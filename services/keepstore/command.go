@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-package main
+package keepstore
 
 import (
 	"context"
@@ -15,6 +15,7 @@ import (
 	"os"
 	"sync"
 
+	"git.arvados.org/arvados.git/lib/cmd"
 	"git.arvados.org/arvados.git/lib/config"
 	"git.arvados.org/arvados.git/lib/service"
 	"git.arvados.org/arvados.git/sdk/go/arvados"
@@ -26,26 +27,22 @@ import (
 )
 
 var (
-	version = "dev"
 	Command = service.Command(arvados.ServiceNameKeepstore, newHandlerOrErrorHandler)
 )
 
-func main() {
-	os.Exit(runCommand(os.Args[0], os.Args[1:], os.Stdin, os.Stdout, os.Stderr))
-}
-
 func runCommand(prog string, args []string, stdin io.Reader, stdout, stderr io.Writer) int {
-	args, ok := convertKeepstoreFlagsToServiceFlags(args, ctxlog.FromContext(context.Background()))
+	args, ok, code := convertKeepstoreFlagsToServiceFlags(prog, args, ctxlog.FromContext(context.Background()), stderr)
 	if !ok {
-		return 2
+		return code
 	}
 	return Command.RunCommand(prog, args, stdin, stdout, stderr)
 }
 
 // Parse keepstore command line flags, and return equivalent
-// service.Command flags. The second return value ("ok") is true if
-// all provided flags were successfully converted.
-func convertKeepstoreFlagsToServiceFlags(args []string, lgr logrus.FieldLogger) ([]string, bool) {
+// service.Command flags. If the second return value ("ok") is false,
+// the program should exit, and the third return value is a suitable
+// exit code.
+func convertKeepstoreFlagsToServiceFlags(prog string, args []string, lgr logrus.FieldLogger, stderr io.Writer) ([]string, bool, int) {
 	flags := flag.NewFlagSet("", flag.ContinueOnError)
 	flags.String("listen", "", "Services.Keepstore.InternalURLs")
 	flags.Int("max-buffers", 0, "API.MaxKeepBlobBuffers")
@@ -72,8 +69,8 @@ func convertKeepstoreFlagsToServiceFlags(args []string, lgr logrus.FieldLogger) 
 	flags.String("s3-bucket-volume", "", "Volumes.*.DriverParameters.Bucket")
 	flags.String("s3-region", "", "Volumes.*.DriverParameters.Region")
 	flags.String("s3-endpoint", "", "Volumes.*.DriverParameters.Endpoint")
-	flags.String("s3-access-key-file", "", "Volumes.*.DriverParameters.AccessKey")
-	flags.String("s3-secret-key-file", "", "Volumes.*.DriverParameters.SecretKey")
+	flags.String("s3-access-key-file", "", "Volumes.*.DriverParameters.AccessKeyID")
+	flags.String("s3-secret-key-file", "", "Volumes.*.DriverParameters.SecretAccessKey")
 	flags.String("s3-race-window", "", "Volumes.*.DriverParameters.RaceWindow")
 	flags.String("s3-replication", "", "Volumes.*.Replication")
 	flags.String("s3-unsafe-delete", "", "Volumes.*.DriverParameters.UnsafeDelete")
@@ -84,11 +81,8 @@ func convertKeepstoreFlagsToServiceFlags(args []string, lgr logrus.FieldLogger) 
 	flags.String("config", "", "")
 	flags.String("legacy-keepstore-config", "", "")
 
-	err := flags.Parse(args)
-	if err == flag.ErrHelp {
-		return []string{"-help"}, true
-	} else if err != nil {
-		return nil, false
+	if ok, code := cmd.ParseFlags(flags, prog, args, "", stderr); !ok {
+		return nil, false, code
 	}
 
 	args = nil
@@ -105,13 +99,13 @@ func convertKeepstoreFlagsToServiceFlags(args []string, lgr logrus.FieldLogger) 
 		}
 	})
 	if !ok {
-		return nil, false
+		return nil, false, 2
 	}
 
-	flags = flag.NewFlagSet("", flag.ExitOnError)
+	flags = flag.NewFlagSet("", flag.ContinueOnError)
 	loader := config.NewLoader(nil, lgr)
 	loader.SetupFlags(flags)
-	return loader.MungeLegacyConfigArgs(lgr, args, "-legacy-keepstore-config"), true
+	return loader.MungeLegacyConfigArgs(lgr, args, "-legacy-keepstore-config"), true, 0
 }
 
 type handler struct {
@@ -172,7 +166,7 @@ func (h *handler) setup(ctx context.Context, cluster *arvados.Cluster, token str
 		return errors.New("no volumes configured")
 	}
 
-	h.Logger.Printf("keepstore %s starting, pid %d", version, os.Getpid())
+	h.Logger.Printf("keepstore %s starting, pid %d", cmd.Version.String(), os.Getpid())
 
 	// Start a round-robin VolumeManager with the configured volumes.
 	vm, err := makeRRVolumeManager(h.Logger, h.Cluster, serviceURL, newVolumeMetricsVecs(reg))

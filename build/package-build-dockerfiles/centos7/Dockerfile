@@ -16,7 +16,7 @@ RUN gpg --import --no-tty /tmp/mpapis.asc && \
     curl -L https://get.rvm.io | bash -s stable && \
     /usr/local/rvm/bin/rvm install 2.5 && \
     /usr/local/rvm/bin/rvm alias create default ruby-2.5 && \
-    /usr/local/rvm/bin/rvm-exec default gem install bundler --version 2.0.2 && \
+    /usr/local/rvm/bin/rvm-exec default gem install bundler --version 2.2.19 && \
     /usr/local/rvm/bin/rvm-exec default gem install fpm --version 1.10.2
 
 # Install Bash 4.4.12 // see https://dev.arvados.org/issues/15612
@@ -31,7 +31,7 @@ RUN cd /usr/local/src \
 && ln -sf /usr/local/src/bash-4.4.12/bash /bin/bash
 
 # Install golang binary
-ADD generated/go1.13.4.linux-amd64.tar.gz /usr/local/
+ADD generated/go1.17.1.linux-amd64.tar.gz /usr/local/
 RUN ln -s /usr/local/go/bin/go /usr/local/bin/
 
 # Install nodejs and npm

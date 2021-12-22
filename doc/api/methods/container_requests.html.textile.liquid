@@ -60,6 +60,7 @@ table(table table-bordered table-condensed).
 |runtime_token|string|A v2 token to be passed into the container itself, used to access Keep-backed mounts, etc.  |Not returned in API responses.  Reset to null when state is "Complete" or "Cancelled".|
 |runtime_user_uuid|string|The user permission that will be granted to this container.||
 |runtime_auth_scopes|array of string|The scopes associated with the auth token used to run this container.||
+|output_storage_classes|array of strings|The storage classes that will be used for the log and output collections of this container request|default is ["default"]|
 
 h2(#priority). Priority
 
@@ -71,7 +72,7 @@ Priority 1 is the lowest priority.
 
 Priority 1000 is the highest priority.
 
-The actual order that containers execute is determined by the underlying scheduling software (e.g. SLURM) and may be based on a combination of container priority, submission time, available resources, and other factors.
+The actual order that containers execute is determined by the underlying scheduling software (e.g. Slurm) and may be based on a combination of container priority, submission time, available resources, and other factors.
 
 In the current implementation, the magnitude of difference in priority between two containers affects the weight of priority vs age in determining scheduling order.  If two containers have only a small difference in priority (for example, 500 and 501) and the lower priority container has a longer queue time, the lower priority container may be scheduled before the higher priority container.  Use a greater magnitude difference (for example, 500 and 600) to give higher weight to priority over queue time.
 

@@ -198,6 +198,13 @@ class UsersTest < ActionDispatch::IntegrationTest
 
     verify_link_existence created['uuid'], created['email'], true, true, true, true, false
 
+    # create a token
+    token = act_as_system_user do
+      ApiClientAuthorization.create!(user: User.find_by_uuid(created['uuid']), api_client: ApiClient.all.first).api_token
+    end
+
+    assert_equal 1, ApiClientAuthorization.where(user_id: User.find_by_uuid(created['uuid']).id).size, 'expected token not found'
+
     post "/arvados/v1/users/#{created['uuid']}/unsetup", params: {}, headers: auth(:admin)
 
     assert_response :success
@@ -205,6 +212,7 @@ class UsersTest < ActionDispatch::IntegrationTest
     created2 = json_response
     assert_not_nil created2['uuid'], 'expected uuid for the newly created user'
     assert_equal created['uuid'], created2['uuid'], 'expected uuid not found'
+    assert_equal 0, ApiClientAuthorization.where(user_id: User.find_by_uuid(created['uuid']).id).size, 'token should have been deleted by user unsetup'
 
     verify_link_existence created['uuid'], created['email'], false, false, false, false, false
   end
@@ -426,20 +434,26 @@ class UsersTest < ActionDispatch::IntegrationTest
         params: {},
         headers: {"HTTP_AUTHORIZATION" => "Bearer #{token}"})
     assert_response(:success)
-    user = json_response
-    assert_equal true, user['is_active']
+    userJSON = json_response
+    assert_equal true, userJSON['is_active']
 
     post("/arvados/v1/users/#{user['uuid']}/unsetup",
         params: {},
         headers: auth(:admin))
     assert_response :success
 
+    # Need to get a new token, the old one was invalidated by the unsetup call
+    act_as_system_user do
+      ap = ApiClientAuthorization.create!(user: user, api_client_id: 0)
+      token = ap.api_token
+    end
+
     get("/arvados/v1/users/#{user['uuid']}",
         params: {},
         headers: {"HTTP_AUTHORIZATION" => "Bearer #{token}"})
     assert_response(:success)
-    user = json_response
-    assert_equal false, user['is_active']
+    userJSON = json_response
+    assert_equal false, userJSON['is_active']
 
     post("/arvados/v1/users/#{user['uuid']}/activate",
         params: {},

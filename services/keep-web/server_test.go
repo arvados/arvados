@@ -6,6 +6,7 @@ package main
 
 import (
 	"bytes"
+	"context"
 	"crypto/md5"
 	"encoding/json"
 	"fmt"
@@ -34,6 +35,7 @@ var _ = check.Suite(&IntegrationSuite{})
 // IntegrationSuite tests need an API server and a keep-web server
 type IntegrationSuite struct {
 	testServer *server
+	ArvConfig  *arvados.Config
 }
 
 func (s *IntegrationSuite) TestNoToken(c *check.C) {
@@ -389,13 +391,12 @@ func (s *IntegrationSuite) TestMetrics(c *check.C) {
 	c.Check(summaries["request_duration_seconds/get/404"].SampleCount, check.Equals, "1")
 	c.Check(summaries["time_to_status_seconds/get/404"].SampleCount, check.Equals, "1")
 	c.Check(counters["arvados_keepweb_collectioncache_requests//"].Value, check.Equals, int64(2))
-	c.Check(counters["arvados_keepweb_collectioncache_api_calls//"].Value, check.Equals, int64(1))
+	c.Check(counters["arvados_keepweb_collectioncache_api_calls//"].Value, check.Equals, int64(2))
 	c.Check(counters["arvados_keepweb_collectioncache_hits//"].Value, check.Equals, int64(1))
 	c.Check(counters["arvados_keepweb_collectioncache_pdh_hits//"].Value, check.Equals, int64(1))
-	c.Check(counters["arvados_keepweb_collectioncache_permission_hits//"].Value, check.Equals, int64(1))
 	c.Check(gauges["arvados_keepweb_collectioncache_cached_manifests//"].Value, check.Equals, float64(1))
 	// FooCollection's cached manifest size is 45 ("1f4b0....+45") plus one 51-byte blob signature
-	c.Check(gauges["arvados_keepweb_collectioncache_cached_manifest_bytes//"].Value, check.Equals, float64(45+51))
+	c.Check(gauges["arvados_keepweb_sessions_cached_collection_bytes//"].Value, check.Equals, float64(45+51))
 
 	// If the Host header indicates a collection, /metrics.json
 	// refers to a file in the collection -- the metrics handler
@@ -409,7 +410,7 @@ func (s *IntegrationSuite) TestMetrics(c *check.C) {
 }
 
 func (s *IntegrationSuite) SetUpSuite(c *check.C) {
-	arvadostest.StartAPI()
+	arvadostest.ResetDB(c)
 	arvadostest.StartKeep(2, true)
 
 	arv, err := arvadosclient.MakeArvadosClient()
@@ -425,7 +426,6 @@ func (s *IntegrationSuite) SetUpSuite(c *check.C) {
 
 func (s *IntegrationSuite) TearDownSuite(c *check.C) {
 	arvadostest.StopKeep(2)
-	arvadostest.StopAPI()
 }
 
 func (s *IntegrationSuite) SetUpTest(c *check.C) {
@@ -434,7 +434,7 @@ func (s *IntegrationSuite) SetUpTest(c *check.C) {
 	ldr.Path = "-"
 	arvCfg, err := ldr.Load()
 	c.Check(err, check.IsNil)
-	cfg := newConfig(arvCfg)
+	cfg := newConfig(ctxlog.TestLogger(c), arvCfg)
 	c.Assert(err, check.IsNil)
 	cfg.Client = arvados.Client{
 		APIHost:  testAPIHost,
@@ -446,8 +446,11 @@ func (s *IntegrationSuite) SetUpTest(c *check.C) {
 	cfg.cluster.ManagementToken = arvadostest.ManagementToken
 	cfg.cluster.SystemRootToken = arvadostest.SystemRootToken
 	cfg.cluster.Users.AnonymousUserToken = arvadostest.AnonymousToken
+	s.ArvConfig = arvCfg
 	s.testServer = &server{Config: cfg}
-	err = s.testServer.Start(ctxlog.TestLogger(c))
+	logger := ctxlog.TestLogger(c)
+	ctx := ctxlog.Context(context.Background(), logger)
+	err = s.testServer.Start(ctx, logger)
 	c.Assert(err, check.Equals, nil)
 }
 

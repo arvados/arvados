@@ -12,7 +12,7 @@ import (
 	"os"
 	"os/exec"
 
-	"git.arvados.org/arvados.git/sdk/go/arvados"
+	"git.arvados.org/arvados.git/lib/cmd"
 	"git.arvados.org/arvados.git/sdk/go/ctxlog"
 	"github.com/ghodss/yaml"
 	"github.com/sirupsen/logrus"
@@ -36,22 +36,11 @@ func (dumpCommand) RunCommand(prog string, args []string, stdin io.Reader, stdou
 	}
 
 	flags := flag.NewFlagSet("", flag.ContinueOnError)
-	flags.SetOutput(stderr)
 	loader.SetupFlags(flags)
 
-	err = flags.Parse(args)
-	if err == flag.ErrHelp {
-		err = nil
-		return 0
-	} else if err != nil {
-		return 2
+	if ok, code := cmd.ParseFlags(flags, prog, args, "", stderr); !ok {
+		return code
 	}
-
-	if len(flags.Args()) != 0 {
-		flags.Usage()
-		return 2
-	}
-
 	cfg, err := loader.Load()
 	if err != nil {
 		return 1
@@ -88,22 +77,11 @@ func (checkCommand) RunCommand(prog string, args []string, stdin io.Reader, stdo
 		Logger: logger,
 	}
 
-	flags := flag.NewFlagSet("", flag.ContinueOnError)
-	flags.SetOutput(stderr)
+	flags := flag.NewFlagSet(prog, flag.ContinueOnError)
 	loader.SetupFlags(flags)
 	strict := flags.Bool("strict", true, "Strict validation of configuration file (warnings result in non-zero exit code)")
-
-	err = flags.Parse(args)
-	if err == flag.ErrHelp {
-		err = nil
-		return 0
-	} else if err != nil {
-		return 2
-	}
-
-	if len(flags.Args()) != 0 {
-		flags.Usage()
-		return 2
+	if ok, code := cmd.ParseFlags(flags, prog, args, "", stderr); !ok {
+		return code
 	}
 
 	// Load the config twice -- once without loading deprecated
@@ -120,15 +98,14 @@ func (checkCommand) RunCommand(prog string, args []string, stdin io.Reader, stdo
 	if err != nil {
 		return 1
 	}
+	// Reset() to avoid printing the same warnings twice when they
+	// are logged by both without-legacy and with-legacy loads.
+	logbuf.Reset()
 	loader.SkipDeprecated = false
 	loader.SkipLegacy = false
 	withDepr, err := loader.Load()
 	if err != nil {
 		return 1
-	}
-	problems := false
-	if warnAboutProblems(logger, withDepr) {
-		problems = true
 	}
 	cmd := exec.Command("diff", "-u", "--label", "without-deprecated-configs", "--label", "relying-on-deprecated-configs", "/dev/fd/3", "/dev/fd/4")
 	for _, obj := range []interface{}{withoutDepr, withDepr} {
@@ -165,26 +142,7 @@ func (checkCommand) RunCommand(prog string, args []string, stdin io.Reader, stdo
 			return 1
 		}
 	}
-
-	if problems {
-		return 1
-	}
 	return 0
-}
-
-func warnAboutProblems(logger logrus.FieldLogger, cfg *arvados.Config) bool {
-	warned := false
-	for id, cc := range cfg.Clusters {
-		if cc.SystemRootToken == "" {
-			logger.Warnf("Clusters.%s.SystemRootToken is empty; see https://doc.arvados.org/master/install/install-keepstore.html", id)
-			warned = true
-		}
-		if cc.ManagementToken == "" {
-			logger.Warnf("Clusters.%s.ManagementToken is empty; see https://doc.arvados.org/admin/management-token.html", id)
-			warned = true
-		}
-	}
-	return warned
 }
 
 var DumpDefaultsCommand defaultsCommand

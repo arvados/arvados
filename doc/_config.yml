@@ -57,6 +57,9 @@ navbar:
       - user/cwl/cwl-extensions.html.textile.liquid
       - user/cwl/federated-workflows.html.textile.liquid
       - user/cwl/cwl-versions.html.textile.liquid
+      - user/cwl/crunchstat-summary.html.textile.liquid
+      - user/cwl/costanalyzer.html.textile.liquid
+      - user/debugging/container-shell-access.html.textile.liquid
     - Working with git repositories:
       - user/tutorials/add-new-repository.html.textile.liquid
       - user/tutorials/git-arvados-guide.html.textile.liquid
@@ -97,9 +100,6 @@ navbar:
       - sdk/java-v2/index.html.textile.liquid
       - sdk/java-v2/example.html.textile.liquid
       - sdk/java-v2/javadoc.html.textile.liquid
-    - Java v1:
-      - sdk/java/index.html.textile.liquid
-      - sdk/java/example.html.textile.liquid
     - Perl:
       - sdk/perl/index.html.textile.liquid
       - sdk/perl/example.html.textile.liquid
@@ -128,6 +128,7 @@ navbar:
       - api/keep-webdav.html.textile.liquid
       - api/keep-s3.html.textile.liquid
       - api/keep-web-urls.html.textile.liquid
+      - api/projects.html.textile.liquid
       - api/methods/collections.html.textile.liquid
       - api/methods/repositories.html.textile.liquid
     - Container engine:
@@ -157,6 +158,8 @@ navbar:
       - architecture/manifest-format.html.textile.liquid
     - Computation with Crunch:
       - api/execution.html.textile.liquid
+      - architecture/dispatchcloud.html.textile.liquid
+      - architecture/singularity.html.textile.liquid
     - Other:
       - api/permission-model.html.textile.liquid
       - architecture/federation.html.textile.liquid
@@ -184,12 +187,14 @@ navbar:
     - Data Management:
       - admin/collection-versioning.html.textile.liquid
       - admin/collection-managed-properties.html.textile.liquid
+      - admin/restricting-upload-download.html.textile.liquid
       - admin/keep-balance.html.textile.liquid
       - admin/controlling-container-reuse.html.textile.liquid
       - admin/logs-table-management.html.textile.liquid
-      - admin/workbench2-vocabulary.html.textile.liquid
+      - admin/metadata-vocabulary.html.textile.liquid
       - admin/storage-classes.html.textile.liquid
       - admin/keep-recovering-data.html.textile.liquid
+      - admin/keep-measuring-deduplication.html.textile.liquid
     - Cloud:
       - admin/spot-instances.html.textile.liquid
       - admin/cloudtest.html.textile.liquid
@@ -218,6 +223,7 @@ navbar:
       - install/config.html.textile.liquid
       - admin/config-migration.html.textile.liquid
       - admin/config.html.textile.liquid
+      - admin/config-urls.html.textile.liquid
     - Core:
       - install/install-api-server.html.textile.liquid
     - Keep:
@@ -238,15 +244,22 @@ navbar:
       - install/install-shell-server.html.textile.liquid
       - install/install-webshell.html.textile.liquid
       - install/install-arv-git-httpd.html.textile.liquid
-    - Containers API (cloud):
+    - Containers API (all):
       - install/install-jobs-image.html.textile.liquid
+    - Containers API (cloud):
       - install/crunch2-cloud/install-compute-node.html.textile.liquid
       - install/crunch2-cloud/install-dispatch-cloud.html.textile.liquid
-    - Containers API (slurm):
+    - Compute nodes (Slurm or LSF):
+      - install/crunch2/install-compute-node-docker.html.textile.liquid
+      - install/crunch2/install-compute-node-singularity.html.textile.liquid
+    - Containers API (Slurm):
       - install/crunch2-slurm/install-dispatch.html.textile.liquid
       - install/crunch2-slurm/configure-slurm.html.textile.liquid
-      - install/crunch2-slurm/install-compute-node.html.textile.liquid
       - install/crunch2-slurm/install-test.html.textile.liquid
+    - Containers API (LSF):
+      - install/crunch2-lsf/install-dispatch.html.textile.liquid
+    - Additional configuration:
+      - install/container-shell-access.html.textile.liquid
     - External dependencies:
       - install/install-postgresql.html.textile.liquid
       - install/ruby.html.textile.liquid

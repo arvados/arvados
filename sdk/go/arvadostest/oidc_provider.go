@@ -17,6 +17,7 @@ import (
 
 	"gopkg.in/check.v1"
 	"gopkg.in/square/go-jose.v2"
+	"gopkg.in/square/go-jose.v2/jwt"
 )
 
 type OIDCProvider struct {
@@ -25,9 +26,12 @@ type OIDCProvider struct {
 	ValidClientID     string
 	ValidClientSecret string
 	// desired response from token endpoint
-	AuthEmail         string
-	AuthEmailVerified bool
-	AuthName          string
+	AuthEmail          string
+	AuthEmailVerified  bool
+	AuthName           string
+	AuthGivenName      string
+	AuthFamilyName     string
+	AccessTokenPayload map[string]interface{}
 
 	PeopleAPIResponse map[string]interface{}
 
@@ -44,11 +48,13 @@ func NewOIDCProvider(c *check.C) *OIDCProvider {
 	c.Assert(err, check.IsNil)
 	p.Issuer = httptest.NewServer(http.HandlerFunc(p.serveOIDC))
 	p.PeopleAPI = httptest.NewServer(http.HandlerFunc(p.servePeopleAPI))
+	p.AccessTokenPayload = map[string]interface{}{"sub": "example"}
 	return p
 }
 
 func (p *OIDCProvider) ValidAccessToken() string {
-	return p.fakeToken([]byte("fake access token"))
+	buf, _ := json.Marshal(p.AccessTokenPayload)
+	return p.fakeToken(buf)
 }
 
 func (p *OIDCProvider) serveOIDC(w http.ResponseWriter, req *http.Request) {
@@ -92,6 +98,8 @@ func (p *OIDCProvider) serveOIDC(w http.ResponseWriter, req *http.Request) {
 			"email":          p.AuthEmail,
 			"email_verified": p.AuthEmailVerified,
 			"name":           p.AuthName,
+			"given_name":     p.AuthGivenName,
+			"family_name":    p.AuthFamilyName,
 			"alt_verified":   true,                    // for custom claim tests
 			"alt_email":      "alt_email@example.com", // for custom claim tests
 			"alt_username":   "desired-username",      // for custom claim tests
@@ -118,7 +126,8 @@ func (p *OIDCProvider) serveOIDC(w http.ResponseWriter, req *http.Request) {
 	case "/auth":
 		w.WriteHeader(http.StatusInternalServerError)
 	case "/userinfo":
-		if authhdr := req.Header.Get("Authorization"); strings.TrimPrefix(authhdr, "Bearer ") != p.ValidAccessToken() {
+		authhdr := req.Header.Get("Authorization")
+		if _, err := jwt.ParseSigned(strings.TrimPrefix(authhdr, "Bearer ")); err != nil {
 			p.c.Logf("OIDCProvider: bad auth %q", authhdr)
 			w.WriteHeader(http.StatusUnauthorized)
 			return
@@ -126,8 +135,8 @@ func (p *OIDCProvider) serveOIDC(w http.ResponseWriter, req *http.Request) {
 		json.NewEncoder(w).Encode(map[string]interface{}{
 			"sub":            "fake-user-id",
 			"name":           p.AuthName,
-			"given_name":     p.AuthName,
-			"family_name":    "",
+			"given_name":     p.AuthGivenName,
+			"family_name":    p.AuthFamilyName,
 			"alt_username":   "desired-username",
 			"email":          p.AuthEmail,
 			"email_verified": p.AuthEmailVerified,

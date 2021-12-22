@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-package main
+package keepstore
 
 import (
 	"context"
@@ -89,6 +89,6 @@ var writePulledBlock = func(volmgr *RRVolumeManager, volume Volume, data []byte,
 	if volume != nil {
 		return volume.Put(context.Background(), locator, data)
 	}
-	_, err := PutBlock(context.Background(), volmgr, data, locator)
+	_, err := PutBlock(context.Background(), volmgr, data, locator, nil)
 	return err
 }

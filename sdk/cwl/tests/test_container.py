@@ -59,6 +59,7 @@ class TestContainer(unittest.TestCase):
 
     def setUp(self):
         cwltool.process._names = set()
+        arv_docker_clear_cache()
 
     def helper(self, runner, enable_reuse=True):
         document_loader, avsc_names, schema_metadata, metaschema_loader = cwltool.process.get_schema(INTERNAL_VERSION)
@@ -111,6 +112,7 @@ class TestContainer(unittest.TestCase):
             runner.ignore_docker_for_reuse = False
             runner.intermediate_output_ttl = 0
             runner.secret_store = cwltool.secrets.SecretStore()
+            runner.api._rootDesc = {"revision": "20210628"}
 
             keepdocker.return_value = [("zzzzz-4zz18-zzzzzzzzzzzzzz3", "")]
             runner.api.collections().get().execute.return_value = {
@@ -122,7 +124,7 @@ class TestContainer(unittest.TestCase):
                 "baseCommand": "ls",
                 "arguments": [{"valueFrom": "$(runtime.outdir)"}],
                 "id": "#",
-                "class": "CommandLineTool"
+                "class": "org.w3id.cwl.cwl.CommandLineTool"
             })
 
             loadingContext, runtimeContext = self.helper(runner, enable_reuse)
@@ -162,18 +164,19 @@ class TestContainer(unittest.TestCase):
                         'cwd': '/var/spool/cwl',
                         'scheduling_parameters': {},
                         'properties': {},
-                        'secret_mounts': {}
+                        'secret_mounts': {},
+                        'output_storage_classes': ["default"]
                     }))
 
     # The test passes some fields in builder.resources
     # For the remaining fields, the defaults will apply: {'cores': 1, 'ram': 1024, 'outdirSize': 1024, 'tmpdirSize': 1024}
     @mock.patch("arvados.commands.keepdocker.list_images_in_arv")
     def test_resource_requirements(self, keepdocker):
-        arv_docker_clear_cache()
         runner = mock.MagicMock()
         runner.ignore_docker_for_reuse = False
         runner.intermediate_output_ttl = 3600
         runner.secret_store = cwltool.secrets.SecretStore()
+        runner.api._rootDesc = {"revision": "20210628"}
 
         keepdocker.return_value = [("zzzzz-4zz18-zzzzzzzzzzzzzz3", "")]
         runner.api.collections().get().execute.return_value = {
@@ -205,7 +208,7 @@ class TestContainer(unittest.TestCase):
             }],
             "baseCommand": "ls",
             "id": "#",
-            "class": "CommandLineTool"
+            "class": "org.w3id.cwl.cwl.CommandLineTool"
         })
 
         loadingContext, runtimeContext = self.helper(runner)
@@ -250,7 +253,8 @@ class TestContainer(unittest.TestCase):
                 'partitions': ['blurb']
             },
             'properties': {},
-            'secret_mounts': {}
+            'secret_mounts': {},
+            'output_storage_classes': ["default"]
         }
 
         call_body = call_kwargs.get('body', None)
@@ -264,11 +268,11 @@ class TestContainer(unittest.TestCase):
     @mock.patch("arvados.commands.keepdocker.list_images_in_arv")
     @mock.patch("arvados.collection.Collection")
     def test_initial_work_dir(self, collection_mock, keepdocker):
-        arv_docker_clear_cache()
         runner = mock.MagicMock()
         runner.ignore_docker_for_reuse = False
         runner.intermediate_output_ttl = 0
         runner.secret_store = cwltool.secrets.SecretStore()
+        runner.api._rootDesc = {"revision": "20210628"}
 
         keepdocker.return_value = [("zzzzz-4zz18-zzzzzzzzzzzzzz3", "")]
         runner.api.collections().get().execute.return_value = {
@@ -313,7 +317,7 @@ class TestContainer(unittest.TestCase):
             }],
             "baseCommand": "ls",
             "id": "#",
-            "class": "CommandLineTool"
+            "class": "org.w3id.cwl.cwl.CommandLineTool"
         })
 
         loadingContext, runtimeContext = self.helper(runner)
@@ -380,7 +384,8 @@ class TestContainer(unittest.TestCase):
             'scheduling_parameters': {
             },
             'properties': {},
-            'secret_mounts': {}
+            'secret_mounts': {},
+            'output_storage_classes': ["default"]
         }
 
         call_body = call_kwargs.get('body', None)
@@ -392,12 +397,11 @@ class TestContainer(unittest.TestCase):
     # Test redirecting stdin/stdout/stderr
     @mock.patch("arvados.commands.keepdocker.list_images_in_arv")
     def test_redirects(self, keepdocker):
-        arv_docker_clear_cache()
-
         runner = mock.MagicMock()
         runner.ignore_docker_for_reuse = False
         runner.intermediate_output_ttl = 0
         runner.secret_store = cwltool.secrets.SecretStore()
+        runner.api._rootDesc = {"revision": "20210628"}
 
         keepdocker.return_value = [("zzzzz-4zz18-zzzzzzzzzzzzzz3", "")]
         runner.api.collections().get().execute.return_value = {
@@ -414,7 +418,7 @@ class TestContainer(unittest.TestCase):
             "stdin": "/keep/99999999999999999999999999999996+99/file.txt",
             "arguments": [{"valueFrom": "$(runtime.outdir)"}],
             "id": "#",
-            "class": "CommandLineTool"
+            "class": "org.w3id.cwl.cwl.CommandLineTool"
         })
 
         loadingContext, runtimeContext = self.helper(runner)
@@ -466,7 +470,8 @@ class TestContainer(unittest.TestCase):
                     'cwd': '/var/spool/cwl',
                     'scheduling_parameters': {},
                     'properties': {},
-                    'secret_mounts': {}
+                    'secret_mounts': {},
+                    'output_storage_classes': ["default"]
                 }))
 
     @mock.patch("arvados.collection.Collection")
@@ -617,12 +622,11 @@ class TestContainer(unittest.TestCase):
     # Hence the default resources will apply: {'cores': 1, 'ram': 1024, 'outdirSize': 1024, 'tmpdirSize': 1024}
     @mock.patch("arvados.commands.keepdocker.list_images_in_arv")
     def test_mounts(self, keepdocker):
-        arv_docker_clear_cache()
-
         runner = mock.MagicMock()
         runner.ignore_docker_for_reuse = False
         runner.intermediate_output_ttl = 0
         runner.secret_store = cwltool.secrets.SecretStore()
+        runner.api._rootDesc = {"revision": "20210628"}
 
         keepdocker.return_value = [("zzzzz-4zz18-zzzzzzzzzzzzzz3", "")]
         runner.api.collections().get().execute.return_value = {
@@ -640,7 +644,7 @@ class TestContainer(unittest.TestCase):
             "baseCommand": "ls",
             "arguments": [{"valueFrom": "$(runtime.outdir)"}],
             "id": "#",
-            "class": "CommandLineTool"
+            "class": "org.w3id.cwl.cwl.CommandLineTool"
         })
 
         loadingContext, runtimeContext = self.helper(runner)
@@ -701,19 +705,19 @@ class TestContainer(unittest.TestCase):
                     'cwd': '/var/spool/cwl',
                     'scheduling_parameters': {},
                     'properties': {},
-                    'secret_mounts': {}
+                    'secret_mounts': {},
+                    'output_storage_classes': ["default"]
                 }))
 
     # The test passes no builder.resources
     # Hence the default resources will apply: {'cores': 1, 'ram': 1024, 'outdirSize': 1024, 'tmpdirSize': 1024}
     @mock.patch("arvados.commands.keepdocker.list_images_in_arv")
     def test_secrets(self, keepdocker):
-        arv_docker_clear_cache()
-
         runner = mock.MagicMock()
         runner.ignore_docker_for_reuse = False
         runner.intermediate_output_ttl = 0
         runner.secret_store = cwltool.secrets.SecretStore()
+        runner.api._rootDesc = {"revision": "20210628"}
 
         keepdocker.return_value = [("zzzzz-4zz18-zzzzzzzzzzzzzz3", "")]
         runner.api.collections().get().execute.return_value = {
@@ -722,7 +726,7 @@ class TestContainer(unittest.TestCase):
         document_loader, avsc_names, schema_metadata, metaschema_loader = cwltool.process.get_schema("v1.1")
 
         tool = cmap({"arguments": ["md5sum", "example.conf"],
-                     "class": "CommandLineTool",
+                     "class": "org.w3id.cwl.cwl.CommandLineTool",
                      "hints": [
                          {
                              "class": "http://commonwl.org/cwltool#Secrets",
@@ -798,19 +802,19 @@ class TestContainer(unittest.TestCase):
                             "content": "username: user\npassword: blorp\n",
                             "kind": "text"
                         }
-                    }
+                    },
+                    'output_storage_classes': ["default"]
                 }))
 
     # The test passes no builder.resources
     # Hence the default resources will apply: {'cores': 1, 'ram': 1024, 'outdirSize': 1024, 'tmpdirSize': 1024}
     @mock.patch("arvados.commands.keepdocker.list_images_in_arv")
     def test_timelimit(self, keepdocker):
-        arv_docker_clear_cache()
-
         runner = mock.MagicMock()
         runner.ignore_docker_for_reuse = False
         runner.intermediate_output_ttl = 0
         runner.secret_store = cwltool.secrets.SecretStore()
+        runner.api._rootDesc = {"revision": "20210628"}
 
         keepdocker.return_value = [("zzzzz-4zz18-zzzzzzzzzzzzzz3", "")]
         runner.api.collections().get().execute.return_value = {
@@ -822,7 +826,7 @@ class TestContainer(unittest.TestCase):
             "baseCommand": "ls",
             "arguments": [{"valueFrom": "$(runtime.outdir)"}],
             "id": "#",
-            "class": "CommandLineTool",
+            "class": "org.w3id.cwl.cwl.CommandLineTool",
             "hints": [
                 {
                     "class": "ToolTimeLimit",
@@ -844,9 +848,176 @@ class TestContainer(unittest.TestCase):
         self.assertEqual(42, kwargs['body']['scheduling_parameters'].get('max_run_time'))
 
 
+    # The test passes no builder.resources
+    # Hence the default resources will apply: {'cores': 1, 'ram': 1024, 'outdirSize': 1024, 'tmpdirSize': 1024}
+    @mock.patch("arvados.commands.keepdocker.list_images_in_arv")
+    def test_setting_storage_class(self, keepdocker):
+        arv_docker_clear_cache()
+
+        runner = mock.MagicMock()
+        runner.ignore_docker_for_reuse = False
+        runner.intermediate_output_ttl = 0
+        runner.secret_store = cwltool.secrets.SecretStore()
+        runner.api._rootDesc = {"revision": "20210628"}
+
+        keepdocker.return_value = [("zzzzz-4zz18-zzzzzzzzzzzzzz3", "")]
+        runner.api.collections().get().execute.return_value = {
+            "portable_data_hash": "99999999999999999999999999999993+99"}
+
+        tool = cmap({
+            "inputs": [],
+            "outputs": [],
+            "baseCommand": "ls",
+            "arguments": [{"valueFrom": "$(runtime.outdir)"}],
+            "id": "#",
+            "class": "org.w3id.cwl.cwl.CommandLineTool",
+            "hints": [
+                {
+                    "class": "http://arvados.org/cwl#OutputStorageClass",
+                    "finalStorageClass": ["baz_sc", "qux_sc"],
+                    "intermediateStorageClass": ["foo_sc", "bar_sc"]
+                }
+            ]
+        })
+
+        loadingContext, runtimeContext = self.helper(runner, True)
+
+        arvtool = arvados_cwl.ArvadosCommandTool(runner, tool, loadingContext)
+        arvtool.formatgraph = None
+
+        for j in arvtool.job({}, mock.MagicMock(), runtimeContext):
+            j.run(runtimeContext)
+            runner.api.container_requests().create.assert_called_with(
+                body=JsonDiffMatcher({
+                    'environment': {
+                        'HOME': '/var/spool/cwl',
+                        'TMPDIR': '/tmp'
+                    },
+                    'name': 'test_run_True',
+                    'runtime_constraints': {
+                        'vcpus': 1,
+                        'ram': 1073741824
+                    },
+                    'use_existing': True,
+                    'priority': 500,
+                    'mounts': {
+                        '/tmp': {'kind': 'tmp',
+                                 "capacity": 1073741824
+                             },
+                        '/var/spool/cwl': {'kind': 'tmp',
+                                           "capacity": 1073741824 }
+                    },
+                    'state': 'Committed',
+                    'output_name': 'Output for step test_run_True',
+                    'owner_uuid': 'zzzzz-8i9sb-zzzzzzzzzzzzzzz',
+                    'output_path': '/var/spool/cwl',
+                    'output_ttl': 0,
+                    'container_image': '99999999999999999999999999999993+99',
+                    'command': ['ls', '/var/spool/cwl'],
+                    'cwd': '/var/spool/cwl',
+                    'scheduling_parameters': {},
+                    'properties': {},
+                    'secret_mounts': {},
+                    'output_storage_classes': ["foo_sc", "bar_sc"]
+                }))
+
+
+    # The test passes no builder.resources
+    # Hence the default resources will apply: {'cores': 1, 'ram': 1024, 'outdirSize': 1024, 'tmpdirSize': 1024}
+    @mock.patch("arvados.commands.keepdocker.list_images_in_arv")
+    def test_setting_process_properties(self, keepdocker):
+        arv_docker_clear_cache()
+
+        runner = mock.MagicMock()
+        runner.ignore_docker_for_reuse = False
+        runner.intermediate_output_ttl = 0
+        runner.secret_store = cwltool.secrets.SecretStore()
+        runner.api._rootDesc = {"revision": "20210628"}
+
+        keepdocker.return_value = [("zzzzz-4zz18-zzzzzzzzzzzzzz3", "")]
+        runner.api.collections().get().execute.return_value = {
+            "portable_data_hash": "99999999999999999999999999999993+99"}
+
+        tool = cmap({
+            "inputs": [
+                {"id": "x", "type": "string"}],
+            "outputs": [],
+            "baseCommand": "ls",
+            "arguments": [{"valueFrom": "$(runtime.outdir)"}],
+            "id": "#",
+            "class": "org.w3id.cwl.cwl.CommandLineTool",
+            "hints": [
+            {
+                "class": "http://arvados.org/cwl#ProcessProperties",
+                "processProperties": [
+                    {"propertyName": "foo",
+                     "propertyValue": "bar"},
+                    {"propertyName": "baz",
+                     "propertyValue": "$(inputs.x)"},
+                    {"propertyName": "quux",
+                     "propertyValue": {
+                         "q1": 1,
+                         "q2": 2
+                     }
+                    }
+                ],
+            }
+        ]
+        })
+
+        loadingContext, runtimeContext = self.helper(runner, True)
+
+        arvtool = arvados_cwl.ArvadosCommandTool(runner, tool, loadingContext)
+        arvtool.formatgraph = None
+
+        for j in arvtool.job({"x": "blorp"}, mock.MagicMock(), runtimeContext):
+            j.run(runtimeContext)
+            runner.api.container_requests().create.assert_called_with(
+                body=JsonDiffMatcher({
+                    'environment': {
+                        'HOME': '/var/spool/cwl',
+                        'TMPDIR': '/tmp'
+                    },
+                    'name': 'test_run_True',
+                    'runtime_constraints': {
+                        'vcpus': 1,
+                        'ram': 1073741824
+                    },
+                    'use_existing': True,
+                    'priority': 500,
+                    'mounts': {
+                        '/tmp': {'kind': 'tmp',
+                                 "capacity": 1073741824
+                             },
+                        '/var/spool/cwl': {'kind': 'tmp',
+                                           "capacity": 1073741824 }
+                    },
+                    'state': 'Committed',
+                    'output_name': 'Output for step test_run_True',
+                    'owner_uuid': 'zzzzz-8i9sb-zzzzzzzzzzzzzzz',
+                    'output_path': '/var/spool/cwl',
+                    'output_ttl': 0,
+                    'container_image': '99999999999999999999999999999993+99',
+                    'command': ['ls', '/var/spool/cwl'],
+                    'cwd': '/var/spool/cwl',
+                    'scheduling_parameters': {},
+                    'properties': {
+                        "baz": "blorp",
+                        "foo": "bar",
+                        "quux": {
+                            "q1": 1,
+                            "q2": 2
+                        }
+                    },
+                    'secret_mounts': {},
+                    'output_storage_classes': ["default"]
+                }))
+
+
 class TestWorkflow(unittest.TestCase):
     def setUp(self):
         cwltool.process._names = set()
+        arv_docker_clear_cache()
 
     def helper(self, runner, enable_reuse=True):
         document_loader, avsc_names, schema_metadata, metaschema_loader = cwltool.process.get_schema("v1.0")
@@ -883,7 +1054,6 @@ class TestWorkflow(unittest.TestCase):
     @mock.patch("arvados.collection.Collection")
     @mock.patch('arvados.commands.keepdocker.list_images_in_arv')
     def test_run(self, list_images_in_arv, mockcollection, mockcollectionreader):
-        arv_docker_clear_cache()
         arvados_cwl.add_arv_hints()
 
         api = mock.MagicMock()
@@ -904,6 +1074,8 @@ class TestWorkflow(unittest.TestCase):
 
         loadingContext, runtimeContext = self.helper(runner)
         runner.fs_access = runtimeContext.make_fs_access(runtimeContext.basedir)
+
+        mockcollectionreader().exists.return_value = True
 
         tool, metadata = loadingContext.loader.resolve_ref("tests/wf/scatter2.cwl")
         metadata["cwlVersion"] = tool["cwlVersion"]
@@ -979,7 +1151,8 @@ class TestWorkflow(unittest.TestCase):
                 "scheduling_parameters": {},
                 "secret_mounts": {},
                 "state": "Committed",
-                "use_existing": True
+                "use_existing": True,
+                'output_storage_classes': ["default"]
             }))
         mockc.open().__enter__().write.assert_has_calls([mock.call(subwf)])
         mockc.open().__enter__().write.assert_has_calls([mock.call(
@@ -999,7 +1172,6 @@ class TestWorkflow(unittest.TestCase):
     @mock.patch("arvados.collection.Collection")
     @mock.patch('arvados.commands.keepdocker.list_images_in_arv')
     def test_overall_resource_singlecontainer(self, list_images_in_arv, mockcollection, mockcollectionreader):
-        arv_docker_clear_cache()
         arvados_cwl.add_arv_hints()
 
         api = mock.MagicMock()
@@ -1082,7 +1254,8 @@ class TestWorkflow(unittest.TestCase):
                 ],
                 'use_existing': True,
                 'output_name': u'Output for step echo-subwf',
-                'cwd': '/var/spool/cwl'
+                'cwd': '/var/spool/cwl',
+                'output_storage_classes': ["default"]
             }))
 
     def test_default_work_api(self):

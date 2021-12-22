@@ -10,6 +10,7 @@ const (
 	ActiveToken             = "3kg6k6lzmp9kj5cpkcoxie963cmvjahbt2fod9zru30k1jqdmi"
 	ActiveTokenUUID         = "zzzzz-gj3su-077z32aux8dg2s1"
 	ActiveTokenV2           = "v2/zzzzz-gj3su-077z32aux8dg2s1/3kg6k6lzmp9kj5cpkcoxie963cmvjahbt2fod9zru30k1jqdmi"
+	AdminUserUUID           = "zzzzz-tpzed-d9tiejq69daie8f"
 	AdminToken              = "4axaw8zxe0qm22wa6urpp5nskcne8z88cvbupv653y1njyi05h"
 	AdminTokenUUID          = "zzzzz-gj3su-027z32aux8dg2s1"
 	AnonymousToken          = "4kg6k6lzmp9kj4cpkcoxie964cmvjahbt4fod9zru44k4jqdmi"
@@ -30,6 +31,11 @@ const (
 	UserAgreementPDH        = "b519d9cb706a29fc7ea24dbea2f05851+93"
 	HelloWorldPdh           = "55713e6a34081eb03609e7ad5fcad129+62"
 
+	MultilevelCollection1                        = "zzzzz-4zz18-pyw8yp9g3pr7irn"
+	StorageClassesDesiredDefaultConfirmedDefault = "zzzzz-4zz18-3t236wr12769tga"
+	StorageClassesDesiredArchiveConfirmedDefault = "zzzzz-4zz18-3t236wr12769qqa"
+	EmptyCollectionUUID                          = "zzzzz-4zz18-gs9ooj1h9sd5mde"
+
 	AProjectUUID    = "zzzzz-j7d0g-v955i6s2oi1cbso"
 	ASubprojectUUID = "zzzzz-j7d0g-axqo7eu9pwvna1x"
 
@@ -41,6 +47,8 @@ const (
 
 	QueuedContainerRequestUUID = "zzzzz-xvhdp-cr4queuedcontnr"
 	QueuedContainerUUID        = "zzzzz-dz642-queuedcontainer"
+
+	LockedContainerUUID = "zzzzz-dz642-lockedcontainer"
 
 	RunningContainerUUID = "zzzzz-dz642-runningcontainr"
 
@@ -61,6 +69,8 @@ const (
 	CompletedDiagnosticsHasher1ContainerUUID        = "zzzzz-dz642-diagcomphasher1"
 	CompletedDiagnosticsHasher2ContainerUUID        = "zzzzz-dz642-diagcomphasher2"
 	CompletedDiagnosticsHasher3ContainerUUID        = "zzzzz-dz642-diagcomphasher3"
+
+	UncommittedContainerRequestUUID = "zzzzz-xvhdp-cr4uncommittedc"
 
 	Hasher1LogCollectionUUID = "zzzzz-4zz18-dlogcollhash001"
 	Hasher2LogCollectionUUID = "zzzzz-4zz18-dlogcollhash002"
@@ -96,6 +106,9 @@ const (
 
 	LogCollectionUUID  = "zzzzz-4zz18-logcollection01"
 	LogCollectionUUID2 = "zzzzz-4zz18-logcollection02"
+
+	DockerImage112PDH      = "d740a57097711e08eb9b2a93518f20ab+174"
+	DockerImage112Filename = "sha256:d8309758b8fe2c81034ffc8a10c36460b77db7bc5e7b448c4e5b684f9d95a678.tar"
 )
 
 // PathologicalManifest : A valid manifest designed to test

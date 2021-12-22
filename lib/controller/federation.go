@@ -94,20 +94,12 @@ func (h *Handler) setupProxyRemoteCluster(next http.Handler) http.Handler {
 
 	wfHandler := &genericFederatedRequestHandler{next, h, wfRe, nil}
 	containersHandler := &genericFederatedRequestHandler{next, h, containersRe, nil}
-	containerRequestsHandler := &genericFederatedRequestHandler{next, h, containerRequestsRe,
-		[]federatedRequestDelegate{remoteContainerRequestCreate}}
-	collectionsRequestsHandler := &genericFederatedRequestHandler{next, h, collectionsRe,
-		[]federatedRequestDelegate{fetchRemoteCollectionByUUID, fetchRemoteCollectionByPDH}}
 	linksRequestsHandler := &genericFederatedRequestHandler{next, h, linksRe, nil}
 
 	mux.Handle("/arvados/v1/workflows", wfHandler)
 	mux.Handle("/arvados/v1/workflows/", wfHandler)
 	mux.Handle("/arvados/v1/containers", containersHandler)
 	mux.Handle("/arvados/v1/containers/", containersHandler)
-	mux.Handle("/arvados/v1/container_requests", containerRequestsHandler)
-	mux.Handle("/arvados/v1/container_requests/", containerRequestsHandler)
-	mux.Handle("/arvados/v1/collections", collectionsRequestsHandler)
-	mux.Handle("/arvados/v1/collections/", collectionsRequestsHandler)
 	mux.Handle("/arvados/v1/links", linksRequestsHandler)
 	mux.Handle("/arvados/v1/links/", linksRequestsHandler)
 	mux.Handle("/", next)
@@ -129,8 +121,6 @@ func (h *Handler) setupProxyRemoteCluster(next http.Handler) http.Handler {
 
 		mux.ServeHTTP(w, req)
 	})
-
-	return mux
 }
 
 type CurrentUser struct {
@@ -224,10 +214,9 @@ VALUES ($1, $2, CURRENT_TIMESTAMP AT TIME ZONE 'UTC' + INTERVAL '2 weeks', $3,
 	}
 
 	return &arvados.APIClientAuthorization{
-		UUID:      uuid,
-		APIToken:  token,
-		ExpiresAt: "",
-		Scopes:    scopes}, nil
+		UUID:     uuid,
+		APIToken: token,
+		Scopes:   scopes}, nil
 }
 
 // Extract the auth token supplied in req, and replace it with a
@@ -263,10 +252,10 @@ func (h *Handler) saltAuthToken(req *http.Request, remote string) (updatedReq *h
 		return updatedReq, nil
 	}
 
-	ctxlog.FromContext(req.Context()).Infof("saltAuthToken: cluster %s token %s remote %s", h.Cluster.ClusterID, creds.Tokens[0], remote)
+	ctxlog.FromContext(req.Context()).Debugf("saltAuthToken: cluster %s token %s remote %s", h.Cluster.ClusterID, creds.Tokens[0], remote)
 	token, err := auth.SaltToken(creds.Tokens[0], remote)
 
-	if err == auth.ErrObsoleteToken {
+	if err == auth.ErrObsoleteToken || err == auth.ErrTokenFormat {
 		// If the token exists in our own database for our own
 		// user, salt it for the remote. Otherwise, assume it
 		// was issued by the remote, and pass it through

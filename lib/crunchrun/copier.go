@@ -55,7 +55,7 @@ type copier struct {
 	keepClient    IKeepClient
 	hostOutputDir string
 	ctrOutputDir  string
-	binds         []string
+	bindmounts    map[string]bindmount
 	mounts        map[string]arvados.Mount
 	secretMounts  map[string]arvados.Mount
 	logger        printfer
@@ -331,8 +331,8 @@ func (cp *copier) walkHostFS(dest, src string, maxSymlinks int, includeMounts bo
 		})
 		return nil
 	}
-
-	return fmt.Errorf("Unsupported file type (mode %o) in output dir: %q", fi.Mode(), src)
+	cp.logger.Printf("Skipping unsupported file type (mode %o) in output dir: %q", fi.Mode(), src)
+	return nil
 }
 
 // Return the host path that was mounted at the given path in the
@@ -341,11 +341,8 @@ func (cp *copier) hostRoot(ctrRoot string) (string, error) {
 	if ctrRoot == cp.ctrOutputDir {
 		return cp.hostOutputDir, nil
 	}
-	for _, bind := range cp.binds {
-		tokens := strings.Split(bind, ":")
-		if len(tokens) >= 2 && tokens[1] == ctrRoot {
-			return tokens[0], nil
-		}
+	if mnt, ok := cp.bindmounts[ctrRoot]; ok {
+		return mnt.HostPath, nil
 	}
 	return "", fmt.Errorf("not bind-mounted: %q", ctrRoot)
 }

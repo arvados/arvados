@@ -145,6 +145,10 @@ module LoadParam
       end
     end
 
+    @distinct = params[:distinct] && true
+  end
+
+  def load_select_param
     case params[:select]
     when Array
       @select = params[:select]
@@ -157,7 +161,7 @@ module LoadParam
       end
     end
 
-    if @select
+    if @select && @orders
       # Any ordering columns must be selected when doing select,
       # otherwise it is an SQL error, so filter out invaliding orderings.
       @orders.select! { |o|
@@ -166,9 +170,6 @@ module LoadParam
         @select.select { |s| col == "#{table_name}.#{s}" }.any?
       }
     end
-
-    @distinct = true if (params[:distinct] == true || params[:distinct] == "true")
-    @distinct = false if (params[:distinct] == false || params[:distinct] == "false")
   end
 
 end

@@ -8,6 +8,7 @@ class Arvados::V1::HealthcheckController < ApplicationController
   skip_before_action :find_object_by_uuid
   skip_before_action :load_filters_param
   skip_before_action :load_limit_offset_order_params
+  skip_before_action :load_select_param
   skip_before_action :load_read_auths
   skip_before_action :load_where_param
   skip_before_action :render_404_if_no_object

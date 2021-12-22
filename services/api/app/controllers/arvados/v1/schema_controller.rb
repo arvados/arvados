@@ -8,6 +8,7 @@ class Arvados::V1::SchemaController < ApplicationController
   skip_before_action :find_object_by_uuid
   skip_before_action :load_filters_param
   skip_before_action :load_limit_offset_order_params
+  skip_before_action :load_select_param
   skip_before_action :load_read_auths
   skip_before_action :load_where_param
   skip_before_action :render_404_if_no_object
@@ -36,7 +37,7 @@ class Arvados::V1::SchemaController < ApplicationController
         # format is YYYYMMDD, must be fixed width (needs to be lexically
         # sortable), updated manually, may be used by clients to
         # determine availability of API server features.
-        revision: "20201210",
+        revision: "20210628",
         source_version: AppVersion.hash,
         sourceVersion: AppVersion.hash, # source_version should be deprecated in the future
         packageVersion: AppVersion.package_version,
@@ -105,10 +106,10 @@ class Arvados::V1::SchemaController < ApplicationController
         auth: {
           oauth2: {
             scopes: {
-              "https://api.curoverse.com/auth/arvados" => {
+              "https://api.arvados.org/auth/arvados" => {
                 description: "View and manage objects"
               },
-              "https://api.curoverse.com/auth/arvados.readonly" => {
+              "https://api.arvados.org/auth/arvados.readonly" => {
                 description: "View objects"
               }
             }
@@ -220,8 +221,8 @@ class Arvados::V1::SchemaController < ApplicationController
                 "$ref" => k.to_s
               },
               scopes: [
-                       "https://api.curoverse.com/auth/arvados",
-                       "https://api.curoverse.com/auth/arvados.readonly"
+                       "https://api.arvados.org/auth/arvados",
+                       "https://api.arvados.org/auth/arvados.readonly"
                       ]
             },
             index: {
@@ -256,8 +257,8 @@ class Arvados::V1::SchemaController < ApplicationController
                 "$ref" => "#{k.to_s}List"
               },
               scopes: [
-                       "https://api.curoverse.com/auth/arvados",
-                       "https://api.curoverse.com/auth/arvados.readonly"
+                       "https://api.arvados.org/auth/arvados",
+                       "https://api.arvados.org/auth/arvados.readonly"
                       ]
             },
             create: {
@@ -278,7 +279,7 @@ class Arvados::V1::SchemaController < ApplicationController
                 "$ref" => k.to_s
               },
               scopes: [
-                       "https://api.curoverse.com/auth/arvados"
+                       "https://api.arvados.org/auth/arvados"
                       ]
             },
             update: {
@@ -306,7 +307,7 @@ class Arvados::V1::SchemaController < ApplicationController
                 "$ref" => k.to_s
               },
               scopes: [
-                       "https://api.curoverse.com/auth/arvados"
+                       "https://api.arvados.org/auth/arvados"
                       ]
             },
             delete: {
@@ -326,7 +327,7 @@ class Arvados::V1::SchemaController < ApplicationController
                 "$ref" => k.to_s
               },
               scopes: [
-                       "https://api.curoverse.com/auth/arvados"
+                       "https://api.arvados.org/auth/arvados"
                       ]
             }
           }
@@ -353,7 +354,7 @@ class Arvados::V1::SchemaController < ApplicationController
                   "$ref" => (action == 'index' ? "#{k.to_s}List" : k.to_s)
                 },
                 scopes: [
-                         "https://api.curoverse.com/auth/arvados"
+                         "https://api.arvados.org/auth/arvados"
                         ]
               }
               route.segment_keys.each do |key|
@@ -419,8 +420,29 @@ class Arvados::V1::SchemaController < ApplicationController
             response: {
             },
             scopes: [
-              "https://api.curoverse.com/auth/arvados",
-              "https://api.curoverse.com/auth/arvados.readonly"
+              "https://api.arvados.org/auth/arvados",
+              "https://api.arvados.org/auth/arvados.readonly"
+            ]
+          },
+        }
+      }
+
+      discovery[:resources]['sys'] = {
+        methods: {
+          get: {
+            id: "arvados.sys.trash_sweep",
+            path: "sys/trash_sweep",
+            httpMethod: "POST",
+            description: "apply scheduled trash and delete operations",
+            parameters: {
+            },
+            parameterOrder: [
+            ],
+            response: {
+            },
+            scopes: [
+              "https://api.arvados.org/auth/arvados",
+              "https://api.arvados.org/auth/arvados.readonly"
             ]
           },
         }

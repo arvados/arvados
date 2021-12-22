@@ -63,7 +63,11 @@ func guessAndParse(k, v string) (interface{}, error) {
 func (rtr *router) loadRequestParams(req *http.Request, attrsKey string) (map[string]interface{}, error) {
 	err := req.ParseForm()
 	if err != nil {
-		return nil, httpError(http.StatusBadRequest, err)
+		if err.Error() == "http: request body too large" {
+			return nil, httpError(http.StatusRequestEntityTooLarge, err)
+		} else {
+			return nil, httpError(http.StatusBadRequest, err)
+		}
 	}
 	params := map[string]interface{}{}
 
@@ -170,6 +174,8 @@ var boolParams = map[string]bool{
 	"redirect_to_new_user":    true,
 	"send_notification_email": true,
 	"bypass_federation":       true,
+	"recursive":               true,
+	"exclude_home_project":    true,
 }
 
 func stringToBool(s string) bool {

@@ -18,6 +18,7 @@ class Group < ArvadosModel
 
   validate :ensure_filesystem_compatible_name
   validate :check_group_class
+  validate :check_filter_group_filters
   before_create :assign_name
   after_create :after_ownership_change
   after_create :update_trash
@@ -42,17 +43,52 @@ class Group < ArvadosModel
   end
 
   def ensure_filesystem_compatible_name
-    # project groups need filesystem-compatible names, but others
+    # project and filter groups need filesystem-compatible names, but others
     # don't.
-    super if group_class == 'project'
+    super if group_class == 'project' || group_class == 'filter'
   end
 
   def check_group_class
-    if group_class != 'project' && group_class != 'role'
-      errors.add :group_class, "value must be one of 'project' or 'role', was '#{group_class}'"
+    if group_class != 'project' && group_class != 'role' && group_class != 'filter'
+      errors.add :group_class, "value must be one of 'project', 'role' or 'filter', was '#{group_class}'"
     end
     if group_class_changed? && !group_class_was.nil?
       errors.add :group_class, "cannot be modified after record is created"
+    end
+  end
+
+  def check_filter_group_filters
+    if group_class == 'filter'
+      if !self.properties.key?("filters")
+        errors.add :properties, "filters property missing, it must be an array of arrays, each with 3 elements"
+        return
+      end
+      if !self.properties["filters"].is_a?(Array)
+        errors.add :properties, "filters property must be an array of arrays, each with 3 elements"
+        return
+      end
+      self.properties["filters"].each do |filter|
+        if !filter.is_a?(Array)
+          errors.add :properties, "filters property must be an array of arrays, each with 3 elements"
+          return
+        end
+        if filter.length() != 3
+          errors.add :properties, "filters property must be an array of arrays, each with 3 elements"
+          return
+        end
+        if !filter[0].include?(".") and filter[0].downcase != "uuid"
+          errors.add :properties, "filter attribute must be 'uuid' or contain a dot (e.g. groups.name)"
+          return
+        end
+        if (filter[0].downcase != "uuid" and filter[1].downcase == "is_a")
+          errors.add :properties, "when filter operator is 'is_a', attribute must be 'uuid'"
+          return
+        end
+        if ! ["=","<","<=",">",">=","!=","like","ilike","in","not in","is_a","exists","contains"].include?(filter[1].downcase)
+          errors.add :properties, "filter operator is not valid (must be =,<,<=,>,>=,!=,like,ilike,in,not in,is_a,exists,contains)"
+          return
+        end
+      end
     end
   end
 

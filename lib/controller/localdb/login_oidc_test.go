@@ -56,6 +56,8 @@ func (s *OIDCLoginSuite) SetUpTest(c *check.C) {
 	s.fakeProvider.AuthEmail = "active-user@arvados.local"
 	s.fakeProvider.AuthEmailVerified = true
 	s.fakeProvider.AuthName = "Fake User Name"
+	s.fakeProvider.AuthGivenName = "Fake"
+	s.fakeProvider.AuthFamilyName = "User Name"
 	s.fakeProvider.ValidCode = fmt.Sprintf("abcdefgh-%d", time.Now().Unix())
 	s.fakeProvider.PeopleAPIResponse = map[string]interface{}{}
 
@@ -63,7 +65,7 @@ func (s *OIDCLoginSuite) SetUpTest(c *check.C) {
 	c.Assert(err, check.IsNil)
 	s.cluster, err = cfg.GetCluster("")
 	c.Assert(err, check.IsNil)
-	s.cluster.Login.SSO.Enable = false
+	s.cluster.Login.Test.Enable = false
 	s.cluster.Login.Google.Enable = true
 	s.cluster.Login.Google.ClientID = "test%client$id"
 	s.cluster.Login.Google.ClientSecret = "test#client/secret"
@@ -208,22 +210,25 @@ func (s *OIDCLoginSuite) TestOIDCAuthorizer(c *check.C) {
 	json.Unmarshal([]byte(fmt.Sprintf("%q", s.fakeProvider.Issuer.URL)), &s.cluster.Login.OpenIDConnect.Issuer)
 	s.cluster.Login.OpenIDConnect.ClientID = "oidc#client#id"
 	s.cluster.Login.OpenIDConnect.ClientSecret = "oidc#client#secret"
+	s.cluster.Login.OpenIDConnect.AcceptAccessToken = true
+	s.cluster.Login.OpenIDConnect.AcceptAccessTokenScope = ""
 	s.fakeProvider.ValidClientID = "oidc#client#id"
 	s.fakeProvider.ValidClientSecret = "oidc#client#secret"
 	db := arvadostest.DB(c, s.cluster)
 
 	tokenCacheTTL = time.Millisecond
 	tokenCacheRaceWindow = time.Millisecond
+	tokenCacheNegativeTTL = time.Millisecond
 
 	oidcAuthorizer := OIDCAccessTokenAuthorizer(s.cluster, func(context.Context) (*sqlx.DB, error) { return db, nil })
 	accessToken := s.fakeProvider.ValidAccessToken()
 
 	mac := hmac.New(sha256.New, []byte(s.cluster.SystemRootToken))
 	io.WriteString(mac, accessToken)
-	hmac := fmt.Sprintf("%x", mac.Sum(nil))
+	apiToken := fmt.Sprintf("%x", mac.Sum(nil))
 
 	cleanup := func() {
-		_, err := db.Exec(`delete from api_client_authorizations where api_token=$1`, hmac)
+		_, err := db.Exec(`delete from api_client_authorizations where api_token=$1`, apiToken)
 		c.Check(err, check.IsNil)
 	}
 	cleanup()
@@ -237,7 +242,7 @@ func (s *OIDCLoginSuite) TestOIDCAuthorizer(c *check.C) {
 		c.Assert(creds.Tokens, check.HasLen, 1)
 		c.Check(creds.Tokens[0], check.Equals, accessToken)
 
-		err := db.QueryRowContext(ctx, `select expires_at at time zone 'UTC' from api_client_authorizations where api_token=$1`, hmac).Scan(&exp1)
+		err := db.QueryRowContext(ctx, `select expires_at at time zone 'UTC' from api_client_authorizations where api_token=$1`, apiToken).Scan(&exp1)
 		c.Check(err, check.IsNil)
 		c.Check(exp1.Sub(time.Now()) > -time.Second, check.Equals, true)
 		c.Check(exp1.Sub(time.Now()) < time.Second, check.Equals, true)
@@ -245,17 +250,58 @@ func (s *OIDCLoginSuite) TestOIDCAuthorizer(c *check.C) {
 	})(ctx, nil)
 
 	// If the token is used again after the in-memory cache
-	// expires, oidcAuthorizer must re-checks the token and update
+	// expires, oidcAuthorizer must re-check the token and update
 	// the expires_at value in the database.
 	time.Sleep(3 * time.Millisecond)
 	oidcAuthorizer.WrapCalls(func(ctx context.Context, opts interface{}) (interface{}, error) {
 		var exp time.Time
-		err := db.QueryRowContext(ctx, `select expires_at at time zone 'UTC' from api_client_authorizations where api_token=$1`, hmac).Scan(&exp)
+		err := db.QueryRowContext(ctx, `select expires_at at time zone 'UTC' from api_client_authorizations where api_token=$1`, apiToken).Scan(&exp)
 		c.Check(err, check.IsNil)
 		c.Check(exp.Sub(exp1) > 0, check.Equals, true)
 		c.Check(exp.Sub(exp1) < time.Second, check.Equals, true)
 		return nil, nil
 	})(ctx, nil)
+
+	s.fakeProvider.AccessTokenPayload = map[string]interface{}{"scope": "openid profile foobar"}
+	accessToken = s.fakeProvider.ValidAccessToken()
+	ctx = auth.NewContext(context.Background(), &auth.Credentials{Tokens: []string{accessToken}})
+
+	mac = hmac.New(sha256.New, []byte(s.cluster.SystemRootToken))
+	io.WriteString(mac, accessToken)
+	apiToken = fmt.Sprintf("%x", mac.Sum(nil))
+
+	for _, trial := range []struct {
+		configEnable bool
+		configScope  string
+		acceptable   bool
+		shouldRun    bool
+	}{
+		{true, "foobar", true, true},
+		{true, "foo", false, false},
+		{true, "", true, true},
+		{false, "", false, true},
+		{false, "foobar", false, true},
+	} {
+		c.Logf("trial = %+v", trial)
+		cleanup()
+		s.cluster.Login.OpenIDConnect.AcceptAccessToken = trial.configEnable
+		s.cluster.Login.OpenIDConnect.AcceptAccessTokenScope = trial.configScope
+		oidcAuthorizer = OIDCAccessTokenAuthorizer(s.cluster, func(context.Context) (*sqlx.DB, error) { return db, nil })
+		checked := false
+		oidcAuthorizer.WrapCalls(func(ctx context.Context, opts interface{}) (interface{}, error) {
+			var n int
+			err := db.QueryRowContext(ctx, `select count(*) from api_client_authorizations where api_token=$1`, apiToken).Scan(&n)
+			c.Check(err, check.IsNil)
+			if trial.acceptable {
+				c.Check(n, check.Equals, 1)
+			} else {
+				c.Check(n, check.Equals, 0)
+			}
+			checked = true
+			return nil, nil
+		})(ctx, nil)
+		c.Check(checked, check.Equals, trial.shouldRun)
+	}
 }
 
 func (s *OIDCLoginSuite) TestGenericOIDCLogin(c *check.C) {
@@ -377,8 +423,8 @@ func (s *OIDCLoginSuite) TestGoogleLogin_Success(c *check.C) {
 	c.Check(token, check.Matches, `v2/zzzzz-gj3su-.{15}/.{32,50}`)
 
 	authinfo := getCallbackAuthInfo(c, s.railsSpy)
-	c.Check(authinfo.FirstName, check.Equals, "Fake User")
-	c.Check(authinfo.LastName, check.Equals, "Name")
+	c.Check(authinfo.FirstName, check.Equals, "Fake")
+	c.Check(authinfo.LastName, check.Equals, "User Name")
 	c.Check(authinfo.Email, check.Equals, "active-user@arvados.local")
 	c.Check(authinfo.AlternateEmails, check.HasLen, 0)
 
@@ -402,6 +448,7 @@ func (s *OIDCLoginSuite) TestGoogleLogin_Success(c *check.C) {
 
 func (s *OIDCLoginSuite) TestGoogleLogin_RealName(c *check.C) {
 	s.fakeProvider.AuthEmail = "joe.smith@primary.example.com"
+	s.fakeProvider.AuthEmailVerified = true
 	s.fakeProvider.PeopleAPIResponse = map[string]interface{}{
 		"names": []map[string]interface{}{
 			{
@@ -427,8 +474,10 @@ func (s *OIDCLoginSuite) TestGoogleLogin_RealName(c *check.C) {
 	c.Check(authinfo.LastName, check.Equals, "Psmith")
 }
 
-func (s *OIDCLoginSuite) TestGoogleLogin_OIDCRealName(c *check.C) {
+func (s *OIDCLoginSuite) TestGoogleLogin_OIDCNameWithoutGivenAndFamilyNames(c *check.C) {
 	s.fakeProvider.AuthName = "Joe P. Smith"
+	s.fakeProvider.AuthGivenName = ""
+	s.fakeProvider.AuthFamilyName = ""
 	s.fakeProvider.AuthEmail = "joe.smith@primary.example.com"
 	state := s.startLogin(c)
 	s.localdb.Login(context.Background(), arvados.LoginOptions{

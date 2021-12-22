@@ -29,7 +29,7 @@ arvboxswitch <name>
   With no arguments, list available arvboxes.
 
 arvopen:
-  Open an Arvados uuid in web browser (http://curover.se)
+  Open an Arvados uuid in web browser (http://arvadosapi.com)
 
 arvissue
   Open an Arvados ticket in web browser (http://dev.arvados.org)
@@ -111,7 +111,7 @@ arvboxswitch() {
 
 arvopen() {
     if [[ -n "$1" ]] ; then
-        xdg-open https://curover.se/$1
+        xdg-open https://arvadosapi.com/$1
     else
         echo "Open Arvados uuid in browser"
         echo "Usage: arvopen uuid"

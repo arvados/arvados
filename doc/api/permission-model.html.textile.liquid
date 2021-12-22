@@ -26,7 +26,7 @@ There are four levels of permission: *none*, *can_read*, *can_write*, and *can_m
 
 h2. Ownership
 
-All Arvados objects have an @owner_uuid@ field. Valid uuid types for @owner_uuid@ are "User" and "Group".  For Group, the @group_class@ must be a "project".
+All Arvados objects have an @owner_uuid@ field. Valid uuid types for @owner_uuid@ are "User" and "Group".  In the case of a Group, the @group_class@ must be "project".
 
 The User or Group specified by @owner_uuid@ has *can_manage* permission on the object.  This permission is one way: an object that is owned does not get any special permissions on the User or Group that owns it.
 
@@ -46,7 +46,7 @@ This grants the permission in @name@ for @tail_uuid@ accessing @head_uuid@.
 
 If a User has *can_manage* permission on some object, the user has the ability to read, create, update and delete permission links with @head_uuid@ of the managed object.  In other words, the user has the ability to modify the permission grants on the object.
 
-The *can_login* @name@ is only meaningful on a permission link with with @tail_uuid@ a user UUID and @head_uuid@ a Virtual Machine UUID. A permission link of this type gives the user UUID permission to log into the Virtual Machine UUID. The username for the VM is specified in the @properties@ field. Group membership can be specified that way as well, optionally. See the "VM login section on the CLI cheat sheet":/install/cheat_sheet.html#vm-login for an example.
+The *can_login* @name@ is only meaningful on a permission link with with @tail_uuid@ a user UUID and @head_uuid@ a Virtual Machine UUID. A permission link of this type gives the user UUID permission to log into the Virtual Machine UUID. The username for the VM is specified in the @properties@ field. Group membership can be specified that way as well, optionally. See the "VM login section on the 'User management at the CLI' page":{{ site.baseurl }}/admin/user-management-cli.html#vm-login for an example.
 
 h3. Transitive permissions
 
@@ -63,14 +63,21 @@ h2. Projects and Roles
 A "project" is a subtype of Group that is displayed as a "Project" in Workbench, and as a directory by @arv-mount@.
 * A project can own things (appear in @owner_uuid@)
 * A project can be owned by a user or another project.
-* The name of a project is unique only among projects with the same owner_uuid.
+* The name of a project is unique only among projects and filters with the same owner_uuid.
 * Projects can be targets (@head_uuid@) of permission links, but not origins (@tail_uuid@).  Putting a project in a @tail_uuid@ field is an error.
+
+A "filter" is a subtype of Group that is displayed as a "Project" in Workbench, and as a directory by @arv-mount@. See "the groups API documentation":{{ site.baseurl }}/api/methods/groups.html for more information.
+* A filter group cannot own things (cannot appear in @owner_uuid@).  Putting a filter group in an @owner_uuid@ field is an error.
+* A filter group can be owned by a user or a project.
+* The name of a filter is unique only among projects and filters with the same owner_uuid.
+* Filters can be targets (@head_uuid@) of permission links, but not origins (@tail_uuid@).  Putting a filter in a @tail_uuid@ field is an error.
 
 A "role" is a subtype of Group that is treated in Workbench as a group of users who have permissions in common (typically an organizational group).
 * A role cannot own things (cannot appear in @owner_uuid@).  Putting a role in an @owner_uuid@ field is an error.
 * All roles are owned by the system user.
 * The name of a role is unique across a single Arvados cluster.
 * Roles can be both targets (@head_uuid@) and origins (@tail_uuid@) of permission links.
+* By default, all roles are visible to all active users. However, if the configuration entry @Users.RoleGroupsVisibleToAll@ is @false@, visibility is determined by normal permission rules, _i.e._, a role is only visible to users who have that role, and to admins.
 
 h3. Access through Roles
 

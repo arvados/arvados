@@ -473,7 +473,7 @@ def _start_keep(n, blob_signing=False):
     confdata['Clusters']['zzzzz']['Collections']['BlobSigning'] = blob_signing
     with open(conf, 'w') as f:
         yaml.safe_dump(confdata, f)
-    keep_cmd = ["keepstore", "-config", conf]
+    keep_cmd = ["arvados-server", "keepstore", "-config", conf]
 
     with open(_logfilename('keep{}'.format(n)), WRITE_MODE) as logf:
         with open('/dev/null') as _stdin:
@@ -755,9 +755,6 @@ def setup_config():
                 "http://%s:%s"%(localhost, keep_web_dl_port): {},
             },
         },
-        "SSO": {
-            "ExternalURL": "http://localhost:3002",
-        },
     }
 
     config = {
@@ -769,9 +766,14 @@ def setup_config():
                     "RequestTimeout": "30s",
                 },
                 "Login": {
-                    "SSO": {
-                        "ProviderAppID": "arvados-server",
-                        "ProviderAppSecret": "608dbf356a327e2d0d4932b60161e212c2d8d8f5e25690d7b622f850a990cd33",
+                    "Test": {
+                        "Enable": True,
+                        "Users": {
+                            "alice": {
+                                "Email": "alice@example.com",
+                                "Password": "xyzzy"
+                            }
+                        }
                     },
                 },
                 "SystemLogs": {
@@ -789,6 +791,7 @@ def setup_config():
                     "UserProfileNotificationAddress": "arvados@example.com",
                 },
                 "Collections": {
+                    "CollectionVersioning": True,
                     "BlobSigningKey": "zfhgfenhffzltr9dixws36j1yhksjoll2grmku38mi7yxd66h5j4q9w4jzanezacp8s6q0ro3hxakfye02152hncy6zml2ed0uc",
                     "TrustAllContent": False,
                     "ForwardSlashNameSubstitution": "/",

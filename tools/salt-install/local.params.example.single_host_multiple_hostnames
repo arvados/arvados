@@ -1,0 +1,96 @@
+##########################################################
+# Copyright (C) The Arvados Authors. All rights reserved.
+#
+# SPDX-License-Identifier: CC-BY-SA-3.0
+
+# These are the basic parameters to configure the installation
+
+# The FIVE ALPHANUMERIC CHARACTERS name you want to give your cluster
+CLUSTER="cluster_fixme_or_this_wont_work"
+
+# The domainname you want tou give to your cluster's hosts
+DOMAIN="domain_fixme_or_this_wont_work"
+
+# Host SSL port where you want to point your browser to access Arvados
+# Defaults to 443 for regular runs, and to 8443 when called in Vagrant.
+# You can point it to another port if desired
+# In Vagrant, make sure it matches what you set in the Vagrantfile (8443)
+CONTROLLER_EXT_SSL_PORT=443
+KEEP_EXT_SSL_PORT=25101
+# Both for collections and downloads
+KEEPWEB_EXT_SSL_PORT=9002
+WEBSHELL_EXT_SSL_PORT=4202
+WEBSOCKET_EXT_SSL_PORT=8002
+WORKBENCH1_EXT_SSL_PORT=443
+WORKBENCH2_EXT_SSL_PORT=3001
+
+INITIAL_USER="admin"
+
+# If not specified, the initial user email will be composed as
+# INITIAL_USER@CLUSTER.DOMAIN
+INITIAL_USER_EMAIL="admin@cluster_fixme_or_this_wont_work.domain_fixme_or_this_wont_work"
+INITIAL_USER_PASSWORD="password"
+
+# YOU SHOULD CHANGE THESE TO SOME RANDOM STRINGS
+BLOB_SIGNING_KEY=blobsigningkeymushaveatleast32characters
+MANAGEMENT_TOKEN=managementtokenmushaveatleast32characters
+SYSTEM_ROOT_TOKEN=systemroottokenmushaveatleast32characters
+ANONYMOUS_USER_TOKEN=anonymoususertokenmushaveatleast32characters
+WORKBENCH_SECRET_KEY=workbenchsecretkeymushaveatleast32characters
+DATABASE_PASSWORD=please_set_this_to_some_secure_value
+
+# SSL CERTIFICATES
+# Arvados REQUIRES valid SSL to work correctly. Otherwise, some components will fail
+# to communicate and can silently drop traffic. You can try to use the Letsencrypt
+# salt formula (https://github.com/saltstack-formulas/letsencrypt-formula) to try to
+# automatically obtain and install SSL certificates for your instances or set this
+# variable to "no", provide and upload your own certificates to the instances and
+# modify the 'nginx_*' salt pillars accordingly (see CUSTOM_CERTS_DIR below)
+USE_LETSENCRYPT="no"
+
+# If you going to provide your own certificates for Arvados, the provision script can
+# help you deploy them. In order to do that, you need to set `USE_LETSENCRYPT=no` above,
+# and copy the required certificates under the directory specified in the next line.
+# The certs will be copied from this directory by the provision script.
+CUSTOM_CERTS_DIR="./certs"
+# The script expects cert/key files with these basenames (matching the role except for
+# keepweb, which is split in both downoad/collections):
+#  "controller"
+#  "websocket"
+#  "workbench"
+#  "workbench2"
+#  "webshell"
+#  "download"         # Part of keepweb
+#  "collections"      # Part of keepweb
+#  "keepproxy"
+# Ie., 'keepproxy', the script will lookup for
+# ${CUSTOM_CERTS_DIR}/keepproxy.crt
+# ${CUSTOM_CERTS_DIR}/keepproxy.key
+
+# The directory to check for the config files (pillars, states) you want to use.
+# There are a few examples under 'config_examples'.
+# CONFIG_DIR="local_config_dir"
+# Extra states to apply. If you use your own subdir, change this value accordingly
+# EXTRA_STATES_DIR="${CONFIG_DIR}/states"
+
+# These are ARVADOS-related settings.
+# Which release of Arvados repo you want to use
+RELEASE="production"
+# Which version of Arvados you want to install. Defaults to latest stable
+# VERSION="2.1.2-1"
+
+# This is an arvados-formula setting.
+# If branch is set, the script will switch to it before running salt
+# Usually not needed, only used for testing
+# BRANCH="main"
+
+##########################################################
+# Usually there's no need to modify things below this line
+
+# Formulas versions
+# ARVADOS_TAG="2.2.0"
+# POSTGRES_TAG="v0.41.6"
+# NGINX_TAG="temp-fix-missing-statements-in-pillar"
+# DOCKER_TAG="v2.0.7"
+# LOCALE_TAG="v0.3.4"
+# LETSENCRYPT_TAG="v2.1.0"

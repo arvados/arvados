@@ -3,7 +3,6 @@
 # SPDX-License-Identifier: AGPL-3.0
 
 require 'test_helper'
-require 'sweep_trashed_objects'
 require 'fix_collection_versions_timestamps'
 
 class CollectionTest < ActiveSupport::TestCase
@@ -185,6 +184,23 @@ class CollectionTest < ActiveSupport::TestCase
       c.reload
       assert_equal 'foobar', c.name
       assert_equal 2, c.version
+      # Simulate a keep-balance run and trigger a new versionable update
+      # This tests bug #18005
+      assert_nil c.replication_confirmed
+      assert_nil c.replication_confirmed_at
+      # Updates without validations/callbacks
+      c.update_column('modified_at', fifteen_min_ago)
+      c.update_column('replication_confirmed_at', Time.now)
+      c.update_column('replication_confirmed', 2)
+      c.reload
+      assert_equal fifteen_min_ago.to_i, c.modified_at.to_i
+      assert_not_nil c.replication_confirmed_at
+      assert_not_nil c.replication_confirmed
+      # Make the versionable update
+      c.update_attributes!({'name' => 'foobarbaz'})
+      c.reload
+      assert_equal 'foobarbaz', c.name
+      assert_equal 3, c.version
     end
   end
 
@@ -693,6 +709,19 @@ class CollectionTest < ActiveSupport::TestCase
     end
   end
 
+  test "storage_classes_desired default respects config" do
+    saved = Rails.configuration.DefaultStorageClasses
+    Rails.configuration.DefaultStorageClasses = ["foo"]
+    begin
+      act_as_user users(:active) do
+        c = Collection.create!
+        assert_equal ["foo"], c.storage_classes_desired
+      end
+    ensure
+      Rails.configuration.DefaultStorageClasses = saved
+    end
+  end
+
   test "storage_classes_desired cannot be empty" do
     act_as_user users(:active) do
       c = collections(:collection_owned_by_active)
@@ -826,7 +855,7 @@ class CollectionTest < ActiveSupport::TestCase
   test "clear replication_confirmed* when introducing a new block in manifest" do
     c = collections(:replication_desired_2_confirmed_2)
     act_as_user users(:active) do
-      assert c.update_attributes(manifest_text: collections(:user_agreement).signed_manifest_text)
+      assert c.update_attributes(manifest_text: collections(:user_agreement).signed_manifest_text_only_for_tests)
       assert_nil c.replication_confirmed
       assert_nil c.replication_confirmed_at
     end
@@ -835,7 +864,7 @@ class CollectionTest < ActiveSupport::TestCase
   test "don't clear replication_confirmed* when just renaming a file" do
     c = collections(:replication_desired_2_confirmed_2)
     act_as_user users(:active) do
-      new_manifest = c.signed_manifest_text.sub(':bar', ':foo')
+      new_manifest = c.signed_manifest_text_only_for_tests.sub(':bar', ':foo')
       assert c.update_attributes(manifest_text: new_manifest)
       assert_equal 2, c.replication_confirmed
       assert_not_nil c.replication_confirmed_at
@@ -845,13 +874,13 @@ class CollectionTest < ActiveSupport::TestCase
   test "don't clear replication_confirmed* when just deleting a data block" do
     c = collections(:replication_desired_2_confirmed_2)
     act_as_user users(:active) do
-      new_manifest = c.signed_manifest_text
+      new_manifest = c.signed_manifest_text_only_for_tests
       new_manifest.sub!(/ \S+:bar/, '')
       new_manifest.sub!(/ acbd\S+/, '')
 
       # Confirm that we did just remove a block from the manifest (if
       # not, this test would pass without testing the relevant case):
-      assert_operator new_manifest.length+40, :<, c.signed_manifest_text.length
+      assert_operator new_manifest.length+40, :<, c.signed_manifest_text_only_for_tests.length
 
       assert c.update_attributes(manifest_text: new_manifest)
       assert_equal 2, c.replication_confirmed
@@ -865,7 +894,7 @@ class CollectionTest < ActiveSupport::TestCase
       c = Collection.create!(manifest_text: ". d41d8cd98f00b204e9800998ecf8427e+0 0:0:x\n", name: 'foo')
       c.update_attributes! trash_at: (t0 + 1.hours)
       c.reload
-      sig_exp = /\+A[0-9a-f]{40}\@([0-9]+)/.match(c.signed_manifest_text)[1].to_i
+      sig_exp = /\+A[0-9a-f]{40}\@([0-9]+)/.match(c.signed_manifest_text_only_for_tests)[1].to_i
       assert_operator sig_exp.to_i, :<=, (t0 + 1.hours).to_i
     end
   end
@@ -875,7 +904,7 @@ class CollectionTest < ActiveSupport::TestCase
       c = Collection.create!(manifest_text: ". d41d8cd98f00b204e9800998ecf8427e+0 0:0:x\n",
                              name: 'foo',
                              trash_at: db_current_time + 1.years)
-      sig_exp = /\+A[0-9a-f]{40}\@([0-9]+)/.match(c.signed_manifest_text)[1].to_i
+      sig_exp = /\+A[0-9a-f]{40}\@([0-9]+)/.match(c.signed_manifest_text_only_for_tests)[1].to_i
       expect_max_sig_exp = db_current_time.to_i + Rails.configuration.Collections.BlobSigningTTL.to_i
       assert_operator c.trash_at.to_i, :>, expect_max_sig_exp
       assert_operator sig_exp.to_i, :<=, expect_max_sig_exp
@@ -1026,60 +1055,6 @@ class CollectionTest < ActiveSupport::TestCase
       find_all_for_docker_image('a' * 64, nil, [users(:active)])
     coll_uuids = coll_list.map(&:uuid)
     assert_includes(coll_uuids, collections(:docker_image).uuid)
-  end
-
-  test "move collections to trash in SweepTrashedObjects" do
-    c = collections(:trashed_on_next_sweep)
-    refute_empty Collection.where('uuid=? and is_trashed=false', c.uuid)
-    assert_raises(ActiveRecord::RecordNotUnique) do
-      act_as_user users(:active) do
-        Collection.create!(owner_uuid: c.owner_uuid,
-                           name: c.name)
-      end
-    end
-    SweepTrashedObjects.sweep_now
-    c = Collection.where('uuid=? and is_trashed=true', c.uuid).first
-    assert c
-    act_as_user users(:active) do
-      assert Collection.create!(owner_uuid: c.owner_uuid,
-                                name: c.name)
-    end
-  end
-
-  test "delete collections in SweepTrashedObjects" do
-    uuid = 'zzzzz-4zz18-3u1p5umicfpqszp' # deleted_on_next_sweep
-    assert_not_empty Collection.where(uuid: uuid)
-    SweepTrashedObjects.sweep_now
-    assert_empty Collection.where(uuid: uuid)
-  end
-
-  test "delete referring links in SweepTrashedObjects" do
-    uuid = collections(:trashed_on_next_sweep).uuid
-    act_as_system_user do
-      assert_raises ActiveRecord::RecordInvalid do
-        # Cannot create because :trashed_on_next_sweep is already trashed
-        Link.create!(head_uuid: uuid,
-                     tail_uuid: system_user_uuid,
-                     link_class: 'whatever',
-                     name: 'something')
-      end
-
-      # Bump trash_at to now + 1 minute
-      Collection.where(uuid: uuid).
-        update(trash_at: db_current_time + (1).minute)
-
-      # Not considered trashed now
-      Link.create!(head_uuid: uuid,
-                   tail_uuid: system_user_uuid,
-                   link_class: 'whatever',
-                   name: 'something')
-    end
-    past = db_current_time
-    Collection.where(uuid: uuid).
-      update_all(is_trashed: true, trash_at: past, delete_at: past)
-    assert_not_empty Collection.where(uuid: uuid)
-    SweepTrashedObjects.sweep_now
-    assert_empty Collection.where(uuid: uuid)
   end
 
   test "empty names are exempt from name uniqueness" do

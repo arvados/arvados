@@ -26,9 +26,16 @@ type responseOptions struct {
 func (rtr *router) responseOptions(opts interface{}) (responseOptions, error) {
 	var rOpts responseOptions
 	switch opts := opts.(type) {
+	case *arvados.CreateOptions:
+		rOpts.Select = opts.Select
+	case *arvados.UpdateOptions:
+		rOpts.Select = opts.Select
 	case *arvados.GetOptions:
 		rOpts.Select = opts.Select
 	case *arvados.ListOptions:
+		rOpts.Select = opts.Select
+		rOpts.Count = opts.Count
+	case *arvados.GroupContentsOptions:
 		rOpts.Select = opts.Select
 		rOpts.Count = opts.Count
 	}
@@ -74,32 +81,39 @@ func (rtr *router) sendResponse(w http.ResponseWriter, req *http.Request, resp i
 	if respKind != "" {
 		tmp["kind"] = respKind
 	}
+	if included, ok := tmp["included"]; ok && included == nil {
+		tmp["included"] = make([]interface{}, 0)
+	}
 	defaultItemKind := ""
 	if strings.HasSuffix(respKind, "List") {
 		defaultItemKind = strings.TrimSuffix(respKind, "List")
 	}
 
-	if items, ok := tmp["items"].([]interface{}); ok {
-		for i, item := range items {
-			// Fill in "kind" by inspecting UUID/PDH if
-			// possible; fall back on assuming each
-			// Items[] entry in an "arvados#fooList"
-			// response should have kind="arvados#foo".
-			item, _ := item.(map[string]interface{})
-			infix := ""
-			if uuid, _ := item["uuid"].(string); len(uuid) == 27 {
-				infix = uuid[6:11]
+	if _, isListResponse := tmp["items"].([]interface{}); isListResponse {
+		items, _ := tmp["items"].([]interface{})
+		included, _ := tmp["included"].([]interface{})
+		for _, slice := range [][]interface{}{items, included} {
+			for i, item := range slice {
+				// Fill in "kind" by inspecting UUID/PDH if
+				// possible; fall back on assuming each
+				// Items[] entry in an "arvados#fooList"
+				// response should have kind="arvados#foo".
+				item, _ := item.(map[string]interface{})
+				infix := ""
+				if uuid, _ := item["uuid"].(string); len(uuid) == 27 {
+					infix = uuid[6:11]
+				}
+				if k := kind(infixMap[infix]); k != "" {
+					item["kind"] = k
+				} else if pdh, _ := item["portable_data_hash"].(string); pdh != "" {
+					item["kind"] = "arvados#collection"
+				} else if defaultItemKind != "" {
+					item["kind"] = defaultItemKind
+				}
+				item = applySelectParam(opts.Select, item)
+				rtr.mungeItemFields(item)
+				slice[i] = item
 			}
-			if k := kind(infixMap[infix]); k != "" {
-				item["kind"] = k
-			} else if pdh, _ := item["portable_data_hash"].(string); pdh != "" {
-				item["kind"] = "arvados#collection"
-			} else if defaultItemKind != "" {
-				item["kind"] = defaultItemKind
-			}
-			item = applySelectParam(opts.Select, item)
-			rtr.mungeItemFields(item)
-			items[i] = item
 		}
 		if opts.Count == "none" {
 			delete(tmp, "items_available")
@@ -124,8 +138,22 @@ func (rtr *router) sendError(w http.ResponseWriter, err error) {
 }
 
 var infixMap = map[string]interface{}{
+	"gj3su": arvados.APIClientAuthorization{},
 	"4zz18": arvados.Collection{},
+	"xvhdp": arvados.ContainerRequest{},
+	"dz642": arvados.Container{},
 	"j7d0g": arvados.Group{},
+	"8i9sb": arvados.Job{},
+	"d1hrv": arvados.PipelineInstance{},
+	"p5p6p": arvados.PipelineTemplate{},
+	"j58dm": arvados.Specimen{},
+	"q1cn2": arvados.Trait{},
+	"7fd4e": arvados.Workflow{},
+}
+
+var specialKindTransforms = map[string]string{
+	"arvados.APIClientAuthorization":     "arvados#apiClientAuthorization",
+	"arvados.APIClientAuthorizationList": "arvados#apiClientAuthorizationList",
 }
 
 var mungeKind = regexp.MustCompile(`\..`)
@@ -134,6 +162,9 @@ func kind(resp interface{}) string {
 	t := fmt.Sprintf("%T", resp)
 	if !strings.HasPrefix(t, "arvados.") {
 		return ""
+	}
+	if k, ok := specialKindTransforms[t]; ok {
+		return k
 	}
 	return mungeKind.ReplaceAllStringFunc(t, func(s string) string {
 		// "arvados.CollectionList" => "arvados#collectionList"

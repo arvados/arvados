@@ -37,6 +37,8 @@ table(table table-bordered table-condensed).
 |_. Argument |_. Type |_. Description |_. Location |
 |{resource_type}|object|Name is the singular form of the resource type, e.g., for the "collections" resource, this argument is "collection"|body|
 |{cluster_id}|string|Optional, the cluster on which to create the object if not the current cluster.|query|
+|select  |array  |Attributes of the new object to return in the response (by default, all available attributes are returned).
+Example: @["uuid","name","modified_at"]@|query|
 
 h2. delete
 
@@ -49,6 +51,8 @@ Arguments:
 table(table table-bordered table-condensed).
 |_. Argument |_. Type |_. Description |_. Location |
 {background:#ccffcc}.|uuid|string|The UUID of the object in question.|path|
+|select  |array  |Attributes of the deleted object to return in the response (by default, all available attributes are returned).
+Example: @["uuid","name","modified_at"]@|query|
 
 h2. get
 
@@ -61,10 +65,12 @@ Arguments:
 table(table table-bordered table-condensed).
 |_. Argument |_. Type |_. Description |_. Location |
 {background:#ccffcc}.|uuid|string|The UUID of the object in question.|path|
+|select  |array  |Attributes of the object to return in the response (by default, all available attributes are returned).
+Example: @["uuid","name","modified_at"]@|query|
 
 h2(#index). list
 
-The @list@ method requests an list of resources of that type.  It corresponds to the HTTP request @GET /arvados/v1/resource_type@.  All resources support "list" method unless otherwise noted.
+The @list@ method requests an list of resources of that type.  It corresponds to the HTTP request @GET /arvados/v1/resource_type@.  All resources support the @list@ method unless otherwise noted.
 
 Arguments:
 
@@ -76,11 +82,10 @@ table(table table-bordered table-condensed).
 |order   |array  |Attributes to use as sort keys to determine the order resources are returned, each optionally followed by @asc@ or @desc@ to indicate ascending or descending order.  (If not specified, it will be ascending).
 Example: @["head_uuid asc","modified_at desc"]@
 Default: @["modified_at desc", "uuid asc"]@|query|
-|select  |array  |Set of attributes to include in the response.
-Example: @["head_uuid","tail_uuid"]@
-Default: all available attributes.  As a special case, collections do not return "manifest_text" unless explicitly selected.|query|
-|distinct|boolean|@true@: (default) do not return duplicate objects
-@false@: permitted to return duplicates|query|
+|select  |array  |Attributes of each object to return in the response (by default, all available attributes are returned, except collections, which do not return @manifest_text@ unless explicitly selected).
+Example: @["uuid","name","modified_at"]@|query|
+|distinct|boolean|When returning multiple records whose selected attributes (see @select@) are equal, return them as a single response entry.
+Default is @false@.|query|
 |count|string|@"exact"@ (default): Include an @items_available@ response field giving the number of distinct matching items that can be retrieved (irrespective of @limit@ and @offset@ arguments).
 @"none"@: Omit the @items_available@ response field. This option will produce a faster response.|query|
 
@@ -96,18 +101,20 @@ table(table table-bordered table-condensed).
 |1|operator|string|Comparison operator|@>@, @>=@, @like@, @not in@|
 |2|operand|string, array, or null|Value to compare with the resource attribute|@"d00220fb%"@, @"1234"@, @["foo","bar"]@, @nil@|
 
-The following operators are available.[1]
+The following operators are available.
 
 table(table table-bordered table-condensed).
 |_. Operator|_. Operand type|_. Description|_. Example|
-|@=@, @!=@|string, number, timestamp, or null|Equality comparison|@["tail_uuid","=","xyzzy-j7d0g-fffffffffffffff"]@ @["tail_uuid","!=",null]@|
+|@=@, @!=@, @<>@|string, number, timestamp, JSON-encoded array, JSON-encoded object, or null|Equality comparison|@["tail_uuid","=","xyzzy-j7d0g-fffffffffffffff"]@
+@["tail_uuid","!=",null]@
+@["storage_classes_desired","=","[\"default\"]"]@|
 |@<@, @<=@, @>=@, @>@|string, number, or timestamp|Ordering comparison|@["script_version",">","123"]@|
 |@like@, @ilike@|string|SQL pattern match.  Single character match is @_@ and wildcard is @%@. The @ilike@ operator is case-insensitive|@["script_version","like","d00220fb%"]@|
 |@in@, @not in@|array of strings|Set membership|@["script_version","in",["main","d00220fb38d4b85ca8fc28a8151702a2b9d1dec5"]]@|
 |@is_a@|string|Arvados object type|@["head_uuid","is_a","arvados#collection"]@|
-|@exists@|string|Test if a subproperty is present.|@["properties","exists","my_subproperty"]@|
-
-Note:
+|@exists@|string|Presence of subproperty|@["properties","exists","my_subproperty"]@|
+|@contains@|string, array of strings|Presence of one or more keys or array elements|@["storage_classes_desired", "contains", ["foo", "bar"]]@ (matches both @["foo", "bar"]@ and @["foo", "bar", "baz"]@)
+(note @[..., "contains", "foo"]@ is also accepted, and is equivalent to @[..., "contains", ["foo"]]@)|
 
 h4(#substringsearchfilter). Filtering using substring search
 
@@ -130,9 +137,25 @@ table(table table-bordered table-condensed).
 |@like@, @ilike@|string|SQL pattern match, single character match is @_@ and wildcard is @%@, ilike is case-insensitive|@["properties.my_subproperty", "like", "d00220fb%"]@|
 |@in@, @not in@|array of strings|Set membership|@["properties.my_subproperty", "in", ["fizz", "buzz"]]@|
 |@exists@|boolean|Test if a subproperty is present or not (determined by operand).|@["properties.my_subproperty", "exists", true]@|
-|@contains@|string, number|Filter where subproperty has a value either by exact match or value is element of subproperty list.|@["foo", "contains", "bar"]@ will find both @{"foo": "bar"}@ and @{"foo": ["bar", "baz"]}@.|
+|@contains@|string, number|Filter where subproperty has a value either by exact match or value is element of subproperty list.|@["properties.foo", "contains", "bar"]@ will find both @{"foo": "bar"}@ and @{"foo": ["bar", "baz"]}@.|
 
 Note that exclusion filters @!=@ and @not in@ will return records for which the property is not defined at all.  To restrict filtering to records on which the subproperty is defined, combine with an @exists@ filter.
+
+h4(#filterexpression). Filtering using boolean expressions
+
+In addition to the three-element array form described above, a string containing a boolean expression is also accepted. The following restrictions apply:
+* The expression must contain exactly one operator.
+* The operator must be @=@, @<@, @<=@, @>@, or @>=@.
+* There must be exactly one pair of parentheses, surrounding the entire expression.
+* Each operand must be the name of a numeric attribute like @replication_desired@ (literal values like @3@ and non-numeric attributes like @uuid@ are not accepted).
+* The expression must not contain whitespace other than an ASCII space (newline and tab characters are not accepted).
+
+Examples:
+* @(replication_desired > replication_confirmed)@
+* @(replication_desired = replication_confirmed)@
+
+Both types of filter (boolean expressions and @[attribute, operator, operand]@ filters) can be combined in the same API call. Example:
+* @{"filters": ["(replication_desired > replication_confirmed)", ["replication_desired", "<", 2]]}@
 
 h4. Federated listing
 
@@ -169,5 +192,5 @@ table(table table-bordered table-condensed).
 |_. Argument |_. Type |_. Description |_. Location |
 {background:#ccffcc}.|uuid|string|The UUID of the resource in question.|path||
 |{resource_type}|object||query||
-
-fn1^. NOTE: The filter operator for full-text search (@@) which previously worked (but was undocumented) is deprecated and will be removed in a future release.
+|select  |array  |Attributes of the updated object to return in the response (by default, all available attributes are returned).
+Example: @["uuid","name","modified_at"]@|query|

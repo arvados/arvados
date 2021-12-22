@@ -30,49 +30,42 @@ Clusters:
 
       # In each of the service sections below, the keys under
       # InternalURLs are the endpoints where the service should be
-      # listening, and reachable from other hosts in the cluster.
-      SAMPLE:
-        InternalURLs:
-          "http://host1.example:12345": {}
-          "http://host2.example:12345":
-            # Rendezvous is normally empty/omitted. When changing the
-            # URL of a Keepstore service, Rendezvous should be set to
-            # the old URL (with trailing slash omitted) to preserve
-            # rendezvous ordering.
-            Rendezvous: ""
-          SAMPLE:
-            Rendezvous: ""
-        ExternalURL: "-"
+      # listening, and reachable from other hosts in the
+      # cluster. Example:
+      #
+      # InternalURLs:
+      #   "http://host1.example:12345": {}
+      #   "http://host2.example:12345": {}
 
       RailsAPI:
-        InternalURLs: {}
-        ExternalURL: "-"
+        InternalURLs: {SAMPLE: {}}
+        ExternalURL: ""
       Controller:
-        InternalURLs: {}
+        InternalURLs: {SAMPLE: {}}
         ExternalURL: ""
       Websocket:
-        InternalURLs: {}
+        InternalURLs: {SAMPLE: {}}
         ExternalURL: ""
       Keepbalance:
-        InternalURLs: {}
-        ExternalURL: "-"
+        InternalURLs: {SAMPLE: {}}
+        ExternalURL: ""
       GitHTTP:
-        InternalURLs: {}
+        InternalURLs: {SAMPLE: {}}
         ExternalURL: ""
       GitSSH:
-        InternalURLs: {}
+        InternalURLs: {SAMPLE: {}}
         ExternalURL: ""
       DispatchCloud:
-        InternalURLs: {}
-        ExternalURL: "-"
-      SSO:
-        InternalURLs: {}
+        InternalURLs: {SAMPLE: {}}
+        ExternalURL: ""
+      DispatchLSF:
+        InternalURLs: {SAMPLE: {}}
         ExternalURL: ""
       Keepproxy:
-        InternalURLs: {}
+        InternalURLs: {SAMPLE: {}}
         ExternalURL: ""
       WebDAV:
-        InternalURLs: {}
+        InternalURLs: {SAMPLE: {}}
         # Base URL for Workbench inline preview.  If blank, use
         # WebDAVDownload instead, and disable inline preview.
         # If both are empty, downloading collections from workbench
@@ -111,7 +104,7 @@ Clusters:
         ExternalURL: ""
 
       WebDAVDownload:
-        InternalURLs: {}
+        InternalURLs: {SAMPLE: {}}
         # Base URL for download links. If blank, serve links to WebDAV
         # with disposition=attachment query param.  Unlike preview links,
         # browsers do not render attachments, so there is no risk of XSS.
@@ -125,13 +118,19 @@ Clusters:
         ExternalURL: ""
 
       Keepstore:
-        InternalURLs: {}
-        ExternalURL: "-"
+        InternalURLs:
+          SAMPLE:
+            # Rendezvous is normally empty/omitted. When changing the
+            # URL of a Keepstore service, Rendezvous should be set to
+            # the old URL (with trailing slash omitted) to preserve
+            # rendezvous ordering.
+            Rendezvous: ""
+        ExternalURL: ""
       Composer:
-        InternalURLs: {}
+        InternalURLs: {SAMPLE: {}}
         ExternalURL: ""
       WebShell:
-        InternalURLs: {}
+        InternalURLs: {SAMPLE: {}}
         # ShellInABox service endpoint URL for a given VM.  If empty, do not
         # offer web shell logins.
         #
@@ -142,14 +141,14 @@ Clusters:
         # https://*.webshell.uuid_prefix.arvadosapi.com
         ExternalURL: ""
       Workbench1:
-        InternalURLs: {}
+        InternalURLs: {SAMPLE: {}}
         ExternalURL: ""
       Workbench2:
-        InternalURLs: {}
+        InternalURLs: {SAMPLE: {}}
         ExternalURL: ""
       Health:
-        InternalURLs: {}
-        ExternalURL: "-"
+        InternalURLs: {SAMPLE: {}}
+        ExternalURL: ""
 
     PostgreSQL:
       # max concurrent connections per arvados server daemon
@@ -164,6 +163,13 @@ Clusters:
         dbname: ""
         SAMPLE: ""
     API:
+      # Limits for how long a client token created by regular users can be valid,
+      # and also is used as a default expiration policy when no expiration date is
+      # specified.
+      # Default value zero means token expirations don't get clamped and no
+      # default expiration is set.
+      MaxTokenLifetime: 0s
+
       # Maximum size (in bytes) allowed for a single API request.  This
       # limit is published in the discovery document for use by clients.
       # Note: You must separately configure the upstream web server or
@@ -234,6 +240,12 @@ Clusters:
       # Timeout on requests to internal Keep services.
       KeepServiceRequestTimeout: 15s
 
+      # Vocabulary file path, local to the node running the controller.
+      # This JSON file should contain the description of what's allowed
+      # as object's metadata. Its format is described at:
+      # https://doc.arvados.org/admin/metadata-vocabulary.html
+      VocabularyPath: ""
+
     Users:
       # Config parameters to automatically setup new users.  If enabled,
       # this users will be able to self-activate.  Enable this if you want
@@ -259,6 +271,16 @@ Clusters:
       # user agreements.  Should only be enabled for development.
       NewUsersAreActive: false
 
+      # Newly activated users (whether set up by an admin or via
+      # AutoSetupNewUsers) immediately become visible to other active
+      # users.
+      #
+      # On a multi-tenant cluster, where the intent is for users to be
+      # invisible to one another unless they have been added to the
+      # same group(s) via Workbench admin interface, change this to
+      # false.
+      ActivatedUsersAreVisibleToOthers: true
+
       # The e-mail address of the user you would like to become marked as an admin
       # user on their first login.
       AutoAdminUserWithEmail: ""
@@ -273,6 +295,7 @@ Clusters:
       AdminNotifierEmailFrom: arvados@example.com
       EmailSubjectPrefix: "[ARVADOS] "
       UserNotifierEmailFrom: arvados@example.com
+      UserNotifierEmailBcc: {}
       NewUserNotificationRecipients: {}
       NewInactiveUserNotificationRecipients: {}
 
@@ -301,6 +324,14 @@ Clusters:
 
         Thanks,
         Your Arvados administrator.
+
+      # If RoleGroupsVisibleToAll is true, all role groups are visible
+      # to all active users.
+      #
+      # If false, users must be granted permission to role groups in
+      # order to see them. This is more appropriate for a multi-tenant
+      # cluster.
+      RoleGroupsVisibleToAll: true
 
     AuditLogs:
       # Time to keep audit logs, in seconds. (An audit log is a row added
@@ -432,7 +463,7 @@ Clusters:
       #
       # BalancePeriod determines the interval between start times of
       # successive scan/balance operations. If a scan/balance operation
-      # takes longer than RunPeriod, the next one will follow it
+      # takes longer than BalancePeriod, the next one will follow it
       # immediately.
       #
       # If SIGUSR1 is received during an idle period between operations,
@@ -459,6 +490,13 @@ Clusters:
       # long-running balancing operation.
       BalanceTimeout: 6h
 
+      # Maximum number of replication_confirmed /
+      # storage_classes_confirmed updates to write to the database
+      # after a rebalancing run. When many updates are needed, this
+      # spreads them over a few runs rather than applying them all at
+      # once.
+      BalanceUpdateLimit: 100000
+
       # Default lifetime for ephemeral collections: 2 weeks. This must not
       # be less than BlobSigningTTL.
       DefaultTrashLifetime: 336h
@@ -473,12 +511,12 @@ Clusters:
       # is older than the amount of seconds defined on PreserveVersionIfIdle,
       # a snapshot of the collection's previous state is created and linked to
       # the current collection.
-      CollectionVersioning: false
+      CollectionVersioning: true
 
       #   0s = auto-create a new version on every update.
       #  -1s = never auto-create new versions.
       # > 0s = auto-create a new version when older than the specified number of seconds.
-      PreserveVersionIfIdle: -1s
+      PreserveVersionIfIdle: 10s
 
       # If non-empty, allow project and collection names to contain
       # the "/" character (slash/stroke/solidus), and replace "/" with
@@ -520,33 +558,67 @@ Clusters:
       # WebDAV would have to expose XSS vulnerabilities in order to
       # handle the redirect (see discussion on Services.WebDAV).
       #
-      # This setting has no effect in the recommended configuration,
-      # where the WebDAV is configured to have a separate domain for
-      # every collection; in this case XSS protection is provided by
-      # browsers' same-origin policy.
+      # This setting has no effect in the recommended configuration, where the
+      # WebDAV service is configured to have a separate domain for every
+      # collection and XSS protection is provided by browsers' same-origin
+      # policy.
       #
       # The default setting (false) is appropriate for a multi-user site.
       TrustAllContent: false
 
       # Cache parameters for WebDAV content serving:
-      # * TTL: Maximum time to cache manifests and permission checks.
-      # * UUIDTTL: Maximum time to cache collection state.
-      # * MaxBlockEntries: Maximum number of block cache entries.
-      # * MaxCollectionEntries: Maximum number of collection cache entries.
-      # * MaxCollectionBytes: Approximate memory limit for collection cache.
-      # * MaxPermissionEntries: Maximum number of permission cache entries.
-      # * MaxUUIDEntries: Maximum number of UUID cache entries.
       WebDAVCache:
+        # Time to cache manifests, permission checks, and sessions.
         TTL: 300s
+
+        # Time to cache collection state.
         UUIDTTL: 5s
-        MaxBlockEntries:      4
+
+        # Block cache entries. Each block consumes up to 64 MiB RAM.
+        MaxBlockEntries: 20
+
+        # Collection cache entries.
         MaxCollectionEntries: 1000
-        MaxCollectionBytes:   100000000
-        MaxPermissionEntries: 1000
-        MaxUUIDEntries:       1000
+
+        # Approximate memory limit (in bytes) for collection cache.
+        MaxCollectionBytes: 100000000
+
+        # UUID cache entries.
+        MaxUUIDEntries: 1000
+
+        # Persistent sessions.
+        MaxSessions: 100
+
+      # Selectively set permissions for regular users and admins to
+      # download or upload data files using the upload/download
+      # features for Workbench, WebDAV and S3 API support.
+      WebDAVPermission:
+        User:
+          Download: true
+          Upload: true
+        Admin:
+          Download: true
+          Upload: true
+
+      # Selectively set permissions for regular users and admins to be
+      # able to download or upload blocks using arv-put and
+      # arv-get from outside the cluster.
+      KeepproxyPermission:
+        User:
+          Download: true
+          Upload: true
+        Admin:
+          Download: true
+          Upload: true
+
+      # Post upload / download events to the API server logs table, so
+      # that they can be included in the arv-user-activity report.
+      # You can disable this if you find that it is creating excess
+      # load on the API server and you don't need it.
+      WebDAVLogEvents: true
 
     Login:
-      # One of the following mechanisms (SSO, Google, PAM, LDAP, or
+      # One of the following mechanisms (Google, PAM, LDAP, or
       # LoginCluster) should be enabled; see
       # https://doc.arvados.org/install/setup-login.html
 
@@ -561,9 +633,6 @@ Clusters:
         # ID > Web application) and add your controller's /login URL
         # (e.g., "https://zzzzz.example.com/login") as an authorized
         # redirect URL.
-        #
-        # Incompatible with ForceLegacyAPI14. ProviderAppID must be
-        # blank.
         ClientID: ""
         ClientSecret: ""
 
@@ -626,8 +695,25 @@ Clusters:
         AuthenticationRequestParameters:
           SAMPLE: ""
 
+        # Accept an OIDC access token as an API token if the OIDC
+        # provider's UserInfo endpoint accepts it.
+        #
+        # AcceptAccessTokenScope should also be used when enabling
+        # this feature.
+        AcceptAccessToken: false
+
+        # Before accepting an OIDC access token as an API token, first
+        # check that it is a JWT whose "scope" value includes this
+        # value. Example: "https://zzzzz.example.com/" (your Arvados
+        # API endpoint).
+        #
+        # If this value is empty and AcceptAccessToken is true, all
+        # access tokens will be accepted regardless of scope,
+        # including non-JWT tokens. This is not recommended.
+        AcceptAccessTokenScope: ""
+
       PAM:
-        # (Experimental) Use PAM to authenticate users.
+        # Use PAM to authenticate users.
         Enable: false
 
         # PAM service name. PAM will apply the policy in the
@@ -713,16 +799,6 @@ Clusters:
         # originally supplied by the user will be used.
         UsernameAttribute: uid
 
-      SSO:
-        # Authenticate with a separate SSO server. (Deprecated)
-        Enable: false
-
-        # ProviderAppID and ProviderAppSecret are generated during SSO
-        # setup; see
-        # https://doc.arvados.org/v2.0/install/install-sso.html#update-config
-        ProviderAppID: ""
-        ProviderAppSecret: ""
-
       Test:
         # Authenticate users listed here in the config file. This
         # feature is intended to be used in test environments, and
@@ -747,8 +823,15 @@ Clusters:
       # Default value zero means tokens don't have expiration.
       TokenLifetime: 0s
 
+      # If true (default) tokens issued through login are allowed to create
+      # new tokens.
+      # If false, tokens issued through login are not allowed to
+      # viewing/creating other tokens.  New tokens can only be created
+      # by going through login again.
+      IssueTrustedTokens: true
+
       # When the token is returned to a client, the token itself may
-      # be restricted from manipulating other tokens based on whether
+      # be restricted from viewing/creating other tokens based on whether
       # the client is "trusted" or not.  The local Workbench1 and
       # Workbench2 are trusted by default, but if this is a
       # LoginCluster, you probably want to include the other Workbench
@@ -828,8 +911,8 @@ Clusters:
       UsePreemptibleInstances: false
 
       # PEM encoded SSH key (RSA, DSA, or ECDSA) used by the
-      # (experimental) cloud dispatcher for executing containers on
-      # worker VMs. Begins with "-----BEGIN RSA PRIVATE KEY-----\n"
+      # cloud dispatcher for executing containers on worker VMs.
+      # Begins with "-----BEGIN RSA PRIVATE KEY-----\n"
       # and ends with "\n-----END RSA PRIVATE KEY-----\n".
       DispatchPrivateKey: ""
 
@@ -854,6 +937,45 @@ Clusters:
 
       # Minimum time between two attempts to run the same container
       MinRetryPeriod: 0s
+
+      # Container runtime: "docker" (default) or "singularity"
+      RuntimeEngine: docker
+
+      # When running a container, run a dedicated keepstore process,
+      # using the specified number of 64 MiB memory buffers per
+      # allocated CPU core (VCPUs in the container's runtime
+      # constraints). The dedicated keepstore handles I/O for
+      # collections mounted in the container, as well as saving
+      # container logs.
+      #
+      # A zero value disables this feature.
+      #
+      # In order for this feature to be activated, no volume may use
+      # AccessViaHosts, and each volume must have Replication higher
+      # than Collections.DefaultReplication. If these requirements are
+      # not satisfied, the feature is disabled automatically
+      # regardless of the value given here.
+      #
+      # Note that when this configuration is enabled, the entire
+      # cluster configuration file, including the system root token,
+      # is copied to the worker node and held in memory for the
+      # duration of the container.
+      LocalKeepBlobBuffersPerVCPU: 1
+
+      # When running a dedicated keepstore process for a container
+      # (see LocalKeepBlobBuffersPerVCPU), write keepstore log
+      # messages to keepstore.txt in the container's log collection.
+      #
+      # These log messages can reveal some volume configuration
+      # details, error messages from the cloud storage provider, etc.,
+      # which are not otherwise visible to users.
+      #
+      # Accepted values:
+      # * "none" -- no keepstore.txt file
+      # * "all" -- all logs, including request and response lines
+      # * "errors" -- all logs except "response" logs with 2xx
+      #   response codes and "request" logs
+      LocalKeepLogsToContainerLog: none
 
       Logging:
         # When you run the db:delete_old_container_logs task, it will find
@@ -964,6 +1086,33 @@ Clusters:
           # (See http://ruby-doc.org/core-2.2.2/Kernel.html#method-i-format for more.)
           AssignNodeHostname: "compute%<slot_number>d"
 
+      LSF:
+        # Arguments to bsub when submitting Arvados containers as LSF jobs.
+        #
+        # Template variables starting with % will be substituted as follows:
+        #
+        # %U uuid
+        # %C number of VCPUs
+        # %M memory in MB
+        # %T tmp in MB
+        #
+        # Use %% to express a literal %. The %%J in the default will be changed
+        # to %J, which is interpreted by bsub itself.
+        #
+        # Note that the default arguments cause LSF to write two files
+        # in /tmp on the compute node each time an Arvados container
+        # runs. Ensure you have something in place to delete old files
+        # from /tmp, or adjust the "-o" and "-e" arguments accordingly.
+        BsubArgumentsList: ["-o", "/tmp/crunch-run.%%J.out", "-e", "/tmp/crunch-run.%%J.err", "-J", "%U", "-n", "%C", "-D", "%MMB", "-R", "rusage[mem=%MMB:tmp=%TMB] span[hosts=1]", "-R", "select[mem>=%MMB]", "-R", "select[tmp>=%TMB]", "-R", "select[ncpus>=%C]"]
+
+        # Use sudo to switch to this user account when submitting LSF
+        # jobs.
+        #
+        # This account must exist on the hosts where LSF jobs run
+        # ("execution hosts"), as well as on the host where the
+        # Arvados LSF dispatcher runs ("submission host").
+        BsubSudoUser: "crunch"
+
       JobsAPI:
         # Enable the legacy 'jobs' API (crunch v1).  This value must be a string.
         #
@@ -983,7 +1132,7 @@ Clusters:
         GitInternalDir: /var/lib/arvados/internal.git
 
       CloudVMs:
-        # Enable the cloud scheduler (experimental).
+        # Enable the cloud scheduler.
         Enable: false
 
         # Name/number of port where workers' SSH services listen.
@@ -995,7 +1144,7 @@ Clusters:
         # Shell command to execute on each worker to determine whether
         # the worker is booted and ready to run containers. It should
         # exit zero if the worker is ready.
-        BootProbeCommand: "docker ps -q"
+        BootProbeCommand: "systemctl is-system-running"
 
         # Minimum interval between consecutive probes to a single
         # worker.
@@ -1017,13 +1166,25 @@ Clusters:
 
         # Maximum create/destroy-instance operations per second (0 =
         # unlimited).
-        MaxCloudOpsPerSecond: 0
+        MaxCloudOpsPerSecond: 10
 
-        # Maximum concurrent node creation operations (0 = unlimited). This is
-        # recommended by Azure in certain scenarios (see
-        # https://docs.microsoft.com/en-us/azure/virtual-machines/linux/capture-image)
-        # and can be used with other cloud providers too, if desired.
-        MaxConcurrentInstanceCreateOps: 0
+        # Maximum concurrent instance creation operations (0 = unlimited).
+        #
+        # MaxConcurrentInstanceCreateOps limits the number of instance creation
+        # requests that can be in flight at any one time, whereas
+        # MaxCloudOpsPerSecond limits the number of create/destroy operations
+        # that can be started per second.
+        #
+        # Because the API for instance creation on Azure is synchronous, it is
+        # recommended to increase MaxConcurrentInstanceCreateOps when running
+        # on Azure. When using managed images, a value of 20 would be
+        # appropriate. When using Azure Shared Image Galeries, it could be set
+        # higher. For more information, see
+        # https://docs.microsoft.com/en-us/azure/virtual-machines/linux/capture-image
+        #
+        # MaxConcurrentInstanceCreateOps can be increased for other cloud
+        # providers too, if desired.
+        MaxConcurrentInstanceCreateOps: 1
 
         # Interval between cloud provider syncs/updates ("list all
         # instances").
@@ -1157,6 +1318,29 @@ Clusters:
         Price: 0.1
         Preemptible: false
 
+    StorageClasses:
+
+      # If you use multiple storage classes, specify them here, using
+      # the storage class name as the key (in place of "SAMPLE" in
+      # this sample entry).
+      #
+      # Further info/examples:
+      # https://doc.arvados.org/admin/storage-classes.html
+      SAMPLE:
+
+        # Priority determines the order volumes should be searched
+        # when reading data, in cases where a keepstore server has
+        # access to multiple volumes with different storage classes.
+        Priority: 0
+
+        # Default determines which storage class(es) should be used
+        # when a user/client writes data or saves a new collection
+        # without specifying storage classes.
+        #
+        # If any StorageClasses are configured, at least one of them
+        # must have Default: true.
+        Default: true
+
     Volumes:
       SAMPLE:
         # AccessViaHosts specifies which keepstore processes can read
@@ -1180,17 +1364,19 @@ Clusters:
         ReadOnly: false
         Replication: 1
         StorageClasses:
-          default: true
+          # If you have configured storage classes (see StorageClasses
+          # section above), add an entry here for each storage class
+          # satisfied by this volume.
           SAMPLE: true
-        Driver: s3
+        Driver: S3
         DriverParameters:
           # for s3 driver -- see
           # https://doc.arvados.org/install/configure-s3-object-storage.html
           IAMRole: aaaaa
-          AccessKey: aaaaa
-          SecretKey: aaaaa
+          AccessKeyID: aaaaa
+          SecretAccessKey: aaaaa
           Endpoint: ""
-          Region: us-east-1a
+          Region: us-east-1
           Bucket: aaaaa
           LocationConstraint: false
           V2Signature: false
@@ -1198,6 +1384,7 @@ Clusters:
           ConnectTimeout: 1m
           ReadTimeout: 10m
           RaceWindow: 24h
+          PrefixLength: 0
           # Use aws-s3-go (v2) instead of goamz
           UseAWSS3v2Driver: false
 
@@ -1409,7 +1596,6 @@ Clusters:
       DefaultOpenIdPrefix: "https://www.google.com/accounts/o8/id"
 
       # Workbench2 configs
-      VocabularyURL: ""
       FileViewersConfigURL: ""
 
       # Idle time after which the user's session will be auto closed.
@@ -1422,15 +1608,11 @@ Clusters:
         <img src="/arvados-logo-big.png" style="width: 20%; float: right; padding: 1em;" />
         <h2>Please log in.</h2>
 
-        <p>The "Log in" button below will show you a sign-in
-        page. After you log in, you will be redirected back to
-        Arvados Workbench.</p>
-
         <p>If you have never used Arvados Workbench before, logging in
         for the first time will automatically create a new
         account.</p>
 
-        <i>Arvados Workbench uses your name and email address only for
+        <i>Arvados Workbench uses your information only for
         identification, and does not retrieve any other personal
         information.</i>
 
@@ -1470,13 +1652,6 @@ Clusters:
       # proxy and have fully qualified host names, you should leave
       # this blank.
       SSHHelpHostSuffix: ""
-
-    # Bypass new (Arvados 1.5) API implementations, and hand off
-    # requests directly to Rails instead. This can provide a temporary
-    # workaround for clients that are incompatible with the new API
-    # implementation. Note that it also disables some new federation
-    # features and will be removed in a future release.
-    ForceLegacyAPI14: false
 
 # (Experimental) Restart services automatically when config file
 # changes are detected. Only supported by ` + "`" + `arvados-server boot` + "`" + ` in

@@ -8,30 +8,23 @@ $(function(){
 });
 <% end %>
 <div id="intropage">
-  <img class="curoverse-logo" src="<%= asset_path('logo.png') %>" style="display:block; margin:2em auto"/>
+  <img class="arvados-logo" src="<%= asset_path('logo.png') %>" style="display:block; margin:2em auto"/>
   <div style="width:30em; margin:2em auto 0 auto">
     <h1>Welcome</h1>
-    <h4>Curoverse ARVADOS</h4>
+    <h4>ARVADOS</h4>
 
     <% if !current_user and session['invite_code'] %>
 
-    <p>Curoverse Arvados lets you manage and process human genomes and exomes.  You can start using the private beta
-    now with your Google account.</p>
+    <p>Arvados lets you manage and process biomedical data.</p>
     <p style="float:right;margin-top:1em">
-      <button class="login" href="/auth/joshid">Log in and get started</button>
+      <button class="login" href="/login">Log in and get started</button>
     </p>
 
     <% else %>
 
-    <p>Curoverse ARVADOS is transforming how researchers and
-    clinical geneticists use whole genome sequences. </p>
-    <p>If you&rsquo;re interested in learning more, we&rsquo;d love to hear
-    from you &mdash;
-    contact <a href="mailto:arvados@curoverse.com">arvados@curoverse.com</a>.</p>
-
     <% if !current_user %>
     <p style="float:right;margin-top:1em">
-      <a href="/auth/joshid">Log in here.</a>
+      <a href="/login">Log in here.</a>
     </p>
     <% end %>
 

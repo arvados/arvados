@@ -62,7 +62,7 @@ class GroupTest < ActiveSupport::TestCase
     assert g_foo.errors.messages[:owner_uuid].join(" ").match(/ownership cycle/)
   end
 
-  test "cannot create a group that is not a 'role' or 'project'" do
+  test "cannot create a group that is not a 'role' or 'project' or 'filter'" do
     set_user_from_auth :active_trustedclient
 
     assert_raises(ActiveRecord::RecordInvalid) do
@@ -228,56 +228,13 @@ class GroupTest < ActiveSupport::TestCase
     assert User.readable_by(users(:admin)).where(uuid:  u_bar.uuid).any?
   end
 
-  test "move projects to trash in SweepTrashedObjects" do
-    p = groups(:trashed_on_next_sweep)
-    assert_empty Group.where('uuid=? and is_trashed=true', p.uuid)
-    SweepTrashedObjects.sweep_now
-    assert_not_empty Group.where('uuid=? and is_trashed=true', p.uuid)
-  end
-
-  test "delete projects and their contents in SweepTrashedObjects" do
-    g_foo = groups(:trashed_project)
-    g_bar = groups(:trashed_subproject)
-    g_baz = groups(:trashed_subproject3)
-    col = collections(:collection_in_trashed_subproject)
-    job = jobs(:job_in_trashed_project)
-    cr = container_requests(:cr_in_trashed_project)
-    # Save how many objects were before the sweep
-    user_nr_was = User.all.length
-    coll_nr_was = Collection.all.length
-    group_nr_was = Group.where('group_class<>?', 'project').length
-    project_nr_was = Group.where(group_class: 'project').length
-    cr_nr_was = ContainerRequest.all.length
-    job_nr_was = Job.all.length
-    assert_not_empty Group.where(uuid: g_foo.uuid)
-    assert_not_empty Group.where(uuid: g_bar.uuid)
-    assert_not_empty Group.where(uuid: g_baz.uuid)
-    assert_not_empty Collection.where(uuid: col.uuid)
-    assert_not_empty Job.where(uuid: job.uuid)
-    assert_not_empty ContainerRequest.where(uuid: cr.uuid)
-    SweepTrashedObjects.sweep_now
-    assert_empty Group.where(uuid: g_foo.uuid)
-    assert_empty Group.where(uuid: g_bar.uuid)
-    assert_empty Group.where(uuid: g_baz.uuid)
-    assert_empty Collection.where(uuid: col.uuid)
-    assert_empty Job.where(uuid: job.uuid)
-    assert_empty ContainerRequest.where(uuid: cr.uuid)
-    # No unwanted deletions should have happened
-    assert_equal user_nr_was, User.all.length
-    assert_equal coll_nr_was-2,        # collection_in_trashed_subproject
-                 Collection.all.length # & deleted_on_next_sweep collections
-    assert_equal group_nr_was, Group.where('group_class<>?', 'project').length
-    assert_equal project_nr_was-3, Group.where(group_class: 'project').length
-    assert_equal cr_nr_was-1, ContainerRequest.all.length
-    assert_equal job_nr_was-1, Job.all.length
-  end
-
   test "project names must be displayable in a filesystem" do
     set_user_from_auth :active
     ["", "{SOLIDUS}"].each do |subst|
       Rails.configuration.Collections.ForwardSlashNameSubstitution = subst
       proj = Group.create group_class: "project"
       role = Group.create group_class: "role"
+      filt = Group.create group_class: "filter", properties: {"filters":[]}
       [[nil, true],
        ["", true],
        [".", false],
@@ -291,7 +248,9 @@ class GroupTest < ActiveSupport::TestCase
         role.name = name
         assert_equal true, role.valid?
         proj.name = name
-        assert_equal valid, proj.valid?, "#{name.inspect} should be #{valid ? "valid" : "invalid"}"
+        assert_equal valid, proj.valid?, "project: #{name.inspect} should be #{valid ? "valid" : "invalid"}"
+        filt.name = name
+        assert_equal valid, filt.valid?, "filter: #{name.inspect} should be #{valid ? "valid" : "invalid"}"
       end
     end
   end

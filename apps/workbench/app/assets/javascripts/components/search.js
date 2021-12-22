@@ -128,6 +128,12 @@ window.Search = {
                             description: 'project',
                         },
                         {
+                            wb_path: 'projects',
+                            api_path: 'arvados/v1/groups',
+                            filters: [['group_class', '=', 'filter']],
+                            description: 'project',
+                        },
+                        {
                             wb_path: 'collections',
                             api_path: 'arvados/v1/collections',
                             filters: [],

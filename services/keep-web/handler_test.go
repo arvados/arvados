@@ -6,8 +6,10 @@ package main
 
 import (
 	"bytes"
+	"context"
 	"fmt"
 	"html"
+	"io"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
@@ -16,6 +18,7 @@ import (
 	"path/filepath"
 	"regexp"
 	"strings"
+	"time"
 
 	"git.arvados.org/arvados.git/lib/config"
 	"git.arvados.org/arvados.git/sdk/go/arvados"
@@ -24,10 +27,15 @@ import (
 	"git.arvados.org/arvados.git/sdk/go/auth"
 	"git.arvados.org/arvados.git/sdk/go/ctxlog"
 	"git.arvados.org/arvados.git/sdk/go/keepclient"
+	"github.com/sirupsen/logrus"
 	check "gopkg.in/check.v1"
 )
 
 var _ = check.Suite(&UnitSuite{})
+
+func init() {
+	arvados.DebugLocksPanicMode = true
+}
 
 type UnitSuite struct {
 	Config *arvados.Config
@@ -42,7 +50,7 @@ func (s *UnitSuite) SetUpTest(c *check.C) {
 }
 
 func (s *UnitSuite) TestCORSPreflight(c *check.C) {
-	h := handler{Config: newConfig(s.Config)}
+	h := handler{Config: newConfig(ctxlog.TestLogger(c), s.Config)}
 	u := mustParseURL("http://keep-web.example/c=" + arvadostest.FooCollection + "/foo")
 	req := &http.Request{
 		Method:     "OPTIONS",
@@ -72,6 +80,65 @@ func (s *UnitSuite) TestCORSPreflight(c *check.C) {
 	c.Check(resp.Code, check.Equals, http.StatusMethodNotAllowed)
 }
 
+func (s *UnitSuite) TestEmptyResponse(c *check.C) {
+	for _, trial := range []struct {
+		dataExists    bool
+		sendIMSHeader bool
+		expectStatus  int
+		logRegexp     string
+	}{
+		// If we return no content due to a Keep read error,
+		// we should emit a log message.
+		{false, false, http.StatusOK, `(?ms).*only wrote 0 bytes.*`},
+
+		// If we return no content because the client sent an
+		// If-Modified-Since header, our response should be
+		// 304.  We still expect a "File download" log since it
+		// counts as a file access for auditing.
+		{true, true, http.StatusNotModified, `(?ms).*msg="File download".*`},
+	} {
+		c.Logf("trial: %+v", trial)
+		arvadostest.StartKeep(2, true)
+		if trial.dataExists {
+			arv, err := arvadosclient.MakeArvadosClient()
+			c.Assert(err, check.IsNil)
+			arv.ApiToken = arvadostest.ActiveToken
+			kc, err := keepclient.MakeKeepClient(arv)
+			c.Assert(err, check.IsNil)
+			_, _, err = kc.PutB([]byte("foo"))
+			c.Assert(err, check.IsNil)
+		}
+
+		h := handler{Config: newConfig(ctxlog.TestLogger(c), s.Config)}
+		u := mustParseURL("http://" + arvadostest.FooCollection + ".keep-web.example/foo")
+		req := &http.Request{
+			Method:     "GET",
+			Host:       u.Host,
+			URL:        u,
+			RequestURI: u.RequestURI(),
+			Header: http.Header{
+				"Authorization": {"Bearer " + arvadostest.ActiveToken},
+			},
+		}
+		if trial.sendIMSHeader {
+			req.Header.Set("If-Modified-Since", strings.Replace(time.Now().UTC().Format(time.RFC1123), "UTC", "GMT", -1))
+		}
+
+		var logbuf bytes.Buffer
+		logger := logrus.New()
+		logger.Out = &logbuf
+		req = req.WithContext(ctxlog.Context(context.Background(), logger))
+
+		resp := httptest.NewRecorder()
+		h.ServeHTTP(resp, req)
+		c.Check(resp.Code, check.Equals, trial.expectStatus)
+		c.Check(resp.Body.String(), check.Equals, "")
+
+		c.Log(logbuf.String())
+		c.Check(logbuf.String(), check.Matches, trial.logRegexp)
+	}
+}
+
 func (s *UnitSuite) TestInvalidUUID(c *check.C) {
 	bogusID := strings.Replace(arvadostest.FooCollectionPDH, "+", "-", 1) + "-"
 	token := arvadostest.ActiveToken
@@ -92,7 +159,7 @@ func (s *UnitSuite) TestInvalidUUID(c *check.C) {
 			RequestURI: u.RequestURI(),
 		}
 		resp := httptest.NewRecorder()
-		cfg := newConfig(s.Config)
+		cfg := newConfig(ctxlog.TestLogger(c), s.Config)
 		cfg.cluster.Users.AnonymousUserToken = arvadostest.AnonymousToken
 		h := handler{Config: cfg}
 		h.ServeHTTP(resp, req)
@@ -132,11 +199,18 @@ func (s *IntegrationSuite) TestVhost404(c *check.C) {
 // the token is invalid.
 type authorizer func(*http.Request, string) int
 
-func (s *IntegrationSuite) TestVhostViaAuthzHeader(c *check.C) {
-	s.doVhostRequests(c, authzViaAuthzHeader)
+func (s *IntegrationSuite) TestVhostViaAuthzHeaderOAuth2(c *check.C) {
+	s.doVhostRequests(c, authzViaAuthzHeaderOAuth2)
 }
-func authzViaAuthzHeader(r *http.Request, tok string) int {
-	r.Header.Add("Authorization", "OAuth2 "+tok)
+func authzViaAuthzHeaderOAuth2(r *http.Request, tok string) int {
+	r.Header.Add("Authorization", "Bearer "+tok)
+	return http.StatusUnauthorized
+}
+func (s *IntegrationSuite) TestVhostViaAuthzHeaderBearer(c *check.C) {
+	s.doVhostRequests(c, authzViaAuthzHeaderBearer)
+}
+func authzViaAuthzHeaderBearer(r *http.Request, tok string) int {
+	r.Header.Add("Authorization", "Bearer "+tok)
 	return http.StatusUnauthorized
 }
 
@@ -237,7 +311,6 @@ func (s *IntegrationSuite) doVhostRequestsWithHostPath(c *check.C, authz authori
 		if tok == arvadostest.ActiveToken {
 			c.Check(code, check.Equals, http.StatusOK)
 			c.Check(body, check.Equals, "foo")
-
 		} else {
 			c.Check(code >= 400, check.Equals, true)
 			c.Check(code < 500, check.Equals, true)
@@ -254,6 +327,30 @@ func (s *IntegrationSuite) doVhostRequestsWithHostPath(c *check.C, authz authori
 				c.Check(body, check.Equals, notFoundMessage+"\n")
 			} else {
 				c.Check(body, check.Equals, unauthorizedMessage+"\n")
+			}
+		}
+	}
+}
+
+func (s *IntegrationSuite) TestVhostPortMatch(c *check.C) {
+	for _, host := range []string{"download.example.com", "DOWNLOAD.EXAMPLE.COM"} {
+		for _, port := range []string{"80", "443", "8000"} {
+			s.testServer.Config.cluster.Services.WebDAVDownload.ExternalURL.Host = fmt.Sprintf("download.example.com:%v", port)
+			u := mustParseURL(fmt.Sprintf("http://%v/by_id/%v/foo", host, arvadostest.FooCollection))
+			req := &http.Request{
+				Method:     "GET",
+				Host:       u.Host,
+				URL:        u,
+				RequestURI: u.RequestURI(),
+				Header:     http.Header{"Authorization": []string{"Bearer " + arvadostest.ActiveToken}},
+			}
+			req, resp := s.doReq(req)
+			code, _ := resp.Code, resp.Body.String()
+
+			if port == "8000" {
+				c.Check(code, check.Equals, 401)
+			} else {
+				c.Check(code, check.Equals, 200)
 			}
 		}
 	}
@@ -683,7 +780,7 @@ func (s *IntegrationSuite) testDirectoryListing(c *check.C) {
 		{
 			// URLs of this form ignore authHeader, and
 			// FooAndBarFilesInDirUUID isn't public, so
-			// this returns 404.
+			// this returns 401.
 			uri:    "download.example.com/collections/" + arvadostest.FooAndBarFilesInDirUUID + "/",
 			header: authHeader,
 			expect: nil,
@@ -826,7 +923,11 @@ func (s *IntegrationSuite) testDirectoryListing(c *check.C) {
 			c.Check(req.URL.Path, check.Equals, trial.redirect, comment)
 		}
 		if trial.expect == nil {
-			c.Check(resp.Code, check.Equals, http.StatusNotFound, comment)
+			if s.testServer.Config.cluster.Users.AnonymousUserToken == "" {
+				c.Check(resp.Code, check.Equals, http.StatusUnauthorized, comment)
+			} else {
+				c.Check(resp.Code, check.Equals, http.StatusNotFound, comment)
+			}
 		} else {
 			c.Check(resp.Code, check.Equals, http.StatusOK, comment)
 			for _, e := range trial.expect {
@@ -847,7 +948,11 @@ func (s *IntegrationSuite) testDirectoryListing(c *check.C) {
 		resp = httptest.NewRecorder()
 		s.testServer.Handler.ServeHTTP(resp, req)
 		if trial.expect == nil {
-			c.Check(resp.Code, check.Equals, http.StatusNotFound, comment)
+			if s.testServer.Config.cluster.Users.AnonymousUserToken == "" {
+				c.Check(resp.Code, check.Equals, http.StatusUnauthorized, comment)
+			} else {
+				c.Check(resp.Code, check.Equals, http.StatusNotFound, comment)
+			}
 		} else {
 			c.Check(resp.Code, check.Equals, http.StatusOK, comment)
 		}
@@ -863,7 +968,11 @@ func (s *IntegrationSuite) testDirectoryListing(c *check.C) {
 		resp = httptest.NewRecorder()
 		s.testServer.Handler.ServeHTTP(resp, req)
 		if trial.expect == nil {
-			c.Check(resp.Code, check.Equals, http.StatusNotFound, comment)
+			if s.testServer.Config.cluster.Users.AnonymousUserToken == "" {
+				c.Check(resp.Code, check.Equals, http.StatusUnauthorized, comment)
+			} else {
+				c.Check(resp.Code, check.Equals, http.StatusNotFound, comment)
+			}
 		} else {
 			c.Check(resp.Code, check.Equals, http.StatusMultiStatus, comment)
 			for _, e := range trial.expect {
@@ -958,7 +1067,7 @@ func (s *IntegrationSuite) TestFileContentType(c *check.C) {
 		contentType string
 	}{
 		{"picture.txt", "BMX bikes are small this year\n", "text/plain; charset=utf-8"},
-		{"picture.bmp", "BMX bikes are small this year\n", "image/x-ms-bmp"},
+		{"picture.bmp", "BMX bikes are small this year\n", "image/(x-ms-)?bmp"},
 		{"picture.jpg", "BMX bikes are small this year\n", "image/jpeg"},
 		{"picture1", "BMX bikes are small this year\n", "image/bmp"},            // content sniff; "BM" is the magic signature for .bmp
 		{"picture2", "Cars are small this year\n", "text/plain; charset=utf-8"}, // content sniff
@@ -994,7 +1103,7 @@ func (s *IntegrationSuite) TestFileContentType(c *check.C) {
 		resp := httptest.NewRecorder()
 		s.testServer.Handler.ServeHTTP(resp, req)
 		c.Check(resp.Code, check.Equals, http.StatusOK)
-		c.Check(resp.Header().Get("Content-Type"), check.Equals, trial.contentType)
+		c.Check(resp.Header().Get("Content-Type"), check.Matches, trial.contentType)
 		c.Check(resp.Body.String(), check.Equals, trial.content)
 	}
 }
@@ -1015,10 +1124,254 @@ func (s *IntegrationSuite) TestKeepClientBlockCache(c *check.C) {
 	c.Check(keepclient.DefaultBlockCache.MaxBlocks, check.Equals, 42)
 }
 
+// Writing to a collection shouldn't affect its entry in the
+// PDH-to-manifest cache.
+func (s *IntegrationSuite) TestCacheWriteCollectionSamePDH(c *check.C) {
+	arv, err := arvadosclient.MakeArvadosClient()
+	c.Assert(err, check.Equals, nil)
+	arv.ApiToken = arvadostest.ActiveToken
+
+	u := mustParseURL("http://x.example/testfile")
+	req := &http.Request{
+		Method:     "GET",
+		Host:       u.Host,
+		URL:        u,
+		RequestURI: u.RequestURI(),
+		Header:     http.Header{"Authorization": {"Bearer " + arv.ApiToken}},
+	}
+
+	checkWithID := func(id string, status int) {
+		req.URL.Host = strings.Replace(id, "+", "-", -1) + ".example"
+		req.Host = req.URL.Host
+		resp := httptest.NewRecorder()
+		s.testServer.Handler.ServeHTTP(resp, req)
+		c.Check(resp.Code, check.Equals, status)
+	}
+
+	var colls [2]arvados.Collection
+	for i := range colls {
+		err := arv.Create("collections",
+			map[string]interface{}{
+				"ensure_unique_name": true,
+				"collection": map[string]interface{}{
+					"name": "test collection",
+				},
+			}, &colls[i])
+		c.Assert(err, check.Equals, nil)
+	}
+
+	// Populate cache with empty collection
+	checkWithID(colls[0].PortableDataHash, http.StatusNotFound)
+
+	// write a file to colls[0]
+	reqPut := *req
+	reqPut.Method = "PUT"
+	reqPut.URL.Host = colls[0].UUID + ".example"
+	reqPut.Host = req.URL.Host
+	reqPut.Body = ioutil.NopCloser(bytes.NewBufferString("testdata"))
+	resp := httptest.NewRecorder()
+	s.testServer.Handler.ServeHTTP(resp, &reqPut)
+	c.Check(resp.Code, check.Equals, http.StatusCreated)
+
+	// new file should not appear in colls[1]
+	checkWithID(colls[1].PortableDataHash, http.StatusNotFound)
+	checkWithID(colls[1].UUID, http.StatusNotFound)
+
+	checkWithID(colls[0].UUID, http.StatusOK)
+}
+
 func copyHeader(h http.Header) http.Header {
 	hc := http.Header{}
 	for k, v := range h {
 		hc[k] = append([]string(nil), v...)
 	}
 	return hc
+}
+
+func (s *IntegrationSuite) checkUploadDownloadRequest(c *check.C, h *handler, req *http.Request,
+	successCode int, direction string, perm bool, userUuid string, collectionUuid string, filepath string) {
+
+	client := s.testServer.Config.Client
+	client.AuthToken = arvadostest.AdminToken
+	var logentries arvados.LogList
+	limit1 := 1
+	err := client.RequestAndDecode(&logentries, "GET", "arvados/v1/logs", nil,
+		arvados.ResourceListParams{
+			Limit: &limit1,
+			Order: "created_at desc"})
+	c.Check(err, check.IsNil)
+	c.Check(logentries.Items, check.HasLen, 1)
+	lastLogId := logentries.Items[0].ID
+
+	var logbuf bytes.Buffer
+	logger := logrus.New()
+	logger.Out = &logbuf
+	resp := httptest.NewRecorder()
+	req = req.WithContext(ctxlog.Context(context.Background(), logger))
+	h.ServeHTTP(resp, req)
+
+	if perm {
+		c.Check(resp.Result().StatusCode, check.Equals, successCode)
+		c.Check(logbuf.String(), check.Matches, `(?ms).*msg="File `+direction+`".*`)
+		c.Check(logbuf.String(), check.Not(check.Matches), `(?ms).*level=error.*`)
+
+		deadline := time.Now().Add(time.Second)
+		for {
+			c.Assert(time.Now().After(deadline), check.Equals, false, check.Commentf("timed out waiting for log entry"))
+			err = client.RequestAndDecode(&logentries, "GET", "arvados/v1/logs", nil,
+				arvados.ResourceListParams{
+					Filters: []arvados.Filter{
+						{Attr: "event_type", Operator: "=", Operand: "file_" + direction},
+						{Attr: "object_uuid", Operator: "=", Operand: userUuid},
+					},
+					Limit: &limit1,
+					Order: "created_at desc",
+				})
+			c.Assert(err, check.IsNil)
+			if len(logentries.Items) > 0 &&
+				logentries.Items[0].ID > lastLogId &&
+				logentries.Items[0].ObjectUUID == userUuid &&
+				logentries.Items[0].Properties["collection_uuid"] == collectionUuid &&
+				logentries.Items[0].Properties["collection_file_path"] == filepath {
+				break
+			}
+			c.Logf("logentries.Items: %+v", logentries.Items)
+			time.Sleep(50 * time.Millisecond)
+		}
+	} else {
+		c.Check(resp.Result().StatusCode, check.Equals, http.StatusForbidden)
+		c.Check(logbuf.String(), check.Equals, "")
+	}
+}
+
+func (s *IntegrationSuite) TestDownloadLoggingPermission(c *check.C) {
+	config := newConfig(ctxlog.TestLogger(c), s.ArvConfig)
+	h := handler{Config: config}
+	u := mustParseURL("http://" + arvadostest.FooCollection + ".keep-web.example/foo")
+
+	config.cluster.Collections.TrustAllContent = true
+
+	for _, adminperm := range []bool{true, false} {
+		for _, userperm := range []bool{true, false} {
+			config.cluster.Collections.WebDAVPermission.Admin.Download = adminperm
+			config.cluster.Collections.WebDAVPermission.User.Download = userperm
+
+			// Test admin permission
+			req := &http.Request{
+				Method:     "GET",
+				Host:       u.Host,
+				URL:        u,
+				RequestURI: u.RequestURI(),
+				Header: http.Header{
+					"Authorization": {"Bearer " + arvadostest.AdminToken},
+				},
+			}
+			s.checkUploadDownloadRequest(c, &h, req, http.StatusOK, "download", adminperm,
+				arvadostest.AdminUserUUID, arvadostest.FooCollection, "foo")
+
+			// Test user permission
+			req = &http.Request{
+				Method:     "GET",
+				Host:       u.Host,
+				URL:        u,
+				RequestURI: u.RequestURI(),
+				Header: http.Header{
+					"Authorization": {"Bearer " + arvadostest.ActiveToken},
+				},
+			}
+			s.checkUploadDownloadRequest(c, &h, req, http.StatusOK, "download", userperm,
+				arvadostest.ActiveUserUUID, arvadostest.FooCollection, "foo")
+		}
+	}
+
+	config.cluster.Collections.WebDAVPermission.User.Download = true
+
+	for _, tryurl := range []string{"http://" + arvadostest.MultilevelCollection1 + ".keep-web.example/dir1/subdir/file1",
+		"http://keep-web/users/active/multilevel_collection_1/dir1/subdir/file1"} {
+
+		u = mustParseURL(tryurl)
+		req := &http.Request{
+			Method:     "GET",
+			Host:       u.Host,
+			URL:        u,
+			RequestURI: u.RequestURI(),
+			Header: http.Header{
+				"Authorization": {"Bearer " + arvadostest.ActiveToken},
+			},
+		}
+		s.checkUploadDownloadRequest(c, &h, req, http.StatusOK, "download", true,
+			arvadostest.ActiveUserUUID, arvadostest.MultilevelCollection1, "dir1/subdir/file1")
+	}
+
+	u = mustParseURL("http://" + strings.Replace(arvadostest.FooCollectionPDH, "+", "-", 1) + ".keep-web.example/foo")
+	req := &http.Request{
+		Method:     "GET",
+		Host:       u.Host,
+		URL:        u,
+		RequestURI: u.RequestURI(),
+		Header: http.Header{
+			"Authorization": {"Bearer " + arvadostest.ActiveToken},
+		},
+	}
+	s.checkUploadDownloadRequest(c, &h, req, http.StatusOK, "download", true,
+		arvadostest.ActiveUserUUID, arvadostest.FooCollection, "foo")
+}
+
+func (s *IntegrationSuite) TestUploadLoggingPermission(c *check.C) {
+	config := newConfig(ctxlog.TestLogger(c), s.ArvConfig)
+	h := handler{Config: config}
+
+	for _, adminperm := range []bool{true, false} {
+		for _, userperm := range []bool{true, false} {
+
+			arv := s.testServer.Config.Client
+			arv.AuthToken = arvadostest.ActiveToken
+
+			var coll arvados.Collection
+			err := arv.RequestAndDecode(&coll,
+				"POST",
+				"/arvados/v1/collections",
+				nil,
+				map[string]interface{}{
+					"ensure_unique_name": true,
+					"collection": map[string]interface{}{
+						"name": "test collection",
+					},
+				})
+			c.Assert(err, check.Equals, nil)
+
+			u := mustParseURL("http://" + coll.UUID + ".keep-web.example/bar")
+
+			config.cluster.Collections.WebDAVPermission.Admin.Upload = adminperm
+			config.cluster.Collections.WebDAVPermission.User.Upload = userperm
+
+			// Test admin permission
+			req := &http.Request{
+				Method:     "PUT",
+				Host:       u.Host,
+				URL:        u,
+				RequestURI: u.RequestURI(),
+				Header: http.Header{
+					"Authorization": {"Bearer " + arvadostest.AdminToken},
+				},
+				Body: io.NopCloser(bytes.NewReader([]byte("bar"))),
+			}
+			s.checkUploadDownloadRequest(c, &h, req, http.StatusCreated, "upload", adminperm,
+				arvadostest.AdminUserUUID, coll.UUID, "bar")
+
+			// Test user permission
+			req = &http.Request{
+				Method:     "PUT",
+				Host:       u.Host,
+				URL:        u,
+				RequestURI: u.RequestURI(),
+				Header: http.Header{
+					"Authorization": {"Bearer " + arvadostest.ActiveToken},
+				},
+				Body: io.NopCloser(bytes.NewReader([]byte("bar"))),
+			}
+			s.checkUploadDownloadRequest(c, &h, req, http.StatusCreated, "upload", userperm,
+				arvadostest.ActiveUserUUID, coll.UUID, "bar")
+		}
+	}
 }

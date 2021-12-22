@@ -36,10 +36,10 @@ type procinfo struct {
 //
 // Stdout and stderr in the child process are sent to the systemd
 // journal using the systemd-cat program.
-func Detach(uuid string, prog string, args []string, stdout, stderr io.Writer) int {
-	return exitcode(stderr, detach(uuid, prog, args, stdout, stderr))
+func Detach(uuid string, prog string, args []string, stdin io.Reader, stdout, stderr io.Writer) int {
+	return exitcode(stderr, detach(uuid, prog, args, stdin, stdout))
 }
-func detach(uuid string, prog string, args []string, stdout, stderr io.Writer) error {
+func detach(uuid string, prog string, args []string, stdin io.Reader, stdout io.Writer) error {
 	lockfile, err := func() (*os.File, error) {
 		// We must hold the dir-level lock between
 		// opening/creating the lockfile and acquiring LOCK_EX
@@ -77,20 +77,24 @@ func detach(uuid string, prog string, args []string, stdout, stderr io.Writer) e
 		// invoked as "/path/to/crunch-run"
 		execargs = append([]string{prog}, execargs...)
 	}
-	execargs = append([]string{
-		// Here, if the inner systemd-cat can't exec
-		// crunch-run, it writes an error message to stderr,
-		// and the outer systemd-cat writes it to the journal
-		// where the operator has a chance to discover it. (If
-		// we only used one systemd-cat command, it would be
-		// up to us to report the error -- but we are going to
-		// detach and exit, not wait for something to appear
-		// on stderr.)  Note these systemd-cat calls don't
-		// result in additional processes -- they just connect
-		// stderr/stdout to sockets and call exec().
-		"systemd-cat", "--identifier=crunch-run",
-		"systemd-cat", "--identifier=crunch-run",
-	}, execargs...)
+	if _, err := exec.LookPath("systemd-cat"); err == nil {
+		execargs = append([]string{
+			// Here, if the inner systemd-cat can't exec
+			// crunch-run, it writes an error message to
+			// stderr, and the outer systemd-cat writes it
+			// to the journal where the operator has a
+			// chance to discover it. (If we only used one
+			// systemd-cat command, it would be up to us
+			// to report the error -- but we are going to
+			// detach and exit, not wait for something to
+			// appear on stderr.)  Note these systemd-cat
+			// calls don't result in additional processes
+			// -- they just connect stderr/stdout to
+			// sockets and call exec().
+			"systemd-cat", "--identifier=crunch-run",
+			"systemd-cat", "--identifier=crunch-run",
+		}, execargs...)
+	}
 
 	cmd := exec.Command(execargs[0], execargs[1:]...)
 	// Child inherits lockfile.
@@ -99,9 +103,25 @@ func detach(uuid string, prog string, args []string, stdout, stderr io.Writer) e
 	// from parent (sshd) while sending lockfile content to
 	// caller.
 	cmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
+	// We need to manage our own OS pipe here to ensure the child
+	// process reads all of our stdin pipe before we return.
+	piper, pipew, err := os.Pipe()
+	if err != nil {
+		return err
+	}
+	defer pipew.Close()
+	cmd.Stdin = piper
 	err = cmd.Start()
 	if err != nil {
 		return fmt.Errorf("exec %s: %s", cmd.Path, err)
+	}
+	_, err = io.Copy(pipew, stdin)
+	if err != nil {
+		return err
+	}
+	err = pipew.Close()
+	if err != nil {
+		return err
 	}
 
 	w := io.MultiWriter(stdout, lockfile)

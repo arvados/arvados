@@ -5,7 +5,6 @@
 package crunchrun
 
 import (
-	"bufio"
 	"bytes"
 	"crypto/md5"
 	"encoding/json"
@@ -13,11 +12,10 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
-	"net"
 	"os"
 	"os/exec"
+	"regexp"
 	"runtime/pprof"
-	"sort"
 	"strings"
 	"sync"
 	"syscall"
@@ -30,9 +28,6 @@ import (
 	"git.arvados.org/arvados.git/sdk/go/manifest"
 	"golang.org/x/net/context"
 
-	dockertypes "github.com/docker/docker/api/types"
-	dockercontainer "github.com/docker/docker/api/types/container"
-	dockernetwork "github.com/docker/docker/api/types/network"
 	. "gopkg.in/check.v1"
 )
 
@@ -41,18 +36,45 @@ func TestCrunchExec(t *testing.T) {
 	TestingT(t)
 }
 
-// Gocheck boilerplate
 var _ = Suite(&TestSuite{})
 
 type TestSuite struct {
-	client *arvados.Client
-	docker *TestDockerClient
-	runner *ContainerRunner
+	client                   *arvados.Client
+	api                      *ArvTestClient
+	runner                   *ContainerRunner
+	executor                 *stubExecutor
+	keepmount                string
+	testDispatcherKeepClient KeepTestClient
+	testContainerKeepClient  KeepTestClient
 }
 
 func (s *TestSuite) SetUpTest(c *C) {
+	*brokenNodeHook = ""
 	s.client = arvados.NewClientFromEnv()
-	s.docker = NewTestDockerClient()
+	s.executor = &stubExecutor{}
+	var err error
+	s.api = &ArvTestClient{}
+	s.runner, err = NewContainerRunner(s.client, s.api, &s.testDispatcherKeepClient, "zzzzz-zzzzz-zzzzzzzzzzzzzzz")
+	c.Assert(err, IsNil)
+	s.runner.executor = s.executor
+	s.runner.MkArvClient = func(token string) (IArvadosClient, IKeepClient, *arvados.Client, error) {
+		return s.api, &s.testContainerKeepClient, s.client, nil
+	}
+	s.runner.RunArvMount = func(cmd []string, tok string) (*exec.Cmd, error) {
+		s.runner.ArvMountPoint = s.keepmount
+		return nil, nil
+	}
+	s.keepmount = c.MkDir()
+	err = os.Mkdir(s.keepmount+"/by_id", 0755)
+	c.Assert(err, IsNil)
+	err = os.Mkdir(s.keepmount+"/by_id/"+arvadostest.DockerImage112PDH, 0755)
+	c.Assert(err, IsNil)
+	err = ioutil.WriteFile(s.keepmount+"/by_id/"+arvadostest.DockerImage112PDH+"/"+arvadostest.DockerImage112Filename, []byte("#notarealtarball"), 0644)
+	err = os.Mkdir(s.keepmount+"/by_id/"+fakeInputCollectionPDH, 0755)
+	c.Assert(err, IsNil)
+	err = ioutil.WriteFile(s.keepmount+"/by_id/"+fakeInputCollectionPDH+"/input.json", []byte(`{"input":true}`), 0644)
+	c.Assert(err, IsNil)
+	s.runner.ArvMountPoint = s.keepmount
 }
 
 type ArvTestClient struct {
@@ -68,9 +90,44 @@ type ArvTestClient struct {
 }
 
 type KeepTestClient struct {
-	Called  bool
-	Content []byte
+	Called         bool
+	Content        []byte
+	StorageClasses []string
 }
+
+type stubExecutor struct {
+	imageLoaded bool
+	loaded      string
+	loadErr     error
+	exitCode    int
+	createErr   error
+	created     containerSpec
+	startErr    error
+	waitSleep   time.Duration
+	waitErr     error
+	stopErr     error
+	stopped     bool
+	closed      bool
+	runFunc     func()
+	exit        chan int
+}
+
+func (e *stubExecutor) LoadImage(imageId string, tarball string, container arvados.Container, keepMount string,
+	containerClient *arvados.Client) error {
+	e.loaded = tarball
+	return e.loadErr
+}
+func (e *stubExecutor) Runtime() string                 { return "stub" }
+func (e *stubExecutor) Create(spec containerSpec) error { e.created = spec; return e.createErr }
+func (e *stubExecutor) Start() error                    { e.exit = make(chan int, 1); go e.runFunc(); return e.startErr }
+func (e *stubExecutor) CgroupID() string                { return "cgroupid" }
+func (e *stubExecutor) Stop() error                     { e.stopped = true; go func() { e.exit <- -1 }(); return e.stopErr }
+func (e *stubExecutor) Close()                          { e.closed = true }
+func (e *stubExecutor) Wait(context.Context) (int, error) {
+	return <-e.exit, e.waitErr
+}
+
+const fakeInputCollectionPDH = "ffffffffaaaaaaaa88888888eeeeeeee+1234"
 
 var hwManifest = ". 82ab40c24fc8df01798e57ba66795bb1+841216+Aa124ac75e5168396c73c0a18eda641a4f41791c0@569fa8c3 0:841216:9c31ee32b3d15268a0754e8edc74d4f815ee014b693bc5109058e431dd5caea7.tar\n"
 var hwPDH = "a45557269dcb65a6b78f9ac061c0850b+120"
@@ -91,129 +148,6 @@ var denormalizedWithSubdirsPDH = "b0def87f80dd594d4675809e83bd4f15+367"
 
 var fakeAuthUUID = "zzzzz-gj3su-55pqoyepgi2glem"
 var fakeAuthToken = "a3ltuwzqcu2u4sc0q7yhpc2w7s00fdcqecg5d6e0u3pfohmbjt"
-
-type TestDockerClient struct {
-	imageLoaded string
-	logReader   io.ReadCloser
-	logWriter   io.WriteCloser
-	fn          func(t *TestDockerClient)
-	exitCode    int
-	stop        chan bool
-	cwd         string
-	env         []string
-	api         *ArvTestClient
-	realTemp    string
-	calledWait  bool
-	ctrExited   bool
-}
-
-func NewTestDockerClient() *TestDockerClient {
-	t := &TestDockerClient{}
-	t.logReader, t.logWriter = io.Pipe()
-	t.stop = make(chan bool, 1)
-	t.cwd = "/"
-	return t
-}
-
-type MockConn struct {
-	net.Conn
-}
-
-func (m *MockConn) Write(b []byte) (int, error) {
-	return len(b), nil
-}
-
-func NewMockConn() *MockConn {
-	c := &MockConn{}
-	return c
-}
-
-func (t *TestDockerClient) ContainerAttach(ctx context.Context, container string, options dockertypes.ContainerAttachOptions) (dockertypes.HijackedResponse, error) {
-	return dockertypes.HijackedResponse{Conn: NewMockConn(), Reader: bufio.NewReader(t.logReader)}, nil
-}
-
-func (t *TestDockerClient) ContainerCreate(ctx context.Context, config *dockercontainer.Config, hostConfig *dockercontainer.HostConfig, networkingConfig *dockernetwork.NetworkingConfig, containerName string) (dockercontainer.ContainerCreateCreatedBody, error) {
-	if config.WorkingDir != "" {
-		t.cwd = config.WorkingDir
-	}
-	t.env = config.Env
-	return dockercontainer.ContainerCreateCreatedBody{ID: "abcde"}, nil
-}
-
-func (t *TestDockerClient) ContainerStart(ctx context.Context, container string, options dockertypes.ContainerStartOptions) error {
-	if t.exitCode == 3 {
-		return errors.New(`Error response from daemon: oci runtime error: container_linux.go:247: starting container process caused "process_linux.go:359: container init caused \"rootfs_linux.go:54: mounting \\\"/tmp/keep453790790/by_id/99999999999999999999999999999999+99999/myGenome\\\" to rootfs \\\"/tmp/docker/overlay2/9999999999999999999999999999999999999999999999999999999999999999/merged\\\" at \\\"/tmp/docker/overlay2/9999999999999999999999999999999999999999999999999999999999999999/merged/keep/99999999999999999999999999999999+99999/myGenome\\\" caused \\\"no such file or directory\\\"\""`)
-	}
-	if t.exitCode == 4 {
-		return errors.New(`panic: standard_init_linux.go:175: exec user process caused "no such file or directory"`)
-	}
-	if t.exitCode == 5 {
-		return errors.New(`Error response from daemon: Cannot start container 41f26cbc43bcc1280f4323efb1830a394ba8660c9d1c2b564ba42bf7f7694845: [8] System error: no such file or directory`)
-	}
-	if t.exitCode == 6 {
-		return errors.New(`Error response from daemon: Cannot start container 58099cd76c834f3dc2a4fb76c8028f049ae6d4fdf0ec373e1f2cfea030670c2d: [8] System error: exec: "foobar": executable file not found in $PATH`)
-	}
-
-	if container == "abcde" {
-		// t.fn gets executed in ContainerWait
-		return nil
-	}
-	return errors.New("Invalid container id")
-}
-
-func (t *TestDockerClient) ContainerRemove(ctx context.Context, container string, options dockertypes.ContainerRemoveOptions) error {
-	t.stop <- true
-	return nil
-}
-
-func (t *TestDockerClient) ContainerWait(ctx context.Context, container string, condition dockercontainer.WaitCondition) (<-chan dockercontainer.ContainerWaitOKBody, <-chan error) {
-	t.calledWait = true
-	body := make(chan dockercontainer.ContainerWaitOKBody, 1)
-	err := make(chan error)
-	go func() {
-		t.fn(t)
-		body <- dockercontainer.ContainerWaitOKBody{StatusCode: int64(t.exitCode)}
-	}()
-	return body, err
-}
-
-func (t *TestDockerClient) ContainerInspect(ctx context.Context, id string) (c dockertypes.ContainerJSON, err error) {
-	c.ContainerJSONBase = &dockertypes.ContainerJSONBase{}
-	c.ID = "abcde"
-	if t.ctrExited {
-		c.State = &dockertypes.ContainerState{Status: "exited", Dead: true}
-	} else {
-		c.State = &dockertypes.ContainerState{Status: "running", Pid: 1234, Running: true}
-	}
-	return
-}
-
-func (t *TestDockerClient) ImageInspectWithRaw(ctx context.Context, image string) (dockertypes.ImageInspect, []byte, error) {
-	if t.exitCode == 2 {
-		return dockertypes.ImageInspect{}, nil, fmt.Errorf("Cannot connect to the Docker daemon at unix:///var/run/docker.sock. Is the docker daemon running?")
-	}
-
-	if t.imageLoaded == image {
-		return dockertypes.ImageInspect{}, nil, nil
-	}
-	return dockertypes.ImageInspect{}, nil, errors.New("")
-}
-
-func (t *TestDockerClient) ImageLoad(ctx context.Context, input io.Reader, quiet bool) (dockertypes.ImageLoadResponse, error) {
-	if t.exitCode == 2 {
-		return dockertypes.ImageLoadResponse{}, fmt.Errorf("Cannot connect to the Docker daemon at unix:///var/run/docker.sock. Is the docker daemon running?")
-	}
-	_, err := io.Copy(ioutil.Discard, input)
-	if err != nil {
-		return dockertypes.ImageLoadResponse{}, err
-	}
-	t.imageLoaded = hwImageID
-	return dockertypes.ImageLoadResponse{Body: ioutil.NopCloser(input)}, nil
-}
-
-func (*TestDockerClient) ImageRemove(ctx context.Context, image string, options dockertypes.ImageRemoveOptions) ([]dockertypes.ImageDeleteResponseItem, error) {
-	return nil, nil
-}
 
 func (client *ArvTestClient) Create(resourceType string,
 	parameters arvadosclient.Dict,
@@ -287,7 +221,7 @@ func (client *ArvTestClient) CallRaw(method, resourceType, uuid, action string,
 	} else {
 		j = []byte(`{
 			"command": ["sleep", "1"],
-			"container_image": "d4ab34d3d4f8a72f5c4973051ae69fab+122",
+			"container_image": "` + arvadostest.DockerImage112PDH + `",
 			"cwd": ".",
 			"environment": {},
 			"mounts": {"/tmp": {"kind": "tmp"}, "/json": {"kind": "json", "content": {"number": 123456789123456789}}},
@@ -375,9 +309,11 @@ func (client *KeepTestClient) LocalLocator(locator string) (string, error) {
 	return locator, nil
 }
 
-func (client *KeepTestClient) PutB(buf []byte) (string, int, error) {
-	client.Content = buf
-	return fmt.Sprintf("%x+%d", md5.Sum(buf), len(buf)), len(buf), nil
+func (client *KeepTestClient) BlockWrite(_ context.Context, opts arvados.BlockWriteOptions) (arvados.BlockWriteResponse, error) {
+	client.Content = opts.Data
+	return arvados.BlockWriteResponse{
+		Locator: fmt.Sprintf("%x+%d", md5.Sum(opts.Data), len(opts.Data)),
+	}, nil
 }
 
 func (client *KeepTestClient) ReadAt(string, []byte, int) (int, error) {
@@ -389,6 +325,10 @@ func (client *KeepTestClient) ClearBlockCache() {
 
 func (client *KeepTestClient) Close() {
 	client.Content = nil
+}
+
+func (client *KeepTestClient) SetStorageClasses(sc []string) {
+	client.StorageClasses = sc
 }
 
 type FileWrapper struct {
@@ -438,49 +378,35 @@ func (client *KeepTestClient) ManifestFileReader(m manifest.Manifest, filename s
 }
 
 func (s *TestSuite) TestLoadImage(c *C) {
-	cr, err := NewContainerRunner(s.client, &ArvTestClient{},
-		&KeepTestClient{}, s.docker, "zzzzz-zzzzz-zzzzzzzzzzzzzzz")
+	s.runner.Container.ContainerImage = arvadostest.DockerImage112PDH
+	s.runner.Container.Mounts = map[string]arvados.Mount{
+		"/out": {Kind: "tmp", Writable: true},
+	}
+	s.runner.Container.OutputPath = "/out"
+
+	_, err := s.runner.SetupMounts()
 	c.Assert(err, IsNil)
 
-	kc := &KeepTestClient{}
-	defer kc.Close()
-	cr.ContainerArvClient = &ArvTestClient{}
-	cr.ContainerKeepClient = kc
-
-	_, err = cr.Docker.ImageRemove(nil, hwImageID, dockertypes.ImageRemoveOptions{})
+	imageID, err := s.runner.LoadImage()
 	c.Check(err, IsNil)
+	c.Check(s.executor.loaded, Matches, ".*"+regexp.QuoteMeta(arvadostest.DockerImage112Filename))
+	c.Check(imageID, Equals, strings.TrimSuffix(arvadostest.DockerImage112Filename, ".tar"))
 
-	_, _, err = cr.Docker.ImageInspectWithRaw(nil, hwImageID)
-	c.Check(err, NotNil)
+	s.runner.Container.ContainerImage = arvadostest.DockerImage112PDH
+	s.executor.imageLoaded = false
+	s.executor.loaded = ""
+	s.executor.loadErr = errors.New("bork")
+	imageID, err = s.runner.LoadImage()
+	c.Check(err, ErrorMatches, ".*bork")
+	c.Check(s.executor.loaded, Matches, ".*"+regexp.QuoteMeta(arvadostest.DockerImage112Filename))
 
-	cr.Container.ContainerImage = hwPDH
-
-	// (1) Test loading image from keep
-	c.Check(kc.Called, Equals, false)
-	c.Check(cr.ContainerConfig.Image, Equals, "")
-
-	err = cr.LoadImage()
-
-	c.Check(err, IsNil)
-	defer func() {
-		cr.Docker.ImageRemove(nil, hwImageID, dockertypes.ImageRemoveOptions{})
-	}()
-
-	c.Check(kc.Called, Equals, true)
-	c.Check(cr.ContainerConfig.Image, Equals, hwImageID)
-
-	_, _, err = cr.Docker.ImageInspectWithRaw(nil, hwImageID)
-	c.Check(err, IsNil)
-
-	// (2) Test using image that's already loaded
-	kc.Called = false
-	cr.ContainerConfig.Image = ""
-
-	err = cr.LoadImage()
-	c.Check(err, IsNil)
-	c.Check(kc.Called, Equals, false)
-	c.Check(cr.ContainerConfig.Image, Equals, hwImageID)
-
+	s.runner.Container.ContainerImage = fakeInputCollectionPDH
+	s.executor.imageLoaded = false
+	s.executor.loaded = ""
+	s.executor.loadErr = nil
+	imageID, err = s.runner.LoadImage()
+	c.Check(err, ErrorMatches, "image collection does not include a \\.tar image file")
+	c.Check(s.executor.loaded, Equals, "")
 }
 
 type ArvErrorTestClient struct{}
@@ -523,8 +449,8 @@ func (*KeepErrorTestClient) ManifestFileReader(manifest.Manifest, string) (arvad
 	return nil, errors.New("KeepError")
 }
 
-func (*KeepErrorTestClient) PutB(buf []byte) (string, int, error) {
-	return "", 0, errors.New("KeepError")
+func (*KeepErrorTestClient) BlockWrite(context.Context, arvados.BlockWriteOptions) (arvados.BlockWriteResponse, error) {
+	return arvados.BlockWriteResponse{}, errors.New("KeepError")
 }
 
 func (*KeepErrorTestClient) LocalLocator(string) (string, error) {
@@ -553,65 +479,6 @@ func (ErrorReader) Seek(int64, int) (int64, error) {
 
 func (KeepReadErrorTestClient) ManifestFileReader(m manifest.Manifest, filename string) (arvados.File, error) {
 	return ErrorReader{}, nil
-}
-
-func (s *TestSuite) TestLoadImageArvError(c *C) {
-	// (1) Arvados error
-	kc := &KeepTestClient{}
-	defer kc.Close()
-	cr, err := NewContainerRunner(s.client, &ArvErrorTestClient{}, kc, nil, "zzzzz-zzzzz-zzzzzzzzzzzzzzz")
-	c.Assert(err, IsNil)
-
-	cr.ContainerArvClient = &ArvErrorTestClient{}
-	cr.ContainerKeepClient = &KeepTestClient{}
-
-	cr.Container.ContainerImage = hwPDH
-
-	err = cr.LoadImage()
-	c.Check(err.Error(), Equals, "While getting container image collection: ArvError")
-}
-
-func (s *TestSuite) TestLoadImageKeepError(c *C) {
-	// (2) Keep error
-	kc := &KeepErrorTestClient{}
-	cr, err := NewContainerRunner(s.client, &ArvTestClient{}, kc, s.docker, "zzzzz-zzzzz-zzzzzzzzzzzzzzz")
-	c.Assert(err, IsNil)
-
-	cr.ContainerArvClient = &ArvTestClient{}
-	cr.ContainerKeepClient = &KeepErrorTestClient{}
-
-	cr.Container.ContainerImage = hwPDH
-
-	err = cr.LoadImage()
-	c.Assert(err, NotNil)
-	c.Check(err.Error(), Equals, "While creating ManifestFileReader for container image: KeepError")
-}
-
-func (s *TestSuite) TestLoadImageCollectionError(c *C) {
-	// (3) Collection doesn't contain image
-	kc := &KeepReadErrorTestClient{}
-	cr, err := NewContainerRunner(s.client, &ArvTestClient{}, kc, nil, "zzzzz-zzzzz-zzzzzzzzzzzzzzz")
-	c.Assert(err, IsNil)
-	cr.Container.ContainerImage = otherPDH
-
-	cr.ContainerArvClient = &ArvTestClient{}
-	cr.ContainerKeepClient = &KeepReadErrorTestClient{}
-
-	err = cr.LoadImage()
-	c.Check(err.Error(), Equals, "First file in the container image collection does not end in .tar")
-}
-
-func (s *TestSuite) TestLoadImageKeepReadError(c *C) {
-	// (4) Collection doesn't contain image
-	kc := &KeepReadErrorTestClient{}
-	cr, err := NewContainerRunner(s.client, &ArvTestClient{}, kc, s.docker, "zzzzz-zzzzz-zzzzzzzzzzzzzzz")
-	c.Assert(err, IsNil)
-	cr.Container.ContainerImage = hwPDH
-	cr.ContainerArvClient = &ArvTestClient{}
-	cr.ContainerKeepClient = &KeepReadErrorTestClient{}
-
-	err = cr.LoadImage()
-	c.Check(err, NotNil)
 }
 
 type ClosableBuffer struct {
@@ -647,35 +514,30 @@ func dockerLog(fd byte, msg string) []byte {
 }
 
 func (s *TestSuite) TestRunContainer(c *C) {
-	s.docker.fn = func(t *TestDockerClient) {
-		t.logWriter.Write(dockerLog(1, "Hello world\n"))
-		t.logWriter.Close()
+	s.executor.runFunc = func() {
+		fmt.Fprintf(s.executor.created.Stdout, "Hello world\n")
+		s.executor.exit <- 0
 	}
-	kc := &KeepTestClient{}
-	defer kc.Close()
-	cr, err := NewContainerRunner(s.client, &ArvTestClient{}, kc, s.docker, "zzzzz-zzzzz-zzzzzzzzzzzzzzz")
-	c.Assert(err, IsNil)
-
-	cr.ContainerArvClient = &ArvTestClient{}
-	cr.ContainerKeepClient = &KeepTestClient{}
 
 	var logs TestLogs
-	cr.NewLogWriter = logs.NewTestLoggingWriter
-	cr.Container.ContainerImage = hwPDH
-	cr.Container.Command = []string{"./hw"}
-	err = cr.LoadImage()
-	c.Check(err, IsNil)
+	s.runner.NewLogWriter = logs.NewTestLoggingWriter
+	s.runner.Container.ContainerImage = arvadostest.DockerImage112PDH
+	s.runner.Container.Command = []string{"./hw"}
+	s.runner.Container.OutputStorageClasses = []string{"default"}
 
-	err = cr.CreateContainer()
-	c.Check(err, IsNil)
+	imageID, err := s.runner.LoadImage()
+	c.Assert(err, IsNil)
 
-	err = cr.StartContainer()
-	c.Check(err, IsNil)
+	err = s.runner.CreateContainer(imageID, nil)
+	c.Assert(err, IsNil)
 
-	err = cr.WaitFinish()
-	c.Check(err, IsNil)
+	err = s.runner.StartContainer()
+	c.Assert(err, IsNil)
 
-	c.Check(strings.HasSuffix(logs.Stdout.String(), "Hello world\n"), Equals, true)
+	err = s.runner.WaitFinish()
+	c.Assert(err, IsNil)
+
+	c.Check(logs.Stdout.String(), Matches, ".*Hello world\n")
 	c.Check(logs.Stderr.String(), Equals, "")
 }
 
@@ -683,7 +545,7 @@ func (s *TestSuite) TestCommitLogs(c *C) {
 	api := &ArvTestClient{}
 	kc := &KeepTestClient{}
 	defer kc.Close()
-	cr, err := NewContainerRunner(s.client, api, kc, nil, "zzzzz-zzzzz-zzzzzzzzzzzzzzz")
+	cr, err := NewContainerRunner(s.client, api, kc, "zzzzz-zzzzz-zzzzzzzzzzzzzzz")
 	c.Assert(err, IsNil)
 	cr.CrunchLog.Timestamper = (&TestTimestamper{}).Timestamp
 
@@ -705,7 +567,7 @@ func (s *TestSuite) TestUpdateContainerRunning(c *C) {
 	api := &ArvTestClient{}
 	kc := &KeepTestClient{}
 	defer kc.Close()
-	cr, err := NewContainerRunner(s.client, api, kc, nil, "zzzzz-zzzzz-zzzzzzzzzzzzzzz")
+	cr, err := NewContainerRunner(s.client, api, kc, "zzzzz-zzzzz-zzzzzzzzzzzzzzz")
 	c.Assert(err, IsNil)
 
 	err = cr.UpdateContainerRunning()
@@ -718,7 +580,7 @@ func (s *TestSuite) TestUpdateContainerComplete(c *C) {
 	api := &ArvTestClient{}
 	kc := &KeepTestClient{}
 	defer kc.Close()
-	cr, err := NewContainerRunner(s.client, api, kc, nil, "zzzzz-zzzzz-zzzzzzzzzzzzzzz")
+	cr, err := NewContainerRunner(s.client, api, kc, "zzzzz-zzzzz-zzzzzzzzzzzzzzz")
 	c.Assert(err, IsNil)
 
 	cr.LogsPDH = new(string)
@@ -740,7 +602,7 @@ func (s *TestSuite) TestUpdateContainerCancelled(c *C) {
 	api := &ArvTestClient{}
 	kc := &KeepTestClient{}
 	defer kc.Close()
-	cr, err := NewContainerRunner(s.client, api, kc, nil, "zzzzz-zzzzz-zzzzzzzzzzzzzzz")
+	cr, err := NewContainerRunner(s.client, api, kc, "zzzzz-zzzzz-zzzzzzzzzzzzzzz")
 	c.Assert(err, IsNil)
 	cr.cCancelled = true
 	cr.finalState = "Cancelled"
@@ -755,10 +617,10 @@ func (s *TestSuite) TestUpdateContainerCancelled(c *C) {
 
 // Used by the TestFullRun*() test below to DRY up boilerplate setup to do full
 // dress rehearsal of the Run() function, starting from a JSON container record.
-func (s *TestSuite) fullRunHelper(c *C, record string, extraMounts []string, exitCode int, fn func(t *TestDockerClient)) (api *ArvTestClient, cr *ContainerRunner, realTemp string) {
-	rec := arvados.Container{}
-	err := json.Unmarshal([]byte(record), &rec)
-	c.Check(err, IsNil)
+func (s *TestSuite) fullRunHelper(c *C, record string, extraMounts []string, exitCode int, fn func()) (*ArvTestClient, *ContainerRunner, string) {
+	err := json.Unmarshal([]byte(record), &s.api.Container)
+	c.Assert(err, IsNil)
+	initialState := s.api.Container.State
 
 	var sm struct {
 		SecretMounts map[string]arvados.Mount `json:"secret_mounts"`
@@ -766,33 +628,22 @@ func (s *TestSuite) fullRunHelper(c *C, record string, extraMounts []string, exi
 	err = json.Unmarshal([]byte(record), &sm)
 	c.Check(err, IsNil)
 	secretMounts, err := json.Marshal(sm)
-	c.Logf("%s %q", sm, secretMounts)
-	c.Check(err, IsNil)
-
-	s.docker.exitCode = exitCode
-	s.docker.fn = fn
-	s.docker.ImageRemove(nil, hwImageID, dockertypes.ImageRemoveOptions{})
-
-	api = &ArvTestClient{Container: rec}
-	s.docker.api = api
-	kc := &KeepTestClient{}
-	defer kc.Close()
-	cr, err = NewContainerRunner(s.client, api, kc, s.docker, "zzzzz-zzzzz-zzzzzzzzzzzzzzz")
 	c.Assert(err, IsNil)
-	s.runner = cr
-	cr.statInterval = 100 * time.Millisecond
-	cr.containerWatchdogInterval = time.Second
+	c.Logf("SecretMounts decoded %v json %q", sm, secretMounts)
+
+	s.executor.runFunc = func() {
+		fn()
+		s.executor.exit <- exitCode
+	}
+
+	s.runner.statInterval = 100 * time.Millisecond
+	s.runner.containerWatchdogInterval = time.Second
 	am := &ArvMountCmdLine{}
-	cr.RunArvMount = am.ArvMountTest
+	s.runner.RunArvMount = am.ArvMountTest
 
-	realTemp, err = ioutil.TempDir("", "crunchrun_test1-")
-	c.Assert(err, IsNil)
-	defer os.RemoveAll(realTemp)
-
-	s.docker.realTemp = realTemp
-
+	realTemp := c.MkDir()
 	tempcount := 0
-	cr.MkTempDir = func(_ string, prefix string) (string, error) {
+	s.runner.MkTempDir = func(_, prefix string) (string, error) {
 		tempcount++
 		d := fmt.Sprintf("%s/%s%d", realTemp, prefix, tempcount)
 		err := os.Mkdir(d, os.ModePerm)
@@ -802,73 +653,84 @@ func (s *TestSuite) fullRunHelper(c *C, record string, extraMounts []string, exi
 		}
 		return d, err
 	}
-	cr.MkArvClient = func(token string) (IArvadosClient, IKeepClient, *arvados.Client, error) {
-		return &ArvTestClient{secretMounts: secretMounts}, &KeepTestClient{}, nil, nil
+	s.runner.MkArvClient = func(token string) (IArvadosClient, IKeepClient, *arvados.Client, error) {
+		return &ArvTestClient{secretMounts: secretMounts}, &s.testContainerKeepClient, nil, nil
 	}
 
 	if extraMounts != nil && len(extraMounts) > 0 {
-		err := cr.SetupArvMountPoint("keep")
+		err := s.runner.SetupArvMountPoint("keep")
 		c.Check(err, IsNil)
 
 		for _, m := range extraMounts {
-			os.MkdirAll(cr.ArvMountPoint+"/by_id/"+m, os.ModePerm)
+			os.MkdirAll(s.runner.ArvMountPoint+"/by_id/"+m, os.ModePerm)
 		}
 	}
 
-	err = cr.Run()
-	if api.CalledWith("container.state", "Complete") != nil {
+	err = s.runner.Run()
+	if s.api.CalledWith("container.state", "Complete") != nil {
 		c.Check(err, IsNil)
 	}
-	if exitCode != 2 {
-		c.Check(api.WasSetRunning, Equals, true)
+	if s.executor.loadErr == nil && s.executor.createErr == nil && initialState != "Running" {
+		c.Check(s.api.WasSetRunning, Equals, true)
 		var lastupdate arvadosclient.Dict
-		for _, content := range api.Content {
+		for _, content := range s.api.Content {
 			if content["container"] != nil {
 				lastupdate = content["container"].(arvadosclient.Dict)
 			}
 		}
 		if lastupdate["log"] == nil {
-			c.Errorf("no container update with non-nil log -- updates were: %v", api.Content)
+			c.Errorf("no container update with non-nil log -- updates were: %v", s.api.Content)
 		}
 	}
 
 	if err != nil {
-		for k, v := range api.Logs {
+		for k, v := range s.api.Logs {
 			c.Log(k)
 			c.Log(v.String())
 		}
 	}
 
-	return
+	return s.api, s.runner, realTemp
 }
 
 func (s *TestSuite) TestFullRunHello(c *C) {
-	api, _, _ := s.fullRunHelper(c, `{
+	s.runner.enableMemoryLimit = true
+	s.runner.networkMode = "default"
+	s.fullRunHelper(c, `{
     "command": ["echo", "hello world"],
-    "container_image": "d4ab34d3d4f8a72f5c4973051ae69fab+122",
+    "container_image": "`+arvadostest.DockerImage112PDH+`",
     "cwd": ".",
-    "environment": {},
+    "environment": {"foo":"bar","baz":"waz"},
     "mounts": {"/tmp": {"kind": "tmp"} },
     "output_path": "/tmp",
     "priority": 1,
-    "runtime_constraints": {},
-    "state": "Locked"
-}`, nil, 0, func(t *TestDockerClient) {
-		t.logWriter.Write(dockerLog(1, "hello world\n"))
-		t.logWriter.Close()
+    "runtime_constraints": {"vcpus":1,"ram":1000000},
+    "state": "Locked",
+    "output_storage_classes": ["default"]
+}`, nil, 0, func() {
+		c.Check(s.executor.created.Command, DeepEquals, []string{"echo", "hello world"})
+		c.Check(s.executor.created.Image, Equals, "sha256:d8309758b8fe2c81034ffc8a10c36460b77db7bc5e7b448c4e5b684f9d95a678")
+		c.Check(s.executor.created.Env, DeepEquals, map[string]string{"foo": "bar", "baz": "waz"})
+		c.Check(s.executor.created.VCPUs, Equals, 1)
+		c.Check(s.executor.created.RAM, Equals, int64(1000000))
+		c.Check(s.executor.created.NetworkMode, Equals, "default")
+		c.Check(s.executor.created.EnableNetwork, Equals, false)
+		c.Check(s.executor.created.CUDADeviceCount, Equals, 0)
+		fmt.Fprintln(s.executor.created.Stdout, "hello world")
 	})
 
-	c.Check(api.CalledWith("container.exit_code", 0), NotNil)
-	c.Check(api.CalledWith("container.state", "Complete"), NotNil)
-	c.Check(strings.HasSuffix(api.Logs["stdout"].String(), "hello world\n"), Equals, true)
-
+	c.Check(s.api.CalledWith("container.exit_code", 0), NotNil)
+	c.Check(s.api.CalledWith("container.state", "Complete"), NotNil)
+	c.Check(s.api.Logs["stdout"].String(), Matches, ".*hello world\n")
+	c.Check(s.testDispatcherKeepClient.StorageClasses, DeepEquals, []string{"default"})
+	c.Check(s.testContainerKeepClient.StorageClasses, DeepEquals, []string{"default"})
 }
 
 func (s *TestSuite) TestRunAlreadyRunning(c *C) {
 	var ran bool
-	api, _, _ := s.fullRunHelper(c, `{
+	s.fullRunHelper(c, `{
     "command": ["sleep", "3"],
-    "container_image": "d4ab34d3d4f8a72f5c4973051ae69fab+122",
+    "container_image": "`+arvadostest.DockerImage112PDH+`",
     "cwd": ".",
     "environment": {},
     "mounts": {"/tmp": {"kind": "tmp"} },
@@ -877,19 +739,18 @@ func (s *TestSuite) TestRunAlreadyRunning(c *C) {
     "runtime_constraints": {},
     "scheduling_parameters":{"max_run_time": 1},
     "state": "Running"
-}`, nil, 2, func(t *TestDockerClient) {
+}`, nil, 2, func() {
 		ran = true
 	})
-
-	c.Check(api.CalledWith("container.state", "Cancelled"), IsNil)
-	c.Check(api.CalledWith("container.state", "Complete"), IsNil)
+	c.Check(s.api.CalledWith("container.state", "Cancelled"), IsNil)
+	c.Check(s.api.CalledWith("container.state", "Complete"), IsNil)
 	c.Check(ran, Equals, false)
 }
 
 func (s *TestSuite) TestRunTimeExceeded(c *C) {
-	api, _, _ := s.fullRunHelper(c, `{
+	s.fullRunHelper(c, `{
     "command": ["sleep", "3"],
-    "container_image": "d4ab34d3d4f8a72f5c4973051ae69fab+122",
+    "container_image": "`+arvadostest.DockerImage112PDH+`",
     "cwd": ".",
     "environment": {},
     "mounts": {"/tmp": {"kind": "tmp"} },
@@ -898,38 +759,35 @@ func (s *TestSuite) TestRunTimeExceeded(c *C) {
     "runtime_constraints": {},
     "scheduling_parameters":{"max_run_time": 1},
     "state": "Locked"
-}`, nil, 0, func(t *TestDockerClient) {
+}`, nil, 0, func() {
 		time.Sleep(3 * time.Second)
-		t.logWriter.Close()
 	})
 
-	c.Check(api.CalledWith("container.state", "Cancelled"), NotNil)
-	c.Check(api.Logs["crunch-run"].String(), Matches, "(?ms).*maximum run time exceeded.*")
+	c.Check(s.api.CalledWith("container.state", "Cancelled"), NotNil)
+	c.Check(s.api.Logs["crunch-run"].String(), Matches, "(?ms).*maximum run time exceeded.*")
 }
 
 func (s *TestSuite) TestContainerWaitFails(c *C) {
-	api, _, _ := s.fullRunHelper(c, `{
+	s.fullRunHelper(c, `{
     "command": ["sleep", "3"],
-    "container_image": "d4ab34d3d4f8a72f5c4973051ae69fab+122",
+    "container_image": "`+arvadostest.DockerImage112PDH+`",
     "cwd": ".",
     "mounts": {"/tmp": {"kind": "tmp"} },
     "output_path": "/tmp",
     "priority": 1,
     "state": "Locked"
-}`, nil, 0, func(t *TestDockerClient) {
-		t.ctrExited = true
-		time.Sleep(10 * time.Second)
-		t.logWriter.Close()
+}`, nil, 0, func() {
+		s.executor.waitErr = errors.New("Container is not running")
 	})
 
-	c.Check(api.CalledWith("container.state", "Cancelled"), NotNil)
-	c.Check(api.Logs["crunch-run"].String(), Matches, "(?ms).*Container is not running.*")
+	c.Check(s.api.CalledWith("container.state", "Cancelled"), NotNil)
+	c.Check(s.api.Logs["crunch-run"].String(), Matches, "(?ms).*Container is not running.*")
 }
 
 func (s *TestSuite) TestCrunchstat(c *C) {
-	api, _, _ := s.fullRunHelper(c, `{
+	s.fullRunHelper(c, `{
 		"command": ["sleep", "1"],
-		"container_image": "d4ab34d3d4f8a72f5c4973051ae69fab+122",
+		"container_image": "`+arvadostest.DockerImage112PDH+`",
 		"cwd": ".",
 		"environment": {},
 		"mounts": {"/tmp": {"kind": "tmp"} },
@@ -937,33 +795,32 @@ func (s *TestSuite) TestCrunchstat(c *C) {
 		"priority": 1,
 		"runtime_constraints": {},
 		"state": "Locked"
-	}`, nil, 0, func(t *TestDockerClient) {
+	}`, nil, 0, func() {
 		time.Sleep(time.Second)
-		t.logWriter.Close()
 	})
 
-	c.Check(api.CalledWith("container.exit_code", 0), NotNil)
-	c.Check(api.CalledWith("container.state", "Complete"), NotNil)
+	c.Check(s.api.CalledWith("container.exit_code", 0), NotNil)
+	c.Check(s.api.CalledWith("container.state", "Complete"), NotNil)
 
 	// We didn't actually start a container, so crunchstat didn't
 	// find accounting files and therefore didn't log any stats.
 	// It should have logged a "can't find accounting files"
 	// message after one poll interval, though, so we can confirm
 	// it's alive:
-	c.Assert(api.Logs["crunchstat"], NotNil)
-	c.Check(api.Logs["crunchstat"].String(), Matches, `(?ms).*cgroup stats files have not appeared after 100ms.*`)
+	c.Assert(s.api.Logs["crunchstat"], NotNil)
+	c.Check(s.api.Logs["crunchstat"].String(), Matches, `(?ms).*cgroup stats files have not appeared after 100ms.*`)
 
 	// The "files never appeared" log assures us that we called
 	// (*crunchstat.Reporter)Stop(), and that we set it up with
 	// the correct container ID "abcde":
-	c.Check(api.Logs["crunchstat"].String(), Matches, `(?ms).*cgroup stats files never appeared for abcde\n`)
+	c.Check(s.api.Logs["crunchstat"].String(), Matches, `(?ms).*cgroup stats files never appeared for cgroupid\n`)
 }
 
 func (s *TestSuite) TestNodeInfoLog(c *C) {
 	os.Setenv("SLURMD_NODENAME", "compute2")
-	api, _, _ := s.fullRunHelper(c, `{
+	s.fullRunHelper(c, `{
 		"command": ["sleep", "1"],
-		"container_image": "d4ab34d3d4f8a72f5c4973051ae69fab+122",
+		"container_image": "`+arvadostest.DockerImage112PDH+`",
 		"cwd": ".",
 		"environment": {},
 		"mounts": {"/tmp": {"kind": "tmp"} },
@@ -972,22 +829,21 @@ func (s *TestSuite) TestNodeInfoLog(c *C) {
 		"runtime_constraints": {},
 		"state": "Locked"
 	}`, nil, 0,
-		func(t *TestDockerClient) {
+		func() {
 			time.Sleep(time.Second)
-			t.logWriter.Close()
 		})
 
-	c.Check(api.CalledWith("container.exit_code", 0), NotNil)
-	c.Check(api.CalledWith("container.state", "Complete"), NotNil)
+	c.Check(s.api.CalledWith("container.exit_code", 0), NotNil)
+	c.Check(s.api.CalledWith("container.state", "Complete"), NotNil)
 
-	c.Assert(api.Logs["node"], NotNil)
-	json := api.Logs["node"].String()
+	c.Assert(s.api.Logs["node"], NotNil)
+	json := s.api.Logs["node"].String()
 	c.Check(json, Matches, `(?ms).*"uuid": *"zzzzz-7ekkf-2z3mc76g2q73aio".*`)
 	c.Check(json, Matches, `(?ms).*"total_cpu_cores": *16.*`)
 	c.Check(json, Not(Matches), `(?ms).*"info":.*`)
 
-	c.Assert(api.Logs["node-info"], NotNil)
-	json = api.Logs["node-info"].String()
+	c.Assert(s.api.Logs["node-info"], NotNil)
+	json = s.api.Logs["node-info"].String()
 	c.Check(json, Matches, `(?ms).*Host Information.*`)
 	c.Check(json, Matches, `(?ms).*CPU Information.*`)
 	c.Check(json, Matches, `(?ms).*Memory Information.*`)
@@ -995,10 +851,10 @@ func (s *TestSuite) TestNodeInfoLog(c *C) {
 	c.Check(json, Matches, `(?ms).*Disk INodes.*`)
 }
 
-func (s *TestSuite) TestContainerRecordLog(c *C) {
-	api, _, _ := s.fullRunHelper(c, `{
+func (s *TestSuite) TestLogVersionAndRuntime(c *C) {
+	s.fullRunHelper(c, `{
 		"command": ["sleep", "1"],
-		"container_image": "d4ab34d3d4f8a72f5c4973051ae69fab+122",
+		"container_image": "`+arvadostest.DockerImage112PDH+`",
 		"cwd": ".",
 		"environment": {},
 		"mounts": {"/tmp": {"kind": "tmp"} },
@@ -1007,22 +863,41 @@ func (s *TestSuite) TestContainerRecordLog(c *C) {
 		"runtime_constraints": {},
 		"state": "Locked"
 	}`, nil, 0,
-		func(t *TestDockerClient) {
-			time.Sleep(time.Second)
-			t.logWriter.Close()
+		func() {
 		})
 
-	c.Check(api.CalledWith("container.exit_code", 0), NotNil)
-	c.Check(api.CalledWith("container.state", "Complete"), NotNil)
+	c.Assert(s.api.Logs["crunch-run"], NotNil)
+	c.Check(s.api.Logs["crunch-run"].String(), Matches, `(?ms).*crunch-run \S+ \(go\S+\) start.*`)
+	c.Check(s.api.Logs["crunch-run"].String(), Matches, `(?ms).*Executing container 'zzzzz-zzzzz-zzzzzzzzzzzzzzz' using stub runtime.*`)
+}
 
-	c.Assert(api.Logs["container"], NotNil)
-	c.Check(api.Logs["container"].String(), Matches, `(?ms).*container_image.*`)
+func (s *TestSuite) TestContainerRecordLog(c *C) {
+	s.fullRunHelper(c, `{
+		"command": ["sleep", "1"],
+		"container_image": "`+arvadostest.DockerImage112PDH+`",
+		"cwd": ".",
+		"environment": {},
+		"mounts": {"/tmp": {"kind": "tmp"} },
+		"output_path": "/tmp",
+		"priority": 1,
+		"runtime_constraints": {},
+		"state": "Locked"
+	}`, nil, 0,
+		func() {
+			time.Sleep(time.Second)
+		})
+
+	c.Check(s.api.CalledWith("container.exit_code", 0), NotNil)
+	c.Check(s.api.CalledWith("container.state", "Complete"), NotNil)
+
+	c.Assert(s.api.Logs["container"], NotNil)
+	c.Check(s.api.Logs["container"].String(), Matches, `(?ms).*container_image.*`)
 }
 
 func (s *TestSuite) TestFullRunStderr(c *C) {
-	api, _, _ := s.fullRunHelper(c, `{
+	s.fullRunHelper(c, `{
     "command": ["/bin/sh", "-c", "echo hello ; echo world 1>&2 ; exit 1"],
-    "container_image": "d4ab34d3d4f8a72f5c4973051ae69fab+122",
+    "container_image": "`+arvadostest.DockerImage112PDH+`",
     "cwd": ".",
     "environment": {},
     "mounts": {"/tmp": {"kind": "tmp"} },
@@ -1030,25 +905,24 @@ func (s *TestSuite) TestFullRunStderr(c *C) {
     "priority": 1,
     "runtime_constraints": {},
     "state": "Locked"
-}`, nil, 1, func(t *TestDockerClient) {
-		t.logWriter.Write(dockerLog(1, "hello\n"))
-		t.logWriter.Write(dockerLog(2, "world\n"))
-		t.logWriter.Close()
+}`, nil, 1, func() {
+		fmt.Fprintln(s.executor.created.Stdout, "hello")
+		fmt.Fprintln(s.executor.created.Stderr, "world")
 	})
 
-	final := api.CalledWith("container.state", "Complete")
+	final := s.api.CalledWith("container.state", "Complete")
 	c.Assert(final, NotNil)
 	c.Check(final["container"].(arvadosclient.Dict)["exit_code"], Equals, 1)
 	c.Check(final["container"].(arvadosclient.Dict)["log"], NotNil)
 
-	c.Check(strings.HasSuffix(api.Logs["stdout"].String(), "hello\n"), Equals, true)
-	c.Check(strings.HasSuffix(api.Logs["stderr"].String(), "world\n"), Equals, true)
+	c.Check(s.api.Logs["stdout"].String(), Matches, ".*hello\n")
+	c.Check(s.api.Logs["stderr"].String(), Matches, ".*world\n")
 }
 
 func (s *TestSuite) TestFullRunDefaultCwd(c *C) {
-	api, _, _ := s.fullRunHelper(c, `{
+	s.fullRunHelper(c, `{
     "command": ["pwd"],
-    "container_image": "d4ab34d3d4f8a72f5c4973051ae69fab+122",
+    "container_image": "`+arvadostest.DockerImage112PDH+`",
     "cwd": ".",
     "environment": {},
     "mounts": {"/tmp": {"kind": "tmp"} },
@@ -1056,21 +930,20 @@ func (s *TestSuite) TestFullRunDefaultCwd(c *C) {
     "priority": 1,
     "runtime_constraints": {},
     "state": "Locked"
-}`, nil, 0, func(t *TestDockerClient) {
-		t.logWriter.Write(dockerLog(1, t.cwd+"\n"))
-		t.logWriter.Close()
+}`, nil, 0, func() {
+		fmt.Fprintf(s.executor.created.Stdout, "workdir=%q", s.executor.created.WorkingDir)
 	})
 
-	c.Check(api.CalledWith("container.exit_code", 0), NotNil)
-	c.Check(api.CalledWith("container.state", "Complete"), NotNil)
-	c.Log(api.Logs["stdout"])
-	c.Check(strings.HasSuffix(api.Logs["stdout"].String(), "/\n"), Equals, true)
+	c.Check(s.api.CalledWith("container.exit_code", 0), NotNil)
+	c.Check(s.api.CalledWith("container.state", "Complete"), NotNil)
+	c.Log(s.api.Logs["stdout"])
+	c.Check(s.api.Logs["stdout"].String(), Matches, `.*workdir=""\n`)
 }
 
 func (s *TestSuite) TestFullRunSetCwd(c *C) {
-	api, _, _ := s.fullRunHelper(c, `{
+	s.fullRunHelper(c, `{
     "command": ["pwd"],
-    "container_image": "d4ab34d3d4f8a72f5c4973051ae69fab+122",
+    "container_image": "`+arvadostest.DockerImage112PDH+`",
     "cwd": "/bin",
     "environment": {},
     "mounts": {"/tmp": {"kind": "tmp"} },
@@ -1078,41 +951,96 @@ func (s *TestSuite) TestFullRunSetCwd(c *C) {
     "priority": 1,
     "runtime_constraints": {},
     "state": "Locked"
-}`, nil, 0, func(t *TestDockerClient) {
-		t.logWriter.Write(dockerLog(1, t.cwd+"\n"))
-		t.logWriter.Close()
+}`, nil, 0, func() {
+		fmt.Fprintln(s.executor.created.Stdout, s.executor.created.WorkingDir)
 	})
 
-	c.Check(api.CalledWith("container.exit_code", 0), NotNil)
-	c.Check(api.CalledWith("container.state", "Complete"), NotNil)
-	c.Check(strings.HasSuffix(api.Logs["stdout"].String(), "/bin\n"), Equals, true)
+	c.Check(s.api.CalledWith("container.exit_code", 0), NotNil)
+	c.Check(s.api.CalledWith("container.state", "Complete"), NotNil)
+	c.Check(s.api.Logs["stdout"].String(), Matches, ".*/bin\n")
+}
+
+func (s *TestSuite) TestFullRunSetOutputStorageClasses(c *C) {
+	s.fullRunHelper(c, `{
+    "command": ["pwd"],
+    "container_image": "`+arvadostest.DockerImage112PDH+`",
+    "cwd": "/bin",
+    "environment": {},
+    "mounts": {"/tmp": {"kind": "tmp"} },
+    "output_path": "/tmp",
+    "priority": 1,
+    "runtime_constraints": {},
+    "state": "Locked",
+    "output_storage_classes": ["foo", "bar"]
+}`, nil, 0, func() {
+		fmt.Fprintln(s.executor.created.Stdout, s.executor.created.WorkingDir)
+	})
+
+	c.Check(s.api.CalledWith("container.exit_code", 0), NotNil)
+	c.Check(s.api.CalledWith("container.state", "Complete"), NotNil)
+	c.Check(s.api.Logs["stdout"].String(), Matches, ".*/bin\n")
+	c.Check(s.testDispatcherKeepClient.StorageClasses, DeepEquals, []string{"foo", "bar"})
+	c.Check(s.testContainerKeepClient.StorageClasses, DeepEquals, []string{"foo", "bar"})
+}
+
+func (s *TestSuite) TestEnableCUDADeviceCount(c *C) {
+	s.fullRunHelper(c, `{
+    "command": ["pwd"],
+    "container_image": "`+arvadostest.DockerImage112PDH+`",
+    "cwd": "/bin",
+    "environment": {},
+    "mounts": {"/tmp": {"kind": "tmp"} },
+    "output_path": "/tmp",
+    "priority": 1,
+    "runtime_constraints": {"cuda_device_count": 2},
+    "state": "Locked",
+    "output_storage_classes": ["foo", "bar"]
+}`, nil, 0, func() {
+		fmt.Fprintln(s.executor.created.Stdout, "ok")
+	})
+	c.Check(s.executor.created.CUDADeviceCount, Equals, 2)
+}
+
+func (s *TestSuite) TestEnableCUDAHardwareCapability(c *C) {
+	s.fullRunHelper(c, `{
+    "command": ["pwd"],
+    "container_image": "`+arvadostest.DockerImage112PDH+`",
+    "cwd": "/bin",
+    "environment": {},
+    "mounts": {"/tmp": {"kind": "tmp"} },
+    "output_path": "/tmp",
+    "priority": 1,
+    "runtime_constraints": {"cuda_hardware_capability": "foo"},
+    "state": "Locked",
+    "output_storage_classes": ["foo", "bar"]
+}`, nil, 0, func() {
+		fmt.Fprintln(s.executor.created.Stdout, "ok")
+	})
+	c.Check(s.executor.created.CUDADeviceCount, Equals, 1)
 }
 
 func (s *TestSuite) TestStopOnSignal(c *C) {
-	s.testStopContainer(c, func(cr *ContainerRunner) {
-		go func() {
-			for !s.docker.calledWait {
-				time.Sleep(time.Millisecond)
-			}
-			cr.SigChan <- syscall.SIGINT
-		}()
-	})
+	s.executor.runFunc = func() {
+		s.executor.created.Stdout.Write([]byte("foo\n"))
+		s.runner.SigChan <- syscall.SIGINT
+	}
+	s.testStopContainer(c)
 }
 
 func (s *TestSuite) TestStopOnArvMountDeath(c *C) {
-	s.testStopContainer(c, func(cr *ContainerRunner) {
-		cr.ArvMountExit = make(chan error)
-		go func() {
-			cr.ArvMountExit <- exec.Command("true").Run()
-			close(cr.ArvMountExit)
-		}()
-	})
+	s.executor.runFunc = func() {
+		s.executor.created.Stdout.Write([]byte("foo\n"))
+		s.runner.ArvMountExit <- nil
+		close(s.runner.ArvMountExit)
+	}
+	s.runner.ArvMountExit = make(chan error)
+	s.testStopContainer(c)
 }
 
-func (s *TestSuite) testStopContainer(c *C, setup func(cr *ContainerRunner)) {
+func (s *TestSuite) testStopContainer(c *C) {
 	record := `{
     "command": ["/bin/sh", "-c", "echo foo && sleep 30 && echo bar"],
-    "container_image": "d4ab34d3d4f8a72f5c4973051ae69fab+122",
+    "container_image": "` + arvadostest.DockerImage112PDH + `",
     "cwd": ".",
     "environment": {},
     "mounts": {"/tmp": {"kind": "tmp"} },
@@ -1122,31 +1050,17 @@ func (s *TestSuite) testStopContainer(c *C, setup func(cr *ContainerRunner)) {
     "state": "Locked"
 }`
 
-	rec := arvados.Container{}
-	err := json.Unmarshal([]byte(record), &rec)
-	c.Check(err, IsNil)
-
-	s.docker.fn = func(t *TestDockerClient) {
-		<-t.stop
-		t.logWriter.Write(dockerLog(1, "foo\n"))
-		t.logWriter.Close()
-	}
-	s.docker.ImageRemove(nil, hwImageID, dockertypes.ImageRemoveOptions{})
-
-	api := &ArvTestClient{Container: rec}
-	kc := &KeepTestClient{}
-	defer kc.Close()
-	cr, err := NewContainerRunner(s.client, api, kc, s.docker, "zzzzz-zzzzz-zzzzzzzzzzzzzzz")
+	err := json.Unmarshal([]byte(record), &s.api.Container)
 	c.Assert(err, IsNil)
-	cr.RunArvMount = func([]string, string) (*exec.Cmd, error) { return nil, nil }
-	cr.MkArvClient = func(token string) (IArvadosClient, IKeepClient, *arvados.Client, error) {
+
+	s.runner.RunArvMount = func([]string, string) (*exec.Cmd, error) { return nil, nil }
+	s.runner.MkArvClient = func(token string) (IArvadosClient, IKeepClient, *arvados.Client, error) {
 		return &ArvTestClient{}, &KeepTestClient{}, nil, nil
 	}
-	setup(cr)
 
 	done := make(chan error)
 	go func() {
-		done <- cr.Run()
+		done <- s.runner.Run()
 	}()
 	select {
 	case <-time.After(20 * time.Second):
@@ -1155,20 +1069,20 @@ func (s *TestSuite) testStopContainer(c *C, setup func(cr *ContainerRunner)) {
 	case err = <-done:
 		c.Check(err, IsNil)
 	}
-	for k, v := range api.Logs {
+	for k, v := range s.api.Logs {
 		c.Log(k)
-		c.Log(v.String())
+		c.Log(v.String(), "\n")
 	}
 
-	c.Check(api.CalledWith("container.log", nil), NotNil)
-	c.Check(api.CalledWith("container.state", "Cancelled"), NotNil)
-	c.Check(api.Logs["stdout"].String(), Matches, "(?ms).*foo\n$")
+	c.Check(s.api.CalledWith("container.log", nil), NotNil)
+	c.Check(s.api.CalledWith("container.state", "Cancelled"), NotNil)
+	c.Check(s.api.Logs["stdout"].String(), Matches, "(?ms).*foo\n$")
 }
 
 func (s *TestSuite) TestFullRunSetEnv(c *C) {
-	api, _, _ := s.fullRunHelper(c, `{
+	s.fullRunHelper(c, `{
     "command": ["/bin/sh", "-c", "echo $FROBIZ"],
-    "container_image": "d4ab34d3d4f8a72f5c4973051ae69fab+122",
+    "container_image": "`+arvadostest.DockerImage112PDH+`",
     "cwd": "/bin",
     "environment": {"FROBIZ": "bilbo"},
     "mounts": {"/tmp": {"kind": "tmp"} },
@@ -1176,14 +1090,13 @@ func (s *TestSuite) TestFullRunSetEnv(c *C) {
     "priority": 1,
     "runtime_constraints": {},
     "state": "Locked"
-}`, nil, 0, func(t *TestDockerClient) {
-		t.logWriter.Write(dockerLog(1, t.env[0][7:]+"\n"))
-		t.logWriter.Close()
+}`, nil, 0, func() {
+		fmt.Fprintf(s.executor.created.Stdout, "%v", s.executor.created.Env)
 	})
 
-	c.Check(api.CalledWith("container.exit_code", 0), NotNil)
-	c.Check(api.CalledWith("container.state", "Complete"), NotNil)
-	c.Check(strings.HasSuffix(api.Logs["stdout"].String(), "bilbo\n"), Equals, true)
+	c.Check(s.api.CalledWith("container.exit_code", 0), NotNil)
+	c.Check(s.api.CalledWith("container.state", "Complete"), NotNil)
+	c.Check(s.api.Logs["stdout"].String(), Matches, `.*map\[FROBIZ:bilbo\]\n`)
 }
 
 type ArvMountCmdLine struct {
@@ -1206,26 +1119,17 @@ func stubCert(temp string) string {
 }
 
 func (s *TestSuite) TestSetupMounts(c *C) {
-	api := &ArvTestClient{}
-	kc := &KeepTestClient{}
-	defer kc.Close()
-	cr, err := NewContainerRunner(s.client, api, kc, nil, "zzzzz-zzzzz-zzzzzzzzzzzzzzz")
-	c.Assert(err, IsNil)
+	cr := s.runner
 	am := &ArvMountCmdLine{}
 	cr.RunArvMount = am.ArvMountTest
 	cr.ContainerArvClient = &ArvTestClient{}
 	cr.ContainerKeepClient = &KeepTestClient{}
+	cr.Container.OutputStorageClasses = []string{"default"}
 
-	realTemp, err := ioutil.TempDir("", "crunchrun_test1-")
-	c.Assert(err, IsNil)
-	certTemp, err := ioutil.TempDir("", "crunchrun_test2-")
-	c.Assert(err, IsNil)
+	realTemp := c.MkDir()
+	certTemp := c.MkDir()
 	stubCertPath := stubCert(certTemp)
-
 	cr.parentTemp = realTemp
-
-	defer os.RemoveAll(realTemp)
-	defer os.RemoveAll(certTemp)
 
 	i := 0
 	cr.MkTempDir = func(_ string, prefix string) (string, error) {
@@ -1255,12 +1159,12 @@ func (s *TestSuite) TestSetupMounts(c *C) {
 		cr.Container.Mounts["/tmp"] = arvados.Mount{Kind: "tmp"}
 		cr.Container.OutputPath = "/tmp"
 		cr.statInterval = 5 * time.Second
-		err := cr.SetupMounts()
+		bindmounts, err := cr.SetupMounts()
 		c.Check(err, IsNil)
-		c.Check(am.Cmd, DeepEquals, []string{"--foreground", "--allow-other",
-			"--read-write", "--crunchstat-interval=5",
-			"--mount-by-pdh", "by_id", realTemp + "/keep1"})
-		c.Check(cr.Binds, DeepEquals, []string{realTemp + "/tmp2:/tmp"})
+		c.Check(am.Cmd, DeepEquals, []string{"arv-mount", "--foreground",
+			"--read-write", "--storage-classes", "default", "--crunchstat-interval=5",
+			"--mount-by-pdh", "by_id", "--disable-event-listening", "--mount-by-id", "by_uuid", realTemp + "/keep1"})
+		c.Check(bindmounts, DeepEquals, map[string]bindmount{"/tmp": {realTemp + "/tmp2", false}})
 		os.RemoveAll(cr.ArvMountPoint)
 		cr.CleanupDirs()
 		checkEmpty()
@@ -1273,13 +1177,14 @@ func (s *TestSuite) TestSetupMounts(c *C) {
 		cr.Container.Mounts["/out"] = arvados.Mount{Kind: "tmp"}
 		cr.Container.Mounts["/tmp"] = arvados.Mount{Kind: "tmp"}
 		cr.Container.OutputPath = "/out"
+		cr.Container.OutputStorageClasses = []string{"foo", "bar"}
 
-		err := cr.SetupMounts()
+		bindmounts, err := cr.SetupMounts()
 		c.Check(err, IsNil)
-		c.Check(am.Cmd, DeepEquals, []string{"--foreground", "--allow-other",
-			"--read-write", "--crunchstat-interval=5",
-			"--mount-by-pdh", "by_id", realTemp + "/keep1"})
-		c.Check(cr.Binds, DeepEquals, []string{realTemp + "/tmp2:/out", realTemp + "/tmp3:/tmp"})
+		c.Check(am.Cmd, DeepEquals, []string{"arv-mount", "--foreground",
+			"--read-write", "--storage-classes", "foo,bar", "--crunchstat-interval=5",
+			"--mount-by-pdh", "by_id", "--disable-event-listening", "--mount-by-id", "by_uuid", realTemp + "/keep1"})
+		c.Check(bindmounts, DeepEquals, map[string]bindmount{"/out": {realTemp + "/tmp2", false}, "/tmp": {realTemp + "/tmp3", false}})
 		os.RemoveAll(cr.ArvMountPoint)
 		cr.CleanupDirs()
 		checkEmpty()
@@ -1292,13 +1197,14 @@ func (s *TestSuite) TestSetupMounts(c *C) {
 		cr.Container.Mounts["/tmp"] = arvados.Mount{Kind: "tmp"}
 		cr.Container.OutputPath = "/tmp"
 		cr.Container.RuntimeConstraints.API = true
+		cr.Container.OutputStorageClasses = []string{"default"}
 
-		err := cr.SetupMounts()
+		bindmounts, err := cr.SetupMounts()
 		c.Check(err, IsNil)
-		c.Check(am.Cmd, DeepEquals, []string{"--foreground", "--allow-other",
-			"--read-write", "--crunchstat-interval=5",
-			"--mount-by-pdh", "by_id", realTemp + "/keep1"})
-		c.Check(cr.Binds, DeepEquals, []string{realTemp + "/tmp2:/tmp", stubCertPath + ":/etc/arvados/ca-certificates.crt:ro"})
+		c.Check(am.Cmd, DeepEquals, []string{"arv-mount", "--foreground",
+			"--read-write", "--storage-classes", "default", "--crunchstat-interval=5",
+			"--mount-by-pdh", "by_id", "--disable-event-listening", "--mount-by-id", "by_uuid", realTemp + "/keep1"})
+		c.Check(bindmounts, DeepEquals, map[string]bindmount{"/tmp": {realTemp + "/tmp2", false}, "/etc/arvados/ca-certificates.crt": {stubCertPath, true}})
 		os.RemoveAll(cr.ArvMountPoint)
 		cr.CleanupDirs()
 		checkEmpty()
@@ -1316,12 +1222,12 @@ func (s *TestSuite) TestSetupMounts(c *C) {
 
 		os.MkdirAll(realTemp+"/keep1/tmp0", os.ModePerm)
 
-		err := cr.SetupMounts()
+		bindmounts, err := cr.SetupMounts()
 		c.Check(err, IsNil)
-		c.Check(am.Cmd, DeepEquals, []string{"--foreground", "--allow-other",
-			"--read-write", "--crunchstat-interval=5",
-			"--mount-tmp", "tmp0", "--mount-by-pdh", "by_id", realTemp + "/keep1"})
-		c.Check(cr.Binds, DeepEquals, []string{realTemp + "/keep1/tmp0:/keeptmp"})
+		c.Check(am.Cmd, DeepEquals, []string{"arv-mount", "--foreground",
+			"--read-write", "--storage-classes", "default", "--crunchstat-interval=5",
+			"--mount-tmp", "tmp0", "--mount-by-pdh", "by_id", "--disable-event-listening", "--mount-by-id", "by_uuid", realTemp + "/keep1"})
+		c.Check(bindmounts, DeepEquals, map[string]bindmount{"/keeptmp": {realTemp + "/keep1/tmp0", false}})
 		os.RemoveAll(cr.ArvMountPoint)
 		cr.CleanupDirs()
 		checkEmpty()
@@ -1339,14 +1245,15 @@ func (s *TestSuite) TestSetupMounts(c *C) {
 		os.MkdirAll(realTemp+"/keep1/by_id/59389a8f9ee9d399be35462a0f92541c+53", os.ModePerm)
 		os.MkdirAll(realTemp+"/keep1/tmp0", os.ModePerm)
 
-		err := cr.SetupMounts()
+		bindmounts, err := cr.SetupMounts()
 		c.Check(err, IsNil)
-		c.Check(am.Cmd, DeepEquals, []string{"--foreground", "--allow-other",
-			"--read-write", "--crunchstat-interval=5",
-			"--mount-tmp", "tmp0", "--mount-by-pdh", "by_id", realTemp + "/keep1"})
-		sort.StringSlice(cr.Binds).Sort()
-		c.Check(cr.Binds, DeepEquals, []string{realTemp + "/keep1/by_id/59389a8f9ee9d399be35462a0f92541c+53:/keepinp:ro",
-			realTemp + "/keep1/tmp0:/keepout"})
+		c.Check(am.Cmd, DeepEquals, []string{"arv-mount", "--foreground",
+			"--read-write", "--storage-classes", "default", "--crunchstat-interval=5",
+			"--mount-tmp", "tmp0", "--mount-by-pdh", "by_id", "--disable-event-listening", "--mount-by-id", "by_uuid", realTemp + "/keep1"})
+		c.Check(bindmounts, DeepEquals, map[string]bindmount{
+			"/keepinp": {realTemp + "/keep1/by_id/59389a8f9ee9d399be35462a0f92541c+53", true},
+			"/keepout": {realTemp + "/keep1/tmp0", false},
+		})
 		os.RemoveAll(cr.ArvMountPoint)
 		cr.CleanupDirs()
 		checkEmpty()
@@ -1365,14 +1272,15 @@ func (s *TestSuite) TestSetupMounts(c *C) {
 		os.MkdirAll(realTemp+"/keep1/by_id/59389a8f9ee9d399be35462a0f92541c+53", os.ModePerm)
 		os.MkdirAll(realTemp+"/keep1/tmp0", os.ModePerm)
 
-		err := cr.SetupMounts()
+		bindmounts, err := cr.SetupMounts()
 		c.Check(err, IsNil)
-		c.Check(am.Cmd, DeepEquals, []string{"--foreground", "--allow-other",
-			"--read-write", "--crunchstat-interval=5",
-			"--file-cache", "512", "--mount-tmp", "tmp0", "--mount-by-pdh", "by_id", realTemp + "/keep1"})
-		sort.StringSlice(cr.Binds).Sort()
-		c.Check(cr.Binds, DeepEquals, []string{realTemp + "/keep1/by_id/59389a8f9ee9d399be35462a0f92541c+53:/keepinp:ro",
-			realTemp + "/keep1/tmp0:/keepout"})
+		c.Check(am.Cmd, DeepEquals, []string{"arv-mount", "--foreground",
+			"--read-write", "--storage-classes", "default", "--crunchstat-interval=5",
+			"--file-cache", "512", "--mount-tmp", "tmp0", "--mount-by-pdh", "by_id", "--disable-event-listening", "--mount-by-id", "by_uuid", realTemp + "/keep1"})
+		c.Check(bindmounts, DeepEquals, map[string]bindmount{
+			"/keepinp": {realTemp + "/keep1/by_id/59389a8f9ee9d399be35462a0f92541c+53", true},
+			"/keepout": {realTemp + "/keep1/tmp0", false},
+		})
 		os.RemoveAll(cr.ArvMountPoint)
 		cr.CleanupDirs()
 		checkEmpty()
@@ -1391,10 +1299,11 @@ func (s *TestSuite) TestSetupMounts(c *C) {
 		cr.Container.Mounts = map[string]arvados.Mount{
 			"/mnt/test.json": {Kind: "json", Content: test.in},
 		}
-		err := cr.SetupMounts()
+		bindmounts, err := cr.SetupMounts()
 		c.Check(err, IsNil)
-		sort.StringSlice(cr.Binds).Sort()
-		c.Check(cr.Binds, DeepEquals, []string{realTemp + "/json2/mountdata.json:/mnt/test.json:ro"})
+		c.Check(bindmounts, DeepEquals, map[string]bindmount{
+			"/mnt/test.json": {realTemp + "/json2/mountdata.json", true},
+		})
 		content, err := ioutil.ReadFile(realTemp + "/json2/mountdata.json")
 		c.Check(err, IsNil)
 		c.Check(content, DeepEquals, []byte(test.out))
@@ -1416,13 +1325,14 @@ func (s *TestSuite) TestSetupMounts(c *C) {
 		cr.Container.Mounts = map[string]arvados.Mount{
 			"/mnt/test.txt": {Kind: "text", Content: test.in},
 		}
-		err := cr.SetupMounts()
+		bindmounts, err := cr.SetupMounts()
 		if test.out == "error" {
 			c.Check(err.Error(), Equals, "content for mount \"/mnt/test.txt\" must be a string")
 		} else {
 			c.Check(err, IsNil)
-			sort.StringSlice(cr.Binds).Sort()
-			c.Check(cr.Binds, DeepEquals, []string{realTemp + "/text2/mountdata.text:/mnt/test.txt:ro"})
+			c.Check(bindmounts, DeepEquals, map[string]bindmount{
+				"/mnt/test.txt": {realTemp + "/text2/mountdata.text", true},
+			})
 			content, err := ioutil.ReadFile(realTemp + "/text2/mountdata.text")
 			c.Check(err, IsNil)
 			c.Check(content, DeepEquals, []byte(test.out))
@@ -1445,12 +1355,15 @@ func (s *TestSuite) TestSetupMounts(c *C) {
 
 		os.MkdirAll(realTemp+"/keep1/tmp0", os.ModePerm)
 
-		err := cr.SetupMounts()
+		bindmounts, err := cr.SetupMounts()
 		c.Check(err, IsNil)
-		c.Check(am.Cmd, DeepEquals, []string{"--foreground", "--allow-other",
-			"--read-write", "--crunchstat-interval=5",
-			"--file-cache", "512", "--mount-tmp", "tmp0", "--mount-by-pdh", "by_id", realTemp + "/keep1"})
-		c.Check(cr.Binds, DeepEquals, []string{realTemp + "/tmp2:/tmp", realTemp + "/keep1/tmp0:/tmp/foo:ro"})
+		c.Check(am.Cmd, DeepEquals, []string{"arv-mount", "--foreground",
+			"--read-write", "--storage-classes", "default", "--crunchstat-interval=5",
+			"--file-cache", "512", "--mount-tmp", "tmp0", "--mount-by-pdh", "by_id", "--disable-event-listening", "--mount-by-id", "by_uuid", realTemp + "/keep1"})
+		c.Check(bindmounts, DeepEquals, map[string]bindmount{
+			"/tmp":     {realTemp + "/tmp2", false},
+			"/tmp/foo": {realTemp + "/keep1/tmp0", true},
+		})
 		os.RemoveAll(cr.ArvMountPoint)
 		cr.CleanupDirs()
 		checkEmpty()
@@ -1480,7 +1393,7 @@ func (s *TestSuite) TestSetupMounts(c *C) {
 		rf.Write([]byte("bar"))
 		rf.Close()
 
-		err := cr.SetupMounts()
+		_, err := cr.SetupMounts()
 		c.Check(err, IsNil)
 		_, err = os.Stat(cr.HostOutputDir + "/foo")
 		c.Check(err, IsNil)
@@ -1502,7 +1415,7 @@ func (s *TestSuite) TestSetupMounts(c *C) {
 		}
 		cr.Container.OutputPath = "/tmp"
 
-		err := cr.SetupMounts()
+		_, err := cr.SetupMounts()
 		c.Check(err, NotNil)
 		c.Check(err, ErrorMatches, `only mount points of kind 'collection', 'text' or 'json' are supported underneath the output_path.*`)
 		os.RemoveAll(cr.ArvMountPoint)
@@ -1519,7 +1432,7 @@ func (s *TestSuite) TestSetupMounts(c *C) {
 			"stdin": {Kind: "tmp"},
 		}
 
-		err := cr.SetupMounts()
+		_, err := cr.SetupMounts()
 		c.Check(err, NotNil)
 		c.Check(err, ErrorMatches, `unsupported mount kind 'tmp' for stdin.*`)
 		os.RemoveAll(cr.ArvMountPoint)
@@ -1550,34 +1463,24 @@ func (s *TestSuite) TestSetupMounts(c *C) {
 		}
 		cr.Container.OutputPath = "/tmp"
 
-		err := cr.SetupMounts()
+		bindmounts, err := cr.SetupMounts()
 		c.Check(err, IsNil)
 
-		// dirMap[mountpoint] == tmpdir
-		dirMap := make(map[string]string)
-		for _, bind := range cr.Binds {
-			tokens := strings.Split(bind, ":")
-			dirMap[tokens[1]] = tokens[0]
-
-			if cr.Container.Mounts[tokens[1]].Writable {
-				c.Check(len(tokens), Equals, 2)
-			} else {
-				c.Check(len(tokens), Equals, 3)
-				c.Check(tokens[2], Equals, "ro")
-			}
+		for path, mount := range bindmounts {
+			c.Check(mount.ReadOnly, Equals, !cr.Container.Mounts[path].Writable, Commentf("%s %#v", path, mount))
 		}
 
-		data, err := ioutil.ReadFile(dirMap["/tip"] + "/dir1/dir2/file with mode 0644")
+		data, err := ioutil.ReadFile(bindmounts["/tip"].HostPath + "/dir1/dir2/file with mode 0644")
 		c.Check(err, IsNil)
 		c.Check(string(data), Equals, "\000\001\002\003")
-		_, err = ioutil.ReadFile(dirMap["/tip"] + "/file only on testbranch")
+		_, err = ioutil.ReadFile(bindmounts["/tip"].HostPath + "/file only on testbranch")
 		c.Check(err, FitsTypeOf, &os.PathError{})
 		c.Check(os.IsNotExist(err), Equals, true)
 
-		data, err = ioutil.ReadFile(dirMap["/non-tip"] + "/dir1/dir2/file with mode 0644")
+		data, err = ioutil.ReadFile(bindmounts["/non-tip"].HostPath + "/dir1/dir2/file with mode 0644")
 		c.Check(err, IsNil)
 		c.Check(string(data), Equals, "\000\001\002\003")
-		data, err = ioutil.ReadFile(dirMap["/non-tip"] + "/file only on testbranch")
+		data, err = ioutil.ReadFile(bindmounts["/non-tip"].HostPath + "/file only on testbranch")
 		c.Check(err, IsNil)
 		c.Check(string(data), Equals, "testfile\n")
 
@@ -1589,7 +1492,7 @@ func (s *TestSuite) TestSetupMounts(c *C) {
 func (s *TestSuite) TestStdout(c *C) {
 	helperRecord := `{
 		"command": ["/bin/sh", "-c", "echo $FROBIZ"],
-		"container_image": "d4ab34d3d4f8a72f5c4973051ae69fab+122",
+		"container_image": "` + arvadostest.DockerImage112PDH + `",
 		"cwd": "/bin",
 		"environment": {"FROBIZ": "bilbo"},
 		"mounts": {"/tmp": {"kind": "tmp"}, "stdout": {"kind": "file", "path": "/tmp/a/b/c.out"} },
@@ -1599,38 +1502,25 @@ func (s *TestSuite) TestStdout(c *C) {
 		"state": "Locked"
 	}`
 
-	api, cr, _ := s.fullRunHelper(c, helperRecord, nil, 0, func(t *TestDockerClient) {
-		t.logWriter.Write(dockerLog(1, t.env[0][7:]+"\n"))
-		t.logWriter.Close()
+	s.fullRunHelper(c, helperRecord, nil, 0, func() {
+		fmt.Fprintln(s.executor.created.Stdout, s.executor.created.Env["FROBIZ"])
 	})
 
-	c.Check(api.CalledWith("container.exit_code", 0), NotNil)
-	c.Check(api.CalledWith("container.state", "Complete"), NotNil)
-	c.Check(cr.ContainerArvClient.(*ArvTestClient).CalledWith("collection.manifest_text", "./a/b 307372fa8fd5c146b22ae7a45b49bc31+6 0:6:c.out\n"), NotNil)
+	c.Check(s.api.CalledWith("container.exit_code", 0), NotNil)
+	c.Check(s.api.CalledWith("container.state", "Complete"), NotNil)
+	c.Check(s.runner.ContainerArvClient.(*ArvTestClient).CalledWith("collection.manifest_text", "./a/b 307372fa8fd5c146b22ae7a45b49bc31+6 0:6:c.out\n"), NotNil)
 }
 
 // Used by the TestStdoutWithWrongPath*()
-func (s *TestSuite) stdoutErrorRunHelper(c *C, record string, fn func(t *TestDockerClient)) (api *ArvTestClient, cr *ContainerRunner, err error) {
-	rec := arvados.Container{}
-	err = json.Unmarshal([]byte(record), &rec)
-	c.Check(err, IsNil)
-
-	s.docker.fn = fn
-	s.docker.ImageRemove(nil, hwImageID, dockertypes.ImageRemoveOptions{})
-
-	api = &ArvTestClient{Container: rec}
-	kc := &KeepTestClient{}
-	defer kc.Close()
-	cr, err = NewContainerRunner(s.client, api, kc, s.docker, "zzzzz-zzzzz-zzzzzzzzzzzzzzz")
+func (s *TestSuite) stdoutErrorRunHelper(c *C, record string, fn func()) (*ArvTestClient, *ContainerRunner, error) {
+	err := json.Unmarshal([]byte(record), &s.api.Container)
 	c.Assert(err, IsNil)
-	am := &ArvMountCmdLine{}
-	cr.RunArvMount = am.ArvMountTest
-	cr.MkArvClient = func(token string) (IArvadosClient, IKeepClient, *arvados.Client, error) {
-		return &ArvTestClient{}, &KeepTestClient{}, nil, nil
+	s.executor.runFunc = fn
+	s.runner.RunArvMount = (&ArvMountCmdLine{}).ArvMountTest
+	s.runner.MkArvClient = func(token string) (IArvadosClient, IKeepClient, *arvados.Client, error) {
+		return s.api, &KeepTestClient{}, nil, nil
 	}
-
-	err = cr.Run()
-	return
+	return s.api, s.runner, s.runner.Run()
 }
 
 func (s *TestSuite) TestStdoutWithWrongPath(c *C) {
@@ -1638,10 +1528,8 @@ func (s *TestSuite) TestStdoutWithWrongPath(c *C) {
     "mounts": {"/tmp": {"kind": "tmp"}, "stdout": {"kind": "file", "path":"/tmpa.out"} },
     "output_path": "/tmp",
     "state": "Locked"
-}`, func(t *TestDockerClient) {})
-
-	c.Check(err, NotNil)
-	c.Check(strings.Contains(err.Error(), "Stdout path does not start with OutputPath"), Equals, true)
+}`, func() {})
+	c.Check(err, ErrorMatches, ".*Stdout path does not start with OutputPath.*")
 }
 
 func (s *TestSuite) TestStdoutWithWrongKindTmp(c *C) {
@@ -1649,10 +1537,8 @@ func (s *TestSuite) TestStdoutWithWrongKindTmp(c *C) {
     "mounts": {"/tmp": {"kind": "tmp"}, "stdout": {"kind": "tmp", "path":"/tmp/a.out"} },
     "output_path": "/tmp",
     "state": "Locked"
-}`, func(t *TestDockerClient) {})
-
-	c.Check(err, NotNil)
-	c.Check(strings.Contains(err.Error(), "unsupported mount kind 'tmp' for stdout"), Equals, true)
+}`, func() {})
+	c.Check(err, ErrorMatches, ".*unsupported mount kind 'tmp' for stdout.*")
 }
 
 func (s *TestSuite) TestStdoutWithWrongKindCollection(c *C) {
@@ -1660,18 +1546,14 @@ func (s *TestSuite) TestStdoutWithWrongKindCollection(c *C) {
     "mounts": {"/tmp": {"kind": "tmp"}, "stdout": {"kind": "collection", "path":"/tmp/a.out"} },
     "output_path": "/tmp",
     "state": "Locked"
-}`, func(t *TestDockerClient) {})
-
-	c.Check(err, NotNil)
-	c.Check(strings.Contains(err.Error(), "unsupported mount kind 'collection' for stdout"), Equals, true)
+}`, func() {})
+	c.Check(err, ErrorMatches, ".*unsupported mount kind 'collection' for stdout.*")
 }
 
 func (s *TestSuite) TestFullRunWithAPI(c *C) {
-	defer os.Setenv("ARVADOS_API_HOST", os.Getenv("ARVADOS_API_HOST"))
-	os.Setenv("ARVADOS_API_HOST", "test.arvados.org")
-	api, _, _ := s.fullRunHelper(c, `{
-    "command": ["/bin/sh", "-c", "echo $ARVADOS_API_HOST"],
-    "container_image": "d4ab34d3d4f8a72f5c4973051ae69fab+122",
+	s.fullRunHelper(c, `{
+    "command": ["/bin/sh", "-c", "true $ARVADOS_API_HOST"],
+    "container_image": "`+arvadostest.DockerImage112PDH+`",
     "cwd": "/bin",
     "environment": {},
     "mounts": {"/tmp": {"kind": "tmp"} },
@@ -1679,23 +1561,20 @@ func (s *TestSuite) TestFullRunWithAPI(c *C) {
     "priority": 1,
     "runtime_constraints": {"API": true},
     "state": "Locked"
-}`, nil, 0, func(t *TestDockerClient) {
-		t.logWriter.Write(dockerLog(1, t.env[1][17:]+"\n"))
-		t.logWriter.Close()
+}`, nil, 0, func() {
+		c.Check(s.executor.created.Env["ARVADOS_API_HOST"], Equals, os.Getenv("ARVADOS_API_HOST"))
+		s.executor.exit <- 3
 	})
-
-	c.Check(api.CalledWith("container.exit_code", 0), NotNil)
-	c.Check(api.CalledWith("container.state", "Complete"), NotNil)
-	c.Check(strings.HasSuffix(api.Logs["stdout"].String(), "test.arvados.org\n"), Equals, true)
-	c.Check(api.CalledWith("container.output", "d41d8cd98f00b204e9800998ecf8427e+0"), NotNil)
+	c.Check(s.api.CalledWith("container.exit_code", 3), NotNil)
+	c.Check(s.api.CalledWith("container.state", "Complete"), NotNil)
 }
 
 func (s *TestSuite) TestFullRunSetOutput(c *C) {
 	defer os.Setenv("ARVADOS_API_HOST", os.Getenv("ARVADOS_API_HOST"))
 	os.Setenv("ARVADOS_API_HOST", "test.arvados.org")
-	api, _, _ := s.fullRunHelper(c, `{
+	s.fullRunHelper(c, `{
     "command": ["/bin/sh", "-c", "echo $ARVADOS_API_HOST"],
-    "container_image": "d4ab34d3d4f8a72f5c4973051ae69fab+122",
+    "container_image": "`+arvadostest.DockerImage112PDH+`",
     "cwd": "/bin",
     "environment": {},
     "mounts": {"/tmp": {"kind": "tmp"} },
@@ -1703,20 +1582,50 @@ func (s *TestSuite) TestFullRunSetOutput(c *C) {
     "priority": 1,
     "runtime_constraints": {"API": true},
     "state": "Locked"
-}`, nil, 0, func(t *TestDockerClient) {
-		t.api.Container.Output = "d4ab34d3d4f8a72f5c4973051ae69fab+122"
-		t.logWriter.Close()
+}`, nil, 0, func() {
+		s.api.Container.Output = arvadostest.DockerImage112PDH
 	})
 
-	c.Check(api.CalledWith("container.exit_code", 0), NotNil)
-	c.Check(api.CalledWith("container.state", "Complete"), NotNil)
-	c.Check(api.CalledWith("container.output", "d4ab34d3d4f8a72f5c4973051ae69fab+122"), NotNil)
+	c.Check(s.api.CalledWith("container.exit_code", 0), NotNil)
+	c.Check(s.api.CalledWith("container.state", "Complete"), NotNil)
+	c.Check(s.api.CalledWith("container.output", arvadostest.DockerImage112PDH), NotNil)
+}
+
+func (s *TestSuite) TestArvMountRuntimeStatusWarning(c *C) {
+	s.runner.RunArvMount = func([]string, string) (*exec.Cmd, error) {
+		os.Mkdir(s.runner.ArvMountPoint+"/by_id", 0666)
+		ioutil.WriteFile(s.runner.ArvMountPoint+"/by_id/README", nil, 0666)
+		return s.runner.ArvMountCmd([]string{"bash", "-c", "echo >&2 Test: Keep write error: I am a teapot; sleep 3"}, "")
+	}
+	s.executor.runFunc = func() {
+		time.Sleep(time.Second)
+		s.executor.exit <- 0
+	}
+	record := `{
+    "command": ["sleep", "1"],
+    "container_image": "` + arvadostest.DockerImage112PDH + `",
+    "cwd": "/bin",
+    "environment": {},
+    "mounts": {"/tmp": {"kind": "tmp"} },
+    "output_path": "/tmp",
+    "priority": 1,
+    "runtime_constraints": {"API": true},
+    "state": "Locked"
+}`
+	err := json.Unmarshal([]byte(record), &s.api.Container)
+	c.Assert(err, IsNil)
+	err = s.runner.Run()
+	c.Assert(err, IsNil)
+	c.Check(s.api.CalledWith("container.exit_code", 0), NotNil)
+	c.Check(s.api.CalledWith("container.runtime_status.warning", "arv-mount: Keep write error"), NotNil)
+	c.Check(s.api.CalledWith("container.runtime_status.warningDetail", "Test: Keep write error: I am a teapot"), NotNil)
+	c.Check(s.api.CalledWith("container.state", "Complete"), NotNil)
 }
 
 func (s *TestSuite) TestStdoutWithExcludeFromOutputMountPointUnderOutputDir(c *C) {
 	helperRecord := `{
 		"command": ["/bin/sh", "-c", "echo $FROBIZ"],
-		"container_image": "d4ab34d3d4f8a72f5c4973051ae69fab+122",
+		"container_image": "` + arvadostest.DockerImage112PDH + `",
 		"cwd": "/bin",
 		"environment": {"FROBIZ": "bilbo"},
 		"mounts": {
@@ -1735,20 +1644,19 @@ func (s *TestSuite) TestStdoutWithExcludeFromOutputMountPointUnderOutputDir(c *C
 
 	extraMounts := []string{"a3e8f74c6f101eae01fa08bfb4e49b3a+54"}
 
-	api, cr, _ := s.fullRunHelper(c, helperRecord, extraMounts, 0, func(t *TestDockerClient) {
-		t.logWriter.Write(dockerLog(1, t.env[0][7:]+"\n"))
-		t.logWriter.Close()
+	s.fullRunHelper(c, helperRecord, extraMounts, 0, func() {
+		fmt.Fprintln(s.executor.created.Stdout, s.executor.created.Env["FROBIZ"])
 	})
 
-	c.Check(api.CalledWith("container.exit_code", 0), NotNil)
-	c.Check(api.CalledWith("container.state", "Complete"), NotNil)
-	c.Check(cr.ContainerArvClient.(*ArvTestClient).CalledWith("collection.manifest_text", "./a/b 307372fa8fd5c146b22ae7a45b49bc31+6 0:6:c.out\n"), NotNil)
+	c.Check(s.api.CalledWith("container.exit_code", 0), NotNil)
+	c.Check(s.api.CalledWith("container.state", "Complete"), NotNil)
+	c.Check(s.runner.ContainerArvClient.(*ArvTestClient).CalledWith("collection.manifest_text", "./a/b 307372fa8fd5c146b22ae7a45b49bc31+6 0:6:c.out\n"), NotNil)
 }
 
 func (s *TestSuite) TestStdoutWithMultipleMountPointsUnderOutputDir(c *C) {
 	helperRecord := `{
 		"command": ["/bin/sh", "-c", "echo $FROBIZ"],
-		"container_image": "d4ab34d3d4f8a72f5c4973051ae69fab+122",
+		"container_image": "` + arvadostest.DockerImage112PDH + `",
 		"cwd": "/bin",
 		"environment": {"FROBIZ": "bilbo"},
 		"mounts": {
@@ -1771,16 +1679,16 @@ func (s *TestSuite) TestStdoutWithMultipleMountPointsUnderOutputDir(c *C) {
 		"a0def87f80dd594d4675809e83bd4f15+367/subdir1/subdir2/file2_in_subdir2.txt",
 	}
 
-	api, runner, realtemp := s.fullRunHelper(c, helperRecord, extraMounts, 0, func(t *TestDockerClient) {
-		t.logWriter.Write(dockerLog(1, t.env[0][7:]+"\n"))
-		t.logWriter.Close()
+	api, _, realtemp := s.fullRunHelper(c, helperRecord, extraMounts, 0, func() {
+		fmt.Fprintln(s.executor.created.Stdout, s.executor.created.Env["FROBIZ"])
 	})
 
-	c.Check(runner.Binds, DeepEquals, []string{realtemp + "/tmp2:/tmp",
-		realtemp + "/keep1/by_id/a0def87f80dd594d4675809e83bd4f15+367/file2_in_main.txt:/tmp/foo/bar:ro",
-		realtemp + "/keep1/by_id/a0def87f80dd594d4675809e83bd4f15+367/subdir1/subdir2/file2_in_subdir2.txt:/tmp/foo/baz/sub2file2:ro",
-		realtemp + "/keep1/by_id/a0def87f80dd594d4675809e83bd4f15+367/subdir1:/tmp/foo/sub1:ro",
-		realtemp + "/keep1/by_id/a0def87f80dd594d4675809e83bd4f15+367/subdir1/file2_in_subdir1.txt:/tmp/foo/sub1file2:ro",
+	c.Check(s.executor.created.BindMounts, DeepEquals, map[string]bindmount{
+		"/tmp":                   {realtemp + "/tmp1", false},
+		"/tmp/foo/bar":           {s.keepmount + "/by_id/a0def87f80dd594d4675809e83bd4f15+367/file2_in_main.txt", true},
+		"/tmp/foo/baz/sub2file2": {s.keepmount + "/by_id/a0def87f80dd594d4675809e83bd4f15+367/subdir1/subdir2/file2_in_subdir2.txt", true},
+		"/tmp/foo/sub1":          {s.keepmount + "/by_id/a0def87f80dd594d4675809e83bd4f15+367/subdir1", true},
+		"/tmp/foo/sub1file2":     {s.keepmount + "/by_id/a0def87f80dd594d4675809e83bd4f15+367/subdir1/file2_in_subdir1.txt", true},
 	})
 
 	c.Check(api.CalledWith("container.exit_code", 0), NotNil)
@@ -1806,7 +1714,7 @@ func (s *TestSuite) TestStdoutWithMultipleMountPointsUnderOutputDir(c *C) {
 func (s *TestSuite) TestStdoutWithMountPointsUnderOutputDirDenormalizedManifest(c *C) {
 	helperRecord := `{
 		"command": ["/bin/sh", "-c", "echo $FROBIZ"],
-		"container_image": "d4ab34d3d4f8a72f5c4973051ae69fab+122",
+		"container_image": "` + arvadostest.DockerImage112PDH + `",
 		"cwd": "/bin",
 		"environment": {"FROBIZ": "bilbo"},
 		"mounts": {
@@ -1824,14 +1732,13 @@ func (s *TestSuite) TestStdoutWithMountPointsUnderOutputDirDenormalizedManifest(
 		"b0def87f80dd594d4675809e83bd4f15+367/subdir1/file2_in_subdir1.txt",
 	}
 
-	api, _, _ := s.fullRunHelper(c, helperRecord, extraMounts, 0, func(t *TestDockerClient) {
-		t.logWriter.Write(dockerLog(1, t.env[0][7:]+"\n"))
-		t.logWriter.Close()
+	s.fullRunHelper(c, helperRecord, extraMounts, 0, func() {
+		fmt.Fprintln(s.executor.created.Stdout, s.executor.created.Env["FROBIZ"])
 	})
 
-	c.Check(api.CalledWith("container.exit_code", 0), NotNil)
-	c.Check(api.CalledWith("container.state", "Complete"), NotNil)
-	for _, v := range api.Content {
+	c.Check(s.api.CalledWith("container.exit_code", 0), NotNil)
+	c.Check(s.api.CalledWith("container.state", "Complete"), NotNil)
+	for _, v := range s.api.Content {
 		if v["collection"] != nil {
 			collection := v["collection"].(arvadosclient.Dict)
 			if strings.Index(collection["name"].(string), "output") == 0 {
@@ -1848,7 +1755,7 @@ func (s *TestSuite) TestStdoutWithMountPointsUnderOutputDirDenormalizedManifest(
 func (s *TestSuite) TestOutputError(c *C) {
 	helperRecord := `{
 		"command": ["/bin/sh", "-c", "echo $FROBIZ"],
-		"container_image": "d4ab34d3d4f8a72f5c4973051ae69fab+122",
+		"container_image": "` + arvadostest.DockerImage112PDH + `",
 		"cwd": "/bin",
 		"environment": {"FROBIZ": "bilbo"},
 		"mounts": {
@@ -1859,21 +1766,17 @@ func (s *TestSuite) TestOutputError(c *C) {
 		"runtime_constraints": {},
 		"state": "Locked"
 	}`
-
-	extraMounts := []string{}
-
-	api, _, _ := s.fullRunHelper(c, helperRecord, extraMounts, 0, func(t *TestDockerClient) {
-		os.Symlink("/etc/hosts", t.realTemp+"/tmp2/baz")
-		t.logWriter.Close()
+	s.fullRunHelper(c, helperRecord, nil, 0, func() {
+		os.Symlink("/etc/hosts", s.runner.HostOutputDir+"/baz")
 	})
 
-	c.Check(api.CalledWith("container.state", "Cancelled"), NotNil)
+	c.Check(s.api.CalledWith("container.state", "Cancelled"), NotNil)
 }
 
 func (s *TestSuite) TestStdinCollectionMountPoint(c *C) {
 	helperRecord := `{
 		"command": ["/bin/sh", "-c", "echo $FROBIZ"],
-		"container_image": "d4ab34d3d4f8a72f5c4973051ae69fab+122",
+		"container_image": "` + arvadostest.DockerImage112PDH + `",
 		"cwd": "/bin",
 		"environment": {"FROBIZ": "bilbo"},
 		"mounts": {
@@ -1891,9 +1794,8 @@ func (s *TestSuite) TestStdinCollectionMountPoint(c *C) {
 		"b0def87f80dd594d4675809e83bd4f15+367/file1_in_main.txt",
 	}
 
-	api, _, _ := s.fullRunHelper(c, helperRecord, extraMounts, 0, func(t *TestDockerClient) {
-		t.logWriter.Write(dockerLog(1, t.env[0][7:]+"\n"))
-		t.logWriter.Close()
+	api, _, _ := s.fullRunHelper(c, helperRecord, extraMounts, 0, func() {
+		fmt.Fprintln(s.executor.created.Stdout, s.executor.created.Env["FROBIZ"])
 	})
 
 	c.Check(api.CalledWith("container.exit_code", 0), NotNil)
@@ -1913,7 +1815,7 @@ func (s *TestSuite) TestStdinCollectionMountPoint(c *C) {
 func (s *TestSuite) TestStdinJsonMountPoint(c *C) {
 	helperRecord := `{
 		"command": ["/bin/sh", "-c", "echo $FROBIZ"],
-		"container_image": "d4ab34d3d4f8a72f5c4973051ae69fab+122",
+		"container_image": "` + arvadostest.DockerImage112PDH + `",
 		"cwd": "/bin",
 		"environment": {"FROBIZ": "bilbo"},
 		"mounts": {
@@ -1927,9 +1829,8 @@ func (s *TestSuite) TestStdinJsonMountPoint(c *C) {
 		"state": "Locked"
 	}`
 
-	api, _, _ := s.fullRunHelper(c, helperRecord, nil, 0, func(t *TestDockerClient) {
-		t.logWriter.Write(dockerLog(1, t.env[0][7:]+"\n"))
-		t.logWriter.Close()
+	api, _, _ := s.fullRunHelper(c, helperRecord, nil, 0, func() {
+		fmt.Fprintln(s.executor.created.Stdout, s.executor.created.Env["FROBIZ"])
 	})
 
 	c.Check(api.CalledWith("container.exit_code", 0), NotNil)
@@ -1949,7 +1850,7 @@ func (s *TestSuite) TestStdinJsonMountPoint(c *C) {
 func (s *TestSuite) TestStderrMount(c *C) {
 	api, cr, _ := s.fullRunHelper(c, `{
     "command": ["/bin/sh", "-c", "echo hello;exit 1"],
-    "container_image": "d4ab34d3d4f8a72f5c4973051ae69fab+122",
+    "container_image": "`+arvadostest.DockerImage112PDH+`",
     "cwd": ".",
     "environment": {},
     "mounts": {"/tmp": {"kind": "tmp"},
@@ -1959,10 +1860,9 @@ func (s *TestSuite) TestStderrMount(c *C) {
     "priority": 1,
     "runtime_constraints": {},
     "state": "Locked"
-}`, nil, 1, func(t *TestDockerClient) {
-		t.logWriter.Write(dockerLog(1, "hello\n"))
-		t.logWriter.Write(dockerLog(2, "oops\n"))
-		t.logWriter.Close()
+}`, nil, 1, func() {
+		fmt.Fprintln(s.executor.created.Stdout, "hello")
+		fmt.Fprintln(s.executor.created.Stderr, "oops")
 	})
 
 	final := api.CalledWith("container.state", "Complete")
@@ -1974,35 +1874,37 @@ func (s *TestSuite) TestStderrMount(c *C) {
 }
 
 func (s *TestSuite) TestNumberRoundTrip(c *C) {
-	kc := &KeepTestClient{}
-	defer kc.Close()
-	cr, err := NewContainerRunner(s.client, &ArvTestClient{callraw: true}, kc, nil, "zzzzz-zzzzz-zzzzzzzzzzzzzzz")
+	s.api.callraw = true
+	err := s.runner.fetchContainerRecord()
 	c.Assert(err, IsNil)
-	cr.fetchContainerRecord()
-
-	jsondata, err := json.Marshal(cr.Container.Mounts["/json"].Content)
-
+	jsondata, err := json.Marshal(s.runner.Container.Mounts["/json"].Content)
+	c.Logf("%#v", s.runner.Container)
 	c.Check(err, IsNil)
 	c.Check(string(jsondata), Equals, `{"number":123456789123456789}`)
 }
 
-func (s *TestSuite) TestFullBrokenDocker1(c *C) {
-	tf, err := ioutil.TempFile("", "brokenNodeHook-")
-	c.Assert(err, IsNil)
-	defer os.Remove(tf.Name())
-
-	tf.Write([]byte(`#!/bin/sh
-exec echo killme
-`))
-	tf.Close()
-	os.Chmod(tf.Name(), 0700)
-
-	ech := tf.Name()
-	brokenNodeHook = &ech
-
-	api, _, _ := s.fullRunHelper(c, `{
+func (s *TestSuite) TestFullBrokenDocker(c *C) {
+	nextState := ""
+	for _, setup := range []func(){
+		func() {
+			c.Log("// waitErr = ocl runtime error")
+			s.executor.waitErr = errors.New(`Error response from daemon: oci runtime error: container_linux.go:247: starting container process caused "process_linux.go:359: container init caused \"rootfs_linux.go:54: mounting \\\"/tmp/keep453790790/by_id/99999999999999999999999999999999+99999/myGenome\\\" to rootfs \\\"/tmp/docker/overlay2/9999999999999999999999999999999999999999999999999999999999999999/merged\\\" at \\\"/tmp/docker/overlay2/9999999999999999999999999999999999999999999999999999999999999999/merged/keep/99999999999999999999999999999999+99999/myGenome\\\" caused \\\"no such file or directory\\\"\""`)
+			nextState = "Cancelled"
+		},
+		func() {
+			c.Log("// loadErr = cannot connect")
+			s.executor.loadErr = errors.New("Cannot connect to the Docker daemon at unix:///var/run/docker.sock. Is the docker daemon running?")
+			*brokenNodeHook = c.MkDir() + "/broken-node-hook"
+			err := ioutil.WriteFile(*brokenNodeHook, []byte("#!/bin/sh\nexec echo killme\n"), 0700)
+			c.Assert(err, IsNil)
+			nextState = "Queued"
+		},
+	} {
+		s.SetUpTest(c)
+		setup()
+		s.fullRunHelper(c, `{
     "command": ["echo", "hello world"],
-    "container_image": "d4ab34d3d4f8a72f5c4973051ae69fab+122",
+    "container_image": "`+arvadostest.DockerImage112PDH+`",
     "cwd": ".",
     "environment": {},
     "mounts": {"/tmp": {"kind": "tmp"} },
@@ -2010,25 +1912,30 @@ exec echo killme
     "priority": 1,
     "runtime_constraints": {},
     "state": "Locked"
-}`, nil, 2, func(t *TestDockerClient) {
-		t.logWriter.Write(dockerLog(1, "hello world\n"))
-		t.logWriter.Close()
-	})
-
-	c.Check(api.CalledWith("container.state", "Queued"), NotNil)
-	c.Check(api.Logs["crunch-run"].String(), Matches, "(?ms).*unable to run containers.*")
-	c.Check(api.Logs["crunch-run"].String(), Matches, "(?ms).*Running broken node hook.*")
-	c.Check(api.Logs["crunch-run"].String(), Matches, "(?ms).*killme.*")
-
+}`, nil, 0, func() {})
+		c.Check(s.api.CalledWith("container.state", nextState), NotNil)
+		c.Check(s.api.Logs["crunch-run"].String(), Matches, "(?ms).*unable to run containers.*")
+		if *brokenNodeHook != "" {
+			c.Check(s.api.Logs["crunch-run"].String(), Matches, "(?ms).*Running broken node hook.*")
+			c.Check(s.api.Logs["crunch-run"].String(), Matches, "(?ms).*killme.*")
+			c.Check(s.api.Logs["crunch-run"].String(), Not(Matches), "(?ms).*Writing /var/lock/crunch-run-broken to mark node as broken.*")
+		} else {
+			c.Check(s.api.Logs["crunch-run"].String(), Matches, "(?ms).*Writing /var/lock/crunch-run-broken to mark node as broken.*")
+		}
+	}
 }
 
-func (s *TestSuite) TestFullBrokenDocker2(c *C) {
-	ech := ""
-	brokenNodeHook = &ech
-
-	api, _, _ := s.fullRunHelper(c, `{
+func (s *TestSuite) TestBadCommand(c *C) {
+	for _, startError := range []string{
+		`panic: standard_init_linux.go:175: exec user process caused "no such file or directory"`,
+		`Error response from daemon: Cannot start container 41f26cbc43bcc1280f4323efb1830a394ba8660c9d1c2b564ba42bf7f7694845: [8] System error: no such file or directory`,
+		`Error response from daemon: Cannot start container 58099cd76c834f3dc2a4fb76c8028f049ae6d4fdf0ec373e1f2cfea030670c2d: [8] System error: exec: "foobar": executable file not found in $PATH`,
+	} {
+		s.SetUpTest(c)
+		s.executor.startErr = errors.New(startError)
+		s.fullRunHelper(c, `{
     "command": ["echo", "hello world"],
-    "container_image": "d4ab34d3d4f8a72f5c4973051ae69fab+122",
+    "container_image": "`+arvadostest.DockerImage112PDH+`",
     "cwd": ".",
     "environment": {},
     "mounts": {"/tmp": {"kind": "tmp"} },
@@ -2036,113 +1943,16 @@ func (s *TestSuite) TestFullBrokenDocker2(c *C) {
     "priority": 1,
     "runtime_constraints": {},
     "state": "Locked"
-}`, nil, 2, func(t *TestDockerClient) {
-		t.logWriter.Write(dockerLog(1, "hello world\n"))
-		t.logWriter.Close()
-	})
-
-	c.Check(api.CalledWith("container.state", "Queued"), NotNil)
-	c.Check(api.Logs["crunch-run"].String(), Matches, "(?ms).*unable to run containers.*")
-	c.Check(api.Logs["crunch-run"].String(), Matches, "(?ms).*Writing /var/lock/crunch-run-broken to mark node as broken.*")
-}
-
-func (s *TestSuite) TestFullBrokenDocker3(c *C) {
-	ech := ""
-	brokenNodeHook = &ech
-
-	api, _, _ := s.fullRunHelper(c, `{
-    "command": ["echo", "hello world"],
-    "container_image": "d4ab34d3d4f8a72f5c4973051ae69fab+122",
-    "cwd": ".",
-    "environment": {},
-    "mounts": {"/tmp": {"kind": "tmp"} },
-    "output_path": "/tmp",
-    "priority": 1,
-    "runtime_constraints": {},
-    "state": "Locked"
-}`, nil, 3, func(t *TestDockerClient) {
-		t.logWriter.Write(dockerLog(1, "hello world\n"))
-		t.logWriter.Close()
-	})
-
-	c.Check(api.CalledWith("container.state", "Cancelled"), NotNil)
-	c.Check(api.Logs["crunch-run"].String(), Matches, "(?ms).*unable to run containers.*")
-}
-
-func (s *TestSuite) TestBadCommand1(c *C) {
-	ech := ""
-	brokenNodeHook = &ech
-
-	api, _, _ := s.fullRunHelper(c, `{
-    "command": ["echo", "hello world"],
-    "container_image": "d4ab34d3d4f8a72f5c4973051ae69fab+122",
-    "cwd": ".",
-    "environment": {},
-    "mounts": {"/tmp": {"kind": "tmp"} },
-    "output_path": "/tmp",
-    "priority": 1,
-    "runtime_constraints": {},
-    "state": "Locked"
-}`, nil, 4, func(t *TestDockerClient) {
-		t.logWriter.Write(dockerLog(1, "hello world\n"))
-		t.logWriter.Close()
-	})
-
-	c.Check(api.CalledWith("container.state", "Cancelled"), NotNil)
-	c.Check(api.Logs["crunch-run"].String(), Matches, "(?ms).*Possible causes:.*is missing.*")
-}
-
-func (s *TestSuite) TestBadCommand2(c *C) {
-	ech := ""
-	brokenNodeHook = &ech
-
-	api, _, _ := s.fullRunHelper(c, `{
-    "command": ["echo", "hello world"],
-    "container_image": "d4ab34d3d4f8a72f5c4973051ae69fab+122",
-    "cwd": ".",
-    "environment": {},
-    "mounts": {"/tmp": {"kind": "tmp"} },
-    "output_path": "/tmp",
-    "priority": 1,
-    "runtime_constraints": {},
-    "state": "Locked"
-}`, nil, 5, func(t *TestDockerClient) {
-		t.logWriter.Write(dockerLog(1, "hello world\n"))
-		t.logWriter.Close()
-	})
-
-	c.Check(api.CalledWith("container.state", "Cancelled"), NotNil)
-	c.Check(api.Logs["crunch-run"].String(), Matches, "(?ms).*Possible causes:.*is missing.*")
-}
-
-func (s *TestSuite) TestBadCommand3(c *C) {
-	ech := ""
-	brokenNodeHook = &ech
-
-	api, _, _ := s.fullRunHelper(c, `{
-    "command": ["echo", "hello world"],
-    "container_image": "d4ab34d3d4f8a72f5c4973051ae69fab+122",
-    "cwd": ".",
-    "environment": {},
-    "mounts": {"/tmp": {"kind": "tmp"} },
-    "output_path": "/tmp",
-    "priority": 1,
-    "runtime_constraints": {},
-    "state": "Locked"
-}`, nil, 6, func(t *TestDockerClient) {
-		t.logWriter.Write(dockerLog(1, "hello world\n"))
-		t.logWriter.Close()
-	})
-
-	c.Check(api.CalledWith("container.state", "Cancelled"), NotNil)
-	c.Check(api.Logs["crunch-run"].String(), Matches, "(?ms).*Possible causes:.*is missing.*")
+}`, nil, 0, func() {})
+		c.Check(s.api.CalledWith("container.state", "Cancelled"), NotNil)
+		c.Check(s.api.Logs["crunch-run"].String(), Matches, "(?ms).*Possible causes:.*is missing.*")
+	}
 }
 
 func (s *TestSuite) TestSecretTextMountPoint(c *C) {
-	// under normal mounts, gets captured in output, oops
 	helperRecord := `{
 		"command": ["true"],
-		"container_image": "d4ab34d3d4f8a72f5c4973051ae69fab+122",
+		"container_image": "` + arvadostest.DockerImage112PDH + `",
 		"cwd": "/bin",
 		"mounts": {
                     "/tmp": {"kind": "tmp"},
@@ -2156,22 +1966,21 @@ func (s *TestSuite) TestSecretTextMountPoint(c *C) {
 		"state": "Locked"
 	}`
 
-	api, cr, _ := s.fullRunHelper(c, helperRecord, nil, 0, func(t *TestDockerClient) {
-		content, err := ioutil.ReadFile(t.realTemp + "/tmp2/secret.conf")
+	s.fullRunHelper(c, helperRecord, nil, 0, func() {
+		content, err := ioutil.ReadFile(s.runner.HostOutputDir + "/secret.conf")
 		c.Check(err, IsNil)
-		c.Check(content, DeepEquals, []byte("mypassword"))
-		t.logWriter.Close()
+		c.Check(string(content), Equals, "mypassword")
 	})
 
-	c.Check(api.CalledWith("container.exit_code", 0), NotNil)
-	c.Check(api.CalledWith("container.state", "Complete"), NotNil)
-	c.Check(cr.ContainerArvClient.(*ArvTestClient).CalledWith("collection.manifest_text", ". 34819d7beeabb9260a5c854bc85b3e44+10 0:10:secret.conf\n"), NotNil)
-	c.Check(cr.ContainerArvClient.(*ArvTestClient).CalledWith("collection.manifest_text", ""), IsNil)
+	c.Check(s.api.CalledWith("container.exit_code", 0), NotNil)
+	c.Check(s.api.CalledWith("container.state", "Complete"), NotNil)
+	c.Check(s.runner.ContainerArvClient.(*ArvTestClient).CalledWith("collection.manifest_text", ". 34819d7beeabb9260a5c854bc85b3e44+10 0:10:secret.conf\n"), NotNil)
+	c.Check(s.runner.ContainerArvClient.(*ArvTestClient).CalledWith("collection.manifest_text", ""), IsNil)
 
 	// under secret mounts, not captured in output
 	helperRecord = `{
 		"command": ["true"],
-		"container_image": "d4ab34d3d4f8a72f5c4973051ae69fab+122",
+		"container_image": "` + arvadostest.DockerImage112PDH + `",
 		"cwd": "/bin",
 		"mounts": {
                     "/tmp": {"kind": "tmp"}
@@ -2185,17 +1994,17 @@ func (s *TestSuite) TestSecretTextMountPoint(c *C) {
 		"state": "Locked"
 	}`
 
-	api, cr, _ = s.fullRunHelper(c, helperRecord, nil, 0, func(t *TestDockerClient) {
-		content, err := ioutil.ReadFile(t.realTemp + "/tmp2/secret.conf")
+	s.SetUpTest(c)
+	s.fullRunHelper(c, helperRecord, nil, 0, func() {
+		content, err := ioutil.ReadFile(s.runner.HostOutputDir + "/secret.conf")
 		c.Check(err, IsNil)
-		c.Check(content, DeepEquals, []byte("mypassword"))
-		t.logWriter.Close()
+		c.Check(string(content), Equals, "mypassword")
 	})
 
-	c.Check(api.CalledWith("container.exit_code", 0), NotNil)
-	c.Check(api.CalledWith("container.state", "Complete"), NotNil)
-	c.Check(cr.ContainerArvClient.(*ArvTestClient).CalledWith("collection.manifest_text", ". 34819d7beeabb9260a5c854bc85b3e44+10 0:10:secret.conf\n"), IsNil)
-	c.Check(cr.ContainerArvClient.(*ArvTestClient).CalledWith("collection.manifest_text", ""), NotNil)
+	c.Check(s.api.CalledWith("container.exit_code", 0), NotNil)
+	c.Check(s.api.CalledWith("container.state", "Complete"), NotNil)
+	c.Check(s.runner.ContainerArvClient.(*ArvTestClient).CalledWith("collection.manifest_text", ". 34819d7beeabb9260a5c854bc85b3e44+10 0:10:secret.conf\n"), IsNil)
+	c.Check(s.runner.ContainerArvClient.(*ArvTestClient).CalledWith("collection.manifest_text", ""), NotNil)
 }
 
 type FakeProcess struct {

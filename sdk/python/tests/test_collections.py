@@ -9,11 +9,9 @@ import arvados
 import copy
 import mock
 import os
-import pprint
 import random
 import re
 import sys
-import tempfile
 import datetime
 import ciso8601
 import time
@@ -910,6 +908,37 @@ class NewCollectionTestCase(unittest.TestCase, CollectionTestMixin):
         self.assertEqual(c1.manifest_text, c2.manifest_text)
         self.assertNotEqual(c1.replication_desired, c2.replication_desired)
 
+    def test_storage_classes_desired_kept_on_load(self):
+        m = '. 781e5e245d69b566979b86e28d23f2c7+10 0:10:count1.txt 0:10:count2.txt\n'
+        c1 = Collection(m, storage_classes_desired=['archival'])
+        c1.save_new()
+        loc = c1.manifest_locator()
+        c2 = Collection(loc)
+        self.assertEqual(c1.manifest_text, c2.manifest_text)
+        self.assertEqual(c1.storage_classes_desired(), c2.storage_classes_desired())
+
+    def test_storage_classes_change_after_save(self):
+        m = '. 781e5e245d69b566979b86e28d23f2c7+10 0:10:count1.txt 0:10:count2.txt\n'
+        c1 = Collection(m, storage_classes_desired=['archival'])
+        c1.save_new()
+        loc = c1.manifest_locator()
+        c2 = Collection(loc)
+        self.assertEqual(['archival'], c2.storage_classes_desired())
+        c2.save(storage_classes=['highIO'])
+        self.assertEqual(['highIO'], c2.storage_classes_desired())
+        c3 = Collection(loc)
+        self.assertEqual(c1.manifest_text, c3.manifest_text)
+        self.assertEqual(['highIO'], c3.storage_classes_desired())
+
+    def test_storage_classes_desired_not_loaded_if_provided(self):
+        m = '. 781e5e245d69b566979b86e28d23f2c7+10 0:10:count1.txt 0:10:count2.txt\n'
+        c1 = Collection(m, storage_classes_desired=['archival'])
+        c1.save_new()
+        loc = c1.manifest_locator()
+        c2 = Collection(loc, storage_classes_desired=['default'])
+        self.assertEqual(c1.manifest_text, c2.manifest_text)
+        self.assertNotEqual(c1.storage_classes_desired(), c2.storage_classes_desired())
+
     def test_init_manifest(self):
         m1 = """. 5348b82a029fd9e971a811ce1f71360b+43 0:43:md5sum.txt
 . 085c37f02916da1cad16f93c54d899b7+41 0:41:md5sum.txt
@@ -1249,6 +1278,16 @@ class NewCollectionTestCaseWithServersAndTokens(run_test_server.TestCaseWithServ
         self.keep_put = getattr(arvados.keep.KeepClient, 'put')
 
     @mock.patch('arvados.keep.KeepClient.put', autospec=True)
+    def test_storage_classes_desired(self, put_mock):
+        put_mock.side_effect = self.keep_put
+        c = Collection(storage_classes_desired=['default'])
+        with c.open("file.txt", 'wb') as f:
+            f.write('content')
+        c.save_new()
+        _, kwargs = put_mock.call_args
+        self.assertEqual(['default'], kwargs['classes'])
+
+    @mock.patch('arvados.keep.KeepClient.put', autospec=True)
     def test_repacked_block_submission_get_permission_token(self, mocked_put):
         '''
         Make sure that those blocks that are committed after repacking small ones,
@@ -1321,6 +1360,25 @@ class NewCollectionTestCaseWithServersAndTokens(run_test_server.TestCaseWithServ
 
 
 class NewCollectionTestCaseWithServers(run_test_server.TestCaseWithServers):
+    def test_preserve_version_on_save(self):
+        c = Collection()
+        c.save_new(preserve_version=True)
+        coll_record = arvados.api().collections().get(uuid=c.manifest_locator()).execute()
+        self.assertEqual(coll_record['version'], 1)
+        self.assertEqual(coll_record['preserve_version'], True)
+        with c.open("foo.txt", "wb") as foo:
+            foo.write(b"foo")
+        c.save(preserve_version=True)
+        coll_record = arvados.api().collections().get(uuid=c.manifest_locator()).execute()
+        self.assertEqual(coll_record['version'], 2)
+        self.assertEqual(coll_record['preserve_version'], True)
+        with c.open("bar.txt", "wb") as foo:
+            foo.write(b"bar")
+        c.save(preserve_version=False)
+        coll_record = arvados.api().collections().get(uuid=c.manifest_locator()).execute()
+        self.assertEqual(coll_record['version'], 3)
+        self.assertEqual(coll_record['preserve_version'], False)
+
     def test_get_manifest_text_only_committed(self):
         c = Collection()
         with c.open("count.txt", "wb") as f:

@@ -12,7 +12,7 @@ require 'fileutils'
 
 # This script does the actual gitolite config management on disk.
 #
-# Ward Vandewege <ward@curoverse.com>
+# Ward Vandewege <ward@curii.com>
 
 # Default is development
 production = ARGV[0] == "production"

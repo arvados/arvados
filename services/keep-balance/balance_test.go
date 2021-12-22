@@ -85,7 +85,8 @@ func (bal *balancerSuite) SetUpTest(c *check.C) {
 		}
 		srv.mounts = []*KeepMount{{
 			KeepMount: arvados.KeepMount{
-				UUID: fmt.Sprintf("zzzzz-mount-%015x", i),
+				UUID:           fmt.Sprintf("zzzzz-mount-%015x", i),
+				StorageClasses: map[string]bool{"default": true},
 			},
 			KeepService: srv,
 		}}
@@ -166,10 +167,11 @@ func (bal *balancerSuite) testMultipleViews(c *check.C, readonly bool) {
 		srv.mounts[0].KeepMount.DeviceID = fmt.Sprintf("writable-by-srv-%x", i)
 		srv.mounts = append(srv.mounts, &KeepMount{
 			KeepMount: arvados.KeepMount{
-				DeviceID:    fmt.Sprintf("writable-by-srv-%x", (i+1)%len(bal.srvs)),
-				UUID:        fmt.Sprintf("zzzzz-mount-%015x", i<<16),
-				ReadOnly:    readonly,
-				Replication: 1,
+				DeviceID:       bal.srvs[(i+1)%len(bal.srvs)].mounts[0].KeepMount.DeviceID,
+				UUID:           bal.srvs[(i+1)%len(bal.srvs)].mounts[0].KeepMount.UUID,
+				ReadOnly:       readonly,
+				Replication:    1,
+				StorageClasses: map[string]bool{"default": true},
 			},
 			KeepService: srv,
 		})
@@ -345,6 +347,7 @@ func (bal *balancerSuite) TestDecreaseReplBlockTooNew(c *check.C) {
 func (bal *balancerSuite) TestCleanupMounts(c *check.C) {
 	bal.srvs[3].mounts[0].KeepMount.ReadOnly = true
 	bal.srvs[3].mounts[0].KeepMount.DeviceID = "abcdef"
+	bal.srvs[14].mounts[0].KeepMount.UUID = bal.srvs[3].mounts[0].KeepMount.UUID
 	bal.srvs[14].mounts[0].KeepMount.DeviceID = "abcdef"
 	c.Check(len(bal.srvs[3].mounts), check.Equals, 1)
 	bal.cleanupMounts()
@@ -483,32 +486,32 @@ func (bal *balancerSuite) TestVolumeReplication(c *check.C) {
 }
 
 func (bal *balancerSuite) TestDeviceRWMountedByMultipleServers(c *check.C) {
-	bal.srvs[0].mounts[0].KeepMount.DeviceID = "abcdef"
-	bal.srvs[9].mounts[0].KeepMount.DeviceID = "abcdef"
-	bal.srvs[14].mounts[0].KeepMount.DeviceID = "abcdef"
+	dupUUID := bal.srvs[0].mounts[0].KeepMount.UUID
+	bal.srvs[9].mounts[0].KeepMount.UUID = dupUUID
+	bal.srvs[14].mounts[0].KeepMount.UUID = dupUUID
 	// block 0 belongs on servers 3 and e, which have different
-	// device IDs.
+	// UUIDs.
 	bal.try(c, tester{
 		known:      0,
 		desired:    map[string]int{"default": 2},
 		current:    slots{1},
 		shouldPull: slots{0}})
 	// block 1 belongs on servers 0 and 9, which both report
-	// having a replica, but the replicas are on the same device
-	// ID -- so we should pull to the third position (7).
+	// having a replica, but the replicas are on the same volume
+	// -- so we should pull to the third position (7).
 	bal.try(c, tester{
 		known:      1,
 		desired:    map[string]int{"default": 2},
 		current:    slots{0, 1},
 		shouldPull: slots{2}})
-	// block 1 can be pulled to the doubly-mounted device, but the
+	// block 1 can be pulled to the doubly-mounted volume, but the
 	// pull should only be done on the first of the two servers.
 	bal.try(c, tester{
 		known:      1,
 		desired:    map[string]int{"default": 2},
 		current:    slots{2},
 		shouldPull: slots{0}})
-	// block 0 has one replica on a single device mounted on two
+	// block 0 has one replica on a single volume mounted on two
 	// servers (e,9 at positions 1,9). Trashing the replica on 9
 	// would lose the block.
 	bal.try(c, tester{
@@ -521,7 +524,7 @@ func (bal *balancerSuite) TestDeviceRWMountedByMultipleServers(c *check.C) {
 			pulling: 1,
 		}})
 	// block 0 is overreplicated, but the second and third
-	// replicas are the same replica according to DeviceID
+	// replicas are the same replica according to volume UUID
 	// (despite different Mtimes). Don't trash the third replica.
 	bal.try(c, tester{
 		known:   0,
@@ -593,7 +596,7 @@ func (bal *balancerSuite) TestChangeStorageClasses(c *check.C) {
 		desired:          map[string]int{"default": 2, "special": 1},
 		current:          slots{0, 1},
 		shouldPull:       slots{9},
-		shouldPullMounts: []string{"zzzzz-mount-special00000009"}})
+		shouldPullMounts: []string{"zzzzz-mount-special20000009"}})
 	// If some storage classes are not satisfied, don't trash any
 	// excess replicas. (E.g., if someone desires repl=1 on
 	// class=durable, and we have two copies on class=volatile, we
@@ -603,7 +606,7 @@ func (bal *balancerSuite) TestChangeStorageClasses(c *check.C) {
 		desired:          map[string]int{"special": 1},
 		current:          slots{0, 1},
 		shouldPull:       slots{9},
-		shouldPullMounts: []string{"zzzzz-mount-special00000009"}})
+		shouldPullMounts: []string{"zzzzz-mount-special20000009"}})
 	// Once storage classes are satisfied, trash excess replicas
 	// that appear earlier in probe order but aren't needed to
 	// satisfy the desired classes.

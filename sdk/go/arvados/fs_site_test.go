@@ -16,18 +16,33 @@ const (
 	// Importing arvadostest would be an import cycle, so these
 	// fixtures are duplicated here [until fs moves to a separate
 	// package].
-	fixtureActiveToken             = "3kg6k6lzmp9kj5cpkcoxie963cmvjahbt2fod9zru30k1jqdmi"
-	fixtureAProjectUUID            = "zzzzz-j7d0g-v955i6s2oi1cbso"
-	fixtureFooAndBarFilesInDirUUID = "zzzzz-4zz18-foonbarfilesdir"
-	fixtureFooCollectionName       = "zzzzz-4zz18-fy296fx3hot09f7 added sometime"
-	fixtureFooCollectionPDH        = "1f4b0bc7583c2a7f9102c395f4ffc5e3+45"
-	fixtureFooCollection           = "zzzzz-4zz18-fy296fx3hot09f7"
-	fixtureNonexistentCollection   = "zzzzz-4zz18-totallynotexist"
-	fixtureBlobSigningKey          = "zfhgfenhffzltr9dixws36j1yhksjoll2grmku38mi7yxd66h5j4q9w4jzanezacp8s6q0ro3hxakfye02152hncy6zml2ed0uc"
-	fixtureBlobSigningTTL          = 336 * time.Hour
+	fixtureActiveToken                  = "3kg6k6lzmp9kj5cpkcoxie963cmvjahbt2fod9zru30k1jqdmi"
+	fixtureAProjectUUID                 = "zzzzz-j7d0g-v955i6s2oi1cbso"
+	fixtureThisFilterGroupUUID          = "zzzzz-j7d0g-thisfiltergroup"
+	fixtureAFilterGroupTwoUUID          = "zzzzz-j7d0g-afiltergrouptwo"
+	fixtureAFilterGroupThreeUUID        = "zzzzz-j7d0g-filtergroupthre"
+	fixtureAFilterGroupFourUUID         = "zzzzz-j7d0g-filtergroupfour"
+	fixtureAFilterGroupFiveUUID         = "zzzzz-j7d0g-filtergroupfive"
+	fixtureFooAndBarFilesInDirUUID      = "zzzzz-4zz18-foonbarfilesdir"
+	fixtureFooCollectionName            = "zzzzz-4zz18-fy296fx3hot09f7 added sometime"
+	fixtureFooCollectionPDH             = "1f4b0bc7583c2a7f9102c395f4ffc5e3+45"
+	fixtureFooCollection                = "zzzzz-4zz18-fy296fx3hot09f7"
+	fixtureNonexistentCollection        = "zzzzz-4zz18-totallynotexist"
+	fixtureStorageClassesDesiredArchive = "zzzzz-4zz18-3t236wr12769qqa"
+	fixtureBlobSigningKey               = "zfhgfenhffzltr9dixws36j1yhksjoll2grmku38mi7yxd66h5j4q9w4jzanezacp8s6q0ro3hxakfye02152hncy6zml2ed0uc"
+	fixtureBlobSigningTTL               = 336 * time.Hour
 )
 
 var _ = check.Suite(&SiteFSSuite{})
+
+func init() {
+	// Enable DebugLocksPanicMode sometimes. Don't enable it all
+	// the time, though -- it adds many calls to time.Sleep(),
+	// which could hide different bugs.
+	if time.Now().Second()&1 == 0 {
+		DebugLocksPanicMode = true
+	}
+}
 
 type SiteFSSuite struct {
 	client *Client
@@ -63,6 +78,17 @@ func (s *SiteFSSuite) TestByIDEmpty(c *check.C) {
 	fis, err := f.Readdir(-1)
 	c.Check(err, check.IsNil)
 	c.Check(len(fis), check.Equals, 0)
+}
+
+func (s *SiteFSSuite) TestUpdateStorageClasses(c *check.C) {
+	f, err := s.fs.OpenFile("/by_id/"+fixtureStorageClassesDesiredArchive+"/newfile", os.O_CREATE|os.O_RDWR, 0777)
+	c.Assert(err, check.IsNil)
+	_, err = f.Write([]byte("nope"))
+	c.Assert(err, check.IsNil)
+	err = f.Close()
+	c.Assert(err, check.IsNil)
+	err = s.fs.Sync()
+	c.Assert(err, check.ErrorMatches, `.*stub does not write storage class "archive"`)
 }
 
 func (s *SiteFSSuite) TestByUUIDAndPDH(c *check.C) {

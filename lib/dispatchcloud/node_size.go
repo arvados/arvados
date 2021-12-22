@@ -97,6 +97,7 @@ func ChooseInstanceType(cc *arvados.Cluster, ctr *arvados.Container) (best arvad
 
 	needRAM := ctr.RuntimeConstraints.RAM + ctr.RuntimeConstraints.KeepCacheRAM
 	needRAM += int64(cc.Containers.ReserveExtraRAM)
+	needRAM += int64(cc.Containers.LocalKeepBlobBuffersPerVCPU * needVCPUs * (1 << 26))
 	needRAM = (needRAM * 100) / int64(100-discountConfiguredRAMPercent)
 
 	ok := false

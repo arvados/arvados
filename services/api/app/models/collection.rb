@@ -3,7 +3,6 @@
 # SPDX-License-Identifier: AGPL-3.0
 
 require 'arvados/keep'
-require 'sweep_trashed_objects'
 require 'trashable'
 
 class Collection < ArvadosModel
@@ -17,7 +16,7 @@ class Collection < ArvadosModel
   # Posgresql JSONB columns should NOT be declared as serialized, Rails 5
   # already know how to properly treat them.
   attribute :properties, :jsonbHash, default: {}
-  attribute :storage_classes_desired, :jsonbArray, default: ["default"]
+  attribute :storage_classes_desired, :jsonbArray, default: lambda { Rails.configuration.DefaultStorageClasses }
   attribute :storage_classes_confirmed, :jsonbArray, default: []
 
   before_validation :default_empty_manifest
@@ -44,8 +43,8 @@ class Collection < ArvadosModel
     t.add :description
     t.add :properties
     t.add :portable_data_hash
-    t.add :signed_manifest_text, as: :manifest_text
     t.add :manifest_text, as: :unsigned_manifest_text
+    t.add :manifest_text, as: :manifest_text
     t.add :replication_desired
     t.add :replication_confirmed
     t.add :replication_confirmed_at
@@ -71,15 +70,11 @@ class Collection < ArvadosModel
 
   def self.attributes_required_columns
     super.merge(
-                # If we don't list manifest_text explicitly, the
-                # params[:select] code gets confused by the way we
-                # expose signed_manifest_text as manifest_text in the
-                # API response, and never let clients select the
-                # manifest_text column.
-                #
-                # We need trash_at and is_trashed to determine the
-                # correct timestamp in signed_manifest_text.
-                'manifest_text' => ['manifest_text', 'trash_at', 'is_trashed'],
+                # If we don't list unsigned_manifest_text explicitly,
+                # the params[:select] code gets confused by the way we
+                # expose manifest_text as unsigned_manifest_text in
+                # the API response, and never let clients select the
+                # unsigned_manifest_text column.
                 'unsigned_manifest_text' => ['manifest_text'],
                 'name' => ['name'],
                 )
@@ -150,7 +145,9 @@ class Collection < ArvadosModel
   def strip_signatures_and_update_replication_confirmed
     if self.manifest_text_changed?
       in_old_manifest = {}
-      if not self.replication_confirmed.nil?
+      # manifest_text_was could be nil when dealing with a freshly created snapshot,
+      # so we skip this case because there was no real manifest change. (Bug #18005)
+      if (not self.replication_confirmed.nil?) and (not self.manifest_text_was.nil?)
         self.class.each_manifest_locator(manifest_text_was) do |match|
           in_old_manifest[match[1]] = true
         end
@@ -404,7 +401,7 @@ class Collection < ArvadosModel
     end
   end
 
-  def signed_manifest_text
+  def signed_manifest_text_only_for_tests
     if !has_attribute? :manifest_text
       return nil
     elsif is_trashed
@@ -413,11 +410,11 @@ class Collection < ArvadosModel
       token = Thread.current[:token]
       exp = [db_current_time.to_i + Rails.configuration.Collections.BlobSigningTTL.to_i,
              trash_at].compact.map(&:to_i).min
-      self.class.sign_manifest manifest_text, token, exp
+      self.class.sign_manifest_only_for_tests manifest_text, token, exp
     end
   end
 
-  def self.sign_manifest manifest, token, exp=nil
+  def self.sign_manifest_only_for_tests manifest, token, exp=nil
     if exp.nil?
       exp = db_current_time.to_i + Rails.configuration.Collections.BlobSigningTTL.to_i
     end
@@ -618,11 +615,6 @@ class Collection < ArvadosModel
     super - ["manifest_text", "storage_classes_desired", "storage_classes_confirmed", "current_version_uuid"]
   end
 
-  def self.where *args
-    SweepTrashedObjects.sweep_if_stale
-    super
-  end
-
   protected
 
   # Although the defaults for these columns is already set up on the schema,
@@ -630,7 +622,7 @@ class Collection < ArvadosModel
   # validation on empty desired storage classes return an error.
   def default_storage_classes
     if self.storage_classes_desired.nil? || self.storage_classes_desired.empty?
-      self.storage_classes_desired = ["default"]
+      self.storage_classes_desired = Rails.configuration.DefaultStorageClasses
     end
     self.storage_classes_confirmed ||= []
   end

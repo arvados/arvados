@@ -8,6 +8,7 @@ import (
 	"bufio"
 	"context"
 	"encoding/json"
+	"io"
 	"net"
 
 	"github.com/sirupsen/logrus"
@@ -22,6 +23,7 @@ type APIEndpoint struct {
 
 var (
 	EndpointConfigGet                     = APIEndpoint{"GET", "arvados/v1/config", ""}
+	EndpointVocabularyGet                 = APIEndpoint{"GET", "arvados/v1/vocabulary", ""}
 	EndpointLogin                         = APIEndpoint{"GET", "login", ""}
 	EndpointLogout                        = APIEndpoint{"GET", "logout", ""}
 	EndpointCollectionCreate              = APIEndpoint{"POST", "arvados/v1/collections", "collection"}
@@ -51,6 +53,22 @@ var (
 	EndpointContainerRequestGet           = APIEndpoint{"GET", "arvados/v1/container_requests/{uuid}", ""}
 	EndpointContainerRequestList          = APIEndpoint{"GET", "arvados/v1/container_requests", ""}
 	EndpointContainerRequestDelete        = APIEndpoint{"DELETE", "arvados/v1/container_requests/{uuid}", ""}
+	EndpointGroupCreate                   = APIEndpoint{"POST", "arvados/v1/groups", "group"}
+	EndpointGroupUpdate                   = APIEndpoint{"PATCH", "arvados/v1/groups/{uuid}", "group"}
+	EndpointGroupGet                      = APIEndpoint{"GET", "arvados/v1/groups/{uuid}", ""}
+	EndpointGroupList                     = APIEndpoint{"GET", "arvados/v1/groups", ""}
+	EndpointGroupContents                 = APIEndpoint{"GET", "arvados/v1/groups/contents", ""}
+	EndpointGroupContentsUUIDInPath       = APIEndpoint{"GET", "arvados/v1/groups/{uuid}/contents", ""} // Alternative HTTP route; client-side code should always use EndpointGroupContents instead
+	EndpointGroupShared                   = APIEndpoint{"GET", "arvados/v1/groups/shared", ""}
+	EndpointGroupDelete                   = APIEndpoint{"DELETE", "arvados/v1/groups/{uuid}", ""}
+	EndpointGroupTrash                    = APIEndpoint{"POST", "arvados/v1/groups/{uuid}/trash", ""}
+	EndpointGroupUntrash                  = APIEndpoint{"POST", "arvados/v1/groups/{uuid}/untrash", ""}
+	EndpointLinkCreate                    = APIEndpoint{"POST", "arvados/v1/links", "link"}
+	EndpointLinkUpdate                    = APIEndpoint{"PATCH", "arvados/v1/links/{uuid}", "link"}
+	EndpointLinkGet                       = APIEndpoint{"GET", "arvados/v1/links/{uuid}", ""}
+	EndpointLinkList                      = APIEndpoint{"GET", "arvados/v1/links", ""}
+	EndpointLinkDelete                    = APIEndpoint{"DELETE", "arvados/v1/links/{uuid}", ""}
+	EndpointSysTrashSweep                 = APIEndpoint{"POST", "sys/trash_sweep", ""}
 	EndpointUserActivate                  = APIEndpoint{"POST", "arvados/v1/users/{uuid}/activate", ""}
 	EndpointUserCreate                    = APIEndpoint{"POST", "arvados/v1/users", "user"}
 	EndpointUserCurrent                   = APIEndpoint{"GET", "arvados/v1/users/current", ""}
@@ -64,10 +82,14 @@ var (
 	EndpointUserSystem                    = APIEndpoint{"GET", "arvados/v1/users/system", ""}
 	EndpointUserUnsetup                   = APIEndpoint{"POST", "arvados/v1/users/{uuid}/unsetup", ""}
 	EndpointUserUpdate                    = APIEndpoint{"PATCH", "arvados/v1/users/{uuid}", "user"}
-	EndpointUserUpdateUUID                = APIEndpoint{"POST", "arvados/v1/users/{uuid}/update_uuid", ""}
 	EndpointUserBatchUpdate               = APIEndpoint{"PATCH", "arvados/v1/users/batch_update", ""}
 	EndpointUserAuthenticate              = APIEndpoint{"POST", "arvados/v1/users/authenticate", ""}
 	EndpointAPIClientAuthorizationCurrent = APIEndpoint{"GET", "arvados/v1/api_client_authorizations/current", ""}
+	EndpointAPIClientAuthorizationCreate  = APIEndpoint{"POST", "arvados/v1/api_client_authorizations", "api_client_authorization"}
+	EndpointAPIClientAuthorizationUpdate  = APIEndpoint{"PUT", "arvados/v1/api_client_authorizations/{uuid}", "api_client_authorization"}
+	EndpointAPIClientAuthorizationList    = APIEndpoint{"GET", "arvados/v1/api_client_authorizations", ""}
+	EndpointAPIClientAuthorizationDelete  = APIEndpoint{"DELETE", "arvados/v1/api_client_authorizations/{uuid}", ""}
+	EndpointAPIClientAuthorizationGet     = APIEndpoint{"GET", "arvados/v1/api_client_authorizations/{uuid}", ""}
 )
 
 type ContainerSSHOptions struct {
@@ -109,6 +131,7 @@ type ListOptions struct {
 	IncludeOldVersions bool                   `json:"include_old_versions"`
 	BypassFederation   bool                   `json:"bypass_federation"`
 	ForwardedFor       string                 `json:"forwarded_for,omitempty"`
+	Include            string                 `json:"include"`
 }
 
 type CreateOptions struct {
@@ -121,12 +144,25 @@ type CreateOptions struct {
 type UpdateOptions struct {
 	UUID             string                 `json:"uuid"`
 	Attrs            map[string]interface{} `json:"attrs"`
+	Select           []string               `json:"select"`
 	BypassFederation bool                   `json:"bypass_federation"`
 }
 
-type UpdateUUIDOptions struct {
-	UUID    string `json:"uuid"`
-	NewUUID string `json:"new_uuid"`
+type GroupContentsOptions struct {
+	ClusterID          string   `json:"cluster_id"`
+	UUID               string   `json:"uuid,omitempty"`
+	Select             []string `json:"select"`
+	Filters            []Filter `json:"filters"`
+	Limit              int64    `json:"limit"`
+	Offset             int64    `json:"offset"`
+	Order              []string `json:"order"`
+	Distinct           bool     `json:"distinct"`
+	Count              string   `json:"count"`
+	Include            string   `json:"include"`
+	Recursive          bool     `json:"recursive"`
+	IncludeTrash       bool     `json:"include_trash"`
+	IncludeOldVersions bool     `json:"include_old_versions"`
+	ExcludeHomeProject bool     `json:"exclude_home_project"`
 }
 
 type UserActivateOptions struct {
@@ -177,8 +213,25 @@ type LogoutOptions struct {
 	ReturnTo string `json:"return_to"` // Redirect to this URL after logging out
 }
 
+type BlockWriteOptions struct {
+	Hash           string
+	Data           []byte
+	Reader         io.Reader
+	DataSize       int // Must be set if Data is nil.
+	RequestID      string
+	StorageClasses []string
+	Replicas       int
+	Attempts       int
+}
+
+type BlockWriteResponse struct {
+	Locator  string
+	Replicas int
+}
+
 type API interface {
 	ConfigGet(ctx context.Context) (json.RawMessage, error)
+	VocabularyGet(ctx context.Context) (Vocabulary, error)
 	Login(ctx context.Context, options LoginOptions) (LoginResponse, error)
 	Logout(ctx context.Context, options LogoutOptions) (LogoutResponse, error)
 	CollectionCreate(ctx context.Context, options CreateOptions) (Collection, error)
@@ -203,14 +256,28 @@ type API interface {
 	ContainerRequestGet(ctx context.Context, options GetOptions) (ContainerRequest, error)
 	ContainerRequestList(ctx context.Context, options ListOptions) (ContainerRequestList, error)
 	ContainerRequestDelete(ctx context.Context, options DeleteOptions) (ContainerRequest, error)
+	GroupCreate(ctx context.Context, options CreateOptions) (Group, error)
+	GroupUpdate(ctx context.Context, options UpdateOptions) (Group, error)
+	GroupGet(ctx context.Context, options GetOptions) (Group, error)
+	GroupList(ctx context.Context, options ListOptions) (GroupList, error)
+	GroupContents(ctx context.Context, options GroupContentsOptions) (ObjectList, error)
+	GroupShared(ctx context.Context, options ListOptions) (GroupList, error)
+	GroupDelete(ctx context.Context, options DeleteOptions) (Group, error)
+	GroupTrash(ctx context.Context, options DeleteOptions) (Group, error)
+	GroupUntrash(ctx context.Context, options UntrashOptions) (Group, error)
+	LinkCreate(ctx context.Context, options CreateOptions) (Link, error)
+	LinkUpdate(ctx context.Context, options UpdateOptions) (Link, error)
+	LinkGet(ctx context.Context, options GetOptions) (Link, error)
+	LinkList(ctx context.Context, options ListOptions) (LinkList, error)
+	LinkDelete(ctx context.Context, options DeleteOptions) (Link, error)
 	SpecimenCreate(ctx context.Context, options CreateOptions) (Specimen, error)
 	SpecimenUpdate(ctx context.Context, options UpdateOptions) (Specimen, error)
 	SpecimenGet(ctx context.Context, options GetOptions) (Specimen, error)
 	SpecimenList(ctx context.Context, options ListOptions) (SpecimenList, error)
 	SpecimenDelete(ctx context.Context, options DeleteOptions) (Specimen, error)
+	SysTrashSweep(ctx context.Context, options struct{}) (struct{}, error)
 	UserCreate(ctx context.Context, options CreateOptions) (User, error)
 	UserUpdate(ctx context.Context, options UpdateOptions) (User, error)
-	UserUpdateUUID(ctx context.Context, options UpdateUUIDOptions) (User, error)
 	UserMerge(ctx context.Context, options UserMergeOptions) (User, error)
 	UserActivate(ctx context.Context, options UserActivateOptions) (User, error)
 	UserSetup(ctx context.Context, options UserSetupOptions) (map[string]interface{}, error)
@@ -223,4 +290,9 @@ type API interface {
 	UserBatchUpdate(context.Context, UserBatchUpdateOptions) (UserList, error)
 	UserAuthenticate(ctx context.Context, options UserAuthenticateOptions) (APIClientAuthorization, error)
 	APIClientAuthorizationCurrent(ctx context.Context, options GetOptions) (APIClientAuthorization, error)
+	APIClientAuthorizationCreate(ctx context.Context, options CreateOptions) (APIClientAuthorization, error)
+	APIClientAuthorizationList(ctx context.Context, options ListOptions) (APIClientAuthorizationList, error)
+	APIClientAuthorizationDelete(ctx context.Context, options DeleteOptions) (APIClientAuthorization, error)
+	APIClientAuthorizationUpdate(ctx context.Context, options UpdateOptions) (APIClientAuthorization, error)
+	APIClientAuthorizationGet(ctx context.Context, options GetOptions) (APIClientAuthorization, error)
 }

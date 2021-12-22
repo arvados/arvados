@@ -42,7 +42,7 @@ from .context import ArvLoadingContext, ArvRuntimeContext
 from ._version import __version__
 
 from cwltool.process import shortname, UnsupportedRequirement, use_custom_schema
-from cwltool.utils import adjustFileObjs, adjustDirObjs, get_listing, visit_class
+from cwltool.utils import adjustFileObjs, adjustDirObjs, get_listing, visit_class, aslist
 from cwltool.command_line_tool import compute_checksums
 from cwltool.load_tool import load_tool
 
@@ -99,7 +99,8 @@ class ArvCwlExecutor(object):
                  arvargs=None,
                  keep_client=None,
                  num_retries=4,
-                 thread_count=4):
+                 thread_count=4,
+                 stdout=sys.stdout):
 
         if arvargs is None:
             arvargs = argparse.Namespace()
@@ -132,6 +133,7 @@ class ArvCwlExecutor(object):
         self.should_estimate_cache_size = True
         self.fs_access = None
         self.secret_store = None
+        self.stdout = stdout
 
         if keep_client is not None:
             self.keep_client = keep_client
@@ -549,6 +551,12 @@ The 'jobs' API is no longer supported.
         if runtimeContext.submit_request_uuid and self.work_api != "containers":
             raise Exception("--submit-request-uuid requires containers API, but using '{}' api".format(self.work_api))
 
+        default_storage_classes = ",".join([k for k,v in self.api.config().get("StorageClasses", {"default": {"Default": True}}).items() if v.get("Default") is True])
+        if runtimeContext.storage_classes == "default":
+            runtimeContext.storage_classes = default_storage_classes
+        if runtimeContext.intermediate_storage_classes == "default":
+            runtimeContext.intermediate_storage_classes = default_storage_classes
+
         if not runtimeContext.name:
             runtimeContext.name = self.name = updated_tool.tool.get("label") or updated_tool.metadata.get("label") or os.path.basename(updated_tool.tool["id"])
 
@@ -569,8 +577,8 @@ The 'jobs' API is no longer supported.
 
         loadingContext = self.loadingContext.copy()
         loadingContext.do_validate = False
-        loadingContext.do_update = False
         if submitting:
+            loadingContext.do_update = False
             # Document may have been auto-updated. Reload the original
             # document with updating disabled because we want to
             # submit the document with its original CWL version, not
@@ -596,14 +604,15 @@ The 'jobs' API is no longer supported.
         if existing_uuid or runtimeContext.create_workflow:
             # Create a pipeline template or workflow record and exit.
             if self.work_api == "containers":
-                return (upload_workflow(self, tool, job_order,
+                uuid = upload_workflow(self, tool, job_order,
                                         self.project_uuid,
                                         uuid=existing_uuid,
                                         submit_runner_ram=runtimeContext.submit_runner_ram,
                                         name=runtimeContext.name,
                                         merged_map=merged_map,
-                                        submit_runner_image=runtimeContext.submit_runner_image),
-                        "success")
+                                        submit_runner_image=runtimeContext.submit_runner_image)
+                self.stdout.write(uuid + "\n")
+                return (None, "success")
 
         self.apply_reqs(job_order, tool)
 
@@ -673,7 +682,8 @@ The 'jobs' API is no longer supported.
         if runtimeContext.submit and not runtimeContext.wait:
             runnerjob = next(jobiter)
             runnerjob.run(runtimeContext)
-            return (runnerjob.uuid, "success")
+            self.stdout.write(runnerjob.uuid+"\n")
+            return (None, "success")
 
         current_container = arvados_cwl.util.get_current_container(self.api, self.num_retries, logger)
         if current_container:
@@ -771,7 +781,13 @@ The 'jobs' API is no longer supported.
             if self.output_tags is None:
                 self.output_tags = ""
 
-            storage_classes = runtimeContext.storage_classes.strip().split(",")
+            storage_classes = ""
+            storage_class_req, _ = tool.get_requirement("http://arvados.org/cwl#OutputStorageClass")
+            if storage_class_req and storage_class_req.get("finalStorageClass"):
+                storage_classes = aslist(storage_class_req["finalStorageClass"])
+            else:
+                storage_classes = runtimeContext.storage_classes.strip().split(",")
+
             self.final_output, self.final_output_collection = self.make_output_collection(self.output_name, storage_classes, self.output_tags, self.final_output)
             self.set_crunch_output()
 

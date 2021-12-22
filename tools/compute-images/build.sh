@@ -49,14 +49,18 @@ Options:
       Azure SKU image to use
   --ssh_user  (default: packer)
       The user packer will use to log into the image
-  --resolver (default: 8.8.8.8)
+  --resolver (default: host's network provided)
       The dns resolver for the machine
   --reposuffix (default: unset)
       Set this to "-dev" to track the unstable/dev Arvados repositories
   --public-key-file (required)
       Path to the public key file that a-d-c will use to log into the compute node
-  --debug
-      Output debug information (default: false)
+  --mksquashfs-mem (default: 256M)
+      Only relevant when using Singularity. This is the amount of memory mksquashfs is allowed to use.
+  --nvidia-gpu-support (default: false)
+      Install all the necessary tooling for Nvidia GPU support
+  --debug (default: false)
+      Output debug information
 
 EOF
 
@@ -78,9 +82,11 @@ DEBUG=
 SSH_USER=
 AWS_DEFAULT_REGION=us-east-1
 PUBLIC_KEY_FILE=
+MKSQUASHFS_MEM=256M
+NVIDIA_GPU_SUPPORT=
 
 PARSEDOPTS=$(getopt --name "$0" --longoptions \
-    help,json-file:,arvados-cluster-id:,aws-source-ami:,aws-profile:,aws-secrets-file:,aws-region:,aws-vpc-id:,aws-subnet-id:,gcp-project-id:,gcp-account-file:,gcp-zone:,azure-secrets-file:,azure-resource-group:,azure-location:,azure-sku:,azure-cloud-environment:,ssh_user:,resolver:,reposuffix:,public-key-file:,debug \
+    help,json-file:,arvados-cluster-id:,aws-source-ami:,aws-profile:,aws-secrets-file:,aws-region:,aws-vpc-id:,aws-subnet-id:,gcp-project-id:,gcp-account-file:,gcp-zone:,azure-secrets-file:,azure-resource-group:,azure-location:,azure-sku:,azure-cloud-environment:,ssh_user:,resolver:,reposuffix:,public-key-file:,mksquashfs-mem:,nvidia-gpu-support,debug \
     -- "" "$@")
 if [ $? -ne 0 ]; then
     exit 1
@@ -153,6 +159,12 @@ while [ $# -gt 0 ]; do
             ;;
         --public-key-file)
             PUBLIC_KEY_FILE="$2"; shift
+            ;;
+        --mksquashfs-mem)
+            MKSQUASHFS_MEM="$2"; shift
+            ;;
+        --nvidia-gpu-support)
+            NVIDIA_GPU_SUPPORT=1
             ;;
         --debug)
             # If you want to debug a build issue, add the -debug flag to the build
@@ -256,6 +268,17 @@ fi
 if [[ "$PUBLIC_KEY_FILE" != "" ]]; then
   EXTRA2+=" -var public_key_file=$PUBLIC_KEY_FILE"
 fi
+if [[ "$MKSQUASHFS_MEM" != "" ]]; then
+  EXTRA2+=" -var mksquashfs_mem=$MKSQUASHFS_MEM"
+fi
+if [[ "$NVIDIA_GPU_SUPPORT" != "" ]]; then
+  EXTRA2+=" -var nvidia_gpu_support=$NVIDIA_GPU_SUPPORT"
+fi
 
+
+
+echo
+packer version
+echo
 echo packer build$EXTRA -var "arvados_cluster=$ARVADOS_CLUSTER_ID"$EXTRA2 $JSON_FILE
 packer build$EXTRA -var "arvados_cluster=$ARVADOS_CLUSTER_ID"$EXTRA2 $JSON_FILE

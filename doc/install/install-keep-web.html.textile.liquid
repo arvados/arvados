@@ -20,7 +20,7 @@ SPDX-License-Identifier: CC-BY-SA-3.0
 
 h2(#introduction). Introduction
 
-The Keep-web server provides read/write access to files stored in Keep using WebDAV and S3 protocols.  This makes it easy to access files in Keep from a browser, or mount Keep as a network folder using WebDAV support in various operating systems. It serves public data to unauthenticated clients, and serves private data to clients that supply Arvados API tokens. It can be installed anywhere with access to Keep services, typically behind a web proxy that provides TLS support. See the "godoc page":http://godoc.org/github.com/curoverse/arvados/services/keep-web for more detail.
+The Keep-web server provides read/write access to files stored in Keep using WebDAV and S3 protocols.  This makes it easy to access files in Keep from a browser, or mount Keep as a network folder using WebDAV support in various operating systems. It serves public data to unauthenticated clients, and serves private data to clients that supply Arvados API tokens. It can be installed anywhere with access to Keep services, typically behind a web proxy that provides TLS support. See the "godoc page":https://pkg.go.dev/git.arvados.org/arvados.git/services/keep-web for more detail.
 
 h2(#dns). Configure DNS
 
@@ -90,7 +90,7 @@ Note the trailing slash.
 {% include 'notebox_begin' %}
 Whether you choose to serve collections from their own subdomain or from a single domain, it's important to keep in mind that they should be served from me same _site_ as Workbench for the inline previews to work.
 
-Please check "keep-web's URL pattern guide":/api/keep-web-urls.html#same-site to learn more.
+Please check "keep-web's URL pattern guide":../api/keep-web-urls.html#same-site to learn more.
 {% include 'notebox_end' %}
 
 h2. Set InternalURLs
@@ -105,7 +105,7 @@ h2. Set InternalURLs
 
 h2(#update-config). Configure anonymous user token
 
-{% assign railscmd = "bundle exec ./script/get_anonymous_user_token.rb --get" %}
+{% assign railscmd = "bin/bundle exec ./script/get_anonymous_user_token.rb --get" %}
 {% assign railsout = "zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz" %}
 If you intend to use Keep-web to serve public data to anonymous clients, configure it with an anonymous token.
 
@@ -122,7 +122,7 @@ Set @Users.AnonymousUserToken: ""@ (empty string) or leave it out if you do not 
 
 h3. Update nginx configuration
 
-Put a reverse proxy with SSL support in front of keep-web.  Keep-web itself runs on the port 25107 (or whatever is specified in @Services.Keepproxy.InternalURL@) the reverse proxy runs on port 443 and forwards requests to Keepproxy.
+Put a reverse proxy with SSL support in front of keep-web.  Keep-web itself runs on the port 9002 (or whatever is specified in @Services.WebDAV.InternalURL@) while the reverse proxy runs on port 443 and forwards requests to Keep-web.
 
 Use a text editor to create a new file @/etc/nginx/conf.d/keep-web.conf@ with the following configuration. Options that need attention are marked in <span class="userinput">red</span>.
 

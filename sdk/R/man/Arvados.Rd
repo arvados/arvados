@@ -171,7 +171,6 @@ Arvados class gives users ability to access Arvados REST API.
 	\item{}{\code{\link{users.system}}}
 	\item{}{\code{\link{users.unsetup}}}
 	\item{}{\code{\link{users.update}}}
-	\item{}{\code{\link{users.update_uuid}}}
 	\item{}{\code{\link{virtual_machines.create}}}
 	\item{}{\code{\link{virtual_machines.delete}}}
 	\item{}{\code{\link{virtual_machines.get}}}

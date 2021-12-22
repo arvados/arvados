@@ -25,14 +25,60 @@ Each Group has, in addition to the "Common resource fields":{{site.baseurl}}/api
 table(table table-bordered table-condensed).
 |_. Attribute|_. Type|_. Description|_. Example|
 |name|string|||
-|group_class|string|Type of group. This does not affect behavior, but determines how the group is presented in the user interface. For example, @project@ indicates that the group should be displayed by Workbench and arv-mount as a project for organizing and naming objects.|@"project"@
-null|
+|group_class|string|Type of group. @project@ and @filter@ indicate that the group should be displayed by Workbench and arv-mount as a project for organizing and naming objects. @role@ is used as part of the "permission system":{{site.baseurl}}/api/permission-model.html. |@"filter"@
+@"project"@
+@"role"@|
 |description|text|||
 |properties|hash|User-defined metadata, may be used in queries using "subproperty filters":{{site.baseurl}}/api/methods.html#subpropertyfilters ||
 |writable_by|array|List of UUID strings identifying Users and other Groups that have write permission for this Group.  Only users who are allowed to administer the Group will receive a full list.  Other users will receive a partial list that includes the Group's owner_uuid and (if applicable) their own user UUID.||
 |trash_at|datetime|If @trash_at@ is non-null and in the past, this group and all objects directly or indirectly owned by the group will be hidden from API calls.  May be untrashed.||
 |delete_at|datetime|If @delete_at@ is non-null and in the past, the group and all objects directly or indirectly owned by the group may be permanently deleted.||
 |is_trashed|datetime|True if @trash_at@ is in the past, false if not.||
+
+@filter@ groups are virtual groups; they can not own other objects. Filter groups have a special @properties@ field named @filters@, which must be an array of filter conditions. See "list method filters":{{site.baseurl}}/api/methods.html#filters for details on the syntax of valid filters, but keep in mind that the attributes must include the object type (@collections@, @container_requests@, @groups@, @workflows@), separated with a dot from the field to be filtered on.
+
+Filters are applied with an implied *and* between them, but each filter only applies to the object type specified. The results are subject to the usual access controls - they are a subset of all objects the user can see. Here is an example:
+
+<pre>
+ "properties":{
+  "filters":[
+   [
+    "groups.name",
+    "like",
+    "Public%"
+   ]
+  ]
+ },
+</pre>
+
+This @filter@ group will return all groups (projects) that have a name starting with the word @Public@ and are visible to the user issuing the query. Because groups can contain many types of object, it will also return all objects of other types that the user can see.
+
+The 'is_a' filter operator is of particular interest to limit the @filter@ group 'content' to the desired object(s). When the 'is_a' operator is used, the attribute must be 'uuid'. The operand may be a string or an array which means objects of either type will match the filter. This example will return all groups (projects) that have a name starting with the word @Public@, as well as all collections that are in the project with uuid @zzzzz-j7d0g-0123456789abcde@.
+
+<pre>
+ "properties":{
+  "filters":[
+   [
+    "groups.name",
+    "like",
+    "Public%"
+   ],
+   [
+    "collections.owner_uuid",
+    "=",
+    "zzzzz-j7d0g-0123456789abcde"
+   ],
+   [
+    "uuid",
+    "is_a",
+    [
+     "arvados#group",
+     "arvados#collection"
+    ]
+   ]
+  ]
+ },
+ </pre>
 
 h2. Methods
 

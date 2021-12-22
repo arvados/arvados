@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-package main
+package keepstore
 
 import (
 	"bytes"
@@ -557,6 +557,9 @@ func (v *AzureBlobVolume) translateError(err error) error {
 		return VolumeBusyError
 	case strings.Contains(err.Error(), "Not Found"):
 		// "storage: service returned without a response body (404 Not Found)"
+		return os.ErrNotExist
+	case strings.Contains(err.Error(), "ErrorCode=BlobNotFound"):
+		// "storage: service returned error: StatusCode=404, ErrorCode=BlobNotFound, ErrorMessage=The specified blob does not exist.\n..."
 		return os.ErrNotExist
 	default:
 		return err

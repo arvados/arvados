@@ -4,7 +4,6 @@
 
 # Load the rails application
 require_relative 'application'
-require 'josh_id'
 
 # Initialize the rails application
 Rails.application.initialize!

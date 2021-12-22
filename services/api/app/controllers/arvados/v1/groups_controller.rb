@@ -10,6 +10,8 @@ class Arvados::V1::GroupsController < ApplicationController
   skip_before_action :find_object_by_uuid, only: :shared
   skip_before_action :render_404_if_no_object, only: :shared
 
+  TRASHABLE_CLASSES = ['project']
+
   def self._index_requires_parameters
     (super rescue {}).
       merge({
@@ -32,7 +34,7 @@ class Arvados::V1::GroupsController < ApplicationController
     params = _index_requires_parameters.
       merge({
               uuid: {
-                type: 'string', required: false, default: nil,
+                type: 'string', required: false, default: '',
               },
               recursive: {
                 type: 'boolean', required: false, default: false, description: 'Include contents from child groups recursively.',
@@ -99,6 +101,15 @@ class Arvados::V1::GroupsController < ApplicationController
     end
   end
 
+  def destroy
+    if !TRASHABLE_CLASSES.include?(@object.group_class)
+      return @object.destroy
+      show
+    else
+      super # Calls destroy from TrashableController module
+    end
+  end
+
   def render_404_if_no_object
     if params[:action] == 'contents'
       if !params[:uuid]
@@ -127,9 +138,11 @@ class Arvados::V1::GroupsController < ApplicationController
       :self_link => "",
       :offset => @offset,
       :limit => @limit,
-      :items_available => @items_available,
       :items => @objects.as_api_response(nil)
     }
+    if params[:count] != 'none'
+      list[:items_available] = @items_available
+    end
     if @extra_included
       list[:included] = @extra_included.as_api_response(nil, {select: @select})
     end
@@ -185,6 +198,13 @@ class Arvados::V1::GroupsController < ApplicationController
     # columns ("name" => "groups.name"). Here, unqualified orders
     # apply to each table being searched, not "groups".
     load_limit_offset_order_params(fill_table_names: false)
+
+    if params['count'] == 'none' and @offset != 0 and (params['last_object_class'].nil? or params['last_object_class'].empty?)
+      # can't use offset without getting counts, so
+      # fall back to count=exact behavior.
+      params['count'] = 'exact'
+      set_count_none = true
+    end
 
     # Trick apply_where_limit_order_params into applying suitable
     # per-table values. *_all are the real ones we'll apply to the
@@ -244,9 +264,7 @@ class Arvados::V1::GroupsController < ApplicationController
 
     seen_last_class = false
     klasses.each do |klass|
-      @offset = 0 if seen_last_class  # reset offset for the new next type being processed
-
-      # if current klass is same as params['last_object_class'], mark that fact
+      # check if current klass is same as params['last_object_class']
       seen_last_class = true if((params['count'].andand.==('none')) and
                                 (params['last_object_class'].nil? or
                                  params['last_object_class'].empty? or
@@ -255,7 +273,9 @@ class Arvados::V1::GroupsController < ApplicationController
       # if klasses are specified, skip all other klass types
       next if wanted_klasses.any? and !wanted_klasses.include?(klass.to_s)
 
-      # don't reprocess klass types that were already seen
+      # if specified, and count=none, then only look at the klass in
+      # last_object_class.
+      # for whatever reason, this parameter exists separately from 'wanted_klasses'
       next if params['count'] == 'none' and !seen_last_class
 
       # don't process rest of object types if we already have needed number of objects
@@ -273,7 +293,7 @@ class Arvados::V1::GroupsController < ApplicationController
       if klass == Collection
         @select = klass.selectable_attributes - ["manifest_text", "unsigned_manifest_text"]
       elsif klass == Group
-        where_conds = where_conds.merge(group_class: "project")
+        where_conds = where_conds.merge(group_class: ["project","filter"])
       end
 
       @filters = request_filters.map do |col, op, val|
@@ -295,13 +315,21 @@ class Arvados::V1::GroupsController < ApplicationController
         @objects = exclude_home @objects, klass
       end
 
+      # Adjust the limit based on number of objects fetched so far
       klass_limit = limit_all - all_objects.count
       @limit = klass_limit
       apply_where_limit_order_params klass
+
+      # This actually fetches the objects
       klass_object_list = object_list(model_class: klass)
+
+      # If count=none, :items_available will be nil, and offset is
+      # required to be 0.
       klass_items_available = klass_object_list[:items_available] || 0
       @items_available += klass_items_available
       @offset = [@offset - klass_items_available, 0].max
+
+      # Add objects to the list of objects to be returned.
       all_objects += klass_object_list[:items]
 
       if klass_object_list[:limit] < klass_limit
@@ -325,12 +353,14 @@ class Arvados::V1::GroupsController < ApplicationController
       @extra_included = included_by_uuid.values
     end
 
+    if set_count_none
+      params['count'] = 'none'
+    end
+
     @objects = all_objects
     @limit = limit_all
     @offset = offset_all
   end
-
-  protected
 
   def exclude_home objectlist, klass
     # select records that are readable by current user AND

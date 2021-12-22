@@ -23,7 +23,7 @@ The legacy API server configuration is stored in @config/application.yml@ and @c
 Change to the API server directory and use the following commands:
 
 <pre>
-$ RAILS_ENV=production bundle exec rake config:migrate > config.yml
+$ RAILS_ENV=production bin/rake config:migrate > config.yml
 $ cp config.yml /etc/arvados/config.yml
 </pre>
 
@@ -32,7 +32,7 @@ This will print the contents of @config.yml@ after merging the legacy @applicati
 If you wish to update @config.yml@ configuration by hand, or check that everything has been migrated, use @config:diff@ to print configuration items that differ between @application.yml@ and the system @config.yml@.
 
 <pre>
-$ RAILS_ENV=production bundle exec rake config:diff
+$ RAILS_ENV=production bin/rake config:diff
 </pre>
 
 This command will also report if no migrations are required.
@@ -44,7 +44,7 @@ The legacy workbench configuration is stored in @config/application.yml@.  After
 Change to the workbench server directory and use the following commands:
 
 <pre>
-$ RAILS_ENV=production bundle exec rake config:migrate > config.yml
+$ RAILS_ENV=production bin/rake config:migrate > config.yml
 $ cp config.yml /etc/arvados/config.yml
 </pre>
 
@@ -53,7 +53,7 @@ This will print the contents of @config.yml@ after merging the legacy @applicati
 If you wish to update @config.yml@ configuration by hand, or check that everything has been migrated, use @config:diff@ to print configuration items that differ between @application.yml@ and the system @config.yml@.
 
 <pre>
-$ RAILS_ENV=production bundle exec rake config:diff
+$ RAILS_ENV=production bin/rake config:diff
 </pre>
 
 This command will also report if no migrations are required.
@@ -70,6 +70,22 @@ To migrate a component configuration, do this on each node that runs an Arvados 
 # After applying changes, re-run @arvados-server config-check@ again to check for additional warnings and recommendations.
 # When you are satisfied, delete the legacy config file, restart the service, and check its startup logs.
 # Copy the updated @config.yml@ file to your next node, and repeat the process there.
+# When you have a @config.yml@ file that includes all volumes on all keepstores, it is important to add a 'Rendezvous' parameter to the InternalURLs entries to make sure the old volume identifiers line up with the new config. If you don't do this, @keep-balance@ will want to shuffle all the existing data around to match the new volume order. The 'Rendezvous' value should be the last 15 characters of the keepstore's UUID in the old configuration. Here's an example:
+
+<notextile>
+<pre><code>Clusters:
+  xxxxx:
+    Services:
+      Keepstore:
+        InternalURLs:
+          "http://keep1.xxxxx.arvadosapi.com:25107": {Rendezvous: "eim6eefaibesh3i"}
+          "http://keep2.xxxxx.arvadosapi.com:25107": {Rendezvous: "yequoodalai7ahg"}
+          "http://keep3.xxxxx.arvadosapi.com:25107": {Rendezvous: "eipheho6re1shou"}
+          "http://keep4.xxxxx.arvadosapi.com:25107": {Rendezvous: "ahk7chahthae3oo"}
+</code></pre>
+</notextile>
+
+In this example, the keepstore with the name `keep1` had the uuid `xxxxx-bi6l4-eim6eefaibesh3i` in the old configuration.
 
 After migrating and removing all legacy config files, make sure the @/etc/arvados/config.yml@ file is identical across all system nodes -- API server, keepstore, etc. -- and restart all services to make sure they are using the latest configuration.
 

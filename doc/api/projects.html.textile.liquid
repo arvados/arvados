@@ -1,0 +1,69 @@
+---
+layout: default
+navsection: api
+title: "Projects and filter groups"
+...
+{% comment %}
+Copyright (C) The Arvados Authors. All rights reserved.
+
+SPDX-License-Identifier: CC-BY-SA-3.0
+{% endcomment %}
+
+Arvados @projects@ are used to organize objects. Projects can contain @collections@, @container requests@, @workflows@, etc. Projects can also contain other projects. An object is part of a project if the @owner_uuid@ of the object is set to the uuid of the project.
+
+Projects are implemented as a subtype of the Arvados @group@ object type, with @group_class@ set to the value "project". More information is available in the "groups API reference":{{ site.baseurl }}/api/methods/groups.html.
+
+Projects can be manipulated via Workbench, the cli tools, the SDKs, and the Arvados APIs.
+
+h2. The home project
+
+Each user has a @home project@, which is implemented differently. This is a virtual project that is comprised of all objects owned by the user, in other words, all objects with the @owner_uuid@ set to the @uuid@ of the user. The home project is accessible via Workbench, which makes it easy view its contents and to move objects from and to the home project. The home project is also accessible via FUSE, WebDAV and the S3 interface.
+
+The same thing can be done via the APIs. To put something in a user's home project via the cli or SDKs, one would set the @owner_uuid@ of the object to the user's @uuid@. This also implies that this user now has full ownership and control over that object.
+
+The contents of the home project can be accessed with the @group contents@ API, e.g. via the cli with this command:
+<pre>arv group contents --uuid zzzzz-tpzed-123456789012345</pre>
+In this command, `zzzzz-tpzed-123456789012345` is a @user@ uuid, which is unusual because we are using it as the argument to a @groups@ API. The @group contents@ API is normally used with a @group@ uuid.
+
+Because the home project is a virtual project, other operations via the @groups@ API are not supported.
+
+h2. Filter groups
+
+Filter groups are another type of virtual project. They are implemented as an Arvados @group@ object with @group_class@ set to the value "filter".
+
+Filter groups define one or more filters which are applied to all objects that the current user can see, and returned as the contents of the @group@. Filter groups are described in more detail in the "groups API reference":{{site.baseurl}}/api/methods/groups.html, and the rules for creating valid filters are the same as for "list method filters":{{site.baseurl}}/api/methods.html#filters.
+
+Filter groups are accessible (read-only) via Workbench and the Arvados FUSE mount, WebDAV and S3 interface. Filter groups must currently be defined via the API, SDK or cli, there is no Workbench support yet.
+
+As an example, create a filter group with the @arv@ cli:
+
+<notextile>
+<pre><code>~$ <span class="userinput"> FILTER_GROUP_UUID=`arv -s group create --group '{
+    "group_class":"filter",
+    "name":"my filter group",
+    "properties":{
+      "filters":
+        [
+          ["collections.name","ilike","%test%"],
+          ["uuid","is_a","arvados#collection"]
+        ]
+      }
+    }'`
+</code>
+</pre>
+</notextile>
+This filter group will contain all collections visible to the current user whose name matches the word @test@ (case insensitive).
+
+To see how this works via the keep FUSE mount, create a few matching (and non-matching) collections:
+
+<notextile>
+<pre><code>~$ <span class="userinput">arv collection create --collection '{"name":"empty test collection 1"}'</span>
+~$ <span class="userinput">arv collection create --collection '{"name":"another empty collection"}'</span>
+~$ <span class="userinput">arv collection create --collection '{"name":"empty Test collection 2"}'</span>
+~$ <span class="userinput">mkdir -p keep</span>
+~$ <span class="userinput">arv-mount keep</span>
+~$ <span class="userinput">ls keep/by_id/$FILTER_GROUP_UUID/ -C1</span>
+'empty test collection 1'
+'empty Test collection 2'</code>
+</pre>
+</notextile>

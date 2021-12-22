@@ -50,13 +50,13 @@ func (s *DurationSuite) TestUnmarshalJSON(c *check.C) {
 		D Duration
 	}
 	err := json.Unmarshal([]byte(`{"D":1.234}`), &d)
-	c.Check(err, check.ErrorMatches, `missing unit in duration 1.234`)
+	c.Check(err, check.ErrorMatches, `.*missing unit in duration "?1\.234"?`)
 	err = json.Unmarshal([]byte(`{"D":"1.234"}`), &d)
-	c.Check(err, check.ErrorMatches, `.*missing unit in duration 1.234`)
+	c.Check(err, check.ErrorMatches, `.*missing unit in duration "?1\.234"?`)
 	err = json.Unmarshal([]byte(`{"D":"1"}`), &d)
-	c.Check(err, check.ErrorMatches, `.*missing unit in duration 1`)
+	c.Check(err, check.ErrorMatches, `.*missing unit in duration "?1"?`)
 	err = json.Unmarshal([]byte(`{"D":"foobar"}`), &d)
-	c.Check(err, check.ErrorMatches, `.*invalid duration foobar`)
+	c.Check(err, check.ErrorMatches, `.*invalid duration "?foobar"?`)
 	err = json.Unmarshal([]byte(`{"D":"60s"}`), &d)
 	c.Check(err, check.IsNil)
 	c.Check(d.D.Duration(), check.Equals, time.Minute)

@@ -9,91 +9,179 @@ Copyright (C) The Arvados Authors. All rights reserved.
 SPDX-License-Identifier: CC-BY-SA-3.0
 {% endcomment %}
 
-# "Install Saltstack":#saltstack
-# "Install dependencies":#dependencies
-# "Install Arvados using Saltstack":#saltstack
-# "DNS configuration":#final_steps
+# "Introduction":#introduction
+# "Hosts preparation":#hosts_preparation
+## "Create a compute image":#create_a_compute_image
+# "Multi host install using the provision.sh script":#multi_host
+# "Choose the desired configuration":#choose_configuration
+## "Multiple hosts / multiple hostnames":#multi_host_multi_hostnames
+## "Further customization of the installation (modifying the salt pillars and states)":#further_customization
+# "Installation order":#installation_order
+# "Run the provision.sh script":#run_provision_script
 # "Initial user and login":#initial_user
+# "Test the installed cluster running a simple workflow":#test_install
 
-h2(#saltstack). Install Saltstack
 
-If you already have a Saltstack environment you can skip this section.
 
-The simplest way to get Salt up and running on a node is to use the bootstrap script they provide:
+h2(#introduction). Introduction
 
+Arvados components can be installed in a distributed infrastructure, whether it is an "on-prem" with physical or virtual hosts, or a cloud environment.
+
+As infrastructures vary a great deal from site to site, these instructions should be considered more as 'guidelines' than fixed steps to follow.
+
+We provide an "installer script":salt.html that can help you deploy the different Arvados components. At the time of writing, the provided examples are suitable to install Arvados on AWS.
+
+
+
+h2(#hosts_preparation). Hosts preparation
+
+In order to run Arvados on a multi-host installation, there are a few requirements that your infrastructure has to fulfill.
+
+These instructions explain how to setup a multi-host environment that is suitable for production use of Arvados.
+
+We suggest distributing the Arvados components in the following way, creating at least 6 hosts:
+
+# Database server:
+## postgresql server
+# API node:
+## arvados api server
+## arvados controller
+## arvados websocket
+## arvados cloud dispatcher
+# WORKBENCH node:
+## arvados workbench
+## arvados workbench2
+## arvados webshell
+# KEEPPROXY node:
+## arvados keepproxy
+## arvados keepweb
+# KEEPSTOREs (at least 2)
+## arvados keepstore
+# SHELL node (optional):
+## arvados shell
+
+Note that these hosts can be virtual machines in your infrastructure and they don't need to be physical machines.
+
+Again, if your infrastructure differs from the setup proposed above (ie, using RDS or an existing DB server), remember that you will need to edit the configuration files for the scripts so they work with your infrastructure.
+
+h2(#multi_host). Multi host install using the provision.sh script
+
+{% include 'branchname' %}
+
+This is a package-based installation method. Start with the @provision.sh@ script which is available by cloning the @{{ branchname }}@ branch from "https://git.arvados.org/arvados.git":https://git.arvados.org/arvados.git . The @provision.sh@ script and its supporting files can be found in the "arvados/tools/salt-install":https://git.arvados.org/arvados.git/tree/refs/heads/{{ branchname }}:/tools/salt-install directory in the Arvados git repository.
+
+This procedure will install all the main Arvados components to get you up and running in a multi-host environment.
+
+The @provision.sh@ script will help you deploy Arvados by preparing your environment to be able to run the installer, then running it. The actual installer is located at "arvados-formula":https://git.arvados.org/arvados-formula.git/tree/refs/heads/{{ branchname }} and will be cloned during the running of the @provision.sh@ script.  The installer is built using "Saltstack":https://saltproject.io/ and @provision.sh@ performs the install using master-less mode.
+
+After setting up a few variables in a config file (next step), you'll be ready to run it and get Arvados deployed.
+
+h3(#create_a_compute_image). Create a compute image
+
+In a multi-host installation, containers are dispatched in docker daemons running in the <i>compute instances</i>, which need some special setup. We provide a "compute image builder script":https://github.com/arvados/arvados/tree/main/tools/compute-images that you can use to build a template image following "these instructions":https://doc.arvados.org/main/install/crunch2-cloud/install-compute-node.html . Once you have that image created, you can use the image ID in the Arvados configuration in the next steps.
+
+h2(#choose_configuration). Choose the desired configuration
+
+For documentation's sake, we will use the cluster name <i>arva2</i> and the domain <i>arv.local</i>. If you don't change them as required in the next steps, installation won't proceed.
+
+We will try to provide a few Arvados' multi host installation configurations examples for different infrastructure providers. Currently only AWS is available but they can be used with almost any provider with little changes.
+
+You need to copy one of the example configuration files and directory, and edit them to suit your needs.
+
+h3(#multi_host_multi_hostnames). Multiple hosts / multiple hostnames
 <notextile>
-<pre><code>curl -L https://bootstrap.saltstack.com -o /tmp/bootstrap_salt.sh
-sudo sh /tmp/bootstrap_salt.sh -XUdfP -x python3
+<pre><code>cp local.params.example.multiple_hosts local.params
+cp -r config_examples/multi_host/aws local_config_dir
 </code></pre>
 </notextile>
 
-For more information check "Saltstack's documentation":https://docs.saltstack.com/en/latest/topics/installation/index.html
+Edit the variables in the <i>local.params</i> file. Pay attention to the <b>*_INT_IP, *_TOKEN</b> and <b>*KEY</b> variables. Those variables will be used to do a search and replace on the <i>pillars/*</i> in place of any matching __VARIABLE__.
 
-h2(#dependencies). Install dependencies
+The <i>multi_host</i> example includes Let's Encrypt salt code to automatically request and install the certificates for the public-facing hosts (API/controller, Workbench, Keepproxy/Keepweb) using AWS' Route53.
 
-Arvados depends in a few applications and packages (postgresql, nginx+passenger, ruby) that can also be installed using their respective Saltstack formulas.
+{% include 'install_custom_certificates' %}
 
-The formulas we use are:
+h3(#further_customization). Further customization of the installation (modifying the salt pillars and states)
 
-* "postgres":https://github.com/saltstack-formulas/postgres-formula.git
-* "nginx":https://github.com/saltstack-formulas/nginx-formula.git
-* "docker":https://github.com/saltstack-formulas/docker-formula.git
-* "locale":https://github.com/saltstack-formulas/locale-formula.git
+You will need further customization to suit your environment, which can be done editing the Saltstack pillars and states files. Pay particular attention to the <i>pillars/arvados.sls</i> file, where you will need to provide some information that describes your environment.
 
-There are example Salt pillar files for each of those formulas in the "arvados-formula's test/salt/pillar/examples":https://github.com/saltstack-formulas/arvados-formula/tree/master/test/salt/pillar/examples directory. As they are, they allow you to get all the main Arvados components up and running.
+Any extra <i>state</i> file you add under <i>local_config_dir/states</i> will be added to the salt run and applied to the hosts.
 
-h2(#saltstack). Install Arvados using Saltstack
+h2(#installation_order). Installation order
 
-This is a package-based installation method. The Salt scripts are available from the "tools/salt-install":https://github.com/arvados/arvados/tree/master/tools/salt-install directory in the Arvados git repository.
+A few Arvados nodes need to be installed in certain order. The required order is
 
-The Arvados formula we maintain is located in the Saltstack's community repository of formulas:
+#. Database
+#. API server
+#. The other nodes can be installed in any order after the two above
 
-* "arvados-formula":https://github.com/saltstack-formulas/arvados-formula.git
+h2(#run_provision_script). Run the provision.sh script
 
-The @development@ version lives in our own repository
-
-* "arvados-formula development":https://github.com/arvados/arvados-formula.git
-
-This last one might break from time to time, as we try and add new features. Use with caution.
-
-As much as possible, we try to keep it up to date, with example pillars to help you deploy Arvados.
-
-For those familiar with Saltstack, the process to get it deployed is similar to any other formula:
-
-1. Fork/copy the formula to your Salt master host.
-2. Edit the Arvados, nginx, postgres, locale and docker pillars to match your desired configuration.
-3. Run a @state.apply@ to get it deployed.
-
-h2(#final_steps). DNS configuration
-
-After the setup is done, you need to set up your DNS to be able to access the cluster's nodes.
-
-The simplest way to do this is to add entries in the @/etc/hosts@ file of every host:
+When you finished customizing the configuration, you are ready to copy the files to the hosts and run the @provision.sh@ script. The script allows you to specify the <i>role/s</i> a node will have and it will install only the Arvados components required for such role. The general format of the command is:
 
 <notextile>
-<pre><code>export CLUSTER="arva2"
-export DOMAIN="arv.local"
-
-echo A.B.C.a  api ${CLUSTER}.${DOMAIN} api.${CLUSTER}.${DOMAIN} >> /etc/hosts
-echo A.B.C.b  keep keep.${CLUSTER}.${DOMAIN} >> /etc/hosts
-echo A.B.C.c  keep0 keep0.${CLUSTER}.${DOMAIN} >> /etc/hosts
-echo A.B.C.d  collections collections.${CLUSTER}.${DOMAIN} >> /etc/hosts
-echo A.B.C.e  download download.${CLUSTER}.${DOMAIN} >> /etc/hosts
-echo A.B.C.f  ws ws.${CLUSTER}.${DOMAIN} >> /etc/hosts
-echo A.B.C.g  workbench workbench.${CLUSTER}.${DOMAIN} >> /etc/hosts
-echo A.B.C.h  workbench2 workbench2.${CLUSTER}.${DOMAIN}" >> /etc/hosts
+<pre><code>scp -r provision.sh local* user@host:
+ssh user@host sudo ./provision.sh --roles comma,separated,list,of,roles,to,apply
 </code></pre>
 </notextile>
 
-Replacing in each case de @A.B.C.x@ IP with the corresponding IP of the node.
+and wait for it to finish.
 
-If your infrastructure uses another DNS service setup, add the corresponding entries accordingly.
+If everything goes OK, you'll get some final lines stating something like:
+
+<notextile>
+<pre><code>arvados: Succeeded: 109 (changed=9)
+arvados: Failed:      0
+</code></pre>
+</notextile>
+
+The distribution of role as described above can be applied running these commands:
+
+#. Database
+<notextile>
+<pre><code>scp -r provision.sh local* user@host:
+ssh user@host sudo ./provision.sh --config local.params --roles database
+</code></pre>
+</notextile>
+
+#. API
+<notextile>
+<pre><code>scp -r provision.sh local* user@host:
+ssh user@host sudo ./provision.sh --config local.params --roles api,controller,websocket,dispatcher
+</code></pre>
+</notextile>
+
+#. Keepstore/s
+<notextile>
+<pre><code>scp -r provision.sh local* user@host:
+ssh user@host sudo ./provision.sh --config local.params --roles keepstore
+</code></pre>
+</notextile>
+
+#. Workbench
+<notextile>
+<pre><code>scp -r provision.sh local* user@host:
+ssh user@host sudo ./provision.sh --config local.params --roles workbench,workbench2,webshell
+</code></pre>
+</notextile>
+
+#. Keepproxy / Keepweb
+<notextile>
+<pre><code>scp -r provision.sh local* user@host:
+ssh user@host sudo ./provision.sh --config local.params --roles keepproxy,keepweb
+</code></pre>
+</notextile>
+
+#. Shell (here we copy the CLI test workflow too)
+<notextile>
+<pre><code>scp -r provision.sh local* tests user@host:
+ssh user@host sudo ./provision.sh --config local.params --roles shell
+</code></pre>
+</notextile>
 
 h2(#initial_user). Initial user and login
 
-At this point you should be able to log into the Arvados cluster.
-
-If you did not change the defaults, the initial URL will be:
+At this point you should be able to log into the Arvados cluster. The initial URL will be:
 
 * https://workbench.arva2.arv.local
 
@@ -103,8 +191,100 @@ or, in general, the url format will be:
 
 By default, the provision script creates an initial user for testing purposes. This user is configured as administrator of the newly created cluster.
 
-Assuming you didn't change the defaults, the initial credentials are:
+Assuming you didn't change these values in the @local.params@ file, the initial credentials are:
 
 * User: 'admin'
 * Password: 'password'
 * Email: 'admin@arva2.arv.local'
+
+h2(#test_install). Test the installed cluster running a simple workflow
+
+If you followed the instructions above, the @provision.sh@ script saves a simple example test workflow in the @/tmp/cluster_tests@ directory in the @shell@ node. If you want to run it, just ssh to the node, change to that directory and run:
+
+<notextile>
+<pre><code>cd /tmp/cluster_tests
+sudo /run-test.sh
+</code></pre>
+</notextile>
+
+It will create a test user (by default, the same one as the admin user), upload a small workflow and run it. If everything goes OK, the output should similar to this (some output was shortened for clarity):
+
+<notextile>
+<pre><code>Creating Arvados Standard Docker Images project
+Arvados project uuid is 'arva2-j7d0g-0prd8cjlk6kfl7y'
+{
+ ...
+ "uuid":"arva2-o0j2j-n4zu4cak5iifq2a",
+ "owner_uuid":"arva2-tpzed-000000000000000",
+ ...
+}
+Uploading arvados/jobs' docker image to the project
+2.1.1: Pulling from arvados/jobs
+8559a31e96f4: Pulling fs layer
+...
+Status: Downloaded newer image for arvados/jobs:2.1.1
+docker.io/arvados/jobs:2.1.1
+2020-11-23 21:43:39 arvados.arv_put[32678] INFO: Creating new cache file at /home/vagrant/.cache/arvados/arv-put/c59256eda1829281424c80f588c7cc4d
+2020-11-23 21:43:46 arvados.arv_put[32678] INFO: Collection saved as 'Docker image arvados jobs:2.1.1 sha256:0dd50'
+arva2-4zz18-1u5pvbld7cvxuy2
+Creating initial user ('admin')
+Setting up user ('admin')
+{
+ "items":[
+  {
+   ...
+   "owner_uuid":"arva2-tpzed-000000000000000",
+   ...
+   "uuid":"arva2-o0j2j-1ownrdne0ok9iox"
+  },
+  {
+   ...
+   "owner_uuid":"arva2-tpzed-000000000000000",
+   ...
+   "uuid":"arva2-o0j2j-1zbeyhcwxc1tvb7"
+  },
+  {
+   ...
+   "email":"admin@arva2.arv.local",
+   ...
+   "owner_uuid":"arva2-tpzed-000000000000000",
+   ...
+   "username":"admin",
+   "uuid":"arva2-tpzed-3wrm93zmzpshrq2",
+   ...
+  }
+ ],
+ "kind":"arvados#HashList"
+}
+Activating user 'admin'
+{
+ ...
+ "email":"admin@arva2.arv.local",
+ ...
+ "username":"admin",
+ "uuid":"arva2-tpzed-3wrm93zmzpshrq2",
+ ...
+}
+Running test CWL workflow
+INFO /usr/bin/cwl-runner 2.1.1, arvados-python-client 2.1.1, cwltool 3.0.20200807132242
+INFO Resolved 'hasher-workflow.cwl' to 'file:///tmp/cluster_tests/hasher-workflow.cwl'
+...
+INFO Using cluster arva2 (https://arva2.arv.local:8443/)
+INFO Upload local files: "test.txt"
+INFO Uploaded to ea34d971b71d5536b4f6b7d6c69dc7f6+50 (arva2-4zz18-c8uvwqdry4r8jao)
+INFO Using collection cache size 256 MiB
+INFO [container hasher-workflow.cwl] submitted container_request arva2-xvhdp-v1bkywd58gyocwm
+INFO [container hasher-workflow.cwl] arva2-xvhdp-v1bkywd58gyocwm is Final
+INFO Overall process status is success
+INFO Final output collection d6c69a88147dde9d52a418d50ef788df+123
+{
+    "hasher_out": {
+        "basename": "hasher3.md5sum.txt",
+        "class": "File",
+        "location": "keep:d6c69a88147dde9d52a418d50ef788df+123/hasher3.md5sum.txt",
+        "size": 95
+    }
+}
+INFO Final process status is success
+</code></pre>
+</notextile>

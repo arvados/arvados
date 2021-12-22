@@ -7,6 +7,7 @@ package router
 import (
 	"context"
 	"fmt"
+	"math"
 	"net/http"
 	"strings"
 
@@ -20,24 +21,32 @@ import (
 )
 
 type router struct {
-	mux       *mux.Router
-	backend   arvados.API
-	wrapCalls func(api.RoutableFunc) api.RoutableFunc
+	mux     *mux.Router
+	backend arvados.API
+	config  Config
+}
+
+type Config struct {
+	// Return an error if request body exceeds this size. 0 means
+	// unlimited.
+	MaxRequestSize int
+
+	// If wrapCalls is not nil, it is called once for each API
+	// method, and the returned method is used in its place. This
+	// can be used to install hooks before and after each API call
+	// and alter responses; see localdb.WrapCallsInTransaction for
+	// an example.
+	WrapCalls func(api.RoutableFunc) api.RoutableFunc
 }
 
 // New returns a new router (which implements the http.Handler
 // interface) that serves requests by calling Arvados API methods on
 // the given backend.
-//
-// If wrapCalls is not nil, it is called once for each API method, and
-// the returned method is used in its place. This can be used to
-// install hooks before and after each API call and alter responses;
-// see localdb.WrapCallsInTransaction for an example.
-func New(backend arvados.API, wrapCalls func(api.RoutableFunc) api.RoutableFunc) *router {
+func New(backend arvados.API, config Config) *router {
 	rtr := &router{
-		mux:       mux.NewRouter(),
-		backend:   backend,
-		wrapCalls: wrapCalls,
+		mux:     mux.NewRouter(),
+		backend: backend,
+		config:  config,
 	}
 	rtr.addRoutes()
 	return rtr
@@ -54,6 +63,13 @@ func (rtr *router) addRoutes() {
 			func() interface{} { return &struct{}{} },
 			func(ctx context.Context, opts interface{}) (interface{}, error) {
 				return rtr.backend.ConfigGet(ctx)
+			},
+		},
+		{
+			arvados.EndpointVocabularyGet,
+			func() interface{} { return &struct{}{} },
+			func(ctx context.Context, opts interface{}) (interface{}, error) {
+				return rtr.backend.VocabularyGet(ctx)
 			},
 		},
 		{
@@ -229,6 +245,111 @@ func (rtr *router) addRoutes() {
 			},
 		},
 		{
+			arvados.EndpointGroupCreate,
+			func() interface{} { return &arvados.CreateOptions{} },
+			func(ctx context.Context, opts interface{}) (interface{}, error) {
+				return rtr.backend.GroupCreate(ctx, *opts.(*arvados.CreateOptions))
+			},
+		},
+		{
+			arvados.EndpointGroupUpdate,
+			func() interface{} { return &arvados.UpdateOptions{} },
+			func(ctx context.Context, opts interface{}) (interface{}, error) {
+				return rtr.backend.GroupUpdate(ctx, *opts.(*arvados.UpdateOptions))
+			},
+		},
+		{
+			arvados.EndpointGroupList,
+			func() interface{} { return &arvados.ListOptions{Limit: -1} },
+			func(ctx context.Context, opts interface{}) (interface{}, error) {
+				return rtr.backend.GroupList(ctx, *opts.(*arvados.ListOptions))
+			},
+		},
+		{
+			arvados.EndpointGroupContents,
+			func() interface{} { return &arvados.GroupContentsOptions{Limit: -1} },
+			func(ctx context.Context, opts interface{}) (interface{}, error) {
+				return rtr.backend.GroupContents(ctx, *opts.(*arvados.GroupContentsOptions))
+			},
+		},
+		{
+			arvados.EndpointGroupContentsUUIDInPath,
+			func() interface{} { return &arvados.GroupContentsOptions{Limit: -1} },
+			func(ctx context.Context, opts interface{}) (interface{}, error) {
+				return rtr.backend.GroupContents(ctx, *opts.(*arvados.GroupContentsOptions))
+			},
+		},
+		{
+			arvados.EndpointGroupShared,
+			func() interface{} { return &arvados.ListOptions{Limit: -1} },
+			func(ctx context.Context, opts interface{}) (interface{}, error) {
+				return rtr.backend.GroupShared(ctx, *opts.(*arvados.ListOptions))
+			},
+		},
+		{
+			arvados.EndpointGroupGet,
+			func() interface{} { return &arvados.GetOptions{} },
+			func(ctx context.Context, opts interface{}) (interface{}, error) {
+				return rtr.backend.GroupGet(ctx, *opts.(*arvados.GetOptions))
+			},
+		},
+		{
+			arvados.EndpointGroupDelete,
+			func() interface{} { return &arvados.DeleteOptions{} },
+			func(ctx context.Context, opts interface{}) (interface{}, error) {
+				return rtr.backend.GroupDelete(ctx, *opts.(*arvados.DeleteOptions))
+			},
+		},
+		{
+			arvados.EndpointGroupTrash,
+			func() interface{} { return &arvados.DeleteOptions{} },
+			func(ctx context.Context, opts interface{}) (interface{}, error) {
+				return rtr.backend.GroupTrash(ctx, *opts.(*arvados.DeleteOptions))
+			},
+		},
+		{
+			arvados.EndpointGroupUntrash,
+			func() interface{} { return &arvados.UntrashOptions{} },
+			func(ctx context.Context, opts interface{}) (interface{}, error) {
+				return rtr.backend.GroupUntrash(ctx, *opts.(*arvados.UntrashOptions))
+			},
+		},
+		{
+			arvados.EndpointLinkCreate,
+			func() interface{} { return &arvados.CreateOptions{} },
+			func(ctx context.Context, opts interface{}) (interface{}, error) {
+				return rtr.backend.LinkCreate(ctx, *opts.(*arvados.CreateOptions))
+			},
+		},
+		{
+			arvados.EndpointLinkUpdate,
+			func() interface{} { return &arvados.UpdateOptions{} },
+			func(ctx context.Context, opts interface{}) (interface{}, error) {
+				return rtr.backend.LinkUpdate(ctx, *opts.(*arvados.UpdateOptions))
+			},
+		},
+		{
+			arvados.EndpointLinkList,
+			func() interface{} { return &arvados.ListOptions{Limit: -1} },
+			func(ctx context.Context, opts interface{}) (interface{}, error) {
+				return rtr.backend.LinkList(ctx, *opts.(*arvados.ListOptions))
+			},
+		},
+		{
+			arvados.EndpointLinkGet,
+			func() interface{} { return &arvados.GetOptions{} },
+			func(ctx context.Context, opts interface{}) (interface{}, error) {
+				return rtr.backend.LinkGet(ctx, *opts.(*arvados.GetOptions))
+			},
+		},
+		{
+			arvados.EndpointLinkDelete,
+			func() interface{} { return &arvados.DeleteOptions{} },
+			func(ctx context.Context, opts interface{}) (interface{}, error) {
+				return rtr.backend.LinkDelete(ctx, *opts.(*arvados.DeleteOptions))
+			},
+		},
+		{
 			arvados.EndpointSpecimenCreate,
 			func() interface{} { return &arvados.CreateOptions{} },
 			func(ctx context.Context, opts interface{}) (interface{}, error) {
@@ -261,6 +382,48 @@ func (rtr *router) addRoutes() {
 			func() interface{} { return &arvados.DeleteOptions{} },
 			func(ctx context.Context, opts interface{}) (interface{}, error) {
 				return rtr.backend.SpecimenDelete(ctx, *opts.(*arvados.DeleteOptions))
+			},
+		},
+		{
+			arvados.EndpointAPIClientAuthorizationCreate,
+			func() interface{} { return &arvados.CreateOptions{} },
+			func(ctx context.Context, opts interface{}) (interface{}, error) {
+				return rtr.backend.APIClientAuthorizationCreate(ctx, *opts.(*arvados.CreateOptions))
+			},
+		},
+		{
+			arvados.EndpointAPIClientAuthorizationUpdate,
+			func() interface{} { return &arvados.UpdateOptions{} },
+			func(ctx context.Context, opts interface{}) (interface{}, error) {
+				return rtr.backend.APIClientAuthorizationUpdate(ctx, *opts.(*arvados.UpdateOptions))
+			},
+		},
+		{
+			arvados.EndpointAPIClientAuthorizationDelete,
+			func() interface{} { return &arvados.DeleteOptions{} },
+			func(ctx context.Context, opts interface{}) (interface{}, error) {
+				return rtr.backend.APIClientAuthorizationDelete(ctx, *opts.(*arvados.DeleteOptions))
+			},
+		},
+		{
+			arvados.EndpointAPIClientAuthorizationList,
+			func() interface{} { return &arvados.ListOptions{} },
+			func(ctx context.Context, opts interface{}) (interface{}, error) {
+				return rtr.backend.APIClientAuthorizationList(ctx, *opts.(*arvados.ListOptions))
+			},
+		},
+		{
+			arvados.EndpointAPIClientAuthorizationCurrent,
+			func() interface{} { return &arvados.GetOptions{} },
+			func(ctx context.Context, opts interface{}) (interface{}, error) {
+				return rtr.backend.APIClientAuthorizationCurrent(ctx, *opts.(*arvados.GetOptions))
+			},
+		},
+		{
+			arvados.EndpointAPIClientAuthorizationGet,
+			func() interface{} { return &arvados.GetOptions{} },
+			func(ctx context.Context, opts interface{}) (interface{}, error) {
+				return rtr.backend.APIClientAuthorizationGet(ctx, *opts.(*arvados.GetOptions))
 			},
 		},
 		{
@@ -320,13 +483,6 @@ func (rtr *router) addRoutes() {
 			},
 		},
 		{
-			arvados.EndpointUserUpdateUUID,
-			func() interface{} { return &arvados.UpdateUUIDOptions{} },
-			func(ctx context.Context, opts interface{}) (interface{}, error) {
-				return rtr.backend.UserUpdateUUID(ctx, *opts.(*arvados.UpdateUUIDOptions))
-			},
-		},
-		{
 			arvados.EndpointUserUpdate,
 			func() interface{} { return &arvados.UpdateOptions{} },
 			func(ctx context.Context, opts interface{}) (interface{}, error) {
@@ -363,8 +519,8 @@ func (rtr *router) addRoutes() {
 		},
 	} {
 		exec := route.exec
-		if rtr.wrapCalls != nil {
-			exec = rtr.wrapCalls(exec)
+		if rtr.config.WrapCalls != nil {
+			exec = rtr.config.WrapCalls(exec)
 		}
 		rtr.addRoute(route.endpoint, route.defaultOpts, exec)
 	}
@@ -454,8 +610,26 @@ func (rtr *router) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if r.Method == "OPTIONS" {
 		return
 	}
+	if r.Body != nil {
+		// Wrap r.Body in a http.MaxBytesReader(), otherwise
+		// r.ParseForm() uses a default max request body size
+		// of 10 megabytes. Note we rely on the Nginx
+		// configuration to enforce the real max body size.
+		max := int64(rtr.config.MaxRequestSize)
+		if max < 1 {
+			max = math.MaxInt64 - 1
+		}
+		r.Body = http.MaxBytesReader(w, r.Body, max)
+	}
 	if r.Method == "POST" {
-		r.ParseForm()
+		err := r.ParseForm()
+		if err != nil {
+			if err.Error() == "http: request body too large" {
+				err = httpError(http.StatusRequestEntityTooLarge, err)
+			}
+			rtr.sendError(w, err)
+			return
+		}
 		if m := r.FormValue("_method"); m != "" {
 			r2 := *r
 			r = &r2

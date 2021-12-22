@@ -125,17 +125,17 @@ setup_conffile() {
 }
 
 prepare_database() {
-  DB_MIGRATE_STATUS=`$COMMAND_PREFIX bundle exec rake db:migrate:status 2>&1 || true`
+  DB_MIGRATE_STATUS=`$COMMAND_PREFIX bin/rake db:migrate:status 2>&1 || true`
   if echo "$DB_MIGRATE_STATUS" | grep -qF 'Schema migrations table does not exist yet.'; then
       # The database exists, but the migrations table doesn't.
-      run_and_report "Setting up database" $COMMAND_PREFIX bundle exec \
-                     rake "$RAILSPKG_DATABASE_LOAD_TASK" db:seed
+      run_and_report "Setting up database" $COMMAND_PREFIX bin/rake \
+                     "$RAILSPKG_DATABASE_LOAD_TASK" db:seed
   elif echo "$DB_MIGRATE_STATUS" | grep -q '^database: '; then
       run_and_report "Running db:migrate" \
-                     $COMMAND_PREFIX bundle exec rake db:migrate
+                     $COMMAND_PREFIX bin/rake db:migrate
   elif echo "$DB_MIGRATE_STATUS" | grep -q 'database .* does not exist'; then
       if ! run_and_report "Running db:setup" \
-           $COMMAND_PREFIX bundle exec rake db:setup 2>/dev/null; then
+           $COMMAND_PREFIX bin/rake db:setup 2>/dev/null; then
           echo "Warning: unable to set up database." >&2
           DATABASE_READY=0
       fi
@@ -198,12 +198,15 @@ configure_version() {
   cd "$RELEASE_PATH"
   export RAILS_ENV=production
 
-  if ! $COMMAND_PREFIX bundle --version >/dev/null; then
-      run_and_report "Installing bundler" $COMMAND_PREFIX gem install bundler --version 1.17.3
+  if ! $COMMAND_PREFIX bundle --version >/dev/null 2>&1; then
+      run_and_report "Installing bundler" $COMMAND_PREFIX gem install bundler --version 2.2.19 --no-document
   fi
 
+  run_and_report "Running bundle config set --local path $SHARED_PATH/vendor_bundle" \
+      $COMMAND_PREFIX bin/bundle config set --local path $SHARED_PATH/vendor_bundle
+
   run_and_report "Running bundle install" \
-      $COMMAND_PREFIX bundle install --path $SHARED_PATH/vendor_bundle --local --quiet
+      $COMMAND_PREFIX bin/bundle install --local --quiet
 
   echo -n "Ensuring directory and file permissions ..."
   # Ensure correct ownership of a few files
@@ -226,19 +229,15 @@ configure_version() {
       prepare_database
   fi
 
-  if [ 11 = "$RAILSPKG_SUPPORTS_CONFIG_CHECK$APPLICATION_READY" ]; then
+  if [ -e /etc/arvados/config.yml ]; then
+      # warn about config errors (deprecated/removed keys from
+      # previous version, etc)
       run_and_report "Checking configuration for completeness" \
-          $COMMAND_PREFIX bundle exec rake config:check || APPLICATION_READY=0
+                     $COMMAND_PREFIX bin/rake config:check || APPLICATION_READY=0
+  else
+      APPLICATION_READY=0
   fi
 
-  # precompile assets; thankfully this does not take long
-  if [ "$APPLICATION_READY" = "1" ]; then
-      run_and_report "Precompiling assets" \
-          $COMMAND_PREFIX bundle exec rake assets:precompile -q -s 2>/dev/null \
-          || APPLICATION_READY=0
-  else
-      echo "Precompiling assets... skipped."
-  fi
   chown -R "$WWW_OWNER:" $RELEASE_PATH/tmp
 
   setup_before_nginx_restart

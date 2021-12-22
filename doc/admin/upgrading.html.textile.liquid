@@ -35,9 +35,78 @@ TODO: extract this information based on git commit messages and generate changel
 <div class="releasenotes">
 </notextile>
 
-h2(#main). development main (as of 2020-12-10)
+h2(#main). development main (as of 2021-11-10)
 
-"Upgrading from 2.1.0":#v2_1_0
+"previous: Upgrading from 2.3.0":#v2_3_0
+
+h3. Role groups are visible to all users by default
+
+The permission model has changed such that all role groups are visible to all active users. This enables users to share objects with groups they don't belong to. To preserve the previous behavior, where role groups are only visible to members and admins, add @RoleGroupsVisibleToAll: false@ to the @Users@ section of your configuration file.
+
+h3. Default LSF arguments have changed
+
+If you use LSF and your configuration specifies @Containers.LSF.BsubArgumentsList@, you should update it to include the new arguments (@"-R", "select[mem>=%MMB]", ...@, see "configuration reference":{{site.baseurl}}/admin/config.html). Otherwise, containers that are too big to run on any LSF host will remain in the LSF queue instead of being cancelled.
+
+h3. Previously trashed role groups will be deleted
+
+Due to a bug in previous versions, the @DELETE@ operation on a role group caused the group to be flagged as trash in the database, but continue to grant permissions regardless. After upgrading, any role groups that had been trashed this way will be deleted. This might surprise some users if they were relying on permissions that were still in effect due to this bug. Future @DELETE@ operations on a role group will immediately delete the group and revoke the associated permissions.
+
+h3. Users are visible to other users by default
+
+When a new user is set up (either via @AutoSetupNewUsers@ config or via Workbench admin interface) the user immediately becomes visible to other users. To revert to the previous behavior, where the administrator must add two users to the same group using the Workbench admin interface in order for the users to see each other, change the new @Users.ActivatedUsersAreVisibleToOthers@ config to @false@.
+
+h3. Dedicated keepstore process for each container
+
+When Arvados runs a container via @arvados-dispatch-cloud@, the @crunch-run@ supervisor process now brings up its own keepstore server to handle I/O for mounted collections, outputs, and logs. With the default configuration, the keepstore process allocates one 64 MiB block buffer per VCPU requested by the container. For most workloads this will increase throughput, reduce total network traffic, and make it possible to run more containers at once without provisioning additional keepstore nodes to handle the I/O load.
+* If you have containers that can effectively handle multiple I/O threads per VCPU, consider increasing the @Containers.LocalKeepBlobBuffersPerVCPU@ value.
+* If you already have a robust permanent keepstore infrastructure, you can set @Containers.LocalKeepBlobBuffersPerVCPU@ to 0 to disable this feature and preserve the previous behavior of sending container I/O traffic to your separately provisioned keepstore servers.
+* This feature is enabled only if no volumes use @AccessViaHosts@, and no volumes have underlying @Replication@ less than @Collections.DefaultReplication@. If the feature is configured but cannot be enabled due to an incompatible volume configuration, this will be noted in the @crunch-run.txt@ file in the container log.
+
+h3. Backend support for vocabulary checking
+
+If your installation uses the vocabulary feature on Workbench2, you will need to update the cluster configuration by moving the vocabulary definition file to the node where @controller@ runs, and set the @API.VocabularyPath@ configuration parameter to the local path where the file was placed.
+This will enable the vocabulary checking cluster-wide, including Workbench2. The @Workbench.VocabularyURL@ configuration parameter is deprecated and will be removed in a future release.
+You can read more about how this feature works on the "admin page":{{site.baseurl}}/admin/metadata-vocabulary.html.
+
+h2(#v2_3_0). v2.3.0 (2021-10-27)
+
+"previous: Upgrading to 2.2.0":#v2_2_0
+
+h3. Ubuntu 18.04 packages for arvados-api-server and arvados-workbench now conflict with ruby-bundler
+
+Ubuntu 18.04 ships with Bundler version 1.16.1, which is no longer compatible with the Gemfiles in the Arvados packages (made with Bundler 2.2.19). The Ubuntu 18.04 packages for arvados-api-server and arvados-workbench now conflict with the ruby-bundler package to work around this issue. The post-install scripts for arvados-api-server and arvados-workbench install the proper version of Bundler as a gem.
+
+h3. Removed unused @update_uuid@ endpoint for users.
+
+The @update_uuid@ endpoint was superseded by the "link accounts feature":{{site.baseurl}}/admin/link-accounts.html, so it's no longer available.
+
+h3. Removed deprecated '@@' search operator
+
+The '@@' full text search operator, previously deprecated, has been removed. To perform a string search across multiple columns, use the 'ilike' operator on 'any' column as described in the "available list method filter section":{{site.baseurl}}/api/methods.html#substringsearchfilter of the API documentation.
+
+h3. Storage classes must be defined explicitly
+
+If your configuration uses the StorageClasses attribute on any Keep volumes, you must add a new @StorageClasses@ section that lists all of your storage classes. Refer to the updated documentation about "configuring storage classes":{{site.baseurl}}/admin/storage-classes.html for details.
+
+h3. keep-balance requires access to PostgreSQL
+
+Make sure the keep-balance process can connect to your PostgreSQL server using the settings in your config file. (In previous versions, keep-balance accessed the database through controller instead of connecting to the database server directly.)
+
+h3. crunch-dispatch-local now requires config.yml
+
+The @crunch-dispatch-local@ dispatcher now reads the API host and token from the system wide @/etc/arvados/config.yml@ .  It will fail to start that file is not found or not readable.
+
+h3. Multi-file docker image collections
+
+Typically a docker image collection contains a single @.tar@ file at the top level. Handling of atypical cases has changed. If a docker image collection contains files with extensions other than @.tar@, they will be ignored (previously they could cause errors). If a docker image collection contains multiple @.tar@ files, it will cause an error at runtime, "cannot choose from multiple tar files in image collection" (previously one of the @.tar@ files was selected). Subdirectories are ignored. The @arv keep docker@ command always creates a collection with a single @.tar@ file, and never uses subdirectories, so this change will not affect most users.
+
+h2(#v2_2_0). v2.2.0 (2021-06-03)
+
+"previous: Upgrading to 2.1.0":#v2_1_0
+
+h3. New spelling of S3 credential configs
+
+If you use the S3 driver for Keep volumes and specify credentials in your configuration file (as opposed to using an IAM role), you should change the spelling of the @AccessKey@ and @SecretKey@ config keys to @AccessKeyID@ and @SecretAccessKey@. If you don't update them, the previous spellings will still be accepted, but warnings will be logged at server startup.
 
 h3. New proxy parameters for arvados-controller
 
@@ -62,13 +131,39 @@ h3. Centos7 Python 3 dependency upgraded to python3
 
 Now that Python 3 is part of the base repository in CentOS 7, the Python 3 dependency for Centos7 Arvados packages was changed from SCL rh-python36 to python3.
 
+h3. ForceLegacyAPI14 option removed
+
+The ForceLegacyAPI14 configuration option has been removed. In the unlikely event it is mentioned in your config file, remove it to avoid "deprecated/unknown config" warning logs.
+
 h2(#v2_1_0). v2.1.0 (2020-10-13)
 
-"Upgrading from 2.0.0":#v2_0_0
+"previous: Upgrading to 2.0.0":#v2_0_0
 
 h3. LoginCluster conflicts with other Login providers
 
 A satellite cluster that delegates its user login to a central user database must only have `Login.LoginCluster` set, or it will return an error.  This is a change in behavior, previously it would return an error if another login provider was _not_ configured, even though the provider would never be used.
+
+h3. Minimum supported Python version is now 3.5
+
+We no longer publish Python 2 based distribution packages for our Python components. There are equivalent packages based on Python 3, but their names are slightly different. If you were using the Python 2 based packages, you can install the Python 3 based package for a drop in replacement. On Debian and Ubuntu:
+
+<pre>
+    apt remove python-arvados-fuse && apt install python3-arvados-fuse
+    apt remove python-arvados-python-client && apt install python3-arvados-python-client
+    apt remove python-arvados-cwl-runner && apt install python3-arvados-cwl-runner
+    apt remove python-crunchstat-summary && apt install python3-crunchstat-summary
+    apt remove python-cwltest && apt install python3-cwltest
+</pre>
+
+On CentOS:
+
+<pre>
+    yum remove python-arvados-fuse && yum install python3-arvados-fuse
+    yum remove python-arvados-python-client && yum install python3-arvados-python-client
+    yum remove python-arvados-cwl-runner && yum install python3-arvados-cwl-runner
+    yum remove python-crunchstat-summary && yum install python3-crunchstat-summary
+    yum remove python-cwltest && yum install python3-cwltest
+</pre>
 
 h3. Minimum supported Ruby version is now 2.5
 
@@ -129,7 +224,7 @@ As a side effect of new permission system constraints, "star" links (indicating 
 
 h2(#v2_0_0). v2.0.0 (2020-02-07)
 
-"Upgrading from 1.4":#v1_4_1
+"previous: Upgrading to 1.4.1":#v1_4_1
 
 Arvados 2.0 is a major upgrade, with many changes.  Please read these upgrade notes carefully before you begin.
 
@@ -219,7 +314,7 @@ Workbench 2 is now ready for regular use.  Follow the instructions to "install w
 
 h3. New property vocabulary format for Workbench2
 
-(feature "#14151":https://dev.arvados.org/issues/14151) Workbench2 supports a new vocabulary format and it isn't compatible with the previous one, please read the "workbench2 vocabulary format admin page":{{site.baseurl}}/admin/workbench2-vocabulary.html for more information.
+(feature "#14151":https://dev.arvados.org/issues/14151) Workbench2 supports a new vocabulary format and it isn't compatible with the previous one, please read the "metadata vocabulary format admin page":{{site.baseurl}}/admin/metadata-vocabulary.html for more information.
 
 h3. Cloud installations only: node manager replaced by arvados-dispatch-cloud
 
@@ -257,7 +352,7 @@ The API server accepts both PUT and PATCH for updates, but they will be normaliz
 
 h2(#v1_4_1). v1.4.1 (2019-09-20)
 
-"Upgrading from 1.4.0":#v1_4_0
+"previous: Upgrading to 1.4.0":#v1_4_0
 
 h3. Centos7 Python 3 dependency upgraded to rh-python36
 
@@ -265,7 +360,7 @@ The Python 3 dependency for Centos7 Arvados packages was upgraded from rh-python
 
 h2(#v1_4_0). v1.4.0 (2019-06-05)
 
-"Upgrading from 1.3.3":#v1_3_3
+"previous: Upgrading to 1.3.3":#v1_3_3
 
 h3. Populating the new file_count and file_size_total columns on the collections table
 
@@ -334,7 +429,7 @@ h3. Python packaging change
 
 As part of story "#9945":https://dev.arvados.org/issues/9945, the distribution packaging (deb/rpm) of our Python packages has changed. These packages now include a built-in virtualenv to reduce dependencies on system packages. We have also stopped packaging and publishing backports for all the Python dependencies of our packages, as they are no longer needed.
 
-One practical consequence of this change is that the use of the Arvados Python SDK (aka "import arvados") will require a tweak if the SDK was installed from a distribution package. It now requires the loading of the virtualenv environment from our packages. The "Install documentation for the Arvados Python SDK":/sdk/python/sdk-python.html reflects this change. This does not affect the use of the command line tools (e.g. arv-get, etc.).
+One practical consequence of this change is that the use of the Arvados Python SDK (aka "import arvados") will require a tweak if the SDK was installed from a distribution package. It now requires the loading of the virtualenv environment from our packages. The "Install documentation for the Arvados Python SDK":{{ site.baseurl }}/sdk/python/sdk-python.html reflects this change. This does not affect the use of the command line tools (e.g. arv-get, etc.).
 
 Python scripts that rely on the distribution Arvados Python SDK packages to import the Arvados SDK will need to be tweaked to load the correct Python environment.
 
@@ -372,15 +467,15 @@ Arvados is migrating to a centralized configuration file for all components.  Du
 
 h2(#v1_3_3). v1.3.3 (2019-05-14)
 
-"Upgrading from 1.3.0":#v1_3_0
+"previous: Upgrading to 1.3.0":#v1_3_0
 
 This release corrects a potential data loss issue, if you are running Arvados 1.3.0 or 1.3.1 we strongly recommended disabling @keep-balance@ until you can upgrade to 1.3.3 or 1.4.0. With keep-balance disabled, there is no chance of data loss.
 
-We've put together a "wiki page":https://dev.arvados.org/projects/arvados/wiki/Recovering_lost_data which outlines how to recover blocks which have been put in the trash, but not yet deleted, as well as how to identify any collections which have missing blocks so that they can be regenerated. The keep-balance component has been enhanced to provide a list of missing blocks and affected collections and we've provided a "utility script":https://github.com/arvados/arvados/blob/master/tools/keep-xref/keep-xref.py  which can be used to identify the workflows that generated those collections and who ran those workflows, so that they can be rerun.
+We've put together a "wiki page":https://dev.arvados.org/projects/arvados/wiki/Recovering_lost_data which outlines how to recover blocks which have been put in the trash, but not yet deleted, as well as how to identify any collections which have missing blocks so that they can be regenerated. The keep-balance component has been enhanced to provide a list of missing blocks and affected collections and we've provided a "utility script":https://github.com/arvados/arvados/blob/main/tools/keep-xref/keep-xref.py  which can be used to identify the workflows that generated those collections and who ran those workflows, so that they can be rerun.
 
 h2(#v1_3_0). v1.3.0 (2018-12-05)
 
-"Upgrading from 1.2":#v1_2_0
+"previous: Upgrading to 1.2":#v1_2_0
 
 This release includes several database migrations, which will be executed automatically as part of the API server upgrade. On large Arvados installations, these migrations will take a while. We've seen the upgrade take 30 minutes or more on installations with a lot of collections.
 
@@ -394,7 +489,7 @@ There are no special upgrade notes for this release.
 
 h2(#v1_2_0). v1.2.0 (2018-09-05)
 
-"Upgrading from 1.1.2 or 1.1.3":#v1_1_2
+"previous: Upgrading to 1.1.2 or 1.1.3":#v1_1_2
 
 h3. Regenerate Postgres table statistics
 
@@ -426,7 +521,7 @@ Verify your setup by confirming that API calls appear in the controller's logs (
 
 h2(#v1_1_4). v1.1.4 (2018-04-10)
 
-"Upgrading from 1.1.3":#v1_1_3
+"previous: Upgrading to 1.1.3":#v1_1_3
 
 h3. arvados-cwl-runner regressions (2018-04-05)
 
@@ -559,7 +654,7 @@ There are no special upgrade notes for this release.
 
 h2(#v1_1_2). v1.1.2 (2017-12-22)
 
-"Upgrading from 1.1.0 or 1.1.1":#v1_1_0
+"previous: Upgrading to 1.1.0 or 1.1.1":#v1_1_0
 
 h3. The minimum version for Postgres is now 9.4 (2017-12-08)
 

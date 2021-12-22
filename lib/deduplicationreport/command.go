@@ -7,20 +7,13 @@ package deduplicationreport
 import (
 	"io"
 
-	"git.arvados.org/arvados.git/lib/config"
+	"git.arvados.org/arvados.git/lib/cmd"
 	"git.arvados.org/arvados.git/sdk/go/ctxlog"
-	"github.com/sirupsen/logrus"
 )
 
 var Command command
 
 type command struct{}
-
-type NoPrefixFormatter struct{}
-
-func (f *NoPrefixFormatter) Format(entry *logrus.Entry) ([]byte, error) {
-	return []byte(entry.Message), nil
-}
 
 // RunCommand implements the subcommand "deduplication-report <collection> <collection> ..."
 func (command) RunCommand(prog string, args []string, stdin io.Reader, stdout, stderr io.Writer) int {
@@ -32,12 +25,9 @@ func (command) RunCommand(prog string, args []string, stdin io.Reader, stdout, s
 		}
 	}()
 
-	logger.SetFormatter(new(NoPrefixFormatter))
+	logger.SetFormatter(cmd.NoPrefixFormatter{})
 
-	loader := config.NewLoader(stdin, logger)
-	loader.SkipLegacy = true
-
-	exitcode := report(prog, args, loader, logger, stdout, stderr)
+	exitcode := report(prog, args, logger, stdout, stderr)
 
 	return exitcode
 }

@@ -14,10 +14,10 @@ from functools import partial
 import apiclient
 import ciso8601
 import datetime
-import hashlib
 import json
 import logging
 import mock
+import multiprocessing
 import os
 import pwd
 import random
@@ -31,7 +31,6 @@ import tempfile
 import time
 import unittest
 import uuid
-import yaml
 
 import arvados
 import arvados.commands.put as arv_put
@@ -294,7 +293,29 @@ class ArvPutUploadJobTest(run_test_server.TestCaseWithServers,
         shutil.rmtree(self.small_files_dir)
         shutil.rmtree(self.tempdir_with_symlink)
 
+    def test_non_regular_files_are_ignored_except_symlinks_to_dirs(self):
+        def pfunc(x):
+            with open(x, 'w') as f:
+                f.write('test')
+        fifo_filename = 'fifo-file'
+        fifo_path = os.path.join(self.tempdir_with_symlink, fifo_filename)
+        self.assertTrue(os.path.islink(os.path.join(self.tempdir_with_symlink, 'linkeddir')))
+        os.mkfifo(fifo_path)
+        producer = multiprocessing.Process(target=pfunc, args=(fifo_path,))
+        producer.start()
+        cwriter = arv_put.ArvPutUploadJob([self.tempdir_with_symlink])
+        cwriter.start(save_collection=False)
+        if producer.exitcode is None:
+            # If the producer is still running, kill it. This should always be
+            # before any assertion that may fail.
+            producer.terminate()
+            producer.join(1)
+        self.assertIn('linkeddir', cwriter.manifest_text())
+        self.assertNotIn(fifo_filename, cwriter.manifest_text())
+
     def test_symlinks_are_followed_by_default(self):
+        self.assertTrue(os.path.islink(os.path.join(self.tempdir_with_symlink, 'linkeddir')))
+        self.assertTrue(os.path.islink(os.path.join(self.tempdir_with_symlink, 'linkedfile')))
         cwriter = arv_put.ArvPutUploadJob([self.tempdir_with_symlink])
         cwriter.start(save_collection=False)
         self.assertIn('linkeddir', cwriter.manifest_text())
@@ -302,11 +323,28 @@ class ArvPutUploadJobTest(run_test_server.TestCaseWithServers,
         cwriter.destroy_cache()
 
     def test_symlinks_are_not_followed_when_requested(self):
+        self.assertTrue(os.path.islink(os.path.join(self.tempdir_with_symlink, 'linkeddir')))
+        self.assertTrue(os.path.islink(os.path.join(self.tempdir_with_symlink, 'linkedfile')))
         cwriter = arv_put.ArvPutUploadJob([self.tempdir_with_symlink],
                                           follow_links=False)
         cwriter.start(save_collection=False)
         self.assertNotIn('linkeddir', cwriter.manifest_text())
         self.assertNotIn('linkedfile', cwriter.manifest_text())
+        cwriter.destroy_cache()
+        # Check for bug #17800: passed symlinks should also be ignored.
+        linked_dir = os.path.join(self.tempdir_with_symlink, 'linkeddir')
+        cwriter = arv_put.ArvPutUploadJob([linked_dir], follow_links=False)
+        cwriter.start(save_collection=False)
+        self.assertNotIn('linkeddir', cwriter.manifest_text())
+        cwriter.destroy_cache()
+
+    def test_no_empty_collection_saved(self):
+        self.assertTrue(os.path.islink(os.path.join(self.tempdir_with_symlink, 'linkeddir')))
+        linked_dir = os.path.join(self.tempdir_with_symlink, 'linkeddir')
+        cwriter = arv_put.ArvPutUploadJob([linked_dir], follow_links=False)
+        cwriter.start(save_collection=True)
+        self.assertIsNone(cwriter.manifest_locator())
+        self.assertEqual('', cwriter.manifest_text())
         cwriter.destroy_cache()
 
     def test_passing_nonexistant_path_raise_exception(self):
@@ -813,11 +851,6 @@ class ArvadosPutTest(run_test_server.TestCaseWithServers,
                           self.call_main_with_args,
                           ['--project-uuid', self.Z_UUID, '--stream'])
 
-    def test_error_when_multiple_storage_classes_specified(self):
-        self.assertRaises(SystemExit,
-                          self.call_main_with_args,
-                          ['--storage-classes', 'hot,cold'])
-
     def test_error_when_excluding_absolute_path(self):
         tmpdir = self.make_tmpdir()
         self.assertRaises(SystemExit,
@@ -912,7 +945,7 @@ class ArvPutIntegrationTest(run_test_server.TestCaseWithServers,
             [sys.executable, arv_put.__file__, '--stream'],
             stdin=subprocess.PIPE, stdout=subprocess.PIPE,
             stderr=subprocess.STDOUT, env=self.ENVIRON)
-        pipe.stdin.write(b'stdin test\n')
+        pipe.stdin.write(b'stdin test\xa6\n')
         pipe.stdin.close()
         deadline = time.time() + 5
         while (pipe.poll() is None) and (time.time() < deadline):
@@ -924,7 +957,7 @@ class ArvPutIntegrationTest(run_test_server.TestCaseWithServers,
         elif returncode != 0:
             sys.stdout.write(pipe.stdout.read())
             self.fail("arv-put returned exit code {}".format(returncode))
-        self.assertIn('4a9c8b735dce4b5fa3acf221a0b13628+11',
+        self.assertIn('1cb671b355a0c23d5d1c61d59cdb1b2b+12',
                       pipe.stdout.read().decode())
 
     def test_sigint_logs_request_id(self):
@@ -1041,43 +1074,53 @@ class ArvPutIntegrationTest(run_test_server.TestCaseWithServers,
             r'INFO: Cache expired, starting from scratch.*')
         self.assertEqual(p.returncode, 0)
 
-    def test_invalid_signature_invalidates_cache(self):
-        self.authorize_with('active')
-        tmpdir = self.make_tmpdir()
-        with open(os.path.join(tmpdir, 'somefile.txt'), 'w') as f:
-            f.write('foo')
-        # Upload a directory and get the cache file name
-        p = subprocess.Popen([sys.executable, arv_put.__file__, tmpdir],
-                             stdout=subprocess.PIPE,
-                             stderr=subprocess.PIPE,
-                             env=self.ENVIRON)
-        (_, err) = p.communicate()
-        self.assertRegex(err.decode(), r'INFO: Creating new cache file at ')
-        self.assertEqual(p.returncode, 0)
-        cache_filepath = re.search(r'INFO: Creating new cache file at (.*)',
-                                   err.decode()).groups()[0]
-        self.assertTrue(os.path.isfile(cache_filepath))
-        # Load the cache file contents and modify the manifest to simulate
-        # an invalid access token
-        with open(cache_filepath, 'r') as c:
-            cache = json.load(c)
-        self.assertRegex(cache['manifest'], r'\+A\S+\@')
-        cache['manifest'] = re.sub(
-            r'\+A.*\@',
-            "+Aabcdef0123456789abcdef0123456789abcdef01@",
-            cache['manifest'])
-        with open(cache_filepath, 'w') as c:
-            c.write(json.dumps(cache))
-        # Re-run the upload and expect to get an invalid cache message
-        p = subprocess.Popen([sys.executable, arv_put.__file__, tmpdir],
-                             stdout=subprocess.PIPE,
-                             stderr=subprocess.PIPE,
-                             env=self.ENVIRON)
-        (_, err) = p.communicate()
-        self.assertRegex(
-            err.decode(),
-            r'ERROR: arv-put: Resume cache contains invalid signature.*')
-        self.assertEqual(p.returncode, 1)
+    def test_invalid_signature_in_cache(self):
+        for batch_mode in [False, True]:
+            self.authorize_with('active')
+            tmpdir = self.make_tmpdir()
+            with open(os.path.join(tmpdir, 'somefile.txt'), 'w') as f:
+                f.write('foo')
+            # Upload a directory and get the cache file name
+            arv_put_args = [tmpdir]
+            if batch_mode:
+                arv_put_args = ['--batch'] + arv_put_args
+            p = subprocess.Popen([sys.executable, arv_put.__file__] + arv_put_args,
+                                stdout=subprocess.PIPE,
+                                stderr=subprocess.PIPE,
+                                env=self.ENVIRON)
+            (_, err) = p.communicate()
+            self.assertRegex(err.decode(), r'INFO: Creating new cache file at ')
+            self.assertEqual(p.returncode, 0)
+            cache_filepath = re.search(r'INFO: Creating new cache file at (.*)',
+                                    err.decode()).groups()[0]
+            self.assertTrue(os.path.isfile(cache_filepath))
+            # Load the cache file contents and modify the manifest to simulate
+            # an invalid access token
+            with open(cache_filepath, 'r') as c:
+                cache = json.load(c)
+            self.assertRegex(cache['manifest'], r'\+A\S+\@')
+            cache['manifest'] = re.sub(
+                r'\+A.*\@',
+                "+Aabcdef0123456789abcdef0123456789abcdef01@",
+                cache['manifest'])
+            with open(cache_filepath, 'w') as c:
+                c.write(json.dumps(cache))
+            # Re-run the upload and expect to get an invalid cache message
+            p = subprocess.Popen([sys.executable, arv_put.__file__] + arv_put_args,
+                                stdout=subprocess.PIPE,
+                                stderr=subprocess.PIPE,
+                                env=self.ENVIRON)
+            (_, err) = p.communicate()
+            if not batch_mode:
+                self.assertRegex(
+                    err.decode(),
+                    r'ERROR: arv-put: Resume cache contains invalid signature.*')
+                self.assertEqual(p.returncode, 1)
+            else:
+                self.assertRegex(
+                    err.decode(),
+                    r'Invalid signatures on cache file \'.*\' while being run in \'batch mode\' -- continuing anyways.*')
+                self.assertEqual(p.returncode, 0)
 
     def test_single_expired_signature_reuploads_file(self):
         self.authorize_with('active')
@@ -1315,13 +1358,16 @@ class ArvPutIntegrationTest(run_test_server.TestCaseWithServers,
 
     def test_put_collection_with_storage_classes_specified(self):
         collection = self.run_and_find_collection("", ['--storage-classes', 'hot'])
-
         self.assertEqual(len(collection['storage_classes_desired']), 1)
         self.assertEqual(collection['storage_classes_desired'][0], 'hot')
 
+    def test_put_collection_with_multiple_storage_classes_specified(self):
+        collection = self.run_and_find_collection("", ['--storage-classes', ' foo, bar  ,baz'])
+        self.assertEqual(len(collection['storage_classes_desired']), 3)
+        self.assertEqual(collection['storage_classes_desired'], ['foo', 'bar', 'baz'])
+
     def test_put_collection_without_storage_classes_specified(self):
         collection = self.run_and_find_collection("")
-
         self.assertEqual(len(collection['storage_classes_desired']), 1)
         self.assertEqual(collection['storage_classes_desired'][0], 'default')
 

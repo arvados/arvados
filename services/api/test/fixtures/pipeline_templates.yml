@@ -14,7 +14,7 @@ two_part:
   components:
     part-one:
       script: foo
-      script_version: master
+      script_version: main
       script_parameters:
         input:
           required: true
@@ -22,7 +22,7 @@ two_part:
           title: "Foo/bar pair"
     part-two:
       script: bar
-      script_version: master
+      script_version: main
       script_parameters:
         input:
           output_of: part-one
@@ -53,7 +53,7 @@ components_is_jobspec:
   name: Pipeline Template with Jobspec Components
   components:
     script: foo
-    script_version: master
+    script_version: main
     script_parameters:
       input:
         required: true
@@ -73,7 +73,7 @@ parameter_with_search:
   components:
     with-search:
       script: foo
-      script_version: master
+      script_version: main
       script_parameters:
         input:
           required: true
@@ -95,7 +95,7 @@ new_pipeline_template:
   components:
     foo:
       script: foo
-      script_version: master
+      script_version: main
       script_parameters:
         input:
           required: true
@@ -103,7 +103,7 @@ new_pipeline_template:
           title: foo template input
     bar:
       script: bar
-      script_version: master
+      script_version: main
       script_parameters:
         input:
           required: true
@@ -122,7 +122,7 @@ pipeline_template_in_fuse_project:
   components:
     foo_component:
       script: foo
-      script_version: master
+      script_version: main
       script_parameters:
         input:
           required: true
@@ -142,7 +142,7 @@ template_with_dataclass_file:
   components:
     part-one:
       script: foo
-      script_version: master
+      script_version: main
       script_parameters:
         input:
           required: true
@@ -151,7 +151,7 @@ template_with_dataclass_file:
           description: "Provide an input file"
     part-two:
       script: bar
-      script_version: master
+      script_version: main
       script_parameters:
         input:
           output_of: part-one
@@ -181,7 +181,7 @@ template_with_dataclass_number:
   components:
     work:
       script: foo
-      script_version: master
+      script_version: main
       script_parameters:
         input:
           required: true
@@ -200,7 +200,7 @@ pipeline_template_in_publicly_accessible_project:
   components:
     foo_component:
       script: foo
-      script_version: master
+      script_version: main
       script_parameters:
         input:
           required: true
@@ -221,7 +221,7 @@ template_in_active_user_home_project_to_test_unique_key_violation:
   name: Template to test owner uuid and name unique key violation upon removal
   components:
     script: foo
-    script_version: master
+    script_version: main
     script_parameters:
       input:
         required: true
@@ -240,7 +240,7 @@ template_in_asubproject_with_same_name_as_one_in_active_user_home:
   name: Template to test owner uuid and name unique key violation upon removal
   components:
     script: foo
-    script_version: master
+    script_version: main
     script_parameters:
       input:
         required: true
@@ -260,7 +260,7 @@ workflow_with_input_defaults:
   components:
     part-one:
       script: foo
-      script_version: master
+      script_version: main
       script_parameters:
         ex_string:
           required: true

@@ -17,6 +17,7 @@ import (
 	"strings"
 	"time"
 
+	"git.arvados.org/arvados.git/lib/cmd"
 	"git.arvados.org/arvados.git/sdk/go/arvadosclient"
 	"git.arvados.org/arvados.git/sdk/go/keepclient"
 )
@@ -76,12 +77,10 @@ func doMain() error {
 		false,
 		"Print version information and exit.")
 
-	// Parse args; omit the first arg which is the command name
-	flags.Parse(os.Args[1:])
-
-	// Print version information if requested
-	if *getVersion {
-		fmt.Printf("keep-rsync %s\n", version)
+	if ok, code := cmd.ParseFlags(flags, os.Args[0], os.Args[1:], "", os.Stderr); !ok {
+		os.Exit(code)
+	} else if *getVersion {
+		fmt.Printf("%s %s\n", os.Args[0], version)
 		os.Exit(0)
 	}
 

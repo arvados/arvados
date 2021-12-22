@@ -517,10 +517,10 @@ setup_ruby_environment() {
             || fatal 'rvm gemset setup'
 
         rvm env
-        (bundle version | grep -q 2.0.2) || gem install bundler -v 2.0.2
+        (bundle version | grep -q 2.2.19) || gem install bundler -v 2.2.19
         bundle="$(which bundle)"
         echo "$bundle"
-        "$bundle" version | grep 2.0.2 || fatal 'install bundler'
+        "$bundle" version | grep 2.2.19 || fatal 'install bundler'
     else
         # When our "bundle install"s need to install new gems to
         # satisfy dependencies, we want them to go where "gem install
@@ -550,7 +550,7 @@ setup_ruby_environment() {
         (
             export HOME=$GEMHOME
             bundlers="$(gem list --details bundler)"
-            versions=(1.16.6 1.17.3 2.0.2)
+            versions=(2.2.19)
             for v in ${versions[@]}; do
                 if ! echo "$bundlers" | fgrep -q "($v)"; then
                     gem install --user $(for v in ${versions[@]}; do echo bundler:${v}; done)
@@ -1082,9 +1082,7 @@ install_deps() {
     do_install services/api
     do_install services/arv-git-httpd go
     do_install services/keepproxy go
-    do_install services/keepstore go
     do_install services/keep-web go
-    do_install services/ws go
 }
 
 install_all() {
@@ -1145,6 +1143,14 @@ test_all() {
     do_test apps/workbench_integration
     do_test apps/workbench_benchmark
     do_test apps/workbench_profile
+}
+
+test_go() {
+    do_test gofmt
+    for g in "${gostuff[@]}"
+    do
+        do_test "$g" go
+    done
 }
 
 help_interactive() {

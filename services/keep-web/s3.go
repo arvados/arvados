@@ -7,6 +7,7 @@ package main
 import (
 	"crypto/hmac"
 	"crypto/sha256"
+	"encoding/base64"
 	"encoding/xml"
 	"errors"
 	"fmt"
@@ -23,7 +24,9 @@ import (
 	"time"
 
 	"git.arvados.org/arvados.git/sdk/go/arvados"
+	"git.arvados.org/arvados.git/sdk/go/arvadosclient"
 	"git.arvados.org/arvados.git/sdk/go/ctxlog"
+	"git.arvados.org/arvados.git/sdk/go/keepclient"
 	"github.com/AdRoll/goamz/s3"
 )
 
@@ -32,6 +35,42 @@ const (
 	s3SignAlgorithm = "AWS4-HMAC-SHA256"
 	s3MaxClockSkew  = 5 * time.Minute
 )
+
+type commonPrefix struct {
+	Prefix string
+}
+
+type listV1Resp struct {
+	XMLName string `xml:"http://s3.amazonaws.com/doc/2006-03-01/ ListBucketResult"`
+	s3.ListResp
+	// s3.ListResp marshals an empty tag when
+	// CommonPrefixes is nil, which confuses some clients.
+	// Fix by using this nested struct instead.
+	CommonPrefixes []commonPrefix
+	// Similarly, we need omitempty here, because an empty
+	// tag confuses some clients (e.g.,
+	// github.com/aws/aws-sdk-net never terminates its
+	// paging loop).
+	NextMarker string `xml:"NextMarker,omitempty"`
+	// ListObjectsV2 has a KeyCount response field.
+	KeyCount int
+}
+
+type listV2Resp struct {
+	XMLName               string `xml:"http://s3.amazonaws.com/doc/2006-03-01/ ListBucketResult"`
+	IsTruncated           bool
+	Contents              []s3.Key
+	Name                  string
+	Prefix                string
+	Delimiter             string
+	MaxKeys               int
+	CommonPrefixes        []commonPrefix
+	EncodingType          string `xml:",omitempty"`
+	KeyCount              int
+	ContinuationToken     string `xml:",omitempty"`
+	NextContinuationToken string `xml:",omitempty"`
+	StartAfter            string `xml:",omitempty"`
+}
 
 func hmacstring(msg string, key []byte) []byte {
 	h := hmac.New(sha256.New, key)
@@ -99,12 +138,37 @@ func s3stringToSign(alg, scope, signedHeaders string, r *http.Request) (string, 
 		}
 	}
 
-	normalizedURL := *r.URL
-	normalizedURL.RawPath = ""
-	normalizedURL.Path = reMultipleSlashChars.ReplaceAllString(normalizedURL.Path, "/")
-	canonicalRequest := fmt.Sprintf("%s\n%s\n%s\n%s\n%s\n%s", r.Method, normalizedURL.EscapedPath(), s3querystring(r.URL), canonicalHeaders, signedHeaders, r.Header.Get("X-Amz-Content-Sha256"))
+	normalizedPath := normalizePath(r.URL.Path)
+	ctxlog.FromContext(r.Context()).Debugf("normalizedPath %q", normalizedPath)
+	canonicalRequest := fmt.Sprintf("%s\n%s\n%s\n%s\n%s\n%s", r.Method, normalizedPath, s3querystring(r.URL), canonicalHeaders, signedHeaders, r.Header.Get("X-Amz-Content-Sha256"))
 	ctxlog.FromContext(r.Context()).Debugf("s3stringToSign: canonicalRequest %s", canonicalRequest)
 	return fmt.Sprintf("%s\n%s\n%s\n%s", alg, r.Header.Get("X-Amz-Date"), scope, hashdigest(sha256.New(), canonicalRequest)), nil
+}
+
+func normalizePath(s string) string {
+	// (url.URL).EscapedPath() would be incorrect here. AWS
+	// documentation specifies the URL path should be normalized
+	// according to RFC 3986, i.e., unescaping ALPHA / DIGIT / "-"
+	// / "." / "_" / "~". The implication is that everything other
+	// than those chars (and "/") _must_ be percent-encoded --
+	// even chars like ";" and "," that are not normally
+	// percent-encoded in paths.
+	out := ""
+	for _, c := range []byte(reMultipleSlashChars.ReplaceAllString(s, "/")) {
+		if (c >= 'a' && c <= 'z') ||
+			(c >= 'A' && c <= 'Z') ||
+			(c >= '0' && c <= '9') ||
+			c == '-' ||
+			c == '.' ||
+			c == '_' ||
+			c == '~' ||
+			c == '/' {
+			out += string(c)
+		} else {
+			out += fmt.Sprintf("%%%02X", c)
+		}
+	}
+	return out
 }
 
 func s3signature(secretKey, scope, signedHeaders, stringToSign string) (string, error) {
@@ -221,6 +285,8 @@ var UnauthorizedAccess = "UnauthorizedAccess"
 var InvalidRequest = "InvalidRequest"
 var SignatureDoesNotMatch = "SignatureDoesNotMatch"
 
+var reRawQueryIndicatesAPI = regexp.MustCompile(`^[a-z]+(&|$)`)
+
 // serveS3 handles r and returns true if r is a request from an S3
 // client, otherwise it returns false.
 func (h *handler) serveS3(w http.ResponseWriter, r *http.Request) bool {
@@ -243,15 +309,35 @@ func (h *handler) serveS3(w http.ResponseWriter, r *http.Request) bool {
 		return false
 	}
 
-	_, kc, client, release, err := h.getClients(r.Header.Get("X-Request-Id"), token)
-	if err != nil {
-		s3ErrorResponse(w, InternalError, "Pool failed: "+h.clientPool.Err().Error(), r.URL.Path, http.StatusInternalServerError)
-		return true
+	var err error
+	var fs arvados.CustomFileSystem
+	var arvclient *arvadosclient.ArvadosClient
+	if r.Method == http.MethodGet || r.Method == http.MethodHead {
+		// Use a single session (cached FileSystem) across
+		// multiple read requests.
+		var sess *cachedSession
+		fs, sess, err = h.Config.Cache.GetSession(token)
+		if err != nil {
+			s3ErrorResponse(w, InternalError, err.Error(), r.URL.Path, http.StatusInternalServerError)
+			return true
+		}
+		arvclient = sess.arvadosclient
+	} else {
+		// Create a FileSystem for this request, to avoid
+		// exposing incomplete write operations to concurrent
+		// requests.
+		var kc *keepclient.KeepClient
+		var release func()
+		var client *arvados.Client
+		arvclient, kc, client, release, err = h.getClients(r.Header.Get("X-Request-Id"), token)
+		if err != nil {
+			s3ErrorResponse(w, InternalError, err.Error(), r.URL.Path, http.StatusInternalServerError)
+			return true
+		}
+		defer release()
+		fs = client.SiteFileSystem(kc)
+		fs.ForwardSlashNameSubstitution(h.Config.cluster.Collections.ForwardSlashNameSubstitution)
 	}
-	defer release()
-
-	fs := client.SiteFileSystem(kc)
-	fs.ForwardSlashNameSubstitution(h.Config.cluster.Collections.ForwardSlashNameSubstitution)
 
 	var objectNameGiven bool
 	var bucketName string
@@ -274,12 +360,27 @@ func (h *handler) serveS3(w http.ResponseWriter, r *http.Request) bool {
 			w.Header().Set("Content-Type", "application/xml")
 			io.WriteString(w, xml.Header)
 			fmt.Fprintln(w, `<VersioningConfiguration xmlns="http://s3.amazonaws.com/doc/2006-03-01/"/>`)
+		} else if _, ok = r.URL.Query()["location"]; ok {
+			// GetBucketLocation
+			w.Header().Set("Content-Type", "application/xml")
+			io.WriteString(w, xml.Header)
+			fmt.Fprintln(w, `<LocationConstraint><LocationConstraint xmlns="http://s3.amazonaws.com/doc/2006-03-01/">`+
+				h.Config.cluster.ClusterID+
+				`</LocationConstraint></LocationConstraint>`)
+		} else if reRawQueryIndicatesAPI.MatchString(r.URL.RawQuery) {
+			// GetBucketWebsite ("GET /bucketid/?website"), GetBucketTagging, etc.
+			s3ErrorResponse(w, InvalidRequest, "API not supported", r.URL.Path+"?"+r.URL.RawQuery, http.StatusBadRequest)
 		} else {
 			// ListObjects
 			h.s3list(bucketName, w, r, fs)
 		}
 		return true
 	case r.Method == http.MethodGet || r.Method == http.MethodHead:
+		if reRawQueryIndicatesAPI.MatchString(r.URL.RawQuery) {
+			// GetObjectRetention ("GET /bucketid/objectid?retention&versionID=..."), etc.
+			s3ErrorResponse(w, InvalidRequest, "API not supported", r.URL.Path+"?"+r.URL.RawQuery, http.StatusBadRequest)
+			return true
+		}
 		fi, err := fs.Stat(fspath)
 		if r.Method == "HEAD" && !objectNameGiven {
 			// HeadBucket
@@ -303,12 +404,25 @@ func (h *handler) serveS3(w http.ResponseWriter, r *http.Request) bool {
 			s3ErrorResponse(w, NoSuchKey, "The specified key does not exist.", r.URL.Path, http.StatusNotFound)
 			return true
 		}
+
+		tokenUser, err := h.Config.Cache.GetTokenUser(token)
+		if !h.userPermittedToUploadOrDownload(r.Method, tokenUser) {
+			http.Error(w, "Not permitted", http.StatusForbidden)
+			return true
+		}
+		h.logUploadOrDownload(r, arvclient, fs, fspath, nil, tokenUser)
+
 		// shallow copy r, and change URL path
 		r := *r
 		r.URL.Path = fspath
 		http.FileServer(fs).ServeHTTP(w, &r)
 		return true
 	case r.Method == http.MethodPut:
+		if reRawQueryIndicatesAPI.MatchString(r.URL.RawQuery) {
+			// PutObjectAcl ("PUT /bucketid/objectid?acl&versionID=..."), etc.
+			s3ErrorResponse(w, InvalidRequest, "API not supported", r.URL.Path+"?"+r.URL.RawQuery, http.StatusBadRequest)
+			return true
+		}
 		if !objectNameGiven {
 			s3ErrorResponse(w, InvalidArgument, "Missing object name in PUT request.", r.URL.Path, http.StatusBadRequest)
 			return true
@@ -381,6 +495,14 @@ func (h *handler) serveS3(w http.ResponseWriter, r *http.Request) bool {
 				return true
 			}
 			defer f.Close()
+
+			tokenUser, err := h.Config.Cache.GetTokenUser(token)
+			if !h.userPermittedToUploadOrDownload(r.Method, tokenUser) {
+				http.Error(w, "Not permitted", http.StatusForbidden)
+				return true
+			}
+			h.logUploadOrDownload(r, arvclient, fs, fspath, nil, tokenUser)
+
 			_, err = io.Copy(f, r.Body)
 			if err != nil {
 				err = fmt.Errorf("write to %q failed: %w", r.URL.Path, err)
@@ -400,9 +522,16 @@ func (h *handler) serveS3(w http.ResponseWriter, r *http.Request) bool {
 			s3ErrorResponse(w, InternalError, err.Error(), r.URL.Path, http.StatusInternalServerError)
 			return true
 		}
+		// Ensure a subsequent read operation will see the changes.
+		h.Config.Cache.ResetSession(token)
 		w.WriteHeader(http.StatusOK)
 		return true
 	case r.Method == http.MethodDelete:
+		if reRawQueryIndicatesAPI.MatchString(r.URL.RawQuery) {
+			// DeleteObjectTagging ("DELETE /bucketid/objectid?tagging&versionID=..."), etc.
+			s3ErrorResponse(w, InvalidRequest, "API not supported", r.URL.Path+"?"+r.URL.RawQuery, http.StatusBadRequest)
+			return true
+		}
 		if !objectNameGiven || r.URL.Path == "/" {
 			s3ErrorResponse(w, InvalidArgument, "missing object name in DELETE request", r.URL.Path, http.StatusBadRequest)
 			return true
@@ -447,11 +576,12 @@ func (h *handler) serveS3(w http.ResponseWriter, r *http.Request) bool {
 			s3ErrorResponse(w, InternalError, err.Error(), r.URL.Path, http.StatusInternalServerError)
 			return true
 		}
+		// Ensure a subsequent read operation will see the changes.
+		h.Config.Cache.ResetSession(token)
 		w.WriteHeader(http.StatusNoContent)
 		return true
 	default:
 		s3ErrorResponse(w, InvalidRequest, "method not allowed", r.URL.Path, http.StatusMethodNotAllowed)
-
 		return true
 	}
 }
@@ -514,19 +644,50 @@ var errDone = errors.New("done")
 
 func (h *handler) s3list(bucket string, w http.ResponseWriter, r *http.Request, fs arvados.CustomFileSystem) {
 	var params struct {
-		delimiter string
-		marker    string
-		maxKeys   int
-		prefix    string
+		v2                bool
+		delimiter         string
+		maxKeys           int
+		prefix            string
+		marker            string // decoded continuationToken (v2) or provided by client (v1)
+		startAfter        string // v2
+		continuationToken string // v2
+		encodingTypeURL   bool   // v2
 	}
 	params.delimiter = r.FormValue("delimiter")
-	params.marker = r.FormValue("marker")
 	if mk, _ := strconv.ParseInt(r.FormValue("max-keys"), 10, 64); mk > 0 && mk < s3MaxKeys {
 		params.maxKeys = int(mk)
 	} else {
 		params.maxKeys = s3MaxKeys
 	}
 	params.prefix = r.FormValue("prefix")
+	switch r.FormValue("list-type") {
+	case "":
+	case "2":
+		params.v2 = true
+	default:
+		http.Error(w, "invalid list-type parameter", http.StatusBadRequest)
+		return
+	}
+	if params.v2 {
+		params.continuationToken = r.FormValue("continuation-token")
+		marker, err := base64.StdEncoding.DecodeString(params.continuationToken)
+		if err != nil {
+			http.Error(w, "invalid continuation token", http.StatusBadRequest)
+			return
+		}
+		params.marker = string(marker)
+		params.startAfter = r.FormValue("start-after")
+		switch r.FormValue("encoding-type") {
+		case "":
+		case "url":
+			params.encodingTypeURL = true
+		default:
+			http.Error(w, "invalid encoding-type parameter", http.StatusBadRequest)
+			return
+		}
+	} else {
+		params.marker = r.FormValue("marker")
+	}
 
 	bucketdir := "by_id/" + bucket
 	// walkpath is the directory (relative to bucketdir) we need
@@ -543,33 +704,16 @@ func (h *handler) s3list(bucket string, w http.ResponseWriter, r *http.Request, 
 		walkpath = ""
 	}
 
-	type commonPrefix struct {
-		Prefix string
+	resp := listV2Resp{
+		Name:              bucket,
+		Prefix:            params.prefix,
+		Delimiter:         params.delimiter,
+		MaxKeys:           params.maxKeys,
+		ContinuationToken: r.FormValue("continuation-token"),
+		StartAfter:        params.startAfter,
 	}
-	type listResp struct {
-		XMLName string `xml:"http://s3.amazonaws.com/doc/2006-03-01/ ListBucketResult"`
-		s3.ListResp
-		// s3.ListResp marshals an empty tag when
-		// CommonPrefixes is nil, which confuses some clients.
-		// Fix by using this nested struct instead.
-		CommonPrefixes []commonPrefix
-		// Similarly, we need omitempty here, because an empty
-		// tag confuses some clients (e.g.,
-		// github.com/aws/aws-sdk-net never terminates its
-		// paging loop).
-		NextMarker string `xml:"NextMarker,omitempty"`
-		// ListObjectsV2 has a KeyCount response field.
-		KeyCount int
-	}
-	resp := listResp{
-		ListResp: s3.ListResp{
-			Name:      bucket,
-			Prefix:    params.prefix,
-			Delimiter: params.delimiter,
-			Marker:    params.marker,
-			MaxKeys:   params.maxKeys,
-		},
-	}
+	nextMarker := ""
+
 	commonPrefixes := map[string]bool{}
 	err := walkFS(fs, strings.TrimSuffix(bucketdir+"/"+walkpath, "/"), true, func(path string, fi os.FileInfo) error {
 		if path == bucketdir {
@@ -609,7 +753,7 @@ func (h *handler) s3list(bucket string, w http.ResponseWriter, r *http.Request, 
 				return errDone
 			}
 		}
-		if path < params.marker || path < params.prefix {
+		if path < params.marker || path < params.prefix || path <= params.startAfter {
 			return nil
 		}
 		if fi.IsDir() && !h.Config.cluster.Collections.S3FolderObjects {
@@ -619,6 +763,13 @@ func (h *handler) s3list(bucket string, w http.ResponseWriter, r *http.Request, 
 			// return a commonPrefix only if we end up
 			// finding a regular file inside it.
 			return nil
+		}
+		if len(resp.Contents)+len(commonPrefixes) >= params.maxKeys {
+			resp.IsTruncated = true
+			if params.delimiter != "" || params.v2 {
+				nextMarker = path
+			}
+			return errDone
 		}
 		if params.delimiter != "" {
 			idx := strings.Index(path[len(params.prefix):], params.delimiter)
@@ -630,13 +781,6 @@ func (h *handler) s3list(bucket string, w http.ResponseWriter, r *http.Request, 
 				commonPrefixes[path[:len(params.prefix)+idx+1]] = true
 				return filepath.SkipDir
 			}
-		}
-		if len(resp.Contents)+len(commonPrefixes) >= params.maxKeys {
-			resp.IsTruncated = true
-			if params.delimiter != "" {
-				resp.NextMarker = path
-			}
-			return errDone
 		}
 		resp.Contents = append(resp.Contents, s3.Key{
 			Key:          path,
@@ -657,9 +801,66 @@ func (h *handler) s3list(bucket string, w http.ResponseWriter, r *http.Request, 
 		sort.Slice(resp.CommonPrefixes, func(i, j int) bool { return resp.CommonPrefixes[i].Prefix < resp.CommonPrefixes[j].Prefix })
 	}
 	resp.KeyCount = len(resp.Contents)
+	var respV1orV2 interface{}
+
+	if params.encodingTypeURL {
+		// https://docs.aws.amazon.com/AmazonS3/latest/API/API_ListObjectsV2.html
+		// "If you specify the encoding-type request
+		// parameter, Amazon S3 includes this element in the
+		// response, and returns encoded key name values in
+		// the following response elements:
+		//
+		// Delimiter, Prefix, Key, and StartAfter.
+		//
+		// 	Type: String
+		//
+		// Valid Values: url"
+		//
+		// This is somewhat vague but in practice it appears
+		// to mean x-www-form-urlencoded as in RFC1866 8.2.1
+		// para 1 (encode space as "+") rather than straight
+		// percent-encoding as in RFC1738 2.2.  Presumably,
+		// the intent is to allow the client to decode XML and
+		// then paste the strings directly into another URI
+		// query or POST form like "https://host/path?foo=" +
+		// foo + "&bar=" + bar.
+		resp.EncodingType = "url"
+		resp.Delimiter = url.QueryEscape(resp.Delimiter)
+		resp.Prefix = url.QueryEscape(resp.Prefix)
+		resp.StartAfter = url.QueryEscape(resp.StartAfter)
+		for i, ent := range resp.Contents {
+			ent.Key = url.QueryEscape(ent.Key)
+			resp.Contents[i] = ent
+		}
+		for i, ent := range resp.CommonPrefixes {
+			ent.Prefix = url.QueryEscape(ent.Prefix)
+			resp.CommonPrefixes[i] = ent
+		}
+	}
+
+	if params.v2 {
+		resp.NextContinuationToken = base64.StdEncoding.EncodeToString([]byte(nextMarker))
+		respV1orV2 = resp
+	} else {
+		respV1orV2 = listV1Resp{
+			CommonPrefixes: resp.CommonPrefixes,
+			NextMarker:     nextMarker,
+			KeyCount:       resp.KeyCount,
+			ListResp: s3.ListResp{
+				IsTruncated: resp.IsTruncated,
+				Name:        bucket,
+				Prefix:      params.prefix,
+				Delimiter:   params.delimiter,
+				Marker:      params.marker,
+				MaxKeys:     params.maxKeys,
+				Contents:    resp.Contents,
+			},
+		}
+	}
+
 	w.Header().Set("Content-Type", "application/xml")
 	io.WriteString(w, xml.Header)
-	if err := xml.NewEncoder(w).Encode(resp); err != nil {
+	if err := xml.NewEncoder(w).Encode(respV1orV2); err != nil {
 		ctxlog.FromContext(r.Context()).WithError(err).Error("error writing xml response")
 	}
 }

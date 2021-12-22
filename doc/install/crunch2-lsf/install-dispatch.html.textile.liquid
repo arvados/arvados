@@ -1,0 +1,121 @@
+---
+layout: default
+navsection: installguide
+title: Install the LSF dispatcher
+...
+{% comment %}
+Copyright (C) The Arvados Authors. All rights reserved.
+
+SPDX-License-Identifier: CC-BY-SA-3.0
+{% endcomment %}
+
+{% include 'notebox_begin_warning' %}
+@arvados-dispatch-lsf@ is only relevant for on premises clusters that will spool jobs to LSF. Skip this section if you use Slurm or if you are installing a cloud cluster.
+{% include 'notebox_end' %}
+
+h2(#overview). Overview
+
+Containers can be dispatched to an LSF cluster.  The dispatcher sends work to the cluster using LSF's @bsub@ command, so it works in a variety of LSF configurations.
+
+In order to run containers, you must choose a user that has permission to set up FUSE mounts and run Singularity/Docker containers on each compute node.  This install guide refers to this user as the @crunch@ user.  We recommend you create this user on each compute node with the same UID and GID, and add it to the @fuse@ and @docker@ system groups to grant it the necessary permissions.  However, you can run the dispatcher under any account with sufficient permissions across the cluster.
+
+Set up all of your compute nodes with "Docker":../crunch2/install-compute-node-singularity.html or "Singularity":../crunch2/install-compute-node-docker.html.
+
+*Current limitations*:
+* Arvados container priority is not propagated to LSF job priority. This can cause inefficient use of compute resources, and even deadlock if there are fewer compute nodes than concurrent Arvados workflows.
+* Combining LSF with docker may not work, depending on LSF configuration and user/group IDs (if LSF only sets up the configured user's primary group ID when executing the crunch-run process on a compute node, it may not have permission to connect to the docker daemon).
+
+h2(#update-config). Update config.yml
+
+Arvados-dispatch-lsf reads the common configuration file at @/etc/arvados/config.yml@.
+
+Add a DispatchLSF entry to the Services section, using the hostname where @arvados-dispatch-lsf@ will run, and an available port:
+
+<notextile>
+<pre>    Services:
+      DispatchLSF:
+        InternalURLs:
+          "http://<code class="userinput">hostname.zzzzz.arvadosapi.com:9007</code>": {}</pre>
+</notextile>
+
+Review the following configuration parameters and adjust as needed.
+
+h3(#BsubSudoUser). Containers.LSF.BsubSudoUser
+
+arvados-dispatch-lsf uses @sudo@ to execute @bsub@, for example @sudo -E -u crunch bsub [...]@. This means the @crunch@ account must exist on the hosts where LSF jobs run ("execution hosts"), as well as on the host where you are installing the Arvados LSF dispatcher (the "submission host"). To use a user account other than @crunch@, configure @BsubSudoUser@:
+
+<notextile>
+<pre>    Containers:
+      LSF:
+        <code class="userinput">BsubSudoUser: <b>lsfuser</b>
+</code></pre>
+</notextile>
+
+Alternatively, you can arrange for the arvados-dispatch-lsf process to run as an unprivileged user that has a corresponding account on all compute nodes, and disable the use of @sudo@ by specifying an empty string:
+
+<notextile>
+<pre>    Containers:
+      LSF:
+        # Don't use sudo
+        <code class="userinput">BsubSudoUser: <b>""</b>
+</code></pre>
+</notextile>
+
+
+h3(#SbatchArguments). Containers.LSF.BsubArgumentsList
+
+When arvados-dispatch-lsf invokes @bsub@, you can add arguments to the command by specifying @BsubArgumentsList@.  You can use this to send the jobs to specific cluster partitions or add resource requests.  Set @BsubArgumentsList@ to an array of strings.  For example:
+
+<notextile>
+<pre>    Containers:
+      LSF:
+        <code class="userinput">BsubArgumentsList: <b>["-C", "0", "-o", "/tmp/crunch-run.%J.out", "-e", "/tmp/crunch-run.%J.err"]</b></code>
+</pre>
+</notextile>
+
+Note that the default value for @BsubArgumentsList@ uses the @-o@ and @-e@ arguments to write stdout/stderr data to files in @/tmp@ on the compute nodes, which is helpful for troubleshooting installation/configuration problems. Ensure you have something in place to delete old files from @/tmp@, or adjust these arguments accordingly.
+
+
+h3(#PollPeriod). Containers.PollInterval
+
+arvados-dispatch-lsf polls the API server periodically for new containers to run.  The @PollInterval@ option controls how often this poll happens.  Set this to a string of numbers suffixed with one of the time units @s@, @m@, or @h@.  For example:
+
+<notextile>
+<pre>    Containers:
+      <code class="userinput">PollInterval: <b>10s</b>
+</code></pre>
+</notextile>
+
+
+h3(#ReserveExtraRAM). Containers.ReserveExtraRAM: Extra RAM for jobs
+
+Extra RAM to reserve (in bytes) on each LSF job submitted by Arvados, which is added to the amount specified in the container's @runtime_constraints@.  If not provided, the default value is zero.
+
+Supports suffixes @KB@, @KiB@, @MB@, @MiB@, @GB@, @GiB@, @TB@, @TiB@, @PB@, @PiB@, @EB@, @EiB@ (where @KB@ is 10[^3^], @KiB@ is 2[^10^], @MB@ is 10[^6^], @MiB@ is 2[^20^] and so forth).
+
+<notextile>
+<pre>    Containers:
+      <code class="userinput">ReserveExtraRAM: <b>256MiB</b></code>
+</pre>
+</notextile>
+
+
+h3(#CrunchRunCommand-network). Containers.CrunchRunArgumentList: Using host networking for containers
+
+Older Linux kernels (prior to 3.18) have bugs in network namespace handling which can lead to compute node lockups.  This by is indicated by blocked kernel tasks in "Workqueue: netns cleanup_net".   If you are experiencing this problem, as a workaround you can disable use of network namespaces by Docker across the cluster.  Be aware this reduces container isolation, which may be a security risk.
+
+<notextile>
+<pre>    Containers:
+      <code class="userinput">CrunchRunArgumentsList:
+        - <b>"-container-enable-networking=always"</b>
+        - <b>"-container-network-mode=host"</b></code>
+</pre>
+</notextile>
+
+{% assign arvados_component = 'arvados-dispatch-lsf' %}
+
+{% include 'install_packages' %}
+
+{% include 'start_service' %}
+
+{% include 'restart_api' %}

@@ -113,6 +113,11 @@ func (conn *Conn) splitListRequest(ctx context.Context, opts arvados.ListOptions
 		_, err := fn(ctx, conn.cluster.ClusterID, conn.local, opts)
 		return err
 	}
+	if opts.ClusterID != "" {
+		// Client explicitly selected cluster
+		_, err := fn(ctx, conn.cluster.ClusterID, conn.chooseBackend(opts.ClusterID), opts)
+		return err
+	}
 
 	cannotSplit := false
 	var matchAllFilters map[string]bool
@@ -205,8 +210,8 @@ func (conn *Conn) splitListRequest(ctx context.Context, opts arvados.ListOptions
 	if opts.Count != "none" {
 		return httpErrorf(http.StatusBadRequest, "cannot execute federated list query unless count==\"none\"")
 	}
-	if opts.Limit >= 0 || opts.Offset != 0 || len(opts.Order) > 0 {
-		return httpErrorf(http.StatusBadRequest, "cannot execute federated list query with limit, offset, or order parameter")
+	if (opts.Limit >= 0 && opts.Limit < int64(nUUIDs)) || opts.Offset != 0 || len(opts.Order) > 0 {
+		return httpErrorf(http.StatusBadRequest, "cannot execute federated list query with limit (%d) < nUUIDs (%d), offset (%d) > 0, or order (%v) parameter", opts.Limit, nUUIDs, opts.Offset, opts.Order)
 	}
 	if max := conn.cluster.API.MaxItemsPerResponse; nUUIDs > max {
 		return httpErrorf(http.StatusBadRequest, "cannot execute federated list query because number of UUIDs (%d) exceeds page size limit %d", nUUIDs, max)

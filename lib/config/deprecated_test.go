@@ -35,7 +35,9 @@ func testLoadLegacyConfig(content []byte, mungeFlag string, c *check.C) (*arvado
 	ldr := testLoader(c, "Clusters: {zzzzz: {}}", nil)
 	ldr.SetupFlags(flags)
 	args := ldr.MungeLegacyConfigArgs(ldr.Logger, []string{"-config", tmpfile.Name()}, mungeFlag)
-	flags.Parse(args)
+	err = flags.Parse(args)
+	c.Assert(err, check.IsNil)
+	c.Assert(flags.NArg(), check.Equals, 0)
 	cfg, err := ldr.Load()
 	if err != nil {
 		return nil, err
@@ -45,6 +47,48 @@ func testLoadLegacyConfig(content []byte, mungeFlag string, c *check.C) (*arvado
 		return nil, err
 	}
 	return cluster, nil
+}
+
+func (s *LoadSuite) TestLegacyVolumeDriverParameters(c *check.C) {
+	logs := checkEquivalent(c, `
+Clusters:
+ z1111:
+  Volumes:
+   z1111-nyw5e-aaaaaaaaaaaaaaa:
+    Driver: S3
+    DriverParameters:
+     AccessKey: exampleaccesskey
+     SecretKey: examplesecretkey
+     Region: foobar
+     ReadTimeout: 1200s
+`, `
+Clusters:
+ z1111:
+  Volumes:
+   z1111-nyw5e-aaaaaaaaaaaaaaa:
+    Driver: S3
+    DriverParameters:
+     AccessKeyID: exampleaccesskey
+     SecretAccessKey: examplesecretkey
+     Region: foobar
+     ReadTimeout: 1200s
+`)
+	c.Check(logs, check.Matches, `(?ms).*deprecated or unknown config entry: .*AccessKey.*`)
+	c.Check(logs, check.Matches, `(?ms).*deprecated or unknown config entry: .*SecretKey.*`)
+	c.Check(logs, check.Matches, `(?ms).*using your old config keys z1111\.Volumes\.z1111-nyw5e-aaaaaaaaaaaaaaa\.DriverParameters\.AccessKey/SecretKey -- but you should rename them to AccessKeyID/SecretAccessKey.*`)
+
+	_, err := testLoader(c, `
+Clusters:
+ z1111:
+  Volumes:
+   z1111-nyw5e-aaaaaaaaaaaaaaa:
+    Driver: S3
+    DriverParameters:
+     AccessKey: exampleaccesskey
+     SecretKey: examplesecretkey
+     AccessKeyID: exampleaccesskey
+`, nil).Load()
+	c.Check(err, check.ErrorMatches, `(?ms).*cannot use .*SecretKey.*and.*SecretAccessKey.*in z1111.Volumes.z1111-nyw5e-aaaaaaaaaaaaaaa.DriverParameters.*`)
 }
 
 func (s *LoadSuite) TestDeprecatedNodeProfilesToServices(c *check.C) {
@@ -143,7 +187,6 @@ func (s *LoadSuite) TestLegacyKeepWebConfig(c *check.C) {
 		"UUIDTTL": "1s",
 		"MaxCollectionEntries": 42,
 		"MaxCollectionBytes": 1234567890,
-		"MaxPermissionEntries": 100,
 		"MaxUUIDEntries": 100
 	},
 	"ManagementToken": "xyzzy"
@@ -159,7 +202,6 @@ func (s *LoadSuite) TestLegacyKeepWebConfig(c *check.C) {
 	c.Check(cluster.Collections.WebDAVCache.UUIDTTL, check.Equals, arvados.Duration(time.Second))
 	c.Check(cluster.Collections.WebDAVCache.MaxCollectionEntries, check.Equals, 42)
 	c.Check(cluster.Collections.WebDAVCache.MaxCollectionBytes, check.Equals, int64(1234567890))
-	c.Check(cluster.Collections.WebDAVCache.MaxPermissionEntries, check.Equals, 100)
 	c.Check(cluster.Collections.WebDAVCache.MaxUUIDEntries, check.Equals, 100)
 
 	c.Check(cluster.Services.WebDAVDownload.ExternalURL, check.Equals, arvados.URL{Host: "download.example.com", Path: "/"})

@@ -25,7 +25,6 @@ unless ENV["NO_COVERAGE_TEST"]
     SimpleCov.start do
       add_filter '/test/'
       add_filter 'initializers/secret_token'
-      add_filter 'initializers/omniauth'
     end
   rescue Exception => e
     $stderr.puts "SimpleCov unavailable (#{e}). Proceeding without."

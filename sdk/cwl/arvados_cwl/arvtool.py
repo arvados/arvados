@@ -6,6 +6,7 @@ from cwltool.command_line_tool import CommandLineTool, ExpressionTool
 from .arvcontainer import ArvadosContainer
 from .pathmapper import ArvPathMapper
 from .runner import make_builder
+from ._version import __version__
 from functools import partial
 from schema_salad.sourceline import SourceLine
 from cwltool.errors import WorkflowException
@@ -15,7 +16,22 @@ def validate_cluster_target(arvrunner, runtimeContext):
         runtimeContext.submit_runner_cluster not in arvrunner.api._rootDesc["remoteHosts"] and
         runtimeContext.submit_runner_cluster != arvrunner.api._rootDesc["uuidPrefix"]):
         raise WorkflowException("Unknown or invalid cluster id '%s' known remote clusters are %s" % (runtimeContext.submit_runner_cluster,
-                                                                                                  ", ".join(list(arvrunner.api._rootDesc["remoteHosts"].keys()))))
+                                                                                                     ", ".join(list(arvrunner.api._rootDesc["remoteHosts"].keys()))))
+    if runtimeContext.project_uuid:
+        cluster_target = runtimeContext.submit_runner_cluster or arvrunner.api._rootDesc["uuidPrefix"]
+        if not runtimeContext.project_uuid.startswith(cluster_target):
+            raise WorkflowException("Project uuid '%s' should start with id of target cluster '%s'" % (runtimeContext.project_uuid, cluster_target))
+
+        try:
+            if runtimeContext.project_uuid[5:12] == '-tpzed-':
+                arvrunner.api.users().get(uuid=runtimeContext.project_uuid).execute()
+            else:
+                proj = arvrunner.api.groups().get(uuid=runtimeContext.project_uuid).execute()
+                if proj["group_class"] != "project":
+                    raise Exception("not a project, group_class is '%s'" % (proj["group_class"]))
+        except Exception as e:
+            raise WorkflowException("Invalid project uuid '%s': %s" % (runtimeContext.project_uuid, e))
+
 def set_cluster_target(tool, arvrunner, builder, runtimeContext):
     cluster_target_req = None
     for field in ("hints", "requirements"):
@@ -42,6 +58,12 @@ class ArvadosCommandTool(CommandLineTool):
 
     def __init__(self, arvrunner, toolpath_object, loadingContext):
         super(ArvadosCommandTool, self).__init__(toolpath_object, loadingContext)
+
+        (docker_req, docker_is_req) = self.get_requirement("DockerRequirement")
+        if not docker_req:
+            self.hints.append({"class": "DockerRequirement",
+                               "dockerPull": "arvados/jobs:"+__version__})
+
         self.arvrunner = arvrunner
 
     def make_job_runner(self, runtimeContext):

@@ -8,6 +8,16 @@
 # generating the documentation for the SDKs, which (the R docs
 # especially) take a fair bit of time and slow down the edit-preview
 # cycle.
+#
+# To generate and view the documentation locally, run this command
+#
+#   rake && sensible-browser .site/index.html
+#
+# Or alternatively:
+#
+#   baseurl=http://localhost:8000 rake && rake run
+#
+# and then visit http://localhost:8000 in a browser.
 
 require "rubygems"
 require "colorize"
@@ -150,7 +160,8 @@ task :linkchecker => [ :generate ] do
   Dir.chdir(".site") do
     `which linkchecker`
     if $? == 0
-      system "linkchecker index.html --ignore-url='!file://'" or exit $?.exitstatus
+      # we need --check-extern to check relative links, weird but true
+      system "linkchecker index.html --check-extern --ignore-url='!file://'" or exit $?.exitstatus
     else
       puts "Warning: linkchecker not found, skipping run".colorize(:light_red)
     end

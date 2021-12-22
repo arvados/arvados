@@ -16,6 +16,6 @@ import (
 // Command starts a controller service. See cmd/arvados-server/cmd.go
 var Command cmd.Handler = service.Command(arvados.ServiceNameController, newHandler)
 
-func newHandler(_ context.Context, cluster *arvados.Cluster, _ string, _ *prometheus.Registry) service.Handler {
-	return &Handler{Cluster: cluster}
+func newHandler(ctx context.Context, cluster *arvados.Cluster, _ string, _ *prometheus.Registry) service.Handler {
+	return &Handler{Cluster: cluster, BackgroundContext: ctx}
 }

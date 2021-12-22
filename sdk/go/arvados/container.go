@@ -32,6 +32,11 @@ type Container struct {
 	FinishedAt                *time.Time             `json:"finished_at"` // nil if not yet finished
 	GatewayAddress            string                 `json:"gateway_address"`
 	InteractiveSessionStarted bool                   `json:"interactive_session_started"`
+	OutputStorageClasses      []string               `json:"output_storage_classes"`
+	RuntimeUserUUID           string                 `json:"runtime_user_uuid"`
+	RuntimeAuthScopes         []string               `json:"runtime_auth_scopes"`
+	RuntimeToken              string                 `json:"runtime_token"`
+	AuthUUID                  string                 `json:"auth_uuid"`
 }
 
 // ContainerRequest is an arvados#container_request resource.
@@ -43,7 +48,6 @@ type ContainerRequest struct {
 	ModifiedByUserUUID      string                 `json:"modified_by_user_uuid"`
 	ModifiedAt              time.Time              `json:"modified_at"`
 	Href                    string                 `json:"href"`
-	Kind                    string                 `json:"kind"`
 	Etag                    string                 `json:"etag"`
 	Name                    string                 `json:"name"`
 	Description             string                 `json:"description"`
@@ -70,6 +74,7 @@ type ContainerRequest struct {
 	ExpiresAt               time.Time              `json:"expires_at"`
 	Filters                 []Filter               `json:"filters"`
 	ContainerCount          int                    `json:"container_count"`
+	OutputStorageClasses    []string               `json:"output_storage_classes"`
 }
 
 // Mount is special behavior to attach to a filesystem path or device.
@@ -91,10 +96,13 @@ type Mount struct {
 // RuntimeConstraints specify a container's compute resources (RAM,
 // CPU) and network connectivity.
 type RuntimeConstraints struct {
-	API          bool  `json:"API"`
-	RAM          int64 `json:"ram"`
-	VCPUs        int   `json:"vcpus"`
-	KeepCacheRAM int64 `json:"keep_cache_ram"`
+	API                    bool   `json:"API"`
+	RAM                    int64  `json:"ram"`
+	VCPUs                  int    `json:"vcpus"`
+	KeepCacheRAM           int64  `json:"keep_cache_ram"`
+	CUDADriverVersion      string `json:"cuda_driver_version,omitempty"`
+	CUDAHardwareCapability string `json:"cuda_hardware_capability,omitempty"`
+	CUDADeviceCount        int    `json:"cuda_device_count,omitempty"`
 }
 
 // SchedulingParameters specify a container's scheduling parameters

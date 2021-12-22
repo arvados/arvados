@@ -39,6 +39,66 @@ func (sc *spyingClient) RequestAndDecode(dst interface{}, method, path string, b
 	return sc.Client.RequestAndDecode(dst, method, path, body, params)
 }
 
+func (s *SiteFSSuite) TestFilterGroup(c *check.C) {
+	// Make sure that a collection and group that match the filter are present,
+	// and that a group that does not match the filter is not present.
+	s.fs.MountProject("fg", fixtureThisFilterGroupUUID)
+
+	_, err := s.fs.OpenFile("/fg/baz_file", 0, 0)
+	c.Assert(err, check.IsNil)
+
+	_, err = s.fs.OpenFile("/fg/A Subproject", 0, 0)
+	c.Assert(err, check.IsNil)
+
+	_, err = s.fs.OpenFile("/fg/A Project", 0, 0)
+	c.Assert(err, check.Not(check.IsNil))
+
+	// An empty filter means everything that is visible should be returned.
+	s.fs.MountProject("fg2", fixtureAFilterGroupTwoUUID)
+
+	_, err = s.fs.OpenFile("/fg2/baz_file", 0, 0)
+	c.Assert(err, check.IsNil)
+
+	_, err = s.fs.OpenFile("/fg2/A Subproject", 0, 0)
+	c.Assert(err, check.IsNil)
+
+	_, err = s.fs.OpenFile("/fg2/A Project", 0, 0)
+	c.Assert(err, check.IsNil)
+
+	// An 'is_a' 'arvados#collection' filter means only collections should be returned.
+	s.fs.MountProject("fg3", fixtureAFilterGroupThreeUUID)
+
+	_, err = s.fs.OpenFile("/fg3/baz_file", 0, 0)
+	c.Assert(err, check.IsNil)
+
+	_, err = s.fs.OpenFile("/fg3/A Subproject", 0, 0)
+	c.Assert(err, check.Not(check.IsNil))
+
+	// An 'exists' 'arvados#collection' filter means only collections with certain properties should be returned.
+	s.fs.MountProject("fg4", fixtureAFilterGroupFourUUID)
+
+	_, err = s.fs.Stat("/fg4/collection with list property with odd values")
+	c.Assert(err, check.IsNil)
+
+	_, err = s.fs.Stat("/fg4/collection with list property with even values")
+	c.Assert(err, check.IsNil)
+
+	// A 'contains' 'arvados#collection' filter means only collections with certain properties should be returned.
+	s.fs.MountProject("fg5", fixtureAFilterGroupFiveUUID)
+
+	_, err = s.fs.Stat("/fg5/collection with list property with odd values")
+	c.Assert(err, check.IsNil)
+
+	_, err = s.fs.Stat("/fg5/collection with list property with string value")
+	c.Assert(err, check.IsNil)
+
+	_, err = s.fs.Stat("/fg5/collection with prop2 5")
+	c.Assert(err, check.Not(check.IsNil))
+
+	_, err = s.fs.Stat("/fg5/collection with list property with even values")
+	c.Assert(err, check.Not(check.IsNil))
+}
+
 func (s *SiteFSSuite) TestCurrentUserHome(c *check.C) {
 	s.fs.MountProject("home", "")
 	s.testHomeProject(c, "/home")

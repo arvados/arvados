@@ -26,11 +26,25 @@ type Queue struct {
 
 	Logger logrus.FieldLogger
 
-	entries     map[string]container.QueueEnt
-	updTime     time.Time
-	subscribers map[<-chan struct{}]chan struct{}
+	entries      map[string]container.QueueEnt
+	updTime      time.Time
+	subscribers  map[<-chan struct{}]chan struct{}
+	stateChanges []QueueStateChange
 
 	mtx sync.Mutex
+}
+
+type QueueStateChange struct {
+	UUID string
+	From arvados.ContainerState
+	To   arvados.ContainerState
+}
+
+// All calls to Lock/Unlock/Cancel to date.
+func (q *Queue) StateChanges() []QueueStateChange {
+	q.mtx.Lock()
+	defer q.mtx.Unlock()
+	return q.stateChanges
 }
 
 // Entries returns the containers that were queued when Update was
@@ -111,6 +125,7 @@ func (q *Queue) notify() {
 // caller must have lock.
 func (q *Queue) changeState(uuid string, from, to arvados.ContainerState) error {
 	ent := q.entries[uuid]
+	q.stateChanges = append(q.stateChanges, QueueStateChange{uuid, from, to})
 	if ent.Container.State != from {
 		return fmt.Errorf("changeState failed: state=%q", ent.Container.State)
 	}
@@ -145,6 +160,7 @@ func (q *Queue) Update() error {
 			upd[ctr.UUID] = container.QueueEnt{
 				Container:    ctr,
 				InstanceType: it,
+				FirstSeenAt:  time.Now(),
 			}
 		}
 	}

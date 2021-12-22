@@ -277,6 +277,8 @@ package_go_binary cmd/arvados-server arvados-controller \
     "Arvados cluster controller daemon"
 package_go_binary cmd/arvados-server arvados-dispatch-cloud \
     "Arvados cluster cloud dispatch"
+package_go_binary cmd/arvados-server arvados-dispatch-lsf \
+    "Dispatch Arvados containers to an LSF cluster"
 package_go_binary services/arv-git-httpd arvados-git-httpd \
     "Provide authenticated http access to Arvados-hosted git repositories"
 package_go_binary services/crunch-dispatch-local crunch-dispatch-local \
@@ -293,7 +295,7 @@ package_go_binary services/keep-balance keep-balance \
     "Rebalance and garbage-collect data blocks stored in Arvados Keep"
 package_go_binary services/keepproxy keepproxy \
     "Make a Keep cluster accessible to clients that are not on the LAN"
-package_go_binary services/keepstore keepstore \
+package_go_binary cmd/arvados-server keepstore \
     "Keep storage daemon, accessible to clients on the LAN"
 package_go_binary services/keep-web keep-web \
     "Static web hosting service for user data stored in Arvados Keep"
@@ -328,6 +330,14 @@ fpm_build_virtualenv "arvados-docker-cleaner" "services/dockercleaner" "python3"
 # The Arvados user activity tool
 fpm_build_virtualenv "arvados-user-activity" "tools/user-activity" "python3"
 
+# The python->python3 metapackages
+build_metapackage "arvados-fuse" "services/fuse"
+build_metapackage "arvados-python-client" "services/fuse"
+build_metapackage "arvados-cwl-runner" "sdk/cwl"
+build_metapackage "crunchstat-summary" "tools/crunchstat-summary"
+build_metapackage "arvados-docker-cleaner" "services/dockercleaner"
+build_metapackage "arvados-user-activity" "tools/user-activity"
+
 # The cwltest package, which lives out of tree
 cd "$WORKSPACE"
 if [[ -e "$WORKSPACE/cwltest" ]]; then
@@ -337,6 +347,9 @@ git clone https://github.com/common-workflow-language/cwltest.git
 # signal to our build script that we want a cwltest executable installed in /usr/bin/
 mkdir cwltest/bin && touch cwltest/bin/cwltest
 fpm_build_virtualenv "cwltest" "cwltest" "python3"
+# The python->python3 metapackage
+build_metapackage "cwltest" "cwltest"
+cd "$WORKSPACE"
 rm -rf "$WORKSPACE/cwltest"
 
 calculate_go_package_version arvados_server_version cmd/arvados-server
@@ -390,8 +403,8 @@ if [[ "$?" == "0" ]] ; then
       mv /tmp/x /etc/arvados/config.yml
       perl -p -i -e 'BEGIN{undef $/;} s/WebDAV(.*?):\n( *)ExternalURL: ""/WebDAV$1:\n$2ExternalURL: "example.com"/g' /etc/arvados/config.yml
 
-      RAILS_ENV=production RAILS_GROUPS=assets bundle exec rake npm:install >"$STDOUT_IF_DEBUG"
-      RAILS_ENV=production RAILS_GROUPS=assets bundle exec rake assets:precompile >"$STDOUT_IF_DEBUG"
+      ARVADOS_CONFIG=none RAILS_ENV=production RAILS_GROUPS=assets bin/rake npm:install >"$STDOUT_IF_DEBUG"
+      ARVADOS_CONFIG=none RAILS_ENV=production RAILS_GROUPS=assets bin/rake assets:precompile >"$STDOUT_IF_DEBUG"
 
       # Remove generated configuration files so they don't go in the package.
       rm -rf /etc/arvados/

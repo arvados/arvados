@@ -81,7 +81,6 @@ Rails.application.routes.draw do
         post 'activate', on: :member
         post 'setup', on: :collection
         post 'unsetup', on: :member
-        post 'update_uuid', on: :member
         post 'merge', on: :collection
         patch 'batch_update', on: :collection
       end
@@ -92,6 +91,8 @@ Rails.application.routes.draw do
       get '/permissions/:uuid', to: 'links#get_permissions'
     end
   end
+
+  post '/sys/trash_sweep', to: 'sys#trash_sweep'
 
   if Rails.env == 'test'
     post '/database/reset', to: 'database#reset'

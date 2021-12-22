@@ -135,8 +135,8 @@ timer_reset
 cd "$WORKSPACE"
 
 if [[ -z "$ARVADOS_BUILDING_VERSION" ]] && ! [[ -z "$version_tag" ]]; then
-	ARVADOS_BUILDING_VERSION="$version_tag"
-	ARVADOS_BUILDING_ITERATION="1"
+	export ARVADOS_BUILDING_VERSION="$version_tag"
+	export ARVADOS_BUILDING_ITERATION="1"
 fi
 
 # This defines python_sdk_version and cwl_runner_version with python-style

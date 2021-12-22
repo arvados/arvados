@@ -355,3 +355,87 @@
       "size": 4
   tool: 17267-broken-schemas.cwl
   doc: "Test issue 17267 - inaccessible $schemas URL is not a fatal error"
+
+- job: null
+  output: {}
+  tool: wf/trick_defaults2.cwl
+  doc: "Test issue 17462 - secondary file objects on file defaults are not resolved"
+
+- job: null
+  output: {
+    "stuff": {
+        "location": "bar.txt",
+        "basename": "bar.txt",
+        "class": "File",
+        "checksum": "sha1$da39a3ee5e6b4b0d3255bfef95601890afd80709",
+        "size": 0
+    }
+  }
+  tool: 17521-dot-slash-glob.cwl
+  doc: "Test issue 17521 - bug with leading './' capturing files in subdirectories"
+
+- job: null
+  output: {
+    "stuff": {
+        "basename": "foo",
+        "class": "Directory",
+        "listing": [
+            {
+                "basename": "bar.txt",
+                "checksum": "sha1$da39a3ee5e6b4b0d3255bfef95601890afd80709",
+                "class": "File",
+                "location": "foo/bar.txt",
+                "size": 0
+            }
+        ],
+        "location": "foo"
+    }
+  }
+  tool: 10380-trailing-slash-dir.cwl
+  doc: "Test issue 10380 - bug with trailing slash when capturing an output directory"
+
+- job: null
+  output: {
+    "stuff": {
+        "basename": "78f3957c41d044352303a3fa326dff1e+102",
+        "class": "Directory",
+        "listing": [
+            {
+                "basename": "baz.txt",
+                "checksum": "sha1$da39a3ee5e6b4b0d3255bfef95601890afd80709",
+                "class": "File",
+                "location": "78f3957c41d044352303a3fa326dff1e+102/baz.txt",
+                "size": 0
+            },
+            {
+                "basename": "foo",
+                "class": "Directory",
+                "listing": [
+                    {
+                        "basename": "bar.txt",
+                        "checksum": "sha1$da39a3ee5e6b4b0d3255bfef95601890afd80709",
+                        "class": "File",
+                        "location": "78f3957c41d044352303a3fa326dff1e+102/foo/bar.txt",
+                        "size": 0
+                    }
+                ],
+                "location": "78f3957c41d044352303a3fa326dff1e+102/foo"
+            }
+        ],
+        "location": "78f3957c41d044352303a3fa326dff1e+102"
+    }
+  }
+  tool: 17801-runtime-outdir.cwl
+  doc: "Test issue 17801 - bug using $(runtime.outdir) to capture the output directory"
+
+- job: null
+  output:
+    "val": "keep:f225e6259bdd63bc7240599648dde9f1+97/hg19.fa"
+  tool: 17858-pack-visit-crash.cwl
+  doc: "Test issue 17858 - keep ref default inputs on ExpressionTool"
+
+- job: 17879-ignore-sbg-fields-job.yml
+  output:
+    "outstr": "foo woble bar"
+  tool: 17879-ignore-sbg-fields.cwl
+  doc: "Test issue 17879 - ignores sbg fields"

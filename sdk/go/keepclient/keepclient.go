@@ -8,6 +8,7 @@ package keepclient
 
 import (
 	"bytes"
+	"context"
 	"crypto/md5"
 	"errors"
 	"fmt"
@@ -21,8 +22,8 @@ import (
 	"sync"
 	"time"
 
+	"git.arvados.org/arvados.git/sdk/go/arvados"
 	"git.arvados.org/arvados.git/sdk/go/arvadosclient"
-	"git.arvados.org/arvados.git/sdk/go/asyncbuf"
 	"git.arvados.org/arvados.git/sdk/go/httpserver"
 )
 
@@ -68,11 +69,11 @@ type ErrNotFound struct {
 	multipleResponseError
 }
 
-type InsufficientReplicasError error
+type InsufficientReplicasError struct{ error }
 
-type OversizeBlockError error
+type OversizeBlockError struct{ error }
 
-var ErrOversizeBlock = OversizeBlockError(errors.New("Exceeded maximum block size (" + strconv.Itoa(BLOCKSIZE) + ")"))
+var ErrOversizeBlock = OversizeBlockError{error: errors.New("Exceeded maximum block size (" + strconv.Itoa(BLOCKSIZE) + ")")}
 var MissingArvadosApiHost = errors.New("Missing required environment variable ARVADOS_API_HOST")
 var MissingArvadosApiToken = errors.New("Missing required environment variable ARVADOS_API_TOKEN")
 var InvalidLocatorError = errors.New("Invalid locator")
@@ -83,8 +84,12 @@ var ErrNoSuchKeepServer = errors.New("No keep server matching the given UUID is 
 // ErrIncompleteIndex is returned when the Index response does not end with a new empty line
 var ErrIncompleteIndex = errors.New("Got incomplete index")
 
-const XKeepDesiredReplicas = "X-Keep-Desired-Replicas"
-const XKeepReplicasStored = "X-Keep-Replicas-Stored"
+const (
+	XKeepDesiredReplicas         = "X-Keep-Desired-Replicas"
+	XKeepReplicasStored          = "X-Keep-Replicas-Stored"
+	XKeepStorageClasses          = "X-Keep-Storage-Classes"
+	XKeepStorageClassesConfirmed = "X-Keep-Storage-Classes-Confirmed"
+)
 
 type HTTPClient interface {
 	Do(*http.Request) (*http.Response, error)
@@ -92,17 +97,18 @@ type HTTPClient interface {
 
 // KeepClient holds information about Arvados and Keep servers.
 type KeepClient struct {
-	Arvados            *arvadosclient.ArvadosClient
-	Want_replicas      int
-	localRoots         map[string]string
-	writableLocalRoots map[string]string
-	gatewayRoots       map[string]string
-	lock               sync.RWMutex
-	HTTPClient         HTTPClient
-	Retries            int
-	BlockCache         *BlockCache
-	RequestID          string
-	StorageClasses     []string
+	Arvados               *arvadosclient.ArvadosClient
+	Want_replicas         int
+	localRoots            map[string]string
+	writableLocalRoots    map[string]string
+	gatewayRoots          map[string]string
+	lock                  sync.RWMutex
+	HTTPClient            HTTPClient
+	Retries               int
+	BlockCache            *BlockCache
+	RequestID             string
+	StorageClasses        []string
+	DefaultStorageClasses []string // Set by cluster's exported config
 
 	// set to 1 if all writable services are of disk type, otherwise 0
 	replicasPerService int
@@ -114,7 +120,23 @@ type KeepClient struct {
 	disableDiscovery bool
 }
 
-// MakeKeepClient creates a new KeepClient, calls
+func (kc *KeepClient) loadDefaultClasses() error {
+	scData, err := kc.Arvados.ClusterConfig("StorageClasses")
+	if err != nil {
+		return err
+	}
+	classes := scData.(map[string]interface{})
+	for scName := range classes {
+		scConf, _ := classes[scName].(map[string]interface{})
+		isDefault, ok := scConf["Default"].(bool)
+		if ok && isDefault {
+			kc.DefaultStorageClasses = append(kc.DefaultStorageClasses, scName)
+		}
+	}
+	return nil
+}
+
+// MakeKeepClient creates a new KeepClient, loads default storage classes, calls
 // DiscoverKeepServices(), and returns when the client is ready to
 // use.
 func MakeKeepClient(arv *arvadosclient.ArvadosClient) (*KeepClient, error) {
@@ -133,11 +155,16 @@ func New(arv *arvadosclient.ArvadosClient) *KeepClient {
 			defaultReplicationLevel = int(v)
 		}
 	}
-	return &KeepClient{
+	kc := &KeepClient{
 		Arvados:       arv,
 		Want_replicas: defaultReplicationLevel,
 		Retries:       2,
 	}
+	err = kc.loadDefaultClasses()
+	if err != nil {
+		DebugPrintf("DEBUG: Unable to load the default storage classes cluster config")
+	}
+	return kc
 }
 
 // PutHR puts a block given the block hash, a reader, and the number of bytes
@@ -149,23 +176,12 @@ func New(arv *arvadosclient.ArvadosClient) *KeepClient {
 // Returns an InsufficientReplicasError if 0 <= replicas <
 // kc.Wants_replicas.
 func (kc *KeepClient) PutHR(hash string, r io.Reader, dataBytes int64) (string, int, error) {
-	// Buffer for reads from 'r'
-	var bufsize int
-	if dataBytes > 0 {
-		if dataBytes > BLOCKSIZE {
-			return "", 0, ErrOversizeBlock
-		}
-		bufsize = int(dataBytes)
-	} else {
-		bufsize = BLOCKSIZE
-	}
-
-	buf := asyncbuf.NewBuffer(make([]byte, 0, bufsize))
-	go func() {
-		_, err := io.Copy(buf, HashCheckingReader{r, md5.New(), hash})
-		buf.CloseWithError(err)
-	}()
-	return kc.putReplicas(hash, buf.NewReader, dataBytes)
+	resp, err := kc.BlockWrite(context.Background(), arvados.BlockWriteOptions{
+		Hash:     hash,
+		Reader:   r,
+		DataSize: int(dataBytes),
+	})
+	return resp.Locator, resp.Replicas, err
 }
 
 // PutHB writes a block to Keep. The hash of the bytes is given in
@@ -173,16 +189,21 @@ func (kc *KeepClient) PutHR(hash string, r io.Reader, dataBytes int64) (string, 
 //
 // Return values are the same as for PutHR.
 func (kc *KeepClient) PutHB(hash string, buf []byte) (string, int, error) {
-	newReader := func() io.Reader { return bytes.NewBuffer(buf) }
-	return kc.putReplicas(hash, newReader, int64(len(buf)))
+	resp, err := kc.BlockWrite(context.Background(), arvados.BlockWriteOptions{
+		Hash: hash,
+		Data: buf,
+	})
+	return resp.Locator, resp.Replicas, err
 }
 
 // PutB writes a block to Keep. It computes the hash itself.
 //
 // Return values are the same as for PutHR.
 func (kc *KeepClient) PutB(buffer []byte) (string, int, error) {
-	hash := fmt.Sprintf("%x", md5.Sum(buffer))
-	return kc.PutHB(hash, buffer)
+	resp, err := kc.BlockWrite(context.Background(), arvados.BlockWriteOptions{
+		Data: buffer,
+	})
+	return resp.Locator, resp.Replicas, err
 }
 
 // PutR writes a block to Keep. It first reads all data from r into a buffer
@@ -499,6 +520,11 @@ func (kc *KeepClient) cache() *BlockCache {
 
 func (kc *KeepClient) ClearBlockCache() {
 	kc.cache().Clear()
+}
+
+func (kc *KeepClient) SetStorageClasses(sc []string) {
+	// make a copy so the caller can't mess with it.
+	kc.StorageClasses = append([]string{}, sc...)
 }
 
 var (

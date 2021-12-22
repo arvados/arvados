@@ -29,34 +29,14 @@ class Arvados::V1::FiltersTest < ActionController::TestCase
                  json_response['errors'].join(' '))
   end
 
-  test 'error message for full text search on a specific column' do
+  test 'error message for unsupported full text search' do
     @controller = Arvados::V1::CollectionsController.new
     authorize_with :active
     get :index, params: {
       filters: [['uuid', '@@', 'abcdef']],
     }
     assert_response 422
-    assert_match(/not supported/, json_response['errors'].join(' '))
-  end
-
-  test 'difficult characters in full text search' do
-    @controller = Arvados::V1::CollectionsController.new
-    authorize_with :active
-    get :index, params: {
-      filters: [['any', '@@', 'a|b"c']],
-    }
-    assert_response :success
-    # (Doesn't matter so much which results are returned.)
-  end
-
-  test 'array operand in full text search' do
-    @controller = Arvados::V1::CollectionsController.new
-    authorize_with :active
-    get :index, params: {
-      filters: [['any', '@@', ['abc', 'def']]],
-    }
-    assert_response 422
-    assert_match(/not supported/, json_response['errors'].join(' '))
+    assert_match(/no longer supported/, json_response['errors'].join(' '))
   end
 
   test 'api responses provide timestamps with nanoseconds' do
@@ -98,58 +78,6 @@ class Arvados::V1::FiltersTest < ActionController::TestCase
         assert_not_includes uuids, mine.uuid
       end
     end
-  end
-
-  test "full text search with count='none'" do
-    @controller = Arvados::V1::GroupsController.new
-    authorize_with :admin
-
-    get :contents, params: {
-      format: :json,
-      count: 'none',
-      limit: 1000,
-      filters: [['any', '@@', Rails.configuration.ClusterID]],
-    }
-
-    assert_response :success
-
-    all_objects = Hash.new(0)
-    json_response['items'].map{|o| o['kind']}.each{|t| all_objects[t] += 1}
-
-    assert_equal true, all_objects['arvados#group']>0
-    assert_equal true, all_objects['arvados#job']>0
-    assert_equal true, all_objects['arvados#pipelineInstance']>0
-    assert_equal true, all_objects['arvados#pipelineTemplate']>0
-
-    # Perform test again mimicking a second page request with:
-    # last_object_class = PipelineInstance
-    #   and hence groups and jobs should not be included in the response
-    # offset = 5, which means first 5 pipeline instances were already received in page 1
-    #   and hence the remaining pipeline instances and all other object types should be included in the response
-
-    @test_counter = 0  # Reset executed action counter
-
-    @controller = Arvados::V1::GroupsController.new
-
-    get :contents, params: {
-      format: :json,
-      count: 'none',
-      limit: 1000,
-      offset: '5',
-      last_object_class: 'PipelineInstance',
-      filters: [['any', '@@', Rails.configuration.ClusterID]],
-    }
-
-    assert_response :success
-
-    second_page = Hash.new(0)
-    json_response['items'].map{|o| o['kind']}.each{|t| second_page[t] += 1}
-
-    assert_equal false, second_page.include?('arvados#group')
-    assert_equal false, second_page.include?('arvados#job')
-    assert_equal true, second_page['arvados#pipelineInstance']>0
-    assert_equal all_objects['arvados#pipelineInstance'], second_page['arvados#pipelineInstance']+5
-    assert_equal true, second_page['arvados#pipelineTemplate']>0
   end
 
   [['prop1', '=', 'value1', [:collection_with_prop1_value1], [:collection_with_prop1_value2, :collection_with_prop2_1]],
@@ -318,5 +246,52 @@ class Arvados::V1::FiltersTest < ActionController::TestCase
     found = assigns(:objects).collect(&:uuid)
     assert_includes(found, collections(:replication_desired_2_unconfirmed).uuid)
     assert_includes(found, collections(:replication_desired_2_confirmed_2).uuid)
+  end
+
+  [
+    [1, "foo"],
+    [1, ["foo"]],
+    [1, ["bar"]],
+    [1, ["bar", "foo"]],
+    [0, ["foo", "qux"]],
+    [0, ["qux"]],
+    [nil, []],
+    [nil, [[]]],
+    [nil, [["bogus"]]],
+    [nil, [{"foo" => "bar"}]],
+    [nil, {"foo" => "bar"}],
+  ].each do |results, operand|
+    test "storage_classes_desired contains #{operand.inspect}" do
+      @controller = Arvados::V1::CollectionsController.new
+      authorize_with(:active)
+      c = Collection.create!(
+        manifest_text: "",
+        storage_classes_desired: ["foo", "bar", "baz"])
+      get :index, params: {
+            filters: [["storage_classes_desired", "contains", operand]],
+          }
+      if results.nil?
+        assert_response 422
+        next
+      end
+      assert_response :success
+      assert_equal results, json_response["items"].length
+      if results > 0
+        assert_equal c.uuid, json_response["items"][0]["uuid"]
+      end
+    end
+  end
+
+  test "collections properties contains top level key" do
+    @controller = Arvados::V1::CollectionsController.new
+    authorize_with(:active)
+    get :index, params: {
+          filters: [["properties", "contains", "prop1"]],
+        }
+    assert_response :success
+    assert_not_empty json_response["items"]
+    json_response["items"].each do |c|
+      assert c["properties"].has_key?("prop1")
+    end
   end
 end

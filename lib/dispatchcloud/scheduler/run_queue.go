@@ -20,7 +20,16 @@ func (sch *Scheduler) runQueue() {
 		sorted = append(sorted, ent)
 	}
 	sort.Slice(sorted, func(i, j int) bool {
-		return sorted[i].Container.Priority > sorted[j].Container.Priority
+		if pi, pj := sorted[i].Container.Priority, sorted[j].Container.Priority; pi != pj {
+			return pi > pj
+		} else {
+			// When containers have identical priority,
+			// start them in the order we first noticed
+			// them. This avoids extra lock/unlock cycles
+			// when we unlock the containers that don't
+			// fit in the available pool.
+			return sorted[i].FirstSeenAt.Before(sorted[j].FirstSeenAt)
+		}
 	})
 
 	running := sch.pool.Running()
@@ -66,20 +75,22 @@ tryrun:
 				// starve this one by using keeping
 				// idle workers alive on different
 				// instance types.
-				logger.Debug("unlocking: AtQuota and no unalloc workers")
-				sch.queue.Unlock(ctr.UUID)
+				logger.Trace("overquota")
 				overquota = sorted[i:]
 				break tryrun
-			} else if logger.Info("creating new instance"); sch.pool.Create(it) {
+			} else if sch.pool.Create(it) {
 				// Success. (Note pool.Create works
 				// asynchronously and does its own
-				// logging, so we don't need to.)
+				// logging about the eventual outcome,
+				// so we don't need to.)
+				logger.Info("creating new instance")
 			} else {
 				// Failed despite not being at quota,
 				// e.g., cloud ops throttled.  TODO:
 				// avoid getting starved here if
 				// instances of a specific type always
 				// fail.
+				logger.Trace("pool declined to create new instance")
 				continue
 			}
 

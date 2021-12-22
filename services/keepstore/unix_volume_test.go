@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-package main
+package keepstore
 
 import (
 	"bytes"
@@ -395,7 +395,7 @@ func (s *UnixVolumeSuite) TestStats(c *check.C) {
 	c.Check(err, check.NotNil)
 	c.Check(stats(), check.Matches, `.*"StatOps":[^0],.*`)
 	c.Check(stats(), check.Matches, `.*"Errors":[^0],.*`)
-	c.Check(stats(), check.Matches, `.*"\*os\.PathError":[^0].*`)
+	c.Check(stats(), check.Matches, `.*"\*(fs|os)\.PathError":[^0].*`) // os.PathError changed to fs.PathError in Go 1.16
 	c.Check(stats(), check.Matches, `.*"InBytes":0,.*`)
 	c.Check(stats(), check.Matches, `.*"OpenOps":0,.*`)
 	c.Check(stats(), check.Matches, `.*"CreateOps":0,.*`)

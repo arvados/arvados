@@ -6,38 +6,31 @@ package costanalyzer
 
 import (
 	"io"
+	"time"
 
-	"git.arvados.org/arvados.git/lib/config"
+	"git.arvados.org/arvados.git/lib/cmd"
 	"git.arvados.org/arvados.git/sdk/go/ctxlog"
-	"github.com/sirupsen/logrus"
 )
 
-var Command command
+var Command = command{}
 
-type command struct{}
-
-type NoPrefixFormatter struct{}
-
-func (f *NoPrefixFormatter) Format(entry *logrus.Entry) ([]byte, error) {
-	return []byte(entry.Message), nil
+type command struct {
+	uuids      arrayFlags
+	resultsDir string
+	cache      bool
+	begin      time.Time
+	end        time.Time
 }
 
 // RunCommand implements the subcommand "costanalyzer <collection> <collection> ..."
-func (command) RunCommand(prog string, args []string, stdin io.Reader, stdout, stderr io.Writer) int {
+func (c command) RunCommand(prog string, args []string, stdin io.Reader, stdout, stderr io.Writer) int {
 	var err error
 	logger := ctxlog.New(stderr, "text", "info")
-	defer func() {
-		if err != nil {
-			logger.Error("\n" + err.Error() + "\n")
-		}
-	}()
+	logger.SetFormatter(cmd.NoPrefixFormatter{})
 
-	logger.SetFormatter(new(NoPrefixFormatter))
-
-	loader := config.NewLoader(stdin, logger)
-	loader.SkipLegacy = true
-
-	exitcode, err := costanalyzer(prog, args, loader, logger, stdout, stderr)
-
+	exitcode, err := c.costAnalyzer(prog, args, logger, stdout, stderr)
+	if err != nil {
+		logger.Error("\n" + err.Error())
+	}
 	return exitcode
 }

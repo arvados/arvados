@@ -10,7 +10,7 @@ import (
 	"io"
 	"strings"
 
-	"git.arvados.org/arvados.git/lib/config"
+	"git.arvados.org/arvados.git/lib/cmd"
 	"git.arvados.org/arvados.git/sdk/go/arvados"
 	"git.arvados.org/arvados.git/sdk/go/arvadosclient"
 	"git.arvados.org/arvados.git/sdk/go/manifest"
@@ -30,16 +30,17 @@ func deDuplicate(inputs []string) (trimmed []string) {
 	return
 }
 
-func parseFlags(prog string, args []string, loader *config.Loader, logger *logrus.Logger, stderr io.Writer) (exitcode int, inputs []string) {
-	flags := flag.NewFlagSet("", flag.ContinueOnError)
-	flags.SetOutput(stderr)
+// parseFlags returns either some inputs to process, or (if there are
+// no inputs to process) a nil slice and a suitable exit code.
+func parseFlags(prog string, args []string, logger *logrus.Logger, stderr io.Writer) (inputs []string, exitcode int) {
+	flags := flag.NewFlagSet(prog, flag.ContinueOnError)
 	flags.Usage = func() {
 		fmt.Fprintf(flags.Output(), `
 Usage:
   %s [options ...] <collection-uuid> <collection-uuid> ...
 
-  %s [options ...] <collection-pdh>,<collection_uuid> \
-     <collection-pdh>,<collection_uuid> ...
+  %s [options ...] <collection-pdh>,<collection-uuid> \
+     <collection-pdh>,<collection-uuid> ...
 
   This program analyzes the overlap in blocks used by 2 or more collections. It
   prints a deduplication report that shows the nominal space used by the
@@ -60,38 +61,32 @@ Example:
 
   arv collection list --order 'file_size_total desc' --limit 100 | \
     jq -r '.items[] | [.portable_data_hash,.uuid] |@csv' | \
-    tail -n+2 |sed -e 's/"//g'|tr '\n' ' ' | \
+    sed -e 's/"//g'|tr '\n' ' ' | \
     xargs %s
 
 Options:
 `, prog, prog, prog)
 		flags.PrintDefaults()
 	}
-	loader.SetupFlags(flags)
 	loglevel := flags.String("log-level", "info", "logging level (debug, info, ...)")
-	err := flags.Parse(args)
-	if err == flag.ErrHelp {
-		return 0, inputs
-	} else if err != nil {
-		return 2, inputs
+	if ok, code := cmd.ParseFlags(flags, prog, args, "collection-uuid [...]", stderr); !ok {
+		return nil, code
 	}
 
-	inputs = flags.Args()
-
-	inputs = deDuplicate(inputs)
+	inputs = deDuplicate(flags.Args())
 
 	if len(inputs) < 1 {
-		logger.Errorf("Error: no collections provided")
-		flags.Usage()
-		return 2, inputs
+		fmt.Fprintf(stderr, "Error: no collections provided\n")
+		return nil, 2
 	}
 
 	lvl, err := logrus.ParseLevel(*loglevel)
 	if err != nil {
-		return 2, inputs
+		fmt.Fprintf(stderr, "Error: cannot parse log level: %s\n", err)
+		return nil, 2
 	}
 	logger.SetLevel(lvl)
-	return
+	return inputs, 0
 }
 
 func blockList(collection arvados.Collection) (blocks map[string]int) {
@@ -104,11 +99,11 @@ func blockList(collection arvados.Collection) (blocks map[string]int) {
 	return
 }
 
-func report(prog string, args []string, loader *config.Loader, logger *logrus.Logger, stdout, stderr io.Writer) (exitcode int) {
-
+func report(prog string, args []string, logger *logrus.Logger, stdout, stderr io.Writer) (exitcode int) {
 	var inputs []string
-	exitcode, inputs = parseFlags(prog, args, loader, logger, stderr)
-	if exitcode != 0 {
+
+	inputs, exitcode = parseFlags(prog, args, logger, stderr)
+	if inputs == nil {
 		return
 	}
 

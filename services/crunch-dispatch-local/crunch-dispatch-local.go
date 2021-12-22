@@ -17,6 +17,8 @@ import (
 	"syscall"
 	"time"
 
+	"git.arvados.org/arvados.git/lib/cmd"
+	"git.arvados.org/arvados.git/lib/config"
 	"git.arvados.org/arvados.git/sdk/go/arvados"
 	"git.arvados.org/arvados.git/sdk/go/arvadosclient"
 	"git.arvados.org/arvados.git/sdk/go/dispatch"
@@ -25,13 +27,6 @@ import (
 
 var version = "dev"
 
-func main() {
-	err := doMain()
-	if err != nil {
-		logrus.Fatalf("%q", err)
-	}
-}
-
 var (
 	runningCmds      map[string]*exec.Cmd
 	runningCmdsMutex sync.Mutex
@@ -39,12 +34,12 @@ var (
 	crunchRunCommand *string
 )
 
-func doMain() error {
-	logger := logrus.StandardLogger()
+func main() {
+	baseLogger := logrus.StandardLogger()
 	if os.Getenv("DEBUG") != "" {
-		logger.SetLevel(logrus.DebugLevel)
+		baseLogger.SetLevel(logrus.DebugLevel)
 	}
-	logger.Formatter = &logrus.JSONFormatter{
+	baseLogger.Formatter = &logrus.JSONFormatter{
 		TimestampFormat: "2006-01-02T15:04:05.000000000Z07:00",
 	}
 
@@ -65,23 +60,57 @@ func doMain() error {
 		false,
 		"Print version information and exit.")
 
-	// Parse args; omit the first arg which is the command name
-	flags.Parse(os.Args[1:])
+	if ok, code := cmd.ParseFlags(flags, os.Args[0], os.Args[1:], "", os.Stderr); !ok {
+		os.Exit(code)
+	}
 
 	// Print version information if requested
 	if *getVersion {
 		fmt.Printf("crunch-dispatch-local %s\n", version)
-		return nil
+		return
 	}
 
+	loader := config.NewLoader(nil, baseLogger)
+	cfg, err := loader.Load()
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "error loading config: %s\n", err)
+		os.Exit(1)
+	}
+	cluster, err := cfg.GetCluster("")
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "config error: %s\n", err)
+		os.Exit(1)
+	}
+
+	logger := baseLogger.WithField("ClusterID", cluster.ClusterID)
 	logger.Printf("crunch-dispatch-local %s started", version)
 
 	runningCmds = make(map[string]*exec.Cmd)
 
+	var client arvados.Client
+	client.APIHost = cluster.Services.Controller.ExternalURL.Host
+	client.AuthToken = cluster.SystemRootToken
+	client.Insecure = cluster.TLS.Insecure
+
+	if client.APIHost != "" || client.AuthToken != "" {
+		// Copy real configs into env vars so [a]
+		// MakeArvadosClient() uses them, and [b] they get
+		// propagated to crunch-run via SLURM.
+		os.Setenv("ARVADOS_API_HOST", client.APIHost)
+		os.Setenv("ARVADOS_API_TOKEN", client.AuthToken)
+		os.Setenv("ARVADOS_API_HOST_INSECURE", "")
+		if client.Insecure {
+			os.Setenv("ARVADOS_API_HOST_INSECURE", "1")
+		}
+		os.Setenv("ARVADOS_EXTERNAL_CLIENT", "")
+	} else {
+		logger.Warnf("Client credentials missing from config, so falling back on environment variables (deprecated).")
+	}
+
 	arv, err := arvadosclient.MakeArvadosClient()
 	if err != nil {
 		logger.Errorf("error making Arvados client: %v", err)
-		return err
+		os.Exit(1)
 	}
 	arv.Retries = 25
 
@@ -90,13 +119,14 @@ func doMain() error {
 	dispatcher := dispatch.Dispatcher{
 		Logger:       logger,
 		Arv:          arv,
-		RunContainer: (&LocalRun{startFunc, make(chan bool, 8), ctx}).run,
+		RunContainer: (&LocalRun{startFunc, make(chan bool, 8), ctx, cluster}).run,
 		PollPeriod:   time.Duration(*pollInterval) * time.Second,
 	}
 
 	err = dispatcher.Run(ctx)
 	if err != nil {
-		return err
+		logger.Error(err)
+		return
 	}
 
 	c := make(chan os.Signal, 1)
@@ -116,8 +146,6 @@ func doMain() error {
 
 	// Wait for all running crunch jobs to complete / terminate
 	waitGroup.Wait()
-
-	return nil
 }
 
 func startFunc(container arvados.Container, cmd *exec.Cmd) error {
@@ -128,6 +156,7 @@ type LocalRun struct {
 	startCmd         func(container arvados.Container, cmd *exec.Cmd) error
 	concurrencyLimit chan bool
 	ctx              context.Context
+	cluster          *arvados.Cluster
 }
 
 // Run a container.
@@ -140,7 +169,7 @@ type LocalRun struct {
 // crunch-run terminates, mark the container as Cancelled.
 func (lr *LocalRun) run(dispatcher *dispatch.Dispatcher,
 	container arvados.Container,
-	status <-chan arvados.Container) {
+	status <-chan arvados.Container) error {
 
 	uuid := container.UUID
 
@@ -150,7 +179,7 @@ func (lr *LocalRun) run(dispatcher *dispatch.Dispatcher,
 		case lr.concurrencyLimit <- true:
 			break
 		case <-lr.ctx.Done():
-			return
+			return lr.ctx.Err()
 		}
 
 		defer func() { <-lr.concurrencyLimit }()
@@ -169,7 +198,7 @@ func (lr *LocalRun) run(dispatcher *dispatch.Dispatcher,
 		waitGroup.Add(1)
 		defer waitGroup.Done()
 
-		cmd := exec.Command(*crunchRunCommand, uuid)
+		cmd := exec.Command(*crunchRunCommand, "--runtime-engine="+lr.cluster.Containers.RuntimeEngine, uuid)
 		cmd.Stdin = nil
 		cmd.Stderr = os.Stderr
 		cmd.Stdout = os.Stderr
@@ -241,4 +270,5 @@ Finish:
 	}
 
 	dispatcher.Logger.Printf("finalized container %v", uuid)
+	return nil
 }

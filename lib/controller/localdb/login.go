@@ -30,15 +30,14 @@ type loginController interface {
 func chooseLoginController(cluster *arvados.Cluster, parent *Conn) loginController {
 	wantGoogle := cluster.Login.Google.Enable
 	wantOpenIDConnect := cluster.Login.OpenIDConnect.Enable
-	wantSSO := cluster.Login.SSO.Enable
 	wantPAM := cluster.Login.PAM.Enable
 	wantLDAP := cluster.Login.LDAP.Enable
 	wantTest := cluster.Login.Test.Enable
 	wantLoginCluster := cluster.Login.LoginCluster != "" && cluster.Login.LoginCluster != cluster.ClusterID
 	switch {
-	case 1 != countTrue(wantGoogle, wantOpenIDConnect, wantSSO, wantPAM, wantLDAP, wantTest, wantLoginCluster):
+	case 1 != countTrue(wantGoogle, wantOpenIDConnect, wantPAM, wantLDAP, wantTest, wantLoginCluster):
 		return errorLoginController{
-			error: errors.New("configuration problem: exactly one of Login.Google, Login.OpenIDConnect, Login.SSO, Login.PAM, Login.LDAP, Login.Test, or Login.LoginCluster must be set"),
+			error: errors.New("configuration problem: exactly one of Login.Google, Login.OpenIDConnect, Login.PAM, Login.LDAP, Login.Test, or Login.LoginCluster must be set"),
 		}
 	case wantGoogle:
 		return &oidcLoginController{
@@ -54,18 +53,18 @@ func chooseLoginController(cluster *arvados.Cluster, parent *Conn) loginControll
 		}
 	case wantOpenIDConnect:
 		return &oidcLoginController{
-			Cluster:            cluster,
-			Parent:             parent,
-			Issuer:             cluster.Login.OpenIDConnect.Issuer,
-			ClientID:           cluster.Login.OpenIDConnect.ClientID,
-			ClientSecret:       cluster.Login.OpenIDConnect.ClientSecret,
-			AuthParams:         cluster.Login.OpenIDConnect.AuthenticationRequestParameters,
-			EmailClaim:         cluster.Login.OpenIDConnect.EmailClaim,
-			EmailVerifiedClaim: cluster.Login.OpenIDConnect.EmailVerifiedClaim,
-			UsernameClaim:      cluster.Login.OpenIDConnect.UsernameClaim,
+			Cluster:                cluster,
+			Parent:                 parent,
+			Issuer:                 cluster.Login.OpenIDConnect.Issuer,
+			ClientID:               cluster.Login.OpenIDConnect.ClientID,
+			ClientSecret:           cluster.Login.OpenIDConnect.ClientSecret,
+			AuthParams:             cluster.Login.OpenIDConnect.AuthenticationRequestParameters,
+			EmailClaim:             cluster.Login.OpenIDConnect.EmailClaim,
+			EmailVerifiedClaim:     cluster.Login.OpenIDConnect.EmailVerifiedClaim,
+			UsernameClaim:          cluster.Login.OpenIDConnect.UsernameClaim,
+			AcceptAccessToken:      cluster.Login.OpenIDConnect.AcceptAccessToken,
+			AcceptAccessTokenScope: cluster.Login.OpenIDConnect.AcceptAccessTokenScope,
 		}
-	case wantSSO:
-		return &ssoLoginController{Parent: parent}
 	case wantPAM:
 		return &pamLoginController{Cluster: cluster, Parent: parent}
 	case wantLDAP:
@@ -91,20 +90,6 @@ func countTrue(vals ...bool) int {
 	return n
 }
 
-// Login and Logout are passed through to the parent's railsProxy;
-// UserAuthenticate is rejected.
-type ssoLoginController struct{ Parent *Conn }
-
-func (ctrl *ssoLoginController) Login(ctx context.Context, opts arvados.LoginOptions) (arvados.LoginResponse, error) {
-	return ctrl.Parent.railsProxy.Login(ctx, opts)
-}
-func (ctrl *ssoLoginController) Logout(ctx context.Context, opts arvados.LogoutOptions) (arvados.LogoutResponse, error) {
-	return ctrl.Parent.railsProxy.Logout(ctx, opts)
-}
-func (ctrl *ssoLoginController) UserAuthenticate(ctx context.Context, opts arvados.UserAuthenticateOptions) (arvados.APIClientAuthorization, error) {
-	return arvados.APIClientAuthorization{}, httpserver.ErrorWithStatus(errors.New("username/password authentication is not available"), http.StatusBadRequest)
-}
-
 type errorLoginController struct{ error }
 
 func (ctrl errorLoginController) Login(context.Context, arvados.LoginOptions) (arvados.LoginResponse, error) {
@@ -124,23 +109,11 @@ type federatedLoginController struct {
 func (ctrl federatedLoginController) Login(context.Context, arvados.LoginOptions) (arvados.LoginResponse, error) {
 	return arvados.LoginResponse{}, httpserver.ErrorWithStatus(errors.New("Should have been redirected to login cluster"), http.StatusBadRequest)
 }
-func (ctrl federatedLoginController) Logout(_ context.Context, opts arvados.LogoutOptions) (arvados.LogoutResponse, error) {
-	return noopLogout(ctrl.Cluster, opts)
+func (ctrl federatedLoginController) Logout(ctx context.Context, opts arvados.LogoutOptions) (arvados.LogoutResponse, error) {
+	return logout(ctx, ctrl.Cluster, opts)
 }
 func (ctrl federatedLoginController) UserAuthenticate(context.Context, arvados.UserAuthenticateOptions) (arvados.APIClientAuthorization, error) {
 	return arvados.APIClientAuthorization{}, httpserver.ErrorWithStatus(errors.New("username/password authentication is not available"), http.StatusBadRequest)
-}
-
-func noopLogout(cluster *arvados.Cluster, opts arvados.LogoutOptions) (arvados.LogoutResponse, error) {
-	target := opts.ReturnTo
-	if target == "" {
-		if cluster.Services.Workbench2.ExternalURL.Host != "" {
-			target = cluster.Services.Workbench2.ExternalURL.String()
-		} else {
-			target = cluster.Services.Workbench1.ExternalURL.String()
-		}
-	}
-	return arvados.LogoutResponse{RedirectLocation: target}, nil
 }
 
 func (conn *Conn) CreateAPIClientAuthorization(ctx context.Context, rootToken string, authinfo rpc.UserSessionAuthInfo) (resp arvados.APIClientAuthorization, err error) {
@@ -174,13 +147,13 @@ func (conn *Conn) CreateAPIClientAuthorization(ctx context.Context, rootToken st
 			tokensecret = tokenparts[2]
 		}
 	}
-	var exp sql.NullString
+	var exp sql.NullTime
 	var scopes []byte
 	err = tx.QueryRowxContext(ctx, "select uuid, api_token, expires_at, scopes from api_client_authorizations where api_token=$1", tokensecret).Scan(&resp.UUID, &resp.APIToken, &exp, &scopes)
 	if err != nil {
 		return
 	}
-	resp.ExpiresAt = exp.String
+	resp.ExpiresAt = exp.Time
 	if len(scopes) > 0 {
 		err = json.Unmarshal(scopes, &resp.Scopes)
 		if err != nil {

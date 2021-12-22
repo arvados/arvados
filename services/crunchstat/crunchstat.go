@@ -16,6 +16,7 @@ import (
 	"syscall"
 	"time"
 
+	"git.arvados.org/arvados.git/lib/cmd"
 	"git.arvados.org/arvados.git/lib/crunchstat"
 )
 
@@ -32,20 +33,23 @@ func main() {
 		Logger: log.New(os.Stderr, "crunchstat: ", 0),
 	}
 
-	flag.StringVar(&reporter.CgroupRoot, "cgroup-root", "", "Root of cgroup tree")
-	flag.StringVar(&reporter.CgroupParent, "cgroup-parent", "", "Name of container parent under cgroup")
-	flag.StringVar(&reporter.CIDFile, "cgroup-cid", "", "Path to container id file")
-	flag.IntVar(&signalOnDeadPPID, "signal-on-dead-ppid", signalOnDeadPPID, "Signal to send child if crunchstat's parent process disappears (0 to disable)")
-	flag.DurationVar(&ppidCheckInterval, "ppid-check-interval", ppidCheckInterval, "Time between checks for parent process disappearance")
-	pollMsec := flag.Int64("poll", 1000, "Reporting interval, in milliseconds")
-	getVersion := flag.Bool("version", false, "Print version information and exit.")
+	flags := flag.NewFlagSet(os.Args[0], flag.ExitOnError)
+	flags.StringVar(&reporter.CgroupRoot, "cgroup-root", "", "Root of cgroup tree")
+	flags.StringVar(&reporter.CgroupParent, "cgroup-parent", "", "Name of container parent under cgroup")
+	flags.StringVar(&reporter.CIDFile, "cgroup-cid", "", "Path to container id file")
+	flags.IntVar(&signalOnDeadPPID, "signal-on-dead-ppid", signalOnDeadPPID, "Signal to send child if crunchstat's parent process disappears (0 to disable)")
+	flags.DurationVar(&ppidCheckInterval, "ppid-check-interval", ppidCheckInterval, "Time between checks for parent process disappearance")
+	pollMsec := flags.Int64("poll", 1000, "Reporting interval, in milliseconds")
+	getVersion := flags.Bool("version", false, "Print version information and exit.")
 
-	flag.Parse()
-
-	// Print version information if requested
-	if *getVersion {
+	if ok, code := cmd.ParseFlags(flags, os.Args[0], os.Args[1:], "program [args ...]", os.Stderr); !ok {
+		os.Exit(code)
+	} else if *getVersion {
 		fmt.Printf("crunchstat %s\n", version)
 		return
+	} else if flags.NArg() == 0 {
+		fmt.Fprintf(os.Stderr, "missing required argument: program (try -help)\n")
+		os.Exit(2)
 	}
 
 	reporter.Logger.Printf("crunchstat %s started", version)
@@ -58,7 +62,7 @@ func main() {
 	reporter.PollPeriod = time.Duration(*pollMsec) * time.Millisecond
 
 	reporter.Start()
-	err := runCommand(flag.Args(), reporter.Logger)
+	err := runCommand(flags.Args(), reporter.Logger)
 	reporter.Stop()
 
 	if err, ok := err.(*exec.ExitError); ok {

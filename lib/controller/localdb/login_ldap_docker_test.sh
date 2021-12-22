@@ -62,8 +62,8 @@ docker run --rm --detach \
        --name=${ldapctr} \
        osixia/openldap:1.3.0
 docker logs --follow ${ldapctr} 2>$debug >$debug &
-ldaphostport=$(docker port ${ldapctr} 389/tcp)
-ldapport=${ldaphostport##*:}
+ldaphostports=$(docker port ${ldapctr} 389/tcp)
+ldapport=${ldaphostports##*:}
 ldapurl="ldap://${hostname}:${ldapport}"
 passwordhash="$(docker exec -i ${ldapctr} slappasswd -s "secret")"
 
@@ -191,11 +191,12 @@ docker run --detach --rm --name=${ctrlctr} \
        debian:10 \
        bash -c "${setup_pam_ldap:-true} && arvados-server controller"
 docker logs --follow ${ctrlctr} 2>$debug >$debug &
-ctrlhostport=$(docker port ${ctrlctr} 9999/tcp)
+ctrlhostports=$(docker port ${ctrlctr} 9999/tcp)
+ctrlport=${ctrlhostports##*:}
 
 echo >&2 "Waiting for arvados controller to come up..."
 for f in $(seq 1 20); do
-    if curl -s "http://${ctrlhostport}/arvados/v1/config" >/dev/null; then
+    if curl -s "http://0.0.0.0:${ctrlport}/arvados/v1/config" >/dev/null; then
         break
     else
         sleep 1
@@ -203,7 +204,7 @@ for f in $(seq 1 20); do
     echo -n >&2 .
 done
 echo >&2
-echo >&2 "Arvados controller is up at http://${ctrlhostport}"
+echo >&2 "Arvados controller is up at http://0.0.0.0:${ctrlport}"
 
 check_contains() {
     resp="${1}"
@@ -218,7 +219,7 @@ check_contains() {
 set +x
 
 echo >&2 "Testing authentication failure"
-resp="$(set -x; curl -s --include -d username=foo-bar -d password=nosecret "http://${ctrlhostport}/arvados/v1/users/authenticate" | tee $debug)"
+resp="$(set -x; curl -s --include -d username=foo-bar -d password=nosecret "http://0.0.0.0:${ctrlport}/arvados/v1/users/authenticate" | tee $debug)"
 check_contains "${resp}" "HTTP/1.1 401"
 if [[ "${config_method}" = ldap ]]; then
     check_contains "${resp}" '{"errors":["LDAP: Authentication failure (with username \"foo-bar\" and password)"]}'
@@ -227,7 +228,7 @@ else
 fi
 
 echo >&2 "Testing authentication success"
-resp="$(set -x; curl -s --include -d username=foo-bar -d password=secret "http://${ctrlhostport}/arvados/v1/users/authenticate" | tee $debug)"
+resp="$(set -x; curl -s --include -d username=foo-bar -d password=secret "http://0.0.0.0:${ctrlport}/arvados/v1/users/authenticate" | tee $debug)"
 check_contains "${resp}" "HTTP/1.1 200"
 check_contains "${resp}" '"api_token":"'
 check_contains "${resp}" '"scopes":["all"]'
@@ -240,7 +241,7 @@ uuid="${uuid%%\"*}"
 token="v2/$uuid/$secret"
 echo >&2 "New token is ${token}"
 
-resp="$(set -x; curl -s --include -H "Authorization: Bearer ${token}" "http://${ctrlhostport}/arvados/v1/users/current" | tee $debug)"
+resp="$(set -x; curl -s --include -H "Authorization: Bearer ${token}" "http://0.0.0.0:${ctrlport}/arvados/v1/users/current" | tee $debug)"
 check_contains "${resp}" "HTTP/1.1 200"
 if [[ "${config_method}" = ldap ]]; then
     # user fields come from LDAP attributes

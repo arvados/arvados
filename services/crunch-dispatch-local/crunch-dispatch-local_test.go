@@ -39,13 +39,8 @@ var initialArgs []string
 
 func (s *TestSuite) SetUpSuite(c *C) {
 	initialArgs = os.Args
-	arvadostest.StartAPI()
 	runningCmds = make(map[string]*exec.Cmd)
 	logrus.SetFormatter(&logrus.TextFormatter{DisableColors: true})
-}
-
-func (s *TestSuite) TearDownSuite(c *C) {
-	arvadostest.StopAPI()
 }
 
 func (s *TestSuite) SetUpTest(c *C) {
@@ -81,9 +76,11 @@ func (s *TestSuite) TestIntegration(c *C) {
 		return cmd.Start()
 	}
 
-	dispatcher.RunContainer = func(d *dispatch.Dispatcher, c arvados.Container, s <-chan arvados.Container) {
-		(&LocalRun{startCmd, make(chan bool, 8), ctx}).run(d, c, s)
-		cancel()
+	cl := arvados.Cluster{Containers: arvados.ContainersConfig{RuntimeEngine: "docker"}}
+
+	dispatcher.RunContainer = func(d *dispatch.Dispatcher, c arvados.Container, s <-chan arvados.Container) error {
+		defer cancel()
+		return (&LocalRun{startCmd, make(chan bool, 8), ctx, &cl}).run(d, c, s)
 	}
 
 	err = dispatcher.Run(ctx)
@@ -184,9 +181,11 @@ func testWithServerStub(c *C, apiStubResponses map[string]arvadostest.StubRespon
 		return cmd.Start()
 	}
 
-	dispatcher.RunContainer = func(d *dispatch.Dispatcher, c arvados.Container, s <-chan arvados.Container) {
-		(&LocalRun{startCmd, make(chan bool, 8), ctx}).run(d, c, s)
-		cancel()
+	cl := arvados.Cluster{Containers: arvados.ContainersConfig{RuntimeEngine: "docker"}}
+
+	dispatcher.RunContainer = func(d *dispatch.Dispatcher, c arvados.Container, s <-chan arvados.Container) error {
+		defer cancel()
+		return (&LocalRun{startCmd, make(chan bool, 8), ctx, &cl}).run(d, c, s)
 	}
 
 	re := regexp.MustCompile(`(?ms).*` + expected + `.*`)

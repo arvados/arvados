@@ -4,10 +4,14 @@ Copyright (C) The Arvados Authors. All rights reserved.
 SPDX-License-Identifier: CC-BY-SA-3.0
 {% endcomment %}
 
+<notextile>
+<pre><code># <span class="userinput">apt-get --no-install-recommends install curl gnupg2 ca-certificates</span>
+# <span class="userinput">curl https://apt.arvados.org/pubkey.gpg -o /etc/apt/trusted.gpg.d/arvados.asc</span>
+</code></pre>
+</notextile>
 
+The Arvados package signing GPG key is also available via the keyservers, though they can be unreliable. To retrieve the signing key via keyserver.ubuntu.com:
 
 <notextile>
-<pre><code># <span class="userinput">apt-get --no-install-recommends install gnupg</span>
-# <span class="userinput">/usr/bin/apt-key adv --keyserver pool.sks-keyservers.net --recv 1078ECD7</span>
-</code></pre>
+<pre><code># <span class="userinput">/usr/bin/apt-key adv --keyserver keyserver.ubuntu.com --recv 1078ECD7</code></pre>
 </notextile>

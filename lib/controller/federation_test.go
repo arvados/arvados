@@ -11,6 +11,7 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	"net"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -57,21 +58,24 @@ func (s *FederationSuite) SetUpTest(c *check.C) {
 	c.Assert(s.remoteMock.Start(), check.IsNil)
 
 	cluster := &arvados.Cluster{
-		ClusterID:        "zhome",
-		PostgreSQL:       integrationTestCluster().PostgreSQL,
-		ForceLegacyAPI14: forceLegacyAPI14,
+		ClusterID:  "zhome",
+		PostgreSQL: integrationTestCluster().PostgreSQL,
 	}
 	cluster.TLS.Insecure = true
 	cluster.API.MaxItemsPerResponse = 1000
 	cluster.API.MaxRequestAmplification = 4
 	cluster.API.RequestTimeout = arvados.Duration(5 * time.Minute)
+	cluster.Collections.BlobSigning = true
+	cluster.Collections.BlobSigningKey = arvadostest.BlobSigningKey
+	cluster.Collections.BlobSigningTTL = arvados.Duration(time.Hour * 24 * 14)
 	arvadostest.SetServiceURL(&cluster.Services.RailsAPI, "http://localhost:1/")
 	arvadostest.SetServiceURL(&cluster.Services.Controller, "http://localhost:/")
-	s.testHandler = &Handler{Cluster: cluster}
+	s.testHandler = &Handler{Cluster: cluster, BackgroundContext: ctxlog.Context(context.Background(), s.log)}
 	s.testServer = newServerFromIntegrationTestEnv(c)
-	s.testServer.Server.Handler = httpserver.HandlerWithContext(
-		ctxlog.Context(context.Background(), s.log),
-		httpserver.AddRequestIDs(httpserver.LogRequests(s.testHandler)))
+	s.testServer.Server.BaseContext = func(net.Listener) context.Context {
+		return ctxlog.Context(context.Background(), s.log)
+	}
+	s.testServer.Server.Handler = httpserver.AddRequestIDs(httpserver.LogRequests(s.testHandler))
 
 	cluster.RemoteClusters = map[string]arvados.RemoteCluster{
 		"zzzzz": {
@@ -695,6 +699,7 @@ func (s *FederationSuite) TestCreateRemoteContainerRequestCheckRuntimeToken(c *c
 	arvadostest.SetServiceURL(&s.testHandler.Cluster.Services.RailsAPI, "https://"+os.Getenv("ARVADOS_TEST_API_HOST"))
 	s.testHandler.Cluster.ClusterID = "zzzzz"
 	s.testHandler.Cluster.SystemRootToken = arvadostest.SystemRootToken
+	s.testHandler.Cluster.API.MaxTokenLifetime = arvados.Duration(time.Hour)
 
 	resp := s.testRequest(req).Result()
 	c.Check(resp.StatusCode, check.Equals, http.StatusOK)
@@ -703,8 +708,22 @@ func (s *FederationSuite) TestCreateRemoteContainerRequestCheckRuntimeToken(c *c
 
 	// Runtime token must match zzzzz cluster
 	c.Check(cr.RuntimeToken, check.Matches, "v2/zzzzz-gj3su-.*")
+
 	// RuntimeToken must be different than the Original Token we originally did the request with.
 	c.Check(cr.RuntimeToken, check.Not(check.Equals), arvadostest.ActiveTokenV2)
+
+	// Runtime token should not have an expiration based on API.MaxTokenLifetime
+	req2 := httptest.NewRequest("GET", "/arvados/v1/api_client_authorizations/current", nil)
+	req2.Header.Set("Authorization", "Bearer "+cr.RuntimeToken)
+	req2.Header.Set("Content-type", "application/json")
+	resp = s.testRequest(req2).Result()
+	c.Check(resp.StatusCode, check.Equals, http.StatusOK)
+	var aca arvados.APIClientAuthorization
+	c.Check(json.NewDecoder(resp.Body).Decode(&aca), check.IsNil)
+	c.Check(aca.ExpiresAt, check.NotNil) // Time.Now()+BlobSigningTTL
+	t := aca.ExpiresAt
+	c.Check(t.After(time.Now().Add(s.testHandler.Cluster.API.MaxTokenLifetime.Duration())), check.Equals, true)
+	c.Check(t.Before(time.Now().Add(s.testHandler.Cluster.Collections.BlobSigningTTL.Duration())), check.Equals, true)
 }
 
 func (s *FederationSuite) TestCreateRemoteContainerRequestCheckSetRuntimeToken(c *check.C) {

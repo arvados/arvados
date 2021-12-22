@@ -28,8 +28,8 @@ func (s *Suite) TearDownSuite(c *check.C) {
 
 func (*Suite) TestUsage(c *check.C) {
 	var stdout, stderr bytes.Buffer
-	exitcode := Command.RunCommand("deduplicationreport.test", []string{"-log-level=debug"}, &bytes.Buffer{}, &stdout, &stderr)
-	c.Check(exitcode, check.Equals, 2)
+	exitcode := Command.RunCommand("deduplicationreport.test", []string{"-h", "-log-level=debug"}, &bytes.Buffer{}, &stdout, &stderr)
+	c.Check(exitcode, check.Equals, 0)
 	c.Check(stdout.String(), check.Equals, "")
 	c.Log(stderr.String())
 	c.Check(stderr.String(), check.Matches, `(?ms).*Usage:.*`)

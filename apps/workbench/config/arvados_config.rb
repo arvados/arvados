@@ -21,28 +21,35 @@ require 'open3'
 
 # Load the defaults, used by config:migrate and fallback loading
 # legacy application.yml
-Open3.popen2("arvados-server", "config-dump", "-config=-", "-skip-legacy") do |stdin, stdout, status_thread|
-  stdin.write("Clusters: {xxxxx: {}}")
-  stdin.close
-  confs = YAML.load(stdout, deserialize_symbols: false)
-  clusterID, clusterConfig = confs["Clusters"].first
-  $arvados_config_defaults = clusterConfig
-  $arvados_config_defaults["ClusterID"] = clusterID
+defaultYAML, stderr, status = Open3.capture3("arvados-server", "config-dump", "-config=-", "-skip-legacy", stdin_data: "Clusters: {xxxxx: {}}")
+if !status.success?
+  puts stderr
+  raise "error loading config: #{status}"
 end
+confs = YAML.load(defaultYAML, deserialize_symbols: false)
+clusterID, clusterConfig = confs["Clusters"].first
+$arvados_config_defaults = clusterConfig
+$arvados_config_defaults["ClusterID"] = clusterID
 
-# Load the global config file
-Open3.popen2("arvados-server", "config-dump", "-skip-legacy") do |stdin, stdout, status_thread|
-  confs = YAML.load(stdout, deserialize_symbols: false)
-  if confs && !confs.empty?
-    # config-dump merges defaults with user configuration, so every
-    # key should be set.
-    clusterID, clusterConfig = confs["Clusters"].first
-    $arvados_config_global = clusterConfig
-    $arvados_config_global["ClusterID"] = clusterID
-  else
-    # config-dump failed, assume we will be loading from legacy
-    # application.yml, initialize with defaults.
-    $arvados_config_global = $arvados_config_defaults.deep_dup
+if ENV["ARVADOS_CONFIG"] == "none"
+  # Don't load config. This magic value is set by packaging scripts so
+  # they can run "rake assets:precompile" without a real config.
+  $arvados_config_global = $arvados_config_defaults.deep_dup
+else
+  # Load the global config file
+  Open3.popen2("arvados-server", "config-dump", "-skip-legacy") do |stdin, stdout, status_thread|
+    confs = YAML.load(stdout, deserialize_symbols: false)
+    if confs && !confs.empty?
+      # config-dump merges defaults with user configuration, so every
+      # key should be set.
+      clusterID, clusterConfig = confs["Clusters"].first
+      $arvados_config_global = clusterConfig
+      $arvados_config_global["ClusterID"] = clusterID
+    else
+      # config-dump failed, assume we will be loading from legacy
+      # application.yml, initialize with defaults.
+      $arvados_config_global = $arvados_config_defaults.deep_dup
+    end
   end
 end
 
@@ -188,7 +195,8 @@ ArvadosWorkbench::Application.configure do
   ConfigLoader.copy_into_config $arvados_config, config
   ConfigLoader.copy_into_config $remaining_config, config
   secrets.secret_key_base = $arvados_config["Workbench"]["SecretKeyBase"]
-  ConfigValidators.validate_wb2_url_config()
-  ConfigValidators.validate_download_config()
-
+  if ENV["ARVADOS_CONFIG"] != "none"
+    ConfigValidators.validate_wb2_url_config()
+    ConfigValidators.validate_download_config()
+  end
 end

@@ -47,7 +47,7 @@ func (s *LoginSuite) TestLogout(c *check.C) {
 	s.cluster.Login.LoginCluster = "zhome"
 	// s.fed is already set by SetUpTest, but we need to
 	// reinitialize with the above config changes.
-	s.fed = New(s.cluster)
+	s.fed = New(s.cluster, nil)
 
 	returnTo := "https://app.example.com/foo?bar"
 	for _, trial := range []struct {
@@ -62,7 +62,7 @@ func (s *LoginSuite) TestLogout(c *check.C) {
 		{token: "v2/zhome-aaaaa-aaaaaaaaaaaaaaa/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", returnTo: returnTo, target: "http://" + s.cluster.RemoteClusters["zhome"].Host + "/logout?" + url.Values{"return_to": {returnTo}}.Encode()},
 	} {
 		c.Logf("trial %#v", trial)
-		ctx := context.Background()
+		ctx := s.ctx
 		if trial.token != "" {
 			ctx = auth.NewContext(ctx, &auth.Credentials{Tokens: []string{trial.token}})
 		}

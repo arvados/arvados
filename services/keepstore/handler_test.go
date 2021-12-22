@@ -11,7 +11,7 @@
 // The HTTP handlers are responsible for enforcing permission policy,
 // so these tests must exercise all possible permission permutations.
 
-package main
+package keepstore
 
 import (
 	"bytes"
@@ -21,8 +21,9 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"os"
-	"regexp"
+	"sort"
 	"strings"
+	"sync/atomic"
 	"time"
 
 	"git.arvados.org/arvados.git/lib/config"
@@ -71,10 +72,11 @@ func (s *HandlerSuite) SetUpTest(c *check.C) {
 // A RequestTester represents the parameters for an HTTP request to
 // be issued on behalf of a unit test.
 type RequestTester struct {
-	uri         string
-	apiToken    string
-	method      string
-	requestBody []byte
+	uri            string
+	apiToken       string
+	method         string
+	requestBody    []byte
+	storageClasses string
 }
 
 // Test GetBlockHandler on the following situations:
@@ -318,6 +320,142 @@ func (s *HandlerSuite) TestPutAndDeleteSkipReadonlyVolumes(c *check.C) {
 	}
 }
 
+func (s *HandlerSuite) TestReadsOrderedByStorageClassPriority(c *check.C) {
+	s.cluster.Volumes = map[string]arvados.Volume{
+		"zzzzz-nyw5e-111111111111111": {
+			Driver:         "mock",
+			Replication:    1,
+			StorageClasses: map[string]bool{"class1": true}},
+		"zzzzz-nyw5e-222222222222222": {
+			Driver:         "mock",
+			Replication:    1,
+			StorageClasses: map[string]bool{"class2": true, "class3": true}},
+	}
+
+	for _, trial := range []struct {
+		priority1 int // priority of class1, thus vol1
+		priority2 int // priority of class2
+		priority3 int // priority of class3 (vol2 priority will be max(priority2, priority3))
+		get1      int // expected number of "get" ops on vol1
+		get2      int // expected number of "get" ops on vol2
+	}{
+		{100, 50, 50, 1, 0},   // class1 has higher priority => try vol1 first, no need to try vol2
+		{100, 100, 100, 1, 0}, // same priority, vol1 is first lexicographically => try vol1 first and succeed
+		{66, 99, 33, 1, 1},    // class2 has higher priority => try vol2 first, then try vol1
+		{66, 33, 99, 1, 1},    // class3 has highest priority => vol2 has highest => try vol2 first, then try vol1
+	} {
+		c.Logf("%+v", trial)
+		s.cluster.StorageClasses = map[string]arvados.StorageClassConfig{
+			"class1": {Priority: trial.priority1},
+			"class2": {Priority: trial.priority2},
+			"class3": {Priority: trial.priority3},
+		}
+		c.Assert(s.handler.setup(context.Background(), s.cluster, "", prometheus.NewRegistry(), testServiceURL), check.IsNil)
+		IssueRequest(s.handler,
+			&RequestTester{
+				method:         "PUT",
+				uri:            "/" + TestHash,
+				requestBody:    TestBlock,
+				storageClasses: "class1",
+			})
+		IssueRequest(s.handler,
+			&RequestTester{
+				method: "GET",
+				uri:    "/" + TestHash,
+			})
+		c.Check(s.handler.volmgr.mountMap["zzzzz-nyw5e-111111111111111"].Volume.(*MockVolume).CallCount("Get"), check.Equals, trial.get1)
+		c.Check(s.handler.volmgr.mountMap["zzzzz-nyw5e-222222222222222"].Volume.(*MockVolume).CallCount("Get"), check.Equals, trial.get2)
+	}
+}
+
+func (s *HandlerSuite) TestPutWithNoWritableVolumes(c *check.C) {
+	s.cluster.Volumes = map[string]arvados.Volume{
+		"zzzzz-nyw5e-111111111111111": {
+			Driver:         "mock",
+			Replication:    1,
+			ReadOnly:       true,
+			StorageClasses: map[string]bool{"class1": true}},
+	}
+	c.Assert(s.handler.setup(context.Background(), s.cluster, "", prometheus.NewRegistry(), testServiceURL), check.IsNil)
+	resp := IssueRequest(s.handler,
+		&RequestTester{
+			method:         "PUT",
+			uri:            "/" + TestHash,
+			requestBody:    TestBlock,
+			storageClasses: "class1",
+		})
+	c.Check(resp.Code, check.Equals, FullError.HTTPCode)
+	c.Check(s.handler.volmgr.mountMap["zzzzz-nyw5e-111111111111111"].Volume.(*MockVolume).CallCount("Put"), check.Equals, 0)
+}
+
+func (s *HandlerSuite) TestConcurrentWritesToMultipleStorageClasses(c *check.C) {
+	s.cluster.Volumes = map[string]arvados.Volume{
+		"zzzzz-nyw5e-111111111111111": {
+			Driver:         "mock",
+			Replication:    1,
+			StorageClasses: map[string]bool{"class1": true}},
+		"zzzzz-nyw5e-121212121212121": {
+			Driver:         "mock",
+			Replication:    1,
+			StorageClasses: map[string]bool{"class1": true, "class2": true}},
+		"zzzzz-nyw5e-222222222222222": {
+			Driver:         "mock",
+			Replication:    1,
+			StorageClasses: map[string]bool{"class2": true}},
+	}
+
+	for _, trial := range []struct {
+		setCounter uint32 // value to stuff vm.counter, to control offset
+		classes    string // desired classes
+		put111     int    // expected number of "put" ops on 11111... after 2x put reqs
+		put121     int    // expected number of "put" ops on 12121...
+		put222     int    // expected number of "put" ops on 22222...
+		cmp111     int    // expected number of "compare" ops on 11111... after 2x put reqs
+		cmp121     int    // expected number of "compare" ops on 12121...
+		cmp222     int    // expected number of "compare" ops on 22222...
+	}{
+		{0, "class1",
+			1, 0, 0,
+			2, 1, 0}, // first put compares on all vols with class2; second put succeeds after checking 121
+		{0, "class2",
+			0, 1, 0,
+			0, 2, 1}, // first put compares on all vols with class2; second put succeeds after checking 121
+		{0, "class1,class2",
+			1, 1, 0,
+			2, 2, 1}, // first put compares on all vols; second put succeeds after checking 111 and 121
+		{1, "class1,class2",
+			0, 1, 0, // vm.counter offset is 1 so the first volume attempted is 121
+			2, 2, 1}, // first put compares on all vols; second put succeeds after checking 111 and 121
+		{0, "class1,class2,class404",
+			1, 1, 0,
+			2, 2, 1}, // first put compares on all vols; second put doesn't compare on 222 because it already satisfied class2 on 121
+	} {
+		c.Logf("%+v", trial)
+		s.cluster.StorageClasses = map[string]arvados.StorageClassConfig{
+			"class1": {},
+			"class2": {},
+			"class3": {},
+		}
+		c.Assert(s.handler.setup(context.Background(), s.cluster, "", prometheus.NewRegistry(), testServiceURL), check.IsNil)
+		atomic.StoreUint32(&s.handler.volmgr.counter, trial.setCounter)
+		for i := 0; i < 2; i++ {
+			IssueRequest(s.handler,
+				&RequestTester{
+					method:         "PUT",
+					uri:            "/" + TestHash,
+					requestBody:    TestBlock,
+					storageClasses: trial.classes,
+				})
+		}
+		c.Check(s.handler.volmgr.mountMap["zzzzz-nyw5e-111111111111111"].Volume.(*MockVolume).CallCount("Put"), check.Equals, trial.put111)
+		c.Check(s.handler.volmgr.mountMap["zzzzz-nyw5e-121212121212121"].Volume.(*MockVolume).CallCount("Put"), check.Equals, trial.put121)
+		c.Check(s.handler.volmgr.mountMap["zzzzz-nyw5e-222222222222222"].Volume.(*MockVolume).CallCount("Put"), check.Equals, trial.put222)
+		c.Check(s.handler.volmgr.mountMap["zzzzz-nyw5e-111111111111111"].Volume.(*MockVolume).CallCount("Compare"), check.Equals, trial.cmp111)
+		c.Check(s.handler.volmgr.mountMap["zzzzz-nyw5e-121212121212121"].Volume.(*MockVolume).CallCount("Compare"), check.Equals, trial.cmp121)
+		c.Check(s.handler.volmgr.mountMap["zzzzz-nyw5e-222222222222222"].Volume.(*MockVolume).CallCount("Compare"), check.Equals, trial.cmp222)
+	}
+}
+
 // Test TOUCH requests.
 func (s *HandlerSuite) TestTouchHandler(c *check.C) {
 	c.Assert(s.handler.setup(context.Background(), s.cluster, "", prometheus.NewRegistry(), testServiceURL), check.IsNil)
@@ -495,12 +633,8 @@ func (s *HandlerSuite) TestIndexHandler(c *check.C) {
 
 	expected := `^` + TestHash + `\+\d+ \d+\n` +
 		TestHash2 + `\+\d+ \d+\n\n$`
-	match, _ := regexp.MatchString(expected, response.Body.String())
-	if !match {
-		c.Errorf(
-			"permissions on, superuser request: expected %s, got:\n%s",
-			expected, response.Body.String())
-	}
+	c.Check(response.Body.String(), check.Matches, expected, check.Commentf(
+		"permissions on, superuser request"))
 
 	// superuser /index/prefix request
 	// => OK
@@ -511,12 +645,8 @@ func (s *HandlerSuite) TestIndexHandler(c *check.C) {
 		response)
 
 	expected = `^` + TestHash + `\+\d+ \d+\n\n$`
-	match, _ = regexp.MatchString(expected, response.Body.String())
-	if !match {
-		c.Errorf(
-			"permissions on, superuser /index/prefix request: expected %s, got:\n%s",
-			expected, response.Body.String())
-	}
+	c.Check(response.Body.String(), check.Matches, expected, check.Commentf(
+		"permissions on, superuser /index/prefix request"))
 
 	// superuser /index/{no-such-prefix} request
 	// => OK
@@ -754,25 +884,25 @@ func (s *HandlerSuite) TestPullHandler(c *check.C) {
 	var testcases = []pullTest{
 		{
 			"Valid pull list from an ordinary user",
-			RequestTester{"/pull", userToken, "PUT", goodJSON},
+			RequestTester{"/pull", userToken, "PUT", goodJSON, ""},
 			http.StatusUnauthorized,
 			"Unauthorized\n",
 		},
 		{
 			"Invalid pull request from an ordinary user",
-			RequestTester{"/pull", userToken, "PUT", badJSON},
+			RequestTester{"/pull", userToken, "PUT", badJSON, ""},
 			http.StatusUnauthorized,
 			"Unauthorized\n",
 		},
 		{
 			"Valid pull request from the data manager",
-			RequestTester{"/pull", s.cluster.SystemRootToken, "PUT", goodJSON},
+			RequestTester{"/pull", s.cluster.SystemRootToken, "PUT", goodJSON, ""},
 			http.StatusOK,
 			"Received 3 pull requests\n",
 		},
 		{
 			"Invalid pull request from the data manager",
-			RequestTester{"/pull", s.cluster.SystemRootToken, "PUT", badJSON},
+			RequestTester{"/pull", s.cluster.SystemRootToken, "PUT", badJSON, ""},
 			http.StatusBadRequest,
 			"",
 		},
@@ -866,25 +996,25 @@ func (s *HandlerSuite) TestTrashHandler(c *check.C) {
 	var testcases = []trashTest{
 		{
 			"Valid trash list from an ordinary user",
-			RequestTester{"/trash", userToken, "PUT", goodJSON},
+			RequestTester{"/trash", userToken, "PUT", goodJSON, ""},
 			http.StatusUnauthorized,
 			"Unauthorized\n",
 		},
 		{
 			"Invalid trash list from an ordinary user",
-			RequestTester{"/trash", userToken, "PUT", badJSON},
+			RequestTester{"/trash", userToken, "PUT", badJSON, ""},
 			http.StatusUnauthorized,
 			"Unauthorized\n",
 		},
 		{
 			"Valid trash list from the data manager",
-			RequestTester{"/trash", s.cluster.SystemRootToken, "PUT", goodJSON},
+			RequestTester{"/trash", s.cluster.SystemRootToken, "PUT", goodJSON, ""},
 			http.StatusOK,
 			"Received 3 trash requests\n",
 		},
 		{
 			"Invalid trash list from the data manager",
-			RequestTester{"/trash", s.cluster.SystemRootToken, "PUT", badJSON},
+			RequestTester{"/trash", s.cluster.SystemRootToken, "PUT", badJSON, ""},
 			http.StatusBadRequest,
 			"",
 		},
@@ -920,6 +1050,9 @@ func IssueRequest(handler http.Handler, rt *RequestTester) *httptest.ResponseRec
 	req, _ := http.NewRequest(rt.method, rt.uri, body)
 	if rt.apiToken != "" {
 		req.Header.Set("Authorization", "OAuth2 "+rt.apiToken)
+	}
+	if rt.storageClasses != "" {
+		req.Header.Set("X-Keep-Storage-Classes", rt.storageClasses)
 	}
 	handler.ServeHTTP(response, req)
 	return response
@@ -1021,15 +1154,6 @@ func (s *HandlerSuite) TestPutHandlerNoBufferleak(c *check.C) {
 	}
 }
 
-type notifyingResponseRecorder struct {
-	*httptest.ResponseRecorder
-	closer chan bool
-}
-
-func (r *notifyingResponseRecorder) CloseNotify() <-chan bool {
-	return r.closer
-}
-
 func (s *HandlerSuite) TestGetHandlerClientDisconnect(c *check.C) {
 	s.cluster.Collections.BlobSigning = false
 	c.Assert(s.handler.setup(context.Background(), s.cluster, "", prometheus.NewRegistry(), testServiceURL), check.IsNil)
@@ -1040,23 +1164,15 @@ func (s *HandlerSuite) TestGetHandlerClientDisconnect(c *check.C) {
 	bufs = newBufferPool(ctxlog.TestLogger(c), 1, BlockSize)
 	defer bufs.Put(bufs.Get(BlockSize))
 
-	if err := s.handler.volmgr.AllWritable()[0].Put(context.Background(), TestHash, TestBlock); err != nil {
-		c.Error(err)
-	}
+	err := s.handler.volmgr.AllWritable()[0].Put(context.Background(), TestHash, TestBlock)
+	c.Assert(err, check.IsNil)
 
-	resp := &notifyingResponseRecorder{
-		ResponseRecorder: httptest.NewRecorder(),
-		closer:           make(chan bool, 1),
-	}
-	if _, ok := http.ResponseWriter(resp).(http.CloseNotifier); !ok {
-		c.Fatal("notifyingResponseRecorder is broken")
-	}
-	// If anyone asks, the client has disconnected.
-	resp.closer <- true
-
+	resp := httptest.NewRecorder()
 	ok := make(chan struct{})
 	go func() {
-		req, _ := http.NewRequest("GET", fmt.Sprintf("/%s+%d", TestHash, len(TestBlock)), nil)
+		ctx, cancel := context.WithCancel(context.Background())
+		req, _ := http.NewRequestWithContext(ctx, "GET", fmt.Sprintf("/%s+%d", TestHash, len(TestBlock)), nil)
+		cancel()
 		s.handler.ServeHTTP(resp, req)
 		ok <- struct{}{}
 	}()
@@ -1067,7 +1183,7 @@ func (s *HandlerSuite) TestGetHandlerClientDisconnect(c *check.C) {
 	case <-ok:
 	}
 
-	ExpectStatusCode(c, "client disconnect", http.StatusServiceUnavailable, resp.ResponseRecorder)
+	ExpectStatusCode(c, "client disconnect", http.StatusServiceUnavailable, resp)
 	for i, v := range s.handler.volmgr.AllWritable() {
 		if calls := v.Volume.(*MockVolume).called["GET"]; calls != 0 {
 			c.Errorf("volume %d got %d calls, expected 0", i, calls)
@@ -1113,7 +1229,64 @@ func (s *HandlerSuite) TestGetHandlerNoBufferLeak(c *check.C) {
 	}
 }
 
-func (s *HandlerSuite) TestPutReplicationHeader(c *check.C) {
+func (s *HandlerSuite) TestPutStorageClasses(c *check.C) {
+	s.cluster.Volumes = map[string]arvados.Volume{
+		"zzzzz-nyw5e-000000000000000": {Replication: 1, Driver: "mock"}, // "default" is implicit
+		"zzzzz-nyw5e-111111111111111": {Replication: 1, Driver: "mock", StorageClasses: map[string]bool{"special": true, "extra": true}},
+		"zzzzz-nyw5e-222222222222222": {Replication: 1, Driver: "mock", StorageClasses: map[string]bool{"readonly": true}, ReadOnly: true},
+	}
+	c.Assert(s.handler.setup(context.Background(), s.cluster, "", prometheus.NewRegistry(), testServiceURL), check.IsNil)
+	rt := RequestTester{
+		method:      "PUT",
+		uri:         "/" + TestHash,
+		requestBody: TestBlock,
+	}
+
+	for _, trial := range []struct {
+		ask    string
+		expect string
+	}{
+		{"", ""},
+		{"default", "default=1"},
+		{" , default , default , ", "default=1"},
+		{"special", "extra=1, special=1"},
+		{"special, readonly", "extra=1, special=1"},
+		{"special, nonexistent", "extra=1, special=1"},
+		{"extra, special", "extra=1, special=1"},
+		{"default, special", "default=1, extra=1, special=1"},
+	} {
+		c.Logf("success case %#v", trial)
+		rt.storageClasses = trial.ask
+		resp := IssueRequest(s.handler, &rt)
+		if trial.expect == "" {
+			// any non-empty value is correct
+			c.Check(resp.Header().Get("X-Keep-Storage-Classes-Confirmed"), check.Not(check.Equals), "")
+		} else {
+			c.Check(sortCommaSeparated(resp.Header().Get("X-Keep-Storage-Classes-Confirmed")), check.Equals, trial.expect)
+		}
+	}
+
+	for _, trial := range []struct {
+		ask string
+	}{
+		{"doesnotexist"},
+		{"doesnotexist, readonly"},
+		{"readonly"},
+	} {
+		c.Logf("failure case %#v", trial)
+		rt.storageClasses = trial.ask
+		resp := IssueRequest(s.handler, &rt)
+		c.Check(resp.Code, check.Equals, http.StatusServiceUnavailable)
+	}
+}
+
+func sortCommaSeparated(s string) string {
+	slice := strings.Split(s, ", ")
+	sort.Strings(slice)
+	return strings.Join(slice, ", ")
+}
+
+func (s *HandlerSuite) TestPutResponseHeader(c *check.C) {
 	c.Assert(s.handler.setup(context.Background(), s.cluster, "", prometheus.NewRegistry(), testServiceURL), check.IsNil)
 
 	resp := IssueRequest(s.handler, &RequestTester{
@@ -1121,10 +1294,9 @@ func (s *HandlerSuite) TestPutReplicationHeader(c *check.C) {
 		uri:         "/" + TestHash,
 		requestBody: TestBlock,
 	})
-	if r := resp.Header().Get("X-Keep-Replicas-Stored"); r != "1" {
-		c.Logf("%#v", resp)
-		c.Errorf("Got X-Keep-Replicas-Stored: %q, expected %q", r, "1")
-	}
+	c.Logf("%#v", resp)
+	c.Check(resp.Header().Get("X-Keep-Replicas-Stored"), check.Equals, "1")
+	c.Check(resp.Header().Get("X-Keep-Storage-Classes-Confirmed"), check.Equals, "default=1")
 }
 
 func (s *HandlerSuite) TestUntrashHandler(c *check.C) {

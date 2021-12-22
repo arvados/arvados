@@ -23,8 +23,8 @@ else
 fi
 
 run_bundler --without=development
-flock $GEM_HOME/gems.lock bundle exec passenger-config build-native-support
-flock $GEM_HOME/gems.lock bundle exec passenger-config install-standalone-runtime
+flock $GEM_HOME/gems.lock bin/bundle exec passenger-config build-native-support
+flock $GEM_HOME/gems.lock bin/bundle exec passenger-config install-standalone-runtime
 mkdir -p /usr/src/arvados/apps/workbench/tmp
 
 if test "$1" = "--only-deps" ; then
@@ -34,7 +34,7 @@ cat >config/application.yml <<EOF
 $RAILS_ENV:
   keep_web_url: https://example.com/c=%{uuid_or_pdh}
 EOF
-   RAILS_GROUPS=assets flock $GEM_HOME/gems.lock bundle exec rake npm:install
+   RAILS_GROUPS=assets flock $GEM_HOME/gems.lock bin/bundle exec rake npm:install
    rm config/application.yml
    exit
 fi
@@ -43,5 +43,5 @@ set -u
 
 secret_token=$(cat $ARVADOS_CONTAINER_PATH/workbench_secret_token)
 
-RAILS_GROUPS=assets flock $GEM_HOME/gems.lock bundle exec rake npm:install
-flock $GEM_HOME/gems.lock bundle exec rake assets:precompile
+RAILS_GROUPS=assets flock $GEM_HOME/gems.lock bin/bundle exec rake npm:install
+flock $GEM_HOME/gems.lock bin/bundle exec rake assets:precompile

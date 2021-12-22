@@ -18,14 +18,6 @@ var _ = Suite(&suite{})
 
 type suite struct{}
 
-func (s *suite) SetUpSuite(c *C) {
-	arvadostest.StartAPI()
-}
-
-func (s *suite) TearDownSuite(c *C) {
-	arvadostest.StopAPI()
-}
-
 func (s *suite) TestTrackContainer(c *C) {
 	arv, err := arvadosclient.MakeArvadosClient()
 	c.Assert(err, Equals, nil)
@@ -35,11 +27,12 @@ func (s *suite) TestTrackContainer(c *C) {
 	time.AfterFunc(10*time.Second, func() { done <- false })
 	d := &Dispatcher{
 		Arv: arv,
-		RunContainer: func(dsp *Dispatcher, ctr arvados.Container, status <-chan arvados.Container) {
+		RunContainer: func(dsp *Dispatcher, ctr arvados.Container, status <-chan arvados.Container) error {
 			for ctr := range status {
 				c.Logf("%#v", ctr)
 			}
 			done <- true
+			return nil
 		},
 	}
 	d.TrackContainer(arvadostest.QueuedContainerUUID)

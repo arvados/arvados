@@ -21,7 +21,8 @@ class Container < ArvadosModel
   # already know how to properly treat them.
   attribute :secret_mounts, :jsonbHash, default: {}
   attribute :runtime_status, :jsonbHash, default: {}
-  attribute :runtime_auth_scopes, :jsonbHash, default: {}
+  attribute :runtime_auth_scopes, :jsonbArray, default: []
+  attribute :output_storage_classes, :jsonbArray, default: lambda { Rails.configuration.DefaultStorageClasses }
 
   serialize :environment, Hash
   serialize :mounts, Hash
@@ -79,6 +80,7 @@ class Container < ArvadosModel
     t.add :lock_count
     t.add :gateway_address
     t.add :interactive_session_started
+    t.add :output_storage_classes
   end
 
   # Supported states for a container
@@ -104,11 +106,11 @@ class Container < ArvadosModel
   end
 
   def self.full_text_searchable_columns
-    super - ["secret_mounts", "secret_mounts_md5", "runtime_token", "gateway_address"]
+    super - ["secret_mounts", "secret_mounts_md5", "runtime_token", "gateway_address", "output_storage_classes"]
   end
 
   def self.searchable_columns *args
-    super - ["secret_mounts_md5", "runtime_token", "gateway_address"]
+    super - ["secret_mounts_md5", "runtime_token", "gateway_address", "output_storage_classes"]
   end
 
   def logged_attributes
@@ -187,7 +189,8 @@ class Container < ArvadosModel
         secret_mounts: req.secret_mounts,
         runtime_token: req.runtime_token,
         runtime_user_uuid: runtime_user.uuid,
-        runtime_auth_scopes: runtime_auth_scopes
+        runtime_auth_scopes: runtime_auth_scopes,
+        output_storage_classes: req.output_storage_classes,
       }
     end
     act_as_system_user do
@@ -467,7 +470,8 @@ class Container < ArvadosModel
                      :environment, :mounts, :output_path, :priority,
                      :runtime_constraints, :scheduling_parameters,
                      :secret_mounts, :runtime_token,
-                     :runtime_user_uuid, :runtime_auth_scopes)
+                     :runtime_user_uuid, :runtime_auth_scopes,
+                     :output_storage_classes)
     end
 
     case self.state
@@ -605,7 +609,8 @@ class Container < ArvadosModel
         self.runtime_auth_scopes = ["all"]
       end
 
-      # generate a new token
+      # Generate a new token. This runs with admin credentials as it's done by a
+      # dispatcher user, so expires_at isn't enforced by API.MaxTokenLifetime.
       self.auth = ApiClientAuthorization.
                     create!(user_id: User.find_by_uuid(self.runtime_user_uuid).id,
                             api_client_id: 0,

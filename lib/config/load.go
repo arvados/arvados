@@ -182,6 +182,11 @@ func (ldr *Loader) Load() (*arvados.Config, error) {
 		ldr.configdata = buf
 	}
 
+	// FIXME: We should reject YAML if the same key is used twice
+	// in a map/object, like {foo: bar, foo: baz}. Maybe we'll get
+	// this fixed free when we upgrade ghodss/yaml to a version
+	// that uses go-yaml v3.
+
 	// Load the config into a dummy map to get the cluster ID
 	// keys, discarding the values; then set up defaults for each
 	// cluster ID; then load the real config on top of the
@@ -241,42 +246,61 @@ func (ldr *Loader) Load() (*arvados.Config, error) {
 		return nil, fmt.Errorf("transcoding config data: %s", err)
 	}
 
+	var loadFuncs []func(*arvados.Config) error
 	if !ldr.SkipDeprecated {
-		err = ldr.applyDeprecatedConfig(&cfg)
-		if err != nil {
-			return nil, err
-		}
+		loadFuncs = append(loadFuncs,
+			ldr.applyDeprecatedConfig,
+			ldr.applyDeprecatedVolumeDriverParameters,
+		)
 	}
 	if !ldr.SkipLegacy {
 		// legacy file is required when either:
 		// * a non-default location was specified
 		// * no primary config was loaded, and this is the
 		// legacy config file for the current component
-		for _, err := range []error{
-			ldr.loadOldEnvironmentVariables(&cfg),
-			ldr.loadOldKeepstoreConfig(&cfg),
-			ldr.loadOldKeepWebConfig(&cfg),
-			ldr.loadOldCrunchDispatchSlurmConfig(&cfg),
-			ldr.loadOldWebsocketConfig(&cfg),
-			ldr.loadOldKeepproxyConfig(&cfg),
-			ldr.loadOldGitHttpdConfig(&cfg),
-			ldr.loadOldKeepBalanceConfig(&cfg),
-		} {
-			if err != nil {
-				return nil, err
-			}
+		loadFuncs = append(loadFuncs,
+			ldr.loadOldEnvironmentVariables,
+			ldr.loadOldKeepstoreConfig,
+			ldr.loadOldKeepWebConfig,
+			ldr.loadOldCrunchDispatchSlurmConfig,
+			ldr.loadOldWebsocketConfig,
+			ldr.loadOldKeepproxyConfig,
+			ldr.loadOldGitHttpdConfig,
+			ldr.loadOldKeepBalanceConfig,
+		)
+	}
+	loadFuncs = append(loadFuncs, ldr.setImplicitStorageClasses)
+	for _, f := range loadFuncs {
+		err = f(&cfg)
+		if err != nil {
+			return nil, err
 		}
 	}
 
 	// Check for known mistakes
 	for id, cc := range cfg.Clusters {
+		for remote := range cc.RemoteClusters {
+			if remote == "*" || remote == "SAMPLE" {
+				continue
+			}
+			err = ldr.checkClusterID(fmt.Sprintf("Clusters.%s.RemoteClusters.%s", id, remote), remote, true)
+			if err != nil {
+				return nil, err
+			}
+		}
 		for _, err = range []error{
+			ldr.checkClusterID(fmt.Sprintf("Clusters.%s", id), id, false),
+			ldr.checkClusterID(fmt.Sprintf("Clusters.%s.Login.LoginCluster", id), cc.Login.LoginCluster, true),
 			ldr.checkToken(fmt.Sprintf("Clusters.%s.ManagementToken", id), cc.ManagementToken),
 			ldr.checkToken(fmt.Sprintf("Clusters.%s.SystemRootToken", id), cc.SystemRootToken),
 			ldr.checkToken(fmt.Sprintf("Clusters.%s.Collections.BlobSigningKey", id), cc.Collections.BlobSigningKey),
 			checkKeyConflict(fmt.Sprintf("Clusters.%s.PostgreSQL.Connection", id), cc.PostgreSQL.Connection),
+			ldr.checkEnum("Containers.LocalKeepLogsToContainerLog", cc.Containers.LocalKeepLogsToContainerLog, "none", "all", "errors"),
 			ldr.checkEmptyKeepstores(cc),
 			ldr.checkUnlistedKeepstores(cc),
+			ldr.checkStorageClasses(cc),
+			// TODO: check non-empty Rendezvous on
+			// services other than Keepstore
 		} {
 			if err != nil {
 				return nil, err
@@ -286,16 +310,91 @@ func (ldr *Loader) Load() (*arvados.Config, error) {
 	return &cfg, nil
 }
 
+var acceptableClusterIDRe = regexp.MustCompile(`^[a-z0-9]{5}$`)
+
+func (ldr *Loader) checkClusterID(label, clusterID string, emptyStringOk bool) error {
+	if emptyStringOk && clusterID == "" {
+		return nil
+	} else if !acceptableClusterIDRe.MatchString(clusterID) {
+		return fmt.Errorf("%s: cluster ID should be 5 alphanumeric characters", label)
+	}
+	return nil
+}
+
 var acceptableTokenRe = regexp.MustCompile(`^[a-zA-Z0-9]+$`)
 var acceptableTokenLength = 32
 
 func (ldr *Loader) checkToken(label, token string) error {
 	if token == "" {
-		ldr.Logger.Warnf("%s: secret token is not set (use %d+ random characters from a-z, A-Z, 0-9)", label, acceptableTokenLength)
+		if ldr.Logger != nil {
+			ldr.Logger.Warnf("%s: secret token is not set (use %d+ random characters from a-z, A-Z, 0-9)", label, acceptableTokenLength)
+		}
 	} else if !acceptableTokenRe.MatchString(token) {
 		return fmt.Errorf("%s: unacceptable characters in token (only a-z, A-Z, 0-9 are acceptable)", label)
 	} else if len(token) < acceptableTokenLength {
-		ldr.Logger.Warnf("%s: token is too short (should be at least %d characters)", label, acceptableTokenLength)
+		if ldr.Logger != nil {
+			ldr.Logger.Warnf("%s: token is too short (should be at least %d characters)", label, acceptableTokenLength)
+		}
+	}
+	return nil
+}
+
+func (ldr *Loader) checkEnum(label, value string, accepted ...string) error {
+	for _, s := range accepted {
+		if s == value {
+			return nil
+		}
+	}
+	return fmt.Errorf("%s: unacceptable value %q: must be one of %q", label, value, accepted)
+}
+
+func (ldr *Loader) setImplicitStorageClasses(cfg *arvados.Config) error {
+cluster:
+	for id, cc := range cfg.Clusters {
+		if len(cc.StorageClasses) > 0 {
+			continue cluster
+		}
+		for _, vol := range cc.Volumes {
+			if len(vol.StorageClasses) > 0 {
+				continue cluster
+			}
+		}
+		// No explicit StorageClasses config info at all; fill
+		// in implicit defaults.
+		for id, vol := range cc.Volumes {
+			vol.StorageClasses = map[string]bool{"default": true}
+			cc.Volumes[id] = vol
+		}
+		cc.StorageClasses = map[string]arvados.StorageClassConfig{"default": {Default: true}}
+		cfg.Clusters[id] = cc
+	}
+	return nil
+}
+
+func (ldr *Loader) checkStorageClasses(cc arvados.Cluster) error {
+	classOnVolume := map[string]bool{}
+	for volid, vol := range cc.Volumes {
+		if len(vol.StorageClasses) == 0 {
+			return fmt.Errorf("%s: volume has no StorageClasses listed", volid)
+		}
+		for classid := range vol.StorageClasses {
+			if _, ok := cc.StorageClasses[classid]; !ok {
+				return fmt.Errorf("%s: volume refers to storage class %q that is not defined in StorageClasses", volid, classid)
+			}
+			classOnVolume[classid] = true
+		}
+	}
+	haveDefault := false
+	for classid, sc := range cc.StorageClasses {
+		if !classOnVolume[classid] && len(cc.Volumes) > 0 {
+			ldr.Logger.Warnf("there are no volumes providing storage class %q", classid)
+		}
+		if sc.Default {
+			haveDefault = true
+		}
+	}
+	if !haveDefault {
+		return fmt.Errorf("there is no default storage class (at least one entry in StorageClasses must have Default: true)")
 	}
 	return nil
 }
@@ -325,20 +424,33 @@ func (ldr *Loader) logExtraKeys(expected, supplied map[string]interface{}, prefi
 	if ldr.Logger == nil {
 		return
 	}
-	allowed := map[string]interface{}{}
-	for k, v := range expected {
-		allowed[strings.ToLower(k)] = v
-	}
 	for k, vsupp := range supplied {
 		if k == "SAMPLE" {
 			// entry will be dropped in removeSampleKeys anyway
 			continue
 		}
-		vexp, ok := allowed[strings.ToLower(k)]
+		vexp, ok := expected[k]
 		if expected["SAMPLE"] != nil {
+			// use the SAMPLE entry's keys as the
+			// "expected" map when checking vsupp
+			// recursively.
 			vexp = expected["SAMPLE"]
 		} else if !ok {
-			ldr.Logger.Warnf("deprecated or unknown config entry: %s%s", prefix, k)
+			// check for a case-insensitive match
+			hint := ""
+			for ek := range expected {
+				if strings.EqualFold(k, ek) {
+					hint = " (perhaps you meant " + ek + "?)"
+					// If we don't delete this, it
+					// will end up getting merged,
+					// unpredictably
+					// merging/overriding the
+					// default.
+					delete(supplied, k)
+					break
+				}
+			}
+			ldr.Logger.Warnf("deprecated or unknown config entry: %s%s%s", prefix, k, hint)
 			continue
 		}
 		if vsupp, ok := vsupp.(map[string]interface{}); !ok {

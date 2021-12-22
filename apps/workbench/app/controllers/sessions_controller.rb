@@ -10,8 +10,9 @@ class SessionsController < ApplicationController
   skip_before_action :ensure_arvados_api_exists
 
   def destroy
+    token = session[:arvados_api_token]
     session.clear
-    redirect_to arvados_api_client.arvados_logout_url(return_to: root_url)
+    redirect_to arvados_api_client.arvados_logout_url(return_to: root_url, api_token: token)
   end
 
   def logged_out

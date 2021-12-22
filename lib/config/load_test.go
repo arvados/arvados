@@ -29,6 +29,8 @@ func Test(t *testing.T) {
 
 var _ = check.Suite(&LoadSuite{})
 
+var emptyConfigYAML = `Clusters: {"z1111": {}}`
+
 // Return a new Loader that reads cluster config from configdata
 // (instead of the usual default /etc/arvados/config.yml), and logs to
 // logdst or (if that's nil) c.Log.
@@ -59,7 +61,7 @@ func (s *LoadSuite) TestEmpty(c *check.C) {
 }
 
 func (s *LoadSuite) TestNoConfigs(c *check.C) {
-	cfg, err := testLoader(c, `Clusters: {"z1111": {}}`, nil).Load()
+	cfg, err := testLoader(c, emptyConfigYAML, nil).Load()
 	c.Assert(err, check.IsNil)
 	c.Assert(cfg.Clusters, check.HasLen, 1)
 	cc, err := cfg.GetCluster("z1111")
@@ -79,7 +81,7 @@ func (s *LoadSuite) TestMungeLegacyConfigArgs(c *check.C) {
 	f, err = ioutil.TempFile("", "")
 	c.Check(err, check.IsNil)
 	defer os.Remove(f.Name())
-	io.WriteString(f, "Clusters: {aaaaa: {}}\n")
+	io.WriteString(f, emptyConfigYAML)
 	newfile := f.Name()
 
 	for _, trial := range []struct {
@@ -196,21 +198,37 @@ Clusters:
     SystemRootToken: aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
     Collections:
      BlobSigningKey: aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
-    postgresql: {}
-    BadKey: {}
-    Containers: {}
+    PostgreSQL: {}
+    BadKey1: {}
+    Containers:
+      RunTimeEngine: abc
     RemoteClusters:
       z2222:
         Host: z2222.arvadosapi.com
         Proxy: true
-        BadKey: badValue
+        BadKey2: badValue
+    Services:
+      KeepStore:
+        InternalURLs:
+          "http://host.example:12345": {}
+      Keepstore:
+        InternalURLs:
+          "http://host.example:12345":
+            RendezVous: x
+    ServiceS:
+      Keepstore:
+        InternalURLs:
+          "http://host.example:12345": {}
+    Volumes:
+      zzzzz-nyw5e-aaaaaaaaaaaaaaa: {}
 `, &logbuf).Load()
 	c.Assert(err, check.IsNil)
+	c.Log(logbuf.String())
 	logs := strings.Split(strings.TrimSuffix(logbuf.String(), "\n"), "\n")
 	for _, log := range logs {
-		c.Check(log, check.Matches, `.*deprecated or unknown config entry:.*BadKey.*`)
+		c.Check(log, check.Matches, `.*deprecated or unknown config entry:.*(RunTimeEngine.*RuntimeEngine|BadKey1|BadKey2|KeepStore|ServiceS|RendezVous).*`)
 	}
-	c.Check(logs, check.HasLen, 2)
+	c.Check(logs, check.HasLen, 6)
 }
 
 func (s *LoadSuite) checkSAMPLEKeys(c *check.C, path string, x interface{}) {
@@ -322,12 +340,51 @@ func (s *LoadSuite) TestPostgreSQLKeyConflict(c *check.C) {
 	_, err := testLoader(c, `
 Clusters:
  zzzzz:
-  postgresql:
-   connection:
+  PostgreSQL:
+   Connection:
      DBName: dbname
      Host: host
 `, nil).Load()
 	c.Check(err, check.ErrorMatches, `Clusters.zzzzz.PostgreSQL.Connection: multiple entries for "(dbname|host)".*`)
+}
+
+func (s *LoadSuite) TestBadClusterIDs(c *check.C) {
+	for _, data := range []string{`
+Clusters:
+ 123456:
+  ManagementToken: aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+  SystemRootToken: aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+  Collections:
+   BlobSigningKey: aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+`, `
+Clusters:
+ 12345:
+  ManagementToken: aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+  SystemRootToken: aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+  Collections:
+   BlobSigningKey: aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+  RemoteClusters:
+   Zzzzz:
+    Host: Zzzzz.arvadosapi.com
+    Proxy: true
+`, `
+Clusters:
+ abcde:
+  ManagementToken: aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+  SystemRootToken: aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+  Collections:
+   BlobSigningKey: aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+  Login:
+   LoginCluster: zz-zz
+`,
+	} {
+		c.Log(data)
+		v, err := testLoader(c, data, nil).Load()
+		if v != nil {
+			c.Logf("%#v", v.Clusters)
+		}
+		c.Check(err, check.ErrorMatches, `.*cluster ID should be 5 alphanumeric characters.*`)
+	}
 }
 
 func (s *LoadSuite) TestBadType(c *check.C) {
@@ -398,10 +455,12 @@ Clusters:
 `)
 }
 
-func checkEquivalent(c *check.C, goty, expectedy string) {
-	gotldr := testLoader(c, goty, nil)
+func checkEquivalent(c *check.C, goty, expectedy string) string {
+	var logbuf bytes.Buffer
+	gotldr := testLoader(c, goty, &logbuf)
 	expectedldr := testLoader(c, expectedy, nil)
 	checkEquivalentLoaders(c, gotldr, expectedldr)
+	return logbuf.String()
 }
 
 func checkEqualYAML(c *check.C, got, expected interface{}) {
@@ -505,11 +564,122 @@ func (s *LoadSuite) TestListKeys(c *check.C) {
 		c.Errorf("Should have produced an error")
 	}
 
-	var logbuf bytes.Buffer
-	loader := testLoader(c, string(DefaultYAML), &logbuf)
+	loader := testLoader(c, string(DefaultYAML), nil)
 	cfg, err := loader.Load()
 	c.Assert(err, check.IsNil)
 	if err := checkListKeys("", cfg); err != nil {
 		c.Error(err)
 	}
+}
+
+func (s *LoadSuite) TestImplicitStorageClasses(c *check.C) {
+	// If StorageClasses and Volumes.*.StorageClasses are all
+	// empty, there is a default storage class named "default".
+	ldr := testLoader(c, `{"Clusters":{"z1111":{}}}`, nil)
+	cfg, err := ldr.Load()
+	c.Assert(err, check.IsNil)
+	cc, err := cfg.GetCluster("z1111")
+	c.Assert(err, check.IsNil)
+	c.Check(cc.StorageClasses, check.HasLen, 1)
+	c.Check(cc.StorageClasses["default"].Default, check.Equals, true)
+	c.Check(cc.StorageClasses["default"].Priority, check.Equals, 0)
+
+	// The implicit "default" storage class is used by all
+	// volumes.
+	ldr = testLoader(c, `
+Clusters:
+ z1111:
+  Volumes:
+   z: {}`, nil)
+	cfg, err = ldr.Load()
+	c.Assert(err, check.IsNil)
+	cc, err = cfg.GetCluster("z1111")
+	c.Assert(err, check.IsNil)
+	c.Check(cc.StorageClasses, check.HasLen, 1)
+	c.Check(cc.StorageClasses["default"].Default, check.Equals, true)
+	c.Check(cc.StorageClasses["default"].Priority, check.Equals, 0)
+	c.Check(cc.Volumes["z"].StorageClasses["default"], check.Equals, true)
+
+	// The "default" storage class isn't implicit if any classes
+	// are configured explicitly.
+	ldr = testLoader(c, `
+Clusters:
+ z1111:
+  StorageClasses:
+   local:
+    Default: true
+    Priority: 111
+  Volumes:
+   z:
+    StorageClasses:
+     local: true`, nil)
+	cfg, err = ldr.Load()
+	c.Assert(err, check.IsNil)
+	cc, err = cfg.GetCluster("z1111")
+	c.Assert(err, check.IsNil)
+	c.Check(cc.StorageClasses, check.HasLen, 1)
+	c.Check(cc.StorageClasses["local"].Default, check.Equals, true)
+	c.Check(cc.StorageClasses["local"].Priority, check.Equals, 111)
+
+	// It is an error for a volume to refer to a storage class
+	// that isn't listed in StorageClasses.
+	ldr = testLoader(c, `
+Clusters:
+ z1111:
+  StorageClasses:
+   local:
+    Default: true
+    Priority: 111
+  Volumes:
+   z:
+    StorageClasses:
+     nx: true`, nil)
+	_, err = ldr.Load()
+	c.Assert(err, check.ErrorMatches, `z: volume refers to storage class "nx" that is not defined.*`)
+
+	// It is an error for a volume to refer to a storage class
+	// that isn't listed in StorageClasses ... even if it's
+	// "default", which would exist implicitly if it weren't
+	// referenced explicitly by a volume.
+	ldr = testLoader(c, `
+Clusters:
+ z1111:
+  Volumes:
+   z:
+    StorageClasses:
+     default: true`, nil)
+	_, err = ldr.Load()
+	c.Assert(err, check.ErrorMatches, `z: volume refers to storage class "default" that is not defined.*`)
+
+	// If the "default" storage class is configured explicitly, it
+	// is not used implicitly by any volumes, even if it's the
+	// only storage class.
+	var logbuf bytes.Buffer
+	ldr = testLoader(c, `
+Clusters:
+ z1111:
+  StorageClasses:
+   default:
+    Default: true
+    Priority: 111
+  Volumes:
+   z: {}`, &logbuf)
+	_, err = ldr.Load()
+	c.Assert(err, check.ErrorMatches, `z: volume has no StorageClasses listed`)
+
+	// If StorageClasses are configured explicitly, there must be
+	// at least one with Default: true. (Calling one "default" is
+	// not sufficient.)
+	ldr = testLoader(c, `
+Clusters:
+ z1111:
+  StorageClasses:
+   default:
+    Priority: 111
+  Volumes:
+   z:
+    StorageClasses:
+     default: true`, nil)
+	_, err = ldr.Load()
+	c.Assert(err, check.ErrorMatches, `there is no default storage class.*`)
 }

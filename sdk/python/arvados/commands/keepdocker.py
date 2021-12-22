@@ -87,9 +87,9 @@ def popen_docker(cmd, *args, **kwargs):
     kwargs.setdefault('stdin', subprocess.PIPE)
     kwargs.setdefault('stdout', sys.stderr)
     try:
-        docker_proc = subprocess.Popen(['docker.io'] + cmd, *args, **kwargs)
-    except OSError:  # No docker.io in $PATH
         docker_proc = subprocess.Popen(['docker'] + cmd, *args, **kwargs)
+    except OSError:  # No docker in $PATH, try docker.io
+        docker_proc = subprocess.Popen(['docker.io'] + cmd, *args, **kwargs)
     if manage_stdin:
         docker_proc.stdin.close()
     return docker_proc
@@ -146,20 +146,18 @@ def docker_images():
     check_docker(list_proc, "images")
 
 def find_image_hashes(image_search, image_tag=None):
-    # Given one argument, search for Docker images with matching hashes,
-    # and return their full hashes in a set.
-    # Given two arguments, also search for a Docker image with the
-    # same repository and tag.  If one is found, return its hash in a
-    # set; otherwise, fall back to the one-argument hash search.
-    # Returns None if no match is found, or a hash search is ambiguous.
-    hash_search = image_search.lower()
-    hash_matches = set()
-    for image in docker_images():
-        if (image.repo == image_search) and (image.tag == image_tag):
-            return set([image.hash])
-        elif image.hash.startswith(hash_search):
-            hash_matches.add(image.hash)
-    return hash_matches
+    # Query for a Docker images with the repository and tag and return
+    # the image ids in a list.  Returns empty list if no match is
+    # found.
+
+    list_proc = popen_docker(['inspect', "%s%s" % (image_search, ":"+image_tag if image_tag else "")], stdout=subprocess.PIPE)
+
+    inspect = list_proc.stdout.read()
+    list_proc.stdout.close()
+
+    imageinfo = json.loads(inspect)
+
+    return [i["Id"] for i in imageinfo]
 
 def find_one_image_hash(image_search, image_tag=None):
     hashes = find_image_hashes(image_search, image_tag)
@@ -498,6 +496,9 @@ def main(arguments=None, stdout=sys.stdout, install_sig_handlers=True, api=None)
         arguments = [i for i in arguments if i not in (args.image, args.tag, image_repo_tag)]
         put_args = keepdocker_parser.parse_known_args(arguments)[1]
 
+        # Don't fail when cached manifest is invalid, just ignore the cache.
+        put_args += ['--batch']
+
         if args.name is None:
             put_args += ['--name', collection_name]
 
@@ -505,7 +506,11 @@ def main(arguments=None, stdout=sys.stdout, install_sig_handlers=True, api=None)
             put_args + ['--filename', outfile_name, image_file.name], stdout=stdout,
             install_sig_handlers=install_sig_handlers).strip()
 
-        api.collections().update(uuid=coll_uuid, body={"properties": {"docker-image-repo-tag": image_repo_tag}}).execute(num_retries=args.retries)
+        # Managed properties could be already set
+        coll_properties = api.collections().get(uuid=coll_uuid).execute(num_retries=args.retries).get('properties', {})
+        coll_properties.update({"docker-image-repo-tag": image_repo_tag})
+
+        api.collections().update(uuid=coll_uuid, body={"properties": coll_properties}).execute(num_retries=args.retries)
 
         # Read the image metadata and make Arvados links from it.
         image_file.seek(0)

@@ -5,7 +5,9 @@
 package crunchrun
 
 import (
+	"bytes"
 	"fmt"
+	"io"
 	"strings"
 	"testing"
 	"time"
@@ -13,6 +15,7 @@ import (
 	"git.arvados.org/arvados.git/sdk/go/arvados"
 	"git.arvados.org/arvados.git/sdk/go/arvadosclient"
 	. "gopkg.in/check.v1"
+	check "gopkg.in/check.v1"
 )
 
 type LoggingTestSuite struct {
@@ -45,7 +48,7 @@ func (s *LoggingTestSuite) TestWriteLogs(c *C) {
 	api := &ArvTestClient{}
 	kc := &KeepTestClient{}
 	defer kc.Close()
-	cr, err := NewContainerRunner(s.client, api, kc, nil, "zzzzz-zzzzzzzzzzzzzzz")
+	cr, err := NewContainerRunner(s.client, api, kc, "zzzzz-zzzzzzzzzzzzzzz")
 	c.Assert(err, IsNil)
 	cr.CrunchLog.Timestamper = (&TestTimestamper{}).Timestamp
 
@@ -74,7 +77,7 @@ func (s *LoggingTestSuite) TestWriteLogsLarge(c *C) {
 	api := &ArvTestClient{}
 	kc := &KeepTestClient{}
 	defer kc.Close()
-	cr, err := NewContainerRunner(s.client, api, kc, nil, "zzzzz-zzzzzzzzzzzzzzz")
+	cr, err := NewContainerRunner(s.client, api, kc, "zzzzz-zzzzzzzzzzzzzzz")
 	c.Assert(err, IsNil)
 	cr.CrunchLog.Timestamper = (&TestTimestamper{}).Timestamp
 	cr.CrunchLog.Immediate = nil
@@ -97,7 +100,7 @@ func (s *LoggingTestSuite) TestWriteMultipleLogs(c *C) {
 	api := &ArvTestClient{}
 	kc := &KeepTestClient{}
 	defer kc.Close()
-	cr, err := NewContainerRunner(s.client, api, kc, nil, "zzzzz-zzzzzzzzzzzzzzz")
+	cr, err := NewContainerRunner(s.client, api, kc, "zzzzz-zzzzzzzzzzzzzzz")
 	c.Assert(err, IsNil)
 	ts := &TestTimestamper{}
 	cr.CrunchLog.Timestamper = ts.Timestamp
@@ -146,7 +149,7 @@ func (s *LoggingTestSuite) TestLogUpdate(c *C) {
 		api := &ArvTestClient{}
 		kc := &KeepTestClient{}
 		defer kc.Close()
-		cr, err := NewContainerRunner(s.client, api, kc, nil, "zzzzz-zzzzzzzzzzzzzzz")
+		cr, err := NewContainerRunner(s.client, api, kc, "zzzzz-zzzzzzzzzzzzzzz")
 		c.Assert(err, IsNil)
 		ts := &TestTimestamper{}
 		cr.CrunchLog.Timestamper = ts.Timestamp
@@ -197,7 +200,7 @@ func (s *LoggingTestSuite) testWriteLogsWithRateLimit(c *C, throttleParam string
 	api := &ArvTestClient{}
 	kc := &KeepTestClient{}
 	defer kc.Close()
-	cr, err := NewContainerRunner(s.client, api, kc, nil, "zzzzz-zzzzzzzzzzzzzzz")
+	cr, err := NewContainerRunner(s.client, api, kc, "zzzzz-zzzzzzzzzzzzzzz")
 	c.Assert(err, IsNil)
 	cr.CrunchLog.Timestamper = (&TestTimestamper{}).Timestamp
 
@@ -219,3 +222,34 @@ func (s *LoggingTestSuite) testWriteLogsWithRateLimit(c *C, throttleParam string
 	c.Check(true, Equals, strings.Contains(stderrLog, expected))
 	c.Check(string(kc.Content), Equals, logtext)
 }
+
+type filterSuite struct{}
+
+var _ = Suite(&filterSuite{})
+
+func (*filterSuite) TestFilterKeepstoreErrorsOnly(c *check.C) {
+	var buf bytes.Buffer
+	f := filterKeepstoreErrorsOnly{WriteCloser: nopCloser{&buf}}
+	for _, s := range []string{
+		"not j",
+		"son\n" + `{"msg":"foo"}` + "\n{}\n" + `{"msg":"request"}` + "\n" + `{"msg":1234}` + "\n\n",
+		"\n[\n",
+		`{"msg":"response","respStatusCode":404,"foo": "bar"}` + "\n",
+		`{"msg":"response","respStatusCode":206}` + "\n",
+	} {
+		f.Write([]byte(s))
+	}
+	c.Check(buf.String(), check.Equals, `not json
+{"msg":"foo"}
+{}
+{"msg":1234}
+[
+{"msg":"response","respStatusCode":404,"foo": "bar"}
+`)
+}
+
+type nopCloser struct {
+	io.Writer
+}
+
+func (nopCloser) Close() error { return nil }

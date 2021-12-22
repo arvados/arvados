@@ -6,6 +6,7 @@ package main
 
 import (
 	"bytes"
+	"context"
 	"crypto/rand"
 	"crypto/sha256"
 	"fmt"
@@ -25,6 +26,10 @@ import (
 	"git.arvados.org/arvados.git/sdk/go/keepclient"
 	"github.com/AdRoll/goamz/aws"
 	"github.com/AdRoll/goamz/s3"
+	aws_aws "github.com/aws/aws-sdk-go/aws"
+	aws_credentials "github.com/aws/aws-sdk-go/aws/credentials"
+	aws_session "github.com/aws/aws-sdk-go/aws/session"
+	aws_s3 "github.com/aws/aws-sdk-go/service/s3"
 	check "gopkg.in/check.v1"
 )
 
@@ -76,7 +81,7 @@ func (s *IntegrationSuite) s3setup(c *check.C) s3stage {
 
 	auth := aws.NewAuth(arvadostest.ActiveTokenUUID, arvadostest.ActiveToken, "", time.Now().Add(time.Hour))
 	region := aws.Region{
-		Name:       s.testServer.Addr,
+		Name:       "zzzzz",
 		S3Endpoint: "http://" + s.testServer.Addr,
 	}
 	client := s3.New(*auth, region)
@@ -455,7 +460,7 @@ func (stage *s3stage) writeBigDirs(c *check.C, dirs int, filesPerDir int) {
 }
 
 func (s *IntegrationSuite) sign(c *check.C, req *http.Request, key, secret string) {
-	scope := "20200202/region/service/aws4_request"
+	scope := "20200202/zzzzz/service/aws4_request"
 	signedHeaders := "date"
 	req.Header.Set("Date", time.Now().UTC().Format(time.RFC1123))
 	stringToSign, err := s3stringToSign(s3SignAlgorithm, scope, signedHeaders, req)
@@ -553,14 +558,17 @@ func (s *IntegrationSuite) TestS3NormalizeURIForSignature(c *check.C) {
 		rawPath        string
 		normalizedPath string
 	}{
-		{"/foo", "/foo"},             // boring case
-		{"/foo%5fbar", "/foo_bar"},   // _ must not be escaped
-		{"/foo%2fbar", "/foo/bar"},   // / must not be escaped
-		{"/(foo)", "/%28foo%29"},     // () must be escaped
-		{"/foo%5bbar", "/foo%5Bbar"}, // %XX must be uppercase
+		{"/foo", "/foo"},                           // boring case
+		{"/foo%5fbar", "/foo_bar"},                 // _ must not be escaped
+		{"/foo%2fbar", "/foo/bar"},                 // / must not be escaped
+		{"/(foo)/[];,", "/%28foo%29/%5B%5D%3B%2C"}, // ()[];, must be escaped
+		{"/foo%5bbar", "/foo%5Bbar"},               // %XX must be uppercase
+		{"//foo///.bar", "/foo/.bar"},              // "//" and "///" must be squashed to "/"
 	} {
+		c.Logf("trial %q", trial)
+
 		date := time.Now().UTC().Format("20060102T150405Z")
-		scope := "20200202/fakeregion/S3/aws4_request"
+		scope := "20200202/zzzzz/S3/aws4_request"
 		canonicalRequest := fmt.Sprintf("%s\n%s\n%s\n%s\n%s\n%s", "GET", trial.normalizedPath, "", "host:host.example.com\n", "host", "")
 		c.Logf("canonicalRequest %q", canonicalRequest)
 		expect := fmt.Sprintf("%s\n%s\n%s\n%s", s3SignAlgorithm, date, scope, hashdigest(sha256.New(), canonicalRequest))
@@ -579,6 +587,23 @@ func (s *IntegrationSuite) TestS3NormalizeURIForSignature(c *check.C) {
 	}
 }
 
+func (s *IntegrationSuite) TestS3GetBucketLocation(c *check.C) {
+	stage := s.s3setup(c)
+	defer stage.teardown(c)
+	for _, bucket := range []*s3.Bucket{stage.collbucket, stage.projbucket} {
+		req, err := http.NewRequest("GET", bucket.URL("/"), nil)
+		c.Check(err, check.IsNil)
+		req.Header.Set("Authorization", "AWS "+arvadostest.ActiveTokenV2+":none")
+		req.URL.RawQuery = "location"
+		resp, err := http.DefaultClient.Do(req)
+		c.Assert(err, check.IsNil)
+		c.Check(resp.Header.Get("Content-Type"), check.Equals, "application/xml")
+		buf, err := ioutil.ReadAll(resp.Body)
+		c.Assert(err, check.IsNil)
+		c.Check(string(buf), check.Equals, "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<LocationConstraint><LocationConstraint xmlns=\"http://s3.amazonaws.com/doc/2006-03-01/\">zzzzz</LocationConstraint></LocationConstraint>\n")
+	}
+}
+
 func (s *IntegrationSuite) TestS3GetBucketVersioning(c *check.C) {
 	stage := s.s3setup(c)
 	defer stage.teardown(c)
@@ -593,6 +618,37 @@ func (s *IntegrationSuite) TestS3GetBucketVersioning(c *check.C) {
 		buf, err := ioutil.ReadAll(resp.Body)
 		c.Assert(err, check.IsNil)
 		c.Check(string(buf), check.Equals, "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<VersioningConfiguration xmlns=\"http://s3.amazonaws.com/doc/2006-03-01/\"/>\n")
+	}
+}
+
+func (s *IntegrationSuite) TestS3UnsupportedAPIs(c *check.C) {
+	stage := s.s3setup(c)
+	defer stage.teardown(c)
+	for _, trial := range []struct {
+		method   string
+		path     string
+		rawquery string
+	}{
+		{"GET", "/", "acl&versionId=1234"},    // GetBucketAcl
+		{"GET", "/foo", "acl&versionId=1234"}, // GetObjectAcl
+		{"PUT", "/", "acl"},                   // PutBucketAcl
+		{"PUT", "/foo", "acl"},                // PutObjectAcl
+		{"DELETE", "/", "tagging"},            // DeleteBucketTagging
+		{"DELETE", "/foo", "tagging"},         // DeleteObjectTagging
+	} {
+		for _, bucket := range []*s3.Bucket{stage.collbucket, stage.projbucket} {
+			c.Logf("trial %v bucket %v", trial, bucket)
+			req, err := http.NewRequest(trial.method, bucket.URL(trial.path), nil)
+			c.Check(err, check.IsNil)
+			req.Header.Set("Authorization", "AWS "+arvadostest.ActiveTokenV2+":none")
+			req.URL.RawQuery = trial.rawquery
+			resp, err := http.DefaultClient.Do(req)
+			c.Assert(err, check.IsNil)
+			c.Check(resp.Header.Get("Content-Type"), check.Equals, "application/xml")
+			buf, err := ioutil.ReadAll(resp.Body)
+			c.Assert(err, check.IsNil)
+			c.Check(string(buf), check.Matches, "(?ms).*InvalidRequest.*API not supported.*")
+		}
 	}
 }
 
@@ -838,6 +894,196 @@ func (s *IntegrationSuite) testS3CollectionListRollup(c *check.C) {
 	}
 }
 
+func (s *IntegrationSuite) TestS3ListObjectsV2(c *check.C) {
+	stage := s.s3setup(c)
+	defer stage.teardown(c)
+	dirs := 2
+	filesPerDir := 40
+	stage.writeBigDirs(c, dirs, filesPerDir)
+
+	sess := aws_session.Must(aws_session.NewSession(&aws_aws.Config{
+		Region:           aws_aws.String("auto"),
+		Endpoint:         aws_aws.String("http://" + s.testServer.Addr),
+		Credentials:      aws_credentials.NewStaticCredentials(url.QueryEscape(arvadostest.ActiveTokenV2), url.QueryEscape(arvadostest.ActiveTokenV2), ""),
+		S3ForcePathStyle: aws_aws.Bool(true),
+	}))
+
+	stringOrNil := func(s string) *string {
+		if s == "" {
+			return nil
+		} else {
+			return &s
+		}
+	}
+
+	client := aws_s3.New(sess)
+	ctx := context.Background()
+
+	for _, trial := range []struct {
+		prefix               string
+		delimiter            string
+		startAfter           string
+		maxKeys              int
+		expectKeys           int
+		expectCommonPrefixes map[string]bool
+	}{
+		{
+			// Expect {filesPerDir plus the dir itself}
+			// for each dir, plus emptydir, emptyfile, and
+			// sailboat.txt.
+			expectKeys: (filesPerDir+1)*dirs + 3,
+		},
+		{
+			maxKeys:    15,
+			expectKeys: (filesPerDir+1)*dirs + 3,
+		},
+		{
+			startAfter: "dir0/z",
+			maxKeys:    15,
+			// Expect {filesPerDir plus the dir itself}
+			// for each dir except dir0, plus emptydir,
+			// emptyfile, and sailboat.txt.
+			expectKeys: (filesPerDir+1)*(dirs-1) + 3,
+		},
+		{
+			maxKeys:              1,
+			delimiter:            "/",
+			expectKeys:           2, // emptyfile, sailboat.txt
+			expectCommonPrefixes: map[string]bool{"dir0/": true, "dir1/": true, "emptydir/": true},
+		},
+		{
+			startAfter:           "dir0/z",
+			maxKeys:              15,
+			delimiter:            "/",
+			expectKeys:           2, // emptyfile, sailboat.txt
+			expectCommonPrefixes: map[string]bool{"dir1/": true, "emptydir/": true},
+		},
+		{
+			startAfter:           "dir0/file10.txt",
+			maxKeys:              15,
+			delimiter:            "/",
+			expectKeys:           2,
+			expectCommonPrefixes: map[string]bool{"dir0/": true, "dir1/": true, "emptydir/": true},
+		},
+		{
+			startAfter:           "dir0/file10.txt",
+			maxKeys:              15,
+			prefix:               "d",
+			delimiter:            "/",
+			expectKeys:           0,
+			expectCommonPrefixes: map[string]bool{"dir0/": true, "dir1/": true},
+		},
+	} {
+		c.Logf("[trial %+v]", trial)
+		params := aws_s3.ListObjectsV2Input{
+			Bucket:     aws_aws.String(stage.collbucket.Name),
+			Prefix:     stringOrNil(trial.prefix),
+			Delimiter:  stringOrNil(trial.delimiter),
+			StartAfter: stringOrNil(trial.startAfter),
+			MaxKeys:    aws_aws.Int64(int64(trial.maxKeys)),
+		}
+		keySeen := map[string]bool{}
+		prefixSeen := map[string]bool{}
+		for {
+			result, err := client.ListObjectsV2WithContext(ctx, &params)
+			if !c.Check(err, check.IsNil) {
+				break
+			}
+			c.Check(result.Name, check.DeepEquals, aws_aws.String(stage.collbucket.Name))
+			c.Check(result.Prefix, check.DeepEquals, aws_aws.String(trial.prefix))
+			c.Check(result.Delimiter, check.DeepEquals, aws_aws.String(trial.delimiter))
+			// The following two fields are expected to be
+			// nil (i.e., no tag in XML response) rather
+			// than "" when the corresponding request
+			// field was empty or nil.
+			c.Check(result.StartAfter, check.DeepEquals, stringOrNil(trial.startAfter))
+			c.Check(result.ContinuationToken, check.DeepEquals, params.ContinuationToken)
+
+			if trial.maxKeys > 0 {
+				c.Check(result.MaxKeys, check.DeepEquals, aws_aws.Int64(int64(trial.maxKeys)))
+				c.Check(len(result.Contents)+len(result.CommonPrefixes) <= trial.maxKeys, check.Equals, true)
+			} else {
+				c.Check(result.MaxKeys, check.DeepEquals, aws_aws.Int64(int64(s3MaxKeys)))
+			}
+
+			for _, ent := range result.Contents {
+				c.Assert(ent.Key, check.NotNil)
+				c.Check(*ent.Key > trial.startAfter, check.Equals, true)
+				c.Check(keySeen[*ent.Key], check.Equals, false, check.Commentf("dup key %q", *ent.Key))
+				keySeen[*ent.Key] = true
+			}
+			for _, ent := range result.CommonPrefixes {
+				c.Assert(ent.Prefix, check.NotNil)
+				c.Check(strings.HasSuffix(*ent.Prefix, trial.delimiter), check.Equals, true, check.Commentf("bad CommonPrefix %q", *ent.Prefix))
+				if strings.HasPrefix(trial.startAfter, *ent.Prefix) {
+					// If we asked for
+					// startAfter=dir0/file10.txt,
+					// we expect dir0/ to be
+					// returned as a common prefix
+				} else {
+					c.Check(*ent.Prefix > trial.startAfter, check.Equals, true)
+				}
+				c.Check(prefixSeen[*ent.Prefix], check.Equals, false, check.Commentf("dup common prefix %q", *ent.Prefix))
+				prefixSeen[*ent.Prefix] = true
+			}
+			if *result.IsTruncated && c.Check(result.NextContinuationToken, check.Not(check.Equals), "") {
+				params.ContinuationToken = aws_aws.String(*result.NextContinuationToken)
+			} else {
+				break
+			}
+		}
+		c.Check(keySeen, check.HasLen, trial.expectKeys)
+		c.Check(prefixSeen, check.HasLen, len(trial.expectCommonPrefixes))
+		if len(trial.expectCommonPrefixes) > 0 {
+			c.Check(prefixSeen, check.DeepEquals, trial.expectCommonPrefixes)
+		}
+	}
+}
+
+func (s *IntegrationSuite) TestS3ListObjectsV2EncodingTypeURL(c *check.C) {
+	stage := s.s3setup(c)
+	defer stage.teardown(c)
+	dirs := 2
+	filesPerDir := 40
+	stage.writeBigDirs(c, dirs, filesPerDir)
+
+	sess := aws_session.Must(aws_session.NewSession(&aws_aws.Config{
+		Region:           aws_aws.String("auto"),
+		Endpoint:         aws_aws.String("http://" + s.testServer.Addr),
+		Credentials:      aws_credentials.NewStaticCredentials(url.QueryEscape(arvadostest.ActiveTokenV2), url.QueryEscape(arvadostest.ActiveTokenV2), ""),
+		S3ForcePathStyle: aws_aws.Bool(true),
+	}))
+
+	client := aws_s3.New(sess)
+	ctx := context.Background()
+
+	result, err := client.ListObjectsV2WithContext(ctx, &aws_s3.ListObjectsV2Input{
+		Bucket:       aws_aws.String(stage.collbucket.Name),
+		Prefix:       aws_aws.String("dir0/"),
+		Delimiter:    aws_aws.String("/"),
+		StartAfter:   aws_aws.String("dir0/"),
+		EncodingType: aws_aws.String("url"),
+	})
+	c.Assert(err, check.IsNil)
+	c.Check(*result.Prefix, check.Equals, "dir0%2F")
+	c.Check(*result.Delimiter, check.Equals, "%2F")
+	c.Check(*result.StartAfter, check.Equals, "dir0%2F")
+	for _, ent := range result.Contents {
+		c.Check(*ent.Key, check.Matches, "dir0%2F.*")
+	}
+	result, err = client.ListObjectsV2WithContext(ctx, &aws_s3.ListObjectsV2Input{
+		Bucket:       aws_aws.String(stage.collbucket.Name),
+		Delimiter:    aws_aws.String("/"),
+		EncodingType: aws_aws.String("url"),
+	})
+	c.Assert(err, check.IsNil)
+	c.Check(*result.Delimiter, check.Equals, "%2F")
+	c.Check(result.CommonPrefixes, check.HasLen, dirs+1)
+	for _, ent := range result.CommonPrefixes {
+		c.Check(*ent.Prefix, check.Matches, ".*%2F")
+	}
+}
+
 // TestS3cmd checks compatibility with the s3cmd command line tool, if
 // it's installed. As of Debian buster, s3cmd is only in backports, so
 // `arvados-server install` don't install it, and this test skips if
@@ -855,6 +1101,15 @@ func (s *IntegrationSuite) TestS3cmd(c *check.C) {
 	buf, err := cmd.CombinedOutput()
 	c.Check(err, check.IsNil)
 	c.Check(string(buf), check.Matches, `.* 3 +s3://`+arvadostest.FooCollection+`/foo\n`)
+
+	// This tests whether s3cmd's path normalization agrees with
+	// keep-web's signature verification wrt chars like "|"
+	// (neither reserved nor unreserved) and "," (not normally
+	// percent-encoded in a path).
+	cmd = exec.Command("s3cmd", "--no-ssl", "--host="+s.testServer.Addr, "--host-bucket="+s.testServer.Addr, "--access_key="+arvadostest.ActiveTokenUUID, "--secret_key="+arvadostest.ActiveToken, "get", "s3://"+arvadostest.FooCollection+"/foo,;$[|]bar")
+	buf, err = cmd.CombinedOutput()
+	c.Check(err, check.NotNil)
+	c.Check(string(buf), check.Matches, `(?ms).*NoSuchKey.*\n`)
 }
 
 func (s *IntegrationSuite) TestS3BucketInHost(c *check.C) {

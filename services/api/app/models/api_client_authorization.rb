@@ -7,11 +7,14 @@ class ApiClientAuthorization < ArvadosModel
   include KindAndEtag
   include CommonApiTemplate
   extend CurrentApiClient
+  extend DbCurrentTime
 
   belongs_to :api_client
   belongs_to :user
   after_initialize :assign_random_api_token
   serialize :scopes, Array
+
+  before_validation :clamp_token_expiration
 
   api_accessible :user, extend: :common do |t|
     t.add :owner_uuid
@@ -246,21 +249,34 @@ class ApiClientAuthorization < ArvadosModel
 
     remote_user_prefix = remote_user['uuid'][0..4]
 
-    if token_uuid == ''
-      # Use the same UUID as the remote when caching the token.
-      begin
-        remote_token = SafeJSON.load(
-          clnt.get_content('https://' + host + '/arvados/v1/api_client_authorizations/current',
-                           {'remote' => Rails.configuration.ClusterID},
-                           {'Authorization' => 'Bearer ' + token}))
-        token_uuid = remote_token['uuid']
-        if !token_uuid.match(HasUuid::UUID_REGEX) || token_uuid[0..4] != upstream_cluster_id
-          raise "remote cluster #{upstream_cluster_id} returned invalid token uuid #{token_uuid.inspect}"
-        end
-      rescue => e
-        Rails.logger.warn "error getting remote token details for #{token.inspect}: #{e}"
-        return nil
+    # Get token scope, and make sure we use the same UUID as the
+    # remote when caching the token.
+    remote_token = nil
+    begin
+      remote_token = SafeJSON.load(
+        clnt.get_content('https://' + host + '/arvados/v1/api_client_authorizations/current',
+                         {'remote' => Rails.configuration.ClusterID},
+                         {'Authorization' => 'Bearer ' + token}))
+      Rails.logger.debug "retrieved remote token #{remote_token.inspect}"
+      token_uuid = remote_token['uuid']
+      if !token_uuid.match(HasUuid::UUID_REGEX) || token_uuid[0..4] != upstream_cluster_id
+        raise "remote cluster #{upstream_cluster_id} returned invalid token uuid #{token_uuid.inspect}"
       end
+    rescue HTTPClient::BadResponseError => e
+      if e.res.status != 401
+        raise
+      end
+      rev = SafeJSON.load(clnt.get_content('https://' + host + '/discovery/v1/apis/arvados/v1/rest'))['revision']
+      if rev >= '20010101' && rev < '20210503'
+        Rails.logger.warn "remote cluster #{upstream_cluster_id} at #{host} with api rev #{rev} does not provide token expiry and scopes; using scopes=['all']"
+      else
+        # remote server is new enough that it should have accepted
+        # this request if the token was valid
+        raise
+      end
+    rescue => e
+      Rails.logger.warn "error getting remote token details for #{token.inspect}: #{e}"
+      return nil
     end
 
     # Clusters can only authenticate for their own users.
@@ -303,7 +319,17 @@ class ApiClientAuthorization < ArvadosModel
         user.last_name = "from cluster #{remote_user_prefix}"
       end
 
-      user.save!
+      begin
+        user.save!
+      rescue ActiveRecord::RecordInvalid, ActiveRecord::RecordNotUnique
+        Rails.logger.debug("remote user #{remote_user['uuid']} already exists, retrying...")
+        # Some other request won the race: retry fetching the user record.
+        user = User.find_by_uuid(remote_user['uuid'])
+        if !user
+          Rails.logger.warn("cannot find or create remote user #{remote_user['uuid']}")
+          return nil
+        end
+      end
 
       if user.is_invited && !remote_user['is_invited']
         # Remote user is not "invited" state, they should be unsetup, which
@@ -336,26 +362,43 @@ class ApiClientAuthorization < ArvadosModel
         end
       end
 
-      # We will accept this token (and avoid reloading the user
-      # record) for 'RemoteTokenRefresh' (default 5 minutes).
-      # Possible todo:
-      # Request the actual api_client_auth record from the remote
-      # server in case it wants the token to expire sooner.
-      auth = ApiClientAuthorization.find_or_create_by(uuid: token_uuid) do |auth|
-        auth.user = user
-        auth.api_client_id = 0
-      end
       # If stored_secret is set, we save stored_secret in the database
       # but return the real secret to the caller. This way, if we end
       # up returning the auth record to the client, they see the same
       # secret they supplied, instead of the HMAC we saved in the
       # database.
       stored_secret = stored_secret || secret
+
+      # We will accept this token (and avoid reloading the user
+      # record) for 'RemoteTokenRefresh' (default 5 minutes).
+      exp = [db_current_time + Rails.configuration.Login.RemoteTokenRefresh,
+             remote_token.andand['expires_at']].compact.min
+      scopes = remote_token.andand['scopes'] || ['all']
+      begin
+        retries ||= 0
+        auth = ApiClientAuthorization.find_or_create_by(uuid: token_uuid) do |auth|
+          auth.user = user
+          auth.api_token = stored_secret
+          auth.api_client_id = 0
+          auth.scopes = scopes
+          auth.expires_at = exp
+        end
+      rescue ActiveRecord::RecordNotUnique
+        Rails.logger.debug("cached remote token #{token_uuid} already exists, retrying...")
+        # Some other request won the race: retry just once before erroring out
+        if (retries += 1) <= 1
+          retry
+        else
+          Rails.logger.warn("cannot find or create cached remote token #{token_uuid}")
+          return nil
+        end
+      end
       auth.update_attributes!(user: user,
                               api_token: stored_secret,
                               api_client_id: 0,
-                              expires_at: Time.now + Rails.configuration.Login.RemoteTokenRefresh)
-      Rails.logger.debug "cached remote token #{token_uuid} with secret #{stored_secret} in local db"
+                              scopes: scopes,
+                              expires_at: exp)
+      Rails.logger.debug "cached remote token #{token_uuid} with secret #{stored_secret} and scopes #{scopes} in local db"
       auth.api_token = secret
       return auth
     end
@@ -383,6 +426,15 @@ class ApiClientAuthorization < ArvadosModel
   end
 
   protected
+
+  def clamp_token_expiration
+    if Rails.configuration.API.MaxTokenLifetime > 0
+      max_token_expiration = db_current_time + Rails.configuration.API.MaxTokenLifetime
+      if (self.new_record? || self.expires_at_changed?) && (self.expires_at.nil? || (self.expires_at > max_token_expiration && !current_user.andand.is_admin))
+        self.expires_at = max_token_expiration
+      end
+    end
+  end
 
   def permission_to_create
     current_user.andand.is_admin or (current_user.andand.id == self.user_id)

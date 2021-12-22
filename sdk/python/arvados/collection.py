@@ -1261,6 +1261,7 @@ class Collection(RichCollectionBase):
                  apiconfig=None,
                  block_manager=None,
                  replication_desired=None,
+                 storage_classes_desired=None,
                  put_threads=None):
         """Collection constructor.
 
@@ -1293,12 +1294,22 @@ class Collection(RichCollectionBase):
           configuration applies. If not None, this value will also be used
           for determining the number of block copies being written.
 
+        :storage_classes_desired:
+          A list of storage class names where to upload the data. If None,
+          the keep client is expected to store the data into the cluster's
+          default storage class(es).
+
         """
+
+        if storage_classes_desired and type(storage_classes_desired) is not list:
+            raise errors.ArgumentError("storage_classes_desired must be list type.")
+
         super(Collection, self).__init__(parent)
         self._api_client = api_client
         self._keep_client = keep_client
         self._block_manager = block_manager
         self.replication_desired = replication_desired
+        self._storage_classes_desired = storage_classes_desired
         self.put_threads = put_threads
 
         if apiconfig:
@@ -1333,8 +1344,11 @@ class Collection(RichCollectionBase):
 
             try:
                 self._populate()
-            except (IOError, errors.SyntaxError) as e:
-                raise errors.ArgumentError("Error processing manifest text: %s", e)
+            except errors.SyntaxError as e:
+                raise errors.ArgumentError("Error processing manifest text: %s", str(e)) from None
+
+    def storage_classes_desired(self):
+        return self._storage_classes_desired or []
 
     def root_collection(self):
         return self
@@ -1410,7 +1424,7 @@ class Collection(RichCollectionBase):
             copies = (self.replication_desired or
                       self._my_api()._rootDesc.get('defaultCollectionReplication',
                                                    2))
-            self._block_manager = _BlockManager(self._my_keep(), copies=copies, put_threads=self.put_threads, num_retries=self.num_retries)
+            self._block_manager = _BlockManager(self._my_keep(), copies=copies, put_threads=self.put_threads, num_retries=self.num_retries, storage_classes_func=self.storage_classes_desired)
         return self._block_manager
 
     def _remember_api_response(self, response):
@@ -1431,9 +1445,11 @@ class Collection(RichCollectionBase):
         self._manifest_text = self._api_response['manifest_text']
         self._portable_data_hash = self._api_response['portable_data_hash']
         # If not overriden via kwargs, we should try to load the
-        # replication_desired from the API server
+        # replication_desired and storage_classes_desired from the API server
         if self.replication_desired is None:
             self.replication_desired = self._api_response.get('replication_desired', None)
+        if self._storage_classes_desired is None:
+            self._storage_classes_desired = self._api_response.get('storage_classes_desired', None)
 
     def _populate(self):
         if self._manifest_text is None:
@@ -1530,7 +1546,8 @@ class Collection(RichCollectionBase):
              storage_classes=None,
              trash_at=None,
              merge=True,
-             num_retries=None):
+             num_retries=None,
+             preserve_version=False):
         """Save collection to an existing collection record.
 
         Commit pending buffer blocks to Keep, merge with remote record (if
@@ -1560,24 +1577,38 @@ class Collection(RichCollectionBase):
         :num_retries:
           Retry count on API calls (if None,  use the collection default)
 
+        :preserve_version:
+          If True, indicate that the collection content being saved right now
+          should be preserved in a version snapshot if the collection record is
+          updated in the future. Requires that the API server has
+          Collections.CollectionVersioning enabled, if not, setting this will
+          raise an exception.
+
         """
         if properties and type(properties) is not dict:
             raise errors.ArgumentError("properties must be dictionary type.")
 
         if storage_classes and type(storage_classes) is not list:
             raise errors.ArgumentError("storage_classes must be list type.")
+        if storage_classes:
+            self._storage_classes_desired = storage_classes
 
         if trash_at and type(trash_at) is not datetime.datetime:
             raise errors.ArgumentError("trash_at must be datetime type.")
 
+        if preserve_version and not self._my_api().config()['Collections'].get('CollectionVersioning', False):
+            raise errors.ArgumentError("preserve_version is not supported when CollectionVersioning is not enabled.")
+
         body={}
         if properties:
             body["properties"] = properties
-        if storage_classes:
-            body["storage_classes_desired"] = storage_classes
+        if self.storage_classes_desired():
+            body["storage_classes_desired"] = self.storage_classes_desired()
         if trash_at:
             t = trash_at.strftime("%Y-%m-%dT%H:%M:%S.%fZ")
             body["trash_at"] = t
+        if preserve_version:
+            body["preserve_version"] = preserve_version
 
         if not self.committed():
             if self._has_remote_blocks:
@@ -1623,7 +1654,8 @@ class Collection(RichCollectionBase):
                  storage_classes=None,
                  trash_at=None,
                  ensure_unique_name=False,
-                 num_retries=None):
+                 num_retries=None,
+                 preserve_version=False):
         """Save collection to a new collection record.
 
         Commit pending buffer blocks to Keep and, when create_collection_record
@@ -1662,6 +1694,13 @@ class Collection(RichCollectionBase):
         :num_retries:
           Retry count on API calls (if None,  use the collection default)
 
+        :preserve_version:
+          If True, indicate that the collection content being saved right now
+          should be preserved in a version snapshot if the collection record is
+          updated in the future. Requires that the API server has
+          Collections.CollectionVersioning enabled, if not, setting this will
+          raise an exception.
+
         """
         if properties and type(properties) is not dict:
             raise errors.ArgumentError("properties must be dictionary type.")
@@ -1672,10 +1711,16 @@ class Collection(RichCollectionBase):
         if trash_at and type(trash_at) is not datetime.datetime:
             raise errors.ArgumentError("trash_at must be datetime type.")
 
+        if preserve_version and not self._my_api().config()['Collections'].get('CollectionVersioning', False):
+            raise errors.ArgumentError("preserve_version is not supported when CollectionVersioning is not enabled.")
+
         if self._has_remote_blocks:
             # Copy any remote blocks to the local cluster.
             self._copy_remote_blocks(remote_blocks={})
             self._has_remote_blocks = False
+
+        if storage_classes:
+            self._storage_classes_desired = storage_classes
 
         self._my_block_manager().commit_all()
         text = self.manifest_text(strip=False)
@@ -1692,11 +1737,13 @@ class Collection(RichCollectionBase):
                 body["owner_uuid"] = owner_uuid
             if properties:
                 body["properties"] = properties
-            if storage_classes:
-                body["storage_classes_desired"] = storage_classes
+            if self.storage_classes_desired():
+                body["storage_classes_desired"] = self.storage_classes_desired()
             if trash_at:
                 t = trash_at.strftime("%Y-%m-%dT%H:%M:%S.%fZ")
                 body["trash_at"] = t
+            if preserve_version:
+                body["preserve_version"] = preserve_version
 
             self._remember_api_response(self._my_api().collections().create(ensure_unique_name=ensure_unique_name, body=body).execute(num_retries=num_retries))
             text = self._api_response["manifest_text"]
@@ -1769,7 +1816,13 @@ class Collection(RichCollectionBase):
                             self.find_or_create(os.path.join(stream_name, name[:-2]), COLLECTION)
                     else:
                         filepath = os.path.join(stream_name, name)
-                        afile = self.find_or_create(filepath, FILE)
+                        try:
+                            afile = self.find_or_create(filepath, FILE)
+                        except IOError as e:
+                            if e.errno == errno.ENOTDIR:
+                                raise errors.SyntaxError("Dir part of %s conflicts with file of the same name.", filepath) from None
+                            else:
+                                raise e from None
                         if isinstance(afile, ArvadosFile):
                             afile.add_segment(blocks, pos, size)
                         else:

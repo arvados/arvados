@@ -64,46 +64,6 @@ class GroupsTest < ActionDispatch::IntegrationTest
     end
   end
 
-  [
-    ['Collection_', true],            # collections and pipelines templates
-    ['hash', true],                   # pipeline templates
-    ['fa7aeb5140e2848d39b', false],   # script_parameter of pipeline instances
-    ['fa7aeb5140e2848d39b:*', true],  # script_parameter of pipeline instances
-    ['project pipeline', true],       # finds "Completed pipeline in A Project"
-    ['project pipeli:*', true],       # finds "Completed pipeline in A Project"
-    ['proje pipeli:*', false],        # first word is incomplete, so no prefix match
-    ['no-such-thing', false],         # script_parameter of pipeline instances
-  ].each do |search_filter, expect_results|
-    test "full text search of group-owned objects for #{search_filter}" do
-      get "/arvados/v1/groups/contents",
-        params: {
-          id: groups(:aproject).uuid,
-          limit: 5,
-          :filters => [['any', '@@', search_filter]].to_json
-        },
-        headers: auth(:active)
-      assert_response :success
-      if expect_results
-        refute_empty json_response['items']
-        json_response['items'].each do |item|
-          assert item['uuid']
-          assert_equal groups(:aproject).uuid, item['owner_uuid']
-        end
-      else
-        assert_empty json_response['items']
-      end
-    end
-  end
-
-  test "full text search is not supported for individual columns" do
-    get "/arvados/v1/groups/contents",
-      params: {
-        :filters => [['name', '@@', 'Private']].to_json
-      },
-      headers: auth(:active)
-    assert_response 422
-  end
-
   test "group contents with include trash collections" do
     get "/arvados/v1/groups/contents",
       params: {
@@ -176,6 +136,26 @@ class GroupsTest < ActionDispatch::IntegrationTest
       found_projects[g['uuid']] = g
     end
     assert_equal true, found_projects.include?(groups(:starred_and_shared_active_user_project).uuid)
+  end
+
+  test 'count none works with offset' do
+    first_results = nil
+    (0..10).each do |offset|
+      get "/arvados/v1/groups/contents", params: {
+        id: groups(:aproject).uuid,
+        offset: offset,
+        format: :json,
+        order: :uuid,
+        count: :none,
+      }, headers: auth(:active)
+      assert_response :success
+      assert_nil json_response['items_available']
+      if first_results.nil?
+        first_results = json_response['items']
+      else
+        assert_equal first_results[offset]['uuid'], json_response['items'][0]['uuid']
+      end
+    end
   end
 end
 

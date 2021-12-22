@@ -155,51 +155,6 @@ class ArvadosModelTest < ActiveSupport::TestCase
     end
   end
 
-  test "full text search index exists on models" do
-    indexes = {}
-    conn = ActiveRecord::Base.connection
-    conn.exec_query("SELECT i.relname as indname,
-      i.relowner as indowner,
-      idx.indrelid::regclass::text as table,
-      am.amname as indam,
-      idx.indkey,
-      ARRAY(
-            SELECT pg_get_indexdef(idx.indexrelid, k + 1, true)
-                   FROM generate_subscripts(idx.indkey, 1) as k
-                   ORDER BY k
-                   ) as keys,
-      idx.indexprs IS NOT NULL as indexprs,
-      idx.indpred IS NOT NULL as indpred
-      FROM   pg_index as idx
-      JOIN   pg_class as i
-      ON     i.oid = idx.indexrelid
-      JOIN   pg_am as am
-      ON     i.relam = am.oid
-      JOIN   pg_namespace as ns
-      ON     ns.oid = i.relnamespace
-      AND    ns.nspname = ANY(current_schemas(false))").each do |idx|
-      if idx['keys'].match(/to_tsvector/)
-        indexes[idx['table']] ||= []
-        indexes[idx['table']] << idx
-      end
-    end
-    fts_tables =  ["collections", "container_requests", "groups", "jobs",
-                   "pipeline_instances", "pipeline_templates", "workflows"]
-    fts_tables.each do |table|
-      table_class = table.classify.constantize
-      if table_class.respond_to?('full_text_searchable_columns')
-        expect = table_class.full_text_searchable_columns
-        ok = false
-        indexes[table].andand.each do |idx|
-          if expect == idx['keys'].scan(/COALESCE\(([A-Za-z_]+)/).flatten
-            ok = true
-          end
-        end
-        assert ok, "#{table} has no full-text index\nexpect: #{expect.inspect}\nfound: #{indexes[table].inspect}"
-      end
-    end
-  end
-
   [
     %w[collections collections_trgm_text_search_idx],
     %w[container_requests container_requests_trgm_text_search_idx],

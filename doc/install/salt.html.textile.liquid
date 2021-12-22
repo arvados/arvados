@@ -1,7 +1,7 @@
 ---
 layout: default
 navsection: installguide
-title: Salt prerequisites
+title: Planning and prerequisites
 ...
 {% comment %}
 Copyright (C) The Arvados Authors. All rights reserved.
@@ -10,20 +10,109 @@ SPDX-License-Identifier: CC-BY-SA-3.0
 {% endcomment %}
 
 # "Introduction":#introduction
-# "Choose an installation method":#installmethod
+# "Provisioning Arvados with Saltstack":#provisioning_arvados
+# "The provisioning tool files and directories":#provisioning_tool_files and directories
+# "Choose an Arvados installation configuration":#choose_configuration
+## "Further customization of the installation (modifying the salt pillars and states)":#further_customization
+# "Dump the configuration files created with the provision script":#dump_provision_config
+# "Add the Arvados formula to your Saltstack infrastructure":#add_formula_to_saltstack
 
 h2(#introduction). Introduction
 
-To ease the installation of the various Arvados components, we have developed a "Saltstack":https://www.saltstack.com/ 's "arvados-formula":https://github.com/saltstack-formulas/arvados-formula which can help you get an Arvados cluster up and running.
+{% include 'branchname' %}
 
-Saltstack is a Python-based, open-source software for event-driven IT automation, remote task execution, and configuration management. It can be used in a master/minion setup or master-less.
+To ease the installation of the various Arvados components, we have developed a "Saltstack":https://www.saltstack.com/ 's "arvados-formula":https://git.arvados.org/arvados-formula.git which can help you get an Arvados cluster up and running.
 
-This is a package-based installation method. The Salt scripts are available from the "tools/salt-install":https://github.com/arvados/arvados/tree/master/tools/salt-install directory in the Arvados git repository.
+Saltstack is a Python-based, open-source software for event-driven IT automation, remote task execution, and configuration management. It can be used in a _master/minion_ setup (where a master node orchestrates and coordinates the configuration of nodes in an infrastructure) or <i>master-less</i>, where Saltstack is run locally in a node, with no communication with a master node.
 
-h2(#installmethod). Choose an installation method
+Similar to other configuration management tools like Puppet, Ansible or Chef, Saltstack uses files named <i>states</i> to describe the tasks that will be performed on a node to take it to a desired state, and <i>pillars</i> to configure variables passed to the states, adding flexibility to the tool.
 
-The salt formulas can be used in different ways. Choose one of these three options to install Arvados:
+You don't need to be running a Saltstack infrastructure to install Arvados: we wrote a provisioning script that will take care of setting up Saltstack in the node/s where you want to install Arvados and run a <i>master-less installer</i>. Once Arvados is installed, you can either uninstall Saltstack and its files or you can keep them, to modify/maintain your Arvados installation in the future.
 
-* "Use Vagrant to install Arvados in a virtual machine":salt-vagrant.html
-* "Arvados on a single host":salt-single-host.html
-* "Arvados across multiple hosts":salt-multi-host.html
+This is a package-based installation method.
+
+
+
+h2(#provisioning_arvados). Provisioning Arvados with Saltstack
+
+The "tools/salt-install":https://git.arvados.org/arvados.git/tree/{{ branchname }}:/tools/salt-install directory in the Arvados git repository contains a script that you can run in the node/s where you want to install Arvados' components (the @provision.sh@ script) and a few configuration examples for different setups, that you can use to customize your installation.
+
+The @provision.sh@ script will help you deploy Arvados by preparing your environment to be able to run the installer, then running it. The actual installer is located at "arvados-formula":https://git.arvados.org/arvados-formula.git/tree/refs/heads/{{ branchname }} and will be cloned during the running of the @provision.sh@ script. The installer is built using "Saltstack":https://saltproject.io/ and @provision.sh@ performs the install using master-less mode.
+
+After setting up a few variables in a config file and copying a directory from the examples (see below), you'll be ready to run it and get Arvados deployed.
+
+
+
+h2(#provisioning_tool_files and directories). The provisioning tool files and directories
+
+The "tools/salt-install":https://git.arvados.org/arvados.git/tree/{{ branchname }}:/tools/salt-install directory contains the following elements:
+
+* The @provision.sh@ script itself. You don't need to modify it.
+* A few @local.params.*@ example files. You will need to copy one of these files to a file named @local.params@, which is the main configuration file for the @provision.sh@ script.
+* A few @config_examples/*@ directories, with pillars and states templates. You need to copy one of these to a @local_config_dir@ directory, which will be used by the @provision.sh@ script to setup your nodes.
+* A @tests@ directory, with a simple workflow and arvados CLI commands you can run to tests your cluster is capable of running a CWL workflow, upload files and create a user.
+
+Once you decide on an Arvados architecture you want to apply, you need to copy one of the example configuration files and directory, and edit them to suit your needs.
+
+Ie., for a multi-hosts / multi-hostnames in AWS, you need to do this:
+<notextile>
+<pre><code>cp local.params.example.multiple_hosts local.params
+cp -r config_examples/multi_host/aws local_config_dir
+</code></pre>
+</notextile>
+
+These local files will be preserved if you upgrade the repository.
+
+
+
+h2(#choose_configuration). Choose an Arvados installation configuration
+
+The configuration examples provided with this installer are suitable to install Arvados with the following distribution of hosts/roles:
+
+* All roles on a single host, which can be done in two fashions:
+** Using a single hostname, assigning <i>a different port (other than 443) for each user-facing service</i>: This choice is easier to setup, but the user will need to know the port/s for the different services she wants to connect to. See "Single host install using the provision.sh script":salt-single-host.html for more details.
+** Using multiple hostnames on the same IP: this setup involves a few extra steps but each service will have a meaningful hostname so it will make easier to access them later. See "Single host install using the provision.sh script":salt-single-host.html for more details.
+* Roles distributed over multiple AWS instances, using multiple hostnames. This example can be adapted to use on-prem too. See "Multiple hosts installation":salt-multi-host.html for more details.
+
+Once you decide which of these choices you prefer, copy one of the example configuration files and directory, and edit them to suit your needs.
+
+Ie, if you decide to install Arvados on a single host using multiple hostnames:
+<notextile>
+<pre><code>cp local.params.example.single_host_multiple_hostnames local.params
+cp -r config_examples/single_host/multiple_hostnames local_config_dir
+</code></pre>
+</notextile>
+
+Edit the variables in the <i>local.params</i> file.
+
+
+
+h3(#further_customization). Further customization of the installation (modifying the salt pillars and states)
+
+If you want or need further customization, you can edit the Saltstack pillars and states files. Pay particular attention to the <i>pillars/arvados.sls</i> one. Any extra <i>state</i> file you add under <i>local_config_dir/states</i> will be added to the salt run and applied to the host.
+
+
+
+h2(#dump_provision_config). Dump the configuration files created with the provision script
+
+As mentioned above, the @provision.sh@ script helps you create a set of configuration files to be used by the Saltstack @arvados-formula@ and other helper formulas.
+
+Is it possible you want to inspect these files before deploying them or use them within your existing Saltstack environment. In order to get a rendered version of these files, the @provision.sh@ script has a option, @--dump-config@, which takes a directory as mandatory parameter. When this option it used, the script will create the specified directory and write the pillars, states and tests files so you can inspect them.
+
+Ie.
+<notextile>
+<pre><code>./provision.sh --dump-config ./config_dump --role workbench
+</code></pre>
+</notextile>
+
+will dump the configuration files used to install a workbench node under the @config_dump@ directory.
+
+These files are also suitable to be used in your existing Saltstack environment (see below).
+
+
+
+h2.(#add_formula_to_saltstack). Add the Arvados formula to your Saltstack infrastructure
+
+If you already have a Saltstack environment you can add the arvados-formula to your Saltstack master and apply the corresponding states and pillars to the nodes on your infrastructure that will be used to run Arvados.
+
+The @--dump-config@ option described above writes a @pillars/top.sls@ and @salt/top.sls@ files that you can use as a guide to configure your infrastructure.

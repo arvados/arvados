@@ -347,8 +347,16 @@ class PermissionsTest < ActionDispatch::IntegrationTest
       headers: auth(:active)
     assert_response 404
 
-    # add some permissions, including can_manage
-    # permission for user :active
+    get "/arvados/v1/links",
+        params: {
+          :filters => [["link_class", "=", "permission"], ["head_uuid", "=", groups(:public).uuid]].to_json
+        },
+      headers: auth(:active)
+    assert_response :success
+    assert_equal [], json_response['items']
+
+    ### add some permissions, including can_manage
+    ### permission for user :active
     post "/arvados/v1/links",
       params: {
         :format => :json,
@@ -379,6 +387,27 @@ class PermissionsTest < ActionDispatch::IntegrationTest
     assert_response :success
     can_write_uuid = json_response['uuid']
 
+    # Still should not be able read these permission links
+    get "/arvados/v1/permissions/#{groups(:public).uuid}",
+      params: nil,
+      headers: auth(:active)
+    assert_response 404
+
+    get "/arvados/v1/links",
+        params: {
+          :filters => [["link_class", "=", "permission"], ["head_uuid", "=", groups(:public).uuid]].to_json
+        },
+      headers: auth(:active)
+    assert_response :success
+    assert_equal [], json_response['items']
+
+    # Shouldn't be able to read links directly either
+    get "/arvados/v1/links/#{can_read_uuid}",
+        params: {},
+      headers: auth(:active)
+    assert_response 404
+
+    ### Now add a can_manage link
     post "/arvados/v1/links",
       params: {
         :format => :json,
@@ -394,8 +423,8 @@ class PermissionsTest < ActionDispatch::IntegrationTest
     assert_response :success
     can_manage_uuid = json_response['uuid']
 
-    # Now user :active should be able to retrieve permissions
-    # on group :public.
+    # user :active should be able to retrieve permissions
+    # on group :public using get_permissions
     get("/arvados/v1/permissions/#{groups(:public).uuid}",
       params: { :format => :json },
       headers: auth(:active))
@@ -405,6 +434,52 @@ class PermissionsTest < ActionDispatch::IntegrationTest
     assert_includes perm_uuids, can_read_uuid, "can_read_uuid not found"
     assert_includes perm_uuids, can_write_uuid, "can_write_uuid not found"
     assert_includes perm_uuids, can_manage_uuid, "can_manage_uuid not found"
+
+    # user :active should be able to retrieve permissions
+    # on group :public using link list
+    get "/arvados/v1/links",
+        params: {
+          :filters => [["link_class", "=", "permission"], ["head_uuid", "=", groups(:public).uuid]].to_json
+        },
+      headers: auth(:active)
+    assert_response :success
+
+    perm_uuids = json_response['items'].map { |item| item['uuid'] }
+    assert_includes perm_uuids, can_read_uuid, "can_read_uuid not found"
+    assert_includes perm_uuids, can_write_uuid, "can_write_uuid not found"
+    assert_includes perm_uuids, can_manage_uuid, "can_manage_uuid not found"
+
+    # Should be able to read links directly too
+    get "/arvados/v1/links/#{can_read_uuid}",
+        params: {},
+      headers: auth(:active)
+    assert_response :success
+
+    ### Now delete the can_manage link
+    delete "/arvados/v1/links/#{can_manage_uuid}",
+      params: nil,
+      headers: auth(:active)
+    assert_response :success
+
+    # Should not be able read these permission links again
+    get "/arvados/v1/permissions/#{groups(:public).uuid}",
+      params: nil,
+      headers: auth(:active)
+    assert_response 404
+
+    get "/arvados/v1/links",
+        params: {
+          :filters => [["link_class", "=", "permission"], ["head_uuid", "=", groups(:public).uuid]].to_json
+        },
+      headers: auth(:active)
+    assert_response :success
+    assert_equal [], json_response['items']
+
+    # Should not be able to read links directly either
+    get "/arvados/v1/links/#{can_read_uuid}",
+        params: {},
+      headers: auth(:active)
+    assert_response 404
   end
 
   test "get_permissions returns 404 for nonexistent uuid" do

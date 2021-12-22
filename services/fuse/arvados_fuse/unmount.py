@@ -159,7 +159,7 @@ def unmount(path, subtype=None, timeout=10, recursive=False):
         if attempted:
             # Report buffered stderr from previous call to fusermount,
             # now that we know it didn't succeed.
-            sys.stderr.write(fusermount_output)
+            sys.stderr.buffer.write(fusermount_output)
 
             delay = 1
             if deadline:

@@ -143,3 +143,13 @@ table(table table-bordered table-condensed).
 |_. Argument |_. Type |_. Description |_. Location |_. Example |
 {background:#ccffcc}.|uuid|string|The UUID of the Link in question.|path||
 |link|object||query||
+
+h3. get_permissions
+
+Get all permission links that point directly to given UUID (in the head_uuid field).  The requesting user must have @can_manage@ permission or be an admin.
+
+Arguments:
+
+table(table table-bordered table-condensed).
+|_. Argument |_. Type |_. Description |_. Location |_. Example |
+{background:#ccffcc}.|uuid|string|The UUID of the object.|path||

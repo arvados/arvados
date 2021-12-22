@@ -5,69 +5,59 @@
 package arvados
 
 import (
-	"bytes"
 	"encoding/json"
-	"testing"
 	"time"
+
+	check "gopkg.in/check.v1"
 )
 
-func TestMarshalFiltersWithNanoseconds(t *testing.T) {
+var _ = check.Suite(&filterEncodingSuite{})
+
+type filterEncodingSuite struct{}
+
+func (s *filterEncodingSuite) TestMarshalNanoseconds(c *check.C) {
 	t0 := time.Now()
 	t0str := t0.Format(time.RFC3339Nano)
 	buf, err := json.Marshal([]Filter{
 		{Attr: "modified_at", Operator: "=", Operand: t0}})
-	if err != nil {
-		t.Fatal(err)
-	}
-	if expect := []byte(`[["modified_at","=","` + t0str + `"]]`); 0 != bytes.Compare(buf, expect) {
-		t.Errorf("Encoded as %q, expected %q", buf, expect)
-	}
+	c.Assert(err, check.IsNil)
+	c.Check(string(buf), check.Equals, `[["modified_at","=","`+t0str+`"]]`)
 }
 
-func TestMarshalFiltersWithNil(t *testing.T) {
+func (s *filterEncodingSuite) TestMarshalNil(c *check.C) {
 	buf, err := json.Marshal([]Filter{
 		{Attr: "modified_at", Operator: "=", Operand: nil}})
-	if err != nil {
-		t.Fatal(err)
-	}
-	if expect := []byte(`[["modified_at","=",null]]`); 0 != bytes.Compare(buf, expect) {
-		t.Errorf("Encoded as %q, expected %q", buf, expect)
-	}
+	c.Assert(err, check.IsNil)
+	c.Check(string(buf), check.Equals, `[["modified_at","=",null]]`)
 }
 
-func TestUnmarshalFiltersWithNil(t *testing.T) {
+func (s *filterEncodingSuite) TestUnmarshalNil(c *check.C) {
 	buf := []byte(`["modified_at","=",null]`)
-	f := &Filter{}
+	var f Filter
 	err := f.UnmarshalJSON(buf)
-	if err != nil {
-		t.Fatal(err)
-	}
-	expect := Filter{Attr: "modified_at", Operator: "=", Operand: nil}
-	if f.Attr != expect.Attr || f.Operator != expect.Operator || f.Operand != expect.Operand {
-		t.Errorf("Decoded as %q, expected %q", f, expect)
-	}
+	c.Assert(err, check.IsNil)
+	c.Check(f, check.DeepEquals, Filter{Attr: "modified_at", Operator: "=", Operand: nil})
 }
 
-func TestMarshalFiltersWithBoolean(t *testing.T) {
+func (s *filterEncodingSuite) TestMarshalBoolean(c *check.C) {
 	buf, err := json.Marshal([]Filter{
 		{Attr: "is_active", Operator: "=", Operand: true}})
-	if err != nil {
-		t.Fatal(err)
-	}
-	if expect := []byte(`[["is_active","=",true]]`); 0 != bytes.Compare(buf, expect) {
-		t.Errorf("Encoded as %q, expected %q", buf, expect)
-	}
+	c.Assert(err, check.IsNil)
+	c.Check(string(buf), check.Equals, `[["is_active","=",true]]`)
 }
 
-func TestUnmarshalFiltersWithBoolean(t *testing.T) {
+func (s *filterEncodingSuite) TestUnmarshalBoolean(c *check.C) {
 	buf := []byte(`["is_active","=",true]`)
-	f := &Filter{}
+	var f Filter
 	err := f.UnmarshalJSON(buf)
-	if err != nil {
-		t.Fatal(err)
-	}
-	expect := Filter{Attr: "is_active", Operator: "=", Operand: true}
-	if f.Attr != expect.Attr || f.Operator != expect.Operator || f.Operand != expect.Operand {
-		t.Errorf("Decoded as %q, expected %q", f, expect)
-	}
+	c.Assert(err, check.IsNil)
+	c.Check(f, check.DeepEquals, Filter{Attr: "is_active", Operator: "=", Operand: true})
+}
+
+func (s *filterEncodingSuite) TestUnmarshalBooleanExpression(c *check.C) {
+	buf := []byte(`"(foo < bar)"`)
+	var f Filter
+	err := f.UnmarshalJSON(buf)
+	c.Assert(err, check.IsNil)
+	c.Check(f, check.DeepEquals, Filter{Attr: "(foo < bar)", Operator: "=", Operand: true})
 }

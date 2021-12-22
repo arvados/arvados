@@ -28,46 +28,37 @@ rescue LoadError
   # configured by application.yml (i.e., here!) instead.
 end
 
-if (File.exist?(File.expand_path '../omniauth.rb', __FILE__) and
-    not defined? WARNED_OMNIAUTH_CONFIG)
-  Rails.logger.warn <<-EOS
-DEPRECATED CONFIGURATION:
- Please move your SSO provider config into config/application.yml
- and delete config/initializers/omniauth.rb.
-EOS
-  # Real values will be copied from globals by omniauth_init.rb. For
-  # now, assign some strings so the generic *.yml config loader
-  # doesn't overwrite them or complain that they're missing.
-  Rails.configuration.Login["SSO"]["ProviderAppID"] = 'xxx'
-  Rails.configuration.Login["SSO"]["ProviderAppSecret"] = 'xxx'
-  Rails.configuration.Services["SSO"]["ExternalURL"] = '//xxx'
-  WARNED_OMNIAUTH_CONFIG = true
-end
-
 # Load the defaults, used by config:migrate and fallback loading
 # legacy application.yml
-Open3.popen2("arvados-server", "config-dump", "-config=-", "-skip-legacy") do |stdin, stdout, status_thread|
-  stdin.write("Clusters: {xxxxx: {}}")
-  stdin.close
-  confs = YAML.load(stdout, deserialize_symbols: false)
-  clusterID, clusterConfig = confs["Clusters"].first
-  $arvados_config_defaults = clusterConfig
-  $arvados_config_defaults["ClusterID"] = clusterID
+defaultYAML, stderr, status = Open3.capture3("arvados-server", "config-dump", "-config=-", "-skip-legacy", stdin_data: "Clusters: {xxxxx: {}}")
+if !status.success?
+  puts stderr
+  raise "error loading config: #{status}"
 end
+confs = YAML.load(defaultYAML, deserialize_symbols: false)
+clusterID, clusterConfig = confs["Clusters"].first
+$arvados_config_defaults = clusterConfig
+$arvados_config_defaults["ClusterID"] = clusterID
 
-# Load the global config file
-Open3.popen2("arvados-server", "config-dump", "-skip-legacy") do |stdin, stdout, status_thread|
-  confs = YAML.load(stdout, deserialize_symbols: false)
-  if confs && !confs.empty?
-    # config-dump merges defaults with user configuration, so every
-    # key should be set.
-    clusterID, clusterConfig = confs["Clusters"].first
-    $arvados_config_global = clusterConfig
-    $arvados_config_global["ClusterID"] = clusterID
-  else
-    # config-dump failed, assume we will be loading from legacy
-    # application.yml, initialize with defaults.
-    $arvados_config_global = $arvados_config_defaults.deep_dup
+if ENV["ARVADOS_CONFIG"] == "none"
+  # Don't load config. This magic value is set by packaging scripts so
+  # they can run "rake assets:precompile" without a real config.
+  $arvados_config_global = $arvados_config_defaults.deep_dup
+else
+  # Load the global config file
+  Open3.popen2("arvados-server", "config-dump", "-skip-legacy") do |stdin, stdout, status_thread|
+    confs = YAML.load(stdout, deserialize_symbols: false)
+    if confs && !confs.empty?
+      # config-dump merges defaults with user configuration, so every
+      # key should be set.
+      clusterID, clusterConfig = confs["Clusters"].first
+      $arvados_config_global = clusterConfig
+      $arvados_config_global["ClusterID"] = clusterID
+    else
+      # config-dump failed, assume we will be loading from legacy
+      # application.yml, initialize with defaults.
+      $arvados_config_global = $arvados_config_defaults.deep_dup
+    end
   end
 end
 
@@ -92,6 +83,8 @@ arvcfg.declare_config "API.DisabledAPIs", Hash, :disable_api_methods, ->(cfg, k,
 arvcfg.declare_config "API.MaxRequestSize", Integer, :max_request_size
 arvcfg.declare_config "API.MaxIndexDatabaseRead", Integer, :max_index_database_read
 arvcfg.declare_config "API.MaxItemsPerResponse", Integer, :max_items_per_response
+arvcfg.declare_config "API.MaxTokenLifetime", ActiveSupport::Duration
+arvcfg.declare_config "API.RequestTimeout", ActiveSupport::Duration
 arvcfg.declare_config "API.AsyncPermissionsUpdateInterval", ActiveSupport::Duration, :async_permissions_update_interval
 arvcfg.declare_config "Users.AutoSetupNewUsers", Boolean, :auto_setup_new_users
 arvcfg.declare_config "Users.AutoSetupNewUsersWithVmUUID", String, :auto_setup_new_users_with_vm_uuid
@@ -104,16 +97,15 @@ arvcfg.declare_config "Users.UserProfileNotificationAddress", String, :user_prof
 arvcfg.declare_config "Users.AdminNotifierEmailFrom", String, :admin_notifier_email_from
 arvcfg.declare_config "Users.EmailSubjectPrefix", String, :email_subject_prefix
 arvcfg.declare_config "Users.UserNotifierEmailFrom", String, :user_notifier_email_from
+arvcfg.declare_config "Users.UserNotifierEmailBcc", Hash
 arvcfg.declare_config "Users.NewUserNotificationRecipients", Hash, :new_user_notification_recipients, ->(cfg, k, v) { arrayToHash cfg, "Users.NewUserNotificationRecipients", v }
 arvcfg.declare_config "Users.NewInactiveUserNotificationRecipients", Hash, :new_inactive_user_notification_recipients, method(:arrayToHash)
-arvcfg.declare_config "Login.SSO.ProviderAppSecret", String, :sso_app_secret
-arvcfg.declare_config "Login.SSO.ProviderAppID", String, :sso_app_id
+arvcfg.declare_config "Users.RoleGroupsVisibleToAll", Boolean
 arvcfg.declare_config "Login.LoginCluster", String
 arvcfg.declare_config "Login.TrustedClients", Hash
 arvcfg.declare_config "Login.RemoteTokenRefresh", ActiveSupport::Duration
 arvcfg.declare_config "Login.TokenLifetime", ActiveSupport::Duration
 arvcfg.declare_config "TLS.Insecure", Boolean, :sso_insecure
-arvcfg.declare_config "Services.SSO.ExternalURL", String, :sso_provider_url
 arvcfg.declare_config "AuditLogs.MaxAge", ActiveSupport::Duration, :max_audit_log_age
 arvcfg.declare_config "AuditLogs.MaxDeleteBatch", Integer, :max_audit_log_delete_batch
 arvcfg.declare_config "AuditLogs.UnloggedAttributes", Hash, :unlogged_attributes, ->(cfg, k, v) { arrayToHash cfg, "AuditLogs.UnloggedAttributes", v }
@@ -123,7 +115,7 @@ arvcfg.declare_config "Collections.DefaultTrashLifetime", ActiveSupport::Duratio
 arvcfg.declare_config "Collections.CollectionVersioning", Boolean, :collection_versioning
 arvcfg.declare_config "Collections.PreserveVersionIfIdle", ActiveSupport::Duration, :preserve_version_if_idle
 arvcfg.declare_config "Collections.TrashSweepInterval", ActiveSupport::Duration, :trash_sweep_interval
-arvcfg.declare_config "Collections.BlobSigningKey", NonemptyString, :blob_signing_key
+arvcfg.declare_config "Collections.BlobSigningKey", String, :blob_signing_key
 arvcfg.declare_config "Collections.BlobSigningTTL", ActiveSupport::Duration, :blob_signature_ttl
 arvcfg.declare_config "Collections.BlobSigning", Boolean, :permit_create_collection_with_unsigned_manifest, ->(cfg, k, v) { ConfigLoader.set_cfg cfg, "Collections.BlobSigning", !v }
 arvcfg.declare_config "Collections.ForwardSlashNameSubstitution", String
@@ -181,6 +173,7 @@ arvcfg.declare_config "RemoteClusters", Hash, :remote_hosts, ->(cfg, k, v) {
   ConfigLoader.set_cfg cfg, "RemoteClusters", h
 }
 arvcfg.declare_config "RemoteClusters.*.Proxy", Boolean, :remote_hosts_via_dns
+arvcfg.declare_config "StorageClasses", Hash
 
 dbcfg = ConfigLoader.new
 
@@ -248,6 +241,17 @@ if $arvados_config["Collections"]["DefaultTrashLifetime"] < 86400.seconds then
   raise "default_trash_lifetime is %d, must be at least 86400" % Rails.configuration.Collections.DefaultTrashLifetime
 end
 
+default_storage_classes = []
+$arvados_config["StorageClasses"].each do |cls, cfg|
+  if cfg["Default"]
+    default_storage_classes << cls
+  end
+end
+if default_storage_classes.length == 0
+  default_storage_classes = ["default"]
+end
+$arvados_config["DefaultStorageClasses"] = default_storage_classes.sort
+
 #
 # Special case for test database where there's no database.yml,
 # because the Arvados config.yml doesn't have a concept of multiple
@@ -262,6 +266,15 @@ if ::Rails.env.to_s == "test"
   $arvados_config["PostgreSQL"]["Connection"]["template"] = "template0"
   # Some test cases depend on en_US.UTF-8 collation.
   $arvados_config["PostgreSQL"]["Connection"]["collation"] = "en_US.UTF-8"
+end
+
+if ENV["ARVADOS_CONFIG"] == "none"
+  # We need the postgresql connection URI to be valid, even if we
+  # don't use it.
+  $arvados_config["PostgreSQL"]["Connection"]["host"] = "localhost"
+  $arvados_config["PostgreSQL"]["Connection"]["user"] = "x"
+  $arvados_config["PostgreSQL"]["Connection"]["password"] = "x"
+  $arvados_config["PostgreSQL"]["Connection"]["dbname"] = "x"
 end
 
 if $arvados_config["PostgreSQL"]["Connection"]["password"].empty?

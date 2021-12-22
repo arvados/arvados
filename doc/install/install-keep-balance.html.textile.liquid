@@ -18,13 +18,13 @@ h2(#introduction). Introduction
 
 Keep-balance deletes unreferenced and overreplicated blocks from Keep servers, makes additional copies of underreplicated blocks, and moves blocks into optimal locations as needed (e.g., after adding new servers). See "Balancing Keep servers":{{site.baseurl}}/admin/keep-balance.html for usage details.
 
-Keep-balance can be installed anywhere with network access to Keep services. Typically it runs on the same host as keepproxy.
+Keep-balance can be installed anywhere with network access to Keep services, arvados-controller, and PostgreSQL. Typically it runs on the same host as keepproxy.
 
 *A cluster should have only one instance of keep-balance running at a time.*
 
 {% include 'notebox_begin' %}
 
-If you are installing keep-balance on an existing system with valuable data, you can run keep-balance in "dry run" mode first and review its logs as a precaution. To do this, edit your keep-balance startup script to use the flags @-commit-pulls=false -commit-trash=false@.
+If you are installing keep-balance on an existing system with valuable data, you can run keep-balance in "dry run" mode first and review its logs as a precaution. To do this, edit your keep-balance startup script to use the flags @-commit-pulls=false -commit-trash=false -commit-confirmed-fields=false@.
 
 {% include 'notebox_end' %}
 

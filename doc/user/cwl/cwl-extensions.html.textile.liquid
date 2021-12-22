@@ -24,29 +24,39 @@ For portability, most Arvados extensions should go into the @hints@ section of y
 {% codeblock as yaml %}
 hints:
   arv:RunInSingleContainer: {}
+
   arv:RuntimeConstraints:
     keep_cache: 123456
     outputDirType: keep_output_dir
+
   arv:PartitionRequirement:
     partition: dev_partition
+
   arv:APIRequirement: {}
-  cwltool:LoadListingRequirement:
-    loadListing: shallow_listing
+
   arv:IntermediateOutput:
     outputTTL: 3600
-  arv:ReuseRequirement:
-    enableReuse: false
+
   cwltool:Secrets:
     secrets: [input1, input2]
-  cwltool:TimeLimit:
-    timelimit: 14400
+
   arv:WorkflowRunnerResources:
     ramMin: 2048
     coresMin: 2
     keep_cache: 512
+
   arv:ClusterTarget:
     cluster_id: clsr1
     project_uuid: clsr1-j7d0g-qxc4jcji7n4lafx
+
+  arv:OutputStorageClass:
+    intermediateStorageClass: fast_storage
+    finalStorageClass: robust_storage
+
+  arv:ProcessProperties:
+    processProperties:
+      property1: value1
+      property2: $(inputs.value2)
 {% endcodeblock %}
 
 h2(#RunInSingleContainer). arv:RunInSingleContainer
@@ -89,7 +99,7 @@ Specify desired handling of intermediate output collections.
 table(table table-bordered table-condensed).
 |_. Field |_. Type |_. Description |
 |outputTTL|int|If the value is greater than zero, consider intermediate output collections to be temporary and should be automatically trashed. Temporary collections will be trashed @outputTTL@ seconds after creation.  A value of zero means intermediate output should be retained indefinitely (this is the default behavior).
-Note: arvados-cwl-runner currently does not take workflow dependencies into account when setting the TTL on an intermediate output collection. If the TTL is too short, it is possible for a collection to be trashed before downstream steps that consume it are started.  The recommended minimum value for TTL is the expected duration of the entire the workflow.|
+Note: arvados-cwl-runner currently does not take workflow dependencies into account when setting the TTL on an intermediate output collection. If the TTL is too short, it is possible for a collection to be trashed before downstream steps that consume it are started.  The recommended minimum value for TTL is the expected duration of the entire workflow.|
 
 h2. cwltool:Secrets
 
@@ -120,6 +130,23 @@ table(table table-bordered table-condensed).
 |cluster_id|string|The five-character alphanumeric cluster id (uuid prefix) where a container or subworkflow will execute.  May be an expression.|
 |project_uuid|string|The uuid of the project which will own container request and output of the container.  May be an expression.|
 
+h2(#OutputStorageClass). arv:OutputStorageClass
+
+Specify the "storage class":{{site.baseurl}}/user/topics/storage-classes.html to use for intermediate and final outputs.
+
+table(table table-bordered table-condensed).
+|_. Field |_. Type |_. Description |
+|intermediateStorageClass|string or array of strings|The storage class for output of intermediate steps.  For example, faster "hot" storage.|
+|finalStorageClass_uuid|string or array of strings|The storage class for the final output.  |
+
+h2(#ProcessProperties). arv:ProcessProperties
+
+Specify extra "properties":{{site.baseurl}}/api/methods.html#subpropertyfilters that will be set on container requests created by the workflow.  May be set on a Workflow or a CommandLineTool.  Setting custom properties on a container request simplifies queries to find the workflow run later on.
+
+table(table table-bordered table-condensed).
+|_. Field |_. Type |_. Description |
+|processProperties|key-value map, or list of objects with the fields {propertyName, propertyValue}|The properties that will be set on the container request.  May include expressions that reference `$(inputs)` of the current workflow or tool.|
+
 h2. arv:dockerCollectionPDH
 
 This is an optional extension field appearing on the standard @DockerRequirement@.  It specifies the portable data hash of the Arvados collection containing the Docker image.  If present, it takes precedence over @dockerPull@ or @dockerImageId@.
@@ -134,6 +161,16 @@ requirements:
 h1. Deprecated extensions
 
 The following extensions are deprecated because equivalent features are part of the CWL v1.1 standard.
+
+{% codeblock as yaml %}
+hints:
+  cwltool:LoadListingRequirement:
+    loadListing: shallow_listing
+  arv:ReuseRequirement:
+    enableReuse: false
+  cwltool:TimeLimit:
+    timelimit: 14400
+{% endcodeblock %}
 
 h2. cwltool:LoadListingRequirement
 

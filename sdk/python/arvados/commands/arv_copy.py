@@ -89,10 +89,10 @@ def main():
         help='Perform copy even if the object appears to exist at the remote destination.')
     copy_opts.add_argument(
         '--src', dest='source_arvados',
-        help='The name of the source Arvados instance (required) - points at an Arvados config file. May be either a pathname to a config file, or (for example) "foo" as shorthand for $HOME/.config/arvados/foo.conf.')
+        help='The cluster id of the source Arvados instance. May be either a pathname to a config file, or (for example) "foo" as shorthand for $HOME/.config/arvados/foo.conf.  If not provided, will be inferred from the UUID of the object being copied.')
     copy_opts.add_argument(
         '--dst', dest='destination_arvados',
-        help='The name of the destination Arvados instance (required) - points at an Arvados config file. May be either a pathname to a config file, or (for example) "foo" as shorthand for $HOME/.config/arvados/foo.conf.')
+        help='The name of the destination Arvados instance (required). May be either a pathname to a config file, or (for example) "foo" as shorthand for $HOME/.config/arvados/foo.conf.  If not provided, will use ARVADOS_API_HOST from environment.')
     copy_opts.add_argument(
         '--recursive', dest='recursive', action='store_true',
         help='Recursively copy any dependencies for this object, and subprojects. (default)')
@@ -102,6 +102,9 @@ def main():
     copy_opts.add_argument(
         '--project-uuid', dest='project_uuid',
         help='The UUID of the project at the destination to which the collection or workflow should be copied.')
+    copy_opts.add_argument(
+        '--storage-classes', dest='storage_classes',
+        help='Comma separated list of storage classes to be used when saving data to the destinaton Arvados instance.')
 
     copy_opts.add_argument(
         'object_uuid',
@@ -110,9 +113,12 @@ def main():
     copy_opts.set_defaults(recursive=True)
 
     parser = argparse.ArgumentParser(
-        description='Copy a workflow or collection from one Arvados instance to another.',
+        description='Copy a workflow, collection or project from one Arvados instance to another.  On success, the uuid of the copied object is printed to stdout.',
         parents=[copy_opts, arv_cmd.retry_opt])
     args = parser.parse_args()
+
+    if args.storage_classes:
+        args.storage_classes = [x for x in args.storage_classes.strip().replace(' ', '').split(',') if x]
 
     if args.verbose:
         logger.setLevel(logging.DEBUG)
@@ -155,7 +161,12 @@ def main():
         logger.error("API server returned an error result: {}".format(result))
         exit(1)
 
-    logger.info("")
+    print(result['uuid'])
+
+    if result.get('partial_error'):
+        logger.warning("Warning: created copy with uuid {} but failed to copy some items: {}".format(result['uuid'], result['partial_error']))
+        exit(1)
+
     logger.info("Success: created copy with uuid {}".format(result['uuid']))
     exit(0)
 
@@ -286,8 +297,11 @@ def copy_workflow(wf_uuid, src, dst, args):
     # fetch the workflow from the source instance
     wf = src.workflows().get(uuid=wf_uuid).execute(num_retries=args.retries)
 
+    if not wf["definition"]:
+        logger.warning("Workflow object {} has an empty or null definition, it won't do anything.".format(wf_uuid))
+
     # copy collections and docker images
-    if args.recursive:
+    if args.recursive and wf["definition"]:
         wf_def = yaml.safe_load(wf["definition"])
         if wf_def is not None:
             locations = []
@@ -409,6 +423,9 @@ def create_collection_from(c, src, dst, args):
 
     if not body["name"]:
         body['name'] = "copied from " + collection_uuid
+
+    if args.storage_classes:
+        body['storage_classes_desired'] = args.storage_classes
 
     body['owner_uuid'] = args.project_uuid
 
@@ -563,7 +580,7 @@ def copy_collection(obj_uuid, src, dst, args):
                 if progress_writer:
                     progress_writer.report(obj_uuid, bytes_written, bytes_expected)
                 data = src_keep.get(word)
-                dst_locator = dst_keep.put(data)
+                dst_locator = dst_keep.put(data, classes=(args.storage_classes or []))
                 dst_locators[blockhash] = dst_locator
                 bytes_written += loc.size
             dst_manifest.write(' ')
@@ -674,17 +691,31 @@ def copy_project(obj_uuid, src, dst, owner_uuid, args):
 
     logger.debug('Copying %s to %s', obj_uuid, project_record["uuid"])
 
+
+    partial_error = ""
+
     # Copy collections
-    copy_collections([col["uuid"] for col in arvados.util.list_all(src.collections().list, filters=[["owner_uuid", "=", obj_uuid]])],
-                     src, dst, args)
+    try:
+        copy_collections([col["uuid"] for col in arvados.util.list_all(src.collections().list, filters=[["owner_uuid", "=", obj_uuid]])],
+                         src, dst, args)
+    except Exception as e:
+        partial_error += "\n" + str(e)
 
     # Copy workflows
     for w in arvados.util.list_all(src.workflows().list, filters=[["owner_uuid", "=", obj_uuid]]):
-        copy_workflow(w["uuid"], src, dst, args)
+        try:
+            copy_workflow(w["uuid"], src, dst, args)
+        except Exception as e:
+            partial_error += "\n" + "Error while copying %s: %s" % (w["uuid"], e)
 
     if args.recursive:
         for g in arvados.util.list_all(src.groups().list, filters=[["owner_uuid", "=", obj_uuid]]):
-            copy_project(g["uuid"], src, dst, project_record["uuid"], args)
+            try:
+                copy_project(g["uuid"], src, dst, project_record["uuid"], args)
+            except Exception as e:
+                partial_error += "\n" + "Error while copying %s: %s" % (g["uuid"], e)
+
+    project_record["partial_error"] = partial_error
 
     return project_record
 

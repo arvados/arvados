@@ -15,6 +15,7 @@ import os
 import subprocess
 import time
 import unittest
+import tempfile
 
 import arvados
 import arvados_fuse as fuse
@@ -22,6 +23,7 @@ from . import run_test_server
 
 from .integration_test import IntegrationTest
 from .mount_test_base import MountTestBase
+from .test_tmp_collection import storage_classes_desired
 
 logger = logging.getLogger('arvados.arv-mount')
 
@@ -129,7 +131,9 @@ class FuseMagicTest(MountTestBase):
 
         self.test_project = run_test_server.fixture('groups')['aproject']['uuid']
         self.non_project_group = run_test_server.fixture('groups')['public_role']['uuid']
+        self.filter_group = run_test_server.fixture('groups')['afiltergroup']['uuid']
         self.collection_in_test_project = run_test_server.fixture('collections')['foo_collection_in_aproject']['name']
+        self.collection_in_filter_group = run_test_server.fixture('collections')['baz_file']['name']
 
         cw = arvados.CollectionWriter()
 
@@ -157,6 +161,11 @@ class FuseMagicTest(MountTestBase):
                       llfuse.listdir(os.path.join(self.mounttmp, self.test_project)))
         self.assertIn(self.collection_in_test_project,
                       llfuse.listdir(os.path.join(self.mounttmp, 'by_id', self.test_project)))
+        self.assertIn(self.collection_in_filter_group,
+                      llfuse.listdir(os.path.join(self.mounttmp, self.filter_group)))
+        self.assertIn(self.collection_in_filter_group,
+                      llfuse.listdir(os.path.join(self.mounttmp, 'by_id', self.filter_group)))
+
 
         mount_ls = llfuse.listdir(self.mounttmp)
         self.assertIn('README', mount_ls)
@@ -165,6 +174,8 @@ class FuseMagicTest(MountTestBase):
                       llfuse.listdir(os.path.join(self.mounttmp, 'by_id')))
         self.assertIn(self.test_project, mount_ls)
         self.assertIn(self.test_project,
+                      llfuse.listdir(os.path.join(self.mounttmp, 'by_id')))
+        self.assertIn(self.filter_group,
                       llfuse.listdir(os.path.join(self.mounttmp, 'by_id')))
 
         with self.assertRaises(OSError):
@@ -778,10 +789,15 @@ class FuseDeleteProjectEventTest(MountTestBase):
             attempt(self.assertEqual, [], llfuse.listdir(os.path.join(self.mounttmp, "aproject")))
 
 
-def fuseFileConflictTestHelper(mounttmp):
+def fuseFileConflictTestHelper(mounttmp, uuid, keeptmp, settings):
     class Test(unittest.TestCase):
         def runTest(self):
+            os.environ['KEEP_LOCAL_STORE'] = keeptmp
+
             with open(os.path.join(mounttmp, "file1.txt"), "w") as f:
+                with arvados.collection.Collection(uuid, api_client=arvados.api_from_config('v1', apiconfig=settings)) as collection2:
+                    with collection2.open("file1.txt", "w") as f2:
+                        f2.write("foo")
                 f.write("bar")
 
             d1 = sorted(llfuse.listdir(os.path.join(mounttmp)))
@@ -810,12 +826,8 @@ class FuseFileConflictTest(MountTestBase):
         d1 = llfuse.listdir(os.path.join(self.mounttmp))
         self.assertEqual([], sorted(d1))
 
-        with arvados.collection.Collection(collection.manifest_locator(), api_client=self.api) as collection2:
-            with collection2.open("file1.txt", "w") as f:
-                f.write("foo")
-
         # See note in MountTestBase.setUp
-        self.pool.apply(fuseFileConflictTestHelper, (self.mounttmp,))
+        self.pool.apply(fuseFileConflictTestHelper, (self.mounttmp, collection.manifest_locator(), self.keeptmp, arvados.config.settings()))
 
 
 def fuseUnlinkOpenFileTest(mounttmp):
@@ -1101,7 +1113,7 @@ class MagicDirApiError(FuseMagicTest):
 
 class SanitizeFilenameTest(MountTestBase):
     def test_sanitize_filename(self):
-        pdir = fuse.ProjectDirectory(1, {}, self.api, 0, project_object=self.api.users().current().execute())
+        pdir = fuse.ProjectDirectory(1, {}, self.api, 0, False, project_object=self.api.users().current().execute())
         acceptable = [
             "foo.txt",
             ".foo",
@@ -1253,3 +1265,53 @@ class SlashSubstitutionTest(IntegrationTest):
     def _test_slash_substitution_conflict(self, tmpdir, fusename):
         with open(os.path.join(tmpdir, fusename, 'waz'), 'w') as f:
             f.write('foo')
+
+class StorageClassesTest(IntegrationTest):
+    mnt_args = [
+        '--read-write',
+        '--mount-home', 'homedir',
+    ]
+
+    def setUp(self):
+        super(StorageClassesTest, self).setUp()
+        self.api = arvados.safeapi.ThreadSafeApiCache(arvados.config.settings())
+
+    @IntegrationTest.mount(argv=mnt_args)
+    def test_collection_default_storage_classes(self):
+        coll_path = os.path.join(self.mnt, 'homedir', 'a_collection')
+        self.api.collections().create(body={'name':'a_collection'}).execute()
+        self.pool_test(coll_path)
+    @staticmethod
+    def _test_collection_default_storage_classes(self, coll):
+        self.assertEqual(storage_classes_desired(coll), ['default'])
+
+    @IntegrationTest.mount(argv=mnt_args+['--storage-classes', 'foo'])
+    def test_collection_custom_storage_classes(self):
+        coll_path = os.path.join(self.mnt, 'homedir', 'new_coll')
+        os.mkdir(coll_path)
+        self.pool_test(coll_path)
+    @staticmethod
+    def _test_collection_custom_storage_classes(self, coll):
+        self.assertEqual(storage_classes_desired(coll), ['foo'])
+
+def _readonlyCollectionTestHelper(mounttmp):
+    f = open(os.path.join(mounttmp, 'thing1.txt'), 'rt')
+    # Testing that close() doesn't raise an error.
+    f.close()
+
+class ReadonlyCollectionTest(MountTestBase):
+    def setUp(self):
+        super(ReadonlyCollectionTest, self).setUp()
+        cw = arvados.collection.Collection()
+        with cw.open('thing1.txt', 'wt') as f:
+            f.write("data 1")
+        cw.save_new(owner_uuid=run_test_server.fixture("groups")["aproject"]["uuid"])
+        self.testcollection = cw.api_response()
+
+    def runTest(self):
+        settings = arvados.config.settings().copy()
+        settings["ARVADOS_API_TOKEN"] = run_test_server.fixture("api_client_authorizations")["project_viewer"]["api_token"]
+        self.api = arvados.safeapi.ThreadSafeApiCache(settings)
+        self.make_mount(fuse.CollectionDirectory, collection_record=self.testcollection, enable_write=False)
+
+        self.pool.apply(_readonlyCollectionTestHelper, (self.mounttmp,))

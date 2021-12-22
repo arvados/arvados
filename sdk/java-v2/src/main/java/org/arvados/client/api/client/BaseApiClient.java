@@ -23,6 +23,7 @@ import java.io.UnsupportedEncodingException;
 import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
 import java.util.Objects;
+import java.util.concurrent.TimeUnit;
 
 abstract class BaseApiClient {
 
@@ -34,7 +35,12 @@ abstract class BaseApiClient {
 
     BaseApiClient(ConfigProvider config) {
         this.config = config;
-        this.client = OkHttpClientFactory.INSTANCE.create(config.isApiHostInsecure());
+        this.client = OkHttpClientFactory.INSTANCE.create(config.isApiHostInsecure())
+	    .newBuilder()
+	    .connectTimeout(config.getConnectTimeout(), TimeUnit.MILLISECONDS)
+	    .readTimeout(config.getReadTimeout(), TimeUnit.MILLISECONDS)
+	    .writeTimeout(config.getWriteTimeout(), TimeUnit.MILLISECONDS)
+	    .build();
     }
 
     Request.Builder getRequestBuilder() {

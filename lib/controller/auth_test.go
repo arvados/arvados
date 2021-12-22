@@ -8,6 +8,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"net"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -62,10 +63,9 @@ func (s *AuthSuite) SetUpTest(c *check.C) {
 	s.fakeProvider.ValidClientSecret = "test#client/secret"
 
 	cluster := &arvados.Cluster{
-		ClusterID:        "zhome",
-		PostgreSQL:       integrationTestCluster().PostgreSQL,
-		ForceLegacyAPI14: forceLegacyAPI14,
-		SystemRootToken:  arvadostest.SystemRootToken,
+		ClusterID:       "zhome",
+		PostgreSQL:      integrationTestCluster().PostgreSQL,
+		SystemRootToken: arvadostest.SystemRootToken,
 	}
 	cluster.TLS.Insecure = true
 	cluster.API.MaxItemsPerResponse = 1000
@@ -95,12 +95,15 @@ func (s *AuthSuite) SetUpTest(c *check.C) {
 	cluster.Login.OpenIDConnect.ClientSecret = s.fakeProvider.ValidClientSecret
 	cluster.Login.OpenIDConnect.EmailClaim = "email"
 	cluster.Login.OpenIDConnect.EmailVerifiedClaim = "email_verified"
+	cluster.Login.OpenIDConnect.AcceptAccessToken = true
+	cluster.Login.OpenIDConnect.AcceptAccessTokenScope = ""
 
-	s.testHandler = &Handler{Cluster: cluster}
+	s.testHandler = &Handler{Cluster: cluster, BackgroundContext: ctxlog.Context(context.Background(), s.log)}
 	s.testServer = newServerFromIntegrationTestEnv(c)
-	s.testServer.Server.Handler = httpserver.HandlerWithContext(
-		ctxlog.Context(context.Background(), s.log),
-		httpserver.AddRequestIDs(httpserver.LogRequests(s.testHandler)))
+	s.testServer.Server.BaseContext = func(net.Listener) context.Context {
+		return ctxlog.Context(context.Background(), s.log)
+	}
+	s.testServer.Server.Handler = httpserver.AddRequestIDs(httpserver.LogRequests(s.testHandler))
 	c.Assert(s.testServer.Start(), check.IsNil)
 }
 

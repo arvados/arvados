@@ -15,7 +15,9 @@ import (
 	"git.arvados.org/arvados.git/lib/crunchrun"
 	"git.arvados.org/arvados.git/lib/dispatchcloud"
 	"git.arvados.org/arvados.git/lib/install"
+	"git.arvados.org/arvados.git/lib/lsf"
 	"git.arvados.org/arvados.git/lib/recovercollection"
+	"git.arvados.org/arvados.git/services/keepstore"
 	"git.arvados.org/arvados.git/services/ws"
 )
 
@@ -33,8 +35,10 @@ var (
 		"controller":         controller.Command,
 		"crunch-run":         crunchrun.Command,
 		"dispatch-cloud":     dispatchcloud.Command,
+		"dispatch-lsf":       lsf.DispatchCommand,
 		"install":            install.Command,
 		"init":               install.InitCommand,
+		"keepstore":          keepstore.Command,
 		"recover-collection": recovercollection.Command,
 		"ws":                 ws.Command,
 	})

@@ -9,7 +9,7 @@ Copyright (C) The Arvados Authors. All rights reserved.
 SPDX-License-Identifier: CC-BY-SA-3.0
 {% endcomment %}
 
-This page documents setting up and running the "Arvados on Kubernetes":/install/arvados-on-kubernetes.html @Helm@ chart on @Google Kubernetes Engine@ (GKE).
+This page documents setting up and running the "Arvados on Kubernetes":{{ site.baseurl }}/install/arvados-on-kubernetes.html @Helm@ chart on @Google Kubernetes Engine@ (GKE).
 
 h2. Prerequisites
 
@@ -34,7 +34,7 @@ h3. Create the GKE cluster
 This can be done via the "cloud console":https://console.cloud.google.com/kubernetes/ or via the command line:
 
 <pre>
-$ gcloud container clusters create <CLUSTERNAME> --zone us-central1-a --machine-type n1-standard-2 --cluster-version 1.15
+$ gcloud container clusters create <CLUSTERNAME> --zone us-central1-a --machine-type n1-standard-2
 </pre>
 
 It takes a few minutes for the cluster to be initialized.

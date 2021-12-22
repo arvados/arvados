@@ -15,13 +15,17 @@ This tutorial describes how to copy Arvados objects from one cluster to another 
 
 h2. arv-copy
 
-@arv-copy@ allows users to copy collections and workflows from one cluster to another. By default, @arv-copy@ will recursively go through the workflow and copy all dependencies associated with the object.
+@arv-copy@ allows users to copy collections, workflow definitions and projects from one cluster to another.
+
+For projects, @arv-copy@ will copy all the collections workflow definitions owned by the project, and recursively copy subprojects.
+
+For workflow definitions, @arv-copy@ will recursively go through the workflow and copy all associated dependencies (input collections and Docker images).
 
 For example, let's copy from the <a href="https://playground.arvados.org/">Arvados playground</a>, also known as *pirca*, to *dstcl*. The names *pirca* and *dstcl* are interchangable with any cluster id. You can find the cluster name from the prefix of the uuid of the object you want to copy. For example, in *zzzzz*-4zz18-tci4vn4fa95w0zx, the cluster name is *zzzzz* .
 
-In order to communicate with both clusters, you must create custom configuration files for each cluster. In the Arvados Workbench, click on the dropdown menu icon <span class="fa fa-lg fa-user"></span> <span class="caret"></span> in the upper right corner of the top navigation menu to access the user settings menu, and click on the menu item *Current token*. Copy the @ARVADOS_API_HOST@ and @ARVADOS_API_TOKEN@ in both of your clusters. Then, create two configuration files in @~/.config/arvados@, one for each cluster. The names of the files must have the format of *ClusterID.conf*. Navigate to the *Current token* page on each of *pirca* and *dstcl* to get the @ARVADOS_API_HOST@ and @ARVADOS_API_TOKEN@.
+In order to communicate with both clusters, you must create custom configuration files for each cluster.  The "Getting an API token":{{site.baseurl}}/user/reference/api-tokens.html page describes how to get a token and create a configuration file.  However, instead of "settings.conf" in @~/.config/arvados@ you need two configuration files, one for each cluster, with filenames in the format of *ClusterID.conf*.
 
-!{display: block;margin-left: 25px;margin-right: auto;}{{ site.baseurl }}/images/api-token-host.png!
+In this example, navigate to the *Current token* page on each of *pirca* and *dstcl* to get the @ARVADOS_API_HOST@ and @ARVADOS_API_TOKEN@.
 
 The config file consists of two lines, one for ARVADOS_API_HOST and one for ARVADOS_API_TOKEN:
 
@@ -57,11 +61,13 @@ arvados.arv-copy[1234] INFO: Success: created copy with uuid dstcl-4zz18-xxxxxxx
 
 The output of arv-copy displays the uuid of the collection generated in the destination cluster. By default, the output is placed in your home project in the destination cluster. If you want to place your collection in an existing project, you can specify the project you want it to be in using the tag @--project-uuid@ followed by the project uuid.
 
-For example, this will copy the collection to project dstcl-j7d0g-a894213ukjhal12 in the destination cluster.
+For example, this will copy the collection to project @dstcl-j7d0g-a894213ukjhal12@ in the destination cluster.
 
 <notextile> <pre><code>~$ <span class="userinput">arv-copy --src pirca --dst dstcl --project-uuid dstcl-j7d0g-a894213ukjhal12 jutro-4zz18-tv416l321i4r01e
 </code></pre>
 </notextile>
+
+Additionally, if you need to specify the storage classes where to save the copied data on the destination cluster, you can do that by using the @--storage-classes LIST@ argument, where @LIST@ is a comma-separated list of storage class names.
 
 h3. How to copy a workflow
 
@@ -80,3 +86,18 @@ jutro-4zz18-vvvqlops0a0kpdl: 94M / 94M 100.0%
 The name, description, and workflow definition from the original workflow will be used for the destination copy. In addition, any *collections* and *docker images* referenced in the source workflow definition will also be copied to the destination.
 
 If you would like to copy the object without dependencies, you can use the @--no-recursive@ flag.
+
+h3. How to copy a project
+
+We will use the uuid @jutro-j7d0g-xj19djofle3aryq@ as an example project.
+
+<notextile>
+<pre><code>~$ <span class="userinput">peteramstutz@shell:~$ arv-copy --project-uuid pirca-j7d0g-lr8sq3tx3ovn68k jutro-j7d0g-xj19djofle3aryq
+2021-09-08 21:29:32 arvados.arv-copy[6377] INFO:
+2021-09-08 21:29:32 arvados.arv-copy[6377] INFO: Success: created copy with uuid pirca-j7d0g-ig9gvu5piznducp
+</code></pre>
+</notextile>
+
+The name and description of the original project will be used for the destination copy.  If a project already exists with the same name, collections and workflow definitions will be copied into the project with the same name.
+
+If you would like to copy the project but not its subproject, you can use the @--no-recursive@ flag.

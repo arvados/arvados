@@ -5,53 +5,40 @@
 package arvadostest
 
 import (
-	"bufio"
-	"bytes"
+	"crypto/tls"
 	"fmt"
 	"io/ioutil"
 	"log"
+	"net/http"
 	"os"
 	"os/exec"
 	"path"
 	"strconv"
 	"strings"
+
+	"gopkg.in/check.v1"
 )
 
 var authSettings = make(map[string]string)
 
-// ResetEnv resets test env
+// ResetEnv resets ARVADOS_* env vars to whatever they were the first
+// time this func was called.
+//
+// Call it from your SetUpTest or SetUpSuite func if your tests modify
+// env vars.
 func ResetEnv() {
-	for k, v := range authSettings {
-		os.Setenv(k, v)
-	}
-}
-
-// APIHost returns the address:port of the current test server.
-func APIHost() string {
-	h := authSettings["ARVADOS_API_HOST"]
-	if h == "" {
-		log.Fatal("arvadostest.APIHost() was called but authSettings is not populated")
-	}
-	return h
-}
-
-// ParseAuthSettings parses auth settings from given input
-func ParseAuthSettings(authScript []byte) {
-	scanner := bufio.NewScanner(bytes.NewReader(authScript))
-	for scanner.Scan() {
-		line := scanner.Text()
-		if 0 != strings.Index(line, "export ") {
-			log.Printf("Ignoring: %v", line)
-			continue
+	if len(authSettings) == 0 {
+		for _, e := range os.Environ() {
+			e := strings.SplitN(e, "=", 2)
+			if len(e) == 2 {
+				authSettings[e[0]] = e[1]
+			}
 		}
-		toks := strings.SplitN(strings.Replace(line, "export ", "", 1), "=", 2)
-		if len(toks) == 2 {
-			authSettings[toks[0]] = toks[1]
-		} else {
-			log.Fatalf("Could not parse: %v", line)
+	} else {
+		for k, v := range authSettings {
+			os.Setenv(k, v)
 		}
 	}
-	log.Printf("authSettings: %v", authSettings)
 }
 
 var pythonTestDir string
@@ -80,34 +67,17 @@ func chdirToPythonTests() {
 	}
 }
 
-// StartAPI starts test API server
-func StartAPI() {
-	cwd, _ := os.Getwd()
-	defer os.Chdir(cwd)
-	chdirToPythonTests()
-
-	cmd := exec.Command("python", "run_test_server.py", "start", "--auth", "admin")
-	cmd.Stdin = nil
-	cmd.Stderr = os.Stderr
-
-	authScript, err := cmd.Output()
-	if err != nil {
-		log.Fatalf("%+v: %s", cmd.Args, err)
-	}
-	ParseAuthSettings(authScript)
-	ResetEnv()
-}
-
-// StopAPI stops test API server
-func StopAPI() {
-	cwd, _ := os.Getwd()
-	defer os.Chdir(cwd)
-	chdirToPythonTests()
-
-	cmd := exec.Command("python", "run_test_server.py", "stop")
-	bgRun(cmd)
-	// Without Wait, "go test" in go1.10.1 tends to hang. https://github.com/golang/go/issues/24050
-	cmd.Wait()
+func ResetDB(c *check.C) {
+	hc := http.Client{Transport: &http.Transport{
+		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+	}}
+	req, err := http.NewRequest("POST", "https://"+os.Getenv("ARVADOS_TEST_API_HOST")+"/database/reset", nil)
+	c.Assert(err, check.IsNil)
+	req.Header.Set("Authorization", "Bearer "+AdminToken)
+	resp, err := hc.Do(req)
+	c.Assert(err, check.IsNil)
+	defer resp.Body.Close()
+	c.Check(resp.StatusCode, check.Equals, http.StatusOK)
 }
 
 // StartKeep starts the given number of keep servers,

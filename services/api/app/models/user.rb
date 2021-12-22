@@ -234,8 +234,9 @@ SELECT target_uuid, perm_level
                               name: 'can_read').empty?
 
     # Add can_read link from this user to "all users" which makes this
-    # user "invited"
-    group_perm = create_user_group_link
+    # user "invited", and (depending on config) a link in the opposite
+    # direction which makes this user visible to other users.
+    group_perms = add_to_all_users_group
 
     # Add git repo
     repo_perm = if (!repo_name.nil? || Rails.configuration.Users.AutoSetupNewUsersWithRepository) and !username.nil?
@@ -267,7 +268,7 @@ SELECT target_uuid, perm_level
 
     forget_cached_group_perms
 
-    return [repo_perm, vm_login_perm, group_perm, self].compact
+    return [repo_perm, vm_login_perm, *group_perms, self].compact
   end
 
   # delete user signatures, login, repo, and vm perms, and mark as inactive
@@ -299,6 +300,12 @@ SELECT target_uuid, perm_level
     # delete any signatures by this user
     Link.where(link_class: 'signature',
                      tail_uuid: self.uuid).destroy_all
+
+    # delete tokens for this user
+    ApiClientAuthorization.where(user_id: self.id).destroy_all
+    # delete ssh keys for this user
+    AuthorizedKey.where(owner_uuid: self.uuid).destroy_all
+    AuthorizedKey.where(authorized_user_uuid: self.uuid).destroy_all
 
     # delete user preferences (including profile)
     self.prefs = {}
@@ -359,37 +366,6 @@ SELECT target_uuid, perm_level
     requested.gsub!(/[^A-Za-z0-9]/, "")
     unless requested.empty?
       self.username = find_usable_username_from(requested)
-    end
-  end
-
-  def update_uuid(new_uuid:)
-    if !current_user.andand.is_admin
-      raise PermissionDeniedError
-    end
-    if uuid == system_user_uuid || uuid == anonymous_user_uuid
-      raise "update_uuid cannot update system accounts"
-    end
-    if self.class != self.class.resource_class_for_uuid(new_uuid)
-      raise "invalid new_uuid #{new_uuid.inspect}"
-    end
-    transaction(requires_new: true) do
-      reload
-      old_uuid = self.uuid
-      self.uuid = new_uuid
-      save!(validate: false)
-      change_all_uuid_refs(old_uuid: old_uuid, new_uuid: new_uuid)
-    ActiveRecord::Base.connection.exec_update %{
-update #{PERMISSION_VIEW} set user_uuid=$1 where user_uuid = $2
-},
-                                             'User.update_uuid.update_permissions_user_uuid',
-                                             [[nil, new_uuid],
-                                              [nil, old_uuid]]
-      ActiveRecord::Base.connection.exec_update %{
-update #{PERMISSION_VIEW} set target_uuid=$1 where target_uuid = $2
-},
-                                            'User.update_uuid.update_permissions_target_uuid',
-                                             [[nil, new_uuid],
-                                              [nil, old_uuid]]
     end
   end
 
@@ -753,16 +729,26 @@ update #{PERMISSION_VIEW} set target_uuid=$1 where target_uuid = $2
     login_perm
   end
 
-  # add the user to the 'All users' group
-  def create_user_group_link
-    return (Link.where(tail_uuid: self.uuid,
+  def add_to_all_users_group
+    resp = [Link.where(tail_uuid: self.uuid,
                        head_uuid: all_users_group_uuid,
                        link_class: 'permission',
-                       name: 'can_read').first or
+                       name: 'can_read').first ||
             Link.create(tail_uuid: self.uuid,
                         head_uuid: all_users_group_uuid,
                         link_class: 'permission',
-                        name: 'can_read'))
+                        name: 'can_read')]
+    if Rails.configuration.Users.ActivatedUsersAreVisibleToOthers
+      resp += [Link.where(tail_uuid: all_users_group_uuid,
+                          head_uuid: self.uuid,
+                          link_class: 'permission',
+                          name: 'can_read').first ||
+               Link.create(tail_uuid: all_users_group_uuid,
+                           head_uuid: self.uuid,
+                           link_class: 'permission',
+                           name: 'can_read')]
+    end
+    return resp
   end
 
   # Give the special "System group" permission to manage this user and

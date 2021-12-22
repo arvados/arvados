@@ -358,7 +358,7 @@ test_package_presence() {
     elif [[ "$FORMAT" == "deb" ]]; then
       declare -A dd
       dd[debian10]=buster
-      dd[ubuntu1604]=xenial
+      dd[debian11]=bullseye
       dd[ubuntu1804]=bionic
       dd[ubuntu2004]=focal
       D=${dd[$TARGET]}
@@ -642,8 +642,9 @@ fpm_build_virtualenv () {
   LICENSE_STRING=`grep license $WORKSPACE/$PKG_DIR/setup.py|cut -f2 -d=|sed -e "s/[',\\"]//g"`
   COMMAND_ARR+=('--license' "$LICENSE_STRING")
 
-  if [[ "$FORMAT" != "rpm" ]]; then
-    COMMAND_ARR+=('--conflicts' "python-$PKG")
+  if [[ "$FORMAT" == "rpm" ]]; then
+    # Make sure to conflict with the old rh-python36 packages we used to publish
+    COMMAND_ARR+=('--conflicts' "rh-python36-python-$PKG")
   fi
 
   if [[ "$DEBUG" != "0" ]]; then
@@ -685,6 +686,10 @@ fpm_build_virtualenv () {
     COMMAND_ARR+=('--depends' "$i")
   done
 
+  for i in "${fpm_depends[@]}"; do
+    COMMAND_ARR+=('--replaces' "python-$PKG")
+  done
+
   # make sure the systemd service file ends up in the right place
   # used by arvados-docker-cleaner
   if [[ -e "${systemd_unit}" ]]; then
@@ -706,8 +711,8 @@ fpm_build_virtualenv () {
   fi
 
   # the python3-arvados-cwl-runner package comes with cwltool, expose that version
-  if [[ -e "$WORKSPACE/$PKG_DIR/dist/build/usr/share/$python/dist/python-arvados-cwl-runner/bin/cwltool" ]]; then
-    COMMAND_ARR+=("usr/share/$python/dist/python-arvados-cwl-runner/bin/cwltool=/usr/bin/")
+  if [[ -e "$WORKSPACE/$PKG_DIR/dist/build/usr/share/$python/dist/$PYTHON_PKG/bin/cwltool" ]]; then
+    COMMAND_ARR+=("usr/share/$python/dist/$PYTHON_PKG/bin/cwltool=/usr/bin/")
   fi
 
   COMMAND_ARR+=(".")
@@ -727,6 +732,136 @@ fpm_build_virtualenv () {
     mv $WORKSPACE/$PKG_DIR/dist/*$FORMAT $WORKSPACE/packages/$TARGET/
   fi
   echo
+}
+
+# build_metapackage builds meta packages that help with the python to python 3 package migration
+build_metapackage() {
+  # base package name (e.g. arvados-python-client)
+  BASE_NAME=$1
+  shift
+  PKG_DIR=$1
+  shift
+
+  if [[ -n "$ONLY_BUILD" ]] && [[ "python-$BASE_NAME" != "$ONLY_BUILD" ]]; then
+    return 0
+  fi
+
+  if [[ "$ARVADOS_BUILDING_ITERATION" == "" ]]; then
+    ARVADOS_BUILDING_ITERATION=1
+  fi
+
+  if [[ -z "$ARVADOS_BUILDING_VERSION" ]]; then
+    cd $WORKSPACE/$PKG_DIR
+    pwd
+    rm -rf dist/*
+
+    # Get the latest setuptools
+    if ! pip3 install $DASHQ_UNLESS_DEBUG $CACHE_FLAG -U 'setuptools<45'; then
+      echo "Error, unable to upgrade setuptools with XY"
+      echo "  pip3 install $DASHQ_UNLESS_DEBUG $CACHE_FLAG -U 'setuptools<45'"
+      exit 1
+    fi
+    # filter a useless warning (when building the cwltest package) from the stderr output
+    if ! python3 setup.py $DASHQ_UNLESS_DEBUG sdist 2> >(grep -v 'warning: no previously-included files matching'); then
+      echo "Error, unable to run python3 setup.py sdist for $PKG"
+      exit 1
+    fi
+
+    PYTHON_VERSION=$(awk '($1 == "Version:"){print $2}' *.egg-info/PKG-INFO)
+    UNFILTERED_PYTHON_VERSION=$(echo -n $PYTHON_VERSION | sed s/\.dev/~dev/g |sed 's/\([0-9]\)rc/\1~rc/g')
+
+  else
+    UNFILTERED_PYTHON_VERSION=$ARVADOS_BUILDING_VERSION
+    PYTHON_VERSION=$(echo -n $ARVADOS_BUILDING_VERSION | sed s/~dev/.dev/g | sed s/~rc/rc/g)
+  fi
+
+  cd - >$STDOUT_IF_DEBUG
+  if [[ -d "$BASE_NAME" ]]; then
+    rm -rf $BASE_NAME
+  fi
+  mkdir $BASE_NAME
+  cd $BASE_NAME
+
+  if [[ "$FORMAT" == "deb" ]]; then
+    cat >ns-control <<EOF
+Section: misc
+Priority: optional
+Standards-Version: 3.9.2
+
+Package: python-${BASE_NAME}
+Version: ${PYTHON_VERSION}-${ARVADOS_BUILDING_ITERATION}
+Maintainer: Arvados Package Maintainers <packaging@arvados.org>
+Depends: python3-${BASE_NAME}
+Description: metapackage to ease the upgrade to the Pyhon 3 version of ${BASE_NAME}
+ This package is a metapackage that will automatically install the new version of
+ ${BASE_NAME} which is Python 3 based and has a different name.
+EOF
+
+    /usr/bin/equivs-build ns-control
+    if [[ $? -ne 0 ]]; then
+      echo "Error running 'equivs-build ns-control', is the 'equivs' package installed?"
+      return 1
+    fi
+  elif [[ "$FORMAT" == "rpm" ]]; then
+    cat >meta.spec <<EOF
+Summary: metapackage to ease the upgrade to the Python 3 version of ${BASE_NAME}
+Name: python-${BASE_NAME}
+Version: ${PYTHON_VERSION}
+Release: ${ARVADOS_BUILDING_ITERATION}
+License: distributable
+
+Requires: python3-${BASE_NAME}
+
+%description
+This package is a metapackage that will automatically install the new version of
+python-${BASE_NAME} which is Python 3 based and has a different name.
+
+%prep
+
+%build
+
+%clean
+
+%install
+
+%post
+
+%files
+
+
+%changelog
+* Mon Apr 12 2021 Arvados Package Maintainers <packaging@arvados.org>
+- initial release
+EOF
+
+    /usr/bin/rpmbuild -ba meta.spec
+    if [[ $? -ne 0 ]]; then
+      echo "Error running 'rpmbuild -ba meta.spec', is the 'rpm-build' package installed?"
+      return 1
+    else
+      mv /root/rpmbuild/RPMS/x86_64/python-${BASE_NAME}*.${FORMAT} .
+      if [[ $? -ne 0 ]]; then
+        echo "Error finding rpm file output of 'rpmbuild -ba meta.spec'"
+        return 1
+      fi
+    fi
+  else
+    echo "Unknown format"
+    return 1
+  fi
+
+  if [[ $EXITCODE -ne 0 ]]; then
+    return 1
+  else
+    echo `ls *$FORMAT`
+    mv *$FORMAT $WORKSPACE/packages/$TARGET/
+  fi
+
+  # clean up
+  cd - >$STDOUT_IF_DEBUG
+  if [[ -d "$BASE_NAME" ]]; then
+    rm -rf $BASE_NAME
+  fi
 }
 
 # Build packages for everything
@@ -798,6 +933,7 @@ fpm_build () {
   declare -a fpm_args=()
   declare -a build_depends=()
   declare -a fpm_depends=()
+  declare -a fpm_conflicts=()
   declare -a fpm_exclude=()
   if [[ ! -d "$SRC_DIR" ]]; then
       echo >&2 "BUG: looking in wrong dir for fpm-info.sh: $pkgdir"
@@ -832,6 +968,9 @@ fpm_build () {
   done
   for i in "${fpm_depends[@]}"; do
     COMMAND_ARR+=('--depends' "$i")
+  done
+  for i in "${fpm_conflicts[@]}"; do
+    COMMAND_ARR+=('--conflicts' "$i")
   done
   for i in "${fpm_exclude[@]}"; do
     COMMAND_ARR+=('--exclude' "$i")

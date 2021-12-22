@@ -8,7 +8,7 @@ MAINTAINER Arvados Package Maintainers <packaging@arvados.org>
 ENV DEBIAN_FRONTEND noninteractive
 
 # Install dependencies.
-RUN /usr/bin/apt-get update && /usr/bin/apt-get install -q -y python3 python3-pip libcurl4-gnutls-dev libgnutls28-dev curl git libattr1-dev libfuse-dev libpq-dev unzip tzdata python3-venv python3-dev libpam-dev
+RUN /usr/bin/apt-get update && /usr/bin/apt-get install -q -y python3 python3-pip libcurl4-gnutls-dev libgnutls28-dev curl git libattr1-dev libfuse-dev libpq-dev unzip tzdata python3-venv python3-dev libpam-dev equivs
 
 # Install virtualenv
 RUN /usr/bin/pip3 install 'virtualenv<20'
@@ -21,11 +21,11 @@ RUN gpg --import --no-tty /tmp/mpapis.asc && \
     curl -L https://get.rvm.io | bash -s stable && \
     /usr/local/rvm/bin/rvm install 2.5 && \
     /usr/local/rvm/bin/rvm alias create default ruby-2.5 && \
-    /usr/local/rvm/bin/rvm-exec default gem install bundler --version 2.0.2 && \
+    /usr/local/rvm/bin/rvm-exec default gem install bundler --version 2.2.19 && \
     /usr/local/rvm/bin/rvm-exec default gem install fpm --version 1.10.2
 
 # Install golang binary
-ADD generated/go1.13.4.linux-amd64.tar.gz /usr/local/
+ADD generated/go1.17.1.linux-amd64.tar.gz /usr/local/
 RUN ln -s /usr/local/go/bin/go /usr/local/bin/
 
 # Install nodejs and npm

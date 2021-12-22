@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-package main
+package keepstore
 
 import (
 	"bytes"
@@ -58,7 +58,6 @@ func (s *HandlerSuite) TestPullWorkerIntegration_GetNonExistingLocator(c *check.
 	}
 
 	pullRequest := s.setupPullWorkerIntegrationTest(c, testData, false)
-	defer arvadostest.StopAPI()
 	defer arvadostest.StopKeep(2)
 
 	s.performPullWorkerIntegrationTest(testData, pullRequest, c)
@@ -76,7 +75,6 @@ func (s *HandlerSuite) TestPullWorkerIntegration_GetExistingLocator(c *check.C) 
 	}
 
 	pullRequest := s.setupPullWorkerIntegrationTest(c, testData, true)
-	defer arvadostest.StopAPI()
 	defer arvadostest.StopKeep(2)
 
 	s.performPullWorkerIntegrationTest(testData, pullRequest, c)

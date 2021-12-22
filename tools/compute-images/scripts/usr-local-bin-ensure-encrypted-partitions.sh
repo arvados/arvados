@@ -114,7 +114,7 @@ head -c321 /dev/urandom >"$KEYPATH"
 echo YES | cryptsetup luksFormat "$LVPATH" "$KEYPATH"
 cryptsetup --key-file "$KEYPATH" luksOpen "$LVPATH" "$(basename "$CRYPTPATH")"
 shred -u "$KEYPATH"
-mkfs.xfs "$CRYPTPATH"
+mkfs.xfs -f "$CRYPTPATH"
 
 # First make sure docker is not using /tmp, then unmount everything under it.
 if [ -d /etc/sv/docker.io ]

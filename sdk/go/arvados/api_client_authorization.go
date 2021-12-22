@@ -4,12 +4,26 @@
 
 package arvados
 
+import "time"
+
 // APIClientAuthorization is an arvados#apiClientAuthorization resource.
 type APIClientAuthorization struct {
-	UUID      string   `json:"uuid"`
-	APIToken  string   `json:"api_token"`
-	ExpiresAt string   `json:"expires_at"`
-	Scopes    []string `json:"scopes"`
+	UUID                 string    `json:"uuid"`
+	APIClientID          int       `json:"api_client_id"`
+	APIToken             string    `json:"api_token"`
+	CreatedAt            time.Time `json:"created_at"`
+	CreatedByIPAddress   string    `json:"created_by_ip_address"`
+	DefaultOwnerUUID     string    `json:"default_owner_uuid"`
+	Etag                 string    `json:"etag"`
+	ExpiresAt            time.Time `json:"expires_at"`
+	LastUsedAt           time.Time `json:"last_used_at"`
+	LastUsedByIPAddress  string    `json:"last_used_by_ip_address"`
+	ModifiedAt           time.Time `json:"modified_at"`
+	ModifiedByClientUUID string    `json:"modified_by_client_uuid"`
+	ModifiedByUserUUID   string    `json:"modified_by_user_uuid"`
+	OwnerUUID            string    `json:"owner_uuid"`
+	Scopes               []string  `json:"scopes"`
+	UserID               int       `json:"user_id"`
 }
 
 // APIClientAuthorizationList is an arvados#apiClientAuthorizationList resource.

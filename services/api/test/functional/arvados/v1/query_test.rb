@@ -80,6 +80,16 @@ class Arvados::V1::QueryTest < ActionController::TestCase
     refute(json_response.has_key?('items_available'))
   end
 
+  test 'do not count items_available if count=none for group contents endpoint' do
+    @controller = Arvados::V1::GroupsController.new
+    authorize_with :active
+    get :contents, params: {
+      count: 'none',
+    }
+    assert_response(:success)
+    refute(json_response.has_key?('items_available'))
+  end
+
   [{}, {count: nil}, {count: ''}, {count: 'exact'}].each do |params|
     test "count items_available if params=#{params.inspect}" do
       @controller = Arvados::V1::LinksController.new

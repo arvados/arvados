@@ -22,6 +22,7 @@ import (
 	"git.arvados.org/arvados.git/sdk/go/arvados"
 	"git.arvados.org/arvados.git/sdk/go/auth"
 	"git.arvados.org/arvados.git/sdk/go/ctxlog"
+	"git.arvados.org/arvados.git/sdk/go/health"
 )
 
 type Conn struct {
@@ -30,18 +31,23 @@ type Conn struct {
 	remotes map[string]backend
 }
 
-func New(cluster *arvados.Cluster) *Conn {
+func New(cluster *arvados.Cluster, healthFuncs *map[string]health.Func) *Conn {
 	local := localdb.NewConn(cluster)
 	remotes := map[string]backend{}
 	for id, remote := range cluster.RemoteClusters {
 		if !remote.Proxy || id == cluster.ClusterID {
 			continue
 		}
-		conn := rpc.NewConn(id, &url.URL{Scheme: remote.Scheme, Host: remote.Host}, remote.Insecure, saltedTokenProvider(local, id))
+		conn := rpc.NewConn(id, &url.URL{Scheme: remote.Scheme, Host: remote.Host}, remote.Insecure, saltedTokenProvider(cluster, local, id))
 		// Older versions of controller rely on the Via header
 		// to detect loops.
 		conn.SendHeader = http.Header{"Via": {"HTTP/1.1 arvados-controller"}}
 		remotes[id] = conn
+	}
+
+	if healthFuncs != nil {
+		hf := map[string]health.Func{"vocabulary": local.LastVocabularyError}
+		*healthFuncs = hf
 	}
 
 	return &Conn{
@@ -55,7 +61,7 @@ func New(cluster *arvados.Cluster) *Conn {
 // tokens from an incoming request context, determines whether they
 // should (and can) be salted for the given remoteID, and returns the
 // resulting tokens.
-func saltedTokenProvider(local backend, remoteID string) rpc.TokenProvider {
+func saltedTokenProvider(cluster *arvados.Cluster, local backend, remoteID string) rpc.TokenProvider {
 	return func(ctx context.Context) ([]string, error) {
 		var tokens []string
 		incoming, ok := auth.FromContext(ctx)
@@ -63,11 +69,24 @@ func saltedTokenProvider(local backend, remoteID string) rpc.TokenProvider {
 			return nil, errors.New("no token provided")
 		}
 		for _, token := range incoming.Tokens {
+			if strings.HasPrefix(token, "v2/"+cluster.ClusterID+"-") && remoteID == cluster.Login.LoginCluster {
+				// If we did this, the login cluster
+				// would call back to us and then
+				// reject our response because the
+				// user UUID prefix (i.e., the
+				// LoginCluster prefix) won't match
+				// the token UUID prefix (i.e., our
+				// prefix).
+				return nil, httpErrorf(http.StatusUnauthorized, "cannot use a locally issued token to forward a request to our login cluster (%s)", remoteID)
+			}
 			salted, err := auth.SaltToken(token, remoteID)
 			switch err {
 			case nil:
 				tokens = append(tokens, salted)
 			case auth.ErrSalted:
+				tokens = append(tokens, token)
+			case auth.ErrTokenFormat:
+				// pass through unmodified (assume it's an OIDC access token)
 				tokens = append(tokens, token)
 			case auth.ErrObsoleteToken:
 				ctx := auth.NewContext(ctx, &auth.Credentials{Tokens: []string{token}})
@@ -189,6 +208,10 @@ func (conn *Conn) ConfigGet(ctx context.Context) (json.RawMessage, error) {
 	return json.RawMessage(buf.Bytes()), err
 }
 
+func (conn *Conn) VocabularyGet(ctx context.Context) (arvados.Vocabulary, error) {
+	return conn.chooseBackend(conn.cluster.ClusterID).VocabularyGet(ctx)
+}
+
 func (conn *Conn) Login(ctx context.Context, options arvados.LoginOptions) (arvados.LoginResponse, error) {
 	if id := conn.cluster.Login.LoginCluster; id != "" && id != conn.cluster.ClusterID {
 		// defer entire login procedure to designated cluster
@@ -259,13 +282,26 @@ func (conn *Conn) CollectionGet(ctx context.Context, options arvados.GetOptions)
 		if err != nil {
 			return err
 		}
-		// options.UUID is either hash+size or
-		// hash+size+hints; only hash+size need to
-		// match the computed PDH.
-		if pdh := arvados.PortableDataHash(c.ManifestText); pdh != options.UUID && !strings.HasPrefix(options.UUID, pdh+"+") {
-			err = httpErrorf(http.StatusBadGateway, "bad portable data hash %q received from remote %q (expected %q)", pdh, remoteID, options.UUID)
-			ctxlog.FromContext(ctx).Warn(err)
-			return err
+		haveManifest := true
+		if options.Select != nil {
+			haveManifest = false
+			for _, s := range options.Select {
+				if s == "manifest_text" {
+					haveManifest = true
+					break
+				}
+			}
+		}
+		if haveManifest {
+			pdh := arvados.PortableDataHash(c.ManifestText)
+			// options.UUID is either hash+size or
+			// hash+size+hints; only hash+size need to
+			// match the computed PDH.
+			if pdh != options.UUID && !strings.HasPrefix(options.UUID, pdh+"+") {
+				err = httpErrorf(http.StatusBadGateway, "bad portable data hash %q received from remote %q (expected %q)", pdh, remoteID, options.UUID)
+				ctxlog.FromContext(ctx).Warn(err)
+				return err
+			}
 		}
 		if remoteID != "" {
 			c.ManifestText = rewriteManifest(c.ManifestText, remoteID)
@@ -402,6 +438,73 @@ func (conn *Conn) ContainerRequestDelete(ctx context.Context, options arvados.De
 	return conn.chooseBackend(options.UUID).ContainerRequestDelete(ctx, options)
 }
 
+func (conn *Conn) GroupCreate(ctx context.Context, options arvados.CreateOptions) (arvados.Group, error) {
+	return conn.chooseBackend(options.ClusterID).GroupCreate(ctx, options)
+}
+
+func (conn *Conn) GroupUpdate(ctx context.Context, options arvados.UpdateOptions) (arvados.Group, error) {
+	return conn.chooseBackend(options.UUID).GroupUpdate(ctx, options)
+}
+
+func (conn *Conn) GroupGet(ctx context.Context, options arvados.GetOptions) (arvados.Group, error) {
+	return conn.chooseBackend(options.UUID).GroupGet(ctx, options)
+}
+
+func (conn *Conn) GroupList(ctx context.Context, options arvados.ListOptions) (arvados.GroupList, error) {
+	return conn.generated_GroupList(ctx, options)
+}
+
+var userUuidRe = regexp.MustCompile(`^[0-9a-z]{5}-tpzed-[0-9a-z]{15}$`)
+
+func (conn *Conn) GroupContents(ctx context.Context, options arvados.GroupContentsOptions) (arvados.ObjectList, error) {
+	if options.ClusterID != "" {
+		// explicitly selected cluster
+		return conn.chooseBackend(options.ClusterID).GroupContents(ctx, options)
+	} else if userUuidRe.MatchString(options.UUID) {
+		// user, get the things they own on the local cluster
+		return conn.local.GroupContents(ctx, options)
+	} else {
+		// a group, potentially want to make federated request
+		return conn.chooseBackend(options.UUID).GroupContents(ctx, options)
+	}
+}
+
+func (conn *Conn) GroupShared(ctx context.Context, options arvados.ListOptions) (arvados.GroupList, error) {
+	return conn.chooseBackend(options.ClusterID).GroupShared(ctx, options)
+}
+
+func (conn *Conn) GroupDelete(ctx context.Context, options arvados.DeleteOptions) (arvados.Group, error) {
+	return conn.chooseBackend(options.UUID).GroupDelete(ctx, options)
+}
+
+func (conn *Conn) GroupTrash(ctx context.Context, options arvados.DeleteOptions) (arvados.Group, error) {
+	return conn.chooseBackend(options.UUID).GroupTrash(ctx, options)
+}
+
+func (conn *Conn) GroupUntrash(ctx context.Context, options arvados.UntrashOptions) (arvados.Group, error) {
+	return conn.chooseBackend(options.UUID).GroupUntrash(ctx, options)
+}
+
+func (conn *Conn) LinkCreate(ctx context.Context, options arvados.CreateOptions) (arvados.Link, error) {
+	return conn.chooseBackend(options.ClusterID).LinkCreate(ctx, options)
+}
+
+func (conn *Conn) LinkUpdate(ctx context.Context, options arvados.UpdateOptions) (arvados.Link, error) {
+	return conn.chooseBackend(options.UUID).LinkUpdate(ctx, options)
+}
+
+func (conn *Conn) LinkGet(ctx context.Context, options arvados.GetOptions) (arvados.Link, error) {
+	return conn.chooseBackend(options.UUID).LinkGet(ctx, options)
+}
+
+func (conn *Conn) LinkList(ctx context.Context, options arvados.ListOptions) (arvados.LinkList, error) {
+	return conn.generated_LinkList(ctx, options)
+}
+
+func (conn *Conn) LinkDelete(ctx context.Context, options arvados.DeleteOptions) (arvados.Link, error) {
+	return conn.chooseBackend(options.UUID).LinkDelete(ctx, options)
+}
+
 func (conn *Conn) SpecimenList(ctx context.Context, options arvados.ListOptions) (arvados.SpecimenList, error) {
 	return conn.generated_SpecimenList(ctx, options)
 }
@@ -422,6 +525,10 @@ func (conn *Conn) SpecimenDelete(ctx context.Context, options arvados.DeleteOpti
 	return conn.chooseBackend(options.UUID).SpecimenDelete(ctx, options)
 }
 
+func (conn *Conn) SysTrashSweep(ctx context.Context, options struct{}) (struct{}, error) {
+	return conn.local.SysTrashSweep(ctx, options)
+}
+
 var userAttrsCachedFromLoginCluster = map[string]bool{
 	"created_at":  true,
 	"email":       true,
@@ -432,6 +539,7 @@ var userAttrsCachedFromLoginCluster = map[string]bool{
 	"modified_at": true,
 	"prefs":       true,
 	"username":    true,
+	"kind":        true,
 
 	"etag":                    false,
 	"full_name":               false,
@@ -542,10 +650,6 @@ func (conn *Conn) UserUpdate(ctx context.Context, options arvados.UpdateOptions)
 	return resp, err
 }
 
-func (conn *Conn) UserUpdateUUID(ctx context.Context, options arvados.UpdateUUIDOptions) (arvados.User, error) {
-	return conn.local.UserUpdateUUID(ctx, options)
-}
-
 func (conn *Conn) UserMerge(ctx context.Context, options arvados.UserMergeOptions) (arvados.User, error) {
 	return conn.local.UserMerge(ctx, options)
 }
@@ -623,6 +727,33 @@ func (conn *Conn) UserAuthenticate(ctx context.Context, options arvados.UserAuth
 
 func (conn *Conn) APIClientAuthorizationCurrent(ctx context.Context, options arvados.GetOptions) (arvados.APIClientAuthorization, error) {
 	return conn.chooseBackend(options.UUID).APIClientAuthorizationCurrent(ctx, options)
+}
+
+func (conn *Conn) APIClientAuthorizationCreate(ctx context.Context, options arvados.CreateOptions) (arvados.APIClientAuthorization, error) {
+	if conn.cluster.Login.LoginCluster != "" {
+		return conn.chooseBackend(conn.cluster.Login.LoginCluster).APIClientAuthorizationCreate(ctx, options)
+	}
+	ownerUUID, ok := options.Attrs["owner_uuid"].(string)
+	if ok && ownerUUID != "" {
+		return conn.chooseBackend(ownerUUID).APIClientAuthorizationCreate(ctx, options)
+	}
+	return conn.local.APIClientAuthorizationCreate(ctx, options)
+}
+
+func (conn *Conn) APIClientAuthorizationUpdate(ctx context.Context, options arvados.UpdateOptions) (arvados.APIClientAuthorization, error) {
+	return conn.chooseBackend(options.UUID).APIClientAuthorizationUpdate(ctx, options)
+}
+
+func (conn *Conn) APIClientAuthorizationDelete(ctx context.Context, options arvados.DeleteOptions) (arvados.APIClientAuthorization, error) {
+	return conn.chooseBackend(options.UUID).APIClientAuthorizationDelete(ctx, options)
+}
+
+func (conn *Conn) APIClientAuthorizationList(ctx context.Context, options arvados.ListOptions) (arvados.APIClientAuthorizationList, error) {
+	return conn.local.APIClientAuthorizationList(ctx, options)
+}
+
+func (conn *Conn) APIClientAuthorizationGet(ctx context.Context, options arvados.GetOptions) (arvados.APIClientAuthorization, error) {
+	return conn.chooseBackend(options.UUID).APIClientAuthorizationGet(ctx, options)
 }
 
 type backend interface {

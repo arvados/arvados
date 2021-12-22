@@ -61,24 +61,16 @@ from builtins import next
 from builtins import str
 from builtins import object
 import os
-import sys
 import llfuse
 import errno
 import stat
 import threading
 import arvados
-import pprint
 import arvados.events
-import re
-import apiclient
-import json
 import logging
 import time
-import _strptime
-import calendar
 import threading
 import itertools
-import ciso8601
 import collections
 import functools
 import arvados.keep

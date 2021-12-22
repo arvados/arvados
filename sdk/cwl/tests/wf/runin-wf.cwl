@@ -36,7 +36,7 @@ steps:
     hints:
       - class: arv:RunInSingleContainer
       - class: DockerRequirement
-        dockerPull: arvados/jobs:1.4.0.20190604172024
+        dockerPull: arvados/jobs:2.2.2
     run:
       class: Workflow
       id: mysub

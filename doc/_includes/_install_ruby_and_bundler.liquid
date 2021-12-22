@@ -22,12 +22,10 @@ The Ruby version shipped with Centos 7 is too old.  Use "RVM":#rvm to install Ru
 
 h3. Debian and Ubuntu
 
-Ubuntu 16.04 (xenial) ships with Ruby 2.3, which is not supported by Arvados.  Use "RVM":#rvm to install Ruby 2.5 or later.
-
-Debian 10 (buster) and Ubuntu 18.04 (bionic) and later ship with Ruby 2.5, which is supported by Arvados.
+Debian 10 (buster) and Ubuntu 18.04 (bionic) and later ship with Ruby 2.5 or newer, which is sufficient for Arvados.
 
 <notextile>
-<pre><code># <span class="userinput">apt-get --no-install-recommends install ruby ruby-dev bundler</span></code></pre>
+<pre><code># <span class="userinput">apt-get --no-install-recommends install ruby ruby-dev</span></code></pre>
 </notextile>
 
 h2(#rvm). Option 2: Install with RVM
@@ -46,34 +44,30 @@ h4. Debian and Ubuntu
 apt-get --no-install-recommends install gpg curl
 </pre>
 
-h3. Install RVM
+h3. Install RVM, Ruby and Bundler
 
 <notextile>
-<pre><code># <span class="userinput">gpg --keyserver pool.sks-keyservers.net --recv-keys 409B6B1796C275462A1703113804BB82D39DC0E3 7D2BAF1CF37B13E2069D6956105BD0E739499BDB
+<pre><code># <span class="userinput">gpg --keyserver pgp.mit.edu --recv-keys 409B6B1796C275462A1703113804BB82D39DC0E3 7D2BAF1CF37B13E2069D6956105BD0E739499BDB
 \curl -sSL https://get.rvm.io | bash -s stable --ruby=2.5
 </span></code></pre></notextile>
+
+This command installs the latest Ruby 2.5.x release, as well as the @gem@ and @bundle@ commands.
 
 To use Ruby installed from RVM, load it in an open shell like this:
 
 <notextile>
-<pre><code><span class="userinput">. /usr/local/rvm/scripts/rvm
+<pre><code><span class="userinput">source /usr/local/rvm/scripts/rvm
 </span></code></pre></notextile>
 
 Alternately you can use @rvm-exec@ (the first parameter is the ruby version to use, or "default"), for example:
 
 <notextile>
-<pre><code><span class="userinput">rvm-exec default rails console
+<pre><code><span class="userinput">rvm-exec default ruby -v
 </span></code></pre></notextile>
-
-Finally, install Bundler:
-
-<notextile>
-<pre><code>~$ <span class="userinput">gem install bundler</span>
-</code></pre></notextile>
 
 h2(#fromsource). Option 3: Install from source
 
-Install prerequisites for Debian 10:
+Install prerequisites for Debian 10, Ubuntu 18.04 and Ubuntu 20.04:
 
 <notextile>
 <pre><code><span class="userinput">sudo apt-get install \
@@ -91,25 +85,20 @@ Install prerequisites for CentOS 7:
     make automake libtool bison sqlite-devel tar
 </span></code></pre></notextile>
 
-Install prerequisites for Ubuntu 16.04:
-
-<notextile>
-<pre><code><span class="userinput">sudo apt-get install \
-    bison build-essential gettext libcurl3 \
-    libcurl3-openssl-dev libpcre3-dev libreadline-dev \
-    libssl-dev libxslt1.1 zlib1g-dev
-</span></code></pre></notextile>
-
 Build and install Ruby:
 
 <notextile>
 <pre><code><span class="userinput">mkdir -p ~/src
 cd ~/src
-curl -f http://cache.ruby-lang.org/pub/ruby/2.5/ruby-2.5.5.tar.gz | tar xz
-cd ruby-2.5.5
+curl -f http://cache.ruby-lang.org/pub/ruby/2.5/ruby-2.5.8.tar.gz | tar xz
+cd ruby-2.5.8
 ./configure --disable-install-rdoc
 make
 sudo make install
 
+# Make sure the post install script can find the gem and ruby executables
+sudo ln -s /usr/local/bin/gem /usr/bin/gem
+sudo ln -s /usr/local/bin/ruby /usr/bin/ruby
+# Install bundler
 sudo -i gem install bundler</span>
 </code></pre></notextile>

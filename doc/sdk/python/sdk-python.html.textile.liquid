@@ -18,7 +18,7 @@ If you are logged in to an Arvados VM, the Python SDK should be installed.
 
 To use the Python SDK elsewhere, you can install from PyPI or a distribution package.
 
-As of Arvados 2.1, the Python SDK requires Python 3.5+.  The last version to support Python 2.7 is Arvados 2.0.4.
+As of Arvados 2.2, the Python SDK requires Python 3.6+.  The last version to support Python 2.7 is Arvados 2.0.4.
 
 h2. Option 1: Install from a distribution package
 
@@ -66,7 +66,7 @@ Type "help", "copyright", "credits" or "license" for more information.
 If you installed from a distribution package (option 2): the package includes a virtualenv, which means the correct Python environment needs to be loaded before the Arvados SDK can be imported. This can be done by activating the virtualenv first:
 
 <notextile>
-<pre>~$ <code class="userinput">source /usr/share/python2.7/dist/python-arvados-python-client/bin/activate</code>
+<pre>~$ <code class="userinput">source /usr/share/python3/dist/python3-arvados-python-client/bin/activate</code>
 (python-arvados-python-client) ~$ <code class="userinput">python</code>
 Python 3.7.3 (default, Jul 25 2020, 13:03:44)
 [GCC 8.3.0] on linux
@@ -80,7 +80,7 @@ Type "help", "copyright", "credits" or "license" for more information.
 Or alternatively, by using the Python executable from the virtualenv directly:
 
 <notextile>
-<pre>~$ <code class="userinput">/usr/share/python2.7/dist/python-arvados-python-client/bin/python</code>
+<pre>~$ <code class="userinput">/usr/share/python3/dist/python3-arvados-python-client/bin/python</code>
 Python 3.7.3 (default, Jul 25 2020, 13:03:44)
 [GCC 8.3.0] on linux
 Type "help", "copyright", "credits" or "license" for more information.

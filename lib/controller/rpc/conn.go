@@ -39,7 +39,9 @@ func PassthroughTokenProvider(ctx context.Context) ([]string, error) {
 }
 
 type Conn struct {
-	SendHeader    http.Header
+	SendHeader         http.Header
+	RedactHostInErrors bool
+
 	clusterID     string
 	httpClient    http.Client
 	baseURL       url.URL
@@ -148,7 +150,21 @@ func (conn *Conn) requestAndDecode(ctx context.Context, dst interface{}, ep arva
 		path = strings.Replace(path, "/{uuid}", "/"+uuid, 1)
 		delete(params, "uuid")
 	}
-	return aClient.RequestAndDecodeContext(ctx, dst, ep.Method, path, body, params)
+	err = aClient.RequestAndDecodeContext(ctx, dst, ep.Method, path, body, params)
+	if err != nil && conn.RedactHostInErrors {
+		redacted := strings.Replace(err.Error(), strings.TrimSuffix(conn.baseURL.String(), "/"), "//railsapi.internal", -1)
+		if strings.HasPrefix(redacted, "request failed: ") {
+			redacted = strings.Replace(redacted, "request failed: ", "", -1)
+		}
+		if redacted != err.Error() {
+			if err, ok := err.(httpStatusError); ok {
+				return wrapHTTPStatusError(err, redacted)
+			} else {
+				return errors.New(redacted)
+			}
+		}
+	}
+	return err
 }
 
 func (conn *Conn) BaseURL() url.URL {
@@ -158,6 +174,13 @@ func (conn *Conn) BaseURL() url.URL {
 func (conn *Conn) ConfigGet(ctx context.Context) (json.RawMessage, error) {
 	ep := arvados.EndpointConfigGet
 	var resp json.RawMessage
+	err := conn.requestAndDecode(ctx, &resp, ep, nil, nil)
+	return resp, err
+}
+
+func (conn *Conn) VocabularyGet(ctx context.Context) (arvados.Vocabulary, error) {
+	ep := arvados.EndpointVocabularyGet
+	var resp arvados.Vocabulary
 	err := conn.requestAndDecode(ctx, &resp, ep, nil, nil)
 	return resp, err
 }
@@ -416,6 +439,104 @@ func (conn *Conn) ContainerRequestDelete(ctx context.Context, options arvados.De
 	return resp, err
 }
 
+func (conn *Conn) GroupCreate(ctx context.Context, options arvados.CreateOptions) (arvados.Group, error) {
+	ep := arvados.EndpointGroupCreate
+	var resp arvados.Group
+	err := conn.requestAndDecode(ctx, &resp, ep, nil, options)
+	return resp, err
+}
+
+func (conn *Conn) GroupUpdate(ctx context.Context, options arvados.UpdateOptions) (arvados.Group, error) {
+	ep := arvados.EndpointGroupUpdate
+	var resp arvados.Group
+	err := conn.requestAndDecode(ctx, &resp, ep, nil, options)
+	return resp, err
+}
+
+func (conn *Conn) GroupGet(ctx context.Context, options arvados.GetOptions) (arvados.Group, error) {
+	ep := arvados.EndpointGroupGet
+	var resp arvados.Group
+	err := conn.requestAndDecode(ctx, &resp, ep, nil, options)
+	return resp, err
+}
+
+func (conn *Conn) GroupList(ctx context.Context, options arvados.ListOptions) (arvados.GroupList, error) {
+	ep := arvados.EndpointGroupList
+	var resp arvados.GroupList
+	err := conn.requestAndDecode(ctx, &resp, ep, nil, options)
+	return resp, err
+}
+
+func (conn *Conn) GroupContents(ctx context.Context, options arvados.GroupContentsOptions) (arvados.ObjectList, error) {
+	ep := arvados.EndpointGroupContents
+	var resp arvados.ObjectList
+	err := conn.requestAndDecode(ctx, &resp, ep, nil, options)
+	return resp, err
+}
+
+func (conn *Conn) GroupShared(ctx context.Context, options arvados.ListOptions) (arvados.GroupList, error) {
+	ep := arvados.EndpointGroupShared
+	var resp arvados.GroupList
+	err := conn.requestAndDecode(ctx, &resp, ep, nil, options)
+	return resp, err
+}
+
+func (conn *Conn) GroupDelete(ctx context.Context, options arvados.DeleteOptions) (arvados.Group, error) {
+	ep := arvados.EndpointGroupDelete
+	var resp arvados.Group
+	err := conn.requestAndDecode(ctx, &resp, ep, nil, options)
+	return resp, err
+}
+
+func (conn *Conn) GroupTrash(ctx context.Context, options arvados.DeleteOptions) (arvados.Group, error) {
+	ep := arvados.EndpointGroupTrash
+	var resp arvados.Group
+	err := conn.requestAndDecode(ctx, &resp, ep, nil, options)
+	return resp, err
+}
+
+func (conn *Conn) GroupUntrash(ctx context.Context, options arvados.UntrashOptions) (arvados.Group, error) {
+	ep := arvados.EndpointGroupUntrash
+	var resp arvados.Group
+	err := conn.requestAndDecode(ctx, &resp, ep, nil, options)
+	return resp, err
+}
+
+func (conn *Conn) LinkCreate(ctx context.Context, options arvados.CreateOptions) (arvados.Link, error) {
+	ep := arvados.EndpointLinkCreate
+	var resp arvados.Link
+	err := conn.requestAndDecode(ctx, &resp, ep, nil, options)
+	return resp, err
+}
+
+func (conn *Conn) LinkUpdate(ctx context.Context, options arvados.UpdateOptions) (arvados.Link, error) {
+	ep := arvados.EndpointLinkUpdate
+	var resp arvados.Link
+	err := conn.requestAndDecode(ctx, &resp, ep, nil, options)
+	return resp, err
+}
+
+func (conn *Conn) LinkGet(ctx context.Context, options arvados.GetOptions) (arvados.Link, error) {
+	ep := arvados.EndpointLinkGet
+	var resp arvados.Link
+	err := conn.requestAndDecode(ctx, &resp, ep, nil, options)
+	return resp, err
+}
+
+func (conn *Conn) LinkList(ctx context.Context, options arvados.ListOptions) (arvados.LinkList, error) {
+	ep := arvados.EndpointLinkList
+	var resp arvados.LinkList
+	err := conn.requestAndDecode(ctx, &resp, ep, nil, options)
+	return resp, err
+}
+
+func (conn *Conn) LinkDelete(ctx context.Context, options arvados.DeleteOptions) (arvados.Link, error) {
+	ep := arvados.EndpointLinkDelete
+	var resp arvados.Link
+	err := conn.requestAndDecode(ctx, &resp, ep, nil, options)
+	return resp, err
+}
+
 func (conn *Conn) SpecimenCreate(ctx context.Context, options arvados.CreateOptions) (arvados.Specimen, error) {
 	ep := arvados.EndpointSpecimenCreate
 	var resp arvados.Specimen
@@ -451,6 +572,13 @@ func (conn *Conn) SpecimenDelete(ctx context.Context, options arvados.DeleteOpti
 	return resp, err
 }
 
+func (conn *Conn) SysTrashSweep(ctx context.Context, options struct{}) (struct{}, error) {
+	ep := arvados.EndpointSysTrashSweep
+	var resp struct{}
+	err := conn.requestAndDecode(ctx, &resp, ep, nil, options)
+	return resp, err
+}
+
 func (conn *Conn) UserCreate(ctx context.Context, options arvados.CreateOptions) (arvados.User, error) {
 	ep := arvados.EndpointUserCreate
 	var resp arvados.User
@@ -459,12 +587,6 @@ func (conn *Conn) UserCreate(ctx context.Context, options arvados.CreateOptions)
 }
 func (conn *Conn) UserUpdate(ctx context.Context, options arvados.UpdateOptions) (arvados.User, error) {
 	ep := arvados.EndpointUserUpdate
-	var resp arvados.User
-	err := conn.requestAndDecode(ctx, &resp, ep, nil, options)
-	return resp, err
-}
-func (conn *Conn) UserUpdateUUID(ctx context.Context, options arvados.UpdateUUIDOptions) (arvados.User, error) {
-	ep := arvados.EndpointUserUpdateUUID
 	var resp arvados.User
 	err := conn.requestAndDecode(ctx, &resp, ep, nil, options)
 	return resp, err
@@ -530,6 +652,36 @@ func (conn *Conn) APIClientAuthorizationCurrent(ctx context.Context, options arv
 	err := conn.requestAndDecode(ctx, &resp, ep, nil, options)
 	return resp, err
 }
+func (conn *Conn) APIClientAuthorizationCreate(ctx context.Context, options arvados.CreateOptions) (arvados.APIClientAuthorization, error) {
+	ep := arvados.EndpointAPIClientAuthorizationCreate
+	var resp arvados.APIClientAuthorization
+	err := conn.requestAndDecode(ctx, &resp, ep, nil, options)
+	return resp, err
+}
+func (conn *Conn) APIClientAuthorizationUpdate(ctx context.Context, options arvados.UpdateOptions) (arvados.APIClientAuthorization, error) {
+	ep := arvados.EndpointAPIClientAuthorizationUpdate
+	var resp arvados.APIClientAuthorization
+	err := conn.requestAndDecode(ctx, &resp, ep, nil, options)
+	return resp, err
+}
+func (conn *Conn) APIClientAuthorizationDelete(ctx context.Context, options arvados.DeleteOptions) (arvados.APIClientAuthorization, error) {
+	ep := arvados.EndpointAPIClientAuthorizationDelete
+	var resp arvados.APIClientAuthorization
+	err := conn.requestAndDecode(ctx, &resp, ep, nil, options)
+	return resp, err
+}
+func (conn *Conn) APIClientAuthorizationList(ctx context.Context, options arvados.ListOptions) (arvados.APIClientAuthorizationList, error) {
+	ep := arvados.EndpointAPIClientAuthorizationList
+	var resp arvados.APIClientAuthorizationList
+	err := conn.requestAndDecode(ctx, &resp, ep, nil, options)
+	return resp, err
+}
+func (conn *Conn) APIClientAuthorizationGet(ctx context.Context, options arvados.GetOptions) (arvados.APIClientAuthorization, error) {
+	ep := arvados.EndpointAPIClientAuthorizationGet
+	var resp arvados.APIClientAuthorization
+	err := conn.requestAndDecode(ctx, &resp, ep, nil, options)
+	return resp, err
+}
 
 type UserSessionAuthInfo struct {
 	UserUUID        string    `json:"user_uuid"`
@@ -565,4 +717,27 @@ func (conn *Conn) UserAuthenticate(ctx context.Context, options arvados.UserAuth
 	var resp arvados.APIClientAuthorization
 	err := conn.requestAndDecode(ctx, &resp, ep, nil, options)
 	return resp, err
+}
+
+// httpStatusError is an error with an HTTP status code that can be
+// propagated by lib/controller/router, etc.
+type httpStatusError interface {
+	error
+	HTTPStatus() int
+}
+
+// wrappedHTTPStatusError is used to augment/replace an error message
+// while preserving the HTTP status code indicated by the original
+// error.
+type wrappedHTTPStatusError struct {
+	httpStatusError
+	message string
+}
+
+func wrapHTTPStatusError(err httpStatusError, message string) httpStatusError {
+	return wrappedHTTPStatusError{err, message}
+}
+
+func (err wrappedHTTPStatusError) Error() string {
+	return err.message
 }

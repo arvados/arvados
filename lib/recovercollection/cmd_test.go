@@ -27,7 +27,6 @@ var _ = check.Suite(&Suite{})
 type Suite struct{}
 
 func (*Suite) SetUpSuite(c *check.C) {
-	arvadostest.StartAPI()
 	arvadostest.StartKeep(2, true)
 }
 

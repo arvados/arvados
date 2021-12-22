@@ -5,7 +5,7 @@
 source 'https://rubygems.org'
 
 gem 'rails', '~> 5.2.0'
-gem 'arvados', git: 'https://github.com/arvados/arvados.git', glob: 'sdk/ruby/arvados.gemspec'
+gem 'arvados', '~> 2.1.5'
 
 gem 'activerecord-nulldb-adapter', git: 'https://github.com/arvados/nulldb'
 gem 'multi_json'
@@ -17,9 +17,6 @@ gem 'responders', '~> 2.0'
 # Pin sprockets to < 4.0 to avoid issues when upgrading rails to 5.2
 # See: https://github.com/rails/sprockets-rails/issues/443
 gem 'sprockets', '~> 3.0'
-
-# Fast app boot times
-gem 'bootsnap', require: false
 
 # Note: keeping this out of the "group :assets" section "may" allow us
 # to use Coffescript for UJS responses. It also prevents a

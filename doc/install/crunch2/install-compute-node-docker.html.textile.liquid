@@ -1,0 +1,44 @@
+---
+layout: default
+navsection: installguide
+title: Set up a compute node with Docker
+...
+{% comment %}
+Copyright (C) The Arvados Authors. All rights reserved.
+
+SPDX-License-Identifier: CC-BY-SA-3.0
+{% endcomment %}
+
+{% include 'notebox_begin_warning' %}
+This page describes the requirements for a compute node in a Slurm or LSF cluster that will run containers dispatched by @crunch-dispatch-slurm@ or @arvados-dispatch-lsf@. If you are installing a cloud cluster, refer to "Build a cloud compute node image":{{ site.baseurl }}/install/crunch2-cloud/install-compute-node.html.
+{% include 'notebox_end' %}
+
+{% include 'notebox_begin_warning' %}
+These instructions apply when Containers.RuntimeEngine is set to @docker@, refer to "Set up a compute node with Singularity":install-compute-node-singularity.html when running @singularity@.
+{% include 'notebox_end' %}
+
+# "Introduction":#introduction
+# "Set up Docker":#docker
+# "Update fuse.conf":#fuse
+# "Update docker-cleaner.json":#docker-cleaner
+# "Install'python-arvados-fuse and crunch-run and arvados-docker-cleaner":#install-packages
+
+h2(#introduction). Introduction
+
+This page describes how to configure a compute node so that it can be used to run containers dispatched by Arvados on a static cluster. These steps must be performed on every compute node.
+
+h2(#docker). Set up Docker
+
+See "Set up Docker":../install-docker.html
+
+{% assign arvados_component = 'python-arvados-fuse crunch-run arvados-docker-cleaner' %}
+
+{% include 'install_compute_fuse' %}
+
+{% include 'install_docker_cleaner' %}
+
+{% include 'install_packages' %}
+
+{% assign arvados_component = 'arvados-docker-cleaner' %}
+
+{% include 'start_service' %}

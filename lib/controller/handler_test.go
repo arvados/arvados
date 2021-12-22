@@ -26,20 +26,16 @@ import (
 	check "gopkg.in/check.v1"
 )
 
-var forceLegacyAPI14 bool
-
 // Gocheck boilerplate
 func Test(t *testing.T) {
-	for _, forceLegacyAPI14 = range []bool{false, true} {
-		check.TestingT(t)
-	}
+	check.TestingT(t)
 }
 
 var _ = check.Suite(&HandlerSuite{})
 
 type HandlerSuite struct {
 	cluster *arvados.Cluster
-	handler http.Handler
+	handler *Handler
 	ctx     context.Context
 	cancel  context.CancelFunc
 }
@@ -48,15 +44,14 @@ func (s *HandlerSuite) SetUpTest(c *check.C) {
 	s.ctx, s.cancel = context.WithCancel(context.Background())
 	s.ctx = ctxlog.Context(s.ctx, ctxlog.New(os.Stderr, "json", "debug"))
 	s.cluster = &arvados.Cluster{
-		ClusterID:        "zzzzz",
-		PostgreSQL:       integrationTestCluster().PostgreSQL,
-		ForceLegacyAPI14: forceLegacyAPI14,
+		ClusterID:  "zzzzz",
+		PostgreSQL: integrationTestCluster().PostgreSQL,
 	}
 	s.cluster.API.RequestTimeout = arvados.Duration(5 * time.Minute)
 	s.cluster.TLS.Insecure = true
 	arvadostest.SetServiceURL(&s.cluster.Services.RailsAPI, "https://"+os.Getenv("ARVADOS_TEST_API_HOST"))
 	arvadostest.SetServiceURL(&s.cluster.Services.Controller, "http://localhost:/")
-	s.handler = newHandler(s.ctx, s.cluster, "", prometheus.NewRegistry())
+	s.handler = newHandler(s.ctx, s.cluster, "", prometheus.NewRegistry()).(*Handler)
 }
 
 func (s *HandlerSuite) TearDownTest(c *check.C) {
@@ -91,6 +86,104 @@ func (s *HandlerSuite) TestConfigExport(c *check.C) {
 		c.Check(cluster.Collections.BlobSigning, check.Equals, true)
 		c.Check(cluster.Collections.BlobSigningTTL, check.Equals, arvados.Duration(23*time.Second))
 	}
+}
+
+func (s *HandlerSuite) TestVocabularyExport(c *check.C) {
+	voc := `{
+		"strict_tags": false,
+		"tags": {
+			"IDTAGIMPORTANCE": {
+				"strict": false,
+				"labels": [{"label": "Importance"}],
+				"values": {
+					"HIGH": {
+						"labels": [{"label": "High"}]
+					},
+					"LOW": {
+						"labels": [{"label": "Low"}]
+					}
+				}
+			}
+		}
+	}`
+	f, err := os.CreateTemp("", "test-vocabulary-*.json")
+	c.Assert(err, check.IsNil)
+	defer os.Remove(f.Name())
+	_, err = f.WriteString(voc)
+	c.Assert(err, check.IsNil)
+	f.Close()
+	s.cluster.API.VocabularyPath = f.Name()
+	for _, method := range []string{"GET", "OPTIONS"} {
+		c.Log(c.TestName()+" ", method)
+		req := httptest.NewRequest(method, "/arvados/v1/vocabulary", nil)
+		resp := httptest.NewRecorder()
+		s.handler.ServeHTTP(resp, req)
+		c.Log(resp.Body.String())
+		if !c.Check(resp.Code, check.Equals, http.StatusOK) {
+			continue
+		}
+		c.Check(resp.Header().Get("Access-Control-Allow-Origin"), check.Equals, `*`)
+		c.Check(resp.Header().Get("Access-Control-Allow-Methods"), check.Matches, `.*\bGET\b.*`)
+		c.Check(resp.Header().Get("Access-Control-Allow-Headers"), check.Matches, `.+`)
+		if method == "OPTIONS" {
+			c.Check(resp.Body.String(), check.HasLen, 0)
+			continue
+		}
+		var expectedVoc, receivedVoc *arvados.Vocabulary
+		err := json.Unmarshal([]byte(voc), &expectedVoc)
+		c.Check(err, check.IsNil)
+		err = json.Unmarshal(resp.Body.Bytes(), &receivedVoc)
+		c.Check(err, check.IsNil)
+		c.Check(receivedVoc, check.DeepEquals, expectedVoc)
+	}
+}
+
+func (s *HandlerSuite) TestVocabularyFailedCheckStatus(c *check.C) {
+	voc := `{
+		"strict_tags": false,
+		"tags": {
+			"IDTAGIMPORTANCE": {
+				"strict": true,
+				"labels": [{"label": "Importance"}],
+				"values": {
+					"HIGH": {
+						"labels": [{"label": "High"}]
+					},
+					"LOW": {
+						"labels": [{"label": "Low"}]
+					}
+				}
+			}
+		}
+	}`
+	f, err := os.CreateTemp("", "test-vocabulary-*.json")
+	c.Assert(err, check.IsNil)
+	defer os.Remove(f.Name())
+	_, err = f.WriteString(voc)
+	c.Assert(err, check.IsNil)
+	f.Close()
+	s.cluster.API.VocabularyPath = f.Name()
+
+	req := httptest.NewRequest("POST", "/arvados/v1/collections",
+		strings.NewReader(`{
+			"collection": {
+				"properties": {
+					"IDTAGIMPORTANCE": "Critical"
+				}
+			}
+		}`))
+	req.Header.Set("Authorization", "Bearer "+arvadostest.ActiveToken)
+	req.Header.Set("Content-type", "application/json")
+
+	resp := httptest.NewRecorder()
+	s.handler.ServeHTTP(resp, req)
+	c.Log(resp.Body.String())
+	c.Assert(resp.Code, check.Equals, http.StatusBadRequest)
+	var jresp httpserver.ErrorResponse
+	err = json.Unmarshal(resp.Body.Bytes(), &jresp)
+	c.Check(err, check.IsNil)
+	c.Assert(len(jresp.Errors), check.Equals, 1)
+	c.Check(jresp.Errors[0], check.Matches, `.*tag value.*is not valid for key.*`)
 }
 
 func (s *HandlerSuite) TestProxyDiscoveryDoc(c *check.C) {
@@ -169,39 +262,7 @@ func (s *HandlerSuite) TestProxyNotFound(c *check.C) {
 	c.Check(jresp["errors"], check.FitsTypeOf, []interface{}{})
 }
 
-func (s *HandlerSuite) TestProxyRedirect(c *check.C) {
-	s.cluster.Login.SSO.Enable = true
-	s.cluster.Login.SSO.ProviderAppID = "test"
-	s.cluster.Login.SSO.ProviderAppSecret = "test"
-	req := httptest.NewRequest("GET", "https://0.0.0.0:1/login?return_to=foo", nil)
-	resp := httptest.NewRecorder()
-	s.handler.ServeHTTP(resp, req)
-	if !c.Check(resp.Code, check.Equals, http.StatusFound) {
-		c.Log(resp.Body.String())
-	}
-	// Old "proxy entire request" code path returns an absolute
-	// URL. New lib/controller/federation code path returns a
-	// relative URL.
-	c.Check(resp.Header().Get("Location"), check.Matches, `(https://0.0.0.0:1)?/auth/joshid\?return_to=%2Cfoo&?`)
-}
-
-func (s *HandlerSuite) TestLogoutSSO(c *check.C) {
-	s.cluster.Login.SSO.Enable = true
-	s.cluster.Login.SSO.ProviderAppID = "test"
-	req := httptest.NewRequest("GET", "https://0.0.0.0:1/logout?return_to=https://example.com/foo", nil)
-	resp := httptest.NewRecorder()
-	s.handler.ServeHTTP(resp, req)
-	if !c.Check(resp.Code, check.Equals, http.StatusFound) {
-		c.Log(resp.Body.String())
-	}
-	c.Check(resp.Header().Get("Location"), check.Equals, "http://localhost:3002/users/sign_out?"+url.Values{"redirect_uri": {"https://example.com/foo"}}.Encode())
-}
-
 func (s *HandlerSuite) TestLogoutGoogle(c *check.C) {
-	if s.cluster.ForceLegacyAPI14 {
-		// Google login N/A
-		return
-	}
 	s.cluster.Login.Google.Enable = true
 	s.cluster.Login.Google.ClientID = "test"
 	req := httptest.NewRequest("GET", "https://0.0.0.0:1/logout?return_to=https://example.com/foo", nil)
@@ -215,7 +276,7 @@ func (s *HandlerSuite) TestLogoutGoogle(c *check.C) {
 
 func (s *HandlerSuite) TestValidateV1APIToken(c *check.C) {
 	req := httptest.NewRequest("GET", "/arvados/v1/users/current", nil)
-	user, ok, err := s.handler.(*Handler).validateAPItoken(req, arvadostest.ActiveToken)
+	user, ok, err := s.handler.validateAPItoken(req, arvadostest.ActiveToken)
 	c.Assert(err, check.IsNil)
 	c.Check(ok, check.Equals, true)
 	c.Check(user.Authorization.UUID, check.Equals, arvadostest.ActiveTokenUUID)
@@ -226,7 +287,7 @@ func (s *HandlerSuite) TestValidateV1APIToken(c *check.C) {
 
 func (s *HandlerSuite) TestValidateV2APIToken(c *check.C) {
 	req := httptest.NewRequest("GET", "/arvados/v1/users/current", nil)
-	user, ok, err := s.handler.(*Handler).validateAPItoken(req, arvadostest.ActiveTokenV2)
+	user, ok, err := s.handler.validateAPItoken(req, arvadostest.ActiveTokenV2)
 	c.Assert(err, check.IsNil)
 	c.Check(ok, check.Equals, true)
 	c.Check(user.Authorization.UUID, check.Equals, arvadostest.ActiveTokenUUID)
@@ -258,11 +319,11 @@ func (s *HandlerSuite) TestValidateRemoteToken(c *check.C) {
 
 func (s *HandlerSuite) TestCreateAPIToken(c *check.C) {
 	req := httptest.NewRequest("GET", "/arvados/v1/users/current", nil)
-	auth, err := s.handler.(*Handler).createAPItoken(req, arvadostest.ActiveUserUUID, nil)
+	auth, err := s.handler.createAPItoken(req, arvadostest.ActiveUserUUID, nil)
 	c.Assert(err, check.IsNil)
 	c.Check(auth.Scopes, check.DeepEquals, []string{"all"})
 
-	user, ok, err := s.handler.(*Handler).validateAPItoken(req, auth.TokenV2())
+	user, ok, err := s.handler.validateAPItoken(req, auth.TokenV2())
 	c.Assert(err, check.IsNil)
 	c.Check(ok, check.Equals, true)
 	c.Check(user.Authorization.UUID, check.Equals, auth.UUID)
@@ -282,7 +343,7 @@ func (s *HandlerSuite) CheckObjectType(c *check.C, url string, token string, ski
 	resp := httptest.NewRecorder()
 	s.handler.ServeHTTP(resp, req)
 	c.Assert(resp.Code, check.Equals, http.StatusOK,
-		check.Commentf("Wasn't able to get data from the controller at %q", url))
+		check.Commentf("Wasn't able to get data from the controller at %q: %q", url, resp.Body.String()))
 	err = json.Unmarshal(resp.Body.Bytes(), &proxied)
 	c.Check(err, check.Equals, nil)
 
@@ -331,10 +392,30 @@ func (s *HandlerSuite) TestGetObjects(c *check.C) {
 	json.Unmarshal(resp.Body.Bytes(), &ksList)
 	c.Assert(len(ksList.Items), check.Not(check.Equals), 0)
 	ksUUID := ksList.Items[0].UUID
+	// Create a new token for the test user so that we're not comparing
+	// the ones from the fixtures.
+	req = httptest.NewRequest("POST", "/arvados/v1/api_client_authorizations",
+		strings.NewReader(`{
+			"api_client_authorization": {
+				"owner_uuid": "`+arvadostest.AdminUserUUID+`",
+				"created_by_ip_address": "::1",
+				"last_used_by_ip_address": "::1",
+				"default_owner_uuid": "`+arvadostest.AdminUserUUID+`"
+			}
+		}`))
+	req.Header.Set("Authorization", "Bearer "+arvadostest.SystemRootToken)
+	req.Header.Set("Content-type", "application/json")
+	resp = httptest.NewRecorder()
+	s.handler.ServeHTTP(resp, req)
+	c.Assert(resp.Code, check.Equals, http.StatusOK,
+		check.Commentf("%s", resp.Body.String()))
+	var auth arvados.APIClientAuthorization
+	json.Unmarshal(resp.Body.Bytes(), &auth)
+	c.Assert(auth.UUID, check.Not(check.Equals), "")
 
 	testCases := map[string]map[string]bool{
 		"api_clients/" + arvadostest.TrustedWorkbenchAPIClientUUID:     nil,
-		"api_client_authorizations/" + arvadostest.AdminTokenUUID:      nil,
+		"api_client_authorizations/" + auth.UUID:                       {"href": true, "modified_by_client_uuid": true, "modified_by_user_uuid": true},
 		"authorized_keys/" + arvadostest.AdminAuthorizedKeysUUID:       nil,
 		"collections/" + arvadostest.CollectionWithUniqueWordsUUID:     {"href": true},
 		"containers/" + arvadostest.RunningContainerUUID:               nil,
@@ -350,6 +431,50 @@ func (s *HandlerSuite) TestGetObjects(c *check.C) {
 		"workflows/" + arvadostest.WorkflowWithDefinitionYAMLUUID:      nil,
 	}
 	for url, skippedFields := range testCases {
-		s.CheckObjectType(c, "/arvados/v1/"+url, arvadostest.AdminToken, skippedFields)
+		c.Logf("Testing %q", url)
+		s.CheckObjectType(c, "/arvados/v1/"+url, auth.TokenV2(), skippedFields)
+	}
+}
+
+func (s *HandlerSuite) TestRedactRailsAPIHostFromErrors(c *check.C) {
+	req := httptest.NewRequest("GET", "https://0.0.0.0:1/arvados/v1/collections/zzzzz-4zz18-abcdefghijklmno", nil)
+	req.Header.Set("Authorization", "Bearer "+arvadostest.ActiveToken)
+	resp := httptest.NewRecorder()
+	s.handler.ServeHTTP(resp, req)
+	c.Check(resp.Code, check.Equals, http.StatusNotFound)
+	var jresp struct {
+		Errors []string
+	}
+	c.Log(resp.Body.String())
+	c.Assert(json.NewDecoder(resp.Body).Decode(&jresp), check.IsNil)
+	c.Assert(jresp.Errors, check.HasLen, 1)
+	c.Check(jresp.Errors[0], check.Matches, `.*//railsapi\.internal/arvados/v1/collections/.*: 404 Not Found.*`)
+	c.Check(jresp.Errors[0], check.Not(check.Matches), `(?ms).*127.0.0.1.*`)
+}
+
+func (s *HandlerSuite) TestTrashSweep(c *check.C) {
+	s.cluster.SystemRootToken = arvadostest.SystemRootToken
+	s.cluster.Collections.TrashSweepInterval = arvados.Duration(time.Second / 10)
+	s.handler.CheckHealth()
+	ctx := auth.NewContext(s.ctx, &auth.Credentials{Tokens: []string{arvadostest.ActiveTokenV2}})
+	coll, err := s.handler.federation.CollectionCreate(ctx, arvados.CreateOptions{Attrs: map[string]interface{}{"name": "test trash sweep"}, EnsureUniqueName: true})
+	c.Assert(err, check.IsNil)
+	defer s.handler.federation.CollectionDelete(ctx, arvados.DeleteOptions{UUID: coll.UUID})
+	db, err := s.handler.db(s.ctx)
+	c.Assert(err, check.IsNil)
+	_, err = db.ExecContext(s.ctx, `update collections set trash_at = $1, delete_at = $2 where uuid = $3`, time.Now().UTC().Add(time.Second/10), time.Now().UTC().Add(time.Hour), coll.UUID)
+	c.Assert(err, check.IsNil)
+	deadline := time.Now().Add(5 * time.Second)
+	for {
+		if time.Now().After(deadline) {
+			c.Log("timed out")
+			c.FailNow()
+		}
+		updated, err := s.handler.federation.CollectionGet(ctx, arvados.GetOptions{UUID: coll.UUID, IncludeTrash: true})
+		c.Assert(err, check.IsNil)
+		if updated.IsTrashed {
+			break
+		}
+		time.Sleep(time.Second / 10)
 	}
 }

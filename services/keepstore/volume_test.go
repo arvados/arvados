@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-package main
+package keepstore
 
 import (
 	"bytes"
@@ -148,7 +148,7 @@ func (v *MockVolume) Compare(ctx context.Context, loc string, buf []byte) error 
 		}
 		return nil
 	} else {
-		return NotFoundError
+		return os.ErrNotExist
 	}
 }
 

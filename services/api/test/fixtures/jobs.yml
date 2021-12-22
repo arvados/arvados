@@ -496,7 +496,7 @@ job_with_latest_version:
   script: hash
   repository: active/foo
   script_version: 7def43a4d3f20789dda4700f703b5514cc3ed250
-  supplied_script_version: master
+  supplied_script_version: main
   script_parameters:
     input: 1f4b0bc7583c2a7f9102c395f4ffc5e3+45
   created_at: <%= 3.minute.ago.to_s(:db) %>
@@ -521,7 +521,7 @@ running_job_in_publicly_accessible_project:
   uuid: zzzzz-8i9sb-n7omg50bvt0m1nf
   owner_uuid: zzzzz-j7d0g-zhxawtyetzwc5f0
   modified_by_user_uuid: zzzzz-tpzed-xurymjxw79nv3jz
-  repository: active/foo
+  repository: active/bar
   script: running_job_script
   script_version: 4fe459abe02d9b365932b8f5dc419439ab4e2577
   state: Running

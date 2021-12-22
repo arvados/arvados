@@ -10,7 +10,7 @@ class Arvados::V1::UsersController < ApplicationController
     [:activate, :current, :system, :setup, :merge, :batch_update]
   skip_before_action :render_404_if_no_object, only:
     [:activate, :current, :system, :setup, :merge, :batch_update]
-  before_action :admin_required, only: [:setup, :unsetup, :update_uuid, :batch_update]
+  before_action :admin_required, only: [:setup, :unsetup, :batch_update]
 
   # Internal API used by controller to update local cache of user
   # records from LoginCluster.
@@ -29,7 +29,23 @@ class Arvados::V1::UsersController < ApplicationController
         end
       end
       if needupdate.length > 0
-        u.update_attributes!(needupdate)
+        begin
+          u.update_attributes!(needupdate)
+        rescue ActiveRecord::RecordInvalid
+          loginCluster = Rails.configuration.Login.LoginCluster
+          if u.uuid[0..4] == loginCluster && !needupdate[:username].nil?
+            local_user = User.find_by_username(needupdate[:username])
+            # A cached user record from the LoginCluster is stale, reset its username
+            # and retry the update operation.
+            if local_user.andand.uuid[0..4] == loginCluster && local_user.uuid != u.uuid
+              new_username = "#{needupdate[:username]}conflict#{rand(99999999)}"
+              Rails.logger.warn("cached username '#{needupdate[:username]}' collision with user '#{local_user.uuid}' - renaming to '#{new_username}' before retrying")
+              local_user.update_attributes!({username: new_username})
+              retry
+            end
+          end
+          raise # Not the issue we're handling above
+        end
       end
       @objects << u
     end
@@ -145,13 +161,6 @@ class Arvados::V1::UsersController < ApplicationController
     show
   end
 
-  # Change UUID to a new (unused) uuid and transfer all owned/linked
-  # objects accordingly.
-  def update_uuid
-    @object.update_uuid(new_uuid: params[:new_uuid])
-    show
-  end
-
   def merge
     if (params[:old_user_uuid] || params[:new_user_uuid])
       if !current_user.andand.is_admin
@@ -259,14 +268,6 @@ class Arvados::V1::UsersController < ApplicationController
         type: 'boolean', required: false, default: false,
       },
     })
-  end
-
-  def self._update_uuid_requires_parameters
-    {
-      new_uuid: {
-        type: 'string', required: true,
-      },
-    }
   end
 
   def apply_filters(model_class=nil)

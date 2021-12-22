@@ -103,6 +103,7 @@ func NewPool(logger logrus.FieldLogger, arvClient *arvados.Client, reg *promethe
 		instanceSetID:                  instanceSetID,
 		instanceSet:                    &throttledInstanceSet{InstanceSet: instanceSet},
 		newExecutor:                    newExecutor,
+		cluster:                        cluster,
 		bootProbeCommand:               cluster.Containers.CloudVMs.BootProbeCommand,
 		runnerSource:                   cluster.Containers.CloudVMs.DeployRunnerBinary,
 		imageID:                        cloud.ImageID(cluster.Containers.CloudVMs.ImageID),
@@ -122,7 +123,7 @@ func NewPool(logger logrus.FieldLogger, arvClient *arvados.Client, reg *promethe
 		installPublicKey:               installPublicKey,
 		tagKeyPrefix:                   cluster.Containers.CloudVMs.TagKeyPrefix,
 		runnerCmdDefault:               cluster.Containers.CrunchRunCommand,
-		runnerArgs:                     cluster.Containers.CrunchRunArgumentsList,
+		runnerArgs:                     append([]string{"--runtime-engine=" + cluster.Containers.RuntimeEngine}, cluster.Containers.CrunchRunArgumentsList...),
 		stop:                           make(chan bool),
 	}
 	wp.registerMetrics(reg)
@@ -144,6 +145,7 @@ type Pool struct {
 	instanceSetID                  cloud.InstanceSetID
 	instanceSet                    *throttledInstanceSet
 	newExecutor                    func(cloud.Instance) Executor
+	cluster                        *arvados.Cluster
 	bootProbeCommand               string
 	runnerSource                   string
 	imageID                        cloud.ImageID

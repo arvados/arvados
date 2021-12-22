@@ -17,6 +17,7 @@ class Arvados::V1::ApiClientAuthorizationsController < ApplicationController
       scopes: {type: 'array', required: false}
     }
   end
+
   def create_system_auth
     @object = ApiClientAuthorization.
       new(user_id: system_user.id,
@@ -48,7 +49,12 @@ class Arvados::V1::ApiClientAuthorizationsController < ApplicationController
   end
 
   def current
-    @object = Thread.current[:api_client_authorization]
+    @object = Thread.current[:api_client_authorization].dup
+    if params[:remote]
+      # Client is validating a salted token. Don't return the unsalted
+      # secret!
+      @object.api_token = nil
+    end
     show
   end
 

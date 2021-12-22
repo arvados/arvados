@@ -29,10 +29,40 @@ var (
 	ErrIsDirectory       = errors.New("cannot rename file to overwrite existing directory")
 	ErrNotADirectory     = errors.New("not a directory")
 	ErrPermission        = os.ErrPermission
+	DebugLocksPanicMode  = false
 )
 
 type syncer interface {
 	Sync() error
+}
+
+func debugPanicIfNotLocked(l sync.Locker, writing bool) {
+	if !DebugLocksPanicMode {
+		return
+	}
+	race := false
+	if rl, ok := l.(interface {
+		RLock()
+		RUnlock()
+	}); ok && writing {
+		go func() {
+			// Fail if we can grab the read lock during an
+			// operation that purportedly has write lock.
+			rl.RLock()
+			race = true
+			rl.RUnlock()
+		}()
+	} else {
+		go func() {
+			l.Lock()
+			race = true
+			l.Unlock()
+		}()
+	}
+	time.Sleep(100)
+	if race {
+		panic("bug: caller-must-have-lock func called, but nobody has lock")
+	}
 }
 
 // A File is an *os.File-like interface for reading and writing files
@@ -106,6 +136,9 @@ type FileSystem interface {
 	// path is "", flush all dirs/streams; otherwise, flush only
 	// the specified dir/stream.
 	Flush(path string, shortBlocks bool) error
+
+	// Estimate current memory usage.
+	MemorySize() int64
 }
 
 type inode interface {
@@ -156,6 +189,7 @@ type inode interface {
 	sync.Locker
 	RLock()
 	RUnlock()
+	MemorySize() int64
 }
 
 type fileinfo struct {
@@ -229,6 +263,13 @@ func (*nullnode) Child(name string, replace func(inode) (inode, error)) (inode, 
 	return nil, ErrNotADirectory
 }
 
+func (*nullnode) MemorySize() int64 {
+	// Types that embed nullnode should report their own size, but
+	// if they don't, we at least report a non-zero size to ensure
+	// a large tree doesn't get reported as 0 bytes.
+	return 64
+}
+
 type treenode struct {
 	fs       FileSystem
 	parent   inode
@@ -260,6 +301,7 @@ func (n *treenode) IsDir() bool {
 }
 
 func (n *treenode) Child(name string, replace func(inode) (inode, error)) (child inode, err error) {
+	debugPanicIfNotLocked(n, false)
 	child = n.inodes[name]
 	if name == "" || name == "." || name == ".." {
 		err = ErrInvalidArgument
@@ -273,8 +315,10 @@ func (n *treenode) Child(name string, replace func(inode) (inode, error)) (child
 		return
 	}
 	if newchild == nil {
+		debugPanicIfNotLocked(n, true)
 		delete(n.inodes, name)
 	} else if newchild != child {
+		debugPanicIfNotLocked(n, true)
 		n.inodes[name] = newchild
 		n.fileinfo.modTime = time.Now()
 		child = newchild
@@ -317,6 +361,16 @@ func (n *treenode) Sync() error {
 		}
 	}
 	return nil
+}
+
+func (n *treenode) MemorySize() (size int64) {
+	n.RLock()
+	defer n.RUnlock()
+	debugPanicIfNotLocked(n, false)
+	for _, inode := range n.inodes {
+		size += inode.MemorySize()
+	}
+	return
 }
 
 type fileSystem struct {
@@ -375,13 +429,12 @@ func (fs *fileSystem) openFile(name string, flag int, perm os.FileMode) (*fileha
 		}
 	}
 	createMode := flag&os.O_CREATE != 0
-	if createMode {
-		parent.Lock()
-		defer parent.Unlock()
-	} else {
-		parent.RLock()
-		defer parent.RUnlock()
-	}
+	// We always need to take Lock() here, not just RLock(). Even
+	// if we know we won't be creating a file, parent might be a
+	// lookupnode, which sometimes populates its inodes map during
+	// a Child() call.
+	parent.Lock()
+	defer parent.Unlock()
 	n, err := parent.Child(name, nil)
 	if err != nil {
 		return nil, err
@@ -607,6 +660,10 @@ func (fs *fileSystem) Flush(string, bool) error {
 	return ErrInvalidOperation
 }
 
+func (fs *fileSystem) MemorySize() int64 {
+	return fs.root.MemorySize()
+}
+
 // rlookup (recursive lookup) returns the inode for the file/directory
 // with the given name (which may contain "/" separators). If no such
 // file/directory exists, the returned node is nil.
@@ -623,8 +680,8 @@ func rlookup(start inode, path string) (node inode, err error) {
 			}
 		}
 		node, err = func() (inode, error) {
-			node.RLock()
-			defer node.RUnlock()
+			node.Lock()
+			defer node.Unlock()
 			return node.Child(name, nil)
 		}()
 		if node == nil || err != nil {

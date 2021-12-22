@@ -29,6 +29,7 @@ import (
 var Command cmd.Handler = &installCommand{}
 
 const devtestDatabasePassword = "insecure_arvados_test"
+const goversion = "1.17.1"
 
 type installCommand struct {
 	ClusterType    string
@@ -57,17 +58,11 @@ func (inst *installCommand) RunCommand(prog string, args []string, stdin io.Read
 	flags.StringVar(&inst.SourcePath, "source", "/arvados", "source tree location (required for -type=package)")
 	flags.StringVar(&inst.PackageVersion, "package-version", "0.0.0", "version string to embed in executable files")
 	flags.BoolVar(&inst.EatMyData, "eatmydata", false, "use eatmydata to speed up install")
-	err = flags.Parse(args)
-	if err == flag.ErrHelp {
-		err = nil
-		return 0
-	} else if err != nil {
-		return 2
+
+	if ok, code := cmd.ParseFlags(flags, prog, args, "", stderr); !ok {
+		return code
 	} else if *versionFlag {
 		return cmd.Version.RunCommand(prog, args, stdin, stdout, stderr)
-	} else if len(flags.Args()) > 0 {
-		err = fmt.Errorf("unrecognized command line arguments: %v", flags.Args())
-		return 2
 	}
 
 	var dev, test, prod, pkg bool
@@ -178,9 +173,15 @@ func (inst *installCommand) RunCommand(prog string, args []string, stdin io.Read
 			"r-cran-roxygen2",
 			"r-cran-xml",
 			"sudo",
+			"uuid-dev",
 			"wget",
 			"xvfb",
 		)
+		if dev || test {
+			pkgs = append(pkgs,
+				"squashfs-tools", // for singularity
+			)
+		}
 		switch {
 		case osv.Debian && osv.Major >= 10:
 			pkgs = append(pkgs, "libcurl4")
@@ -239,12 +240,12 @@ make install
 	}
 
 	if !prod {
-		goversion := "1.14"
 		if havegoversion, err := exec.Command("/usr/local/bin/go", "version").CombinedOutput(); err == nil && bytes.HasPrefix(havegoversion, []byte("go version go"+goversion+" ")) {
 			logger.Print("go " + goversion + " already installed")
 		} else {
 			err = inst.runBash(`
 cd /tmp
+rm -rf /var/lib/arvados/go/
 wget --progress=dot:giga -O- https://storage.googleapis.com/golang/go`+goversion+`.linux-amd64.tar.gz | tar -C /var/lib/arvados -xzf -
 ln -sf /var/lib/arvados/go/bin/* /usr/local/bin/
 `, stdout, stderr)
@@ -283,7 +284,7 @@ ln -sf /var/lib/arvados/bin/geckodriver /usr/local/bin/
 			}
 		}
 
-		nodejsversion := "v10.23.1"
+		nodejsversion := "v12.22.2"
 		if havenodejsversion, err := exec.Command("/usr/local/bin/node", "--version").CombinedOutput(); err == nil && string(havenodejsversion) == nodejsversion+"\n" {
 			logger.Print("nodejs " + nodejsversion + " already installed")
 		} else {
@@ -309,6 +310,27 @@ wget --progress=dot:giga -O${zip} https://services.gradle.org/distributions/grad
 unzip -o -d /var/lib/arvados ${zip}
 ln -sf /var/lib/arvados/gradle-${G}/bin/gradle /usr/local/bin/
 rm ${zip}
+`, stdout, stderr)
+			if err != nil {
+				return 1
+			}
+		}
+
+		singularityversion := "3.7.4"
+		if havesingularityversion, err := exec.Command("/var/lib/arvados/bin/singularity", "--version").CombinedOutput(); err == nil && strings.Contains(string(havesingularityversion), singularityversion) {
+			logger.Print("singularity " + singularityversion + " already installed")
+		} else if dev || test {
+			err = inst.runBash(`
+S=`+singularityversion+`
+tmp=/var/lib/arvados/tmp/singularity
+trap "rm -r ${tmp}" ERR EXIT
+cd /var/lib/arvados/tmp
+git clone https://github.com/sylabs/singularity
+cd singularity
+git checkout v${S}
+./mconfig --prefix=/var/lib/arvados
+make -C ./builddir
+make -C ./builddir install
 `, stdout, stderr)
 			if err != nil {
 				return 1
@@ -462,7 +484,7 @@ rm ${zip}
 				{"mkdir", "-p", "log", "tmp", ".bundle", "/var/www/.gem", "/var/www/.bundle", "/var/www/.passenger"},
 				{"touch", "log/production.log"},
 				{"chown", "-R", "--from=root", "www-data:www-data", "/var/www/.gem", "/var/www/.bundle", "/var/www/.passenger", "log", "tmp", ".bundle", "Gemfile.lock", "config.ru", "config/environment.rb"},
-				{"sudo", "-u", "www-data", "/var/lib/arvados/bin/gem", "install", "--user", "--conservative", "--no-document", "bundler:1.16.6", "bundler:1.17.3", "bundler:2.0.2"},
+				{"sudo", "-u", "www-data", "/var/lib/arvados/bin/gem", "install", "--user", "--conservative", "--no-document", "bundler:2.2.19"},
 				{"sudo", "-u", "www-data", "/var/lib/arvados/bin/bundle", "install", "--deployment", "--jobs", "8", "--path", "/var/www/.gem"},
 				{"sudo", "-u", "www-data", "/var/lib/arvados/bin/bundle", "exec", "passenger-config", "build-native-support"},
 				{"sudo", "-u", "www-data", "/var/lib/arvados/bin/bundle", "exec", "passenger-config", "install-standalone-runtime"},

@@ -11,6 +11,9 @@ SPDX-License-Identifier: AGPL-3.0 %>
       <%= render_editable_attribute @object, 'name', nil, { 'data-emptytext' => "New project" } %>
     <% end %>
   </h2>
+  <% if @object.class == Group and @object.group_class == 'filter' %>
+    This is a filter group.
+  <% end %>
 <% end %>
 
 <%

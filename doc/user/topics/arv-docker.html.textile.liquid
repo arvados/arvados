@@ -1,7 +1,7 @@
 ---
 layout: default
 navsection: userguide
-title: "Working with Docker images"
+title: "Working with container images"
 ...
 {% comment %}
 Copyright (C) The Arvados Authors. All rights reserved.
@@ -9,7 +9,9 @@ Copyright (C) The Arvados Authors. All rights reserved.
 SPDX-License-Identifier: CC-BY-SA-3.0
 {% endcomment %}
 
-This page describes how to set up the runtime environment (e.g., the programs, libraries, and other dependencies needed to run a job) that a workflow step will be run in using "Docker.":https://www.docker.com/  Docker is a tool for building and running containers that isolate applications from other applications running on the same node.  For detailed information about Docker, see the "Docker User Guide.":https://docs.docker.com/userguide/
+This page describes how to set up the runtime environment (e.g., the programs, libraries, and other dependencies needed to run a job) that a workflow step will be run in using "Docker":https://www.docker.com/ or "Singularity":https://sylabs.io/singularity/.  Docker and Singularity are tools for building and running containers that isolate applications from other applications running on the same node.  For detailed information, see the "Docker User Guide":https://docs.docker.com/userguide/ and the "Introduction to Singularity":https://sylabs.io/guides/3.5/user-guide/introduction.html.
+
+Note that Arvados always works with Docker images, even when it is configured to use Singularity to run containers. There are some differences between the two runtimes that can affect your containers. See the "Singularity architecture":{{site.baseurl}}/architecture/singularity.html page for details.
 
 This page describes:
 
@@ -19,7 +21,7 @@ This page describes:
 
 {% include 'tutorial_expectations_workstation' %}
 
-You also need ensure that "Docker is installed,":https://docs.docker.com/installation/ the Docker daemon is running, and you have permission to access Docker.  You can test this by running @docker version@.  If you receive a permission denied error, your user account may need to be added to the @docker@ group.  If you have root access, you can add yourself to the @docker@ group using @$ sudo addgroup $USER docker@ then log out and log back in again; otherwise consult your local sysadmin.
+You also need to ensure that "Docker is installed,":https://docs.docker.com/installation/ the Docker daemon is running, and you have permission to access Docker.  You can test this by running @docker version@.  If you receive a permission denied error, your user account may need to be added to the @docker@ group.  If you have root access, you can add yourself to the @docker@ group using @$ sudo addgroup $USER docker@ then log out and log back in again; otherwise consult your local sysadmin.
 
 h2(#create). Create a custom image using a Dockerfile
 

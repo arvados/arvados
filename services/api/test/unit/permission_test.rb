@@ -218,6 +218,8 @@ class PermissionTest < ActiveSupport::TestCase
   end
 
   test "manager user gets permission to minions' articles via can_manage link" do
+    Rails.configuration.Users.RoleGroupsVisibleToAll = false
+    Rails.configuration.Users.ActivatedUsersAreVisibleToOthers = false
     manager = create :active_user, first_name: "Manage", last_name: "Er"
     minion = create :active_user, first_name: "Min", last_name: "Ion"
     minions_specimen = act_as_user minion do
@@ -314,6 +316,7 @@ class PermissionTest < ActiveSupport::TestCase
   end
 
   test "users with bidirectional read permission in group can see each other, but cannot see each other's private articles" do
+    Rails.configuration.Users.ActivatedUsersAreVisibleToOthers = false
     a = create :active_user, first_name: "A"
     b = create :active_user, first_name: "B"
     other = create :active_user, first_name: "OTHER"

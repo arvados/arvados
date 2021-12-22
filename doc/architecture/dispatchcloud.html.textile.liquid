@@ -1,0 +1,99 @@
+---
+layout: default
+navsection: architecture
+title: Dispatching containers to cloud VMs
+...
+{% comment %}
+Copyright (C) The Arvados Authors. All rights reserved.
+
+SPDX-License-Identifier: CC-BY-SA-3.0
+{% endcomment %}
+
+The arvados-dispatch-cloud component runs Arvados user containers on generic public cloud infrastructure by automatically creating and destroying VMs (“instances”) of various sizes according to demand, preparing the instances’ runtime environments, and running containers on them.
+
+This does not use a cloud provider’s container-execution service.
+
+h2. Overview
+
+In this diagram, the black edges show interactions involved in starting a VM instance and running a container. The blue edges show the “container shell” communication channel.
+
+!{max-width:40em}{{site.baseurl}}/architecture/dispatchcloud.svg!
+
+{% comment %}
+# svg generated using https://graphviz.it/
+digraph {
+    subgraph cluster_cloudvm {
+        node [color=black] [fillcolor=white] [style=filled];
+        style = filled;
+        color = lightgrey;
+        label = "cloud instance (VM)";
+        "SSH server" -> "crunch-run" [label = "start crunch-run"];
+        "crunch-run" -> docker [label = "create container"];
+        "crunch-run" -> docker [label = "shell"] [color = blue] [fontcolor = blue];
+        "crunch-run" -> container [label = "tcp/http"] [color = blue] [fontcolor = blue];
+        docker -> container;
+    }
+    "cloud provider" [shape=box] [style=dashed];
+    dispatcher -> controller [label = "get container queue"];
+    dispatcher -> "cloud provider" [label = "create/destroy/list VMs"];
+    "cloud provider" -> "SSH server" [label = "add authorized_keys"];
+    "crunch-run" -> controller [label = "update\ngateway ip:port,\ncontainer state,\noutput, ..."];
+    client -> controller [label = "shell/tcp/http (https tunnel)"] [color = blue] [fontcolor = blue];
+    controller -> "crunch-run" [label = "shell/tcp/http (https tunnel)"] [color = blue] [fontcolor = blue];
+    dispatcher -> "SSH server" [label = "start crunch-run"];
+}
+{% endcomment %}
+
+h2. Scheduling
+
+The dispatcher periodically polls arvados-controller to get a list of containers that are ready to run. Whenever this list changes, the dispatcher runs a scheduling loop that selects a suitable instance type for each container, allocates the highest priority containers to idle instances, requests new instances if needed, and shuts down instances that have been idle for longer than the configured idle timeout. Currently the dispatcher only runs one container at a time on an instance, even if the instance has enough RAM and CPUs to accommodate more.
+
+h2. Creating instances
+
+When creating a new instance, the dispatcher uses the cloud provider’s metadata feature to add a tag with key “InstanceSetID” and a value derived from its Arvados authentication token. This enables the dispatcher to recognize and reconnect to existing instances that belong to it, and continue monitoring existing containers, after a restart or upgrade.
+
+When using the Azure cloud service, the dispatcher needs to first create a new network interface, then attach it to a new instance. The network interface is also tagged with “InstanceSetID”.
+
+If the cloud provider returns a rate-limiting error when creating a new instance, the dispatcher avoids requesting new instances for a short period, and shuts down idle nodes more aggressively (i.e., without waiting for the usual idle timeout to elapse) until a new instance is successfully created.
+
+h2. Recovering state after a restart
+
+Restarting the dispatcher does not interrupt containers that are already running. When the dispatcher starts up, it gets the cloud provider’s current list of instances that have the expected InstanceSetID tag value. It ignores instances without that tag, so it won’t interfere with other VM instances in the same cloud account. It runs the boot probe command on each instance, checks for containers that were started by a previous invocation and are still running, and resumes monitoring. Before dispatching any new containers to a previously existing instance, it ensures the crunch-run program is updated if needed.
+
+h2. Instance boot process
+
+When the cloud provider indicates that a new instance has been created, the dispatcher connects to the instance’s SSH service (see “instance control channel” below) and executes the configured boot probe command. If this fails, the dispatcher retries until the configured boot timeout is reached, then shuts down the instance. When the boot probe succeeds, the dispatcher copies the crunch-run program to the instance, and runs it to check for running containers before reporting the instance’s state as “idle” or “busy”. (Normally of course a freshly booted instance has no containers running, but this covers the case where the dispatcher itself has restarted and containers submitted by the previous dispatcher process are still running.)
+
+The dispatcher and crunch-run programs are both packaged in a single executable file: when dispatcher copies crunch-run to an instance, it is really copying itself. This ensures the dispatcher is always using the version of crunch-run that it expects.
+
+h2. Boot probe command
+
+The purpose of the boot probe command is to ensure the dispatcher does not try to schedule containers on an instance before the instance is ready, even if its SSH daemon comes up early in the boot process. The default boot probe command, @systemctl is-system-running@, is appropriate for images that use @systemd@ to manage the boot process. Another approach is to use a custom startup script in the VM image that writes a file when it finishes, and a boot probe command that checks for that file, such as @cat /var/run/boot.complete@.
+
+h2. Automatic instance shutdown
+
+Normally, the dispatcher shuts down any instance that has remained idle for 1 minute (see TimeoutIdle configuration) but there are some exceptions to this rule. If the cloud provider returns a quota error when trying to create a new instance, the dispatcher shuts down idle nodes right away, in case the idle nodes are contributing to the quota. Also, the operator can use the management API to set an instance’s idle behavior to “drain” or “hold”. “Drain” shuts down the instance as soon as it becomes idle, which can be used to recycle a suspect node without interrupting a running container. “Hold” keeps the instance alive indefinitely without scheduling additional containers on it, which can be used to investigate problems like a failed startup script.
+
+Each instance is tagged with its current idle behavior (using the tag name “IdleBehavior”), which makes it visible in the cloud provider’s console and ensures the behavior is retained if dispatcher restarts.
+
+h2. Management API
+
+The dispatcher provides an HTTP management interface, which provides the operator with more visibility and control for purposes of troubleshooting and monitoring. APIs are provided to return details of current VM instances and running/scheduled containers as seen by the dispatcher, immediately terminate containers and instances, and control the on-idle behavior of instances. This interface also provides Prometheus metrics. See the "cloud dispatcher management API":{{site.baseurl}}/api/dispatch.html documentation for details.
+
+h2. Instance control channel (SSH)
+
+The dispatcher uses a multiplexed SSH connection to monitor instance boot progress, install the crunch-run supervisor program, start and stop containers, and detect crashed containers and failing instances. It establishes a persistent SSH connection to each cloud instance when the instance first appears, retrying/reconnecting as needed.
+
+Cloud VMs typically generate a random SSH host key at boot time, making host key verification impossible. To provide some assurance the dispatcher is connecting to the intended instance, when it creates a new instance the dispatcher generates a random “instance secret”, uses the cloud provider’s bootstrap command feature to save it in @/var/run/arvados-instance-secret@ on the new instance, and executes @cat /var/run/arvados-instance-secret@ to verify the instance’ identity when first connecting to its SSH server. Each instance is also tagged with its instance secret, so it can still be verified after a dispatcher restart.
+
+h2. Container communication channel (https tunnel)
+
+The crunch-run program runs a gateway server which facilitates the “container shell” feature without sending traffic through the dispatcher process. The gateway server accepts TLS connections from arvados-controller on a dynamic TCP port (typically in the range 32768-60999, see @sysctl net.ipv4.ip_local_port_range@). Crunch-run saves the selected port, along with the external IP address of the VM instance as seen by the dispatcher, in the @gateway_address@ field in the container record so arvados-controller can connect to it.
+
+On the client host (typically a shell node or a user’s workstation) the @arvados-client shell@ command sends an https “connect” request to arvados-controller, which sends an https “connect” request to the gateway server. These tunnels convey SSH protocol traffic between the user’s SSH client and crunch-run’s built-in SSH server, which uses @docker exec@ to run commands inside the container.
+
+Arvados-controller and crunch-run gateway server authenticate each other using a self-signed certificate and a shared secret based on the cluster-wide @SystemRootToken@. If that token changes (and the dispatcher restarts to load the new token) while a container is running, the container will stop accepting container shell traffic.
+
+h2. Scaling
+
+Architecturally, the dispatcher is _designed_ to accommodate multiple concurrent dispatcher processes on multiple hosts, each using a different authorization token, but such a configuration is not yet supported. Currently, each cluster should run a single dispatcher process. A single process can support thousands of concurrent VM instances.

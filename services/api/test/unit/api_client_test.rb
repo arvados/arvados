@@ -10,6 +10,7 @@ class ApiClientTest < ActiveSupport::TestCase
   [true, false].each do |token_lifetime_enabled|
     test "configured workbench is trusted when token lifetime is#{token_lifetime_enabled ? '': ' not'} enabled" do
       Rails.configuration.Login.TokenLifetime = token_lifetime_enabled ? 8.hours : 0
+      Rails.configuration.Login.IssueTrustedTokens = !token_lifetime_enabled;
       Rails.configuration.Services.Workbench1.ExternalURL = URI("http://wb1.example.com")
       Rails.configuration.Services.Workbench2.ExternalURL = URI("https://wb2.example.com:443")
       Rails.configuration.Login.TrustedClients = ActiveSupport::OrderedOptions.new

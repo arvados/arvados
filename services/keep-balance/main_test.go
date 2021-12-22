@@ -11,6 +11,11 @@ import (
 	"net/http"
 	"time"
 
+	"git.arvados.org/arvados.git/lib/config"
+	"git.arvados.org/arvados.git/sdk/go/arvados"
+	"git.arvados.org/arvados.git/sdk/go/arvadostest"
+	"git.arvados.org/arvados.git/sdk/go/ctxlog"
+	"github.com/ghodss/yaml"
 	check "gopkg.in/check.v1"
 )
 
@@ -23,9 +28,12 @@ func (s *mainSuite) TestVersionFlag(c *check.C) {
 	runCommand("keep-balance", []string{"-version"}, nil, &stdout, &stderr)
 	c.Check(stderr.String(), check.Equals, "")
 	c.Log(stdout.String())
+	c.Check(stdout.String(), check.Matches, `keep-balance.*\(go1.*\)\n`)
 }
 
 func (s *mainSuite) TestHTTPServer(c *check.C) {
+	arvadostest.StartKeep(2, true)
+
 	ln, err := net.Listen("tcp", ":0")
 	if err != nil {
 		c.Fatal(err)
@@ -33,10 +41,17 @@ func (s *mainSuite) TestHTTPServer(c *check.C) {
 	_, p, err := net.SplitHostPort(ln.Addr().String())
 	c.Check(err, check.IsNil)
 	ln.Close()
-	config := "Clusters:\n zzzzz:\n  ManagementToken: abcdefg\n  Services: {Keepbalance: {InternalURLs: {'http://localhost:" + p + "/': {}}}}\n"
+	cfg, err := config.NewLoader(nil, ctxlog.TestLogger(c)).Load()
+	c.Assert(err, check.IsNil)
+	cluster, err := cfg.GetCluster("")
+	c.Assert(err, check.IsNil)
+	cluster.Services.Keepbalance.InternalURLs[arvados.URL{Host: "localhost:" + p, Path: "/"}] = arvados.ServiceInstance{}
+	cfg.Clusters[cluster.ClusterID] = *cluster
+	config, err := yaml.Marshal(cfg)
+	c.Assert(err, check.IsNil)
 
 	var stdout bytes.Buffer
-	go runCommand("keep-balance", []string{"-config", "-"}, bytes.NewBufferString(config), &stdout, &stdout)
+	go runCommand("keep-balance", []string{"-config", "-"}, bytes.NewBuffer(config), &stdout, &stdout)
 	done := make(chan struct{})
 	go func() {
 		defer close(done)
@@ -47,7 +62,7 @@ func (s *mainSuite) TestHTTPServer(c *check.C) {
 				c.Fatal(err)
 				return
 			}
-			req.Header.Set("Authorization", "Bearer abcdefg")
+			req.Header.Set("Authorization", "Bearer "+cluster.ManagementToken)
 			resp, err := http.DefaultClient.Do(req)
 			if err != nil {
 				c.Logf("error %s", err)
@@ -73,6 +88,7 @@ func (s *mainSuite) TestHTTPServer(c *check.C) {
 		c.Log(stdout.String())
 		c.Fatal("timeout")
 	}
+	c.Log(stdout.String())
 
 	// Check non-metrics URL that gets passed through to us from
 	// service.Command

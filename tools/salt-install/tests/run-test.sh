@@ -3,14 +3,14 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-export ARVADOS_API_TOKEN=changemesystemroottoken
-export ARVADOS_API_HOST=__CLUSTER__.__DOMAIN__:__HOST_SSL_PORT__
+export ARVADOS_API_TOKEN=__SYSTEM_ROOT_TOKEN__
+export ARVADOS_API_HOST=__CLUSTER__.__DOMAIN__:__CONTROLLER_EXT_SSL_PORT__
 export ARVADOS_API_HOST_INSECURE=true
 
 set -o pipefail
 
 # First, validate that the CA is installed and that we can query it with no errors.
-if ! curl -s -o /dev/null https://workbench.${ARVADOS_API_HOST}/users/welcome?return_to=%2F; then
+if ! curl -s -o /dev/null https://${ARVADOS_API_HOST}/users/welcome?return_to=%2F; then
   echo "The Arvados CA was not correctly installed. Although some components will work,"
   echo "others won't. Please verify that the CA cert file was installed correctly and"
   echo "retry running these tests."
@@ -55,14 +55,18 @@ echo "Activating user '__INITIAL_USER__'"
 arv user update --uuid "${user_uuid}" --user '{"is_active": true}'
 
 echo "Getting the user API TOKEN"
-user_api_token=$(arv api_client_authorization list --filters "[[\"owner_uuid\", \"=\", \"${user_uuid}\"],[\"kind\", \"==\", \"arvados#apiClientAuthorization\"]]" --limit=1 |jq -r .items[].api_token)
+user_api_token=$(arv api_client_authorization list | jq -r ".items[] | select( .owner_uuid == \"${user_uuid}\" ).api_token" | head -1)
 
 if [ "x${user_api_token}" = "x" ]; then
+  echo "No existing token found for user '__INITIAL_USER__' (user_uuid: '${user_uuid}'). Creating token"
   user_api_token=$(arv api_client_authorization create --api-client-authorization "{\"owner_uuid\": \"${user_uuid}\"}" | jq -r .api_token)
 fi
 
+echo "API TOKEN FOR user '__INITIAL_USER__': '${user_api_token}'."
+
 # Change to the user's token and run the workflow
+echo "Switching to user '__INITIAL_USER__'"
 export ARVADOS_API_TOKEN="${user_api_token}"
 
 echo "Running test CWL workflow"
-cwl-runner hasher-workflow.cwl hasher-workflow-job.yml
+cwl-runner --debug hasher-workflow.cwl hasher-workflow-job.yml

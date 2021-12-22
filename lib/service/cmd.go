@@ -12,6 +12,7 @@ import (
 	"io"
 	"net"
 	"net/http"
+	_ "net/http/pprof"
 	"net/url"
 	"os"
 	"strings"
@@ -70,14 +71,17 @@ func (c *command) RunCommand(prog string, args []string, stdin io.Reader, stdout
 	loader := config.NewLoader(stdin, log)
 	loader.SetupFlags(flags)
 	versionFlag := flags.Bool("version", false, "Write version information to stdout and exit 0")
-	err = flags.Parse(args)
-	if err == flag.ErrHelp {
-		err = nil
-		return 0
-	} else if err != nil {
-		return 2
+	pprofAddr := flags.String("pprof", "", "Serve Go profile data at `[addr]:port`")
+	if ok, code := cmd.ParseFlags(flags, prog, args, "", stderr); !ok {
+		return code
 	} else if *versionFlag {
 		return cmd.Version.RunCommand(prog, args, stdin, stdout, stderr)
+	}
+
+	if *pprofAddr != "" {
+		go func() {
+			log.Println(http.ListenAndServe(*pprofAddr, nil))
+		}()
 	}
 
 	if strings.HasSuffix(prog, "controller") {
@@ -101,7 +105,8 @@ func (c *command) RunCommand(prog string, args []string, stdin io.Reader, stdout
 	// logger with a new one according to the logging config.
 	log = ctxlog.New(stderr, cluster.SystemLogs.Format, cluster.SystemLogs.LogLevel)
 	logger := log.WithFields(logrus.Fields{
-		"PID": os.Getpid(),
+		"PID":       os.Getpid(),
+		"ClusterID": cluster.ClusterID,
 	})
 	ctx := ctxlog.Context(c.ctx, logger)
 
@@ -118,13 +123,14 @@ func (c *command) RunCommand(prog string, args []string, stdin io.Reader, stdout
 	}
 
 	instrumented := httpserver.Instrument(reg, log,
-		httpserver.HandlerWithContext(ctx,
+		httpserver.HandlerWithDeadline(cluster.API.RequestTimeout.Duration(),
 			httpserver.AddRequestIDs(
 				httpserver.LogRequests(
 					httpserver.NewRequestLimiter(cluster.API.MaxConcurrentRequests, handler, reg)))))
 	srv := &httpserver.Server{
 		Server: http.Server{
-			Handler: instrumented.ServeAPI(cluster.ManagementToken, instrumented),
+			Handler:     instrumented.ServeAPI(cluster.ManagementToken, instrumented),
+			BaseContext: func(net.Listener) context.Context { return ctx },
 		},
 		Addr: listenURL.Host,
 	}

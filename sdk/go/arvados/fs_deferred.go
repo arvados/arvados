@@ -112,3 +112,4 @@ func (dn *deferrednode) RLock()                          { dn.realinode().RLock(
 func (dn *deferrednode) RUnlock()                        { dn.realinode().RUnlock() }
 func (dn *deferrednode) FS() FileSystem                  { return dn.currentinode().FS() }
 func (dn *deferrednode) Parent() inode                   { return dn.currentinode().Parent() }
+func (dn *deferrednode) MemorySize() int64               { return dn.currentinode().MemorySize() }

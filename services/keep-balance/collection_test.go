@@ -6,57 +6,34 @@ package main
 
 import (
 	"context"
-	"sync"
-	"time"
 
+	"git.arvados.org/arvados.git/lib/config"
 	"git.arvados.org/arvados.git/sdk/go/arvados"
+	"git.arvados.org/arvados.git/sdk/go/ctxlog"
+	"github.com/jmoiron/sqlx"
 	check "gopkg.in/check.v1"
 )
 
-//  TestIdenticalTimestamps ensures EachCollection returns the same
-//  set of collections for various page sizes -- even page sizes so
-//  small that we get entire pages full of collections with identical
-//  timestamps and exercise our gettingExactTimestamp cases.
-func (s *integrationSuite) TestIdenticalTimestamps(c *check.C) {
-	// pageSize==0 uses the default (large) page size.
-	pageSizes := []int{0, 2, 3, 4, 5}
-	got := make([][]string, len(pageSizes))
-	var wg sync.WaitGroup
-	for trial, pageSize := range pageSizes {
-		wg.Add(1)
-		go func(trial, pageSize int) {
-			defer wg.Done()
-			streak := 0
-			longestStreak := 0
-			var lastMod time.Time
-			sawUUID := make(map[string]bool)
-			err := EachCollection(context.Background(), s.client, pageSize, func(c arvados.Collection) error {
-				if c.ModifiedAt.IsZero() {
-					return nil
-				}
-				if sawUUID[c.UUID] {
-					// dup
-					return nil
-				}
-				got[trial] = append(got[trial], c.UUID)
-				sawUUID[c.UUID] = true
-				if lastMod == c.ModifiedAt {
-					streak++
-					if streak > longestStreak {
-						longestStreak = streak
-					}
-				} else {
-					streak = 0
-					lastMod = c.ModifiedAt
-				}
-				return nil
-			}, nil)
-			c.Check(err, check.IsNil)
-			c.Check(longestStreak > 25, check.Equals, true)
-		}(trial, pageSize)
-	}
-	wg.Wait()
-	for trial := 1; trial < len(pageSizes); trial++ {
-		c.Check(got[trial], check.DeepEquals, got[0])
-	}
+// TestMissedCollections exercises EachCollection's sanity check:
+// #collections processed >= #old collections that exist in database
+// after processing.
+func (s *integrationSuite) TestMissedCollections(c *check.C) {
+	cfg, err := config.NewLoader(nil, ctxlog.TestLogger(c)).Load()
+	c.Assert(err, check.IsNil)
+	cluster, err := cfg.GetCluster("")
+	c.Assert(err, check.IsNil)
+	db, err := sqlx.Open("postgres", cluster.PostgreSQL.Connection.String())
+	c.Assert(err, check.IsNil)
+
+	defer db.Exec(`delete from collections where uuid = 'zzzzz-4zz18-404040404040404'`)
+	insertedOld := false
+	err = EachCollection(context.Background(), db, s.client, func(coll arvados.Collection) error {
+		if !insertedOld {
+			insertedOld = true
+			_, err := db.Exec(`insert into collections (uuid, created_at, updated_at, modified_at) values ('zzzzz-4zz18-404040404040404', '2002-02-02T02:02:02Z', '2002-02-02T02:02:02Z', '2002-02-02T02:02:02Z')`)
+			return err
+		}
+		return nil
+	}, nil)
+	c.Check(err, check.ErrorMatches, `Retrieved .* collections .* but server now reports .* collections.*`)
 }

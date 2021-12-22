@@ -100,7 +100,8 @@ class CollectionFsAccess(cwltool.stdfsaccess.StdFsAccess):
         if p.startswith("keep:") and (arvados.util.keep_locator_pattern.match(p[5:]) or
                                       arvados.util.collection_uuid_pattern.match(p[5:])):
             locator = p[5:]
-            return (self.collection_cache.get(locator), urllib.parse.unquote(sp[1]) if len(sp) == 2 else None)
+            rest = os.path.normpath(urllib.parse.unquote(sp[1])) if len(sp) == 2 else None
+            return (self.collection_cache.get(locator), rest)
         else:
             return (None, path)
 
@@ -128,7 +129,7 @@ class CollectionFsAccess(cwltool.stdfsaccess.StdFsAccess):
 
     def glob(self, pattern):
         collection, rest = self.get_collection(pattern)
-        if collection is not None and not rest:
+        if collection is not None and rest in (None, "", "."):
             return [pattern]
         patternsegments = rest.split("/")
         return sorted(self._match(collection, patternsegments, "keep:" + collection.manifest_locator()))
@@ -228,7 +229,7 @@ class CollectionFetcher(DefaultFetcher):
         self.fsaccess = fs_access
         self.num_retries = num_retries
 
-    def fetch_text(self, url):
+    def fetch_text(self, url, content_types=None):
         if url.startswith("keep:"):
             with self.fsaccess.open(url, "r", encoding="utf-8") as f:
                 return f.read()

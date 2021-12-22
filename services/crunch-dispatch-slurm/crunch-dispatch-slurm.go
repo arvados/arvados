@@ -7,7 +7,6 @@ package main
 // Dispatcher service for Crunch that submits containers to the slurm queue.
 
 import (
-	"bytes"
 	"context"
 	"flag"
 	"fmt"
@@ -18,6 +17,7 @@ import (
 	"strings"
 	"time"
 
+	"git.arvados.org/arvados.git/lib/cmd"
 	"git.arvados.org/arvados.git/lib/config"
 	"git.arvados.org/arvados.git/lib/dispatchcloud"
 	"git.arvados.org/arvados.git/sdk/go/arvados"
@@ -77,7 +77,7 @@ func (disp *Dispatcher) configure(prog string, args []string) error {
 	if disp.logger == nil {
 		disp.logger = logrus.StandardLogger()
 	}
-	flags := flag.NewFlagSet(prog, flag.ExitOnError)
+	flags := flag.NewFlagSet(prog, flag.ContinueOnError)
 	flags.Usage = func() { usage(flags) }
 
 	loader := config.NewLoader(nil, disp.logger)
@@ -92,13 +92,9 @@ func (disp *Dispatcher) configure(prog string, args []string) error {
 		false,
 		"Print version information and exit.")
 
-	args = loader.MungeLegacyConfigArgs(logrus.StandardLogger(), args, "-legacy-crunch-dispatch-slurm-config")
-
-	// Parse args; omit the first arg which is the command name
-	err := flags.Parse(args)
-
-	if err == flag.ErrHelp {
-		return nil
+	args = loader.MungeLegacyConfigArgs(disp.logger, args, "-legacy-crunch-dispatch-slurm-config")
+	if ok, code := cmd.ParseFlags(flags, prog, args, "", os.Stderr); !ok {
+		os.Exit(code)
 	}
 
 	// Print version information if requested
@@ -117,6 +113,8 @@ func (disp *Dispatcher) configure(prog string, args []string) error {
 	if disp.cluster, err = cfg.GetCluster(""); err != nil {
 		return fmt.Errorf("config error: %s", err)
 	}
+
+	disp.logger = disp.logger.WithField("ClusterID", disp.cluster.ClusterID)
 
 	disp.Client.APIHost = disp.cluster.Services.Controller.ExternalURL.Host
 	disp.Client.AuthToken = disp.cluster.SystemRootToken
@@ -255,6 +253,7 @@ func (disp *Dispatcher) submit(container arvados.Container, crunchRunCommand []s
 	// append() here avoids modifying crunchRunCommand's
 	// underlying array, which is shared with other goroutines.
 	crArgs := append([]string(nil), crunchRunCommand...)
+	crArgs = append(crArgs, "--runtime-engine="+disp.cluster.Containers.RuntimeEngine)
 	crArgs = append(crArgs, container.UUID)
 	crScript := strings.NewReader(execScript(crArgs))
 
@@ -270,7 +269,7 @@ func (disp *Dispatcher) submit(container arvados.Container, crunchRunCommand []s
 // already in the queue).  Cancel the slurm job if the container's
 // priority changes to zero or its state indicates it's no longer
 // running.
-func (disp *Dispatcher) runContainer(_ *dispatch.Dispatcher, ctr arvados.Container, status <-chan arvados.Container) {
+func (disp *Dispatcher) runContainer(_ *dispatch.Dispatcher, ctr arvados.Container, status <-chan arvados.Container) error {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
@@ -278,38 +277,9 @@ func (disp *Dispatcher) runContainer(_ *dispatch.Dispatcher, ctr arvados.Contain
 		log.Printf("Submitting container %s to slurm", ctr.UUID)
 		cmd := []string{disp.cluster.Containers.CrunchRunCommand}
 		cmd = append(cmd, disp.cluster.Containers.CrunchRunArgumentsList...)
-		if err := disp.submit(ctr, cmd); err != nil {
-			var text string
-			switch err := err.(type) {
-			case dispatchcloud.ConstraintsNotSatisfiableError:
-				var logBuf bytes.Buffer
-				fmt.Fprintf(&logBuf, "cannot run container %s: %s\n", ctr.UUID, err)
-				if len(err.AvailableTypes) == 0 {
-					fmt.Fprint(&logBuf, "No instance types are configured.\n")
-				} else {
-					fmt.Fprint(&logBuf, "Available instance types:\n")
-					for _, t := range err.AvailableTypes {
-						fmt.Fprintf(&logBuf,
-							"Type %q: %d VCPUs, %d RAM, %d Scratch, %f Price\n",
-							t.Name, t.VCPUs, t.RAM, t.Scratch, t.Price,
-						)
-					}
-				}
-				text = logBuf.String()
-				disp.UpdateState(ctr.UUID, dispatch.Cancelled)
-			default:
-				text = fmt.Sprintf("Error submitting container %s to slurm: %s", ctr.UUID, err)
-			}
-			log.Print(text)
-
-			lr := arvadosclient.Dict{"log": arvadosclient.Dict{
-				"object_uuid": ctr.UUID,
-				"event_type":  "dispatch",
-				"properties":  map[string]string{"text": text}}}
-			disp.Arv.Create("logs", lr, nil)
-
-			disp.Unlock(ctr.UUID)
-			return
+		err := disp.submit(ctr, cmd)
+		if err != nil {
+			return err
 		}
 	}
 
@@ -338,7 +308,7 @@ func (disp *Dispatcher) runContainer(_ *dispatch.Dispatcher, ctr arvados.Contain
 			case dispatch.Locked:
 				disp.Unlock(ctr.UUID)
 			}
-			return
+			return nil
 		case updated, ok := <-status:
 			if !ok {
 				log.Printf("container %s is done: cancel slurm job", ctr.UUID)

@@ -225,8 +225,8 @@ Volumes:
 		Driver:      "S3",
 		Replication: 4,
 	}, &arvados.S3VolumeDriverParameters{
-		AccessKey:          "accesskeydata",
-		SecretKey:          "secretkeydata",
+		AccessKeyID:        "accesskeydata",
+		SecretAccessKey:    "secretkeydata",
 		Endpoint:           "https://storage.googleapis.com",
 		Region:             "us-east-1z",
 		Bucket:             "testbucket",

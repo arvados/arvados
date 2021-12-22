@@ -33,6 +33,10 @@ func (as *APIStub) ConfigGet(ctx context.Context) (json.RawMessage, error) {
 	as.appendCall(ctx, as.ConfigGet, nil)
 	return nil, as.Error
 }
+func (as *APIStub) VocabularyGet(ctx context.Context) (arvados.Vocabulary, error) {
+	as.appendCall(ctx, as.VocabularyGet, nil)
+	return arvados.Vocabulary{}, as.Error
+}
 func (as *APIStub) Login(ctx context.Context, options arvados.LoginOptions) (arvados.LoginResponse, error) {
 	as.appendCall(ctx, as.Login, options)
 	return arvados.LoginResponse{}, as.Error
@@ -129,6 +133,62 @@ func (as *APIStub) ContainerRequestDelete(ctx context.Context, options arvados.D
 	as.appendCall(ctx, as.ContainerRequestDelete, options)
 	return arvados.ContainerRequest{}, as.Error
 }
+func (as *APIStub) GroupCreate(ctx context.Context, options arvados.CreateOptions) (arvados.Group, error) {
+	as.appendCall(ctx, as.GroupCreate, options)
+	return arvados.Group{}, as.Error
+}
+func (as *APIStub) GroupUpdate(ctx context.Context, options arvados.UpdateOptions) (arvados.Group, error) {
+	as.appendCall(ctx, as.GroupUpdate, options)
+	return arvados.Group{}, as.Error
+}
+func (as *APIStub) GroupGet(ctx context.Context, options arvados.GetOptions) (arvados.Group, error) {
+	as.appendCall(ctx, as.GroupGet, options)
+	return arvados.Group{}, as.Error
+}
+func (as *APIStub) GroupList(ctx context.Context, options arvados.ListOptions) (arvados.GroupList, error) {
+	as.appendCall(ctx, as.GroupList, options)
+	return arvados.GroupList{}, as.Error
+}
+func (as *APIStub) GroupContents(ctx context.Context, options arvados.GroupContentsOptions) (arvados.ObjectList, error) {
+	as.appendCall(ctx, as.GroupContents, options)
+	return arvados.ObjectList{}, as.Error
+}
+func (as *APIStub) GroupShared(ctx context.Context, options arvados.ListOptions) (arvados.GroupList, error) {
+	as.appendCall(ctx, as.GroupShared, options)
+	return arvados.GroupList{}, as.Error
+}
+func (as *APIStub) GroupDelete(ctx context.Context, options arvados.DeleteOptions) (arvados.Group, error) {
+	as.appendCall(ctx, as.GroupDelete, options)
+	return arvados.Group{}, as.Error
+}
+func (as *APIStub) GroupTrash(ctx context.Context, options arvados.DeleteOptions) (arvados.Group, error) {
+	as.appendCall(ctx, as.GroupTrash, options)
+	return arvados.Group{}, as.Error
+}
+func (as *APIStub) GroupUntrash(ctx context.Context, options arvados.UntrashOptions) (arvados.Group, error) {
+	as.appendCall(ctx, as.GroupUntrash, options)
+	return arvados.Group{}, as.Error
+}
+func (as *APIStub) LinkCreate(ctx context.Context, options arvados.CreateOptions) (arvados.Link, error) {
+	as.appendCall(ctx, as.LinkCreate, options)
+	return arvados.Link{}, as.Error
+}
+func (as *APIStub) LinkUpdate(ctx context.Context, options arvados.UpdateOptions) (arvados.Link, error) {
+	as.appendCall(ctx, as.LinkUpdate, options)
+	return arvados.Link{}, as.Error
+}
+func (as *APIStub) LinkGet(ctx context.Context, options arvados.GetOptions) (arvados.Link, error) {
+	as.appendCall(ctx, as.LinkGet, options)
+	return arvados.Link{}, as.Error
+}
+func (as *APIStub) LinkList(ctx context.Context, options arvados.ListOptions) (arvados.LinkList, error) {
+	as.appendCall(ctx, as.LinkList, options)
+	return arvados.LinkList{}, as.Error
+}
+func (as *APIStub) LinkDelete(ctx context.Context, options arvados.DeleteOptions) (arvados.Link, error) {
+	as.appendCall(ctx, as.LinkDelete, options)
+	return arvados.Link{}, as.Error
+}
 func (as *APIStub) SpecimenCreate(ctx context.Context, options arvados.CreateOptions) (arvados.Specimen, error) {
 	as.appendCall(ctx, as.SpecimenCreate, options)
 	return arvados.Specimen{}, as.Error
@@ -149,16 +209,16 @@ func (as *APIStub) SpecimenDelete(ctx context.Context, options arvados.DeleteOpt
 	as.appendCall(ctx, as.SpecimenDelete, options)
 	return arvados.Specimen{}, as.Error
 }
+func (as *APIStub) SysTrashSweep(ctx context.Context, options struct{}) (struct{}, error) {
+	as.appendCall(ctx, as.SysTrashSweep, options)
+	return struct{}{}, as.Error
+}
 func (as *APIStub) UserCreate(ctx context.Context, options arvados.CreateOptions) (arvados.User, error) {
 	as.appendCall(ctx, as.UserCreate, options)
 	return arvados.User{}, as.Error
 }
 func (as *APIStub) UserUpdate(ctx context.Context, options arvados.UpdateOptions) (arvados.User, error) {
 	as.appendCall(ctx, as.UserUpdate, options)
-	return arvados.User{}, as.Error
-}
-func (as *APIStub) UserUpdateUUID(ctx context.Context, options arvados.UpdateUUIDOptions) (arvados.User, error) {
-	as.appendCall(ctx, as.UserUpdateUUID, options)
 	return arvados.User{}, as.Error
 }
 func (as *APIStub) UserActivate(ctx context.Context, options arvados.UserActivateOptions) (arvados.User, error) {
@@ -207,6 +267,26 @@ func (as *APIStub) UserAuthenticate(ctx context.Context, options arvados.UserAut
 }
 func (as *APIStub) APIClientAuthorizationCurrent(ctx context.Context, options arvados.GetOptions) (arvados.APIClientAuthorization, error) {
 	as.appendCall(ctx, as.APIClientAuthorizationCurrent, options)
+	return arvados.APIClientAuthorization{}, as.Error
+}
+func (as *APIStub) APIClientAuthorizationCreate(ctx context.Context, options arvados.CreateOptions) (arvados.APIClientAuthorization, error) {
+	as.appendCall(ctx, as.APIClientAuthorizationCreate, options)
+	return arvados.APIClientAuthorization{}, as.Error
+}
+func (as *APIStub) APIClientAuthorizationUpdate(ctx context.Context, options arvados.UpdateOptions) (arvados.APIClientAuthorization, error) {
+	as.appendCall(ctx, as.APIClientAuthorizationUpdate, options)
+	return arvados.APIClientAuthorization{}, as.Error
+}
+func (as *APIStub) APIClientAuthorizationDelete(ctx context.Context, options arvados.DeleteOptions) (arvados.APIClientAuthorization, error) {
+	as.appendCall(ctx, as.APIClientAuthorizationDelete, options)
+	return arvados.APIClientAuthorization{}, as.Error
+}
+func (as *APIStub) APIClientAuthorizationList(ctx context.Context, options arvados.ListOptions) (arvados.APIClientAuthorizationList, error) {
+	as.appendCall(ctx, as.APIClientAuthorizationList, options)
+	return arvados.APIClientAuthorizationList{}, as.Error
+}
+func (as *APIStub) APIClientAuthorizationGet(ctx context.Context, options arvados.GetOptions) (arvados.APIClientAuthorization, error) {
+	as.appendCall(ctx, as.APIClientAuthorizationGet, options)
 	return arvados.APIClientAuthorization{}, as.Error
 }
 

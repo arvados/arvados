@@ -42,6 +42,13 @@ if ! grep "^arvbox:" /etc/passwd >/dev/null 2>/dev/null ; then
     mkdir -p /tmp/crunch0 /tmp/crunch1
     chown crunch:crunch -R /tmp/crunch0 /tmp/crunch1
 
+    # singularity needs to be owned by root and suid
+    chown root /var/lib/arvados/bin/singularity \
+	  /var/lib/arvados/etc/singularity/singularity.conf \
+	  /var/lib/arvados/etc/singularity/capability.json \
+	  /var/lib/arvados/etc/singularity/ecl.toml
+    chmod u+s /var/lib/arvados/bin/singularity
+
     echo "arvbox    ALL=(crunch) NOPASSWD: ALL" >> /etc/sudoers
 
     cat <<EOF > /etc/profile.d/paths.sh

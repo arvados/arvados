@@ -6,6 +6,7 @@ package main
 
 import (
 	"bytes"
+	"io"
 	"os"
 	"strings"
 	"testing"
@@ -17,6 +18,7 @@ import (
 	"git.arvados.org/arvados.git/sdk/go/arvadostest"
 	"git.arvados.org/arvados.git/sdk/go/ctxlog"
 	"git.arvados.org/arvados.git/sdk/go/keepclient"
+	"github.com/jmoiron/sqlx"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/sirupsen/logrus"
 	check "gopkg.in/check.v1"
@@ -26,6 +28,7 @@ var _ = check.Suite(&integrationSuite{})
 
 type integrationSuite struct {
 	config     *arvados.Cluster
+	db         *sqlx.DB
 	client     *arvados.Client
 	keepClient *keepclient.KeepClient
 }
@@ -35,7 +38,6 @@ func (s *integrationSuite) SetUpSuite(c *check.C) {
 		c.Skip("-short")
 	}
 	arvadostest.ResetEnv()
-	arvadostest.StartAPI()
 	arvadostest.StartKeep(4, true)
 
 	arv, err := arvadosclient.MakeArvadosClient()
@@ -59,7 +61,6 @@ func (s *integrationSuite) TearDownSuite(c *check.C) {
 		c.Skip("-short")
 	}
 	arvadostest.StopKeep(4)
-	arvadostest.StopAPI()
 }
 
 func (s *integrationSuite) SetUpTest(c *check.C) {
@@ -67,6 +68,8 @@ func (s *integrationSuite) SetUpTest(c *check.C) {
 	c.Assert(err, check.Equals, nil)
 	s.config, err = cfg.GetCluster("")
 	c.Assert(err, check.Equals, nil)
+	s.db, err = sqlx.Open("postgres", s.config.PostgreSQL.Connection.String())
+	c.Assert(err, check.IsNil)
 	s.config.Collections.BalancePeriod = arvados.Duration(time.Second)
 
 	s.client = &arvados.Client{
@@ -81,14 +84,16 @@ func (s *integrationSuite) TestBalanceAPIFixtures(c *check.C) {
 	for iter := 0; iter < 20; iter++ {
 		logBuf.Reset()
 		logger := logrus.New()
-		logger.Out = &logBuf
+		logger.Out = io.MultiWriter(&logBuf, os.Stderr)
 		opts := RunOptions{
-			CommitPulls: true,
-			CommitTrash: true,
-			Logger:      logger,
+			CommitPulls:           true,
+			CommitTrash:           true,
+			CommitConfirmedFields: true,
+			Logger:                logger,
 		}
 
 		bal := &Balancer{
+			DB:      s.db,
 			Logger:  logger,
 			Metrics: newMetrics(prometheus.NewRegistry()),
 		}
@@ -105,4 +110,23 @@ func (s *integrationSuite) TestBalanceAPIFixtures(c *check.C) {
 		time.Sleep(200 * time.Millisecond)
 	}
 	c.Check(logBuf.String(), check.Not(check.Matches), `(?ms).*0 replicas (0 blocks, 0 bytes) underreplicated.*`)
+
+	for _, trial := range []struct {
+		uuid    string
+		repl    int
+		classes []string
+	}{
+		{arvadostest.EmptyCollectionUUID, 0, []string{}},
+		{arvadostest.FooCollection, 2, []string{"default"}},                                // "foo" blk
+		{arvadostest.StorageClassesDesiredDefaultConfirmedDefault, 2, []string{"default"}}, // "bar" blk
+		{arvadostest.StorageClassesDesiredArchiveConfirmedDefault, 0, []string{}},          // "bar" blk
+	} {
+		c.Logf("%#v", trial)
+		var coll arvados.Collection
+		s.client.RequestAndDecode(&coll, "GET", "arvados/v1/collections/"+trial.uuid, nil, nil)
+		if c.Check(coll.ReplicationConfirmed, check.NotNil) {
+			c.Check(*coll.ReplicationConfirmed, check.Equals, trial.repl)
+		}
+		c.Check(coll.StorageClassesConfirmed, check.DeepEquals, trial.classes)
+	}
 }

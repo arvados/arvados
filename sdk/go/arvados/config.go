@@ -63,8 +63,24 @@ type WebDAVCacheConfig struct {
 	MaxBlockEntries      int
 	MaxCollectionEntries int
 	MaxCollectionBytes   int64
-	MaxPermissionEntries int
 	MaxUUIDEntries       int
+	MaxSessions          int
+}
+
+type UploadDownloadPermission struct {
+	Upload   bool
+	Download bool
+}
+
+type UploadDownloadRolePermissions struct {
+	User  UploadDownloadPermission
+	Admin UploadDownloadPermission
+}
+
+type ManagedProperties map[string]struct {
+	Value     interface{}
+	Function  string
+	Protected bool
 }
 
 type Cluster struct {
@@ -86,11 +102,13 @@ type Cluster struct {
 		MaxKeepBlobBuffers             int
 		MaxRequestAmplification        int
 		MaxRequestSize                 int
+		MaxTokenLifetime               Duration
 		RequestTimeout                 Duration
 		SendTimeout                    Duration
 		WebsocketClientEventQueue      int
 		WebsocketServerEventQueue      int
 		KeepServiceRequestTimeout      Duration
+		VocabularyPath                 string
 	}
 	AuditLogs struct {
 		MaxAge             Duration
@@ -98,23 +116,19 @@ type Cluster struct {
 		UnloggedAttributes StringSet
 	}
 	Collections struct {
-		BlobSigning              bool
-		BlobSigningKey           string
-		BlobSigningTTL           Duration
-		BlobTrash                bool
-		BlobTrashLifetime        Duration
-		BlobTrashCheckInterval   Duration
-		BlobTrashConcurrency     int
-		BlobDeleteConcurrency    int
-		BlobReplicateConcurrency int
-		CollectionVersioning     bool
-		DefaultTrashLifetime     Duration
-		DefaultReplication       int
-		ManagedProperties        map[string]struct {
-			Value     interface{}
-			Function  string
-			Protected bool
-		}
+		BlobSigning                  bool
+		BlobSigningKey               string
+		BlobSigningTTL               Duration
+		BlobTrash                    bool
+		BlobTrashLifetime            Duration
+		BlobTrashCheckInterval       Duration
+		BlobTrashConcurrency         int
+		BlobDeleteConcurrency        int
+		BlobReplicateConcurrency     int
+		CollectionVersioning         bool
+		DefaultTrashLifetime         Duration
+		DefaultReplication           int
+		ManagedProperties            ManagedProperties
 		PreserveVersionIfIdle        Duration
 		TrashSweepInterval           Duration
 		TrustAllContent              bool
@@ -126,8 +140,13 @@ type Cluster struct {
 		BalanceCollectionBatch   int
 		BalanceCollectionBuffers int
 		BalanceTimeout           Duration
+		BalanceUpdateLimit       int
 
 		WebDAVCache WebDAVCacheConfig
+
+		KeepproxyPermission UploadDownloadRolePermissions
+		WebDAVPermission    UploadDownloadRolePermissions
+		WebDAVLogEvents     bool
 	}
 	Git struct {
 		GitCommand   string
@@ -165,17 +184,14 @@ type Cluster struct {
 			EmailClaim                      string
 			EmailVerifiedClaim              string
 			UsernameClaim                   string
+			AcceptAccessToken               bool
+			AcceptAccessTokenScope          string
 			AuthenticationRequestParameters map[string]string
 		}
 		PAM struct {
 			Enable             bool
 			Service            string
 			DefaultEmailDomain string
-		}
-		SSO struct {
-			Enable            bool
-			ProviderAppID     string
-			ProviderAppSecret string
 		}
 		Test struct {
 			Enable bool
@@ -185,6 +201,7 @@ type Cluster struct {
 		RemoteTokenRefresh Duration
 		TokenLifetime      Duration
 		TrustedClients     map[string]struct{}
+		IssueTrustedTokens bool
 	}
 	Mail struct {
 		MailchimpAPIKey                string
@@ -206,6 +223,7 @@ type Cluster struct {
 		Insecure    bool
 	}
 	Users struct {
+		ActivatedUsersAreVisibleToOthers      bool
 		AnonymousUserToken                    string
 		AdminNotifierEmailFrom                string
 		AutoAdminFirstUser                    bool
@@ -219,12 +237,15 @@ type Cluster struct {
 		NewUserNotificationRecipients         StringSet
 		NewUsersAreActive                     bool
 		UserNotifierEmailFrom                 string
+		UserNotifierEmailBcc                  StringSet
 		UserProfileNotificationAddress        string
 		PreferDomainForUsername               string
 		UserSetupMailText                     string
+		RoleGroupsVisibleToAll                bool
 	}
-	Volumes   map[string]Volume
-	Workbench struct {
+	StorageClasses map[string]StorageClassConfig
+	Volumes        map[string]Volume
+	Workbench      struct {
 		ActivationContactLink            string
 		APIClientConnectTimeout          Duration
 		APIClientReceiveTimeout          Duration
@@ -257,15 +278,17 @@ type Cluster struct {
 			Options              map[string]struct{}
 		}
 		UserProfileFormMessage string
-		VocabularyURL          string
 		WelcomePageHTML        string
 		InactivePageHTML       string
 		SSHHelpPageHTML        string
 		SSHHelpHostSuffix      string
 		IdleTimeout            Duration
 	}
+}
 
-	ForceLegacyAPI14 bool
+type StorageClassConfig struct {
+	Default  bool
+	Priority int
 }
 
 type Volume struct {
@@ -279,8 +302,8 @@ type Volume struct {
 
 type S3VolumeDriverParameters struct {
 	IAMRole            string
-	AccessKey          string
-	SecretKey          string
+	AccessKeyID        string
+	SecretAccessKey    string
 	Endpoint           string
 	Region             string
 	Bucket             string
@@ -292,6 +315,7 @@ type S3VolumeDriverParameters struct {
 	ReadTimeout        Duration
 	RaceWindow         Duration
 	UnsafeDelete       bool
+	PrefixLength       int
 }
 
 type AzureVolumeDriverParameters struct {
@@ -317,6 +341,7 @@ type Services struct {
 	Composer       Service
 	Controller     Service
 	DispatchCloud  Service
+	DispatchLSF    Service
 	GitHTTP        Service
 	GitSSH         Service
 	Health         Service
@@ -324,7 +349,6 @@ type Services struct {
 	Keepproxy      Service
 	Keepstore      Service
 	RailsAPI       Service
-	SSO            Service
 	WebDAVDownload Service
 	WebDAV         Service
 	WebShell       Service
@@ -414,6 +438,9 @@ type ContainersConfig struct {
 	StaleLockTimeout            Duration
 	SupportedDockerImageFormats StringSet
 	UsePreemptibleInstances     bool
+	RuntimeEngine               string
+	LocalKeepBlobBuffersPerVCPU int
+	LocalKeepLogsToContainerLog string
 
 	JobsAPI struct {
 		Enable         string
@@ -448,6 +475,10 @@ type ContainersConfig struct {
 			ComputeNodeNameservers StringSet
 			AssignNodeHostname     string
 		}
+	}
+	LSF struct {
+		BsubSudoUser      string
+		BsubArgumentsList []string
 	}
 }
 
@@ -585,6 +616,7 @@ const (
 	ServiceNameRailsAPI      ServiceName = "arvados-api-server"
 	ServiceNameController    ServiceName = "arvados-controller"
 	ServiceNameDispatchCloud ServiceName = "arvados-dispatch-cloud"
+	ServiceNameDispatchLSF   ServiceName = "arvados-dispatch-lsf"
 	ServiceNameHealth        ServiceName = "arvados-health"
 	ServiceNameWorkbench1    ServiceName = "arvados-workbench1"
 	ServiceNameWorkbench2    ServiceName = "arvados-workbench2"
@@ -602,6 +634,7 @@ func (svcs Services) Map() map[ServiceName]Service {
 		ServiceNameRailsAPI:      svcs.RailsAPI,
 		ServiceNameController:    svcs.Controller,
 		ServiceNameDispatchCloud: svcs.DispatchCloud,
+		ServiceNameDispatchLSF:   svcs.DispatchLSF,
 		ServiceNameHealth:        svcs.Health,
 		ServiceNameWorkbench1:    svcs.Workbench1,
 		ServiceNameWorkbench2:    svcs.Workbench2,
