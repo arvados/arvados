@@ -905,10 +905,12 @@ Clusters:
       # go down.
       MaxComputeVMs: 64
 
-      # Preemptible instance support (e.g. AWS Spot Instances)
-      # When true, child containers will get created with the preemptible
-      # scheduling parameter parameter set.
-      UsePreemptibleInstances: false
+      # Schedule all child containers on preemptible instances (e.g. AWS
+      # Spot Instances) even if not requested by the submitter.
+      #
+      # This flag is ignored if no preemptible instance types are
+      # configured.
+      UsePreemptibleInstances: true
 
       # PEM encoded SSH key (RSA, DSA, or ECDSA) used by the
       # cloud dispatcher for executing containers on worker VMs.
