@@ -22,6 +22,8 @@ Options:
     Distribution to build packages for (default: debian10)
 --only-build <package>
     Build only a specific package (or $ONLY_BUILD from environment)
+--only-arch <architecture>
+    Build only a specific architecture (or $ONLY_ARCH from environment)
 --force-build
     Build even if the package exists upstream or if it has already been
     built locally
@@ -50,7 +52,7 @@ TARGET=debian10
 COMMAND=
 
 PARSEDOPTS=$(getopt --name "$0" --longoptions \
-    help,build-bundle-packages,debug,target:,only-build:,force-build \
+    help,build-bundle-packages,debug,target:,only-build:,only-arch:,force-build \
     -- "" "$@")
 if [ $? -ne 0 ]; then
     exit 1
@@ -72,6 +74,9 @@ while [ $# -gt 0 ]; do
             ;;
         --force-build)
             FORCE_BUILD=1
+            ;;
+        --only-arch)
+            ONLY_ARCH="$2"; shift
             ;;
         --debug)
             DEBUG=1

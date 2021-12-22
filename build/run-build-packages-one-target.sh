@@ -21,6 +21,8 @@ Syntax:
     Build only a specific package
 --only-test <package>
     Test only a specific package
+--only-arch <arch>
+    Build only a specific architecture (amd64 or arm64)
 --force-build
     Build even if the package exists upstream or if it has already been
     built locally
@@ -54,13 +56,14 @@ if ! [[ -d "$WORKSPACE" ]]; then
 fi
 
 PARSEDOPTS=$(getopt --name "$0" --longoptions \
-    help,debug,test-packages,target:,command:,only-test:,force-test,only-build:,force-build,build-version: \
+    help,debug,test-packages,target:,command:,only-test:,force-test,only-build:,force-build,only-arch:,build-version: \
     -- "" "$@")
 if [ $? -ne 0 ]; then
     exit 1
 fi
 
 TARGET=debian10
+ONLY_ARCH=
 FORCE_BUILD=0
 COMMAND=
 DEBUG=
@@ -89,6 +92,9 @@ while [ $# -gt 0 ]; do
             ;;
         --only-build)
             ONLY_BUILD="$2"; shift
+            ;;
+        --only-arch)
+            ONLY_ARCH="$2"; shift
             ;;
         --debug)
             DEBUG=" --debug"
@@ -311,6 +317,7 @@ else
         --env ARVADOS_DEBUG=$ARVADOS_DEBUG \
         --env "ONLY_BUILD=$ONLY_BUILD" \
         --env "FORCE_BUILD=$FORCE_BUILD" \
+        --env "ONLY_ARCH=$ONLY_ARCH" \
         "$IMAGE" $COMMAND
     then
         echo

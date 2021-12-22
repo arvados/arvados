@@ -137,9 +137,13 @@ package_go_binary() {
     local description="$1"; shift
     local license_file="${1:-agpl-3.0.txt}"; shift
 
-    for arch in 'amd64' 'arm64'; do
-      package_go_binary_worker "$src_path" "$prog" "$description" "$arch" "$license_file"
-    done
+    if [[ -n "$ONLY_ARCH" ]]; then
+        package_go_binary_worker "$src_path" "$prog" "$description" "$ONLY_ARCH" "$license_file"
+    else
+      for arch in 'amd64' 'arm64'; do
+        package_go_binary_worker "$src_path" "$prog" "$description" "$arch" "$license_file"
+      done
+    fi
 }
 
 # Usage: package_go_binary services/foo arvados-foo "Compute foo to arbitrary precision" [amd64/arm64] [apache-2.0.txt]
@@ -159,19 +163,21 @@ package_go_binary_worker() {
     fi
 
     debug_echo "package_go_binary $src_path as $prog"
-
     local basename="${src_path##*/}"
     calculate_go_package_version go_package_version $src_path
 
     cd $WORKSPACE/packages/$TARGET
-    test_package_presence $prog $go_package_version go
-
+    test_package_presence "$prog" "$go_package_version" "go" "" "$arch"
     if [[ "$?" != "0" ]]; then
       return 1
     fi
 
     echo "BUILDING ${arch}"
-    GOARCH=${arch} go get -ldflags "-X git.arvados.org/arvados.git/lib/cmd.version=${go_package_version} -X main.version=${go_package_version}" "git.arvados.org/arvados.git/$src_path"
+    if [[ "$arch" == "arm64" ]]; then
+      CGO_ENABLED=1 CC=aarch64-linux-gnu-gcc GOARCH=${arch} go get -ldflags "-X git.arvados.org/arvados.git/lib/cmd.version=${go_package_version} -X main.version=${go_package_version}" "git.arvados.org/arvados.git/$src_path"
+    else
+      GOARCH=${arch} go get -ldflags "-X git.arvados.org/arvados.git/lib/cmd.version=${go_package_version} -X main.version=${go_package_version}" "git.arvados.org/arvados.git/$src_path"
+    fi
 
     local -a switches=()
 
@@ -346,7 +352,7 @@ test_package_presence() {
     fi
 
     local full_pkgname
-    get_complete_package_name full_pkgname $pkgname $version $pkgtype $iteration $arch
+    get_complete_package_name full_pkgname "$pkgname" "$version" "$pkgtype" "$iteration" "$arch"
 
     # See if we can skip building the package, only if it already exists in the
     # processed/ directory. If so, move it back to the packages directory to make

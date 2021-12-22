@@ -30,6 +30,12 @@ RUN gpg --import --no-tty /tmp/mpapis.asc && \
 ADD generated/go1.17.1.linux-amd64.tar.gz /usr/local/
 RUN ln -s /usr/local/go/bin/go /usr/local/bin/
 
+# Add gcc-aarch64-linux-gnu to compile go binaries for arm64
+RUN /usr/bin/apt-get install -q -y gcc-aarch64-linux-gnu
+# We also need libpam compiled for arm64
+RUN /usr/bin/dpkg --add-architecture arm64
+RUN /usr/bin/apt-get update && /usr/bin/apt-get install -o APT::Immediate-Configure=0 -q -y libpam0g-dev:arm64
+
 # Install nodejs and npm
 ADD generated/node-v10.23.1-linux-x64.tar.xz /usr/local/
 RUN ln -s /usr/local/node-v10.23.1-linux-x64/bin/* /usr/local/bin/
