@@ -196,7 +196,7 @@ fi
 
 echo $TARGET
 cd $TARGET
-time docker build --tag=$IMAGE .
+time docker build --tag "$IMAGE" --build-arg HOSTTYPE=$HOSTTYPE .
 popd
 
 if test -z "$packages" ; then

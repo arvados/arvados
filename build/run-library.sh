@@ -137,11 +137,32 @@ package_go_binary() {
     local description="$1"; shift
     local license_file="${1:-agpl-3.0.txt}"; shift
 
+    if [[ -n "$ONLY_BUILD" ]] && [[ "$prog" != "$ONLY_BUILD" ]]; then
+      # arvados-workbench depends on arvados-server at build time, so even when
+      # only arvados-workbench is being built, we need to build arvados-server too
+      if [[ "$prog" != "arvados-server" ]] || [[ "$ONLY_BUILD" != "arvados-workbench" ]]; then
+        return 0
+      fi
+    fi
+
+    native_arch="amd64"
+    if [[ "$HOSTTYPE" == "aarch64" ]]; then
+        native_arch="arm64"
+    fi
+
     if [[ -n "$ONLY_ARCH" ]]; then
-        package_go_binary_worker "$src_path" "$prog" "$description" "$ONLY_ARCH" "$license_file"
+      if [[ "$native_arch" == "amd64" ]] || [[ "$native_arch" == "$ONLY_ARCH" ]]; then
+        package_go_binary_worker "$src_path" "$prog" "$description" "$native_arch" "$ONLY_ARCH" "$license_file"
+      else
+        echo "Error: no cross compilation support for Go on $native_arch yet, can not build $prog for $ONLY_ARCH"
+      fi
     else
-      for arch in 'amd64' 'arm64'; do
-        package_go_binary_worker "$src_path" "$prog" "$description" "$arch" "$license_file"
+      archs=($native_arch)
+      if [[ "$native_arch" == "amd64" ]]; then
+        archs=('amd64' 'arm64')
+      fi
+      for arch in $archs; do
+        package_go_binary_worker "$src_path" "$prog" "$description" "$native_arch" "$arch" "$license_file"
       done
     fi
 }
@@ -151,16 +172,9 @@ package_go_binary_worker() {
     local src_path="$1"; shift
     local prog="$1"; shift
     local description="$1"; shift
+    local native_arch="${1:-amd64}"; shift
     local arch="${1:-amd64}"; shift
     local license_file="${1:-agpl-3.0.txt}"; shift
-
-    if [[ -n "$ONLY_BUILD" ]] && [[ "$prog" != "$ONLY_BUILD" ]]; then
-      # arvados-workbench depends on arvados-server at build time, so even when
-      # only arvados-workbench is being built, we need to build arvados-server too
-      if [[ "$prog" != "arvados-server" ]] || [[ "$ONLY_BUILD" != "arvados-workbench" ]]; then
-        return 0
-      fi
-    fi
 
     debug_echo "package_go_binary $src_path as $prog"
     local basename="${src_path##*/}"
@@ -173,7 +187,7 @@ package_go_binary_worker() {
     fi
 
     echo "BUILDING ${arch}"
-    if [[ "$arch" == "arm64" ]]; then
+    if [[ "$arch" == "arm64" ]] && [[ "$native_arch" == "amd64" ]]; then
       CGO_ENABLED=1 CC=aarch64-linux-gnu-gcc GOARCH=${arch} go get -ldflags "-X git.arvados.org/arvados.git/lib/cmd.version=${go_package_version} -X main.version=${go_package_version}" "git.arvados.org/arvados.git/$src_path"
     else
       GOARCH=${arch} go get -ldflags "-X git.arvados.org/arvados.git/lib/cmd.version=${go_package_version} -X main.version=${go_package_version}" "git.arvados.org/arvados.git/$src_path"
@@ -182,7 +196,7 @@ package_go_binary_worker() {
     local -a switches=()
 
     binpath=$GOPATH/bin/${basename}
-    if [[ "${arch}" != "amd64" ]]; then
+    if [[ "${arch}" != "${native_arch}" ]]; then
       switches+=("-a${arch}")
       binpath="$GOPATH/bin/linux_${arch}/${basename}"
     fi
@@ -313,8 +327,14 @@ get_complete_package_name() {
   fi
 
   if [[ "$arch" == "" ]]; then
-    rpm_architecture="x86_64"
-    deb_architecture="amd64"
+    native_arch="amd64"
+    rpm_native_arch="x86_64"
+    if [[ "$HOSTTYPE" == "aarch64" ]]; then
+      native_arch="arm64"
+      rpm_native_arch="arm64"
+    fi
+    rpm_architecture="$rpm_native_arch"
+    deb_architecture="$native_arch"
 
     if [[ "$pkgtype" =~ ^(src)$ ]]; then
       rpm_architecture="noarch"
@@ -323,8 +343,8 @@ get_complete_package_name() {
 
     # These python packages have binary components
     if [[ "$pkgname" =~ (ruamel|ciso|pycrypto|pyyaml) ]]; then
-      rpm_architecture="x86_64"
-      deb_architecture="amd64"
+      rpm_architecture="$rpm_native_arch"
+      deb_architecture="$native_arch"
     fi
   else
     rpm_architecture=$arch

@@ -2,6 +2,7 @@
 #
 # SPDX-License-Identifier: AGPL-3.0
 
+SHELL := '/bin/bash'
 all: centos7/generated debian10/generated debian11/generated ubuntu1804/generated ubuntu2004/generated
 
 centos7/generated: common-generated-all
@@ -24,8 +25,19 @@ ubuntu2004/generated: common-generated-all
 	test -d ubuntu2004/generated || mkdir ubuntu2004/generated
 	cp -f -rlt ubuntu2004/generated common-generated/*
 
-GOTARBALL=go1.17.1.linux-amd64.tar.gz
-NODETARBALL=node-v10.23.1-linux-x64.tar.xz
+GOTARBALL_=DOES_NOT_EXIST
+NODETARBALL_=DOES_NOT_EXIST
+GOTARBALL_x86_64=go1.17.1.linux-amd64.tar.gz
+NODETARBALL_x86_64=node-v10.23.1-linux-x64.tar.xz
+GOTARBALL_aarch64=go1.17.1.linux-arm64.tar.gz
+NODETARBALL_aarch64=node-v10.23.1-linux-arm64.tar.xz
+
+# Get the bash variable $HOSTTYPE (this requires the SHELL line above)
+HOSTTYPE=$(shell echo $${HOSTTYPE})
+
+GOTARBALL=${GOTARBALL_$(HOSTTYPE)}
+NODETARBALL=${NODETARBALL_$(HOSTTYPE)}
+
 RVMKEY1=mpapis.asc
 RVMKEY2=pkuczynski.asc
 

@@ -374,60 +374,64 @@ if [[ "$?" == "0" ]]; then
 fi
 
 # Build the workbench server package
-test_rails_package_presence arvados-workbench "$WORKSPACE/apps/workbench"
-if [[ "$?" == "0" ]] ; then
-  (
-      set -e
+if [[ "$HOSTTYPE" == "x86_64" ]]; then
+  test_rails_package_presence arvados-workbench "$WORKSPACE/apps/workbench"
+  if [[ "$?" == "0" ]] ; then
+    (
+        set -e
 
-      # The workbench package has a build-time dependency on the arvados-server
-      # package for config manipulation, so install it first.
-      cd $WORKSPACE/cmd/arvados-server
-      get_complete_package_name arvados_server_pkgname arvados-server ${arvados_server_version} go
+        # The workbench package has a build-time dependency on the arvados-server
+        # package for config manipulation, so install it first.
+        cd $WORKSPACE/cmd/arvados-server
+        get_complete_package_name arvados_server_pkgname arvados-server ${arvados_server_version} go
 
-      arvados_server_pkg_path="$WORKSPACE/packages/$TARGET/${arvados_server_pkgname}"
-      if [[ ! -e ${arvados_server_pkg_path} ]]; then
-        arvados_server_pkg_path="$WORKSPACE/packages/$TARGET/processed/${arvados_server_pkgname}"
-      fi
-      if [[ "$FORMAT" == "deb" ]]; then
-        dpkg -i ${arvados_server_pkg_path}
-      else
-        rpm -i ${arvados_server_pkg_path}
-      fi
+        arvados_server_pkg_path="$WORKSPACE/packages/$TARGET/${arvados_server_pkgname}"
+        if [[ ! -e ${arvados_server_pkg_path} ]]; then
+          arvados_server_pkg_path="$WORKSPACE/packages/$TARGET/processed/${arvados_server_pkgname}"
+        fi
+        if [[ "$FORMAT" == "deb" ]]; then
+          dpkg -i ${arvados_server_pkg_path}
+        else
+          rpm -i ${arvados_server_pkg_path}
+        fi
 
-      cd "$WORKSPACE/apps/workbench"
+        cd "$WORKSPACE/apps/workbench"
 
-      # We need to bundle to be ready even when we build a package without vendor directory
-      # because asset compilation requires it.
-      bundle install --system >"$STDOUT_IF_DEBUG"
+        # We need to bundle to be ready even when we build a package without vendor directory
+        # because asset compilation requires it.
+        bundle install --system >"$STDOUT_IF_DEBUG"
 
-      # clear the tmp directory; the asset generation step will recreate tmp/cache/assets,
-      # and we want that in the package, so it's easier to not exclude the tmp directory
-      # from the package - empty it instead.
-      rm -rf tmp
-      mkdir tmp
+        # clear the tmp directory; the asset generation step will recreate tmp/cache/assets,
+        # and we want that in the package, so it's easier to not exclude the tmp directory
+        # from the package - empty it instead.
+        rm -rf tmp
+        mkdir tmp
 
-      # Set up an appropriate config.yml
-      arvados-server config-dump -config <(cat /etc/arvados/config.yml 2>/dev/null || echo  "Clusters: {zzzzz: {}}") > /tmp/x
-      mkdir -p /etc/arvados/
-      mv /tmp/x /etc/arvados/config.yml
-      perl -p -i -e 'BEGIN{undef $/;} s/WebDAV(.*?):\n( *)ExternalURL: ""/WebDAV$1:\n$2ExternalURL: "example.com"/g' /etc/arvados/config.yml
+        # Set up an appropriate config.yml
+        arvados-server config-dump -config <(cat /etc/arvados/config.yml 2>/dev/null || echo  "Clusters: {zzzzz: {}}") > /tmp/x
+        mkdir -p /etc/arvados/
+        mv /tmp/x /etc/arvados/config.yml
+        perl -p -i -e 'BEGIN{undef $/;} s/WebDAV(.*?):\n( *)ExternalURL: ""/WebDAV$1:\n$2ExternalURL: "example.com"/g' /etc/arvados/config.yml
 
-      ARVADOS_CONFIG=none RAILS_ENV=production RAILS_GROUPS=assets bin/rake npm:install >"$STDOUT_IF_DEBUG"
-      ARVADOS_CONFIG=none RAILS_ENV=production RAILS_GROUPS=assets bin/rake assets:precompile >"$STDOUT_IF_DEBUG"
+        ARVADOS_CONFIG=none RAILS_ENV=production RAILS_GROUPS=assets bin/rake npm:install >"$STDOUT_IF_DEBUG"
+        ARVADOS_CONFIG=none RAILS_ENV=production RAILS_GROUPS=assets bin/rake assets:precompile >"$STDOUT_IF_DEBUG"
 
-      # Remove generated configuration files so they don't go in the package.
-      rm -rf /etc/arvados/
-  )
+        # Remove generated configuration files so they don't go in the package.
+        rm -rf /etc/arvados/
+    )
 
-  if [[ "$?" != "0" ]]; then
-    echo "ERROR: Asset precompilation failed"
-    EXITCODE=1
-  else
-    handle_rails_package arvados-workbench "$WORKSPACE/apps/workbench" \
-        "$WORKSPACE/agpl-3.0.txt" --url="https://arvados.org" \
-        --description="Arvados Workbench - Arvados is a free and open source platform for big data science." \
-        --license="GNU Affero General Public License, version 3.0" --depends "arvados-server = ${arvados_server_version}-${arvados_server_iteration}"
+    if [[ "$?" != "0" ]]; then
+      echo "ERROR: Asset precompilation failed"
+      EXITCODE=1
+    else
+      handle_rails_package arvados-workbench "$WORKSPACE/apps/workbench" \
+          "$WORKSPACE/agpl-3.0.txt" --url="https://arvados.org" \
+          --description="Arvados Workbench - Arvados is a free and open source platform for big data science." \
+          --license="GNU Affero General Public License, version 3.0" --depends "arvados-server = ${arvados_server_version}-${arvados_server_iteration}"
+    fi
   fi
+else
+  echo "Error: building the arvados-workbench package is not yet supported on on this architecture ($HOSTTYPE)."
 fi
 
 # clean up temporary GOPATH
