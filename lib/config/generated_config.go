@@ -1317,6 +1317,11 @@ Clusters:
         AddedScratch: 0
         Price: 0.1
         Preemptible: false
+        # Include this section if the node type includes GPU (CUDA) support
+        CUDA:
+          DriverVersion: "11.0"
+          HardwareCapability: "9.0"
+          DeviceCount: 1
 
     StorageClasses:
 

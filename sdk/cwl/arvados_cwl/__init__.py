@@ -250,7 +250,8 @@ def add_arv_hints():
         "http://arvados.org/cwl#ReuseRequirement",
         "http://arvados.org/cwl#ClusterTarget",
         "http://arvados.org/cwl#OutputStorageClass",
-        "http://arvados.org/cwl#ProcessProperties"
+        "http://arvados.org/cwl#ProcessProperties",
+        "http://arvados.org/cwl#CUDARequirement"
     ])
 
 def exit_signal_handler(sigcode, frame):

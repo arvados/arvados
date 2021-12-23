@@ -143,6 +143,7 @@ var whitelist = map[string]bool{
 	"InstanceTypes":                                       true,
 	"InstanceTypes.*":                                     true,
 	"InstanceTypes.*.*":                                   true,
+	"InstanceTypes.*.*.*":                                 true,
 	"Login":                                               true,
 	"Login.Google":                                        true,
 	"Login.Google.AlternateEmailAddresses":                false,

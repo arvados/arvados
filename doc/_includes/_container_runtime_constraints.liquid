@@ -14,6 +14,11 @@ table(table table-bordered table-condensed).
 |vcpus|integer|Number of cores to be used to run this process.|Optional. However, a ContainerRequest that is in "Committed" state must provide this.|
 |keep_cache_ram|integer|Number of keep cache bytes to be used to run this process.|Optional.|
 |API|boolean|When set, ARVADOS_API_HOST and ARVADOS_API_TOKEN will be set, and container will have networking enabled to access the Arvados API server.|Optional.|
-|cuda_driver_version|string|Minimum CUDA driver version.|Optional.|
-|cuda_hardware_capability|string|Minimum CUDA hardware capability.|Optional.|
-|cuda_device_count|int|Number of GPUs to request.|Optional.|
+|cuda|object|Request CUDA GPU support, see below|Optional.|
+
+h3. CUDA GPU support
+
+table(table table-bordered table-condensed).
+|device_count|int|Number of GPUs to request.|Count greater than 0 enables CUDA GPU support.|
+|driver_version|string|Minimum CUDA driver version, in "X.Y" format.|Required when device_count > 0|
+|hardware_capability|string|Minimum CUDA hardware capability, in "X.Y" format.|Required when device_count > 0|

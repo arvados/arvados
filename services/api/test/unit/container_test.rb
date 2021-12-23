@@ -14,7 +14,7 @@ class ContainerTest < ActiveSupport::TestCase
     container_image: 'fa3c1a9cb6783f85f2ecda037e07b8c3+167',
     output_path: '/tmp',
     priority: 1,
-    runtime_constraints: {"vcpus" => 1, "ram" => 1},
+    runtime_constraints: {"vcpus" => 1, "ram" => 1, "cuda" => {"device_count":0, "driver_version": "", "hardware_capability": ""}},
   }
 
   REUSABLE_COMMON_ATTRS = {
@@ -26,7 +26,7 @@ class ContainerTest < ActiveSupport::TestCase
       "API" => false,
       "keep_cache_ram" => 0,
       "ram" => 12000000000,
-      "vcpus" => 4,
+      "vcpus" => 4
     },
     mounts: {
       "test" => {"kind" => "json"},
@@ -229,7 +229,7 @@ class ContainerTest < ActiveSupport::TestCase
     set_user_from_auth :active
     env = {"C" => "3", "B" => "2", "A" => "1"}
     m = {"F" => {"kind" => "3"}, "E" => {"kind" => "2"}, "D" => {"kind" => "1"}}
-    rc = {"vcpus" => 1, "ram" => 1, "keep_cache_ram" => 1, "API" => true}
+    rc = {"vcpus" => 1, "ram" => 1, "keep_cache_ram" => 1, "API" => true, "cuda" => {"device_count":0, "driver_version": "", "hardware_capability": ""}}
     c, _ = minimal_new(environment: env, mounts: m, runtime_constraints: rc)
     c.reload
     assert_equal Container.deep_sort_hash(env).to_json, c.environment.to_json
@@ -588,6 +588,33 @@ class ContainerTest < ActiveSupport::TestCase
     # See #14584
     assert_not_nil reused
     assert_equal c1.uuid, reused.uuid
+  end
+
+  test "find_reusable method with cuda" do
+    set_user_from_auth :active
+    # No cuda
+    no_cuda_attrs = REUSABLE_COMMON_ATTRS.merge({use_existing:false, priority:1, environment:{"var" => "queued"},
+                                                runtime_constraints: {"vcpus" => 1, "ram" => 1, "keep_cache_ram"=>268435456, "API" => false,
+                                                                      "cuda" => {"device_count":0, "driver_version": "", "hardware_capability": ""}},})
+    c1, _ = minimal_new(no_cuda_attrs)
+    assert_equal Container::Queued, c1.state
+
+    # has cuda
+    cuda_attrs = REUSABLE_COMMON_ATTRS.merge({use_existing:false, priority:1, environment:{"var" => "queued"},
+                                                runtime_constraints: {"vcpus" => 1, "ram" => 1, "keep_cache_ram"=>268435456, "API" => false,
+                                                                      "cuda" => {"device_count":1, "driver_version": "11.0", "hardware_capability": "9.0"}},})
+    c2, _ = minimal_new(cuda_attrs)
+    assert_equal Container::Queued, c2.state
+
+    # should find the no cuda one
+    reused = Container.find_reusable(no_cuda_attrs)
+    assert_not_nil reused
+    assert_equal reused.uuid, c1.uuid
+
+    # should find the cuda one
+    reused = Container.find_reusable(cuda_attrs)
+    assert_not_nil reused
+    assert_equal reused.uuid, c2.uuid
   end
 
   test "Container running" do
