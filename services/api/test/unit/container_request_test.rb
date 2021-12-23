@@ -1053,10 +1053,17 @@ class ContainerRequestTest < ActiveSupport::TestCase
 
       expect[true].push create_minimal_req!(attrs_p)
       expect[true].push create_minimal_req!(attrs_nonp)
+      commit_later = create_minimal_req!()
 
       Rails.configuration.InstanceTypes = ConfigLoader.to_OrderedOptions({})
 
       expect[false].push create_minimal_req!(attrs_nonp)
+
+      # Even though preemptible is not allowed, we should be able to
+      # commit a CR that was created earlier when preemptible was the
+      # default.
+      commit_later.update_attributes!(priority: 1, state: "Committed")
+      expect[false].push commit_later
     end
 
     set_user_from_auth :active
