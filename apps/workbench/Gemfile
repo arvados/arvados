@@ -32,7 +32,6 @@ group :assets do
   gem 'uglifier', '~> 2.0'
 
   # See https://github.com/rails/execjs#readme for more supported runtimes
-  gem 'mini_racer', :platforms => :ruby
 end
 
 group :development, :test, :performance do
