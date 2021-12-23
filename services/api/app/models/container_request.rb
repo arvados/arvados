@@ -328,7 +328,7 @@ class ContainerRequest < ArvadosModel
   def set_preemptible
     if (new_record? || state_changed?) &&
        state == Committed &&
-       Rails.configuration.Containers.UsePreemptibleInstances &&
+       Rails.configuration.Containers.AlwaysUsePreemptibleInstances &&
        get_requesting_container_uuid() &&
        self.class.any_preemptible_instances?
       self.scheduling_parameters['preemptible'] = true

@@ -984,15 +984,15 @@ class ContainerRequestTest < ActiveSupport::TestCase
     [false, true, false, false, false],
     [true, true, false, false, false],
     # client requests non-preemptible for child container, preemptible
-    # is enabled anyway if UsePreemptibleInstances and instance types
+    # is enabled anyway if AlwaysUsePreemptibleInstances and instance types
     # are configured.
     [false, false, true, false, false],
     [true, false, true, false, false],
     [false, true, true, false, false],
     [true, true, true, false, true],
   ].each do |use_preemptible, have_preemptible, is_child, ask, expect|
-    test "with UsePreemptibleInstances=#{use_preemptible} and preemptible types #{have_preemptible ? '' : 'not '}configured, create #{is_child ? 'child' : 'top-level'} container request with preemptible=#{ask} and expect #{expect}" do
-      Rails.configuration.Containers.UsePreemptibleInstances = use_preemptible
+    test "with AlwaysUsePreemptibleInstances=#{use_preemptible} and preemptible types #{have_preemptible ? '' : 'not '}configured, create #{is_child ? 'child' : 'top-level'} container request with preemptible=#{ask} and expect #{expect}" do
+      Rails.configuration.Containers.AlwaysUsePreemptibleInstances = use_preemptible
       if have_preemptible
         configure_preemptible_instance_type
       end
@@ -1044,12 +1044,12 @@ class ContainerRequestTest < ActiveSupport::TestCase
 
     with_container_auth(parent) do
       configure_preemptible_instance_type
-      Rails.configuration.Containers.UsePreemptibleInstances = false
+      Rails.configuration.Containers.AlwaysUsePreemptibleInstances = false
 
       expect[true].push create_minimal_req!(attrs_p)
       expect[false].push create_minimal_req!(attrs_nonp)
 
-      Rails.configuration.Containers.UsePreemptibleInstances = true
+      Rails.configuration.Containers.AlwaysUsePreemptibleInstances = true
 
       expect[true].push create_minimal_req!(attrs_p)
       expect[true].push create_minimal_req!(attrs_nonp)

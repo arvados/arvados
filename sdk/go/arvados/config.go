@@ -424,23 +424,23 @@ type InstanceType struct {
 }
 
 type ContainersConfig struct {
-	CloudVMs                    CloudVMsConfig
-	CrunchRunCommand            string
-	CrunchRunArgumentsList      []string
-	DefaultKeepCacheRAM         ByteSize
-	DispatchPrivateKey          string
-	LogReuseDecisions           bool
-	MaxComputeVMs               int
-	MaxDispatchAttempts         int
-	MaxRetryAttempts            int
-	MinRetryPeriod              Duration
-	ReserveExtraRAM             ByteSize
-	StaleLockTimeout            Duration
-	SupportedDockerImageFormats StringSet
-	UsePreemptibleInstances     bool
-	RuntimeEngine               string
-	LocalKeepBlobBuffersPerVCPU int
-	LocalKeepLogsToContainerLog string
+	CloudVMs                      CloudVMsConfig
+	CrunchRunCommand              string
+	CrunchRunArgumentsList        []string
+	DefaultKeepCacheRAM           ByteSize
+	DispatchPrivateKey            string
+	LogReuseDecisions             bool
+	MaxComputeVMs                 int
+	MaxDispatchAttempts           int
+	MaxRetryAttempts              int
+	MinRetryPeriod                Duration
+	ReserveExtraRAM               ByteSize
+	StaleLockTimeout              Duration
+	SupportedDockerImageFormats   StringSet
+	AlwaysUsePreemptibleInstances bool
+	RuntimeEngine                 string
+	LocalKeepBlobBuffersPerVCPU   int
+	LocalKeepLogsToContainerLog   string
 
 	JobsAPI struct {
 		Enable         string

@@ -16,13 +16,13 @@ Currently Arvados supports preemptible instances using AWS and Azure spot instan
 
 h2. Configuration
 
-To use preemptible instances, ensure they are not disabled in your configuration file (they are enabled by default, but can be disabled with @UsePreemptibleInstances: false@), and add entries to @InstanceTypes@ that have @Preemptible: true@.  Typically you want to add both preemptible and non-preemptible entries for each cloud provider VM type.  The @Price@ for preemptible instances is the maximum bid price, the actual price paid is dynamic and will likely be lower.  For example:
+First, ensure automatic selection of preemptible instances is not disabled in your configuration file (this is enabled by default, but can be disabled with @AlwaysUsePreemptibleInstances: false@), and add entries to @InstanceTypes@ that have @Preemptible: true@.  Typically you want to add both preemptible and non-preemptible entries for each cloud provider VM type.  The @Price@ for preemptible instances is the maximum bid price, the actual price paid is dynamic and will likely be lower.  For example:
 
 <pre>
 Clusters:
   ClusterID: 
     Containers:
-      UsePreemptibleInstances: true
+      AlwaysUsePreemptibleInstances: true
     InstanceTypes:
       m4.large:
         Preemptible: false
@@ -40,7 +40,7 @@ Clusters:
         Price: 0.1
 </pre>
 
-When @UsePreemptibleInstances@ is enabled, child containers (workflow steps) will automatically be made preemptible.  Note that because preempting the workflow runner would cancel the entire workflow, the workflow runner runs in a reserved (non-preemptible) instance.
+When @AlwaysUsePreemptibleInstances@ is enabled, child containers (workflow steps) will automatically be made preemptible.  Note that because preempting the workflow runner would cancel the entire workflow, the workflow runner runs in a reserved (non-preemptible) instance.
 
 No additional configuration is required, "arvados-dispatch-cloud":{{site.baseurl}}/install/crunch2-cloud/install-dispatch-cloud.html will now start preemptible instances where appropriate.
 

@@ -918,7 +918,7 @@ Clusters:
       #
       # This flag is ignored if no preemptible instance types are
       # configured, and has no effect on top-level containers.
-      UsePreemptibleInstances: true
+      AlwaysUsePreemptibleInstances: true
 
       # PEM encoded SSH key (RSA, DSA, or ECDSA) used by the
       # cloud dispatcher for executing containers on worker VMs.
