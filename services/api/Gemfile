@@ -30,9 +30,6 @@ gem 'pg', '~> 1.0'
 gem 'multi_json'
 gem 'oj'
 
-gem 'therubyracer'
-gem 'uglifier', '~> 2.0'
-
 gem 'jquery-rails'
 
 gem 'rvm-capistrano', :group => :test
@@ -63,8 +60,6 @@ gem 'rails-observers'
 
 gem 'rails-perftest'
 gem 'rails-controller-testing'
-
-gem 'sass-rails'
 
 # arvados-google-api-client and googleauth depend on signet, but
 # signet 0.12 is incompatible with ruby 2.3.
