@@ -16,7 +16,7 @@ Currently Arvados supports preemptible instances using AWS and Azure spot instan
 
 h2. Configuration
 
-To use preemptible instances, set @UsePreemptibleInstances: true@ and add entries to @InstanceTypes@ with @Preemptible: true@ to @config.yml@.  Typically you want to add both preemptible and non-preemptible entries for each cloud provider VM type.  The @Price@ for preemptible instances is the maximum bid price, the actual price paid is dynamic and will likely be lower.  For example:
+To use preemptible instances, ensure they are not disabled in your configuration file (they are enabled by default, but can be disabled with @UsePreemptibleInstances: false@), and add entries to @InstanceTypes@ that have @Preemptible: true@.  Typically you want to add both preemptible and non-preemptible entries for each cloud provider VM type.  The @Price@ for preemptible instances is the maximum bid price, the actual price paid is dynamic and will likely be lower.  For example:
 
 <pre>
 Clusters:

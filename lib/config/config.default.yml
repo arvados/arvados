@@ -902,8 +902,16 @@ Clusters:
       # Schedule all child containers on preemptible instances (e.g. AWS
       # Spot Instances) even if not requested by the submitter.
       #
+      # If false, containers are scheduled on preemptible instances
+      # only when requested by the submitter.
+      #
+      # Note that arvados-cwl-runner does not currently offer a
+      # feature to request preemptible instances, so this value
+      # effectively acts as a cluster-wide decision about whether to
+      # use preemptible instances.
+      #
       # This flag is ignored if no preemptible instance types are
-      # configured.
+      # configured, and has no effect on top-level containers.
       UsePreemptibleInstances: true
 
       # PEM encoded SSH key (RSA, DSA, or ECDSA) used by the
