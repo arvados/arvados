@@ -12,6 +12,30 @@ else
     PACKAGE_NAME=$1; shift
 fi
 
+if [ "$PACKAGE_NAME" = "arvados-workbench" ]; then
+  mkdir -p /etc/arvados
+  cat <<'EOF' >/etc/arvados/config.yml
+--- 
+Clusters:
+  xxxxx:
+    Services:
+      Workbench1:
+        ExternalURL: "https://workbench.xxxxx.example.com"
+      WebDAV:
+        ExternalURL: https://*.collections.xxxxx.example.com/
+      WebDAVDownload:
+        ExternalURL: https://download.xxxxx.example.com
+    ManagementToken: aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+    SystemRootToken: aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+    Collections:
+      BlobSigningKey: aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+    Workbench:
+      SecretKeyBase: aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+    Users:
+      AutoAdminFirstUser: true
+EOF
+fi
+
 cd "/var/www/${PACKAGE_NAME%-server}/current"
 
 case "$TARGET" in
