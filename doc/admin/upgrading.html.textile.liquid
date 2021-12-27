@@ -39,6 +39,10 @@ h2(#main). development main (as of 2021-11-10)
 
 "previous: Upgrading from 2.3.0":#v2_3_0
 
+h3. Preemptible instance types are used automatically, if any are configured
+
+The default behavior for selecting "preemptible instances":{{site.baseurl}}/admin/spot-instances.html has changed. If your configuration lists any instance types with @Preemptible: true@, all child (non-top-level) containers will automatically be scheduled on preemptible instances. To avoid using preemptible instances except when explicitly requested by clients, add @AlwaysUsePreemptibleInstances: false@ in the @Containers@ config section. (Previously, preemptible instance types were never used unless the configuration specified @UsePreemptibleInstances: true@. That flag has been removed.)
+
 h3. Role groups are visible to all users by default
 
 The permission model has changed such that all role groups are visible to all active users. This enables users to share objects with groups they don't belong to. To preserve the previous behavior, where role groups are only visible to members and admins, add @RoleGroupsVisibleToAll: false@ to the @Users@ section of your configuration file.
