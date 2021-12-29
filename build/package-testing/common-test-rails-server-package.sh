@@ -15,7 +15,7 @@ fi
 if [ "$PACKAGE_NAME" = "arvados-workbench" ]; then
   mkdir -p /etc/arvados
   cat <<'EOF' >/etc/arvados/config.yml
---- 
+---
 Clusters:
   xxxxx:
     Services:
