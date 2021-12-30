@@ -56,7 +56,7 @@ RUN /usr/local/rvm/bin/rvm-exec default bundle config --global jobs $(let a=$(gr
 # Cf. https://build.betterup.com/one-weird-trick-that-will-speed-up-your-bundle-install/
 ENV MAKE "make --jobs $(grep -c processor /proc/cpuinfo)"
 
-RUN echo $MAKE && git clone -b 17417-switch-to-mini_racer --depth 1 git://git.arvados.org/arvados.git /tmp/arvados && \
+RUN git clone --depth 1 git://git.arvados.org/arvados.git /tmp/arvados && \
     cd /tmp/arvados/services/api && \
     /usr/local/rvm/bin/rvm-exec default bundle install && \
     cd /tmp/arvados/apps/workbench && \

@@ -150,11 +150,11 @@ package_go_binary() {
         native_arch="arm64"
     fi
 
-    if [[ -n "$ONLY_ARCH" ]]; then
-      if [[ "$native_arch" == "amd64" ]] || [[ "$native_arch" == "$ONLY_ARCH" ]]; then
-        package_go_binary_worker "$src_path" "$prog" "$description" "$native_arch" "$ONLY_ARCH" "$license_file"
+    if [[ -n "$ARCH" ]]; then
+      if [[ "$native_arch" == "amd64" ]] || [[ "$native_arch" == "$ARCH" ]]; then
+        package_go_binary_worker "$src_path" "$prog" "$description" "$native_arch" "$ARCH" "$license_file"
       else
-        echo "Error: no cross compilation support for Go on $native_arch yet, can not build $prog for $ONLY_ARCH"
+        echo "Error: no cross compilation support for Go on $native_arch yet, can not build $prog for $ARCH"
       fi
     else
       archs=($native_arch)
@@ -167,7 +167,7 @@ package_go_binary() {
     fi
 }
 
-# Usage: package_go_binary services/foo arvados-foo "Compute foo to arbitrary precision" [amd64/arm64] [apache-2.0.txt]
+# Usage: package_go_binary services/foo arvados-foo "Compute foo to arbitrary precision" [amd64/arm64] [amd64/arm64] [apache-2.0.txt]
 package_go_binary_worker() {
     local src_path="$1"; shift
     local prog="$1"; shift
@@ -495,14 +495,14 @@ fpm_build_virtualenv () {
     native_arch="arm64"
   fi
 
-  if [[ -n "$ONLY_ARCH" ]] && [[ "$ONLY_ARCH" == "$native_arch" ]]; then
-      fpm_build_virtualenv_worker "$PKG" "$PKG_DIR" "$PACKAGE_TYPE" "$ONLY_ARCH"
-  elif [[ -z "$ONLY_ARCH" ]]; then
+  if [[ -n "$ARCH" ]] && [[ "$ARCH" == "$native_arch" ]]; then
+      fpm_build_virtualenv_worker "$PKG" "$PKG_DIR" "$PACKAGE_TYPE" "$ARCH"
+  elif [[ -z "$ARCH" ]]; then
     for arch in $native_arch; do
       fpm_build_virtualenv_worker "$PKG" "$PKG_DIR" "$PACKAGE_TYPE" "$arch"
     done
   else
-    echo "Error: no cross compilation support for Python yet, can not build $PKG for $ONLY_ARCH"
+    echo "Error: no cross compilation support for Python yet, can not build $PKG for $ARCH"
   fi
 }
 
