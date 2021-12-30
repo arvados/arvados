@@ -188,7 +188,12 @@ package_go_binary_worker() {
 
     echo "BUILDING ${arch}"
     if [[ "$arch" == "arm64" ]] && [[ "$native_arch" == "amd64" ]]; then
-      CGO_ENABLED=1 CC=aarch64-linux-gnu-gcc GOARCH=${arch} go get -ldflags "-X git.arvados.org/arvados.git/lib/cmd.version=${go_package_version} -X main.version=${go_package_version}" "git.arvados.org/arvados.git/$src_path"
+      if [[ "$FORMAT" == "deb" ]]; then
+        CGO_ENABLED=1 CC=aarch64-linux-gnu-gcc GOARCH=${arch} go get -ldflags "-X git.arvados.org/arvados.git/lib/cmd.version=${go_package_version} -X main.version=${go_package_version}" "git.arvados.org/arvados.git/$src_path"
+      else
+        echo "Error: no cross compilation support for Go on $native_arch ($FORMAT), can not build $prog for $ARCH"
+        return
+      fi
     else
       GOARCH=${arch} go get -ldflags "-X git.arvados.org/arvados.git/lib/cmd.version=${go_package_version} -X main.version=${go_package_version}" "git.arvados.org/arvados.git/$src_path"
     fi
