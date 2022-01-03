@@ -130,10 +130,12 @@ calculate_go_package_version() {
   __returnvar="$version"
 }
 
-# Usage: package_go_binary services/foo arvados-foo "Compute foo to arbitrary precision" [apache-2.0.txt]
+# Usage: package_go_binary services/foo arvados-foo [deb|rpm] [amd64|arm64] "Compute foo to arbitrary precision" [apache-2.0.txt]
 package_go_binary() {
     local src_path="$1"; shift
     local prog="$1"; shift
+    local package_format="$1"; shift
+    local target_arch="$1"; shift
     local description="$1"; shift
     local license_file="${1:-agpl-3.0.txt}"; shift
 
@@ -145,55 +147,66 @@ package_go_binary() {
       fi
     fi
 
+    # Only amd64 and aarch64 are supported
     native_arch="amd64"
     if [[ "$HOSTTYPE" == "aarch64" ]]; then
         native_arch="arm64"
     fi
 
-    if [[ -n "$ARCH" ]]; then
-      if [[ "$native_arch" == "amd64" ]] || [[ "$native_arch" == "$ARCH" ]]; then
-        package_go_binary_worker "$src_path" "$prog" "$description" "$native_arch" "$ARCH" "$license_file"
-      else
-        echo "Error: no cross compilation support for Go on $native_arch yet, can not build $prog for $ARCH"
-      fi
+    if [[ "$native_arch" != "amd64" ]] && [[ -n "$target_arch" ]] && [[ "$native_arch" != "$target_arch" ]]; then
+      echo "Error: no cross compilation support for Go on $native_arch yet, can not build $prog for $target_arch"
+      return 1
+    fi
+
+    if [[ -n "$target_arch" ]]; then
+      # A target architecture has been specified
+      package_go_binary_worker "$src_path" "$prog" "$package_format" "$description" "$native_arch" "$target_arch" "$license_file"
+      return $?
     else
+      # No target architecture specified, default to native target. When on amd64 also crosscompile arm64
+      # but only when building deb packages (centos does not have support for crosscompiling userspace).
       archs=($native_arch)
-      if [[ "$native_arch" == "amd64" ]]; then
+      if [[ "$native_arch" == "amd64" ]] && [[ "$package_format" == "deb" ]]; then
         archs=('amd64' 'arm64')
       fi
-      for arch in $archs; do
-        package_go_binary_worker "$src_path" "$prog" "$description" "$native_arch" "$arch" "$license_file"
+      for ta in $archs; do
+        package_go_binary_worker "$src_path" "$prog" "$package_format" "$description" "$native_arch" "$ta" "$license_file"
+        retval=$?
+        if [[ "$retval" != 0 ]]; then
+          return $retval
+        fi
       done
     fi
 }
 
-# Usage: package_go_binary services/foo arvados-foo "Compute foo to arbitrary precision" [amd64/arm64] [amd64/arm64] [apache-2.0.txt]
+# Usage: package_go_binary services/foo arvados-foo deb "Compute foo to arbitrary precision" [amd64/arm64] [amd64/arm64] [apache-2.0.txt]
 package_go_binary_worker() {
     local src_path="$1"; shift
     local prog="$1"; shift
+    local package_format="$1"; shift
     local description="$1"; shift
     local native_arch="${1:-amd64}"; shift
-    local arch="${1:-amd64}"; shift
+    local target_arch="${1:-amd64}"; shift
     local license_file="${1:-agpl-3.0.txt}"; shift
 
-    debug_echo "package_go_binary $src_path as $prog"
+    if [[ "$native_arch" != "$target_arch" ]] && [[ "$package_format" == "rpm" ]]; then
+      echo "Error: no cross compilation support for Go on $native_arch ($package_format), can not build $prog for $target_arch"
+      return 1
+    fi
+
+    debug_echo "package_go_binary $src_path as $prog (native arch: $native_arch, target arch: $target_arch)"
     local basename="${src_path##*/}"
     calculate_go_package_version go_package_version $src_path
 
     cd $WORKSPACE/packages/$TARGET
-    test_package_presence "$prog" "$go_package_version" "go" "" "$arch"
+    test_package_presence "$prog" "$go_package_version" "go" "" "$target_arch"
     if [[ "$?" != "0" ]]; then
       return 1
     fi
 
-    echo "BUILDING ${arch}"
-    if [[ "$arch" == "arm64" ]] && [[ "$native_arch" == "amd64" ]]; then
-      if [[ "$FORMAT" == "deb" ]]; then
-        CGO_ENABLED=1 CC=aarch64-linux-gnu-gcc GOARCH=${arch} go get -ldflags "-X git.arvados.org/arvados.git/lib/cmd.version=${go_package_version} -X main.version=${go_package_version}" "git.arvados.org/arvados.git/$src_path"
-      else
-        echo "Error: no cross compilation support for Go on $native_arch ($FORMAT), can not build $prog for $ARCH"
-        return
-      fi
+    echo "Building $pachage_format ($target_arch) package for $prog from $src_path"
+    if [[ "$native_arch" == "amd64" ]] && [[ "$target_arch" == "arm64" ]]; then
+      CGO_ENABLED=1 CC=aarch64-linux-gnu-gcc GOARCH=${target_arch} go get -ldflags "-X git.arvados.org/arvados.git/lib/cmd.version=${go_package_version} -X main.version=${go_package_version}" "git.arvados.org/arvados.git/$src_path"
     else
       GOARCH=${arch} go get -ldflags "-X git.arvados.org/arvados.git/lib/cmd.version=${go_package_version} -X main.version=${go_package_version}" "git.arvados.org/arvados.git/$src_path"
     fi
@@ -201,9 +214,9 @@ package_go_binary_worker() {
     local -a switches=()
 
     binpath=$GOPATH/bin/${basename}
-    if [[ "${arch}" != "${native_arch}" ]]; then
-      switches+=("-a${arch}")
-      binpath="$GOPATH/bin/linux_${arch}/${basename}"
+    if [[ "${target_arch}" != "${native_arch}" ]]; then
+      switches+=("-a${target_arch}")
+      binpath="$GOPATH/bin/linux_${target_arch}/${basename}"
     fi
 
     systemd_unit="$WORKSPACE/${src_path}/${prog}.service"
@@ -218,11 +231,13 @@ package_go_binary_worker() {
     fpm_build "${WORKSPACE}/${src_path}" "$binpath=/usr/bin/${prog}" "${prog}" dir "${go_package_version}" "--url=https://arvados.org" "--license=GNU Affero General Public License, version 3.0" "--description=${description}" "${switches[@]}"
 }
 
-# Usage: package_go_so lib/foo arvados_foo.so arvados-foo "Arvados foo library"
+# Usage: package_go_so lib/foo arvados_foo.so arvados-foo deb amd64 "Arvados foo library"
 package_go_so() {
     local src_path="$1"; shift
     local sofile="$1"; shift
     local pkg="$1"; shift
+    local package_format="$1"; shift
+    local target_arch="$1"; shift # supported: amd64, arm64
     local description="$1"; shift
 
     if [[ -n "$ONLY_BUILD" ]] && [[ "$pkg" != "$ONLY_BUILD" ]]; then

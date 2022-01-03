@@ -276,47 +276,47 @@ fi
 # Go binaries
 cd $WORKSPACE/packages/$TARGET
 export GOPATH=$(mktemp -d)
-package_go_binary cmd/arvados-client arvados-client \
+package_go_binary cmd/arvados-client arvados-client "$FORMAT" "$ARCH" \
     "Arvados command line tool (beta)"
-package_go_binary cmd/arvados-server arvados-server \
+package_go_binary cmd/arvados-server arvados-server "$FORMAT" "$ARCH" \
     "Arvados server daemons"
-package_go_binary cmd/arvados-server arvados-controller \
+package_go_binary cmd/arvados-server arvados-controller "$FORMAT" "$ARCH" \
     "Arvados cluster controller daemon"
-package_go_binary cmd/arvados-server arvados-dispatch-cloud \
+package_go_binary cmd/arvados-server arvados-dispatch-cloud "$FORMAT" "$ARCH" \
     "Arvados cluster cloud dispatch"
-package_go_binary cmd/arvados-server arvados-dispatch-lsf \
+package_go_binary cmd/arvados-server arvados-dispatch-lsf "$FORMAT" "$ARCH" \
     "Dispatch Arvados containers to an LSF cluster"
-package_go_binary services/arv-git-httpd arvados-git-httpd \
+package_go_binary services/arv-git-httpd arvados-git-httpd "$FORMAT" "$ARCH" \
     "Provide authenticated http access to Arvados-hosted git repositories"
-package_go_binary services/crunch-dispatch-local crunch-dispatch-local \
+package_go_binary services/crunch-dispatch-local crunch-dispatch-local "$FORMAT" "$ARCH" \
     "Dispatch Crunch containers on the local system"
-package_go_binary services/crunch-dispatch-slurm crunch-dispatch-slurm \
+package_go_binary services/crunch-dispatch-slurm crunch-dispatch-slurm "$FORMAT" "$ARCH" \
     "Dispatch Crunch containers to a SLURM cluster"
-package_go_binary cmd/arvados-server crunch-run \
+package_go_binary cmd/arvados-server crunch-run "$FORMAT" "$ARCH" \
     "Supervise a single Crunch container"
-package_go_binary services/crunchstat crunchstat \
+package_go_binary services/crunchstat crunchstat "$FORMAT" "$ARCH" \
     "Gather cpu/memory/network statistics of running Crunch jobs"
-package_go_binary services/health arvados-health \
+package_go_binary services/health arvados-health "$FORMAT" "$ARCH" \
     "Check health of all Arvados cluster services"
-package_go_binary services/keep-balance keep-balance \
+package_go_binary services/keep-balance keep-balance "$FORMAT" "$ARCH" \
     "Rebalance and garbage-collect data blocks stored in Arvados Keep"
-package_go_binary services/keepproxy keepproxy \
+package_go_binary services/keepproxy keepproxy "$FORMAT" "$ARCH" \
     "Make a Keep cluster accessible to clients that are not on the LAN"
-package_go_binary cmd/arvados-server keepstore \
+package_go_binary cmd/arvados-server keepstore "$FORMAT" "$ARCH" \
     "Keep storage daemon, accessible to clients on the LAN"
-package_go_binary services/keep-web keep-web \
+package_go_binary services/keep-web keep-web "$FORMAT" "$ARCH" \
     "Static web hosting service for user data stored in Arvados Keep"
-package_go_binary cmd/arvados-server arvados-ws \
+package_go_binary cmd/arvados-server arvados-ws "$FORMAT" "$ARCH" \
     "Arvados Websocket server"
-package_go_binary tools/sync-groups arvados-sync-groups \
+package_go_binary tools/sync-groups arvados-sync-groups "$FORMAT" "$ARCH" \
     "Synchronize remote groups into Arvados from an external source"
-package_go_binary tools/keep-block-check keep-block-check \
+package_go_binary tools/keep-block-check keep-block-check "$FORMAT" "$ARCH" \
     "Verify that all data from one set of Keep servers to another was copied"
-package_go_binary tools/keep-rsync keep-rsync \
+package_go_binary tools/keep-rsync keep-rsync "$FORMAT" "$ARCH" \
     "Copy all data from one set of Keep servers to another"
-package_go_binary tools/keep-exercise keep-exercise \
+package_go_binary tools/keep-exercise keep-exercise "$FORMAT" "$ARCH" \
     "Performance testing tool for Arvados Keep"
-package_go_so lib/pam pam_arvados.so libpam-arvados-go \
+package_go_so lib/pam pam_arvados.so libpam-arvados-go "$FORMAT" "$ARCH" \
     "Arvados PAM authentication module"
 
 # The Python SDK - Python3 package
