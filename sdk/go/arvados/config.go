@@ -486,6 +486,7 @@ type ContainersConfig struct {
 	LSF struct {
 		BsubSudoUser      string
 		BsubArgumentsList []string
+		BsubCUDAArguments []string
 	}
 }
 

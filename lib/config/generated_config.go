@@ -1095,6 +1095,7 @@ Clusters:
         # %C number of VCPUs
         # %M memory in MB
         # %T tmp in MB
+        # %G number of GPU devices (runtime_constraints.cuda.device_count)
         #
         # Use %% to express a literal %. The %%J in the default will be changed
         # to %J, which is interpreted by bsub itself.
@@ -1104,6 +1105,11 @@ Clusters:
         # runs. Ensure you have something in place to delete old files
         # from /tmp, or adjust the "-o" and "-e" arguments accordingly.
         BsubArgumentsList: ["-o", "/tmp/crunch-run.%%J.out", "-e", "/tmp/crunch-run.%%J.err", "-J", "%U", "-n", "%C", "-D", "%MMB", "-R", "rusage[mem=%MMB:tmp=%TMB] span[hosts=1]", "-R", "select[mem>=%MMB]", "-R", "select[tmp>=%TMB]", "-R", "select[ncpus>=%C]"]
+
+        # Arguments that will be appended to the bsub command line
+        # when submitting Arvados containers as LSF jobs with
+        # runtime_constraints.cuda.device_count > 0
+        BsubCUDAArguments: ["-gpu", "num=%G"]
 
         # Use sudo to switch to this user account when submitting LSF
         # jobs.
