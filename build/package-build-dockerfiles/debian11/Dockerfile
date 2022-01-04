@@ -60,7 +60,9 @@ RUN git clone --depth 1 git://git.arvados.org/arvados.git /tmp/arvados && \
     cd /tmp/arvados/services/api && \
     /usr/local/rvm/bin/rvm-exec default bundle install && \
     cd /tmp/arvados/apps/workbench && \
-    /usr/local/rvm/bin/rvm-exec default bundle install
+    /usr/local/rvm/bin/rvm-exec default bundle install && \
+    cd /tmp/arvados && \
+    go mod download
 
 ENV WORKSPACE /arvados
 CMD ["/usr/local/rvm/bin/rvm-exec", "default", "bash", "/jenkins/run-build-packages.sh", "--target", "debian11"]

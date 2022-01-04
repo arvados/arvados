@@ -224,7 +224,7 @@ debug_echo -e "\nGo packages\n"
 
 # Go binaries
 cd $WORKSPACE/packages/$TARGET
-export GOPATH=$(mktemp -d)
+export GOPATH=~/go
 package_go_binary cmd/arvados-client arvados-client "$FORMAT" "$ARCH" \
     "Arvados command line tool (beta)"
 package_go_binary cmd/arvados-server arvados-server "$FORMAT" "$ARCH" \

@@ -68,7 +68,9 @@ RUN git clone --depth 1 git://git.arvados.org/arvados.git /tmp/arvados && \
     cd /tmp/arvados/services/api && \
     /usr/local/rvm/bin/rvm-exec default bundle install && \
     cd /tmp/arvados/apps/workbench && \
-    /usr/local/rvm/bin/rvm-exec default bundle install
+    /usr/local/rvm/bin/rvm-exec default bundle install && \
+    cd /tmp/arvados && \
+    go mod download
 
 # The version of setuptools that comes with CentOS is way too old
 RUN pip3 install 'setuptools<45'
