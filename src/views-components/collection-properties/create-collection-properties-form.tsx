@@ -18,7 +18,6 @@ const Form = withStyles(
     ({ spacing }) => (
         { container:
             {
-                paddingTop: spacing.unit,
                 margin: 0,
             }
         })

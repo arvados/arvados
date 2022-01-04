@@ -10,9 +10,22 @@ import { FormDialog } from 'components/form-dialog/form-dialog';
 import { ProjectNameField, ProjectDescriptionField, UsersField } from 'views-components/form-fields/project-form-fields';
 import { CreateProjectPropertiesForm } from 'views-components/project-properties/create-project-properties-form';
 import { ResourceParentField } from '../form-fields/resource-form-fields';
-import { FormGroup, FormLabel } from '@material-ui/core';
+import { FormGroup, FormLabel, StyleRulesCallback, WithStyles, withStyles } from '@material-ui/core';
 import { resourcePropertiesList } from 'views-components/resource-properties/resource-properties-list';
 import { GroupClass } from 'models/group';
+
+type CssRules = 'propertiesForm' | 'description';
+
+const styles: StyleRulesCallback<CssRules> = theme => ({
+    propertiesForm: {
+        marginTop: theme.spacing.unit * 2,
+        marginBottom: theme.spacing.unit * 2,
+    },
+    description: {
+        marginTop: theme.spacing.unit * 2,
+        marginBottom: theme.spacing.unit * 2,
+    },
+});
 
 type DialogProjectProps = WithDialogProps<{sourcePanel: GroupClass}> & InjectedFormProps<ProjectCreateFormDialogData>;
 
@@ -28,7 +41,7 @@ export const DialogProjectCreate = (props: DialogProjectProps) => {
 
     return <FormDialog
         dialogTitle={title}
-        formFields={fields}
+        formFields={fields as any}
         submitLabel='Create'
         {...props}
     />;
@@ -36,24 +49,34 @@ export const DialogProjectCreate = (props: DialogProjectProps) => {
 
 const CreateProjectPropertiesList = resourcePropertiesList(PROJECT_CREATE_FORM_NAME);
 
-const ProjectAddFields = () => <span>
-    <ResourceParentField />
-    <ProjectNameField />
-    <ProjectDescriptionField />
-    <FormLabel>Properties</FormLabel>
-    <FormGroup>
-        <CreateProjectPropertiesForm />
-        <CreateProjectPropertiesList />
-    </FormGroup>
-</span>;
+const ProjectAddFields = withStyles(styles)(
+    ({ classes }: WithStyles<CssRules>) => <span>
+        <ResourceParentField />
+        <ProjectNameField />
+        <div className={classes.description}>
+            <ProjectDescriptionField />
+        </div>
+        <div className={classes.propertiesForm}>
+            <FormLabel>Properties</FormLabel>
+            <FormGroup>
+                <CreateProjectPropertiesForm />
+                <CreateProjectPropertiesList />
+            </FormGroup>
+        </div>
+    </span>);
 
-const GroupAddFields = () => <span>
-    <ProjectNameField />
-    <UsersField />
-    <ProjectDescriptionField />
-    <FormLabel>Properties</FormLabel>
-    <FormGroup>
-        <CreateProjectPropertiesForm />
-        <CreateProjectPropertiesList />
-    </FormGroup>
-</span>;
+const GroupAddFields = withStyles(styles)(
+    ({ classes }: WithStyles<CssRules>) => <span>
+        <ProjectNameField />
+        <UsersField />
+        <div className={classes.description}>
+            <ProjectDescriptionField />
+        </div>
+        <div className={classes.propertiesForm}>
+            <FormLabel>Properties</FormLabel>
+            <FormGroup>
+                <CreateProjectPropertiesForm />
+                <CreateProjectPropertiesList />
+            </FormGroup>
+        </div>
+    </span>);

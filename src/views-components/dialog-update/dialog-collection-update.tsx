@@ -13,28 +13,40 @@ import {
     CollectionStorageClassesField
 } from 'views-components/form-fields/collection-form-fields';
 import { UpdateCollectionPropertiesForm } from 'views-components/collection-properties/update-collection-properties-form';
-import { FormGroup, FormLabel } from '@material-ui/core';
+import { FormGroup, FormLabel, StyleRulesCallback, withStyles, WithStyles } from '@material-ui/core';
 import { resourcePropertiesList } from 'views-components/resource-properties/resource-properties-list';
+
+type CssRules = 'propertiesForm';
+
+const styles: StyleRulesCallback<CssRules> = theme => ({
+    propertiesForm: {
+        marginTop: theme.spacing.unit * 2,
+        marginBottom: theme.spacing.unit * 2,
+    },
+});
 
 type DialogCollectionProps = WithDialogProps<{}> & InjectedFormProps<CollectionUpdateFormDialogData>;
 
 export const DialogCollectionUpdate = (props: DialogCollectionProps) =>
     <FormDialog
         dialogTitle='Edit Collection'
-        formFields={CollectionEditFields}
+        formFields={CollectionEditFields as any}
         submitLabel='Save'
         {...props}
     />;
 
 const UpdateCollectionPropertiesList = resourcePropertiesList(COLLECTION_UPDATE_FORM_NAME);
 
-const CollectionEditFields = () => <span>
-    <CollectionNameField />
-    <CollectionDescriptionField />
-    <FormLabel>Properties</FormLabel>
-    <FormGroup>
-        <UpdateCollectionPropertiesForm />
-        <UpdateCollectionPropertiesList />
-    </FormGroup>
-    <CollectionStorageClassesField />
-</span>;
+const CollectionEditFields = withStyles(styles)(
+    ({ classes }: WithStyles<CssRules>) => <span>
+        <CollectionNameField />
+        <CollectionDescriptionField />
+        <div className={classes.propertiesForm}>
+            <FormLabel>Properties</FormLabel>
+            <FormGroup>
+                <UpdateCollectionPropertiesForm />
+                <UpdateCollectionPropertiesList />
+            </FormGroup>
+        </div>
+        <CollectionStorageClassesField />
+    </span>);
