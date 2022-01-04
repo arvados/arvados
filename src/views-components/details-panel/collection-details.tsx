@@ -3,21 +3,22 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import React from 'react';
-import { CollectionIcon } from 'components/icon/icon';
+import { CollectionIcon, RenameIcon } from 'components/icon/icon';
 import { CollectionResource } from 'models/collection';
 import { DetailsData } from "./details-data";
 import { CollectionDetailsAttributes } from 'views/collection-panel/collection-panel';
 import { RootState } from 'store/store';
 import { filterResources, getResource } from 'store/resources/resources';
 import { connect } from 'react-redux';
-import { Grid, ListItem, StyleRulesCallback, Typography, withStyles, WithStyles } from '@material-ui/core';
+import { Button, Grid, ListItem, StyleRulesCallback, Typography, withStyles, WithStyles } from '@material-ui/core';
 import { formatDate, formatFileSize } from 'common/formatters';
 import { UserNameFromID } from '../data-explorer/renderers';
 import { Dispatch } from 'redux';
 import { navigateTo } from 'store/navigation/navigation-action';
 import { openContextMenu, resourceUuidToContextMenuKind } from 'store/context-menu/context-menu-actions';
+import { openCollectionUpdateDialog } from 'store/collections/collection-update-actions';
 
-export type CssRules = 'versionBrowserHeader' | 'versionBrowserItem' | 'versionBrowserField';
+export type CssRules = 'versionBrowserHeader' | 'versionBrowserItem' | 'versionBrowserField' | 'editIcon';
 
 const styles: StyleRulesCallback<CssRules> = theme => ({
     versionBrowserHeader: {
@@ -29,7 +30,11 @@ const styles: StyleRulesCallback<CssRules> = theme => ({
     },
     versionBrowserField: {
         textAlign: 'center',
-    }
+    },
+    editIcon: {
+        paddingRight: theme.spacing.unit/2,
+        fontSize: '1.125rem',
+    },
 });
 
 export class CollectionDetails extends DetailsData<CollectionResource> {
@@ -54,13 +59,54 @@ export class CollectionDetails extends DetailsData<CollectionResource> {
     }
 
     private getCollectionInfo() {
-        return <CollectionDetailsAttributes twoCol={false} item={this.item} />;
+        return <CollectionInfo />;
     }
 
     private getVersionBrowser() {
         return <CollectionVersionBrowser />;
     }
 }
+
+interface CollectionInfoDataProps {
+    currentCollection: CollectionResource | undefined;
+}
+
+interface CollectionInfoDispatchProps {
+    editCollection: (collection: CollectionResource | undefined) => void;
+}
+
+const ciMapStateToProps = (state: RootState): CollectionInfoDataProps => {
+    return {
+        currentCollection: getResource<CollectionResource>(state.detailsPanel.resourceUuid)(state.resources),
+    };
+};
+
+const ciMapDispatchToProps = (dispatch: Dispatch): CollectionInfoDispatchProps => ({
+    editCollection: (collection: CollectionResource) =>
+        dispatch<any>(openCollectionUpdateDialog({
+            uuid: collection.uuid,
+            name: collection.name,
+            description: collection.description,
+            properties: collection.properties,
+            storageClassesDesired: collection.storageClassesDesired,
+        })),
+});
+
+type CollectionInfoProps = CollectionInfoDataProps & CollectionInfoDispatchProps & WithStyles<CssRules>;
+
+const CollectionInfo = withStyles(styles)(
+    connect(ciMapStateToProps, ciMapDispatchToProps)(
+        ({ currentCollection, editCollection, classes }: CollectionInfoProps) =>
+            currentCollection !== undefined
+                ? <div data-cy='details-panel-edit-btn'>
+                    <Button onClick={() => editCollection(currentCollection)}>
+                        <RenameIcon className={classes.editIcon} /> Edit
+                    </Button>
+                    <CollectionDetailsAttributes twoCol={false} item={currentCollection} />
+                </div>
+                : <div />
+    )
+);
 
 interface CollectionVersionBrowserProps {
     currentCollection: CollectionResource | undefined;
@@ -72,7 +118,7 @@ interface CollectionVersionBrowserDispatchProps {
     handleContextMenu: (event: React.MouseEvent<HTMLElement>, collection: CollectionResource) => void;
 }
 
-const mapStateToProps = (state: RootState): CollectionVersionBrowserProps => {
+const vbMapStateToProps = (state: RootState): CollectionVersionBrowserProps => {
     const currentCollection = getResource<CollectionResource>(state.detailsPanel.resourceUuid)(state.resources);
     const versions = (currentCollection
         && filterResources(rsc =>
@@ -82,7 +128,7 @@ const mapStateToProps = (state: RootState): CollectionVersionBrowserProps => {
     return { currentCollection, versions };
 };
 
-const mapDispatchToProps = () =>
+const vbMapDispatchToProps = () =>
     (dispatch: Dispatch): CollectionVersionBrowserDispatchProps => ({
         showVersion: (collection) => dispatch<any>(navigateTo(collection.uuid)),
         handleContextMenu: (event: React.MouseEvent<HTMLElement>, collection: CollectionResource) => {
@@ -103,7 +149,7 @@ const mapDispatchToProps = () =>
     });
 
 const CollectionVersionBrowser = withStyles(styles)(
-    connect(mapStateToProps, mapDispatchToProps)(
+    connect(vbMapStateToProps, vbMapDispatchToProps)(
         ({ currentCollection, versions, showVersion, handleContextMenu, classes }: CollectionVersionBrowserProps & CollectionVersionBrowserDispatchProps & WithStyles<CssRules>) => {
             return <div data-cy="collection-version-browser">
                 <Grid container>

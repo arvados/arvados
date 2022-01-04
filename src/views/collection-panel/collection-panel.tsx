@@ -3,7 +3,6 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import React from 'react';
-import { Dispatch } from 'redux';
 import {
     StyleRulesCallback,
     WithStyles,
@@ -18,7 +17,7 @@ import { connect, DispatchProp } from "react-redux";
 import { RouteComponentProps } from 'react-router';
 import { ArvadosTheme } from 'common/custom-theme';
 import { RootState } from 'store/store';
-import { MoreOptionsIcon, CollectionIcon, ReadOnlyIcon, CollectionOldVersionIcon, RenameIcon } from 'components/icon/icon';
+import { MoreOptionsIcon, CollectionIcon, ReadOnlyIcon, CollectionOldVersionIcon } from 'components/icon/icon';
 import { DetailsAttribute } from 'components/details-attribute/details-attribute';
 import { CollectionResource, getCollectionUrl } from 'models/collection';
 import { CollectionPanelFiles } from 'views-components/collection-panel-files/collection-panel-files';
@@ -26,7 +25,7 @@ import { navigateToProcess, collectionPanelActions } from 'store/collection-pane
 import { getResource } from 'store/resources/resources';
 import { openContextMenu, resourceUuidToContextMenuKind } from 'store/context-menu/context-menu-actions';
 import { formatDate, formatFileSize } from "common/formatters";
-import { openDetailsPanel, openResourcePropertiesDialog } from 'store/details-panel/details-panel-action';
+import { openDetailsPanel } from 'store/details-panel/details-panel-action';
 import { snackbarActions, SnackbarKind } from 'store/snackbar/snackbar-actions';
 import { getPropertyChip } from 'views-components/resource-properties-form/property-chip';
 import { IllegalNamingWarning } from 'components/warning/warning';
@@ -261,10 +260,6 @@ export const CollectionPanel = withStyles(styles)(
     )
 );
 
-interface CollectionDetailsActionProps {
-    onClick: () => void;
-}
-
 interface CollectionDetailsProps {
     item: CollectionResource;
     classes?: any;
@@ -272,12 +267,7 @@ interface CollectionDetailsProps {
     showVersionBrowser?: () => void;
 }
 
-const mapDispatchToProps = (dispatch: Dispatch) => ({
-    onClick: () => dispatch<any>(openResourcePropertiesDialog()),
-});
-
-export const CollectionDetailsAttributes = connect(null, mapDispatchToProps)(
-(props: CollectionDetailsProps & CollectionDetailsActionProps) => {
+export const CollectionDetailsAttributes = (props: CollectionDetailsProps) => {
     const item = props.item;
     const classes = props.classes || { label: '', value: '', button: '', tag: '' };
     const isOldVersion = item && item.currentVersionUuid !== item.uuid;
@@ -345,13 +335,7 @@ export const CollectionDetailsAttributes = connect(null, mapDispatchToProps)(
         </Grid>
         <Grid item xs={12} md={mdSize}>
             <DetailsAttribute classLabel={classes.label} classValue={classes.value}
-                label='Properties'>
-                { !props.twoCol
-                    ? <div data-cy='property-editor-btn' onClick={props.onClick}>
-                        <RenameIcon className={classes.editIcon} />
-                    </div>
-                    : '' }
-            </DetailsAttribute>
+                label='Properties' />
             { Object.keys(item.properties).length > 0
                 ? Object.keys(item.properties).map(k =>
                         Array.isArray(item.properties[k])
@@ -361,4 +345,4 @@ export const CollectionDetailsAttributes = connect(null, mapDispatchToProps)(
                 : <div className={classes.value}>No properties</div> }
         </Grid>
     </Grid>;
-});
+};

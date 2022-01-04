@@ -5,11 +5,10 @@
 import { unionize, ofType, UnionOf } from 'common/unionize';
 import { RootState } from 'store/store';
 import { Dispatch } from 'redux';
-import { dialogActions } from 'store/dialog/dialog-actions';
 import { getResource } from 'store/resources/resources';
 import { ServiceRepository } from 'services/services';
 import { resourcesActions } from 'store/resources/resources-actions';
-import {snackbarActions, SnackbarKind} from 'store/snackbar/snackbar-actions';
+import { snackbarActions, SnackbarKind } from 'store/snackbar/snackbar-actions';
 import { FilterBuilder } from 'services/api/filter-builder';
 import { OrderBuilder } from 'services/api/order-builder';
 import { CollectionResource } from 'models/collection';
@@ -24,9 +23,6 @@ export const detailsPanelActions = unionize({
 });
 
 export type DetailsPanelAction = UnionOf<typeof detailsPanelActions>;
-
-export const RESOURCE_PROPERTIES_FORM_NAME = 'resourcePropertiesFormName';
-export const RESOURCE_PROPERTIES_DIALOG_NAME = 'resourcePropertiesDialogName';
 
 export const loadDetailsPanel = (uuid: string) =>
     (dispatch: Dispatch, getState: () => RootState) => {
@@ -49,11 +45,6 @@ export const openDetailsPanel = (uuid?: string, tabNr: number = 0) =>
         if (uuid !== undefined) {
             dispatch<any>(loadDetailsPanel(uuid));
         }
-    };
-
-export const openResourcePropertiesDialog = () =>
-    (dispatch: Dispatch) => {
-        dispatch<any>(dialogActions.OPEN_DIALOG({ id: RESOURCE_PROPERTIES_DIALOG_NAME, data: { } }));
     };
 
 export const refreshCollectionVersionsList = (uuid: string) =>

@@ -137,7 +137,7 @@ describe('Collection panel tests', function () {
                 cy.get('[data-cy=additional-info-icon]').click();
 
                 cy.get('[data-cy=details-panel]').within(() => {
-                    cy.get('[data-cy=property-editor-btn]').click();
+                    cy.get('[data-cy=details-panel-edit-btn]').click();
                 });
                 cy.get('[data-cy=resource-properties-dialog').contains('Edit properties');
 
