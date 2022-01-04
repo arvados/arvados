@@ -200,31 +200,7 @@ fi
 # Perl packages
 debug_echo -e "\nPerl packages\n"
 
-if [[ -z "$ONLY_BUILD" ]] || [[ "libarvados-perl" = "$ONLY_BUILD" ]] ; then
-  cd "$WORKSPACE/sdk/perl"
-  libarvados_perl_version="$(version_from_git)"
-
-  cd $WORKSPACE/packages/$TARGET
-  test_package_presence libarvados-perl "$libarvados_perl_version"
-
-  if [[ "$?" == "0" ]]; then
-    cd "$WORKSPACE/sdk/perl"
-
-    if [[ -e Makefile ]]; then
-      make realclean >"$STDOUT_IF_DEBUG"
-    fi
-    find -maxdepth 1 \( -name 'MANIFEST*' -or -name "libarvados-perl*.$FORMAT" \) \
-        -delete
-    rm -rf install
-
-    perl Makefile.PL INSTALL_BASE=install >"$STDOUT_IF_DEBUG" && \
-        make install INSTALLDIRS=perl >"$STDOUT_IF_DEBUG" && \
-        fpm_build "$WORKSPACE/sdk/perl" install/lib/=/usr/share libarvados-perl \
-        dir "$(version_from_git)" install/man/=/usr/share/man \
-        "$WORKSPACE/apache-2.0.txt=/usr/share/doc/libarvados-perl/apache-2.0.txt" && \
-        mv --no-clobber libarvados-perl*.$FORMAT "$WORKSPACE/packages/$TARGET/"
-  fi
-fi
+handle_libarvados_perl
 
 # Ruby gems
 debug_echo -e "\nRuby gems\n"
@@ -240,38 +216,11 @@ handle_ruby_gem arvados-cli
 cd "$WORKSPACE/services/login-sync"
 handle_ruby_gem arvados-login-sync
 
-# Python packages
-debug_echo -e "\nPython packages\n"
+# arvados-src
+handle_arvados_src
 
-if [[ -z "$ONLY_BUILD" ]] || [[ "arvados-src" == "$ONLY_BUILD" ]] ; then
-  # arvados-src
-  (
-      cd "$WORKSPACE"
-      COMMIT_HASH=$(format_last_commit_here "%H")
-      arvados_src_version="$(version_from_git)"
-
-      cd $WORKSPACE/packages/$TARGET
-      test_package_presence arvados-src "$arvados_src_version" src ""
-
-      if [[ "$?" == "0" ]]; then
-        cd "$WORKSPACE"
-        SRC_BUILD_DIR=$(mktemp -d)
-        # mktemp creates the directory with 0700 permissions by default
-        chmod 755 $SRC_BUILD_DIR
-        git clone $DASHQ_UNLESS_DEBUG "$WORKSPACE/.git" "$SRC_BUILD_DIR"
-        cd "$SRC_BUILD_DIR"
-
-        # go into detached-head state
-        git checkout $DASHQ_UNLESS_DEBUG "$COMMIT_HASH"
-        echo "$COMMIT_HASH" >git-commit.version
-
-        cd $WORKSPACE/packages/$TARGET
-        fpm_build "$WORKSPACE" $SRC_BUILD_DIR/=/usr/local/arvados/src arvados-src 'dir' "$arvados_src_version" "--exclude=usr/local/arvados/src/.git" "--url=https://arvados.org" "--license=GNU Affero General Public License, version 3.0" "--description=The Arvados source code" "--architecture=all"
-
-        rm -rf "$SRC_BUILD_DIR"
-      fi
-  )
-fi
+# Go packages
+debug_echo -e "\nGo packages\n"
 
 # Go binaries
 cd $WORKSPACE/packages/$TARGET
@@ -319,23 +268,26 @@ package_go_binary tools/keep-exercise keep-exercise "$FORMAT" "$ARCH" \
 package_go_so lib/pam pam_arvados.so libpam-arvados-go "$FORMAT" "$ARCH" \
     "Arvados PAM authentication module"
 
+# Python packages
+debug_echo -e "\nPython packages\n"
+
 # The Python SDK - Python3 package
-fpm_build_virtualenv "arvados-python-client" "sdk/python" "python3"
+fpm_build_virtualenv "arvados-python-client" "sdk/python" "$FORMAT" "$ARCH"
 
 # Arvados cwl runner - Python3 package
-fpm_build_virtualenv "arvados-cwl-runner" "sdk/cwl" "python3"
+fpm_build_virtualenv "arvados-cwl-runner" "sdk/cwl" "$FORMAT" "$ARCH"
 
 # The FUSE driver - Python3 package
-fpm_build_virtualenv "arvados-fuse" "services/fuse" "python3"
+fpm_build_virtualenv "arvados-fuse" "services/fuse" "$FORMAT" "$ARCH"
 
 # The Arvados crunchstat-summary tool
-fpm_build_virtualenv "crunchstat-summary" "tools/crunchstat-summary" "python3"
+fpm_build_virtualenv "crunchstat-summary" "tools/crunchstat-summary" "$FORMAT" "$ARCH"
 
 # The Docker image cleaner
-fpm_build_virtualenv "arvados-docker-cleaner" "services/dockercleaner" "python3"
+fpm_build_virtualenv "arvados-docker-cleaner" "services/dockercleaner" "$FORMAT" "$ARCH"
 
 # The Arvados user activity tool
-fpm_build_virtualenv "arvados-user-activity" "tools/user-activity" "python3"
+fpm_build_virtualenv "arvados-user-activity" "tools/user-activity" "$FORMAT" "$ARCH"
 
 # The python->python3 metapackages
 build_metapackage "arvados-fuse" "services/fuse"
@@ -345,94 +297,16 @@ build_metapackage "crunchstat-summary" "tools/crunchstat-summary"
 build_metapackage "arvados-docker-cleaner" "services/dockercleaner"
 build_metapackage "arvados-user-activity" "tools/user-activity"
 
-if [[ -z "$ONLY_BUILD" ]] || [[ "cwltest" == "$ONLY_BUILD" ]] ; then
-  # The cwltest package, which lives out of tree
-  cd "$WORKSPACE"
-  if [[ -e "$WORKSPACE/cwltest" ]]; then
-    rm -rf "$WORKSPACE/cwltest"
-  fi
-  git clone https://github.com/common-workflow-language/cwltest.git
-  # signal to our build script that we want a cwltest executable installed in /usr/bin/
-  mkdir cwltest/bin && touch cwltest/bin/cwltest
-  fpm_build_virtualenv "cwltest" "cwltest" "python3"
-  # The python->python3 metapackage
-  build_metapackage "cwltest" "cwltest"
-  cd "$WORKSPACE"
-  rm -rf "$WORKSPACE/cwltest"
-fi
+# The cwltest package, which lives out of tree
+handle_cwltest "$FORMAT" "$ARCH"
 
-calculate_go_package_version arvados_server_version cmd/arvados-server
-arvados_server_iteration=$(default_iteration "arvados-server" "$arvados_server_version" "go")
+# Rails packages
+debug_echo -e "\nRails packages\n"
 
-# Build the API server package
-test_rails_package_presence arvados-api-server "$WORKSPACE/services/api"
-if [[ "$?" == "0" ]]; then
-  handle_rails_package arvados-api-server "$WORKSPACE/services/api" \
-      "$WORKSPACE/agpl-3.0.txt" --url="https://arvados.org" \
-      --description="Arvados API server - Arvados is a free and open source platform for big data science." \
-      --license="GNU Affero General Public License, version 3.0" --depends "arvados-server = ${arvados_server_version}-${arvados_server_iteration}"
-fi
-
-# Build the workbench server package
-if [[ "$HOSTTYPE" == "x86_64" ]]; then
-  test_rails_package_presence arvados-workbench "$WORKSPACE/apps/workbench"
-  if [[ "$?" == "0" ]] ; then
-    (
-        set -e
-
-        # The workbench package has a build-time dependency on the arvados-server
-        # package for config manipulation, so install it first.
-        cd $WORKSPACE/cmd/arvados-server
-        get_complete_package_name arvados_server_pkgname arvados-server ${arvados_server_version} go
-
-        arvados_server_pkg_path="$WORKSPACE/packages/$TARGET/${arvados_server_pkgname}"
-        if [[ ! -e ${arvados_server_pkg_path} ]]; then
-          arvados_server_pkg_path="$WORKSPACE/packages/$TARGET/processed/${arvados_server_pkgname}"
-        fi
-        if [[ "$FORMAT" == "deb" ]]; then
-          dpkg -i ${arvados_server_pkg_path}
-        else
-          rpm -i ${arvados_server_pkg_path}
-        fi
-
-        cd "$WORKSPACE/apps/workbench"
-
-        # We need to bundle to be ready even when we build a package without vendor directory
-        # because asset compilation requires it.
-        bundle install --system >"$STDOUT_IF_DEBUG"
-
-        # clear the tmp directory; the asset generation step will recreate tmp/cache/assets,
-        # and we want that in the package, so it's easier to not exclude the tmp directory
-        # from the package - empty it instead.
-        rm -rf tmp
-        mkdir tmp
-
-        # Set up an appropriate config.yml
-        arvados-server config-dump -config <(cat /etc/arvados/config.yml 2>/dev/null || echo  "Clusters: {zzzzz: {}}") > /tmp/x
-        mkdir -p /etc/arvados/
-        mv /tmp/x /etc/arvados/config.yml
-        perl -p -i -e 'BEGIN{undef $/;} s/WebDAV(.*?):\n( *)ExternalURL: ""/WebDAV$1:\n$2ExternalURL: "example.com"/g' /etc/arvados/config.yml
-
-        ARVADOS_CONFIG=none RAILS_ENV=production RAILS_GROUPS=assets bin/rake npm:install >"$STDOUT_IF_DEBUG"
-        ARVADOS_CONFIG=none RAILS_ENV=production RAILS_GROUPS=assets bin/rake assets:precompile >"$STDOUT_IF_DEBUG"
-
-        # Remove generated configuration files so they don't go in the package.
-        rm -rf /etc/arvados/
-    )
-
-    if [[ "$?" != "0" ]]; then
-      echo "ERROR: Asset precompilation failed"
-      EXITCODE=1
-    else
-      handle_rails_package arvados-workbench "$WORKSPACE/apps/workbench" \
-          "$WORKSPACE/agpl-3.0.txt" --url="https://arvados.org" \
-          --description="Arvados Workbench - Arvados is a free and open source platform for big data science." \
-          --license="GNU Affero General Public License, version 3.0" --depends "arvados-server = ${arvados_server_version}-${arvados_server_iteration}"
-    fi
-  fi
-else
-  echo "Error: building the arvados-workbench package is not yet supported on on this architecture ($HOSTTYPE)."
-fi
+# The rails api server package
+handle_api_server "$ARCH"
+# The rails workbench package
+handle_workbench "$ARCH"
 
 # clean up temporary GOPATH
 rm -rf "$GOPATH"

@@ -35,3 +35,4 @@ _version.py
 *.log
 arvados-snakeoil-ca.pem
 .vagrant
+packages
