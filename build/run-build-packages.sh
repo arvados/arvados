@@ -4,7 +4,6 @@
 # SPDX-License-Identifier: AGPL-3.0
 
 . `dirname "$(readlink -f "$0")"`/run-library.sh || exit 1
-. `dirname "$(readlink -f "$0")"`/libcloud-pin.sh || exit 1
 
 read -rd "\000" helpmessage <<EOF
 $(basename $0): Build Arvados packages

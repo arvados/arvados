@@ -3,8 +3,6 @@
 #
 # SPDX-License-Identifier: AGPL-3.0
 
-. `dirname "$(readlink -f "$0")"`/libcloud-pin.sh
-
 COLUMNS=80
 . `dirname "$(readlink -f "$0")"`/run-library.sh
 
