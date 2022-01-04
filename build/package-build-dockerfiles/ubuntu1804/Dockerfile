@@ -14,7 +14,9 @@ ONBUILD RUN ln -s /usr/local/node-v10.23.1-linux-x64/bin/* /usr/local/bin/
 # On x86, we want some cross-compilation support for arm64
 # Add gcc-aarch64-linux-gnu to compile go binaries for arm64
 ONBUILD RUN /usr/bin/apt-get update && /usr/bin/apt-get install -q -y gcc-aarch64-linux-gnu
-# We also need libpam compiled for arm64
+# We also need libpam compiled for arm64, and that requires some sources.list mangling
+ONBUILD RUN /bin/sed -i 's/deb http/deb [ arch=amd64 ] http/' /etc/apt/sources.list
+ONBUILD ADD ports.list /etc/apt/sources.list.d/
 ONBUILD RUN /usr/bin/dpkg --add-architecture arm64
 ONBUILD RUN /usr/bin/apt-get update && /usr/bin/apt-get install -o APT::Immediate-Configure=0 -q -y libpam0g-dev:arm64
 
