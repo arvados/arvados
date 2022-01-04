@@ -98,8 +98,8 @@ const CollectionInfo = withStyles(styles)(
     connect(ciMapStateToProps, ciMapDispatchToProps)(
         ({ currentCollection, editCollection, classes }: CollectionInfoProps) =>
             currentCollection !== undefined
-                ? <div data-cy='details-panel-edit-btn'>
-                    <Button onClick={() => editCollection(currentCollection)}>
+                ? <div>
+                    <Button data-cy='details-panel-edit-btn' onClick={() => editCollection(currentCollection)}>
                         <RenameIcon className={classes.editIcon} /> Edit
                     </Button>
                     <CollectionDetailsAttributes twoCol={false} item={currentCollection} />

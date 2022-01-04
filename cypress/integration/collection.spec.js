@@ -120,7 +120,7 @@ describe('Collection panel tests', function () {
             });
     });
 
-    it('uses the property editor (from details panel) with vocabulary terms', function () {
+    it('uses the editor (from details panel) with vocabulary terms', function () {
         cy.createCollection(adminUser.token, {
             name: `Test collection ${Math.floor(Math.random() * 999999)}`,
             owner_uuid: activeUser.user.uuid,
@@ -139,7 +139,7 @@ describe('Collection panel tests', function () {
                 cy.get('[data-cy=details-panel]').within(() => {
                     cy.get('[data-cy=details-panel-edit-btn]').click();
                 });
-                cy.get('[data-cy=resource-properties-dialog').contains('Edit properties');
+                cy.get('[data-cy=form-dialog').contains('Edit Collection');
 
                 // Key: Color (IDTAGCOLORS) - Value: Magenta (IDVALCOLORS3)
                 cy.get('[data-cy=resource-properties-form]').within(() => {
@@ -152,14 +152,8 @@ describe('Collection panel tests', function () {
                     cy.root().submit();
                 });
                 // Confirm proper vocabulary labels are displayed on the UI.
-                cy.get('[data-cy=resource-properties-dialog]')
+                cy.get('[data-cy=form-dialog]')
                     .should('contain', 'Color: Magenta');
-                // Confirm proper vocabulary IDs were saved on the backend.
-                cy.doRequest('GET', `/arvados/v1/collections/${this.testCollection.uuid}`)
-                    .its('body').as('collection')
-                    .then(function () {
-                        expect(this.collection.properties.IDTAGCOLORS).to.equal('IDVALCOLORS3');
-                    });
 
                 // Case-insensitive on-blur auto-selection test
                 // Key: Size (IDTAGSIZES) - Value: Small (IDVALSIZES2)
@@ -176,19 +170,21 @@ describe('Collection panel tests', function () {
                     cy.root().submit();
                 });
                 // Confirm proper vocabulary labels are displayed on the UI.
-                cy.get('[data-cy=resource-properties-dialog]')
+                cy.get('[data-cy=form-dialog]')
                     .should('contain', 'Size: S');
+
+                cy.get('[data-cy=form-dialog]').contains('Save').click();
+                cy.get('[data-cy=form-dialog]').should('not.exist');
+
                 // Confirm proper vocabulary IDs were saved on the backend.
                 cy.doRequest('GET', `/arvados/v1/collections/${this.testCollection.uuid}`)
                     .its('body').as('collection')
                     .then(function () {
+                        expect(this.collection.properties.IDTAGCOLORS).to.equal('IDVALCOLORS3');
                         expect(this.collection.properties.IDTAGSIZES).to.equal('IDVALSIZES2');
                     });
 
-                // Close property editor & confirm properties display on the UI.
-                cy.get('[data-cy=resource-properties-dialog]').within(() => {
-                    cy.get('[data-cy=close-dialog-btn]').click();
-                });
+                // Confirm properties display on the UI.
                 cy.get('[data-cy=collection-info-panel')
                     .should('contain', this.testCollection.name)
                     .and('contain', 'Color: Magenta')
