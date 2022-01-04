@@ -3,13 +3,13 @@
 #
 # SPDX-License-Identifier: AGPL-3.0
 
-. `dirname "$(readlink -f "$0")"`/run-library.sh || exit 1
+. "$(dirname "$(readlink -f "$0")")"/run-library.sh || exit 1
 
 read -rd "\000" helpmessage <<EOF
-$(basename $0): Build Arvados packages
+$(basename "$0"): Build Arvados packages
 
 Syntax:
-        WORKSPACE=/path/to/arvados $(basename $0) [options]
+        WORKSPACE=/path/to/arvados $(basename "$0") [options]
 
 Options:
 
@@ -127,7 +127,7 @@ case "$TARGET" in
         ;;
     centos*)
         FORMAT=rpm
-        PYTHON3_PACKAGE=$(rpm -qf "$(which python$PYTHON3_VERSION)" --queryformat '%{NAME}\n')
+        PYTHON3_PACKAGE=$(rpm -qf "$(which python"$PYTHON3_VERSION")" --queryformat '%{NAME}\n')
         PYTHON3_PKG_PREFIX=$PYTHON3_PACKAGE
         PYTHON3_PREFIX=/usr
         PYTHON3_INSTALL_LIB=lib/python$PYTHON3_VERSION/site-packages
@@ -140,7 +140,7 @@ case "$TARGET" in
 esac
 
 
-if ! [[ -n "$WORKSPACE" ]]; then
+if [[ -z "$WORKSPACE" ]]; then
   echo >&2 "$helpmessage"
   echo >&2
   echo >&2 "Error: WORKSPACE environment variable not set"
@@ -151,7 +151,7 @@ fi
 # Test for fpm
 fpm --version >/dev/null 2>&1
 
-if [[ "$?" != 0 ]]; then
+if [[ $? -ne 0 ]]; then
   echo >&2 "$helpmessage"
   echo >&2
   echo >&2 "Error: fpm not found"
@@ -159,8 +159,8 @@ if [[ "$?" != 0 ]]; then
   exit 1
 fi
 
-RUN_BUILD_PACKAGES_PATH="`dirname \"$0\"`"
-RUN_BUILD_PACKAGES_PATH="`( cd \"$RUN_BUILD_PACKAGES_PATH\" && pwd )`"  # absolutized and normalized
+RUN_BUILD_PACKAGES_PATH="$(dirname "$0")"
+RUN_BUILD_PACKAGES_PATH="$(cd "$RUN_BUILD_PACKAGES_PATH" && pwd)"  # absolutized and normalized
 if [ -z "$RUN_BUILD_PACKAGES_PATH" ] ; then
   # error; for some reason, the path is not accessible
   # to the script (e.g. permissions re-evaled after suid)
@@ -182,17 +182,17 @@ fi
 chmod o+r "$WORKSPACE" -R
 
 # More cleanup - make sure all executables that we'll package are 755
-cd "$WORKSPACE"
-find -type d -name 'bin' |xargs -I {} find {} -type f |xargs -I {} chmod 755 {}
+cd "$WORKSPACE" || exit 1
+find . -type d -name 'bin' -print0 |xargs -0 -I {} find {} -type f -print0 |xargs -0 -I {} chmod 755 {}
 
 # Now fix our umask to something better suited to building and publishing
 # gems and packages
 umask 0022
 
-debug_echo "umask is" `umask`
+debug_echo "umask is" "$(umask)"
 
 if [[ ! -d "$WORKSPACE/packages/$TARGET" ]]; then
-  mkdir -p $WORKSPACE/packages/$TARGET
+  mkdir -p "$WORKSPACE/packages/$TARGET"
   chown --reference="$WORKSPACE" "$WORKSPACE/packages/$TARGET"
 fi
 
@@ -206,13 +206,13 @@ debug_echo -e "\nRuby gems\n"
 
 FPM_GEM_PREFIX=$($GEM environment gemdir)
 
-cd "$WORKSPACE/sdk/ruby"
+cd "$WORKSPACE/sdk/ruby" || exit 1
 handle_ruby_gem arvados
 
-cd "$WORKSPACE/sdk/cli"
+cd "$WORKSPACE/sdk/cli" || exit 1
 handle_ruby_gem arvados-cli
 
-cd "$WORKSPACE/services/login-sync"
+cd "$WORKSPACE/services/login-sync" || exit 1
 handle_ruby_gem arvados-login-sync
 
 # arvados-src
@@ -222,7 +222,6 @@ handle_arvados_src
 debug_echo -e "\nGo packages\n"
 
 # Go binaries
-cd $WORKSPACE/packages/$TARGET
 export GOPATH=~/go
 package_go_binary cmd/arvados-client arvados-client "$FORMAT" "$ARCH" \
     "Arvados command line tool (beta)"
