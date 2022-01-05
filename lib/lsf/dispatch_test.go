@@ -30,8 +30,9 @@ func Test(t *testing.T) {
 var _ = check.Suite(&suite{})
 
 type suite struct {
-	disp     *dispatcher
-	crTooBig arvados.ContainerRequest
+	disp          *dispatcher
+	crTooBig      arvados.ContainerRequest
+	crCUDARequest arvados.ContainerRequest
 }
 
 func (s *suite) TearDownTest(c *check.C) {
@@ -64,6 +65,29 @@ func (s *suite) SetUpTest(c *check.C) {
 		},
 	})
 	c.Assert(err, check.IsNil)
+
+	err = arvados.NewClientFromEnv().RequestAndDecode(&s.crCUDARequest, "POST", "arvados/v1/container_requests", nil, map[string]interface{}{
+		"container_request": map[string]interface{}{
+			"runtime_constraints": arvados.RuntimeConstraints{
+				RAM:   16000000,
+				VCPUs: 1,
+				CUDA: arvados.CUDARuntimeConstraints{
+					DeviceCount:        1,
+					DriverVersion:      "11.0",
+					HardwareCapability: "8.0",
+				},
+			},
+			"container_image":     arvadostest.DockerImage112PDH,
+			"command":             []string{"sleep", "1"},
+			"mounts":              map[string]arvados.Mount{"/mnt/out": {Kind: "tmp", Capacity: 1000}},
+			"output_path":         "/mnt/out",
+			"state":               arvados.ContainerRequestStateCommitted,
+			"priority":            1,
+			"container_count_max": 1,
+		},
+	})
+	c.Assert(err, check.IsNil)
+
 }
 
 type lsfstub struct {
@@ -90,7 +114,11 @@ func (stub lsfstub) stubCommand(s *suite, c *check.C) func(prog string, args ...
 		switch prog {
 		case "bsub":
 			defaultArgs := s.disp.Cluster.Containers.LSF.BsubArgumentsList
-			c.Assert(len(args), check.Equals, len(defaultArgs))
+			if args[5] == s.crCUDARequest.ContainerUUID {
+				c.Assert(len(args), check.Equals, len(defaultArgs)+len(s.disp.Cluster.Containers.LSF.BsubCUDAArguments))
+			} else {
+				c.Assert(len(args), check.Equals, len(defaultArgs))
+			}
 			// %%J must have been rewritten to %J
 			c.Check(args[1], check.Equals, "/tmp/crunch-run.%J.out")
 			args = args[4:]
@@ -130,6 +158,20 @@ func (stub lsfstub) stubCommand(s *suite, c *check.C) func(prog string, args ...
 					"-R", "select[mem>=954187MB]",
 					"-R", "select[tmp>=256MB]",
 					"-R", "select[ncpus>=1]"})
+				mtx.Lock()
+				fakejobq[nextjobid] = args[1]
+				nextjobid++
+				mtx.Unlock()
+			case s.crCUDARequest.ContainerUUID:
+				c.Check(args, check.DeepEquals, []string{
+					"-J", s.crCUDARequest.ContainerUUID,
+					"-n", "1",
+					"-D", "528MB",
+					"-R", "rusage[mem=528MB:tmp=256MB] span[hosts=1]",
+					"-R", "select[mem>=528MB]",
+					"-R", "select[tmp>=256MB]",
+					"-R", "select[ncpus>=1]",
+					"-gpu", "num=1"})
 				mtx.Lock()
 				fakejobq[nextjobid] = args[1]
 				nextjobid++
