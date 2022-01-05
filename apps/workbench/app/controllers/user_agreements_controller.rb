@@ -9,7 +9,11 @@ class UserAgreementsController < ApplicationController
 
   def index
     if unsigned_user_agreements.empty?
-      redirect_to(params[:return_to] || :back)
+      if params[:return_to]
+        redirect_to(params[:return_to])
+      else
+        redirect_back(fallback_location: root_path)
+      end
     end
   end
 
@@ -24,6 +28,10 @@ class UserAgreementsController < ApplicationController
       end
     end
     current_user.activate
-    redirect_to(params[:return_to] || :back)
+    if params[:return_to]
+      redirect_to(params[:return_to])
+    else
+      redirect_back(fallback_location: root_path)
+    end
   end
 end
