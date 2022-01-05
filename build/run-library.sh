@@ -182,7 +182,13 @@ package_go_binary() {
     # No target architecture specified, default to native target. When on amd64 also crosscompile arm64
     # but only when building deb packages (centos does not have support for crosscompiling userspace).
     archs=($native_arch)
-    if [[ "$native_arch" == "amd64" ]] && [[ "$package_format" == "deb" ]]; then
+    if [[ "$native_arch" == "amd64" ]] &&
+       [[ "$package_format" == "deb" ]] &&
+       [[ "$TARGET" != "debian10" ]] &&
+       [[ "$TARGET" != "ubuntu1804" ]] &&
+       [[ "$TARGET" != "ubuntu2004" ]]; then
+      # Due to bug https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=983477 the libfuse-dev package for arm64 does
+      # not install properly side by side with the amd64 version before Debian 11.
       archs+=("arm64")
     fi
     for ta in ${archs[@]}; do

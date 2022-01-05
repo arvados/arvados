@@ -12,12 +12,7 @@ ONBUILD RUN ln -s /usr/local/go/bin/go /usr/local/bin/
 # Install nodejs and npm
 ONBUILD ADD generated/node-v10.23.1-linux-x64.tar.xz /usr/local/
 ONBUILD RUN ln -s /usr/local/node-v10.23.1-linux-x64/bin/* /usr/local/bin/
-# On x86, we want some cross-compilation support for arm64
-# Add gcc-aarch64-linux-gnu to compile go binaries for arm64
-ONBUILD RUN /usr/bin/apt-get update && /usr/bin/apt-get install -q -y gcc-aarch64-linux-gnu
-# We also need libpam compiled for arm64
-ONBUILD RUN /usr/bin/dpkg --add-architecture arm64
-ONBUILD RUN /usr/bin/apt-get update && /usr/bin/apt-get install -o APT::Immediate-Configure=0 -q -y libpam0g-dev:arm64
+# No cross compilation support for debian10 because of https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=983477
 
 FROM debian:buster as build_aarch64
 # Install go
