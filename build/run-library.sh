@@ -728,11 +728,17 @@ fpm_build_virtualenv () {
     PYTHON_PKG=$pkg
   fi
 
-  # arvados-python-client sdist should always be built, to be available
-  # for other dependent packages.
-  if [[ -n "$ONLY_BUILD" ]] && [[ "arvados-python-client" != "$pkg" ]] && [[ "$PYTHON_PKG" != "$ONLY_BUILD" ]] && [[ "$pkg" != "$ONLY_BUILD" ]]; then
-    debug_echo -e "Skipping build of $pkg package."
-    return 0
+  if [[ -n "$ONLY_BUILD" ]] && [[ "$PYTHON_PKG" != "$ONLY_BUILD" ]]; then
+    # arvados-python-client sdist should always be built if we are building a
+    # python package.
+    if [[ "$ONLY_BUILD" != "python3-arvados-cwl-runner" ]] &&
+       [[ "$ONLY_BUILD" != "python3-arvados-fuse" ]] &&
+       [[ "$ONLY_BUILD" != "python3-crunchstat-summary" ]] &&
+       [[ "$ONLY_BUILD" != "arvados-docker-cleaner" ]] &&
+       [[ "$ONLY_BUILD" != "python3-arvados-user-activity" ]]; then
+      debug_echo -e "Skipping build of $pkg package."
+      return 0
+    fi
   fi
 
   if [[ -n "$target_arch" ]] && [[ "$native_arch" == "$target_arch" ]]; then
