@@ -1061,11 +1061,11 @@ class TestContainer(unittest.TestCase):
             "id": "",
             "cwlVersion": "v1.2",
             "class": "CommandLineTool",
-            "hints": [
+            "requirements": [
             {
                 "class": "http://commonwl.org/cwltool#CUDARequirement",
-                "minCUDADriverVersion": "11.0",
-                "minCUDAHardwareCapability": "9.0",
+                "cudaVersionMin": "11.0",
+                "cudaComputeCapabilityMin": "9.0",
             }
         ]
         })
