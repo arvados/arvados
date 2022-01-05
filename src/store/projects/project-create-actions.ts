@@ -3,7 +3,14 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import { Dispatch } from "redux";
-import { reset, startSubmit, stopSubmit, initialize, FormErrors, formValueSelector, change } from 'redux-form';
+import {
+    reset,
+    startSubmit,
+    stopSubmit,
+    initialize,
+    FormErrors,
+    formValueSelector
+} from 'redux-form';
 import { RootState } from 'store/store';
 import { getUserUuid } from "common/getuser";
 import { dialogActions } from "store/dialog/dialog-actions";
@@ -11,9 +18,8 @@ import { getCommonResourceServiceError, CommonResourceServiceError } from 'servi
 import { ProjectResource } from 'models/project';
 import { ServiceRepository } from 'services/services';
 import { matchProjectRoute, matchRunProcessRoute } from 'routes/routes';
-import { ResourcePropertiesFormData } from 'views-components/resource-properties-form/resource-properties-form';
 import { RouterState } from "react-router-redux";
-import { addProperty, deleteProperty } from "lib/resource-properties";
+import { GroupClass } from "models/group";
 
 export interface ProjectCreateFormDialogData {
     ownerUuid: string;
@@ -47,7 +53,12 @@ export const openProjectCreateDialog = (ownerUuid: string) =>
         } else {
             dispatch(initialize(PROJECT_CREATE_FORM_NAME, { ownerUuid }));
         }
-        dispatch(dialogActions.OPEN_DIALOG({ id: PROJECT_CREATE_FORM_NAME, data: {} }));
+        dispatch(dialogActions.OPEN_DIALOG({
+            id: PROJECT_CREATE_FORM_NAME,
+            data: {
+                sourcePanel: GroupClass.PROJECT,
+            }
+        }));
     };
 
 export const createProject = (project: Partial<ProjectResource>) =>
@@ -65,24 +76,4 @@ export const createProject = (project: Partial<ProjectResource>) =>
             }
             return undefined;
         }
-    };
-
-export const addPropertyToCreateProjectForm = (data: ResourcePropertiesFormData) =>
-    (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
-        const properties = { ...PROJECT_CREATE_FORM_SELECTOR(getState(), 'properties') };
-        const key = data.keyID || data.key;
-        const value =  data.valueID || data.value;
-        dispatch(change(
-            PROJECT_CREATE_FORM_NAME,
-            'properties',
-            addProperty(properties, key, value)));
-    };
-
-export const removePropertyFromCreateProjectForm = (key: string, value: string) =>
-    (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
-        const properties = { ...PROJECT_CREATE_FORM_SELECTOR(getState(), 'properties') };
-        dispatch(change(
-            PROJECT_CREATE_FORM_NAME,
-            'properties',
-            deleteProperty(properties, key, value)));
     };

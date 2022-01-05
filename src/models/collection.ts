@@ -2,13 +2,16 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import { ResourceKind, TrashableResource } from "./resource";
+import {
+    ResourceKind,
+    TrashableResource,
+    ResourceWithProperties
+} from "./resource";
 
-export interface CollectionResource extends TrashableResource {
+export interface CollectionResource extends TrashableResource, ResourceWithProperties {
     kind: ResourceKind.COLLECTION;
     name: string;
     description: string;
-    properties: any;
     portableDataHash: string;
     manifestText: string;
     replicationDesired: number;

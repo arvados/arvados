@@ -14,6 +14,10 @@ export interface Resource {
     etag: string;
 }
 
+export interface ResourceWithProperties extends Resource {
+    properties: any;
+}
+
 export interface EditableResource extends Resource {
     isEditable: boolean;
 }

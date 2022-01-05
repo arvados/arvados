@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import { Resource, ResourceKind } from "./resource";
+import { Resource, ResourceKind, ResourceWithProperties } from "./resource";
 import { MountType } from "models/mount-types";
 import { RuntimeConstraints } from './runtime-constraints';
 import { SchedulingParameters } from './scheduling-parameters';
@@ -13,11 +13,10 @@ export enum ContainerRequestState {
     FINAL = "Final"
 }
 
-export interface ContainerRequestResource extends Resource {
+export interface ContainerRequestResource extends Resource, ResourceWithProperties {
     kind: ResourceKind.CONTAINER_REQUEST;
     name: string;
     description: string;
-    properties: any;
     state: ContainerRequestState;
     requestingContainerUuid: string | null;
     containerUuid: string | null;

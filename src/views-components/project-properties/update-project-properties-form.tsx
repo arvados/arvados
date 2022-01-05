@@ -5,9 +5,9 @@
 import { reduxForm, reset } from 'redux-form';
 import { withStyles } from '@material-ui/core';
 import {
-    PROJECT_CREATE_PROPERTIES_FORM_NAME,
-    PROJECT_CREATE_FORM_NAME
-} from 'store/projects/project-create-actions';
+    PROJECT_UPDATE_PROPERTIES_FORM_NAME,
+    PROJECT_UPDATE_FORM_NAME
+} from 'store/projects/project-update-actions';
 import {
     ResourcePropertiesForm,
     ResourcePropertiesFormData
@@ -23,10 +23,10 @@ const Form = withStyles(
         })
     )(ResourcePropertiesForm);
 
-export const CreateProjectPropertiesForm = reduxForm<ResourcePropertiesFormData>({
-    form: PROJECT_CREATE_PROPERTIES_FORM_NAME,
+export const UpdateProjectPropertiesForm = reduxForm<ResourcePropertiesFormData>({
+    form: PROJECT_UPDATE_PROPERTIES_FORM_NAME,
     onSubmit: (data, dispatch) => {
-        dispatch(addPropertyToResourceForm(data, PROJECT_CREATE_FORM_NAME));
-        dispatch(reset(PROJECT_CREATE_PROPERTIES_FORM_NAME));
+        dispatch(addPropertyToResourceForm(data, PROJECT_UPDATE_FORM_NAME));
+        dispatch(reset(PROJECT_UPDATE_PROPERTIES_FORM_NAME));
     }
 })(Form);
