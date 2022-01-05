@@ -11,6 +11,8 @@ Syntax:
 
 --target <target>
     Distribution to build packages for (default: debian10)
+--only-build <package>
+    Build only a specific package (or $ONLY_BUILD from environment)
 --upload
     If the build and test steps are successful, upload the packages
     to a remote apt repository (default: false)
@@ -44,7 +46,7 @@ if ! [[ -d "$WORKSPACE" ]]; then
 fi
 
 PARSEDOPTS=$(getopt --name "$0" --longoptions \
-    help,debug,upload,rc,target:,build-version: \
+    help,debug,upload,rc,target:,only-build:,build-version: \
     -- "" "$@")
 if [ $? -ne 0 ]; then
     exit 1
@@ -67,6 +69,9 @@ while [ $# -gt 0 ]; do
             ;;
         --target)
             TARGET="$2"; shift
+            ;;
+        --only-build)
+            ONLY_BUILD="$2"; shift
             ;;
         --debug)
             DEBUG=" --debug"
@@ -92,6 +97,10 @@ while [ $# -gt 0 ]; do
 done
 
 build_args+=(--target "$TARGET")
+
+if [[ -n "$ONLY_BUILD" ]]; then
+  build_args+=(--only-build "$ONLY_BUILD")
+fi
 
 exit_cleanly() {
     trap - INT
