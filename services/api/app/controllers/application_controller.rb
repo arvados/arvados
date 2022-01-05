@@ -688,11 +688,6 @@ class ApplicationController < ActionController::Base
     }
   end
 
-  def client_accepts_plain_text_stream
-    (request.headers['Accept'].split(' ') &
-     ['text/plain', '*/*']).count > 0
-  end
-
   def render *opts
     if opts.first
       response = opts.first[:json]
