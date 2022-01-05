@@ -157,7 +157,7 @@ package_go_binary() {
       return 1
     fi
 
-    go get -ldflags "-X git.arvados.org/arvados.git/lib/cmd.version=${go_package_version} -X main.version=${go_package_version}" "git.arvados.org/arvados.git/$src_path"
+    go install -ldflags "-X git.arvados.org/arvados.git/lib/cmd.version=${go_package_version} -X main.version=${go_package_version}" "git.arvados.org/arvados.git/$src_path"
 
     local -a switches=()
     systemd_unit="$WORKSPACE/${src_path}/${prog}.service"
