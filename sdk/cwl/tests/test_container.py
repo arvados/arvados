@@ -1063,7 +1063,7 @@ class TestContainer(unittest.TestCase):
             "class": "CommandLineTool",
             "hints": [
             {
-                "class": "http://arvados.org/cwl#CUDARequirement",
+                "class": "http://commonwl.org/cwltool#CUDARequirement",
                 "minCUDADriverVersion": "11.0",
                 "minCUDAHardwareCapability": "9.0",
             }
