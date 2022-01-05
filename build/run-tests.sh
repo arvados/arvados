@@ -642,7 +642,7 @@ initialize() {
 
 install_env() {
     go mod download || fatal "Go deps failed"
-    which goimports >/dev/null || go get golang.org/x/tools/cmd/goimports || fatal "Go setup failed"
+    which goimports >/dev/null || go install golang.org/x/tools/cmd/goimports@latest || fatal "Go setup failed"
 
     setup_virtualenv "$VENV3DIR"
     . "$VENV3DIR/bin/activate"

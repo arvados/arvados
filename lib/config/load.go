@@ -6,6 +6,7 @@ package config
 
 import (
 	"bytes"
+	_ "embed"
 	"encoding/json"
 	"errors"
 	"flag"
@@ -22,6 +23,9 @@ import (
 	"github.com/imdario/mergo"
 	"github.com/sirupsen/logrus"
 )
+
+//go:embed config.default.yml
+var DefaultYAML []byte
 
 var ErrNoClustersDefined = errors.New("config does not define any clusters")
 

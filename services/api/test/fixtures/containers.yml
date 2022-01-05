@@ -404,6 +404,7 @@ running_container_with_logs:
     vcpus: 4
   secret_mounts: {}
   secret_mounts_md5: 99914b932bd37a50b983c5e7c90ae93b
+  auth_uuid: zzzzz-gj3su-n4xycwjpvvi776n
 
 running_to_be_deleted:
   uuid: zzzzz-dz642-runnincntrtodel

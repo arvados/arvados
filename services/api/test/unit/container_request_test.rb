@@ -14,11 +14,21 @@ class ContainerRequestTest < ActiveSupport::TestCase
 
   def with_container_auth(ctr)
     auth_was = Thread.current[:api_client_authorization]
-    Thread.current[:api_client_authorization] = ApiClientAuthorization.find_by_uuid(ctr.auth_uuid)
+    client_was = Thread.current[:api_client]
+    token_was = Thread.current[:token]
+    user_was = Thread.current[:user]
+    auth = ApiClientAuthorization.find_by_uuid(ctr.auth_uuid)
+    Thread.current[:api_client_authorization] = auth
+    Thread.current[:api_client] = auth.api_client
+    Thread.current[:token] = auth.token
+    Thread.current[:user] = auth.user
     begin
       yield
     ensure
       Thread.current[:api_client_authorization] = auth_was
+      Thread.current[:api_client] = client_was
+      Thread.current[:token] = token_was
+      Thread.current[:user] = user_was
     end
   end
 
@@ -54,6 +64,18 @@ class ContainerRequestTest < ActiveSupport::TestCase
       end
       cr.reload
     end
+  end
+
+  def configure_preemptible_instance_type
+    Rails.configuration.InstanceTypes = ConfigLoader.to_OrderedOptions({
+      "a1.small.pre" => {
+        "Preemptible" => true,
+        "Price" => 0.1,
+        "ProviderType" => "a1.small",
+        "VCPUs" => 1,
+        "RAM" => 1000000000,
+      },
+    })
   end
 
   test "Container request create" do
@@ -333,7 +355,7 @@ class ContainerRequestTest < ActiveSupport::TestCase
     cr2 = with_container_auth(c) do
       create_minimal_req!(priority: 10, state: "Committed", container_count_max: 1, command: ["echo", "foo2"])
     end
-    assert_not_nil cr2.requesting_container_uuid
+    assert_equal c.uuid, cr2.requesting_container_uuid
     assert_equal users(:active).uuid, cr2.modified_by_user_uuid
 
     c2 = Container.find_by_uuid cr2.container_uuid
@@ -950,63 +972,120 @@ class ContainerRequestTest < ActiveSupport::TestCase
   end
 
   [
-    [false, ActiveRecord::RecordInvalid],
-    [true, nil],
-  ].each do |preemptible_conf, expected|
-    test "having Rails.configuration.Containers.UsePreemptibleInstances=#{preemptible_conf}, create preemptible container request and verify #{expected}" do
-      sp = {"preemptible" => true}
-      common_attrs = {cwd: "test",
-                      priority: 1,
-                      command: ["echo", "hello"],
-                      output_path: "test",
-                      scheduling_parameters: sp,
-                      mounts: {"test" => {"kind" => "json"}}}
-      Rails.configuration.Containers.UsePreemptibleInstances = preemptible_conf
-      set_user_from_auth :active
-
-      cr = create_minimal_req!(common_attrs)
-      cr.state = ContainerRequest::Committed
-
-      if !expected.nil?
-        assert_raises(expected) do
-          cr.save!
-        end
-      else
-        cr.save!
-        assert (sp.to_a - cr.scheduling_parameters.to_a).empty?
+    # client requests preemptible, but types are not configured
+    [false, false, false, true, ActiveRecord::RecordInvalid],
+    [true, false, false, true, ActiveRecord::RecordInvalid],
+    # client requests preemptible, types are configured
+    [false, true, false, true, true],
+    [true, true, false, true, true],
+    # client requests non-preemptible for top-level container
+    [false, false, false, false, false],
+    [true, false, false, false, false],
+    [false, true, false, false, false],
+    [true, true, false, false, false],
+    # client requests non-preemptible for child container, preemptible
+    # is enabled anyway if AlwaysUsePreemptibleInstances and instance types
+    # are configured.
+    [false, false, true, false, false],
+    [true, false, true, false, false],
+    [false, true, true, false, false],
+    [true, true, true, false, true],
+  ].each do |use_preemptible, have_preemptible, is_child, ask, expect|
+    test "with AlwaysUsePreemptibleInstances=#{use_preemptible} and preemptible types #{have_preemptible ? '' : 'not '}configured, create #{is_child ? 'child' : 'top-level'} container request with preemptible=#{ask} and expect #{expect}" do
+      Rails.configuration.Containers.AlwaysUsePreemptibleInstances = use_preemptible
+      if have_preemptible
+        configure_preemptible_instance_type
       end
-    end
-  end
-
-  [
-    [true, 'zzzzz-dz642-runningcontainr', true],
-    [true, nil, false],
-    [false, 'zzzzz-dz642-runningcontainr', false],
-    [false, nil, false],
-  ].each do |preemptible_conf, requesting_c, schedule_preemptible|
-    test "having Rails.configuration.Containers.UsePreemptibleInstances=#{preemptible_conf}, #{requesting_c.nil? ? 'non-':''}child CR should #{schedule_preemptible ? '':'not'} ask for preemptible instance by default" do
-      common_attrs = {cwd: "test",
-                      priority: 1,
-                      command: ["echo", "hello"],
-                      output_path: "test",
-                      mounts: {"test" => {"kind" => "json"}}}
-
-      Rails.configuration.Containers.UsePreemptibleInstances = preemptible_conf
+      common_attrs = {
+        cwd: "test",
+        priority: 1,
+        command: ["echo", "hello"],
+        output_path: "test",
+        scheduling_parameters: {"preemptible" => ask},
+        mounts: {"test" => {"kind" => "json"}},
+      }
       set_user_from_auth :active
 
-      if requesting_c
-        cr = with_container_auth(Container.find_by_uuid requesting_c) do
+      if is_child
+        cr = with_container_auth(containers(:running)) do
           create_minimal_req!(common_attrs)
         end
-        assert_not_nil cr.requesting_container_uuid
       else
         cr = create_minimal_req!(common_attrs)
       end
 
+      cr.reload
       cr.state = ContainerRequest::Committed
-      cr.save!
 
-      assert_equal schedule_preemptible, cr.scheduling_parameters['preemptible']
+      if expect == true || expect == false
+        cr.save!
+        assert_equal expect, cr.scheduling_parameters["preemptible"]
+      else
+        assert_raises(expect) do
+          cr.save!
+        end
+      end
+    end
+  end
+
+  test "config update does not flip preemptible flag on already-committed container requests" do
+    parent = containers(:running_container_with_logs)
+    attrs_p = {
+      scheduling_parameters: {"preemptible" => true},
+      "state" => "Committed",
+      "priority" => 1,
+    }
+    attrs_nonp = {
+      scheduling_parameters: {"preemptible" => false},
+      "state" => "Committed",
+      "priority" => 1,
+    }
+    expect = {false => [], true => []}
+
+    with_container_auth(parent) do
+      configure_preemptible_instance_type
+      Rails.configuration.Containers.AlwaysUsePreemptibleInstances = false
+
+      expect[true].push create_minimal_req!(attrs_p)
+      expect[false].push create_minimal_req!(attrs_nonp)
+
+      Rails.configuration.Containers.AlwaysUsePreemptibleInstances = true
+
+      expect[true].push create_minimal_req!(attrs_p)
+      expect[true].push create_minimal_req!(attrs_nonp)
+      commit_later = create_minimal_req!()
+
+      Rails.configuration.InstanceTypes = ConfigLoader.to_OrderedOptions({})
+
+      expect[false].push create_minimal_req!(attrs_nonp)
+
+      # Even though preemptible is not allowed, we should be able to
+      # commit a CR that was created earlier when preemptible was the
+      # default.
+      commit_later.update_attributes!(priority: 1, state: "Committed")
+      expect[false].push commit_later
+    end
+
+    set_user_from_auth :active
+    [false, true].each do |pflag|
+      expect[pflag].each do |cr|
+        cr.reload
+        assert_equal pflag, cr.scheduling_parameters['preemptible']
+      end
+    end
+
+    act_as_system_user do
+      # Cancelling the parent used to fail while updating the child
+      # containers' priority, because the child containers' unchanged
+      # preemptible fields caused validation to fail.
+      parent.update_attributes!(state: 'Cancelled')
+
+      [false, true].each do |pflag|
+        expect[pflag].each do |cr|
+          cr.reload
+          assert_equal 0, cr.priority, "unexpected non-zero priority #{cr.priority} for #{cr.uuid}"
+        end
+      end
     end
   end
 
@@ -1055,7 +1134,7 @@ class ContainerRequestTest < ActiveSupport::TestCase
                     state: ContainerRequest::Committed,
                     mounts: {"test" => {"kind" => "json"}}}
     set_user_from_auth :active
-    Rails.configuration.Containers.UsePreemptibleInstances = true
+    configure_preemptible_instance_type
 
     cr = with_container_auth(Container.find_by_uuid 'zzzzz-dz642-runningcontainr') do
       create_minimal_req!(common_attrs)
