@@ -228,9 +228,9 @@ package_go_binary_worker() {
 
     echo "Building $package_format ($target_arch) package for $prog from $src_path"
     if [[ "$native_arch" == "amd64" ]] && [[ "$target_arch" == "arm64" ]]; then
-      CGO_ENABLED=1 CC=aarch64-linux-gnu-gcc GOARCH=${target_arch} go get -ldflags "-X git.arvados.org/arvados.git/lib/cmd.version=${go_package_version} -X main.version=${go_package_version}" "git.arvados.org/arvados.git/$src_path"
+      CGO_ENABLED=1 CC=aarch64-linux-gnu-gcc GOARCH=${target_arch} go install -ldflags "-X git.arvados.org/arvados.git/lib/cmd.version=${go_package_version} -X main.version=${go_package_version}" "git.arvados.org/arvados.git/$src_path"
     else
-      GOARCH=${arch} go get -ldflags "-X git.arvados.org/arvados.git/lib/cmd.version=${go_package_version} -X main.version=${go_package_version}" "git.arvados.org/arvados.git/$src_path"
+      GOARCH=${arch} go install -ldflags "-X git.arvados.org/arvados.git/lib/cmd.version=${go_package_version} -X main.version=${go_package_version}" "git.arvados.org/arvados.git/$src_path"
     fi
 
     local -a switches=()
