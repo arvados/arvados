@@ -183,12 +183,12 @@ package_go_binary() {
     # but only when building deb packages (centos does not have support for crosscompiling userspace).
     archs=($native_arch)
     if [[ "$native_arch" == "amd64" ]] && [[ "$package_format" == "deb" ]]; then
-      archs=('amd64' 'arm64')
+      archs+=("arm64")
     fi
-    for ta in $archs; do
+    for ta in ${archs[@]}; do
       package_go_binary_worker "$src_path" "$prog" "$package_format" "$description" "$native_arch" "$ta" "$license_file"
       retval=$?
-      if [[ "$retval" != 0 ]]; then
+      if [[ $retval -ne 0 ]]; then
         return $retval
       fi
     done
@@ -216,8 +216,8 @@ package_go_binary_worker() {
 
     cd $WORKSPACE/packages/$TARGET
     test_package_presence "$prog" "$go_package_version" "go" "" "$target_arch"
-    if [[ "$?" != "0" ]]; then
-      return 1
+    if [[ $? -ne 0 ]]; then
+      return 0
     fi
 
     echo "Building $package_format ($target_arch) package for $prog from $src_path"

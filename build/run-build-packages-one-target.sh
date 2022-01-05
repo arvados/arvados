@@ -170,7 +170,7 @@ if [[ -n "$test_packages" ]]; then
     fi
     set -e
     (cd $WORKSPACE/packages/$TARGET
-      dpkg-scanpackages .  2> >(grep -v 'warning' 1>&2) | tee Packages | gzip -c > Packages.gz
+      dpkg-scanpackages --multiversion .  2> >(grep -v 'warning' 1>&2) | tee Packages | gzip -c > Packages.gz
       apt-ftparchive -o APT::FTPArchive::Release::Origin=Arvados release . > Release
     )
   fi
