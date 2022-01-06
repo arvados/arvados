@@ -26,7 +26,7 @@ h2(#single_host). Single host install using the provision.sh script
 <b>NOTE: The single host installation is not recommended for production use.</b>
 
 {% if site.current_version %}
-{% assign branchname = site.current_version | slice: 1, 5 | append: '-dev' %}
+{% assign branchname = site.current_version | slice: 1, 5 | append: '-release' %}
 {% else %}
 {% assign branchname = 'main' %}
 {% endif %}

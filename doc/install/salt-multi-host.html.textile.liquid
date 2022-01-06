@@ -59,7 +59,7 @@ We added a few "terraform":https://terraform.io/ scripts (https://github.com/arv
 h2(#multi_host). Multi host install using the provision.sh script
 
 {% if site.current_version %}
-{% assign branchname = site.current_version | slice: 1, 5 | append: '-dev' %}
+{% assign branchname = site.current_version | slice: 1, 5 | append: '-release' %}
 {% else %}
 {% assign branchname = 'main' %}
 {% endif %}
