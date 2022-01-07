@@ -170,35 +170,48 @@ package_go_binary() {
   native_arch=$(get_native_arch)
 
   if [[ "$native_arch" != "amd64" ]] && [[ -n "$target_arch" ]] && [[ "$native_arch" != "$target_arch" ]]; then
-    echo "Error: no cross compilation support for Go on $native_arch yet, can not build $prog for $target_arch"
+    echo "Error: no cross compilation support for Go on $native_arch, can not build $prog for $target_arch"
     return 1
   fi
 
+  cross_compilation=1
+  if [[ "$TARGET" == "centos7" ]]; then
+    if [[ "$native_arch" == "amd64" ]] && [[ -n "$target_arch" ]] && [[ "$native_arch" != "$target_arch" ]]; then
+      echo "Error: no cross compilation support for Go on $native_arch for $TARGET, can not build $prog for $target_arch"
+      return 1
+    fi
+    cross_compilation=0
+  fi
+
+  if [[ "$package_format" == "deb" ]] &&
+     [[ "$TARGET" == "debian10" ]] || [[ "$TARGET" == "ubuntu1804" ]] || [[ "$TARGET" == "ubuntu2004" ]]; then
+    # Due to bug https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=983477 the libfuse-dev package for arm64 does
+    # not install properly side by side with the amd64 version before Debian 11.
+    if [[ "$native_arch" == "amd64" ]] && [[ -n "$target_arch" ]] && [[ "$native_arch" != "$target_arch" ]]; then
+      echo "Error: no cross compilation support for Go on $native_arch for $TARGET, can not build $prog for $target_arch"
+      return 1
+    fi
+    cross_compilation=0
+  fi
+
   if [[ -n "$target_arch" ]]; then
-    # A target architecture has been specified
-    package_go_binary_worker "$src_path" "$prog" "$package_format" "$description" "$native_arch" "$target_arch" "$license_file"
-    return $?
+    archs=($target_arch)
   else
-    # No target architecture specified, default to native target. When on amd64 also crosscompile arm64
-    # but only when building deb packages (centos does not have support for crosscompiling userspace).
+    # No target architecture specified, default to native target. When on amd64
+    # also crosscompile arm64 (when supported).
     archs=($native_arch)
-    if [[ "$native_arch" == "amd64" ]] &&
-       [[ "$package_format" == "deb" ]] &&
-       [[ "$TARGET" != "debian10" ]] &&
-       [[ "$TARGET" != "ubuntu1804" ]] &&
-       [[ "$TARGET" != "ubuntu2004" ]]; then
-      # Due to bug https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=983477 the libfuse-dev package for arm64 does
-      # not install properly side by side with the amd64 version before Debian 11.
+    if [[ $cross_compilation -ne 0 ]]; then
       archs+=("arm64")
     fi
-    for ta in ${archs[@]}; do
-      package_go_binary_worker "$src_path" "$prog" "$package_format" "$description" "$native_arch" "$ta" "$license_file"
-      retval=$?
-      if [[ $retval -ne 0 ]]; then
-        return $retval
-      fi
-    done
   fi
+
+  for ta in ${archs[@]}; do
+    package_go_binary_worker "$src_path" "$prog" "$package_format" "$description" "$native_arch" "$ta" "$license_file"
+    retval=$?
+    if [[ $retval -ne 0 ]]; then
+      return $retval
+    fi
+  done
 }
 
 # Usage: package_go_binary services/foo arvados-foo deb "Compute foo to arbitrary precision" [amd64/arm64] [amd64/arm64] [apache-2.0.txt]
@@ -210,11 +223,6 @@ package_go_binary_worker() {
     local native_arch="${1:-amd64}"; shift
     local target_arch="${1:-amd64}"; shift
     local license_file="${1:-agpl-3.0.txt}"; shift
-
-    if [[ "$native_arch" != "$target_arch" ]] && [[ "$package_format" == "rpm" ]]; then
-      echo "Error: no cross compilation support for Go on $native_arch ($package_format), can not build $prog for $target_arch"
-      return 1
-    fi
 
     debug_echo "package_go_binary $src_path as $prog (native arch: $native_arch, target arch: $target_arch)"
     local basename="${src_path##*/}"

@@ -63,7 +63,6 @@ if [ $? -ne 0 ]; then
 fi
 
 TARGET=debian10
-ARCH=
 FORCE_BUILD=0
 COMMAND=
 DEBUG=
