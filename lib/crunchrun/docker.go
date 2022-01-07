@@ -112,7 +112,7 @@ func (e *dockerExecutor) config(spec containerSpec) (dockercontainer.Config, doc
 			// If a resource manager such as slurm or LSF told
 			// us to select specific devices we need to propagate that.
 			if strings.HasPrefix(s, "CUDA_VISIBLE_DEVICES=") {
-				deviceIds = strings.SplitN(strings.SplitN(s, "=", 2)[1], ",")
+				deviceIds = strings.Split(strings.SplitN(s, "=", 2)[1], ",")
 			}
 		}
 		deviceCount := spec.CUDADeviceCount
