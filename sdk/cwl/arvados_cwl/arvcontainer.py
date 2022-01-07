@@ -291,12 +291,12 @@ class ArvadosContainer(JobBase):
             else:
                 container_request["output_storage_classes"] = runtimeContext.intermediate_storage_classes.strip().split(",")
 
-        cuda_req, _ = self.get_requirement("http://arvados.org/cwl#CUDARequirement")
+        cuda_req, _ = self.get_requirement("http://commonwl.org/cwltool#CUDARequirement")
         if cuda_req:
             runtime_constraints["cuda"] = {
-                "device_count": cuda_req.get("minDeviceCount", 1),
-                "driver_version": cuda_req["minCUDADriverVersion"],
-                "hardware_capability": cuda_req["minCUDAHardwareCapability"]
+                "device_count": cuda_req.get("deviceCountMin", 1),
+                "driver_version": cuda_req["cudaVersionMin"],
+                "hardware_capability": cuda_req["cudaComputeCapabilityMin"]
             }
 
         if self.timelimit is not None and self.timelimit > 0:
