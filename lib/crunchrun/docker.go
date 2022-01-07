@@ -107,10 +107,26 @@ func (e *dockerExecutor) config(spec containerSpec) (dockercontainer.Config, doc
 		},
 	}
 	if spec.CUDADeviceCount != 0 {
+		var deviceIds []string
+		for _, s := range os.Environ() {
+			// If a resource manager such as slurm or LSF told
+			// us to select specific devices we need to propagate that.
+			if strings.HasPrefix(s, "CUDA_VISIBLE_DEVICES=") {
+				deviceIds = strings.SplitN(strings.SplitN(s, "=", 2)[1], ",")
+			}
+		}
+		deviceCount := spec.CUDADeviceCount
+		if len(deviceIds) > 0 {
+			// Docker won't accept both non-empty
+			// DeviceIDs and a non-zero Count
+			deviceCount = 0
+		}
+
 		hostCfg.Resources.DeviceRequests = append(hostCfg.Resources.DeviceRequests, dockercontainer.DeviceRequest{
 			Driver:       "nvidia",
-			Count:        spec.CUDADeviceCount,
-			Capabilities: [][]string{[]string{"gpu", "nvidia", "compute"}},
+			Count:        deviceCount,
+			DeviceIDs:    deviceIds,
+			Capabilities: [][]string{[]string{"gpu", "nvidia"}},
 		})
 	}
 	for path, mount := range spec.BindMounts {

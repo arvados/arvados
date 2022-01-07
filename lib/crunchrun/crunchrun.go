@@ -987,6 +987,10 @@ func (runner *ContainerRunner) CreateContainer(imageID string, bindmounts map[st
 	runner.executorStdout = stdout
 	runner.executorStderr = stderr
 
+	if runner.Container.RuntimeConstraints.CUDA.DeviceCount > 0 {
+		nvidiaModprobe(runner.CrunchLog)
+	}
+
 	return runner.executor.Create(containerSpec{
 		Image:           imageID,
 		VCPUs:           runner.Container.RuntimeConstraints.VCPUs,
