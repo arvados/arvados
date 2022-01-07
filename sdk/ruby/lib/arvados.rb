@@ -16,6 +16,26 @@ ActiveSupport::Inflector.inflections do |inflect|
 end
 
 class Arvados
+  class ArvadosClient < Google::APIClient
+    attr_reader :request_id
+
+    def execute(*args)
+      @request_id = "req-" + Random::DEFAULT.rand(2**128).to_s(36)[0..19]
+      if args.last.is_a? Hash
+        args.last[:headers] ||= {}
+        args.last[:headers]['X-Request-Id'] = @request_id
+      end
+      begin
+        super(*args)
+      rescue => e
+        if !e.message.match(/.*req-[0-9a-zA-Z]{20}.*/)
+          e.message += "\nRequest ID: #{e.headers['X-Request-Id'] or @request_id}"
+        end
+        raise e
+      end
+    end
+  end
+
   class TransactionFailedError < StandardError
   end
 
@@ -101,7 +121,7 @@ class Arvados
   end
 
   def client
-    @client ||= Google::APIClient.
+    @client ||= ArvadosClient.
       new(:host => config["ARVADOS_API_HOST"],
           :application_name => @application_name,
           :application_version => @application_version.to_s)
@@ -207,6 +227,9 @@ class Arvados
                 })
       resp = JSON.parse result.body, :symbolize_names => true
       if resp[:errors]
+        if !resp[:errors][0].match(/.*req-[0-9a-zA-Z]{20}.*/)
+          resp[:errors][0] += " (#{result.headers['X-Request-Id'] or client.request_id})"
+        end
         raise Arvados::TransactionFailedError.new(resp[:errors])
       elsif resp[:uuid] and resp[:etag]
         self.new(resp)
