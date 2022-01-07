@@ -49,7 +49,7 @@ class ActionsController < ApplicationController
         return self.send(param)
       end
     end
-    redirect_to :back
+    redirect_back(fallback_location: root_path)
   end
 
   expose_action :copy_selections_into_project do

@@ -18,7 +18,9 @@ SPDX-License-Identifier: CC-BY-SA-3.0
 
 h2(#vagrant). Vagrant
 
-This is a package-based installation method. The Salt scripts are available from the "tools/salt-install":https://github.com/arvados/arvados/tree/main/tools/salt-install directory in the Arvados git repository.
+{% include 'branchname' %}
+
+This is a package-based installation method. Start by cloning the @{{ branchname }}@ branch from "https://git.arvados.org/arvados.git":https://git.arvados.org/arvados.git . The Salt scripts are available in the @tools/salt-install@ directory.
 
 A @Vagrantfile@ is provided to install Arvados in a virtual machine on your computer using "Vagrant":https://www.vagrantup.com/.
 

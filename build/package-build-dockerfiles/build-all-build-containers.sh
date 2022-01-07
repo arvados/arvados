@@ -12,7 +12,7 @@ for target in `find -maxdepth 1 -type d |grep -v generated`; do
   target=${target#./}
   echo $target
   cd $target
-  docker build -t arvados/build:$target .
+  docker build --tag arvados/build:$target --build-arg HOSTTYPE=$HOSTTYPE .
   cd ..
 done
 

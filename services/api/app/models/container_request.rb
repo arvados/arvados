@@ -34,8 +34,6 @@ class ContainerRequest < ArvadosModel
   after_find :fill_container_defaults_after_find
   before_validation :fill_field_defaults, :if => :new_record?
   before_validation :fill_container_defaults
-  before_validation :set_default_preemptible_scheduling_parameter
-  before_validation :set_container
   validates :command, :container_image, :output_path, :cwd, :presence => true
   validates :output_ttl, numericality: { only_integer: true, greater_than_or_equal_to: 0 }
   validates :priority, numericality: { only_integer: true, greater_than_or_equal_to: 0, less_than_or_equal_to: 1000 }
@@ -46,7 +44,9 @@ class ContainerRequest < ArvadosModel
   validate :check_update_whitelist
   validate :secret_mounts_key_conflict
   validate :validate_runtime_token
-  before_save :scrub_secrets
+  after_validation :scrub_secrets
+  after_validation :set_preemptible
+  after_validation :set_container
   before_create :set_requesting_container_uuid
   before_destroy :set_priority_zero
   after_save :update_priority
@@ -101,6 +101,12 @@ class ContainerRequest < ArvadosModel
   :runtime_constraints, :state, :container_uuid, :use_existing,
   :scheduling_parameters, :secret_mounts, :output_name, :output_ttl,
   :output_storage_classes]
+
+  def self.any_preemptible_instances?
+    Rails.configuration.InstanceTypes.any? do |k, v|
+      v["Preemptible"]
+    end
+  end
 
   def self.limit_index_columns_read
     ["mounts"]
@@ -268,6 +274,10 @@ class ContainerRequest < ArvadosModel
       errors.add :container_uuid, "can only be updated to nil."
       return false
     end
+    if self.container_count_changed?
+      errors.add :container_count, "cannot be updated directly."
+      return false
+    end
     if state_changed? and state == Committed and container_uuid.nil?
       while true
         c = Container.resolve(self)
@@ -283,11 +293,6 @@ class ContainerRequest < ArvadosModel
       end
     end
     if self.container_uuid != self.container_uuid_was
-      if self.container_count_changed?
-        errors.add :container_count, "cannot be updated directly."
-        return false
-      end
-
       self.container_count += 1
       return if self.container_uuid_was.nil?
 
@@ -320,8 +325,12 @@ class ContainerRequest < ArvadosModel
     end
   end
 
-  def set_default_preemptible_scheduling_parameter
-    if Rails.configuration.Containers.UsePreemptibleInstances && state == Committed && get_requesting_container()
+  def set_preemptible
+    if (new_record? || state_changed?) &&
+       state == Committed &&
+       Rails.configuration.Containers.AlwaysUsePreemptibleInstances &&
+       get_requesting_container_uuid() &&
+       self.class.any_preemptible_instances?
       self.scheduling_parameters['preemptible'] = true
     end
   end
@@ -400,8 +409,10 @@ class ContainerRequest < ArvadosModel
             scheduling_parameters['partitions'].size)
             errors.add :scheduling_parameters, "partitions must be an array of strings"
       end
-      if !Rails.configuration.Containers.UsePreemptibleInstances and scheduling_parameters['preemptible']
-        errors.add :scheduling_parameters, "preemptible instances are not allowed"
+      if scheduling_parameters['preemptible'] &&
+         (new_record? || state_changed?) &&
+         !self.class.any_preemptible_instances?
+        errors.add :scheduling_parameters, "preemptible instances are not configured in InstanceTypes"
       end
       if scheduling_parameters.include? 'max_run_time' and
         (!scheduling_parameters['max_run_time'].is_a?(Integer) ||
@@ -437,20 +448,13 @@ class ContainerRequest < ArvadosModel
     when Committed
       permitted.push :priority, :container_count_max, :container_uuid
 
-      if self.container_uuid.nil?
-        self.errors.add :container_uuid, "has not been resolved to a container."
-      end
-
       if self.priority.nil?
         self.errors.add :priority, "cannot be nil"
       end
 
-      # Allow container count to increment by 1
-      if (self.container_uuid &&
-          self.container_uuid != self.container_uuid_was &&
-          self.container_count == 1 + (self.container_count_was || 0))
-        permitted.push :container_count
-      end
+      # Allow container count to increment (not by client, only by us
+      # -- see set_container)
+      permitted.push :container_count
 
       if current_user.andand.is_admin
         permitted.push :log_uuid
@@ -513,17 +517,14 @@ class ContainerRequest < ArvadosModel
   end
 
   def set_requesting_container_uuid
-    c = get_requesting_container()
-    if !c.nil?
-      self.requesting_container_uuid = c.uuid
+    if (self.requesting_container_uuid = get_requesting_container_uuid())
       # Determine the priority of container request for the requesting
       # container.
       self.priority = ContainerRequest.where(container_uuid: self.requesting_container_uuid).maximum("priority") || 0
     end
   end
 
-  def get_requesting_container
-    return self.requesting_container_uuid if !self.requesting_container_uuid.nil?
-    Container.for_current_token
+  def get_requesting_container_uuid
+    return self.requesting_container_uuid || Container.for_current_token.andand.uuid
   end
 end

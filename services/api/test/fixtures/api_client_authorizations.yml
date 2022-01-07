@@ -317,6 +317,13 @@ running_container_auth:
   api_token: it2gl94mgu3rbn5s2d06vzh73ns1y6cthct0tvg82qdlsxvbwk
   expires_at: 2038-01-01 00:00:00
 
+running_container_with_logs_auth:
+  uuid: zzzzz-gj3su-n4xycwjpvvi776n
+  api_client: untrusted
+  user: active
+  api_token: mkpdp5jbytt471lw9so1by2t5ylciojdur845rfn4dtm0etl33
+  expires_at: 2038-01-01 00:00:00
+
 running_to_be_deleted_container_auth:
   uuid: zzzzz-gj3su-ty6lvu9d7u7c2sq
   api_client: untrusted

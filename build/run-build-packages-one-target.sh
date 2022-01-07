@@ -21,6 +21,8 @@ Syntax:
     Build only a specific package
 --only-test <package>
     Test only a specific package
+--arch <arch>
+    Build a specific architecture (amd64 or arm64, defaults to native architecture)
 --force-build
     Build even if the package exists upstream or if it has already been
     built locally
@@ -54,7 +56,7 @@ if ! [[ -d "$WORKSPACE" ]]; then
 fi
 
 PARSEDOPTS=$(getopt --name "$0" --longoptions \
-    help,debug,test-packages,target:,command:,only-test:,force-test,only-build:,force-build,build-version: \
+    help,debug,test-packages,target:,command:,only-test:,force-test,only-build:,force-build,arch:,build-version: \
     -- "" "$@")
 if [ $? -ne 0 ]; then
     exit 1
@@ -89,6 +91,9 @@ while [ $# -gt 0 ]; do
             ;;
         --only-build)
             ONLY_BUILD="$2"; shift
+            ;;
+        --arch)
+            ARCH="$2"; shift
             ;;
         --debug)
             DEBUG=" --debug"
@@ -164,7 +169,7 @@ if [[ -n "$test_packages" ]]; then
     fi
     set -e
     (cd $WORKSPACE/packages/$TARGET
-      dpkg-scanpackages .  2> >(grep -v 'warning' 1>&2) | tee Packages | gzip -c > Packages.gz
+      dpkg-scanpackages --multiversion .  2> >(grep -v 'warning' 1>&2) | tee Packages | gzip -c > Packages.gz
       apt-ftparchive -o APT::FTPArchive::Release::Origin=Arvados release . > Release
     )
   fi
@@ -190,7 +195,7 @@ fi
 
 echo $TARGET
 cd $TARGET
-time docker build --tag=$IMAGE .
+time docker build --tag "$IMAGE" --build-arg HOSTTYPE=$HOSTTYPE .
 popd
 
 if test -z "$packages" ; then
@@ -311,6 +316,7 @@ else
         --env ARVADOS_DEBUG=$ARVADOS_DEBUG \
         --env "ONLY_BUILD=$ONLY_BUILD" \
         --env "FORCE_BUILD=$FORCE_BUILD" \
+        --env "ARCH=$ARCH" \
         "$IMAGE" $COMMAND
     then
         echo
