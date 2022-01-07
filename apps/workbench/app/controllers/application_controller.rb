@@ -417,7 +417,11 @@ class ApplicationController < ActionController::Base
       respond_to do |f|
         f.json { render json: @object }
         f.html {
-          redirect_to(params[:return_to] || :back)
+          if params[:return_to]
+            redirect_to(params[:return_to])
+          else
+            redirect_back(fallback_location: root_path)
+          end
         }
         f.js { render }
       end
@@ -519,7 +523,7 @@ class ApplicationController < ActionController::Base
       redirect_to arvados_api_client.arvados_login_url(return_to: strip_token_from_path(request.url))
     else
       flash[:error] = "Either you are not logged in, or your session has timed out. I can't automatically log you in and re-attempt this request."
-      redirect_to :back
+      redirect_back(fallback_location: root_path)
     end
     false  # For convenience to return from callbacks
   end
