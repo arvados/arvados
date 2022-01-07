@@ -79,6 +79,25 @@ calculate_python_sdk_cwl_package_versions() {
   cwl_runner_version=$(cd sdk/cwl && python3 arvados_version.py)
 }
 
+# Usage: get_native_arch
+get_native_arch() {
+  # Only amd64 and aarch64 are supported at the moment
+  local native_arch=""
+  case "$HOSTTYPE" in
+    x86_64)
+      native_arch="amd64"
+      ;;
+    aarch64)
+      native_arch="arm64"
+      ;;
+    *)
+      echo "Error: architecture not supported"
+      exit 1
+      ;;
+  esac
+  echo $native_arch
+}
+
 handle_ruby_gem() {
     local gem_name="$1"; shift
     local gem_version="$(nohash_version_from_git)"
@@ -130,36 +149,106 @@ calculate_go_package_version() {
   __returnvar="$version"
 }
 
-# Usage: package_go_binary services/foo arvados-foo "Compute foo to arbitrary precision" [apache-2.0.txt]
+# Usage: package_go_binary services/foo arvados-foo [deb|rpm] [amd64|arm64] "Compute foo to arbitrary precision" [apache-2.0.txt]
 package_go_binary() {
+  local src_path="$1"; shift
+  local prog="$1"; shift
+  local package_format="$1"; shift
+  local target_arch="$1"; shift
+  local description="$1"; shift
+  local license_file="${1:-agpl-3.0.txt}"; shift
+
+  if [[ -n "$ONLY_BUILD" ]] && [[ "$prog" != "$ONLY_BUILD" ]]; then
+    # arvados-workbench depends on arvados-server at build time, so even when
+    # only arvados-workbench is being built, we need to build arvados-server too
+    if [[ "$prog" != "arvados-server" ]] || [[ "$ONLY_BUILD" != "arvados-workbench" ]]; then
+      debug_echo -e "Skipping build of $prog package."
+      return 0
+    fi
+  fi
+
+  native_arch=$(get_native_arch)
+
+  if [[ "$native_arch" != "amd64" ]] && [[ -n "$target_arch" ]] && [[ "$native_arch" != "$target_arch" ]]; then
+    echo "Error: no cross compilation support for Go on $native_arch, can not build $prog for $target_arch"
+    return 1
+  fi
+
+  cross_compilation=1
+  if [[ "$TARGET" == "centos7" ]]; then
+    if [[ "$native_arch" == "amd64" ]] && [[ -n "$target_arch" ]] && [[ "$native_arch" != "$target_arch" ]]; then
+      echo "Error: no cross compilation support for Go on $native_arch for $TARGET, can not build $prog for $target_arch"
+      return 1
+    fi
+    cross_compilation=0
+  fi
+
+  if [[ "$package_format" == "deb" ]] &&
+     [[ "$TARGET" == "debian10" ]] || [[ "$TARGET" == "ubuntu1804" ]] || [[ "$TARGET" == "ubuntu2004" ]]; then
+    # Due to bug https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=983477 the libfuse-dev package for arm64 does
+    # not install properly side by side with the amd64 version before Debian 11.
+    if [[ "$native_arch" == "amd64" ]] && [[ -n "$target_arch" ]] && [[ "$native_arch" != "$target_arch" ]]; then
+      echo "Error: no cross compilation support for Go on $native_arch for $TARGET, can not build $prog for $target_arch"
+      return 1
+    fi
+    cross_compilation=0
+  fi
+
+  if [[ -n "$target_arch" ]]; then
+    archs=($target_arch)
+  else
+    # No target architecture specified, default to native target. When on amd64
+    # also crosscompile arm64 (when supported).
+    archs=($native_arch)
+    if [[ $cross_compilation -ne 0 ]]; then
+      archs+=("arm64")
+    fi
+  fi
+
+  for ta in ${archs[@]}; do
+    package_go_binary_worker "$src_path" "$prog" "$package_format" "$description" "$native_arch" "$ta" "$license_file"
+    retval=$?
+    if [[ $retval -ne 0 ]]; then
+      return $retval
+    fi
+  done
+}
+
+# Usage: package_go_binary services/foo arvados-foo deb "Compute foo to arbitrary precision" [amd64/arm64] [amd64/arm64] [apache-2.0.txt]
+package_go_binary_worker() {
     local src_path="$1"; shift
     local prog="$1"; shift
+    local package_format="$1"; shift
     local description="$1"; shift
+    local native_arch="${1:-amd64}"; shift
+    local target_arch="${1:-amd64}"; shift
     local license_file="${1:-agpl-3.0.txt}"; shift
 
-    if [[ -n "$ONLY_BUILD" ]] && [[ "$prog" != "$ONLY_BUILD" ]]; then
-      # arvados-workbench depends on arvados-server at build time, so even when
-      # only arvados-workbench is being built, we need to build arvados-server too
-      if [[ "$prog" != "arvados-server" ]] || [[ "$ONLY_BUILD" != "arvados-workbench" ]]; then
-        return 0
-      fi
-    fi
-
-    debug_echo "package_go_binary $src_path as $prog"
-
+    debug_echo "package_go_binary $src_path as $prog (native arch: $native_arch, target arch: $target_arch)"
     local basename="${src_path##*/}"
     calculate_go_package_version go_package_version $src_path
 
     cd $WORKSPACE/packages/$TARGET
-    test_package_presence $prog $go_package_version go
-
-    if [[ "$?" != "0" ]]; then
-      return 1
+    test_package_presence "$prog" "$go_package_version" "go" "" "$target_arch"
+    if [[ $? -ne 0 ]]; then
+      return 0
     fi
 
-    go install -ldflags "-X git.arvados.org/arvados.git/lib/cmd.version=${go_package_version} -X main.version=${go_package_version}" "git.arvados.org/arvados.git/$src_path"
+    echo "Building $package_format ($target_arch) package for $prog from $src_path"
+    if [[ "$native_arch" == "amd64" ]] && [[ "$target_arch" == "arm64" ]]; then
+      CGO_ENABLED=1 CC=aarch64-linux-gnu-gcc GOARCH=${target_arch} go install -ldflags "-X git.arvados.org/arvados.git/lib/cmd.version=${go_package_version} -X main.version=${go_package_version}" "git.arvados.org/arvados.git/$src_path"
+    else
+      GOARCH=${arch} go install -ldflags "-X git.arvados.org/arvados.git/lib/cmd.version=${go_package_version} -X main.version=${go_package_version}" "git.arvados.org/arvados.git/$src_path"
+    fi
 
     local -a switches=()
+
+    binpath=$GOPATH/bin/${basename}
+    if [[ "${target_arch}" != "${native_arch}" ]]; then
+      switches+=("-a${target_arch}")
+      binpath="$GOPATH/bin/linux_${target_arch}/${basename}"
+    fi
+
     systemd_unit="$WORKSPACE/${src_path}/${prog}.service"
     if [[ -e "${systemd_unit}" ]]; then
         switches+=(
@@ -169,15 +258,22 @@ package_go_binary() {
     fi
     switches+=("$WORKSPACE/${license_file}=/usr/share/doc/$prog/${license_file}")
 
-    fpm_build "${WORKSPACE}/${src_path}" "$GOPATH/bin/${basename}=/usr/bin/${prog}" "${prog}" dir "${go_package_version}" "--url=https://arvados.org" "--license=GNU Affero General Public License, version 3.0" "--description=${description}" "${switches[@]}"
+    fpm_build "${WORKSPACE}/${src_path}" "$binpath=/usr/bin/${prog}" "${prog}" dir "${go_package_version}" "--url=https://arvados.org" "--license=GNU Affero General Public License, version 3.0" "--description=${description}" "${switches[@]}"
 }
 
-# Usage: package_go_so lib/foo arvados_foo.so arvados-foo "Arvados foo library"
+# Usage: package_go_so lib/foo arvados_foo.so arvados-foo deb amd64 "Arvados foo library"
 package_go_so() {
     local src_path="$1"; shift
     local sofile="$1"; shift
     local pkg="$1"; shift
+    local package_format="$1"; shift
+    local target_arch="$1"; shift # supported: amd64, arm64
     local description="$1"; shift
+
+    if [[ -n "$ONLY_BUILD" ]] && [[ "$pkg" != "$ONLY_BUILD" ]]; then
+      debug_echo -e "Skipping build of $pkg package."
+      return 0
+    fi
 
     debug_echo "package_go_so $src_path as $pkg"
 
@@ -282,18 +378,17 @@ get_complete_package_name() {
   fi
 
   if [[ "$arch" == "" ]]; then
-    rpm_architecture="x86_64"
-    deb_architecture="amd64"
+    native_arch=$(get_native_arch)
+    rpm_native_arch="x86_64"
+    if [[ "$HOSTTYPE" == "aarch64" ]]; then
+      rpm_native_arch="arm64"
+    fi
+    rpm_architecture="$rpm_native_arch"
+    deb_architecture="$native_arch"
 
     if [[ "$pkgtype" =~ ^(src)$ ]]; then
       rpm_architecture="noarch"
       deb_architecture="all"
-    fi
-
-    # These python packages have binary components
-    if [[ "$pkgname" =~ (ruamel|ciso|pycrypto|pyyaml) ]]; then
-      rpm_architecture="x86_64"
-      deb_architecture="amd64"
     fi
   else
     rpm_architecture=$arch
@@ -325,7 +420,7 @@ test_package_presence() {
     fi
 
     local full_pkgname
-    get_complete_package_name full_pkgname $pkgname $version $pkgtype $iteration $arch
+    get_complete_package_name full_pkgname "$pkgname" "$version" "$pkgtype" "$iteration" "$arch"
 
     # See if we can skip building the package, only if it already exists in the
     # processed/ directory. If so, move it back to the packages directory to make
@@ -431,14 +526,253 @@ handle_rails_package() {
     rm -rf "$scripts_dir"
 }
 
+# Usage: handle_api_server [amd64|arm64]
+handle_api_server () {
+  local target_arch="${1:-amd64}"; shift
+
+  if [[ -n "$ONLY_BUILD" ]] && [[ "$ONLY_BUILD" != "arvados-api-server" ]] ; then
+    debug_echo -e "Skipping build of arvados-api-server package."
+    return 0
+  fi
+
+  native_arch=$(get_native_arch)
+  if [[ "$target_arch" != "$native_arch" ]]; then
+    echo "Error: no cross compilation support for Rails yet, can not build arvados-api-server for $ARCH"
+    echo
+    exit 1
+  fi
+
+  # Build the API server package
+  test_rails_package_presence arvados-api-server "$WORKSPACE/services/api"
+  if [[ "$?" == "0" ]]; then
+    calculate_go_package_version arvados_server_version cmd/arvados-server
+    arvados_server_iteration=$(default_iteration "arvados-server" "$arvados_server_version" "go")
+    handle_rails_package arvados-api-server "$WORKSPACE/services/api" \
+        "$WORKSPACE/agpl-3.0.txt" --url="https://arvados.org" \
+        --description="Arvados API server - Arvados is a free and open source platform for big data science." \
+        --license="GNU Affero General Public License, version 3.0" --depends "arvados-server = ${arvados_server_version}-${arvados_server_iteration}"
+  fi
+}
+
+# Usage: handle_workbench [amd64|arm64]
+handle_workbench () {
+  local target_arch="${1:-amd64}"; shift
+  if [[ -n "$ONLY_BUILD" ]] && [[ "$ONLY_BUILD" != "arvados-workbench" ]] ; then
+    debug_echo -e "Skipping build of arvados-workbench package."
+    return 0
+  fi
+
+  native_arch=$(get_native_arch)
+  if [[ "$target_arch" != "$native_arch" ]]; then
+    echo "Error: no cross compilation support for Rails yet, can not build arvados-workbench for $native_arch"
+    echo
+    exit 1
+  fi
+
+  if [[ "$native_arch" != "amd64" ]]; then
+    echo "Error: building the arvados-workbench package is not yet supported on this architecture ($native_arch)."
+    echo
+    exit 1
+  fi
+
+  # Build the workbench server package
+  test_rails_package_presence arvados-workbench "$WORKSPACE/apps/workbench"
+  if [[ "$?" == "0" ]] ; then
+    (
+        set -e
+
+        calculate_go_package_version arvados_server_version cmd/arvados-server
+        arvados_server_iteration=$(default_iteration "arvados-server" "$arvados_server_version" "go")
+
+        # The workbench package has a build-time dependency on the arvados-server
+        # package for config manipulation, so install it first.
+        cd $WORKSPACE/cmd/arvados-server
+        get_complete_package_name arvados_server_pkgname arvados-server ${arvados_server_version} go
+
+        arvados_server_pkg_path="$WORKSPACE/packages/$TARGET/${arvados_server_pkgname}"
+        if [[ ! -e ${arvados_server_pkg_path} ]]; then
+          arvados_server_pkg_path="$WORKSPACE/packages/$TARGET/processed/${arvados_server_pkgname}"
+        fi
+        if [[ "$FORMAT" == "deb" ]]; then
+          dpkg -i ${arvados_server_pkg_path}
+        else
+          rpm -i ${arvados_server_pkg_path}
+        fi
+
+        cd "$WORKSPACE/apps/workbench"
+
+        # We need to bundle to be ready even when we build a package without vendor directory
+        # because asset compilation requires it.
+        bundle install --system >"$STDOUT_IF_DEBUG"
+
+        # clear the tmp directory; the asset generation step will recreate tmp/cache/assets,
+        # and we want that in the package, so it's easier to not exclude the tmp directory
+        # from the package - empty it instead.
+        rm -rf tmp
+        mkdir tmp
+
+        # Set up an appropriate config.yml
+        arvados-server config-dump -config <(cat /etc/arvados/config.yml 2>/dev/null || echo  "Clusters: {zzzzz: {}}") > /tmp/x
+        mkdir -p /etc/arvados/
+        mv /tmp/x /etc/arvados/config.yml
+        perl -p -i -e 'BEGIN{undef $/;} s/WebDAV(.*?):\n( *)ExternalURL: ""/WebDAV$1:\n$2ExternalURL: "example.com"/g' /etc/arvados/config.yml
+
+        ARVADOS_CONFIG=none RAILS_ENV=production RAILS_GROUPS=assets bin/rake npm:install >"$STDOUT_IF_DEBUG"
+        ARVADOS_CONFIG=none RAILS_ENV=production RAILS_GROUPS=assets bin/rake assets:precompile >"$STDOUT_IF_DEBUG"
+
+        # Remove generated configuration files so they don't go in the package.
+        rm -rf /etc/arvados/
+    )
+
+    if [[ "$?" != "0" ]]; then
+      echo "ERROR: Asset precompilation failed"
+      EXITCODE=1
+    else
+      handle_rails_package arvados-workbench "$WORKSPACE/apps/workbench" \
+          "$WORKSPACE/agpl-3.0.txt" --url="https://arvados.org" \
+          --description="Arvados Workbench - Arvados is a free and open source platform for big data science." \
+          --license="GNU Affero General Public License, version 3.0" --depends "arvados-server = ${arvados_server_version}-${arvados_server_iteration}"
+    fi
+  fi
+}
+
+# Usage: handle_cwltest [deb|rpm] [amd64|arm64]
+handle_cwltest () {
+  local package_format="$1"; shift
+  local target_arch="${1:-amd64}"; shift
+
+  if [[ -n "$ONLY_BUILD" ]] && [[ "$ONLY_BUILD" != "python3-cwltest" ]] ; then
+    debug_echo -e "Skipping build of cwltest package."
+    return 0
+  fi
+  cd "$WORKSPACE"
+  if [[ -e "$WORKSPACE/cwltest" ]]; then
+    rm -rf "$WORKSPACE/cwltest"
+  fi
+  git clone https://github.com/common-workflow-language/cwltest.git
+  # signal to our build script that we want a cwltest executable installed in /usr/bin/
+  mkdir cwltest/bin && touch cwltest/bin/cwltest
+  fpm_build_virtualenv "cwltest" "cwltest" "$package_format" "$target_arch"
+  # The python->python3 metapackage
+  build_metapackage "cwltest" "cwltest"
+  cd "$WORKSPACE"
+  rm -rf "$WORKSPACE/cwltest"
+}
+
+# Usage: handle_arvados_src
+handle_arvados_src () {
+  if [[ -n "$ONLY_BUILD" ]] && [[ "$ONLY_BUILD" != "arvados-src" ]] ; then
+    debug_echo -e "Skipping build of arvados-src package."
+    return 0
+  fi
+  # arvados-src
+  (
+      cd "$WORKSPACE"
+      COMMIT_HASH=$(format_last_commit_here "%H")
+      arvados_src_version="$(version_from_git)"
+
+      cd $WORKSPACE/packages/$TARGET
+      test_package_presence arvados-src "$arvados_src_version" src ""
+
+      if [[ "$?" == "0" ]]; then
+        cd "$WORKSPACE"
+        SRC_BUILD_DIR=$(mktemp -d)
+        # mktemp creates the directory with 0700 permissions by default
+        chmod 755 $SRC_BUILD_DIR
+        git clone $DASHQ_UNLESS_DEBUG "$WORKSPACE/.git" "$SRC_BUILD_DIR"
+        cd "$SRC_BUILD_DIR"
+
+        # go into detached-head state
+        git checkout $DASHQ_UNLESS_DEBUG "$COMMIT_HASH"
+        echo "$COMMIT_HASH" >git-commit.version
+
+        cd $WORKSPACE/packages/$TARGET
+        fpm_build "$WORKSPACE" $SRC_BUILD_DIR/=/usr/local/arvados/src arvados-src 'dir' "$arvados_src_version" "--exclude=usr/local/arvados/src/.git" "--url=https://arvados.org" "--license=GNU Affero General Public License, version 3.0" "--description=The Arvados source code" "--architecture=all"
+
+        rm -rf "$SRC_BUILD_DIR"
+      fi
+  )
+}
+
+# Usage: handle_libarvados_perl
+handle_libarvados_perl () {
+  if [[ -n "$ONLY_BUILD" ]] || [[ "$ONLY_BUILD" != "libarvados-perl" ]] ; then
+    debug_echo -e "Skipping build of libarvados-perl package."
+    return 0
+  fi
+  cd "$WORKSPACE/sdk/perl"
+  libarvados_perl_version="$(version_from_git)"
+
+  cd $WORKSPACE/packages/$TARGET
+  test_package_presence libarvados-perl "$libarvados_perl_version"
+
+  if [[ "$?" == "0" ]]; then
+    cd "$WORKSPACE/sdk/perl"
+
+    if [[ -e Makefile ]]; then
+      make realclean >"$STDOUT_IF_DEBUG"
+    fi
+    find -maxdepth 1 \( -name 'MANIFEST*' -or -name "libarvados-perl*.$FORMAT" \) \
+        -delete
+    rm -rf install
+
+    perl Makefile.PL INSTALL_BASE=install >"$STDOUT_IF_DEBUG" && \
+        make install INSTALLDIRS=perl >"$STDOUT_IF_DEBUG" && \
+        fpm_build "$WORKSPACE/sdk/perl" install/lib/=/usr/share libarvados-perl \
+        dir "$(version_from_git)" install/man/=/usr/share/man \
+        "$WORKSPACE/apache-2.0.txt=/usr/share/doc/libarvados-perl/apache-2.0.txt" && \
+        mv --no-clobber libarvados-perl*.$FORMAT "$WORKSPACE/packages/$TARGET/"
+  fi
+}
+
 # Build python packages with a virtualenv built-in
+# Usage: fpm_build_virtualenv arvados-python-client sdk/python [deb|rpm] [amd64|arm64]
 fpm_build_virtualenv () {
-  PKG=$1
-  shift
-  PKG_DIR=$1
-  shift
-  PACKAGE_TYPE=${1:-python}
-  shift
+  local pkg=$1; shift
+  local pkg_dir=$1; shift
+  local package_format="$1"; shift
+  local target_arch="${1:-amd64}"; shift
+
+  native_arch=$(get_native_arch)
+
+  if [[ "$pkg" != "arvados-docker-cleaner" ]]; then
+    PYTHON_PKG=$PYTHON3_PKG_PREFIX-$pkg
+  else
+    # Exception to our package naming convention
+    PYTHON_PKG=$pkg
+  fi
+
+  if [[ -n "$ONLY_BUILD" ]] && [[ "$PYTHON_PKG" != "$ONLY_BUILD" ]]; then
+    # arvados-python-client sdist should always be built if we are building a
+    # python package.
+    if [[ "$ONLY_BUILD" != "python3-arvados-cwl-runner" ]] &&
+       [[ "$ONLY_BUILD" != "python3-arvados-fuse" ]] &&
+       [[ "$ONLY_BUILD" != "python3-crunchstat-summary" ]] &&
+       [[ "$ONLY_BUILD" != "arvados-docker-cleaner" ]] &&
+       [[ "$ONLY_BUILD" != "python3-arvados-user-activity" ]]; then
+      debug_echo -e "Skipping build of $pkg package."
+      return 0
+    fi
+  fi
+
+  if [[ -n "$target_arch" ]] && [[ "$native_arch" == "$target_arch" ]]; then
+      fpm_build_virtualenv_worker "$pkg" "$pkg_dir" "$package_format" "$native_arch" "$target_arch"
+  elif [[ -z "$target_arch" ]]; then
+    fpm_build_virtualenv_worker "$pkg" "$pkg_dir" "$package_format" "$native_arch" "$native_arch"
+  else
+    echo "Error: no cross compilation support for Python yet, can not build $pkg for $target_arch"
+    return 1
+  fi
+}
+
+# Build python packages with a virtualenv built-in
+# Usage: fpm_build_virtualenv_worker arvados-python-client sdk/python python3 [deb|rpm] [amd64|arm64] [amd64|arm64]
+fpm_build_virtualenv_worker () {
+  PKG=$1; shift
+  PKG_DIR=$1; shift
+  local package_format="$1"; shift
+  local native_arch="${1:-amd64}"; shift
+  local target_arch=${1:-amd64}; shift
 
   # Set up
   STDOUT_IF_DEBUG=/dev/null
@@ -453,26 +787,15 @@ fpm_build_virtualenv () {
     ARVADOS_BUILDING_ITERATION=1
   fi
 
-  local python=""
-  case "$PACKAGE_TYPE" in
-    python3)
-        python=python3
-        pip=pip3
-        PACKAGE_PREFIX=$PYTHON3_PKG_PREFIX
-        ;;
-  esac
+  local python=python3
+  pip=pip3
+  PACKAGE_PREFIX=$PYTHON3_PKG_PREFIX
 
   if [[ "$PKG" != "arvados-docker-cleaner" ]]; then
     PYTHON_PKG=$PACKAGE_PREFIX-$PKG
   else
     # Exception to our package naming convention
     PYTHON_PKG=$PKG
-  fi
-
-  # arvados-python-client sdist should always be built, to be available
-  # for other dependent packages.
-  if [[ -n "$ONLY_BUILD" ]] && [[ "arvados-python-client" != "$PKG" ]] && [[ "$PYTHON_PKG" != "$ONLY_BUILD" ]] && [[ "$PKG" != "$ONLY_BUILD" ]]; then
-    return 0
   fi
 
   cd $WORKSPACE/$PKG_DIR
@@ -514,11 +837,11 @@ fpm_build_virtualenv () {
   # We can't do this earlier than here, because we need PYTHON_VERSION...
   # This isn't so bad; the sdist call above is pretty quick compared to
   # the invocation of virtualenv and fpm, below.
-  if ! test_package_presence "$PYTHON_PKG" $UNFILTERED_PYTHON_VERSION $PACKAGE_TYPE $ARVADOS_BUILDING_ITERATION; then
+  if ! test_package_presence "$PYTHON_PKG" "$UNFILTERED_PYTHON_VERSION" "$python" "$ARVADOS_BUILDING_ITERATION" "$target_arch"; then
     return 0
   fi
 
-  echo "Building $FORMAT package for $PKG from $PKG_DIR"
+  echo "Building $package_format ($target_arch) package for $PKG from $PKG_DIR"
 
   # Package the sdist in a virtualenv
   echo "Creating virtualenv..."
@@ -601,7 +924,11 @@ fpm_build_virtualenv () {
   # Finally, generate the package
   echo "Creating package..."
 
-  declare -a COMMAND_ARR=("fpm" "-s" "dir" "-t" "$FORMAT")
+  declare -a COMMAND_ARR=("fpm" "-s" "dir" "-t" "$package_format")
+
+  if [[ -n "$target_arch" ]] && [[ "$target_arch" != "amd64" ]]; then
+    COMMAND_ARR+=("-a$target_arch")
+  fi
 
   if [[ "$MAINTAINER" != "" ]]; then
     COMMAND_ARR+=('--maintainer' "$MAINTAINER")
@@ -621,7 +948,7 @@ fpm_build_virtualenv () {
   LICENSE_STRING=`grep license $WORKSPACE/$PKG_DIR/setup.py|cut -f2 -d=|sed -e "s/[',\\"]//g"`
   COMMAND_ARR+=('--license' "$LICENSE_STRING")
 
-  if [[ "$FORMAT" == "rpm" ]]; then
+  if [[ "$package_format" == "rpm" ]]; then
     # Make sure to conflict with the old rh-python36 packages we used to publish
     COMMAND_ARR+=('--conflicts' "rh-python36-python-$PKG")
   fi
@@ -707,8 +1034,8 @@ fpm_build_virtualenv () {
     echo
     echo -e "\n${COMMAND_ARR[@]}\n"
   else
-    echo `ls *$FORMAT`
-    mv $WORKSPACE/$PKG_DIR/dist/*$FORMAT $WORKSPACE/packages/$TARGET/
+    echo `ls *$package_format`
+    mv $WORKSPACE/$PKG_DIR/dist/*$package_format $WORKSPACE/packages/$TARGET/
   fi
   echo
 }
