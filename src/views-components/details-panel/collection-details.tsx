@@ -18,7 +18,11 @@ import { navigateTo } from 'store/navigation/navigation-action';
 import { openContextMenu, resourceUuidToContextMenuKind } from 'store/context-menu/context-menu-actions';
 import { openCollectionUpdateDialog } from 'store/collections/collection-update-actions';
 
-export type CssRules = 'versionBrowserHeader' | 'versionBrowserItem' | 'versionBrowserField' | 'editIcon';
+export type CssRules = 'versionBrowserHeader'
+    | 'versionBrowserItem'
+    | 'versionBrowserField'
+    | 'editButton'
+    | 'editIcon';
 
 const styles: StyleRulesCallback<CssRules> = theme => ({
     versionBrowserHeader: {
@@ -34,6 +38,11 @@ const styles: StyleRulesCallback<CssRules> = theme => ({
     editIcon: {
         paddingRight: theme.spacing.unit/2,
         fontSize: '1.125rem',
+    },
+    editButton: {
+        boxShadow: 'none',
+        padding: '2px 10px 2px 5px',
+        fontSize: '0.75rem'
     },
 });
 
@@ -99,7 +108,10 @@ const CollectionInfo = withStyles(styles)(
         ({ currentCollection, editCollection, classes }: CollectionInfoProps) =>
             currentCollection !== undefined
                 ? <div>
-                    <Button data-cy='details-panel-edit-btn' onClick={() => editCollection(currentCollection)}>
+                    <Button
+                        className={classes.editButton} variant='contained'
+                        data-cy='details-panel-edit-btn' color='primary' size='small'
+                        onClick={() => editCollection(currentCollection)}>
                         <RenameIcon className={classes.editIcon} /> Edit
                     </Button>
                     <CollectionDetailsAttributes twoCol={false} item={currentCollection} />
