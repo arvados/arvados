@@ -119,14 +119,29 @@ func (e *dockerExecutor) config(spec containerSpec) (dockercontainer.Config, doc
 		if len(deviceIds) > 0 {
 			// Docker won't accept both non-empty
 			// DeviceIDs and a non-zero Count
+			//
+			// (it turns out "Count" is a dumb fallback
+			// that just allocates device 0, 1, 2, ...,
+			// Count-1)
 			deviceCount = 0
 		}
 
+		// Capabilities are confusing.  The driver has generic
+		// capabilities "gpu" and "nvidia" but then there's
+		// additional capabilities "compute" and "utility"
+		// that are passed to nvidia-container-cli.
+		//
+		// "compute" means include the CUDA libraries and
+		// "utility" means include the CUDA utility programs
+		// (like nvidia-smi).
+		//
+		// https://github.com/moby/moby/blob/7b9275c0da707b030e62c96b679a976f31f929d3/daemon/nvidia_linux.go#L37
+		// https://github.com/containerd/containerd/blob/main/contrib/nvidia/nvidia.go
 		hostCfg.Resources.DeviceRequests = append(hostCfg.Resources.DeviceRequests, dockercontainer.DeviceRequest{
 			Driver:       "nvidia",
 			Count:        deviceCount,
 			DeviceIDs:    deviceIds,
-			Capabilities: [][]string{[]string{"gpu", "nvidia"}},
+			Capabilities: [][]string{[]string{"gpu", "nvidia", "compute", "utility"}},
 		})
 	}
 	for path, mount := range spec.BindMounts {
