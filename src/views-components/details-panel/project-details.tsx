@@ -33,7 +33,7 @@ export class ProjectDetails extends DetailsData<ProjectResource> {
     }
 }
 
-type CssRules = 'tag' | 'editIcon';
+type CssRules = 'tag' | 'editIcon' | 'editButton';
 
 const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     tag: {
@@ -43,7 +43,12 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     editIcon: {
         paddingRight: theme.spacing.unit/2,
         fontSize: '1.125rem',
-    }
+    },
+    editButton: {
+        boxShadow: 'none',
+        padding: '2px 10px 2px 5px',
+        fontSize: '0.75rem'
+    },
 });
 
 interface ProjectDetailsComponentDataProps {
@@ -70,7 +75,9 @@ const ProjectDetailsComponent = connect(null, mapDispatchToProps)(
                         name: project.name,
                         description: project.description,
                         properties: project.properties,
-                    })}>
+                    })}
+                        className={classes.editButton} variant='contained'
+                        data-cy='details-panel-edit-btn' color='primary' size='small'>
                         <RenameIcon className={classes.editIcon} /> Edit
                     </Button>
                     : ''
