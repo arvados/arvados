@@ -5,15 +5,13 @@
 package crunchrun
 
 import (
-	"fmt"
-	"io"
 	"os/exec"
 )
 
 // nvidiaModprobe makes sure all the nvidia kernel modules and devices
 // are set up.  If we don't have all the modules/devices set up we get
 // "CUDA_ERROR_UNKNOWN".
-func nvidiaModprobe(writer io.Writer) {
+func nvidiaModprobe(writer *ThrottledLogger) {
 	// The underlying problem is that when normally running
 	// directly on the host, the CUDA SDK will automatically
 	// detect and set up the devices on demand.  However, when
@@ -44,7 +42,7 @@ func nvidiaModprobe(writer io.Writer) {
 	nvidiaSmi.Stderr = writer
 	err := nvidiaSmi.Run()
 	if err != nil {
-		writer.Write([]byte(fmt.Sprintf("nvidia-smi error: %v\n", err)))
+		writer.Printf("Warning - nvidia-smi: %v", err)
 	}
 
 	// Load the kernel modules & devices associated with
@@ -65,7 +63,7 @@ func nvidiaModprobe(writer io.Writer) {
 		nvmodprobe.Stderr = writer
 		err = nvmodprobe.Run()
 		if err != nil {
-			writer.Write([]byte(fmt.Sprintf("nvidia-modprobe error: %v\n", err)))
+			writer.Printf("Warning: nvidia-modprobe: %v", err)
 		}
 	}
 }
