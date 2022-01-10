@@ -59,6 +59,6 @@ func (s *dockerStubSuite) TestDockerContainerConfig(c *C) {
 	c.Check(hostCfg.Resources.DeviceRequests, DeepEquals, []dockercontainer.DeviceRequest{{
 		Driver:       "nvidia",
 		Count:        3,
-		Capabilities: [][]string{{"gpu", "nvidia", "compute"}},
+		Capabilities: [][]string{{"gpu", "nvidia", "compute", "utility"}},
 	}})
 }

@@ -284,6 +284,15 @@ func (e *singularityExecutor) execCmd(path string) *exec.Cmd {
 		env = append(env, "SINGULARITYENV_"+k+"="+v)
 	}
 
+	// Singularity always makes all nvidia devices visible to the
+	// container.  If a resource manager such as slurm or LSF told
+	// us to select specific devices we need to propagate that.
+	if cudaVisibleDevices := os.Getenv("CUDA_VISIBLE_DEVICES"); cudaVisibleDevices != "" {
+		// If a resource manager such as slurm or LSF told
+		// us to select specific devices we need to propagate that.
+		env = append(env, "SINGULARITYENV_CUDA_VISIBLE_DEVICES="+cudaVisibleDevices)
+	}
+
 	args = append(args, e.imageFilename)
 	args = append(args, e.spec.Command...)
 
