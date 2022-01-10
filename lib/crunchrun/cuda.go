@@ -42,7 +42,7 @@ func nvidiaModprobe(writer *ThrottledLogger) {
 	nvidiaSmi.Stderr = writer
 	err := nvidiaSmi.Run()
 	if err != nil {
-		writer.Printf("Warning - nvidia-smi: %v", err)
+		writer.Printf("Warning %v: %v", nvidiaSmi.Args, err)
 	}
 
 	// Load the kernel modules & devices associated with
@@ -63,7 +63,7 @@ func nvidiaModprobe(writer *ThrottledLogger) {
 		nvmodprobe.Stderr = writer
 		err = nvmodprobe.Run()
 		if err != nil {
-			writer.Printf("Warning: nvidia-modprobe: %v", err)
+			writer.Printf("Warning %v: %v", nvmodprobe.Args, err)
 		}
 	}
 }
