@@ -108,13 +108,12 @@ func (e *dockerExecutor) config(spec containerSpec) (dockercontainer.Config, doc
 	}
 	if spec.CUDADeviceCount != 0 {
 		var deviceIds []string
-		for _, s := range os.Environ() {
+		if cudaVisibleDevices := os.Getenv("CUDA_VISIBLE_DEVICES"); cudaVisibleDevices != "" {
 			// If a resource manager such as slurm or LSF told
 			// us to select specific devices we need to propagate that.
-			if strings.HasPrefix(s, "CUDA_VISIBLE_DEVICES=") {
-				deviceIds = strings.Split(strings.SplitN(s, "=", 2)[1], ",")
-			}
+			deviceIds = strings.Split(cudaVisibleDevices, ",")
 		}
+
 		deviceCount := spec.CUDADeviceCount
 		if len(deviceIds) > 0 {
 			// Docker won't accept both non-empty

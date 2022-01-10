@@ -10,7 +10,6 @@ import (
 	"os"
 	"os/exec"
 	"sort"
-	"strings"
 	"syscall"
 	"time"
 
@@ -288,10 +287,10 @@ func (e *singularityExecutor) execCmd(path string) *exec.Cmd {
 	// Singularity always makes all nvidia devices visible to the
 	// container.  If a resource manager such as slurm or LSF told
 	// us to select specific devices we need to propagate that.
-	for _, s := range os.Environ() {
-		if strings.HasPrefix(s, "CUDA_VISIBLE_DEVICES=") {
-			env = append(env, "SINGULARITYENV_"+s)
-		}
+	if cudaVisibleDevices := os.Getenv("CUDA_VISIBLE_DEVICES"); cudaVisibleDevices != "" {
+		// If a resource manager such as slurm or LSF told
+		// us to select specific devices we need to propagate that.
+		env = append(env, "SINGULARITYENV_CUDA_VISIBLE_DEVICES="+cudaVisibleDevices)
 	}
 
 	args = append(args, e.imageFilename)

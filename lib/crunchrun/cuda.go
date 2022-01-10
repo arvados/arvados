@@ -5,6 +5,7 @@
 package crunchrun
 
 import (
+	"fmt"
 	"io"
 	"os/exec"
 )
@@ -41,23 +42,30 @@ func nvidiaModprobe(writer io.Writer) {
 	nvidiaSmi := exec.Command("nvidia-smi", "-L")
 	nvidiaSmi.Stdout = writer
 	nvidiaSmi.Stderr = writer
-	nvidiaSmi.Run()
+	err := nvidiaSmi.Run()
+	if err != nil {
+		writer.Write([]byte(fmt.Sprintf("nvidia-smi error: %v\n", err)))
+	}
 
 	// Load the kernel modules & devices associated with
 	// /dev/nvidia-modeset, /dev/nvidia-nvlink, /dev/nvidia-uvm
-	// and /dev/nvidia-uvm-tools (-m, -l and -u).  Annoyingly, you
-	// don't have multiple devices but you need to supply "-c0"
-	// anyway or it won't make the device file.
-	exec.Command("nvidia-modprobe", "-c0", "-m").Run()
-	exec.Command("nvidia-modprobe", "-c0", "-l").Run()
-	exec.Command("nvidia-modprobe", "-c0", "-u").Run()
+	// and /dev/nvidia-uvm-tools (-m, -l and -u).  Annoyingly,
+	// these don't have multiple devices but you need to supply
+	// "-c0" anyway or it won't make the device file.
 
 	// Nvswitch devices are multi-GPU interconnects for up to 16
-	// GPUs.  Here we'll create /dev/nvidia-nvswitch0.  If someone
-	// runs Arvados on a system with multiple nvswitches
-	// (i.e. more than 16 GPUs) they can either ensure that the
-	// additional /dev/nvidia-nvswitch* devices exist before
-	// crunch-run starts or pay for support (because they clearly
-	// have the budget for it).
-	exec.Command("nvidia-modprobe", "-c0", "-s").Run()
+	// GPUs.  The "-c0 -s" flag will create /dev/nvidia-nvswitch0.
+	// If someone runs Arvados on a system with multiple
+	// nvswitches (i.e. more than 16 GPUs) they'll have to ensure
+	// that all the /dev/nvidia-nvswitch* devices exist before
+	// crunch-run starts.
+	for _, opt := range []string{"-m", "-l", "-u", "-s"} {
+		nvmodprobe := exec.Command("nvidia-modprobe", "-c0", opt)
+		nvmodprobe.Stdout = writer
+		nvmodprobe.Stderr = writer
+		err = nvmodprobe.Run()
+		if err != nil {
+			writer.Write([]byte(fmt.Sprintf("nvidia-modprobe error: %v\n", err)))
+		}
+	}
 }
