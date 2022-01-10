@@ -515,7 +515,7 @@ setup_ruby_environment() {
             || fatal 'rvm gemset setup'
 
         rvm env
-        (bundle version | grep -q 2.2.19) || gem install bundler -v 2.2.19
+        (bundle version | grep -q 2.2.19) || gem install --no-document bundler -v 2.2.19
         bundle="$(which bundle)"
         echo "$bundle"
         "$bundle" version | grep 2.2.19 || fatal 'install bundler'
@@ -551,7 +551,7 @@ setup_ruby_environment() {
             versions=(2.2.19)
             for v in ${versions[@]}; do
                 if ! echo "$bundlers" | fgrep -q "($v)"; then
-                    gem install --user $(for v in ${versions[@]}; do echo bundler:${v}; done)
+                    gem install --no-document --user $(for v in ${versions[@]}; do echo bundler:${v}; done)
                     break
                 fi
             done
