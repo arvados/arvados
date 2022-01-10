@@ -306,11 +306,16 @@ func (disp *dispatcher) bsubArgs(container arvados.Container) ([]string, error) 
 		"%M": fmt.Sprintf("%d", mem),
 		"%T": fmt.Sprintf("%d", tmp),
 		"%U": container.UUID,
+		"%G": fmt.Sprintf("%d", container.RuntimeConstraints.CUDA.DeviceCount),
 	}
 
 	re := regexp.MustCompile(`%.`)
 	var substitutionErrors string
-	for _, a := range disp.Cluster.Containers.LSF.BsubArgumentsList {
+	argumentTemplate := disp.Cluster.Containers.LSF.BsubArgumentsList
+	if container.RuntimeConstraints.CUDA.DeviceCount > 0 {
+		argumentTemplate = append(argumentTemplate, disp.Cluster.Containers.LSF.BsubCUDAArguments...)
+	}
+	for _, a := range argumentTemplate {
 		args = append(args, re.ReplaceAllStringFunc(a, func(s string) string {
 			subst := repl[s]
 			if len(subst) == 0 {
