@@ -4,7 +4,6 @@
 
 import React from 'react';
 import { connect } from 'react-redux';
-import { openProjectPropertiesDialog } from 'store/details-panel/details-panel-action';
 import { ProjectIcon, RenameIcon, FilterGroupIcon } from 'components/icon/icon';
 import { ProjectResource } from 'models/project';
 import { formatDate } from 'common/formatters';
@@ -13,12 +12,13 @@ import { resourceLabel } from 'common/labels';
 import { DetailsData } from "./details-data";
 import { DetailsAttribute } from "components/details-attribute/details-attribute";
 import { RichTextEditorLink } from 'components/rich-text-editor-link/rich-text-editor-link';
-import { withStyles, StyleRulesCallback, WithStyles } from '@material-ui/core';
+import { withStyles, StyleRulesCallback, WithStyles, Button } from '@material-ui/core';
 import { ArvadosTheme } from 'common/custom-theme';
 import { Dispatch } from 'redux';
 import { getPropertyChip } from '../resource-properties-form/property-chip';
 import { ResourceOwnerWithName } from '../data-explorer/renderers';
 import { GroupClass } from "models/group";
+import { openProjectUpdateDialog, ProjectUpdateFormDialogData } from 'store/projects/project-update-actions';
 
 export class ProjectDetails extends DetailsData<ProjectResource> {
     getIcon(className?: string) {
@@ -33,7 +33,7 @@ export class ProjectDetails extends DetailsData<ProjectResource> {
     }
 }
 
-type CssRules = 'tag' | 'editIcon';
+type CssRules = 'tag' | 'editIcon' | 'editButton';
 
 const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     tag: {
@@ -41,9 +41,14 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
         marginBottom: theme.spacing.unit
     },
     editIcon: {
+        paddingRight: theme.spacing.unit/2,
         fontSize: '1.125rem',
-        cursor: 'pointer'
-    }
+    },
+    editButton: {
+        boxShadow: 'none',
+        padding: '2px 10px 2px 5px',
+        fontSize: '0.75rem'
+    },
 });
 
 interface ProjectDetailsComponentDataProps {
@@ -51,11 +56,12 @@ interface ProjectDetailsComponentDataProps {
 }
 
 interface ProjectDetailsComponentActionProps {
-    onClick: () => void;
+    onClick: (prj: ProjectUpdateFormDialogData) => () => void;
 }
 
 const mapDispatchToProps = (dispatch: Dispatch) => ({
-    onClick: () => dispatch<any>(openProjectPropertiesDialog()),
+    onClick: (prj: ProjectUpdateFormDialogData) =>
+        () => dispatch<any>(openProjectUpdateDialog(prj)),
 });
 
 type ProjectDetailsComponentProps = ProjectDetailsComponentDataProps & ProjectDetailsComponentActionProps & WithStyles<CssRules>;
@@ -63,6 +69,19 @@ type ProjectDetailsComponentProps = ProjectDetailsComponentDataProps & ProjectDe
 const ProjectDetailsComponent = connect(null, mapDispatchToProps)(
     withStyles(styles)(
         ({ classes, project, onClick }: ProjectDetailsComponentProps) => <div>
+            {project.groupClass !== GroupClass.FILTER ?
+                    <Button onClick={onClick({
+                        uuid: project.uuid,
+                        name: project.name,
+                        description: project.description,
+                        properties: project.properties,
+                    })}
+                        className={classes.editButton} variant='contained'
+                        data-cy='details-panel-edit-btn' color='primary' size='small'>
+                        <RenameIcon className={classes.editIcon} /> Edit
+                    </Button>
+                    : ''
+                }
             <DetailsAttribute label='Type' value={project.groupClass === GroupClass.FILTER ? 'Filter group' : resourceLabel(ResourceKind.PROJECT)} />
             <DetailsAttribute label='Owner' linkToUuid={project.ownerUuid}
                 uuidEnhancer={(uuid: string) => <ResourceOwnerWithName uuid={uuid} />} />
@@ -78,14 +97,7 @@ const ProjectDetailsComponent = connect(null, mapDispatchToProps)(
                     : '---'
                 }
             </DetailsAttribute>
-            <DetailsAttribute label='Properties'>
-                {project.groupClass !== GroupClass.FILTER ?
-                    <div onClick={onClick}>
-                        <RenameIcon className={classes.editIcon} />
-                    </div>
-                    : ''
-                }
-            </DetailsAttribute>
+            <DetailsAttribute label='Properties' />
             {
                 Object.keys(project.properties).map(k =>
                     Array.isArray(project.properties[k])

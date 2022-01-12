@@ -3,7 +3,14 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import { Dispatch } from "redux";
-import { reset, startSubmit, stopSubmit, initialize, FormErrors } from 'redux-form';
+import {
+    reset,
+    startSubmit,
+    stopSubmit,
+    initialize,
+    FormErrors,
+    formValueSelector
+} from 'redux-form';
 import { RootState } from 'store/store';
 import { getUserUuid } from "common/getuser";
 import { dialogActions } from "store/dialog/dialog-actions";
@@ -21,9 +28,16 @@ export interface CollectionCreateFormDialogData {
     name: string;
     description: string;
     storageClassesDesired: string[];
+    properties: CollectionProperties;
+}
+
+export interface CollectionProperties {
+    [key: string]: string | string[];
 }
 
 export const COLLECTION_CREATE_FORM_NAME = "collectionCreateFormName";
+export const COLLECTION_CREATE_PROPERTIES_FORM_NAME = "collectionCreatePropertiesFormName";
+export const COLLECTION_CREATE_FORM_SELECTOR = formValueSelector(COLLECTION_CREATE_FORM_NAME);
 
 export const openCollectionCreateDialog = (ownerUuid: string) =>
     (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {

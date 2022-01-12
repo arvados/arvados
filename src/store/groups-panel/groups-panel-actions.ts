@@ -16,6 +16,7 @@ import { PermissionLevel } from 'models/permission';
 import { PermissionService } from 'services/permission-service/permission-service';
 import { FilterBuilder } from 'services/api/filter-builder';
 import { ProjectUpdateFormDialogData, PROJECT_UPDATE_FORM_NAME } from 'store/projects/project-update-actions';
+import { PROJECT_CREATE_FORM_NAME } from 'store/projects/project-create-actions';
 
 export const GROUPS_PANEL_ID = "groupsPanel";
 
@@ -28,8 +29,13 @@ export const loadGroupsPanel = () => GroupsPanelActions.REQUEST_ITEMS();
 
 export const openCreateGroupDialog = () =>
     (dispatch: Dispatch, getState: () => RootState) => {
-        dispatch(initialize(PROJECT_UPDATE_FORM_NAME, {}));
-        dispatch(dialogActions.OPEN_DIALOG({ id: PROJECT_UPDATE_FORM_NAME, data: {sourcePanel: GroupClass.ROLE, create: true} }));
+        dispatch(initialize(PROJECT_CREATE_FORM_NAME, {}));
+        dispatch(dialogActions.OPEN_DIALOG({
+            id: PROJECT_CREATE_FORM_NAME,
+            data: {
+                sourcePanel: GroupClass.ROLE,
+            }
+        }));
     };
 
 export const openGroupAttributes = (uuid: string) =>
@@ -64,7 +70,12 @@ export const openRemoveGroupDialog = (uuid: string) =>
 export const openGroupUpdateDialog = (resource: ProjectUpdateFormDialogData) =>
     (dispatch: Dispatch, getState: () => RootState) => {
         dispatch(initialize(PROJECT_UPDATE_FORM_NAME, resource));
-        dispatch(dialogActions.OPEN_DIALOG({ id: PROJECT_UPDATE_FORM_NAME, data: {sourcePanel: GroupClass.ROLE} }));
+        dispatch(dialogActions.OPEN_DIALOG({
+            id: PROJECT_UPDATE_FORM_NAME,
+            data: {
+                sourcePanel: GroupClass.ROLE,
+            }
+        }));
     };
 
 export const updateGroup = (project: ProjectUpdateFormDialogData) =>
@@ -89,7 +100,7 @@ export const updateGroup = (project: ProjectUpdateFormDialogData) =>
 
 export const createGroup = ({ name, users = [], description }: ProjectUpdateFormDialogData) =>
     async (dispatch: Dispatch, _: {}, { groupsService, permissionService }: ServiceRepository) => {
-        dispatch(startSubmit(PROJECT_UPDATE_FORM_NAME));
+        dispatch(startSubmit(PROJECT_CREATE_FORM_NAME));
         try {
             const newGroup = await groupsService.create({ name, description, groupClass: GroupClass.ROLE });
             for (const user of users) {
@@ -100,8 +111,8 @@ export const createGroup = ({ name, users = [], description }: ProjectUpdateForm
                     permissionService,
                 });
             }
-            dispatch(dialogActions.CLOSE_DIALOG({ id: PROJECT_UPDATE_FORM_NAME }));
-            dispatch(reset(PROJECT_UPDATE_FORM_NAME));
+            dispatch(dialogActions.CLOSE_DIALOG({ id: PROJECT_CREATE_FORM_NAME }));
+            dispatch(reset(PROJECT_CREATE_FORM_NAME));
             dispatch(loadGroupsPanel());
             dispatch(snackbarActions.OPEN_SNACKBAR({
                 message: `${newGroup.name} group has been created`,
@@ -111,7 +122,7 @@ export const createGroup = ({ name, users = [], description }: ProjectUpdateForm
         } catch (e) {
             const error = getCommonResourceServiceError(e);
             if (error === CommonResourceServiceError.UNIQUE_NAME_VIOLATION) {
-                dispatch(stopSubmit(PROJECT_UPDATE_FORM_NAME, { name: 'Group with the same name already exists.' } as FormErrors));
+                dispatch(stopSubmit(PROJECT_CREATE_FORM_NAME, { name: 'Group with the same name already exists.' } as FormErrors));
             }
             return;
         }

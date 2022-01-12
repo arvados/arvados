@@ -41,6 +41,7 @@ export type ContextMenuResource = {
     outputUuid?: string;
     workflowUuid?: string;
     storageClassesDesired?: string[];
+    properties?: { [key: string]: string | string[] };
 };
 
 export const isKeyboardClick = (event: React.MouseEvent<HTMLElement>) => event.nativeEvent.detail === 0;

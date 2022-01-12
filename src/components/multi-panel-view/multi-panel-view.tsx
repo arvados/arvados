@@ -64,6 +64,7 @@ interface MPVPanelDataProps {
     panelMaximized?: boolean;
     panelIlluminated?: boolean;
     panelRef?: MutableRefObject<any>;
+    forwardProps?: boolean;
 }
 
 interface MPVPanelActionProps {
@@ -77,7 +78,7 @@ export type MPVPanelProps = MPVPanelDataProps & MPVPanelActionProps;
 type MPVPanelContentProps = {children: ReactElement} & MPVPanelProps & GridProps;
 
 // Grid item compatible component for layout and MPV props passing
-export const MPVPanelContent = ({doHidePanel, doMaximizePanel, panelName, panelMaximized, panelIlluminated, panelRef, ...props}: MPVPanelContentProps) => {
+export const MPVPanelContent = ({doHidePanel, doMaximizePanel, panelName, panelMaximized, panelIlluminated, panelRef, forwardProps, ...props}: MPVPanelContentProps) => {
     useEffect(() => {
         if (panelRef && panelRef.current) {
             panelRef.current.scrollIntoView({behavior: 'smooth'});
@@ -87,7 +88,9 @@ export const MPVPanelContent = ({doHidePanel, doMaximizePanel, panelName, panelM
     return <Grid item {...props}>
         <span ref={panelRef} /> {/* Element to scroll to when the panel is selected */}
         <Paper style={{height: '100%'}} elevation={panelIlluminated ? 8 : 0}>
-            {React.cloneElement(props.children, { doHidePanel, doMaximizePanel, panelName, panelMaximized })}
+            { forwardProps
+                ? React.cloneElement(props.children, { doHidePanel, doMaximizePanel, panelName, panelMaximized })
+                : props.children }
         </Paper>
     </Grid>;
 }

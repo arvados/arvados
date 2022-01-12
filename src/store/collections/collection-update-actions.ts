@@ -3,7 +3,13 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import { Dispatch } from "redux";
-import { FormErrors, initialize, startSubmit, stopSubmit } from 'redux-form';
+import {
+    FormErrors,
+    formValueSelector,
+    initialize,
+    startSubmit,
+    stopSubmit
+} from 'redux-form';
 import { RootState } from "store/store";
 import { collectionPanelActions } from "store/collection-panel/collection-panel-action";
 import { dialogActions } from "store/dialog/dialog-actions";
@@ -15,15 +21,19 @@ import { snackbarActions, SnackbarKind } from "../snackbar/snackbar-actions";
 import { updateResources } from "../resources/resources-actions";
 import { loadDetailsPanel } from "../details-panel/details-panel-action";
 import { getResource } from "store/resources/resources";
+import { CollectionProperties } from "./collection-create-actions";
 
 export interface CollectionUpdateFormDialogData {
     uuid: string;
     name: string;
     description?: string;
     storageClassesDesired?: string[];
+    properties?: CollectionProperties;
 }
 
 export const COLLECTION_UPDATE_FORM_NAME = 'collectionUpdateFormName';
+export const COLLECTION_UPDATE_PROPERTIES_FORM_NAME = "collectionUpdatePropertiesFormName";
+export const COLLECTION_UPDATE_FORM_SELECTOR = formValueSelector(COLLECTION_UPDATE_FORM_NAME);
 
 export const openCollectionUpdateDialog = (resource: CollectionUpdateFormDialogData) =>
     (dispatch: Dispatch) => {
@@ -41,7 +51,8 @@ export const updateCollection = (collection: CollectionUpdateFormDialogData) =>
         services.collectionService.update(uuid, {
             name: collection.name,
             storageClassesDesired: collection.storageClassesDesired,
-            description: collection.description }
+            description: collection.description,
+            properties: collection.properties }
         ).then(updatedCollection => {
             updatedCollection = {...cachedCollection, ...updatedCollection};
             dispatch(collectionPanelActions.LOAD_COLLECTION_SUCCESS({ item: updatedCollection as CollectionResource }));

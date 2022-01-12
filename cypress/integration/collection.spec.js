@@ -75,7 +75,7 @@ describe('Collection panel tests', function () {
         });
     });
 
-    it('uses the property editor with vocabulary terms', function () {
+    it('uses the property editor (from edit dialog) with vocabulary terms', function () {
         cy.createCollection(adminUser.token, {
             name: `Test collection ${Math.floor(Math.random() * 999999)}`,
             owner_uuid: activeUser.user.uuid,
@@ -84,6 +84,14 @@ describe('Collection panel tests', function () {
             .as('testCollection').then(function () {
                 cy.loginAs(activeUser);
                 cy.goToPath(`/collections/${this.testCollection.uuid}`);
+
+                cy.get('[data-cy=collection-info-panel')
+                    .should('contain', this.testCollection.name)
+                    .and('not.contain', 'Color: Magenta');
+
+                cy.get('[data-cy=collection-panel-options-btn]').click();
+                cy.get('[data-cy=context-menu]').contains('Edit collection').click();
+                cy.get('[data-cy=form-dialog]').should('contain', 'Properties');
 
                 // Key: Color (IDTAGCOLORS) - Value: Magenta (IDVALCOLORS3)
                 cy.get('[data-cy=resource-properties-form]').within(() => {
@@ -96,14 +104,56 @@ describe('Collection panel tests', function () {
                     cy.root().submit();
                 });
                 // Confirm proper vocabulary labels are displayed on the UI.
-                cy.get('[data-cy=collection-properties-panel]')
-                    .should('contain', 'Color: Magenta');
+                cy.get('[data-cy=form-dialog]').should('contain', 'Color: Magenta');
+                cy.get('[data-cy=form-dialog]').contains('Save').click();
+                cy.get('[data-cy=form-dialog]').should('not.exist');
                 // Confirm proper vocabulary IDs were saved on the backend.
                 cy.doRequest('GET', `/arvados/v1/collections/${this.testCollection.uuid}`)
                     .its('body').as('collection')
                     .then(function () {
                         expect(this.collection.properties.IDTAGCOLORS).to.equal('IDVALCOLORS3');
                     });
+                // Confirm the property is displayed on the UI.
+                cy.get('[data-cy=collection-info-panel')
+                    .should('contain', this.testCollection.name)
+                    .and('contain', 'Color: Magenta');
+            });
+    });
+
+    it('uses the editor (from details panel) with vocabulary terms', function () {
+        cy.createCollection(adminUser.token, {
+            name: `Test collection ${Math.floor(Math.random() * 999999)}`,
+            owner_uuid: activeUser.user.uuid,
+            manifest_text: ". 37b51d194a7513e45b56f6524f2d51f2+3 0:3:bar\n"
+        })
+            .as('testCollection').then(function () {
+                cy.loginAs(activeUser);
+                cy.goToPath(`/collections/${this.testCollection.uuid}`);
+
+                cy.get('[data-cy=collection-info-panel')
+                    .should('contain', this.testCollection.name)
+                    .and('not.contain', 'Color: Magenta')
+                    .and('not.contain', 'Size: S');
+                cy.get('[data-cy=additional-info-icon]').click();
+
+                cy.get('[data-cy=details-panel]').within(() => {
+                    cy.get('[data-cy=details-panel-edit-btn]').click();
+                });
+                cy.get('[data-cy=form-dialog').contains('Edit Collection');
+
+                // Key: Color (IDTAGCOLORS) - Value: Magenta (IDVALCOLORS3)
+                cy.get('[data-cy=resource-properties-form]').within(() => {
+                    cy.get('[data-cy=property-field-key]').within(() => {
+                        cy.get('input').type('Color');
+                    });
+                    cy.get('[data-cy=property-field-value]').within(() => {
+                        cy.get('input').type('Magenta');
+                    });
+                    cy.root().submit();
+                });
+                // Confirm proper vocabulary labels are displayed on the UI.
+                cy.get('[data-cy=form-dialog]')
+                    .should('contain', 'Color: Magenta');
 
                 // Case-insensitive on-blur auto-selection test
                 // Key: Size (IDTAGSIZES) - Value: Small (IDVALSIZES2)
@@ -120,14 +170,25 @@ describe('Collection panel tests', function () {
                     cy.root().submit();
                 });
                 // Confirm proper vocabulary labels are displayed on the UI.
-                cy.get('[data-cy=collection-properties-panel]')
+                cy.get('[data-cy=form-dialog]')
                     .should('contain', 'Size: S');
+
+                cy.get('[data-cy=form-dialog]').contains('Save').click();
+                cy.get('[data-cy=form-dialog]').should('not.exist');
+
                 // Confirm proper vocabulary IDs were saved on the backend.
                 cy.doRequest('GET', `/arvados/v1/collections/${this.testCollection.uuid}`)
                     .its('body').as('collection')
                     .then(function () {
+                        expect(this.collection.properties.IDTAGCOLORS).to.equal('IDVALCOLORS3');
                         expect(this.collection.properties.IDTAGSIZES).to.equal('IDVALSIZES2');
                     });
+
+                // Confirm properties display on the UI.
+                cy.get('[data-cy=collection-info-panel')
+                    .should('contain', this.testCollection.name)
+                    .and('contain', 'Color: Magenta')
+                    .and('contain', 'Size: S');
             });
     });
 
@@ -186,29 +247,9 @@ describe('Collection panel tests', function () {
                             .should('contain', 'Add to favorites')
                             .and(`${isWritable ? '' : 'not.'}contain`, 'Edit collection');
                         cy.get('body').click(); // Collapse the menu avoiding details panel expansion
-                        cy.get('[data-cy=collection-properties-panel]')
-                            .should('contain', 'someKey')
-                            .and('contain', 'someValue')
-                            .and('not.contain', 'anotherKey')
-                            .and('not.contain', 'anotherValue')
-                        if (isWritable === true) {
-                            // Check that properties can be added.
-                            cy.get('[data-cy=resource-properties-form]').within(() => {
-                                cy.get('[data-cy=property-field-key]').within(() => {
-                                    cy.get('input').type('anotherKey');
-                                });
-                                cy.get('[data-cy=property-field-value]').within(() => {
-                                    cy.get('input').type('anotherValue');
-                                });
-                                cy.root().submit();
-                            })
-                            cy.get('[data-cy=collection-properties-panel]')
-                                .should('contain', 'anotherKey')
-                                .and('contain', 'anotherValue')
-                        } else {
-                            // Properties form shouldn't be displayed.
-                            cy.get('[data-cy=resource-properties-form]').should('not.exist');
-                        }
+                        cy.get('[data-cy=collection-info-panel]')
+                            .should('contain', 'someKey: someValue')
+                            .and('not.contain', 'anotherKey: anotherValue');
                         // Check that the file listing show both read & write operations
                         cy.get('[data-cy=collection-files-panel]').within(() => {
                             cy.wait(1000);
@@ -310,63 +351,6 @@ describe('Collection panel tests', function () {
                         .should('not.contain', `${from}`)
                         .and('contain', `${to}`);
                 })
-            });
-    });
-
-    it.skip('renames a file to a different directory', function () {
-        // Creates the collection using the admin token so we can set up
-        // a bogus manifest text without block signatures.
-        cy.createCollection(adminUser.token, {
-            name: `Test collection ${Math.floor(Math.random() * 999999)}`,
-            owner_uuid: activeUser.user.uuid,
-            manifest_text: ". 37b51d194a7513e45b56f6524f2d51f2+3 0:3:bar\n"
-        })
-            .as('testCollection').then(function () {
-                cy.loginAs(activeUser);
-                cy.goToPath(`/collections/${this.testCollection.uuid}`);
-
-                ['subdir', 'G%C3%BCnter\'s%20file', 'table%&?*2'].forEach((subdir) => {
-                    cy.get('[data-cy=collection-files-panel]')
-                        .contains('bar').rightclick({force: true});
-                    cy.get('[data-cy=context-menu]')
-                        .contains('Rename')
-                        .click();
-                    cy.get('[data-cy=form-dialog]')
-                        .should('contain', 'Rename')
-                        .within(() => {
-                            cy.get('input').type(`{selectall}{backspace}${subdir}/foo`);
-                        });
-                    cy.get('[data-cy=form-submit-btn]').click();
-                    cy.get('[data-cy=collection-files-panel]')
-                        .should('not.contain', 'bar')
-                        .and('contain', subdir);
-                    // Look for the "arrow icon" and expand the "subdir" directory.
-                    cy.get('[data-cy=virtual-file-tree] > div > i').click();
-                    // Rename 'subdir/foo' to 'foo'
-                    cy.get('[data-cy=collection-files-panel]')
-                        .contains('foo').rightclick();
-                    cy.get('[data-cy=context-menu]')
-                        .contains('Rename')
-                        .click();
-                    cy.get('[data-cy=form-dialog]')
-                        .should('contain', 'Rename')
-                        .within(() => {
-                            cy.get('input')
-                                .should('have.value', `${subdir}/foo`)
-                                .type(`{selectall}{backspace}bar`);
-                        });
-                    cy.get('[data-cy=form-submit-btn]').click();
-                    cy.get('[data-cy=collection-files-panel]')
-                        .should('contain', subdir) // empty dir kept
-                        .and('contain', 'bar');
-
-                    cy.get('[data-cy=collection-files-panel]')
-                        .contains(subdir).rightclick();
-                    cy.get('[data-cy=context-menu]')
-                        .contains('Remove')
-                        .click();
-                    cy.get('[data-cy=confirmation-dialog-ok-btn]').click();
-                });
             });
     });
 
@@ -807,7 +791,7 @@ describe('Collection panel tests', function () {
             });
     });
 
-    it('creates new collection on home project', function () {
+    it('creates new collection with properties on home project', function () {
         cy.loginAs(activeUser);
         cy.goToPath(`/projects/${activeUser.user.uuid}`);
         cy.get('[data-cy=breadcrumb-first]').should('contain', 'Projects');
@@ -817,6 +801,8 @@ describe('Collection panel tests', function () {
         cy.get('[data-cy=side-panel-new-collection]').click();
         // Name between brackets tests bugfix #17582
         const collName = `[Test collection (${Math.floor(999999 * Math.random())})]`;
+
+        // Select a storage class.
         cy.get('[data-cy=form-dialog]')
             .should('contain', 'New collection')
             .and('contain', 'Storage classes')
@@ -832,15 +818,42 @@ describe('Collection panel tests', function () {
                 });
                 cy.get('[data-cy=checkbox-foo]').click();
             })
+
+        // Add a property.
+        // Key: Color (IDTAGCOLORS) - Value: Magenta (IDVALCOLORS3)
+        cy.get('[data-cy=form-dialog]').should('not.contain', 'Color: Magenta');
+        cy.get('[data-cy=resource-properties-form]').within(() => {
+            cy.get('[data-cy=property-field-key]').within(() => {
+                cy.get('input').type('Color');
+            });
+            cy.get('[data-cy=property-field-value]').within(() => {
+                cy.get('input').type('Magenta');
+            });
+            cy.root().submit();
+        });
+        // Confirm proper vocabulary labels are displayed on the UI.
+        cy.get('[data-cy=form-dialog]').should('contain', 'Color: Magenta');
+
         cy.get('[data-cy=form-submit-btn]').click();
-        // Confirm that the user was taken to the newly created thing
+        // Confirm that the user was taken to the newly created collection
         cy.get('[data-cy=form-dialog]').should('not.exist');
         cy.get('[data-cy=breadcrumb-first]').should('contain', 'Projects');
         cy.get('[data-cy=breadcrumb-last]').should('contain', collName);
         cy.get('[data-cy=collection-info-panel]')
             .should('contain', 'default')
             .and('contain', 'foo')
+            .and('contain', 'Color: Magenta')
             .and('not.contain', 'bar');
+        // Confirm that the collection's properties has the real values.
+        cy.doRequest('GET', '/arvados/v1/collections', null, {
+            filters: `[["name", "=", "${collName}"]]`,
+        })
+        .its('body.items').as('collections')
+        .then(function() {
+            expect(this.collections).to.have.lengthOf(1);
+            expect(this.collections[0].properties).to.have.property(
+                'IDTAGCOLORS', 'IDVALCOLORS3');
+        });
     });
 
     it('shows responsible person for collection if available', () => {

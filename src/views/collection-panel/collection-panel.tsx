@@ -11,7 +11,7 @@ import {
     Grid,
     Tooltip,
     Typography,
-    Card, CardHeader, CardContent,
+    Card
 } from '@material-ui/core';
 import { connect, DispatchProp } from "react-redux";
 import { RouteComponentProps } from 'react-router';
@@ -21,8 +21,7 @@ import { MoreOptionsIcon, CollectionIcon, ReadOnlyIcon, CollectionOldVersionIcon
 import { DetailsAttribute } from 'components/details-attribute/details-attribute';
 import { CollectionResource, getCollectionUrl } from 'models/collection';
 import { CollectionPanelFiles } from 'views-components/collection-panel-files/collection-panel-files';
-import { CollectionTagForm } from './collection-tag-form';
-import { deleteCollectionTag, navigateToProcess, collectionPanelActions } from 'store/collection-panel/collection-panel-action';
+import { navigateToProcess, collectionPanelActions } from 'store/collection-panel/collection-panel-action';
 import { getResource } from 'store/resources/resources';
 import { openContextMenu, resourceUuidToContextMenuKind } from 'store/context-menu/context-menu-actions';
 import { formatDate, formatFileSize } from "common/formatters";
@@ -148,7 +147,6 @@ export const CollectionPanel = withStyles(styles)(
                 const { classes, item, dispatch, isWritable, isOldVersion, isLoadingFiles, tooManyFiles } = this.props;
                 const panelsData: MPVPanelState[] = [
                     {name: "Details"},
-                    {name: "Properties"},
                     {name: "Files"},
                 ];
                 return item
@@ -203,37 +201,6 @@ export const CollectionPanel = withStyles(styles)(
                                 </Grid>
                             </Card>
                         </MPVPanelContent>
-                        <MPVPanelContent xs="auto" data-cy='collection-properties-panel'>
-                            <Card className={classes.propertiesCard}>
-                                <CardHeader title="Properties" />
-                                <CardContent><Grid container>
-                                    {isWritable && <Grid item xs={12}>
-                                        <CollectionTagForm />
-                                    </Grid>}
-                                    <Grid item xs={12}>
-                                        {Object.keys(item.properties).length > 0
-                                            ? Object.keys(item.properties).map(k =>
-                                                Array.isArray(item.properties[k])
-                                                    ? item.properties[k].map((v: string) =>
-                                                        getPropertyChip(
-                                                            k, v,
-                                                            isWritable
-                                                                ? this.handleDelete(k, v)
-                                                                : undefined,
-                                                            classes.tag))
-                                                    : getPropertyChip(
-                                                        k, item.properties[k],
-                                                        isWritable
-                                                            ? this.handleDelete(k, item.properties[k])
-                                                            : undefined,
-                                                        classes.tag)
-                                            )
-                                            : <div className={classes.centeredLabel}>No properties set on this collection.</div>
-                                        }
-                                    </Grid>
-                                </Grid></CardContent>
-                            </Card>
-                        </MPVPanelContent>
                         <MPVPanelContent xs>
                             <Card className={classes.filesCard}>
                                 <CollectionPanelFiles
@@ -252,7 +219,8 @@ export const CollectionPanel = withStyles(styles)(
             }
 
             handleContextMenu = (event: React.MouseEvent<any>) => {
-                const { uuid, ownerUuid, name, description, kind, storageClassesDesired } = this.props.item;
+                const { uuid, ownerUuid, name, description,
+                    kind, storageClassesDesired, properties } = this.props.item;
                 const menuKind = this.props.dispatch<any>(resourceUuidToContextMenuKind(uuid));
                 const resource = {
                     uuid,
@@ -262,6 +230,7 @@ export const CollectionPanel = withStyles(styles)(
                     storageClassesDesired,
                     kind,
                     menuKind,
+                    properties,
                 };
                 // Avoid expanding/collapsing the panel
                 event.stopPropagation();
@@ -274,10 +243,6 @@ export const CollectionPanel = withStyles(styles)(
                     hideDuration: 2000,
                     kind: SnackbarKind.SUCCESS
                 }))
-
-            handleDelete = (key: string, value: string) => () => {
-                this.props.dispatch<any>(deleteCollectionTag(key, value));
-            }
 
             openCollectionDetails = (e: React.MouseEvent<HTMLElement>) => {
                 const { item } = this.props;
@@ -295,9 +260,16 @@ export const CollectionPanel = withStyles(styles)(
     )
 );
 
-export const CollectionDetailsAttributes = (props: { item: CollectionResource, twoCol: boolean, classes?: Record<CssRules, string>, showVersionBrowser?: () => void }) => {
+interface CollectionDetailsProps {
+    item: CollectionResource;
+    classes?: any;
+    twoCol?: boolean;
+    showVersionBrowser?: () => void;
+}
+
+export const CollectionDetailsAttributes = (props: CollectionDetailsProps) => {
     const item = props.item;
-    const classes = props.classes || { label: '', value: '', button: '' };
+    const classes = props.classes || { label: '', value: '', button: '', tag: '' };
     const isOldVersion = item && item.currentVersionUuid !== item.uuid;
     const mdSize = props.twoCol ? 6 : 12;
     const showVersionBrowser = props.showVersionBrowser;
@@ -360,6 +332,17 @@ export const CollectionDetailsAttributes = (props: { item: CollectionResource, t
         <Grid item xs={12} md={mdSize}>
             <DetailsAttribute classLabel={classes.label} classValue={classes.value}
                 label='Storage classes' value={item.storageClassesDesired.join(', ')} />
+        </Grid>
+        <Grid item xs={12} md={mdSize}>
+            <DetailsAttribute classLabel={classes.label} classValue={classes.value}
+                label='Properties' />
+            { Object.keys(item.properties).length > 0
+                ? Object.keys(item.properties).map(k =>
+                        Array.isArray(item.properties[k])
+                        ? item.properties[k].map((v: string) =>
+                            getPropertyChip(k, v, undefined, classes.tag))
+                        : getPropertyChip(k, item.properties[k], undefined, classes.tag))
+                : <div className={classes.value}>No properties</div> }
         </Grid>
     </Grid>;
 };

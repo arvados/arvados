@@ -28,13 +28,13 @@ describe('Project tests', function() {
         cy.clearLocalStorage();
     });
 
-    it('adds creates a new project with properties', function() {
+    it('creates a new project with properties', function() {
         const projName = `Test project (${Math.floor(999999 * Math.random())})`;
         cy.loginAs(activeUser);
         cy.get('[data-cy=side-panel-button]').click();
         cy.get('[data-cy=side-panel-new-project]').click();
         cy.get('[data-cy=form-dialog]')
-            .should('contain', 'New project')
+            .should('contain', 'New Project')
             .within(() => {
                 cy.get('[data-cy=name-field]').within(() => {
                     cy.get('input').type(projName);
@@ -42,6 +42,7 @@ describe('Project tests', function() {
 
             });
         // Key: Color (IDTAGCOLORS) - Value: Magenta (IDVALCOLORS3)
+        cy.get('[data-cy=form-dialog]').should('not.contain', 'Color: Magenta');
         cy.get('[data-cy=resource-properties-form]').within(() => {
             cy.get('[data-cy=property-field-key]').within(() => {
                 cy.get('input').type('Color');
@@ -73,7 +74,7 @@ describe('Project tests', function() {
             cy.get('[data-cy=side-panel-button]').click();
             cy.get('[data-cy=side-panel-new-project]').click();
             cy.get('[data-cy=form-dialog]')
-                .should('contain', 'New project')
+                .should('contain', 'New Project')
                 .within(() => {
                     cy.get('[data-cy=parent-field]').within(() => {
                         cy.get('input').invoke('val').then((val) => {

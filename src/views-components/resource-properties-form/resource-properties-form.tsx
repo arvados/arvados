@@ -11,16 +11,18 @@ import { ProgressButton } from 'components/progress-button/progress-button';
 import { GridClassKey } from '@material-ui/core/Grid';
 
 export interface ResourcePropertiesFormData {
+    uuid: string;
     [PROPERTY_KEY_FIELD_NAME]: string;
     [PROPERTY_KEY_FIELD_ID]: string;
     [PROPERTY_VALUE_FIELD_NAME]: string;
     [PROPERTY_VALUE_FIELD_ID]: string;
 }
 
-export type ResourcePropertiesFormProps = InjectedFormProps<ResourcePropertiesFormData> & WithStyles<GridClassKey>;
+export type ResourcePropertiesFormProps = {uuid: string; } & InjectedFormProps<ResourcePropertiesFormData, {uuid: string; }> & WithStyles<GridClassKey>;
 
-export const ResourcePropertiesForm = ({ handleSubmit, submitting, invalid, classes }: ResourcePropertiesFormProps ) =>
-    <form data-cy='resource-properties-form' onSubmit={handleSubmit}>
+export const ResourcePropertiesForm = ({ handleSubmit, change, submitting, invalid, classes, uuid }: ResourcePropertiesFormProps ) => {
+    change('uuid', uuid); // Sets the uuid field to the uuid of the resource.
+    return <form data-cy='resource-properties-form' onSubmit={handleSubmit}>
         <Grid container spacing={16} classes={classes}>
             <Grid item xs>
                 <PropertyKeyField />
@@ -28,7 +30,7 @@ export const ResourcePropertiesForm = ({ handleSubmit, submitting, invalid, clas
             <Grid item xs>
                 <PropertyValueField />
             </Grid>
-            <Grid item xs>
+            <Grid item>
                 <Button
                     data-cy='property-add-btn'
                     disabled={invalid}
@@ -40,7 +42,7 @@ export const ResourcePropertiesForm = ({ handleSubmit, submitting, invalid, clas
                 </Button>
             </Grid>
         </Grid>
-    </form>;
+    </form>};
 
 export const Button = withStyles(theme => ({
     root: { marginTop: theme.spacing.unit }

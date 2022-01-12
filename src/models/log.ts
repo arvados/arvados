@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import { Resource } from "./resource";
+import { Resource, ResourceWithProperties } from "./resource";
 import { ResourceKind } from 'models/resource';
 
 export enum LogEventType {
@@ -18,11 +18,10 @@ export enum LogEventType {
     STDERR = 'stderr',
 }
 
-export interface LogResource extends Resource {
+export interface LogResource extends Resource, ResourceWithProperties {
     kind: ResourceKind.LOG;
     objectUuid: string;
     eventAt: string;
     eventType: string;
     summary: string;
-    properties: any;
 }
