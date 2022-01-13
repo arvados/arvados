@@ -64,7 +64,6 @@ wait_for_apt_locks && $SUDO DEBIAN_FRONTEND=noninteractive apt-get -qq --yes ins
 # Install the Arvados packages we need
 wait_for_apt_locks && $SUDO DEBIAN_FRONTEND=noninteractive apt-get -qq --yes install \
   python3-arvados-fuse \
-  crunch-run \
   arvados-docker-cleaner \
   docker.io
 
