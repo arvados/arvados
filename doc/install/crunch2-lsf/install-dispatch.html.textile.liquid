@@ -64,17 +64,40 @@ Alternatively, you can arrange for the arvados-dispatch-lsf process to run as an
 
 h3(#SbatchArguments). Containers.LSF.BsubArgumentsList
 
-When arvados-dispatch-lsf invokes @bsub@, you can add arguments to the command by specifying @BsubArgumentsList@.  You can use this to send the jobs to specific cluster partitions or add resource requests.  Set @BsubArgumentsList@ to an array of strings.  For example:
+When arvados-dispatch-lsf invokes @bsub@, you can add arguments to the command by specifying @BsubArgumentsList@.  You can use this to send the jobs to specific cluster partitions or add resource requests.  Set @BsubArgumentsList@ to an array of strings.
+
+Template variables starting with % will be substituted as follows:
+
+%U uuid
+%C number of VCPUs
+%M memory in MB
+%T tmp in MB
+%G number of GPU devices (@runtime_constraints.cuda.device_count@)
+
+Use %% to express a literal %. The %%J in the default will be changed
+to %J, which is interpreted by @bsub@ itself.
+
+For example:
 
 <notextile>
 <pre>    Containers:
       LSF:
-        <code class="userinput">BsubArgumentsList: <b>["-C", "0", "-o", "/tmp/crunch-run.%J.out", "-e", "/tmp/crunch-run.%J.err"]</b></code>
+        <code class="userinput">BsubArgumentsList: <b>["-o", "/tmp/crunch-run.%%J.out", "-e", "/tmp/crunch-run.%%J.err", "-J", "%U", "-n", "%C", "-D", "%MMB", "-R", "rusage[mem=%MMB:tmp=%TMB] span[hosts=1]", "-R", "select[mem>=%MMB]", "-R", "select[tmp>=%TMB]", "-R", "select[ncpus>=%C]"]</b></code>
 </pre>
 </notextile>
 
 Note that the default value for @BsubArgumentsList@ uses the @-o@ and @-e@ arguments to write stdout/stderr data to files in @/tmp@ on the compute nodes, which is helpful for troubleshooting installation/configuration problems. Ensure you have something in place to delete old files from @/tmp@, or adjust these arguments accordingly.
 
+h3(#SbatchArguments). Containers.LSF.BsubCUDAArguments
+
+If the container requests access to GPUs (@runtime_constraints.cuda.device_count@ of the container request is greater than zero), the command line arguments in @BsubCUDAArguments@ will be added to the command line _after_ @BsubArgumentsList@.  This should consist of the additional @bsub@ flags your site requires to schedule the job on a node with GPU support.  Set @BsubCUDAArguments@ to an array of strings.  For example:
+
+<notextile>
+<pre>    Containers:
+      LSF:
+        <code class="userinput">BsubCUDAArguments: <b>["-gpu", "num=%G"]</b></code>
+</pre>
+</notextile>
 
 h3(#PollPeriod). Containers.PollInterval
 

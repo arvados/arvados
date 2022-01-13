@@ -58,7 +58,7 @@ hints:
       property1: value1
       property2: $(inputs.value2)
 
-  arv:CUDARequirement:
+  cwltool:CUDARequirement:
     cudaVersionMin: "11.0"
     cudaComputeCapabilityMin: "9.0"
     deviceCountMin: 1
@@ -153,7 +153,7 @@ table(table table-bordered table-condensed).
 |_. Field |_. Type |_. Description |
 |processProperties|key-value map, or list of objects with the fields {propertyName, propertyValue}|The properties that will be set on the container request.  May include expressions that reference `$(inputs)` of the current workflow or tool.|
 
-h2(#CUDARequirement). arv:CUDARequirement
+h2(#CUDARequirement). cwltool:CUDARequirement
 
 Request support for Nvidia CUDA GPU acceleration in the container.  Assumes that the CUDA runtime (SDK) is installed in the container, and the host will inject the CUDA driver libraries into the container (equal or later to the version requested).
 

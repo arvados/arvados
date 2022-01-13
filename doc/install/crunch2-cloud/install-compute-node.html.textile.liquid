@@ -113,9 +113,15 @@ Options:
       Path to the public key file that a-d-c will use to log into the compute node
   --mksquashfs-mem (default: 256M)
       Only relevant when using Singularity. This is the amount of memory mksquashfs is allowed to use.
-  --debug
-      Output debug information (default: false)
+  --nvidia-gpu-support (default: false)
+      Install all the necessary tooling for Nvidia GPU support
+  --debug (default: false)
+      Output debug information
 </code></pre></notextile>
+
+h2(#building). NVIDIA GPU support
+
+If you plan on using instance types with NVIDIA GPUs, add @--nvidia-gpu-support@ to the build command line.  Arvados uses the same compute image for both GPU and non-GPU instance types.  The GPU tooling is ignored when using the image with a non-GPU instance type.
 
 h2(#aws). Build an AWS image
 
