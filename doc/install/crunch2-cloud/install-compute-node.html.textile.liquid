@@ -64,13 +64,13 @@ The desired amount of memory to make available for @mksquashfs@ can be configure
 
 h2(#requirements). Compute image requirements
 
-Arvados comes with a build script to automate the creation of a suitable compute node image (see "The build script":#building below). It is provided as a convenience. It is also possible to create a compoute node image via other means. These are the requirements:
+Arvados comes with a build script to automate the creation of a suitable compute node image (see "The build script":#building below). It is provided as a convenience. It is also possible to create a compute node image via other means. These are the requirements:
 
-* for AWS: the ssh public key for @arvados-dispatch-cloud@ (the one that corresponds with @Containers/DispatchPrivateKey@ in the Arvados config file) needs to go into ~/.ssh/authorized_keys for the ssh user you want @arvados-dispatch-cloud@ to use (cf. @CloudVMs/DriverParameters/AdminUsername@ in the Arvados config file) and that user needs to be able to sudo without password prompt, unless you use `root` in which case sudo is not used.
-* for Azure: @arvados-dispatch-cloud@ automatically extracts the ssh public key from the value of @Containers/DispatchPrivateKey@ and uses an API call to create the user specified in @CloudVMs/DriverParameters/AdminUsername@ with that ssh public key and password-less sudo enabled.
-* SSH needs to be running and reachable by @arvados-dispatch-cloud@ on port 22 (or a custom port, see @CloudVMS/SSHPort@ to in the Arvados config file)
+* for AWS: the SSH public key for @arvados-dispatch-cloud@ (the one that corresponds with @Containers.DispatchPrivateKey@ in the Arvados config file) needs to go into ~/.ssh/authorized_keys for the SSH user you want @arvados-dispatch-cloud@ to use (cf. @CloudVMs.DriverParameters.AdminUsername@ in the Arvados config file) and that user needs to be able to sudo without password prompt, unless you use `root` in which case sudo is not used.
+* for Azure: @arvados-dispatch-cloud@ automatically extracts the SSH public key from the value of @Containers.DispatchPrivateKey@ and uses an API call to create the user specified in @CloudVMs.DriverParameters.AdminUsername@ with that SSH public key and password-less sudo enabled.
+* SSH needs to be running and reachable by @arvados-dispatch-cloud@ on port 22 (or a custom port, see @CloudVMS.SSHPort@ to in the Arvados config file)
 * the @python3-arvados-fuse@ package needs to be installed
-* @Docker@ or @Singularity@ needs to be installed and running (cf. @Containers/RuntimeEngine@ in the Arvados config file).
+* @Docker@ or @Singularity@ needs to be installed (cf. @Containers.RuntimeEngine@ in the Arvados config file).
 * all available scratch space should be made available under `/tmp`.
 
 h2(#building). The build script
