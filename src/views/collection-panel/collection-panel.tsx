@@ -77,8 +77,8 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
         color: theme.customs.colors.yellow700
     },
     tag: {
-        marginRight: theme.spacing.unit,
-        marginBottom: theme.spacing.unit
+        marginRight: theme.spacing.unit / 2,
+        marginBottom: theme.spacing.unit / 2
     },
     label: {
         fontSize: '0.875rem'
@@ -333,7 +333,12 @@ export const CollectionDetailsAttributes = (props: CollectionDetailsProps) => {
             <DetailsAttribute classLabel={classes.label} classValue={classes.value}
                 label='Storage classes' value={item.storageClassesDesired.join(', ')} />
         </Grid>
-        <Grid item xs={12} md={mdSize}>
+
+        {/*
+            NOTE: The property list should be kept at the bottom, because it spans
+            the entire available width, without regards of the twoCol prop.
+        */}
+        <Grid item xs={12} md={12}>
             <DetailsAttribute classLabel={classes.label} classValue={classes.value}
                 label='Properties' />
             { Object.keys(item.properties).length > 0

@@ -22,7 +22,8 @@ export type CssRules = 'versionBrowserHeader'
     | 'versionBrowserItem'
     | 'versionBrowserField'
     | 'editButton'
-    | 'editIcon';
+    | 'editIcon'
+    | 'tag';
 
 const styles: StyleRulesCallback<CssRules> = theme => ({
     versionBrowserHeader: {
@@ -43,6 +44,10 @@ const styles: StyleRulesCallback<CssRules> = theme => ({
         boxShadow: 'none',
         padding: '2px 10px 2px 5px',
         fontSize: '0.75rem'
+    },
+    tag: {
+        marginRight: theme.spacing.unit / 2,
+        marginBottom: theme.spacing.unit / 2
     },
 });
 
@@ -114,7 +119,7 @@ const CollectionInfo = withStyles(styles)(
                         onClick={() => editCollection(currentCollection)}>
                         <RenameIcon className={classes.editIcon} /> Edit
                     </Button>
-                    <CollectionDetailsAttributes twoCol={false} item={currentCollection} />
+                    <CollectionDetailsAttributes classes={classes} twoCol={false} item={currentCollection} />
                 </div>
                 : <div />
     )
