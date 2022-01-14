@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import React from 'react';
-import { Table, TableBody, TableRow, TableCell, TableHead, TableSortLabel, StyleRulesCallback, Theme, WithStyles, withStyles, IconButton, CircularProgress } from '@material-ui/core';
+import { Table, TableBody, TableRow, TableCell, TableHead, TableSortLabel, StyleRulesCallback, Theme, WithStyles, withStyles, IconButton } from '@material-ui/core';
 import classnames from 'classnames';
 import { DataColumn, SortDirection } from './data-column';
 import { DataTableDefaultView } from '../data-table-default-view/data-table-default-view';
@@ -99,9 +99,7 @@ export const DataTable = withStyles(styles)(
                         <TableBody className={classes.tableBody}>
                             {
                                 this.props.working ? 
-                                    <div>
-                                        <CircularProgress className={classes.loader} size={30} />
-                                    </div> :
+                                    null :
                                     items.map(this.renderBodyRow)
                             }
                         </TableBody>
