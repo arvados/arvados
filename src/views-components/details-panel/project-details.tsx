@@ -37,8 +37,8 @@ type CssRules = 'tag' | 'editIcon' | 'editButton';
 
 const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     tag: {
-        marginRight: theme.spacing.unit,
-        marginBottom: theme.spacing.unit
+        marginRight: theme.spacing.unit / 2,
+        marginBottom: theme.spacing.unit / 2,
     },
     editIcon: {
         paddingRight: theme.spacing.unit/2,
