@@ -6,6 +6,7 @@ package config
 
 import (
 	"bytes"
+	"errors"
 	"flag"
 	"fmt"
 	"io"
@@ -13,6 +14,7 @@ import (
 	"os/exec"
 
 	"git.arvados.org/arvados.git/lib/cmd"
+	"git.arvados.org/arvados.git/sdk/go/arvados"
 	"git.arvados.org/arvados.git/sdk/go/ctxlog"
 	"github.com/ghodss/yaml"
 	"github.com/sirupsen/logrus"
@@ -139,6 +141,36 @@ func (checkCommand) RunCommand(prog string, args []string, stdin io.Reader, stdo
 	}
 	if logbuf.Len() > 0 {
 		if *strict {
+			return 1
+		}
+	}
+	for id, cc := range withDepr.Clusters {
+		if cc.API.VocabularyPath == "" {
+			continue
+		}
+		_, err = os.Stat(cc.API.VocabularyPath)
+		if err != nil {
+			if errors.Is(err, os.ErrNotExist) {
+				// If the vocabulary path doesn't exist, it might mean that
+				// the current node isn't the controller; so it's not an
+				// error.
+				continue
+			}
+			fmt.Fprintf(stderr, "Error checking vocabulary path %q for cluster %s: %s\n", cc.API.VocabularyPath, id, err)
+			return 1
+		}
+		vd, err := os.ReadFile(cc.API.VocabularyPath)
+		if err != nil {
+			fmt.Fprintf(stderr, "Error reading vocabulary file %q for cluster %s: %s\n", cc.API.VocabularyPath, id, err)
+			return 1
+		}
+		mk := make([]string, 0, len(cc.Collections.ManagedProperties))
+		for k := range cc.Collections.ManagedProperties {
+			mk = append(mk, k)
+		}
+		_, err = arvados.NewVocabulary(vd, mk)
+		if err != nil {
+			fmt.Fprintf(stderr, "Error loading vocabulary file %q for cluster %s: %s\n", cc.API.VocabularyPath, id, err)
 			return 1
 		}
 	}
