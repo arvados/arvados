@@ -181,7 +181,7 @@ VERSION="2.3.2-1"
 # An arvados-formula tag. For a stable release, this should be a
 # branch name (e.g. X.Y-dev) or tag for the release.
 # ARVADOS_TAG="2.3.0"
-BRANCH="2.3-dev"
+BRANCH="2.3-release"
 
 # Other formula versions we depend on
 POSTGRES_TAG="v0.41.6"
