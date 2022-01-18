@@ -21,6 +21,7 @@ import { ProjectPanelColumnNames } from 'views/project-panel/project-panel';
 import { getSortColumn } from "store/data-explorer/data-explorer-reducer";
 import { updatePublicFavorites } from 'store/public-favorites/public-favorites-actions';
 import { FilterBuilder } from 'services/api/filter-builder';
+import { progressIndicatorActions } from 'store/progress-indicator/progress-indicator-actions';
 
 export class SharedWithMeMiddlewareService extends DataExplorerMiddlewareService {
     constructor(private services: ServiceRepository, id: string) {
@@ -31,6 +32,7 @@ export class SharedWithMeMiddlewareService extends DataExplorerMiddlewareService
         const state = api.getState();
         const dataExplorer = getDataExplorer(state.dataExplorer, this.getId());
         try {
+            api.dispatch(progressIndicatorActions.START_WORKING(this.getId()));
             const response = await this.services.groupsService
                 .contents('', {
                     ...getParams(dataExplorer),
@@ -44,6 +46,8 @@ export class SharedWithMeMiddlewareService extends DataExplorerMiddlewareService
             api.dispatch(setItems(response));
         } catch (e) {
             api.dispatch(couldNotFetchSharedItems());
+        } finally {
+            api.dispatch(progressIndicatorActions.PERSIST_STOP_WORKING(this.getId()));
         }
     }
 }

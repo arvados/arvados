@@ -55,7 +55,11 @@ export const SharedWithMePanel = withStyles(styles)(
                     onRowDoubleClick={this.handleRowDoubleClick}
                     onContextMenu={this.handleContextMenu}
                     contextMenuColumn={false}
-                    dataTableDefaultView={<DataTableDefaultView icon={ShareMeIcon} />} /></div>;
+                    dataTableDefaultView={
+                        <DataTableDefaultView
+                            icon={ShareMeIcon}
+                            messages={['No shared items']} />
+                    } /></div>;
             }
 
             handleContextMenu = (event: React.MouseEvent<HTMLElement>, resourceUuid: string) => {

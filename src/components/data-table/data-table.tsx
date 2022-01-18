@@ -10,7 +10,7 @@ import { DataTableDefaultView } from '../data-table-default-view/data-table-defa
 import { DataTableFilters } from '../data-table-filters/data-table-filters-tree';
 import { DataTableFiltersPopover } from '../data-table-filters/data-table-filters-popover';
 import { countNodes } from 'models/tree';
-import { ProjectIcon } from 'components/icon/icon';
+import { PendingIcon } from 'components/icon/icon';
 import { SvgIconProps } from '@material-ui/core/SvgIcon';
 import ArrowDownwardIcon from '@material-ui/icons/ArrowDownward';
 
@@ -100,7 +100,7 @@ export const DataTable = withStyles(styles)(
                                 this.props.working ?
                                 <div className={classes.loader}>
                                     <DataTableDefaultView
-                                        icon={ProjectIcon}
+                                        icon={PendingIcon}
                                         messages={['Loading data, please wait.']} />
                                 </div> : items.map(this.renderBodyRow)
                             }
