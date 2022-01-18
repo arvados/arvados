@@ -53,6 +53,7 @@ Clusters:
   SystemRootToken: aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
   API:
     MaxItemsPerResponse: 1234
+    VocabularyPath: /this/path/does/not/exist
   Collections:
     BlobSigningKey: aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
   PostgreSQL:
@@ -75,6 +76,60 @@ Clusters:
 	c.Check(code, check.Equals, 0)
 	c.Check(stdout.String(), check.Equals, "")
 	c.Check(stderr.String(), check.Equals, "")
+}
+
+func (s *CommandSuite) TestCheck_VocabularyErrors(c *check.C) {
+	tmpFile, err := ioutil.TempFile("", "")
+	c.Assert(err, check.IsNil)
+	defer os.Remove(tmpFile.Name())
+	_, err = tmpFile.WriteString(`
+{
+ "tags": {
+  "IDfoo": {
+   "labels": [
+    {"label": "foo"}
+   ]
+  },
+  "IDfoo": {
+   "labels": [
+    {"label": "baz"}
+   ]
+  }
+ }
+}`)
+	c.Assert(err, check.IsNil)
+	tmpFile.Close()
+	vocPath := tmpFile.Name()
+	var stdout, stderr bytes.Buffer
+	in := `
+Clusters:
+ z1234:
+  ManagementToken: aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+  SystemRootToken: aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+  API:
+    MaxItemsPerResponse: 1234
+    VocabularyPath: ` + vocPath + `
+  Collections:
+    BlobSigningKey: aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+  PostgreSQL:
+    Connection:
+      sslmode: require
+  Services:
+    RailsAPI:
+      InternalURLs:
+        "http://0.0.0.0:8000": {}
+  Workbench:
+    UserProfileFormFields:
+      color:
+        Type: select
+        Options:
+          fuchsia: {}
+    ApplicationMimetypesWithViewIcon:
+      whitespace: {}
+`
+	code := CheckCommand.RunCommand("arvados config-check", []string{"-config", "-"}, bytes.NewBufferString(in), &stdout, &stderr)
+	c.Check(code, check.Equals, 1)
+	c.Check(stderr.String(), check.Matches, `(?s).*Error loading vocabulary file.*duplicate JSON key\(s\).*`)
 }
 
 func (s *CommandSuite) TestCheck_DeprecatedKeys(c *check.C) {

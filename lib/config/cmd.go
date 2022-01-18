@@ -148,7 +148,7 @@ func (checkCommand) RunCommand(prog string, args []string, stdin io.Reader, stdo
 		if cc.API.VocabularyPath == "" {
 			continue
 		}
-		_, err = os.Stat(cc.API.VocabularyPath)
+		vd, err := os.ReadFile(cc.API.VocabularyPath)
 		if err != nil {
 			if errors.Is(err, os.ErrNotExist) {
 				// If the vocabulary path doesn't exist, it might mean that
@@ -156,11 +156,6 @@ func (checkCommand) RunCommand(prog string, args []string, stdin io.Reader, stdo
 				// error.
 				continue
 			}
-			fmt.Fprintf(stderr, "Error checking vocabulary path %q for cluster %s: %s\n", cc.API.VocabularyPath, id, err)
-			return 1
-		}
-		vd, err := os.ReadFile(cc.API.VocabularyPath)
-		if err != nil {
 			fmt.Fprintf(stderr, "Error reading vocabulary file %q for cluster %s: %s\n", cc.API.VocabularyPath, id, err)
 			return 1
 		}
