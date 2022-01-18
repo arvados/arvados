@@ -258,14 +258,36 @@ func (s *VocabularySuite) TestNewVocabulary(c *check.C) {
 			},
 		},
 		{
+			"Invalid JSON error with line & column numbers",
+			`{"tags":{
+				"aKey":{
+					"labels": [,{"label": "A label"}]
+				}
+			}}`,
+			false, `invalid JSON format:.*\(line \d+, column \d+\)`, nil,
+		},
+		{
+			"Invalid JSON with duplicate keys",
+			`{"tags":{
+				"type":{
+					"strict": false,
+					"labels": [{"label": "Class", "label": "Type"}]
+				},
+				"type":{
+					"labels": []
+				}
+			}}`,
+			false, "(?s).*tags.type.labels.0.label\ntags.type", nil,
+		},
+		{
 			"Valid data, but uses reserved key",
 			`{"tags":{
 				"type":{
 					"strict": false,
-					"labels": [{"label": "Type"}]
+					"labels": [{"label": "Class"}]
 				}
 			}}`,
-			false, "tag key.*is reserved", nil,
+			false, "(?s).*tag key.*is reserved", nil,
 		},
 	}
 
@@ -288,14 +310,14 @@ func (s *VocabularySuite) TestValidationErrors(c *check.C) {
 	tests := []struct {
 		name       string
 		voc        *Vocabulary
-		errMatches string
+		errMatches []string
 	}{
 		{
 			"Strict vocabulary, no keys",
 			&Vocabulary{
 				StrictTags: true,
 			},
-			"vocabulary is strict but no tags are defined",
+			[]string{"vocabulary is strict but no tags are defined"},
 		},
 		{
 			"Collision between tag key and tag key label",
@@ -312,7 +334,7 @@ func (s *VocabularySuite) TestValidationErrors(c *check.C) {
 					},
 				},
 			},
-			"", // Depending on how the map is sorted, this could be one of two errors
+			nil, // Depending on how the map is sorted, this could be one of two errors
 		},
 		{
 			"Collision between tag key and tag key label (case-insensitive)",
@@ -329,7 +351,7 @@ func (s *VocabularySuite) TestValidationErrors(c *check.C) {
 					},
 				},
 			},
-			"", // Depending on how the map is sorted, this could be one of two errors
+			nil, // Depending on how the map is sorted, this could be one of two errors
 		},
 		{
 			"Collision between tag key labels",
@@ -346,7 +368,7 @@ func (s *VocabularySuite) TestValidationErrors(c *check.C) {
 					},
 				},
 			},
-			"tag label.*for key.*already seen.*",
+			[]string{"(?s).*tag label.*for key.*already seen.*"},
 		},
 		{
 			"Collision between tag value and tag value label",
@@ -367,7 +389,7 @@ func (s *VocabularySuite) TestValidationErrors(c *check.C) {
 					},
 				},
 			},
-			"", // Depending on how the map is sorted, this could be one of two errors
+			nil, // Depending on how the map is sorted, this could be one of two errors
 		},
 		{
 			"Collision between tag value and tag value label (case-insensitive)",
@@ -388,7 +410,7 @@ func (s *VocabularySuite) TestValidationErrors(c *check.C) {
 					},
 				},
 			},
-			"", // Depending on how the map is sorted, this could be one of two errors
+			nil, // Depending on how the map is sorted, this could be one of two errors
 		},
 		{
 			"Collision between tag value labels",
@@ -409,7 +431,7 @@ func (s *VocabularySuite) TestValidationErrors(c *check.C) {
 					},
 				},
 			},
-			"tag value label.*for pair.*already seen.*on value.*",
+			[]string{"(?s).*tag value label.*for pair.*already seen.*on value.*"},
 		},
 		{
 			"Collision between tag value labels (case-insensitive)",
@@ -430,7 +452,7 @@ func (s *VocabularySuite) TestValidationErrors(c *check.C) {
 					},
 				},
 			},
-			"tag value label.*for pair.*already seen.*on value.*",
+			[]string{"(?s).*tag value label.*for pair.*already seen.*on value.*"},
 		},
 		{
 			"Strict tag key, with no values",
@@ -443,15 +465,34 @@ func (s *VocabularySuite) TestValidationErrors(c *check.C) {
 					},
 				},
 			},
-			"tag key.*is configured as strict but doesn't provide values",
+			[]string{"(?s).*tag key.*is configured as strict but doesn't provide values"},
+		},
+		{
+			"Multiple errors reported",
+			&Vocabulary{
+				StrictTags: false,
+				Tags: map[string]VocabularyTag{
+					"IDTAGANIMALS": {
+						Strict: true,
+						Labels: []VocabularyLabel{{Label: "Animal"}, {Label: "Creature"}},
+					},
+					"IDTAGSIZES": {
+						Labels: []VocabularyLabel{{Label: "Animal"}, {Label: "Size"}},
+					},
+				},
+			},
+			[]string{
+				"(?s).*tag key.*is configured as strict but doesn't provide values.*",
+				"(?s).*tag label.*for key.*already seen.*",
+			},
 		},
 	}
 	for _, tt := range tests {
 		c.Log(c.TestName()+" ", tt.name)
 		err := tt.voc.validate()
 		c.Assert(err, check.NotNil)
-		if tt.errMatches != "" {
-			c.Assert(err, check.ErrorMatches, tt.errMatches)
+		for _, errMatch := range tt.errMatches {
+			c.Assert(err, check.ErrorMatches, errMatch)
 		}
 	}
 }
