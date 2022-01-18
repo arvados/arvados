@@ -36,6 +36,7 @@ import (
 	"git.arvados.org/arvados.git/sdk/go/arvadosclient"
 	"git.arvados.org/arvados.git/sdk/go/keepclient"
 	"git.arvados.org/arvados.git/sdk/go/manifest"
+	"golang.org/x/sys/unix"
 )
 
 type command struct{}
@@ -1055,6 +1056,20 @@ func (runner *ContainerRunner) WaitFinish() error {
 		return err
 	}
 	runner.ExitCode = &exitcode
+
+	extra := ""
+	if exitcode&0x80 != 0 {
+		// Convert raw exit status (0x80 + signal number) to a
+		// string to log after the code, like " (signal 101)"
+		// or " (signal 9, killed)"
+		sig := syscall.WaitStatus(exitcode).Signal()
+		if name := unix.SignalName(sig); name != "" {
+			extra = fmt.Sprintf(" (signal %d, %s)", sig, name)
+		} else {
+			extra = fmt.Sprintf(" (signal %d)", sig)
+		}
+	}
+	runner.CrunchLog.Printf("Container exited with status code %d%s", exitcode, extra)
 
 	var returnErr error
 	if err = runner.executorStdin.Close(); err != nil {

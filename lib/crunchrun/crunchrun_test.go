@@ -1567,6 +1567,7 @@ func (s *TestSuite) TestFullRunWithAPI(c *C) {
 	})
 	c.Check(s.api.CalledWith("container.exit_code", 3), NotNil)
 	c.Check(s.api.CalledWith("container.state", "Complete"), NotNil)
+	c.Check(s.api.Logs["crunch-run"].String(), Matches, `(?ms).*status code 3\n.*`)
 }
 
 func (s *TestSuite) TestFullRunSetOutput(c *C) {
@@ -1599,7 +1600,7 @@ func (s *TestSuite) TestArvMountRuntimeStatusWarning(c *C) {
 	}
 	s.executor.runFunc = func() {
 		time.Sleep(time.Second)
-		s.executor.exit <- 0
+		s.executor.exit <- 137
 	}
 	record := `{
     "command": ["sleep", "1"],
@@ -1616,10 +1617,11 @@ func (s *TestSuite) TestArvMountRuntimeStatusWarning(c *C) {
 	c.Assert(err, IsNil)
 	err = s.runner.Run()
 	c.Assert(err, IsNil)
-	c.Check(s.api.CalledWith("container.exit_code", 0), NotNil)
+	c.Check(s.api.CalledWith("container.exit_code", 137), NotNil)
 	c.Check(s.api.CalledWith("container.runtime_status.warning", "arv-mount: Keep write error"), NotNil)
 	c.Check(s.api.CalledWith("container.runtime_status.warningDetail", "Test: Keep write error: I am a teapot"), NotNil)
 	c.Check(s.api.CalledWith("container.state", "Complete"), NotNil)
+	c.Check(s.api.Logs["crunch-run"].String(), Matches, `(?ms).*Container exited with status code 137 \(signal 9, SIGKILL\).*`)
 }
 
 func (s *TestSuite) TestStdoutWithExcludeFromOutputMountPointUnderOutputDir(c *C) {

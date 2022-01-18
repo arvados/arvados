@@ -86,6 +86,22 @@ func (s *executorSuite) TestExecTrivialContainer(c *C) {
 	c.Check(s.stderr.String(), Equals, "")
 }
 
+func (s *executorSuite) TestExitStatus(c *C) {
+	s.spec.Command = []string{"false"}
+	s.checkRun(c, 1)
+}
+
+func (s *executorSuite) TestSignalExitStatus(c *C) {
+	if _, isdocker := s.executor.(*dockerExecutor); isdocker {
+		// It's not quite this easy to make busybox kill
+		// itself in docker where it's pid 1.
+		c.Skip("kill -9 $$ doesn't work on busybox with pid=1 in docker")
+		return
+	}
+	s.spec.Command = []string{"sh", "-c", "kill -9 $$"}
+	s.checkRun(c, 0x80+9)
+}
+
 func (s *executorSuite) TestExecStop(c *C) {
 	s.spec.Command = []string{"sh", "-c", "sleep 10; echo ok"}
 	err := s.executor.Create(s.spec)
