@@ -137,31 +137,19 @@ interface ProjectPanelDataProps {
 type ProjectPanelProps = ProjectPanelDataProps & DispatchProp
     & WithStyles<CssRules> & RouteComponentProps<{ id: string }>;
 
-let data: any[] = [];
-let href: string = '';
 
 export const ProjectPanel = withStyles(styles)(
     connect((state: RootState) => ({
         currentItemId: getProperty(PROJECT_PANEL_CURRENT_UUID)(state.properties),
         resources: state.resources,
-        userUuid: state.auth.user!.uuid,
-        dataExplorerItems: state.dataExplorer?.projectPanel.items,
+        userUuid: state.auth.user!.uuid
     }))(
         class extends React.Component<ProjectPanelProps> {
             render() {
-                const { classes, dataExplorerItems } = this.props;
-                let loading = false;
-
-                if (dataExplorerItems.length > 0 && data === dataExplorerItems && href !== window.location.href) {
-                    loading = true
-                } else {
-                    href = window.location.href;
-                    data = dataExplorerItems;
-                }
+                const { classes } = this.props;
 
                 return <div data-cy='project-panel' className={classes.root}>
                     <DataExplorer
-                        working={loading}
                         id={PROJECT_PANEL_ID}
                         onRowClick={this.handleRowClick}
                         onRowDoubleClick={this.handleRowDoubleClick}

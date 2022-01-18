@@ -10,6 +10,7 @@ import { DataTableDefaultView } from '../data-table-default-view/data-table-defa
 import { DataTableFilters } from '../data-table-filters/data-table-filters-tree';
 import { DataTableFiltersPopover } from '../data-table-filters/data-table-filters-popover';
 import { countNodes } from 'models/tree';
+import { ProjectIcon } from 'components/icon/icon';
 import { SvgIconProps } from '@material-ui/core/SvgIcon';
 import ArrowDownwardIcon from '@material-ui/icons/ArrowDownward';
 
@@ -49,10 +50,8 @@ const styles: StyleRulesCallback<CssRules> = (theme: Theme) => ({
         background: theme.palette.background.paper
     },
     loader: {
-        top: '50%',
         left: '50%',
-        marginTop: '-15px',
-        marginLeft: '-15px',
+        marginLeft: '-84px',
         position: 'absolute'
     },
     noItemsInfo: {
@@ -98,9 +97,12 @@ export const DataTable = withStyles(styles)(
                         </TableHead>
                         <TableBody className={classes.tableBody}>
                             {
-                                this.props.working ? 
-                                    null :
-                                    items.map(this.renderBodyRow)
+                                this.props.working ?
+                                <div className={classes.loader}>
+                                    <DataTableDefaultView
+                                        icon={ProjectIcon}
+                                        messages={['Loading data, please wait.']} />
+                                </div> : items.map(this.renderBodyRow)
                             }
                         </TableBody>
                     </Table>

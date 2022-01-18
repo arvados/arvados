@@ -21,12 +21,27 @@ interface Props {
     working?: boolean;
 }
 
-const mapStateToProps = (state: RootState, { id, working: parentWorking }: Props) => {
+let data: any[] = [];
+let href: string = '';
+
+const mapStateToProps = (state: RootState, { id }: Props) => {
     const progress = state.progressIndicator.find(p => p.id === id);
-    const working = (progress && progress.working) || parentWorking;
+    const dataExplorerState = getDataExplorer(state.dataExplorer, id);
     const currentRoute = state.router.location ? state.router.location.pathname : '';
     const currentItemUuid = currentRoute === '/workflows' ? state.properties.workflowPanelDetailsUuid : state.detailsPanel.resourceUuid;
-    return { ...getDataExplorer(state.dataExplorer, id), working, paperKey: currentRoute, currentItemUuid };
+
+    let loading = false;
+
+    if (dataExplorerState.items.length > 0 && data === dataExplorerState.items && href !== window.location.href) {
+        loading = true
+    } else {
+        href = window.location.href;
+        data = dataExplorerState.items;
+    }
+
+    const working = (progress && progress.working) || loading;
+
+    return { ...dataExplorerState, working, paperKey: currentRoute, currentItemUuid };
 };
 
 const mapDispatchToProps = () => {
