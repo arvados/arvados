@@ -215,7 +215,6 @@ func (e *dockerExecutor) Wait(ctx context.Context) (int, error) {
 	for {
 		select {
 		case waitBody := <-waitOk:
-			e.logf("Container exited with code: %v", waitBody.StatusCode)
 			// wait for stdout/stderr to complete
 			<-e.doneIO
 			return int(waitBody.StatusCode), nil
