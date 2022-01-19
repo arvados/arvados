@@ -180,15 +180,15 @@ VERSION="latest"
 # These are arvados-formula-related parameters
 # An arvados-formula tag. For a stable release, this should be a
 # branch name (e.g. X.Y-dev) or tag for the release.
-# ARVADOS_TAG="2.2.0"
+# ARVADOS_TAG="2.3.0"
 # BRANCH="main"
 
 # Other formula versions we depend on
-POSTGRES_TAG="v0.41.6"
+POSTGRES_TAG="v0.43.0"
 NGINX_TAG="temp-fix-missing-statements-in-pillar"
-DOCKER_TAG="v2.0.7"
-LOCALE_TAG="v0.3.4"
-LETSENCRYPT_TAG="v2.1.0"
+DOCKER_TAG="v2.3.1"
+LOCALE_TAG="v0.3.5"
+LETSENCRYPT_TAG="v3.2.0"
 
 # Salt's dir
 DUMP_SALT_CONFIG_DIR=""

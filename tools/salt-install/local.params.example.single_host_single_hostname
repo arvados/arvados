@@ -78,9 +78,9 @@ RELEASE="production"
 # Usually there's no need to modify things below this line
 
 # Formulas versions
-# ARVADOS_TAG="2.2.0"
-# POSTGRES_TAG="v0.41.6"
+# ARVADOS_TAG="2.3.0"
+# POSTGRES_TAG="v0.43.0"
 # NGINX_TAG="temp-fix-missing-statements-in-pillar"
-# DOCKER_TAG="v2.0.7"
-# LOCALE_TAG="v0.3.4"
-# LETSENCRYPT_TAG="v2.1.0"
+# DOCKER_TAG="v2.3.1"
+# LOCALE_TAG="v0.3.5"
+# LETSENCRYPT_TAG="v3.2.0"
