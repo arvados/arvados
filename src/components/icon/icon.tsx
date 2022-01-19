@@ -68,13 +68,19 @@ import Computer from '@material-ui/icons/Computer';
 
 // Import FontAwesome icons
 import { library } from '@fortawesome/fontawesome-svg-core';
-import { faPencilAlt, faSlash, faUsers } from '@fortawesome/free-solid-svg-icons';
+import { faPencilAlt, faSlash, faUsers, faEllipsisH } from '@fortawesome/free-solid-svg-icons';
 import { CropFreeSharp } from '@material-ui/icons';
 library.add(
     faPencilAlt,
     faSlash,
     faUsers,
+    faEllipsisH,
 );
+
+export const PendingIcon = (props: any) =>
+    <span {...props}>
+        <span className='fas fa-ellipsis-h' />
+    </span>
 
 export const ReadOnlyIcon = (props: any) =>
     <span {...props}>

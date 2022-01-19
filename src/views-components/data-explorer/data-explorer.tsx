@@ -18,14 +18,30 @@ interface Props {
     onContextMenu?: (event: React.MouseEvent<HTMLElement>, item: any, isAdmin?: boolean) => void;
     onRowDoubleClick: (item: any) => void;
     extractKey?: (item: any) => React.Key;
+    working?: boolean;
 }
+
+let data: any[] = [];
+let href: string = '';
 
 const mapStateToProps = (state: RootState, { id }: Props) => {
     const progress = state.progressIndicator.find(p => p.id === id);
-    const working = progress && progress.working;
+    const dataExplorerState = getDataExplorer(state.dataExplorer, id);
     const currentRoute = state.router.location ? state.router.location.pathname : '';
     const currentItemUuid = currentRoute === '/workflows' ? state.properties.workflowPanelDetailsUuid : state.detailsPanel.resourceUuid;
-    return { ...getDataExplorer(state.dataExplorer, id), working, paperKey: currentRoute, currentItemUuid };
+
+    let loading = false;
+
+    if (dataExplorerState.items.length > 0 && data === dataExplorerState.items && href !== window.location.href) {
+        loading = true
+    } else {
+        href = window.location.href;
+        data = dataExplorerState.items;
+    }
+
+    const working = (progress && progress.working) || loading;
+
+    return { ...dataExplorerState, working, paperKey: currentRoute, currentItemUuid };
 };
 
 const mapDispatchToProps = () => {

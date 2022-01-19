@@ -58,7 +58,6 @@ export class ProjectPanelMiddlewareService extends DataExplorerMiddlewareService
                 await api.dispatch<any>(loadMissingProcessesInformation(response.items));
                 api.dispatch(setItems(response));
             } catch (e) {
-                api.dispatch(progressIndicatorActions.PERSIST_STOP_WORKING(this.getId()));
                 api.dispatch(projectPanelActions.SET_ITEMS({
                     items: [],
                     itemsAvailable: 0,
@@ -66,6 +65,8 @@ export class ProjectPanelMiddlewareService extends DataExplorerMiddlewareService
                     rowsPerPage: dataExplorer.rowsPerPage
                 }));
                 api.dispatch(couldNotFetchProjectContents());
+            } finally {
+                api.dispatch(progressIndicatorActions.PERSIST_STOP_WORKING(this.getId()));
             }
         }
     }

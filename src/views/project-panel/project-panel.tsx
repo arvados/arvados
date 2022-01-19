@@ -131,20 +131,23 @@ interface ProjectPanelDataProps {
     resources: ResourcesState;
     isAdmin: boolean;
     userUuid: string;
+    dataExplorerItems: any;
 }
 
 type ProjectPanelProps = ProjectPanelDataProps & DispatchProp
     & WithStyles<CssRules> & RouteComponentProps<{ id: string }>;
 
+
 export const ProjectPanel = withStyles(styles)(
     connect((state: RootState) => ({
         currentItemId: getProperty(PROJECT_PANEL_CURRENT_UUID)(state.properties),
         resources: state.resources,
-        userUuid: state.auth.user!.uuid,
+        userUuid: state.auth.user!.uuid
     }))(
         class extends React.Component<ProjectPanelProps> {
             render() {
                 const { classes } = this.props;
+
                 return <div data-cy='project-panel' className={classes.root}>
                     <DataExplorer
                         id={PROJECT_PANEL_ID}

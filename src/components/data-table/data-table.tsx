@@ -10,6 +10,7 @@ import { DataTableDefaultView } from '../data-table-default-view/data-table-defa
 import { DataTableFilters } from '../data-table-filters/data-table-filters-tree';
 import { DataTableFiltersPopover } from '../data-table-filters/data-table-filters-popover';
 import { countNodes } from 'models/tree';
+import { PendingIcon } from 'components/icon/icon';
 import { SvgIconProps } from '@material-ui/core/SvgIcon';
 import ArrowDownwardIcon from '@material-ui/icons/ArrowDownward';
 
@@ -35,7 +36,7 @@ export interface DataTableDataProps<T> {
     currentRoute?: string;
 }
 
-type CssRules = "tableBody" | "root" | "content" | "noItemsInfo" | 'tableCell' | 'arrow' | 'arrowButton' | 'tableCellWorkflows';
+type CssRules = "tableBody" | "root" | "content" | "noItemsInfo" | 'tableCell' | 'arrow' | 'arrowButton' | 'tableCellWorkflows' | 'loader';
 
 const styles: StyleRulesCallback<CssRules> = (theme: Theme) => ({
     root: {
@@ -47,6 +48,11 @@ const styles: StyleRulesCallback<CssRules> = (theme: Theme) => ({
     },
     tableBody: {
         background: theme.palette.background.paper
+    },
+    loader: {
+        left: '50%',
+        marginLeft: '-84px',
+        position: 'absolute'
     },
     noItemsInfo: {
         textAlign: "center",
@@ -90,7 +96,14 @@ export const DataTable = withStyles(styles)(
                             </TableRow>
                         </TableHead>
                         <TableBody className={classes.tableBody}>
-                            {items.map(this.renderBodyRow)}
+                            {
+                                this.props.working ?
+                                <div className={classes.loader}>
+                                    <DataTableDefaultView
+                                        icon={PendingIcon}
+                                        messages={['Loading data, please wait.']} />
+                                </div> : items.map(this.renderBodyRow)
+                            }
                         </TableBody>
                     </Table>
                     {items.length === 0 && this.props.working !== undefined && !this.props.working && this.renderNoItemsPlaceholder()}

@@ -15,6 +15,7 @@ import { OrderBuilder, OrderDirection } from 'services/api/order-builder';
 import { GroupResource, GroupClass } from 'models/group';
 import { SortDirection } from 'components/data-table/data-column';
 import { GroupsPanelColumnNames } from 'views/groups-panel/groups-panel';
+import { progressIndicatorActions } from "store/progress-indicator/progress-indicator-actions";
 
 export class GroupsPanelMiddlewareService extends DataExplorerMiddlewareService {
     constructor(private services: ServiceRepository, id: string) {
@@ -26,6 +27,7 @@ export class GroupsPanelMiddlewareService extends DataExplorerMiddlewareService 
             api.dispatch(groupsPanelDataExplorerIsNotSet());
         } else {
             try {
+                api.dispatch(progressIndicatorActions.START_WORKING(this.getId()));
                 const order = new OrderBuilder<GroupResource>();
                 const sortColumn = getSortColumn(dataExplorer);
                 if (sortColumn) {
@@ -58,6 +60,8 @@ export class GroupsPanelMiddlewareService extends DataExplorerMiddlewareService 
                 api.dispatch(updateResources(permissions.items));
             } catch (e) {
                 api.dispatch(couldNotFetchFavoritesContents());
+            } finally {
+                api.dispatch(progressIndicatorActions.STOP_WORKING(this.getId()));
             }
         }
     }
