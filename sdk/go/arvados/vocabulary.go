@@ -67,13 +67,21 @@ func NewVocabulary(data []byte, managedTagKeys []string) (voc *Vocabulary, err e
 		}
 		return nil, fmt.Errorf("invalid JSON format: %q", err)
 	}
-	// json.Unmarshal() doesn't error out on duplicate keys.
-	err = checkJSONDupedKeys(json.NewDecoder(bytes.NewReader(data)), nil, &[]string{})
-	if err != nil {
-		return nil, err
-	}
 	if reflect.DeepEqual(voc, &Vocabulary{}) {
 		return nil, fmt.Errorf("JSON data provided doesn't match Vocabulary format: %q", data)
+	}
+
+	shouldReportErrors := false
+	errors := []string{}
+
+	// json.Unmarshal() doesn't error out on duplicate keys.
+	dupedKeys := []string{}
+	err = checkJSONDupedKeys(json.NewDecoder(bytes.NewReader(data)), nil, &dupedKeys)
+	if err != nil {
+		shouldReportErrors = true
+		for _, dk := range dupedKeys {
+			errors = append(errors, fmt.Sprintf("duplicate JSON key %q", dk))
+		}
 	}
 	voc.reservedTagKeys = make(map[string]bool)
 	for _, managedKey := range managedTagKeys {
@@ -82,9 +90,13 @@ func NewVocabulary(data []byte, managedTagKeys []string) (voc *Vocabulary, err e
 	for systemKey := range voc.systemTagKeys() {
 		voc.reservedTagKeys[systemKey] = true
 	}
-	err = voc.validate()
+	validationErrs, err := voc.validate()
 	if err != nil {
-		return nil, err
+		shouldReportErrors = true
+		errors = append(errors, validationErrs...)
+	}
+	if shouldReportErrors {
+		return nil, fmt.Errorf("%s", strings.Join(errors, "\n"))
 	}
 	return voc, nil
 }
@@ -135,19 +147,19 @@ func checkJSONDupedKeys(d *json.Decoder, path []string, errors *[]string) error 
 		}
 	}
 	if len(path) == 0 && len(*errors) > 0 {
-		return fmt.Errorf("duplicate JSON key(s):\n%s", strings.Join(*errors, "\n"))
+		return fmt.Errorf("duplicate JSON key(s) found")
 	}
 	return nil
 }
 
-func (v *Vocabulary) validate() error {
+func (v *Vocabulary) validate() ([]string, error) {
 	if v == nil {
-		return nil
+		return nil, nil
 	}
 	tagKeys := map[string]string{}
 	// Checks for Vocabulary strictness
 	if v.StrictTags && len(v.Tags) == 0 {
-		return fmt.Errorf("vocabulary is strict but no tags are defined")
+		return nil, fmt.Errorf("vocabulary is strict but no tags are defined")
 	}
 	// Checks for collisions between tag keys, reserved tag keys
 	// and tag key labels.
@@ -191,9 +203,9 @@ func (v *Vocabulary) validate() error {
 		}
 	}
 	if len(errors) > 0 {
-		return fmt.Errorf("invalid vocabulary:\n%s", strings.Join(errors, "\n"))
+		return errors, fmt.Errorf("invalid vocabulary")
 	}
-	return nil
+	return nil, nil
 }
 
 func (v *Vocabulary) getLabelsToKeys() (labels map[string]string) {

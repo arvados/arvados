@@ -165,7 +165,7 @@ func (checkCommand) RunCommand(prog string, args []string, stdin io.Reader, stdo
 		}
 		_, err = arvados.NewVocabulary(vd, mk)
 		if err != nil {
-			fmt.Fprintf(stderr, "Error loading vocabulary file %q for cluster %s: %s\n", cc.API.VocabularyPath, id, err)
+			fmt.Fprintf(stderr, "Error loading vocabulary file %q for cluster %s:\n%s\n", cc.API.VocabularyPath, id, err)
 			return 1
 		}
 	}

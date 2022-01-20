@@ -6,6 +6,8 @@ package arvados
 
 import (
 	"encoding/json"
+	"regexp"
+	"strings"
 
 	check "gopkg.in/check.v1"
 )
@@ -56,7 +58,7 @@ func (s *VocabularySuite) SetUpTest(c *check.C) {
 			},
 		},
 	}
-	err := s.testVoc.validate()
+	_, err := s.testVoc.validate()
 	c.Assert(err, check.IsNil)
 }
 
@@ -267,7 +269,7 @@ func (s *VocabularySuite) TestNewVocabulary(c *check.C) {
 			false, `invalid JSON format:.*\(line \d+, column \d+\)`, nil,
 		},
 		{
-			"Invalid JSON with duplicate keys",
+			"Invalid JSON with duplicate & reserved keys",
 			`{"tags":{
 				"type":{
 					"strict": false,
@@ -277,17 +279,7 @@ func (s *VocabularySuite) TestNewVocabulary(c *check.C) {
 					"labels": []
 				}
 			}}`,
-			false, "(?s).*tags.type.labels.0.label\ntags.type", nil,
-		},
-		{
-			"Valid data, but uses reserved key",
-			`{"tags":{
-				"type":{
-					"strict": false,
-					"labels": [{"label": "Class"}]
-				}
-			}}`,
-			false, "(?s).*tag key.*is reserved", nil,
+			false, "(?s).*duplicate JSON key \"tags.type.labels.0.label\"\nduplicate JSON key \"tags.type\"\ntag key \"type\" is reserved", nil,
 		},
 	}
 
@@ -489,10 +481,23 @@ func (s *VocabularySuite) TestValidationErrors(c *check.C) {
 	}
 	for _, tt := range tests {
 		c.Log(c.TestName()+" ", tt.name)
-		err := tt.voc.validate()
+		validationErrs, err := tt.voc.validate()
 		c.Assert(err, check.NotNil)
 		for _, errMatch := range tt.errMatches {
-			c.Assert(err, check.ErrorMatches, errMatch)
+			seen := false
+			for _, validationErr := range validationErrs {
+				if regexp.MustCompile(errMatch).MatchString(validationErr) {
+					seen = true
+					break
+				}
+			}
+			if len(validationErrs) == 0 {
+				c.Assert(err, check.ErrorMatches, errMatch)
+			} else {
+				c.Assert(seen, check.Equals, true,
+					check.Commentf("Expected to see error matching %q:\n%s",
+						errMatch, strings.Join(validationErrs, "\n")))
+			}
 		}
 	}
 }
