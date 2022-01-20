@@ -321,7 +321,12 @@ func (v *UnixVolume) Status() *VolumeStatus {
 		v.logger.WithError(err).Error("stat failed")
 		return nil
 	}
-	devnum := fi.Sys().(*syscall.Stat_t).Dev
+	// uint64() cast here supports GOOS=darwin where Dev is
+	// int32. If the device number is negative, the unsigned
+	// devnum won't be the real device number any more, but that's
+	// fine -- all we care about is getting the same number each
+	// time.
+	devnum := uint64(fi.Sys().(*syscall.Stat_t).Dev)
 
 	var fs syscall.Statfs_t
 	if err := syscall.Statfs(v.Root, &fs); err != nil {
