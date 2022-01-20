@@ -118,8 +118,8 @@ arvados:
           SubnetID: subnet-FIXMEFIXMEFIXMEFI
       DispatchPrivateKey: |
         -----BEGIN OPENSSH PRIVATE KEY-----
-        Read https://doc.arvados.org/v2.0/install/install-dispatch-cloud.html
-        for details on how to create it and where to place the key
+        Read https://doc.arvados.org/install/crunch2-cloud/install-compute-node.html#sshkeypair
+        for details on how to create this key.
         FIXMEFIXMEFIXMEFI
         -----END OPENSSH PRIVATE KEY-----
 
@@ -128,24 +128,18 @@ arvados:
     Volumes:
       # the volume name will be composed with
       # <cluster>-nyw5e-<volume>
-      __CLUSTER__-nyw5e-0000000000000000:
-        AccessViaHosts:
-          'http://__KEEPSTORE0_INT_IP__:25107':
-            ReadOnly: false
+      __CLUSTER__-nyw5e-000000000000000:
         Replication: 2
         Driver: S3
         DriverParameters:
-          Bucket: __CLUSTER__-nyw5e-0000000000000000-volume
+          Bucket: __CLUSTER__-nyw5e-000000000000000-volume
           IAMRole: __CLUSTER__-keepstore-00-iam-role
           Region: FIXME
       __CLUSTER__-nyw5e-0000000000000001:
-        AccessViaHosts:
-          'http://__KEEPSTORE1_INT_IP__:25107':
-            ReadOnly: false
         Replication: 2
         Driver: S3
         DriverParameters:
-          Bucket: __CLUSTER__-nyw5e-0000000000000001-volume
+          Bucket: __CLUSTER__-nyw5e-000000000000001-volume
           IAMRole: __CLUSTER__-keepstore-01-iam-role
           Region: FIXME
 
