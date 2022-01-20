@@ -166,7 +166,7 @@ WORKBENCH1_EXT_SSL_PORT=443
 WORKBENCH2_EXT_SSL_PORT=3001
 
 USE_LETSENCRYPT="no"
-CUSTOM_CERTS_DIR="./certs"
+CUSTOM_CERTS_DIR="${SCRIPT_DIR}/certs"
 
 ## These are ARVADOS-related parameters
 # For a stable release, change RELEASE "production" and VERSION to the
