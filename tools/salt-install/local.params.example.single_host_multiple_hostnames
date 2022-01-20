@@ -52,7 +52,8 @@ USE_LETSENCRYPT="no"
 # help you deploy them. In order to do that, you need to set `USE_LETSENCRYPT=no` above,
 # and copy the required certificates under the directory specified in the next line.
 # The certs will be copied from this directory by the provision script.
-CUSTOM_CERTS_DIR="./certs"
+# Plese set it to the FULL PATH to the certs dir if you're going to use a different dir
+# CUSTOM_CERTS_DIR="${SCRIPT_DIR}/certs"
 # The script expects cert/key files with these basenames (matching the role except for
 # keepweb, which is split in both downoad/collections):
 #  "controller"
