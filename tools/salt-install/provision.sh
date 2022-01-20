@@ -136,6 +136,15 @@ arguments() {
   done
 }
 
+copy_custom_cert() {
+  cert_dir=${1}
+  cert_name=${2}
+
+  mkdir -p /srv/salt/certs
+  cp -v ${cert_dir}/${cert_name}.crt /srv/salt/certs/arvados-${cert_name}.pem
+  cp -v ${cert_dir}/${cert_name}.key /srv/salt/certs/arvados-${cert_name}.key
+}
+
 DEV_MODE="no"
 CONFIG_FILE="${SCRIPT_DIR}/local.params"
 CONFIG_DIR="local_config_dir"
@@ -547,6 +556,17 @@ if [ -z "${ROLES}" ]; then
 else
   # If we add individual roles, make sure we add the repo first
   echo "    - arvados.repo" >> ${S_DIR}/top.sls
+  # We add the custom_certs state
+  grep -q "custom_certs"    ${S_DIR}/top.sls || echo "    - extra.custom_certs" >> ${S_DIR}/top.sls
+
+  # And we add the basic part for the certs pillar
+  if [ "x${USE_LETSENCRYPT}" != "xyes" ]; then
+    # And add the certs in the custom_certs pillar
+    echo "extra_custom_certs_dir: /srv/salt/certs" > ${P_DIR}/extra_custom_certs.sls
+    echo "extra_custom_certs:" >> ${P_DIR}/extra_custom_certs.sls
+    grep -q "extra_custom_certs" ${P_DIR}/top.sls || echo "    - extra_custom_certs" >> ${P_DIR}/top.sls
+  fi
+
   for R in ${ROLES}; do
     case "${R}" in
       "database")
@@ -570,9 +590,8 @@ else
           grep -q "letsencrypt" ${S_DIR}/top.sls || echo "    - letsencrypt" >> ${S_DIR}/top.sls
         else
           # Use custom certs
-          cp -v ${CUSTOM_CERTS_DIR}/controller.* "${F_DIR}/extra/extra/files/"
-          # We add the custom_certs state
-          grep -q "custom_certs"    ${S_DIR}/top.sls || echo "    - extra.custom_certs" >> ${S_DIR}/top.sls
+          copy_custom_cert ${CUSTOM_CERTS_DIR} controller
+          grep -q controller ${P_DIR}/extra_custom_certs.sls || echo "  - controller" >> ${P_DIR}/extra_custom_certs.sls
         fi
         grep -q "arvados.${R}" ${S_DIR}/top.sls    || echo "    - arvados.${R}" >> ${S_DIR}/top.sls
         # Pillars
@@ -594,14 +613,11 @@ else
         else
           # Use custom certs, special case for keepweb
           if [ ${R} = "keepweb" ]; then
-            cp -v ${CUSTOM_CERTS_DIR}/download.* "${F_DIR}/extra/extra/files/"
-            cp -v ${CUSTOM_CERTS_DIR}/collections.* "${F_DIR}/extra/extra/files/"
+            copy_custom_cert ${CUSTOM_CERTS_DIR} download
+            copy_custom_cert ${CUSTOM_CERTS_DIR} collections
           else
-            cp -v ${CUSTOM_CERTS_DIR}/${R}.* "${F_DIR}/extra/extra/files/"
+            copy_custom_cert ${CUSTOM_CERTS_DIR} ${R}
           fi
-          # We add the custom_certs state
-          grep -q "custom_certs"    ${S_DIR}/top.sls || echo "    - extra.custom_certs" >> ${S_DIR}/top.sls
-
         fi
         # webshell role is just a nginx vhost, so it has no state
         if [ "${R}" != "webshell" ]; then
@@ -640,8 +656,6 @@ else
             ${P_DIR}/nginx_${R}_configuration.sls
           fi
         else
-          grep -q ${R} ${P_DIR}/extra_custom_certs.sls || echo "  - ${R}" >> ${P_DIR}/extra_custom_certs.sls
-
           # As the pillar differ whether we use LE or custom certs, we need to do a final edition on them
           # Special case for keepweb
           if [ ${R} = "keepweb" ]; then
@@ -650,12 +664,14 @@ else
                       s#__CERT_PEM__#/etc/nginx/ssl/arvados-${kwsub}.pem#g;
                       s#__CERT_KEY__#/etc/nginx/ssl/arvados-${kwsub}.key#g" \
               ${P_DIR}/nginx_${kwsub}_configuration.sls
+              grep -q ${kwsub} ${P_DIR}/extra_custom_certs.sls || echo "  - ${kwsub}" >> ${P_DIR}/extra_custom_certs.sls
             done
           else
             sed -i "s/__CERT_REQUIRES__/file: extra_custom_certs_file_copy_arvados-${R}.pem/g;
                     s#__CERT_PEM__#/etc/nginx/ssl/arvados-${R}.pem#g;
                     s#__CERT_KEY__#/etc/nginx/ssl/arvados-${R}.key#g" \
             ${P_DIR}/nginx_${R}_configuration.sls
+            grep -q ${R} ${P_DIR}/extra_custom_certs.sls || echo "  - ${R}" >> ${P_DIR}/extra_custom_certs.sls
           fi
         fi
       ;;
