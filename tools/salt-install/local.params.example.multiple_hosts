@@ -79,10 +79,12 @@ LE_AWS_SECRET_ACCESS_KEY="thisistherandomstringthatisyoursecretkey"
 # help you deploy them. In order to do that, you need to set `USE_LETSENCRYPT=no` above,
 # and copy the required certificates under the directory specified in the next line.
 # The certs will be copied from this directory by the provision script.
-# Plese set it to the FULL PATH to the certs dir if you're going to use a different dir
+# Please set it to the FULL PATH to the certs dir if you're going to use a different dir
+# Default is "${SCRIPT_DIR}/certs", where the variable "SCRIPT_DIR" has the path to the
+# directory where the  "provision.sh" script was copied in the destination host.
 # CUSTOM_CERTS_DIR="${SCRIPT_DIR}/certs"
 # The script expects cert/key files with these basenames (matching the role except for
-# keepweb, which is split in both downoad/collections):
+# keepweb, which is split in both download/collections):
 #  "controller"
 #  "websocket"
 #  "workbench"
@@ -90,10 +92,10 @@ LE_AWS_SECRET_ACCESS_KEY="thisistherandomstringthatisyoursecretkey"
 #  "webshell"
 #  "download"         # Part of keepweb
 #  "collections"      # Part of keepweb
-#  "keep"             # Keepproxy
+#  "keepproxy"        # Keepproxy
 # Ie., 'keep', the script will lookup for
-# ${CUSTOM_CERTS_DIR}/keep.crt
-# ${CUSTOM_CERTS_DIR}/keep.key
+# ${CUSTOM_CERTS_DIR}/keepproxy.crt
+# ${CUSTOM_CERTS_DIR}/keepproxy.key
 
 # The directory to check for the config files (pillars, states) you want to use.
 # There are a few examples under 'config_examples'.
