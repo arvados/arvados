@@ -3,12 +3,34 @@
 #
 # SPDX-License-Identifier: AGPL-3.0
 
+{%- set passenger_pkg = 'nginx-mod-http-passenger'
+                          if grains.osfinger in ('CentOS Linux-7') else
+                        'libnginx-mod-http-passenger' %}
+{%- set passenger_mod = '/usr/lib64/nginx/modules/ngx_http_passenger_module.so'
+                          if grains.osfinger in ('CentOS Linux-7',) else
+                        '/usr/lib/nginx/modules/ngx_http_passenger_module.so' %}
+{%- set passenger_ruby = '/usr/local/rvm/rubies/ruby-2.7.2/bin/ruby'
+                           if grains.osfinger in ('CentOS Linux-7', 'Ubuntu-18.04',) else
+                         '/usr/bin/ruby' %}
+
 ### NGINX
 nginx:
   install_from_phusionpassenger: true
   lookup:
-    passenger_package: libnginx-mod-http-passenger
-    passenger_config_file: /etc/nginx/conf.d/mod-http-passenger.conf
+    passenger_package: {{ passenger_pkg }}
+  ### PASSENGER
+  passenger:
+    passenger_ruby: {{ passenger_ruby }}
+
+  ### SERVER
+  server:
+    config:
+      # This is required to get the passenger module loaded
+      # In Debian it can be done with this
+      # include: 'modules-enabled/*.conf'
+      load_module: {{ passenger_mod }}
+
+      worker_processes: 4
 
   ### SNIPPETS
   snippets:
@@ -38,12 +60,6 @@ nginx:
 
       # replace with the IP address of your resolver
       # - resolver: 127.0.0.1
-
-  ### SERVER
-  server:
-    config:
-      include: 'modules-enabled/*.conf'
-      worker_processes: 4
 
   ### SITES
   servers:
