@@ -690,6 +690,7 @@ func (s *IntegrationSuite) TestFederatedApiClientAuthHandling(c *check.C) {
 		},
 	)
 	c.Assert(err, check.IsNil)
+	c.Assert(resp.APIClientID, check.Not(check.Equals), 0)
 	newTok := resp.TokenV2()
 	c.Assert(newTok, check.Not(check.Equals), "")
 
