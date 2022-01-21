@@ -121,6 +121,8 @@ When you finished customizing the configuration, you are ready to copy the files
 
 <notextile>
 <pre><code>scp -r provision.sh local* user@host:
+# if you use custom certificates (not Let's Encrypt), make sure to copy those too:
+# scp -r certs user@host:
 ssh user@host sudo ./provision.sh --roles comma,separated,list,of,roles,to,apply
 </code></pre>
 </notextile>
