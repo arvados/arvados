@@ -141,8 +141,19 @@ copy_custom_cert() {
   cert_name=${2}
 
   mkdir -p /srv/salt/certs
-  cp -v ${cert_dir}/${cert_name}.crt /srv/salt/certs/arvados-${cert_name}.pem
-  cp -v ${cert_dir}/${cert_name}.key /srv/salt/certs/arvados-${cert_name}.key
+
+  if [ -f ${cert_dir}/${cert_name}.crt ]; then
+    cp -v ${cert_dir}/${cert_name}.crt /srv/salt/certs/arvados-${cert_name}.pem
+  else
+    echo "${cert_dir}/${cert_name}.crt does not exist. Exiting"
+    exit 1
+  fi
+  if [ -f ${cert_dir}/${cert_name}.key ]; then
+    cp -v ${cert_dir}/${cert_name}.key /srv/salt/certs/arvados-${cert_name}.key
+  else
+    echo "${cert_dir}/${cert_name}.key does not exist. Exiting"
+    exit 1
+  fi
 }
 
 DEV_MODE="no"
