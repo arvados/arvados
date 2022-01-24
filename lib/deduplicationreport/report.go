@@ -8,6 +8,7 @@ import (
 	"flag"
 	"fmt"
 	"io"
+	"os"
 	"strings"
 
 	"git.arvados.org/arvados.git/lib/cmd"
@@ -99,6 +100,72 @@ func blockList(collection arvados.Collection) (blocks map[string]int) {
 	return
 }
 
+func collectionsInProject(ac *arvados.Client, UUID string) ([]string, error) {
+	var UUIDs []string
+	if !strings.Contains(UUID, "-j7d0g-") {
+		return nil, fmt.Errorf("Error: UUID must refer to project object")
+	}
+
+	var collections, projects map[string]interface{}
+	filterSet := []arvados.Filter{
+		{
+			Attr:     "owner_uuid",
+			Operator: "=",
+			Operand:  UUID,
+		},
+	}
+
+	// Recursively add the collections of any subprojects
+	// FIXME handle paging
+	err := ac.RequestAndDecode(&projects, "GET", "arvados/v1/groups", nil, map[string]interface{}{
+		"filters": filterSet,
+		"limit":   10000,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("error querying subprojects: %s", err.Error())
+	}
+	if value, ok := projects["items"]; ok {
+		items := value.([]interface{})
+		for _, item := range items {
+			itemMap := item.(map[string]interface{})
+			if _, ok := itemMap["uuid"]; !ok {
+				return nil, fmt.Errorf("Error: no uuid key in itemMap (projects)")
+			}
+			subUUIDs, err := collectionsInProject(ac, itemMap["uuid"].(string))
+			if err != nil {
+				return nil, err
+			}
+			UUIDs = append(UUIDs, subUUIDs...)
+		}
+	}
+
+	// Add collections in this project
+	// FIXME handle paging
+	err = ac.RequestAndDecode(&collections, "GET", "arvados/v1/collections", nil, map[string]interface{}{
+		"filters": filterSet,
+		"limit":   10000,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("error querying collections: %s", err.Error())
+	}
+	if value, ok := collections["items"]; ok {
+		items := value.([]interface{})
+		for _, item := range items {
+			itemMap := item.(map[string]interface{})
+			if _, ok := itemMap["uuid"]; !ok {
+				return nil, fmt.Errorf("Error: no uuid key in itemMap (collections)")
+			}
+			if _, ok := itemMap["portable_data_hash"]; !ok {
+				return nil, fmt.Errorf("Error: no portable_data_hash key in itemMap (collections)")
+			}
+			UUIDs = append(UUIDs, itemMap["portable_data_hash"].(string)+","+itemMap["uuid"].(string))
+		}
+	}
+	fmt.Fprintf(os.Stderr, ".")
+
+	return UUIDs, nil
+}
+
 func report(prog string, args []string, logger *logrus.Logger, stdout, stderr io.Writer) (exitcode int) {
 	var inputs []string
 
@@ -123,6 +190,23 @@ func report(prog string, args []string, logger *logrus.Logger, stdout, stderr io
 	blocks := make(map[string]map[string]int)
 	pdhs := make(map[string]Col)
 	var nominalSize int64
+	ac := arvados.NewClientFromEnv()
+	var extra []string
+	for _, input := range inputs {
+		if !strings.Contains(input, ",") && strings.Contains(input, "-j7d0g-") {
+			fmt.Fprintf(os.Stderr, "Getting collections in %s and its sub-projects", input)
+			tmp, err := collectionsInProject(ac, input)
+			if err != nil {
+				logger.Errorf("Error: %s", err.Error())
+				exitcode = 1
+				return
+			}
+			extra = append(extra, tmp...)
+			fmt.Fprintf(os.Stderr, "\n")
+		}
+	}
+
+	inputs = append(inputs, extra...)
 
 	for _, input := range inputs {
 		var uuid string
@@ -135,6 +219,11 @@ func report(prog string, args []string, logger *logrus.Logger, stdout, stderr io
 		} else {
 			// The input must be a plain uuid
 			uuid = input
+		}
+
+		if strings.Contains(uuid, "-j7d0g-") {
+			// Already expanded to the list of collections in the project, above
+			continue
 		}
 		if !strings.Contains(uuid, "-4zz18-") {
 			logger.Errorf("Error: uuid must refer to collection object")
