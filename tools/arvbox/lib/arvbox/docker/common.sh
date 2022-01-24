@@ -70,8 +70,8 @@ run_bundler() {
 	# If present, use the one associated with rails workbench or API
 	BUNDLER=$PWD/bin/bundler
     fi
-    if ! flock $GEM_HOME/gems.lock $BUNDLER install --verbose --local --no-deployment $frozen "$@" ; then
-        flock $GEM_HOME/gems.lock $BUNDLER install --verbose --no-deployment $frozen "$@"
+    if ! flock $GEM_HOME/gems.lock $BUNDLER install --binstubs --verbose --local --no-deployment $frozen "$@" ; then
+        flock $GEM_HOME/gems.lock $BUNDLER install --binstubs --verbose --no-deployment $frozen "$@"
     fi
 }
 

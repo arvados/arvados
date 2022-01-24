@@ -23,8 +23,8 @@ else
 fi
 
 run_bundler --without=development
-flock $GEM_HOME/gems.lock bin/bundle exec passenger-config build-native-support
-flock $GEM_HOME/gems.lock bin/bundle exec passenger-config install-standalone-runtime
+flock $GEM_HOME/gems.lock bin/passenger-config build-native-support
+flock $GEM_HOME/gems.lock bin/passenger-config install-standalone-runtime
 mkdir -p /usr/src/arvados/apps/workbench/tmp
 
 if test "$1" = "--only-deps" ; then
