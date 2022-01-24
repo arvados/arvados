@@ -109,6 +109,34 @@ func (checkCommand) RunCommand(prog string, args []string, stdin io.Reader, stdo
 	if err != nil {
 		return 1
 	}
+
+	// Check for configured vocabulary validity.
+	for id, cc := range withDepr.Clusters {
+		if cc.API.VocabularyPath == "" {
+			continue
+		}
+		vd, err := os.ReadFile(cc.API.VocabularyPath)
+		if err != nil {
+			if errors.Is(err, os.ErrNotExist) {
+				// If the vocabulary path doesn't exist, it might mean that
+				// the current node isn't the controller; so it's not an
+				// error.
+				continue
+			}
+			logger.Errorf("Error reading vocabulary file %q for cluster %s: %s\n", cc.API.VocabularyPath, id, err)
+			continue
+		}
+		mk := make([]string, 0, len(cc.Collections.ManagedProperties))
+		for k := range cc.Collections.ManagedProperties {
+			mk = append(mk, k)
+		}
+		_, err = arvados.NewVocabulary(vd, mk)
+		if err != nil {
+			logger.Errorf("Error loading vocabulary file %q for cluster %s:\n%s\n", cc.API.VocabularyPath, id, err)
+			continue
+		}
+	}
+
 	cmd := exec.Command("diff", "-u", "--label", "without-deprecated-configs", "--label", "relying-on-deprecated-configs", "/dev/fd/3", "/dev/fd/4")
 	for _, obj := range []interface{}{withoutDepr, withDepr} {
 		y, _ := yaml.Marshal(obj)
@@ -141,31 +169,6 @@ func (checkCommand) RunCommand(prog string, args []string, stdin io.Reader, stdo
 	}
 	if logbuf.Len() > 0 {
 		if *strict {
-			return 1
-		}
-	}
-	for id, cc := range withDepr.Clusters {
-		if cc.API.VocabularyPath == "" {
-			continue
-		}
-		vd, err := os.ReadFile(cc.API.VocabularyPath)
-		if err != nil {
-			if errors.Is(err, os.ErrNotExist) {
-				// If the vocabulary path doesn't exist, it might mean that
-				// the current node isn't the controller; so it's not an
-				// error.
-				continue
-			}
-			fmt.Fprintf(stderr, "Error reading vocabulary file %q for cluster %s: %s\n", cc.API.VocabularyPath, id, err)
-			return 1
-		}
-		mk := make([]string, 0, len(cc.Collections.ManagedProperties))
-		for k := range cc.Collections.ManagedProperties {
-			mk = append(mk, k)
-		}
-		_, err = arvados.NewVocabulary(vd, mk)
-		if err != nil {
-			fmt.Fprintf(stderr, "Error loading vocabulary file %q for cluster %s:\n%s\n", cc.API.VocabularyPath, id, err)
 			return 1
 		}
 	}

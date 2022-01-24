@@ -129,7 +129,7 @@ Clusters:
 `
 	code := CheckCommand.RunCommand("arvados config-check", []string{"-config", "-"}, bytes.NewBufferString(in), &stdout, &stderr)
 	c.Check(code, check.Equals, 1)
-	c.Check(stderr.String(), check.Matches, `(?s).*Error loading vocabulary file.*for cluster.*\nduplicate JSON key "tags.IDfoo".*`)
+	c.Check(stderr.String(), check.Matches, `(?ms).*Error loading vocabulary file.*for cluster.*duplicate JSON key.*tags.IDfoo.*`)
 }
 
 func (s *CommandSuite) TestCheck_DeprecatedKeys(c *check.C) {
