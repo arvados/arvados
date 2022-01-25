@@ -32,6 +32,7 @@ var _ = check.Suite(&CollectionFSSuite{})
 type keepClientStub struct {
 	blocks      map[string][]byte
 	refreshable map[string]bool
+	reads       []string             // locators from ReadAt() calls
 	onWrite     func(bufcopy []byte) // called from WriteBlock, before acquiring lock
 	authToken   string               // client's auth token (used for signing locators)
 	sigkey      string               // blob signing key
@@ -42,8 +43,14 @@ type keepClientStub struct {
 var errStub404 = errors.New("404 block not found")
 
 func (kcs *keepClientStub) ReadAt(locator string, p []byte, off int) (int, error) {
+	kcs.Lock()
+	kcs.reads = append(kcs.reads, locator)
+	kcs.Unlock()
 	kcs.RLock()
 	defer kcs.RUnlock()
+	if err := VerifySignature(locator, kcs.authToken, kcs.sigttl, []byte(kcs.sigkey)); err != nil {
+		return 0, err
+	}
 	buf := kcs.blocks[locator[:32]]
 	if buf == nil {
 		return 0, errStub404
@@ -102,6 +109,7 @@ type CollectionFSSuite struct {
 
 func (s *CollectionFSSuite) SetUpTest(c *check.C) {
 	s.client = NewClientFromEnv()
+	s.client.AuthToken = fixtureActiveToken
 	err := s.client.RequestAndDecode(&s.coll, "GET", "arvados/v1/collections/"+fixtureFooAndBarFilesInDirUUID, nil, nil)
 	c.Assert(err, check.IsNil)
 	s.kc = &keepClientStub{
@@ -1430,6 +1438,103 @@ func (s *CollectionFSSuite) TestEdgeCaseManifests(c *check.C) {
 		fs, err := (&Collection{ManifestText: txt}).FileSystem(s.client, s.kc)
 		c.Check(err, check.IsNil)
 		c.Check(fs, check.NotNil)
+	}
+}
+
+func (s *CollectionFSSuite) TestRefreshSignatures(c *check.C) {
+	filedata1 := "hello refresh signatures world\n"
+	fs, err := (&Collection{}).FileSystem(s.client, s.kc)
+	c.Assert(err, check.IsNil)
+	fs.Mkdir("d1", 0700)
+	f, err := fs.OpenFile("d1/file1", os.O_CREATE|os.O_RDWR, 0700)
+	c.Assert(err, check.IsNil)
+	_, err = f.Write([]byte(filedata1))
+	c.Assert(err, check.IsNil)
+	err = f.Close()
+	c.Assert(err, check.IsNil)
+
+	filedata2 := "hello refresh signatures universe\n"
+	fs.Mkdir("d2", 0700)
+	f, err = fs.OpenFile("d2/file2", os.O_CREATE|os.O_RDWR, 0700)
+	c.Assert(err, check.IsNil)
+	_, err = f.Write([]byte(filedata2))
+	c.Assert(err, check.IsNil)
+	err = f.Close()
+	c.Assert(err, check.IsNil)
+	txt, err := fs.MarshalManifest(".")
+	c.Assert(err, check.IsNil)
+	var saved Collection
+	err = s.client.RequestAndDecode(&saved, "POST", "arvados/v1/collections", nil, map[string]interface{}{
+		"select": []string{"manifest_text", "uuid", "portable_data_hash"},
+		"collection": map[string]interface{}{
+			"manifest_text": txt,
+		},
+	})
+	c.Assert(err, check.IsNil)
+
+	// Update signatures synchronously if they are already expired
+	// when Read() is called.
+	{
+		saved.ManifestText = SignManifest(saved.ManifestText, s.kc.authToken, time.Now().Add(-2*time.Second), s.kc.sigttl, []byte(s.kc.sigkey))
+		fs, err := saved.FileSystem(s.client, s.kc)
+		c.Assert(err, check.IsNil)
+		f, err := fs.OpenFile("d1/file1", os.O_RDONLY, 0)
+		c.Assert(err, check.IsNil)
+		buf, err := ioutil.ReadAll(f)
+		c.Check(err, check.IsNil)
+		c.Check(string(buf), check.Equals, filedata1)
+	}
+
+	// Update signatures asynchronously if we're more than half
+	// way to TTL when Read() is called.
+	{
+		exp := time.Now().Add(2 * time.Minute)
+		saved.ManifestText = SignManifest(saved.ManifestText, s.kc.authToken, exp, s.kc.sigttl, []byte(s.kc.sigkey))
+		fs, err := saved.FileSystem(s.client, s.kc)
+		c.Assert(err, check.IsNil)
+		f1, err := fs.OpenFile("d1/file1", os.O_RDONLY, 0)
+		c.Assert(err, check.IsNil)
+		f2, err := fs.OpenFile("d2/file2", os.O_RDONLY, 0)
+		c.Assert(err, check.IsNil)
+		buf, err := ioutil.ReadAll(f1)
+		c.Check(err, check.IsNil)
+		c.Check(string(buf), check.Equals, filedata1)
+
+		// Ensure fs treats the 2-minute TTL as less than half
+		// the server's signing TTL. If we don't do this,
+		// collectionfs will guess the signature is fresh,
+		// i.e., signing TTL is 2 minutes, and won't do an
+		// async refresh.
+		fs.(*collectionFileSystem).guessSignatureTTL = time.Hour
+
+		refreshed := false
+		for deadline := time.Now().Add(time.Second * 10); time.Now().Before(deadline) && !refreshed; time.Sleep(time.Second / 10) {
+			_, err = f1.Seek(0, io.SeekStart)
+			c.Assert(err, check.IsNil)
+			buf, err = ioutil.ReadAll(f1)
+			c.Assert(err, check.IsNil)
+			c.Assert(string(buf), check.Equals, filedata1)
+			loc := s.kc.reads[len(s.kc.reads)-1]
+			t, err := signatureExpiryTime(loc)
+			c.Assert(err, check.IsNil)
+			c.Logf("last read block %s had signature expiry time %v", loc, t)
+			if t.Sub(time.Now()) > time.Hour {
+				refreshed = true
+			}
+		}
+		c.Check(refreshed, check.Equals, true)
+
+		// Second locator should have been updated at the same
+		// time.
+		buf, err = ioutil.ReadAll(f2)
+		c.Assert(err, check.IsNil)
+		c.Assert(string(buf), check.Equals, filedata2)
+		loc := s.kc.reads[len(s.kc.reads)-1]
+		c.Check(loc, check.Not(check.Equals), s.kc.reads[len(s.kc.reads)-2])
+		t, err := signatureExpiryTime(s.kc.reads[len(s.kc.reads)-1])
+		c.Assert(err, check.IsNil)
+		c.Logf("last read block %s had signature expiry time %v", loc, t)
+		c.Check(t.Sub(time.Now()) > time.Hour, check.Equals, true)
 	}
 }
 

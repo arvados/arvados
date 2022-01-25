@@ -16,6 +16,7 @@ import (
 	"fmt"
 	"regexp"
 	"strconv"
+	"strings"
 	"time"
 )
 
@@ -125,4 +126,22 @@ func parseHexTimestamp(timestampHex string) (ts time.Time, err error) {
 		err = e
 	}
 	return ts, err
+}
+
+var errNoSignature = errors.New("locator has no signature")
+
+func signatureExpiryTime(signedLocator string) (time.Time, error) {
+	matches := SignedLocatorRe.FindStringSubmatch(signedLocator)
+	if matches == nil {
+		return time.Time{}, errNoSignature
+	}
+	expiryHex := matches[7]
+	return parseHexTimestamp(expiryHex)
+}
+
+func stripAllHints(locator string) string {
+	if i := strings.IndexRune(locator, '+'); i > 0 {
+		return locator[:i]
+	}
+	return locator
 }
