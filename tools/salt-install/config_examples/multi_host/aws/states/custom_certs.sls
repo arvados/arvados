@@ -6,17 +6,18 @@
 {%- set dest_cert_dir = '/etc/nginx/ssl' %}
 {%- set certs = salt['pillar.get']('extra_custom_certs', [])  %}
 
+{% if certs %}
 extra_custom_certs_file_directory_certs_dir:
   file.directory:
     - name: /etc/nginx/ssl
     - require:
       - pkg: nginx_install
 
-{%- for cert in certs %}
-  {%- set cert_file = 'arvados-' ~ cert ~ '.pem' %}
-  {#- set csr_file = 'arvados-' ~ cert ~ '.csr' #}
-  {%- set key_file = 'arvados-' ~ cert ~ '.key' %}
-  {% for c in [cert_file, key_file] %}
+  {%- for cert in certs %}
+    {%- set cert_file = 'arvados-' ~ cert ~ '.pem' %}
+    {#- set csr_file = 'arvados-' ~ cert ~ '.csr' #}
+    {%- set key_file = 'arvados-' ~ cert ~ '.key' %}
+    {% for c in [cert_file, key_file] %}
 extra_custom_certs_file_copy_{{ c }}:
   file.copy:
     - name: {{ dest_cert_dir }}/{{ c }}
@@ -27,5 +28,6 @@ extra_custom_certs_file_copy_{{ c }}:
     - unless: cmp {{ dest_cert_dir }}/{{ c }} {{ orig_cert_dir }}/{{ c }}
     - require:
       - file: extra_custom_certs_file_directory_certs_dir
+    {%- endfor %}
   {%- endfor %}
-{%- endfor %}
+{%- endif %}
