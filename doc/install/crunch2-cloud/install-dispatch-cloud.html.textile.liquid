@@ -79,15 +79,14 @@ h4. NVIDIA GPU support
 To specify instance types with NVIDIA GPUs, you must include an additional @CUDA@ section:
 
 <notextile>
-<pre><code>    Services:
-    InstanceTypes:
+<pre><code>    InstanceTypes:
       g4dn:
         ProviderType: g4dn.xlarge
         VCPUs: 4
         RAM: 16GiB
         IncludedScratch: 125GB
         Price: 0.56
-	CUDA:
+        CUDA:
           DriverVersion: "11.4"
           HardwareCapability: "7.5"
           DeviceCount: 1
