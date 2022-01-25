@@ -7,8 +7,10 @@ package arvados
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"reflect"
+	"strconv"
 	"strings"
 )
 
@@ -55,10 +57,31 @@ func NewVocabulary(data []byte, managedTagKeys []string) (voc *Vocabulary, err e
 	}
 	err = json.Unmarshal(data, &voc)
 	if err != nil {
-		return nil, fmt.Errorf("invalid JSON format error: %q", err)
+		var serr *json.SyntaxError
+		if errors.As(err, &serr) {
+			offset := serr.Offset
+			errorMsg := string(data[:offset])
+			line := 1 + strings.Count(errorMsg, "\n")
+			column := offset - int64(strings.LastIndex(errorMsg, "\n")+len("\n"))
+			return nil, fmt.Errorf("invalid JSON format: %q (line %d, column %d)", err, line, column)
+		}
+		return nil, fmt.Errorf("invalid JSON format: %q", err)
 	}
 	if reflect.DeepEqual(voc, &Vocabulary{}) {
 		return nil, fmt.Errorf("JSON data provided doesn't match Vocabulary format: %q", data)
+	}
+
+	shouldReportErrors := false
+	errors := []string{}
+
+	// json.Unmarshal() doesn't error out on duplicate keys.
+	dupedKeys := []string{}
+	err = checkJSONDupedKeys(json.NewDecoder(bytes.NewReader(data)), nil, &dupedKeys)
+	if err != nil {
+		shouldReportErrors = true
+		for _, dk := range dupedKeys {
+			errors = append(errors, fmt.Sprintf("duplicate JSON key %q", dk))
+		}
 	}
 	voc.reservedTagKeys = make(map[string]bool)
 	for _, managedKey := range managedTagKeys {
@@ -67,63 +90,122 @@ func NewVocabulary(data []byte, managedTagKeys []string) (voc *Vocabulary, err e
 	for systemKey := range voc.systemTagKeys() {
 		voc.reservedTagKeys[systemKey] = true
 	}
-	err = voc.validate()
+	validationErrs, err := voc.validate()
 	if err != nil {
-		return nil, err
+		shouldReportErrors = true
+		errors = append(errors, validationErrs...)
+	}
+	if shouldReportErrors {
+		return nil, fmt.Errorf("%s", strings.Join(errors, "\n"))
 	}
 	return voc, nil
 }
 
-func (v *Vocabulary) validate() error {
-	if v == nil {
+func checkJSONDupedKeys(d *json.Decoder, path []string, errors *[]string) error {
+	t, err := d.Token()
+	if err != nil {
+		return err
+	}
+	delim, ok := t.(json.Delim)
+	if !ok {
 		return nil
+	}
+	switch delim {
+	case '{':
+		keys := make(map[string]bool)
+		for d.More() {
+			t, err := d.Token()
+			if err != nil {
+				return err
+			}
+			key := t.(string)
+
+			if keys[key] {
+				*errors = append(*errors, strings.Join(append(path, key), "."))
+			}
+			keys[key] = true
+
+			if err := checkJSONDupedKeys(d, append(path, key), errors); err != nil {
+				return err
+			}
+		}
+		// consume closing '}'
+		if _, err := d.Token(); err != nil {
+			return err
+		}
+	case '[':
+		i := 0
+		for d.More() {
+			if err := checkJSONDupedKeys(d, append(path, strconv.Itoa(i)), errors); err != nil {
+				return err
+			}
+			i++
+		}
+		// consume closing ']'
+		if _, err := d.Token(); err != nil {
+			return err
+		}
+	}
+	if len(path) == 0 && len(*errors) > 0 {
+		return fmt.Errorf("duplicate JSON key(s) found")
+	}
+	return nil
+}
+
+func (v *Vocabulary) validate() ([]string, error) {
+	if v == nil {
+		return nil, nil
 	}
 	tagKeys := map[string]string{}
 	// Checks for Vocabulary strictness
 	if v.StrictTags && len(v.Tags) == 0 {
-		return fmt.Errorf("vocabulary is strict but no tags are defined")
+		return nil, fmt.Errorf("vocabulary is strict but no tags are defined")
 	}
 	// Checks for collisions between tag keys, reserved tag keys
 	// and tag key labels.
+	errors := []string{}
 	for key := range v.Tags {
 		if v.reservedTagKeys[key] {
-			return fmt.Errorf("tag key %q is reserved", key)
+			errors = append(errors, fmt.Sprintf("tag key %q is reserved", key))
 		}
 		lcKey := strings.ToLower(key)
 		if tagKeys[lcKey] != "" {
-			return fmt.Errorf("duplicate tag key %q", key)
+			errors = append(errors, fmt.Sprintf("duplicate tag key %q", key))
 		}
 		tagKeys[lcKey] = key
 		for _, lbl := range v.Tags[key].Labels {
 			label := strings.ToLower(lbl.Label)
 			if tagKeys[label] != "" {
-				return fmt.Errorf("tag label %q for key %q already seen as a tag key or label", lbl.Label, key)
+				errors = append(errors, fmt.Sprintf("tag label %q for key %q already seen as a tag key or label", lbl.Label, key))
 			}
 			tagKeys[label] = lbl.Label
 		}
 		// Checks for value strictness
 		if v.Tags[key].Strict && len(v.Tags[key].Values) == 0 {
-			return fmt.Errorf("tag key %q is configured as strict but doesn't provide values", key)
+			errors = append(errors, fmt.Sprintf("tag key %q is configured as strict but doesn't provide values", key))
 		}
 		// Checks for collisions between tag values and tag value labels.
 		tagValues := map[string]string{}
 		for val := range v.Tags[key].Values {
 			lcVal := strings.ToLower(val)
 			if tagValues[lcVal] != "" {
-				return fmt.Errorf("duplicate tag value %q for tag %q", val, key)
+				errors = append(errors, fmt.Sprintf("duplicate tag value %q for tag %q", val, key))
 			}
 			// Checks for collisions between labels from different values.
 			tagValues[lcVal] = val
 			for _, tagLbl := range v.Tags[key].Values[val].Labels {
 				label := strings.ToLower(tagLbl.Label)
 				if tagValues[label] != "" && tagValues[label] != val {
-					return fmt.Errorf("tag value label %q for pair (%q:%q) already seen on value %q", tagLbl.Label, key, val, tagValues[label])
+					errors = append(errors, fmt.Sprintf("tag value label %q for pair (%q:%q) already seen on value %q", tagLbl.Label, key, val, tagValues[label]))
 				}
 				tagValues[label] = val
 			}
 		}
 	}
-	return nil
+	if len(errors) > 0 {
+		return errors, fmt.Errorf("invalid vocabulary")
+	}
+	return nil, nil
 }
 
 func (v *Vocabulary) getLabelsToKeys() (labels map[string]string) {

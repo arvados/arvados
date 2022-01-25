@@ -99,7 +99,7 @@ func (conn *Conn) maybeRefreshVocabularyCache(logger logrus.FieldLogger) error {
 func (conn *Conn) loadVocabularyFile() error {
 	vf, err := os.ReadFile(conn.cluster.API.VocabularyPath)
 	if err != nil {
-		return fmt.Errorf("couldn't reading the vocabulary file: %v", err)
+		return fmt.Errorf("while reading the vocabulary file: %v", err)
 	}
 	mk := make([]string, 0, len(conn.cluster.Collections.ManagedProperties))
 	for k := range conn.cluster.Collections.ManagedProperties {

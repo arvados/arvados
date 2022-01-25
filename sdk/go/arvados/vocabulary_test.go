@@ -6,6 +6,8 @@ package arvados
 
 import (
 	"encoding/json"
+	"regexp"
+	"strings"
 
 	check "gopkg.in/check.v1"
 )
@@ -56,7 +58,7 @@ func (s *VocabularySuite) SetUpTest(c *check.C) {
 			},
 		},
 	}
-	err := s.testVoc.validate()
+	_, err := s.testVoc.validate()
 	c.Assert(err, check.IsNil)
 }
 
@@ -258,14 +260,26 @@ func (s *VocabularySuite) TestNewVocabulary(c *check.C) {
 			},
 		},
 		{
-			"Valid data, but uses reserved key",
+			"Invalid JSON error with line & column numbers",
+			`{"tags":{
+				"aKey":{
+					"labels": [,{"label": "A label"}]
+				}
+			}}`,
+			false, `invalid JSON format:.*\(line \d+, column \d+\)`, nil,
+		},
+		{
+			"Invalid JSON with duplicate & reserved keys",
 			`{"tags":{
 				"type":{
 					"strict": false,
-					"labels": [{"label": "Type"}]
+					"labels": [{"label": "Class", "label": "Type"}]
+				},
+				"type":{
+					"labels": []
 				}
 			}}`,
-			false, "tag key.*is reserved", nil,
+			false, "(?s).*duplicate JSON key \"tags.type.labels.0.label\"\nduplicate JSON key \"tags.type\"\ntag key \"type\" is reserved", nil,
 		},
 	}
 
@@ -288,14 +302,14 @@ func (s *VocabularySuite) TestValidationErrors(c *check.C) {
 	tests := []struct {
 		name       string
 		voc        *Vocabulary
-		errMatches string
+		errMatches []string
 	}{
 		{
 			"Strict vocabulary, no keys",
 			&Vocabulary{
 				StrictTags: true,
 			},
-			"vocabulary is strict but no tags are defined",
+			[]string{"vocabulary is strict but no tags are defined"},
 		},
 		{
 			"Collision between tag key and tag key label",
@@ -312,7 +326,7 @@ func (s *VocabularySuite) TestValidationErrors(c *check.C) {
 					},
 				},
 			},
-			"", // Depending on how the map is sorted, this could be one of two errors
+			nil, // Depending on how the map is sorted, this could be one of two errors
 		},
 		{
 			"Collision between tag key and tag key label (case-insensitive)",
@@ -329,7 +343,7 @@ func (s *VocabularySuite) TestValidationErrors(c *check.C) {
 					},
 				},
 			},
-			"", // Depending on how the map is sorted, this could be one of two errors
+			nil, // Depending on how the map is sorted, this could be one of two errors
 		},
 		{
 			"Collision between tag key labels",
@@ -346,7 +360,7 @@ func (s *VocabularySuite) TestValidationErrors(c *check.C) {
 					},
 				},
 			},
-			"tag label.*for key.*already seen.*",
+			[]string{"(?s).*tag label.*for key.*already seen.*"},
 		},
 		{
 			"Collision between tag value and tag value label",
@@ -367,7 +381,7 @@ func (s *VocabularySuite) TestValidationErrors(c *check.C) {
 					},
 				},
 			},
-			"", // Depending on how the map is sorted, this could be one of two errors
+			nil, // Depending on how the map is sorted, this could be one of two errors
 		},
 		{
 			"Collision between tag value and tag value label (case-insensitive)",
@@ -388,7 +402,7 @@ func (s *VocabularySuite) TestValidationErrors(c *check.C) {
 					},
 				},
 			},
-			"", // Depending on how the map is sorted, this could be one of two errors
+			nil, // Depending on how the map is sorted, this could be one of two errors
 		},
 		{
 			"Collision between tag value labels",
@@ -409,7 +423,7 @@ func (s *VocabularySuite) TestValidationErrors(c *check.C) {
 					},
 				},
 			},
-			"tag value label.*for pair.*already seen.*on value.*",
+			[]string{"(?s).*tag value label.*for pair.*already seen.*on value.*"},
 		},
 		{
 			"Collision between tag value labels (case-insensitive)",
@@ -430,7 +444,7 @@ func (s *VocabularySuite) TestValidationErrors(c *check.C) {
 					},
 				},
 			},
-			"tag value label.*for pair.*already seen.*on value.*",
+			[]string{"(?s).*tag value label.*for pair.*already seen.*on value.*"},
 		},
 		{
 			"Strict tag key, with no values",
@@ -443,15 +457,47 @@ func (s *VocabularySuite) TestValidationErrors(c *check.C) {
 					},
 				},
 			},
-			"tag key.*is configured as strict but doesn't provide values",
+			[]string{"(?s).*tag key.*is configured as strict but doesn't provide values"},
+		},
+		{
+			"Multiple errors reported",
+			&Vocabulary{
+				StrictTags: false,
+				Tags: map[string]VocabularyTag{
+					"IDTAGANIMALS": {
+						Strict: true,
+						Labels: []VocabularyLabel{{Label: "Animal"}, {Label: "Creature"}},
+					},
+					"IDTAGSIZES": {
+						Labels: []VocabularyLabel{{Label: "Animal"}, {Label: "Size"}},
+					},
+				},
+			},
+			[]string{
+				"(?s).*tag key.*is configured as strict but doesn't provide values.*",
+				"(?s).*tag label.*for key.*already seen.*",
+			},
 		},
 	}
 	for _, tt := range tests {
 		c.Log(c.TestName()+" ", tt.name)
-		err := tt.voc.validate()
+		validationErrs, err := tt.voc.validate()
 		c.Assert(err, check.NotNil)
-		if tt.errMatches != "" {
-			c.Assert(err, check.ErrorMatches, tt.errMatches)
+		for _, errMatch := range tt.errMatches {
+			seen := false
+			for _, validationErr := range validationErrs {
+				if regexp.MustCompile(errMatch).MatchString(validationErr) {
+					seen = true
+					break
+				}
+			}
+			if len(validationErrs) == 0 {
+				c.Assert(err, check.ErrorMatches, errMatch)
+			} else {
+				c.Assert(seen, check.Equals, true,
+					check.Commentf("Expected to see error matching %q:\n%s",
+						errMatch, strings.Join(validationErrs, "\n")))
+			}
 		}
 	}
 }

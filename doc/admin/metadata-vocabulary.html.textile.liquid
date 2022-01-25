@@ -28,7 +28,7 @@ The site administrator should place the JSON vocabulary file on the same host as
 </code></pre>
 </notextile>
 
-h2. Vocabulary definition format
+h2. Definition format
 
 The JSON file describes the available keys and values and if the user is allowed to enter free text not defined by the vocabulary.
 
@@ -53,6 +53,74 @@ The @values@ member is optional and is used to define valid key/label pairs when
 When any key or value has more than one label option, Workbench2's user interface will allow the user to select any of the options. But because only the IDs are saved in the system, when the property is displayed in the user interface, the label shown will be the first of each group defined in the vocabulary file. For example, the user could select the property key @Species@ and @Homo sapiens@ as its value, but the user interface will display it as @Animal: Human@ because those labels are the first in the vocabulary definition.
 
 Internally, Workbench2 uses the IDs to do property based searches, so if the user searches by @Animal: Human@ or @Species: Homo sapiens@, both will return the same results.
+
+h2. Definition validation
+
+Because the vocabulary definition is prone to syntax or logical errors, the @controller@ service needs to do some validation before answering requests. If the vocabulary validation fails, the service won't start.
+The site administrator can make sure the vocabulary file is correct before even trying to start the @controller@ service by running @arvados-server config-check@. When the vocabulary definition isn't correct, the administrator will get a list of issues like the one below:
+
+<notextile>
+<pre><code># arvados-server config-check -config /etc/arvados/config.yml
+Error loading vocabulary file "/etc/arvados/vocabulary.json" for cluster zzzzz:
+duplicate JSON key "tags.IDTAGFRUITS.values.IDVALFRUITS1"
+tag key "IDTAGCOMMENT" is configured as strict but doesn't provide values
+tag value label "Banana" for pair ("IDTAGFRUITS":"IDVALFRUITS8") already seen on value "IDVALFRUITS4"
+exit status 1
+</code></pre>
+</notextile>
+
+bq. NOTE: These validation checks are performed only on the node that hosts the vocabulary file defined on the configuration. As the same configuration file is shared between different nodes, those who don't host the file won't produce spurious errors when running @arvados-server config-check@.
+
+h2. Live updates
+
+Sometimes it may be necessary to modify the vocabulary definition in a running production environment.
+When a change is detected, the @controller@ service will automatically attempt to load the new vocabulary and check its validity before making it active.
+If the new vocabulary has some issue, the last valid one will keep being active. The service will export any errors on its health endpoint so that a monitoring solution can send an alert appropriately.
+With the above mechanisms in place, no outages should occur from making typos or other errors when updating the vocabulary file.
+
+h2. Health status
+
+To be able for the administrator to guarantee the system's metadata integrity, the @controller@ service exports a specific health endpoint for the vocabulary at @/_health/vocabulary@.
+As a first measure, the service won't start if the vocabulary file is incorrect. Once running, if there are updates (that may even be periodical), the service needs to keep running while notifying the operator that some fixing is in order.
+An example of a vocabulary health error is included below:
+
+<notextile>
+<pre><code>$ curl --silent -H "Authorization: Bearer xxxtokenxxx" https://controller/_health/vocabulary | jq .
+{
+  "error": "while loading vocabulary file \"/etc/arvados/vocabulary.json\": duplicate JSON key \"tags.IDTAGSIZES.values.IDVALSIZES3\"",
+  "health": "ERROR"
+}
+</code></pre>
+</notextile>
+
+h2. Client support
+
+Workbench2 currently takes advantage of this vocabulary definition by providing an easy-to-use interface for searching and applying metadata to different objects in the system. Because the definition file only resides on the @controller@ node, and Workbench2 is just a static web application run by every users' web browser, there's a mechanism in place that allows Workbench2 and any other client to request the active vocabulary.
+
+The @controller@ service provides an unauthenticated endpoint at @/arvados/v1/vocabulary@ where it exports the contents of the vocabulary JSON file:
+
+<notextile>
+<pre><code>$ curl --silent https://controller/arvados/v1/vocabulary | jq .
+{
+  "kind": "arvados#vocabulary",
+  "strict_tags": false,
+  "tags": {
+    "IDTAGANIMALS": {
+      "labels": [
+        {
+          "label": "Animal"
+        },
+        {
+          "label": "Creature"
+        }
+      ],
+      "strict": false,
+...
+}
+</code></pre>
+</notextile>
+
+Although the vocabulary enforcement is done on the backend side, clients can use this information to provide helping features to users, like doing ID-to-label translations, preemptive error checking, etc.
 
 h2. Properties migration
 
