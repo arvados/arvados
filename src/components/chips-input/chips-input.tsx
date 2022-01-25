@@ -12,6 +12,9 @@ interface ChipsInputProps<Value> {
     values: Value[];
     getLabel?: (value: Value) => string;
     onChange: (value: Value[]) => void;
+    handleFocus?: (e: any) => void;
+    handleBlur?: (e: any) => void;
+    chipsClassName?: string;
     createNewValue: (value: string) => Value;
     inputComponent?: React.ComponentType<InputProps>;
     inputProps?: InputProps;
@@ -52,10 +55,11 @@ export const ChipsInput = withStyles(styles)(
             this.setState({ text: event.target.value });
         }
 
-        handleKeyPress = ({ key }: React.KeyboardEvent<HTMLInputElement>) => {
-            if (key === 'Enter') {
+        handleKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
+            if (e.key === 'Enter') {
                 this.createNewValue();
-            } else if (key === 'Backspace') {
+                e.preventDefault();
+            } else if (e.key === 'Backspace') {
                 this.deleteLastValue();
             }
         }
@@ -104,7 +108,7 @@ export const ChipsInput = withStyles(styles)(
 
         renderChips() {
             const { classes, ...props } = this.props;
-            return <div className={classes.chips}>
+            return <div className={[classes.chips, this.props.chipsClassName].join(' ')}>
                 <Chips
                     {...props}
                     clickable={!props.disabled}
@@ -121,6 +125,8 @@ export const ChipsInput = withStyles(styles)(
                 onChange={this.setText}
                 disabled={this.props.disabled}
                 onKeyDown={this.handleKeyPress}
+                onFocus={this.props.handleFocus}
+                onBlur={this.props.handleBlur}
                 inputProps={{
                     ...(InputProps && InputProps.inputProps),
                     className: classes.input,

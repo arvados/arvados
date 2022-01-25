@@ -68,12 +68,14 @@ import { RemoveApiClientAuthorizationDialog } from 'views-components/api-client-
 import { RemoveKeepServiceDialog } from 'views-components/keep-services-dialog/remove-dialog';
 import { RemoveLinkDialog } from 'views-components/links-dialog/remove-dialog';
 import { RemoveSshKeyDialog } from 'views-components/ssh-keys-dialog/remove-dialog';
+import { VirtualMachineAttributesDialog } from 'views-components/virtual-machines-dialog/attributes-dialog';
 import { RemoveVirtualMachineDialog } from 'views-components/virtual-machines-dialog/remove-dialog';
+import { RemoveVirtualMachineLoginDialog } from 'views-components/virtual-machines-dialog/remove-login-dialog';
+import { VirtualMachineAddLoginDialog } from 'views-components/virtual-machines-dialog/add-login-dialog';
 import { AttributesApiClientAuthorizationDialog } from 'views-components/api-client-authorizations-dialog/attributes-dialog';
 import { AttributesKeepServiceDialog } from 'views-components/keep-services-dialog/attributes-dialog';
 import { AttributesLinkDialog } from 'views-components/links-dialog/attributes-dialog';
 import { AttributesSshKeyDialog } from 'views-components/ssh-keys-dialog/attributes-dialog';
-import { VirtualMachineAttributesDialog } from 'views-components/virtual-machines-dialog/attributes-dialog';
 import { UserPanel } from 'views/user-panel/user-panel';
 import { UserAttributesDialog } from 'views-components/user-dialog/attributes-dialog';
 import { CreateUserDialog } from 'views-components/dialog-forms/create-user-dialog';
@@ -251,6 +253,8 @@ export const WorkbenchPanel =
             <RemoveRepositoryDialog />
             <RemoveSshKeyDialog />
             <RemoveVirtualMachineDialog />
+            <RemoveVirtualMachineLoginDialog />
+            <VirtualMachineAddLoginDialog />
             <RenameFileDialog />
             <RepositoryAttributesDialog />
             <RepositoriesSampleGitDialog />

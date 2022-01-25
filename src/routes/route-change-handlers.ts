@@ -86,7 +86,7 @@ const handleLocationChange = (store: RootStore) => ({ pathname }: Location) => {
     } else if (virtualMachineUserMatch) {
         store.dispatch(WorkbenchActions.loadVirtualMachines);
     } else if (virtualMachineAdminMatch) {
-        store.dispatch(WorkbenchActions.loadVirtualMachines);
+        store.dispatch(WorkbenchActions.loadVirtualMachinesAdmin);
     } else if (repositoryMatch) {
         store.dispatch(WorkbenchActions.loadRepositories);
     } else if (sshKeysUserMatch) {

@@ -4,7 +4,7 @@
 
 import React from 'react';
 import { connect } from 'react-redux';
-import { Grid, Typography, Button, Card, CardContent, TableBody, TableCell, TableHead, TableRow, Table, Tooltip } from '@material-ui/core';
+import { Grid, Typography, Button, Card, CardContent, TableBody, TableCell, TableHead, TableRow, Table, Tooltip, Chip } from '@material-ui/core';
 import { StyleRulesCallback, WithStyles, withStyles } from '@material-ui/core/styles';
 import { ArvadosTheme } from 'common/custom-theme';
 import { compose, Dispatch } from 'redux';
@@ -16,7 +16,7 @@ import { SESSION_STORAGE } from "services/auth-service/auth-service";
 // import * as CopyToClipboard from 'react-copy-to-clipboard';
 import parse from "parse-duration";
 
-type CssRules = 'button' | 'codeSnippet' | 'link' | 'linkIcon' | 'rightAlign' | 'cardWithoutMachines' | 'icon';
+type CssRules = 'button' | 'codeSnippet' | 'link' | 'linkIcon' | 'rightAlign' | 'cardWithoutMachines' | 'icon' | 'chipsRoot';
 
 const EXTRA_TOKEN = "exraToken";
 
@@ -56,7 +56,10 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     icon: {
         textAlign: "right",
         marginTop: theme.spacing.unit
-    }
+    },
+    chipsRoot: {
+        margin: `0px -${theme.spacing.unit / 2}px`,
+    },
 });
 
 const mapStateToProps = (state: RootState) => {
@@ -174,6 +177,7 @@ const virtualMachinesTable = (props: VirtualMachineProps) =>
             <TableRow>
                 <TableCell>Host name</TableCell>
                 <TableCell>Login name</TableCell>
+                <TableCell>Groups</TableCell>
                 <TableCell>Command line</TableCell>
                 <TableCell>Web shell</TableCell>
             </TableRow>
@@ -181,7 +185,7 @@ const virtualMachinesTable = (props: VirtualMachineProps) =>
         <TableBody>
             {props.virtualMachines.items.map(it =>
                 props.links.items.map(lk => {
-                    if (lk.tailUuid === props.userUuid) {
+                    if (lk.tailUuid === props.userUuid && lk.headUuid === it.uuid) {
                         const username = lk.properties.username;
                         const command = `ssh ${username}@${it.hostname}${props.hostSuffix}`;
                         let tokenParam = "";
@@ -191,6 +195,17 @@ const virtualMachinesTable = (props: VirtualMachineProps) =>
                         return <TableRow key={lk.uuid}>
                             <TableCell>{it.hostname}</TableCell>
                             <TableCell>{username}</TableCell>
+                            <TableCell>
+                                <Grid container spacing={8} className={props.classes.chipsRoot}>
+                                    {
+                                    (lk.properties.groups || []).map((group, i) => (
+                                        <Grid item key={i}>
+                                            <Chip label={group} />
+                                        </Grid>
+                                    ))
+                                    }
+                                </Grid>
+                            </TableCell>
                             <TableCell>
                                 {command}
                             </TableCell>

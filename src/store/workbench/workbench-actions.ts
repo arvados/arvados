@@ -100,6 +100,7 @@ import { loadAllProcessesPanel, allProcessesPanelActions } from '../all-processe
 import { allProcessesPanelColumns } from 'views/all-processes-panel/all-processes-panel';
 import { collectionPanelFilesAction } from '../collection-panel/collection-panel-files/collection-panel-files-actions';
 import { createTree } from 'models/tree';
+import { AdminMenuIcon } from 'components/icon/icon';
 
 export const WORKBENCH_LOADING_SCREEN = 'workbenchLoadingScreen';
 
@@ -490,6 +491,12 @@ export const loadVirtualMachines = handleFirstTimeLoad(
     async (dispatch: Dispatch<any>) => {
         await dispatch(loadVirtualMachinesPanel());
         dispatch(setBreadcrumbs([{ label: 'Virtual Machines' }]));
+    });
+
+export const loadVirtualMachinesAdmin = handleFirstTimeLoad(
+    async (dispatch: Dispatch<any>) => {
+        await dispatch(loadVirtualMachinesPanel());
+        dispatch(setBreadcrumbs([{ label: 'Virtual Machines Admin', icon: AdminMenuIcon }]));
     });
 
 export const loadRepositories = handleFirstTimeLoad(

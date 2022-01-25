@@ -35,6 +35,7 @@ import { formatPermissionLevel } from 'views-components/sharing-dialog/permissio
 import { PermissionLevel } from 'models/permission';
 import { openPermissionEditContextMenu } from 'store/context-menu/context-menu-actions';
 import { getUserUuid } from 'common/getuser';
+import { VirtualMachinesResource } from 'models/virtual-machines';
 
 const renderName = (dispatch: Dispatch, item: GroupContentsResource) => {
 
@@ -221,7 +222,7 @@ const renderIsHidden = (props: {
                             permissionLinkUuid: string,
                             visible: boolean,
                             canManage: boolean,
-                            setMemberIsHidden: (memberLinkUuid: string, permissionLinkUuid: string, hide: boolean) => void 
+                            setMemberIsHidden: (memberLinkUuid: string, permissionLinkUuid: string, hide: boolean) => void
                         }) => {
     if (props.memberLinkUuid) {
         return <Checkbox
@@ -271,14 +272,36 @@ export const ResourceIsAdmin = connect(
     }, { toggleIsAdmin }
 )(renderIsAdmin);
 
-const renderUsername = (item: { username: string }) =>
-    <Typography noWrap>{item.username}</Typography>;
+const renderUsername = (item: { username: string, uuid: string }) =>
+    <Typography noWrap>{item.username || item.uuid}</Typography>;
 
 export const ResourceUsername = connect(
     (state: RootState, props: { uuid: string }) => {
         const resource = getResource<UserResource>(props.uuid)(state.resources);
-        return resource || { username: '' };
+        return resource || { username: '', uuid: props.uuid };
     })(renderUsername);
+
+// Virtual machine resource
+
+const renderHostname = (item: { hostname: string }) =>
+    <Typography noWrap>{item.hostname}</Typography>;
+
+export const VirtualMachineHostname = connect(
+    (state: RootState, props: { uuid: string }) => {
+        const resource = getResource<VirtualMachinesResource>(props.uuid)(state.resources);
+        return resource || { hostname: '' };
+    })(renderHostname);
+
+const renderVirtualMachineLogin = (login: {user: string}) =>
+    <Typography noWrap>{login.user}</Typography>
+
+export const VirtualMachineLogin = connect(
+    (state: RootState, props: { linkUuid: string }) => {
+        const permission = getResource<LinkResource>(props.linkUuid)(state.resources);
+        const user = getResource<UserResource>(permission?.tailUuid || '')(state.resources);
+
+        return {user: user?.username || permission?.tailUuid || ''};
+    })(renderVirtualMachineLogin);
 
 // Common methods
 const renderCommonData = (data: string) =>

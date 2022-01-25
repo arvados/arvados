@@ -13,4 +13,5 @@ export enum PermissionLevel {
     CAN_READ = 'can_read',
     CAN_WRITE = 'can_write',
     CAN_MANAGE = 'can_manage',
+    CAN_LOGIN = 'can_login',
 }

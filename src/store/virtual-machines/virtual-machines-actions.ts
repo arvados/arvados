@@ -14,6 +14,10 @@ import { FilterBuilder } from "services/api/filter-builder";
 import { ListResults } from "services/common-service/common-service";
 import { dialogActions } from 'store/dialog/dialog-actions';
 import { snackbarActions, SnackbarKind } from 'store/snackbar/snackbar-actions';
+import { PermissionLevel } from "models/permission";
+import { deleteResources, updateResources } from 'store/resources/resources-actions';
+import { Participant } from "views-components/sharing-dialog/participant-select";
+import { initialize, reset } from "redux-form";
 
 export const virtualMachinesActions = unionize({
     SET_REQUESTED_DATE: ofType<string>(),
@@ -27,6 +31,13 @@ export type VirtualMachineActions = UnionOf<typeof virtualMachinesActions>;
 export const VIRTUAL_MACHINES_PANEL = 'virtualMachinesPanel';
 export const VIRTUAL_MACHINE_ATTRIBUTES_DIALOG = 'virtualMachineAttributesDialog';
 export const VIRTUAL_MACHINE_REMOVE_DIALOG = 'virtualMachineRemoveDialog';
+export const VIRTUAL_MACHINE_ADD_LOGIN_DIALOG = 'virtualMachineAddLoginDialog';
+export const VIRTUAL_MACHINE_ADD_LOGIN_FORM = 'virtualMachineAddLoginForm';
+export const VIRTUAL_MACHINE_REMOVE_LOGIN_DIALOG = 'virtualMachineRemoveLoginDialog';
+
+export const VIRTUAL_MACHINE_ADD_LOGIN_VM_FIELD = 'vmUuid';
+export const VIRTUAL_MACHINE_ADD_LOGIN_USER_FIELD = 'user';
+export const VIRTUAL_MACHINE_ADD_LOGIN_GROUPS_FIELD = 'groups';
 
 export const openUserVirtualMachines = () =>
     async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
@@ -59,8 +70,29 @@ const loadRequestedDate = () =>
 export const loadVirtualMachinesAdminData = () =>
     async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
         dispatch<any>(loadRequestedDate());
+
         const virtualMachines = await services.virtualMachineService.list();
+        dispatch(updateResources(virtualMachines.items));
         dispatch(virtualMachinesActions.SET_VIRTUAL_MACHINES(virtualMachines));
+
+
+        const logins = await services.permissionService.list({
+            filters: new FilterBuilder()
+            .addIn('head_uuid', virtualMachines.items.map(item => item.uuid))
+            .addEqual('name', PermissionLevel.CAN_LOGIN)
+            .getFilters()
+        });
+        dispatch(updateResources(logins.items));
+        dispatch(virtualMachinesActions.SET_LINKS(logins));
+
+        const users = await services.userService.list({
+            filters: new FilterBuilder()
+            .addIn('uuid', logins.items.map(item => item.tailUuid))
+            .getFilters(),
+            count: "none"
+        });
+        dispatch(updateResources(users.items));
+
         const getAllLogins = await services.virtualMachineService.getAllLogins();
         dispatch(virtualMachinesActions.SET_LOGINS(getAllLogins));
     };
@@ -77,6 +109,79 @@ export const loadVirtualMachinesUserData = () =>
         });
         dispatch(virtualMachinesActions.SET_VIRTUAL_MACHINES(virtualMachines));
         dispatch(virtualMachinesActions.SET_LINKS(links));
+    };
+
+export const openAddVirtualMachineLoginDialog = (uuid: string) =>
+    async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
+        dispatch(initialize(VIRTUAL_MACHINE_ADD_LOGIN_FORM, {[VIRTUAL_MACHINE_ADD_LOGIN_VM_FIELD]: uuid, [VIRTUAL_MACHINE_ADD_LOGIN_GROUPS_FIELD]: ['docker']}));
+        dispatch(dialogActions.OPEN_DIALOG( {id: VIRTUAL_MACHINE_ADD_LOGIN_DIALOG, data: {}} ));
+    }
+
+export interface AddLoginFormData {
+    [VIRTUAL_MACHINE_ADD_LOGIN_VM_FIELD]: string;
+    [VIRTUAL_MACHINE_ADD_LOGIN_USER_FIELD]: Participant;
+    [VIRTUAL_MACHINE_ADD_LOGIN_GROUPS_FIELD]: string[];
+}
+
+
+export const addVirtualMachineLogin = ({vmUuid, user, groups}: AddLoginFormData) =>
+    async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
+        try {
+            // Get user
+            const userResource = await services.userService.get(user.uuid);
+
+            const permission = await services.permissionService.create({
+                headUuid: vmUuid,
+                tailUuid: userResource.uuid,
+                name: PermissionLevel.CAN_LOGIN,
+                properties: {
+                    username: userResource.username,
+                    groups,
+                }
+            });
+            dispatch(updateResources([permission]));
+
+            dispatch(reset(VIRTUAL_MACHINE_ADD_LOGIN_FORM));
+            dispatch(dialogActions.CLOSE_DIALOG({ id: VIRTUAL_MACHINE_ADD_LOGIN_DIALOG }));
+            dispatch<any>(loadVirtualMachinesAdminData());
+
+            dispatch(snackbarActions.OPEN_SNACKBAR({
+                message: `Permissions updated`,
+                kind: SnackbarKind.SUCCESS
+            }));
+        } catch (e) {
+            dispatch(snackbarActions.OPEN_SNACKBAR({ message: e.message, hideDuration: 2000, kind: SnackbarKind.ERROR }));
+        }
+    };
+
+export const openRemoveVirtualMachineLoginDialog = (uuid: string) =>
+    (dispatch: Dispatch, getState: () => RootState) => {
+        dispatch(dialogActions.OPEN_DIALOG({
+            id: VIRTUAL_MACHINE_REMOVE_LOGIN_DIALOG,
+            data: {
+                title: 'Remove login permission',
+                text: 'Are you sure you want to remove this permission?',
+                confirmButtonLabel: 'Remove',
+                uuid
+            }
+        }));
+    };
+
+export const removeVirtualMachineLogin = (uuid: string) =>
+    async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
+        try {
+            await services.permissionService.delete(uuid);
+            dispatch<any>(deleteResources([uuid]));
+
+            dispatch<any>(loadVirtualMachinesAdminData());
+
+            dispatch(snackbarActions.OPEN_SNACKBAR({
+                message: `Login permission removed`,
+                kind: SnackbarKind.SUCCESS
+            }));
+        } catch (e) {
+            dispatch(snackbarActions.OPEN_SNACKBAR({ message: e.message, hideDuration: 2000, kind: SnackbarKind.ERROR }));
+        }
     };
 
 export const saveRequestedDate = () =>
