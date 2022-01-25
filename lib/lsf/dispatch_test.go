@@ -44,7 +44,8 @@ func (s *suite) SetUpTest(c *check.C) {
 	c.Assert(err, check.IsNil)
 	cluster, err := cfg.GetCluster("")
 	c.Assert(err, check.IsNil)
-	cluster.Containers.CloudVMs.PollInterval = arvados.Duration(time.Second)
+	cluster.Containers.CloudVMs.PollInterval = arvados.Duration(time.Second / 4)
+	cluster.Containers.MinRetryPeriod = arvados.Duration(time.Second / 4)
 	s.disp = newHandler(context.Background(), cluster, arvadostest.Dispatch1Token, prometheus.NewRegistry()).(*dispatcher)
 	s.disp.lsfcli.stubCommand = func(string, ...string) *exec.Cmd {
 		return exec.Command("bash", "-c", "echo >&2 unimplemented stub; false")
@@ -243,16 +244,19 @@ func (s *suite) TestSubmit(c *check.C) {
 		}
 		// "queuedcontainer" should be running
 		if _, ok := s.disp.lsfqueue.Lookup(arvadostest.QueuedContainerUUID); !ok {
+			c.Log("Lookup(queuedcontainer) == false")
 			continue
 		}
 		// "lockedcontainer" should be cancelled because it
 		// has priority 0 (no matching container requests)
-		if _, ok := s.disp.lsfqueue.Lookup(arvadostest.LockedContainerUUID); ok {
+		if ent, ok := s.disp.lsfqueue.Lookup(arvadostest.LockedContainerUUID); ok {
+			c.Logf("Lookup(lockedcontainer) == true, ent = %#v", ent)
 			continue
 		}
 		// "crTooBig" should be cancelled because lsf stub
 		// reports there is no suitable instance type
-		if _, ok := s.disp.lsfqueue.Lookup(s.crTooBig.ContainerUUID); ok {
+		if ent, ok := s.disp.lsfqueue.Lookup(s.crTooBig.ContainerUUID); ok {
+			c.Logf("Lookup(crTooBig) == true, ent = %#v", ent)
 			continue
 		}
 		var ctr arvados.Container
