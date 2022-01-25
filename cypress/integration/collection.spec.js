@@ -791,6 +791,35 @@ describe('Collection panel tests', function () {
             });
     });
 
+    it('creates collection from selected files of another collection', () => {
+        cy.createCollection(adminUser.token, {
+            name: `Test Collection ${Math.floor(Math.random() * 999999)}`,
+            owner_uuid: activeUser.user.uuid,
+            preserve_version: true,
+            manifest_text: ". 37b51d194a7513e45b56f6524f2d51f2+3 0:3:foo 0:3:bar\n"
+        })
+            .as('collection').then(function () {
+                // Visit collection, check basic information
+                cy.loginAs(activeUser)
+                cy.goToPath(`/collections/${this.collection.uuid}`);
+
+                cy.get('[data-cy=collection-files-panel]').within(() => {
+                    cy.get('input[type=checkbox]').first().click();
+                });
+
+                cy.get('[data-cy=collection-files-panel-options-btn]').click();
+                cy.get('[data-cy=context-menu]').contains('Create a new collection with selected').click();
+
+                cy.get('[data-cy=form-dialog]').contains('Projects').click();
+
+                cy.get('[data-cy=form-submit-btn]').click();
+
+                cy.get('.layout-pane-primary', { wait: 12000 }).contains('Projects').click();
+
+                cy.get('main').contains(`Files extracted from: ${this.collection.name}`).should('exist');
+            });
+    });
+
     it('creates new collection with properties on home project', function () {
         cy.loginAs(activeUser);
         cy.goToPath(`/projects/${activeUser.user.uuid}`);
