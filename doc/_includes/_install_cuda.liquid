@@ -1,0 +1,21 @@
+{% comment %}
+Copyright (C) The Arvados Authors. All rights reserved.
+
+SPDX-License-Identifier: CC-BY-SA-3.0
+{% endcomment %}
+
+h2(#cuda). Install NVIDA CUDA Toolkit (optional)
+
+If you want to use NVIDIA GPUs, "install the CUDA toolkit.":https://docs.nvidia.com/cuda/cuda-installation-guide-linux/index.html
+
+In addition, you also must install the NVIDIA Container Toolkit:
+
+<pre>
+DIST=$(. /etc/os-release; echo $ID$VERSION_ID)
+curl -s -L https://nvidia.github.io/libnvidia-container/gpgkey | \
+  sudo apt-key add -
+curl -s -L https://nvidia.github.io/libnvidia-container/$DIST/libnvidia-container.list | \
+  sudo tee /etc/apt/sources.list.d/libnvidia-container.list
+sudo apt-get update
+apt-get install libnvidia-container1 libnvidia-container-tools nvidia-container-toolkit
+</pre>

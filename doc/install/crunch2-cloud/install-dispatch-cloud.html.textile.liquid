@@ -74,6 +74,27 @@ Add or update the following portions of your cluster configuration file, @config
 </code></pre>
 </notextile>
 
+h4. NVIDIA GPU support
+
+To specify instance types with NVIDIA GPUs, you must include an additional @CUDA@ section:
+
+<notextile>
+<pre><code>    InstanceTypes:
+      g4dn:
+        ProviderType: g4dn.xlarge
+        VCPUs: 4
+        RAM: 16GiB
+        IncludedScratch: 125GB
+        Price: 0.56
+        CUDA:
+          DriverVersion: "11.4"
+          HardwareCapability: "7.5"
+          DeviceCount: 1
+</code></pre>
+</notextile>
+
+The @DriverVersion@ is the version of the CUDA toolkit installed in your compute image (in X.Y format, do not include the patchlevel).  The @HardwareCapability@ is the CUDA compute capability of the GPUs available for this instance type.  The @DeviceCount@ is the number of GPU cores available for this instance type.
+
 h4. Minimal configuration example for Amazon EC2
 
 The <span class="userinput">ImageID</span> value is the compute node image that was built in "the previous section":install-compute-node.html#aws.

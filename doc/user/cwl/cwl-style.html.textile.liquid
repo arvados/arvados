@@ -11,9 +11,36 @@ SPDX-License-Identifier: CC-BY-SA-3.0
 
 h2(#performance). Performance
 
-To get the best perfomance from your workflows, be aware of the following Arvados features, behaviors, and best practices:
+To get the best perfomance from your workflows, be aware of the following Arvados features, behaviors, and best practices.
 
-If you have a sequence of short-running steps (less than 1-2 minutes each), use the Arvados extension "arv:RunInSingleContainer":cwl-extensions.html#RunInSingleContainer to avoid scheduling and data transfer overhead by running all the steps together at once.  To use this feature, @cwltool@ must be installed in the container image.
+Does your application support NVIDIA GPU acceleration?  Use "cwltool:CUDARequirement":cwl-extensions.html#CUDARequirement to request nodes with GPUs.
+
+If you have a sequence of short-running steps (less than 1-2 minutes each), use the Arvados extension "arv:RunInSingleContainer":cwl-extensions.html#RunInSingleContainer to avoid scheduling and data transfer overhead by running all the steps together in the same container on the same node.  To use this feature, @cwltool@ must be installed in the container image.  Example:
+
+{% codeblock as yaml %}
+class: Workflow
+cwlVersion: v1.0
+$namespaces:
+  arv: "http://arvados.org/cwl#"
+inputs:
+  file: File
+outputs: []
+requirements:
+  SubworkflowFeatureRequirement: {}
+steps:
+  subworkflow-with-short-steps:
+    in:
+      file: file
+    out: [out]
+    # This hint indicates that the subworkflow should be bundled and
+    # run in a single container, instead of the normal behavior, which
+    # is to run each step in a separate container.  This greatly
+    # reduces overhead if you have a series of short jobs, without
+    # requiring any changes the CWL definition of the sub workflow.
+    hints:
+      - class: arv:RunInSingleContainer
+    run: subworkflow-with-short-steps.cwl
+{% endcodeblock %}
 
 Avoid declaring @InlineJavascriptRequirement@ or @ShellCommandRequirement@ unless you specifically need them.  Don't include them "just in case" because they change the default behavior and may add extra overhead.
 
@@ -123,7 +150,7 @@ To write workflows that are easy to modify and portable across CWL runners (in t
 
 Workflows should always provide @DockerRequirement@ in the @hints@ or @requirements@ section.
 
-Build a reusable library of components.  Share tool wrappers and subworkflows between projects.  Make use of and contribute to "community maintained workflows and tools":https://github.com/common-workflow-language/workflows and tool registries such as "Dockstore":http://dockstore.org .
+Build a reusable library of components.  Share tool wrappers and subworkflows between projects.  Make use of and contribute to "community maintained workflows and tools":https://github.com/common-workflow-library and tool registries such as "Dockstore":http://dockstore.org .
 
 CommandLineTools wrapping custom scripts should represent the script as an input parameter with the script file as a default value.  Use @secondaryFiles@ for scripts that consist of multiple files.  For example:
 
