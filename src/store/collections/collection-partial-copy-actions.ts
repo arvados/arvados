@@ -13,7 +13,7 @@ import { filterCollectionFilesBySelection } from '../collection-panel/collection
 import { snackbarActions, SnackbarKind } from 'store/snackbar/snackbar-actions';
 import { getCommonResourceServiceError, CommonResourceServiceError } from 'services/common-service/common-resource-service';
 import { progressIndicatorActions } from "store/progress-indicator/progress-indicator-actions";
-import { initProjectsTreePicker } from 'store/tree-picker/tree-picker-actions';
+import { initProjectsTreePicker } from "store/tree-picker/tree-picker-actions";
 
 export const COLLECTION_PARTIAL_COPY_FORM_NAME = 'COLLECTION_PARTIAL_COPY_DIALOG';
 export const COLLECTION_PARTIAL_COPY_TO_SELECTED_COLLECTION = 'COLLECTION_PARTIAL_COPY_TO_SELECTED_DIALOG';
@@ -33,9 +33,9 @@ export const openCollectionPartialCopyDialog = () =>
         const currentCollection = getState().collectionPanel.item;
         if (currentCollection) {
             const initialData = {
-                name: currentCollection.name,
+                name: `Files extracted from: ${currentCollection.name}`,
                 description: currentCollection.description,
-                projectUuid: ''
+                projectUuid: undefined
             };
             dispatch(initialize(COLLECTION_PARTIAL_COPY_FORM_NAME, initialData));
             dispatch<any>(resetPickerProjectTree());
