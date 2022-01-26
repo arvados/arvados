@@ -172,7 +172,7 @@ const virtualMachineSendRequest = (props: VirtualMachineProps) =>
     </span>;
 
 const virtualMachinesTable = (props: VirtualMachineProps) =>
-    <Table>
+    <Table data-cy="vm-user-table">
         <TableHead>
             <TableRow>
                 <TableCell>Host name</TableCell>

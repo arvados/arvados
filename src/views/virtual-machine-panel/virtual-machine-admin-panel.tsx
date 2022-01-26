@@ -98,7 +98,7 @@ const CardContentWithVirtualMachines = (props: VirtualMachineProps) =>
     </Grid>;
 
 const virtualMachinesTable = (props: VirtualMachineProps) =>
-    <Table>
+    <Table data-cy="vm-admin-table">
         <TableHead>
             <TableRow>
                 <TableCell>Uuid</TableCell>
@@ -109,7 +109,7 @@ const virtualMachinesTable = (props: VirtualMachineProps) =>
             </TableRow>
         </TableHead>
         <TableBody>
-            {props.logins.items.length > 0 && props.virtualMachines.items.map((machine, index) =>
+            {props.virtualMachines.items.map((machine, index) =>
                 <TableRow key={index}>
                     <TableCell><ResourceUuid uuid={machine.uuid} /></TableCell>
                     <TableCell><VirtualMachineHostname uuid={machine.uuid} /></TableCell>
