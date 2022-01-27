@@ -119,7 +119,7 @@ func (disp *dispatcher) init() {
 	disp.lsfcli.logger = disp.logger
 	disp.lsfqueue = lsfqueue{
 		logger: disp.logger,
-		period: time.Duration(disp.Cluster.Containers.CloudVMs.PollInterval),
+		period: disp.Cluster.Containers.CloudVMs.PollInterval.Duration(),
 		lsfcli: &disp.lsfcli,
 	}
 	disp.ArvClient.AuthToken = disp.AuthToken
@@ -256,7 +256,7 @@ func (disp *dispatcher) runContainer(_ *dispatch.Dispatcher, ctr arvados.Contain
 
 	// Try "bkill" every few seconds until the LSF job disappears
 	// from the queue.
-	ticker := time.NewTicker(5 * time.Second)
+	ticker := time.NewTicker(disp.Cluster.Containers.CloudVMs.PollInterval.Duration() / 2)
 	defer ticker.Stop()
 	for qent, ok := disp.lsfqueue.Lookup(ctr.UUID); ok; _, ok = disp.lsfqueue.Lookup(ctr.UUID) {
 		err := disp.lsfcli.Bkill(qent.ID)

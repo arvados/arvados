@@ -58,7 +58,7 @@ func (q *lsfqueue) getNext() map[string]bjobsEntry {
 func (q *lsfqueue) init() {
 	q.updated = sync.NewCond(&q.mutex)
 	q.nextReady = make(chan (<-chan struct{}))
-	ticker := time.NewTicker(time.Second)
+	ticker := time.NewTicker(q.period)
 	go func() {
 		for range ticker.C {
 			// Send a new "next update ready" channel to
