@@ -134,6 +134,7 @@ describe('Virtual machine login manage tests', function() {
 
         cy.get('[data-cy=vm-admin-table]')
             .contains('user'); // Wait for page to finish
+        cy.wait(3000);
 
         cy.get('[data-cy=vm-admin-table]')
             .contains(vmHost)
