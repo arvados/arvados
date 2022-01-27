@@ -13,12 +13,12 @@ describe('Virtual machine login manage tests', function() {
         // aliases are cleaned up after every test. Also it doesn't make sense
         // to set the same users on beforeEach() over and over again, so we
         // separate a little from Cypress' 'Best Practices' here.
-        cy.getUser('admin', 'Admin', 'User', true, true)
+        cy.getUser('admin', 'VMAdmin', 'User', true, true)
             .as('adminUser').then(function() {
                 adminUser = this.adminUser;
             }
         );
-        cy.getUser('user', 'Active', 'User', false, true)
+        cy.getUser('user', 'VMActive', 'User', false, true)
             .as('activeUser').then(function() {
                 activeUser = this.activeUser;
             }
@@ -47,7 +47,7 @@ describe('Virtual machine login manage tests', function() {
                   .contains('Search for users')
                   .parent()
                   .within(() => {
-                    cy.get('input').type('admin');
+                    cy.get('input').type('VMAdmin');
                   })
             });
         cy.get('[role=tooltip]').click();
@@ -85,7 +85,7 @@ describe('Virtual machine login manage tests', function() {
                   .contains('Search for users')
                   .parent()
                   .within(() => {
-                    cy.get('input').type('active user');
+                    cy.get('input').type('VMActive user');
                   })
             });
         cy.get('[role=tooltip]').click();
@@ -134,7 +134,6 @@ describe('Virtual machine login manage tests', function() {
 
         cy.get('[data-cy=vm-admin-table]')
             .contains('user'); // Wait for page to finish
-        cy.wait(3000);
 
         cy.get('[data-cy=vm-admin-table]')
             .contains(vmHost)
@@ -153,7 +152,7 @@ describe('Virtual machine login manage tests', function() {
                 cy.get('div[role=button]').should('have.length', 1)
             });
 
-            cy.get('@vmRow')
+        cy.get('@vmRow')
             .find('div[role=button]')
             .contains('admin')
             .parents('[role=button]')
