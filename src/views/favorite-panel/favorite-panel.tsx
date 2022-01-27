@@ -18,7 +18,7 @@ import {
     ResourceFileSize,
     ResourceLastModifiedDate,
     ResourceName,
-    ResourceOwner,
+    ResourceOwnerWithName,
     ResourceType
 } from 'views-components/data-explorer/renderers';
 import { FavoriteIcon } from 'components/icon/icon';
@@ -97,7 +97,7 @@ export const favoritePanelColumns: DataColumns<string> = [
         selected: false,
         configurable: true,
         filters: createTree(),
-        render: uuid => <ResourceOwner uuid={uuid} />
+        render: uuid => <ResourceOwnerWithName uuid={uuid} />
     },
     {
         name: FavoritePanelColumnNames.FILE_SIZE,
