@@ -131,29 +131,34 @@ describe('Virtual machine login manage tests', function() {
         cy.loginAs(adminUser);
         cy.get('header button[title="Admin Panel"]').click();
         cy.get('#admin-menu').contains('Virtual Machines').click();
+
         cy.get('[data-cy=vm-admin-table]')
-            .contains(vmHost)
-            .parents('tr')
-            .within(() => {
-                // Remove user login
-                cy.get('div[role=button]').contains('user').parents('[role=button]').within(() => {
-                    cy.get('svg').click();
-                });
-            });
-        cy.get('[data-cy=confirmation-dialog-ok-btn]').click();
+            .contains('user'); // Wait for page to finish
 
         cy.get('[data-cy=vm-admin-table]')
             .contains(vmHost)
             .parents('tr')
+            .as('vmRow')
+            .contains('user')
+            .parents('[role=button]')
+            .find('svg')
+            .as('removeButton');
+        cy.get('@removeButton').click();
+        cy.get('[data-cy=confirmation-dialog-ok-btn]').click();
+
+        cy.get('@vmRow')
             .within(() => {
                 cy.get('div[role=button]').should('not.contain', 'user');
                 cy.get('div[role=button]').should('have.length', 1)
-
-                // Remove admin login
-                cy.get('div[role=button]').contains('admin').parents('[role=button]').within(() => {
-                    cy.get('svg').click();
-                });
             });
+
+            cy.get('@vmRow')
+            .find('div[role=button]')
+            .contains('admin')
+            .parents('[role=button]')
+            .find('svg')
+            .as('removeButton');
+        cy.get('@removeButton').click();
         cy.get('[data-cy=confirmation-dialog-ok-btn]').click();
 
         cy.get('[data-cy=vm-admin-table]')
@@ -167,7 +172,7 @@ describe('Virtual machine login manage tests', function() {
         cy.get('header button[title="Account Management"]').click();
         cy.get('#account-menu').contains('Virtual Machines').click();
 
-        cy.get('[data-cy=vm-user-table]')
+        cy.get('[data-cy=vm-user-panel]')
             .should('not.contain', vmHost);
 
         // Check activeUser's vm page for login
@@ -175,7 +180,7 @@ describe('Virtual machine login manage tests', function() {
         cy.get('header button[title="Account Management"]').click();
         cy.get('#account-menu').contains('Virtual Machines').click();
 
-        cy.get('[data-cy=vm-user-table]')
+        cy.get('[data-cy=vm-user-panel]')
             .should('not.contain', vmHost);
     });
 });

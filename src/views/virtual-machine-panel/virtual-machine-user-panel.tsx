@@ -112,7 +112,7 @@ export const VirtualMachineUserPanel = compose(
             render() {
                 const { virtualMachines, links } = this.props;
                 return (
-                    <Grid container spacing={16}>
+                    <Grid container spacing={16} data-cy="vm-user-panel">
                         {virtualMachines.itemsAvailable === 0 && <CardContentWithoutVirtualMachines {...this.props} />}
                         {virtualMachines.itemsAvailable > 0 && links.itemsAvailable > 0 && <CardContentWithVirtualMachines {...this.props} />}
                         {<CardSSHSection {...this.props} />}
