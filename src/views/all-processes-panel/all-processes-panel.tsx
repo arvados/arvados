@@ -16,7 +16,7 @@ import { ALL_PROCESSES_PANEL_ID } from 'store/all-processes-panel/all-processes-
 import {
     ProcessStatus,
     ResourceName,
-    ResourceOwner,
+    ResourceOwnerWithName,
     ResourceType,
     ContainerRunTime,
     ResourceCreatedAtDate
@@ -90,7 +90,7 @@ export const allProcessesPanelColumns: DataColumns<string> = [
         selected: true,
         configurable: true,
         filters: createTree(),
-        render: uuid => <ResourceOwner uuid={uuid} />
+        render: uuid => <ResourceOwnerWithName uuid={uuid} />
     },
     {
         name: AllProcessesPanelColumnNames.CREATED_AT,

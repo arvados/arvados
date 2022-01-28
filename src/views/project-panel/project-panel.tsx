@@ -20,7 +20,7 @@ import {
     ResourceLastModifiedDate,
     ProcessStatus,
     ResourceType,
-    ResourceOwner
+    ResourceOwnerWithName
 } from 'views-components/data-explorer/renderers';
 import { ProjectIcon } from 'components/icon/icon';
 import { ResourceName } from 'views-components/data-explorer/renderers';
@@ -100,7 +100,7 @@ export const projectPanelColumns: DataColumns<string> = [
         selected: false,
         configurable: true,
         filters: createTree(),
-        render: uuid => <ResourceOwner uuid={uuid} />
+        render: uuid => <ResourceOwnerWithName uuid={uuid} />
     },
     {
         name: ProjectPanelColumnNames.FILE_SIZE,

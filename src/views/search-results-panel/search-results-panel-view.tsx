@@ -15,7 +15,7 @@ import {
     ResourceFileSize,
     ResourceLastModifiedDate,
     ResourceName,
-    ResourceOwner,
+    ResourceOwnerWithName,
     ResourceStatus,
     ResourceType
 } from 'views-components/data-explorer/renderers';
@@ -85,7 +85,7 @@ export const searchResultsPanelColumns: DataColumns<string> = [
         selected: true,
         configurable: true,
         filters: createTree(),
-        render: uuid => <ResourceOwner uuid={uuid} />
+        render: uuid => <ResourceOwnerWithName uuid={uuid} />
     },
     {
         name: SearchResultsPanelColumnNames.FILE_SIZE,

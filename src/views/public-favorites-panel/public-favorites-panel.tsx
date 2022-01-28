@@ -18,7 +18,7 @@ import {
     ResourceLastModifiedDate,
     ResourceType,
     ResourceName,
-    ResourceOwner
+    ResourceOwnerWithName
 } from 'views-components/data-explorer/renderers';
 import { PublicFavoriteIcon } from 'components/icon/icon';
 import { Dispatch } from 'redux';
@@ -95,7 +95,7 @@ export const publicFavoritePanelColumns: DataColumns<string> = [
         selected: false,
         configurable: true,
         filters: createTree(),
-        render: uuid => <ResourceOwner uuid={uuid} />
+        render: uuid => <ResourceOwnerWithName uuid={uuid} />
     },
     {
         name: PublicFavoritePanelColumnNames.FILE_SIZE,
