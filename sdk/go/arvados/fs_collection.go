@@ -43,10 +43,18 @@ type CollectionFileSystem interface {
 
 type collectionFileSystem struct {
 	fileSystem
-	uuid              string
-	savedPDH          atomic.Value
-	replicas          int
-	storageClasses    []string
+	uuid           string
+	savedPDH       atomic.Value
+	replicas       int
+	storageClasses []string
+	// guessSignatureTTL tracks a lower bound for the server's
+	// configured BlobSigningTTL. The guess is initially zero, and
+	// increases when we come across a signature with an expiry
+	// time further in the future than the previous guess.
+	//
+	// When the guessed TTL is much smaller than the real TTL,
+	// preemptive signature refresh is delayed or missed entirely,
+	// which is OK.
 	guessSignatureTTL time.Duration
 	holdCheckChanges  time.Time
 	lockCheckChanges  sync.Mutex
@@ -156,8 +164,13 @@ func (fs *collectionFileSystem) signatureTimeLeft() (float64, time.Duration) {
 	fs.fileSystem.root.Lock()
 	{
 		if ttl > fs.guessSignatureTTL {
+			// ttl is closer to the real TTL than
+			// guessSignatureTTL.
 			fs.guessSignatureTTL = ttl
 		} else {
+			// Use the previous best guess to compute the
+			// portion remaining (below, after unlocking
+			// mutex).
 			ttl = fs.guessSignatureTTL
 		}
 	}
