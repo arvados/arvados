@@ -295,6 +295,11 @@ func (s *SiteFSSuite) TestProjectUpdatedByOther(c *check.C) {
 	err = s.client.RequestAndDecode(nil, "DELETE", "arvados/v1/collections/"+oob.UUID, nil, nil)
 	c.Assert(err, check.IsNil)
 
+	wf, err = s.fs.OpenFile("/home/A Project/oob/test.txt", os.O_CREATE|os.O_RDWR, 0700)
+	c.Assert(err, check.IsNil)
+	err = wf.Close()
+	c.Check(err, check.IsNil)
+
 	err = project.Sync()
 	c.Check(err, check.NotNil) // can't update the deleted collection
 	_, err = s.fs.Open("/home/A Project/oob")
