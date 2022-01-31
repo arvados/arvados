@@ -64,7 +64,7 @@ export class AuthService {
         this.getStorage().setItem(API_TOKEN_KEY, token);
         const sp = token.split('/');
         if (sp.length === 3) {
-            this.getStorage().setItem(HOME_CLUSTER, sp[1].substr(0, 5));
+            this.getStorage().setItem(HOME_CLUSTER, sp[1].substring(0, 5));
         }
     }
 

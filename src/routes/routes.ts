@@ -68,7 +68,7 @@ export const getResourceUrl = (uuid: string) => {
 
 export const getNavUrl = (uuid: string, config: FederationConfig) => {
     const path = getResourceUrl(uuid) || "";
-    const cls = uuid.substr(0, 5);
+    const cls = uuid.substring(0, 5);
     if (cls === config.localCluster || extractUuidKind(uuid) === ResourceKind.USER || COLLECTION_PDH_REGEX.exec(uuid)) {
         return path;
     } else if (config.remoteHostsConfig[cls]) {

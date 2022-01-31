@@ -55,7 +55,7 @@ function displayUser(user: UserResource, showCreatedAt: boolean = false, showClu
     const disp: JSX.Element[] = [];
     disp.push(<span><b>{user.email}</b> ({user.username}, {user.uuid})</span>);
     if (showCluster) {
-        const homeCluster = user.uuid.substr(0, 5);
+        const homeCluster = user.uuid.substring(0, 5);
         disp.push(<span> hosted on cluster <b>{homeCluster}</b> and </span>);
     }
     if (showCreatedAt) {
@@ -134,7 +134,7 @@ export const LinkAccountPanelRoot = withStyles(styles)(
                                             This a remote account. You can link a local Arvados account to this one.
                                             After linking, you can access the local account's data by logging into the
 					                        <b>{localCluster}</b> cluster as user <b>{targetUser.email}</b>
-                                            from <b>{targetUser.uuid.substr(0, 5)}</b>.
+                                            from <b>{targetUser.uuid.substring(0, 5)}</b>.
 					                    </Grid >
                                             <Grid item>
                                                 <Button color="primary" variant="contained" onClick={() => startLinking(LinkAccountType.ADD_LOCAL_TO_REMOTE)}>
