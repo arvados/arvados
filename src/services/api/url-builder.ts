@@ -30,13 +30,13 @@ export function joinUrls(url0?: string, url1?: string) {
     if (url0) {
         let idx0 = url0.length - 1;
         while (url0[idx0] === '/') { --idx0; }
-        u0 = url0.substr(0, idx0 + 1);
+        u0 = url0.substring(0, idx0 + 1);
     }
     let u1 = "";
     if (url1) {
         let idx1 = 0;
         while (url1[idx1] === '/') { ++idx1; }
-        u1 = url1.substr(idx1);
+        u1 = url1.substring(idx1);
     }
     let url = u0;
     if (u1.length > 0) {

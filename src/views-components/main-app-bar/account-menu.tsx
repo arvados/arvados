@@ -90,7 +90,7 @@ export const AccountMenuComponent =
                 title="Account Management"
                 key={currentRoute}>
                 <MenuItem disabled>
-                    {getUserDisplayName(user)} {user.uuid.substr(0, 5) !== localCluster && `(${user.uuid.substr(0, 5)})`}
+                    {getUserDisplayName(user)} {user.uuid.substring(0, 5) !== localCluster && `(${user.uuid.substring(0, 5)})`}
                 </MenuItem>
                 {user.isActive && accountMenuItems}
                 <Divider />

@@ -99,7 +99,7 @@ export const getSaltedToken = (clusterId: string, token: string) => {
         throw new Error(invalidV2Token);
     }
     let salted = secret;
-    if (uuid.substr(0, 5) !== clusterId) {
+    if (uuid.substring(0, 5) !== clusterId) {
         shaObj.setHMACKey(secret, "TEXT");
         shaObj.update(clusterId);
         salted = shaObj.getHMAC("HEX");

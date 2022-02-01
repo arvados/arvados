@@ -79,12 +79,12 @@ export const authReducer = (services: ServiceRepository) => (state = initialStat
                 apiToken: token,
                 apiTokenExpiration: tokenExpiration,
                 apiTokenLocation: tokenLocation,
-                homeCluster: user.uuid.substr(0, 5)
+                homeCluster: user.uuid.substring(0, 5)
             }),
         LOGIN: () => state,
         LOGOUT: () => ({ ...state, apiToken: undefined }),
         USER_DETAILS_SUCCESS: (user: User) =>
-            ({ ...state, user, homeCluster: user.uuid.substr(0, 5) }),
+            ({ ...state, user, homeCluster: user.uuid.substring(0, 5) }),
         SET_SSH_KEYS: (sshKeys: SshKeyResource[]) => ({ ...state, sshKeys }),
         ADD_SSH_KEY: (sshKey: SshKeyResource) =>
             ({ ...state, sshKeys: state.sshKeys.concat(sshKey) }),

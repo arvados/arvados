@@ -68,7 +68,7 @@ type MyAccountPanelRootProps = InjectedFormProps<MyAccountPanelRootActionProps> 
 
 type LocalClusterProp = { localCluster: string };
 const renderField: React.ComponentType<WrappedFieldProps & LocalClusterProp> = ({ input, localCluster }) => (
-    <span>{localCluster === input.value.substr(0, 5) ? "" : "federated"} user {input.value}</span>
+    <span>{localCluster === input.value.substring(0, 5) ? "" : "federated"} user {input.value}</span>
 );
 
 export const MyAccountPanelRoot = withStyles(styles)(

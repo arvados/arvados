@@ -86,9 +86,15 @@ export const saveApiToken = (token: string) => async (dispatch: Dispatch, getSta
     const auth = getState().auth;
     config = dispatch<any>(getConfig);
 
-    // If federated token, get user & token data from the token issuing cluster
-    if (tokenParts.length === 3 && tokenParts[1].substring(0, 5) !== auth.localCluster) {
-        config = await getRemoteHostConfig(auth.remoteHosts[tokenParts[1].substring(0, 5)]);
+    // If the token is from a LoginCluster federation, get user & token data
+    // from the token issuing cluster.
+    const lc = (config as Config).loginCluster
+    const tokenCluster = tokenParts.length === 3
+        ? tokenParts[1].substring(0, 5)
+        : undefined;
+    if (tokenCluster && tokenCluster !== auth.localCluster &&
+        lc && lc === tokenCluster) {
+        config = await getRemoteHostConfig(auth.remoteHosts[tokenCluster]);
     }
 
     const svc = createServices(config, { progressFn: () => { }, errorFn: () => { } });

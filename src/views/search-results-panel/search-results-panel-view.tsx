@@ -106,7 +106,7 @@ export const searchResultsPanelColumns: DataColumns<string> = [
 
 export const SearchResultsPanelView = withStyles(styles, { withTheme: true })(
     (props: SearchResultsPanelProps & WithStyles<CssRules, true>) => {
-        const homeCluster = props.user.uuid.substr(0, 5);
+        const homeCluster = props.user.uuid.substring(0, 5);
         const loggedIn = props.sessions.filter((ss) => ss.loggedIn && ss.userIsActive);
         return <span data-cy='search-results'><DataExplorer
             id={SEARCH_RESULTS_PANEL_ID}
