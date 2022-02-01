@@ -63,7 +63,6 @@ export const MainContentBar =
             onDetailsPanelToggle: () => dispatch<any>(toggleDetailsPanel()),
             onRefreshButtonClick: (id) => {
                 dispatch<any>(loadSidePanelTreeProjects(id));
-                dispatch<any>(reloadProjectMatchingUuid([id]));
             }
         }))(
             withStyles(styles)(
