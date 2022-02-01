@@ -690,6 +690,7 @@ func (s *IntegrationSuite) TestFederatedApiClientAuthHandling(c *check.C) {
 		},
 	)
 	c.Assert(err, check.IsNil)
+	c.Assert(resp.APIClientID, check.Not(check.Equals), 0)
 	newTok := resp.TokenV2()
 	c.Assert(newTok, check.Not(check.Equals), "")
 
@@ -704,6 +705,14 @@ func (s *IntegrationSuite) TestFederatedApiClientAuthHandling(c *check.C) {
 	)
 	c.Assert(err, check.IsNil)
 	c.Assert(curUser.UUID, check.Equals, user.UUID)
+
+	// Request the ApiClientAuthorization list using the new token
+	_, userClient, _ := s.testClusters["z3333"].ClientsWithToken(newTok)
+	var acaLst arvados.APIClientAuthorizationList
+	err = userClient.RequestAndDecode(
+		&acaLst, "GET", "arvados/v1/api_client_authorizations", nil, nil,
+	)
+	c.Assert(err, check.IsNil)
 }
 
 // Test for bug #18076

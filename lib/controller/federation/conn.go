@@ -741,6 +741,9 @@ func (conn *Conn) APIClientAuthorizationCreate(ctx context.Context, options arva
 }
 
 func (conn *Conn) APIClientAuthorizationUpdate(ctx context.Context, options arvados.UpdateOptions) (arvados.APIClientAuthorization, error) {
+	if options.BypassFederation {
+		return conn.local.APIClientAuthorizationUpdate(ctx, options)
+	}
 	return conn.chooseBackend(options.UUID).APIClientAuthorizationUpdate(ctx, options)
 }
 
@@ -749,7 +752,10 @@ func (conn *Conn) APIClientAuthorizationDelete(ctx context.Context, options arva
 }
 
 func (conn *Conn) APIClientAuthorizationList(ctx context.Context, options arvados.ListOptions) (arvados.APIClientAuthorizationList, error) {
-	return conn.local.APIClientAuthorizationList(ctx, options)
+	if id := conn.cluster.Login.LoginCluster; id != "" && id != conn.cluster.ClusterID && !options.BypassFederation {
+		return conn.chooseBackend(conn.cluster.Login.LoginCluster).APIClientAuthorizationList(ctx, options)
+	}
+	return conn.generated_APIClientAuthorizationList(ctx, options)
 }
 
 func (conn *Conn) APIClientAuthorizationGet(ctx context.Context, options arvados.GetOptions) (arvados.APIClientAuthorization, error) {
