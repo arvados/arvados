@@ -56,6 +56,7 @@ const StyledInputComponent = withStyles(styles)(
               createNewValue={identity}
               inputComponent={Input}
               chipsClassName={classes.chips}
+              pattern={/[_a-z][-0-9_a-z]*/ig}
               inputProps={{
                   error: meta.error,
               }} />;

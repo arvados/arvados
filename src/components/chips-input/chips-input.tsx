@@ -21,6 +21,7 @@ interface ChipsInputProps<Value> {
     deletable?: boolean;
     orderable?: boolean;
     disabled?: boolean;
+    pattern?: RegExp;
 }
 
 type CssRules = 'chips' | 'input' | 'inputContainer';
@@ -52,10 +53,26 @@ export const ChipsInput = withStyles(styles)(
         timeout = -1;
 
         setText = (event: React.ChangeEvent<HTMLInputElement>) => {
-            this.setState({ text: event.target.value });
+            this.setState({ text: event.target.value }, () => {
+                // If pattern is provided, check for delimiter
+                if (this.props.pattern) {
+                    const matches = this.state.text.match(this.props.pattern);
+                    // Only create values if 1 match and the last character is a delimiter
+                    //   (user pressed an invalid character at the end of a token)
+                    //   or if multiple matches (user pasted text)
+                    if (matches &&
+                            (
+                                matches.length > 1 ||
+                                (matches.length === 1 && !this.state.text.endsWith(matches[0]))
+                            )) {
+                        this.createNewValue(matches.map((i) => i));
+                    }
+                }
+            });
         }
 
         handleKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
+            // Handle special keypresses
             if (e.key === 'Enter') {
                 this.createNewValue();
                 e.preventDefault();
@@ -64,11 +81,17 @@ export const ChipsInput = withStyles(styles)(
             }
         }
 
-        createNewValue = () => {
+        createNewValue = (matches?: string[]) => {
             if (this.state.text) {
-                const newValue = this.props.createNewValue(this.state.text);
-                this.setState({ text: '' });
-                this.props.onChange([...this.props.values, newValue]);
+                if (matches && matches.length > 0) {
+                    const newValues = matches.map((v) => this.props.createNewValue(v));
+                    this.setState({ text: '' });
+                    this.props.onChange([...this.props.values, ...newValues]);
+                } else {
+                    const newValue = this.props.createNewValue(this.state.text);
+                    this.setState({ text: '' });
+                    this.props.onChange([...this.props.values, newValue]);
+                }
             }
         }
 
