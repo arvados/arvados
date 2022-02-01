@@ -13,7 +13,7 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
 
    # A single_host multiple_hostnames example
    config.vm.define "arvados-sh-mn" do |arv|
-     arv.vm.box = "bento/debian-10"
+     arv.vm.box = "bento/debian-11"
      arv.vm.hostname = "harpo"
      # CPU/RAM
      config.vm.provider :virtualbox do |v|
