@@ -280,7 +280,14 @@ const getDataForAdvancedTab = (uuid: string) =>
                 .addEqual('head_uuid', uuid)
                 .getFilters()
         });
-        const user = metadata.itemsAvailable && await services.userService.get(metadata.items[0].tailUuid || '');
+        let user;
+
+        try {
+            if (metadata.itemsAvailable && metadata.items[0].tailKind === ResourceKind.USER) {
+                user = await services.userService.get(metadata.items[0].tailUuid || '');
+            }
+        } catch {};
+
         return { data, metadata, user };
     };
 
