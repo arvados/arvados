@@ -214,4 +214,31 @@ describe('Project tests', function() {
             cy.get('[data-cy=search-input] input').should('not.have.value', 'test123');
         });
     });
+
+    it('opens advanced popup for project with username', () => {
+        const projectName = `Test root project ${Math.floor(Math.random() * 999999)}`;
+
+        cy.createProject({
+            owningUser: adminUser,
+            targetUser: activeUser,
+            projectName,
+            canWrite: true,
+            addToFavorites: true
+        }).as('mySharedProject');
+
+        cy.getAll('@mySharedProject')
+            .then(function ([mySharedProject]) {
+                cy.loginAs(activeUser);
+                
+                cy.get('[data-cy=side-panel-tree]').contains('Shared with me').click();
+
+                cy.get('main').contains(projectName).rightclick();
+
+                cy.get('[data-cy=context-menu]').contains('Advanced').click();
+
+                cy.get('[role=tablist]').contains('METADATA').click();
+
+                cy.get('td').contains('User: Active User').should('exist');
+        });
+    });
 });
