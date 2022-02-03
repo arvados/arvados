@@ -210,7 +210,8 @@ if [ "$NVIDIA_GPU_SUPPORT" == "1" ]; then
   # This service fails to start when the image is booted without Nvidia GPUs present, which makes
   # `systemctl is-system-running` respond with "degraded" and since that command is our default
   # BootProbeCommand, compute nodes never finish booting from Arvados' perspective.
-  # Disable the service to avoid this.
+  # Disable the service to avoid this. This should be fine because crunch-run does its own basic
+  # CUDA initialization.
   $SUDO systemctl disable nvidia-persistenced.service
 fi
 
