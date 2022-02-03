@@ -194,35 +194,36 @@ export const loadProject = (uuid: string) =>
         async (dispatch: Dispatch<any>, getState: () => RootState, services: ServiceRepository) => {
             const userUuid = getUserUuid(getState());
             dispatch(setIsProjectPanelTrashed(false));
-            if (userUuid) {
-                if (extractUuidKind(uuid) === ResourceKind.USER && userUuid !== uuid) {
-                    // Load another users home projects
-                    dispatch(finishLoadingProject(uuid));
-                } else if (userUuid !== uuid) {
-                    const match = await loadGroupContentsResource({ uuid, userUuid, services });
-                    match({
-                        OWNED: async project => {
-                            await dispatch(activateSidePanelTreeItem(uuid));
-                            dispatch<any>(setSidePanelBreadcrumbs(uuid));
-                            dispatch(finishLoadingProject(project));
-                        },
-                        SHARED: project => {
-                            dispatch<any>(setSharedWithMeBreadcrumbs(uuid));
-                            dispatch(activateSidePanelTreeItem(uuid));
-                            dispatch(finishLoadingProject(project));
-                        },
-                        TRASHED: project => {
-                            dispatch<any>(setTrashBreadcrumbs(uuid));
-                            dispatch(setIsProjectPanelTrashed(true));
-                            dispatch(activateSidePanelTreeItem(SidePanelTreeCategory.TRASH));
-                            dispatch(finishLoadingProject(project));
-                        }
-                    });
-                } else {
-                    await dispatch(activateSidePanelTreeItem(userUuid));
-                    dispatch<any>(setSidePanelBreadcrumbs(userUuid));
-                    dispatch(finishLoadingProject(userUuid));
-                }
+            if (!userUuid) {
+                return;
+            }
+            if (extractUuidKind(uuid) === ResourceKind.USER && userUuid !== uuid) {
+                // Load another users home projects
+                dispatch(finishLoadingProject(uuid));
+            } else if (userUuid !== uuid) {
+                const match = await loadGroupContentsResource({ uuid, userUuid, services });
+                match({
+                    OWNED: async project => {
+                        await dispatch(finishLoadingProject(project));
+                        await dispatch(activateSidePanelTreeItem(uuid));
+                        dispatch<any>(setSidePanelBreadcrumbs(uuid));
+                    },
+                    SHARED: async project => {
+                        await dispatch(finishLoadingProject(project));
+                        await dispatch(activateSidePanelTreeItem(uuid));
+                        dispatch<any>(setSharedWithMeBreadcrumbs(uuid));
+                    },
+                    TRASHED: async project => {
+                        await dispatch(finishLoadingProject(project));
+                        await dispatch(activateSidePanelTreeItem(SidePanelTreeCategory.TRASH));
+                        dispatch<any>(setTrashBreadcrumbs(uuid));
+                        dispatch(setIsProjectPanelTrashed(true));
+                    }
+                });
+            } else {
+                await dispatch(finishLoadingProject(userUuid));
+                await dispatch(activateSidePanelTreeItem(userUuid));
+                dispatch<any>(setSidePanelBreadcrumbs(userUuid));
             }
         });
 
@@ -444,6 +445,7 @@ export const couldNotLoadUser = snackbarActions.OPEN_SNACKBAR({
 
 export const reloadProjectMatchingUuid = (matchingUuids: string[]) =>
     async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
+        console.log("ReloadProjectMatchingUUID: ", matchingUuids);
         const currentProjectPanelUuid = getProjectPanelCurrentUuid(getState());
         if (currentProjectPanelUuid && matchingUuids.some(uuid => uuid === currentProjectPanelUuid)) {
             dispatch<any>(loadProject(currentProjectPanelUuid));
