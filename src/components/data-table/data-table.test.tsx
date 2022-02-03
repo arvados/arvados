@@ -101,6 +101,7 @@ describe("<DataTable />", () => {
         ];
         const dataTable = mount(<DataTable
             columns={columns}
+            working={false}
             items={["item 1"]}
             onFiltersChange={jest.fn()}
             onRowClick={jest.fn()}
@@ -128,6 +129,7 @@ describe("<DataTable />", () => {
         ];
         const dataTable = mount(<DataTable
             columns={columns}
+            working={false}
             items={["item 1"]}
             onFiltersChange={jest.fn()}
             onRowClick={jest.fn()}

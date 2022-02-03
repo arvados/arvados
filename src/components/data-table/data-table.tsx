@@ -96,16 +96,15 @@ export const DataTable = withStyles(styles)(
                             </TableRow>
                         </TableHead>
                         <TableBody className={classes.tableBody}>
-                            {
-                                this.props.working ?
-                                <div className={classes.loader}>
-                                    <DataTableDefaultView
-                                        icon={PendingIcon}
-                                        messages={['Loading data, please wait.']} />
-                                </div> : items.map(this.renderBodyRow)
-                            }
+                            { this.props.working !== undefined && !this.props.working && items.map(this.renderBodyRow) }
                         </TableBody>
                     </Table>
+                    { this.props.working &&
+                        <div className={classes.loader}>
+                            <DataTableDefaultView
+                                icon={PendingIcon}
+                                messages={['Loading data, please wait.']} />
+                        </div> }
                     {items.length === 0 && this.props.working !== undefined && !this.props.working && this.renderNoItemsPlaceholder()}
                 </div>
             </div>;
