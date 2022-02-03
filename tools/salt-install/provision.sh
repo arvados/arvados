@@ -205,7 +205,7 @@ VERSION="latest"
 
 # Other formula versions we depend on
 POSTGRES_TAG="v0.43.0"
-NGINX_TAG="temp-fix-missing-statements-in-pillar"
+NGINX_TAG="v2.8.0"
 DOCKER_TAG="v2.0.7"
 LOCALE_TAG="v0.3.4"
 LETSENCRYPT_TAG="v2.1.0"
@@ -316,7 +316,7 @@ git clone --quiet https://github.com/saltstack-formulas/docker-formula.git ${F_D
 git clone --quiet https://github.com/saltstack-formulas/locale-formula.git ${F_DIR}/locale
 ( cd locale && git checkout --quiet tags/"${LOCALE_TAG}" -b "${LOCALE_TAG}" )
 
-git clone --quiet https://github.com/netmanagers/nginx-formula.git ${F_DIR}/nginx
+git clone --quiet https://github.com/saltstack-formulas/nginx-formula.git ${F_DIR}/nginx
 ( cd nginx && git checkout --quiet tags/"${NGINX_TAG}" -b "${NGINX_TAG}" )
 
 git clone --quiet https://github.com/saltstack-formulas/postgres-formula.git ${F_DIR}/postgres

@@ -83,7 +83,7 @@ RELEASE="production"
 # Formulas versions
 # ARVADOS_TAG="2.2.0"
 # POSTGRES_TAG="v0.43.0"
-# NGINX_TAG="temp-fix-missing-statements-in-pillar"
+# NGINX_TAG="v2.8.0"
 # DOCKER_TAG="v2.0.7"
 # LOCALE_TAG="v0.3.4"
 # LETSENCRYPT_TAG="v2.1.0"
