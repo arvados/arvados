@@ -294,9 +294,7 @@ Clusters:
       NewInactiveUserNotificationRecipients: {}
 
       # Set AnonymousUserToken to enable anonymous user access. Populate this
-      # field with a long random string. Then run "bundle exec
-      # ./script/get_anonymous_user_token.rb" in the directory where your API
-      # server is running to record the token in the database.
+      # field with a random string at least 50 characters long.
       AnonymousUserToken: ""
 
       # If a new user has an alternate email address (local@domain)
