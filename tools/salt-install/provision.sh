@@ -204,7 +204,7 @@ VERSION="latest"
 # BRANCH="main"
 
 # Other formula versions we depend on
-POSTGRES_TAG="v0.41.6"
+POSTGRES_TAG="v0.43.0"
 NGINX_TAG="temp-fix-missing-statements-in-pillar"
 DOCKER_TAG="v2.0.7"
 LOCALE_TAG="v0.3.4"
