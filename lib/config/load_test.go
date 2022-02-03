@@ -71,6 +71,18 @@ func (s *LoadSuite) TestNoConfigs(c *check.C) {
 	c.Check(cc.API.MaxItemsPerResponse, check.Equals, 1000)
 }
 
+func (s *LoadSuite) TestNullKeyDoesNotOverrideDefault(c *check.C) {
+	ldr := testLoader(c, `{"Clusters":{"z1111":{"API":}}}`, nil)
+	ldr.SkipDeprecated = true
+	cfg, err := ldr.Load()
+	c.Assert(err, check.IsNil)
+	c1, err := cfg.GetCluster("z1111")
+	c.Assert(err, check.IsNil)
+	c.Check(c1.ClusterID, check.Equals, "z1111")
+	c.Check(c1.API.MaxRequestAmplification, check.Equals, 4)
+	c.Check(c1.API.MaxItemsPerResponse, check.Equals, 1000)
+}
+
 func (s *LoadSuite) TestMungeLegacyConfigArgs(c *check.C) {
 	f, err := ioutil.TempFile("", "")
 	c.Check(err, check.IsNil)

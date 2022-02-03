@@ -230,6 +230,9 @@ func (ldr *Loader) Load() (*arvados.Config, error) {
 	}
 	ldr.logExtraKeys(merged, src, "")
 	removeSampleKeys(merged)
+	// We merge the loaded config into the default, overriding any existing keys.
+	// Make sure we do not override a default with a key that has a 'null' value.
+	removeNullKeys(src)
 	err = mergo.Merge(&merged, src, mergo.WithOverride)
 	if err != nil {
 		return nil, fmt.Errorf("merging config data: %s", err)
@@ -433,6 +436,17 @@ func checkKeyConflict(label string, m map[string]string) error {
 		saw[k] = true
 	}
 	return nil
+}
+
+func removeNullKeys(m map[string]interface{}) {
+	for k, v := range m {
+		if v == nil {
+			delete(m, k)
+		}
+		if v, _ := v.(map[string]interface{}); v != nil {
+			removeNullKeys(v)
+		}
+	}
 }
 
 func removeSampleKeys(m map[string]interface{}) {
