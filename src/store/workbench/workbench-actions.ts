@@ -443,7 +443,6 @@ export const couldNotLoadUser = snackbarActions.OPEN_SNACKBAR({
 
 export const reloadProjectMatchingUuid = (matchingUuids: string[]) =>
     async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
-        console.log("ReloadProjectMatchingUUID: ", matchingUuids);
         const currentProjectPanelUuid = getProjectPanelCurrentUuid(getState());
         if (currentProjectPanelUuid && matchingUuids.some(uuid => uuid === currentProjectPanelUuid)) {
             dispatch<any>(loadProject(currentProjectPanelUuid));
