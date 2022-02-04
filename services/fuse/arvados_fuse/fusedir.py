@@ -270,10 +270,11 @@ class CollectionDirectoryBase(Directory):
 
     """
 
-    def __init__(self, parent_inode, inodes, apiconfig, enable_write, collection):
+    def __init__(self, parent_inode, inodes, apiconfig, enable_write, collection, collectionRoot):
         super(CollectionDirectoryBase, self).__init__(parent_inode, inodes, apiconfig, enable_write)
         self.apiconfig = apiconfig
         self.collection = collection
+        self.collection_root = collection_root
 
     def new_entry(self, name, item, mtime):
         name = self.sanitize_filename(name)
@@ -285,7 +286,7 @@ class CollectionDirectoryBase(Directory):
             item.fuse_entry.dead = False
             self._entries[name] = item.fuse_entry
         elif isinstance(item, arvados.collection.RichCollectionBase):
-            self._entries[name] = self.inodes.add_entry(CollectionDirectoryBase(self.inode, self.inodes, self.apiconfig, self._enable_write, item))
+            self._entries[name] = self.inodes.add_entry(CollectionDirectoryBase(self.inode, self.inodes, self.apiconfig, self._enable_write, item, self.collection_root))
             self._entries[name].populate(mtime)
         else:
             self._entries[name] = self.inodes.add_entry(FuseArvadosFile(self.inode, item, mtime, self._enable_write))
@@ -353,10 +354,7 @@ class CollectionDirectoryBase(Directory):
 
     @use_counter
     def flush(self):
-        if not self.writable():
-            return
-        with llfuse.lock_released:
-            self.collection.root_collection().save()
+        self.collection_root.flush()
 
     @use_counter
     @check_update
@@ -428,7 +426,7 @@ class CollectionDirectory(CollectionDirectoryBase):
     """Represents the root of a directory tree representing a collection."""
 
     def __init__(self, parent_inode, inodes, api, num_retries, enable_write, collection_record=None, explicit_collection=None):
-        super(CollectionDirectory, self).__init__(parent_inode, inodes, api.config, enable_write, None)
+        super(CollectionDirectory, self).__init__(parent_inode, inodes, api.config, enable_write, None, self)
         self.api = api
         self.num_retries = num_retries
         self.collection_record_file = None
@@ -457,6 +455,14 @@ class CollectionDirectory(CollectionDirectoryBase):
     def writable(self):
         return self._enable_write and (self.collection.writable() if self.collection is not None else self._writable)
 
+    @use_counter
+    def flush(self):
+        if not self.writable():
+            return
+        with llfuse.lock_released:
+            self.collection.save()
+        self.new_collection_record(self.collection.api_response())
+
     def want_event_subscribe(self):
         return (uuid_pattern.match(self.collection_locator) is not None)
 
@@ -474,17 +480,23 @@ class CollectionDirectory(CollectionDirectoryBase):
     def new_collection(self, new_collection_record, coll_reader):
         if self.inode:
             self.clear()
-
-        self.collection_record = new_collection_record
-
-        if self.collection_record:
-            self._mtime = convertTime(self.collection_record.get('modified_at'))
-            self.collection_locator = self.collection_record["uuid"]
-            if self.collection_record_file is not None:
-                self.collection_record_file.update(self.collection_record)
-
         self.collection = coll_reader
+        self.new_collection_record(new_collection_record)
         self.populate(self.mtime())
+
+    def new_collection_record(self, new_collection_record):
+        self.collection_record = new_collection_record
+        if not self.collection_record:
+            self.collection_record_file = None
+            self._mtime = 0
+            return
+        self._mtime = convertTime(self.collection_record.get('modified_at'))
+        self._manifest_size = len(self.collection.manifest_text())
+        self.collection_locator = self.collection_record["uuid"]
+        if self.collection_record_file is not None:
+            self.collection_record_file.update(self.collection_record)
+            self.inodes.invalidate_inode(self.collection_record_file)
+            _logger.debug("%s invalidated collection record file", self)
 
     def uuid(self):
         return self.collection_locator
@@ -493,9 +505,11 @@ class CollectionDirectory(CollectionDirectoryBase):
     def update(self, to_record_version=None):
         try:
             if self.collection_record is not None and portable_data_hash_pattern.match(self.collection_locator):
+                # It's immutable, nothing to update
                 return True
 
             if self.collection_locator is None:
+                # No collection locator to retrieve from
                 self.fresh()
                 return True
 
@@ -507,12 +521,16 @@ class CollectionDirectory(CollectionDirectoryBase):
 
                     _logger.debug("Updating collection %s inode %s to record version %s", self.collection_locator, self.inode, to_record_version)
                     new_collection_record = None
+                    coll_reader = None
                     if self.collection is not None:
+                        # Already have a collection object
                         if self.collection.known_past_version(to_record_version):
                             _logger.debug("%s already processed %s", self.collection_locator, to_record_version)
                         else:
                             self.collection.update()
+                            new_collection_record = self.collection.api_response()
                     else:
+                        # Create a new collection object
                         if uuid_pattern.match(self.collection_locator):
                             coll_reader = arvados.collection.Collection(
                                 self.collection_locator, self.api, self.api.keep,
@@ -534,12 +552,12 @@ class CollectionDirectory(CollectionDirectoryBase):
                             new_collection_record['storage_classes_desired'] = coll_reader.storage_classes_desired()
 
                 # end with llfuse.lock_released, re-acquire lock
-                if (new_collection_record is not None and
-                    (self.collection_record is None or
-                     self.collection_record["portable_data_hash"] != new_collection_record.get("portable_data_hash"))):
-                    self.new_collection(new_collection_record, coll_reader)
-                    self._manifest_size = len(coll_reader.manifest_text())
-                    _logger.debug("%s manifest_size %i", self, self._manifest_size)
+
+                if new_collection_record is not None:
+                    if coll_reader is not None:
+                        self.new_collection(new_collection_record, coll_reader)
+                    else:
+                        self.new_collection_record(new_collection_record, coll_reader)
 
                 self.fresh()
                 return True
@@ -577,6 +595,8 @@ class CollectionDirectory(CollectionDirectoryBase):
 
     def invalidate(self):
         self.collection_record = None
+        if self.collection_record_file is not None:
+            self.inodes.invalidate_inode(self.collection_record_file)
         self.collection_record_file = None
         super(CollectionDirectory, self).invalidate()
 
@@ -630,29 +650,6 @@ class TmpCollectionDirectory(CollectionDirectoryBase):
         self.collection_record_file = None
         self.populate(self.mtime())
 
-    def on_event(self, *args, **kwargs):
-        super(TmpCollectionDirectory, self).on_event(*args, **kwargs)
-        if self.collection_record_file:
-
-            # See discussion in CollectionDirectoryBase.on_event
-            lockcount = 0
-            try:
-                while True:
-                    self.collection.lock.release()
-                    lockcount += 1
-            except RuntimeError:
-                pass
-
-            try:
-                with llfuse.lock:
-                    with self.collection.lock:
-                        self.collection_record_file.invalidate()
-                        self.inodes.invalidate_inode(self.collection_record_file)
-                        _logger.debug("%s invalidated collection record", self)
-            finally:
-                while lockcount > 0:
-                    self.collection.lock.acquire()
-                    lockcount -= 1
 
     def collection_record(self):
         with llfuse.lock_released:
@@ -973,11 +970,13 @@ class ProjectDirectory(Directory):
                                                         uuid=self.project_uuid,
                                                         filters=[["uuid", "is_a", "arvados#group"],
                                                                  ["groups.group_class", "in", ["project","filter"]]]))
-                contents.extend(arvados.util.keyset_list_all(self.api.groups().contents,
+                contents.extend(filter(lambda i: i["current_version_uuid"] == i["uuid"],
+                                       arvados.util.keyset_list_all(self.api.groups().contents,
                                                              order_key="uuid",
                                                              num_retries=self.num_retries,
                                                              uuid=self.project_uuid,
-                                                             filters=[["uuid", "is_a", "arvados#collection"]]))
+                                                             filters=[["uuid", "is_a", "arvados#collection"]])))
+
 
             # end with llfuse.lock_released, re-acquire lock
 
