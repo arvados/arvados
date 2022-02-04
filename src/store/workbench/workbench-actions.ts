@@ -201,20 +201,18 @@ export const loadProject = (uuid: string) =>
                 // Load another users home projects
                 dispatch(finishLoadingProject(uuid));
             } else if (userUuid !== uuid) {
+                await dispatch(finishLoadingProject(uuid));
                 const match = await loadGroupContentsResource({ uuid, userUuid, services });
                 match({
-                    OWNED: async project => {
-                        await dispatch(finishLoadingProject(project));
+                    OWNED: async () => {
                         await dispatch(activateSidePanelTreeItem(uuid));
                         dispatch<any>(setSidePanelBreadcrumbs(uuid));
                     },
-                    SHARED: async project => {
-                        await dispatch(finishLoadingProject(project));
+                    SHARED: async () => {
                         await dispatch(activateSidePanelTreeItem(uuid));
                         dispatch<any>(setSharedWithMeBreadcrumbs(uuid));
                     },
-                    TRASHED: async project => {
-                        await dispatch(finishLoadingProject(project));
+                    TRASHED: async () => {
                         await dispatch(activateSidePanelTreeItem(SidePanelTreeCategory.TRASH));
                         dispatch<any>(setTrashBreadcrumbs(uuid));
                         dispatch(setIsProjectPanelTrashed(true));
