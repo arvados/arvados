@@ -104,7 +104,7 @@ describe('Side panel tests', function() {
         cy.getAll('@mySharedWritableProject')
             .then(function ([mySharedWritableProject]) {
                 cy.loginAs(activeUser);
-                
+
                 cy.get('[data-cy=side-panel-tree]').contains('Projects').click();
 
                 const newProjectName = `New project name ${mySharedWritableProject.name}`;
@@ -125,19 +125,16 @@ describe('Side panel tests', function() {
             addToFavorites: false
         });
 
-        cy.getAll('@writableProject')
-            .then(function ([writableProject]) {
-                cy.loginAs(activeUser);
-                
-                cy.get('[data-cy=side-panel-tree]').contains('Projects').click();
-
-                cy.get('[data-cy=side-panel-tree]').contains(writableProject.name).should('exist');
-
-                cy.trashGroup(activeUser.token, writableProject.uuid);
-
+        cy.getAll('@writableProject').then(function ([writableProject]) {
+            cy.loginAs(activeUser);
+            cy.get('[data-cy=side-panel-tree]')
+                .contains('Projects').click();
+            cy.get('[data-cy=side-panel-tree]')
+                .contains(writableProject.name).should('exist');
+            cy.trashGroup(activeUser.token, writableProject.uuid).then(() => {
                 cy.contains('Refresh').click();
-
                 cy.contains(writableProject.name).should('not.exist');
             });
+        });
     });
 })

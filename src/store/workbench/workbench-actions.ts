@@ -194,35 +194,34 @@ export const loadProject = (uuid: string) =>
         async (dispatch: Dispatch<any>, getState: () => RootState, services: ServiceRepository) => {
             const userUuid = getUserUuid(getState());
             dispatch(setIsProjectPanelTrashed(false));
-            if (userUuid) {
-                if (extractUuidKind(uuid) === ResourceKind.USER && userUuid !== uuid) {
-                    // Load another users home projects
-                    dispatch(finishLoadingProject(uuid));
-                } else if (userUuid !== uuid) {
-                    const match = await loadGroupContentsResource({ uuid, userUuid, services });
-                    match({
-                        OWNED: async project => {
-                            await dispatch(activateSidePanelTreeItem(uuid));
-                            dispatch<any>(setSidePanelBreadcrumbs(uuid));
-                            dispatch(finishLoadingProject(project));
-                        },
-                        SHARED: project => {
-                            dispatch<any>(setSharedWithMeBreadcrumbs(uuid));
-                            dispatch(activateSidePanelTreeItem(uuid));
-                            dispatch(finishLoadingProject(project));
-                        },
-                        TRASHED: project => {
-                            dispatch<any>(setTrashBreadcrumbs(uuid));
-                            dispatch(setIsProjectPanelTrashed(true));
-                            dispatch(activateSidePanelTreeItem(SidePanelTreeCategory.TRASH));
-                            dispatch(finishLoadingProject(project));
-                        }
-                    });
-                } else {
-                    await dispatch(activateSidePanelTreeItem(userUuid));
-                    dispatch<any>(setSidePanelBreadcrumbs(userUuid));
-                    dispatch(finishLoadingProject(userUuid));
-                }
+            if (!userUuid) {
+                return;
+            }
+            if (extractUuidKind(uuid) === ResourceKind.USER && userUuid !== uuid) {
+                // Load another users home projects
+                dispatch(finishLoadingProject(uuid));
+            } else if (userUuid !== uuid) {
+                await dispatch(finishLoadingProject(uuid));
+                const match = await loadGroupContentsResource({ uuid, userUuid, services });
+                match({
+                    OWNED: async () => {
+                        await dispatch(activateSidePanelTreeItem(uuid));
+                        dispatch<any>(setSidePanelBreadcrumbs(uuid));
+                    },
+                    SHARED: async () => {
+                        await dispatch(activateSidePanelTreeItem(uuid));
+                        dispatch<any>(setSharedWithMeBreadcrumbs(uuid));
+                    },
+                    TRASHED: async () => {
+                        await dispatch(activateSidePanelTreeItem(SidePanelTreeCategory.TRASH));
+                        dispatch<any>(setTrashBreadcrumbs(uuid));
+                        dispatch(setIsProjectPanelTrashed(true));
+                    }
+                });
+            } else {
+                await dispatch(finishLoadingProject(userUuid));
+                await dispatch(activateSidePanelTreeItem(userUuid));
+                dispatch<any>(setSidePanelBreadcrumbs(userUuid));
             }
         });
 

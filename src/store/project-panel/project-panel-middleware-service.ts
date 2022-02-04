@@ -50,7 +50,6 @@ export class ProjectPanelMiddlewareService extends DataExplorerMiddlewareService
             try {
                 api.dispatch(progressIndicatorActions.START_WORKING(this.getId()));
                 const response = await this.services.groupsService.contents(projectUuid, getParams(dataExplorer, !!isProjectTrashed));
-                api.dispatch(progressIndicatorActions.PERSIST_STOP_WORKING(this.getId()));
                 const resourceUuids = response.items.map(item => item.uuid);
                 api.dispatch<any>(updateFavorites(resourceUuids));
                 api.dispatch<any>(updatePublicFavorites(resourceUuids));
