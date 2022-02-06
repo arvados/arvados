@@ -703,6 +703,9 @@ class TmpCollectionDirectory(CollectionDirectoryBase):
     def writable(self):
         return True
 
+    def flush(self):
+        pass
+
     def want_event_subscribe(self):
         return False
 
