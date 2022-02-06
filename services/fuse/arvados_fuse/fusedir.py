@@ -342,8 +342,9 @@ class CollectionDirectoryBase(Directory):
                             elif name in self._entries:
                                 self.inodes.invalidate_inode(self._entries[name])
 
-                        self.collection_record_file.invalidate()
-                        self.inodes.invalidate_inode(self.collection_record_file)
+                        if self.collection_record_file is not None:
+                            self.collection_record_file.invalidate()
+                            self.inodes.invalidate_inode(self.collection_record_file)
             finally:
                 while lockcount > 0:
                     self.collection.lock.acquire()
