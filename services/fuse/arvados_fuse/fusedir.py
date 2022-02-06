@@ -270,7 +270,7 @@ class CollectionDirectoryBase(Directory):
 
     """
 
-    def __init__(self, parent_inode, inodes, apiconfig, enable_write, collection, collectionRoot):
+    def __init__(self, parent_inode, inodes, apiconfig, enable_write, collection, collection_root):
         super(CollectionDirectoryBase, self).__init__(parent_inode, inodes, apiconfig, enable_write)
         self.apiconfig = apiconfig
         self.collection = collection
@@ -293,6 +293,10 @@ class CollectionDirectoryBase(Directory):
         item.fuse_entry = self._entries[name]
 
     def on_event(self, event, collection, name, item):
+        # These are events from the Collection object (ADD/DEL/MOD)
+        # emitted by operations on the Collection object (like
+        # "mkdirs" or "remove"), and by "update", which we need to
+        # synchronize with our FUSE objects that are assigned inodes.
         if collection == self.collection:
             name = self.sanitize_filename(name)
 
@@ -465,16 +469,6 @@ class CollectionDirectory(CollectionDirectoryBase):
     def want_event_subscribe(self):
         return (uuid_pattern.match(self.collection_locator) is not None)
 
-    # Used by arv-web.py to switch the contents of the CollectionDirectory
-    def change_collection(self, new_locator):
-        """Switch the contents of the CollectionDirectory.
-
-        Must be called with llfuse.lock held.
-        """
-
-        self.collection_locator = new_locator
-        self.update()
-
     def new_collection(self, new_collection_record, coll_reader):
         if self.inode:
             self.clear()
@@ -484,21 +478,21 @@ class CollectionDirectory(CollectionDirectoryBase):
 
     def new_collection_record(self, new_collection_record):
         if not new_collection_record:
-            self.collection_record_file = None
-            self._mtime = 0
-            return
+            raise Exception("invalid new_collection_record")
         self._mtime = convertTime(new_collection_record.get('modified_at'))
-        self._manifest_size = len(self.collection.manifest_text())
+        self._manifest_size = len(new_collection_record["manifest_text"])
         self.collection_locator = new_collection_record["uuid"]
         if self.collection_record_file is not None:
+            self.collection_record_file.invalidate()
             self.inodes.invalidate_inode(self.collection_record_file)
             _logger.debug("%s invalidated collection record file", self)
+        self.fresh()
 
     def uuid(self):
         return self.collection_locator
 
     @use_counter
-    def update(self, to_record_version=None):
+    def update(self):
         try:
             if self.collection is not None and portable_data_hash_pattern.match(self.collection_locator):
                 # It's immutable, nothing to update
@@ -514,17 +508,14 @@ class CollectionDirectory(CollectionDirectoryBase):
                 with llfuse.lock_released:
                     self._updating_lock.acquire()
                     if not self.stale():
-                        return
+                        return True
 
-                    _logger.debug("Updating collection %s inode %s to record version %s", self.collection_locator, self.inode, to_record_version)
+                    _logger.debug("Updating collection %s inode %s to record version %s", self.collection_locator, self.inode)
                     coll_reader = None
                     if self.collection is not None:
                         # Already have a collection object
-                        if self.collection.known_past_version(to_record_version):
-                            _logger.debug("%s already processed %s", self.collection_locator, to_record_version)
-                        else:
-                            self.collection.update()
-                            new_collection_record = self.collection.api_response()
+                        self.collection.update()
+                        new_collection_record = self.collection.api_response()
                     else:
                         # Create a new collection object
                         if uuid_pattern.match(self.collection_locator):
@@ -553,9 +544,8 @@ class CollectionDirectory(CollectionDirectoryBase):
                     if coll_reader is not None:
                         self.new_collection(new_collection_record, coll_reader)
                     else:
-                        self.new_collection_record(new_collection_record, coll_reader)
+                        self.new_collection_record(new_collection_record)
 
-                self.fresh()
                 return True
             finally:
                 self._updating_lock.release()
@@ -568,7 +558,7 @@ class CollectionDirectory(CollectionDirectoryBase):
         except Exception:
             _logger.exception("arv-mount %s: error", self.collection_locator)
             if new_collection_record is not None and "manifest_text" in new_collection_record:
-                _logger.error("arv-mount manifest_text is: %s", self.collection_record["manifest_text"])
+                _logger.error("arv-mount manifest_text is: %s", new_collection_record["manifest_text"])
         self.invalidate()
         return False
 
@@ -597,6 +587,7 @@ class CollectionDirectory(CollectionDirectoryBase):
 
     def invalidate(self):
         if self.collection_record_file is not None:
+            self.collection_record_file.invalidate()
             self.inodes.invalidate_inode(self.collection_record_file)
         super(CollectionDirectory, self).invalidate()
 

@@ -492,7 +492,7 @@ class Operations(llfuse.Operations):
             for parent in (
                     self.inodes.inode_cache.find_by_uuid(oldowner) +
                     self.inodes.inode_cache.find_by_uuid(newowner)):
-                parent.child_event(ev)
+                parent.invalidate()
 
     @getattr_time.time()
     @catch_exceptions
