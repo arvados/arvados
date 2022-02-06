@@ -1395,7 +1395,7 @@ class Collection(RichCollectionBase):
                 # our tokens.
                 return
             else:
-                self._past_versions.add((response.get("modified_at"), response.get("portable_data_hash")))
+                self._remember_api_response(response)
             other = CollectionReader(response["manifest_text"])
         baseline = CollectionReader(self._manifest_text)
         self.apply(baseline.diff(other))

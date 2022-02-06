@@ -463,8 +463,12 @@ class CollectionDirectory(CollectionDirectoryBase):
         if not self.writable():
             return
         with llfuse.lock_released:
-            self.collection.save()
-        self.new_collection_record(self.collection.api_response())
+            with self._updating_lock:
+                if self.collection.committed():
+                    self.collection.update()
+                else:
+                    self.collection.save()
+                self.new_collection_record(self.collection.api_response())
 
     def want_event_subscribe(self):
         return (uuid_pattern.match(self.collection_locator) is not None)
@@ -510,7 +514,7 @@ class CollectionDirectory(CollectionDirectoryBase):
                     if not self.stale():
                         return True
 
-                    _logger.debug("Updating collection %s inode %s to record version %s", self.collection_locator, self.inode)
+                    _logger.debug("Updating collection %s inode %s", self.collection_locator, self.inode)
                     coll_reader = None
                     if self.collection is not None:
                         # Already have a collection object
@@ -563,8 +567,8 @@ class CollectionDirectory(CollectionDirectoryBase):
         return False
 
     @use_counter
-    @check_update
     def collection_record(self):
+        self.flush()
         return self.collection.api_response()
 
     @use_counter
@@ -575,6 +579,7 @@ class CollectionDirectory(CollectionDirectoryBase):
                 self.collection_record_file = FuncToJSONFile(
                     self.inode, self.collection_record)
                 self.inodes.add_entry(self.collection_record_file)
+            self.collection_record_file.invalidate()
             return self.collection_record_file
         else:
             return super(CollectionDirectory, self).__getitem__(item)
@@ -662,6 +667,7 @@ class TmpCollectionDirectory(CollectionDirectoryBase):
                 self.collection_record_file = FuncToJSONFile(
                     self.inode, self.collection_record)
                 self.inodes.add_entry(self.collection_record_file)
+            self.collection_record_file.invalidate()
             return self.collection_record_file
         return super(TmpCollectionDirectory, self).__getitem__(item)
 
