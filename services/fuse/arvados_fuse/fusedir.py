@@ -275,6 +275,7 @@ class CollectionDirectoryBase(Directory):
         self.apiconfig = apiconfig
         self.collection = collection
         self.collection_root = collection_root
+        self.collection_record_file = None
 
     def new_entry(self, name, item, mtime):
         name = self.sanitize_filename(name)
@@ -437,7 +438,6 @@ class CollectionDirectory(CollectionDirectoryBase):
         super(CollectionDirectory, self).__init__(parent_inode, inodes, api.config, enable_write, None, self)
         self.api = api
         self.num_retries = num_retries
-        self.collection_record_file = None
         self._poll = True
         try:
             self._poll_time = (api._rootDesc.get('blobSignatureTtl', 60*60*2) // 2)
@@ -647,32 +647,32 @@ class TmpCollectionDirectory(CollectionDirectoryBase):
         # save to the backend
         super(TmpCollectionDirectory, self).__init__(
             parent_inode, inodes, api_client.config, True, collection, self)
-        self.collection_record_file = None
         self.populate(self.mtime())
 
     def on_event(self, *args, **kwargs):
         super(TmpCollectionDirectory, self).on_event(*args, **kwargs)
-        if self.collection_record_file:
+        if self.collection_record_file is None:
+            return
 
-            # See discussion in CollectionDirectoryBase.on_event
-            lockcount = 0
-            try:
-                while True:
-                    self.collection.lock.release()
-                    lockcount += 1
-            except RuntimeError:
-                pass
+        # See discussion in CollectionDirectoryBase.on_event
+        lockcount = 0
+        try:
+            while True:
+                self.collection.lock.release()
+                lockcount += 1
+        except RuntimeError:
+            pass
 
-            try:
-                with llfuse.lock:
-                    with self.collection.lock:
-                        self.collection_record_file.invalidate()
-                        self.inodes.invalidate_inode(self.collection_record_file)
-                        _logger.debug("%s invalidated collection record", self)
-            finally:
-                while lockcount > 0:
-                    self.collection.lock.acquire()
-                    lockcount -= 1
+        try:
+            with llfuse.lock:
+                with self.collection.lock:
+                    self.collection_record_file.invalidate()
+                    self.inodes.invalidate_inode(self.collection_record_file)
+                    _logger.debug("%s invalidated collection record", self)
+        finally:
+            while lockcount > 0:
+                self.collection.lock.acquire()
+                lockcount -= 1
 
     def collection_record(self):
         with llfuse.lock_released:
