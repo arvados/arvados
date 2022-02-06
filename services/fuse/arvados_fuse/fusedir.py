@@ -430,7 +430,6 @@ class CollectionDirectory(CollectionDirectoryBase):
         self.api = api
         self.num_retries = num_retries
         self.collection_record_file = None
-        self.collection_record = None
         self._poll = True
         try:
             self._poll_time = (api._rootDesc.get('blobSignatureTtl', 60*60*2) // 2)
@@ -474,7 +473,6 @@ class CollectionDirectory(CollectionDirectoryBase):
         """
 
         self.collection_locator = new_locator
-        self.collection_record = None
         self.update()
 
     def new_collection(self, new_collection_record, coll_reader):
@@ -485,16 +483,14 @@ class CollectionDirectory(CollectionDirectoryBase):
         self.populate(self.mtime())
 
     def new_collection_record(self, new_collection_record):
-        self.collection_record = new_collection_record
-        if not self.collection_record:
+        if not new_collection_record:
             self.collection_record_file = None
             self._mtime = 0
             return
-        self._mtime = convertTime(self.collection_record.get('modified_at'))
+        self._mtime = convertTime(new_collection_record.get('modified_at'))
         self._manifest_size = len(self.collection.manifest_text())
-        self.collection_locator = self.collection_record["uuid"]
+        self.collection_locator = new_collection_record["uuid"]
         if self.collection_record_file is not None:
-            self.collection_record_file.update(self.collection_record)
             self.inodes.invalidate_inode(self.collection_record_file)
             _logger.debug("%s invalidated collection record file", self)
 
@@ -504,7 +500,7 @@ class CollectionDirectory(CollectionDirectoryBase):
     @use_counter
     def update(self, to_record_version=None):
         try:
-            if self.collection_record is not None and portable_data_hash_pattern.match(self.collection_locator):
+            if self.collection is not None and portable_data_hash_pattern.match(self.collection_locator):
                 # It's immutable, nothing to update
                 return True
 
@@ -513,6 +509,7 @@ class CollectionDirectory(CollectionDirectoryBase):
                 self.fresh()
                 return True
 
+            new_collection_record = None
             try:
                 with llfuse.lock_released:
                     self._updating_lock.acquire()
@@ -520,7 +517,6 @@ class CollectionDirectory(CollectionDirectoryBase):
                         return
 
                     _logger.debug("Updating collection %s inode %s to record version %s", self.collection_locator, self.inode, to_record_version)
-                    new_collection_record = None
                     coll_reader = None
                     if self.collection is not None:
                         # Already have a collection object
@@ -567,21 +563,27 @@ class CollectionDirectory(CollectionDirectoryBase):
             _logger.error("Error fetching collection '%s': %s", self.collection_locator, e)
         except arvados.errors.ArgumentError as detail:
             _logger.warning("arv-mount %s: error %s", self.collection_locator, detail)
-            if self.collection_record is not None and "manifest_text" in self.collection_record:
-                _logger.warning("arv-mount manifest_text is: %s", self.collection_record["manifest_text"])
+            if new_collection_record is not None and "manifest_text" in new_collection_record:
+                _logger.warning("arv-mount manifest_text is: %s", new_collection_record["manifest_text"])
         except Exception:
             _logger.exception("arv-mount %s: error", self.collection_locator)
-            if self.collection_record is not None and "manifest_text" in self.collection_record:
+            if new_collection_record is not None and "manifest_text" in new_collection_record:
                 _logger.error("arv-mount manifest_text is: %s", self.collection_record["manifest_text"])
         self.invalidate()
         return False
 
     @use_counter
     @check_update
+    def collection_record(self):
+        return self.collection.api_response()
+
+    @use_counter
+    @check_update
     def __getitem__(self, item):
         if item == '.arvados#collection':
             if self.collection_record_file is None:
-                self.collection_record_file = ObjectFile(self.inode, self.collection_record)
+                self.collection_record_file = FuncToJSONFile(
+                    self.inode, self.collection_record)
                 self.inodes.add_entry(self.collection_record_file)
             return self.collection_record_file
         else:
@@ -594,10 +596,8 @@ class CollectionDirectory(CollectionDirectoryBase):
             return super(CollectionDirectory, self).__contains__(k)
 
     def invalidate(self):
-        self.collection_record = None
         if self.collection_record_file is not None:
             self.inodes.invalidate_inode(self.collection_record_file)
-        self.collection_record_file = None
         super(CollectionDirectory, self).invalidate()
 
     def persisted(self):
