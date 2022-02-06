@@ -341,6 +341,9 @@ class CollectionDirectoryBase(Directory):
                                 self.inodes.invalidate_inode(item.fuse_entry)
                             elif name in self._entries:
                                 self.inodes.invalidate_inode(self._entries[name])
+
+                        self.collection_record_file.invalidate()
+                        self.inodes.invalidate_inode(self.collection_record_file)
             finally:
                 while lockcount > 0:
                     self.collection.lock.acquire()
@@ -579,7 +582,7 @@ class CollectionDirectory(CollectionDirectoryBase):
                 self.collection_record_file = FuncToJSONFile(
                     self.inode, self.collection_record)
                 self.inodes.add_entry(self.collection_record_file)
-            self.collection_record_file.invalidate()
+            self.invalidate()  # use lookup as a signal to force update
             return self.collection_record_file
         else:
             return super(CollectionDirectory, self).__getitem__(item)
@@ -646,6 +649,29 @@ class TmpCollectionDirectory(CollectionDirectoryBase):
         self.collection_record_file = None
         self.populate(self.mtime())
 
+    def on_event(self, *args, **kwargs):
+        super(TmpCollectionDirectory, self).on_event(*args, **kwargs)
+        if self.collection_record_file:
+
+            # See discussion in CollectionDirectoryBase.on_event
+            lockcount = 0
+            try:
+                while True:
+                    self.collection.lock.release()
+                    lockcount += 1
+            except RuntimeError:
+                pass
+
+            try:
+                with llfuse.lock:
+                    with self.collection.lock:
+                        self.collection_record_file.invalidate()
+                        self.inodes.invalidate_inode(self.collection_record_file)
+                        _logger.debug("%s invalidated collection record", self)
+            finally:
+                while lockcount > 0:
+                    self.collection.lock.acquire()
+                    lockcount -= 1
 
     def collection_record(self):
         with llfuse.lock_released:
@@ -667,7 +693,6 @@ class TmpCollectionDirectory(CollectionDirectoryBase):
                 self.collection_record_file = FuncToJSONFile(
                     self.inode, self.collection_record)
                 self.inodes.add_entry(self.collection_record_file)
-            self.collection_record_file.invalidate()
             return self.collection_record_file
         return super(TmpCollectionDirectory, self).__getitem__(item)
 
