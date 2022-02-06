@@ -645,7 +645,7 @@ class TmpCollectionDirectory(CollectionDirectoryBase):
         # This is always enable_write=True because it never tries to
         # save to the backend
         super(TmpCollectionDirectory, self).__init__(
-            parent_inode, inodes, api_client.config, True, collection)
+            parent_inode, inodes, api_client.config, True, collection, self)
         self.collection_record_file = None
         self.populate(self.mtime())
 
