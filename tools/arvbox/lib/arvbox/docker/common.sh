@@ -62,7 +62,8 @@ else
 fi
 
 run_bundler() {
-    /var/lib/arvados/bin/gem install --no-document bundler:$BUNDLER_VERSION
+    GEMLOCK=/var/lib/arvados/lib/ruby/gems/gems.lock
+    flock $GEMLOCK /var/lib/arvados/bin/gem install --no-document bundler:$BUNDLER_VERSION
     if test -f Gemfile.lock ; then
         frozen=--frozen
     else
@@ -73,8 +74,8 @@ run_bundler() {
 	# If present, use the one associated with rails workbench or API
 	BUNDLER=$PWD/bin/bundle
     fi
-    if ! $BUNDLER install --verbose --local --no-deployment $frozen "$@" ; then
-        $BUNDLER install --verbose --no-deployment $frozen "$@"
+    if ! flock $GEMLOCK $BUNDLER install --verbose --local --no-deployment $frozen "$@" ; then
+        flock $GEMLOCK $BUNDLER install --verbose --no-deployment $frozen "$@"
     fi
 }
 
