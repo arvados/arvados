@@ -56,7 +56,7 @@ EOF
 fi
 
 if ! test -f $ARVADOS_CONTAINER_PATH/api_database_setup ; then
-   bin/rake db:setup
+   bin/bundle exec rake db:setup
    touch $ARVADOS_CONTAINER_PATH/api_database_setup
 fi
 
@@ -68,4 +68,4 @@ fi
 rm -rf tmp
 mkdir -p tmp/cache
 
-bin/rake db:migrate
+bin/bundle exec rake db:migrate

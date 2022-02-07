@@ -33,4 +33,4 @@ fi
 
 touch $ARVADOS_CONTAINER_PATH/api.ready
 
-exec bin/passenger start --port=${services[api]}
+exec binstubs/passenger start --port=${services[api]}
