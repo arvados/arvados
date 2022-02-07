@@ -962,11 +962,11 @@ install_services/api() {
         set -ex
         cd "$WORKSPACE/services/api"
         export RAILS_ENV=test
-        if "$bundle" exec rails db:environment:set ; then
-            "$bundle" exec rake db:drop
+        if bin/rails db:environment:set ; then
+            bin/rake db:drop
         fi
-        "$bundle" exec rake db:setup
-        "$bundle" exec rake db:fixtures:load
+        bin/rake db:setup
+        bin/rake db:fixtures:load
     ) || return 1
 }
 
