@@ -17,8 +17,8 @@ else
 fi
 
 run_bundler --without=development --binstubs
-flock $GEM_HOME/gems.lock bin/passenger-config build-native-support
-flock $GEM_HOME/gems.lock bin/passenger-config install-standalone-runtime
+bin/passenger-config build-native-support
+bin/passenger-config install-standalone-runtime
 
 if test "$1" = "--only-deps" ; then
     exit

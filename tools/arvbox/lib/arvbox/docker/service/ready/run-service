@@ -63,7 +63,7 @@ fi
 
 if ! [[ -z "$waiting" ]] ; then
     if ps x | grep -v grep | grep "bundle install" > /dev/null; then
-        gemcount=$(ls $GEM_HOME/gems 2>/dev/null | wc -l)
+        gemcount=0  # $(ls $GEM_HOME/gems 2>/dev/null | wc -l)
 
         gemlockcount=0
         for l in /usr/src/arvados/services/api/Gemfile.lock \

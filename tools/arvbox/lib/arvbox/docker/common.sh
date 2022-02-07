@@ -6,8 +6,7 @@ export RUBY_VERSION=2.7.0
 export BUNDLER_VERSION=2.2.19
 
 export DEBIAN_FRONTEND=noninteractive
-export GEM_HOME=/var/lib/arvados/lib/ruby/gems/$RUBY_VERSION
-export PATH=${PATH}:/usr/local/go/bin:$GEM_HOME/bin:/var/lib/arvados/bin
+export PATH=${PATH}:/usr/local/go/bin:/var/lib/arvados/bin
 export npm_config_cache=/var/lib/npm
 export npm_config_cache_min=Infinity
 export R_LIBS=/var/lib/Rlibs
@@ -74,8 +73,8 @@ run_bundler() {
 	# If present, use the one associated with rails workbench or API
 	BUNDLER=$PWD/bin/bundle
     fi
-    if ! flock $GEM_HOME/gems.lock $BUNDLER install --verbose --local --no-deployment $frozen "$@" ; then
-        flock $GEM_HOME/gems.lock $BUNDLER install --verbose --no-deployment $frozen "$@"
+    if ! $BUNDLER install --verbose --local --no-deployment $frozen "$@" ; then
+        $BUNDLER install --verbose --no-deployment $frozen "$@"
     fi
 }
 
