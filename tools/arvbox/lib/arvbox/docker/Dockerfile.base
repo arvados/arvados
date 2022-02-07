@@ -98,7 +98,7 @@ RUN /etc/init.d/postgresql start && \
     su postgres -c 'createuser -s arvbox' && \
     /etc/init.d/postgresql stop
 
-ENV GEM_HOME /var/lib/arvados/lib/ruby/gems/2.5.0
+ENV GEM_HOME /var/lib/arvados/lib/ruby/gems/2.7.0
 ENV PATH $PATH:$GEM_HOME/bin
 
 VOLUME /var/lib/docker

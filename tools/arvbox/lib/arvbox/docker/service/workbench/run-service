@@ -22,7 +22,7 @@ else
   export RAILS_ENV=development
 fi
 
-run_bundler --without=development
+run_bundler --without=development --binstubs
 flock $GEM_HOME/gems.lock bin/passenger-config build-native-support
 flock $GEM_HOME/gems.lock bin/passenger-config install-standalone-runtime
 mkdir -p /usr/src/arvados/apps/workbench/tmp
@@ -34,7 +34,7 @@ cat >config/application.yml <<EOF
 $RAILS_ENV:
   keep_web_url: https://example.com/c=%{uuid_or_pdh}
 EOF
-   RAILS_GROUPS=assets flock $GEM_HOME/gems.lock bin/bundle exec rake npm:install
+   RAILS_GROUPS=assets flock $GEM_HOME/gems.lock bin/rake npm:install
    rm config/application.yml
    exit
 fi
@@ -43,5 +43,5 @@ set -u
 
 secret_token=$(cat $ARVADOS_CONTAINER_PATH/workbench_secret_token)
 
-RAILS_GROUPS=assets flock $GEM_HOME/gems.lock bin/bundle exec rake npm:install
-flock $GEM_HOME/gems.lock bin/bundle exec rake assets:precompile
+RAILS_GROUPS=assets flock $GEM_HOME/gems.lock bin/rake npm:install
+flock $GEM_HOME/gems.lock bin/rake assets:precompile

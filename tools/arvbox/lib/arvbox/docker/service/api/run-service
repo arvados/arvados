@@ -16,7 +16,7 @@ else
   export RAILS_ENV=development
 fi
 
-run_bundler --without=development
+run_bundler --without=development --binstubs
 flock $GEM_HOME/gems.lock bin/passenger-config build-native-support
 flock $GEM_HOME/gems.lock bin/passenger-config install-standalone-runtime
 

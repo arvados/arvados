@@ -56,7 +56,7 @@ EOF
 fi
 
 if ! test -f $ARVADOS_CONTAINER_PATH/api_database_setup ; then
-   flock $GEM_HOME/gems.lock bin/bundle exec rake db:setup
+   flock $GEM_HOME/gems.lock bin/rake db:setup
    touch $ARVADOS_CONTAINER_PATH/api_database_setup
 fi
 
@@ -68,4 +68,4 @@ fi
 rm -rf tmp
 mkdir -p tmp/cache
 
-flock $GEM_HOME/gems.lock bin/bundle exec rake db:migrate
+flock $GEM_HOME/gems.lock bin/rake db:migrate

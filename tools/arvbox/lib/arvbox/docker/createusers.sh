@@ -5,7 +5,7 @@
 
 set -e -o pipefail
 
-export GEM_HOME=/var/lib/arvados/lib/ruby/gems/2.5.0
+export GEM_HOME=/var/lib/arvados/lib/ruby/gems/2.7.0
 export ARVADOS_CONTAINER_PATH=/var/lib/arvados-arvbox
 
 if ! grep "^arvbox:" /etc/passwd >/dev/null 2>/dev/null ; then
@@ -53,7 +53,7 @@ if ! grep "^arvbox:" /etc/passwd >/dev/null 2>/dev/null ; then
 
     cat <<EOF > /etc/profile.d/paths.sh
 export PATH=/var/lib/arvados/bin:/usr/local/bin:/usr/bin:/bin
-export GEM_HOME=/var/lib/arvados/lib/ruby/gems/2.5.0
+export GEM_HOME=/var/lib/arvados/lib/ruby/gems/2.7.0
 export npm_config_cache=/var/lib/npm
 export npm_config_cache_min=Infinity
 export R_LIBS=/var/lib/Rlibs

@@ -2,8 +2,11 @@
 #
 # SPDX-License-Identifier: AGPL-3.0
 
+export RUBY_VERSION=2.7.0
+export BUNDLER_VERSION=2.2.19
+
 export DEBIAN_FRONTEND=noninteractive
-export GEM_HOME=/var/lib/arvados/lib/ruby/gems/2.5.0
+export GEM_HOME=/var/lib/arvados/lib/ruby/gems/$RUBY_VERSION
 export PATH=${PATH}:/usr/local/go/bin:$GEM_HOME/bin:/var/lib/arvados/bin
 export npm_config_cache=/var/lib/npm
 export npm_config_cache_min=Infinity
@@ -60,18 +63,19 @@ else
 fi
 
 run_bundler() {
+    /var/lib/arvados/bin/gem install --no-document bundler:$BUNDLER_VERSION
     if test -f Gemfile.lock ; then
         frozen=--frozen
     else
         frozen=""
     fi
-    BUNDLER=bundler
-    if test -x $PWD/bin/bundler ; then
+    BUNDLER=bundle
+    if test -x $PWD/bin/bundle ; then
 	# If present, use the one associated with rails workbench or API
-	BUNDLER=$PWD/bin/bundler
+	BUNDLER=$PWD/bin/bundle
     fi
-    if ! flock $GEM_HOME/gems.lock $BUNDLER install --binstubs --verbose --local --no-deployment $frozen "$@" ; then
-        flock $GEM_HOME/gems.lock $BUNDLER install --binstubs --verbose --no-deployment $frozen "$@"
+    if ! flock $GEM_HOME/gems.lock $BUNDLER install --verbose --local --no-deployment $frozen "$@" ; then
+        flock $GEM_HOME/gems.lock $BUNDLER install --verbose --no-deployment $frozen "$@"
     fi
 }
 

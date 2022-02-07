@@ -15,8 +15,8 @@ download_cache = /var/lib/pip
 EOF
 
 cd /usr/src/arvados/sdk/cli
-run_bundler --binstubs=$PWD/binstubs
-ln -sf /usr/src/arvados/sdk/cli/binstubs/arv /usr/local/bin/arv
+run_bundler --binstubs
+ln -sf /usr/src/arvados/sdk/cli/bin/arv /usr/local/bin/arv
 
 export PYCMD=python3
 
