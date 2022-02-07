@@ -143,6 +143,7 @@ docker_run_dev() {
            "--volume=$PG_DATA:/var/lib/postgresql:rw" \
            "--volume=$VAR_DATA:$ARVADOS_CONTAINER_PATH:rw" \
            "--volume=$PASSENGER:/var/lib/passenger:rw" \
+	   "--volume=$GEMS:/var/lib/arvados/lib/ruby/gems:rw" \
            "--volume=$PIPCACHE:/var/lib/pip:rw" \
            "--volume=$NPMCACHE:/var/lib/npm:rw" \
            "--volume=$GOSTUFF:/var/lib/gopath:rw" \
