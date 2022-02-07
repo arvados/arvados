@@ -6,7 +6,7 @@ export RUBY_VERSION=2.7.0
 export BUNDLER_VERSION=2.2.19
 
 export DEBIAN_FRONTEND=noninteractive
-export PATH=${PATH}:/usr/local/go/bin:/var/lib/arvados/bin
+export PATH=${PATH}:/usr/local/go/bin:/var/lib/arvados/bin:/usr/src/arvados/sdk/cli/binstubs
 export npm_config_cache=/var/lib/npm
 export npm_config_cache_min=Infinity
 export R_LIBS=/var/lib/Rlibs

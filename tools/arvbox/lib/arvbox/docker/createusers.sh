@@ -51,7 +51,7 @@ if ! grep "^arvbox:" /etc/passwd >/dev/null 2>/dev/null ; then
     echo "arvbox    ALL=(crunch) NOPASSWD: ALL" >> /etc/sudoers
 
     cat <<EOF > /etc/profile.d/paths.sh
-export PATH=/var/lib/arvados/bin:/usr/local/bin:/usr/bin:/bin
+export PATH=/var/lib/arvados/bin:/usr/local/bin:/usr/bin:/bin:/usr/src/arvados/sdk/cli/binstubs
 export npm_config_cache=/var/lib/npm
 export npm_config_cache_min=Infinity
 export R_LIBS=/var/lib/Rlibs
