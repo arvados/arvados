@@ -8,7 +8,7 @@ import { Grid, Card, Chip, CardContent, TableBody, TableCell, TableHead, TableRo
 import { StyleRulesCallback, WithStyles, withStyles } from '@material-ui/core/styles';
 import { ArvadosTheme } from 'common/custom-theme';
 import { compose, Dispatch } from 'redux';
-import { loadVirtualMachinesAdminData, openAddVirtualMachineLoginDialog, openRemoveVirtualMachineLoginDialog } from 'store/virtual-machines/virtual-machines-actions';
+import { loadVirtualMachinesAdminData, openAddVirtualMachineLoginDialog, openRemoveVirtualMachineLoginDialog, openEditVirtualMachineLoginDialog } from 'store/virtual-machines/virtual-machines-actions';
 import { RootState } from 'store/store';
 import { ListResults } from 'services/common-service/common-service';
 import { MoreOptionsIcon, AddUserIcon } from 'components/icon/icon';
@@ -40,7 +40,7 @@ const mapStateToProps = (state: RootState) => {
     };
 };
 
-const mapDispatchToProps = (dispatch: Dispatch): Pick<VirtualMachinesPanelActionProps, 'loadVirtualMachinesData' | 'onOptionsMenuOpen' | 'onAddLogin' | 'onDeleteLogin'> => ({
+const mapDispatchToProps = (dispatch: Dispatch): Pick<VirtualMachinesPanelActionProps, 'loadVirtualMachinesData' | 'onOptionsMenuOpen' | 'onAddLogin' | 'onDeleteLogin' | 'onLoginEdit'> => ({
     loadVirtualMachinesData: () => dispatch<any>(loadVirtualMachinesAdminData()),
     onOptionsMenuOpen: (event, virtualMachine) => {
         dispatch<any>(openVirtualMachinesContextMenu(event, virtualMachine));
@@ -50,6 +50,9 @@ const mapDispatchToProps = (dispatch: Dispatch): Pick<VirtualMachinesPanelAction
     },
     onDeleteLogin: (uuid: string) => {
         dispatch<any>(openRemoveVirtualMachineLoginDialog(uuid));
+    },
+    onLoginEdit: (uuid: string) => {
+        dispatch<any>(openEditVirtualMachineLoginDialog(uuid));
     },
 });
 
@@ -65,6 +68,7 @@ interface VirtualMachinesPanelActionProps {
     onOptionsMenuOpen: (event: React.MouseEvent<HTMLElement>, virtualMachine: VirtualMachinesResource) => void;
     onAddLogin: (uuid: string) => void;
     onDeleteLogin: (uuid: string) => void;
+    onLoginEdit: (uuid: string) => void;
 }
 
 type VirtualMachineProps = VirtualMachinesPanelActionProps & VirtualMachinesPanelDataProps & WithStyles<CssRules>;
@@ -117,7 +121,7 @@ const virtualMachinesTable = (props: VirtualMachineProps) =>
                         <Grid container spacing={8} className={props.classes.chipsRoot}>
                             {props.links.items.filter((link) => (link.headUuid === machine.uuid)).map((permission, i) => (
                                 <Grid item key={i}>
-                                    <Chip label={<VirtualMachineLogin linkUuid={permission.uuid} />} onDelete={event => props.onDeleteLogin(permission.uuid)} />
+                                    <Chip label={<VirtualMachineLogin linkUuid={permission.uuid} />} onDelete={event => props.onDeleteLogin(permission.uuid)} onClick={event => props.onLoginEdit(permission.uuid)} />
                                 </Grid>
                             ))}
                         </Grid>

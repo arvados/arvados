@@ -18,6 +18,7 @@ import { PermissionLevel } from "models/permission";
 import { deleteResources, updateResources } from 'store/resources/resources-actions';
 import { Participant } from "views-components/sharing-dialog/participant-select";
 import { initialize, reset } from "redux-form";
+import { getUserDisplayName } from "models/user";
 
 export const virtualMachinesActions = unionize({
     SET_REQUESTED_DATE: ofType<string>(),
@@ -35,6 +36,7 @@ export const VIRTUAL_MACHINE_ADD_LOGIN_DIALOG = 'virtualMachineAddLoginDialog';
 export const VIRTUAL_MACHINE_ADD_LOGIN_FORM = 'virtualMachineAddLoginForm';
 export const VIRTUAL_MACHINE_REMOVE_LOGIN_DIALOG = 'virtualMachineRemoveLoginDialog';
 
+export const VIRTUAL_MACHINE_UPDATE_LOGIN_UUID_FIELD = 'uuid';
 export const VIRTUAL_MACHINE_ADD_LOGIN_VM_FIELD = 'vmUuid';
 export const VIRTUAL_MACHINE_ADD_LOGIN_USER_FIELD = 'user';
 export const VIRTUAL_MACHINE_ADD_LOGIN_GROUPS_FIELD = 'groups';
@@ -111,42 +113,67 @@ export const loadVirtualMachinesUserData = () =>
         dispatch(virtualMachinesActions.SET_LINKS(links));
     };
 
-export const openAddVirtualMachineLoginDialog = (uuid: string) =>
+export const openAddVirtualMachineLoginDialog = (vmUuid: string) =>
     async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
-        dispatch(initialize(VIRTUAL_MACHINE_ADD_LOGIN_FORM, {[VIRTUAL_MACHINE_ADD_LOGIN_VM_FIELD]: uuid, [VIRTUAL_MACHINE_ADD_LOGIN_GROUPS_FIELD]: ['docker']}));
+        dispatch(initialize(VIRTUAL_MACHINE_ADD_LOGIN_FORM, {[VIRTUAL_MACHINE_ADD_LOGIN_VM_FIELD]: vmUuid, [VIRTUAL_MACHINE_ADD_LOGIN_GROUPS_FIELD]: []}));
         dispatch(dialogActions.OPEN_DIALOG( {id: VIRTUAL_MACHINE_ADD_LOGIN_DIALOG, data: {}} ));
     }
 
+export const openEditVirtualMachineLoginDialog = (permissionUuid: string) =>
+    async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
+        const login = await services.permissionService.get(permissionUuid);
+        const user = await services.userService.get(login.tailUuid);
+        dispatch(initialize(VIRTUAL_MACHINE_ADD_LOGIN_FORM, {
+                [VIRTUAL_MACHINE_UPDATE_LOGIN_UUID_FIELD]: permissionUuid,
+                [VIRTUAL_MACHINE_ADD_LOGIN_USER_FIELD]: {name: getUserDisplayName(user, true), uuid: login.tailUuid},
+                [VIRTUAL_MACHINE_ADD_LOGIN_GROUPS_FIELD]: login.properties.groups,
+            }));
+        dispatch(dialogActions.OPEN_DIALOG( {id: VIRTUAL_MACHINE_ADD_LOGIN_DIALOG, data: {updating: true}} ));
+    }
+
 export interface AddLoginFormData {
+    [VIRTUAL_MACHINE_UPDATE_LOGIN_UUID_FIELD]: string;
     [VIRTUAL_MACHINE_ADD_LOGIN_VM_FIELD]: string;
     [VIRTUAL_MACHINE_ADD_LOGIN_USER_FIELD]: Participant;
     [VIRTUAL_MACHINE_ADD_LOGIN_GROUPS_FIELD]: string[];
 }
 
 
-export const addVirtualMachineLogin = ({vmUuid, user, groups}: AddLoginFormData) =>
+export const addUpdateVirtualMachineLogin = ({uuid, vmUuid, user, groups}: AddLoginFormData) =>
     async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
         try {
             // Get user
             const userResource = await services.userService.get(user.uuid);
 
-            const permission = await services.permissionService.create({
+            if (uuid) {
+                const permission = await services.permissionService.update(uuid, {
+                    tailUuid: userResource.uuid,
+                    name: PermissionLevel.CAN_LOGIN,
+                    properties: {
+                        username: userResource.username,
+                        groups,
+                    }
+                });
+                dispatch(updateResources([permission]));
+            } else {
+                const permission = await services.permissionService.create({
                 headUuid: vmUuid,
-                tailUuid: userResource.uuid,
-                name: PermissionLevel.CAN_LOGIN,
-                properties: {
-                    username: userResource.username,
-                    groups,
-                }
-            });
-            dispatch(updateResources([permission]));
+                    tailUuid: userResource.uuid,
+                    name: PermissionLevel.CAN_LOGIN,
+                    properties: {
+                        username: userResource.username,
+                        groups,
+                    }
+                });
+                dispatch(updateResources([permission]));
+            }
 
             dispatch(reset(VIRTUAL_MACHINE_ADD_LOGIN_FORM));
             dispatch(dialogActions.CLOSE_DIALOG({ id: VIRTUAL_MACHINE_ADD_LOGIN_DIALOG }));
             dispatch<any>(loadVirtualMachinesAdminData());
 
             dispatch(snackbarActions.OPEN_SNACKBAR({
-                message: `Permissions updated`,
+                message: `Permission updated`,
                 kind: SnackbarKind.SUCCESS
             }));
         } catch (e) {

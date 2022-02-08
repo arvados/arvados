@@ -41,10 +41,10 @@ describe('Virtual machine login manage tests', function() {
                 cy.get('button[title="Add Login Permission"]').click();
             });
         cy.get('[data-cy=form-dialog]')
-            .should('contain', 'Add login permissions')
+            .should('contain', 'Add login permission')
             .within(() => {
                 cy.get('label')
-                  .contains('Search for users')
+                  .contains('Search for user')
                   .parent()
                   .within(() => {
                     cy.get('input').type('VMAdmin');
@@ -52,13 +52,13 @@ describe('Virtual machine login manage tests', function() {
             });
         cy.get('[role=tooltip]').click();
         cy.get('[data-cy=form-dialog]')
-            .should('contain', 'Add login permissions')
+            .should('contain', 'Add login permission')
             .within(() => {
                 cy.get('label')
                   .contains('Add groups')
                   .parent()
                   .within(() => {
-                    cy.get('input').type('sudo{enter}');
+                    cy.get('input').type('docker sudo{enter}');
                   })
             });
         cy.get('[data-cy=form-dialog]').within(() => {
@@ -79,10 +79,10 @@ describe('Virtual machine login manage tests', function() {
                 cy.get('button[title="Add Login Permission"]').click();
             });
         cy.get('[data-cy=form-dialog]')
-            .should('contain', 'Add login permissions')
+            .should('contain', 'Add login permission')
             .within(() => {
                 cy.get('label')
-                  .contains('Search for users')
+                  .contains('Search for user')
                   .parent()
                   .within(() => {
                     cy.get('input').type('VMActive user');
@@ -123,7 +123,95 @@ describe('Virtual machine login manage tests', function() {
             .parents('tr')
             .within(() => {
                 cy.get('td').contains('user');
+                cy.get('td').should('not.contain', 'docker');
+                cy.get('td').should('not.contain', 'sudo');
+                cy.get('td').contains('ssh user@' + vmHost);
+        });
+
+        // Edit login permissions
+        cy.loginAs(adminUser);
+        cy.get('header button[title="Admin Panel"]').click();
+        cy.get('#admin-menu').contains('Virtual Machines').click();
+
+        cy.get('[data-cy=vm-admin-table]')
+            .contains('admin'); // Wait for page to finish
+
+        cy.get('[data-cy=vm-admin-table]')
+            .contains(vmHost)
+            .parents('tr')
+            .contains('admin')
+            .click();
+
+        cy.get('[data-cy=form-dialog]')
+            .should('contain', 'Update login permission')
+            .within(() => {
+                cy.get('label')
+                    .contains('Add groups')
+                    .parent()
+                    .as('groupInput');
+            });
+
+        cy.get('@groupInput').within(() => {
+            cy.get('div[role=button]').contains('sudo').parent().find('svg').click();
+            cy.get('div[role=button]').contains('docker').parent().find('svg').click();
+        });
+
+        cy.get('[data-cy=form-dialog]').within(() => {
+            cy.get('[data-cy=form-submit-btn]').click();
+        });
+
+        cy.get('[data-cy=vm-admin-table]')
+            .contains('user'); // Wait for page to finish
+
+        cy.get('[data-cy=vm-admin-table]')
+            .contains(vmHost)
+            .parents('tr')
+            .contains('user')
+            .click();
+
+        cy.get('[data-cy=form-dialog]')
+            .should('contain', 'Update login permission')
+            .within(() => {
+                cy.get('label')
+                    .contains('Add groups')
+                    .parent()
+                    .within(() => {
+                        cy.get('input').type('docker{enter}');
+                    })
+            });
+
+        cy.get('[data-cy=form-dialog]').within(() => {
+            cy.get('[data-cy=form-submit-btn]').click();
+        });
+
+        // Verify new login permissions
+        // Check admin's vm page for login
+        cy.get('header button[title="Account Management"]').click();
+        cy.get('#account-menu').contains('Virtual Machines').click();
+
+        cy.get('[data-cy=vm-user-table]')
+            .contains(vmHost)
+            .parents('tr')
+            .within(() => {
+                cy.get('td').contains('admin');
+                cy.get('td').should('not.contain', 'docker');
+                cy.get('td').should('not.contain', 'sudo');
+                cy.get('td').contains('ssh admin@' + vmHost);
+        });
+
+        // Verify new login permissions
+        // Check activeUser's vm page for login
+        cy.loginAs(activeUser);
+        cy.get('header button[title="Account Management"]').click();
+        cy.get('#account-menu').contains('Virtual Machines').click();
+
+        cy.get('[data-cy=vm-user-table]')
+            .contains(vmHost)
+            .parents('tr')
+            .within(() => {
+                cy.get('td').contains('user');
                 cy.get('td').contains('docker');
+                cy.get('td').should('not.contain', 'sudo');
                 cy.get('td').contains('ssh user@' + vmHost);
         });
 
