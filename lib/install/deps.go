@@ -29,7 +29,7 @@ import (
 var Command cmd.Handler = &installCommand{}
 
 const devtestDatabasePassword = "insecure_arvados_test"
-const goversion = "1.17.1"
+const goversion = "1.17.6"
 
 type installCommand struct {
 	ClusterType    string
