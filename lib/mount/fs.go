@@ -5,6 +5,7 @@
 package mount
 
 import (
+	"errors"
 	"io"
 	"log"
 	"os"
@@ -121,23 +122,25 @@ func (fs *keepFS) Utimens(path string, tmsp []fuse.Timespec) int {
 }
 
 func (fs *keepFS) errCode(err error) int {
-	if os.IsNotExist(err) {
+	if err == nil {
+		return 0
+	}
+	if errors.Is(err, os.ErrNotExist) {
 		return -fuse.ENOENT
 	}
-	switch err {
-	case os.ErrExist:
+	if errors.Is(err, os.ErrExist) {
 		return -fuse.EEXIST
-	case arvados.ErrInvalidArgument:
-		return -fuse.EINVAL
-	case arvados.ErrInvalidOperation:
-		return -fuse.ENOSYS
-	case arvados.ErrDirectoryNotEmpty:
-		return -fuse.ENOTEMPTY
-	case nil:
-		return 0
-	default:
-		return -fuse.EIO
 	}
+	if errors.Is(err, arvados.ErrInvalidArgument) {
+		return -fuse.EINVAL
+	}
+	if errors.Is(err, arvados.ErrInvalidOperation) {
+		return -fuse.ENOSYS
+	}
+	if errors.Is(err, arvados.ErrDirectoryNotEmpty) {
+		return -fuse.ENOTEMPTY
+	}
+	return -fuse.EIO
 }
 
 func (fs *keepFS) Mkdir(path string, mode uint32) int {

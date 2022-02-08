@@ -5,8 +5,12 @@
 package arvados
 
 import (
+	"fmt"
+	"io"
+	"io/ioutil"
 	"net/http"
 	"os"
+	"syscall"
 	"time"
 
 	check "gopkg.in/check.v1"
@@ -143,4 +147,143 @@ func (s *SiteFSSuite) TestByUUIDAndPDH(c *check.C) {
 
 	err = s.fs.Rename("/by_id", "/beep")
 	c.Check(err, check.Equals, ErrInvalidArgument)
+}
+
+// Copy subtree from OS src to dst path inside fs. If src is a
+// directory, dst must exist and be a directory.
+func copyFromOS(fs FileSystem, dst, src string) error {
+	inf, err := os.Open(src)
+	if err != nil {
+		return err
+	}
+	defer inf.Close()
+	dirents, err := inf.Readdir(-1)
+	if e, ok := err.(*os.PathError); ok {
+		if e, ok := e.Err.(syscall.Errno); ok {
+			if e == syscall.ENOTDIR {
+				err = syscall.ENOTDIR
+			}
+		}
+	}
+	if err == syscall.ENOTDIR {
+		outf, err := fs.OpenFile(dst, os.O_CREATE|os.O_EXCL|os.O_TRUNC|os.O_WRONLY, 0700)
+		if err != nil {
+			return fmt.Errorf("open %s: %s", dst, err)
+		}
+		defer outf.Close()
+		_, err = io.Copy(outf, inf)
+		if err != nil {
+			return fmt.Errorf("%s: copying data from %s: %s", dst, src, err)
+		}
+		err = outf.Close()
+		if err != nil {
+			return err
+		}
+	} else if err != nil {
+		return fmt.Errorf("%s: readdir: %T %s", src, err, err)
+	} else {
+		{
+			d, err := fs.Open(dst)
+			if err != nil {
+				return fmt.Errorf("opendir(%s): %s", dst, err)
+			}
+			d.Close()
+		}
+		for _, ent := range dirents {
+			if ent.Name() == "." || ent.Name() == ".." {
+				continue
+			}
+			dstname := dst + "/" + ent.Name()
+			if ent.IsDir() {
+				err = fs.Mkdir(dstname, 0700)
+				if err != nil {
+					return fmt.Errorf("mkdir %s: %s", dstname, err)
+				}
+			}
+			err = copyFromOS(fs, dstname, src+"/"+ent.Name())
+			if err != nil {
+				return err
+			}
+		}
+	}
+	return nil
+}
+
+func (s *SiteFSSuite) TestSnapshotSplice(c *check.C) {
+	s.fs.MountProject("home", "")
+
+	var src1 Collection
+	err := s.client.RequestAndDecode(&src1, "POST", "arvados/v1/collections", nil, map[string]interface{}{
+		"collection": map[string]string{
+			"name":       "TestSnapshotSplice src1",
+			"owner_uuid": fixtureAProjectUUID,
+		},
+	})
+	c.Assert(err, check.IsNil)
+	defer s.client.RequestAndDecode(nil, "DELETE", "arvados/v1/collections/"+src1.UUID, nil, nil)
+	err = s.fs.Sync()
+	c.Assert(err, check.IsNil)
+	err = copyFromOS(s.fs, "/home/A Project/TestSnapshotSplice src1", "..") // arvados.git/sdk/go
+	c.Assert(err, check.IsNil)
+
+	var src2 Collection
+	err = s.client.RequestAndDecode(&src2, "POST", "arvados/v1/collections", nil, map[string]interface{}{
+		"collection": map[string]string{
+			"name":       "TestSnapshotSplice src2",
+			"owner_uuid": fixtureAProjectUUID,
+		},
+	})
+	c.Assert(err, check.IsNil)
+	defer s.client.RequestAndDecode(nil, "DELETE", "arvados/v1/collections/"+src2.UUID, nil, nil)
+	err = s.fs.Sync()
+	c.Assert(err, check.IsNil)
+	err = copyFromOS(s.fs, "/home/A Project/TestSnapshotSplice src2", "..") // arvados.git/sdk/go
+	c.Assert(err, check.IsNil)
+
+	var dst Collection
+	err = s.client.RequestAndDecode(&dst, "POST", "arvados/v1/collections", nil, map[string]interface{}{
+		"collection": map[string]string{
+			"name":       "TestSnapshotSplice dst",
+			"owner_uuid": fixtureAProjectUUID,
+		},
+	})
+	c.Assert(err, check.IsNil)
+	defer s.client.RequestAndDecode(nil, "DELETE", "arvados/v1/collections/"+dst.UUID, nil, nil)
+	err = s.fs.Sync()
+	c.Assert(err, check.IsNil)
+	err = copyFromOS(s.fs, "/home/A Project/TestSnapshotSplice dst", "..") // arvados.git/sdk/go
+	c.Assert(err, check.IsNil)
+
+	snap1, err := Snapshot(s.fs, "/home/A Project/TestSnapshotSplice src1/ctxlog")
+	c.Assert(err, check.IsNil)
+	err = Splice(s.fs, "/home/A Project/TestSnapshotSplice dst/ctxlog-copy", snap1)
+	c.Assert(err, check.IsNil)
+	err = Splice(s.fs, "/home/A Project/TestSnapshotSplice dst/ctxlog-copy2", snap1)
+	c.Assert(err, check.IsNil)
+
+	snap2, err := Snapshot(s.fs, "/home/A Project/TestSnapshotSplice dst/ctxlog-copy")
+	c.Assert(err, check.IsNil)
+	err = Splice(s.fs, "/home/A Project/TestSnapshotSplice dst/ctxlog-copy-copy", snap2)
+	c.Assert(err, check.IsNil)
+
+	snapDst, err := Snapshot(s.fs, "/home/A Project/TestSnapshotSplice dst")
+	c.Assert(err, check.IsNil)
+	err = Splice(s.fs, "/home/A Project/TestSnapshotSplice dst", snapDst)
+	c.Assert(err, check.IsNil)
+	err = Splice(s.fs, "/home/A Project/TestSnapshotSplice dst/copy1", snapDst)
+	c.Assert(err, check.IsNil)
+	err = Splice(s.fs, "/home/A Project/TestSnapshotSplice dst/copy2", snapDst)
+	c.Assert(err, check.IsNil)
+	err = s.fs.RemoveAll("/home/A Project/TestSnapshotSplice dst/arvados")
+	c.Assert(err, check.IsNil)
+	_, err = s.fs.Open("/home/A Project/TestSnapshotSplice dst/arvados/fs_site_test.go")
+	c.Assert(err, check.Equals, os.ErrNotExist)
+	f, err := s.fs.Open("/home/A Project/TestSnapshotSplice dst/copy2/arvados/fs_site_test.go")
+	c.Assert(err, check.IsNil)
+	defer f.Close()
+	buf, err := ioutil.ReadAll(f)
+	c.Check(err, check.IsNil)
+	c.Check(string(buf), check.Not(check.Equals), "")
+	err = f.Close()
+	c.Assert(err, check.IsNil)
 }
