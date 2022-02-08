@@ -29,7 +29,7 @@ class Arvados
         super(*args)
       rescue => e
         if !e.message.match(/.*req-[0-9a-zA-Z]{20}.*/)
-          e.message += "\nRequest ID: #{e.headers['X-Request-Id'] or @request_id}"
+          raise $!, "#{$!} (Request ID: #{@request_id})", $!.backtrace
         end
         raise e
       end
