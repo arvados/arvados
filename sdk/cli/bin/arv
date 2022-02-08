@@ -65,16 +65,6 @@ module Kernel
   end
 end
 
-class ArvadosClient < Google::APIClient
-  def execute(*args)
-    if args.last.is_a? Hash
-      args.last[:headers] ||= {}
-      args.last[:headers]['Accept'] ||= 'application/json'
-    end
-    super(*args)
-  end
-end
-
 def init_config
   # read authentication data from arvados configuration file if present
   lineno = 0
@@ -605,7 +595,7 @@ if ENV['ARVADOS_API_HOST_INSECURE']
 end
 
 begin
-  client = ArvadosClient.new(:host => ENV['ARVADOS_API_HOST'], :application_name => 'arvados-cli', :application_version => '1.0')
+  client = Google::APIClient.new(:host => ENV['ARVADOS_API_HOST'], :application_name => 'arvados-cli', :application_version => '1.0')
   arvados = client.discovered_api('arvados', ENV['ARVADOS_API_VERSION'])
 rescue Exception => e
   puts "Failed to connect to Arvados API server: #{e}"
@@ -708,14 +698,23 @@ else
                           })
 end
 
+request_id = result.headers[:x_request_id]
 begin
   results = JSON.parse result.body
 rescue JSON::ParserError => e
-  abort "Failed to parse server response:\n" + e.to_s
+  err_msg = "Failed to parse server response:\n" + e.to_s
+  if request_id
+    err_msg += "\nRequest ID: #{request_id or client.request_id}"
+  end
+  abort err_msg
 end
 
 if results["errors"] then
-  abort "Error: #{results["errors"][0]}"
+  err_message = results["errors"][0]
+  if request_id and !err_message.match(/.*req-[0-9a-zA-Z]{20}.*/)
+    err_message += " (#{request_id})"
+  end
+  abort "Error: #{err_message}"
 end
 
 case global_opts[:format]

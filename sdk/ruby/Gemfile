@@ -6,4 +6,5 @@ source 'https://rubygems.org'
 gemspec
 gem 'rake'
 gem 'minitest', '>= 5.0.0'
+gem 'mocha', require: false
 gem 'signet', '<= 0.11'
