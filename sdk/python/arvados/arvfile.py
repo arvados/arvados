@@ -760,9 +760,10 @@ class _BlockManager(object):
         self._delete_bufferblock(locator)
 
     def _delete_bufferblock(self, locator):
-        bb = self._bufferblocks[locator]
-        bb.clear()
-        del self._bufferblocks[locator]
+        if locator in self._bufferblocks:
+            bb = self._bufferblocks[locator]
+            bb.clear()
+            del self._bufferblocks[locator]
 
     def get_block_contents(self, locator, num_retries, cache_only=False):
         """Fetch a block.
