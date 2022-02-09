@@ -72,7 +72,6 @@ NPMCACHE="$ARVBOX_DATA/npm"
 GOSTUFF="$ARVBOX_DATA/gopath"
 RLIBS="$ARVBOX_DATA/Rlibs"
 ARVADOS_CONTAINER_PATH="/var/lib/arvados-arvbox"
-GEM_HOME="/var/lib/arvados/lib/ruby/gems/2.7.0"
 
 getip() {
     docker inspect --format='{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' $ARVBOX_CONTAINER
@@ -144,7 +143,7 @@ docker_run_dev() {
            "--volume=$PG_DATA:/var/lib/postgresql:rw" \
            "--volume=$VAR_DATA:$ARVADOS_CONTAINER_PATH:rw" \
            "--volume=$PASSENGER:/var/lib/passenger:rw" \
-           "--volume=$GEMS:$GEM_HOME:rw" \
+	   "--volume=$GEMS:/var/lib/arvados/lib/ruby/gems:rw" \
            "--volume=$PIPCACHE:/var/lib/pip:rw" \
            "--volume=$NPMCACHE:/var/lib/npm:rw" \
            "--volume=$GOSTUFF:/var/lib/gopath:rw" \
@@ -295,7 +294,6 @@ run() {
                    -e COLUMNS=$(tput cols) \
                    -e TERM=$TERM \
                    -e WORKSPACE=/usr/src/arvados \
-                   -e GEM_HOME=$GEM_HOME \
                    -e CONFIGSRC=$ARVADOS_CONTAINER_PATH/run_tests \
                    $ARVBOX_CONTAINER \
                    /usr/local/lib/arvbox/runsu.sh \
@@ -469,7 +467,6 @@ case "$subcmd" in
                -e LINES=$(tput lines) \
                -e COLUMNS=$(tput cols) \
                -e TERM=$TERM \
-               -e GEM_HOME=$GEM_HOME \
                $ARVBOX_CONTAINER /bin/bash
         ;;
 
@@ -478,14 +475,13 @@ case "$subcmd" in
                -e LINES=$(tput lines) \
                -e COLUMNS=$(tput cols) \
                -e TERM=$TERM \
-               -e GEM_HOME=$GEM_HOME \
                -u arvbox \
                -w /usr/src/arvados \
                $ARVBOX_CONTAINER /bin/bash --login
         ;;
 
     pipe)
-        exec docker exec -i $ARVBOX_CONTAINER /usr/bin/env GEM_HOME=$GEM_HOME /bin/bash -
+        exec docker exec -i $ARVBOX_CONTAINER /usr/bin/env /bin/bash -
         ;;
 
     stop)
@@ -650,7 +646,7 @@ case "$subcmd" in
         ;;
 
     hotreset)
-        exec docker exec -i $ARVBOX_CONTAINER /usr/bin/env GEM_HOME=$GEM_HOME /bin/bash - <<EOF
+        exec docker exec -i $ARVBOX_CONTAINER /usr/bin/env /bin/bash - <<EOF
 sv stop api
 sv stop controller
 sv stop websockets
@@ -660,7 +656,7 @@ sv stop keepproxy
 cd /usr/src/arvados/services/api
 export DISABLE_DATABASE_ENVIRONMENT_CHECK=1
 export RAILS_ENV=development
-flock $GEM_HOME/gems.lock bin/bundle exec rake db:drop
+bin/bundle exec rake db:drop
 rm $ARVADOS_CONTAINER_PATH/api_database_setup
 rm $ARVADOS_CONTAINER_PATH/superuser_token
 sv start api
