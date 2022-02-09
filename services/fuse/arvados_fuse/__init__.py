@@ -475,24 +475,13 @@ class Operations(llfuse.Operations):
 
             for item in self.inodes.inode_cache.find_by_uuid(ev["object_uuid"]):
                 item.invalidate()
-                if ev.get("object_kind") == "arvados#collection":
-                    pdh = new_attrs.get("portable_data_hash")
-                    # new_attributes.modified_at currently lacks
-                    # subsecond precision (see #6347) so use event_at
-                    # which should always be the same.
-                    stamp = ev.get("event_at")
-                    if (stamp and pdh and item.writable() and
-                        item.collection is not None and
-                        item.collection.modified() and
-                        new_attrs.get("is_trashed") is not True):
-                        item.update(to_record_version=(stamp, pdh))
 
             oldowner = old_attrs.get("owner_uuid")
             newowner = ev.get("object_owner_uuid")
             for parent in (
                     self.inodes.inode_cache.find_by_uuid(oldowner) +
                     self.inodes.inode_cache.find_by_uuid(newowner)):
-                parent.child_event(ev)
+                parent.invalidate()
 
     @getattr_time.time()
     @catch_exceptions
