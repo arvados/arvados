@@ -52,7 +52,6 @@ const StyledInputComponent = withStyles(styles)(
               values={input.value}
               onChange={this.handleChange}
               handleFocus={input.onFocus}
-              handleBlur={this.handleBlur}
               createNewValue={identity}
               inputComponent={Input}
               chipsClassName={classes.chips}
@@ -70,11 +69,5 @@ const StyledInputComponent = withStyles(styles)(
           input.onChange(values);
       }
 
-      handleBlur = (e: React.FocusEvent<HTMLInputElement>) => {
-        const { input } = this.props;
-        if (!input.value?.length) {
-          input.onBlur(e);
-        }
-      }
   }
 );
