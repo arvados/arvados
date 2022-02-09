@@ -15,8 +15,11 @@ import { HelpIcon } from 'components/icon/icon';
 import { SESSION_STORAGE } from "services/auth-service/auth-service";
 // import * as CopyToClipboard from 'react-copy-to-clipboard';
 import parse from "parse-duration";
+import { CopyIcon } from 'components/icon/icon';
+import CopyToClipboard from 'react-copy-to-clipboard';
+import { snackbarActions, SnackbarKind } from 'store/snackbar/snackbar-actions';
 
-type CssRules = 'button' | 'codeSnippet' | 'link' | 'linkIcon' | 'rightAlign' | 'cardWithoutMachines' | 'icon' | 'chipsRoot';
+type CssRules = 'button' | 'codeSnippet' | 'link' | 'linkIcon' | 'rightAlign' | 'cardWithoutMachines' | 'icon' | 'chipsRoot' | 'copyIcon' | 'webshellButton';
 
 const EXTRA_TOKEN = "exraToken";
 
@@ -60,6 +63,18 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     chipsRoot: {
         margin: `0px -${theme.spacing.unit / 2}px`,
     },
+    copyIcon: {
+        marginLeft: theme.spacing.unit,
+        color: theme.palette.grey["500"],
+        cursor: 'pointer',
+        display: 'inline',
+        '& svg': {
+            fontSize: '1rem'
+        }
+    },
+    webshellButton: {
+        textTransform: "initial",
+    },
 });
 
 const mapStateToProps = (state: RootState) => {
@@ -76,9 +91,16 @@ const mapStateToProps = (state: RootState) => {
     };
 };
 
-const mapDispatchToProps = (dispatch: Dispatch): Pick<VirtualMachinesPanelActionProps, 'loadVirtualMachinesData' | 'saveRequestedDate'> => ({
+const mapDispatchToProps = (dispatch: Dispatch): Pick<VirtualMachinesPanelActionProps, 'loadVirtualMachinesData' | 'saveRequestedDate' | 'onCopy'> => ({
     saveRequestedDate: () => dispatch<any>(saveRequestedDate()),
     loadVirtualMachinesData: () => dispatch<any>(loadVirtualMachinesUserData()),
+    onCopy: (message: string) => {
+        dispatch(snackbarActions.OPEN_SNACKBAR({
+            message,
+            hideDuration: 2000,
+            kind: SnackbarKind.SUCCESS
+        }));
+    },
 });
 
 interface VirtualMachinesPanelDataProps {
@@ -97,6 +119,7 @@ interface VirtualMachinesPanelDataProps {
 interface VirtualMachinesPanelActionProps {
     saveRequestedDate: () => void;
     loadVirtualMachinesData: () => string;
+    onCopy: (message: string) => void;
 }
 
 type VirtualMachineProps = VirtualMachinesPanelActionProps & VirtualMachinesPanelDataProps & WithStyles<CssRules>;
@@ -192,6 +215,7 @@ const virtualMachinesTable = (props: VirtualMachineProps) =>
                         if (props.tokenLocation === SESSION_STORAGE || props.tokenLocation === EXTRA_TOKEN) {
                           tokenParam = `&token=${encodeURIComponent(props.token)}`;
                         }
+                        const loginHref = `/webshell/?host=${encodeURIComponent(props.webshellUrl + '/' + it.hostname)}&timeout=${props.idleTimeout}&login=${encodeURIComponent(username)}${tokenParam}`;
                         return <TableRow key={lk.uuid}>
                             <TableCell>{it.hostname}</TableCell>
                             <TableCell>{username}</TableCell>
@@ -208,11 +232,24 @@ const virtualMachinesTable = (props: VirtualMachineProps) =>
                             </TableCell>
                             <TableCell>
                                 {command}
+                                <Tooltip title="Copy to clipboard">
+                                    <span className={props.classes.copyIcon}>
+                                        <CopyToClipboard text={command || ""} onCopy={() => props.onCopy!("Copied")}>
+                                            <CopyIcon />
+                                        </CopyToClipboard>
+                                    </span>
+                                </Tooltip>
                             </TableCell>
                             <TableCell>
-                                <a href={`/webshell/?host=${encodeURIComponent(props.webshellUrl + '/' + it.hostname)}&timeout=${props.idleTimeout}&login=${encodeURIComponent(username)}${tokenParam}`} target="_blank" rel="noopener noreferrer" className={props.classes.link}>
-                                    Log in as {username}
-                                </a>
+                                <Button
+                                    className={props.classes.webshellButton}
+                                    variant="contained"
+                                    size="small"
+                                    href={loginHref}
+                                    target="_blank"
+                                    rel="noopener noreferrer">
+                                        Log in as {username}
+                                </Button>
                             </TableCell>
                         </TableRow>;
                     }
