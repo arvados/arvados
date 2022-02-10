@@ -742,7 +742,7 @@ func Snapshot(fs FileSystem, path string) (*Subtree, error) {
 //
 // Splice returns an error if target is not inside a collection.
 //
-// Splice returns an error if target is an existing directory and
+// Splice returns an error if target is the root of a collection and
 // newsubtree is a snapshot of a file.
 func Splice(fs FileSystem, target string, newsubtree *Subtree) error {
 	f, err := fs.OpenFile(target, os.O_WRONLY, 0)
