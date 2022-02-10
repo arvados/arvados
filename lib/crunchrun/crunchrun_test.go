@@ -364,6 +364,14 @@ func (fw FileWrapper) Sync() error {
 	return errors.New("not implemented")
 }
 
+func (fw FileWrapper) Snapshot() (*arvados.Subtree, error) {
+	return nil, errors.New("not implemented")
+}
+
+func (fw FileWrapper) Splice(*arvados.Subtree) error {
+	return errors.New("not implemented")
+}
+
 func (client *KeepTestClient) ManifestFileReader(m manifest.Manifest, filename string) (arvados.File, error) {
 	if filename == hwImageID+".tar" {
 		rdr := ioutil.NopCloser(&bytes.Buffer{})
