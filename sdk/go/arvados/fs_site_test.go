@@ -135,18 +135,18 @@ func (s *SiteFSSuite) TestByUUIDAndPDH(c *check.C) {
 	c.Check(names, check.DeepEquals, []string{"baz"})
 
 	_, err = s.fs.OpenFile("/by_id/"+fixtureNonexistentCollection, os.O_RDWR|os.O_CREATE, 0755)
-	c.Check(err, check.Equals, ErrInvalidArgument)
+	c.Check(err, ErrorIs, ErrInvalidOperation)
 	err = s.fs.Rename("/by_id/"+fixtureFooCollection, "/by_id/beep")
-	c.Check(err, check.Equals, ErrInvalidArgument)
+	c.Check(err, ErrorIs, ErrInvalidOperation)
 	err = s.fs.Rename("/by_id/"+fixtureFooCollection+"/foo", "/by_id/beep")
-	c.Check(err, check.Equals, ErrInvalidArgument)
+	c.Check(err, ErrorIs, ErrInvalidOperation)
 	_, err = s.fs.Stat("/by_id/beep")
 	c.Check(err, check.Equals, os.ErrNotExist)
 	err = s.fs.Rename("/by_id/"+fixtureFooCollection+"/foo", "/by_id/"+fixtureFooCollection+"/bar")
 	c.Check(err, check.IsNil)
 
 	err = s.fs.Rename("/by_id", "/beep")
-	c.Check(err, check.Equals, ErrInvalidArgument)
+	c.Check(err, ErrorIs, ErrInvalidOperation)
 }
 
 // Copy subtree from OS src to dst path inside fs. If src is a
@@ -211,9 +211,11 @@ func copyFromOS(fs FileSystem, dst, src string) error {
 
 func (s *SiteFSSuite) TestSnapshotSplice(c *check.C) {
 	s.fs.MountProject("home", "")
+	thisfile, err := ioutil.ReadFile("fs_site_test.go")
+	c.Assert(err, check.IsNil)
 
 	var src1 Collection
-	err := s.client.RequestAndDecode(&src1, "POST", "arvados/v1/collections", nil, map[string]interface{}{
+	err = s.client.RequestAndDecode(&src1, "POST", "arvados/v1/collections", nil, map[string]interface{}{
 		"collection": map[string]string{
 			"name":       "TestSnapshotSplice src1",
 			"owner_uuid": fixtureAProjectUUID,
@@ -251,39 +253,118 @@ func (s *SiteFSSuite) TestSnapshotSplice(c *check.C) {
 	defer s.client.RequestAndDecode(nil, "DELETE", "arvados/v1/collections/"+dst.UUID, nil, nil)
 	err = s.fs.Sync()
 	c.Assert(err, check.IsNil)
-	err = copyFromOS(s.fs, "/home/A Project/TestSnapshotSplice dst", "..") // arvados.git/sdk/go
+
+	dstPath := "/home/A Project/TestSnapshotSplice dst"
+	err = copyFromOS(s.fs, dstPath, "..") // arvados.git/sdk/go
 	c.Assert(err, check.IsNil)
 
+	// Snapshot directory
 	snap1, err := Snapshot(s.fs, "/home/A Project/TestSnapshotSplice src1/ctxlog")
-	c.Assert(err, check.IsNil)
-	err = Splice(s.fs, "/home/A Project/TestSnapshotSplice dst/ctxlog-copy", snap1)
-	c.Assert(err, check.IsNil)
-	err = Splice(s.fs, "/home/A Project/TestSnapshotSplice dst/ctxlog-copy2", snap1)
-	c.Assert(err, check.IsNil)
+	c.Check(err, check.IsNil)
+	// Attach same snapshot twice, at paths that didn't exist before
+	err = Splice(s.fs, dstPath+"/ctxlog-copy", snap1)
+	c.Check(err, check.IsNil)
+	err = Splice(s.fs, dstPath+"/ctxlog-copy2", snap1)
+	c.Check(err, check.IsNil)
+	// Splicing a snapshot twice results in two independent copies
+	err = s.fs.Rename(dstPath+"/ctxlog-copy2/log.go", dstPath+"/ctxlog-copy/log2.go")
+	c.Check(err, check.IsNil)
+	_, err = s.fs.Open(dstPath + "/ctxlog-copy2/log.go")
+	c.Check(err, check.Equals, os.ErrNotExist)
+	f, err := s.fs.Open(dstPath + "/ctxlog-copy/log.go")
+	if c.Check(err, check.IsNil) {
+		buf, err := ioutil.ReadAll(f)
+		c.Check(err, check.IsNil)
+		c.Check(string(buf), check.Not(check.Equals), "")
+		f.Close()
+	}
 
-	snap2, err := Snapshot(s.fs, "/home/A Project/TestSnapshotSplice dst/ctxlog-copy")
-	c.Assert(err, check.IsNil)
-	err = Splice(s.fs, "/home/A Project/TestSnapshotSplice dst/ctxlog-copy-copy", snap2)
-	c.Assert(err, check.IsNil)
+	// Snapshot regular file
+	snapFile, err := Snapshot(s.fs, "/home/A Project/TestSnapshotSplice src1/arvados/fs_site_test.go")
+	c.Check(err, check.IsNil)
+	// Replace dir with file
+	err = Splice(s.fs, dstPath+"/ctxlog-copy2", snapFile)
+	c.Check(err, check.IsNil)
+	if f, err := s.fs.Open(dstPath + "/ctxlog-copy2"); c.Check(err, check.IsNil) {
+		buf, err := ioutil.ReadAll(f)
+		c.Check(err, check.IsNil)
+		c.Check(string(buf), check.Equals, string(thisfile))
+	}
 
-	snapDst, err := Snapshot(s.fs, "/home/A Project/TestSnapshotSplice dst")
-	c.Assert(err, check.IsNil)
-	err = Splice(s.fs, "/home/A Project/TestSnapshotSplice dst", snapDst)
-	c.Assert(err, check.IsNil)
-	err = Splice(s.fs, "/home/A Project/TestSnapshotSplice dst/copy1", snapDst)
-	c.Assert(err, check.IsNil)
-	err = Splice(s.fs, "/home/A Project/TestSnapshotSplice dst/copy2", snapDst)
-	c.Assert(err, check.IsNil)
-	err = s.fs.RemoveAll("/home/A Project/TestSnapshotSplice dst/arvados")
-	c.Assert(err, check.IsNil)
-	_, err = s.fs.Open("/home/A Project/TestSnapshotSplice dst/arvados/fs_site_test.go")
-	c.Assert(err, check.Equals, os.ErrNotExist)
-	f, err := s.fs.Open("/home/A Project/TestSnapshotSplice dst/copy2/arvados/fs_site_test.go")
-	c.Assert(err, check.IsNil)
+	// Cannot splice a file onto a collection root, or anywhere
+	// outside a collection
+	for _, badpath := range []string{
+		dstPath,
+		"/home/A Project/newnodename",
+		"/home/A Project",
+		"/home/newnodename",
+		"/home",
+		"/newnodename",
+	} {
+		err = Splice(s.fs, badpath, snapFile)
+		c.Check(err, check.NotNil)
+		c.Check(err, ErrorIs, ErrInvalidOperation, check.Commentf("badpath %s"))
+		if badpath == dstPath {
+			c.Check(err, check.ErrorMatches, `cannot use Splice to attach a file at top level of \*arvados.collectionFileSystem: invalid operation`, check.Commentf("badpath: %s", badpath))
+			continue
+		}
+		err = Splice(s.fs, badpath, snap1)
+		c.Check(err, ErrorIs, ErrInvalidOperation, check.Commentf("badpath %s"))
+	}
+
+	// Destination cannot have trailing slash
+	for _, badpath := range []string{
+		dstPath + "/ctxlog/",
+		dstPath + "/",
+		"/home/A Project/",
+		"/home/",
+		"/",
+		"",
+	} {
+		err = Splice(s.fs, badpath, snap1)
+		c.Check(err, ErrorIs, ErrInvalidArgument, check.Commentf("badpath %s", badpath))
+		err = Splice(s.fs, badpath, snapFile)
+		c.Check(err, ErrorIs, ErrInvalidArgument, check.Commentf("badpath %s", badpath))
+	}
+
+	// Destination's parent must already exist
+	for _, badpath := range []string{
+		dstPath + "/newdirname/",
+		dstPath + "/newdirname/foobar",
+		"/foo/bar",
+	} {
+		err = Splice(s.fs, badpath, snap1)
+		c.Check(err, ErrorIs, os.ErrNotExist, check.Commentf("badpath %s", badpath))
+		err = Splice(s.fs, badpath, snapFile)
+		c.Check(err, ErrorIs, os.ErrNotExist, check.Commentf("badpath %s", badpath))
+	}
+
+	snap2, err := Snapshot(s.fs, dstPath+"/ctxlog-copy")
+	c.Check(err, check.IsNil)
+	err = Splice(s.fs, dstPath+"/ctxlog-copy-copy", snap2)
+	c.Check(err, check.IsNil)
+
+	// Snapshot entire collection, splice into same collection at
+	// a new path, remove file from original location, verify
+	// spliced content survives
+	snapDst, err := Snapshot(s.fs, dstPath+"")
+	c.Check(err, check.IsNil)
+	err = Splice(s.fs, dstPath+"", snapDst)
+	c.Check(err, check.IsNil)
+	err = Splice(s.fs, dstPath+"/copy1", snapDst)
+	c.Check(err, check.IsNil)
+	err = Splice(s.fs, dstPath+"/copy2", snapDst)
+	c.Check(err, check.IsNil)
+	err = s.fs.RemoveAll(dstPath + "/arvados/fs_site_test.go")
+	c.Check(err, check.IsNil)
+	err = s.fs.RemoveAll(dstPath + "/arvados")
+	c.Check(err, check.IsNil)
+	_, err = s.fs.Open(dstPath + "/arvados/fs_site_test.go")
+	c.Check(err, check.Equals, os.ErrNotExist)
+	f, err = s.fs.Open(dstPath + "/copy2/arvados/fs_site_test.go")
+	c.Check(err, check.IsNil)
 	defer f.Close()
 	buf, err := ioutil.ReadAll(f)
 	c.Check(err, check.IsNil)
-	c.Check(string(buf), check.Not(check.Equals), "")
-	err = f.Close()
-	c.Assert(err, check.IsNil)
+	c.Check(string(buf), check.Equals, string(thisfile))
 }

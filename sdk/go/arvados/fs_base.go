@@ -588,7 +588,7 @@ func (fs *fileSystem) Rename(oldname, newname string) error {
 		// supported. Locking inodes from different
 		// filesystems could deadlock, so we must error out
 		// now.
-		return ErrInvalidArgument
+		return ErrInvalidOperation
 	}
 
 	// To ensure we can test reliably whether we're about to move

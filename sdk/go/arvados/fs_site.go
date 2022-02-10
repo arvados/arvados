@@ -133,7 +133,7 @@ func (fs *customFileSystem) Stale(t time.Time) bool {
 }
 
 func (fs *customFileSystem) newNode(name string, perm os.FileMode, modTime time.Time) (node inode, err error) {
-	return nil, ErrInvalidArgument
+	return nil, ErrInvalidOperation
 }
 
 func (fs *customFileSystem) mountByID(parent inode, id string) inode {
@@ -179,7 +179,7 @@ func (fs *customFileSystem) newProjectNode(root inode, name, uuid string) inode 
 	}
 }
 
-// vdirnode wraps an inode by rejecting (with ErrInvalidArgument)
+// vdirnode wraps an inode by rejecting (with ErrInvalidOperation)
 // calls that add/replace children directly, instead calling a
 // create() func when a non-existing child is looked up.
 //
@@ -204,7 +204,7 @@ func (vn *vdirnode) Child(name string, replace func(inode) (inode, error)) (inod
 		} else if tryRepl, err := replace(existing); err != nil {
 			return existing, err
 		} else if tryRepl != existing {
-			return existing, ErrInvalidArgument
+			return existing, ErrInvalidOperation
 		} else {
 			return existing, nil
 		}
