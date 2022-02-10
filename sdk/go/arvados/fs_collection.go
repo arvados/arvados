@@ -1563,18 +1563,46 @@ func (dn *dirnode) snapshot() (*dirnode, error) {
 }
 
 func (dn *dirnode) Splice(repl inode) error {
-	repldn, ok := repl.(*dirnode)
-	if !ok {
-		return fmt.Errorf("cannot use Splice to replace a directory with a file: %w", ErrInvalidArgument)
-	}
-	repldn, err := repldn.snapshot()
+	repl, err := repl.Snapshot()
 	if err != nil {
 		return err
 	}
-	dn.Lock()
-	defer dn.Unlock()
-	dn.inodes = repldn.inodes
-	dn.setTreeFS(dn.fs)
+	switch repl := repl.(type) {
+	default:
+		return fmt.Errorf("cannot splice snapshot containing %T: %w", repl, ErrInvalidArgument)
+	case *dirnode:
+		dn.Lock()
+		defer dn.Unlock()
+		dn.inodes = repl.inodes
+		dn.setTreeFS(dn.fs)
+	case *filenode:
+		dn.parent.Lock()
+		defer dn.parent.Unlock()
+		removing, err := dn.parent.Child(dn.fileinfo.name, nil)
+		if err != nil {
+			return fmt.Errorf("cannot use Splice to replace a top-level directory with a file: %w", ErrInvalidOperation)
+		} else if removing != dn {
+			// If ../thisdirname is not this dirnode, it
+			// must be an inode that wraps a dirnode, like
+			// a collectionFileSystem or deferrednode.
+			if deferred, ok := removing.(*deferrednode); ok {
+				// More useful to report the type of
+				// the wrapped node rather than just
+				// *deferrednode. (We know the real
+				// inode is already loaded because dn
+				// is inside it.)
+				removing = deferred.realinode()
+			}
+			return fmt.Errorf("cannot use Splice to attach a file at top level of %T: %w", removing, ErrInvalidOperation)
+		}
+		dn.Lock()
+		defer dn.Unlock()
+		_, err = dn.parent.Child(dn.fileinfo.name, func(inode) (inode, error) { return repl, nil })
+		if err != nil {
+			return err
+		}
+		repl.fs = dn.fs
+	}
 	return nil
 }
 
