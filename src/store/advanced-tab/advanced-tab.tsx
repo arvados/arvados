@@ -18,7 +18,7 @@ import { ListResults } from 'services/common-service/common-service';
 import { RepositoryResource } from 'models/repositories';
 import { SshKeyResource } from 'models/ssh-key';
 import { VirtualMachinesResource } from 'models/virtual-machines';
-import { UserResource } from 'models/user';
+import { UserResource, getUserDisplayName } from 'models/user';
 import { LinkResource } from 'models/link';
 import { KeepServiceResource } from 'models/keep-services';
 import { ApiClientAuthorization } from 'models/api-client-authorization';
@@ -282,11 +282,18 @@ const getDataForAdvancedTab = (uuid: string) =>
         });
         let user;
 
-        try {
-            if (metadata.itemsAvailable && metadata.items[0].tailKind === ResourceKind.USER) {
-                user = await services.userService.get(metadata.items[0].tailUuid || '');
-            }
-        } catch {};
+        if (metadata.itemsAvailable) {
+            metadata.items.forEach(async (item) => {
+                const {tailKind, tailUuid, properties} = item;
+                properties['tail'] = tailUuid;
+                try {
+                    if (tailKind === ResourceKind.USER && tailUuid) {
+                        user = await services.userService.get(tailUuid);
+                        properties['tail'] = getUserDisplayName(user);
+                    }
+                } catch {};
+            });
+        }
 
         return { data, metadata, user };
     };
