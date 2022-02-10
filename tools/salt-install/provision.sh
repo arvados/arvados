@@ -206,7 +206,7 @@ VERSION="latest"
 # Other formula versions we depend on
 POSTGRES_TAG="v0.44.0"
 NGINX_TAG="v2.8.0"
-DOCKER_TAG="v2.0.7"
+DOCKER_TAG="v2.4.0"
 LOCALE_TAG="v0.3.4"
 LETSENCRYPT_TAG="v2.1.0"
 
