@@ -27,6 +27,7 @@ export interface Tag {
 export interface PropFieldSuggestion {
     id: string;
     label: string;
+    description?: string;
 }
 
 const VOCABULARY_VALIDATORS = [
@@ -64,9 +65,9 @@ const compare = (a: PropFieldSuggestion, b: PropFieldSuggestion) => {
     return 0;
 };
 
-export const getTagValues = (tagKeyID: string, vocabulary: Vocabulary) => {
+export const getTagValues = (tagKeyID: string, vocabulary: Vocabulary): PropFieldSuggestion[] => {
     const tag = vocabulary.tags[tagKeyID];
-    const ret = tag && tag.values
+    return tag && tag.values
         ? Object.keys(tag.values).map(
             tagValueID => tag.values![tagValueID].labels && tag.values![tagValueID].labels.length > 0
                 ? tag.values![tagValueID].labels.map(
@@ -75,11 +76,27 @@ export const getTagValues = (tagKeyID: string, vocabulary: Vocabulary) => {
             .reduce((prev, curr) => [...prev, ...curr], [])
             .sort(compare)
         : [];
-    return ret;
 };
 
-export const getTags = ({ tags }: Vocabulary) => {
-    const ret = tags && Object.keys(tags)
+export const getPreferredTagValues = (tagKeyID: string, vocabulary: Vocabulary, withSynonyms?: boolean): PropFieldSuggestion[] => {
+    const tag = vocabulary.tags[tagKeyID];
+    return tag && tag.values
+        ? Object.keys(tag.values).map(
+            tagValueID => tag.values![tagValueID].labels && tag.values![tagValueID].labels.length > 0
+                ? {
+                    "id": tagValueID,
+                    "label": tag.values![tagValueID].labels[0].label,
+                    "description": tag.values![tagValueID].labels[0].label + (
+                        withSynonyms && tag.values![tagValueID].labels.length > 1
+                        ? ` (${tag.values![tagValueID].labels.slice(1).map(l => l.label).join(', ')})`
+                        : '')}
+                : {"id": tagValueID, "label": tagValueID})
+            .sort(compare)
+        : [];
+};
+
+export const getTags = ({ tags }: Vocabulary): PropFieldSuggestion[] => {
+    return tags && Object.keys(tags)
         ? Object.keys(tags).map(
             tagID => tags[tagID].labels && tags[tagID].labels.length > 0
                 ? tags[tagID].labels.map(
@@ -88,7 +105,23 @@ export const getTags = ({ tags }: Vocabulary) => {
             .reduce((prev, curr) => [...prev, ...curr], [])
             .sort(compare)
         : [];
-    return ret;
+};
+
+export const getPreferredTags = ({ tags }: Vocabulary, withSynonyms?: boolean): PropFieldSuggestion[] => {
+    return tags && Object.keys(tags)
+        ? Object.keys(tags).map(
+            tagID => tags[tagID].labels && tags[tagID].labels.length > 0
+                ? {
+                    "id": tagID,
+                    "label": tags[tagID].labels[0].label,
+                    "description": tags[tagID].labels[0].label + (
+                        withSynonyms && tags[tagID].labels.length > 1
+                        ? ` (${tags[tagID].labels.slice(1).map(lbl => lbl.label).join(', ')})`
+                        : ''
+                    )}
+                : {"id": tagID, "label": tagID})
+            .sort(compare)
+        : [];
 };
 
 export const getTagKeyID = (tagKeyLabel:string, vocabulary: Vocabulary) =>
