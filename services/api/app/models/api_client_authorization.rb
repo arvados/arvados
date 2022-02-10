@@ -112,7 +112,19 @@ class ApiClientAuthorization < ArvadosModel
   end
 
   def self.check_anonymous_user_token token
-    if token.length >= 50 and token == Rails.configuration.Users.AnonymousUserToken
+    case token[0..2]
+    when 'v2/'
+      _, token_uuid, secret, optional = token.split('/')
+      unless token_uuid.andand.length == 27 && secret.andand.length.andand > 0
+        # invalid token
+        return nil
+      end
+    else
+      # v1 token
+      secret = token
+    end
+
+    if secret.length >= 50 and secret == Rails.configuration.Users.AnonymousUserToken
       return ApiClientAuthorization.new(user: User.find_by_uuid(anonymous_user_uuid),
                                         uuid: Rails.configuration.ClusterID+"-gj3su-anonymouspublic",
                                         api_token: token,
