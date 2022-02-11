@@ -26,6 +26,15 @@ public class KeepWebApiClient extends BaseApiClient {
         return newFileCall(request);
     }
 
+    public String delete(String collectionUuid, String filePathName) {
+        Request request = getRequestBuilder()
+                .url(getUrlBuilder(collectionUuid, filePathName).build())
+                .delete()
+                .build();
+
+        return newCall(request);
+    }
+
     private HttpUrl.Builder getUrlBuilder(String collectionUuid, String filePathName) {
         return new HttpUrl.Builder()
                 .scheme(config.getApiProtocol())
