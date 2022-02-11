@@ -626,6 +626,35 @@ describe('Collection panel tests', function () {
             });
     });
 
+    it('updates the collection UI contents by using the Refresh button', function () {
+        const collName = `Test Collection ${Math.floor(Math.random() * 999999)}`;
+        const fileName = 'foobar'
+
+        cy.createCollection(adminUser.token, {
+            name: collName,
+            owner_uuid: activeUser.user.uuid,
+        }).as('testCollection');
+
+        cy.getAll('@testCollection').then(function ([testCollection]) {
+            cy.loginAs(activeUser);
+            cy.goToPath(`/collections/${testCollection.uuid}`);
+            cy.get('[data-cy=collection-files-panel]').should('contain', 'This collection is empty');
+            cy.get('[data-cy=collection-files-panel]').should('not.contain', fileName);
+            cy.get('[data-cy=collection-info-panel]').should('contain', collName);
+
+            cy.updateCollection(adminUser.token, testCollection.uuid, {
+                name: `${collName + ' updated'}`,
+                manifest_text: `. 37b51d194a7513e45b56f6524f2d51f2+3 0:3:${fileName}\n`,
+            }).as('updatedCollection');
+            cy.getAll('@updatedCollection').then(function ([updatedCollection]) {
+                cy.contains('Refresh').click();
+                expect(updatedCollection.name).to.equal(`${collName + ' updated'}`);
+                cy.get('[data-cy=collection-info-panel]').should('contain', updatedCollection.name);
+                cy.get('[data-cy=collection-files-panel]').should('contain', fileName);
+            });
+        });
+    })
+
     it('makes a copy of an existing collection', function() {
         const collName = `Test Collection ${Math.floor(Math.random() * 999999)}`;
         const copyName = `Copy of: ${collName}`;

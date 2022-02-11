@@ -567,7 +567,7 @@ export const CollectionPanelFiles = withStyles(styles)(connect((state: RootState
                                                     </div>
                                                 }
                                             }
-                                        </FixedSizeList> : <div className={classes.rowEmpty}>No data available</div>
+                                        </FixedSizeList> : <div className={classes.rowEmpty}>This collection is empty</div>
                                     }}
                                 </AutoSizer> : <div className={classes.row}><CircularProgress className={classes.loader} size={30} /></div>
                         }

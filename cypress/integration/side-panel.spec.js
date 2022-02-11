@@ -82,7 +82,6 @@ describe('Side panel tests', function() {
             group_class: 'filter',
             properties: {filters: []},
         }).as('myFavoriteFilterGroup').then(function (myFavoriteFilterGroup) {
-            cy.contains('Refresh').click();
             cy.goToPath(`/projects/${myFavoriteFilterGroup.uuid}`);
             cy.get('[data-cy=breadcrumb-last]').should('contain', 'my-favorite-filter-group');
 
