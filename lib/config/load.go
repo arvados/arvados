@@ -299,9 +299,10 @@ func (ldr *Loader) Load() (*arvados.Config, error) {
 		for _, err = range []error{
 			ldr.checkClusterID(fmt.Sprintf("Clusters.%s", id), id, false),
 			ldr.checkClusterID(fmt.Sprintf("Clusters.%s.Login.LoginCluster", id), cc.Login.LoginCluster, true),
-			ldr.checkToken(fmt.Sprintf("Clusters.%s.ManagementToken", id), cc.ManagementToken),
-			ldr.checkToken(fmt.Sprintf("Clusters.%s.SystemRootToken", id), cc.SystemRootToken),
-			ldr.checkToken(fmt.Sprintf("Clusters.%s.Collections.BlobSigningKey", id), cc.Collections.BlobSigningKey),
+			ldr.checkToken(fmt.Sprintf("Clusters.%s.ManagementToken", id), cc.ManagementToken, true),
+			ldr.checkToken(fmt.Sprintf("Clusters.%s.SystemRootToken", id), cc.SystemRootToken, true),
+			ldr.checkToken(fmt.Sprintf("Clusters.%s.Users.AnonymousUserToken", id), cc.Users.AnonymousUserToken, false),
+			ldr.checkToken(fmt.Sprintf("Clusters.%s.Collections.BlobSigningKey", id), cc.Collections.BlobSigningKey, true),
 			checkKeyConflict(fmt.Sprintf("Clusters.%s.PostgreSQL.Connection", id), cc.PostgreSQL.Connection),
 			ldr.checkEnum("Containers.LocalKeepLogsToContainerLog", cc.Containers.LocalKeepLogsToContainerLog, "none", "all", "errors"),
 			ldr.checkEmptyKeepstores(cc),
@@ -333,14 +334,15 @@ func (ldr *Loader) checkClusterID(label, clusterID string, emptyStringOk bool) e
 var acceptableTokenRe = regexp.MustCompile(`^[a-zA-Z0-9]+$`)
 var acceptableTokenLength = 32
 
-func (ldr *Loader) checkToken(label, token string) error {
-	if token == "" {
+func (ldr *Loader) checkToken(label, token string, mandatory bool) error {
+	// when a token is not mandatory, the acceptable length and content is only checked if its length is non-zero
+	if mandatory && token == "" {
 		if ldr.Logger != nil {
 			ldr.Logger.Warnf("%s: secret token is not set (use %d+ random characters from a-z, A-Z, 0-9)", label, acceptableTokenLength)
 		}
-	} else if !acceptableTokenRe.MatchString(token) {
+	} else if (mandatory || len(token) > 0) && !acceptableTokenRe.MatchString(token) {
 		return fmt.Errorf("%s: unacceptable characters in token (only a-z, A-Z, 0-9 are acceptable)", label)
-	} else if len(token) < acceptableTokenLength {
+	} else if (mandatory || len(token) > 0) && len(token) < acceptableTokenLength {
 		if ldr.Logger != nil {
 			ldr.Logger.Warnf("%s: token is too short (should be at least %d characters)", label, acceptableTokenLength)
 		}

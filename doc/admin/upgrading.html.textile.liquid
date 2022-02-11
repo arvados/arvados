@@ -41,7 +41,7 @@ h2(#main). development main (as of 2022-02-10)
 
 h3. Anonymous token changes
 
-The anonymous token configured in @Users.AnonymousUserToken@ must now be 50 characters or longer. This was already the suggestion in the documentation, now it is enforced. The @script/get_anonymous_user_token.rb@ script that was needed to register the anonymous user token in the database has been removed. Registration of the anonymous token is no longer necessary.
+The anonymous token configured in @Users.AnonymousUserToken@ must now be 32 characters or longer. This was already the suggestion in the documentation, now it is enforced. The @script/get_anonymous_user_token.rb@ script that was needed to register the anonymous user token in the database has been removed. Registration of the anonymous token is no longer necessary.
 
 h3. Preemptible instance types are used automatically, if any are configured
 

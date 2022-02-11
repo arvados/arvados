@@ -124,7 +124,8 @@ class ApiClientAuthorization < ArvadosModel
       secret = token
     end
 
-    if secret.length >= 50 and secret == Rails.configuration.Users.AnonymousUserToken
+    # The anonymous token content and minimum length is verified in lib/config
+    if secret.length >= 0 && secret == Rails.configuration.Users.AnonymousUserToken
       return ApiClientAuthorization.new(user: User.find_by_uuid(anonymous_user_uuid),
                                         uuid: Rails.configuration.ClusterID+"-gj3su-anonymouspublic",
                                         api_token: token,
