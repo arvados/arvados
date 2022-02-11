@@ -44,6 +44,7 @@ type TestSuite struct {
 	runner                   *ContainerRunner
 	executor                 *stubExecutor
 	keepmount                string
+	keepmountTmp             []string
 	testDispatcherKeepClient KeepTestClient
 	testContainerKeepClient  KeepTestClient
 }
@@ -62,10 +63,20 @@ func (s *TestSuite) SetUpTest(c *C) {
 	}
 	s.runner.RunArvMount = func(cmd []string, tok string) (*exec.Cmd, error) {
 		s.runner.ArvMountPoint = s.keepmount
+		for i, opt := range cmd {
+			if opt == "--mount-tmp" {
+				err := os.Mkdir(s.keepmount+"/"+cmd[i+1], 0700)
+				if err != nil {
+					return nil, err
+				}
+				s.keepmountTmp = append(s.keepmountTmp, cmd[i+1])
+			}
+		}
 		return nil, nil
 	}
 	s.keepmount = c.MkDir()
 	err = os.Mkdir(s.keepmount+"/by_id", 0755)
+	s.keepmountTmp = nil
 	c.Assert(err, IsNil)
 	err = os.Mkdir(s.keepmount+"/by_id/"+arvadostest.DockerImage112PDH, 0755)
 	c.Assert(err, IsNil)
@@ -638,8 +649,6 @@ func (s *TestSuite) fullRunHelper(c *C, record string, extraMounts []string, exi
 
 	s.runner.statInterval = 100 * time.Millisecond
 	s.runner.containerWatchdogInterval = time.Second
-	am := &ArvMountCmdLine{}
-	s.runner.RunArvMount = am.ArvMountTest
 
 	realTemp := c.MkDir()
 	tempcount := 0
@@ -2007,6 +2016,44 @@ func (s *TestSuite) TestSecretTextMountPoint(c *C) {
 	c.Check(s.api.CalledWith("container.state", "Complete"), NotNil)
 	c.Check(s.runner.ContainerArvClient.(*ArvTestClient).CalledWith("collection.manifest_text", ". 34819d7beeabb9260a5c854bc85b3e44+10 0:10:secret.conf\n"), IsNil)
 	c.Check(s.runner.ContainerArvClient.(*ArvTestClient).CalledWith("collection.manifest_text", ""), NotNil)
+
+	// under secret mounts, output dir is a collection, not captured in output
+	helperRecord = `{
+		"command": ["true"],
+		"container_image": "` + arvadostest.DockerImage112PDH + `",
+		"cwd": "/bin",
+		"mounts": {
+                    "/tmp": {"kind": "collection", "writable": true}
+                },
+                "secret_mounts": {
+                    "/tmp/secret.conf": {"kind": "text", "content": "mypassword"}
+                },
+		"output_path": "/tmp",
+		"priority": 1,
+		"runtime_constraints": {},
+		"state": "Locked"
+	}`
+
+	s.SetUpTest(c)
+	_, _, realtemp := s.fullRunHelper(c, helperRecord, nil, 0, func() {
+		// secret.conf should be provisioned as a separate
+		// bind mount, i.e., it should not appear in the
+		// (fake) fuse filesystem as viewed from the host.
+		content, err := ioutil.ReadFile(s.runner.HostOutputDir + "/secret.conf")
+		if !c.Check(errors.Is(err, os.ErrNotExist), Equals, true) {
+			c.Logf("secret.conf: content %q, err %#v", content, err)
+		}
+		err = ioutil.WriteFile(s.runner.HostOutputDir+"/.arvados#collection", []byte(`{"manifest_text":". acbd18db4cc2f85cedef654fccc4a4d8+3 0:3:foo.txt\n"}`), 0700)
+		c.Check(err, IsNil)
+	})
+
+	content, err := ioutil.ReadFile(realtemp + "/text1/mountdata.text")
+	c.Check(err, IsNil)
+	c.Check(string(content), Equals, "mypassword")
+	c.Check(s.executor.created.BindMounts["/tmp/secret.conf"], DeepEquals, bindmount{realtemp + "/text1/mountdata.text", true})
+	c.Check(s.api.CalledWith("container.exit_code", 0), NotNil)
+	c.Check(s.api.CalledWith("container.state", "Complete"), NotNil)
+	c.Check(s.runner.ContainerArvClient.(*ArvTestClient).CalledWith("collection.manifest_text", ". acbd18db4cc2f85cedef654fccc4a4d8+3 0:3:foo.txt\n"), NotNil)
 }
 
 type FakeProcess struct {
