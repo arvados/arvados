@@ -440,8 +440,8 @@ func (runner *ContainerRunner) SetupMounts() (map[string]bindmount, error) {
 	sort.Strings(binds)
 
 	for _, bind := range binds {
-		mnt, ok := runner.Container.Mounts[bind]
-		if !ok {
+		mnt, notSecret := runner.Container.Mounts[bind]
+		if !notSecret {
 			mnt = runner.SecretMounts[bind]
 		}
 		if bind == "stdout" || bind == "stderr" {
@@ -510,8 +510,7 @@ func (runner *ContainerRunner) SetupMounts() (map[string]bindmount, error) {
 				}
 			} else {
 				src = fmt.Sprintf("%s/tmp%d", runner.ArvMountPoint, tmpcount)
-				arvMountCmd = append(arvMountCmd, "--mount-tmp")
-				arvMountCmd = append(arvMountCmd, fmt.Sprintf("tmp%d", tmpcount))
+				arvMountCmd = append(arvMountCmd, "--mount-tmp", fmt.Sprintf("tmp%d", tmpcount))
 				tmpcount++
 			}
 			if mnt.Writable {
@@ -571,9 +570,32 @@ func (runner *ContainerRunner) SetupMounts() (map[string]bindmount, error) {
 			if err != nil {
 				return nil, fmt.Errorf("writing temp file: %v", err)
 			}
-			if strings.HasPrefix(bind, runner.Container.OutputPath+"/") {
+			if strings.HasPrefix(bind, runner.Container.OutputPath+"/") && (notSecret || runner.Container.Mounts[runner.Container.OutputPath].Kind != "collection") {
+				// In most cases, if the container
+				// specifies a literal file inside the
+				// output path, we copy it into the
+				// output directory (either a mounted
+				// collection or a staging area on the
+				// host fs). If it's a secret, it will
+				// be skipped when copying output from
+				// staging to Keep later.
 				copyFiles = append(copyFiles, copyFile{tmpfn, runner.HostOutputDir + bind[len(runner.Container.OutputPath):]})
 			} else {
+				// If a secret is outside OutputPath,
+				// we bind mount the secret file
+				// directly just like other mounts. We
+				// also use this strategy when a
+				// secret is inside OutputPath but
+				// OutputPath is a live collection, to
+				// avoid writing the secret to
+				// Keep. Attempting to remove a
+				// bind-mounted secret file from
+				// inside the container will return a
+				// "Device or resource busy" error
+				// that might not be handled well by
+				// the container, which is why we
+				// don't use this strategy when
+				// OutputPath is a staging directory.
 				bindmounts[bind] = bindmount{HostPath: tmpfn, ReadOnly: true}
 			}
 
