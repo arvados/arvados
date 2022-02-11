@@ -14,7 +14,7 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import java.util.List;
 
 @JsonInclude(JsonInclude.Include.NON_NULL)
-@JsonPropertyOrder({ "limit", "offset", "filters", "order", "select", "distinct", "count" })
+@JsonPropertyOrder({ "limit", "offset", "filters", "order", "select", "distinct", "count", "exclude_home_project" })
 public class ListArgument extends Argument {
 
     @JsonProperty("limit")
@@ -38,8 +38,10 @@ public class ListArgument extends Argument {
     @JsonProperty("count")
     private Count count;
 
+    @JsonProperty("exclude_home_project")
+    private Boolean excludeHomeProject;
 
-    ListArgument(Integer limit, Integer offset, List<Filter> filters, List<String> order, List<String> select, Boolean distinct, Count count) {
+    ListArgument(Integer limit, Integer offset, List<Filter> filters, List<String> order, List<String> select, Boolean distinct, Count count, Boolean excludeHomeProject) {
         this.limit = limit;
         this.offset = offset;
         this.filters = filters;
@@ -47,6 +49,7 @@ public class ListArgument extends Argument {
         this.select = select;
         this.distinct = distinct;
         this.count = count;
+        this.excludeHomeProject = excludeHomeProject;
     }
 
     public static ListArgumentBuilder builder() {
@@ -70,6 +73,7 @@ public class ListArgument extends Argument {
         private List<String> select;
         private Boolean distinct;
         private Count count;
+        private Boolean excludeHomeProject;
 
         ListArgumentBuilder() {
         }
@@ -109,15 +113,21 @@ public class ListArgument extends Argument {
             return this;
         }
 
+        public ListArgument.ListArgumentBuilder excludeHomeProject(Boolean excludeHomeProject) {
+            this.excludeHomeProject = excludeHomeProject;
+            return this;
+        }
+
         public ListArgument build() {
-            return new ListArgument(limit, offset, filters, order, select, distinct, count);
+            return new ListArgument(limit, offset, filters, order, select, distinct, count, excludeHomeProject);
         }
 
         public String toString() {
             return "ListArgument.ListArgumentBuilder(limit=" + this.limit +
                     ", offset=" + this.offset + ", filters=" + this.filters +
                     ", order=" + this.order + ", select=" + this.select +
-                    ", distinct=" + this.distinct + ", count=" + this.count + ")";
+                    ", distinct=" + this.distinct + ", count=" + this.count +
+                    ", excludeHomeProject=" + this.excludeHomeProject + ")";
         }
     }
 }
