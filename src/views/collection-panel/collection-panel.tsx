@@ -323,7 +323,7 @@ export const CollectionDetailsAttributes = (props: CollectionDetailsProps) => {
         </Grid>
         <Grid item xs={12} md={mdSize}>
             <DetailsAttribute classLabel={classes.label} classValue={classes.value}
-                label='Number of files' value={item.fileCount} />
+                label='Number of files' value={<span data-cy='collection-file-count'>{item.fileCount}</span>} />
         </Grid>
         <Grid item xs={12} md={mdSize}>
             <DetailsAttribute classLabel={classes.label} classValue={classes.value}
