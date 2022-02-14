@@ -46,7 +46,11 @@ const PropertyKeyInput = ({ vocabulary, ...props }: WrappedFieldProps & Vocabula
             {...buildProps(props)}
             label='Key'
             suggestions={getSuggestions(props.input.value, vocabulary)}
-            renderSuggestion={(s: PropFieldSuggestion) => (s.description || s.label)}
+            renderSuggestion={
+                (s: PropFieldSuggestion) => s.synonyms && s.synonyms.length > 0
+                    ? `${s.label} (${s.synonyms.join('; ')})`
+                    : s.label
+            }
             onSelect={handleSelect(PROPERTY_KEY_FIELD_ID, data.form, props.input, props.meta)}
             onBlur={() => {
                 // Case-insensitive search for the key in the vocabulary
@@ -77,8 +81,9 @@ const matchTags = (vocabulary: Vocabulary) =>
 
 const getSuggestions = (value: string, vocabulary: Vocabulary): PropFieldSuggestion[] => {
     const re = new RegExp(escapeRegExp(value), "i");
-    return getPreferredTags(vocabulary, value !== '').filter(
-        tag => re.test((tag.description || tag.label)) && tag.label !== value);
+    return getPreferredTags(vocabulary, value).filter(
+        tag => (tag.label !== value && re.test(tag.label)) ||
+            (tag.synonyms && tag.synonyms.some(s => re.test(s))));
 };
 
 const handleChange = (

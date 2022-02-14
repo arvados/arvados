@@ -60,7 +60,11 @@ const PropertyValueInput = ({ vocabulary, propertyKeyId, propertyKeyName, ...pro
             label='Value'
             disabled={props.disabled}
             suggestions={getSuggestions(props.input.value, propertyKeyId, vocabulary)}
-            renderSuggestion={(s: PropFieldSuggestion) => (s.description || s.label)}
+            renderSuggestion={
+                (s: PropFieldSuggestion) => s.synonyms && s.synonyms.length > 0
+                    ? `${s.label} (${s.synonyms.join('; ')})`
+                    : s.label
+            }
             onSelect={handleSelect(PROPERTY_VALUE_FIELD_ID, data.form, props.input, props.meta)}
             onBlur={() => {
                 // Case-insensitive search for the value in the vocabulary
@@ -91,8 +95,9 @@ const matchTagValues = ({ vocabulary, propertyKeyId }: PropertyValueFieldProps) 
 
 const getSuggestions = (value: string, tagName: string, vocabulary: Vocabulary) => {
     const re = new RegExp(escapeRegExp(value), "i");
-    return getPreferredTagValues(tagName, vocabulary, value !== '').filter(
-        v => re.test((v.description || v.label)) && v.label !== value);
+    return getPreferredTagValues(tagName, vocabulary, value).filter(
+        val => (val.label !== value && re.test(val.label)) ||
+            (val.synonyms && val.synonyms.some(s => re.test(s))));
 };
 
 const handleChange = (

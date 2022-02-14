@@ -2,6 +2,7 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
+import { escapeRegExp } from 'common/regexp';
 import { isObject, has, every } from 'lodash/fp';
 
 export interface Vocabulary {
@@ -27,7 +28,7 @@ export interface Tag {
 export interface PropFieldSuggestion {
     id: string;
     label: string;
-    description?: string;
+    synonyms?: string[];
 }
 
 const VOCABULARY_VALIDATORS = [
@@ -78,19 +79,22 @@ export const getTagValues = (tagKeyID: string, vocabulary: Vocabulary): PropFiel
         : [];
 };
 
-export const getPreferredTagValues = (tagKeyID: string, vocabulary: Vocabulary, withSynonyms?: boolean): PropFieldSuggestion[] => {
+export const getPreferredTagValues = (tagKeyID: string, vocabulary: Vocabulary, withMatch?: string): PropFieldSuggestion[] => {
     const tag = vocabulary.tags[tagKeyID];
+    const regex = !!withMatch ? new RegExp(escapeRegExp(withMatch), 'i') : undefined;
     return tag && tag.values
         ? Object.keys(tag.values).map(
             tagValueID => tag.values![tagValueID].labels && tag.values![tagValueID].labels.length > 0
                 ? {
                     "id": tagValueID,
                     "label": tag.values![tagValueID].labels[0].label,
-                    "description": tag.values![tagValueID].labels[0].label + (
-                        withSynonyms && tag.values![tagValueID].labels.length > 1
-                        ? ` (${tag.values![tagValueID].labels.slice(1).map(l => l.label).join(', ')})`
-                        : '')}
-                : {"id": tagValueID, "label": tagValueID})
+                    "synonyms": !!withMatch && tag.values![tagValueID].labels.length > 1
+                        ? tag.values![tagValueID].labels.slice(1)
+                            .filter(l => !!regex ? regex.test(l.label) : true)
+                            .map(l => l.label)
+                        : []
+                }
+                : {"id": tagValueID, "label": tagValueID, "synonyms": []})
             .sort(compare)
         : [];
 };
@@ -107,19 +111,21 @@ export const getTags = ({ tags }: Vocabulary): PropFieldSuggestion[] => {
         : [];
 };
 
-export const getPreferredTags = ({ tags }: Vocabulary, withSynonyms?: boolean): PropFieldSuggestion[] => {
+export const getPreferredTags = ({ tags }: Vocabulary, withMatch?: string): PropFieldSuggestion[] => {
+    const regex = !!withMatch ? new RegExp(escapeRegExp(withMatch), 'i') : undefined;
     return tags && Object.keys(tags)
         ? Object.keys(tags).map(
             tagID => tags[tagID].labels && tags[tagID].labels.length > 0
                 ? {
                     "id": tagID,
                     "label": tags[tagID].labels[0].label,
-                    "description": tags[tagID].labels[0].label + (
-                        withSynonyms && tags[tagID].labels.length > 1
-                        ? ` (${tags[tagID].labels.slice(1).map(lbl => lbl.label).join(', ')})`
-                        : ''
-                    )}
-                : {"id": tagID, "label": tagID})
+                    "synonyms": !!withMatch && tags[tagID].labels.length > 1
+                        ? tags[tagID].labels.slice(1)
+                                .filter(l => !!regex ? regex.test(l.label) : true)
+                                .map(lbl => lbl.label)
+                        : []
+                }
+                : {"id": tagID, "label": tagID, "synonyms": []})
             .sort(compare)
         : [];
 };
