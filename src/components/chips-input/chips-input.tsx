@@ -12,12 +12,16 @@ interface ChipsInputProps<Value> {
     values: Value[];
     getLabel?: (value: Value) => string;
     onChange: (value: Value[]) => void;
+    handleFocus?: (e: any) => void;
+    handleBlur?: (e: any) => void;
+    chipsClassName?: string;
     createNewValue: (value: string) => Value;
     inputComponent?: React.ComponentType<InputProps>;
     inputProps?: InputProps;
     deletable?: boolean;
     orderable?: boolean;
     disabled?: boolean;
+    pattern?: RegExp;
 }
 
 type CssRules = 'chips' | 'input' | 'inputContainer';
@@ -49,22 +53,45 @@ export const ChipsInput = withStyles(styles)(
         timeout = -1;
 
         setText = (event: React.ChangeEvent<HTMLInputElement>) => {
-            this.setState({ text: event.target.value });
+            this.setState({ text: event.target.value }, () => {
+                // If pattern is provided, check for delimiter
+                if (this.props.pattern) {
+                    const matches = this.state.text.match(this.props.pattern);
+                    // Only create values if 1 match and the last character is a delimiter
+                    //   (user pressed an invalid character at the end of a token)
+                    //   or if multiple matches (user pasted text)
+                    if (matches &&
+                            (
+                                matches.length > 1 ||
+                                (matches.length === 1 && !this.state.text.endsWith(matches[0]))
+                            )) {
+                        this.createNewValue(matches.map((i) => i));
+                    }
+                }
+            });
         }
 
-        handleKeyPress = ({ key }: React.KeyboardEvent<HTMLInputElement>) => {
-            if (key === 'Enter') {
+        handleKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
+            // Handle special keypresses
+            if (e.key === 'Enter') {
                 this.createNewValue();
-            } else if (key === 'Backspace') {
+                e.preventDefault();
+            } else if (e.key === 'Backspace') {
                 this.deleteLastValue();
             }
         }
 
-        createNewValue = () => {
+        createNewValue = (matches?: string[]) => {
             if (this.state.text) {
-                const newValue = this.props.createNewValue(this.state.text);
-                this.setState({ text: '' });
-                this.props.onChange([...this.props.values, newValue]);
+                if (matches && matches.length > 0) {
+                    const newValues = matches.map((v) => this.props.createNewValue(v));
+                    this.setState({ text: '' });
+                    this.props.onChange([...this.props.values, ...newValues]);
+                } else {
+                    const newValue = this.props.createNewValue(this.state.text);
+                    this.setState({ text: '' });
+                    this.props.onChange([...this.props.values, newValue]);
+                }
             }
         }
 
@@ -104,7 +131,7 @@ export const ChipsInput = withStyles(styles)(
 
         renderChips() {
             const { classes, ...props } = this.props;
-            return <div className={classes.chips}>
+            return <div className={[classes.chips, this.props.chipsClassName].join(' ')}>
                 <Chips
                     {...props}
                     clickable={!props.disabled}
@@ -121,6 +148,8 @@ export const ChipsInput = withStyles(styles)(
                 onChange={this.setText}
                 disabled={this.props.disabled}
                 onKeyDown={this.handleKeyPress}
+                onFocus={this.props.handleFocus}
+                onBlur={this.props.handleBlur}
                 inputProps={{
                     ...(InputProps && InputProps.inputProps),
                     className: classes.input,

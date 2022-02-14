@@ -7,12 +7,15 @@ import { Button, Grid, StyleRulesCallback, WithStyles, Typography, Tooltip } fro
 import ChevronRightIcon from '@material-ui/icons/ChevronRight';
 import { withStyles } from '@material-ui/core';
 import { IllegalNamingWarning } from '../warning/warning';
+import { IconType } from 'components/icon/icon';
+import grey from '@material-ui/core/colors/grey';
 
 export interface Breadcrumb {
     label: string;
+    icon?: IconType;
 }
 
-type CssRules = "item" | "currentItem" | "label";
+type CssRules = "item" | "currentItem" | "label" | "icon";
 
 const styles: StyleRulesCallback<CssRules> = theme => ({
     item: {
@@ -23,7 +26,11 @@ const styles: StyleRulesCallback<CssRules> = theme => ({
     },
     label: {
         textTransform: "none"
-    }
+    },
+    icon: {
+        fontSize: 20,
+        color: grey["600"]
+    },
 });
 
 export interface BreadcrumbsProps {
@@ -39,6 +46,7 @@ export const Breadcrumbs = withStyles(styles)(
         items.map((item, index) => {
             const isLastItem = index === items.length - 1;
             const isFirstItem = index === 0;
+            const Icon = item.icon || (() => (null));
             return (
                 <React.Fragment key={index}>
                     {isFirstItem ? null : <IllegalNamingWarning name={item.label} />}
@@ -54,6 +62,7 @@ export const Breadcrumbs = withStyles(styles)(
                             className={isLastItem ? classes.currentItem : classes.item}
                             onClick={() => onClick(item)}
                             onContextMenu={event => onContextMenu(event, item)}>
+                            <Icon className={classes.icon} />
                             <Typography
                                 noWrap
                                 color="inherit"

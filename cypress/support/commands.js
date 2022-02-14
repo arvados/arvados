@@ -151,6 +151,15 @@ Cypress.Commands.add(
 )
 
 Cypress.Commands.add(
+    "createVirtualMachine", (token, data) => {
+        return cy.createResource(token, 'virtual_machines', {
+            virtual_machine: JSON.stringify(data),
+            ensure_unique_name: true
+        })
+    }
+)
+
+Cypress.Commands.add(
     "createResource", (token, suffix, data) => {
         return cy.doRequest('POST', '/arvados/v1/' + suffix, data, null, token, true)
             .its('body').as('resource')

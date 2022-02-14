@@ -4,7 +4,7 @@
 
 import React from 'react';
 import { connect } from 'react-redux';
-import { Grid, Typography, Button, Card, CardContent, TableBody, TableCell, TableHead, TableRow, Table, Tooltip } from '@material-ui/core';
+import { Grid, Typography, Button, Card, CardContent, TableBody, TableCell, TableHead, TableRow, Table, Tooltip, Chip } from '@material-ui/core';
 import { StyleRulesCallback, WithStyles, withStyles } from '@material-ui/core/styles';
 import { ArvadosTheme } from 'common/custom-theme';
 import { compose, Dispatch } from 'redux';
@@ -15,8 +15,11 @@ import { HelpIcon } from 'components/icon/icon';
 import { SESSION_STORAGE } from "services/auth-service/auth-service";
 // import * as CopyToClipboard from 'react-copy-to-clipboard';
 import parse from "parse-duration";
+import { CopyIcon } from 'components/icon/icon';
+import CopyToClipboard from 'react-copy-to-clipboard';
+import { snackbarActions, SnackbarKind } from 'store/snackbar/snackbar-actions';
 
-type CssRules = 'button' | 'codeSnippet' | 'link' | 'linkIcon' | 'rightAlign' | 'cardWithoutMachines' | 'icon';
+type CssRules = 'button' | 'codeSnippet' | 'link' | 'linkIcon' | 'rightAlign' | 'cardWithoutMachines' | 'icon' | 'chipsRoot' | 'copyIcon' | 'webshellButton';
 
 const EXTRA_TOKEN = "exraToken";
 
@@ -56,7 +59,22 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     icon: {
         textAlign: "right",
         marginTop: theme.spacing.unit
-    }
+    },
+    chipsRoot: {
+        margin: `0px -${theme.spacing.unit / 2}px`,
+    },
+    copyIcon: {
+        marginLeft: theme.spacing.unit,
+        color: theme.palette.grey["500"],
+        cursor: 'pointer',
+        display: 'inline',
+        '& svg': {
+            fontSize: '1rem'
+        }
+    },
+    webshellButton: {
+        textTransform: "initial",
+    },
 });
 
 const mapStateToProps = (state: RootState) => {
@@ -73,9 +91,16 @@ const mapStateToProps = (state: RootState) => {
     };
 };
 
-const mapDispatchToProps = (dispatch: Dispatch): Pick<VirtualMachinesPanelActionProps, 'loadVirtualMachinesData' | 'saveRequestedDate'> => ({
+const mapDispatchToProps = (dispatch: Dispatch): Pick<VirtualMachinesPanelActionProps, 'loadVirtualMachinesData' | 'saveRequestedDate' | 'onCopy'> => ({
     saveRequestedDate: () => dispatch<any>(saveRequestedDate()),
     loadVirtualMachinesData: () => dispatch<any>(loadVirtualMachinesUserData()),
+    onCopy: (message: string) => {
+        dispatch(snackbarActions.OPEN_SNACKBAR({
+            message,
+            hideDuration: 2000,
+            kind: SnackbarKind.SUCCESS
+        }));
+    },
 });
 
 interface VirtualMachinesPanelDataProps {
@@ -94,6 +119,7 @@ interface VirtualMachinesPanelDataProps {
 interface VirtualMachinesPanelActionProps {
     saveRequestedDate: () => void;
     loadVirtualMachinesData: () => string;
+    onCopy: (message: string) => void;
 }
 
 type VirtualMachineProps = VirtualMachinesPanelActionProps & VirtualMachinesPanelDataProps & WithStyles<CssRules>;
@@ -109,7 +135,7 @@ export const VirtualMachineUserPanel = compose(
             render() {
                 const { virtualMachines, links } = this.props;
                 return (
-                    <Grid container spacing={16}>
+                    <Grid container spacing={16} data-cy="vm-user-panel">
                         {virtualMachines.itemsAvailable === 0 && <CardContentWithoutVirtualMachines {...this.props} />}
                         {virtualMachines.itemsAvailable > 0 && links.itemsAvailable > 0 && <CardContentWithVirtualMachines {...this.props} />}
                         {<CardSSHSection {...this.props} />}
@@ -169,11 +195,12 @@ const virtualMachineSendRequest = (props: VirtualMachineProps) =>
     </span>;
 
 const virtualMachinesTable = (props: VirtualMachineProps) =>
-    <Table>
+    <Table data-cy="vm-user-table">
         <TableHead>
             <TableRow>
                 <TableCell>Host name</TableCell>
                 <TableCell>Login name</TableCell>
+                <TableCell>Groups</TableCell>
                 <TableCell>Command line</TableCell>
                 <TableCell>Web shell</TableCell>
             </TableRow>
@@ -181,23 +208,48 @@ const virtualMachinesTable = (props: VirtualMachineProps) =>
         <TableBody>
             {props.virtualMachines.items.map(it =>
                 props.links.items.map(lk => {
-                    if (lk.tailUuid === props.userUuid) {
+                    if (lk.tailUuid === props.userUuid && lk.headUuid === it.uuid) {
                         const username = lk.properties.username;
                         const command = `ssh ${username}@${it.hostname}${props.hostSuffix}`;
                         let tokenParam = "";
                         if (props.tokenLocation === SESSION_STORAGE || props.tokenLocation === EXTRA_TOKEN) {
                           tokenParam = `&token=${encodeURIComponent(props.token)}`;
                         }
+                        const loginHref = `/webshell/?host=${encodeURIComponent(props.webshellUrl + '/' + it.hostname)}&timeout=${props.idleTimeout}&login=${encodeURIComponent(username)}${tokenParam}`;
                         return <TableRow key={lk.uuid}>
                             <TableCell>{it.hostname}</TableCell>
                             <TableCell>{username}</TableCell>
                             <TableCell>
-                                {command}
+                                <Grid container spacing={8} className={props.classes.chipsRoot}>
+                                    {
+                                    (lk.properties.groups || []).map((group, i) => (
+                                        <Grid item key={i}>
+                                            <Chip label={group} />
+                                        </Grid>
+                                    ))
+                                    }
+                                </Grid>
                             </TableCell>
                             <TableCell>
-                                <a href={`/webshell/?host=${encodeURIComponent(props.webshellUrl + '/' + it.hostname)}&timeout=${props.idleTimeout}&login=${encodeURIComponent(username)}${tokenParam}`} target="_blank" rel="noopener noreferrer" className={props.classes.link}>
-                                    Log in as {username}
-                                </a>
+                                {command}
+                                <Tooltip title="Copy to clipboard">
+                                    <span className={props.classes.copyIcon}>
+                                        <CopyToClipboard text={command || ""} onCopy={() => props.onCopy!("Copied")}>
+                                            <CopyIcon />
+                                        </CopyToClipboard>
+                                    </span>
+                                </Tooltip>
+                            </TableCell>
+                            <TableCell>
+                                <Button
+                                    className={props.classes.webshellButton}
+                                    variant="contained"
+                                    size="small"
+                                    href={loginHref}
+                                    target="_blank"
+                                    rel="noopener noreferrer">
+                                        Log in as {username}
+                                </Button>
                             </TableCell>
                         </TableRow>;
                     }

@@ -172,3 +172,4 @@ export const FolderSharedIcon: IconType = (props) => <FolderShared {...props} />
 export const CanReadIcon: IconType = (props) => <RemoveRedEye {...props} />;
 export const CanWriteIcon: IconType = (props) => <Edit {...props} />;
 export const CanManageIcon: IconType = (props) => <Computer {...props} />;
+export const AddUserIcon: IconType = (props) => <PersonAdd {...props} />;
