@@ -283,9 +283,10 @@ def upload_dependencies(arvrunner, name, document_loader,
     metadata = scanobj
 
     sc_result = scandeps(uri, scanobj,
-                  loadref_fields,
-                  set(("$include", "$schemas", "location")),
-                  loadref, urljoin=document_loader.fetcher.urljoin)
+                         loadref_fields,
+                         set(("$include", "$schemas", "location")),
+                         loadref, urljoin=document_loader.fetcher.urljoin,
+                         nestdirs=False)
 
     sc = []
     uuids = {}

@@ -544,13 +544,12 @@ setup_ruby_environment() {
         echo "Will install dependencies to $(gem env gemdir)"
         echo "Will install bundler and arvados gems to $tmpdir_gem_home"
         echo "Gem search path is GEM_PATH=$GEM_PATH"
-        bundle="$tmpdir_gem_home/bin/bundle"
+        bundle="bundle"
         (
             export HOME=$GEMHOME
-            bundlers="$(gem list --details bundler)"
             versions=(2.2.19)
             for v in ${versions[@]}; do
-                if ! echo "$bundlers" | fgrep -q "($v)"; then
+                if ! gem list --installed --version "${v}" bundler >/dev/null; then
                     gem install --no-document --user $(for v in ${versions[@]}; do echo bundler:${v}; done)
                     break
                 fi
@@ -962,11 +961,11 @@ install_services/api() {
         set -ex
         cd "$WORKSPACE/services/api"
         export RAILS_ENV=test
-        if "$bundle" exec rails db:environment:set ; then
-            "$bundle" exec rake db:drop
+        if bin/rails db:environment:set ; then
+            bin/rake db:drop
         fi
-        "$bundle" exec rake db:setup
-        "$bundle" exec rake db:fixtures:load
+        bin/rake db:setup
+        bin/rake db:fixtures:load
     ) || return 1
 }
 

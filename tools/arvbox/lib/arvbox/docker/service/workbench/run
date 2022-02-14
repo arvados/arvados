@@ -23,7 +23,7 @@ fi
 
 if test "$1" != "--only-deps" ; then
     openssl verify -CAfile $root_cert $server_cert
-    exec bin/bundle exec passenger start --port=${services[workbench]} \
+    exec binstubs/passenger start --port=${services[workbench]} \
 	 --ssl --ssl-certificate=$ARVADOS_CONTAINER_PATH/server-cert-${localip}.pem \
 	 --ssl-certificate-key=$ARVADOS_CONTAINER_PATH/server-cert-${localip}.key \
          --user arvbox

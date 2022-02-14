@@ -5,14 +5,13 @@
 
 set -e -o pipefail
 
-export GEM_HOME=/var/lib/arvados/lib/ruby/gems/2.5.0
 export ARVADOS_CONTAINER_PATH=/var/lib/arvados-arvbox
 
 if ! grep "^arvbox:" /etc/passwd >/dev/null 2>/dev/null ; then
     HOSTUID=$(ls -nd /usr/src/arvados | sed 's/ */ /' | cut -d' ' -f4)
     HOSTGID=$(ls -nd /usr/src/arvados | sed 's/ */ /' | cut -d' ' -f5)
 
-    mkdir -p $ARVADOS_CONTAINER_PATH/git $GEM_HOME \
+    mkdir -p $ARVADOS_CONTAINER_PATH/git \
           /var/lib/passenger /var/lib/gopath \
           /var/lib/pip /var/lib/npm
 
@@ -32,7 +31,7 @@ if ! grep "^arvbox:" /etc/passwd >/dev/null 2>/dev/null ; then
     useradd --groups docker crunch
 
     if [[ "$1" != --no-chown ]] ; then
-        chown arvbox:arvbox -R /usr/local $ARVADOS_CONTAINER_PATH $GEM_HOME \
+        chown arvbox:arvbox -R /usr/local $ARVADOS_CONTAINER_PATH \
               /var/lib/passenger /var/lib/postgresql \
               /var/lib/nginx /var/log/nginx /etc/ssl/private \
               /var/lib/gopath /var/lib/pip /var/lib/npm \
@@ -52,8 +51,7 @@ if ! grep "^arvbox:" /etc/passwd >/dev/null 2>/dev/null ; then
     echo "arvbox    ALL=(crunch) NOPASSWD: ALL" >> /etc/sudoers
 
     cat <<EOF > /etc/profile.d/paths.sh
-export PATH=/var/lib/arvados/bin:/usr/local/bin:/usr/bin:/bin
-export GEM_HOME=/var/lib/arvados/lib/ruby/gems/2.5.0
+export PATH=/var/lib/arvados/bin:/usr/local/bin:/usr/bin:/bin:/usr/src/arvados/sdk/cli/binstubs
 export npm_config_cache=/var/lib/npm
 export npm_config_cache_min=Infinity
 export R_LIBS=/var/lib/Rlibs
