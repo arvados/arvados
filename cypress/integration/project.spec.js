@@ -257,7 +257,7 @@ describe('Project tests', function() {
 
                     cy.get('td').contains(uuid).should('exist');
 
-                    cy.get('td').contains('Active User').should('exist');
+                    cy.get('td').contains(activeUser.user.uuid).should('exist');
                 });
         });
     });
