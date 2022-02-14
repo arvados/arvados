@@ -257,7 +257,11 @@ def exit_signal_handler(sigcode, frame):
     logger.error(str(u"Caught signal {}, exiting.").format(sigcode))
     sys.exit(-sigcode)
 
-def main(args, stdout, stderr, api_client=None, keep_client=None,
+def main(args=sys.argv[1:],
+         stdout=sys.stdout,
+         stderr=sys.stderr,
+         api_client=None,
+         keep_client=None,
          install_sig_handlers=True):
     parser = arg_parser()
 
