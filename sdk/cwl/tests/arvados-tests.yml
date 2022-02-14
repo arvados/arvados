@@ -439,3 +439,8 @@
     "outstr": "foo woble bar"
   tool: 17879-ignore-sbg-fields.cwl
   doc: "Test issue 17879 - ignores sbg fields"
+
+- job: chipseq/chip-seq-single.json
+  output: {}
+  tool: chipseq/cwl-packed.json
+  doc: "Test issue 18723 - correctly upload two directories with the same basename"
