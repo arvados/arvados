@@ -23,9 +23,7 @@ ARG pipcmd=pip3
 
 RUN apt-get update -q && apt-get install -qy --no-install-recommends \
     git ${pythoncmd}-pip ${pythoncmd}-virtualenv ${pythoncmd}-dev libcurl4-gnutls-dev \
-    libgnutls28-dev nodejs ${pythoncmd}-pyasn1-modules build-essential
-
-RUN $pipcmd install -U setuptools six requests
+    libgnutls28-dev nodejs ${pythoncmd}-pyasn1-modules build-essential ${pythoncmd}-setuptools
 
 ARG sdk
 ARG runner
@@ -39,7 +37,7 @@ ADD cwl/dist/$runner /tmp/
 
 RUN cd /tmp/arvados-python-client-* && $pipcmd install .
 RUN if test -d /tmp/schema-salad-* ; then cd /tmp/schema-salad-* && $pipcmd install . ; fi
-RUN if test -d /tmp/cwltool-* ; then cd /tmp/cwltool-* && $pipcmd install networkx==2.2 && $pipcmd install . ; fi
+RUN if test -d /tmp/cwltool-* ; then cd /tmp/cwltool-* && $pipcmd install . ; fi
 RUN cd /tmp/arvados-cwl-runner-* && $pipcmd install .
 
 # Install dependencies and set up system.
