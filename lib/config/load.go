@@ -335,14 +335,18 @@ var acceptableTokenRe = regexp.MustCompile(`^[a-zA-Z0-9]+$`)
 var acceptableTokenLength = 32
 
 func (ldr *Loader) checkToken(label, token string, mandatory bool) error {
-	// when a token is not mandatory, the acceptable length and content is only checked if its length is non-zero
-	if mandatory && token == "" {
-		if ldr.Logger != nil {
-			ldr.Logger.Warnf("%s: secret token is not set (use %d+ random characters from a-z, A-Z, 0-9)", label, acceptableTokenLength)
+	if len(token) == 0 {
+		if !mandatory {
+			// when a token is not mandatory, the acceptable length and content is only checked if its length is non-zero
+			return nil
+		} else {
+			if ldr.Logger != nil {
+				ldr.Logger.Warnf("%s: secret token is not set (use %d+ random characters from a-z, A-Z, 0-9)", label, acceptableTokenLength)
+			}
 		}
-	} else if (mandatory || len(token) > 0) && !acceptableTokenRe.MatchString(token) {
+	} else if !acceptableTokenRe.MatchString(token) {
 		return fmt.Errorf("%s: unacceptable characters in token (only a-z, A-Z, 0-9 are acceptable)", label)
-	} else if (mandatory || len(token) > 0) && len(token) < acceptableTokenLength {
+	} else if len(token) < acceptableTokenLength {
 		if ldr.Logger != nil {
 			ldr.Logger.Warnf("%s: token is too short (should be at least %d characters)", label, acceptableTokenLength)
 		}

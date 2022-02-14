@@ -115,8 +115,9 @@ class ApiClientAuthorization < ArvadosModel
     case token[0..2]
     when 'v2/'
       _, token_uuid, secret, optional = token.split('/')
-      unless token_uuid.andand.length == 27 && secret.andand.length.andand > 0
-        # invalid token
+      unless token_uuid.andand.length == 27 && secret.andand.length.andand > 0 &&
+             token_uuid == Rails.configuration.ClusterID+"-gj3su-anonymouspublic"
+        # invalid v2 token, or v2 token for another user
         return nil
       end
     else
