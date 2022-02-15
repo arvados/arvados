@@ -262,7 +262,7 @@ ln -sf /var/lib/arvados/go/bin/* /usr/local/bin/
 		} else {
 			err = inst.runBash(`
 PJS=phantomjs-`+pjsversion+`-linux-x86_64
-wget --progress=dot:giga -O- https://bitbucket.org/ariya/phantomjs/downloads/$PJS.tar.bz2 | tar -C /var/lib/arvados -xjf -
+wget --progress=dot:giga -O- https://cache.arvados.org/$PJS.tar.bz2 | tar -C /var/lib/arvados -xjf -
 ln -sf /var/lib/arvados/$PJS/bin/phantomjs /usr/local/bin/
 `, stdout, stderr)
 			if err != nil {
