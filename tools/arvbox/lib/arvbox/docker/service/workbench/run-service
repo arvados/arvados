@@ -34,7 +34,7 @@ cat >config/application.yml <<EOF
 $RAILS_ENV:
   keep_web_url: https://example.com/c=%{uuid_or_pdh}
 EOF
-   RAILS_GROUPS=assets bin/bundle exec rake npm:install
+   RAILS_GROUPS=assets flock $GEMLOCK bin/bundle exec rake npm:install
    rm config/application.yml
    exit
 fi
@@ -43,5 +43,5 @@ set -u
 
 secret_token=$(cat $ARVADOS_CONTAINER_PATH/workbench_secret_token)
 
-RAILS_GROUPS=assets bin/bundle exec rake npm:install
-bin/bundle exec rake assets:precompile
+RAILS_GROUPS=assets flock $GEMLOCK bin/bundle exec rake npm:install
+flock $GEMLOCK bin/bundle exec rake assets:precompile

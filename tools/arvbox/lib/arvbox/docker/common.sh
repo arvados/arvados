@@ -12,6 +12,7 @@ export npm_config_cache_min=Infinity
 export R_LIBS=/var/lib/Rlibs
 export HOME=$(getent passwd arvbox | cut -d: -f6)
 export ARVADOS_CONTAINER_PATH=/var/lib/arvados-arvbox
+GEMLOCK=/var/lib/arvados/lib/ruby/gems/gems.lock
 
 defaultdev=$(/sbin/ip route|awk '/default/ { print $5 }')
 dockerip=$(/sbin/ip route | grep default | awk '{ print $3 }')
@@ -62,7 +63,6 @@ else
 fi
 
 run_bundler() {
-    GEMLOCK=/var/lib/arvados/lib/ruby/gems/gems.lock
     flock $GEMLOCK /var/lib/arvados/bin/gem install --no-document bundler:$BUNDLER_VERSION
     if test -f Gemfile.lock ; then
         frozen=--frozen

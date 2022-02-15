@@ -29,4 +29,4 @@ if test "$1" = "--only-deps" ; then
 fi
 
 cd /usr/src/arvados/doc
-bundle exec rake generate baseurl=http://$localip:${services[doc]} arvados_api_host=$localip:${services[controller-ssl]} arvados_workbench_host=http://$localip
+flock $GEMLOCK bundle exec rake generate baseurl=http://$localip:${services[doc]} arvados_api_host=$localip:${services[controller-ssl]} arvados_workbench_host=http://$localip

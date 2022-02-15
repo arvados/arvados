@@ -125,6 +125,6 @@ $RAILS_ENV:
 EOF
 
 while true ; do
-    bundle exec script/arvados-git-sync.rb $RAILS_ENV
+    flock $GEMLOCK bundle exec script/arvados-git-sync.rb $RAILS_ENV
     sleep 120
 done
