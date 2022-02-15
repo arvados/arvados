@@ -626,7 +626,7 @@ describe('Collection panel tests', function () {
             });
     });
 
-    it('updates the collection UI contents by using the Refresh button', function () {
+    it('automatically updates the collection UI contents without using the Refresh button', function () {
         const collName = `Test Collection ${Math.floor(Math.random() * 999999)}`;
         const fileName = 'foobar'
 
@@ -647,7 +647,6 @@ describe('Collection panel tests', function () {
                 manifest_text: `. 37b51d194a7513e45b56f6524f2d51f2+3 0:3:${fileName}\n`,
             }).as('updatedCollection');
             cy.getAll('@updatedCollection').then(function ([updatedCollection]) {
-                cy.contains('Refresh').click();
                 expect(updatedCollection.name).to.equal(`${collName + ' updated'}`);
                 cy.get('[data-cy=collection-info-panel]').should('contain', updatedCollection.name);
                 cy.get('[data-cy=collection-files-panel]').should('contain', fileName);
