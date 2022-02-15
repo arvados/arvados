@@ -278,13 +278,12 @@ export const CollectionPanelFiles = withStyles(styles)(connect((state: RootState
         }
     }, [rightKey]); // eslint-disable-line react-hooks/exhaustive-deps
 
+    const currentPDH = (collectionPanel.item || {}).portableDataHash;
     React.useEffect(() => {
-        const hash = (collectionPanel.item || {}).portableDataHash;
-
-        if (hash && collectionAutofetchEnabled) {
+        if (currentPDH) {
             fetchData([leftKey, rightKey], true);
         }
-    }, [(collectionPanel.item || {}).portableDataHash]); // eslint-disable-line react-hooks/exhaustive-deps
+    }, [currentPDH]); // eslint-disable-line react-hooks/exhaustive-deps
 
     React.useEffect(() => {
         if (rightData) {
