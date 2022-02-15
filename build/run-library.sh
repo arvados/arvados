@@ -787,7 +787,7 @@ fpm_build_virtualenv_worker () {
     ARVADOS_BUILDING_ITERATION=1
   fi
 
-  local python=python3
+  local python=$PYTHON3_EXECUTABLE
   pip=pip3
   PACKAGE_PREFIX=$PYTHON3_PKG_PREFIX
 
