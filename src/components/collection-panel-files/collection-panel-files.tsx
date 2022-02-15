@@ -201,7 +201,6 @@ export const CollectionPanelFiles = withStyles(styles)(connect((state: RootState
     const [path, setPath]: any = React.useState([]);
     const [pathData, setPathData]: any = React.useState({});
     const [isLoading, setIsLoading] = React.useState(false);
-    const [collectionAutofetchEnabled, setCollectionAutofetchEnabled] = React.useState(false);
     const [leftSearch, setLeftSearch] = React.useState('');
     const [rightSearch, setRightSearch] = React.useState('');
 
@@ -314,10 +313,6 @@ export const CollectionPanelFiles = withStyles(styles)(connect((state: RootState
 
             if (id) {
                 onItemMenuOpen(event, item, isWritable);
-
-                if (!collectionAutofetchEnabled) {
-                    setCollectionAutofetchEnabled(true);
-                }
             }
         },
         [onItemMenuOpen, isWritable, rightData] // eslint-disable-line react-hooks/exhaustive-deps
@@ -444,9 +439,6 @@ export const CollectionPanelFiles = withStyles(styles)(connect((state: RootState
                     <IconButton
                         data-cy='collection-files-panel-options-btn'
                         onClick={(ev) => {
-                            if (!collectionAutofetchEnabled) {
-                                setCollectionAutofetchEnabled(true);
-                            }
                             onOptionsMenuOpen(ev, isWritable);
                         }}>
                         <CustomizeTableIcon />
@@ -516,9 +508,6 @@ export const CollectionPanelFiles = withStyles(styles)(connect((state: RootState
                             className={classes.uploadButton}
                             data-cy='upload-button'
                             onClick={() => {
-                                if (!collectionAutofetchEnabled) {
-                                    setCollectionAutofetchEnabled(true);
-                                }
                                 onUploadDataClick();
                             }}
                             variant='contained'
