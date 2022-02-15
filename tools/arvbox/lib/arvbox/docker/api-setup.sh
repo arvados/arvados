@@ -56,16 +56,16 @@ EOF
 fi
 
 if ! test -f $ARVADOS_CONTAINER_PATH/api_database_setup ; then
-   bin/bundle exec rake db:setup
+   flock $GEMLOCK bin/bundle exec rake db:setup
    touch $ARVADOS_CONTAINER_PATH/api_database_setup
 fi
 
 if ! test -s $ARVADOS_CONTAINER_PATH/superuser_token ; then
-    superuser_tok=$(bin/bundle exec ./script/create_superuser_token.rb)
+    superuser_tok=$(flock $GEMLOCK bin/bundle exec ./script/create_superuser_token.rb)
     echo "$superuser_tok" > $ARVADOS_CONTAINER_PATH/superuser_token
 fi
 
 rm -rf tmp
 mkdir -p tmp/cache
 
-bin/bundle exec rake db:migrate
+flock $GEMLOCK bin/bundle exec rake db:migrate
