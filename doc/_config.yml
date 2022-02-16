@@ -218,12 +218,14 @@ navbar:
     - Manual installation:
       - install/install-manual-prerequisites.html.textile.liquid
       - install/packages.html.textile.liquid
-      - admin/upgrading.html.textile.liquid
     - Configuration:
       - install/config.html.textile.liquid
       - admin/config-migration.html.textile.liquid
       - admin/config.html.textile.liquid
       - admin/config-urls.html.textile.liquid
+    - Maintenance and upgrading:
+      - admin/upgrading.html.textile.liquid
+      - install/maintenance-and-upgrading.html.textile.liquid
     - Core:
       - install/install-api-server.html.textile.liquid
     - Keep:
