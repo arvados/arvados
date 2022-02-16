@@ -280,8 +280,8 @@ const getDataForAdvancedTab = (uuid: string) =>
                 .addEqual('head_uuid', uuid)
                 .getFilters()
         });
-        const user = metadata.itemsAvailable && await services.userService.get(metadata.items[0].tailUuid || '');
-        return { data, metadata, user };
+
+        return { data, metadata };
     };
 
 const initAdvancedTabDialog = (data: AdvancedTabDialogData) => dialogActions.OPEN_DIALOG({ id: ADVANCED_TAB_DIALOG, data });

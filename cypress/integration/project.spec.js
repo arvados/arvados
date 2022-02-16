@@ -200,7 +200,9 @@ describe('Project tests', function() {
         cy.createGroup(activeUser.token, {
             name: `Test root project ${Math.floor(Math.random() * 999999)}`,
             group_class: 'project',
-        }).as('testProject1');
+        }).as('testProject1').then((testProject1) => {
+            cy.shareWith(adminUser.token, activeUser.user.uuid, testProject1.uuid, 'can_write');
+        });
 
         cy.getAll('@testProject1').then(function([testProject1]) {
             cy.loginAs(activeUser);
@@ -212,6 +214,50 @@ describe('Project tests', function() {
             cy.get('[data-cy=side-panel-tree]').contains('Projects').click();
 
             cy.get('[data-cy=search-input] input').should('not.have.value', 'test123');
+        });
+    });
+
+    it('opens advanced popup for project with username', () => {
+        const projectName = `Test project ${Math.floor(Math.random() * 999999)}`;
+
+        cy.createGroup(adminUser.token, {
+            name: projectName,
+            group_class: 'project',
+        }).as('mainProject')
+
+        cy.getAll('@mainProject')
+            .then(function ([mainProject]) {
+                cy.loginAs(adminUser);
+                
+                cy.get('[data-cy=side-panel-tree]').contains('Groups').click();
+
+                cy.get('[data-cy=uuid]').eq(0).invoke('text').then(uuid => {
+                    cy.createLink(adminUser.token, {
+                        name: 'can_write',
+                        link_class: 'permission',
+                        head_uuid: mainProject.uuid,
+                        tail_uuid: uuid
+                    });
+
+                    cy.createLink(adminUser.token, {
+                        name: 'can_write',
+                        link_class: 'permission',
+                        head_uuid: mainProject.uuid,
+                        tail_uuid: activeUser.user.uuid
+                    });
+
+                    cy.get('[data-cy=side-panel-tree]').contains('Projects').click();
+
+                    cy.get('main').contains(projectName).rightclick();
+
+                    cy.get('[data-cy=context-menu]').contains('Advanced').click();
+
+                    cy.get('[role=tablist]').contains('METADATA').click();
+
+                    cy.get('td').contains(uuid).should('exist');
+
+                    cy.get('td').contains(activeUser.user.uuid).should('exist');
+                });
         });
     });
 });
