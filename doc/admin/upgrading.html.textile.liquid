@@ -225,7 +225,7 @@ Arvados 2.0 is a major upgrade, with many changes.  Please read these upgrade no
 
 h3. Migrating to centralized config.yml
 
-See "Migrating Configuration":config-migration.html for notes on migrating legacy per-component configuration files to the new centralized @/etc/arvados/config.yml@.
+See "Migrating Configuration":https://doc.arvados.org/v2.1/admin/config-migration.html for notes on migrating legacy per-component configuration files to the new centralized @/etc/arvados/config.yml@.
 
 To ensure a smooth transition, the per-component config files continue to be read, and take precedence over the centralized configuration.  Your cluster should continue to function after upgrade but before doing the full configuration migration.  However, several services (keepstore, keep-web, keepproxy) require a minimal `/etc/arvados/config.yml` to start:
 
@@ -245,11 +245,11 @@ You can no longer specify types of keep services to balance via the @KeepService
 
 You can no longer specify individual keep services to balance via the @config.KeepServiceList@ command line option or @KeepServiceList@ legacy config option. Instead, keep-balance will operate on all keepstore servers with @service_type:disk@ as reported by the @arv keep_service list@ command. If you are still using the legacy config, @KeepServiceList@ should be removed or keep-balance will produce an error.
 
-Please see the "config migration guide":{{site.baseurl}}/admin/config-migration.html and "keep-balance install guide":{{site.baseurl}}/install/install-keep-balance.html for more details.
+Please see the "config migration guide":https://doc.arvados.org/v2.1/admin/config-migration.html and "keep-balance install guide":{{site.baseurl}}/install/install-keep-balance.html for more details.
 
 h3. Arv-git-httpd configuration migration
 
-(feature "#14712":https://dev.arvados.org/issues/14712 ) The arv-git-httpd package can now be configured using the centralized configuration file at @/etc/arvados/config.yml@. Configuration via individual command line arguments is no longer available. Please see "arv-git-httpd's config migration guide":{{site.baseurl}}/admin/config-migration.html#arv-git-httpd for more details.
+(feature "#14712":https://dev.arvados.org/issues/14712 ) The arv-git-httpd package can now be configured using the centralized configuration file at @/etc/arvados/config.yml@. Configuration via individual command line arguments is no longer available. Please see "arv-git-httpd's config migration guide":https://doc.arvados.org/v2.1/admin/config-migration.html#arv-git-httpd for more details.
 
 h3. Keepstore and keep-web configuration migration
 
@@ -257,11 +257,11 @@ keepstore and keep-web no longer support configuration via (previously deprecate
 
 keep-web now supports the legacy @keep-web.yml@ config format (used by Arvados 1.4) and the new cluster config file format. Please check "keep-web's install guide":{{site.baseurl}}/install/install-keep-web.html for more details.
 
-keepstore now supports the legacy @keepstore.yml@ config format (used by Arvados 1.4) and the new cluster config file format. Please check the "keepstore config migration notes":{{site.baseurl}}/admin/config-migration.html#keepstore and "keepstore install guide":{{site.baseurl}}/install/install-keepstore.html for more details.
+keepstore now supports the legacy @keepstore.yml@ config format (used by Arvados 1.4) and the new cluster config file format. Please check the "keepstore config migration notes":https://doc.arvados.org/v2.1/admin/config-migration.html#keepstore and "keepstore install guide":{{site.baseurl}}/install/install-keepstore.html for more details.
 
 h3. Keepproxy configuration migration
 
-(feature "#14715":https://dev.arvados.org/issues/14715 ) Keepproxy can now be configured using the centralized config at @/etc/arvados/config.yml@. Configuration via individual command line arguments is no longer available and the @DisableGet@, @DisablePut@, and @PIDFile@ configuration options are no longer supported. If you are still using the legacy config and @DisableGet@ or @DisablePut@ are set to true or @PIDFile@ has a value, keepproxy will produce an error and fail to start. Please see "keepproxy's config migration guide":{{site.baseurl}}/admin/config-migration.html#keepproxy for more details.
+(feature "#14715":https://dev.arvados.org/issues/14715 ) Keepproxy can now be configured using the centralized config at @/etc/arvados/config.yml@. Configuration via individual command line arguments is no longer available and the @DisableGet@, @DisablePut@, and @PIDFile@ configuration options are no longer supported. If you are still using the legacy config and @DisableGet@ or @DisablePut@ are set to true or @PIDFile@ has a value, keepproxy will produce an error and fail to start. Please see "keepproxy's config migration guide":https://doc.arvados.org/v2.1/admin/config-migration.html#keepproxy for more details.
 
 h3. Delete "keep_services" records
 
@@ -458,7 +458,7 @@ As part of story "#9945":https://dev.arvados.org/issues/9945, it was discovered 
 
 h3. New configuration
 
-Arvados is migrating to a centralized configuration file for all components.  During the migration, legacy configuration files will continue to be loaded.  See "Migrating Configuration":config-migration.html for details.
+Arvados is migrating to a centralized configuration file for all components.  During the migration, legacy configuration files will continue to be loaded.  See "Migrating Configuration":https://doc.arvados.org/v2.0/config-migration.html for details.
 
 h2(#v1_3_3). v1.3.3 (2019-05-14)
 
