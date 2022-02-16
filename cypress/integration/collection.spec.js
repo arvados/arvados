@@ -626,6 +626,34 @@ describe('Collection panel tests', function () {
             });
     });
 
+    it('automatically updates the collection UI contents without using the Refresh button', function () {
+        const collName = `Test Collection ${Math.floor(Math.random() * 999999)}`;
+        const fileName = 'foobar'
+
+        cy.createCollection(adminUser.token, {
+            name: collName,
+            owner_uuid: activeUser.user.uuid,
+        }).as('testCollection');
+
+        cy.getAll('@testCollection').then(function ([testCollection]) {
+            cy.loginAs(activeUser);
+            cy.goToPath(`/collections/${testCollection.uuid}`);
+            cy.get('[data-cy=collection-files-panel]').should('contain', 'This collection is empty');
+            cy.get('[data-cy=collection-files-panel]').should('not.contain', fileName);
+            cy.get('[data-cy=collection-info-panel]').should('contain', collName);
+
+            cy.updateCollection(adminUser.token, testCollection.uuid, {
+                name: `${collName + ' updated'}`,
+                manifest_text: `. 37b51d194a7513e45b56f6524f2d51f2+3 0:3:${fileName}\n`,
+            }).as('updatedCollection');
+            cy.getAll('@updatedCollection').then(function ([updatedCollection]) {
+                expect(updatedCollection.name).to.equal(`${collName + ' updated'}`);
+                cy.get('[data-cy=collection-info-panel]').should('contain', updatedCollection.name);
+                cy.get('[data-cy=collection-files-panel]').should('contain', fileName);
+            });
+        });
+    })
+
     it('makes a copy of an existing collection', function() {
         const collName = `Test Collection ${Math.floor(Math.random() * 999999)}`;
         const copyName = `Copy of: ${collName}`;
@@ -890,17 +918,15 @@ describe('Collection panel tests', function () {
             name: `Test collection ${Math.floor(Math.random() * 999999)}`,
             owner_uuid: activeUser.user.uuid,
             manifest_text: ". 37b51d194a7513e45b56f6524f2d51f2+3 0:3:bar\n"
-        })
-            .as('testCollection1');
+        }).as('testCollection1');
 
         cy.createCollection(adminUser.token, {
             name: `Test collection ${Math.floor(Math.random() * 999999)}`,
             owner_uuid: adminUser.user.uuid,
             manifest_text: ". 37b51d194a7513e45b56f6524f2d51f2+3 0:3:bar\n"
-        })
-            .as('testCollection2').then(function (testCollection2) {
-                cy.shareWith(adminUser.token, activeUser.user.uuid, testCollection2.uuid, 'can_write');
-            });
+        }).as('testCollection2').then(function (testCollection2) {
+            cy.shareWith(adminUser.token, activeUser.user.uuid, testCollection2.uuid, 'can_write');
+        });
 
         cy.getAll('@testCollection1', '@testCollection2')
             .then(function ([testCollection1, testCollection2]) {
@@ -922,8 +948,29 @@ describe('Collection panel tests', function () {
                 name: `Test collection ${Math.floor(Math.random() * 999999)}`,
                 owner_uuid: activeUser.user.uuid,
                 manifest_text: ". 37b51d194a7513e45b56f6524f2d51f2+3 0:3:bar\n"
-            })
-                .as('testCollection1');
+            }).as('testCollection1');
+        });
+
+        it('uploads a file and checks the collection UI to be fresh', () => {
+            cy.getAll('@testCollection1')
+                .then(function([testCollection1]) {
+                    cy.loginAs(activeUser);
+                    cy.goToPath(`/collections/${testCollection1.uuid}`);
+                    cy.get('[data-cy=upload-button]').click();
+                    cy.get('[data-cy=collection-files-panel]')
+                        .contains('5mb_a.bin').should('not.exist');
+                    cy.get('[data-cy=collection-file-count]').should('contain', '1');
+                    cy.fixture('files/5mb.bin', 'base64').then(content => {
+                        cy.get('[data-cy=drag-and-drop]').upload(content, '5mb_a.bin');
+                        cy.get('[data-cy=form-submit-btn]').click();
+                        cy.get('[data-cy=form-submit-btn]').should('not.exist');
+                    });
+                    // Confirm that the file browser has been updated.
+                    cy.get('[data-cy=collection-files-panel]')
+                        .contains('5mb_a.bin').should('exist');
+                    // Confirm that the collection panel has been updated.
+                    cy.get('[data-cy=collection-file-count]').should('contain', '2');
+                });
         });
 
         it('allows to cancel running upload', () => {

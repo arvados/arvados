@@ -183,7 +183,7 @@ const initListener = (history: History, store: RootStore, services: ServiceRepos
     let initialized = false;
     return async () => {
         const { router, auth } = store.getState();
-        if (router.location && auth.user && !initialized) {
+        if (router.location && auth.user && services.authService.getApiToken() && !initialized) {
             initialized = true;
             initWebSocket(config, services.authService, store);
             await store.dispatch(loadWorkbench());
