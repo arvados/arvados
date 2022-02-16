@@ -201,8 +201,7 @@ describe('Project tests', function() {
             name: `Test root project ${Math.floor(Math.random() * 999999)}`,
             group_class: 'project',
         }).as('testProject1').then((testProject1) => {
-      
-            cy.shareWith(adminUser.token, activeUser.user.uuid, testCollection2.uuid, 'can_write');
+            cy.shareWith(adminUser.token, activeUser.user.uuid, testProject1.uuid, 'can_write');
         });
 
         cy.getAll('@testProject1').then(function([testProject1]) {
