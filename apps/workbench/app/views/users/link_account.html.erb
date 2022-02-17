@@ -75,6 +75,8 @@ SPDX-License-Identifier: AGPL-3.0 %>
   });
 <% end %>
 
+<% if Rails.configuration.Login.LoginCluster.empty? %>
+
 <div id="need-login" style="display: none">
 
   <p>You are currently logged in as <b><%= Thread.current[:user].email %></b> (<%= Thread.current[:user].username%>, <%= Thread.current[:user].uuid %>) created at <b><%= Thread.current[:user].created_at%></b></p>
@@ -91,7 +93,7 @@ SPDX-License-Identifier: AGPL-3.0 %>
     <i class="fa fa-fw fa-sign-in"></i> Use this login to access another account
   </button>
 
-</p>
+  </p>
 </div>
 
 <div id="ready-to-link" style="display: none">
@@ -105,8 +107,13 @@ SPDX-License-Identifier: AGPL-3.0 %>
     <input type="hidden" id="new-user-token-input" name="direction" value="<%=params[:direction]%>" />
     <%= button_tag class: "btn btn-primary", id: "link-account-submit" do %>
       <i class="fa fa-fw fa-link"></i> Link accounts
+    <% end %>
   <% end %>
-<% end %>
 
 </div>
+
+<% else %>
+<div>
+Self-serve account linking is not supported on this cluster. Please contact your Arvados administrator.
 </div>
+<% end %>
