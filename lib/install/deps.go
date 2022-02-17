@@ -28,8 +28,12 @@ import (
 
 var Command cmd.Handler = &installCommand{}
 
-const devtestDatabasePassword = "insecure_arvados_test"
-const goversion = "1.17.1"
+const goversion = "1.17.7"
+
+const (
+	devtestDatabasePassword = "insecure_arvados_test"
+	workbench2version       = "5e805cf2209d3afe42699e4658d8a12e50bcd5a4"
+)
 
 type installCommand struct {
 	ClusterType    string
@@ -247,7 +251,7 @@ make install
 cd /tmp
 rm -rf /var/lib/arvados/go/
 wget --progress=dot:giga -O- https://storage.googleapis.com/golang/go`+goversion+`.linux-amd64.tar.gz | tar -C /var/lib/arvados -xzf -
-ln -sf /var/lib/arvados/go/bin/* /usr/local/bin/
+ln -sfv /var/lib/arvados/go/bin/* /usr/local/bin/
 `, stdout, stderr)
 			if err != nil {
 				return 1
@@ -263,7 +267,7 @@ ln -sf /var/lib/arvados/go/bin/* /usr/local/bin/
 			err = inst.runBash(`
 PJS=phantomjs-`+pjsversion+`-linux-x86_64
 wget --progress=dot:giga -O- https://cache.arvados.org/$PJS.tar.bz2 | tar -C /var/lib/arvados -xjf -
-ln -sf /var/lib/arvados/$PJS/bin/phantomjs /usr/local/bin/
+ln -sfv /var/lib/arvados/$PJS/bin/phantomjs /usr/local/bin/
 `, stdout, stderr)
 			if err != nil {
 				return 1
@@ -277,21 +281,7 @@ ln -sf /var/lib/arvados/$PJS/bin/phantomjs /usr/local/bin/
 			err = inst.runBash(`
 GD=v`+geckoversion+`
 wget --progress=dot:giga -O- https://github.com/mozilla/geckodriver/releases/download/$GD/geckodriver-$GD-linux64.tar.gz | tar -C /var/lib/arvados/bin -xzf - geckodriver
-ln -sf /var/lib/arvados/bin/geckodriver /usr/local/bin/
-`, stdout, stderr)
-			if err != nil {
-				return 1
-			}
-		}
-
-		nodejsversion := "v12.22.2"
-		if havenodejsversion, err := exec.Command("/usr/local/bin/node", "--version").CombinedOutput(); err == nil && string(havenodejsversion) == nodejsversion+"\n" {
-			logger.Print("nodejs " + nodejsversion + " already installed")
-		} else {
-			err = inst.runBash(`
-NJS=`+nodejsversion+`
-wget --progress=dot:giga -O- https://nodejs.org/dist/${NJS}/node-${NJS}-linux-x64.tar.xz | sudo tar -C /var/lib/arvados -xJf -
-ln -sf /var/lib/arvados/node-${NJS}-linux-x64/bin/{node,npm} /usr/local/bin/
+ln -sfv /var/lib/arvados/bin/geckodriver /usr/local/bin/
 `, stdout, stderr)
 			if err != nil {
 				return 1
@@ -308,7 +298,7 @@ zip=/var/lib/arvados/tmp/gradle-${G}-bin.zip
 trap "rm ${zip}" ERR
 wget --progress=dot:giga -O${zip} https://services.gradle.org/distributions/gradle-${G}-bin.zip
 unzip -o -d /var/lib/arvados ${zip}
-ln -sf /var/lib/arvados/gradle-${G}/bin/gradle /usr/local/bin/
+ln -sfv /var/lib/arvados/gradle-${G}/bin/gradle /usr/local/bin/
 rm ${zip}
 `, stdout, stderr)
 			if err != nil {
@@ -458,7 +448,75 @@ make -C ./builddir install
 		}
 	}
 
+	if !prod {
+		nodejsversion := "v12.22.2"
+		if havenodejsversion, err := exec.Command("/usr/local/bin/node", "--version").CombinedOutput(); err == nil && string(havenodejsversion) == nodejsversion+"\n" {
+			logger.Print("nodejs " + nodejsversion + " already installed")
+		} else {
+			err = inst.runBash(`
+NJS=`+nodejsversion+`
+wget --progress=dot:giga -O- https://nodejs.org/dist/${NJS}/node-${NJS}-linux-x64.tar.xz | sudo tar -C /var/lib/arvados -xJf -
+ln -sfv /var/lib/arvados/node-${NJS}-linux-x64/bin/{node,npm} /usr/local/bin/
+`, stdout, stderr)
+			if err != nil {
+				return 1
+			}
+		}
+
+		if haveyarnversion, err := exec.Command("/usr/local/bin/yarn", "--version").CombinedOutput(); err == nil && len(haveyarnversion) > 0 {
+			logger.Print("yarn " + strings.TrimSpace(string(haveyarnversion)) + " already installed")
+		} else {
+			err = inst.runBash(`
+npm install -g yarn
+ln -sfv /var/lib/arvados/node-`+nodejsversion+`-linux-x64/bin/{yarn,yarnpkg} /usr/local/bin/
+`, stdout, stderr)
+			if err != nil {
+				return 1
+			}
+		}
+
+		if havewb2version, err := exec.Command("git", "--git-dir=/var/lib/arvados/arvados-workbench2/.git", "log", "-n1", "--format=%H").CombinedOutput(); err == nil && string(havewb2version) == workbench2version+"\n" {
+			logger.Print("workbench2 repo is already at " + workbench2version)
+		} else {
+			err = inst.runBash(`
+V=`+workbench2version+`
+cd /var/lib/arvados
+if [[ ! -e arvados-workbench2 ]]; then
+  git clone https://git.arvados.org/arvados-workbench2.git
+  cd arvados-workbench2
+  git checkout $V
+else
+  cd arvados-workbench2
+  if ! git checkout $V; then
+    git fetch
+    git checkout $V
+  fi
+fi
+rm -rf build
+`, stdout, stderr)
+			if err != nil {
+				return 1
+			}
+		}
+
+		if err = inst.runBash(`
+cd /var/lib/arvados/arvados-workbench2
+yarn install --non-interactive
+`, stdout, stderr); err != nil {
+			return 1
+		}
+	}
+
 	if prod || pkg {
+		// Install workbench2 app to /var/lib/arvados/workbench2/
+		if err = inst.runBash(`
+cd /var/lib/arvados/arvados-workbench2
+yarn build
+rsync -a --delete-after build/ /var/lib/arvados/workbench2/
+`, stdout, stderr); err != nil {
+			return 1
+		}
+
 		// Install Rails apps to /var/lib/arvados/{railsapi,workbench1}/
 		for dstdir, srcdir := range map[string]string{
 			"railsapi":   "services/api",

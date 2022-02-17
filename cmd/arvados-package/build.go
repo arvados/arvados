@@ -53,6 +53,11 @@ func build(ctx context.Context, opts opts, stdin io.Reader, stdout, stderr io.Wr
 		return err
 	}
 	defer os.RemoveAll(tmpdir)
+	if abs, err := filepath.Abs(tmpdir); err != nil {
+		return fmt.Errorf("error getting absolute path of tmpdir %s: %w", tmpdir, err)
+	} else {
+		tmpdir = abs
+	}
 
 	selfbin, err := os.Readlink("/proc/self/exe")
 	if err != nil {
@@ -87,7 +92,7 @@ func build(ctx context.Context, opts opts, stdin io.Reader, stdout, stderr io.Wr
 		cmd.Stderr = stderr
 		err = cmd.Run()
 		if err != nil {
-			return fmt.Errorf("docker run: %w", err)
+			return fmt.Errorf("%v: %w", cmd.Args, err)
 		}
 
 		cmd = exec.CommandContext(ctx, "docker", "commit", buildCtrName, buildImageName)
@@ -120,7 +125,7 @@ func build(ctx context.Context, opts opts, stdin io.Reader, stdout, stderr io.Wr
 	cmd.Stderr = stderr
 	err = cmd.Run()
 	if err != nil {
-		return fmt.Errorf("docker run: %w", err)
+		return fmt.Errorf("%v: %w", cmd.Args, err)
 	}
 
 	err = os.Rename(tmpdir+"/"+packageFilename, opts.PackageDir+"/"+packageFilename)

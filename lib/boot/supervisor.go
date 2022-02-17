@@ -42,6 +42,7 @@ type Supervisor struct {
 	ClusterType          string // e.g., production
 	ListenHost           string // e.g., localhost
 	ControllerAddr       string // e.g., 127.0.0.1:8000
+	Workbench2Source     string // e.g., /home/username/src/arvados-workbench2
 	NoWorkbench1         bool
 	OwnTemporaryDatabase bool
 	Stderr               io.Writer
@@ -250,6 +251,7 @@ func (super *Supervisor) run(cfg *arvados.Config) error {
 		runServiceCommand{name: "ws", svc: super.cluster.Services.Websocket, depends: []supervisedTask{seedDatabase{}}},
 		installPassenger{src: "services/api"},
 		runPassenger{src: "services/api", varlibdir: "railsapi", svc: super.cluster.Services.RailsAPI, depends: []supervisedTask{createCertificates{}, seedDatabase{}, installPassenger{src: "services/api"}}},
+		runWorkbench2{svc: super.cluster.Services.Workbench2},
 		seedDatabase{},
 	}
 	if !super.NoWorkbench1 {
@@ -482,6 +484,7 @@ type runOptions struct {
 	output io.Writer // attach stdout
 	env    []string  // add/replace environment variables
 	user   string    // run as specified user
+	stdin  io.Reader
 }
 
 // RunProgram runs prog with args, using dir as working directory. If ctx is
@@ -525,6 +528,7 @@ func (super *Supervisor) RunProgram(ctx context.Context, dir string, opts runOpt
 	}
 
 	cmd := exec.Command(super.lookPath(prog), args...)
+	cmd.Stdin = opts.stdin
 	stdout, err := cmd.StdoutPipe()
 	if err != nil {
 		return err
@@ -628,31 +632,41 @@ func (super *Supervisor) autofillConfig(cfg *arvados.Config) error {
 		return err
 	}
 	usedPort := map[string]bool{}
-	nextPort := func(host string) string {
+	nextPort := func(host string) (string, error) {
 		for {
 			port, err := availablePort(host)
 			if err != nil {
-				panic(err)
+				port, err = availablePort(super.ListenHost)
+			}
+			if err != nil {
+				return "", err
 			}
 			if usedPort[port] {
 				continue
 			}
 			usedPort[port] = true
-			return port
+			return port, nil
 		}
 	}
 	if cluster.Services.Controller.ExternalURL.Host == "" {
 		h, p, err := net.SplitHostPort(super.ControllerAddr)
 		if err != nil {
-			return err
+			return fmt.Errorf("SplitHostPort(ControllerAddr): %w", err)
 		}
 		if h == "" {
 			h = super.ListenHost
 		}
 		if p == "0" {
-			p = nextPort(h)
+			p, err = nextPort(h)
+			if err != nil {
+				return err
+			}
 		}
 		cluster.Services.Controller.ExternalURL = arvados.URL{Scheme: "https", Host: net.JoinHostPort(h, p), Path: "/"}
+	}
+	defaultExtHost, _, err := net.SplitHostPort(cluster.Services.Controller.ExternalURL.Host)
+	if err != nil {
+		return fmt.Errorf("SplitHostPort(Controller.ExternalURL.Host): %w", err)
 	}
 	for _, svc := range []*arvados.Service{
 		&cluster.Services.Controller,
@@ -666,21 +680,28 @@ func (super *Supervisor) autofillConfig(cfg *arvados.Config) error {
 		&cluster.Services.WebDAVDownload,
 		&cluster.Services.Websocket,
 		&cluster.Services.Workbench1,
+		&cluster.Services.Workbench2,
 	} {
 		if svc == &cluster.Services.DispatchCloud && super.ClusterType == "test" {
 			continue
 		}
 		if svc.ExternalURL.Host == "" {
+			port, err := nextPort(defaultExtHost)
+			if err != nil {
+				return err
+			}
+			host := net.JoinHostPort(defaultExtHost, port)
 			if svc == &cluster.Services.Controller ||
 				svc == &cluster.Services.GitHTTP ||
 				svc == &cluster.Services.Health ||
 				svc == &cluster.Services.Keepproxy ||
 				svc == &cluster.Services.WebDAV ||
 				svc == &cluster.Services.WebDAVDownload ||
-				svc == &cluster.Services.Workbench1 {
-				svc.ExternalURL = arvados.URL{Scheme: "https", Host: fmt.Sprintf("%s:%s", super.ListenHost, nextPort(super.ListenHost)), Path: "/"}
+				svc == &cluster.Services.Workbench1 ||
+				svc == &cluster.Services.Workbench2 {
+				svc.ExternalURL = arvados.URL{Scheme: "https", Host: host, Path: "/"}
 			} else if svc == &cluster.Services.Websocket {
-				svc.ExternalURL = arvados.URL{Scheme: "wss", Host: fmt.Sprintf("%s:%s", super.ListenHost, nextPort(super.ListenHost)), Path: "/websocket"}
+				svc.ExternalURL = arvados.URL{Scheme: "wss", Host: host, Path: "/websocket"}
 			}
 		}
 		if super.NoWorkbench1 && svc == &cluster.Services.Workbench1 {
@@ -692,8 +713,13 @@ func (super *Supervisor) autofillConfig(cfg *arvados.Config) error {
 			continue
 		}
 		if len(svc.InternalURLs) == 0 {
+			port, err := nextPort(super.ListenHost)
+			if err != nil {
+				return err
+			}
+			host := net.JoinHostPort(super.ListenHost, port)
 			svc.InternalURLs = map[arvados.URL]arvados.ServiceInstance{
-				{Scheme: "http", Host: fmt.Sprintf("%s:%s", super.ListenHost, nextPort(super.ListenHost)), Path: "/"}: {},
+				{Scheme: "http", Host: host, Path: "/"}: {},
 			}
 		}
 	}
@@ -721,7 +747,12 @@ func (super *Supervisor) autofillConfig(cfg *arvados.Config) error {
 	}
 	if super.ClusterType == "test" {
 		// Add a second keepstore process.
-		cluster.Services.Keepstore.InternalURLs[arvados.URL{Scheme: "http", Host: fmt.Sprintf("%s:%s", super.ListenHost, nextPort(super.ListenHost)), Path: "/"}] = arvados.ServiceInstance{}
+		port, err := nextPort(super.ListenHost)
+		if err != nil {
+			return err
+		}
+		host := net.JoinHostPort(super.ListenHost, port)
+		cluster.Services.Keepstore.InternalURLs[arvados.URL{Scheme: "http", Host: host, Path: "/"}] = arvados.ServiceInstance{}
 
 		// Create a directory-backed volume for each keepstore
 		// process.
@@ -755,10 +786,14 @@ func (super *Supervisor) autofillConfig(cfg *arvados.Config) error {
 		}
 	}
 	if super.OwnTemporaryDatabase {
+		port, err := nextPort("localhost")
+		if err != nil {
+			return err
+		}
 		cluster.PostgreSQL.Connection = arvados.PostgreSQLConnection{
 			"client_encoding": "utf8",
-			"host":            super.ListenHost,
-			"port":            nextPort(super.ListenHost),
+			"host":            "localhost",
+			"port":            port,
 			"dbname":          "arvados_test",
 			"user":            "arvados",
 			"password":        "insecure_arvados_test",

@@ -40,6 +40,15 @@ func (runNginx) Run(ctx context.Context, fail func(error), super *Supervisor) er
 		"ERRORLOG":   filepath.Join(super.tempdir, "nginx_error.log"),
 		"TMPDIR":     super.wwwtempdir,
 	}
+	ctrlHost, _, err := net.SplitHostPort(super.cluster.Services.Controller.ExternalURL.Host)
+	if err != nil {
+		return fmt.Errorf("SplitHostPort(Controller.ExternalURL.Host): %w", err)
+	}
+	if f, err := os.Open("/var/lib/acme/live/" + ctrlHost + "/privkey"); err == nil {
+		f.Close()
+		vars["SSLCERT"] = "/var/lib/acme/live/" + ctrlHost + "/cert"
+		vars["SSLKEY"] = "/var/lib/acme/live/" + ctrlHost + "/privkey"
+	}
 	for _, cmpt := range []struct {
 		varname string
 		svc     arvados.Service
@@ -51,6 +60,7 @@ func (runNginx) Run(ctx context.Context, fail func(error), super *Supervisor) er
 		{"GIT", super.cluster.Services.GitHTTP},
 		{"HEALTH", super.cluster.Services.Health},
 		{"WORKBENCH1", super.cluster.Services.Workbench1},
+		{"WORKBENCH2", super.cluster.Services.Workbench2},
 		{"WS", super.cluster.Services.Websocket},
 	} {
 		var host, port string

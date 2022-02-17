@@ -64,12 +64,12 @@ func fpm(ctx context.Context, opts opts, stdin io.Reader, stdout, stderr io.Writ
 	// Remove unneeded files. This is much faster than "fpm
 	// --exclude X" because fpm copies everything into a staging
 	// area before looking at the --exclude args.
-	cmd = exec.Command("bash", "-c", "cd /var/www/.gem/ruby && rm -rf */cache */bundler/gems/*/.git */bundler/gems/arvados-*/[^s]* */bundler/gems/arvados-*/s[^d]* */bundler/gems/arvados-*/sdk/[^cr]* */gems/passenger-*/src/cxx* ruby/*/gems/*/ext /var/lib/arvados/go")
+	cmd = exec.Command("bash", "-c", "cd /var/www/.gem/ruby && rm -rf */cache */bundler/gems/*/.git */bundler/gems/arvados-*/[^s]* */bundler/gems/arvados-*/s[^d]* */bundler/gems/arvados-*/sdk/[^cr]* */gems/passenger-*/src/cxx* ruby/*/gems/*/ext /var/lib/arvados/go /var/lib/arvados/arvados-workbench2")
 	cmd.Stdout = stdout
 	cmd.Stderr = stderr
 	err = cmd.Run()
 	if err != nil {
-		return fmt.Errorf("rm -rf [...]: %w", err)
+		return fmt.Errorf("%v: %w", cmd.Args, err)
 	}
 
 	format := "deb" // TODO: rpm

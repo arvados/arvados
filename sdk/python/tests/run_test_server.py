@@ -634,6 +634,8 @@ def run_nginx():
     nginxconf['WSSSLPORT'] = external_port_from_config("Websocket")
     nginxconf['WORKBENCH1PORT'] = internal_port_from_config("Workbench1")
     nginxconf['WORKBENCH1SSLPORT'] = external_port_from_config("Workbench1")
+    nginxconf['WORKBENCH2PORT'] = internal_port_from_config("Workbench2")
+    nginxconf['WORKBENCH2SSLPORT'] = external_port_from_config("Workbench2")
     nginxconf['SSLCERT'] = os.path.join(SERVICES_SRC_DIR, 'api', 'tmp', 'self-signed.pem')
     nginxconf['SSLKEY'] = os.path.join(SERVICES_SRC_DIR, 'api', 'tmp', 'self-signed.key')
     nginxconf['ACCESSLOG'] = _logfilename('nginx_access')
@@ -667,6 +669,8 @@ def setup_config():
     websocket_external_port = find_available_port()
     workbench1_port = find_available_port()
     workbench1_external_port = find_available_port()
+    workbench2_port = find_available_port()
+    workbench2_external_port = find_available_port()
     git_httpd_port = find_available_port()
     git_httpd_external_port = find_available_port()
     health_httpd_port = find_available_port()
@@ -718,6 +722,12 @@ def setup_config():
             "ExternalURL": "https://%s:%s/" % (localhost, workbench1_external_port),
             "InternalURLs": {
                 "http://%s:%s"%(localhost, workbench1_port): {},
+            },
+        },
+        "Workbench2": {
+            "ExternalURL": "https://%s:%s/" % (localhost, workbench2_external_port),
+            "InternalURLs": {
+                "http://%s:%s"%(localhost, workbench2_port): {},
             },
         },
         "GitHTTP": {
