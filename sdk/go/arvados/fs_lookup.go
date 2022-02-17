@@ -68,7 +68,7 @@ func (ln *lookupnode) Readdir() ([]os.FileInfo, error) {
 	return ln.treenode.Readdir()
 }
 
-// Child rejects (with ErrInvalidArgument) calls to add/replace
+// Child rejects (with ErrInvalidOperation) calls to add/replace
 // children, instead calling loadOne when a non-existing child is
 // looked up.
 func (ln *lookupnode) Child(name string, replace func(inode) (inode, error)) (inode, error) {
@@ -97,12 +97,12 @@ func (ln *lookupnode) Child(name string, replace func(inode) (inode, error)) (in
 	if replace != nil {
 		// Let the callback try to delete or replace the
 		// existing node; if it does, return
-		// ErrInvalidArgument.
+		// ErrInvalidOperation.
 		if tryRepl, err := replace(existing); err != nil {
 			// Propagate error from callback
 			return existing, err
 		} else if tryRepl != existing {
-			return existing, ErrInvalidArgument
+			return existing, ErrInvalidOperation
 		}
 	}
 	// Return original error from ln.treenode.Child() (it might be

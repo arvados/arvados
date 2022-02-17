@@ -225,6 +225,16 @@ module CurrentApiClient
     end
   end
 
+  def anonymous_user_token_api_client
+    $anonymous_user_token_api_client = check_cache $anonymous_user_token_api_client do
+      act_as_system_user do
+        ActiveRecord::Base.transaction do
+          ApiClient.find_or_create_by!(is_trusted: false, url_prefix: "", name: "AnonymousUserToken")
+        end
+      end
+    end
+  end
+
   def system_root_token_api_client
     $system_root_token_api_client = check_cache $system_root_token_api_client do
       act_as_system_user do

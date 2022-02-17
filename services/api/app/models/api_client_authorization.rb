@@ -111,6 +111,31 @@ class ApiClientAuthorization < ArvadosModel
     clnt
   end
 
+  def self.check_anonymous_user_token token
+    case token[0..2]
+    when 'v2/'
+      _, token_uuid, secret, optional = token.split('/')
+      unless token_uuid.andand.length == 27 && secret.andand.length.andand > 0 &&
+             token_uuid == Rails.configuration.ClusterID+"-gj3su-anonymouspublic"
+        # invalid v2 token, or v2 token for another user
+        return nil
+      end
+    else
+      # v1 token
+      secret = token
+    end
+
+    # The anonymous token content and minimum length is verified in lib/config
+    if secret.length >= 0 && secret == Rails.configuration.Users.AnonymousUserToken
+      return ApiClientAuthorization.new(user: User.find_by_uuid(anonymous_user_uuid),
+                                        uuid: Rails.configuration.ClusterID+"-gj3su-anonymouspublic",
+                                        api_token: token,
+                                        api_client: anonymous_user_token_api_client)
+    else
+      return nil
+    end
+  end
+
   def self.check_system_root_token token
     if token == Rails.configuration.SystemRootToken
       return ApiClientAuthorization.new(user: User.find_by_uuid(system_user_uuid),
@@ -125,6 +150,11 @@ class ApiClientAuthorization < ArvadosModel
   def self.validate(token:, remote: nil)
     return nil if token.nil? or token.empty?
     remote ||= Rails.configuration.ClusterID
+
+    auth = self.check_anonymous_user_token(token)
+    if !auth.nil?
+      return auth
+    end
 
     auth = self.check_system_root_token(token)
     if !auth.nil?

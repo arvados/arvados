@@ -108,7 +108,8 @@ fi
 
 declare -a PYTHON3_BACKPORTS
 
-PYTHON3_VERSION=$(python3 -c 'import sys; print("{v.major}.{v.minor}".format(v=sys.version_info))')
+PYTHON3_EXECUTABLE=python3
+PYTHON3_VERSION=$($PYTHON3_EXECUTABLE -c 'import sys; print("{v.major}.{v.minor}".format(v=sys.version_info))')
 
 ## These defaults are suitable for any Debian-based distribution.
 # You can customize them as needed in distro sections below.
@@ -121,6 +122,13 @@ PYTHON3_INSTALL_LIB=lib/python$PYTHON3_VERSION/dist-packages
 case "$TARGET" in
     debian*)
         FORMAT=deb
+        ;;
+    ubuntu1804)
+        FORMAT=deb
+        PYTHON3_EXECUTABLE=python3.8
+        PYTHON3_VERSION=$($PYTHON3_EXECUTABLE -c 'import sys; print("{v.major}.{v.minor}".format(v=sys.version_info))')
+        PYTHON3_PACKAGE=python$PYTHON3_VERSION
+        PYTHON3_INSTALL_LIB=lib/python$PYTHON3_VERSION/dist-packages
         ;;
     ubuntu*)
         FORMAT=deb
