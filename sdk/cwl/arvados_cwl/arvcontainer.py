@@ -246,7 +246,8 @@ class ArvadosContainer(JobBase):
                                                                     runtimeContext.pull_image,
                                                                     runtimeContext.project_uuid,
                                                                     runtimeContext.force_docker_pull,
-                                                                    runtimeContext.tmp_outdir_prefix)
+                                                                    runtimeContext.tmp_outdir_prefix,
+                                                                    runtimeContext.match_local_docker)
 
         network_req, _ = self.get_requirement("NetworkAccess")
         if network_req:
