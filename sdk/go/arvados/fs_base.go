@@ -77,6 +77,24 @@ type File interface {
 	Stat() (os.FileInfo, error)
 	Truncate(int64) error
 	Sync() error
+	// Create a snapshot of a file or directory tree, which can
+	// then be spliced onto a different path or a different
+	// collection.
+	Snapshot() (*Subtree, error)
+	// Replace this file or directory with the given snapshot.
+	// The target must be inside a collection: Splice returns an
+	// error if the File is a virtual file or directory like
+	// by_id, a project directory, .arvados#collection,
+	// etc. Splice can replace directories with regular files and
+	// vice versa, except it cannot replace the root directory of
+	// a collection with a regular file.
+	Splice(snapshot *Subtree) error
+}
+
+// A Subtree is a detached part of a filesystem tree that can be
+// spliced into a filesystem via (File)Splice().
+type Subtree struct {
+	inode inode
 }
 
 // A FileSystem is an http.Filesystem plus Stat() and support for
@@ -152,6 +170,12 @@ type inode interface {
 	Readdir() ([]os.FileInfo, error)
 	Size() int64
 	FileInfo() os.FileInfo
+	// Create a snapshot of this node and its descendants.
+	Snapshot() (inode, error)
+	// Replace this node with a copy of the provided snapshot.
+	// Caller may provide the same snapshot to multiple Splice
+	// calls, but must not modify the snapshot concurrently.
+	Splice(inode) error
 
 	// Child() performs lookups and updates of named child nodes.
 	//
@@ -268,6 +292,14 @@ func (*nullnode) MemorySize() int64 {
 	// if they don't, we at least report a non-zero size to ensure
 	// a large tree doesn't get reported as 0 bytes.
 	return 64
+}
+
+func (*nullnode) Snapshot() (inode, error) {
+	return nil, ErrInvalidOperation
+}
+
+func (*nullnode) Splice(inode) error {
+	return ErrInvalidOperation
 }
 
 type treenode struct {
@@ -559,7 +591,7 @@ func (fs *fileSystem) Rename(oldname, newname string) error {
 		// supported. Locking inodes from different
 		// filesystems could deadlock, so we must error out
 		// now.
-		return ErrInvalidArgument
+		return ErrInvalidOperation
 	}
 
 	// To ensure we can test reliably whether we're about to move
@@ -696,4 +728,33 @@ func rlookup(start inode, path string) (node inode, err error) {
 
 func permittedName(name string) bool {
 	return name != "" && name != "." && name != ".." && !strings.Contains(name, "/")
+}
+
+// Snapshot returns a Subtree that's a copy of the given path. It
+// returns an error if the path is not inside a collection.
+func Snapshot(fs FileSystem, path string) (*Subtree, error) {
+	f, err := fs.OpenFile(path, os.O_RDONLY, 0)
+	if err != nil {
+		return nil, err
+	}
+	defer f.Close()
+	return f.Snapshot()
+}
+
+// Splice inserts newsubtree at the indicated target path.
+//
+// Splice returns an error if target is not inside a collection.
+//
+// Splice returns an error if target is the root of a collection and
+// newsubtree is a snapshot of a file.
+func Splice(fs FileSystem, target string, newsubtree *Subtree) error {
+	f, err := fs.OpenFile(target, os.O_WRONLY, 0)
+	if os.IsNotExist(err) {
+		f, err = fs.OpenFile(target, os.O_CREATE|os.O_WRONLY, 0700)
+	}
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+	return f.Splice(newsubtree)
 }

@@ -110,3 +110,18 @@ func (f *filehandle) Sync() error {
 	// Sync the containing filesystem.
 	return f.FS().Sync()
 }
+
+func (f *filehandle) Snapshot() (*Subtree, error) {
+	if !f.readable {
+		return nil, ErrInvalidOperation
+	}
+	node, err := f.inode.Snapshot()
+	return &Subtree{inode: node}, err
+}
+
+func (f *filehandle) Splice(r *Subtree) error {
+	if !f.writable {
+		return ErrReadOnlyFile
+	}
+	return f.inode.Splice(r.inode)
+}

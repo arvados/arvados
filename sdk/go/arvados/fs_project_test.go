@@ -7,6 +7,7 @@ package arvados
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"io"
 	"os"
 	"path/filepath"
@@ -311,17 +312,37 @@ func (s *SiteFSSuite) TestProjectUnsupportedOperations(c *check.C) {
 	s.fs.MountProject("home", "")
 
 	_, err := s.fs.OpenFile("/home/A Project/newfilename", os.O_CREATE|os.O_RDWR, 0)
-	c.Check(err, check.ErrorMatches, "invalid argument")
+	c.Check(err, ErrorIs, ErrInvalidOperation)
 
 	err = s.fs.Mkdir("/home/A Project/newdirname", 0)
-	c.Check(err, check.ErrorMatches, "invalid argument")
+	c.Check(err, ErrorIs, ErrInvalidOperation)
 
 	err = s.fs.Mkdir("/by_id/newdirname", 0)
-	c.Check(err, check.ErrorMatches, "invalid argument")
+	c.Check(err, ErrorIs, ErrInvalidOperation)
 
 	err = s.fs.Mkdir("/by_id/"+fixtureAProjectUUID+"/newdirname", 0)
-	c.Check(err, check.ErrorMatches, "invalid argument")
+	c.Check(err, ErrorIs, ErrInvalidOperation)
 
 	_, err = s.fs.OpenFile("/home/A Project", 0, 0)
 	c.Check(err, check.IsNil)
+}
+
+type errorIsChecker struct {
+	*check.CheckerInfo
+}
+
+var ErrorIs check.Checker = errorIsChecker{
+	&check.CheckerInfo{Name: "ErrorIs", Params: []string{"value", "target"}},
+}
+
+func (checker errorIsChecker) Check(params []interface{}, names []string) (result bool, errStr string) {
+	err, ok := params[0].(error)
+	if !ok {
+		return false, ""
+	}
+	target, ok := params[1].(error)
+	if !ok {
+		return false, ""
+	}
+	return errors.Is(err, target), ""
 }

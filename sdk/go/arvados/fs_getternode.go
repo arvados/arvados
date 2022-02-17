@@ -24,7 +24,7 @@ func (*getternode) IsDir() bool {
 }
 
 func (*getternode) Child(string, func(inode) (inode, error)) (inode, error) {
-	return nil, ErrInvalidArgument
+	return nil, ErrInvalidOperation
 }
 
 func (gn *getternode) get() error {

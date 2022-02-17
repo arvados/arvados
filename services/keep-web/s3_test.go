@@ -332,7 +332,7 @@ func (s *IntegrationSuite) TestS3ProjectPutObjectNotSupported(c *check.C) {
 		err = bucket.PutReader(trial.path, bytes.NewReader(buf), int64(len(buf)), trial.contentType, s3.Private, s3.Options{})
 		c.Check(err.(*s3.Error).StatusCode, check.Equals, 400)
 		c.Check(err.(*s3.Error).Code, check.Equals, `InvalidArgument`)
-		c.Check(err, check.ErrorMatches, `(mkdir "/by_id/zzzzz-j7d0g-[a-z0-9]{15}/newdir2?"|open "/zzzzz-j7d0g-[a-z0-9]{15}/newfile") failed: invalid argument`)
+		c.Check(err, check.ErrorMatches, `(mkdir "/by_id/zzzzz-j7d0g-[a-z0-9]{15}/newdir2?"|open "/zzzzz-j7d0g-[a-z0-9]{15}/newfile") failed: invalid (argument|operation)`)
 
 		_, err = bucket.GetReader(trial.path)
 		c.Check(err.(*s3.Error).StatusCode, check.Equals, 404)
