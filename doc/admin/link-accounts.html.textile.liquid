@@ -11,6 +11,8 @@ SPDX-License-Identifier: CC-BY-SA-3.0
 
 If a user needs to log in to Arvados with a upstream account or provider, they may end up with two Arvados user accounts.  If the user still has the ability to log in with the old account, they can use the "self-serve account linking":{{site.baseurl}}/user/topics/link-accounts.html feature of workbench.  However, if the user does not have the ability to log in with both upstream accounts, the admin can also link the accounts using the command line.
 
+bq. NOTE: self-serve account linking is currently not supported on LoginCluster federations and needs to be performed manually by the site admin.
+
 h3. Step 1: Determine user uuids
 
 User uuids can be determined by browsing workbench or using @arv user list@ at the command line.
