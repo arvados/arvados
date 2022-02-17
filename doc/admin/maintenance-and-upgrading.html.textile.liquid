@@ -1,0 +1,64 @@
+---
+layout: default
+navsection: installguide
+title: Maintenance and upgrading
+...
+{% comment %}
+Copyright (C) The Arvados Authors. All rights reserved.
+
+SPDX-License-Identifier: CC-BY-SA-3.0
+{% endcomment %}
+
+# "Commercial support":#commercial_support
+# "Maintaining Arvados":#maintaining
+## "Modification of the config.yml file":#configuration
+## "Distributing the configuration file":#distribution
+## "Restart the services affected by the change":#restart
+# "Upgrading Arvados":#upgrading
+
+h2(#commercial_support). Commercial support
+
+Arvados is "100% open source software":{{site.baseurl}}/user/copying/copying.html. Anyone can download, install, maintain and upgrade it. However, if this is not something you want to spend your time and energy doing, "Curii Corporation":https://curii.com provides managed Arvados installations as well as commercial support for Arvados. Please contact "info@curii.com":mailto:info@curii.com for more information.
+
+If you'd prefer to do things yourself, a few starting points for a maintaining and upgrading Arvados can be found below.
+
+h2(#maintaining). Maintaining Arvados
+
+After Arvados is installed, periodic configuration changes may be required to adapt the software to your needs. Arvados uses a unified configuration file, which is normally found at @/etc/arvados/config.yml@.
+
+Making a configuration change to Arvados typically involves three steps:
+
+* modification of the @config.yml@ file
+* distribution of the modified file to the machines in the cluster
+* restarting of the services affected by the change
+
+h3(#configchange). Modification of the @config.yml@ file
+
+Consult the "configuration reference":{{site.baseurl}}/admin/config.html or another part of the documentation to identify the change to be made.
+
+Preserve a copy of your existing configuration file as a backup, and make the desired modification.
+
+Run @arvados-server config-check@ to make sure the configuration file has no errors and no warnings.
+
+h3(#distribution). Distribute the configuration file
+
+We recommend to keep the @config.yml@ file in sync between all the Arvados system nodes, to avoid issues with services running on different versions of the configuration.
+
+Distribution of the configuration file can be done in many ways, e.g. scp, configuration management software, etc.
+
+h3(#restart). Restart the services affected by the change
+
+If you know which Arvados service uses the specific configuration that was modified, restart those services. When in doubt, restart all Arvados system services.
+
+h2(#upgrading). Upgrading Arvados
+
+Upgrading Arvados typically involves the following steps:
+
+# consult the "upgrade notes":{{site.baseurl}}/admin/upgrading.html and the "release notes":https://arvados.org/releases/ for the release you want to upgrade to
+# Wait for the cluster to be idle and stop Arvados services.
+# Make a backup of your database, as a precaution.
+# update the configuration file for the new release, if necessary (see "Maintaining Arvados":#maintaining above)
+# rebuild and deploy the "compute node image":{{site.baseurl}}/install/crunch2-cloud/install-compute-node.html (cloud only)
+# Install new packages using @apt-get upgrade@ or @yum upgrade@.
+# Wait for package installation scripts as they perform any necessary data migrations.
+# Verify that the Arvados services were restarted as part of the package upgrades.

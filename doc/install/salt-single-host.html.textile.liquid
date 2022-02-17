@@ -20,6 +20,7 @@ SPDX-License-Identifier: CC-BY-SA-3.0
 ## "DNS configuration (single host / multiple hostnames)":#single_host_multiple_hostnames_dns_configuration
 # "Initial user and login":#initial_user
 # "Test the installed cluster running a simple workflow":#test_install
+# "After the installation":#post_install
 
 h2(#single_host). Single host install using the provision.sh script
 
@@ -266,3 +267,9 @@ INFO Final output collection d6c69a88147dde9d52a418d50ef788df+123
 INFO Final process status is success
 </code></pre>
 </notextile>
+
+h2(#post_install). After the installation
+
+Once the installation is complete, it is recommended to keep a copy of your local configuration files. Committing them to version control is a good idea.
+
+Re-running the Salt-based installer is not recommended for maintaining and upgrading Arvados, please see "Maintenance and upgrading":{{site.baseurl}}/admin/maintenance-and-upgrading.html for more information.
