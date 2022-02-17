@@ -67,10 +67,10 @@ def stubs(func):
 
         stubs.keep_client = keep_client2
         stubs.docker_images = {
-            "arvados/jobs:"+arvados_cwl.__version__: [("zzzzz-4zz18-zzzzzzzzzzzzzd3", "")],
-            "debian:buster-slim": [("zzzzz-4zz18-zzzzzzzzzzzzzd4", "")],
-            "arvados/jobs:123": [("zzzzz-4zz18-zzzzzzzzzzzzzd5", "")],
-            "arvados/jobs:latest": [("zzzzz-4zz18-zzzzzzzzzzzzzd6", "")],
+            "arvados/jobs:"+arvados_cwl.__version__: [("zzzzz-4zz18-zzzzzzzzzzzzzd3", {})],
+            "debian:buster-slim": [("zzzzz-4zz18-zzzzzzzzzzzzzd4", {})],
+            "arvados/jobs:123": [("zzzzz-4zz18-zzzzzzzzzzzzzd5", {})],
+            "arvados/jobs:latest": [("zzzzz-4zz18-zzzzzzzzzzzzzd6", {})],
         }
         def kd(a, b, image_name=None, image_tag=None):
             return stubs.docker_images.get("%s:%s" % (image_name, image_tag), [])
@@ -1088,6 +1088,25 @@ class TestSubmit(unittest.TestCase):
         self.assertEqual("9999999999999999999999999999999b+99",
                          arvados_cwl.runner.arvados_jobs_image(arvrunner, "arvados/jobs:"+arvados_cwl.__version__))
 
+
+    @stubs
+    def test_match_local_docker(self, stubs):
+        stubs.docker_images["debian:buster-slim"] = [("zzzzz-4zz18-zzzzzzzzzzzzzd6", {"dockerhash": "456"}),
+                                                     ("zzzzz-4zz18-zzzzzzzzzzzzzd5", {"dockerhash": "123"})]
+
+        exited = arvados_cwl.main(
+            ["--submit", "--no-wait", "--api=containers", "--debug",
+                "tests/tool/submit_tool.cwl", "tests/submit_test_job.json"],
+            stubs.capture_stdout, sys.stderr, api_client=stubs.api, keep_client=stubs.keep_client)
+
+        expect_container = {
+        }
+
+        stubs.api.container_requests().create.assert_called_with(
+            body=JsonDiffMatcher(expect_container))
+        self.assertEqual(stubs.capture_stdout.getvalue(),
+                         stubs.expect_container_request_uuid + '\n')
+        self.assertEqual(exited, 0)
 
     @stubs
     def test_submit_secrets(self, stubs):
