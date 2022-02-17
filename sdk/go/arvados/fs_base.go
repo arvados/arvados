@@ -81,10 +81,13 @@ type File interface {
 	// then be spliced onto a different path or a different
 	// collection.
 	Snapshot() (*Subtree, error)
-	// Replace this file or directory with the given snapshot. It
-	// is an error to replace a directory with a file. If snapshot
-	// is (or might be) a directory, remove the directory, create
-	// a file with the same name, and splice the file.
+	// Replace this file or directory with the given snapshot.
+	// The target must be inside a collection: Splice returns an
+	// error if the File is a virtual file or directory like
+	// by_id, a project directory, .arvados#collection,
+	// etc. Splice can replace directories with regular files and
+	// vice versa, except it cannot replace the root directory of
+	// a collection with a regular file.
 	Splice(snapshot *Subtree) error
 }
 
@@ -171,7 +174,7 @@ type inode interface {
 	Snapshot() (inode, error)
 	// Replace this node with a copy of the provided snapshot.
 	// Caller may provide the same snapshot to multiple Splice
-	// calls, but must not modify the the snapshot concurrently.
+	// calls, but must not modify the snapshot concurrently.
 	Splice(inode) error
 
 	// Child() performs lookups and updates of named child nodes.
