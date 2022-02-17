@@ -227,7 +227,7 @@ navbar:
       - admin/config.html.textile.liquid
     - Maintenance and upgrading:
       - admin/upgrading.html.textile.liquid
-      - install/maintenance-and-upgrading.html.textile.liquid
+      - admin/maintenance-and-upgrading.html.textile.liquid
     - Core:
       - install/install-api-server.html.textile.liquid
     - Keep:

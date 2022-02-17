@@ -10,20 +10,13 @@ Copyright (C) The Arvados Authors. All rights reserved.
 SPDX-License-Identifier: CC-BY-SA-3.0
 {% endcomment %}
 
-For Arvados administrators, this page will cover what you need to know and do in order to ensure a smooth upgrade of your Arvados installation.  For general release notes covering features added and bugs fixed, see "Arvados releases":https://arvados.org/releases .
+For Arvados administrators, this page will cover what you need to know and do in order to ensure a smooth upgrade of your Arvados installation.  For general release notes covering features added and bugs fixed, see "Arvados releases":https://arvados.org/releases.
 
-h2. General process
-
-# Consult upgrade notes below to see if any manual configuration updates are necessary.
-# Wait for the cluster to be idle and stop Arvados services.
-# Make a backup of your database, as a precaution.
-# Install new packages using @apt-get upgrade@ or @yum upgrade@.
-# Wait for package installation scripts as they perform any necessary data migrations.
-# Restart Arvados services.
+Upgrade instructions can be found at "Maintenance and upgrading":{{site.baseurl}}/admin/maintenance-and-upgrading.html#upgrading.
 
 h2. Upgrade notes
 
-Some versions introduce changes that require special attention when upgrading: e.g., there is a new service to install, or there is a change to the default configuration that you might need to override in order to preserve the old behavior.
+Some versions introduce changes that require special attention when upgrading: e.g., there is a new service to install, or there is a change to the default configuration that you might need to override in order to preserve the old behavior. These notes are listed below, organized by release version. Scroll down to the version number you are upgrading to.
 
 {% comment %}
 Note to developers: Add new items at the top. Include the date, issue number, commit, and considerations/instructions for those about to upgrade.
