@@ -152,6 +152,10 @@ def arg_parser():  # type: () -> argparse.ArgumentParser
                         help="When invoked with --submit --wait, always submit a runner to manage the workflow, even when only running a single CommandLineTool",
                         default=False)
 
+    parser.add_argument("--match-submitter-images", action="store_true",
+                        default=False, dest="match_local_docker",
+                        help="Where Arvados has more than one Docker image of the same name, use image from the Docker instance on the submitting node.")
+
     exgroup = parser.add_mutually_exclusive_group()
     exgroup.add_argument("--submit-request-uuid",
                          default=None,
