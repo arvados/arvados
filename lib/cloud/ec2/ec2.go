@@ -40,13 +40,14 @@ const (
 )
 
 type ec2InstanceSetConfig struct {
-	AccessKeyID      string
-	SecretAccessKey  string
-	Region           string
-	SecurityGroupIDs arvados.StringSet
-	SubnetID         string
-	AdminUsername    string
-	EBSVolumeType    string
+	AccessKeyID        string
+	SecretAccessKey    string
+	Region             string
+	SecurityGroupIDs   arvados.StringSet
+	SubnetID           string
+	AdminUsername      string
+	EBSVolumeType      string
+	IamInstanceProfile string
 }
 
 type ec2Interface interface {
@@ -228,6 +229,12 @@ func (instanceSet *ec2InstanceSet) Create(
 				InstanceInterruptionBehavior: aws.String("terminate"),
 				MaxPrice:                     aws.String(fmt.Sprintf("%v", instanceType.Price)),
 			}}
+	}
+
+	if instanceSet.ec2config.IamInstanceProfile != "" {
+		rii.IamInstanceProfile = &ec2.IamInstanceProfileSpecification{
+			Name: aws.String(instanceSet.ec2config.IamInstanceProfile),
+		}
 	}
 
 	rsv, err := instanceSet.client.RunInstances(&rii)
