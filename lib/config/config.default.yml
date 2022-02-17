@@ -1269,6 +1269,7 @@ Clusters:
           Region: ""
           EBSVolumeType: gp2
           AdminUsername: debian
+          IamInstanceProfile: ""
 
           # (azure) Credentials.
           SubscriptionID: ""
