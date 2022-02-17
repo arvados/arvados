@@ -44,6 +44,7 @@ type Supervisor struct {
 	ControllerAddr       string // e.g., 127.0.0.1:8000
 	Workbench2Source     string // e.g., /home/username/src/arvados-workbench2
 	NoWorkbench1         bool
+	NoWorkbench2         bool
 	OwnTemporaryDatabase bool
 	Stderr               io.Writer
 
@@ -251,13 +252,17 @@ func (super *Supervisor) run(cfg *arvados.Config) error {
 		runServiceCommand{name: "ws", svc: super.cluster.Services.Websocket, depends: []supervisedTask{seedDatabase{}}},
 		installPassenger{src: "services/api"},
 		runPassenger{src: "services/api", varlibdir: "railsapi", svc: super.cluster.Services.RailsAPI, depends: []supervisedTask{createCertificates{}, seedDatabase{}, installPassenger{src: "services/api"}}},
-		runWorkbench2{svc: super.cluster.Services.Workbench2},
 		seedDatabase{},
 	}
 	if !super.NoWorkbench1 {
 		tasks = append(tasks,
 			installPassenger{src: "apps/workbench", depends: []supervisedTask{seedDatabase{}}}, // dependency ensures workbench doesn't delay api install/startup
 			runPassenger{src: "apps/workbench", varlibdir: "workbench1", svc: super.cluster.Services.Workbench1, depends: []supervisedTask{installPassenger{src: "apps/workbench"}}},
+		)
+	}
+	if !super.NoWorkbench2 {
+		tasks = append(tasks,
+			runWorkbench2{svc: super.cluster.Services.Workbench2},
 		)
 	}
 	if super.ClusterType != "test" {
@@ -704,7 +709,8 @@ func (super *Supervisor) autofillConfig(cfg *arvados.Config) error {
 				svc.ExternalURL = arvados.URL{Scheme: "wss", Host: host, Path: "/websocket"}
 			}
 		}
-		if super.NoWorkbench1 && svc == &cluster.Services.Workbench1 {
+		if super.NoWorkbench1 && svc == &cluster.Services.Workbench1 ||
+			super.NoWorkbench2 && svc == &cluster.Services.Workbench2 {
 			// When workbench1 is disabled, it gets an
 			// ExternalURL (so we have a valid listening
 			// port to write in our Nginx config) but no
