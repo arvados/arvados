@@ -18,7 +18,8 @@ describe('Vocabulary', () => {
                     strict: false,
                     labels: [
                         {label: "Animal" },
-                        {label: "Creature"}
+                        {label: "Creature"},
+                        {label: "Beast"},
                     ],
                     values: {
                         IDVALANIMALS1: {
@@ -39,13 +40,13 @@ describe('Vocabulary', () => {
                     labels: [{label: "Sizes"}],
                     values: {
                         IDVALSIZES1: {
-                            labels: [{label: "Small"}]
+                            labels: [{label: "Small"}, {label: "S"}, {label: "Little"}]
                         },
                         IDVALSIZES2: {
-                            labels: [{label: "Medium"}]
+                            labels: [{label: "Medium"}, {label: "M"}]
                         },
                         IDVALSIZES3: {
-                            labels: [{label: "Large"}]
+                            labels: [{label: "Large"}, {label: "L"}]
                         },
                         IDVALSIZES4: {
                             labels: []
@@ -61,9 +62,30 @@ describe('Vocabulary', () => {
         // Alphabetically ordered by label
         expect(tagKeys).toEqual([
             {id: "IDKEYANIMALS", label: "Animal"},
+            {id: "IDKEYANIMALS", label: "Beast"},
             {id: "IDKEYANIMALS", label: "Creature"},
             {id: "IDKEYCOMMENT", label: "IDKEYCOMMENT"},
             {id: "IDKEYSIZES", label: "Sizes"},
+        ]);
+    });
+
+    it('returns the list of preferred tag keys', () => {
+        const preferredTagKeys = Vocabulary.getPreferredTags(vocabulary);
+        // Alphabetically ordered by label
+        expect(preferredTagKeys).toEqual([
+            {id: "IDKEYANIMALS", label: "Animal", synonyms: []},
+            {id: "IDKEYCOMMENT", label: "IDKEYCOMMENT", synonyms: []},
+            {id: "IDKEYSIZES", label: "Sizes", synonyms: []},
+        ]);
+    });
+
+    it('returns the list of preferred tag keys with matching synonyms', () => {
+        const preferredTagKeys = Vocabulary.getPreferredTags(vocabulary, 'creat');
+        // Alphabetically ordered by label
+        expect(preferredTagKeys).toEqual([
+            {id: "IDKEYANIMALS", label: "Animal", synonyms: ["Creature"]},
+            {id: "IDKEYCOMMENT", label: "IDKEYCOMMENT", synonyms: []},
+            {id: "IDKEYSIZES", label: "Sizes", synonyms: []},
         ]);
     });
 
@@ -72,9 +94,35 @@ describe('Vocabulary', () => {
         // Alphabetically ordered by label
         expect(tagValues).toEqual([
             {id: "IDVALSIZES4", label: "IDVALSIZES4"},
+            {id: "IDVALSIZES3", label: "L"},
             {id: "IDVALSIZES3", label: "Large"},
+            {id: "IDVALSIZES1", label: "Little"},
+            {id: "IDVALSIZES2", label: "M"},
             {id: "IDVALSIZES2", label: "Medium"},
+            {id: "IDVALSIZES1", label: "S"},
             {id: "IDVALSIZES1", label: "Small"},
+        ])
+    });
+
+    it('returns the preferred tag values for a given key', () => {
+        const preferredTagValues = Vocabulary.getPreferredTagValues('IDKEYSIZES', vocabulary);
+        // Alphabetically ordered by label
+        expect(preferredTagValues).toEqual([
+            {id: "IDVALSIZES4", label: "IDVALSIZES4", synonyms: []},
+            {id: "IDVALSIZES3", label: "Large", synonyms: []},
+            {id: "IDVALSIZES2", label: "Medium", synonyms: []},
+            {id: "IDVALSIZES1", label: "Small", synonyms: []},
+        ])
+    });
+
+    it('returns the preferred tag values with matching synonyms for a given key', () => {
+        const preferredTagValues = Vocabulary.getPreferredTagValues('IDKEYSIZES', vocabulary, 'litt');
+        // Alphabetically ordered by label
+        expect(preferredTagValues).toEqual([
+            {id: "IDVALSIZES4", label: "IDVALSIZES4", synonyms: []},
+            {id: "IDVALSIZES3", label: "Large", synonyms: []},
+            {id: "IDVALSIZES2", label: "Medium", synonyms: []},
+            {id: "IDVALSIZES1", label: "Small", synonyms: ["Little"]},
         ])
     });
 

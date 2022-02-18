@@ -6,7 +6,7 @@ import React from 'react';
 import { WrappedFieldProps, Field, formValues, FormName, WrappedFieldInputProps, WrappedFieldMetaProps, change } from 'redux-form';
 import { compose } from 'redux';
 import { Autocomplete } from 'components/autocomplete/autocomplete';
-import { Vocabulary, isStrictTag, getTagValues, getTagValueID, getTagValueLabel } from 'models/vocabulary';
+import { Vocabulary, isStrictTag, getTagValues, getTagValueID, getTagValueLabel, PropFieldSuggestion, getPreferredTagValues } from 'models/vocabulary';
 import { PROPERTY_KEY_FIELD_ID, PROPERTY_KEY_FIELD_NAME } from 'views-components/resource-properties-form/property-key-field';
 import {
     handleSelect,
@@ -56,9 +56,15 @@ export const PropertyValueField = connectVocabularyAndPropertyKey(
 const PropertyValueInput = ({ vocabulary, propertyKeyId, propertyKeyName, ...props }: WrappedFieldProps & PropertyValueFieldProps) =>
     <FormName children={data => (
         <Autocomplete
+            {...buildProps(props)}
             label='Value'
             disabled={props.disabled}
             suggestions={getSuggestions(props.input.value, propertyKeyId, vocabulary)}
+            renderSuggestion={
+                (s: PropFieldSuggestion) => s.synonyms && s.synonyms.length > 0
+                    ? `${s.label} (${s.synonyms.join('; ')})`
+                    : s.label
+            }
             onSelect={handleSelect(PROPERTY_VALUE_FIELD_ID, data.form, props.input, props.meta)}
             onBlur={() => {
                 // Case-insensitive search for the value in the vocabulary
@@ -73,7 +79,6 @@ const PropertyValueInput = ({ vocabulary, propertyKeyId, propertyKeyName, ...pro
                 const tagValueID = getTagValueID(propertyKeyId, newValue, vocabulary);
                 handleChange(data.form, tagValueID, props.input, props.meta, newValue);
             }}
-            {...buildProps(props)}
         />
     )} />;
 
@@ -90,7 +95,9 @@ const matchTagValues = ({ vocabulary, propertyKeyId }: PropertyValueFieldProps) 
 
 const getSuggestions = (value: string, tagName: string, vocabulary: Vocabulary) => {
     const re = new RegExp(escapeRegExp(value), "i");
-    return getTagValues(tagName, vocabulary).filter(v => re.test(v.label) && v.label !== value);
+    return getPreferredTagValues(tagName, vocabulary, value).filter(
+        val => (val.label !== value && re.test(val.label)) ||
+            (val.synonyms && val.synonyms.some(s => re.test(s))));
 };
 
 const handleChange = (

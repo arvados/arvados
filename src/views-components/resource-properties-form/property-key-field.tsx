@@ -6,7 +6,14 @@ import React from 'react';
 import { WrappedFieldProps, Field, FormName, reset, change, WrappedFieldInputProps, WrappedFieldMetaProps } from 'redux-form';
 import { memoize } from 'lodash';
 import { Autocomplete } from 'components/autocomplete/autocomplete';
-import { Vocabulary, getTags, getTagKeyID, getTagKeyLabel } from 'models/vocabulary';
+import {
+    Vocabulary,
+    getTags,
+    getTagKeyID,
+    getTagKeyLabel,
+    getPreferredTags,
+    PropFieldSuggestion
+} from 'models/vocabulary';
 import {
     handleSelect,
     handleBlur,
@@ -36,8 +43,14 @@ export const PropertyKeyField = connectVocabulary(
 const PropertyKeyInput = ({ vocabulary, ...props }: WrappedFieldProps & VocabularyProp) =>
     <FormName children={data => (
         <Autocomplete
+            {...buildProps(props)}
             label='Key'
             suggestions={getSuggestions(props.input.value, vocabulary)}
+            renderSuggestion={
+                (s: PropFieldSuggestion) => s.synonyms && s.synonyms.length > 0
+                    ? `${s.label} (${s.synonyms.join('; ')})`
+                    : s.label
+            }
             onSelect={handleSelect(PROPERTY_KEY_FIELD_ID, data.form, props.input, props.meta)}
             onBlur={() => {
                 // Case-insensitive search for the key in the vocabulary
@@ -51,7 +64,6 @@ const PropertyKeyInput = ({ vocabulary, ...props }: WrappedFieldProps & Vocabula
                 const newValue = e.currentTarget.value;
                 handleChange(data.form, props.input, props.meta, newValue);
             }}
-            {...buildProps(props)}
         />
     )} />;
 
@@ -67,9 +79,11 @@ const matchTags = (vocabulary: Vocabulary) =>
             ? undefined
             : 'Incorrect key';
 
-const getSuggestions = (value: string, vocabulary: Vocabulary) => {
+const getSuggestions = (value: string, vocabulary: Vocabulary): PropFieldSuggestion[] => {
     const re = new RegExp(escapeRegExp(value), "i");
-    return getTags(vocabulary).filter(tag => re.test(tag.label) && tag.label !== value);
+    return getPreferredTags(vocabulary, value).filter(
+        tag => (tag.label !== value && re.test(tag.label)) ||
+            (tag.synonyms && tag.synonyms.some(s => re.test(s))));
 };
 
 const handleChange = (

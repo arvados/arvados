@@ -2,6 +2,7 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
+import { escapeRegExp } from 'common/regexp';
 import { isObject, has, every } from 'lodash/fp';
 
 export interface Vocabulary {
@@ -27,6 +28,7 @@ export interface Tag {
 export interface PropFieldSuggestion {
     id: string;
     label: string;
+    synonyms?: string[];
 }
 
 const VOCABULARY_VALIDATORS = [
@@ -64,9 +66,9 @@ const compare = (a: PropFieldSuggestion, b: PropFieldSuggestion) => {
     return 0;
 };
 
-export const getTagValues = (tagKeyID: string, vocabulary: Vocabulary) => {
+export const getTagValues = (tagKeyID: string, vocabulary: Vocabulary): PropFieldSuggestion[] => {
     const tag = vocabulary.tags[tagKeyID];
-    const ret = tag && tag.values
+    return tag && tag.values
         ? Object.keys(tag.values).map(
             tagValueID => tag.values![tagValueID].labels && tag.values![tagValueID].labels.length > 0
                 ? tag.values![tagValueID].labels.map(
@@ -75,11 +77,30 @@ export const getTagValues = (tagKeyID: string, vocabulary: Vocabulary) => {
             .reduce((prev, curr) => [...prev, ...curr], [])
             .sort(compare)
         : [];
-    return ret;
 };
 
-export const getTags = ({ tags }: Vocabulary) => {
-    const ret = tags && Object.keys(tags)
+export const getPreferredTagValues = (tagKeyID: string, vocabulary: Vocabulary, withMatch?: string): PropFieldSuggestion[] => {
+    const tag = vocabulary.tags[tagKeyID];
+    const regex = !!withMatch ? new RegExp(escapeRegExp(withMatch), 'i') : undefined;
+    return tag && tag.values
+        ? Object.keys(tag.values).map(
+            tagValueID => tag.values![tagValueID].labels && tag.values![tagValueID].labels.length > 0
+                ? {
+                    "id": tagValueID,
+                    "label": tag.values![tagValueID].labels[0].label,
+                    "synonyms": !!withMatch && tag.values![tagValueID].labels.length > 1
+                        ? tag.values![tagValueID].labels.slice(1)
+                            .filter(l => !!regex ? regex.test(l.label) : true)
+                            .map(l => l.label)
+                        : []
+                }
+                : {"id": tagValueID, "label": tagValueID, "synonyms": []})
+            .sort(compare)
+        : [];
+};
+
+export const getTags = ({ tags }: Vocabulary): PropFieldSuggestion[] => {
+    return tags && Object.keys(tags)
         ? Object.keys(tags).map(
             tagID => tags[tagID].labels && tags[tagID].labels.length > 0
                 ? tags[tagID].labels.map(
@@ -88,7 +109,25 @@ export const getTags = ({ tags }: Vocabulary) => {
             .reduce((prev, curr) => [...prev, ...curr], [])
             .sort(compare)
         : [];
-    return ret;
+};
+
+export const getPreferredTags = ({ tags }: Vocabulary, withMatch?: string): PropFieldSuggestion[] => {
+    const regex = !!withMatch ? new RegExp(escapeRegExp(withMatch), 'i') : undefined;
+    return tags && Object.keys(tags)
+        ? Object.keys(tags).map(
+            tagID => tags[tagID].labels && tags[tagID].labels.length > 0
+                ? {
+                    "id": tagID,
+                    "label": tags[tagID].labels[0].label,
+                    "synonyms": !!withMatch && tags[tagID].labels.length > 1
+                        ? tags[tagID].labels.slice(1)
+                                .filter(l => !!regex ? regex.test(l.label) : true)
+                                .map(lbl => lbl.label)
+                        : []
+                }
+                : {"id": tagID, "label": tagID, "synonyms": []})
+            .sort(compare)
+        : [];
 };
 
 export const getTagKeyID = (tagKeyLabel:string, vocabulary: Vocabulary) =>

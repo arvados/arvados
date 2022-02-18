@@ -64,9 +64,6 @@ describe('Multi-file deletion tests', function () {
         cy.get('@testWorkflow').then(() => {
             cy.loginAs(adminUser);
 
-            cy.get('[data-cy=linear-progress]').should('exist');
-            cy.get('[data-cy=linear-progress]').should('not.exist');
-
             cy.get('[data-cy=side-panel-button]').click();
             cy.get('[data-cy=side-panel-run-process]').click();
 
