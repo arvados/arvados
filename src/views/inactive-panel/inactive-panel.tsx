@@ -11,7 +11,7 @@ import { ArvadosTheme } from 'common/custom-theme';
 import { navigateToLinkAccount } from 'store/navigation/navigation-action';
 import { RootState } from 'store/store';
 
-type CssRules = 'root' | 'ontop' | 'title';
+export type CssRules = 'root' | 'ontop' | 'title';
 
 const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     root: {
@@ -47,32 +47,45 @@ const mapDispatchToProps = (dispatch: Dispatch): InactivePanelActionProps => ({
     }
 });
 
+const mapStateToProps = (state: RootState): InactivePanelStateProps => ({
+    inactivePageText: state.auth.config.clusterConfig.Workbench.InactivePageHTML,
+    isLoginClusterFederation: state.auth.config.clusterConfig.Login.LoginCluster !== '',
+});
+
 export interface InactivePanelStateProps {
     inactivePageText: string;
+    isLoginClusterFederation: boolean;
 }
 
 type InactivePanelProps = WithStyles<CssRules> & InactivePanelActionProps & InactivePanelStateProps;
 
-export const InactivePanel = connect((state: RootState) => ({
-    inactivePageText: state.auth.config.clusterConfig.Workbench.InactivePageHTML
-}), mapDispatchToProps)(withStyles(styles)((({ classes, startLinking, inactivePageText }: InactivePanelProps) =>
+
+export const InactivePanelRoot = ({ classes, startLinking, inactivePageText, isLoginClusterFederation }: InactivePanelProps) =>
     <Grid container justify="center" alignItems="center" direction="column" spacing={24}
         className={classes.root}
         style={{ marginTop: 56, height: "100%" }}>
         <Grid item>
             <Typography>
-                <div dangerouslySetInnerHTML={{ __html: inactivePageText }} style={{ margin: "1em" }} />
+                <span dangerouslySetInnerHTML={{ __html: inactivePageText }} style={{ margin: "1em" }} />
             </Typography>
         </Grid>
-        <Grid item>
+        { !isLoginClusterFederation
+        ? <><Grid item>
             <Typography align="center">
-                If you would like to use this login to access another account click "Link Account".
-	    </Typography>
+            If you would like to use this login to access another account click "Link Account".
+            </Typography>
         </Grid>
         <Grid item>
             <Button className={classes.ontop} color="primary" variant="contained" onClick={() => startLinking()}>
                 Link Account
-	    </Button>
-        </Grid>
-    </Grid >
-)));
+            </Button>
+        </Grid></>
+        : <><Grid item>
+            <Typography align="center">
+                If you would like to use this login to access another account, please contact your administrator.
+            </Typography>
+        </Grid></> }
+    </Grid >;
+
+export const InactivePanel = connect(mapStateToProps, mapDispatchToProps)(
+    withStyles(styles)(InactivePanelRoot));
