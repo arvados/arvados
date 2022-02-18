@@ -1062,6 +1062,7 @@ class TestSubmit(unittest.TestCase):
         arvrunner.project_uuid = ""
         api.return_value = mock.MagicMock()
         arvrunner.api = api.return_value
+        arvrunner.runtimeContext.match_local_docker = False
         arvrunner.api.links().list().execute.side_effect = ({"items": [{"created_at": "",
                                                                         "head_uuid": "zzzzz-4zz18-zzzzzzzzzzzzzzb",
                                                                         "link_class": "docker_image_repo+tag",
