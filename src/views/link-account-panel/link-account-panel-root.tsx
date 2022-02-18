@@ -73,6 +73,18 @@ type LinkAccountPanelRootProps = LinkAccountPanelRootDataProps & LinkAccountPane
 export const LinkAccountPanelRoot = withStyles(styles)(
     ({ classes, targetUser, userToLink, status, isProcessing, error, startLinking, cancelLinking, linkAccount,
         remoteHostsConfig, hasRemoteHosts, selectedCluster, setSelectedCluster, localCluster, loginCluster }: LinkAccountPanelRootProps) => {
+
+        // If a LoginFederation is configured, the self-serve account linking is not
+        // currently available.
+        if (loginCluster !== "") {
+            return <Card className={classes.root}><CardContent>
+                <Grid container spacing={16}>
+                    <Grid item xs={12}>
+                        If you would like to link this account to another one, please contact your administrator.
+                    </Grid>
+                </Grid>
+            </CardContent></Card>;
+        }
         return <Card className={classes.root}><CardContent>
             { isProcessing && <Grid container item direction="column" alignContent="center" spacing={24}>
                 <Grid item>
