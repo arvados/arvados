@@ -13,7 +13,7 @@ export R_LIBS=/var/lib/Rlibs
 export HOME=$(getent passwd arvbox | cut -d: -f6)
 export ARVADOS_CONTAINER_PATH=/var/lib/arvados-arvbox
 export GEM_HOME=$HOME/.gem
-GEMLOCK=$GEM_HOME/gems.lock
+GEMLOCK=$HOME/gems.lock
 
 defaultdev=$(/sbin/ip route|awk '/default/ { print $5 }')
 dockerip=$(/sbin/ip route | grep default | awk '{ print $3 }')
