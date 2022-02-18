@@ -113,6 +113,14 @@ h3. Work reuse
 
 Workflows submitted with @arvados-cwl-runner@ will take advantage of Arvados job reuse.  If you submit a workflow which is identical to one that has run before, it will short cut the execution and return the result of the previous run.  This also applies to individual workflow steps.  For example, a two step workflow where the first step has run before will reuse results for first step and only execute the new second step.  You can disable this behavior with @--disable-reuse@.
 
+h3(#docker). Docker images
+
+Docker images referenced by the workflow must be uploaded to Arvados.  This requires @docker@ to be installed and usable by the user running @arvados-cwl-runner@.  If the image is not present in the local Docker instance, @arvados-cwl-runner@ will first attempt to pull the image using @docker pull@, then upload it.
+
+If there is already a Docker image in Arvados with the same name, it will use the existing image.  In this case, the submitter will not use Docker.
+
+The @--match-submitter-images@ option will check the id of the image in the local Docker instance and compare it to the id of the image already in Arvados with the same name and tag.  If they are different, it will choose the image matching the local image id, which will be uploaded it if necessary.  This helpful for development, if you locally rebuild the image with the 'latest' tag, the @--match-submitter-images@ will ensure that the newer version is used.
+
 h3. Command line options
 
 See "arvados-cwl-runner options":{{site.baseurl}}/user/cwl/cwl-run-options.html
