@@ -6,6 +6,8 @@ import logging
 import sys
 import threading
 import copy
+import re
+import subprocess
 
 from schema_salad.sourceline import SourceLine
 
@@ -18,8 +20,44 @@ logger = logging.getLogger('arvados.cwl-runner')
 cached_lookups = {}
 cached_lookups_lock = threading.Lock()
 
+def determine_image_id(dockerImageId):
+    for line in (
+        subprocess.check_output(  # nosec
+            ["docker", "images", "--no-trunc", "--all"]
+        )
+        .decode("utf-8")
+        .splitlines()
+    ):
+        try:
+            match = re.match(r"^([^ ]+)\s+([^ ]+)\s+([^ ]+)", line)
+            split = dockerImageId.split(":")
+            if len(split) == 1:
+                split.append("latest")
+            elif len(split) == 2:
+                #  if split[1] doesn't  match valid tag names, it is a part of repository
+                if not re.match(r"[\w][\w.-]{0,127}", split[1]):
+                    split[0] = split[0] + ":" + split[1]
+                    split[1] = "latest"
+            elif len(split) == 3:
+                if re.match(r"[\w][\w.-]{0,127}", split[2]):
+                    split[0] = split[0] + ":" + split[1]
+                    split[1] = split[2]
+                    del split[2]
+
+            # check for repository:tag match or image id match
+            if match and (
+                (split[0] == match.group(1) and split[1] == match.group(2))
+                or dockerImageId == match.group(3)
+            ):
+                return match.group(3)
+        except ValueError:
+            pass
+
+    return None
+
+
 def arv_docker_get_image(api_client, dockerRequirement, pull_image, project_uuid,
-                         force_pull, tmp_outdir_prefix):
+                         force_pull, tmp_outdir_prefix, match_local_docker):
     """Check if a Docker image is available in Keep, if not, upload it using arv-keepdocker."""
 
     if "http://arvados.org/cwl#dockerCollectionPDH" in dockerRequirement:
@@ -45,6 +83,20 @@ def arv_docker_get_image(api_client, dockerRequirement, pull_image, project_uuid
         images = arvados.commands.keepdocker.list_images_in_arv(api_client, 3,
                                                                 image_name=image_name,
                                                                 image_tag=image_tag)
+
+        if images and match_local_docker:
+            local_image_id = determine_image_id(dockerRequirement["dockerImageId"])
+            if local_image_id:
+                # find it in the list
+                found = False
+                for i in images:
+                    if i[1]["dockerhash"] == local_image_id:
+                        found = True
+                        images = [i]
+                        break
+                if not found:
+                    # force re-upload.
+                    images = []
 
         if not images:
             # Fetch Docker image if necessary.

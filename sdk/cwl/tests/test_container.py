@@ -1014,6 +1014,96 @@ class TestContainer(unittest.TestCase):
                 }))
 
 
+    # The test passes no builder.resources
+    # Hence the default resources will apply: {'cores': 1, 'ram': 1024, 'outdirSize': 1024, 'tmpdirSize': 1024}
+    @mock.patch("arvados_cwl.arvdocker.determine_image_id")
+    @mock.patch("arvados.commands.keepdocker.list_images_in_arv")
+    def test_match_local_docker(self, keepdocker, determine_image_id):
+        arvados_cwl.add_arv_hints()
+        arv_docker_clear_cache()
+
+        runner = mock.MagicMock()
+        runner.ignore_docker_for_reuse = False
+        runner.intermediate_output_ttl = 0
+        runner.secret_store = cwltool.secrets.SecretStore()
+        runner.api._rootDesc = {"revision": "20210628"}
+
+        keepdocker.return_value = [("zzzzz-4zz18-zzzzzzzzzzzzzz4", {"dockerhash": "456"}),
+                                   ("zzzzz-4zz18-zzzzzzzzzzzzzz3", {"dockerhash": "123"})]
+        determine_image_id.side_effect = lambda x: "123"
+        def execute(uuid):
+            ex = mock.MagicMock()
+            lookup = {"zzzzz-4zz18-zzzzzzzzzzzzzz4": {"portable_data_hash": "99999999999999999999999999999994+99"},
+                      "zzzzz-4zz18-zzzzzzzzzzzzzz3": {"portable_data_hash": "99999999999999999999999999999993+99"}}
+            ex.execute.return_value = lookup[uuid]
+            return ex
+        runner.api.collections().get.side_effect = execute
+
+        tool = cmap({
+            "inputs": [],
+            "outputs": [],
+            "baseCommand": "echo",
+            "arguments": [],
+            "id": "",
+            "cwlVersion": "v1.2",
+            "class": "CommandLineTool"
+        })
+
+        loadingContext, runtimeContext = self.helper(runner, True)
+
+        arvtool = cwltool.load_tool.load_tool(tool, loadingContext)
+        arvtool.formatgraph = None
+
+        container_request = {
+            'environment': {
+                'HOME': '/var/spool/cwl',
+                'TMPDIR': '/tmp'
+            },
+            'name': 'test_run_True',
+            'runtime_constraints': {
+                'vcpus': 1,
+                'ram': 268435456
+            },
+            'use_existing': True,
+            'priority': 500,
+            'mounts': {
+                '/tmp': {'kind': 'tmp',
+                         "capacity": 1073741824
+                         },
+                '/var/spool/cwl': {'kind': 'tmp',
+                                   "capacity": 1073741824 }
+            },
+            'state': 'Committed',
+            'output_name': 'Output for step test_run_True',
+            'owner_uuid': 'zzzzz-8i9sb-zzzzzzzzzzzzzzz',
+            'output_path': '/var/spool/cwl',
+            'output_ttl': 0,
+            'container_image': '99999999999999999999999999999994+99',
+            'command': ['echo'],
+            'cwd': '/var/spool/cwl',
+            'scheduling_parameters': {},
+            'properties': {},
+            'secret_mounts': {},
+            'output_storage_classes': ["default"]
+        }
+
+        runtimeContext.match_local_docker = False
+        for j in arvtool.job({}, mock.MagicMock(), runtimeContext):
+            j.run(runtimeContext)
+            runner.api.container_requests().create.assert_called_with(
+                body=JsonDiffMatcher(container_request))
+
+        arv_docker_clear_cache()
+        runtimeContext.match_local_docker = True
+        container_request['container_image'] = '99999999999999999999999999999993+99'
+        container_request['name'] = 'test_run_True_2'
+        container_request['output_name'] = 'Output for step test_run_True_2'
+        for j in arvtool.job({}, mock.MagicMock(), runtimeContext):
+            j.run(runtimeContext)
+            runner.api.container_requests().create.assert_called_with(
+                body=JsonDiffMatcher(container_request))
+
+
 class TestWorkflow(unittest.TestCase):
     def setUp(self):
         cwltool.process._names = set()
