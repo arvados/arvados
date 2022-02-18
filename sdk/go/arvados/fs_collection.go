@@ -457,6 +457,14 @@ func (fs *collectionFileSystem) Size() int64 {
 	return fs.fileSystem.root.(*dirnode).TreeSize()
 }
 
+func (fs *collectionFileSystem) Snapshot() (inode, error) {
+	return fs.fileSystem.root.Snapshot()
+}
+
+func (fs *collectionFileSystem) Splice(r inode) error {
+	return fs.fileSystem.root.Splice(r)
+}
+
 // filenodePtr is an offset into a file that is (usually) efficient to
 // seek to. Specifically, if filenode.repacked==filenodePtr.repacked
 // then
@@ -874,6 +882,47 @@ func (fn *filenode) waitPrune() {
 	for _, p := range pending {
 		<-p
 	}
+}
+
+func (fn *filenode) Snapshot() (inode, error) {
+	fn.RLock()
+	defer fn.RUnlock()
+	segments := make([]segment, 0, len(fn.segments))
+	for _, seg := range fn.segments {
+		segments = append(segments, seg.Slice(0, seg.Len()))
+	}
+	return &filenode{
+		fileinfo: fn.fileinfo,
+		segments: segments,
+	}, nil
+}
+
+func (fn *filenode) Splice(repl inode) error {
+	repl, err := repl.Snapshot()
+	if err != nil {
+		return err
+	}
+	fn.parent.Lock()
+	defer fn.parent.Unlock()
+	fn.Lock()
+	defer fn.Unlock()
+	_, err = fn.parent.Child(fn.fileinfo.name, func(inode) (inode, error) { return repl, nil })
+	if err != nil {
+		return err
+	}
+	switch repl := repl.(type) {
+	case *dirnode:
+		repl.parent = fn.parent
+		repl.fileinfo.name = fn.fileinfo.name
+		repl.setTreeFS(fn.fs)
+	case *filenode:
+		repl.parent = fn.parent
+		repl.fileinfo.name = fn.fileinfo.name
+		repl.fs = fn.fs
+	default:
+		return fmt.Errorf("cannot splice snapshot containing %T: %w", repl, ErrInvalidArgument)
+	}
+	return nil
 }
 
 type dirnode struct {
@@ -1487,6 +1536,86 @@ func (dn *dirnode) TreeSize() (bytes int64) {
 		}
 	}
 	return
+}
+
+func (dn *dirnode) Snapshot() (inode, error) {
+	return dn.snapshot()
+}
+
+func (dn *dirnode) snapshot() (*dirnode, error) {
+	dn.RLock()
+	defer dn.RUnlock()
+	snap := &dirnode{
+		treenode: treenode{
+			inodes:   make(map[string]inode, len(dn.inodes)),
+			fileinfo: dn.fileinfo,
+		},
+	}
+	for name, child := range dn.inodes {
+		dupchild, err := child.Snapshot()
+		if err != nil {
+			return nil, err
+		}
+		snap.inodes[name] = dupchild
+		dupchild.SetParent(snap, name)
+	}
+	return snap, nil
+}
+
+func (dn *dirnode) Splice(repl inode) error {
+	repl, err := repl.Snapshot()
+	if err != nil {
+		return err
+	}
+	switch repl := repl.(type) {
+	default:
+		return fmt.Errorf("cannot splice snapshot containing %T: %w", repl, ErrInvalidArgument)
+	case *dirnode:
+		dn.Lock()
+		defer dn.Unlock()
+		dn.inodes = repl.inodes
+		dn.setTreeFS(dn.fs)
+	case *filenode:
+		dn.parent.Lock()
+		defer dn.parent.Unlock()
+		removing, err := dn.parent.Child(dn.fileinfo.name, nil)
+		if err != nil {
+			return fmt.Errorf("cannot use Splice to replace a top-level directory with a file: %w", ErrInvalidOperation)
+		} else if removing != dn {
+			// If ../thisdirname is not this dirnode, it
+			// must be an inode that wraps a dirnode, like
+			// a collectionFileSystem or deferrednode.
+			if deferred, ok := removing.(*deferrednode); ok {
+				// More useful to report the type of
+				// the wrapped node rather than just
+				// *deferrednode. (We know the real
+				// inode is already loaded because dn
+				// is inside it.)
+				removing = deferred.realinode()
+			}
+			return fmt.Errorf("cannot use Splice to attach a file at top level of %T: %w", removing, ErrInvalidOperation)
+		}
+		dn.Lock()
+		defer dn.Unlock()
+		_, err = dn.parent.Child(dn.fileinfo.name, func(inode) (inode, error) { return repl, nil })
+		if err != nil {
+			return err
+		}
+		repl.fs = dn.fs
+	}
+	return nil
+}
+
+func (dn *dirnode) setTreeFS(fs *collectionFileSystem) {
+	dn.fs = fs
+	for _, child := range dn.inodes {
+		switch child := child.(type) {
+		case *dirnode:
+			child.setTreeFS(fs)
+		case *filenode:
+			child.fs = fs
+		}
+	}
 }
 
 type segment interface {

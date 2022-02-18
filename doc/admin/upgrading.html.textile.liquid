@@ -1,7 +1,7 @@
 ---
 layout: default
 navsection: installguide
-title: "Upgrading Arvados and Release notes"
+title: "Arvados upgrade notes"
 ...
 
 {% comment %}
@@ -10,20 +10,13 @@ Copyright (C) The Arvados Authors. All rights reserved.
 SPDX-License-Identifier: CC-BY-SA-3.0
 {% endcomment %}
 
-For Arvados administrators, this page will cover what you need to know and do in order to ensure a smooth upgrade of your Arvados installation.  For general release notes covering features added and bugs fixed, see "Arvados releases":https://arvados.org/releases .
+For Arvados administrators, this page will cover what you need to know and do in order to ensure a smooth upgrade of your Arvados installation.  For general release notes covering features added and bugs fixed, see "Arvados releases":https://arvados.org/releases.
 
-h2. General process
-
-# Consult upgrade notes below to see if any manual configuration updates are necessary.
-# Wait for the cluster to be idle and stop Arvados services.
-# Make a backup of your database, as a precaution.
-# Install new packages using @apt-get upgrade@ or @yum upgrade@.
-# Wait for package installation scripts as they perform any necessary data migrations.
-# Restart Arvados services.
+Upgrade instructions can be found at "Maintenance and upgrading":{{site.baseurl}}/admin/maintenance-and-upgrading.html#upgrading.
 
 h2. Upgrade notes
 
-Some versions introduce changes that require special attention when upgrading: e.g., there is a new service to install, or there is a change to the default configuration that you might need to override in order to preserve the old behavior.
+Some versions introduce changes that require special attention when upgrading: e.g., there is a new service to install, or there is a change to the default configuration that you might need to override in order to preserve the old behavior. These notes are listed below, organized by release version. Scroll down to the version number you are upgrading to.
 
 {% comment %}
 Note to developers: Add new items at the top. Include the date, issue number, commit, and considerations/instructions for those about to upgrade.
@@ -37,7 +30,7 @@ TODO: extract this information based on git commit messages and generate changel
 
 h2(#main). development main (as of 2022-02-10)
 
-"previous: Upgrading from 2.3.0":#v2_3_0
+"previous: Upgrading to 2.3.0":#v2_3_0
 
 h3. Anonymous token changes
 
@@ -238,7 +231,7 @@ Arvados 2.0 is a major upgrade, with many changes.  Please read these upgrade no
 
 h3. Migrating to centralized config.yml
 
-See "Migrating Configuration":config-migration.html for notes on migrating legacy per-component configuration files to the new centralized @/etc/arvados/config.yml@.
+See "Migrating Configuration":https://doc.arvados.org/v2.1/admin/config-migration.html for notes on migrating legacy per-component configuration files to the new centralized @/etc/arvados/config.yml@.
 
 To ensure a smooth transition, the per-component config files continue to be read, and take precedence over the centralized configuration.  Your cluster should continue to function after upgrade but before doing the full configuration migration.  However, several services (keepstore, keep-web, keepproxy) require a minimal `/etc/arvados/config.yml` to start:
 
@@ -258,11 +251,11 @@ You can no longer specify types of keep services to balance via the @KeepService
 
 You can no longer specify individual keep services to balance via the @config.KeepServiceList@ command line option or @KeepServiceList@ legacy config option. Instead, keep-balance will operate on all keepstore servers with @service_type:disk@ as reported by the @arv keep_service list@ command. If you are still using the legacy config, @KeepServiceList@ should be removed or keep-balance will produce an error.
 
-Please see the "config migration guide":{{site.baseurl}}/admin/config-migration.html and "keep-balance install guide":{{site.baseurl}}/install/install-keep-balance.html for more details.
+Please see the "config migration guide":https://doc.arvados.org/v2.1/admin/config-migration.html and "keep-balance install guide":{{site.baseurl}}/install/install-keep-balance.html for more details.
 
 h3. Arv-git-httpd configuration migration
 
-(feature "#14712":https://dev.arvados.org/issues/14712 ) The arv-git-httpd package can now be configured using the centralized configuration file at @/etc/arvados/config.yml@. Configuration via individual command line arguments is no longer available. Please see "arv-git-httpd's config migration guide":{{site.baseurl}}/admin/config-migration.html#arv-git-httpd for more details.
+(feature "#14712":https://dev.arvados.org/issues/14712 ) The arv-git-httpd package can now be configured using the centralized configuration file at @/etc/arvados/config.yml@. Configuration via individual command line arguments is no longer available. Please see "arv-git-httpd's config migration guide":https://doc.arvados.org/v2.1/admin/config-migration.html#arv-git-httpd for more details.
 
 h3. Keepstore and keep-web configuration migration
 
@@ -270,11 +263,11 @@ keepstore and keep-web no longer support configuration via (previously deprecate
 
 keep-web now supports the legacy @keep-web.yml@ config format (used by Arvados 1.4) and the new cluster config file format. Please check "keep-web's install guide":{{site.baseurl}}/install/install-keep-web.html for more details.
 
-keepstore now supports the legacy @keepstore.yml@ config format (used by Arvados 1.4) and the new cluster config file format. Please check the "keepstore config migration notes":{{site.baseurl}}/admin/config-migration.html#keepstore and "keepstore install guide":{{site.baseurl}}/install/install-keepstore.html for more details.
+keepstore now supports the legacy @keepstore.yml@ config format (used by Arvados 1.4) and the new cluster config file format. Please check the "keepstore config migration notes":https://doc.arvados.org/v2.1/admin/config-migration.html#keepstore and "keepstore install guide":{{site.baseurl}}/install/install-keepstore.html for more details.
 
 h3. Keepproxy configuration migration
 
-(feature "#14715":https://dev.arvados.org/issues/14715 ) Keepproxy can now be configured using the centralized config at @/etc/arvados/config.yml@. Configuration via individual command line arguments is no longer available and the @DisableGet@, @DisablePut@, and @PIDFile@ configuration options are no longer supported. If you are still using the legacy config and @DisableGet@ or @DisablePut@ are set to true or @PIDFile@ has a value, keepproxy will produce an error and fail to start. Please see "keepproxy's config migration guide":{{site.baseurl}}/admin/config-migration.html#keepproxy for more details.
+(feature "#14715":https://dev.arvados.org/issues/14715 ) Keepproxy can now be configured using the centralized config at @/etc/arvados/config.yml@. Configuration via individual command line arguments is no longer available and the @DisableGet@, @DisablePut@, and @PIDFile@ configuration options are no longer supported. If you are still using the legacy config and @DisableGet@ or @DisablePut@ are set to true or @PIDFile@ has a value, keepproxy will produce an error and fail to start. Please see "keepproxy's config migration guide":https://doc.arvados.org/v2.1/admin/config-migration.html#keepproxy for more details.
 
 h3. Delete "keep_services" records
 
@@ -471,7 +464,7 @@ As part of story "#9945":https://dev.arvados.org/issues/9945, it was discovered 
 
 h3. New configuration
 
-Arvados is migrating to a centralized configuration file for all components.  During the migration, legacy configuration files will continue to be loaded.  See "Migrating Configuration":config-migration.html for details.
+Arvados is migrating to a centralized configuration file for all components.  During the migration, legacy configuration files will continue to be loaded.  See "Migrating Configuration":https://doc.arvados.org/v2.1/admin/config-migration.html for details.
 
 h2(#v1_3_3). v1.3.3 (2019-05-14)
 

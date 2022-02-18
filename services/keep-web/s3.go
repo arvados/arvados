@@ -471,7 +471,7 @@ func (h *handler) serveS3(w http.ResponseWriter, r *http.Request) bool {
 					return true
 				}
 				err = fs.Mkdir(dir, 0755)
-				if err == arvados.ErrInvalidArgument {
+				if errors.Is(err, arvados.ErrInvalidArgument) || errors.Is(err, arvados.ErrInvalidOperation) {
 					// Cannot create a directory
 					// here.
 					err = fmt.Errorf("mkdir %q failed: %w", dir, err)
