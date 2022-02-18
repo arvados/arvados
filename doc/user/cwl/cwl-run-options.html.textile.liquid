@@ -51,6 +51,7 @@ table(table table-bordered table-condensed).
 |==--submit-runner-ram== SUBMIT_RUNNER_RAM|RAM (in MiB) required for the workflow runner (default 1024)|
 |==--submit-runner-image== SUBMIT_RUNNER_IMAGE|Docker image for workflow runner|
 |==--always-submit-runner==|When invoked with --submit --wait, always submit a runner to manage the workflow, even when only running a single CommandLineTool|
+|==--match-submitter-images==|Where Arvados has more than one Docker image of the same name, use image from the Docker instance on the submitting node.|
 |==--submit-request-uuid== UUID|Update and commit to supplied container request instead of creating a new one.|
 |==--submit-runner-cluster== CLUSTER_ID|Submit workflow runner to a remote cluster|
 |==--name NAME==|Name to use for workflow execution instance.|

@@ -36,6 +36,7 @@ class ArvRuntimeContext(RuntimeContext):
         self.cluster_target_id = 0
         self.always_submit_runner = False
         self.collection_cache_size = 256
+        self.match_local_docker = False
 
         super(ArvRuntimeContext, self).__init__(kwargs)
 

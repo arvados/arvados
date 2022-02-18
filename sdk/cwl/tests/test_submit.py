@@ -67,10 +67,10 @@ def stubs(func):
 
         stubs.keep_client = keep_client2
         stubs.docker_images = {
-            "arvados/jobs:"+arvados_cwl.__version__: [("zzzzz-4zz18-zzzzzzzzzzzzzd3", "")],
-            "debian:buster-slim": [("zzzzz-4zz18-zzzzzzzzzzzzzd4", "")],
-            "arvados/jobs:123": [("zzzzz-4zz18-zzzzzzzzzzzzzd5", "")],
-            "arvados/jobs:latest": [("zzzzz-4zz18-zzzzzzzzzzzzzd6", "")],
+            "arvados/jobs:"+arvados_cwl.__version__: [("zzzzz-4zz18-zzzzzzzzzzzzzd3", {})],
+            "debian:buster-slim": [("zzzzz-4zz18-zzzzzzzzzzzzzd4", {})],
+            "arvados/jobs:123": [("zzzzz-4zz18-zzzzzzzzzzzzzd5", {})],
+            "arvados/jobs:latest": [("zzzzz-4zz18-zzzzzzzzzzzzzd6", {})],
         }
         def kd(a, b, image_name=None, image_tag=None):
             return stubs.docker_images.get("%s:%s" % (image_name, image_tag), [])
@@ -1062,6 +1062,7 @@ class TestSubmit(unittest.TestCase):
         arvrunner.project_uuid = ""
         api.return_value = mock.MagicMock()
         arvrunner.api = api.return_value
+        arvrunner.runtimeContext.match_local_docker = False
         arvrunner.api.links().list().execute.side_effect = ({"items": [{"created_at": "",
                                                                         "head_uuid": "zzzzz-4zz18-zzzzzzzzzzzzzzb",
                                                                         "link_class": "docker_image_repo+tag",
