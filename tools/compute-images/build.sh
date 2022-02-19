@@ -33,6 +33,8 @@ Options:
       VPC id for AWS, otherwise packer will pick the default one
   --aws-subnet-id
       Subnet id for AWS otherwise packer will pick the default one for the VPC
+  --aws-ebs-autoscale (default: false)
+      Install the AWS EBS autoscaler daemon.
   --gcp-project-id (default: false, required if building for GCP)
       GCP project id
   --gcp-account-file (default: false, required if building for GCP)
@@ -62,6 +64,8 @@ Options:
   --debug (default: false)
       Output debug information
 
+For more information, see the Arvados documentation at https://doc.arvados.org/install/crunch2-cloud/install-compute-node.html
+
 EOF
 
 JSON_FILE=
@@ -71,6 +75,7 @@ AWS_SECRETS_FILE=
 AWS_SOURCE_AMI=
 AWS_VPC_ID=
 AWS_SUBNET_ID=
+AWS_EBS_AUTOSCALE=
 GCP_PROJECT_ID=
 GCP_ACCOUNT_FILE=
 GCP_ZONE=
@@ -86,7 +91,7 @@ MKSQUASHFS_MEM=256M
 NVIDIA_GPU_SUPPORT=
 
 PARSEDOPTS=$(getopt --name "$0" --longoptions \
-    help,json-file:,arvados-cluster-id:,aws-source-ami:,aws-profile:,aws-secrets-file:,aws-region:,aws-vpc-id:,aws-subnet-id:,gcp-project-id:,gcp-account-file:,gcp-zone:,azure-secrets-file:,azure-resource-group:,azure-location:,azure-sku:,azure-cloud-environment:,ssh_user:,resolver:,reposuffix:,public-key-file:,mksquashfs-mem:,nvidia-gpu-support,debug \
+    help,json-file:,arvados-cluster-id:,aws-source-ami:,aws-profile:,aws-secrets-file:,aws-region:,aws-vpc-id:,aws-subnet-id:,aws-ebs-autoscale,gcp-project-id:,gcp-account-file:,gcp-zone:,azure-secrets-file:,azure-resource-group:,azure-location:,azure-sku:,azure-cloud-environment:,ssh_user:,resolver:,reposuffix:,public-key-file:,mksquashfs-mem:,nvidia-gpu-support,debug \
     -- "" "$@")
 if [ $? -ne 0 ]; then
     exit 1
@@ -123,6 +128,9 @@ while [ $# -gt 0 ]; do
             ;;
         --aws-subnet-id)
             AWS_SUBNET_ID="$2"; shift
+            ;;
+        --aws-ebs-autoscale)
+            AWS_EBS_AUTOSCALE=1
             ;;
         --gcp-project-id)
             GCP_PROJECT_ID="$2"; shift
@@ -234,6 +242,9 @@ if [[ "$AWS_SUBNET_ID" != "" ]]; then
 fi
 if [[ "$AWS_DEFAULT_REGION" != "" ]]; then
   EXTRA2+=" -var aws_default_region=$AWS_DEFAULT_REGION"
+fi
+if [[ "$AWS_EBS_AUTOSCALE" != "" ]]; then
+  EXTRA2+=" -var aws_ebs_autoscale=$AWS_EBS_AUTOSCALE"
 fi
 if [[ "$GCP_PROJECT_ID" != "" ]]; then
   EXTRA2+=" -var project_id=$GCP_PROJECT_ID"

@@ -142,8 +142,30 @@ $SUDO chmod 700 /home/crunch/.ssh/
 if [ "x$RESOLVER" != "x" ]; then
   $SUDO sed -i "s/#prepend domain-name-servers 127.0.0.1;/prepend domain-name-servers ${RESOLVER};/" /etc/dhcp/dhclient.conf
 fi
-# Set up the cloud-init script that will ensure encrypted disks
-$SUDO mv /tmp/usr-local-bin-ensure-encrypted-partitions.sh /usr/local/bin/ensure-encrypted-partitions.sh
+
+if [ "$AWS_EBS_AUTOSCALE" != "1" ]; then
+  # Set up the cloud-init script that will ensure encrypted disks
+  $SUDO mv /tmp/usr-local-bin-ensure-encrypted-partitions.sh /usr/local/bin/ensure-encrypted-partitions.sh
+else
+  wait_for_apt_locks && $SUDO DEBIAN_FRONTEND=noninteractive apt-get -qq --yes install jq unzip
+
+  curl -s "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "/tmp/awscliv2.zip"
+  unzip -q /tmp/awscliv2.zip -d /tmp && $SUDO /tmp/aws/install
+  # Pinned to v2.4.5 because we apply a patch below
+  #export EBS_AUTOSCALE_VERSION=$(curl --silent "https://api.github.com/repos/awslabs/amazon-ebs-autoscale/releases/latest" | jq -r .tag_name)
+  export EBS_AUTOSCALE_VERSION="v2.4.5"
+  cd /opt && $SUDO git clone https://github.com/awslabs/amazon-ebs-autoscale.git
+  cd /opt/amazon-ebs-autoscale && $SUDO git checkout $EBS_AUTOSCALE_VERSION
+  cd bin
+  $SUDO patch -p1 < /tmp/create-ebs-volume-nvme.patch
+
+  # This script really requires bash and the shebang line is wrong
+  $SUDO sed -i 's|^#!/bin/sh|#!/bin/bash|' /opt/amazon-ebs-autoscale/bin/ebs-autoscale
+
+  # Set up the cloud-init script that makes use of the AWS EBS autoscaler
+  $SUDO mv /tmp/usr-local-bin-ensure-encrypted-partitions-aws-ebs-autoscale.sh /usr/local/bin/ensure-encrypted-partitions.sh
+fi
+
 $SUDO chmod 755 /usr/local/bin/ensure-encrypted-partitions.sh
 $SUDO chown root:root /usr/local/bin/ensure-encrypted-partitions.sh
 $SUDO mv /tmp/etc-cloud-cloud.cfg.d-07_compute_arvados_dispatch_cloud.cfg /etc/cloud/cloud.cfg.d/07_compute_arvados_dispatch_cloud.cfg
