@@ -5,7 +5,8 @@
     "aws_access_key": "",
     "aws_profile": "",
     "aws_secret_key": "",
-    "aws_source_ami": "ami-04d70e069399af2e9",
+    "aws_source_ami": "ami-031283ff8a43b021c",
+    "aws_ebs_autoscale": "",
     "build_environment": "aws",
     "public_key_file": "",
     "mksquashfs_mem": "",
@@ -71,12 +72,20 @@
     "destination": "/tmp/usr-local-bin-ensure-encrypted-partitions.sh"
   },{
     "type": "file",
+    "source": "scripts/usr-local-bin-ensure-encrypted-partitions-aws-ebs-autoscale.sh",
+    "destination": "/tmp/usr-local-bin-ensure-encrypted-partitions-aws-ebs-autoscale.sh"
+  },{
+    "type": "file",
+    "source": "scripts/create-ebs-volume-nvme.patch",
+    "destination": "/tmp/create-ebs-volume-nvme.patch"
+  },{
+    "type": "file",
     "source": "{{user `public_key_file`}}",
     "destination": "/tmp/crunch-authorized_keys"
   },{
     "type": "shell",
     "execute_command": "sudo -S env {{ .Vars }} /bin/bash '{{ .Path }}'",
     "script": "scripts/base.sh",
-    "environment_vars": ["RESOLVER={{user `resolver`}}","REPOSUFFIX={{user `reposuffix`}}","MKSQUASHFS_MEM={{user `mksquashfs_mem`}}"]
+    "environment_vars": ["RESOLVER={{user `resolver`}}","REPOSUFFIX={{user `reposuffix`}}","MKSQUASHFS_MEM={{user `mksquashfs_mem`}}","CLOUD=aws","AWS_EBS_AUTOSCALE={{user `aws_ebs_autoscale`}}"]
   }]
 }
