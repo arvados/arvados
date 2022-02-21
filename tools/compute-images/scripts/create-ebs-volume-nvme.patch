@@ -1,0 +1,63 @@
+# Copyright (C) The Arvados Authors. All rights reserved.
+#
+# SPDX-License-Identifier: BSD-3-Clause
+
+Make the create-ebs-volume script work with nvme devices.
+
+--- a/create-ebs-volume	2022-02-18 15:24:19.866607848 -0500
++++ b/create-ebs-volume	2022-02-18 16:23:17.931870970 -0500
+@@ -149,9 +152,20 @@
+     for letter in ${alphabet[@]}; do
+         # use /dev/xvdb* device names to avoid contention for /dev/sd* and /dev/xvda names
+         # only supported by HVM instances
+-        if [ ! -b "/dev/xvdb${letter}" ]; then
++        if [[ $created_volumes =~ .*/dev/xvdb${letter}.* ]]; then
++            continue
++        fi
+             echo "/dev/xvdb${letter}"
+             break
++    done
++}
++
++numbers=( {1..255} )
++function get_next_logical_nvme_device() {
++    for num in ${numbers[@]}; do
++        if [ ! -b "/dev/nvme${num}n1" ]; then
++            echo "/dev/nvme${num}"
++            break
+         fi
+     done
+ }
+@@ -243,10 +257,12 @@
+     
+     # check if there are available device names
+     local device=$(get_next_logical_device)
++    local nvme_device=$(get_next_logical_nvme_device)
+     if [ -z "$device" ]; then
+         error "no device names available for volume"
+     fi
+     logthis "next available device: $device"
++    logthis "next available nvme device: $nvme_device"
+ 
+     # create the volume
+     local tmpfile=$(mktemp /tmp/ebs-autoscale.create-volume.XXXXXXXXXX)
+@@ -323,8 +339,8 @@
+ 
+     logthis "waiting for volume $volume_id on filesystem"
+     while true; do
+-        if [ -e "$device" ]; then
+-            logthis "volume $volume_id on filesystem as $device"
++        if [ -e "$nvme_device" ]; then
++            logthis "volume $volume_id on filesystem as $nvme_device (aws device $device)"
+             break
+         fi
+         sleep 1
+@@ -338,7 +354,7 @@
+     > /dev/null
+     logthis "volume $volume_id DeleteOnTermination ENABLED"
+ 
+-    echo $device
++    echo "$nvme_device"n1
+ }
+ 
+ create_and_attach_volume
