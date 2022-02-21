@@ -185,7 +185,7 @@ WEBSOCKET_EXT_SSL_PORT=8002
 WORKBENCH1_EXT_SSL_PORT=443
 WORKBENCH2_EXT_SSL_PORT=3001
 
-USE_LETSENCRYPT="no"
+SSL_MODE="self-signed"
 CUSTOM_CERTS_DIR="${SCRIPT_DIR}/certs"
 
 ## These are ARVADOS-related parameters
@@ -478,18 +478,19 @@ EOFPSLS
 
 # States, extra states
 if [ -d "${F_DIR}"/extra/extra ]; then
-  if [ "$DEV_MODE" = "yes" ]; then
+  SKIP_SNAKE_OIL="snakeoil_certs"
+
+  if [[ "$DEV_MODE" = "yes" || "${SSL_MODE}" == "self-signed" ]] ; then
     # In dev mode, we create some snake oil certs that we'll
-    # use as CUSTOM_CERTS, so we don't skip the states file
+    # use as CUSTOM_CERTS, so we don't skip the states file.
+    # Same when using self-signed certificates.
     SKIP_SNAKE_OIL="dont_snakeoil_certs"
-  else
-    SKIP_SNAKE_OIL="snakeoil_certs"
   fi
   for f in $(ls "${F_DIR}"/extra/extra/*.sls | grep -v ${SKIP_SNAKE_OIL}); do
   echo "    - extra.$(basename ${f} | sed 's/.sls$//g')" >> ${S_DIR}/top.sls
   done
-  # Use custom certs
-  if [ "x${USE_LETSENCRYPT}" != "xyes" ]; then
+  # Use byo or self-signed certificates
+  if [ "${SSL_MODE}" != "lets-encrypt" ]; then
     mkdir -p "${F_DIR}"/extra/extra/files
   fi
 fi
@@ -500,8 +501,8 @@ if [ -z "${ROLES}" ]; then
   # States
   echo "    - nginx.passenger" >> ${S_DIR}/top.sls
   # Currently, only available on config_examples/multi_host/aws
-  if [ "x${USE_LETSENCRYPT}" = "xyes" ]; then
-    if [ "x${USE_LETSENCRYPT_IAM_USER}" != "xyes" ]; then
+  if [ "${SSL_MODE}" = "lets-encrypt" ]; then
+    if [ "${USE_LETSENCRYPT_IAM_USER}" != "yes" ]; then
       grep -q "aws_credentials" ${S_DIR}/top.sls || echo "    - extra.aws_credentials" >> ${S_DIR}/top.sls
     fi
     grep -q "letsencrypt"     ${S_DIR}/top.sls || echo "    - letsencrypt" >> ${S_DIR}/top.sls
@@ -534,8 +535,8 @@ if [ -z "${ROLES}" ]; then
   echo "    - postgresql" >> ${P_DIR}/top.sls
 
   # Currently, only available on config_examples/multi_host/aws
-  if [ "x${USE_LETSENCRYPT}" = "xyes" ]; then
-    if [ "x${USE_LETSENCRYPT_IAM_USER}" != "xyes" ]; then
+  if [ "${SSL_MODE}" = "lets-encrypt" ]; then
+    if [ "${USE_LETSENCRYPT_IAM_USER}" != "yes" ]; then
       grep -q "aws_credentials" ${P_DIR}/top.sls || echo "    - aws_credentials" >> ${P_DIR}/top.sls
     fi
     grep -q "letsencrypt"     ${P_DIR}/top.sls || echo "    - letsencrypt" >> ${P_DIR}/top.sls
@@ -555,6 +556,7 @@ if [ -z "${ROLES}" ]; then
     echo "extra_custom_certs:" >> ${P_DIR}/extra_custom_certs.sls
 
     for c in controller websocket workbench workbench2 webshell download collections keepproxy; do
+      copy_custom_cert ${CUSTOM_CERTS_DIR} $c
       grep -q ${c} ${P_DIR}/extra_custom_certs.sls || echo "  - ${c}" >> ${P_DIR}/extra_custom_certs.sls
 
       # As the pillar differ whether we use LE or custom certs, we need to do a final edition on them
@@ -571,7 +573,7 @@ else
   grep -q "custom_certs"    ${S_DIR}/top.sls || echo "    - extra.custom_certs" >> ${S_DIR}/top.sls
 
   # And we add the basic part for the certs pillar
-  if [ "x${USE_LETSENCRYPT}" != "xyes" ]; then
+  if [ "${SSL_MODE}" != "lets-encrypt" ]; then
     # And add the certs in the custom_certs pillar
     echo "extra_custom_certs_dir: /srv/salt/certs" > ${P_DIR}/extra_custom_certs.sls
     echo "extra_custom_certs:" >> ${P_DIR}/extra_custom_certs.sls
@@ -594,8 +596,8 @@ else
         ### If we don't install and run LE before arvados-api-server, it fails and breaks everything
         ### after it. So we add this here as we are, after all, sharing the host for api and controller
         # Currently, only available on config_examples/multi_host/aws
-        if [ "x${USE_LETSENCRYPT}" = "xyes" ]; then
-          if [ "x${USE_LETSENCRYPT_IAM_USER}" != "xyes" ]; then
+        if [ "${SSL_MODE}" = "lets-encrypt" ]; then
+          if [ "${USE_LETSENCRYPT_IAM_USER}" != "yes" ]; then
             grep -q "aws_credentials" ${S_DIR}/top.sls || echo "    - aws_credentials" >> ${S_DIR}/top.sls
           fi
           grep -q "letsencrypt" ${S_DIR}/top.sls || echo "    - letsencrypt" >> ${S_DIR}/top.sls
@@ -615,7 +617,7 @@ else
         # States
         grep -q "nginx.passenger" ${S_DIR}/top.sls || echo "    - nginx.passenger" >> ${S_DIR}/top.sls
         # Currently, only available on config_examples/multi_host/aws
-        if [ "x${USE_LETSENCRYPT}" = "xyes" ]; then
+        if [ "${SSL_MODE}" = "lets-encrypt" ]; then
           if [ "x${USE_LETSENCRYPT_IAM_USER}" != "xyes" ]; then
             grep -q "aws_credentials" ${S_DIR}/top.sls || echo "    - aws_credentials" >> ${S_DIR}/top.sls
           fi
@@ -643,8 +645,8 @@ else
         fi
 
         # Currently, only available on config_examples/multi_host/aws
-        if [ "x${USE_LETSENCRYPT}" = "xyes" ]; then
-          if [ "x${USE_LETSENCRYPT_IAM_USER}" != "xyes" ]; then
+        if [ "${SSL_MODE}" = "lets-encrypt" ]; then
+          if [ "${USE_LETSENCRYPT_IAM_USER}" != "yes" ]; then
             grep -q "aws_credentials" ${P_DIR}/top.sls || echo "    - aws_credentials" >> ${P_DIR}/top.sls
           fi
           grep -q "letsencrypt"     ${P_DIR}/top.sls || echo "    - letsencrypt" >> ${P_DIR}/top.sls

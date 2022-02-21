@@ -9,6 +9,8 @@ Copyright (C) The Arvados Authors. All rights reserved.
 SPDX-License-Identifier: CC-BY-SA-3.0
 {% endcomment %}
 
+# "Limitations of the single host install":#limitations
+# "Prerequisites":#prerequisites
 # "Single host install using the provision.sh script":#single_host
 # "Choose the desired configuration":#choose_configuration
 ## "Single host / single hostname":#single_host_single_hostnames
@@ -22,15 +24,44 @@ SPDX-License-Identifier: CC-BY-SA-3.0
 # "Test the installed cluster running a simple workflow":#test_install
 # "After the installation":#post_install
 
-h2(#single_host). Single host install using the provision.sh script
+h2(#limitations). Limitations of the single host install
 
-<b>NOTE: The single host installation is not recommended for production use.</b>
+<b>NOTE: The single host installation is a good choice when evaluating Arvados, but it is not recommended for production use.</b>
+
+Using the default configuration, this installation method has a number of limitations:
+
+* all services run on the same machine, and they will compete for resources.
+* it uses the local machine disk for Keep storage (under the @/tmp@ directory).
+* it installs the @crunch-dispatch-local@ dispatcher, which can run just one concurrent CWL job. This job will be executed on the machine that runs all the Arvados services. Most workflows require at least two concurrent CWL jobs, one for the workflow runner, and one for the payload.
+
+It is possible to start with the single host installation method and modify the Arvados configuration file later to address these limitations. E.g. switch to a "different storage volume setup":{{site.baseurl}}/install/configure-s3-object-storage.html for Keep, and switch to "the cloud dispatcher":{{site.baseurl}}/install/crunch2-cloud/install-dispatch-cloud.html to provision compute resources dynamically.
+
+h2(#prerequisites). Prerequisites and planning
+
+Arvados requires SSL for (almost) all network traffic. This installation method supports the following options for the required SSL certificate(s): @self-signed@ and @bring your own certificates@.
+
+Prerequisites
+
+* git
+* a dedicated (virtual) machine for your Arvados server with at least 2 cores and 8 GiB of RAM, running a "supported Arvados distribution":{{site.baseurl}}/install/install-manual-prerequisites.html#supportedlinux
+* ports 9443-9445, 11002, 14202, 18002, 35101 need to be reachable from your client (configurable, see below)
+* at least one DNS hostname that resolves to the IP address of your Arvados server
+* one or more SSL certificates matching the hostname(s) in use (only when using @bring your own certificates@)
+
+h2(#single_host). Single host install using the provision.sh script
 
 {% include 'branchname' %}
 
-This is a package-based installation method. Start with the @provision.sh@ script which is available by cloning the @{{ branchname }}@ branch from "https://git.arvados.org/arvados.git":https://git.arvados.org/arvados.git .  The @provision.sh@ script and its supporting files can be found in the "arvados/tools/salt-install":https://git.arvados.org/arvados.git/tree/refs/heads/{{ branchname }}:/tools/salt-install directory in the Arvados git repository.
-
 This procedure will install all the main Arvados components to get you up and running in a single host. The whole installation procedure takes somewhere between 15 to 60 minutes, depending on the host resources and its network bandwidth. As a reference, on a virtual machine with 1 core and 1 GB RAM, it takes ~25 minutes to do the initial install.
+
+This is a package-based installation method, however the installation script is currently distributed in source form via @git@:
+
+<notextile>
+<pre><code>git clone https://git.arvados.org/arvados.git
+git checkout {{ branchname }}
+cd arvados/tools/salt-install
+</code></pre>
+</notextile>
 
 The @provision.sh@ script will help you deploy Arvados by preparing your environment to be able to run the installer, then running it. The actual installer is located at "arvados-formula":https://git.arvados.org/arvados-formula.git/tree/refs/heads/{{ branchname }} and will be cloned during the running of the @provision.sh@ script.  The installer is built using "Saltstack":https://saltproject.io/ and @provision.sh@ performs the install using master-less mode.
 
@@ -58,10 +89,6 @@ Edit the variables in the <i>local.params</i> file. Pay attention to the <b>*_PO
 
 The <i>single_host</i> examples use self-signed SSL certificates, which are deployed using the same mechanism used to deploy custom certificates.
 
-{% include 'install_custom_certificates' %}
-
-If you want to use valid certificates provided by Let's Encrypt, please set the variable <i>USE_LETSENCRYPT=yes</i> and make sure that all the FQDNs that you will use for the public-facing applications (API/controller, Workbench, Keepproxy/Keepweb) are reachable.
-
 h3(#single_host_multiple_hostnames). Single host / multiple hostnames (Alternative configuration)
 <notextile>
 <pre><code>cp local.params.example.single_host_multiple_hostnames local.params
@@ -70,6 +97,8 @@ cp -r config_examples/single_host/multiple_hostnames local_config_dir
 </notextile>
 
 Edit the variables in the <i>local.params</i> file.
+
+{% include 'install_custom_certificates' %}
 
 h3(#further_customization). Further customization of the installation (modifying the salt pillars and states)
 
@@ -81,7 +110,7 @@ When you finished customizing the configuration, you are ready to copy the files
 
 <notextile>
 <pre><code>scp -r provision.sh local* tests user@host:
-# if you use custom certificates (not Let's Encrypt), make sure to copy those too:
+# if you are using bring-your-own certificates, make sure to copy those too:
 # scp -r certs user@host:
 ssh user@host sudo ./provision.sh
 </code></pre>
@@ -109,7 +138,7 @@ h2(#final_steps). Final configuration steps
 
 Once the deployment went OK, you'll need to perform a few extra steps in your local browser/host to access the cluster.
 
-h3(#ca_root_certificate). Install the CA root certificate (required in both alternatives)
+h3(#ca_root_certificate). Install the CA root certificate (SSL_MODE=self-signed only)
 
 Arvados uses SSL to encrypt communications. Its UI uses AJAX which will silently fail if the certificate is not valid or signed by an unknown Certification Authority.
 
