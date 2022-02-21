@@ -100,6 +100,8 @@ The <i>multi_host</i> example includes Let's Encrypt salt code to automatically 
 
 {% include 'install_custom_certificates' %}
 
+If you want to use valid certificates provided by Let's Encrypt, set the variable <i>SSL_MODE=lets-encrypt</i> and make sure that all the FQDNs that you will use for the public-facing applications (API/controller, Workbench, Keepproxy/Keepweb) are reachable.
+
 h3(#further_customization). Further customization of the installation (modifying the salt pillars and states)
 
 You will need further customization to suit your environment, which can be done editing the Saltstack pillars and states files. Pay particular attention to the <i>pillars/arvados.sls</i> file, where you will need to provide some information that describes your environment.

@@ -49,16 +49,12 @@ WORKBENCH_SECRET_KEY=workbenchsecretkeymushaveatleast32characters
 DATABASE_PASSWORD=please_set_this_to_some_secure_value
 
 # SSL CERTIFICATES
-# Arvados REQUIRES valid SSL to work correctly. Otherwise, some components will
-# fail to communicate and can silently drop traffic. Set USE_LETSENCRYPT="yes"
-# to use the Let's Encrypt salt formula
-# (https://github.com/saltstack-formulas/letsencrypt-formula) to automatically
-# obtain and install SSL certificates for your hostname(s).
+# Arvados requires SSL certificates to work correctly. This installer supports these options:
+# * self-signed: let the installer create self-signed certificate(s)
+# * bring-your-own: supply your own certificate(s) in the `certs` directory
 #
-# Alternatively, set this variable to "no" and provide and upload your own
-# certificates to the instances and modify the 'nginx_*' salt pillars
-# accordingly
-USE_LETSENCRYPT="no"
+# See https://doc.arvados.org/intall/salt-single-host.html#certificates for more information.
+SSL_MODE="self-signed"
 
 # The directory to check for the config files (pillars, states) you want to use.
 # There are a few examples under 'config_examples'.

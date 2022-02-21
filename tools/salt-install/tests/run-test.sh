@@ -69,4 +69,4 @@ echo "Switching to user '__INITIAL_USER__'"
 export ARVADOS_API_TOKEN="${user_api_token}"
 
 echo "Running test CWL workflow"
-cwl-runner --debug hasher-workflow.cwl hasher-workflow-job.yml
+cwl-runner --local --debug hasher-workflow.cwl hasher-workflow-job.yml
