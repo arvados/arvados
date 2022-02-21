@@ -187,7 +187,7 @@ while [ $# -gt 0 ]; do
 done
 
 
-if [[ "$JSON_FILE" == "" ]] || [[ ! -f "$JSON_FILE" ]]; then
+if [[ -z "$JSON_FILE" ]] || [[ ! -f "$JSON_FILE" ]]; then
   echo >&2 "$helpmessage"
   echo >&2
   echo >&2 "ERROR: packer json file not found"
@@ -203,7 +203,7 @@ if [[ -z "$ARVADOS_CLUSTER_ID" ]]; then
   exit 1
 fi
 
-if [[ "$PUBLIC_KEY_FILE" == "" ]] || [[ ! -f "$PUBLIC_KEY_FILE" ]]; then
+if [[ -z "$PUBLIC_KEY_FILE" ]] || [[ ! -f "$PUBLIC_KEY_FILE" ]]; then
   echo >&2 "$helpmessage"
   echo >&2
   echo >&2 "ERROR: public key file file not found"
@@ -222,61 +222,60 @@ fi
 
 EXTRA2=""
 
-if [[ "$AWS_SOURCE_AMI" != "" ]]; then
+if [[ -n "$AWS_SOURCE_AMI" ]]; then
   EXTRA2+=" -var aws_source_ami=$AWS_SOURCE_AMI"
 fi
-if [[ "$AWS_PROFILE" != "" ]]; then
+if [[ -n "$AWS_PROFILE" ]]; then
   EXTRA2+=" -var aws_profile=$AWS_PROFILE"
 fi
-if [[ "$AWS_VPC_ID" != "" ]]; then
+if [[ -n "$AWS_VPC_ID" ]]; then
   EXTRA2+=" -var vpc_id=$AWS_VPC_ID -var associate_public_ip_address=true "
 fi
-if [[ "$AWS_SUBNET_ID" != "" ]]; then
+if [[ -n "$AWS_SUBNET_ID" ]]; then
   EXTRA2+=" -var subnet_id=$AWS_SUBNET_ID -var associate_public_ip_address=true "
 fi
-if [[ "$AWS_DEFAULT_REGION" != "" ]]; then
+if [[ -n "$AWS_DEFAULT_REGION" ]]; then
   EXTRA2+=" -var aws_default_region=$AWS_DEFAULT_REGION"
 fi
-if [[ "$AWS_EBS_AUTOSCALE" != "" ]]; then
+if [[ -n "$AWS_EBS_AUTOSCALE" ]]; then
   EXTRA2+=" -var aws_ebs_autoscale=$AWS_EBS_AUTOSCALE"
 fi
-if [[ "$GCP_PROJECT_ID" != "" ]]; then
+if [[ -n "$GCP_PROJECT_ID" ]]; then
   EXTRA2+=" -var project_id=$GCP_PROJECT_ID"
 fi
-if [[ "$GCP_ACCOUNT_FILE" != "" ]]; then
+if [[ -n "$GCP_ACCOUNT_FILE" ]]; then
   EXTRA2+=" -var account_file=$GCP_ACCOUNT_FILE"
 fi
-if [[ "$GCP_ZONE" != "" ]]; then
+if [[ -n "$GCP_ZONE" ]]; then
   EXTRA2+=" -var zone=$GCP_ZONE"
 fi
-if [[ "$AZURE_RESOURCE_GROUP" != "" ]]; then
+if [[ -n "$AZURE_RESOURCE_GROUP" ]]; then
   EXTRA2+=" -var resource_group=$AZURE_RESOURCE_GROUP"
 fi
-if [[ "$AZURE_LOCATION" != "" ]]; then
+if [[ -n "$AZURE_LOCATION" ]]; then
   EXTRA2+=" -var location=$AZURE_LOCATION"
 fi
-if [[ "$AZURE_SKU" != "" ]]; then
+if [[ -n "$AZURE_SKU" ]]; then
   EXTRA2+=" -var image_sku=$AZURE_SKU"
 fi
-if [[ "$AZURE_CLOUD_ENVIRONMENT" != "" ]]; then
+if [[ -n "$AZURE_CLOUD_ENVIRONMENT" ]]; then
   EXTRA2+=" -var cloud_environment_name=$AZURE_CLOUD_ENVIRONMENT"
 fi
-if [[ "$SSH_USER" != "" ]]; then
+if [[ -n "$SSH_USER" ]]; then
   EXTRA2+=" -var ssh_user=$SSH_USER"
 fi
-if [[ "$RESOLVER" != "" ]]; then
+if [[ -n "$RESOLVER" ]]; then
   EXTRA2+=" -var resolver=$RESOLVER"
 fi
-if [[ "$REPOSUFFIX" != "" ]]; then
+if [[ -n "$REPOSUFFIX" ]]; then
   EXTRA2+=" -var reposuffix=$REPOSUFFIX"
 fi
-if [[ "$PUBLIC_KEY_FILE" != "" ]]; then
+if [[ -n "$PUBLIC_KEY_FILE" ]]; then
   EXTRA2+=" -var public_key_file=$PUBLIC_KEY_FILE"
 fi
-if [[ "$MKSQUASHFS_MEM" != "" ]]; then
+if [[ -n "$MKSQUASHFS_MEM" ]]; then
   EXTRA2+=" -var mksquashfs_mem=$MKSQUASHFS_MEM"
 fi
-
 
 echo
 packer version
