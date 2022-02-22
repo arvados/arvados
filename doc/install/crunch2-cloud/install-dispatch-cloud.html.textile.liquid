@@ -120,6 +120,32 @@ The <span class="userinput">ImageID</span> value is the compute node image that 
 </code></pre>
 </notextile>
 
+Example policy for the IAM role used by the cloud dispatcher:
+
+<notextile>
+<pre>
+{
+    "Version": "2012-10-17",
+    "Id": "arvados-dispatch-cloud policy",
+    "Statement": [
+        {
+            "Effect": "Allow",
+            "Action": [
+                "iam:PassRole",
+                "ec2:DescribeKeyPairs",
+                "ec2:ImportKeyPair",
+                "ec2:RunInstances",
+                "ec2:DescribeInstances",
+                "ec2:CreateTags",
+                "ec2:TerminateInstances"
+            ],
+            "Resource": "*"
+        }
+    ]
+}
+</pre>
+</notextile>
+
 h4. Minimal configuration example for Azure
 
 Using managed disks:

@@ -17,8 +17,11 @@ SPDX-License-Identifier: CC-BY-SA-3.0
 # "Create an SSH keypair":#sshkeypair
 # "Compute image requirements":#requirements
 # "The build script":#building
+# "DNS resolution":#dns-resolution
+# "NVIDIA GPU support":#nvidia
 # "Singularity mksquashfs configuration":#singularity_mksquashfs_configuration
 # "Build an AWS image":#aws
+## "Autoscaling compute node scratch space":#aws-ebs-autoscaler
 # "Build an Azure image":#azure
 
 h2(#introduction). Introduction
@@ -55,12 +58,6 @@ foktmqOY8MyctzFgXBpGTxPliGjqo8OkrOyQP2g+FL7v+Km31Xs61P8=
 -----END RSA PRIVATE KEY-----
 </code></pre>
 </notextile>
-
-{% assign show_docker_warning = true %}
-
-{% include 'singularity_mksquashfs_configuration' %}
-
-The desired amount of memory to make available for @mksquashfs@ can be configured in an argument to "the build script":#building. It defaults to @256M@.
 
 h2(#requirements). Compute image requirements
 
@@ -101,6 +98,8 @@ Options:
       VPC id for AWS, otherwise packer will pick the default one
   --aws-subnet-id
       Subnet id for AWS otherwise packer will pick the default one for the VPC
+  --aws-ebs-autoscale (default: false)
+      Install the AWS EBS autoscaler daemon.
   --gcp-project-id (default: false, required if building for GCP)
       GCP project id
   --gcp-account-file (default: false, required if building for GCP)
@@ -131,9 +130,28 @@ Options:
       Output debug information
 </code></pre></notextile>
 
-h2(#building). NVIDIA GPU support
+h2(#dns-resolution). DNS resolution
+
+Compute nodes must be able to resolve the hostnames of the API server and any keepstore servers to your internal IP addresses. You can do this by running an internal DNS resolver. The IP address of the resolver should be passed as the value for the @--resolver@ argument to "the build script":#building.
+
+Alternatively, the services could be hardcoded into an @/etc/hosts@ file. For example:
+
+<notextile><pre><code>10.20.30.40     <span class="userinput">ClusterID.example.com</span>
+10.20.30.41     <span class="userinput">keep1.ClusterID.example.com</span>
+10.20.30.42     <span class="userinput">keep2.ClusterID.example.com</span>
+</code></pre></notextile>
+
+Adding these lines to the @/etc/hosts@ file in the compute node image could be done with a small change to the Packer template and the @scripts/base.sh@ script, which will be left as an exercise for the reader.
+
+h2(#nvidia). NVIDIA GPU support
 
 If you plan on using instance types with NVIDIA GPUs, add @--nvidia-gpu-support@ to the build command line.  Arvados uses the same compute image for both GPU and non-GPU instance types.  The GPU tooling is ignored when using the image with a non-GPU instance type.
+
+{% assign show_docker_warning = true %}
+
+{% include 'singularity_mksquashfs_configuration' %}
+
+The desired amount of memory to make available for @mksquashfs@ can be configured in an argument to "the build script":#building. It defaults to @256M@.
 
 h2(#aws). Build an AWS image
 
@@ -155,16 +173,84 @@ For @ClusterID@, fill in your cluster ID. The @VPC@ and @Subnet@ should be confi
 
 @ArvadosDispatchCloudPublicKeyPath@ should be replaced with the path to the ssh *public* key file generated in "Create an SSH keypair":#sshkeypair, above.
 
-Compute nodes must be able to resolve the hostnames of the API server and any keepstore servers to your internal IP addresses. You can do this by running an internal DNS resolver. The IP address of the resolver should replace the string @ResolverIP@ in the command above.
+h3(#aws-ebs-autoscaler). Autoscaling compute node scratch space
 
-Alternatively, the services could be hardcoded into an @/etc/hosts@ file. For example:
+If you want to add the "AWS EBS autoscaler":https://github.com/awslabs/amazon-ebs-autoscale daemon in your images, add the @--aws-ebs-autoscale@ flag to the "the build script":#building. Doing so will make the compute image scratch space scale automatically as needed.
 
-<notextile><pre><code>10.20.30.40     <span class="userinput">ClusterID.example.com</span>
-10.20.30.41     <span class="userinput">keep1.ClusterID.example.com</span>
-10.20.30.42     <span class="userinput">keep2.ClusterID.example.com</span>
+The AWS EBS autoscaler daemon will be installed with this configuration:
+
+<notextile><pre><code>{
+    "mountpoint": "/tmp",
+    "filesystem": "lvm.ext4",
+    "lvm": {
+      "volume_group": "autoscale_vg",
+      "logical_volume": "autoscale_lv"
+    },
+    "volume": {
+        "type": "gp3",
+        "iops": 3000,
+        "encrypted": 1
+    },
+    "detection_interval": 2,
+    "limits": {
+        "max_ebs_volume_size": 1500,
+        "max_logical_volume_size": 8000,
+        "max_ebs_volume_count": 16
+    },
+    "logging": {
+        "log_file": "/var/log/ebs-autoscale.log",
+        "log_interval": 300
+    }
+}
 </code></pre></notextile>
 
-Adding these lines to the @/etc/hosts@ file in the compute node image could be done with a small change to the Packer template and the @scripts/base.sh@ script, which will be left as an exercise for the reader.
+Changing the configuration is left as an exercise for the reader.
+
+Using this feature also requires a few Arvados configuration changes in @config.yml@:
+
+* The @Containers/InstanceTypes@ list should be modified so that all @AddedScratch@ lines are removed, and the @IncludedScratch@ value should be set to a (fictional) high number. This way, the scratch space requirements will be met by all the defined instance type. For example:
+
+<notextile><pre><code>    InstanceTypes:
+      c5large:
+        ProviderType: c5.large
+        VCPUs: 2
+        RAM: 4GiB
+        IncludedScratch: 16TB
+        Price: 0.085
+      m5large:
+        ProviderType: m5.large
+        VCPUs: 2
+        RAM: 8GiB
+        IncludedScratch: 16TB
+        Price: 0.096
+...
+</code></pre></notextile>
+
+* You will also need to create an IAM role in AWS with these permissions:
+
+<notextile><pre><code>{
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Effect": "Allow",
+            "Action": [
+                "ec2:AttachVolume",
+                "ec2:DescribeVolumeStatus",
+                "ec2:DescribeVolumes",
+                "ec2:DescribeTags",
+                "ec2:ModifyInstanceAttribute",
+                "ec2:DescribeVolumeAttribute",
+                "ec2:CreateVolume",
+                "ec2:DeleteVolume",
+                "ec2:CreateTags"
+            ],
+            "Resource": "*"
+        }
+    ]
+}
+</code></pre></notextile>
+
+Then, in @config.yml@ set @Containers/CloudVMs/DriverParameters/IAMInstanceProfile@ to the name of the IAM role. This will make @arvados-dispatch-cloud@ pass an IAMInstanceProfile to the compute nodes as they start up, giving them sufficient permissions to attach and grow EBS volumes.
 
 h2(#azure). Build an Azure image
 
@@ -195,14 +281,3 @@ These secrets can be generated from the Azure portal, or with the cli using a co
 </code></pre></notextile>
 
 @ArvadosDispatchCloudPublicKeyPath@ should be replaced with the path to the ssh *public* key file generated in "Create an SSH keypair":#sshkeypair, above.
-
-Compute nodes must be able to resolve the hostnames of the API server and any keepstore servers to your internal IP addresses. You can do this by running an internal DNS resolver. The IP address of the resolver should replace the string @ResolverIP@ in the command above.
-
-Alternatively, the services could be hardcoded into an @/etc/hosts@ file. For example:
-
-<notextile><pre><code>10.20.30.40     <span class="userinput">ClusterID.example.com</span>
-10.20.30.41     <span class="userinput">keep1.ClusterID.example.com</span>
-10.20.30.42     <span class="userinput">keep2.ClusterID.example.com</span>
-</code></pre></notextile>
-
-Adding these lines to the @/etc/hosts@ file in the compute node image could be done with a small change to the Packer template and the @scripts/base.sh@ script, which will be left as an exercise for the reader.

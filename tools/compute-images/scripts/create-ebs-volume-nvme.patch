@@ -1,0 +1,49 @@
+# Copyright (C) The Arvados Authors. All rights reserved.
+#
+# SPDX-License-Identifier: BSD-3-Clause
+
+Make the create-ebs-volume script work with nvme devices.
+
+diff --git a/bin/create-ebs-volume b/bin/create-ebs-volume
+index 6857564..e3122fa 100755
+--- a/bin/create-ebs-volume
++++ b/bin/create-ebs-volume
+@@ -149,10 +149,11 @@ function get_next_logical_device() {
+     for letter in ${alphabet[@]}; do
+         # use /dev/xvdb* device names to avoid contention for /dev/sd* and /dev/xvda names
+         # only supported by HVM instances
+-        if [ ! -b "/dev/xvdb${letter}" ]; then
++        if [[ $created_volumes =~ .*/dev/xvdb${letter}.* ]]; then
++            continue
++        fi
+             echo "/dev/xvdb${letter}"
+             break
+-        fi
+     done
+ }
+ 
+@@ -323,8 +324,13 @@ function create_and_attach_volume() {
+ 
+     logthis "waiting for volume $volume_id on filesystem"
+     while true; do
+-        if [ -e "$device" ]; then
+-            logthis "volume $volume_id on filesystem as $device"
++        # AWS returns e.g. vol-00338247831716a7b4, the kernel changes that to vol00338247831716a7b
++        valid_volume_id=`echo $volume_id |sed -e 's/[^a-zA-Z0-9]//'`
++        # example lsblk output:
++        # nvme4n1                     259:7    0  150G  0 disk            vol00338247831716a7b
++        if LSBLK=`lsblk -o NAME,SERIAL |grep $valid_volume_id`; then
++            nvme_device=/dev/`echo $LSBLK|cut -f1 -d' '`
++            logthis "volume $volume_id on filesystem as $nvme_device (aws device $device)"
+             break
+         fi
+         sleep 1
+@@ -338,7 +344,7 @@ function create_and_attach_volume() {
+     > /dev/null
+     logthis "volume $volume_id DeleteOnTermination ENABLED"
+ 
+-    echo $device
++    echo "$nvme_device"
+ }
+ 
+ create_and_attach_volume
