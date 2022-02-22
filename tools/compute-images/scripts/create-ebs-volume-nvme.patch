@@ -4,9 +4,11 @@
 
 Make the create-ebs-volume script work with nvme devices.
 
---- a/create-ebs-volume	2022-02-18 15:24:19.866607848 -0500
-+++ b/create-ebs-volume	2022-02-18 16:23:17.931870970 -0500
-@@ -149,9 +152,20 @@
+diff --git a/bin/create-ebs-volume b/bin/create-ebs-volume
+index 6857564..efeac35 100755
+--- a/create-ebs-volume
++++ b/create-ebs-volume
+@@ -149,10 +149,11 @@ function get_next_logical_device() {
      for letter in ${alphabet[@]}; do
          # use /dev/xvdb* device names to avoid contention for /dev/sd* and /dev/xvda names
          # only supported by HVM instances
@@ -16,48 +18,40 @@ Make the create-ebs-volume script work with nvme devices.
 +        fi
              echo "/dev/xvdb${letter}"
              break
-+    done
-+}
-+
-+numbers=( {1..255} )
-+function get_next_logical_nvme_device() {
-+    for num in ${numbers[@]}; do
-+        if [ ! -b "/dev/nvme${num}n1" ]; then
-+            echo "/dev/nvme${num}"
-+            break
-         fi
+-        fi
      done
  }
-@@ -243,10 +257,12 @@
-     
-     # check if there are available device names
-     local device=$(get_next_logical_device)
-+    local nvme_device=$(get_next_logical_nvme_device)
-     if [ -z "$device" ]; then
-         error "no device names available for volume"
-     fi
-     logthis "next available device: $device"
-+    logthis "next available nvme device: $nvme_device"
  
-     # create the volume
-     local tmpfile=$(mktemp /tmp/ebs-autoscale.create-volume.XXXXXXXXXX)
-@@ -323,8 +339,8 @@
+@@ -322,13 +323,21 @@ function create_and_attach_volume() {
+     set -e
  
      logthis "waiting for volume $volume_id on filesystem"
++    set +e
      while true; do
 -        if [ -e "$device" ]; then
 -            logthis "volume $volume_id on filesystem as $device"
-+        if [ -e "$nvme_device" ]; then
++        # AWS returns e.g. vol-00338247831716a7b4, the kernel changes that to vol00338247831716a7b
++        valid_volume_id=`echo $volume_id |sed -e 's/[^a-zA-Z0-9]//'`
++        # example lsblk output:
++        # nvme4n1                     259:7    0  150G  0 disk            vol00338247831716a7b
++        LSBLK=`lsblk -o +SERIAL |grep $valid_volume_id`
++        if [[ $? -eq 0 ]]; then
++            nvme_device=`echo $LSBLK|cut -f1 -d' '|xargs -I {} echo "/dev/{}"`
 +            logthis "volume $volume_id on filesystem as $nvme_device (aws device $device)"
              break
          fi
          sleep 1
-@@ -338,7 +354,7 @@
+     done
++    set -e
+ 
+     # set volume delete on termination
+     aws ec2 modify-instance-attribute \
+@@ -338,7 +347,7 @@ function create_and_attach_volume() {
      > /dev/null
      logthis "volume $volume_id DeleteOnTermination ENABLED"
  
 -    echo $device
-+    echo "$nvme_device"n1
++    echo "$nvme_device"
  }
  
  create_and_attach_volume
