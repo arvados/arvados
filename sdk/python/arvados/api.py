@@ -253,6 +253,7 @@ def api(version=None, cache=True, host=None, token=None, insecure=False,
     svc.insecure = insecure
     svc.request_id = request_id
     svc.config = lambda: util.get_config_once(svc)
+    svc.vocabulary = lambda: util.get_vocabulary_once(svc)
     kwargs['http'].max_request_size = svc._rootDesc.get('maxRequestSize', 0)
     kwargs['http'].cache = None
     kwargs['http']._request_id = lambda: svc.request_id or util.new_request_id()
