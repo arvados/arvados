@@ -47,7 +47,7 @@ type ec2InstanceSetConfig struct {
 	SubnetID           string
 	AdminUsername      string
 	EBSVolumeType      string
-	IamInstanceProfile string
+	IAMInstanceProfile string
 }
 
 type ec2Interface interface {
@@ -231,9 +231,9 @@ func (instanceSet *ec2InstanceSet) Create(
 			}}
 	}
 
-	if instanceSet.ec2config.IamInstanceProfile != "" {
+	if instanceSet.ec2config.IAMInstanceProfile != "" {
 		rii.IamInstanceProfile = &ec2.IamInstanceProfileSpecification{
-			Name: aws.String(instanceSet.ec2config.IamInstanceProfile),
+			Name: aws.String(instanceSet.ec2config.IAMInstanceProfile),
 		}
 	}
 

@@ -175,7 +175,40 @@ For @ClusterID@, fill in your cluster ID. The @VPC@ and @Subnet@ should be confi
 
 h3(#aws-ebs-autoscaler). Autoscaling compute node scratch space
 
-If you want to add the AWS EBS autoscaler daemon in your images, add the @--aws-ebs-autoscale@ flag to the "the build script":#building. Doing so will make the compute image scratch space scale automatically as needed. The @Containers/InstanceTypes@ list should be modified so that all @AddedScratch@ lines are removed, and the @IncludedScratch@ value should be set to a (fictional) high number. This way, the scratch space requirements will be met by all the defined instance type. For example:
+If you want to add the "AWS EBS autoscaler":https://github.com/awslabs/amazon-ebs-autoscale daemon in your images, add the @--aws-ebs-autoscale@ flag to the "the build script":#building. Doing so will make the compute image scratch space scale automatically as needed.
+
+The AWS EBS autoscaler daemon will be installed with this configuration:
+
+<notextile><pre><code>{
+    "mountpoint": "/tmp",
+    "filesystem": "lvm.ext4",
+    "lvm": {
+      "volume_group": "autoscale_vg",
+      "logical_volume": "autoscale_lv"
+    },
+    "volume": {
+        "type": "gp3",
+        "iops": 3000,
+        "encrypted": 1
+    },
+    "detection_interval": 2,
+    "limits": {
+        "max_ebs_volume_size": 1500,
+        "max_logical_volume_size": 8000,
+        "max_ebs_volume_count": 16
+    },
+    "logging": {
+        "log_file": "/var/log/ebs-autoscale.log",
+        "log_interval": 300
+    }
+}
+</code></pre></notextile>
+
+Changing the configuration is left as an exercise for the reader.
+
+Using this feature also requires a few Arvados configuration changes in @config.yml@:
+
+* The @Containers/InstanceTypes@ list should be modified so that all @AddedScratch@ lines are removed, and the @IncludedScratch@ value should be set to a (fictional) high number. This way, the scratch space requirements will be met by all the defined instance type. For example:
 
 <notextile><pre><code>    InstanceTypes:
       c5large:
@@ -192,6 +225,32 @@ If you want to add the AWS EBS autoscaler daemon in your images, add the @--aws-
         Price: 0.096
 ...
 </code></pre></notextile>
+
+* You will also need to create an IAM role in AWS with these permissions:
+
+<notextile><pre><code>{
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Effect": "Allow",
+            "Action": [
+                "ec2:AttachVolume",
+                "ec2:DescribeVolumeStatus",
+                "ec2:DescribeVolumes",
+                "ec2:DescribeTags",
+                "ec2:ModifyInstanceAttribute",
+                "ec2:DescribeVolumeAttribute",
+                "ec2:CreateVolume",
+                "ec2:DeleteVolume",
+                "ec2:CreateTags"
+            ],
+            "Resource": "*"
+        }
+    ]
+}
+</code></pre></notextile>
+
+Then, in @config.yml@ set @Containers/CloudVMs/DriverParameters/IAMInstanceProfile@ to the name of the IAM role. This will make @arvados-dispatch-cloud@ pass an IAMInstanceProfile to the compute nodes as they start up, giving them sufficient permissions to attach and grow EBS volumes.
 
 h2(#azure). Build an Azure image
 
