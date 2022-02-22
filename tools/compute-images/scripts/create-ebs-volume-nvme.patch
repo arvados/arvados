@@ -5,9 +5,9 @@
 Make the create-ebs-volume script work with nvme devices.
 
 diff --git a/bin/create-ebs-volume b/bin/create-ebs-volume
-index 6857564..efeac35 100755
---- a/create-ebs-volume
-+++ b/create-ebs-volume
+index 6857564..e3122fa 100755
+--- a/bin/create-ebs-volume
++++ b/bin/create-ebs-volume
 @@ -149,10 +149,11 @@ function get_next_logical_device() {
      for letter in ${alphabet[@]}; do
          # use /dev/xvdb* device names to avoid contention for /dev/sd* and /dev/xvda names
@@ -22,11 +22,9 @@ index 6857564..efeac35 100755
      done
  }
  
-@@ -322,13 +323,21 @@ function create_and_attach_volume() {
-     set -e
+@@ -323,8 +324,13 @@ function create_and_attach_volume() {
  
      logthis "waiting for volume $volume_id on filesystem"
-+    set +e
      while true; do
 -        if [ -e "$device" ]; then
 -            logthis "volume $volume_id on filesystem as $device"
@@ -34,19 +32,13 @@ index 6857564..efeac35 100755
 +        valid_volume_id=`echo $volume_id |sed -e 's/[^a-zA-Z0-9]//'`
 +        # example lsblk output:
 +        # nvme4n1                     259:7    0  150G  0 disk            vol00338247831716a7b
-+        LSBLK=`lsblk -o +SERIAL |grep $valid_volume_id`
-+        if [[ $? -eq 0 ]]; then
-+            nvme_device=`echo $LSBLK|cut -f1 -d' '|xargs -I {} echo "/dev/{}"`
++        if LSBLK=`lsblk -o NAME,SERIAL |grep $valid_volume_id`; then
++            nvme_device=/dev/`echo $LSBLK|cut -f1 -d' '`
 +            logthis "volume $volume_id on filesystem as $nvme_device (aws device $device)"
              break
          fi
          sleep 1
-     done
-+    set -e
- 
-     # set volume delete on termination
-     aws ec2 modify-instance-attribute \
-@@ -338,7 +347,7 @@ function create_and_attach_volume() {
+@@ -338,7 +344,7 @@ function create_and_attach_volume() {
      > /dev/null
      logthis "volume $volume_id DeleteOnTermination ENABLED"
  
