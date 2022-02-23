@@ -4,6 +4,8 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
+set -eu -o pipefail
+
 SUDO=sudo
 
 wait_for_apt_locks() {
