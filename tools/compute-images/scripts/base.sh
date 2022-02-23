@@ -156,7 +156,6 @@ else
   export EBS_AUTOSCALE_VERSION="v2.4.5"
   cd /opt && $SUDO git clone https://github.com/awslabs/amazon-ebs-autoscale.git
   cd /opt/amazon-ebs-autoscale && $SUDO git checkout $EBS_AUTOSCALE_VERSION
-  cd bin
   $SUDO patch -p1 < /tmp/create-ebs-volume-nvme.patch
 
   # This script really requires bash and the shebang line is wrong
