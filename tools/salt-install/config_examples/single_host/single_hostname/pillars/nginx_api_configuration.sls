@@ -13,7 +13,7 @@ nginx:
   ### SITES
   servers:
     managed:
-      arvados_api:
+      arvados_api.conf:
         enabled: true
         overwrite: true
         config:

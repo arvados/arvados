@@ -65,7 +65,7 @@ DATABASE_PASSWORD=please_set_this_to_some_secure_value
 #
 # See https://doc.arvados.org/intall/salt-multi-host.html for more information.
 SSL_MODE="lets-encrypt"
-USE_LETSENCRYPT_IAM_USER="yes"
+USE_LETSENCRYPT_ROUTE53="yes"
 # For collections, we need to obtain a wildcard certificate for
 # '*.collections.<cluster>.<domain>'. This is only possible through a DNS-01 challenge.
 # For that reason, you'll need to provide AWS credentials with permissions to manage
@@ -120,7 +120,7 @@ RELEASE="production"
 # Formulas versions
 # ARVADOS_TAG="2.2.0"
 # POSTGRES_TAG="v0.43.0"
-# NGINX_TAG="temp-fix-missing-statements-in-pillar"
+# NGINX_TAG="v2.8.0"
 # DOCKER_TAG="v2.0.7"
 # LOCALE_TAG="v0.3.4"
 # LETSENCRYPT_TAG="v2.1.0"

@@ -168,7 +168,6 @@ CLUSTER=""
 DOMAIN=""
 
 # Hostnames/IPs used for single-host deploys
-HOSTNAME_EXT=""
 IP_INT="127.0.1.1"
 
 # Initial user setup
@@ -186,6 +185,7 @@ WORKBENCH1_EXT_SSL_PORT=443
 WORKBENCH2_EXT_SSL_PORT=3001
 
 SSL_MODE="self-signed"
+USE_LETSENCRYPT_ROUTE53="no"
 CUSTOM_CERTS_DIR="${SCRIPT_DIR}/certs"
 
 ## These are ARVADOS-related parameters
@@ -205,7 +205,7 @@ BRANCH="2.3-release"
 
 # Other formula versions we depend on
 POSTGRES_TAG="v0.43.0"
-NGINX_TAG="temp-fix-missing-statements-in-pillar"
+NGINX_TAG="v2.8.0"
 DOCKER_TAG="v2.0.7"
 LOCALE_TAG="v0.3.4"
 LETSENCRYPT_TAG="v2.1.0"
@@ -254,7 +254,13 @@ if ! grep -qE '^[[:alnum:]]{5}$' <<<${CLUSTER} ; then
 fi
 
 # Only used in single_host/single_name deploys
-if [ "x${HOSTNAME_EXT}" = "x" ] ; then
+if [ ! -z "${HOSTNAME_EXT}" ] ; then
+  # We need to add some extra control vars to manage a single certificate vs. multiple
+  USE_SINGLE_HOSTNAME="yes"
+else
+  USE_SINGLE_HOSTNAME="no"
+  # We set this variable, anyway, so sed lines do not fail and we don't need to add more
+  # conditionals
   HOSTNAME_EXT="${CLUSTER}.${DOMAIN}"
 fi
 
@@ -313,18 +319,23 @@ rm -rf ${F_DIR}/* || exit 1
 git clone --quiet https://github.com/saltstack-formulas/docker-formula.git ${F_DIR}/docker
 ( cd docker && git checkout --quiet tags/"${DOCKER_TAG}" -b "${DOCKER_TAG}" )
 
+echo "...locale"
 git clone --quiet https://github.com/saltstack-formulas/locale-formula.git ${F_DIR}/locale
 ( cd locale && git checkout --quiet tags/"${LOCALE_TAG}" -b "${LOCALE_TAG}" )
 
-git clone --quiet https://github.com/netmanagers/nginx-formula.git ${F_DIR}/nginx
+echo "...nginx"
+git clone --quiet https://github.com/saltstack-formulas/nginx-formula.git ${F_DIR}/nginx
 ( cd nginx && git checkout --quiet tags/"${NGINX_TAG}" -b "${NGINX_TAG}" )
 
+echo "...postgres"
 git clone --quiet https://github.com/saltstack-formulas/postgres-formula.git ${F_DIR}/postgres
 ( cd postgres && git checkout --quiet tags/"${POSTGRES_TAG}" -b "${POSTGRES_TAG}" )
 
+echo "...letsencrypt"
 git clone --quiet https://github.com/saltstack-formulas/letsencrypt-formula.git ${F_DIR}/letsencrypt
 ( cd letsencrypt && git checkout --quiet tags/"${LETSENCRYPT_TAG}" -b "${LETSENCRYPT_TAG}" )
 
+echo "...arvados"
 git clone --quiet https://git.arvados.org/arvados-formula.git ${F_DIR}/arvados
 
 # If we want to try a specific branch of the formula
@@ -479,11 +490,12 @@ EOFPSLS
 # States, extra states
 if [ -d "${F_DIR}"/extra/extra ]; then
   SKIP_SNAKE_OIL="snakeoil_certs"
+
   if [[ "$DEV_MODE" = "yes" || "${SSL_MODE}" == "self-signed" ]] ; then
     # In dev mode, we create some snake oil certs that we'll
     # use as CUSTOM_CERTS, so we don't skip the states file.
     # Same when using self-signed certificates.
-    SKIP_SNAKE_OIL="dont_snakeoil_certs"
+    SKIP_SNAKE_OIL="dont_add_snakeoil_certs"
   fi
   for f in $(ls "${F_DIR}"/extra/extra/*.sls | grep -v ${SKIP_SNAKE_OIL}); do
   echo "    - extra.$(basename ${f} | sed 's/.sls$//g')" >> ${S_DIR}/top.sls
@@ -501,7 +513,7 @@ if [ -z "${ROLES}" ]; then
   echo "    - nginx.passenger" >> ${S_DIR}/top.sls
   # Currently, only available on config_examples/multi_host/aws
   if [ "${SSL_MODE}" = "lets-encrypt" ]; then
-    if [ "${USE_LETSENCRYPT_IAM_USER}" != "yes" ]; then
+    if [ "${USE_LETSENCRYPT_ROUTE53}" = "yes" ]; then
       grep -q "aws_credentials" ${S_DIR}/top.sls || echo "    - extra.aws_credentials" >> ${S_DIR}/top.sls
     fi
     grep -q "letsencrypt"     ${S_DIR}/top.sls || echo "    - letsencrypt" >> ${S_DIR}/top.sls
@@ -519,7 +531,6 @@ if [ -z "${ROLES}" ]; then
   echo "    - postgres" >> ${S_DIR}/top.sls
   echo "    - docker.software" >> ${S_DIR}/top.sls
   echo "    - arvados" >> ${S_DIR}/top.sls
-  echo "    - extra.dns" >> ${S_DIR}/top.sls
 
   # Pillars
   echo "    - docker" >> ${P_DIR}/top.sls
@@ -534,36 +545,52 @@ if [ -z "${ROLES}" ]; then
   echo "    - nginx_workbench_configuration" >> ${P_DIR}/top.sls
   echo "    - postgresql" >> ${P_DIR}/top.sls
 
-  # Currently, only available on config_examples/multi_host/aws
   if [ "${SSL_MODE}" = "lets-encrypt" ]; then
-    if [ "${USE_LETSENCRYPT_IAM_USER}" != "yes" ]; then
+    if [ "${USE_LETSENCRYPT_ROUTE53}" = "yes" ]; then
       grep -q "aws_credentials" ${P_DIR}/top.sls || echo "    - aws_credentials" >> ${P_DIR}/top.sls
     fi
-    grep -q "letsencrypt"     ${P_DIR}/top.sls || echo "    - letsencrypt" >> ${P_DIR}/top.sls
+    grep -q "letsencrypt" ${P_DIR}/top.sls || echo "    - letsencrypt" >> ${P_DIR}/top.sls
 
     # As the pillar differ whether we use LE or custom certs, we need to do a final edition on them
-    for c in controller websocket workbench workbench2 webshell download collections keepproxy; do
-      sed -i "s/__CERT_REQUIRES__/cmd: create-initial-cert-${c}.${CLUSTER}.${DOMAIN}*/g;
-              s#__CERT_PEM__#/etc/letsencrypt/live/${c}.${CLUSTER}.${DOMAIN}/fullchain.pem#g;
-              s#__CERT_KEY__#/etc/letsencrypt/live/${c}.${CLUSTER}.${DOMAIN}/privkey.pem#g" \
+    for c in controller websocket workbench workbench2 webshell keepweb keepproxy; do
+      if [ "${USE_SINGLE_HOSTNAME}" = "yes" ]; then
+        # Are we in a single-host-single-hostname env?
+        CERT_NAME=${HOSTNAME_EXT}
+      else
+        # We are in a single-host-multiple-hostnames env
+        CERT_NAME=${c}.${CLUSTER}.${DOMAIN}
+      fi
+
+      sed -i "s/__CERT_REQUIRES__/cmd: create-initial-cert-${CERT_NAME}*/g;
+              s#__CERT_PEM__#/etc/letsencrypt/live/${CERT_NAME}/fullchain.pem#g;
+              s#__CERT_KEY__#/etc/letsencrypt/live/${CERT_NAME}/privkey.pem#g" \
       ${P_DIR}/nginx_${c}_configuration.sls
     done
-  elif [ "${SSL_MODE}" = "bring-your-own" ]; then
-    # Use custom "bring-your-own" certs (either dev mode or prod)
-    grep -q "custom_certs"       ${S_DIR}/top.sls || echo "    - extra.custom_certs" >> ${S_DIR}/top.sls
+  else
+    # Use custom certs (either dev mode or prod)
     grep -q "extra_custom_certs" ${P_DIR}/top.sls || echo "    - extra_custom_certs" >> ${P_DIR}/top.sls
     # And add the certs in the custom_certs pillar
     echo "extra_custom_certs_dir: /srv/salt/certs" > ${P_DIR}/extra_custom_certs.sls
     echo "extra_custom_certs:" >> ${P_DIR}/extra_custom_certs.sls
 
-    for c in controller websocket workbench workbench2 webshell download collections keepproxy; do
-      copy_custom_cert ${CUSTOM_CERTS_DIR} $c
-      grep -q ${c} ${P_DIR}/extra_custom_certs.sls || echo "  - ${c}" >> ${P_DIR}/extra_custom_certs.sls
+    # Are we in a single-host-single-hostname env?
+    if [ "${USE_SINGLE_HOSTNAME}" = "yes" ]; then
+      # Are we in a single-host-single-hostname env?
+      CERT_NAME=${HOSTNAME_EXT}
+    else
+      # We are in a multiple-hostnames env
+      CERT_NAME=${c}
+    fi
+    for c in controller websocket workbench workbench2 webshell keepweb keepproxy; do
+      if [ "${SSL_MODE}" = "bring-your-own" ]; then
+        copy_custom_cert ${CUSTOM_CERTS_DIR} $c
+      fi
+      grep -q ${CERT_NAME} ${P_DIR}/extra_custom_certs.sls || echo "  - ${CERT_NAME}" >> ${P_DIR}/extra_custom_certs.sls
 
-      # As the pillar differ whether we use LE or custom certs, we need to do a final edition on them
-      sed -i "s/__CERT_REQUIRES__/file: extra_custom_certs_file_copy_arvados-${c}.pem/g;
-              s#__CERT_PEM__#/etc/nginx/ssl/arvados-${c}.pem#g;
-              s#__CERT_KEY__#/etc/nginx/ssl/arvados-${c}.key#g" \
+      # As the pillar differs whether we use LE or custom certs, we need to do a final edition on them
+      sed -i "s/__CERT_REQUIRES__/file: extra_custom_certs_file_copy_arvados-${CERT_NAME}.pem/g;
+              s#__CERT_PEM__#/etc/nginx/ssl/arvados-${CERT_NAME}.pem#g;
+              s#__CERT_KEY__#/etc/nginx/ssl/arvados-${CERT_NAME}.key#g" \
       ${P_DIR}/nginx_${c}_configuration.sls
     done
   fi
@@ -571,7 +598,7 @@ else
   # If we add individual roles, make sure we add the repo first
   echo "    - arvados.repo" >> ${S_DIR}/top.sls
   # We add the extra_custom_certs state
-  grep -q "extra_custom_certs"    ${S_DIR}/top.sls || echo "    - extra.custom_certs" >> ${S_DIR}/top.sls
+  grep -q "extra.custom_certs"    ${S_DIR}/top.sls || echo "    - extra.custom_certs" >> ${S_DIR}/top.sls
 
   # And we add the basic part for the certs pillar
   if [ "${SSL_MODE}" != "lets-encrypt" ]; then
@@ -598,13 +625,15 @@ else
         ### after it. So we add this here as we are, after all, sharing the host for api and controller
         # Currently, only available on config_examples/multi_host/aws
         if [ "${SSL_MODE}" = "lets-encrypt" ]; then
-          if [ "${USE_LETSENCRYPT_IAM_USER}" != "yes" ]; then
+          if [ "${USE_LETSENCRYPT_ROUTE53}" = "yes" ]; then
             grep -q "aws_credentials" ${S_DIR}/top.sls || echo "    - aws_credentials" >> ${S_DIR}/top.sls
           fi
           grep -q "letsencrypt" ${S_DIR}/top.sls || echo "    - letsencrypt" >> ${S_DIR}/top.sls
         else
           # Use custom certs
-          copy_custom_cert ${CUSTOM_CERTS_DIR} controller
+          if [ "${SSL_MODE}" = "bring-your-own" ]; then
+            copy_custom_cert ${CUSTOM_CERTS_DIR} controller
+          fi
           grep -q controller ${P_DIR}/extra_custom_certs.sls || echo "  - controller" >> ${P_DIR}/extra_custom_certs.sls
         fi
         grep -q "arvados.${R}" ${S_DIR}/top.sls    || echo "    - arvados.${R}" >> ${S_DIR}/top.sls
@@ -619,17 +648,21 @@ else
         grep -q "nginx.passenger" ${S_DIR}/top.sls || echo "    - nginx.passenger" >> ${S_DIR}/top.sls
         # Currently, only available on config_examples/multi_host/aws
         if [ "${SSL_MODE}" = "lets-encrypt" ]; then
-          if [ "x${USE_LETSENCRYPT_IAM_USER}" != "xyes" ]; then
+          if [ "x${USE_LETSENCRYPT_ROUTE53}" = "xyes" ]; then
             grep -q "aws_credentials" ${S_DIR}/top.sls || echo "    - aws_credentials" >> ${S_DIR}/top.sls
           fi
           grep -q "letsencrypt"     ${S_DIR}/top.sls || echo "    - letsencrypt" >> ${S_DIR}/top.sls
         else
           # Use custom certs, special case for keepweb
           if [ ${R} = "keepweb" ]; then
-            copy_custom_cert ${CUSTOM_CERTS_DIR} download
-            copy_custom_cert ${CUSTOM_CERTS_DIR} collections
+            if [ "${SSL_MODE}" = "bring-your-own" ]; then
+              copy_custom_cert ${CUSTOM_CERTS_DIR} download
+              copy_custom_cert ${CUSTOM_CERTS_DIR} collections
+            fi
           else
-            copy_custom_cert ${CUSTOM_CERTS_DIR} ${R}
+            if [ "${SSL_MODE}" = "bring-your-own" ]; then
+              copy_custom_cert ${CUSTOM_CERTS_DIR} ${R}
+            fi
           fi
         fi
         # webshell role is just a nginx vhost, so it has no state
@@ -647,7 +680,7 @@ else
 
         # Currently, only available on config_examples/multi_host/aws
         if [ "${SSL_MODE}" = "lets-encrypt" ]; then
-          if [ "${USE_LETSENCRYPT_IAM_USER}" != "yes" ]; then
+          if [ "${USE_LETSENCRYPT_ROUTE53}" = "yes" ]; then
             grep -q "aws_credentials" ${P_DIR}/top.sls || echo "    - aws_credentials" >> ${P_DIR}/top.sls
           fi
           grep -q "letsencrypt"     ${P_DIR}/top.sls || echo "    - letsencrypt" >> ${P_DIR}/top.sls
