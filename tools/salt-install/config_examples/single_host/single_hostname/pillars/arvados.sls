@@ -68,6 +68,7 @@ arvados:
       password: "__DATABASE_PASSWORD__"
       user: __CLUSTER___arvados
       encoding: en_US.utf8
+      client_encoding: UTF8
 
     tls:
       # certificate: ''
@@ -80,7 +81,6 @@ arvados:
       system_root: __SYSTEM_ROOT_TOKEN__
       management: __MANAGEMENT_TOKEN__
       anonymous_user: __ANONYMOUS_USER_TOKEN__
-      rails_secret: YDLxHf4GqqmLXYAMgndrAmFEdqgC0sBqX7TEjMN2rw9D6EVwgx
 
     ### KEYS
     secrets:

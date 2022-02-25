@@ -22,9 +22,11 @@ nginx:
   ### SITES
   servers:
     managed:
-      arvados_workbench_ssl:
+      arvados_workbench_ssl.conf:
         enabled: true
         overwrite: true
+        requires:
+          __CERT_REQUIRES__
         config:
           - server:
             - server_name: __HOSTNAME_EXT__
@@ -40,7 +42,9 @@ nginx:
               - proxy_set_header: 'Host $http_host'
               - proxy_set_header: 'X-Real-IP $remote_addr'
               - proxy_set_header: 'X-Forwarded-For $proxy_add_x_forwarded_for'
-            - include: 'snippets/arvados-snakeoil.conf'
+            - include: snippets/ssl_hardening_default.conf
+            - ssl_certificate: __CERT_PEM__
+            - ssl_certificate_key: __CERT_KEY__
             - access_log: /var/log/nginx/workbench.__CLUSTER__.__DOMAIN__.access.log combined
             - error_log: /var/log/nginx/workbench.__CLUSTER__.__DOMAIN__.error.log
 

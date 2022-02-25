@@ -37,9 +37,9 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
                                     s#domain_fixme_or_this_wont_work#local#g;
                                     s#CONTROLLER_EXT_SSL_PORT=443#CONTROLLER_EXT_SSL_PORT=8443#g;
                                     s#RELEASE=\"production\"#RELEASE=\"development\"#g;
-                                    s/# VERSION=.*$/VERSION=\"latest\"/g;
-                                    s/#\ BRANCH=\"main\"/\ BRANCH=\"main\"/g' \
+                                    s/# VERSION=.*$/VERSION=\"latest\"/g;' \
                                     /vagrant/local.params.example.single_host_multiple_hostnames > /tmp/local.params.single_host_multiple_hostnames"
+                                    # s/#\ BRANCH=\"main\"/\ BRANCH=\"main\"/g;' \
 
      arv.vm.provision "shell",
                       path: "provision.sh",
@@ -54,7 +54,7 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
 
    # A single_host single_hostname example
    config.vm.define "arvados-sh-sn" do |arv|
-     arv.vm.box = "bento/debian-10"
+     arv.vm.box = "bento/debian-11"
      arv.vm.hostname = "zeppo"
      # CPU/RAM
      config.vm.provider :virtualbox do |v|
@@ -80,15 +80,15 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
      arv.vm.provision "shell",
                       inline: "cp -vr /vagrant/config_examples/single_host/single_hostname /home/vagrant/local_config_dir;
                                cp -vr /vagrant/tests /home/vagrant/tests;
-                               sed 's#HOSTNAME_EXT=\"\"#HOSTNAME_EXT=\"zeppo.local\"#g;
+                               sed 's#HOSTNAME_EXT=\"hostname_ext_fixme_or_this_wont_work\"#HOSTNAME_EXT=\"zeppo.local\"#g;
                                     s#cluster_fixme_or_this_wont_work#zeppo#g;
-                                    s/#\ BRANCH=\"main\"/\ BRANCH=\"main\"/g;
                                     s#domain_fixme_or_this_wont_work#local#g;' \
                                     /vagrant/local.params.example.single_host_single_hostname > /tmp/local.params.single_host_single_hostname"
+                                    # s/#\ BRANCH=\"main\"/\ BRANCH=\"main\"/g;
      arv.vm.provision "shell",
                       path: "provision.sh",
                       args: [
-                        # "--debug",
+                        "--debug",
                         "--config /tmp/local.params.single_host_single_hostname",
                         "--test",
                         "--vagrant"
