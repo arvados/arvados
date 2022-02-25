@@ -35,7 +35,12 @@ class ApiClientAuthorization < ArvadosModel
   UNLOGGED_CHANGES = ['last_used_at', 'last_used_by_ip_address', 'updated_at']
 
   def assign_random_api_token
-    self.api_token ||= rand(2**256).to_s(36)
+    begin
+      self.api_token ||= rand(2**256).to_s(36)
+    rescue ActiveModel::MissingAttributeError
+      # Ignore the case where self.api_token doesn't exist, which happens when
+      # the select=[...] is used.
+    end
   end
 
   def owner_uuid
