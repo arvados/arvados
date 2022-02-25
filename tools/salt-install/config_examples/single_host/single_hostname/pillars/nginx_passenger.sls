@@ -69,6 +69,16 @@ nginx:
   ### SITES
   servers:
     managed:
-      # Remove default webserver
+      # Update default config to redirect to https
       default:
-        enabled: false
+        enabled: true
+        overwrite: true
+        config:
+          - server:
+            - server_name: _
+            - listen:
+              - 80 default_server
+            - location /.well-known:
+              - root: /var/www
+            - location /:
+              - return: '301 https://$host$request_uri'

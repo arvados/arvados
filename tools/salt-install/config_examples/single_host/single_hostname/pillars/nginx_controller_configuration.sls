@@ -27,7 +27,7 @@ nginx:
           - server:
             - server_name: _
             - listen:
-              - 80 default_server
+              - 80
             - location /.well-known:
               - root: /var/www
             - location /:
