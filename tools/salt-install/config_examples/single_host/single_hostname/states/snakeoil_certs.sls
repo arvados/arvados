@@ -116,7 +116,6 @@ extra_snakeoil_certs_arvados_snakeoil_cert___HOSTNAME_EXT___cmd_run:
         {%- endfor %}
         DNS.1 = {{ arvados.cluster.name }}.{{ arvados.cluster.domain }}
         DNS.2 = '__HOSTNAME_EXT__'
-        DNS.3 = '__HOSTNAME_INT__'
         CNF
 
         # The req
