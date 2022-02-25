@@ -11,7 +11,7 @@ nginx:
       ### STREAMS
       http:
         upstream keepproxy_upstream:
-          - server: '__HOSTNAME_INT__:25100 fail_timeout=10s'
+          - server: '__IP_INT__:25100 fail_timeout=10s'
 
   servers:
     managed:

@@ -7,3 +7,4 @@ docker:
   pkg:
     docker:
       use_upstream: package
+      daemon_config: {"dns": ["__IP_INT__"]}

@@ -11,7 +11,7 @@ nginx:
       ### STREAMS
       http:
         upstream collections_downloads_upstream:
-          - server: '__HOSTNAME_INT__:9003 fail_timeout=10s'
+          - server: '__IP_INT__:9003 fail_timeout=10s'
 
   servers:
     managed:

@@ -14,7 +14,7 @@ nginx:
           default: 1
           '127.0.0.0/8': 0
         upstream controller_upstream:
-          - server: '__HOSTNAME_INT__:8003  fail_timeout=10s'
+          - server: '__IP_INT__:8003  fail_timeout=10s'
 
   ### SITES
   servers:

@@ -101,7 +101,7 @@ arvados_test_salt_states_examples_single_host_snakeoil_certs_arvados_snake_oil_c
         {%- endfor %}
         DNS.8 = {{ arvados.cluster.name }}.{{ arvados.cluster.domain }}
         DNS.9 = '__HOSTNAME_EXT__'
-        DNS.10 = '__HOSTNAME_INT__'
+        DNS.10 = '__IP_INT__'
         CNF
 
         # The req
