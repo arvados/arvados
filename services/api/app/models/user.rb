@@ -21,6 +21,7 @@ class User < ArvadosModel
             uniqueness: true,
             allow_nil: true)
   validate :must_unsetup_to_deactivate
+  validate :identity_url_nil_if_empty
   before_update :prevent_privilege_escalation
   before_update :prevent_inactive_admin
   before_update :verify_repositories_empty, :if => Proc.new {
@@ -808,6 +809,12 @@ SELECT target_uuid, perm_level
     repositories.find_each do |repo|
       repo.name = repo.name.sub(old_name_re, name_sub)
       repo.save!
+    end
+  end
+
+  def identity_url_nil_if_empty
+    if identity_url == ""
+      self.identity_url = nil
     end
   end
 end
