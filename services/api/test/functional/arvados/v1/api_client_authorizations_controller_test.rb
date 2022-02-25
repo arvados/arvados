@@ -203,4 +203,20 @@ class Arvados::V1::ApiClientAuthorizationsControllerTest < ActionController::Tes
     get :current
     assert_response 401
   end
+
+  # Tests regression #18801
+  test "select param is respected in 'show' response" do
+    authorize_with :active
+    get :show, params: {
+          id: api_client_authorizations(:active).uuid,
+          select: ["uuid"],
+        }
+    assert_response :success
+    assert_raises ActiveModel::MissingAttributeError do
+      assigns(:object).api_token
+    end
+    assert_nil json_response["expires_at"]
+    assert_nil json_response["api_token"]
+    assert_equal api_client_authorizations(:active).uuid, json_response["uuid"]
+  end
 end
