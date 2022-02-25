@@ -19,7 +19,7 @@ DOMAIN="domain_fixme_or_this_wont_work"
 HOSTNAME_EXT=""
 # The internal hostname for the host. In the example files, only used in the
 # single_host/single_hostname example
-HOSTNAME_INT="127.0.1.1"
+IP_INT="127.0.1.1"
 # Host SSL port where you want to point your browser to access Arvados
 # Defaults to 443 for regular runs, and to 8443 when called in Vagrant.
 # You can point it to another port if desired

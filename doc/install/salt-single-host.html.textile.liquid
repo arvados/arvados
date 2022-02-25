@@ -26,13 +26,13 @@ SPDX-License-Identifier: CC-BY-SA-3.0
 
 h2(#limitations). Limitations of the single host install
 
-<b>NOTE: The single host installation is a good choice when evaluating Arvados, but it is not recommended for production use.</b>
+<b>NOTE: The single host installation is a good choice for evaluating Arvados, but it is not recommended for production use.</b>
 
 Using the default configuration, this installation method has a number of limitations:
 
-* all services run on the same machine, and they will compete for resources.
-* it uses the local machine disk for Keep storage (under the @/tmp@ directory).
-* it installs the @crunch-dispatch-local@ dispatcher, which can run just one concurrent CWL job. This job will be executed on the machine that runs all the Arvados services. Most workflows require at least two concurrent CWL jobs, one for the workflow runner, and one for the payload.
+* all services run on the same machine, and they will compete for resources. This includes any compute jobs.
+* it uses the local machine disk for Keep storage (under the @/tmp@ directory). There may not be a lot of space available.
+* it installs the @crunch-dispatch-local@ dispatcher, which can run just eight concurrent CWL jobs. These jobs will be executed on the same machine that runs all the Arvados services and may well starve them of resources.
 
 It is possible to start with the single host installation method and modify the Arvados configuration file later to address these limitations. E.g. switch to a "different storage volume setup":{{site.baseurl}}/install/configure-s3-object-storage.html for Keep, and switch to "the cloud dispatcher":{{site.baseurl}}/install/crunch2-cloud/install-dispatch-cloud.html to provision compute resources dynamically.
 

@@ -12,7 +12,7 @@ nginx:
       ### STREAMS
       http:
         upstream webshell_upstream:
-          - server: '__HOSTNAME_INT__:4200 fail_timeout=10s'
+          - server: '__IP_INT__:4200 fail_timeout=10s'
 
   ### SITES
   servers:

@@ -169,7 +169,7 @@ DOMAIN=""
 
 # Hostnames/IPs used for single-host deploys
 HOSTNAME_EXT=""
-HOSTNAME_INT="127.0.1.1"
+IP_INT="127.0.1.1"
 
 # Initial user setup
 INITIAL_USER=""
@@ -361,7 +361,7 @@ for f in $(ls "${SOURCE_PILLARS_DIR}"/*); do
        s#__CLUSTER__#${CLUSTER}#g;
        s#__DOMAIN__#${DOMAIN}#g;
        s#__HOSTNAME_EXT__#${HOSTNAME_EXT}#g;
-       s#__HOSTNAME_INT__#${HOSTNAME_INT}#g;
+       s#__IP_INT__#${IP_INT}#g;
        s#__INITIAL_USER_EMAIL__#${INITIAL_USER_EMAIL}#g;
        s#__INITIAL_USER_PASSWORD__#${INITIAL_USER_PASSWORD}#g;
        s#__INITIAL_USER__#${INITIAL_USER}#g;
@@ -405,7 +405,7 @@ for f in $(ls "${SOURCE_TESTS_DIR}"/*); do
   sed "s#__CLUSTER__#${CLUSTER}#g;
        s#__CONTROLLER_EXT_SSL_PORT__#${CONTROLLER_EXT_SSL_PORT}#g;
        s#__DOMAIN__#${DOMAIN}#g;
-       s#__HOSTNAME_INT__#${HOSTNAME_INT}#g;
+       s#__IP_INT__#${IP_INT}#g;
        s#__INITIAL_USER_EMAIL__#${INITIAL_USER_EMAIL}#g;
        s#__INITIAL_USER_PASSWORD__#${INITIAL_USER_PASSWORD}#g
        s#__INITIAL_USER__#${INITIAL_USER}#g;
@@ -426,7 +426,7 @@ if [ -d "${SOURCE_STATES_DIR}" ]; then
          s#__CONTROLLER_EXT_SSL_PORT__#${CONTROLLER_EXT_SSL_PORT}#g;
          s#__DOMAIN__#${DOMAIN}#g;
          s#__HOSTNAME_EXT__#${HOSTNAME_EXT}#g;
-         s#__HOSTNAME_INT__#${HOSTNAME_INT}#g;
+         s#__IP_INT__#${IP_INT}#g;
          s#__INITIAL_USER_EMAIL__#${INITIAL_USER_EMAIL}#g;
          s#__INITIAL_USER_PASSWORD__#${INITIAL_USER_PASSWORD}#g;
          s#__INITIAL_USER__#${INITIAL_USER}#g;
@@ -479,7 +479,6 @@ EOFPSLS
 # States, extra states
 if [ -d "${F_DIR}"/extra/extra ]; then
   SKIP_SNAKE_OIL="snakeoil_certs"
-
   if [[ "$DEV_MODE" = "yes" || "${SSL_MODE}" == "self-signed" ]] ; then
     # In dev mode, we create some snake oil certs that we'll
     # use as CUSTOM_CERTS, so we don't skip the states file.
@@ -520,6 +519,7 @@ if [ -z "${ROLES}" ]; then
   echo "    - postgres" >> ${S_DIR}/top.sls
   echo "    - docker.software" >> ${S_DIR}/top.sls
   echo "    - arvados" >> ${S_DIR}/top.sls
+  echo "    - extra.dns" >> ${S_DIR}/top.sls
 
   # Pillars
   echo "    - docker" >> ${P_DIR}/top.sls
@@ -548,8 +548,9 @@ if [ -z "${ROLES}" ]; then
               s#__CERT_KEY__#/etc/letsencrypt/live/${c}.${CLUSTER}.${DOMAIN}/privkey.pem#g" \
       ${P_DIR}/nginx_${c}_configuration.sls
     done
-  else
-    # Use custom certs (either dev mode or prod)
+  elif [ "${SSL_MODE}" = "bring-your-own" ]; then
+    # Use custom "bring-your-own" certs (either dev mode or prod)
+    grep -q "custom_certs"       ${S_DIR}/top.sls || echo "    - extra.custom_certs" >> ${S_DIR}/top.sls
     grep -q "extra_custom_certs" ${P_DIR}/top.sls || echo "    - extra_custom_certs" >> ${P_DIR}/top.sls
     # And add the certs in the custom_certs pillar
     echo "extra_custom_certs_dir: /srv/salt/certs" > ${P_DIR}/extra_custom_certs.sls
@@ -569,8 +570,8 @@ if [ -z "${ROLES}" ]; then
 else
   # If we add individual roles, make sure we add the repo first
   echo "    - arvados.repo" >> ${S_DIR}/top.sls
-  # We add the custom_certs state
-  grep -q "custom_certs"    ${S_DIR}/top.sls || echo "    - extra.custom_certs" >> ${S_DIR}/top.sls
+  # We add the extra_custom_certs state
+  grep -q "extra_custom_certs"    ${S_DIR}/top.sls || echo "    - extra.custom_certs" >> ${S_DIR}/top.sls
 
   # And we add the basic part for the certs pillar
   if [ "${SSL_MODE}" != "lets-encrypt" ]; then

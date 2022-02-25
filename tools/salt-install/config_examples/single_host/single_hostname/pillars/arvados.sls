@@ -102,7 +102,7 @@ arvados:
       # <cluster>-nyw5e-<volume>
       __CLUSTER__-nyw5e-000000000000000:
         AccessViaHosts:
-          'http://__HOSTNAME_INT__:25107':
+          'http://__IP_INT__:25107':
             ReadOnly: false
         Replication: 2
         Driver: Directory
@@ -119,21 +119,21 @@ arvados:
       Controller:
         ExternalURL: 'https://__HOSTNAME_EXT__:__CONTROLLER_EXT_SSL_PORT__'
         InternalURLs:
-          'http://__HOSTNAME_INT__:8003': {}
+          'http://__IP_INT__:8003': {}
       Keepproxy:
         ExternalURL: 'https://__HOSTNAME_EXT__:__KEEP_EXT_SSL_PORT__'
         InternalURLs:
-          'http://__HOSTNAME_INT__:25100': {}
+          'http://__IP_INT__:25100': {}
       Keepstore:
         InternalURLs:
-          'http://__HOSTNAME_INT__:25107': {}
+          'http://__IP_INT__:25107': {}
       RailsAPI:
         InternalURLs:
-          'http://__HOSTNAME_INT__:8004': {}
+          'http://__IP_INT__:8004': {}
       WebDAV:
         ExternalURL: 'https://__HOSTNAME_EXT__:__KEEPWEB_EXT_SSL_PORT__'
         InternalURLs:
-          'http://__HOSTNAME_INT__:9003': {}
+          'http://__IP_INT__:9003': {}
       WebDAVDownload:
         ExternalURL: 'https://__HOSTNAME_EXT__:__KEEPWEB_EXT_SSL_PORT__'
       WebShell:
@@ -141,7 +141,7 @@ arvados:
       Websocket:
         ExternalURL: 'wss://__HOSTNAME_EXT__:__WEBSOCKET_EXT_SSL_PORT__/websocket'
         InternalURLs:
-          'http://__HOSTNAME_INT__:8005': {}
+          'http://__IP_INT__:8005': {}
       Workbench1:
         ExternalURL: 'https://__HOSTNAME_EXT__:__WORKBENCH1_EXT_SSL_PORT__'
       Workbench2:
