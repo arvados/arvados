@@ -6,7 +6,15 @@ SPDX-License-Identifier: CC-BY-SA-3.0
 
 If you plan to use custom certificates, please set the variable <i>SSL_MODE=bring-your-own</i> and copy your certificates to the directory specified with the variable @CUSTOM_CERTS_DIR@ (usually "./certs") in the remote directory where you copied the @provision.sh@ script. From this dir, the provision script will install the certificates required for the role you're installing.
 
-The script expects cert/key files with these basenames (matching the role except for <i>keepweb</i>, which is split in both <i>download / collections</i>):
+When using custom certificates in a single-host / single-hostname setup, the certificate and its key need to be copied to a file named after <i>${HOSTNAME_EXT}</i>. Ie., for "HOSTNAME_EXT='my-arvados.example.net', the script will lookup for
+<notextile>
+<pre><code>
+# ${CUSTOM_CERTS_DIR}/my-arvados.example.net.crt
+# ${CUSTOM_CERTS_DIR}/my-arvados.example.net.key
+</code></pre>
+</notextile>
+
+For a setup with multiple hostnames, the script expects cert/key files with these basenames (matching the role except for <i>keepweb</i>, which is split in both <i>download / collections</i>):
 
 * "controller"
 * "websocket"
