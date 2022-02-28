@@ -14,8 +14,9 @@ import { ServiceRepository } from 'services/services';
 import { PermissionResource, PermissionLevel } from 'models/permission';
 import { snackbarActions, SnackbarKind } from 'store/snackbar/snackbar-actions';
 import { LinkResource } from 'models/link';
-import { deleteResources } from 'store/resources/resources-actions';
+import { deleteResources, updateResources } from 'store/resources/resources-actions';
 import { openSharingDialog } from 'store/sharing-dialog/sharing-dialog-actions';
+// import { UserProfileGroupsActions } from 'store/user-profile/user-profile-actions';
 
 export const GROUP_DETAILS_MEMBERS_PANEL_ID = 'groupDetailsMembersPanel';
 export const GROUP_DETAILS_PERMISSIONS_PANEL_ID = 'groupDetailsPermissionsPanel';
@@ -48,9 +49,8 @@ export const openAddGroupMembersDialog = () =>
 export const editPermissionLevel = (uuid: string, level: PermissionLevel) =>
     async (dispatch: Dispatch, getState: () => RootState, { permissionService }: ServiceRepository) => {
         try {
-            await permissionService.update(uuid, {name: level});
-            dispatch(GroupMembersPanelActions.REQUEST_ITEMS());
-            dispatch(GroupPermissionsPanelActions.REQUEST_ITEMS());
+            const permission = await permissionService.update(uuid, {name: level});
+            dispatch(updateResources([permission]));
             dispatch(snackbarActions.OPEN_SNACKBAR({ message: 'Permission level changed.', hideDuration: 2000 }));
         } catch (e) {
             dispatch(snackbarActions.OPEN_SNACKBAR({
@@ -83,25 +83,19 @@ export const openRemoveGroupMemberDialog = (uuid: string) =>
 export const removeGroupMember = (uuid: string) =>
 
     async (dispatch: Dispatch, getState: () => RootState, { permissionService }: ServiceRepository) => {
+        dispatch(snackbarActions.OPEN_SNACKBAR({ message: 'Removing ...', kind: SnackbarKind.INFO }));
+        await deleteGroupMember({
+            link: {
+                uuid,
+            },
+            permissionService,
+            dispatch,
+        });
+        dispatch<any>(deleteResources([uuid]));
+        dispatch(GroupMembersPanelActions.REQUEST_ITEMS());
+        // dispatch(UserProfileGroupsActions.REQUEST_ITEMS());
 
-        const groupUuid = getCurrentGroupDetailsPanelUuid(getState().properties);
-
-        if (groupUuid) {
-            dispatch(snackbarActions.OPEN_SNACKBAR({ message: 'Removing ...', kind: SnackbarKind.INFO }));
-
-            await deleteGroupMember({
-                link: {
-                    uuid,
-                },
-                permissionService,
-                dispatch,
-            });
-
-            dispatch(snackbarActions.OPEN_SNACKBAR({ message: 'Removed.', hideDuration: 2000, kind: SnackbarKind.SUCCESS }));
-            dispatch(GroupMembersPanelActions.REQUEST_ITEMS());
-
-        }
-
+        dispatch(snackbarActions.OPEN_SNACKBAR({ message: 'Removed.', hideDuration: 2000, kind: SnackbarKind.SUCCESS }));
     };
 
 export const setMemberIsHidden = (memberLinkUuid: string, permissionLinkUuid: string, visible: boolean) =>
@@ -113,7 +107,6 @@ export const setMemberIsHidden = (memberLinkUuid: string, permissionLinkUuid: st
             try {
                 await permissionService.delete(permissionLinkUuid);
                 dispatch<any>(deleteResources([permissionLinkUuid]));
-                dispatch(GroupPermissionsPanelActions.REQUEST_ITEMS());
                 dispatch(snackbarActions.OPEN_SNACKBAR({
                     message: 'Removed read permission.',
                     hideDuration: 2000,
@@ -128,17 +121,17 @@ export const setMemberIsHidden = (memberLinkUuid: string, permissionLinkUuid: st
         } else if (visible && memberLink) {
             // Create read permission
             try {
-                await permissionService.create({
+                const permission = await permissionService.create({
                     headUuid: memberLink.tailUuid,
                     tailUuid: memberLink.headUuid,
                     name: PermissionLevel.CAN_READ,
                 });
+                dispatch(updateResources([permission]));
                 dispatch(snackbarActions.OPEN_SNACKBAR({
                     message: 'Created read permission.',
                     hideDuration: 2000,
                     kind: SnackbarKind.SUCCESS,
                 }));
-                dispatch(GroupPermissionsPanelActions.REQUEST_ITEMS());
             } catch(e) {
                 dispatch(snackbarActions.OPEN_SNACKBAR({
                     message: 'Failed to create permission',
