@@ -19,6 +19,7 @@ class Group < ArvadosModel
   validate :ensure_filesystem_compatible_name
   validate :check_group_class
   validate :check_filter_group_filters
+  validate :check_frozen_state_change_allowed
   before_create :assign_name
   after_create :after_ownership_change
   after_create :update_trash
@@ -40,6 +41,7 @@ class Group < ArvadosModel
     t.add :trash_at
     t.add :is_trashed
     t.add :properties
+    t.add :frozen_by_uuid
   end
 
   def ensure_filesystem_compatible_name
@@ -87,6 +89,40 @@ class Group < ArvadosModel
         if ! ["=","<","<=",">",">=","!=","like","ilike","in","not in","is_a","exists","contains"].include?(filter[1].downcase)
           errors.add :properties, "filter operator is not valid (must be =,<,<=,>,>=,!=,like,ilike,in,not in,is_a,exists,contains)"
           return
+        end
+      end
+    end
+  end
+
+  def check_frozen_state_change_allowed
+    if frozen_by_uuid == ""
+      self.frozen_by_uuid = nil
+    end
+    if frozen_by_uuid_changed? || (new_record? && frozen_by_uuid)
+      if group_class != "project"
+        errors.add(:frozen_by_uuid, "cannot be modified on a non-project group")
+        return
+      end
+      if frozen_by_uuid_was && Rails.configuration.API.UnfreezeProjectRequiresAdmin && !current_user.is_admin
+        errors.add(:frozen_by_uuid, "can only be changed by an admin user, once set")
+        return
+      end
+      if frozen_by_uuid && frozen_by_uuid != current_user.uuid
+        errors.add(:frozen_by_uuid, "can only be set to the current user's UUID")
+        return
+      end
+      if !new_record? && !current_user.can?(manage: uuid)
+        raise PermissionDeniedError
+      end
+      if frozen_by_uuid_was.nil?
+        if Rails.configuration.API.FreezeProjectRequiresDescription && !attribute_present?(:description)
+          errors.add(:frozen_by_uuid, "can only be set if description is non-empty")
+        end
+        Rails.configuration.API.FreezeProjectRequiresProperties.andand.each do |key, _|
+          key = key.to_s
+          if !properties[key] || properties[key] == ""
+            errors.add(:frozen_by_uuid, "can only be set if properties[#{key}] value is non-empty")
+          end
         end
       end
     end
