@@ -35,6 +35,12 @@ type OIDCProvider struct {
 
 	PeopleAPIResponse map[string]interface{}
 
+	// send incoming /userinfo requests to HoldUserInfo (if not
+	// nil), then receive from ReleaseUserInfo (if not nil),
+	// before responding (these are used to set up races)
+	HoldUserInfo    chan *http.Request
+	ReleaseUserInfo chan struct{}
+
 	key       *rsa.PrivateKey
 	Issuer    *httptest.Server
 	PeopleAPI *httptest.Server
@@ -126,6 +132,12 @@ func (p *OIDCProvider) serveOIDC(w http.ResponseWriter, req *http.Request) {
 	case "/auth":
 		w.WriteHeader(http.StatusInternalServerError)
 	case "/userinfo":
+		if p.HoldUserInfo != nil {
+			p.HoldUserInfo <- req
+		}
+		if p.ReleaseUserInfo != nil {
+			<-p.ReleaseUserInfo
+		}
 		authhdr := req.Header.Get("Authorization")
 		if _, err := jwt.ParseSigned(strings.TrimPrefix(authhdr, "Bearer ")); err != nil {
 			p.c.Logf("OIDCProvider: bad auth %q", authhdr)

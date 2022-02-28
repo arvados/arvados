@@ -17,6 +17,7 @@ import (
 	"net/url"
 	"sort"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 
@@ -236,18 +237,49 @@ func (s *OIDCLoginSuite) TestOIDCAuthorizer(c *check.C) {
 
 	ctx := auth.NewContext(context.Background(), &auth.Credentials{Tokens: []string{accessToken}})
 	var exp1 time.Time
-	oidcAuthorizer.WrapCalls(func(ctx context.Context, opts interface{}) (interface{}, error) {
-		creds, ok := auth.FromContext(ctx)
-		c.Assert(ok, check.Equals, true)
-		c.Assert(creds.Tokens, check.HasLen, 1)
-		c.Check(creds.Tokens[0], check.Equals, accessToken)
 
-		err := db.QueryRowContext(ctx, `select expires_at at time zone 'UTC' from api_client_authorizations where api_token=$1`, apiToken).Scan(&exp1)
-		c.Check(err, check.IsNil)
-		c.Check(exp1.Sub(time.Now()) > -time.Second, check.Equals, true)
-		c.Check(exp1.Sub(time.Now()) < time.Second, check.Equals, true)
-		return nil, nil
-	})(ctx, nil)
+	concurrent := 4
+	s.fakeProvider.HoldUserInfo = make(chan *http.Request)
+	s.fakeProvider.ReleaseUserInfo = make(chan struct{})
+	go func() {
+		for i := 0; ; i++ {
+			if i == concurrent {
+				close(s.fakeProvider.ReleaseUserInfo)
+			}
+			<-s.fakeProvider.HoldUserInfo
+		}
+	}()
+	var wg sync.WaitGroup
+	for i := 0; i < concurrent; i++ {
+		i := i
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			_, err := oidcAuthorizer.WrapCalls(func(ctx context.Context, opts interface{}) (interface{}, error) {
+				c.Logf("concurrent req %d/%d", i, concurrent)
+				var exp time.Time
+
+				creds, ok := auth.FromContext(ctx)
+				c.Assert(ok, check.Equals, true)
+				c.Assert(creds.Tokens, check.HasLen, 1)
+				c.Check(creds.Tokens[0], check.Equals, accessToken)
+
+				err := db.QueryRowContext(ctx, `select expires_at at time zone 'UTC' from api_client_authorizations where api_token=$1`, apiToken).Scan(&exp)
+				c.Check(err, check.IsNil)
+				c.Check(exp.Sub(time.Now()) > -time.Second, check.Equals, true)
+				c.Check(exp.Sub(time.Now()) < time.Second, check.Equals, true)
+				if i == 0 {
+					exp1 = exp
+				}
+				return nil, nil
+			})(ctx, nil)
+			c.Check(err, check.IsNil)
+		}()
+	}
+	wg.Wait()
+	if c.Failed() {
+		c.Fatal("giving up")
+	}
 
 	// If the token is used again after the in-memory cache
 	// expires, oidcAuthorizer must re-check the token and update
@@ -257,8 +289,8 @@ func (s *OIDCLoginSuite) TestOIDCAuthorizer(c *check.C) {
 		var exp time.Time
 		err := db.QueryRowContext(ctx, `select expires_at at time zone 'UTC' from api_client_authorizations where api_token=$1`, apiToken).Scan(&exp)
 		c.Check(err, check.IsNil)
-		c.Check(exp.Sub(exp1) > 0, check.Equals, true)
-		c.Check(exp.Sub(exp1) < time.Second, check.Equals, true)
+		c.Check(exp.Sub(exp1) > 0, check.Equals, true, check.Commentf("expect %v > 0", exp.Sub(exp1)))
+		c.Check(exp.Sub(exp1) < time.Second, check.Equals, true, check.Commentf("expect %v < 1s", exp.Sub(exp1)))
 		return nil, nil
 	})(ctx, nil)
 
