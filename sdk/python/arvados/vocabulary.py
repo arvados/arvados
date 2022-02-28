@@ -8,9 +8,11 @@ from . import api
 
 _logger = logging.getLogger('arvados.vocabulary')
 
-def load_vocabulary(api_client=api('v1')):
+def load_vocabulary(api_client=None):
     """Load the Arvados vocabulary from the API.
     """
+    if api_client is None:
+        api_client = api('v1')
     return Vocabulary(api_client.vocabulary())
 
 class Vocabulary(object):
