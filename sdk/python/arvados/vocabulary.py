@@ -46,9 +46,11 @@ class Vocabulary(object):
                 try:
                     v_id = self[k][v].identifier
                 except KeyError:
-                    pass
+                    if self[k].strict:
+                        raise ValueError("value '%s' not found for key '%s'" % (v, k))
             except KeyError:
-                pass
+                if self.strict_keys:
+                    raise KeyError("key '%s' not found" % k)
             r[k_id] = v_id
         return r
 
@@ -65,9 +67,11 @@ class Vocabulary(object):
                 try:
                     v_lbl = self[k][v].preferred_label
                 except KeyError:
-                    pass
+                    if self[k].strict:
+                        raise ValueError("value '%s' not found for key '%s'" % (v, k))
             except KeyError:
-                pass
+                if self.strict_keys:
+                    raise KeyError("key '%s' not found" % k)
             r[k_lbl] = v_lbl
         return r
 

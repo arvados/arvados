@@ -32,7 +32,7 @@ class VocabularyTest(unittest.TestCase):
                     },
                 },
             },
-            'IDTAGIMPORTANCE': {
+            'IDTAGIMPORTANCES': {
                 'strict': True,
                 'labels': [
                     {'label': 'Importance'},
@@ -72,7 +72,7 @@ class VocabularyTest(unittest.TestCase):
         self.assertEqual(
             self.voc.key_aliases.keys(),
             set(['idtaganimals', 'creature', 'animal',
-                'idtagimportance', 'importance', 'priority'])
+                'idtagimportances', 'importance', 'priority'])
         )
 
         vk = self.voc.key_aliases['creature']
@@ -113,22 +113,55 @@ class VocabularyTest(unittest.TestCase):
 
     def test_convert_to_identifiers(self):
         cases = [
-            {'IDTAGIMPORTANCE': 'IDVALIMPORTANCE1'},
-            {'IDTAGIMPORTANCE': 'High'},
+            {'IDTAGIMPORTANCES': 'IDVALIMPORTANCE1'},
+            {'IDTAGIMPORTANCES': 'High'},
             {'importance': 'IDVALIMPORTANCE1'},
             {'priority': 'high priority'},
         ]
         for case in cases:
             self.assertEqual(
                 self.voc.convert_to_identifiers(case),
-                {'IDTAGIMPORTANCE': 'IDVALIMPORTANCE1'},
+                {'IDTAGIMPORTANCES': 'IDVALIMPORTANCE1'},
                 "failing test case: {}".format(case)
             )
 
+    def test_convert_to_identifiers_multiple_pairs(self):
+        cases = [
+            {'IDTAGIMPORTANCES': 'IDVALIMPORTANCE1', 'IDTAGANIMALS': 'IDVALANIMAL1'},
+            {'IDTAGIMPORTANCES': 'High', 'IDTAGANIMALS': 'IDVALANIMAL1'},
+            {'importance': 'IDVALIMPORTANCE1', 'animal': 'IDVALANIMAL1'},
+            {'priority': 'high priority', 'animal': 'IDVALANIMAL1'},
+        ]
+        for case in cases:
+            self.assertEqual(
+                self.voc.convert_to_identifiers(case),
+                {'IDTAGIMPORTANCES': 'IDVALIMPORTANCE1', 'IDTAGANIMALS': 'IDVALANIMAL1'},
+                "failing test case: {}".format(case)
+            )
+
+    def test_convert_to_identifiers_unknown_key(self):
+        # Non-strict vocabulary
+        self.assertEqual(self.voc.strict_keys, False)
+        self.assertEqual(self.voc.convert_to_identifiers({'foo': 'bar'}), {'foo': 'bar'})
+        # Strict vocabulary
+        strict_voc = arvados.vocabulary.Vocabulary(self.EXAMPLE_VOC)
+        strict_voc.strict_keys = True
+        with self.assertRaises(KeyError):
+            strict_voc.convert_to_identifiers({'foo': 'bar'})
+
+    def test_convert_to_identifiers_unknown_value(self):
+        # Non-strict key
+        self.assertEqual(self.voc['animal'].strict, False)
+        self.assertEqual(self.voc.convert_to_identifiers({'Animal': 'foo'}), {'IDTAGANIMALS': 'foo'})
+        # Strict key
+        self.assertEqual(self.voc['priority'].strict, True)
+        with self.assertRaises(ValueError):
+            self.voc.convert_to_identifiers({'Priority': 'foo'})
+
     def test_convert_to_labels(self):
         cases = [
-            {'IDTAGIMPORTANCE': 'IDVALIMPORTANCE1'},
-            {'IDTAGIMPORTANCE': 'High'},
+            {'IDTAGIMPORTANCES': 'IDVALIMPORTANCE1'},
+            {'IDTAGIMPORTANCES': 'High'},
             {'importance': 'IDVALIMPORTANCE1'},
             {'priority': 'high priority'},
         ]
@@ -138,3 +171,36 @@ class VocabularyTest(unittest.TestCase):
                 {'Importance': 'High'},
                 "failing test case: {}".format(case)
             )
+
+    def test_convert_to_labels_multiple_pairs(self):
+        cases = [
+            {'IDTAGIMPORTANCES': 'IDVALIMPORTANCE1', 'IDTAGANIMALS': 'IDVALANIMAL1'},
+            {'IDTAGIMPORTANCES': 'High', 'IDTAGANIMALS': 'IDVALANIMAL1'},
+            {'importance': 'IDVALIMPORTANCE1', 'animal': 'IDVALANIMAL1'},
+            {'priority': 'high priority', 'animal': 'IDVALANIMAL1'},
+        ]
+        for case in cases:
+            self.assertEqual(
+                self.voc.convert_to_labels(case),
+                {'Importance': 'High', 'Animal': 'Human'},
+                "failing test case: {}".format(case)
+            )
+
+    def test_convert_to_labels_unknown_key(self):
+        # Non-strict vocabulary
+        self.assertEqual(self.voc.strict_keys, False)
+        self.assertEqual(self.voc.convert_to_labels({'foo': 'bar'}), {'foo': 'bar'})
+        # Strict vocabulary
+        strict_voc = arvados.vocabulary.Vocabulary(self.EXAMPLE_VOC)
+        strict_voc.strict_keys = True
+        with self.assertRaises(KeyError):
+            strict_voc.convert_to_labels({'foo': 'bar'})
+
+    def test_convert_to_labels_unknown_value(self):
+        # Non-strict key
+        self.assertEqual(self.voc['animal'].strict, False)
+        self.assertEqual(self.voc.convert_to_labels({'IDTAGANIMALS': 'foo'}), {'Animal': 'foo'})
+        # Strict key
+        self.assertEqual(self.voc['priority'].strict, True)
+        with self.assertRaises(ValueError):
+            self.voc.convert_to_labels({'IDTAGIMPORTANCES': 'foo'})
