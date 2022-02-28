@@ -21,16 +21,6 @@ import (
 	"time"
 )
 
-// This magically allows us to look up userHz via _SC_CLK_TCK:
-
-/*
-#include <unistd.h>
-#include <sys/types.h>
-#include <pwd.h>
-#include <stdlib.h>
-*/
-import "C"
-
 // A Reporter gathers statistics for a cgroup and writes them to a
 // log.Logger.
 type Reporter struct {
@@ -395,7 +385,7 @@ func (r *Reporter) doCPUStats() {
 
 	var userTicks, sysTicks int64
 	fmt.Sscanf(string(b), "user %d\nsystem %d", &userTicks, &sysTicks)
-	userHz := float64(C.sysconf(C._SC_CLK_TCK))
+	userHz := float64(100)
 	nextSample := cpuSample{
 		hasData:    true,
 		sampleTime: time.Now(),

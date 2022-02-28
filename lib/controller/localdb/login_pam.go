@@ -2,6 +2,8 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
+//go:build !static
+
 package localdb
 
 import (
