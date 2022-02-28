@@ -26,12 +26,50 @@ class Vocabulary(object):
                 labels = [l['label'] for l in v_val.get('labels', [])]
                 values[v_id] = VocabularyValue(v_id, labels)
             vk = VocabularyKey(key_id, key_labels, values, strict)
-            self.key_aliases[key_id] = vk
+            self.key_aliases[key_id.lower()] = vk
             for alias in vk.aliases:
                 self.key_aliases[alias.lower()] = vk
 
     def __getitem__(self, key):
         return self.key_aliases[key.lower()]
+
+    def convert_to_identifiers(self, obj={}):
+        """Translate key/value pairs to machine readable identifiers.
+        """
+        if not isinstance(obj, dict):
+            raise ValueError("obj must be a dict")
+        r = {}
+        for k, v in obj.items():
+            k_id, v_id = k, v
+            try:
+                k_id = self[k].identifier
+                try:
+                    v_id = self[k][v].identifier
+                except KeyError:
+                    pass
+            except KeyError:
+                pass
+            r[k_id] = v_id
+        return r
+
+    def convert_to_labels(self, obj={}):
+        """Translate key/value pairs to human readable labels.
+        """
+        if not isinstance(obj, dict):
+            raise ValueError("obj must be a dict")
+        r = {}
+        for k, v in obj.items():
+            k_lbl, v_lbl = k, v
+            try:
+                k_lbl = self[k].preferred_label
+                try:
+                    v_lbl = self[k][v].preferred_label
+                except KeyError:
+                    pass
+            except KeyError:
+                pass
+            r[k_lbl] = v_lbl
+        return r
 
 class VocabularyData(object):
     def __init__(self, identifier, aliases=[]):
@@ -53,7 +91,7 @@ class VocabularyKey(VocabularyData):
         self.strict = strict
         self.value_aliases = {}
         for v_id, v_val in values.items():
-            self.value_aliases[v_id] = v_val
+            self.value_aliases[v_id.lower()] = v_val
             for v_alias in v_val.aliases:
                 self.value_aliases[v_alias.lower()] = v_val
 
