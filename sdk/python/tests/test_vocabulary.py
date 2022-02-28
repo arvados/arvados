@@ -59,6 +59,13 @@ class VocabularyTest(unittest.TestCase):
                     },
                 },
             },
+            'IDTAGCOMMENTS': {
+                'strict': False,
+                'labels': [
+                    {'label': 'Comment'},
+                    {'label': 'Notes'},
+                ],
+            },
         },
     }
 
@@ -72,7 +79,8 @@ class VocabularyTest(unittest.TestCase):
         self.assertEqual(
             self.voc.key_aliases.keys(),
             set(['idtaganimals', 'creature', 'animal',
-                'idtagimportances', 'importance', 'priority'])
+                'idtagimportances', 'importance', 'priority',
+                'idtagcomments', 'comment', 'notes'])
         )
 
         vk = self.voc.key_aliases['creature']
@@ -127,15 +135,15 @@ class VocabularyTest(unittest.TestCase):
 
     def test_convert_to_identifiers_multiple_pairs(self):
         cases = [
-            {'IDTAGIMPORTANCES': 'IDVALIMPORTANCE1', 'IDTAGANIMALS': 'IDVALANIMAL1'},
-            {'IDTAGIMPORTANCES': 'High', 'IDTAGANIMALS': 'IDVALANIMAL1'},
-            {'importance': 'IDVALIMPORTANCE1', 'animal': 'IDVALANIMAL1'},
-            {'priority': 'high priority', 'animal': 'IDVALANIMAL1'},
+            {'IDTAGIMPORTANCES': 'IDVALIMPORTANCE1', 'IDTAGANIMALS': 'IDVALANIMAL1', 'IDTAGCOMMENTS': 'Very important person'},
+            {'IDTAGIMPORTANCES': 'High', 'IDTAGANIMALS': 'IDVALANIMAL1', 'comment': 'Very important person'},
+            {'importance': 'IDVALIMPORTANCE1', 'animal': 'IDVALANIMAL1', 'notes': 'Very important person'},
+            {'priority': 'high priority', 'animal': 'IDVALANIMAL1', 'NOTES': 'Very important person'},
         ]
         for case in cases:
             self.assertEqual(
                 self.voc.convert_to_identifiers(case),
-                {'IDTAGIMPORTANCES': 'IDVALIMPORTANCE1', 'IDTAGANIMALS': 'IDVALANIMAL1'},
+                {'IDTAGIMPORTANCES': 'IDVALIMPORTANCE1', 'IDTAGANIMALS': 'IDVALANIMAL1', 'IDTAGCOMMENTS': 'Very important person'},
                 "failing test case: {}".format(case)
             )
 
@@ -174,17 +182,23 @@ class VocabularyTest(unittest.TestCase):
 
     def test_convert_to_labels_multiple_pairs(self):
         cases = [
-            {'IDTAGIMPORTANCES': 'IDVALIMPORTANCE1', 'IDTAGANIMALS': 'IDVALANIMAL1'},
-            {'IDTAGIMPORTANCES': 'High', 'IDTAGANIMALS': 'IDVALANIMAL1'},
-            {'importance': 'IDVALIMPORTANCE1', 'animal': 'IDVALANIMAL1'},
-            {'priority': 'high priority', 'animal': 'IDVALANIMAL1'},
+            {'IDTAGIMPORTANCES': 'IDVALIMPORTANCE1', 'IDTAGANIMALS': 'IDVALANIMAL1', 'IDTAGCOMMENTS': 'Very important person'},
+            {'IDTAGIMPORTANCES': 'High', 'IDTAGANIMALS': 'IDVALANIMAL1', 'comment': 'Very important person'},
+            {'importance': 'IDVALIMPORTANCE1', 'animal': 'IDVALANIMAL1', 'notes': 'Very important person'},
+            {'priority': 'high priority', 'animal': 'IDVALANIMAL1', 'NOTES': 'Very important person'},
         ]
         for case in cases:
             self.assertEqual(
                 self.voc.convert_to_labels(case),
-                {'Importance': 'High', 'Animal': 'Human'},
+                {'Importance': 'High', 'Animal': 'Human', 'Comment': 'Very important person'},
                 "failing test case: {}".format(case)
             )
+
+    def test_convert_roundtrip(self):
+        initial = {'IDTAGIMPORTANCES': 'IDVALIMPORTANCE1', 'IDTAGANIMALS': 'IDVALANIMAL1', 'IDTAGCOMMENTS': 'Very important person'}
+        converted = self.voc.convert_to_labels(initial)
+        self.assertNotEqual(converted, initial)
+        self.assertEqual(self.voc.convert_to_identifiers(converted), initial)
 
     def test_convert_to_labels_unknown_key(self):
         # Non-strict vocabulary
