@@ -2,9 +2,6 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-# WARNING: This file is only used for testing purposes, and should not be used
-# in a production environment
-
 {%- set curr_tpldir = tpldir %}
 {%- set tpldir = 'arvados' %}
 {%- from "arvados/map.jinja" import arvados with context %}
