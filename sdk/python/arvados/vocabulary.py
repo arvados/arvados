@@ -26,12 +26,18 @@ class Vocabulary(object):
             for v_id, v_val in val.get('values', {}).items():
                 labels = [l['label'] for l in v_val.get('labels', [])]
                 values[v_id] = VocabularyValue(v_id, labels)
-            self.key_aliases[key_id] = VocabularyKey(key_id, key_labels, values, strict)
+            vk = VocabularyKey(key_id, key_labels, values, strict)
+            self.key_aliases[key_id] = vk
+            for alias in vk.aliases:
+                self.key_aliases[alias.lower()] = vk
+
+    def __getitem__(self, key):
+        return self.key_aliases[key.lower()]
 
 class VocabularyData(object):
     def __init__(self, identifier, aliases=[]):
         self.identifier = identifier
-        self.aliases = set([x.lower() for x in aliases])
+        self.aliases = aliases
 
 class VocabularyValue(VocabularyData):
     def __init__(self, identifier, aliases=[]):
@@ -40,5 +46,12 @@ class VocabularyValue(VocabularyData):
 class VocabularyKey(VocabularyData):
     def __init__(self, identifier, aliases=[], values={}, strict=False):
         super(VocabularyKey, self).__init__(identifier, aliases)
-        self.values = values
         self.strict = strict
+        self.value_aliases = {}
+        for v_id, v_val in values.items():
+            self.value_aliases[v_id] = v_val
+            for v_alias in v_val.aliases:
+                self.value_aliases[v_alias.lower()] = v_val
+
+    def __getitem__(self, key):
+        return self.value_aliases[key.lower()]

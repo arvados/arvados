@@ -64,19 +64,31 @@ class VocabularyTest(unittest.TestCase):
 
     def perform_vocabulary_tests(self, voc):
         self.assertEqual(voc.strict_keys, False)
-        self.assertEqual(voc.key_aliases.keys(), set(['IDTAGANIMALS', 'IDTAGIMPORTANCE']))
+        self.assertEqual(
+            voc.key_aliases.keys(),
+            set(['IDTAGANIMALS', 'creature', 'animal',
+                'IDTAGIMPORTANCE', 'importance', 'priority'])
+        )
 
-        self.assertEqual(voc.key_aliases['IDTAGANIMALS'].strict, False)
-        self.assertEqual(set(voc.key_aliases['IDTAGANIMALS'].aliases), set(['animal', 'creature']))
-        self.assertEqual(voc.key_aliases['IDTAGANIMALS'].values.keys(), set(['IDVALANIMAL1', 'IDVALANIMAL2']))
-        self.assertEqual(voc.key_aliases['IDTAGANIMALS'].values['IDVALANIMAL1'].aliases, set(['human', 'homo sapiens']))
+        vk = voc.key_aliases['creature']
+        self.assertEqual(vk.strict, False)
+        self.assertEqual(vk.identifier, 'IDTAGANIMALS')
+        self.assertEqual(vk.aliases, ['Animal', 'Creature'])
+
+        vv = vk.value_aliases['human']
+        self.assertEqual(vv.identifier, 'IDVALANIMAL1')
+        self.assertEqual(vv.aliases, ['Human', 'Homo sapiens'])
+
+        self.assertEqual(voc['creature']['human'].identifier, vv.identifier)
+        self.assertEqual(voc['Creature']['Human'].identifier, vv.identifier)
+        self.assertEqual(voc['CREATURE']['HUMAN'].identifier, vv.identifier)
 
     def test_empty_vocabulary(self):
         voc = vocabulary.Vocabulary()
         self.assertEqual(voc.strict_keys, False)
         self.assertEqual(voc.key_aliases, {})
 
-    def test_load_vocabulary(self):
+    def test_vocabulary_explicit_instantiation(self):
         voc = vocabulary.Vocabulary(self.EXAMPLE_VOC)
         self.perform_vocabulary_tests(voc)
 
