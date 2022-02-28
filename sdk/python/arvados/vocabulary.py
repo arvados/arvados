@@ -15,8 +15,7 @@ def load_vocabulary(api_client=api('v1')):
 
 class Vocabulary(object):
     def __init__(self, voc_definition={}):
-        self._definition = voc_definition
-        self.strict_keys = self._definition.get('strict_tags', False)
+        self.strict_keys = voc_definition.get('strict_tags', False)
         self.key_aliases = {}
 
         for key_id, val in voc_definition.get('tags', {}).items():
@@ -38,6 +37,11 @@ class VocabularyData(object):
     def __init__(self, identifier, aliases=[]):
         self.identifier = identifier
         self.aliases = aliases
+
+    def __getattribute__(self, name):
+        if name == 'preferred_label':
+            return self.aliases[0]
+        return super(VocabularyData, self).__getattribute__(name)
 
 class VocabularyValue(VocabularyData):
     def __init__(self, identifier, aliases=[]):

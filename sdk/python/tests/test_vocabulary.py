@@ -74,14 +74,18 @@ class VocabularyTest(unittest.TestCase):
         self.assertEqual(vk.strict, False)
         self.assertEqual(vk.identifier, 'IDTAGANIMALS')
         self.assertEqual(vk.aliases, ['Animal', 'Creature'])
+        self.assertEqual(vk.preferred_label, 'Animal')
 
         vv = vk.value_aliases['human']
         self.assertEqual(vv.identifier, 'IDVALANIMAL1')
         self.assertEqual(vv.aliases, ['Human', 'Homo sapiens'])
+        self.assertEqual(vv.preferred_label, 'Human')
 
         self.assertEqual(voc['creature']['human'].identifier, vv.identifier)
         self.assertEqual(voc['Creature']['Human'].identifier, vv.identifier)
         self.assertEqual(voc['CREATURE']['HUMAN'].identifier, vv.identifier)
+        with self.assertRaises(KeyError):
+            inexistant = voc['foo']
 
     def test_empty_vocabulary(self):
         voc = vocabulary.Vocabulary()
