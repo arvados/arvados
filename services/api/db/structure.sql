@@ -567,7 +567,8 @@ CREATE TABLE public.groups (
     trash_at timestamp without time zone,
     is_trashed boolean DEFAULT false NOT NULL,
     delete_at timestamp without time zone,
-    properties jsonb DEFAULT '{}'::jsonb
+    properties jsonb DEFAULT '{}'::jsonb,
+    frozen_by_uuid character varying
 );
 
 
@@ -3147,6 +3148,7 @@ INSERT INTO "schema_migrations" (version) VALUES
 ('20210126183521'),
 ('20210621204455'),
 ('20210816191509'),
-('20211027154300');
+('20211027154300'),
+('20220224203102');
 
 

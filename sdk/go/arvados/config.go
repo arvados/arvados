@@ -94,21 +94,24 @@ type Cluster struct {
 	PostgreSQL      PostgreSQL
 
 	API struct {
-		AsyncPermissionsUpdateInterval Duration
-		DisabledAPIs                   StringSet
-		MaxIndexDatabaseRead           int
-		MaxItemsPerResponse            int
-		MaxConcurrentRequests          int
-		MaxKeepBlobBuffers             int
-		MaxRequestAmplification        int
-		MaxRequestSize                 int
-		MaxTokenLifetime               Duration
-		RequestTimeout                 Duration
-		SendTimeout                    Duration
-		WebsocketClientEventQueue      int
-		WebsocketServerEventQueue      int
-		KeepServiceRequestTimeout      Duration
-		VocabularyPath                 string
+		AsyncPermissionsUpdateInterval   Duration
+		DisabledAPIs                     StringSet
+		MaxIndexDatabaseRead             int
+		MaxItemsPerResponse              int
+		MaxConcurrentRequests            int
+		MaxKeepBlobBuffers               int
+		MaxRequestAmplification          int
+		MaxRequestSize                   int
+		MaxTokenLifetime                 Duration
+		RequestTimeout                   Duration
+		SendTimeout                      Duration
+		WebsocketClientEventQueue        int
+		WebsocketServerEventQueue        int
+		KeepServiceRequestTimeout        Duration
+		VocabularyPath                   string
+		FreezeProjectRequiresDescription bool
+		FreezeProjectRequiresProperties  StringSet
+		UnfreezeProjectRequiresAdmin     bool
 	}
 	AuditLogs struct {
 		MaxAge             Duration
