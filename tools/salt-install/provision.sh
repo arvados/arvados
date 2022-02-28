@@ -511,14 +511,13 @@ fi
 if [ -z "${ROLES}" ]; then
   # States
   echo "    - nginx.passenger" >> ${S_DIR}/top.sls
-  # Currently, only available on config_examples/multi_host/aws
   if [ "${SSL_MODE}" = "lets-encrypt" ]; then
     if [ "${USE_LETSENCRYPT_ROUTE53}" = "yes" ]; then
       grep -q "aws_credentials" ${S_DIR}/top.sls || echo "    - extra.aws_credentials" >> ${S_DIR}/top.sls
     fi
     grep -q "letsencrypt"     ${S_DIR}/top.sls || echo "    - letsencrypt" >> ${S_DIR}/top.sls
   else
-    # Use custom certs
+    # Use custom certs, as both bring-your-own and self-signed are copied using this state
     # Copy certs to formula extra/files
     # In dev mode, the files will be created and put in the destination directory by the
     # snakeoil_certs.sls state file
@@ -573,18 +572,20 @@ if [ -z "${ROLES}" ]; then
     echo "extra_custom_certs_dir: /srv/salt/certs" > ${P_DIR}/extra_custom_certs.sls
     echo "extra_custom_certs:" >> ${P_DIR}/extra_custom_certs.sls
 
-    # Are we in a single-host-single-hostname env?
-    if [ "${USE_SINGLE_HOSTNAME}" = "yes" ]; then
-      # Are we in a single-host-single-hostname env?
-      CERT_NAME=${HOSTNAME_EXT}
-    else
-      # We are in a multiple-hostnames env
-      CERT_NAME=${c}
-    fi
     for c in controller websocket workbench workbench2 webshell keepweb keepproxy; do
-      if [ "${SSL_MODE}" = "bring-your-own" ]; then
-        copy_custom_cert ${CUSTOM_CERTS_DIR} $c
+      # Are we in a single-host-single-hostname env?
+      if [ "${USE_SINGLE_HOSTNAME}" = "yes" ]; then
+        # Are we in a single-host-single-hostname env?
+        CERT_NAME=${HOSTNAME_EXT}
+      else
+        # We are in a multiple-hostnames env
+        CERT_NAME=${c}
       fi
+
+      if [[ "${SSL_MODE}" = "bring-your-own" || "${SSL_MODE}" == "self-signed" ]]; then
+        copy_custom_cert ${CUSTOM_CERTS_DIR} ${CERT_NAME}
+      fi
+
       grep -q ${CERT_NAME} ${P_DIR}/extra_custom_certs.sls || echo "  - ${CERT_NAME}" >> ${P_DIR}/extra_custom_certs.sls
 
       # As the pillar differs whether we use LE or custom certs, we need to do a final edition on them
