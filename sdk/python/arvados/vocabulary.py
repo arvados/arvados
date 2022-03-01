@@ -38,49 +38,42 @@ class Vocabulary(object):
     def convert_to_identifiers(self, obj={}):
         """Translate key/value pairs to machine readable identifiers.
         """
-        if not isinstance(obj, dict):
-            raise ValueError("obj must be a dict")
-        r = {}
-        for k, v in obj.items():
-            k_id, v_id = k, v
-            try:
-                k_id = self[k].identifier
-                try:
-                    if isinstance(v, list):
-                        v_id = [self[k][x].identifier for x in v]
-                    else:
-                        v_id = self[k][v].identifier
-                except KeyError:
-                    if self[k].strict:
-                        raise ValueError("value '%s' not found for key '%s'" % (v, k))
-            except KeyError:
-                if self.strict_keys:
-                    raise KeyError("key '%s' not found" % k)
-            r[k_id] = v_id
-        return r
+        return self._convert_to_what(obj, 'identifier')
 
     def convert_to_labels(self, obj={}):
         """Translate key/value pairs to human readable labels.
         """
+        return self._convert_to_what(obj, 'preferred_label')
+
+    def _convert_to_what(self, obj={}, what=None):
         if not isinstance(obj, dict):
             raise ValueError("obj must be a dict")
+        if what not in ['preferred_label', 'identifier']:
+            raise ValueError("what attr must be 'preferred_label' or 'identifier'")
         r = {}
         for k, v in obj.items():
-            k_lbl, v_lbl = k, v
+            k_what, v_what = k, v
             try:
-                k_lbl = self[k].preferred_label
-                try:
-                    if isinstance(v, list):
-                        v_lbl = [self[k][x].preferred_label for x in v]
-                    else:
-                        v_lbl = self[k][v].preferred_label
-                except KeyError:
-                    if self[k].strict:
-                        raise ValueError("value '%s' not found for key '%s'" % (v, k))
+                k_what = getattr(self[k], what)
+                if isinstance(v, list):
+                    v_what = []
+                    for x in v:
+                        try:
+                            v_what.append(getattr(self[k][x], what))
+                        except KeyError:
+                            if self[k].strict:
+                                raise ValueError("value '%s' not found for key '%s'" % (x, k))
+                            v_what.append(x)
+                else:
+                    try:
+                        v_what = getattr(self[k][v], what)
+                    except KeyError:
+                        if self[k].strict:
+                            raise ValueError("value '%s' not found for key '%s'" % (v, k))
             except KeyError:
                 if self.strict_keys:
                     raise KeyError("key '%s' not found" % k)
-            r[k_lbl] = v_lbl
+            r[k_what] = v_what
         return r
 
 class VocabularyData(object):

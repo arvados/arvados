@@ -180,6 +180,18 @@ class VocabularyTest(unittest.TestCase):
         with self.assertRaises(ValueError):
             self.voc.convert_to_identifiers({'Priority': 'foo'})
 
+    def test_convert_to_identifiers_unknown_value_list(self):
+        # Non-strict key
+        self.assertEqual(self.voc['animal'].strict, False)
+        self.assertEqual(
+            self.voc.convert_to_identifiers({'Animal': ['foo', 'loxodonta']}),
+            {'IDTAGANIMALS': ['foo', 'IDVALANIMAL2']}
+        )
+        # Strict key
+        self.assertEqual(self.voc['priority'].strict, True)
+        with self.assertRaises(ValueError):
+            self.voc.convert_to_identifiers({'Priority': ['foo', 'bar']})
+
     def test_convert_to_labels(self):
         cases = [
             {'IDTAGIMPORTANCES': 'IDVALIMPORTANCE1'},
@@ -240,6 +252,18 @@ class VocabularyTest(unittest.TestCase):
         self.assertEqual(self.voc['priority'].strict, True)
         with self.assertRaises(ValueError):
             self.voc.convert_to_labels({'IDTAGIMPORTANCES': 'foo'})
+
+    def test_convert_to_labels_unknown_value_list(self):
+        # Non-strict key
+        self.assertEqual(self.voc['animal'].strict, False)
+        self.assertEqual(
+            self.voc.convert_to_labels({'IDTAGANIMALS': ['foo', 'IDVALANIMAL1']}),
+            {'Animal': ['foo', 'Human']}
+        )
+        # Strict key
+        self.assertEqual(self.voc['priority'].strict, True)
+        with self.assertRaises(ValueError):
+            self.voc.convert_to_labels({'IDTAGIMPORTANCES': ['foo', 'bar']})
 
     def test_convert_roundtrip(self):
         initial = {'IDTAGIMPORTANCES': 'IDVALIMPORTANCE1', 'IDTAGANIMALS': 'IDVALANIMAL1', 'IDTAGCOMMENTS': 'Very important person'}
