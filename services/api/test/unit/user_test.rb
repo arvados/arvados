@@ -797,4 +797,12 @@ class UserTest < ActiveSupport::TestCase
     assert user.save
   end
 
+  test "empty identity_url saves as null" do
+    set_user_from_auth :admin
+    user = users(:active)
+    assert user.update_attributes(identity_url: '')
+    user.reload
+    assert_nil user.identity_url
+  end
+
 end
