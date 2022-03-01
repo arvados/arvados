@@ -125,7 +125,7 @@ ${CUSTOM_CERTS_DIR}/my-arvados.example.net.key
 
 All certificate files will be used by nginx. You may need to include intermediate certificates in your certificate file. See "the nginx documentation":http://nginx.org/en/docs/http/configuring_https_servers.html#chains for more details.
 
-h3(#further_customization). Further customization of the installation (modifying the salt pillars and states)
+h2(#further_customization). Further customization of the installation (modifying the salt pillars and states)
 
 If you want or need further customization, you can edit the Saltstack pillars and states files. Pay particular attention to the <i>pillars/arvados.sls</i> one. Any extra <i>state</i> file you add under <i>local_config_dir/states</i> will be added to the salt run and applied to the host.
 
@@ -151,7 +151,7 @@ arvados: Failed:      0
 </code></pre>
 </notextile>
 
-h3(#ca_root_certificate). Install the CA root certificate (SSL_MODE=self-signed only)
+h2(#ca_root_certificate). Install the CA root certificate (SSL_MODE=self-signed only)
 
 Arvados uses SSL to encrypt communications. The web interface uses AJAX which will silently fail if the certificate is not valid or signed by an unknown Certification Authority.
 
