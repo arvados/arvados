@@ -46,7 +46,10 @@ class Vocabulary(object):
             try:
                 k_id = self[k].identifier
                 try:
-                    v_id = self[k][v].identifier
+                    if isinstance(v, list):
+                        v_id = [self[k][x].identifier for x in v]
+                    else:
+                        v_id = self[k][v].identifier
                 except KeyError:
                     if self[k].strict:
                         raise ValueError("value '%s' not found for key '%s'" % (v, k))
@@ -67,7 +70,10 @@ class Vocabulary(object):
             try:
                 k_lbl = self[k].preferred_label
                 try:
-                    v_lbl = self[k][v].preferred_label
+                    if isinstance(v, list):
+                        v_lbl = [self[k][x].preferred_label for x in v]
+                    else:
+                        v_lbl = self[k][v].preferred_label
                 except KeyError:
                     if self[k].strict:
                         raise ValueError("value '%s' not found for key '%s'" % (v, k))
