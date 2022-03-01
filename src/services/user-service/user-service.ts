@@ -8,8 +8,12 @@ import { UserResource } from "models/user";
 import { ApiActions } from "services/api/api-actions";
 
 export class UserService extends CommonResourceService<UserResource> {
-    constructor(serverApi: AxiosInstance, actions: ApiActions) {
-        super(serverApi, "users", actions);
+    constructor(serverApi: AxiosInstance, actions: ApiActions, readOnlyFields: string[] = []) {
+        super(serverApi, "users", actions, readOnlyFields.concat([
+            'fullName',
+            'isInvited',
+            'writableBy',
+        ]));
     }
 
     activate(uuid: string) {
