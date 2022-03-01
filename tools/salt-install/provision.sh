@@ -413,7 +413,7 @@ fi
 mkdir -p ${T_DIR}
 # Replace cluster and domain name in the test files
 for f in $(ls "${SOURCE_TESTS_DIR}"/*); do
-  sed "s#__CLUSTER__#${CLUSTER}#g;
+  FILTERS="s#__CLUSTER__#${CLUSTER}#g;
        s#__CONTROLLER_EXT_SSL_PORT__#${CONTROLLER_EXT_SSL_PORT}#g;
        s#__DOMAIN__#${DOMAIN}#g;
        s#__IP_INT__#${IP_INT}#g;
@@ -421,8 +421,13 @@ for f in $(ls "${SOURCE_TESTS_DIR}"/*); do
        s#__INITIAL_USER_PASSWORD__#${INITIAL_USER_PASSWORD}#g
        s#__INITIAL_USER__#${INITIAL_USER}#g;
        s#__DATABASE_PASSWORD__#${DATABASE_PASSWORD}#g;
-       s#__SYSTEM_ROOT_TOKEN__#${SYSTEM_ROOT_TOKEN}#g" \
-  "${f}" > ${T_DIR}/$(basename "${f}")
+       s#__SYSTEM_ROOT_TOKEN__#${SYSTEM_ROOT_TOKEN}#g"
+  if [ "$USE_SINGLE_HOSTNAME" = "yes" ]; then
+    FILTERS="s#__CLUSTER__.__DOMAIN__#${HOSTNAME_EXT}#g;
+       $FILTERS"
+  fi
+  sed "$FILTERS" \
+    "${f}" > ${T_DIR}/$(basename "${f}")
 done
 chmod 755 ${T_DIR}/run-test.sh
 

@@ -29,7 +29,7 @@ KEEP_EXT_SSL_PORT=35101
 KEEPWEB_EXT_SSL_PORT=11002
 WEBSHELL_EXT_SSL_PORT=14202
 WEBSOCKET_EXT_SSL_PORT=18002
-WORKBENCH1_EXT_SSL_PORT=9444
+WORKBENCH1_EXT_SSL_PORT=443
 WORKBENCH2_EXT_SSL_PORT=9445
 
 INITIAL_USER="admin"
@@ -51,31 +51,19 @@ DATABASE_PASSWORD=please_set_this_to_some_secure_value
 # Arvados requires SSL certificates to work correctly. This installer supports these options:
 # * self-signed: let the installer create self-signed certificate(s)
 # * bring-your-own: supply your own certificate(s) in the `certs` directory
+# * lets-encrypt: automatically obtain and install SSL certificates for your hostname(s)
 #
 # See https://doc.arvados.org/intall/salt-single-host.html#certificates for more information.
 SSL_MODE="self-signed"
 
-# If you want to use letsencrypt, set SSL_MODE="lets-encrypt"
-# A single certificate for the external hostname of the host will be retrieved, using
-# "standalone" mode of LE.
-
-# If you going to provide your own certificate for Arvados, the provision script can
-# help you deploy it. In order to do that, you need to set `SSL_MODE=bring-your-own` above,
-# and copy the required certificate under the directory specified in the next line.
-# The cert will be copied from this directory by the provision script.
-# Please set it to the FULL PATH to the certs dir if you're going to use a different dir
-# Default is "${SCRIPT_DIR}/certs", where the variable "SCRIPT_DIR" has the path to the
-# directory where the  "provision.sh" script was copied in the destination host.
+# Only used when SSL_MODE is set to "bring-your-own".
+# See https://doc.arvados.org/intall/salt-single-host.html#bring-your-own for more information.
 # CUSTOM_CERTS_DIR="${SCRIPT_DIR}/certs"
-# The script expects cert/key files with the filename matcing ${HOSTNAME_EXT} above
-# Ie., for "HOSTNAME_EXT='my-arvados.example.net', the script will lookup for
-# ${CUSTOM_CERTS_DIR}/my-arvados.example.net.crt
-# ${CUSTOM_CERTS_DIR}/my-arvados.example.net.key
 
-# The certs will be copied from this directory by the provision script.
 # The directory to check for the config files (pillars, states) you want to use.
 # There are a few examples under 'config_examples'.
 # CONFIG_DIR="local_config_dir"
+
 # Extra states to apply. If you use your own subdir, change this value accordingly
 # EXTRA_STATES_DIR="${CONFIG_DIR}/states"
 

@@ -15,7 +15,11 @@ SPDX-License-Identifier: CC-BY-SA-3.0
 # "Choose the desired configuration":#choose_configuration
 ## "Single host / single hostname":#single_host_single_hostname
 ## "Single host / multiple hostnames (Alternative configuration)":#single_host_multiple_hostnames
-## "Further customization of the installation (modifying the salt pillars and states)":#further_customization
+# "Choose the SSL configuration (SSL_MODE)":#certificates
+## "Using self-signed certificates":#self-signed
+## "Using Let's Encrypt certificates":#lets-encrypt
+## "Using your own certificates":#bring-your-own
+# "Further customization of the installation (modifying the salt pillars and states)":#further_customization
 # "Run the provision.sh script":#run_provision_script
 # "Final configuration steps":#final_steps
 ## "Install the CA root certificate (required in both alternatives)":#ca_root_certificate
@@ -38,21 +42,20 @@ It is possible to start with the single host installation method and modify the 
 
 h2(#prerequisites). Prerequisites and planning
 
-Arvados requires SSL for (almost) all network traffic. This installation method supports the following options for the required SSL certificate(s): @self-signed@ and @bring your own certificates@.
-
-Prerequisites
+Prerequisites:
 
 * git
 * a dedicated (virtual) machine for your Arvados server with at least 2 cores and 8 GiB of RAM, running a "supported Arvados distribution":{{site.baseurl}}/install/install-manual-prerequisites.html#supportedlinux
-* ports 9443-9445, 11002, 14202, 18002, 35101 need to be reachable from your client (configurable, see below)
 * at least one DNS hostname that resolves to the IP address of your Arvados server
-* one or more SSL certificates matching the hostname(s) in use (only when using @bring your own certificates@)
+* ports 443, 9443-9445, 11002, 14202, 18002, 35101 need to be reachable from your client (configurable, see below)
+* port 80 needs to be reachable from everywhere on the internet (only when using "Let's Encrypt":#lets-encrypt)
+* one or more SSL certificates matching the hostname(s) in use (only when using "bring your own certificate(s)":#bring-your-own)
 
 h2(#single_host). Single host install using the provision.sh script
 
 {% include 'branchname' %}
 
-This procedure will install all the main Arvados components to get you up and running in a single host. The whole installation procedure takes somewhere between 15 to 60 minutes, depending on the host resources and its network bandwidth. As a reference, on a virtual machine with 1 core and 1 GB RAM, it takes ~25 minutes to do the initial install.
+This procedure will install all the main Arvados components to get you up and running in a single host.
 
 This is a package-based installation method, however the installation script is currently distributed in source form via @git@:
 
@@ -63,15 +66,13 @@ cd arvados/tools/salt-install
 </code></pre>
 </notextile>
 
-The @provision.sh@ script will help you deploy Arvados by preparing your environment to be able to run the installer, then running it. The actual installer is located at "arvados-formula":https://git.arvados.org/arvados-formula.git/tree/refs/heads/{{ branchname }} and will be cloned during the running of the @provision.sh@ script.  The installer is built using "Saltstack":https://saltproject.io/ and @provision.sh@ performs the install using master-less mode.
+The @provision.sh@ script will help you deploy Arvados by preparing your environment to be able to run the installer, then running it. The actual installer is located in the "arvados-formula git repository":https://git.arvados.org/arvados-formula.git/tree/refs/heads/{{ branchname }} and will be cloned during the running of the @provision.sh@ script.  The installer is built using "Saltstack":https://saltproject.io/ and @provision.sh@ performs the install using master-less mode.
 
 After setting up a few variables in a config file (next step), you'll be ready to run it and get Arvados deployed.
 
 h2(#choose_configuration). Choose the desired configuration
 
-For documentation's sake, we will use the cluster name <i>arva2</i> and the domain <i>arv.local</i>. If you don't change them as required in the next steps, installation won't proceed.
-
-Arvados' single host installation can be done in two fashions:
+Arvados' single host installation can be done in two ways:
 
 * Using a single hostname, assigning <i>a different port (other than 443) for each user-facing service</i>: This choice is easier to setup, but the user will need to know the port/s for the different services she wants to connect to.
 * Using multiple hostnames on the same IP: this setup involves a few extra steps but each service will have a meaningful hostname so it will make easier to access them later.
@@ -87,10 +88,6 @@ cp -r config_examples/single_host/single_hostname local_config_dir
 
 Edit the variables in the <i>local.params</i> file. Pay attention to the <b>*_PORT, *_TOKEN</b> and <b>*KEY</b> variables.
 
-The <i>single_host</i> examples use self-signed SSL certificates by default, which are deployed using the same mechanism used to deploy custom certificates.
-
-When setting (SSL_MODE=lets-encrypt), please note: When using AWS, EC2 instances can have a default hostname that ends with `amazonaws.com`. Let's Encrypt has a blacklist of domain names for which it will not issue certificates, and that blacklist includes the `amazonaws.com` domain. In order to use Let's Encrypt certificates on AWS EC2, you will need to bring your own domain name and point a hostname in that domain at your EC2 instance.
-
 h3(#single_host_multiple_hostnames). Single host / multiple hostnames (Alternative configuration)
 <notextile>
 <pre><code>cp local.params.example.single_host_multiple_hostnames local.params
@@ -99,6 +96,61 @@ cp -r config_examples/single_host/multiple_hostnames local_config_dir
 </notextile>
 
 Edit the variables in the <i>local.params</i> file.
+
+h2(#certificates). Choose the SSL configuration (SSL_MODE)
+
+Arvados requires SSL certificates to work correctly. This installer supports these options:
+
+* @self-signed@: let the installer create self-signed certificate(s)
+* @lets-encrypt@: automatically obtain and install SSL certificates for your hostname(s)
+* @bring-your-own@: supply your own certificate(s) in the `certs` directory
+
+h3(#self-signed). Using self-signed certificates
+
+In the default configuration, this installer uses self-signed certificate(s):
+
+<notextile>
+<pre><code>SSL_MODE="self-signed"
+</code></pre>
+</notextile>
+
+When connecting to the Arvados web interface for the first time, you will need to accept the self-signed certificate as trusted to bypass the browser warnings.
+
+h3(#lets-encrypt). Using Let's Encrypt certificates
+
+To automatically get (a) valid certificate(s) via Let's Encrypt, change the configuration like this:
+
+<notextile>
+<pre><code>SSL_MODE="lets-encrypt"
+</code></pre>
+</notextile>
+
+It is important that the DNS hostnames defined in the configuration resolve to the Arvados instance(s), so that Let's Encrypt can validate the domainname ownership and issue the certificate(s).
+
+When using AWS, EC2 instances can have a default hostname that ends with `amazonaws.com`. Let's Encrypt has a blacklist of domain names for which it will not issue certificates, and that blacklist includes the `amazonaws.com` domain, which means the default hostname can not be used to get a certificate from Let's Encrypt.
+
+For a @single hostname@ setup, the hostname must be defined in @HOSTNAME_EXT@ and resolve to the IP address of your Arvados instance.
+
+For a @multiple hostnames@ setup, the hostnames are created by combining the values of @CLUSTER@ and @DOMAIN@ from the configuration with a prefix. These hostnames must resolve to the IP address of your Arvados instance:
+
+* @CLUSTER@.@DOMAIN@
+* ws.@CLUSTER@.@DOMAIN@
+* workbench.@CLUSTER@.@DOMAIN@
+* workbench2.@CLUSTER@.@DOMAIN@
+* webshell.@CLUSTER@.@DOMAIN@
+* download.@CLUSTER@.@DOMAIN@
+* collections.@CLUSTER@.@DOMAIN@
+* keep.@CLUSTER@.@DOMAIN@
+
+h3(#bring-your-own). Using your own certificates
+
+To supply your own certificates, change the configuration like this:
+
+<notextile>
+<pre><code>SSL_MODE="bring-your-own"
+CUSTOM_CERTS_DIR="${SCRIPT_DIR}/certs"
+</code></pre>
+</notextile>
 
 {% include 'install_custom_certificates' %}
 
@@ -126,7 +178,7 @@ ssh user@host sudo ./provision.sh -c /path/to/your/local.params.file
 </code></pre>
 </notextile>
 
-and wait for it to finish.
+and wait for it to finish. The script will need 5 to 10 minutes to install and configure everything.
 
 If everything goes OK, you'll get some final lines stating something like:
 
@@ -173,11 +225,11 @@ To access your Arvados instance using command line clients (such as arv-get and 
 </code></pre>
 </notextile>
 
-h3(#single_host_multiple_hostnames_dns_configuration). DNS configuration (single host / multiple hostnames)
+h3(#single_host_multiple_hostnames_dns_configuration). Local DNS configuration (multiple hostnames only)
 
-When using multiple hostnames, after the setup is done, you need to set up your DNS to be able to access the cluster.
+When using multiple hostnames, you need to set up your DNS to be able to access the cluster.
 
-If you don't have access to the domain's DNS to add the required entries, the simplest way to do it is to edit your @/etc/hosts@ file (as root):
+If you don't have access to the domain's DNS to add the required entries, the simplest way to do it is to edit your @/etc/hosts@ file (as root). Change @CLUSTER@, @DOMAIN@ and @HOST_IP@ to your local values:
 
 <notextile>
 <pre><code>export CLUSTER="arva2"
@@ -191,21 +243,17 @@ echo "${HOST_IP} api keep keep0 collections download ws workbench workbench2 ${C
 
 h2(#initial_user). Initial user and login
 
-At this point you should be able to log into the Arvados cluster. The initial URL will be:
+At this point you should be able to log on to your new Arvados cluster.
 
-* https://workbench.arva2.arv.local
+For a @single hostname@ setup, the workbench URL will be
 
-or, in general, the url format will be:
+* https://@HOSTNAME_EXT@
 
-* https://workbench.@<cluster>.<domain>@
+For a @multiple hostnames@ setup, the workbench URL will be
 
-By default, the provision script creates an initial user for testing purposes. This user is configured as administrator of the newly created cluster.
+* https://workbench.@CLUSTER@.@DOMAIN@
 
-Assuming you didn't change these values in the @local.params@ file, the initial credentials are:
-
-* User: 'admin'
-* Password: 'password'
-* Email: 'admin@arva2.arv.local'
+By default, the provision script creates an initial user for testing purposes. This user is configured as administrator of the newly created cluster. The username, password and e-mail address for the initial user are configured in the @local.params@ file.
 
 h2(#test_install). Test the installed cluster running a simple workflow
 
