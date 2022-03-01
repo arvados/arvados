@@ -784,8 +784,10 @@ echo '\pset pager off' >> /root/.psqlrc
 salt-call --local state.apply -l ${LOG_LEVEL}
 
 # Finally, make sure that /etc/hosts is not overwritten on reboot
-# TODO: will this work on CentOS?
-sed -i 's/^manage_etc_hosts: true/#manage_etc_hosts: true/g' /etc/cloud/cloud.cfg.d/*
+if [ -d /etc/cloud/cloud.cfg.d ]; then
+  # TODO: will this work on CentOS?
+  sed -i 's/^manage_etc_hosts: true/#manage_etc_hosts: true/g' /etc/cloud/cloud.cfg.d/*
+fi
 
 # FIXME! #16992 Temporary fix for psql call in arvados-api-server
 if [ "x${DELETE_PSQL}" = "xyes" ]; then
