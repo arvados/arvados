@@ -147,6 +147,20 @@ class VocabularyTest(unittest.TestCase):
                 "failing test case: {}".format(case)
             )
 
+    def test_convert_to_identifiers_value_lists(self):
+        cases = [
+            {'IDTAGIMPORTANCES': ['IDVALIMPORTANCE1', 'IDVALIMPORTANCE2']},
+            {'IDTAGIMPORTANCES': ['High', 'Medium']},
+            {'importance': ['IDVALIMPORTANCE1', 'IDVALIMPORTANCE2']},
+            {'priority': ['high', 'medium']},
+        ]
+        for case in cases:
+            self.assertEqual(
+                self.voc.convert_to_identifiers(case),
+                {'IDTAGIMPORTANCES': ['IDVALIMPORTANCE1', 'IDVALIMPORTANCE2']},
+                "failing test case: {}".format(case)
+            )
+
     def test_convert_to_identifiers_unknown_key(self):
         # Non-strict vocabulary
         self.assertEqual(self.voc.strict_keys, False)
@@ -194,11 +208,19 @@ class VocabularyTest(unittest.TestCase):
                 "failing test case: {}".format(case)
             )
 
-    def test_convert_roundtrip(self):
-        initial = {'IDTAGIMPORTANCES': 'IDVALIMPORTANCE1', 'IDTAGANIMALS': 'IDVALANIMAL1', 'IDTAGCOMMENTS': 'Very important person'}
-        converted = self.voc.convert_to_labels(initial)
-        self.assertNotEqual(converted, initial)
-        self.assertEqual(self.voc.convert_to_identifiers(converted), initial)
+    def test_convert_to_labels_value_lists(self):
+        cases = [
+            {'IDTAGIMPORTANCES': ['IDVALIMPORTANCE1', 'IDVALIMPORTANCE2']},
+            {'IDTAGIMPORTANCES': ['High', 'Medium']},
+            {'importance': ['IDVALIMPORTANCE1', 'IDVALIMPORTANCE2']},
+            {'priority': ['high', 'medium']},
+        ]
+        for case in cases:
+            self.assertEqual(
+                self.voc.convert_to_labels(case),
+                {'Importance': ['High', 'Medium']},
+                "failing test case: {}".format(case)
+            )
 
     def test_convert_to_labels_unknown_key(self):
         # Non-strict vocabulary
@@ -218,3 +240,9 @@ class VocabularyTest(unittest.TestCase):
         self.assertEqual(self.voc['priority'].strict, True)
         with self.assertRaises(ValueError):
             self.voc.convert_to_labels({'IDTAGIMPORTANCES': 'foo'})
+
+    def test_convert_roundtrip(self):
+        initial = {'IDTAGIMPORTANCES': 'IDVALIMPORTANCE1', 'IDTAGANIMALS': 'IDVALANIMAL1', 'IDTAGCOMMENTS': 'Very important person'}
+        converted = self.voc.convert_to_labels(initial)
+        self.assertNotEqual(converted, initial)
+        self.assertEqual(self.voc.convert_to_identifiers(converted), initial)
