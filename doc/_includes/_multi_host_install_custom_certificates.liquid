@@ -6,17 +6,7 @@ SPDX-License-Identifier: CC-BY-SA-3.0
 
 Copy your certificates to the directory specified with the variable @CUSTOM_CERTS_DIR@ in the remote directory where you copied the @provision.sh@ script. The provision script will find the certificates there.
 
-For a @single hostname@ setup, the certificate and its key need to be copied to a file named after @HOSTNAME_EXT@.
-
-For example, if @HOSTNAME_EXT@ is defined as @my-arvados.example.net@, the script will look for
-
-<notextile>
-<pre><code>${CUSTOM_CERTS_DIR}/my-arvados.example.net.crt
-${CUSTOM_CERTS_DIR}/my-arvados.example.net.key
-</code></pre>
-</notextile>
-
-For a @multiple hostnames@ setup, the script expects cert/key files with these basenames (matching the role except for <i>keepweb</i>, which is split in both <i>download / collections</i>):
+The script expects cert/key files with these basenames (matching the role except for <i>keepweb</i>, which is split in both <i>download / collections</i>):
 
 * "controller"
 * "websocket"
