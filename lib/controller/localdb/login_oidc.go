@@ -31,6 +31,7 @@ import (
 	"github.com/coreos/go-oidc"
 	lru "github.com/hashicorp/golang-lru"
 	"github.com/jmoiron/sqlx"
+	"github.com/lib/pq"
 	"github.com/sirupsen/logrus"
 	"golang.org/x/oauth2"
 	"google.golang.org/api/option"
@@ -43,6 +44,7 @@ var (
 	tokenCacheNegativeTTL = time.Minute * 5
 	tokenCacheTTL         = time.Minute * 10
 	tokenCacheRaceWindow  = time.Minute
+	pqCodeUniqueViolation = pq.ErrorCode("23505")
 )
 
 type oidcLoginController struct {
@@ -479,7 +481,6 @@ func (ta *oidcTokenAuthorizer) registerToken(ctx context.Context, tok string) er
 	// it's expiring.
 	exp := time.Now().UTC().Add(tokenCacheTTL + tokenCacheRaceWindow)
 
-	var aca arvados.APIClientAuthorization
 	if updating {
 		_, err = tx.ExecContext(ctx, `update api_client_authorizations set expires_at=$1 where api_token=$2`, exp, hmac)
 		if err != nil {
@@ -487,23 +488,44 @@ func (ta *oidcTokenAuthorizer) registerToken(ctx context.Context, tok string) er
 		}
 		ctxlog.FromContext(ctx).WithField("HMAC", hmac).Debug("(*oidcTokenAuthorizer)registerToken: updated api_client_authorizations row")
 	} else {
-		aca, err = ta.ctrl.Parent.CreateAPIClientAuthorization(ctx, ta.ctrl.Cluster.SystemRootToken, *authinfo)
+		aca, err := ta.ctrl.Parent.CreateAPIClientAuthorization(ctx, ta.ctrl.Cluster.SystemRootToken, *authinfo)
+		if err != nil {
+			return err
+		}
+		_, err = tx.ExecContext(ctx, `savepoint upd`)
 		if err != nil {
 			return err
 		}
 		_, err = tx.ExecContext(ctx, `update api_client_authorizations set api_token=$1, expires_at=$2 where uuid=$3`, hmac, exp, aca.UUID)
-		if err != nil {
+		if e, ok := err.(*pq.Error); ok && e.Code == pqCodeUniqueViolation {
+			// unique_violation, given that the above
+			// query did not find a row with matching
+			// api_token, means another thread/process
+			// also received this same token and won the
+			// race to insert it -- in which case this
+			// thread doesn't need to update the database.
+			// Discard the redundant row.
+			_, err = tx.ExecContext(ctx, `rollback to savepoint upd`)
+			if err != nil {
+				return err
+			}
+			_, err = tx.ExecContext(ctx, `delete from api_client_authorizations where uuid=$1`, aca.UUID)
+			if err != nil {
+				return err
+			}
+			ctxlog.FromContext(ctx).WithField("HMAC", hmac).Debug("(*oidcTokenAuthorizer)registerToken: api_client_authorizations row inserted by another thread")
+		} else if err != nil {
+			ctxlog.FromContext(ctx).Errorf("%#v", err)
 			return fmt.Errorf("error adding OIDC access token to database: %w", err)
+		} else {
+			ctxlog.FromContext(ctx).WithFields(logrus.Fields{"UUID": aca.UUID, "HMAC": hmac}).Debug("(*oidcTokenAuthorizer)registerToken: inserted api_client_authorizations row")
 		}
-		aca.APIToken = hmac
-		ctxlog.FromContext(ctx).WithFields(logrus.Fields{"UUID": aca.UUID, "HMAC": hmac}).Debug("(*oidcTokenAuthorizer)registerToken: inserted api_client_authorizations row")
 	}
 	err = tx.Commit()
 	if err != nil {
 		return err
 	}
-	aca.ExpiresAt = exp
-	ta.cache.Add(tok, aca)
+	ta.cache.Add(tok, arvados.APIClientAuthorization{ExpiresAt: exp})
 	return nil
 }
 
