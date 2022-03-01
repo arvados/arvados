@@ -587,7 +587,7 @@ if [ -z "${ROLES}" ]; then
         CERT_NAME=${c}
       fi
 
-      if [[ "${SSL_MODE}" = "bring-your-own" || "${SSL_MODE}" == "self-signed" ]]; then
+      if [[ "$SSL_MODE" == "bring-your-own" ]]; then
         copy_custom_cert ${CUSTOM_CERTS_DIR} ${CERT_NAME}
       fi
 
