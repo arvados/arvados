@@ -11,13 +11,9 @@ CLUSTER="cluster_fixme_or_this_wont_work"
 # The domainname you want tou give to your cluster's hosts
 DOMAIN="domain_fixme_or_this_wont_work"
 
-# Host SSL port where you want to point your browser to access Arvados
-# Defaults to 443 for regular runs, and to 8443 when called in Vagrant.
-# You can point it to another port if desired
-# In Vagrant, make sure it matches what you set in the Vagrantfile (8443)
+# External ports used by the Arvados services
 CONTROLLER_EXT_SSL_PORT=443
 KEEP_EXT_SSL_PORT=25101
-# Both for collections and downloads
 KEEPWEB_EXT_SSL_PORT=9002
 WEBSHELL_EXT_SSL_PORT=4202
 WEBSOCKET_EXT_SSL_PORT=8002
@@ -25,7 +21,6 @@ WORKBENCH1_EXT_SSL_PORT=443
 WORKBENCH2_EXT_SSL_PORT=3001
 
 INITIAL_USER="admin"
-
 # If not specified, the initial user email will be composed as
 # INITIAL_USER@CLUSTER.DOMAIN
 INITIAL_USER_EMAIL="admin@cluster_fixme_or_this_wont_work.domain_fixme_or_this_wont_work"
@@ -43,35 +38,19 @@ DATABASE_PASSWORD=please_set_this_to_some_secure_value
 # Arvados requires SSL certificates to work correctly. This installer supports these options:
 # * self-signed: let the installer create self-signed certificate(s)
 # * bring-your-own: supply your own certificate(s) in the `certs` directory
+# * lets-encrypt: automatically obtain and install SSL certificates for your hostname(s)
 #
 # See https://doc.arvados.org/intall/salt-single-host.html#certificates for more information.
 SSL_MODE="self-signed"
 
-# If you going to provide your own certificates for Arvados, the provision script can
-# help you deploy them. In order to do that, you need to set `SSL_MODE=bring-your-own` above,
-# and copy the required certificates under the directory specified in the next line.
-# The certs will be copied from this directory by the provision script.
-# Please set it to the FULL PATH to the certs dir if you're going to use a different dir
-# Default is "${SCRIPT_DIR}/certs", where the variable "SCRIPT_DIR" has the path to the
-# directory where the  "provision.sh" script was copied in the destination host.
+# CUSTOM_CERTS_DIR is only used when SSL_MODE is set to "bring-your-own".
+# See https://doc.arvados.org/intall/salt-single-host.html#bring-your-own for more information.
 # CUSTOM_CERTS_DIR="${SCRIPT_DIR}/certs"
-# The script expects cert/key files with these basenames (matching the role except for
-# keepweb, which is split in both download/collections):
-#  "controller"
-#  "websocket"
-#  "workbench"
-#  "workbench2"
-#  "webshell"
-#  "download"         # Part of keepweb
-#  "collections"      # Part of keepweb
-#  "keepproxy"
-# Ie., 'keepproxy', the script will lookup for
-# ${CUSTOM_CERTS_DIR}/keepproxy.crt
-# ${CUSTOM_CERTS_DIR}/keepproxy.key
 
 # The directory to check for the config files (pillars, states) you want to use.
 # There are a few examples under 'config_examples'.
 # CONFIG_DIR="local_config_dir"
+
 # Extra states to apply. If you use your own subdir, change this value accordingly
 # EXTRA_STATES_DIR="${CONFIG_DIR}/states"
 

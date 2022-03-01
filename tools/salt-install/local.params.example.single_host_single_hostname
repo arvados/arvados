@@ -5,41 +5,36 @@
 
 # These are the basic parameters to configure the installation
 
-# The FIVE ALPHANUMERIC CHARACTERS name you want to give your cluster
+# The Arvados cluster ID, needs to be five alphanumeric characters.
 CLUSTER="cluster_fixme_or_this_wont_work"
 
-# The domainname you want tou give to your cluster's hosts
+# The domainname for your cluster's hosts
 DOMAIN="domain_fixme_or_this_wont_work"
 
-# Set this value when installing a cluster in a single host with a single hostname
-# to access all the instances. Not used in the other examples.
-# When using virtualization (ie AWS), this should be
-# the EXTERNAL/PUBLIC hostname for the instance.
+# Set this value when installing a cluster in a single host with a single
+# hostname to access all the instances. HOSTNAME_EXT should be set to the
+# external hostname for the instance.
 HOSTNAME_EXT="hostname_ext_fixme_or_this_wont_work"
-# The internal hostname for the host. In the example files, only used in the
-# single_host/single_hostname example
+
+# The internal IP address for the host.
 IP_INT="ip_int_fixme_or_this_wont_work"
-# Host SSL port where you want to point your browser to access Arvados
-# Defaults to 443 for regular runs, and to 8443 when called in Vagrant.
-# You can point it to another port if desired
-# In Vagrant, make sure it matches what you set in the Vagrantfile (8443)
-CONTROLLER_EXT_SSL_PORT=9443
-KEEP_EXT_SSL_PORT=35101
-# Both for collections and downloads
-KEEPWEB_EXT_SSL_PORT=11002
-WEBSHELL_EXT_SSL_PORT=14202
-WEBSOCKET_EXT_SSL_PORT=18002
-WORKBENCH1_EXT_SSL_PORT=443
-WORKBENCH2_EXT_SSL_PORT=9445
+
+# External ports used by the Arvados services
+CONTROLLER_EXT_SSL_PORT=8800
+KEEP_EXT_SSL_PORT=8801
+KEEPWEB_EXT_SSL_PORT=8802
+WEBSHELL_EXT_SSL_PORT=8803
+WEBSOCKET_EXT_SSL_PORT=8804
+WORKBENCH1_EXT_SSL_PORT=8805
+WORKBENCH2_EXT_SSL_PORT=443
 
 INITIAL_USER="admin"
-
 # If not specified, the initial user email will be composed as
 # INITIAL_USER@CLUSTER.DOMAIN
 INITIAL_USER_EMAIL="admin@cluster_fixme_or_this_wont_work.domain_fixme_or_this_wont_work"
 INITIAL_USER_PASSWORD="password"
 
-# YOU SHOULD CHANGE THESE TO SOME RANDOM STRINGS
+# Populate these values with random strings
 BLOB_SIGNING_KEY=blobsigningkeymushaveatleast32characters
 MANAGEMENT_TOKEN=managementtokenmushaveatleast32characters
 SYSTEM_ROOT_TOKEN=systemroottokenmushaveatleast32characters
@@ -56,7 +51,7 @@ DATABASE_PASSWORD=please_set_this_to_some_secure_value
 # See https://doc.arvados.org/intall/salt-single-host.html#certificates for more information.
 SSL_MODE="self-signed"
 
-# Only used when SSL_MODE is set to "bring-your-own".
+# CUSTOM_CERTS_DIR is only used when SSL_MODE is set to "bring-your-own".
 # See https://doc.arvados.org/intall/salt-single-host.html#bring-your-own for more information.
 # CUSTOM_CERTS_DIR="${SCRIPT_DIR}/certs"
 
