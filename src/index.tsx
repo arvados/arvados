@@ -29,7 +29,6 @@ import { collectionFilesActionSet, readOnlyCollectionFilesActionSet } from 'view
 import { collectionDirectoryItemActionSet, collectionFileItemActionSet, readOnlyCollectionDirectoryItemActionSet, readOnlyCollectionFileItemActionSet } from 'views-components/context-menu/action-sets/collection-files-item-action-set';
 import { collectionFilesNotSelectedActionSet } from 'views-components/context-menu/action-sets/collection-files-not-selected-action-set';
 import { collectionActionSet, collectionAdminActionSet, oldCollectionVersionActionSet, readOnlyCollectionActionSet } from 'views-components/context-menu/action-sets/collection-action-set';
-import { processActionSet } from 'views-components/context-menu/action-sets/process-action-set';
 import { loadWorkbench } from 'store/workbench/workbench-actions';
 import { Routes } from 'routes/routes';
 import { trashActionSet } from "views-components/context-menu/action-sets/trash-action-set";
@@ -38,7 +37,11 @@ import { initWebSocket } from 'websocket/websocket';
 import { Config } from 'common/config';
 import { addRouteChangeHandlers } from './routes/route-change-handlers';
 import { setTokenDialogApiHost } from 'store/token-dialog/token-dialog-actions';
-import { processResourceActionSet, readOnlyProcessResourceActionSet } from 'views-components/context-menu/action-sets/process-resource-action-set';
+import {
+    processResourceActionSet,
+    processResourceAdminActionSet,
+    readOnlyProcessResourceActionSet
+} from 'views-components/context-menu/action-sets/process-resource-action-set';
 import { progressIndicatorActions } from 'store/progress-indicator/progress-indicator-actions';
 import { trashedCollectionActionSet } from 'views-components/context-menu/action-sets/trashed-collection-action-set';
 import { setBuildInfo } from 'store/app-info/app-info-actions';
@@ -57,7 +60,6 @@ import { groupActionSet } from 'views-components/context-menu/action-sets/group-
 import { groupMemberActionSet } from 'views-components/context-menu/action-sets/group-member-action-set';
 import { linkActionSet } from 'views-components/context-menu/action-sets/link-action-set';
 import { loadFileViewersConfig } from 'store/file-viewers/file-viewers-actions';
-import { processResourceAdminActionSet } from 'views-components/context-menu/action-sets/process-resource-admin-action-set';
 import { filterGroupAdminActionSet, projectAdminActionSet } from 'views-components/context-menu/action-sets/project-admin-action-set';
 import { permissionEditActionSet } from 'views-components/context-menu/action-sets/permission-edit-action-set';
 import { snackbarActions, SnackbarKind } from "store/snackbar/snackbar-actions";
@@ -83,7 +85,6 @@ addMenuActionSet(ContextMenuKind.COLLECTION, collectionActionSet);
 addMenuActionSet(ContextMenuKind.READONLY_COLLECTION, readOnlyCollectionActionSet);
 addMenuActionSet(ContextMenuKind.OLD_VERSION_COLLECTION, oldCollectionVersionActionSet);
 addMenuActionSet(ContextMenuKind.TRASHED_COLLECTION, trashedCollectionActionSet);
-addMenuActionSet(ContextMenuKind.PROCESS, processActionSet);
 addMenuActionSet(ContextMenuKind.PROCESS_RESOURCE, processResourceActionSet);
 addMenuActionSet(ContextMenuKind.READONLY_PROCESS_RESOURCE, readOnlyProcessResourceActionSet);
 addMenuActionSet(ContextMenuKind.TRASH, trashActionSet);

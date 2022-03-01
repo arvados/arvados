@@ -190,7 +190,7 @@ export const openProcessContextMenu = (event: React.MouseEvent<HTMLElement>, pro
                 description: res.description,
                 outputUuid: res.outputUuid || '',
                 workflowUuid: res.properties.workflowUuid || '',
-                menuKind: ContextMenuKind.PROCESS
+                menuKind: ContextMenuKind.PROCESS_RESOURCE
             }));
         }
     };
