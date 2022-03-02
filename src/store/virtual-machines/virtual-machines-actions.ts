@@ -157,7 +157,7 @@ export const addUpdateVirtualMachineLogin = ({uuid, vmUuid, user, groups}: AddLo
                 dispatch(updateResources([permission]));
             } else {
                 const permission = await services.permissionService.create({
-                headUuid: vmUuid,
+                    headUuid: vmUuid,
                     tailUuid: userResource.uuid,
                     name: PermissionLevel.CAN_LOGIN,
                     properties: {

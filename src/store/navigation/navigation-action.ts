@@ -11,6 +11,7 @@ import { RootState } from 'store/store';
 import { ServiceRepository } from 'services/services';
 import { pluginConfig } from 'plugins';
 import { snackbarActions, SnackbarKind } from 'store/snackbar/snackbar-actions';
+import { USERS_PANEL_LABEL, MY_ACCOUNT_PANEL_LABEL } from 'store/breadcrumbs/breadcrumbs-actions';
 
 const navigationNotAvailable = (id: string) =>
     snackbarActions.OPEN_SNACKBAR({
@@ -68,6 +69,12 @@ export const navigateTo = (uuid: string) =>
                 return;
             case SidePanelTreeCategory.ALL_PROCESSES:
                 dispatch(navigateToAllProcesses);
+                return;
+            case USERS_PANEL_LABEL:
+                dispatch(navigateToUsers);
+                return;
+            case MY_ACCOUNT_PANEL_LABEL:
+                dispatch(navigateToMyAccount);
                 return;
         }
 

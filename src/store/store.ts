@@ -49,6 +49,8 @@ import { repositoriesReducer } from 'store/repositories/repositories-reducer';
 import { keepServicesReducer } from 'store/keep-services/keep-services-reducer';
 import { UserMiddlewareService } from 'store/users/user-panel-middleware-service';
 import { USERS_PANEL_ID } from 'store/users/users-actions';
+import { UserProfileGroupsMiddlewareService } from 'store/user-profile/user-profile-groups-middleware-service';
+import { USER_PROFILE_PANEL_ID } from 'store/user-profile/user-profile-actions'
 import { GroupsPanelMiddlewareService } from 'store/groups-panel/groups-panel-middleware-service';
 import { GROUPS_PANEL_ID } from 'store/groups-panel/groups-panel-actions';
 import { GroupDetailsPanelMembersMiddlewareService } from 'store/group-details-panel/group-details-panel-members-middleware-service';
@@ -114,6 +116,9 @@ export function configureStore(history: History, services: ServiceRepository, co
     const userPanelMiddleware = dataExplorerMiddleware(
         new UserMiddlewareService(services, USERS_PANEL_ID)
     );
+    const userProfileGroupsMiddleware = dataExplorerMiddleware(
+        new UserProfileGroupsMiddlewareService(services, USER_PROFILE_PANEL_ID)
+    );
     const groupsPanelMiddleware = dataExplorerMiddleware(
         new GroupsPanelMiddlewareService(services, GROUPS_PANEL_ID)
     );
@@ -160,6 +165,7 @@ export function configureStore(history: History, services: ServiceRepository, co
         sharedWithMePanelMiddleware,
         workflowPanelMiddleware,
         userPanelMiddleware,
+        userProfileGroupsMiddleware,
         groupsPanelMiddleware,
         groupDetailsPanelMembersMiddleware,
         groupDetailsPanelPermissionsMiddleware,

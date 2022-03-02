@@ -8,15 +8,17 @@ import { withDialog, WithDialogProps } from "store/dialog/with-dialog";
 import { FormDialog } from 'components/form-dialog/form-dialog';
 import { TextField } from 'components/text-field/text-field';
 import { VirtualMachinesResource } from 'models/virtual-machines';
-import { USER_LENGTH_VALIDATION, CHOOSE_VM_VALIDATION } from 'validators/validators';
+import { CHOOSE_VM_VALIDATION } from 'validators/validators';
 import { InputLabel } from '@material-ui/core';
 import { NativeSelectField } from 'components/select-field/select-field';
-import { SetupShellAccountFormDialogData, SETUP_SHELL_ACCOUNT_DIALOG, setupUserVM } from 'store/users/users-actions';
+import { SETUP_SHELL_ACCOUNT_DIALOG, setupUserVM } from 'store/users/users-actions';
 import { UserResource } from 'models/user';
+import { VIRTUAL_MACHINE_ADD_LOGIN_USER_FIELD, VIRTUAL_MACHINE_ADD_LOGIN_VM_FIELD, VIRTUAL_MACHINE_ADD_LOGIN_GROUPS_FIELD, AddLoginFormData } from 'store/virtual-machines/virtual-machines-actions';
+import { GroupArrayInput } from 'views-components/virtual-machines-dialog/group-array-input';
 
 export const SetupShellAccountDialog = compose(
     withDialog(SETUP_SHELL_ACCOUNT_DIALOG),
-    reduxForm<SetupShellAccountFormDialogData>({
+    reduxForm<AddLoginFormData>({
         form: SETUP_SHELL_ACCOUNT_DIALOG,
         onSubmit: (data, dispatch) => {
             dispatch(setupUserVM(data));
@@ -32,12 +34,6 @@ export const SetupShellAccountDialog = compose(
         />
 );
 
-interface UserProps {
-    data: {
-        user: UserResource;
-    };
-}
-
 interface VirtualMachinesProps {
     data: {
         items: VirtualMachinesResource[];
@@ -48,39 +44,39 @@ interface DataProps {
     items: VirtualMachinesResource[];
 }
 
-const UserEmailField = ({ data }: UserProps) =>
+const UserNameField = () =>
     <span>
+        <InputLabel>VM Login</InputLabel>
         <Field
-            name='email'
+            name={`${VIRTUAL_MACHINE_ADD_LOGIN_USER_FIELD}.username`}
             component={TextField as any}
-            disabled
-            label={data.user.email} /></span>;
+            disabled /></span>;
 
 const UserVirtualMachineField = ({ data }: VirtualMachinesProps) =>
     <div style={{ marginBottom: '21px' }}>
         <InputLabel>Virtual Machine</InputLabel>
         <Field
-            name='virtualMachine'
+            name={VIRTUAL_MACHINE_ADD_LOGIN_VM_FIELD}
             component={NativeSelectField as any}
             validate={CHOOSE_VM_VALIDATION}
             items={getVirtualMachinesList(data.items)} />
     </div>;
 
 const UserGroupsVirtualMachineField = () =>
-    <Field
-        name='groups'
-        component={TextField as any}
-        validate={USER_LENGTH_VALIDATION}
-        label="Groups for virtual machine (comma separated list)" />;
+    <GroupArrayInput
+        name={VIRTUAL_MACHINE_ADD_LOGIN_GROUPS_FIELD}
+        input={{id:"Add groups to VM login (eg: docker, sudo)", disabled:false}}
+        required={false}
+    />
 
 const getVirtualMachinesList = (virtualMachines: VirtualMachinesResource[]) =>
-    [{ key: "", value: "" }].concat(virtualMachines.map(it => ({ key: it.hostname, value: it.hostname })));
+    [{ key: "", value: "" }].concat(virtualMachines.map(it => ({ key: it.uuid, value: it.hostname })));
 
-type SetupShellAccountDialogComponentProps = WithDialogProps<{}> & InjectedFormProps<SetupShellAccountFormDialogData>;
+type SetupShellAccountDialogComponentProps = WithDialogProps<{}> & InjectedFormProps<AddLoginFormData>;
 
 const SetupShellAccountFormFields = (props: SetupShellAccountDialogComponentProps) =>
     <>
-        <UserEmailField data={props.data as DataProps} />
+        <UserNameField />
         <UserVirtualMachineField data={props.data as DataProps} />
         <UserGroupsVirtualMachineField />
     </>;

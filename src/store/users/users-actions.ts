@@ -8,13 +8,16 @@ import { RootState } from 'store/store';
 import { getUserUuid } from "common/getuser";
 import { ServiceRepository } from "services/services";
 import { dialogActions } from 'store/dialog/dialog-actions';
-import { startSubmit, reset } from "redux-form";
+import { startSubmit, reset, initialize, stopSubmit } from "redux-form";
 import { snackbarActions, SnackbarKind } from 'store/snackbar/snackbar-actions';
 import { UserResource } from "models/user";
 import { getResource } from 'store/resources/resources';
 import { navigateTo, navigateToUsers, navigateToRootProject } from "store/navigation/navigation-action";
 import { authActions } from 'store/auth/auth-action';
 import { getTokenV2 } from "models/api-client-authorization";
+import { AddLoginFormData, VIRTUAL_MACHINE_ADD_LOGIN_GROUPS_FIELD, VIRTUAL_MACHINE_ADD_LOGIN_USER_FIELD } from "store/virtual-machines/virtual-machines-actions";
+import { PermissionLevel } from "models/permission";
+import { updateResources } from "store/resources/resources-actions";
 
 export const USERS_PANEL_ID = 'usersPanel';
 export const USER_ATTRIBUTES_DIALOG = 'userAttributesDialog';
@@ -28,11 +31,7 @@ export interface UserCreateFormDialogData {
     groupVirtualMachine: string;
 }
 
-export interface SetupShellAccountFormDialogData {
-    email: string;
-    virtualMachineName: string;
-    groupVirtualMachine: string;
-}
+export const userBindedActions = bindDataExplorerActions(USERS_PANEL_ID);
 
 export const openUserAttributes = (uuid: string) =>
     (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
@@ -53,8 +52,8 @@ export const openSetupShellAccount = (uuid: string) =>
         const { resources } = getState();
         const user = getResource<UserResource>(uuid)(resources);
         const virtualMachines = await services.virtualMachineService.list();
-        dispatch(dialogActions.CLOSE_DIALOG({ id: USER_MANAGEMENT_DIALOG }));
-        dispatch(dialogActions.OPEN_DIALOG({ id: SETUP_SHELL_ACCOUNT_DIALOG, data: { user, ...virtualMachines } }));
+        dispatch(initialize(SETUP_SHELL_ACCOUNT_DIALOG, {[VIRTUAL_MACHINE_ADD_LOGIN_USER_FIELD]: user, [VIRTUAL_MACHINE_ADD_LOGIN_GROUPS_FIELD]: []}));
+        dispatch(dialogActions.OPEN_DIALOG({ id: SETUP_SHELL_ACCOUNT_DIALOG, data: virtualMachines }));
     };
 
 export const loginAs = (uuid: string) =>
@@ -84,7 +83,6 @@ export const openUserProjects = (uuid: string) =>
         dispatch<any>(navigateTo(uuid));
     };
 
-
 export const createUser = (user: UserCreateFormDialogData) =>
     async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
         dispatch(startSubmit(USER_CREATE_FORM_NAME));
@@ -101,20 +99,32 @@ export const createUser = (user: UserCreateFormDialogData) =>
         }
     };
 
-
-export const setupUserVM = (setupData: SetupShellAccountFormDialogData) =>
+export const setupUserVM = (setupData: AddLoginFormData) =>
     async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
-        dispatch(startSubmit(USER_CREATE_FORM_NAME));
+        dispatch(startSubmit(SETUP_SHELL_ACCOUNT_DIALOG));
         try {
-            // TODO: make correct API call
-            // const setupResult = await services.userService.setup({ ...setupData });
+            const userResource = await services.userService.get(setupData.user.uuid);
+
+            const resources = await services.userService.setup(setupData.user.uuid);
+            dispatch(updateResources(resources.items));
+
+            const permission = await services.permissionService.create({
+                headUuid: setupData.vmUuid,
+                tailUuid: userResource.uuid,
+                name: PermissionLevel.CAN_LOGIN,
+                properties: {
+                    username: userResource.username,
+                    groups: setupData.groups,
+                }
+            });
+            dispatch(updateResources([permission]));
+
             dispatch(dialogActions.CLOSE_DIALOG({ id: SETUP_SHELL_ACCOUNT_DIALOG }));
             dispatch(reset(SETUP_SHELL_ACCOUNT_DIALOG));
             dispatch(snackbarActions.OPEN_SNACKBAR({ message: "User has been added to VM.", hideDuration: 2000, kind: SnackbarKind.SUCCESS }));
-            dispatch<any>(loadUsersPanel());
-            dispatch(userBindedActions.REQUEST_ITEMS());
         } catch (e) {
-            return;
+            dispatch(stopSubmit(SETUP_SHELL_ACCOUNT_DIALOG));
+            dispatch(snackbarActions.OPEN_SNACKBAR({ message: e.message, hideDuration: 2000, kind: SnackbarKind.ERROR }));
         }
     };
 
@@ -152,13 +162,6 @@ export const toggleIsAdmin = (uuid: string) =>
         const newActivity = await services.userService.update(uuid, { isAdmin: !isAdmin });
         dispatch<any>(loadUsersPanel());
         return newActivity;
-    };
-
-export const userBindedActions = bindDataExplorerActions(USERS_PANEL_ID);
-
-export const loadUsersData = () =>
-    async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
-        await services.userService.list({ count: "none" });
     };
 
 export const loadUsersPanel = () =>

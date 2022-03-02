@@ -31,7 +31,10 @@ import {
     setProcessBreadcrumbs,
     setSharedWithMeBreadcrumbs,
     setSidePanelBreadcrumbs,
-    setTrashBreadcrumbs
+    setTrashBreadcrumbs,
+    setUsersBreadcrumbs,
+    setMyAccountBreadcrumbs,
+    setUserProfileBreadcrumbs,
 } from 'store/breadcrumbs/breadcrumbs-actions';
 import { navigateTo, navigateToRootProject } from 'store/navigation/navigation-action';
 import { MoveToFormDialogData } from 'store/move-to-dialog/move-to-dialog';
@@ -58,7 +61,6 @@ import {
 import { CopyFormDialogData } from 'store/copy-dialog/copy-dialog';
 import { loadWorkflowPanel, workflowPanelActions } from 'store/workflow-panel/workflow-panel-actions';
 import { loadSshKeysPanel } from 'store/auth/auth-action-ssh';
-import { loadMyAccountPanel } from 'store/my-account/my-account-panel-actions';
 import { loadLinkAccountPanel, linkAccountPanelActions } from 'store/link-account-panel/link-account-panel-actions';
 import { loadSiteManagerPanel } from 'store/auth/auth-action-session';
 import { workflowPanelColumns } from 'views/workflow-panel/workflow-panel-view';
@@ -80,6 +82,7 @@ import { loadVirtualMachinesPanel } from 'store/virtual-machines/virtual-machine
 import { loadRepositoriesPanel } from 'store/repositories/repositories-actions';
 import { loadKeepServicesPanel } from 'store/keep-services/keep-services-actions';
 import { loadUsersPanel, userBindedActions } from 'store/users/users-actions';
+import * as userProfilePanelActions from 'store/user-profile/user-profile-actions';
 import { linkPanelActions, loadLinkPanel } from 'store/link-panel/link-panel-actions';
 import { linkPanelColumns } from 'views/link-panel/link-panel-root';
 import { userPanelColumns } from 'views/user-panel/user-panel';
@@ -101,6 +104,7 @@ import { allProcessesPanelColumns } from 'views/all-processes-panel/all-processe
 import { collectionPanelFilesAction } from '../collection-panel/collection-panel-files/collection-panel-files-actions';
 import { createTree } from 'models/tree';
 import { AdminMenuIcon } from 'components/icon/icon';
+import { userProfileGroupsColumns } from 'views/user-profile-panel/user-profile-panel-root';
 
 export const WORKBENCH_LOADING_SCREEN = 'workbenchLoadingScreen';
 
@@ -139,6 +143,7 @@ export const loadWorkbench = () =>
             dispatch(groupPanelActions.GroupsPanelActions.SET_COLUMNS({ columns: groupsPanelColumns }));
             dispatch(groupDetailsPanelActions.GroupMembersPanelActions.SET_COLUMNS({ columns: groupDetailsMembersPanelColumns }));
             dispatch(groupDetailsPanelActions.GroupPermissionsPanelActions.SET_COLUMNS({ columns: groupDetailsPermissionsPanelColumns }));
+            dispatch(userProfilePanelActions.UserProfileGroupsActions.SET_COLUMNS({ columns: userProfileGroupsColumns }));
             dispatch(linkPanelActions.SET_COLUMNS({ columns: linkPanelColumns }));
             dispatch(apiClientAuthorizationsActions.SET_COLUMNS({ columns: apiClientAuthorizationPanelColumns }));
             dispatch(collectionsContentAddressActions.SET_COLUMNS({ columns: collectionContentAddressPanelColumns }));
@@ -514,10 +519,18 @@ export const loadSiteManager = handleFirstTimeLoad(
         await dispatch(loadSiteManagerPanel());
     });
 
-export const loadMyAccount = handleFirstTimeLoad(
-    (dispatch: Dispatch<any>) => {
-        dispatch(loadMyAccountPanel());
-    });
+export const loadUserProfile = (userUuid?: string) =>
+    handleFirstTimeLoad(
+        (dispatch: Dispatch<any>) => {
+            if (userUuid) {
+                dispatch(setUserProfileBreadcrumbs(userUuid));
+                dispatch(userProfilePanelActions.loadUserProfilePanel(userUuid));
+            } else {
+                dispatch(setMyAccountBreadcrumbs());
+                dispatch(userProfilePanelActions.loadUserProfilePanel());
+            }
+        }
+    );
 
 export const loadLinkAccount = handleFirstTimeLoad(
     (dispatch: Dispatch<any>) => {
@@ -532,7 +545,7 @@ export const loadKeepServices = handleFirstTimeLoad(
 export const loadUsers = handleFirstTimeLoad(
     async (dispatch: Dispatch<any>) => {
         await dispatch(loadUsersPanel());
-        dispatch(setBreadcrumbs([{ label: 'Users' }]));
+        dispatch(setUsersBreadcrumbs());
     });
 
 export const loadApiClientAuthorizations = handleFirstTimeLoad(

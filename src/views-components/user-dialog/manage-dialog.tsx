@@ -10,7 +10,8 @@ import { WithDialogProps } from "store/dialog/with-dialog";
 import { withDialog } from 'store/dialog/with-dialog';
 import { WithStyles, withStyles } from '@material-ui/core/styles';
 import { ArvadosTheme } from 'common/custom-theme';
-import { USER_MANAGEMENT_DIALOG, openSetupShellAccount, loginAs } from "store/users/users-actions";
+import { USER_MANAGEMENT_DIALOG } from "store/users/users-actions";
+import { openSetupShellAccount, loginAs } from 'store/users/users-actions';
 import { getUserDisplayName } from "models/user";
 
 type CssRules = 'spacing';

@@ -16,7 +16,7 @@ import { snackbarActions, SnackbarKind } from 'store/snackbar/snackbar-actions';
 import { LinkResource } from 'models/link';
 import { deleteResources, updateResources } from 'store/resources/resources-actions';
 import { openSharingDialog } from 'store/sharing-dialog/sharing-dialog-actions';
-// import { UserProfileGroupsActions } from 'store/user-profile/user-profile-actions';
+import { UserProfileGroupsActions } from 'store/user-profile/user-profile-actions';
 
 export const GROUP_DETAILS_MEMBERS_PANEL_ID = 'groupDetailsMembersPanel';
 export const GROUP_DETAILS_PERMISSIONS_PANEL_ID = 'groupDetailsPermissionsPanel';
@@ -93,7 +93,7 @@ export const removeGroupMember = (uuid: string) =>
         });
         dispatch<any>(deleteResources([uuid]));
         dispatch(GroupMembersPanelActions.REQUEST_ITEMS());
-        // dispatch(UserProfileGroupsActions.REQUEST_ITEMS());
+        dispatch(UserProfileGroupsActions.REQUEST_ITEMS());
 
         dispatch(snackbarActions.OPEN_SNACKBAR({ message: 'Removed.', hideDuration: 2000, kind: SnackbarKind.SUCCESS }));
     };

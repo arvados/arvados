@@ -47,7 +47,7 @@ import { SearchResultsPanel } from 'views/search-results-panel/search-results-pa
 import { SshKeyPanel } from 'views/ssh-key-panel/ssh-key-panel';
 import { SshKeyAdminPanel } from 'views/ssh-key-panel/ssh-key-admin-panel';
 import { SiteManagerPanel } from "views/site-manager-panel/site-manager-panel";
-import { MyAccountPanel } from 'views/my-account-panel/my-account-panel';
+import { UserProfilePanel } from 'views/user-profile-panel/user-profile-panel';
 import { SharingDialog } from 'views-components/sharing-dialog/sharing-dialog';
 import { NotFoundDialog } from 'views-components/not-found-dialog/not-found-dialog';
 import { AdvancedTabDialog } from 'views-components/advanced-tab-dialog/advanced-tab-dialog';
@@ -81,6 +81,7 @@ import { UserAttributesDialog } from 'views-components/user-dialog/attributes-di
 import { CreateUserDialog } from 'views-components/dialog-forms/create-user-dialog';
 import { HelpApiClientAuthorizationDialog } from 'views-components/api-client-authorizations-dialog/help-dialog';
 import { UserManageDialog } from 'views-components/user-dialog/manage-dialog';
+import { DeactivateDialog } from 'views-components/user-dialog/deactivate-dialog';
 import { SetupShellAccountDialog } from 'views-components/dialog-forms/setup-shell-account-dialog';
 import { GroupsPanel } from 'views/groups-panel/groups-panel';
 import { RemoveGroupDialog } from 'views-components/groups-dialog/remove-dialog';
@@ -172,7 +173,8 @@ let routes = <>
     <Route path={Routes.KEEP_SERVICES} component={KeepServicePanel} />
     <Route path={Routes.USERS} component={UserPanel} />
     <Route path={Routes.API_CLIENT_AUTHORIZATIONS} component={ApiClientAuthorizationPanel} />
-    <Route path={Routes.MY_ACCOUNT} component={MyAccountPanel} />
+    <Route path={Routes.MY_ACCOUNT} component={UserProfilePanel} />
+    <Route path={Routes.USER_PROFILE} component={UserProfilePanel} />
     <Route path={Routes.GROUPS} component={GroupsPanel} />
     <Route path={Routes.GROUP_DETAILS} component={GroupDetailsPanel} />
     <Route path={Routes.LINKS} component={LinkPanel} />
@@ -268,6 +270,7 @@ export const WorkbenchPanel =
             <UpdateProjectDialog />
             <UserAttributesDialog />
             <UserManageDialog />
+            <DeactivateDialog />
             <VirtualMachineAttributesDialog />
             <FedLogin />
             <WebDavS3InfoDialog />
