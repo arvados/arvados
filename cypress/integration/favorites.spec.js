@@ -64,7 +64,7 @@ describe('Favorites tests', function () {
                 cy.loginAs(activeUser);
                 cy.goToPath(`/collections/${testSourceCollection.uuid}`);
                 cy.get('[data-cy=collection-files-panel]').contains('bar');
-                cy.get('[data-cy=collection-files-panel]').find('input[type=checkbox]').click({ force: true });
+                cy.get('[data-cy=collection-files-panel]').find('input[type=checkbox]').click();
                 cy.get('[data-cy=collection-files-panel-options-btn]').click();
                 cy.get('[data-cy=context-menu]')
                     .contains('Copy selected into the collection').click();
