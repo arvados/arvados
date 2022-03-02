@@ -319,7 +319,7 @@ update links set tail_uuid='#{g5}' where uuid='#{l1.uuid}'
       Rails.configuration.API.UnfreezeProjectRequiresAdmin = false
       proj = Group.create!(group_class: 'project', name: 'freeze-test', owner_uuid: users(:active).uuid)
       proj_inner = Group.create!(group_class: 'project', name: 'freeze-test-inner', owner_uuid: proj.uuid)
-      coll = Collection.create!(name: 'foo', manifest_text: '')
+      coll = Collection.create!(name: 'foo', manifest_text: '', owner_uuid: proj_inner.uuid)
 
       # Cannot set frozen_by_uuid to a different user
       assert_raises do
@@ -357,35 +357,19 @@ update links set tail_uuid='#{g5}' where uuid='#{l1.uuid}'
         properties: {'frobity' => 'bar baz'})
       assert ok, proj.errors.messages.inspect
 
-      # Once project is frozen, cannot change name/contents, trash, or
-      # delete the project or anything beneath it
-      [proj, proj_inner, coll].each do |frozen|
-        assert_raises do
-          frozen.update_attributes!(name: 'foo2')
-        end
-        if frozen.is_a?(Collection)
-          assert_raises do
-            frozen.update_attributes!(manifest_text: ". d41d8cd98f00b204e9800998ecf8427e+0 0:0:foo\n")
-          end
-        end
-        assert_raises do
-          frozen.update_attributes!(trash_at: db_current_time)
-        end
-        assert_raises do
-          frozen.destroy
-        end
-      end
-
       # Once project is frozen, cannot create new items inside it or
       # its descendants
-      [proj, proj_inner].each do |parent|
+      [proj, proj_inner].each do |frozen|
         assert_raises do
-          Collection.create!(owner_uuid: parent.uuid, name: 'inside-frozen-project')
+          collections(:collection_owned_by_active).update_attributes!(owner_uuid: frozen.uuid)
         end
         assert_raises do
-          Group.create!(owner_uuid: parent.uuid, group_class: 'project', name: 'inside-frozen-project')
+          Collection.create!(owner_uuid: frozen.uuid, name: 'inside-frozen-project')
         end
-        cr = ContainerRequest.create(
+        assert_raises do
+          Group.create!(owner_uuid: frozen.uuid, group_class: 'project', name: 'inside-frozen-project')
+        end
+        cr = ContainerRequest.new(
           command: ["echo", "foo"],
           container_image: links(:docker_image_collection_tag).name,
           cwd: "/tmp",
@@ -395,12 +379,39 @@ update links set tail_uuid='#{g5}' where uuid='#{l1.uuid}'
           runtime_constraints: {"vcpus" => 1, "ram" => 2},
           name: "foo",
           description: "bar",
-          owner_uuid: parent.uuid,
+          owner_uuid: frozen.uuid,
         )
-        assert_raises do
-          cr.save!
+        assert_raises ArvadosModel::PermissionDeniedError do
+          cr.save
         end
-        assert_match cr.errors.inspect, /frozen/
+        assert_match /frozen/, cr.errors.inspect
+        # Check the frozen-parent condition is the only reason save failed.
+        cr.owner_uuid = users(:active).uuid
+        assert cr.save
+        cr.destroy
+      end
+
+      # Once project is frozen, cannot change name/contents, trash, or
+      # delete the project or anything beneath it
+      [proj, proj_inner, coll].each do |frozen|
+        assert_raises(StandardError, "should reject rename of #{frozen.uuid} with parent #{frozen.owner_uuid}") do
+          frozen.update_attributes!(name: 'foo2')
+        end
+        frozen.reload
+        if frozen.is_a?(Collection)
+          assert_raises(StandardError, "should reject manifest change of #{frozen.uuid}") do
+            frozen.update_attributes!(manifest_text: ". d41d8cd98f00b204e9800998ecf8427e+0 0:0:foo\n")
+          end
+          frozen.reload
+        end
+        assert_raises(StandardError, "should reject setting trash_at of #{frozen.uuid}") do
+          frozen.update_attributes!(trash_at: db_current_time)
+        end
+        frozen.reload
+        assert_raises(StandardError, "should reject delete of #{frozen.uuid}") do
+          frozen.destroy
+        end
+        frozen.reload
       end
 
       # User with manage permission can unfreeze, then create items

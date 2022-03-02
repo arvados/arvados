@@ -643,7 +643,14 @@ class ArvadosModel < ApplicationRecord
   end
 
   def permission_to_create
-    current_user.andand.is_active
+    if !current_user.andand.is_active
+      return false
+    end
+    if self.respond_to?(:owner_uuid) && FrozenGroup.where(uuid: owner_uuid).any?
+      errors.add :owner_uuid, "#{owner_uuid} is frozen"
+      return false
+    end
+    return true
   end
 
   def permission_to_update
@@ -659,6 +666,13 @@ class ArvadosModel < ApplicationRecord
     if self.uuid_changed?
       logger.warn "User #{current_user.uuid} tried to change uuid of #{self.class.to_s} #{self.uuid_was} to #{self.uuid}"
       return false
+    end
+    if self.respond_to?(:owner_uuid)
+      frozen = FrozenGroup.where(uuid: [owner_uuid, owner_uuid_in_database]).to_a
+      if frozen.any?
+        errors.add :uuid, "#{uuid} cannot be modified in frozen project #{frozen[0]}"
+        return false
+      end
     end
     return true
   end
