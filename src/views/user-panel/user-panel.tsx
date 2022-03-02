@@ -157,7 +157,7 @@ export const UserPanel = compose(
             render() {
                 const { value } = this.state;
                 return <Paper className={this.props.classes.root}>
-                    <Tabs value={value} onChange={this.handleChange} fullWidth>
+                    <Tabs value={value} onChange={this.handleChange} variant={"fullWidth"}>
                         <Tab label="USERS" />
                         <Tab label="ACTIVITY" disabled />
                     </Tabs>

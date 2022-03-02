@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: AGPL-3.0
 import { RootState } from "store/store";
 import { Dispatch } from 'redux';
-import { reset } from "redux-form";
+import { initialize, reset } from "redux-form";
 import { ServiceRepository } from "services/services";
 import { bindDataExplorerActions } from "store/data-explorer/data-explorer-action";
 import { propertiesActions } from 'store/properties/properties-actions';
@@ -25,9 +25,10 @@ export const loadUserProfilePanel = (userUuid?: string) =>
     // Get user uuid from route or use current user uuid
     const uuid = userUuid || getState().auth.user?.uuid;
     if (uuid) {
-      const user = await services.userService.get(uuid);
-      dispatch(updateResources([user]));
       await dispatch(propertiesActions.SET_PROPERTY({ key: USER_PROFILE_PANEL_ID, value: uuid }));
+      const user = await services.userService.get(uuid);
+      dispatch(initialize(USER_PROFILE_FORM, user));
+      dispatch(updateResources([user]));
       dispatch(UserProfileGroupsActions.REQUEST_ITEMS());
     }
   }

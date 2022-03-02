@@ -89,11 +89,6 @@ const RoleTypes = [
 
 type UserProfilePanelRootProps = InjectedFormProps<{}> & UserProfilePanelRootActionProps & UserProfilePanelRootDataProps & WithStyles<CssRules>;
 
-// type LocalClusterProp = { localCluster: string };
-// const renderField: React.ComponentType<WrappedFieldProps & LocalClusterProp> = ({ input, localCluster }) => (
-//     <span>{localCluster === input.value.substring(0, 5) ? "" : "federated"} user {input.value}</span>
-// );
-
 export enum UserProfileGroupsColumnNames {
     NAME = "Name",
     PERMISSION = "Permission",
@@ -152,10 +147,7 @@ export const UserProfilePanelRoot = withStyles(styles)(
 
         render() {
             return <Paper className={this.props.classes.root}>
-                {/* <Typography variant="title" className={this.props.classes.title}>
-                    Logged in as <Field name="uuid" component={renderField} localCluster={this.props.localCluster} />
-                </Typography> */}
-                <Tabs value={this.state.value} onChange={this.handleChange} fullWidth>
+                <Tabs value={this.state.value} onChange={this.handleChange} variant={"fullWidth"}>
                     <Tab label="PROFILE" />
                     <Tab label="GROUPS" />
                     <Tab label="ADMIN" />
@@ -254,7 +246,6 @@ export const UserProfilePanelRoot = withStyles(styles)(
                                 id={USER_PROFILE_PANEL_ID}
                                 onRowClick={noop}
                                 onRowDoubleClick={noop}
-                                // onContextMenu={this.handleContextMenu}
                                 contextMenuColumn={false}
                                 hideColumnSelector
                                 hideSearchInput
@@ -352,17 +343,5 @@ export const UserProfilePanelRoot = withStyles(styles)(
             this.setState({ value });
         }
 
-        handleContextMenu = (event: React.MouseEvent<HTMLElement>, resourceUuid: string) => {
-            // const resource = getResource<UserResource>(resourceUuid)(this.props.resources);
-            // if (resource) {
-            //     this.props.onContextMenu(event, {
-            //         name: '',
-            //         uuid: resource.uuid,
-            //         ownerUuid: resource.ownerUuid,
-            //         kind: resource.kind,
-            //         menuKind: ContextMenuKind.USER
-            //     });
-            // }
-        }
     }
 );
