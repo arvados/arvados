@@ -195,7 +195,10 @@ const renderIsActive = (props: { uuid: string, kind: ResourceKind, isActive: boo
             color="primary"
             checked={props.isActive}
             disabled={!!props.disabled}
-            onClick={() => props.toggleIsActive(props.uuid)} />;
+            onClick={(e) => {
+                e.stopPropagation();
+                props.toggleIsActive(props.uuid)
+            }} />;
     } else {
         return <Typography />;
     }
@@ -230,7 +233,10 @@ const renderIsHidden = (props: {
                 color="primary"
                 checked={props.visible}
                 disabled={!props.canManage}
-                onClick={() => props.setMemberIsHidden(props.memberLinkUuid, props.permissionLinkUuid, !props.visible)} />;
+                onClick={(e) => {
+                    e.stopPropagation();
+                    props.setMemberIsHidden(props.memberLinkUuid, props.permissionLinkUuid, !props.visible);
+                }} />;
     } else {
         return <Typography />;
     }
@@ -263,7 +269,10 @@ const renderIsAdmin = (props: { uuid: string, isAdmin: boolean, toggleIsAdmin: (
     <Checkbox
         color="primary"
         checked={props.isAdmin}
-        onClick={() => props.toggleIsAdmin(props.uuid)} />;
+        onClick={(e) => {
+            e.stopPropagation();
+            props.toggleIsAdmin(props.uuid);
+        }} />;
 
 export const ResourceIsAdmin = connect(
     (state: RootState, props: { uuid: string }) => {

@@ -20,7 +20,7 @@ import {
     ResourceIsAdmin,
     ResourceUsername
 } from "views-components/data-explorer/renderers";
-import { navigateTo } from "store/navigation/navigation-action";
+import { navigateToUserProfile } from "store/navigation/navigation-action";
 import { ContextMenuKind } from "views-components/context-menu/context-menu";
 import { DataTableDefaultView } from 'components/data-table-default-view/data-table-default-view';
 import { createTree } from 'models/tree';
@@ -124,7 +124,7 @@ interface UserPanelDataProps {
 
 interface UserPanelActionProps {
     openUserCreateDialog: () => void;
-    handleRowDoubleClick: (uuid: string) => void;
+    handleRowClick: (uuid: string) => void;
     onContextMenu: (event: React.MouseEvent<HTMLElement>, item: any) => void;
 }
 
@@ -136,7 +136,7 @@ const mapStateToProps = (state: RootState) => {
 
 const mapDispatchToProps = (dispatch: Dispatch) => ({
     openUserCreateDialog: () => dispatch<any>(openUserCreateDialog()),
-    handleRowDoubleClick: (uuid: string) => dispatch<any>(navigateTo(uuid)),
+    handleRowClick: (uuid: string) => dispatch<any>(navigateToUserProfile(uuid)),
     onContextMenu: (event: React.MouseEvent<HTMLElement>, item: any) => dispatch<any>(openContextMenu(event, item))
 });
 
@@ -165,7 +165,7 @@ export const UserPanel = compose(
                         <div className={this.props.classes.content}>
                             <DataExplorer
                                 id={USERS_PANEL_ID}
-                                onRowClick={noop}
+                                onRowClick={this.props.handleRowClick}
                                 onRowDoubleClick={noop}
                                 onContextMenu={this.handleContextMenu}
                                 contextMenuColumn={true}
@@ -194,6 +194,7 @@ export const UserPanel = compose(
             }
 
             handleContextMenu = (event: React.MouseEvent<HTMLElement>, resourceUuid: string) => {
+                event.stopPropagation();
                 const resource = getResource<UserResource>(resourceUuid)(this.props.resources);
                 if (resource) {
                     this.props.onContextMenu(event, {

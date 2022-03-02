@@ -100,6 +100,8 @@ export const getProcessLogUrl = (uuid: string) => `/process-logs/${uuid}`;
 
 export const getGroupUrl = (uuid: string) => `/group/${uuid}`;
 
+export const getUserProfileUrl = (uuid: string) => `/user/${uuid}`;
+
 export interface ResourceRouteParams {
     id: string;
 }

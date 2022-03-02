@@ -6,7 +6,7 @@ import { Dispatch, compose, AnyAction } from 'redux';
 import { push } from "react-router-redux";
 import { ResourceKind, extractUuidKind } from 'models/resource';
 import { SidePanelTreeCategory } from '../side-panel-tree/side-panel-tree-actions';
-import { Routes, getProcessLogUrl, getGroupUrl, getNavUrl } from 'routes/routes';
+import { Routes, getProcessLogUrl, getGroupUrl, getNavUrl, getUserProfileUrl } from 'routes/routes';
 import { RootState } from 'store/store';
 import { ServiceRepository } from 'services/services';
 import { pluginConfig } from 'plugins';
@@ -143,6 +143,8 @@ export const navigateToLinkAccount = push(Routes.LINK_ACCOUNT);
 export const navigateToKeepServices = push(Routes.KEEP_SERVICES);
 
 export const navigateToUsers = push(Routes.USERS);
+
+export const navigateToUserProfile = compose(push, getUserProfileUrl);
 
 export const navigateToApiClientAuthorizations = push(Routes.API_CLIENT_AUTHORIZATIONS);
 
