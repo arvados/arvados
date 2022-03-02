@@ -15,8 +15,8 @@
 # update_permissions reference that file instead.
 
 PERMISSION_VIEW = "materialized_permissions"
-
 TRASHED_GROUPS = "trashed_groups"
+FROZEN_GROUPS = "frozen_groups"
 
 # We need to use this parameterized query in a few different places,
 # including as a subquery in a larger query.
@@ -81,5 +81,23 @@ INSERT INTO materialized_permissions
 :edge_perm => 'edges.val'
 } }
 }, "refresh_permission_view.do"
+  end
+end
+
+def refresh_frozen
+  ActiveRecord::Base.transaction do
+    ActiveRecord::Base.connection.execute("LOCK TABLE #{FROZEN_GROUPS}")
+    ActiveRecord::Base.connection.execute("DELETE FROM #{FROZEN_GROUPS}")
+
+    # Compute entire frozen_groups table, starting with top-level
+    # projects (i.e., project groups owned by a user).
+    ActiveRecord::Base.connection.execute(%{
+INSERT INTO #{FROZEN_GROUPS}
+select ps.uuid from groups,
+  lateral project_subtree_with_is_frozen(groups.uuid, groups.frozen_by_uuid is not null) ps
+  where groups.owner_uuid like '_____-tpzed-_______________'
+    and group_class = 'project'
+    and ps.is_frozen
+})
   end
 end
