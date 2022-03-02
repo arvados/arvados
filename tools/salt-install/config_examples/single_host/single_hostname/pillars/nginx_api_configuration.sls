@@ -13,12 +13,12 @@ nginx:
   ### SITES
   servers:
     managed:
-      arvados_api:
+      arvados_api.conf:
         enabled: true
         overwrite: true
         config:
           - server:
-            - listen: '__HOSTNAME_INT__:8004'
+            - listen: '__IP_INT__:8004'
             - server_name: api
             - root: /var/www/arvados-api/current/public
             - index:  index.html index.htm

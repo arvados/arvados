@@ -5,42 +5,36 @@
 
 # These are the basic parameters to configure the installation
 
-# The FIVE ALPHANUMERIC CHARACTERS name you want to give your cluster
+# The Arvados cluster ID, needs to be five alphanumeric characters.
 CLUSTER="cluster_fixme_or_this_wont_work"
 
-# The domainname you want tou give to your cluster's hosts
+# The domainname for your cluster's hosts
 DOMAIN="domain_fixme_or_this_wont_work"
 
-# Set this value when installing a cluster in a single host with a single hostname
-# to access all the instances. Not used in the other examples.
-# When using virtualization (ie AWS), this should be
-# the EXTERNAL/PUBLIC hostname for the instance.
-# If empty, ${CLUSTER}.${DOMAIN} will be used
-HOSTNAME_EXT=""
-# The internal hostname for the host. In the example files, only used in the
-# single_host/single_hostname example
-HOSTNAME_INT="127.0.1.1"
-# Host SSL port where you want to point your browser to access Arvados
-# Defaults to 443 for regular runs, and to 8443 when called in Vagrant.
-# You can point it to another port if desired
-# In Vagrant, make sure it matches what you set in the Vagrantfile (8443)
-CONTROLLER_EXT_SSL_PORT=9443
-KEEP_EXT_SSL_PORT=35101
-# Both for collections and downloads
-KEEPWEB_EXT_SSL_PORT=11002
-WEBSHELL_EXT_SSL_PORT=14202
-WEBSOCKET_EXT_SSL_PORT=18002
-WORKBENCH1_EXT_SSL_PORT=9444
-WORKBENCH2_EXT_SSL_PORT=9445
+# Set this value when installing a cluster in a single host with a single
+# hostname to access all the instances. HOSTNAME_EXT should be set to the
+# external hostname for the instance.
+HOSTNAME_EXT="hostname_ext_fixme_or_this_wont_work"
+
+# The internal IP address for the host.
+IP_INT="ip_int_fixme_or_this_wont_work"
+
+# External ports used by the Arvados services
+CONTROLLER_EXT_SSL_PORT=8800
+KEEP_EXT_SSL_PORT=8801
+KEEPWEB_EXT_SSL_PORT=8802
+WEBSHELL_EXT_SSL_PORT=8803
+WEBSOCKET_EXT_SSL_PORT=8804
+WORKBENCH1_EXT_SSL_PORT=8805
+WORKBENCH2_EXT_SSL_PORT=443
 
 INITIAL_USER="admin"
-
 # If not specified, the initial user email will be composed as
 # INITIAL_USER@CLUSTER.DOMAIN
 INITIAL_USER_EMAIL="admin@cluster_fixme_or_this_wont_work.domain_fixme_or_this_wont_work"
 INITIAL_USER_PASSWORD="password"
 
-# YOU SHOULD CHANGE THESE TO SOME RANDOM STRINGS
+# Populate these values with random strings
 BLOB_SIGNING_KEY=blobsigningkeymushaveatleast32characters
 MANAGEMENT_TOKEN=managementtokenmushaveatleast32characters
 SYSTEM_ROOT_TOKEN=systemroottokenmushaveatleast32characters
@@ -49,20 +43,22 @@ WORKBENCH_SECRET_KEY=workbenchsecretkeymushaveatleast32characters
 DATABASE_PASSWORD=please_set_this_to_some_secure_value
 
 # SSL CERTIFICATES
-# Arvados REQUIRES valid SSL to work correctly. Otherwise, some components will
-# fail to communicate and can silently drop traffic. Set USE_LETSENCRYPT="yes"
-# to use the Let's Encrypt salt formula
-# (https://github.com/saltstack-formulas/letsencrypt-formula) to automatically
-# obtain and install SSL certificates for your hostname(s).
+# Arvados requires SSL certificates to work correctly. This installer supports these options:
+# * self-signed: let the installer create self-signed certificate(s)
+# * bring-your-own: supply your own certificate(s) in the `certs` directory
+# * lets-encrypt: automatically obtain and install SSL certificates for your hostname(s)
 #
-# Alternatively, set this variable to "no" and provide and upload your own
-# certificates to the instances and modify the 'nginx_*' salt pillars
-# accordingly
-USE_LETSENCRYPT="no"
+# See https://doc.arvados.org/intall/salt-single-host.html#certificates for more information.
+SSL_MODE="self-signed"
+
+# CUSTOM_CERTS_DIR is only used when SSL_MODE is set to "bring-your-own".
+# See https://doc.arvados.org/intall/salt-single-host.html#bring-your-own for more information.
+# CUSTOM_CERTS_DIR="${SCRIPT_DIR}/certs"
 
 # The directory to check for the config files (pillars, states) you want to use.
 # There are a few examples under 'config_examples'.
 # CONFIG_DIR="local_config_dir"
+
 # Extra states to apply. If you use your own subdir, change this value accordingly
 # EXTRA_STATES_DIR="${CONFIG_DIR}/states"
 
@@ -83,7 +79,7 @@ RELEASE="production"
 # Formulas versions
 # ARVADOS_TAG="2.2.0"
 # POSTGRES_TAG="v0.43.0"
-# NGINX_TAG="temp-fix-missing-statements-in-pillar"
+# NGINX_TAG="v2.8.0"
 # DOCKER_TAG="v2.0.7"
 # LOCALE_TAG="v0.3.4"
 # LETSENCRYPT_TAG="v2.1.0"

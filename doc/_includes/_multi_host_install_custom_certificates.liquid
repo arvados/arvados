@@ -4,7 +4,7 @@ Copyright (C) The Arvados Authors. All rights reserved.
 SPDX-License-Identifier: CC-BY-SA-3.0
 {% endcomment %}
 
-If you plan to use custom certificates, please set the variable <i>USE_LETSENCRYPT=no</i> and copy your certificates to the directory specified with the variable @CUSTOM_CERTS_DIR@ (usually "./certs") in the remote directory where you copied the @provision.sh@ script. From this dir, the provision script will install the certificates required for the role you're installing.
+Copy your certificates to the directory specified with the variable @CUSTOM_CERTS_DIR@ in the remote directory where you copied the @provision.sh@ script. The provision script will find the certificates there.
 
 The script expects cert/key files with these basenames (matching the role except for <i>keepweb</i>, which is split in both <i>download / collections</i>):
 
@@ -17,10 +17,12 @@ The script expects cert/key files with these basenames (matching the role except
 * "collections"      # Part of keepweb
 * "keepproxy"
 
-Ie., for 'keepproxy', the script will look for
+E.g. for 'keepproxy', the script will look for
 
 <notextile>
 <pre><code>${CUSTOM_CERTS_DIR}/keepproxy.crt
 ${CUSTOM_CERTS_DIR}/keepproxy.key
 </code></pre>
 </notextile>
+
+Make sure that all the FQDNs that you will use for the public-facing applications (API/controller, Workbench, Keepproxy/Keepweb) are reachable.
