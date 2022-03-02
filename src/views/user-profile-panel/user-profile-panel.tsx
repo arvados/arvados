@@ -23,7 +23,8 @@ const mapStateToProps = (state: RootState): UserProfilePanelRootDataProps => {
   // const subprocesses = getSubprocesses(uuid)(resources);
 
   return {
-
+    isAdmin: state.auth.user!.isAdmin,
+    isSelf: state.auth.user!.uuid === uuid,
     isPristine: isPristine(USER_PROFILE_FORM)(state),
     isValid: isValid(USER_PROFILE_FORM)(state),
     initialValues: user,

@@ -71,6 +71,8 @@ export interface UserProfilePanelRootActionProps {
 }
 
 export interface UserProfilePanelRootDataProps {
+    isAdmin: boolean;
+    isSelf: boolean;
     isPristine: boolean;
     isValid: boolean;
     initialValues?: User;
@@ -150,95 +152,97 @@ export const UserProfilePanelRoot = withStyles(styles)(
                 <Tabs value={this.state.value} onChange={this.handleChange} variant={"fullWidth"}>
                     <Tab label="PROFILE" />
                     <Tab label="GROUPS" />
-                    <Tab label="ADMIN" />
+                    <Tab label="ADMIN" disabled={!this.props.isAdmin} />
                 </Tabs>
                 {this.state.value === 0 &&
-                    // <Card className={this.props.classes.root}>
-                        <CardContent>
-                            <form onSubmit={this.props.handleSubmit}>
-                                <Grid container spacing={24}>
-                                    <Grid item className={this.props.classes.gridItem} sm={6} xs={12}>
-                                        <Field
-                                            label="First name"
-                                            name="firstName"
-                                            component={TextField as any}
-                                            disabled
-                                        />
-                                    </Grid>
-                                    <Grid item className={this.props.classes.gridItem} sm={6} xs={12}>
-                                        <Field
-                                            label="Last name"
-                                            name="lastName"
-                                            component={TextField as any}
-                                            disabled
-                                        />
-                                    </Grid>
-                                    <Grid item className={this.props.classes.gridItem} sm={6} xs={12}>
-                                        <Field
-                                            label="E-mail"
-                                            name="email"
-                                            component={TextField as any}
-                                            disabled
-                                        />
-                                    </Grid>
-                                    <Grid item className={this.props.classes.gridItem} sm={6} xs={12}>
-                                        <Field
-                                            label="Username"
-                                            name="username"
-                                            component={TextField as any}
-                                            disabled
-                                        />
-                                    </Grid>
-                                    <Grid item className={this.props.classes.gridItem} sm={6} xs={12}>
-                                        <Field
-                                            label="Organization"
-                                            name="prefs.profile.organization"
-                                            component={TextField as any}
-                                            validate={MY_ACCOUNT_VALIDATION}
-                                            required
-                                        />
-                                    </Grid>
-                                    <Grid item className={this.props.classes.gridItem} sm={6} xs={12}>
-                                        <Field
-                                            label="E-mail at Organization"
-                                            name="prefs.profile.organization_email"
-                                            component={TextField as any}
-                                            validate={MY_ACCOUNT_VALIDATION}
-                                            required
-                                        />
-                                    </Grid>
-                                    <Grid item className={this.props.classes.gridItem} sm={6} xs={12}>
-                                        <InputLabel className={this.props.classes.label} htmlFor="prefs.profile.role">Role</InputLabel>
-                                        <Field
-                                            id="prefs.profile.role"
-                                            name="prefs.profile.role"
-                                            component={NativeSelectField as any}
-                                            items={RoleTypes}
-                                        />
-                                    </Grid>
-                                    <Grid item className={this.props.classes.gridItem} sm={6} xs={12}>
-                                        <Field
-                                            label="Website"
-                                            name="prefs.profile.website_url"
-                                            component={TextField as any}
-                                        />
-                                    </Grid>
-                                    <Grid item sm={12}>
-                                        <Grid container direction="row" justify="flex-end">
-                                            <Button color="primary" onClick={this.props.reset} disabled={this.props.isPristine}>Discard changes</Button>
-                                            <Button
-                                                color="primary"
-                                                variant="contained"
-                                                type="submit"
-                                                disabled={this.props.isPristine || this.props.invalid || this.props.submitting}>
-                                                Save changes
-                                            </Button>
-                                        </Grid>
+                    <CardContent>
+                        <form onSubmit={this.props.handleSubmit}>
+                            <Grid container spacing={24}>
+                                <Grid item className={this.props.classes.gridItem} sm={6} xs={12}>
+                                    <Field
+                                        label="First name"
+                                        name="firstName"
+                                        component={TextField as any}
+                                        disabled
+                                    />
+                                </Grid>
+                                <Grid item className={this.props.classes.gridItem} sm={6} xs={12}>
+                                    <Field
+                                        label="Last name"
+                                        name="lastName"
+                                        component={TextField as any}
+                                        disabled
+                                    />
+                                </Grid>
+                                <Grid item className={this.props.classes.gridItem} sm={6} xs={12}>
+                                    <Field
+                                        label="E-mail"
+                                        name="email"
+                                        component={TextField as any}
+                                        disabled
+                                    />
+                                </Grid>
+                                <Grid item className={this.props.classes.gridItem} sm={6} xs={12}>
+                                    <Field
+                                        label="Username"
+                                        name="username"
+                                        component={TextField as any}
+                                        disabled
+                                    />
+                                </Grid>
+                                <Grid item className={this.props.classes.gridItem} sm={6} xs={12}>
+                                    <Field
+                                        label="Organization"
+                                        name="prefs.profile.organization"
+                                        component={TextField as any}
+                                        validate={MY_ACCOUNT_VALIDATION}
+                                        required
+                                        disabled={!this.props.isAdmin && !this.props.isSelf}
+                                    />
+                                </Grid>
+                                <Grid item className={this.props.classes.gridItem} sm={6} xs={12}>
+                                    <Field
+                                        label="E-mail at Organization"
+                                        name="prefs.profile.organization_email"
+                                        component={TextField as any}
+                                        validate={MY_ACCOUNT_VALIDATION}
+                                        required
+                                        disabled={!this.props.isAdmin && !this.props.isSelf}
+                                    />
+                                </Grid>
+                                <Grid item className={this.props.classes.gridItem} sm={6} xs={12}>
+                                    <InputLabel className={this.props.classes.label} htmlFor="prefs.profile.role">Role</InputLabel>
+                                    <Field
+                                        id="prefs.profile.role"
+                                        name="prefs.profile.role"
+                                        component={NativeSelectField as any}
+                                        items={RoleTypes}
+                                        disabled={!this.props.isAdmin && !this.props.isSelf}
+                                    />
+                                </Grid>
+                                <Grid item className={this.props.classes.gridItem} sm={6} xs={12}>
+                                    <Field
+                                        label="Website"
+                                        name="prefs.profile.website_url"
+                                        component={TextField as any}
+                                        disabled={!this.props.isAdmin && !this.props.isSelf}
+                                    />
+                                </Grid>
+                                <Grid item sm={12}>
+                                    <Grid container direction="row" justify="flex-end">
+                                        <Button color="primary" onClick={this.props.reset} disabled={this.props.isPristine}>Discard changes</Button>
+                                        <Button
+                                            color="primary"
+                                            variant="contained"
+                                            type="submit"
+                                            disabled={this.props.isPristine || this.props.invalid || this.props.submitting}>
+                                            Save changes
+                                        </Button>
                                     </Grid>
                                 </Grid>
-                            </form >
-                        </CardContent>
-                    // </Card>
+                            </Grid>
+                        </form >
+                    </CardContent>
                 }
                 {this.state.value === 1 &&
                     <div className={this.props.classes.content}>

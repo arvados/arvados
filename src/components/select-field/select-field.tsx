@@ -35,14 +35,18 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     }
 });
 
+interface NativeSelectFieldProps {
+    disabled?: boolean;
+}
+
 export const NativeSelectField = withStyles(styles)
-    ((props: WrappedFieldProps & WithStyles<CssRules> & { items: any[] }) =>
+    ((props: WrappedFieldProps & NativeSelectFieldProps & WithStyles<CssRules> & { items: any[] }) =>
         <FormControl className={props.classes.formControl}>
             <Select className={props.classes.selectWrapper}
                 native
                 value={props.input.value}
                 onChange={props.input.onChange}
-                disabled={props.meta.submitting}
+                disabled={props.meta.submitting || props.disabled}
                 name={props.input.name}
                 inputProps={{
                     id: `id-${props.input.name}`,
