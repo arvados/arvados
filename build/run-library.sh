@@ -578,11 +578,11 @@ handle_workbench () {
   # Build the workbench server package
   test_rails_package_presence arvados-workbench "$WORKSPACE/apps/workbench"
   if [[ "$?" == "0" ]] ; then
+    calculate_go_package_version arvados_server_version cmd/arvados-server
+    arvados_server_iteration=$(default_iteration "arvados-server" "$arvados_server_version" "go")
+
     (
         set -e
-
-        calculate_go_package_version arvados_server_version cmd/arvados-server
-        arvados_server_iteration=$(default_iteration "arvados-server" "$arvados_server_version" "go")
 
         # The workbench package has a build-time dependency on the arvados-server
         # package for config manipulation, so install it first.
