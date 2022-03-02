@@ -65,6 +65,7 @@ class VocabularyTest(unittest.TestCase):
                     {'label': 'Comment'},
                     {'label': 'Notes'},
                 ],
+                'values': None,
             },
         },
     }

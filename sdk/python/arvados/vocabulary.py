@@ -20,11 +20,11 @@ class Vocabulary(object):
         self.strict_keys = voc_definition.get('strict_tags', False)
         self.key_aliases = {}
 
-        for key_id, val in voc_definition.get('tags', {}).items():
+        for key_id, val in (voc_definition.get('tags') or {}).items():
             strict = val.get('strict', False)
             key_labels = [l['label'] for l in val.get('labels', [])]
             values = {}
-            for v_id, v_val in val.get('values', {}).items():
+            for v_id, v_val in (val.get('values') or {}).items():
                 labels = [l['label'] for l in v_val.get('labels', [])]
                 values[v_id] = VocabularyValue(v_id, labels)
             vk = VocabularyKey(key_id, key_labels, values, strict)
