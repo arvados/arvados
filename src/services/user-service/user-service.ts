@@ -6,6 +6,7 @@ import { AxiosInstance } from "axios";
 import { CommonResourceService } from "services/common-service/common-resource-service";
 import { UserResource } from "models/user";
 import { ApiActions } from "services/api/api-actions";
+import { ListResults } from "services/common-service/common-service";
 
 export class UserService extends CommonResourceService<UserResource> {
     constructor(serverApi: AxiosInstance, actions: ApiActions, readOnlyFields: string[] = []) {
@@ -24,8 +25,16 @@ export class UserService extends CommonResourceService<UserResource> {
         );
     }
 
+    setup(uuid: string) {
+        return CommonResourceService.defaultResponse<ListResults<any>>(
+            this.serverApi
+                .post(this.resourceType + `/setup`, {}, { params: { uuid } }),
+            this.actions
+        );
+    }
+
     unsetup(uuid: string) {
-        return CommonResourceService.defaultResponse(
+        return CommonResourceService.defaultResponse<UserResource>(
             this.serverApi
                 .post(this.resourceType + `/${uuid}/unsetup`),
             this.actions
