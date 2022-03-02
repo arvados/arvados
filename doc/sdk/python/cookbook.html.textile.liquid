@@ -298,3 +298,33 @@ api = arvados.api()
 for c in arvados.util.keyset_list_all(api.collections().list, filters=[["name", "like", "%sample123%"]]):
     print("got collection " + c["uuid"])
 {% endcodeblock %}
+
+h2. Querying the vocabulary definition
+
+The Python SDK provides facilities to interact with the "active metadata vocabulary":{{ site.baseurl }}/admin/metadata-vocabulary.html in the system. The developer can do key and value lookups in a case-insensitive manner:
+
+{% codeblock as python %}
+>>> from arvados import api, vocabulary
+>>> voc = vocabulary.load_vocabulary(api('v1'))
+>>> [k.identifier for k in set(voc.key_aliases.values())]
+['IDTAGCOLORS', 'IDTAGFRUITS', 'IDTAGCOMMENT', 'IDTAGIMPORTANCES', 'IDTAGCATEGORIES', 'IDTAGSIZES', 'IDTAGANIMALS']
+>>> voc['IDTAGSIZES'].preferred_label
+'Size'
+>>> [v.preferred_label for v in set(voc['size'].value_aliases.values())]
+['S', 'M', 'L', 'XL', 'XS']
+>>> voc['size']['s'].aliases
+['S', 'small']
+>>> voc['size']['Small'].identifier
+'IDVALSIZES2'
+{% endcodeblock %}
+
+h2. Translating between vocabulary identifiers and labels
+
+Client software might need to present properties to the user in a human-readable form or take input from the user without requiring them to remember identifiers. For these cases, there're a couple of conversion methods that take a dictionary as input like this:
+
+{% codeblock as python %}
+>>> voc.convert_to_labels({'IDTAGIMPORTANCES': 'IDVALIMPORTANCES1'})
+{'Importance': 'Critical'}
+>>> voc.convert_to_identifiers({'creature': 'elephant'})
+{'IDTAGANIMALS': 'IDVALANIMALS3'}
+{% endcodeblock %}
