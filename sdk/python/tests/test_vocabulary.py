@@ -174,6 +174,10 @@ class VocabularyTest(unittest.TestCase):
 
     def test_convert_to_identifiers_invalid_key(self):
         with self.assertRaises(vocabulary.VocabularyKeyError):
+            self.voc.convert_to_identifiers({42: 'bar'})
+        with self.assertRaises(vocabulary.VocabularyKeyError):
+            self.voc.convert_to_identifiers({None: 'bar'})
+        with self.assertRaises(vocabulary.VocabularyKeyError):
             self.voc.convert_to_identifiers({('f', 'o', 'o'): 'bar'})
 
     def test_convert_to_identifiers_unknown_value(self):
@@ -188,6 +192,16 @@ class VocabularyTest(unittest.TestCase):
     def test_convert_to_identifiers_invalid_value(self):
         with self.assertRaises(vocabulary.VocabularyValueError):
             self.voc.convert_to_identifiers({'Animal': 42})
+        with self.assertRaises(vocabulary.VocabularyValueError):
+            self.voc.convert_to_identifiers({'Animal': None})
+        with self.assertRaises(vocabulary.VocabularyValueError):
+            self.voc.convert_to_identifiers({'Animal': {'hello': 'world'}})
+        with self.assertRaises(vocabulary.VocabularyValueError):
+            self.voc.convert_to_identifiers({'Animal': [42]})
+        with self.assertRaises(vocabulary.VocabularyValueError):
+            self.voc.convert_to_identifiers({'Animal': [None]})
+        with self.assertRaises(vocabulary.VocabularyValueError):
+            self.voc.convert_to_identifiers({'Animal': [{'hello': 'world'}]})
 
     def test_convert_to_identifiers_unknown_value_list(self):
         # Non-strict key
@@ -256,6 +270,10 @@ class VocabularyTest(unittest.TestCase):
     def test_convert_to_labels_invalid_key(self):
         with self.assertRaises(vocabulary.VocabularyKeyError):
             self.voc.convert_to_labels({42: 'bar'})
+        with self.assertRaises(vocabulary.VocabularyKeyError):
+            self.voc.convert_to_labels({None: 'bar'})
+        with self.assertRaises(vocabulary.VocabularyKeyError):
+            self.voc.convert_to_labels({('f', 'o', 'o'): 'bar'})
 
     def test_convert_to_labels_unknown_value(self):
         # Non-strict key
@@ -269,6 +287,18 @@ class VocabularyTest(unittest.TestCase):
     def test_convert_to_labels_invalid_value(self):
         with self.assertRaises(vocabulary.VocabularyValueError):
             self.voc.convert_to_labels({'IDTAGIMPORTANCES': {'high': True}})
+        with self.assertRaises(vocabulary.VocabularyValueError):
+            self.voc.convert_to_labels({'IDTAGIMPORTANCES': None})
+        with self.assertRaises(vocabulary.VocabularyValueError):
+            self.voc.convert_to_labels({'IDTAGIMPORTANCES': 42})
+        with self.assertRaises(vocabulary.VocabularyValueError):
+            self.voc.convert_to_labels({'IDTAGIMPORTANCES': False})
+        with self.assertRaises(vocabulary.VocabularyValueError):
+            self.voc.convert_to_labels({'IDTAGIMPORTANCES': [42]})
+        with self.assertRaises(vocabulary.VocabularyValueError):
+            self.voc.convert_to_labels({'IDTAGIMPORTANCES': [None]})
+        with self.assertRaises(vocabulary.VocabularyValueError):
+            self.voc.convert_to_labels({'IDTAGIMPORTANCES': [{'high': True}]})
 
     def test_convert_to_labels_unknown_value_list(self):
         # Non-strict key
