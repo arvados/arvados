@@ -1803,7 +1803,7 @@ CREATE INDEX group_index_on_properties ON public.groups USING gin (properties);
 -- Name: groups_search_index; Type: INDEX; Schema: public; Owner: -
 --
 
-CREATE INDEX groups_search_index ON public.groups USING btree (uuid, owner_uuid, modified_by_client_uuid, modified_by_user_uuid, name, group_class);
+CREATE INDEX groups_search_index ON public.groups USING btree (uuid, owner_uuid, modified_by_client_uuid, modified_by_user_uuid, name, group_class, frozen_by_uuid);
 
 
 --
@@ -3184,6 +3184,7 @@ INSERT INTO "schema_migrations" (version) VALUES
 ('20210816191509'),
 ('20211027154300'),
 ('20220224203102'),
-('20220301155729');
+('20220301155729'),
+('20220303204419');
 
 

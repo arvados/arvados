@@ -250,4 +250,8 @@ on conflict (group_uuid) do update set trash_at=EXCLUDED.trash_at;
       return true
     end
   end
+
+  def self.full_text_searchable_columns
+    super - ["frozen_by_uuid"]
+  end
 end
