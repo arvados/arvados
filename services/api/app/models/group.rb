@@ -194,11 +194,14 @@ on conflict (group_uuid) do update set trash_at=EXCLUDED.trash_at;
 
   def clear_permissions_trash_frozen
     MaterializedPermission.where(target_uuid: uuid).delete_all
-    ['trashed_groups', 'frozen_groups'].each do |table|
-      ActiveRecord::Base.connection.exec_delete %{
-        delete from #{table} where group_uuid=$1
-      }, "Group.clear_permissions_trash_frozen", [[nil, self.uuid]]
-    end
+    ActiveRecord::Base.connection.exec_delete(
+      "delete from trashed_groups where group_uuid=$1",
+      "Group.clear_permissions_trash_frozen",
+      [[nil, self.uuid]])
+    ActiveRecord::Base.connection.exec_delete(
+      "delete from frozen_groups where uuid=$1",
+      "Group.clear_permissions_trash_frozen",
+      [[nil, self.uuid]])
   end
 
   def assign_name
