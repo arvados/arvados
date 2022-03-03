@@ -327,6 +327,19 @@ update links set tail_uuid='#{g5}' where uuid='#{l1.uuid}'
       end
       proj.reload
 
+      # Cannot set frozen_by_uuid without can_manage permission
+      act_as_system_user do
+        Link.create!(link_class: 'permission', name: 'can_write', tail_uuid: users(:spectator).uuid, head_uuid: proj.uuid)
+      end
+      act_as_user users(:spectator) do
+        # First confirm we have write permission
+        assert Collection.create(name: 'bar', owner_uuid: proj.uuid)
+        assert_raises(ArvadosModel::PermissionDeniedError) do
+          proj.update_attributes!(frozen_by_uuid: users(:spectator).uuid)
+        end
+      end
+      proj.reload
+
       # Cannot set frozen_by_uuid without description (if so configured)
       Rails.configuration.API.FreezeProjectRequiresDescription = true
       err = assert_raises do
