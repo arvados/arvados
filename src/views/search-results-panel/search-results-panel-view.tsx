@@ -2,11 +2,11 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import React from 'react';
+import React, { useEffect, useCallback, useState } from 'react';
 import { SortDirection } from 'components/data-table/data-column';
 import { DataColumns } from 'components/data-table/data-table';
 import { DataTableFilterItem } from 'components/data-table-filters/data-table-filters';
-import { ResourceKind } from 'models/resource';
+import { extractUuidKind, ResourceKind } from 'models/resource';
 import { ContainerRequestState } from 'models/container-request';
 import { SEARCH_RESULTS_PANEL_ID } from 'store/search-results-panel/search-results-panel-actions';
 import { DataExplorer } from 'views-components/data-explorer/data-explorer';
@@ -19,6 +19,7 @@ import {
     ResourceStatus,
     ResourceType
 } from 'views-components/data-explorer/renderers';
+import servicesProvider from 'common/service-provider';
 import { createTree } from 'models/tree';
 import { getInitialResourceTypeFilters } from 'store/resource-type-filters/resource-type-filters';
 import { SearchResultsPanelProps } from "./search-results-panel";
@@ -108,9 +109,41 @@ export const SearchResultsPanelView = withStyles(styles, { withTheme: true })(
     (props: SearchResultsPanelProps & WithStyles<CssRules, true>) => {
         const homeCluster = props.user.uuid.substring(0, 5);
         const loggedIn = props.sessions.filter((ss) => ss.loggedIn && ss.userIsActive);
+        const [selectedItem, setSelectedItem] = useState('');
+        let itemPath: string[] = [];
+
+        useEffect(() => {
+            if (selectedItem !== '') {
+                itemPath = [];
+
+                (async () => {
+                    let searchUuid = selectedItem;
+                    let itemKind = extractUuidKind(searchUuid);
+
+                    while (itemKind !== ResourceKind.USER) {
+                        console.log(itemKind);
+                        const { name, ownerUuid } = await servicesProvider.getServices().groupsService.get(searchUuid);
+                        itemKind = extractUuidKind(ownerUuid);
+                        searchUuid = ownerUuid;
+                        itemPath.push(name);
+                    }
+
+                    const rootFolder = props.user.uuid === searchUuid ? 'Projects' : 'Shared with me';
+                    itemPath.push(rootFolder);
+
+                    console.log(itemPath.reverse().join('/'));
+                })();
+            }
+        }, [selectedItem]);
+
+        const onItemClick = useCallback((uuid) => {
+            setSelectedItem(uuid);
+            props.onItemClick(uuid);
+        },[props.onItemClick]);
+
         return <span data-cy='search-results'><DataExplorer
             id={SEARCH_RESULTS_PANEL_ID}
-            onRowClick={props.onItemClick}
+            onRowClick={onItemClick}
             onRowDoubleClick={props.onItemDoubleClick}
             onContextMenu={props.onContextMenu}
             contextMenuColumn={false}
