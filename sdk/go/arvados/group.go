@@ -26,6 +26,7 @@ type Group struct {
 	Properties           map[string]interface{} `json:"properties"`
 	WritableBy           []string               `json:"writable_by,omitempty"`
 	Description          string                 `json:"description"`
+	FrozenByUUID         string                 `json:"frozen_by_uuid"`
 }
 
 // GroupList is an arvados#groupList resource.
