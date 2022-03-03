@@ -107,6 +107,7 @@ export const setMemberIsHidden = (memberLinkUuid: string, permissionLinkUuid: st
             try {
                 await permissionService.delete(permissionLinkUuid);
                 dispatch<any>(deleteResources([permissionLinkUuid]));
+                dispatch(GroupPermissionsPanelActions.REQUEST_ITEMS());
                 dispatch(snackbarActions.OPEN_SNACKBAR({
                     message: 'Removed read permission.',
                     hideDuration: 2000,
@@ -127,6 +128,7 @@ export const setMemberIsHidden = (memberLinkUuid: string, permissionLinkUuid: st
                     name: PermissionLevel.CAN_READ,
                 });
                 dispatch(updateResources([permission]));
+                dispatch(GroupPermissionsPanelActions.REQUEST_ITEMS());
                 dispatch(snackbarActions.OPEN_SNACKBAR({
                     message: 'Created read permission.',
                     hideDuration: 2000,
