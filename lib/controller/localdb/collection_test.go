@@ -71,7 +71,7 @@ func (s *CollectionSuite) setUpVocabulary(c *check.C, testVocabulary string) {
 	s.localdb.vocabularyCache = voc
 }
 
-func (s *CollectionSuite) TestCollectionCreateWithProperties(c *check.C) {
+func (s *CollectionSuite) TestCollectionCreateAndUpdateWithProperties(c *check.C) {
 	s.setUpVocabulary(c, "")
 	ctx := auth.NewContext(context.Background(), &auth.Credentials{Tokens: []string{arvadostest.ActiveTokenV2}})
 
@@ -88,6 +88,7 @@ func (s *CollectionSuite) TestCollectionCreateWithProperties(c *check.C) {
 	for _, tt := range tests {
 		c.Log(c.TestName()+" ", tt.name)
 
+		// Create with properties
 		coll, err := s.localdb.CollectionCreate(ctx, arvados.CreateOptions{
 			Select: []string{"uuid", "properties"},
 			Attrs: map[string]interface{}{
@@ -99,26 +100,9 @@ func (s *CollectionSuite) TestCollectionCreateWithProperties(c *check.C) {
 		} else {
 			c.Assert(err, check.NotNil)
 		}
-	}
-}
 
-func (s *CollectionSuite) TestCollectionUpdateWithProperties(c *check.C) {
-	s.setUpVocabulary(c, "")
-	ctx := auth.NewContext(context.Background(), &auth.Credentials{Tokens: []string{arvadostest.ActiveTokenV2}})
-
-	tests := []struct {
-		name    string
-		props   map[string]interface{}
-		success bool
-	}{
-		{"Invalid prop key", map[string]interface{}{"Priority": "IDVALIMPORTANCES1"}, false},
-		{"Invalid prop value", map[string]interface{}{"IDTAGIMPORTANCES": "high"}, false},
-		{"Valid prop key & value", map[string]interface{}{"IDTAGIMPORTANCES": "IDVALIMPORTANCES1"}, true},
-		{"Empty properties", map[string]interface{}{}, true},
-	}
-	for _, tt := range tests {
-		c.Log(c.TestName()+" ", tt.name)
-		coll, err := s.localdb.CollectionCreate(ctx, arvados.CreateOptions{})
+		// Create, then update with properties
+		coll, err = s.localdb.CollectionCreate(ctx, arvados.CreateOptions{})
 		c.Assert(err, check.IsNil)
 		coll, err = s.localdb.CollectionUpdate(ctx, arvados.UpdateOptions{
 			UUID:   coll.UUID,
