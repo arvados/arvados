@@ -246,6 +246,15 @@ class ArvadosModel < ApplicationRecord
   # If current user cannot write this object, just return
   # [self.owner_uuid].
   def writable_by
+    # Return [] if this is a frozen project and the current user can't
+    # unfreeze
+    return [] if respond_to?(:frozen_by_uuid) && frozen_by_uuid &&
+                 !(Rails.configuration.API.UnfreezeProjectRequiresAdmin ?
+                     current_user.andand.is_admin :
+                     current_user.can?(manage: uuid))
+    # Return [] if nobody can write because this object is inside a
+    # frozen project
+    return [] if FrozenGroup.where(uuid: owner_uuid).any?
     return [owner_uuid] if not current_user
     unless (owner_uuid == current_user.uuid or
             current_user.is_admin or

@@ -425,6 +425,9 @@ update links set tail_uuid='#{g5}' where uuid='#{l1.uuid}'
           frozen.destroy
         end
         frozen.reload
+        if frozen != proj
+          assert_equal [], frozen.writable_by
+        end
       end
 
       # User with manage permission can unfreeze, then create items
