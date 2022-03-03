@@ -169,8 +169,12 @@ class VocabularyTest(unittest.TestCase):
         # Strict vocabulary
         strict_voc = arvados.vocabulary.Vocabulary(self.EXAMPLE_VOC)
         strict_voc.strict_keys = True
-        with self.assertRaises(KeyError):
+        with self.assertRaises(vocabulary.VocabularyKeyError):
             strict_voc.convert_to_identifiers({'foo': 'bar'})
+
+    def test_convert_to_identifiers_invalid_key(self):
+        with self.assertRaises(vocabulary.VocabularyKeyError):
+            self.voc.convert_to_identifiers({('f', 'o', 'o'): 'bar'})
 
     def test_convert_to_identifiers_unknown_value(self):
         # Non-strict key
@@ -178,8 +182,12 @@ class VocabularyTest(unittest.TestCase):
         self.assertEqual(self.voc.convert_to_identifiers({'Animal': 'foo'}), {'IDTAGANIMALS': 'foo'})
         # Strict key
         self.assertEqual(self.voc['priority'].strict, True)
-        with self.assertRaises(ValueError):
+        with self.assertRaises(vocabulary.VocabularyValueError):
             self.voc.convert_to_identifiers({'Priority': 'foo'})
+
+    def test_convert_to_identifiers_invalid_value(self):
+        with self.assertRaises(vocabulary.VocabularyValueError):
+            self.voc.convert_to_identifiers({'Animal': 42})
 
     def test_convert_to_identifiers_unknown_value_list(self):
         # Non-strict key
@@ -190,7 +198,7 @@ class VocabularyTest(unittest.TestCase):
         )
         # Strict key
         self.assertEqual(self.voc['priority'].strict, True)
-        with self.assertRaises(ValueError):
+        with self.assertRaises(vocabulary.VocabularyValueError):
             self.voc.convert_to_identifiers({'Priority': ['foo', 'bar']})
 
     def test_convert_to_labels(self):
@@ -242,8 +250,12 @@ class VocabularyTest(unittest.TestCase):
         # Strict vocabulary
         strict_voc = arvados.vocabulary.Vocabulary(self.EXAMPLE_VOC)
         strict_voc.strict_keys = True
-        with self.assertRaises(KeyError):
+        with self.assertRaises(vocabulary.VocabularyKeyError):
             strict_voc.convert_to_labels({'foo': 'bar'})
+
+    def test_convert_to_labels_invalid_key(self):
+        with self.assertRaises(vocabulary.VocabularyKeyError):
+            self.voc.convert_to_labels({42: 'bar'})
 
     def test_convert_to_labels_unknown_value(self):
         # Non-strict key
@@ -251,8 +263,12 @@ class VocabularyTest(unittest.TestCase):
         self.assertEqual(self.voc.convert_to_labels({'IDTAGANIMALS': 'foo'}), {'Animal': 'foo'})
         # Strict key
         self.assertEqual(self.voc['priority'].strict, True)
-        with self.assertRaises(ValueError):
+        with self.assertRaises(vocabulary.VocabularyValueError):
             self.voc.convert_to_labels({'IDTAGIMPORTANCES': 'foo'})
+
+    def test_convert_to_labels_invalid_value(self):
+        with self.assertRaises(vocabulary.VocabularyValueError):
+            self.voc.convert_to_labels({'IDTAGIMPORTANCES': {'high': True}})
 
     def test_convert_to_labels_unknown_value_list(self):
         # Non-strict key
@@ -263,7 +279,7 @@ class VocabularyTest(unittest.TestCase):
         )
         # Strict key
         self.assertEqual(self.voc['priority'].strict, True)
-        with self.assertRaises(ValueError):
+        with self.assertRaises(vocabulary.VocabularyValueError):
             self.voc.convert_to_labels({'IDTAGIMPORTANCES': ['foo', 'bar']})
 
     def test_convert_roundtrip(self):

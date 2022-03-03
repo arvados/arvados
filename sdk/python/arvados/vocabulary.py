@@ -15,6 +15,17 @@ def load_vocabulary(api_client=None):
         api_client = api('v1')
     return Vocabulary(api_client.vocabulary())
 
+class VocabularyError(Exception):
+    """Base class for all vocabulary errors.
+    """
+    pass
+
+class VocabularyKeyError(VocabularyError):
+    pass
+
+class VocabularyValueError(VocabularyError):
+    pass
+
 class Vocabulary(object):
     def __init__(self, voc_definition={}):
         self.strict_keys = voc_definition.get('strict_tags', False)
@@ -52,27 +63,39 @@ class Vocabulary(object):
             raise ValueError("what attr must be 'preferred_label' or 'identifier'")
         r = {}
         for k, v in obj.items():
+            # Key validation & lookup
+            key_found = False
+            if not isinstance(k, str):
+                raise VocabularyKeyError("key '{}' must be a string".format(k))
             k_what, v_what = k, v
             try:
                 k_what = getattr(self[k], what)
-                if isinstance(v, list):
-                    v_what = []
-                    for x in v:
-                        try:
-                            v_what.append(getattr(self[k][x], what))
-                        except KeyError:
-                            if self[k].strict:
-                                raise ValueError("value '%s' not found for key '%s'" % (x, k))
-                            v_what.append(x)
-                else:
-                    try:
-                        v_what = getattr(self[k][v], what)
-                    except KeyError:
-                        if self[k].strict:
-                            raise ValueError("value '%s' not found for key '%s'" % (v, k))
+                key_found = True
             except KeyError:
                 if self.strict_keys:
-                    raise KeyError("key '%s' not found" % k)
+                    raise VocabularyKeyError("key '{}' not found in vocabulary".format(k))
+
+            # Value validation & lookup
+            if isinstance(v, list):
+                v_what = []
+                for x in v:
+                    if not isinstance(x, str):
+                        raise VocabularyValueError("value '{}' for key '{}' must be a string".format(x, k))
+                    try:
+                        v_what.append(getattr(self[k][x], what))
+                    except KeyError:
+                        if self[k].strict:
+                            raise VocabularyValueError("value '{}' not found for key '{}'".format(x, k))
+                        v_what.append(x)
+            else:
+                if not isinstance(v, str):
+                    raise VocabularyValueError("{} value '{}' for key '{}' must be a string".format(type(v).__name__, v, k))
+                try:
+                    v_what = getattr(self[k][v], what)
+                except KeyError:
+                    if key_found and self[k].strict:
+                        raise VocabularyValueError("value '{}' not found for key '{}'".format(v, k))
+
             r[k_what] = v_what
         return r
 
