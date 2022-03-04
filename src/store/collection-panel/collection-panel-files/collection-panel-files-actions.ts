@@ -30,7 +30,6 @@ export const collectionPanelFilesAction = unionize({
 export type CollectionPanelFilesAction = UnionOf<typeof collectionPanelFilesAction>;
 
 export const COLLECTION_PANEL_LOAD_FILES = 'collectionPanelLoadFiles';
-export const COLLECTION_PANEL_LOAD_FILES_THRESHOLD = 40000;
 
 export const setCollectionFiles = (files, joinParents = true) => (dispatch: any) => {
     const tree = createCollectionFilesTree(files, joinParents);

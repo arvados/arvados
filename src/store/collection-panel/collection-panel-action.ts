@@ -3,9 +3,6 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import { Dispatch } from "redux";
-import {
-    COLLECTION_PANEL_LOAD_FILES_THRESHOLD
-} from "./collection-panel-files/collection-panel-files-actions";
 import { CollectionResource } from 'models/collection';
 import { RootState } from "store/store";
 import { ServiceRepository } from "services/services";
@@ -19,7 +16,6 @@ import { loadDetailsPanel } from 'store/details-panel/details-panel-action';
 export const collectionPanelActions = unionize({
     SET_COLLECTION: ofType<CollectionResource>(),
     LOAD_COLLECTION_SUCCESS: ofType<{ item: CollectionResource }>(),
-    LOAD_BIG_COLLECTIONS: ofType<boolean>(),
 });
 
 export type CollectionPanelAction = UnionOf<typeof collectionPanelActions>;
@@ -33,9 +29,6 @@ export const loadCollectionPanel = (uuid: string, forceReload = false) =>
         dispatch<any>(loadDetailsPanel(collection.uuid));
         dispatch(collectionPanelActions.LOAD_COLLECTION_SUCCESS({ item: collection }));
         dispatch(resourcesActions.SET_RESOURCES([collection]));
-        if (collection.fileCount <= COLLECTION_PANEL_LOAD_FILES_THRESHOLD &&
-            !getState().collectionPanel.loadBigCollections) {
-        }
         return collection;
     };
 

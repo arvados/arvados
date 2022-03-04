@@ -27,7 +27,6 @@ export interface CollectionPanelFilesProps {
     items: any;
     isWritable: boolean;
     isLoading: boolean;
-    tooManyFiles: boolean;
     onUploadDataClick: (targetLocation?: string) => void;
     onSearchChange: (searchValue: string) => void;
     onItemMenuOpen: (event: React.MouseEvent<HTMLElement>, item: TreeItem<FileTreeData>, isWritable: boolean) => void;
@@ -211,6 +210,7 @@ export const CollectionPanelFiles = withStyles(styles)(connect((state: RootState
     const rightData = pathData[rightKey];
 
     React.useEffect(() => {
+        console.log(' --> useEffect current UUID: ', props.currentItemUuid);
         if (props.currentItemUuid) {
             setPathData({});
             setPath([props.currentItemUuid]);
@@ -244,6 +244,7 @@ export const CollectionPanelFiles = withStyles(styles)(connect((state: RootState
         .then((requests) => {
             const newState = requests.map((request, index) => {
                 if (request && request.responseXML != null) {
+                    console.log(">>> got data for key", keyArray[index]);
                     const key = keyArray[index];
                     const result: any = extractFilesData(request.responseXML);
                     const sortedResult = sortBy(result, (n) => n.name).sort((n1, n2) => {
@@ -272,6 +273,7 @@ export const CollectionPanelFiles = withStyles(styles)(connect((state: RootState
     };
 
     React.useEffect(() => {
+        console.log('---> useEffect rightKey', rightKey);
         if (rightKey) {
             fetchData(rightKey);
             setLeftSearch('');
@@ -281,12 +283,14 @@ export const CollectionPanelFiles = withStyles(styles)(connect((state: RootState
 
     const currentPDH = (collectionPanel.item || {}).portableDataHash;
     React.useEffect(() => {
+        console.log('---> useEffect PDH change:', currentPDH);
         if (currentPDH) {
             fetchData([leftKey, rightKey], true);
         }
     }, [currentPDH]); // eslint-disable-line react-hooks/exhaustive-deps
 
     React.useEffect(() => {
+        console.log('---> useEffect rightData:', rightData, dispatch, rightSearch);
         if (rightData) {
             const filtered = rightData.filter(({ name }) => name.indexOf(rightSearch) > -1);
             setCollectionFiles(filtered, false)(dispatch);
@@ -321,6 +325,7 @@ export const CollectionPanelFiles = withStyles(styles)(connect((state: RootState
     );
 
     React.useEffect(() => {
+        console.log('---> useEffect parentRef:', parentRef, handleRightClick);
         let node = null;
 
         if (parentRef && parentRef.current) {
@@ -421,6 +426,7 @@ export const CollectionPanelFiles = withStyles(styles)(connect((state: RootState
         [props.onOptionsMenuOpen] // eslint-disable-line react-hooks/exhaustive-deps
     );
 
+    console.log('---> render CollectionPanel <------');
     return <div data-cy="collection-files-panel" onClick={handleClick} ref={parentRef}>
         <div className={classes.pathPanel}>
             <div className={classes.pathPanelPathWrapper}>
@@ -574,6 +580,7 @@ export const CollectionPanelFiles = withStyles(styles)(connect((state: RootState
                 <div className={classes.dataWrapper}>{ rightData && !isLoading
                     ? <AutoSizer defaultHeight={500}>{({ height, width }) => {
                         const filtered = rightData.filter(({ name }) => name.indexOf(rightSearch) > -1);
+                        console.log("Right Data: ", filtered);
 
                         return !!filtered.length
                         ? <FixedSizeList height={height} itemCount={filtered.length}
