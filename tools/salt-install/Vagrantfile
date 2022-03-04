@@ -81,6 +81,7 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
                       inline: "cp -vr /vagrant/config_examples/single_host/single_hostname /home/vagrant/local_config_dir;
                                cp -vr /vagrant/tests /home/vagrant/tests;
                                sed 's#HOSTNAME_EXT=\"hostname_ext_fixme_or_this_wont_work\"#HOSTNAME_EXT=\"zeppo.local\"#g;
+                                   's#IP_INT=\"ip_int_fixme_or_this_wont_work\"#IP_INT=\"127.0.0.1\"#g;
                                     s#cluster_fixme_or_this_wont_work#zeppo#g;
                                     s#domain_fixme_or_this_wont_work#local#g;' \
                                     /vagrant/local.params.example.single_host_single_hostname > /tmp/local.params.single_host_single_hostname"
