@@ -208,7 +208,7 @@ func (rtr *router) mungeItemFields(tmp map[string]interface{}) {
 		// they appear in responses as null, rather than a
 		// zero value.
 		switch k {
-		case "output_uuid", "output_name", "log_uuid", "description", "requesting_container_uuid", "container_uuid":
+		case "output_uuid", "output_name", "log_uuid", "description", "requesting_container_uuid", "container_uuid", "modified_by_client_uuid", "frozen_by_uuid":
 			if v == "" {
 				tmp[k] = nil
 			}
