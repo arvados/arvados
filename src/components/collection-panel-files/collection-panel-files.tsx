@@ -218,9 +218,10 @@ export const CollectionPanelFiles = withStyles(styles)(connect((state: RootState
     }, [props.currentItemUuid]);
 
     const fetchData = (keys, ignoreCache = false) => {
+        console.log('---> fetchData', keys);
         const keyArray = Array.isArray(keys) ? keys : [keys];
 
-        Promise.all(keyArray
+        Promise.all(keyArray.filter(key => !!key)
             .map((key) => {
                 const dataExists = !!pathData[key];
                 const runningRequest = pathPromise[key];
@@ -232,6 +233,7 @@ export const CollectionPanelFiles = withStyles(styles)(connect((state: RootState
 
                     pathPromise[key] = true;
 
+                    console.log('>>> fetching data for key', key);
                     return webdavClient.propfind(`c=${key}`, webDAVRequestConfig);
                 }
 
@@ -239,34 +241,34 @@ export const CollectionPanelFiles = withStyles(styles)(connect((state: RootState
             })
             .filter((promise) => !!promise)
         )
-            .then((requests) => {
-                const newState = requests.map((request, index) => {
-                    if (request && request.responseXML != null) {
-                        const key = keyArray[index];
-                        const result: any = extractFilesData(request.responseXML);
-                        const sortedResult = sortBy(result, (n) => n.name).sort((n1, n2) => {
-                            if (n1.type === 'directory' && n2.type !== 'directory') {
-                                return -1;
-                            }
-                            if (n1.type !== 'directory' && n2.type === 'directory') {
-                                return 1;
-                            }
-                            return 0;
-                        });
+        .then((requests) => {
+            const newState = requests.map((request, index) => {
+                if (request && request.responseXML != null) {
+                    const key = keyArray[index];
+                    const result: any = extractFilesData(request.responseXML);
+                    const sortedResult = sortBy(result, (n) => n.name).sort((n1, n2) => {
+                        if (n1.type === 'directory' && n2.type !== 'directory') {
+                            return -1;
+                        }
+                        if (n1.type !== 'directory' && n2.type === 'directory') {
+                            return 1;
+                        }
+                        return 0;
+                    });
 
-                        return { [key]: sortedResult };
-                    }
-                    return {};
-                }).reduce((prev, next) => {
-                    return { ...next, ...prev };
-                }, {});
+                    return { [key]: sortedResult };
+                }
+                return {};
+            }).reduce((prev, next) => {
+                return { ...next, ...prev };
+            }, {});
 
-                setPathData({ ...pathData, ...newState });
-            })
-            .finally(() => {
-                setIsLoading(false);
-                keyArray.forEach(key => delete pathPromise[key]);
-            });
+            setPathData({ ...pathData, ...newState });
+        })
+        .finally(() => {
+            setIsLoading(false);
+            keyArray.forEach(key => delete pathPromise[key]);
+        });
     };
 
     React.useEffect(() => {
@@ -531,6 +533,7 @@ export const CollectionPanelFiles = withStyles(styles)(connect((state: RootState
                         return !!filtered.length
                         ? <FixedSizeList height={height} itemCount={filtered.length}
                             itemSize={35} width={width}>{ ({ index, style }) => {
+                            console.log("Left Data ROW: ", filtered[index]);
                             const { id, type, name } = filtered[index];
 
                             return <div data-id={id} style={style} data-item="true"
@@ -575,6 +578,7 @@ export const CollectionPanelFiles = withStyles(styles)(connect((state: RootState
                         return !!filtered.length
                         ? <FixedSizeList height={height} itemCount={filtered.length}
                             itemSize={35} width={width}>{ ({ index, style }) => {
+                                console.log("Right Data ROW: ", filtered[index]);
                                 const { id, type, name, size } = filtered[index];
 
                                 return <div style={style} data-id={id} data-item="true"
