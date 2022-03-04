@@ -367,16 +367,14 @@ func (s *HandlerSuite) CheckObjectType(c *check.C, url string, token string, ski
 	for k := range direct {
 		if _, ok := skippedFields[k]; ok {
 			continue
-		} else if val, ok := proxied[k]; ok {
-			if direct["kind"] == "arvados#collection" && k == "manifest_text" {
-				// Tokens differ from request to request
-				c.Check(strings.Split(val.(string), "+A")[0], check.Equals, strings.Split(direct[k].(string), "+A")[0])
-			} else {
-				c.Check(val, check.DeepEquals, direct[k],
-					check.Commentf("RailsAPI %s key %q's value %q differs from controller's %q.", direct["kind"], k, direct[k], val))
-			}
-		} else {
+		} else if val, ok := proxied[k]; !ok {
 			c.Errorf("%s's key %q missing on controller's response.", direct["kind"], k)
+		} else if direct["kind"] == "arvados#collection" && k == "manifest_text" {
+			// Tokens differ from request to request
+			c.Check(strings.Split(val.(string), "+A")[0], check.Equals, strings.Split(direct[k].(string), "+A")[0])
+		} else {
+			c.Check(val, check.DeepEquals, direct[k],
+				check.Commentf("RailsAPI %s key %q's value %q differs from controller's %q.", direct["kind"], k, direct[k], val))
 		}
 	}
 }
