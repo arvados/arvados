@@ -20,6 +20,10 @@ h2. Exported configuration
 
 The Controller exposes a subset of the cluster's configuration and makes it available to clients in JSON format. This public config includes valuable information like several service's URLs, timeout settings, etc. and it is available at @/arvados/v1/config@, for example @https://{{ site.arvados_api_host }}/arvados/v1/config@. The new Workbench is one example of a client using this information, as it's a client-side application and doesn't have access to the cluster's config file.
 
+h2. Exported vocabulary definition
+
+When configured, the Controller also exports the "metadata vocabulary definition":{{site.baseurl}}/admin/metadata-vocabulary.html in JSON format. This functionality is useful for clients like Workbench2 and the Python SDK to provide "identifier to human-readable labels" translations facilities for reading and writing objects on the system. This is available at @/arvados/v1/vocabulary@, for example @https://{{ site.arvados_api_host }}/arvados/v1/vocabulary@.
+
 h2. Workbench examples
 
 Many Arvados Workbench pages, under the *Advanced* tab, provide examples of API and SDK use for accessing the current resource .
