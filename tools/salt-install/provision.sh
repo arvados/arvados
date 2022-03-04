@@ -204,9 +204,9 @@ VERSION="latest"
 # BRANCH="main"
 
 # Other formula versions we depend on
-POSTGRES_TAG="v0.43.0"
+POSTGRES_TAG="v0.44.0"
 NGINX_TAG="v2.8.0"
-DOCKER_TAG="v2.0.7"
+DOCKER_TAG="v2.4.0"
 LOCALE_TAG="v0.3.4"
 LETSENCRYPT_TAG="v2.1.0"
 
@@ -564,18 +564,10 @@ if [ -z "${ROLES}" ]; then
     grep -q "letsencrypt" ${P_DIR}/top.sls || echo "    - letsencrypt" >> ${P_DIR}/top.sls
 
     # As the pillar differ whether we use LE or custom certs, we need to do a final edition on them
-    for c in controller websocket workbench workbench2 webshell keepweb keepproxy; do
-      if [ "${USE_SINGLE_HOSTNAME}" = "yes" ]; then
-        # Are we in a single-host-single-hostname env?
-        CERT_NAME=${HOSTNAME_EXT}
-      else
-        # We are in a single-host-multiple-hostnames env
-        CERT_NAME=${c}.${CLUSTER}.${DOMAIN}
-      fi
-
-      sed -i "s/__CERT_REQUIRES__/cmd: create-initial-cert-${CERT_NAME}*/g;
-              s#__CERT_PEM__#/etc/letsencrypt/live/${CERT_NAME}/fullchain.pem#g;
-              s#__CERT_KEY__#/etc/letsencrypt/live/${CERT_NAME}/privkey.pem#g" \
+    for c in controller websocket workbench workbench2 webshell download collections keepproxy; do
+      sed -i "s/__CERT_REQUIRES__/cmd: create-initial-cert-${c}.${CLUSTER}.${DOMAIN}*/g;
+              s#__CERT_PEM__#/etc/letsencrypt/live/${c}.${CLUSTER}.${DOMAIN}/fullchain.pem#g;
+              s#__CERT_KEY__#/etc/letsencrypt/live/${c}.${CLUSTER}.${DOMAIN}/privkey.pem#g" \
       ${P_DIR}/nginx_${c}_configuration.sls
     done
   else
