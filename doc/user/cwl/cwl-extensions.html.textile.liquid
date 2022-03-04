@@ -160,9 +160,9 @@ Request support for Nvidia CUDA GPU acceleration in the container.  Assumes that
 table(table table-bordered table-condensed).
 |_. Field |_. Type |_. Description |
 |cudaVersionMin|string|Required.  The CUDA SDK version corresponding to the minimum driver version supported by the container (generally, the SDK version 'X.Y' the application was compiled against).|
-|cudaComputeCapabilityMin|string|Required.  The minimum CUDA hardware capability (in 'X.Y' format) required by the application's PTX or C++ GPU code (will be JIT compiled for the available hardware).|
-|deviceCountMin|integer|Minimum number of GPU devices to allocate on a single node. Required.|
-|deviceCountMax|integer|Maximum number of GPU devices to allocate on a single node. Optional.  If not specified, same as @minDeviceCount@.|
+|cudaComputeCapability|string or array of strings|Required. CUDA hardware capability required to run the software, in X.Y format.  If this is a single value, it defines only the minimum compute capability. GPUs with higher capability are also accepted.  If it is an array value, then only select GPUs with compute capabilities that explicitly appear in the array.|
+|cudaDeviceCountMin|integer|Minimum number of GPU devices to request, default 1.|
+|cudaDeviceCountMax|integer|Maximum number of GPU devices to request.  If not specified, same as @deviceCountMin@.|
 
 h2. arv:dockerCollectionPDH
 
