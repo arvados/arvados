@@ -65,7 +65,7 @@ def is_in_collection(root, branch):
             return (None, None)
         fn = os.path.join(root, ".arvados#collection")
         if os.path.exists(fn):
-            with file(fn, 'r') as f:
+            with open(fn, 'r') as f:
                 c = json.load(f)
             return (c["portable_data_hash"], branch)
         else:
