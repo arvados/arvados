@@ -6,16 +6,20 @@ package localdb
 
 import (
 	"context"
+	"io/fs"
 	"regexp"
+	"sort"
 	"strconv"
 	"time"
 
 	"git.arvados.org/arvados.git/lib/config"
 	"git.arvados.org/arvados.git/lib/controller/rpc"
 	"git.arvados.org/arvados.git/sdk/go/arvados"
+	"git.arvados.org/arvados.git/sdk/go/arvadosclient"
 	"git.arvados.org/arvados.git/sdk/go/arvadostest"
 	"git.arvados.org/arvados.git/sdk/go/auth"
 	"git.arvados.org/arvados.git/sdk/go/ctxlog"
+	"git.arvados.org/arvados.git/sdk/go/keepclient"
 	check "gopkg.in/check.v1"
 )
 
@@ -117,6 +121,100 @@ func (s *CollectionSuite) TestCollectionCreateAndUpdateWithProperties(c *check.C
 			c.Assert(err, check.NotNil)
 		}
 	}
+}
+
+func (s *CollectionSuite) TestCollectionUpdateFiles(c *check.C) {
+	ctx := auth.NewContext(context.Background(), &auth.Credentials{Tokens: []string{arvadostest.AdminToken}})
+	foo, err := s.localdb.railsProxy.CollectionCreate(ctx, arvados.CreateOptions{
+		Attrs: map[string]interface{}{
+			"owner_uuid":    arvadostest.ActiveUserUUID,
+			"manifest_text": ". acbd18db4cc2f85cedef654fccc4a4d8+3 0:3:foo.txt\n",
+		}})
+	c.Assert(err, check.IsNil)
+	s.localdb.signCollection(ctx, &foo)
+	foobarbaz, err := s.localdb.railsProxy.CollectionCreate(ctx, arvados.CreateOptions{
+		Attrs: map[string]interface{}{
+			"owner_uuid":    arvadostest.ActiveUserUUID,
+			"manifest_text": "./foo/bar 73feffa4b7f6bb68e44cf984c85f6e88+3 0:3:baz.txt\n",
+		}})
+	c.Assert(err, check.IsNil)
+	s.localdb.signCollection(ctx, &foobarbaz)
+	wazqux, err := s.localdb.railsProxy.CollectionCreate(ctx, arvados.CreateOptions{
+		Attrs: map[string]interface{}{
+			"owner_uuid":    arvadostest.ActiveUserUUID,
+			"manifest_text": "./waz d85b1213473c2fd7c2045020a6b9c62b+3 0:3:qux.txt\n",
+		}})
+	c.Assert(err, check.IsNil)
+	s.localdb.signCollection(ctx, &wazqux)
+
+	ctx = auth.NewContext(context.Background(), &auth.Credentials{Tokens: []string{arvadostest.ActiveTokenV2}})
+
+	// Create using content from existing collections
+	dst, err := s.localdb.CollectionCreate(ctx, arvados.CreateOptions{
+		Attrs: map[string]interface{}{
+			"owner_uuid": arvadostest.ActiveUserUUID,
+			"splices": map[string]string{
+				"/f": foo.PortableDataHash + "/foo.txt",
+				"/b": foobarbaz.PortableDataHash + "/foo/bar",
+				"/q": wazqux.PortableDataHash + "/",
+				"/w": wazqux.PortableDataHash + "/waz",
+			},
+		}})
+	c.Assert(err, check.IsNil)
+	s.expectFiles(c, dst, "f", "b/baz.txt", "q/waz/qux.txt", "w/qux.txt")
+
+	// Delete a file and a directory
+	dst, err = s.localdb.CollectionUpdate(ctx, arvados.UpdateOptions{
+		UUID: dst.UUID,
+		Attrs: map[string]interface{}{
+			"splices": map[string]string{
+				"/f":     "",
+				"/q/waz": "",
+			},
+		}})
+	c.Assert(err, check.IsNil)
+	s.expectFiles(c, dst, "b/baz.txt", "q/", "w/qux.txt")
+
+	// Move content within collection
+	dst, err = s.localdb.CollectionUpdate(ctx, arvados.UpdateOptions{
+		UUID: dst.UUID,
+		Attrs: map[string]interface{}{
+			"splices": map[string]string{
+				"/b":              "",
+				"/quux/corge.txt": dst.PortableDataHash + "/b/baz.txt",
+			},
+		}})
+	c.Assert(err, check.IsNil)
+	s.expectFiles(c, dst, "q/", "w/qux.txt", "quux/corge.txt")
+}
+
+// Wrap arvados.FileSystem to satisfy the fs.FS interface (until the
+// SDK offers a neater solution) so we can use fs.WalkDir().
+type filesystemfs struct {
+	arvados.FileSystem
+}
+
+func (fs filesystemfs) Open(path string) (fs.File, error) {
+	f, err := fs.FileSystem.Open(path)
+	return f, err
+}
+
+func (s *CollectionSuite) expectFiles(c *check.C, coll arvados.Collection, expected ...string) {
+	client := arvados.NewClientFromEnv()
+	ac, err := arvadosclient.New(client)
+	c.Assert(err, check.IsNil)
+	kc, err := keepclient.MakeKeepClient(ac)
+	c.Assert(err, check.IsNil)
+	cfs, err := coll.FileSystem(arvados.NewClientFromEnv(), kc)
+	c.Assert(err, check.IsNil)
+	var found []string
+	fs.WalkDir(filesystemfs{cfs}, "/", func(path string, d fs.DirEntry, err error) error {
+		found = append(found, path)
+		return nil
+	})
+	sort.Strings(found)
+	sort.Strings(expected)
+	c.Check(found, check.DeepEquals, expected)
 }
 
 func (s *CollectionSuite) TestSignatures(c *check.C) {
