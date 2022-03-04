@@ -1053,68 +1053,90 @@ class TestContainer(unittest.TestCase):
         runner.api.collections().get().execute.return_value = {
             "portable_data_hash": "99999999999999999999999999999993+99"}
 
-        tool = cmap({
-            "inputs": [],
-            "outputs": [],
-            "baseCommand": "nvidia-smi",
-            "arguments": [],
-            "id": "",
-            "cwlVersion": "v1.2",
-            "class": "CommandLineTool",
-            "requirements": [
-            {
+        test_cwl_req = [{
                 "class": "http://commonwl.org/cwltool#CUDARequirement",
                 "cudaVersionMin": "11.0",
-                "cudaComputeCapabilityMin": "9.0",
-            }
-        ]
-        })
+                "cudaComputeCapability": "9.0",
+            }, {
+                "class": "http://commonwl.org/cwltool#CUDARequirement",
+                "cudaVersionMin": "11.0",
+                "cudaComputeCapability": "9.0",
+                "cudaDeviceCountMin": 2
+            }, {
+                "class": "http://commonwl.org/cwltool#CUDARequirement",
+                "cudaVersionMin": "11.0",
+                "cudaComputeCapability": ["4.0", "5.0"],
+                "cudaDeviceCountMin": 2
+            }]
 
-        loadingContext, runtimeContext = self.helper(runner, True)
+        test_arv_req = [{
+            'device_count': 1,
+            'driver_version': "11.0",
+            'hardware_capability': "9.0"
+        }, {
+            'device_count': 2,
+            'driver_version': "11.0",
+            'hardware_capability': "9.0"
+        }, {
+            'device_count': 2,
+            'driver_version': "11.0",
+            'hardware_capability': "4.0"
+        }]
 
-        arvtool = cwltool.load_tool.load_tool(tool, loadingContext)
-        arvtool.formatgraph = None
+        for test_case in range(0, len(test_cwl_req)):
 
-        for j in arvtool.job({}, mock.MagicMock(), runtimeContext):
-            j.run(runtimeContext)
-            runner.api.container_requests().create.assert_called_with(
-                body=JsonDiffMatcher({
-                    'environment': {
-                        'HOME': '/var/spool/cwl',
-                        'TMPDIR': '/tmp'
-                    },
-                    'name': 'test_run_True',
-                    'runtime_constraints': {
-                        'vcpus': 1,
-                        'ram': 268435456,
-                        'cuda': {
-                            'device_count': 1,
-                            'driver_version': "11.0",
-                            'hardware_capability': "9.0"
-                        }
-                    },
-                    'use_existing': True,
-                    'priority': 500,
-                    'mounts': {
-                        '/tmp': {'kind': 'tmp',
-                                 "capacity": 1073741824
-                             },
-                        '/var/spool/cwl': {'kind': 'tmp',
-                                           "capacity": 1073741824 }
-                    },
-                    'state': 'Committed',
-                    'output_name': 'Output for step test_run_True',
-                    'owner_uuid': 'zzzzz-8i9sb-zzzzzzzzzzzzzzz',
-                    'output_path': '/var/spool/cwl',
-                    'output_ttl': 0,
-                    'container_image': '99999999999999999999999999999993+99',
-                    'command': ['nvidia-smi'],
-                    'cwd': '/var/spool/cwl',
-                    'scheduling_parameters': {},
-                    'properties': {},
-                    'secret_mounts': {},
-                    'output_storage_classes': ["default"]
-                }))
+            tool = cmap({
+                "inputs": [],
+                "outputs": [],
+                "baseCommand": "nvidia-smi",
+                "arguments": [],
+                "id": "",
+                "cwlVersion": "v1.2",
+                "class": "CommandLineTool",
+                "requirements": [test_cwl_req[test_case]]
+            })
+
+            loadingContext, runtimeContext = self.helper(runner, True)
+
+            arvtool = cwltool.load_tool.load_tool(tool, loadingContext)
+            arvtool.formatgraph = None
+
+            for j in arvtool.job({}, mock.MagicMock(), runtimeContext):
+                j.run(runtimeContext)
+                runner.api.container_requests().create.assert_called_with(
+                    body=JsonDiffMatcher({
+                        'environment': {
+                            'HOME': '/var/spool/cwl',
+                            'TMPDIR': '/tmp'
+                        },
+                        'name': 'test_run_True' + ("" if test_case == 0 else "_"+str(test_case+1)),
+                        'runtime_constraints': {
+                            'vcpus': 1,
+                            'ram': 268435456,
+                            'cuda': test_arv_req[test_case]
+                        },
+                        'use_existing': True,
+                        'priority': 500,
+                        'mounts': {
+                            '/tmp': {'kind': 'tmp',
+                                     "capacity": 1073741824
+                                 },
+                            '/var/spool/cwl': {'kind': 'tmp',
+                                               "capacity": 1073741824 }
+                        },
+                        'state': 'Committed',
+                        'output_name': 'Output for step test_run_True' + ("" if test_case == 0 else "_"+str(test_case+1)),
+                        'owner_uuid': 'zzzzz-8i9sb-zzzzzzzzzzzzzzz',
+                        'output_path': '/var/spool/cwl',
+                        'output_ttl': 0,
+                        'container_image': '99999999999999999999999999999993+99',
+                        'command': ['nvidia-smi'],
+                        'cwd': '/var/spool/cwl',
+                        'scheduling_parameters': {},
+                        'properties': {},
+                        'secret_mounts': {},
+                        'output_storage_classes': ["default"]
+                    }))
 
 
     # The test passes no builder.resources

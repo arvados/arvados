@@ -1,0 +1,99 @@
+{
+    "referenceGenomeSequence": {
+        "class": "File",
+        "location": "data/Genomes/Homo_sapiens/GRCh38.p2/WholeGenome/genome.fa",
+        "metadata": {
+            "reference_genome": {
+                "organism": "Homo sapiens",
+                "version": "hg38"
+            },
+            "annotation": {
+                "source": "gencode",
+                "version": "v24"
+            }
+        }
+    },
+    "referenceGenomeSequenceDrosophila": {
+        "class": "File",
+        "location": "data/Genomes/Drosophila_melanogaster/dmel_r6.16/WholeGenome/genome.fa",
+        "metadata": {
+            "reference_genome": {
+                "organism": "Drosophila melanogaster",
+                "version": "rmel_r6.16"
+            }
+        }
+    },
+    "blacklistBed": {
+        "class": "File",
+        "location": "data/Genomes/Blacklist/lists2/hg38-blacklist.v2.bed",
+        "metadata": {
+            "reference_genome": {
+                "organism": "Homo sapiens",
+                "version": "hg38"
+            },
+            "annotation": {
+                "source": "gencode",
+                "version": "v24"
+            }
+        }
+    },
+    "BowtieHumanReference": {
+        "class": "Directory",
+        "location": "data/Genomes/Homo_sapiens/GRCh38.p2/Bowtie2Index/",
+        "metadata": {
+            "reference_genome": {
+                "organism": "Homo sapiens",
+                "version": "hg38"
+            },
+            "annotation": {
+                "source": "gencode",
+                "version": "v24"
+            }
+        }
+    },
+    "BowtieDrosophilaReference": {
+        "class": "Directory",
+        "location": "data/Genomes/Drosophila_melanogaster/dmel_r6.16/Bowtie2Index/",
+        "metadata": {
+            "reference_genome": {
+                "organism": "Drosophila melanogaster",
+                "version": "rmel_r6.16"
+            }
+        }
+    },
+    "sampleName": "LED054_0p03nMR1.0",
+    "inputFastq1": {
+        "class": "File",
+        "metadata": {
+            "user": "kmavrommatis",
+            "sample_id": [
+               2
+            ]
+        },
+        "location": "DATEST/ChIP-Seq/Raw/fastq/Input_R1.fastq.gz",
+        "secondaryFiles": []
+    },
+    "inputFastq2": {
+        "class": "File",
+        "metadata": {
+            "user": "kmavrommatis",
+            "sample_id": [
+                2
+            ]
+        },
+        "location": "DATEST/ChIP-Seq/Raw/fastq/Input_R3.fastq.gz",
+        "secondaryFiles": []
+    },
+    "inputFastqUMI": {
+        "class": "File",
+        "metadata": {
+            "user": "kmavrommatis",
+            "sample_id": [
+               2
+            ]
+        },
+        "location": "DATEST/ChIP-Seq/Raw/fastq/Input_R2.fastq.gz",
+        "secondaryFiles": []
+    }
+}
+

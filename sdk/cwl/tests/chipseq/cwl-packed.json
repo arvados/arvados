@@ -1,0 +1,94 @@
+{
+    "$graph": [
+        {
+            "class": "Workflow",
+            "id": "#main",
+            "doc": "Pipeline that is applied on single ChIP-seq samples.\n\nStarts with QC on the reads and trimming (for adapters and based on quality)\n\nAligns to human genome and adds UMI\n\nAligns to Drosophila genome and counts the number of reads.\n\nAfter the alignment to human genome the files are filtered for duplicates, multimappers and alignments in black listed regions",
+            "label": "ChIP-Seq (single sample)",
+            "inputs": [
+                {
+                    "id": "#inputFastq1",
+                    "type": "File",
+                    "https://www.sevenbridges.com/fileTypes": "fastq",
+                    "https://www.sevenbridges.com/x": 0,
+                    "https://www.sevenbridges.com/y": 1726.25
+                },
+                {
+                    "id": "#blacklistBed",
+                    "type": "File",
+                    "https://www.sevenbridges.com/x": 746.4744873046875,
+                    "https://www.sevenbridges.com/y": 1903.265625
+                },
+                {
+                    "id": "#referenceGenomeSequence",
+                    "type": "File",
+                    "secondaryFiles": [
+                        ".fai",
+                        "^.dict"
+                    ],
+                    "https://www.sevenbridges.com/fileTypes": "fasta, fa",
+                    "https://www.sevenbridges.com/x": 0,
+                    "https://www.sevenbridges.com/y": 1405.203125
+                },
+                {
+                    "id": "#sampleName",
+                    "type": "string",
+                    "https://www.sevenbridges.com/x": 0,
+                    "https://www.sevenbridges.com/y": 1191.171875
+                },
+                {
+                    "id": "#inputFastq2",
+                    "type": [
+                        "null",
+                        "File"
+                    ],
+                    "https://www.sevenbridges.com/fileTypes": "fastq",
+                    "https://www.sevenbridges.com/x": 0,
+                    "https://www.sevenbridges.com/y": 1619.234375
+                },
+                {
+                    "id": "#inputFastqUMI",
+                    "type": "File",
+                    "https://www.sevenbridges.com/x": 0,
+                    "https://www.sevenbridges.com/y": 1512.21875
+                },
+                {
+                    "id": "#BowtieHumanReference",
+                    "type": "Directory",
+                    "https://www.sevenbridges.com/x": 363.875,
+                    "https://www.sevenbridges.com/y": 1519.21875
+                },
+                {
+                    "id": "#BowtieDrosophilaReference",
+                    "type": "Directory",
+                    "https://www.sevenbridges.com/x": 363.875,
+                    "https://www.sevenbridges.com/y": 1626.234375
+                },
+                {
+                    "id": "#referenceGenomeSequenceDrosophila",
+                    "type": "File",
+                    "secondaryFiles": [
+                        ".fai"
+                    ],
+                    "https://www.sevenbridges.com/x": 0,
+                    "https://www.sevenbridges.com/y": 1298.1875
+                }
+            ],
+            "outputs": [
+            ],
+            "steps": [
+                {
+                    "id": "#step1",
+                    "in": {
+                        "inp": "#inputFastq1"
+                    },
+                    "out": [],
+                    "run": "../cat.cwl"
+                }
+            ],
+            "requirements": [
+            ]
+        },
+   ],
+    "cwlVersion": "v1.0"
+}
