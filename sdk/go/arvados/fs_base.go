@@ -8,6 +8,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"io/fs"
 	"log"
 	"net/http"
 	"os"
@@ -157,6 +158,18 @@ type FileSystem interface {
 
 	// Estimate current memory usage.
 	MemorySize() int64
+}
+
+type fsFS struct {
+	FileSystem
+}
+
+// FS returns an fs.FS interface to the given FileSystem, to enable
+// the use of fs.WalkDir, etc.
+func FS(fs FileSystem) fs.FS { return fsFS{fs} }
+func (fs fsFS) Open(path string) (fs.File, error) {
+	f, err := fs.FileSystem.Open(path)
+	return f, err
 }
 
 type inode interface {
