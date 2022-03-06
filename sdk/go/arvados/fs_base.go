@@ -463,14 +463,14 @@ func (fs *fileSystem) openFile(name string, flag int, perm os.FileMode) (*fileha
 	default:
 		return nil, fmt.Errorf("invalid flags 0x%x", flag)
 	}
-	if !writable && parent.IsDir() {
+	if parent.IsDir() {
 		// A directory can be opened via "foo/", "foo/.", or
 		// "foo/..".
 		switch name {
 		case ".", "":
-			return &filehandle{inode: parent}, nil
+			return &filehandle{inode: parent, readable: readable, writable: writable}, nil
 		case "..":
-			return &filehandle{inode: parent.Parent()}, nil
+			return &filehandle{inode: parent.Parent(), readable: readable, writable: writable}, nil
 		}
 	}
 	createMode := flag&os.O_CREATE != 0
@@ -766,7 +766,7 @@ func Splice(fs FileSystem, target string, newsubtree *Subtree) error {
 		f, err = fs.OpenFile(target, os.O_CREATE|os.O_WRONLY, 0700)
 	}
 	if err != nil {
-		return err
+		return fmt.Errorf("open %s: %w", target, err)
 	}
 	defer f.Close()
 	return f.Splice(newsubtree)
