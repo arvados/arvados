@@ -88,3 +88,4 @@ sdk/python/tests/fed-migrate/*.cwlex
 doc/install/*.xlsx
 sdk/cwl/tests/wf/hello.txt
 sdk/cwl/tests/wf/indir1/hello2.txt
+sdk/cwl/tests/chipseq/data/Genomes/*

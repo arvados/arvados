@@ -98,7 +98,9 @@ Edit the variables in the <i>local.params</i> file. Pay attention to the <b>*_IN
 
 The <i>multi_host</i> example includes Let's Encrypt salt code to automatically request and install the certificates for the public-facing hosts (API/controller, Workbench, Keepproxy/Keepweb) using AWS' Route53.
 
-{% include 'install_custom_certificates' %}
+{% include 'multi_host_install_custom_certificates' %}
+
+If you want to use valid certificates provided by Let's Encrypt, set the variable <i>SSL_MODE=lets-encrypt</i> and make sure that all the FQDNs that you will use for the public-facing applications (API/controller, Workbench, Keepproxy/Keepweb) are reachable.
 
 h3(#further_customization). Further customization of the installation (modifying the salt pillars and states)
 

@@ -37,10 +37,6 @@ fi
 
 echo "Arvados project uuid is '${project_uuid}'"
 
-echo "Uploading arvados/jobs' docker image to the project"
-VERSION="2.1.1"
-arv-keepdocker --pull arvados/jobs "${VERSION}" --project-uuid "${project_uuid}"
-
 # Create the initial user
 echo "Creating initial user '__INITIAL_USER__'"
 user_uuid=$(arv --format=uuid user list --filters '[["email", "=", "__INITIAL_USER_EMAIL__"], ["username", "=", "__INITIAL_USER__"]]')

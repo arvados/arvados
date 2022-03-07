@@ -37,7 +37,7 @@ class Arvados::V1::SchemaController < ApplicationController
         # format is YYYYMMDD, must be fixed width (needs to be lexically
         # sortable), updated manually, may be used by clients to
         # determine availability of API server features.
-        revision: "20210628",
+        revision: "20220222",
         source_version: AppVersion.hash,
         sourceVersion: AppVersion.hash, # source_version should be deprecated in the future
         packageVersion: AppVersion.package_version,
@@ -413,6 +413,27 @@ class Arvados::V1::SchemaController < ApplicationController
             path: "config",
             httpMethod: "GET",
             description: "Get public config",
+            parameters: {
+            },
+            parameterOrder: [
+            ],
+            response: {
+            },
+            scopes: [
+              "https://api.arvados.org/auth/arvados",
+              "https://api.arvados.org/auth/arvados.readonly"
+            ]
+          },
+        }
+      }
+
+      discovery[:resources]['vocabularies'] = {
+        methods: {
+          get: {
+            id: "arvados.vocabularies.get",
+            path: "vocabulary",
+            httpMethod: "GET",
+            description: "Get vocabulary definition",
             parameters: {
             },
             parameterOrder: [

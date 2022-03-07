@@ -491,3 +491,11 @@ def get_config_once(svc):
     if not hasattr(svc, '_cached_config'):
         svc._cached_config = svc.configs().get().execute()
     return svc._cached_config
+
+def get_vocabulary_once(svc):
+    if not svc._rootDesc.get('resources').get('vocabularies', False):
+        # Old API server version, no vocabulary export endpoint
+        return {}
+    if not hasattr(svc, '_cached_vocabulary'):
+        svc._cached_vocabulary = svc.vocabularies().get().execute()
+    return svc._cached_vocabulary

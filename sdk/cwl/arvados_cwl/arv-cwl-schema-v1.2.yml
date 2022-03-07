@@ -304,13 +304,29 @@ $graph:
 
         See https://docs.nvidia.com/deploy/cuda-compatibility/ for
         details.
-    cudaComputeCapabilityMin:
-      type: string
-      doc: Minimum CUDA hardware capability required to run the software, in X.Y format.
-    deviceCountMin:
-      type: int?
+    cudaComputeCapability:
+      type:
+        - 'string'
+        - 'string[]'
+      doc: |
+        CUDA hardware capability required to run the software, in X.Y
+        format.
+
+        * If this is a single value, it defines only the minimum
+          compute capability.  GPUs with higher capability are also
+          accepted.
+
+        * If it is an array value, then only select GPUs with compute
+          capabilities that explicitly appear in the array.
+    cudaDeviceCountMin:
+      type: ['null', int, cwl:Expression]
       default: 1
-      doc: Minimum number of GPU devices to request, default 1.
-    deviceCountMax:
-      type: int?
-      doc: Maximum number of GPU devices to request.  If not specified, same as `deviceCountMin`.
+      doc: |
+        Minimum number of GPU devices to request.  If not specified,
+        same as `cudaDeviceCountMax`.  If neither are specified,
+        default 1.
+    cudaDeviceCountMax:
+      type: ['null', int, cwl:Expression]
+      doc: |
+        Maximum number of GPU devices to request.  If not specified,
+        same as `cudaDeviceCountMin`.

@@ -14,28 +14,30 @@ nginx:
           default: 1
           '127.0.0.0/8': 0
         upstream controller_upstream:
-          - server: '__HOSTNAME_INT__:8003  fail_timeout=10s'
+          - server: '__IP_INT__:8003  fail_timeout=10s'
 
   ### SITES
   servers:
     managed:
       ### DEFAULT
-      arvados_controller_default:
+      arvados_controller_default.conf:
         enabled: true
         overwrite: true
         config:
           - server:
             - server_name: _
             - listen:
-              - 80 default_server
+              - 80
             - location /.well-known:
               - root: /var/www
             - location /:
               - return: '301 https://$host$request_uri'
 
-      arvados_controller_ssl:
+      arvados_controller_ssl.conf:
         enabled: true
         overwrite: true
+        requires:
+          __CERT_REQUIRES__
         config:
           - server:
             - server_name: __HOSTNAME_EXT__
@@ -52,7 +54,9 @@ nginx:
               - proxy_set_header: 'X-Real-IP $remote_addr'
               - proxy_set_header: 'X-Forwarded-For $proxy_add_x_forwarded_for'
               - proxy_set_header: 'X-External-Client $external_client'
-            - include: 'snippets/arvados-snakeoil.conf'
+            - include: snippets/ssl_hardening_default.conf
+            - ssl_certificate: __CERT_PEM__
+            - ssl_certificate_key: __CERT_KEY__
             - access_log: /var/log/nginx/__CLUSTER__.__DOMAIN__.access.log combined
             - error_log: /var/log/nginx/__CLUSTER__.__DOMAIN__.error.log
             - client_max_body_size: 128m
