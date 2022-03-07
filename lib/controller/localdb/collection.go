@@ -238,7 +238,7 @@ func (conn *Conn) applySplices(ctx context.Context, fromUUID string, attrs map[s
 		srcspec := strings.SplitN(src, "/", 2)
 		srcid, srcpath := srcspec[0], "/"
 		if !arvadosclient.PDHMatch(srcid) {
-			return httpserver.Errorf(http.StatusBadRequest, "invalid source %q for splices[%q]: must be \"\" or \"PDH[/path]\"", src, dst)
+			return httpserver.Errorf(http.StatusBadRequest, "invalid source %q for splices[%q]: must be \"\" or \"PDH\" or \"PDH/path\"", src, dst)
 		}
 		if len(srcspec) == 2 && srcspec[1] != "" {
 			srcpath = srcspec[1]

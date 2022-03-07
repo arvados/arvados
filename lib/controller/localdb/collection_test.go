@@ -219,6 +219,7 @@ func (s *CollectionSuite) TestCollectionUpdateFiles(c *check.C) {
 	c.Check(dstcopy.PortableDataHash, check.Equals, dst.PortableDataHash)
 	s.expectFiles(c, dstcopy, "b/corge.txt")
 
+	// Check invalid targets, sources, and combinations
 	for _, splices := range []map[string]string{
 		{
 			"/foo/nope": dst.PortableDataHash + "/b",
@@ -256,9 +257,14 @@ func (s *CollectionSuite) TestCollectionUpdateFiles(c *check.C) {
 		c.Logf("splices %#v\n... got err: %s", splices, err)
 		c.Check(err, check.NotNil)
 	}
+
+	// Check "splices" value that isn't even the right type
 	for _, splices := range []interface{}{
 		map[string]int{"foo": 1},
 		map[int]string{1: "foo"},
+		12345,
+		"foo",
+		[]string{"foo"},
 	} {
 		_, err = s.localdb.CollectionUpdate(ctx, arvados.UpdateOptions{
 			UUID: dst.UUID,
@@ -266,8 +272,18 @@ func (s *CollectionSuite) TestCollectionUpdateFiles(c *check.C) {
 				"splices": splices,
 			}})
 		c.Logf("splices %#v\n... got err: %s", splices, err)
-		c.Check(err, check.NotNil)
+		c.Check(err, check.ErrorMatches, "invalid type .* for splices parameter")
 	}
+
+	// Check conflicting splices and manifest_text
+	_, err = s.localdb.CollectionUpdate(ctx, arvados.UpdateOptions{
+		UUID: dst.UUID,
+		Attrs: map[string]interface{}{
+			"splices":       map[string]string{"/": ""},
+			"manifest_text": ". d41d8cd98f00b204e9800998ecf8427e+0 0:0:z\n",
+		}})
+	c.Logf("splices+manifest_text\n... got err: %s", err)
+	c.Check(err, check.ErrorMatches, "ambiguous request: both.*splices.*manifest_text.*")
 }
 
 // expectFiles checks coll's directory structure against the given
