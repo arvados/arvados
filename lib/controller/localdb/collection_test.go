@@ -7,9 +7,11 @@ package localdb
 import (
 	"context"
 	"io/fs"
+	"path/filepath"
 	"regexp"
 	"sort"
 	"strconv"
+	"strings"
 	"time"
 
 	"git.arvados.org/arvados.git/lib/config"
@@ -175,30 +177,102 @@ func (s *CollectionSuite) TestCollectionUpdateFiles(c *check.C) {
 	c.Assert(err, check.IsNil)
 	s.expectFiles(c, dst, "b/baz.txt", "q/", "w/qux.txt")
 
-	// Move content within collection
+	// Move and copy content within collection
 	dst, err = s.localdb.CollectionUpdate(ctx, arvados.UpdateOptions{
 		UUID: dst.UUID,
 		Attrs: map[string]interface{}{
 			"splices": map[string]string{
+				// Note splicing content to
+				// /b/corge.txt but removing
+				// everything else from /b
 				"/b":              "",
+				"/b/corge.txt":    dst.PortableDataHash + "/b/baz.txt",
 				"/quux/corge.txt": dst.PortableDataHash + "/b/baz.txt",
 			},
 		}})
 	c.Assert(err, check.IsNil)
-	s.expectFiles(c, dst, "q/", "w/qux.txt", "quux/corge.txt")
+	s.expectFiles(c, dst, "b/corge.txt", "q/", "w/qux.txt", "quux/corge.txt")
+
+	// Remove everything except one file
+	dst, err = s.localdb.CollectionUpdate(ctx, arvados.UpdateOptions{
+		UUID: dst.UUID,
+		Attrs: map[string]interface{}{
+			"splices": map[string]string{
+				"/":            "",
+				"/b/corge.txt": dst.PortableDataHash + "/b/corge.txt",
+			},
+		}})
+	c.Assert(err, check.IsNil)
+	s.expectFiles(c, dst, "b/corge.txt")
+
+	// Copy entire collection to root
+	dstcopy, err := s.localdb.CollectionCreate(ctx, arvados.CreateOptions{
+		Attrs: map[string]interface{}{
+			// Note map[string]interface{} here, which is
+			// how lib/controller/router requests will
+			// look.
+			"splices": map[string]interface{}{
+				"/": dst.PortableDataHash,
+			},
+		}})
+	c.Check(err, check.IsNil)
+	c.Check(dstcopy.PortableDataHash, check.Equals, dst.PortableDataHash)
+	s.expectFiles(c, dstcopy, "b/corge.txt")
+
+	for _, splices := range []map[string]string{
+		{
+			"/foo/nope": dst.PortableDataHash + "/b",
+			"/foo":      dst.PortableDataHash + "/b",
+		},
+		{
+			"/foo":      dst.PortableDataHash + "/b",
+			"/foo/nope": "",
+		},
+		{
+			"/":     dst.PortableDataHash + "/",
+			"/nope": "",
+		},
+		{
+			"/":     dst.PortableDataHash + "/",
+			"/nope": dst.PortableDataHash + "/b",
+		},
+		{"/bad/": ""},
+		{"/./bad": ""},
+		{"/b/./ad": ""},
+		{"/b/../ad": ""},
+		{"/b/.": ""},
+		{".": ""},
+		{"bad": ""},
+		{"": ""},
+		{"/bad": "/b"},
+		{"/bad": "bad/b"},
+		{"/bad": dst.UUID + "/b"},
+	} {
+		_, err = s.localdb.CollectionUpdate(ctx, arvados.UpdateOptions{
+			UUID: dst.UUID,
+			Attrs: map[string]interface{}{
+				"splices": splices,
+			}})
+		c.Logf("splices %#v\n... got err: %s", splices, err)
+		c.Check(err, check.NotNil)
+	}
+	for _, splices := range []interface{}{
+		map[string]int{"foo": 1},
+		map[int]string{1: "foo"},
+	} {
+		_, err = s.localdb.CollectionUpdate(ctx, arvados.UpdateOptions{
+			UUID: dst.UUID,
+			Attrs: map[string]interface{}{
+				"splices": splices,
+			}})
+		c.Logf("splices %#v\n... got err: %s", splices, err)
+		c.Check(err, check.NotNil)
+	}
 }
 
-// Wrap arvados.FileSystem to satisfy the fs.FS interface (until the
-// SDK offers a neater solution) so we can use fs.WalkDir().
-type filesystemfs struct {
-	arvados.FileSystem
-}
-
-func (fs filesystemfs) Open(path string) (fs.File, error) {
-	f, err := fs.FileSystem.Open(path)
-	return f, err
-}
-
+// expectFiles checks coll's directory structure against the given
+// list of expected files and empty directories. An expected path with
+// a trailing slash indicates an empty directory.
 func (s *CollectionSuite) expectFiles(c *check.C, coll arvados.Collection, expected ...string) {
 	client := arvados.NewClientFromEnv()
 	ac, err := arvadosclient.New(client)
@@ -208,10 +282,32 @@ func (s *CollectionSuite) expectFiles(c *check.C, coll arvados.Collection, expec
 	cfs, err := coll.FileSystem(arvados.NewClientFromEnv(), kc)
 	c.Assert(err, check.IsNil)
 	var found []string
-	fs.WalkDir(filesystemfs{cfs}, "/", func(path string, d fs.DirEntry, err error) error {
-		found = append(found, path)
+	nonemptydirs := map[string]bool{}
+	fs.WalkDir(arvados.FS(cfs), "/", func(path string, d fs.DirEntry, err error) error {
+		dir, _ := filepath.Split(path)
+		nonemptydirs[dir] = true
+		if d.IsDir() {
+			if path != "/" {
+				path += "/"
+			}
+			if !nonemptydirs[path] {
+				nonemptydirs[path] = false
+			}
+		} else {
+			found = append(found, path)
+		}
 		return nil
 	})
+	for d, nonempty := range nonemptydirs {
+		if !nonempty {
+			found = append(found, d)
+		}
+	}
+	for i, path := range found {
+		if path != "/" {
+			found[i] = strings.TrimPrefix(path, "/")
+		}
+	}
 	sort.Strings(found)
 	sort.Strings(expected)
 	c.Check(found, check.DeepEquals, expected)

@@ -37,7 +37,7 @@ var errStubClient = errors.New("stub client")
 type StubClient struct{}
 
 func (*StubClient) ReadAt(string, []byte, int) (int, error) { return 0, errStubClient }
-func (*StubClient) LocalLocator(string) (string, error)     { return "", errStubClient }
+func (*StubClient) LocalLocator(loc string) (string, error) { return loc, nil }
 func (*StubClient) BlockWrite(context.Context, BlockWriteOptions) (BlockWriteResponse, error) {
 	return BlockWriteResponse{}, errStubClient
 }

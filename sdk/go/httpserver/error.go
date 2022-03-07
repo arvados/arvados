@@ -6,8 +6,13 @@ package httpserver
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 )
+
+func Errorf(status int, tmpl string, args ...interface{}) error {
+	return errorWithStatus{fmt.Errorf(tmpl, args...), status}
+}
 
 func ErrorWithStatus(err error, status int) error {
 	return errorWithStatus{err, status}
