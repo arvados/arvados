@@ -65,6 +65,10 @@ Type "help", "copyright", "credits" or "license" for more information.
 
 If you installed from a distribution package (option 2): the package includes a virtualenv, which means the correct Python environment needs to be loaded before the Arvados SDK can be imported. This can be done by activating the virtualenv first:
 
+{% include 'notebox_begin_warning' %}
+If you are on Ubuntu 18.04, please note that the Arvados packages that use Python depend on the python-3.8 package. This means they are installed under @/usr/share/python3.8@, not @/usr/share/python3@. You will need to update the commands below accordingly.
+{% include 'notebox_end' %}
+
 <notextile>
 <pre>~$ <code class="userinput">source /usr/share/python3/dist/python3-arvados-python-client/bin/activate</code>
 (python-arvados-python-client) ~$ <code class="userinput">python</code>
