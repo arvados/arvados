@@ -1217,6 +1217,9 @@ Clusters:
           Region: ""
           EBSVolumeType: gp2
           AdminUsername: debian
+          # (ec2) name of the IAMInstanceProfile for instances started by
+          # the cloud dispatcher. Leave blank when not needed.
+          IAMInstanceProfile: ""
 
           # (azure) Credentials.
           SubscriptionID: ""
