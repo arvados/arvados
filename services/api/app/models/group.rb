@@ -116,6 +116,9 @@ class Group < ArvadosModel
       if !new_record? && !current_user.can?(manage: uuid)
         raise PermissionDeniedError
       end
+      if trash_at || delete_at || !new_record? && TrashedGroup.where(group_uuid: uuid).any?
+        errors.add(:frozen_by_uuid, "cannot be set on a trashed project")
+      end
       if frozen_by_uuid_was.nil?
         if Rails.configuration.API.FreezeProjectRequiresDescription && !attribute_present?(:description)
           errors.add(:frozen_by_uuid, "can only be set if description is non-empty")
@@ -131,36 +134,38 @@ class Group < ArvadosModel
   end
 
   def update_trash
-    if saved_change_to_trash_at? or saved_change_to_owner_uuid?
-      # The group was added or removed from the trash.
-      #
-      # Strategy:
-      #   Compute project subtree, propagating trash_at to subprojects
-      #   Remove groups that don't belong from trash
-      #   Add/update groups that do belong in the trash
+    return unless saved_change_to_trash_at? || saved_change_to_owner_uuid?
 
-      temptable = "group_subtree_#{rand(2**64).to_s(10)}"
-      ActiveRecord::Base.connection.exec_query %{
-create temporary table #{temptable} on commit drop
-as select * from project_subtree_with_trash_at($1, LEAST($2, $3)::timestamp)
-},
-                                               'Group.update_trash.select',
-                                               [[nil, self.uuid],
-                                                [nil, TrashedGroup.find_by_group_uuid(self.owner_uuid).andand.trash_at],
-                                                [nil, self.trash_at]]
+    # The group was added or removed from the trash.
+    #
+    # Strategy:
+    #   Compute project subtree, propagating trash_at to subprojects
+    #   Ensure none of the newly trashed descendants were frozen (if so, bail out)
+    #   Remove groups that don't belong from trash
+    #   Add/update groups that do belong in the trash
 
-      ActiveRecord::Base.connection.exec_delete %{
-delete from trashed_groups where group_uuid in (select target_uuid from #{temptable} where trash_at is NULL);
-},
-                                            "Group.update_trash.delete"
-
-      ActiveRecord::Base.connection.exec_query %{
-insert into trashed_groups (group_uuid, trash_at)
-  select target_uuid as group_uuid, trash_at from #{temptable} where trash_at is not NULL
-on conflict (group_uuid) do update set trash_at=EXCLUDED.trash_at;
-},
-                                            "Group.update_trash.insert"
+    temptable = "group_subtree_#{rand(2**64).to_s(10)}"
+    ActiveRecord::Base.connection.exec_query(
+      "create temporary table #{temptable} on commit drop " +
+      "as select * from project_subtree_with_trash_at($1, LEAST($2, $3)::timestamp)",
+      "Group.update_trash.select",
+      [[nil, self.uuid],
+       [nil, TrashedGroup.find_by_group_uuid(self.owner_uuid).andand.trash_at],
+       [nil, self.trash_at]])
+    frozen_descendants = ActiveRecord::Base.connection.exec_query(
+      "select uuid from frozen_groups, #{temptable} where uuid = target_uuid",
+      "Group.update_trash.check_frozen")
+    if frozen_descendants.any?
+      raise ArgumentError.new("cannot trash project containing frozen project #{frozen_descendants[0]["uuid"]}")
     end
+    ActiveRecord::Base.connection.exec_delete(
+      "delete from trashed_groups where group_uuid in (select target_uuid from #{temptable} where trash_at is NULL)",
+      "Group.update_trash.delete")
+    ActiveRecord::Base.connection.exec_query(
+      "insert into trashed_groups (group_uuid, trash_at) "+
+      "select target_uuid as group_uuid, trash_at from #{temptable} where trash_at is not NULL " +
+      "on conflict (group_uuid) do update set trash_at=EXCLUDED.trash_at",
+      "Group.update_trash.insert")
   end
 
   def update_frozen
