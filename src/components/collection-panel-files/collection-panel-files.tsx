@@ -22,11 +22,11 @@ import { setCollectionFiles } from 'store/collection-panel/collection-panel-file
 import { sortBy } from 'lodash';
 import { formatFileSize } from 'common/formatters';
 import { getInlineFileUrl, sanitizeToken } from 'views-components/context-menu/actions/helpers';
+import _ from 'lodash';
 
 export interface CollectionPanelFilesProps {
     items: any;
     isWritable: boolean;
-    isLoading: boolean;
     onUploadDataClick: (targetLocation?: string) => void;
     onSearchChange: (searchValue: string) => void;
     onItemMenuOpen: (event: React.MouseEvent<HTMLElement>, item: TreeItem<FileTreeData>, isWritable: boolean) => void;
@@ -34,7 +34,6 @@ export interface CollectionPanelFilesProps {
     onSelectionToggle: (event: React.MouseEvent<HTMLElement>, item: TreeItem<FileTreeData>) => void;
     onCollapseToggle: (id: string, status: TreeItemStatus) => void;
     onFileClick: (id: string) => void;
-    loadFilesFunc: () => void;
     currentItemUuid: any;
     dispatch: Function;
     collectionPanelFiles: any;
@@ -176,11 +175,25 @@ const styles: StyleRulesCallback<CssRules> = (theme: Theme) => ({
 
 const pathPromise = {};
 
+let prevState = {};
+function difference(object, base) {
+	function changes(object, base) {
+		return _.transform(object, function(result, value, key) {
+			if (!_.isEqual(value, base[key])) {
+				result[key] = (_.isObject(value) && _.isObject(base[key])) ? changes(value, base[key]) : value;
+			}
+		});
+	}
+	return changes(object, base);
+}
 export const CollectionPanelFiles = withStyles(styles)(connect((state: RootState) => ({
     auth: state.auth,
     collectionPanel: state.collectionPanel,
     collectionPanelFiles: state.collectionPanelFiles,
 }))((props: CollectionPanelFilesProps & WithStyles<CssRules> & { auth: AuthState }) => {
+    const diff = difference(props, prevState);
+    prevState = props;
+    console.log('---> render CollectionPanel <------', diff);
     const { classes, onItemMenuOpen, onUploadDataClick, isWritable, dispatch, collectionPanelFiles, collectionPanel } = props;
     const { apiToken, config } = props.auth;
 
@@ -210,8 +223,8 @@ export const CollectionPanelFiles = withStyles(styles)(connect((state: RootState
     const rightData = pathData[rightKey];
 
     React.useEffect(() => {
-        console.log(' --> useEffect current UUID: ', props.currentItemUuid);
         if (props.currentItemUuid) {
+            console.log(' --> useEffect current UUID: ', props.currentItemUuid);
             setPathData({});
             setPath([props.currentItemUuid]);
         }
@@ -273,8 +286,8 @@ export const CollectionPanelFiles = withStyles(styles)(connect((state: RootState
     };
 
     React.useEffect(() => {
-        console.log('---> useEffect rightKey', rightKey);
         if (rightKey) {
+            console.log('---> useEffect rightKey:', rightKey);
             fetchData(rightKey);
             setLeftSearch('');
             setRightSearch('');
@@ -283,15 +296,20 @@ export const CollectionPanelFiles = withStyles(styles)(connect((state: RootState
 
     const currentPDH = (collectionPanel.item || {}).portableDataHash;
     React.useEffect(() => {
-        console.log('---> useEffect PDH change:', currentPDH);
         if (currentPDH) {
-            fetchData([leftKey, rightKey], true);
+            console.log('---> useEffect PDH change:', currentPDH);
+            // Avoid fetching the same content level twice
+            if (leftKey !== rightKey) {
+                fetchData([leftKey, rightKey], true);
+            } else {
+                fetchData(rightKey, true);
+            }
         }
     }, [currentPDH]); // eslint-disable-line react-hooks/exhaustive-deps
 
     React.useEffect(() => {
-        console.log('---> useEffect rightData:', rightData, dispatch, rightSearch);
         if (rightData) {
+            console.log('---> useEffect rightData:', rightData, 'search:', rightSearch);
             const filtered = rightData.filter(({ name }) => name.indexOf(rightSearch) > -1);
             setCollectionFiles(filtered, false)(dispatch);
         }
@@ -325,10 +343,10 @@ export const CollectionPanelFiles = withStyles(styles)(connect((state: RootState
     );
 
     React.useEffect(() => {
-        console.log('---> useEffect parentRef:', parentRef, handleRightClick);
         let node = null;
 
         if (parentRef && parentRef.current) {
+            console.log('---> useEffect parentRef:', parentRef);
             node = parentRef.current;
             (node as any).addEventListener('contextmenu', handleRightClick);
         }
@@ -426,7 +444,6 @@ export const CollectionPanelFiles = withStyles(styles)(connect((state: RootState
         [props.onOptionsMenuOpen] // eslint-disable-line react-hooks/exhaustive-deps
     );
 
-    console.log('---> render CollectionPanel <------');
     return <div data-cy="collection-files-panel" onClick={handleClick} ref={parentRef}>
         <div className={classes.pathPanel}>
             <div className={classes.pathPanelPathWrapper}>
