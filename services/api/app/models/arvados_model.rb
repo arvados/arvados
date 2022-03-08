@@ -297,26 +297,32 @@ class ArvadosModel < ApplicationRecord
     user_uuids = users_list.map { |u| u.uuid }
     all_user_uuids = []
 
+    admin = users_list.select { |u| u.is_admin }.any?
+
     # For details on how the trashed_groups table is constructed, see
     # see db/migrate/20200501150153_permission_table.rb
 
-    exclude_trashed_records = ""
-    if !include_trash and (sql_table == "groups" or sql_table == "collections") then
-      # Only include records that are not trashed
-      exclude_trashed_records = "AND (#{sql_table}.trash_at is NULL or #{sql_table}.trash_at > statement_timestamp())"
+    if (admin && include_trash) || sql_table == "api_client_authorizations"
+      excluded_trash = "false"
+    else
+      excluded_trash = "(#{sql_table}.owner_uuid IN (SELECT group_uuid FROM #{TRASHED_GROUPS} " +
+                       "WHERE trash_at <= statement_timestamp()))"
+      if sql_table == "groups" || sql_table == "collections"
+        excluded_trash = "(#{excluded_trash} OR #{sql_table}.trash_at <= statement_timestamp() IS TRUE)"
+      end
+
+      if include_trash
+        # Exclude trash inside frozen projects
+        excluded_trash = "(#{excluded_trash} AND #{sql_table}.owner_uuid IN (SELECT uuid FROM #{FROZEN_GROUPS}))"
+      end
     end
 
-    trashed_check = ""
-    if !include_trash && sql_table != "api_client_authorizations"
-      trashed_check = "#{sql_table}.owner_uuid NOT IN (SELECT group_uuid FROM #{TRASHED_GROUPS} " +
-                      "where trash_at <= statement_timestamp()) #{exclude_trashed_records}"
-    end
-
-    if users_list.select { |u| u.is_admin }.any?
-      # Admin skips most permission checks, but still want to filter on trashed items.
+    if admin
+      # Admin skips most permission checks, but still want to filter
+      # on trashed items.
       if !include_trash && sql_table != "api_client_authorizations"
         # Only include records where the owner is not trashed
-        sql_conds = trashed_check
+        sql_conds = "NOT #{excluded_trash}"
       end
     else
       # The core of the permission check is a join against the
@@ -416,7 +422,7 @@ class ArvadosModel < ApplicationRecord
                      "    WHERE user_uuid IN (#{user_uuids_subquery}) AND perm_level >= 3))) "
       end
 
-      sql_conds = "(#{owner_check} #{direct_check} #{links_cond}) #{trashed_check.empty? ? "" : "AND"} #{trashed_check}"
+      sql_conds = "(#{owner_check} #{direct_check} #{links_cond}) AND NOT #{excluded_trash}"
 
     end
 
