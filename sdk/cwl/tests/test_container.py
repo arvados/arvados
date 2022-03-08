@@ -16,6 +16,7 @@ import mock
 import unittest
 import os
 import functools
+import threading
 import cwltool.process
 import cwltool.secrets
 import cwltool.load_tool
@@ -75,7 +76,9 @@ class TestContainer(unittest.TestCase):
              "basedir": "",
              "make_fs_access": make_fs_access,
              "construct_tool_object": runner.arv_make_tool,
-             "fetcher_constructor": functools.partial(arvados_cwl.CollectionFetcher, api_client=runner.api, fs_access=fs_access)
+             "fetcher_constructor": functools.partial(arvados_cwl.CollectionFetcher, api_client=runner.api, fs_access=fs_access),
+             "loader": Loader({}),
+             "metadata": cmap({"cwlVersion": INTERNAL_VERSION, "http://commonwl.org/cwltool#original_cwlVersion": "v1.0"})
              })
         runtimeContext = arvados_cwl.context.ArvRuntimeContext(
             {"work_api": "containers",
@@ -83,9 +86,11 @@ class TestContainer(unittest.TestCase):
              "name": "test_run_"+str(enable_reuse),
              "make_fs_access": make_fs_access,
              "tmpdir": "/tmp",
+             "outdir": "/tmp",
              "enable_reuse": enable_reuse,
              "priority": 500,
-             "project_uuid": "zzzzz-8i9sb-zzzzzzzzzzzzzzz"
+             "project_uuid": "zzzzz-8i9sb-zzzzzzzzzzzzzzz",
+             "workflow_eval_lock": threading.Condition(threading.RLock())
             })
 
         if isinstance(runner, mock.MagicMock):
@@ -1170,13 +1175,13 @@ class TestContainer(unittest.TestCase):
             "baseCommand": "echo",
             "arguments": [],
             "id": "",
-            "cwlVersion": "v1.2",
-            "class": "CommandLineTool"
+            "cwlVersion": "v1.0",
+            "class": "org.w3id.cwl.cwl.CommandLineTool"
         })
 
         loadingContext, runtimeContext = self.helper(runner, True)
 
-        arvtool = cwltool.load_tool.load_tool(tool, loadingContext)
+        arvtool = arvados_cwl.ArvadosCommandTool(runner, tool, loadingContext)
         arvtool.formatgraph = None
 
         container_request = {
@@ -1187,7 +1192,7 @@ class TestContainer(unittest.TestCase):
             'name': 'test_run_True',
             'runtime_constraints': {
                 'vcpus': 1,
-                'ram': 268435456
+                'ram': 1073741824,
             },
             'use_existing': True,
             'priority': 500,
