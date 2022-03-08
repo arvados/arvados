@@ -920,4 +920,24 @@ class Arvados::V1::GroupsControllerTest < ActionController::TestCase
 
     assert_response 422
   end
+
+  test "include_trash does not return trash inside frozen project" do
+    authorize_with :active
+    trashtime = Time.now - 1.second
+    outerproj = Group.create!(group_class: 'project')
+    innerproj = Group.create!(group_class: 'project', owner_uuid: outerproj.uuid)
+    innercoll = Collection.create!(name: 'inner-not-trashed', owner_uuid: innerproj.uuid)
+    innertrash = Collection.create!(name: 'inner-trashed', owner_uuid: innerproj.uuid, trash_at: trashtime)
+    innertrashproj = Group.create!(group_class: 'project', name: 'inner-trashed-proj', owner_uuid: innerproj.uuid, trash_at: trashtime)
+    outertrash = Collection.create!(name: 'outer-trashed', owner_uuid: outerproj.uuid, trash_at: trashtime)
+    innerproj.update_attributes!(frozen_by_uuid: users(:active).uuid)
+    get :contents, params: {id: outerproj.uuid, include_trash: true, recursive: true}
+    assert_response :success
+    uuids = json_response['items'].collect { |item| item['uuid'] }
+    assert_includes uuids, outertrash.uuid
+    assert_includes uuids, innerproj.uuid
+    assert_includes uuids, innercoll.uuid
+    refute_includes uuids, innertrash.uuid
+    refute_includes uuids, innertrashproj.uuid
+  end
 end
