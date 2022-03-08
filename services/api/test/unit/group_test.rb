@@ -364,6 +364,21 @@ update links set tail_uuid='#{g5}' where uuid='#{l1.uuid}'
       assert_match /can only be set if properties\[frobity\] value is non-empty/, err.inspect
       proj.reload
 
+      # Cannot set frozen_by_uuid while project or its parent is
+      # trashed
+      [parent, proj].each do |trashed|
+        trashed.update_attributes!(trash_at: db_current_time)
+        err = assert_raises do
+          proj.update_attributes!(
+            frozen_by_uuid: users(:active).uuid,
+            description: 'ready to freeze',
+            properties: {'frobity' => 'bar baz'})
+        end
+        assert_match /cannot be set on a trashed project/, err.inspect
+        proj.reload
+        trashed.update_attributes!(trash_at: nil)
+      end
+
       # Can set frozen_by_uuid if all conditions are met
       ok = proj.update_attributes(
         frozen_by_uuid: users(:active).uuid,
