@@ -317,7 +317,8 @@ update links set tail_uuid='#{g5}' where uuid='#{l1.uuid}'
   test "freeze project" do
     act_as_user users(:active) do
       Rails.configuration.API.UnfreezeProjectRequiresAdmin = false
-      proj = Group.create!(group_class: 'project', name: 'freeze-test', owner_uuid: users(:active).uuid)
+      parent = Group.create!(group_class: 'project', name: 'freeze-test-parent', owner_uuid: users(:active).uuid)
+      proj = Group.create!(group_class: 'project', name: 'freeze-test', owner_uuid: parent.uuid)
       proj_inner = Group.create!(group_class: 'project', name: 'freeze-test-inner', owner_uuid: proj.uuid)
       coll = Collection.create!(name: 'foo', manifest_text: '', owner_uuid: proj_inner.uuid)
 
@@ -431,6 +432,10 @@ update links set tail_uuid='#{g5}' where uuid='#{l1.uuid}'
           frozen.update_attributes!(trash_at: db_current_time)
         end
         frozen.reload
+        assert_raises(StandardError, "should reject setting delete_at of #{frozen.uuid}") do
+          frozen.update_attributes!(delete_at: db_current_time)
+        end
+        frozen.reload
         assert_raises(StandardError, "should reject delete of #{frozen.uuid}") do
           frozen.destroy
         end
@@ -456,6 +461,16 @@ update links set tail_uuid='#{g5}' where uuid='#{l1.uuid}'
       end
       assert_match /can only be changed by an admin user, once set/, err.inspect
       proj.reload
+
+      # Cannot trash or delete a frozen project's ancestor
+      assert_raises(StandardError, "should not be able to set trash_at on parent of frozen project") do
+        parent.update_attributes!(trash_at: db_current_time)
+      end
+      parent.reload
+      assert_raises(StandardError, "should not be able to set delete_at on parent of frozen project") do
+        parent.update_attributes!(delete_at: db_current_time)
+      end
+      parent.reload
 
       act_as_user users(:admin) do
         # Even admin cannot change frozen_by_uuid to someone else's UUID.
