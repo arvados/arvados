@@ -81,4 +81,27 @@ describe('Search tests', function() {
             cy.get('[data-cy=search-results]').should('contain', 'version 1');
         });
     });
+
+    it('can search for old collection versions', function() {
+        const colName = `Collection ${Math.floor(Math.random() * Math.floor(999999))}`;
+
+        // Creates the collection using the admin token so we can set up
+        // a bogus manifest text without block signatures.
+        cy.createCollection(adminUser.token, {
+            name: colName,
+            owner_uuid: activeUser.user.uuid,
+            preserve_version: true,
+            manifest_text: ". 37b51d194a7513e45b56f6524f2d51f2+3 0:3:bar\n"
+        }).then(function() {
+            cy.loginAs(activeUser);
+
+            cy.doSearch(colName);
+
+            cy.get('[data-cy=search-results]').should('contain', colName);
+
+            cy.get('[data-cy=search-results]').contains(colName).closest('tr').click();
+
+            cy.get('[data-cy=snackbar]').should('contain', `/ Projects / ${colName}`);
+        });
+    });
 });
