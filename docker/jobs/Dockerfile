@@ -26,8 +26,8 @@ RUN apt-get update -q
 RUN apt-get install -yq --no-install-recommends python3-arvados-cwl-runner=$cwl_runner_version
 
 # use the Python executable from the python-arvados-cwl-runner package
-RUN rm -f /usr/bin/python && ln -s /usr/share/python3/dist/python3-arvados-cwl-runner/bin/python /usr/bin/python
-RUN rm -f /usr/bin/python3 && ln -s /usr/share/python3/dist/python3-arvados-cwl-runner/bin/python /usr/bin/python3
+RUN PYTHON=`ls /usr/share/python3*/dist/python3-arvados-cwl-runner/bin/python|head -n1` && rm -f /usr/bin/python && ln -s $PYTHON /usr/bin/python
+RUN PYTHON3=`ls /usr/share/python3*/dist/python3-arvados-cwl-runner/bin/python3|head -n1` && rm -f /usr/bin/python3 && ln -s $PYTHON3 /usr/bin/python3
 
 # Install dependencies and set up system.
 RUN /usr/sbin/adduser --disabled-password \
