@@ -157,6 +157,9 @@ arvados:
       DispatchCloud:
         InternalURLs:
           'http://__CONTROLLER_INT_IP__:9006': {}
+      Keepbalance:
+        InternalURLs:
+          'http://keep.__CLUSTER__.__DOMAIN__:9005': {}
       Keepproxy:
         ExternalURL: 'https://keep.__CLUSTER__.__DOMAIN__:__KEEP_EXT_SSL_PORT__'
         InternalURLs:
