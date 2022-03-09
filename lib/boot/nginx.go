@@ -40,10 +40,8 @@ func (runNginx) Run(ctx context.Context, fail func(error), super *Supervisor) er
 		"ERRORLOG":   filepath.Join(super.tempdir, "nginx_error.log"),
 		"TMPDIR":     super.wwwtempdir,
 	}
-	ctrlHost, _, err := net.SplitHostPort(super.cluster.Services.Controller.ExternalURL.Host)
-	if err != nil {
-		return fmt.Errorf("SplitHostPort(Controller.ExternalURL.Host): %w", err)
-	}
+	u := url.URL(super.cluster.Services.Controller.ExternalURL)
+	ctrlHost := u.Hostname()
 	if f, err := os.Open("/var/lib/acme/live/" + ctrlHost + "/privkey"); err == nil {
 		f.Close()
 		vars["SSLCERT"] = "/var/lib/acme/live/" + ctrlHost + "/cert"

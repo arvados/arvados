@@ -669,10 +669,8 @@ func (super *Supervisor) autofillConfig(cfg *arvados.Config) error {
 		}
 		cluster.Services.Controller.ExternalURL = arvados.URL{Scheme: "https", Host: net.JoinHostPort(h, p), Path: "/"}
 	}
-	defaultExtHost, _, err := net.SplitHostPort(cluster.Services.Controller.ExternalURL.Host)
-	if err != nil {
-		return fmt.Errorf("SplitHostPort(Controller.ExternalURL.Host): %w", err)
-	}
+	u := url.URL(cluster.Services.Controller.ExternalURL)
+	defaultExtHost := u.Hostname()
 	for _, svc := range []*arvados.Service{
 		&cluster.Services.Controller,
 		&cluster.Services.DispatchCloud,
