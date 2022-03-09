@@ -116,12 +116,6 @@
     "wait-on": "4.0.2",
     "yamljs": "0.3.0"
   },
-  "resolutions": {
-    "**/meow/trim-newlines": "^3.0.1",
-    "react-scripts/**/css-what": "5.0.1",
-    "**/@typescript-eslint/eslint-plugin": "^4.1.1",
-    "**/@typescript-eslint/parser": "^4.1.1"
-  },
   "browserslist": {
     "production": [
       ">0.2%",
@@ -133,5 +127,6 @@
       "last 1 firefox version",
       "last 1 safari version"
     ]
-  }
+  },
+  "packageManager": "yarn@3.2.0"
 }
