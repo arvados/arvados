@@ -21,6 +21,10 @@ import (
 func testinstall(ctx context.Context, opts opts, stdin io.Reader, stdout, stderr io.Writer) error {
 	depsImageName := "arvados-package-deps-" + opts.TargetOS
 	depsCtrName := strings.Replace(depsImageName, ":", "-", -1)
+	absPackageDir, err := filepath.Abs(opts.PackageDir)
+	if err != nil {
+		return fmt.Errorf("error resolving PackageDir %q: %w", opts.PackageDir, err)
+	}
 
 	_, prog := filepath.Split(os.Args[0])
 	tmpdir, err := ioutil.TempDir("", prog+".")
@@ -40,7 +44,7 @@ func testinstall(ctx context.Context, opts opts, stdin io.Reader, stdout, stderr
 		cmd := exec.CommandContext(ctx, "docker", "run",
 			"--name", depsCtrName,
 			"--tmpfs", "/tmp:exec,mode=01777",
-			"-v", opts.PackageDir+":/pkg:ro",
+			"-v", absPackageDir+":/pkg:ro",
 			"--env", "DEBIAN_FRONTEND=noninteractive",
 			opts.TargetOS,
 			"bash", "-c", `
@@ -64,7 +68,7 @@ rm /etc/apt/sources.list.d/arvados-local.list
 		cmd.Stderr = stderr
 		err = cmd.Run()
 		if err != nil {
-			return fmt.Errorf("docker run: %w", err)
+			return fmt.Errorf("%v: %w", cmd.Args, err)
 		}
 
 		cmd = exec.CommandContext(ctx, "docker", "commit", depsCtrName, depsImageName)
@@ -72,7 +76,7 @@ rm /etc/apt/sources.list.d/arvados-local.list
 		cmd.Stderr = stderr
 		err = cmd.Run()
 		if err != nil {
-			return fmt.Errorf("docker commit: %w", err)
+			return fmt.Errorf("%v: %w", cmd.Args, err)
 		}
 	}
 
@@ -82,7 +86,7 @@ rm /etc/apt/sources.list.d/arvados-local.list
 	}
 	cmd := exec.CommandContext(ctx, "docker", "run", "--rm",
 		"--tmpfs", "/tmp:exec,mode=01777",
-		"-v", opts.PackageDir+":/pkg:ro",
+		"-v", absPackageDir+":/pkg:ro",
 		"--env", "DEBIAN_FRONTEND=noninteractive",
 		depsImageName,
 		"bash", "-c", `
@@ -109,7 +113,7 @@ exec arvados-server boot -listen-host 0.0.0.0 -shutdown
 	cmd.Stderr = stderr
 	err = cmd.Run()
 	if err != nil {
-		return fmt.Errorf("docker run: %w", err)
+		return fmt.Errorf("%v: %w", cmd.Args, err)
 	}
 	return nil
 }
