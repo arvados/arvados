@@ -45,8 +45,6 @@ RUN touch /var/lib/rpm/* && yum -q -y install python3 python3-pip python3-devel
 # Install virtualenv
 RUN /usr/bin/pip3 install 'virtualenv<20'
 
-RUN git clone --depth 1 git://git.arvados.org/arvados.git /tmp/arvados && cd /tmp/arvados/services/api && /usr/local/rvm/bin/rvm-exec default bundle && cd /tmp/arvados/apps/workbench && /usr/local/rvm/bin/rvm-exec default bundle
-
 # The version of setuptools that comes with CentOS is way too old
 RUN pip3 install 'setuptools<45'
 
