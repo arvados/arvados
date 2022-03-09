@@ -32,7 +32,7 @@ const goversion = "1.17.7"
 
 const (
 	devtestDatabasePassword = "insecure_arvados_test"
-	workbench2version       = "5e805cf2209d3afe42699e4658d8a12e50bcd5a4"
+	workbench2version       = "cfa81dfc3041cb459c8a0918a2732dfcf3a11d40"
 )
 
 type installCommand struct {
