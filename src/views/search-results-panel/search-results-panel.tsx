@@ -14,6 +14,7 @@ import { SearchBarAdvancedFormData } from 'models/search-bar';
 import { User } from "models/user";
 import { Config } from 'common/config';
 import { Session } from "models/session";
+import { snackbarActions, SnackbarKind } from "store/snackbar/snackbar-actions";
 
 export interface SearchResultsPanelDataProps {
     data: SearchBarAdvancedFormData;
@@ -28,6 +29,7 @@ export interface SearchResultsPanelActionProps {
     onContextMenu: (event: React.MouseEvent<HTMLElement>, item: string) => void;
     onDialogOpen: (ownerUuid: string) => void;
     onItemDoubleClick: (item: string) => void;
+    onPathDisplay: (path: string) => void;
 }
 
 export type SearchResultsPanelProps = SearchResultsPanelDataProps & SearchResultsPanelActionProps;
@@ -49,7 +51,15 @@ const mapDispatchToProps = (dispatch: Dispatch): SearchResultsPanelActionProps =
     },
     onItemDoubleClick: uuid => {
         dispatch<any>(navigateTo(uuid));
-    }
+    },
+    onPathDisplay: (path: string) => {
+        dispatch(snackbarActions.SHIFT_MESSAGES());
+        dispatch(snackbarActions.OPEN_SNACKBAR({
+            message: path,
+            kind: SnackbarKind.INFO,
+            hideDuration: 9999999999,
+        }));
+    },
 });
 
 export const SearchResultsPanel = connect(mapStateToProps, mapDispatchToProps)(SearchResultsPanelView);

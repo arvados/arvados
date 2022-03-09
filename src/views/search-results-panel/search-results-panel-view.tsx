@@ -27,6 +27,7 @@ import { Routes } from 'routes/routes';
 import { Link } from 'react-router-dom';
 import { StyleRulesCallback, withStyles, WithStyles } from '@material-ui/core';
 import { ArvadosTheme } from 'common/custom-theme';
+import { getSearchSessions } from 'store/search-bar/search-bar-actions';
 
 export enum SearchResultsPanelColumnNames {
     CLUSTER = "Cluster",
@@ -110,38 +111,50 @@ export const SearchResultsPanelView = withStyles(styles, { withTheme: true })(
         const homeCluster = props.user.uuid.substring(0, 5);
         const loggedIn = props.sessions.filter((ss) => ss.loggedIn && ss.userIsActive);
         const [selectedItem, setSelectedItem] = useState('');
-        let itemPath: string[] = [];
 
         useEffect(() => {
-            if (selectedItem !== '') {
-                itemPath = [];
+            let itemPath: string[] = [];
 
-                (async () => {
+            (async () => {
+                if (selectedItem !== '') {
                     let searchUuid = selectedItem;
                     let itemKind = extractUuidKind(searchUuid);
 
                     while (itemKind !== ResourceKind.USER) {
-                        console.log(itemKind);
-                        const { name, ownerUuid } = await servicesProvider.getServices().groupsService.get(searchUuid);
-                        itemKind = extractUuidKind(ownerUuid);
-                        searchUuid = ownerUuid;
-                        itemPath.push(name);
+                        const clusterId = searchUuid.split('-')[0];
+                        const serviceType = itemKind?.replace('arvados#', '');
+                        const service = Object.values(servicesProvider.getServices())
+                            .filter(({resourceType}) => !!resourceType)
+                            .find(({resourceType}) => resourceType.indexOf(serviceType) > -1);
+                        const sessions = getSearchSessions(clusterId, props.sessions);
+
+                        if (sessions.length > 0) {
+                            const session = sessions[0];
+                            const { name, ownerUuid } = await (service as any).get(searchUuid, false, session);
+                            itemPath.push(name);
+                            searchUuid = ownerUuid;
+                            itemKind = extractUuidKind(searchUuid);
+                        } else {
+                            break;
+                        }
                     }
 
-                    const rootFolder = props.user.uuid === searchUuid ? 'Projects' : 'Shared with me';
-                    itemPath.push(rootFolder);
+                    itemPath.push(props.user.uuid === searchUuid ? 'Projects' : 'Shared with me');
+                    props.onPathDisplay(`/ ${itemPath.reverse().join(' / ')}`);
+                }
+            })();
 
-                    console.log(itemPath.reverse().join('/'));
-                })();
-            }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
         }, [selectedItem]);
 
         const onItemClick = useCallback((uuid) => {
             setSelectedItem(uuid);
             props.onItemClick(uuid);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
         },[props.onItemClick]);
 
-        return <span data-cy='search-results'><DataExplorer
+        return <span data-cy='search-results'>
+            <DataExplorer
             id={SEARCH_RESULTS_PANEL_ID}
             onRowClick={onItemClick}
             onRowDoubleClick={props.onItemDoubleClick}
