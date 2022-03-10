@@ -7,18 +7,26 @@ import { connect } from 'react-redux';
 import { getProcess, getSubprocesses, Process, getProcessStatus } from 'store/processes/process';
 import { Dispatch } from 'redux';
 import { openProcessContextMenu } from 'store/context-menu/context-menu-actions';
-import { matchProcessRoute } from 'routes/routes';
-import { ProcessPanelRootDataProps, ProcessPanelRootActionProps, ProcessPanelRoot } from './process-panel-root';
-import { ProcessPanel as ProcessPanelState} from 'store/process-panel/process-panel';
+import {
+    ProcessPanelRootDataProps,
+    ProcessPanelRootActionProps,
+    ProcessPanelRoot
+} from './process-panel-root';
+import {
+    getProcessPanelCurrentUuid,
+    ProcessPanel as ProcessPanelState
+} from 'store/process-panel/process-panel';
 import { groupBy } from 'lodash';
-import { toggleProcessPanelFilter, navigateToOutput, openWorkflow } from 'store/process-panel/process-panel-actions';
+import {
+    toggleProcessPanelFilter,
+    navigateToOutput,
+    openWorkflow
+} from 'store/process-panel/process-panel-actions';
 import { openProcessInputDialog } from 'store/processes/process-input-actions';
 import { cancelRunningWorkflow } from 'store/processes/processes-actions';
 
 const mapStateToProps = ({ router, resources, processPanel }: RootState): ProcessPanelRootDataProps => {
-    const pathname = router.location ? router.location.pathname : '';
-    const match = matchProcessRoute(pathname);
-    const uuid = match ? match.params.id : '';
+    const uuid = getProcessPanelCurrentUuid(router) || '';
     const subprocesses = getSubprocesses(uuid)(resources);
     return {
         process: getProcess(uuid)(resources),
@@ -40,9 +48,7 @@ const mapDispatchToProps = (dispatch: Dispatch): ProcessPanelRootActionProps => 
     cancelProcess: (uuid) => dispatch<any>(cancelRunningWorkflow(uuid))
 });
 
-export const ProcessPanel = connect(mapStateToProps, mapDispatchToProps)(ProcessPanelRoot);
-
-export const getFilters = (processPanel: ProcessPanelState, processes: Process[]) => {
+const getFilters = (processPanel: ProcessPanelState, processes: Process[]) => {
     const grouppedProcesses = groupBy(processes, getProcessStatus);
     return Object
         .keys(processPanel.filters)
@@ -53,3 +59,5 @@ export const getFilters = (processPanel: ProcessPanelState, processes: Process[]
             key: filter,
         }));
     };
+
+export const ProcessPanel = connect(mapStateToProps, mapDispatchToProps)(ProcessPanelRoot);

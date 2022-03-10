@@ -45,7 +45,7 @@ export const initProcessLogsPanel = (processUuid: string) =>
 export const addProcessLogsPanelItem = (message: ResourceEventMessage<{ text: string }>) =>
     async (dispatch: Dispatch, getState: () => RootState, { logService }: ServiceRepository) => {
         if (PROCESS_PANEL_LOG_EVENT_TYPES.indexOf(message.eventType) > -1) {
-            const uuid = getProcessLogsPanelCurrentUuid(getState());
+            const uuid = getProcessLogsPanelCurrentUuid(getState().router);
             if (uuid) {
                 const process = getProcess(uuid)(getState().resources);
                 if (process) {

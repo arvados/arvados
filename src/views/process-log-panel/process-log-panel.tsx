@@ -25,9 +25,8 @@ export interface FilterOption {
     value: string;
 }
 
-const mapStateToProps = (state: RootState): ProcessLogPanelRootDataProps => {
-    const { resources, processLogsPanel } = state;
-    const uuid = getProcessLogsPanelCurrentUuid(state) || '';
+const mapStateToProps = ({resources, processLogsPanel, router}: RootState): ProcessLogPanelRootDataProps => {
+    const uuid = getProcessLogsPanelCurrentUuid(router) || '';
     return {
         process: getProcess(uuid)(resources),
         selectedFilter: { label: processLogsPanel.selectedFilter, value: processLogsPanel.selectedFilter },
