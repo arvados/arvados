@@ -4,7 +4,7 @@ Copyright (C) The Arvados Authors. All rights reserved.
 SPDX-License-Identifier: CC-BY-SA-3.0
 {% endcomment %}
 
-Ruby 2.5 or newer is required.
+Ruby 2.6 or newer is required.
 
 * "Option 1: Install from packages":#packages
 * "Option 2: Install with RVM":#rvm
@@ -18,11 +18,13 @@ Future versions of Arvados may require a newer version of Ruby than is packaged 
 
 h3. Centos 7
 
-The Ruby version shipped with Centos 7 is too old.  Use "RVM":#rvm to install Ruby 2.5 or later.
+The Ruby version shipped with Centos 7 is too old.  Use "RVM":#rvm to install a newer version of Ruby (we recommend installing version 2.7 or newer).
 
 h3. Debian and Ubuntu
 
-Debian 10 (buster) and Ubuntu 18.04 (bionic) and later ship with Ruby 2.5 or newer, which is sufficient for Arvados.
+Debian 10 (buster) and Ubuntu 18.04 (bionic) ship with Ruby 2.5, which is too old for Arvados. Use "RVM":#rvm to install a newer version of Ruby (we recommend installing version 2.7 or newer).
+
+Debian 11 (bullseye) and Ubuntu 20.04 (focal) and later ship with Ruby 2.7 or newer, which is sufficient for Arvados.
 
 <notextile>
 <pre><code># <span class="userinput">apt-get --no-install-recommends install ruby ruby-dev</span></code></pre>
@@ -48,10 +50,10 @@ h3. Install RVM, Ruby and Bundler
 
 <notextile>
 <pre><code># <span class="userinput">gpg --keyserver pgp.mit.edu --recv-keys 409B6B1796C275462A1703113804BB82D39DC0E3 7D2BAF1CF37B13E2069D6956105BD0E739499BDB
-\curl -sSL https://get.rvm.io | bash -s stable --ruby=2.5
+\curl -sSL https://get.rvm.io | bash -s stable --ruby=2.7
 </span></code></pre></notextile>
 
-This command installs the latest Ruby 2.5.x release, as well as the @gem@ and @bundle@ commands.
+This command installs the latest Ruby 2.7.x release, as well as the @gem@ and @bundle@ commands.
 
 To use Ruby installed from RVM, load it in an open shell like this:
 
@@ -90,8 +92,8 @@ Build and install Ruby:
 <notextile>
 <pre><code><span class="userinput">mkdir -p ~/src
 cd ~/src
-curl -f http://cache.ruby-lang.org/pub/ruby/2.5/ruby-2.5.8.tar.gz | tar xz
-cd ruby-2.5.8
+curl -f https://cache.ruby-lang.org/pub/ruby/2.7/ruby-2.7.5.tar.gz | tar xz
+cd ruby-2.7.5
 ./configure --disable-install-rdoc
 make
 sudo make install
