@@ -501,7 +501,7 @@ rm -rf build
 
 		if err = inst.runBash(`
 cd /var/lib/arvados/arvados-workbench2
-yarn install --non-interactive
+yarn install
 `, stdout, stderr); err != nil {
 			return 1
 		}
@@ -511,7 +511,7 @@ yarn install --non-interactive
 		// Install workbench2 app to /var/lib/arvados/workbench2/
 		if err = inst.runBash(`
 cd /var/lib/arvados/arvados-workbench2
-yarn build
+VERSION="`+inst.PackageVersion+`" BUILD_NUMBER=1 GIT_COMMIT="`+workbench2version+`" yarn build
 rsync -a --delete-after build/ /var/lib/arvados/workbench2/
 `, stdout, stderr); err != nil {
 			return 1
