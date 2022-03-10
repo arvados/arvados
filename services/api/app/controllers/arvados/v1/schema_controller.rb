@@ -406,6 +406,20 @@ class Arvados::V1::SchemaController < ApplicationController
         end
       end
 
+      # The 'replace_files' option is implemented in lib/controller,
+      # not Rails -- we just need to add it here so discovery-aware
+      # clients know how to validate it.
+      [:create, :update].each do |action|
+        discovery[:resources]['collections'][:methods][action][:parameters]['replace_files'] = {
+          type: 'object',
+          description: 'Files and directories to initialize/replace with content from other collections.',
+          required: false,
+          location: 'query',
+          properties: {},
+          additionalProperties: {type: 'string'},
+        }
+      end
+
       discovery[:resources]['configs'] = {
         methods: {
           get: {

@@ -125,7 +125,7 @@ func (s *CollectionSuite) TestCollectionCreateAndUpdateWithProperties(c *check.C
 	}
 }
 
-func (s *CollectionSuite) TestCollectionUpdateFiles(c *check.C) {
+func (s *CollectionSuite) TestCollectionReplaceFiles(c *check.C) {
 	ctx := auth.NewContext(context.Background(), &auth.Credentials{Tokens: []string{arvadostest.AdminToken}})
 	foo, err := s.localdb.railsProxy.CollectionCreate(ctx, arvados.CreateOptions{
 		Attrs: map[string]interface{}{
@@ -153,14 +153,14 @@ func (s *CollectionSuite) TestCollectionUpdateFiles(c *check.C) {
 
 	// Create using content from existing collections
 	dst, err := s.localdb.CollectionCreate(ctx, arvados.CreateOptions{
+		ReplaceFiles: map[string]string{
+			"/f": foo.PortableDataHash + "/foo.txt",
+			"/b": foobarbaz.PortableDataHash + "/foo/bar",
+			"/q": wazqux.PortableDataHash + "/",
+			"/w": wazqux.PortableDataHash + "/waz",
+		},
 		Attrs: map[string]interface{}{
 			"owner_uuid": arvadostest.ActiveUserUUID,
-			"splices": map[string]string{
-				"/f": foo.PortableDataHash + "/foo.txt",
-				"/b": foobarbaz.PortableDataHash + "/foo/bar",
-				"/q": wazqux.PortableDataHash + "/",
-				"/w": wazqux.PortableDataHash + "/waz",
-			},
 		}})
 	c.Assert(err, check.IsNil)
 	s.expectFiles(c, dst, "f", "b/baz.txt", "q/waz/qux.txt", "w/qux.txt")
@@ -168,11 +168,9 @@ func (s *CollectionSuite) TestCollectionUpdateFiles(c *check.C) {
 	// Delete a file and a directory
 	dst, err = s.localdb.CollectionUpdate(ctx, arvados.UpdateOptions{
 		UUID: dst.UUID,
-		Attrs: map[string]interface{}{
-			"splices": map[string]string{
-				"/f":     "",
-				"/q/waz": "",
-			},
+		ReplaceFiles: map[string]string{
+			"/f":     "",
+			"/q/waz": "",
 		}})
 	c.Assert(err, check.IsNil)
 	s.expectFiles(c, dst, "b/baz.txt", "q/", "w/qux.txt")
@@ -180,15 +178,12 @@ func (s *CollectionSuite) TestCollectionUpdateFiles(c *check.C) {
 	// Move and copy content within collection
 	dst, err = s.localdb.CollectionUpdate(ctx, arvados.UpdateOptions{
 		UUID: dst.UUID,
-		Attrs: map[string]interface{}{
-			"splices": map[string]string{
-				// Note splicing content to
-				// /b/corge.txt but removing
-				// everything else from /b
-				"/b":              "",
-				"/b/corge.txt":    dst.PortableDataHash + "/b/baz.txt",
-				"/quux/corge.txt": dst.PortableDataHash + "/b/baz.txt",
-			},
+		ReplaceFiles: map[string]string{
+			// Note splicing content to /b/corge.txt but
+			// removing everything else from /b
+			"/b":              "",
+			"/b/corge.txt":    dst.PortableDataHash + "/b/baz.txt",
+			"/quux/corge.txt": dst.PortableDataHash + "/b/baz.txt",
 		}})
 	c.Assert(err, check.IsNil)
 	s.expectFiles(c, dst, "b/corge.txt", "q/", "w/qux.txt", "quux/corge.txt")
@@ -196,31 +191,24 @@ func (s *CollectionSuite) TestCollectionUpdateFiles(c *check.C) {
 	// Remove everything except one file
 	dst, err = s.localdb.CollectionUpdate(ctx, arvados.UpdateOptions{
 		UUID: dst.UUID,
-		Attrs: map[string]interface{}{
-			"splices": map[string]string{
-				"/":            "",
-				"/b/corge.txt": dst.PortableDataHash + "/b/corge.txt",
-			},
+		ReplaceFiles: map[string]string{
+			"/":            "",
+			"/b/corge.txt": dst.PortableDataHash + "/b/corge.txt",
 		}})
 	c.Assert(err, check.IsNil)
 	s.expectFiles(c, dst, "b/corge.txt")
 
 	// Copy entire collection to root
 	dstcopy, err := s.localdb.CollectionCreate(ctx, arvados.CreateOptions{
-		Attrs: map[string]interface{}{
-			// Note map[string]interface{} here, which is
-			// how lib/controller/router requests will
-			// look.
-			"splices": map[string]interface{}{
-				"/": dst.PortableDataHash,
-			},
+		ReplaceFiles: map[string]string{
+			"/": dst.PortableDataHash,
 		}})
 	c.Check(err, check.IsNil)
 	c.Check(dstcopy.PortableDataHash, check.Equals, dst.PortableDataHash)
 	s.expectFiles(c, dstcopy, "b/corge.txt")
 
 	// Check invalid targets, sources, and combinations
-	for _, splices := range []map[string]string{
+	for _, badrepl := range []map[string]string{
 		{
 			"/foo/nope": dst.PortableDataHash + "/b",
 			"/foo":      dst.PortableDataHash + "/b",
@@ -250,40 +238,22 @@ func (s *CollectionSuite) TestCollectionUpdateFiles(c *check.C) {
 		{"/bad": dst.UUID + "/b"},
 	} {
 		_, err = s.localdb.CollectionUpdate(ctx, arvados.UpdateOptions{
-			UUID: dst.UUID,
-			Attrs: map[string]interface{}{
-				"splices": splices,
-			}})
-		c.Logf("splices %#v\n... got err: %s", splices, err)
+			UUID:         dst.UUID,
+			ReplaceFiles: badrepl,
+		})
+		c.Logf("badrepl %#v\n... got err: %s", badrepl, err)
 		c.Check(err, check.NotNil)
 	}
 
-	// Check "splices" value that isn't even the right type
-	for _, splices := range []interface{}{
-		map[string]int{"foo": 1},
-		map[int]string{1: "foo"},
-		12345,
-		"foo",
-		[]string{"foo"},
-	} {
-		_, err = s.localdb.CollectionUpdate(ctx, arvados.UpdateOptions{
-			UUID: dst.UUID,
-			Attrs: map[string]interface{}{
-				"splices": splices,
-			}})
-		c.Logf("splices %#v\n... got err: %s", splices, err)
-		c.Check(err, check.ErrorMatches, "invalid type .* for splices parameter")
-	}
-
-	// Check conflicting splices and manifest_text
+	// Check conflicting replace_files and manifest_text
 	_, err = s.localdb.CollectionUpdate(ctx, arvados.UpdateOptions{
-		UUID: dst.UUID,
+		UUID:         dst.UUID,
+		ReplaceFiles: map[string]string{"/": ""},
 		Attrs: map[string]interface{}{
-			"splices":       map[string]string{"/": ""},
 			"manifest_text": ". d41d8cd98f00b204e9800998ecf8427e+0 0:0:z\n",
 		}})
-	c.Logf("splices+manifest_text\n... got err: %s", err)
-	c.Check(err, check.ErrorMatches, "ambiguous request: both.*splices.*manifest_text.*")
+	c.Logf("replace_files+manifest_text\n... got err: %s", err)
+	c.Check(err, check.ErrorMatches, "ambiguous request: both.*replace_files.*manifest_text.*")
 }
 
 // expectFiles checks coll's directory structure against the given
