@@ -31,6 +31,12 @@ var Command cmd.Handler = &installCommand{}
 const goversion = "1.17.7"
 
 const (
+	rubyversion             = "2.7.5"
+	singularityversion      = "3.7.4"
+	pjsversion              = "1.9.8"
+	geckoversion            = "0.24.0"
+	gradleversion           = "5.3.1"
+	nodejsversion           = "v12.22.2"
 	devtestDatabasePassword = "insecure_arvados_test"
 	workbench2version       = "cfa81dfc3041cb459c8a0918a2732dfcf3a11d40"
 )
@@ -227,7 +233,6 @@ func (inst *installCommand) RunCommand(prog string, args []string, stdin io.Read
 			return 1
 		}
 	}
-	rubyversion := "2.7.2"
 	rubymajorversion := rubyversion[:strings.LastIndex(rubyversion, ".")]
 	if haverubyversion, err := exec.Command("/var/lib/arvados/bin/ruby", "-v").CombinedOutput(); err == nil && bytes.HasPrefix(haverubyversion, []byte("ruby "+rubyversion)) {
 		logger.Print("ruby " + rubyversion + " already installed")
@@ -264,7 +269,6 @@ ln -sfv /var/lib/arvados/go/bin/* /usr/local/bin/
 	}
 
 	if !prod && !pkg {
-		pjsversion := "1.9.8"
 		if havepjsversion, err := exec.Command("/usr/local/bin/phantomjs", "--version").CombinedOutput(); err == nil && string(havepjsversion) == "1.9.8\n" {
 			logger.Print("phantomjs " + pjsversion + " already installed")
 		} else {
@@ -278,7 +282,6 @@ ln -sfv /var/lib/arvados/$PJS/bin/phantomjs /usr/local/bin/
 			}
 		}
 
-		geckoversion := "0.24.0"
 		if havegeckoversion, err := exec.Command("/usr/local/bin/geckodriver", "--version").CombinedOutput(); err == nil && strings.Contains(string(havegeckoversion), " "+geckoversion+" ") {
 			logger.Print("geckodriver " + geckoversion + " already installed")
 		} else {
@@ -292,7 +295,6 @@ ln -sfv /var/lib/arvados/bin/geckodriver /usr/local/bin/
 			}
 		}
 
-		gradleversion := "5.3.1"
 		if havegradleversion, err := exec.Command("/usr/local/bin/gradle", "--version").CombinedOutput(); err == nil && strings.Contains(string(havegradleversion), "Gradle "+gradleversion+"\n") {
 			logger.Print("gradle " + gradleversion + " already installed")
 		} else {
@@ -310,7 +312,6 @@ rm ${zip}
 			}
 		}
 
-		singularityversion := "3.7.4"
 		if havesingularityversion, err := exec.Command("/var/lib/arvados/bin/singularity", "--version").CombinedOutput(); err == nil && strings.Contains(string(havesingularityversion), singularityversion) {
 			logger.Print("singularity " + singularityversion + " already installed")
 		} else if dev || test {
@@ -453,7 +454,6 @@ make -C ./builddir install
 	}
 
 	if !prod {
-		nodejsversion := "v12.22.2"
 		if havenodejsversion, err := exec.Command("/usr/local/bin/node", "--version").CombinedOutput(); err == nil && string(havenodejsversion) == nodejsversion+"\n" {
 			logger.Print("nodejs " + nodejsversion + " already installed")
 		} else {
