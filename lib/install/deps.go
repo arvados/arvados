@@ -143,7 +143,6 @@ func (inst *installCommand) RunCommand(prog string, args []string, stdin io.Read
 			"default-jdk-headless",
 			"default-jre-headless",
 			"gettext",
-			"iceweasel",
 			"libattr1-dev",
 			"libcrypt-ssleay-perl",
 			"libfuse-dev",
@@ -181,10 +180,15 @@ func (inst *installCommand) RunCommand(prog string, args []string, stdin io.Read
 			"wget",
 			"xvfb",
 		)
+		if test {
+			if osv.Debian && osv.Major <= 10 {
+				pkgs = append(pkgs, "iceweasel")
+			} else {
+				pkgs = append(pkgs, "firefox")
+			}
+		}
 		if dev || test {
-			pkgs = append(pkgs,
-				"squashfs-tools", // for singularity
-			)
+			pkgs = append(pkgs, "squashfs-tools") // for singularity
 		}
 		switch {
 		case osv.Debian && osv.Major >= 10:
