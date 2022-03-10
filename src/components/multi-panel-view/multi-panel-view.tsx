@@ -112,7 +112,7 @@ const MPVContainerComponent = ({children, panelStates, classes, ...props}: MPVCo
         children = [children];
     }
     const visibility = (children as ReactNodeArray).map((_, idx) =>
-        !!!panelStates || // if panelStates wasn't passed, default to all visible panels
+        !panelStates || // if panelStates wasn't passed, default to all visible panels
             (panelStates[idx] &&
                 (panelStates[idx].visible || panelStates[idx].visible === undefined)));
     const [panelVisibility, setPanelVisibility] = useState<boolean[]>(visibility);
@@ -159,13 +159,20 @@ const MPVContainerComponent = ({children, panelStates, classes, ...props}: MPVCo
             const panelIsMaximized = panelVisibility[idx] &&
                 panelVisibility.filter(e => e).length === 1;
 
+            let brightenerTimer: NodeJS.Timer;
             toggles = [
                 ...toggles,
                 <Tooltip title={toggleTooltip} disableFocusListener>
                     <Button variant={toggleVariant} size="small" color="primary"
                         className={classNames(classes.button)}
-                        onMouseEnter={() => setBrightenedPanel(idx)}
-                        onMouseLeave={() => setBrightenedPanel(-1)}
+                        onMouseEnter={() => {
+                            brightenerTimer = setTimeout(
+                                () => setBrightenedPanel(idx), 100);
+                        }}
+                        onMouseLeave={() => {
+                            brightenerTimer && clearTimeout(brightenerTimer);
+                            setBrightenedPanel(-1);
+                        }}
                         onClick={showFn(idx)}>
                             {panelName}
                             {toggleIcon}
