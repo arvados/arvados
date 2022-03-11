@@ -33,6 +33,7 @@ type initCommand struct {
 	ClusterID          string
 	Domain             string
 	PostgreSQLPassword string
+	Login              string
 }
 
 func (initcmd *initCommand) RunCommand(prog string, args []string, stdin io.Reader, stdout, stderr io.Writer) int {
@@ -59,6 +60,7 @@ func (initcmd *initCommand) RunCommand(prog string, args []string, stdin io.Read
 	versionFlag := flags.Bool("version", false, "Write version information to stdout and exit 0")
 	flags.StringVar(&initcmd.ClusterID, "cluster-id", "", "cluster `id`, like x1234 for a dev cluster")
 	flags.StringVar(&initcmd.Domain, "domain", hostname, "cluster public DNS `name`, like x1234.arvadosapi.com")
+	flags.StringVar(&initcmd.Login, "login", "", "login `backend`: test, pam, or ''")
 	if ok, code := cmd.ParseFlags(flags, prog, args, "", stderr); !ok {
 		return code
 	} else if *versionFlag {
@@ -169,6 +171,26 @@ func (initcmd *initCommand) RunCommand(prog string, args []string, stdin io.Read
         Replication: 2
     Workbench:
       SecretKeyBase: {{printf "%q" ( .RandomHex 50 )}}
+    Login:
+      {{if eq .Login "pam"}}
+      PAM:
+        Enable: true
+      {{else if eq .Login "test"}}
+      Test:
+        Enable: true
+        Users:
+          admin:
+            Email: admin@example.com
+            Password: admin
+      {{else}}
+      {}
+      {{end}}
+    Users:
+      {{if eq .Login "test"}}
+      AutoAdminUserWithEmail: admin@example.com
+      {{else}}
+      {}
+      {{end}}
 `)
 	if err != nil {
 		return 1
