@@ -754,19 +754,6 @@ if [ "${DUMP_CONFIG}" = "yes" ]; then
   exit 0
 fi
 
-# FIXME! #16992 Temporary fix for psql call in arvados-api-server
-if [ -e /root/.psqlrc ]; then
-  if ! ( grep 'pset pager off' /root/.psqlrc ); then
-    RESTORE_PSQL="yes"
-    cp /root/.psqlrc /root/.psqlrc.provision.backup
-  fi
-else
-  DELETE_PSQL="yes"
-fi
-
-echo '\pset pager off' >> /root/.psqlrc
-# END FIXME! #16992 Temporary fix for psql call in arvados-api-server
-
 # Now run the install
 salt-call --local state.apply -l ${LOG_LEVEL}
 
@@ -775,18 +762,6 @@ if [ -d /etc/cloud/cloud.cfg.d ]; then
   # TODO: will this work on CentOS?
   sed -i 's/^manage_etc_hosts: true/#manage_etc_hosts: true/g' /etc/cloud/cloud.cfg.d/*
 fi
-
-# FIXME! #16992 Temporary fix for psql call in arvados-api-server
-if [ "x${DELETE_PSQL}" = "xyes" ]; then
-  echo "Removing .psql file"
-  rm /root/.psqlrc
-fi
-
-if [ "x${RESTORE_PSQL}" = "xyes" ]; then
-  echo "Restoring .psql file"
-  mv -v /root/.psqlrc.provision.backup /root/.psqlrc
-fi
-# END FIXME! #16992 Temporary fix for psql call in arvados-api-server
 
 # Leave a copy of the Arvados CA so the user can copy it where it's required
 if [ "$DEV_MODE" = "yes" ]; then
