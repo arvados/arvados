@@ -71,8 +71,8 @@ Arguments:
 
 table(table table-bordered table-condensed).
 |_. Argument |_. Type |_. Description |_. Location |_. Example |
-|collection|object||body||
-|replace_files|object|Initialize files and directories using content from other collections|body||
+|collection|object||query||
+|replace_files|object|Initialize files and directories using content from other collections|query||
 
 The new collection's content can be initialized by providing a @manifest_text@ key in the provided @collection@ object, or by using the @replace_files@ option (see "replace_files":#replace_files below).
 
@@ -118,8 +118,8 @@ Arguments:
 table(table table-bordered table-condensed).
 |_. Argument |_. Type |_. Description |_. Location |_. Example |
 {background:#ccffcc}.|uuid|string|The UUID of the Collection in question.|path||
-|collection|object||body||
-|replace_files|object|Delete and replace files and directories using content from other collections|body||
+|collection|object||query||
+|replace_files|object|Delete and replace files and directories using content from other collections|query||
 
 The collection's content can be updated by providing a @manifest_text@ key in the provided @collection@ object, or by using the @replace_files@ option (see "replace_files":#replace_files below).
 
