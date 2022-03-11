@@ -65,6 +65,7 @@ type opts struct {
 	TargetOS       string
 	Maintainer     string
 	Vendor         string
+	Live           string
 }
 
 func parseFlags(prog string, args []string, stderr io.Writer) (_ opts, ok bool, exitCode int) {
@@ -82,6 +83,7 @@ func parseFlags(prog string, args []string, stderr io.Writer) (_ opts, ok bool, 
 	flags.StringVar(&opts.TargetOS, "target-os", opts.TargetOS, "target operating system vendor:version")
 	flags.StringVar(&opts.Maintainer, "package-maintainer", opts.Maintainer, "maintainer to be listed in package metadata")
 	flags.StringVar(&opts.Vendor, "package-vendor", opts.Vendor, "vendor to be listed in package metadata")
+	flags.StringVar(&opts.Live, "live", opts.Live, "run controller at https://`example.com`, use host's /var/lib/acme/live certificates, wait for ^C before shutting down")
 	flags.BoolVar(&opts.RebuildImage, "rebuild-image", opts.RebuildImage, "rebuild docker image(s) instead of using existing")
 	flags.Usage = func() {
 		fmt.Fprint(flags.Output(), `Usage: arvados-package <subcommand> [options]

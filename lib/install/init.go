@@ -103,49 +103,49 @@ func (initcmd *initCommand) RunCommand(prog string, args []string, stdin io.Read
       Controller:
         InternalURLs:
           "http://0.0.0.0:8003/": {}
-        ExternalURL: {{printf "%q" ( print "https://" .Domain "/" ) }}
+        ExternalURL: {{printf "%q" ( print "https://" .Domain ":4430/" ) }}
       RailsAPI:
         InternalURLs:
           "http://0.0.0.0:8004/": {}
       Websocket:
         InternalURLs:
           "http://0.0.0.0:8005/": {}
-        ExternalURL: {{printf "%q" ( print "wss://ws." .Domain "/" ) }}
+        ExternalURL: {{printf "%q" ( print "wss://." .Domain ":4436/" ) }}
       Keepbalance:
         InternalURLs:
           "http://0.0.0.0:9005/": {}
       GitHTTP:
         InternalURLs:
           "http://0.0.0.0:9001/": {}
-        ExternalURL: {{printf "%q" ( print "https://git." .Domain "/" ) }}
+        ExternalURL: {{printf "%q" ( print "https://" .Domain ":4437/" ) }}
       DispatchCloud:
         InternalURLs:
           "http://0.0.0.0:9006/": {}
       Keepproxy:
         InternalURLs:
           "http://0.0.0.0:25108/": {}
-        ExternalURL: {{printf "%q" ( print "https://keep." .Domain "/" ) }}
+        ExternalURL: {{printf "%q" ( print "https://" .Domain ":4438/" ) }}
       WebDAV:
         InternalURLs:
           "http://0.0.0.0:9002/": {}
-        ExternalURL: {{printf "%q" ( print "https://*.collections." .Domain "/" ) }}
+        ExternalURL: {{printf "%q" ( print "https://" .Domain ":4439/" ) }}
       WebDAVDownload:
         InternalURLs:
           "http://0.0.0.0:8004/": {}
-        ExternalURL: {{printf "%q" ( print "https://download." .Domain "/" ) }}
+        ExternalURL: {{printf "%q" ( print "https://" .Domain ":4439/" ) }}
       Keepstore:
         InternalURLs:
           "http://0.0.0.0:25107/": {}
       Composer:
-        ExternalURL: {{printf "%q" ( print "https://workbench." .Domain "/composer" ) }}
+        ExternalURL: {{printf "%q" ( print "https://" .Domain ":4440/composer" ) }}
       Workbench1:
         InternalURLs:
           "http://0.0.0.0:8001/": {}
-        ExternalURL: {{printf "%q" ( print "https://workbench." .Domain "/" ) }}
-      #Workbench2:
-      #  InternalURLs:
-      #    "http://0.0.0.0:8002/": {}
-      #  ExternalURL: {{printf "%q" ( print "https://workbench2." .Domain "/" ) }}
+        ExternalURL: {{printf "%q" ( print "https://" .Domain ":4441/" ) }}
+      Workbench2:
+        InternalURLs:
+          "http://0.0.0.0:8002/": {}
+        ExternalURL: {{printf "%q" ( print "https://" .Domain ":4442/" ) }}
       Health:
         InternalURLs:
           "http://0.0.0.0:9007/": {}

@@ -85,9 +85,21 @@ rm /etc/apt/sources.list.d/arvados-local.list
 		versionsuffix = "=" + opts.PackageVersion
 	}
 	cmd := exec.CommandContext(ctx, "docker", "run", "--rm",
-		"--tmpfs", "/tmp:exec,mode=01777",
-		"-v", absPackageDir+":/pkg:ro",
-		"--env", "DEBIAN_FRONTEND=noninteractive",
+		"--tmpfs=/tmp:exec,mode=01777",
+		"--volume="+absPackageDir+":/pkg:ro",
+		"--env=DEBIAN_FRONTEND=noninteractive")
+	if opts.Live != "" {
+		cmd.Args = append(cmd.Args,
+			"--env=domain="+opts.Live,
+			"--env=bootargs=",
+			"--publish=:4430-4450:4430-4450",
+			"--volume=/var/lib/acme:/var/lib/acme:ro")
+	} else {
+		cmd.Args = append(cmd.Args,
+			"--env=domain=localhost",
+			"--env=bootargs=-shutdown")
+	}
+	cmd.Args = append(cmd.Args,
 		depsImageName,
 		"bash", "-c", `
 set -e -o pipefail
@@ -106,8 +118,8 @@ eatmydata apt-get install --reinstall -y --no-install-recommends arvados-server-
 SUDO_FORCE_REMOVE=yes apt-get autoremove -y
 
 /etc/init.d/postgresql start
-arvados-server init -cluster-id x1234
-exec arvados-server boot -listen-host 0.0.0.0 -shutdown
+arvados-server init -cluster-id x1234 -domain=$domain
+exec arvados-server boot -listen-host=0.0.0.0 $bootargs
 `)
 	cmd.Stdout = stdout
 	cmd.Stderr = stderr
