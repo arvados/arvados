@@ -143,8 +143,6 @@ func (initcmd *initCommand) RunCommand(prog string, args []string, stdin io.Read
           "http://0.0.0.0:8001/": {}
         ExternalURL: {{printf "%q" ( print "https://" .Domain ":4441/" ) }}
       Workbench2:
-        InternalURLs:
-          "http://0.0.0.0:8002/": {}
         ExternalURL: {{printf "%q" ( print "https://" .Domain ":4442/" ) }}
       Health:
         InternalURLs:

@@ -133,7 +133,14 @@ func (agg *Aggregator) ClusterHealth() ClusterHealthResponse {
 		}
 		mtx.Unlock()
 
+		checkURLs := map[arvados.URL]bool{}
 		for addr := range svc.InternalURLs {
+			checkURLs[addr] = true
+		}
+		if len(checkURLs) == 0 && svc.ExternalURL.Host != "" {
+			checkURLs[svc.ExternalURL] = true
+		}
+		for addr := range checkURLs {
 			wg.Add(1)
 			go func(svcName arvados.ServiceName, addr arvados.URL) {
 				defer wg.Done()
