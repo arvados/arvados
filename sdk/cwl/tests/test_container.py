@@ -16,6 +16,7 @@ import mock
 import unittest
 import os
 import functools
+import threading
 import cwltool.process
 import cwltool.secrets
 import cwltool.load_tool
@@ -75,7 +76,9 @@ class TestContainer(unittest.TestCase):
              "basedir": "",
              "make_fs_access": make_fs_access,
              "construct_tool_object": runner.arv_make_tool,
-             "fetcher_constructor": functools.partial(arvados_cwl.CollectionFetcher, api_client=runner.api, fs_access=fs_access)
+             "fetcher_constructor": functools.partial(arvados_cwl.CollectionFetcher, api_client=runner.api, fs_access=fs_access),
+             "loader": Loader({}),
+             "metadata": cmap({"cwlVersion": INTERNAL_VERSION, "http://commonwl.org/cwltool#original_cwlVersion": "v1.0"})
              })
         runtimeContext = arvados_cwl.context.ArvRuntimeContext(
             {"work_api": "containers",
@@ -83,9 +86,11 @@ class TestContainer(unittest.TestCase):
              "name": "test_run_"+str(enable_reuse),
              "make_fs_access": make_fs_access,
              "tmpdir": "/tmp",
+             "outdir": "/tmp",
              "enable_reuse": enable_reuse,
              "priority": 500,
-             "project_uuid": "zzzzz-8i9sb-zzzzzzzzzzzzzzz"
+             "project_uuid": "zzzzz-8i9sb-zzzzzzzzzzzzzzz",
+             "workflow_eval_lock": threading.Condition(threading.RLock())
             })
 
         if isinstance(runner, mock.MagicMock):
@@ -1053,68 +1058,90 @@ class TestContainer(unittest.TestCase):
         runner.api.collections().get().execute.return_value = {
             "portable_data_hash": "99999999999999999999999999999993+99"}
 
-        tool = cmap({
-            "inputs": [],
-            "outputs": [],
-            "baseCommand": "nvidia-smi",
-            "arguments": [],
-            "id": "",
-            "cwlVersion": "v1.2",
-            "class": "CommandLineTool",
-            "requirements": [
-            {
+        test_cwl_req = [{
                 "class": "http://commonwl.org/cwltool#CUDARequirement",
                 "cudaVersionMin": "11.0",
-                "cudaComputeCapabilityMin": "9.0",
-            }
-        ]
-        })
+                "cudaComputeCapability": "9.0",
+            }, {
+                "class": "http://commonwl.org/cwltool#CUDARequirement",
+                "cudaVersionMin": "11.0",
+                "cudaComputeCapability": "9.0",
+                "cudaDeviceCountMin": 2
+            }, {
+                "class": "http://commonwl.org/cwltool#CUDARequirement",
+                "cudaVersionMin": "11.0",
+                "cudaComputeCapability": ["4.0", "5.0"],
+                "cudaDeviceCountMin": 2
+            }]
 
-        loadingContext, runtimeContext = self.helper(runner, True)
+        test_arv_req = [{
+            'device_count': 1,
+            'driver_version': "11.0",
+            'hardware_capability': "9.0"
+        }, {
+            'device_count': 2,
+            'driver_version': "11.0",
+            'hardware_capability': "9.0"
+        }, {
+            'device_count': 2,
+            'driver_version': "11.0",
+            'hardware_capability': "4.0"
+        }]
 
-        arvtool = cwltool.load_tool.load_tool(tool, loadingContext)
-        arvtool.formatgraph = None
+        for test_case in range(0, len(test_cwl_req)):
 
-        for j in arvtool.job({}, mock.MagicMock(), runtimeContext):
-            j.run(runtimeContext)
-            runner.api.container_requests().create.assert_called_with(
-                body=JsonDiffMatcher({
-                    'environment': {
-                        'HOME': '/var/spool/cwl',
-                        'TMPDIR': '/tmp'
-                    },
-                    'name': 'test_run_True',
-                    'runtime_constraints': {
-                        'vcpus': 1,
-                        'ram': 268435456,
-                        'cuda': {
-                            'device_count': 1,
-                            'driver_version': "11.0",
-                            'hardware_capability': "9.0"
-                        }
-                    },
-                    'use_existing': True,
-                    'priority': 500,
-                    'mounts': {
-                        '/tmp': {'kind': 'tmp',
-                                 "capacity": 1073741824
-                             },
-                        '/var/spool/cwl': {'kind': 'tmp',
-                                           "capacity": 1073741824 }
-                    },
-                    'state': 'Committed',
-                    'output_name': 'Output for step test_run_True',
-                    'owner_uuid': 'zzzzz-8i9sb-zzzzzzzzzzzzzzz',
-                    'output_path': '/var/spool/cwl',
-                    'output_ttl': 0,
-                    'container_image': '99999999999999999999999999999993+99',
-                    'command': ['nvidia-smi'],
-                    'cwd': '/var/spool/cwl',
-                    'scheduling_parameters': {},
-                    'properties': {},
-                    'secret_mounts': {},
-                    'output_storage_classes': ["default"]
-                }))
+            tool = cmap({
+                "inputs": [],
+                "outputs": [],
+                "baseCommand": "nvidia-smi",
+                "arguments": [],
+                "id": "",
+                "cwlVersion": "v1.2",
+                "class": "CommandLineTool",
+                "requirements": [test_cwl_req[test_case]]
+            })
+
+            loadingContext, runtimeContext = self.helper(runner, True)
+
+            arvtool = cwltool.load_tool.load_tool(tool, loadingContext)
+            arvtool.formatgraph = None
+
+            for j in arvtool.job({}, mock.MagicMock(), runtimeContext):
+                j.run(runtimeContext)
+                runner.api.container_requests().create.assert_called_with(
+                    body=JsonDiffMatcher({
+                        'environment': {
+                            'HOME': '/var/spool/cwl',
+                            'TMPDIR': '/tmp'
+                        },
+                        'name': 'test_run_True' + ("" if test_case == 0 else "_"+str(test_case+1)),
+                        'runtime_constraints': {
+                            'vcpus': 1,
+                            'ram': 268435456,
+                            'cuda': test_arv_req[test_case]
+                        },
+                        'use_existing': True,
+                        'priority': 500,
+                        'mounts': {
+                            '/tmp': {'kind': 'tmp',
+                                     "capacity": 1073741824
+                                 },
+                            '/var/spool/cwl': {'kind': 'tmp',
+                                               "capacity": 1073741824 }
+                        },
+                        'state': 'Committed',
+                        'output_name': 'Output for step test_run_True' + ("" if test_case == 0 else "_"+str(test_case+1)),
+                        'owner_uuid': 'zzzzz-8i9sb-zzzzzzzzzzzzzzz',
+                        'output_path': '/var/spool/cwl',
+                        'output_ttl': 0,
+                        'container_image': '99999999999999999999999999999993+99',
+                        'command': ['nvidia-smi'],
+                        'cwd': '/var/spool/cwl',
+                        'scheduling_parameters': {},
+                        'properties': {},
+                        'secret_mounts': {},
+                        'output_storage_classes': ["default"]
+                    }))
 
 
     # The test passes no builder.resources
@@ -1148,13 +1175,13 @@ class TestContainer(unittest.TestCase):
             "baseCommand": "echo",
             "arguments": [],
             "id": "",
-            "cwlVersion": "v1.2",
-            "class": "CommandLineTool"
+            "cwlVersion": "v1.0",
+            "class": "org.w3id.cwl.cwl.CommandLineTool"
         })
 
         loadingContext, runtimeContext = self.helper(runner, True)
 
-        arvtool = cwltool.load_tool.load_tool(tool, loadingContext)
+        arvtool = arvados_cwl.ArvadosCommandTool(runner, tool, loadingContext)
         arvtool.formatgraph = None
 
         container_request = {
@@ -1165,7 +1192,7 @@ class TestContainer(unittest.TestCase):
             'name': 'test_run_True',
             'runtime_constraints': {
                 'vcpus': 1,
-                'ram': 268435456
+                'ram': 1073741824,
             },
             'use_existing': True,
             'priority': 500,

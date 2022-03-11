@@ -29,6 +29,7 @@ usage() {
   echo >&2 "                                                controller"
   echo >&2 "                                                dispatcher"
   echo >&2 "                                                keepproxy"
+  echo >&2 "                                                keepbalance"
   echo >&2 "                                                keepstore"
   echo >&2 "                                                keepweb"
   echo >&2 "                                                shell"
@@ -107,7 +108,7 @@ arguments() {
         for i in ${2//,/ }
           do
             # Verify the role exists
-            if [[ ! "database,api,controller,keepstore,websocket,keepweb,workbench2,webshell,keepproxy,shell,workbench,dispatcher" == *"$i"* ]]; then
+            if [[ ! "database,api,controller,keepstore,websocket,keepweb,workbench2,webshell,keepbalance,keepproxy,shell,workbench,dispatcher" == *"$i"* ]]; then
               echo "The role '${i}' is not a valid role"
               usage
               exit 1
@@ -204,9 +205,9 @@ VERSION="latest"
 # BRANCH="main"
 
 # Other formula versions we depend on
-POSTGRES_TAG="v0.43.0"
+POSTGRES_TAG="v0.44.0"
 NGINX_TAG="v2.8.0"
-DOCKER_TAG="v2.0.7"
+DOCKER_TAG="v2.4.0"
 LOCALE_TAG="v0.3.4"
 LETSENCRYPT_TAG="v2.1.0"
 
@@ -564,18 +565,10 @@ if [ -z "${ROLES}" ]; then
     grep -q "letsencrypt" ${P_DIR}/top.sls || echo "    - letsencrypt" >> ${P_DIR}/top.sls
 
     # As the pillar differ whether we use LE or custom certs, we need to do a final edition on them
-    for c in controller websocket workbench workbench2 webshell keepweb keepproxy; do
-      if [ "${USE_SINGLE_HOSTNAME}" = "yes" ]; then
-        # Are we in a single-host-single-hostname env?
-        CERT_NAME=${HOSTNAME_EXT}
-      else
-        # We are in a single-host-multiple-hostnames env
-        CERT_NAME=${c}.${CLUSTER}.${DOMAIN}
-      fi
-
-      sed -i "s/__CERT_REQUIRES__/cmd: create-initial-cert-${CERT_NAME}*/g;
-              s#__CERT_PEM__#/etc/letsencrypt/live/${CERT_NAME}/fullchain.pem#g;
-              s#__CERT_KEY__#/etc/letsencrypt/live/${CERT_NAME}/privkey.pem#g" \
+    for c in controller websocket workbench workbench2 webshell download collections keepproxy; do
+      sed -i "s/__CERT_REQUIRES__/cmd: create-initial-cert-${c}.${CLUSTER}.${DOMAIN}*/g;
+              s#__CERT_PEM__#/etc/letsencrypt/live/${c}.${CLUSTER}.${DOMAIN}/fullchain.pem#g;
+              s#__CERT_KEY__#/etc/letsencrypt/live/${c}.${CLUSTER}.${DOMAIN}/privkey.pem#g" \
       ${P_DIR}/nginx_${c}_configuration.sls
     done
   else
@@ -742,13 +735,7 @@ else
         # Pillars
         grep -q "docker" ${P_DIR}/top.sls       || echo "    - docker" >> ${P_DIR}/top.sls
       ;;
-      "dispatcher")
-        # States
-        grep -q "arvados.${R}" ${S_DIR}/top.sls || echo "    - arvados.${R}" >> ${S_DIR}/top.sls
-        # Pillars
-        # ATM, no specific pillar needed
-      ;;
-      "keepstore")
+      "dispatcher" | "keepbalance" | "keepstore")
         # States
         grep -q "arvados.${R}" ${S_DIR}/top.sls || echo "    - arvados.${R}" >> ${S_DIR}/top.sls
         # Pillars

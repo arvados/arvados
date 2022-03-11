@@ -3,10 +3,16 @@
 #
 # SPDX-License-Identifier: AGPL-3.0
 
+{%- if grains.os_family in ('RedHat',) %}
+  {%- set group = 'nginx' %}
+{%- else %}
+  {%- set group = 'www-data' %}
+{%- endif %}
+
 ### ARVADOS
 arvados:
   config:
-    group: www-data
+    group: {{ group }}
 
 ### NGINX
 nginx:
@@ -22,6 +28,20 @@ nginx:
   ### SITES
   servers:
     managed:
+      ### DEFAULT
+      arvados_workbench_default.conf:
+        enabled: true
+        overwrite: true
+        config:
+          - server:
+            - server_name: workbench.__CLUSTER__.__DOMAIN__
+            - listen:
+              - 80
+            - location /.well-known:
+              - root: /var/www
+            - location /:
+              - return: '301 https://$host$request_uri'
+
       arvados_workbench_ssl.conf:
         enabled: true
         overwrite: true

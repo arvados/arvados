@@ -5,11 +5,32 @@
 
 ### POSTGRESQL
 postgres:
+  # Centos-7's postgres package is too old, so we need to force using upstream's
+  # This is not required in Debian's family as they already ship with PG +11
+  {%- if salt['grains.get']('os_family') == 'RedHat' %}
+  use_upstream_repo: true
+  version: '12'
+
+  pkgs_deps:
+    - libicu
+    - libxslt
+    - systemd-sysv
+
+  pkgs_extra:
+    - postgresql12-contrib
+
+  {%- else %}
   use_upstream_repo: false
   pkgs_extra:
     - postgresql-contrib
+  {%- endif %}
   postgresconf: |-
     listen_addresses = '*'  # listen on all interfaces
+    # If you want to enable communications' encryption to the DB server,
+    # uncomment these entries
+    # ssl = on
+    # ssl_cert_file = '/etc/ssl/certs/arvados-snakeoil-cert.pem'
+    # ssl_key_file = '/etc/ssl/private/arvados-snakeoil-cert.key'
   acls:
     - ['local', 'all', 'postgres', 'peer']
     - ['local', 'all', 'all', 'peer']

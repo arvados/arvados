@@ -1,3 +1,5 @@
+# -*- coding: utf-8 -*-
+# vim: ft=yaml
 ---
 # Copyright (C) The Arvados Authors. All rights reserved.
 #
@@ -67,14 +69,28 @@ arvados:
       host: 127.0.0.1
       password: "__DATABASE_PASSWORD__"
       user: __CLUSTER___arvados
-      encoding: en_US.utf8
-      client_encoding: UTF8
+      extra_conn_params:
+        client_encoding: UTF8
+      # Centos7 does not enable SSL by default, so we disable
+      # it here just for testing of the formula purposes only.
+      # You should not do this in production, and should
+      # configure Postgres certificates correctly
+      {%- if grains.os_family in ('RedHat',) %}
+        sslmode: disable
+      {%- endif %}
 
     tls:
       # certificate: ''
       # key: ''
       # When using arvados-snakeoil certs set insecure: true
       insecure: true
+
+    resources:
+      virtual_machines:
+        shell:
+          name: webshell
+          backend: 127.0.1.1
+          port: 4200
 
     ### TOKENS
     tokens:
@@ -120,6 +136,9 @@ arvados:
         ExternalURL: 'https://__HOSTNAME_EXT__:__CONTROLLER_EXT_SSL_PORT__'
         InternalURLs:
           'http://__IP_INT__:8003': {}
+      Keepbalance:
+        InternalURLs:
+          'http://__IP_INT__:9005': {}
       Keepproxy:
         ExternalURL: 'https://__HOSTNAME_EXT__:__KEEP_EXT_SSL_PORT__'
         InternalURLs:

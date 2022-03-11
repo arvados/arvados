@@ -10,7 +10,7 @@
                           if grains.osfinger in ('CentOS Linux-7',) else
                         '/usr/lib/nginx/modules/ngx_http_passenger_module.so' %}
 {%- set passenger_ruby = '/usr/local/rvm/rubies/ruby-2.7.2/bin/ruby'
-                           if grains.osfinger in ('CentOS Linux-7', 'Ubuntu-18.04',) else
+                           if grains.osfinger in ('CentOS Linux-7', 'Ubuntu-18.04', 'Debian-10') else
                          '/usr/bin/ruby' %}
 
 ### NGINX
