@@ -620,6 +620,7 @@ def run_nginx():
     nginxconf = {}
     nginxconf['LISTENHOST'] = 'localhost'
     nginxconf['CONTROLLERPORT'] = internal_port_from_config("Controller")
+    nginxconf['ARVADOS_API_HOST'] = "0.0.0.0:" + str(external_port_from_config("Controller"))
     nginxconf['CONTROLLERSSLPORT'] = external_port_from_config("Controller")
     nginxconf['KEEPWEBPORT'] = internal_port_from_config("WebDAV")
     nginxconf['KEEPWEBDLSSLPORT'] = external_port_from_config("WebDAVDownload")

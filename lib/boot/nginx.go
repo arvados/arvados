@@ -33,12 +33,13 @@ func (runNginx) Run(ctx context.Context, fail func(error), super *Supervisor) er
 		return err
 	}
 	vars := map[string]string{
-		"LISTENHOST": super.ListenHost,
-		"SSLCERT":    filepath.Join(super.tempdir, "server.crt"),
-		"SSLKEY":     filepath.Join(super.tempdir, "server.key"),
-		"ACCESSLOG":  filepath.Join(super.tempdir, "nginx_access.log"),
-		"ERRORLOG":   filepath.Join(super.tempdir, "nginx_error.log"),
-		"TMPDIR":     super.wwwtempdir,
+		"LISTENHOST":       super.ListenHost,
+		"SSLCERT":          filepath.Join(super.tempdir, "server.crt"),
+		"SSLKEY":           filepath.Join(super.tempdir, "server.key"),
+		"ACCESSLOG":        filepath.Join(super.tempdir, "nginx_access.log"),
+		"ERRORLOG":         filepath.Join(super.tempdir, "nginx_error.log"),
+		"TMPDIR":           super.wwwtempdir,
+		"ARVADOS_API_HOST": super.cluster.Services.Controller.ExternalURL.Host,
 	}
 	u := url.URL(super.cluster.Services.Controller.ExternalURL)
 	ctrlHost := u.Hostname()
