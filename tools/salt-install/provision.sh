@@ -29,6 +29,7 @@ usage() {
   echo >&2 "                                                controller"
   echo >&2 "                                                dispatcher"
   echo >&2 "                                                keepproxy"
+  echo >&2 "                                                keepbalance"
   echo >&2 "                                                keepstore"
   echo >&2 "                                                keepweb"
   echo >&2 "                                                shell"
@@ -107,7 +108,7 @@ arguments() {
         for i in ${2//,/ }
           do
             # Verify the role exists
-            if [[ ! "database,api,controller,keepstore,websocket,keepweb,workbench2,webshell,keepproxy,shell,workbench,dispatcher" == *"$i"* ]]; then
+            if [[ ! "database,api,controller,keepstore,websocket,keepweb,workbench2,webshell,keepbalance,keepproxy,shell,workbench,dispatcher" == *"$i"* ]]; then
               echo "The role '${i}' is not a valid role"
               usage
               exit 1
@@ -734,13 +735,7 @@ else
         # Pillars
         grep -q "docker" ${P_DIR}/top.sls       || echo "    - docker" >> ${P_DIR}/top.sls
       ;;
-      "dispatcher")
-        # States
-        grep -q "arvados.${R}" ${S_DIR}/top.sls || echo "    - arvados.${R}" >> ${S_DIR}/top.sls
-        # Pillars
-        # ATM, no specific pillar needed
-      ;;
-      "keepstore")
+      "dispatcher" | "keepbalance" | "keepstore")
         # States
         grep -q "arvados.${R}" ${S_DIR}/top.sls || echo "    - arvados.${R}" >> ${S_DIR}/top.sls
         # Pillars

@@ -136,6 +136,9 @@ arvados:
         ExternalURL: 'https://__HOSTNAME_EXT__:__CONTROLLER_EXT_SSL_PORT__'
         InternalURLs:
           'http://__IP_INT__:8003': {}
+      Keepbalance:
+        InternalURLs:
+          'http://__IP_INT__:9005': {}
       Keepproxy:
         ExternalURL: 'https://__HOSTNAME_EXT__:__KEEP_EXT_SSL_PORT__'
         InternalURLs:

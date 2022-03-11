@@ -142,7 +142,7 @@ arvados:
           'http://__CLUSTER__.__DOMAIN__:9006': {}
       Keepbalance:
         InternalURLs:
-          'http://__CLUSTER__.__DOMAIN__:9005': {}
+          'http://localhost:9005': {}
       Keepproxy:
         ExternalURL: 'https://keep.__CLUSTER__.__DOMAIN__:__CONTROLLER_EXT_SSL_PORT__'
         InternalURLs:
