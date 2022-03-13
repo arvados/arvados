@@ -12,7 +12,6 @@ import (
 	"net/url"
 	"os"
 	"os/exec"
-	"os/user"
 	"path/filepath"
 	"regexp"
 
@@ -117,28 +116,18 @@ func (runNginx) Run(ctx context.Context, fail func(error), super *Supervisor) er
 		}
 	}
 
-	args := []string{
-		"-g", "error_log stderr info;",
-		"-g", "pid " + filepath.Join(super.wwwtempdir, "nginx.pid") + ";",
-		"-c", conffile,
-	}
-	// Nginx ignores "user www-data;" when running as a non-root
-	// user... except that it causes it to ignore our other -g
-	// options. So we still have to decide for ourselves whether
-	// it's needed.
-	if u, err := user.Current(); err != nil {
-		return fmt.Errorf("user.Current(): %w", err)
-	} else if u.Uid == "0" {
-		args = append([]string{"-g", "user www-data;"}, args...)
-	}
+	configs := "error_log stderr info; "
+	configs += "pid " + filepath.Join(super.wwwtempdir, "nginx.pid") + "; "
+	configs += "user www-data; "
 
 	super.waitShutdown.Add(1)
 	go func() {
 		defer super.waitShutdown.Done()
-		fail(super.RunProgram(ctx, ".", runOptions{}, nginx, args...))
+		fail(super.RunProgram(ctx, ".", runOptions{}, nginx, "-g", configs, "-c", conffile))
 	}()
 	// Choose one of the ports where Nginx should listen, and wait
-	// here until we can connect. If ExternalURL is https://foo (with no port) then we connect to "foo:https"
+	// here until we can connect. If ExternalURL is https://foo
+	// (with no port) then we connect to "foo:https"
 	testurl := url.URL(super.cluster.Services.Controller.ExternalURL)
 	if testurl.Port() == "" {
 		testurl.Host = net.JoinHostPort(testurl.Host, testurl.Scheme)

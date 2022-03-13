@@ -60,8 +60,8 @@ type Supervisor struct {
 	waitShutdown  sync.WaitGroup
 
 	bindir     string
-	tempdir    string
-	wwwtempdir string
+	tempdir    string // in production mode, this is accessible only to root
+	wwwtempdir string // in production mode, this is accessible only to www-data
 	configfile string
 	environ    []string // for child processes
 }

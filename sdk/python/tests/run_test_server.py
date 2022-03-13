@@ -641,7 +641,7 @@ def run_nginx():
     nginxconf['SSLKEY'] = os.path.join(SERVICES_SRC_DIR, 'api', 'tmp', 'self-signed.key')
     nginxconf['ACCESSLOG'] = _logfilename('nginx_access')
     nginxconf['ERRORLOG'] = _logfilename('nginx_error')
-    nginxconf['TMPDIR'] = TEST_TMPDIR
+    nginxconf['TMPDIR'] = TEST_TMPDIR + '/nginx'
 
     conftemplatefile = os.path.join(MY_DIRNAME, 'nginx.conf')
     conffile = os.path.join(TEST_TMPDIR, 'nginx.conf')
@@ -656,8 +656,7 @@ def run_nginx():
 
     nginx = subprocess.Popen(
         ['nginx',
-         '-g', 'error_log stderr info;',
-         '-g', 'pid '+_pidfile('nginx')+';',
+         '-g', 'error_log stderr info; pid '+_pidfile('nginx')+';',
          '-c', conffile],
         env=env, stdin=open('/dev/null'), stdout=sys.stderr)
     _wait_until_port_listens(nginxconf['CONTROLLERSSLPORT'])

@@ -220,7 +220,6 @@ func (inst *installCommand) RunCommand(prog string, args []string, stdin io.Read
 	os.Mkdir("/var/lib/arvados", 0755)
 	os.Mkdir("/var/lib/arvados/tmp", 0700)
 	if prod || pkg {
-		os.Mkdir("/var/lib/arvados/wwwtmp", 0700)
 		u, er := user.Lookup("www-data")
 		if er != nil {
 			err = fmt.Errorf("user.Lookup(%q): %w", "www-data", er)
@@ -228,6 +227,7 @@ func (inst *installCommand) RunCommand(prog string, args []string, stdin io.Read
 		}
 		uid, _ := strconv.Atoi(u.Uid)
 		gid, _ := strconv.Atoi(u.Gid)
+		os.Mkdir("/var/lib/arvados/wwwtmp", 0700)
 		err = os.Chown("/var/lib/arvados/wwwtmp", uid, gid)
 		if err != nil {
 			return 1
