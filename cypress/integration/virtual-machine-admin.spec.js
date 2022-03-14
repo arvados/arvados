@@ -64,6 +64,7 @@ describe('Virtual machine login manage tests', function() {
         cy.get('[data-cy=form-dialog]').within(() => {
             cy.get('[data-cy=form-submit-btn]').click();
         });
+        cy.get('[data-cy=snackbar]').contains('Permission updated');
         cy.get('[data-cy=vm-admin-table]')
             .contains(vmHost)
             .parents('tr')
@@ -92,6 +93,7 @@ describe('Virtual machine login manage tests', function() {
         cy.get('[data-cy=form-dialog]').within(() => {
             cy.get('[data-cy=form-submit-btn]').click();
         });
+        cy.get('[data-cy=snackbar]').contains('Permission updated');
         cy.get('[data-cy=vm-admin-table]')
             .contains(vmHost)
             .parents('tr')
@@ -160,8 +162,17 @@ describe('Virtual machine login manage tests', function() {
             cy.get('[data-cy=form-submit-btn]').click();
         });
 
+        // Wait for page to finish loading
+        cy.get('[data-cy=snackbar]').contains('Permission updated');
         cy.get('[data-cy=vm-admin-table]')
-            .contains('user'); // Wait for page to finish
+            .contains(vmHost)
+            .parents('tr')
+            .within(() => {
+                cy.get('div[role=button]')
+                    .parent()
+                    .first()
+                    .contains('admin')
+            });
 
         cy.get('[data-cy=vm-admin-table]')
             .contains(vmHost)
@@ -183,6 +194,7 @@ describe('Virtual machine login manage tests', function() {
         cy.get('[data-cy=form-dialog]').within(() => {
             cy.get('[data-cy=form-submit-btn]').click();
         });
+        cy.get('[data-cy=snackbar]').contains('Permission updated');
 
         // Verify new login permissions
         // Check admin's vm page for login
