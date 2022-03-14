@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: AGPL-3.0
 import { RootState } from "store/store";
 import { Dispatch } from 'redux';
-import { initialize, reset } from "redux-form";
+import { initialize } from "redux-form";
 import { ServiceRepository } from "services/services";
 import { bindDataExplorerActions } from "store/data-explorer/data-explorer-action";
 import { propertiesActions } from 'store/properties/properties-actions';
@@ -38,7 +38,7 @@ export const saveEditedUser = (resource: any) =>
       try {
           const user = await services.userService.update(resource.uuid, resource);
           dispatch(updateResources([user]));
-          dispatch(reset(USER_PROFILE_FORM));
+          dispatch(initialize(USER_PROFILE_FORM, user));
           dispatch(snackbarActions.OPEN_SNACKBAR({ message: "Profile has been updated.", hideDuration: 2000, kind: SnackbarKind.SUCCESS }));
       } catch (e) {
           dispatch(snackbarActions.OPEN_SNACKBAR({
