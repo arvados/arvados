@@ -15,7 +15,7 @@ import { getResource } from 'store/resources/resources';
 import { navigateTo, navigateToUsers, navigateToRootProject } from "store/navigation/navigation-action";
 import { authActions } from 'store/auth/auth-action';
 import { getTokenV2 } from "models/api-client-authorization";
-import { AddLoginFormData, VIRTUAL_MACHINE_ADD_LOGIN_GROUPS_FIELD, VIRTUAL_MACHINE_ADD_LOGIN_USER_FIELD } from "store/virtual-machines/virtual-machines-actions";
+import { AddLoginFormData, VIRTUAL_MACHINE_ADD_LOGIN_GROUPS_FIELD, VIRTUAL_MACHINE_ADD_LOGIN_USER_FIELD, VIRTUAL_MACHINE_ADD_LOGIN_VM_FIELD } from "store/virtual-machines/virtual-machines-actions";
 import { PermissionLevel } from "models/permission";
 import { updateResources } from "store/resources/resources-actions";
 
@@ -27,8 +27,8 @@ export const SETUP_SHELL_ACCOUNT_DIALOG = 'setupShellAccountDialog';
 
 export interface UserCreateFormDialogData {
     email: string;
-    virtualMachineName: string;
-    groupVirtualMachine: string;
+    [VIRTUAL_MACHINE_ADD_LOGIN_VM_FIELD]: string;
+    [VIRTUAL_MACHINE_ADD_LOGIN_GROUPS_FIELD]: string[];
 }
 
 export const userBindedActions = bindDataExplorerActions(USERS_PANEL_ID);
@@ -83,11 +83,28 @@ export const openUserProjects = (uuid: string) =>
         dispatch<any>(navigateTo(uuid));
     };
 
-export const createUser = (user: UserCreateFormDialogData) =>
+export const createUser = (data: UserCreateFormDialogData) =>
     async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
         dispatch(startSubmit(USER_CREATE_FORM_NAME));
         try {
-            const newUser = await services.userService.create({ ...user });
+            const newUser = await services.userService.create({
+                email: data.email,
+            });
+            dispatch(updateResources([newUser]));
+
+            if (data[VIRTUAL_MACHINE_ADD_LOGIN_VM_FIELD]) {
+                const permission = await services.permissionService.create({
+                    headUuid: data[VIRTUAL_MACHINE_ADD_LOGIN_VM_FIELD],
+                    tailUuid: newUser.uuid,
+                    name: PermissionLevel.CAN_LOGIN,
+                    properties: {
+                        username: newUser.username,
+                        groups: data.groups,
+                    }
+                });
+                dispatch(updateResources([permission]));
+            }
+
             dispatch(dialogActions.CLOSE_DIALOG({ id: USER_CREATE_FORM_NAME }));
             dispatch(reset(USER_CREATE_FORM_NAME));
             dispatch(snackbarActions.OPEN_SNACKBAR({ message: "User has been successfully created.", hideDuration: 2000, kind: SnackbarKind.SUCCESS }));
@@ -96,6 +113,8 @@ export const createUser = (user: UserCreateFormDialogData) =>
             return newUser;
         } catch (e) {
             return;
+        } finally {
+            dispatch(stopSubmit(USER_CREATE_FORM_NAME));
         }
     };
 
