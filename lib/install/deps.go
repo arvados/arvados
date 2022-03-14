@@ -590,7 +590,7 @@ rsync -a --delete-after build/ /var/lib/arvados/workbench2/
 			"services/ws",
 		} {
 			fmt.Fprintf(stderr, "building %s...\n", srcdir)
-			cmd := exec.Command("go", "install", "-ldflags", "-X git.arvados.org/arvados.git/lib/cmd.version="+inst.PackageVersion+" -X main.version="+inst.PackageVersion)
+			cmd := exec.Command("go", "install", "-ldflags", "-X git.arvados.org/arvados.git/lib/cmd.version="+inst.PackageVersion+" -X main.version="+inst.PackageVersion+" -s -w")
 			cmd.Env = append(cmd.Env, os.Environ()...)
 			cmd.Env = append(cmd.Env, "GOBIN=/var/lib/arvados/bin")
 			cmd.Dir = filepath.Join(inst.SourcePath, srcdir)
