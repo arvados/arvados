@@ -12,6 +12,8 @@ import { updateResources } from 'store/resources/resources-actions';
 import { FilterBuilder } from 'services/api/filter-builder';
 import { LinkClass } from 'models/link';
 import { ResourceKind } from 'models/resource';
+import { GroupClass } from 'models/group';
+import { snackbarActions, SnackbarKind } from 'store/snackbar/snackbar-actions';
 
 export class UserProfileGroupsMiddlewareService extends DataExplorerMiddlewareService {
     constructor(private services: ServiceRepository, id: string) {
@@ -36,26 +38,44 @@ export class UserProfileGroupsMiddlewareService extends DataExplorerMiddlewareSe
                     .addEqual('head_kind', ResourceKind.GROUP)
                     .getFilters()
             });
+            // Update resources, includes "project" groups
             api.dispatch(updateResources(groupMembershipLinks.items));
 
-            // Get user's groups details
+            // Get user's groups details and filter to role groups
             const groups = await this.services.groupsService.list({
                 filters: new FilterBuilder()
                     .addIn('uuid', groupMembershipLinks.items
                         .map(item => item.headUuid))
+                    .addEqual('group_class', GroupClass.ROLE)
                     .getFilters(),
                 count: "none"
             });
             api.dispatch(updateResources(groups.items));
 
+            // Get permission links for only role groups
+            const roleGroupMembershipLinks = await this.services.permissionService.list({
+                filters: new FilterBuilder()
+                    .addIn('head_uuid', groups.items.map(item => item.uuid))
+                    .addEqual('tail_uuid', userUuid)
+                    .addEqual('link_class', LinkClass.PERMISSION)
+                    .addEqual('head_kind', ResourceKind.GROUP)
+                    .getFilters()
+            });
+
             api.dispatch(UserProfileGroupsActions.SET_ITEMS({
-                ...listResultsToDataExplorerItemsMeta(groupMembershipLinks),
-                items: groupMembershipLinks.items.map(item => item.uuid),
+                ...listResultsToDataExplorerItemsMeta(roleGroupMembershipLinks),
+                items: roleGroupMembershipLinks.items.map(item => item.uuid),
             }));
         } catch {
-            // api.dispatch(couldNotFetchUsers());
+            api.dispatch(couldNotFetchGroups());
         } finally {
             api.dispatch(progressIndicatorActions.STOP_WORKING(this.getId()));
         }
     }
 }
+
+const couldNotFetchGroups = () =>
+    snackbarActions.OPEN_SNACKBAR({
+        message: 'Could not fetch groups.',
+        kind: SnackbarKind.ERROR
+    });
