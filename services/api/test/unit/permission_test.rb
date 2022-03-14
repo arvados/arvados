@@ -602,4 +602,17 @@ class PermissionTest < ActiveSupport::TestCase
       end
     end
   end
+
+  # Show query plan for readable_by query. The plan for a test db
+  # might not resemble the plan for a production db, but it doesn't
+  # hurt to show the test db plan in test logs, and the .
+  [false, true].each do |include_trash|
+    test "query plan, include_trash=#{include_trash}" do
+      sql = Collection.readable_by(users(:active), include_trash: include_trash).to_sql
+      sql = "explain analyze #{sql}"
+      STDERR.puts sql
+      q = ActiveRecord::Base.connection.exec_query(sql)
+      q.rows.each do |row| STDERR.puts(row) end
+    end
+  end
 end
