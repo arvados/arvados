@@ -103,6 +103,13 @@ export enum UserProfileGroupsColumnNames {
     REMOVE = "Remove",
 }
 
+enum TABS {
+    PROFILE = "PROFILE",
+    GROUPS = "GROUPS",
+    ADMIN = "ADMIN",
+
+}
+
 export const userProfileGroupsColumns: DataColumns<string> = [
     {
         name: UserProfileGroupsColumnNames.NAME,
@@ -157,21 +164,21 @@ const ReadOnlyField = withStyles(styles)(
 export const UserProfilePanelRoot = withStyles(styles)(
     class extends React.Component<UserProfilePanelRootProps> {
         state = {
-            value: 0,
+            value: TABS.PROFILE,
         };
 
         componentDidMount() {
-            this.setState({ value: 0 });
+            this.setState({ value: TABS.PROFILE});
         }
 
         render() {
             return <Paper className={this.props.classes.root}>
                 <Tabs value={this.state.value} onChange={this.handleChange} variant={"fullWidth"}>
-                    <Tab label="PROFILE" />
-                    <Tab label="GROUPS" />
-                    <Tab label="ADMIN" disabled={!this.props.isAdmin} />
+                    <Tab label={TABS.PROFILE} value={TABS.PROFILE} />
+                    <Tab label={TABS.GROUPS} value={TABS.GROUPS} />
+                    {this.props.isAdmin && <Tab label={TABS.ADMIN} value={TABS.ADMIN} />}
                 </Tabs>
-                {this.state.value === 0 &&
+                {this.state.value === TABS.PROFILE &&
                     <CardContent>
                         <form onSubmit={this.props.handleSubmit}>
                             <Grid container spacing={24}>
@@ -259,7 +266,7 @@ export const UserProfilePanelRoot = withStyles(styles)(
                         </form >
                     </CardContent>
                 }
-                {this.state.value === 1 &&
+                {this.state.value === TABS.GROUPS &&
                     <div className={this.props.classes.content}>
                         <DataExplorer
                                 id={USER_PROFILE_PANEL_ID}
@@ -277,7 +284,7 @@ export const UserProfilePanelRoot = withStyles(styles)(
                                         messages={['Group list is empty.']} />
                                 } />
                     </div>}
-                {this.state.value === 2 &&
+                {this.props.isAdmin && this.state.value === TABS.ADMIN &&
                     <Paper elevation={0} className={this.props.classes.adminRoot}>
                         <Card elevation={0}>
                             <CardContent>
