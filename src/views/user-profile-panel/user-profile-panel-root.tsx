@@ -31,7 +31,7 @@ import { DataColumns } from 'components/data-table/data-table';
 import { ResourceLinkHeadUuid, ResourceLinkHeadPermissionLevel, ResourceLinkHead, ResourceLinkDelete, ResourceLinkTailIsVisible } from 'views-components/data-explorer/renderers';
 import { createTree } from 'models/tree';
 
-type CssRules = 'root' | 'adminRoot' | 'gridItem' | 'label' | 'title' | 'description' | 'actions' | 'content';
+type CssRules = 'root' | 'adminRoot' | 'gridItem' | 'label' | 'readOnlyValue' | 'title' | 'description' | 'actions' | 'content';
 
 const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     root: {
@@ -46,7 +46,11 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
         marginBottom: 20
     },
     label: {
-        fontSize: '0.675rem'
+        fontSize: '0.675rem',
+        color: theme.palette.grey['600']
+    },
+    readOnlyValue: {
+        fontSize: '0.875rem',
     },
     title: {
         fontSize: '1.1rem',
@@ -137,6 +141,19 @@ export const userProfileGroupsColumns: DataColumns<string> = [
     },
 ];
 
+const ReadOnlyField = withStyles(styles)(
+    (props: ({ label: string, input: {value: string} }) & WithStyles<CssRules> ) => (
+        <Grid item xs={12}>
+            <Typography className={props.classes.label}>
+                {props.label}
+            </Typography>
+            <Typography className={props.classes.readOnlyValue}>
+                {props.input.value}
+            </Typography>
+        </Grid>
+    )
+);
+
 export const UserProfilePanelRoot = withStyles(styles)(
     class extends React.Component<UserProfilePanelRootProps> {
         state = {
@@ -162,7 +179,7 @@ export const UserProfilePanelRoot = withStyles(styles)(
                                     <Field
                                         label="First name"
                                         name="firstName"
-                                        component={TextField as any}
+                                        component={ReadOnlyField as any}
                                         disabled
                                     />
                                 </Grid>
@@ -170,7 +187,7 @@ export const UserProfilePanelRoot = withStyles(styles)(
                                     <Field
                                         label="Last name"
                                         name="lastName"
-                                        component={TextField as any}
+                                        component={ReadOnlyField as any}
                                         disabled
                                     />
                                 </Grid>
@@ -178,7 +195,7 @@ export const UserProfilePanelRoot = withStyles(styles)(
                                     <Field
                                         label="E-mail"
                                         name="email"
-                                        component={TextField as any}
+                                        component={ReadOnlyField as any}
                                         disabled
                                     />
                                 </Grid>
@@ -186,7 +203,7 @@ export const UserProfilePanelRoot = withStyles(styles)(
                                     <Field
                                         label="Username"
                                         name="username"
-                                        component={TextField as any}
+                                        component={ReadOnlyField as any}
                                         disabled
                                     />
                                 </Grid>
@@ -196,7 +213,6 @@ export const UserProfilePanelRoot = withStyles(styles)(
                                         name="prefs.profile.organization"
                                         component={TextField as any}
                                         validate={MY_ACCOUNT_VALIDATION}
-                                        required
                                         disabled={!this.props.isAdmin && !this.props.isSelf}
                                     />
                                 </Grid>
@@ -206,7 +222,6 @@ export const UserProfilePanelRoot = withStyles(styles)(
                                         name="prefs.profile.organization_email"
                                         component={TextField as any}
                                         validate={MY_ACCOUNT_VALIDATION}
-                                        required
                                         disabled={!this.props.isAdmin && !this.props.isSelf}
                                     />
                                 </Grid>
