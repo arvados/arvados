@@ -165,6 +165,8 @@ LOG_LEVEL="info"
 CONTROLLER_EXT_SSL_PORT=443
 TESTS_DIR="tests"
 
+NGINX_INSTALL_SOURCE="install_from_repo"
+
 CLUSTER=""
 DOMAIN=""
 
@@ -474,6 +476,7 @@ if [ -d "${SOURCE_STATES_DIR}" ]; then
          s#__WORKBENCH2_INT_IP__#${WORKBENCH2_INT_IP}#g;
          s#__DATABASE_INT_IP__#${DATABASE_INT_IP}#g;
          s#__WEBSHELL_EXT_SSL_PORT__#${WEBSHELL_EXT_SSL_PORT}#g;
+         s#__SHELL_INT_IP__#${SHELL_INT_IP}#g;
          s#__WEBSOCKET_EXT_SSL_PORT__#${WEBSOCKET_EXT_SSL_PORT}#g;
          s#__WORKBENCH1_EXT_SSL_PORT__#${WORKBENCH1_EXT_SSL_PORT}#g;
          s#__WORKBENCH2_EXT_SSL_PORT__#${WORKBENCH2_EXT_SSL_PORT}#g;
@@ -558,6 +561,10 @@ if [ -z "${ROLES}" ]; then
   echo "    - nginx_workbench_configuration" >> ${P_DIR}/top.sls
   echo "    - postgresql" >> ${P_DIR}/top.sls
 
+  # We need to tweak the Nginx's pillar depending whether we want plan nginx or nginx+passenger
+  NGINX_INSTALL_SOURCE="install_from_phusionpassenger"
+  sed -i "s/__NGINX_INSTALL_SOURCE__/${NGINX_INSTALL_SOURCE}/g" ${P_DIR}/nginx_passenger.sls
+
   if [ "${SSL_MODE}" = "lets-encrypt" ]; then
     if [ "${USE_LETSENCRYPT_ROUTE53}" = "yes" ]; then
       grep -q "aws_credentials" ${P_DIR}/top.sls || echo "    - aws_credentials" >> ${P_DIR}/top.sls
@@ -627,10 +634,13 @@ else
         # States
         # FIXME: https://dev.arvados.org/issues/17352
         grep -q "postgres.client" ${S_DIR}/top.sls || echo "    - postgres.client" >> ${S_DIR}/top.sls
-        grep -q "nginx.passenger" ${S_DIR}/top.sls || echo "    - nginx.passenger" >> ${S_DIR}/top.sls
+        if grep -q "    - nginx.*$" ${S_DIR}/top.sls; then
+          sed -i s/"^    - nginx.*$"/"    - nginx.passenger"/g ${S_DIR}/top.sls
+        else
+          echo "    - nginx.passenger" >> ${S_DIR}/top.sls
+        fi
         ### If we don't install and run LE before arvados-api-server, it fails and breaks everything
         ### after it. So we add this here as we are, after all, sharing the host for api and controller
-        # Currently, only available on config_examples/multi_host/aws
         if [ "${SSL_MODE}" = "lets-encrypt" ]; then
           if [ "${USE_LETSENCRYPT_ROUTE53}" = "yes" ]; then
             grep -q "aws_credentials" ${S_DIR}/top.sls || echo "    - aws_credentials" >> ${S_DIR}/top.sls
@@ -649,11 +659,23 @@ else
         grep -q "postgresql" ${P_DIR}/top.sls               || echo "    - postgresql" >> ${P_DIR}/top.sls
         grep -q "nginx_passenger" ${P_DIR}/top.sls          || echo "    - nginx_passenger" >> ${P_DIR}/top.sls
         grep -q "nginx_${R}_configuration" ${P_DIR}/top.sls || echo "    - nginx_${R}_configuration" >> ${P_DIR}/top.sls
+
+        # We need to tweak the Nginx's pillar depending whether we want plain nginx or nginx+passenger
+        NGINX_INSTALL_SOURCE="install_from_phusionpassenger"
+        sed -i "s/__NGINX_INSTALL_SOURCE__/${NGINX_INSTALL_SOURCE}/g" ${P_DIR}/nginx_passenger.sls
       ;;
       "controller" | "websocket" | "workbench" | "workbench2" | "webshell" | "keepweb" | "keepproxy")
         # States
-        grep -q "nginx.passenger" ${S_DIR}/top.sls || echo "    - nginx.passenger" >> ${S_DIR}/top.sls
-        # Currently, only available on config_examples/multi_host/aws
+        if [ "${R}" = "workbench" ]; then
+          NGINX_INSTALL_SOURCE="install_from_phusionpassenger"
+          if grep -q "    - nginx$" ${S_DIR}/top.sls; then
+            sed -i s/"^    - nginx.*$"/"    - nginx.passenger"/g ${S_DIR}/top.sls
+          else
+            echo "    - nginx.passenger" >> ${S_DIR}/top.sls
+          fi
+        else
+          grep -q "nginx" ${S_DIR}/top.sls || echo "    - nginx" >> ${S_DIR}/top.sls
+        fi
         if [ "${SSL_MODE}" = "lets-encrypt" ]; then
           if [ "x${USE_LETSENCRYPT_ROUTE53}" = "xyes" ]; then
             grep -q "aws_credentials" ${S_DIR}/top.sls || echo "    - aws_credentials" >> ${S_DIR}/top.sls
@@ -685,7 +707,6 @@ else
           grep -q "nginx_collections_configuration" ${P_DIR}/top.sls || echo "    - nginx_collections_configuration" >> ${P_DIR}/top.sls
         fi
 
-        # Currently, only available on config_examples/multi_host/aws
         if [ "${SSL_MODE}" = "lets-encrypt" ]; then
           if [ "${USE_LETSENCRYPT_ROUTE53}" = "yes" ]; then
             grep -q "aws_credentials" ${P_DIR}/top.sls || echo "    - aws_credentials" >> ${P_DIR}/top.sls
@@ -727,6 +748,8 @@ else
             grep -q ${R} ${P_DIR}/extra_custom_certs.sls || echo "  - ${R}" >> ${P_DIR}/extra_custom_certs.sls
           fi
         fi
+        # We need to tweak the Nginx's pillar depending whether we want plain nginx or nginx+passenger
+        sed -i "s/__NGINX_INSTALL_SOURCE__/${NGINX_INSTALL_SOURCE}/g" ${P_DIR}/nginx_passenger.sls
       ;;
       "shell")
         # States
