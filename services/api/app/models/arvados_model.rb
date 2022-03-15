@@ -302,6 +302,15 @@ class ArvadosModel < ApplicationRecord
     # For details on how the trashed_groups table is constructed, see
     # see db/migrate/20200501150153_permission_table.rb
 
+    # excluded_trash is a SQL expression that determines whether a row
+    # should be excluded from the results due to being trashed.
+    # Trashed items inside frozen projects are invisible to regular
+    # (non-admin) users even when using include_trash, so we have:
+    #
+    # (item_trashed || item_inside_trashed_project)
+    # &&
+    # (!caller_requests_include_trash ||
+    #  (item_inside_frozen_project && caller_is_not_admin))
     if (admin && include_trash) || sql_table == "api_client_authorizations"
       excluded_trash = "false"
     else
@@ -322,7 +331,7 @@ class ArvadosModel < ApplicationRecord
       # on trashed items.
       if !include_trash && sql_table != "api_client_authorizations"
         # Only include records where the owner is not trashed
-        sql_conds = "NOT #{excluded_trash}"
+        sql_conds = "NOT (#{excluded_trash})"
       end
     else
       # The core of the permission check is a join against the
@@ -422,7 +431,7 @@ class ArvadosModel < ApplicationRecord
                      "    WHERE user_uuid IN (#{user_uuids_subquery}) AND perm_level >= 3))) "
       end
 
-      sql_conds = "(#{owner_check} #{direct_check} #{links_cond}) AND NOT #{excluded_trash}"
+      sql_conds = "(#{owner_check} #{direct_check} #{links_cond}) AND NOT (#{excluded_trash})"
 
     end
 
