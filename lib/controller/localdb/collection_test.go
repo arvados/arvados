@@ -6,16 +6,22 @@ package localdb
 
 import (
 	"context"
+	"io/fs"
+	"path/filepath"
 	"regexp"
+	"sort"
 	"strconv"
+	"strings"
 	"time"
 
 	"git.arvados.org/arvados.git/lib/config"
 	"git.arvados.org/arvados.git/lib/controller/rpc"
 	"git.arvados.org/arvados.git/sdk/go/arvados"
+	"git.arvados.org/arvados.git/sdk/go/arvadosclient"
 	"git.arvados.org/arvados.git/sdk/go/arvadostest"
 	"git.arvados.org/arvados.git/sdk/go/auth"
 	"git.arvados.org/arvados.git/sdk/go/ctxlog"
+	"git.arvados.org/arvados.git/sdk/go/keepclient"
 	check "gopkg.in/check.v1"
 )
 
@@ -71,7 +77,7 @@ func (s *CollectionSuite) setUpVocabulary(c *check.C, testVocabulary string) {
 	s.localdb.vocabularyCache = voc
 }
 
-func (s *CollectionSuite) TestCollectionCreateWithProperties(c *check.C) {
+func (s *CollectionSuite) TestCollectionCreateAndUpdateWithProperties(c *check.C) {
 	s.setUpVocabulary(c, "")
 	ctx := auth.NewContext(context.Background(), &auth.Credentials{Tokens: []string{arvadostest.ActiveTokenV2}})
 
@@ -88,6 +94,7 @@ func (s *CollectionSuite) TestCollectionCreateWithProperties(c *check.C) {
 	for _, tt := range tests {
 		c.Log(c.TestName()+" ", tt.name)
 
+		// Create with properties
 		coll, err := s.localdb.CollectionCreate(ctx, arvados.CreateOptions{
 			Select: []string{"uuid", "properties"},
 			Attrs: map[string]interface{}{
@@ -99,26 +106,9 @@ func (s *CollectionSuite) TestCollectionCreateWithProperties(c *check.C) {
 		} else {
 			c.Assert(err, check.NotNil)
 		}
-	}
-}
 
-func (s *CollectionSuite) TestCollectionUpdateWithProperties(c *check.C) {
-	s.setUpVocabulary(c, "")
-	ctx := auth.NewContext(context.Background(), &auth.Credentials{Tokens: []string{arvadostest.ActiveTokenV2}})
-
-	tests := []struct {
-		name    string
-		props   map[string]interface{}
-		success bool
-	}{
-		{"Invalid prop key", map[string]interface{}{"Priority": "IDVALIMPORTANCES1"}, false},
-		{"Invalid prop value", map[string]interface{}{"IDTAGIMPORTANCES": "high"}, false},
-		{"Valid prop key & value", map[string]interface{}{"IDTAGIMPORTANCES": "IDVALIMPORTANCES1"}, true},
-		{"Empty properties", map[string]interface{}{}, true},
-	}
-	for _, tt := range tests {
-		c.Log(c.TestName()+" ", tt.name)
-		coll, err := s.localdb.CollectionCreate(ctx, arvados.CreateOptions{})
+		// Create, then update with properties
+		coll, err = s.localdb.CollectionCreate(ctx, arvados.CreateOptions{})
 		c.Assert(err, check.IsNil)
 		coll, err = s.localdb.CollectionUpdate(ctx, arvados.UpdateOptions{
 			UUID:   coll.UUID,
@@ -133,6 +123,180 @@ func (s *CollectionSuite) TestCollectionUpdateWithProperties(c *check.C) {
 			c.Assert(err, check.NotNil)
 		}
 	}
+}
+
+func (s *CollectionSuite) TestCollectionReplaceFiles(c *check.C) {
+	ctx := auth.NewContext(context.Background(), &auth.Credentials{Tokens: []string{arvadostest.AdminToken}})
+	foo, err := s.localdb.railsProxy.CollectionCreate(ctx, arvados.CreateOptions{
+		Attrs: map[string]interface{}{
+			"owner_uuid":    arvadostest.ActiveUserUUID,
+			"manifest_text": ". acbd18db4cc2f85cedef654fccc4a4d8+3 0:3:foo.txt\n",
+		}})
+	c.Assert(err, check.IsNil)
+	s.localdb.signCollection(ctx, &foo)
+	foobarbaz, err := s.localdb.railsProxy.CollectionCreate(ctx, arvados.CreateOptions{
+		Attrs: map[string]interface{}{
+			"owner_uuid":    arvadostest.ActiveUserUUID,
+			"manifest_text": "./foo/bar 73feffa4b7f6bb68e44cf984c85f6e88+3 0:3:baz.txt\n",
+		}})
+	c.Assert(err, check.IsNil)
+	s.localdb.signCollection(ctx, &foobarbaz)
+	wazqux, err := s.localdb.railsProxy.CollectionCreate(ctx, arvados.CreateOptions{
+		Attrs: map[string]interface{}{
+			"owner_uuid":    arvadostest.ActiveUserUUID,
+			"manifest_text": "./waz d85b1213473c2fd7c2045020a6b9c62b+3 0:3:qux.txt\n",
+		}})
+	c.Assert(err, check.IsNil)
+	s.localdb.signCollection(ctx, &wazqux)
+
+	ctx = auth.NewContext(context.Background(), &auth.Credentials{Tokens: []string{arvadostest.ActiveTokenV2}})
+
+	// Create using content from existing collections
+	dst, err := s.localdb.CollectionCreate(ctx, arvados.CreateOptions{
+		ReplaceFiles: map[string]string{
+			"/f": foo.PortableDataHash + "/foo.txt",
+			"/b": foobarbaz.PortableDataHash + "/foo/bar",
+			"/q": wazqux.PortableDataHash + "/",
+			"/w": wazqux.PortableDataHash + "/waz",
+		},
+		Attrs: map[string]interface{}{
+			"owner_uuid": arvadostest.ActiveUserUUID,
+		}})
+	c.Assert(err, check.IsNil)
+	s.expectFiles(c, dst, "f", "b/baz.txt", "q/waz/qux.txt", "w/qux.txt")
+
+	// Delete a file and a directory
+	dst, err = s.localdb.CollectionUpdate(ctx, arvados.UpdateOptions{
+		UUID: dst.UUID,
+		ReplaceFiles: map[string]string{
+			"/f":     "",
+			"/q/waz": "",
+		}})
+	c.Assert(err, check.IsNil)
+	s.expectFiles(c, dst, "b/baz.txt", "q/", "w/qux.txt")
+
+	// Move and copy content within collection
+	dst, err = s.localdb.CollectionUpdate(ctx, arvados.UpdateOptions{
+		UUID: dst.UUID,
+		ReplaceFiles: map[string]string{
+			// Note splicing content to /b/corge.txt but
+			// removing everything else from /b
+			"/b":              "",
+			"/b/corge.txt":    dst.PortableDataHash + "/b/baz.txt",
+			"/quux/corge.txt": dst.PortableDataHash + "/b/baz.txt",
+		}})
+	c.Assert(err, check.IsNil)
+	s.expectFiles(c, dst, "b/corge.txt", "q/", "w/qux.txt", "quux/corge.txt")
+
+	// Remove everything except one file
+	dst, err = s.localdb.CollectionUpdate(ctx, arvados.UpdateOptions{
+		UUID: dst.UUID,
+		ReplaceFiles: map[string]string{
+			"/":            "",
+			"/b/corge.txt": dst.PortableDataHash + "/b/corge.txt",
+		}})
+	c.Assert(err, check.IsNil)
+	s.expectFiles(c, dst, "b/corge.txt")
+
+	// Copy entire collection to root
+	dstcopy, err := s.localdb.CollectionCreate(ctx, arvados.CreateOptions{
+		ReplaceFiles: map[string]string{
+			"/": dst.PortableDataHash,
+		}})
+	c.Check(err, check.IsNil)
+	c.Check(dstcopy.PortableDataHash, check.Equals, dst.PortableDataHash)
+	s.expectFiles(c, dstcopy, "b/corge.txt")
+
+	// Check invalid targets, sources, and combinations
+	for _, badrepl := range []map[string]string{
+		{
+			"/foo/nope": dst.PortableDataHash + "/b",
+			"/foo":      dst.PortableDataHash + "/b",
+		},
+		{
+			"/foo":      dst.PortableDataHash + "/b",
+			"/foo/nope": "",
+		},
+		{
+			"/":     dst.PortableDataHash + "/",
+			"/nope": "",
+		},
+		{
+			"/":     dst.PortableDataHash + "/",
+			"/nope": dst.PortableDataHash + "/b",
+		},
+		{"/bad/": ""},
+		{"/./bad": ""},
+		{"/b/./ad": ""},
+		{"/b/../ad": ""},
+		{"/b/.": ""},
+		{".": ""},
+		{"bad": ""},
+		{"": ""},
+		{"/bad": "/b"},
+		{"/bad": "bad/b"},
+		{"/bad": dst.UUID + "/b"},
+	} {
+		_, err = s.localdb.CollectionUpdate(ctx, arvados.UpdateOptions{
+			UUID:         dst.UUID,
+			ReplaceFiles: badrepl,
+		})
+		c.Logf("badrepl %#v\n... got err: %s", badrepl, err)
+		c.Check(err, check.NotNil)
+	}
+
+	// Check conflicting replace_files and manifest_text
+	_, err = s.localdb.CollectionUpdate(ctx, arvados.UpdateOptions{
+		UUID:         dst.UUID,
+		ReplaceFiles: map[string]string{"/": ""},
+		Attrs: map[string]interface{}{
+			"manifest_text": ". d41d8cd98f00b204e9800998ecf8427e+0 0:0:z\n",
+		}})
+	c.Logf("replace_files+manifest_text\n... got err: %s", err)
+	c.Check(err, check.ErrorMatches, "ambiguous request: both.*replace_files.*manifest_text.*")
+}
+
+// expectFiles checks coll's directory structure against the given
+// list of expected files and empty directories. An expected path with
+// a trailing slash indicates an empty directory.
+func (s *CollectionSuite) expectFiles(c *check.C, coll arvados.Collection, expected ...string) {
+	client := arvados.NewClientFromEnv()
+	ac, err := arvadosclient.New(client)
+	c.Assert(err, check.IsNil)
+	kc, err := keepclient.MakeKeepClient(ac)
+	c.Assert(err, check.IsNil)
+	cfs, err := coll.FileSystem(arvados.NewClientFromEnv(), kc)
+	c.Assert(err, check.IsNil)
+	var found []string
+	nonemptydirs := map[string]bool{}
+	fs.WalkDir(arvados.FS(cfs), "/", func(path string, d fs.DirEntry, err error) error {
+		dir, _ := filepath.Split(path)
+		nonemptydirs[dir] = true
+		if d.IsDir() {
+			if path != "/" {
+				path += "/"
+			}
+			if !nonemptydirs[path] {
+				nonemptydirs[path] = false
+			}
+		} else {
+			found = append(found, path)
+		}
+		return nil
+	})
+	for d, nonempty := range nonemptydirs {
+		if !nonempty {
+			found = append(found, d)
+		}
+	}
+	for i, path := range found {
+		if path != "/" {
+			found[i] = strings.TrimPrefix(path, "/")
+		}
+	}
+	sort.Strings(found)
+	sort.Strings(expected)
+	c.Check(found, check.DeepEquals, expected)
 }
 
 func (s *CollectionSuite) TestSignatures(c *check.C) {

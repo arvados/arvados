@@ -1565,7 +1565,7 @@ func (dn *dirnode) snapshot() (*dirnode, error) {
 func (dn *dirnode) Splice(repl inode) error {
 	repl, err := repl.Snapshot()
 	if err != nil {
-		return err
+		return fmt.Errorf("cannot copy snapshot: %w", err)
 	}
 	switch repl := repl.(type) {
 	default:
@@ -1599,7 +1599,7 @@ func (dn *dirnode) Splice(repl inode) error {
 		defer dn.Unlock()
 		_, err = dn.parent.Child(dn.fileinfo.name, func(inode) (inode, error) { return repl, nil })
 		if err != nil {
-			return err
+			return fmt.Errorf("error replacing filenode: dn.parent.Child(): %w", err)
 		}
 		repl.fs = dn.fs
 	}

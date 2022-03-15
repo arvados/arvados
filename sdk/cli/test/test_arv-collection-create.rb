@@ -14,14 +14,48 @@ class TestCollectionCreate < Minitest::Test
 
   def test_small_collection
     uuid = Digest::MD5.hexdigest(foo_manifest) + '+' + foo_manifest.size.to_s
+    ok = nil
     out, err = capture_subprocess_io do
-      assert_arv('--format', 'uuid', 'collection', 'create', '--collection', {
-                   uuid: uuid,
-                   manifest_text: foo_manifest
-                 }.to_json)
+      ok = arv('--format', 'uuid', 'collection', 'create', '--collection', {
+                     uuid: uuid,
+                     manifest_text: foo_manifest
+                   }.to_json)
     end
-    assert(/^([0-9a-z]{5}-4zz18-[0-9a-z]{15})?$/.match(out))
-    assert_equal '', err
+    assert_equal('', err)
+    assert_equal(true, ok)
+    assert_match(/^([0-9a-z]{5}-4zz18-[0-9a-z]{15})?$/, out)
+  end
+
+  def test_collection_replace_files
+    ok = nil
+    uuid, err = capture_subprocess_io do
+      ok = arv('--format', 'uuid', 'collection', 'create', '--collection', '{}')
+    end
+    assert_equal('', err)
+    assert_equal(true, ok)
+    assert_match(/^([0-9a-z]{5}-4zz18-[0-9a-z]{15})?$/, uuid)
+    uuid = uuid.strip
+
+    out, err = capture_subprocess_io do
+      ok = arv('--format', 'uuid',
+                   'collection', 'update',
+                   '--uuid', uuid,
+                   '--collection', '{}',
+                   '--replace-files', {
+                     "/gpl.pdf": "b519d9cb706a29fc7ea24dbea2f05851+93/GNU_General_Public_License,_version_3.pdf",
+                   }.to_json)
+    end
+    assert_equal('', err)
+    assert_equal(true, ok)
+    assert_equal(uuid, out.strip)
+
+    ok = nil
+    out, err = capture_subprocess_io do
+      ok = arv('--format', 'json', 'collection', 'get', '--uuid', uuid)
+    end
+    assert_equal('', err)
+    assert_equal(true, ok)
+    assert_match(/\. 6a4ff0499484c6c79c95cd8c566bd25f\+249025.* 0:249025:gpl.pdf\\n/, out)
   end
 
   def test_read_resource_object_from_file
@@ -29,29 +63,22 @@ class TestCollectionCreate < Minitest::Test
     begin
       tempfile.write({manifest_text: foo_manifest}.to_json)
       tempfile.close
+      ok = nil
       out, err = capture_subprocess_io do
-        assert_arv('--format', 'uuid',
-                   'collection', 'create', '--collection', tempfile.path)
+        ok = arv('--format', 'uuid',
+                     'collection', 'create', '--collection', tempfile.path)
       end
-      assert(/^([0-9a-z]{5}-4zz18-[0-9a-z]{15})?$/.match(out))
-      assert_equal '', err
+      assert_equal('', err)
+      assert_equal(true, ok)
+      assert_match(/^([0-9a-z]{5}-4zz18-[0-9a-z]{15})?$/, out)
     ensure
       tempfile.unlink
     end
   end
 
   protected
-  def assert_arv(*args)
-    expect = case args.first
-             when true, false
-               args.shift
-             else
-               true
-             end
-    assert_equal(expect,
-                 system(['./bin/arv', 'arv'], *args),
-                 "`arv #{args.join ' '}` " +
-                 "should exit #{if expect then 0 else 'non-zero' end}")
+  def arv(*args)
+    system(['./bin/arv', 'arv'], *args)
   end
 
   def foo_manifest

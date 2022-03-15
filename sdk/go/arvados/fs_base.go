@@ -8,6 +8,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"io/fs"
 	"log"
 	"net/http"
 	"os"
@@ -157,6 +158,18 @@ type FileSystem interface {
 
 	// Estimate current memory usage.
 	MemorySize() int64
+}
+
+type fsFS struct {
+	FileSystem
+}
+
+// FS returns an fs.FS interface to the given FileSystem, to enable
+// the use of fs.WalkDir, etc.
+func FS(fs FileSystem) fs.FS { return fsFS{fs} }
+func (fs fsFS) Open(path string) (fs.File, error) {
+	f, err := fs.FileSystem.Open(path)
+	return f, err
 }
 
 type inode interface {
@@ -450,14 +463,14 @@ func (fs *fileSystem) openFile(name string, flag int, perm os.FileMode) (*fileha
 	default:
 		return nil, fmt.Errorf("invalid flags 0x%x", flag)
 	}
-	if !writable && parent.IsDir() {
+	if parent.IsDir() {
 		// A directory can be opened via "foo/", "foo/.", or
 		// "foo/..".
 		switch name {
 		case ".", "":
-			return &filehandle{inode: parent}, nil
+			return &filehandle{inode: parent, readable: readable, writable: writable}, nil
 		case "..":
-			return &filehandle{inode: parent.Parent()}, nil
+			return &filehandle{inode: parent.Parent(), readable: readable, writable: writable}, nil
 		}
 	}
 	createMode := flag&os.O_CREATE != 0
@@ -753,7 +766,7 @@ func Splice(fs FileSystem, target string, newsubtree *Subtree) error {
 		f, err = fs.OpenFile(target, os.O_CREATE|os.O_WRONLY, 0700)
 	}
 	if err != nil {
-		return err
+		return fmt.Errorf("open %s: %w", target, err)
 	}
 	defer f.Close()
 	return f.Splice(newsubtree)
