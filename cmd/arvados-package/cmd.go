@@ -77,13 +77,13 @@ func parseFlags(prog string, args []string, stderr io.Writer) (_ opts, ok bool, 
 	}
 	flags := flag.NewFlagSet("", flag.ContinueOnError)
 	flags.StringVar(&opts.PackageVersion, "package-version", opts.PackageVersion, "package version to build/test, like \"1.2.3\"")
-	flags.StringVar(&opts.SourceDir, "source", opts.SourceDir, "arvados source tree location")
-	flags.StringVar(&opts.PackageDir, "package-dir", opts.PackageDir, "destination directory for new package (default is cwd)")
-	flags.StringVar(&opts.PackageChown, "package-chown", opts.PackageChown, "desired uid:gid for new package (default is current user:group)")
+	flags.StringVar(&opts.SourceDir, "source", opts.SourceDir, "arvados source tree `directory`")
+	flags.StringVar(&opts.PackageDir, "package-dir", opts.PackageDir, "destination `directory` for new package (default is cwd)")
+	flags.StringVar(&opts.PackageChown, "package-chown", opts.PackageChown, "desired `uid:gid` for new package (default is current user:group)")
 	flags.StringVar(&opts.TargetOS, "target-os", opts.TargetOS, "target operating system vendor:version")
 	flags.StringVar(&opts.Maintainer, "package-maintainer", opts.Maintainer, "maintainer to be listed in package metadata")
 	flags.StringVar(&opts.Vendor, "package-vendor", opts.Vendor, "vendor to be listed in package metadata")
-	flags.StringVar(&opts.Live, "live", opts.Live, "run controller at https://`example.com`, use host's /var/lib/acme/live certificates, wait for ^C before shutting down")
+	flags.StringVar(&opts.Live, "live", opts.Live, "(for testinstall) advertise external URLs like https://`example.com`:44xx, use the host's /var/lib/acme/live certificates, listen on the host's external interfaces, and wait for ^C before shutting down")
 	flags.BoolVar(&opts.RebuildImage, "rebuild-image", opts.RebuildImage, "rebuild docker image(s) instead of using existing")
 	flags.Usage = func() {
 		fmt.Fprint(flags.Output(), `Usage: arvados-package <subcommand> [options]
@@ -94,7 +94,11 @@ Subcommands:
 		out version of the arvados source tree
 	testinstall
 		use a docker container to install a package and confirm
-		the resulting installation is functional
+		the resulting installation is functional; optionally,
+		expose the test cluster's services using the host's
+		interfaces and ACME certificates, and leave it up to
+		facilitate interactive testing (see -live option
+		below)
 	version
 		show program version
 
