@@ -320,7 +320,7 @@ update links set tail_uuid='#{g5}' where uuid='#{l1.uuid}'
       parent = Group.create!(group_class: 'project', name: 'freeze-test-parent', owner_uuid: users(:active).uuid)
       proj = Group.create!(group_class: 'project', name: 'freeze-test', owner_uuid: parent.uuid)
       proj_inner = Group.create!(group_class: 'project', name: 'freeze-test-inner', owner_uuid: proj.uuid)
-      coll = Collection.create!(name: 'foo', manifest_text: '', owner_uuid: proj_inner.uuid)
+      coll = Collection.create!(name: 'freeze-test-collection', manifest_text: '', owner_uuid: proj_inner.uuid)
 
       # Cannot set frozen_by_uuid to a different user
       assert_raises do
@@ -423,7 +423,7 @@ update links set tail_uuid='#{g5}' where uuid='#{l1.uuid}'
       # Once project is frozen, cannot change name/contents, move,
       # trash, or delete the project or anything beneath it
       [proj, proj_inner, coll].each do |frozen|
-        assert_raises(StandardError, "should reject rename of #{frozen.uuid} with parent #{frozen.owner_uuid}") do
+        assert_raises(StandardError, "should reject rename of #{frozen.uuid} (#{frozen.name}) with parent #{frozen.owner_uuid}") do
           frozen.update_attributes!(name: 'foo2')
         end
         frozen.reload
@@ -486,6 +486,7 @@ update links set tail_uuid='#{g5}' where uuid='#{l1.uuid}'
         parent.update_attributes!(delete_at: db_current_time)
       end
       parent.reload
+      assert_nil parent.frozen_by_uuid
 
       act_as_user users(:admin) do
         # Even admin cannot change frozen_by_uuid to someone else's UUID.
