@@ -24,13 +24,13 @@ import (
 func build(ctx context.Context, opts opts, stdin io.Reader, stdout, stderr io.Writer) error {
 	if opts.PackageVersion == "" {
 		var buf bytes.Buffer
-		cmd := exec.CommandContext(ctx, "git", "describe", "--tag", "--dirty")
+		cmd := exec.CommandContext(ctx, "bash", "./build/version-at-commit.sh", "HEAD")
 		cmd.Stdout = &buf
 		cmd.Stderr = stderr
 		cmd.Dir = opts.SourceDir
 		err := cmd.Run()
 		if err != nil {
-			return fmt.Errorf("git describe: %w", err)
+			return fmt.Errorf("%v: %w", cmd.Args, err)
 		}
 		opts.PackageVersion = strings.TrimSpace(buf.String())
 		ctxlog.FromContext(ctx).Infof("version not specified; using %s", opts.PackageVersion)
