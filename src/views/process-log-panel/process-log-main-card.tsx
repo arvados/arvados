@@ -3,18 +3,28 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import React from 'react';
-import { Link } from 'react-router-dom';
 import {
-    StyleRulesCallback, WithStyles, withStyles, Card,
-    CardHeader, IconButton, CardContent, Grid, Typography, Tooltip
+    StyleRulesCallback,
+    WithStyles,
+    withStyles,
+    Card,
+    CardHeader,
+    IconButton,
+    CardContent,
+    Grid,
+    Typography,
+    Tooltip
 } from '@material-ui/core';
 import { Process } from 'store/processes/process';
 import { ProcessLogCodeSnippet } from 'views/process-log-panel/process-log-code-snippet';
-import { ProcessLogForm, ProcessLogFormDataProps, ProcessLogFormActionProps } from 'views/process-log-panel/process-log-form';
-import { MoreOptionsIcon, ProcessIcon } from 'components/icon/icon';
+import {
+    ProcessLogForm,
+    ProcessLogFormDataProps,
+    ProcessLogFormActionProps
+} from 'views/process-log-panel/process-log-form';
+import { MoreOptionsIcon, LogIcon } from 'components/icon/icon';
 import { ArvadosTheme } from 'common/custom-theme';
 import { CodeSnippetDataProps } from 'components/code-snippet/code-snippet';
-import { BackIcon } from 'components/icon/icon';
 import { DefaultView } from 'components/default-view/default-view';
 
 type CssRules = 'backLink' | 'backIcon' | 'card' | 'title' | 'iconHeader' | 'link';
@@ -52,7 +62,6 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     }
 });
 
-
 interface ProcessLogMainCardDataProps {
     process: Process;
 }
@@ -71,12 +80,9 @@ export type ProcessLogMainCardProps = ProcessLogMainCardDataProps
 export const ProcessLogMainCard = withStyles(styles)(
     ({ classes, process, selectedFilter, filters, onChange, lines, onContextMenu, navigateToLogCollection }: ProcessLogMainCardProps & WithStyles<CssRules>) =>
         <Grid item xs={12}>
-            <Link to={`/processes/${process.containerRequest.uuid}`} className={classes.backLink}>
-                <BackIcon className={classes.backIcon} /> BACK
-            </Link>
             <Card className={classes.card}>
                 <CardHeader
-                    avatar={<ProcessIcon className={classes.iconHeader} />}
+                    avatar={<LogIcon className={classes.iconHeader} />}
                     action={
                         <Tooltip title="More options" disableFocusListener>
                             <IconButton onClick={event => onContextMenu(event, process)} aria-label="More options">
@@ -84,12 +90,10 @@ export const ProcessLogMainCard = withStyles(styles)(
                             </IconButton>
                         </Tooltip>}
                     title={
-                        <Tooltip title={process.containerRequest.name} placement="bottom-start">
-                            <Typography noWrap variant='h6' className={classes.title}>
-                                {process.containerRequest.name}
-                            </Typography>
-                        </Tooltip>}
-                    subheader={process.containerRequest.description} />
+                        <Typography noWrap variant='h6' className={classes.title}>
+                            Logs for {process.containerRequest.name}
+                        </Typography>}
+                />
                 <CardContent>
                     {lines.length > 0
                         ? < Grid
@@ -111,7 +115,7 @@ export const ProcessLogMainCard = withStyles(styles)(
                             </Grid>
                         </Grid>
                         : <DefaultView
-                            icon={ProcessIcon}
+                            icon={LogIcon}
                             messages={['No logs yet']} />
                     }
                 </CardContent>

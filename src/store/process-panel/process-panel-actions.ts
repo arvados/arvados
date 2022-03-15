@@ -13,6 +13,7 @@ import { snackbarActions } from 'store/snackbar/snackbar-actions';
 import { SnackbarKind } from '../snackbar/snackbar-actions';
 import { showWorkflowDetails } from 'store/workflow-panel/workflow-panel-actions';
 import { loadSubprocessPanel } from "../subprocess-panel/subprocess-panel-actions";
+import { initProcessLogsPanel } from "store/process-logs-panel/process-logs-panel-actions";
 
 export const processPanelActions = unionize({
     SET_PROCESS_PANEL_CONTAINER_REQUEST_UUID: ofType<string>(),
@@ -29,6 +30,7 @@ export const loadProcessPanel = (uuid: string) =>
         dispatch<ProcessPanelAction>(processPanelActions.SET_PROCESS_PANEL_CONTAINER_REQUEST_UUID(uuid));
         dispatch<any>(loadProcess(uuid));
         dispatch(initProcessPanelFilters);
+        dispatch<any>(initProcessLogsPanel(uuid));
         dispatch<any>(loadSubprocessPanel());
     };
 
