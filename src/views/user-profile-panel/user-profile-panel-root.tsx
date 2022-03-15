@@ -84,6 +84,7 @@ export interface UserProfilePanelRootDataProps {
 }
 
 const RoleTypes = [
+    { key: '', value: '' },
     { key: 'Bio-informatician', value: 'Bio-informatician' },
     { key: 'Data Scientist', value: 'Data Scientist' },
     { key: 'Analyst', value: 'Analyst' },
@@ -150,11 +151,11 @@ export const userProfileGroupsColumns: DataColumns<string> = [
 
 const ReadOnlyField = withStyles(styles)(
     (props: ({ label: string, input: {value: string} }) & WithStyles<CssRules> ) => (
-        <Grid item xs={12}>
+        <Grid item xs={12} data-cy="field">
             <Typography className={props.classes.label}>
                 {props.label}
             </Typography>
-            <Typography className={props.classes.readOnlyValue}>
+            <Typography className={props.classes.readOnlyValue} data-cy="value">
                 {props.input.value}
             </Typography>
         </Grid>
@@ -180,9 +181,9 @@ export const UserProfilePanelRoot = withStyles(styles)(
                 </Tabs>
                 {this.state.value === TABS.PROFILE &&
                     <CardContent>
-                        <form onSubmit={this.props.handleSubmit}>
+                        <form onSubmit={this.props.handleSubmit} data-cy="profile-form">
                             <Grid container spacing={24}>
-                                <Grid item className={this.props.classes.gridItem} sm={6} xs={12}>
+                                <Grid item className={this.props.classes.gridItem} sm={6} xs={12} data-cy="firstName">
                                     <Field
                                         label="First name"
                                         name="firstName"
@@ -190,7 +191,7 @@ export const UserProfilePanelRoot = withStyles(styles)(
                                         disabled
                                     />
                                 </Grid>
-                                <Grid item className={this.props.classes.gridItem} sm={6} xs={12}>
+                                <Grid item className={this.props.classes.gridItem} sm={6} xs={12} data-cy="lastName">
                                     <Field
                                         label="Last name"
                                         name="lastName"
@@ -198,7 +199,7 @@ export const UserProfilePanelRoot = withStyles(styles)(
                                         disabled
                                     />
                                 </Grid>
-                                <Grid item className={this.props.classes.gridItem} sm={6} xs={12}>
+                                <Grid item className={this.props.classes.gridItem} sm={6} xs={12} data-cy="email">
                                     <Field
                                         label="E-mail"
                                         name="email"
@@ -206,7 +207,7 @@ export const UserProfilePanelRoot = withStyles(styles)(
                                         disabled
                                     />
                                 </Grid>
-                                <Grid item className={this.props.classes.gridItem} sm={6} xs={12}>
+                                <Grid item className={this.props.classes.gridItem} sm={6} xs={12} data-cy="username">
                                     <Field
                                         label="Username"
                                         name="username"
@@ -219,7 +220,6 @@ export const UserProfilePanelRoot = withStyles(styles)(
                                         label="Organization"
                                         name="prefs.profile.organization"
                                         component={TextField as any}
-                                        validate={MY_ACCOUNT_VALIDATION}
                                         disabled={!this.props.isAdmin && !this.props.isSelf}
                                     />
                                 </Grid>
@@ -228,7 +228,6 @@ export const UserProfilePanelRoot = withStyles(styles)(
                                         label="E-mail at Organization"
                                         name="prefs.profile.organization_email"
                                         component={TextField as any}
-                                        validate={MY_ACCOUNT_VALIDATION}
                                         disabled={!this.props.isAdmin && !this.props.isSelf}
                                     />
                                 </Grid>
@@ -270,8 +269,10 @@ export const UserProfilePanelRoot = withStyles(styles)(
                     <div className={this.props.classes.content}>
                         <DataExplorer
                                 id={USER_PROFILE_PANEL_ID}
+                                data-cy="user-profile-groups-data-explorer"
                                 onRowClick={noop}
                                 onRowDoubleClick={noop}
+                                onContextMenu={noop}
                                 contextMenuColumn={false}
                                 hideColumnSelector
                                 hideSearchInput
