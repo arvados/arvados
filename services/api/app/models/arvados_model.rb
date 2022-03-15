@@ -249,9 +249,9 @@ class ArvadosModel < ApplicationRecord
     # Return [] if this is a frozen project and the current user can't
     # unfreeze
     return [] if respond_to?(:frozen_by_uuid) && frozen_by_uuid &&
-                 !(Rails.configuration.API.UnfreezeProjectRequiresAdmin ?
-                     current_user.andand.is_admin :
-                     current_user.can?(manage: uuid))
+                 (Rails.configuration.API.UnfreezeProjectRequiresAdmin ?
+                    !current_user.andand.is_admin :
+                    !current_user.can?(manage: uuid))
     # Return [] if nobody can write because this object is inside a
     # frozen project
     return [] if FrozenGroup.where(uuid: owner_uuid).any?
