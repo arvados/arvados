@@ -145,7 +145,10 @@ if [ "x$RESOLVER" != "x" ]; then
   $SUDO sed -i "s/#prepend domain-name-servers 127.0.0.1;/prepend domain-name-servers ${RESOLVER};/" /etc/dhcp/dhclient.conf
 fi
 
-if [ "$AWS_EBS_AUTOSCALE" != "1" ]; then
+# AWS_EBS_AUTOSCALE is not always set, work around unset variable check
+EBS_AUTOSCALE=${AWS_EBS_AUTOSCALE:-}
+
+if [ "$EBS_AUTOSCALE" != "1" ]; then
   # Set up the cloud-init script that will ensure encrypted disks
   $SUDO mv /tmp/usr-local-bin-ensure-encrypted-partitions.sh /usr/local/bin/ensure-encrypted-partitions.sh
 else
