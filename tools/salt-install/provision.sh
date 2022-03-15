@@ -286,7 +286,7 @@ else
   case ${OS_ID} in
     "centos")
       echo "WARNING! Disabling SELinux, see https://dev.arvados.org/issues/18019"
-      sed -i 's/SELINUX=enforcing/SELINUX=permissive' /etc/sysconfig/selinux
+      sed -i 's/SELINUX=enforcing/SELINUX=permissive/g' /etc/sysconfig/selinux
       setenforce permissive
       yum install -y  curl git jq
       ;;
