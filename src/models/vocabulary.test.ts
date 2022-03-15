@@ -52,6 +52,14 @@ describe('Vocabulary', () => {
                             labels: []
                         }
                     }
+                },
+                automation: {
+                    strict: true,
+                    labels: [],
+                    values: {
+                        upload: { labels: [] },
+                        results: { labels: [] },
+                    }
                 }
             }
         }
@@ -66,6 +74,7 @@ describe('Vocabulary', () => {
             {id: "IDKEYANIMALS", label: "Creature"},
             {id: "IDKEYCOMMENT", label: "IDKEYCOMMENT"},
             {id: "IDKEYSIZES", label: "Sizes"},
+            {id: "automation", label: "automation"},
         ]);
     });
 
@@ -76,6 +85,7 @@ describe('Vocabulary', () => {
             {id: "IDKEYANIMALS", label: "Animal", synonyms: []},
             {id: "IDKEYCOMMENT", label: "IDKEYCOMMENT", synonyms: []},
             {id: "IDKEYSIZES", label: "Sizes", synonyms: []},
+            {id: "automation", label: "automation", synonyms: []},
         ]);
     });
 
@@ -86,6 +96,7 @@ describe('Vocabulary', () => {
             {id: "IDKEYANIMALS", label: "Animal", synonyms: ["Creature"]},
             {id: "IDKEYCOMMENT", label: "IDKEYCOMMENT", synonyms: []},
             {id: "IDKEYSIZES", label: "Sizes", synonyms: []},
+            {id: "automation", label: "automation", synonyms: []},
         ]);
     });
 
@@ -101,7 +112,13 @@ describe('Vocabulary', () => {
             {id: "IDVALSIZES2", label: "Medium"},
             {id: "IDVALSIZES1", label: "S"},
             {id: "IDVALSIZES1", label: "Small"},
-        ])
+        ]);
+        // Let's try a key that doesn't have any labels
+        const tagValues2 = Vocabulary.getTagValues('automation', vocabulary);
+        expect(tagValues2).toEqual([
+            {id: "results", label: "results"},
+            {id: "upload", label: "upload"},
+        ]);
     });
 
     it('returns the preferred tag values for a given key', () => {
@@ -112,7 +129,13 @@ describe('Vocabulary', () => {
             {id: "IDVALSIZES3", label: "Large", synonyms: []},
             {id: "IDVALSIZES2", label: "Medium", synonyms: []},
             {id: "IDVALSIZES1", label: "Small", synonyms: []},
-        ])
+        ]);
+        // Let's try a key that doesn't have any labels
+        const preferredTagValues2 = Vocabulary.getPreferredTagValues('automation', vocabulary);
+        expect(preferredTagValues2).toEqual([
+            {id: "results", label: "results", synonyms: []},
+            {id: "upload", label: "upload", synonyms: []},
+        ]);
     });
 
     it('returns the preferred tag values with matching synonyms for a given key', () => {
@@ -138,6 +161,8 @@ describe('Vocabulary', () => {
             {keyLabel: 'Creature', expected: 'IDKEYANIMALS'},
             // Non-existent label returns empty string
             {keyLabel: 'ThisKeyLabelDoesntExist', expected: ''},
+            // Key with no labels still returns the key ID
+            {keyLabel: 'automation', expected: 'automation'},
         ]
         testCases.forEach(tc => {
             const tagValueID = Vocabulary.getTagKeyID(tc.keyLabel, vocabulary);
@@ -169,6 +194,8 @@ describe('Vocabulary', () => {
             {keyID: 'IDKEYANIMALS', valueLabel: 'Dinosaur', expected: ''},
             // Key ID unknown
             {keyID: 'IDNONSENSE', valueLabel: 'Does not matter', expected: ''},
+            // Value with no labels still returns the value ID
+            {keyID: 'automation', valueLabel: 'results', expected: 'results'},
         ]
         testCases.forEach(tc => {
             const tagValueID = Vocabulary.getTagValueID(tc.keyID, tc.valueLabel, vocabulary);
