@@ -3,6 +3,7 @@
 # SPDX-License-Identifier: AGPL-3.0
 
 ARG HOSTTYPE
+ARG BRANCH
 
 ## dont use debian:11 here since the word 'bullseye' is used for rvm precompiled binaries
 FROM debian:bullseye as build_x86_64
@@ -56,7 +57,12 @@ RUN /usr/local/rvm/bin/rvm-exec default bundle config --global jobs $(let a=$(gr
 # Cf. https://build.betterup.com/one-weird-trick-that-will-speed-up-your-bundle-install/
 ENV MAKE "make --jobs $(grep -c processor /proc/cpuinfo)"
 
+# Preseed the go module cache and the ruby gems, using the currently checked
+# out branch of the source tree. This avoids potential compatibility issues
+# between the version of Ruby and certain gems.
 RUN git clone --depth 1 git://git.arvados.org/arvados.git /tmp/arvados && \
+    cd /tmp/arvados && \
+    if [[ -n "${BRANCH}" ]]; then git checkout ${BRANCH}; fi && \
     cd /tmp/arvados/services/api && \
     /usr/local/rvm/bin/rvm-exec default bundle install && \
     cd /tmp/arvados/apps/workbench && \
