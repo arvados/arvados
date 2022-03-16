@@ -55,6 +55,36 @@ Referenced blocks are protected from garbage collection in Keep.
 
 Data can be shared with other users via the Arvados permission model.
 
+h3. Searching Collections for names of file or directories
+
+You can search collections for specific file or directory names (whole or part) using the following filter in a "list":../methods.html#index query.
+
+<pre>
+filters: [["file_names", "ilike", "%sample1234.fastq%"]]
+</pre>
+
+Note: @file_names@ is a hidden field used for indexing.  It is not returned by any API call.  On the client, to get the list of files, you will need to parse the @manifest_text@.
+
+As of this writing (Arvados 2.4), you can also search for directory paths, but _not_ complete file paths.
+
+In other words, this will work (when @dir3@ is a directory):
+
+<pre>
+filters: [["file_names", "ilike", "%dir1/dir2/dir3%"]]
+</pre>
+
+However, this will _not_ return the desired results (where @sample1234.fastq@ is a file):
+
+<pre>
+filters: [["file_names", "ilike", "%dir1/dir2/dir3/sample1234.fastq%"]]
+</pre>
+
+As a workaround, you can search for both the directory path and file name separately, and then filter on the client side.
+
+<pre>
+filters: [["file_names", "ilike", "%dir1/dir2/dir3%"], ["file_names", "ilike", "%sample1234.fastq%"]]
+</pre>
+
 h2. Methods
 
 See "Common resource methods":{{site.baseurl}}/api/methods.html for more information about @create@, @delete@, @get@, @list@, and @update@.
