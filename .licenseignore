@@ -15,3 +15,6 @@ public/*
 src/lib/cwl-svg/*
 tools/arvados_config.yml
 cypress/fixtures/files/5mb.bin
+.yarn/releases/*
+package.json
+yarn.lock

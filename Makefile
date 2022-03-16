@@ -12,6 +12,9 @@ APP_NAME?=arvados-workbench2
 # something in the lines of 1.2.0.20180612145021, this will be the package version
 # it can be overwritten when invoking make as in make packages VERSION=1.2.0
 VERSION?=$(shell ./version-at-commit.sh HEAD)
+# We don't use BUILD_NUMBER at the moment, but it needs to be defined
+BUILD_NUMBER?=0
+GIT_COMMIT?=$(shell git rev-parse --short HEAD)
 
 # ITERATION is the package iteration, intended for manual change if anything non-code related
 # changes in the package. (i.e. example config files externally added
@@ -83,7 +86,7 @@ integration-tests-in-docker: workbench2-build-image
 test: unit-tests integration-tests
 
 build: yarn-install
-	VERSION=$(VERSION) yarn build
+	VERSION=$(VERSION) BUILD_NUMBER=$(BUILD_NUMBER) GIT_COMMIT=$(GIT_COMMIT) yarn build
 
 $(DEB_FILE): build
 	fpm \
@@ -132,7 +135,11 @@ copy: $(DEB_FILE) $(RPM_FILE)
 # use FPM to create DEB and RPM
 packages: copy
 
-packages-in-docker: workbench2-build-image
+check-arvados-directory:
+	@if test "${ARVADOS_DIRECTORY}" == "unset"; then echo "the environment variable ARVADOS_DIRECTORY must be set to the path of an arvados git checkout"; exit 1; fi
+	@if ! test -d "${ARVADOS_DIRECTORY}"; then echo "the environment variable ARVADOS_DIRECTORY does not point at a directory"; exit 1; fi
+
+packages-in-docker: check-arvados-directory workbench2-build-image
 	docker run --env ci="true" \
 		--env ARVADOS_DIRECTORY=/tmp/arvados \
 		--env APP_NAME=${APP_NAME} \
