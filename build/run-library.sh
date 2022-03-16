@@ -492,7 +492,8 @@ handle_rails_package() {
         cd "$srcdir"
         mkdir -p tmp
         git rev-parse HEAD >git-commit.version
-        bundle package --all
+        bundle config set cache_all true
+        bundle package
     )
     if [[ 0 != "$?" ]] || ! cd "$WORKSPACE/packages/$TARGET"; then
         echo "ERROR: $pkgname package prep failed" >&2
@@ -603,7 +604,8 @@ handle_workbench () {
 
         # We need to bundle to be ready even when we build a package without vendor directory
         # because asset compilation requires it.
-        bundle install --system >"$STDOUT_IF_DEBUG"
+        bundle config set --local system 'true' >"$STDOUT_IF_DEBUG"
+        bundle install >"$STDOUT_IF_DEBUG"
 
         # clear the tmp directory; the asset generation step will recreate tmp/cache/assets,
         # and we want that in the package, so it's easier to not exclude the tmp directory
