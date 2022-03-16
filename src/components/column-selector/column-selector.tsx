@@ -14,6 +14,7 @@ import { ArvadosTheme } from "common/custom-theme";
 interface ColumnSelectorDataProps {
     columns: DataColumns<any>;
     onColumnToggle: (column: DataColumn<any>) => void;
+    className?: string;
 }
 
 type CssRules = "checkbox";

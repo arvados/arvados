@@ -82,7 +82,7 @@ describe('Search tests', function() {
         });
     });
 
-    it('can search for old collection versions', function() {
+    it.only('can display path of the selected item', function() {
         const colName = `Collection ${Math.floor(Math.random() * Math.floor(999999))}`;
 
         // Creates the collection using the admin token so we can set up
@@ -101,7 +101,7 @@ describe('Search tests', function() {
 
             cy.get('[data-cy=search-results]').contains(colName).closest('tr').click();
 
-            cy.get('[data-cy=snackbar]').should('contain', `/ Projects / ${colName}`);
+            cy.get('[data-cy=element-path]').should('contain', `/ Projects / ${colName}`);
         });
     });
 });

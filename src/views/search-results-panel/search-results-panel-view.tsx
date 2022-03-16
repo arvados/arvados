@@ -28,6 +28,7 @@ import { Link } from 'react-router-dom';
 import { StyleRulesCallback, withStyles, WithStyles } from '@material-ui/core';
 import { ArvadosTheme } from 'common/custom-theme';
 import { getSearchSessions } from 'store/search-bar/search-bar-actions';
+import { camelCase } from 'lodash';
 
 export enum SearchResultsPanelColumnNames {
     CLUSTER = "Cluster",
@@ -39,9 +40,12 @@ export enum SearchResultsPanelColumnNames {
     LAST_MODIFIED = "Last modified"
 }
 
-export type CssRules = 'siteManagerLink';
+export type CssRules = 'siteManagerLink' | 'searchResults';
 
 const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
+    searchResults: {
+        width: '100%'
+    },
     siteManagerLink: {
         marginRight: theme.spacing.unit * 2,
         float: 'right'
@@ -111,9 +115,10 @@ export const SearchResultsPanelView = withStyles(styles, { withTheme: true })(
         const homeCluster = props.user.uuid.substring(0, 5);
         const loggedIn = props.sessions.filter((ss) => ss.loggedIn && ss.userIsActive);
         const [selectedItem, setSelectedItem] = useState('');
+        const [itemPath, setItemPath] = useState<string[]>([]);
 
         useEffect(() => {
-            let itemPath: string[] = [];
+            let tmpPath: string[] = [];
 
             (async () => {
                 if (selectedItem !== '') {
@@ -122,16 +127,16 @@ export const SearchResultsPanelView = withStyles(styles, { withTheme: true })(
 
                     while (itemKind !== ResourceKind.USER) {
                         const clusterId = searchUuid.split('-')[0];
-                        const serviceType = itemKind?.replace('arvados#', '');
+                        const serviceType = camelCase(itemKind?.replace('arvados#', ''));
                         const service = Object.values(servicesProvider.getServices())
                             .filter(({resourceType}) => !!resourceType)
-                            .find(({resourceType}) => resourceType.indexOf(serviceType) > -1);
+                            .find(({resourceType}) => camelCase(resourceType).indexOf(serviceType) > -1);
                         const sessions = getSearchSessions(clusterId, props.sessions);
 
                         if (sessions.length > 0) {
                             const session = sessions[0];
                             const { name, ownerUuid } = await (service as any).get(searchUuid, false, session);
-                            itemPath.push(name);
+                            tmpPath.push(name);
                             searchUuid = ownerUuid;
                             itemKind = extractUuidKind(searchUuid);
                         } else {
@@ -139,8 +144,8 @@ export const SearchResultsPanelView = withStyles(styles, { withTheme: true })(
                         }
                     }
 
-                    itemPath.push(props.user.uuid === searchUuid ? 'Projects' : 'Shared with me');
-                    props.onPathDisplay(`/ ${itemPath.reverse().join(' / ')}`);
+                    tmpPath.push(props.user.uuid === searchUuid ? 'Projects' : 'Shared with me');
+                    setItemPath(tmpPath);
                 }
             })();
 
@@ -153,13 +158,14 @@ export const SearchResultsPanelView = withStyles(styles, { withTheme: true })(
         // eslint-disable-next-line react-hooks/exhaustive-deps
         },[props.onItemClick]);
 
-        return <span data-cy='search-results'>
+        return <span data-cy='search-results' className={props.classes.searchResults}>
             <DataExplorer
             id={SEARCH_RESULTS_PANEL_ID}
             onRowClick={onItemClick}
             onRowDoubleClick={props.onItemDoubleClick}
             onContextMenu={props.onContextMenu}
             contextMenuColumn={false}
+            elementPath={`/ ${itemPath.reverse().join(' / ')}`}
             hideSearchInput
             title={
                 <div>
