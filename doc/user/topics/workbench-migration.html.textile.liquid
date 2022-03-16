@@ -1,0 +1,49 @@
+---
+layout: default
+navsection: userguide
+title: "Workbench 2 migration"
+...
+{% comment %}
+Copyright (C) The Arvados Authors. All rights reserved.
+
+SPDX-License-Identifier: CC-BY-SA-3.0
+{% endcomment %}
+
+Arvados is in the process of migrating from the classic web application, referred to as "Workbench 1", to a completely new web application, referred to as "Workbench 2".
+
+!{width: 90%}{{ site.baseurl }}/images/wb2-example.png!
+
+Workbench 2 is the new Workbench web application first introduced in Arvados 2.0.  Workbench 2 is built using modern web technologies and based on user feedback.  Workbench 2 has a modern look and feel and offers several advanced features and performance enhancements.  Arvados clusters which have both Workbench applications installed will have a dropdown menu option  “Go to Workbench 2” to switch between versions.
+
+!{{ site.baseurl }}/images/switch-to-wb2.png!
+
+Workbench 2 is stable and recommended for general use, but still lacks some features available in the classic Workbench 1 application.  When necessary, you can easily switch back:
+
+!{{ site.baseurl }}/images/switch-to-wb1.png!
+
+Some major improvements of Workbench 2 include:
+
+h2. General
+
+* More responsive, only loads data needed for display
+* More familiar user interface, modeled on the file explorer of MacOS and Windows.
+* Advanced search capabilities
+
+h2. Project browsing
+
+* Expanded informational columns
+* Expanded filtering options
+* Right side informational panel providing details about selected item without navigating away from the project
+* Support for adding and querying user-supplied metadata properties on Projects
+
+h2. Collection browsing
+
+* Able to browse collections with millions of files
+* Support for adding and querying user-supplied metadata properties on Collections
+* Support for viewing past versions of a collection
+
+h2. User and Group management
+
+* Able to create user groups through the GUI
+* Able to add/view/remove members of user groups, and what permissions are shared with the group
+* Able to add/view/remove permissions shared with individual users
