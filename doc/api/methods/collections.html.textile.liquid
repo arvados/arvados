@@ -47,7 +47,7 @@ table(table table-bordered table-condensed).
 
 h3. Conditions of creating a Collection
 
-The @portable_data_hash@ and @manifest_text@ attributes must be provided when creating a Collection. The cryptographic digest of the supplied @manifest_text@ must match the supplied @portable_data_hash@.
+If a new @portable_data_hash@ is specified when creating or updating a Collection, it must match the cryptographic digest of the supplied @manifest_text@.
 
 h3. Side effects of creating a Collection
 
@@ -72,6 +72,9 @@ Arguments:
 table(table table-bordered table-condensed).
 |_. Argument |_. Type |_. Description |_. Location |_. Example |
 |collection|object||query||
+|replace_files|object|Initialize files and directories using content from other collections|query||
+
+The new collection's content can be initialized by providing a @manifest_text@ key in the provided @collection@ object, or by using the @replace_files@ option (see "replace_files":#replace_files below).
 
 h3. delete
 
@@ -116,6 +119,9 @@ table(table table-bordered table-condensed).
 |_. Argument |_. Type |_. Description |_. Location |_. Example |
 {background:#ccffcc}.|uuid|string|The UUID of the Collection in question.|path||
 |collection|object||query||
+|replace_files|object|Delete and replace files and directories using content from other collections|query||
+
+The collection's content can be updated by providing a @manifest_text@ key in the provided @collection@ object, or by using the @replace_files@ option (see "replace_files":#replace_files below).
 
 h3. untrash
 
@@ -160,3 +166,56 @@ Arguments:
 table(table table-bordered table-condensed).
 |_. Argument |_. Type |_. Description |_. Location |_. Example |
 {background:#ccffcc}.|uuid|string|The UUID of the Collection to get usage.|path||
+
+h2(#replace_files). Using "replace_files" to create/update collections
+
+The @replace_files@ option can be used with the @create@ and @update@ APIs to efficiently copy individual files and directory trees from other collections, and copy/rename/delete items within an existing collection, without transferring any file data.
+
+@replace_files@ keys indicate target paths in the new collection, and values specify sources that should be copied to the target paths.
+* Each target path must be an absolute canonical path beginning with @/@. It must not contain @.@ or @..@ components, consecutive @/@ characters, or a trailing @/@ after the final component.
+* Each source must be either an empty string (signifying that the target path is to be deleted), or @PDH/path@ where @PDH@ is the portable data hash of a collection on the cluster and @/path@ is a file or directory in that collection.
+* In an @update@ request, sources may reference the current portable data hash of the collection being updated.
+
+Example: delete @foo.txt@ from a collection
+
+<notextile><pre>
+"replace_files": {
+  "/foo.txt": ""
+}
+</pre></notextile>
+
+Example: rename @foo.txt@ to @bar.txt@ in a collection with portable data hash @fa7aeb5140e2848d39b416daeef4ffc5+45@
+
+<notextile><pre>
+"replace_files": {
+  "/foo.txt": "",
+  "/bar.txt": "fa7aeb5140e2848d39b416daeef4ffc5+45/foo.txt"
+}
+</pre></notextile>
+
+Example: delete current contents, then add content from multiple collections
+
+<notextile><pre>
+"replace_files": {
+  "/": "",
+  "/copy of collection 1": "1f4b0bc7583c2a7f9102c395f4ffc5e3+45/",
+  "/copy of collection 2": "ea10d51bcf88862dbcc36eb292017dfd+45/"
+}
+</pre></notextile>
+
+Example: replace entire collection with a copy of a subdirectory from another collection
+
+<notextile><pre>
+"replace_files": {
+  "/": "1f4b0bc7583c2a7f9102c395f4ffc5e3+45/subdir"
+}
+</pre></notextile>
+
+A target path with a non-empty source cannot be the ancestor of another target path in the same request. For example, the following request is invalid:
+
+<notextile><pre>
+"replace_files": {
+  "/foo": "fa7aeb5140e2848d39b416daeef4ffc5+45/",
+  "/foo/this_will_return_an_error": ""
+}
+</pre></notextile>

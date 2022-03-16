@@ -145,7 +145,10 @@ if [ "x$RESOLVER" != "x" ]; then
   $SUDO sed -i "s/#prepend domain-name-servers 127.0.0.1;/prepend domain-name-servers ${RESOLVER};/" /etc/dhcp/dhclient.conf
 fi
 
-if [ "$AWS_EBS_AUTOSCALE" != "1" ]; then
+# AWS_EBS_AUTOSCALE is not always set, work around unset variable check
+EBS_AUTOSCALE=${AWS_EBS_AUTOSCALE:-}
+
+if [ "$EBS_AUTOSCALE" != "1" ]; then
   # Set up the cloud-init script that will ensure encrypted disks
   $SUDO mv /tmp/usr-local-bin-ensure-encrypted-partitions.sh /usr/local/bin/ensure-encrypted-partitions.sh
 else
@@ -188,7 +191,8 @@ if [ "$NVIDIA_GPU_SUPPORT" == "1" ]; then
   $SUDO apt-key adv --fetch-keys https://developer.download.nvidia.com/compute/cuda/repos/$DIST/x86_64/7fa2af80.pub
   $SUDO apt-get -y install software-properties-common
   $SUDO add-apt-repository "deb https://developer.download.nvidia.com/compute/cuda/repos/$DIST/x86_64/ /"
-  $SUDO add-apt-repository contrib
+  # Ubuntu 18.04's add-apt-repository does not understand 'contrib'
+  $SUDO add-apt-repository contrib || true
   $SUDO apt-get update
   $SUDO apt-get -y install cuda
 

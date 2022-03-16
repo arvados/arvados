@@ -1441,6 +1441,30 @@ func (s *CollectionFSSuite) TestEdgeCaseManifests(c *check.C) {
 	}
 }
 
+func (s *CollectionFSSuite) TestSnapshotSplice(c *check.C) {
+	filedata1 := "hello snapshot+splice world\n"
+	fs, err := (&Collection{}).FileSystem(s.client, s.kc)
+	c.Assert(err, check.IsNil)
+	{
+		f, err := fs.OpenFile("file1", os.O_CREATE|os.O_RDWR, 0700)
+		c.Assert(err, check.IsNil)
+		_, err = f.Write([]byte(filedata1))
+		c.Assert(err, check.IsNil)
+		err = f.Close()
+		c.Assert(err, check.IsNil)
+	}
+
+	snap, err := Snapshot(fs, "/")
+	c.Assert(err, check.IsNil)
+	err = Splice(fs, "dir1", snap)
+	c.Assert(err, check.IsNil)
+	f, err := fs.Open("dir1/file1")
+	c.Assert(err, check.IsNil)
+	buf, err := io.ReadAll(f)
+	c.Assert(err, check.IsNil)
+	c.Check(string(buf), check.Equals, filedata1)
+}
+
 func (s *CollectionFSSuite) TestRefreshSignatures(c *check.C) {
 	filedata1 := "hello refresh signatures world\n"
 	fs, err := (&Collection{}).FileSystem(s.client, s.kc)
