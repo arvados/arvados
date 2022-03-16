@@ -45,12 +45,17 @@ export const isStrictTag = (tagKeyID: string, vocabulary: Vocabulary) => {
     return tag ? tag.strict : false;
 };
 
-export const getTagValueID = (tagKeyID:string, tagValueLabel:string, vocabulary: Vocabulary) =>
-    (tagKeyID && vocabulary.tags[tagKeyID] && vocabulary.tags[tagKeyID].values)
-    ? Object.keys(vocabulary.tags[tagKeyID].values!).find(
-        k => vocabulary.tags[tagKeyID].values![k].labels.find(
-            l => l.label.toLowerCase() === tagValueLabel.toLowerCase()) !== undefined) || ''
-    : '';
+export const getTagValueID = (tagKeyID:string, tagValueLabel:string, vocabulary: Vocabulary) => {
+    if (tagKeyID && vocabulary.tags[tagKeyID] && vocabulary.tags[tagKeyID].values) {
+        const values = vocabulary.tags[tagKeyID].values!;
+        return Object.keys(values).find(k =>
+            (k.toLowerCase() === tagValueLabel.toLowerCase())
+            || values[k].labels.find(
+                l => l.label.toLowerCase() === tagValueLabel.toLowerCase()) !== undefined)
+            || '';
+    };
+    return '';
+};
 
 export const getTagValueLabel = (tagKeyID:string, tagValueID:string, vocabulary: Vocabulary) =>
     vocabulary.tags[tagKeyID] &&
@@ -130,11 +135,11 @@ export const getPreferredTags = ({ tags }: Vocabulary, withMatch?: string): Prop
         : [];
 };
 
-export const getTagKeyID = (tagKeyLabel:string, vocabulary: Vocabulary) =>
-    Object.keys(vocabulary.tags).find(
-        k => vocabulary.tags[k].labels.find(
-            l => l.label.toLowerCase() === tagKeyLabel.toLowerCase()) !== undefined
-        ) || '';
+export const getTagKeyID = (tagKeyLabel: string, vocabulary: Vocabulary) =>
+    Object.keys(vocabulary.tags).find(k => (k.toLowerCase() === tagKeyLabel.toLowerCase())
+        || vocabulary.tags[k].labels.find(
+            l => l.label.toLowerCase() === tagKeyLabel.toLowerCase()) !== undefined)
+        || '';
 
 export const getTagKeyLabel = (tagKeyID:string, vocabulary: Vocabulary) =>
     vocabulary.tags[tagKeyID] && vocabulary.tags[tagKeyID].labels.length > 0
