@@ -15,6 +15,9 @@ wait_for_apt_locks() {
   done
 }
 
+# $DIST should not have a dot if there is one in /etc/os-release (e.g. 18.04)
+DIST=$(. /etc/os-release; echo $ID$VERSION_ID | tr -d '.')
+
 # Run apt-get update
 $SUDO DEBIAN_FRONTEND=noninteractive apt-get --yes update
 
@@ -35,6 +38,11 @@ fi
 
 TMP_LSB=`/usr/bin/lsb_release -c -s`
 LSB_RELEASE_CODENAME=${TMP_LSB//[$'\t\r\n ']}
+
+SET_RESOLVER=
+if [ -n "$RESOLVER" ]; then
+  SET_RESOLVER="--dns ${RESOLVER}"
+fi
 
 # Add the arvados apt repository
 echo "# apt.arvados.org" |$SUDO tee --append /etc/apt/sources.list.d/apt.arvados.org.list
@@ -66,8 +74,45 @@ wait_for_apt_locks && $SUDO DEBIAN_FRONTEND=noninteractive apt-get -qq --yes ins
 # Install the Arvados packages we need
 wait_for_apt_locks && $SUDO DEBIAN_FRONTEND=noninteractive apt-get -qq --yes install \
   python3-arvados-fuse \
-  arvados-docker-cleaner \
-  docker.io
+  arvados-docker-cleaner
+
+# We want Docker 20.10 or later so that we support glibc 2.33 and up in the container, cf.
+# https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=1005906
+dockerversion=5:20.10.13~3-0
+if [[ "$DIST" =~ ^debian ]]; then
+  family="debian"
+  if [ "$DIST" == "debian10" ]; then
+    distro="buster"
+  elif [ "$DIST" == "debian11" ]; then
+    distro="bullseye"
+  fi
+elif [[ "$DIST" =~ ^ubuntu ]]; then
+  family="ubuntu"
+  if [ "$DIST" == "ubuntu1804" ]; then
+    distro="bionic"
+  elif [ "$DIST" == "ubuntu2004" ]; then
+    distro="focal"
+  fi
+else
+  echo "Unsupported distribution $DIST"
+  exit 1
+fi
+curl -fsSL https://download.docker.com/linux/$family/gpg | $SUDO gpg --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg
+echo deb [arch=amd64 signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/$family/ $distro stable | \
+    $SUDO tee /etc/apt/sources.list.d/docker.list
+$SUDO apt-get update
+$SUDO apt-get -yq --no-install-recommends install docker-ce=${dockerversion}~${family}-${distro}
+
+# Set a higher ulimit and the resolver (if set) for docker
+$SUDO sed "s/ExecStart=\(.*\)/ExecStart=\1 --default-ulimit nofile=10000:10000 ${SET_RESOLVER}/g" \
+  /lib/systemd/system/docker.service \
+  > /etc/systemd/system/docker.service
+
+$SUDO systemctl daemon-reload
+
+# docker should not start on boot: we restart it inside /usr/local/bin/ensure-encrypted-partitions.sh,
+# and the BootProbeCommand might be "docker ps -q"
+$SUDO systemctl disable docker
 
 # Get Go and build singularity
 goversion=1.17.1
@@ -108,21 +153,6 @@ $SUDO echo -e "{\n  \"Quota\": \"10G\",\n  \"RemoveStoppedContainers\": \"always
 # Enable cgroup accounting
 $SUDO sed -i 's/GRUB_CMDLINE_LINUX=""/GRUB_CMDLINE_LINUX="cgroup_enable=memory swapaccount=1"/g' /etc/default/grub
 $SUDO update-grub
-
-# Set a higher ulimit and the resolver (if set) for docker
-if [ "x$RESOLVER" != "x" ]; then
-  SET_RESOLVER="--dns ${RESOLVER}"
-fi
-
-$SUDO sed "s/ExecStart=\(.*\)/ExecStart=\1 --default-ulimit nofile=10000:10000 ${SET_RESOLVER}/g" \
-  /lib/systemd/system/docker.service \
-  > /etc/systemd/system/docker.service
-
-$SUDO systemctl daemon-reload
-
-# docker should not start on boot: we restart it inside /usr/local/bin/ensure-encrypted-partitions.sh,
-# and the BootProbeCommand might be "docker ps -q"
-$SUDO systemctl disable docker
 
 # Make sure user_allow_other is set in fuse.conf
 $SUDO sed -i 's/#user_allow_other/user_allow_other/g' /etc/fuse.conf
@@ -176,8 +206,6 @@ $SUDO mv /tmp/etc-cloud-cloud.cfg.d-07_compute_arvados_dispatch_cloud.cfg /etc/c
 $SUDO chown root:root /etc/cloud/cloud.cfg.d/07_compute_arvados_dispatch_cloud.cfg
 
 if [ "$NVIDIA_GPU_SUPPORT" == "1" ]; then
-  # $DIST should not have a dot if there is one in /etc/os-release (e.g. 18.04)
-  DIST=$(. /etc/os-release; echo $ID$VERSION_ID | tr -d '.')
   # We need a kernel and matching headers
   if [[ "$DIST" =~ ^debian ]]; then
     $SUDO apt-get -y install linux-image-cloud-amd64 linux-headers-cloud-amd64
@@ -214,24 +242,6 @@ if [ "$NVIDIA_GPU_SUPPORT" == "1" ]; then
       $SUDO tee /etc/apt/sources.list.d/libnvidia-container.list
   fi
 
-  if [ "$DIST" == "debian10" ]; then
-    # Debian 10 comes with Docker 18.xx, we need 19.03 or later
-    curl -fsSL https://download.docker.com/linux/debian/gpg | $SUDO gpg --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg
-    echo deb [arch=amd64 signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/debian/ buster stable | \
-      $SUDO tee /etc/apt/sources.list.d/docker.list
-    $SUDO apt-get update
-    $SUDO apt-get -yq --no-install-recommends install docker-ce=5:19.03.15~3-0~debian-buster
-
-    $SUDO sed "s/ExecStart=\(.*\)/ExecStart=\1 --default-ulimit nofile=10000:10000 ${SET_RESOLVER}/g" \
-      /lib/systemd/system/docker.service \
-      > /etc/systemd/system/docker.service
-
-    $SUDO systemctl daemon-reload
-
-    # docker should not start on boot: we restart it inside /usr/local/bin/ensure-encrypted-partitions.sh,
-    # and the BootProbeCommand might be "docker ps -q"
-    $SUDO systemctl disable docker
-  fi
   $SUDO apt-get update
   $SUDO apt-get -y install libnvidia-container1 libnvidia-container-tools nvidia-container-toolkit
   # This service fails to start when the image is booted without Nvidia GPUs present, which makes
