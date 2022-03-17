@@ -460,6 +460,16 @@ update links set tail_uuid='#{g5}' where uuid='#{l1.uuid}'
         end
       end
 
+      # User with write permission (but not manage) cannot unfreeze
+      act_as_user users(:spectator) do
+        # First confirm we have write permission on the parent project
+        assert Collection.create(name: 'bar', owner_uuid: parent.uuid)
+        assert_raises(ArvadosModel::PermissionDeniedError) do
+          proj.update_attributes!(frozen_by_uuid: nil)
+        end
+      end
+      proj.reload
+
       # User with manage permission can unfreeze, then create items
       # inside it and its children
       assert proj.update_attributes(frozen_by_uuid: nil)
