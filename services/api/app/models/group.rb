@@ -248,7 +248,7 @@ class Group < ArvadosModel
   def permission_to_update
     if !super
       return false
-    elsif frozen_by_uuid && frozen_by_uuid_in_database
+    elsif frozen_by_uuid && frozen_by_uuid_was
       errors.add :uuid, "#{uuid} is frozen and cannot be modified"
       return false
     else

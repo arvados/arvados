@@ -656,7 +656,7 @@ class ArvadosModel < ApplicationRecord
       # itself. (If we're in the act of unfreezing, we only need
       # :unfreeze permission, which means "what write permission would
       # be if target weren't frozen")
-      unless ((respond_to?(:frozen_by_uuid) && frozen_by_uuid_in_database && !frozen_by_uuid) ?
+      unless ((respond_to?(:frozen_by_uuid) && frozen_by_uuid_was && !frozen_by_uuid) ?
                 current_user.can?(unfreeze: uuid) :
                 current_user.can?(write: uuid))
         logger.warn "User #{current_user.uuid} tried to modify #{self.class.to_s} #{self.uuid} without write permission"
