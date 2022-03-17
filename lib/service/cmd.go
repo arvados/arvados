@@ -159,7 +159,7 @@ func (c *command) RunCommand(prog string, args []string, stdin io.Reader, stdout
 		Addr: listenURL.Host,
 	}
 	if listenURL.Scheme == "https" || listenURL.Scheme == "wss" {
-		tlsconfig, err := tlsConfigWithCertUpdater(cluster, logger)
+		tlsconfig, err := makeTLSConfig(cluster, logger)
 		if err != nil {
 			logger.WithError(err).Errorf("cannot start %s service on %s", c.svcName, listenURL.String())
 			return 1

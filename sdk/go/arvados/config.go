@@ -227,6 +227,8 @@ type Cluster struct {
 		Certificate string
 		Key         string
 		Insecure    bool
+		Automatic   bool
+		Staging     bool
 	}
 	Users struct {
 		ActivatedUsersAreVisibleToOthers      bool

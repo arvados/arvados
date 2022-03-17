@@ -5,6 +5,7 @@
 package service
 
 import (
+	"context"
 	"crypto/tls"
 	"errors"
 	"fmt"
@@ -12,18 +13,69 @@ import (
 	"os/signal"
 	"strings"
 	"syscall"
+	"time"
 
 	"git.arvados.org/arvados.git/sdk/go/arvados"
 	"github.com/sirupsen/logrus"
+	"golang.org/x/crypto/acme/autocert"
 )
 
-func tlsConfigWithCertUpdater(cluster *arvados.Cluster, logger logrus.FieldLogger) (*tls.Config, error) {
+func makeTLSConfig(cluster *arvados.Cluster, logger logrus.FieldLogger) (*tls.Config, error) {
+	if cluster.TLS.Automatic {
+		return makeAutocertConfig(cluster, logger)
+	} else {
+		return makeFileLoaderConfig(cluster, logger)
+	}
+}
+
+var errCertUnavailable = errors.New("certificate unavailable, waiting for supervisor to update cache")
+
+type readonlyDirCache autocert.DirCache
+
+func (c readonlyDirCache) Get(ctx context.Context, name string) ([]byte, error) {
+	data, err := autocert.DirCache(c).Get(ctx, name)
+	if err != nil {
+		// Returning an error other than autocert.ErrCacheMiss
+		// causes GetCertificate() to fail early instead of
+		// trying to obtain a certificate itself (which
+		// wouldn't work because we're not in a position to
+		// answer challenges).
+		return nil, errCertUnavailable
+	}
+	return data, nil
+}
+
+func (c readonlyDirCache) Put(ctx context.Context, name string, data []byte) error {
+	return fmt.Errorf("(bug?) (readonlyDirCache)Put(%s) called", name)
+}
+
+func (c readonlyDirCache) Delete(ctx context.Context, name string) error {
+	return nil
+}
+
+func makeAutocertConfig(cluster *arvados.Cluster, logger logrus.FieldLogger) (*tls.Config, error) {
+	mgr := &autocert.Manager{
+		Cache:  readonlyDirCache("/var/lib/arvados/tmp/autocert"),
+		Prompt: autocert.AcceptTOS,
+		// HostPolicy accepts all names because this Manager
+		// doesn't request certs. Whoever writes certs to our
+		// cache is effectively responsible for HostPolicy.
+		HostPolicy: func(ctx context.Context, host string) error { return nil },
+		// Keep using whatever's in the cache as long as
+		// possible. Assume some other process (see lib/boot)
+		// handles renewals.
+		RenewBefore: time.Second,
+	}
+	return mgr.TLSConfig(), nil
+}
+
+func makeFileLoaderConfig(cluster *arvados.Cluster, logger logrus.FieldLogger) (*tls.Config, error) {
 	currentCert := make(chan *tls.Certificate, 1)
 	loaded := false
 
-	key, cert := cluster.TLS.Key, cluster.TLS.Certificate
+	key := strings.TrimPrefix(cluster.TLS.Key, "file://")
+	cert := strings.TrimPrefix(cluster.TLS.Certificate, "file://")
 	if !strings.HasPrefix(key, "file://") || !strings.HasPrefix(cert, "file://") {
-		return nil, errors.New("cannot use TLS certificate: TLS.Key and TLS.Certificate must be specified with a 'file://' prefix")
 	}
 	key, cert = key[7:], cert[7:]
 
@@ -45,9 +97,14 @@ func tlsConfigWithCertUpdater(cluster *arvados.Cluster, logger logrus.FieldLogge
 		return nil, err
 	}
 
+	reload := make(chan os.Signal, 1)
+	signal.Notify(reload, syscall.SIGHUP)
 	go func() {
-		reload := make(chan os.Signal, 1)
-		signal.Notify(reload, syscall.SIGHUP)
+		for range time.NewTicker(time.Hour).C {
+			reload <- nil
+		}
+	}()
+	go func() {
 		for range reload {
 			err := update()
 			if err != nil {

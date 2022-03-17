@@ -34,7 +34,7 @@ type initCommand struct {
 	Domain             string
 	PostgreSQLPassword string
 	Login              string
-	Insecure           bool
+	TLS                string
 }
 
 func (initcmd *initCommand) RunCommand(prog string, args []string, stdin io.Reader, stdout, stderr io.Writer) int {
@@ -62,7 +62,7 @@ func (initcmd *initCommand) RunCommand(prog string, args []string, stdin io.Read
 	flags.StringVar(&initcmd.ClusterID, "cluster-id", "", "cluster `id`, like x1234 for a dev cluster")
 	flags.StringVar(&initcmd.Domain, "domain", hostname, "cluster public DNS `name`, like x1234.arvadosapi.com")
 	flags.StringVar(&initcmd.Login, "login", "", "login `backend`: test, pam, or ''")
-	flags.BoolVar(&initcmd.Insecure, "insecure", false, "accept invalid TLS certificates and configure TrustAllContent (do not use in production!)")
+	flags.StringVar(&initcmd.TLS, "tls", "none", "tls certificate `source`: acme, auto, insecure, or none")
 	if ok, code := cmd.ParseFlags(flags, prog, args, "", stderr); !ok {
 		return code
 	} else if *versionFlag {
@@ -113,8 +113,8 @@ func (initcmd *initCommand) RunCommand(prog string, args []string, stdin io.Read
           "http://0.0.0.0:9001/": {}
       Websocket:
         InternalURLs:
-          "http://0.0.0.0:9004/": {}
-        ExternalURL: {{printf "%q" ( print "wss://" .Domain ":4444/websocket" ) }}
+          "http://0.0.0.0:8005/": {}
+        ExternalURL: {{printf "%q" ( print "wss://" .Domain ":4436/" ) }}
       Keepbalance:
         InternalURLs:
           "http://0.0.0.0:9019/": {}
@@ -155,7 +155,7 @@ func (initcmd *initCommand) RunCommand(prog string, args []string, stdin io.Read
           "http://0.0.0.0:9011/": {}
     Collections:
       BlobSigningKey: {{printf "%q" ( .RandomHex 50 )}}
-      {{if .Insecure}}
+      {{if eq .TLS "insecure"}}
       TrustAllContent: true
       {{end}}
     Containers:
@@ -171,10 +171,17 @@ func (initcmd *initCommand) RunCommand(prog string, args []string, stdin io.Read
         user: arvados
         password: {{printf "%q" .PostgreSQLPassword}}
     SystemRootToken: {{printf "%q" ( .RandomHex 50 )}}
-    {{if .Insecure}}
     TLS:
+      {{if eq .TLS "insecure"}}
       Insecure: true
-    {{end}}
+      {{else if eq .TLS "auto"}}
+      Automatic: true
+      {{else if eq .TLS "acme"}}
+      Certificate: {{printf "%q" (print "/var/lib/acme/live/" .Domain "/cert")}}
+      Key: {{printf "%q" (print "/var/lib/acme/live/" .Domain "/privkey")}}
+      {{else}}
+      {}
+      {{end}}
     Volumes:
       {{.ClusterID}}-nyw5e-000000000000000:
         Driver: Directory

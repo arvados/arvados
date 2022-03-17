@@ -92,6 +92,7 @@ rm /etc/apt/sources.list.d/arvados-local.list
 	if opts.Live != "" {
 		cmd.Args = append(cmd.Args,
 			"--env=domain="+opts.Live,
+			"--env=initargs=-tls=acme",
 			"--env=bootargs=",
 			"--publish=:443:443",
 			"--publish=:4440-4460:4440-4460",
@@ -101,6 +102,7 @@ rm /etc/apt/sources.list.d/arvados-local.list
 	} else {
 		cmd.Args = append(cmd.Args,
 			"--env=domain=localhost",
+			"--env=initargs=-tls=insecure",
 			"--env=bootargs=-shutdown")
 	}
 	cmd.Args = append(cmd.Args,
@@ -122,7 +124,7 @@ eatmydata apt-get install --reinstall -y --no-install-recommends arvados-server-
 SUDO_FORCE_REMOVE=yes apt-get autoremove -y
 
 /etc/init.d/postgresql start
-arvados-server init -cluster-id x1234 -domain=$domain -login=test -insecure
+arvados-server init -cluster-id x1234 -domain=$domain -login=test $initargs
 exec arvados-server boot -listen-host=0.0.0.0 -no-workbench2=false $bootargs
 `)
 	cmd.Stdout = stdout

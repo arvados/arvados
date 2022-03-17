@@ -900,9 +900,22 @@ Clusters:
       Repositories: /var/lib/arvados/git/repositories
 
     TLS:
+      # Use "file:///var/lib/acme/live/example.com/cert" and ".../key"
+      # to load externally managed certificates.
       Certificate: ""
       Key: ""
+
+      # Accept invalid certificates when connecting to servers. Never
+      # use this in production.
       Insecure: false
+
+      # Agree to Let's Encrypt terms of service and obtain
+      # certificates automatically for ExternalURL domains.
+      Automatic: false
+
+      # Use Let's Encrypt staging environment instead of production
+      # environment.
+      Staging: false
 
     Containers:
       # List of supported Docker Registry image formats that compute nodes
