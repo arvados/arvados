@@ -15,7 +15,7 @@
 
 ### NGINX
 nginx:
-  install_from_phusionpassenger: true
+  __NGINX_INSTALL_SOURCE__: true
   lookup:
     passenger_package: {{ passenger_pkg }}
   ### PASSENGER
@@ -25,11 +25,15 @@ nginx:
   ### SERVER
   server:
     config:
+      # As we now differentiate where passenger is required or not, we need to
+      # load this module conditionally, so we add this conditional just to use
+      # the same pillar file
+      {% if "install_from_phusionpassenger" == "__NGINX_INSTALL_SOURCE__" %}
       # This is required to get the passenger module loaded
       # In Debian it can be done with this
       # include: 'modules-enabled/*.conf'
       load_module: {{ passenger_mod }}
-
+      {% endif %}
       worker_processes: 4
 
   ### SNIPPETS

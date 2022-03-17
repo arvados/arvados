@@ -6,7 +6,7 @@
 ### POSTGRESQL
 postgres:
   use_upstream_repo: true
-  version: '11'
+  version: '12'
   postgresconf: |-
     listen_addresses = '*'  # listen on all interfaces
   acls:
