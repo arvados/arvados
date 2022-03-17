@@ -17,11 +17,15 @@ import classNames from 'classnames';
 import { ContainerState } from 'models/container';
 import { MPVPanelProps } from 'components/multi-panel-view/multi-panel-view';
 
-type CssRules = 'card' | 'iconHeader' | 'label' | 'value' | 'chip' | 'link' | 'content' | 'title' | 'avatar' | 'cancelButton';
+type CssRules = 'card' | 'iconHeader' | 'label' | 'value' | 'chip' | 'link' | 'content' | 'title' | 'avatar' | 'cancelButton' | 'header';
 
 const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     card: {
         height: '100%'
+    },
+    header: {
+        paddingTop: theme.spacing.unit,
+        paddingBottom: theme.spacing.unit,
     },
     iconHeader: {
         fontSize: '1.875rem',
@@ -93,6 +97,7 @@ export const ProcessInformationCard = withStyles(styles, { withTheme: true })(
         const finishedAt = container ? formatDate(container.finishedAt) : 'N/A';
         return <Card className={classes.card}>
             <CardHeader
+                className={classes.header}
                 classes={{
                     content: classes.title,
                     avatar: classes.avatar

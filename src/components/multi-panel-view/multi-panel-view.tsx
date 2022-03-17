@@ -33,6 +33,7 @@ const styles: StyleRulesCallback<CssRules> = theme => ({
     },
     content: {
         overflow: 'auto',
+        height: '100%',
     },
 });
 
@@ -85,7 +86,7 @@ export const MPVPanelContent = ({doHidePanel, doMaximizePanel, panelName, panelM
         }
     }, [panelRef]);
 
-    return <Grid item {...props}>
+    return <Grid item style={{height: '100%'}} {...props}>
         <span ref={panelRef} /> {/* Element to scroll to when the panel is selected */}
         <Paper style={{height: '100%'}} elevation={panelIlluminated ? 8 : 0}>
             { forwardProps

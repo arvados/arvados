@@ -6,13 +6,16 @@ import React from 'react';
 import { MuiThemeProvider, createMuiTheme, StyleRulesCallback, withStyles, WithStyles } from '@material-ui/core/styles';
 import { CodeSnippet } from 'components/code-snippet/code-snippet';
 import grey from '@material-ui/core/colors/grey';
+import { ArvadosTheme } from 'common/custom-theme';
 
-type CssRules = 'codeSnippet';
+type CssRules = 'codeSnippet' | 'codeSnippetContainer';
 
-const styles: StyleRulesCallback<CssRules> = () => ({
+const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     codeSnippet: {
-        maxHeight: '550px',
-    }
+    },
+    codeSnippetContainer: {
+        height: `calc(100% - ${theme.spacing.unit * 4}px)`, // so that horizontal scollbar is visible
+    },
 });
 
 const theme = createMuiTheme({
@@ -39,5 +42,6 @@ interface ProcessLogCodeSnippetProps {
 export const ProcessLogCodeSnippet = withStyles(styles)(
     (props: ProcessLogCodeSnippetProps & WithStyles<CssRules>) =>
         <MuiThemeProvider theme={theme}>
-            <CodeSnippet lines={props.lines} className={props.classes.codeSnippet} />
+            <CodeSnippet lines={props.lines} className={props.classes.codeSnippet}
+                containerClassName={props.classes.codeSnippetContainer} />
         </MuiThemeProvider>);

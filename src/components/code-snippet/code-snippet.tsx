@@ -24,19 +24,18 @@ export interface CodeSnippetDataProps {
     lines: string[];
     className?: string;
     apiResponse?: boolean;
+    containerClassName?: string;
 }
 
 type CodeSnippetProps = CodeSnippetDataProps & WithStyles<CssRules>;
 
 export const CodeSnippet = withStyles(styles)(
-    ({ classes, lines, className, apiResponse }: CodeSnippetProps) =>
+    ({ classes, lines, className, containerClassName, apiResponse }: CodeSnippetProps) =>
         <Typography
-        component="div"
-        className={classNames(classes.root, className)}>
-            {
-                lines.map((line: string, index: number) => {
+            component="div"
+            className={classNames(classes.root, containerClassName, className)}>
+                { lines.map((line: string, index: number) => {
                     return <Typography key={index} className={apiResponse ? classes.space : className} component="pre">{line}</Typography>;
-                })
-            }
+                }) }
         </Typography>
     );

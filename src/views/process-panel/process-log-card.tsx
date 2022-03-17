@@ -32,16 +32,25 @@ import { ProcessLogCodeSnippet } from 'views/process-panel/process-log-code-snip
 import { DefaultView } from 'components/default-view/default-view';
 import { CodeSnippetDataProps } from 'components/code-snippet/code-snippet';
 
-type CssRules = 'card' | 'content' | 'title' | 'iconHeader';
+type CssRules = 'card' | 'content' | 'title' | 'iconHeader' | 'header' | 'root' | 'logViewer' | 'logViewerContainer';
 
 const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     card: {
         height: '100%'
     },
+    header: {
+        paddingTop: theme.spacing.unit,
+        paddingBottom: theme.spacing.unit,
+    },
     content: {
-        '&:last-child': {
-            paddingBottom: theme.spacing.unit * 2,
-        }
+        padding: theme.spacing.unit * 0,
+        height: '100%',
+    },
+    logViewer: {
+        height: '100%',
+    },
+    logViewerContainer: {
+        height: '100%',
     },
     title: {
         overflow: 'hidden',
@@ -50,6 +59,9 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     iconHeader: {
         fontSize: '1.875rem',
         color: theme.customs.colors.green700
+    },
+    root: {
+        height: '100%',
     },
 });
 
@@ -73,9 +85,9 @@ type ProcessLogsCardProps = ProcessLogsCardDataProps
 export const ProcessLogsCard = withStyles(styles)(
     ({ classes, process, filters, selectedFilter, lines, onLogFilterChange, navigateToLog,
         doHidePanel, doMaximizePanel, panelMaximized, panelName }: ProcessLogsCardProps) =>
-        <Grid item xs={12}>
+        <Grid item className={classes.root} xs={12}>
             <Card className={classes.card}>
-                <CardHeader
+                <CardHeader className={classes.header}
                     avatar={<LogIcon className={classes.iconHeader} />}
                     action={<Grid container direction='row' alignItems='center'>
                         <Grid item>
@@ -107,10 +119,11 @@ export const ProcessLogsCard = withStyles(styles)(
                 <CardContent className={classes.content}>
                     {lines.length > 0
                         ? < Grid
+                            className={classes.logViewerContainer}
                             container
                             spacing={24}
                             direction='column'>
-                            <Grid item xs>
+                            <Grid className={classes.logViewer} item xs>
                                 <ProcessLogCodeSnippet lines={lines} />
                             </Grid>
                         </Grid>
