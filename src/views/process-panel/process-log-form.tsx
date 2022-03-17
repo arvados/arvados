@@ -13,7 +13,6 @@ import {
     Input
 } from '@material-ui/core';
 import { ArvadosTheme } from 'common/custom-theme';
-import { FilterOption } from './process-log-panel';
 
 type CssRules = 'formControl';
 
@@ -22,6 +21,11 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
         minWidth: theme.spacing.unit * 15,
     }
 });
+
+export interface FilterOption {
+    label: string;
+    value: string;
+}
 
 export interface ProcessLogFormDataProps {
     selectedFilter: FilterOption;

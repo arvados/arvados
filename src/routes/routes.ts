@@ -25,7 +25,6 @@ export const Routes = {
     PROCESSES: `/processes/:id(${RESOURCE_UUID_PATTERN})`,
     FAVORITES: '/favorites',
     TRASH: '/trash',
-    PROCESS_LOGS: `/process-logs/:id(${RESOURCE_UUID_PATTERN})`,
     REPOSITORIES: '/repositories',
     SHARED_WITH_ME: '/shared-with-me',
     RUN_PROCESS: '/run-process',
@@ -95,8 +94,6 @@ export const getNavUrl = (uuid: string, config: FederationConfig) => {
 
 export const getProcessUrl = (uuid: string) => `/processes/${uuid}`;
 
-export const getProcessLogUrl = (uuid: string) => `/process-logs/${uuid}`;
-
 export const getGroupUrl = (uuid: string) => `/group/${uuid}`;
 
 export interface ResourceRouteParams {
@@ -123,9 +120,6 @@ export const matchCollectionRoute = (route: string) =>
 
 export const matchProcessRoute = (route: string) =>
     matchPath<ResourceRouteParams>(route, { path: Routes.PROCESSES });
-
-export const matchProcessLogRoute = (route: string) =>
-    matchPath<ResourceRouteParams>(route, { path: Routes.PROCESS_LOGS });
 
 export const matchSharedWithMeRoute = (route: string) =>
     matchPath(route, { path: Routes.SHARED_WITH_ME });

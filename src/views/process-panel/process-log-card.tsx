@@ -24,9 +24,11 @@ import {
 } from 'components/icon/icon';
 import { Process } from 'store/processes/process';
 import { MPVPanelProps } from 'components/multi-panel-view/multi-panel-view';
-import { FilterOption } from 'views/process-log-panel/process-log-panel';
-import { ProcessLogForm } from 'views/process-log-panel/process-log-form';
-import { ProcessLogCodeSnippet } from 'views/process-log-panel/process-log-code-snippet';
+import {
+    FilterOption,
+    ProcessLogForm
+} from 'views/process-panel/process-log-form';
+import { ProcessLogCodeSnippet } from 'views/process-panel/process-log-code-snippet';
 import { DefaultView } from 'components/default-view/default-view';
 import { CodeSnippetDataProps } from 'components/code-snippet/code-snippet';
 

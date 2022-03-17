@@ -20,7 +20,6 @@ import { MultipleFilesRemoveDialog } from 'views-components/file-remove-dialog/m
 import { Routes } from 'routes/routes';
 import { SidePanel } from 'views-components/side-panel/side-panel';
 import { ProcessPanel } from 'views/process-panel/process-panel';
-import { ProcessLogPanel } from 'views/process-log-panel/process-log-panel';
 import { ChangeWorkflowDialog } from 'views-components/run-process-dialog/change-workflow-dialog';
 import { CreateProjectDialog } from 'views-components/dialog-forms/create-project-dialog';
 import { CreateCollectionDialog } from 'views-components/dialog-forms/create-collection-dialog';
@@ -158,7 +157,6 @@ let routes = <>
     <Route path={Routes.ALL_PROCESSES} component={AllProcessesPanel} />
     <Route path={Routes.PROCESSES} component={ProcessPanel} />
     <Route path={Routes.TRASH} component={TrashPanel} />
-    <Route path={Routes.PROCESS_LOGS} component={ProcessLogPanel} />
     <Route path={Routes.SHARED_WITH_ME} component={SharedWithMePanel} />
     <Route path={Routes.RUN_PROCESS} component={RunProcessPanel} />
     <Route path={Routes.WORKFLOWS} component={WorkflowPanel} />

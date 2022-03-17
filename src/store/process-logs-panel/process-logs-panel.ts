@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import { matchProcessLogRoute, matchProcessRoute } from 'routes/routes';
+import { matchProcessRoute } from 'routes/routes';
 import { RouterState } from 'react-router-redux';
 
 export interface ProcessLogsPanel {
@@ -21,6 +21,6 @@ export const getProcessPanelLogs = ({ selectedFilter, logs }: ProcessLogsPanel) 
 
 export const getProcessLogsPanelCurrentUuid = (router: RouterState) => {
     const pathname = router.location ? router.location.pathname : '';
-    const match = matchProcessLogRoute(pathname) || matchProcessRoute(pathname);
+    const match = matchProcessRoute(pathname);
     return match ? match.params.id : undefined;
 };
