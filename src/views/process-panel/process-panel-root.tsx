@@ -14,8 +14,8 @@ import { MPVContainer, MPVPanelContent, MPVPanelState } from 'components/multi-p
 import { ArvadosTheme } from 'common/custom-theme';
 import { ProcessDetailsCard } from './process-details-card';
 import { FilterOption } from 'views/process-log-panel/process-log-panel';
-import { ProcessLogMainCard } from 'views/process-log-panel/process-log-main-card';
 import { getProcessPanelLogs, ProcessLogsPanel } from 'store/process-logs-panel/process-logs-panel';
+import { ProcessLogsCard } from './process-log-card';
 
 type CssRules = 'root';
 
@@ -69,8 +69,8 @@ export const ProcessPanelRoot = withStyles(styles)(
             <MPVPanelContent forwardProps xs="auto">
                 <ProcessDetailsCard process={process} />
             </MPVPanelContent>
-            <MPVPanelContent xs="auto">
-                <ProcessLogMainCard
+            <MPVPanelContent forwardProps xs>
+                <ProcessLogsCard
                     process={process}
                     lines={getProcessPanelLogs(processLogsPanel)}
                     selectedFilter={{
@@ -80,11 +80,8 @@ export const ProcessPanelRoot = withStyles(styles)(
                     filters={processLogsPanel.filters.map(
                         filter => ({ label: filter, value: filter })
                     )}
-                    onChange={props.onLogFilterChange}
-                    onContextMenu={function (event: any, process: Process): void {
-                        throw new Error('Function not implemented.');
-                    } }
-                    navigateToLogCollection={props.navigateToLog}
+                    onLogFilterChange={props.onLogFilterChange}
+                    navigateToLog={props.navigateToLog}
                 />
             </MPVPanelContent>
             <MPVPanelContent forwardProps xs>

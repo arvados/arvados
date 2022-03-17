@@ -3,7 +3,15 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import React from 'react';
-import { withStyles, WithStyles, StyleRulesCallback, FormControl, InputLabel, Select, MenuItem, Input } from '@material-ui/core';
+import {
+    withStyles,
+    WithStyles,
+    StyleRulesCallback,
+    FormControl,
+    Select,
+    MenuItem,
+    Input
+} from '@material-ui/core';
 import { ArvadosTheme } from 'common/custom-theme';
 import { FilterOption } from './process-log-panel';
 
@@ -11,7 +19,7 @@ type CssRules = 'formControl';
 
 const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     formControl: {
-        minWidth: 200
+        minWidth: theme.spacing.unit * 15,
     }
 });
 
@@ -30,9 +38,6 @@ export const ProcessLogForm = withStyles(styles)(
     ({ classes, selectedFilter, onChange, filters }: ProcessLogFormProps) =>
         <form autoComplete="off">
             <FormControl className={classes.formControl}>
-                <InputLabel shrink htmlFor="log-label-placeholder">
-                    Event Type
-                </InputLabel>
                 <Select
                     value={selectedFilter.value}
                     onChange={({ target }) => onChange({ label: target.innerText, value: target.value })}
