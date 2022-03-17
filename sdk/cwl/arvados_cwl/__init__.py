@@ -213,6 +213,10 @@ def arg_parser():  # type: () -> argparse.ArgumentParser
     parser.add_argument("--http-timeout", type=int,
                         default=5*60, dest="http_timeout", help="API request timeout in seconds. Default is 300 seconds (5 minutes).")
 
+    exgroup = parser.add_mutually_exclusive_group()
+    exgroup.add_argument("--enable-preemptible", dest="enable_preemptible", default=None, action="store_true", help="Use preemptible instances. Control individual steps with arv:UsePreemptible hint.")
+    exgroup.add_argument("--disable-preemptible", dest="enable_preemptible", default=None, action="store_false", help="Don't use preemptible instances.")
+
     parser.add_argument(
         "--skip-schemas",
         action="store_true",
@@ -255,7 +259,8 @@ def add_arv_hints():
         "http://arvados.org/cwl#ClusterTarget",
         "http://arvados.org/cwl#OutputStorageClass",
         "http://arvados.org/cwl#ProcessProperties",
-        "http://commonwl.org/cwltool#CUDARequirement"
+        "http://commonwl.org/cwltool#CUDARequirement",
+        "http://arvados.org/cwl#UsePreemptible",
     ])
 
 def exit_signal_handler(sigcode, frame):

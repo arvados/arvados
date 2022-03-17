@@ -37,6 +37,7 @@ class ArvRuntimeContext(RuntimeContext):
         self.always_submit_runner = False
         self.collection_cache_size = 256
         self.match_local_docker = False
+        self.enable_preemptible = None
 
         super(ArvRuntimeContext, self).__init__(kwargs)
 

@@ -1468,6 +1468,49 @@ class TestSubmit(unittest.TestCase):
         self.assertEqual(exited, 0)
 
 
+    @stubs
+    def test_submit_enable_preemptible(self, stubs):
+        exited = arvados_cwl.main(
+            ["--submit", "--no-wait", "--api=containers", "--debug", "--enable-preemptible",
+                "tests/wf/submit_wf.cwl", "tests/submit_test_job.json"],
+            stubs.capture_stdout, sys.stderr, api_client=stubs.api, keep_client=stubs.keep_client)
+
+        expect_container = copy.deepcopy(stubs.expect_container_spec)
+        expect_container['command'] = ['arvados-cwl-runner', '--local', '--api=containers',
+                        '--no-log-timestamps', '--disable-validate', '--disable-color',
+                        '--eval-timeout=20', '--thread-count=0',
+                        '--enable-reuse', "--collection-cache-size=256", '--debug', '--on-error=continue',
+                                       '--enable-preemptible',
+                        '/var/lib/cwl/workflow.json#main', '/var/lib/cwl/cwl.input.json']
+
+        stubs.api.container_requests().create.assert_called_with(
+            body=JsonDiffMatcher(expect_container))
+        self.assertEqual(stubs.capture_stdout.getvalue(),
+                         stubs.expect_container_request_uuid + '\n')
+        self.assertEqual(exited, 0)
+
+    @stubs
+    def test_submit_disable_preemptible(self, stubs):
+        exited = arvados_cwl.main(
+            ["--submit", "--no-wait", "--api=containers", "--debug", "--disable-preemptible",
+                "tests/wf/submit_wf.cwl", "tests/submit_test_job.json"],
+            stubs.capture_stdout, sys.stderr, api_client=stubs.api, keep_client=stubs.keep_client)
+
+        expect_container = copy.deepcopy(stubs.expect_container_spec)
+        expect_container['command'] = ['arvados-cwl-runner', '--local', '--api=containers',
+                        '--no-log-timestamps', '--disable-validate', '--disable-color',
+                        '--eval-timeout=20', '--thread-count=0',
+                        '--enable-reuse', "--collection-cache-size=256", '--debug', '--on-error=continue',
+                                       '--disable-preemptible',
+                        '/var/lib/cwl/workflow.json#main', '/var/lib/cwl/cwl.input.json']
+
+        stubs.api.container_requests().create.assert_called_with(
+            body=JsonDiffMatcher(expect_container))
+        self.assertEqual(stubs.capture_stdout.getvalue(),
+                         stubs.expect_container_request_uuid + '\n')
+        self.assertEqual(exited, 0)
+
+
 class TestCreateWorkflow(unittest.TestCase):
     existing_workflow_uuid = "zzzzz-7fd4e-validworkfloyml"
     expect_workflow = StripYAMLComments(

@@ -63,6 +63,9 @@ hints:
     cudaComputeCapabilityMin: "9.0"
     deviceCountMin: 1
     deviceCountMax: 1
+
+  arv:UsePreemptible:
+    usePreemptible: true
 {% endcodeblock %}
 
 h2(#RunInSingleContainer). arv:RunInSingleContainer
@@ -163,6 +166,14 @@ table(table table-bordered table-condensed).
 |cudaComputeCapabilityMin|string|Required.  The minimum CUDA hardware capability (in 'X.Y' format) required by the application's PTX or C++ GPU code (will be JIT compiled for the available hardware).|
 |deviceCountMin|integer|Minimum number of GPU devices to allocate on a single node. Required.|
 |deviceCountMax|integer|Maximum number of GPU devices to allocate on a single node. Optional.  If not specified, same as @minDeviceCount@.|
+
+h2(#UsePreemptible). arv:UsePreemptible
+
+Specify whether a workflow step should request preemptible (e.g. AWS Spot market) instances.  Such instances are generally cheaper, but can be taken back by the cloud provider at any time (preempted) causing the step to fail.  When this happens, Arvados will automatically re-try the step, up to the configuration value of @Containers.MaxRetryAttempts@ (default 3) times.
+
+table(table table-bordered table-condensed).
+|_. Field |_. Type |_. Description |
+|usePreemptible|boolean|Required, true to opt-in to using preemptible instances, false to opt-out.|
 
 h2. arv:dockerCollectionPDH
 

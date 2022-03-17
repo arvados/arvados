@@ -300,6 +300,17 @@ class ArvadosContainer(JobBase):
                 "hardware_capability": aslist(cuda_req["cudaComputeCapability"])[0]
             }
 
+        if runtimeContext.enable_preemptible is False:
+            scheduling_parameters["preemptible"] = False
+        else:
+            preemptible_req, _ = self.get_requirement("http://arvados.org/cwl#UsePreemptible")
+            if preemptible_req:
+                scheduling_parameters["preemptible"] = preemptible_req["usePreemptible"]
+            elif runtimeContext.enable_preemptible is True:
+                scheduling_parameters["preemptible"] = True
+            elif runtimeContext.enable_preemptible is None:
+                pass
+
         if self.timelimit is not None and self.timelimit > 0:
             scheduling_parameters["max_run_time"] = self.timelimit
 
@@ -549,6 +560,12 @@ class RunnerContainer(Runner):
 
         if self.enable_dev:
             command.append("--enable-dev")
+
+        if runtimeContext.enable_preemptible is True:
+            command.append("--enable-preemptible")
+
+        if runtimeContext.enable_preemptible is False:
+            command.append("--disable-preemptible")
 
         command.extend([workflowpath, "/var/lib/cwl/cwl.input.json"])
 

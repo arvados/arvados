@@ -1234,6 +1234,103 @@ class TestContainer(unittest.TestCase):
                 body=JsonDiffMatcher(container_request))
 
 
+    # The test passes no builder.resources
+    # Hence the default resources will apply: {'cores': 1, 'ram': 1024, 'outdirSize': 1024, 'tmpdirSize': 1024}
+    @mock.patch("arvados.commands.keepdocker.list_images_in_arv")
+    def test_run_preemptible_hint(self, keepdocker):
+        arvados_cwl.add_arv_hints()
+        for enable_preemptible in (None, True, False):
+            for preemptible_hint in (None, True, False):
+                arv_docker_clear_cache()
+
+                runner = mock.MagicMock()
+                runner.ignore_docker_for_reuse = False
+                runner.intermediate_output_ttl = 0
+                runner.secret_store = cwltool.secrets.SecretStore()
+                runner.api._rootDesc = {"revision": "20210628"}
+
+                keepdocker.return_value = [("zzzzz-4zz18-zzzzzzzzzzzzzz3", "")]
+                runner.api.collections().get().execute.return_value = {
+                    "portable_data_hash": "99999999999999999999999999999993+99"}
+
+                if preemptible_hint is not None:
+                    hints = [{
+                        "class": "http://arvados.org/cwl#UsePreemptible",
+                        "usePreemptible": preemptible_hint
+                    }]
+                else:
+                    hints = []
+
+                tool = cmap({
+                    "inputs": [],
+                    "outputs": [],
+                    "baseCommand": "ls",
+                    "arguments": [{"valueFrom": "$(runtime.outdir)"}],
+                    "id": "",
+                    "class": "CommandLineTool",
+                    "cwlVersion": "v1.2",
+                    "hints": hints
+                })
+
+                loadingContext, runtimeContext = self.helper(runner)
+
+                runtimeContext.name = 'test_run_enable_preemptible_'+str(enable_preemptible)+str(preemptible_hint)
+                runtimeContext.enable_preemptible = enable_preemptible
+
+                arvtool = cwltool.load_tool.load_tool(tool, loadingContext)
+                arvtool.formatgraph = None
+
+                # Test the interactions between --enable/disable-preemptible
+                # and UsePreemptible hint
+
+                if enable_preemptible is None:
+                    if preemptible_hint is None:
+                        sched = {}
+                    else:
+                        sched = {'preemptible': preemptible_hint}
+                else:
+                    if preemptible_hint is None:
+                        sched = {'preemptible': enable_preemptible}
+                    else:
+                        sched = {'preemptible': enable_preemptible and preemptible_hint}
+
+                for j in arvtool.job({}, mock.MagicMock(), runtimeContext):
+                    j.run(runtimeContext)
+                    runner.api.container_requests().create.assert_called_with(
+                        body=JsonDiffMatcher({
+                            'environment': {
+                                'HOME': '/var/spool/cwl',
+                                'TMPDIR': '/tmp'
+                            },
+                            'name': runtimeContext.name,
+                            'runtime_constraints': {
+                                'vcpus': 1,
+                                'ram': 268435456
+                            },
+                            'use_existing': True,
+                            'priority': 500,
+                            'mounts': {
+                                '/tmp': {'kind': 'tmp',
+                                         "capacity": 1073741824
+                                     },
+                                '/var/spool/cwl': {'kind': 'tmp',
+                                                   "capacity": 1073741824 }
+                            },
+                            'state': 'Committed',
+                            'output_name': 'Output for step '+runtimeContext.name,
+                            'owner_uuid': 'zzzzz-8i9sb-zzzzzzzzzzzzzzz',
+                            'output_path': '/var/spool/cwl',
+                            'output_ttl': 0,
+                            'container_image': '99999999999999999999999999999993+99',
+                            'command': ['ls', '/var/spool/cwl'],
+                            'cwd': '/var/spool/cwl',
+                            'scheduling_parameters': sched,
+                            'properties': {},
+                            'secret_mounts': {},
+                            'output_storage_classes': ["default"]
+                        }))
+
+
 
 class TestWorkflow(unittest.TestCase):
     def setUp(self):
