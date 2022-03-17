@@ -34,7 +34,7 @@ table(table table-bordered table-condensed).
 |trash_at|datetime|If @trash_at@ is non-null and in the past, this group and all objects directly or indirectly owned by the group will be hidden from API calls.  May be untrashed.||
 |delete_at|datetime|If @delete_at@ is non-null and in the past, the group and all objects directly or indirectly owned by the group may be permanently deleted.||
 |is_trashed|datetime|True if @trash_at@ is in the past, false if not.||
-|frozen_by_uuid|string|For a frozen project, indicates the user who froze the project; null in all other cases. When a project is frozen, no further changes can be made to the project or its contents, even by admins. Attempting to add new items or modify, rename, trash, or delete the project or its contents, including any subprojects, will return an error.||
+|frozen_by_uuid|string|For a frozen project, indicates the user who froze the project; null in all other cases. When a project is frozen, no further changes can be made to the project or its contents, even by admins. Attempting to add new items or modify, rename, move, trash, or delete the project or its contents, including any subprojects, will return an error.||
 
 h3. Frozen projects
 
