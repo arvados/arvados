@@ -86,7 +86,7 @@ class User < ArvadosModel
   VAL_FOR_PERM =
     {:read => 1,
      :write => 2,
-     :unfreeze => 2,
+     :unfreeze => 3,
      :manage => 3}
 
 
@@ -148,10 +148,12 @@ SELECT 1 FROM #{PERMISSION_VIEW}
           return false
         end
       elsif action == :unfreeze
-        # "unfreeze" permission means "could write if target weren't
-        # frozen", which is relevant when a user is un-freezing a
-        # project. If the permission query above allows :write, and
-        # the parent isn't also frozen, then un-freeze is allowed.
+        # "unfreeze" permission means "can write, but only if
+        # explicitly un-freezing at the same time" (see
+        # ArvadosModel#ensure_owner_uuid_is_permitted). If the
+        # permission query above passed the permission level of
+        # :unfreeze (which is the same as :manage), and the parent
+        # isn't also frozen, then un-freeze is allowed.
         if FrozenGroup.where(uuid: target_owner_uuid).any?
           return false
         end
