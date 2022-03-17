@@ -176,6 +176,18 @@ class Group < ArvadosModel
       "Group.update_frozen.select",
       [[nil, self.uuid],
        [nil, !self.frozen_by_uuid.nil?]])
+    if frozen_by_uuid
+      rows = ActiveRecord::Base.connection.exec_query(
+        "select cr.uuid, cr.state from container_requests cr, #{temptable} frozen " +
+        "where cr.owner_uuid = frozen.uuid and frozen.is_frozen " +
+        "and cr.state not in ($1, $2) limit 1",
+        "Group.update_frozen.check_container_requests",
+        [[nil, ContainerRequest::Uncommitted],
+         [nil, ContainerRequest::Final]])
+      if rows.any?
+        raise ArgumentError.new("cannot freeze project containing container request #{rows.first['uuid']} with state = #{rows.first['state']}")
+      end
+    end
     ActiveRecord::Base.connection.exec_delete(
       "delete from frozen_groups where uuid in (select uuid from #{temptable} where not is_frozen)",
       "Group.update_frozen.delete")

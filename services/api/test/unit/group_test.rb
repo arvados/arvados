@@ -317,6 +317,18 @@ update links set tail_uuid='#{g5}' where uuid='#{l1.uuid}'
   test "freeze project" do
     act_as_user users(:active) do
       Rails.configuration.API.UnfreezeProjectRequiresAdmin = false
+
+      test_cr_attrs = {
+        command: ["echo", "foo"],
+        container_image: links(:docker_image_collection_tag).name,
+        cwd: "/tmp",
+        environment: {},
+        mounts: {"/out" => {"kind" => "tmp", "capacity" => 1000000}},
+        output_path: "/out",
+        runtime_constraints: {"vcpus" => 1, "ram" => 2},
+        name: "foo",
+        description: "bar",
+      }
       parent = Group.create!(group_class: 'project', name: 'freeze-test-parent', owner_uuid: users(:active).uuid)
       proj = Group.create!(group_class: 'project', name: 'freeze-test', owner_uuid: parent.uuid)
       proj_inner = Group.create!(group_class: 'project', name: 'freeze-test-inner', owner_uuid: proj.uuid)
@@ -398,18 +410,7 @@ update links set tail_uuid='#{g5}' where uuid='#{l1.uuid}'
         assert_raises do
           Group.create!(owner_uuid: frozen.uuid, group_class: 'project', name: 'inside-frozen-project')
         end
-        cr = ContainerRequest.new(
-          command: ["echo", "foo"],
-          container_image: links(:docker_image_collection_tag).name,
-          cwd: "/tmp",
-          environment: {},
-          mounts: {"/out" => {"kind" => "tmp", "capacity" => 1000000}},
-          output_path: "/out",
-          runtime_constraints: {"vcpus" => 1, "ram" => 2},
-          name: "foo",
-          description: "bar",
-          owner_uuid: frozen.uuid,
-        )
+        cr = ContainerRequest.new(test_cr_attrs.merge(owner_uuid: frozen.uuid))
         assert_raises ArvadosModel::PermissionDeniedError do
           cr.save
         end
@@ -509,6 +510,22 @@ update links set tail_uuid='#{g5}' where uuid='#{l1.uuid}'
         # Admin can unfreeze.
         assert proj.update_attributes(frozen_by_uuid: nil), proj.errors.messages
       end
+
+      # Cannot freeze a project if it contains container requests in
+      # Committed state (this would cause operations on the relevant
+      # Containers to fail when syncing container request state)
+      creq_uncommitted = ContainerRequest.create!(test_cr_attrs.merge(owner_uuid: proj_inner.uuid))
+      creq_committed = ContainerRequest.create!(test_cr_attrs.merge(owner_uuid: proj_inner.uuid, state: 'Committed'))
+      err = assert_raises do
+        proj.update_attributes!(frozen_by_uuid: users(:active).uuid)
+      end
+      assert_match /container request zzzzz-xvhdp-.* with state = Committed/, err.inspect
+      proj.reload
+
+      # Can freeze once all container requests are in Uncommitted or
+      # Final state
+      creq_committed.update_attributes!(state: ContainerRequest::Final)
+      assert proj.update_attributes(frozen_by_uuid: users(:active).uuid)
     end
   end
 end
