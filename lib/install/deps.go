@@ -512,12 +512,39 @@ yarn install
 	}
 
 	if prod || pkg {
-		// Install workbench2 app to /var/lib/arvados/workbench2/
-		if err = inst.runBash(`
-cd /var/lib/arvados/arvados-workbench2
-VERSION="`+inst.PackageVersion+`" BUILD_NUMBER=1 GIT_COMMIT="`+workbench2version+`" yarn build
-rsync -a --delete-after build/ /var/lib/arvados/workbench2/
-`, stdout, stderr); err != nil {
+		// Install Go programs to /var/lib/arvados/bin/
+		for _, srcdir := range []string{
+			"cmd/arvados-client",
+			"cmd/arvados-server",
+			"services/arv-git-httpd",
+			"services/crunch-dispatch-local",
+			"services/crunch-dispatch-slurm",
+			"services/health",
+			"services/keep-balance",
+			"services/keep-web",
+			"services/keepproxy",
+			"services/keepstore",
+			"services/ws",
+		} {
+			fmt.Fprintf(stderr, "building %s...\n", srcdir)
+			cmd := exec.Command("go", "install", "-ldflags", "-X git.arvados.org/arvados.git/lib/cmd.version="+inst.PackageVersion+" -X main.version="+inst.PackageVersion+" -s -w")
+			cmd.Env = append(cmd.Env, os.Environ()...)
+			cmd.Env = append(cmd.Env, "GOBIN=/var/lib/arvados/bin")
+			cmd.Dir = filepath.Join(inst.SourcePath, srcdir)
+			cmd.Stdout = stdout
+			cmd.Stderr = stderr
+			err = cmd.Run()
+			if err != nil {
+				return 1
+			}
+		}
+
+		// Copy assets from source tree to /var/lib/arvados/share
+		cmd := exec.Command("install", "-v", "-t", "/var/lib/arvados/share", filepath.Join(inst.SourcePath, "sdk/python/tests/nginx.conf"))
+		cmd.Stdout = stdout
+		cmd.Stderr = stderr
+		err = cmd.Run()
+		if err != nil {
 			return 1
 		}
 
@@ -575,39 +602,12 @@ rsync -a --delete-after build/ /var/lib/arvados/workbench2/
 			}
 		}
 
-		// Install Go programs to /var/lib/arvados/bin/
-		for _, srcdir := range []string{
-			"cmd/arvados-client",
-			"cmd/arvados-server",
-			"services/arv-git-httpd",
-			"services/crunch-dispatch-local",
-			"services/crunch-dispatch-slurm",
-			"services/health",
-			"services/keep-balance",
-			"services/keep-web",
-			"services/keepproxy",
-			"services/keepstore",
-			"services/ws",
-		} {
-			fmt.Fprintf(stderr, "building %s...\n", srcdir)
-			cmd := exec.Command("go", "install", "-ldflags", "-X git.arvados.org/arvados.git/lib/cmd.version="+inst.PackageVersion+" -X main.version="+inst.PackageVersion+" -s -w")
-			cmd.Env = append(cmd.Env, os.Environ()...)
-			cmd.Env = append(cmd.Env, "GOBIN=/var/lib/arvados/bin")
-			cmd.Dir = filepath.Join(inst.SourcePath, srcdir)
-			cmd.Stdout = stdout
-			cmd.Stderr = stderr
-			err = cmd.Run()
-			if err != nil {
-				return 1
-			}
-		}
-
-		// Copy assets from source tree to /var/lib/arvados/share
-		cmd := exec.Command("install", "-v", "-t", "/var/lib/arvados/share", filepath.Join(inst.SourcePath, "sdk/python/tests/nginx.conf"))
-		cmd.Stdout = stdout
-		cmd.Stderr = stderr
-		err = cmd.Run()
-		if err != nil {
+		// Install workbench2 app to /var/lib/arvados/workbench2/
+		if err = inst.runBash(`
+cd /var/lib/arvados/arvados-workbench2
+VERSION="`+inst.PackageVersion+`" BUILD_NUMBER=1 GIT_COMMIT="`+workbench2version[:9]+`" yarn build
+rsync -a --delete-after build/ /var/lib/arvados/workbench2/
+`, stdout, stderr); err != nil {
 			return 1
 		}
 	}
