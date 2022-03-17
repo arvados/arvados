@@ -116,7 +116,7 @@ class Group < ArvadosModel
       if !new_record? && !current_user.can?(manage: uuid)
         raise PermissionDeniedError
       end
-      if trash_at || delete_at || !new_record? && TrashedGroup.where(group_uuid: uuid).any?
+      if trash_at || delete_at || (!new_record? && TrashedGroup.where(group_uuid: uuid).any?)
         errors.add(:frozen_by_uuid, "cannot be set on a trashed project")
       end
       if frozen_by_uuid_was.nil?
