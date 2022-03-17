@@ -265,6 +265,9 @@ class KeepClientServiceTestCase(unittest.TestCase, tutil.ApiClientMock):
             self.assertEqual(
                 mock.responses[0].getopt(pycurl.SSL_VERIFYPEER),
                 0)
+            self.assertEqual(
+                mock.responses[0].getopt(pycurl.SSL_VERIFYHOST),
+                0)
 
         api_client.insecure = False
         with tutil.mock_keep_responses(b'foo', 200) as mock:
@@ -275,6 +278,9 @@ class KeepClientServiceTestCase(unittest.TestCase, tutil.ApiClientMock):
             # it would return the default value 1.
             self.assertEqual(
                 mock.responses[0].getopt(pycurl.SSL_VERIFYPEER),
+                None)
+            self.assertEqual(
+                mock.responses[0].getopt(pycurl.SSL_VERIFYHOST),
                 None)
 
     def test_refresh_signature(self):
