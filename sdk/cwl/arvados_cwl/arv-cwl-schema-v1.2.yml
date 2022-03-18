@@ -340,7 +340,7 @@ $graph:
   fields:
     class:
       type: string
-      doc: "Always 'arv:ProcessProperties"
+      doc: "Always 'arv:UsePreemptible"
       jsonldPredicate:
         _id: "@type"
         _type: "@vocab"
