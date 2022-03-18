@@ -38,13 +38,14 @@ const theme = createMuiTheme({
 
 interface ProcessLogCodeSnippetProps {
     lines: string[];
+    fontSize: number;
     wordWrap?: boolean;
 }
 
 export const ProcessLogCodeSnippet = withStyles(styles)(
     (props: ProcessLogCodeSnippetProps & WithStyles<CssRules>) =>
         <MuiThemeProvider theme={theme}>
-            <CodeSnippet lines={props.lines}
+            <CodeSnippet lines={props.lines} fontSize={props.fontSize}
                 className={props.wordWrap ? props.classes.wordWrap : undefined}
                 containerClassName={props.classes.codeSnippetContainer} />
         </MuiThemeProvider>);

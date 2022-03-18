@@ -21,6 +21,8 @@ import {
     CollectionIcon,
     LogIcon,
     MaximizeIcon,
+    TextDecreaseIcon,
+    TextIncreaseIcon,
     WordWrapIcon
 } from 'components/icon/icon';
 import { Process } from 'store/processes/process';
@@ -87,6 +89,10 @@ export const ProcessLogsCard = withStyles(styles)(
     ({ classes, process, filters, selectedFilter, lines, onLogFilterChange, navigateToLog,
         doHidePanel, doMaximizePanel, panelMaximized, panelName }: ProcessLogsCardProps) => {
         const [wordWrapToggle, setWordWrapToggle] = useState<boolean>(true);
+        const [fontSize, setFontSize] = useState<number>(3);
+        const fontBaseSize = 10;
+        const fontStepSize = 1;
+
         return <Grid item className={classes.root} xs={12}>
             <Card className={classes.card}>
                 <CardHeader className={classes.header}
@@ -95,6 +101,20 @@ export const ProcessLogsCard = withStyles(styles)(
                         <Grid item>
                             <ProcessLogForm selectedFilter={selectedFilter}
                                 filters={filters} onChange={onLogFilterChange} />
+                        </Grid>
+                        <Grid item>
+                            <Tooltip title="Decrease font size" disableFocusListener>
+                                <IconButton onClick={() => fontSize > 1 && setFontSize(fontSize-1)}>
+                                    <TextDecreaseIcon />
+                                </IconButton>
+                            </Tooltip>
+                        </Grid>
+                        <Grid item>
+                            <Tooltip title="Increase font size" disableFocusListener>
+                                <IconButton onClick={() => fontSize < 5 && setFontSize(fontSize+1)}>
+                                    <TextIncreaseIcon />
+                                </IconButton>
+                            </Tooltip>
                         </Grid>
                         <Grid item>
                             <Tooltip title="Toggle word wrapping" disableFocusListener>
@@ -133,7 +153,7 @@ export const ProcessLogsCard = withStyles(styles)(
                             spacing={24}
                             direction='column'>
                             <Grid className={classes.logViewer} item xs>
-                                <ProcessLogCodeSnippet wordWrap={wordWrapToggle} lines={lines} />
+                                <ProcessLogCodeSnippet fontSize={fontBaseSize+(fontStepSize*fontSize)} wordWrap={wordWrapToggle} lines={lines} />
                             </Grid>
                         </Grid>
                         : <DefaultView
