@@ -13,6 +13,7 @@ import { ApiActions } from "services/api/api-actions";
 import { customEncodeURI } from "common/url";
 import { FilterBuilder } from "services/api/filter-builder";
 import { ListArguments } from "services/common-service/common-service";
+import { Session } from "models/session";
 
 export type UploadProgress = (fileId: number, loaded: number, total: number, currentTime: number) => void;
 
@@ -30,7 +31,7 @@ export class CollectionService extends TrashableResourceService<CollectionResour
         ]);
     }
 
-    async get(uuid: string, showErrors?: boolean, select?: string[]) {
+    async get(uuid: string, showErrors?: boolean, select?: string[], session?: Session) {
         super.validateUuid(uuid);
         // We use a filtered list request to avoid getting the manifest text
         const filters = new FilterBuilder().addEqual('uuid', uuid).getFilters();
@@ -38,8 +39,13 @@ export class CollectionService extends TrashableResourceService<CollectionResour
         if (select) {
             listArgs.select = select;
         }
-        const lst = await super.list(listArgs, showErrors);
-        return lst.items[0];
+
+        if (session) {
+            const lst = await super.list(listArgs, showErrors);
+            return lst.items[0];
+        } else {
+            return super.get(uuid, showErrors, session);
+        }
     }
 
     create(data?: Partial<CollectionResource>) {

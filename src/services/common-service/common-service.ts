@@ -3,10 +3,11 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import { camelCase, isPlainObject, isArray, snakeCase } from "lodash";
-import { AxiosInstance, AxiosPromise } from "axios";
+import { AxiosInstance, AxiosPromise, AxiosRequestConfig } from "axios";
 import uuid from "uuid/v4";
 import { ApiActions } from "services/api/api-actions";
 import QueryString from "query-string";
+import { Session } from "models/session";
 
 interface Errors {
     status: number;
@@ -113,11 +114,18 @@ export class CommonService<T> {
         );
     }
 
-    get(uuid: string, showErrors?: boolean) {
+    get(uuid: string, showErrors?: boolean, select?: string[], session?: Session) {
         this.validateUuid(uuid);
+
+        const cfg: AxiosRequestConfig = {};
+        if (session) {
+            cfg.baseURL = session.baseUrl;
+            cfg.headers = { 'Authorization': 'Bearer ' + session.token };
+        }
+
         return CommonService.defaultResponse(
             this.serverApi
-                .get<T>(`/${this.resourceType}/${uuid}`),
+                .get<T>(`/${this.resourceType}/${uuid}`, session ? cfg : undefined),
             this.actions,
             true, // mapKeys
             showErrors
