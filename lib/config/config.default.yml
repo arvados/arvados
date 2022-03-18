@@ -903,11 +903,6 @@ Clusters:
       # If false, containers are scheduled on preemptible instances
       # only when requested by the submitter.
       #
-      # Note that arvados-cwl-runner does not currently offer a
-      # feature to request preemptible instances, so this value
-      # effectively acts as a cluster-wide decision about whether to
-      # use preemptible instances.
-      #
       # This flag is ignored if no preemptible instance types are
       # configured, and has no effect on top-level containers.
       AlwaysUsePreemptibleInstances: true

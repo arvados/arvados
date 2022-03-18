@@ -330,3 +330,18 @@ $graph:
       doc: |
         Maximum number of GPU devices to request.  If not specified,
         same as `cudaDeviceCountMin`.
+
+- name: UsePreemptible
+  type: record
+  extends: cwl:ProcessRequirement
+  inVocab: false
+  doc: |
+    Specify a workflow step should opt-in or opt-out of using preemptible (spot) instances.
+  fields:
+    class:
+      type: string
+      doc: "Always 'arv:UsePreemptible"
+      jsonldPredicate:
+        _id: "@type"
+        _type: "@vocab"
+    usePreemptible: boolean
