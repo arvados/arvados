@@ -33,7 +33,6 @@ const styles: StyleRulesCallback<CssRules> = theme => ({
     },
     content: {
         overflow: 'auto',
-        height: '100%',
     },
 });
 
@@ -66,6 +65,7 @@ interface MPVPanelDataProps {
     panelIlluminated?: boolean;
     panelRef?: MutableRefObject<any>;
     forwardProps?: boolean;
+    maxHeight?: string;
 }
 
 interface MPVPanelActionProps {
@@ -79,14 +79,23 @@ export type MPVPanelProps = MPVPanelDataProps & MPVPanelActionProps;
 type MPVPanelContentProps = {children: ReactElement} & MPVPanelProps & GridProps;
 
 // Grid item compatible component for layout and MPV props passing
-export const MPVPanelContent = ({doHidePanel, doMaximizePanel, panelName, panelMaximized, panelIlluminated, panelRef, forwardProps, ...props}: MPVPanelContentProps) => {
+export const MPVPanelContent = ({doHidePanel, doMaximizePanel, panelName,
+    panelMaximized, panelIlluminated, panelRef, forwardProps, maxHeight,
+    ...props}: MPVPanelContentProps) => {
     useEffect(() => {
         if (panelRef && panelRef.current) {
             panelRef.current.scrollIntoView({behavior: 'smooth'});
         }
     }, [panelRef]);
 
-    return <Grid item style={{height: '100%'}} {...props}>
+    // If maxHeight is set, only apply it when not maximized
+    const mh = maxHeight
+        ? panelMaximized
+            ? '100%'
+            : maxHeight
+        : undefined;
+
+    return <Grid item style={{maxHeight: mh}} {...props}>
         <span ref={panelRef} /> {/* Element to scroll to when the panel is selected */}
         <Paper style={{height: '100%'}} elevation={panelIlluminated ? 8 : 0}>
             { forwardProps

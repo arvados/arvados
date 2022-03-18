@@ -70,7 +70,7 @@ export const ProcessPanelRoot = withStyles(styles)(
             <MPVPanelContent forwardProps xs="auto">
                 <ProcessDetailsCard process={process} />
             </MPVPanelContent>
-            <MPVPanelContent forwardProps xs>
+            <MPVPanelContent forwardProps xs maxHeight='50%'>
                 <ProcessLogsCard
                     process={process}
                     lines={getProcessPanelLogs(processLogsPanel)}
