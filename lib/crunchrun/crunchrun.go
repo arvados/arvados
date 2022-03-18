@@ -19,6 +19,7 @@ import (
 	"os"
 	"os/exec"
 	"os/signal"
+	"os/user"
 	"path"
 	"path/filepath"
 	"regexp"
@@ -1475,6 +1476,7 @@ func (runner *ContainerRunner) NewArvLogWriter(name string) (io.WriteCloser, err
 // Run the full container lifecycle.
 func (runner *ContainerRunner) Run() (err error) {
 	runner.CrunchLog.Printf("crunch-run %s started", cmd.Version.String())
+	runner.CrunchLog.Printf("%s", currentUserAndGroups())
 	runner.CrunchLog.Printf("Executing container '%s' using %s runtime", runner.Container.UUID, runner.executor.Runtime())
 
 	hostname, hosterr := os.Hostname()
@@ -2044,4 +2046,31 @@ func startLocalKeepstore(configData ConfigData, logbuf io.Writer) (*exec.Cmd, er
 	}
 	os.Setenv("ARVADOS_KEEP_SERVICES", url)
 	return cmd, nil
+}
+
+// return current uid, gid, groups in a format suitable for logging:
+// "crunch-run process has uid=1234(arvados) gid=1234(arvados)
+// groups=1234(arvados),114(fuse)"
+func currentUserAndGroups() string {
+	u, err := user.Current()
+	if err != nil {
+		return fmt.Sprintf("error getting current user ID: %s", err)
+	}
+	s := fmt.Sprintf("crunch-run process has uid=%s(%s) gid=%s", u.Uid, u.Username, u.Gid)
+	if g, err := user.LookupGroupId(u.Gid); err == nil {
+		s += fmt.Sprintf("(%s)", g.Name)
+	}
+	s += " groups="
+	if gids, err := u.GroupIds(); err == nil {
+		for i, gid := range gids {
+			if i > 0 {
+				s += ","
+			}
+			s += gid
+			if g, err := user.LookupGroupId(gid); err == nil {
+				s += fmt.Sprintf("(%s)", g.Name)
+			}
+		}
+	}
+	return s
 }
