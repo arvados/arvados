@@ -15,10 +15,10 @@ Syntax:
 arvswitch <name>
   Set ARVADOS_API_HOST and ARVADOS_API_TOKEN in the current environment based on
   $HOME/.config/arvados/<name>.conf
-  With no arguments, list available Arvados configurations.
+  With no arguments, print current API host and available Arvados configurations.
 
 arvsave <name>
-  Save values of ARVADOS_API_HOST and ARVADOS_API_TOKEN in the current environment to
+  Save current values of ARVADOS_API_HOST and ARVADOS_API_TOKEN in the current environment to
   $HOME/.config/arvados/<name>.conf
 
 arvrm <name>
@@ -26,12 +26,12 @@ arvrm <name>
 
 arvboxswitch <name>
   Set ARVBOX_CONTAINER to <name>
-  With no arguments, list available arvboxes.
+  With no arguments, print current arvbox and available arvboxes.
 
-arvopen:
+arvopen <uuid>
   Open an Arvados uuid in web browser (http://arvadosapi.com)
 
-arvissue
+arvissue <issue number>
   Open an Arvados ticket in web browser (http://dev.arvados.org)
 
 EOF
@@ -61,7 +61,8 @@ arvswitch() {
         fi
     else
         echo "Switch Arvados environment conf"
-        echo "Usage: arvswitch name"
+	echo "Current host: ${ARVADOS_API_HOST}"
+        echo "Usage: arvswitch <name>"
         echo "Available confs:" $((cd $HOME/.config/arvados && ls --indicator-style=none *.conf) | rev | cut -c6- | rev)
     fi
 }
@@ -73,7 +74,7 @@ arvsave() {
         env | grep ARVADOS_ > $HOME/.config/arvados/$1.conf
     else
         echo "Save current Arvados environment variables to conf file"
-        echo "Usage: arvsave name"
+        echo "Usage: arvsave <name>"
     fi
 }
 
@@ -86,25 +87,25 @@ arvrm() {
         fi
     else
         echo "Delete Arvados environment conf"
-        echo "Usage: arvrm name"
+        echo "Usage: arvrm <name>"
     fi
 }
 
 arvboxswitch() {
     if [[ -n "$1" ]] ; then
+        export ARVBOX_CONTAINER=$1
         if [[ -d $HOME/.arvbox/$1 ]] ; then
-            export ARVBOX_CONTAINER=$1
             echo "Arvbox switched to $1"
         else
-            echo "$1 unknown"
+            echo "Warning: $1 doesn't exist, will be created."
         fi
     else
         if test -z "$ARVBOX_CONTAINER" ; then
             ARVBOX_CONTAINER=arvbox
         fi
         echo "Switch Arvbox environment conf"
-        echo "Usage: arvboxswitch name"
         echo "Your current container is: $ARVBOX_CONTAINER"
+        echo "Usage: arvboxswitch <name>"
         echo "Available confs:" $(cd $HOME/.arvbox && ls --indicator-style=none)
     fi
 }
@@ -114,7 +115,7 @@ arvopen() {
         xdg-open https://arvadosapi.com/$1
     else
         echo "Open Arvados uuid in browser"
-        echo "Usage: arvopen uuid"
+        echo "Usage: arvopen <uuid>"
     fi
 }
 
@@ -123,6 +124,6 @@ arvissue() {
         xdg-open https://dev.arvados.org/issues/$1
     else
         echo "Open Arvados issue in browser"
-        echo "Usage: arvissue uuid"
+        echo "Usage: arvissue <issue number>"
     fi
 }
