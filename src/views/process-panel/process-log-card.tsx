@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import React from 'react';
+import React, { useState } from 'react';
 import {
     StyleRulesCallback,
     WithStyles,
@@ -20,7 +20,8 @@ import {
     CloseIcon,
     CollectionIcon,
     LogIcon,
-    MaximizeIcon
+    MaximizeIcon,
+    WordWrapIcon
 } from 'components/icon/icon';
 import { Process } from 'store/processes/process';
 import { MPVPanelProps } from 'components/multi-panel-view/multi-panel-view';
@@ -84,8 +85,9 @@ type ProcessLogsCardProps = ProcessLogsCardDataProps
 
 export const ProcessLogsCard = withStyles(styles)(
     ({ classes, process, filters, selectedFilter, lines, onLogFilterChange, navigateToLog,
-        doHidePanel, doMaximizePanel, panelMaximized, panelName }: ProcessLogsCardProps) =>
-        <Grid item className={classes.root} xs={12}>
+        doHidePanel, doMaximizePanel, panelMaximized, panelName }: ProcessLogsCardProps) => {
+        const [wordWrapToggle, setWordWrapToggle] = useState<boolean>(true);
+        return <Grid item className={classes.root} xs={12}>
             <Card className={classes.card}>
                 <CardHeader className={classes.header}
                     avatar={<LogIcon className={classes.iconHeader} />}
@@ -93,6 +95,13 @@ export const ProcessLogsCard = withStyles(styles)(
                         <Grid item>
                             <ProcessLogForm selectedFilter={selectedFilter}
                                 filters={filters} onChange={onLogFilterChange} />
+                        </Grid>
+                        <Grid item>
+                            <Tooltip title="Toggle word wrapping" disableFocusListener>
+                                <IconButton onClick={() => setWordWrapToggle(!wordWrapToggle)}>
+                                    <WordWrapIcon />
+                                </IconButton>
+                            </Tooltip>
                         </Grid>
                         <Grid item>
                             <Tooltip title="Go to Log collection" disableFocusListener>
@@ -124,7 +133,7 @@ export const ProcessLogsCard = withStyles(styles)(
                             spacing={24}
                             direction='column'>
                             <Grid className={classes.logViewer} item xs>
-                                <ProcessLogCodeSnippet lines={lines} />
+                                <ProcessLogCodeSnippet wordWrap={wordWrapToggle} lines={lines} />
                             </Grid>
                         </Grid>
                         : <DefaultView
@@ -134,5 +143,5 @@ export const ProcessLogsCard = withStyles(styles)(
                 </CardContent>
             </Card>
         </Grid >
-);
+});
 

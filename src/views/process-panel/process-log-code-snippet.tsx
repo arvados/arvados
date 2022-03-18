@@ -8,10 +8,11 @@ import { CodeSnippet } from 'components/code-snippet/code-snippet';
 import grey from '@material-ui/core/colors/grey';
 import { ArvadosTheme } from 'common/custom-theme';
 
-type CssRules = 'codeSnippet' | 'codeSnippetContainer';
+type CssRules = 'wordWrap' | 'codeSnippetContainer';
 
 const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
-    codeSnippet: {
+    wordWrap: {
+        whiteSpace: 'pre-wrap',
     },
     codeSnippetContainer: {
         height: `calc(100% - ${theme.spacing.unit * 4}px)`, // so that horizontal scollbar is visible
@@ -37,11 +38,13 @@ const theme = createMuiTheme({
 
 interface ProcessLogCodeSnippetProps {
     lines: string[];
+    wordWrap?: boolean;
 }
 
 export const ProcessLogCodeSnippet = withStyles(styles)(
     (props: ProcessLogCodeSnippetProps & WithStyles<CssRules>) =>
         <MuiThemeProvider theme={theme}>
-            <CodeSnippet lines={props.lines} className={props.classes.codeSnippet}
+            <CodeSnippet lines={props.lines}
+                className={props.wordWrap ? props.classes.wordWrap : undefined}
                 containerClassName={props.classes.codeSnippetContainer} />
         </MuiThemeProvider>);
