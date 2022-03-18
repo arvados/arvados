@@ -13,7 +13,15 @@ h2(#performance). Performance
 
 To get the best perfomance from your workflows, be aware of the following Arvados features, behaviors, and best practices.
 
-Does your application support NVIDIA GPU acceleration?  Use "cwltool:CUDARequirement":cwl-extensions.html#CUDARequirement to request nodes with GPUs.
+h3. Does your application support NVIDIA GPU acceleration?
+
+Use "cwltool:CUDARequirement":cwl-extensions.html#CUDARequirement to request nodes with GPUs.
+
+h3. Trying to reduce costs?
+
+Try "using preemptible (spot) instances":cwl-run-options.html#preemptible .
+
+h3. You have a sequence of short-running steps
 
 If you have a sequence of short-running steps (less than 1-2 minutes each), use the Arvados extension "arv:RunInSingleContainer":cwl-extensions.html#RunInSingleContainer to avoid scheduling and data transfer overhead by running all the steps together in the same container on the same node.  To use this feature, @cwltool@ must be installed in the container image.  Example:
 
@@ -42,9 +50,15 @@ steps:
     run: subworkflow-with-short-steps.cwl
 {% endcodeblock %}
 
+h3. Avoid declaring @InlineJavascriptRequirement@ or @ShellCommandRequirement@
+
 Avoid declaring @InlineJavascriptRequirement@ or @ShellCommandRequirement@ unless you specifically need them.  Don't include them "just in case" because they change the default behavior and may add extra overhead.
 
+h3. Prefer text substitution to Javascript
+
 When combining a parameter value with a string, such as adding a filename extension, write @$(inputs.file.basename).ext@ instead of @$(inputs.file.basename + 'ext')@.  The first form is evaluated as a simple text substitution, the second form (using the @+@ operator) is evaluated as an arbitrary Javascript expression and requires that you declare @InlineJavascriptRequirement@.
+
+h3. Use @ExpressionTool@ to efficiently rearrange input files
 
 Use @ExpressionTool@ to efficiently rearrange input files between steps of a Workflow.  For example, the following expression accepts a directory containing files paired by @_R1_@ and @_R2_@ and produces an array of Directories containing each pair.
 
@@ -80,9 +94,13 @@ expression: |
   }
 {% endcodeblock %}
 
-Available compute nodes types vary over time and across different cloud providers, so try to limit the RAM requirement to what the program actually needs.  However, if you need to target a specific compute node type, see this discussion on "calculating RAM request and choosing instance type for containers.":{{site.baseurl}}/api/execution.html#RAM
+h3. Limit RAM requests to what you really need
 
-Instead of scattering separate steps, prefer to scatter over a subworkflow.
+Available compute nodes types vary over time and across different cloud providers, so it is important to limit the RAM requirement to what the program actually needs.  However, if you need to target a specific compute node type, see this discussion on "calculating RAM request and choosing instance type for containers.":{{site.baseurl}}/api/execution.html#RAM
+
+h3. Avoid scattering by step by step
+
+Instead of a scatter step that feeds into another scatter step, prefer to scatter over a subworkflow.
 
 With the following pattern, @step1@ has to wait for all samples to complete before @step2@ can start computing on any samples.  This means a single long-running sample can prevent the rest of the workflow from moving on:
 
@@ -148,9 +166,15 @@ h2. Portability
 
 To write workflows that are easy to modify and portable across CWL runners (in the event you need to share your workflow with others), there are several best practices to follow:
 
+h3. Always provide @DockerRequirement@
+
 Workflows should always provide @DockerRequirement@ in the @hints@ or @requirements@ section.
 
+h3. Build a reusable library of components
+
 Build a reusable library of components.  Share tool wrappers and subworkflows between projects.  Make use of and contribute to "community maintained workflows and tools":https://github.com/common-workflow-library and tool registries such as "Dockstore":http://dockstore.org .
+
+h3. Supply scripts as input parameters
 
 CommandLineTools wrapping custom scripts should represent the script as an input parameter with the script file as a default value.  Use @secondaryFiles@ for scripts that consist of multiple files.  For example:
 
@@ -180,22 +204,21 @@ outputs:
       glob: "*.fastq"
 {% endcodeblock %}
 
+h3. Getting the temporary and output directories
+
 You can get the designated temporary directory using @$(runtime.tmpdir)@ in your CWL file, or from the @$TMPDIR@ environment variable in your script.
 
 Similarly, you can get the designated output directory using $(runtime.outdir), or from the @HOME@ environment variable in your script.
 
-Avoid specifying resource requirements in CommandLineTool.  Prefer to specify them in the workflow.  You can provide a default resource requirement in the top level @hints@ section, and individual steps can override it with their own resource requirement.
+h3. Specifying @ResourceRequirement@
+
+Avoid specifying resources in the @requirements@ section of a @CommandLineTool@, put it in the @hints@ section instead.  This enables you to override the tool resource hint with a workflow step level requirement:
 
 {% codeblock as yaml %}
 cwlVersion: v1.0
 class: Workflow
 inputs:
   inp: File
-hints:
-  ResourceRequirement:
-    ramMin: 1000
-    coresMin: 1
-    tmpdirMin: 45000
 steps:
   step1:
     in: {inp: inp}
@@ -205,7 +228,7 @@ steps:
     in: {inp: step1/inp}
     out: [out]
     run: tool2.cwl
-    hints:
+    requirements:
       ResourceRequirement:
         ramMin: 2000
         coresMin: 2

@@ -63,6 +63,9 @@ table(table table-bordered table-condensed).
 |==--priority== PRIORITY|Workflow priority (range 1..1000, higher has precedence over lower)|
 |==--thread-count== THREAD_COUNT|Number of threads to use for container submit and output collection.|
 |==--http-timeout== HTTP_TIMEOUT|API request timeout in seconds. Default is 300 seconds (5 minutes).|
+|==--enable-preemptible==|Use preemptible instances. Control individual steps with "arv:UsePreemptible":cwl-extensions.html#UsePreemptible hint.|
+|==--disable-preemptible==|Don't use preemptible instances.|
+|==--skip-schemas==|Skip loading of extension schemas (the $schemas section).|
 |==--trash-intermediate==|Immediately trash intermediate outputs on workflow success.|
 |==--no-trash-intermediate==|Do not trash intermediate outputs (default).|
 
@@ -143,3 +146,19 @@ Using @--intermediate-output-ttl@ without @--trash-intermediate@ means that inte
 h3(#federation). Run workflow on a remote federated cluster
 
 By default, the workflow runner will run on the local (home) cluster.  Using @--submit-runner-cluster@ you can specify that the runner should be submitted to a remote federated cluster.  When doing this, @--project-uuid@ should specify a project on that cluster.  Steps making up the workflow will be submitted to the remote federated cluster by default, but the behavior of @arv:ClusterTarget@ is unchanged.  Note: when using this option, any resources that need to be uploaded in order to run the workflow (such as files or Docker images) will be uploaded to the local (home) cluster, and streamed to the federated cluster on demand.
+
+h3(#preemptible). Using preemptible (spot) instances
+
+Preemptible instances typically offer lower cost computation with a tradeoff of lower service guarantees.  If a compute node is preempted, Arvados will restart the computation on a new instance.
+
+If the sitewide configuration @Containers.AlwaysUsePreemptibleInstances@ is true, workflow steps will always select preemptible instances, regardless of user option.
+
+If @Containers.AlwaysUsePreemptibleInstances@ is false, you can request preemptible instances for a specific run with the @arvados-cwl-runner --enable-preemptible@ option.
+
+Within the workflow, you can control whether individual steps should be preemptible with the "arv:UsePreemptible":cwl-extensions.html#UsePreemptible hint.
+
+If a workflow requests preemptible instances with "arv:UsePreemptible":cwl-extensions.html#UsePreemptible , but you _do not_ want to use preemptible instances, you can override it for a specific run with the @arvados-cwl-runner --disable-preemptible@ option.
+
+h3(#gpu). Use CUDA GPU instances
+
+See "cwltool:CUDARequirement":cwl-extensions.html#CUDARequirement .

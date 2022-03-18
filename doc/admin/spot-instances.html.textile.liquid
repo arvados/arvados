@@ -16,13 +16,11 @@ Currently Arvados supports preemptible instances using AWS and Azure spot instan
 
 h2. Configuration
 
-First, ensure automatic selection of preemptible instances is not disabled in your configuration file (this is enabled by default, but can be disabled with @AlwaysUsePreemptibleInstances: false@), and add entries to @InstanceTypes@ that have @Preemptible: true@.  Typically you want to add both preemptible and non-preemptible entries for each cloud provider VM type.  The @Price@ for preemptible instances is the maximum bid price, the actual price paid is dynamic and will likely be lower.  For example:
+Add entries to @InstanceTypes@ that have @Preemptible: true@.  Typically you want to add both preemptible and non-preemptible entries for each cloud provider VM type.  The @Price@ for preemptible instances is the maximum bid price, the actual price paid is dynamic and will likely be lower.  For example:
 
 <pre>
 Clusters:
-  ClusterID: 
-    Containers:
-      AlwaysUsePreemptibleInstances: true
+  ClusterID:
     InstanceTypes:
       m4.large:
         Preemptible: false
@@ -40,7 +38,18 @@ Clusters:
         Price: 0.1
 </pre>
 
-When @AlwaysUsePreemptibleInstances@ is enabled, child containers (workflow steps) will automatically be made preemptible.  Note that because preempting the workflow runner would cancel the entire workflow, the workflow runner runs in a reserved (non-preemptible) instance.
+Next, you can choose to enable automatic use of preemptible instances:
+
+<pre>
+    Containers:
+      AlwaysUsePreemptibleInstances: true
+</pre>
+
+If @AlwaysUsePreemptibleInstances@ is "true", child containers (workflow steps) will always select preemptible instances, regardless of user option.
+
+If @AlwaysUsePreemptibleInstances@ is "false" (the default) or unspecified, preemptible instance are "used when requested by the user.":{{site.baseurl}}/user/cwl/cwl-run-options.html#preemptible
+
+Note that regardless of the value of @AlwaysUsePreemptibleInstances@, the top level workflow runner container always runs in a reserved (non-preemptible) instance, to avoid situations where the workflow runner is killed requiring the entire to be restarted.
 
 No additional configuration is required, "arvados-dispatch-cloud":{{site.baseurl}}/install/crunch2-cloud/install-dispatch-cloud.html will now start preemptible instances where appropriate.
 
