@@ -695,3 +695,38 @@ Clusters:
 	_, err = ldr.Load()
 	c.Assert(err, check.ErrorMatches, `there is no default storage class.*`)
 }
+
+func (s *LoadSuite) TestPreemptiblePriceFactor(c *check.C) {
+	yaml := `
+Clusters:
+ z1111:
+  InstanceTypes:
+   Type1:
+    RAM: 12345M
+    VCPUs: 8
+    Price: 1.23
+ z2222:
+  Containers:
+   PreemptiblePriceFactor: 0.5
+  InstanceTypes:
+   Type1:
+    RAM: 12345M
+    VCPUs: 8
+    Price: 1.23
+`
+	cfg, err := testLoader(c, yaml, nil).Load()
+	c.Assert(err, check.IsNil)
+	cc, err := cfg.GetCluster("z1111")
+	c.Assert(err, check.IsNil)
+	c.Check(cc.InstanceTypes["Type1"].Price, check.Equals, 1.23)
+	c.Check(cc.InstanceTypes, check.HasLen, 1)
+
+	cc, err = cfg.GetCluster("z2222")
+	c.Assert(err, check.IsNil)
+	c.Check(cc.InstanceTypes["Type1"].Preemptible, check.Equals, false)
+	c.Check(cc.InstanceTypes["Type1"].Price, check.Equals, 1.23)
+	c.Check(cc.InstanceTypes["Type1.preemptible"].Preemptible, check.Equals, true)
+	c.Check(cc.InstanceTypes["Type1.preemptible"].Price, check.Equals, 1.23/2)
+	c.Check(cc.InstanceTypes["Type1.preemptible"].ProviderType, check.Equals, "Type1")
+	c.Check(cc.InstanceTypes, check.HasLen, 2)
+}

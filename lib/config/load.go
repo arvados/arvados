@@ -285,6 +285,19 @@ func (ldr *Loader) Load() (*arvados.Config, error) {
 		}
 	}
 
+	// Preprocess/automate some configs
+	for id, cc := range cfg.Clusters {
+		ldr.autofillPreemptible(&cc)
+
+		if strings.Count(cc.Users.AnonymousUserToken, "/") == 3 {
+			// V2 token, strip it to just a secret
+			tmp := strings.Split(cc.Users.AnonymousUserToken, "/")
+			cc.Users.AnonymousUserToken = tmp[2]
+		}
+
+		cfg.Clusters[id] = cc
+	}
+
 	// Check for known mistakes
 	for id, cc := range cfg.Clusters {
 		for remote := range cc.RemoteClusters {
@@ -315,11 +328,6 @@ func (ldr *Loader) Load() (*arvados.Config, error) {
 			if err != nil {
 				return nil, err
 			}
-		}
-		if strings.Count(cc.Users.AnonymousUserToken, "/") == 3 {
-			// V2 token, strip it to just a secret
-			tmp := strings.Split(cc.Users.AnonymousUserToken, "/")
-			cc.Users.AnonymousUserToken = tmp[2]
 		}
 	}
 	return &cfg, nil
@@ -526,4 +534,18 @@ func (ldr *Loader) logExtraKeys(expected, supplied map[string]interface{}, prefi
 			ldr.logExtraKeys(vexp, vsupp, prefix+k+".")
 		}
 	}
+}
+
+func (ldr *Loader) autofillPreemptible(cc *arvados.Cluster) {
+	if factor := cc.Containers.PreemptiblePriceFactor; factor > 0 {
+		for name, it := range cc.InstanceTypes {
+			if !it.Preemptible {
+				it.Preemptible = true
+				it.Price = it.Price * factor
+				it.Name = name + ".preemptible"
+				cc.InstanceTypes[it.Name] = it
+			}
+		}
+	}
+
 }

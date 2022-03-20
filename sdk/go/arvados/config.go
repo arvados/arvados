@@ -445,6 +445,7 @@ type ContainersConfig struct {
 	StaleLockTimeout              Duration
 	SupportedDockerImageFormats   StringSet
 	AlwaysUsePreemptibleInstances bool
+	PreemptiblePriceFactor        float64
 	RuntimeEngine                 string
 	LocalKeepBlobBuffersPerVCPU   int
 	LocalKeepLogsToContainerLog   string
