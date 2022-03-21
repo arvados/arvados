@@ -28,9 +28,19 @@ TODO: extract this information based on git commit messages and generate changel
 <div class="releasenotes">
 </notextile>
 
-h2(#main). development main (as of 2022-02-10)
+h2(#main). development main (as of 2022-03-08)
 
 "previous: Upgrading to 2.3.0":#v2_3_0
+
+h3. Ubuntu 18.04 Arvados Python packages now depend on python-3.8
+
+Ubuntu 18.04 ships with Python 3.6 as the default version of Python 3. Ubuntu also ships a version of Python 3.8, and the Arvados Python packages (@python3-arvados-cwl-runner@, @python3-arvados-fuse@, @python3-arvados-python-client@, @python3-arvados-user-activity@ and @python3-crunchstat-summary@) now depend on the @python-3.8@ system package.
+
+This means that they are now installed under @/usr/share/python3.8@ (before, the path was @/usr/share/python3@). If you rely on the @python3@ executable from the packages (e.g. to load a virtualenv), you may need to update the path to that executable.
+
+h3. Minimum supported Ruby version is now 2.6
+
+The minimum supported Ruby version is now 2.6.  If you are running Arvados on Debian 10 or Ubuntu 18.04, you may need to switch to using RVM or upgrade your OS.  See "Install Ruby and Bundler":../install/ruby.html for more information.
 
 h3. Anonymous token changes
 

@@ -25,7 +25,7 @@
     "region": "{{user `aws_default_region`}}",
     "ena_support": "true",
     "source_ami": "{{user `aws_source_ami`}}",
-    "instance_type": "m4.large",
+    "instance_type": "m5.large",
     "vpc_id": "{{user `vpc_id`}}",
     "subnet_id": "{{user `subnet_id`}}",
     "associate_public_ip_address": "{{user `associate_public_ip_address`}}",
@@ -34,7 +34,7 @@
     "launch_block_device_mappings": [{
       "device_name": "/dev/xvda",
       "volume_size": 20,
-      "volume_type": "gp2",
+      "volume_type": "gp3",
       "delete_on_termination": true
     }],
     "ami_block_device_mappings": [

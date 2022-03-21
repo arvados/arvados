@@ -34,19 +34,11 @@ if ! grep "^arvbox:" /etc/passwd >/dev/null 2>/dev/null ; then
         chown arvbox:arvbox -R /usr/local $ARVADOS_CONTAINER_PATH \
               /var/lib/passenger /var/lib/postgresql \
               /var/lib/nginx /var/log/nginx /etc/ssl/private \
-              /var/lib/gopath /var/lib/pip /var/lib/npm \
-              /var/lib/arvados
+              /var/lib/gopath /var/lib/pip /var/lib/npm
     fi
 
     mkdir -p /tmp/crunch0 /tmp/crunch1
     chown crunch:crunch -R /tmp/crunch0 /tmp/crunch1
-
-    # singularity needs to be owned by root and suid
-    chown root /var/lib/arvados/bin/singularity \
-	  /var/lib/arvados/etc/singularity/singularity.conf \
-	  /var/lib/arvados/etc/singularity/capability.json \
-	  /var/lib/arvados/etc/singularity/ecl.toml
-    chmod u+s /var/lib/arvados/bin/singularity
 
     echo "arvbox    ALL=(crunch) NOPASSWD: ALL" >> /etc/sudoers
 

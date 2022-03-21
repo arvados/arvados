@@ -240,6 +240,18 @@ Clusters:
       # https://doc.arvados.org/admin/metadata-vocabulary.html
       VocabularyPath: ""
 
+      # If true, a project must have a non-empty description field in
+      # order to be frozen.
+      FreezeProjectRequiresDescription: false
+
+      # Project properties that must have non-empty values in order to
+      # freeze a project. Example: {"property_name": true}
+      FreezeProjectRequiresProperties: {}
+
+      # If true, only an admin user can un-freeze a project. If false,
+      # any user with "manage" permission can un-freeze.
+      UnfreezeProjectRequiresAdmin: false
+
     Users:
       # Config parameters to automatically setup new users.  If enabled,
       # this users will be able to self-activate.  Enable this if you want
@@ -902,11 +914,6 @@ Clusters:
       #
       # If false, containers are scheduled on preemptible instances
       # only when requested by the submitter.
-      #
-      # Note that arvados-cwl-runner does not currently offer a
-      # feature to request preemptible instances, so this value
-      # effectively acts as a cluster-wide decision about whether to
-      # use preemptible instances.
       #
       # This flag is ignored if no preemptible instance types are
       # configured, and has no effect on top-level containers.

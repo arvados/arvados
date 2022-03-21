@@ -29,6 +29,7 @@ usage() {
   echo >&2 "                                                controller"
   echo >&2 "                                                dispatcher"
   echo >&2 "                                                keepproxy"
+  echo >&2 "                                                keepbalance"
   echo >&2 "                                                keepstore"
   echo >&2 "                                                keepweb"
   echo >&2 "                                                shell"
@@ -107,7 +108,7 @@ arguments() {
         for i in ${2//,/ }
           do
             # Verify the role exists
-            if [[ ! "database,api,controller,keepstore,websocket,keepweb,workbench2,webshell,keepproxy,shell,workbench,dispatcher" == *"$i"* ]]; then
+            if [[ ! "database,api,controller,keepstore,websocket,keepweb,workbench2,webshell,keepbalance,keepproxy,shell,workbench,dispatcher" == *"$i"* ]]; then
               echo "The role '${i}' is not a valid role"
               usage
               exit 1
@@ -164,6 +165,8 @@ LOG_LEVEL="info"
 CONTROLLER_EXT_SSL_PORT=443
 TESTS_DIR="tests"
 
+NGINX_INSTALL_SOURCE="install_from_repo"
+
 CLUSTER=""
 DOMAIN=""
 
@@ -204,9 +207,9 @@ VERSION="latest"
 # BRANCH="main"
 
 # Other formula versions we depend on
-POSTGRES_TAG="v0.43.0"
-NGINX_TAG="v2.8.0"
-DOCKER_TAG="v2.0.7"
+POSTGRES_TAG="v0.44.0"
+NGINX_TAG="v2.8.1"
+DOCKER_TAG="v2.4.2"
 LOCALE_TAG="v0.3.4"
 LETSENCRYPT_TAG="v2.1.0"
 
@@ -260,7 +263,7 @@ if [ ! -z "${HOSTNAME_EXT}" ] ; then
   # Make sure that the value configured as IP_INT is a real IP on the system.
   # If we don't error out early here when there is a mismatch, the formula will
   # fail with hard to interpret nginx errors later on.
-  ip addr list |grep -q " ${IP_INT}/"
+  ip addr list |grep -q "${IP_INT}/"
   if [[ $? -ne 0 ]]; then
     echo "Unable to find the IP_INT address '${IP_INT}' on the system, please correct the value in local.params. Exiting..."
     exit 1
@@ -283,7 +286,7 @@ else
   case ${OS_ID} in
     "centos")
       echo "WARNING! Disabling SELinux, see https://dev.arvados.org/issues/18019"
-      sed -i 's/SELINUX=enforcing/SELINUX=permissive' /etc/sysconfig/selinux
+      sed -i 's/SELINUX=enforcing/SELINUX=permissive/g' /etc/sysconfig/selinux
       setenforce permissive
       yum install -y  curl git jq
       ;;
@@ -473,6 +476,7 @@ if [ -d "${SOURCE_STATES_DIR}" ]; then
          s#__WORKBENCH2_INT_IP__#${WORKBENCH2_INT_IP}#g;
          s#__DATABASE_INT_IP__#${DATABASE_INT_IP}#g;
          s#__WEBSHELL_EXT_SSL_PORT__#${WEBSHELL_EXT_SSL_PORT}#g;
+         s#__SHELL_INT_IP__#${SHELL_INT_IP}#g;
          s#__WEBSOCKET_EXT_SSL_PORT__#${WEBSOCKET_EXT_SSL_PORT}#g;
          s#__WORKBENCH1_EXT_SSL_PORT__#${WORKBENCH1_EXT_SSL_PORT}#g;
          s#__WORKBENCH2_EXT_SSL_PORT__#${WORKBENCH2_EXT_SSL_PORT}#g;
@@ -557,6 +561,10 @@ if [ -z "${ROLES}" ]; then
   echo "    - nginx_workbench_configuration" >> ${P_DIR}/top.sls
   echo "    - postgresql" >> ${P_DIR}/top.sls
 
+  # We need to tweak the Nginx's pillar depending whether we want plan nginx or nginx+passenger
+  NGINX_INSTALL_SOURCE="install_from_phusionpassenger"
+  sed -i "s/__NGINX_INSTALL_SOURCE__/${NGINX_INSTALL_SOURCE}/g" ${P_DIR}/nginx_passenger.sls
+
   if [ "${SSL_MODE}" = "lets-encrypt" ]; then
     if [ "${USE_LETSENCRYPT_ROUTE53}" = "yes" ]; then
       grep -q "aws_credentials" ${P_DIR}/top.sls || echo "    - aws_credentials" >> ${P_DIR}/top.sls
@@ -564,18 +572,10 @@ if [ -z "${ROLES}" ]; then
     grep -q "letsencrypt" ${P_DIR}/top.sls || echo "    - letsencrypt" >> ${P_DIR}/top.sls
 
     # As the pillar differ whether we use LE or custom certs, we need to do a final edition on them
-    for c in controller websocket workbench workbench2 webshell keepweb keepproxy; do
-      if [ "${USE_SINGLE_HOSTNAME}" = "yes" ]; then
-        # Are we in a single-host-single-hostname env?
-        CERT_NAME=${HOSTNAME_EXT}
-      else
-        # We are in a single-host-multiple-hostnames env
-        CERT_NAME=${c}.${CLUSTER}.${DOMAIN}
-      fi
-
-      sed -i "s/__CERT_REQUIRES__/cmd: create-initial-cert-${CERT_NAME}*/g;
-              s#__CERT_PEM__#/etc/letsencrypt/live/${CERT_NAME}/fullchain.pem#g;
-              s#__CERT_KEY__#/etc/letsencrypt/live/${CERT_NAME}/privkey.pem#g" \
+    for c in controller websocket workbench workbench2 webshell download collections keepproxy; do
+      sed -i "s/__CERT_REQUIRES__/cmd: create-initial-cert-${c}.${CLUSTER}.${DOMAIN}*/g;
+              s#__CERT_PEM__#/etc/letsencrypt/live/${c}.${CLUSTER}.${DOMAIN}/fullchain.pem#g;
+              s#__CERT_KEY__#/etc/letsencrypt/live/${c}.${CLUSTER}.${DOMAIN}/privkey.pem#g" \
       ${P_DIR}/nginx_${c}_configuration.sls
     done
   else
@@ -634,10 +634,13 @@ else
         # States
         # FIXME: https://dev.arvados.org/issues/17352
         grep -q "postgres.client" ${S_DIR}/top.sls || echo "    - postgres.client" >> ${S_DIR}/top.sls
-        grep -q "nginx.passenger" ${S_DIR}/top.sls || echo "    - nginx.passenger" >> ${S_DIR}/top.sls
+        if grep -q "    - nginx.*$" ${S_DIR}/top.sls; then
+          sed -i s/"^    - nginx.*$"/"    - nginx.passenger"/g ${S_DIR}/top.sls
+        else
+          echo "    - nginx.passenger" >> ${S_DIR}/top.sls
+        fi
         ### If we don't install and run LE before arvados-api-server, it fails and breaks everything
         ### after it. So we add this here as we are, after all, sharing the host for api and controller
-        # Currently, only available on config_examples/multi_host/aws
         if [ "${SSL_MODE}" = "lets-encrypt" ]; then
           if [ "${USE_LETSENCRYPT_ROUTE53}" = "yes" ]; then
             grep -q "aws_credentials" ${S_DIR}/top.sls || echo "    - aws_credentials" >> ${S_DIR}/top.sls
@@ -656,11 +659,23 @@ else
         grep -q "postgresql" ${P_DIR}/top.sls               || echo "    - postgresql" >> ${P_DIR}/top.sls
         grep -q "nginx_passenger" ${P_DIR}/top.sls          || echo "    - nginx_passenger" >> ${P_DIR}/top.sls
         grep -q "nginx_${R}_configuration" ${P_DIR}/top.sls || echo "    - nginx_${R}_configuration" >> ${P_DIR}/top.sls
+
+        # We need to tweak the Nginx's pillar depending whether we want plain nginx or nginx+passenger
+        NGINX_INSTALL_SOURCE="install_from_phusionpassenger"
+        sed -i "s/__NGINX_INSTALL_SOURCE__/${NGINX_INSTALL_SOURCE}/g" ${P_DIR}/nginx_passenger.sls
       ;;
       "controller" | "websocket" | "workbench" | "workbench2" | "webshell" | "keepweb" | "keepproxy")
         # States
-        grep -q "nginx.passenger" ${S_DIR}/top.sls || echo "    - nginx.passenger" >> ${S_DIR}/top.sls
-        # Currently, only available on config_examples/multi_host/aws
+        if [ "${R}" = "workbench" ]; then
+          NGINX_INSTALL_SOURCE="install_from_phusionpassenger"
+          if grep -q "    - nginx$" ${S_DIR}/top.sls; then
+            sed -i s/"^    - nginx.*$"/"    - nginx.passenger"/g ${S_DIR}/top.sls
+          else
+            echo "    - nginx.passenger" >> ${S_DIR}/top.sls
+          fi
+        else
+          grep -q "nginx" ${S_DIR}/top.sls || echo "    - nginx" >> ${S_DIR}/top.sls
+        fi
         if [ "${SSL_MODE}" = "lets-encrypt" ]; then
           if [ "x${USE_LETSENCRYPT_ROUTE53}" = "xyes" ]; then
             grep -q "aws_credentials" ${S_DIR}/top.sls || echo "    - aws_credentials" >> ${S_DIR}/top.sls
@@ -692,7 +707,6 @@ else
           grep -q "nginx_collections_configuration" ${P_DIR}/top.sls || echo "    - nginx_collections_configuration" >> ${P_DIR}/top.sls
         fi
 
-        # Currently, only available on config_examples/multi_host/aws
         if [ "${SSL_MODE}" = "lets-encrypt" ]; then
           if [ "${USE_LETSENCRYPT_ROUTE53}" = "yes" ]; then
             grep -q "aws_credentials" ${P_DIR}/top.sls || echo "    - aws_credentials" >> ${P_DIR}/top.sls
@@ -734,6 +748,8 @@ else
             grep -q ${R} ${P_DIR}/extra_custom_certs.sls || echo "  - ${R}" >> ${P_DIR}/extra_custom_certs.sls
           fi
         fi
+        # We need to tweak the Nginx's pillar depending whether we want plain nginx or nginx+passenger
+        sed -i "s/__NGINX_INSTALL_SOURCE__/${NGINX_INSTALL_SOURCE}/g" ${P_DIR}/nginx_passenger.sls
       ;;
       "shell")
         # States
@@ -742,13 +758,7 @@ else
         # Pillars
         grep -q "docker" ${P_DIR}/top.sls       || echo "    - docker" >> ${P_DIR}/top.sls
       ;;
-      "dispatcher")
-        # States
-        grep -q "arvados.${R}" ${S_DIR}/top.sls || echo "    - arvados.${R}" >> ${S_DIR}/top.sls
-        # Pillars
-        # ATM, no specific pillar needed
-      ;;
-      "keepstore")
+      "dispatcher" | "keepbalance" | "keepstore")
         # States
         grep -q "arvados.${R}" ${S_DIR}/top.sls || echo "    - arvados.${R}" >> ${S_DIR}/top.sls
         # Pillars
@@ -767,19 +777,6 @@ if [ "${DUMP_CONFIG}" = "yes" ]; then
   exit 0
 fi
 
-# FIXME! #16992 Temporary fix for psql call in arvados-api-server
-if [ -e /root/.psqlrc ]; then
-  if ! ( grep 'pset pager off' /root/.psqlrc ); then
-    RESTORE_PSQL="yes"
-    cp /root/.psqlrc /root/.psqlrc.provision.backup
-  fi
-else
-  DELETE_PSQL="yes"
-fi
-
-echo '\pset pager off' >> /root/.psqlrc
-# END FIXME! #16992 Temporary fix for psql call in arvados-api-server
-
 # Now run the install
 salt-call --local state.apply -l ${LOG_LEVEL}
 
@@ -788,18 +785,6 @@ if [ -d /etc/cloud/cloud.cfg.d ]; then
   # TODO: will this work on CentOS?
   sed -i 's/^manage_etc_hosts: true/#manage_etc_hosts: true/g' /etc/cloud/cloud.cfg.d/*
 fi
-
-# FIXME! #16992 Temporary fix for psql call in arvados-api-server
-if [ "x${DELETE_PSQL}" = "xyes" ]; then
-  echo "Removing .psql file"
-  rm /root/.psqlrc
-fi
-
-if [ "x${RESTORE_PSQL}" = "xyes" ]; then
-  echo "Restoring .psql file"
-  mv -v /root/.psqlrc.provision.backup /root/.psqlrc
-fi
-# END FIXME! #16992 Temporary fix for psql call in arvados-api-server
 
 # Leave a copy of the Arvados CA so the user can copy it where it's required
 if [ "$DEV_MODE" = "yes" ]; then

@@ -6,6 +6,7 @@ package arvados
 
 import (
 	"context"
+	"errors"
 	"io"
 )
 
@@ -29,4 +30,17 @@ type keepClient interface {
 
 type apiClient interface {
 	RequestAndDecode(dst interface{}, method, path string, body io.Reader, params interface{}) error
+}
+
+var errStubClient = errors.New("stub client")
+
+type StubClient struct{}
+
+func (*StubClient) ReadAt(string, []byte, int) (int, error) { return 0, errStubClient }
+func (*StubClient) LocalLocator(loc string) (string, error) { return loc, nil }
+func (*StubClient) BlockWrite(context.Context, BlockWriteOptions) (BlockWriteResponse, error) {
+	return BlockWriteResponse{}, errStubClient
+}
+func (*StubClient) RequestAndDecode(_ interface{}, _, _ string, _ io.Reader, _ interface{}) error {
+	return errStubClient
 }

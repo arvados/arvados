@@ -47,6 +47,7 @@ We suggest distributing the Arvados components in the following way, creating at
 ## arvados controller
 ## arvados websocket
 ## arvados cloud dispatcher
+## arvados keepbalance
 # WORKBENCH node:
 ## arvados workbench
 ## arvados workbench2
@@ -150,7 +151,7 @@ ssh user@host sudo ./provision.sh --config local.params --roles database
 h4. API
 <notextile>
 <pre><code>scp -r provision.sh local* user@host:
-ssh user@host sudo ./provision.sh --config local.params --roles api,controller,websocket,dispatcher
+ssh user@host sudo ./provision.sh --config local.params --roles api,controller,websocket,dispatcher,keepbalance
 </code></pre>
 </notextile>
 

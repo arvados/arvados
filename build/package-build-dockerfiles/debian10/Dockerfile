@@ -3,6 +3,7 @@
 # SPDX-License-Identifier: AGPL-3.0
 
 ARG HOSTTYPE
+ARG BRANCH
 
 ## dont use debian:10 here since the word 'buster' is used for rvm precompiled binaries
 FROM debian:buster as build_x86_64
@@ -41,8 +42,8 @@ ADD generated/pkuczynski.asc /tmp/
 RUN gpg --import --no-tty /tmp/mpapis.asc && \
     gpg --import --no-tty /tmp/pkuczynski.asc && \
     curl -L https://get.rvm.io | bash -s stable && \
-    /usr/local/rvm/bin/rvm install 2.5 -j $(grep -c processor /proc/cpuinfo) && \
-    /usr/local/rvm/bin/rvm alias create default ruby-2.5 && \
+    /usr/local/rvm/bin/rvm install 2.7 -j $(grep -c processor /proc/cpuinfo) && \
+    /usr/local/rvm/bin/rvm alias create default ruby-2.7 && \
     echo "gem: --no-document" >> ~/.gemrc && \
     /usr/local/rvm/bin/rvm-exec default gem install bundler --version 2.2.19 && \
     /usr/local/rvm/bin/rvm-exec default gem install fpm --version 1.10.2
@@ -51,7 +52,12 @@ RUN /usr/local/rvm/bin/rvm-exec default bundle config --global jobs $(let a=$(gr
 # Cf. https://build.betterup.com/one-weird-trick-that-will-speed-up-your-bundle-install/
 ENV MAKE "make --jobs $(grep -c processor /proc/cpuinfo)"
 
+# Preseed the go module cache and the ruby gems, using the currently checked
+# out branch of the source tree. This avoids potential compatibility issues
+# between the version of Ruby and certain gems.
 RUN git clone --depth 1 git://git.arvados.org/arvados.git /tmp/arvados && \
+    cd /tmp/arvados && \
+    if [[ -n "${BRANCH}" ]]; then git checkout ${BRANCH}; fi && \
     cd /tmp/arvados/services/api && \
     /usr/local/rvm/bin/rvm-exec default bundle install && \
     cd /tmp/arvados/apps/workbench && \

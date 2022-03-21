@@ -37,7 +37,7 @@ class Arvados::V1::SchemaController < ApplicationController
         # format is YYYYMMDD, must be fixed width (needs to be lexically
         # sortable), updated manually, may be used by clients to
         # determine availability of API server features.
-        revision: "20210628",
+        revision: "20220222",
         source_version: AppVersion.hash,
         sourceVersion: AppVersion.hash, # source_version should be deprecated in the future
         packageVersion: AppVersion.package_version,
@@ -406,6 +406,20 @@ class Arvados::V1::SchemaController < ApplicationController
         end
       end
 
+      # The 'replace_files' option is implemented in lib/controller,
+      # not Rails -- we just need to add it here so discovery-aware
+      # clients know how to validate it.
+      [:create, :update].each do |action|
+        discovery[:resources]['collections'][:methods][action][:parameters]['replace_files'] = {
+          type: 'object',
+          description: 'Files and directories to initialize/replace with content from other collections.',
+          required: false,
+          location: 'query',
+          properties: {},
+          additionalProperties: {type: 'string'},
+        }
+      end
+
       discovery[:resources]['configs'] = {
         methods: {
           get: {
@@ -413,6 +427,27 @@ class Arvados::V1::SchemaController < ApplicationController
             path: "config",
             httpMethod: "GET",
             description: "Get public config",
+            parameters: {
+            },
+            parameterOrder: [
+            ],
+            response: {
+            },
+            scopes: [
+              "https://api.arvados.org/auth/arvados",
+              "https://api.arvados.org/auth/arvados.readonly"
+            ]
+          },
+        }
+      }
+
+      discovery[:resources]['vocabularies'] = {
+        methods: {
+          get: {
+            id: "arvados.vocabularies.get",
+            path: "vocabulary",
+            httpMethod: "GET",
+            description: "Get vocabulary definition",
             parameters: {
             },
             parameterOrder: [

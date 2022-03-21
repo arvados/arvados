@@ -246,6 +246,15 @@ class ArvadosModel < ApplicationRecord
   # If current user cannot write this object, just return
   # [self.owner_uuid].
   def writable_by
+    # Return [] if this is a frozen project and the current user can't
+    # unfreeze
+    return [] if respond_to?(:frozen_by_uuid) && frozen_by_uuid &&
+                 (Rails.configuration.API.UnfreezeProjectRequiresAdmin ?
+                    !current_user.andand.is_admin :
+                    !current_user.can?(manage: uuid))
+    # Return [] if nobody can write because this object is inside a
+    # frozen project
+    return [] if FrozenGroup.where(uuid: owner_uuid).any?
     return [owner_uuid] if not current_user
     unless (owner_uuid == current_user.uuid or
             current_user.is_admin or
@@ -288,26 +297,41 @@ class ArvadosModel < ApplicationRecord
     user_uuids = users_list.map { |u| u.uuid }
     all_user_uuids = []
 
+    admin = users_list.select { |u| u.is_admin }.any?
+
     # For details on how the trashed_groups table is constructed, see
     # see db/migrate/20200501150153_permission_table.rb
 
-    exclude_trashed_records = ""
-    if !include_trash and (sql_table == "groups" or sql_table == "collections") then
-      # Only include records that are not trashed
-      exclude_trashed_records = "AND (#{sql_table}.trash_at is NULL or #{sql_table}.trash_at > statement_timestamp())"
+    # excluded_trash is a SQL expression that determines whether a row
+    # should be excluded from the results due to being trashed.
+    # Trashed items inside frozen projects are invisible to regular
+    # (non-admin) users even when using include_trash, so we have:
+    #
+    # (item_trashed || item_inside_trashed_project)
+    # &&
+    # (!caller_requests_include_trash ||
+    #  (item_inside_frozen_project && caller_is_not_admin))
+    if (admin && include_trash) || sql_table == "api_client_authorizations"
+      excluded_trash = "false"
+    else
+      excluded_trash = "(#{sql_table}.owner_uuid IN (SELECT group_uuid FROM #{TRASHED_GROUPS} " +
+                       "WHERE trash_at <= statement_timestamp()))"
+      if sql_table == "groups" || sql_table == "collections"
+        excluded_trash = "(#{excluded_trash} OR #{sql_table}.trash_at <= statement_timestamp() IS TRUE)"
+      end
+
+      if include_trash
+        # Exclude trash inside frozen projects
+        excluded_trash = "(#{excluded_trash} AND #{sql_table}.owner_uuid IN (SELECT uuid FROM #{FROZEN_GROUPS}))"
+      end
     end
 
-    trashed_check = ""
-    if !include_trash && sql_table != "api_client_authorizations"
-      trashed_check = "#{sql_table}.owner_uuid NOT IN (SELECT group_uuid FROM #{TRASHED_GROUPS} " +
-                      "where trash_at <= statement_timestamp()) #{exclude_trashed_records}"
-    end
-
-    if users_list.select { |u| u.is_admin }.any?
-      # Admin skips most permission checks, but still want to filter on trashed items.
+    if admin
+      # Admin skips most permission checks, but still want to filter
+      # on trashed items.
       if !include_trash && sql_table != "api_client_authorizations"
         # Only include records where the owner is not trashed
-        sql_conds = trashed_check
+        sql_conds = "NOT (#{excluded_trash})"
       end
     else
       # The core of the permission check is a join against the
@@ -407,7 +431,7 @@ class ArvadosModel < ApplicationRecord
                      "    WHERE user_uuid IN (#{user_uuids_subquery}) AND perm_level >= 3))) "
       end
 
-      sql_conds = "(#{owner_check} #{direct_check} #{links_cond}) #{trashed_check.empty? ? "" : "AND"} #{trashed_check}"
+      sql_conds = "(#{owner_check} #{direct_check} #{links_cond}) AND NOT (#{excluded_trash})"
 
     end
 
@@ -614,8 +638,12 @@ class ArvadosModel < ApplicationRecord
         if check_uuid.nil?
           # old_owner_uuid is nil? New record, no need to check.
         elsif !current_user.can?(write: check_uuid)
-          logger.warn "User #{current_user.uuid} tried to set ownership of #{self.class.to_s} #{self.uuid} but does not have permission to write #{which} owner_uuid #{check_uuid}"
-          errors.add :owner_uuid, "cannot be set or changed without write permission on #{which} owner"
+          if FrozenGroup.where(uuid: check_uuid).any?
+            errors.add :owner_uuid, "cannot be set or changed because #{which} owner is frozen"
+          else
+            logger.warn "User #{current_user.uuid} tried to set ownership of #{self.class.to_s} #{self.uuid} but does not have permission to write #{which} owner_uuid #{check_uuid}"
+            errors.add :owner_uuid, "cannot be set or changed without write permission on #{which} owner"
+          end
           raise PermissionDeniedError
         elsif rsc_class == Group && Group.find_by_uuid(owner_uuid).group_class != "project"
           errors.add :owner_uuid, "must be a project"
@@ -625,8 +653,12 @@ class ArvadosModel < ApplicationRecord
     else
       # If the object already existed and we're not changing
       # owner_uuid, we only need write permission on the object
-      # itself.
-      if !current_user.can?(write: self.uuid)
+      # itself. (If we're in the act of unfreezing, we only need
+      # :unfreeze permission, which means "what write permission would
+      # be if target weren't frozen")
+      unless ((respond_to?(:frozen_by_uuid) && frozen_by_uuid_was && !frozen_by_uuid) ?
+                current_user.can?(unfreeze: uuid) :
+                current_user.can?(write: uuid))
         logger.warn "User #{current_user.uuid} tried to modify #{self.class.to_s} #{self.uuid} without write permission"
         errors.add :uuid, " #{uuid} is not writable by #{current_user.uuid}"
         raise PermissionDeniedError
@@ -643,7 +675,7 @@ class ArvadosModel < ApplicationRecord
   end
 
   def permission_to_create
-    current_user.andand.is_active
+    return current_user.andand.is_active
   end
 
   def permission_to_update

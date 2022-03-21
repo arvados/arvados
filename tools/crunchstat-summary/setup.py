@@ -15,6 +15,11 @@ README = os.path.join(SETUP_DIR, 'README.rst')
 
 import arvados_version
 version = arvados_version.get_version(SETUP_DIR, "crunchstat_summary")
+if os.environ.get('ARVADOS_BUILDING_VERSION', False):
+    pysdk_dep = "=={}".format(version)
+else:
+    # On dev releases, arvados-python-client may have a different timestamp
+    pysdk_dep = "<={}".format(version)
 
 short_tests_only = False
 if '--short-tests-only' in sys.argv:
@@ -38,7 +43,7 @@ setup(name='crunchstat_summary',
           ('share/doc/crunchstat_summary', ['agpl-3.0.txt']),
       ],
       install_requires=[
-          'arvados-python-client',
+          'arvados-python-client{}'.format(pysdk_dep),
       ],
       test_suite='tests',
       tests_require=['pbr<1.7.0', 'mock>=1.0'],

@@ -191,6 +191,24 @@ $$;
 
 
 --
+-- Name: project_subtree_with_is_frozen(character varying, boolean); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.project_subtree_with_is_frozen(starting_uuid character varying, starting_is_frozen boolean) RETURNS TABLE(uuid character varying, is_frozen boolean)
+    LANGUAGE sql STABLE
+    AS $$
+WITH RECURSIVE
+  project_subtree(uuid, is_frozen) as (
+    values (starting_uuid, starting_is_frozen)
+    union
+    select groups.uuid, project_subtree.is_frozen or groups.frozen_by_uuid is not null
+      from groups join project_subtree on (groups.owner_uuid = project_subtree.uuid)
+  )
+  select uuid, is_frozen from project_subtree;
+$$;
+
+
+--
 -- Name: project_subtree_with_trash_at(character varying, timestamp without time zone); Type: FUNCTION; Schema: public; Owner: -
 --
 
@@ -549,6 +567,15 @@ ALTER SEQUENCE public.containers_id_seq OWNED BY public.containers.id;
 
 
 --
+-- Name: frozen_groups; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.frozen_groups (
+    uuid character varying
+);
+
+
+--
 -- Name: groups; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -567,7 +594,8 @@ CREATE TABLE public.groups (
     trash_at timestamp without time zone,
     is_trashed boolean DEFAULT false NOT NULL,
     delete_at timestamp without time zone,
-    properties jsonb DEFAULT '{}'::jsonb
+    properties jsonb DEFAULT '{}'::jsonb,
+    frozen_by_uuid character varying
 );
 
 
@@ -1775,7 +1803,7 @@ CREATE INDEX group_index_on_properties ON public.groups USING gin (properties);
 -- Name: groups_search_index; Type: INDEX; Schema: public; Owner: -
 --
 
-CREATE INDEX groups_search_index ON public.groups USING btree (uuid, owner_uuid, modified_by_client_uuid, modified_by_user_uuid, name, group_class);
+CREATE INDEX groups_search_index ON public.groups USING btree (uuid, owner_uuid, modified_by_client_uuid, modified_by_user_uuid, name, group_class, frozen_by_uuid);
 
 
 --
@@ -2056,6 +2084,13 @@ CREATE INDEX index_containers_on_secret_mounts_md5 ON public.containers USING bt
 --
 
 CREATE UNIQUE INDEX index_containers_on_uuid ON public.containers USING btree (uuid);
+
+
+--
+-- Name: index_frozen_groups_on_uuid; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX index_frozen_groups_on_uuid ON public.frozen_groups USING btree (uuid);
 
 
 --
@@ -3147,6 +3182,9 @@ INSERT INTO "schema_migrations" (version) VALUES
 ('20210126183521'),
 ('20210621204455'),
 ('20210816191509'),
-('20211027154300');
+('20211027154300'),
+('20220224203102'),
+('20220301155729'),
+('20220303204419');
 
 

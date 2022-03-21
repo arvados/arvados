@@ -15,6 +15,11 @@ Syntax:
     Build only a specific package (or ONLY_BUILD from environment)
 --arch <arch>
     Build a specific architecture (or ARCH from environment, defaults to native architecture)
+--force-build
+    Build even if the package exists upstream or if it has already been
+    built locally
+--force-test
+    Test even if there is no new untested package
 --upload
     If the build and test steps are successful, upload the packages
     to a remote apt repository (default: false)
@@ -48,7 +53,7 @@ if ! [[ -d "$WORKSPACE" ]]; then
 fi
 
 PARSEDOPTS=$(getopt --name "$0" --longoptions \
-    help,debug,upload,rc,target:,only-build:,arch:,build-version: \
+    help,debug,upload,rc,target:,force-test,only-build:,force-build,arch:,build-version: \
     -- "" "$@")
 if [ $? -ne 0 ]; then
     exit 1
@@ -71,6 +76,12 @@ while [ $# -gt 0 ]; do
             ;;
         --target)
             TARGET="$2"; shift
+            ;;
+        --force-test)
+            FORCE_TEST=1
+            ;;
+        --force-build)
+            FORCE_BUILD=1
             ;;
         --only-build)
             ONLY_BUILD="$2"; shift
@@ -105,6 +116,14 @@ build_args+=(--target "$TARGET")
 
 if [[ -n "$ONLY_BUILD" ]]; then
   build_args+=(--only-build "$ONLY_BUILD")
+fi
+
+if [[ -n "$FORCE_BUILD" ]]; then
+  build_args+=(--force-build)
+fi
+
+if [[ -n "$FORCE_TEST" ]]; then
+  build_args+=(--force-test)
 fi
 
 if [[ -n "$ARCH" ]]; then

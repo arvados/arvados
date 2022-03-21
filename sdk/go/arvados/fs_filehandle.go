@@ -6,6 +6,7 @@ package arvados
 
 import (
 	"io"
+	"io/fs"
 	"os"
 )
 
@@ -71,6 +72,31 @@ func (f *filehandle) Write(p []byte) (n int, err error) {
 	}
 	n, f.ptr, err = f.inode.Write(p, f.ptr)
 	return
+}
+
+// dirEntry implements fs.DirEntry, see (*filehandle)ReadDir().
+type dirEntry struct {
+	os.FileInfo
+}
+
+func (ent dirEntry) Type() fs.FileMode {
+	return ent.Mode().Type()
+}
+func (ent dirEntry) Info() (fs.FileInfo, error) {
+	return ent, nil
+}
+
+// ReadDir implements fs.ReadDirFile.
+func (f *filehandle) ReadDir(count int) ([]fs.DirEntry, error) {
+	fis, err := f.Readdir(count)
+	if len(fis) == 0 {
+		return nil, err
+	}
+	ents := make([]fs.DirEntry, len(fis))
+	for i, fi := range fis {
+		ents[i] = dirEntry{fi}
+	}
+	return ents, err
 }
 
 func (f *filehandle) Readdir(count int) ([]os.FileInfo, error) {

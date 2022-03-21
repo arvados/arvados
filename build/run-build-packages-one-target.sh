@@ -195,7 +195,7 @@ fi
 
 echo $TARGET
 cd $TARGET
-time docker build --tag "$IMAGE" --build-arg HOSTTYPE=$HOSTTYPE .
+time docker build --tag "$IMAGE" --build-arg HOSTTYPE=$HOSTTYPE --build-arg BRANCH=$(git rev-parse --abbrev-ref HEAD) .
 popd
 
 if test -z "$packages" ; then
@@ -307,16 +307,24 @@ else
     set +e
     mv -f ${WORKSPACE}/packages/${TARGET}/* ${WORKSPACE}/packages/${TARGET}/processed/ 2>/dev/null
     set -e
+    # give bundle (almost) all the cores. See also the MAKE env var that is passed into the
+    # docker run command below.
+    # Cf. https://build.betterup.com/one-weird-trick-that-will-speed-up-your-bundle-install/
+    tmpfile=$(mktemp /tmp/run-build-packages-one-target.XXXXXX)
+    cores=$(let a=$(grep -c processor /proc/cpuinfo )-1; echo $a)
+    printf -- "---\nBUNDLE_JOBS: \"$cores\"" > $tmpfile
     # Build packages.
     if docker run \
         --rm \
         "${docker_volume_args[@]}" \
+        -v $tmpfile:/root/.bundle/config \
         --env ARVADOS_BUILDING_VERSION="$ARVADOS_BUILDING_VERSION" \
         --env ARVADOS_BUILDING_ITERATION="$ARVADOS_BUILDING_ITERATION" \
         --env ARVADOS_DEBUG=$ARVADOS_DEBUG \
         --env "ONLY_BUILD=$ONLY_BUILD" \
         --env "FORCE_BUILD=$FORCE_BUILD" \
         --env "ARCH=$ARCH" \
+        --env "MAKE=make --jobs $cores" \
         "$IMAGE" $COMMAND
     then
         echo
@@ -325,6 +333,8 @@ else
         FINAL_EXITCODE=$?
         echo "ERROR: build packages on $IMAGE failed with exit status $FINAL_EXITCODE" >&2
     fi
+    # Clean up the bundle config file
+    rm -f $tmpfile
 fi
 
 if test -n "$package_fails" ; then

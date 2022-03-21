@@ -313,4 +313,219 @@ update links set tail_uuid='#{g5}' where uuid='#{l1.uuid}'
     assert Link.where(tail_uuid: g3, head_uuid: g4, link_class: "permission", name: "can_manage").any?
     assert !Link.where(link_class: 'permission', name: 'can_manage', tail_uuid: g5, head_uuid: g4).any?
   end
+
+  test "freeze project" do
+    act_as_user users(:active) do
+      Rails.configuration.API.UnfreezeProjectRequiresAdmin = false
+
+      test_cr_attrs = {
+        command: ["echo", "foo"],
+        container_image: links(:docker_image_collection_tag).name,
+        cwd: "/tmp",
+        environment: {},
+        mounts: {"/out" => {"kind" => "tmp", "capacity" => 1000000}},
+        output_path: "/out",
+        runtime_constraints: {"vcpus" => 1, "ram" => 2},
+        name: "foo",
+        description: "bar",
+      }
+      parent = Group.create!(group_class: 'project', name: 'freeze-test-parent', owner_uuid: users(:active).uuid)
+      proj = Group.create!(group_class: 'project', name: 'freeze-test', owner_uuid: parent.uuid)
+      proj_inner = Group.create!(group_class: 'project', name: 'freeze-test-inner', owner_uuid: proj.uuid)
+      coll = Collection.create!(name: 'freeze-test-collection', manifest_text: '', owner_uuid: proj_inner.uuid)
+
+      # Cannot set frozen_by_uuid to a different user
+      assert_raises do
+        proj.update_attributes!(frozen_by_uuid: users(:spectator).uuid)
+      end
+      proj.reload
+
+      # Cannot set frozen_by_uuid without can_manage permission
+      act_as_system_user do
+        Link.create!(link_class: 'permission', name: 'can_write', tail_uuid: users(:spectator).uuid, head_uuid: proj.uuid)
+      end
+      act_as_user users(:spectator) do
+        # First confirm we have write permission
+        assert Collection.create(name: 'bar', owner_uuid: proj.uuid)
+        assert_raises(ArvadosModel::PermissionDeniedError) do
+          proj.update_attributes!(frozen_by_uuid: users(:spectator).uuid)
+        end
+      end
+      proj.reload
+
+      # Cannot set frozen_by_uuid without description (if so configured)
+      Rails.configuration.API.FreezeProjectRequiresDescription = true
+      err = assert_raises do
+        proj.update_attributes!(frozen_by_uuid: users(:active).uuid)
+      end
+      assert_match /can only be set if description is non-empty/, err.inspect
+      proj.reload
+      err = assert_raises do
+        proj.update_attributes!(frozen_by_uuid: users(:active).uuid, description: '')
+      end
+      assert_match /can only be set if description is non-empty/, err.inspect
+      proj.reload
+
+      # Cannot set frozen_by_uuid without properties (if so configured)
+      Rails.configuration.API.FreezeProjectRequiresProperties['frobity'] = true
+      err = assert_raises do
+        proj.update_attributes!(
+          frozen_by_uuid: users(:active).uuid,
+          description: 'ready to freeze')
+      end
+      assert_match /can only be set if properties\[frobity\] value is non-empty/, err.inspect
+      proj.reload
+
+      # Cannot set frozen_by_uuid while project or its parent is
+      # trashed
+      [parent, proj].each do |trashed|
+        trashed.update_attributes!(trash_at: db_current_time)
+        err = assert_raises do
+          proj.update_attributes!(
+            frozen_by_uuid: users(:active).uuid,
+            description: 'ready to freeze',
+            properties: {'frobity' => 'bar baz'})
+        end
+        assert_match /cannot be set on a trashed project/, err.inspect
+        proj.reload
+        trashed.update_attributes!(trash_at: nil)
+      end
+
+      # Can set frozen_by_uuid if all conditions are met
+      ok = proj.update_attributes(
+        frozen_by_uuid: users(:active).uuid,
+        description: 'ready to freeze',
+        properties: {'frobity' => 'bar baz'})
+      assert ok, proj.errors.messages.inspect
+
+      # Once project is frozen, cannot create new items inside it or
+      # its descendants
+      [proj, proj_inner].each do |frozen|
+        assert_raises do
+          collections(:collection_owned_by_active).update_attributes!(owner_uuid: frozen.uuid)
+        end
+        assert_raises do
+          Collection.create!(owner_uuid: frozen.uuid, name: 'inside-frozen-project')
+        end
+        assert_raises do
+          Group.create!(owner_uuid: frozen.uuid, group_class: 'project', name: 'inside-frozen-project')
+        end
+        cr = ContainerRequest.new(test_cr_attrs.merge(owner_uuid: frozen.uuid))
+        assert_raises ArvadosModel::PermissionDeniedError do
+          cr.save
+        end
+        assert_match /frozen/, cr.errors.inspect
+        # Check the frozen-parent condition is the only reason save failed.
+        cr.owner_uuid = users(:active).uuid
+        assert cr.save
+        cr.destroy
+      end
+
+      # Once project is frozen, cannot change name/contents, move,
+      # trash, or delete the project or anything beneath it
+      [proj, proj_inner, coll].each do |frozen|
+        assert_raises(StandardError, "should reject rename of #{frozen.uuid} (#{frozen.name}) with parent #{frozen.owner_uuid}") do
+          frozen.update_attributes!(name: 'foo2')
+        end
+        frozen.reload
+
+        if frozen.is_a?(Collection)
+          assert_raises(StandardError, "should reject manifest change of #{frozen.uuid}") do
+            frozen.update_attributes!(manifest_text: ". d41d8cd98f00b204e9800998ecf8427e+0 0:0:foo\n")
+          end
+        else
+          assert_raises(StandardError, "should reject moving a project into #{frozen.uuid}") do
+            groups(:private).update_attributes!(owner_uuid: frozen.uuid)
+          end
+        end
+        frozen.reload
+
+        assert_raises(StandardError, "should reject moving #{frozen.uuid} to a different parent project") do
+          frozen.update_attributes!(owner_uuid: groups(:private).uuid)
+        end
+        frozen.reload
+        assert_raises(StandardError, "should reject setting trash_at of #{frozen.uuid}") do
+          frozen.update_attributes!(trash_at: db_current_time)
+        end
+        frozen.reload
+        assert_raises(StandardError, "should reject setting delete_at of #{frozen.uuid}") do
+          frozen.update_attributes!(delete_at: db_current_time)
+        end
+        frozen.reload
+        assert_raises(StandardError, "should reject delete of #{frozen.uuid}") do
+          frozen.destroy
+        end
+        frozen.reload
+        if frozen != proj
+          assert_equal [], frozen.writable_by
+        end
+      end
+
+      # User with write permission (but not manage) cannot unfreeze
+      act_as_user users(:spectator) do
+        # First confirm we have write permission on the parent project
+        assert Collection.create(name: 'bar', owner_uuid: parent.uuid)
+        assert_raises(ArvadosModel::PermissionDeniedError) do
+          proj.update_attributes!(frozen_by_uuid: nil)
+        end
+      end
+      proj.reload
+
+      # User with manage permission can unfreeze, then create items
+      # inside it and its children
+      assert proj.update_attributes(frozen_by_uuid: nil)
+      assert Collection.create!(owner_uuid: proj.uuid, name: 'inside-unfrozen-project')
+      assert Collection.create!(owner_uuid: proj_inner.uuid, name: 'inside-inner-unfrozen-project')
+
+      # Re-freeze, and reconfigure so only admins can unfreeze.
+      assert proj.update_attributes(frozen_by_uuid: users(:active).uuid)
+      Rails.configuration.API.UnfreezeProjectRequiresAdmin = true
+
+      # Owner cannot unfreeze, because not admin.
+      err = assert_raises do
+        proj.update_attributes!(frozen_by_uuid: nil)
+      end
+      assert_match /can only be changed by an admin user, once set/, err.inspect
+      proj.reload
+
+      # Cannot trash or delete a frozen project's ancestor
+      assert_raises(StandardError, "should not be able to set trash_at on parent of frozen project") do
+        parent.update_attributes!(trash_at: db_current_time)
+      end
+      parent.reload
+      assert_raises(StandardError, "should not be able to set delete_at on parent of frozen project") do
+        parent.update_attributes!(delete_at: db_current_time)
+      end
+      parent.reload
+      assert_nil parent.frozen_by_uuid
+
+      act_as_user users(:admin) do
+        # Even admin cannot change frozen_by_uuid to someone else's UUID.
+        err = assert_raises do
+          proj.update_attributes!(frozen_by_uuid: users(:project_viewer).uuid)
+        end
+        assert_match /can only be set to the current user's UUID/, err.inspect
+        proj.reload
+
+        # Admin can unfreeze.
+        assert proj.update_attributes(frozen_by_uuid: nil), proj.errors.messages
+      end
+
+      # Cannot freeze a project if it contains container requests in
+      # Committed state (this would cause operations on the relevant
+      # Containers to fail when syncing container request state)
+      creq_uncommitted = ContainerRequest.create!(test_cr_attrs.merge(owner_uuid: proj_inner.uuid))
+      creq_committed = ContainerRequest.create!(test_cr_attrs.merge(owner_uuid: proj_inner.uuid, state: 'Committed'))
+      err = assert_raises do
+        proj.update_attributes!(frozen_by_uuid: users(:active).uuid)
+      end
+      assert_match /container request zzzzz-xvhdp-.* with state = Committed/, err.inspect
+      proj.reload
+
+      # Can freeze once all container requests are in Uncommitted or
+      # Final state
+      creq_committed.update_attributes!(state: ContainerRequest::Final)
+      assert proj.update_attributes(frozen_by_uuid: users(:active).uuid)
+    end
+  end
 end

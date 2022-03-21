@@ -26,9 +26,10 @@ navbar:
       - user/getting_started/community.html.textile.liquid
     - Walkthough:
       - user/tutorials/wgs-tutorial.html.textile.liquid
-    - Run a workflow using Workbench:
+    - Using Workbench:
       - user/getting_started/workbench.html.textile.liquid
       - user/tutorials/tutorial-workflow-workbench.html.textile.liquid
+      - user/topics/workbench-migration.html.textile.liquid
     - Working at the Command Line:
       - user/getting_started/setup-cli.html.textile.liquid
       - user/reference/api-tokens.html.textile.liquid

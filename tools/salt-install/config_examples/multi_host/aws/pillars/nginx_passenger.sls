@@ -10,12 +10,12 @@
                           if grains.osfinger in ('CentOS Linux-7',) else
                         '/usr/lib/nginx/modules/ngx_http_passenger_module.so' %}
 {%- set passenger_ruby = '/usr/local/rvm/rubies/ruby-2.7.2/bin/ruby'
-                           if grains.osfinger in ('CentOS Linux-7', 'Ubuntu-18.04',) else
+                           if grains.osfinger in ('CentOS Linux-7', 'Ubuntu-18.04', 'Debian-10') else
                          '/usr/bin/ruby' %}
 
 ### NGINX
 nginx:
-  install_from_phusionpassenger: true
+  __NGINX_INSTALL_SOURCE__: true
   lookup:
     passenger_package: {{ passenger_pkg }}
   ### PASSENGER
@@ -25,11 +25,15 @@ nginx:
   ### SERVER
   server:
     config:
+      # As we now differentiate where passenger is required or not, we need to
+      # load this module conditionally, so we add this conditional just to use
+      # the same pillar file
+      {% if "install_from_phusionpassenger" == "__NGINX_INSTALL_SOURCE__" %}
       # This is required to get the passenger module loaded
       # In Debian it can be done with this
       # include: 'modules-enabled/*.conf'
       load_module: {{ passenger_mod }}
-
+      {% endif %}
       worker_processes: 4
 
   ### SNIPPETS

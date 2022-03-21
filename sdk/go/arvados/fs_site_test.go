@@ -10,6 +10,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"os"
+	"strings"
 	"syscall"
 	"time"
 
@@ -291,40 +292,41 @@ func (s *SiteFSSuite) TestSnapshotSplice(c *check.C) {
 		c.Check(string(buf), check.Equals, string(thisfile))
 	}
 
-	// Cannot splice a file onto a collection root, or anywhere
-	// outside a collection
+	// Cannot splice a file onto a collection root; cannot splice
+	// anything to a target outside a collection.
 	for _, badpath := range []string{
+		dstPath + "/",
 		dstPath,
+		"/home/A Project/newnodename/",
 		"/home/A Project/newnodename",
+		"/home/A Project/",
 		"/home/A Project",
+		"/home/newnodename/",
 		"/home/newnodename",
+		"/home/",
 		"/home",
+		"/newnodename/",
 		"/newnodename",
+		"/",
 	} {
 		err = Splice(s.fs, badpath, snapFile)
 		c.Check(err, check.NotNil)
-		c.Check(err, ErrorIs, ErrInvalidOperation, check.Commentf("badpath %s"))
-		if badpath == dstPath {
-			c.Check(err, check.ErrorMatches, `cannot use Splice to attach a file at top level of \*arvados.collectionFileSystem: invalid operation`, check.Commentf("badpath: %s", badpath))
+		if strings.Contains(badpath, "newnodename") && strings.HasSuffix(badpath, "/") {
+			c.Check(err, ErrorIs, os.ErrNotExist, check.Commentf("badpath %q", badpath))
+		} else {
+			c.Check(err, ErrorIs, ErrInvalidOperation, check.Commentf("badpath %q", badpath))
+		}
+		if strings.TrimSuffix(badpath, "/") == dstPath {
+			c.Check(err, check.ErrorMatches, `cannot use Splice to attach a file at top level of \*arvados.collectionFileSystem: invalid operation`, check.Commentf("badpath: %q", badpath))
 			continue
 		}
-		err = Splice(s.fs, badpath, snap1)
-		c.Check(err, ErrorIs, ErrInvalidOperation, check.Commentf("badpath %s"))
-	}
 
-	// Destination cannot have trailing slash
-	for _, badpath := range []string{
-		dstPath + "/ctxlog/",
-		dstPath + "/",
-		"/home/A Project/",
-		"/home/",
-		"/",
-		"",
-	} {
 		err = Splice(s.fs, badpath, snap1)
-		c.Check(err, ErrorIs, ErrInvalidArgument, check.Commentf("badpath %s", badpath))
-		err = Splice(s.fs, badpath, snapFile)
-		c.Check(err, ErrorIs, ErrInvalidArgument, check.Commentf("badpath %s", badpath))
+		if strings.Contains(badpath, "newnodename") && strings.HasSuffix(badpath, "/") {
+			c.Check(err, ErrorIs, os.ErrNotExist, check.Commentf("badpath %q", badpath))
+		} else {
+			c.Check(err, ErrorIs, ErrInvalidOperation, check.Commentf("badpath %q", badpath))
+		}
 	}
 
 	// Destination's parent must already exist
@@ -340,9 +342,10 @@ func (s *SiteFSSuite) TestSnapshotSplice(c *check.C) {
 	}
 
 	snap2, err := Snapshot(s.fs, dstPath+"/ctxlog-copy")
-	c.Check(err, check.IsNil)
-	err = Splice(s.fs, dstPath+"/ctxlog-copy-copy", snap2)
-	c.Check(err, check.IsNil)
+	if c.Check(err, check.IsNil) {
+		err = Splice(s.fs, dstPath+"/ctxlog-copy-copy", snap2)
+		c.Check(err, check.IsNil)
+	}
 
 	// Snapshot entire collection, splice into same collection at
 	// a new path, remove file from original location, verify
@@ -362,9 +365,10 @@ func (s *SiteFSSuite) TestSnapshotSplice(c *check.C) {
 	_, err = s.fs.Open(dstPath + "/arvados/fs_site_test.go")
 	c.Check(err, check.Equals, os.ErrNotExist)
 	f, err = s.fs.Open(dstPath + "/copy2/arvados/fs_site_test.go")
-	c.Check(err, check.IsNil)
-	defer f.Close()
-	buf, err := ioutil.ReadAll(f)
-	c.Check(err, check.IsNil)
-	c.Check(string(buf), check.Equals, string(thisfile))
+	if c.Check(err, check.IsNil) {
+		defer f.Close()
+		buf, err := ioutil.ReadAll(f)
+		c.Check(err, check.IsNil)
+		c.Check(string(buf), check.Equals, string(thisfile))
+	}
 }
