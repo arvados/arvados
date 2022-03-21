@@ -116,9 +116,9 @@ elif [[ "$suite" =~ conformance-(.*) ]] ; then
    version=\${BASH_REMATCH[1]}
    if ! test -d cwl-\${version} ; then
      git clone https://github.com/common-workflow-language/cwl-\${version}.git
-     git checkout \${version}.0
    fi
    cd cwl-\${version}
+   git checkout \${version}.0
 elif [[ "$suite" != "integration" ]] ; then
    echo "ERROR: unknown suite '$suite'"
    exit 1
