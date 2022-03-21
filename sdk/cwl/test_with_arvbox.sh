@@ -124,9 +124,9 @@ elif [[ "$suite" != "integration" ]] ; then
    exit 1
 fi
 
-if [[ "$suite" != "integration" ]] ; then
-  git pull
-fi
+#if [[ "$suite" != "integration" ]] ; then
+#  git pull
+#fi
 
 export ARVADOS_API_HOST=localhost:8000
 export ARVADOS_API_HOST_INSECURE=1
