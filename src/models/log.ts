@@ -16,6 +16,7 @@ export enum LogEventType {
     ARV_MOUNT = 'arv-mount',
     STDOUT = 'stdout',
     STDERR = 'stderr',
+    CONTAINER = 'container',
 }
 
 export interface LogResource extends Resource, ResourceWithProperties {
