@@ -49,7 +49,6 @@ import * as processUpdateActions from 'store/processes/process-update-actions';
 import * as processCopyActions from 'store/processes/process-copy-actions';
 import { trashPanelColumns } from "views/trash-panel/trash-panel";
 import { loadTrashPanel, trashPanelActions } from "store/trash-panel/trash-panel-action";
-import { initProcessLogsPanel } from 'store/process-logs-panel/process-logs-panel-actions';
 import { loadProcessPanel } from 'store/process-panel/process-panel-actions';
 import {
     loadSharedWithMePanel,
@@ -416,15 +415,6 @@ export const copyProcess = (data: CopyFormDialogData) =>
             dispatch(snackbarActions.OPEN_SNACKBAR({ message: e.message, hideDuration: 2000, kind: SnackbarKind.ERROR }));
         }
     };
-
-export const loadProcessLog = (uuid: string) =>
-    handleFirstTimeLoad(
-        async (dispatch: Dispatch) => {
-            const process = await dispatch<any>(processesActions.loadProcess(uuid));
-            dispatch<any>(setProcessBreadcrumbs(uuid));
-            dispatch<any>(initProcessLogsPanel(uuid));
-            await dispatch<any>(activateSidePanelTreeItem(process.containerRequest.ownerUuid));
-        });
 
 export const resourceIsNotLoaded = (uuid: string) =>
     snackbarActions.OPEN_SNACKBAR({
