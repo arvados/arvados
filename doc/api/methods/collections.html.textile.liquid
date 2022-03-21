@@ -109,6 +109,36 @@ table(table table-bordered table-condensed).
 
 Note: Because adding access tokens to manifests can be computationally expensive, the @manifest_text@ field is not included in results by default.  If you need it, pass a @select@ parameter that includes @manifest_text@.
 
+h4. Searching Collections for names of file or directories
+
+You can search collections for specific file or directory names (whole or part) using the following filter in a @list@ query.
+
+<pre>
+filters: [["file_names", "ilike", "%sample1234.fastq%"]]
+</pre>
+
+Note: @file_names@ is a hidden field used for indexing.  It is not returned by any API call.  On the client, you can programmatically enumerate all the files in a collection using @arv-ls@, the Python SDK @Collection@ class, Go SDK @FileSystem@ struct, the WebDAV API, or the S3-compatible API.
+
+As of this writing (Arvados 2.4), you can also search for directory paths, but _not_ complete file paths.
+
+In other words, this will work (when @dir3@ is a directory):
+
+<pre>
+filters: [["file_names", "ilike", "%dir1/dir2/dir3%"]]
+</pre>
+
+However, this will _not_ return the desired results (where @sample1234.fastq@ is a file):
+
+<pre>
+filters: [["file_names", "ilike", "%dir1/dir2/dir3/sample1234.fastq%"]]
+</pre>
+
+As a workaround, you can search for both the directory path and file name separately, and then filter on the client side.
+
+<pre>
+filters: [["file_names", "ilike", "%dir1/dir2/dir3%"], ["file_names", "ilike", "%sample1234.fastq%"]]
+</pre>
+
 h3. update
 
 Update attributes of an existing Collection.
