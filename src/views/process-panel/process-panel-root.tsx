@@ -85,7 +85,7 @@ export const ProcessPanelRoot = withStyles(styles)(
                     navigateToLog={props.navigateToLog}
                 />
             </MPVPanelContent>
-            <MPVPanelContent forwardProps xs>
+            <MPVPanelContent forwardProps xs maxHeight='50%'>
                 <SubprocessPanel />
             </MPVPanelContent>
         </MPVContainer>

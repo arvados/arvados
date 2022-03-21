@@ -7,6 +7,10 @@ import { MuiThemeProvider, createMuiTheme, StyleRulesCallback, withStyles, WithS
 import { CodeSnippet } from 'components/code-snippet/code-snippet';
 import grey from '@material-ui/core/colors/grey';
 import { ArvadosTheme } from 'common/custom-theme';
+import { Link, Typography } from '@material-ui/core';
+import { navigateTo } from 'store/navigation/navigation-action';
+import { Dispatch } from 'redux';
+import { connect, DispatchProp } from 'react-redux';
 
 type CssRules = 'wordWrap' | 'codeSnippetContainer';
 
@@ -42,10 +46,32 @@ interface ProcessLogCodeSnippetProps {
     wordWrap?: boolean;
 }
 
-export const ProcessLogCodeSnippet = withStyles(styles)(
-    (props: ProcessLogCodeSnippetProps & WithStyles<CssRules>) =>
+const renderLinks = (fontSize: number, dispatch: Dispatch) => (text: string) => {
+    // Matches UUIDs & PDHs
+    const REGEX = /[a-z0-9]{5}-[a-z0-9]{5}-[a-z0-9]{15}|[0-9a-f]{32}\+\d+/g;
+    const links = text.match(REGEX);
+    if (!links) {
+        return <Typography style={{ fontSize: fontSize }}>{text}</Typography>;
+    }
+    return <Typography style={{ fontSize: fontSize }}>
+        {text.split(REGEX).map((part, index) =>
+        <React.Fragment key={index}>
+            {part}
+            {links[index] &&
+            <Link onClick={() => dispatch<any>(navigateTo(links[index]))}
+                style={ {cursor: 'pointer'} }>
+                {links[index]}
+            </Link>}
+        </React.Fragment>
+        )}
+    </Typography>;
+};
+
+export const ProcessLogCodeSnippet = withStyles(styles)(connect()(
+    (props: ProcessLogCodeSnippetProps & WithStyles<CssRules> & DispatchProp) =>
         <MuiThemeProvider theme={theme}>
             <CodeSnippet lines={props.lines} fontSize={props.fontSize}
+                customRenderer={renderLinks(props.fontSize, props.dispatch)}
                 className={props.wordWrap ? props.classes.wordWrap : undefined}
                 containerClassName={props.classes.codeSnippetContainer} />
-        </MuiThemeProvider>);
+        </MuiThemeProvider>));

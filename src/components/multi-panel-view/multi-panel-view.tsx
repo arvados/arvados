@@ -88,12 +88,9 @@ export const MPVPanelContent = ({doHidePanel, doMaximizePanel, panelName,
         }
     }, [panelRef]);
 
-    // If maxHeight is set, only apply it when not maximized
-    const mh = maxHeight
-        ? panelMaximized
-            ? '100%'
-            : maxHeight
-        : undefined;
+    const mh = panelMaximized
+        ? '100%'
+        : maxHeight;
 
     return <Grid item style={{maxHeight: mh}} {...props}>
         <span ref={panelRef} /> {/* Element to scroll to when the panel is selected */}

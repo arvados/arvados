@@ -26,17 +26,22 @@ export interface CodeSnippetDataProps {
     apiResponse?: boolean;
     containerClassName?: string;
     fontSize?: number;
+    customRenderer?: (line: string) => React.ReactNode;
 }
 
 type CodeSnippetProps = CodeSnippetDataProps & WithStyles<CssRules>;
 
 export const CodeSnippet = withStyles(styles)(
-    ({ classes, lines, className, containerClassName, apiResponse, fontSize }: CodeSnippetProps) =>
-        <Typography
-            component="div"
+    ({ classes, lines, className, containerClassName,
+        apiResponse, fontSize, customRenderer }: CodeSnippetProps) =>
+        <Typography component="div"
             className={classNames(classes.root, containerClassName, className)}>
-                { lines.map((line: string, index: number) => {
-                    return <Typography key={index} style={{ fontSize: fontSize }} className={apiResponse ? classes.space : className} component="pre">{line}</Typography>;
-                }) }
+            { lines.map((line: string, index: number) => {
+            return <Typography key={index} style={{ fontSize: fontSize }}
+                className={apiResponse ? classes.space : className}
+                component="pre">
+                {customRenderer ? customRenderer(line) : line}
+            </Typography>;
+            }) }
         </Typography>
     );
