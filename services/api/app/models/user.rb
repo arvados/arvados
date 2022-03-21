@@ -87,6 +87,7 @@ class User < ArvadosModel
   VAL_FOR_PERM =
     {:read => 1,
      :write => 2,
+     :unfreeze => 3,
      :manage => 3}
 
 
@@ -140,6 +141,23 @@ SELECT 1 FROM #{PERMISSION_VIEW}
                     [nil, target_owner_uuid]]
                   ).any?
         return false
+      end
+
+      if action == :write
+        if FrozenGroup.where(uuid: [target_uuid, target_owner_uuid]).any?
+          # self or parent is frozen
+          return false
+        end
+      elsif action == :unfreeze
+        # "unfreeze" permission means "can write, but only if
+        # explicitly un-freezing at the same time" (see
+        # ArvadosModel#ensure_owner_uuid_is_permitted). If the
+        # permission query above passed the permission level of
+        # :unfreeze (which is the same as :manage), and the parent
+        # isn't also frozen, then un-freeze is allowed.
+        if FrozenGroup.where(uuid: target_owner_uuid).any?
+          return false
+        end
       end
     end
     true
