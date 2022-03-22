@@ -417,30 +417,32 @@ for f in $(ls "${SOURCE_PILLARS_DIR}"/*); do
   "${f}" > "${P_DIR}"/$(basename "${f}")
 done
 
-if [ "x${TEST}" = "xyes" ] && [ ! -d "${SOURCE_TESTS_DIR}" ]; then
-  echo "You requested to run tests, but ${SOURCE_TESTS_DIR} does not exist or is not a directory. Exiting."
-  exit 1
-fi
-mkdir -p ${T_DIR}
-# Replace cluster and domain name in the test files
-for f in $(ls "${SOURCE_TESTS_DIR}"/*); do
-  FILTERS="s#__CLUSTER__#${CLUSTER}#g;
-       s#__CONTROLLER_EXT_SSL_PORT__#${CONTROLLER_EXT_SSL_PORT}#g;
-       s#__DOMAIN__#${DOMAIN}#g;
-       s#__IP_INT__#${IP_INT}#g;
-       s#__INITIAL_USER_EMAIL__#${INITIAL_USER_EMAIL}#g;
-       s#__INITIAL_USER_PASSWORD__#${INITIAL_USER_PASSWORD}#g
-       s#__INITIAL_USER__#${INITIAL_USER}#g;
-       s#__DATABASE_PASSWORD__#${DATABASE_PASSWORD}#g;
-       s#__SYSTEM_ROOT_TOKEN__#${SYSTEM_ROOT_TOKEN}#g"
-  if [ "$USE_SINGLE_HOSTNAME" = "yes" ]; then
-    FILTERS="s#__CLUSTER__.__DOMAIN__#${HOSTNAME_EXT}#g;
-       $FILTERS"
+if [ "x${TEST}" = "xyes" ]; then
+  if [ ! -d "${SOURCE_TESTS_DIR}" ]; then
+    echo "You requested to run tests, but ${SOURCE_TESTS_DIR} does not exist or is not a directory. Exiting."
+    exit 1
   fi
-  sed "$FILTERS" \
-    "${f}" > ${T_DIR}/$(basename "${f}")
-done
-chmod 755 ${T_DIR}/run-test.sh
+  mkdir -p ${T_DIR}
+  # Replace cluster and domain name in the test files
+  for f in $(ls "${SOURCE_TESTS_DIR}"/*); do
+    FILTERS="s#__CLUSTER__#${CLUSTER}#g;
+         s#__CONTROLLER_EXT_SSL_PORT__#${CONTROLLER_EXT_SSL_PORT}#g;
+         s#__DOMAIN__#${DOMAIN}#g;
+         s#__IP_INT__#${IP_INT}#g;
+         s#__INITIAL_USER_EMAIL__#${INITIAL_USER_EMAIL}#g;
+         s#__INITIAL_USER_PASSWORD__#${INITIAL_USER_PASSWORD}#g
+         s#__INITIAL_USER__#${INITIAL_USER}#g;
+         s#__DATABASE_PASSWORD__#${DATABASE_PASSWORD}#g;
+         s#__SYSTEM_ROOT_TOKEN__#${SYSTEM_ROOT_TOKEN}#g"
+    if [ "$USE_SINGLE_HOSTNAME" = "yes" ]; then
+      FILTERS="s#__CLUSTER__.__DOMAIN__#${HOSTNAME_EXT}#g;
+         $FILTERS"
+    fi
+    sed "$FILTERS" \
+      "${f}" > ${T_DIR}/$(basename "${f}")
+  done
+  chmod 755 ${T_DIR}/run-test.sh
+fi
 
 # Replace helper state files that differ from the formula's examples
 if [ -d "${SOURCE_STATES_DIR}" ]; then
