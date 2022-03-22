@@ -39,7 +39,7 @@ const (
 	gradleversion           = "5.3.1"
 	nodejsversion           = "v12.22.11"
 	devtestDatabasePassword = "insecure_arvados_test"
-	workbench2version       = "cfa81dfc3041cb459c8a0918a2732dfcf3a11d40"
+	workbench2version       = "5e020488f67b5bc919796e0dc8b0b9f3b3ff23b0"
 )
 
 type installCommand struct {
