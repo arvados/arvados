@@ -155,18 +155,6 @@ else
   arv-keepdocker arvados/jobs latest
 fi
 
-cat >/tmp/cwltest/arv-cwl-jobs <<EOF2
-#!/bin/sh
-exec arvados-cwl-runner --api=jobs \\\$@
-EOF2
-chmod +x /tmp/cwltest/arv-cwl-jobs
-
-cat >/tmp/cwltest/arv-cwl-containers <<EOF2
-#!/bin/sh
-exec arvados-cwl-runner --api=containers \\\$@
-EOF2
-chmod +x /tmp/cwltest/arv-cwl-containers
-
 EXTRA=--compute-checksum
 
 if [[ $devcwl -eq 1 ]] ; then
@@ -177,8 +165,10 @@ env
 if [[ "$suite" = "integration" ]] ; then
    cd /usr/src/arvados/sdk/cwl/tests
    exec ./arvados-tests.sh $@
+elif [[ "$suite" = "conformance-v1.2" ]] ; then
+   exec cwltest --tool arvados-cwl-runner --test conformance_tests.yaml -N307 -- \$EXTRA
 else
-   exec ./run_test.sh RUNNER=/tmp/cwltest/arv-cwl-${runapi} EXTRA="\$EXTRA" $@
+   exec ./run_test.sh RUNNER=arvados-cwl-runner EXTRA="\$EXTRA" $@
 fi
 EOF
 
