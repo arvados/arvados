@@ -25,6 +25,7 @@ import {
 import { openProcessInputDialog } from 'store/processes/process-input-actions';
 import { cancelRunningWorkflow } from 'store/processes/processes-actions';
 import { navigateToLogCollection, setProcessLogsPanelFilter } from 'store/process-logs-panel/process-logs-panel-actions';
+import { snackbarActions, SnackbarKind } from 'store/snackbar/snackbar-actions';
 
 const mapStateToProps = ({ router, resources, processPanel, processLogsPanel }: RootState): ProcessPanelRootDataProps => {
     const uuid = getProcessPanelCurrentUuid(router) || '';
@@ -38,6 +39,13 @@ const mapStateToProps = ({ router, resources, processPanel, processLogsPanel }: 
 };
 
 const mapDispatchToProps = (dispatch: Dispatch): ProcessPanelRootActionProps => ({
+    onLogCopyToClipboard: (message: string) => {
+        dispatch<any>(snackbarActions.OPEN_SNACKBAR({
+            message,
+            hideDuration: 2000,
+            kind: SnackbarKind.SUCCESS,
+        }));
+    },
     onContextMenu: (event, process) => {
         dispatch<any>(openProcessContextMenu(event, process));
     },

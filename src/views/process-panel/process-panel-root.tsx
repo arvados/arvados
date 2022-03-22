@@ -42,6 +42,7 @@ export interface ProcessPanelRootActionProps {
     cancelProcess: (uuid: string) => void;
     onLogFilterChange: (filter: FilterOption) => void;
     navigateToLog: (uuid: string) => void;
+    onLogCopyToClipboard: (uuid: string) => void;
 }
 
 export type ProcessPanelRootProps = ProcessPanelRootDataProps & ProcessPanelRootActionProps & WithStyles<CssRules>;
@@ -72,6 +73,7 @@ export const ProcessPanelRoot = withStyles(styles)(
             </MPVPanelContent>
             <MPVPanelContent forwardProps xs maxHeight='50%'>
                 <ProcessLogsCard
+                    onCopy={props.onLogCopyToClipboard}
                     process={process}
                     lines={getProcessPanelLogs(processLogsPanel)}
                     selectedFilter={{

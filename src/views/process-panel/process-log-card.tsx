@@ -19,6 +19,7 @@ import { ArvadosTheme } from 'common/custom-theme';
 import {
     CloseIcon,
     CollectionIcon,
+    CopyIcon,
     LogIcon,
     MaximizeIcon,
     TextDecreaseIcon,
@@ -34,6 +35,7 @@ import {
 import { ProcessLogCodeSnippet } from 'views/process-panel/process-log-code-snippet';
 import { DefaultView } from 'components/default-view/default-view';
 import { CodeSnippetDataProps } from 'components/code-snippet/code-snippet';
+import CopyToClipboard from 'react-copy-to-clipboard';
 
 type CssRules = 'card' | 'content' | 'title' | 'iconHeader' | 'header' | 'root' | 'logViewer' | 'logViewerContainer';
 
@@ -77,6 +79,7 @@ export interface ProcessLogsCardDataProps {
 export interface ProcessLogsCardActionProps {
     onLogFilterChange: (filter: FilterOption) => void;
     navigateToLog: (uuid: string) => void;
+    onCopy: (text: string) => void;
 }
 
 type ProcessLogsCardProps = ProcessLogsCardDataProps
@@ -86,7 +89,8 @@ type ProcessLogsCardProps = ProcessLogsCardDataProps
     & MPVPanelProps;
 
 export const ProcessLogsCard = withStyles(styles)(
-    ({ classes, process, filters, selectedFilter, lines, onLogFilterChange, navigateToLog,
+    ({ classes, process, filters, selectedFilter, lines,
+        onLogFilterChange, navigateToLog, onCopy,
         doHidePanel, doMaximizePanel, panelMaximized, panelName }: ProcessLogsCardProps) => {
         const [wordWrapToggle, setWordWrapToggle] = useState<boolean>(true);
         const [fontSize, setFontSize] = useState<number>(3);
@@ -113,6 +117,15 @@ export const ProcessLogsCard = withStyles(styles)(
                             <Tooltip title="Increase font size" disableFocusListener>
                                 <IconButton onClick={() => fontSize < 5 && setFontSize(fontSize+1)}>
                                     <TextIncreaseIcon />
+                                </IconButton>
+                            </Tooltip>
+                        </Grid>
+                        <Grid item>
+                            <Tooltip title="Copy to clipboard" disableFocusListener>
+                                <IconButton>
+                                    <CopyToClipboard text={lines.join()} onCopy={() => onCopy("Log copied to clipboard")}>
+                                        <CopyIcon />
+                                    </CopyToClipboard>
                                 </IconButton>
                             </Tooltip>
                         </Grid>
