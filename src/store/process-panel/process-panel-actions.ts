@@ -13,7 +13,7 @@ import { snackbarActions } from 'store/snackbar/snackbar-actions';
 import { SnackbarKind } from '../snackbar/snackbar-actions';
 import { showWorkflowDetails } from 'store/workflow-panel/workflow-panel-actions';
 import { loadSubprocessPanel } from "../subprocess-panel/subprocess-panel-actions";
-import { initProcessLogsPanel } from "store/process-logs-panel/process-logs-panel-actions";
+import { initProcessLogsPanel, processLogsPanelActions } from "store/process-logs-panel/process-logs-panel-actions";
 
 export const processPanelActions = unionize({
     SET_PROCESS_PANEL_CONTAINER_REQUEST_UUID: ofType<string>(),
@@ -27,6 +27,7 @@ export const toggleProcessPanelFilter = processPanelActions.TOGGLE_PROCESS_PANEL
 
 export const loadProcessPanel = (uuid: string) =>
     async (dispatch: Dispatch) => {
+        dispatch(processLogsPanelActions.RESET_PROCESS_LOGS_PANEL());
         dispatch<ProcessPanelAction>(processPanelActions.SET_PROCESS_PANEL_CONTAINER_REQUEST_UUID(uuid));
         await dispatch<any>(loadProcess(uuid));
         dispatch(initProcessPanelFilters);
