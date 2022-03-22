@@ -37,7 +37,7 @@ const (
 	pjsversion              = "1.9.8"
 	geckoversion            = "0.24.0"
 	gradleversion           = "5.3.1"
-	nodejsversion           = "v12.22.2"
+	nodejsversion           = "v12.22.11"
 	devtestDatabasePassword = "insecure_arvados_test"
 	workbench2version       = "cfa81dfc3041cb459c8a0918a2732dfcf3a11d40"
 )
