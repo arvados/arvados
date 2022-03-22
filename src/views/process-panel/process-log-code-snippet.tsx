@@ -2,24 +2,36 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import React from 'react';
-import { MuiThemeProvider, createMuiTheme, StyleRulesCallback, withStyles, WithStyles } from '@material-ui/core/styles';
-import { CodeSnippet } from 'components/code-snippet/code-snippet';
+import React, { useEffect, useRef, useState } from 'react';
+import {
+    MuiThemeProvider,
+    createMuiTheme,
+    StyleRulesCallback,
+    withStyles,
+    WithStyles
+} from '@material-ui/core/styles';
 import grey from '@material-ui/core/colors/grey';
 import { ArvadosTheme } from 'common/custom-theme';
 import { Link, Typography } from '@material-ui/core';
 import { navigateTo } from 'store/navigation/navigation-action';
 import { Dispatch } from 'redux';
 import { connect, DispatchProp } from 'react-redux';
+import classNames from 'classnames';
 
-type CssRules = 'wordWrap' | 'codeSnippetContainer';
+type CssRules = 'root' | 'wordWrap' | 'logText';
 
 const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
+    root: {
+        boxSizing: 'border-box',
+        overflow: 'auto',
+        backgroundColor: '#000',
+        height: `calc(100% - ${theme.spacing.unit * 4}px)`, // so that horizontal scollbar is visible
+    },
+    logText: {
+        padding: theme.spacing.unit * 0.5,
+    },
     wordWrap: {
         whiteSpace: 'pre-wrap',
-    },
-    codeSnippetContainer: {
-        height: `calc(100% - ${theme.spacing.unit * 4}px)`, // so that horizontal scollbar is visible
     },
 });
 
@@ -28,9 +40,6 @@ const theme = createMuiTheme({
         MuiTypography: {
             body2: {
                 color: grey["200"]
-            },
-            root: {
-                backgroundColor: '#000'
             }
         }
     },
@@ -68,10 +77,33 @@ const renderLinks = (fontSize: number, dispatch: Dispatch) => (text: string) => 
 };
 
 export const ProcessLogCodeSnippet = withStyles(styles)(connect()(
-    (props: ProcessLogCodeSnippetProps & WithStyles<CssRules> & DispatchProp) =>
-        <MuiThemeProvider theme={theme}>
-            <CodeSnippet lines={props.lines} fontSize={props.fontSize}
-                customRenderer={renderLinks(props.fontSize, props.dispatch)}
-                className={props.wordWrap ? props.classes.wordWrap : undefined}
-                containerClassName={props.classes.codeSnippetContainer} />
-        </MuiThemeProvider>));
+    ({classes, lines, fontSize, dispatch, wordWrap}: ProcessLogCodeSnippetProps & WithStyles<CssRules> & DispatchProp) => {
+        const [followMode, setFollowMode] = useState<boolean>(false);
+        const scrollRef = useRef<HTMLDivElement>(null);
+
+        useEffect(() => {
+            if (followMode && scrollRef.current && lines.length > 0) {
+                // Scroll to bottom
+                scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+            }
+        }, [followMode, lines, scrollRef]);
+
+        return <MuiThemeProvider theme={theme}>
+            <div ref={scrollRef} className={classes.root}
+                onScroll={(e) => {
+                    const elem = e.target as HTMLDivElement;
+                    if (elem.scrollTop + elem.clientHeight >= elem.scrollHeight) {
+                        setFollowMode(true);
+                    } else {
+                        setFollowMode(false);
+                    }
+                }}>
+                { lines.map((line: string, index: number) =>
+                <Typography key={index} component="pre"
+                    className={classNames(classes.logText, wordWrap ? classes.wordWrap : undefined)}>
+                    {renderLinks(fontSize, dispatch)(line)}
+                </Typography>
+                ) }
+            </div>
+        </MuiThemeProvider>
+    }));
