@@ -305,8 +305,6 @@ func (s *LoadSuite) TestNoUnrecognizedKeysInDefaultConfig(c *check.C) {
 
 func (s *LoadSuite) TestNoWarningsForDumpedConfig(c *check.C) {
 	var logbuf bytes.Buffer
-	logger := logrus.New()
-	logger.Out = &logbuf
 	cfg, err := testLoader(c, `
 Clusters:
  zzzzz:
@@ -713,8 +711,33 @@ Clusters:
     RAM: 12345M
     VCPUs: 8
     Price: 1.23
+ z3333:
+  Containers:
+   PreemptiblePriceFactor: 0.5
+  InstanceTypes:
+   Type1:
+    RAM: 12345M
+    VCPUs: 8
+    Price: 1.23
+   Type1.preemptible: # higher price than the auto-added variant would use -- should generate warning
+    ProviderType: Type1
+    RAM: 12345M
+    VCPUs: 8
+    Price: 1.23
+    Preemptible: true
+   Type2:
+    RAM: 23456M
+    VCPUs: 16
+    Price: 2.46
+   Type2.preemptible: # identical to the auto-added variant -- so no warning
+    ProviderType: Type2
+    RAM: 23456M
+    VCPUs: 16
+    Price: 1.23
+    Preemptible: true
 `
-	cfg, err := testLoader(c, yaml, nil).Load()
+	var logbuf bytes.Buffer
+	cfg, err := testLoader(c, yaml, &logbuf).Load()
 	c.Assert(err, check.IsNil)
 	cc, err := cfg.GetCluster("z1111")
 	c.Assert(err, check.IsNil)
@@ -729,4 +752,13 @@ Clusters:
 	c.Check(cc.InstanceTypes["Type1.preemptible"].Price, check.Equals, 1.23/2)
 	c.Check(cc.InstanceTypes["Type1.preemptible"].ProviderType, check.Equals, "Type1")
 	c.Check(cc.InstanceTypes, check.HasLen, 2)
+
+	cc, err = cfg.GetCluster("z3333")
+	c.Assert(err, check.IsNil)
+	// Don't overwrite the explicitly configured preemptible variant
+	c.Check(cc.InstanceTypes["Type1.preemptible"].Price, check.Equals, 1.23)
+	c.Check(cc.InstanceTypes, check.HasLen, 4)
+	c.Check(logbuf.String(), check.Matches, `(?ms).*Clusters\.z3333\.InstanceTypes\[Type1\.preemptible\]: already exists, so not automatically adding a preemptible variant of Type1.*`)
+	c.Check(logbuf.String(), check.Not(check.Matches), `(?ms).*Type2\.preemptible.*`)
+	c.Check(logbuf.String(), check.Not(check.Matches), `(?ms).*(z1111|z2222)[^\n]*InstanceTypes.*`)
 }

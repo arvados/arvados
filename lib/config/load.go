@@ -287,7 +287,7 @@ func (ldr *Loader) Load() (*arvados.Config, error) {
 
 	// Preprocess/automate some configs
 	for id, cc := range cfg.Clusters {
-		ldr.autofillPreemptible(&cc)
+		ldr.autofillPreemptible("Clusters."+id, &cc)
 
 		if strings.Count(cc.Users.AnonymousUserToken, "/") == 3 {
 			// V2 token, strip it to just a secret
@@ -536,13 +536,17 @@ func (ldr *Loader) logExtraKeys(expected, supplied map[string]interface{}, prefi
 	}
 }
 
-func (ldr *Loader) autofillPreemptible(cc *arvados.Cluster) {
+func (ldr *Loader) autofillPreemptible(label string, cc *arvados.Cluster) {
 	if factor := cc.Containers.PreemptiblePriceFactor; factor > 0 {
 		for name, it := range cc.InstanceTypes {
 			if !it.Preemptible {
 				it.Preemptible = true
 				it.Price = it.Price * factor
 				it.Name = name + ".preemptible"
+				if it2, exists := cc.InstanceTypes[it.Name]; exists && it2 != it {
+					ldr.Logger.Warnf("%s.InstanceTypes[%s]: already exists, so not automatically adding a preemptible variant of %s", label, it.Name, name)
+					continue
+				}
 				cc.InstanceTypes[it.Name] = it
 			}
 		}
