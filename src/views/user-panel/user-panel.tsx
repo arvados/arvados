@@ -30,7 +30,7 @@ import { ShareMeIcon, AddIcon } from 'components/icon/icon';
 import { USERS_PANEL_ID, openUserCreateDialog } from 'store/users/users-actions';
 import { noop } from 'lodash';
 
-type UserPanelRules = "button" | 'root' | 'content';
+type UserPanelRules = "button" | 'root';
 
 const styles = withStyles<UserPanelRules>(theme => ({
     button: {
@@ -42,10 +42,6 @@ const styles = withStyles<UserPanelRules>(theme => ({
     root: {
         width: '100%',
     },
-    content: {
-        // reserve space for the tab bar
-        height: `calc(100% - ${theme.spacing.unit * 7}px)`,
-    }
 }));
 
 export enum UserPanelColumnNames {
@@ -146,51 +142,31 @@ export const UserPanel = compose(
     styles,
     connect(mapStateToProps, mapDispatchToProps))(
         class extends React.Component<UserPanelProps> {
-            state = {
-                value: 0,
-            };
-
-            componentDidMount() {
-                this.setState({ value: 0 });
-            }
-
             render() {
-                const { value } = this.state;
                 return <Paper className={this.props.classes.root}>
-                    <Tabs value={value} onChange={this.handleChange} variant={"fullWidth"}>
-                        <Tab label="USERS" />
-                        <Tab label="ACTIVITY" disabled />
-                    </Tabs>
-                    {value === 0 &&
-                        <div className={this.props.classes.content}>
-                            <DataExplorer
-                                id={USERS_PANEL_ID}
-                                onRowClick={this.props.handleRowClick}
-                                onRowDoubleClick={noop}
-                                onContextMenu={this.handleContextMenu}
-                                contextMenuColumn={true}
-                                hideColumnSelector
-                                actions={
-                                    <Grid container justify='flex-end'>
-                                        <Button variant="contained" color="primary" onClick={this.props.openUserCreateDialog}>
-                                            <AddIcon /> NEW USER
-                                        </Button>
-                                    </Grid>
-                                }
-                                paperProps={{
-                                    elevation: 0,
-                                }}
-                                dataTableDefaultView={
-                                    <DataTableDefaultView
-                                        icon={ShareMeIcon}
-                                        messages={['Your user list is empty.']} />
-                                } />
-                        </div>}
+                    <DataExplorer
+                        id={USERS_PANEL_ID}
+                        onRowClick={this.props.handleRowClick}
+                        onRowDoubleClick={noop}
+                        onContextMenu={this.handleContextMenu}
+                        contextMenuColumn={true}
+                        hideColumnSelector
+                        actions={
+                            <Grid container justify='flex-end'>
+                                <Button variant="contained" color="primary" onClick={this.props.openUserCreateDialog}>
+                                    <AddIcon /> NEW USER
+                                </Button>
+                            </Grid>
+                        }
+                        paperProps={{
+                            elevation: 0,
+                        }}
+                        dataTableDefaultView={
+                            <DataTableDefaultView
+                                icon={ShareMeIcon}
+                                messages={['Your user list is empty.']} />
+                        } />
                 </Paper>;
-            }
-
-            handleChange = (event: React.MouseEvent<HTMLElement>, value: number) => {
-                this.setState({ value });
             }
 
             handleContextMenu = (event: React.MouseEvent<HTMLElement>, resourceUuid: string) => {
