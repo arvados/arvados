@@ -42,11 +42,13 @@ def getuserinfo(arv, uuid):
                                                        uuid, prof)
 
 collectionNameCache = {}
-def getCollectionName(arv, uuid):
-    if uuid not in collectionNameCache:
-        u = arv.collections().get(uuid=uuid).execute()
-        collectionNameCache[uuid] = u["name"]
-    return collectionNameCache[uuid]
+def getCollectionName(arv, pdh):
+    if pdh not in collectionNameCache:
+        u = arv.collections().list(filters=[["portable_data_hash","=",pdh]]).execute().get("items")
+        if len(u) < 1:
+            return "(deleted)"
+        collectionNameCache[pdh] = u[0]["name"]
+    return collectionNameCache[pdh]
 
 def getname(u):
     return "\"%s\" (%s)" % (u["name"], u["uuid"])
@@ -148,7 +150,7 @@ def main(arguments=None):
                 users.setdefault(e["object_uuid"], [])
                 users[e["object_uuid"]].append("%s Downloaded file \"%s\" from \"%s\" (%s) (%s)" % (event_at,
                                                                                        e["properties"].get("collection_file_path") or e["properties"].get("reqPath"),
-                                                                                       getCollectionName(arv, e["properties"].get("collection_uuid")),
+                                                                                       getCollectionName(arv, e["properties"].get("portable_data_hash")),
                                                                                        e["properties"].get("collection_uuid"),
                                                                                        e["properties"].get("portable_data_hash")))
 
@@ -156,7 +158,7 @@ def main(arguments=None):
                 users.setdefault(e["object_uuid"], [])
                 users[e["object_uuid"]].append("%s Uploaded file \"%s\" to \"%s\" (%s)" % (event_at,
                                                                                     e["properties"].get("collection_file_path") or e["properties"].get("reqPath"),
-                                                                                    getCollectionName(arv, e["properties"].get("collection_uuid")),
+                                                                                    getCollectionName(arv, e["properties"].get("portable_data_hash")),
                                                                                     e["properties"].get("collection_uuid")))
 
         else:
