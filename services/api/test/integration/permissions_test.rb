@@ -480,6 +480,73 @@ class PermissionsTest < ActionDispatch::IntegrationTest
         params: {},
       headers: auth(:active)
     assert_response 404
+
+    ### Create a collection, and share it with a direct permission
+    ### link (as opposed to sharing its parent project)
+    post "/arvados/v1/collections",
+      params: {
+        collection: {
+          name: 'permission test',
+        }
+      },
+      headers: auth(:admin)
+    assert_response :success
+    collection_uuid = json_response['uuid']
+    post "/arvados/v1/links",
+      params: {
+        link: {
+          tail_uuid: users(:spectator).uuid,
+          link_class: 'permission',
+          name: 'can_read',
+          head_uuid: collection_uuid,
+          properties: {}
+        }
+      },
+      headers: auth(:admin)
+    assert_response :success
+    can_read_collection_uuid = json_response['uuid']
+
+    # Should not be able read the permission link via permissions API,
+    # because permission is only can_read, not can_manage
+    get "/arvados/v1/permissions/#{collection_uuid}",
+      headers: auth(:active)
+    assert_response 404
+
+    # Should not be able to read the permission link directly, for
+    # same reason
+    get "/arvados/v1/links/#{can_read_collection_uuid}",
+      headers: auth(:active)
+    assert_response 404
+
+    ### Now add a can_manage link
+    post "/arvados/v1/links",
+      params: {
+        link: {
+          tail_uuid: users(:active).uuid,
+          link_class: 'permission',
+          name: 'can_manage',
+          head_uuid: collection_uuid,
+          properties: {}
+        }
+      },
+      headers: auth(:admin)
+    assert_response :success
+    can_manage_collection_uuid = json_response['uuid']
+
+    # Should be able read both permission links via permissions API
+    get "/arvados/v1/permissions/#{collection_uuid}",
+      headers: auth(:active)
+    assert_response :success
+    perm_uuids = json_response['items'].map { |item| item['uuid'] }
+    assert_includes perm_uuids, can_read_collection_uuid, "can_read_uuid not found"
+    assert_includes perm_uuids, can_manage_collection_uuid, "can_manage_uuid not found"
+
+    # Should be able to read both permission links directly
+    [can_read_collection_uuid, can_manage_collection_uuid].each do |uuid|
+      get "/arvados/v1/links/#{uuid}",
+        headers: auth(:active)
+      assert_response :success
+    end
   end
 
   test "get_permissions returns 404 for nonexistent uuid" do
