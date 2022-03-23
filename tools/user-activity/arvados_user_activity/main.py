@@ -121,7 +121,7 @@ def main(arguments=None):
             elif e["properties"]["new_attributes"]["link_class"] == "permission":
                 users[owner].append("%s Shared %s with %s" % (event_at, e["properties"]["new_attributes"]["tail_uuid"], e["properties"]["new_attributes"]["head_uuid"]))
             else:
-                users[owner].append("%s %s %s %s" % (e["event_type"], e["object_kind"], e["object_uuid"], loguuid))
+                users[owner].append("%s %s %s %s %s" % (event_at, e["event_type"], e["object_kind"], e["object_uuid"], loguuid))
 
         elif e["event_type"] == "delete" and e["object_uuid"][6:11] == "o0j2j":
             if e["properties"]["old_attributes"]["link_class"] == "tag":
@@ -129,7 +129,7 @@ def main(arguments=None):
             elif e["properties"]["old_attributes"]["link_class"] == "permission":
                 users[owner].append("%s Unshared %s with %s" % (event_at, e["properties"]["old_attributes"]["tail_uuid"], e["properties"]["old_attributes"]["head_uuid"]))
             else:
-                users[owner].append("%s %s %s %s" % (e["event_type"], e["object_kind"], e["object_uuid"], loguuid))
+                users[owner].append("%s %s %s %s %s" % (event_at, e["event_type"], e["object_kind"], e["object_uuid"], loguuid))
 
         elif e["event_type"] == "create" and e["object_uuid"][6:11] == "4zz18":
             if e["properties"]["new_attributes"]["properties"].get("type") in ("log", "output", "intermediate"):
@@ -162,7 +162,7 @@ def main(arguments=None):
                                                                                     e["properties"].get("collection_uuid")))
 
         else:
-            users[owner].append("%s %s %s %s" % (e["event_type"], e["object_kind"], e["object_uuid"], loguuid))
+            users[owner].append("%s %s %s %s %s" % (event_at, e["event_type"], e["object_kind"], e["object_uuid"], loguuid))
 
     for k,v in users.items():
         if k is None or k.endswith("-tpzed-000000000000000"):
