@@ -68,19 +68,19 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
  
      # Networking
      # WEBUI PORT
-     arv.vm.network "forwarded_port", guest: 9443, host: 9443
+     arv.vm.network "forwarded_port", guest: 443, host: 9443
      # WORKBENCH1
-     arv.vm.network "forwarded_port", guest: 9444, host: 9444
+     arv.vm.network "forwarded_port", guest: 8805, host: 9444
      # WORKBENCH2
-     arv.vm.network "forwarded_port", guest: 9445, host: 9445
+     arv.vm.network "forwarded_port", guest: 443, host: 9445
      # KEEPPROXY
-     arv.vm.network "forwarded_port", guest: 35101, host: 35101
+     arv.vm.network "forwarded_port", guest: 8801, host: 35101
      # KEEPWEB
-     arv.vm.network "forwarded_port", guest: 11002, host: 11002
+     arv.vm.network "forwarded_port", guest: 8802, host: 11002
      # WEBSHELL
-     arv.vm.network "forwarded_port", guest: 14202, host: 14202
+     arv.vm.network "forwarded_port", guest: 8803, host: 14202
      # WEBSOCKET
-     arv.vm.network "forwarded_port", guest: 18002, host: 18002
+     arv.vm.network "forwarded_port", guest: 8804, host: 18002
      arv.vm.provision "shell",
                       inline: "cp -vr /vagrant/config_examples/single_host/single_hostname /home/vagrant/local_config_dir;
                                cp -vr /vagrant/tests /home/vagrant/tests;
