@@ -145,6 +145,7 @@ def main(arguments=None):
                 users[owner].append("%s Deleted collection %s %s" % (event_at, getname(e["properties"]["old_attributes"]), loguuid))
 
         elif e["event_type"] == "file_download":
+                users.setdefault(e["object_uuid"], [])
                 users[e["object_uuid"]].append("%s Downloaded file \"%s\" from \"%s\" (%s) (%s)" % (event_at,
                                                                                        e["properties"].get("collection_file_path") or e["properties"].get("reqPath"),
                                                                                        getCollectionName(arv, e["properties"].get("collection_uuid")),
@@ -152,6 +153,7 @@ def main(arguments=None):
                                                                                        e["properties"].get("portable_data_hash")))
 
         elif e["event_type"] == "file_upload":
+                users.setdefault(e["object_uuid"], [])
                 users[e["object_uuid"]].append("%s Uploaded file \"%s\" to \"%s\" (%s)" % (event_at,
                                                                                     e["properties"].get("collection_file_path") or e["properties"].get("reqPath"),
                                                                                     getCollectionName(arv, e["properties"].get("collection_uuid")),
