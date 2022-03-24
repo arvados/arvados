@@ -44,7 +44,7 @@ const styles = withStyles<UserPanelRules>(theme => ({
 }));
 
 export enum UserPanelColumnNames {
-    NAME = "First Name",
+    NAME = "Name",
     UUID = "Uuid",
     EMAIL = "Email",
     ACTIVE = "Active",
