@@ -112,25 +112,25 @@ func (initcmd *initCommand) RunCommand(prog string, args []string, stdin io.Read
       Websocket:
         InternalURLs:
           "http://0.0.0.0:8005/": {}
-        ExternalURL: {{printf "%q" ( print "wss://" .Domain ":4436/websocket" ) }}
+        ExternalURL: {{printf "%q" ( print "wss://" .Domain ":4435/websocket" ) }}
       Keepbalance:
         InternalURLs:
           "http://0.0.0.0:9005/": {}
       GitHTTP:
         InternalURLs:
           "http://0.0.0.0:9001/": {}
-        ExternalURL: {{printf "%q" ( print "https://" .Domain ":4437/" ) }}
+        ExternalURL: {{printf "%q" ( print "https://" .Domain ":4436/" ) }}
       DispatchCloud:
         InternalURLs:
           "http://0.0.0.0:9006/": {}
       Keepproxy:
         InternalURLs:
           "http://0.0.0.0:25108/": {}
-        ExternalURL: {{printf "%q" ( print "https://" .Domain ":4438/" ) }}
+        ExternalURL: {{printf "%q" ( print "https://" .Domain ":4437/" ) }}
       WebDAV:
         InternalURLs:
           "http://0.0.0.0:9002/": {}
-        ExternalURL: {{printf "%q" ( print "https://" .Domain ":4439/" ) }}
+        ExternalURL: {{printf "%q" ( print "https://" .Domain ":4438/" ) }}
       WebDAVDownload:
         InternalURLs:
           "http://0.0.0.0:8004/": {}
