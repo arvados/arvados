@@ -1126,7 +1126,8 @@ class ContainerRequestTest < ActiveSupport::TestCase
     end
   end
 
-  test "Having preemptible_instances=true create a committed child container request and verify the scheduling parameter of its container" do
+  test "AlwaysUsePreemptibleInstances makes child containers preemptible" do
+    Rails.configuration.Containers.AlwaysUsePreemptibleInstances = true
     common_attrs = {cwd: "test",
                     priority: 1,
                     command: ["echo", "hello"],

@@ -919,6 +919,15 @@ Clusters:
       # configured, and has no effect on top-level containers.
       AlwaysUsePreemptibleInstances: false
 
+      # Automatically add a preemptible variant for every
+      # non-preemptible entry in InstanceTypes below. The maximum bid
+      # price for the preemptible variant will be the non-preemptible
+      # price multiplied by PreemptiblePriceFactor. If 0, preemptible
+      # variants are not added automatically.
+      #
+      # A price factor of 1.0 is a reasonable starting point.
+      PreemptiblePriceFactor: 0
+
       # PEM encoded SSH key (RSA, DSA, or ECDSA) used by the
       # cloud dispatcher for executing containers on worker VMs.
       # Begins with "-----BEGIN RSA PRIVATE KEY-----\n"
