@@ -75,13 +75,23 @@ export const getOrder = (dataExplorer: DataExplorer) => {
         const sortDirection = sortColumn && sortColumn.sortDirection === SortDirection.ASC
             ? OrderDirection.ASC
             : OrderDirection.DESC;
-        const columnName = sortColumn && sortColumn.name === UserPanelColumnNames.LAST_NAME ? "lastName" : "firstName";
-        return order
-            .addOrder(sortDirection, columnName)
-            .getOrder();
-    } else {
-        return order.getOrder();
+        switch (sortColumn.name) {
+            case UserPanelColumnNames.NAME:
+                order.addOrder(sortDirection, "firstName")
+                    .addOrder(sortDirection, "lastName");
+                break;
+            case UserPanelColumnNames.UUID:
+                order.addOrder(sortDirection, "uuid");
+                break;
+            case UserPanelColumnNames.EMAIL:
+                order.addOrder(sortDirection, "email");
+                break;
+            case UserPanelColumnNames.USERNAME:
+                order.addOrder(sortDirection, "username");
+                break;
+        }
     }
+    return order.getOrder();
 };
 
 export const setItems = (listResults: ListResults<UserResource>) =>

@@ -23,7 +23,7 @@ import { openSharingDialog } from 'store/sharing-dialog/sharing-dialog-actions';
 import { getUserFullname, getUserDisplayName, User, UserResource } from 'models/user';
 import { toggleIsActive, toggleIsAdmin } from 'store/users/users-actions';
 import { LinkClass, LinkResource } from 'models/link';
-import { navigateTo, navigateToGroupDetails } from 'store/navigation/navigation-action';
+import { navigateTo, navigateToGroupDetails, navigateToUserProfile } from 'store/navigation/navigation-action';
 import { withResourceData } from 'views-components/data-explorer/with-resources';
 import { CollectionResource } from 'models/collection';
 import { IllegalNamingWarning } from 'components/warning/warning';
@@ -161,14 +161,22 @@ export const ResourceLastName = connect(
         return resource || { lastName: '' };
     })(renderLastName);
 
-const renderFullName = (item: { firstName: string, lastName: string }) =>
-    <Typography noWrap>{(item.firstName + " " + item.lastName).trim()}</Typography>;
+const renderFullName = (dispatch: Dispatch ,item: { uuid: string, firstName: string, lastName: string }, link?: boolean) => {
+    const displayName = (item.firstName + " " + item.lastName).trim() || item.uuid;
+    return link ? <Typography noWrap
+        color="primary"
+        style={{ 'cursor': 'pointer' }}
+        onClick={() => dispatch<any>(navigateToUserProfile(item.uuid))}>
+            {displayName}
+    </Typography> :
+    <Typography noWrap>{displayName}</Typography>;
+}
 
-export const ResourceFullName = connect(
-    (state: RootState, props: { uuid: string }) => {
+export const UserResourceFullName = connect(
+    (state: RootState, props: { uuid: string, link?: boolean }) => {
         const resource = getResource<UserResource>(props.uuid)(state.resources);
-        return resource || { firstName: '', lastName: '' };
-    })(renderFullName);
+        return {item: resource || { uuid: '', firstName: '', lastName: '' }, link: props.link};
+    })((props: {item: {uuid: string, firstName: string, lastName: string}, link?: boolean} & DispatchProp<any>) => renderFullName(props.dispatch, props.item, props.link));
 
 
 const renderUuid = (item: { uuid: string }) =>

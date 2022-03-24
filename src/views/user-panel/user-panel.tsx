@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import React from 'react';
-import { WithStyles, withStyles, Tabs, Tab, Paper, Button, Grid } from '@material-ui/core';
+import { WithStyles, withStyles, Paper, Button, Grid } from '@material-ui/core';
 import { DataExplorer } from "views-components/data-explorer/data-explorer";
 import { connect, DispatchProp } from 'react-redux';
 import { DataColumns } from 'components/data-table/data-table';
@@ -12,8 +12,7 @@ import { SortDirection } from 'components/data-table/data-column';
 import { openContextMenu } from "store/context-menu/context-menu-actions";
 import { getResource, ResourcesState } from "store/resources/resources";
 import {
-    ResourceFirstName,
-    ResourceLastName,
+    UserResourceFullName,
     ResourceUuid,
     ResourceEmail,
     ResourceIsActive,
@@ -45,8 +44,7 @@ const styles = withStyles<UserPanelRules>(theme => ({
 }));
 
 export enum UserPanelColumnNames {
-    FIRST_NAME = "First Name",
-    LAST_NAME = "Last Name",
+    NAME = "First Name",
     UUID = "Uuid",
     EMAIL = "Email",
     ACTIVE = "Active",
@@ -57,20 +55,12 @@ export enum UserPanelColumnNames {
 
 export const userPanelColumns: DataColumns<string> = [
     {
-        name: UserPanelColumnNames.FIRST_NAME,
+        name: UserPanelColumnNames.NAME,
         selected: true,
         configurable: true,
         sortDirection: SortDirection.NONE,
         filters: createTree(),
-        render: uuid => <ResourceFirstName uuid={uuid} />
-    },
-    {
-        name: UserPanelColumnNames.LAST_NAME,
-        selected: true,
-        configurable: true,
-        sortDirection: SortDirection.NONE,
-        filters: createTree(),
-        render: uuid => <ResourceLastName uuid={uuid} />
+        render: uuid => <UserResourceFullName uuid={uuid} link={true} />
     },
     {
         name: UserPanelColumnNames.UUID,
@@ -92,7 +82,6 @@ export const userPanelColumns: DataColumns<string> = [
         name: UserPanelColumnNames.ACTIVE,
         selected: true,
         configurable: true,
-        sortDirection: SortDirection.NONE,
         filters: createTree(),
         render: uuid => <ResourceIsActive uuid={uuid} />
     },
@@ -100,7 +89,6 @@ export const userPanelColumns: DataColumns<string> = [
         name: UserPanelColumnNames.ADMIN,
         selected: true,
         configurable: false,
-        sortDirection: SortDirection.NONE,
         filters: createTree(),
         render: uuid => <ResourceIsAdmin uuid={uuid} />
     },
@@ -146,7 +134,7 @@ export const UserPanel = compose(
                 return <Paper className={this.props.classes.root}>
                     <DataExplorer
                         id={USERS_PANEL_ID}
-                        onRowClick={this.props.handleRowClick}
+                        onRowClick={noop}
                         onRowDoubleClick={noop}
                         onContextMenu={this.handleContextMenu}
                         contextMenuColumn={true}
