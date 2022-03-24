@@ -514,7 +514,7 @@ if [ -d "${F_DIR}"/extra/extra ]; then
     # Same when using self-signed certificates.
     SKIP_SNAKE_OIL="dont_add_snakeoil_certs"
   fi
-  for f in $(ls "${F_DIR}"/extra/extra/*.sls | grep -v ${SKIP_SNAKE_OIL}); do
+  for f in $(ls "${F_DIR}"/extra/extra/*.sls | egrep -v "${SKIP_SNAKE_OIL}|shell_sudo_passwordless"); do
   echo "    - extra.$(basename ${f} | sed 's/.sls$//g')" >> ${S_DIR}/top.sls
   done
   # Use byo or self-signed certificates
@@ -544,6 +544,7 @@ if [ -z "${ROLES}" ]; then
     grep -q "custom_certs"    ${S_DIR}/top.sls || echo "    - extra.custom_certs" >> ${S_DIR}/top.sls
   fi
 
+  echo "    - extra.shell_sudo_passwordless" >> ${S_DIR}/top.sls
   echo "    - postgres" >> ${S_DIR}/top.sls
   echo "    - docker.software" >> ${S_DIR}/top.sls
   echo "    - arvados" >> ${S_DIR}/top.sls
@@ -753,6 +754,7 @@ else
       ;;
       "shell")
         # States
+        echo "    - extra.shell_sudo_passwordless" >> ${S_DIR}/top.sls
         grep -q "docker" ${S_DIR}/top.sls       || echo "    - docker.software" >> ${S_DIR}/top.sls
         grep -q "arvados.${R}" ${S_DIR}/top.sls || echo "    - arvados.${R}" >> ${S_DIR}/top.sls
         # Pillars
