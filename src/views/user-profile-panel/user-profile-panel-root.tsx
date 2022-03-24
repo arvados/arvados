@@ -23,7 +23,7 @@ import {
 import { ArvadosTheme } from 'common/custom-theme';
 import { User } from "models/user";
 import { DataTableDefaultView } from 'components/data-table-default-view/data-table-default-view';
-import { MY_ACCOUNT_VALIDATION } from "validators/validators";
+import { PROFILE_EMAIL_VALIDATION } from "validators/validators";
 import { USER_PROFILE_PANEL_ID } from 'store/user-profile/user-profile-actions';
 import { noop } from 'lodash';
 import { GroupsIcon } from 'components/icon/icon';
@@ -229,6 +229,7 @@ export const UserProfilePanelRoot = withStyles(styles)(
                                         name="prefs.profile.organization_email"
                                         component={TextField as any}
                                         disabled={!this.props.isAdmin && !this.props.isSelf}
+                                        validate={PROFILE_EMAIL_VALIDATION}
                                     />
                                 </Grid>
                                 <Grid item className={this.props.classes.gridItem} sm={6} xs={12}>
