@@ -8,6 +8,7 @@ import (
 	"bufio"
 	"bytes"
 	"context"
+	_ "embed"
 	"errors"
 	"flag"
 	"fmt"
@@ -41,6 +42,9 @@ const (
 	devtestDatabasePassword = "insecure_arvados_test"
 	workbench2version       = "5e020488f67b5bc919796e0dc8b0b9f3b3ff23b0"
 )
+
+//go:embed arvados.service
+var arvadosServiceFile []byte
 
 type installCommand struct {
 	ClusterType    string
@@ -540,6 +544,19 @@ yarn install
 			}
 		}
 
+		// Symlink user-facing Go programs /usr/bin/x ->
+		// /var/lib/arvados/bin/x
+		for _, prog := range []string{"arvados-client", "arvados-server"} {
+			err = os.Remove("/usr/bin/" + prog)
+			if err != nil && !errors.Is(err, os.ErrNotExist) {
+				return 1
+			}
+			err = os.Symlink("/var/lib/arvados/bin/"+prog, "/usr/bin/"+prog)
+			if err != nil {
+				return 1
+			}
+		}
+
 		// Copy assets from source tree to /var/lib/arvados/share
 		cmd := exec.Command("install", "-v", "-t", "/var/lib/arvados/share", filepath.Join(inst.SourcePath, "sdk/python/tests/nginx.conf"))
 		cmd.Stdout = stdout
@@ -609,6 +626,23 @@ cd /var/lib/arvados/arvados-workbench2
 VERSION="`+inst.PackageVersion+`" BUILD_NUMBER=1 GIT_COMMIT="`+workbench2version[:9]+`" yarn build
 rsync -a --delete-after build/ /var/lib/arvados/workbench2/
 `, stdout, stderr); err != nil {
+			return 1
+		}
+
+		err = os.WriteFile("/lib/systemd/system/arvados.service", arvadosServiceFile, 0777)
+		if err != nil {
+			return 1
+		}
+		// This is equivalent to "systemd enable", but does
+		// not depend on the systemctl program being
+		// available.
+		symlink := "/etc/systemd/system/multi-user.target.wants/arvados.service"
+		err = os.Remove(symlink)
+		if err != nil && !errors.Is(err, os.ErrNotExist) {
+			return 1
+		}
+		err = os.Symlink("/lib/systemd/system/arvados.service", symlink)
+		if err != nil {
 			return 1
 		}
 	}
