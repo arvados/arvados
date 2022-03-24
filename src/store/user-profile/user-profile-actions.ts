@@ -15,6 +15,7 @@ import { dialogActions } from "store/dialog/dialog-actions";
 export const USER_PROFILE_PANEL_ID = 'userProfilePanel';
 export const USER_PROFILE_FORM = 'userProfileForm';
 export const DEACTIVATE_DIALOG = 'deactivateDialog';
+export const SETUP_DIALOG = 'setupDialog';
 
 export const UserProfileGroupsActions = bindDataExplorerActions(USER_PROFILE_PANEL_ID);
 
@@ -60,6 +61,34 @@ export const openDeactivateDialog = (uuid: string) =>
       }
   }));
 }
+
+export const openSetupDialog = (uuid: string) =>
+  (dispatch: Dispatch<any>, getState: () => RootState, services: ServiceRepository) => {
+    dispatch(dialogActions.OPEN_DIALOG({
+      id: SETUP_DIALOG,
+      data: {
+          title: 'Setup user',
+          text: 'Are you sure you want to setup this user?',
+          confirmButtonLabel: 'Confirm',
+          uuid
+      }
+  }));
+}
+
+
+export const setup = (uuid: string) =>
+    async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
+        try {
+            const resources = await services.userService.setup(uuid);
+            dispatch(updateResources(resources.items));
+            dispatch(snackbarActions.OPEN_SNACKBAR({ message: "User has been setup", hideDuration: 2000, kind: SnackbarKind.SUCCESS }));
+        } catch (e) {
+            dispatch(snackbarActions.OPEN_SNACKBAR({ message: e.message, hideDuration: 2000, kind: SnackbarKind.ERROR }));
+        } finally {
+            dispatch(dialogActions.CLOSE_DIALOG({ id: SETUP_DIALOG }));
+        }
+
+    };
 
 export const unsetup = (uuid: string) =>
     async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {

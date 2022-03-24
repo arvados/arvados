@@ -8,11 +8,11 @@ import { reduxForm, isPristine, isValid } from 'redux-form';
 import { connect } from 'react-redux';
 import { saveEditedUser } from 'store/user-profile/user-profile-actions';
 import { UserProfilePanelRoot, UserProfilePanelRootDataProps } from 'views/user-profile-panel/user-profile-panel-root';
-import { openDeactivateDialog, USER_PROFILE_FORM } from "store/user-profile/user-profile-actions";
+import { openSetupDialog, openDeactivateDialog, USER_PROFILE_FORM } from "store/user-profile/user-profile-actions";
 import { matchUserProfileRoute } from 'routes/routes';
 import { UserResource } from 'models/user';
 import { getResource } from 'store/resources/resources';
-import { openSetupShellAccount, loginAs } from 'store/users/users-actions';
+import { loginAs } from 'store/users/users-actions';
 
 const mapStateToProps = (state: RootState): UserProfilePanelRootDataProps => {
   const pathname = state.router.location ? state.router.location.pathname : '';
@@ -32,7 +32,7 @@ const mapStateToProps = (state: RootState): UserProfilePanelRootDataProps => {
 }};
 
 const mapDispatchToProps = (dispatch: Dispatch) => ({
-    openSetupShellAccount: (uuid: string) => dispatch<any>(openSetupShellAccount(uuid)),
+    openSetupDialog: (uuid: string) => dispatch<any>(openSetupDialog(uuid)),
     loginAs: (uuid: string) => dispatch<any>(loginAs(uuid)),
     openDeactivateDialog: (uuid: string) => dispatch<any>(openDeactivateDialog(uuid)),
 });

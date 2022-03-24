@@ -80,9 +80,8 @@ import { UserPanel } from 'views/user-panel/user-panel';
 import { UserAttributesDialog } from 'views-components/user-dialog/attributes-dialog';
 import { CreateUserDialog } from 'views-components/dialog-forms/create-user-dialog';
 import { HelpApiClientAuthorizationDialog } from 'views-components/api-client-authorizations-dialog/help-dialog';
-import { UserManageDialog } from 'views-components/user-dialog/manage-dialog';
 import { DeactivateDialog } from 'views-components/user-dialog/deactivate-dialog';
-import { SetupShellAccountDialog } from 'views-components/dialog-forms/setup-shell-account-dialog';
+import { SetupDialog } from 'views-components/user-dialog/setup-dialog';
 import { GroupsPanel } from 'views/groups-panel/groups-panel';
 import { RemoveGroupDialog } from 'views-components/groups-dialog/remove-dialog';
 import { GroupAttributesDialog } from 'views-components/groups-dialog/attributes-dialog';
@@ -261,7 +260,6 @@ export const WorkbenchPanel =
             <RepositoryAttributesDialog />
             <RepositoriesSampleGitDialog />
             <RichTextEditorDialog />
-            <SetupShellAccountDialog />
             <SharingDialog />
             <NotFoundDialog />
             <Snackbar />
@@ -269,8 +267,8 @@ export const WorkbenchPanel =
             <UpdateProcessDialog />
             <UpdateProjectDialog />
             <UserAttributesDialog />
-            <UserManageDialog />
             <DeactivateDialog />
+            <SetupDialog />
             <VirtualMachineAttributesDialog />
             <FedLogin />
             <WebDavS3InfoDialog />

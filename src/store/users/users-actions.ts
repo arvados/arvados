@@ -8,14 +8,14 @@ import { RootState } from 'store/store';
 import { getUserUuid } from "common/getuser";
 import { ServiceRepository } from "services/services";
 import { dialogActions } from 'store/dialog/dialog-actions';
-import { startSubmit, reset, initialize, stopSubmit } from "redux-form";
+import { startSubmit, reset, stopSubmit } from "redux-form";
 import { snackbarActions, SnackbarKind } from 'store/snackbar/snackbar-actions';
 import { UserResource } from "models/user";
 import { getResource } from 'store/resources/resources';
 import { navigateTo, navigateToUsers, navigateToRootProject } from "store/navigation/navigation-action";
 import { authActions } from 'store/auth/auth-action';
 import { getTokenV2 } from "models/api-client-authorization";
-import { AddLoginFormData, VIRTUAL_MACHINE_ADD_LOGIN_GROUPS_FIELD, VIRTUAL_MACHINE_ADD_LOGIN_USER_FIELD, VIRTUAL_MACHINE_ADD_LOGIN_VM_FIELD } from "store/virtual-machines/virtual-machines-actions";
+import { VIRTUAL_MACHINE_ADD_LOGIN_GROUPS_FIELD, VIRTUAL_MACHINE_ADD_LOGIN_VM_FIELD } from "store/virtual-machines/virtual-machines-actions";
 import { PermissionLevel } from "models/permission";
 import { updateResources } from "store/resources/resources-actions";
 
@@ -23,7 +23,6 @@ export const USERS_PANEL_ID = 'usersPanel';
 export const USER_ATTRIBUTES_DIALOG = 'userAttributesDialog';
 export const USER_CREATE_FORM_NAME = 'userCreateFormName';
 export const USER_MANAGEMENT_DIALOG = 'userManageDialog';
-export const SETUP_SHELL_ACCOUNT_DIALOG = 'setupShellAccountDialog';
 
 export interface UserCreateFormDialogData {
     email: string;
@@ -45,15 +44,6 @@ export const openUserManagement = (uuid: string) =>
         const { resources } = getState();
         const data = getResource<UserResource>(uuid)(resources);
         dispatch(dialogActions.OPEN_DIALOG({ id: USER_MANAGEMENT_DIALOG, data }));
-    };
-
-export const openSetupShellAccount = (uuid: string) =>
-    async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
-        const { resources } = getState();
-        const user = getResource<UserResource>(uuid)(resources);
-        const virtualMachines = await services.virtualMachineService.list();
-        dispatch(initialize(SETUP_SHELL_ACCOUNT_DIALOG, {[VIRTUAL_MACHINE_ADD_LOGIN_USER_FIELD]: user, [VIRTUAL_MACHINE_ADD_LOGIN_GROUPS_FIELD]: []}));
-        dispatch(dialogActions.OPEN_DIALOG({ id: SETUP_SHELL_ACCOUNT_DIALOG, data: virtualMachines }));
     };
 
 export const loginAs = (uuid: string) =>
@@ -115,35 +105,6 @@ export const createUser = (data: UserCreateFormDialogData) =>
             return;
         } finally {
             dispatch(stopSubmit(USER_CREATE_FORM_NAME));
-        }
-    };
-
-export const setupUserVM = (setupData: AddLoginFormData) =>
-    async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
-        dispatch(startSubmit(SETUP_SHELL_ACCOUNT_DIALOG));
-        try {
-            const userResource = await services.userService.get(setupData.user.uuid);
-
-            const resources = await services.userService.setup(setupData.user.uuid);
-            dispatch(updateResources(resources.items));
-
-            const permission = await services.permissionService.create({
-                headUuid: setupData.vmUuid,
-                tailUuid: userResource.uuid,
-                name: PermissionLevel.CAN_LOGIN,
-                properties: {
-                    username: userResource.username,
-                    groups: setupData.groups,
-                }
-            });
-            dispatch(updateResources([permission]));
-
-            dispatch(dialogActions.CLOSE_DIALOG({ id: SETUP_SHELL_ACCOUNT_DIALOG }));
-            dispatch(reset(SETUP_SHELL_ACCOUNT_DIALOG));
-            dispatch(snackbarActions.OPEN_SNACKBAR({ message: "User has been added to VM.", hideDuration: 2000, kind: SnackbarKind.SUCCESS }));
-        } catch (e) {
-            dispatch(stopSubmit(SETUP_SHELL_ACCOUNT_DIALOG));
-            dispatch(snackbarActions.OPEN_SNACKBAR({ message: e.message, hideDuration: 2000, kind: SnackbarKind.ERROR }));
         }
     };
 

@@ -69,7 +69,7 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
 });
 
 export interface UserProfilePanelRootActionProps {
-    openSetupShellAccount: (uuid: string) => void;
+    openSetupDialog: (uuid: string) => void;
     loginAs: (uuid: string) => void;
     openDeactivateDialog: (uuid: string) => void;
 }
@@ -305,7 +305,7 @@ export const UserProfilePanelRoot = withStyles(styles)(
                                     <Grid item sm={'auto'} xs={12}>
                                         <Button variant="contained"
                                             color="primary"
-                                            onClick={() => {this.props.openSetupShellAccount(this.props.initialValues.uuid)}}
+                                            onClick={() => {this.props.openSetupDialog(this.props.initialValues.uuid)}}
                                             disabled={false}>
                                             Setup Account
                                         </Button>
