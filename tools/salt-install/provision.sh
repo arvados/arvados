@@ -417,11 +417,13 @@ for f in $(ls "${SOURCE_PILLARS_DIR}"/*); do
   "${f}" > "${P_DIR}"/$(basename "${f}")
 done
 
-if [ "x${TEST}" = "xyes" ]; then
-  if [ ! -d "${SOURCE_TESTS_DIR}" ]; then
-    echo "You requested to run tests, but ${SOURCE_TESTS_DIR} does not exist or is not a directory. Exiting."
-    exit 1
+if [ ! -d "${SOURCE_TESTS_DIR}" ]; then
+  echo "WARNING: The tests directory was not copied to \"${SOURCE_TESTS_DIR}\"."
+  if [ "x${TEST}" = "xyes" ]; then
+    echo "WARNING: Disabling tests for this installation."
   fi
+  TEST="no"
+else
   mkdir -p ${T_DIR}
   # Replace cluster and domain name in the test files
   for f in $(ls "${SOURCE_TESTS_DIR}"/*); do
