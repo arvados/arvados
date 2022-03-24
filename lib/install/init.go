@@ -34,6 +34,7 @@ type initCommand struct {
 	Domain             string
 	PostgreSQLPassword string
 	Login              string
+	Insecure           bool
 }
 
 func (initcmd *initCommand) RunCommand(prog string, args []string, stdin io.Reader, stdout, stderr io.Writer) int {
@@ -61,6 +62,7 @@ func (initcmd *initCommand) RunCommand(prog string, args []string, stdin io.Read
 	flags.StringVar(&initcmd.ClusterID, "cluster-id", "", "cluster `id`, like x1234 for a dev cluster")
 	flags.StringVar(&initcmd.Domain, "domain", hostname, "cluster public DNS `name`, like x1234.arvadosapi.com")
 	flags.StringVar(&initcmd.Login, "login", "", "login `backend`: test, pam, or ''")
+	flags.BoolVar(&initcmd.Insecure, "insecure", false, "accept invalid TLS certificates and configure TrustAllContent (do not use in production!)")
 	if ok, code := cmd.ParseFlags(flags, prog, args, "", stderr); !ok {
 		return code
 	} else if *versionFlag {
@@ -151,6 +153,9 @@ func (initcmd *initCommand) RunCommand(prog string, args []string, stdin io.Read
           "http://0.0.0.0:9007/": {}
     Collections:
       BlobSigningKey: {{printf "%q" ( .RandomHex 50 )}}
+      {{if .Insecure}}
+      TrustAllContent: true
+      {{end}}
     Containers:
       DispatchPrivateKey: {{printf "%q" .GenerateSSHPrivateKey}}
     ManagementToken: {{printf "%q" ( .RandomHex 50 )}}
@@ -161,8 +166,10 @@ func (initcmd *initCommand) RunCommand(prog string, args []string, stdin io.Read
         user: arvados
         password: {{printf "%q" .PostgreSQLPassword}}
     SystemRootToken: {{printf "%q" ( .RandomHex 50 )}}
+    {{if .Insecure}}
     TLS:
       Insecure: true
+    {{end}}
     Volumes:
       {{.ClusterID}}-nyw5e-000000000000000:
         Driver: Directory
