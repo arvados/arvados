@@ -58,7 +58,9 @@ class Arvados::V1::LinksController < ApplicationController
       # user or (b) its head_uuid is an object the current_user
       # can_manage.
       @object = Link.unscoped.where(uuid: params[:uuid]).first
-      if @object.link_class != 'permission'
+      if @object && @object.link_class != 'permission'
+        # Throw this out and re-fetch using generic permission query
+        @object = nil
         super
       elsif @object &&
          current_user.uuid != @object.tail_uuid &&
