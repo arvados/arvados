@@ -208,6 +208,17 @@ export const openPermissionEditContextMenu = (event: React.MouseEvent<HTMLElemen
         }
     };
 
+export const openUserContextMenu = (event: React.MouseEvent<HTMLElement>, user: UserResource) =>
+    (dispatch: Dispatch, getState: () => RootState) => {
+        dispatch<any>(openContextMenu(event, {
+            name: '',
+            uuid: user.uuid,
+            ownerUuid: user.ownerUuid,
+            kind: user.kind,
+            menuKind: ContextMenuKind.USER
+        }));
+    };
+
 export const resourceUuidToContextMenuKind = (uuid: string, readonly = false) =>
     (dispatch: Dispatch, getState: () => RootState) => {
         const { isAdmin: isAdminUser, uuid: userUuid } = getState().auth.user!;

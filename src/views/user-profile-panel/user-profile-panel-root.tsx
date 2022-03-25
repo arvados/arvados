@@ -4,6 +4,8 @@
 
 import React from 'react';
 import { Field, InjectedFormProps } from "redux-form";
+import { DispatchProp } from 'react-redux';
+import { UserResource } from 'models/user';
 import { TextField } from "components/text-field/text-field";
 import { DataExplorer } from "views-components/data-explorer/data-explorer";
 import { NativeSelectField } from "components/select-field/select-field";
@@ -18,20 +20,24 @@ import {
     Grid,
     InputLabel,
     Tabs, Tab,
-    Paper
+    Paper,
+    Tooltip,
+    IconButton,
 } from '@material-ui/core';
 import { ArvadosTheme } from 'common/custom-theme';
-import { User } from "models/user";
 import { DataTableDefaultView } from 'components/data-table-default-view/data-table-default-view';
 import { PROFILE_EMAIL_VALIDATION } from "validators/validators";
 import { USER_PROFILE_PANEL_ID } from 'store/user-profile/user-profile-actions';
 import { noop } from 'lodash';
-import { GroupsIcon } from 'components/icon/icon';
+import { CopyIcon, GroupsIcon, MoreOptionsIcon } from 'components/icon/icon';
 import { DataColumns } from 'components/data-table/data-table';
 import { ResourceLinkHeadUuid, ResourceLinkHeadPermissionLevel, ResourceLinkHead, ResourceLinkDelete, ResourceLinkTailIsVisible } from 'views-components/data-explorer/renderers';
 import { createTree } from 'models/tree';
+import { getResource, ResourcesState } from 'store/resources/resources';
+import { snackbarActions, SnackbarKind } from 'store/snackbar/snackbar-actions';
+import CopyToClipboard from 'react-copy-to-clipboard';
 
-type CssRules = 'root' | 'adminRoot' | 'gridItem' | 'label' | 'readOnlyValue' | 'title' | 'description' | 'actions' | 'content';
+type CssRules = 'root' | 'adminRoot' | 'gridItem' | 'label' | 'readOnlyValue' | 'title' | 'description' | 'actions' | 'content' | 'copyIcon';
 
 const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     root: {
@@ -65,6 +71,15 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     content: {
         // reserve space for the tab bar
         height: `calc(100% - ${theme.spacing.unit * 7}px)`,
+    },
+    copyIcon: {
+        marginLeft: theme.spacing.unit,
+        color: theme.palette.grey["500"],
+        cursor: 'pointer',
+        display: 'inline',
+        '& svg': {
+            fontSize: '1rem'
+        }
     }
 });
 
@@ -72,6 +87,7 @@ export interface UserProfilePanelRootActionProps {
     openSetupDialog: (uuid: string) => void;
     loginAs: (uuid: string) => void;
     openDeactivateDialog: (uuid: string) => void;
+    handleContextMenu: (event, resource: UserResource) => void;
 }
 
 export interface UserProfilePanelRootDataProps {
@@ -79,7 +95,8 @@ export interface UserProfilePanelRootDataProps {
     isSelf: boolean;
     isPristine: boolean;
     isValid: boolean;
-    initialValues?: User;
+    userUuid: string;
+    resources: ResourcesState
     localCluster: string;
 }
 
@@ -94,7 +111,7 @@ const RoleTypes = [
     { key: 'Other', value: 'Other' }
 ];
 
-type UserProfilePanelRootProps = InjectedFormProps<{}> & UserProfilePanelRootActionProps & UserProfilePanelRootDataProps & WithStyles<CssRules>;
+type UserProfilePanelRootProps = InjectedFormProps<{}> & UserProfilePanelRootActionProps & UserProfilePanelRootDataProps & DispatchProp & WithStyles<CssRules>;
 
 export enum UserProfileGroupsColumnNames {
     NAME = "Name",
@@ -172,6 +189,14 @@ export const UserProfilePanelRoot = withStyles(styles)(
             this.setState({ value: TABS.PROFILE});
         }
 
+        onCopy = (message: string) => {
+            this.props.dispatch(snackbarActions.OPEN_SNACKBAR({
+                message,
+                hideDuration: 2000,
+                kind: SnackbarKind.SUCCESS
+            }));
+        }
+
         render() {
             return <Paper className={this.props.classes.root}>
                 <Tabs value={this.state.value} onChange={this.handleChange} variant={"fullWidth"}>
@@ -181,6 +206,30 @@ export const UserProfilePanelRoot = withStyles(styles)(
                 </Tabs>
                 {this.state.value === TABS.PROFILE &&
                     <CardContent>
+                        <Grid container justify="space-between">
+                            <Grid item xs={11}>
+                                <Typography className={this.props.classes.title}>
+                                    {this.props.userUuid}
+                                    <Tooltip title="Copy to clipboard">
+                                        <span className={this.props.classes.copyIcon}>
+                                            <CopyToClipboard text={this.props.userUuid || ""} onCopy={() => this.onCopy!("Copied")}>
+                                                <CopyIcon />
+                                            </CopyToClipboard>
+                                        </span>
+                                    </Tooltip>
+                                </Typography>
+                            </Grid>
+                            <Grid item xs={1} style={{ textAlign: "right" }}>
+                                <Tooltip title="Actions" disableFocusListener>
+                                    <IconButton
+                                        data-cy='collection-panel-options-btn'
+                                        aria-label="Actions"
+                                        onClick={(event) => this.handleContextMenu(event, this.props.userUuid)}>
+                                        <MoreOptionsIcon />
+                                    </IconButton>
+                                </Tooltip>
+                            </Grid>
+                        </Grid>
                         <form onSubmit={this.props.handleSubmit} data-cy="profile-form">
                             <Grid container spacing={24}>
                                 <Grid item className={this.props.classes.gridItem} sm={6} xs={12} data-cy="firstName">
@@ -305,7 +354,7 @@ export const UserProfilePanelRoot = withStyles(styles)(
                                     <Grid item sm={'auto'} xs={12}>
                                         <Button variant="contained"
                                             color="primary"
-                                            onClick={() => {this.props.openSetupDialog(this.props.initialValues.uuid)}}
+                                            onClick={() => {this.props.openSetupDialog(this.props.userUuid)}}
                                             disabled={false}>
                                             Setup Account
                                         </Button>
@@ -330,7 +379,7 @@ export const UserProfilePanelRoot = withStyles(styles)(
                                     <Grid item sm={'auto'} xs={12}>
                                         <Button variant="contained"
                                             color="primary"
-                                            onClick={() => {this.props.openDeactivateDialog(this.props.initialValues.uuid)}}
+                                            onClick={() => {this.props.openDeactivateDialog(this.props.userUuid)}}
                                             disabled={false}>
                                             Deactivate
                                         </Button>
@@ -355,7 +404,7 @@ export const UserProfilePanelRoot = withStyles(styles)(
                                     <Grid item sm={'auto'} xs={12}>
                                         <Button variant="contained"
                                             color="primary"
-                                            onClick={() => {this.props.loginAs(this.props.initialValues.uuid)}}
+                                            onClick={() => {this.props.loginAs(this.props.userUuid)}}
                                             disabled={false}>
                                             Log In
                                         </Button>
@@ -369,6 +418,14 @@ export const UserProfilePanelRoot = withStyles(styles)(
 
         handleChange = (event: React.MouseEvent<HTMLElement>, value: number) => {
             this.setState({ value });
+        }
+
+        handleContextMenu = (event: React.MouseEvent<HTMLElement>, resourceUuid: string) => {
+            event.stopPropagation();
+            const resource = getResource<UserResource>(resourceUuid)(this.props.resources);
+            if (resource) {
+                this.props.handleContextMenu(event, resource);
+            }
         }
 
     }

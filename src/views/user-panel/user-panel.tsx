@@ -9,7 +9,7 @@ import { connect, DispatchProp } from 'react-redux';
 import { DataColumns } from 'components/data-table/data-table';
 import { RootState } from 'store/store';
 import { SortDirection } from 'components/data-table/data-column';
-import { openContextMenu } from "store/context-menu/context-menu-actions";
+import { openUserContextMenu } from "store/context-menu/context-menu-actions";
 import { getResource, ResourcesState } from "store/resources/resources";
 import {
     UserResourceFullName,
@@ -20,7 +20,6 @@ import {
     ResourceUsername
 } from "views-components/data-explorer/renderers";
 import { navigateToUserProfile } from "store/navigation/navigation-action";
-import { ContextMenuKind } from "views-components/context-menu/context-menu";
 import { DataTableDefaultView } from 'components/data-table-default-view/data-table-default-view';
 import { createTree } from 'models/tree';
 import { compose, Dispatch } from 'redux';
@@ -109,7 +108,7 @@ interface UserPanelDataProps {
 interface UserPanelActionProps {
     openUserCreateDialog: () => void;
     handleRowClick: (uuid: string) => void;
-    onContextMenu: (event: React.MouseEvent<HTMLElement>, item: any) => void;
+    handleContextMenu: (event, resource: UserResource) => void;
 }
 
 const mapStateToProps = (state: RootState) => {
@@ -121,7 +120,7 @@ const mapStateToProps = (state: RootState) => {
 const mapDispatchToProps = (dispatch: Dispatch) => ({
     openUserCreateDialog: () => dispatch<any>(openUserCreateDialog()),
     handleRowClick: (uuid: string) => dispatch<any>(navigateToUserProfile(uuid)),
-    onContextMenu: (event: React.MouseEvent<HTMLElement>, item: any) => dispatch<any>(openContextMenu(event, item))
+    handleContextMenu: (event, resource: UserResource) => dispatch<any>(openUserContextMenu(event, resource)),
 });
 
 type UserPanelProps = UserPanelDataProps & UserPanelActionProps & DispatchProp & WithStyles<UserPanelRules>;
@@ -161,13 +160,7 @@ export const UserPanel = compose(
                 event.stopPropagation();
                 const resource = getResource<UserResource>(resourceUuid)(this.props.resources);
                 if (resource) {
-                    this.props.onContextMenu(event, {
-                        name: '',
-                        uuid: resource.uuid,
-                        ownerUuid: resource.ownerUuid,
-                        kind: resource.kind,
-                        menuKind: ContextMenuKind.USER
-                    });
+                    this.props.handleContextMenu(event, resource);
                 }
             }
         }
