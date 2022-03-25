@@ -134,6 +134,16 @@ Cypress.Commands.add(
 )
 
 Cypress.Commands.add(
+    "getCollection", (token, uuid) => {
+        return cy.doRequest('GET', `/arvados/v1/collections/${uuid}`, null, {}, token)
+            .its('body')
+            .then(function (theCollection) {
+                return theCollection;
+            })
+    }
+)
+
+Cypress.Commands.add(
     "createCollection", (token, data) => {
         return cy.createResource(token, 'collections', {
             collection: JSON.stringify(data),
@@ -146,6 +156,49 @@ Cypress.Commands.add(
     "updateCollection", (token, uuid, data) => {
         return cy.updateResource(token, 'collections', uuid, {
             collection: JSON.stringify(data)
+        })
+    }
+)
+
+Cypress.Commands.add(
+    'createContainerRequest', (token, data) => {
+        return cy.createResource(token, 'container_requests', {
+            container_request: JSON.stringify(data),
+            ensure_unique_name: true
+        })
+    }
+)
+
+Cypress.Commands.add(
+    "updateContainerRequest", (token, uuid, data) => {
+        return cy.updateResource(token, 'container_requests', uuid, {
+            container_request: JSON.stringify(data)
+        })
+    }
+)
+
+Cypress.Commands.add(
+    "createLog", (token, data) => {
+        return cy.createResource(token, 'logs', {
+            log: JSON.stringify(data)
+        })
+    }
+)
+
+Cypress.Commands.add(
+    "logsForContainer", (token, uuid, logType, logTextArray = []) => {
+        let logs = [];
+        for (const logText of logTextArray) {
+            logs.push(cy.createLog(token, {
+                object_uuid: uuid,
+                event_type: logType,
+                properties: {
+                    text: logText
+                }
+            }).as('lastLogRecord'))
+        }
+        cy.getAll('@lastLogRecord').then(function () {
+            return logs;
         })
     }
 )

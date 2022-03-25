@@ -40,7 +40,7 @@ type ProcessLogFormProps = ProcessLogFormDataProps & ProcessLogFormActionProps &
 
 export const ProcessLogForm = withStyles(styles)(
     ({ classes, selectedFilter, onChange, filters }: ProcessLogFormProps) =>
-        <form autoComplete="off">
+        <form autoComplete="off" data-cy="process-logs-filter">
             <FormControl className={classes.formControl}>
                 <Select
                     value={selectedFilter.value}

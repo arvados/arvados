@@ -58,7 +58,7 @@ export const ProcessPanelRoot = withStyles(styles)(
     ({ process, processLogsPanel, ...props }: ProcessPanelRootProps) =>
     process
         ? <MPVContainer className={props.classes.root} spacing={8} panelStates={panelsData}  justify-content="flex-start" direction="column" wrap="nowrap">
-            <MPVPanelContent forwardProps xs="auto">
+            <MPVPanelContent forwardProps xs="auto" data-cy="process-info">
                 <ProcessInformationCard
                     process={process}
                     onContextMenu={event => props.onContextMenu(event, process)}
@@ -68,10 +68,10 @@ export const ProcessPanelRoot = withStyles(styles)(
                     cancelProcess={props.cancelProcess}
                 />
             </MPVPanelContent>
-            <MPVPanelContent forwardProps xs="auto">
+            <MPVPanelContent forwardProps xs="auto" data-cy="process-details">
                 <ProcessDetailsCard process={process} />
             </MPVPanelContent>
-            <MPVPanelContent forwardProps xs maxHeight='50%'>
+            <MPVPanelContent forwardProps xs maxHeight='50%' data-cy="process-logs">
                 <ProcessLogsCard
                     onCopy={props.onLogCopyToClipboard}
                     process={process}
@@ -87,7 +87,7 @@ export const ProcessPanelRoot = withStyles(styles)(
                     navigateToLog={props.navigateToLog}
                 />
             </MPVPanelContent>
-            <MPVPanelContent forwardProps xs maxHeight='50%'>
+            <MPVPanelContent forwardProps xs maxHeight='50%' data-cy="process-children">
                 <SubprocessPanel />
             </MPVPanelContent>
         </MPVContainer>

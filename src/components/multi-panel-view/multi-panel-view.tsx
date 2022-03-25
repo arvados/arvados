@@ -33,6 +33,7 @@ const styles: StyleRulesCallback<CssRules> = theme => ({
     },
     content: {
         overflow: 'auto',
+        display: 'contents',
     },
 });
 
