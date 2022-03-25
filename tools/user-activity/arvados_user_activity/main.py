@@ -33,7 +33,11 @@ def getowner(arv, uuid, owners):
     return getowner(arv, owners[uuid], owners)
 
 def getuserinfo(arv, uuid):
-    u = arv.users().get(uuid=uuid).execute()
+    try:
+        u = arv.users().get(uuid=uuid).execute()
+    except:
+        return "deleted user (%susers/%s)" % (arv.config()["Services"]["Workbench1"]["ExternalURL"],
+                                                       uuid)
     prof = "\n".join("  %s: \"%s\"" % (k, v) for k, v in u["prefs"].get("profile", {}).items() if v)
     if prof:
         prof = "\n"+prof+"\n"
