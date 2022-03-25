@@ -49,15 +49,18 @@ class Arvados::V1::LinksController < ApplicationController
         .where(uuid: params[:uuid])
         .first
     elsif !current_user
-      @object = nil
+      super
     else
       # The usual permission-filtering index query is unnecessarily
-      # inefficient, and doesn't match all links that should be
-      # visible (see #18865).  Instead, we look up the link by UUID,
-      # then check whether (a) its tail_uuid is the current user or
-      # (b) its head_uuid is an object the current_user can_manage.
+      # inefficient, and doesn't match all permission links that
+      # should be visible (see #18865).  Instead, we look up the link
+      # by UUID, then check whether (a) its tail_uuid is the current
+      # user or (b) its head_uuid is an object the current_user
+      # can_manage.
       @object = Link.unscoped.where(uuid: params[:uuid]).first
-      if @object &&
+      if @object.link_class != 'permission'
+        super
+      elsif @object &&
          current_user.uuid != @object.tail_uuid &&
          !current_user.can?(manage: @object.head_uuid)
         @object = nil
@@ -102,19 +105,26 @@ class Arvados::V1::LinksController < ApplicationController
       end
     end
 
-    # If filtering by one or more head_uuid, and the current user has
-    # manage permission on those uuids, bypass the normal readable_by
-    # query (which doesn't match all can_manage-able items, see
-    # #18865) -- just rely on the head_uuid filters.
-    @filters.map do |k|
-      if k[0] == 'head_uuid'
-        if k[1] == '=' && current_user.can?(manage: k[2])
+    # If the provided filters are enough to limit the results to
+    # permission links with specific head_uuids or
+    # tail_uuid=current_user, bypass the normal readable_by query
+    # (which doesn't match all can_manage-able items, see #18865) --
+    # just ensure the current user actually has can_manage permission
+    # for the provided head_uuids, removing any that don't. At that
+    # point the caller's filters are an effective permission filter.
+    if @filters.include?(['link_class', '=', 'permission'])
+      @filters.map do |k|
+        if k[0] == 'tail_uuid' && k[1] == '=' && k[2] == current_user.uuid
           @objects = Link.unscoped
-        elsif k[1] == 'in'
-          k[2].select! do |head_uuid|
-            current_user.can?(manage: head_uuid)
+        elsif k[0] == 'head_uuid'
+          if k[1] == '=' && current_user.can?(manage: k[2])
+            @objects = Link.unscoped
+          elsif k[1] == 'in'
+            k[2].select! do |head_uuid|
+              current_user.can?(manage: head_uuid)
+            end
+            @objects = Link.unscoped
           end
-          @objects = Link.unscoped
         end
       end
     end

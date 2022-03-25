@@ -521,6 +521,22 @@ class PermissionsTest < ActionDispatch::IntegrationTest
       assert_equal can_read_collection_uuid, json_response['items'][0]['uuid']
     end
 
+    # The "spectator-can_read-collection" link should be visible to
+    # the subject user ("spectator") in a filter query, even without
+    # can_manage permission on the target object.
+    [
+      ['tail_uuid', '=', users(:spectator).uuid],
+    ].each do |filter|
+      get "/arvados/v1/links",
+          params: {
+            filters: ([['link_class', '=', 'permission'], filter]).to_json,
+          },
+          headers: auth(:spectator)
+      assert_response :success
+      perm_uuids = json_response['items'].map { |item| item['uuid'] }
+      assert_includes perm_uuids, can_read_collection_uuid, "could not find can_read link using index with filter #{filter}"
+    end
+
     ### Now delete the can_manage link
     delete "/arvados/v1/links/#{can_manage_uuid}",
       headers: auth(:active)
