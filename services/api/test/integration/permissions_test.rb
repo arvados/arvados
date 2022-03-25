@@ -451,34 +451,120 @@ class PermissionsTest < ActionDispatch::IntegrationTest
 
     # Should be able to read links directly too
     get "/arvados/v1/links/#{can_read_uuid}",
-        params: {},
       headers: auth(:active)
     assert_response :success
 
+    ### Create a collection inside a subproject inside the shared
+    ### project, and share the collection with a 3rd user
+    ### ("spectator").
+    post '/arvados/v1/groups',
+         params: {
+           group: {
+             owner_uuid: groups(:public).uuid,
+             name: 'permission test subproject',
+             group_class: 'project',
+           },
+         },
+         headers: auth(:admin)
+    assert_response :success
+    subproject_uuid = json_response['uuid']
+
+    post '/arvados/v1/collections',
+         params: {
+           collection: {
+             owner_uuid: subproject_uuid,
+             name: 'permission test collection in subproject',
+           },
+         },
+         headers: auth(:admin)
+    assert_response :success
+    collection_uuid = json_response['uuid']
+
+    post '/arvados/v1/links',
+         params: {
+           link: {
+             tail_uuid: users(:spectator).uuid,
+             link_class: 'permission',
+             name: 'can_read',
+             head_uuid: collection_uuid,
+           }
+         },
+         headers: auth(:admin)
+    assert_response :success
+    can_read_collection_uuid = json_response['uuid']
+
+    # The "active-can_manage-project" permission should cause the
+    # "spectator-can_read-collection" link to be visible to the
+    # "active" user.
+    get "/arvados/v1/permissions/#{collection_uuid}",
+      headers: auth(:active)
+    assert_response :success
+    perm_uuids = json_response['items'].map { |item| item['uuid'] }
+    assert_includes perm_uuids, can_read_collection_uuid, "can_read_uuid not found"
+
+    get "/arvados/v1/links/#{can_read_collection_uuid}",
+      headers: auth(:active)
+    assert_response :success
+
+    [
+      ['head_uuid', '=', collection_uuid],
+      ['head_uuid', 'in', [collection_uuid]],
+      ['head_uuid', 'in', [users(:admin).uuid, collection_uuid]],
+    ].each do |filter|
+      get "/arvados/v1/links",
+          params: {
+            filters: ([['link_class', '=', 'permission'], filter]).to_json,
+          },
+          headers: auth(:active)
+      assert_response :success
+      assert_not_empty json_response['items'], "could not find can_read link using index with filter #{filter}"
+      assert_equal can_read_collection_uuid, json_response['items'][0]['uuid']
+    end
+
     ### Now delete the can_manage link
     delete "/arvados/v1/links/#{can_manage_uuid}",
-      params: nil,
       headers: auth(:active)
     assert_response :success
 
     # Should not be able read these permission links again
     get "/arvados/v1/permissions/#{groups(:public).uuid}",
-      params: nil,
+      headers: auth(:active)
+    assert_response 404
+
+    get "/arvados/v1/permissions/#{collection_uuid}",
       headers: auth(:active)
     assert_response 404
 
     get "/arvados/v1/links",
-        params: {
-          :filters => [["link_class", "=", "permission"], ["head_uuid", "=", groups(:public).uuid]].to_json
-        },
+      params: {
+        filters: [["link_class", "=", "permission"], ["head_uuid", "=", groups(:public).uuid]].to_json
+      },
       headers: auth(:active)
     assert_response :success
     assert_equal [], json_response['items']
 
+    [
+      ['head_uuid', '=', collection_uuid],
+      ['head_uuid', 'in', [users(:admin).uuid, collection_uuid]],
+      ['head_uuid', 'in', []],
+    ].each do |filter|
+      get "/arvados/v1/links",
+          params: {
+            :filters => [["link_class", "=", "permission"], filter].to_json
+          },
+          headers: auth(:active)
+      assert_response :success
+      assert_equal [], json_response['items']
+    end
+
     # Should not be able to read links directly either
     get "/arvados/v1/links/#{can_read_uuid}",
-        params: {},
+      params: {},
       headers: auth(:active)
+    assert_response 404
+
+    get "/arvados/v1/links/#{can_read_collection_uuid}",
+        headers: auth(:active)
     assert_response 404
 
     ### Create a collection, and share it with a direct permission
