@@ -21,7 +21,8 @@ type contextKey struct {
 }
 
 var (
-	requestTimeContextKey = contextKey{"requestTime"}
+	requestTimeContextKey       = contextKey{"requestTime"}
+	responseLogFieldsContextKey = contextKey{"responseLogFields"}
 )
 
 type hijacker interface {
@@ -64,6 +65,15 @@ func HandlerWithDeadline(timeout time.Duration, next http.Handler) http.Handler 
 	})
 }
 
+func SetResponseLogFields(ctx context.Context, fields logrus.Fields) {
+	ctxfields := ctx.Value(&responseLogFieldsContextKey)
+	if c, ok := ctxfields.(logrus.Fields); ok {
+		for k, v := range fields {
+			c[k] = v
+		}
+	}
+}
+
 // LogRequests wraps an http.Handler, logging each request and
 // response.
 func LogRequests(h http.Handler) http.Handler {
@@ -81,6 +91,7 @@ func LogRequests(h http.Handler) http.Handler {
 		})
 		ctx := req.Context()
 		ctx = context.WithValue(ctx, &requestTimeContextKey, time.Now())
+		ctx = context.WithValue(ctx, &responseLogFieldsContextKey, logrus.Fields{})
 		ctx = ctxlog.Context(ctx, lgr)
 		req = req.WithContext(ctx)
 
@@ -123,6 +134,9 @@ func logResponse(w *responseTimer, req *http.Request, lgr *logrus.Entry) {
 			"timeToStatus":  stats.Duration(writeTime.Sub(tStart)),
 			"timeWriteBody": stats.Duration(tDone.Sub(writeTime)),
 		})
+	}
+	if responseLogFields, ok := req.Context().Value(&responseLogFieldsContextKey).(logrus.Fields); ok {
+		lgr = lgr.WithFields(responseLogFields)
 	}
 	respCode := w.WroteStatus()
 	if respCode == 0 {
