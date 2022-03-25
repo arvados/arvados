@@ -597,7 +597,11 @@ func (rtr *router) addRoute(endpoint arvados.APIEndpoint, defaultOpts func() int
 					tokenUUIDs = append(tokenUUIDs, tokenParts[1])
 				}
 			} else {
-				tokenUUIDs = append(tokenUUIDs, "v1 token ending in "+t[len(t)-5:])
+				end := t
+				if len(t) > 5 {
+					end = t[len(t)-5:]
+				}
+				tokenUUIDs = append(tokenUUIDs, "v1 token ending in "+end)
 			}
 		}
 		httpserver.SetResponseLogFields(req.Context(), logrus.Fields{"tokenUUIDs": tokenUUIDs})

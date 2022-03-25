@@ -9,6 +9,7 @@ import (
 	"context"
 	"net"
 	"net/http"
+	"sync"
 	"time"
 
 	"git.arvados.org/arvados.git/sdk/go/ctxlog"
@@ -23,6 +24,7 @@ type contextKey struct {
 var (
 	requestTimeContextKey       = contextKey{"requestTime"}
 	responseLogFieldsContextKey = contextKey{"responseLogFields"}
+	mutexContextKey             = contextKey{"mutex"}
 )
 
 type hijacker interface {
@@ -66,11 +68,18 @@ func HandlerWithDeadline(timeout time.Duration, next http.Handler) http.Handler 
 }
 
 func SetResponseLogFields(ctx context.Context, fields logrus.Fields) {
-	ctxfields := ctx.Value(&responseLogFieldsContextKey)
-	if c, ok := ctxfields.(logrus.Fields); ok {
-		for k, v := range fields {
-			c[k] = v
+	m := ctx.Value(&mutexContextKey)
+	if mutex, ok := m.(sync.Mutex); ok {
+		mutex.Lock()
+		defer mutex.Unlock()
+		ctxfields := ctx.Value(&responseLogFieldsContextKey)
+		if c, ok := ctxfields.(logrus.Fields); ok {
+			for k, v := range fields {
+				c[k] = v
+			}
 		}
+	} else {
+		// We can't lock, don't set the fields
 	}
 }
 
@@ -92,6 +101,7 @@ func LogRequests(h http.Handler) http.Handler {
 		ctx := req.Context()
 		ctx = context.WithValue(ctx, &requestTimeContextKey, time.Now())
 		ctx = context.WithValue(ctx, &responseLogFieldsContextKey, logrus.Fields{})
+		ctx = context.WithValue(ctx, &mutexContextKey, sync.Mutex{})
 		ctx = ctxlog.Context(ctx, lgr)
 		req = req.WithContext(ctx)
 
