@@ -13,8 +13,26 @@ import ciso8601
 
 def parse_arguments(arguments):
     arg_parser = argparse.ArgumentParser()
-    arg_parser.add_argument('--days', type=int, required=True)
+    arg_parser.add_argument('--start', help='Start date for the report in YYYY-MM-DD format')
+    arg_parser.add_argument('--end', help='End date for the report in YYYY-MM-DD format')
+    arg_parser.add_argument('--days', type=int, help='Number of days before now() to start the report')
     args = arg_parser.parse_args(arguments)
+
+    if args.days and (args.start or args.end):
+        p.print_help()
+        print("Error: either specify --days or both --start and --end")
+        exit(1)
+
+    if not args.days and (not args.start or not args.end):
+        p.print_help()
+        print("Error: either specify --days or both --start and --end")
+        exit(1)
+
+    if (args.start and not args.end) or (args.end and not args.start):
+        p.print_help()
+        print("Error: no start or end date found, either specify --days or both --start and --end")
+        exit(1)
+
     return args
 
 def getowner(arv, uuid, owners):
@@ -65,13 +83,31 @@ def main(arguments=None):
 
     arv = arvados.api()
 
-    since = datetime.datetime.utcnow() - datetime.timedelta(days=args.days)
+    if args.days:
+        to = datetime.datetime.utcnow()
+        since = to - datetime.timedelta(days=args.days)
+
+    if args.start:
+        try:
+            since = datetime.datetime.strptime(args.start,"%Y-%m-%d")
+        except:
+            p.print_help()
+            print("Error: start date must be in YYYY-MM-DD format")
+            exit(1)
+
+    if args.end:
+        try:
+            to = datetime.datetime.strptime(args.end,"%Y-%m-%d")
+        except:
+            p.print_help()
+            print("Error: end date must be in YYYY-MM-DD format")
+            exit(1)
 
     print("User activity on %s between %s and %s\n" % (arv.config()["ClusterID"],
-                                                       (datetime.datetime.now() - datetime.timedelta(days=args.days)).isoformat(sep=" ", timespec="minutes"),
-                                                       datetime.datetime.now().isoformat(sep=" ", timespec="minutes")))
+                                                       since.isoformat(sep=" ", timespec="minutes"),
+                                                       to.isoformat(sep=" ", timespec="minutes")))
 
-    events = arvados.util.keyset_list_all(arv.logs().list, filters=[["created_at", ">=", since.isoformat()]])
+    events = arvados.util.keyset_list_all(arv.logs().list, filters=[["created_at", ">=", since.isoformat()],["created_at", "<", to.isoformat()]])
 
     users = {}
     owners = {}
