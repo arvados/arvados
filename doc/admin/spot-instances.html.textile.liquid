@@ -16,21 +16,17 @@ Currently Arvados supports preemptible instances using AWS and Azure spot instan
 
 h2. Configuration
 
-Add entries to @InstanceTypes@ that have @Preemptible: true@.  Typically you want to add both preemptible and non-preemptible entries for each cloud provider VM type.  The @Price@ for preemptible instances is the maximum bid price, the actual price paid is dynamic and will likely be lower.  For example:
+First, configure some @InstanceTypes@ that have @Preemptible: true@. For a preemptible instance, @Price@ determines the maximum bid price; the actual price paid is dynamic and will likely be lower.
+
+Typically you want to add both preemptible and non-preemptible entries for each cloud provider VM type. To do this automatically, use @PreemptiblePriceFactor@ to enable a preemptible version of each listed type, using the given factor to set the maximum bid price relative to the non-preemptible price. Alternatively, you can configure preemptible instance types explicitly. For example, the following two configurations are equivalent:
 
 <pre>
 Clusters:
   ClusterID:
+    Containers:
+      PreemptiblePriceFactor: 0.8
     InstanceTypes:
       m4.large:
-        Preemptible: false
-        ProviderType: m4.large
-        VCPUs: 2
-        RAM: 8GiB
-        AddedScratch: 32GB
-        Price: 0.1
-      m4.large.spot:
-        Preemptible: true
         ProviderType: m4.large
         VCPUs: 2
         RAM: 8GiB
@@ -38,9 +34,30 @@ Clusters:
         Price: 0.1
 </pre>
 
+<pre>
+Clusters:
+  ClusterID:
+    InstanceTypes:
+      m4.large:
+        ProviderType: m4.large
+        VCPUs: 2
+        RAM: 8GiB
+        AddedScratch: 32GB
+        Price: 0.1
+      m4.large.preemptible:
+        Preemptible: true
+        ProviderType: m4.large
+        VCPUs: 2
+        RAM: 8GiB
+        AddedScratch: 32GB
+        Price: 0.08
+</pre>
+
 Next, you can choose to enable automatic use of preemptible instances:
 
 <pre>
+Clusters:
+  ClusterID:
     Containers:
       AlwaysUsePreemptibleInstances: true
 </pre>
