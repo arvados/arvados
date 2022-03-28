@@ -28,7 +28,7 @@ export interface CollectionPanelFilesProps {
     isWritable: boolean;
     isLoading: boolean;
     tooManyFiles: boolean;
-    onUploadDataClick: () => void;
+    onUploadDataClick: (targetLocation?: string) => void;
     onSearchChange: (searchValue: string) => void;
     onItemMenuOpen: (event: React.MouseEvent<HTMLElement>, item: TreeItem<FileTreeData>, isWritable: boolean) => void;
     onOptionsMenuOpen: (event: React.MouseEvent<HTMLElement>, isWritable: boolean) => void;
@@ -508,7 +508,7 @@ export const CollectionPanelFiles = withStyles(styles)(connect((state: RootState
                             className={classes.uploadButton}
                             data-cy='upload-button'
                             onClick={() => {
-                                onUploadDataClick();
+                                onUploadDataClick(rightKey === leftKey ? undefined : rightKey);
                             }}
                             variant='contained'
                             color='primary'

@@ -16,31 +16,31 @@ import { createTree } from 'models/tree';
 import { loadCollectionPanel } from '../collection-panel/collection-panel-action';
 import * as WorkbenchActions from 'store/workbench/workbench-actions';
 
-export const uploadCollectionFiles = (collectionUuid: string) =>
+export const uploadCollectionFiles = (collectionUuid: string, targetLocation?: string) =>
     async (dispatch: Dispatch<any>, getState: () => RootState, services: ServiceRepository) => {
         dispatch(fileUploaderActions.START_UPLOAD());
         const files = getState().fileUploader.map(file => file.file);
-        await services.collectionService.uploadFiles(collectionUuid, files, handleUploadProgress(dispatch));
+        await services.collectionService.uploadFiles(collectionUuid, files, handleUploadProgress(dispatch), targetLocation);
         dispatch(WorkbenchActions.loadCollection(collectionUuid));
         dispatch(fileUploaderActions.CLEAR_UPLOAD());
     };
 
 export const COLLECTION_UPLOAD_FILES_DIALOG = 'uploadCollectionFilesDialog';
 
-export const openUploadCollectionFilesDialog = () => (dispatch: Dispatch) => {
+export const openUploadCollectionFilesDialog = (targetLocation?: string) => (dispatch: Dispatch) => {
     dispatch(reset(COLLECTION_UPLOAD_FILES_DIALOG));
     dispatch(fileUploaderActions.CLEAR_UPLOAD());
-    dispatch<any>(dialogActions.OPEN_DIALOG({ id: COLLECTION_UPLOAD_FILES_DIALOG, data: {} }));
+    dispatch<any>(dialogActions.OPEN_DIALOG({ id: COLLECTION_UPLOAD_FILES_DIALOG, data: { targetLocation } }));
 };
 
-export const submitCollectionFiles = () =>
+export const submitCollectionFiles = (targetLocation?: string) =>
     async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
         const currentCollection = getState().collectionPanel.item;
         if (currentCollection) {
             try {
                 dispatch(progressIndicatorActions.START_WORKING(COLLECTION_UPLOAD_FILES_DIALOG));
                 dispatch(startSubmit(COLLECTION_UPLOAD_FILES_DIALOG));
-                await dispatch<any>(uploadCollectionFiles(currentCollection.uuid))
+                await dispatch<any>(uploadCollectionFiles(currentCollection.uuid, targetLocation))
                     .then(() => dispatch<any>(collectionPanelFilesAction.SET_COLLECTION_FILES({ files: createTree() })));
                 dispatch<any>(loadCollectionFiles(currentCollection.uuid));
                 dispatch<any>(loadCollectionPanel(currentCollection.uuid));

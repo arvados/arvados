@@ -45,8 +45,8 @@ const memoizedMapStateToProps = () => {
 };
 
 const mapDispatchToProps = (dispatch: Dispatch): Pick<CollectionPanelFilesProps, 'onSearchChange' | 'onFileClick' | 'onUploadDataClick' | 'onCollapseToggle' | 'onSelectionToggle' | 'onItemMenuOpen' | 'onOptionsMenuOpen'> => ({
-    onUploadDataClick: () => {
-        dispatch<any>(openUploadCollectionFilesDialog());
+    onUploadDataClick: (targetLocation?: string) => {
+        dispatch<any>(openUploadCollectionFilesDialog(targetLocation));
     },
     onCollapseToggle: (id) => {
         dispatch(collectionPanelFilesAction.TOGGLE_COLLECTION_FILE_COLLAPSE({ id }));

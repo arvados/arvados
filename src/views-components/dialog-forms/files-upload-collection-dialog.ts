@@ -13,8 +13,9 @@ export const FilesUploadCollectionDialog = compose(
     withDialog(COLLECTION_UPLOAD_FILES_DIALOG),
     reduxForm<CollectionCreateFormDialogData>({
         form: COLLECTION_UPLOAD_FILES_DIALOG,
-        onSubmit: (data, dispatch) => {
-            dispatch(submitCollectionFiles());
+        onSubmit: (data, dispatch, dialog: any) => {
+            const targetLocation = (dialog.data || {}).targetLocation;
+            dispatch(submitCollectionFiles(targetLocation));
         }
     })
 )(DialogCollectionFilesUpload);
