@@ -68,18 +68,15 @@ func HandlerWithDeadline(timeout time.Duration, next http.Handler) http.Handler 
 }
 
 func SetResponseLogFields(ctx context.Context, fields logrus.Fields) {
-	m := ctx.Value(&mutexContextKey)
-	if mutex, ok := m.(sync.Mutex); ok {
-		mutex.Lock()
-		defer mutex.Unlock()
-		ctxfields := ctx.Value(&responseLogFieldsContextKey)
-		if c, ok := ctxfields.(logrus.Fields); ok {
-			for k, v := range fields {
-				c[k] = v
-			}
-		}
-	} else {
-		// We can't lock, don't set the fields
+	m, _ := ctx.Value(&mutexContextKey).(*sync.Mutex)
+	c, _ := ctx.Value(&responseLogFieldsContextKey).(logrus.Fields)
+	if m == nil || c == nil {
+		return
+	}
+	m.Lock()
+	defer m.Unlock()
+	for k, v := range fields {
+		c[k] = v
 	}
 }
 
@@ -101,7 +98,7 @@ func LogRequests(h http.Handler) http.Handler {
 		ctx := req.Context()
 		ctx = context.WithValue(ctx, &requestTimeContextKey, time.Now())
 		ctx = context.WithValue(ctx, &responseLogFieldsContextKey, logrus.Fields{})
-		ctx = context.WithValue(ctx, &mutexContextKey, sync.Mutex{})
+		ctx = context.WithValue(ctx, &mutexContextKey, &sync.Mutex{})
 		ctx = ctxlog.Context(ctx, lgr)
 		req = req.WithContext(ctx)
 
