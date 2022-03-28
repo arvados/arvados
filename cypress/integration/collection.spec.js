@@ -951,7 +951,7 @@ describe('Collection panel tests', function () {
             }).as('testCollection1');
         });
 
-        it.only('uploads a file and checks the collection UI to be fresh', () => {
+        it('uploads a file and checks the collection UI to be fresh', () => {
             cy.getAll('@testCollection1')
                 .then(function([testCollection1]) {
                     cy.loginAs(activeUser);
@@ -963,7 +963,7 @@ describe('Collection panel tests', function () {
                     cy.fixture('files/5mb.bin', 'base64').then(content => {
                         cy.get('[data-cy=drag-and-drop]').upload(content, '5mb_a.bin');
                         cy.get('[data-cy=form-submit-btn]').click();
-                        // cy.get('[data-cy=form-submit-btn]').should('not.exist');
+                        cy.get('[data-cy=form-submit-btn]').should('not.exist');
                         cy.get('[data-cy=collection-files-panel]')
                             .contains('5mb_a.bin').should('exist');
                         cy.get('[data-cy=collection-file-count]').should('contain', '3');
@@ -973,7 +973,7 @@ describe('Collection panel tests', function () {
                         cy.fixture('files/5mb.bin', 'base64').then(content => {
                             cy.get('[data-cy=drag-and-drop]').upload(content, '5mb_b.bin');
                             cy.get('[data-cy=form-submit-btn]').click();
-                            // cy.get('[data-cy=form-submit-btn]').should('not.exist');
+                            cy.get('[data-cy=form-submit-btn]').should('not.exist');
                             cy.get('[data-cy=collection-files-panel]')
                                  .contains('5mb_b.bin').should('exist');
                         });
