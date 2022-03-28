@@ -46,7 +46,7 @@ The minimum supported Ruby version is now 2.6.  If you are running Arvados on De
 
 h3. Anonymous token changes
 
-The anonymous token configured in @Users.AnonymousUserToken@ must now be 32 characters or longer. This was already the suggestion in the documentation, now it is enforced. The @script/get_anonymous_user_token.rb@ script that was needed to register the anonymous user token in the database has been removed. Registration of the anonymous token is no longer necessary. If the anonymous token in @config.yml@ is specified as a full V2 token, that will now generate a warning - it should be updated to list just the secret (i.e. the part after the last forward slash).
+The anonymous token configured in @Users.AnonymousUserToken@ must now be 32 characters or longer. This was already the suggestion in the documentation, now it is enforced. The @script/get_anonymous_user_token.rb@ script that was needed to register the anonymous user token in the database has been removed. Registration of the anonymous token is no longer necessary.
 
 h3. Preemptible instance support changes
 
