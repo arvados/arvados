@@ -135,7 +135,7 @@ export const SearchResultsPanelView = withStyles(styles, { withTheme: true })(
 
                         if (sessions.length > 0) {
                             const session = sessions[0];
-                            const { name, ownerUuid } = await (service as any).get(searchUuid, false, session);
+                            const { name, ownerUuid } = await (service as any).get(searchUuid, false, undefined, session);
                             tmpPath.push(name);
                             searchUuid = ownerUuid;
                             itemKind = extractUuidKind(searchUuid);
