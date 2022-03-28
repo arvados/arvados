@@ -15,6 +15,7 @@ import {
 import { openAdvancedTabDialog } from 'store/advanced-tab/advanced-tab';
 import { loginAs, openUserAttributes, openUserProjects } from "store/users/users-actions";
 import { openSetupDialog, openDeactivateDialog } from "store/user-profile/user-profile-actions";
+import { navigateToUserProfile } from "store/navigation/navigation-action";
 
 export const userActionSet: ContextMenuActionSet = [[{
     name: "Attributes",
@@ -38,7 +39,7 @@ export const userActionSet: ContextMenuActionSet = [[{
     name: "Account Settings",
     icon: UserPanelIcon,
     execute: (dispatch, { uuid }) => {
-        dispatch<any>(openAdvancedTabDialog(uuid));
+        dispatch<any>(navigateToUserProfile(uuid));
     }
 }, {
     name: "Setup User",
