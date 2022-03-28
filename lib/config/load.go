@@ -369,9 +369,11 @@ func (ldr *Loader) checkToken(label, token string, mandatory bool, acceptV2 bool
 		if !strings.HasPrefix(token, "v2/") {
 			return fmt.Errorf("%s: unacceptable characters in token (only a-z, A-Z, 0-9 are acceptable)", label)
 		}
-		ldr.Logger.Warnf("%s: token is a full V2 token, should just be a secret (remove everything up to and including the last forward slash)", label)
 		if !acceptableTokenRe.MatchString(tmp[2]) {
 			return fmt.Errorf("%s: unacceptable characters in V2 token secret (only a-z, A-Z, 0-9 are acceptable)", label)
+		}
+		if len(tmp[2]) < acceptableTokenLength {
+			ldr.Logger.Warnf("%s: secret is too short (should be at least %d characters)", label, acceptableTokenLength)
 		}
 	} else if len(token) < acceptableTokenLength {
 		if ldr.Logger != nil {
