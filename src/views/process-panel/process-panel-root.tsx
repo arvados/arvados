@@ -22,7 +22,6 @@ type CssRules = 'root';
 const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     root: {
         width: '100%',
-        height: '100%',
     },
 });
 
