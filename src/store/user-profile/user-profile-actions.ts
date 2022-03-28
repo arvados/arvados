@@ -75,7 +75,6 @@ export const openSetupDialog = (uuid: string) =>
   }));
 }
 
-
 export const setup = (uuid: string) =>
     async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
         try {

@@ -13,7 +13,6 @@ import {
     StyleRulesCallback,
     WithStyles,
     withStyles,
-    Card,
     CardContent,
     Button,
     Typography,
@@ -84,9 +83,6 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
 });
 
 export interface UserProfilePanelRootActionProps {
-    openSetupDialog: (uuid: string) => void;
-    loginAs: (uuid: string) => void;
-    openDeactivateDialog: (uuid: string) => void;
     handleContextMenu: (event, resource: UserResource) => void;
 }
 
@@ -124,7 +120,6 @@ export enum UserProfileGroupsColumnNames {
 enum TABS {
     PROFILE = "PROFILE",
     GROUPS = "GROUPS",
-    ADMIN = "ADMIN",
 
 }
 
@@ -202,7 +197,6 @@ export const UserProfilePanelRoot = withStyles(styles)(
                 <Tabs value={this.state.value} onChange={this.handleChange} variant={"fullWidth"}>
                     <Tab label={TABS.PROFILE} value={TABS.PROFILE} />
                     <Tab label={TABS.GROUPS} value={TABS.GROUPS} />
-                    {this.props.isAdmin && <Tab label={TABS.ADMIN} value={TABS.ADMIN} />}
                 </Tabs>
                 {this.state.value === TABS.PROFILE &&
                     <CardContent>
@@ -335,84 +329,6 @@ export const UserProfilePanelRoot = withStyles(styles)(
                                         messages={['Group list is empty.']} />
                                 } />
                     </div>}
-                {this.props.isAdmin && this.state.value === TABS.ADMIN &&
-                    <Paper elevation={0} className={this.props.classes.adminRoot}>
-                        <Card elevation={0}>
-                            <CardContent>
-                                <Grid container
-                                    direction="row"
-                                    justify={'flex-end'}
-                                    alignItems={'center'}>
-                                    <Grid item xs>
-                                        <Typography variant="h6" className={this.props.classes.title}>
-                                            Setup Account
-                                        </Typography>
-                                        <Typography variant="body1" className={this.props.classes.description}>
-                                            This button sets up a user. After setup, they will be able use Arvados. This dialog box also allows you to optionally set up a shell account for this user. The login name is automatically generated from the user's e-mail address.
-                                        </Typography>
-                                    </Grid>
-                                    <Grid item sm={'auto'} xs={12}>
-                                        <Button variant="contained"
-                                            color="primary"
-                                            onClick={() => {this.props.openSetupDialog(this.props.userUuid)}}
-                                            disabled={false}>
-                                            Setup Account
-                                        </Button>
-                                    </Grid>
-                                </Grid>
-                            </CardContent>
-                        </Card>
-                        <Card elevation={0}>
-                            <CardContent>
-                                <Grid container
-                                    direction="row"
-                                    justify={'flex-end'}
-                                    alignItems={'center'}>
-                                    <Grid item xs>
-                                        <Typography variant="h6" className={this.props.classes.title}>
-                                            Deactivate
-                                        </Typography>
-                                        <Typography variant="body1" className={this.props.classes.description}>
-                                            As an admin, you can deactivate and reset this user. This will remove all repository/VM permissions for the user. If you "setup" the user again, the user will have to sign the user agreement again. You may also want to reassign data ownership.
-                                        </Typography>
-                                    </Grid>
-                                    <Grid item sm={'auto'} xs={12}>
-                                        <Button variant="contained"
-                                            color="primary"
-                                            onClick={() => {this.props.openDeactivateDialog(this.props.userUuid)}}
-                                            disabled={false}>
-                                            Deactivate
-                                        </Button>
-                                    </Grid>
-                                </Grid>
-                            </CardContent>
-                        </Card>
-                        <Card elevation={0}>
-                            <CardContent>
-                                <Grid container
-                                    direction="row"
-                                    justify={'flex-end'}
-                                    alignItems={'center'}>
-                                    <Grid item xs>
-                                        <Typography variant="h6" className={this.props.classes.title}>
-                                            Log In
-                                        </Typography>
-                                        <Typography variant="body1" className={this.props.classes.description}>
-                                            As an admin, you can log in as this user. When you’ve finished, you will need to log out and log in again with your own account.
-                                        </Typography>
-                                    </Grid>
-                                    <Grid item sm={'auto'} xs={12}>
-                                        <Button variant="contained"
-                                            color="primary"
-                                            onClick={() => {this.props.loginAs(this.props.userUuid)}}
-                                            disabled={false}>
-                                            Log In
-                                        </Button>
-                                    </Grid>
-                                </Grid>
-                            </CardContent>
-                        </Card>
-                    </Paper>}
             </Paper >;
         }
 

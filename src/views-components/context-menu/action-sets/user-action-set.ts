@@ -3,9 +3,18 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import { ContextMenuActionSet } from "views-components/context-menu/context-menu-action-set";
-import { AdvancedIcon, ProjectIcon, AttributesIcon } from "components/icon/icon";
+import {
+    AdvancedIcon,
+    ProjectIcon,
+    AttributesIcon,
+    DeactivateUserIcon,
+    UserPanelIcon,
+    LoginAsIcon,
+    AdminMenuIcon,
+} from "components/icon/icon";
 import { openAdvancedTabDialog } from 'store/advanced-tab/advanced-tab';
-import { openUserAttributes, openUserProjects } from "store/users/users-actions";
+import { loginAs, openUserAttributes, openUserProjects } from "store/users/users-actions";
+import { openSetupDialog, openDeactivateDialog } from "store/user-profile/user-profile-actions";
 
 export const userActionSet: ContextMenuActionSet = [[{
     name: "Attributes",
@@ -25,13 +34,30 @@ export const userActionSet: ContextMenuActionSet = [[{
     execute: (dispatch, { uuid }) => {
         dispatch<any>(openAdvancedTabDialog(uuid));
     }
-}, /*
-    // Neither of the buttons on this dialog work correctly (bugs #16114 and #16124) so hide it for now.
-    {
-    name: "Manage",
+}, {
+    name: "Account Settings",
     icon: UserPanelIcon,
     execute: (dispatch, { uuid }) => {
-        dispatch<any>(openUserManagement(uuid));
+        dispatch<any>(openAdvancedTabDialog(uuid));
     }
-} */
+}, {
+    name: "Setup User",
+    icon: AdminMenuIcon,
+    execute: (dispatch, { uuid }) => {
+        dispatch<any>(openSetupDialog(uuid));
+    }
+}, {
+    name: "Deactivate User",
+    icon: DeactivateUserIcon,
+    execute: (dispatch, { uuid }) => {
+        dispatch<any>(openDeactivateDialog(uuid));
+    }
+}, {
+    name: "Login As User",
+    icon: LoginAsIcon,
+    execute: (dispatch, { uuid }) => {
+        dispatch<any>(loginAs(uuid));
+    }
+},
+
 ]];

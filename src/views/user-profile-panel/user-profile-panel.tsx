@@ -9,9 +9,8 @@ import { connect } from 'react-redux';
 import { UserResource } from 'models/user';
 import { saveEditedUser } from 'store/user-profile/user-profile-actions';
 import { UserProfilePanelRoot, UserProfilePanelRootDataProps } from 'views/user-profile-panel/user-profile-panel-root';
-import { openSetupDialog, openDeactivateDialog, USER_PROFILE_FORM } from "store/user-profile/user-profile-actions";
+import { USER_PROFILE_FORM } from "store/user-profile/user-profile-actions";
 import { matchUserProfileRoute } from 'routes/routes';
-import { loginAs } from 'store/users/users-actions';
 import { openUserContextMenu } from 'store/context-menu/context-menu-actions';
 
 const mapStateToProps = (state: RootState): UserProfilePanelRootDataProps => {
@@ -30,9 +29,6 @@ const mapStateToProps = (state: RootState): UserProfilePanelRootDataProps => {
 }};
 
 const mapDispatchToProps = (dispatch: Dispatch) => ({
-    openSetupDialog: (uuid: string) => dispatch<any>(openSetupDialog(uuid)),
-    loginAs: (uuid: string) => dispatch<any>(loginAs(uuid)),
-    openDeactivateDialog: (uuid: string) => dispatch<any>(openDeactivateDialog(uuid)),
     handleContextMenu: (event, resource: UserResource) => dispatch<any>(openUserContextMenu(event, resource)),
 });
 
