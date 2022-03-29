@@ -497,6 +497,7 @@ else
   cd arvados-workbench2
   if ! git checkout $V; then
     git fetch
+    git checkout yarn.lock
     git checkout $V
   fi
 fi
