@@ -176,7 +176,7 @@ class Keep(object):
 
 class KeepBlockCache(object):
     # Default RAM cache is 256MiB
-    def __init__(self, cache_max=(1024 * 1024 * 1024)):
+    def __init__(self, cache_max=(256 * 1024 * 1024)):
         self.cache_max = cache_max
         self._cache = []
         self._cache_lock = threading.Lock()
@@ -1337,4 +1337,3 @@ class KeepClient(object):
             return True
         if os.path.exists(os.path.join(self.local_store, locator.md5sum)):
             return True
-
