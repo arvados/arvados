@@ -593,10 +593,7 @@ class _BlockManager(object):
                 b = self._prefetch_queue.get()
                 if b is None:
                     return
-                if self._keep.has_cache_slot(b):
-                    continue
-                _logger.debug("prefetching %s", b)
-                self._keep.get(b)
+                self._keep.get(b, cache_slot_get=False)
             except Exception:
                 _logger.exception("Exception doing block prefetch")
 
@@ -842,9 +839,6 @@ class _BlockManager(object):
         """
 
         if not self.prefetch_enabled:
-            return
-
-        if self._keep.has_cache_slot(locator):
             return
 
         with self.lock:
