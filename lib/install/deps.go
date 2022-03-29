@@ -172,7 +172,6 @@ func (inst *installCommand) RunCommand(prog string, args []string, stdin io.Read
 			"make",
 			"net-tools",
 			"pandoc",
-			"perl-modules",
 			"pkg-config",
 			"postgresql",
 			"postgresql-contrib",
@@ -203,9 +202,9 @@ func (inst *installCommand) RunCommand(prog string, args []string, stdin io.Read
 		}
 		switch {
 		case osv.Debian && osv.Major >= 10:
-			pkgs = append(pkgs, "libcurl4")
+			pkgs = append(pkgs, "libcurl4", "perl-modules-5.32")
 		default:
-			pkgs = append(pkgs, "libcurl3")
+			pkgs = append(pkgs, "libcurl3", "perl-modules")
 		}
 		cmd := exec.CommandContext(ctx, "apt-get")
 		if inst.EatMyData {
