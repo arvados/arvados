@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: AGPL-3.0
 import { RootState } from "store/store";
 import { Dispatch } from 'redux';
-import { initialize } from "redux-form";
+import { initialize, reset } from "redux-form";
 import { ServiceRepository } from "services/services";
 import { bindDataExplorerActions } from "store/data-explorer/data-explorer-action";
 import { propertiesActions } from 'store/properties/properties-actions';
@@ -16,21 +16,37 @@ export const USER_PROFILE_PANEL_ID = 'userProfilePanel';
 export const USER_PROFILE_FORM = 'userProfileForm';
 export const DEACTIVATE_DIALOG = 'deactivateDialog';
 export const SETUP_DIALOG = 'setupDialog';
+export const IS_PROFILE_INACCESSIBLE = 'isProfileInaccessible';
 
 export const UserProfileGroupsActions = bindDataExplorerActions(USER_PROFILE_PANEL_ID);
 
 export const getCurrentUserProfilePanelUuid = getProperty<string>(USER_PROFILE_PANEL_ID);
+export const getUserProfileIsInaccessible = getProperty<boolean>(IS_PROFILE_INACCESSIBLE);
 
 export const loadUserProfilePanel = (userUuid?: string) =>
   async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
+    // Reset isInacessible to ensure error screen is hidden
+    dispatch(propertiesActions.SET_PROPERTY({ key: IS_PROFILE_INACCESSIBLE, value: false }));
     // Get user uuid from route or use current user uuid
     const uuid = userUuid || getState().auth.user?.uuid;
     if (uuid) {
       await dispatch(propertiesActions.SET_PROPERTY({ key: USER_PROFILE_PANEL_ID, value: uuid }));
-      const user = await services.userService.get(uuid);
-      dispatch(initialize(USER_PROFILE_FORM, user));
-      dispatch(updateResources([user]));
-      dispatch(UserProfileGroupsActions.REQUEST_ITEMS());
+      try {
+        const user = await services.userService.get(uuid, false);
+        dispatch(initialize(USER_PROFILE_FORM, user));
+        dispatch(updateResources([user]));
+        dispatch(UserProfileGroupsActions.REQUEST_ITEMS());
+      } catch (e) {
+        if (e.status === 404) {
+          await dispatch(propertiesActions.SET_PROPERTY({ key: IS_PROFILE_INACCESSIBLE, value: true }));
+          dispatch(reset(USER_PROFILE_FORM));
+        } else {
+          dispatch(snackbarActions.OPEN_SNACKBAR({
+            message: 'Could not load user profile',
+            kind: SnackbarKind.ERROR
+          }));
+        }
+      }
     }
   }
 

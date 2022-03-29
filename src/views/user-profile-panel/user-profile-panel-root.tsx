@@ -28,23 +28,26 @@ import { DataTableDefaultView } from 'components/data-table-default-view/data-ta
 import { PROFILE_EMAIL_VALIDATION } from "validators/validators";
 import { USER_PROFILE_PANEL_ID } from 'store/user-profile/user-profile-actions';
 import { noop } from 'lodash';
-import { CopyIcon, GroupsIcon, MoreOptionsIcon } from 'components/icon/icon';
+import { CopyIcon, DetailsIcon, GroupsIcon, MoreOptionsIcon } from 'components/icon/icon';
 import { DataColumns } from 'components/data-table/data-table';
 import { ResourceLinkHeadUuid, ResourceLinkHeadPermissionLevel, ResourceLinkHead, ResourceLinkDelete, ResourceLinkTailIsVisible } from 'views-components/data-explorer/renderers';
 import { createTree } from 'models/tree';
 import { getResource, ResourcesState } from 'store/resources/resources';
 import { snackbarActions, SnackbarKind } from 'store/snackbar/snackbar-actions';
 import CopyToClipboard from 'react-copy-to-clipboard';
+import { DefaultView } from 'components/default-view/default-view';
 
-type CssRules = 'root' | 'adminRoot' | 'gridItem' | 'label' | 'readOnlyValue' | 'title' | 'description' | 'actions' | 'content' | 'copyIcon';
+type CssRules = 'root' | 'emptyRoot' | 'gridItem' | 'label' | 'readOnlyValue' | 'title' | 'description' | 'actions' | 'content' | 'copyIcon';
 
 const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     root: {
         width: '100%',
         overflow: 'auto'
     },
-    adminRoot: {
-        // ...theme.mixins.gutters()
+    emptyRoot: {
+        width: '100%',
+        overflow: 'auto',
+        padding: theme.spacing.unit * 4,
     },
     gridItem: {
         height: 45,
@@ -91,8 +94,9 @@ export interface UserProfilePanelRootDataProps {
     isSelf: boolean;
     isPristine: boolean;
     isValid: boolean;
+    isInaccessible: boolean;
     userUuid: string;
-    resources: ResourcesState
+    resources: ResourcesState;
     localCluster: string;
 }
 
@@ -193,143 +197,154 @@ export const UserProfilePanelRoot = withStyles(styles)(
         }
 
         render() {
-            return <Paper className={this.props.classes.root}>
-                <Tabs value={this.state.value} onChange={this.handleChange} variant={"fullWidth"}>
-                    <Tab label={TABS.PROFILE} value={TABS.PROFILE} />
-                    <Tab label={TABS.GROUPS} value={TABS.GROUPS} />
-                </Tabs>
-                {this.state.value === TABS.PROFILE &&
-                    <CardContent>
-                        <Grid container justify="space-between">
-                            <Grid item xs={11}>
-                                <Typography className={this.props.classes.title}>
-                                    {this.props.userUuid}
-                                    <Tooltip title="Copy to clipboard">
-                                        <span className={this.props.classes.copyIcon}>
-                                            <CopyToClipboard text={this.props.userUuid || ""} onCopy={() => this.onCopy!("Copied")}>
-                                                <CopyIcon />
-                                            </CopyToClipboard>
-                                        </span>
+            if (this.props.isInaccessible) {
+                return (
+                    <Paper className={this.props.classes.emptyRoot}>
+                        <CardContent>
+                            <DefaultView icon={DetailsIcon} messages={['This user does not exist or your account does not have permission to view it']} />
+                        </CardContent>
+                    </Paper>
+                );
+            } else {
+                return <Paper className={this.props.classes.root}>
+                    <Tabs value={this.state.value} onChange={this.handleChange} variant={"fullWidth"}>
+                        <Tab label={TABS.PROFILE} value={TABS.PROFILE} />
+                        <Tab label={TABS.GROUPS} value={TABS.GROUPS} />
+                    </Tabs>
+                    {this.state.value === TABS.PROFILE &&
+                        <CardContent>
+                            <Grid container justify="space-between">
+                                <Grid item xs={11}>
+                                    <Typography className={this.props.classes.title}>
+                                        {this.props.userUuid}
+                                        <Tooltip title="Copy to clipboard">
+                                            <span className={this.props.classes.copyIcon}>
+                                                <CopyToClipboard text={this.props.userUuid || ""} onCopy={() => this.onCopy!("Copied")}>
+                                                    <CopyIcon />
+                                                </CopyToClipboard>
+                                            </span>
+                                        </Tooltip>
+                                    </Typography>
+                                </Grid>
+                                <Grid item xs={1} style={{ textAlign: "right" }}>
+                                    <Tooltip title="Actions" disableFocusListener>
+                                        <IconButton
+                                            data-cy='collection-panel-options-btn'
+                                            aria-label="Actions"
+                                            onClick={(event) => this.handleContextMenu(event, this.props.userUuid)}>
+                                            <MoreOptionsIcon />
+                                        </IconButton>
                                     </Tooltip>
-                                </Typography>
+                                </Grid>
                             </Grid>
-                            <Grid item xs={1} style={{ textAlign: "right" }}>
-                                <Tooltip title="Actions" disableFocusListener>
-                                    <IconButton
-                                        data-cy='collection-panel-options-btn'
-                                        aria-label="Actions"
-                                        onClick={(event) => this.handleContextMenu(event, this.props.userUuid)}>
-                                        <MoreOptionsIcon />
-                                    </IconButton>
-                                </Tooltip>
-                            </Grid>
-                        </Grid>
-                        <form onSubmit={this.props.handleSubmit} data-cy="profile-form">
-                            <Grid container spacing={24}>
-                                <Grid item className={this.props.classes.gridItem} sm={6} xs={12} data-cy="firstName">
-                                    <Field
-                                        label="First name"
-                                        name="firstName"
-                                        component={ReadOnlyField as any}
-                                        disabled
-                                    />
-                                </Grid>
-                                <Grid item className={this.props.classes.gridItem} sm={6} xs={12} data-cy="lastName">
-                                    <Field
-                                        label="Last name"
-                                        name="lastName"
-                                        component={ReadOnlyField as any}
-                                        disabled
-                                    />
-                                </Grid>
-                                <Grid item className={this.props.classes.gridItem} sm={6} xs={12} data-cy="email">
-                                    <Field
-                                        label="E-mail"
-                                        name="email"
-                                        component={ReadOnlyField as any}
-                                        disabled
-                                    />
-                                </Grid>
-                                <Grid item className={this.props.classes.gridItem} sm={6} xs={12} data-cy="username">
-                                    <Field
-                                        label="Username"
-                                        name="username"
-                                        component={ReadOnlyField as any}
-                                        disabled
-                                    />
-                                </Grid>
-                                <Grid item className={this.props.classes.gridItem} sm={6} xs={12}>
-                                    <Field
-                                        label="Organization"
-                                        name="prefs.profile.organization"
-                                        component={TextField as any}
-                                        disabled={!this.props.isAdmin && !this.props.isSelf}
-                                    />
-                                </Grid>
-                                <Grid item className={this.props.classes.gridItem} sm={6} xs={12}>
-                                    <Field
-                                        label="E-mail at Organization"
-                                        name="prefs.profile.organization_email"
-                                        component={TextField as any}
-                                        disabled={!this.props.isAdmin && !this.props.isSelf}
-                                        validate={PROFILE_EMAIL_VALIDATION}
-                                    />
-                                </Grid>
-                                <Grid item className={this.props.classes.gridItem} sm={6} xs={12}>
-                                    <InputLabel className={this.props.classes.label} htmlFor="prefs.profile.role">Role</InputLabel>
-                                    <Field
-                                        id="prefs.profile.role"
-                                        name="prefs.profile.role"
-                                        component={NativeSelectField as any}
-                                        items={RoleTypes}
-                                        disabled={!this.props.isAdmin && !this.props.isSelf}
-                                    />
-                                </Grid>
-                                <Grid item className={this.props.classes.gridItem} sm={6} xs={12}>
-                                    <Field
-                                        label="Website"
-                                        name="prefs.profile.website_url"
-                                        component={TextField as any}
-                                        disabled={!this.props.isAdmin && !this.props.isSelf}
-                                    />
-                                </Grid>
-                                <Grid item sm={12}>
-                                    <Grid container direction="row" justify="flex-end">
-                                        <Button color="primary" onClick={this.props.reset} disabled={this.props.isPristine}>Discard changes</Button>
-                                        <Button
-                                            color="primary"
-                                            variant="contained"
-                                            type="submit"
-                                            disabled={this.props.isPristine || this.props.invalid || this.props.submitting}>
-                                            Save changes
-                                        </Button>
+                            <form onSubmit={this.props.handleSubmit} data-cy="profile-form">
+                                <Grid container spacing={24}>
+                                    <Grid item className={this.props.classes.gridItem} sm={6} xs={12} data-cy="firstName">
+                                        <Field
+                                            label="First name"
+                                            name="firstName"
+                                            component={ReadOnlyField as any}
+                                            disabled
+                                        />
+                                    </Grid>
+                                    <Grid item className={this.props.classes.gridItem} sm={6} xs={12} data-cy="lastName">
+                                        <Field
+                                            label="Last name"
+                                            name="lastName"
+                                            component={ReadOnlyField as any}
+                                            disabled
+                                        />
+                                    </Grid>
+                                    <Grid item className={this.props.classes.gridItem} sm={6} xs={12} data-cy="email">
+                                        <Field
+                                            label="E-mail"
+                                            name="email"
+                                            component={ReadOnlyField as any}
+                                            disabled
+                                        />
+                                    </Grid>
+                                    <Grid item className={this.props.classes.gridItem} sm={6} xs={12} data-cy="username">
+                                        <Field
+                                            label="Username"
+                                            name="username"
+                                            component={ReadOnlyField as any}
+                                            disabled
+                                        />
+                                    </Grid>
+                                    <Grid item className={this.props.classes.gridItem} sm={6} xs={12}>
+                                        <Field
+                                            label="Organization"
+                                            name="prefs.profile.organization"
+                                            component={TextField as any}
+                                            disabled={!this.props.isAdmin && !this.props.isSelf}
+                                        />
+                                    </Grid>
+                                    <Grid item className={this.props.classes.gridItem} sm={6} xs={12}>
+                                        <Field
+                                            label="E-mail at Organization"
+                                            name="prefs.profile.organization_email"
+                                            component={TextField as any}
+                                            disabled={!this.props.isAdmin && !this.props.isSelf}
+                                            validate={PROFILE_EMAIL_VALIDATION}
+                                        />
+                                    </Grid>
+                                    <Grid item className={this.props.classes.gridItem} sm={6} xs={12}>
+                                        <InputLabel className={this.props.classes.label} htmlFor="prefs.profile.role">Role</InputLabel>
+                                        <Field
+                                            id="prefs.profile.role"
+                                            name="prefs.profile.role"
+                                            component={NativeSelectField as any}
+                                            items={RoleTypes}
+                                            disabled={!this.props.isAdmin && !this.props.isSelf}
+                                        />
+                                    </Grid>
+                                    <Grid item className={this.props.classes.gridItem} sm={6} xs={12}>
+                                        <Field
+                                            label="Website"
+                                            name="prefs.profile.website_url"
+                                            component={TextField as any}
+                                            disabled={!this.props.isAdmin && !this.props.isSelf}
+
+                                        />
+                                    </Grid>
+                                    <Grid item sm={12}>
+                                        <Grid container direction="row" justify="flex-end">
+                                            <Button color="primary" onClick={this.props.reset} disabled={this.props.isPristine}>Discard changes</Button>
+                                            <Button
+                                                color="primary"
+                                                variant="contained"
+                                                type="submit"
+                                                disabled={this.props.isPristine || this.props.invalid || this.props.submitting}>
+                                                Save changes
+                                            </Button>
+                                        </Grid>
                                     </Grid>
                                 </Grid>
-                            </Grid>
-                        </form >
-                    </CardContent>
-                }
-                {this.state.value === TABS.GROUPS &&
-                    <div className={this.props.classes.content}>
-                        <DataExplorer
-                                id={USER_PROFILE_PANEL_ID}
-                                data-cy="user-profile-groups-data-explorer"
-                                onRowClick={noop}
-                                onRowDoubleClick={noop}
-                                onContextMenu={noop}
-                                contextMenuColumn={false}
-                                hideColumnSelector
-                                hideSearchInput
-                                paperProps={{
-                                    elevation: 0,
-                                }}
-                                dataTableDefaultView={
-                                    <DataTableDefaultView
-                                        icon={GroupsIcon}
-                                        messages={['Group list is empty.']} />
-                                } />
-                    </div>}
-            </Paper >;
+                            </form >
+                        </CardContent>
+                    }
+                    {this.state.value === TABS.GROUPS &&
+                        <div className={this.props.classes.content}>
+                            <DataExplorer
+                                    id={USER_PROFILE_PANEL_ID}
+                                    data-cy="user-profile-groups-data-explorer"
+                                    onRowClick={noop}
+                                    onRowDoubleClick={noop}
+                                    onContextMenu={noop}
+                                    contextMenuColumn={false}
+                                    hideColumnSelector
+                                    hideSearchInput
+                                    paperProps={{
+                                        elevation: 0,
+                                    }}
+                                    dataTableDefaultView={
+                                        <DataTableDefaultView
+                                            icon={GroupsIcon}
+                                            messages={['Group list is empty.']} />
+                                    } />
+                        </div>}
+                </Paper >;
+            }
         }
 
         handleChange = (event: React.MouseEvent<HTMLElement>, value: number) => {

@@ -7,7 +7,7 @@ import { compose, Dispatch } from 'redux';
 import { reduxForm, isPristine, isValid } from 'redux-form';
 import { connect } from 'react-redux';
 import { UserResource } from 'models/user';
-import { saveEditedUser } from 'store/user-profile/user-profile-actions';
+import { getUserProfileIsInaccessible, saveEditedUser } from 'store/user-profile/user-profile-actions';
 import { UserProfilePanelRoot, UserProfilePanelRootDataProps } from 'views/user-profile-panel/user-profile-panel-root';
 import { USER_PROFILE_FORM } from "store/user-profile/user-profile-actions";
 import { matchUserProfileRoute } from 'routes/routes';
@@ -23,6 +23,7 @@ const mapStateToProps = (state: RootState): UserProfilePanelRootDataProps => {
     isSelf: state.auth.user!.uuid === uuid,
     isPristine: isPristine(USER_PROFILE_FORM)(state),
     isValid: isValid(USER_PROFILE_FORM)(state),
+    isInaccessible: getUserProfileIsInaccessible(state.properties) || false,
     localCluster: state.auth.localCluster,
     userUuid: uuid,
     resources: state.resources,
