@@ -537,7 +537,6 @@ class CollectionDirectory(CollectionDirectoryBase):
                                 self.collection_locator, self.api, self.api.keep,
                                 num_retries=self.num_retries,
                                 get_threads=get_threads)
-                            )
                         new_collection_record = coll_reader.api_response() or {}
                         # If the Collection only exists in Keep, there will be no API
                         # response.  Fill in the fields we need.
