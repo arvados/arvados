@@ -1105,6 +1105,7 @@ class KeepClient(object):
                                 "failed to read {}".format(loc_s))
                         return blob
                     else:
+                        slot = None  # prevent finally from calling slot.set()
                         return None
 
             self.misses_counter.add(1)
