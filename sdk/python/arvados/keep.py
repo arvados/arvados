@@ -176,7 +176,7 @@ class Keep(object):
 
 class KeepBlockCache(object):
     # Default RAM cache is 256MiB
-    def __init__(self, cache_max=(256 * 1024 * 1024)):
+    def __init__(self, cache_max=(1024 * 1024 * 1024)):
         self.cache_max = cache_max
         self._cache = []
         self._cache_lock = threading.Lock()
@@ -1036,13 +1036,18 @@ class KeepClient(object):
         else:
             return None
 
-    def get_from_cache(self, loc):
+    def get_from_cache(self, loc_s):
         """Fetch a block only if is in the cache, otherwise return None."""
-        slot = self.block_cache.get(loc)
+        locator = KeepLocator(loc_s)
+        slot = self.block_cache.get(locator.md5sum)
         if slot is not None and slot.ready.is_set():
             return slot.get()
         else:
             return None
+
+    def has_cache_slot(self, loc_s):
+        locator = KeepLocator(loc_s)
+        return self.block_cache.get(locator.md5sum) is not None
 
     def refresh_signature(self, loc):
         """Ask Keep to get the remote block and return its local signature"""
@@ -1333,5 +1338,3 @@ class KeepClient(object):
         if os.path.exists(os.path.join(self.local_store, locator.md5sum)):
             return True
 
-    def is_cached(self, locator):
-        return self.block_cache.reserve_cache(expect_hash)
