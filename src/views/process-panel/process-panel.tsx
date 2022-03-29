@@ -7,27 +7,45 @@ import { connect } from 'react-redux';
 import { getProcess, getSubprocesses, Process, getProcessStatus } from 'store/processes/process';
 import { Dispatch } from 'redux';
 import { openProcessContextMenu } from 'store/context-menu/context-menu-actions';
-import { matchProcessRoute } from 'routes/routes';
-import { ProcessPanelRootDataProps, ProcessPanelRootActionProps, ProcessPanelRoot } from './process-panel-root';
-import { ProcessPanel as ProcessPanelState} from 'store/process-panel/process-panel';
+import {
+    ProcessPanelRootDataProps,
+    ProcessPanelRootActionProps,
+    ProcessPanelRoot
+} from './process-panel-root';
+import {
+    getProcessPanelCurrentUuid,
+    ProcessPanel as ProcessPanelState
+} from 'store/process-panel/process-panel';
 import { groupBy } from 'lodash';
-import { toggleProcessPanelFilter, navigateToOutput, openWorkflow } from 'store/process-panel/process-panel-actions';
+import {
+    toggleProcessPanelFilter,
+    navigateToOutput,
+    openWorkflow
+} from 'store/process-panel/process-panel-actions';
 import { openProcessInputDialog } from 'store/processes/process-input-actions';
 import { cancelRunningWorkflow } from 'store/processes/processes-actions';
+import { navigateToLogCollection, setProcessLogsPanelFilter } from 'store/process-logs-panel/process-logs-panel-actions';
+import { snackbarActions, SnackbarKind } from 'store/snackbar/snackbar-actions';
 
-const mapStateToProps = ({ router, resources, processPanel }: RootState): ProcessPanelRootDataProps => {
-    const pathname = router.location ? router.location.pathname : '';
-    const match = matchProcessRoute(pathname);
-    const uuid = match ? match.params.id : '';
+const mapStateToProps = ({ router, resources, processPanel, processLogsPanel }: RootState): ProcessPanelRootDataProps => {
+    const uuid = getProcessPanelCurrentUuid(router) || '';
     const subprocesses = getSubprocesses(uuid)(resources);
     return {
         process: getProcess(uuid)(resources),
         subprocesses: subprocesses.filter(subprocess => processPanel.filters[getProcessStatus(subprocess)]),
         filters: getFilters(processPanel, subprocesses),
+        processLogsPanel: processLogsPanel,
     };
 };
 
 const mapDispatchToProps = (dispatch: Dispatch): ProcessPanelRootActionProps => ({
+    onLogCopyToClipboard: (message: string) => {
+        dispatch<any>(snackbarActions.OPEN_SNACKBAR({
+            message,
+            hideDuration: 2000,
+            kind: SnackbarKind.SUCCESS,
+        }));
+    },
     onContextMenu: (event, process) => {
         dispatch<any>(openProcessContextMenu(event, process));
     },
@@ -37,12 +55,12 @@ const mapDispatchToProps = (dispatch: Dispatch): ProcessPanelRootActionProps => 
     openProcessInputDialog: (uuid) => dispatch<any>(openProcessInputDialog(uuid)),
     navigateToOutput: (uuid) => dispatch<any>(navigateToOutput(uuid)),
     navigateToWorkflow: (uuid) => dispatch<any>(openWorkflow(uuid)),
-    cancelProcess: (uuid) => dispatch<any>(cancelRunningWorkflow(uuid))
+    cancelProcess: (uuid) => dispatch<any>(cancelRunningWorkflow(uuid)),
+    onLogFilterChange: (filter) => dispatch(setProcessLogsPanelFilter(filter.value)),
+    navigateToLog: (uuid) => dispatch<any>(navigateToLogCollection(uuid)),
 });
 
-export const ProcessPanel = connect(mapStateToProps, mapDispatchToProps)(ProcessPanelRoot);
-
-export const getFilters = (processPanel: ProcessPanelState, processes: Process[]) => {
+const getFilters = (processPanel: ProcessPanelState, processes: Process[]) => {
     const grouppedProcesses = groupBy(processes, getProcessStatus);
     return Object
         .keys(processPanel.filters)
@@ -53,3 +71,5 @@ export const getFilters = (processPanel: ProcessPanelState, processes: Process[]
             key: filter,
         }));
     };
+
+export const ProcessPanel = connect(mapStateToProps, mapDispatchToProps)(ProcessPanelRoot);

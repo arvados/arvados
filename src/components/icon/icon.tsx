@@ -65,6 +65,9 @@ import VpnKey from '@material-ui/icons/VpnKey';
 import LinkOutlined from '@material-ui/icons/LinkOutlined';
 import RemoveRedEye from '@material-ui/icons/RemoveRedEye';
 import Computer from '@material-ui/icons/Computer';
+import WrapText from '@material-ui/icons/WrapText';
+import TextIncrease from '@material-ui/icons/ZoomIn';
+import TextDecrease from '@material-ui/icons/ZoomOut';
 
 // Import FontAwesome icons
 import { library } from '@fortawesome/fontawesome-svg-core';
@@ -173,3 +176,6 @@ export const CanReadIcon: IconType = (props) => <RemoveRedEye {...props} />;
 export const CanWriteIcon: IconType = (props) => <Edit {...props} />;
 export const CanManageIcon: IconType = (props) => <Computer {...props} />;
 export const AddUserIcon: IconType = (props) => <PersonAdd {...props} />;
+export const WordWrapIcon: IconType = (props) => <WrapText {...props} />;
+export const TextIncreaseIcon: IconType = (props) => <TextIncrease {...props} />;
+export const TextDecreaseIcon: IconType = (props) => <TextDecrease {...props} />;

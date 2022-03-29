@@ -27,7 +27,6 @@ const handleLocationChange = (store: RootStore) => ({ pathname }: Location) => {
     const publicFavoritesMatch = Routes.matchPublicFavoritesRoute(pathname);
     const trashMatch = Routes.matchTrashRoute(pathname);
     const processMatch = Routes.matchProcessRoute(pathname);
-    const processLogMatch = Routes.matchProcessLogRoute(pathname);
     const repositoryMatch = Routes.matchRepositoriesRoute(pathname);
     const searchResultsMatch = Routes.matchSearchResultsRoute(pathname);
     const sharedWithMeMatch = Routes.matchSharedWithMeRoute(pathname);
@@ -71,8 +70,6 @@ const handleLocationChange = (store: RootStore) => ({ pathname }: Location) => {
         store.dispatch(WorkbenchActions.loadTrash());
     } else if (processMatch) {
         store.dispatch(WorkbenchActions.loadProcess(processMatch.params.id));
-    } else if (processLogMatch) {
-        store.dispatch(WorkbenchActions.loadProcessLog(processLogMatch.params.id));
     } else if (rootMatch) {
         store.dispatch(navigateToRootProject);
     } else if (sharedWithMeMatch) {

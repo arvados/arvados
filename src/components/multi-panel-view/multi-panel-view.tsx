@@ -65,6 +65,7 @@ interface MPVPanelDataProps {
     panelIlluminated?: boolean;
     panelRef?: MutableRefObject<any>;
     forwardProps?: boolean;
+    maxHeight?: string;
 }
 
 interface MPVPanelActionProps {
@@ -78,14 +79,20 @@ export type MPVPanelProps = MPVPanelDataProps & MPVPanelActionProps;
 type MPVPanelContentProps = {children: ReactElement} & MPVPanelProps & GridProps;
 
 // Grid item compatible component for layout and MPV props passing
-export const MPVPanelContent = ({doHidePanel, doMaximizePanel, panelName, panelMaximized, panelIlluminated, panelRef, forwardProps, ...props}: MPVPanelContentProps) => {
+export const MPVPanelContent = ({doHidePanel, doMaximizePanel, panelName,
+    panelMaximized, panelIlluminated, panelRef, forwardProps, maxHeight,
+    ...props}: MPVPanelContentProps) => {
     useEffect(() => {
         if (panelRef && panelRef.current) {
             panelRef.current.scrollIntoView({behavior: 'smooth'});
         }
     }, [panelRef]);
 
-    return <Grid item {...props}>
+    const mh = panelMaximized
+        ? '100%'
+        : maxHeight;
+
+    return <Grid item style={{maxHeight: mh}} {...props}>
         <span ref={panelRef} /> {/* Element to scroll to when the panel is selected */}
         <Paper style={{height: '100%'}} elevation={panelIlluminated ? 8 : 0}>
             { forwardProps
@@ -112,7 +119,7 @@ const MPVContainerComponent = ({children, panelStates, classes, ...props}: MPVCo
         children = [children];
     }
     const visibility = (children as ReactNodeArray).map((_, idx) =>
-        !!!panelStates || // if panelStates wasn't passed, default to all visible panels
+        !panelStates || // if panelStates wasn't passed, default to all visible panels
             (panelStates[idx] &&
                 (panelStates[idx].visible || panelStates[idx].visible === undefined)));
     const [panelVisibility, setPanelVisibility] = useState<boolean[]>(visibility);
@@ -159,13 +166,20 @@ const MPVContainerComponent = ({children, panelStates, classes, ...props}: MPVCo
             const panelIsMaximized = panelVisibility[idx] &&
                 panelVisibility.filter(e => e).length === 1;
 
+            let brightenerTimer: NodeJS.Timer;
             toggles = [
                 ...toggles,
                 <Tooltip title={toggleTooltip} disableFocusListener>
                     <Button variant={toggleVariant} size="small" color="primary"
                         className={classNames(classes.button)}
-                        onMouseEnter={() => setBrightenedPanel(idx)}
-                        onMouseLeave={() => setBrightenedPanel(-1)}
+                        onMouseEnter={() => {
+                            brightenerTimer = setTimeout(
+                                () => setBrightenedPanel(idx), 100);
+                        }}
+                        onMouseLeave={() => {
+                            brightenerTimer && clearTimeout(brightenerTimer);
+                            setBrightenedPanel(-1);
+                        }}
                         onClick={showFn(idx)}>
                             {panelName}
                             {toggleIcon}

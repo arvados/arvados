@@ -6,7 +6,7 @@ import { Dispatch, compose, AnyAction } from 'redux';
 import { push } from "react-router-redux";
 import { ResourceKind, extractUuidKind } from 'models/resource';
 import { SidePanelTreeCategory } from '../side-panel-tree/side-panel-tree-actions';
-import { Routes, getProcessLogUrl, getGroupUrl, getNavUrl } from 'routes/routes';
+import { Routes, getGroupUrl, getNavUrl } from 'routes/routes';
 import { RootState } from 'store/store';
 import { ServiceRepository } from 'services/services';
 import { pluginConfig } from 'plugins';
@@ -98,8 +98,6 @@ export const pushOrGoto = (url: string): AnyAction => {
     }
 };
 
-
-export const navigateToProcessLogs = compose(push, getProcessLogUrl);
 
 export const navigateToRootProject = (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
     navigateTo(SidePanelTreeCategory.PROJECTS)(dispatch, getState);

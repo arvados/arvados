@@ -19,11 +19,15 @@ import { Process } from 'store/processes/process';
 import { MPVPanelProps } from 'components/multi-panel-view/multi-panel-view';
 import { ProcessDetailsAttributes } from './process-details-attributes';
 
-type CssRules = 'card' | 'content' | 'title';
+type CssRules = 'card' | 'content' | 'title' | 'header';
 
 const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     card: {
         height: '100%'
+    },
+    header: {
+        paddingTop: theme.spacing.unit,
+        paddingBottom: theme.spacing.unit,
     },
     content: {
         '&:last-child': {
@@ -46,6 +50,7 @@ export const ProcessDetailsCard = withStyles(styles)(
     ({ classes, process, doHidePanel, panelName }: ProcessDetailsCardProps) => {
         return <Card className={classes.card}>
             <CardHeader
+                className={classes.header}
                 classes={{
                     content: classes.title,
                 }}

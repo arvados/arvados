@@ -9,7 +9,6 @@ import { RootState } from 'store/store';
 import { ServiceRepository } from 'services/services';
 import { Dispatch } from 'redux';
 import { groupBy } from 'lodash';
-import { loadProcess } from 'store/processes/processes-actions';
 import { LogResource } from 'models/log';
 import { LogService } from 'services/log-service/log-service';
 import { ResourceEventMessage } from 'websocket/resource-event-message';
@@ -34,8 +33,8 @@ export const setProcessLogsPanelFilter = (filter: string) =>
 export const initProcessLogsPanel = (processUuid: string) =>
     async (dispatch: Dispatch, getState: () => RootState, { logService }: ServiceRepository) => {
         dispatch(processLogsPanelActions.RESET_PROCESS_LOGS_PANEL());
-        const process = await dispatch<any>(loadProcess(processUuid));
-        if (process.container) {
+        const process = getProcess(processUuid)(getState().resources);
+        if (process && process.container) {
             const logResources = await loadContainerLogs(process.container.uuid, logService);
             const initialState = createInitialLogPanelState(logResources);
             dispatch(processLogsPanelActions.INIT_PROCESS_LOGS_PANEL(initialState));
@@ -45,7 +44,7 @@ export const initProcessLogsPanel = (processUuid: string) =>
 export const addProcessLogsPanelItem = (message: ResourceEventMessage<{ text: string }>) =>
     async (dispatch: Dispatch, getState: () => RootState, { logService }: ServiceRepository) => {
         if (PROCESS_PANEL_LOG_EVENT_TYPES.indexOf(message.eventType) > -1) {
-            const uuid = getProcessLogsPanelCurrentUuid(getState());
+            const uuid = getProcessLogsPanelCurrentUuid(getState().router);
             if (uuid) {
                 const process = getProcess(uuid)(getState().resources);
                 if (process) {
@@ -53,7 +52,7 @@ export const addProcessLogsPanelItem = (message: ResourceEventMessage<{ text: st
                     if (message.objectUuid === containerRequest.uuid
                         || (container && message.objectUuid === container.uuid)) {
                         dispatch(processLogsPanelActions.ADD_PROCESS_LOGS_PANEL_ITEM({
-                            logType: SUMMARIZED_FILTER_TYPE,
+                            logType: COMBINED_FILTER_TYPE,
                             log: message.properties.text
                         }));
                         dispatch(processLogsPanelActions.ADD_PROCESS_LOGS_PANEL_ITEM({
@@ -92,8 +91,8 @@ const createInitialLogPanelState = (logResources: LogResource[]) => {
             ...grouped,
             [key]: logsToLines(groupedLogResources[key])
         }), {});
-    const filters = [SUMMARIZED_FILTER_TYPE, ...Object.keys(groupedLogs)];
-    const logs = { [SUMMARIZED_FILTER_TYPE]: allLogs, ...groupedLogs };
+    const filters = [COMBINED_FILTER_TYPE, ...Object.keys(groupedLogs)];
+    const logs = { [COMBINED_FILTER_TYPE]: allLogs, ...groupedLogs };
     return { filters, logs };
 };
 
@@ -106,13 +105,13 @@ export const navigateToLogCollection = (uuid: string) =>
             await services.collectionService.get(uuid);
             dispatch<any>(navigateTo(uuid));
         } catch {
-            dispatch(snackbarActions.OPEN_SNACKBAR({ message: 'This collection does not exists!', hideDuration: 2000, kind: SnackbarKind.ERROR }));
+            dispatch(snackbarActions.OPEN_SNACKBAR({ message: 'Could not request collection', hideDuration: 2000, kind: SnackbarKind.ERROR }));
         }
     };
 
 const MAX_AMOUNT_OF_LOGS = 10000;
 
-const SUMMARIZED_FILTER_TYPE = 'Summarized';
+const COMBINED_FILTER_TYPE = 'All logs';
 
 const PROCESS_PANEL_LOG_EVENT_TYPES = [
     LogEventType.ARV_MOUNT,
@@ -123,4 +122,5 @@ const PROCESS_PANEL_LOG_EVENT_TYPES = [
     LogEventType.NODE_INFO,
     LogEventType.STDERR,
     LogEventType.STDOUT,
+    LogEventType.CONTAINER,
 ];

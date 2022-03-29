@@ -13,6 +13,9 @@ import { SubprocessFilterDataProps } from 'components/subprocess-filter/subproce
 import { MPVContainer, MPVPanelContent, MPVPanelState } from 'components/multi-panel-view/multi-panel-view';
 import { ArvadosTheme } from 'common/custom-theme';
 import { ProcessDetailsCard } from './process-details-card';
+import { getProcessPanelLogs, ProcessLogsPanel } from 'store/process-logs-panel/process-logs-panel';
+import { ProcessLogsCard } from './process-log-card';
+import { FilterOption } from 'views/process-panel/process-log-form';
 
 type CssRules = 'root';
 
@@ -26,6 +29,7 @@ export interface ProcessPanelRootDataProps {
     process?: Process;
     subprocesses: Array<Process>;
     filters: Array<SubprocessFilterDataProps>;
+    processLogsPanel: ProcessLogsPanel;
 }
 
 export interface ProcessPanelRootActionProps {
@@ -35,6 +39,9 @@ export interface ProcessPanelRootActionProps {
     navigateToOutput: (uuid: string) => void;
     navigateToWorkflow: (uuid: string) => void;
     cancelProcess: (uuid: string) => void;
+    onLogFilterChange: (filter: FilterOption) => void;
+    navigateToLog: (uuid: string) => void;
+    onLogCopyToClipboard: (uuid: string) => void;
 }
 
 export type ProcessPanelRootProps = ProcessPanelRootDataProps & ProcessPanelRootActionProps & WithStyles<CssRules>;
@@ -42,13 +49,15 @@ export type ProcessPanelRootProps = ProcessPanelRootDataProps & ProcessPanelRoot
 const panelsData: MPVPanelState[] = [
     {name: "Info"},
     {name: "Details", visible: false},
+    {name: "Logs", visible: true},
     {name: "Subprocesses"},
 ];
 
-export const ProcessPanelRoot = withStyles(styles)(({ process, ...props }: ProcessPanelRootProps) =>
+export const ProcessPanelRoot = withStyles(styles)(
+    ({ process, processLogsPanel, ...props }: ProcessPanelRootProps) =>
     process
         ? <MPVContainer className={props.classes.root} spacing={8} panelStates={panelsData}  justify-content="flex-start" direction="column" wrap="nowrap">
-            <MPVPanelContent forwardProps xs="auto">
+            <MPVPanelContent forwardProps xs="auto" data-cy="process-info">
                 <ProcessInformationCard
                     process={process}
                     onContextMenu={event => props.onContextMenu(event, process)}
@@ -58,10 +67,26 @@ export const ProcessPanelRoot = withStyles(styles)(({ process, ...props }: Proce
                     cancelProcess={props.cancelProcess}
                 />
             </MPVPanelContent>
-            <MPVPanelContent forwardProps xs="auto">
+            <MPVPanelContent forwardProps xs="auto" data-cy="process-details">
                 <ProcessDetailsCard process={process} />
             </MPVPanelContent>
-            <MPVPanelContent forwardProps xs>
+            <MPVPanelContent forwardProps xs maxHeight='50%' data-cy="process-logs">
+                <ProcessLogsCard
+                    onCopy={props.onLogCopyToClipboard}
+                    process={process}
+                    lines={getProcessPanelLogs(processLogsPanel)}
+                    selectedFilter={{
+                        label: processLogsPanel.selectedFilter,
+                        value: processLogsPanel.selectedFilter
+                    }}
+                    filters={processLogsPanel.filters.map(
+                        filter => ({ label: filter, value: filter })
+                    )}
+                    onLogFilterChange={props.onLogFilterChange}
+                    navigateToLog={props.navigateToLog}
+                />
+            </MPVPanelContent>
+            <MPVPanelContent forwardProps xs maxHeight='50%' data-cy="process-children">
                 <SubprocessPanel />
             </MPVPanelContent>
         </MPVContainer>
@@ -73,4 +98,3 @@ export const ProcessPanelRoot = withStyles(styles)(({ process, ...props }: Proce
                 icon={ProcessIcon}
                 messages={['Process not found']} />
         </Grid>);
-
