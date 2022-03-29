@@ -40,11 +40,11 @@ export class CollectionService extends TrashableResourceService<CollectionResour
             listArgs.select = select;
         }
 
-        if (session) {
+        if (!session) {
             const lst = await super.list(listArgs, showErrors);
             return lst.items[0];
         } else {
-            return super.get(uuid, showErrors, session);
+            return super.get(uuid, showErrors, select, session);
         }
     }
 
