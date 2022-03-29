@@ -40,13 +40,35 @@ export const openUserAttributes = (uuid: string) =>
 
 export const loginAs = (uuid: string) =>
     async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
-        const { resources } = getState();
-        const data = getResource<UserResource>(uuid)(resources);
-        const client = await services.apiClientAuthorizationService.create({ ownerUuid: uuid });
-        if (data) {
-            dispatch<any>(authActions.INIT_USER({ user: data, token: getTokenV2(client) }));
-            window.location.reload();
-            dispatch<any>(navigateToRootProject);
+        const userUuid = getUserUuid(getState());
+        if (userUuid === uuid) {
+            dispatch(snackbarActions.OPEN_SNACKBAR({
+                message: 'You are already logged in as this user',
+                kind: SnackbarKind.WARNING
+            }));
+        } else {
+            try {
+                const { resources } = getState();
+                const data = getResource<UserResource>(uuid)(resources);
+                const client = await services.apiClientAuthorizationService.create({ ownerUuid: uuid }, false);
+                if (data) {
+                    dispatch<any>(authActions.INIT_USER({ user: data, token: getTokenV2(client) }));
+                    window.location.reload();
+                    dispatch<any>(navigateToRootProject);
+                }
+            } catch (e) {
+                if (e.status === 403) {
+                    dispatch(snackbarActions.OPEN_SNACKBAR({
+                        message: 'You do not have permission to login as this user',
+                        kind: SnackbarKind.WARNING
+                    }));
+                } else {
+                    dispatch(snackbarActions.OPEN_SNACKBAR({
+                        message: 'Failed to login as this user',
+                        kind: SnackbarKind.ERROR
+                    }));
+                }
+            }
         }
     };
 
