@@ -98,11 +98,11 @@ When getting a collection manifest, strip its access tokens before writing
 it.
 """)
 
-parser.add_argument('--threads', type=int, metavar='N', default=2,
+parser.add_argument('--threads', type=int, metavar='N', default=4,
                     help="""
 Set the number of download threads to be used. Take into account that
 using lots of threads will increase the RAM requirements. Default is
-to use 2 threads.
+to use 4 threads.
 On high latency installations, using a greater number will improve
 overall throughput.
 """)
