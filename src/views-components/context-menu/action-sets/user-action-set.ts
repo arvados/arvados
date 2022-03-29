@@ -37,24 +37,28 @@ export const userActionSet: ContextMenuActionSet = [[{
     }
 }, {
     name: "Account Settings",
+    adminOnly: true,
     icon: UserPanelIcon,
     execute: (dispatch, { uuid }) => {
         dispatch<any>(navigateToUserProfile(uuid));
     }
 }, {
     name: "Setup User",
+    adminOnly: true,
     icon: AdminMenuIcon,
     execute: (dispatch, { uuid }) => {
         dispatch<any>(openSetupDialog(uuid));
     }
 }, {
     name: "Deactivate User",
+    adminOnly: true,
     icon: DeactivateUserIcon,
     execute: (dispatch, { uuid }) => {
         dispatch<any>(openDeactivateDialog(uuid));
     }
 }, {
     name: "Login As User",
+    adminOnly: true,
     icon: LoginAsIcon,
     execute: (dispatch, { uuid }) => {
         dispatch<any>(loginAs(uuid));

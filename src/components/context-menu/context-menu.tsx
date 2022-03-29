@@ -10,6 +10,7 @@ export interface ContextMenuItem {
     name?: string | React.ComponentType;
     icon?: IconType;
     component?: React.ComponentType<any>;
+    adminOnly?: boolean;
 }
 
 export type ContextMenuItemGroup = ContextMenuItem[];
