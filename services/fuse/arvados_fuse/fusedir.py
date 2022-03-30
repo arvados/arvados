@@ -525,7 +525,8 @@ class CollectionDirectory(CollectionDirectoryBase):
                         self.collection.update()
                         new_collection_record = self.collection.api_response()
                     else:
-                        get_threads = min(max((self.api.keep.block_cache.cache_max // (64 * 1024 * 1024)) - 1, 1), 16)
+                        # experimentally, 4 block prefetch seems to be optimal.
+                        get_threads = min(max((self.api.keep.block_cache.cache_max // (64 * 1024 * 1024)) - 1, 1), 4)
                         # Create a new collection object
                         if uuid_pattern.match(self.collection_locator):
                             coll_reader = arvados.collection.Collection(
