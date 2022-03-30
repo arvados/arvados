@@ -96,7 +96,7 @@ extra_shell_cron_add_login_sync_add_{{ vm }}_arvados_api_host_insecure_cron_env_
 extra_shell_cron_add_login_sync_add_{{ vm }}_arvados_virtual_machine_uuid_cron_env_present:
   cron.env_present:
     - name: ARVADOS_VIRTUAL_MACHINE_UUID
-    - value: __slot__:salt:cmd.run("cat /tmp/scoped_token_{{ vm }}")
+    - value: __slot__:salt:cmd.run("cat /tmp/vm_uuid_{{ vm }}")
 
 extra_shell_cron_add_login_sync_add_{{ vm }}_arvados_login_sync_cron_present:
   cron.present:
