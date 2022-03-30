@@ -49,6 +49,7 @@ extra_shell_cron_add_login_sync_add_{{ vm }}_get_vm_uuid_cmd_run:
     - env:
       - ARVADOS_API_TOKEN: {{ api_token }}
       - ARVADOS_API_HOST: {{ api_host }}
+      - ARVADOS_API_HOST_INSECURE: {{ arvados.cluster.tls.insecure | default(false) }}
     - name: {{ cmd_query_vm_uuid }} | head -1 | tee /tmp/vm_uuid_{{ vm }}
     - require:
       - cmd: arvados-controller-resources-virtual-machines-{{ vm }}-record-cmd-run
@@ -70,6 +71,7 @@ extra_shell_cron_add_login_sync_add_{{ vm }}_get_scoped_token_cmd_run:
     - env:
       - ARVADOS_API_TOKEN: {{ api_token }}
       - ARVADOS_API_HOST: {{ api_host }}
+      - ARVADOS_API_HOST_INSECURE: {{ arvados.cluster.tls.insecure | default(false) }}
     - name: {{ cmd_query_scoped_token_url }}
     - require:
       - cmd: extra_shell_cron_add_login_sync_add_{{ vm }}_get_vm_uuid_cmd_run
@@ -85,6 +87,11 @@ extra_shell_cron_add_login_sync_add_{{ vm }}_arvados_api_token_cron_env_present:
   cron.env_present:
     - name: ARVADOS_API_TOKEN
     - value: __slot__:salt:cmd.run("cat /tmp/scoped_token_{{ vm }}")
+
+extra_shell_cron_add_login_sync_add_{{ vm }}_arvados_api_host_insecure_cron_env_present:
+  cron.env_present:
+    - name: ARVADOS_API_HOST_INSECURE
+    - value: {{ arvados.cluster.tls.insecure | default(false) }}
 
 extra_shell_cron_add_login_sync_add_{{ vm }}_arvados_virtual_machine_uuid_cron_env_present:
   cron.env_present:
