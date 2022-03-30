@@ -525,9 +525,12 @@ class CollectionDirectory(CollectionDirectoryBase):
                         self.collection.update()
                         new_collection_record = self.collection.api_response()
                     else:
-                        # too much prefetch and you end up stepping on your own transfers
-                        # experimentally the optimal somewhere between 4 and 6
-                        get_threads = min(max((self.api.keep.block_cache.cache_max // (64 * 1024 * 1024)) - 1, 1), 6)
+                        # If there's too many prefetch threads and you
+                        # max out the CPU, delivering data to the FUSE
+                        # layer actually ends up being slower.
+                        # Experimentally, capping 7 threads seems to
+                        # be a sweet spot.
+                        get_threads = min(max((self.api.keep.block_cache.cache_max // (64 * 1024 * 1024)) - 1, 1), 7)
                         # Create a new collection object
                         if uuid_pattern.match(self.collection_locator):
                             coll_reader = arvados.collection.Collection(
