@@ -35,7 +35,7 @@ import { ResourceStatus as WorkflowStatus } from 'views/workflow-panel/workflow-
 import { getUuidPrefix, openRunProcess } from 'store/workflow-panel/workflow-panel-actions';
 import { openSharingDialog } from 'store/sharing-dialog/sharing-dialog-actions';
 import { getUserFullname, getUserDisplayName, User, UserResource } from 'models/user';
-import { toggleIsActive, toggleIsAdmin } from 'store/users/users-actions';
+import { toggleIsAdmin } from 'store/users/users-actions';
 import { LinkClass, LinkResource } from 'models/link';
 import { navigateTo, navigateToGroupDetails, navigateToUserProfile } from 'store/navigation/navigation-action';
 import { withResourceData } from 'views-components/data-explorer/with-resources';
@@ -211,33 +211,11 @@ export const ResourceEmail = connect(
         return resource || { email: '' };
     })(renderEmail);
 
-const renderIsActive = (props: { uuid: string, kind: ResourceKind, isActive: boolean, toggleIsActive: (uuid: string) => void, disabled?: boolean }) => {
-    if (props.kind === ResourceKind.USER) {
-        return <Checkbox
-            color="primary"
-            checked={props.isActive}
-            disabled={!!props.disabled}
-            onClick={(e) => {
-                e.stopPropagation();
-                props.toggleIsActive(props.uuid)
-            }} />;
-    } else {
-        return <Typography />;
-    }
-}
-
-export const ResourceIsActive = connect(
-    (state: RootState, props: { uuid: string, disabled?: boolean }) => {
-        const resource = getResource<UserResource>(props.uuid)(state.resources);
-        return resource ? {...resource, disabled: !!props.disabled} : { isActive: false, kind: ResourceKind.NONE };
-    }, { toggleIsActive }
-)(renderIsActive);
-
 enum UserAccountStatus {
     ACTIVE = 'Active',
     INACTIVE = 'Inactive',
     SETUP = 'Setup',
-    UNKNOWN = 'UNKNOWN'
+    UNKNOWN = ''
 }
 
 const renderAccountStatus = (props: {status: UserAccountStatus}) =>
@@ -252,7 +230,7 @@ const renderAccountStatus = (props: {status: UserAccountStatus}) =>
                     case UserAccountStatus.INACTIVE:
                         return <InactiveIcon style={{color: '#9e9e9e'}} />;
                     default:
-                        return <InactiveIcon />;
+                        return <></>;
                 }
             })()}
         </Grid>
@@ -263,33 +241,31 @@ const renderAccountStatus = (props: {status: UserAccountStatus}) =>
         </Grid>
     </Grid>;
 
-export const UserResourceAccountStatus = connect(
-    (state: RootState, props: { uuid: string }) => {
-        const user = getResource<UserResource>(props.uuid)(state.resources);
-        // Get membership links for all users group
-        const allUsersGroupUuid = getBuiltinGroupUuid(state.auth.localCluster, BuiltinGroups.ALL);
-        const permissions = filterResources((resource: LinkResource) =>
-            resource.kind === ResourceKind.LINK &&
-            resource.linkClass === LinkClass.PERMISSION &&
-            resource.headUuid === allUsersGroupUuid &&
-            resource.tailUuid === props.uuid
-        )(state.resources);
+const getUserAccountStatus = (state: RootState, props: { uuid: string }) => {
+    const user = getResource<UserResource>(props.uuid)(state.resources);
+    // Get membership links for all users group
+    const allUsersGroupUuid = getBuiltinGroupUuid(state.auth.localCluster, BuiltinGroups.ALL);
+    const permissions = filterResources((resource: LinkResource) =>
+        resource.kind === ResourceKind.LINK &&
+        resource.linkClass === LinkClass.PERMISSION &&
+        resource.headUuid === allUsersGroupUuid &&
+        resource.tailUuid === props.uuid
+    )(state.resources);
 
-        if (user) {
-            return user.isActive ? {status: UserAccountStatus.ACTIVE} : permissions.length > 0 ? {status: UserAccountStatus.SETUP} : {status: UserAccountStatus.INACTIVE};
-        } else {
-            return {status: UserAccountStatus.UNKNOWN};
-        }
+    if (user) {
+        return user.isActive ? {status: UserAccountStatus.ACTIVE} : permissions.length > 0 ? {status: UserAccountStatus.SETUP} : {status: UserAccountStatus.INACTIVE};
+    } else {
+        return {status: UserAccountStatus.UNKNOWN};
+    }
+}
+
+export const ResourceLinkTailAccountStatus = connect(
+    (state: RootState, props: { uuid: string }) => {
+        const link = getResource<LinkResource>(props.uuid)(state.resources);
+        return link && link.tailKind === ResourceKind.USER ? getUserAccountStatus(state, {uuid: link.tailUuid}) : {status: UserAccountStatus.UNKNOWN};
     })(renderAccountStatus);
 
-export const ResourceLinkTailIsActive = connect(
-    (state: RootState, props: { uuid: string, disabled?: boolean }) => {
-        const link = getResource<LinkResource>(props.uuid)(state.resources);
-        const tailResource = getResource<UserResource>(link?.tailUuid || '')(state.resources);
-
-        return tailResource ? {...tailResource, disabled: !!props.disabled} : { isActive: false, kind: ResourceKind.NONE };
-    }, { toggleIsActive }
-)(renderIsActive);
+export const UserResourceAccountStatus = connect(getUserAccountStatus)(renderAccountStatus);
 
 const renderIsHidden = (props: {
                             memberLinkUuid: string,

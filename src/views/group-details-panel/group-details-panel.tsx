@@ -7,7 +7,7 @@ import { connect } from 'react-redux';
 
 import { DataExplorer } from "views-components/data-explorer/data-explorer";
 import { DataColumns } from 'components/data-table/data-table';
-import { ResourceLinkHeadUuid, ResourceLinkTailUsername, ResourceLinkHeadPermissionLevel, ResourceLinkTailPermissionLevel, ResourceLinkHead, ResourceLinkTail, ResourceLinkDelete, ResourceLinkTailIsActive, ResourceLinkTailIsVisible } from 'views-components/data-explorer/renderers';
+import { ResourceLinkHeadUuid, ResourceLinkTailUsername, ResourceLinkHeadPermissionLevel, ResourceLinkTailPermissionLevel, ResourceLinkHead, ResourceLinkTail, ResourceLinkDelete, ResourceLinkTailAccountStatus, ResourceLinkTailIsVisible } from 'views-components/data-explorer/renderers';
 import { createTree } from 'models/tree';
 import { noop } from 'lodash/fp';
 import { RootState } from 'store/store';
@@ -31,7 +31,7 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
 export enum GroupDetailsPanelMembersColumnNames {
     FULL_NAME = "Name",
     USERNAME = "Username",
-    ACTIVE = "User Active",
+    STATUS = "Account Status",
     VISIBLE = "Visible to other members",
     PERMISSION = "Permission",
     REMOVE = "Remove",
@@ -60,11 +60,11 @@ export const groupDetailsMembersPanelColumns: DataColumns<string> = [
         render: uuid => <ResourceLinkTailUsername uuid={uuid} />
     },
     {
-        name: GroupDetailsPanelMembersColumnNames.ACTIVE,
+        name: GroupDetailsPanelMembersColumnNames.STATUS,
         selected: true,
         configurable: true,
         filters: createTree(),
-        render: uuid => <ResourceLinkTailIsActive uuid={uuid} disabled={true} />
+        render: uuid => <ResourceLinkTailAccountStatus uuid={uuid} />
     },
     {
         name: GroupDetailsPanelMembersColumnNames.VISIBLE,

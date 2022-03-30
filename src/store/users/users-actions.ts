@@ -133,21 +133,6 @@ export const openUserPanel = () =>
         }
     };
 
-export const toggleIsActive = (uuid: string) =>
-    async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
-        const { resources } = getState();
-        const data = getResource<UserResource>(uuid)(resources);
-        const isActive = data!.isActive;
-        let newActivity;
-        if (isActive) {
-            newActivity = await services.userService.unsetup(uuid);
-        } else {
-            newActivity = await services.userService.update(uuid, { isActive: true });
-        }
-        dispatch<any>(loadUsersPanel());
-        return newActivity;
-    };
-
 export const toggleIsAdmin = (uuid: string) =>
     async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
         const { resources } = getState();
