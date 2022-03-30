@@ -320,7 +320,7 @@ class ArvadosCollectionsTest(run_test_server.TestCaseWithServers,
         def __init__(self, content, num_retries=0):
             self.content = content
 
-        def get(self, locator, num_retries=0):
+        def get(self, locator, num_retries=0, cache_slot_get=None):
             return self.content[locator]
 
     def test_stream_reader(self):

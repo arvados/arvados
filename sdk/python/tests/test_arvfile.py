@@ -27,7 +27,7 @@ class ArvadosFileWriterTestCase(unittest.TestCase):
         def __init__(self, blocks):
             self.blocks = blocks
             self.requests = []
-        def get(self, locator, num_retries=0):
+        def get(self, locator, num_retries=0, cache_slot_get=None):
             self.requests.append(locator)
             return self.blocks.get(locator)
         def get_from_cache(self, locator):
@@ -627,6 +627,7 @@ class ArvadosFileReaderTestCase(StreamFileReaderTestCase):
             def __init__(self, blocks, nocache):
                 self.blocks = blocks
                 self.nocache = nocache
+                self.num_get_threads = 1
 
             def block_prefetch(self, loc):
                 pass

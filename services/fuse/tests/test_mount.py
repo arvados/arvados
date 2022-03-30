@@ -1088,6 +1088,7 @@ class FuseFsyncTest(FuseMagicTest):
 class MagicDirApiError(FuseMagicTest):
     def setUp(self):
         api = mock.MagicMock()
+        api.keep.block_cache = mock.MagicMock(cache_max=1)
         super(MagicDirApiError, self).setUp(api=api)
         api.collections().get().execute.side_effect = iter([
             Exception('API fail'),
