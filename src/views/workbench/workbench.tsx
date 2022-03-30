@@ -81,6 +81,7 @@ import { UserAttributesDialog } from 'views-components/user-dialog/attributes-di
 import { CreateUserDialog } from 'views-components/dialog-forms/create-user-dialog';
 import { HelpApiClientAuthorizationDialog } from 'views-components/api-client-authorizations-dialog/help-dialog';
 import { DeactivateDialog } from 'views-components/user-dialog/deactivate-dialog';
+import { ActivateDialog } from 'views-components/user-dialog/activate-dialog';
 import { SetupDialog } from 'views-components/user-dialog/setup-dialog';
 import { GroupsPanel } from 'views/groups-panel/groups-panel';
 import { RemoveGroupDialog } from 'views-components/groups-dialog/remove-dialog';
@@ -268,6 +269,7 @@ export const WorkbenchPanel =
             <UpdateProjectDialog />
             <UserAttributesDialog />
             <DeactivateDialog />
+            <ActivateDialog />
             <SetupDialog />
             <VirtualMachineAttributesDialog />
             <FedLogin />

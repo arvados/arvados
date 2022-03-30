@@ -15,9 +15,9 @@ import {
     UserResourceFullName,
     ResourceUuid,
     ResourceEmail,
-    ResourceIsActive,
     ResourceIsAdmin,
-    ResourceUsername
+    ResourceUsername,
+    UserResourceAccountStatus,
 } from "views-components/data-explorer/renderers";
 import { navigateToUserProfile } from "store/navigation/navigation-action";
 import { DataTableDefaultView } from 'components/data-table-default-view/data-table-default-view';
@@ -46,7 +46,7 @@ export enum UserPanelColumnNames {
     NAME = "Name",
     UUID = "Uuid",
     EMAIL = "Email",
-    ACTIVE = "Active",
+    STATUS = "Account Status",
     ADMIN = "Admin",
     REDIRECT_TO_USER = "Redirect to user",
     USERNAME = "Username"
@@ -78,11 +78,11 @@ export const userPanelColumns: DataColumns<string> = [
         render: uuid => <ResourceEmail uuid={uuid} />
     },
     {
-        name: UserPanelColumnNames.ACTIVE,
+        name: UserPanelColumnNames.STATUS,
         selected: true,
         configurable: true,
         filters: createTree(),
-        render: uuid => <ResourceIsActive uuid={uuid} />
+        render: uuid => <UserResourceAccountStatus uuid={uuid} />
     },
     {
         name: UserPanelColumnNames.ADMIN,

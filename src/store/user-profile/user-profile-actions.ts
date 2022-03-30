@@ -9,13 +9,18 @@ import { bindDataExplorerActions } from "store/data-explorer/data-explorer-actio
 import { propertiesActions } from 'store/properties/properties-actions';
 import { getProperty } from 'store/properties/properties';
 import { snackbarActions, SnackbarKind } from "store/snackbar/snackbar-actions";
-import { updateResources } from "store/resources/resources-actions";
+import { deleteResources, updateResources } from "store/resources/resources-actions";
 import { dialogActions } from "store/dialog/dialog-actions";
+import { filterResources } from "store/resources/resources";
+import { ResourceKind } from "models/resource";
+import { LinkClass, LinkResource } from "models/link";
+import { BuiltinGroups, getBuiltinGroupUuid } from "models/group";
 
 export const USER_PROFILE_PANEL_ID = 'userProfilePanel';
 export const USER_PROFILE_FORM = 'userProfileForm';
 export const DEACTIVATE_DIALOG = 'deactivateDialog';
 export const SETUP_DIALOG = 'setupDialog';
+export const ACTIVATE_DIALOG = 'activateDialog';
 export const IS_PROFILE_INACCESSIBLE = 'isProfileInaccessible';
 
 export const UserProfileGroupsActions = bindDataExplorerActions(USER_PROFILE_PANEL_ID);
@@ -65,60 +70,97 @@ export const saveEditedUser = (resource: any) =>
       }
   };
 
-export const openDeactivateDialog = (uuid: string) =>
-  (dispatch: Dispatch<any>, getState: () => RootState, services: ServiceRepository) => {
-    dispatch(dialogActions.OPEN_DIALOG({
-      id: DEACTIVATE_DIALOG,
-      data: {
-          title: 'Deactivate user',
-          text: 'Are you sure you want to deactivate this user?',
-          confirmButtonLabel: 'Deactvate',
-          uuid
-      }
-  }));
-}
-
 export const openSetupDialog = (uuid: string) =>
   (dispatch: Dispatch<any>, getState: () => RootState, services: ServiceRepository) => {
     dispatch(dialogActions.OPEN_DIALOG({
       id: SETUP_DIALOG,
       data: {
-          title: 'Setup user',
-          text: 'Are you sure you want to setup this user?',
-          confirmButtonLabel: 'Confirm',
-          uuid
+        title: 'Setup user',
+        text: 'Are you sure you want to setup this user?',
+        confirmButtonLabel: 'Confirm',
+        uuid
       }
-  }));
-}
+    }));
+  };
+
+export const openActivateDialog = (uuid: string) =>
+  (dispatch: Dispatch<any>, getState: () => RootState, services: ServiceRepository) => {
+    dispatch(dialogActions.OPEN_DIALOG({
+      id: ACTIVATE_DIALOG,
+      data: {
+        title: 'Activate user',
+        text: 'Are you sure you want to activate this user?',
+        confirmButtonLabel: 'Confirm',
+        uuid
+      }
+    }));
+  };
+
+export const openDeactivateDialog = (uuid: string) =>
+  (dispatch: Dispatch<any>, getState: () => RootState, services: ServiceRepository) => {
+    dispatch(dialogActions.OPEN_DIALOG({
+      id: DEACTIVATE_DIALOG,
+      data: {
+        title: 'Deactivate user',
+        text: 'Are you sure you want to deactivate this user?',
+        confirmButtonLabel: 'Confirm',
+        uuid
+      }
+    }));
+  };
 
 export const setup = (uuid: string) =>
-    async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
-        try {
-            const resources = await services.userService.setup(uuid);
-            dispatch(updateResources(resources.items));
-            dispatch(snackbarActions.OPEN_SNACKBAR({ message: "User has been setup", hideDuration: 2000, kind: SnackbarKind.SUCCESS }));
-        } catch (e) {
-            dispatch(snackbarActions.OPEN_SNACKBAR({ message: e.message, hideDuration: 2000, kind: SnackbarKind.ERROR }));
-        } finally {
-            dispatch(dialogActions.CLOSE_DIALOG({ id: SETUP_DIALOG }));
-        }
+  async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
+    try {
+      const resources = await services.userService.setup(uuid);
+      dispatch(updateResources(resources.items));
+      dispatch(snackbarActions.OPEN_SNACKBAR({ message: "User has been setup", hideDuration: 2000, kind: SnackbarKind.SUCCESS }));
+    } catch (e) {
+      dispatch(snackbarActions.OPEN_SNACKBAR({ message: e.message, hideDuration: 2000, kind: SnackbarKind.ERROR }));
+    } finally {
+      dispatch(dialogActions.CLOSE_DIALOG({ id: SETUP_DIALOG }));
+    }
+  };
 
-    };
+export const activate = (uuid: string) =>
+  async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
+    try {
+      const user = await services.userService.activate(uuid);
+      dispatch(updateResources([user]));
+      dispatch(snackbarActions.OPEN_SNACKBAR({ message: "User has been activated", hideDuration: 2000, kind: SnackbarKind.SUCCESS }));
+    } catch (e) {
+      dispatch(snackbarActions.OPEN_SNACKBAR({ message: e.message, hideDuration: 2000, kind: SnackbarKind.ERROR }));
+    }
+  };
 
-export const unsetup = (uuid: string) =>
-    async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
-        try {
-          const user = await services.userService.unsetup(uuid);
-          dispatch(updateResources([user]));
-          dispatch(snackbarActions.OPEN_SNACKBAR({
-              message: "User has been deactivated.",
-              hideDuration: 2000,
-              kind: SnackbarKind.SUCCESS
-          }));
-        } catch (e) {
-          dispatch(snackbarActions.OPEN_SNACKBAR({
-              message: "Could not deactivate user",
-              kind: SnackbarKind.ERROR,
-          }));
-        }
-    };
+export const deactivate = (uuid: string) =>
+  async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
+    try {
+      const { resources, auth } = getState();
+      // Call unsetup
+      const user = await services.userService.unsetup(uuid);
+      dispatch(updateResources([user]));
+
+      // Find and remove all users membership
+      const allUsersGroupUuid = getBuiltinGroupUuid(auth.localCluster, BuiltinGroups.ALL);
+      const memberships = filterResources((resource: LinkResource) =>
+          resource.kind === ResourceKind.LINK &&
+          resource.linkClass === LinkClass.PERMISSION &&
+          resource.headUuid === allUsersGroupUuid &&
+          resource.tailUuid === uuid
+      )(resources);
+      // Remove all users membership locally
+      dispatch<any>(deleteResources(memberships.map(link => link.uuid)));
+
+      dispatch(snackbarActions.OPEN_SNACKBAR({
+        message: "User has been deactivated.",
+        hideDuration: 2000,
+        kind: SnackbarKind.SUCCESS
+      }));
+    } catch (e) {
+      dispatch(snackbarActions.OPEN_SNACKBAR({
+        message: "Could not deactivate user",
+        kind: SnackbarKind.ERROR,
+      }));
+    }
+  };

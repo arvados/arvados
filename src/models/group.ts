@@ -25,14 +25,18 @@ export enum GroupClass {
     ROLE  = 'role',
 }
 
-export const BUILTIN_GROUP_IDS = [
-    'fffffffffffffff',
-    'anonymouspublic',
-    '000000000000000',
-]
+export enum BuiltinGroups {
+    ALL = 'fffffffffffffff',
+    ANON = 'anonymouspublic',
+    SYSTEM = '000000000000000',
+}
+
+export const getBuiltinGroupUuid = (cluster: string, groupName: BuiltinGroups): string => {
+    return cluster ? `${cluster}-${ResourceObjectType.GROUP}-${groupName}` : "";
+};
 
 export const isBuiltinGroup = (uuid: string) => {
     const match = RESOURCE_UUID_REGEX.exec(uuid);
     const parts = match ? match[0].split('-') : [];
-    return parts.length === 3 && parts[1] === ResourceObjectType.GROUP && BUILTIN_GROUP_IDS.includes(parts[2]);
+    return parts.length === 3 && parts[1] === ResourceObjectType.GROUP && Object.values<string>(BuiltinGroups).includes(parts[2]);
 };

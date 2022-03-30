@@ -66,8 +66,10 @@ import LinkOutlined from '@material-ui/icons/LinkOutlined';
 import RemoveRedEye from '@material-ui/icons/RemoveRedEye';
 import Computer from '@material-ui/icons/Computer';
 import CropFreeSharp from '@material-ui/icons/CropFreeSharp';
-import Cancel from '@material-ui/icons/Cancel';
 import ExitToApp from '@material-ui/icons/ExitToApp';
+import CheckCircleOutline from '@material-ui/icons/CheckCircleOutline';
+import RemoveCircleOutline from '@material-ui/icons/RemoveCircleOutline';
+import NotInterested from '@material-ui/icons/NotInterested';
 
 // Import FontAwesome icons
 import { library } from '@fortawesome/fontawesome-svg-core';
@@ -175,5 +177,8 @@ export const CanReadIcon: IconType = (props) => <RemoveRedEye {...props} />;
 export const CanWriteIcon: IconType = (props) => <Edit {...props} />;
 export const CanManageIcon: IconType = (props) => <Computer {...props} />;
 export const AddUserIcon: IconType = (props) => <PersonAdd {...props} />;
-export const DeactivateUserIcon: IconType = (props) => <Cancel {...props} />;
+export const DeactivateUserIcon: IconType = (props) => <NotInterested {...props} />;
 export const LoginAsIcon: IconType = (props) => <ExitToApp {...props} />;
+export const ActiveIcon: IconType = (props) => <CheckCircleOutline {...props} />;
+export const SetupIcon: IconType = (props) => <RemoveCircleOutline {...props} />;
+export const InactiveIcon: IconType = (props) => <NotInterested {...props} />;

@@ -6,7 +6,21 @@ import React from 'react';
 import { Grid, Typography, withStyles, Tooltip, IconButton, Checkbox } from '@material-ui/core';
 import { FavoriteStar, PublicFavoriteStar } from '../favorite-star/favorite-star';
 import { Resource, ResourceKind, TrashableResource } from 'models/resource';
-import { ProjectIcon, FilterGroupIcon, CollectionIcon, ProcessIcon, DefaultIcon, ShareIcon, CollectionOldVersionIcon, WorkflowIcon, RemoveIcon, RenameIcon } from 'components/icon/icon';
+import {
+    ProjectIcon,
+    FilterGroupIcon,
+    CollectionIcon,
+    ProcessIcon,
+    DefaultIcon,
+    ShareIcon,
+    CollectionOldVersionIcon,
+    WorkflowIcon,
+    RemoveIcon,
+    RenameIcon,
+    ActiveIcon,
+    SetupIcon,
+    InactiveIcon,
+} from 'components/icon/icon';
 import { formatDate, formatFileSize, formatTime } from 'common/formatters';
 import { resourceLabel } from 'common/labels';
 import { connect, DispatchProp } from 'react-redux';
@@ -28,7 +42,7 @@ import { withResourceData } from 'views-components/data-explorer/with-resources'
 import { CollectionResource } from 'models/collection';
 import { IllegalNamingWarning } from 'components/warning/warning';
 import { loadResource } from 'store/resources/resources-actions';
-import { GroupClass, GroupResource, isBuiltinGroup } from 'models/group';
+import { BuiltinGroups, getBuiltinGroupUuid, GroupClass, GroupResource, isBuiltinGroup } from 'models/group';
 import { openRemoveGroupMemberDialog } from 'store/group-details-panel/group-details-panel-actions';
 import { setMemberIsHidden } from 'store/group-details-panel/group-details-panel-actions';
 import { formatPermissionLevel } from 'views-components/sharing-dialog/permission-select';
@@ -218,6 +232,55 @@ export const ResourceIsActive = connect(
         return resource ? {...resource, disabled: !!props.disabled} : { isActive: false, kind: ResourceKind.NONE };
     }, { toggleIsActive }
 )(renderIsActive);
+
+enum UserAccountStatus {
+    ACTIVE = 'Active',
+    INACTIVE = 'Inactive',
+    SETUP = 'Setup',
+    UNKNOWN = 'UNKNOWN'
+}
+
+const renderAccountStatus = (props: {status: UserAccountStatus}) =>
+    <Grid container alignItems="center" wrap="nowrap" spacing={8}>
+        <Grid item>
+            {(() => {
+                switch(props.status) {
+                    case UserAccountStatus.ACTIVE:
+                        return <ActiveIcon style={{color: '#4caf50'}} />;
+                    case UserAccountStatus.SETUP:
+                        return <SetupIcon style={{color: '#2196f3'}} />;
+                    case UserAccountStatus.INACTIVE:
+                        return <InactiveIcon style={{color: '#9e9e9e'}} />;
+                    default:
+                        return <InactiveIcon />;
+                }
+            })()}
+        </Grid>
+        <Grid item>
+            <Typography noWrap>
+                {props.status}
+            </Typography>
+        </Grid>
+    </Grid>;
+
+export const UserResourceAccountStatus = connect(
+    (state: RootState, props: { uuid: string }) => {
+        const user = getResource<UserResource>(props.uuid)(state.resources);
+        // Get membership links for all users group
+        const allUsersGroupUuid = getBuiltinGroupUuid(state.auth.localCluster, BuiltinGroups.ALL);
+        const permissions = filterResources((resource: LinkResource) =>
+            resource.kind === ResourceKind.LINK &&
+            resource.linkClass === LinkClass.PERMISSION &&
+            resource.headUuid === allUsersGroupUuid &&
+            resource.tailUuid === props.uuid
+        )(state.resources);
+
+        if (user) {
+            return user.isActive ? {status: UserAccountStatus.ACTIVE} : permissions.length > 0 ? {status: UserAccountStatus.SETUP} : {status: UserAccountStatus.INACTIVE};
+        } else {
+            return {status: UserAccountStatus.UNKNOWN};
+        }
+    })(renderAccountStatus);
 
 export const ResourceLinkTailIsActive = connect(
     (state: RootState, props: { uuid: string, disabled?: boolean }) => {

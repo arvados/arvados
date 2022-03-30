@@ -80,6 +80,10 @@ export const getConfig = (dispatch: Dispatch, getState: () => RootState, service
     return state.remoteHostsConfig[state.localCluster];
 };
 
+export const getLocalCluster = (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository): string => {
+    return getState().auth.localCluster;
+};
+
 export const saveApiToken = (token: string) => async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository): Promise<any> => {
     let config: any;
     const tokenParts = token.split('/');

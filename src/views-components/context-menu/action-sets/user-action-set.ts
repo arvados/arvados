@@ -11,10 +11,11 @@ import {
     UserPanelIcon,
     LoginAsIcon,
     AdminMenuIcon,
+    ActiveIcon,
 } from "components/icon/icon";
 import { openAdvancedTabDialog } from 'store/advanced-tab/advanced-tab';
 import { loginAs, openUserAttributes, openUserProjects } from "store/users/users-actions";
-import { openSetupDialog, openDeactivateDialog } from "store/user-profile/user-profile-actions";
+import { openSetupDialog, openDeactivateDialog, openActivateDialog } from "store/user-profile/user-profile-actions";
 import { navigateToUserProfile } from "store/navigation/navigation-action";
 
 export const userActionSet: ContextMenuActionSet = [[{
@@ -37,12 +38,17 @@ export const userActionSet: ContextMenuActionSet = [[{
     }
 }, {
     name: "Account Settings",
-    adminOnly: true,
     icon: UserPanelIcon,
     execute: (dispatch, { uuid }) => {
         dispatch<any>(navigateToUserProfile(uuid));
     }
-}, {
+},], [{
+    name: "Activate User",
+    icon: ActiveIcon,
+    execute: (dispatch, { uuid }) => {
+        dispatch<any>(openActivateDialog(uuid));
+    }
+},{
     name: "Setup User",
     adminOnly: true,
     icon: AdminMenuIcon,

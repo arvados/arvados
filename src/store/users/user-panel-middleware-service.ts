@@ -17,6 +17,8 @@ import { userBindedActions } from 'store/users/users-actions';
 import { getSortColumn } from "store/data-explorer/data-explorer-reducer";
 import { UserResource } from 'models/user';
 import { UserPanelColumnNames } from 'views/user-panel/user-panel';
+import { BuiltinGroups, getBuiltinGroupUuid } from 'models/group';
+import { LinkClass } from 'models/link';
 
 export class UserMiddlewareService extends DataExplorerMiddlewareService {
     constructor(private services: ServiceRepository, id: string) {
@@ -36,6 +38,15 @@ export class UserMiddlewareService extends DataExplorerMiddlewareService {
                 api.dispatch(updateResources(responseLastName.items));
                 api.dispatch(setItems(responseLastName));
             }
+            // Get "all users" group memberships
+            const allUsersGroupUuid = getBuiltinGroupUuid(state.auth.localCluster, BuiltinGroups.ALL);
+            const allUserMemberships = await this.services.permissionService.list({
+                filters: new FilterBuilder()
+                    .addEqual('head_uuid', allUsersGroupUuid)
+                    .addEqual('link_class', LinkClass.PERMISSION)
+                    .getFilters()
+            });
+            api.dispatch(updateResources(allUserMemberships.items));
         } catch {
             api.dispatch(couldNotFetchUsers());
         }
