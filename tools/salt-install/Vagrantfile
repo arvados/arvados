@@ -89,7 +89,7 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
                                     s#HOSTNAME_EXT=\"hostname_ext_fixme_or_this_wont_work\"#HOSTNAME_EXT=\"cnts7.local\"#g;
                                     s#IP_INT=\"ip_int_fixme_or_this_wont_work\"#IP_INT=\"127.0.0.1\"#g;
                                     s#RELEASE=\"production\"#RELEASE=\"development\"#g;
-                                    s/# BRANCH=\"main\"/BRANCH=\"main\"/g;
+                                    s/# BRANCH=\"main\"/BRANCH=\"18631-shell-login-sync\"/g;
                                     s/# VERSION=.*$/VERSION=\"latest\"/g' \
                                     /vagrant/local.params.example.single_host_single_hostname > /tmp/local.params.single_host_single_hostname"
 
