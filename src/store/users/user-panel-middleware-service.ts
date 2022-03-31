@@ -29,15 +29,10 @@ export class UserMiddlewareService extends DataExplorerMiddlewareService {
         const state = api.getState();
         const dataExplorer = getDataExplorer(state.dataExplorer, this.getId());
         try {
-            const responseFirstName = await this.services.userService.list(getParamsFirstName(dataExplorer));
-            if (responseFirstName.itemsAvailable) {
-                api.dispatch(updateResources(responseFirstName.items));
-                api.dispatch(setItems(responseFirstName));
-            } else {
-                const responseLastName = await this.services.userService.list(getParamsLastName(dataExplorer));
-                api.dispatch(updateResources(responseLastName.items));
-                api.dispatch(setItems(responseLastName));
-            }
+            const users = await this.services.userService.list(getParams(dataExplorer));
+            api.dispatch(updateResources(users.items));
+            api.dispatch(setItems(users));
+
             // Get "all users" group memberships
             const allUsersGroupUuid = getBuiltinGroupUuid(state.auth.localCluster, BuiltinGroups.ALL);
             const allUserMemberships = await this.services.permissionService.list({
@@ -53,31 +48,13 @@ export class UserMiddlewareService extends DataExplorerMiddlewareService {
     }
 }
 
-const getParamsFirstName = (dataExplorer: DataExplorer) => ({
+const getParams = (dataExplorer: DataExplorer) => ({
     ...dataExplorerToListParams(dataExplorer),
     order: getOrder(dataExplorer),
-    filters: getFiltersFirstName(dataExplorer)
+    filters: new FilterBuilder()
+        .addFullTextSearch(dataExplorer.searchValue)
+        .getFilters()
 });
-
-const getParamsLastName = (dataExplorer: DataExplorer) => ({
-    ...dataExplorerToListParams(dataExplorer),
-    order: getOrder(dataExplorer),
-    filters: getFiltersLastName(dataExplorer)
-});
-
-const getFiltersFirstName = (dataExplorer: DataExplorer) => {
-    const filters = new FilterBuilder()
-        .addILike("first_name", dataExplorer.searchValue)
-        .getFilters();
-    return filters;
-};
-
-const getFiltersLastName = (dataExplorer: DataExplorer) => {
-    const filters = new FilterBuilder()
-        .addILike("last_name", dataExplorer.searchValue)
-        .getFilters();
-    return filters;
-};
 
 export const getOrder = (dataExplorer: DataExplorer) => {
     const sortColumn = getSortColumn(dataExplorer);
