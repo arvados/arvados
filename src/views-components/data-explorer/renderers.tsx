@@ -225,11 +225,11 @@ const renderAccountStatus = (props: {status: UserAccountStatus}) =>
             {(() => {
                 switch(props.status) {
                     case UserAccountStatus.ACTIVE:
-                        return <ActiveIcon style={{color: '#4caf50'}} />;
+                        return <ActiveIcon style={{color: '#4caf50', verticalAlign: "middle"}} />;
                     case UserAccountStatus.SETUP:
-                        return <SetupIcon style={{color: '#2196f3'}} />;
+                        return <SetupIcon style={{color: '#2196f3', verticalAlign: "middle"}} />;
                     case UserAccountStatus.INACTIVE:
-                        return <InactiveIcon style={{color: '#9e9e9e'}} />;
+                        return <InactiveIcon style={{color: '#9e9e9e', verticalAlign: "middle"}} />;
                     default:
                         return <></>;
                 }

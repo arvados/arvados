@@ -30,7 +30,7 @@ import { USER_PROFILE_PANEL_ID } from 'store/user-profile/user-profile-actions';
 import { noop } from 'lodash';
 import { DetailsIcon, GroupsIcon, MoreOptionsIcon } from 'components/icon/icon';
 import { DataColumns } from 'components/data-table/data-table';
-import { ResourceLinkHeadUuid, ResourceLinkHeadPermissionLevel, ResourceLinkHead, ResourceLinkDelete, ResourceLinkTailIsVisible } from 'views-components/data-explorer/renderers';
+import { ResourceLinkHeadUuid, ResourceLinkHeadPermissionLevel, ResourceLinkHead, ResourceLinkDelete, ResourceLinkTailIsVisible, UserResourceAccountStatus } from 'views-components/data-explorer/renderers';
 import { createTree } from 'models/tree';
 import { getResource, ResourcesState } from 'store/resources/resources';
 import { DefaultView } from 'components/default-view/default-view';
@@ -205,21 +205,26 @@ export const UserProfilePanelRoot = withStyles(styles)(
                     {this.state.value === TABS.PROFILE &&
                         <CardContent>
                             <Grid container justify="space-between">
-                                <Grid item xs={11}>
+                                <Grid item>
                                     <Typography className={this.props.classes.title}>
                                         {this.props.userUuid}
                                         <CopyToClipboardSnackbar value={this.props.userUuid} />
                                     </Typography>
                                 </Grid>
-                                <Grid item xs={1} style={{ textAlign: "right" }}>
-                                    <Tooltip title="Actions" disableFocusListener>
-                                        <IconButton
-                                            data-cy='collection-panel-options-btn'
-                                            aria-label="Actions"
-                                            onClick={(event) => this.handleContextMenu(event, this.props.userUuid)}>
-                                            <MoreOptionsIcon />
-                                        </IconButton>
-                                    </Tooltip>
+                                <Grid item>
+                                    <Grid container alignItems="center">
+                                        <Grid item style={{marginRight: '10px'}}><UserResourceAccountStatus uuid={this.props.userUuid} /></Grid>
+                                        <Grid item>
+                                            <Tooltip title="Actions" disableFocusListener>
+                                                <IconButton
+                                                    data-cy='collection-panel-options-btn'
+                                                    aria-label="Actions"
+                                                    onClick={(event) => this.handleContextMenu(event, this.props.userUuid)}>
+                                                    <MoreOptionsIcon />
+                                                </IconButton>
+                                            </Tooltip>
+                                        </Grid>
+                                    </Grid>
                                 </Grid>
                             </Grid>
                             <form onSubmit={this.props.handleSubmit} data-cy="profile-form">
