@@ -44,6 +44,7 @@ export const userActionSet: ContextMenuActionSet = [[{
     }
 },], [{
     name: "Activate User",
+    adminOnly: true,
     icon: ActiveIcon,
     execute: (dispatch, { uuid }) => {
         dispatch<any>(openActivateDialog(uuid));

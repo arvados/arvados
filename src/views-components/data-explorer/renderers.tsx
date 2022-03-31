@@ -220,7 +220,7 @@ enum UserAccountStatus {
 }
 
 const renderAccountStatus = (props: {status: UserAccountStatus}) =>
-    <Grid container alignItems="center" wrap="nowrap" spacing={8}>
+    <Grid container alignItems="center" wrap="nowrap" spacing={8} data-cy="account-status">
         <Grid item>
             {(() => {
                 switch(props.status) {

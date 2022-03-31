@@ -217,7 +217,7 @@ export const UserProfilePanelRoot = withStyles(styles)(
                                         <Grid item>
                                             <Tooltip title="Actions" disableFocusListener>
                                                 <IconButton
-                                                    data-cy='collection-panel-options-btn'
+                                                    data-cy='user-profile-panel-options-btn'
                                                     aria-label="Actions"
                                                     onClick={(event) => this.handleContextMenu(event, this.props.userUuid)}>
                                                     <MoreOptionsIcon />

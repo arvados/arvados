@@ -114,6 +114,10 @@ export const setup = (uuid: string) =>
     try {
       const resources = await services.userService.setup(uuid);
       dispatch(updateResources(resources.items));
+
+      // Refresh data explorer
+      dispatch(UserProfileGroupsActions.REQUEST_ITEMS());
+
       dispatch(snackbarActions.OPEN_SNACKBAR({ message: "User has been setup", hideDuration: 2000, kind: SnackbarKind.SUCCESS }));
     } catch (e) {
       dispatch(snackbarActions.OPEN_SNACKBAR({ message: e.message, hideDuration: 2000, kind: SnackbarKind.ERROR }));
@@ -127,6 +131,10 @@ export const activate = (uuid: string) =>
     try {
       const user = await services.userService.activate(uuid);
       dispatch(updateResources([user]));
+
+      // Refresh data explorer
+      dispatch(UserProfileGroupsActions.REQUEST_ITEMS());
+
       dispatch(snackbarActions.OPEN_SNACKBAR({ message: "User has been activated", hideDuration: 2000, kind: SnackbarKind.SUCCESS }));
     } catch (e) {
       dispatch(snackbarActions.OPEN_SNACKBAR({ message: e.message, hideDuration: 2000, kind: SnackbarKind.ERROR }));
@@ -151,6 +159,9 @@ export const deactivate = (uuid: string) =>
       )(resources);
       // Remove all users membership locally
       dispatch<any>(deleteResources(memberships.map(link => link.uuid)));
+
+      // Refresh data explorer
+      dispatch(UserProfileGroupsActions.REQUEST_ITEMS());
 
       dispatch(snackbarActions.OPEN_SNACKBAR({
         message: "User has been deactivated.",
