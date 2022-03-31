@@ -228,16 +228,16 @@ export const UserProfilePanelRoot = withStyles(styles)(
                                         <Field
                                             label="First name"
                                             name="firstName"
-                                            component={ReadOnlyField as any}
-                                            disabled
+                                            component={TextField as any}
+                                            disabled={!this.props.isAdmin && !this.props.isSelf}
                                         />
                                     </Grid>
                                     <Grid item className={this.props.classes.gridItem} sm={6} xs={12} data-cy="lastName">
                                         <Field
                                             label="Last name"
                                             name="lastName"
-                                            component={ReadOnlyField as any}
-                                            disabled
+                                            component={TextField as any}
+                                            disabled={!this.props.isAdmin && !this.props.isSelf}
                                         />
                                     </Grid>
                                     <Grid item className={this.props.classes.gridItem} sm={6} xs={12} data-cy="email">
@@ -289,7 +289,6 @@ export const UserProfilePanelRoot = withStyles(styles)(
                                             name="prefs.profile.website_url"
                                             component={TextField as any}
                                             disabled={!this.props.isAdmin && !this.props.isSelf}
-
                                         />
                                     </Grid>
                                     <Grid item sm={12}>
