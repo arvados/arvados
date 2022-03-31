@@ -47,8 +47,6 @@ extra_shell_cron_add_login_sync_add_{{ vm }}_get_vm_uuid_cmd_run:
       - ARVADOS_API_HOST: {{ api_host }}
       - ARVADOS_API_HOST_INSECURE: {{ arvados.cluster.tls.insecure | default(false) }}
     - name: {{ cmd_query_vm_uuid }} | head -1 | tee /tmp/vm_uuid_{{ vm }}
-    - require:
-      - cmd: arvados-controller-resources-virtual-machines-{{ vm }}-record-cmd-run
     - unless:
       - /bin/grep -qE "[a-z0-9]{5}-2x53u-[a-z0-9]{15}" /tmp/vm_uuid_{{ vm }}
 
@@ -56,26 +54,36 @@ extra_shell_cron_add_login_sync_add_{{ vm }}_arvados_api_host_cron_env_present:
   cron.env_present:
     - name: ARVADOS_API_HOST
     - value: {{ api_host }}
+    - onlyif:
+      - /bin/grep -qE "[a-z0-9]{5}-2x53u-[a-z0-9]{15}" /tmp/vm_uuid_{{ vm }}
 
 extra_shell_cron_add_login_sync_add_{{ vm }}_arvados_api_token_cron_env_present:
   cron.env_present:
     - name: ARVADOS_API_TOKEN
     - value: {{ api_token }}
+    - onlyif:
+      - /bin/grep -qE "[a-z0-9]{5}-2x53u-[a-z0-9]{15}" /tmp/vm_uuid_{{ vm }}
 
 extra_shell_cron_add_login_sync_add_{{ vm }}_arvados_api_host_insecure_cron_env_present:
   cron.env_present:
     - name: ARVADOS_API_HOST_INSECURE
     - value: {{ arvados.cluster.tls.insecure | default(false) }}
+    - onlyif:
+      - /bin/grep -qE "[a-z0-9]{5}-2x53u-[a-z0-9]{15}" /tmp/vm_uuid_{{ vm }}
 
 extra_shell_cron_add_login_sync_add_{{ vm }}_arvados_virtual_machine_uuid_cron_env_present:
   cron.env_present:
     - name: ARVADOS_VIRTUAL_MACHINE_UUID
     - value: __slot__:salt:cmd.run("cat /tmp/vm_uuid_{{ vm }}")
+    - onlyif:
+      - /bin/grep -qE "[a-z0-9]{5}-2x53u-[a-z0-9]{15}" /tmp/vm_uuid_{{ vm }}
 
 extra_shell_cron_add_login_sync_add_{{ vm }}_arvados_login_sync_cron_present:
   cron.present:
     - name: arvados-login-sync
     - minute: '*/2'
+    - onlyif:
+      - /bin/grep -qE "[a-z0-9]{5}-2x53u-[a-z0-9]{15}" /tmp/vm_uuid_{{ vm }}
 
   {%- endif %}
 {%- endfor %}
