@@ -14,7 +14,7 @@ import { sortByProperty } from "common/array-utils";
 type DataProps = Pick<ContextMenuProps, "anchorEl" | "items" | "open"> & { resource?: ContextMenuResource };
 const mapStateToProps = (state: RootState): DataProps => {
     const { open, position, resource } = state.contextMenu;
-    const isAdmin = state.auth.user!.isAdmin;
+    const isAdmin = state.auth.user?.isAdmin;
     return {
         anchorEl: resource ? createAnchorAt(position) : undefined,
         items: getMenuActionSet(resource, isAdmin),
