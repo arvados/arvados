@@ -25,7 +25,7 @@ import {
 } from '@material-ui/core';
 import { ArvadosTheme } from 'common/custom-theme';
 import { DataTableDefaultView } from 'components/data-table-default-view/data-table-default-view';
-import { PROFILE_EMAIL_VALIDATION } from "validators/validators";
+import { PROFILE_EMAIL_VALIDATION, PROFILE_URL_VALIDATION } from "validators/validators";
 import { USER_PROFILE_PANEL_ID } from 'store/user-profile/user-profile-actions';
 import { noop } from 'lodash';
 import { DetailsIcon, GroupsIcon, MoreOptionsIcon } from 'components/icon/icon';
@@ -289,6 +289,7 @@ export const UserProfilePanelRoot = withStyles(styles)(
                                             name="prefs.profile.website_url"
                                             component={TextField as any}
                                             disabled={!this.props.isAdmin && !this.props.isSelf}
+                                            validate={PROFILE_URL_VALIDATION}
                                         />
                                     </Grid>
                                     <Grid item sm={12}>
