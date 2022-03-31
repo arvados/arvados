@@ -50,6 +50,7 @@ import { PermissionLevel } from 'models/permission';
 import { openPermissionEditContextMenu } from 'store/context-menu/context-menu-actions';
 import { getUserUuid } from 'common/getuser';
 import { VirtualMachinesResource } from 'models/virtual-machines';
+import { CopyToClipboardSnackbar } from 'components/copy-to-clipboard-snackbar/copy-to-clipboard-snackbar';
 
 const renderName = (dispatch: Dispatch, item: GroupContentsResource) => {
 
@@ -192,15 +193,15 @@ export const UserResourceFullName = connect(
         return {item: resource || { uuid: '', firstName: '', lastName: '' }, link: props.link};
     })((props: {item: {uuid: string, firstName: string, lastName: string}, link?: boolean} & DispatchProp<any>) => renderFullName(props.dispatch, props.item, props.link));
 
-
 const renderUuid = (item: { uuid: string }) =>
-    <Typography data-cy="uuid" noWrap>{item.uuid}</Typography>;
+    <Typography data-cy="uuid" noWrap>
+        {item.uuid}
+        <CopyToClipboardSnackbar value={item.uuid} />
+    </Typography>;
 
-export const ResourceUuid = connect(
-    (state: RootState, props: { uuid: string }) => {
-        const resource = getResource<UserResource>(props.uuid)(state.resources);
-        return resource || { uuid: '' };
-    })(renderUuid);
+export const ResourceUuid = connect((state: RootState, props: { uuid: string }) => (
+        getResource<UserResource>(props.uuid)(state.resources) || { uuid: '' }
+    ))(renderUuid);
 
 const renderEmail = (item: { email: string }) =>
     <Typography noWrap>{item.email}</Typography>;

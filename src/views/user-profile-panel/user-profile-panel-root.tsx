@@ -28,14 +28,13 @@ import { DataTableDefaultView } from 'components/data-table-default-view/data-ta
 import { PROFILE_EMAIL_VALIDATION } from "validators/validators";
 import { USER_PROFILE_PANEL_ID } from 'store/user-profile/user-profile-actions';
 import { noop } from 'lodash';
-import { CopyIcon, DetailsIcon, GroupsIcon, MoreOptionsIcon } from 'components/icon/icon';
+import { DetailsIcon, GroupsIcon, MoreOptionsIcon } from 'components/icon/icon';
 import { DataColumns } from 'components/data-table/data-table';
 import { ResourceLinkHeadUuid, ResourceLinkHeadPermissionLevel, ResourceLinkHead, ResourceLinkDelete, ResourceLinkTailIsVisible } from 'views-components/data-explorer/renderers';
 import { createTree } from 'models/tree';
 import { getResource, ResourcesState } from 'store/resources/resources';
-import { snackbarActions, SnackbarKind } from 'store/snackbar/snackbar-actions';
-import CopyToClipboard from 'react-copy-to-clipboard';
 import { DefaultView } from 'components/default-view/default-view';
+import { CopyToClipboardSnackbar } from 'components/copy-to-clipboard-snackbar/copy-to-clipboard-snackbar';
 
 type CssRules = 'root' | 'emptyRoot' | 'gridItem' | 'label' | 'readOnlyValue' | 'title' | 'description' | 'actions' | 'content' | 'copyIcon';
 
@@ -188,14 +187,6 @@ export const UserProfilePanelRoot = withStyles(styles)(
             this.setState({ value: TABS.PROFILE});
         }
 
-        onCopy = (message: string) => {
-            this.props.dispatch(snackbarActions.OPEN_SNACKBAR({
-                message,
-                hideDuration: 2000,
-                kind: SnackbarKind.SUCCESS
-            }));
-        }
-
         render() {
             if (this.props.isInaccessible) {
                 return (
@@ -217,13 +208,7 @@ export const UserProfilePanelRoot = withStyles(styles)(
                                 <Grid item xs={11}>
                                     <Typography className={this.props.classes.title}>
                                         {this.props.userUuid}
-                                        <Tooltip title="Copy to clipboard">
-                                            <span className={this.props.classes.copyIcon}>
-                                                <CopyToClipboard text={this.props.userUuid || ""} onCopy={() => this.onCopy!("Copied")}>
-                                                    <CopyIcon />
-                                                </CopyToClipboard>
-                                            </span>
-                                        </Tooltip>
+                                        <CopyToClipboardSnackbar value={this.props.userUuid} />
                                     </Typography>
                                 </Grid>
                                 <Grid item xs={1} style={{ textAlign: "right" }}>
