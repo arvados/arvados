@@ -1036,9 +1036,10 @@ class KeepClient(object):
         else:
             return None
 
-    def get_from_cache(self, loc):
+    def get_from_cache(self, loc_s):
         """Fetch a block only if is in the cache, otherwise return None."""
-        slot = self.block_cache.get(loc)
+        locator = KeepLocator(loc_s)
+        slot = self.block_cache.get(locator.md5sum)
         if slot is not None and slot.ready.is_set():
             return slot.get()
         else:
@@ -1057,7 +1058,7 @@ class KeepClient(object):
     def get(self, loc_s, **kwargs):
         return self._get_or_head(loc_s, method="GET", **kwargs)
 
-    def _get_or_head(self, loc_s, method="GET", num_retries=None, request_id=None, headers=None):
+    def _get_or_head(self, loc_s, method="GET", num_retries=None, request_id=None, headers=None, prefetch=False):
         """Get data from Keep.
 
         This method fetches one or more blocks of data from Keep.  It
@@ -1096,6 +1097,13 @@ class KeepClient(object):
             if method == "GET":
                 slot, first = self.block_cache.reserve_cache(locator.md5sum)
                 if not first:
+                    if prefetch:
+                        # this is request for a prefetch, if it is
+                        # already in flight, return immediately.
+                        # clear 'slot' to prevent finally block from
+                        # calling slot.set()
+                        slot = None
+                        return None
                     self.hits_counter.add(1)
                     blob = slot.get()
                     if blob is None:
@@ -1332,6 +1340,3 @@ class KeepClient(object):
             return True
         if os.path.exists(os.path.join(self.local_store, locator.md5sum)):
             return True
-
-    def is_cached(self, locator):
-        return self.block_cache.reserve_cache(expect_hash)

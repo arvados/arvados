@@ -588,6 +588,23 @@ func (rtr *router) addRoute(endpoint arvados.APIEndpoint, defaultOpts func() int
 			"apiOptsType": fmt.Sprintf("%T", opts),
 			"apiOpts":     opts,
 		}).Debug("exec")
+		// Extract the token UUIDs (or a placeholder for v1 tokens)
+		var tokenUUIDs []string
+		for _, t := range creds.Tokens {
+			if strings.HasPrefix(t, "v2/") {
+				tokenParts := strings.Split(t, "/")
+				if len(tokenParts) >= 3 {
+					tokenUUIDs = append(tokenUUIDs, tokenParts[1])
+				}
+			} else {
+				end := t
+				if len(t) > 5 {
+					end = t[len(t)-5:]
+				}
+				tokenUUIDs = append(tokenUUIDs, "v1 token ending in "+end)
+			}
+		}
+		httpserver.SetResponseLogFields(req.Context(), logrus.Fields{"tokenUUIDs": tokenUUIDs})
 		resp, err := exec(ctx, opts)
 		if err != nil {
 			logger.WithError(err).Debugf("returning error type %T", err)
