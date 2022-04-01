@@ -1905,10 +1905,10 @@ CREATE UNIQUE INDEX index_authorized_keys_on_uuid ON public.authorized_keys USIN
 
 
 --
--- Name: index_collections_on_created_at; Type: INDEX; Schema: public; Owner: -
+-- Name: index_collections_on_created_at_and_uuid; Type: INDEX; Schema: public; Owner: -
 --
 
-CREATE INDEX index_collections_on_created_at ON public.collections USING btree (created_at);
+CREATE INDEX index_collections_on_created_at_and_uuid ON public.collections USING btree (created_at, uuid);
 
 
 --
@@ -2094,10 +2094,10 @@ CREATE UNIQUE INDEX index_frozen_groups_on_uuid ON public.frozen_groups USING bt
 
 
 --
--- Name: index_groups_on_created_at; Type: INDEX; Schema: public; Owner: -
+-- Name: index_groups_on_created_at_and_uuid; Type: INDEX; Schema: public; Owner: -
 --
 
-CREATE INDEX index_groups_on_created_at ON public.groups USING btree (created_at);
+CREATE INDEX index_groups_on_created_at_and_uuid ON public.groups USING btree (created_at, uuid);
 
 
 --
@@ -2360,10 +2360,10 @@ CREATE UNIQUE INDEX index_keep_services_on_uuid ON public.keep_services USING bt
 
 
 --
--- Name: index_links_on_created_at; Type: INDEX; Schema: public; Owner: -
+-- Name: index_links_on_created_at_and_uuid; Type: INDEX; Schema: public; Owner: -
 --
 
-CREATE INDEX index_links_on_created_at ON public.links USING btree (created_at);
+CREATE INDEX index_links_on_created_at_and_uuid ON public.links USING btree (created_at, uuid);
 
 
 --
@@ -2423,10 +2423,10 @@ CREATE UNIQUE INDEX index_links_on_uuid ON public.links USING btree (uuid);
 
 
 --
--- Name: index_logs_on_created_at; Type: INDEX; Schema: public; Owner: -
+-- Name: index_logs_on_created_at_and_uuid; Type: INDEX; Schema: public; Owner: -
 --
 
-CREATE INDEX index_logs_on_created_at ON public.logs USING btree (created_at);
+CREATE INDEX index_logs_on_created_at_and_uuid ON public.logs USING btree (created_at, uuid);
 
 
 --
@@ -2689,10 +2689,10 @@ CREATE UNIQUE INDEX index_trashed_groups_on_group_uuid ON public.trashed_groups 
 
 
 --
--- Name: index_users_on_created_at; Type: INDEX; Schema: public; Owner: -
+-- Name: index_users_on_created_at_and_uuid; Type: INDEX; Schema: public; Owner: -
 --
 
-CREATE INDEX index_users_on_created_at ON public.users USING btree (created_at);
+CREATE INDEX index_users_on_created_at_and_uuid ON public.users USING btree (created_at, uuid);
 
 
 --
@@ -3185,6 +3185,7 @@ INSERT INTO "schema_migrations" (version) VALUES
 ('20211027154300'),
 ('20220224203102'),
 ('20220301155729'),
-('20220303204419');
+('20220303204419'),
+('20220401153101');
 
 
