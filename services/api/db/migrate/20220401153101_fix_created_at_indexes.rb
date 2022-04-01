@@ -8,24 +8,26 @@ class FixCreatedAtIndexes < ActiveRecord::Migration[5.2]
   def up
     @@idxtables.each do |table|
       ActiveRecord::Base.connection.execute("DROP INDEX IF EXISTS index_#{table.to_s}_on_created_at")
-      ActiveRecord::Base.connection.execute("DROP INDEX IF EXISTS index_#{table.to_s}_on_created_at_uuid")
+      ActiveRecord::Base.connection.execute("DROP INDEX IF EXISTS index_#{table.to_s}_on_created_at_and_uuid")
       ActiveRecord::Base.connection.execute("DROP INDEX IF EXISTS index_#{table.to_s}_on_modified_at")
       ActiveRecord::Base.connection.execute("DROP INDEX IF EXISTS index_#{table.to_s}_on_modified_at_uuid")
+      ActiveRecord::Base.connection.execute("DROP INDEX IF EXISTS index_#{table.to_s}_on_modified_at_and_uuid")
 
-      ActiveRecord::Base.connection.execute("CREATE INDEX index_#{table.to_s}_on_created_at_uuid ON #{table.to_s} USING btree  (created_at, uuid)")
-      ActiveRecord::Base.connection.execute("CREATE INDEX index_#{table.to_s}_on_modified_at_uuid ON #{table.to_s} USING btree (modified_at desc, uuid desc)")
+      ActiveRecord::Base.connection.execute("CREATE INDEX IF NOT EXISTS index_#{table.to_s}_on_created_at_and_uuid ON #{table.to_s} USING btree (created_at, uuid)")
+      ActiveRecord::Base.connection.execute("CREATE INDEX IF NOT EXISTS index_#{table.to_s}_on_modified_at_and_uuid ON #{table.to_s} USING btree (modified_at desc, uuid desc)")
     end
   end
 
   def down
     @@idxtables.each do |table|
       ActiveRecord::Base.connection.execute("DROP INDEX IF EXISTS index_#{table.to_s}_on_created_at")
-      ActiveRecord::Base.connection.execute("DROP INDEX IF EXISTS index_#{table.to_s}_on_created_at_uuid")
+      ActiveRecord::Base.connection.execute("DROP INDEX IF EXISTS index_#{table.to_s}_on_created_at_and_uuid")
       ActiveRecord::Base.connection.execute("DROP INDEX IF EXISTS index_#{table.to_s}_on_modified_at")
       ActiveRecord::Base.connection.execute("DROP INDEX IF EXISTS index_#{table.to_s}_on_modified_at_uuid")
+      ActiveRecord::Base.connection.execute("DROP INDEX IF EXISTS index_#{table.to_s}_on_modified_at_and_uuid")
 
-      ActiveRecord::Base.connection.execute("CREATE INDEX index_#{table.to_s}_on_created_at ON #{table.to_s} USING btree  (created_at)")
-      ActiveRecord::Base.connection.execute("CREATE INDEX index_#{table.to_s}_on_modified_at_uuid ON #{table.to_s} USING btree (modified_at desc, uuid asc)")
+      ActiveRecord::Base.connection.execute("CREATE INDEX IF NOT EXISTS index_#{table.to_s}_on_created_at_and_uuid ON #{table.to_s} USING btree (created_at, uuid)")
+      ActiveRecord::Base.connection.execute("CREATE INDEX IF NOT EXISTS index_#{table.to_s}_on_modified_at_uuid ON #{table.to_s} USING btree (modified_at desc, uuid asc)")
     end
   end
 end
