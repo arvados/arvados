@@ -3,21 +3,29 @@
 # SPDX-License-Identifier: AGPL-3.0
 
 class FixCreatedAtIndexes < ActiveRecord::Migration[5.2]
-  def tables
-    %w{collections links logs groups users}
-  end
+  @@idxtables = [:collections, :container_requests, :groups, :links, :repositories, :users, :virtual_machines, :workflows, :logs]
 
   def up
-    tables.each do |t|
-      remove_index t.to_sym, :created_at
-      add_index t.to_sym, [:created_at, :uuid]
+    @@idxtables.each do |table|
+      ActiveRecord::Base.connection.execute("DROP INDEX IF EXISTS index_#{table.to_s}_on_created_at")
+      ActiveRecord::Base.connection.execute("DROP INDEX IF EXISTS index_#{table.to_s}_on_created_at_uuid")
+      ActiveRecord::Base.connection.execute("DROP INDEX IF EXISTS index_#{table.to_s}_on_modified_at")
+      ActiveRecord::Base.connection.execute("DROP INDEX IF EXISTS index_#{table.to_s}_on_modified_at_uuid")
+
+      ActiveRecord::Base.connection.execute("CREATE INDEX index_#{table.to_s}_on_created_at_uuid ON #{table.to_s} USING btree  (created_at, uuid)")
+      ActiveRecord::Base.connection.execute("CREATE INDEX index_#{table.to_s}_on_modified_at_uuid ON #{table.to_s} USING btree (modified_at desc, uuid desc)")
     end
   end
 
   def down
-    tables.each do |t|
-      remove_index t.to_sym, [:created_at, :uuid]
-      add_index t.to_sym, :created_at
+    @@idxtables.each do |table|
+      ActiveRecord::Base.connection.execute("DROP INDEX IF EXISTS index_#{table.to_s}_on_created_at")
+      ActiveRecord::Base.connection.execute("DROP INDEX IF EXISTS index_#{table.to_s}_on_created_at_uuid")
+      ActiveRecord::Base.connection.execute("DROP INDEX IF EXISTS index_#{table.to_s}_on_modified_at")
+      ActiveRecord::Base.connection.execute("DROP INDEX IF EXISTS index_#{table.to_s}_on_modified_at_uuid")
+
+      ActiveRecord::Base.connection.execute("CREATE INDEX index_#{table.to_s}_on_created_at ON #{table.to_s} USING btree  (created_at)")
+      ActiveRecord::Base.connection.execute("CREATE INDEX index_#{table.to_s}_on_modified_at_uuid ON #{table.to_s} USING btree (modified_at desc, uuid asc)")
     end
   end
 end

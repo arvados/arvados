@@ -1912,6 +1912,13 @@ CREATE INDEX index_collections_on_created_at_and_uuid ON public.collections USIN
 
 
 --
+-- Name: index_collections_on_created_at_uuid; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_collections_on_created_at_uuid ON public.collections USING btree (created_at, uuid);
+
+
+--
 -- Name: index_collections_on_current_version_uuid_and_version; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -1933,17 +1940,10 @@ CREATE INDEX index_collections_on_is_trashed ON public.collections USING btree (
 
 
 --
--- Name: index_collections_on_modified_at; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE INDEX index_collections_on_modified_at ON public.collections USING btree (modified_at);
-
-
---
 -- Name: index_collections_on_modified_at_uuid; Type: INDEX; Schema: public; Owner: -
 --
 
-CREATE INDEX index_collections_on_modified_at_uuid ON public.collections USING btree (modified_at DESC, uuid);
+CREATE INDEX index_collections_on_modified_at_uuid ON public.collections USING btree (modified_at DESC, uuid DESC);
 
 
 --
@@ -1989,10 +1989,17 @@ CREATE INDEX index_container_requests_on_container_uuid ON public.container_requ
 
 
 --
+-- Name: index_container_requests_on_created_at_uuid; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_container_requests_on_created_at_uuid ON public.container_requests USING btree (created_at, uuid);
+
+
+--
 -- Name: index_container_requests_on_modified_at_uuid; Type: INDEX; Schema: public; Owner: -
 --
 
-CREATE INDEX index_container_requests_on_modified_at_uuid ON public.container_requests USING btree (modified_at DESC, uuid);
+CREATE INDEX index_container_requests_on_modified_at_uuid ON public.container_requests USING btree (modified_at DESC, uuid DESC);
 
 
 --
@@ -2101,6 +2108,13 @@ CREATE INDEX index_groups_on_created_at_and_uuid ON public.groups USING btree (c
 
 
 --
+-- Name: index_groups_on_created_at_uuid; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_groups_on_created_at_uuid ON public.groups USING btree (created_at, uuid);
+
+
+--
 -- Name: index_groups_on_delete_at; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -2122,17 +2136,10 @@ CREATE INDEX index_groups_on_is_trashed ON public.groups USING btree (is_trashed
 
 
 --
--- Name: index_groups_on_modified_at; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE INDEX index_groups_on_modified_at ON public.groups USING btree (modified_at);
-
-
---
 -- Name: index_groups_on_modified_at_uuid; Type: INDEX; Schema: public; Owner: -
 --
 
-CREATE INDEX index_groups_on_modified_at_uuid ON public.groups USING btree (modified_at DESC, uuid);
+CREATE INDEX index_groups_on_modified_at_uuid ON public.groups USING btree (modified_at DESC, uuid DESC);
 
 
 --
@@ -2367,6 +2374,13 @@ CREATE INDEX index_links_on_created_at_and_uuid ON public.links USING btree (cre
 
 
 --
+-- Name: index_links_on_created_at_uuid; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_links_on_created_at_uuid ON public.links USING btree (created_at, uuid);
+
+
+--
 -- Name: index_links_on_head_uuid; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -2374,17 +2388,10 @@ CREATE INDEX index_links_on_head_uuid ON public.links USING btree (head_uuid);
 
 
 --
--- Name: index_links_on_modified_at; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE INDEX index_links_on_modified_at ON public.links USING btree (modified_at);
-
-
---
 -- Name: index_links_on_modified_at_uuid; Type: INDEX; Schema: public; Owner: -
 --
 
-CREATE INDEX index_links_on_modified_at_uuid ON public.links USING btree (modified_at DESC, uuid);
+CREATE INDEX index_links_on_modified_at_uuid ON public.links USING btree (modified_at DESC, uuid DESC);
 
 
 --
@@ -2430,6 +2437,13 @@ CREATE INDEX index_logs_on_created_at_and_uuid ON public.logs USING btree (creat
 
 
 --
+-- Name: index_logs_on_created_at_uuid; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_logs_on_created_at_uuid ON public.logs USING btree (created_at, uuid);
+
+
+--
 -- Name: index_logs_on_event_at; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -2444,17 +2458,10 @@ CREATE INDEX index_logs_on_event_type ON public.logs USING btree (event_type);
 
 
 --
--- Name: index_logs_on_modified_at; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE INDEX index_logs_on_modified_at ON public.logs USING btree (modified_at);
-
-
---
 -- Name: index_logs_on_modified_at_uuid; Type: INDEX; Schema: public; Owner: -
 --
 
-CREATE INDEX index_logs_on_modified_at_uuid ON public.logs USING btree (modified_at DESC, uuid);
+CREATE INDEX index_logs_on_modified_at_uuid ON public.logs USING btree (modified_at DESC, uuid DESC);
 
 
 --
@@ -2605,10 +2612,17 @@ CREATE UNIQUE INDEX index_pipeline_templates_on_uuid ON public.pipeline_template
 
 
 --
+-- Name: index_repositories_on_created_at_uuid; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_repositories_on_created_at_uuid ON public.repositories USING btree (created_at, uuid);
+
+
+--
 -- Name: index_repositories_on_modified_at_uuid; Type: INDEX; Schema: public; Owner: -
 --
 
-CREATE INDEX index_repositories_on_modified_at_uuid ON public.repositories USING btree (modified_at DESC, uuid);
+CREATE INDEX index_repositories_on_modified_at_uuid ON public.repositories USING btree (modified_at DESC, uuid DESC);
 
 
 --
@@ -2696,6 +2710,13 @@ CREATE INDEX index_users_on_created_at_and_uuid ON public.users USING btree (cre
 
 
 --
+-- Name: index_users_on_created_at_uuid; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_users_on_created_at_uuid ON public.users USING btree (created_at, uuid);
+
+
+--
 -- Name: index_users_on_identity_url; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -2703,17 +2724,10 @@ CREATE UNIQUE INDEX index_users_on_identity_url ON public.users USING btree (ide
 
 
 --
--- Name: index_users_on_modified_at; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE INDEX index_users_on_modified_at ON public.users USING btree (modified_at);
-
-
---
 -- Name: index_users_on_modified_at_uuid; Type: INDEX; Schema: public; Owner: -
 --
 
-CREATE INDEX index_users_on_modified_at_uuid ON public.users USING btree (modified_at DESC, uuid);
+CREATE INDEX index_users_on_modified_at_uuid ON public.users USING btree (modified_at DESC, uuid DESC);
 
 
 --
@@ -2738,6 +2752,13 @@ CREATE UNIQUE INDEX index_users_on_uuid ON public.users USING btree (uuid);
 
 
 --
+-- Name: index_virtual_machines_on_created_at_uuid; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_virtual_machines_on_created_at_uuid ON public.virtual_machines USING btree (created_at, uuid);
+
+
+--
 -- Name: index_virtual_machines_on_hostname; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -2748,7 +2769,7 @@ CREATE INDEX index_virtual_machines_on_hostname ON public.virtual_machines USING
 -- Name: index_virtual_machines_on_modified_at_uuid; Type: INDEX; Schema: public; Owner: -
 --
 
-CREATE INDEX index_virtual_machines_on_modified_at_uuid ON public.virtual_machines USING btree (modified_at DESC, uuid);
+CREATE INDEX index_virtual_machines_on_modified_at_uuid ON public.virtual_machines USING btree (modified_at DESC, uuid DESC);
 
 
 --
@@ -2766,10 +2787,17 @@ CREATE UNIQUE INDEX index_virtual_machines_on_uuid ON public.virtual_machines US
 
 
 --
+-- Name: index_workflows_on_created_at_uuid; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_workflows_on_created_at_uuid ON public.workflows USING btree (created_at, uuid);
+
+
+--
 -- Name: index_workflows_on_modified_at_uuid; Type: INDEX; Schema: public; Owner: -
 --
 
-CREATE INDEX index_workflows_on_modified_at_uuid ON public.workflows USING btree (modified_at DESC, uuid);
+CREATE INDEX index_workflows_on_modified_at_uuid ON public.workflows USING btree (modified_at DESC, uuid DESC);
 
 
 --
