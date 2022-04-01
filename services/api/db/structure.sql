@@ -1912,13 +1912,6 @@ CREATE INDEX index_collections_on_created_at_and_uuid ON public.collections USIN
 
 
 --
--- Name: index_collections_on_created_at_uuid; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE INDEX index_collections_on_created_at_uuid ON public.collections USING btree (created_at, uuid);
-
-
---
 -- Name: index_collections_on_current_version_uuid_and_version; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -1993,13 +1986,6 @@ CREATE INDEX index_container_requests_on_container_uuid ON public.container_requ
 --
 
 CREATE INDEX index_container_requests_on_created_at_and_uuid ON public.container_requests USING btree (created_at, uuid);
-
-
---
--- Name: index_container_requests_on_created_at_uuid; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE INDEX index_container_requests_on_created_at_uuid ON public.container_requests USING btree (created_at, uuid);
 
 
 --
@@ -2112,13 +2098,6 @@ CREATE UNIQUE INDEX index_frozen_groups_on_uuid ON public.frozen_groups USING bt
 --
 
 CREATE INDEX index_groups_on_created_at_and_uuid ON public.groups USING btree (created_at, uuid);
-
-
---
--- Name: index_groups_on_created_at_uuid; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE INDEX index_groups_on_created_at_uuid ON public.groups USING btree (created_at, uuid);
 
 
 --
@@ -2381,13 +2360,6 @@ CREATE INDEX index_links_on_created_at_and_uuid ON public.links USING btree (cre
 
 
 --
--- Name: index_links_on_created_at_uuid; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE INDEX index_links_on_created_at_uuid ON public.links USING btree (created_at, uuid);
-
-
---
 -- Name: index_links_on_head_uuid; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -2441,13 +2413,6 @@ CREATE UNIQUE INDEX index_links_on_uuid ON public.links USING btree (uuid);
 --
 
 CREATE INDEX index_logs_on_created_at_and_uuid ON public.logs USING btree (created_at, uuid);
-
-
---
--- Name: index_logs_on_created_at_uuid; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE INDEX index_logs_on_created_at_uuid ON public.logs USING btree (created_at, uuid);
 
 
 --
@@ -2626,13 +2591,6 @@ CREATE INDEX index_repositories_on_created_at_and_uuid ON public.repositories US
 
 
 --
--- Name: index_repositories_on_created_at_uuid; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE INDEX index_repositories_on_created_at_uuid ON public.repositories USING btree (created_at, uuid);
-
-
---
 -- Name: index_repositories_on_modified_at_and_uuid; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -2724,13 +2682,6 @@ CREATE INDEX index_users_on_created_at_and_uuid ON public.users USING btree (cre
 
 
 --
--- Name: index_users_on_created_at_uuid; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE INDEX index_users_on_created_at_uuid ON public.users USING btree (created_at, uuid);
-
-
---
 -- Name: index_users_on_identity_url; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -2773,13 +2724,6 @@ CREATE INDEX index_virtual_machines_on_created_at_and_uuid ON public.virtual_mac
 
 
 --
--- Name: index_virtual_machines_on_created_at_uuid; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE INDEX index_virtual_machines_on_created_at_uuid ON public.virtual_machines USING btree (created_at, uuid);
-
-
---
 -- Name: index_virtual_machines_on_hostname; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -2812,13 +2756,6 @@ CREATE UNIQUE INDEX index_virtual_machines_on_uuid ON public.virtual_machines US
 --
 
 CREATE INDEX index_workflows_on_created_at_and_uuid ON public.workflows USING btree (created_at, uuid);
-
-
---
--- Name: index_workflows_on_created_at_uuid; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE INDEX index_workflows_on_created_at_uuid ON public.workflows USING btree (created_at, uuid);
 
 
 --
