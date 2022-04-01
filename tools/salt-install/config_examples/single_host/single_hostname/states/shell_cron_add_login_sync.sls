@@ -9,8 +9,6 @@
 
 {%- set curr_tpldir = tpldir %}
 {%- set tpldir = 'arvados' %}
-{%- set sls_config_file = 'arvados.config.file' %}
-{#  from "arvados/map.jinja" import arvados with context #}
 {%- from "arvados/map.jinja" import arvados with context %}
 {%- from "arvados/libtofs.jinja" import files_switch with context %}
 {%- set tpldir = curr_tpldir %}
@@ -18,9 +16,6 @@
 {%- set virtual_machines = arvados.cluster.resources.virtual_machines | default({}) %}
 {%- set api_token = arvados.cluster.tokens.system_root | yaml_encode %}
 {%- set api_host = arvados.cluster.Services.Controller.ExternalURL | regex_replace('^http(s?)://', '', ignorecase=true) %}
-
-include:
-  - arvados
 
 extra_shell_cron_add_login_sync_add_jq_pkg_installed:
   pkg.installed:
