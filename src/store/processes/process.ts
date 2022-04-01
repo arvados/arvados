@@ -19,10 +19,12 @@ export enum ProcessStatus {
     CANCELLED = 'Cancelled',
     COMPLETED = 'Completed',
     DRAFT = 'Draft',
+    FAILING = 'Failing',
     FAILED = 'Failed',
-    LOCKED = 'Locked',
+    ONHOLD = 'On hold',
     QUEUED = 'Queued',
     RUNNING = 'Running',
+    WARNING = 'Warning',
     UNKNOWN = 'Unknown',
 }
 
@@ -71,17 +73,20 @@ export const getProcessRuntime = ({ container }: Process) => {
     }
 };
 
-export const getProcessStatusColor = (status: string, { customs, palette }: ArvadosTheme) => {
+export const getProcessStatusColor = (status: string, { customs }: ArvadosTheme) => {
     switch (status) {
         case ProcessStatus.RUNNING:
             return customs.colors.blue500;
         case ProcessStatus.COMPLETED:
             return customs.colors.green700;
+        case ProcessStatus.WARNING:
+            return customs.colors.yellow700;
+        case ProcessStatus.FAILING:
         case ProcessStatus.CANCELLED:
         case ProcessStatus.FAILED:
             return customs.colors.red900;
         default:
-            return palette.grey["500"];
+            return customs.colors.grey500;
     }
 };
 
@@ -90,18 +95,26 @@ export const getProcessStatus = ({ containerRequest, container }: Process): Proc
         case containerRequest.state === ContainerRequestState.UNCOMMITTED:
             return ProcessStatus.DRAFT;
 
+        case containerRequest.priority === 0:
+            return ProcessStatus.ONHOLD;
+
         case container && container.state === ContainerState.COMPLETE && container.exitCode === 0:
             return ProcessStatus.COMPLETED;
 
-        case containerRequest.priority === 0:
         case container && container.state === ContainerState.CANCELLED:
             return ProcessStatus.CANCELLED;
 
-        case container && container.state === ContainerState.QUEUED:
+        case container && (container.state === ContainerState.QUEUED ||
+            container.state === ContainerState.LOCKED):
             return ProcessStatus.QUEUED;
 
-        case container && container.state === ContainerState.LOCKED:
-            return ProcessStatus.LOCKED;
+        case container && container.state === ContainerState.RUNNING &&
+            !!container.runtimeStatus.error:
+            return ProcessStatus.FAILING;
+
+        case container && container.state === ContainerState.RUNNING &&
+            !!container.runtimeStatus.warning:
+            return ProcessStatus.WARNING;
 
         case container && container.state === ContainerState.RUNNING:
             return ProcessStatus.RUNNING;
