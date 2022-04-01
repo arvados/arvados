@@ -13,27 +13,47 @@ import ciso8601
 
 def parse_arguments(arguments):
     arg_parser = argparse.ArgumentParser()
-    arg_parser.add_argument('--start', help='Start date for the report in YYYY-MM-DD format')
-    arg_parser.add_argument('--end', help='End date for the report in YYYY-MM-DD format')
+    arg_parser.add_argument('--start', help='Start date for the report in YYYY-MM-DD format (UTC)')
+    arg_parser.add_argument('--end', help='End date for the report in YYYY-MM-DD format (UTC)')
     arg_parser.add_argument('--days', type=int, help='Number of days before now() to start the report')
     args = arg_parser.parse_args(arguments)
 
     if args.days and (args.start or args.end):
-        p.print_help()
+        arg_parser.print_help()
         print("Error: either specify --days or both --start and --end")
         exit(1)
 
     if not args.days and (not args.start or not args.end):
-        p.print_help()
-        print("Error: either specify --days or both --start and --end")
+        arg_parser.print_help()
+        print("\nError: either specify --days or both --start and --end")
         exit(1)
 
     if (args.start and not args.end) or (args.end and not args.start):
-        p.print_help()
-        print("Error: no start or end date found, either specify --days or both --start and --end")
+        arg_parser.print_help()
+        print("\nError: no start or end date found, either specify --days or both --start and --end")
         exit(1)
 
-    return args
+    if args.days:
+        to = datetime.datetime.utcnow()
+        since = to - datetime.timedelta(days=args.days)
+
+    if args.start:
+        try:
+            since = datetime.datetime.strptime(args.start,"%Y-%m-%d")
+        except:
+            arg_parser.print_help()
+            print("\nError: start date must be in YYYY-MM-DD format")
+            exit(1)
+
+    if args.end:
+        try:
+            to = datetime.datetime.strptime(args.end,"%Y-%m-%d")
+        except:
+            arg_parser.print_help()
+            print("\nError: end date must be in YYYY-MM-DD format")
+            exit(1)
+
+    return args, since, to
 
 def getowner(arv, uuid, owners):
     if uuid is None:
@@ -64,13 +84,26 @@ def getuserinfo(arv, uuid):
                                                        uuid, prof)
 
 collectionNameCache = {}
-def getCollectionName(arv, pdh):
-    if pdh not in collectionNameCache:
-        u = arv.collections().list(filters=[["portable_data_hash","=",pdh]]).execute().get("items")
+def getCollectionName(arv, uuid, pdh):
+    lookupField = uuid
+    filters = [["uuid","=",uuid]]
+    cached = uuid in collectionNameCache
+    # look up by uuid if it is available, fall back to look up by pdh
+    if len(uuid) != 27:
+        # Look up by pdh. Note that this can be misleading; the download could
+        # have happened from a collection with the same pdh but different name.
+        # We arbitrarily pick the oldest collection with the pdh to lookup the
+        # name, if the uuid for the request is not known.
+        lookupField = pdh
+        filters = [["portable_data_hash","=",pdh]]
+        cached = pdh in collectionNameCache
+
+    if not cached:
+        u = arv.collections().list(filters=filters,order="created_at",limit=1).execute().get("items")
         if len(u) < 1:
             return "(deleted)"
-        collectionNameCache[pdh] = u[0]["name"]
-    return collectionNameCache[pdh]
+        collectionNameCache[lookupField] = u[0]["name"]
+    return collectionNameCache[lookupField]
 
 def getname(u):
     return "\"%s\" (%s)" % (u["name"], u["uuid"])
@@ -79,29 +112,9 @@ def main(arguments=None):
     if arguments is None:
         arguments = sys.argv[1:]
 
-    args = parse_arguments(arguments)
+    args, since, to = parse_arguments(arguments)
 
     arv = arvados.api()
-
-    if args.days:
-        to = datetime.datetime.utcnow()
-        since = to - datetime.timedelta(days=args.days)
-
-    if args.start:
-        try:
-            since = datetime.datetime.strptime(args.start,"%Y-%m-%d")
-        except:
-            p.print_help()
-            print("Error: start date must be in YYYY-MM-DD format")
-            exit(1)
-
-    if args.end:
-        try:
-            to = datetime.datetime.strptime(args.end,"%Y-%m-%d")
-        except:
-            p.print_help()
-            print("Error: end date must be in YYYY-MM-DD format")
-            exit(1)
 
     print("User activity on %s between %s and %s\n" % (arv.config()["ClusterID"],
                                                        since.isoformat(sep=" ", timespec="minutes"),
@@ -190,7 +203,7 @@ def main(arguments=None):
                 users.setdefault(e["object_uuid"], [])
                 users[e["object_uuid"]].append("%s Downloaded file \"%s\" from \"%s\" (%s) (%s)" % (event_at,
                                                                                        e["properties"].get("collection_file_path") or e["properties"].get("reqPath"),
-                                                                                       getCollectionName(arv, e["properties"].get("portable_data_hash")),
+                                                                                       getCollectionName(arv, e["properties"].get("collection_uuid"), e["properties"].get("portable_data_hash")),
                                                                                        e["properties"].get("collection_uuid"),
                                                                                        e["properties"].get("portable_data_hash")))
 
@@ -198,7 +211,7 @@ def main(arguments=None):
                 users.setdefault(e["object_uuid"], [])
                 users[e["object_uuid"]].append("%s Uploaded file \"%s\" to \"%s\" (%s)" % (event_at,
                                                                                     e["properties"].get("collection_file_path") or e["properties"].get("reqPath"),
-                                                                                    getCollectionName(arv, e["properties"].get("portable_data_hash")),
+                                                                                    getCollectionName(arv, e["properties"].get("collection_uuid"), e["properties"].get("portable_data_hash")),
                                                                                     e["properties"].get("collection_uuid")))
 
         else:
