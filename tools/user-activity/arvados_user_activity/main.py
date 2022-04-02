@@ -10,12 +10,14 @@ import arvados
 import arvados.util
 import datetime
 import ciso8601
+import csv
 
 def parse_arguments(arguments):
     arg_parser = argparse.ArgumentParser()
     arg_parser.add_argument('--start', help='Start date for the report in YYYY-MM-DD format (UTC)')
     arg_parser.add_argument('--end', help='End date for the report in YYYY-MM-DD format (UTC)')
     arg_parser.add_argument('--days', type=int, help='Number of days before now() to start the report')
+    arg_parser.add_argument('--csv', action='store_true', help='Output in csv format (default: false)')
     args = arg_parser.parse_args(arguments)
 
     if args.days and (args.start or args.end):
@@ -82,6 +84,13 @@ def getuserinfo(arv, uuid):
     return "%s %s <%s> (%susers/%s)%s" % (u["first_name"], u["last_name"], u["email"],
                                                        arv.config()["Services"]["Workbench1"]["ExternalURL"],
                                                        uuid, prof)
+def getuserinfocsv(arv, uuid):
+    try:
+        u = arv.users().get(uuid=uuid).execute()
+    except:
+        return [uuid,"deleted","user",""]
+    return [uuid, u["first_name"], u["last_name"], u["email"]]
+
 
 collectionNameCache = {}
 def getCollectionName(arv, uuid, pdh):
@@ -116,9 +125,14 @@ def main(arguments=None):
 
     arv = arvados.api()
 
-    print("User activity on %s between %s and %s\n" % (arv.config()["ClusterID"],
+    prefix = ''
+    suffix = "\n"
+    if args.csv:
+        prefix = '# '
+        suffix = ''
+    print("%sUser activity on %s between %s and %s%s" % (prefix, arv.config()["ClusterID"],
                                                        since.isoformat(sep=" ", timespec="minutes"),
-                                                       to.isoformat(sep=" ", timespec="minutes")))
+                                                       to.isoformat(sep=" ", timespec="minutes"), suffix))
 
     events = arvados.util.keyset_list_all(arv.logs().list, filters=[["created_at", ">=", since.isoformat()],["created_at", "<", to.isoformat()]])
 
@@ -129,101 +143,112 @@ def main(arguments=None):
         owner = getowner(arv, e["object_owner_uuid"], owners)
         users.setdefault(owner, [])
         event_at = ciso8601.parse_datetime(e["event_at"]).astimezone().isoformat(sep=" ", timespec="minutes")
-        # loguuid = e["uuid"]
-        loguuid = ""
+        loguuid = e["uuid"]
 
         if e["event_type"] == "create" and e["object_uuid"][6:11] == "tpzed":
             users.setdefault(e["object_uuid"], [])
-            users[e["object_uuid"]].append("%s User account created" % event_at)
+            users[e["object_uuid"]].append([loguuid, event_at, "User account created"])
 
         elif e["event_type"] == "update" and e["object_uuid"][6:11] == "tpzed":
             pass
 
         elif e["event_type"] == "create" and e["object_uuid"][6:11] == "xvhdp":
             if e["properties"]["new_attributes"]["requesting_container_uuid"] is None:
-                users[owner].append("%s Ran container %s %s" % (event_at, getname(e["properties"]["new_attributes"]), loguuid))
+                users[owner].append([loguuid, event_at, "Ran container %s" % (getname(e["properties"]["new_attributes"]))])
 
         elif e["event_type"] == "update" and e["object_uuid"][6:11] == "xvhdp":
             pass
 
         elif e["event_type"] == "create" and e["object_uuid"][6:11] == "j7d0g":
-            users[owner].append("%s Created project %s" %  (event_at, getname(e["properties"]["new_attributes"])))
+            users[owner].append([loguuid, event_at,"Created project %s" % (getname(e["properties"]["new_attributes"]))])
 
         elif e["event_type"] == "delete" and e["object_uuid"][6:11] == "j7d0g":
-            users[owner].append("%s Deleted project %s" % (event_at, getname(e["properties"]["old_attributes"])))
+            users[owner].append([loguuid, event_at,"Deleted project %s" % (getname(e["properties"]["old_attributes"]))])
 
         elif e["event_type"] == "update" and e["object_uuid"][6:11] == "j7d0g":
-            users[owner].append("%s Updated project %s" % (event_at, getname(e["properties"]["new_attributes"])))
+            users[owner].append([loguuid, event_at,"Updated project %s" % (getname(e["properties"]["new_attributes"]))])
 
         elif e["event_type"] in ("create", "update") and e["object_uuid"][6:11] == "gj3su":
             since_last = None
-            if len(users[owner]) > 0 and users[owner][-1].endswith("activity"):
-                sp = users[owner][-1].split(" ")
-                start = sp[0]+" "+sp[1]
-                since_last = ciso8601.parse_datetime(event_at) - ciso8601.parse_datetime(sp[3]+" "+sp[4])
+            if len(users[owner]) > 0 and users[owner][-1][-1].endswith("activity"):
+                sp = users[owner][-1][-1].split(" ")
+                start = users[owner][-1][1]
+                since_last = ciso8601.parse_datetime(event_at) - ciso8601.parse_datetime(sp[1]+" "+sp[2])
                 span = ciso8601.parse_datetime(event_at) - ciso8601.parse_datetime(start)
 
             if since_last is not None and since_last < datetime.timedelta(minutes=61):
-                users[owner][-1] = "%s to %s (%02d:%02d) Account activity" % (start, event_at, span.days*24 + int(span.seconds/3600), int((span.seconds % 3600)/60))
+                users[owner][-1] = [loguuid, start,"to %s (%02d:%02d) Account activity" % (event_at, span.days*24 + int(span.seconds/3600), int((span.seconds % 3600)/60))]
             else:
-                users[owner].append("%s to %s (0:00) Account activity" % (event_at, event_at))
+                users[owner].append([loguuid, event_at,"to %s (0:00) Account activity" % (event_at)])
 
         elif e["event_type"] == "create" and e["object_uuid"][6:11] == "o0j2j":
             if e["properties"]["new_attributes"]["link_class"] == "tag":
-                users[owner].append("%s Tagged %s" % (event_at, e["properties"]["new_attributes"]["head_uuid"]))
+                users[owner].append([event_at,"Tagged %s" % (e["properties"]["new_attributes"]["head_uuid"])])
             elif e["properties"]["new_attributes"]["link_class"] == "permission":
-                users[owner].append("%s Shared %s with %s" % (event_at, e["properties"]["new_attributes"]["tail_uuid"], e["properties"]["new_attributes"]["head_uuid"]))
+                users[owner].append([loguuid, event_at,"Shared %s with %s" % (e["properties"]["new_attributes"]["tail_uuid"], e["properties"]["new_attributes"]["head_uuid"])])
             else:
-                users[owner].append("%s %s %s %s %s" % (event_at, e["event_type"], e["object_kind"], e["object_uuid"], loguuid))
+                users[owner].append([loguuid, event_at,"%s %s %s" % (e["event_type"], e["object_kind"], e["object_uuid"])])
 
         elif e["event_type"] == "delete" and e["object_uuid"][6:11] == "o0j2j":
             if e["properties"]["old_attributes"]["link_class"] == "tag":
-                users[owner].append("%s Untagged %s" % (event_at, e["properties"]["old_attributes"]["head_uuid"]))
+                users[owner].append([loguuid, event_at,"Untagged %s" % (e["properties"]["old_attributes"]["head_uuid"])])
             elif e["properties"]["old_attributes"]["link_class"] == "permission":
-                users[owner].append("%s Unshared %s with %s" % (event_at, e["properties"]["old_attributes"]["tail_uuid"], e["properties"]["old_attributes"]["head_uuid"]))
+                users[owner].append([loguuid, event_at,"Unshared %s with %s" % (e["properties"]["old_attributes"]["tail_uuid"], e["properties"]["old_attributes"]["head_uuid"])])
             else:
-                users[owner].append("%s %s %s %s %s" % (event_at, e["event_type"], e["object_kind"], e["object_uuid"], loguuid))
+                users[owner].append([loguuid, event_at,"%s %s %s" % (e["event_type"], e["object_kind"], e["object_uuid"])])
 
         elif e["event_type"] == "create" and e["object_uuid"][6:11] == "4zz18":
             if e["properties"]["new_attributes"]["properties"].get("type") in ("log", "output", "intermediate"):
                 pass
             else:
-                users[owner].append("%s Created collection %s %s" % (event_at, getname(e["properties"]["new_attributes"]), loguuid))
+                users[owner].append([loguuid, event_at,"Created collection %s" % (getname(e["properties"]["new_attributes"]))])
 
         elif e["event_type"] == "update" and e["object_uuid"][6:11] == "4zz18":
-            users[owner].append("%s Updated collection %s %s" % (event_at, getname(e["properties"]["new_attributes"]), loguuid))
+            users[owner].append([loguuid, event_at,"Updated collection %s" % (getname(e["properties"]["new_attributes"]))])
 
         elif e["event_type"] == "delete" and e["object_uuid"][6:11] == "4zz18":
             if e["properties"]["old_attributes"]["properties"].get("type") in ("log", "output", "intermediate"):
                 pass
             else:
-                users[owner].append("%s Deleted collection %s %s" % (event_at, getname(e["properties"]["old_attributes"]), loguuid))
+                users[owner].append([loguuid, event_at, "Deleted collection %s" % (getname(e["properties"]["old_attributes"]))])
 
         elif e["event_type"] == "file_download":
                 users.setdefault(e["object_uuid"], [])
-                users[e["object_uuid"]].append("%s Downloaded file \"%s\" from \"%s\" (%s) (%s)" % (event_at,
+                users[e["object_uuid"]].append([loguuid, event_at, "Downloaded file \"%s\" from \"%s\" (%s) (%s)" % (
                                                                                        e["properties"].get("collection_file_path") or e["properties"].get("reqPath"),
                                                                                        getCollectionName(arv, e["properties"].get("collection_uuid"), e["properties"].get("portable_data_hash")),
                                                                                        e["properties"].get("collection_uuid"),
-                                                                                       e["properties"].get("portable_data_hash")))
+                                                                                       e["properties"].get("portable_data_hash"))])
+
 
         elif e["event_type"] == "file_upload":
                 users.setdefault(e["object_uuid"], [])
-                users[e["object_uuid"]].append("%s Uploaded file \"%s\" to \"%s\" (%s)" % (event_at,
+                users[e["object_uuid"]].append([loguuid, event_at, "Uploaded file \"%s\" to \"%s\" (%s)" % (
                                                                                     e["properties"].get("collection_file_path") or e["properties"].get("reqPath"),
                                                                                     getCollectionName(arv, e["properties"].get("collection_uuid"), e["properties"].get("portable_data_hash")),
-                                                                                    e["properties"].get("collection_uuid")))
+                                                                                    e["properties"].get("collection_uuid"))])
 
         else:
-            users[owner].append("%s %s %s %s %s" % (event_at, e["event_type"], e["object_kind"], e["object_uuid"], loguuid))
+            users[owner].append([loguuid, event_at, "%s %s %s" % (e["event_type"], e["object_kind"], e["object_uuid"])])
+
+    if args.csv:
+        csvwriter = csv.writer(sys.stdout, dialect='unix')
 
     for k,v in users.items():
         if k is None or k.endswith("-tpzed-000000000000000"):
             continue
-        print(getuserinfo(arv, k))
-        for ev in v:
-            print("  %s" % ev)
-        print("")
+        if not args.csv:
+          print(getuserinfo(arv, k))
+          for ev in v:
+              # Remove the log entry uuid, this report is intended for human consumption
+              ev.pop(0)
+              print("  %s" % ' '.join(ev))
+          print("")
+        else:
+          user = getuserinfocsv(arv, k)
+          for ev in v:
+            ev = user + ev
+            csvwriter.writerow(ev)
 
 if __name__ == "__main__":
     main()
