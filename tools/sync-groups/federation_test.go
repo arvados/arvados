@@ -12,7 +12,6 @@ import (
 
 	"git.arvados.org/arvados.git/lib/boot"
 	"git.arvados.org/arvados.git/sdk/go/arvados"
-	"git.arvados.org/arvados.git/sdk/go/arvadostest"
 	"git.arvados.org/arvados.git/sdk/go/ctxlog"
 	check "gopkg.in/check.v1"
 )
@@ -22,20 +21,12 @@ var _ = check.Suite(&FederationSuite{})
 var origAPIHost, origAPIToken string
 
 type FederationSuite struct {
-	super        *boot.Supervisor
-	oidcprovider *arvadostest.OIDCProvider
+	super *boot.Supervisor
 }
 
 func (s *FederationSuite) SetUpSuite(c *check.C) {
 	origAPIHost = os.Getenv("ARVADOS_API_HOST")
 	origAPIToken = os.Getenv("ARVADOS_API_TOKEN")
-
-	s.oidcprovider = arvadostest.NewOIDCProvider(c)
-	s.oidcprovider.AuthEmail = "user@example.com"
-	s.oidcprovider.AuthEmailVerified = true
-	s.oidcprovider.AuthName = "Example User"
-	s.oidcprovider.ValidClientID = "clientid"
-	s.oidcprovider.ValidClientSecret = "clientsecret"
 
 	hostport := map[string]string{}
 	for _, id := range []string{"z1111", "z2222"} {
@@ -84,13 +75,8 @@ func (s *FederationSuite) SetUpSuite(c *check.C) {
 			yaml += `
     Login:
       LoginCluster: z1111
-      OpenIDConnect:
+      PAM:
         Enable: true
-        Issuer: ` + s.oidcprovider.Issuer.URL + `
-        ClientID: ` + s.oidcprovider.ValidClientID + `
-        ClientSecret: ` + s.oidcprovider.ValidClientSecret + `
-        EmailClaim: email
-        EmailVerifiedClaim: email_verified
 `
 		} else {
 			yaml += `
@@ -118,7 +104,7 @@ func (s *FederationSuite) SetUpSuite(c *check.C) {
 	// Activate user, make it admin.
 	conn1 := s.super.Conn("z1111")
 	rootctx1, _, _ := s.super.RootClients("z1111")
-	userctx1, _, _, _ := s.super.UserClients("z1111", rootctx1, c, conn1, s.oidcprovider.AuthEmail, true)
+	userctx1, _, _, _ := s.super.UserClients("z1111", rootctx1, c, conn1, "admin@example.com", true)
 	user1, err := conn1.UserGetCurrent(userctx1, arvados.GetOptions{})
 	c.Assert(err, check.IsNil)
 	c.Assert(user1.IsAdmin, check.Equals, false)
@@ -142,7 +128,7 @@ func (s *FederationSuite) TestGroupSyncingOnFederatedCluster(c *check.C) {
 	// Get admin user's V2 token
 	conn1 := s.super.Conn("z1111")
 	rootctx1, _, _ := s.super.RootClients("z1111")
-	userctx1, _, _, _ := s.super.UserClients("z1111", rootctx1, c, conn1, s.oidcprovider.AuthEmail, true)
+	userctx1, _, _, _ := s.super.UserClients("z1111", rootctx1, c, conn1, "admin@example.com", true)
 	user1Auth, err := conn1.APIClientAuthorizationCurrent(userctx1, arvados.GetOptions{})
 	c.Check(err, check.IsNil)
 	userV2Token := user1Auth.TokenV2()
