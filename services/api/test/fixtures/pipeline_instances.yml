@@ -364,7 +364,7 @@ pipeline_in_running_state:
   uuid: zzzzz-d1hrv-runningpipeline
   owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz
   created_at: <%= 2.9.minute.ago.to_s(:db) %>
-  started_at: <%= 2.8.minute.ago.to_s(:db) %>
+  started_at: <%= 2.9.minute.ago.to_s(:db) %>
   state: RunningOnServer
   components:
    foo:
