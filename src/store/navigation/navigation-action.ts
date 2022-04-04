@@ -6,11 +6,12 @@ import { Dispatch, compose, AnyAction } from 'redux';
 import { push } from "react-router-redux";
 import { ResourceKind, extractUuidKind } from 'models/resource';
 import { SidePanelTreeCategory } from '../side-panel-tree/side-panel-tree-actions';
-import { Routes, getGroupUrl, getNavUrl } from 'routes/routes';
+import { Routes, getGroupUrl, getNavUrl, getUserProfileUrl } from 'routes/routes';
 import { RootState } from 'store/store';
 import { ServiceRepository } from 'services/services';
 import { pluginConfig } from 'plugins';
 import { snackbarActions, SnackbarKind } from 'store/snackbar/snackbar-actions';
+import { USERS_PANEL_LABEL, MY_ACCOUNT_PANEL_LABEL } from 'store/breadcrumbs/breadcrumbs-actions';
 
 const navigationNotAvailable = (id: string) =>
     snackbarActions.OPEN_SNACKBAR({
@@ -68,6 +69,12 @@ export const navigateTo = (uuid: string) =>
                 return;
             case SidePanelTreeCategory.ALL_PROCESSES:
                 dispatch(navigateToAllProcesses);
+                return;
+            case USERS_PANEL_LABEL:
+                dispatch(navigateToUsers);
+                return;
+            case MY_ACCOUNT_PANEL_LABEL:
+                dispatch(navigateToMyAccount);
                 return;
         }
 
@@ -134,6 +141,8 @@ export const navigateToLinkAccount = push(Routes.LINK_ACCOUNT);
 export const navigateToKeepServices = push(Routes.KEEP_SERVICES);
 
 export const navigateToUsers = push(Routes.USERS);
+
+export const navigateToUserProfile = compose(push, getUserProfileUrl);
 
 export const navigateToApiClientAuthorizations = push(Routes.API_CLIENT_AUTHORIZATIONS);
 

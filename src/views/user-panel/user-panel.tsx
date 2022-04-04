@@ -3,25 +3,23 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import React from 'react';
-import { WithStyles, withStyles, Tabs, Tab, Paper, Button, Grid } from '@material-ui/core';
+import { WithStyles, withStyles, Paper, Button, Grid } from '@material-ui/core';
 import { DataExplorer } from "views-components/data-explorer/data-explorer";
 import { connect, DispatchProp } from 'react-redux';
 import { DataColumns } from 'components/data-table/data-table';
 import { RootState } from 'store/store';
 import { SortDirection } from 'components/data-table/data-column';
-import { openContextMenu } from "store/context-menu/context-menu-actions";
+import { openUserContextMenu } from "store/context-menu/context-menu-actions";
 import { getResource, ResourcesState } from "store/resources/resources";
 import {
-    ResourceFirstName,
-    ResourceLastName,
+    UserResourceFullName,
     ResourceUuid,
     ResourceEmail,
-    ResourceIsActive,
     ResourceIsAdmin,
-    ResourceUsername
+    ResourceUsername,
+    UserResourceAccountStatus,
 } from "views-components/data-explorer/renderers";
-import { navigateTo } from "store/navigation/navigation-action";
-import { ContextMenuKind } from "views-components/context-menu/context-menu";
+import { navigateToUserProfile } from "store/navigation/navigation-action";
 import { DataTableDefaultView } from 'components/data-table-default-view/data-table-default-view';
 import { createTree } from 'models/tree';
 import { compose, Dispatch } from 'redux';
@@ -30,7 +28,7 @@ import { ShareMeIcon, AddIcon } from 'components/icon/icon';
 import { USERS_PANEL_ID, openUserCreateDialog } from 'store/users/users-actions';
 import { noop } from 'lodash';
 
-type UserPanelRules = "button" | 'root' | 'content';
+type UserPanelRules = "button" | 'root';
 
 const styles = withStyles<UserPanelRules>(theme => ({
     button: {
@@ -42,18 +40,13 @@ const styles = withStyles<UserPanelRules>(theme => ({
     root: {
         width: '100%',
     },
-    content: {
-        // reserve space for the tab bar
-        height: `calc(100% - ${theme.spacing.unit * 7}px)`,
-    }
 }));
 
 export enum UserPanelColumnNames {
-    FIRST_NAME = "First Name",
-    LAST_NAME = "Last Name",
+    NAME = "Name",
     UUID = "Uuid",
     EMAIL = "Email",
-    ACTIVE = "Active",
+    STATUS = "Account Status",
     ADMIN = "Admin",
     REDIRECT_TO_USER = "Redirect to user",
     USERNAME = "Username"
@@ -61,20 +54,12 @@ export enum UserPanelColumnNames {
 
 export const userPanelColumns: DataColumns<string> = [
     {
-        name: UserPanelColumnNames.FIRST_NAME,
+        name: UserPanelColumnNames.NAME,
         selected: true,
         configurable: true,
         sortDirection: SortDirection.NONE,
         filters: createTree(),
-        render: uuid => <ResourceFirstName uuid={uuid} />
-    },
-    {
-        name: UserPanelColumnNames.LAST_NAME,
-        selected: true,
-        configurable: true,
-        sortDirection: SortDirection.NONE,
-        filters: createTree(),
-        render: uuid => <ResourceLastName uuid={uuid} />
+        render: uuid => <UserResourceFullName uuid={uuid} link={true} />
     },
     {
         name: UserPanelColumnNames.UUID,
@@ -93,18 +78,16 @@ export const userPanelColumns: DataColumns<string> = [
         render: uuid => <ResourceEmail uuid={uuid} />
     },
     {
-        name: UserPanelColumnNames.ACTIVE,
+        name: UserPanelColumnNames.STATUS,
         selected: true,
         configurable: true,
-        sortDirection: SortDirection.NONE,
         filters: createTree(),
-        render: uuid => <ResourceIsActive uuid={uuid} />
+        render: uuid => <UserResourceAccountStatus uuid={uuid} />
     },
     {
         name: UserPanelColumnNames.ADMIN,
         selected: true,
         configurable: false,
-        sortDirection: SortDirection.NONE,
         filters: createTree(),
         render: uuid => <ResourceIsAdmin uuid={uuid} />
     },
@@ -124,8 +107,8 @@ interface UserPanelDataProps {
 
 interface UserPanelActionProps {
     openUserCreateDialog: () => void;
-    handleRowDoubleClick: (uuid: string) => void;
-    onContextMenu: (event: React.MouseEvent<HTMLElement>, item: any) => void;
+    handleRowClick: (uuid: string) => void;
+    handleContextMenu: (event, resource: UserResource) => void;
 }
 
 const mapStateToProps = (state: RootState) => {
@@ -136,8 +119,8 @@ const mapStateToProps = (state: RootState) => {
 
 const mapDispatchToProps = (dispatch: Dispatch) => ({
     openUserCreateDialog: () => dispatch<any>(openUserCreateDialog()),
-    handleRowDoubleClick: (uuid: string) => dispatch<any>(navigateTo(uuid)),
-    onContextMenu: (event: React.MouseEvent<HTMLElement>, item: any) => dispatch<any>(openContextMenu(event, item))
+    handleRowClick: (uuid: string) => dispatch<any>(navigateToUserProfile(uuid)),
+    handleContextMenu: (event, resource: UserResource) => dispatch<any>(openUserContextMenu(event, resource)),
 });
 
 type UserPanelProps = UserPanelDataProps & UserPanelActionProps & DispatchProp & WithStyles<UserPanelRules>;
@@ -146,63 +129,38 @@ export const UserPanel = compose(
     styles,
     connect(mapStateToProps, mapDispatchToProps))(
         class extends React.Component<UserPanelProps> {
-            state = {
-                value: 0,
-            };
-
-            componentDidMount() {
-                this.setState({ value: 0 });
-            }
-
             render() {
-                const { value } = this.state;
                 return <Paper className={this.props.classes.root}>
-                    <Tabs value={value} onChange={this.handleChange} fullWidth>
-                        <Tab label="USERS" />
-                        <Tab label="ACTIVITY" disabled />
-                    </Tabs>
-                    {value === 0 &&
-                        <div className={this.props.classes.content}>
-                            <DataExplorer
-                                id={USERS_PANEL_ID}
-                                onRowClick={noop}
-                                onRowDoubleClick={noop}
-                                onContextMenu={this.handleContextMenu}
-                                contextMenuColumn={true}
-                                hideColumnSelector
-                                actions={
-                                    <Grid container justify='flex-end'>
-                                        <Button variant="contained" color="primary" onClick={this.props.openUserCreateDialog}>
-                                            <AddIcon /> NEW USER
-                                        </Button>
-                                    </Grid>
-                                }
-                                paperProps={{
-                                    elevation: 0,
-                                }}
-                                dataTableDefaultView={
-                                    <DataTableDefaultView
-                                        icon={ShareMeIcon}
-                                        messages={['Your user list is empty.']} />
-                                } />
-                        </div>}
+                    <DataExplorer
+                        id={USERS_PANEL_ID}
+                        onRowClick={noop}
+                        onRowDoubleClick={noop}
+                        onContextMenu={this.handleContextMenu}
+                        contextMenuColumn={true}
+                        hideColumnSelector
+                        actions={
+                            <Grid container justify='flex-end'>
+                                <Button variant="contained" color="primary" onClick={this.props.openUserCreateDialog}>
+                                    <AddIcon /> NEW USER
+                                </Button>
+                            </Grid>
+                        }
+                        paperProps={{
+                            elevation: 0,
+                        }}
+                        dataTableDefaultView={
+                            <DataTableDefaultView
+                                icon={ShareMeIcon}
+                                messages={['Your user list is empty.']} />
+                        } />
                 </Paper>;
             }
 
-            handleChange = (event: React.MouseEvent<HTMLElement>, value: number) => {
-                this.setState({ value });
-            }
-
             handleContextMenu = (event: React.MouseEvent<HTMLElement>, resourceUuid: string) => {
+                event.stopPropagation();
                 const resource = getResource<UserResource>(resourceUuid)(this.props.resources);
                 if (resource) {
-                    this.props.onContextMenu(event, {
-                        name: '',
-                        uuid: resource.uuid,
-                        ownerUuid: resource.ownerUuid,
-                        kind: resource.kind,
-                        menuKind: ContextMenuKind.USER
-                    });
+                    this.props.handleContextMenu(event, resource);
                 }
             }
         }

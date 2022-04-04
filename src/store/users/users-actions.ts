@@ -8,31 +8,31 @@ import { RootState } from 'store/store';
 import { getUserUuid } from "common/getuser";
 import { ServiceRepository } from "services/services";
 import { dialogActions } from 'store/dialog/dialog-actions';
-import { startSubmit, reset } from "redux-form";
+import { startSubmit, reset, stopSubmit } from "redux-form";
 import { snackbarActions, SnackbarKind } from 'store/snackbar/snackbar-actions';
 import { UserResource } from "models/user";
-import { getResource } from 'store/resources/resources';
+import { filterResources, getResource } from 'store/resources/resources';
 import { navigateTo, navigateToUsers, navigateToRootProject } from "store/navigation/navigation-action";
 import { authActions } from 'store/auth/auth-action';
 import { getTokenV2 } from "models/api-client-authorization";
+import { VIRTUAL_MACHINE_ADD_LOGIN_GROUPS_FIELD, VIRTUAL_MACHINE_ADD_LOGIN_VM_FIELD } from "store/virtual-machines/virtual-machines-actions";
+import { PermissionLevel } from "models/permission";
+import { updateResources } from "store/resources/resources-actions";
+import { BuiltinGroups, getBuiltinGroupUuid } from "models/group";
+import { LinkClass, LinkResource } from "models/link";
+import { ResourceKind } from "models/resource";
 
 export const USERS_PANEL_ID = 'usersPanel';
 export const USER_ATTRIBUTES_DIALOG = 'userAttributesDialog';
 export const USER_CREATE_FORM_NAME = 'userCreateFormName';
-export const USER_MANAGEMENT_DIALOG = 'userManageDialog';
-export const SETUP_SHELL_ACCOUNT_DIALOG = 'setupShellAccountDialog';
 
 export interface UserCreateFormDialogData {
     email: string;
-    virtualMachineName: string;
-    groupVirtualMachine: string;
+    [VIRTUAL_MACHINE_ADD_LOGIN_VM_FIELD]: string;
+    [VIRTUAL_MACHINE_ADD_LOGIN_GROUPS_FIELD]: string[];
 }
 
-export interface SetupShellAccountFormDialogData {
-    email: string;
-    virtualMachineName: string;
-    groupVirtualMachine: string;
-}
+export const userBindedActions = bindDataExplorerActions(USERS_PANEL_ID);
 
 export const openUserAttributes = (uuid: string) =>
     (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
@@ -41,31 +41,37 @@ export const openUserAttributes = (uuid: string) =>
         dispatch(dialogActions.OPEN_DIALOG({ id: USER_ATTRIBUTES_DIALOG, data }));
     };
 
-export const openUserManagement = (uuid: string) =>
-    async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
-        const { resources } = getState();
-        const data = getResource<UserResource>(uuid)(resources);
-        dispatch(dialogActions.OPEN_DIALOG({ id: USER_MANAGEMENT_DIALOG, data }));
-    };
-
-export const openSetupShellAccount = (uuid: string) =>
-    async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
-        const { resources } = getState();
-        const user = getResource<UserResource>(uuid)(resources);
-        const virtualMachines = await services.virtualMachineService.list();
-        dispatch(dialogActions.CLOSE_DIALOG({ id: USER_MANAGEMENT_DIALOG }));
-        dispatch(dialogActions.OPEN_DIALOG({ id: SETUP_SHELL_ACCOUNT_DIALOG, data: { user, ...virtualMachines } }));
-    };
-
 export const loginAs = (uuid: string) =>
     async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
-        const { resources } = getState();
-        const data = getResource<UserResource>(uuid)(resources);
-        const client = await services.apiClientAuthorizationService.create({ ownerUuid: uuid });
-        if (data) {
-            dispatch<any>(authActions.INIT_USER({ user: data, token: getTokenV2(client) }));
-            window.location.reload();
-            dispatch<any>(navigateToRootProject);
+        const userUuid = getUserUuid(getState());
+        if (userUuid === uuid) {
+            dispatch(snackbarActions.OPEN_SNACKBAR({
+                message: 'You are already logged in as this user',
+                kind: SnackbarKind.WARNING
+            }));
+        } else {
+            try {
+                const { resources } = getState();
+                const data = getResource<UserResource>(uuid)(resources);
+                const client = await services.apiClientAuthorizationService.create({ ownerUuid: uuid }, false);
+                if (data) {
+                    dispatch<any>(authActions.INIT_USER({ user: data, token: getTokenV2(client) }));
+                    window.location.reload();
+                    dispatch<any>(navigateToRootProject);
+                }
+            } catch (e) {
+                if (e.status === 403) {
+                    dispatch(snackbarActions.OPEN_SNACKBAR({
+                        message: 'You do not have permission to login as this user',
+                        kind: SnackbarKind.WARNING
+                    }));
+                } else {
+                    dispatch(snackbarActions.OPEN_SNACKBAR({
+                        message: 'Failed to login as this user',
+                        kind: SnackbarKind.ERROR
+                    }));
+                }
+            }
         }
     };
 
@@ -84,12 +90,28 @@ export const openUserProjects = (uuid: string) =>
         dispatch<any>(navigateTo(uuid));
     };
 
-
-export const createUser = (user: UserCreateFormDialogData) =>
+export const createUser = (data: UserCreateFormDialogData) =>
     async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
         dispatch(startSubmit(USER_CREATE_FORM_NAME));
         try {
-            const newUser = await services.userService.create({ ...user });
+            const newUser = await services.userService.create({
+                email: data.email,
+            });
+            dispatch(updateResources([newUser]));
+
+            if (data[VIRTUAL_MACHINE_ADD_LOGIN_VM_FIELD]) {
+                const permission = await services.permissionService.create({
+                    headUuid: data[VIRTUAL_MACHINE_ADD_LOGIN_VM_FIELD],
+                    tailUuid: newUser.uuid,
+                    name: PermissionLevel.CAN_LOGIN,
+                    properties: {
+                        username: newUser.username,
+                        groups: data.groups,
+                    }
+                });
+                dispatch(updateResources([permission]));
+            }
+
             dispatch(dialogActions.CLOSE_DIALOG({ id: USER_CREATE_FORM_NAME }));
             dispatch(reset(USER_CREATE_FORM_NAME));
             dispatch(snackbarActions.OPEN_SNACKBAR({ message: "User has been successfully created.", hideDuration: 2000, kind: SnackbarKind.SUCCESS }));
@@ -98,23 +120,8 @@ export const createUser = (user: UserCreateFormDialogData) =>
             return newUser;
         } catch (e) {
             return;
-        }
-    };
-
-
-export const setupUserVM = (setupData: SetupShellAccountFormDialogData) =>
-    async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
-        dispatch(startSubmit(USER_CREATE_FORM_NAME));
-        try {
-            // TODO: make correct API call
-            // const setupResult = await services.userService.setup({ ...setupData });
-            dispatch(dialogActions.CLOSE_DIALOG({ id: SETUP_SHELL_ACCOUNT_DIALOG }));
-            dispatch(reset(SETUP_SHELL_ACCOUNT_DIALOG));
-            dispatch(snackbarActions.OPEN_SNACKBAR({ message: "User has been added to VM.", hideDuration: 2000, kind: SnackbarKind.SUCCESS }));
-            dispatch<any>(loadUsersPanel());
-            dispatch(userBindedActions.REQUEST_ITEMS());
-        } catch (e) {
-            return;
+        } finally {
+            dispatch(stopSubmit(USER_CREATE_FORM_NAME));
         }
     };
 
@@ -129,21 +136,6 @@ export const openUserPanel = () =>
         }
     };
 
-export const toggleIsActive = (uuid: string) =>
-    async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
-        const { resources } = getState();
-        const data = getResource<UserResource>(uuid)(resources);
-        const isActive = data!.isActive;
-        let newActivity;
-        if (isActive) {
-            newActivity = await services.userService.unsetup(uuid);
-        } else {
-            newActivity = await services.userService.update(uuid, { isActive: true });
-        }
-        dispatch<any>(loadUsersPanel());
-        return newActivity;
-    };
-
 export const toggleIsAdmin = (uuid: string) =>
     async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
         const { resources } = getState();
@@ -154,14 +146,31 @@ export const toggleIsAdmin = (uuid: string) =>
         return newActivity;
     };
 
-export const userBindedActions = bindDataExplorerActions(USERS_PANEL_ID);
-
-export const loadUsersData = () =>
-    async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
-        await services.userService.list({ count: "none" });
-    };
-
 export const loadUsersPanel = () =>
     (dispatch: Dispatch) => {
         dispatch(userBindedActions.REQUEST_ITEMS());
     };
+
+export enum UserAccountStatus {
+        ACTIVE = 'Active',
+        INACTIVE = 'Inactive',
+        SETUP = 'Setup',
+    }
+
+export const getUserAccountStatus = (state: RootState, uuid: string) => {
+    const user = getResource<UserResource>(uuid)(state.resources);
+    // Get membership links for all users group
+    const allUsersGroupUuid = getBuiltinGroupUuid(state.auth.localCluster, BuiltinGroups.ALL);
+    const permissions = filterResources((resource: LinkResource) =>
+        resource.kind === ResourceKind.LINK &&
+        resource.linkClass === LinkClass.PERMISSION &&
+        resource.headUuid === allUsersGroupUuid &&
+        resource.tailUuid === uuid
+    )(state.resources);
+
+    return user && user.isActive
+        ? UserAccountStatus.ACTIVE
+        : permissions.length > 0
+            ? UserAccountStatus.SETUP
+            : UserAccountStatus.INACTIVE;
+}

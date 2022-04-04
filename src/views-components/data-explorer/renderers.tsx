@@ -6,7 +6,21 @@ import React from 'react';
 import { Grid, Typography, withStyles, Tooltip, IconButton, Checkbox } from '@material-ui/core';
 import { FavoriteStar, PublicFavoriteStar } from '../favorite-star/favorite-star';
 import { Resource, ResourceKind, TrashableResource } from 'models/resource';
-import { ProjectIcon, FilterGroupIcon, CollectionIcon, ProcessIcon, DefaultIcon, ShareIcon, CollectionOldVersionIcon, WorkflowIcon, RemoveIcon, RenameIcon } from 'components/icon/icon';
+import {
+    ProjectIcon,
+    FilterGroupIcon,
+    CollectionIcon,
+    ProcessIcon,
+    DefaultIcon,
+    ShareIcon,
+    CollectionOldVersionIcon,
+    WorkflowIcon,
+    RemoveIcon,
+    RenameIcon,
+    ActiveIcon,
+    SetupIcon,
+    InactiveIcon,
+} from 'components/icon/icon';
 import { formatDate, formatFileSize, formatTime } from 'common/formatters';
 import { resourceLabel } from 'common/labels';
 import { connect, DispatchProp } from 'react-redux';
@@ -21,14 +35,14 @@ import { ResourceStatus as WorkflowStatus } from 'views/workflow-panel/workflow-
 import { getUuidPrefix, openRunProcess } from 'store/workflow-panel/workflow-panel-actions';
 import { openSharingDialog } from 'store/sharing-dialog/sharing-dialog-actions';
 import { getUserFullname, getUserDisplayName, User, UserResource } from 'models/user';
-import { toggleIsActive, toggleIsAdmin } from 'store/users/users-actions';
+import { toggleIsAdmin } from 'store/users/users-actions';
 import { LinkClass, LinkResource } from 'models/link';
-import { navigateTo, navigateToGroupDetails } from 'store/navigation/navigation-action';
+import { navigateTo, navigateToGroupDetails, navigateToUserProfile } from 'store/navigation/navigation-action';
 import { withResourceData } from 'views-components/data-explorer/with-resources';
 import { CollectionResource } from 'models/collection';
 import { IllegalNamingWarning } from 'components/warning/warning';
 import { loadResource } from 'store/resources/resources-actions';
-import { GroupClass, GroupResource, isBuiltinGroup } from 'models/group';
+import { BuiltinGroups, getBuiltinGroupUuid, GroupClass, GroupResource, isBuiltinGroup } from 'models/group';
 import { openRemoveGroupMemberDialog } from 'store/group-details-panel/group-details-panel-actions';
 import { setMemberIsHidden } from 'store/group-details-panel/group-details-panel-actions';
 import { formatPermissionLevel } from 'views-components/sharing-dialog/permission-select';
@@ -36,6 +50,7 @@ import { PermissionLevel } from 'models/permission';
 import { openPermissionEditContextMenu } from 'store/context-menu/context-menu-actions';
 import { getUserUuid } from 'common/getuser';
 import { VirtualMachinesResource } from 'models/virtual-machines';
+import { CopyToClipboardSnackbar } from 'components/copy-to-clipboard-snackbar/copy-to-clipboard-snackbar';
 
 const renderName = (dispatch: Dispatch, item: GroupContentsResource) => {
 
@@ -161,24 +176,32 @@ export const ResourceLastName = connect(
         return resource || { lastName: '' };
     })(renderLastName);
 
-const renderFullName = (item: { firstName: string, lastName: string }) =>
-    <Typography noWrap>{(item.firstName + " " + item.lastName).trim()}</Typography>;
+const renderFullName = (dispatch: Dispatch ,item: { uuid: string, firstName: string, lastName: string }, link?: boolean) => {
+    const displayName = (item.firstName + " " + item.lastName).trim() || item.uuid;
+    return link ? <Typography noWrap
+        color="primary"
+        style={{ 'cursor': 'pointer' }}
+        onClick={() => dispatch<any>(navigateToUserProfile(item.uuid))}>
+            {displayName}
+    </Typography> :
+    <Typography noWrap>{displayName}</Typography>;
+}
 
-export const ResourceFullName = connect(
-    (state: RootState, props: { uuid: string }) => {
+export const UserResourceFullName = connect(
+    (state: RootState, props: { uuid: string, link?: boolean }) => {
         const resource = getResource<UserResource>(props.uuid)(state.resources);
-        return resource || { firstName: '', lastName: '' };
-    })(renderFullName);
-
+        return {item: resource || { uuid: '', firstName: '', lastName: '' }, link: props.link};
+    })((props: {item: {uuid: string, firstName: string, lastName: string}, link?: boolean} & DispatchProp<any>) => renderFullName(props.dispatch, props.item, props.link));
 
 const renderUuid = (item: { uuid: string }) =>
-    <Typography data-cy="uuid" noWrap>{item.uuid}</Typography>;
+    <Typography data-cy="uuid" noWrap>
+        {item.uuid}
+        <CopyToClipboardSnackbar value={item.uuid} />
+    </Typography>;
 
-export const ResourceUuid = connect(
-    (state: RootState, props: { uuid: string }) => {
-        const resource = getResource<UserResource>(props.uuid)(state.resources);
-        return resource || { uuid: '' };
-    })(renderUuid);
+export const ResourceUuid = connect((state: RootState, props: { uuid: string }) => (
+        getResource<UserResource>(props.uuid)(state.resources) || { uuid: '' }
+    ))(renderUuid);
 
 const renderEmail = (item: { email: string }) =>
     <Typography noWrap>{item.email}</Typography>;
@@ -189,33 +212,61 @@ export const ResourceEmail = connect(
         return resource || { email: '' };
     })(renderEmail);
 
-const renderIsActive = (props: { uuid: string, kind: ResourceKind, isActive: boolean, toggleIsActive: (uuid: string) => void, disabled?: boolean }) => {
-    if (props.kind === ResourceKind.USER) {
-        return <Checkbox
-            color="primary"
-            checked={props.isActive}
-            disabled={!!props.disabled}
-            onClick={() => props.toggleIsActive(props.uuid)} />;
+enum UserAccountStatus {
+    ACTIVE = 'Active',
+    INACTIVE = 'Inactive',
+    SETUP = 'Setup',
+    UNKNOWN = ''
+}
+
+const renderAccountStatus = (props: {status: UserAccountStatus}) =>
+    <Grid container alignItems="center" wrap="nowrap" spacing={8} data-cy="account-status">
+        <Grid item>
+            {(() => {
+                switch(props.status) {
+                    case UserAccountStatus.ACTIVE:
+                        return <ActiveIcon style={{color: '#4caf50', verticalAlign: "middle"}} />;
+                    case UserAccountStatus.SETUP:
+                        return <SetupIcon style={{color: '#2196f3', verticalAlign: "middle"}} />;
+                    case UserAccountStatus.INACTIVE:
+                        return <InactiveIcon style={{color: '#9e9e9e', verticalAlign: "middle"}} />;
+                    default:
+                        return <></>;
+                }
+            })()}
+        </Grid>
+        <Grid item>
+            <Typography noWrap>
+                {props.status}
+            </Typography>
+        </Grid>
+    </Grid>;
+
+const getUserAccountStatus = (state: RootState, props: { uuid: string }) => {
+    const user = getResource<UserResource>(props.uuid)(state.resources);
+    // Get membership links for all users group
+    const allUsersGroupUuid = getBuiltinGroupUuid(state.auth.localCluster, BuiltinGroups.ALL);
+    const permissions = filterResources((resource: LinkResource) =>
+        resource.kind === ResourceKind.LINK &&
+        resource.linkClass === LinkClass.PERMISSION &&
+        resource.headUuid === allUsersGroupUuid &&
+        resource.tailUuid === props.uuid
+    )(state.resources);
+
+    if (user) {
+        return user.isActive ? {status: UserAccountStatus.ACTIVE} : permissions.length > 0 ? {status: UserAccountStatus.SETUP} : {status: UserAccountStatus.INACTIVE};
     } else {
-        return <Typography />;
+        return {status: UserAccountStatus.UNKNOWN};
     }
 }
 
-export const ResourceIsActive = connect(
-    (state: RootState, props: { uuid: string, disabled?: boolean }) => {
-        const resource = getResource<UserResource>(props.uuid)(state.resources);
-        return resource ? {...resource, disabled: !!props.disabled} : { isActive: false, kind: ResourceKind.NONE };
-    }, { toggleIsActive }
-)(renderIsActive);
-
-export const ResourceLinkTailIsActive = connect(
-    (state: RootState, props: { uuid: string, disabled?: boolean }) => {
+export const ResourceLinkTailAccountStatus = connect(
+    (state: RootState, props: { uuid: string }) => {
         const link = getResource<LinkResource>(props.uuid)(state.resources);
-        const tailResource = getResource<UserResource>(link?.tailUuid || '')(state.resources);
+        return link && link.tailKind === ResourceKind.USER ? getUserAccountStatus(state, {uuid: link.tailUuid}) : {status: UserAccountStatus.UNKNOWN};
+    })(renderAccountStatus);
 
-        return tailResource ? {...tailResource, disabled: !!props.disabled} : { isActive: false, kind: ResourceKind.NONE };
-    }, { toggleIsActive }
-)(renderIsActive);
+export const UserResourceAccountStatus = connect(getUserAccountStatus)(renderAccountStatus);
 
 const renderIsHidden = (props: {
                             memberLinkUuid: string,
@@ -230,7 +281,10 @@ const renderIsHidden = (props: {
                 color="primary"
                 checked={props.visible}
                 disabled={!props.canManage}
-                onClick={() => props.setMemberIsHidden(props.memberLinkUuid, props.permissionLinkUuid, !props.visible)} />;
+                onClick={(e) => {
+                    e.stopPropagation();
+                    props.setMemberIsHidden(props.memberLinkUuid, props.permissionLinkUuid, !props.visible);
+                }} />;
     } else {
         return <Typography />;
     }
@@ -263,7 +317,10 @@ const renderIsAdmin = (props: { uuid: string, isAdmin: boolean, toggleIsAdmin: (
     <Checkbox
         color="primary"
         checked={props.isAdmin}
-        onClick={() => props.toggleIsAdmin(props.uuid)} />;
+        onClick={(e) => {
+            e.stopPropagation();
+            props.toggleIsAdmin(props.uuid);
+        }} />;
 
 export const ResourceIsAdmin = connect(
     (state: RootState, props: { uuid: string }) => {

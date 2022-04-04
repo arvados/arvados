@@ -14,9 +14,19 @@ import { sortByProperty } from "common/array-utils";
 type DataProps = Pick<ContextMenuProps, "anchorEl" | "items" | "open"> & { resource?: ContextMenuResource };
 const mapStateToProps = (state: RootState): DataProps => {
     const { open, position, resource } = state.contextMenu;
+
+    const filteredItems = getMenuActionSet(resource).map((group) => (group.filter((item) => {
+        if (resource && item.filters) {
+            // Execute all filters on this item, every returns true IFF all filters return true
+            return item.filters.every((filter) => filter(state, resource));
+        } else {
+            return true;
+        }
+    })));
+
     return {
         anchorEl: resource ? createAnchorAt(position) : undefined,
-        items: getMenuActionSet(resource),
+        items: filteredItems,
         open,
         resource
     };
@@ -59,9 +69,9 @@ export const addMenuActionSet = (name: string, itemSet: ContextMenuActionSet) =>
 };
 
 const emptyActionSet: ContextMenuActionSet = [];
-const getMenuActionSet = (resource?: ContextMenuResource): ContextMenuActionSet => {
-    return resource ? menuActionSets.get(resource.menuKind) || emptyActionSet : emptyActionSet;
-};
+const getMenuActionSet = (resource?: ContextMenuResource): ContextMenuActionSet => (
+   resource ? menuActionSets.get(resource.menuKind) || emptyActionSet : emptyActionSet
+);
 
 export enum ContextMenuKind {
     API_CLIENT_AUTHORIZATION = "ApiClientAuthorization",

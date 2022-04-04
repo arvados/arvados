@@ -24,7 +24,7 @@ export class GroupDetailsPanelPermissionsMiddlewareService extends DataExplorerM
         const dataExplorer = getDataExplorer(api.getState().dataExplorer, this.getId());
         const groupUuid = getCurrentGroupDetailsPanelUuid(api.getState().properties);
         if (!dataExplorer || !groupUuid) {
-            api.dispatch(groupsDetailsPanelDataExplorerIsNotSet());
+            // No-op if data explorer is not set since refresh may be triggered from elsewhere
         } else {
             try {
                 const permissionsOut = await this.services.permissionService.list({
@@ -75,12 +75,6 @@ export class GroupDetailsPanelPermissionsMiddlewareService extends DataExplorerM
         }
     }
 }
-
-const groupsDetailsPanelDataExplorerIsNotSet = () =>
-    snackbarActions.OPEN_SNACKBAR({
-        message: 'Group permissions panel is not ready.',
-        kind: SnackbarKind.ERROR
-    });
 
 const couldNotFetchGroupDetailsContents = () =>
     snackbarActions.OPEN_SNACKBAR({

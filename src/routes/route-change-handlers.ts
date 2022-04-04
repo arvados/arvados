@@ -41,7 +41,8 @@ const handleLocationChange = (store: RootStore) => ({ pathname }: Location) => {
     const apiClientAuthorizationsMatch = Routes.matchApiClientAuthorizationsRoute(pathname);
     const myAccountMatch = Routes.matchMyAccountRoute(pathname);
     const linkAccountMatch = Routes.matchLinkAccountRoute(pathname);
-    const userMatch = Routes.matchUsersRoute(pathname);
+    const usersMatch = Routes.matchUsersRoute(pathname);
+    const userProfileMatch = Routes.matchUserProfileRoute(pathname);
     const groupsMatch = Routes.matchGroupsRoute(pathname);
     const groupDetailsMatch = Routes.matchGroupDetailsRoute(pathname);
     const linksMatch = Routes.matchLinksRoute(pathname);
@@ -97,11 +98,13 @@ const handleLocationChange = (store: RootStore) => ({ pathname }: Location) => {
     } else if (apiClientAuthorizationsMatch) {
         store.dispatch(WorkbenchActions.loadApiClientAuthorizations);
     } else if (myAccountMatch) {
-        store.dispatch(WorkbenchActions.loadMyAccount);
+        store.dispatch(WorkbenchActions.loadUserProfile());
     } else if (linkAccountMatch) {
         store.dispatch(WorkbenchActions.loadLinkAccount);
-    } else if (userMatch) {
+    } else if (usersMatch) {
         store.dispatch(WorkbenchActions.loadUsers);
+    } else if (userProfileMatch) {
+        store.dispatch(WorkbenchActions.loadUserProfile(userProfileMatch.params.id));
     } else if (groupsMatch) {
         store.dispatch(WorkbenchActions.loadGroupsPanel);
     } else if (groupDetailsMatch) {

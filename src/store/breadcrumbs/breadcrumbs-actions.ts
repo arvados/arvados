@@ -17,6 +17,7 @@ import { updateResources } from '../resources/resources-actions';
 import { ResourceKind } from 'models/resource';
 import { GroupResource } from 'models/group';
 import { extractUuidKind } from 'models/resource';
+import { UserResource } from 'models/user';
 
 export const BREADCRUMBS = 'breadcrumbs';
 
@@ -112,21 +113,52 @@ export const setProcessBreadcrumbs = (processUuid: string) =>
         }
     };
 
-export const GROUPS_PANEL_LABEL = 'Groups';
-
 export const setGroupsBreadcrumbs = () =>
-    setBreadcrumbs([{ label: GROUPS_PANEL_LABEL }]);
+    setBreadcrumbs([{ label: SidePanelTreeCategory.GROUPS }]);
 
 export const setGroupDetailsBreadcrumbs = (groupUuid: string) =>
-    (dispatch: Dispatch, getState: () => RootState) => {
+    async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
 
         const group = getResource<GroupResource>(groupUuid)(getState().resources);
 
         const breadcrumbs: ResourceBreadcrumb[] = [
-            { label: GROUPS_PANEL_LABEL, uuid: GROUPS_PANEL_LABEL },
-            { label: group ? group.name : groupUuid, uuid: groupUuid },
+            { label: SidePanelTreeCategory.GROUPS, uuid: SidePanelTreeCategory.GROUPS },
+            { label: group ? group.name : (await services.groupsService.get(groupUuid)).name, uuid: groupUuid },
         ];
 
         dispatch(setBreadcrumbs(breadcrumbs));
 
+    };
+
+export const USERS_PANEL_LABEL = 'Users';
+
+export const setUsersBreadcrumbs = () =>
+    setBreadcrumbs([{ label: USERS_PANEL_LABEL, uuid: USERS_PANEL_LABEL }]);
+
+export const setUserProfileBreadcrumbs = (userUuid: string) =>
+    async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
+        try {
+            const user = getResource<UserResource>(userUuid)(getState().resources)
+                        || await services.userService.get(userUuid, false);
+            const breadcrumbs: ResourceBreadcrumb[] = [
+                { label: USERS_PANEL_LABEL, uuid: USERS_PANEL_LABEL },
+                { label: user ? user.username : userUuid, uuid: userUuid },
+            ];
+            dispatch(setBreadcrumbs(breadcrumbs));
+        } catch (e) {
+            const breadcrumbs: ResourceBreadcrumb[] = [
+                { label: USERS_PANEL_LABEL, uuid: USERS_PANEL_LABEL },
+                { label: userUuid, uuid: userUuid },
+            ];
+            dispatch(setBreadcrumbs(breadcrumbs));
+        }
+    };
+
+export const MY_ACCOUNT_PANEL_LABEL = 'My Account';
+
+export const setMyAccountBreadcrumbs = () =>
+    async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
+        dispatch(setBreadcrumbs([
+            { label: MY_ACCOUNT_PANEL_LABEL, uuid: MY_ACCOUNT_PANEL_LABEL },
+        ]));
     };

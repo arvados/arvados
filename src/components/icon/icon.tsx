@@ -68,11 +68,15 @@ import Computer from '@material-ui/icons/Computer';
 import WrapText from '@material-ui/icons/WrapText';
 import TextIncrease from '@material-ui/icons/ZoomIn';
 import TextDecrease from '@material-ui/icons/ZoomOut';
+import CropFreeSharp from '@material-ui/icons/CropFreeSharp';
+import ExitToApp from '@material-ui/icons/ExitToApp';
+import CheckCircleOutline from '@material-ui/icons/CheckCircleOutline';
+import RemoveCircleOutline from '@material-ui/icons/RemoveCircleOutline';
+import NotInterested from '@material-ui/icons/NotInterested';
 
 // Import FontAwesome icons
 import { library } from '@fortawesome/fontawesome-svg-core';
 import { faPencilAlt, faSlash, faUsers, faEllipsisH } from '@fortawesome/free-solid-svg-icons';
-import { CropFreeSharp } from '@material-ui/icons';
 library.add(
     faPencilAlt,
     faSlash,
@@ -179,3 +183,8 @@ export const AddUserIcon: IconType = (props) => <PersonAdd {...props} />;
 export const WordWrapIcon: IconType = (props) => <WrapText {...props} />;
 export const TextIncreaseIcon: IconType = (props) => <TextIncrease {...props} />;
 export const TextDecreaseIcon: IconType = (props) => <TextDecrease {...props} />;
+export const DeactivateUserIcon: IconType = (props) => <NotInterested {...props} />;
+export const LoginAsIcon: IconType = (props) => <ExitToApp {...props} />;
+export const ActiveIcon: IconType = (props) => <CheckCircleOutline {...props} />;
+export const SetupIcon: IconType = (props) => <RemoveCircleOutline {...props} />;
+export const InactiveIcon: IconType = (props) => <NotInterested {...props} />;

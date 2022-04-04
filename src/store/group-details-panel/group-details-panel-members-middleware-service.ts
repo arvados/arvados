@@ -24,7 +24,8 @@ export class GroupDetailsPanelMembersMiddlewareService extends DataExplorerMiddl
         const dataExplorer = getDataExplorer(api.getState().dataExplorer, this.getId());
         const groupUuid = getCurrentGroupDetailsPanelUuid(api.getState().properties);
         if (!dataExplorer || !groupUuid) {
-            api.dispatch(groupsDetailsPanelDataExplorerIsNotSet());
+            // Noop if data explorer refresh is triggered from another panel
+            return;
         } else {
             try {
                 const groupResource = await this.services.groupsService.get(groupUuid);
@@ -68,12 +69,6 @@ export class GroupDetailsPanelMembersMiddlewareService extends DataExplorerMiddl
         }
     }
 }
-
-const groupsDetailsPanelDataExplorerIsNotSet = () =>
-    snackbarActions.OPEN_SNACKBAR({
-        message: 'Group members panel is not ready.',
-        kind: SnackbarKind.ERROR
-    });
 
 const couldNotFetchGroupDetailsContents = () =>
     snackbarActions.OPEN_SNACKBAR({

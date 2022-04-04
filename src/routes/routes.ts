@@ -39,6 +39,7 @@ export const Routes = {
     LINK_ACCOUNT: '/link_account',
     KEEP_SERVICES: `/keep-services`,
     USERS: '/users',
+    USER_PROFILE: `/user/:id(${RESOURCE_UUID_PATTERN})`,
     API_CLIENT_AUTHORIZATIONS: `/api_client_authorizations`,
     GROUPS: '/groups',
     GROUP_DETAILS: `/group/:id(${RESOURCE_UUID_PATTERN})`,
@@ -95,6 +96,8 @@ export const getNavUrl = (uuid: string, config: FederationConfig) => {
 export const getProcessUrl = (uuid: string) => `/processes/${uuid}`;
 
 export const getGroupUrl = (uuid: string) => `/group/${uuid}`;
+
+export const getUserProfileUrl = (uuid: string) => `/user/${uuid}`;
 
 export interface ResourceRouteParams {
     id: string;
@@ -168,6 +171,9 @@ export const matchFedTokenRoute = (route: string) =>
 
 export const matchUsersRoute = (route: string) =>
     matchPath(route, { path: Routes.USERS });
+
+export const matchUserProfileRoute = (route: string) =>
+    matchPath<ResourceRouteParams>(route, { path: Routes.USER_PROFILE });
 
 export const matchApiClientAuthorizationsRoute = (route: string) =>
     matchPath(route, { path: Routes.API_CLIENT_AUTHORIZATIONS });
