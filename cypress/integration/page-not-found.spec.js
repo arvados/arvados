@@ -31,14 +31,22 @@ describe('Page not found tests', function() {
 
     it('shows not found popup', function() {
         // given
-        const notExistingUUID = 'zzzzz-tpzed-5o5tg0l9a57gxxx';
+        [
+            '/projects/zzzzz-j7d0g-nonexistingproj',
+            '/projects/zzzzz-tpzed-nonexistinguser',
+            '/processes/zzzzz-xvhdp-nonexistingproc',
+            '/collections/zzzzz-4zz18-nonexistingcoll'
+        ].forEach(function(path) {
+            // Using de slower loginAs() method to avoid bumping into dialog
+            // dismissal issues that are not related to this test.
+            cy.loginAs(adminUser);
 
-        // when
-        cy.loginAs(adminUser);
-        cy.goToPath(`/projects/${notExistingUUID}`);
+            // when
+            cy.goToPath(path);
 
-        // then
-        cy.get('[data-cy=not-found-content]').should('exist');
-        cy.get('[data-cy=not-found-page]').should('not.exist');
+            // then
+            cy.get('[data-cy=not-found-page]').should('not.exist');
+            cy.get('[data-cy=not-found-content]').should('exist');
+        });
     });
 })
