@@ -418,6 +418,15 @@ func (s *IntegrationSuite) TestForwardAnonymousTokenToLoginCluster(c *check.C) {
 	)
 	// The local z3333 anonymous token must be allowed to be forwarded to the login cluster
 	c.Check(err, check.IsNil)
+
+	userac1.AuthToken = "v2/z1111-gj3su-asdfasdfasdfasd/this-token-does-not-validate-so-anonymous-token-will-be-used-instead"
+	err = userac1.RequestAndDecode(&userList, "GET", "/arvados/v1/users", nil,
+		map[string]interface{}{
+			"reader_tokens": []string{anon3Auth.TokenV2()},
+			"where":         where,
+		},
+	)
+	c.Check(err, check.IsNil)
 }
 
 // Get a token from the login cluster (z1111), use it to submit a

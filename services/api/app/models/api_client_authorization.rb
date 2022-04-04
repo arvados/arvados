@@ -131,7 +131,7 @@ class ApiClientAuthorization < ArvadosModel
     end
 
     # Usually, the secret is salted
-    salted_secret = OpenSSL::HMAC.hexdigest('sha1', secret, remote)
+    salted_secret = OpenSSL::HMAC.hexdigest('sha1', Rails.configuration.Users.AnonymousUserToken, remote)
 
     # The anonymous token could be specified as a full v2 token in the config,
     # but the config loader strips it down to the secret part.
