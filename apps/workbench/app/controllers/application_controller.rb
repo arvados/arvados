@@ -172,7 +172,7 @@ class ApplicationController < ActionController::Base
 
   def find_objects_for_index
     @objects ||= model_class
-    @objects = @objects.filter(@filters).limit(@limit).offset(@offset)
+    @objects = @objects.filter(@filters).limit(@limit).offset(@offset).order(@order)
     @objects.fetch_multiple_pages(false)
   end
 

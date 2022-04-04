@@ -97,7 +97,7 @@ has_job:
   state: Ready
   uuid: zzzzz-d1hrv-1yfj6xkidf2muk3
   owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz
-  created_at: <%= 2.1.minute.ago.to_s(:db) %>
+  created_at: <%= 2.9.minute.ago.to_s(:db) %>
   components:
    foo:
     script: foo
@@ -363,8 +363,8 @@ pipeline_in_running_state:
   name: running_with_job
   uuid: zzzzz-d1hrv-runningpipeline
   owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz
-  created_at: <%= 3.1.minute.ago.to_s(:db) %>
-  started_at: <%= 3.1.minute.ago.to_s(:db) %>
+  created_at: <%= 2.8.minute.ago.to_s(:db) %>
+  started_at: <%= 2.8.minute.ago.to_s(:db) %>
   state: RunningOnServer
   components:
    foo:
