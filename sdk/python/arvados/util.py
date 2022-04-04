@@ -392,7 +392,8 @@ def keyset_list_all(fn, order_key="created_at", num_retries=0, ascending=True, *
     pagesize = 1000
     kwargs["limit"] = pagesize
     kwargs["count"] = 'none'
-    kwargs["order"] = ["%s %s" % (order_key, "asc" if ascending else "desc"), "uuid asc"]
+    asc = "asc" if ascending else "desc"
+    kwargs["order"] = ["%s %s" % (order_key, asc), "uuid %s" % asc]
     other_filters = kwargs.get("filters", [])
 
     if "select" in kwargs and "uuid" not in kwargs["select"]:
@@ -436,7 +437,7 @@ def keyset_list_all(fn, order_key="created_at", num_retries=0, ascending=True, *
         if firstitem[order_key] == lastitem[order_key]:
             # Got a page where every item has the same order key.
             # Switch to using uuid for paging.
-            nextpage = [[order_key, "=", lastitem[order_key]], ["uuid", ">", lastitem["uuid"]]]
+            nextpage = [[order_key, "=", lastitem[order_key]], ["uuid", ">" if ascending else "<", lastitem["uuid"]]]
             prev_page_all_same_order_key = True
         else:
             # Start from the last order key seen, but skip the last

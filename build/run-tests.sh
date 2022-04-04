@@ -556,6 +556,12 @@ setup_ruby_environment() {
             done
             "$bundle" version | tee /dev/stderr | grep -q 'version 2'
         ) || fatal 'install bundler'
+	if test -d /var/lib/arvados-arvbox/ ; then
+	    # Inside arvbox, use bundler-installed binstubs.  The
+	    # system bundler and rail's own bin/bundle refuse to work.
+	    # I don't know why.
+	    bundle=binstubs/bundle
+	fi
     fi
 }
 

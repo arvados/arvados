@@ -97,7 +97,7 @@ has_job:
   state: Ready
   uuid: zzzzz-d1hrv-1yfj6xkidf2muk3
   owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz
-  created_at: <%= 3.1.minute.ago.to_s(:db) %>
+  created_at: <%= 2.9.minute.ago.to_s(:db) %>
   components:
    foo:
     script: foo
@@ -112,7 +112,7 @@ components_is_jobspec:
   # Helps test that clients cope with funny-shaped components.
   # For an example, see #3321.
   uuid: zzzzz-d1hrv-1yfj61234abcdk4
-  created_at: <%= 2.minute.ago.to_s(:db) %>
+  created_at: <%= 4.minute.ago.to_s(:db) %>
   owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz
   modified_by_client_uuid: zzzzz-ozdt8-brczlopd8u8d0jr
   modified_by_user_uuid: zzzzz-tpzed-xurymjxw79nv3jz
@@ -132,7 +132,7 @@ pipeline_with_tagged_collection_input:
   state: Ready
   uuid: zzzzz-d1hrv-1yfj61234abcdk3
   owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz
-  created_at: <%= 3.1.minute.ago.to_s(:db) %>
+  created_at: <%= 3.2.minute.ago.to_s(:db) %>
   components:
     part-one:
       script_parameters:
@@ -145,7 +145,7 @@ pipeline_to_merge_params:
   uuid: zzzzz-d1hrv-1yfj6dcba4321k3
   pipeline_template_uuid: zzzzz-p5p6p-aox0k0ofxrystgw
   owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz
-  created_at: <%= 3.1.minute.ago.to_s(:db) %>
+  created_at: <%= 3.3.minute.ago.to_s(:db) %>
   components:
     part-one:
       script_parameters:
@@ -193,7 +193,7 @@ pipeline_instance_owned_by_fuse:
   uuid: zzzzz-d1hrv-ri9dvgkgqs9y09j
   owner_uuid: zzzzz-tpzed-0fusedrivertest
   pipeline_template_uuid: zzzzz-p5p6p-vq4wuvy84xvaq2r
-  created_at: 2014-09-15 12:00:00
+  created_at: 2014-09-16 12:00:00
   name: "pipeline instance owned by FUSE"
   components:
     foo:
@@ -210,7 +210,7 @@ pipeline_instance_in_fuse_project:
   uuid: zzzzz-d1hrv-scarxiyajtshq3l
   owner_uuid: zzzzz-j7d0g-0000ownedbyfuse
   pipeline_template_uuid: zzzzz-p5p6p-vq4wuvy84xvaq2r
-  created_at: 2014-09-15 12:00:00
+  created_at: 2014-09-17 12:00:00
   name: "pipeline instance in FUSE project"
   components:
     foo:
@@ -227,7 +227,7 @@ pipeline_owned_by_active_in_aproject:
   state: Complete
   uuid: zzzzz-d1hrv-ju5ghi0i9z2kqc6
   owner_uuid: zzzzz-j7d0g-v955i6s2oi1cbso
-  created_at: 2014-09-15 12:00:00
+  created_at: 2014-09-18 12:00:00
   components:
     foo:
       script: foo
@@ -243,7 +243,7 @@ pipeline_owned_by_active_in_home:
   state: Complete
   uuid: zzzzz-d1hrv-lihrbd0i9z2kqc6
   owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz
-  created_at: 2014-09-15 12:00:00
+  created_at: 2014-09-19 12:00:00
   components:
     foo:
       script: foo
@@ -287,7 +287,7 @@ pipeline_in_publicly_accessible_project_but_other_objects_elsewhere:
   name: Pipeline in public project with other objects elsewhere
   pipeline_template_uuid: zzzzz-p5p6p-aox0k0ofxrystgw
   state: Complete
-  created_at: 2014-09-15 12:00:00
+  created_at: 2014-09-20 12:00:00
   components:
     foo:
       script: foo
@@ -314,7 +314,7 @@ new_pipeline_in_publicly_accessible_project:
   name: Pipeline in New state in publicly accessible project
   pipeline_template_uuid: zzzzz-p5p6p-tmpltpublicproj
   state: New
-  created_at: 2014-09-15 12:00:00
+  created_at: 2014-09-21 12:00:00
   components:
     foo:
       script: foo
@@ -331,7 +331,7 @@ new_pipeline_in_publicly_accessible_project_but_other_objects_elsewhere:
   name: Pipeline in New state in public project with objects elsewhere
   pipeline_template_uuid: zzzzz-p5p6p-aox0k0ofxrystgw
   state: New
-  created_at: 2014-09-15 12:00:00
+  created_at: 2014-09-22 12:00:00
   components:
     foo:
       script: foo
@@ -348,7 +348,7 @@ new_pipeline_in_publicly_accessible_project_with_dataclass_file_and_other_object
   name: Pipeline in public project in New state with file type data class with objects elsewhere
   pipeline_template_uuid: zzzzz-p5p6p-aox0k0ofxrystgw
   state: New
-  created_at: 2014-09-15 12:00:00
+  created_at: 2014-09-23 12:00:00
   components:
     foo:
       script: foo
@@ -363,8 +363,8 @@ pipeline_in_running_state:
   name: running_with_job
   uuid: zzzzz-d1hrv-runningpipeline
   owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz
-  created_at: <%= 3.1.minute.ago.to_s(:db) %>
-  started_at: <%= 3.1.minute.ago.to_s(:db) %>
+  created_at: <%= 2.8.minute.ago.to_s(:db) %>
+  started_at: <%= 2.8.minute.ago.to_s(:db) %>
   state: RunningOnServer
   components:
    foo:
@@ -393,7 +393,7 @@ complete_pipeline_with_two_jobs:
   uuid: zzzzz-d1hrv-twodonepipeline
   owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz
   state: Complete
-  created_at: <%= 3.minute.ago.to_s(:db) %>
+  created_at: <%= 2.5.minute.ago.to_s(:db) %>
   started_at: <%= 2.minute.ago.to_s(:db) %>
   finished_at: <%= 1.minute.ago.to_s(:db) %>
   components:
