@@ -5,12 +5,15 @@ import React from "react";
 import { Popover, List, ListItem, ListItemIcon, ListItemText, Divider } from "@material-ui/core";
 import { DefaultTransformOrigin } from "../popover/helpers";
 import { IconType } from "../icon/icon";
+import { RootState } from "store/store";
+import { ContextMenuResource } from "store/context-menu/context-menu-actions";
 
 export interface ContextMenuItem {
     name?: string | React.ComponentType;
     icon?: IconType;
     component?: React.ComponentType<any>;
     adminOnly?: boolean;
+    filters?: ((state: RootState, resource: ContextMenuResource) => boolean)[]
 }
 
 export type ContextMenuItemGroup = ContextMenuItem[];

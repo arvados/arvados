@@ -11,13 +11,16 @@ import { dialogActions } from 'store/dialog/dialog-actions';
 import { startSubmit, reset, stopSubmit } from "redux-form";
 import { snackbarActions, SnackbarKind } from 'store/snackbar/snackbar-actions';
 import { UserResource } from "models/user";
-import { getResource } from 'store/resources/resources';
+import { filterResources, getResource } from 'store/resources/resources';
 import { navigateTo, navigateToUsers, navigateToRootProject } from "store/navigation/navigation-action";
 import { authActions } from 'store/auth/auth-action';
 import { getTokenV2 } from "models/api-client-authorization";
 import { VIRTUAL_MACHINE_ADD_LOGIN_GROUPS_FIELD, VIRTUAL_MACHINE_ADD_LOGIN_VM_FIELD } from "store/virtual-machines/virtual-machines-actions";
 import { PermissionLevel } from "models/permission";
 import { updateResources } from "store/resources/resources-actions";
+import { BuiltinGroups, getBuiltinGroupUuid } from "models/group";
+import { LinkClass, LinkResource } from "models/link";
+import { ResourceKind } from "models/resource";
 
 export const USERS_PANEL_ID = 'usersPanel';
 export const USER_ATTRIBUTES_DIALOG = 'userAttributesDialog';
@@ -147,3 +150,27 @@ export const loadUsersPanel = () =>
     (dispatch: Dispatch) => {
         dispatch(userBindedActions.REQUEST_ITEMS());
     };
+
+export enum UserAccountStatus {
+        ACTIVE = 'Active',
+        INACTIVE = 'Inactive',
+        SETUP = 'Setup',
+    }
+
+export const getUserAccountStatus = (state: RootState, uuid: string) => {
+    const user = getResource<UserResource>(uuid)(state.resources);
+    // Get membership links for all users group
+    const allUsersGroupUuid = getBuiltinGroupUuid(state.auth.localCluster, BuiltinGroups.ALL);
+    const permissions = filterResources((resource: LinkResource) =>
+        resource.kind === ResourceKind.LINK &&
+        resource.linkClass === LinkClass.PERMISSION &&
+        resource.headUuid === allUsersGroupUuid &&
+        resource.tailUuid === uuid
+    )(state.resources);
+
+    return user && user.isActive
+        ? UserAccountStatus.ACTIVE
+        : permissions.length > 0
+            ? UserAccountStatus.SETUP
+            : UserAccountStatus.INACTIVE;
+}
