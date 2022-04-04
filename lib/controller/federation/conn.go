@@ -75,9 +75,11 @@ func saltedTokenProvider(cluster *arvados.Cluster, local backend, remoteID strin
 				// If we did this, the login cluster would call back to us and then
 				// reject our response because the user UUID prefix (i.e., the
 				// LoginCluster prefix) won't match the token UUID prefix (i.e., our
-				// prefix). The anonymous token is OK to forward, because it gets
-				// mapped to the local anonymous token automatically on the login
-				// cluster.
+				// prefix). The anonymous token is OK to forward, because (unlike other
+				// local tokens for real users) the validation callback will return the
+				// locally issued anonymous user ID instead of a login-cluster user ID.
+				// That anonymous user ID gets mapped to the local anonymous user
+				// automatically on the login cluster.
 				return nil, httpErrorf(http.StatusUnauthorized, "cannot use a locally issued token to forward a request to our login cluster (%s)", remoteID)
 			}
 			salted, err := auth.SaltToken(token, remoteID)

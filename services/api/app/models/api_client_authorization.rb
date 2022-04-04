@@ -130,23 +130,13 @@ class ApiClientAuthorization < ArvadosModel
       secret = token
     end
 
-    # the anonymous token could be specified as a full v2 token in the config
-    case Rails.configuration.Users.AnonymousUserToken[0..2]
-    when 'v2/'
-      _, anon_token_uuid, anon_secret, anon_optional = Rails.configuration.Users.AnonymousUserToken.split('/')
-      unless anon_token_uuid.andand.length == 27 && anon_secret.andand.length.andand > 0
-        # invalid v2 token
-        return nil
-      end
-    else
-      # v1 token
-      anon_secret = Rails.configuration.Users.AnonymousUserToken
-    end
+    # Usually, the secret is salted
+    salted_secret = OpenSSL::HMAC.hexdigest('sha1', secret, remote)
 
-    salted_secret = OpenSSL::HMAC.hexdigest('sha1', anon_secret, remote)
-
+    # The anonymous token could be specified as a full v2 token in the config,
+    # but the config loader strips it down to the secret part.
     # The anonymous token content and minimum length is verified in lib/config
-    if secret.length >= 0 && (secret == anon_secret || secret == salted_secret)
+    if secret.length >= 0 && (secret == Rails.configuration.Users.AnonymousUserToken || secret == salted_secret)
       return ApiClientAuthorization.new(user: User.find_by_uuid(anonymous_user_uuid),
                                         uuid: Rails.configuration.ClusterID+"-gj3su-anonymouspublic",
                                         api_token: secret,
