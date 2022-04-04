@@ -24,7 +24,7 @@ class Arvados::V1::QueryTest < ActionController::TestCase
       controller: 'logs',
     }
     assert_response :success
-    assert_equal('logs.event_type asc, logs.modified_at desc, logs.uuid',
+    assert_equal('logs.event_type asc, logs.modified_at desc, logs.uuid desc',
                  assigns(:objects).order_values.join(', '))
   end
 
@@ -36,7 +36,7 @@ class Arvados::V1::QueryTest < ActionController::TestCase
       controller: 'logs',
     }
     assert_response :success
-    assert_equal('logs.modified_at asc, logs.uuid',
+    assert_equal('logs.modified_at asc, logs.uuid desc',
                  assigns(:objects).order_values.join(', '))
   end
 
@@ -51,7 +51,7 @@ class Arvados::V1::QueryTest < ActionController::TestCase
       controller: 'logs',
     }
     assert_response :success
-    assert_equal('logs.modified_at asc, logs.event_type desc, logs.uuid',
+    assert_equal('logs.modified_at asc, logs.event_type desc, logs.uuid desc',
                  assigns(:objects).order_values.join(', '))
   end
 
