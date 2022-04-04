@@ -82,7 +82,7 @@ describe('Search tests', function() {
         });
     });
 
-    it.only('can display path of the selected item', function() {
+    it('can display path of the selected item', function() {
         const colName = `Collection ${Math.floor(Math.random() * Math.floor(999999))}`;
 
         // Creates the collection using the admin token so we can set up
