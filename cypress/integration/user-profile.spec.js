@@ -67,33 +67,46 @@ describe('User profile tests', function() {
         }
     }
 
+    function assertContextMenuItems({
+        account,
+        activate,
+        deactivate,
+        login,
+        setup
+    }) {
+        cy.get('[data-cy=user-profile-panel-options-btn]').click();
+        cy.get('[data-cy=context-menu]').within(() => {
+            cy.get('[role=button]').contains('Advanced');
+
+            cy.get('[role=button]').should(account ? 'contain' : 'not.contain', 'Account Settings');
+            cy.get('[role=button]').should(activate ? 'contain' : 'not.contain', 'Activate User');
+            cy.get('[role=button]').should(deactivate ? 'contain' : 'not.contain', 'Deactivate User');
+            cy.get('[role=button]').should(login ? 'contain' : 'not.contain', 'Login As User');
+            cy.get('[role=button]').should(setup ? 'contain' : 'not.contain', 'Setup User');
+        });
+        cy.get('div[role=presentation]').click();
+    }
+
     beforeEach(function() {
-        cy.loginAs(adminUser);
-        cy.goToPath('/my-account');
-        enterProfileValues({
-            org: '',
-            org_email: '',
-            role: '',
-            website: '',
+        cy.updateResource(adminUser.token, 'users', adminUser.user.uuid, {
+            prefs: {
+                profile: {
+                    organization: '',
+                    organization_email: '',
+                    role: '',
+                    website_url: '',
+                },
+            },
         });
-        cy.get('[data-cy=profile-form] button[type="submit"]').then((btn) => {
-            if (!btn.is(':disabled')) {
-                btn.click();
-            }
-        });
-
-
-        cy.goToPath('/user/' + activeUser.user.uuid);
-        enterProfileValues({
-            org: '',
-            org_email: '',
-            role: '',
-            website: '',
-        });
-        cy.get('[data-cy=profile-form] button[type="submit"]').then((btn) => {
-            if (!btn.is(':disabled')) {
-                btn.click();
-            }
+        cy.updateResource(adminUser.token, 'users', activeUser.user.uuid, {
+            prefs: {
+                profile: {
+                    organization: '',
+                    organization_email: '',
+                    role: '',
+                    website_url: '',
+                },
+            },
         });
     });
 
@@ -103,8 +116,14 @@ describe('User profile tests', function() {
         cy.get('header button[title="Account Management"]').click();
         cy.get('#account-menu').contains('My account').click();
 
-        // Admin tab should be hidden
-        cy.get('div [role="tab"]').should('not.contain', 'ADMIN');
+        // Admin actions should be hidden, no account menu
+        assertContextMenuItems({
+            account: false,
+            activate: false,
+            deactivate: false,
+            login: false,
+            setup: false,
+        });
 
         // Check initial values
         assertProfileValues({
@@ -166,15 +185,14 @@ describe('User profile tests', function() {
         // Submit should be disabled
         cy.get('[data-cy=profile-form] button[type="submit"]').should('be.disabled');
 
-        // Admin context items should be hidden
-        cy.get('[data-cy=user-profile-panel-options-btn]').click();
-        cy.get('[data-cy=context-menu]').within(() => {
-            cy.get('[role=button]').should('not.contain', 'Activate User')
-            cy.get('[role=button]').should('not.contain', 'Deactivate User')
-            cy.get('[role=button]').should('not.contain', 'Login As User')
-            cy.get('[role=button]').should('not.contain', 'Setup User');
+        // Admin actions should be hidden, no account menu
+        assertContextMenuItems({
+            account: false,
+            activate: false,
+            deactivate: false,
+            login: false,
+            setup: false,
         });
-        cy.get('div[role=presentation]').click();
     });
 
     it('admin can edit own profile', function() {
@@ -183,15 +201,14 @@ describe('User profile tests', function() {
         cy.get('header button[title="Account Management"]').click();
         cy.get('#account-menu').contains('My account').click();
 
-        // Admin context items should be visible
-        cy.get('[data-cy=user-profile-panel-options-btn]').click();
-        cy.get('[data-cy=context-menu]').within(() => {
-            cy.get('[role=button]').contains('Activate User')
-            cy.get('[role=button]').contains('Deactivate User')
-            cy.get('[role=button]').contains('Login As User')
-            cy.get('[role=button]').contains('Setup User');
+        // Admin actions should be visible, no account menu
+        assertContextMenuItems({
+            account: false,
+            activate: false,
+            deactivate: true,
+            login: false,
+            setup: false,
         });
-        cy.get('div[role=presentation]').click();
 
         // Check initial values
         assertProfileValues({
@@ -262,6 +279,15 @@ describe('User profile tests', function() {
             role: 'Researcher',
             website: 'changed.local',
         });
+
+        // Admin actions should be visible, no account menu
+        assertContextMenuItems({
+            account: false,
+            activate: false,
+            deactivate: true,
+            login: true,
+            setup: false,
+        });
     });
 
     it('displays role groups on user profile', function() {
@@ -323,6 +349,13 @@ describe('User profile tests', function() {
         cy.get('div [role="tab"]').contains('GROUPS').click();
         cy.get('[data-cy=user-profile-groups-data-explorer]').should('contain', 'All users');
         cy.get('div [role="tab"]').contains('PROFILE').click();
+        assertContextMenuItems({
+            account: false,
+            activate: false,
+            deactivate: true,
+            login: true,
+            setup: false,
+        });
 
         // Deactivate user
         cy.get('[data-cy=user-profile-panel-options-btn]').click();
@@ -334,6 +367,13 @@ describe('User profile tests', function() {
         cy.get('div [role="tab"]').contains('GROUPS').click();
         cy.get('[data-cy=user-profile-groups-data-explorer]').should('not.contain', 'All users');
         cy.get('div [role="tab"]').contains('PROFILE').click();
+        assertContextMenuItems({
+            account: false,
+            activate: true,
+            deactivate: false,
+            login: true,
+            setup: true,
+        });
 
         // Setup user
         cy.get('[data-cy=user-profile-panel-options-btn]').click();
@@ -345,6 +385,13 @@ describe('User profile tests', function() {
         cy.get('div [role="tab"]').contains('GROUPS').click();
         cy.get('[data-cy=user-profile-groups-data-explorer]').should('contain', 'All users');
         cy.get('div [role="tab"]').contains('PROFILE').click();
+        assertContextMenuItems({
+            account: false,
+            activate: true,
+            deactivate: true,
+            login: true,
+            setup: false,
+        });
 
         // Activate user
         cy.get('[data-cy=user-profile-panel-options-btn]').click();
@@ -356,17 +403,31 @@ describe('User profile tests', function() {
         cy.get('div [role="tab"]').contains('GROUPS').click();
         cy.get('[data-cy=user-profile-groups-data-explorer]').should('contain', 'All users');
         cy.get('div [role="tab"]').contains('PROFILE').click();
+        assertContextMenuItems({
+            account: false,
+            activate: false,
+            deactivate: true,
+            login: true,
+            setup: false,
+        });
 
         // Deactivate and activate user skipping setup
         cy.get('[data-cy=user-profile-panel-options-btn]').click();
         cy.get('[data-cy=context-menu]').contains('Deactivate User').click();
         cy.get('[data-cy=confirmation-dialog-ok-btn]').click();
-        //
+        // Check
         cy.get('[data-cy=account-status]').contains('Inactive');
         cy.get('div [role="tab"]').contains('GROUPS').click();
         cy.get('[data-cy=user-profile-groups-data-explorer]').should('not.contain', 'All users');
         cy.get('div [role="tab"]').contains('PROFILE').click();
-        //
+        assertContextMenuItems({
+            account: false,
+            activate: true,
+            deactivate: false,
+            login: true,
+            setup: true,
+        });
+        // reactivate
         cy.get('[data-cy=user-profile-panel-options-btn]').click();
         cy.get('[data-cy=context-menu]').contains('Activate User').click();
         cy.get('[data-cy=confirmation-dialog-ok-btn]').click();
@@ -375,6 +436,14 @@ describe('User profile tests', function() {
         cy.get('[data-cy=account-status]').contains('Active');
         cy.get('div [role="tab"]').contains('GROUPS').click();
         cy.get('[data-cy=user-profile-groups-data-explorer]').should('contain', 'All users');
+        cy.get('div [role="tab"]').contains('PROFILE').click();
+        assertContextMenuItems({
+            account: false,
+            activate: false,
+            deactivate: true,
+            login: true,
+            setup: false,
+        });
     });
 
 });
