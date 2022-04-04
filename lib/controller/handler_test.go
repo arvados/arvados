@@ -5,9 +5,11 @@
 package controller
 
 import (
+	"bytes"
 	"context"
 	"crypto/tls"
 	"encoding/json"
+	"io"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
@@ -36,13 +38,15 @@ var _ = check.Suite(&HandlerSuite{})
 type HandlerSuite struct {
 	cluster *arvados.Cluster
 	handler *Handler
+	logbuf  *bytes.Buffer
 	ctx     context.Context
 	cancel  context.CancelFunc
 }
 
 func (s *HandlerSuite) SetUpTest(c *check.C) {
+	s.logbuf = &bytes.Buffer{}
 	s.ctx, s.cancel = context.WithCancel(context.Background())
-	s.ctx = ctxlog.Context(s.ctx, ctxlog.New(os.Stderr, "json", "debug"))
+	s.ctx = ctxlog.Context(s.ctx, ctxlog.New(io.MultiWriter(os.Stderr, s.logbuf), "json", "debug"))
 	s.cluster = &arvados.Cluster{
 		ClusterID:  "zzzzz",
 		PostgreSQL: integrationTestCluster().PostgreSQL,
@@ -315,6 +319,16 @@ func (s *HandlerSuite) TestValidateRemoteToken(c *check.C) {
 			c.Logf("HTTP %d: %s", resp.Code, resp.Body.String())
 		}
 	}
+}
+
+func (s *HandlerSuite) TestLogTokenUUID(c *check.C) {
+	req := httptest.NewRequest("GET", "https://0.0.0.0/arvados/v1/users/current", nil)
+	req.Header.Set("Authorization", "Bearer "+arvadostest.ActiveTokenV2)
+	req = req.WithContext(s.ctx)
+	resp := httptest.NewRecorder()
+	httpserver.LogRequests(s.handler).ServeHTTP(resp, req)
+	c.Check(resp.Code, check.Equals, http.StatusOK)
+	c.Check(s.logbuf.String(), check.Matches, `(?ms).*"tokenUUIDs":\["`+strings.Split(arvadostest.ActiveTokenV2, "/")[1]+`"\].*`)
 }
 
 func (s *HandlerSuite) TestCreateAPIToken(c *check.C) {

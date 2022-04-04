@@ -62,7 +62,7 @@ class SelectTest < ActionDispatch::IntegrationTest
       headers: auth(:admin)
     assert_response :success
     uuids = json_response['items'].collect { |i| i['uuid'] }
-    assert_equal uuids, uuids.sort
+    assert_equal uuids, uuids.sort.reverse
   end
 
   def assert_link_classes_ascend(current_class, prev_class)

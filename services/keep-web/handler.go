@@ -913,6 +913,14 @@ func (h *handler) logUploadOrDownload(
 			WithField("collection_file_path", filepath)
 		props["collection_uuid"] = collection.UUID
 		props["collection_file_path"] = filepath
+		// h.determineCollection populates the collection_uuid prop with the PDH, if
+		// this collection is being accessed via PDH. In that case, blank the
+		// collection_uuid field so that consumers of the log entries can rely on it
+		// being a UUID, or blank. The PDH remains available via the
+		// portable_data_hash property.
+		if props["collection_uuid"] == collection.PortableDataHash {
+			props["collection_uuid"] = ""
+		}
 	}
 	if r.Method == "PUT" || r.Method == "POST" {
 		log.Info("File upload")

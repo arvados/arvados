@@ -12,6 +12,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"io/fs"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -102,11 +103,60 @@ func NewClientFromConfig(cluster *Cluster) (*Client, error) {
 }
 
 // NewClientFromEnv creates a new Client that uses the default HTTP
-// client with the API endpoint and credentials given by the
-// ARVADOS_API_* environment variables.
+// client, and loads API endpoint and credentials from ARVADOS_*
+// environment variables (if set) and
+// $HOME/.config/arvados/settings.conf (if readable).
+//
+// If a config exists in both locations, the environment variable is
+// used.
+//
+// If there is an error (other than ENOENT) reading settings.conf,
+// NewClientFromEnv logs the error to log.Default(), then proceeds as
+// if settings.conf did not exist.
+//
+// Space characters are trimmed when reading the settings file, so
+// these are equivalent:
+//
+//   ARVADOS_API_HOST=localhost\n
+//   ARVADOS_API_HOST=localhost\r\n
+//   ARVADOS_API_HOST = localhost \n
+//   \tARVADOS_API_HOST = localhost\n
 func NewClientFromEnv() *Client {
+	vars := map[string]string{}
+	home := os.Getenv("HOME")
+	conffile := home + "/.config/arvados/settings.conf"
+	if home == "" {
+		// no $HOME => just use env vars
+	} else if settings, err := os.ReadFile(conffile); errors.Is(err, fs.ErrNotExist) {
+		// no config file => just use env vars
+	} else if err != nil {
+		// config file unreadable => log message, then use env vars
+		log.Printf("continuing without loading %s: %s", conffile, err)
+	} else {
+		for _, line := range bytes.Split(settings, []byte{'\n'}) {
+			kv := bytes.SplitN(line, []byte{'='}, 2)
+			k := string(bytes.TrimSpace(kv[0]))
+			if len(kv) != 2 || !strings.HasPrefix(k, "ARVADOS_") {
+				// Same behavior as python sdk:
+				// silently skip leading # (comments),
+				// blank lines, typos, and non-Arvados
+				// vars.
+				continue
+			}
+			vars[k] = string(bytes.TrimSpace(kv[1]))
+		}
+	}
+	for _, env := range os.Environ() {
+		if !strings.HasPrefix(env, "ARVADOS_") {
+			continue
+		}
+		kv := strings.SplitN(env, "=", 2)
+		if len(kv) == 2 {
+			vars[kv[0]] = kv[1]
+		}
+	}
 	var svcs []string
-	for _, s := range strings.Split(os.Getenv("ARVADOS_KEEP_SERVICES"), " ") {
+	for _, s := range strings.Split(vars["ARVADOS_KEEP_SERVICES"], " ") {
 		if s == "" {
 			continue
 		} else if u, err := url.Parse(s); err != nil {
@@ -118,13 +168,13 @@ func NewClientFromEnv() *Client {
 		}
 	}
 	var insecure bool
-	if s := strings.ToLower(os.Getenv("ARVADOS_API_HOST_INSECURE")); s == "1" || s == "yes" || s == "true" {
+	if s := strings.ToLower(vars["ARVADOS_API_HOST_INSECURE"]); s == "1" || s == "yes" || s == "true" {
 		insecure = true
 	}
 	return &Client{
 		Scheme:          "https",
-		APIHost:         os.Getenv("ARVADOS_API_HOST"),
-		AuthToken:       os.Getenv("ARVADOS_API_TOKEN"),
+		APIHost:         vars["ARVADOS_API_HOST"],
+		AuthToken:       vars["ARVADOS_API_TOKEN"],
 		Insecure:        insecure,
 		KeepServiceURIs: svcs,
 		Timeout:         5 * time.Minute,

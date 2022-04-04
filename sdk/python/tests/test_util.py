@@ -166,10 +166,10 @@ class KeysetListAllTestCase(unittest.TestCase):
 
     def test_onepage_desc(self):
         ks = KeysetTestHelper([[
-            {"limit": 1000, "count": "none", "order": ["created_at desc", "uuid asc"], "filters": []},
+            {"limit": 1000, "count": "none", "order": ["created_at desc", "uuid desc"], "filters": []},
             {"items": [{"created_at": "2", "uuid": "2"}, {"created_at": "1", "uuid": "1"}]}
         ], [
-            {"limit": 1000, "count": "none", "order": ["created_at desc", "uuid asc"], "filters": [["created_at", "<=", "1"], ["uuid", "!=", "1"]]},
+            {"limit": 1000, "count": "none", "order": ["created_at desc", "uuid desc"], "filters": [["created_at", "<=", "1"], ["uuid", "!=", "1"]]},
             {"items": []}
         ]])
 

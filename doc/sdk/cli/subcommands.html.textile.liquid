@@ -212,9 +212,10 @@ This is a frontend to @arv-get@.
 <notextile>
 <pre>
 $ <code class="userinput">arv keep get --help</code>
-usage: arv-get [-h] [--retries RETRIES]
+usage: arv-get [-h] [--retries RETRIES] [--version]
                [--progress | --no-progress | --batch-progress]
-               [--hash HASH | --md5sum] [-n] [-r] [-f | --skip-existing]
+               [--hash HASH | --md5sum] [-n] [-r]
+               [-f | -v | --skip-existing | --strip-manifest] [--threads N]
                locator [destination]
 
 Copy data from Keep to a local file or pipe.
@@ -223,19 +224,20 @@ positional arguments:
   locator            Collection locator, optionally with a file path or
                      prefix.
   destination        Local file or directory where the data is to be written.
-                     Default: /dev/stdout.
+                     Default: stdout.
 
 optional arguments:
   -h, --help         show this help message and exit
   --retries RETRIES  Maximum number of times to retry server requests that
-                     encounter temporary failures (e.g., server down). Default
-                     3.
+                     encounter temporary failures (e.g., server down).
+                     Default 3.
+  --version          Print version and exit.
   --progress         Display human-readable progress on stderr (bytes and, if
                      possible, percentage of total data size). This is the
                      default behavior when it is not expected to interfere
                      with the output: specifically, stderr is a tty _and_
-                     either stdout is not a tty, or output is being written to
-                     named files rather than stdout.
+                     either stdout is not a tty, or output is being written
+                     to named files rather than stdout.
   --no-progress      Do not display human-readable progress on stderr.
   --batch-progress   Display machine-readable progress on stderr (bytes and,
                      if known, total data size).
@@ -252,11 +254,19 @@ optional arguments:
   -f                 Overwrite existing files while writing. The default
                      behavior is to refuse to write *anything* if any of the
                      output files already exist. As a special case, -f is not
-                     needed to write to /dev/stdout.
-  --skip-existing    Skip files that already exist. The default behavior is to
-                     refuse to write *anything* if any files exist that would
-                     have to be overwritten. This option causes even devices,
-                     sockets, and fifos to be skipped.
+                     needed to write to stdout.
+  -v                 Once for verbose mode, twice for debug mode.
+  --skip-existing    Skip files that already exist. The default behavior is
+                     to refuse to write *anything* if any files exist that
+                     would have to be overwritten. This option causes even
+                     devices, sockets, and fifos to be skipped.
+  --strip-manifest   When getting a collection manifest, strip its access
+                     tokens before writing it.
+  --threads N        Set the number of download threads to be used. Take into
+                     account that using lots of threads will increase the RAM
+                     requirements. Default is to use 4 threads. On high
+                     latency installations, using a greater number will
+                     improve overall throughput.
 </pre>
 </notextile>
 
