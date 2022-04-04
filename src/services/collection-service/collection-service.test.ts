@@ -4,7 +4,8 @@
 
 import axios, { AxiosInstance } from 'axios';
 import MockAdapter from 'axios-mock-adapter';
-import { CollectionResource } from 'models/collection';
+import { snakeCase } from 'lodash';
+import { CollectionResource, defaultCollectionSelectedFields } from 'models/collection';
 import { AuthService } from '../auth-service/auth-service';
 import { CollectionService } from './collection-service';
 
@@ -31,17 +32,16 @@ describe('collection-service', () => {
     });
 
     describe('get', () => {
-        it('should make a list request with uuid filtering', async () => {
+        it('should make a request with default selected fields', async () => {
             serverApi.get = jest.fn(() => Promise.resolve(
                 { data: { items: [{}] } }
             ));
             const uuid = 'zzzzz-4zz18-0123456789abcde'
             await collectionService.get(uuid);
             expect(serverApi.get).toHaveBeenCalledWith(
-                '/collections', {
+                `/collections/${uuid}`, {
                     params: {
-                        filters: `[["uuid","=","zzzzz-4zz18-0123456789abcde"]]`,
-                        include_old_versions: true,
+                        select: JSON.stringify(defaultCollectionSelectedFields.map(snakeCase)),
                     },
                 }
             );
@@ -54,10 +54,8 @@ describe('collection-service', () => {
             const uuid = 'zzzzz-4zz18-0123456789abcde'
             await collectionService.get(uuid, undefined, ['manifestText']);
             expect(serverApi.get).toHaveBeenCalledWith(
-                '/collections', {
+                `/collections/${uuid}`, {
                     params: {
-                        filters: `[["uuid","=","zzzzz-4zz18-0123456789abcde"]]`,
-                        include_old_versions: true,
                         select: `["manifest_text"]`
                     },
                 }
