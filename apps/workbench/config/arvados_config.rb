@@ -199,4 +199,8 @@ ArvadosWorkbench::Application.configure do
     ConfigValidators.validate_wb2_url_config()
     ConfigValidators.validate_download_config()
   end
+  if Rails.configuration.Users.AnonymousUserToken and
+     !Rails.configuration.Users.AnonymousUserToken.starts_with?("v2/")
+    Rails.configuration.Users.AnonymousUserToken = "v2/#{clusterID}-gj3su-anonymouspublic/#{Rails.configuration.Users.AnonymousUserToken}"
+  end
 end

@@ -379,6 +379,56 @@ func (s *IntegrationSuite) TestGetCollectionAsAnonymous(c *check.C) {
 	c.Check(coll.PortableDataHash, check.Equals, pdh)
 }
 
+// z3333 should forward the locally-issued anonymous user token to its login
+// cluster z1111. That is no problem because the login cluster controller will
+// map any anonymous user token to its local anonymous user.
+//
+// This needs to work because wb1 has a tendency to slap the local anonymous
+// user token on every request as a reader_token, which gets folded into the
+// request token list controller.
+//
+// Use a z1111 user token and the anonymous token from z3333 passed in as a
+// reader_token to do a request on z3333, asking for the z1111 anonymous user
+// object. The request will be forwarded to the z1111 cluster. The presence of
+// the z3333 anonymous user token should not prohibit the request from being
+// forwarded.
+func (s *IntegrationSuite) TestForwardAnonymousTokenToLoginCluster(c *check.C) {
+	conn1 := s.testClusters["z1111"].Conn()
+	s.testClusters["z3333"].Conn()
+
+	rootctx1, _, _ := s.testClusters["z1111"].RootClients()
+	_, anonac3, _ := s.testClusters["z3333"].AnonymousClients()
+
+	// Make a user connection to z3333 (using a z1111 user, because that's the login cluster)
+	_, userac1, _, _ := s.testClusters["z3333"].UserClients(rootctx1, c, conn1, "user@example.com", true)
+
+	// Get the anonymous user token for z3333
+	var anon3Auth arvados.APIClientAuthorization
+	err := anonac3.RequestAndDecode(&anon3Auth, "GET", "/arvados/v1/api_client_authorizations/current", nil, nil)
+	c.Check(err, check.IsNil)
+
+	var userList arvados.UserList
+	where := make(map[string]string)
+	where["uuid"] = "z1111-tpzed-anonymouspublic"
+	err = userac1.RequestAndDecode(&userList, "GET", "/arvados/v1/users", nil,
+		map[string]interface{}{
+			"reader_tokens": []string{anon3Auth.TokenV2()},
+			"where":         where,
+		},
+	)
+	// The local z3333 anonymous token must be allowed to be forwarded to the login cluster
+	c.Check(err, check.IsNil)
+
+	userac1.AuthToken = "v2/z1111-gj3su-asdfasdfasdfasd/this-token-does-not-validate-so-anonymous-token-will-be-used-instead"
+	err = userac1.RequestAndDecode(&userList, "GET", "/arvados/v1/users", nil,
+		map[string]interface{}{
+			"reader_tokens": []string{anon3Auth.TokenV2()},
+			"where":         where,
+		},
+	)
+	c.Check(err, check.IsNil)
+}
+
 // Get a token from the login cluster (z1111), use it to submit a
 // container request on z2222.
 func (s *IntegrationSuite) TestCreateContainerRequestWithFedToken(c *check.C) {
