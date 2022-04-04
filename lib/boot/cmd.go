@@ -10,6 +10,7 @@ import (
 	"flag"
 	"fmt"
 	"io"
+	"sort"
 	"time"
 
 	"git.arvados.org/arvados.git/lib/cmd"
@@ -100,15 +101,29 @@ func (bcmd bootCommand) run(ctx context.Context, prog string, args []string, std
 	} else if !ok {
 		super.logger.Error("boot failed")
 	} else {
-		// Write each cluster's controller URL to stdout.
-		// Nothing else goes to stdout, so this allows a
-		// calling script to determine when the cluster is
-		// ready to use, and the controller's host:port (which
-		// may have been dynamically assigned depending on
-		// config/options).
-		for _, cc := range super.Clusters() {
-			fmt.Fprintln(stdout, cc.Services.Controller.ExternalURL)
+		// Write each cluster's controller URL, id, and URL
+		// host:port to stdout.  Nothing else goes to stdout,
+		// so this allows a calling script to determine when
+		// the cluster is ready to use, and the controller's
+		// host:port (which may have been dynamically assigned
+		// depending on config/options).
+		//
+		// Sort output by cluster ID for convenience.
+		var ids []string
+		for id := range super.Clusters() {
+			ids = append(ids, id)
 		}
+		sort.Strings(ids)
+		for _, id := range ids {
+			cc := super.Cluster(id)
+			// Providing both scheme://host:port and
+			// host:port is redundant, but convenient.
+			fmt.Fprintln(stdout, cc.Services.Controller.ExternalURL, id, cc.Services.Controller.ExternalURL.Host)
+		}
+		// Write ".\n" to mark the end of the list of
+		// controllers, in case the caller doesn't already
+		// know how many clusters are coming up.
+		fmt.Fprintln(stdout, ".")
 		if *shutdown {
 			super.Stop()
 			// Wait for children to exit. Don't report the
