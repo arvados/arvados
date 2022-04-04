@@ -57,14 +57,17 @@ class Arvados::V1::LinksController < ApplicationController
       # by UUID, then check whether (a) its tail_uuid is the current
       # user or (b) its head_uuid is an object the current_user
       # can_manage.
-      @object = Link.unscoped.where(uuid: params[:uuid]).first
-      if @object && @object.link_class != 'permission'
-        # Throw this out and re-fetch using generic permission query
-        @object = nil
+      link = Link.unscoped.where(uuid: params[:uuid]).first
+      if link && link.link_class != 'permission'
+        # Not a permission link. Re-fetch using generic
+        # permission-filtering query.
         super
-      elsif @object &&
-         current_user.uuid != @object.tail_uuid &&
-         !current_user.can?(manage: @object.head_uuid)
+      elsif link && (current_user.uuid == link.tail_uuid ||
+                     current_user.can?(manage: link.head_uuid))
+        # Permission granted.
+        @object = link
+      else
+        # Permission denied, i.e., link is invisible => 404.
         @object = nil
       end
     end
@@ -122,6 +125,8 @@ class Arvados::V1::LinksController < ApplicationController
           if k[1] == '=' && current_user.can?(manage: k[2])
             @objects = Link.unscoped
           elsif k[1] == 'in'
+            # Modify the filter operand element (k[2]) in place,
+            # removing any non-permitted UUIDs.
             k[2].select! do |head_uuid|
               current_user.can?(manage: head_uuid)
             end
