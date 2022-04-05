@@ -30,9 +30,13 @@ TODO: extract this information based on git commit messages and generate changel
 
 h2(#main). development main (as of 2022-03-??)
 
-h2(#v2_4_0). v2.4.0 (2022-03-??)
+h2(#v2_4_0). v2.4.0 (2022-04-??)
 
 "previous: Upgrading to 2.3.1":#v2_3_1
+
+h3. Default result order changed
+
+When requesting a list of objects without an explicit @order@ parameter, the default order has changed from @modified_at desc, uuid asc@ to @modified_at desc, uuid desc@.  This means that if two objects have identical @modified_at@ timestamps, the tiebreaker will now be based on @uuid@ in decending order where previously it would be ascending order. The practical effect of this should be minor; with microsecond precision it is unusual to have two records with exactly the same timestamp, and order-sensitive queries should already provide an explicit @order@ parameter.
 
 h3. Ubuntu 18.04 Arvados Python packages now depend on python-3.8
 
