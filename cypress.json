@@ -3,5 +3,6 @@
     "chromeWebSecurity": false,
     "viewportWidth": 1920,
     "viewportHeight": 1080,
-    "downloadsFolder": "cypress/downloads"
+    "downloadsFolder": "cypress/downloads",
+    "videoUploadOnPasses": false
 }

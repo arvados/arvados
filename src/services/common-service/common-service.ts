@@ -117,7 +117,13 @@ export class CommonService<T> {
     get(uuid: string, showErrors?: boolean, select?: string[], session?: Session) {
         this.validateUuid(uuid);
 
-        const cfg: AxiosRequestConfig = {};
+        const cfg: AxiosRequestConfig = {
+            params: {
+                select: select
+                    ? `[${select.map(snakeCase).map(s => `"${s}"`).join(',')}]`
+                    : undefined
+            }
+        };
         if (session) {
             cfg.baseURL = session.baseUrl;
             cfg.headers = { 'Authorization': 'Bearer ' + session.token };
@@ -125,7 +131,7 @@ export class CommonService<T> {
 
         return CommonService.defaultResponse(
             this.serverApi
-                .get<T>(`/${this.resourceType}/${uuid}`, session ? cfg : undefined),
+                .get<T>(`/${this.resourceType}/${uuid}`, cfg),
             this.actions,
             true, // mapKeys
             showErrors

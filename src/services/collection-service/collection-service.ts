@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import { CollectionResource } from "models/collection";
+import { CollectionResource, defaultCollectionSelectedFields } from "models/collection";
 import { AxiosInstance } from "axios";
 import { CollectionFile, CollectionDirectory } from "models/collection-file";
 import { WebDAV } from "common/webdav";
@@ -11,8 +11,6 @@ import { extractFilesData } from "./collection-service-files-response";
 import { TrashableResourceService } from "services/common-service/trashable-resource-service";
 import { ApiActions } from "services/api/api-actions";
 import { customEncodeURI } from "common/url";
-import { FilterBuilder } from "services/api/filter-builder";
-import { ListArguments } from "services/common-service/common-service";
 import { Session } from "models/session";
 
 export type UploadProgress = (fileId: number, loaded: number, total: number, currentTime: number) => void;
@@ -33,19 +31,8 @@ export class CollectionService extends TrashableResourceService<CollectionResour
 
     async get(uuid: string, showErrors?: boolean, select?: string[], session?: Session) {
         super.validateUuid(uuid);
-        // We use a filtered list request to avoid getting the manifest text
-        const filters = new FilterBuilder().addEqual('uuid', uuid).getFilters();
-        const listArgs: ListArguments = {filters, includeOldVersions: true};
-        if (select) {
-            listArgs.select = select;
-        }
-
-        if (!session) {
-            const lst = await super.list(listArgs, showErrors);
-            return lst.items[0];
-        } else {
-            return super.get(uuid, showErrors, select, session);
-        }
+        const selectParam = select || defaultCollectionSelectedFields;
+        return super.get(uuid, showErrors, selectParam, session);
     }
 
     create(data?: Partial<CollectionResource>) {

@@ -28,6 +28,40 @@ export interface CollectionResource extends TrashableResource, ResourceWithPrope
     fileSizeTotal: number;
 }
 
+// We exclude 'manifestText' and 'unsignedManifestText' from the default
+export const defaultCollectionSelectedFields = [
+    'name',
+    'description',
+    'portableDataHash',
+    'replicationDesired',
+    'replicationConfirmed',
+    'replicationConfirmedAt',
+    'storageClassesDesired',
+    'storageClassesConfirmed',
+    'storageClassesConfirmedAt',
+    'currentVersionUuid',
+    'version',
+    'preserveVersion',
+    'fileCount',
+    'fileSizeTotal',
+    // ResourceWithProperties field
+    'properties',
+    // TrashableResource fields
+    'trashAt',
+    'deleteAt',
+    'isTrashed',
+    // Resource fields
+    'uuid',
+    'ownerUuid',
+    'createdAt',
+    'modifiedByClientUuid',
+    'modifiedByUserUuid',
+    'modifiedAt',
+    'href',
+    'kind',
+    'etag',
+];
+
 export const getCollectionUrl = (uuid: string) => {
     return `/collections/${uuid}`;
 };
