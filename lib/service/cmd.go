@@ -150,6 +150,7 @@ func (c *command) RunCommand(prog string, args []string, stdin io.Reader, stdout
 		"URL":     listenURL,
 		"Listen":  srv.Addr,
 		"Service": c.svcName,
+		"Version": cmd.Version.String(),
 	}).Info("listening")
 	if _, err := daemon.SdNotify(false, "READY=1"); err != nil {
 		logger.WithError(err).Errorf("error notifying init daemon")
