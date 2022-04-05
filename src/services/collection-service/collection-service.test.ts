@@ -21,6 +21,7 @@ describe('collection-service', () => {
         axiosMock = new MockAdapter(serverApi);
         webdavClient = {
             delete: jest.fn(),
+            upload: jest.fn(),
         } as any;
         authService = {} as AuthService;
         actions = {
@@ -81,6 +82,47 @@ describe('collection-service', () => {
             collectionService = new CollectionService(serverApi, webdavClient, authService, actions);
             await collectionService.update('uuid', data);
             expect(serverApi.put).toHaveBeenCalledWith('/collections/uuid', expected);
+        });
+    });
+
+    describe('uploadFiles', () => {
+        it('should skip if no files to upload files', async () => {
+            // given
+            const files: File[] = [];
+            const collectionUUID = '';
+
+            // when
+            await collectionService.uploadFiles(collectionUUID, files);
+
+            // then
+            expect(webdavClient.upload).not.toHaveBeenCalled();
+        });
+
+        it('should upload files', async () => {
+            // given
+            const files: File[] = [{name: 'test-file1'} as File];
+            const collectionUUID = 'zzzzz-4zz18-0123456789abcde';
+
+            // when
+            await collectionService.uploadFiles(collectionUUID, files);
+
+            // then
+            expect(webdavClient.upload).toHaveBeenCalledTimes(1);
+            expect(webdavClient.upload.mock.calls[0][0]).toEqual("c=zzzzz-4zz18-0123456789abcde/test-file1");
+        });
+
+        it('should upload files with custom uplaod target', async () => {
+            // given
+            const files: File[] = [{name: 'test-file1'} as File];
+            const collectionUUID = 'zzzzz-4zz18-0123456789abcde';
+            const customTarget = 'zzzzz-4zz18-0123456789adddd/test-path/'
+
+            // when
+            await collectionService.uploadFiles(collectionUUID, files, undefined, customTarget);
+
+            // then
+            expect(webdavClient.upload).toHaveBeenCalledTimes(1);
+            expect(webdavClient.upload.mock.calls[0][0]).toEqual("c=zzzzz-4zz18-0123456789adddd/test-path//test-file1");
         });
     });
 

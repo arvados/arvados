@@ -446,7 +446,7 @@ export const CollectionPanelFiles = withStyles(styles)(connect((state: RootState
                 </Tooltip>
             </div>
             <div className={classes.wrapper}>
-                <div className={classNames(classes.leftPanel, path.length > 1 ? classes.leftPanelVisible : classes.leftPanelHidden)}>
+                <div className={classNames(classes.leftPanel, path.length > 1 ? classes.leftPanelVisible : classes.leftPanelHidden)}  data-cy="collection-files-left-panel">
                     <Tooltip title="Go back" className={path.length > 1 ? classes.backButton : classes.backButtonHidden}>
                         <IconButton onClick={() => setPath([...path.slice(0, path.length -1)])}>
                             <BackIcon />
@@ -498,7 +498,7 @@ export const CollectionPanelFiles = withStyles(styles)(connect((state: RootState
 
                     </div>
                 </div>
-                <div className={classes.rightPanel}>
+                <div className={classes.rightPanel} data-cy="collection-files-right-panel">
                     <div className={classes.searchWrapper}>
                         <SearchInput selfClearProp={rightKey} label="Search" value={rightSearch} onSearch={setRightSearch} />
                     </div>

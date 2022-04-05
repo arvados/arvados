@@ -974,8 +974,9 @@ describe('Collection panel tests', function () {
                             cy.get('[data-cy=drag-and-drop]').upload(content, '5mb_b.bin');
                             cy.get('[data-cy=form-submit-btn]').click();
                             cy.get('[data-cy=form-submit-btn]').should('not.exist');
-                            cy.get('[data-cy=collection-files-panel]')
+                            cy.get('[data-cy=collection-files-right-panel]')
                                  .contains('5mb_b.bin').should('exist');
+                            
                         });
                     });
                 });
