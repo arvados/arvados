@@ -295,6 +295,7 @@ func (h *proxyHandler) Get(resp http.ResponseWriter, req *http.Request) {
 	logger := ctxlog.FromContext(req.Context())
 	defer func() {
 		httpserver.SetResponseLogFields(req.Context(), logrus.Fields{
+			"locator":        locator,
 			"expectLength":   expectLength,
 			"responseLength": responseLength,
 			"proxiedURI":     proxiedURI,

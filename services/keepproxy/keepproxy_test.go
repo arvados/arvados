@@ -370,7 +370,7 @@ func (s *ServerRequiredSuite) TestPutAskGet(c *C) {
 		c.Check(err, Equals, nil)
 		c.Log("Finished PutB (expected success)")
 
-		c.Check(logbuf.String(), Matches, `(?ms).*msg="Block upload".* locator=acbd18db4cc2f85cedef654fccc4a4d8\+3.* user_full_name="TestCase Administrator".* user_uuid=zzzzz-tpzed-d9tiejq69daie8f.*`)
+		c.Check(logbuf.String(), Matches, `(?ms).* locator=acbd18db4cc2f85cedef654fccc4a4d8\+3.* userFullName="TestCase Administrator".* userUUID=zzzzz-tpzed-d9tiejq69daie8f.*`)
 		logbuf.Reset()
 	}
 
@@ -379,7 +379,7 @@ func (s *ServerRequiredSuite) TestPutAskGet(c *C) {
 		c.Assert(err, Equals, nil)
 		c.Check(blocklen, Equals, int64(3))
 		c.Log("Finished Ask (expected success)")
-		c.Check(logbuf.String(), Matches, `(?ms).*msg="Block download".* locator=acbd18db4cc2f85cedef654fccc4a4d8\+3.* user_full_name="TestCase Administrator".* user_uuid=zzzzz-tpzed-d9tiejq69daie8f.*`)
+		c.Check(logbuf.String(), Matches, `(?ms).* locator=acbd18db4cc2f85cedef654fccc4a4d8\+3.* userFullName="TestCase Administrator".* userUUID=zzzzz-tpzed-d9tiejq69daie8f.*`)
 		logbuf.Reset()
 	}
 
@@ -391,7 +391,7 @@ func (s *ServerRequiredSuite) TestPutAskGet(c *C) {
 		c.Check(all, DeepEquals, []byte("foo"))
 		c.Check(blocklen, Equals, int64(3))
 		c.Log("Finished Get (expected success)")
-		c.Check(logbuf.String(), Matches, `(?ms).*msg="Block download".* locator=acbd18db4cc2f85cedef654fccc4a4d8\+3.* user_full_name="TestCase Administrator".* user_uuid=zzzzz-tpzed-d9tiejq69daie8f.*`)
+		c.Check(logbuf.String(), Matches, `(?ms).* locator=acbd18db4cc2f85cedef654fccc4a4d8\+3.* userFullName="TestCase Administrator".* userUUID=zzzzz-tpzed-d9tiejq69daie8f.*`)
 		logbuf.Reset()
 	}
 
@@ -473,10 +473,10 @@ func testPermission(c *C, admin bool, perm arvados.UploadDownloadPermission) {
 			c.Check(err, Equals, nil)
 			c.Log("Finished PutB (expected success)")
 			if admin {
-				c.Check(logbuf.String(), Matches, `(?ms).*msg="Block upload".* locator=acbd18db4cc2f85cedef654fccc4a4d8\+3.* user_full_name="TestCase Administrator".* user_uuid=zzzzz-tpzed-d9tiejq69daie8f.*`)
+				c.Check(logbuf.String(), Matches, `(?ms).* locator=acbd18db4cc2f85cedef654fccc4a4d8\+3.* userFullName="TestCase Administrator".* userUUID=zzzzz-tpzed-d9tiejq69daie8f.*`)
 			} else {
 
-				c.Check(logbuf.String(), Matches, `(?ms).*msg="Block upload".* locator=acbd18db4cc2f85cedef654fccc4a4d8\+3.* user_full_name="Active User".* user_uuid=zzzzz-tpzed-xurymjxw79nv3jz.*`)
+				c.Check(logbuf.String(), Matches, `(?ms).* locator=acbd18db4cc2f85cedef654fccc4a4d8\+3.* userFullName="Active User".* userUUID=zzzzz-tpzed-xurymjxw79nv3jz.*`)
 			}
 		} else {
 			c.Check(hash2, Equals, "")
@@ -497,9 +497,9 @@ func testPermission(c *C, admin bool, perm arvados.UploadDownloadPermission) {
 			c.Check(blocklen, Equals, int64(3))
 			c.Log("Finished Get (expected success)")
 			if admin {
-				c.Check(logbuf.String(), Matches, `(?ms).*msg="Block download".* locator=acbd18db4cc2f85cedef654fccc4a4d8\+3.* user_full_name="TestCase Administrator".* user_uuid=zzzzz-tpzed-d9tiejq69daie8f.*`)
+				c.Check(logbuf.String(), Matches, `(?ms).* locator=acbd18db4cc2f85cedef654fccc4a4d8\+3.* userFullName="TestCase Administrator".* userUUID=zzzzz-tpzed-d9tiejq69daie8f.*`)
 			} else {
-				c.Check(logbuf.String(), Matches, `(?ms).*msg="Block download".* locator=acbd18db4cc2f85cedef654fccc4a4d8\+3.* user_full_name="Active User".* user_uuid=zzzzz-tpzed-xurymjxw79nv3jz.*`)
+				c.Check(logbuf.String(), Matches, `(?ms).* locator=acbd18db4cc2f85cedef654fccc4a4d8\+3.* userFullName="Active User".* userUUID=zzzzz-tpzed-xurymjxw79nv3jz.*`)
 			}
 		} else {
 			c.Check(err, FitsTypeOf, &keepclient.ErrNotFound{})
