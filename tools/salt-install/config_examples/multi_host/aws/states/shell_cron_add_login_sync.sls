@@ -44,6 +44,8 @@ extra_shell_cron_add_login_sync_add_{{ vm }}_get_vm_uuid_cmd_run:
     - name: {{ cmd_query_vm_uuid }} | head -1 | tee /tmp/vm_uuid_{{ vm }}
     - unless:
       - /bin/grep -qE "[a-z0-9]{5}-2x53u-[a-z0-9]{15}" /tmp/vm_uuid_{{ vm }}
+    - require:
+      - gem: arvados-shell-package-install-gem-arvados-cli-installed
 
 extra_shell_cron_add_login_sync_add_{{ vm }}_arvados_api_host_cron_env_present:
   cron.env_present:
