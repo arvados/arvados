@@ -26,8 +26,8 @@ class Arvados::V1::LinksController < ApplicationController
   def get_permissions
     if current_user.andand.can?(manage: @object)
       # find all links and return them
-      @objects = Link.where(link_class: "permission",
-                            head_uuid: params[:uuid])
+      @objects = Link.unscoped.where(link_class: "permission",
+                                     head_uuid: params[:uuid])
       @offset = 0
       @limit = @objects.count
       render_list
@@ -39,14 +39,37 @@ class Arvados::V1::LinksController < ApplicationController
   protected
 
   def find_object_by_uuid
+    if params[:id] && params[:id].match(/\D/)
+      params[:uuid] = params.delete :id
+    end
     if action_name == 'get_permissions'
       # get_permissions accepts a UUID for any kind of object.
       @object = ArvadosModel::resource_class_for_uuid(params[:uuid])
         .readable_by(*@read_users)
         .where(uuid: params[:uuid])
         .first
-    else
+    elsif !current_user
       super
+    else
+      # The usual permission-filtering index query is unnecessarily
+      # inefficient, and doesn't match all permission links that
+      # should be visible (see #18865).  Instead, we look up the link
+      # by UUID, then check whether (a) its tail_uuid is the current
+      # user or (b) its head_uuid is an object the current_user
+      # can_manage.
+      link = Link.unscoped.where(uuid: params[:uuid]).first
+      if link && link.link_class != 'permission'
+        # Not a permission link. Re-fetch using generic
+        # permission-filtering query.
+        super
+      elsif link && (current_user.uuid == link.tail_uuid ||
+                     current_user.can?(manage: link.head_uuid))
+        # Permission granted.
+        @object = link
+      else
+        # Permission denied, i.e., link is invisible => 404.
+        @object = nil
+      end
     end
   end
 
@@ -84,6 +107,32 @@ class Arvados::V1::LinksController < ApplicationController
         ['tail_uuid', 'is_a', k[2]]
       else
         k
+      end
+    end
+
+    # If the provided filters are enough to limit the results to
+    # permission links with specific head_uuids or
+    # tail_uuid=current_user, bypass the normal readable_by query
+    # (which doesn't match all can_manage-able items, see #18865) --
+    # just ensure the current user actually has can_manage permission
+    # for the provided head_uuids, removing any that don't. At that
+    # point the caller's filters are an effective permission filter.
+    if @filters.include?(['link_class', '=', 'permission'])
+      @filters.map do |k|
+        if k[0] == 'tail_uuid' && k[1] == '=' && k[2] == current_user.uuid
+          @objects = Link.unscoped
+        elsif k[0] == 'head_uuid'
+          if k[1] == '=' && current_user.can?(manage: k[2])
+            @objects = Link.unscoped
+          elsif k[1] == 'in'
+            # Modify the filter operand element (k[2]) in place,
+            # removing any non-permitted UUIDs.
+            k[2].select! do |head_uuid|
+              current_user.can?(manage: head_uuid)
+            end
+            @objects = Link.unscoped
+          end
+        end
       end
     end
   end
