@@ -2,207 +2,75 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-package main
+package keepproxy
 
 import (
 	"context"
 	"errors"
-	"flag"
 	"fmt"
 	"io"
 	"io/ioutil"
 	"net"
 	"net/http"
-	"os"
-	"os/signal"
 	"regexp"
 	"strings"
-	"syscall"
 	"time"
 
-	"git.arvados.org/arvados.git/lib/cmd"
-	"git.arvados.org/arvados.git/lib/config"
+	"git.arvados.org/arvados.git/lib/service"
 	"git.arvados.org/arvados.git/sdk/go/arvados"
 	"git.arvados.org/arvados.git/sdk/go/arvadosclient"
 	"git.arvados.org/arvados.git/sdk/go/ctxlog"
 	"git.arvados.org/arvados.git/sdk/go/health"
 	"git.arvados.org/arvados.git/sdk/go/httpserver"
 	"git.arvados.org/arvados.git/sdk/go/keepclient"
-	"github.com/coreos/go-systemd/daemon"
-	"github.com/ghodss/yaml"
 	"github.com/gorilla/mux"
 	lru "github.com/hashicorp/golang-lru"
+	"github.com/prometheus/client_golang/prometheus"
 	"github.com/sirupsen/logrus"
-)
-
-var version = "dev"
-
-var (
-	listener net.Listener
-	router   http.Handler
 )
 
 const rfc3339NanoFixed = "2006-01-02T15:04:05.000000000Z07:00"
 
-func configure(args []string) (*arvados.Cluster, logrus.FieldLogger, error) {
-	prog := args[0]
-	flags := flag.NewFlagSet(prog, flag.ContinueOnError)
+var Command = service.Command(arvados.ServiceNameKeepproxy, newHandlerOrErrorHandler)
 
-	dumpConfig := flags.Bool("dump-config", false, "write current configuration to stdout and exit")
-	getVersion := flags.Bool("version", false, "Print version information and exit.")
-
-	initLogger := logrus.New()
-	initLogger.Formatter = &logrus.JSONFormatter{
-		TimestampFormat: rfc3339NanoFixed,
-	}
-	var logger logrus.FieldLogger = initLogger
-
-	loader := config.NewLoader(os.Stdin, logger)
-	loader.SetupFlags(flags)
-	args = loader.MungeLegacyConfigArgs(logger, args[1:], "-legacy-keepproxy-config")
-
-	if ok, code := cmd.ParseFlags(flags, prog, args, "", os.Stderr); !ok {
-		os.Exit(code)
-	} else if *getVersion {
-		fmt.Printf("keepproxy %s\n", version)
-		return nil, logger, nil
-	}
-
-	cfg, err := loader.Load()
-	if err != nil {
-		return nil, logger, err
-	}
-	cluster, err := cfg.GetCluster("")
-	if err != nil {
-		return nil, logger, err
-	}
-
-	logger = ctxlog.New(os.Stderr, cluster.SystemLogs.Format, cluster.SystemLogs.LogLevel).WithFields(logrus.Fields{
-		"ClusterID": cluster.ClusterID,
-		"PID":       os.Getpid(),
-	})
-
-	if *dumpConfig {
-		out, err := yaml.Marshal(cfg)
-		if err != nil {
-			return nil, logger, err
-		}
-		if _, err := os.Stdout.Write(out); err != nil {
-			return nil, logger, err
-		}
-		return nil, logger, nil
-	}
-
-	return cluster, logger, nil
-}
-
-func main() {
-	cluster, logger, err := configure(os.Args)
-	if err != nil {
-		logger.Fatal(err)
-	}
-	if cluster == nil {
-		return
-	}
-
-	logger.Printf("keepproxy %s started", version)
-
-	if err := run(logger, cluster); err != nil {
-		logger.Fatal(err)
-	}
-
-	logger.Println("shutting down")
-}
-
-func run(logger logrus.FieldLogger, cluster *arvados.Cluster) error {
+func newHandlerOrErrorHandler(ctx context.Context, cluster *arvados.Cluster, token string, reg *prometheus.Registry) service.Handler {
 	client, err := arvados.NewClientFromConfig(cluster)
 	if err != nil {
-		return err
+		return service.ErrorHandler(ctx, cluster, fmt.Errorf("Error setting up arvados client: %w", err))
 	}
-	client.AuthToken = cluster.SystemRootToken
-
 	arv, err := arvadosclient.New(client)
 	if err != nil {
-		return fmt.Errorf("Error setting up arvados client %v", err)
-	}
-
-	// If a config file is available, use the keepstores defined there
-	// instead of the legacy autodiscover mechanism via the API server
-	for k := range cluster.Services.Keepstore.InternalURLs {
-		arv.KeepServiceURIs = append(arv.KeepServiceURIs, strings.TrimRight(k.String(), "/"))
-	}
-
-	if cluster.SystemLogs.LogLevel == "debug" {
-		keepclient.DebugPrintf = logger.Printf
+		return service.ErrorHandler(ctx, cluster, fmt.Errorf("Error setting up arvados client: %w", err))
 	}
 	kc, err := keepclient.MakeKeepClient(arv)
 	if err != nil {
-		return fmt.Errorf("Error setting up keep client %v", err)
+		return service.ErrorHandler(ctx, cluster, fmt.Errorf("Error setting up keep client: %w", err))
 	}
 	keepclient.RefreshServiceDiscoveryOnSIGHUP()
-
-	if cluster.Collections.DefaultReplication > 0 {
-		kc.Want_replicas = cluster.Collections.DefaultReplication
-	}
-
-	var listen arvados.URL
-	for listen = range cluster.Services.Keepproxy.InternalURLs {
-		break
-	}
-
-	var lErr error
-	listener, lErr = net.Listen("tcp", listen.Host)
-	if lErr != nil {
-		return fmt.Errorf("listen(%s): %v", listen.Host, lErr)
-	}
-
-	if _, err := daemon.SdNotify(false, "READY=1"); err != nil {
-		logger.Printf("Error notifying init daemon: %v", err)
-	}
-	logger.Println("listening at", listener.Addr())
-
-	// Shut down the server gracefully (by closing the listener)
-	// if SIGTERM is received.
-	term := make(chan os.Signal, 1)
-	go func(sig <-chan os.Signal) {
-		s := <-sig
-		logger.Println("caught signal:", s)
-		listener.Close()
-	}(term)
-	signal.Notify(term, syscall.SIGTERM)
-	signal.Notify(term, syscall.SIGINT)
-
-	// Start serving requests.
-	router, err = MakeRESTRouter(kc, time.Duration(keepclient.DefaultProxyRequestTimeout), cluster, logger)
+	router, err := newHandler(ctx, kc, time.Duration(keepclient.DefaultProxyRequestTimeout), cluster)
 	if err != nil {
-		return err
+		return service.ErrorHandler(ctx, cluster, err)
 	}
-	server := http.Server{
-		Handler: httpserver.AddRequestIDs(httpserver.LogRequests(router)),
-		BaseContext: func(net.Listener) context.Context {
-			return ctxlog.Context(context.Background(), logger)
-		},
-	}
-	return server.Serve(listener)
+	return router
 }
 
-type TokenCacheEntry struct {
+type tokenCacheEntry struct {
 	expire int64
 	user   *arvados.User
 }
 
-type APITokenCache struct {
+type apiTokenCache struct {
 	tokens     *lru.TwoQueueCache
 	expireTime int64
 }
 
 // RememberToken caches the token and set an expire time.  If the
 // token is already in the cache, it is not updated.
-func (cache *APITokenCache) RememberToken(token string, user *arvados.User) {
+func (cache *apiTokenCache) RememberToken(token string, user *arvados.User) {
 	now := time.Now().Unix()
 	_, ok := cache.tokens.Get(token)
 	if !ok {
-		cache.tokens.Add(token, TokenCacheEntry{
+		cache.tokens.Add(token, tokenCacheEntry{
 			expire: now + cache.expireTime,
 			user:   user,
 		})
@@ -211,13 +79,13 @@ func (cache *APITokenCache) RememberToken(token string, user *arvados.User) {
 
 // RecallToken checks if the cached token is known and still believed to be
 // valid.
-func (cache *APITokenCache) RecallToken(token string) (bool, *arvados.User) {
+func (cache *apiTokenCache) RecallToken(token string) (bool, *arvados.User) {
 	val, ok := cache.tokens.Get(token)
 	if !ok {
 		return false, nil
 	}
 
-	cacheEntry := val.(TokenCacheEntry)
+	cacheEntry := val.(tokenCacheEntry)
 	now := time.Now().Unix()
 	if now < cacheEntry.expire {
 		// Token is known and still valid
@@ -229,18 +97,15 @@ func (cache *APITokenCache) RecallToken(token string) (bool, *arvados.User) {
 	}
 }
 
-// GetRemoteAddress returns a string with the remote address for the request.
-// If the X-Forwarded-For header is set and has a non-zero length, it returns a
-// string made from a comma separated list of all the remote addresses,
-// starting with the one(s) from the X-Forwarded-For header.
-func GetRemoteAddress(req *http.Request) string {
-	if xff := req.Header.Get("X-Forwarded-For"); xff != "" {
-		return xff + "," + req.RemoteAddr
-	}
-	return req.RemoteAddr
+func (h *proxyHandler) Done() <-chan struct{} {
+	return nil
 }
 
-func (h *proxyHandler) CheckAuthorizationHeader(req *http.Request) (pass bool, tok string, user *arvados.User) {
+func (h *proxyHandler) CheckHealth() error {
+	return nil
+}
+
+func (h *proxyHandler) checkAuthorizationHeader(req *http.Request) (pass bool, tok string, user *arvados.User) {
 	parts := strings.SplitN(req.Header.Get("Authorization"), " ", 2)
 	if len(parts) < 2 || !(parts[0] == "OAuth2" || parts[0] == "Bearer") || len(parts[1]) == 0 {
 		return false, "", nil
@@ -258,7 +123,7 @@ func (h *proxyHandler) CheckAuthorizationHeader(req *http.Request) (pass bool, t
 		op = "write"
 	}
 
-	if ok, user := h.APITokenCache.RecallToken(op + ":" + tok); ok {
+	if ok, user := h.apiTokenCache.RecallToken(op + ":" + tok); ok {
 		// Valid in the cache, short circuit
 		return true, tok, user
 	}
@@ -282,7 +147,7 @@ func (h *proxyHandler) CheckAuthorizationHeader(req *http.Request) (pass bool, t
 		}
 	}
 	if err != nil {
-		ctxlog.FromContext(req.Context()).Printf("%s: CheckAuthorizationHeader error: %v", GetRemoteAddress(req), err)
+		ctxlog.FromContext(req.Context()).WithError(err).Info("checkAuthorizationHeader error")
 		return false, "", nil
 	}
 
@@ -305,7 +170,7 @@ func (h *proxyHandler) CheckAuthorizationHeader(req *http.Request) (pass bool, t
 	}
 
 	// Success!  Update cache
-	h.APITokenCache.RememberToken(op+":"+tok, user)
+	h.apiTokenCache.RememberToken(op+":"+tok, user)
 
 	return true, tok, user
 }
@@ -321,16 +186,13 @@ var defaultTransport = *(http.DefaultTransport.(*http.Transport))
 type proxyHandler struct {
 	http.Handler
 	*keepclient.KeepClient
-	*APITokenCache
+	*apiTokenCache
 	timeout   time.Duration
 	transport *http.Transport
-	logger    logrus.FieldLogger
 	cluster   *arvados.Cluster
 }
 
-// MakeRESTRouter returns an http.Handler that passes GET and PUT
-// requests to the appropriate handlers.
-func MakeRESTRouter(kc *keepclient.KeepClient, timeout time.Duration, cluster *arvados.Cluster, logger logrus.FieldLogger) (http.Handler, error) {
+func newHandler(ctx context.Context, kc *keepclient.KeepClient, timeout time.Duration, cluster *arvados.Cluster) (service.Handler, error) {
 	rest := mux.NewRouter()
 
 	transport := defaultTransport
@@ -352,11 +214,10 @@ func MakeRESTRouter(kc *keepclient.KeepClient, timeout time.Duration, cluster *a
 		KeepClient: kc,
 		timeout:    timeout,
 		transport:  &transport,
-		APITokenCache: &APITokenCache{
+		apiTokenCache: &apiTokenCache{
 			tokens:     cacheQ,
 			expireTime: 300,
 		},
-		logger:  logger,
 		cluster: cluster,
 	}
 
@@ -380,7 +241,7 @@ func MakeRESTRouter(kc *keepclient.KeepClient, timeout time.Duration, cluster *a
 		Prefix: "/_health/",
 	}).Methods("GET")
 
-	rest.NotFoundHandler = InvalidPathHandler{}
+	rest.NotFoundHandler = invalidPathHandler{}
 	return h, nil
 }
 
@@ -388,30 +249,28 @@ var errLoopDetected = errors.New("loop detected")
 
 func (h *proxyHandler) checkLoop(resp http.ResponseWriter, req *http.Request) error {
 	if via := req.Header.Get("Via"); strings.Index(via, " "+viaAlias) >= 0 {
-		h.logger.Printf("proxy loop detected (request has Via: %q): perhaps keepproxy is misidentified by gateway config as an external client, or its keep_services record does not have service_type=proxy?", via)
+		ctxlog.FromContext(req.Context()).Printf("proxy loop detected (request has Via: %q): perhaps keepproxy is misidentified by gateway config as an external client, or its keep_services record does not have service_type=proxy?", via)
 		http.Error(resp, errLoopDetected.Error(), http.StatusInternalServerError)
 		return errLoopDetected
 	}
 	return nil
 }
 
-func SetCorsHeaders(resp http.ResponseWriter) {
+func setCORSHeaders(resp http.ResponseWriter) {
 	resp.Header().Set("Access-Control-Allow-Methods", "GET, HEAD, POST, PUT, OPTIONS")
 	resp.Header().Set("Access-Control-Allow-Origin", "*")
 	resp.Header().Set("Access-Control-Allow-Headers", "Authorization, Content-Length, Content-Type, X-Keep-Desired-Replicas")
 	resp.Header().Set("Access-Control-Max-Age", "86486400")
 }
 
-type InvalidPathHandler struct{}
+type invalidPathHandler struct{}
 
-func (InvalidPathHandler) ServeHTTP(resp http.ResponseWriter, req *http.Request) {
-	ctxlog.FromContext(req.Context()).Printf("%s: %s %s unroutable", GetRemoteAddress(req), req.Method, req.URL.Path)
+func (invalidPathHandler) ServeHTTP(resp http.ResponseWriter, req *http.Request) {
 	http.Error(resp, "Bad request", http.StatusBadRequest)
 }
 
 func (h *proxyHandler) Options(resp http.ResponseWriter, req *http.Request) {
-	ctxlog.FromContext(req.Context()).Printf("%s: %s %s", GetRemoteAddress(req), req.Method, req.URL.Path)
-	SetCorsHeaders(resp)
+	setCORSHeaders(resp)
 }
 
 var errBadAuthorizationHeader = errors.New("Missing or invalid Authorization header, or method not allowed")
@@ -424,7 +283,7 @@ func (h *proxyHandler) Get(resp http.ResponseWriter, req *http.Request) {
 	if err := h.checkLoop(resp, req); err != nil {
 		return
 	}
-	SetCorsHeaders(resp)
+	setCORSHeaders(resp)
 	resp.Header().Set("Via", req.Proto+" "+viaAlias)
 
 	locator := mux.Vars(req)["locator"]
@@ -433,8 +292,14 @@ func (h *proxyHandler) Get(resp http.ResponseWriter, req *http.Request) {
 	var expectLength, responseLength int64
 	var proxiedURI = "-"
 
+	logger := ctxlog.FromContext(req.Context())
 	defer func() {
-		h.logger.Println(GetRemoteAddress(req), req.Method, req.URL.Path, status, expectLength, responseLength, proxiedURI, err)
+		httpserver.SetResponseLogFields(req.Context(), logrus.Fields{
+			"expectLength":   expectLength,
+			"responseLength": responseLength,
+			"proxiedURI":     proxiedURI,
+			"err":            err,
+		})
 		if status != http.StatusOK {
 			http.Error(resp, err.Error(), status)
 		}
@@ -445,10 +310,14 @@ func (h *proxyHandler) Get(resp http.ResponseWriter, req *http.Request) {
 	var pass bool
 	var tok string
 	var user *arvados.User
-	if pass, tok, user = h.CheckAuthorizationHeader(req); !pass {
+	if pass, tok, user = h.checkAuthorizationHeader(req); !pass {
 		status, err = http.StatusForbidden, errBadAuthorizationHeader
 		return
 	}
+	httpserver.SetResponseLogFields(req.Context(), logrus.Fields{
+		"userUUID":     user.UUID,
+		"userFullName": user.FullName,
+	})
 
 	// Copy ArvadosClient struct and use the client's API token
 	arvclient := *kc.Arvados
@@ -458,18 +327,6 @@ func (h *proxyHandler) Get(resp http.ResponseWriter, req *http.Request) {
 	var reader io.ReadCloser
 
 	locator = removeHint.ReplaceAllString(locator, "$1")
-
-	if locator != "" {
-		parts := strings.SplitN(locator, "+", 3)
-		if len(parts) >= 2 {
-			logger := h.logger
-			if user != nil {
-				logger = logger.WithField("user_uuid", user.UUID).
-					WithField("user_full_name", user.FullName)
-			}
-			logger.WithField("locator", fmt.Sprintf("%s+%s", parts[0], parts[1])).Infof("Block download")
-		}
-	}
 
 	switch req.Method {
 	case "HEAD":
@@ -485,7 +342,7 @@ func (h *proxyHandler) Get(resp http.ResponseWriter, req *http.Request) {
 	}
 
 	if expectLength == -1 {
-		h.logger.Println("Warning:", GetRemoteAddress(req), req.Method, proxiedURI, "Content-Length not provided")
+		logger.Warn("Content-Length not provided")
 	}
 
 	switch respErr := err.(type) {
@@ -521,7 +378,7 @@ func (h *proxyHandler) Put(resp http.ResponseWriter, req *http.Request) {
 	if err := h.checkLoop(resp, req); err != nil {
 		return
 	}
-	SetCorsHeaders(resp)
+	setCORSHeaders(resp)
 	resp.Header().Set("Via", "HTTP/1.1 "+viaAlias)
 
 	kc := h.makeKeepClient(req)
@@ -533,7 +390,13 @@ func (h *proxyHandler) Put(resp http.ResponseWriter, req *http.Request) {
 	var locatorOut string = "-"
 
 	defer func() {
-		h.logger.Println(GetRemoteAddress(req), req.Method, req.URL.Path, status, expectLength, kc.Want_replicas, wroteReplicas, locatorOut, err)
+		httpserver.SetResponseLogFields(req.Context(), logrus.Fields{
+			"expectLength":  expectLength,
+			"wantReplicas":  kc.Want_replicas,
+			"wroteReplicas": wroteReplicas,
+			"locator":       strings.SplitN(locatorOut, "+A", 2)[0],
+			"err":           err,
+		})
 		if status != http.StatusOK {
 			http.Error(resp, err.Error(), status)
 		}
@@ -572,11 +435,15 @@ func (h *proxyHandler) Put(resp http.ResponseWriter, req *http.Request) {
 	var pass bool
 	var tok string
 	var user *arvados.User
-	if pass, tok, user = h.CheckAuthorizationHeader(req); !pass {
+	if pass, tok, user = h.checkAuthorizationHeader(req); !pass {
 		err = errBadAuthorizationHeader
 		status = http.StatusForbidden
 		return
 	}
+	httpserver.SetResponseLogFields(req.Context(), logrus.Fields{
+		"userUUID":     user.UUID,
+		"userFullName": user.FullName,
+	})
 
 	// Copy ArvadosClient struct and use the client's API token
 	arvclient := *kc.Arvados
@@ -603,18 +470,6 @@ func (h *proxyHandler) Put(resp http.ResponseWriter, req *http.Request) {
 		locatorOut, wroteReplicas, err = kc.PutB(bytes)
 	} else {
 		locatorOut, wroteReplicas, err = kc.PutHR(locatorIn, req.Body, expectLength)
-	}
-
-	if locatorOut != "" {
-		parts := strings.SplitN(locatorOut, "+", 3)
-		if len(parts) >= 2 {
-			logger := h.logger
-			if user != nil {
-				logger = logger.WithField("user_uuid", user.UUID).
-					WithField("user_full_name", user.FullName)
-			}
-			logger.WithField("locator", fmt.Sprintf("%s+%s", parts[0], parts[1])).Infof("Block upload")
-		}
 	}
 
 	// Tell the client how many successful PUTs we accomplished
@@ -658,7 +513,7 @@ func (h *proxyHandler) Put(resp http.ResponseWriter, req *http.Request) {
 //   Aborts on any errors
 // Concatenates responses from all those keep servers and returns
 func (h *proxyHandler) Index(resp http.ResponseWriter, req *http.Request) {
-	SetCorsHeaders(resp)
+	setCORSHeaders(resp)
 
 	prefix := mux.Vars(req)["prefix"]
 	var err error
@@ -671,7 +526,7 @@ func (h *proxyHandler) Index(resp http.ResponseWriter, req *http.Request) {
 	}()
 
 	kc := h.makeKeepClient(req)
-	ok, token, _ := h.CheckAuthorizationHeader(req)
+	ok, token, _ := h.checkAuthorizationHeader(req)
 	if !ok {
 		status, err = http.StatusForbidden, errBadAuthorizationHeader
 		return
