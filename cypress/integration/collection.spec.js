@@ -947,7 +947,7 @@ describe('Collection panel tests', function () {
             cy.createCollection(adminUser.token, {
                 name: `Test collection ${Math.floor(Math.random() * 999999)}`,
                 owner_uuid: activeUser.user.uuid,
-                manifest_text: ". 37b51d194a7513e45b56f6524f2d51f2+3 0:3:bar\n"
+                manifest_text: "./subdir 37b51d194a7513e45b56f6524f2d51f2+3 0:3:foo\n. 37b51d194a7513e45b56f6524f2d51f2+3 0:3:bar\n"
             }).as('testCollection1');
         });
 
@@ -959,17 +959,26 @@ describe('Collection panel tests', function () {
                     cy.get('[data-cy=upload-button]').click();
                     cy.get('[data-cy=collection-files-panel]')
                         .contains('5mb_a.bin').should('not.exist');
-                    cy.get('[data-cy=collection-file-count]').should('contain', '1');
+                    cy.get('[data-cy=collection-file-count]').should('contain', '2');
                     cy.fixture('files/5mb.bin', 'base64').then(content => {
                         cy.get('[data-cy=drag-and-drop]').upload(content, '5mb_a.bin');
                         cy.get('[data-cy=form-submit-btn]').click();
                         cy.get('[data-cy=form-submit-btn]').should('not.exist');
+                        cy.get('[data-cy=collection-files-panel]')
+                            .contains('5mb_a.bin').should('exist');
+                        cy.get('[data-cy=collection-file-count]').should('contain', '3');
+
+                        cy.get('[data-cy=collection-files-panel]').contains('subdir').click();
+                        cy.get('[data-cy=upload-button]').click();
+                        cy.fixture('files/5mb.bin', 'base64').then(content => {
+                            cy.get('[data-cy=drag-and-drop]').upload(content, '5mb_b.bin');
+                            cy.get('[data-cy=form-submit-btn]').click();
+                            cy.get('[data-cy=form-submit-btn]').should('not.exist');
+                            cy.get('[data-cy=collection-files-right-panel]')
+                                 .contains('5mb_b.bin').should('exist');
+                            
+                        });
                     });
-                    // Confirm that the file browser has been updated.
-                    cy.get('[data-cy=collection-files-panel]')
-                        .contains('5mb_a.bin').should('exist');
-                    // Confirm that the collection panel has been updated.
-                    cy.get('[data-cy=collection-file-count]').should('contain', '2');
                 });
         });
 

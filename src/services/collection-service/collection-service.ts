@@ -75,11 +75,11 @@ export class CollectionService extends TrashableResourceService<CollectionResour
         await this.update(collectionUuid, { preserveVersion: true });
     }
 
-    async uploadFiles(collectionUuid: string, files: File[], onProgress?: UploadProgress) {
+    async uploadFiles(collectionUuid: string, files: File[], onProgress?: UploadProgress, targetLocation: string = '') {
         if (collectionUuid === "" || files.length === 0) { return; }
         // files have to be uploaded sequentially
         for (let idx = 0; idx < files.length; idx++) {
-            await this.uploadFile(collectionUuid, files[idx], idx, onProgress);
+            await this.uploadFile(collectionUuid, files[idx], idx, onProgress, targetLocation);
         }
         await this.update(collectionUuid, { preserveVersion: true });
     }
@@ -107,8 +107,8 @@ export class CollectionService extends TrashableResourceService<CollectionResour
         };
     }
 
-    private async uploadFile(collectionUuid: string, file: File, fileId: number, onProgress: UploadProgress = () => { return; }) {
-        const fileURL = `c=${collectionUuid}/${file.name}`;
+    private async uploadFile(collectionUuid: string, file: File, fileId: number, onProgress: UploadProgress = () => { return; }, targetLocation: string = '') {
+        const fileURL = `c=${targetLocation !== '' ? targetLocation : collectionUuid}/${file.name}`.replace('//', '/');
         const requestConfig = {
             headers: {
                 'Content-Type': 'text/octet-stream'
