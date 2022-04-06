@@ -121,7 +121,7 @@ export class CollectionService extends TrashableResourceService<CollectionResour
     }
 
     private async uploadFile(collectionUuid: string, file: File, fileId: number, onProgress: UploadProgress = () => { return; }, targetLocation: string = '') {
-        const fileURL = `c=${targetLocation !== '' ? targetLocation : collectionUuid}/${file.name}`;
+        const fileURL = `c=${targetLocation !== '' ? targetLocation : collectionUuid}/${file.name}`.replace('//', '/');
         const requestConfig = {
             headers: {
                 'Content-Type': 'text/octet-stream'

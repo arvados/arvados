@@ -111,7 +111,7 @@ describe('collection-service', () => {
             expect(webdavClient.upload.mock.calls[0][0]).toEqual("c=zzzzz-4zz18-0123456789abcde/test-file1");
         });
 
-        it('should upload files with custom uplaod target', async () => {
+        it.only('should upload files with custom uplaod target', async () => {
             // given
             const files: File[] = [{name: 'test-file1'} as File];
             const collectionUUID = 'zzzzz-4zz18-0123456789abcde';
@@ -122,7 +122,7 @@ describe('collection-service', () => {
 
             // then
             expect(webdavClient.upload).toHaveBeenCalledTimes(1);
-            expect(webdavClient.upload.mock.calls[0][0]).toEqual("c=zzzzz-4zz18-0123456789adddd/test-path//test-file1");
+            expect(webdavClient.upload.mock.calls[0][0]).toEqual("c=zzzzz-4zz18-0123456789adddd/test-path/test-file1");
         });
     });
 
