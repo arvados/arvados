@@ -92,35 +92,39 @@ export const getProcessStatusColor = (status: string, { customs }: ArvadosTheme)
 
 export const getProcessStatus = ({ containerRequest, container }: Process): ProcessStatus => {
     switch (true) {
+        case containerRequest.state === ContainerRequestState.FINAL &&
+            container?.state !== ContainerState.COMPLETE:
+            // Request was finalized before its container started (or the
+            // container was cancelled)
+            return ProcessStatus.CANCELLED;
+
         case containerRequest.state === ContainerRequestState.UNCOMMITTED:
             return ProcessStatus.DRAFT;
 
-        case containerRequest.priority === 0:
-            return ProcessStatus.ONHOLD;
+        case container?.state === ContainerState.COMPLETE:
+            if (container?.exitCode === 0) {
+                return ProcessStatus.COMPLETED;
+            }
+            return ProcessStatus.FAILED;
 
-        case container && container.state === ContainerState.COMPLETE && container.exitCode === 0:
-            return ProcessStatus.COMPLETED;
-
-        case container && container.state === ContainerState.CANCELLED:
+        case container?.state === ContainerState.CANCELLED:
             return ProcessStatus.CANCELLED;
 
-        case container && (container.state === ContainerState.QUEUED ||
-            container.state === ContainerState.LOCKED):
+        case container?.state === ContainerState.QUEUED ||
+            container?.state === ContainerState.LOCKED:
+            if (containerRequest.priority === 0) {
+                return ProcessStatus.ONHOLD;
+            }
             return ProcessStatus.QUEUED;
 
-        case container && container.state === ContainerState.RUNNING &&
-            !!container.runtimeStatus.error:
-            return ProcessStatus.FAILING;
-
-        case container && container.state === ContainerState.RUNNING &&
-            !!container.runtimeStatus.warning:
-            return ProcessStatus.WARNING;
-
-        case container && container.state === ContainerState.RUNNING:
+        case container?.state === ContainerState.RUNNING:
+            if (!!container?.runtimeStatus.error) {
+                return ProcessStatus.FAILING;
+            }
+            if (!!container?.runtimeStatus.warning) {
+                return ProcessStatus.WARNING;
+            }
             return ProcessStatus.RUNNING;
-
-        case container && container.state === ContainerState.COMPLETE && container.exitCode !== 0:
-            return ProcessStatus.FAILED;
 
         default:
             return ProcessStatus.UNKNOWN;
