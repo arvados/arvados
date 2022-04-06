@@ -81,6 +81,13 @@ arvados:
       # required to test with arvados-snakeoil certs
       insecure: false
 
+    resources:
+      virtual_machines:
+        shell:
+          name: shell
+          backend: __SHELL_INT_IP__
+          port: 4200
+
     ### TOKENS
     tokens:
       system_root: __SYSTEM_ROOT_TOKEN__

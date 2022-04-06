@@ -28,7 +28,6 @@ arvados:
   ## manage OS packages with some other tool and you don't want us messing up
   ## with your setup.
   ruby:
-
     ## We set these to `true` here for testing purposes.
     ## They both default to `false`.
     manage_ruby: true
@@ -90,7 +89,7 @@ arvados:
       virtual_machines:
         shell:
           name: webshell
-          backend: 127.0.1.1
+          backend: 127.0.0.1
           port: 4200
 
     ### TOKENS
