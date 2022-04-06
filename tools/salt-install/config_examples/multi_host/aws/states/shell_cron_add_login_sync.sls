@@ -77,7 +77,7 @@ extra_shell_cron_add_login_sync_add_{{ vm }}_arvados_virtual_machine_uuid_cron_e
 
 extra_shell_cron_add_login_sync_add_{{ vm }}_arvados_login_sync_cron_present:
   cron.present:
-    - name: arvados-login-sync
+    - name: /usr/local/bin/arvados-login-sync
     - minute: '*/2'
     - onlyif:
       - /bin/grep -qE "[a-z0-9]{5}-2x53u-[a-z0-9]{15}" /tmp/vm_uuid_{{ vm }}
