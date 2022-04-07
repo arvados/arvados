@@ -8,19 +8,27 @@ import (
 	"context"
 	"crypto/tls"
 	"encoding/json"
+	"errors"
+	"flag"
 	"fmt"
+	"io"
 	"net/http"
 	"net/url"
 	"sync"
 	"time"
 
+	"git.arvados.org/arvados.git/lib/cmd"
+	"git.arvados.org/arvados.git/lib/config"
 	"git.arvados.org/arvados.git/sdk/go/arvados"
 	"git.arvados.org/arvados.git/sdk/go/auth"
+	"git.arvados.org/arvados.git/sdk/go/ctxlog"
+	"github.com/ghodss/yaml"
+	"github.com/sirupsen/logrus"
 )
 
 const defaultTimeout = arvados.Duration(2 * time.Second)
 
-// Aggregator implements http.Handler. It handles "GET /_health/all"
+// Aggregator implements service.Handler. It handles "GET /_health/all"
 // by checking the health of all configured services on the cluster
 // and responding 200 if everything is healthy.
 type Aggregator struct {
@@ -240,4 +248,62 @@ func (agg *Aggregator) checkAuth(req *http.Request) bool {
 		}
 	}
 	return false
+}
+
+var errSilent = errors.New("")
+
+var CheckCommand cmd.Handler = checkCommand{}
+
+type checkCommand struct{}
+
+func (ccmd checkCommand) RunCommand(prog string, args []string, stdin io.Reader, stdout, stderr io.Writer) int {
+	logger := ctxlog.New(stderr, "json", "info")
+	ctx := ctxlog.Context(context.Background(), logger)
+	err := ccmd.run(ctx, prog, args, stdin, stdout, stderr)
+	if err != nil {
+		if err != errSilent {
+			fmt.Fprintln(stdout, err.Error())
+		}
+		return 1
+	}
+	return 0
+}
+
+func (ccmd checkCommand) run(ctx context.Context, prog string, args []string, stdin io.Reader, stdout, stderr io.Writer) error {
+	flags := flag.NewFlagSet("", flag.ContinueOnError)
+	flags.SetOutput(stderr)
+	loader := config.NewLoader(stdin, ctxlog.New(stderr, "text", "info"))
+	loader.SetupFlags(flags)
+	versionFlag := flags.Bool("version", false, "Write version information to stdout and exit 0")
+	timeout := flags.Duration("timeout", defaultTimeout.Duration(), "Maximum time to wait for health responses")
+	if ok, _ := cmd.ParseFlags(flags, prog, args, "", stderr); !ok {
+		// cmd.ParseFlags already reported the error
+		return errSilent
+	} else if *versionFlag {
+		cmd.Version.RunCommand(prog, args, stdin, stdout, stderr)
+		return nil
+	}
+	cfg, err := loader.Load()
+	if err != nil {
+		return err
+	}
+	cluster, err := cfg.GetCluster("")
+	if err != nil {
+		return err
+	}
+	logger := ctxlog.New(stderr, cluster.SystemLogs.Format, cluster.SystemLogs.LogLevel).WithFields(logrus.Fields{
+		"ClusterID": cluster.ClusterID,
+	})
+	ctx = ctxlog.Context(ctx, logger)
+	agg := Aggregator{Cluster: cluster, timeout: arvados.Duration(*timeout)}
+	resp := agg.ClusterHealth()
+	buf, err := yaml.Marshal(resp)
+	if err != nil {
+		return err
+	}
+	stdout.Write(buf)
+	if resp.Health != "OK" {
+		return fmt.Errorf("health check failed")
+	}
+	return nil
 }

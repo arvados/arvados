@@ -5,14 +5,19 @@
 package health
 
 import (
+	"bytes"
 	"encoding/json"
+	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
 	"strings"
 	"time"
 
+	"git.arvados.org/arvados.git/lib/config"
 	"git.arvados.org/arvados.git/sdk/go/arvados"
 	"git.arvados.org/arvados.git/sdk/go/arvadostest"
+	"git.arvados.org/arvados.git/sdk/go/ctxlog"
+	"github.com/ghodss/yaml"
 	"gopkg.in/check.v1"
 )
 
@@ -30,9 +35,17 @@ func (s *AggregatorSuite) TestInterface(c *check.C) {
 }
 
 func (s *AggregatorSuite) SetUpTest(c *check.C) {
-	s.handler = &Aggregator{Cluster: &arvados.Cluster{
-		ManagementToken: arvadostest.ManagementToken,
-	}}
+	ldr := config.NewLoader(bytes.NewBufferString(`Clusters: {zzzzz: {}}`), ctxlog.TestLogger(c))
+	ldr.Path = "-"
+	cfg, err := ldr.Load()
+	c.Assert(err, check.IsNil)
+	cluster, err := cfg.GetCluster("")
+	c.Assert(err, check.IsNil)
+	cluster.ManagementToken = arvadostest.ManagementToken
+	cluster.SystemRootToken = arvadostest.SystemRootToken
+	cluster.Collections.BlobSigningKey = arvadostest.BlobSigningKey
+	cluster.Volumes["z"] = arvados.Volume{StorageClasses: map[string]bool{"default": true}}
+	s.handler = &Aggregator{Cluster: cluster}
 	s.req = httptest.NewRequest("GET", "/_health/all", nil)
 	s.req.Header.Set("Authorization", "Bearer "+arvadostest.ManagementToken)
 	s.resp = httptest.NewRecorder()
@@ -120,6 +133,22 @@ func (s *AggregatorSuite) TestPingTimeout(c *check.C) {
 	rt, err := ep.ResponseTime.Float64()
 	c.Check(err, check.IsNil)
 	c.Check(rt > 0.005, check.Equals, true)
+}
+
+func (s *AggregatorSuite) TestCheckCommand(c *check.C) {
+	srv, listen := s.stubServer(&healthyHandler{})
+	defer srv.Close()
+	s.setAllServiceURLs(listen)
+	tmpdir := c.MkDir()
+	confdata, err := yaml.Marshal(arvados.Config{Clusters: map[string]arvados.Cluster{s.handler.Cluster.ClusterID: *s.handler.Cluster}})
+	c.Assert(err, check.IsNil)
+	err = ioutil.WriteFile(tmpdir+"/config.yml", confdata, 0777)
+	c.Assert(err, check.IsNil)
+	var stdout, stderr bytes.Buffer
+	exitcode := CheckCommand.RunCommand("check", []string{"-config=" + tmpdir + "/config.yml"}, &bytes.Buffer{}, &stdout, &stderr)
+	c.Check(exitcode, check.Equals, 0)
+	c.Check(stderr.String(), check.Equals, "")
+	c.Check(stdout.String(), check.Matches, `(?ms).*(\n|^)health: OK\n.*`)
 }
 
 func (s *AggregatorSuite) checkError(c *check.C) {
