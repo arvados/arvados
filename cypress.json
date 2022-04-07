@@ -4,5 +4,5 @@
     "viewportWidth": 1920,
     "viewportHeight": 1080,
     "downloadsFolder": "cypress/downloads",
-    "videoUploadOnPasses": false
+    "videoCompression": false
 }
