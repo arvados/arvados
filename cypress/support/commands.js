@@ -135,11 +135,7 @@ Cypress.Commands.add(
 
 Cypress.Commands.add(
     "getCollection", (token, uuid) => {
-        return cy.doRequest('GET', `/arvados/v1/collections/${uuid}`, null, {}, token)
-            .its('body')
-            .then(function (theCollection) {
-                return theCollection;
-            })
+        return cy.getResource(token, 'collections', uuid)
     }
 )
 
@@ -156,6 +152,20 @@ Cypress.Commands.add(
     "updateCollection", (token, uuid, data) => {
         return cy.updateResource(token, 'collections', uuid, {
             collection: JSON.stringify(data)
+        })
+    }
+)
+
+Cypress.Commands.add(
+    "getContainer", (token, uuid) => {
+        return cy.getResource(token, 'containers', uuid)
+    }
+)
+
+Cypress.Commands.add(
+    "updateContainer", (token, uuid, data) => {
+        return cy.updateResource(token, 'containers', uuid, {
+            container: JSON.stringify(data)
         })
     }
 )
@@ -213,12 +223,22 @@ Cypress.Commands.add(
 )
 
 Cypress.Commands.add(
+    "getResource", (token, suffix, uuid) => {
+        return cy.doRequest('GET', `/arvados/v1/${suffix}/${uuid}`, null, {}, token)
+            .its('body')
+            .then(function (resource) {
+                return resource;
+            })
+    }
+)
+
+Cypress.Commands.add(
     "createResource", (token, suffix, data) => {
         return cy.doRequest('POST', '/arvados/v1/' + suffix, data, null, token, true)
-            .its('body').as('resource')
-            .then(function () {
-                createdResources.push({suffix, uuid: this.resource.uuid});
-                return this.resource;
+            .its('body')
+            .then(function (resource) {
+                createdResources.push({suffix, uuid: resource.uuid});
+                return resource;
             })
     }
 )
@@ -226,19 +246,19 @@ Cypress.Commands.add(
 Cypress.Commands.add(
     "deleteResource", (token, suffix, uuid, failOnStatusCode = true) => {
         return cy.doRequest('DELETE', '/arvados/v1/' + suffix + '/' + uuid, null, null, token, false, true, failOnStatusCode)
-            .its('body').as('resource')
-            .then(function () {
-                return this.resource;
+            .its('body')
+            .then(function (resource) {
+                return resource;
             })
     }
 )
 
 Cypress.Commands.add(
     "updateResource", (token, suffix, uuid, data) => {
-        return cy.doRequest('PUT', '/arvados/v1/' + suffix + '/' + uuid, data, null, token, true)
-            .its('body').as('resource')
-            .then(function () {
-                return this.resource;
+        return cy.doRequest('PATCH', '/arvados/v1/' + suffix + '/' + uuid, data, null, token, true)
+            .its('body')
+            .then(function (resource) {
+                return resource;
             })
     }
 )
