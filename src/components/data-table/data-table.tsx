@@ -86,7 +86,7 @@ type DataTableProps<T> = DataTableDataProps<T> & WithStyles<CssRules>;
 export const DataTable = withStyles(styles)(
     class Component<T> extends React.Component<DataTableProps<T>> {
         render() {
-            const { items, classes } = this.props;
+            const { items, classes, working } = this.props;
             return <div className={classes.root}>
                 <div className={classes.content}>
                     <Table>
@@ -96,16 +96,16 @@ export const DataTable = withStyles(styles)(
                             </TableRow>
                         </TableHead>
                         <TableBody className={classes.tableBody}>
-                            { this.props.working !== undefined && !this.props.working && items.map(this.renderBodyRow) }
+                            { !working && items.map(this.renderBodyRow) }
                         </TableBody>
                     </Table>
-                    { this.props.working &&
+                    { !!working &&
                         <div className={classes.loader}>
                             <DataTableDefaultView
                                 icon={PendingIcon}
                                 messages={['Loading data, please wait.']} />
                         </div> }
-                    {items.length === 0 && this.props.working !== undefined && !this.props.working && this.renderNoItemsPlaceholder()}
+                    {items.length === 0 && !working && this.renderNoItemsPlaceholder()}
                 </div>
             </div>;
         }

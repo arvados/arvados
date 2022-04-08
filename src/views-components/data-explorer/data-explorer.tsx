@@ -21,8 +21,9 @@ interface Props {
     working?: boolean;
 }
 
-let data: any[] = [];
-let href: string = '';
+let prevRoute = '';
+let routeChanged = false;
+let isWorking = false;
 
 const mapStateToProps = (state: RootState, { id }: Props) => {
     const progress = state.progressIndicator.find(p => p.id === id);
@@ -30,16 +31,20 @@ const mapStateToProps = (state: RootState, { id }: Props) => {
     const currentRoute = state.router.location ? state.router.location.pathname : '';
     const currentItemUuid = currentRoute === '/workflows' ? state.properties.workflowPanelDetailsUuid : state.detailsPanel.resourceUuid;
 
-    let loading = false;
-
-    if (dataExplorerState.items.length > 0 && data === dataExplorerState.items && href !== window.location.href) {
-        loading = true
-    } else {
-        href = window.location.href;
-        data = dataExplorerState.items;
+    if (currentRoute !== prevRoute) {
+        routeChanged = true;
+        prevRoute = currentRoute;
+    }
+    if (progress?.working) {
+        isWorking = true;
     }
 
-    const working = (progress && progress.working) || loading;
+    const working = routeChanged && isWorking;
+
+    if (working && !progress?.working) {
+        routeChanged = false;
+        isWorking = false;
+    }
 
     return { ...dataExplorerState, working, paperKey: currentRoute, currentItemUuid };
 };
@@ -86,5 +91,5 @@ const mapDispatchToProps = () => {
     });
 };
 
-export const DataExplorer = connect(mapStateToProps, mapDispatchToProps())(DataExplorerComponent);
+export const DataExplorer = connect(mapStateToProps, mapDispatchToProps)(DataExplorerComponent);
 
