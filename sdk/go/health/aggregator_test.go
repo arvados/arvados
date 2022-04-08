@@ -10,6 +10,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
+	"regexp"
 	"strings"
 	"time"
 
@@ -142,6 +143,7 @@ func (s *AggregatorSuite) TestCheckCommand(c *check.C) {
 	tmpdir := c.MkDir()
 	confdata, err := yaml.Marshal(arvados.Config{Clusters: map[string]arvados.Cluster{s.handler.Cluster.ClusterID: *s.handler.Cluster}})
 	c.Assert(err, check.IsNil)
+	confdata = regexp.MustCompile(`SourceTimestamp: [^\n]+\n`).ReplaceAll(confdata, []byte{})
 	err = ioutil.WriteFile(tmpdir+"/config.yml", confdata, 0777)
 	c.Assert(err, check.IsNil)
 	var stdout, stderr bytes.Buffer

@@ -17,6 +17,7 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+	"time"
 
 	"git.arvados.org/arvados.git/sdk/go/arvados"
 	"github.com/ghodss/yaml"
@@ -46,6 +47,10 @@ type Loader struct {
 	KeepBalancePath         string
 
 	configdata []byte
+	// UTC time for configdata: either the modtime of the file we
+	// read configdata from, or the time when we read configdata
+	// from a pipe.
+	sourceTimestamp time.Time
 }
 
 // NewLoader returns a new Loader with Stdin and Logger set to the
@@ -166,25 +171,32 @@ func (ldr *Loader) MungeLegacyConfigArgs(lgr logrus.FieldLogger, args []string, 
 	return munged
 }
 
-func (ldr *Loader) loadBytes(path string) ([]byte, error) {
+func (ldr *Loader) loadBytes(path string) ([]byte, time.Time, error) {
 	if path == "-" {
-		return ioutil.ReadAll(ldr.Stdin)
+		buf, err := ioutil.ReadAll(ldr.Stdin)
+		return buf, time.Now().UTC(), err
 	}
 	f, err := os.Open(path)
 	if err != nil {
-		return nil, err
+		return nil, time.Time{}, err
 	}
 	defer f.Close()
-	return ioutil.ReadAll(f)
+	fi, err := f.Stat()
+	if err != nil {
+		return nil, time.Time{}, err
+	}
+	buf, err := ioutil.ReadAll(f)
+	return buf, fi.ModTime().UTC(), err
 }
 
 func (ldr *Loader) Load() (*arvados.Config, error) {
 	if ldr.configdata == nil {
-		buf, err := ldr.loadBytes(ldr.Path)
+		buf, t, err := ldr.loadBytes(ldr.Path)
 		if err != nil {
 			return nil, err
 		}
 		ldr.configdata = buf
+		ldr.sourceTimestamp = t
 	}
 
 	// FIXME: We should reject YAML if the same key is used twice
@@ -330,6 +342,8 @@ func (ldr *Loader) Load() (*arvados.Config, error) {
 			}
 		}
 	}
+	cfg.SourceTimestamp = ldr.sourceTimestamp
+	cfg.SourceSHA256 = fmt.Sprintf("%x", sha256.Sum256(ldr.configdata))
 	return &cfg, nil
 }
 
