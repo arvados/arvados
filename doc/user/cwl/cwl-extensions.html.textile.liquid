@@ -60,9 +60,9 @@ hints:
 
   cwltool:CUDARequirement:
     cudaVersionMin: "11.0"
-    cudaComputeCapabilityMin: "9.0"
-    deviceCountMin: 1
-    deviceCountMax: 1
+    cudaComputeCapability: "9.0"
+    cudaDeviceCountMin: 1
+    cudaDeviceCountMax: 1
 
   arv:UsePreemptible:
     usePreemptible: true
@@ -163,9 +163,9 @@ Request support for Nvidia CUDA GPU acceleration in the container.  Assumes that
 table(table table-bordered table-condensed).
 |_. Field |_. Type |_. Description |
 |cudaVersionMin|string|Required.  The CUDA SDK version corresponding to the minimum driver version supported by the container (generally, the SDK version 'X.Y' the application was compiled against).|
-|cudaComputeCapabilityMin|string|Required.  The minimum CUDA hardware capability (in 'X.Y' format) required by the application's PTX or C++ GPU code (will be JIT compiled for the available hardware).|
-|deviceCountMin|integer|Minimum number of GPU devices to allocate on a single node. Required.|
-|deviceCountMax|integer|Maximum number of GPU devices to allocate on a single node. Optional.  If not specified, same as @minDeviceCount@.|
+|cudaComputeCapability|string|Required.  The minimum CUDA hardware capability (in 'X.Y' format) required by the application's PTX or C++ GPU code (will be JIT compiled for the available hardware).|
+|cudaDeviceCountMin|integer|Minimum number of GPU devices to allocate on a single node. Required.|
+|cudaDeviceCountMax|integer|Maximum number of GPU devices to allocate on a single node. Optional.  If not specified, same as @cudaDeviceCountMin@.|
 
 h2(#UsePreemptible). arv:UsePreemptible
 
