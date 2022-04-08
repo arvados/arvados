@@ -117,6 +117,8 @@ func (c *command) RunCommand(prog string, args []string, stdin io.Reader, stdout
 	ctx = context.WithValue(ctx, contextKeyURL{}, listenURL)
 
 	reg := prometheus.NewRegistry()
+	loader.RegisterMetrics(reg)
+
 	handler := c.newHandler(ctx, cluster, cluster.SystemRootToken, reg)
 	if err = handler.CheckHealth(); err != nil {
 		return 1

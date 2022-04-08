@@ -20,6 +20,8 @@ import (
 	"git.arvados.org/arvados.git/sdk/go/arvados"
 	"git.arvados.org/arvados.git/sdk/go/ctxlog"
 	"github.com/ghodss/yaml"
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/common/expfmt"
 	"github.com/sirupsen/logrus"
 	"golang.org/x/sys/unix"
 	check "gopkg.in/check.v1"
@@ -798,5 +800,15 @@ func (s *LoadSuite) TestSourceTimestamp(c *check.C) {
 		c.Assert(err, check.IsNil)
 		c.Check(cfg.SourceTimestamp, check.Equals, cfg.SourceTimestamp.UTC())
 		c.Check(int(cfg.SourceTimestamp.Sub(trial.expectTime).Seconds()), check.Equals, 0)
+
+		var buf bytes.Buffer
+		reg := prometheus.NewRegistry()
+		ldr.RegisterMetrics(reg)
+		enc := expfmt.NewEncoder(&buf, expfmt.FmtText)
+		got, _ := reg.Gather()
+		for _, mf := range got {
+			enc.Encode(mf)
+		}
+		c.Check(buf.String(), check.Matches, `# HELP .*\n# TYPE .*\narvados_config_source_timestamp_seconds{sha256="83aea5d82eb1d53372cd65c936c60acc1c6ef946e61977bbca7cfea709d201a8"} \Q`+fmt.Sprintf("%g", float64(cfg.SourceTimestamp.UnixNano())/1e9)+`\E\n`)
 	}
 }

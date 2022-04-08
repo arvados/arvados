@@ -6,6 +6,7 @@ package config
 
 import (
 	"bytes"
+	"crypto/sha256"
 	_ "embed"
 	"encoding/json"
 	"errors"
@@ -22,6 +23,7 @@ import (
 	"git.arvados.org/arvados.git/sdk/go/arvados"
 	"github.com/ghodss/yaml"
 	"github.com/imdario/mergo"
+	"github.com/prometheus/client_golang/prometheus"
 	"github.com/sirupsen/logrus"
 )
 
@@ -568,4 +570,21 @@ func (ldr *Loader) autofillPreemptible(label string, cc *arvados.Cluster) {
 		}
 	}
 
+}
+
+// RegisterMetrics registers metrics showing the timestamp and content
+// hash of the currently loaded config.
+//
+// Must not be called more than once for a given registry. Must not be
+// called before Load(). Metrics are not updated by subsequent calls
+// to Load().
+func (ldr *Loader) RegisterMetrics(reg *prometheus.Registry) {
+	vec := prometheus.NewGaugeVec(prometheus.GaugeOpts{
+		Namespace: "arvados",
+		Subsystem: "config",
+		Name:      "source_timestamp_seconds",
+		Help:      "Timestamp of config file when it was loaded.",
+	}, []string{"sha256"})
+	vec.WithLabelValues(fmt.Sprintf("%x", sha256.Sum256(ldr.configdata))).Set(float64(ldr.sourceTimestamp.UnixNano()) / 1e9)
+	reg.MustRegister(vec)
 }
