@@ -55,7 +55,7 @@ export const ProcessRuntimeStatus = withStyles(styles)(
     ({ runtimeStatus, classes }: ProcessRuntimeStatusProps) => {
     return <>
         { runtimeStatus?.error &&
-        <ExpansionPanel className={classes.error} elevation={0}>
+        <div data-cy='process-runtime-status-error'><ExpansionPanel className={classes.error} elevation={0}>
             <ExpansionPanelSummary className={classes.summary} expandIcon={<ExpandMoreIcon />}>
                 <Typography className={classNames(classes.heading, classes.errorColor)}>
                     {`Error: ${runtimeStatus.error }`}
@@ -66,10 +66,10 @@ export const ProcessRuntimeStatus = withStyles(styles)(
                     {runtimeStatus?.errorDetail || 'No additional error details available'}
                 </Typography>
             </ExpansionPanelDetails>
-        </ExpansionPanel>
+        </ExpansionPanel></div>
         }
         { runtimeStatus?.warning &&
-        <ExpansionPanel className={classes.warning} elevation={0}>
+        <div data-cy='process-runtime-status-warning' ><ExpansionPanel className={classes.warning} elevation={0}>
             <ExpansionPanelSummary className={classes.summary} expandIcon={<ExpandMoreIcon />}>
                 <Typography className={classNames(classes.heading, classes.warningColor)}>
                     {`Warning: ${runtimeStatus.warning }`}
@@ -80,7 +80,7 @@ export const ProcessRuntimeStatus = withStyles(styles)(
                     {runtimeStatus?.warningDetail || 'No additional warning details available'}
                 </Typography>
             </ExpansionPanelDetails>
-        </ExpansionPanel>
+        </ExpansionPanel></div>
         }
     </>
 });
