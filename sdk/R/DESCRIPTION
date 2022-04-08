@@ -1,7 +1,7 @@
 Package: ArvadosR
 Type: Package
 Title: Arvados R SDK
-Version: 0.0.6
+Version: 2.4.0
 Authors@R: c(person("Fuad", "Muhic", role = c("aut", "ctr"), email = "fmuhic@capeannenterprises.com"),
              person("Peter", "Amstutz", role = c("cre"), email = "peter.amstutz@curii.com"))
 Description: This is the Arvados R SDK
