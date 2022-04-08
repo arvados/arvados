@@ -799,7 +799,9 @@ func (s *LoadSuite) TestSourceTimestamp(c *check.C) {
 		cfg, err := ldr.Load()
 		c.Assert(err, check.IsNil)
 		c.Check(cfg.SourceTimestamp, check.Equals, cfg.SourceTimestamp.UTC())
+		c.Check(cfg.SourceTimestamp, check.Equals, ldr.sourceTimestamp)
 		c.Check(int(cfg.SourceTimestamp.Sub(trial.expectTime).Seconds()), check.Equals, 0)
+		c.Check(int(ldr.loadTimestamp.Sub(time.Now()).Seconds()), check.Equals, 0)
 
 		var buf bytes.Buffer
 		reg := prometheus.NewRegistry()
@@ -809,6 +811,12 @@ func (s *LoadSuite) TestSourceTimestamp(c *check.C) {
 		for _, mf := range got {
 			enc.Encode(mf)
 		}
-		c.Check(buf.String(), check.Matches, `# HELP .*\n# TYPE .*\narvados_config_source_timestamp_seconds{sha256="83aea5d82eb1d53372cd65c936c60acc1c6ef946e61977bbca7cfea709d201a8"} \Q`+fmt.Sprintf("%g", float64(cfg.SourceTimestamp.UnixNano())/1e9)+`\E\n`)
+		c.Check(buf.String(), check.Matches, `# HELP .*
+# TYPE .*
+arvados_config_load_timestamp_seconds{sha256="83aea5d82eb1d53372cd65c936c60acc1c6ef946e61977bbca7cfea709d201a8"} \Q`+fmt.Sprintf("%g", float64(ldr.loadTimestamp.UnixNano())/1e9)+`\E
+# HELP .*
+# TYPE .*
+arvados_config_source_timestamp_seconds{sha256="83aea5d82eb1d53372cd65c936c60acc1c6ef946e61977bbca7cfea709d201a8"} \Q`+fmt.Sprintf("%g", float64(cfg.SourceTimestamp.UnixNano())/1e9)+`\E
+`)
 	}
 }
