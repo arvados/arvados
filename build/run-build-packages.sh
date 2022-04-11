@@ -255,7 +255,7 @@ package_go_binary services/health arvados-health "$FORMAT" "$ARCH" \
     "Check health of all Arvados cluster services"
 package_go_binary services/keep-balance keep-balance "$FORMAT" "$ARCH" \
     "Rebalance and garbage-collect data blocks stored in Arvados Keep"
-package_go_binary services/keepproxy keepproxy "$FORMAT" "$ARCH" \
+package_go_binary cmd/arvados-server keepproxy "$FORMAT" "$ARCH" \
     "Make a Keep cluster accessible to clients that are not on the LAN"
 package_go_binary cmd/arvados-server keepstore "$FORMAT" "$ARCH" \
     "Keep storage daemon, accessible to clients on the LAN"
