@@ -6,7 +6,9 @@ package health
 
 import (
 	"bytes"
+	"crypto/sha256"
 	"encoding/json"
+	"fmt"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
@@ -121,6 +123,65 @@ func (s *AggregatorSuite) TestHealthyAndUnhealthy(c *check.C) {
 	c.Logf("%#v", ep)
 }
 
+func (s *AggregatorSuite) TestConfigMismatch(c *check.C) {
+	// time1/hash1: current config
+	time1 := time.Now().Add(time.Second - time.Minute - time.Hour)
+	hash1 := fmt.Sprintf("%x", sha256.Sum256([]byte(`Clusters: {zzzzz: {SystemRootToken: xyzzy}}`)))
+	// time2/hash2: old config
+	time2 := time1.Add(-time.Hour)
+	hash2 := fmt.Sprintf("%x", sha256.Sum256([]byte(`Clusters: {zzzzz: {SystemRootToken: old-token}}`)))
+
+	// srv1: current file
+	handler1 := healthyHandler{configHash: hash1, configTime: time1}
+	srv1, listen1 := s.stubServer(&handler1)
+	defer srv1.Close()
+	// srv2: old file, current content
+	handler2 := healthyHandler{configHash: hash1, configTime: time2}
+	srv2, listen2 := s.stubServer(&handler2)
+	defer srv2.Close()
+	// srv3: old file, old content
+	handler3 := healthyHandler{configHash: hash2, configTime: time2}
+	srv3, listen3 := s.stubServer(&handler3)
+	defer srv3.Close()
+	// srv4: no metrics handler
+	handler4 := healthyHandler{}
+	srv4, listen4 := s.stubServer(&handler4)
+	defer srv4.Close()
+
+	s.setAllServiceURLs(listen1)
+
+	// listen2 => old timestamp, same content => no problem
+	s.resp = httptest.NewRecorder()
+	arvadostest.SetServiceURL(&s.handler.Cluster.Services.DispatchCloud,
+		"http://localhost"+listen2+"/")
+	s.handler.ServeHTTP(s.resp, s.req)
+	resp := s.checkOK(c)
+
+	// listen4 => no metrics on some services => no problem
+	s.resp = httptest.NewRecorder()
+	arvadostest.SetServiceURL(&s.handler.Cluster.Services.WebDAV,
+		"http://localhost"+listen4+"/")
+	s.handler.ServeHTTP(s.resp, s.req)
+	resp = s.checkOK(c)
+
+	// listen3 => old timestamp, old content => report discrepancy
+	s.resp = httptest.NewRecorder()
+	arvadostest.SetServiceURL(&s.handler.Cluster.Services.Keepstore,
+		"http://localhost"+listen1+"/",
+		"http://localhost"+listen3+"/")
+	s.handler.ServeHTTP(s.resp, s.req)
+	resp = s.checkUnhealthy(c)
+	if c.Check(len(resp.Errors) > 0, check.Equals, true) {
+		c.Check(resp.Errors[0], check.Matches, `outdated config: \Qkeepstore+http://localhost`+listen3+`\E: config file \(sha256 .*\) does not match latest version with timestamp .*`)
+	}
+
+	// no services report config time (migrating to current version) => no problem
+	s.resp = httptest.NewRecorder()
+	s.setAllServiceURLs(listen4)
+	s.handler.ServeHTTP(s.resp, s.req)
+	s.checkOK(c)
+}
+
 func (s *AggregatorSuite) TestPingTimeout(c *check.C) {
 	s.handler.timeout = arvados.Duration(100 * time.Millisecond)
 	srv, listen := s.stubServer(&slowHandler{})
@@ -143,7 +204,7 @@ func (s *AggregatorSuite) TestCheckCommand(c *check.C) {
 	tmpdir := c.MkDir()
 	confdata, err := yaml.Marshal(arvados.Config{Clusters: map[string]arvados.Cluster{s.handler.Cluster.ClusterID: *s.handler.Cluster}})
 	c.Assert(err, check.IsNil)
-	confdata = regexp.MustCompile(`SourceTimestamp: [^\n]+\n`).ReplaceAll(confdata, []byte{})
+	confdata = regexp.MustCompile(`Source(Timestamp|SHA256): [^\n]+\n`).ReplaceAll(confdata, []byte{})
 	err = ioutil.WriteFile(tmpdir+"/config.yml", confdata, 0777)
 	c.Assert(err, check.IsNil)
 	var stdout, stderr bytes.Buffer
@@ -209,11 +270,37 @@ func (*unhealthyHandler) ServeHTTP(resp http.ResponseWriter, req *http.Request) 
 	}
 }
 
-type healthyHandler struct{}
+type healthyHandler struct {
+	configHash string
+	configTime time.Time
+}
 
-func (*healthyHandler) ServeHTTP(resp http.ResponseWriter, req *http.Request) {
+func (h *healthyHandler) ServeHTTP(resp http.ResponseWriter, req *http.Request) {
+	authOK := req.Header.Get("Authorization") == "Bearer "+arvadostest.ManagementToken
 	if req.URL.Path == "/_health/ping" {
+		if !authOK {
+			http.Error(resp, "unauthorized", http.StatusUnauthorized)
+			return
+		}
 		resp.Write([]byte(`{"health":"OK"}`))
+	} else if req.URL.Path == "/metrics" {
+		if !authOK {
+			http.Error(resp, "unauthorized", http.StatusUnauthorized)
+			return
+		}
+		t := h.configTime
+		if t.IsZero() {
+			t = time.Now()
+		}
+		fmt.Fprintf(resp, `# HELP arvados_config_load_timestamp_seconds Time when config file was loaded.
+# TYPE arvados_config_load_timestamp_seconds gauge
+arvados_config_load_timestamp_seconds{sha256="%s"} %g
+# HELP arvados_config_source_timestamp_seconds Timestamp of config file when it was loaded.
+# TYPE arvados_config_source_timestamp_seconds gauge
+arvados_config_source_timestamp_seconds{sha256="%s"} %g
+`,
+			h.configHash, float64(time.Now().UnixNano())/1e9,
+			h.configHash, float64(t.UnixNano())/1e9)
 	} else {
 		http.Error(resp, "not found", http.StatusNotFound)
 	}
