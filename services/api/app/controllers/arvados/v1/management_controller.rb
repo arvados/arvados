@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: AGPL-3.0
 
-class Arvados::V1::HealthcheckController < ApplicationController
+class Arvados::V1::ManagementController < ApplicationController
   skip_before_action :catch_redirect_hint
   skip_before_action :find_objects_for_index
   skip_before_action :find_object_by_uuid
@@ -29,8 +29,24 @@ class Arvados::V1::HealthcheckController < ApplicationController
     end
   end
 
-  def ping
-    resp = {"health" => "OK"}
-    send_json resp
+  def metrics
+    render content_type: 'text/plain', plain: <<~EOF
+# HELP arvados_config_load_timestamp_seconds Time when config file was loaded.
+# TYPE arvados_config_load_timestamp_seconds gauge
+arvados_config_load_timestamp_seconds{sha256="#{Rails.configuration.SourceSHA256}"} #{Rails.configuration.LoadTimestamp.to_f}
+# HELP arvados_config_source_timestamp_seconds Timestamp of config file when it was loaded.
+# TYPE arvados_config_source_timestamp_seconds gauge
+arvados_config_source_timestamp_seconds{sha256="#{Rails.configuration.SourceSHA256}"} #{Rails.configuration.SourceTimestamp.to_f}
+EOF
+  end
+
+  def health
+    case params[:check]
+    when 'ping'
+      resp = {"health" => "OK"}
+      send_json resp
+    else
+      send_json ({"errors" => "not found"}), status: 404
+    end
   end
 end

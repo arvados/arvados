@@ -112,7 +112,8 @@ Rails.application.routes.draw do
 
   match '/static/login_failure', to: 'static#login_failure', as: :login_failure, via: [:get, :post]
 
-  match '/_health/ping', to: 'arvados/v1/healthcheck#ping', via: [:get]
+  match '/_health/:check', to: 'arvados/v1/management#health', via: [:get]
+  match '/metrics', to: 'arvados/v1/management#metrics', via: [:get]
 
   # Send unroutable requests to an arbitrary controller
   # (ends up at ApplicationController#render_not_found)
