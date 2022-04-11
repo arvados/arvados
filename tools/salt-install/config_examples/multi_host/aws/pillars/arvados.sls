@@ -88,7 +88,7 @@ arvados:
       # certificate: ''
       # key: ''
       # When using arvados-snakeoil certs set insecure: true
-      insecure: true
+      insecure: false
 
     resources:
       virtual_machines:
