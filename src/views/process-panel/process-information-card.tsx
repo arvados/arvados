@@ -4,21 +4,29 @@
 
 import React from 'react';
 import {
-    StyleRulesCallback, WithStyles, withStyles, Card,
-    CardHeader, IconButton, CardContent, Grid, Chip, Typography, Tooltip
+    StyleRulesCallback,
+    WithStyles,
+    withStyles,
+    Card,
+    CardHeader,
+    IconButton,
+    CardContent,
+    Grid,
+    Typography,
+    Tooltip
 } from '@material-ui/core';
 import { ArvadosTheme } from 'common/custom-theme';
 import { CloseIcon, MoreOptionsIcon, ProcessIcon } from 'components/icon/icon';
 import { DetailsAttribute } from 'components/details-attribute/details-attribute';
 import { Process } from 'store/processes/process';
-import { getProcessStatus, getProcessStatusColor } from 'store/processes/process';
 import { formatDate } from 'common/formatters';
 import classNames from 'classnames';
 import { ContainerState } from 'models/container';
 import { MPVPanelProps } from 'components/multi-panel-view/multi-panel-view';
 import { ProcessRuntimeStatus } from 'views-components/process-runtime-status/process-runtime-status';
+import { ProcessStatus } from 'views-components/data-explorer/renderers';
 
-type CssRules = 'card' | 'iconHeader' | 'label' | 'value' | 'chip' | 'link' | 'content' | 'title' | 'avatar' | 'cancelButton' | 'header';
+type CssRules = 'card' | 'iconHeader' | 'label' | 'value' | 'link' | 'content' | 'title' | 'avatar' | 'cancelButton' | 'header';
 
 const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     card: {
@@ -53,13 +61,6 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
         '&:hover': {
             cursor: 'pointer'
         }
-    },
-    chip: {
-        height: theme.spacing.unit * 3,
-        width: theme.spacing.unit * 12,
-        color: theme.palette.common.white,
-        fontSize: '0.875rem',
-        borderRadius: theme.spacing.unit * 0.625,
     },
     content: {
         paddingTop: '0px',
@@ -111,9 +112,7 @@ export const ProcessInformationCard = withStyles(styles, { withTheme: true })(
                     <div>
                         {process.container && process.container.state === ContainerState.RUNNING &&
                             <span className={classes.cancelButton} onClick={() => cancelProcess(process.containerRequest.uuid)}>Cancel</span>}
-                        <Chip label={getProcessStatus(process)}
-                            className={classes.chip}
-                            style={{ backgroundColor: getProcessStatusColor(getProcessStatus(process), theme as ArvadosTheme) }} />
+                        <ProcessStatus uuid={process.containerRequest.uuid} />
                         <Tooltip title="More options" disableFocusListener>
                             <IconButton
                                 aria-label="More options"

@@ -35,7 +35,15 @@ describe('renderers', () => {
                         red900: 'rgb(255, 0, 0)',
                         grey500: 'rgb(128, 128, 128)',
                     }
-                }
+                },
+                spacing: {
+                    unit: 8,
+                },
+                palette: {
+                    common: {
+                        white: 'rgb(255, 255, 255)',
+                    },
+                },
             },
         };
 
@@ -75,7 +83,9 @@ describe('renderers', () => {
 
                 expect(wrapper.text()).toEqual(eLabel);
                 expect(getComputedStyle(wrapper.getDOMNode())
-                    .getPropertyValue('color')).toEqual(eColor);
+                    .getPropertyValue('color')).toEqual(props.theme.palette.common.white);
+                expect(getComputedStyle(wrapper.getDOMNode())
+                    .getPropertyValue('background-color')).toEqual(eColor);
             });
         })
     });
