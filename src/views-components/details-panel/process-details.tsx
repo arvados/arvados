@@ -15,6 +15,6 @@ export class ProcessDetails extends DetailsData<ProcessResource> {
     }
 
     getDetails() {
-        return <ProcessDetailsAttributes item={this.item} />;
+        return <ProcessDetailsAttributes request={this.item} />;
     }
 }

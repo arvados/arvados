@@ -4,7 +4,6 @@
 
 import React from 'react';
 import { Grid, StyleRulesCallback, WithStyles, withStyles } from '@material-ui/core';
-import { ProcessInformationCard } from './process-information-card';
 import { DefaultView } from 'components/default-view/default-view';
 import { ProcessIcon } from 'components/icon/icon';
 import { Process } from 'store/processes/process';
@@ -35,9 +34,6 @@ export interface ProcessPanelRootDataProps {
 export interface ProcessPanelRootActionProps {
     onContextMenu: (event: React.MouseEvent<HTMLElement>, process: Process) => void;
     onToggle: (status: string) => void;
-    openProcessInputDialog: (uuid: string) => void;
-    navigateToOutput: (uuid: string) => void;
-    navigateToWorkflow: (uuid: string) => void;
     cancelProcess: (uuid: string) => void;
     onLogFilterChange: (filter: FilterOption) => void;
     navigateToLog: (uuid: string) => void;
@@ -47,8 +43,7 @@ export interface ProcessPanelRootActionProps {
 export type ProcessPanelRootProps = ProcessPanelRootDataProps & ProcessPanelRootActionProps & WithStyles<CssRules>;
 
 const panelsData: MPVPanelState[] = [
-    {name: "Info"},
-    {name: "Details", visible: false},
+    {name: "Details"},
     {name: "Logs", visible: true},
     {name: "Subprocesses"},
 ];
@@ -57,18 +52,12 @@ export const ProcessPanelRoot = withStyles(styles)(
     ({ process, processLogsPanel, ...props }: ProcessPanelRootProps) =>
     process
         ? <MPVContainer className={props.classes.root} spacing={8} panelStates={panelsData}  justify-content="flex-start" direction="column" wrap="nowrap">
-            <MPVPanelContent forwardProps xs="auto" data-cy="process-info">
-                <ProcessInformationCard
+            <MPVPanelContent forwardProps xs="auto" data-cy="process-details">
+                <ProcessDetailsCard
                     process={process}
                     onContextMenu={event => props.onContextMenu(event, process)}
-                    openProcessInputDialog={props.openProcessInputDialog}
-                    navigateToOutput={props.navigateToOutput}
-                    openWorkflow={props.navigateToWorkflow}
                     cancelProcess={props.cancelProcess}
                 />
-            </MPVPanelContent>
-            <MPVPanelContent forwardProps xs="auto" data-cy="process-details">
-                <ProcessDetailsCard process={process} />
             </MPVPanelContent>
             <MPVPanelContent forwardProps xs maxHeight='50%' data-cy="process-logs">
                 <ProcessLogsCard
