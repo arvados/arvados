@@ -537,16 +537,15 @@ if [ -z "${ROLES}" ]; then
       grep -q "aws_credentials" ${S_DIR}/top.sls || echo "    - extra.aws_credentials" >> ${S_DIR}/top.sls
     fi
     grep -q "letsencrypt"     ${S_DIR}/top.sls || echo "    - letsencrypt" >> ${S_DIR}/top.sls
-  else
-    # Use custom certs, as both bring-your-own and self-signed are copied using this state
+  elif [ "${SSL_MODE}" = "bring-your-own" ]; then
     # Copy certs to formula extra/files
-    # In dev mode, the files will be created and put in the destination directory by the
-    # snakeoil_certs.sls state file
     mkdir -p /srv/salt/certs
     cp -rv ${CUSTOM_CERTS_DIR}/* /srv/salt/certs/
     # We add the custom_certs state
     grep -q "custom_certs"    ${S_DIR}/top.sls || echo "    - extra.custom_certs" >> ${S_DIR}/top.sls
   fi
+  # In self-signed mode, the certificate files will be created and put in the
+  # destination directory by the snakeoil_certs.sls state file
 
   echo "    - postgres" >> ${S_DIR}/top.sls
   echo "    - docker.software" >> ${S_DIR}/top.sls
