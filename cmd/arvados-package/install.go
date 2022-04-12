@@ -92,7 +92,8 @@ rm /etc/apt/sources.list.d/arvados-local.list
 		cmd.Args = append(cmd.Args,
 			"--env=domain="+opts.Live,
 			"--env=bootargs=",
-			"--publish=:4430-4450:4430-4450",
+			"--publish=:4440-4460:4440-4460",
+			"--publish=:9000-9020:9000-9020",
 			"--add-host="+opts.Live+":0.0.0.0",
 			"--volume=/var/lib/acme:/var/lib/acme:ro")
 	} else {

@@ -106,53 +106,53 @@ func (initcmd *initCommand) RunCommand(prog string, args []string, stdin io.Read
     Services:
       Controller:
         InternalURLs:
-          "http://0.0.0.0:8003/": {}
-        ExternalURL: {{printf "%q" ( print "https://" .Domain ":4430/" ) }}
+          "http://0.0.0.0:9000/": {}
+        ExternalURL: {{printf "%q" ( print "https://" .Domain ":4440/" ) }}
       RailsAPI:
         InternalURLs:
-          "http://0.0.0.0:8004/": {}
+          "http://0.0.0.0:9001/": {}
       Websocket:
         InternalURLs:
-          "http://0.0.0.0:8005/": {}
-        ExternalURL: {{printf "%q" ( print "wss://" .Domain ":4435/websocket" ) }}
+          "http://0.0.0.0:9004/": {}
+        ExternalURL: {{printf "%q" ( print "wss://" .Domain ":4444/websocket" ) }}
       Keepbalance:
         InternalURLs:
-          "http://0.0.0.0:9005/": {}
+          "http://0.0.0.0:9019/": {}
       GitHTTP:
         InternalURLs:
-          "http://0.0.0.0:9001/": {}
-        ExternalURL: {{printf "%q" ( print "https://" .Domain ":4436/" ) }}
+          "http://0.0.0.0:9005/": {}
+        ExternalURL: {{printf "%q" ( print "https://" .Domain ":4445/" ) }}
       DispatchCloud:
         InternalURLs:
           "http://0.0.0.0:9006/": {}
       Keepproxy:
         InternalURLs:
-          "http://0.0.0.0:25108/": {}
-        ExternalURL: {{printf "%q" ( print "https://" .Domain ":4437/" ) }}
+          "http://0.0.0.0:9007/": {}
+        ExternalURL: {{printf "%q" ( print "https://" .Domain ":4447/" ) }}
       WebDAV:
         InternalURLs:
-          "http://0.0.0.0:9002/": {}
-        ExternalURL: {{printf "%q" ( print "https://" .Domain ":4438/" ) }}
+          "http://0.0.0.0:9008/": {}
+        ExternalURL: {{printf "%q" ( print "https://" .Domain ":4448/" ) }}
       WebDAVDownload:
         InternalURLs:
-          "http://0.0.0.0:8004/": {}
-        ExternalURL: {{printf "%q" ( print "https://" .Domain ":4439/" ) }}
+          "http://0.0.0.0:9009/": {}
+        ExternalURL: {{printf "%q" ( print "https://" .Domain ":4449/" ) }}
       Keepstore:
         InternalURLs:
-          "http://0.0.0.0:25107/": {}
+          "http://0.0.0.0:9010/": {}
       Composer:
-        ExternalURL: {{printf "%q" ( print "https://" .Domain ":4440/composer" ) }}
+        ExternalURL: {{printf "%q" ( print "https://" .Domain ":4459/composer" ) }}
       Workbench1:
         InternalURLs:
-          "http://0.0.0.0:8001/": {}
-        ExternalURL: {{printf "%q" ( print "https://" .Domain ":4441/" ) }}
+          "http://0.0.0.0:9002/": {}
+        ExternalURL: {{printf "%q" ( print "https://" .Domain ":4442/" ) }}
       Workbench2:
         InternalURLs:
-          "http://0.0.0.0:8002/": {}
-        ExternalURL: {{printf "%q" ( print "https://" .Domain ":4442/" ) }}
+          "http://0.0.0.0:9003/": {}
+        ExternalURL: {{printf "%q" ( print "https://" .Domain ":4443/" ) }}
       Health:
         InternalURLs:
-          "http://0.0.0.0:9007/": {}
+          "http://0.0.0.0:9011/": {}
     Collections:
       BlobSigningKey: {{printf "%q" ( .RandomHex 50 )}}
       {{if .Insecure}}
