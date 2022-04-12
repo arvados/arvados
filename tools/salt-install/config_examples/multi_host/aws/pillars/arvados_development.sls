@@ -5,6 +5,9 @@
 #
 # SPDX-License-Identifier: AGPL-3.0
 
+# This config file is used to test a multi-node deployment using a local
+# dispatcher. This setup is not recommended for production use.
+
 # The variables commented out are the default values that the formula uses.
 # The uncommented values are REQUIRED values. If you don't set them, running
 # this formula will fail.
@@ -88,8 +91,8 @@ arvados:
     resources:
       virtual_machines:
         shell:
-          name: __HOSTNAME_EXT__
-          backend: 127.0.0.1
+          name: shell
+          backend: __SHELL_INT_IP__
           port: 4200
 
     ### TOKENS
@@ -118,7 +121,15 @@ arvados:
       # <cluster>-nyw5e-<volume>
       __CLUSTER__-nyw5e-000000000000000:
         AccessViaHosts:
-          'http://__IP_INT__:25107':
+          'http://__KEEPSTORE0_INT_IP__:25107':
+            ReadOnly: false
+        Replication: 2
+        Driver: Directory
+        DriverParameters:
+          Root: /tmp
+      __CLUSTER__-nyw5e-000000000000001:
+        AccessViaHosts:
+          'http://__KEEPSTORE1_INT_IP__:25107':
             ReadOnly: false
         Replication: 2
         Driver: Directory
@@ -133,35 +144,36 @@ arvados:
 
     Services:
       Controller:
-        ExternalURL: 'https://__HOSTNAME_EXT__:__CONTROLLER_EXT_SSL_PORT__'
+        ExternalURL: 'https://__CLUSTER__.__DOMAIN__:__CONTROLLER_EXT_SSL_PORT__'
         InternalURLs:
-          'http://__IP_INT__:8003': {}
+          'http://localhost:8003': {}
       Keepbalance:
         InternalURLs:
-          'http://__IP_INT__:9005': {}
+          'http://__CONTROLLER_INT_IP__:9005': {}
       Keepproxy:
-        ExternalURL: 'https://__HOSTNAME_EXT__:__KEEP_EXT_SSL_PORT__'
+        ExternalURL: 'https://__CLUSTER__.__DOMAIN__:__KEEP_EXT_SSL_PORT__'
         InternalURLs:
-          'http://__IP_INT__:25100': {}
+          'http://__KEEP_INT_IP__:25100': {}
       Keepstore:
         InternalURLs:
-          'http://__IP_INT__:25107': {}
+          'http://__KEEPSTORE0_INT_IP__:25107': {}
+          'http://__KEEPSTORE1_INT_IP__:25107': {}
       RailsAPI:
         InternalURLs:
-          'http://__IP_INT__:8004': {}
+          'http://localhost:8004': {}
       WebDAV:
-        ExternalURL: 'https://__HOSTNAME_EXT__:__KEEPWEB_EXT_SSL_PORT__'
+        ExternalURL: 'https://__CLUSTER__.__DOMAIN__:__KEEPWEB_EXT_SSL_PORT__'
         InternalURLs:
-          'http://__IP_INT__:9003': {}
+          'http://localhost:9002': {}
       WebDAVDownload:
-        ExternalURL: 'https://__HOSTNAME_EXT__:__KEEPWEB_EXT_SSL_PORT__'
+        ExternalURL: 'https://__CLUSTER__.__DOMAIN__:__KEEPWEB_EXT_SSL_PORT__'
       WebShell:
-        ExternalURL: 'https://__HOSTNAME_EXT__:__WEBSHELL_EXT_SSL_PORT__'
+        ExternalURL: 'https://__CLUSTER__.__DOMAIN__:__WEBSHELL_EXT_SSL_PORT__'
       Websocket:
-        ExternalURL: 'wss://__HOSTNAME_EXT__:__WEBSOCKET_EXT_SSL_PORT__/websocket'
+        ExternalURL: 'wss://__CLUSTER__.__DOMAIN__:__WEBSOCKET_EXT_SSL_PORT__/websocket'
         InternalURLs:
-          'http://__IP_INT__:8005': {}
+          'http://__WEBSOCKET_INT_IP__:8005': {}
       Workbench1:
-        ExternalURL: 'https://__HOSTNAME_EXT__:__WORKBENCH1_EXT_SSL_PORT__'
+        ExternalURL: 'https://__CLUSTER__.__DOMAIN__:__WORKBENCH1_EXT_SSL_PORT__'
       Workbench2:
-        ExternalURL: 'https://__HOSTNAME_EXT__:__WORKBENCH2_EXT_SSL_PORT__'
+        ExternalURL: 'https://__CLUSTER__.__DOMAIN__:__WORKBENCH2_EXT_SSL_PORT__'

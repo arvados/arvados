@@ -12,6 +12,17 @@
 
 set -o pipefail
 
+_exit_handler() {
+  local rc="$?"
+  trap - EXIT
+  if [ "$rc" -ne 0 ]; then
+    echo "Error occurred ($rc) while running $0 at line $1 : $BASH_COMMAND"
+  fi
+  exit "$rc"
+}
+
+trap '_exit_handler $LINENO' EXIT ERR
+
 # capture the directory that the script is running from
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 
@@ -350,9 +361,9 @@ echo "...arvados"
 git clone --quiet https://git.arvados.org/arvados-formula.git ${F_DIR}/arvados
 
 # If we want to try a specific branch of the formula
-if [ "x${BRANCH}" != "x" ]; then
+if [ "x${BRANCH}" != "x" -a $(git rev-parse --abbrev-ref HEAD) != "${BRANCH}" ]; then
   ( cd ${F_DIR}/arvados && git checkout --quiet -t origin/"${BRANCH}" -b "${BRANCH}" )
-elif [ "x${ARVADOS_TAG}" != "x" ]; then
+elif [ "x${ARVADOS_TAG}" != "x" -a $(git rev-parse --abbrev-ref HEAD) != "${ARVADOS_TAG}" ]; then
 ( cd ${F_DIR}/arvados && git checkout --quiet tags/"${ARVADOS_TAG}" -b "${ARVADOS_TAG}" )
 fi
 
@@ -417,30 +428,34 @@ for f in $(ls "${SOURCE_PILLARS_DIR}"/*); do
   "${f}" > "${P_DIR}"/$(basename "${f}")
 done
 
-if [ "x${TEST}" = "xyes" ] && [ ! -d "${SOURCE_TESTS_DIR}" ]; then
-  echo "You requested to run tests, but ${SOURCE_TESTS_DIR} does not exist or is not a directory. Exiting."
-  exit 1
-fi
-mkdir -p ${T_DIR}
-# Replace cluster and domain name in the test files
-for f in $(ls "${SOURCE_TESTS_DIR}"/*); do
-  FILTERS="s#__CLUSTER__#${CLUSTER}#g;
-       s#__CONTROLLER_EXT_SSL_PORT__#${CONTROLLER_EXT_SSL_PORT}#g;
-       s#__DOMAIN__#${DOMAIN}#g;
-       s#__IP_INT__#${IP_INT}#g;
-       s#__INITIAL_USER_EMAIL__#${INITIAL_USER_EMAIL}#g;
-       s#__INITIAL_USER_PASSWORD__#${INITIAL_USER_PASSWORD}#g
-       s#__INITIAL_USER__#${INITIAL_USER}#g;
-       s#__DATABASE_PASSWORD__#${DATABASE_PASSWORD}#g;
-       s#__SYSTEM_ROOT_TOKEN__#${SYSTEM_ROOT_TOKEN}#g"
-  if [ "$USE_SINGLE_HOSTNAME" = "yes" ]; then
-    FILTERS="s#__CLUSTER__.__DOMAIN__#${HOSTNAME_EXT}#g;
-       $FILTERS"
+if [ ! -d "${SOURCE_TESTS_DIR}" ]; then
+  echo "WARNING: The tests directory was not copied to \"${SOURCE_TESTS_DIR}\"."
+  if [ "x${TEST}" = "xyes" ]; then
+    echo "WARNING: Disabling tests for this installation."
   fi
-  sed "$FILTERS" \
-    "${f}" > ${T_DIR}/$(basename "${f}")
-done
-chmod 755 ${T_DIR}/run-test.sh
+  TEST="no"
+else
+  mkdir -p ${T_DIR}
+  # Replace cluster and domain name in the test files
+  for f in $(ls "${SOURCE_TESTS_DIR}"/*); do
+    FILTERS="s#__CLUSTER__#${CLUSTER}#g;
+         s#__CONTROLLER_EXT_SSL_PORT__#${CONTROLLER_EXT_SSL_PORT}#g;
+         s#__DOMAIN__#${DOMAIN}#g;
+         s#__IP_INT__#${IP_INT}#g;
+         s#__INITIAL_USER_EMAIL__#${INITIAL_USER_EMAIL}#g;
+         s#__INITIAL_USER_PASSWORD__#${INITIAL_USER_PASSWORD}#g
+         s#__INITIAL_USER__#${INITIAL_USER}#g;
+         s#__DATABASE_PASSWORD__#${DATABASE_PASSWORD}#g;
+         s#__SYSTEM_ROOT_TOKEN__#${SYSTEM_ROOT_TOKEN}#g"
+    if [ "$USE_SINGLE_HOSTNAME" = "yes" ]; then
+      FILTERS="s#__CLUSTER__.__DOMAIN__#${HOSTNAME_EXT}#g;
+         $FILTERS"
+    fi
+    sed "$FILTERS" \
+      "${f}" > ${T_DIR}/$(basename "${f}")
+  done
+  chmod 755 ${T_DIR}/run-test.sh
+fi
 
 # Replace helper state files that differ from the formula's examples
 if [ -d "${SOURCE_STATES_DIR}" ]; then
@@ -514,7 +529,7 @@ if [ -d "${F_DIR}"/extra/extra ]; then
     # Same when using self-signed certificates.
     SKIP_SNAKE_OIL="dont_add_snakeoil_certs"
   fi
-  for f in $(ls "${F_DIR}"/extra/extra/*.sls | grep -v ${SKIP_SNAKE_OIL}); do
+  for f in $(ls "${F_DIR}"/extra/extra/*.sls | egrep -v "${SKIP_SNAKE_OIL}|shell_"); do
   echo "    - extra.$(basename ${f} | sed 's/.sls$//g')" >> ${S_DIR}/top.sls
   done
   # Use byo or self-signed certificates
@@ -547,6 +562,8 @@ if [ -z "${ROLES}" ]; then
   echo "    - postgres" >> ${S_DIR}/top.sls
   echo "    - docker.software" >> ${S_DIR}/top.sls
   echo "    - arvados" >> ${S_DIR}/top.sls
+  echo "    - extra.shell_sudo_passwordless" >> ${S_DIR}/top.sls
+  echo "    - extra.shell_cron_add_login_sync" >> ${S_DIR}/top.sls
 
   # Pillars
   echo "    - docker" >> ${P_DIR}/top.sls
@@ -665,6 +682,7 @@ else
         sed -i "s/__NGINX_INSTALL_SOURCE__/${NGINX_INSTALL_SOURCE}/g" ${P_DIR}/nginx_passenger.sls
       ;;
       "controller" | "websocket" | "workbench" | "workbench2" | "webshell" | "keepweb" | "keepproxy")
+        NGINX_INSTALL_SOURCE="install_from_repo"
         # States
         if [ "${R}" = "workbench" ]; then
           NGINX_INSTALL_SOURCE="install_from_phusionpassenger"
@@ -745,7 +763,7 @@ else
                     s#__CERT_PEM__#/etc/nginx/ssl/arvados-${R}.pem#g;
                     s#__CERT_KEY__#/etc/nginx/ssl/arvados-${R}.key#g" \
             ${P_DIR}/nginx_${R}_configuration.sls
-            grep -q ${R} ${P_DIR}/extra_custom_certs.sls || echo "  - ${R}" >> ${P_DIR}/extra_custom_certs.sls
+            grep -q ${R}$ ${P_DIR}/extra_custom_certs.sls || echo "  - ${R}" >> ${P_DIR}/extra_custom_certs.sls
           fi
         fi
         # We need to tweak the Nginx's pillar depending whether we want plain nginx or nginx+passenger
@@ -753,6 +771,8 @@ else
       ;;
       "shell")
         # States
+        echo "    - extra.shell_sudo_passwordless" >> ${S_DIR}/top.sls
+        echo "    - extra.shell_cron_add_login_sync" >> ${S_DIR}/top.sls
         grep -q "docker" ${S_DIR}/top.sls       || echo "    - docker.software" >> ${S_DIR}/top.sls
         grep -q "arvados.${R}" ${S_DIR}/top.sls || echo "    - arvados.${R}" >> ${S_DIR}/top.sls
         # Pillars
@@ -788,15 +808,17 @@ fi
 
 # Leave a copy of the Arvados CA so the user can copy it where it's required
 if [ "$DEV_MODE" = "yes" ]; then
-  echo "Copying the Arvados CA certificate to the installer dir, so you can import it"
+  ARVADOS_SNAKEOIL_CA_DEST_FILE="${SCRIPT_DIR}/${CLUSTER}.${DOMAIN}-arvados-snakeoil-ca.pem"
+
   # If running in a vagrant VM, also add default user to docker group
   if [ "x${VAGRANT}" = "xyes" ]; then
-    cp /etc/ssl/certs/arvados-snakeoil-ca.pem /vagrant/${CLUSTER}.${DOMAIN}-arvados-snakeoil-ca.pem
-
     echo "Adding the vagrant user to the docker group"
     usermod -a -G docker vagrant
-  else
-    cp /etc/ssl/certs/arvados-snakeoil-ca.pem ${SCRIPT_DIR}/${CLUSTER}.${DOMAIN}-arvados-snakeoil-ca.pem
+    ARVADOS_SNAKEOIL_CA_DEST_FILE="/vagrant/${CLUSTER}.${DOMAIN}-arvados-snakeoil-ca.pem"
+  fi
+  if [ -f /etc/ssl/certs/arvados-snakeoil-ca.pem ]; then
+    echo "Copying the Arvados CA certificate to the installer dir, so you can import it"
+    cp /etc/ssl/certs/arvados-snakeoil-ca.pem ${ARVADOS_SNAKEOIL_CA_DEST_FILE}
   fi
 fi
 

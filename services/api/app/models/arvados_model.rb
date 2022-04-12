@@ -220,7 +220,7 @@ class ArvadosModel < ApplicationRecord
   end
 
   def self.default_orders
-    ["#{table_name}.modified_at desc", "#{table_name}.uuid"]
+    ["#{table_name}.modified_at desc", "#{table_name}.uuid desc"]
   end
 
   def self.unique_columns

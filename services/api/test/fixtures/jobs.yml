@@ -8,8 +8,8 @@ running:
   cancelled_at: ~
   cancelled_by_user_uuid: ~
   cancelled_by_client_uuid: ~
-  created_at: <%= 3.minute.ago.to_s(:db) %>
-  started_at: <%= 3.minute.ago.to_s(:db) %>
+  created_at: <%= 2.7.minute.ago.to_s(:db) %>
+  started_at: <%= 2.7.minute.ago.to_s(:db) %>
   finished_at: ~
   script: hash
   repository: active/foo

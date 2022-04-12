@@ -237,7 +237,7 @@ run() {
         fi
 
         if ! (docker ps -a | grep -E "$ARVBOX_CONTAINER-data$" -q) ; then
-            docker create -v /var/lib/postgresql -v $ARVADOS_CONTAINER_PATH --name $ARVBOX_CONTAINER-data arvados/arvbox-demo /bin/true
+            docker create -v /var/lib/postgresql -v $ARVADOS_CONTAINER_PATH --name $ARVBOX_CONTAINER-data arvados/arvbox-demo$TAG /bin/true
         fi
 
         docker run \

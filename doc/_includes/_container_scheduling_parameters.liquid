@@ -11,5 +11,5 @@ Parameters to be passed to the container scheduler (e.g., Slurm) when running a 
 table(table table-bordered table-condensed).
 |_. Key|_. Type|_. Description|_. Notes|
 |partitions|array of strings|The names of one or more compute partitions that may run this container. If not provided, the system will choose where to run the container.|Optional.|
-|preemptible|boolean|If true, the dispatcher will ask for a preemptible cloud node instance (eg: AWS Spot Instance) to run this container.|Optional. Default is false.|
+|preemptible|boolean|If true, the dispatcher should use a preemptible cloud node instance (eg: AWS Spot Instance) to run this container.  Whether a preemptible instance is actually used "depends on cluster configuration.":{{site.baseurl}}/admin/spot-instances.html|Optional. Default is false.|
 |max_run_time|integer|Maximum running time (in seconds) that this container will be allowed to run before being cancelled.|Optional. Default is 0 (no limit).|

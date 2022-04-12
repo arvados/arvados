@@ -285,6 +285,19 @@ func (ldr *Loader) Load() (*arvados.Config, error) {
 		}
 	}
 
+	// Preprocess/automate some configs
+	for id, cc := range cfg.Clusters {
+		ldr.autofillPreemptible("Clusters."+id, &cc)
+
+		if strings.Count(cc.Users.AnonymousUserToken, "/") == 3 {
+			// V2 token, strip it to just a secret
+			tmp := strings.Split(cc.Users.AnonymousUserToken, "/")
+			cc.Users.AnonymousUserToken = tmp[2]
+		}
+
+		cfg.Clusters[id] = cc
+	}
+
 	// Check for known mistakes
 	for id, cc := range cfg.Clusters {
 		for remote := range cc.RemoteClusters {
@@ -315,11 +328,6 @@ func (ldr *Loader) Load() (*arvados.Config, error) {
 			if err != nil {
 				return nil, err
 			}
-		}
-		if strings.Count(cc.Users.AnonymousUserToken, "/") == 3 {
-			// V2 token, strip it to just a secret
-			tmp := strings.Split(cc.Users.AnonymousUserToken, "/")
-			cc.Users.AnonymousUserToken = tmp[2]
 		}
 	}
 	return &cfg, nil
@@ -361,9 +369,11 @@ func (ldr *Loader) checkToken(label, token string, mandatory bool, acceptV2 bool
 		if !strings.HasPrefix(token, "v2/") {
 			return fmt.Errorf("%s: unacceptable characters in token (only a-z, A-Z, 0-9 are acceptable)", label)
 		}
-		ldr.Logger.Warnf("%s: token is a full V2 token, should just be a secret (remove everything up to and including the last forward slash)", label)
 		if !acceptableTokenRe.MatchString(tmp[2]) {
 			return fmt.Errorf("%s: unacceptable characters in V2 token secret (only a-z, A-Z, 0-9 are acceptable)", label)
+		}
+		if len(tmp[2]) < acceptableTokenLength {
+			ldr.Logger.Warnf("%s: secret is too short (should be at least %d characters)", label, acceptableTokenLength)
 		}
 	} else if len(token) < acceptableTokenLength {
 		if ldr.Logger != nil {
@@ -526,4 +536,22 @@ func (ldr *Loader) logExtraKeys(expected, supplied map[string]interface{}, prefi
 			ldr.logExtraKeys(vexp, vsupp, prefix+k+".")
 		}
 	}
+}
+
+func (ldr *Loader) autofillPreemptible(label string, cc *arvados.Cluster) {
+	if factor := cc.Containers.PreemptiblePriceFactor; factor > 0 {
+		for name, it := range cc.InstanceTypes {
+			if !it.Preemptible {
+				it.Preemptible = true
+				it.Price = it.Price * factor
+				it.Name = name + ".preemptible"
+				if it2, exists := cc.InstanceTypes[it.Name]; exists && it2 != it {
+					ldr.Logger.Warnf("%s.InstanceTypes[%s]: already exists, so not automatically adding a preemptible variant of %s", label, it.Name, name)
+					continue
+				}
+				cc.InstanceTypes[it.Name] = it
+			}
+		}
+	}
+
 }
