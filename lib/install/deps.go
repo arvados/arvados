@@ -576,7 +576,9 @@ yarn install
 				"-a", "--no-owner", "--no-group", "--delete-after", "--delete-excluded",
 				"--exclude", "/coverage",
 				"--exclude", "/log",
+				"--exclude", "/node_modules",
 				"--exclude", "/tmp",
+				"--exclude", "/public/assets",
 				"--exclude", "/vendor",
 				"--exclude", "/config/environments",
 				"./", "/var/lib/arvados/"+dstdir+"/")
@@ -588,14 +590,25 @@ yarn install
 				return 1
 			}
 			for _, cmdline := range [][]string{
-				{"mkdir", "-p", "log", "tmp", ".bundle", "/var/www/.gem", "/var/www/.bundle", "/var/www/.passenger"},
+				{"mkdir", "-p", "log", "public/assets", "tmp", "vendor", ".bundle", "/var/www/.bundle", "/var/www/.gem", "/var/www/.npm", "/var/www/.passenger"},
 				{"touch", "log/production.log"},
-				{"chown", "-R", "--from=root", "www-data:www-data", "/var/www/.gem", "/var/www/.bundle", "/var/www/.passenger", "log", "tmp", ".bundle", "Gemfile.lock", "config.ru", "config/environment.rb"},
+				{"chown", "-R", "--from=root", "www-data:www-data", "/var/www/.bundle", "/var/www/.gem", "/var/www/.npm", "/var/www/.passenger", "log", "tmp", "vendor", ".bundle", "Gemfile.lock", "config.ru", "config/environment.rb"},
 				{"sudo", "-u", "www-data", "/var/lib/arvados/bin/gem", "install", "--user", "--conservative", "--no-document", "bundler:" + bundlerversion},
 				{"sudo", "-u", "www-data", "/var/lib/arvados/bin/bundle", "install", "--deployment", "--jobs", "8", "--path", "/var/www/.gem", "--without", "development test diagnostics performance"},
+
+				{"chown", "www-data:www-data", ".", "public/assets"},
+				// {"sudo", "-u", "www-data", "/var/lib/arvados/bin/bundle", "config", "set", "--local", "system", "true"},
+				{"sudo", "-u", "www-data", "ARVADOS_CONFIG=none", "RAILS_GROUPS=assets", "RAILS_ENV=production", "/var/lib/arvados/bin/bundle", "exec", "rake", "npm:install"},
+				{"sudo", "-u", "www-data", "ARVADOS_CONFIG=none", "RAILS_GROUPS=assets", "RAILS_ENV=production", "/var/lib/arvados/bin/bundle", "exec", "rake", "assets:precompile"},
+				{"chown", "root:root", "."},
+				{"chown", "-R", "root:root", "public/assets", "vendor"},
+
 				{"sudo", "-u", "www-data", "/var/lib/arvados/bin/bundle", "exec", "passenger-config", "build-native-support"},
 				{"sudo", "-u", "www-data", "/var/lib/arvados/bin/bundle", "exec", "passenger-config", "install-standalone-runtime"},
 			} {
+				if cmdline[len(cmdline)-2] == "rake" && dstdir != "workbench1" {
+					continue
+				}
 				cmd = exec.Command(cmdline[0], cmdline[1:]...)
 				cmd.Dir = "/var/lib/arvados/" + dstdir
 				cmd.Stdout = stdout
