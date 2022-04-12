@@ -833,19 +833,21 @@ export const ProcessStatus = compose(
         return { process: getProcess(props.uuid)(state.resources) };
     }),
     withStyles({}, { withTheme: true }))
-    ((props: { process?: Process, theme: ArvadosTheme }) => {
-        const status = props.process ? getProcessStatus(props.process) : "-";
-        return <Chip label={status}
+    ((props: { process?: Process, theme: ArvadosTheme }) =>
+        props.process
+        ? <Chip label={getProcessStatus(props.process)}
             style={{
                 height: props.theme.spacing.unit * 3,
                 width: props.theme.spacing.unit * 12,
-                backgroundColor: getProcessStatusColor(status, props.theme),
+                backgroundColor: getProcessStatusColor(
+                    getProcessStatus(props.process), props.theme),
                 color: props.theme.palette.common.white,
                 fontSize: '0.875rem',
                 borderRadius: props.theme.spacing.unit * 0.625,
             }}
-        />;
-    });
+        />
+        : <Typography>-</Typography>
+    );
 
 export const ProcessStartDate = connect(
     (state: RootState, props: { uuid: string }) => {
