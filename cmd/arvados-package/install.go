@@ -120,7 +120,7 @@ SUDO_FORCE_REMOVE=yes apt-get autoremove -y
 
 /etc/init.d/postgresql start
 arvados-server init -cluster-id x1234 -domain=$domain -login=test -insecure
-exec arvados-server boot -listen-host=0.0.0.0 $bootargs
+exec arvados-server boot -listen-host=0.0.0.0 -no-workbench2=false $bootargs
 `)
 	cmd.Stdout = stdout
 	cmd.Stderr = stderr
