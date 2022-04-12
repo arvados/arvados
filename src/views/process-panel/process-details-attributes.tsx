@@ -18,6 +18,7 @@ import { ContainerResource } from "models/container";
 import { openProcessInputDialog } from "store/processes/process-input-actions";
 import { navigateToOutput, openWorkflow } from "store/process-panel/process-panel-actions";
 import { ArvadosTheme } from "common/custom-theme";
+import { ProcessRuntimeStatus } from "views-components/process-runtime-status/process-runtime-status";
 
 type CssRules = 'link';
 
@@ -57,6 +58,9 @@ export const ProcessDetailsAttributes = withStyles(styles, { withTheme: true })(
             const classes = props.classes || { label: '', value: '', button: '', link: '' };
             const mdSize = props.twoCol ? 6 : 12;
             return <Grid container>
+                <Grid item xs={12}>
+                    <ProcessRuntimeStatus runtimeStatus={container?.runtimeStatus} />
+                </Grid>
                 <Grid item xs={12} md={mdSize}>
                     <DetailsAttribute label='Type' value={resourceLabel(ResourceKind.PROCESS)} />
                 </Grid>
