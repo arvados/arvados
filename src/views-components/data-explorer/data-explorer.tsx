@@ -11,6 +11,7 @@ import { dataExplorerActions } from "store/data-explorer/data-explorer-action";
 import { DataColumn } from "components/data-table/data-column";
 import { DataColumns } from "components/data-table/data-table";
 import { DataTableFilters } from 'components/data-table-filters/data-table-filters-tree';
+import { LAST_REFRESH_TIMESTAMP } from "components/refresh-button/refresh-button";
 
 interface Props {
     id: string;
@@ -18,10 +19,10 @@ interface Props {
     onContextMenu?: (event: React.MouseEvent<HTMLElement>, item: any, isAdmin?: boolean) => void;
     onRowDoubleClick: (item: any) => void;
     extractKey?: (item: any) => React.Key;
-    working?: boolean;
 }
 
 let prevRoute = '';
+let prevRefresh = '';
 let routeChanged = false;
 let isWorking = false;
 
@@ -29,11 +30,13 @@ const mapStateToProps = (state: RootState, { id }: Props) => {
     const progress = state.progressIndicator.find(p => p.id === id);
     const dataExplorerState = getDataExplorer(state.dataExplorer, id);
     const currentRoute = state.router.location ? state.router.location.pathname : '';
+    const currentRefresh = localStorage.getItem(LAST_REFRESH_TIMESTAMP) || '';
     const currentItemUuid = currentRoute === '/workflows' ? state.properties.workflowPanelDetailsUuid : state.detailsPanel.resourceUuid;
 
-    if (currentRoute !== prevRoute) {
+    if (currentRoute !== prevRoute || currentRefresh !== prevRefresh) {
         routeChanged = true;
         prevRoute = currentRoute;
+        prevRefresh = currentRefresh;
     }
     if (progress?.working) {
         isWorking = true;
