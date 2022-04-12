@@ -19,10 +19,12 @@ export enum ProcessStatus {
     CANCELLED = 'Cancelled',
     COMPLETED = 'Completed',
     DRAFT = 'Draft',
+    FAILING = 'Failing',
     FAILED = 'Failed',
-    LOCKED = 'Locked',
+    ONHOLD = 'On hold',
     QUEUED = 'Queued',
     RUNNING = 'Running',
+    WARNING = 'Warning',
     UNKNOWN = 'Unknown',
 }
 
@@ -71,43 +73,58 @@ export const getProcessRuntime = ({ container }: Process) => {
     }
 };
 
-export const getProcessStatusColor = (status: string, { customs, palette }: ArvadosTheme) => {
+export const getProcessStatusColor = (status: string, { customs }: ArvadosTheme) => {
     switch (status) {
         case ProcessStatus.RUNNING:
             return customs.colors.blue500;
         case ProcessStatus.COMPLETED:
             return customs.colors.green700;
+        case ProcessStatus.WARNING:
+            return customs.colors.yellow700;
+        case ProcessStatus.FAILING:
         case ProcessStatus.CANCELLED:
         case ProcessStatus.FAILED:
             return customs.colors.red900;
         default:
-            return palette.grey["500"];
+            return customs.colors.grey500;
     }
 };
 
 export const getProcessStatus = ({ containerRequest, container }: Process): ProcessStatus => {
     switch (true) {
+        case containerRequest.state === ContainerRequestState.FINAL &&
+            container?.state !== ContainerState.COMPLETE:
+            // Request was finalized before its container started (or the
+            // container was cancelled)
+            return ProcessStatus.CANCELLED;
+
         case containerRequest.state === ContainerRequestState.UNCOMMITTED:
             return ProcessStatus.DRAFT;
 
-        case container && container.state === ContainerState.COMPLETE && container.exitCode === 0:
-            return ProcessStatus.COMPLETED;
+        case container?.state === ContainerState.COMPLETE:
+            if (container?.exitCode === 0) {
+                return ProcessStatus.COMPLETED;
+            }
+            return ProcessStatus.FAILED;
 
-        case containerRequest.priority === 0:
-        case container && container.state === ContainerState.CANCELLED:
+        case container?.state === ContainerState.CANCELLED:
             return ProcessStatus.CANCELLED;
 
-        case container && container.state === ContainerState.QUEUED:
+        case container?.state === ContainerState.QUEUED ||
+            container?.state === ContainerState.LOCKED:
+            if (containerRequest.priority === 0) {
+                return ProcessStatus.ONHOLD;
+            }
             return ProcessStatus.QUEUED;
 
-        case container && container.state === ContainerState.LOCKED:
-            return ProcessStatus.LOCKED;
-
-        case container && container.state === ContainerState.RUNNING:
+        case container?.state === ContainerState.RUNNING:
+            if (!!container?.runtimeStatus.error) {
+                return ProcessStatus.FAILING;
+            }
+            if (!!container?.runtimeStatus.warning) {
+                return ProcessStatus.WARNING;
+            }
             return ProcessStatus.RUNNING;
-
-        case container && container.state === ContainerState.COMPLETE && container.exitCode !== 0:
-            return ProcessStatus.FAILED;
 
         default:
             return ProcessStatus.UNKNOWN;

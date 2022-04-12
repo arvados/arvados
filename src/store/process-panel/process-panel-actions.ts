@@ -56,6 +56,8 @@ export const initProcessPanelFilters = processPanelActions.SET_PROCESS_PANEL_FIL
     ProcessStatus.COMPLETED,
     ProcessStatus.FAILED,
     ProcessStatus.RUNNING,
-    ProcessStatus.LOCKED,
+    ProcessStatus.ONHOLD,
+    ProcessStatus.FAILING,
+    ProcessStatus.WARNING,
     ProcessStatus.CANCELLED
 ]);

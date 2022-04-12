@@ -4,20 +4,29 @@
 
 import React from 'react';
 import {
-    StyleRulesCallback, WithStyles, withStyles, Card,
-    CardHeader, IconButton, CardContent, Grid, Chip, Typography, Tooltip
+    StyleRulesCallback,
+    WithStyles,
+    withStyles,
+    Card,
+    CardHeader,
+    IconButton,
+    CardContent,
+    Grid,
+    Typography,
+    Tooltip
 } from '@material-ui/core';
 import { ArvadosTheme } from 'common/custom-theme';
 import { CloseIcon, MoreOptionsIcon, ProcessIcon } from 'components/icon/icon';
 import { DetailsAttribute } from 'components/details-attribute/details-attribute';
 import { Process } from 'store/processes/process';
-import { getProcessStatus, getProcessStatusColor } from 'store/processes/process';
 import { formatDate } from 'common/formatters';
 import classNames from 'classnames';
 import { ContainerState } from 'models/container';
 import { MPVPanelProps } from 'components/multi-panel-view/multi-panel-view';
+import { ProcessRuntimeStatus } from 'views-components/process-runtime-status/process-runtime-status';
+import { ProcessStatus } from 'views-components/data-explorer/renderers';
 
-type CssRules = 'card' | 'iconHeader' | 'label' | 'value' | 'chip' | 'link' | 'content' | 'title' | 'avatar' | 'cancelButton' | 'header';
+type CssRules = 'card' | 'iconHeader' | 'label' | 'value' | 'link' | 'content' | 'title' | 'avatar' | 'cancelButton' | 'header';
 
 const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     card: {
@@ -37,7 +46,7 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     },
     label: {
         display: 'flex',
-        justifyContent: 'flex-end',
+        justifyContent: 'flex-start',
         fontSize: '0.875rem',
         marginRight: theme.spacing.unit * 3,
         paddingRight: theme.spacing.unit
@@ -53,16 +62,12 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
             cursor: 'pointer'
         }
     },
-    chip: {
-        height: theme.spacing.unit * 3,
-        width: theme.spacing.unit * 12,
-        color: theme.palette.common.white,
-        fontSize: '0.875rem',
-        borderRadius: theme.spacing.unit * 0.625,
-    },
     content: {
+        paddingTop: '0px',
+        paddingLeft: theme.spacing.unit * 1,
+        paddingRight: theme.spacing.unit * 1,
         '&:last-child': {
-            paddingBottom: theme.spacing.unit * 2,
+            paddingBottom: theme.spacing.unit * 1,
         }
     },
     title: {
@@ -107,9 +112,7 @@ export const ProcessInformationCard = withStyles(styles, { withTheme: true })(
                     <div>
                         {process.container && process.container.state === ContainerState.RUNNING &&
                             <span className={classes.cancelButton} onClick={() => cancelProcess(process.containerRequest.uuid)}>Cancel</span>}
-                        <Chip label={getProcessStatus(process)}
-                            className={classes.chip}
-                            style={{ backgroundColor: getProcessStatusColor(getProcessStatus(process), theme as ArvadosTheme) }} />
+                        <ProcessStatus uuid={process.containerRequest.uuid} />
                         <Tooltip title="More options" disableFocusListener>
                             <IconButton
                                 aria-label="More options"
@@ -123,27 +126,28 @@ export const ProcessInformationCard = withStyles(styles, { withTheme: true })(
                         </Tooltip> }
                     </div>
                 }
-                title={
-                    <Tooltip title={process.containerRequest.name} placement="bottom-start">
-                        <Typography noWrap variant='h6' color='inherit'>
-                            {process.containerRequest.name}
-                        </Typography>
-                    </Tooltip>
+                title={ !!process.containerRequest.name &&
+                    <Typography noWrap variant='h6' color='inherit'>
+                        {process.containerRequest.name}
+                    </Typography>
                 }
                 subheader={
-                    <Tooltip title={getDescription(process)} placement="bottom-start">
-                        <Typography noWrap variant='body1' color='inherit'>
-                            {getDescription(process)}
-                        </Typography>
-                    </Tooltip>} />
+                    <Typography noWrap variant='body1' color='inherit'>
+                        {process.containerRequest.description}
+                    </Typography>
+                }
+            />
             <CardContent className={classes.content}>
                 <Grid container>
+                    <Grid item xs={12}>
+                        <ProcessRuntimeStatus runtimeStatus={process.container?.runtimeStatus} />
+                    </Grid>
                     <Grid item xs={6}>
                         <DetailsAttribute classLabel={classes.label} classValue={classes.value}
-                            label='From'
+                            label='Started at'
                             value={startedAt} />
                         <DetailsAttribute classLabel={classes.label} classValue={classes.value}
-                            label='To'
+                            label='Finished at'
                             value={finishedAt} />
                         {process.containerRequest.properties.workflowUuid &&
                             <span onClick={() => openWorkflow(process.containerRequest.properties.workflowUuid)}>
@@ -164,6 +168,3 @@ export const ProcessInformationCard = withStyles(styles, { withTheme: true })(
         </Card>;
     }
 );
-
-const getDescription = (process: Process) =>
-    process.containerRequest.description || '(no-description)';
