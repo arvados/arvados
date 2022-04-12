@@ -201,8 +201,10 @@ func (inst *installCommand) RunCommand(prog string, args []string, stdin io.Read
 			pkgs = append(pkgs, "squashfs-tools") // for singularity
 		}
 		switch {
-		case osv.Debian && osv.Major >= 10:
+		case osv.Debian && osv.Major >= 11:
 			pkgs = append(pkgs, "libcurl4", "perl-modules-5.32")
+		case osv.Debian && osv.Major >= 10:
+			pkgs = append(pkgs, "libcurl4", "perl-modules")
 		default:
 			pkgs = append(pkgs, "libcurl3", "perl-modules")
 		}
