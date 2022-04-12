@@ -17,7 +17,11 @@ import { OrderBuilder, OrderDirection } from "services/api/order-builder";
 import { FilterBuilder, joinFilters } from "services/api/filter-builder";
 import { GroupContentsResource, GroupContentsResourcePrefix } from "services/groups-service/groups-service";
 import { updateFavorites } from "store/favorites/favorites-actions";
-import { IS_PROJECT_PANEL_TRASHED, projectPanelActions, getProjectPanelCurrentUuid } from 'store/project-panel/project-panel-action';
+import {
+    IS_PROJECT_PANEL_TRASHED,
+    projectPanelActions,
+    getProjectPanelCurrentUuid
+} from 'store/project-panel/project-panel-action';
 import { Dispatch, MiddlewareAPI } from "redux";
 import { ProjectResource } from "models/project";
 import { updateResources } from "store/resources/resources-actions";
@@ -29,7 +33,10 @@ import { ListResults } from 'services/common-service/common-service';
 import { loadContainers } from 'store/processes/processes-actions';
 import { ResourceKind } from 'models/resource';
 import { getSortColumn } from "store/data-explorer/data-explorer-reducer";
-import { serializeResourceTypeFilters, ProcessStatusFilter } from 'store/resource-type-filters/resource-type-filters';
+import {
+    serializeResourceTypeFilters,
+    buildProcessStatusFilters
+} from 'store/resource-type-filters/resource-type-filters';
 import { updatePublicFavorites } from 'store/public-favorites/public-favorites-actions';
 
 export class ProjectPanelMiddlewareService extends DataExplorerMiddlewareService {
@@ -116,27 +123,10 @@ export const getFilters = (dataExplorer: DataExplorer) => {
         .getFilters();
 
     // Filter by container status
-    const fb = new FilterBuilder();
-    switch (activeStatusFilter) {
-        case ProcessStatusFilter.COMPLETED: {
-            fb.addEqual('container.state', 'Complete', GroupContentsResourcePrefix.PROCESS);
-            fb.addEqual('container.exit_code', '0', GroupContentsResourcePrefix.PROCESS);
-            break;
-        }
-        case ProcessStatusFilter.FAILED: {
-            fb.addEqual('container.state', 'Complete', GroupContentsResourcePrefix.PROCESS);
-            fb.addDistinct('container.exit_code', '0', GroupContentsResourcePrefix.PROCESS);
-            break;
-        }
-        case ProcessStatusFilter.CANCELLED:
-        case ProcessStatusFilter.LOCKED:
-        case ProcessStatusFilter.QUEUED:
-        case ProcessStatusFilter.RUNNING: {
-            fb.addEqual('container.state', activeStatusFilter, GroupContentsResourcePrefix.PROCESS);
-            break;
-        }
-    }
-    const statusFilters = fb.getFilters();
+    const statusFilters = buildProcessStatusFilters(
+        new FilterBuilder(),
+        activeStatusFilter || '',
+        GroupContentsResourcePrefix.PROCESS).getFilters();
 
     return joinFilters(
         statusFilters,

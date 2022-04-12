@@ -13,16 +13,16 @@ import {
     CardContent,
     Tooltip,
     Typography,
-    Chip,
 } from '@material-ui/core';
 import { ArvadosTheme } from 'common/custom-theme';
 import { CloseIcon, MoreOptionsIcon, ProcessIcon } from 'components/icon/icon';
-import { Process, getProcessStatus, getProcessStatusColor } from 'store/processes/process';
+import { Process } from 'store/processes/process';
 import { MPVPanelProps } from 'components/multi-panel-view/multi-panel-view';
 import { ProcessDetailsAttributes } from './process-details-attributes';
+import { ProcessStatus } from 'views-components/data-explorer/renderers';
 import { ContainerState } from 'models/container';
 
-type CssRules = 'card' | 'content' | 'title' | 'header' | 'cancelButton' | 'chip' | 'avatar' | 'iconHeader';
+type CssRules = 'card' | 'content' | 'title' | 'header' | 'cancelButton' | 'avatar' | 'iconHeader';
 
 const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     card: {
@@ -57,13 +57,6 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
             cursor: 'pointer'
         }
     },
-    chip: {
-        height: theme.spacing.unit * 3,
-        width: theme.spacing.unit * 12,
-        color: theme.palette.common.white,
-        fontSize: '0.875rem',
-        borderRadius: theme.spacing.unit * 0.625,
-    },
 });
 
 export interface ProcessDetailsCardDataProps {
@@ -72,10 +65,10 @@ export interface ProcessDetailsCardDataProps {
     onContextMenu: (event: React.MouseEvent<HTMLElement>) => void;
 }
 
-type ProcessDetailsCardProps = ProcessDetailsCardDataProps & WithStyles<CssRules, true> & MPVPanelProps;
+type ProcessDetailsCardProps = ProcessDetailsCardDataProps & WithStyles<CssRules> & MPVPanelProps;
 
-export const ProcessDetailsCard = withStyles(styles, {withTheme: true})(
-    ({ theme, cancelProcess, onContextMenu, classes, process, doHidePanel, panelName }: ProcessDetailsCardProps) => {
+export const ProcessDetailsCard = withStyles(styles)(
+    ({ cancelProcess, onContextMenu, classes, process, doHidePanel, panelName }: ProcessDetailsCardProps) => {
         return <Card className={classes.card}>
             <CardHeader
                 className={classes.header}
@@ -101,9 +94,7 @@ export const ProcessDetailsCard = withStyles(styles, {withTheme: true})(
                     <div>
                         {process.container && process.container.state === ContainerState.RUNNING &&
                             <span className={classes.cancelButton} onClick={() => cancelProcess(process.containerRequest.uuid)}>Cancel</span>}
-                        <Chip label={getProcessStatus(process)}
-                            className={classes.chip}
-                            style={{ backgroundColor: getProcessStatusColor(getProcessStatus(process), theme as ArvadosTheme) }} />
+                        <ProcessStatus uuid={process.containerRequest.uuid} />
                         <Tooltip title="More options" disableFocusListener>
                             <IconButton
                                 aria-label="More options"

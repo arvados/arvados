@@ -252,8 +252,8 @@ describe('Collection panel tests', function () {
                             .and('not.contain', 'anotherKey: anotherValue');
                         // Check that the file listing show both read & write operations
                         cy.get('[data-cy=collection-files-panel]').within(() => {
-                            cy.wait(1000);
-                            cy.root().should('contain', fileName);
+                            cy.get('[data-cy=collection-files-right-panel]', { timeout: 5000 })
+                                .should('contain', fileName);
                             if (isWritable) {
                                 cy.get('[data-cy=upload-button]')
                                     .should(`${isWritable ? '' : 'not.'}contain`, 'Upload data');
@@ -842,7 +842,7 @@ describe('Collection panel tests', function () {
 
                 cy.get('[data-cy=form-submit-btn]').click();
 
-                cy.get('.layout-pane-primary', { wait: 12000 }).contains('Projects').click();
+                cy.get('.layout-pane-primary', { timeout: 12000 }).contains('Projects').click();
 
                 cy.get('main').contains(`Files extracted from: ${this.collection.name}`).should('exist');
             });
@@ -976,7 +976,6 @@ describe('Collection panel tests', function () {
                             cy.get('[data-cy=form-submit-btn]').should('not.exist');
                             cy.get('[data-cy=collection-files-right-panel]')
                                  .contains('5mb_b.bin').should('exist');
-                            
                         });
                     });
                 });

@@ -191,4 +191,58 @@ describe('Process tests', function() {
             });
         });
     });
+
+    it('should show runtime status indicators', function() {
+        // Setup running container with runtime_status error & warning messages
+        createContainerRequest(
+            activeUser,
+            'test_container_request',
+            'arvados/jobs',
+            ['echo', 'hello world'],
+            false, 'Committed')
+        .as('containerRequest')
+        .then(function(containerRequest) {
+            expect(containerRequest.state).to.equal('Committed');
+            expect(containerRequest.container_uuid).not.to.be.equal('');
+
+            cy.getContainer(activeUser.token, containerRequest.container_uuid)
+            .then(function(queuedContainer) {
+                expect(queuedContainer.state).to.be.equal('Queued');
+            });
+            cy.updateContainer(adminUser.token, containerRequest.container_uuid, {
+                state: 'Locked'
+            }).then(function(lockedContainer) {
+                expect(lockedContainer.state).to.be.equal('Locked');
+
+                cy.updateContainer(adminUser.token, lockedContainer.uuid, {
+                    state: 'Running',
+                    runtime_status: {
+                        error: 'Something went wrong',
+                        errorDetail: 'Process exited with status 1',
+                        warning: 'Free disk space is low',
+                    }
+                })
+                .as('runningContainer')
+                .then(function(runningContainer) {
+                    expect(runningContainer.state).to.be.equal('Running');
+                    expect(runningContainer.runtime_status).to.be.deep.equal({
+                        'error': 'Something went wrong',
+                        'errorDetail': 'Process exited with status 1',
+                        'warning': 'Free disk space is low',
+                    });
+                });
+            })
+        });
+        // Test that the UI shows the error and warning messages
+        cy.getAll('@containerRequest', '@runningContainer').then(function([containerRequest]) {
+            cy.loginAs(activeUser);
+            cy.goToPath(`/processes/${containerRequest.uuid}`);
+            cy.get('[data-cy=process-runtime-status-error]')
+                .should('contain', 'Something went wrong')
+                .and('contain', 'Process exited with status 1');
+            cy.get('[data-cy=process-runtime-status-warning]')
+                .should('contain', 'Free disk space is low')
+                .and('contain', 'No additional warning details available');
+        });
+    });
 });

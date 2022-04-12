@@ -2,10 +2,29 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import { getInitialResourceTypeFilters, serializeResourceTypeFilters, ObjectTypeFilter, CollectionTypeFilter, ProcessTypeFilter, GroupTypeFilter } from './resource-type-filters';
+import { getInitialResourceTypeFilters, serializeResourceTypeFilters, ObjectTypeFilter, CollectionTypeFilter, ProcessTypeFilter, GroupTypeFilter, buildProcessStatusFilters, ProcessStatusFilter } from './resource-type-filters';
 import { ResourceKind } from 'models/resource';
 import { deselectNode } from 'models/tree';
 import { pipe } from 'lodash/fp';
+import { FilterBuilder } from 'services/api/filter-builder';
+
+describe("buildProcessStatusFilters", () => {
+    [
+        [ProcessStatusFilter.ALL, ""],
+        [ProcessStatusFilter.ONHOLD, `["state","!=","Final"],["priority","=","0"],["container.state","in",["Queued","Locked"]]`],
+        [ProcessStatusFilter.COMPLETED, `["container.state","=","Complete"],["container.exit_code","=","0"]`],
+        [ProcessStatusFilter.FAILED, `["container.state","=","Complete"],["container.exit_code","!=","0"]`],
+        [ProcessStatusFilter.QUEUED, `["container.state","=","Queued"],["priority","!=","0"]`],
+        [ProcessStatusFilter.CANCELLED, `["container.state","=","Cancelled"]`],
+        [ProcessStatusFilter.RUNNING, `["container.state","=","Running"]`],
+    ].forEach(([status, expected]) => {
+        it(`can filter "${status}" processes`, () => {
+            const filters = buildProcessStatusFilters(new FilterBuilder(), status);
+            expect(filters.getFilters())
+                .toEqual(expected);
+        })
+    });
+});
 
 describe("serializeResourceTypeFilters", () => {
     it("should serialize all filters", () => {

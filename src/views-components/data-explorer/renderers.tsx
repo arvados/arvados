@@ -3,7 +3,15 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import React from 'react';
-import { Grid, Typography, withStyles, Tooltip, IconButton, Checkbox } from '@material-ui/core';
+import {
+    Grid,
+    Typography,
+    withStyles,
+    Tooltip,
+    IconButton,
+    Checkbox,
+    Chip
+} from '@material-ui/core';
 import { FavoriteStar, PublicFavoriteStar } from '../favorite-star/favorite-star';
 import { Resource, ResourceKind, TrashableResource } from 'models/resource';
 import {
@@ -825,14 +833,21 @@ export const ProcessStatus = compose(
         return { process: getProcess(props.uuid)(state.resources) };
     }),
     withStyles({}, { withTheme: true }))
-    ((props: { process?: Process, theme: ArvadosTheme }) => {
-        const status = props.process ? getProcessStatus(props.process) : "-";
-        return <Typography
-            noWrap
-            style={{ color: getProcessStatusColor(status, props.theme) }} >
-            {status}
-        </Typography>;
-    });
+    ((props: { process?: Process, theme: ArvadosTheme }) =>
+        props.process
+        ? <Chip label={getProcessStatus(props.process)}
+            style={{
+                height: props.theme.spacing.unit * 3,
+                width: props.theme.spacing.unit * 12,
+                backgroundColor: getProcessStatusColor(
+                    getProcessStatus(props.process), props.theme),
+                color: props.theme.palette.common.white,
+                fontSize: '0.875rem',
+                borderRadius: props.theme.spacing.unit * 0.625,
+            }}
+        />
+        : <Typography>-</Typography>
+    );
 
 export const ProcessStartDate = connect(
     (state: RootState, props: { uuid: string }) => {

@@ -6,6 +6,7 @@ import { Resource, ResourceKind } from "./resource";
 import { MountType } from 'models/mount-types';
 import { RuntimeConstraints } from "models/runtime-constraints";
 import { SchedulingParameters } from './scheduling-parameters';
+import { RuntimeStatus } from "./runtime-status";
 
 export enum ContainerState {
     QUEUED = 'Queued',
@@ -27,6 +28,7 @@ export interface ContainerResource extends Resource {
     outputPath: string;
     mounts: MountType[];
     runtimeConstraints: RuntimeConstraints;
+    runtimeStatus: RuntimeStatus;
     schedulingParameters: SchedulingParameters;
     output: string | null;
     containerImage: string;

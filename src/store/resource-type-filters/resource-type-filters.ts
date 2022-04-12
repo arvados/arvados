@@ -11,6 +11,7 @@ import { getSelectedNodes } from 'models/tree';
 import { CollectionType } from 'models/collection';
 import { GroupContentsResourcePrefix } from 'services/groups-service/groups-service';
 import { ContainerState } from 'models/container';
+import { ContainerRequestState } from 'models/container-request';
 
 export enum ProcessStatusFilter {
     ALL = 'All',
@@ -18,7 +19,7 @@ export enum ProcessStatusFilter {
     FAILED = 'Failed',
     COMPLETED = 'Completed',
     CANCELLED = 'Cancelled',
-    LOCKED = 'Locked',
+    ONHOLD = 'On hold',
     QUEUED = 'Queued'
 }
 
@@ -95,12 +96,12 @@ export const getInitialProcessStatusFilters = pipe(
     (): DataTableFilters => createTree<DataTableFilterItem>(),
     pipe(
         initFilter(ProcessStatusFilter.ALL, '', true),
+        initFilter(ProcessStatusFilter.ONHOLD, '', false),
+        initFilter(ProcessStatusFilter.QUEUED, '', false),
         initFilter(ProcessStatusFilter.RUNNING, '', false),
-        initFilter(ProcessStatusFilter.FAILED, '', false),
         initFilter(ProcessStatusFilter.COMPLETED, '', false),
         initFilter(ProcessStatusFilter.CANCELLED, '', false),
-        initFilter(ProcessStatusFilter.QUEUED, '', false),
-        initFilter(ProcessStatusFilter.LOCKED, '', false),
+        initFilter(ProcessStatusFilter.FAILED, '', false),
     ),
 );
 
@@ -272,27 +273,32 @@ export const serializeSimpleObjectTypeFilters = (filters: Tree<DataTableFilterIt
         .map(objectTypeToResourceKind);
 };
 
-export const buildProcessStatusFilters = ( fb:FilterBuilder, activeStatusFilter:string ): FilterBuilder => {
+export const buildProcessStatusFilters = ( fb: FilterBuilder, activeStatusFilter: string, resourcePrefix?: string ): FilterBuilder => {
     switch (activeStatusFilter) {
+        case ProcessStatusFilter.ONHOLD: {
+            fb.addDistinct('state', ContainerRequestState.FINAL, resourcePrefix);
+            fb.addEqual('priority', '0', resourcePrefix);
+            fb.addIn('container.state', [ContainerState.QUEUED, ContainerState.LOCKED], resourcePrefix);
+            break;
+        }
         case ProcessStatusFilter.COMPLETED: {
-            fb.addEqual('container.state', ContainerState.COMPLETE);
-            fb.addEqual('container.exit_code', '0');
+            fb.addEqual('container.state', ContainerState.COMPLETE, resourcePrefix);
+            fb.addEqual('container.exit_code', '0', resourcePrefix);
             break;
         }
         case ProcessStatusFilter.FAILED: {
-            fb.addEqual('container.state', ContainerState.COMPLETE);
-            fb.addDistinct('container.exit_code', '0');
+            fb.addEqual('container.state', ContainerState.COMPLETE, resourcePrefix);
+            fb.addDistinct('container.exit_code', '0', resourcePrefix);
             break;
         }
         case ProcessStatusFilter.QUEUED: {
-            fb.addEqual('container.state', ContainerState.QUEUED);
-            fb.addDistinct('container.priority', '0');
+            fb.addEqual('container.state', ContainerState.QUEUED, resourcePrefix);
+            fb.addDistinct('priority', '0', resourcePrefix);
             break;
         }
         case ProcessStatusFilter.CANCELLED:
-        case ProcessStatusFilter.LOCKED:
         case ProcessStatusFilter.RUNNING: {
-            fb.addEqual('container.state', activeStatusFilter);
+            fb.addEqual('container.state', activeStatusFilter, resourcePrefix);
             break;
         }
     }
