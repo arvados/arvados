@@ -334,7 +334,7 @@ describe('Collection panel tests', function () {
                     'bar' // make sure we can go back to the original name as a last step
                 ];
                 eachPair(names, (from, to) => {
-                    cy.get('[data-cy=collection-files-panel]')
+                    cy.waitForDom().get('[data-cy=collection-files-panel]')
                         .contains(`${from}`).rightclick();
                     cy.get('[data-cy=context-menu]')
                         .contains('Rename')
