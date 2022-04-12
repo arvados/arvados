@@ -12,8 +12,8 @@ RUN apt-get update && \
     libpam0g-dev libgbm1 git && \
     apt-get clean
 
-RUN gem install --no-ri --no-rdoc fpm
-RUN cd /usr/src && git clone https://git.arvados.org/arvados.git && \
+RUN /usr/bin/gem install --no-document fpm
+RUN cd /usr/src && git clone git://git.arvados.org/arvados.git && \
     cd arvados && \
     GO_VERSION=$(grep 'goversion =' lib/install/deps.go |awk -F'"' '{print $2}') && \
     echo $GO_VERSION && \
@@ -25,6 +25,7 @@ RUN cd /usr/src && git clone https://git.arvados.org/arvados.git && \
     ln -s /usr/local/bin/go-${GO_VERSION} /usr/local/bin/go && \
     ln -s /usr/local/bin/gofmt-${GO_VERSION} /usr/local/bin/gofmt
 
+# preseed arvados build dependencies
 RUN cd /usr/src/arvados && \
     apt-get update && \
     go mod download && \
