@@ -204,6 +204,9 @@ if [[ ! -d "$WORKSPACE/packages/$TARGET" ]]; then
   chown --reference="$WORKSPACE" "$WORKSPACE/packages/$TARGET"
 fi
 
+# Required due to CVE-2022-24765
+git config --global --add safe.directory /arvados
+
 # Perl packages
 debug_echo -e "\nPerl packages\n"
 
