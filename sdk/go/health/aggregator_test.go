@@ -123,6 +123,44 @@ func (s *AggregatorSuite) TestHealthyAndUnhealthy(c *check.C) {
 	c.Logf("%#v", ep)
 }
 
+// If an InternalURL host is 0.0.0.0, localhost, 127/8, or ::1 and
+// nothing is listening there, don't fail the health check -- instead,
+// assume the relevant component just isn't installed/enabled on this
+// node, but does work when contacted through ExternalURL.
+func (s *AggregatorSuite) TestUnreachableLoopbackPort(c *check.C) {
+	srvH, listenH := s.stubServer(&healthyHandler{})
+	defer srvH.Close()
+	s.setAllServiceURLs(listenH)
+	arvadostest.SetServiceURL(&s.handler.Cluster.Services.Keepproxy, "http://localhost:9/")
+	arvadostest.SetServiceURL(&s.handler.Cluster.Services.Workbench1, "http://0.0.0.0:9/")
+	arvadostest.SetServiceURL(&s.handler.Cluster.Services.Keepbalance, "http://127.0.0.127:9/")
+	arvadostest.SetServiceURL(&s.handler.Cluster.Services.WebDAV, "http://[::1]:9/")
+	s.handler.ServeHTTP(s.resp, s.req)
+	s.checkOK(c)
+
+	// If a non-loopback address is unreachable, that's still a
+	// fail.
+	s.resp = httptest.NewRecorder()
+	arvadostest.SetServiceURL(&s.handler.Cluster.Services.WebDAV, "http://172.31.255.254:9/")
+	s.handler.ServeHTTP(s.resp, s.req)
+	s.checkUnhealthy(c)
+}
+
+func (s *AggregatorSuite) TestIsLocalHost(c *check.C) {
+	c.Check(isLocalHost("Localhost"), check.Equals, true)
+	c.Check(isLocalHost("localhost"), check.Equals, true)
+	c.Check(isLocalHost("127.0.0.1"), check.Equals, true)
+	c.Check(isLocalHost("127.0.0.127"), check.Equals, true)
+	c.Check(isLocalHost("127.1.2.7"), check.Equals, true)
+	c.Check(isLocalHost("0.0.0.0"), check.Equals, true)
+	c.Check(isLocalHost("::1"), check.Equals, true)
+	c.Check(isLocalHost("1.2.3.4"), check.Equals, false)
+	c.Check(isLocalHost("1::1"), check.Equals, false)
+	c.Check(isLocalHost("example.com"), check.Equals, false)
+	c.Check(isLocalHost("127.0.0"), check.Equals, false)
+	c.Check(isLocalHost(""), check.Equals, false)
+}
+
 func (s *AggregatorSuite) TestConfigMismatch(c *check.C) {
 	// time1/hash1: current config
 	time1 := time.Now().Add(time.Second - time.Minute - time.Hour)

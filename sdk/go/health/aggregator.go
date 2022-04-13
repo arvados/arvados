@@ -6,6 +6,7 @@ package health
 
 import (
 	"bufio"
+	"bytes"
 	"context"
 	"crypto/tls"
 	"encoding/json"
@@ -13,6 +14,7 @@ import (
 	"flag"
 	"fmt"
 	"io"
+	"net"
 	"net/http"
 	"net/url"
 	"regexp"
@@ -131,7 +133,7 @@ type Metrics struct {
 }
 
 type ServiceHealth struct {
-	Health string `json:"health"`
+	Health string `json:"health"` // "OK", "ERROR", or "SKIP"
 	N      int    `json:"n"`
 }
 
@@ -149,7 +151,7 @@ func (agg *Aggregator) ClusterHealth() ClusterHealthResponse {
 		// Ensure svc is listed in resp.Services.
 		mtx.Lock()
 		if _, ok := resp.Services[svcName]; !ok {
-			resp.Services[svcName] = ServiceHealth{Health: "ERROR"}
+			resp.Services[svcName] = ServiceHealth{Health: "NONE"}
 		}
 		mtx.Unlock()
 
@@ -173,11 +175,13 @@ func (agg *Aggregator) ClusterHealth() ClusterHealthResponse {
 					}
 				} else {
 					result = agg.ping(pingURL)
-					m, err := agg.metrics(pingURL)
-					if err != nil {
-						result.Error = "metrics: " + err.Error()
+					if result.Health != "SKIP" {
+						m, err := agg.metrics(pingURL)
+						if err != nil && result.Error == "" {
+							result.Error = "metrics: " + err.Error()
+						}
+						result.Metrics = m
 					}
-					result.Metrics = m
 				}
 
 				mtx.Lock()
@@ -188,7 +192,7 @@ func (agg *Aggregator) ClusterHealth() ClusterHealthResponse {
 					h.N++
 					h.Health = "OK"
 					resp.Services[svcName] = h
-				} else {
+				} else if result.Health != "SKIP" {
 					resp.Health = "ERROR"
 				}
 			}(svcName, addr)
@@ -198,10 +202,20 @@ func (agg *Aggregator) ClusterHealth() ClusterHealthResponse {
 
 	// Report ERROR if a needed service didn't fail any checks
 	// merely because it isn't configured to run anywhere.
-	for _, sh := range resp.Services {
-		if sh.Health != "OK" {
-			resp.Health = "ERROR"
-			break
+	for svcName, sh := range resp.Services {
+		switch svcName {
+		case arvados.ServiceNameDispatchCloud,
+			arvados.ServiceNameDispatchLSF:
+			// ok to not run any given dispatcher
+		case arvados.ServiceNameHealth,
+			arvados.ServiceNameWorkbench1,
+			arvados.ServiceNameWorkbench2:
+			// typically doesn't have InternalURLs in config
+		default:
+			if sh.Health != "OK" && sh.Health != "SKIP" {
+				resp.Health = "ERROR"
+				continue
+			}
 		}
 	}
 
@@ -253,6 +267,16 @@ func (agg *Aggregator) ping(target *url.URL) (result CheckResult) {
 	req.Header.Set("X-Forwarded-Proto", "https")
 
 	resp, err := agg.httpClient.Do(req)
+	if urlerr, ok := err.(*url.Error); ok {
+		if neterr, ok := urlerr.Err.(*net.OpError); ok && isLocalHost(target.Hostname()) {
+			result = CheckResult{
+				Health: "SKIP",
+				Error:  neterr.Error(),
+			}
+			err = nil
+			return
+		}
+	}
 	if err != nil {
 		result.Error = err.Error()
 		return
@@ -318,6 +342,13 @@ func (agg *Aggregator) metrics(pingURL *url.URL) (result Metrics, err error) {
 		return
 	}
 	return
+}
+
+// Test whether host is an easily recognizable loopback address:
+// 0.0.0.0, 127.x.x.x, ::1, or localhost.
+func isLocalHost(host string) bool {
+	ip := net.ParseIP(host)
+	return ip.IsLoopback() || bytes.Equal(ip.To4(), []byte{0, 0, 0, 0}) || strings.EqualFold(host, "localhost")
 }
 
 func (agg *Aggregator) checkAuth(req *http.Request) bool {
