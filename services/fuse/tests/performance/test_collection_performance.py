@@ -472,10 +472,9 @@ class FuseListLargeProjectContents(MountTestBase):
         project_contents = llfuse.listdir(self.mounttmp)
         self.assertEqual(201, len(project_contents))
         self.assertIn('Collection_1', project_contents)
-        return project_contents
 
     @profiled
-    def listContentsInProjectWithManyCollections(self, project_contents):
+    def listContentsInProjectWithManyCollections(self):
         project_contents = llfuse.listdir(self.mounttmp)
         self.assertEqual(201, len(project_contents))
         self.assertIn('Collection_1', project_contents)
@@ -488,5 +487,5 @@ class FuseListLargeProjectContents(MountTestBase):
     def test_listLargeProjectContents(self):
         self.make_mount(fuse.ProjectDirectory,
                         project_object=run_test_server.fixture('groups')['project_with_201_collections'])
-        project_contents = self.getProjectWithManyCollections()
-        self.listContentsInProjectWithManyCollections(project_contents)
+        self.getProjectWithManyCollections()
+        self.listContentsInProjectWithManyCollections()
