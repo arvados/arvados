@@ -11,6 +11,7 @@
     "public_key_file": "",
     "mksquashfs_mem": "",
     "nvidia_gpu_support": "",
+    "goversion": "",
     "reposuffix": "",
     "resolver": "",
     "ssh_user": "admin",
@@ -93,6 +94,6 @@
     "type": "shell",
     "execute_command": "sudo -S env {{ .Vars }} /bin/bash '{{ .Path }}'",
     "script": "scripts/base.sh",
-    "environment_vars": ["RESOLVER={{user `resolver`}}","REPOSUFFIX={{user `reposuffix`}}","MKSQUASHFS_MEM={{user `mksquashfs_mem`}}","NVIDIA_GPU_SUPPORT={{user `nvidia_gpu_support`}}","CLOUD=aws","AWS_EBS_AUTOSCALE={{user `aws_ebs_autoscale`}}"]
+    "environment_vars": ["RESOLVER={{user `resolver`}}","REPOSUFFIX={{user `reposuffix`}}","MKSQUASHFS_MEM={{user `mksquashfs_mem`}}","NVIDIA_GPU_SUPPORT={{user `nvidia_gpu_support`}}","CLOUD=aws","AWS_EBS_AUTOSCALE={{user `aws_ebs_autoscale`}}","GOVERSION={{user `goversion`}}"]
   }]
 }
