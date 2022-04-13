@@ -529,7 +529,6 @@ yarn install
 			"services/health",
 			"services/keep-balance",
 			"services/keep-web",
-			"services/keepproxy",
 			"services/keepstore",
 			"services/ws",
 		} {
