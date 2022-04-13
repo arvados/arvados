@@ -770,7 +770,6 @@ func (super *Supervisor) autofillConfig(cfg *arvados.Config) error {
 }
 
 func addrIsLocal(addr string) (bool, error) {
-	return true, nil
 	listener, err := net.Listen("tcp", addr)
 	if err == nil {
 		listener.Close()
