@@ -125,7 +125,6 @@ func (ldr *Loader) applyDeprecatedVolumeDriverParameters(cfg *arvados.Config) er
 				if params.AccessKey != "" || params.SecretKey != "" {
 					if params.AccessKeyID != "" || params.SecretAccessKey != "" {
 						return fmt.Errorf("cannot use old keys (AccessKey/SecretKey) and new keys (AccessKeyID/SecretAccessKey) at the same time in %s.Volumes.%s.DriverParameters -- you must remove the old config keys", clusterID, volID)
-						continue
 					}
 					var allparams map[string]interface{}
 					err = json.Unmarshal(vol.DriverParameters, &allparams)
