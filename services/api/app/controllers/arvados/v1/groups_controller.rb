@@ -104,7 +104,6 @@ class Arvados::V1::GroupsController < ApplicationController
   def destroy
     if !TRASHABLE_CLASSES.include?(@object.group_class)
       return @object.destroy
-      show
     else
       super # Calls destroy from TrashableController module
     end
