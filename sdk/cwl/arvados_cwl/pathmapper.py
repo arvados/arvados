@@ -149,15 +149,16 @@ class ArvPathMapper(PathMapper):
         loc = srcobj["location"]
         if loc.startswith("_:"):
             return True
-        if prefix:
-            if loc != prefix+srcobj["basename"]:
-                return True
-        else:
+        if not prefix:
             i = loc.rfind("/")
             if i > -1:
                 prefix = loc[:i+1]
             else:
                 prefix = loc+"/"
+
+        if loc != prefix+srcobj["basename"]:
+            return True
+
         if srcobj["class"] == "File" and loc not in self._pathmap:
             return True
         for s in srcobj.get("secondaryFiles", []):
@@ -198,6 +199,7 @@ class ArvPathMapper(PathMapper):
                                            "Directory" if os.path.isdir(ab) else "File", True)
 
         for srcobj in referenced_files:
+            print("na na na", srcobj, srcobj["location"].endswith("/"+srcobj["basename"]))
             remap = []
             if srcobj["class"] == "Directory" and srcobj["location"] not in self._pathmap:
                 c = arvados.collection.Collection(api_client=self.arvrunner.api,
@@ -217,16 +219,7 @@ class ArvPathMapper(PathMapper):
 
                 ab = self.collection_pattern % c.portable_data_hash()
                 self._pathmap[srcobj["location"]] = MapperEnt("keep:"+c.portable_data_hash(), ab, "Directory", True)
-            elif srcobj["class"] == "File" and (srcobj.get("secondaryFiles") or
-                (srcobj["location"].startswith("_:") and "contents" in srcobj)):
-
-                # If all secondary files/directories are located in
-                # the same collection as the primary file and the
-                # paths and names that are consistent with staging,
-                # don't create a new collection.
-                if not self.needs_new_collection(srcobj):
-                    continue
-
+            elif srcobj["class"] == "File" and self.needs_new_collection(srcobj):
                 c = arvados.collection.Collection(api_client=self.arvrunner.api,
                                                   keep_client=self.arvrunner.keep_client,
                                                   num_retries=self.arvrunner.num_retries                                                  )
