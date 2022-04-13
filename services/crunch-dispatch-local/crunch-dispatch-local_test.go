@@ -64,7 +64,7 @@ func (s *TestSuite) TestIntegration(c *C) {
 	c.Assert(err, IsNil)
 
 	echo := "echo"
-	crunchRunCommand = &echo
+	crunchRunCommand = echo
 
 	ctx, cancel := context.WithCancel(ctxlog.Context(context.Background(), ctxlog.TestLogger(c)))
 	dispatcher := dispatch.Dispatcher{
@@ -169,7 +169,7 @@ func testWithServerStub(c *C, apiStubResponses map[string]arvadostest.StubRespon
 	logger := ctxlog.TestLogger(c)
 	logger.SetOutput(io.MultiWriter(buf, logger.Out))
 
-	*crunchRunCommand = crunchCmd
+	crunchRunCommand = crunchCmd
 
 	ctx, cancel := context.WithCancel(ctxlog.Context(context.Background(), logger))
 	defer cancel()
