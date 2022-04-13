@@ -19,8 +19,8 @@ import (
 	"git.arvados.org/arvados.git/sdk/go/arvados"
 	"git.arvados.org/arvados.git/sdk/go/arvadosclient"
 	"git.arvados.org/arvados.git/sdk/go/arvadostest"
+	"git.arvados.org/arvados.git/sdk/go/ctxlog"
 	"git.arvados.org/arvados.git/sdk/go/dispatch"
-	"github.com/sirupsen/logrus"
 	. "gopkg.in/check.v1"
 )
 
@@ -40,16 +40,18 @@ var initialArgs []string
 func (s *TestSuite) SetUpSuite(c *C) {
 	initialArgs = os.Args
 	runningCmds = make(map[string]*exec.Cmd)
-	logrus.SetFormatter(&logrus.TextFormatter{DisableColors: true})
 }
 
 func (s *TestSuite) SetUpTest(c *C) {
+	arvadostest.ResetDB(c)
+	arvadostest.ResetEnv()
 	args := []string{"crunch-dispatch-local"}
 	os.Args = args
 }
 
 func (s *TestSuite) TearDownTest(c *C) {
 	arvadostest.ResetEnv()
+	arvadostest.ResetDB(c)
 	os.Args = initialArgs
 }
 
@@ -62,9 +64,9 @@ func (s *TestSuite) TestIntegration(c *C) {
 	c.Assert(err, IsNil)
 
 	echo := "echo"
-	crunchRunCommand = &echo
+	crunchRunCommand = echo
 
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancel(ctxlog.Context(context.Background(), ctxlog.TestLogger(c)))
 	dispatcher := dispatch.Dispatcher{
 		Arv:        arv,
 		PollPeriod: time.Second,
@@ -164,15 +166,17 @@ func testWithServerStub(c *C, apiStubResponses map[string]arvadostest.StubRespon
 	}
 
 	buf := bytes.NewBuffer(nil)
-	logrus.SetOutput(io.MultiWriter(buf, os.Stderr))
-	defer logrus.SetOutput(os.Stderr)
+	logger := ctxlog.TestLogger(c)
+	logger.SetOutput(io.MultiWriter(buf, logger.Out))
 
-	*crunchRunCommand = crunchCmd
+	crunchRunCommand = crunchCmd
 
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancel(ctxlog.Context(context.Background(), logger))
+	defer cancel()
 	dispatcher := dispatch.Dispatcher{
+		Logger:     logger,
 		Arv:        arv,
-		PollPeriod: time.Second / 20,
+		PollPeriod: time.Second,
 	}
 
 	startCmd := func(container arvados.Container, cmd *exec.Cmd) error {
@@ -198,9 +202,8 @@ func testWithServerStub(c *C, apiStubResponses map[string]arvadostest.StubRespon
 
 	err := dispatcher.Run(ctx)
 	c.Assert(err, Equals, context.Canceled)
-
-	// Wait for all running crunch jobs to complete / terminate
-	waitGroup.Wait()
-
 	c.Check(buf.String(), Matches, `(?ms).*`+expected+`.*`)
+
+	c.Logf("test finished, waiting for running crunch jobs to complete / terminate")
+	waitGroup.Wait()
 }

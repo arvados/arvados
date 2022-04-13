@@ -31,7 +31,7 @@ var (
 	runningCmds      map[string]*exec.Cmd
 	runningCmdsMutex sync.Mutex
 	waitGroup        sync.WaitGroup
-	crunchRunCommand *string
+	crunchRunCommand string
 )
 
 func main() {
@@ -50,7 +50,7 @@ func main() {
 		10,
 		"Interval in seconds to poll for queued containers")
 
-	crunchRunCommand = flags.String(
+	flags.StringVar(&crunchRunCommand,
 		"crunch-run-command",
 		"/usr/bin/crunch-run",
 		"Crunch command to run container")
@@ -198,7 +198,7 @@ func (lr *LocalRun) run(dispatcher *dispatch.Dispatcher,
 		waitGroup.Add(1)
 		defer waitGroup.Done()
 
-		cmd := exec.Command(*crunchRunCommand, "--runtime-engine="+lr.cluster.Containers.RuntimeEngine, uuid)
+		cmd := exec.Command(crunchRunCommand, "--runtime-engine="+lr.cluster.Containers.RuntimeEngine, uuid)
 		cmd.Stdin = nil
 		cmd.Stderr = os.Stderr
 		cmd.Stdout = os.Stderr
@@ -211,7 +211,7 @@ func (lr *LocalRun) run(dispatcher *dispatch.Dispatcher,
 		runningCmdsMutex.Lock()
 		if err := lr.startCmd(container, cmd); err != nil {
 			runningCmdsMutex.Unlock()
-			dispatcher.Logger.Warnf("error starting %q for %s: %s", *crunchRunCommand, uuid, err)
+			dispatcher.Logger.Warnf("error starting %q for %s: %s", crunchRunCommand, uuid, err)
 			dispatcher.UpdateState(uuid, dispatch.Cancelled)
 		} else {
 			runningCmds[uuid] = cmd
@@ -261,7 +261,7 @@ Finish:
 	}
 	if container.State == dispatch.Locked || container.State == dispatch.Running {
 		dispatcher.Logger.Warnf("after %q process termination, container state for %v is %q; updating it to %q",
-			*crunchRunCommand, uuid, container.State, dispatch.Cancelled)
+			crunchRunCommand, uuid, container.State, dispatch.Cancelled)
 		dispatcher.UpdateState(uuid, dispatch.Cancelled)
 	}
 
