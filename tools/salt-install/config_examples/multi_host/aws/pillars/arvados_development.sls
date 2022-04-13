@@ -5,6 +5,9 @@
 #
 # SPDX-License-Identifier: AGPL-3.0
 
+# This config file is used to test a multi-node deployment using a local
+# dispatcher. This setup is not recommended for production use.
+
 # The variables commented out are the default values that the formula uses.
 # The uncommented values are REQUIRED values. If you don't set them, running
 # this formula will fail.
@@ -56,11 +59,6 @@ arvados:
   ## should be set to that of the web server, usually `www-data`
   #   group: root
   #   mode: 640
-  dispatcher:
-    pkg:
-      name: arvados-dispatch-cloud
-    service:
-      name: arvados-dispatch-cloud
 
   ### ARVADOS CLUSTER CONFIG
   cluster:
@@ -71,7 +69,7 @@ arvados:
       # max concurrent connections per arvados server daemon
       # connection_pool_max: 32
       name: __CLUSTER___arvados
-      host: __DATABASE_INT_IP__
+      host: 127.0.0.1
       password: "__DATABASE_PASSWORD__"
       user: __CLUSTER___arvados
       extra_conn_params:
@@ -88,7 +86,7 @@ arvados:
       # certificate: ''
       # key: ''
       # When using arvados-snakeoil certs set insecure: true
-      insecure: false
+      insecure: true
 
     resources:
       virtual_machines:
@@ -116,48 +114,27 @@ arvados:
             Email: __INITIAL_USER_EMAIL__
             Password: __INITIAL_USER_PASSWORD__
 
-    ### CONTAINERS
-    Containers:
-      MaxRetryAttempts: 10
-      CloudVMs:
-        ResourceTags:
-          Name: __CLUSTER__-compute-node
-        BootProbeCommand: 'systemctl is-system-running'
-        ImageID: ami-FIXMEFIXMEFIXMEFI
-        Driver: ec2
-        DriverParameters:
-          Region: FIXME
-          EBSVolumeType: gp2
-          AdminUsername: FIXME
-          ### This SG should allow SSH from the dispatcher to the compute nodes
-          SecurityGroupIDs: ['sg-FIXMEFIXMEFIXMEFI']
-          SubnetID: subnet-FIXMEFIXMEFIXMEFI
-      DispatchPrivateKey: |
-        -----BEGIN OPENSSH PRIVATE KEY-----
-        Read https://doc.arvados.org/install/crunch2-cloud/install-compute-node.html#sshkeypair
-        for details on how to create this key.
-        FIXMEFIXMEFIXMEFI
-        -----END OPENSSH PRIVATE KEY-----
-
     ### VOLUMES
     ## This should usually match all your `keepstore` instances
     Volumes:
       # the volume name will be composed with
       # <cluster>-nyw5e-<volume>
       __CLUSTER__-nyw5e-000000000000000:
+        AccessViaHosts:
+          'http://__KEEPSTORE0_INT_IP__:25107':
+            ReadOnly: false
         Replication: 2
-        Driver: S3
+        Driver: Directory
         DriverParameters:
-          Bucket: __CLUSTER__-nyw5e-000000000000000-volume
-          IAMRole: __CLUSTER__-keepstore-00-iam-role
-          Region: FIXME
-      __CLUSTER__-nyw5e-0000000000000001:
+          Root: /tmp
+      __CLUSTER__-nyw5e-000000000000001:
+        AccessViaHosts:
+          'http://__KEEPSTORE1_INT_IP__:25107':
+            ReadOnly: false
         Replication: 2
-        Driver: S3
+        Driver: Directory
         DriverParameters:
-          Bucket: __CLUSTER__-nyw5e-000000000000001-volume
-          IAMRole: __CLUSTER__-keepstore-01-iam-role
-          Region: FIXME
+          Root: /tmp
 
     Users:
       NewUsersAreActive: true
@@ -170,16 +147,13 @@ arvados:
         ExternalURL: 'https://__CLUSTER__.__DOMAIN__:__CONTROLLER_EXT_SSL_PORT__'
         InternalURLs:
           'http://localhost:8003': {}
-      DispatchCloud:
-        InternalURLs:
-          'http://__CONTROLLER_INT_IP__:9006': {}
       Keepbalance:
         InternalURLs:
-          'http://localhost:9005': {}
+          'http://__CONTROLLER_INT_IP__:9005': {}
       Keepproxy:
-        ExternalURL: 'https://keep.__CLUSTER__.__DOMAIN__:__KEEP_EXT_SSL_PORT__'
+        ExternalURL: 'https://__CLUSTER__.__DOMAIN__:__KEEP_EXT_SSL_PORT__'
         InternalURLs:
-          'http://localhost:25107': {}
+          'http://__KEEP_INT_IP__:25100': {}
       Keepstore:
         InternalURLs:
           'http://__KEEPSTORE0_INT_IP__:25107': {}
@@ -188,80 +162,18 @@ arvados:
         InternalURLs:
           'http://localhost:8004': {}
       WebDAV:
-        ExternalURL: 'https://*.collections.__CLUSTER__.__DOMAIN__:__KEEPWEB_EXT_SSL_PORT__/'
+        ExternalURL: 'https://__CLUSTER__.__DOMAIN__:__KEEPWEB_EXT_SSL_PORT__'
         InternalURLs:
           'http://localhost:9002': {}
       WebDAVDownload:
-        ExternalURL: 'https://download.__CLUSTER__.__DOMAIN__:__KEEPWEB_EXT_SSL_PORT__'
+        ExternalURL: 'https://__CLUSTER__.__DOMAIN__:__KEEPWEB_EXT_SSL_PORT__'
       WebShell:
-        ExternalURL: 'https://webshell.__CLUSTER__.__DOMAIN__:__KEEPWEB_EXT_SSL_PORT__'
+        ExternalURL: 'https://__CLUSTER__.__DOMAIN__:__WEBSHELL_EXT_SSL_PORT__'
       Websocket:
-        ExternalURL: 'wss://ws.__CLUSTER__.__DOMAIN__/websocket'
+        ExternalURL: 'wss://__CLUSTER__.__DOMAIN__:__WEBSOCKET_EXT_SSL_PORT__/websocket'
         InternalURLs:
-          'http://localhost:8005': {}
+          'http://__WEBSOCKET_INT_IP__:8005': {}
       Workbench1:
-        ExternalURL: 'https://workbench.__CLUSTER__.__DOMAIN__:__WORKBENCH1_EXT_SSL_PORT__'
+        ExternalURL: 'https://__CLUSTER__.__DOMAIN__:__WORKBENCH1_EXT_SSL_PORT__'
       Workbench2:
-        ExternalURL: 'https://workbench2.__CLUSTER__.__DOMAIN__:__WORKBENCH2_EXT_SSL_PORT__'
-
-    InstanceTypes:
-      t3small:
-        ProviderType: t3.small
-        VCPUs: 2
-        RAM: 2GiB
-        AddedScratch: 50GB
-        Price: 0.0208
-      c5large:
-        ProviderType: c5.large
-        VCPUs: 2
-        RAM: 4GiB
-        AddedScratch: 50GB
-        Price: 0.085
-      m5large:
-        ProviderType: m5.large
-        VCPUs: 2
-        RAM: 8GiB
-        AddedScratch: 50GB
-        Price: 0.096
-      c5xlarge:
-        ProviderType: c5.xlarge
-        VCPUs: 4
-        RAM: 8GiB
-        AddedScratch: 100GB
-        Price: 0.17
-      m5xlarge:
-        ProviderType: m5.xlarge
-        VCPUs: 4
-        RAM: 16GiB
-        AddedScratch: 100GB
-        Price: 0.192
-      m5xlarge_extradisk:
-        ProviderType: m5.xlarge
-        VCPUs: 4
-        RAM: 16GiB
-        AddedScratch: 400GB
-        Price: 0.193
-      c52xlarge:
-        ProviderType: c5.2xlarge
-        VCPUs: 8
-        RAM: 16GiB
-        AddedScratch: 200GB
-        Price: 0.34
-      m52xlarge:
-        ProviderType: m5.2xlarge
-        VCPUs: 8
-        RAM: 32GiB
-        AddedScratch: 200GB
-        Price: 0.384
-      c54xlarge:
-        ProviderType: c5.4xlarge
-        VCPUs: 16
-        RAM: 32GiB
-        AddedScratch: 400GB
-        Price: 0.68
-      m54xlarge:
-        ProviderType: m5.4xlarge
-        VCPUs: 16
-        RAM: 64GiB
-        AddedScratch: 400GB
-        Price: 0.768
+        ExternalURL: 'https://__CLUSTER__.__DOMAIN__:__WORKBENCH2_EXT_SSL_PORT__'

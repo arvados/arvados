@@ -698,12 +698,15 @@ handle_arvados_src () {
 
 # Usage: handle_libarvados_perl
 handle_libarvados_perl () {
-  if [[ -n "$ONLY_BUILD" ]] || [[ "$ONLY_BUILD" != "libarvados-perl" ]] ; then
+  if [[ -n "$ONLY_BUILD" ]] && [[ "$ONLY_BUILD" != "libarvados-perl" ]] ; then
     debug_echo -e "Skipping build of libarvados-perl package."
     return 0
   fi
-  cd "$WORKSPACE/sdk/perl"
+  # The perl sdk subdirectory is so old that it has no tag in its history,
+  # which causes version_at_commit.sh to fail. Just rebuild it every time.
+  cd "$WORKSPACE"
   libarvados_perl_version="$(version_from_git)"
+  cd "$WORKSPACE/sdk/perl"
 
   cd $WORKSPACE/packages/$TARGET
   test_package_presence libarvados-perl "$libarvados_perl_version"
@@ -721,7 +724,7 @@ handle_libarvados_perl () {
     perl Makefile.PL INSTALL_BASE=install >"$STDOUT_IF_DEBUG" && \
         make install INSTALLDIRS=perl >"$STDOUT_IF_DEBUG" && \
         fpm_build "$WORKSPACE/sdk/perl" install/lib/=/usr/share libarvados-perl \
-        dir "$(version_from_git)" install/man/=/usr/share/man \
+        dir "$libarvados_perl_version" install/man/=/usr/share/man \
         "$WORKSPACE/apache-2.0.txt=/usr/share/doc/libarvados-perl/apache-2.0.txt" && \
         mv --no-clobber libarvados-perl*.$FORMAT "$WORKSPACE/packages/$TARGET/"
   fi

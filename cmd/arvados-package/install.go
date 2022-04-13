@@ -21,6 +21,10 @@ import (
 func testinstall(ctx context.Context, opts opts, stdin io.Reader, stdout, stderr io.Writer) error {
 	depsImageName := "arvados-package-deps-" + opts.TargetOS
 	depsCtrName := strings.Replace(depsImageName, ":", "-", -1)
+	absPackageDir, err := filepath.Abs(opts.PackageDir)
+	if err != nil {
+		return fmt.Errorf("error resolving PackageDir %q: %w", opts.PackageDir, err)
+	}
 
 	_, prog := filepath.Split(os.Args[0])
 	tmpdir, err := ioutil.TempDir("", prog+".")
@@ -40,7 +44,7 @@ func testinstall(ctx context.Context, opts opts, stdin io.Reader, stdout, stderr
 		cmd := exec.CommandContext(ctx, "docker", "run",
 			"--name", depsCtrName,
 			"--tmpfs", "/tmp:exec,mode=01777",
-			"-v", opts.PackageDir+":/pkg:ro",
+			"-v", absPackageDir+":/pkg:ro",
 			"--env", "DEBIAN_FRONTEND=noninteractive",
 			opts.TargetOS,
 			"bash", "-c", `
@@ -64,7 +68,7 @@ rm /etc/apt/sources.list.d/arvados-local.list
 		cmd.Stderr = stderr
 		err = cmd.Run()
 		if err != nil {
-			return fmt.Errorf("docker run: %w", err)
+			return fmt.Errorf("%v: %w", cmd.Args, err)
 		}
 
 		cmd = exec.CommandContext(ctx, "docker", "commit", depsCtrName, depsImageName)
@@ -72,7 +76,7 @@ rm /etc/apt/sources.list.d/arvados-local.list
 		cmd.Stderr = stderr
 		err = cmd.Run()
 		if err != nil {
-			return fmt.Errorf("docker commit: %w", err)
+			return fmt.Errorf("%v: %w", cmd.Args, err)
 		}
 	}
 
@@ -81,9 +85,24 @@ rm /etc/apt/sources.list.d/arvados-local.list
 		versionsuffix = "=" + opts.PackageVersion
 	}
 	cmd := exec.CommandContext(ctx, "docker", "run", "--rm",
-		"--tmpfs", "/tmp:exec,mode=01777",
-		"-v", opts.PackageDir+":/pkg:ro",
-		"--env", "DEBIAN_FRONTEND=noninteractive",
+		"--tmpfs=/tmp:exec,mode=01777",
+		"--volume="+absPackageDir+":/pkg:ro",
+		"--env=DEBIAN_FRONTEND=noninteractive")
+	if opts.Live != "" {
+		cmd.Args = append(cmd.Args,
+			"--env=domain="+opts.Live,
+			"--env=bootargs=",
+			"--publish=:443:443",
+			"--publish=:4440-4460:4440-4460",
+			"--publish=:9000-9020:9000-9020",
+			"--add-host="+opts.Live+":0.0.0.0",
+			"--volume=/var/lib/acme:/var/lib/acme:ro")
+	} else {
+		cmd.Args = append(cmd.Args,
+			"--env=domain=localhost",
+			"--env=bootargs=-shutdown")
+	}
+	cmd.Args = append(cmd.Args,
 		depsImageName,
 		"bash", "-c", `
 set -e -o pipefail
@@ -102,14 +121,14 @@ eatmydata apt-get install --reinstall -y --no-install-recommends arvados-server-
 SUDO_FORCE_REMOVE=yes apt-get autoremove -y
 
 /etc/init.d/postgresql start
-arvados-server init -cluster-id x1234
-exec arvados-server boot -listen-host 0.0.0.0 -shutdown
+arvados-server init -cluster-id x1234 -domain=$domain -login=test -insecure
+exec arvados-server boot -listen-host=0.0.0.0 -no-workbench2=false $bootargs
 `)
 	cmd.Stdout = stdout
 	cmd.Stderr = stderr
 	err = cmd.Run()
 	if err != nil {
-		return fmt.Errorf("docker run: %w", err)
+		return fmt.Errorf("%v: %w", cmd.Args, err)
 	}
 	return nil
 }

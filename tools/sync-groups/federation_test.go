@@ -115,6 +115,7 @@ func (s *FederationSuite) SetUpSuite(c *check.C) {
 			filepath.Join(cwd, "..", ".."),
 			id, cfg, "127.0.0."+id[3:], c.Log)
 		tc.Super.NoWorkbench1 = true
+		tc.Super.NoWorkbench2 = true
 		tc.Start()
 		s.testClusters[id] = tc
 	}

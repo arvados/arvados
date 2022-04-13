@@ -6,12 +6,14 @@
 Description=Arvados Keep Proxy
 Documentation=https://doc.arvados.org/
 After=network.target
+AssertPathExists=/etc/arvados/config.yml
 
 # systemd>=230 (debian:9) obeys StartLimitIntervalSec in the [Unit] section
 StartLimitIntervalSec=0
 
 [Service]
 Type=notify
+EnvironmentFile=-/etc/arvados/environment
 ExecStart=/usr/bin/keepproxy
 # Set a reasonable default for the open file limit
 LimitNOFILE=65536

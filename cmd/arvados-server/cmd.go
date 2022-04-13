@@ -5,6 +5,10 @@
 package main
 
 import (
+	"encoding/json"
+	"fmt"
+	"io"
+	"net/http"
 	"os"
 
 	"git.arvados.org/arvados.git/lib/boot"
@@ -17,6 +21,7 @@ import (
 	"git.arvados.org/arvados.git/lib/install"
 	"git.arvados.org/arvados.git/lib/lsf"
 	"git.arvados.org/arvados.git/lib/recovercollection"
+	"git.arvados.org/arvados.git/services/keepproxy"
 	"git.arvados.org/arvados.git/services/keepstore"
 	"git.arvados.org/arvados.git/services/ws"
 )
@@ -38,12 +43,42 @@ var (
 		"dispatch-lsf":       lsf.DispatchCommand,
 		"install":            install.Command,
 		"init":               install.InitCommand,
+		"keepproxy":          keepproxy.Command,
 		"keepstore":          keepstore.Command,
 		"recover-collection": recovercollection.Command,
+		"workbench2":         wb2command{},
 		"ws":                 ws.Command,
 	})
 )
 
 func main() {
 	os.Exit(handler.RunCommand(os.Args[0], os.Args[1:], os.Stdin, os.Stdout, os.Stderr))
+}
+
+type wb2command struct{}
+
+func (wb2command) RunCommand(prog string, args []string, stdin io.Reader, stdout, stderr io.Writer) int {
+	if len(args) != 3 {
+		fmt.Fprintf(stderr, "usage: %s api-host listen-addr app-dir\n", prog)
+		return 1
+	}
+	configJSON, err := json.Marshal(map[string]string{"API_HOST": args[0]})
+	if err != nil {
+		fmt.Fprintf(stderr, "json.Marshal: %s\n", err)
+		return 1
+	}
+	mux := http.NewServeMux()
+	mux.Handle("/", http.FileServer(http.Dir(args[2])))
+	mux.HandleFunc("/config.json", func(w http.ResponseWriter, _ *http.Request) {
+		w.Write(configJSON)
+	})
+	mux.HandleFunc("/_health/ping", func(w http.ResponseWriter, _ *http.Request) {
+		io.WriteString(w, `{"health":"OK"}`)
+	})
+	err = http.ListenAndServe(args[1], mux)
+	if err != nil {
+		fmt.Fprintln(stderr, err.Error())
+		return 1
+	}
+	return 0
 }
