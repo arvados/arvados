@@ -8,6 +8,7 @@ import (
 	"bufio"
 	"bytes"
 	"context"
+	_ "embed"
 	"errors"
 	"flag"
 	"fmt"
@@ -28,8 +29,22 @@ import (
 
 var Command cmd.Handler = &installCommand{}
 
-const devtestDatabasePassword = "insecure_arvados_test"
-const goversion = "1.17.1"
+const goversion = "1.17.7"
+
+const (
+	rubyversion             = "2.7.5"
+	bundlerversion          = "2.2.19"
+	singularityversion      = "3.7.4"
+	pjsversion              = "1.9.8"
+	geckoversion            = "0.24.0"
+	gradleversion           = "5.3.1"
+	nodejsversion           = "v12.22.11"
+	devtestDatabasePassword = "insecure_arvados_test"
+	workbench2version       = "5e020488f67b5bc919796e0dc8b0b9f3b3ff23b0"
+)
+
+//go:embed arvados.service
+var arvadosServiceFile []byte
 
 type installCommand struct {
 	ClusterType    string
@@ -139,7 +154,6 @@ func (inst *installCommand) RunCommand(prog string, args []string, stdin io.Read
 			"default-jdk-headless",
 			"default-jre-headless",
 			"gettext",
-			"iceweasel",
 			"libattr1-dev",
 			"libcrypt-ssleay-perl",
 			"libfuse-dev",
@@ -158,7 +172,6 @@ func (inst *installCommand) RunCommand(prog string, args []string, stdin io.Read
 			"make",
 			"net-tools",
 			"pandoc",
-			"perl-modules",
 			"pkg-config",
 			"postgresql",
 			"postgresql-contrib",
@@ -177,16 +190,23 @@ func (inst *installCommand) RunCommand(prog string, args []string, stdin io.Read
 			"wget",
 			"xvfb",
 		)
+		if test {
+			if osv.Debian && osv.Major <= 10 {
+				pkgs = append(pkgs, "iceweasel")
+			} else {
+				pkgs = append(pkgs, "firefox")
+			}
+		}
 		if dev || test {
-			pkgs = append(pkgs,
-				"squashfs-tools", // for singularity
-			)
+			pkgs = append(pkgs, "squashfs-tools") // for singularity
 		}
 		switch {
+		case osv.Debian && osv.Major >= 11:
+			pkgs = append(pkgs, "libcurl4", "perl-modules-5.32")
 		case osv.Debian && osv.Major >= 10:
-			pkgs = append(pkgs, "libcurl4")
+			pkgs = append(pkgs, "libcurl4", "perl-modules")
 		default:
-			pkgs = append(pkgs, "libcurl3")
+			pkgs = append(pkgs, "libcurl3", "perl-modules")
 		}
 		cmd := exec.CommandContext(ctx, "apt-get")
 		if inst.EatMyData {
@@ -206,7 +226,6 @@ func (inst *installCommand) RunCommand(prog string, args []string, stdin io.Read
 	os.Mkdir("/var/lib/arvados", 0755)
 	os.Mkdir("/var/lib/arvados/tmp", 0700)
 	if prod || pkg {
-		os.Mkdir("/var/lib/arvados/wwwtmp", 0700)
 		u, er := user.Lookup("www-data")
 		if er != nil {
 			err = fmt.Errorf("user.Lookup(%q): %w", "www-data", er)
@@ -214,12 +233,12 @@ func (inst *installCommand) RunCommand(prog string, args []string, stdin io.Read
 		}
 		uid, _ := strconv.Atoi(u.Uid)
 		gid, _ := strconv.Atoi(u.Gid)
+		os.Mkdir("/var/lib/arvados/wwwtmp", 0700)
 		err = os.Chown("/var/lib/arvados/wwwtmp", uid, gid)
 		if err != nil {
 			return 1
 		}
 	}
-	rubyversion := "2.7.2"
 	rubymajorversion := rubyversion[:strings.LastIndex(rubyversion, ".")]
 	if haverubyversion, err := exec.Command("/var/lib/arvados/bin/ruby", "-v").CombinedOutput(); err == nil && bytes.HasPrefix(haverubyversion, []byte("ruby "+rubyversion)) {
 		logger.Print("ruby " + rubyversion + " already installed")
@@ -247,7 +266,7 @@ make install
 cd /tmp
 rm -rf /var/lib/arvados/go/
 wget --progress=dot:giga -O- https://storage.googleapis.com/golang/go`+goversion+`.linux-amd64.tar.gz | tar -C /var/lib/arvados -xzf -
-ln -sf /var/lib/arvados/go/bin/* /usr/local/bin/
+ln -sfv /var/lib/arvados/go/bin/* /usr/local/bin/
 `, stdout, stderr)
 			if err != nil {
 				return 1
@@ -256,49 +275,32 @@ ln -sf /var/lib/arvados/go/bin/* /usr/local/bin/
 	}
 
 	if !prod && !pkg {
-		pjsversion := "1.9.8"
 		if havepjsversion, err := exec.Command("/usr/local/bin/phantomjs", "--version").CombinedOutput(); err == nil && string(havepjsversion) == "1.9.8\n" {
 			logger.Print("phantomjs " + pjsversion + " already installed")
 		} else {
 			err = inst.runBash(`
 PJS=phantomjs-`+pjsversion+`-linux-x86_64
 wget --progress=dot:giga -O- https://cache.arvados.org/$PJS.tar.bz2 | tar -C /var/lib/arvados -xjf -
-ln -sf /var/lib/arvados/$PJS/bin/phantomjs /usr/local/bin/
+ln -sfv /var/lib/arvados/$PJS/bin/phantomjs /usr/local/bin/
 `, stdout, stderr)
 			if err != nil {
 				return 1
 			}
 		}
 
-		geckoversion := "0.24.0"
 		if havegeckoversion, err := exec.Command("/usr/local/bin/geckodriver", "--version").CombinedOutput(); err == nil && strings.Contains(string(havegeckoversion), " "+geckoversion+" ") {
 			logger.Print("geckodriver " + geckoversion + " already installed")
 		} else {
 			err = inst.runBash(`
 GD=v`+geckoversion+`
 wget --progress=dot:giga -O- https://github.com/mozilla/geckodriver/releases/download/$GD/geckodriver-$GD-linux64.tar.gz | tar -C /var/lib/arvados/bin -xzf - geckodriver
-ln -sf /var/lib/arvados/bin/geckodriver /usr/local/bin/
+ln -sfv /var/lib/arvados/bin/geckodriver /usr/local/bin/
 `, stdout, stderr)
 			if err != nil {
 				return 1
 			}
 		}
 
-		nodejsversion := "v12.22.2"
-		if havenodejsversion, err := exec.Command("/usr/local/bin/node", "--version").CombinedOutput(); err == nil && string(havenodejsversion) == nodejsversion+"\n" {
-			logger.Print("nodejs " + nodejsversion + " already installed")
-		} else {
-			err = inst.runBash(`
-NJS=`+nodejsversion+`
-wget --progress=dot:giga -O- https://nodejs.org/dist/${NJS}/node-${NJS}-linux-x64.tar.xz | sudo tar -C /var/lib/arvados -xJf -
-ln -sf /var/lib/arvados/node-${NJS}-linux-x64/bin/{node,npm} /usr/local/bin/
-`, stdout, stderr)
-			if err != nil {
-				return 1
-			}
-		}
-
-		gradleversion := "5.3.1"
 		if havegradleversion, err := exec.Command("/usr/local/bin/gradle", "--version").CombinedOutput(); err == nil && strings.Contains(string(havegradleversion), "Gradle "+gradleversion+"\n") {
 			logger.Print("gradle " + gradleversion + " already installed")
 		} else {
@@ -308,7 +310,7 @@ zip=/var/lib/arvados/tmp/gradle-${G}-bin.zip
 trap "rm ${zip}" ERR
 wget --progress=dot:giga -O${zip} https://services.gradle.org/distributions/gradle-${G}-bin.zip
 unzip -o -d /var/lib/arvados ${zip}
-ln -sf /var/lib/arvados/gradle-${G}/bin/gradle /usr/local/bin/
+ln -sfv /var/lib/arvados/gradle-${G}/bin/gradle /usr/local/bin/
 rm ${zip}
 `, stdout, stderr)
 			if err != nil {
@@ -316,7 +318,6 @@ rm ${zip}
 			}
 		}
 
-		singularityversion := "3.7.4"
 		if havesingularityversion, err := exec.Command("/var/lib/arvados/bin/singularity", "--version").CombinedOutput(); err == nil && strings.Contains(string(havesingularityversion), singularityversion) {
 			logger.Print("singularity " + singularityversion + " already installed")
 		} else if dev || test {
@@ -458,7 +459,115 @@ make -C ./builddir install
 		}
 	}
 
+	if !prod {
+		if havenodejsversion, err := exec.Command("/usr/local/bin/node", "--version").CombinedOutput(); err == nil && string(havenodejsversion) == nodejsversion+"\n" {
+			logger.Print("nodejs " + nodejsversion + " already installed")
+		} else {
+			err = inst.runBash(`
+NJS=`+nodejsversion+`
+wget --progress=dot:giga -O- https://nodejs.org/dist/${NJS}/node-${NJS}-linux-x64.tar.xz | sudo tar -C /var/lib/arvados -xJf -
+ln -sfv /var/lib/arvados/node-${NJS}-linux-x64/bin/{node,npm} /usr/local/bin/
+`, stdout, stderr)
+			if err != nil {
+				return 1
+			}
+		}
+
+		if haveyarnversion, err := exec.Command("/usr/local/bin/yarn", "--version").CombinedOutput(); err == nil && len(haveyarnversion) > 0 {
+			logger.Print("yarn " + strings.TrimSpace(string(haveyarnversion)) + " already installed")
+		} else {
+			err = inst.runBash(`
+npm install -g yarn
+ln -sfv /var/lib/arvados/node-`+nodejsversion+`-linux-x64/bin/{yarn,yarnpkg} /usr/local/bin/
+`, stdout, stderr)
+			if err != nil {
+				return 1
+			}
+		}
+
+		if havewb2version, err := exec.Command("git", "--git-dir=/var/lib/arvados/arvados-workbench2/.git", "log", "-n1", "--format=%H").CombinedOutput(); err == nil && string(havewb2version) == workbench2version+"\n" {
+			logger.Print("workbench2 repo is already at " + workbench2version)
+		} else {
+			err = inst.runBash(`
+V=`+workbench2version+`
+cd /var/lib/arvados
+if [[ ! -e arvados-workbench2 ]]; then
+  git clone https://git.arvados.org/arvados-workbench2.git
+  cd arvados-workbench2
+  git checkout $V
+else
+  cd arvados-workbench2
+  if ! git checkout $V; then
+    git fetch
+    git checkout yarn.lock
+    git checkout $V
+  fi
+fi
+rm -rf build
+`, stdout, stderr)
+			if err != nil {
+				return 1
+			}
+		}
+
+		if err = inst.runBash(`
+cd /var/lib/arvados/arvados-workbench2
+yarn install
+`, stdout, stderr); err != nil {
+			return 1
+		}
+	}
+
 	if prod || pkg {
+		// Install Go programs to /var/lib/arvados/bin/
+		for _, srcdir := range []string{
+			"cmd/arvados-client",
+			"cmd/arvados-server",
+			"services/arv-git-httpd",
+			"services/crunch-dispatch-local",
+			"services/crunch-dispatch-slurm",
+			"services/health",
+			"services/keep-balance",
+			"services/keep-web",
+			"services/keepproxy",
+			"services/keepstore",
+			"services/ws",
+		} {
+			fmt.Fprintf(stderr, "building %s...\n", srcdir)
+			cmd := exec.Command("go", "install", "-ldflags", "-X git.arvados.org/arvados.git/lib/cmd.version="+inst.PackageVersion+" -X main.version="+inst.PackageVersion+" -s -w")
+			cmd.Env = append(cmd.Env, os.Environ()...)
+			cmd.Env = append(cmd.Env, "GOBIN=/var/lib/arvados/bin")
+			cmd.Dir = filepath.Join(inst.SourcePath, srcdir)
+			cmd.Stdout = stdout
+			cmd.Stderr = stderr
+			err = cmd.Run()
+			if err != nil {
+				return 1
+			}
+		}
+
+		// Symlink user-facing Go programs /usr/bin/x ->
+		// /var/lib/arvados/bin/x
+		for _, prog := range []string{"arvados-client", "arvados-server"} {
+			err = os.Remove("/usr/bin/" + prog)
+			if err != nil && !errors.Is(err, os.ErrNotExist) {
+				return 1
+			}
+			err = os.Symlink("/var/lib/arvados/bin/"+prog, "/usr/bin/"+prog)
+			if err != nil {
+				return 1
+			}
+		}
+
+		// Copy assets from source tree to /var/lib/arvados/share
+		cmd := exec.Command("install", "-v", "-t", "/var/lib/arvados/share", filepath.Join(inst.SourcePath, "sdk/python/tests/nginx.conf"))
+		cmd.Stdout = stdout
+		cmd.Stderr = stderr
+		err = cmd.Run()
+		if err != nil {
+			return 1
+		}
+
 		// Install Rails apps to /var/lib/arvados/{railsapi,workbench1}/
 		for dstdir, srcdir := range map[string]string{
 			"railsapi":   "services/api",
@@ -469,7 +578,9 @@ make -C ./builddir install
 				"-a", "--no-owner", "--no-group", "--delete-after", "--delete-excluded",
 				"--exclude", "/coverage",
 				"--exclude", "/log",
+				"--exclude", "/node_modules",
 				"--exclude", "/tmp",
+				"--exclude", "/public/assets",
 				"--exclude", "/vendor",
 				"--exclude", "/config/environments",
 				"./", "/var/lib/arvados/"+dstdir+"/")
@@ -481,14 +592,25 @@ make -C ./builddir install
 				return 1
 			}
 			for _, cmdline := range [][]string{
-				{"mkdir", "-p", "log", "tmp", ".bundle", "/var/www/.gem", "/var/www/.bundle", "/var/www/.passenger"},
+				{"mkdir", "-p", "log", "public/assets", "tmp", "vendor", ".bundle", "/var/www/.bundle", "/var/www/.gem", "/var/www/.npm", "/var/www/.passenger"},
 				{"touch", "log/production.log"},
-				{"chown", "-R", "--from=root", "www-data:www-data", "/var/www/.gem", "/var/www/.bundle", "/var/www/.passenger", "log", "tmp", ".bundle", "Gemfile.lock", "config.ru", "config/environment.rb"},
-				{"sudo", "-u", "www-data", "/var/lib/arvados/bin/gem", "install", "--user", "--conservative", "--no-document", "bundler:2.2.19"},
-				{"sudo", "-u", "www-data", "/var/lib/arvados/bin/bundle", "install", "--deployment", "--jobs", "8", "--path", "/var/www/.gem"},
+				{"chown", "-R", "--from=root", "www-data:www-data", "/var/www/.bundle", "/var/www/.gem", "/var/www/.npm", "/var/www/.passenger", "log", "tmp", "vendor", ".bundle", "Gemfile.lock", "config.ru", "config/environment.rb"},
+				{"sudo", "-u", "www-data", "/var/lib/arvados/bin/gem", "install", "--user", "--conservative", "--no-document", "bundler:" + bundlerversion},
+				{"sudo", "-u", "www-data", "/var/lib/arvados/bin/bundle", "install", "--deployment", "--jobs", "8", "--path", "/var/www/.gem", "--without", "development test diagnostics performance"},
+
+				{"chown", "www-data:www-data", ".", "public/assets"},
+				// {"sudo", "-u", "www-data", "/var/lib/arvados/bin/bundle", "config", "set", "--local", "system", "true"},
+				{"sudo", "-u", "www-data", "ARVADOS_CONFIG=none", "RAILS_GROUPS=assets", "RAILS_ENV=production", "/var/lib/arvados/bin/bundle", "exec", "rake", "npm:install"},
+				{"sudo", "-u", "www-data", "ARVADOS_CONFIG=none", "RAILS_GROUPS=assets", "RAILS_ENV=production", "/var/lib/arvados/bin/bundle", "exec", "rake", "assets:precompile"},
+				{"chown", "root:root", "."},
+				{"chown", "-R", "root:root", "public/assets", "vendor"},
+
 				{"sudo", "-u", "www-data", "/var/lib/arvados/bin/bundle", "exec", "passenger-config", "build-native-support"},
 				{"sudo", "-u", "www-data", "/var/lib/arvados/bin/bundle", "exec", "passenger-config", "install-standalone-runtime"},
 			} {
+				if cmdline[len(cmdline)-2] == "rake" && dstdir != "workbench1" {
+					continue
+				}
 				cmd = exec.Command(cmdline[0], cmdline[1:]...)
 				cmd.Dir = "/var/lib/arvados/" + dstdir
 				cmd.Stdout = stdout
@@ -513,38 +635,28 @@ make -C ./builddir install
 			}
 		}
 
-		// Install Go programs to /var/lib/arvados/bin/
-		for _, srcdir := range []string{
-			"cmd/arvados-client",
-			"cmd/arvados-server",
-			"services/arv-git-httpd",
-			"services/crunch-dispatch-local",
-			"services/crunch-dispatch-slurm",
-			"services/health",
-			"services/keep-balance",
-			"services/keep-web",
-			"services/keepproxy",
-			"services/keepstore",
-			"services/ws",
-		} {
-			fmt.Fprintf(stderr, "building %s...\n", srcdir)
-			cmd := exec.Command("go", "install", "-ldflags", "-X git.arvados.org/arvados.git/lib/cmd.version="+inst.PackageVersion+" -X main.version="+inst.PackageVersion)
-			cmd.Env = append(cmd.Env, os.Environ()...)
-			cmd.Env = append(cmd.Env, "GOBIN=/var/lib/arvados/bin")
-			cmd.Dir = filepath.Join(inst.SourcePath, srcdir)
-			cmd.Stdout = stdout
-			cmd.Stderr = stderr
-			err = cmd.Run()
-			if err != nil {
-				return 1
-			}
+		// Install workbench2 app to /var/lib/arvados/workbench2/
+		if err = inst.runBash(`
+cd /var/lib/arvados/arvados-workbench2
+VERSION="`+inst.PackageVersion+`" BUILD_NUMBER=1 GIT_COMMIT="`+workbench2version[:9]+`" yarn build
+rsync -a --delete-after build/ /var/lib/arvados/workbench2/
+`, stdout, stderr); err != nil {
+			return 1
 		}
 
-		// Copy assets from source tree to /var/lib/arvados/share
-		cmd := exec.Command("install", "-v", "-t", "/var/lib/arvados/share", filepath.Join(inst.SourcePath, "sdk/python/tests/nginx.conf"))
-		cmd.Stdout = stdout
-		cmd.Stderr = stderr
-		err = cmd.Run()
+		err = os.WriteFile("/lib/systemd/system/arvados.service", arvadosServiceFile, 0777)
+		if err != nil {
+			return 1
+		}
+		// This is equivalent to "systemd enable", but does
+		// not depend on the systemctl program being
+		// available.
+		symlink := "/etc/systemd/system/multi-user.target.wants/arvados.service"
+		err = os.Remove(symlink)
+		if err != nil && !errors.Is(err, os.ErrNotExist) {
+			return 1
+		}
+		err = os.Symlink("/lib/systemd/system/arvados.service", symlink)
 		if err != nil {
 			return 1
 		}

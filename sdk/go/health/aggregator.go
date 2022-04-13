@@ -6,8 +6,8 @@ package health
 
 import (
 	"context"
+	"crypto/tls"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"net/http"
 	"net/url"
@@ -35,7 +35,13 @@ type Aggregator struct {
 }
 
 func (agg *Aggregator) setup() {
-	agg.httpClient = http.DefaultClient
+	agg.httpClient = &http.Client{
+		Transport: &http.Transport{
+			TLSClientConfig: &tls.Config{
+				InsecureSkipVerify: agg.Cluster.TLS.Insecure,
+			},
+		},
+	}
 	if agg.timeout == 0 {
 		// this is always the case, except in the test suite
 		agg.timeout = defaultTimeout
@@ -127,7 +133,14 @@ func (agg *Aggregator) ClusterHealth() ClusterHealthResponse {
 		}
 		mtx.Unlock()
 
+		checkURLs := map[arvados.URL]bool{}
 		for addr := range svc.InternalURLs {
+			checkURLs[addr] = true
+		}
+		if len(checkURLs) == 0 && svc.ExternalURL.Host != "" {
+			checkURLs[svc.ExternalURL] = true
+		}
+		for addr := range checkURLs {
 			wg.Add(1)
 			go func(svcName arvados.ServiceName, addr arvados.URL) {
 				defer wg.Done()
@@ -176,19 +189,14 @@ func (agg *Aggregator) pingURL(svcURL arvados.URL) (*url.URL, error) {
 
 func (agg *Aggregator) ping(target *url.URL) (result CheckResult) {
 	t0 := time.Now()
-
-	var err error
 	defer func() {
 		result.ResponseTime = json.Number(fmt.Sprintf("%.6f", time.Since(t0).Seconds()))
-		if err != nil {
-			result.Health, result.Error = "ERROR", err.Error()
-		} else {
-			result.Health = "OK"
-		}
 	}()
+	result.Health = "ERROR"
 
 	req, err := http.NewRequest("GET", target.String(), nil)
 	if err != nil {
+		result.Error = err.Error()
 		return
 	}
 	req.Header.Set("Authorization", "Bearer "+agg.Cluster.ManagementToken)
@@ -201,22 +209,26 @@ func (agg *Aggregator) ping(target *url.URL) (result CheckResult) {
 	req = req.WithContext(ctx)
 	resp, err := agg.httpClient.Do(req)
 	if err != nil {
+		result.Error = err.Error()
 		return
 	}
 	result.HTTPStatusCode = resp.StatusCode
 	result.HTTPStatusText = resp.Status
 	err = json.NewDecoder(resp.Body).Decode(&result.Response)
 	if err != nil {
-		err = fmt.Errorf("cannot decode response: %s", err)
+		result.Error = fmt.Sprintf("cannot decode response: %s", err)
 	} else if resp.StatusCode != http.StatusOK {
-		err = fmt.Errorf("HTTP %d %s", resp.StatusCode, resp.Status)
+		result.Error = fmt.Sprintf("HTTP %d %s", resp.StatusCode, resp.Status)
 	} else if h, _ := result.Response["health"].(string); h != "OK" {
 		if e, ok := result.Response["error"].(string); ok && e != "" {
-			err = errors.New(e)
+			result.Error = e
+			return
 		} else {
-			err = fmt.Errorf("health=%q in ping response", h)
+			result.Error = fmt.Sprintf("health=%q in ping response", h)
+			return
 		}
 	}
+	result.Health = "OK"
 	return
 }
 
