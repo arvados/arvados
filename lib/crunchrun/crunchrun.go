@@ -2001,14 +2001,15 @@ func loadClusterConfigFile(path string, stderr io.Writer) *arvados.Cluster {
 	ldr.Path = path
 	cfg, err := ldr.Load()
 	if err != nil {
-		fmt.Fprintf(stderr, "could not load config file %s: %s", path, err)
+		fmt.Fprintf(stderr, "could not load config file %s: %s\n", path, err)
 		return nil
 	}
 	cluster, err := cfg.GetCluster("")
 	if err != nil {
-		fmt.Fprintf(stderr, "could not use config file %s: %s", path, err)
+		fmt.Fprintf(stderr, "could not use config file %s: %s\n", path, err)
 		return nil
 	}
+	fmt.Fprintf(stderr, "loaded config file %s\n", path)
 	return cluster
 }
 
