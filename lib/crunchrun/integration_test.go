@@ -39,6 +39,7 @@ type integrationSuite struct {
 
 	logCollection    arvados.Collection
 	outputCollection arvados.Collection
+	logFiles         map[string]string // filename => contents
 }
 
 func (s *integrationSuite) SetUpSuite(c *C) {
@@ -107,6 +108,7 @@ func (s *integrationSuite) SetUpTest(c *C) {
 	s.stderr = bytes.Buffer{}
 	s.logCollection = arvados.Collection{}
 	s.outputCollection = arvados.Collection{}
+	s.logFiles = map[string]string{}
 	s.cr = arvados.ContainerRequest{
 		Priority:       1,
 		State:          "Committed",
@@ -201,20 +203,22 @@ func (s *integrationSuite) TestRunTrivialContainerWithLocalKeepstore(c *C) {
 		s.engine = "docker"
 		s.testRunTrivialContainer(c)
 
-		fs, err := s.logCollection.FileSystem(s.client, s.kc)
-		c.Assert(err, IsNil)
-		f, err := fs.Open("keepstore.txt")
+		log, logExists := s.logFiles["keepstore.txt"]
 		if trial.logConfig == "none" {
-			c.Check(err, NotNil)
-			c.Check(os.IsNotExist(err), Equals, true)
+			c.Check(logExists, Equals, false)
 		} else {
-			c.Assert(err, IsNil)
-			buf, err := ioutil.ReadAll(f)
-			c.Assert(err, IsNil)
-			c.Check(string(buf), trial.matchGetReq, `(?ms).*"reqMethod":"GET".*`)
-			c.Check(string(buf), trial.matchPutReq, `(?ms).*"reqMethod":"PUT".*,"reqPath":"0e3bcff26d51c895a60ea0d4585e134d".*`)
+			c.Check(log, trial.matchGetReq, `(?ms).*"reqMethod":"GET".*`)
+			c.Check(log, trial.matchPutReq, `(?ms).*"reqMethod":"PUT".*,"reqPath":"0e3bcff26d51c895a60ea0d4585e134d".*`)
 		}
 	}
+
+	// Check that (1) config is loaded from $ARVADOS_CONFIG when
+	// not provided on stdin and (2) if a local keepstore is not
+	// started, crunch-run.txt explains why not.
+	s.SetUpTest(c)
+	s.stdin.Reset()
+	s.testRunTrivialContainer(c)
+	c.Check(s.logFiles["crunch-run.txt"], Matches, `(?ms).*not starting a local keepstore process because a volume \(zzzzz-nyw5e-000000000000000\) uses AccessViaHosts\n.*`)
 }
 
 func (s *integrationSuite) testRunTrivialContainer(c *C) {
@@ -257,6 +261,7 @@ func (s *integrationSuite) testRunTrivialContainer(c *C) {
 			buf, err := ioutil.ReadAll(f)
 			c.Assert(err, IsNil)
 			c.Logf("\n===== %s =====\n%s", fi.Name(), buf)
+			s.logFiles[fi.Name()] = string(buf)
 		}
 	}
 	s.logCollection = log
