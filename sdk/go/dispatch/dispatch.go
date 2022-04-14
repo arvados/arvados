@@ -98,6 +98,11 @@ func (d *Dispatcher) Run(ctx context.Context) error {
 		case <-poll.C:
 			break
 		case <-ctx.Done():
+			d.mtx.Lock()
+			defer d.mtx.Unlock()
+			for _, tracker := range d.trackers {
+				tracker.close()
+			}
 			return ctx.Err()
 		}
 

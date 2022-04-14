@@ -193,9 +193,14 @@ else
     make "$TARGET/generated"
 fi
 
+GOVERSION=$(grep 'const goversion =' $WORKSPACE/lib/install/deps.go |awk -F'"' '{print $2}')
+
 echo $TARGET
 cd $TARGET
-time docker build --tag "$IMAGE" --build-arg HOSTTYPE=$HOSTTYPE --build-arg BRANCH=$(git rev-parse --abbrev-ref HEAD) .
+time docker build --tag "$IMAGE" \
+  --build-arg HOSTTYPE=$HOSTTYPE \
+  --build-arg BRANCH=$(git rev-parse --abbrev-ref HEAD) \
+  --build-arg GOVERSION=$GOVERSION --no-cache .
 popd
 
 if test -z "$packages" ; then

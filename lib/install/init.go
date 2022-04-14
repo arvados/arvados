@@ -33,6 +33,8 @@ type initCommand struct {
 	ClusterID          string
 	Domain             string
 	PostgreSQLPassword string
+	Login              string
+	Insecure           bool
 }
 
 func (initcmd *initCommand) RunCommand(prog string, args []string, stdin io.Reader, stdout, stderr io.Writer) int {
@@ -59,6 +61,8 @@ func (initcmd *initCommand) RunCommand(prog string, args []string, stdin io.Read
 	versionFlag := flags.Bool("version", false, "Write version information to stdout and exit 0")
 	flags.StringVar(&initcmd.ClusterID, "cluster-id", "", "cluster `id`, like x1234 for a dev cluster")
 	flags.StringVar(&initcmd.Domain, "domain", hostname, "cluster public DNS `name`, like x1234.arvadosapi.com")
+	flags.StringVar(&initcmd.Login, "login", "", "login `backend`: test, pam, or ''")
+	flags.BoolVar(&initcmd.Insecure, "insecure", false, "accept invalid TLS certificates and configure TrustAllContent (do not use in production!)")
 	if ok, code := cmd.ParseFlags(flags, prog, args, "", stderr); !ok {
 		return code
 	} else if *versionFlag {
@@ -102,55 +106,58 @@ func (initcmd *initCommand) RunCommand(prog string, args []string, stdin io.Read
     Services:
       Controller:
         InternalURLs:
-          "http://0.0.0.0:8003/": {}
-        ExternalURL: {{printf "%q" ( print "https://" .Domain "/" ) }}
+          "http://0.0.0.0:9000/": {}
+        ExternalURL: {{printf "%q" ( print "https://" .Domain ":4440/" ) }}
       RailsAPI:
         InternalURLs:
-          "http://0.0.0.0:8004/": {}
+          "http://0.0.0.0:9001/": {}
       Websocket:
         InternalURLs:
-          "http://0.0.0.0:8005/": {}
-        ExternalURL: {{printf "%q" ( print "wss://ws." .Domain "/" ) }}
+          "http://0.0.0.0:9004/": {}
+        ExternalURL: {{printf "%q" ( print "wss://" .Domain ":4444/websocket" ) }}
       Keepbalance:
         InternalURLs:
-          "http://0.0.0.0:9005/": {}
+          "http://0.0.0.0:9019/": {}
       GitHTTP:
         InternalURLs:
-          "http://0.0.0.0:9001/": {}
-        ExternalURL: {{printf "%q" ( print "https://git." .Domain "/" ) }}
+          "http://0.0.0.0:9005/": {}
+        ExternalURL: {{printf "%q" ( print "https://" .Domain ":4445/" ) }}
       DispatchCloud:
         InternalURLs:
           "http://0.0.0.0:9006/": {}
       Keepproxy:
         InternalURLs:
-          "http://0.0.0.0:25108/": {}
-        ExternalURL: {{printf "%q" ( print "https://keep." .Domain "/" ) }}
+          "http://0.0.0.0:9007/": {}
+        ExternalURL: {{printf "%q" ( print "https://" .Domain ":4447/" ) }}
       WebDAV:
         InternalURLs:
-          "http://0.0.0.0:9002/": {}
-        ExternalURL: {{printf "%q" ( print "https://*.collections." .Domain "/" ) }}
+          "http://0.0.0.0:9008/": {}
+        ExternalURL: {{printf "%q" ( print "https://" .Domain ":4448/" ) }}
       WebDAVDownload:
         InternalURLs:
-          "http://0.0.0.0:8004/": {}
-        ExternalURL: {{printf "%q" ( print "https://download." .Domain "/" ) }}
+          "http://0.0.0.0:9009/": {}
+        ExternalURL: {{printf "%q" ( print "https://" .Domain ":4449/" ) }}
       Keepstore:
         InternalURLs:
-          "http://0.0.0.0:25107/": {}
+          "http://0.0.0.0:9010/": {}
       Composer:
-        ExternalURL: {{printf "%q" ( print "https://workbench." .Domain "/composer" ) }}
+        ExternalURL: {{printf "%q" ( print "https://" .Domain ":4459/composer" ) }}
       Workbench1:
         InternalURLs:
-          "http://0.0.0.0:8001/": {}
-        ExternalURL: {{printf "%q" ( print "https://workbench." .Domain "/" ) }}
-      #Workbench2:
-      #  InternalURLs:
-      #    "http://0.0.0.0:8002/": {}
-      #  ExternalURL: {{printf "%q" ( print "https://workbench2." .Domain "/" ) }}
+          "http://0.0.0.0:9002/": {}
+        ExternalURL: {{printf "%q" ( print "https://" .Domain ":4442/" ) }}
+      Workbench2:
+        InternalURLs:
+          "http://0.0.0.0:9003/": {}
+        ExternalURL: {{printf "%q" ( print "https://" .Domain "/" ) }}
       Health:
         InternalURLs:
-          "http://0.0.0.0:9007/": {}
+          "http://0.0.0.0:9011/": {}
     Collections:
       BlobSigningKey: {{printf "%q" ( .RandomHex 50 )}}
+      {{if .Insecure}}
+      TrustAllContent: true
+      {{end}}
     Containers:
       DispatchPrivateKey: {{printf "%q" .GenerateSSHPrivateKey}}
     ManagementToken: {{printf "%q" ( .RandomHex 50 )}}
@@ -161,8 +168,10 @@ func (initcmd *initCommand) RunCommand(prog string, args []string, stdin io.Read
         user: arvados
         password: {{printf "%q" .PostgreSQLPassword}}
     SystemRootToken: {{printf "%q" ( .RandomHex 50 )}}
+    {{if .Insecure}}
     TLS:
       Insecure: true
+    {{end}}
     Volumes:
       {{.ClusterID}}-nyw5e-000000000000000:
         Driver: Directory
@@ -171,6 +180,26 @@ func (initcmd *initCommand) RunCommand(prog string, args []string, stdin io.Read
         Replication: 2
     Workbench:
       SecretKeyBase: {{printf "%q" ( .RandomHex 50 )}}
+    Login:
+      {{if eq .Login "pam"}}
+      PAM:
+        Enable: true
+      {{else if eq .Login "test"}}
+      Test:
+        Enable: true
+        Users:
+          admin:
+            Email: admin@example.com
+            Password: admin
+      {{else}}
+      {}
+      {{end}}
+    Users:
+      {{if eq .Login "test"}}
+      AutoAdminUserWithEmail: admin@example.com
+      {{else}}
+      {}
+      {{end}}
 `)
 	if err != nil {
 		return 1

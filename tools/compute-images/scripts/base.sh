@@ -115,10 +115,9 @@ $SUDO systemctl daemon-reload
 $SUDO systemctl disable docker
 
 # Get Go and build singularity
-goversion=1.17.1
 mkdir -p /var/lib/arvados
 rm -rf /var/lib/arvados/go/
-curl -s https://storage.googleapis.com/golang/go${goversion}.linux-amd64.tar.gz | tar -C /var/lib/arvados -xzf -
+curl -s https://storage.googleapis.com/golang/go${GOVERSION}.linux-amd64.tar.gz | tar -C /var/lib/arvados -xzf -
 ln -sf /var/lib/arvados/go/bin/* /usr/local/bin/
 
 singularityversion=3.7.4

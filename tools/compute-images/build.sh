@@ -286,6 +286,9 @@ if [[ -n "$NVIDIA_GPU_SUPPORT" ]]; then
   EXTRA2+=" -var nvidia_gpu_support=$NVIDIA_GPU_SUPPORT"
 fi
 
+GOVERSION=$(grep 'const goversion =' ../../lib/install/deps.go |awk -F'"' '{print $2}')
+EXTRA2+=" -var goversion=$GOVERSION"
+
 echo
 packer version
 echo

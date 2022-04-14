@@ -27,9 +27,10 @@ ubuntu2004/generated: common-generated-all
 
 GOTARBALL_=DOES_NOT_EXIST
 NODETARBALL_=DOES_NOT_EXIST
-GOTARBALL_x86_64=go1.17.1.linux-amd64.tar.gz
+GOVERSION=$(shell grep 'const goversion =' ../../lib/install/deps.go |awk -F'"' '{print $$2}')
+GOTARBALL_x86_64=go$(GOVERSION).linux-amd64.tar.gz
 NODETARBALL_x86_64=node-v10.23.1-linux-x64.tar.xz
-GOTARBALL_aarch64=go1.17.1.linux-arm64.tar.gz
+GOTARBALL_aarch64=go$(GOVERSION).linux-arm64.tar.gz
 NODETARBALL_aarch64=node-v10.23.1-linux-arm64.tar.xz
 
 # Get the bash variable $HOSTTYPE (this requires the SHELL line above)

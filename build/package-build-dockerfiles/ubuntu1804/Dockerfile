@@ -4,10 +4,12 @@
 
 ARG HOSTTYPE
 ARG BRANCH
+ARG GOVERSION
 
 FROM ubuntu:bionic as build_x86_64
 # Install go
-ONBUILD ADD generated/go1.17.1.linux-amd64.tar.gz /usr/local/
+ONBUILD ARG GOVERSION
+ONBUILD ADD generated/go${GOVERSION}.linux-amd64.tar.gz /usr/local/
 ONBUILD RUN ln -s /usr/local/go/bin/go /usr/local/bin/
 # Install nodejs and npm
 ONBUILD ADD generated/node-v10.23.1-linux-x64.tar.xz /usr/local/
@@ -16,7 +18,8 @@ ONBUILD RUN ln -s /usr/local/node-v10.23.1-linux-x64/bin/* /usr/local/bin/
 
 FROM ubuntu:bionic as build_aarch64
 # Install go
-ONBUILD ADD generated/go1.17.1.linux-arm64.tar.gz /usr/local/
+ONBUILD ARG GOVERSION
+ONBUILD ADD generated/go${GOVERSION}.linux-arm64.tar.gz /usr/local/
 ONBUILD RUN ln -s /usr/local/go/bin/go /usr/local/bin/
 # Install nodejs and npm
 ONBUILD ADD generated/node-v10.23.1-linux-arm64.tar.xz /usr/local/
