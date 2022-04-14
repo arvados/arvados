@@ -21,11 +21,6 @@ interface Props {
     extractKey?: (item: any) => React.Key;
 }
 
-let prevRoute = '';
-let prevRefresh = '';
-let routeChanged = false;
-let isWorking = false;
-
 const mapStateToProps = (state: RootState, { id }: Props) => {
     const progress = state.progressIndicator.find(p => p.id === id);
     const dataExplorerState = getDataExplorer(state.dataExplorer, id);
@@ -33,23 +28,14 @@ const mapStateToProps = (state: RootState, { id }: Props) => {
     const currentRefresh = localStorage.getItem(LAST_REFRESH_TIMESTAMP) || '';
     const currentItemUuid = currentRoute === '/workflows' ? state.properties.workflowPanelDetailsUuid : state.detailsPanel.resourceUuid;
 
-    if (currentRoute !== prevRoute || currentRefresh !== prevRefresh) {
-        routeChanged = true;
-        prevRoute = currentRoute;
-        prevRefresh = currentRefresh;
-    }
-    if (progress?.working) {
-        isWorking = true;
-    }
-
-    const working = routeChanged && isWorking;
-
-    if (working && !progress?.working) {
-        routeChanged = false;
-        isWorking = false;
-    }
-
-    return { ...dataExplorerState, working, paperKey: currentRoute, currentItemUuid };
+    return {
+        ...dataExplorerState,
+        working: !!progress?.working,
+        currentRefresh: currentRefresh,
+        currentRoute: currentRoute,
+        paperKey: currentRoute,
+        currentItemUuid
+    };
 };
 
 const mapDispatchToProps = () => {

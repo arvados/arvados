@@ -66,6 +66,8 @@ interface DataExplorerDataProps<T> {
     contextMenuColumn: boolean;
     dataTableDefaultView?: React.ReactNode;
     working?: boolean;
+    currentRefresh?: string;
+    currentRoute?: string;
     hideColumnSelector?: boolean;
     paperProps?: PaperProps;
     actions?: React.ReactNode;
@@ -96,16 +98,55 @@ type DataExplorerProps<T> = DataExplorerDataProps<T> &
 
 export const DataExplorer = withStyles(styles)(
     class DataExplorerGeneric<T> extends React.Component<DataExplorerProps<T>> {
+        state = {
+            showLoading: false,
+            prevRefresh: '',
+            prevRoute: '',
+        };
+
+        componentDidUpdate(prevProps: DataExplorerProps<T>) {
+            const currentRefresh = this.props.currentRefresh || '';
+            const currentRoute = this.props.currentRoute || '';
+
+            if (currentRoute !== this.state.prevRoute) {
+                // Component already mounted, but the user comes from a route change,
+                // like browsing through a project hierarchy.
+                this.setState({
+                    showLoading: this.props.working,
+                    prevRoute: currentRoute,
+                });
+            }
+
+            if (currentRefresh !== this.state.prevRefresh) {
+                // Component already mounted, but the user just clicked the
+                // refresh button.
+                this.setState({
+                    showLoading: this.props.working,
+                    prevRefresh: currentRefresh,
+                });
+            }
+            if (this.state.showLoading && !this.props.working) {
+                this.setState({
+                    showLoading: false,
+                });
+            }
+        }
 
         componentDidMount() {
             if (this.props.onSetColumns) {
                 this.props.onSetColumns(this.props.columns);
             }
+            // Component just mounted, so we need to show the loading indicator.
+            this.setState({
+                showLoading: this.props.working,
+                prevRefresh: this.props.currentRefresh || '',
+                prevRoute: this.props.currentRoute || '',
+            });
         }
 
         render() {
             const {
-                columns, onContextMenu, onFiltersChange, onSortToggle, working, extractKey,
+                columns, onContextMenu, onFiltersChange, onSortToggle, extractKey,
                 rowsPerPage, rowsPerPageOptions, onColumnToggle, searchLabel, searchValue, onSearch,
                 items, itemsAvailable, onRowClick, onRowDoubleClick, classes,
                 dataTableDefaultView, hideColumnSelector, actions, paperProps, hideSearchInput,
@@ -113,8 +154,7 @@ export const DataExplorer = withStyles(styles)(
                 doHidePanel, doMaximizePanel, panelName, panelMaximized, elementPath
             } = this.props;
 
-            const dataCy = this.props["data-cy"];
-            return <Paper className={classes.root} {...paperProps} key={paperKey} data-cy={dataCy}>
+            return <Paper className={classes.root} {...paperProps} key={paperKey} data-cy={this.props["data-cy"]}>
                 <Grid container direction="column" wrap="nowrap" className={classes.container}>
                     <div>
                         {title && <Grid item xs className={classes.title}>{title}</Grid>}
@@ -156,7 +196,7 @@ export const DataExplorer = withStyles(styles)(
                     onFiltersChange={onFiltersChange}
                     onSortToggle={onSortToggle}
                     extractKey={extractKey}
-                    working={working}
+                    working={this.state.showLoading}
                     defaultView={dataTableDefaultView}
                     currentItemUuid={currentItemUuid}
                     currentRoute={paperKey} /></Grid>
