@@ -809,7 +809,11 @@ func (super *Supervisor) autofillConfig(cfg *arvados.Config) error {
 }
 
 func addrIsLocal(addr string) (bool, error) {
-	return true, nil
+	if h, _, err := net.SplitHostPort(addr); err != nil {
+		return false, err
+	} else {
+		addr = net.JoinHostPort(h, "0")
+	}
 	listener, err := net.Listen("tcp", addr)
 	if err == nil {
 		listener.Close()
