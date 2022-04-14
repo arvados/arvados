@@ -199,7 +199,6 @@ class ArvPathMapper(PathMapper):
                                            "Directory" if os.path.isdir(ab) else "File", True)
 
         for srcobj in referenced_files:
-            print("na na na", srcobj, srcobj["location"].endswith("/"+srcobj["basename"]))
             remap = []
             if srcobj["class"] == "Directory" and srcobj["location"] not in self._pathmap:
                 c = arvados.collection.Collection(api_client=self.arvrunner.api,
