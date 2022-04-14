@@ -167,6 +167,7 @@ type ContainerRunner struct {
 	enableMemoryLimit bool
 	enableNetwork     string // one of "default" or "always"
 	networkMode       string // "none", "host", or "" -- passed through to executor
+	brokenNodeHook    string // script to run if node appears to be broken
 	arvMountLog       *ThrottledLogger
 
 	containerWatchdogInterval time.Duration
@@ -210,10 +211,9 @@ var errorBlacklist = []string{
 	"(?ms).*oci runtime error.*starting container process.*container init.*mounting.*to rootfs.*no such file or directory.*",
 	"(?ms).*grpc: the connection is unavailable.*",
 }
-var brokenNodeHook *string = flag.String("broken-node-hook", "", "Script to run if node is detected to be broken (for example, Docker daemon is not running)")
 
 func (runner *ContainerRunner) runBrokenNodeHook() {
-	if *brokenNodeHook == "" {
+	if runner.brokenNodeHook == "" {
 		path := filepath.Join(lockdir, brokenfile)
 		runner.CrunchLog.Printf("Writing %s to mark node as broken", path)
 		f, err := os.OpenFile(path, os.O_CREATE|os.O_RDWR, 0700)
@@ -223,9 +223,9 @@ func (runner *ContainerRunner) runBrokenNodeHook() {
 		}
 		f.Close()
 	} else {
-		runner.CrunchLog.Printf("Running broken node hook %q", *brokenNodeHook)
+		runner.CrunchLog.Printf("Running broken node hook %q", runner.brokenNodeHook)
 		// run killme script
-		c := exec.Command(*brokenNodeHook)
+		c := exec.Command(runner.brokenNodeHook)
 		c.Stdout = runner.CrunchLog
 		c.Stderr = runner.CrunchLog
 		err := c.Run()
@@ -1730,6 +1730,7 @@ func (command) RunCommand(prog string, args []string, stdin io.Reader, stdout, s
 	networkMode := flags.String("container-network-mode", "default", `Docker network mode for container (use any argument valid for docker --net)`)
 	memprofile := flags.String("memprofile", "", "write memory profile to `file` after running container")
 	runtimeEngine := flags.String("runtime-engine", "docker", "container runtime: docker or singularity")
+	brokenNodeHook := flags.String("broken-node-hook", "", "script to run if node is detected to be broken (for example, Docker daemon is not running)")
 	flags.Duration("check-containerd", 0, "Ignored. Exists for compatibility with older versions.")
 
 	ignoreDetachFlag := false
@@ -1882,6 +1883,8 @@ func (command) RunCommand(prog string, args []string, stdin io.Reader, stdout, s
 		return 1
 	}
 	defer cr.executor.Close()
+
+	cr.brokenNodeHook = *brokenNodeHook
 
 	gwAuthSecret := os.Getenv("GatewayAuthSecret")
 	os.Unsetenv("GatewayAuthSecret")
