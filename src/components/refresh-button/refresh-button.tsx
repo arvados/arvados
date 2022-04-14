@@ -26,12 +26,17 @@ interface RefreshButtonProps {
     onClick?: () => void;
 }
 
+export const LAST_REFRESH_TIMESTAMP = 'lastRefreshTimestamp';
+
 export const RefreshButton = ({ history, classes, onClick }: RouteComponentProps & WithStyles<CssRules> & RefreshButtonProps) =>
     <Button
         color="primary"
         size="small"
         variant="contained"
         onClick={() => {
+            // Notify interested parties that the refresh button was clicked.
+            const now = (new Date()).getTime();
+            localStorage.setItem(LAST_REFRESH_TIMESTAMP, now.toString());
             history.replace(window.location.pathname);
             if (onClick) {
                 onClick();
