@@ -969,15 +969,25 @@ Clusters:
       # A zero value disables this feature.
       #
       # In order for this feature to be activated, no volume may use
-      # AccessViaHosts, and each volume must have Replication higher
-      # than Collections.DefaultReplication. If these requirements are
-      # not satisfied, the feature is disabled automatically
-      # regardless of the value given here.
+      # AccessViaHosts, and no writable volume may have Replication
+      # lower than Collections.DefaultReplication. If these
+      # requirements are not satisfied, the feature is disabled
+      # automatically regardless of the value given here.
       #
-      # Note that when this configuration is enabled, the entire
-      # cluster configuration file, including the system root token,
-      # is copied to the worker node and held in memory for the
-      # duration of the container.
+      # When an HPC dispatcher is in use (see SLURM and LSF sections),
+      # this feature depends on the operator to ensure an up-to-date
+      # cluster configuration file (/etc/arvados/config.yml) is
+      # available on all compute nodes. If it is missing or not
+      # readable by the crunch-run user, the feature will be disabled
+      # automatically. To read it from a different location, add a
+      # "-config=/path/to/config.yml" argument to
+      # CrunchRunArgumentsList above.
+      #
+      # When the cloud dispatcher is in use (see CloudVMs section) and
+      # this configuration is enabled, the entire cluster
+      # configuration file, including the system root token, is copied
+      # to the worker node and held in memory for the duration of the
+      # container.
       LocalKeepBlobBuffersPerVCPU: 1
 
       # When running a dedicated keepstore process for a container
