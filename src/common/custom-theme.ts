@@ -31,6 +31,7 @@ interface Colors {
     blue500: string;
     grey500: string;
     purple: string;
+    orange: string;
 }
 
 const arvadosPurple = '#361336';
@@ -53,7 +54,8 @@ export const themeOptions: ArvadosThemeOptions = {
             red900: red['900'],
             blue500: blue['500'],
             grey500: grey500,
-            purple: arvadosPurple
+            purple: arvadosPurple,
+            orange: '#f0ad4e',
         }
     },
     overrides: {

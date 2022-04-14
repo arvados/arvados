@@ -82,6 +82,7 @@ export const getProcessStatusColor = (status: string, { customs }: ArvadosTheme)
         case ProcessStatus.WARNING:
             return customs.colors.yellow700;
         case ProcessStatus.FAILING:
+            return customs.colors.orange;
         case ProcessStatus.CANCELLED:
         case ProcessStatus.FAILED:
             return customs.colors.red900;

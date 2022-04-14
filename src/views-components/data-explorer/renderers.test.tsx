@@ -33,6 +33,7 @@ describe('renderers', () => {
                         green700: 'rgb(0, 255, 0)',
                         yellow700: 'rgb(255, 255, 0)',
                         red900: 'rgb(255, 0, 0)',
+                        orange: 'rgb(240, 173, 78)',
                         grey500: 'rgb(128, 128, 128)',
                     }
                 },
@@ -50,7 +51,7 @@ describe('renderers', () => {
         [
             // CR Status ; Priority ; C Status ; Exit Code ; C RuntimeStatus ; Expected label ; Expected Color
             [CR.COMMITTED, 1, C.RUNNING, null, {}, PS.RUNNING, props.theme.customs.colors.blue500],
-            [CR.COMMITTED, 1, C.RUNNING, null, {error: 'whoops'}, PS.FAILING, props.theme.customs.colors.red900],
+            [CR.COMMITTED, 1, C.RUNNING, null, {error: 'whoops'}, PS.FAILING, props.theme.customs.colors.orange],
             [CR.COMMITTED, 1, C.RUNNING, null, {warning: 'watch out!'}, PS.WARNING, props.theme.customs.colors.yellow700],
             [CR.FINAL, 1, C.CANCELLED, null, {}, PS.CANCELLED, props.theme.customs.colors.red900],
             [CR.FINAL, 1, C.COMPLETE, 137, {}, PS.FAILED, props.theme.customs.colors.red900],
