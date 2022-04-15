@@ -787,6 +787,28 @@ class Arvados::V1::GroupsControllerTest < ActionController::TestCase
     end
   end
 
+  # the group class overrides the destroy method. Make sure that the destroyed
+  # object is returned
+  [
+    {group_class: "project"},
+    {group_class: "role"},
+    {group_class: "filter", properties: {"filters":[]}},
+  ].each do |params|
+    test "destroy group #{params} returns object" do
+      authorize_with :active
+
+      group = Group.create!(params)
+
+      post :destroy, params: {
+            id: group.uuid,
+            format: :json,
+          }
+      assert_response :success
+      assert_not_nil json_response
+      assert_equal group.uuid, json_response["uuid"]
+    end
+  end
+
   test 'get shared owned by another user' do
     authorize_with :user_bar_in_sharing_group
 
