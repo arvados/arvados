@@ -20,10 +20,14 @@ import (
 	"git.arvados.org/arvados.git/lib/cmd"
 	"git.arvados.org/arvados.git/lib/config"
 	"git.arvados.org/arvados.git/sdk/go/arvados"
+	"git.arvados.org/arvados.git/sdk/go/auth"
 	"git.arvados.org/arvados.git/sdk/go/ctxlog"
+	"git.arvados.org/arvados.git/sdk/go/health"
 	"git.arvados.org/arvados.git/sdk/go/httpserver"
 	"github.com/coreos/go-systemd/daemon"
+	"github.com/julienschmidt/httprouter"
 	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/sirupsen/logrus"
 )
 
@@ -126,7 +130,9 @@ func (c *command) RunCommand(prog string, args []string, stdin io.Reader, stdout
 		httpserver.HandlerWithDeadline(cluster.API.RequestTimeout.Duration(),
 			httpserver.AddRequestIDs(
 				httpserver.LogRequests(
-					httpserver.NewRequestLimiter(cluster.API.MaxConcurrentRequests, handler, reg)))))
+					interceptHealthReqs(cluster.ManagementToken, handler.CheckHealth,
+						interceptMetricsReqs(cluster.ManagementToken, reg, log,
+							httpserver.NewRequestLimiter(cluster.API.MaxConcurrentRequests, handler, reg)))))))
 	srv := &httpserver.Server{
 		Server: http.Server{
 			Handler:     instrumented.ServeAPI(cluster.ManagementToken, instrumented),
@@ -170,6 +176,29 @@ func (c *command) RunCommand(prog string, args []string, stdin io.Reader, stdout
 		return 1
 	}
 	return 0
+}
+
+func interceptHealthReqs(mgtToken string, checkHealth func() error, next http.Handler) http.Handler {
+	mux := httprouter.New()
+	mux.Handler("GET", "/_health/ping", &health.Handler{
+		Token:  mgtToken,
+		Prefix: "/_health/",
+		Routes: health.Routes{"ping": checkHealth},
+	})
+	mux.NotFound = next
+	return mux
+}
+
+func interceptMetricsReqs(mgtToken string, reg *prometheus.Registry, log logrus.FieldLogger, next http.Handler) http.Handler {
+	mux := httprouter.New()
+	metricsH := auth.RequireLiteralToken(mgtToken,
+		promhttp.HandlerFor(reg, promhttp.HandlerOpts{
+			ErrorLog: log,
+		}))
+	mux.Handler("GET", "/metrics", metricsH)
+	mux.Handler("GET", "/metrics.json", metricsH)
+	mux.NotFound = next
+	return mux
 }
 
 func getListenAddr(svcs arvados.Services, prog arvados.ServiceName, log logrus.FieldLogger) (arvados.URL, error) {
