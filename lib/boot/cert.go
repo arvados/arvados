@@ -26,20 +26,8 @@ func (createCertificates) String() string {
 }
 
 func (createCertificates) Run(ctx context.Context, fail func(error), super *Supervisor) error {
-	var san string
-	if net.ParseIP(super.ListenHost) != nil {
-		san += fmt.Sprintf(",IP:%s", super.ListenHost)
-	} else {
-		san += fmt.Sprintf(",DNS:%s", super.ListenHost)
-	}
-	hostname, err := os.Hostname()
-	if err != nil {
-		return fmt.Errorf("hostname: %w", err)
-	}
-	san += ",DNS:" + hostname
-
 	// Generate root key
-	err = super.RunProgram(ctx, super.tempdir, runOptions{}, "openssl", "genrsa", "-out", "rootCA.key", "4096")
+	err := super.RunProgram(ctx, super.tempdir, runOptions{}, "openssl", "genrsa", "-out", "rootCA.key", "4096")
 	if err != nil {
 		return err
 	}
@@ -58,7 +46,20 @@ func (createCertificates) Run(ctx context.Context, fail func(error), super *Supe
 	if err != nil {
 		return err
 	}
-	err = ioutil.WriteFile(filepath.Join(super.tempdir, "server.cfg"), append(defaultconf, []byte(fmt.Sprintf("\n[SAN]\nsubjectAltName=DNS:localhost,DNS:localhost.localdomain%s\n", san))...), 0644)
+	hostname, err := os.Hostname()
+	if err != nil {
+		return fmt.Errorf("hostname: %w", err)
+	}
+	san := "DNS:localhost,DNS:localhost.localdomain,DNS:" + hostname
+	if super.ListenHost == hostname || super.ListenHost == "localhost" {
+		// already have it
+	} else if net.ParseIP(super.ListenHost) != nil {
+		san += fmt.Sprintf(",IP:%s", super.ListenHost)
+	} else {
+		san += fmt.Sprintf(",DNS:%s", super.ListenHost)
+	}
+	conf := append(defaultconf, []byte(fmt.Sprintf("\n[SAN]\nsubjectAltName=%s\n", san))...)
+	err = ioutil.WriteFile(filepath.Join(super.tempdir, "server.cfg"), conf, 0644)
 	if err != nil {
 		return err
 	}

@@ -14,8 +14,10 @@ var _ = Suite(&CgroupSuite{})
 
 func (s *CgroupSuite) TestFindCgroup(c *C) {
 	for _, s := range []string{"devices", "cpu", "cpuset"} {
-		g := findCgroup(s)
-		c.Check(g, Not(Equals), "")
+		g, err := findCgroup(s)
+		if c.Check(err, IsNil) {
+			c.Check(g, Not(Equals), "", Commentf("subsys %q", s))
+		}
 		c.Logf("cgroup(%q) == %q", s, g)
 	}
 }

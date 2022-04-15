@@ -10,10 +10,10 @@ import (
 	"flag"
 	"fmt"
 	"io"
+	"sort"
 	"time"
 
 	"git.arvados.org/arvados.git/lib/cmd"
-	"git.arvados.org/arvados.git/lib/config"
 	"git.arvados.org/arvados.git/sdk/go/ctxlog"
 )
 
@@ -56,17 +56,17 @@ func (bcmd bootCommand) run(ctx context.Context, prog string, args []string, std
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 	super := &Supervisor{
+		Stdin:  stdin,
 		Stderr: stderr,
 		logger: ctxlog.FromContext(ctx),
 	}
 
 	flags := flag.NewFlagSet(prog, flag.ContinueOnError)
-	loader := config.NewLoader(stdin, super.logger)
-	loader.SetupFlags(flags)
 	versionFlag := flags.Bool("version", false, "Write version information to stdout and exit 0")
+	flags.StringVar(&super.ConfigPath, "config", "/etc/arvados/config.yml", "arvados config file `path`")
 	flags.StringVar(&super.SourcePath, "source", ".", "arvados source tree `directory`")
 	flags.StringVar(&super.ClusterType, "type", "production", "cluster `type`: development, test, or production")
-	flags.StringVar(&super.ListenHost, "listen-host", "localhost", "host name or interface address for service listeners")
+	flags.StringVar(&super.ListenHost, "listen-host", "localhost", "host name or interface address for external services, and internal services whose InternalURLs are not configured")
 	flags.StringVar(&super.ControllerAddr, "controller-address", ":0", "desired controller address, `host:port` or `:port`")
 	flags.StringVar(&super.Workbench2Source, "workbench2-source", "../arvados-workbench2", "path to arvados-workbench2 source tree")
 	flags.BoolVar(&super.NoWorkbench1, "no-workbench1", false, "do not run workbench1")
@@ -87,13 +87,7 @@ func (bcmd bootCommand) run(ctx context.Context, prog string, args []string, std
 		return fmt.Errorf("cluster type must be 'development', 'test', or 'production'")
 	}
 
-	loader.SkipAPICalls = true
-	cfg, err := loader.Load()
-	if err != nil {
-		return err
-	}
-
-	super.Start(ctx, cfg, loader.Path)
+	super.Start(ctx)
 	defer super.Stop()
 
 	var timer *time.Timer
@@ -101,17 +95,35 @@ func (bcmd bootCommand) run(ctx context.Context, prog string, args []string, std
 		timer = time.AfterFunc(*timeout, super.Stop)
 	}
 
-	url, ok := super.WaitReady()
+	ok := super.WaitReady()
 	if timer != nil && !timer.Stop() {
 		return errors.New("boot timed out")
 	} else if !ok {
 		super.logger.Error("boot failed")
 	} else {
-		// Write controller URL to stdout. Nothing else goes
-		// to stdout, so this provides an easy way for a
-		// calling script to discover the controller URL when
-		// everything is ready.
-		fmt.Fprintln(stdout, url)
+		// Write each cluster's controller URL, id, and URL
+		// host:port to stdout.  Nothing else goes to stdout,
+		// so this allows a calling script to determine when
+		// the cluster is ready to use, and the controller's
+		// host:port (which may have been dynamically assigned
+		// depending on config/options).
+		//
+		// Sort output by cluster ID for convenience.
+		var ids []string
+		for id := range super.Clusters() {
+			ids = append(ids, id)
+		}
+		sort.Strings(ids)
+		for _, id := range ids {
+			cc := super.Cluster(id)
+			// Providing both scheme://host:port and
+			// host:port is redundant, but convenient.
+			fmt.Fprintln(stdout, cc.Services.Controller.ExternalURL, id, cc.Services.Controller.ExternalURL.Host)
+		}
+		// Write ".\n" to mark the end of the list of
+		// controllers, in case the caller doesn't already
+		// know how many clusters are coming up.
+		fmt.Fprintln(stdout, ".")
 		if *shutdown {
 			super.Stop()
 			// Wait for children to exit. Don't report the

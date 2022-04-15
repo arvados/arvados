@@ -50,7 +50,6 @@ type TestSuite struct {
 }
 
 func (s *TestSuite) SetUpTest(c *C) {
-	*brokenNodeHook = ""
 	s.client = arvados.NewClientFromEnv()
 	s.executor = &stubExecutor{}
 	var err error
@@ -1914,8 +1913,8 @@ func (s *TestSuite) TestFullBrokenDocker(c *C) {
 		func() {
 			c.Log("// loadErr = cannot connect")
 			s.executor.loadErr = errors.New("Cannot connect to the Docker daemon at unix:///var/run/docker.sock. Is the docker daemon running?")
-			*brokenNodeHook = c.MkDir() + "/broken-node-hook"
-			err := ioutil.WriteFile(*brokenNodeHook, []byte("#!/bin/sh\nexec echo killme\n"), 0700)
+			s.runner.brokenNodeHook = c.MkDir() + "/broken-node-hook"
+			err := ioutil.WriteFile(s.runner.brokenNodeHook, []byte("#!/bin/sh\nexec echo killme\n"), 0700)
 			c.Assert(err, IsNil)
 			nextState = "Queued"
 		},
@@ -1935,7 +1934,7 @@ func (s *TestSuite) TestFullBrokenDocker(c *C) {
 }`, nil, 0, func() {})
 		c.Check(s.api.CalledWith("container.state", nextState), NotNil)
 		c.Check(s.api.Logs["crunch-run"].String(), Matches, "(?ms).*unable to run containers.*")
-		if *brokenNodeHook != "" {
+		if s.runner.brokenNodeHook != "" {
 			c.Check(s.api.Logs["crunch-run"].String(), Matches, "(?ms).*Running broken node hook.*")
 			c.Check(s.api.Logs["crunch-run"].String(), Matches, "(?ms).*killme.*")
 			c.Check(s.api.Logs["crunch-run"].String(), Not(Matches), "(?ms).*Writing /var/lock/crunch-run-broken to mark node as broken.*")

@@ -32,6 +32,7 @@ type integrationSuite struct {
 	stdin  bytes.Buffer
 	stdout bytes.Buffer
 	stderr bytes.Buffer
+	args   []string
 	cr     arvados.ContainerRequest
 	client *arvados.Client
 	ac     *arvadosclient.ArvadosClient
@@ -39,6 +40,7 @@ type integrationSuite struct {
 
 	logCollection    arvados.Collection
 	outputCollection arvados.Collection
+	logFiles         map[string]string // filename => contents
 }
 
 func (s *integrationSuite) SetUpSuite(c *C) {
@@ -102,11 +104,13 @@ func (s *integrationSuite) TearDownSuite(c *C) {
 func (s *integrationSuite) SetUpTest(c *C) {
 	os.Unsetenv("ARVADOS_KEEP_SERVICES")
 	s.engine = "docker"
+	s.args = nil
 	s.stdin = bytes.Buffer{}
 	s.stdout = bytes.Buffer{}
 	s.stderr = bytes.Buffer{}
 	s.logCollection = arvados.Collection{}
 	s.outputCollection = arvados.Collection{}
+	s.logFiles = map[string]string{}
 	s.cr = arvados.ContainerRequest{
 		Priority:       1,
 		State:          "Committed",
@@ -201,20 +205,42 @@ func (s *integrationSuite) TestRunTrivialContainerWithLocalKeepstore(c *C) {
 		s.engine = "docker"
 		s.testRunTrivialContainer(c)
 
-		fs, err := s.logCollection.FileSystem(s.client, s.kc)
-		c.Assert(err, IsNil)
-		f, err := fs.Open("keepstore.txt")
+		log, logExists := s.logFiles["keepstore.txt"]
 		if trial.logConfig == "none" {
-			c.Check(err, NotNil)
-			c.Check(os.IsNotExist(err), Equals, true)
+			c.Check(logExists, Equals, false)
 		} else {
-			c.Assert(err, IsNil)
-			buf, err := ioutil.ReadAll(f)
-			c.Assert(err, IsNil)
-			c.Check(string(buf), trial.matchGetReq, `(?ms).*"reqMethod":"GET".*`)
-			c.Check(string(buf), trial.matchPutReq, `(?ms).*"reqMethod":"PUT".*,"reqPath":"0e3bcff26d51c895a60ea0d4585e134d".*`)
+			c.Check(log, trial.matchGetReq, `(?ms).*"reqMethod":"GET".*`)
+			c.Check(log, trial.matchPutReq, `(?ms).*"reqMethod":"PUT".*,"reqPath":"0e3bcff26d51c895a60ea0d4585e134d".*`)
 		}
 	}
+
+	// Check that (1) config is loaded from $ARVADOS_CONFIG when
+	// not provided on stdin and (2) if a local keepstore is not
+	// started, crunch-run.txt explains why not.
+	s.SetUpTest(c)
+	s.stdin.Reset()
+	s.testRunTrivialContainer(c)
+	c.Check(s.logFiles["crunch-run.txt"], Matches, `(?ms).*not starting a local keepstore process because a volume \(zzzzz-nyw5e-000000000000000\) uses AccessViaHosts\n.*`)
+
+	// Check that config read errors are logged
+	s.SetUpTest(c)
+	s.args = []string{"-config", c.MkDir() + "/config-error.yaml"}
+	s.stdin.Reset()
+	s.testRunTrivialContainer(c)
+	c.Check(s.logFiles["crunch-run.txt"], Matches, `(?ms).*could not load config file \Q`+s.args[1]+`\E:.* no such file or directory\n.*`)
+
+	s.SetUpTest(c)
+	s.args = []string{"-config", c.MkDir() + "/config-unreadable.yaml"}
+	s.stdin.Reset()
+	err := ioutil.WriteFile(s.args[1], []byte{}, 0)
+	c.Check(err, IsNil)
+	s.testRunTrivialContainer(c)
+	c.Check(s.logFiles["crunch-run.txt"], Matches, `(?ms).*could not load config file \Q`+s.args[1]+`\E:.* permission denied\n.*`)
+
+	s.SetUpTest(c)
+	s.stdin.Reset()
+	s.testRunTrivialContainer(c)
+	c.Check(s.logFiles["crunch-run.txt"], Matches, `(?ms).*loaded config file \Q`+os.Getenv("ARVADOS_CONFIG")+`\E\n.*`)
 }
 
 func (s *integrationSuite) testRunTrivialContainer(c *C) {
@@ -227,11 +253,12 @@ func (s *integrationSuite) testRunTrivialContainer(c *C) {
 	args := []string{
 		"-runtime-engine=" + s.engine,
 		"-enable-memory-limit=false",
-		s.cr.ContainerUUID,
 	}
 	if s.stdin.Len() > 0 {
-		args = append([]string{"-stdin-config=true"}, args...)
+		args = append(args, "-stdin-config=true")
 	}
+	args = append(args, s.args...)
+	args = append(args, s.cr.ContainerUUID)
 	code := command{}.RunCommand("crunch-run", args, &s.stdin, io.MultiWriter(&s.stdout, os.Stderr), io.MultiWriter(&s.stderr, os.Stderr))
 	c.Logf("\n===== stdout =====\n%s", s.stdout.String())
 	c.Logf("\n===== stderr =====\n%s", s.stderr.String())
@@ -257,6 +284,7 @@ func (s *integrationSuite) testRunTrivialContainer(c *C) {
 			buf, err := ioutil.ReadAll(f)
 			c.Assert(err, IsNil)
 			c.Logf("\n===== %s =====\n%s", fi.Name(), buf)
+			s.logFiles[fi.Name()] = string(buf)
 		}
 	}
 	s.logCollection = log

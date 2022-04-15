@@ -17,21 +17,21 @@ table#users-storage-table .byte-value {
   </colgroup>
 
   <tr>
-    <th rowspan="2">User</th>
-    <th colspan="2">
+    <th scope="col" rowspan="2">User</th>
+    <th scope="col" colspan="2">
       Collections Read Size
     </th>
-    <th colspan="2">
+    <th scope="col" colspan="2">
       Collections Persisted Storage
     </th>
-    <th rowspan="2">Measured At</th>
+    <th scope="col" rowspan="2">Measured At</th>
   </tr>
   <tr>
     <% 2.times do %>
-    <th class="byte-value">
+    <th scope="col" class="byte-value">
       Total (unweighted)
     </th>
-    <th class="byte-value">
+    <th scope="col" class="byte-value">
       Shared (weighted)
     </th>
     <% end %>

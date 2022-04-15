@@ -15,7 +15,6 @@ function ArvadosClient(arvadosApiToken, arvadosDiscoveryUri) {
     return this;
     ////////////////////////////////
 
-    var that = this;
     var promiseDiscovery;
     var discoveryDoc;
 
