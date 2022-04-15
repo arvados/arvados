@@ -285,9 +285,17 @@ def upload_dependencies(arvrunner, name, document_loader,
 
     sc_result = scandeps(uri, scanobj,
                          loadref_fields,
-                         set(("$include", "$schemas", "location")),
+                         set(("$include", "location")),
                          loadref, urljoin=document_loader.fetcher.urljoin,
                          nestdirs=False)
+
+    optional_deps = scandeps(uri, scanobj,
+                                  loadref_fields,
+                                  set(("$schemas",)),
+                                  loadref, urljoin=document_loader.fetcher.urljoin,
+                                  nestdirs=False)
+
+    sc_result.extend(optional_deps)
 
     sc = []
     uuids = {}
@@ -345,24 +353,25 @@ def upload_dependencies(arvrunner, name, document_loader,
     if include_primary and "id" in workflowobj:
         sc.append({"class": "File", "location": workflowobj["id"]})
 
-    if "$schemas" in workflowobj:
-        for s in workflowobj["$schemas"]:
-            sc.append({"class": "File", "location": s})
+    #if "$schemas" in workflowobj:
+    #    for s in workflowobj["$schemas"]:
+    #        sc.append({"class": "File", "location": s})
 
     def visit_default(obj):
-        remove = [False]
+        #remove = [False]
         def ensure_default_location(f):
             if "location" not in f and "path" in f:
                 f["location"] = f["path"]
                 del f["path"]
-            if "location" in f and not arvrunner.fs_access.exists(f["location"]):
-                # Doesn't exist, remove from list of dependencies to upload
-                sc[:] = [x for x in sc if x["location"] != f["location"]]
-                # Delete "default" from workflowobj
-                remove[0] = True
+            optional_deps.append(f)
+            #if "location" in f and not arvrunner.fs_access.exists(f["location"]):
+            #    # Doesn't exist, remove from list of dependencies to upload
+            #    sc[:] = [x for x in sc if x["location"] != f["location"]]
+            #    # Delete "default" from workflowobj
+            #    remove[0] = True
         visit_class(obj["default"], ("File", "Directory"), ensure_default_location)
-        if remove[0]:
-            del obj["default"]
+        #if remove[0]:
+        #    del obj["default"]
 
     find_defaults(workflowobj, visit_default)
 
@@ -394,11 +403,16 @@ def upload_dependencies(arvrunner, name, document_loader,
         else:
             del discovered[d]
 
+    print("NN", sc)
+
     mapper = ArvPathMapper(arvrunner, sc, "",
                            "keep:%s",
                            "keep:%s/%s",
                            name=name,
-                           single_collection=True)
+                           single_collection=True,
+                           optional_deps=optional_deps)
+
+    print("whargh", mapper._pathmap)
 
     def setloc(p):
         loc = p.get("location")
