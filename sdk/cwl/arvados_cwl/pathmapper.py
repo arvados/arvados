@@ -163,7 +163,8 @@ class ArvPathMapper(PathMapper):
                 suffix = urllib.parse.quote(urllib.parse.unquote(loc[i+1:]), "/+@")
             else:
                 prefix = loc+"/"
-                suffix = ""
+        else:
+            suffix = loc[len(prefix):]
 
         if prefix+suffix != prefix+urllib.parse.quote(srcobj["basename"], "/+@"):
             return True
