@@ -156,17 +156,23 @@ class ArvPathMapper(PathMapper):
         if loc.startswith("_:"):
             return True
 
-        if not prefix:
-            i = loc.rfind("/")
-            if i > -1:
-                prefix = loc[:i+1]
-                suffix = urllib.parse.quote(urllib.parse.unquote(loc[i+1:]), "/+@")
-            else:
-                prefix = loc+"/"
+        i = loc.rfind("/")
+        if i > -1:
+            loc_prefix = loc[:i+1]
+            if not prefix:
+                prefix = loc_prefix
+            # quote/unquote to ensure consistent quoting
+            suffix = urllib.parse.quote(urllib.parse.unquote(loc[i+1:]), "/+@")
         else:
-            suffix = loc[len(prefix):]
+            # no '/' found
+            loc_prefix = loc+"/"
+            prefix = loc+"/"
+            suffix = ""
 
-        if "basename" in srcobj and prefix+suffix != prefix+urllib.parse.quote(srcobj["basename"], "/+@"):
+        if prefix != loc_prefix:
+            return True
+
+        if "basename" in srcobj and suffix != urllib.parse.quote(srcobj["basename"], "/+@"):
             return True
 
         if srcobj["class"] == "File" and loc not in self._pathmap:
@@ -175,7 +181,7 @@ class ArvPathMapper(PathMapper):
             if self.needs_new_collection(s, prefix):
                 return True
         if srcobj.get("listing"):
-            prefix = "%s%s/" % (prefix, srcobj["basename"])
+            prefix = "%s%s/" % (prefix, urllib.parse.quote(srcobj.get("basename", suffix), "/+@"))
             for l in srcobj["listing"]:
                 if self.needs_new_collection(l, prefix):
                     return True
