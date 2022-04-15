@@ -790,14 +790,14 @@ class Arvados::V1::GroupsControllerTest < ActionController::TestCase
   # the group class overrides the destroy method. Make sure that the destroyed
   # object is returned
   [
-    [group_class: "project"],
-    [group_class: "role"],
-    [group_class: "filter", properties: {"filters":[]}],
+    {group_class: "project"},
+    {group_class: "role"},
+    {group_class: "filter", properties: {"filters":[]}},
   ].each do |params|
     test "destroy group #{params} returns object" do
       authorize_with :active
 
-      group = Group.create!(params).first
+      group = Group.create!(params)
 
       post :destroy, params: {
             id: group.uuid,
