@@ -5,15 +5,13 @@
 package main
 
 import (
-	"bytes"
+	"context"
 	"net"
 	"os"
-	"path/filepath"
+	"time"
 
 	"git.arvados.org/arvados.git/lib/boot"
-	"git.arvados.org/arvados.git/lib/config"
 	"git.arvados.org/arvados.git/sdk/go/arvados"
-	"git.arvados.org/arvados.git/sdk/go/arvadostest"
 	"git.arvados.org/arvados.git/sdk/go/ctxlog"
 	check "gopkg.in/check.v1"
 )
@@ -23,29 +21,15 @@ var _ = check.Suite(&FederationSuite{})
 var origAPIHost, origAPIToken string
 
 type FederationSuite struct {
-	testClusters map[string]*boot.TestCluster
-	oidcprovider *arvadostest.OIDCProvider
+	super *boot.Supervisor
 }
 
 func (s *FederationSuite) SetUpSuite(c *check.C) {
 	origAPIHost = os.Getenv("ARVADOS_API_HOST")
 	origAPIToken = os.Getenv("ARVADOS_API_TOKEN")
 
-	cwd, _ := os.Getwd()
-
-	s.oidcprovider = arvadostest.NewOIDCProvider(c)
-	s.oidcprovider.AuthEmail = "user@example.com"
-	s.oidcprovider.AuthEmailVerified = true
-	s.oidcprovider.AuthName = "Example User"
-	s.oidcprovider.ValidClientID = "clientid"
-	s.oidcprovider.ValidClientSecret = "clientsecret"
-
-	s.testClusters = map[string]*boot.TestCluster{
-		"z1111": nil,
-		"z2222": nil,
-	}
 	hostport := map[string]string{}
-	for id := range s.testClusters {
+	for _, id := range []string{"z1111", "z2222"} {
 		hostport[id] = func() string {
 			// TODO: Instead of expecting random ports on
 			// 127.0.0.11, 22 to be race-safe, try
@@ -59,8 +43,9 @@ func (s *FederationSuite) SetUpSuite(c *check.C) {
 			return "127.0.0." + id[3:] + ":" + port
 		}()
 	}
-	for id := range s.testClusters {
-		yaml := `Clusters:
+	yaml := "Clusters:\n"
+	for id := range hostport {
+		yaml += `
   ` + id + `:
     Services:
       Controller:
@@ -90,13 +75,8 @@ func (s *FederationSuite) SetUpSuite(c *check.C) {
 			yaml += `
     Login:
       LoginCluster: z1111
-      OpenIDConnect:
+      PAM:
         Enable: true
-        Issuer: ` + s.oidcprovider.Issuer.URL + `
-        ClientID: ` + s.oidcprovider.ValidClientID + `
-        ClientSecret: ` + s.oidcprovider.ValidClientSecret + `
-        EmailClaim: email
-        EmailVerifiedClaim: email_verified
 `
 		} else {
 			yaml += `
@@ -104,30 +84,27 @@ func (s *FederationSuite) SetUpSuite(c *check.C) {
       LoginCluster: z1111
 `
 		}
+	}
+	s.super = &boot.Supervisor{
+		ClusterType:          "test",
+		ConfigYAML:           yaml,
+		Stderr:               ctxlog.LogWriter(c.Log),
+		NoWorkbench1:         true,
+		NoWorkbench2:         true,
+		OwnTemporaryDatabase: true,
+	}
 
-		loader := config.NewLoader(bytes.NewBufferString(yaml), ctxlog.TestLogger(c))
-		loader.Path = "-"
-		loader.SkipLegacy = true
-		loader.SkipAPICalls = true
-		cfg, err := loader.Load()
-		c.Assert(err, check.IsNil)
-		tc := boot.NewTestCluster(
-			filepath.Join(cwd, "..", ".."),
-			id, cfg, "127.0.0."+id[3:], c.Log)
-		tc.Super.NoWorkbench1 = true
-		tc.Super.NoWorkbench2 = true
-		tc.Start()
-		s.testClusters[id] = tc
-	}
-	for _, tc := range s.testClusters {
-		ok := tc.WaitReady()
-		c.Assert(ok, check.Equals, true)
-	}
+	// Give up if startup takes longer than 3m
+	timeout := time.AfterFunc(3*time.Minute, s.super.Stop)
+	defer timeout.Stop()
+	s.super.Start(context.Background())
+	ok := s.super.WaitReady()
+	c.Assert(ok, check.Equals, true)
 
 	// Activate user, make it admin.
-	conn1 := s.testClusters["z1111"].Conn()
-	rootctx1, _, _ := s.testClusters["z1111"].RootClients()
-	userctx1, _, _, _ := s.testClusters["z1111"].UserClients(rootctx1, c, conn1, s.oidcprovider.AuthEmail, true)
+	conn1 := s.super.Conn("z1111")
+	rootctx1, _, _ := s.super.RootClients("z1111")
+	userctx1, _, _, _ := s.super.UserClients("z1111", rootctx1, c, conn1, "admin@example.com", true)
 	user1, err := conn1.UserGetCurrent(userctx1, arvados.GetOptions{})
 	c.Assert(err, check.IsNil)
 	c.Assert(user1.IsAdmin, check.Equals, false)
@@ -142,25 +119,23 @@ func (s *FederationSuite) SetUpSuite(c *check.C) {
 }
 
 func (s *FederationSuite) TearDownSuite(c *check.C) {
-	for _, c := range s.testClusters {
-		c.Super.Stop()
-	}
+	s.super.Stop()
 	_ = os.Setenv("ARVADOS_API_HOST", origAPIHost)
 	_ = os.Setenv("ARVADOS_API_TOKEN", origAPIToken)
 }
 
 func (s *FederationSuite) TestGroupSyncingOnFederatedCluster(c *check.C) {
 	// Get admin user's V2 token
-	conn1 := s.testClusters["z1111"].Conn()
-	rootctx1, _, _ := s.testClusters["z1111"].RootClients()
-	userctx1, _, _, _ := s.testClusters["z1111"].UserClients(rootctx1, c, conn1, s.oidcprovider.AuthEmail, true)
+	conn1 := s.super.Conn("z1111")
+	rootctx1, _, _ := s.super.RootClients("z1111")
+	userctx1, _, _, _ := s.super.UserClients("z1111", rootctx1, c, conn1, "admin@example.com", true)
 	user1Auth, err := conn1.APIClientAuthorizationCurrent(userctx1, arvados.GetOptions{})
 	c.Check(err, check.IsNil)
 	userV2Token := user1Auth.TokenV2()
 
 	// Get federated admin clients on z2222 to set up environment
-	conn2 := s.testClusters["z2222"].Conn()
-	userctx2, userac2, _ := s.testClusters["z2222"].ClientsWithToken(userV2Token)
+	conn2 := s.super.Conn("z2222")
+	userctx2, userac2, _ := s.super.ClientsWithToken("z2222", userV2Token)
 	user2, err := conn2.UserGetCurrent(userctx2, arvados.GetOptions{})
 	c.Check(err, check.IsNil)
 	c.Check(user2.IsAdmin, check.Equals, true)
@@ -177,7 +152,7 @@ func (s *FederationSuite) TestGroupSyncingOnFederatedCluster(c *check.C) {
 		Filters: []arvados.Filter{{
 			Attr:     "owner_uuid",
 			Operator: "=",
-			Operand:  s.testClusters["z2222"].ClusterID + "-tpzed-000000000000000",
+			Operand:  s.super.Cluster("z2222").ClusterID + "-tpzed-000000000000000",
 		}, {
 			Attr:     "name",
 			Operator: "=",
