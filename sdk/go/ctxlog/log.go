@@ -93,6 +93,11 @@ func setFormat(logger *logrus.Logger, format string) {
 			FullTimestamp:   true,
 			TimestampFormat: rfc3339NanoFixed,
 		}
+	case "plain":
+		logger.Formatter = &logrus.TextFormatter{
+			DisableColors:    true,
+			DisableTimestamp: true,
+		}
 	case "json", "":
 		logger.Formatter = &logrus.JSONFormatter{
 			TimestampFormat: rfc3339NanoFixed,

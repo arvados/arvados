@@ -32,9 +32,11 @@ import (
 	"time"
 
 	"git.arvados.org/arvados.git/lib/cmd"
+	"git.arvados.org/arvados.git/lib/config"
 	"git.arvados.org/arvados.git/lib/crunchstat"
 	"git.arvados.org/arvados.git/sdk/go/arvados"
 	"git.arvados.org/arvados.git/sdk/go/arvadosclient"
+	"git.arvados.org/arvados.git/sdk/go/ctxlog"
 	"git.arvados.org/arvados.git/sdk/go/keepclient"
 	"git.arvados.org/arvados.git/sdk/go/manifest"
 	"golang.org/x/sys/unix"
@@ -167,6 +169,7 @@ type ContainerRunner struct {
 	enableMemoryLimit bool
 	enableNetwork     string // one of "default" or "always"
 	networkMode       string // "none", "host", or "" -- passed through to executor
+	brokenNodeHook    string // script to run if node appears to be broken
 	arvMountLog       *ThrottledLogger
 
 	containerWatchdogInterval time.Duration
@@ -210,10 +213,9 @@ var errorBlacklist = []string{
 	"(?ms).*oci runtime error.*starting container process.*container init.*mounting.*to rootfs.*no such file or directory.*",
 	"(?ms).*grpc: the connection is unavailable.*",
 }
-var brokenNodeHook *string = flag.String("broken-node-hook", "", "Script to run if node is detected to be broken (for example, Docker daemon is not running)")
 
 func (runner *ContainerRunner) runBrokenNodeHook() {
-	if *brokenNodeHook == "" {
+	if runner.brokenNodeHook == "" {
 		path := filepath.Join(lockdir, brokenfile)
 		runner.CrunchLog.Printf("Writing %s to mark node as broken", path)
 		f, err := os.OpenFile(path, os.O_CREATE|os.O_RDWR, 0700)
@@ -223,9 +225,9 @@ func (runner *ContainerRunner) runBrokenNodeHook() {
 		}
 		f.Close()
 	} else {
-		runner.CrunchLog.Printf("Running broken node hook %q", *brokenNodeHook)
+		runner.CrunchLog.Printf("Running broken node hook %q", runner.brokenNodeHook)
 		// run killme script
-		c := exec.Command(*brokenNodeHook)
+		c := exec.Command(runner.brokenNodeHook)
 		c.Stdout = runner.CrunchLog
 		c.Stderr = runner.CrunchLog
 		err := c.Run()
@@ -1722,6 +1724,7 @@ func (command) RunCommand(prog string, args []string, stdin io.Reader, stdout, s
 	caCertsPath := flags.String("ca-certs", "", "Path to TLS root certificates")
 	detach := flags.Bool("detach", false, "Detach from parent process and run in the background")
 	stdinConfig := flags.Bool("stdin-config", false, "Load config and environment variables from JSON message on stdin")
+	configFile := flags.String("config", arvados.DefaultConfigFile, "filename of cluster config file to try loading if -stdin-config=false (default is $ARVADOS_CONFIG)")
 	sleep := flags.Duration("sleep", 0, "Delay before starting (testing use only)")
 	kill := flags.Int("kill", -1, "Send signal to an existing crunch-run process for given UUID")
 	list := flags.Bool("list", false, "List UUIDs of existing crunch-run processes")
@@ -1730,6 +1733,7 @@ func (command) RunCommand(prog string, args []string, stdin io.Reader, stdout, s
 	networkMode := flags.String("container-network-mode", "default", `Docker network mode for container (use any argument valid for docker --net)`)
 	memprofile := flags.String("memprofile", "", "write memory profile to `file` after running container")
 	runtimeEngine := flags.String("runtime-engine", "docker", "container runtime: docker or singularity")
+	brokenNodeHook := flags.String("broken-node-hook", "", "script to run if node is detected to be broken (for example, Docker daemon is not running)")
 	flags.Duration("check-containerd", 0, "Ignored. Exists for compatibility with older versions.")
 
 	ignoreDetachFlag := false
@@ -1767,6 +1771,7 @@ func (command) RunCommand(prog string, args []string, stdin io.Reader, stdout, s
 		return 1
 	}
 
+	var keepstoreLogbuf bufThenWrite
 	var conf ConfigData
 	if *stdinConfig {
 		err := json.NewDecoder(stdin).Decode(&conf)
@@ -1788,6 +1793,8 @@ func (command) RunCommand(prog string, args []string, stdin io.Reader, stdout, s
 			// fill it using the container UUID prefix.
 			conf.Cluster.ClusterID = containerUUID[:5]
 		}
+	} else {
+		conf = hpcConfData(containerUUID, *configFile, io.MultiWriter(&keepstoreLogbuf, stderr))
 	}
 
 	log.Printf("crunch-run %s started", cmd.Version.String())
@@ -1797,7 +1804,6 @@ func (command) RunCommand(prog string, args []string, stdin io.Reader, stdout, s
 		arvadosclient.CertFiles = []string{*caCertsPath}
 	}
 
-	var keepstoreLogbuf bufThenWrite
 	keepstore, err := startLocalKeepstore(conf, io.MultiWriter(&keepstoreLogbuf, stderr))
 	if err != nil {
 		log.Print(err)
@@ -1883,6 +1889,8 @@ func (command) RunCommand(prog string, args []string, stdin io.Reader, stdout, s
 	}
 	defer cr.executor.Close()
 
+	cr.brokenNodeHook = *brokenNodeHook
+
 	gwAuthSecret := os.Getenv("GatewayAuthSecret")
 	os.Unsetenv("GatewayAuthSecret")
 	if gwAuthSecret == "" {
@@ -1923,7 +1931,11 @@ func (command) RunCommand(prog string, args []string, stdin io.Reader, stdout, s
 	cr.enableNetwork = *enableNetwork
 	cr.networkMode = *networkMode
 	if *cgroupParentSubsystem != "" {
-		p := findCgroup(*cgroupParentSubsystem)
+		p, err := findCgroup(*cgroupParentSubsystem)
+		if err != nil {
+			log.Printf("fatal: cgroup parent subsystem: %s", err)
+			return 1
+		}
 		cr.setCgroupParent = p
 		cr.expectCgroupParent = p
 	}
@@ -1952,8 +1964,62 @@ func (command) RunCommand(prog string, args []string, stdin io.Reader, stdout, s
 	return 0
 }
 
+// Try to load ConfigData in hpc (slurm/lsf) environment. This means
+// loading the cluster config from the specified file and (if that
+// works) getting the runtime_constraints container field from
+// controller to determine # VCPUs so we can calculate KeepBuffers.
+func hpcConfData(uuid string, configFile string, stderr io.Writer) ConfigData {
+	var conf ConfigData
+	conf.Cluster = loadClusterConfigFile(configFile, stderr)
+	if conf.Cluster == nil {
+		// skip loading the container record -- we won't be
+		// able to start local keepstore anyway.
+		return conf
+	}
+	arv, err := arvadosclient.MakeArvadosClient()
+	if err != nil {
+		fmt.Fprintf(stderr, "error setting up arvadosclient: %s\n", err)
+		return conf
+	}
+	arv.Retries = 8
+	var ctr arvados.Container
+	err = arv.Call("GET", "containers", uuid, "", arvadosclient.Dict{"select": []string{"runtime_constraints"}}, &ctr)
+	if err != nil {
+		fmt.Fprintf(stderr, "error getting container record: %s\n", err)
+		return conf
+	}
+	if ctr.RuntimeConstraints.VCPUs > 0 {
+		conf.KeepBuffers = ctr.RuntimeConstraints.VCPUs * conf.Cluster.Containers.LocalKeepBlobBuffersPerVCPU
+	}
+	return conf
+}
+
+// Load cluster config file from given path. If an error occurs, log
+// the error to stderr and return nil.
+func loadClusterConfigFile(path string, stderr io.Writer) *arvados.Cluster {
+	ldr := config.NewLoader(&bytes.Buffer{}, ctxlog.New(stderr, "plain", "info"))
+	ldr.Path = path
+	cfg, err := ldr.Load()
+	if err != nil {
+		fmt.Fprintf(stderr, "could not load config file %s: %s\n", path, err)
+		return nil
+	}
+	cluster, err := cfg.GetCluster("")
+	if err != nil {
+		fmt.Fprintf(stderr, "could not use config file %s: %s\n", path, err)
+		return nil
+	}
+	fmt.Fprintf(stderr, "loaded config file %s\n", path)
+	return cluster
+}
+
 func startLocalKeepstore(configData ConfigData, logbuf io.Writer) (*exec.Cmd, error) {
-	if configData.Cluster == nil || configData.KeepBuffers < 1 {
+	if configData.KeepBuffers < 1 {
+		fmt.Fprintf(logbuf, "not starting a local keepstore process because KeepBuffers=%v in config\n", configData.KeepBuffers)
+		return nil, nil
+	}
+	if configData.Cluster == nil {
+		fmt.Fprint(logbuf, "not starting a local keepstore process because cluster config file was not loaded\n")
 		return nil, nil
 	}
 	for uuid, vol := range configData.Cluster.Volumes {
