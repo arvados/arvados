@@ -581,17 +581,17 @@ def run_arv_git_httpd():
     gitport = internal_port_from_config("GitHTTP")
     env = os.environ.copy()
     env.pop('ARVADOS_API_TOKEN', None)
-    logf = open(_logfilename('githttp'), WRITE_MODE)
+    logf = open(_logfilename('githttpd'), WRITE_MODE)
     agh = subprocess.Popen(['arvados-server', 'git-httpd'],
         env=env, stdin=open('/dev/null'), stdout=logf, stderr=logf)
-    with open(_pidfile('githttp'), 'w') as f:
+    with open(_pidfile('githttpd'), 'w') as f:
         f.write(str(agh.pid))
     _wait_until_port_listens(gitport)
 
 def stop_arv_git_httpd():
     if 'ARVADOS_TEST_PROXY_SERVICES' in os.environ:
         return
-    kill_server_pid(_pidfile('githttp'))
+    kill_server_pid(_pidfile('githttpd'))
 
 def run_keep_web():
     if 'ARVADOS_TEST_PROXY_SERVICES' in os.environ:
@@ -942,7 +942,7 @@ if __name__ == "__main__":
         'start_keep', 'stop_keep',
         'start_keep_proxy', 'stop_keep_proxy',
         'start_keep-web', 'stop_keep-web',
-        'start_githttp', 'stop_githttp',
+        'start_githttpd', 'stop_githttpd',
         'start_nginx', 'stop_nginx', 'setup_config',
     ]
     parser = argparse.ArgumentParser()
@@ -987,9 +987,9 @@ if __name__ == "__main__":
         run_keep_proxy()
     elif args.action == 'stop_keep_proxy':
         stop_keep_proxy()
-    elif args.action == 'start_githttp':
+    elif args.action == 'start_githttpd':
         run_arv_git_httpd()
-    elif args.action == 'stop_githttp':
+    elif args.action == 'stop_githttpd':
         stop_arv_git_httpd()
     elif args.action == 'start_keep-web':
         run_keep_web()
