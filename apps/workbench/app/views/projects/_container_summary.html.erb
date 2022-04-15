@@ -9,8 +9,8 @@ SPDX-License-Identifier: AGPL-3.0 %>
         <col width="50%">
       </colgroup>
       <tr>
-        <th>Pending containers</th>
-	<th>Running containers</th>
+        <th scope="col">Pending containers</th>
+        <th scope="col">Running containers</th>
       </tr>
       <tr>
 	<% pending_containers = Container.order("created_at asc").filter([["state", "in", ["Queued", "Locked"]], ["priority", ">", 0]]).limit(1) %>
@@ -19,8 +19,8 @@ SPDX-License-Identifier: AGPL-3.0 %>
         <td><%= running_containers.items_available %></td>
       </tr>
       <tr>
-	<th>Oldest pending</th>
-	<th>Longest running</th>
+        <th scope="col">Oldest pending</th>
+        <th scope="col">Longest running</th>
       </tr>
       <tr>
         <td><% if pending_containers.first then %>
