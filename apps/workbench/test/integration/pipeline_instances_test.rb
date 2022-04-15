@@ -37,30 +37,6 @@ class PipelineInstancesTest < ActionDispatch::IntegrationTest
     DateTime.parse(utc).to_time
   end
 
-  if false
-    # No need to test (or mention) these all the time. If they start
-    # working (without need_selenium) then some real tests might not
-    # need_selenium any more.
-
-    test 'phantomjs DST' do
-      skip '^^'
-      t0s = '3/8/2015, 01:59 AM'
-      t1s = '3/8/2015, 03:01 AM'
-      t0 = parse_browser_timestamp t0s
-      t1 = parse_browser_timestamp t1s
-      assert_equal 120, t1-t0, "'#{t0s}' to '#{t1s}' was reported as #{t1-t0} seconds, should be 120"
-    end
-
-    test 'phantomjs DST 2' do
-      skip '^^'
-      t0s = '2015-03-08T10:43:00Z'
-      t1s = '2015-03-09T03:43:00Z'
-      t0 = parse_browser_timestamp page.evaluate_script("new Date('#{t0s}').toLocaleString()")
-      t1 = parse_browser_timestamp page.evaluate_script("new Date('#{t1s}').toLocaleString()")
-      assert_equal 17*3600, t1-t0, "'#{t0s}' to '#{t1s}' was reported as #{t1-t0} seconds, should be #{17*3600} (17 hours)"
-    end
-  end
-
   test 'view pipeline with job and see graph' do
     visit page_with_token('active_trustedclient', '/pipeline_instances')
     assert page.has_text? 'pipeline_with_job'

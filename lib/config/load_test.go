@@ -338,11 +338,7 @@ func (s *LoadSuite) TestUnacceptableTokens(c *check.C) {
 	} {
 		c.Logf("trying bogus config: %s", trial.example)
 		_, err := testLoader(c, "Clusters:\n zzzzz:\n  "+trial.example, nil).Load()
-		if trial.short {
-			c.Check(err, check.ErrorMatches, `Clusters.zzzzz.`+trial.configPath+`: unacceptable characters in token.*`)
-		} else {
-			c.Check(err, check.ErrorMatches, `Clusters.zzzzz.`+trial.configPath+`: unacceptable characters in token.*`)
-		}
+		c.Check(err, check.ErrorMatches, `Clusters.zzzzz.`+trial.configPath+`: unacceptable characters in token.*`)
 	}
 }
 
