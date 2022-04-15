@@ -403,16 +403,12 @@ def upload_dependencies(arvrunner, name, document_loader,
         else:
             del discovered[d]
 
-    print("NN", sc)
-
     mapper = ArvPathMapper(arvrunner, sc, "",
                            "keep:%s",
                            "keep:%s/%s",
                            name=name,
                            single_collection=True,
                            optional_deps=optional_deps)
-
-    print("whargh", mapper._pathmap)
 
     def setloc(p):
         loc = p.get("location")

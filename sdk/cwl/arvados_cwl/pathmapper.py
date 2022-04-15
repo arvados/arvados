@@ -74,7 +74,6 @@ class ArvPathMapper(PathMapper):
 
         if isinstance(src, basestring) and src.startswith("keep:"):
             if collection_pdh_pattern.match(src):
-                #self._pathmap[src] = MapperEnt(src, self.collection_pattern % src[5:], srcobj["class"], True)
                 self._pathmap[src] = MapperEnt(src, self.collection_pattern % urllib.parse.unquote(src[5:]), srcobj["class"], True)
 
                 if arvados_cwl.util.collectionUUID in srcobj:
@@ -94,12 +93,9 @@ class ArvPathMapper(PathMapper):
                                                    raiseOSError=True)
                 with SourceLine(srcobj, "location", WorkflowException, debug):
                     if isinstance(st, arvados.commands.run.UploadFile):
-                        print("VV", (src, ab, st))
                         uploadfiles.add((src, ab, st))
                     elif isinstance(st, arvados.commands.run.ArvFile):
                         self._pathmap[src] = MapperEnt(st.fn, self.collection_pattern % urllib.parse.unquote(st.fn[5:]), "File", True)
-
-                        #self._pathmap[src] = MapperEnt(st.fn, self.collection_pattern % st.fn[5:], "File", True)
                     else:
                         raise WorkflowException("Input file path '%s' is invalid" % st)
             elif src.startswith("_:"):
@@ -125,7 +121,6 @@ class ArvPathMapper(PathMapper):
                 self.visit(l, uploadfiles)
 
     def addentry(self, obj, c, path, remap):
-        print(obj["location"], self._pathmap)
         if obj["location"] in self._pathmap:
             src, srcpath = self.arvrunner.fs_access.get_collection(self._pathmap[obj["location"]].resolved)
             if srcpath == "":
@@ -170,9 +165,7 @@ class ArvPathMapper(PathMapper):
                 prefix = loc+"/"
                 suffix = ""
 
-        print("LLL", prefix+suffix, prefix+urllib.parse.quote(srcobj["basename"], "/+@"))
         if prefix+suffix != prefix+urllib.parse.quote(srcobj["basename"], "/+@"):
-            print("LLL -> needs new collection")
             return True
 
         if srcobj["class"] == "File" and loc not in self._pathmap:
@@ -211,11 +204,8 @@ class ArvPathMapper(PathMapper):
                                          packed=False)
 
         for src, ab, st in uploadfiles:
-            print("BBBBB", src, ab, st.fn, urllib.parse.quote(st.fn, "/:+@"))
             self._pathmap[src] = MapperEnt(urllib.parse.quote(st.fn, "/:+@"), urllib.parse.quote(self.collection_pattern % st.fn[5:], "/:+@"),
                                            "Directory" if os.path.isdir(ab) else "File", True)
-
-        print("CCCCC", self._pathmap)
 
         for srcobj in referenced_files:
             remap = []
