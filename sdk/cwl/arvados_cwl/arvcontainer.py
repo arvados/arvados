@@ -63,7 +63,7 @@ class ArvadosContainer(JobBase):
         env["TMPDIR"] = self.tmpdir
         return env
 
-    def run(self, runtimeContext):
+    def run(self, toplevelRuntimeContext):
         # ArvadosCommandTool subclasses from cwltool.CommandLineTool,
         # which calls makeJobRunner() to get a new ArvadosContainer
         # object.  The fields that define execution such as

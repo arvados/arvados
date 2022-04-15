@@ -290,7 +290,7 @@ def main(arguments=None, stdout=sys.stdout, stderr=sys.stderr):
                                        if todo_bytes==0
                                        else 100.0*out_bytes/todo_bytes)))
                     elif args.batch_progress:
-                        stderr.write('%s %d read %d total\n' %
+                        stderr.write('%s %d read %d total %d\n' %
                                      (sys.argv[0], os.getpid(),
                                       out_bytes, todo_bytes))
             if digestor:
