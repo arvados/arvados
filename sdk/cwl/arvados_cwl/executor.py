@@ -18,6 +18,7 @@ import json
 import re
 from functools import partial
 import time
+import urllib
 
 from cwltool.errors import WorkflowException
 import cwltool.workflow
@@ -450,7 +451,7 @@ The 'jobs' API is no longer supported.
             srccollection = sp[0][5:]
             try:
                 reader = self.collection_cache.get(srccollection)
-                srcpath = "/".join(sp[1:]) if len(sp) > 1 else "."
+                srcpath = urllib.parse.unquote("/".join(sp[1:]) if len(sp) > 1 else ".")
                 final.copy(srcpath, v.target, source_collection=reader, overwrite=False)
             except arvados.errors.ArgumentError as e:
                 logger.error("Creating CollectionReader for '%s' '%s': %s", k, v, e)

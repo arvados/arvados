@@ -166,7 +166,7 @@ class ArvPathMapper(PathMapper):
         else:
             suffix = loc[len(prefix):]
 
-        if prefix+suffix != prefix+urllib.parse.quote(srcobj["basename"], "/+@"):
+        if "basename" in srcobj and prefix+suffix != prefix+urllib.parse.quote(srcobj["basename"], "/+@"):
             return True
 
         if srcobj["class"] == "File" and loc not in self._pathmap:
