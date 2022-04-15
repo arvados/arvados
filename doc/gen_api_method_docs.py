@@ -59,7 +59,7 @@ for resource in sorted(api[u'resources']):
         try:
             os.rename(out_fname, backup_name)
         except OSError as e:
-            print "WARNING: could not back up {1} as {2}: {3}".format(
+            print "WARNING: could not back up {0} as {1}: {2}".format(
                 out_fname, backup_name, e)
     outf = open(out_fname, 'w')
     outf.write(
