@@ -244,7 +244,7 @@ func (super *Supervisor) run(cfg *arvados.Config) error {
 		runPostgreSQL{},
 		runNginx{},
 		runServiceCommand{name: "controller", svc: super.cluster.Services.Controller, depends: []supervisedTask{seedDatabase{}}},
-		runGoProgram{src: "services/arv-git-httpd", svc: super.cluster.Services.GitHTTP},
+		runServiceCommand{name: "git-httpd", svc: super.cluster.Services.GitHTTP},
 		runGoProgram{src: "services/health", svc: super.cluster.Services.Health},
 		runServiceCommand{name: "keepproxy", svc: super.cluster.Services.Keepproxy, depends: []supervisedTask{runPassenger{src: "services/api"}}},
 		runServiceCommand{name: "keepstore", svc: super.cluster.Services.Keepstore},

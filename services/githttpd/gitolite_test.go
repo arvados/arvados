@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-package main
+package githttpd
 
 import (
 	"io/ioutil"
@@ -18,8 +18,8 @@ import (
 
 var _ = check.Suite(&GitoliteSuite{})
 
-// GitoliteSuite tests need an API server, an arv-git-httpd server,
-// and a repository hosted by gitolite.
+// GitoliteSuite tests need an API server, an arvados-git-httpd
+// server, and a repository hosted by gitolite.
 type GitoliteSuite struct {
 	IntegrationSuite
 	gitoliteHome string
@@ -27,7 +27,7 @@ type GitoliteSuite struct {
 
 func (s *GitoliteSuite) SetUpTest(c *check.C) {
 	var err error
-	s.gitoliteHome, err = ioutil.TempDir("", "arv-git-httpd")
+	s.gitoliteHome, err = ioutil.TempDir("", "githttp")
 	c.Assert(err, check.Equals, nil)
 
 	runGitolite := func(prog string, args ...string) {

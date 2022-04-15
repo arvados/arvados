@@ -2,9 +2,10 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-package main
+package githttpd
 
 import (
+	"context"
 	"errors"
 	"io/ioutil"
 	"os"
@@ -16,6 +17,7 @@ import (
 	"git.arvados.org/arvados.git/sdk/go/arvados"
 	"git.arvados.org/arvados.git/sdk/go/arvadostest"
 	"git.arvados.org/arvados.git/sdk/go/ctxlog"
+	"git.arvados.org/arvados.git/sdk/go/httpserver"
 	check "gopkg.in/check.v1"
 )
 
@@ -24,12 +26,12 @@ func Test(t *testing.T) {
 	check.TestingT(t)
 }
 
-// IntegrationSuite tests need an API server and an arv-git-httpd
+// IntegrationSuite tests need an API server and an arvados-git-httpd
 // server. See GitSuite and GitoliteSuite.
 type IntegrationSuite struct {
 	tmpRepoRoot string
 	tmpWorkdir  string
-	testServer  *server
+	testServer  *httpserver.Server
 	cluster     *arvados.Cluster
 }
 
@@ -38,10 +40,10 @@ func (s *IntegrationSuite) SetUpTest(c *check.C) {
 
 	var err error
 	if s.tmpRepoRoot == "" {
-		s.tmpRepoRoot, err = ioutil.TempDir("", "arv-git-httpd")
+		s.tmpRepoRoot, err = ioutil.TempDir("", "githttp")
 		c.Assert(err, check.Equals, nil)
 	}
-	s.tmpWorkdir, err = ioutil.TempDir("", "arv-git-httpd")
+	s.tmpWorkdir, err = ioutil.TempDir("", "githttp")
 	c.Assert(err, check.Equals, nil)
 	_, err = exec.Command("git", "init", "--bare", s.tmpRepoRoot+"/zzzzz-s0uqq-382brsig8rp3666.git").Output()
 	c.Assert(err, check.Equals, nil)
@@ -70,7 +72,8 @@ func (s *IntegrationSuite) SetUpTest(c *check.C) {
 		s.cluster.ManagementToken = arvadostest.ManagementToken
 	}
 
-	s.testServer = &server{cluster: s.cluster}
+	s.testServer = &httpserver.Server{}
+	s.testServer.Handler = httpserver.LogRequests(newHandler(context.Background(), s.cluster, "", nil))
 	err = s.testServer.Start()
 	c.Assert(err, check.Equals, nil)
 
@@ -86,7 +89,7 @@ func (s *IntegrationSuite) SetUpTest(c *check.C) {
 	c.Assert(err, check.Equals, nil)
 
 	// Clear ARVADOS_API_* env vars before starting up the server,
-	// to make sure arv-git-httpd doesn't use them or complain
+	// to make sure arvados-git-httpd doesn't use them or complain
 	// about them being missing.
 	os.Unsetenv("ARVADOS_API_HOST")
 	os.Unsetenv("ARVADOS_API_HOST_INSECURE")

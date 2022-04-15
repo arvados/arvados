@@ -536,7 +536,7 @@ func (ldr *Loader) loadOldGitHttpdConfig(cfg *arvados.Config) error {
 		return nil
 	}
 	var oc oldGitHttpdConfig
-	err := ldr.loadOldConfigHelper("arv-git-httpd", ldr.GitHttpdPath, &oc)
+	err := ldr.loadOldConfigHelper("arvados-git-httpd", ldr.GitHttpdPath, &oc)
 	if os.IsNotExist(err) && ldr.GitHttpdPath == defaultGitHttpdConfigPath {
 		return nil
 	} else if err != nil {

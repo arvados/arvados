@@ -9,16 +9,14 @@ set -ex -o pipefail
 . /usr/local/lib/arvbox/common.sh
 . /usr/local/lib/arvbox/go-setup.sh
 
-flock /var/lib/gopath/gopath.lock go install "git.arvados.org/arvados.git/services/arv-git-httpd"
-install $GOPATH/bin/arv-git-httpd /usr/local/bin
+(cd /usr/local/bin && ln -sf arvados-server arvados-git-httpd)
 
 if test "$1" = "--only-deps" ; then
     exit
 fi
 
-export ARVADOS_API_HOST=$localip:${services[controller-ssl]}
-export ARVADOS_API_HOST_INSECURE=1
+/usr/local/lib/arvbox/runsu.sh flock $ARVADOS_CONTAINER_PATH/cluster_config.yml.lock /usr/local/lib/arvbox/cluster-config.sh
+
 export PATH="$PATH:$ARVADOS_CONTAINER_PATH/git/bin"
 cd ~git
-
-exec /usr/local/bin/arv-git-httpd
+exec /usr/local/bin/arvados-git-httpd

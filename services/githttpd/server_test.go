@@ -2,15 +2,11 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-package main
+package githttpd
 
 import (
-	"net/http"
-	"net/http/httptest"
 	"os"
 	"os/exec"
-
-	"git.arvados.org/arvados.git/sdk/go/arvadostest"
 
 	check "gopkg.in/check.v1"
 )
@@ -107,17 +103,4 @@ func (s *GitSuite) makeArvadosRepo(c *check.C) {
 	msg, err = exec.Command("git", "--git-dir", s.tmpRepoRoot+"/zzzzz-s0uqq-arvadosrepo0123.git", "fetch", "../../.git", "HEAD:main").CombinedOutput()
 	c.Log(string(msg))
 	c.Assert(err, check.Equals, nil)
-}
-
-func (s *GitSuite) TestHealthCheckPing(c *check.C) {
-	req, err := http.NewRequest("GET",
-		"http://"+s.testServer.Addr+"/_health/ping",
-		nil)
-	c.Assert(err, check.Equals, nil)
-	req.Header.Set("Authorization", "Bearer "+arvadostest.ManagementToken)
-
-	resp := httptest.NewRecorder()
-	s.testServer.Handler.ServeHTTP(resp, req)
-	c.Check(resp.Code, check.Equals, 200)
-	c.Check(resp.Body.String(), check.Matches, `{"health":"OK"}\n`)
 }

@@ -544,7 +544,7 @@ def run_keep_proxy():
     env['ARVADOS_API_TOKEN'] = auth_token('anonymous')
     logf = open(_logfilename('keepproxy'), WRITE_MODE)
     kp = subprocess.Popen(
-        ['keepproxy'], env=env, stdin=open('/dev/null'), stdout=logf, stderr=logf, close_fds=True)
+        ['arvados-server', 'keepproxy'], env=env, stdin=open('/dev/null'), stdout=logf, stderr=logf, close_fds=True)
 
     with open(_pidfile('keepproxy'), 'w') as f:
         f.write(str(kp.pid))
@@ -581,17 +581,17 @@ def run_arv_git_httpd():
     gitport = internal_port_from_config("GitHTTP")
     env = os.environ.copy()
     env.pop('ARVADOS_API_TOKEN', None)
-    logf = open(_logfilename('arv-git-httpd'), WRITE_MODE)
-    agh = subprocess.Popen(['arv-git-httpd'],
+    logf = open(_logfilename('githttp'), WRITE_MODE)
+    agh = subprocess.Popen(['arvados-server', 'git-httpd'],
         env=env, stdin=open('/dev/null'), stdout=logf, stderr=logf)
-    with open(_pidfile('arv-git-httpd'), 'w') as f:
+    with open(_pidfile('githttp'), 'w') as f:
         f.write(str(agh.pid))
     _wait_until_port_listens(gitport)
 
 def stop_arv_git_httpd():
     if 'ARVADOS_TEST_PROXY_SERVICES' in os.environ:
         return
-    kill_server_pid(_pidfile('arv-git-httpd'))
+    kill_server_pid(_pidfile('githttp'))
 
 def run_keep_web():
     if 'ARVADOS_TEST_PROXY_SERVICES' in os.environ:
@@ -942,7 +942,7 @@ if __name__ == "__main__":
         'start_keep', 'stop_keep',
         'start_keep_proxy', 'stop_keep_proxy',
         'start_keep-web', 'stop_keep-web',
-        'start_arv-git-httpd', 'stop_arv-git-httpd',
+        'start_githttp', 'stop_githttp',
         'start_nginx', 'stop_nginx', 'setup_config',
     ]
     parser = argparse.ArgumentParser()
@@ -987,9 +987,9 @@ if __name__ == "__main__":
         run_keep_proxy()
     elif args.action == 'stop_keep_proxy':
         stop_keep_proxy()
-    elif args.action == 'start_arv-git-httpd':
+    elif args.action == 'start_githttp':
         run_arv_git_httpd()
-    elif args.action == 'stop_arv-git-httpd':
+    elif args.action == 'stop_githttp':
         stop_arv_git_httpd()
     elif args.action == 'start_keep-web':
         run_keep_web()
