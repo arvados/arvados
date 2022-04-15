@@ -24,9 +24,9 @@ table#users-activity-table .cell-for-span-Last-month {
   <% end %>
 
   <tr>
-    <th rowspan="2">User</th>
+    <th scope="col" rowspan="2">User</th>
     <% @spans.each do |span, start_at, end_at| %>
-    <th colspan="3" class="cell-for-span-<%= span.gsub ' ','-' %>">
+    <th scope="col" colspan="3" class="cell-for-span-<%= span.gsub ' ','-' %>">
       <%= span %>
       <br />
       <%= start_at.strftime('%b %-d') %>
@@ -37,9 +37,9 @@ table#users-activity-table .cell-for-span-Last-month {
   </tr>
   <tr>
     <% @spans.each do |span, _| %>
-    <th class="cell-for-span-<%= span.gsub ' ','-' %>">Logins</th>
-    <th class="cell-for-span-<%= span.gsub ' ','-' %>">Jobs</th>
-    <th class="cell-for-span-<%= span.gsub ' ','-' %>">Pipelines</th>
+    <th scope="col" class="cell-for-span-<%= span.gsub ' ','-' %>">Logins</th>
+    <th scope="col" class="cell-for-span-<%= span.gsub ' ','-' %>">Jobs</th>
+    <th scope="col" class="cell-for-span-<%= span.gsub ' ','-' %>">Pipelines</th>
     <% end %>
   </tr>
 

@@ -173,7 +173,7 @@ window.SessionDB = function() {
             // scrub the location bar.
             if (document.location.search[0] != '?') { return; }
             var params = {};
-            document.location.search.slice(1).split('&').map(function(kv) {
+            document.location.search.slice(1).split('&').forEach(function(kv) {
                 var e = kv.indexOf('=');
                 if (e < 0) {
                     return;
@@ -191,7 +191,7 @@ window.SessionDB = function() {
         },
         fillMissingUUIDs: function() {
             var sessions = db.loadAll();
-            Object.keys(sessions).map(function(key) {
+            Object.keys(sessions).forEach(function(key) {
                 if (key.indexOf('://') < 0) {
                     return;
                 }
@@ -291,7 +291,7 @@ window.SessionDB = function() {
         // a salted token.
         migrateNonFederatedSessions: function() {
             var sessions = db.loadActive();
-            Object.keys(sessions).map(function(uuidPrefix) {
+            Object.keys(sessions).forEach(function(uuidPrefix) {
                 session = sessions[uuidPrefix];
                 if (!session.isFromRails && session.token) {
                     db.saltedToken(uuidPrefix).then(function(saltedToken) {
@@ -310,7 +310,7 @@ window.SessionDB = function() {
             var doc = db.discoveryDoc(db.loadLocal());
             if (doc === undefined) { return; }
             doc.map(function(d) {
-                Object.keys(d.remoteHosts).map(function(uuidPrefix) {
+                Object.keys(d.remoteHosts).forEach(function(uuidPrefix) {
                     if (!(sessions[uuidPrefix])) {
                         db.findAPI(d.remoteHosts[uuidPrefix]).then(function(baseURL) {
                             db.login(baseURL, false);
