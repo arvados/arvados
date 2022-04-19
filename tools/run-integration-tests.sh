@@ -118,7 +118,8 @@ coproc arvboot (~/go/bin/arvados-server boot \
     -timeout 20m 2> ${ARVADOS_LOG})
 trap cleanup ERR EXIT
 
-read controllerURL <&"${arvboot[0]}" || exit 1
+read controllerInfo <&"${arvboot[0]}" || exit 1
+controllerURL=`echo "$controllerInfo" | awk '{print $1;}'`;
 echo "Arvados up and running at ${controllerURL}"
 IFS='/' ; read -ra controllerHostPort <<< "${controllerURL}" ; unset IFS
 controllerHostPort=${controllerHostPort[2]}
