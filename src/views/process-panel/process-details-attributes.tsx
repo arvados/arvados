@@ -3,63 +3,140 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import React from "react";
-import { Grid } from "@material-ui/core";
+import { Grid, StyleRulesCallback, withStyles } from "@material-ui/core";
+import { Dispatch } from 'redux';
 import { formatDate } from "common/formatters";
 import { resourceLabel } from "common/labels";
 import { DetailsAttribute } from "components/details-attribute/details-attribute";
-import { ProcessResource } from "models/process";
 import { ResourceKind } from "models/resource";
-import { ResourceOwnerWithName } from "views-components/data-explorer/renderers";
+import { ContainerRunTime, ResourceOwnerWithName } from "views-components/data-explorer/renderers";
+import { getProcess, getProcessStatus } from "store/processes/process";
+import { RootState } from "store/store";
+import { connect } from "react-redux";
+import { ProcessResource } from "models/process";
+import { ContainerResource } from "models/container";
+import { openProcessInputDialog } from "store/processes/process-input-actions";
+import { navigateToOutput, openWorkflow } from "store/process-panel/process-panel-actions";
+import { ArvadosTheme } from "common/custom-theme";
+import { ProcessRuntimeStatus } from "views-components/process-runtime-status/process-runtime-status";
+import { getPropertyChip } from "views-components/resource-properties-form/property-chip";
 
-type CssRules = 'label' | 'value';
+type CssRules = 'link' | 'propertyTag';
 
-export const ProcessDetailsAttributes = (props: { item: ProcessResource, twoCol?: boolean, classes?: Record<CssRules, string> }) => {
-    const item = props.item;
-    const classes = props.classes || { label: '', value: '', button: '' };
-    const mdSize = props.twoCol ? 6 : 12;
-    return <Grid container>
-        <Grid item xs={12} md={mdSize}>
-            <DetailsAttribute label='Type' value={resourceLabel(ResourceKind.PROCESS)} />
-        </Grid>
-        <Grid item xs={12} md={mdSize}>
-            <DetailsAttribute classLabel={classes.label} classValue={classes.value}
-                label='Owner' linkToUuid={item.ownerUuid}
-                uuidEnhancer={(uuid: string) => <ResourceOwnerWithName uuid={uuid} />} />
-        </Grid>
-        <Grid item xs={12} md={12}>
-            <DetailsAttribute label='Status' value={item.state} />
-        </Grid>
-        <Grid item xs={12} md={mdSize}>
-            <DetailsAttribute label='Last modified' value={formatDate(item.modifiedAt)} />
-        </Grid>
-        <Grid item xs={12} md={mdSize}>
-            <DetailsAttribute label='Started at' value={formatDate(item.createdAt)} />
-        </Grid>
-        <Grid item xs={12} md={mdSize}>
-            <DetailsAttribute label='Created at' value={formatDate(item.createdAt)} />
-        </Grid>
-        <Grid item xs={12} md={mdSize}>
-            <DetailsAttribute label='Finished at' value={formatDate(item.expiresAt)} />
-        </Grid>
-        <Grid item xs={12} md={mdSize}>
-            <DetailsAttribute label='Outputs' value={item.outputPath} />
-        </Grid>
-        <Grid item xs={12} md={mdSize}>
-            <DetailsAttribute label='UUID' linkToUuid={item.uuid} value={item.uuid} />
-        </Grid>
-        <Grid item xs={12} md={mdSize}>
-            <DetailsAttribute label='Container UUID' value={item.containerUuid} />
-        </Grid>
-        <Grid item xs={12} md={mdSize}>
-            <DetailsAttribute label='Priority' value={item.priority} />
-        </Grid>
-        <Grid item xs={12} md={mdSize}>
-            <DetailsAttribute label='Runtime Constraints'
-            value={JSON.stringify(item.runtimeConstraints)} />
-        </Grid>
-        <Grid item xs={12} md={mdSize}>
-            <DetailsAttribute label='Docker Image locator'
-            linkToUuid={item.containerImage} value={item.containerImage} />
-        </Grid>
-    </Grid>;
+const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
+    link: {
+        fontSize: '0.875rem',
+        color: theme.palette.primary.main,
+        '&:hover': {
+            cursor: 'pointer'
+        }
+    },
+    propertyTag: {
+        marginRight: theme.spacing.unit / 2,
+        marginBottom: theme.spacing.unit / 2
+    },
+});
+
+const mapStateToProps = (state: RootState, props: { request: ProcessResource }) => {
+    return {
+        container: getProcess(props.request.uuid)(state.resources)?.container,
+    };
 };
+
+interface ProcessDetailsAttributesActionProps {
+    openProcessInputDialog: (uuid: string) => void;
+    navigateToOutput: (uuid: string) => void;
+    openWorkflow: (uuid: string) => void;
+}
+
+const mapDispatchToProps = (dispatch: Dispatch): ProcessDetailsAttributesActionProps => ({
+    openProcessInputDialog: (uuid) => dispatch<any>(openProcessInputDialog(uuid)),
+    navigateToOutput: (uuid) => dispatch<any>(navigateToOutput(uuid)),
+    openWorkflow: (uuid) => dispatch<any>(openWorkflow(uuid)),
+});
+
+export const ProcessDetailsAttributes = withStyles(styles, { withTheme: true })(
+    connect(mapStateToProps, mapDispatchToProps)(
+        (props: { request: ProcessResource, container?: ContainerResource, twoCol?: boolean, hideProcessPanelRedundantFields?: boolean, classes: Record<CssRules, string> } & ProcessDetailsAttributesActionProps) => {
+            const containerRequest = props.request;
+            const container = props.container;
+            const classes = props.classes;
+            const mdSize = props.twoCol ? 6 : 12;
+            return <Grid container>
+                <Grid item xs={12}>
+                    <ProcessRuntimeStatus runtimeStatus={container?.runtimeStatus} />
+                </Grid>
+                {!props.hideProcessPanelRedundantFields && <Grid item xs={12} md={mdSize}>
+                    <DetailsAttribute label='Type' value={resourceLabel(ResourceKind.PROCESS)} />
+                </Grid>}
+                <Grid item xs={12} md={mdSize}>
+                    <DetailsAttribute label='Container Request UUID' linkToUuid={containerRequest.uuid} value={containerRequest.uuid} />
+                </Grid>
+                <Grid item xs={12} md={mdSize}>
+                    <DetailsAttribute label='Docker Image locator'
+                    linkToUuid={containerRequest.containerImage} value={containerRequest.containerImage} />
+                </Grid>
+                <Grid item xs={12} md={mdSize}>
+                    <DetailsAttribute
+                        label='Owner' linkToUuid={containerRequest.ownerUuid}
+                        uuidEnhancer={(uuid: string) => <ResourceOwnerWithName uuid={uuid} />} />
+                </Grid>
+                <Grid item xs={12} md={mdSize}>
+                    <DetailsAttribute label='Container UUID' value={containerRequest.containerUuid} />
+                </Grid>
+                {!props.hideProcessPanelRedundantFields && <Grid item xs={12} md={mdSize}>
+                    <DetailsAttribute label='Status' value={getProcessStatus({containerRequest, container})} />
+                </Grid>}
+                <Grid item xs={12} md={mdSize}>
+                    <DetailsAttribute label='Created at' value={formatDate(containerRequest.createdAt)} />
+                </Grid>
+                <Grid item xs={12} md={mdSize}>
+                    <DetailsAttribute label='Started at' value={container ? formatDate(container.startedAt) : "(none)"} />
+                </Grid>
+                <Grid item xs={12} md={mdSize}>
+                    <DetailsAttribute label='Finished at' value={container ? formatDate(container.finishedAt) : "(none)"} />
+                </Grid>
+                <Grid item xs={12} md={mdSize}>
+                    <DetailsAttribute label='Container run time'>
+                        <ContainerRunTime uuid={containerRequest.uuid} />
+                    </DetailsAttribute>
+                </Grid>
+                <Grid item xs={12} md={mdSize}>
+                    <DetailsAttribute label='Requesting Container UUID' value={containerRequest.requestingContainerUuid || "(none)"} />
+                </Grid>
+                <Grid item xs={6}>
+                    <span onClick={() => props.navigateToOutput(containerRequest.outputUuid!)}>
+                        <DetailsAttribute classLabel={classes.link} label='Outputs' />
+                    </span>
+                    <span onClick={() => props.openProcessInputDialog(containerRequest.uuid)}>
+                        <DetailsAttribute classLabel={classes.link} label='Inputs' />
+                    </span>
+                </Grid>
+                {containerRequest.properties.workflowUuid &&
+                <Grid item xs={12} md={mdSize}>
+                    <span onClick={() => props.openWorkflow(containerRequest.properties.workflowUuid)}>
+                        <DetailsAttribute classValue={classes.link}
+                            label='Workflow' value={containerRequest.properties.workflowName} />
+                    </span>
+                </Grid>}
+                <Grid item xs={12} md={mdSize}>
+                    <DetailsAttribute label='Priority' value={containerRequest.priority} />
+                </Grid>
+                {/*
+                    NOTE: The property list should be kept at the bottom, because it spans
+                    the entire available width, without regards of the twoCol prop.
+                */}
+                <Grid item xs={12} md={12}>
+                    <DetailsAttribute label='Properties' />
+                    { Object.keys(containerRequest.properties).length > 0
+                        ? Object.keys(containerRequest.properties).map(k =>
+                                Array.isArray(containerRequest.properties[k])
+                                ? containerRequest.properties[k].map((v: string) =>
+                                    getPropertyChip(k, v, undefined, classes.propertyTag))
+                                : getPropertyChip(k, containerRequest.properties[k], undefined, classes.propertyTag))
+                        : <div>No properties</div> }
+                </Grid>
+            </Grid>;
+        }
+    )
+);

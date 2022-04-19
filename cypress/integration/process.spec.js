@@ -95,7 +95,7 @@ describe('Process tests', function() {
         .then(function(containerRequest) {
             cy.loginAs(activeUser);
             cy.goToPath(`/processes/${containerRequest.uuid}`);
-            cy.get('[data-cy=process-info]').should('contain', crName);
+            cy.get('[data-cy=process-details]').should('contain', crName);
             cy.get('[data-cy=process-logs]')
                 .should('contain', 'No logs yet')
                 .and('not.contain', 'hello world');

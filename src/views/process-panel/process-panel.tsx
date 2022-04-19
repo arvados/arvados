@@ -19,10 +19,7 @@ import {
 import { groupBy } from 'lodash';
 import {
     toggleProcessPanelFilter,
-    navigateToOutput,
-    openWorkflow
 } from 'store/process-panel/process-panel-actions';
-import { openProcessInputDialog } from 'store/processes/process-input-actions';
 import { cancelRunningWorkflow } from 'store/processes/processes-actions';
 import { navigateToLogCollection, setProcessLogsPanelFilter } from 'store/process-logs-panel/process-logs-panel-actions';
 import { snackbarActions, SnackbarKind } from 'store/snackbar/snackbar-actions';
@@ -52,9 +49,6 @@ const mapDispatchToProps = (dispatch: Dispatch): ProcessPanelRootActionProps => 
     onToggle: status => {
         dispatch<any>(toggleProcessPanelFilter(status));
     },
-    openProcessInputDialog: (uuid) => dispatch<any>(openProcessInputDialog(uuid)),
-    navigateToOutput: (uuid) => dispatch<any>(navigateToOutput(uuid)),
-    navigateToWorkflow: (uuid) => dispatch<any>(openWorkflow(uuid)),
     cancelProcess: (uuid) => dispatch<any>(cancelRunningWorkflow(uuid)),
     onLogFilterChange: (filter) => dispatch(setProcessLogsPanelFilter(filter.value)),
     navigateToLog: (uuid) => dispatch<any>(navigateToLogCollection(uuid)),
