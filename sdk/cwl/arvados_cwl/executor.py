@@ -262,45 +262,22 @@ The 'jobs' API is no longer supported.
                 return
             runtime_status = current.get('runtime_status', {})
             # In case of status being an error, only report the first one.
-            if kind == 'error':
-                if not runtime_status.get('error'):
-                    runtime_status.update({
-                        'error': message
-                    })
-                    if detail is not None:
-                        runtime_status.update({
-                            'errorDetail': detail
-                        })
-                # Further errors are only mentioned as a count.
-                else:
-                    # Get anything before an optional 'and N more' string.
-                    try:
-                        error_msg = re.match(
-                            r'^(.*?)(?=\s*\(and \d+ more\)|$)', runtime_status.get('error')).groups()[0]
-                        more_failures = re.match(
-                            r'.*\(and (\d+) more\)', runtime_status.get('error'))
-                    except TypeError:
-                        # Ignore tests stubbing errors
-                        return
-                    if more_failures:
-                        failure_qty = int(more_failures.groups()[0])
-                        runtime_status.update({
-                            'error': "%s (and %d more)" % (error_msg, failure_qty+1)
-                        })
-                    else:
-                        runtime_status.update({
-                            'error': "%s (and 1 more)" % error_msg
-                        })
-            elif kind in ['warning', 'activity']:
-                # Record the last warning/activity status without regard of
-                # previous occurences.
+            if kind in ('error', 'warning', 'activity'):
+                updatemessage = runtime_status.get(kind, "")
+                if updatemessage:
+                    updatemessage += "\n"
+                updatemessage += message
+
+                # Subsequent messages tacked on as detail
+                updatedetail = runtime_status.get(kind+'Detail', "")
+                if updatedetail:
+                   updatedetail += "\n"
+                if detail:
+                    updatedetail += message + "\n" + detail
                 runtime_status.update({
-                    kind: message
+                    kind: updatemessage,
+                    kind+'Detail': updatedetail,
                 })
-                if detail is not None:
-                    runtime_status.update({
-                        kind+"Detail": detail
-                    })
             else:
                 # Ignore any other status kind
                 return
