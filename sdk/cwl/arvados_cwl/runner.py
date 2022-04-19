@@ -353,25 +353,13 @@ def upload_dependencies(arvrunner, name, document_loader,
     if include_primary and "id" in workflowobj:
         sc.append({"class": "File", "location": workflowobj["id"]})
 
-    #if "$schemas" in workflowobj:
-    #    for s in workflowobj["$schemas"]:
-    #        sc.append({"class": "File", "location": s})
-
     def visit_default(obj):
-        #remove = [False]
-        def ensure_default_location(f):
+        def defaults_are_optional(f):
             if "location" not in f and "path" in f:
                 f["location"] = f["path"]
                 del f["path"]
             optional_deps.append(f)
-            #if "location" in f and not arvrunner.fs_access.exists(f["location"]):
-            #    # Doesn't exist, remove from list of dependencies to upload
-            #    sc[:] = [x for x in sc if x["location"] != f["location"]]
-            #    # Delete "default" from workflowobj
-            #    remove[0] = True
-        visit_class(obj["default"], ("File", "Directory"), ensure_default_location)
-        #if remove[0]:
-        #    del obj["default"]
+        visit_class(obj["default"], ("File", "Directory"), defaults_are_optional)
 
     find_defaults(workflowobj, visit_default)
 
