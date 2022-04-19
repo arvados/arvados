@@ -10,7 +10,7 @@ import { resourceLabel } from "common/labels";
 import { DetailsAttribute } from "components/details-attribute/details-attribute";
 import { ResourceKind } from "models/resource";
 import { ContainerRunTime, ResourceOwnerWithName } from "views-components/data-explorer/renderers";
-import { getProcess } from "store/processes/process";
+import { getProcess, getProcessStatus } from "store/processes/process";
 import { RootState } from "store/store";
 import { connect } from "react-redux";
 import { ProcessResource } from "models/process";
@@ -85,7 +85,7 @@ export const ProcessDetailsAttributes = withStyles(styles, { withTheme: true })(
                     <DetailsAttribute label='Container UUID' value={containerRequest.containerUuid} />
                 </Grid>
                 {!props.hideProcessPanelRedundantFields && <Grid item xs={12} md={mdSize}>
-                    <DetailsAttribute label='Status' value={containerRequest.state} />
+                    <DetailsAttribute label='Status' value={getProcessStatus({containerRequest, container})} />
                 </Grid>}
                 <Grid item xs={12} md={mdSize}>
                     <DetailsAttribute label='Created at' value={formatDate(containerRequest.createdAt)} />
