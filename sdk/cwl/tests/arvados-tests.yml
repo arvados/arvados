@@ -444,3 +444,8 @@
   output: {}
   tool: chipseq/cwl-packed.json
   doc: "Test issue 18723 - correctly upload two directories with the same basename"
+
+- job: null
+  output: {}
+  tool: 18994-basename/wf_ren.cwl
+  doc: "Test issue 18994 - correctly stage file with modified basename"
