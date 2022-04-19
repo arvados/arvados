@@ -9,7 +9,7 @@ import { formatDate } from "common/formatters";
 import { resourceLabel } from "common/labels";
 import { DetailsAttribute } from "components/details-attribute/details-attribute";
 import { ResourceKind } from "models/resource";
-import { ResourceOwnerWithName } from "views-components/data-explorer/renderers";
+import { ContainerRunTime, ResourceOwnerWithName } from "views-components/data-explorer/renderers";
 import { getProcess } from "store/processes/process";
 import { RootState } from "store/store";
 import { connect } from "react-redux";
@@ -19,8 +19,9 @@ import { openProcessInputDialog } from "store/processes/process-input-actions";
 import { navigateToOutput, openWorkflow } from "store/process-panel/process-panel-actions";
 import { ArvadosTheme } from "common/custom-theme";
 import { ProcessRuntimeStatus } from "views-components/process-runtime-status/process-runtime-status";
+import { getPropertyChip } from "views-components/resource-properties-form/property-chip";
 
-type CssRules = 'link';
+type CssRules = 'link' | 'propertyTag';
 
 const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     link: {
@@ -29,6 +30,10 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
         '&:hover': {
             cursor: 'pointer'
         }
+    },
+    propertyTag: {
+        marginRight: theme.spacing.unit / 2,
+        marginBottom: theme.spacing.unit / 2
     },
 });
 
@@ -52,49 +57,52 @@ const mapDispatchToProps = (dispatch: Dispatch): ProcessDetailsAttributesActionP
 
 export const ProcessDetailsAttributes = withStyles(styles, { withTheme: true })(
     connect(mapStateToProps, mapDispatchToProps)(
-        (props: { request: ProcessResource, container?: ContainerResource, twoCol?: boolean, classes?: Record<CssRules, string> } & ProcessDetailsAttributesActionProps) => {
+        (props: { request: ProcessResource, container?: ContainerResource, twoCol?: boolean, hideProcessPanelRedundantFields?: boolean, classes: Record<CssRules, string> } & ProcessDetailsAttributesActionProps) => {
             const containerRequest = props.request;
             const container = props.container;
-            const classes = props.classes || { label: '', value: '', button: '', link: '' };
+            const classes = props.classes;
             const mdSize = props.twoCol ? 6 : 12;
             return <Grid container>
                 <Grid item xs={12}>
                     <ProcessRuntimeStatus runtimeStatus={container?.runtimeStatus} />
                 </Grid>
-                <Grid item xs={12} md={mdSize}>
+                {!props.hideProcessPanelRedundantFields && <Grid item xs={12} md={mdSize}>
                     <DetailsAttribute label='Type' value={resourceLabel(ResourceKind.PROCESS)} />
+                </Grid>}
+                <Grid item xs={12} md={mdSize}>
+                    <DetailsAttribute label='Container Request UUID' linkToUuid={containerRequest.uuid} value={containerRequest.uuid} />
+                </Grid>
+                <Grid item xs={12} md={mdSize}>
+                    <DetailsAttribute label='Docker Image locator'
+                    linkToUuid={containerRequest.containerImage} value={containerRequest.containerImage} />
                 </Grid>
                 <Grid item xs={12} md={mdSize}>
                     <DetailsAttribute
                         label='Owner' linkToUuid={containerRequest.ownerUuid}
                         uuidEnhancer={(uuid: string) => <ResourceOwnerWithName uuid={uuid} />} />
                 </Grid>
-                <Grid item xs={12} md={12}>
-                    <DetailsAttribute label='Status' value={containerRequest.state} />
-                </Grid>
                 <Grid item xs={12} md={mdSize}>
-                    <DetailsAttribute label='Last modified' value={formatDate(containerRequest.modifiedAt)} />
+                    <DetailsAttribute label='Container UUID' value={containerRequest.containerUuid} />
                 </Grid>
+                {!props.hideProcessPanelRedundantFields && <Grid item xs={12} md={mdSize}>
+                    <DetailsAttribute label='Status' value={containerRequest.state} />
+                </Grid>}
                 <Grid item xs={12} md={mdSize}>
                     <DetailsAttribute label='Created at' value={formatDate(containerRequest.createdAt)} />
                 </Grid>
                 <Grid item xs={12} md={mdSize}>
-                    <DetailsAttribute label='Started at' value={container ? formatDate(container.startedAt) : "N/A"} />
+                    <DetailsAttribute label='Started at' value={container ? formatDate(container.startedAt) : "(none)"} />
                 </Grid>
                 <Grid item xs={12} md={mdSize}>
-                    <DetailsAttribute label='Finished at' value={container ? formatDate(container.finishedAt) : "N/A"} />
+                    <DetailsAttribute label='Finished at' value={container ? formatDate(container.finishedAt) : "(none)"} />
                 </Grid>
                 <Grid item xs={12} md={mdSize}>
-                    <DetailsAttribute label='Expires at' value={formatDate(containerRequest.expiresAt)} />
+                    <DetailsAttribute label='Container run time'>
+                        <ContainerRunTime uuid={containerRequest.uuid} />
+                    </DetailsAttribute>
                 </Grid>
                 <Grid item xs={12} md={mdSize}>
-                    <DetailsAttribute label='Outputs' value={containerRequest.outputPath} />
-                </Grid>
-                <Grid item xs={12} md={mdSize}>
-                    <DetailsAttribute label='UUID' linkToUuid={containerRequest.uuid} value={containerRequest.uuid} />
-                </Grid>
-                <Grid item xs={12} md={mdSize}>
-                    <DetailsAttribute label='Container UUID' value={containerRequest.containerUuid} />
+                    <DetailsAttribute label='Requesting Container UUID' value={containerRequest.requestingContainerUuid || "(none)"} />
                 </Grid>
                 <Grid item xs={6}>
                     <span onClick={() => props.navigateToOutput(containerRequest.outputUuid!)}>
@@ -114,13 +122,19 @@ export const ProcessDetailsAttributes = withStyles(styles, { withTheme: true })(
                 <Grid item xs={12} md={mdSize}>
                     <DetailsAttribute label='Priority' value={containerRequest.priority} />
                 </Grid>
-                <Grid item xs={12} md={mdSize}>
-                    <DetailsAttribute label='Runtime Constraints'
-                    value={JSON.stringify(containerRequest.runtimeConstraints)} />
-                </Grid>
-                <Grid item xs={12} md={mdSize}>
-                    <DetailsAttribute label='Docker Image locator'
-                    linkToUuid={containerRequest.containerImage} value={containerRequest.containerImage} />
+                {/*
+                    NOTE: The property list should be kept at the bottom, because it spans
+                    the entire available width, without regards of the twoCol prop.
+                */}
+                <Grid item xs={12} md={12}>
+                    <DetailsAttribute label='Properties' />
+                    { Object.keys(containerRequest.properties).length > 0
+                        ? Object.keys(containerRequest.properties).map(k =>
+                                Array.isArray(containerRequest.properties[k])
+                                ? containerRequest.properties[k].map((v: string) =>
+                                    getPropertyChip(k, v, undefined, classes.propertyTag))
+                                : getPropertyChip(k, containerRequest.properties[k], undefined, classes.propertyTag))
+                        : <div>No properties</div> }
                 </Grid>
             </Grid>;
         }

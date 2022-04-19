@@ -109,7 +109,7 @@ export const ProcessDetailsCard = withStyles(styles)(
                     </div>
                 } />
             <CardContent className={classes.content}>
-                <ProcessDetailsAttributes request={process.containerRequest} twoCol />
+                <ProcessDetailsAttributes request={process.containerRequest} twoCol hideProcessPanelRedundantFields />
             </CardContent>
         </Card>;
     }
