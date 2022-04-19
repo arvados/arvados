@@ -17,7 +17,14 @@ import { RuntimeStatus } from "models/runtime-status";
 import { ArvadosTheme } from 'common/custom-theme';
 import classNames from 'classnames';
 
-type CssRules = 'heading' | 'summary' | 'details' | 'error' | 'errorColor' | 'warning' | 'warningColor';
+type CssRules = 'heading'
+    | 'summary'
+    | 'details'
+    | 'detailsText'
+    | 'error'
+    | 'errorColor'
+    | 'warning'
+    | 'warningColor';
 
 const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     heading: {
@@ -30,6 +37,12 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     details: {
         paddingLeft: theme.spacing.unit * 1,
         paddingRight: theme.spacing.unit * 1,
+    },
+    detailsText: {
+        fontSize: '0.8rem',
+        marginTop: '0px',
+        marginBottom: '0px',
+        whiteSpace: 'pre-line',
     },
     errorColor: {
         color: theme.customs.colors.red900,
@@ -62,7 +75,7 @@ export const ProcessRuntimeStatus = withStyles(styles)(
                 </Typography>
             </ExpansionPanelSummary>
             <ExpansionPanelDetails className={classes.details}>
-                <Typography className={classes.errorColor}>
+                <Typography className={classNames(classes.errorColor, classes.detailsText)}>
                     {runtimeStatus?.errorDetail || 'No additional error details available'}
                 </Typography>
             </ExpansionPanelDetails>
@@ -76,7 +89,7 @@ export const ProcessRuntimeStatus = withStyles(styles)(
                 </Typography>
             </ExpansionPanelSummary>
             <ExpansionPanelDetails className={classes.details}>
-                <Typography className={classes.warningColor}>
+                <Typography className={classNames(classes.warningColor, classes.detailsText)}>
                     {runtimeStatus?.warningDetail || 'No additional warning details available'}
                 </Typography>
             </ExpansionPanelDetails>
