@@ -13,6 +13,7 @@ import * as Routes from 'routes/routes';
 import { toggleDetailsPanel } from 'store/details-panel/details-panel-action';
 import RefreshButton from "components/refresh-button/refresh-button";
 import { loadSidePanelTreeProjects } from "store/side-panel-tree/side-panel-tree-actions";
+import { Dispatch } from "redux";
 
 type CssRules = "infoTooltip";
 
@@ -44,46 +45,40 @@ const isButtonVisible = ({ router }: RootState) => {
         Routes.matchAllProcessesRoute(pathname) ||
         Routes.matchTrashRoute(pathname) ||
         Routes.matchFavoritesRoute(pathname);
-
-    /* return !Routes.matchWorkflowRoute(pathname) && !Routes.matchUserVirtualMachineRoute(pathname) &&
-     *     !Routes.matchAdminVirtualMachineRoute(pathname) && !Routes.matchRepositoriesRoute(pathname) &&
-     *     !Routes.matchSshKeysAdminRoute(pathname) && !Routes.matchSshKeysUserRoute(pathname) &&
-     *     !Routes.matchSiteManagerRoute(pathname) &&
-     *     !Routes.matchKeepServicesRoute(pathname) && !Routes.matchComputeNodesRoute(pathname) &&
-     *     !Routes.matchApiClientAuthorizationsRoute(pathname) && !Routes.matchUsersRoute(pathname) &&
-     *     !Routes.matchMyAccountRoute(pathname) && !Routes.matchLinksRoute(pathname); */
 };
 
-export const MainContentBar =
-    connect((state: RootState) => ({
-        buttonVisible: isButtonVisible(state),
-        projectUuid: state.detailsPanel.resourceUuid,
-    }), (dispatch) => ({
-            onDetailsPanelToggle: () => dispatch<any>(toggleDetailsPanel()),
-            onRefreshButtonClick: (id) => {
-                dispatch<any>(loadSidePanelTreeProjects(id));
-            }
-        }))(
-            withStyles(styles)(
-                (props: MainContentBarProps & WithStyles<CssRules> & any) =>
-                    <Toolbar>
-                        <Grid container>
-                            <Grid container item xs alignItems="center">
-                                <Breadcrumbs />
-                            </Grid>
-                            <Grid item>
-                                <RefreshButton onClick={() => {
-                                    props.onRefreshButtonClick(props.projectUuid);
-                                }} />
-                            </Grid>
-                            <Grid item>
-                                {props.buttonVisible && <Tooltip title="Additional Info">
-                                    <IconButton data-cy="additional-info-icon" color="inherit" className={props.classes.infoTooltip} onClick={props.onDetailsPanelToggle}>
-                                        <DetailsIcon />
-                                    </IconButton>
-                                </Tooltip>}
-                            </Grid>
-                        </Grid>
-                    </Toolbar>
-            )
-        );
+const mapStateToProps = (state: RootState) => ({
+    buttonVisible: isButtonVisible(state),
+    projectUuid: state.detailsPanel.resourceUuid,
+});
+
+const mapDispatchToProps = () => (dispatch: Dispatch) => ({
+    onDetailsPanelToggle: () => dispatch<any>(toggleDetailsPanel()),
+    onRefreshButtonClick: (id) => {
+        dispatch<any>(loadSidePanelTreeProjects(id));
+    }
+});
+
+export const MainContentBar = connect(mapStateToProps, mapDispatchToProps)(withStyles(styles)(
+    (props: MainContentBarProps & WithStyles<CssRules> & any) =>
+        <Toolbar><Grid container>
+            <Grid container item xs alignItems="center">
+                <Breadcrumbs />
+            </Grid>
+            <Grid item>
+                <RefreshButton onClick={() => {
+                    props.onRefreshButtonClick(props.projectUuid);
+                }} />
+            </Grid>
+            <Grid item>
+                {props.buttonVisible && <Tooltip title="Additional Info">
+                    <IconButton data-cy="additional-info-icon"
+                        color="inherit"
+                        className={props.classes.infoTooltip}
+                        onClick={props.onDetailsPanelToggle}>
+                        <DetailsIcon />
+                    </IconButton>
+                </Tooltip>}
+            </Grid>
+        </Grid></Toolbar>
+));

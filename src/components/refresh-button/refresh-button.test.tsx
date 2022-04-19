@@ -6,7 +6,7 @@ import React from "react";
 import { Button } from "@material-ui/core";
 import { shallow, configure } from "enzyme";
 import Adapter from "enzyme-adapter-react-16";
-import { RefreshButton } from './refresh-button';
+import { LAST_REFRESH_TIMESTAMP, RefreshButton } from './refresh-button';
 
 configure({ adapter: new Adapter() });
 
@@ -31,6 +31,7 @@ describe('<RefreshButton />', () => {
     });
 
     it('should pass window location to router', () => {
+        expect(localStorage.getItem(LAST_REFRESH_TIMESTAMP)).toBeFalsy();
         // setup
         const wrapper = shallow(<RefreshButton {...props} />);
 
@@ -39,5 +40,6 @@ describe('<RefreshButton />', () => {
 
         // then
         expect(props.history.replace).toHaveBeenCalledWith('/');
+        expect(localStorage.getItem(LAST_REFRESH_TIMESTAMP)).not.toBeFalsy();
     });
 });
