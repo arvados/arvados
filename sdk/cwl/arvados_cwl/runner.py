@@ -358,6 +358,7 @@ def upload_dependencies(arvrunner, name, document_loader,
             if "location" not in f and "path" in f:
                 f["location"] = f["path"]
                 del f["path"]
+            normalizeFilesDirs(f)
             optional_deps.append(f)
         visit_class(obj["default"], ("File", "Directory"), defaults_are_optional)
 
