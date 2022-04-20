@@ -72,7 +72,7 @@ manifest_size =
    + sum(size of all file names)
 </pre>
 
-Here is the size when including signatures.  The signatures authorize access to fetch the block from a Keep server, as <a href="#token_signatures">described below</a>.  The signed manifest is what is actually transferred to/from the API server and stored in RAM by @arv-mount@.
+Here is the size when including block signatures.  The block signatures authorize access to fetch each block from a Keep server, as <a href="#token_signatures">described below</a>.  The signed manifest text is what is actually transferred to/from the API server and stored in RAM by @arv-mount@.  The effective upper limit on how large a collection manifest can be is determined by @API.MaxRequestSize@ in @config.yml@ as well as the maximum request size configuration in your reverse proxy or load balancer (e.g. @client_max_body_size@ in Nginx).
 
 <pre>
 manifest_size =
