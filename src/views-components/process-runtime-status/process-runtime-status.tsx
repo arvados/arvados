@@ -17,9 +17,21 @@ import { RuntimeStatus } from "models/runtime-status";
 import { ArvadosTheme } from 'common/custom-theme';
 import classNames from 'classnames';
 
-type CssRules = 'heading' | 'summary' | 'details' | 'error' | 'errorColor' | 'warning' | 'warningColor';
+type CssRules = 'root'
+    | 'heading'
+    | 'summary'
+    | 'summaryText'
+    | 'details'
+    | 'detailsText'
+    | 'error'
+    | 'errorColor'
+    | 'warning'
+    | 'warningColor';
 
 const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
+    root: {
+        marginBottom: theme.spacing.unit * 1,
+    },
     heading: {
         fontSize: '1rem',
     },
@@ -27,9 +39,18 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
         paddingLeft: theme.spacing.unit * 1,
         paddingRight: theme.spacing.unit * 1,
     },
+    summaryText: {
+        whiteSpace: 'pre-line',
+    },
     details: {
         paddingLeft: theme.spacing.unit * 1,
         paddingRight: theme.spacing.unit * 1,
+    },
+    detailsText: {
+        fontSize: '0.8rem',
+        marginTop: '0px',
+        marginBottom: '0px',
+        whiteSpace: 'pre-line',
     },
     errorColor: {
         color: theme.customs.colors.red900,
@@ -53,16 +74,16 @@ type ProcessRuntimeStatusProps = ProcessRuntimeStatusDataProps & WithStyles<CssR
 
 export const ProcessRuntimeStatus = withStyles(styles)(
     ({ runtimeStatus, classes }: ProcessRuntimeStatusProps) => {
-    return <>
+    return <div className={classes.root}>
         { runtimeStatus?.error &&
         <div data-cy='process-runtime-status-error'><ExpansionPanel className={classes.error} elevation={0}>
-            <ExpansionPanelSummary className={classes.summary} expandIcon={<ExpandMoreIcon />}>
+            <ExpansionPanelSummary className={classNames(classes.summary, classes.detailsText)} expandIcon={<ExpandMoreIcon />}>
                 <Typography className={classNames(classes.heading, classes.errorColor)}>
                     {`Error: ${runtimeStatus.error }`}
                 </Typography>
             </ExpansionPanelSummary>
             <ExpansionPanelDetails className={classes.details}>
-                <Typography className={classes.errorColor}>
+                <Typography className={classNames(classes.errorColor, classes.detailsText)}>
                     {runtimeStatus?.errorDetail || 'No additional error details available'}
                 </Typography>
             </ExpansionPanelDetails>
@@ -70,17 +91,17 @@ export const ProcessRuntimeStatus = withStyles(styles)(
         }
         { runtimeStatus?.warning &&
         <div data-cy='process-runtime-status-warning' ><ExpansionPanel className={classes.warning} elevation={0}>
-            <ExpansionPanelSummary className={classes.summary} expandIcon={<ExpandMoreIcon />}>
+            <ExpansionPanelSummary className={classNames(classes.summary, classes.detailsText)} expandIcon={<ExpandMoreIcon />}>
                 <Typography className={classNames(classes.heading, classes.warningColor)}>
                     {`Warning: ${runtimeStatus.warning }`}
                 </Typography>
             </ExpansionPanelSummary>
             <ExpansionPanelDetails className={classes.details}>
-                <Typography className={classes.warningColor}>
+                <Typography className={classNames(classes.warningColor, classes.detailsText)}>
                     {runtimeStatus?.warningDetail || 'No additional warning details available'}
                 </Typography>
             </ExpansionPanelDetails>
         </ExpansionPanel></div>
         }
-    </>
+    </div>
 });
