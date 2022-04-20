@@ -264,16 +264,16 @@ The 'jobs' API is no longer supported.
             # In case of status being an error, only report the first one.
             if kind in ('error', 'warning', 'activity'):
                 updatemessage = runtime_status.get(kind, "")
-                if updatemessage:
-                    updatemessage += "\n"
-                updatemessage += message
+                if not updatemessage:
+                    updatemessage = message;
 
-                # Subsequent messages tacked on as detail
+                # Subsequent messages tacked on in detail
                 updatedetail = runtime_status.get(kind+'Detail', "")
                 if updatedetail:
-                   updatedetail += "\n"
+                    updatedetail += "\n"
+                updatedetail += message + "\n"
                 if detail:
-                    updatedetail += message + "\n" + detail
+                    updatedetail += detail + "\n"
                 runtime_status.update({
                     kind: updatemessage,
                     kind+'Detail': updatedetail,
