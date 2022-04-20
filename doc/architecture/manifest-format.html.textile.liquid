@@ -60,6 +60,28 @@ A normalized manifest is a manifest that meets the following additional restrict
 * Blocks within a stream are ordered based on order of file tokens of the stream.  A given block is listed at most once in a stream.
 * Filename must not contain @"/"@ (the stream name represents the path prefix)
 
+h3. Estimating manifest size
+
+Here's a formula for estimating manifest size as stored in the database, assuming efficiently packed blocks.
+
+<pre>
+manifest_size =
+   + (total data size / 64 MB) * 40
+   + sum(number of files * 20)
+   + sum(size of all directory paths)
+   + sum(size of all file names)
+</pre>
+
+Here is the size when including block signatures.  The block signatures authorize access to fetch each block from a Keep server, as <a href="#token_signatures">described below</a>.  The signed manifest text is what is actually transferred to/from the API server and stored in RAM by @arv-mount@.  The effective upper limit on how large a collection manifest can be is determined by @API.MaxRequestSize@ in @config.yml@ as well as the maximum request size configuration in your reverse proxy or load balancer (e.g. @client_max_body_size@ in Nginx).
+
+<pre>
+manifest_size =
+   + (total data size / 64 MB) * 94
+   + sum(number of files * 20)
+   + sum(size of all directory paths)
+   + sum(size of all file names)
+</pre>
+
 h3. Example manifests
 
 A manifest with four files in two directories:
@@ -122,7 +144,7 @@ table(table table-bordered table-condensed).
 |@d41d8cd98f00b204e9800998ecf8427e+0+z@|Hint does not start with uppercase letter|
 |@d41d8cd98f00b204e9800998ecf8427e+0+Zfoo*bar@|Hint contains invalid character @*@|
 
-h3. Token signatures
+h3(#token_signatures). Token signatures
 
 A token signature (sign-hint) provides proof-of-access for a data block.  It is computed by taking a SHA1 HMAC of the blob signing token (a shared secret between the API server and keep servers), block digest, current API token, expiration timestamp, and blob signature TTL.
 
