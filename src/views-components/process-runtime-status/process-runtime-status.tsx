@@ -19,6 +19,7 @@ import classNames from 'classnames';
 
 type CssRules = 'heading'
     | 'summary'
+    | 'summaryText'
     | 'details'
     | 'detailsText'
     | 'error'
@@ -33,6 +34,9 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     summary: {
         paddingLeft: theme.spacing.unit * 1,
         paddingRight: theme.spacing.unit * 1,
+    },
+    summaryText: {
+        whiteSpace: 'pre-line',
     },
     details: {
         paddingLeft: theme.spacing.unit * 1,
@@ -69,7 +73,7 @@ export const ProcessRuntimeStatus = withStyles(styles)(
     return <>
         { runtimeStatus?.error &&
         <div data-cy='process-runtime-status-error'><ExpansionPanel className={classes.error} elevation={0}>
-            <ExpansionPanelSummary className={classes.summary} expandIcon={<ExpandMoreIcon />}>
+            <ExpansionPanelSummary className={classNames(classes.summary, classes.detailsText)} expandIcon={<ExpandMoreIcon />}>
                 <Typography className={classNames(classes.heading, classes.errorColor)}>
                     {`Error: ${runtimeStatus.error }`}
                 </Typography>
@@ -83,7 +87,7 @@ export const ProcessRuntimeStatus = withStyles(styles)(
         }
         { runtimeStatus?.warning &&
         <div data-cy='process-runtime-status-warning' ><ExpansionPanel className={classes.warning} elevation={0}>
-            <ExpansionPanelSummary className={classes.summary} expandIcon={<ExpandMoreIcon />}>
+            <ExpansionPanelSummary className={classNames(classes.summary, classes.detailsText)} expandIcon={<ExpandMoreIcon />}>
                 <Typography className={classNames(classes.heading, classes.warningColor)}>
                     {`Warning: ${runtimeStatus.warning }`}
                 </Typography>
