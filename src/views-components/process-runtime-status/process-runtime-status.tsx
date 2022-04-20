@@ -17,7 +17,8 @@ import { RuntimeStatus } from "models/runtime-status";
 import { ArvadosTheme } from 'common/custom-theme';
 import classNames from 'classnames';
 
-type CssRules = 'heading'
+type CssRules = 'root'
+    | 'heading'
     | 'summary'
     | 'summaryText'
     | 'details'
@@ -28,6 +29,9 @@ type CssRules = 'heading'
     | 'warningColor';
 
 const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
+    root: {
+        marginBottom: theme.spacing.unit * 1,
+    },
     heading: {
         fontSize: '1rem',
     },
@@ -70,7 +74,7 @@ type ProcessRuntimeStatusProps = ProcessRuntimeStatusDataProps & WithStyles<CssR
 
 export const ProcessRuntimeStatus = withStyles(styles)(
     ({ runtimeStatus, classes }: ProcessRuntimeStatusProps) => {
-    return <>
+    return <div className={classes.root}>
         { runtimeStatus?.error &&
         <div data-cy='process-runtime-status-error'><ExpansionPanel className={classes.error} elevation={0}>
             <ExpansionPanelSummary className={classNames(classes.summary, classes.detailsText)} expandIcon={<ExpandMoreIcon />}>
@@ -99,5 +103,5 @@ export const ProcessRuntimeStatus = withStyles(styles)(
             </ExpansionPanelDetails>
         </ExpansionPanel></div>
         }
-    </>
+    </div>
 });

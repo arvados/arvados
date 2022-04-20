@@ -41,8 +41,10 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
         paddingTop: theme.spacing.unit * 0.5
     },
     content: {
+        padding: theme.spacing.unit * 1.0,
+        paddingTop: theme.spacing.unit * 0.5,
         '&:last-child': {
-            paddingBottom: theme.spacing.unit * 2,
+            paddingBottom: theme.spacing.unit * 1,
         }
     },
     title: {
