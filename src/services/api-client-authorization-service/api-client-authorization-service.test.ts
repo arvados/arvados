@@ -3,7 +3,6 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import axios, { AxiosInstance } from "axios";
-// import MockAdapter from 'axios-mock-adapter';
 import { ApiClientAuthorizationService } from "./api-client-authorization-service";
 
 
@@ -11,7 +10,6 @@ describe('ApiClientAuthorizationService', () => {
     let apiClientAuthorizationService: ApiClientAuthorizationService;
     let serverApi: AxiosInstance;
     let actions;
-
 
     beforeEach(() => {
         serverApi = axios.create();
