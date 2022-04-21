@@ -1385,6 +1385,8 @@ class TestWorkflow(unittest.TestCase):
         runner.api.collections().list().execute.return_value = {"items": [{"uuid": "zzzzz-4zz18-zzzzzzzzzzzzzzz",
                                                                            "portable_data_hash": "99999999999999999999999999999993+99"}]}
 
+        runner.api.containers().current().execute.return_value = {}
+
         runner.project_uuid = "zzzzz-8i9sb-zzzzzzzzzzzzzzz"
         runner.ignore_docker_for_reuse = False
         runner.num_retries = 0

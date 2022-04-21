@@ -261,19 +261,25 @@ The 'jobs' API is no longer supported.
             if current is None:
                 return
             runtime_status = current.get('runtime_status', {})
-            # In case of status being an error, only report the first one.
-            if kind in ('error', 'warning', 'activity'):
+            if kind in ('error', 'warning'):
                 updatemessage = runtime_status.get(kind, "")
                 if not updatemessage:
-                    updatemessage = message;
+                    updatemessage = message
 
                 # Subsequent messages tacked on in detail
                 updatedetail = runtime_status.get(kind+'Detail', "")
-                if updatedetail:
-                    updatedetail += "\n"
-                updatedetail += message + "\n"
-                if detail:
-                    updatedetail += detail + "\n"
+                maxlines = 40
+                if updatedetail.count("\n") < maxlines:
+                    if updatedetail:
+                        updatedetail += "\n"
+                    updatedetail += message + "\n"
+
+                    if detail:
+                        updatedetail += detail + "\n"
+
+                    if updatedetail.count("\n") >= maxlines:
+                        updatedetail += "\nSome messages may have been omitted.  Check the full log."
+
                 runtime_status.update({
                     kind: updatemessage,
                     kind+'Detail': updatedetail,
