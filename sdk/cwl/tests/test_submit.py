@@ -1418,7 +1418,7 @@ class TestSubmit(unittest.TestCase):
             self.assertEqual(exited, 1)
             self.assertRegex(
                 capture_stderr.getvalue(),
-                r"Collection uuid zzzzz-4zz18-zzzzzzzzzzzzzzz not found")
+                r"Collection\s*uuid\s*zzzzz-4zz18-zzzzzzzzzzzzzzz\s*not\s*found")
         finally:
             cwltool_logger.removeHandler(stderr_logger)
 
