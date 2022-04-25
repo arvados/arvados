@@ -15,7 +15,7 @@ if test "$1" = "--only-deps" ; then
     exit
 fi
 
-/usr/local/lib/arvbox/runsu.sh flock $ARVADOS_CONTAINER_PATH/cluster_config.yml.lock /usr/local/lib/arvbox/cluster-config.sh
+flock $ARVADOS_CONTAINER_PATH/cluster_config.yml.lock /usr/local/lib/arvbox/cluster-config.sh
 
 export PATH="$PATH:$ARVADOS_CONTAINER_PATH/git/bin"
 cd ~git
