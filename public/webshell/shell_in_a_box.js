@@ -128,7 +128,7 @@ function ShellInABox(url, container) {
 };
 extend(ShellInABox, VT100);
 
-ShellInABox.prototype.sessionClosed = function() {
+ShellInABox.prototype.sessionClosed = function(msg) {
   try {
     this.connected    = false;
     if (this.session) {
@@ -136,7 +136,7 @@ ShellInABox.prototype.sessionClosed = function() {
       if (this.cursorX > 0) {
         this.vt100('\r\n');
       }
-      this.vt100('Session closed.');
+      this.vt100(msg || 'Session closed.');
       this.currentRequest.abort();
     }
     // Revealing the "reconnect" button is commented out until we hook

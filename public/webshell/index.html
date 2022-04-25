@@ -60,7 +60,7 @@
         if (currentTime - lastTime > idleTimeoutMs) {
           //logout
           sh.reset();
-          sh.sessionClosed();
+          sh.sessionClosed("Session timed out after " + timeout + " seconds.");
           document.body.onmousemove = undefined;
           document.body.onkeydown = undefined;
         } else {
