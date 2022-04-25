@@ -88,10 +88,12 @@
              sh.keysPressed(token + "\n");
              sh.vt100('(sent authentication token)\n');
              token = null;
-             updateIdleTimer();
-             document.body.onmousemove = updateIdleTimer;
-             document.body.onkeydown = updateIdleTimer;
-             setTimeout(checkIdleTimer, 1000);
+             if (timeout > 0) {
+               updateIdleTimer();
+               document.body.onmousemove = updateIdleTimer;
+               document.body.onkeydown = updateIdleTimer;
+               setTimeout(checkIdleTimer, 1000);
+             }
           } else {
             setTimeout(trySendToken, 200);
           }
