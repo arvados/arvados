@@ -63,6 +63,13 @@ class TestContainer(unittest.TestCase):
         cwltool.process._names = set()
         arv_docker_clear_cache()
 
+    def tearDown(self):
+        root_logger = logging.getLogger('')
+
+        # Remove existing RuntimeStatusLoggingHandlers if they exist
+        handlers = [h for h in root_logger.handlers if not isinstance(h, arvados_cwl.executor.RuntimeStatusLoggingHandler)]
+        root_logger.handlers = handlers
+
     def helper(self, runner, enable_reuse=True):
         document_loader, avsc_names, schema_metadata, metaschema_loader = cwltool.process.get_schema(INTERNAL_VERSION)
 
