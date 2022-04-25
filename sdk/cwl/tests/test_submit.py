@@ -348,6 +348,12 @@ class TestSubmit(unittest.TestCase):
         cwltool.process._names = set()
         arvados_cwl.arvdocker.arv_docker_clear_cache()
 
+    def tearDown(self):
+        root_logger = logging.getLogger('')
+
+        # Remove existing RuntimeStatusLoggingHandlers if they exist
+        handlers = [h for h in root_logger.handlers if not isinstance(h, arvados_cwl.executor.RuntimeStatusLoggingHandler)]
+        root_logger.handlers = handlers
 
     @mock.patch("time.sleep")
     @stubs
@@ -1049,9 +1055,6 @@ class TestSubmit(unittest.TestCase):
                          stubs.expect_container_request_uuid + '\n')
         self.assertEqual(exited, 0)
 
-    def tearDown(self):
-        arvados_cwl.arvdocker.arv_docker_clear_cache()
-
     @mock.patch("arvados.commands.keepdocker.find_one_image_hash")
     @mock.patch("cwltool.docker.DockerCommandLineJob.get_image")
     @mock.patch("arvados.api")
@@ -1519,6 +1522,13 @@ class TestCreateWorkflow(unittest.TestCase):
     def setUp(self):
         cwltool.process._names = set()
         arvados_cwl.arvdocker.arv_docker_clear_cache()
+
+    def tearDown(self):
+        root_logger = logging.getLogger('')
+
+        # Remove existing RuntimeStatusLoggingHandlers if they exist
+        handlers = [h for h in root_logger.handlers if not isinstance(h, arvados_cwl.executor.RuntimeStatusLoggingHandler)]
+        root_logger.handlers = handlers
 
     @stubs
     def test_create(self, stubs):
