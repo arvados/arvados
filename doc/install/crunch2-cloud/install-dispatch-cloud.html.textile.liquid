@@ -101,7 +101,9 @@ When @Containers/LocalKeepBlobBuffersPerVCPU@ is non-zero, the compute node will
 
 If the AWS credentials for S3 access are configured in @config.yml@ (i.e. @Volumes/DriverParameters/AccessKeyID@ and @Volumes/DriverParameters/SecretAccessKey@), these credentials will be made available to the local Keepstore on the compute node to access S3 directly and no further configuration is necessary.
 
-Alternatively, if an IAM role is configured in @config.yml@ (i.e. @Volumes/DriverParameters/IAMRole@), this role (or an equivalent role) needs be configured in the @CloudVMs/DriverParameters/IAMInstanceProfile@ parameter. That way, @arvados-dispatch-cloud@ can attach the appropriate instance profile to the compute node as it starts up and make the role available to the compute node.
+Alternatively, if an IAM role is configured in @config.yml@ (i.e. @Volumes/DriverParameters/IAMRole@), the name of an instance profile that corresponds to this role ("often identical to the name of the IAM role":https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/iam-roles-for-amazon-ec2.html#ec2-instance-profile) must be configured in the @CloudVMs/DriverParameters/IAMInstanceProfile@ parameter.
+
+Finally, if @config.yml@ does not have @Volumes/DriverParameters/AccessKeyID@, @Volumes/DriverParameters/SecretAccessKey@ or @Volumes/DriverParameters/IAMRole@ defined, Keepstore uses the IAM role attached to the node, whatever it may be called. The @CloudVMs/DriverParameters/IAMInstanceProfile@ parameter must then still be configured with the name of a profile whose IAM role has permission to access the S3 bucket(s). That way, @arvados-dispatch-cloud@ can attach the IAM role to the compute node as it is created.
 
 h3. Minimal configuration example for Amazon EC2
 
