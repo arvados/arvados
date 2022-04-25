@@ -736,7 +736,7 @@ do_test() {
 
 go_ldflags() {
     version=${ARVADOS_VERSION:-$(git log -n1 --format=%H)-dev}
-    echo "-X git.arvados.org/arvados.git/lib/cmd.version=${version} -X main.version=${version}"
+    echo "-X git.arvados.org/arvados.git/lib/cmd.version=${version} -X main.version=${version} -s -w"
 }
 
 do_test_once() {
