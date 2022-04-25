@@ -18,6 +18,7 @@
             "basename": "renamed.txt",
             "class": "File",
             "location": "keep:99999999999999999999999999999998+99/file1.txt"
-        }]
+        }],
+        "location": "_:df80736f-f14d-4b10-b2e3-03aa27f034bb"
     }
 }
