@@ -392,6 +392,10 @@ class ArvadosContainer(JobBase):
                     processStatus = "success"
                 else:
                     processStatus = "permanentFail"
+
+                if rcode == 137:
+                    logger.warning("%s Container may have been killed for using too much RAM.  Try resubmitting with a higher 'ramMin'.",
+                                 self.arvrunner.label(self))
             else:
                 processStatus = "permanentFail"
 

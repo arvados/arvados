@@ -63,6 +63,13 @@ class TestContainer(unittest.TestCase):
         cwltool.process._names = set()
         arv_docker_clear_cache()
 
+    def tearDown(self):
+        root_logger = logging.getLogger('')
+
+        # Remove existing RuntimeStatusLoggingHandlers if they exist
+        handlers = [h for h in root_logger.handlers if not isinstance(h, arvados_cwl.executor.RuntimeStatusLoggingHandler)]
+        root_logger.handlers = handlers
+
     def helper(self, runner, enable_reuse=True):
         document_loader, avsc_names, schema_metadata, metaschema_loader = cwltool.process.get_schema(INTERNAL_VERSION)
 
@@ -1384,6 +1391,8 @@ class TestWorkflow(unittest.TestCase):
         runner.api.collections().get().execute.return_value = {"portable_data_hash": "99999999999999999999999999999993+99"}
         runner.api.collections().list().execute.return_value = {"items": [{"uuid": "zzzzz-4zz18-zzzzzzzzzzzzzzz",
                                                                            "portable_data_hash": "99999999999999999999999999999993+99"}]}
+
+        runner.api.containers().current().execute.return_value = {}
 
         runner.project_uuid = "zzzzz-8i9sb-zzzzzzzzzzzzzzz"
         runner.ignore_docker_for_reuse = False
