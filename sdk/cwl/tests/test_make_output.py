@@ -23,6 +23,13 @@ class TestMakeOutput(unittest.TestCase):
         self.api = mock.MagicMock()
         self.api._rootDesc = get_rootDesc()
 
+    def tearDown(self):
+        root_logger = logging.getLogger('')
+
+        # Remove existing RuntimeStatusLoggingHandlers if they exist
+        handlers = [h for h in root_logger.handlers if not isinstance(h, arvados_cwl.executor.RuntimeStatusLoggingHandler)]
+        root_logger.handlers = handlers
+
     @mock.patch("arvados.collection.Collection")
     @mock.patch("arvados.collection.CollectionReader")
     def test_make_output_collection(self, reader, col):
