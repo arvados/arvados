@@ -11,8 +11,11 @@
             "inputs": [
                 {
                     "default": {
+                        "basename": "blub.txt",
                         "class": "File",
-                        "location": "keep:5d373e7629203ce39e7c22af98a0f881+52/blub.txt"
+                        "location": "keep:5d373e7629203ce39e7c22af98a0f881+52/blub.txt",
+                        "nameext": ".txt",
+                        "nameroot": "blub"
                     },
                     "id": "#submit_tool.cwl/x",
                     "inputBinding": {
@@ -68,7 +71,8 @@
                                 "nameroot": "renamed",
                                 "size": 0
                             }
-                        ]
+                        ],
+			"location": "_:df80736f-f14d-4b10-b2e3-03aa27f034b2"
                     },
                     "id": "#main/z",
                     "type": "Directory"

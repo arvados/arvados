@@ -41,16 +41,22 @@
             "inputs": [
                 {
                     "default": {
+                        "basename": "a.txt",
                         "class": "File",
-                        "location": "keep:b9fca8bf06b170b8507b80b2564ee72b+57/a.txt"
+                        "location": "keep:b9fca8bf06b170b8507b80b2564ee72b+57/a.txt",
+                        "nameext": ".txt",
+                        "nameroot": "a"
                     },
                     "id": "#step1.cwl/a",
                     "type": "File"
                 },
                 {
                     "default": {
+                        "basename": "b.txt",
                         "class": "File",
-                        "location": "keep:b9fca8bf06b170b8507b80b2564ee72b+57/b.txt"
+                        "location": "keep:b9fca8bf06b170b8507b80b2564ee72b+57/b.txt",
+                        "nameext": ".txt",
+                        "nameroot": "b"
                     },
                     "id": "#step1.cwl/b",
                     "type": "File"
@@ -69,16 +75,22 @@
             "inputs": [
                 {
                     "default": {
+                        "basename": "b.txt",
                         "class": "File",
-                        "location": "keep:8e2d09a066d96cdffdd2be41579e4e2e+57/b.txt"
+                        "location": "keep:8e2d09a066d96cdffdd2be41579e4e2e+57/b.txt",
+                        "nameext": ".txt",
+                        "nameroot": "b"
                     },
                     "id": "#step2.cwl/b",
                     "type": "File"
                 },
                 {
                     "default": {
+                        "basename": "c.txt",
                         "class": "File",
-                        "location": "keep:8e2d09a066d96cdffdd2be41579e4e2e+57/c.txt"
+                        "location": "keep:8e2d09a066d96cdffdd2be41579e4e2e+57/c.txt",
+                        "nameext": ".txt",
+                        "nameroot": "c"
                     },
                     "id": "#step2.cwl/c",
                     "type": "File"

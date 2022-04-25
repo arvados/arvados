@@ -47,16 +47,21 @@ _rootDesc = None
 
 def stubs(func):
     @functools.wraps(func)
+    @mock.patch("uuid.uuid4")
     @mock.patch("arvados.commands.keepdocker.list_images_in_arv")
     @mock.patch("arvados.collection.KeepClient")
     @mock.patch("arvados.keep.KeepClient")
     @mock.patch("arvados.events.subscribe")
-    def wrapped(self, events, keep_client1, keep_client2, keepdocker, *args, **kwargs):
+    def wrapped(self, events, keep_client1, keep_client2, keepdocker, uuid4, *args, **kwargs):
         class Stubs(object):
             pass
         stubs = Stubs()
         stubs.events = events
         stubs.keepdocker = keepdocker
+
+        uuid4.side_effect = ["df80736f-f14d-4b10-b2e3-03aa27f034bb", "df80736f-f14d-4b10-b2e3-03aa27f034b1",
+                             "df80736f-f14d-4b10-b2e3-03aa27f034b2", "df80736f-f14d-4b10-b2e3-03aa27f034b3",
+                             "df80736f-f14d-4b10-b2e3-03aa27f034b4", "df80736f-f14d-4b10-b2e3-03aa27f034b5"]
 
         def putstub(p, **kwargs):
             return "%s+%i" % (hashlib.md5(p).hexdigest(), len(p))
@@ -1603,6 +1608,7 @@ class TestCreateWorkflow(unittest.TestCase):
         self.assertEqual(stubs.capture_stdout.getvalue(),
                          self.existing_workflow_uuid + '\n')
         self.assertEqual(exited, 0)
+
 
     @stubs
     def test_update_name(self, stubs):
