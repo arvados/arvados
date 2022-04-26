@@ -1,8 +1,15 @@
+{% comment %}
+Copyright (C) The Arvados Authors. All rights reserved.
+
+SPDX-License-Identifier: CC-BY-SA-3.0
+{% endcomment %}
+
 h2(#restart-api). Restart the API server and controller
 
 *Make sure the cluster config file is up to date on the API server host* then restart the API server and controller processes to ensure the configuration changes are visible to the whole cluster.
 
 <notextile>
 <pre><code># <span class="userinput">systemctl restart nginx arvados-controller</span>
+# <span class="userinput">arvados-server check</span>
 </code></pre>
 </notextile>

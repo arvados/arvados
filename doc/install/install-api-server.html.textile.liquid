@@ -211,8 +211,7 @@ Confirm working Rails API server:
 
 Confirm that you can use the system root token to act as the system root user:
 
-<notextile><pre><code>
-$ curl -H "Authorization: Bearer $system_root_token" https://<span class="userinput">ClusterID.example.com</span>/arvados/v1/users/current
+<notextile><pre><code>$ curl -H "Authorization: Bearer $system_root_token" https://<span class="userinput">ClusterID.example.com</span>/arvados/v1/users/current
 </code></pre></notextile>
 
 h3. Troubleshooting
