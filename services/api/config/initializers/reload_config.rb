@@ -4,6 +4,8 @@
 
 if !File.owned?(Rails.root.join('tmp'))
   Rails.logger.debug("reload_config: not owner of #{Rails.root}/tmp, skipping")
+elsif ENV["ARVADOS_CONFIG"] == "none"
+  Rails.logger.debug("reload_config: no config in use, skipping")
 else
   Thread.new do
     lockfile = Rails.root.join('tmp', 'reload_config.lock')
