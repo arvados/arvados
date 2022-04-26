@@ -118,11 +118,12 @@ arvados:
         Driver: ec2
         DriverParameters:
           Region: FIXME
-          EBSVolumeType: gp2
+          EBSVolumeType: gp3
           AdminUsername: FIXME
           ### This SG should allow SSH from the dispatcher to the compute nodes
           SecurityGroupIDs: ['sg-FIXMEFIXMEFIXMEFI']
           SubnetID: subnet-FIXMEFIXMEFIXMEFI
+          IAMInstanceProfile: __CLUSTER__-keepstore-00-iam-role
       DispatchPrivateKey: |
         -----BEGIN OPENSSH PRIVATE KEY-----
         Read https://doc.arvados.org/install/crunch2-cloud/install-compute-node.html#sshkeypair
@@ -139,15 +140,9 @@ arvados:
         Replication: 2
         Driver: S3
         DriverParameters:
+          UseAWSS3v2Driver: true
           Bucket: __CLUSTER__-nyw5e-000000000000000-volume
           IAMRole: __CLUSTER__-keepstore-00-iam-role
-          Region: FIXME
-      __CLUSTER__-nyw5e-0000000000000001:
-        Replication: 2
-        Driver: S3
-        DriverParameters:
-          Bucket: __CLUSTER__-nyw5e-000000000000001-volume
-          IAMRole: __CLUSTER__-keepstore-01-iam-role
           Region: FIXME
 
     Users:
