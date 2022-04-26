@@ -331,6 +331,19 @@ def run(leave_running_atexit=False):
         os.makedirs(gitdir)
     subprocess.check_output(['tar', '-xC', gitdir, '-f', gittarball])
 
+    # Customizing the passenger config template is the only documented
+    # way to override the default passenger_stat_throttle_rate (10 s).
+    # In the testing environment, we want restart.txt to take effect
+    # immediately.
+    resdir = subprocess.check_output(['bundle', 'exec', 'passenger-config', 'about', 'resourcesdir']).decode().rstrip()
+    with open(resdir + '/templates/standalone/config.erb') as f:
+        template = f.read()
+    newtemplate = re.sub('http {', 'http {\n        passenger_stat_throttle_rate 0;', template)
+    if newtemplate == template:
+        raise "template edit failed"
+    with open('tmp/passenger-nginx.conf.erb', 'w') as f:
+        f.write(newtemplate)
+
     port = internal_port_from_config("RailsAPI")
     env = os.environ.copy()
     env['RAILS_ENV'] = 'test'
@@ -344,6 +357,12 @@ def run(leave_running_atexit=False):
     railsapi = subprocess.Popen(
         ['bundle', 'exec',
          'passenger', 'start', '-p{}'.format(port),
+         '--nginx-config-template', 'tmp/passenger-nginx.conf.erb',
+	 '--no-friendly-error-pages',
+	 '--disable-anonymous-telemetry',
+	 '--disable-security-update-check',
+	 '--no-compile-runtime',
+	 '--no-install-runtime',
          '--pid-file', pid_file,
          '--log-file', '/dev/stdout',
          '--ssl',
