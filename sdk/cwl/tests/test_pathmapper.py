@@ -238,3 +238,16 @@ class TestPathmap(unittest.TestCase):
         p._pathmap["keep:99999999999999999999999999999991+99/hw.py"] = True
         p._pathmap["_:123"] = True
         self.assertTrue(p.needs_new_collection(a))
+
+    def test_is_in_collection(self):
+        arvrunner = arvados_cwl.executor.ArvCwlExecutor(self.api)
+        self.maxDiff = 1000000
+
+        cwd = os.getcwd()
+        p = ArvPathMapper(arvrunner, [{
+            "class": "File",
+            "location": "file://"+cwd+"/tests/fake-keep-mount/fake_collection_dir/subdir/banana.txt"
+        }], "", "/test/%s", "/test/%s/%s")
+
+        self.assertEqual({"file://"+cwd+"/tests/fake-keep-mount/fake_collection_dir/subdir/banana.txt": MapperEnt(resolved='keep:99999999999999999999999999999991+99/subdir/banana.txt', target='/test/99999999999999999999999999999991+99/subdir/banana.txt', type='File', staged=True)},
+                         p._pathmap)
