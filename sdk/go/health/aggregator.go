@@ -151,7 +151,7 @@ func (agg *Aggregator) ClusterHealth() ClusterHealthResponse {
 		// Ensure svc is listed in resp.Services.
 		mtx.Lock()
 		if _, ok := resp.Services[svcName]; !ok {
-			resp.Services[svcName] = ServiceHealth{Health: "NONE"}
+			resp.Services[svcName] = ServiceHealth{Health: "MISSING"}
 		}
 		mtx.Unlock()
 
@@ -187,13 +187,18 @@ func (agg *Aggregator) ClusterHealth() ClusterHealthResponse {
 				mtx.Lock()
 				defer mtx.Unlock()
 				resp.Checks[fmt.Sprintf("%s+%s", svcName, pingURL)] = result
-				if result.Health == "OK" {
+				if result.Health == "OK" || result.Health == "SKIP" {
 					h := resp.Services[svcName]
 					h.N++
-					h.Health = "OK"
+					if result.Health == "OK" || h.N == 1 {
+						// "" => "SKIP" or "OK"
+						// "SKIP" => "OK"
+						h.Health = result.Health
+					}
 					resp.Services[svcName] = h
-				} else if result.Health != "SKIP" {
+				} else {
 					resp.Health = "ERROR"
+					resp.Errors = append(resp.Errors, fmt.Sprintf("%s: %s: %s", svcName, result.Health, result.Error))
 				}
 			}(svcName, addr)
 		}
@@ -214,6 +219,7 @@ func (agg *Aggregator) ClusterHealth() ClusterHealthResponse {
 		default:
 			if sh.Health != "OK" && sh.Health != "SKIP" {
 				resp.Health = "ERROR"
+				resp.Errors = append(resp.Errors, fmt.Sprintf("%s: %s: no InternalURLs configured", svcName, sh.Health))
 				continue
 			}
 		}
@@ -387,6 +393,7 @@ func (ccmd checkCommand) run(ctx context.Context, prog string, args []string, st
 	loader.SetupFlags(flags)
 	versionFlag := flags.Bool("version", false, "Write version information to stdout and exit 0")
 	timeout := flags.Duration("timeout", defaultTimeout.Duration(), "Maximum time to wait for health responses")
+	outputYAML := flags.Bool("yaml", false, "Output full health report in YAML format (default mode shows errors as plain text, is silent on success)")
 	if ok, _ := cmd.ParseFlags(flags, prog, args, "", stderr); !ok {
 		// cmd.ParseFlags already reported the error
 		return errSilent
@@ -408,13 +415,23 @@ func (ccmd checkCommand) run(ctx context.Context, prog string, args []string, st
 	ctx = ctxlog.Context(ctx, logger)
 	agg := Aggregator{Cluster: cluster, timeout: arvados.Duration(*timeout)}
 	resp := agg.ClusterHealth()
-	buf, err := yaml.Marshal(resp)
-	if err != nil {
-		return err
+	if *outputYAML {
+		y, err := yaml.Marshal(resp)
+		if err != nil {
+			return err
+		}
+		stdout.Write(y)
+		if resp.Health != "OK" {
+			return errSilent
+		}
+		return nil
 	}
-	stdout.Write(buf)
 	if resp.Health != "OK" {
-		return fmt.Errorf("health check failed")
+		for _, msg := range resp.Errors {
+			fmt.Fprintln(stdout, msg)
+		}
+		fmt.Fprintln(stderr, "health check failed")
+		return errSilent
 	}
 	return nil
 }
