@@ -361,8 +361,6 @@ def run(leave_running_atexit=False):
 	 '--no-friendly-error-pages',
 	 '--disable-anonymous-telemetry',
 	 '--disable-security-update-check',
-	 '--no-compile-runtime',
-	 '--no-install-runtime',
          '--pid-file', pid_file,
          '--log-file', '/dev/stdout',
          '--ssl',
