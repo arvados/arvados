@@ -245,8 +245,17 @@ func (s *AggregatorSuite) TestCheckCommand(c *check.C) {
 	confdata = regexp.MustCompile(`Source(Timestamp|SHA256): [^\n]+\n`).ReplaceAll(confdata, []byte{})
 	err = ioutil.WriteFile(tmpdir+"/config.yml", confdata, 0777)
 	c.Assert(err, check.IsNil)
+
 	var stdout, stderr bytes.Buffer
+
 	exitcode := CheckCommand.RunCommand("check", []string{"-config=" + tmpdir + "/config.yml"}, &bytes.Buffer{}, &stdout, &stderr)
+	c.Check(exitcode, check.Equals, 0)
+	c.Check(stderr.String(), check.Equals, "")
+	c.Check(stdout.String(), check.Equals, "")
+
+	stdout.Reset()
+	stderr.Reset()
+	exitcode = CheckCommand.RunCommand("check", []string{"-config=" + tmpdir + "/config.yml", "-yaml"}, &bytes.Buffer{}, &stdout, &stderr)
 	c.Check(exitcode, check.Equals, 0)
 	c.Check(stderr.String(), check.Equals, "")
 	c.Check(stdout.String(), check.Matches, `(?ms).*(\n|^)health: OK\n.*`)
