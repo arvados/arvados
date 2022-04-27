@@ -565,6 +565,7 @@ if [ -z "${ROLES}" ]; then
   echo "    - arvados" >> ${S_DIR}/top.sls
   echo "    - extra.shell_sudo_passwordless" >> ${S_DIR}/top.sls
   echo "    - extra.shell_cron_add_login_sync" >> ${S_DIR}/top.sls
+  echo "    - extra.passenger_rvm" >> ${S_DIR}/top.sls
 
   # Pillars
   echo "    - docker" >> ${P_DIR}/top.sls
@@ -657,6 +658,7 @@ else
         else
           echo "    - nginx.passenger" >> ${S_DIR}/top.sls
         fi
+        echo "    - extra.passenger_rvm" >> ${S_DIR}/top.sls
         ### If we don't install and run LE before arvados-api-server, it fails and breaks everything
         ### after it. So we add this here as we are, after all, sharing the host for api and controller
         if [ "${SSL_MODE}" = "lets-encrypt" ]; then

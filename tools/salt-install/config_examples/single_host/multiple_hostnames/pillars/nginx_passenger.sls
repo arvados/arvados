@@ -25,6 +25,8 @@ nginx:
   ### SERVER
   server:
     config:
+      # Needed for RVM, harmless otherwise. Cf. https://dev.arvados.org/issues/19015
+      env: GEM_HOME
       # As we now differentiate where passenger is required or not, we need to
       # load this module conditionally, so we add this conditional just to use
       # the same pillar file
