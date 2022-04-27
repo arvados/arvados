@@ -244,7 +244,7 @@ package_go_binary cmd/arvados-server arvados-dispatch-cloud "$FORMAT" "$ARCH" \
     "Arvados cluster cloud dispatch"
 package_go_binary cmd/arvados-server arvados-dispatch-lsf "$FORMAT" "$ARCH" \
     "Dispatch Arvados containers to an LSF cluster"
-package_go_binary services/arv-git-httpd arvados-git-httpd "$FORMAT" "$ARCH" \
+package_go_binary cmd/arvados-server arvados-git-httpd "$FORMAT" "$ARCH" \
     "Provide authenticated http access to Arvados-hosted git repositories"
 package_go_binary services/crunch-dispatch-local crunch-dispatch-local "$FORMAT" "$ARCH" \
     "Dispatch Crunch containers on the local system"

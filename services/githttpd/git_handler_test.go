@@ -2,9 +2,10 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-package main
+package githttpd
 
 import (
+	"context"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -42,7 +43,7 @@ func (s *GitHandlerSuite) TestEnvVars(c *check.C) {
 		URL:        u,
 		RemoteAddr: "[::1]:12345",
 	}
-	h := newGitHandler(s.cluster)
+	h := newGitHandler(context.Background(), s.cluster)
 	h.(*gitHandler).Path = "/bin/sh"
 	h.(*gitHandler).Args = []string{"-c", "printf 'Content-Type: text/plain\r\n\r\n'; env"}
 
@@ -67,7 +68,7 @@ func (s *GitHandlerSuite) TestCGIErrorOnSplitHostPortError(c *check.C) {
 		URL:        u,
 		RemoteAddr: "test.bad.address.missing.port",
 	}
-	h := newGitHandler(s.cluster)
+	h := newGitHandler(context.Background(), s.cluster)
 	h.ServeHTTP(resp, req)
 	c.Check(resp.Code, check.Equals, http.StatusInternalServerError)
 	c.Check(resp.Body.String(), check.Equals, "")

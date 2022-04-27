@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-package main
+package githttpd
 
 import (
 	"io"
@@ -15,6 +15,7 @@ import (
 
 	"git.arvados.org/arvados.git/lib/config"
 	"git.arvados.org/arvados.git/sdk/go/arvados"
+	"git.arvados.org/arvados.git/sdk/go/arvadosclient"
 	"git.arvados.org/arvados.git/sdk/go/arvadostest"
 	"git.arvados.org/arvados.git/sdk/go/ctxlog"
 	check "gopkg.in/check.v1"
@@ -43,10 +44,18 @@ func (s *AuthHandlerSuite) SetUpTest(c *check.C) {
 }
 
 func (s *AuthHandlerSuite) TestPermission(c *check.C) {
-	h := &authHandler{handler: http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		log.Printf("%v", r.URL)
-		io.WriteString(w, r.URL.Path)
-	}), cluster: s.cluster}
+	client, err := arvados.NewClientFromConfig(s.cluster)
+	c.Assert(err, check.IsNil)
+	ac, err := arvadosclient.New(client)
+	c.Assert(err, check.IsNil)
+	h := &authHandler{
+		cluster:    s.cluster,
+		clientPool: &arvadosclient.ClientPool{Prototype: ac},
+		handler: http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			log.Printf("%v", r.URL)
+			io.WriteString(w, r.URL.Path)
+		}),
+	}
 	baseURL, err := url.Parse("http://git.example/")
 	c.Assert(err, check.IsNil)
 	for _, trial := range []struct {

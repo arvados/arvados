@@ -15,6 +15,6 @@ if test "$1" = "--only-deps" ; then
     exit
 fi
 
-/usr/local/lib/arvbox/runsu.sh flock $ARVADOS_CONTAINER_PATH/cluster_config.yml.lock /usr/local/lib/arvbox/cluster-config.sh
+flock $ARVADOS_CONTAINER_PATH/cluster_config.yml.lock /usr/local/lib/arvbox/cluster-config.sh
 
-exec /usr/local/lib/arvbox/runsu.sh /usr/local/bin/keepproxy
+exec /usr/local/bin/keepproxy

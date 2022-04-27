@@ -2,16 +2,17 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-package main
+package githttpd
 
 import (
-	"log"
+	"context"
 	"net"
 	"net/http"
 	"net/http/cgi"
 	"os"
 
 	"git.arvados.org/arvados.git/sdk/go/arvados"
+	"git.arvados.org/arvados.git/sdk/go/ctxlog"
 )
 
 // gitHandler is an http.Handler that invokes git-http-backend (or
@@ -22,7 +23,7 @@ type gitHandler struct {
 	cgi.Handler
 }
 
-func newGitHandler(cluster *arvados.Cluster) http.Handler {
+func newGitHandler(ctx context.Context, cluster *arvados.Cluster) http.Handler {
 	const glBypass = "GL_BYPASS_ACCESS_CHECKS"
 	const glHome = "GITOLITE_HTTP_HOME"
 	var env []string
@@ -34,7 +35,7 @@ func newGitHandler(cluster *arvados.Cluster) http.Handler {
 		path = path + ":" + cluster.Git.GitoliteHome + "/bin"
 	} else if home, bypass := os.Getenv(glHome), os.Getenv(glBypass); home != "" || bypass != "" {
 		env = append(env, glHome+"="+home, glBypass+"="+bypass)
-		log.Printf("DEPRECATED: Passing through %s and %s environment variables. Use GitoliteHome configuration instead.", glHome, glBypass)
+		ctxlog.FromContext(ctx).Printf("DEPRECATED: Passing through %s and %s environment variables. Use GitoliteHome configuration instead.", glHome, glBypass)
 	}
 
 	var listen arvados.URL
@@ -59,7 +60,7 @@ func newGitHandler(cluster *arvados.Cluster) http.Handler {
 func (h *gitHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	remoteHost, remotePort, err := net.SplitHostPort(r.RemoteAddr)
 	if err != nil {
-		log.Printf("Internal error: SplitHostPort(r.RemoteAddr==%q): %s", r.RemoteAddr, err)
+		ctxlog.FromContext(r.Context()).Errorf("Internal error: SplitHostPort(r.RemoteAddr==%q): %s", r.RemoteAddr, err)
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
