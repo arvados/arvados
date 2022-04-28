@@ -571,6 +571,10 @@ The 'jobs' API is no longer supported.
         else:
             tool = updated_tool
 
+        if runtimeContext.update_workflow and self.project_uuid is None:
+            existing_wf = self.api.workflows().get(uuid=runtimeContext.update_workflow).execute()
+            self.project_uuid = existing_wf["owner_uuid"]
+
         # Upload direct dependencies of workflow steps, get back mapping of files to keep references.
         # Also uploads docker images.
         merged_map = upload_workflow_deps(self, tool)
@@ -584,13 +588,12 @@ The 'jobs' API is no longer supported.
         loadingContext.metadata = tool.metadata
         tool = load_tool(tool.tool, loadingContext)
 
-        existing_uuid = runtimeContext.update_workflow
-        if existing_uuid or runtimeContext.create_workflow:
+        if runtimeContext.update_workflow or runtimeContext.create_workflow:
             # Create a pipeline template or workflow record and exit.
             if self.work_api == "containers":
                 uuid = upload_workflow(self, tool, job_order,
                                         self.project_uuid,
-                                        uuid=existing_uuid,
+                                        uuid=runtimeContext.update_workflow,
                                         submit_runner_ram=runtimeContext.submit_runner_ram,
                                         name=runtimeContext.name,
                                         merged_map=merged_map,

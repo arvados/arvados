@@ -258,7 +258,7 @@ def _new_image_listing(link, dockerhash, repo='<none>', tag='<none>'):
         'tag': tag,
         }
 
-def list_images_in_arv(api_client, num_retries, image_name=None, image_tag=None):
+def list_images_in_arv(api_client, num_retries, image_name=None, image_tag=None, project_uuid=None):
     """List all Docker images known to the api_client with image_name and
     image_tag.  If no image_name is given, defaults to listing all
     Docker images.
@@ -273,13 +273,18 @@ def list_images_in_arv(api_client, num_retries, image_name=None, image_tag=None)
     search_filters = []
     repo_links = None
     hash_links = None
+
+    project_filter = []
+    if project_uuid is not None:
+        project_filter = [["owner_uuid", "=", project_uuid]]
+
     if image_name:
         # Find images with the name the user specified.
         search_links = _get_docker_links(
             api_client, num_retries,
             filters=[['link_class', '=', 'docker_image_repo+tag'],
                      ['name', '=',
-                      '{}:{}'.format(image_name, image_tag or 'latest')]])
+                      '{}:{}'.format(image_name, image_tag or 'latest')]]+project_filter)
         if search_links:
             repo_links = search_links
         else:
@@ -287,7 +292,7 @@ def list_images_in_arv(api_client, num_retries, image_name=None, image_tag=None)
             search_links = _get_docker_links(
                 api_client, num_retries,
                 filters=[['link_class', '=', 'docker_image_hash'],
-                         ['name', 'ilike', image_name + '%']])
+                         ['name', 'ilike', image_name + '%']]+project_filter)
             hash_links = search_links
         # Only list information about images that were found in the search.
         search_filters.append(['head_uuid', 'in',
@@ -299,7 +304,7 @@ def list_images_in_arv(api_client, num_retries, image_name=None, image_tag=None)
     if hash_links is None:
         hash_links = _get_docker_links(
             api_client, num_retries,
-            filters=search_filters + [['link_class', '=', 'docker_image_hash']])
+            filters=search_filters + [['link_class', '=', 'docker_image_hash']]+project_filter)
     hash_link_map = {link['head_uuid']: link for link in reversed(hash_links)}
 
     # Each collection may have more than one name (though again, one name
@@ -309,7 +314,7 @@ def list_images_in_arv(api_client, num_retries, image_name=None, image_tag=None)
         repo_links = _get_docker_links(
             api_client, num_retries,
             filters=search_filters + [['link_class', '=',
-                                       'docker_image_repo+tag']])
+                                       'docker_image_repo+tag']]+project_filter)
     seen_image_names = collections.defaultdict(set)
     images = []
     for link in repo_links:
@@ -337,7 +342,7 @@ def list_images_in_arv(api_client, num_retries, image_name=None, image_tag=None)
     # Remove any image listings that refer to unknown collections.
     existing_coll_uuids = {coll['uuid'] for coll in arvados.util.list_all(
             api_client.collections().list, num_retries,
-            filters=[['uuid', 'in', [im['collection'] for im in images]]],
+            filters=[['uuid', 'in', [im['collection'] for im in images]]]+project_filter,
             select=['uuid'])}
     return [(image['collection'], image) for image in images
             if image['collection'] in existing_coll_uuids]
