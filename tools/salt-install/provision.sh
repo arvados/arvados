@@ -302,7 +302,10 @@ else
       yum install -y  curl git jq
       ;;
     "debian"|"ubuntu")
-      DEBIAN_FRONTEND=noninteractive apt update
+      # Wait 2 minutes for any apt locks to clear
+      # This option is supported from apt 1.9.1 and ignored in older apt versions.
+      # Cf. https://blog.sinjakli.co.uk/2021/10/25/waiting-for-apt-locks-without-the-hacky-bash-scripts/
+      DEBIAN_FRONTEND=noninteractive apt -o DPkg::Lock::Timeout=120 update
       DEBIAN_FRONTEND=noninteractive apt install -y curl git jq
       ;;
   esac
