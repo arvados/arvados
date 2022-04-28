@@ -85,7 +85,8 @@ class DockerError(Exception):
 def popen_docker(cmd, *args, **kwargs):
     manage_stdin = ('stdin' not in kwargs)
     kwargs.setdefault('stdin', subprocess.PIPE)
-    kwargs.setdefault('stdout', sys.stderr)
+    kwargs.setdefault('stdout', subprocess.PIPE)
+    kwargs.setdefault('stderr', subprocess.PIPE)
     try:
         docker_proc = subprocess.Popen(['docker'] + cmd, *args, **kwargs)
     except OSError:  # No docker in $PATH, try docker.io
@@ -385,18 +386,25 @@ def main(arguments=None, stdout=sys.stdout, install_sig_handlers=True, api=None)
     if args.pull and not find_image_hashes(args.image):
         pull_image(args.image, args.tag)
 
+    images_in_arv = list_images_in_arv(api, args.retries, args.image, args.tag)
+
+    image_hash = None
     try:
         image_hash = find_one_image_hash(args.image, args.tag)
+        if not docker_image_compatible(api, image_hash):
+            if args.force_image_format:
+                logger.warning("forcing incompatible image")
+            else:
+                logger.error("refusing to store " \
+                    "incompatible format (use --force-image-format to override)")
+                sys.exit(1)
     except DockerError as error:
-        logger.error(str(error))
-        sys.exit(1)
-
-    if not docker_image_compatible(api, image_hash):
-        if args.force_image_format:
-            logger.warning("forcing incompatible image")
+        if images_in_arv:
+            # We don't have Docker / we don't have the image locally,
+            # use image that's already uploaded to Arvados
+            image_hash = images_in_arv[0][1]['dockerhash']
         else:
-            logger.error("refusing to store " \
-                "incompatible format (use --force-image-format to override)")
+            logger.error(str(error))
             sys.exit(1)
 
     image_repo_tag = '{}:{}'.format(args.image, args.tag) if not image_hash.startswith(args.image.lower()) else None
