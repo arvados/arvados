@@ -274,7 +274,7 @@ if [ ! -z "${HOSTNAME_EXT}" ] ; then
   # Make sure that the value configured as IP_INT is a real IP on the system.
   # If we don't error out early here when there is a mismatch, the formula will
   # fail with hard to interpret nginx errors later on.
-  ip addr list |grep -q "${IP_INT}/"
+  ip addr list |grep "${IP_INT}/" >/dev/null
   if [[ $? -ne 0 ]]; then
     echo "Unable to find the IP_INT address '${IP_INT}' on the system, please correct the value in local.params. Exiting..."
     exit 1
