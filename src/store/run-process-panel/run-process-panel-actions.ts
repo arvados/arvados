@@ -177,7 +177,8 @@ export const runProcess = async (dispatch: Dispatch<any>, getState: () => RootSt
             properties: {
                 workflowUuid: selectedWorkflow.uuid,
                 workflowName: selectedWorkflow.name
-            }
+            },
+            useExisting: false
         };
         const newProcess = await services.containerRequestService.create(newProcessData);
         dispatch(navigateTo(newProcess.uuid));

@@ -131,6 +131,7 @@ describe("run-process-panel-actions", () => {
                 },
                 schedulingParameters: { max_run_time: undefined },
                 state: "Committed",
+                useExisting: false
             });
 
             // and
