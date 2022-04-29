@@ -16,7 +16,7 @@ const (
 	AnonymousToken          = "4kg6k6lzmp9kj4cpkcoxie964cmvjahbt4fod9zru44k4jqdmi"
 	DataManagerToken        = "320mkve8qkswstz7ff61glpk3mhgghmg67wmic7elw4z41pke1"
 	SystemRootToken         = "systemusertesttoken1234567890aoeuidhtnsqjkxbmwvzpy"
-	ManagementToken         = "jg3ajndnq63sywcd50gbs5dskdc9ckkysb0nsqmfz08nwf17nl"
+	ManagementToken         = "e687950a23c3a9bceec28c6223a06c79"
 	ActiveUserUUID          = "zzzzz-tpzed-xurymjxw79nv3jz"
 	FederatedActiveUserUUID = "zbbbb-tpzed-xurymjxw79nv3jz"
 	SpectatorUserUUID       = "zzzzz-tpzed-l1s2piq4t4mps8r"

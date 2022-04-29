@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-package main
+package keepweb
 
 import (
 	"bytes"
@@ -27,6 +27,7 @@ import (
 	"git.arvados.org/arvados.git/sdk/go/auth"
 	"git.arvados.org/arvados.git/sdk/go/ctxlog"
 	"git.arvados.org/arvados.git/sdk/go/keepclient"
+	"github.com/prometheus/client_golang/prometheus"
 	"github.com/sirupsen/logrus"
 	check "gopkg.in/check.v1"
 )
@@ -38,19 +39,31 @@ func init() {
 }
 
 type UnitSuite struct {
-	Config *arvados.Config
+	cluster *arvados.Cluster
+	handler *handler
 }
 
 func (s *UnitSuite) SetUpTest(c *check.C) {
-	ldr := config.NewLoader(bytes.NewBufferString("Clusters: {zzzzz: {}}"), ctxlog.TestLogger(c))
+	logger := ctxlog.TestLogger(c)
+	ldr := config.NewLoader(bytes.NewBufferString("Clusters: {zzzzz: {}}"), logger)
 	ldr.Path = "-"
 	cfg, err := ldr.Load()
 	c.Assert(err, check.IsNil)
-	s.Config = cfg
+	cc, err := cfg.GetCluster("")
+	c.Assert(err, check.IsNil)
+	s.cluster = cc
+	s.handler = &handler{
+		Cluster: cc,
+		Cache: cache{
+			cluster:  cc,
+			logger:   logger,
+			registry: prometheus.NewRegistry(),
+		},
+	}
 }
 
 func (s *UnitSuite) TestCORSPreflight(c *check.C) {
-	h := handler{Config: newConfig(ctxlog.TestLogger(c), s.Config)}
+	h := s.handler
 	u := mustParseURL("http://keep-web.example/c=" + arvadostest.FooCollection + "/foo")
 	req := &http.Request{
 		Method:     "OPTIONS",
@@ -109,7 +122,6 @@ func (s *UnitSuite) TestEmptyResponse(c *check.C) {
 			c.Assert(err, check.IsNil)
 		}
 
-		h := handler{Config: newConfig(ctxlog.TestLogger(c), s.Config)}
 		u := mustParseURL("http://" + arvadostest.FooCollection + ".keep-web.example/foo")
 		req := &http.Request{
 			Method:     "GET",
@@ -130,7 +142,7 @@ func (s *UnitSuite) TestEmptyResponse(c *check.C) {
 		req = req.WithContext(ctxlog.Context(context.Background(), logger))
 
 		resp := httptest.NewRecorder()
-		h.ServeHTTP(resp, req)
+		s.handler.ServeHTTP(resp, req)
 		c.Check(resp.Code, check.Equals, trial.expectStatus)
 		c.Check(resp.Body.String(), check.Equals, "")
 
@@ -159,10 +171,8 @@ func (s *UnitSuite) TestInvalidUUID(c *check.C) {
 			RequestURI: u.RequestURI(),
 		}
 		resp := httptest.NewRecorder()
-		cfg := newConfig(ctxlog.TestLogger(c), s.Config)
-		cfg.cluster.Users.AnonymousUserToken = arvadostest.AnonymousToken
-		h := handler{Config: cfg}
-		h.ServeHTTP(resp, req)
+		s.cluster.Users.AnonymousUserToken = arvadostest.AnonymousToken
+		s.handler.ServeHTTP(resp, req)
 		c.Check(resp.Code, check.Equals, http.StatusNotFound)
 	}
 }
@@ -187,7 +197,7 @@ func (s *IntegrationSuite) TestVhost404(c *check.C) {
 			URL:        u,
 			RequestURI: u.RequestURI(),
 		}
-		s.testServer.Handler.ServeHTTP(resp, req)
+		s.handler.ServeHTTP(resp, req)
 		c.Check(resp.Code, check.Equals, http.StatusNotFound)
 		c.Check(resp.Body.String(), check.Equals, notFoundMessage+"\n")
 	}
@@ -335,7 +345,7 @@ func (s *IntegrationSuite) doVhostRequestsWithHostPath(c *check.C, authz authori
 func (s *IntegrationSuite) TestVhostPortMatch(c *check.C) {
 	for _, host := range []string{"download.example.com", "DOWNLOAD.EXAMPLE.COM"} {
 		for _, port := range []string{"80", "443", "8000"} {
-			s.testServer.Config.cluster.Services.WebDAVDownload.ExternalURL.Host = fmt.Sprintf("download.example.com:%v", port)
+			s.handler.Cluster.Services.WebDAVDownload.ExternalURL.Host = fmt.Sprintf("download.example.com:%v", port)
 			u := mustParseURL(fmt.Sprintf("http://%v/by_id/%v/foo", host, arvadostest.FooCollection))
 			req := &http.Request{
 				Method:     "GET",
@@ -358,7 +368,7 @@ func (s *IntegrationSuite) TestVhostPortMatch(c *check.C) {
 
 func (s *IntegrationSuite) doReq(req *http.Request) (*http.Request, *httptest.ResponseRecorder) {
 	resp := httptest.NewRecorder()
-	s.testServer.Handler.ServeHTTP(resp, req)
+	s.handler.ServeHTTP(resp, req)
 	if resp.Code != http.StatusSeeOther {
 		return req, resp
 	}
@@ -453,7 +463,7 @@ func (s *IntegrationSuite) TestVhostRedirectQueryTokenRequestAttachment(c *check
 }
 
 func (s *IntegrationSuite) TestVhostRedirectQueryTokenSiteFS(c *check.C) {
-	s.testServer.Config.cluster.Services.WebDAVDownload.ExternalURL.Host = "download.example.com"
+	s.handler.Cluster.Services.WebDAVDownload.ExternalURL.Host = "download.example.com"
 	resp := s.testVhostRedirectTokenToCookie(c, "GET",
 		"download.example.com/by_id/"+arvadostest.FooCollection+"/foo",
 		"?api_token="+arvadostest.ActiveToken,
@@ -466,7 +476,7 @@ func (s *IntegrationSuite) TestVhostRedirectQueryTokenSiteFS(c *check.C) {
 }
 
 func (s *IntegrationSuite) TestPastCollectionVersionFileAccess(c *check.C) {
-	s.testServer.Config.cluster.Services.WebDAVDownload.ExternalURL.Host = "download.example.com"
+	s.handler.Cluster.Services.WebDAVDownload.ExternalURL.Host = "download.example.com"
 	resp := s.testVhostRedirectTokenToCookie(c, "GET",
 		"download.example.com/c="+arvadostest.WazVersion1Collection+"/waz",
 		"?api_token="+arvadostest.ActiveToken,
@@ -488,7 +498,7 @@ func (s *IntegrationSuite) TestPastCollectionVersionFileAccess(c *check.C) {
 }
 
 func (s *IntegrationSuite) TestVhostRedirectQueryTokenTrustAllContent(c *check.C) {
-	s.testServer.Config.cluster.Collections.TrustAllContent = true
+	s.handler.Cluster.Collections.TrustAllContent = true
 	s.testVhostRedirectTokenToCookie(c, "GET",
 		"example.com/c="+arvadostest.FooCollection+"/foo",
 		"?api_token="+arvadostest.ActiveToken,
@@ -500,7 +510,7 @@ func (s *IntegrationSuite) TestVhostRedirectQueryTokenTrustAllContent(c *check.C
 }
 
 func (s *IntegrationSuite) TestVhostRedirectQueryTokenAttachmentOnlyHost(c *check.C) {
-	s.testServer.Config.cluster.Services.WebDAVDownload.ExternalURL.Host = "example.com:1234"
+	s.handler.Cluster.Services.WebDAVDownload.ExternalURL.Host = "example.com:1234"
 
 	s.testVhostRedirectTokenToCookie(c, "GET",
 		"example.com/c="+arvadostest.FooCollection+"/foo",
@@ -545,7 +555,7 @@ func (s *IntegrationSuite) TestVhostRedirectPOSTFormTokenToCookie404(c *check.C)
 }
 
 func (s *IntegrationSuite) TestAnonymousTokenOK(c *check.C) {
-	s.testServer.Config.cluster.Users.AnonymousUserToken = arvadostest.AnonymousToken
+	s.handler.Cluster.Users.AnonymousUserToken = arvadostest.AnonymousToken
 	s.testVhostRedirectTokenToCookie(c, "GET",
 		"example.com/c="+arvadostest.HelloWorldCollection+"/Hello%20world.txt",
 		"",
@@ -557,7 +567,7 @@ func (s *IntegrationSuite) TestAnonymousTokenOK(c *check.C) {
 }
 
 func (s *IntegrationSuite) TestAnonymousTokenError(c *check.C) {
-	s.testServer.Config.cluster.Users.AnonymousUserToken = "anonymousTokenConfiguredButInvalid"
+	s.handler.Cluster.Users.AnonymousUserToken = "anonymousTokenConfiguredButInvalid"
 	s.testVhostRedirectTokenToCookie(c, "GET",
 		"example.com/c="+arvadostest.HelloWorldCollection+"/Hello%20world.txt",
 		"",
@@ -569,11 +579,11 @@ func (s *IntegrationSuite) TestAnonymousTokenError(c *check.C) {
 }
 
 func (s *IntegrationSuite) TestSpecialCharsInPath(c *check.C) {
-	s.testServer.Config.cluster.Services.WebDAVDownload.ExternalURL.Host = "download.example.com"
+	s.handler.Cluster.Services.WebDAVDownload.ExternalURL.Host = "download.example.com"
 
-	client := s.testServer.Config.Client
+	client := arvados.NewClientFromEnv()
 	client.AuthToken = arvadostest.ActiveToken
-	fs, err := (&arvados.Collection{}).FileSystem(&client, nil)
+	fs, err := (&arvados.Collection{}).FileSystem(client, nil)
 	c.Assert(err, check.IsNil)
 	f, err := fs.OpenFile("https:\\\"odd' path chars", os.O_CREATE, 0777)
 	c.Assert(err, check.IsNil)
@@ -599,22 +609,22 @@ func (s *IntegrationSuite) TestSpecialCharsInPath(c *check.C) {
 		},
 	}
 	resp := httptest.NewRecorder()
-	s.testServer.Handler.ServeHTTP(resp, req)
+	s.handler.ServeHTTP(resp, req)
 	c.Check(resp.Code, check.Equals, http.StatusOK)
 	c.Check(resp.Body.String(), check.Matches, `(?ms).*href="./https:%5c%22odd%27%20path%20chars"\S+https:\\&#34;odd&#39; path chars.*`)
 }
 
 func (s *IntegrationSuite) TestForwardSlashSubstitution(c *check.C) {
 	arv := arvados.NewClientFromEnv()
-	s.testServer.Config.cluster.Services.WebDAVDownload.ExternalURL.Host = "download.example.com"
-	s.testServer.Config.cluster.Collections.ForwardSlashNameSubstitution = "{SOLIDUS}"
+	s.handler.Cluster.Services.WebDAVDownload.ExternalURL.Host = "download.example.com"
+	s.handler.Cluster.Collections.ForwardSlashNameSubstitution = "{SOLIDUS}"
 	name := "foo/bar/baz"
 	nameShown := strings.Replace(name, "/", "{SOLIDUS}", -1)
 	nameShownEscaped := strings.Replace(name, "/", "%7bSOLIDUS%7d", -1)
 
-	client := s.testServer.Config.Client
+	client := arvados.NewClientFromEnv()
 	client.AuthToken = arvadostest.ActiveToken
-	fs, err := (&arvados.Collection{}).FileSystem(&client, nil)
+	fs, err := (&arvados.Collection{}).FileSystem(client, nil)
 	c.Assert(err, check.IsNil)
 	f, err := fs.OpenFile("filename", os.O_CREATE, 0777)
 	c.Assert(err, check.IsNil)
@@ -648,7 +658,7 @@ func (s *IntegrationSuite) TestForwardSlashSubstitution(c *check.C) {
 			},
 		}
 		resp := httptest.NewRecorder()
-		s.testServer.Handler.ServeHTTP(resp, req)
+		s.handler.ServeHTTP(resp, req)
 		c.Check(resp.Code, check.Equals, http.StatusOK)
 		c.Check(resp.Body.String(), check.Matches, expectRegexp)
 	}
@@ -676,7 +686,7 @@ func (s *IntegrationSuite) TestXHRNoRedirect(c *check.C) {
 		}.Encode())),
 	}
 	resp := httptest.NewRecorder()
-	s.testServer.Handler.ServeHTTP(resp, req)
+	s.handler.ServeHTTP(resp, req)
 	c.Check(resp.Code, check.Equals, http.StatusOK)
 	c.Check(resp.Body.String(), check.Equals, "foo")
 	c.Check(resp.Header().Get("Access-Control-Allow-Origin"), check.Equals, "*")
@@ -695,7 +705,7 @@ func (s *IntegrationSuite) TestXHRNoRedirect(c *check.C) {
 		},
 	}
 	resp = httptest.NewRecorder()
-	s.testServer.Handler.ServeHTTP(resp, req)
+	s.handler.ServeHTTP(resp, req)
 	c.Check(resp.Code, check.Equals, http.StatusOK)
 	c.Check(resp.Body.String(), check.Equals, "foo")
 	c.Check(resp.Header().Get("Access-Control-Allow-Origin"), check.Equals, "*")
@@ -718,7 +728,7 @@ func (s *IntegrationSuite) testVhostRedirectTokenToCookie(c *check.C, method, ho
 		c.Check(resp.Body.String(), check.Equals, expectRespBody)
 	}()
 
-	s.testServer.Handler.ServeHTTP(resp, req)
+	s.handler.ServeHTTP(resp, req)
 	if resp.Code != http.StatusSeeOther {
 		return resp
 	}
@@ -738,23 +748,23 @@ func (s *IntegrationSuite) testVhostRedirectTokenToCookie(c *check.C, method, ho
 	}
 
 	resp = httptest.NewRecorder()
-	s.testServer.Handler.ServeHTTP(resp, req)
+	s.handler.ServeHTTP(resp, req)
 	c.Check(resp.Header().Get("Location"), check.Equals, "")
 	return resp
 }
 
 func (s *IntegrationSuite) TestDirectoryListingWithAnonymousToken(c *check.C) {
-	s.testServer.Config.cluster.Users.AnonymousUserToken = arvadostest.AnonymousToken
+	s.handler.Cluster.Users.AnonymousUserToken = arvadostest.AnonymousToken
 	s.testDirectoryListing(c)
 }
 
 func (s *IntegrationSuite) TestDirectoryListingWithNoAnonymousToken(c *check.C) {
-	s.testServer.Config.cluster.Users.AnonymousUserToken = ""
+	s.handler.Cluster.Users.AnonymousUserToken = ""
 	s.testDirectoryListing(c)
 }
 
 func (s *IntegrationSuite) testDirectoryListing(c *check.C) {
-	s.testServer.Config.cluster.Services.WebDAVDownload.ExternalURL.Host = "download.example.com"
+	s.handler.Cluster.Services.WebDAVDownload.ExternalURL.Host = "download.example.com"
 	authHeader := http.Header{
 		"Authorization": {"OAuth2 " + arvadostest.ActiveToken},
 	}
@@ -901,7 +911,7 @@ func (s *IntegrationSuite) testDirectoryListing(c *check.C) {
 			RequestURI: u.RequestURI(),
 			Header:     copyHeader(trial.header),
 		}
-		s.testServer.Handler.ServeHTTP(resp, req)
+		s.handler.ServeHTTP(resp, req)
 		var cookies []*http.Cookie
 		for resp.Code == http.StatusSeeOther {
 			u, _ := req.URL.Parse(resp.Header().Get("Location"))
@@ -917,13 +927,13 @@ func (s *IntegrationSuite) testDirectoryListing(c *check.C) {
 				req.AddCookie(c)
 			}
 			resp = httptest.NewRecorder()
-			s.testServer.Handler.ServeHTTP(resp, req)
+			s.handler.ServeHTTP(resp, req)
 		}
 		if trial.redirect != "" {
 			c.Check(req.URL.Path, check.Equals, trial.redirect, comment)
 		}
 		if trial.expect == nil {
-			if s.testServer.Config.cluster.Users.AnonymousUserToken == "" {
+			if s.handler.Cluster.Users.AnonymousUserToken == "" {
 				c.Check(resp.Code, check.Equals, http.StatusUnauthorized, comment)
 			} else {
 				c.Check(resp.Code, check.Equals, http.StatusNotFound, comment)
@@ -946,9 +956,9 @@ func (s *IntegrationSuite) testDirectoryListing(c *check.C) {
 			Body:       ioutil.NopCloser(&bytes.Buffer{}),
 		}
 		resp = httptest.NewRecorder()
-		s.testServer.Handler.ServeHTTP(resp, req)
+		s.handler.ServeHTTP(resp, req)
 		if trial.expect == nil {
-			if s.testServer.Config.cluster.Users.AnonymousUserToken == "" {
+			if s.handler.Cluster.Users.AnonymousUserToken == "" {
 				c.Check(resp.Code, check.Equals, http.StatusUnauthorized, comment)
 			} else {
 				c.Check(resp.Code, check.Equals, http.StatusNotFound, comment)
@@ -966,9 +976,9 @@ func (s *IntegrationSuite) testDirectoryListing(c *check.C) {
 			Body:       ioutil.NopCloser(&bytes.Buffer{}),
 		}
 		resp = httptest.NewRecorder()
-		s.testServer.Handler.ServeHTTP(resp, req)
+		s.handler.ServeHTTP(resp, req)
 		if trial.expect == nil {
-			if s.testServer.Config.cluster.Users.AnonymousUserToken == "" {
+			if s.handler.Cluster.Users.AnonymousUserToken == "" {
 				c.Check(resp.Code, check.Equals, http.StatusUnauthorized, comment)
 			} else {
 				c.Check(resp.Code, check.Equals, http.StatusNotFound, comment)
@@ -1003,7 +1013,7 @@ func (s *IntegrationSuite) TestDeleteLastFile(c *check.C) {
 
 	var updated arvados.Collection
 	for _, fnm := range []string{"foo.txt", "bar.txt"} {
-		s.testServer.Config.cluster.Services.WebDAVDownload.ExternalURL.Host = "example.com"
+		s.handler.Cluster.Services.WebDAVDownload.ExternalURL.Host = "example.com"
 		u, _ := url.Parse("http://example.com/c=" + newCollection.UUID + "/" + fnm)
 		req := &http.Request{
 			Method:     "DELETE",
@@ -1015,7 +1025,7 @@ func (s *IntegrationSuite) TestDeleteLastFile(c *check.C) {
 			},
 		}
 		resp := httptest.NewRecorder()
-		s.testServer.Handler.ServeHTTP(resp, req)
+		s.handler.ServeHTTP(resp, req)
 		c.Check(resp.Code, check.Equals, http.StatusNoContent)
 
 		updated = arvados.Collection{}
@@ -1027,38 +1037,17 @@ func (s *IntegrationSuite) TestDeleteLastFile(c *check.C) {
 	c.Check(updated.ManifestText, check.Equals, "")
 }
 
-func (s *IntegrationSuite) TestHealthCheckPing(c *check.C) {
-	s.testServer.Config.cluster.ManagementToken = arvadostest.ManagementToken
-	authHeader := http.Header{
-		"Authorization": {"Bearer " + arvadostest.ManagementToken},
-	}
-
-	resp := httptest.NewRecorder()
-	u := mustParseURL("http://download.example.com/_health/ping")
-	req := &http.Request{
-		Method:     "GET",
-		Host:       u.Host,
-		URL:        u,
-		RequestURI: u.RequestURI(),
-		Header:     authHeader,
-	}
-	s.testServer.Handler.ServeHTTP(resp, req)
-
-	c.Check(resp.Code, check.Equals, http.StatusOK)
-	c.Check(resp.Body.String(), check.Matches, `{"health":"OK"}\n`)
-}
-
 func (s *IntegrationSuite) TestFileContentType(c *check.C) {
-	s.testServer.Config.cluster.Services.WebDAVDownload.ExternalURL.Host = "download.example.com"
+	s.handler.Cluster.Services.WebDAVDownload.ExternalURL.Host = "download.example.com"
 
-	client := s.testServer.Config.Client
+	client := arvados.NewClientFromEnv()
 	client.AuthToken = arvadostest.ActiveToken
-	arv, err := arvadosclient.New(&client)
+	arv, err := arvadosclient.New(client)
 	c.Assert(err, check.Equals, nil)
 	kc, err := keepclient.MakeKeepClient(arv)
 	c.Assert(err, check.Equals, nil)
 
-	fs, err := (&arvados.Collection{}).FileSystem(&client, kc)
+	fs, err := (&arvados.Collection{}).FileSystem(client, kc)
 	c.Assert(err, check.IsNil)
 
 	trials := []struct {
@@ -1101,7 +1090,7 @@ func (s *IntegrationSuite) TestFileContentType(c *check.C) {
 			},
 		}
 		resp := httptest.NewRecorder()
-		s.testServer.Handler.ServeHTTP(resp, req)
+		s.handler.ServeHTTP(resp, req)
 		c.Check(resp.Code, check.Equals, http.StatusOK)
 		c.Check(resp.Header().Get("Content-Type"), check.Matches, trial.contentType)
 		c.Check(resp.Body.String(), check.Equals, trial.content)
@@ -1109,7 +1098,7 @@ func (s *IntegrationSuite) TestFileContentType(c *check.C) {
 }
 
 func (s *IntegrationSuite) TestKeepClientBlockCache(c *check.C) {
-	s.testServer.Config.cluster.Collections.WebDAVCache.MaxBlockEntries = 42
+	s.handler.Cluster.Collections.WebDAVCache.MaxBlockEntries = 42
 	c.Check(keepclient.DefaultBlockCache.MaxBlocks, check.Not(check.Equals), 42)
 	u := mustParseURL("http://keep-web.example/c=" + arvadostest.FooCollection + "/t=" + arvadostest.ActiveToken + "/foo")
 	req := &http.Request{
@@ -1119,7 +1108,7 @@ func (s *IntegrationSuite) TestKeepClientBlockCache(c *check.C) {
 		RequestURI: u.RequestURI(),
 	}
 	resp := httptest.NewRecorder()
-	s.testServer.Handler.ServeHTTP(resp, req)
+	s.handler.ServeHTTP(resp, req)
 	c.Check(resp.Code, check.Equals, http.StatusOK)
 	c.Check(keepclient.DefaultBlockCache.MaxBlocks, check.Equals, 42)
 }
@@ -1144,7 +1133,7 @@ func (s *IntegrationSuite) TestCacheWriteCollectionSamePDH(c *check.C) {
 		req.URL.Host = strings.Replace(id, "+", "-", -1) + ".example"
 		req.Host = req.URL.Host
 		resp := httptest.NewRecorder()
-		s.testServer.Handler.ServeHTTP(resp, req)
+		s.handler.ServeHTTP(resp, req)
 		c.Check(resp.Code, check.Equals, status)
 	}
 
@@ -1170,7 +1159,7 @@ func (s *IntegrationSuite) TestCacheWriteCollectionSamePDH(c *check.C) {
 	reqPut.Host = req.URL.Host
 	reqPut.Body = ioutil.NopCloser(bytes.NewBufferString("testdata"))
 	resp := httptest.NewRecorder()
-	s.testServer.Handler.ServeHTTP(resp, &reqPut)
+	s.handler.ServeHTTP(resp, &reqPut)
 	c.Check(resp.Code, check.Equals, http.StatusCreated)
 
 	// new file should not appear in colls[1]
@@ -1188,10 +1177,10 @@ func copyHeader(h http.Header) http.Header {
 	return hc
 }
 
-func (s *IntegrationSuite) checkUploadDownloadRequest(c *check.C, h *handler, req *http.Request,
+func (s *IntegrationSuite) checkUploadDownloadRequest(c *check.C, req *http.Request,
 	successCode int, direction string, perm bool, userUuid string, collectionUuid string, filepath string) {
 
-	client := s.testServer.Config.Client
+	client := arvados.NewClientFromEnv()
 	client.AuthToken = arvadostest.AdminToken
 	var logentries arvados.LogList
 	limit1 := 1
@@ -1208,7 +1197,7 @@ func (s *IntegrationSuite) checkUploadDownloadRequest(c *check.C, h *handler, re
 	logger.Out = &logbuf
 	resp := httptest.NewRecorder()
 	req = req.WithContext(ctxlog.Context(context.Background(), logger))
-	h.ServeHTTP(resp, req)
+	s.handler.ServeHTTP(resp, req)
 
 	if perm {
 		c.Check(resp.Result().StatusCode, check.Equals, successCode)
@@ -1245,16 +1234,14 @@ func (s *IntegrationSuite) checkUploadDownloadRequest(c *check.C, h *handler, re
 }
 
 func (s *IntegrationSuite) TestDownloadLoggingPermission(c *check.C) {
-	config := newConfig(ctxlog.TestLogger(c), s.ArvConfig)
-	h := handler{Config: config}
 	u := mustParseURL("http://" + arvadostest.FooCollection + ".keep-web.example/foo")
 
-	config.cluster.Collections.TrustAllContent = true
+	s.handler.Cluster.Collections.TrustAllContent = true
 
 	for _, adminperm := range []bool{true, false} {
 		for _, userperm := range []bool{true, false} {
-			config.cluster.Collections.WebDAVPermission.Admin.Download = adminperm
-			config.cluster.Collections.WebDAVPermission.User.Download = userperm
+			s.handler.Cluster.Collections.WebDAVPermission.Admin.Download = adminperm
+			s.handler.Cluster.Collections.WebDAVPermission.User.Download = userperm
 
 			// Test admin permission
 			req := &http.Request{
@@ -1266,7 +1253,7 @@ func (s *IntegrationSuite) TestDownloadLoggingPermission(c *check.C) {
 					"Authorization": {"Bearer " + arvadostest.AdminToken},
 				},
 			}
-			s.checkUploadDownloadRequest(c, &h, req, http.StatusOK, "download", adminperm,
+			s.checkUploadDownloadRequest(c, req, http.StatusOK, "download", adminperm,
 				arvadostest.AdminUserUUID, arvadostest.FooCollection, "foo")
 
 			// Test user permission
@@ -1279,12 +1266,12 @@ func (s *IntegrationSuite) TestDownloadLoggingPermission(c *check.C) {
 					"Authorization": {"Bearer " + arvadostest.ActiveToken},
 				},
 			}
-			s.checkUploadDownloadRequest(c, &h, req, http.StatusOK, "download", userperm,
+			s.checkUploadDownloadRequest(c, req, http.StatusOK, "download", userperm,
 				arvadostest.ActiveUserUUID, arvadostest.FooCollection, "foo")
 		}
 	}
 
-	config.cluster.Collections.WebDAVPermission.User.Download = true
+	s.handler.Cluster.Collections.WebDAVPermission.User.Download = true
 
 	for _, tryurl := range []string{"http://" + arvadostest.MultilevelCollection1 + ".keep-web.example/dir1/subdir/file1",
 		"http://keep-web/users/active/multilevel_collection_1/dir1/subdir/file1"} {
@@ -1299,7 +1286,7 @@ func (s *IntegrationSuite) TestDownloadLoggingPermission(c *check.C) {
 				"Authorization": {"Bearer " + arvadostest.ActiveToken},
 			},
 		}
-		s.checkUploadDownloadRequest(c, &h, req, http.StatusOK, "download", true,
+		s.checkUploadDownloadRequest(c, req, http.StatusOK, "download", true,
 			arvadostest.ActiveUserUUID, arvadostest.MultilevelCollection1, "dir1/subdir/file1")
 	}
 
@@ -1313,18 +1300,15 @@ func (s *IntegrationSuite) TestDownloadLoggingPermission(c *check.C) {
 			"Authorization": {"Bearer " + arvadostest.ActiveToken},
 		},
 	}
-	s.checkUploadDownloadRequest(c, &h, req, http.StatusOK, "download", true,
+	s.checkUploadDownloadRequest(c, req, http.StatusOK, "download", true,
 		arvadostest.ActiveUserUUID, arvadostest.FooCollection, "foo")
 }
 
 func (s *IntegrationSuite) TestUploadLoggingPermission(c *check.C) {
-	config := newConfig(ctxlog.TestLogger(c), s.ArvConfig)
-	h := handler{Config: config}
-
 	for _, adminperm := range []bool{true, false} {
 		for _, userperm := range []bool{true, false} {
 
-			arv := s.testServer.Config.Client
+			arv := arvados.NewClientFromEnv()
 			arv.AuthToken = arvadostest.ActiveToken
 
 			var coll arvados.Collection
@@ -1342,8 +1326,8 @@ func (s *IntegrationSuite) TestUploadLoggingPermission(c *check.C) {
 
 			u := mustParseURL("http://" + coll.UUID + ".keep-web.example/bar")
 
-			config.cluster.Collections.WebDAVPermission.Admin.Upload = adminperm
-			config.cluster.Collections.WebDAVPermission.User.Upload = userperm
+			s.handler.Cluster.Collections.WebDAVPermission.Admin.Upload = adminperm
+			s.handler.Cluster.Collections.WebDAVPermission.User.Upload = userperm
 
 			// Test admin permission
 			req := &http.Request{
@@ -1356,7 +1340,7 @@ func (s *IntegrationSuite) TestUploadLoggingPermission(c *check.C) {
 				},
 				Body: io.NopCloser(bytes.NewReader([]byte("bar"))),
 			}
-			s.checkUploadDownloadRequest(c, &h, req, http.StatusCreated, "upload", adminperm,
+			s.checkUploadDownloadRequest(c, req, http.StatusCreated, "upload", adminperm,
 				arvadostest.AdminUserUUID, coll.UUID, "bar")
 
 			// Test user permission
@@ -1370,7 +1354,7 @@ func (s *IntegrationSuite) TestUploadLoggingPermission(c *check.C) {
 				},
 				Body: io.NopCloser(bytes.NewReader([]byte("bar"))),
 			}
-			s.checkUploadDownloadRequest(c, &h, req, http.StatusCreated, "upload", userperm,
+			s.checkUploadDownloadRequest(c, req, http.StatusCreated, "upload", userperm,
 				arvadostest.ActiveUserUUID, coll.UUID, "bar")
 		}
 	}

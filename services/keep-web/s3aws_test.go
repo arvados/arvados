@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-package main
+package keepweb
 
 import (
 	"bytes"
@@ -31,7 +31,7 @@ func (s *IntegrationSuite) TestS3AWSSDK(c *check.C) {
 	cfg.EndpointResolver = aws.EndpointResolverFunc(func(service, region string) (aws.Endpoint, error) {
 		if service == "s3" {
 			return aws.Endpoint{
-				URL:           "http://" + s.testServer.Addr,
+				URL:           s.testServer.URL,
 				SigningRegion: "custom-signing-region",
 			}, nil
 		}

@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-package main
+package keepweb
 
 import (
 	"encoding/json"
@@ -23,7 +23,6 @@ import (
 	"git.arvados.org/arvados.git/sdk/go/arvadosclient"
 	"git.arvados.org/arvados.git/sdk/go/auth"
 	"git.arvados.org/arvados.git/sdk/go/ctxlog"
-	"git.arvados.org/arvados.git/sdk/go/health"
 	"git.arvados.org/arvados.git/sdk/go/httpserver"
 	"git.arvados.org/arvados.git/sdk/go/keepclient"
 	"github.com/sirupsen/logrus"
@@ -31,34 +30,11 @@ import (
 )
 
 type handler struct {
-	Config        *Config
-	MetricsAPI    http.Handler
-	clientPool    *arvadosclient.ClientPool
-	setupOnce     sync.Once
-	healthHandler http.Handler
-	webdavLS      webdav.LockSystem
-}
-
-// parseCollectionIDFromDNSName returns a UUID or PDH if s begins with
-// a UUID or URL-encoded PDH; otherwise "".
-func parseCollectionIDFromDNSName(s string) string {
-	// Strip domain.
-	if i := strings.IndexRune(s, '.'); i >= 0 {
-		s = s[:i]
-	}
-	// Names like {uuid}--collections.example.com serve the same
-	// purpose as {uuid}.collections.example.com but can reduce
-	// cost/effort of using [additional] wildcard certificates.
-	if i := strings.Index(s, "--"); i >= 0 {
-		s = s[:i]
-	}
-	if arvadosclient.UUIDMatch(s) {
-		return s
-	}
-	if pdh := strings.Replace(s, "-", "+", 1); arvadosclient.PDHMatch(pdh) {
-		return pdh
-	}
-	return ""
+	Cache      cache
+	Cluster    *arvados.Cluster
+	clientPool *arvadosclient.ClientPool
+	setupOnce  sync.Once
+	webdavLS   webdav.LockSystem
 }
 
 var urlPDHDecoder = strings.NewReplacer(" ", "+", "-", "+")
@@ -81,16 +57,10 @@ func parseCollectionIDFromURL(s string) string {
 
 func (h *handler) setup() {
 	// Errors will be handled at the client pool.
-	arv, _ := arvados.NewClientFromConfig(h.Config.cluster)
+	arv, _ := arvados.NewClientFromConfig(h.Cluster)
 	h.clientPool = arvadosclient.MakeClientPoolWith(arv)
 
-	keepclient.RefreshServiceDiscoveryOnSIGHUP()
-	keepclient.DefaultBlockCache.MaxBlocks = h.Config.cluster.Collections.WebDAVCache.MaxBlockEntries
-
-	h.healthHandler = &health.Handler{
-		Token:  h.Config.cluster.ManagementToken,
-		Prefix: "/_health/",
-	}
+	keepclient.DefaultBlockCache.MaxBlocks = h.Cluster.Collections.WebDAVCache.MaxBlockEntries
 
 	// Even though we don't accept LOCK requests, every webdav
 	// handler must have a non-nil LockSystem.
@@ -195,6 +165,16 @@ func stripDefaultPort(host string) string {
 	}
 }
 
+// CheckHealth implements service.Handler.
+func (h *handler) CheckHealth() error {
+	return nil
+}
+
+// Done implements service.Handler.
+func (h *handler) Done() <-chan struct{} {
+	return nil
+}
+
 // ServeHTTP implements http.Handler.
 func (h *handler) ServeHTTP(wOrig http.ResponseWriter, r *http.Request) {
 	h.setupOnce.Do(h.setup)
@@ -204,11 +184,6 @@ func (h *handler) ServeHTTP(wOrig http.ResponseWriter, r *http.Request) {
 	}
 
 	w := httpserver.WrapResponseWriter(wOrig)
-
-	if strings.HasPrefix(r.URL.Path, "/_health/") && r.Method == "GET" {
-		h.healthHandler.ServeHTTP(w, r)
-		return
-	}
 
 	if method := r.Header.Get("Access-Control-Request-Method"); method != "" && r.Method == "OPTIONS" {
 		if !browserMethod[method] && !webdavMethod[method] {
@@ -250,10 +225,10 @@ func (h *handler) ServeHTTP(wOrig http.ResponseWriter, r *http.Request) {
 	var pathToken bool
 	var attachment bool
 	var useSiteFS bool
-	credentialsOK := h.Config.cluster.Collections.TrustAllContent
+	credentialsOK := h.Cluster.Collections.TrustAllContent
 	reasonNotAcceptingCredentials := ""
 
-	if r.Host != "" && stripDefaultPort(r.Host) == stripDefaultPort(h.Config.cluster.Services.WebDAVDownload.ExternalURL.Host) {
+	if r.Host != "" && stripDefaultPort(r.Host) == stripDefaultPort(h.Cluster.Services.WebDAVDownload.ExternalURL.Host) {
 		credentialsOK = true
 		attachment = true
 	} else if r.FormValue("disposition") == "attachment" {
@@ -262,17 +237,14 @@ func (h *handler) ServeHTTP(wOrig http.ResponseWriter, r *http.Request) {
 
 	if !credentialsOK {
 		reasonNotAcceptingCredentials = fmt.Sprintf("vhost %q does not specify a single collection ID or match Services.WebDAVDownload.ExternalURL %q, and Collections.TrustAllContent is false",
-			r.Host, h.Config.cluster.Services.WebDAVDownload.ExternalURL)
+			r.Host, h.Cluster.Services.WebDAVDownload.ExternalURL)
 	}
 
-	if collectionID = parseCollectionIDFromDNSName(r.Host); collectionID != "" {
+	if collectionID = arvados.CollectionIDFromDNSName(r.Host); collectionID != "" {
 		// http://ID.collections.example/PATH...
 		credentialsOK = true
 	} else if r.URL.Path == "/status.json" {
 		h.serveStatus(w, r)
-		return
-	} else if strings.HasPrefix(r.URL.Path, "/metrics") {
-		h.MetricsAPI.ServeHTTP(w, r)
 		return
 	} else if siteFSDir[pathParts[0]] {
 		useSiteFS = true
@@ -365,8 +337,8 @@ func (h *handler) ServeHTTP(wOrig http.ResponseWriter, r *http.Request) {
 
 	if tokens == nil {
 		tokens = reqTokens
-		if h.Config.cluster.Users.AnonymousUserToken != "" {
-			tokens = append(tokens, h.Config.cluster.Users.AnonymousUserToken)
+		if h.Cluster.Users.AnonymousUserToken != "" {
+			tokens = append(tokens, h.Cluster.Users.AnonymousUserToken)
 		}
 	}
 
@@ -402,7 +374,7 @@ func (h *handler) ServeHTTP(wOrig http.ResponseWriter, r *http.Request) {
 	tokenResult := make(map[string]int)
 	for _, arv.ApiToken = range tokens {
 		var err error
-		collection, err = h.Config.Cache.Get(arv, collectionID, forceReload)
+		collection, err = h.Cache.Get(arv, collectionID, forceReload)
 		if err == nil {
 			// Success
 			break
@@ -485,8 +457,8 @@ func (h *handler) ServeHTTP(wOrig http.ResponseWriter, r *http.Request) {
 	}
 
 	// Check configured permission
-	_, sess, err := h.Config.Cache.GetSession(arv.ApiToken)
-	tokenUser, err = h.Config.Cache.GetTokenUser(arv.ApiToken)
+	_, sess, err := h.Cache.GetSession(arv.ApiToken)
+	tokenUser, err = h.Cache.GetTokenUser(arv.ApiToken)
 
 	if webdavMethod[r.Method] {
 		if !h.userPermittedToUploadOrDownload(r.Method, tokenUser) {
@@ -504,7 +476,7 @@ func (h *handler) ServeHTTP(wOrig http.ResponseWriter, r *http.Request) {
 				ResponseWriter: w,
 				logger:         ctxlog.FromContext(r.Context()),
 				update: func() error {
-					return h.Config.Cache.Update(client, *collection, writefs)
+					return h.Cache.Update(client, *collection, writefs)
 				}}
 		}
 		h := webdav.Handler{
@@ -601,12 +573,12 @@ func (h *handler) serveSiteFS(w http.ResponseWriter, r *http.Request, tokens []s
 		return
 	}
 
-	fs, sess, err := h.Config.Cache.GetSession(tokens[0])
+	fs, sess, err := h.Cache.GetSession(tokens[0])
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	fs.ForwardSlashNameSubstitution(h.Config.cluster.Collections.ForwardSlashNameSubstitution)
+	fs.ForwardSlashNameSubstitution(h.Cluster.Collections.ForwardSlashNameSubstitution)
 	f, err := fs.Open(r.URL.Path)
 	if os.IsNotExist(err) {
 		http.Error(w, err.Error(), http.StatusNotFound)
@@ -625,7 +597,7 @@ func (h *handler) serveSiteFS(w http.ResponseWriter, r *http.Request, tokens []s
 		return
 	}
 
-	tokenUser, err := h.Config.Cache.GetTokenUser(tokens[0])
+	tokenUser, err := h.Cache.GetTokenUser(tokens[0])
 	if !h.userPermittedToUploadOrDownload(r.Method, tokenUser) {
 		http.Error(w, "Not permitted", http.StatusForbidden)
 		return
@@ -867,11 +839,11 @@ func (h *handler) userPermittedToUploadOrDownload(method string, tokenUser *arva
 	var permitDownload bool
 	var permitUpload bool
 	if tokenUser != nil && tokenUser.IsAdmin {
-		permitUpload = h.Config.cluster.Collections.WebDAVPermission.Admin.Upload
-		permitDownload = h.Config.cluster.Collections.WebDAVPermission.Admin.Download
+		permitUpload = h.Cluster.Collections.WebDAVPermission.Admin.Upload
+		permitDownload = h.Cluster.Collections.WebDAVPermission.Admin.Download
 	} else {
-		permitUpload = h.Config.cluster.Collections.WebDAVPermission.User.Upload
-		permitDownload = h.Config.cluster.Collections.WebDAVPermission.User.Download
+		permitUpload = h.Cluster.Collections.WebDAVPermission.User.Upload
+		permitDownload = h.Cluster.Collections.WebDAVPermission.User.Download
 	}
 	if (method == "PUT" || method == "POST") && !permitUpload {
 		// Disallow operations that upload new files.
@@ -903,7 +875,7 @@ func (h *handler) logUploadOrDownload(
 			WithField("user_full_name", user.FullName)
 		useruuid = user.UUID
 	} else {
-		useruuid = fmt.Sprintf("%s-tpzed-anonymouspublic", h.Config.cluster.ClusterID)
+		useruuid = fmt.Sprintf("%s-tpzed-anonymouspublic", h.Cluster.ClusterID)
 	}
 	if collection == nil && fs != nil {
 		collection, filepath = h.determineCollection(fs, filepath)
@@ -924,7 +896,7 @@ func (h *handler) logUploadOrDownload(
 	}
 	if r.Method == "PUT" || r.Method == "POST" {
 		log.Info("File upload")
-		if h.Config.cluster.Collections.WebDAVLogEvents {
+		if h.Cluster.Collections.WebDAVLogEvents {
 			go func() {
 				lr := arvadosclient.Dict{"log": arvadosclient.Dict{
 					"object_uuid": useruuid,
@@ -942,7 +914,7 @@ func (h *handler) logUploadOrDownload(
 			props["portable_data_hash"] = collection.PortableDataHash
 		}
 		log.Info("File download")
-		if h.Config.cluster.Collections.WebDAVLogEvents {
+		if h.Cluster.Collections.WebDAVLogEvents {
 			go func() {
 				lr := arvadosclient.Dict{"log": arvadosclient.Dict{
 					"object_uuid": useruuid,

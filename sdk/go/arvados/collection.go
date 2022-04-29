@@ -9,9 +9,15 @@ import (
 	"crypto/md5"
 	"fmt"
 	"regexp"
+	"strings"
 	"time"
 
 	"git.arvados.org/arvados.git/sdk/go/blockdigest"
+)
+
+var (
+	UUIDMatch = regexp.MustCompile(`^[a-z0-9]{5}-[a-z0-9]{5}-[a-z0-9]{15}$`).MatchString
+	PDHMatch  = regexp.MustCompile(`^[0-9a-f]{32}\+\d+$`).MatchString
 )
 
 // Collection is an arvados#collection resource.
@@ -121,4 +127,26 @@ func PortableDataHash(mt string) string {
 		return nil
 	})
 	return fmt.Sprintf("%x+%d", h.Sum(nil), size)
+}
+
+// CollectionIDFromDNSName returns a UUID or PDH if s begins with a
+// UUID or URL-encoded PDH; otherwise "".
+func CollectionIDFromDNSName(s string) string {
+	// Strip domain.
+	if i := strings.IndexRune(s, '.'); i >= 0 {
+		s = s[:i]
+	}
+	// Names like {uuid}--collections.example.com serve the same
+	// purpose as {uuid}.collections.example.com but can reduce
+	// cost/effort of using [additional] wildcard certificates.
+	if i := strings.Index(s, "--"); i >= 0 {
+		s = s[:i]
+	}
+	if UUIDMatch(s) {
+		return s
+	}
+	if pdh := strings.Replace(s, "-", "+", 1); PDHMatch(pdh) {
+		return pdh
+	}
+	return ""
 }
