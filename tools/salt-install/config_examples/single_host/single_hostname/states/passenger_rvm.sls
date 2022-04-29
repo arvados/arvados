@@ -32,7 +32,7 @@ extra_nginx_set_gem_home:
     - contents: |
         [Service]
         ExecStart=
-        ExecStart=/bin/bash -a -c "GEM_HOME=`/usr/local/rvm/bin/rvm-exec default env |grep GEM_HOME=|cut -f2 -d=` && /usr/sbin/nginx -g 'daemon on; master_process on;'"
+        ExecStart=/bin/bash -a -c "GEM_HOME=`[ -x /usr/local/rvm/bin/rvm-exec ] && /usr/local/rvm/bin/rvm-exec default env |grep GEM_HOME=|cut -f2 -d= || true` && /usr/sbin/nginx -g 'daemon on; master_process on;'"
   cmd.run:
     - name: systemctl daemon-reload
     - require:
