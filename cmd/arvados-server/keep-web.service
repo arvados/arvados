@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: AGPL-3.0
 
 [Unit]
-Description=Arvados Keep WebDAV gateway
+Description=Arvados Keep WebDAV and S3 gateway
 Documentation=https://doc.arvados.org/
 After=network.target
 AssertPathExists=/etc/arvados/config.yml
