@@ -22,6 +22,7 @@ import (
 	"git.arvados.org/arvados.git/lib/lsf"
 	"git.arvados.org/arvados.git/lib/recovercollection"
 	"git.arvados.org/arvados.git/services/githttpd"
+	keepweb "git.arvados.org/arvados.git/services/keep-web"
 	"git.arvados.org/arvados.git/services/keepproxy"
 	"git.arvados.org/arvados.git/services/keepstore"
 	"git.arvados.org/arvados.git/services/ws"
@@ -45,6 +46,7 @@ var (
 		"git-httpd":          githttpd.Command,
 		"install":            install.Command,
 		"init":               install.InitCommand,
+		"keep-web":           keepweb.Command,
 		"keepproxy":          keepproxy.Command,
 		"keepstore":          keepstore.Command,
 		"recover-collection": recovercollection.Command,

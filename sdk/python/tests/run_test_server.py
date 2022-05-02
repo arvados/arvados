@@ -518,7 +518,7 @@ def run_keep(num_servers=2, **kwargs):
     # If keepproxy and/or keep-web is running, send SIGHUP to make
     # them discover the new keepstore services.
     for svc in ('keepproxy', 'keep-web'):
-        pidfile = _pidfile('keepproxy')
+        pidfile = _pidfile(svc)
         if os.path.exists(pidfile):
             try:
                 with open(pidfile) as pid:
@@ -602,7 +602,7 @@ def run_keep_web():
     env = os.environ.copy()
     logf = open(_logfilename('keep-web'), WRITE_MODE)
     keepweb = subprocess.Popen(
-        ['keep-web'],
+        ['arvados-server', 'keep-web'],
         env=env, stdin=open('/dev/null'), stdout=logf, stderr=logf)
     with open(_pidfile('keep-web'), 'w') as f:
         f.write(str(keepweb.pid))
@@ -680,7 +680,6 @@ def setup_config():
     keepstore_ports = sorted([str(find_available_port()) for _ in range(0,4)])
     keep_web_port = find_available_port()
     keep_web_external_port = find_available_port()
-    keep_web_dl_port = find_available_port()
     keep_web_dl_external_port = find_available_port()
 
     configsrc = os.environ.get("CONFIGSRC", None)
@@ -762,7 +761,7 @@ def setup_config():
         "WebDAVDownload": {
             "ExternalURL": "https://%s:%s" % (localhost, keep_web_dl_external_port),
             "InternalURLs": {
-                "http://%s:%s"%(localhost, keep_web_dl_port): {},
+                "http://%s:%s"%(localhost, keep_web_port): {},
             },
         },
     }

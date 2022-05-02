@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-package main
+package keepweb
 
 import (
 	"bytes"
@@ -52,8 +52,6 @@ func (s *IntegrationSuite) TestCadaverUserProject(c *check.C) {
 }
 
 func (s *IntegrationSuite) testCadaver(c *check.C, password string, pathFunc func(arvados.Collection) (string, string, string), skip func(string) bool) {
-	s.testServer.Config.cluster.Users.AnonymousUserToken = arvadostest.AnonymousToken
-
 	testdata := []byte("the human tragedy consists in the necessity of living with the consequences of actions performed under the pressure of compulsions we do not understand")
 
 	tempdir, err := ioutil.TempDir("", "keep-web-test-")
@@ -278,7 +276,7 @@ func (s *IntegrationSuite) testCadaver(c *check.C, password string, pathFunc fun
 			match: `(?ms).*Locking .* failed:.*405 Method Not Allowed.*`,
 		},
 	} {
-		c.Logf("%s %+v", "http://"+s.testServer.Addr, trial)
+		c.Logf("%s %+v", s.testServer.URL, trial)
 		if skip != nil && skip(trial.path) {
 			c.Log("(skip)")
 			continue
@@ -343,14 +341,14 @@ func (s *IntegrationSuite) runCadaver(c *check.C, password, path, stdin string) 
 	c.Assert(err, check.IsNil)
 	defer os.RemoveAll(tempdir)
 
-	cmd := exec.Command("cadaver", "http://"+s.testServer.Addr+path)
+	cmd := exec.Command("cadaver", s.testServer.URL+path)
 	if password != "" {
 		// cadaver won't try username/password authentication
 		// unless the server responds 401 to an
 		// unauthenticated request, which it only does in
 		// AttachmentOnlyHost, TrustAllContent, and
 		// per-collection vhost cases.
-		s.testServer.Config.cluster.Services.WebDAVDownload.ExternalURL.Host = s.testServer.Addr
+		s.handler.Cluster.Services.WebDAVDownload.ExternalURL.Host = s.testServer.URL[7:]
 
 		cmd.Env = append(os.Environ(), "HOME="+tempdir)
 		f, err := os.OpenFile(filepath.Join(tempdir, ".netrc"), os.O_CREATE|os.O_TRUNC|os.O_WRONLY, 0600)
