@@ -544,6 +544,16 @@ The 'jobs' API is no longer supported.
         if not runtimeContext.name:
             runtimeContext.name = self.name = updated_tool.tool.get("label") or updated_tool.metadata.get("label") or os.path.basename(updated_tool.tool["id"])
 
+        if runtimeContext.copy_deps is None and (runtimeContext.create_workflow or runtimeContext.update_workflow):
+            runtimeContext.copy_deps = True
+
+        if runtimeContext.update_workflow and self.project_uuid is None:
+            # If we are updating a workflow, make sure anything that
+            # gets uploaded goes into the same parent project, unless
+            # an alternate --project-uuid was provided.
+            existing_wf = self.api.workflows().get(uuid=runtimeContext.update_workflow).execute()
+            self.project_uuid = existing_wf["owner_uuid"]
+
         # Upload local file references in the job order.
         job_order = upload_job_order(self, "%s input" % runtimeContext.name,
                                      updated_tool, job_order)
@@ -570,10 +580,6 @@ The 'jobs' API is no longer supported.
             tool = load_tool(updated_tool.tool["id"], loadingContext)
         else:
             tool = updated_tool
-
-        if runtimeContext.update_workflow and self.project_uuid is None:
-            existing_wf = self.api.workflows().get(uuid=runtimeContext.update_workflow).execute()
-            self.project_uuid = existing_wf["owner_uuid"]
 
         # Upload direct dependencies of workflow steps, get back mapping of files to keep references.
         # Also uploads docker images.

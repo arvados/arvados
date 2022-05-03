@@ -39,6 +39,7 @@ from cwltool.builder import Builder
 import schema_salad.validate as validate
 
 import arvados.collection
+import arvados.util
 from .util import collectionUUID
 from ruamel.yaml import YAML
 from ruamel.yaml.comments import CommentedMap, CommentedSeq
@@ -399,10 +400,15 @@ def upload_dependencies(arvrunner, name, document_loader,
                            single_collection=True,
                            optional_deps=optional_deps)
 
+    keeprefs = set()
+    def addkeepref(k):
+        keeprefs.add(collection_pdh_pattern.match(k).group(1))
+
     def setloc(p):
         loc = p.get("location")
         if loc and (not loc.startswith("_:")) and (not loc.startswith("keep:")):
             p["location"] = mapper.mapper(p["location"]).resolved
+            addkeepref(p["location"])
             return
 
         if not loc:
@@ -424,7 +430,10 @@ def upload_dependencies(arvrunner, name, document_loader,
 
         gp = collection_uuid_pattern.match(loc)
         if not gp:
+            # Not a uuid pattern (must be a pdh pattern)
+            addkeepref(p["location"])
             return
+
         uuid = gp.groups()[0]
         if uuid not in uuid_map:
             raise SourceLine(p, "location", validate.ValidationException).makeError(
@@ -438,6 +447,38 @@ def upload_dependencies(arvrunner, name, document_loader,
     if discovered_secondaryfiles is not None:
         for d in discovered:
             discovered_secondaryfiles[mapper.mapper(d).resolved] = discovered[d]
+
+    if arvrunner.runtimeContext.copy_deps:
+        # Find referenced collections and copy them into the
+        # destination project, for easy sharing.
+        already_present = list(arvados.util.keyset_list_all(arvrunner.api.collections().list,
+                                     filters=[["portable_data_hash", "in", list(keeprefs)],
+                                              ["owner_uuid", "=", arvrunner.project_uuid]],
+                                     select=["uuid", "portable_data_hash", "created_at"]))
+
+        keeprefs = keeprefs - set(a["portable_data_hash"] for a in already_present)
+        for kr in keeprefs:
+            col = arvrunner.api.collections().list(filters=[["portable_data_hash", "=", kr]],
+                                                  order="created_at desc",
+                                                   select=["name", "description", "properties", "portable_data_hash", "manifest_text", "storage_classes_desired", "trash_at"],
+                                                   limit=1).execute()
+            if len(col["items"]) == 0:
+                logger.warning("Cannot find collection with portable data hash %s", kr)
+                continue
+            col = col["items"][0]
+            try:
+                arvrunner.api.collections().create(body={"collection": {
+                    "owner_uuid": arvrunner.project_uuid,
+                    "name": col["name"],
+                    "description": col["description"],
+                    "properties": col["properties"],
+                    "portable_data_hash": col["portable_data_hash"],
+                    "manifest_text": col["manifest_text"],
+                    "storage_classes_desired": col["storage_classes_desired"],
+                    "trash_at": col["trash_at"]
+                }}, ensure_unique_name=True).execute()
+            except Exception as e:
+                logger.warning("Unable copy collection to destination: %s", e)
 
     if "$schemas" in workflowobj:
         sch = CommentedSeq()
@@ -462,13 +503,15 @@ def upload_docker(arvrunner, tool):
             arvados_cwl.arvdocker.arv_docker_get_image(arvrunner.api, docker_req, True, arvrunner.project_uuid,
                                                        arvrunner.runtimeContext.force_docker_pull,
                                                        arvrunner.runtimeContext.tmp_outdir_prefix,
-                                                       arvrunner.runtimeContext.match_local_docker)
+                                                       arvrunner.runtimeContext.match_local_docker,
+                                                       arvrunner.runtimeContext.copy_deps)
         else:
             arvados_cwl.arvdocker.arv_docker_get_image(arvrunner.api, {"dockerPull": "arvados/jobs:"+__version__},
                                                        True, arvrunner.project_uuid,
                                                        arvrunner.runtimeContext.force_docker_pull,
                                                        arvrunner.runtimeContext.tmp_outdir_prefix,
-                                                       arvrunner.runtimeContext.match_local_docker)
+                                                       arvrunner.runtimeContext.match_local_docker,
+                                                       arvrunner.runtimeContext.copy_deps)
     elif isinstance(tool, cwltool.workflow.Workflow):
         for s in tool.steps:
             upload_docker(arvrunner, s.embedded_tool)
@@ -506,7 +549,8 @@ def packed_workflow(arvrunner, tool, merged_map):
                                                                                                              arvrunner.project_uuid,
                                                                                                              arvrunner.runtimeContext.force_docker_pull,
                                                                                                              arvrunner.runtimeContext.tmp_outdir_prefix,
-                                                                                                             arvrunner.runtimeContext.match_local_docker)
+                                                                                                             arvrunner.runtimeContext.match_local_docker,
+                                                                                                             arvrunner.runtimeContext.copy_deps)
             for l in v:
                 visit(v[l], cur_id)
         if isinstance(v, list):
@@ -614,7 +658,8 @@ def arvados_jobs_image(arvrunner, img):
         return arvados_cwl.arvdocker.arv_docker_get_image(arvrunner.api, {"dockerPull": img}, True, arvrunner.project_uuid,
                                                           arvrunner.runtimeContext.force_docker_pull,
                                                           arvrunner.runtimeContext.tmp_outdir_prefix,
-                                                          arvrunner.runtimeContext.match_local_docker)
+                                                          arvrunner.runtimeContext.match_local_docker,
+                                                          arvrunner.runtimeContext.copy_deps)
     except Exception as e:
         raise Exception("Docker image %s is not available\n%s" % (img, e) )
 

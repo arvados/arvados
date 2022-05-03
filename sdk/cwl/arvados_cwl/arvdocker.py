@@ -57,7 +57,7 @@ def determine_image_id(dockerImageId):
 
 
 def arv_docker_get_image(api_client, dockerRequirement, pull_image, project_uuid,
-                         force_pull, tmp_outdir_prefix, match_local_docker):
+                         force_pull, tmp_outdir_prefix, match_local_docker, copy_deps):
     """Check if a Docker image is available in Keep, if not, upload it using arv-keepdocker."""
 
     if "http://arvados.org/cwl#dockerCollectionPDH" in dockerRequirement:
@@ -85,10 +85,14 @@ def arv_docker_get_image(api_client, dockerRequirement, pull_image, project_uuid
                                                                 image_tag=image_tag,
                                                                 project_uuid=None)
 
-        images = arvados.commands.keepdocker.list_images_in_arv(api_client, 3,
-                                                                image_name=image_name,
-                                                                image_tag=image_tag,
-                                                                project_uuid=project_uuid)
+        if copy_deps:
+            # Only images that are available in the destination project
+            images = arvados.commands.keepdocker.list_images_in_arv(api_client, 3,
+                                                                    image_name=image_name,
+                                                                    image_tag=image_tag,
+                                                                    project_uuid=project_uuid)
+        else:
+            images = out_of_project_images
 
         if match_local_docker:
             local_image_id = determine_image_id(dockerRequirement["dockerImageId"])
