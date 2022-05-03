@@ -402,7 +402,8 @@ def upload_dependencies(arvrunner, name, document_loader,
 
     keeprefs = set()
     def addkeepref(k):
-        keeprefs.add(collection_pdh_pattern.match(k).group(1))
+        if k.startswith("keep:"):
+            keeprefs.add(collection_pdh_pattern.match(k).group(1))
 
     def setloc(p):
         loc = p.get("location")

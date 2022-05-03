@@ -77,7 +77,7 @@ def stubs(func):
             "arvados/jobs:123": [("zzzzz-4zz18-zzzzzzzzzzzzzd5", {})],
             "arvados/jobs:latest": [("zzzzz-4zz18-zzzzzzzzzzzzzd6", {})],
         }
-        def kd(a, b, image_name=None, image_tag=None):
+        def kd(a, b, image_name=None, image_tag=None, project_uuid=None):
             return stubs.docker_images.get("%s:%s" % (image_name, image_tag), [])
         stubs.keepdocker.side_effect = kd
 
@@ -1599,6 +1599,9 @@ class TestCreateWorkflow(unittest.TestCase):
 
     @stubs
     def test_update(self, stubs):
+        project_uuid = 'zzzzz-j7d0g-zzzzzzzzzzzzzzz'
+        stubs.api.workflows().get().execute.return_value = {"owner_uuid": project_uuid}
+
         exited = arvados_cwl.main(
             ["--update-workflow", self.existing_workflow_uuid,
              "--debug",
@@ -1610,6 +1613,7 @@ class TestCreateWorkflow(unittest.TestCase):
                 "name": "submit_wf.cwl",
                 "description": "",
                 "definition": self.expect_workflow,
+                "owner_uuid": project_uuid
             }
         }
         stubs.api.workflows().update.assert_called_with(
@@ -1622,6 +1626,9 @@ class TestCreateWorkflow(unittest.TestCase):
 
     @stubs
     def test_update_name(self, stubs):
+        project_uuid = 'zzzzz-j7d0g-zzzzzzzzzzzzzzz'
+        stubs.api.workflows().get().execute.return_value = {"owner_uuid": project_uuid}
+
         exited = arvados_cwl.main(
             ["--update-workflow", self.existing_workflow_uuid,
              "--debug", "--name", "testing 123",
@@ -1633,6 +1640,7 @@ class TestCreateWorkflow(unittest.TestCase):
                 "name": "testing 123",
                 "description": "",
                 "definition": self.expect_workflow,
+                "owner_uuid": project_uuid
             }
         }
         stubs.api.workflows().update.assert_called_with(
