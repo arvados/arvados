@@ -138,7 +138,6 @@ func (inst *installCommand) RunCommand(prog string, args []string, stdin io.Read
 		pkgs = append(pkgs,
 			"dpkg-dev",
 			"eatmydata", // install it for later steps, even if we're not using it now
-			"rsync",
 		)
 	}
 
@@ -185,6 +184,7 @@ func (inst *installCommand) RunCommand(prog string, args []string, stdin io.Read
 			"r-cran-markdown",
 			"r-cran-roxygen2",
 			"r-cran-xml",
+			"rsync",
 			"sudo",
 			"uuid-dev",
 			"wget",
