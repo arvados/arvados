@@ -11,6 +11,7 @@ import (
 	"git.arvados.org/arvados.git/lib/cloud"
 	"git.arvados.org/arvados.git/lib/cloud/azure"
 	"git.arvados.org/arvados.git/lib/cloud/ec2"
+	"git.arvados.org/arvados.git/lib/cloud/loopback"
 	"git.arvados.org/arvados.git/sdk/go/arvados"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/sirupsen/logrus"
@@ -21,8 +22,9 @@ import (
 // Clusters.*.Containers.CloudVMs.Driver configuration values
 // correspond to keys in this map.
 var Drivers = map[string]cloud.Driver{
-	"azure": azure.Driver,
-	"ec2":   ec2.Driver,
+	"azure":    azure.Driver,
+	"ec2":      ec2.Driver,
+	"loopback": loopback.Driver,
 }
 
 func newInstanceSet(cluster *arvados.Cluster, setID cloud.InstanceSetID, logger logrus.FieldLogger, reg *prometheus.Registry) (cloud.InstanceSet, error) {

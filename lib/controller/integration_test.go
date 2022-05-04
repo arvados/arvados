@@ -11,6 +11,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"io/fs"
 	"io/ioutil"
 	"math"
 	"net"
@@ -71,6 +72,17 @@ func (s *IntegrationSuite) SetUpSuite(c *check.C) {
       Insecure: true
     SystemLogs:
       Format: text
+    Containers:
+      CloudVMs:
+        Enable: true
+        Driver: loopback
+        BootProbeCommand: id
+        ProbeInterval: 1s
+        PollInterval: 5s
+        SyncInterval: 10s
+        TimeoutIdle: 1s
+        TimeoutBooting: 2s
+      RuntimeEngine: singularity
     RemoteClusters:
       z1111:
         Host: ` + hostport["z1111"] + `
@@ -1110,4 +1122,97 @@ func (s *IntegrationSuite) TestForwardRuntimeTokenToLoginCluster(c *check.C) {
 	c.Assert(err, check.NotNil)
 	c.Check(err, check.ErrorMatches, `request failed: .* 401 Unauthorized: cannot use a locally issued token to forward a request to our login cluster \(z1111\)`)
 	c.Check(err, check.Not(check.ErrorMatches), `(?ms).*127\.0\.0\.11.*`)
+}
+
+func (s *IntegrationSuite) TestRunTrivialContainer(c *check.C) {
+	conn1 := s.super.Conn("z1111")
+	rootctx1, _, _ := s.super.RootClients("z1111")
+	_, ac1, kc1, _ := s.super.UserClients("z1111", rootctx1, c, conn1, s.oidcprovider.AuthEmail, true)
+
+	c.Log("[docker load]")
+	out, err := exec.Command("docker", "load", "--input", arvadostest.BusyboxDockerImage(c)).CombinedOutput()
+	c.Logf("[docker load done] %s", out)
+	c.Check(err, check.IsNil)
+
+	c.Log("[arv-keepdocker]")
+	akd := exec.Command("arv-keepdocker", "--no-resume", "busybox:uclibc")
+	akd.Env = append(os.Environ(), "ARVADOS_API_HOST="+ac1.APIHost, "ARVADOS_API_HOST_INSECURE=1", "ARVADOS_API_TOKEN="+ac1.AuthToken)
+	c.Logf("[arv-keepdocker env] %q", akd.Env)
+	out, err = akd.CombinedOutput()
+	c.Logf("[arv-keepdocker done] %s", out)
+	c.Check(err, check.IsNil)
+
+	var cr arvados.ContainerRequest
+	err = ac1.RequestAndDecode(&cr, "POST", "/arvados/v1/container_requests", nil, map[string]interface{}{
+		"container_request": map[string]interface{}{
+			"command":             []string{"touch", "/out/hello_world"},
+			"container_image":     "busybox:uclibc",
+			"cwd":                 "/tmp",
+			"environment":         map[string]string{},
+			"mounts":              map[string]arvados.Mount{"/out": {Kind: "tmp", Capacity: 10000}},
+			"output_path":         "/out",
+			"runtime_constraints": arvados.RuntimeConstraints{RAM: 100000000, VCPUs: 1},
+			"priority":            1,
+			"state":               arvados.ContainerRequestStateCommitted,
+		},
+	})
+	c.Assert(err, check.IsNil)
+
+	showlogs := func(collectionID string) {
+		var logcoll arvados.Collection
+		err = ac1.RequestAndDecode(&logcoll, "GET", "/arvados/v1/collections/"+collectionID, nil, nil)
+		c.Assert(err, check.IsNil)
+		cfs, err := logcoll.FileSystem(ac1, kc1)
+		c.Assert(err, check.IsNil)
+		fs.WalkDir(arvados.FS(cfs), "/", func(path string, d fs.DirEntry, err error) error {
+			if d.IsDir() || strings.HasPrefix(path, "/log for container") {
+				return nil
+			}
+			f, err := cfs.Open(path)
+			c.Assert(err, check.IsNil)
+			defer f.Close()
+			buf, err := ioutil.ReadAll(f)
+			c.Assert(err, check.IsNil)
+			c.Logf("=== %s\n%s\n", path, buf)
+			return nil
+		})
+	}
+
+	var ctr arvados.Container
+	var lastState arvados.ContainerState
+	deadline := time.Now().Add(time.Minute)
+wait:
+	for ; ; lastState = ctr.State {
+		err = ac1.RequestAndDecode(&ctr, "GET", "/arvados/v1/containers/"+cr.ContainerUUID, nil, nil)
+		c.Assert(err, check.IsNil)
+		switch ctr.State {
+		case lastState:
+			if time.Now().After(deadline) {
+				c.Errorf("timed out, container request state is %q", cr.State)
+				showlogs(ctr.Log)
+				c.FailNow()
+			}
+			time.Sleep(time.Second / 2)
+		case arvados.ContainerStateComplete:
+			break wait
+		case arvados.ContainerStateQueued, arvados.ContainerStateLocked, arvados.ContainerStateRunning:
+			c.Logf("container state changed to %q", ctr.State)
+		default:
+			c.Errorf("unexpected container state %q", ctr.State)
+			showlogs(ctr.Log)
+			c.FailNow()
+		}
+	}
+	c.Check(ctr.ExitCode, check.Equals, 0)
+
+	err = ac1.RequestAndDecode(&cr, "GET", "/arvados/v1/container_requests/"+cr.UUID, nil, nil)
+	c.Assert(err, check.IsNil)
+
+	showlogs(cr.LogUUID)
+
+	var outcoll arvados.Collection
+	err = ac1.RequestAndDecode(&outcoll, "GET", "/arvados/v1/collections/"+cr.OutputUUID, nil, nil)
+	c.Assert(err, check.IsNil)
+	c.Check(outcoll.ManifestText, check.Matches, `\. d41d8.* 0:0:hello_world\n`)
+	c.Check(outcoll.PortableDataHash, check.Equals, "dac08d558cfb6c9536f604ca89e3c002+53")
 }

@@ -387,8 +387,12 @@ func (super *Supervisor) runCluster() error {
 	}
 	if super.ClusterType != "test" {
 		tasks = append(tasks,
-			runServiceCommand{name: "dispatch-cloud", svc: super.cluster.Services.DispatchCloud},
 			runServiceCommand{name: "keep-balance", svc: super.cluster.Services.Keepbalance},
+		)
+	}
+	if super.cluster.Containers.CloudVMs.Enable {
+		tasks = append(tasks,
+			runServiceCommand{name: "dispatch-cloud", svc: super.cluster.Services.DispatchCloud},
 		)
 	}
 	super.tasksReady = map[string]chan bool{}
@@ -824,9 +828,6 @@ func (super *Supervisor) autofillConfig() error {
 		&super.cluster.Services.Workbench1,
 		&super.cluster.Services.Workbench2,
 	} {
-		if svc == &super.cluster.Services.DispatchCloud && super.ClusterType == "test" {
-			continue
-		}
 		if svc.ExternalURL.Host == "" {
 			port, err := nextPort(defaultExtHost)
 			if err != nil {

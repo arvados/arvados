@@ -28,8 +28,8 @@ var railsEnv = []string{
 // Install a Rails application's dependencies, including phusion
 // passenger.
 type installPassenger struct {
-	src       string
-	varlibdir string
+	src       string // path to app in source tree
+	varlibdir string // path to app (relative to /var/lib/arvados) in OS package: "railsapi" or "workbench1"
 	depends   []supervisedTask
 }
 
@@ -52,6 +52,11 @@ func (runner installPassenger) Run(ctx context.Context, fail func(error), super 
 
 	appdir := runner.src
 	if super.ClusterType == "test" {
+		// In the multi-cluster test setup, if we run multiple
+		// Rails instances directly from the source tree, they
+		// step on one another's files in {source}/tmp, log,
+		// etc. So instead we copy the source directory into a
+		// temp dir and run the Rails app from there.
 		appdir = filepath.Join(super.tempdir, runner.varlibdir)
 		err = super.RunProgram(ctx, super.tempdir, runOptions{}, "mkdir", "-p", appdir)
 		if err != nil {
@@ -112,7 +117,7 @@ func (runner installPassenger) Run(ctx context.Context, fail func(error), super 
 
 type runPassenger struct {
 	src       string // path to app in source tree
-	varlibdir string // path to app (relative to /var/lib/arvados) in OS package
+	varlibdir string // path to app (relative to /var/lib/arvados) in OS package: "railsapi" or "workbench1"
 	svc       arvados.Service
 	depends   []supervisedTask
 }

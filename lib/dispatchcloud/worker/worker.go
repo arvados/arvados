@@ -313,6 +313,10 @@ func (wkr *worker) probeAndUpdate() {
 		// not yet running when ctrUUIDs was generated. Leave
 		// wkr.running alone and wait for the next probe to
 		// catch up on any changes.
+		logger.WithFields(logrus.Fields{
+			"updated":     updated,
+			"wkr.updated": wkr.updated,
+		}).Debug("skipping worker state update due to probe/sync race")
 		return
 	}
 
@@ -387,6 +391,11 @@ func (wkr *worker) probeRunning() (running []string, reportsBroken, ok bool) {
 		wkr.wp.mRunProbeDuration.WithLabelValues("fail").Observe(time.Now().Sub(before).Seconds())
 		return
 	}
+	wkr.logger.WithFields(logrus.Fields{
+		"Command": cmd,
+		"stdout":  string(stdout),
+		"stderr":  string(stderr),
+	}).Debug("probe succeeded")
 	wkr.wp.mRunProbeDuration.WithLabelValues("success").Observe(time.Now().Sub(before).Seconds())
 	ok = true
 

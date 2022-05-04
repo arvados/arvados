@@ -13,6 +13,7 @@ import (
 	"os/exec"
 	"reflect"
 	"regexp"
+	"runtime"
 	"strings"
 	"testing"
 	"time"
@@ -601,6 +602,55 @@ func (s *LoadSuite) TestListKeys(c *check.C) {
 	}
 }
 
+func (s *LoadSuite) TestLoopbackInstanceTypes(c *check.C) {
+	ldr := testLoader(c, `
+Clusters:
+ z1111:
+  Containers:
+   CloudVMs:
+    Enable: true
+    Driver: loopback
+  InstanceTypes:
+   a: {}
+   b: {}
+`, nil)
+	cfg, err := ldr.Load()
+	c.Check(err, check.ErrorMatches, `Clusters\.z1111\.InstanceTypes: cannot use multiple InstanceTypes with loopback driver`)
+
+	ldr = testLoader(c, `
+Clusters:
+ z1111:
+  Containers:
+   CloudVMs:
+    Enable: true
+    Driver: loopback
+`, nil)
+	cfg, err = ldr.Load()
+	c.Assert(err, check.IsNil)
+	cc, err := cfg.GetCluster("")
+	c.Assert(err, check.IsNil)
+	c.Check(cc.InstanceTypes, check.HasLen, 1)
+	c.Check(cc.InstanceTypes["localhost"].VCPUs, check.Equals, runtime.NumCPU())
+
+	ldr = testLoader(c, `
+Clusters:
+ z1111:
+  Containers:
+   CloudVMs:
+    Enable: true
+    Driver: loopback
+  InstanceTypes:
+   a:
+    VCPUs: 9
+`, nil)
+	cfg, err = ldr.Load()
+	c.Assert(err, check.IsNil)
+	cc, err = cfg.GetCluster("")
+	c.Assert(err, check.IsNil)
+	c.Check(cc.InstanceTypes, check.HasLen, 1)
+	c.Check(cc.InstanceTypes["a"].VCPUs, check.Equals, 9)
+}
+
 func (s *LoadSuite) TestImplicitStorageClasses(c *check.C) {
 	// If StorageClasses and Volumes.*.StorageClasses are all
 	// empty, there is a default storage class named "default".
@@ -823,4 +873,17 @@ arvados_config_load_timestamp_seconds{sha256="83aea5d82eb1d53372cd65c936c60acc1c
 arvados_config_source_timestamp_seconds{sha256="83aea5d82eb1d53372cd65c936c60acc1c6ef946e61977bbca7cfea709d201a8"} \Q`+fmt.Sprintf("%g", float64(cfg.SourceTimestamp.UnixNano())/1e9)+`\E
 `)
 	}
+}
+
+func (s *LoadSuite) TestGetHostRAM(c *check.C) {
+	hostram, err := getHostRAM()
+	c.Check(err, check.IsNil)
+	c.Logf("getHostRAM() == %v", hostram)
+}
+
+func (s *LoadSuite) TestGetFilesystemSize(c *check.C) {
+	path := c.MkDir()
+	size, err := getFilesystemSize(path)
+	c.Check(err, check.IsNil)
+	c.Logf("getFilesystemSize(%q) == %v", path, size)
 }

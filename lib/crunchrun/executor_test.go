@@ -7,42 +7,14 @@ package crunchrun
 import (
 	"bytes"
 	"io"
-	"io/ioutil"
-	"net/http"
-	"os"
 	"strings"
 	"time"
 
 	"git.arvados.org/arvados.git/sdk/go/arvados"
+	"git.arvados.org/arvados.git/sdk/go/arvadostest"
 	"golang.org/x/net/context"
 	. "gopkg.in/check.v1"
 )
-
-func busyboxDockerImage(c *C) string {
-	fnm := "busybox_uclibc.tar"
-	cachedir := c.MkDir()
-	cachefile := cachedir + "/" + fnm
-	if _, err := os.Stat(cachefile); err == nil {
-		return cachefile
-	}
-
-	f, err := ioutil.TempFile(cachedir, "")
-	c.Assert(err, IsNil)
-	defer f.Close()
-	defer os.Remove(f.Name())
-
-	resp, err := http.Get("https://cache.arvados.org/" + fnm)
-	c.Assert(err, IsNil)
-	defer resp.Body.Close()
-	_, err = io.Copy(f, resp.Body)
-	c.Assert(err, IsNil)
-	err = f.Close()
-	c.Assert(err, IsNil)
-	err = os.Rename(f.Name(), cachefile)
-	c.Assert(err, IsNil)
-
-	return cachefile
-}
 
 type nopWriteCloser struct{ io.Writer }
 
@@ -71,7 +43,7 @@ func (s *executorSuite) SetUpTest(c *C) {
 		Stdout:      nopWriteCloser{&s.stdout},
 		Stderr:      nopWriteCloser{&s.stderr},
 	}
-	err := s.executor.LoadImage("", busyboxDockerImage(c), arvados.Container{}, "", nil)
+	err := s.executor.LoadImage("", arvadostest.BusyboxDockerImage(c), arvados.Container{}, "", nil)
 	c.Assert(err, IsNil)
 }
 
