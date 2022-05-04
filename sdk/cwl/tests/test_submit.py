@@ -1082,6 +1082,18 @@ class TestSubmit(unittest.TestCase):
                                                                         "link_class": "docker_image_hash",
                                                                         "name": "123456",
                                                                         "owner_uuid": "",
+                                                                        "properties": {"image_timestamp": ""}}], "items_available": 1, "offset": 0},
+                                                            {"items": [{"created_at": "",
+                                                                        "head_uuid": "zzzzz-4zz18-zzzzzzzzzzzzzzb",
+                                                                        "link_class": "docker_image_repo+tag",
+                                                                        "name": "arvados/jobs:"+arvados_cwl.__version__,
+                                                                        "owner_uuid": "",
+                                                                        "properties": {"image_timestamp": ""}}], "items_available": 1, "offset": 0},
+                                                            {"items": [{"created_at": "",
+                                                                        "head_uuid": "",
+                                                                        "link_class": "docker_image_hash",
+                                                                        "name": "123456",
+                                                                        "owner_uuid": "",
                                                                         "properties": {"image_timestamp": ""}}], "items_available": 1, "offset": 0}
         )
         find_one_image_hash.return_value = "123456"
@@ -1090,10 +1102,16 @@ class TestSubmit(unittest.TestCase):
                                                                               "owner_uuid": "",
                                                                               "manifest_text": "",
                                                                               "properties": ""
-                                                                          }], "items_available": 1, "offset": 0},)
+                                                                              }], "items_available": 1, "offset": 0},
+                                                                  {"items": [{"uuid": "zzzzz-4zz18-zzzzzzzzzzzzzzb",
+                                                                              "owner_uuid": "",
+                                                                              "manifest_text": "",
+                                                                              "properties": ""
+                                                                          }], "items_available": 1, "offset": 0})
         arvrunner.api.collections().create().execute.return_value = {"uuid": ""}
         arvrunner.api.collections().get().execute.return_value = {"uuid": "zzzzz-4zz18-zzzzzzzzzzzzzzb",
                                                                   "portable_data_hash": "9999999999999999999999999999999b+99"}
+
         self.assertEqual("9999999999999999999999999999999b+99",
                          arvados_cwl.runner.arvados_jobs_image(arvrunner, "arvados/jobs:"+arvados_cwl.__version__))
 
