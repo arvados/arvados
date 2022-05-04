@@ -544,10 +544,10 @@ The 'jobs' API is no longer supported.
         if not runtimeContext.name:
             runtimeContext.name = self.name = updated_tool.tool.get("label") or updated_tool.metadata.get("label") or os.path.basename(updated_tool.tool["id"])
 
-        if runtimeContext.copy_deps is None and (runtimeContext.create_workflow or runtimeContext.update_workflow):
-            runtimeContext.copy_deps = True
+        if self.runtimeContext.copy_deps is None and (runtimeContext.create_workflow or runtimeContext.update_workflow):
+            self.runtimeContext.copy_deps = True
 
-        if runtimeContext.update_workflow and self.project_uuid is None:
+        if self.runtimeContext.update_workflow and self.project_uuid is None:
             # If we are updating a workflow, make sure anything that
             # gets uploaded goes into the same parent project, unless
             # an alternate --project-uuid was provided.
