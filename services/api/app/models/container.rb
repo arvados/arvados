@@ -23,6 +23,7 @@ class Container < ArvadosModel
   attribute :runtime_status, :jsonbHash, default: {}
   attribute :runtime_auth_scopes, :jsonbArray, default: []
   attribute :output_storage_classes, :jsonbArray, default: lambda { Rails.configuration.DefaultStorageClasses }
+  attribute :output_properties, :jsonbHash, default: {}
 
   serialize :environment, Hash
   serialize :mounts, Hash
@@ -81,6 +82,7 @@ class Container < ArvadosModel
     t.add :gateway_address
     t.add :interactive_session_started
     t.add :output_storage_classes
+    t.add :output_properties
   end
 
   # Supported states for a container
@@ -485,7 +487,7 @@ class Container < ArvadosModel
                      :runtime_constraints, :scheduling_parameters,
                      :secret_mounts, :runtime_token,
                      :runtime_user_uuid, :runtime_auth_scopes,
-                     :output_storage_classes)
+                     :output_storage_classes, :output_properties)
     end
 
     case self.state
@@ -496,7 +498,7 @@ class Container < ArvadosModel
       permitted.push :priority
 
     when Running
-      permitted.push :priority, *progress_attrs
+      permitted.push :priority, :output_properties, *progress_attrs
       if self.state_changed?
         permitted.push :started_at, :gateway_address
       end
