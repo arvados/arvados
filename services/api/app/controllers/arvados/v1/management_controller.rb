@@ -37,6 +37,9 @@ arvados_config_load_timestamp_seconds{sha256="#{Rails.configuration.SourceSHA256
 # HELP arvados_config_source_timestamp_seconds Timestamp of config file when it was loaded.
 # TYPE arvados_config_source_timestamp_seconds gauge
 arvados_config_source_timestamp_seconds{sha256="#{Rails.configuration.SourceSHA256}"} #{Rails.configuration.SourceTimestamp.to_f}
+# HELP arvados_version_running Indicated version is running.
+# TYPE arvados_version_running gauge
+arvados_version_running{version="#{AppVersion.package_version}"} 1
 EOF
   end
 

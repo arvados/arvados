@@ -47,6 +47,8 @@ class Arvados::V1::ManagementControllerTest < ActionController::TestCase
     m = @response.body.match(/\narvados_config_load_timestamp_seconds{sha256="#{hash}"} (.*?)\n/)
     assert_operator m[1].to_f, :>, mtime.utc.to_f
     assert_operator m[1].to_f, :<, Time.now.utc.to_f
+
+    assert_match /\narvados_version_running{version="#{Regexp.escape AppVersion.package_version}"} 1\n/, @response.body
   end
 
   test "metrics disabled" do
