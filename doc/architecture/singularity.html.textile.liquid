@@ -32,4 +32,4 @@ Arvados @Singularity@ support is a work in progress. These are the current limit
 * Even when using the Singularity runtime, users' container images are expected to be saved in Docker format. Specifying a @.sif@ file as an image when submitting a container request is not yet supported.
 * Arvados' Singularity implementation does not yet limit the amount of memory available in a container. Each container will have access to all memory on the host where it runs, unless memory use is restricted by Slurm/LSF.
 * The Docker ENTRYPOINT instruction is ignored.
-* Arvados is tested with Singularity version 3.7.4. Other versions may not work.
+* Arvados is tested with Singularity version 3.9.9. Other versions may not work.

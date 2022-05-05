@@ -34,7 +34,7 @@ const goversion = "1.17.7"
 const (
 	rubyversion             = "2.7.5"
 	bundlerversion          = "2.2.19"
-	singularityversion      = "3.7.4"
+	singularityversion      = "3.9.9"
 	pjsversion              = "1.9.8"
 	geckoversion            = "0.24.0"
 	gradleversion           = "5.3.1"
