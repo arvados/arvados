@@ -50,6 +50,9 @@ else
           begin
             File.utime(touchtime, touchtime, restartfile)
           rescue
+            # remove + re-create works even if the existing file is
+            # owned by root, provided the tempdir is writable.
+            File.unlink(restartfile) rescue nil
             File.open(restartfile, 'w') {}
           end
           # Even if passenger doesn't notice that we hit restart.txt
