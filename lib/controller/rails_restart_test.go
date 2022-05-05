@@ -13,6 +13,7 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"strings"
 	"time"
 
 	"git.arvados.org/arvados.git/lib/config"
@@ -72,14 +73,17 @@ func (s *railsRestartSuite) TestConfigReload(c *check.C) {
 	newhash := fmt.Sprintf("%x", sha256.Sum256(append(confdata, '\n')))
 	c.Logf("newhash %s", newhash)
 
-	// Wait 2s to give RailsAPI's 1 Hz reload_config thread time
-	// to poll and hit restart.txt
-	time.Sleep(2 * time.Second)
-
-	resp, err = hc.Do(req)
-	c.Assert(err, check.IsNil)
-	c.Check(resp.StatusCode, check.Equals, http.StatusOK)
-	body, err = ioutil.ReadAll(resp.Body)
-	c.Assert(err, check.IsNil)
+	// Wait for RailsAPI's 1 Hz reload_config thread to poll and
+	// hit restart.txt
+	for deadline := time.Now().Add(10 * time.Second); time.Now().Before(deadline); time.Sleep(time.Second) {
+		resp, err = hc.Do(req)
+		c.Assert(err, check.IsNil)
+		c.Check(resp.StatusCode, check.Equals, http.StatusOK)
+		body, err = ioutil.ReadAll(resp.Body)
+		c.Assert(err, check.IsNil)
+		if strings.Contains(string(body), newhash) {
+			break
+		}
+	}
 	c.Check(string(body), check.Matches, `(?ms).*`+newhash+`.*`)
 }
