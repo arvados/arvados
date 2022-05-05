@@ -220,6 +220,40 @@ func (s *AggregatorSuite) TestConfigMismatch(c *check.C) {
 	s.checkOK(c)
 }
 
+func (s *AggregatorSuite) TestClockSkew(c *check.C) {
+	// srv1: report real wall clock time
+	handler1 := healthyHandler{}
+	srv1, listen1 := s.stubServer(&handler1)
+	defer srv1.Close()
+	// srv2: report near-future time
+	handler2 := healthyHandler{headerDate: time.Now().Add(3 * time.Second)}
+	srv2, listen2 := s.stubServer(&handler2)
+	defer srv2.Close()
+	// srv3: report far-future time
+	handler3 := healthyHandler{headerDate: time.Now().Add(3*time.Minute + 3*time.Second)}
+	srv3, listen3 := s.stubServer(&handler3)
+	defer srv3.Close()
+
+	s.setAllServiceURLs(listen1)
+
+	// near-future time => OK
+	s.resp = httptest.NewRecorder()
+	arvadostest.SetServiceURL(&s.handler.Cluster.Services.DispatchCloud,
+		"http://localhost"+listen2+"/")
+	s.handler.ServeHTTP(s.resp, s.req)
+	s.checkOK(c)
+
+	// far-future time => error
+	s.resp = httptest.NewRecorder()
+	arvadostest.SetServiceURL(&s.handler.Cluster.Services.WebDAV,
+		"http://localhost"+listen3+"/")
+	s.handler.ServeHTTP(s.resp, s.req)
+	resp := s.checkUnhealthy(c)
+	if c.Check(len(resp.Errors) > 0, check.Equals, true) {
+		c.Check(resp.Errors[0], check.Matches, `clock skew detected: maximum timestamp spread is 3m.* \(exceeds warning threshold of 1m\)`)
+	}
+}
+
 func (s *AggregatorSuite) TestPingTimeout(c *check.C) {
 	s.handler.timeout = arvados.Duration(100 * time.Millisecond)
 	srv, listen := s.stubServer(&slowHandler{})
@@ -321,9 +355,13 @@ func (*unhealthyHandler) ServeHTTP(resp http.ResponseWriter, req *http.Request) 
 type healthyHandler struct {
 	configHash string
 	configTime time.Time
+	headerDate time.Time
 }
 
 func (h *healthyHandler) ServeHTTP(resp http.ResponseWriter, req *http.Request) {
+	if !h.headerDate.IsZero() {
+		resp.Header().Set("Date", h.headerDate.Format(time.RFC1123))
+	}
 	authOK := req.Header.Get("Authorization") == "Bearer "+arvadostest.ManagementToken
 	if req.URL.Path == "/_health/ping" {
 		if !authOK {
