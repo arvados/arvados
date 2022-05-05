@@ -404,7 +404,7 @@ The 'jobs' API is no longer supported.
                 with SourceLine(obj, i, UnsupportedRequirement, logger.isEnabledFor(logging.DEBUG)):
                     self.check_features(v, parentfield=parentfield)
 
-    def make_output_collection(self, name, storage_classes, tagsString, outputObj):
+    def make_output_collection(self, name, storage_classes, tagsString, output_properties, outputObj):
         outputObj = copy.deepcopy(outputObj)
 
         files = []
@@ -456,7 +456,9 @@ The 'jobs' API is no longer supported.
             res = str(json.dumps(outputObj, sort_keys=True, indent=4, separators=(',',': '), ensure_ascii=False))
             f.write(res)
 
-        final.save_new(name=name, owner_uuid=self.project_uuid, storage_classes=storage_classes, ensure_unique_name=True)
+
+        final.save_new(name=name, owner_uuid=self.project_uuid, storage_classes=storage_classes,
+                       ensure_unique_name=True, properties=output_properties)
 
         logger.info("Final output collection %s \"%s\" (%s)", final.portable_data_hash(),
                     final.api_response()["name"],
@@ -486,6 +488,7 @@ The 'jobs' API is no longer supported.
                 self.api.containers().update(uuid=current['uuid'],
                                              body={
                                                  'output': self.final_output_collection.portable_data_hash(),
+                                                 'output_properties': self.final_output_collection.get_properties(),
                                              }).execute(num_retries=self.num_retries)
                 self.api.collections().update(uuid=self.final_output_collection.manifest_locator(),
                                               body={
@@ -788,7 +791,15 @@ The 'jobs' API is no longer supported.
             else:
                 storage_classes = runtimeContext.storage_classes.strip().split(",")
 
-            self.final_output, self.final_output_collection = self.make_output_collection(self.output_name, storage_classes, self.output_tags, self.final_output)
+            output_properties = {}
+            output_properties_req, _ = self.get_requirement("http://arvados.org/cwl#OutputCollectionProperties")
+            if output_properties_req:
+                for pr in output_properties_req["processProperties"]:
+                    output_properties[pr["propertyName"]] = self.builder.do_eval(pr["propertyValue"])
+
+            self.final_output, self.final_output_collection = self.make_output_collection(self.output_name, storage_classes,
+                                                                                          self.output_tags, output_properties,
+                                                                                          self.final_output)
             self.set_crunch_output()
 
         if runtimeContext.compute_checksum:
