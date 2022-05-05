@@ -21,6 +21,7 @@ require 'open3'
 
 # Load the defaults, used by config:migrate and fallback loading
 # legacy application.yml
+load_time = Time.now.utc
 defaultYAML, stderr, status = Open3.capture3("arvados-server", "config-dump", "-config=-", "-skip-legacy", stdin_data: "Clusters: {xxxxx: {}}")
 if !status.success?
   puts stderr
@@ -30,6 +31,8 @@ confs = YAML.load(defaultYAML, deserialize_symbols: false)
 clusterID, clusterConfig = confs["Clusters"].first
 $arvados_config_defaults = clusterConfig
 $arvados_config_defaults["ClusterID"] = clusterID
+$arvados_config_defaults["SourceTimestamp"] = Time.rfc3339(confs["SourceTimestamp"])
+$arvados_config_defaults["SourceSHA256"] = confs["SourceSHA256"]
 
 if ENV["ARVADOS_CONFIG"] == "none"
   # Don't load config. This magic value is set by packaging scripts so
@@ -45,6 +48,8 @@ else
       clusterID, clusterConfig = confs["Clusters"].first
       $arvados_config_global = clusterConfig
       $arvados_config_global["ClusterID"] = clusterID
+      $arvados_config_global["SourceTimestamp"] = Time.rfc3339(confs["SourceTimestamp"])
+      $arvados_config_global["SourceSHA256"] = confs["SourceSHA256"]
     else
       # config-dump failed, assume we will be loading from legacy
       # application.yml, initialize with defaults.
@@ -55,6 +60,7 @@ end
 
 # Now make a copy
 $arvados_config = $arvados_config_global.deep_dup
+$arvados_config["LoadTimestamp"] = load_time
 
 # Declare all our configuration items.
 arvcfg = ConfigLoader.new
