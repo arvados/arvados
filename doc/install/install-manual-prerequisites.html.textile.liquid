@@ -58,7 +58,7 @@ table(table table-bordered table-condensed).
 |"Keep-balance":install-keep-balance.html |Storage cluster maintenance daemon responsible for moving blocks to their optimal server location, adjusting block replication levels, and trashing unreferenced blocks.|Required to free deleted data from underlying storage, and to ensure proper replication and block distribution (including support for storage classes).|
 |\3=. *User interface*|
 |"Workbench":install-workbench-app.html, "Workbench2":install-workbench2-app.html |Primary graphical user interface for working with file collections and running containers.|Optional.  Depends on API server, keep-web, websockets server.|
-|"Workflow Composer":install-composer.html |Graphical user interface for editing Common Workflow Language workflows.|Optional.  Depends on git server (arv-git-httpd).|
+|"Workflow Composer":install-composer.html |Graphical user interface for editing Common Workflow Language workflows.|Optional.  Depends on git server (arvados-git-httpd).|
 |\3=. *Additional services*|
 |"Websockets server":install-ws.html |Event distribution server.|Required to view streaming container logs in Workbench.|
 |"Shell server":install-shell-server.html |Synchronize (create/delete/configure) Unix shell accounts with Arvados users.|Optional.|

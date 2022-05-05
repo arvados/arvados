@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-package main
+package keepweb
 
 import (
 	"bytes"
@@ -82,7 +82,7 @@ func (s *IntegrationSuite) s3setup(c *check.C) s3stage {
 	auth := aws.NewAuth(arvadostest.ActiveTokenUUID, arvadostest.ActiveToken, "", time.Now().Add(time.Hour))
 	region := aws.Region{
 		Name:       "zzzzz",
-		S3Endpoint: "http://" + s.testServer.Addr,
+		S3Endpoint: s.testServer.URL,
 	}
 	client := s3.New(*auth, region)
 	client.Signature = aws.V4Signature
@@ -282,7 +282,7 @@ func (s *IntegrationSuite) testS3PutObjectSuccess(c *check.C, bucket *s3.Bucket,
 		c.Check(err, check.IsNil)
 
 		rdr, err := bucket.GetReader(objname)
-		if strings.HasSuffix(trial.path, "/") && !s.testServer.Config.cluster.Collections.S3FolderObjects {
+		if strings.HasSuffix(trial.path, "/") && !s.handler.Cluster.Collections.S3FolderObjects {
 			c.Check(err, check.NotNil)
 			continue
 		} else if !c.Check(err, check.IsNil) {
@@ -352,7 +352,7 @@ func (s *IntegrationSuite) TestS3ProjectDeleteObject(c *check.C) {
 	s.testS3DeleteObject(c, stage.projbucket, stage.coll.Name+"/")
 }
 func (s *IntegrationSuite) testS3DeleteObject(c *check.C, bucket *s3.Bucket, prefix string) {
-	s.testServer.Config.cluster.Collections.S3FolderObjects = true
+	s.handler.Cluster.Collections.S3FolderObjects = true
 	for _, trial := range []struct {
 		path string
 	}{
@@ -389,7 +389,7 @@ func (s *IntegrationSuite) TestS3ProjectPutObjectFailure(c *check.C) {
 	s.testS3PutObjectFailure(c, stage.projbucket, stage.coll.Name+"/")
 }
 func (s *IntegrationSuite) testS3PutObjectFailure(c *check.C, bucket *s3.Bucket, prefix string) {
-	s.testServer.Config.cluster.Collections.S3FolderObjects = false
+	s.handler.Cluster.Collections.S3FolderObjects = false
 
 	var wg sync.WaitGroup
 	for _, trial := range []struct {
@@ -540,7 +540,7 @@ func (s *IntegrationSuite) TestS3VirtualHostStyleRequests(c *check.C) {
 		c.Assert(err, check.IsNil)
 		s.sign(c, req, arvadostest.ActiveTokenUUID, arvadostest.ActiveToken)
 		rr := httptest.NewRecorder()
-		s.testServer.Server.Handler.ServeHTTP(rr, req)
+		s.handler.ServeHTTP(rr, req)
 		resp := rr.Result()
 		c.Check(resp.StatusCode, check.Equals, trial.responseCode)
 		body, err := ioutil.ReadAll(resp.Body)
@@ -710,7 +710,7 @@ func (s *IntegrationSuite) TestS3CollectionList(c *check.C) {
 	defer stage.teardown(c)
 
 	var markers int
-	for markers, s.testServer.Config.cluster.Collections.S3FolderObjects = range []bool{false, true} {
+	for markers, s.handler.Cluster.Collections.S3FolderObjects = range []bool{false, true} {
 		dirs := 2
 		filesPerDir := 1001
 		stage.writeBigDirs(c, dirs, filesPerDir)
@@ -725,7 +725,7 @@ func (s *IntegrationSuite) TestS3CollectionList(c *check.C) {
 	}
 }
 func (s *IntegrationSuite) testS3List(c *check.C, bucket *s3.Bucket, prefix string, pageSize, expectFiles int) {
-	c.Logf("testS3List: prefix=%q pageSize=%d S3FolderObjects=%v", prefix, pageSize, s.testServer.Config.cluster.Collections.S3FolderObjects)
+	c.Logf("testS3List: prefix=%q pageSize=%d S3FolderObjects=%v", prefix, pageSize, s.handler.Cluster.Collections.S3FolderObjects)
 	expectPageSize := pageSize
 	if expectPageSize > 1000 {
 		expectPageSize = 1000
@@ -761,7 +761,7 @@ func (s *IntegrationSuite) testS3List(c *check.C, bucket *s3.Bucket, prefix stri
 }
 
 func (s *IntegrationSuite) TestS3CollectionListRollup(c *check.C) {
-	for _, s.testServer.Config.cluster.Collections.S3FolderObjects = range []bool{false, true} {
+	for _, s.handler.Cluster.Collections.S3FolderObjects = range []bool{false, true} {
 		s.testS3CollectionListRollup(c)
 	}
 }
@@ -790,7 +790,7 @@ func (s *IntegrationSuite) testS3CollectionListRollup(c *check.C) {
 		}
 	}
 	markers := 0
-	if s.testServer.Config.cluster.Collections.S3FolderObjects {
+	if s.handler.Cluster.Collections.S3FolderObjects {
 		markers = 1
 	}
 	c.Check(allfiles, check.HasLen, dirs*(filesPerDir+markers)+3+markers)
@@ -903,7 +903,7 @@ func (s *IntegrationSuite) TestS3ListObjectsV2(c *check.C) {
 
 	sess := aws_session.Must(aws_session.NewSession(&aws_aws.Config{
 		Region:           aws_aws.String("auto"),
-		Endpoint:         aws_aws.String("http://" + s.testServer.Addr),
+		Endpoint:         aws_aws.String(s.testServer.URL),
 		Credentials:      aws_credentials.NewStaticCredentials(url.QueryEscape(arvadostest.ActiveTokenV2), url.QueryEscape(arvadostest.ActiveTokenV2), ""),
 		S3ForcePathStyle: aws_aws.Bool(true),
 	}))
@@ -1049,7 +1049,7 @@ func (s *IntegrationSuite) TestS3ListObjectsV2EncodingTypeURL(c *check.C) {
 
 	sess := aws_session.Must(aws_session.NewSession(&aws_aws.Config{
 		Region:           aws_aws.String("auto"),
-		Endpoint:         aws_aws.String("http://" + s.testServer.Addr),
+		Endpoint:         aws_aws.String(s.testServer.URL),
 		Credentials:      aws_credentials.NewStaticCredentials(url.QueryEscape(arvadostest.ActiveTokenV2), url.QueryEscape(arvadostest.ActiveTokenV2), ""),
 		S3ForcePathStyle: aws_aws.Bool(true),
 	}))
@@ -1097,7 +1097,7 @@ func (s *IntegrationSuite) TestS3cmd(c *check.C) {
 	stage := s.s3setup(c)
 	defer stage.teardown(c)
 
-	cmd := exec.Command("s3cmd", "--no-ssl", "--host="+s.testServer.Addr, "--host-bucket="+s.testServer.Addr, "--access_key="+arvadostest.ActiveTokenUUID, "--secret_key="+arvadostest.ActiveToken, "ls", "s3://"+arvadostest.FooCollection)
+	cmd := exec.Command("s3cmd", "--no-ssl", "--host="+s.testServer.URL[7:], "--host-bucket="+s.testServer.URL[7:], "--access_key="+arvadostest.ActiveTokenUUID, "--secret_key="+arvadostest.ActiveToken, "ls", "s3://"+arvadostest.FooCollection)
 	buf, err := cmd.CombinedOutput()
 	c.Check(err, check.IsNil)
 	c.Check(string(buf), check.Matches, `.* 3 +s3://`+arvadostest.FooCollection+`/foo\n`)
@@ -1106,7 +1106,8 @@ func (s *IntegrationSuite) TestS3cmd(c *check.C) {
 	// keep-web's signature verification wrt chars like "|"
 	// (neither reserved nor unreserved) and "," (not normally
 	// percent-encoded in a path).
-	cmd = exec.Command("s3cmd", "--no-ssl", "--host="+s.testServer.Addr, "--host-bucket="+s.testServer.Addr, "--access_key="+arvadostest.ActiveTokenUUID, "--secret_key="+arvadostest.ActiveToken, "get", "s3://"+arvadostest.FooCollection+"/foo,;$[|]bar")
+	tmpfile := c.MkDir() + "/dstfile"
+	cmd = exec.Command("s3cmd", "--no-ssl", "--host="+s.testServer.URL[7:], "--host-bucket="+s.testServer.URL[7:], "--access_key="+arvadostest.ActiveTokenUUID, "--secret_key="+arvadostest.ActiveToken, "get", "s3://"+arvadostest.FooCollection+"/foo,;$[|]bar", tmpfile)
 	buf, err = cmd.CombinedOutput()
 	c.Check(err, check.NotNil)
 	c.Check(string(buf), check.Matches, `(?ms).*NoSuchKey.*\n`)

@@ -523,12 +523,10 @@ yarn install
 		for _, srcdir := range []string{
 			"cmd/arvados-client",
 			"cmd/arvados-server",
-			"services/arv-git-httpd",
 			"services/crunch-dispatch-local",
 			"services/crunch-dispatch-slurm",
 			"services/health",
 			"services/keep-balance",
-			"services/keep-web",
 			"services/keepstore",
 			"services/ws",
 		} {

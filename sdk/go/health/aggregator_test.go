@@ -293,6 +293,7 @@ func (s *AggregatorSuite) setAllServiceURLs(listen string) {
 		&svcs.Controller,
 		&svcs.DispatchCloud,
 		&svcs.DispatchLSF,
+		&svcs.GitHTTP,
 		&svcs.Keepbalance,
 		&svcs.Keepproxy,
 		&svcs.Keepstore,

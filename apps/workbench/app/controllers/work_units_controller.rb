@@ -83,6 +83,7 @@ class WorkUnitsController < ApplicationController
       attrs['properties'] = {'template_uuid' => template_uuid}
       attrs['priority'] = 1
       attrs['state'] = "Uncommitted"
+      attrs['use_existing'] = false
 
       # required
       attrs['container_image'] = "arvados/jobs"

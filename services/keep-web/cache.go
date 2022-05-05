@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-package main
+package keepweb
 
 import (
 	"sync"
@@ -21,7 +21,6 @@ const metricsUpdateInterval = time.Second / 10
 
 type cache struct {
 	cluster     *arvados.Cluster
-	config      *arvados.WebDAVCacheConfig // TODO: use cluster.Collections.WebDAV instead
 	logger      logrus.FieldLogger
 	registry    *prometheus.Registry
 	metrics     cacheMetrics
@@ -138,15 +137,15 @@ type cachedSession struct {
 
 func (c *cache) setup() {
 	var err error
-	c.pdhs, err = lru.New2Q(c.config.MaxUUIDEntries)
+	c.pdhs, err = lru.New2Q(c.cluster.Collections.WebDAVCache.MaxUUIDEntries)
 	if err != nil {
 		panic(err)
 	}
-	c.collections, err = lru.New2Q(c.config.MaxCollectionEntries)
+	c.collections, err = lru.New2Q(c.cluster.Collections.WebDAVCache.MaxCollectionEntries)
 	if err != nil {
 		panic(err)
 	}
-	c.sessions, err = lru.New2Q(c.config.MaxSessions)
+	c.sessions, err = lru.New2Q(c.cluster.Collections.WebDAVCache.MaxSessions)
 	if err != nil {
 		panic(err)
 	}
@@ -207,12 +206,12 @@ func (c *cache) Update(client *arvados.Client, coll arvados.Collection, fs arvad
 		return err
 	}
 	c.collections.Add(client.AuthToken+"\000"+updated.PortableDataHash, &cachedCollection{
-		expire:     time.Now().Add(time.Duration(c.config.TTL)),
+		expire:     time.Now().Add(time.Duration(c.cluster.Collections.WebDAVCache.TTL)),
 		collection: &updated,
 	})
 	c.pdhs.Add(coll.UUID, &cachedPDH{
-		expire:  time.Now().Add(time.Duration(c.config.TTL)),
-		refresh: time.Now().Add(time.Duration(c.config.UUIDTTL)),
+		expire:  time.Now().Add(time.Duration(c.cluster.Collections.WebDAVCache.TTL)),
+		refresh: time.Now().Add(time.Duration(c.cluster.Collections.WebDAVCache.UUIDTTL)),
 		pdh:     updated.PortableDataHash,
 	})
 	return nil
@@ -237,7 +236,7 @@ func (c *cache) GetSession(token string) (arvados.CustomFileSystem, *cachedSessi
 	if sess == nil {
 		c.metrics.sessionMisses.Inc()
 		sess = &cachedSession{
-			expire: now.Add(c.config.TTL.Duration()),
+			expire: now.Add(c.cluster.Collections.WebDAVCache.TTL.Duration()),
 		}
 		var err error
 		sess.client, err = arvados.NewClientFromConfig(c.cluster)
@@ -378,11 +377,11 @@ func (c *cache) Get(arv *arvadosclient.ArvadosClient, targetID string, forceRelo
 		return nil, err
 	}
 	c.logger.Debugf("cache(%s): retrieved manifest, caching with pdh %s", targetID, retrieved.PortableDataHash)
-	exp := time.Now().Add(time.Duration(c.config.TTL))
+	exp := time.Now().Add(time.Duration(c.cluster.Collections.WebDAVCache.TTL))
 	if targetID != retrieved.PortableDataHash {
 		c.pdhs.Add(targetID, &cachedPDH{
 			expire:  exp,
-			refresh: time.Now().Add(time.Duration(c.config.UUIDTTL)),
+			refresh: time.Now().Add(time.Duration(c.cluster.Collections.WebDAVCache.UUIDTTL)),
 			pdh:     retrieved.PortableDataHash,
 		})
 	}
@@ -390,7 +389,7 @@ func (c *cache) Get(arv *arvadosclient.ArvadosClient, targetID string, forceRelo
 		expire:     exp,
 		collection: &retrieved,
 	})
-	if int64(len(retrieved.ManifestText)) > c.config.MaxCollectionBytes/int64(c.config.MaxCollectionEntries) {
+	if int64(len(retrieved.ManifestText)) > c.cluster.Collections.WebDAVCache.MaxCollectionBytes/int64(c.cluster.Collections.WebDAVCache.MaxCollectionEntries) {
 		select {
 		case c.chPruneCollections <- struct{}{}:
 		default:
@@ -430,7 +429,7 @@ func (c *cache) pruneCollections() {
 		}
 	}
 	for i, k := range keys {
-		if size <= c.config.MaxCollectionBytes/2 {
+		if size <= c.cluster.Collections.WebDAVCache.MaxCollectionBytes/2 {
 			break
 		}
 		if expired[i] {

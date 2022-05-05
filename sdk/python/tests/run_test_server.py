@@ -535,7 +535,7 @@ def run_keep(num_servers=2, **kwargs):
     # If keepproxy and/or keep-web is running, send SIGHUP to make
     # them discover the new keepstore services.
     for svc in ('keepproxy', 'keep-web'):
-        pidfile = _pidfile('keepproxy')
+        pidfile = _pidfile(svc)
         if os.path.exists(pidfile):
             try:
                 with open(pidfile) as pid:
@@ -561,7 +561,7 @@ def run_keep_proxy():
     env['ARVADOS_API_TOKEN'] = auth_token('anonymous')
     logf = open(_logfilename('keepproxy'), WRITE_MODE)
     kp = subprocess.Popen(
-        ['keepproxy'], env=env, stdin=open('/dev/null'), stdout=logf, stderr=logf, close_fds=True)
+        ['arvados-server', 'keepproxy'], env=env, stdin=open('/dev/null'), stdout=logf, stderr=logf, close_fds=True)
 
     with open(_pidfile('keepproxy'), 'w') as f:
         f.write(str(kp.pid))
@@ -598,17 +598,17 @@ def run_arv_git_httpd():
     gitport = internal_port_from_config("GitHTTP")
     env = os.environ.copy()
     env.pop('ARVADOS_API_TOKEN', None)
-    logf = open(_logfilename('arv-git-httpd'), WRITE_MODE)
-    agh = subprocess.Popen(['arv-git-httpd'],
+    logf = open(_logfilename('githttpd'), WRITE_MODE)
+    agh = subprocess.Popen(['arvados-server', 'git-httpd'],
         env=env, stdin=open('/dev/null'), stdout=logf, stderr=logf)
-    with open(_pidfile('arv-git-httpd'), 'w') as f:
+    with open(_pidfile('githttpd'), 'w') as f:
         f.write(str(agh.pid))
     _wait_until_port_listens(gitport)
 
 def stop_arv_git_httpd():
     if 'ARVADOS_TEST_PROXY_SERVICES' in os.environ:
         return
-    kill_server_pid(_pidfile('arv-git-httpd'))
+    kill_server_pid(_pidfile('githttpd'))
 
 def run_keep_web():
     if 'ARVADOS_TEST_PROXY_SERVICES' in os.environ:
@@ -619,7 +619,7 @@ def run_keep_web():
     env = os.environ.copy()
     logf = open(_logfilename('keep-web'), WRITE_MODE)
     keepweb = subprocess.Popen(
-        ['keep-web'],
+        ['arvados-server', 'keep-web'],
         env=env, stdin=open('/dev/null'), stdout=logf, stderr=logf)
     with open(_pidfile('keep-web'), 'w') as f:
         f.write(str(keepweb.pid))
@@ -697,7 +697,6 @@ def setup_config():
     keepstore_ports = sorted([str(find_available_port()) for _ in range(0,4)])
     keep_web_port = find_available_port()
     keep_web_external_port = find_available_port()
-    keep_web_dl_port = find_available_port()
     keep_web_dl_external_port = find_available_port()
 
     configsrc = os.environ.get("CONFIGSRC", None)
@@ -779,7 +778,7 @@ def setup_config():
         "WebDAVDownload": {
             "ExternalURL": "https://%s:%s" % (localhost, keep_web_dl_external_port),
             "InternalURLs": {
-                "http://%s:%s"%(localhost, keep_web_dl_port): {},
+                "http://%s:%s"%(localhost, keep_web_port): {},
             },
         },
     }
@@ -959,7 +958,7 @@ if __name__ == "__main__":
         'start_keep', 'stop_keep',
         'start_keep_proxy', 'stop_keep_proxy',
         'start_keep-web', 'stop_keep-web',
-        'start_arv-git-httpd', 'stop_arv-git-httpd',
+        'start_githttpd', 'stop_githttpd',
         'start_nginx', 'stop_nginx', 'setup_config',
     ]
     parser = argparse.ArgumentParser()
@@ -1004,9 +1003,9 @@ if __name__ == "__main__":
         run_keep_proxy()
     elif args.action == 'stop_keep_proxy':
         stop_keep_proxy()
-    elif args.action == 'start_arv-git-httpd':
+    elif args.action == 'start_githttpd':
         run_arv_git_httpd()
-    elif args.action == 'stop_arv-git-httpd':
+    elif args.action == 'stop_githttpd':
         stop_arv_git_httpd()
     elif args.action == 'start_keep-web':
         run_keep_web()

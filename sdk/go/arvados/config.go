@@ -628,35 +628,37 @@ func (ss *StringSet) UnmarshalJSON(data []byte) error {
 type ServiceName string
 
 const (
-	ServiceNameRailsAPI      ServiceName = "arvados-api-server"
 	ServiceNameController    ServiceName = "arvados-controller"
 	ServiceNameDispatchCloud ServiceName = "arvados-dispatch-cloud"
 	ServiceNameDispatchLSF   ServiceName = "arvados-dispatch-lsf"
+	ServiceNameGitHTTP       ServiceName = "arvados-git-httpd"
 	ServiceNameHealth        ServiceName = "arvados-health"
-	ServiceNameWorkbench1    ServiceName = "arvados-workbench1"
-	ServiceNameWorkbench2    ServiceName = "arvados-workbench2"
-	ServiceNameWebsocket     ServiceName = "arvados-ws"
 	ServiceNameKeepbalance   ServiceName = "keep-balance"
-	ServiceNameKeepweb       ServiceName = "keep-web"
 	ServiceNameKeepproxy     ServiceName = "keepproxy"
 	ServiceNameKeepstore     ServiceName = "keepstore"
+	ServiceNameKeepweb       ServiceName = "keep-web"
+	ServiceNameRailsAPI      ServiceName = "arvados-api-server"
+	ServiceNameWebsocket     ServiceName = "arvados-ws"
+	ServiceNameWorkbench1    ServiceName = "arvados-workbench1"
+	ServiceNameWorkbench2    ServiceName = "arvados-workbench2"
 )
 
 // Map returns all services as a map, suitable for iterating over all
 // services or looking up a service by name.
 func (svcs Services) Map() map[ServiceName]Service {
 	return map[ServiceName]Service{
-		ServiceNameRailsAPI:      svcs.RailsAPI,
 		ServiceNameController:    svcs.Controller,
 		ServiceNameDispatchCloud: svcs.DispatchCloud,
 		ServiceNameDispatchLSF:   svcs.DispatchLSF,
+		ServiceNameGitHTTP:       svcs.GitHTTP,
 		ServiceNameHealth:        svcs.Health,
-		ServiceNameWorkbench1:    svcs.Workbench1,
-		ServiceNameWorkbench2:    svcs.Workbench2,
-		ServiceNameWebsocket:     svcs.Websocket,
 		ServiceNameKeepbalance:   svcs.Keepbalance,
-		ServiceNameKeepweb:       svcs.WebDAV,
 		ServiceNameKeepproxy:     svcs.Keepproxy,
 		ServiceNameKeepstore:     svcs.Keepstore,
+		ServiceNameKeepweb:       svcs.WebDAV,
+		ServiceNameRailsAPI:      svcs.RailsAPI,
+		ServiceNameWebsocket:     svcs.Websocket,
+		ServiceNameWorkbench1:    svcs.Workbench1,
+		ServiceNameWorkbench2:    svcs.Workbench2,
 	}
 }

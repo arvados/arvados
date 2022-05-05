@@ -81,7 +81,7 @@ class Repository < ArvadosBase
         FileUtils.mkdir_p Rails.configuration.Workbench.RepositoryCache
         [['git', 'init', '--bare', workdir],
         ].each do |cmd|
-          system *cmd
+          system(*cmd, in: "/dev/null")
           raise GitCommandError.new($?.to_s) unless $?.exitstatus == 0
         end
       end
@@ -96,14 +96,15 @@ class Repository < ArvadosBase
            'http.sslVerify',
            Rails.configuration.TLS.Insecure ? 'false' : 'true'],
      ].each do |cmd|
-      system *cmd
+      system(*cmd, in: "/dev/null")
       raise GitCommandError.new($?.to_s) unless $?.exitstatus == 0
     end
     env = {}.
       merge(ENV).
-      merge('ARVADOS_API_TOKEN' => Thread.current[:arvados_api_token])
+      merge('ARVADOS_API_TOKEN' => Thread.current[:arvados_api_token],
+            'GIT_TERMINAL_PROMPT' => '0')
     cmd = ['git', '--git-dir', @workdir] + gitcmd
-    io = IO.popen(env, cmd, err: [:child, :out])
+    io = IO.popen(env, cmd, err: [:child, :out], in: "/dev/null")
     output = io.read
     io.close
     # "If [io] is opened by IO.popen, close sets $?." --ruby 2.2.1 docs

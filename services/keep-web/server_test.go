@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-package main
+package keepweb
 
 import (
 	"bytes"
@@ -14,16 +14,20 @@ import (
 	"io/ioutil"
 	"net"
 	"net/http"
+	"net/http/httptest"
 	"os"
 	"os/exec"
+	"regexp"
 	"strings"
 	"testing"
+	"time"
 
 	"git.arvados.org/arvados.git/lib/config"
 	"git.arvados.org/arvados.git/sdk/go/arvados"
 	"git.arvados.org/arvados.git/sdk/go/arvadosclient"
 	"git.arvados.org/arvados.git/sdk/go/arvadostest"
 	"git.arvados.org/arvados.git/sdk/go/ctxlog"
+	"git.arvados.org/arvados.git/sdk/go/httpserver"
 	"git.arvados.org/arvados.git/sdk/go/keepclient"
 	check "gopkg.in/check.v1"
 )
@@ -34,8 +38,8 @@ var _ = check.Suite(&IntegrationSuite{})
 
 // IntegrationSuite tests need an API server and a keep-web server
 type IntegrationSuite struct {
-	testServer *server
-	ArvConfig  *arvados.Config
+	testServer *httptest.Server
+	handler    *handler
 }
 
 func (s *IntegrationSuite) TestNoToken(c *check.C) {
@@ -153,7 +157,7 @@ type curlCase struct {
 }
 
 func (s *IntegrationSuite) Test200(c *check.C) {
-	s.testServer.Config.cluster.Users.AnonymousUserToken = arvadostest.AnonymousToken
+	s.handler.Cluster.Users.AnonymousUserToken = arvadostest.AnonymousToken
 	for _, spec := range []curlCase{
 		// My collection
 		{
@@ -261,7 +265,7 @@ func (s *IntegrationSuite) Test200(c *check.C) {
 // Return header block and body.
 func (s *IntegrationSuite) runCurl(c *check.C, auth, host, uri string, args ...string) (hdr, bodyPart string, bodySize int64) {
 	curlArgs := []string{"--silent", "--show-error", "--include"}
-	testHost, testPort, _ := net.SplitHostPort(s.testServer.Addr)
+	testHost, testPort, _ := net.SplitHostPort(s.testServer.URL[7:])
 	curlArgs = append(curlArgs, "--resolve", host+":"+testPort+":"+testHost)
 	if strings.Contains(auth, " ") {
 		// caller supplied entire Authorization header value
@@ -306,19 +310,97 @@ func (s *IntegrationSuite) runCurl(c *check.C, auth, host, uri string, args ...s
 	return
 }
 
-func (s *IntegrationSuite) TestMetrics(c *check.C) {
-	s.testServer.Config.cluster.Services.WebDAVDownload.ExternalURL.Host = s.testServer.Addr
-	origin := "http://" + s.testServer.Addr
-	req, _ := http.NewRequest("GET", origin+"/notfound", nil)
-	_, err := http.DefaultClient.Do(req)
+// Run a full-featured server, including the metrics/health routes
+// that are added by service.Command.
+func (s *IntegrationSuite) runServer(c *check.C) (cluster arvados.Cluster, srvaddr string, logbuf *bytes.Buffer) {
+	logbuf = &bytes.Buffer{}
+	cluster = *s.handler.Cluster
+	cluster.Services.WebDAV.InternalURLs = map[arvados.URL]arvados.ServiceInstance{{Scheme: "http", Host: "0.0.0.0:0"}: {}}
+	cluster.Services.WebDAVDownload.InternalURLs = map[arvados.URL]arvados.ServiceInstance{{Scheme: "http", Host: "0.0.0.0:0"}: {}}
+
+	var configjson bytes.Buffer
+	json.NewEncoder(&configjson).Encode(arvados.Config{Clusters: map[string]arvados.Cluster{"zzzzz": cluster}})
+	go Command.RunCommand("keep-web", []string{"-config=-"}, &configjson, os.Stderr, io.MultiWriter(os.Stderr, logbuf))
+	for deadline := time.Now().Add(time.Second); deadline.After(time.Now()); time.Sleep(time.Second / 100) {
+		if m := regexp.MustCompile(`"Listen":"(.*?)"`).FindStringSubmatch(logbuf.String()); m != nil {
+			srvaddr = "http://" + m[1]
+			break
+		}
+	}
+	if srvaddr == "" {
+		c.Fatal("timed out")
+	}
+	return
+}
+
+// Ensure uploads can take longer than API.RequestTimeout.
+//
+// Currently, this works only by accident: service.Command cancels the
+// request context as usual (there is no exemption), but
+// webdav.Handler doesn't notice if the request context is cancelled
+// while waiting to send or receive file data.
+func (s *IntegrationSuite) TestRequestTimeoutExemption(c *check.C) {
+	s.handler.Cluster.API.RequestTimeout = arvados.Duration(time.Second / 2)
+	_, srvaddr, _ := s.runServer(c)
+
+	var coll arvados.Collection
+	arv, err := arvadosclient.MakeArvadosClient()
 	c.Assert(err, check.IsNil)
-	req, _ = http.NewRequest("GET", origin+"/by_id/", nil)
-	req.Header.Set("Authorization", "Bearer "+arvadostest.ActiveToken)
+	arv.ApiToken = arvadostest.ActiveTokenV2
+	err = arv.Create("collections", map[string]interface{}{"ensure_unique_name": true}, &coll)
+	c.Assert(err, check.IsNil)
+
+	pr, pw := io.Pipe()
+	go func() {
+		time.Sleep(time.Second)
+		pw.Write(make([]byte, 10000000))
+		pw.Close()
+	}()
+	req, _ := http.NewRequest("PUT", srvaddr+"/testfile", pr)
+	req.Host = coll.UUID + ".example"
+	req.Header.Set("Authorization", "Bearer "+arvadostest.ActiveTokenV2)
+	resp, err := http.DefaultClient.Do(req)
+	c.Assert(err, check.IsNil)
+	c.Check(resp.StatusCode, check.Equals, http.StatusCreated)
+
+	req, _ = http.NewRequest("GET", srvaddr+"/testfile", nil)
+	req.Host = coll.UUID + ".example"
+	req.Header.Set("Authorization", "Bearer "+arvadostest.ActiveTokenV2)
+	resp, err = http.DefaultClient.Do(req)
+	c.Assert(err, check.IsNil)
+	c.Check(resp.StatusCode, check.Equals, http.StatusOK)
+	time.Sleep(time.Second)
+	body, err := ioutil.ReadAll(resp.Body)
+	c.Check(err, check.IsNil)
+	c.Check(len(body), check.Equals, 10000000)
+}
+
+func (s *IntegrationSuite) TestHealthCheckPing(c *check.C) {
+	cluster, srvaddr, _ := s.runServer(c)
+	req, _ := http.NewRequest("GET", srvaddr+"/_health/ping", nil)
+	req.Header.Set("Authorization", "Bearer "+cluster.ManagementToken)
 	resp, err := http.DefaultClient.Do(req)
 	c.Assert(err, check.IsNil)
 	c.Check(resp.StatusCode, check.Equals, http.StatusOK)
+	body, _ := ioutil.ReadAll(resp.Body)
+	c.Check(string(body), check.Matches, `{"health":"OK"}\n`)
+}
+
+func (s *IntegrationSuite) TestMetrics(c *check.C) {
+	cluster, srvaddr, _ := s.runServer(c)
+
+	req, _ := http.NewRequest("GET", srvaddr+"/notfound", nil)
+	req.Host = cluster.Services.WebDAVDownload.ExternalURL.Host
+	_, err := http.DefaultClient.Do(req)
+	c.Assert(err, check.IsNil)
+	req, _ = http.NewRequest("GET", srvaddr+"/by_id/", nil)
+	req.Host = cluster.Services.WebDAVDownload.ExternalURL.Host
+	req.Header.Set("Authorization", "Bearer "+arvadostest.ActiveToken)
+	resp, err := http.DefaultClient.Do(req)
+	c.Assert(err, check.IsNil)
+	c.Assert(resp.StatusCode, check.Equals, http.StatusOK)
 	for i := 0; i < 2; i++ {
-		req, _ = http.NewRequest("GET", origin+"/foo", nil)
+		req, _ = http.NewRequest("GET", srvaddr+"/foo", nil)
 		req.Host = arvadostest.FooCollection + ".example.com"
 		req.Header.Set("Authorization", "Bearer "+arvadostest.ActiveToken)
 		resp, err = http.DefaultClient.Do(req)
@@ -329,20 +411,23 @@ func (s *IntegrationSuite) TestMetrics(c *check.C) {
 		resp.Body.Close()
 	}
 
-	s.testServer.Config.Cache.updateGauges()
+	time.Sleep(metricsUpdateInterval * 2)
 
-	req, _ = http.NewRequest("GET", origin+"/metrics.json", nil)
+	req, _ = http.NewRequest("GET", srvaddr+"/metrics.json", nil)
+	req.Host = cluster.Services.WebDAVDownload.ExternalURL.Host
 	resp, err = http.DefaultClient.Do(req)
 	c.Assert(err, check.IsNil)
 	c.Check(resp.StatusCode, check.Equals, http.StatusUnauthorized)
 
-	req, _ = http.NewRequest("GET", origin+"/metrics.json", nil)
+	req, _ = http.NewRequest("GET", srvaddr+"/metrics.json", nil)
+	req.Host = cluster.Services.WebDAVDownload.ExternalURL.Host
 	req.Header.Set("Authorization", "Bearer badtoken")
 	resp, err = http.DefaultClient.Do(req)
 	c.Assert(err, check.IsNil)
 	c.Check(resp.StatusCode, check.Equals, http.StatusForbidden)
 
-	req, _ = http.NewRequest("GET", origin+"/metrics.json", nil)
+	req, _ = http.NewRequest("GET", srvaddr+"/metrics.json", nil)
+	req.Host = cluster.Services.WebDAVDownload.ExternalURL.Host
 	req.Header.Set("Authorization", "Bearer "+arvadostest.ManagementToken)
 	resp, err = http.DefaultClient.Do(req)
 	c.Assert(err, check.IsNil)
@@ -400,13 +485,16 @@ func (s *IntegrationSuite) TestMetrics(c *check.C) {
 
 	// If the Host header indicates a collection, /metrics.json
 	// refers to a file in the collection -- the metrics handler
-	// must not intercept that route.
-	req, _ = http.NewRequest("GET", origin+"/metrics.json", nil)
-	req.Host = strings.Replace(arvadostest.FooCollectionPDH, "+", "-", -1) + ".example.com"
-	req.Header.Set("Authorization", "Bearer "+arvadostest.ActiveToken)
-	resp, err = http.DefaultClient.Do(req)
-	c.Assert(err, check.IsNil)
-	c.Check(resp.StatusCode, check.Equals, http.StatusNotFound)
+	// must not intercept that route. Ditto health check paths.
+	for _, path := range []string{"/metrics.json", "/_health/ping"} {
+		c.Logf("path: %q", path)
+		req, _ = http.NewRequest("GET", srvaddr+path, nil)
+		req.Host = strings.Replace(arvadostest.FooCollectionPDH, "+", "-", -1) + ".example.com"
+		req.Header.Set("Authorization", "Bearer "+arvadostest.ActiveToken)
+		resp, err = http.DefaultClient.Do(req)
+		c.Assert(err, check.IsNil)
+		c.Check(resp.StatusCode, check.Equals, http.StatusNotFound)
+	}
 }
 
 func (s *IntegrationSuite) SetUpSuite(c *check.C) {
@@ -430,36 +518,31 @@ func (s *IntegrationSuite) TearDownSuite(c *check.C) {
 
 func (s *IntegrationSuite) SetUpTest(c *check.C) {
 	arvadostest.ResetEnv()
-	ldr := config.NewLoader(bytes.NewBufferString("Clusters: {zzzzz: {}}"), ctxlog.TestLogger(c))
-	ldr.Path = "-"
-	arvCfg, err := ldr.Load()
-	c.Check(err, check.IsNil)
-	cfg := newConfig(ctxlog.TestLogger(c), arvCfg)
-	c.Assert(err, check.IsNil)
-	cfg.Client = arvados.Client{
-		APIHost:  testAPIHost,
-		Insecure: true,
-	}
-	listen := "127.0.0.1:0"
-	cfg.cluster.Services.WebDAV.InternalURLs[arvados.URL{Host: listen}] = arvados.ServiceInstance{}
-	cfg.cluster.Services.WebDAVDownload.InternalURLs[arvados.URL{Host: listen}] = arvados.ServiceInstance{}
-	cfg.cluster.ManagementToken = arvadostest.ManagementToken
-	cfg.cluster.SystemRootToken = arvadostest.SystemRootToken
-	cfg.cluster.Users.AnonymousUserToken = arvadostest.AnonymousToken
-	s.ArvConfig = arvCfg
-	s.testServer = &server{Config: cfg}
 	logger := ctxlog.TestLogger(c)
+	ldr := config.NewLoader(&bytes.Buffer{}, logger)
+	cfg, err := ldr.Load()
+	c.Assert(err, check.IsNil)
+	cluster, err := cfg.GetCluster("")
+	c.Assert(err, check.IsNil)
+
 	ctx := ctxlog.Context(context.Background(), logger)
-	err = s.testServer.Start(ctx, logger)
-	c.Assert(err, check.Equals, nil)
+
+	s.handler = newHandlerOrErrorHandler(ctx, cluster, cluster.SystemRootToken, nil).(*handler)
+	s.testServer = httptest.NewUnstartedServer(
+		httpserver.AddRequestIDs(
+			httpserver.LogRequests(
+				s.handler)))
+	s.testServer.Config.BaseContext = func(net.Listener) context.Context { return ctx }
+	s.testServer.Start()
+
+	cluster.Services.WebDAV.InternalURLs = map[arvados.URL]arvados.ServiceInstance{{Host: s.testServer.URL[7:]}: {}}
+	cluster.Services.WebDAVDownload.InternalURLs = map[arvados.URL]arvados.ServiceInstance{{Host: s.testServer.URL[7:]}: {}}
 }
 
 func (s *IntegrationSuite) TearDownTest(c *check.C) {
-	var err error
 	if s.testServer != nil {
-		err = s.testServer.Close()
+		s.testServer.Close()
 	}
-	c.Check(err, check.Equals, nil)
 }
 
 // Gocheck boilerplate

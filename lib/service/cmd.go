@@ -21,8 +21,10 @@ import (
 	"git.arvados.org/arvados.git/lib/config"
 	"git.arvados.org/arvados.git/sdk/go/arvados"
 	"git.arvados.org/arvados.git/sdk/go/ctxlog"
+	"git.arvados.org/arvados.git/sdk/go/health"
 	"git.arvados.org/arvados.git/sdk/go/httpserver"
 	"github.com/coreos/go-systemd/daemon"
+	"github.com/julienschmidt/httprouter"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/sirupsen/logrus"
 )
@@ -30,6 +32,8 @@ import (
 type Handler interface {
 	http.Handler
 	CheckHealth() error
+	// Done returns a channel that closes when the handler shuts
+	// itself down, or nil if this never happens.
 	Done() <-chan struct{}
 }
 
@@ -70,6 +74,13 @@ func (c *command) RunCommand(prog string, args []string, stdin io.Reader, stdout
 
 	loader := config.NewLoader(stdin, log)
 	loader.SetupFlags(flags)
+
+	// prog is [keepstore, keep-web, git-httpd, ...]  but the
+	// legacy config flags are [-legacy-keepstore-config,
+	// -legacy-keepweb-config, -legacy-git-httpd-config, ...]
+	legacyFlag := "-legacy-" + strings.Replace(prog, "keep-", "keep", 1) + "-config"
+	args = loader.MungeLegacyConfigArgs(log, args, legacyFlag)
+
 	versionFlag := flags.Bool("version", false, "Write version information to stdout and exit 0")
 	pprofAddr := flags.String("pprof", "", "Serve Go profile data at `[addr]:port`")
 	if ok, code := cmd.ParseFlags(flags, prog, args, "", stderr); !ok {
@@ -137,10 +148,11 @@ func (c *command) RunCommand(prog string, args []string, stdin io.Reader, stdout
 		httpserver.HandlerWithDeadline(cluster.API.RequestTimeout.Duration(),
 			httpserver.AddRequestIDs(
 				httpserver.LogRequests(
-					httpserver.NewRequestLimiter(cluster.API.MaxConcurrentRequests, handler, reg)))))
+					interceptHealthReqs(cluster.ManagementToken, handler.CheckHealth,
+						httpserver.NewRequestLimiter(cluster.API.MaxConcurrentRequests, handler, reg))))))
 	srv := &httpserver.Server{
 		Server: http.Server{
-			Handler:     instrumented.ServeAPI(cluster.ManagementToken, instrumented),
+			Handler:     ifCollectionInHost(instrumented, instrumented.ServeAPI(cluster.ManagementToken, instrumented)),
 			BaseContext: func(net.Listener) context.Context { return ctx },
 		},
 		Addr: listenURL.Host,
@@ -181,6 +193,34 @@ func (c *command) RunCommand(prog string, args []string, stdin io.Reader, stdout
 		return 1
 	}
 	return 0
+}
+
+// If an incoming request's target vhost has an embedded collection
+// UUID or PDH, handle it with hTrue, otherwise handle it with
+// hFalse.
+//
+// Facilitates routing "http://collections.example/metrics" to metrics
+// and "http://{uuid}.collections.example/metrics" to a file in a
+// collection.
+func ifCollectionInHost(hTrue, hFalse http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if arvados.CollectionIDFromDNSName(r.Host) != "" {
+			hTrue.ServeHTTP(w, r)
+		} else {
+			hFalse.ServeHTTP(w, r)
+		}
+	})
+}
+
+func interceptHealthReqs(mgtToken string, checkHealth func() error, next http.Handler) http.Handler {
+	mux := httprouter.New()
+	mux.Handler("GET", "/_health/ping", &health.Handler{
+		Token:  mgtToken,
+		Prefix: "/_health/",
+		Routes: health.Routes{"ping": checkHealth},
+	})
+	mux.NotFound = next
+	return ifCollectionInHost(next, mux)
 }
 
 func getListenAddr(svcs arvados.Services, prog arvados.ServiceName, log logrus.FieldLogger) (arvados.URL, error) {
