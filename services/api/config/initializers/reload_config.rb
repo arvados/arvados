@@ -47,7 +47,11 @@ else
           restartfile = Rails.root.join('tmp', 'restart.txt')
           touchtime = Time.now
           Rails.logger.info("reload_config: mtime on #{conffile} changed to #{t}, touching #{restartfile} to #{touchtime}")
-          File.utime(touchtime, touchtime, restartfile)
+          begin
+            File.utime(touchtime, touchtime, restartfile)
+          rescue
+            File.open(restartfile, 'w') {}
+          end
           # Even if passenger doesn't notice that we hit restart.txt
           # and kill our process, there's no point waiting around to
           # hit it again.
