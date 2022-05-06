@@ -1448,4 +1448,46 @@ class ContainerRequestTest < ActiveSupport::TestCase
     assert_equal ["foo_storage_class"], output1.storage_classes_desired
     assert_equal ["bar_storage_class"], output2.storage_classes_desired
   end
+
+  [
+    [{},               {},           {"type": "output"}],
+    [{"a1": "b1"},     {},           {"type": "output", "a1": "b1"}],
+    [{},               {"a1": "b1"}, {"type": "output", "a1": "b1"}],
+    [{"a1": "b1"},     {"a1": "c1"}, {"type": "output", "a1": "b1"}],
+    [{"a1": "b1"},     {"a2": "c2"}, {"type": "output", "a1": "b1", "a2": "c2"}],
+    [{"type": "blah"}, {},           {"type": "output"}],
+  ].each do |cr_prop, container_prop, expect_prop|
+    test "setting output_properties #{cr_prop} #{container_prop} on current container" do
+      act_as_user users(:active) do
+        cr = create_minimal_req!(priority: 1,
+                                 state: ContainerRequest::Committed,
+                                 output_name: 'foo',
+                                 output_properties: cr_prop)
+
+        act_as_system_user do
+          logc = Collection.new(owner_uuid: system_user_uuid,
+                                manifest_text: ". ef772b2f28e2c8ca84de45466ed19ee9+7815 0:0:arv-mount.txt\n")
+          logc.save!
+
+          c = Container.find_by_uuid(cr.container_uuid)
+          c.update_attributes!(state: Container::Locked)
+          c.update_attributes!(state: Container::Running)
+
+          c.update_attributes!(output_properties: container_prop)
+
+          c.update_attributes!(state: Container::Complete,
+                               exit_code: 0,
+                               output: '1f4b0bc7583c2a7f9102c395f4ffc5e3+45',
+                               log: logc.portable_data_hash)
+          logc.destroy
+        end
+
+        cr.reload
+        expect_prop["container_request"] = cr.uuid
+        output = Collection.find_by_uuid(cr.output_uuid)
+        assert_equal expect_prop.symbolize_keys, output.properties.symbolize_keys
+      end
+    end
+  end
+
 end
