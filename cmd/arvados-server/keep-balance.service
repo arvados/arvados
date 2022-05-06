@@ -6,12 +6,14 @@
 Description=Arvados Keep Balance
 Documentation=https://doc.arvados.org/
 After=network.target
+AssertPathExists=/etc/arvados/config.yml
 
 # systemd>=230 (debian:9) obeys StartLimitIntervalSec in the [Unit] section
 StartLimitIntervalSec=0
 
 [Service]
-Type=simple
+Type=notify
+EnvironmentFile=-/etc/arvados/environment
 ExecStart=/usr/bin/keep-balance -commit-pulls -commit-trash
 # Set a reasonable default for the open file limit
 LimitNOFILE=65536

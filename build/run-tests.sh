@@ -158,6 +158,8 @@ only_install=
 temp=
 temp_preserve=
 
+ignore_sigint=
+
 clear_temp() {
     if [[ -z "$temp" ]]; then
         # we did not even get as far as making a temp dir
@@ -473,6 +475,10 @@ stop_services() {
 }
 
 interrupt() {
+    if [[ -n "$ignore_sigint" ]]; then
+        echo >&2 "ignored SIGINT"
+        return
+    fi
     failures+=("($(basename $0) interrupted)")
     exit_cleanly
 }
@@ -1216,6 +1222,7 @@ else
     setnextcmd
     HISTFILE="$WORKSPACE/tmp/.history"
     history -r
+    ignore_sigint=1
     while read -p 'What next? ' -e -i "$nextcmd" nextcmd; do
         history -s "$nextcmd"
         history -w

@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-package main
+package keepbalance
 
 import (
 	"bytes"
@@ -25,7 +25,7 @@ type mainSuite struct{}
 
 func (s *mainSuite) TestVersionFlag(c *check.C) {
 	var stdout, stderr bytes.Buffer
-	runCommand("keep-balance", []string{"-version"}, nil, &stdout, &stderr)
+	Command.RunCommand("keep-balance", []string{"-version"}, nil, &stdout, &stderr)
 	c.Check(stderr.String(), check.Equals, "")
 	c.Log(stdout.String())
 	c.Check(stdout.String(), check.Matches, `keep-balance.*\(go1.*\)\n`)
@@ -51,7 +51,7 @@ func (s *mainSuite) TestHTTPServer(c *check.C) {
 	c.Assert(err, check.IsNil)
 
 	var stdout bytes.Buffer
-	go runCommand("keep-balance", []string{"-config", "-"}, bytes.NewBuffer(config), &stdout, &stdout)
+	go Command.RunCommand("keep-balance", []string{"-config", "-"}, bytes.NewBuffer(config), &stdout, &stdout)
 	done := make(chan struct{})
 	go func() {
 		defer close(done)
