@@ -262,7 +262,7 @@ package_go_binary cmd/arvados-server keepproxy "$FORMAT" "$ARCH" \
     "Make a Keep cluster accessible to clients that are not on the LAN"
 package_go_binary cmd/arvados-server keepstore "$FORMAT" "$ARCH" \
     "Keep storage daemon, accessible to clients on the LAN"
-package_go_binary services/keep-web keep-web "$FORMAT" "$ARCH" \
+package_go_binary cmd/arvados-server keep-web "$FORMAT" "$ARCH" \
     "Static web hosting service for user data stored in Arvados Keep"
 package_go_binary cmd/arvados-server arvados-ws "$FORMAT" "$ARCH" \
     "Arvados Websocket server"

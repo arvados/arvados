@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-package main
+package keepweb
 
 import (
 	"fmt"
@@ -78,7 +78,7 @@ func (s *IntegrationSuite) TestRanges(c *check.C) {
 				"Range":         {"bytes=" + trial.header},
 			},
 		}
-		s.testServer.Handler.ServeHTTP(resp, req)
+		s.handler.ServeHTTP(resp, req)
 		if trial.expectObey {
 			c.Check(resp.Code, check.Equals, http.StatusPartialContent)
 			c.Check(resp.Body.Len(), check.Equals, len(trial.expectBody))

@@ -4,14 +4,11 @@
 
 FROM arvados/arvbox-base
 ARG arvados_version
-ARG composer_version=arvados-fork
 ARG workbench2_version=main
 
 RUN cd /usr/src && \
     git clone --no-checkout https://git.arvados.org/arvados.git && \
     git -C arvados checkout ${arvados_version} && \
-    git clone --no-checkout https://github.com/arvados/composer.git && \
-    git -C composer checkout ${composer_version} && \
     git clone --no-checkout https://git.arvados.org/arvados-workbench2.git workbench2 && \
     git -C workbench2 checkout ${workbench2_version} && \
     chown -R 1000:1000 /usr/src
@@ -39,7 +36,6 @@ RUN echo fs.inotify.max_user_watches=524288 >> /etc/sysctl.conf
 RUN /usr/local/lib/arvbox/createusers.sh
 
 RUN sudo -u arvbox /var/lib/arvbox/service/api/run-service --only-deps
-RUN sudo -u arvbox /var/lib/arvbox/service/composer/run-service --only-deps
 RUN sudo -u arvbox /var/lib/arvbox/service/workbench2/run-service --only-deps
 RUN sudo -u arvbox /var/lib/arvbox/service/keep-web/run-service --only-deps
 RUN sudo -u arvbox /var/lib/arvbox/service/workbench/run-service --only-deps

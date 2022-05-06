@@ -527,7 +527,6 @@ yarn install
 			"services/crunch-dispatch-slurm",
 			"services/health",
 			"services/keep-balance",
-			"services/keep-web",
 			"services/keepstore",
 			"services/ws",
 		} {

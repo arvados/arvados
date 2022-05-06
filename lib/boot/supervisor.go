@@ -368,7 +368,7 @@ func (super *Supervisor) runCluster() error {
 		runGoProgram{src: "services/health", svc: super.cluster.Services.Health},
 		runServiceCommand{name: "keepproxy", svc: super.cluster.Services.Keepproxy, depends: []supervisedTask{runPassenger{src: "services/api"}}},
 		runServiceCommand{name: "keepstore", svc: super.cluster.Services.Keepstore},
-		runGoProgram{src: "services/keep-web", svc: super.cluster.Services.WebDAV},
+		runServiceCommand{name: "keep-web", svc: super.cluster.Services.WebDAV},
 		runServiceCommand{name: "ws", svc: super.cluster.Services.Websocket, depends: []supervisedTask{seedDatabase{}}},
 		installPassenger{src: "services/api"},
 		runPassenger{src: "services/api", varlibdir: "railsapi", svc: super.cluster.Services.RailsAPI, depends: []supervisedTask{createCertificates{}, seedDatabase{}, installPassenger{src: "services/api"}}},
