@@ -545,7 +545,11 @@ The 'jobs' API is no longer supported.
             runtimeContext.name = self.name = updated_tool.tool.get("label") or updated_tool.metadata.get("label") or os.path.basename(updated_tool.tool["id"])
 
         if self.runtimeContext.copy_deps is None and (runtimeContext.create_workflow or runtimeContext.update_workflow):
+            # When creating or updating workflow record, by default
+            # always copy dependencies and ensure Docker images are up
+            # to date.
             self.runtimeContext.copy_deps = True
+            self.runtimeContext.match_local_docker = True
 
         if self.runtimeContext.update_workflow and self.project_uuid is None:
             # If we are updating a workflow, make sure anything that
