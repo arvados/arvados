@@ -40,7 +40,7 @@ sdk/python_test="--test-suite tests.test_keep_locator"
                Restrict Python SDK tests to the given class
 apps/workbench_test="TEST=test/integration/pipeline_instances_test.rb"
                Restrict Workbench tests to the given file
-services/arv-git-httpd_test="-check.vv"
+services/githttpd_test="-check.vv"
                Show all log messages, even when tests pass (also works
                with services/keepstore_test etc.)
 ARVADOS_DEBUG=1
@@ -92,7 +92,7 @@ lib/mount
 lib/pam
 lib/service
 services/api
-services/arv-git-httpd
+services/githttpd
 services/crunchstat
 services/dockercleaner
 services/fuse
@@ -410,7 +410,7 @@ start_services() {
         return 0
     fi
     . "$VENV3DIR/bin/activate"
-    echo 'Starting API, controller, keepproxy, keep-web, arv-git-httpd, ws, and nginx ssl proxy...'
+    echo 'Starting API, controller, keepproxy, keep-web, githttpd, ws, and nginx ssl proxy...'
     if [[ ! -d "$WORKSPACE/services/api/log" ]]; then
         mkdir -p "$WORKSPACE/services/api/log"
     fi
@@ -438,8 +438,8 @@ start_services() {
         && python3 sdk/python/tests/run_test_server.py start_keep-web \
         && checkpidfile keep-web \
         && checkhealth WebDAV \
-        && python3 sdk/python/tests/run_test_server.py start_arv-git-httpd \
-        && checkpidfile arv-git-httpd \
+        && python3 sdk/python/tests/run_test_server.py start_githttpd \
+        && checkpidfile githttpd \
         && checkhealth GitHTTP \
         && python3 sdk/python/tests/run_test_server.py start_ws \
         && checkpidfile ws \
@@ -461,7 +461,7 @@ stop_services() {
     . "$VENV3DIR/bin/activate" || return
     cd "$WORKSPACE" \
         && python3 sdk/python/tests/run_test_server.py stop_nginx \
-        && python3 sdk/python/tests/run_test_server.py stop_arv-git-httpd \
+        && python3 sdk/python/tests/run_test_server.py stop_githttpd \
         && python3 sdk/python/tests/run_test_server.py stop_ws \
         && python3 sdk/python/tests/run_test_server.py stop_keep-web \
         && python3 sdk/python/tests/run_test_server.py stop_keep_proxy \
@@ -985,7 +985,7 @@ pythonstuff=(
 )
 
 declare -a gostuff
-gostuff=($(cd "$WORKSPACE" && git grep -lw func | grep \\.go | sed -e 's/\/[^\/]*$//' | sort -u))
+gostuff=($(cd "$WORKSPACE" && git ls-files | grep '\.go$' | sed -e 's/\/[^\/]*$//' | sort -u))
 
 install_apps/workbench() {
     cd "$WORKSPACE/apps/workbench" \
@@ -1083,7 +1083,6 @@ install_deps() {
     do_install sdk/python pip "${VENV3DIR}/bin/"
     do_install sdk/ruby
     do_install services/api
-    do_install services/arv-git-httpd go
     do_install services/keepproxy go
     do_install services/keep-web go
 }

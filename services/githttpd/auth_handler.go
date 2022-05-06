@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-package main
+package githttpd
 
 import (
 	"errors"
@@ -11,44 +11,33 @@ import (
 	"os"
 	"regexp"
 	"strings"
-	"sync"
 	"time"
 
 	"git.arvados.org/arvados.git/sdk/go/arvados"
 	"git.arvados.org/arvados.git/sdk/go/arvadosclient"
 	"git.arvados.org/arvados.git/sdk/go/auth"
 	"git.arvados.org/arvados.git/sdk/go/httpserver"
+	"github.com/sirupsen/logrus"
 )
 
 type authHandler struct {
 	handler    http.Handler
 	clientPool *arvadosclient.ClientPool
 	cluster    *arvados.Cluster
-	setupOnce  sync.Once
 }
 
-func (h *authHandler) setup() {
-	client, err := arvados.NewClientFromConfig(h.cluster)
-	if err != nil {
-		log.Fatal(err)
-	}
+func (h *authHandler) CheckHealth() error {
+	return nil
+}
 
-	ac, err := arvadosclient.New(client)
-	if err != nil {
-		log.Fatalf("Error setting up arvados client prototype %v", err)
-	}
-
-	h.clientPool = &arvadosclient.ClientPool{Prototype: ac}
+func (h *authHandler) Done() <-chan struct{} {
+	return nil
 }
 
 func (h *authHandler) ServeHTTP(wOrig http.ResponseWriter, r *http.Request) {
-	h.setupOnce.Do(h.setup)
-
 	var statusCode int
 	var statusText string
 	var apiToken string
-	var repoName string
-	var validAPIToken bool
 
 	w := httpserver.WrapResponseWriter(wOrig)
 
@@ -84,19 +73,6 @@ func (h *authHandler) ServeHTTP(wOrig http.ResponseWriter, r *http.Request) {
 				w.Write([]byte(statusText))
 			}
 		}
-
-		// If the given password is a valid token, log the first 10 characters of the token.
-		// Otherwise: log the string <invalid> if a password is given, else an empty string.
-		passwordToLog := ""
-		if !validAPIToken {
-			if len(apiToken) > 0 {
-				passwordToLog = "<invalid>"
-			}
-		} else {
-			passwordToLog = apiToken[0:10]
-		}
-
-		httpserver.Log(r.RemoteAddr, passwordToLog, w.WroteStatus(), statusText, repoName, r.Method, r.URL.Path)
 	}()
 
 	creds := auth.CredentialsFromRequest(r)
@@ -115,8 +91,11 @@ func (h *authHandler) ServeHTTP(wOrig http.ResponseWriter, r *http.Request) {
 		statusCode, statusText = http.StatusNotFound, "not found"
 		return
 	}
-	repoName = pathParts[0]
+	repoName := pathParts[0]
 	repoName = strings.TrimRight(repoName, "/")
+	httpserver.SetResponseLogFields(r.Context(), logrus.Fields{
+		"repoName": repoName,
+	})
 
 	arv := h.clientPool.Get()
 	if arv == nil {
@@ -124,6 +103,21 @@ func (h *authHandler) ServeHTTP(wOrig http.ResponseWriter, r *http.Request) {
 		return
 	}
 	defer h.clientPool.Put(arv)
+
+	// Log the UUID if the supplied token is a v2 token, otherwise
+	// just the last five characters.
+	httpserver.SetResponseLogFields(r.Context(), logrus.Fields{
+		"tokenUUID": func() string {
+			if strings.HasPrefix(apiToken, "v2/") && strings.IndexRune(apiToken[3:], '/') == 27 {
+				// UUID part of v2 token
+				return apiToken[3:30]
+			} else if len(apiToken) > 5 {
+				return "[...]" + apiToken[len(apiToken)-5:]
+			} else {
+				return apiToken
+			}
+		}(),
+	})
 
 	// Ask API server whether the repository is readable using
 	// this token (by trying to read it!)
@@ -133,7 +127,6 @@ func (h *authHandler) ServeHTTP(wOrig http.ResponseWriter, r *http.Request) {
 		statusCode, statusText = http.StatusInternalServerError, err.Error()
 		return
 	}
-	validAPIToken = true
 	if repoUUID == "" {
 		statusCode, statusText = http.StatusNotFound, "not found"
 		return

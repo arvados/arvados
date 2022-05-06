@@ -49,8 +49,7 @@
 //
 // Proxy configuration
 //
-// Keep-web does not support TLS natively. Typically, it is installed
-// behind a proxy like nginx.
+// Typically, keep-web is installed behind a proxy like nginx.
 //
 // Here is an example nginx configuration.
 //
@@ -72,7 +71,7 @@
 //	}
 //
 // It is not necessary to run keep-web on the same host as the nginx
-// proxy. However, TLS is not used between nginx and keep-web, so
+// proxy. However, if TLS is not used between nginx and keep-web, the
 // intervening networks must be secured by other means.
 //
 // Anonymous downloads
@@ -149,4 +148,4 @@
 // /metrics. The same information is also available as JSON at
 // /metrics.json.
 //
-package main
+package keepweb

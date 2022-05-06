@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-package main
+package keepweb
 
 import (
 	"crypto/hmac"
@@ -222,8 +222,8 @@ func (h *handler) checks3signature(r *http.Request) (string, error) {
 	}
 
 	client := (&arvados.Client{
-		APIHost:  h.Config.cluster.Services.Controller.ExternalURL.Host,
-		Insecure: h.Config.cluster.TLS.Insecure,
+		APIHost:  h.Cluster.Services.Controller.ExternalURL.Host,
+		Insecure: h.Cluster.TLS.Insecure,
 	}).WithRequestID(r.Header.Get("X-Request-Id"))
 	var aca arvados.APIClientAuthorization
 	var secret string
@@ -231,7 +231,7 @@ func (h *handler) checks3signature(r *http.Request) (string, error) {
 	if len(key) == 27 && key[5:12] == "-gj3su-" {
 		// Access key is the UUID of an Arvados token, secret
 		// key is the secret part.
-		ctx := arvados.ContextWithAuthorization(r.Context(), "Bearer "+h.Config.cluster.SystemRootToken)
+		ctx := arvados.ContextWithAuthorization(r.Context(), "Bearer "+h.Cluster.SystemRootToken)
 		err = client.RequestAndDecodeContext(ctx, &aca, "GET", "arvados/v1/api_client_authorizations/"+key, nil, nil)
 		secret = aca.APIToken
 	} else {
@@ -316,7 +316,7 @@ func (h *handler) serveS3(w http.ResponseWriter, r *http.Request) bool {
 		// Use a single session (cached FileSystem) across
 		// multiple read requests.
 		var sess *cachedSession
-		fs, sess, err = h.Config.Cache.GetSession(token)
+		fs, sess, err = h.Cache.GetSession(token)
 		if err != nil {
 			s3ErrorResponse(w, InternalError, err.Error(), r.URL.Path, http.StatusInternalServerError)
 			return true
@@ -336,13 +336,13 @@ func (h *handler) serveS3(w http.ResponseWriter, r *http.Request) bool {
 		}
 		defer release()
 		fs = client.SiteFileSystem(kc)
-		fs.ForwardSlashNameSubstitution(h.Config.cluster.Collections.ForwardSlashNameSubstitution)
+		fs.ForwardSlashNameSubstitution(h.Cluster.Collections.ForwardSlashNameSubstitution)
 	}
 
 	var objectNameGiven bool
 	var bucketName string
 	fspath := "/by_id"
-	if id := parseCollectionIDFromDNSName(r.Host); id != "" {
+	if id := arvados.CollectionIDFromDNSName(r.Host); id != "" {
 		fspath += "/" + id
 		bucketName = id
 		objectNameGiven = strings.Count(strings.TrimSuffix(r.URL.Path, "/"), "/") > 0
@@ -365,7 +365,7 @@ func (h *handler) serveS3(w http.ResponseWriter, r *http.Request) bool {
 			w.Header().Set("Content-Type", "application/xml")
 			io.WriteString(w, xml.Header)
 			fmt.Fprintln(w, `<LocationConstraint><LocationConstraint xmlns="http://s3.amazonaws.com/doc/2006-03-01/">`+
-				h.Config.cluster.ClusterID+
+				h.Cluster.ClusterID+
 				`</LocationConstraint></LocationConstraint>`)
 		} else if reRawQueryIndicatesAPI.MatchString(r.URL.RawQuery) {
 			// GetBucketWebsite ("GET /bucketid/?website"), GetBucketTagging, etc.
@@ -393,7 +393,7 @@ func (h *handler) serveS3(w http.ResponseWriter, r *http.Request) bool {
 			}
 			return true
 		}
-		if err == nil && fi.IsDir() && objectNameGiven && strings.HasSuffix(fspath, "/") && h.Config.cluster.Collections.S3FolderObjects {
+		if err == nil && fi.IsDir() && objectNameGiven && strings.HasSuffix(fspath, "/") && h.Cluster.Collections.S3FolderObjects {
 			w.Header().Set("Content-Type", "application/x-directory")
 			w.WriteHeader(http.StatusOK)
 			return true
@@ -405,7 +405,7 @@ func (h *handler) serveS3(w http.ResponseWriter, r *http.Request) bool {
 			return true
 		}
 
-		tokenUser, err := h.Config.Cache.GetTokenUser(token)
+		tokenUser, err := h.Cache.GetTokenUser(token)
 		if !h.userPermittedToUploadOrDownload(r.Method, tokenUser) {
 			http.Error(w, "Not permitted", http.StatusForbidden)
 			return true
@@ -429,7 +429,7 @@ func (h *handler) serveS3(w http.ResponseWriter, r *http.Request) bool {
 		}
 		var objectIsDir bool
 		if strings.HasSuffix(fspath, "/") {
-			if !h.Config.cluster.Collections.S3FolderObjects {
+			if !h.Cluster.Collections.S3FolderObjects {
 				s3ErrorResponse(w, InvalidArgument, "invalid object name: trailing slash", r.URL.Path, http.StatusBadRequest)
 				return true
 			}
@@ -496,7 +496,7 @@ func (h *handler) serveS3(w http.ResponseWriter, r *http.Request) bool {
 			}
 			defer f.Close()
 
-			tokenUser, err := h.Config.Cache.GetTokenUser(token)
+			tokenUser, err := h.Cache.GetTokenUser(token)
 			if !h.userPermittedToUploadOrDownload(r.Method, tokenUser) {
 				http.Error(w, "Not permitted", http.StatusForbidden)
 				return true
@@ -523,7 +523,7 @@ func (h *handler) serveS3(w http.ResponseWriter, r *http.Request) bool {
 			return true
 		}
 		// Ensure a subsequent read operation will see the changes.
-		h.Config.Cache.ResetSession(token)
+		h.Cache.ResetSession(token)
 		w.WriteHeader(http.StatusOK)
 		return true
 	case r.Method == http.MethodDelete:
@@ -577,7 +577,7 @@ func (h *handler) serveS3(w http.ResponseWriter, r *http.Request) bool {
 			return true
 		}
 		// Ensure a subsequent read operation will see the changes.
-		h.Config.Cache.ResetSession(token)
+		h.Cache.ResetSession(token)
 		w.WriteHeader(http.StatusNoContent)
 		return true
 	default:
@@ -756,7 +756,7 @@ func (h *handler) s3list(bucket string, w http.ResponseWriter, r *http.Request, 
 		if path < params.marker || path < params.prefix || path <= params.startAfter {
 			return nil
 		}
-		if fi.IsDir() && !h.Config.cluster.Collections.S3FolderObjects {
+		if fi.IsDir() && !h.Cluster.Collections.S3FolderObjects {
 			// Note we don't add anything to
 			// commonPrefixes here even if delimiter is
 			// "/". We descend into the directory, and

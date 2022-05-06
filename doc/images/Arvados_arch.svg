@@ -219,7 +219,7 @@
         <rect class="BoundingBox" stroke="none" fill="none" x="22080" y="8491" width="4194" height="1654"/>
         <path fill="rgb(114,159,207)" stroke="none" d="M 24177,10143 L 22081,10143 22081,8492 26272,8492 26272,10143 24177,10143 Z"/>
         <path fill="none" stroke="rgb(52,101,164)" d="M 24177,10143 L 22081,10143 22081,8492 26272,8492 26272,10143 24177,10143 Z"/>
-        <text class="TextShape"><tspan class="TextParagraph" font-family="Liberation Sans, sans-serif" font-size="494px" font-weight="400"><tspan class="TextPosition" x="22852" y="9489"><tspan fill="rgb(0,0,0)" stroke="none">arv-git-httpd</tspan></tspan></tspan></text>
+        <text class="TextShape"><tspan class="TextParagraph" font-family="Liberation Sans, sans-serif" font-size="494px" font-weight="400"><tspan class="TextPosition" x="22302" y="9489"><tspan fill="rgb(0,0,0)" stroke="none">arvados-git-httpd</tspan></tspan></tspan></text>
        </g>
       </g>
       <g class="com.sun.star.drawing.CustomShape">

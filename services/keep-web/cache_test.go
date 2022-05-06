@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-package main
+package keepweb
 
 import (
 	"bytes"
@@ -34,8 +34,11 @@ func (s *UnitSuite) TestCache(c *check.C) {
 	arv, err := arvadosclient.MakeArvadosClient()
 	c.Assert(err, check.Equals, nil)
 
-	cache := newConfig(ctxlog.TestLogger(c), s.Config).Cache
-	cache.registry = prometheus.NewRegistry()
+	cache := &cache{
+		cluster:  s.cluster,
+		logger:   ctxlog.TestLogger(c),
+		registry: prometheus.NewRegistry(),
+	}
 
 	// Hit the same collection 5 times using the same token. Only
 	// the first req should cause an API call; the next 4 should
@@ -111,8 +114,11 @@ func (s *UnitSuite) TestCacheForceReloadByPDH(c *check.C) {
 	arv, err := arvadosclient.MakeArvadosClient()
 	c.Assert(err, check.Equals, nil)
 
-	cache := newConfig(ctxlog.TestLogger(c), s.Config).Cache
-	cache.registry = prometheus.NewRegistry()
+	cache := &cache{
+		cluster:  s.cluster,
+		logger:   ctxlog.TestLogger(c),
+		registry: prometheus.NewRegistry(),
+	}
 
 	for _, forceReload := range []bool{false, true, false, true} {
 		_, err := cache.Get(arv, arvadostest.FooCollectionPDH, forceReload)
@@ -130,8 +136,11 @@ func (s *UnitSuite) TestCacheForceReloadByUUID(c *check.C) {
 	arv, err := arvadosclient.MakeArvadosClient()
 	c.Assert(err, check.Equals, nil)
 
-	cache := newConfig(ctxlog.TestLogger(c), s.Config).Cache
-	cache.registry = prometheus.NewRegistry()
+	cache := &cache{
+		cluster:  s.cluster,
+		logger:   ctxlog.TestLogger(c),
+		registry: prometheus.NewRegistry(),
+	}
 
 	for _, forceReload := range []bool{false, true, false, true} {
 		_, err := cache.Get(arv, arvadostest.FooCollection, forceReload)

@@ -106,8 +106,6 @@ Clusters:
         InternalURLs:
           "http://localhost:${services[keep-web]}/": {}
         ExternalURL: "https://$localip:${services[keep-web-dl-ssl]}/"
-      Composer:
-        ExternalURL: "https://$localip:${services[composer]}"
       Controller:
         ExternalURL: "https://$localip:${services[controller-ssl]}"
         InternalURLs:
@@ -129,6 +127,8 @@ Clusters:
       BlobSigningKey: $blob_signing_key
       DefaultReplication: 1
       TrustAllContent: true
+    Containers:
+      RuntimeEngine: singularity
     Login:
       Test:
         Enable: true

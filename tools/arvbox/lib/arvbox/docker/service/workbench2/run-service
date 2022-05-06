@@ -16,8 +16,6 @@ fi
 
 cd /usr/src/workbench2
 
-npm -d install --prefix /usr/local --global yarn@1.17.3
-
 yarn install
 
 if test "$1" = "--only-deps" ; then
