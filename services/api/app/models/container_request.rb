@@ -242,7 +242,11 @@ class ContainerRequest < ArvadosModel
         merged_properties.update(self.output_properties)
       end
 
-      merged_properties['type'] = out_type
+      if out_type == 'output' and !requesting_container_uuid.nil?
+          merged_properties['type'] = 'intermediate'
+      else
+        merged_properties['type'] = out_type
+      end
       merged_properties['container_request'] = uuid
 
       coll.assign_attributes(

@@ -794,7 +794,7 @@ The 'jobs' API is no longer supported.
             output_properties = {}
             output_properties_req, _ = self.get_requirement("http://arvados.org/cwl#OutputCollectionProperties")
             if output_properties_req:
-                for pr in output_properties_req["processProperties"]:
+                for pr in output_properties_req["outputProperties"]:
                     output_properties[pr["propertyName"]] = self.builder.do_eval(pr["propertyValue"])
 
             self.final_output, self.final_output_collection = self.make_output_collection(self.output_name, storage_classes,

@@ -342,12 +342,13 @@ class ArvadosContainer(JobBase):
             for pr in properties_req["processProperties"]:
                 container_request["properties"][pr["propertyName"]] = self.builder.do_eval(pr["propertyValue"])
 
+        container_request["output_properties"] = {}
         output_properties_req, _ = self.get_requirement("http://arvados.org/cwl#OutputCollectionProperties")
         if output_properties_req:
-            for pr in output_properties_req["processProperties"]:
+            for pr in output_properties_req["outputProperties"]:
                 container_request["output_properties"][pr["propertyName"]] = self.builder.do_eval(pr["propertyValue"])
 
-        output_properties.update(intermediate_collection_info["properties"])
+        container_request["output_properties"].update(intermediate_collection_info["properties"])
 
         if runtimeContext.runnerjob.startswith("arvwf:"):
             wfuuid = runtimeContext.runnerjob[6:runtimeContext.runnerjob.index("#")]

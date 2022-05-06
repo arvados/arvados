@@ -415,7 +415,7 @@ $graph:
       jsonldPredicate:
         _id: "@type"
         _type: "@vocab"
-    processProperties:
+    outputProperties:
       type: PropertyDef[]
       jsonldPredicate:
         mapSubject: propertyName
