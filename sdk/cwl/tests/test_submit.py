@@ -47,12 +47,14 @@ _rootDesc = None
 
 def stubs(func):
     @functools.wraps(func)
+    @mock.patch("arvados_cwl.arvdocker.determine_image_id")
     @mock.patch("uuid.uuid4")
     @mock.patch("arvados.commands.keepdocker.list_images_in_arv")
     @mock.patch("arvados.collection.KeepClient")
     @mock.patch("arvados.keep.KeepClient")
     @mock.patch("arvados.events.subscribe")
-    def wrapped(self, events, keep_client1, keep_client2, keepdocker, uuid4, *args, **kwargs):
+    def wrapped(self, events, keep_client1, keep_client2, keepdocker,
+                uuid4, determine_image_id, *args, **kwargs):
         class Stubs(object):
             pass
         stubs = Stubs()
@@ -62,6 +64,8 @@ def stubs(func):
         uuid4.side_effect = ["df80736f-f14d-4b10-b2e3-03aa27f034bb", "df80736f-f14d-4b10-b2e3-03aa27f034b1",
                              "df80736f-f14d-4b10-b2e3-03aa27f034b2", "df80736f-f14d-4b10-b2e3-03aa27f034b3",
                              "df80736f-f14d-4b10-b2e3-03aa27f034b4", "df80736f-f14d-4b10-b2e3-03aa27f034b5"]
+
+        determine_image_id.return_value = None
 
         def putstub(p, **kwargs):
             return "%s+%i" % (hashlib.md5(p).hexdigest(), len(p))

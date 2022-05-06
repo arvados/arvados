@@ -136,7 +136,7 @@ def test_execute():
     finally:
         api.groups().delete(uuid=group["uuid"]).execute()
 
-
-test_create()
-test_update()
-test_execute()
+if __name__ == '__main__':
+    test_create()
+    test_update()
+    test_execute()
