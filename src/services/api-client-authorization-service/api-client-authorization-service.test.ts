@@ -55,11 +55,11 @@ describe('ApiClientAuthorizationService', () => {
             await apiClientAuthorizationService.listCollectionSharingTokens(uuid);
             expect(serverApi.get).toHaveBeenCalledWith(
                 `/api_client_authorizations`, {params: {
-                    filters: '[["scopes","=","' + JSON.stringify([
+                    filters: JSON.stringify([["scopes","=",[
                         `GET /arvados/v1/collections/${uuid}`,
                         `GET /arvados/v1/collections/${uuid}/`,
-                        `GET /arvados/v1/keep_services/accessible`,
-                    ]) + '"]]',
+                        'GET /arvados/v1/keep_services/accessible',
+                    ]]]),
                     select: undefined,
                 }}
             );

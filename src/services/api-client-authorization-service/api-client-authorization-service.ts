@@ -33,11 +33,11 @@ export class ApiClientAuthorizationService extends CommonService<ApiClientAuthor
         }
         return this.list({
             filters: new FilterBuilder()
-                .addEqual("scopes", JSON.stringify([
+                .addEqual("scopes", [
                     `GET /arvados/v1/collections/${uuid}`,
                     `GET /arvados/v1/collections/${uuid}/`,
-                    "GET /arvados/v1/keep_services/accessible",
-                ])).getFilters()
+                    "GET /arvados/v1/keep_services/accessible"
+                ]).getFilters()
         });
     }
 }
