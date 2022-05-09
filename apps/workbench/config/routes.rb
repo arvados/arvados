@@ -130,7 +130,8 @@ Rails.application.routes.draw do
 
   root :to => 'projects#index'
 
-  match '/_health/ping', to: 'healthcheck#ping', via: [:get]
+  match '/_health/:check', to: 'management#health', via: [:get]
+  match '/metrics', to: 'management#metrics', via: [:get]
 
   get '/tests/mithril', to: 'tests#mithril'
 

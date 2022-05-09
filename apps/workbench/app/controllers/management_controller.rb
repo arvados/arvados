@@ -2,7 +2,9 @@
 #
 # SPDX-License-Identifier: AGPL-3.0
 
-class HealthcheckController < ApplicationController
+require 'app_version'
+
+class ManagementController < ApplicationController
   skip_around_action :thread_clear
   skip_around_action :set_thread_api_token
   skip_around_action :require_thread_api_token
@@ -28,7 +30,21 @@ class HealthcheckController < ApplicationController
     end
   end
 
-  def ping
+  def metrics
+    render content_type: 'text/plain', plain: <<~EOF
+# HELP arvados_config_load_timestamp_seconds Time when config file was loaded.
+# TYPE arvados_config_load_timestamp_seconds gauge
+arvados_config_load_timestamp_seconds{sha256="#{Rails.configuration.SourceSHA256}"} #{Rails.configuration.LoadTimestamp.to_f}
+# HELP arvados_config_source_timestamp_seconds Timestamp of config file when it was loaded.
+# TYPE arvados_config_source_timestamp_seconds gauge
+arvados_config_source_timestamp_seconds{sha256="#{Rails.configuration.SourceSHA256}"} #{Rails.configuration.SourceTimestamp.to_f}
+# HELP arvados_version_running Indicated version is running.
+# TYPE arvados_version_running gauge
+arvados_version_running{version="#{AppVersion.package_version}"} 1
+EOF
+  end
+
+  def health
     resp = {"health" => "OK"}
     render json: resp
   end

@@ -128,6 +128,17 @@ func (c *command) RunCommand(prog string, args []string, stdin io.Reader, stdout
 	ctx = context.WithValue(ctx, contextKeyURL{}, listenURL)
 
 	reg := prometheus.NewRegistry()
+	loader.RegisterMetrics(reg)
+
+	// arvados_version_running{version="1.2.3~4"} 1.0
+	mVersion := prometheus.NewGaugeVec(prometheus.GaugeOpts{
+		Namespace: "arvados",
+		Name:      "version_running",
+		Help:      "Indicated version is running.",
+	}, []string{"version"})
+	mVersion.WithLabelValues(cmd.Version.String()).Set(1)
+	reg.MustRegister(mVersion)
+
 	handler := c.newHandler(ctx, cluster, cluster.SystemRootToken, reg)
 	if err = handler.CheckHealth(); err != nil {
 		return 1

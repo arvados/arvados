@@ -6,6 +6,7 @@ package config
 
 import (
 	"bytes"
+	"crypto/sha256"
 	_ "embed"
 	"encoding/json"
 	"errors"
@@ -17,10 +18,12 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+	"time"
 
 	"git.arvados.org/arvados.git/sdk/go/arvados"
 	"github.com/ghodss/yaml"
 	"github.com/imdario/mergo"
+	"github.com/prometheus/client_golang/prometheus"
 	"github.com/sirupsen/logrus"
 )
 
@@ -46,6 +49,12 @@ type Loader struct {
 	KeepBalancePath         string
 
 	configdata []byte
+	// UTC time for configdata: either the modtime of the file we
+	// read configdata from, or the time when we read configdata
+	// from a pipe.
+	sourceTimestamp time.Time
+	// UTC time when configdata was read.
+	loadTimestamp time.Time
 }
 
 // NewLoader returns a new Loader with Stdin and Logger set to the
@@ -166,25 +175,36 @@ func (ldr *Loader) MungeLegacyConfigArgs(lgr logrus.FieldLogger, args []string, 
 	return munged
 }
 
-func (ldr *Loader) loadBytes(path string) ([]byte, error) {
+func (ldr *Loader) loadBytes(path string) (buf []byte, sourceTime, loadTime time.Time, err error) {
+	loadTime = time.Now().UTC()
 	if path == "-" {
-		return ioutil.ReadAll(ldr.Stdin)
+		buf, err = ioutil.ReadAll(ldr.Stdin)
+		sourceTime = loadTime
+		return
 	}
 	f, err := os.Open(path)
 	if err != nil {
-		return nil, err
+		return
 	}
 	defer f.Close()
-	return ioutil.ReadAll(f)
+	fi, err := f.Stat()
+	if err != nil {
+		return
+	}
+	sourceTime = fi.ModTime().UTC()
+	buf, err = ioutil.ReadAll(f)
+	return
 }
 
 func (ldr *Loader) Load() (*arvados.Config, error) {
 	if ldr.configdata == nil {
-		buf, err := ldr.loadBytes(ldr.Path)
+		buf, sourceTime, loadTime, err := ldr.loadBytes(ldr.Path)
 		if err != nil {
 			return nil, err
 		}
 		ldr.configdata = buf
+		ldr.sourceTimestamp = sourceTime
+		ldr.loadTimestamp = loadTime
 	}
 
 	// FIXME: We should reject YAML if the same key is used twice
@@ -330,6 +350,8 @@ func (ldr *Loader) Load() (*arvados.Config, error) {
 			}
 		}
 	}
+	cfg.SourceTimestamp = ldr.sourceTimestamp
+	cfg.SourceSHA256 = fmt.Sprintf("%x", sha256.Sum256(ldr.configdata))
 	return &cfg, nil
 }
 
@@ -554,4 +576,31 @@ func (ldr *Loader) autofillPreemptible(label string, cc *arvados.Cluster) {
 		}
 	}
 
+}
+
+// RegisterMetrics registers metrics showing the timestamp and content
+// hash of the currently loaded config.
+//
+// Must not be called more than once for a given registry. Must not be
+// called before Load(). Metrics are not updated by subsequent calls
+// to Load().
+func (ldr *Loader) RegisterMetrics(reg *prometheus.Registry) {
+	hash := fmt.Sprintf("%x", sha256.Sum256(ldr.configdata))
+	vec := prometheus.NewGaugeVec(prometheus.GaugeOpts{
+		Namespace: "arvados",
+		Subsystem: "config",
+		Name:      "source_timestamp_seconds",
+		Help:      "Timestamp of config file when it was loaded.",
+	}, []string{"sha256"})
+	vec.WithLabelValues(hash).Set(float64(ldr.sourceTimestamp.UnixNano()) / 1e9)
+	reg.MustRegister(vec)
+
+	vec = prometheus.NewGaugeVec(prometheus.GaugeOpts{
+		Namespace: "arvados",
+		Subsystem: "config",
+		Name:      "load_timestamp_seconds",
+		Help:      "Time when config file was loaded.",
+	}, []string{"sha256"})
+	vec.WithLabelValues(hash).Set(float64(ldr.loadTimestamp.UnixNano()) / 1e9)
+	reg.MustRegister(vec)
 }

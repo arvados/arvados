@@ -50,6 +50,8 @@ h3(#restart). Restart the services affected by the change
 
 If you know which Arvados service uses the specific configuration that was modified, restart those services. When in doubt, restart all Arvados system services.
 
+To check for services that have not restarted since the configuration file was updated, run the @arvados-server check@ command on each system node.
+
 h2(#upgrading). Upgrading Arvados
 
 Upgrading Arvados typically involves the following steps:
@@ -61,4 +63,6 @@ Upgrading Arvados typically involves the following steps:
 # rebuild and deploy the "compute node image":{{site.baseurl}}/install/crunch2-cloud/install-compute-node.html (cloud only)
 # Install new packages using @apt-get upgrade@ or @yum upgrade@.
 # Wait for package installation scripts as they perform any necessary data migrations.
+# Run @arvados-server config-check@ to detect configuration errors or deprecated entries.
 # Verify that the Arvados services were restarted as part of the package upgrades.
+# Run @arvados-server check@ to detect services that did not restart properly.

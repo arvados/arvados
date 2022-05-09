@@ -21,6 +21,7 @@ import (
 	"git.arvados.org/arvados.git/lib/install"
 	"git.arvados.org/arvados.git/lib/lsf"
 	"git.arvados.org/arvados.git/lib/recovercollection"
+	"git.arvados.org/arvados.git/sdk/go/health"
 	"git.arvados.org/arvados.git/services/githttpd"
 	keepbalance "git.arvados.org/arvados.git/services/keep-balance"
 	keepweb "git.arvados.org/arvados.git/services/keep-web"
@@ -36,6 +37,7 @@ var (
 		"--version": cmd.Version,
 
 		"boot":               boot.Command,
+		"check":              health.CheckCommand,
 		"cloudtest":          cloudtest.Command,
 		"config-check":       config.CheckCommand,
 		"config-defaults":    config.DumpDefaultsCommand,

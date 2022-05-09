@@ -5,22 +5,36 @@
 package health
 
 import (
+	"bufio"
+	"bytes"
 	"context"
 	"crypto/tls"
 	"encoding/json"
+	"errors"
+	"flag"
 	"fmt"
+	"io"
+	"net"
 	"net/http"
 	"net/url"
+	"regexp"
+	"strconv"
+	"strings"
 	"sync"
 	"time"
 
+	"git.arvados.org/arvados.git/lib/cmd"
+	"git.arvados.org/arvados.git/lib/config"
 	"git.arvados.org/arvados.git/sdk/go/arvados"
 	"git.arvados.org/arvados.git/sdk/go/auth"
+	"git.arvados.org/arvados.git/sdk/go/ctxlog"
+	"github.com/ghodss/yaml"
+	"github.com/sirupsen/logrus"
 )
 
 const defaultTimeout = arvados.Duration(2 * time.Second)
 
-// Aggregator implements http.Handler. It handles "GET /_health/all"
+// Aggregator implements service.Handler. It handles "GET /_health/all"
 // by checking the health of all configured services on the cluster
 // and responding 200 if everything is healthy.
 type Aggregator struct {
@@ -99,6 +113,8 @@ type ClusterHealthResponse struct {
 	// "service S is needed, but isn't configured to run
 	// anywhere."
 	Services map[arvados.ServiceName]ServiceHealth `json:"services"`
+
+	Errors []string `json:"errors"`
 }
 
 type CheckResult struct {
@@ -108,10 +124,16 @@ type CheckResult struct {
 	HTTPStatusText string                 `json:",omitempty"`
 	Response       map[string]interface{} `json:"response"`
 	ResponseTime   json.Number            `json:"responseTime"`
+	Metrics        Metrics                `json:"-"`
+}
+
+type Metrics struct {
+	ConfigSourceTimestamp time.Time
+	ConfigSourceSHA256    string
 }
 
 type ServiceHealth struct {
-	Health string `json:"health"`
+	Health string `json:"health"` // "OK", "ERROR", or "SKIP"
 	N      int    `json:"n"`
 }
 
@@ -129,7 +151,7 @@ func (agg *Aggregator) ClusterHealth() ClusterHealthResponse {
 		// Ensure svc is listed in resp.Services.
 		mtx.Lock()
 		if _, ok := resp.Services[svcName]; !ok {
-			resp.Services[svcName] = ServiceHealth{Health: "ERROR"}
+			resp.Services[svcName] = ServiceHealth{Health: "MISSING"}
 		}
 		mtx.Unlock()
 
@@ -153,18 +175,30 @@ func (agg *Aggregator) ClusterHealth() ClusterHealthResponse {
 					}
 				} else {
 					result = agg.ping(pingURL)
+					if result.Health != "SKIP" {
+						m, err := agg.metrics(pingURL)
+						if err != nil && result.Error == "" {
+							result.Error = "metrics: " + err.Error()
+						}
+						result.Metrics = m
+					}
 				}
 
 				mtx.Lock()
 				defer mtx.Unlock()
 				resp.Checks[fmt.Sprintf("%s+%s", svcName, pingURL)] = result
-				if result.Health == "OK" {
+				if result.Health == "OK" || result.Health == "SKIP" {
 					h := resp.Services[svcName]
 					h.N++
-					h.Health = "OK"
+					if result.Health == "OK" || h.N == 1 {
+						// "" => "SKIP" or "OK"
+						// "SKIP" => "OK"
+						h.Health = result.Health
+					}
 					resp.Services[svcName] = h
 				} else {
 					resp.Health = "ERROR"
+					resp.Errors = append(resp.Errors, fmt.Sprintf("%s: %s: %s", svcName, result.Health, result.Error))
 				}
 			}(svcName, addr)
 		}
@@ -173,11 +207,43 @@ func (agg *Aggregator) ClusterHealth() ClusterHealthResponse {
 
 	// Report ERROR if a needed service didn't fail any checks
 	// merely because it isn't configured to run anywhere.
-	for _, sh := range resp.Services {
-		if sh.Health != "OK" {
-			resp.Health = "ERROR"
-			break
+	for svcName, sh := range resp.Services {
+		switch svcName {
+		case arvados.ServiceNameDispatchCloud,
+			arvados.ServiceNameDispatchLSF:
+			// ok to not run any given dispatcher
+		case arvados.ServiceNameHealth,
+			arvados.ServiceNameWorkbench1,
+			arvados.ServiceNameWorkbench2:
+			// typically doesn't have InternalURLs in config
+		default:
+			if sh.Health != "OK" && sh.Health != "SKIP" {
+				resp.Health = "ERROR"
+				resp.Errors = append(resp.Errors, fmt.Sprintf("%s: %s: no InternalURLs configured", svcName, sh.Health))
+				continue
+			}
 		}
+	}
+
+	var newest Metrics
+	for _, result := range resp.Checks {
+		if result.Metrics.ConfigSourceTimestamp.After(newest.ConfigSourceTimestamp) {
+			newest = result.Metrics
+		}
+	}
+	var mismatches []string
+	for target, result := range resp.Checks {
+		if hash := result.Metrics.ConfigSourceSHA256; hash != "" && hash != newest.ConfigSourceSHA256 {
+			mismatches = append(mismatches, target)
+		}
+	}
+	for _, target := range mismatches {
+		msg := fmt.Sprintf("outdated config: %s: config file (sha256 %s) does not match latest version with timestamp %s",
+			strings.TrimSuffix(target, "/_health/ping"),
+			resp.Checks[target].Metrics.ConfigSourceSHA256,
+			newest.ConfigSourceTimestamp.Format(time.RFC3339))
+		resp.Errors = append(resp.Errors, msg)
+		resp.Health = "ERROR"
 	}
 	return resp
 }
@@ -194,7 +260,9 @@ func (agg *Aggregator) ping(target *url.URL) (result CheckResult) {
 	}()
 	result.Health = "ERROR"
 
-	req, err := http.NewRequest("GET", target.String(), nil)
+	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(agg.timeout))
+	defer cancel()
+	req, err := http.NewRequestWithContext(ctx, "GET", target.String(), nil)
 	if err != nil {
 		result.Error = err.Error()
 		return
@@ -204,10 +272,17 @@ func (agg *Aggregator) ping(target *url.URL) (result CheckResult) {
 	// Avoid workbench1's redirect-http-to-https feature
 	req.Header.Set("X-Forwarded-Proto", "https")
 
-	ctx, cancel := context.WithTimeout(req.Context(), time.Duration(agg.timeout))
-	defer cancel()
-	req = req.WithContext(ctx)
 	resp, err := agg.httpClient.Do(req)
+	if urlerr, ok := err.(*url.Error); ok {
+		if neterr, ok := urlerr.Err.(*net.OpError); ok && isLocalHost(target.Hostname()) {
+			result = CheckResult{
+				Health: "SKIP",
+				Error:  neterr.Error(),
+			}
+			err = nil
+			return
+		}
+	}
 	if err != nil {
 		result.Error = err.Error()
 		return
@@ -232,6 +307,56 @@ func (agg *Aggregator) ping(target *url.URL) (result CheckResult) {
 	return
 }
 
+var reMetric = regexp.MustCompile(`([a-z_]+){sha256="([0-9a-f]+)"} (\d[\d\.e\+]+)`)
+
+func (agg *Aggregator) metrics(pingURL *url.URL) (result Metrics, err error) {
+	metricsURL, err := pingURL.Parse("/metrics")
+	if err != nil {
+		return
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(agg.timeout))
+	defer cancel()
+	req, err := http.NewRequestWithContext(ctx, "GET", metricsURL.String(), nil)
+	if err != nil {
+		return
+	}
+	req.Header.Set("Authorization", "Bearer "+agg.Cluster.ManagementToken)
+
+	// Avoid workbench1's redirect-http-to-https feature
+	req.Header.Set("X-Forwarded-Proto", "https")
+
+	resp, err := agg.httpClient.Do(req)
+	if err != nil {
+		return
+	} else if resp.StatusCode != http.StatusOK {
+		err = fmt.Errorf("%s: HTTP %d %s", metricsURL.String(), resp.StatusCode, resp.Status)
+		return
+	}
+
+	scanner := bufio.NewScanner(resp.Body)
+	for scanner.Scan() {
+		m := reMetric.FindSubmatch(scanner.Bytes())
+		if len(m) != 4 || string(m[1]) != "arvados_config_source_timestamp_seconds" {
+			continue
+		}
+		result.ConfigSourceSHA256 = string(m[2])
+		unixtime, _ := strconv.ParseFloat(string(m[3]), 64)
+		result.ConfigSourceTimestamp = time.UnixMicro(int64(unixtime * 1e6))
+	}
+	if err = scanner.Err(); err != nil {
+		err = fmt.Errorf("error parsing response from %s: %w", metricsURL.String(), err)
+		return
+	}
+	return
+}
+
+// Test whether host is an easily recognizable loopback address:
+// 0.0.0.0, 127.x.x.x, ::1, or localhost.
+func isLocalHost(host string) bool {
+	ip := net.ParseIP(host)
+	return ip.IsLoopback() || bytes.Equal(ip.To4(), []byte{0, 0, 0, 0}) || strings.EqualFold(host, "localhost")
+}
+
 func (agg *Aggregator) checkAuth(req *http.Request) bool {
 	creds := auth.CredentialsFromRequest(req)
 	for _, token := range creds.Tokens {
@@ -240,4 +365,73 @@ func (agg *Aggregator) checkAuth(req *http.Request) bool {
 		}
 	}
 	return false
+}
+
+var errSilent = errors.New("")
+
+var CheckCommand cmd.Handler = checkCommand{}
+
+type checkCommand struct{}
+
+func (ccmd checkCommand) RunCommand(prog string, args []string, stdin io.Reader, stdout, stderr io.Writer) int {
+	logger := ctxlog.New(stderr, "json", "info")
+	ctx := ctxlog.Context(context.Background(), logger)
+	err := ccmd.run(ctx, prog, args, stdin, stdout, stderr)
+	if err != nil {
+		if err != errSilent {
+			fmt.Fprintln(stdout, err.Error())
+		}
+		return 1
+	}
+	return 0
+}
+
+func (ccmd checkCommand) run(ctx context.Context, prog string, args []string, stdin io.Reader, stdout, stderr io.Writer) error {
+	flags := flag.NewFlagSet("", flag.ContinueOnError)
+	flags.SetOutput(stderr)
+	loader := config.NewLoader(stdin, ctxlog.New(stderr, "text", "info"))
+	loader.SetupFlags(flags)
+	versionFlag := flags.Bool("version", false, "Write version information to stdout and exit 0")
+	timeout := flags.Duration("timeout", defaultTimeout.Duration(), "Maximum time to wait for health responses")
+	outputYAML := flags.Bool("yaml", false, "Output full health report in YAML format (default mode shows errors as plain text, is silent on success)")
+	if ok, _ := cmd.ParseFlags(flags, prog, args, "", stderr); !ok {
+		// cmd.ParseFlags already reported the error
+		return errSilent
+	} else if *versionFlag {
+		cmd.Version.RunCommand(prog, args, stdin, stdout, stderr)
+		return nil
+	}
+	cfg, err := loader.Load()
+	if err != nil {
+		return err
+	}
+	cluster, err := cfg.GetCluster("")
+	if err != nil {
+		return err
+	}
+	logger := ctxlog.New(stderr, cluster.SystemLogs.Format, cluster.SystemLogs.LogLevel).WithFields(logrus.Fields{
+		"ClusterID": cluster.ClusterID,
+	})
+	ctx = ctxlog.Context(ctx, logger)
+	agg := Aggregator{Cluster: cluster, timeout: arvados.Duration(*timeout)}
+	resp := agg.ClusterHealth()
+	if *outputYAML {
+		y, err := yaml.Marshal(resp)
+		if err != nil {
+			return err
+		}
+		stdout.Write(y)
+		if resp.Health != "OK" {
+			return errSilent
+		}
+		return nil
+	}
+	if resp.Health != "OK" {
+		for _, msg := range resp.Errors {
+			fmt.Fprintln(stdout, msg)
+		}
+		fmt.Fprintln(stderr, "health check failed")
+		return errSilent
+	}
+	return nil
 }

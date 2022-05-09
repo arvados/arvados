@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"net/url"
 	"os"
+	"time"
 
 	"git.arvados.org/arvados.git/sdk/go/config"
 )
@@ -24,6 +25,8 @@ var DefaultConfigFile = func() string {
 type Config struct {
 	Clusters         map[string]Cluster
 	AutoReloadConfig bool
+	SourceTimestamp  time.Time
+	SourceSHA256     string
 }
 
 // GetConfig returns the current system config, loading it from
