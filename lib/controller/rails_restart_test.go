@@ -75,7 +75,8 @@ func (s *railsRestartSuite) TestConfigReload(c *check.C) {
 
 	// Wait for RailsAPI's 1 Hz reload_config thread to poll and
 	// hit restart.txt
-	for deadline := time.Now().Add(10 * time.Second); time.Now().Before(deadline); time.Sleep(time.Second) {
+	pollstart := time.Now()
+	for deadline := time.Now().Add(20 * time.Second); time.Now().Before(deadline); time.Sleep(time.Second) {
 		resp, err = hc.Do(req)
 		c.Assert(err, check.IsNil)
 		c.Check(resp.StatusCode, check.Equals, http.StatusOK)
@@ -85,5 +86,6 @@ func (s *railsRestartSuite) TestConfigReload(c *check.C) {
 			break
 		}
 	}
+	c.Logf("waited %s for rails to restart", time.Now().Sub(pollstart))
 	c.Check(string(body), check.Matches, `(?ms).*`+newhash+`.*`)
 }
