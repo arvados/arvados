@@ -23,6 +23,7 @@ import (
 	"git.arvados.org/arvados.git/lib/recovercollection"
 	"git.arvados.org/arvados.git/sdk/go/health"
 	"git.arvados.org/arvados.git/services/githttpd"
+	keepbalance "git.arvados.org/arvados.git/services/keep-balance"
 	keepweb "git.arvados.org/arvados.git/services/keep-web"
 	"git.arvados.org/arvados.git/services/keepproxy"
 	"git.arvados.org/arvados.git/services/keepstore"
@@ -48,6 +49,7 @@ var (
 		"git-httpd":          githttpd.Command,
 		"install":            install.Command,
 		"init":               install.InitCommand,
+		"keep-balance":       keepbalance.Command,
 		"keep-web":           keepweb.Command,
 		"keepproxy":          keepproxy.Command,
 		"keepstore":          keepstore.Command,

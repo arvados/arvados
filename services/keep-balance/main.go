@@ -2,16 +2,15 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-package main
+package keepbalance
 
 import (
+	"bytes"
 	"context"
 	"flag"
 	"fmt"
 	"io"
-	"net/http"
 	_ "net/http/pprof"
-	"os"
 
 	"git.arvados.org/arvados.git/lib/cmd"
 	"git.arvados.org/arvados.git/lib/config"
@@ -22,16 +21,13 @@ import (
 	"github.com/jmoiron/sqlx"
 	_ "github.com/lib/pq"
 	"github.com/prometheus/client_golang/prometheus"
-	"github.com/sirupsen/logrus"
 )
 
-func main() {
-	os.Exit(runCommand(os.Args[0], os.Args[1:], os.Stdin, os.Stdout, os.Stderr))
-}
+type command struct{}
 
-func runCommand(prog string, args []string, stdin io.Reader, stdout, stderr io.Writer) int {
-	logger := ctxlog.FromContext(context.Background())
+var Command = command{}
 
+func (command) RunCommand(prog string, args []string, stdin io.Reader, stdout, stderr io.Writer) int {
 	var options RunOptions
 	flags := flag.NewFlagSet(prog, flag.ContinueOnError)
 	flags.BoolVar(&options.Once, "once", false,
@@ -42,32 +38,19 @@ func runCommand(prog string, args []string, stdin io.Reader, stdout, stderr io.W
 		"send trash requests (delete unreferenced old blocks, and excess replicas of overreplicated blocks)")
 	flags.BoolVar(&options.CommitConfirmedFields, "commit-confirmed-fields", true,
 		"update collection fields (replicas_confirmed, storage_classes_confirmed, etc.)")
-	dumpFlag := flags.Bool("dump", false, "dump details for each block to stdout")
-	pprofAddr := flags.String("pprof", "", "serve Go profile data at `[addr]:port`")
-	// "show version" is implemented by service.Command, so we
-	// don't need the var here -- we just need the -version flag
+	// These options are implemented by service.Command, so we
+	// don't need the vars here -- we just need the flags
 	// to pass flags.Parse().
+	flags.Bool("dump", false, "dump details for each block to stdout")
+	flags.String("pprof", "", "serve Go profile data at `[addr]:port`")
 	flags.Bool("version", false, "Write version information to stdout and exit 0")
 
-	if *pprofAddr != "" {
-		go func() {
-			logrus.Println(http.ListenAndServe(*pprofAddr, nil))
-		}()
-	}
-
-	loader := config.NewLoader(os.Stdin, logger)
+	logger := ctxlog.New(stderr, "json", "info")
+	loader := config.NewLoader(&bytes.Buffer{}, logger)
 	loader.SetupFlags(flags)
-
 	munged := loader.MungeLegacyConfigArgs(logger, args, "-legacy-keepbalance-config")
 	if ok, code := cmd.ParseFlags(flags, prog, munged, "", stderr); !ok {
 		return code
-	}
-
-	if *dumpFlag {
-		dumper := logrus.New()
-		dumper.Out = os.Stdout
-		dumper.Formatter = &logrus.TextFormatter{}
-		options.Dumper = dumper
 	}
 
 	// Drop our custom args that would be rejected by the generic

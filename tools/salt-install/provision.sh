@@ -274,7 +274,7 @@ if [ ! -z "${HOSTNAME_EXT}" ] ; then
   # Make sure that the value configured as IP_INT is a real IP on the system.
   # If we don't error out early here when there is a mismatch, the formula will
   # fail with hard to interpret nginx errors later on.
-  ip addr list |grep -q "${IP_INT}/"
+  ip addr list |grep "${IP_INT}/" >/dev/null
   if [[ $? -ne 0 ]]; then
     echo "Unable to find the IP_INT address '${IP_INT}' on the system, please correct the value in local.params. Exiting..."
     exit 1
@@ -302,7 +302,10 @@ else
       yum install -y  curl git jq
       ;;
     "debian"|"ubuntu")
-      DEBIAN_FRONTEND=noninteractive apt update
+      # Wait 2 minutes for any apt locks to clear
+      # This option is supported from apt 1.9.1 and ignored in older apt versions.
+      # Cf. https://blog.sinjakli.co.uk/2021/10/25/waiting-for-apt-locks-without-the-hacky-bash-scripts/
+      DEBIAN_FRONTEND=noninteractive apt -o DPkg::Lock::Timeout=120 update
       DEBIAN_FRONTEND=noninteractive apt install -y curl git jq
       ;;
   esac
@@ -565,6 +568,7 @@ if [ -z "${ROLES}" ]; then
   echo "    - arvados" >> ${S_DIR}/top.sls
   echo "    - extra.shell_sudo_passwordless" >> ${S_DIR}/top.sls
   echo "    - extra.shell_cron_add_login_sync" >> ${S_DIR}/top.sls
+  echo "    - extra.passenger_rvm" >> ${S_DIR}/top.sls
 
   # Pillars
   echo "    - docker" >> ${P_DIR}/top.sls
@@ -657,6 +661,7 @@ else
         else
           echo "    - nginx.passenger" >> ${S_DIR}/top.sls
         fi
+        echo "    - extra.passenger_rvm" >> ${S_DIR}/top.sls
         ### If we don't install and run LE before arvados-api-server, it fails and breaks everything
         ### after it. So we add this here as we are, after all, sharing the host for api and controller
         if [ "${SSL_MODE}" = "lets-encrypt" ]; then

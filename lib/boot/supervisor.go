@@ -388,7 +388,7 @@ func (super *Supervisor) runCluster() error {
 	if super.ClusterType != "test" {
 		tasks = append(tasks,
 			runServiceCommand{name: "dispatch-cloud", svc: super.cluster.Services.DispatchCloud},
-			runGoProgram{src: "services/keep-balance", svc: super.cluster.Services.Keepbalance},
+			runServiceCommand{name: "keep-balance", svc: super.cluster.Services.Keepbalance},
 		)
 	}
 	super.tasksReady = map[string]chan bool{}
