@@ -125,7 +125,7 @@ export const openEditVirtualMachineLoginDialog = (permissionUuid: string) =>
         const user = await services.userService.get(login.tailUuid);
         dispatch(initialize(VIRTUAL_MACHINE_ADD_LOGIN_FORM, {
                 [VIRTUAL_MACHINE_UPDATE_LOGIN_UUID_FIELD]: permissionUuid,
-                [VIRTUAL_MACHINE_ADD_LOGIN_USER_FIELD]: {name: getUserDisplayName(user, true), uuid: login.tailUuid},
+                [VIRTUAL_MACHINE_ADD_LOGIN_USER_FIELD]: {name: getUserDisplayName(user, true, true), uuid: login.tailUuid},
                 [VIRTUAL_MACHINE_ADD_LOGIN_GROUPS_FIELD]: login.properties.groups,
             }));
         dispatch(dialogActions.OPEN_DIALOG( {id: VIRTUAL_MACHINE_ADD_LOGIN_DIALOG, data: {updating: true}} ));

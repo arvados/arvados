@@ -43,9 +43,9 @@ interface ParticipantSelectState {
 const getDisplayName = (item: GroupResource | UserResource) => {
     switch (item.kind) {
         case ResourceKind.USER:
-            return getUserDisplayName(item, true);
+            return getUserDisplayName(item, true, true);
         case ResourceKind.GROUP:
-            return item.name;
+            return item.name + `(${`(${(item as Resource).uuid})`})`;
         default:
             return (item as Resource).uuid;
     }
