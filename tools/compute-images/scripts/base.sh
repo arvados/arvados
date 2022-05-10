@@ -121,7 +121,7 @@ rm -rf /var/lib/arvados/go/
 curl -s https://storage.googleapis.com/golang/go${goversion}.linux-amd64.tar.gz | tar -C /var/lib/arvados -xzf -
 ln -sf /var/lib/arvados/go/bin/* /usr/local/bin/
 
-singularityversion=3.7.4
+singularityversion=3.9.9
 curl -Ls https://github.com/sylabs/singularity/archive/refs/tags/v${singularityversion}.tar.gz | tar -C /var/lib/arvados -xzf -
 cd /var/lib/arvados/singularity-${singularityversion}
 

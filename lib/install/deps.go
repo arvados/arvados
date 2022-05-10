@@ -28,8 +28,19 @@ import (
 
 var Command cmd.Handler = &installCommand{}
 
-const devtestDatabasePassword = "insecure_arvados_test"
-const goversion = "1.17.1"
+const goversion = "1.17.7"
+
+const (
+	rubyversion             = "2.7.5"
+	bundlerversion          = "2.2.19"
+	singularityversion      = "3.9.9"
+	pjsversion              = "1.9.8"
+	geckoversion            = "0.24.0"
+	gradleversion           = "5.3.1"
+	nodejsversion           = "v12.22.11"
+	devtestDatabasePassword = "insecure_arvados_test"
+	workbench2version       = "5e020488f67b5bc919796e0dc8b0b9f3b3ff23b0"
+)
 
 type installCommand struct {
 	ClusterType    string
@@ -123,7 +134,6 @@ func (inst *installCommand) RunCommand(prog string, args []string, stdin io.Read
 		pkgs = append(pkgs,
 			"dpkg-dev",
 			"eatmydata", // install it for later steps, even if we're not using it now
-			"rsync",
 		)
 	}
 
@@ -172,6 +182,7 @@ func (inst *installCommand) RunCommand(prog string, args []string, stdin io.Read
 			"r-cran-markdown",
 			"r-cran-roxygen2",
 			"r-cran-xml",
+			"rsync",
 			"sudo",
 			"uuid-dev",
 			"wget",
