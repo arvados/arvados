@@ -12,7 +12,8 @@ AssertPathExists=/etc/arvados/config.yml
 StartLimitIntervalSec=0
 
 [Service]
-Type=simple
+Type=notify
+EnvironmentFile=-/etc/arvados/environment
 ExecStart=/usr/bin/arvados-health
 # Set a reasonable default for the open file limit
 LimitNOFILE=65536

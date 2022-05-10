@@ -5,6 +5,7 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -21,6 +22,8 @@ import (
 	"git.arvados.org/arvados.git/lib/install"
 	"git.arvados.org/arvados.git/lib/lsf"
 	"git.arvados.org/arvados.git/lib/recovercollection"
+	"git.arvados.org/arvados.git/lib/service"
+	"git.arvados.org/arvados.git/sdk/go/arvados"
 	"git.arvados.org/arvados.git/sdk/go/health"
 	"git.arvados.org/arvados.git/services/githttpd"
 	keepbalance "git.arvados.org/arvados.git/services/keep-balance"
@@ -28,6 +31,7 @@ import (
 	"git.arvados.org/arvados.git/services/keepproxy"
 	"git.arvados.org/arvados.git/services/keepstore"
 	"git.arvados.org/arvados.git/services/ws"
+	"github.com/prometheus/client_golang/prometheus"
 )
 
 var (
@@ -47,6 +51,7 @@ var (
 		"dispatch-cloud":     dispatchcloud.Command,
 		"dispatch-lsf":       lsf.DispatchCommand,
 		"git-httpd":          githttpd.Command,
+		"health":             healthCommand,
 		"install":            install.Command,
 		"init":               install.InitCommand,
 		"keep-balance":       keepbalance.Command,
@@ -90,3 +95,7 @@ func (wb2command) RunCommand(prog string, args []string, stdin io.Reader, stdout
 	}
 	return 0
 }
+
+var healthCommand cmd.Handler = service.Command(arvados.ServiceNameHealth, func(ctx context.Context, cluster *arvados.Cluster, _ string, _ *prometheus.Registry) service.Handler {
+	return &health.Aggregator{Cluster: cluster}
+})
