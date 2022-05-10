@@ -237,17 +237,20 @@ class ContainerRequest < ArvadosModel
       end
 
       merged_properties = {}
+      merged_properties['container_request'] = uuid
+
+      if out_type == 'output' and !requesting_container_uuid.nil?
+        # output of a child process, give it "intermediate" type by
+        # default.
+        merged_properties['type'] = 'intermediate'
+      else
+        merged_properties['type'] = out_type
+      end
+
       if out_type == "output"
         merged_properties.update(container.output_properties)
         merged_properties.update(self.output_properties)
       end
-
-      if out_type == 'output' and !requesting_container_uuid.nil?
-          merged_properties['type'] = 'intermediate'
-      else
-        merged_properties['type'] = out_type
-      end
-      merged_properties['container_request'] = uuid
 
       coll.assign_attributes(
         portable_data_hash: Digest::MD5.hexdigest(manifest) + '+' + manifest.bytesize.to_s,

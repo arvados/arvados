@@ -469,10 +469,31 @@ class ContainerRequestTest < ActiveSupport::TestCase
   ].each do |token, expected, expected_priority|
     test "create as #{token} and expect requesting_container_uuid to be #{expected}" do
       set_user_from_auth token
-      cr = ContainerRequest.create(container_image: "img", output_path: "/tmp", command: ["echo", "foo"])
+      cr = create_minimal_req!
       assert_not_nil cr.uuid, 'uuid should be set for newly created container_request'
       assert_equal expected, cr.requesting_container_uuid
       assert_equal expected_priority, cr.priority
+    end
+  end
+
+  [
+    ['running_container_auth', 'zzzzz-dz642-runningcontainr', 501],
+  ].each do |token, expected, expected_priority|
+    test "create as #{token} with requesting_container_uuid set and expect output to be intermediate" do
+      set_user_from_auth token
+      cr = create_minimal_req!
+      assert_not_nil cr.uuid, 'uuid should be set for newly created container_request'
+      assert_equal expected, cr.requesting_container_uuid
+      assert_equal expected_priority, cr.priority
+
+      cr.state = ContainerRequest::Committed
+      cr.save!
+
+      run_container(cr)
+      cr.reload
+      output = Collection.find_by_uuid(cr.output_uuid)
+      props = {"type": "intermediate", "container_request": cr.uuid}
+      assert_equal props.symbolize_keys, output.properties.symbolize_keys
     end
   end
 
@@ -1455,7 +1476,7 @@ class ContainerRequestTest < ActiveSupport::TestCase
     [{},               {"a1": "b1"}, {"type": "output", "a1": "b1"}],
     [{"a1": "b1"},     {"a1": "c1"}, {"type": "output", "a1": "b1"}],
     [{"a1": "b1"},     {"a2": "c2"}, {"type": "output", "a1": "b1", "a2": "c2"}],
-    [{"type": "blah"}, {},           {"type": "output"}],
+    [{"type": "blah"}, {},           {"type": "blah"}],
   ].each do |cr_prop, container_prop, expect_prop|
     test "setting output_properties #{cr_prop} #{container_prop} on current container" do
       act_as_user users(:active) do
