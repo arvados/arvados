@@ -792,7 +792,7 @@ The 'jobs' API is no longer supported.
                 storage_classes = runtimeContext.storage_classes.strip().split(",")
 
             output_properties = {}
-            output_properties_req, _ = self.get_requirement("http://arvados.org/cwl#OutputCollectionProperties")
+            output_properties_req, _ = tool.get_requirement("http://arvados.org/cwl#OutputCollectionProperties")
             if output_properties_req:
                 for pr in output_properties_req["outputProperties"]:
                     output_properties[pr["propertyName"]] = self.builder.do_eval(pr["propertyValue"])

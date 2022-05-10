@@ -569,7 +569,7 @@ class TestSubmit(unittest.TestCase):
         make_output.return_value = ({},final_output_c)
 
         def set_final_output(job_order, output_callback, runtimeContext):
-            output_callback("zzzzz-4zz18-zzzzzzzzzzzzzzzz", "success")
+            output_callback({"out": "zzzzz"}, "success")
             return []
         job.side_effect = set_final_output
 
@@ -578,7 +578,7 @@ class TestSubmit(unittest.TestCase):
                 "tests/wf/submit_wf.cwl", "tests/submit_test_job.json"],
             stubs.capture_stdout, sys.stderr, api_client=stubs.api, keep_client=stubs.keep_client)
 
-        make_output.assert_called_with(u'Output of submit_wf.cwl', ['foo'], '', 'zzzzz-4zz18-zzzzzzzzzzzzzzzz')
+        make_output.assert_called_with(u'Output of submit_wf.cwl', ['foo'], '', {}, {"out": "zzzzz"})
         self.assertEqual(exited, 0)
 
     @mock.patch("cwltool.task_queue.TaskQueue")
@@ -591,7 +591,7 @@ class TestSubmit(unittest.TestCase):
         stubs.api.config().get.return_value = {"default": {"Default": True}}
 
         def set_final_output(job_order, output_callback, runtimeContext):
-            output_callback("zzzzz-4zz18-zzzzzzzzzzzzzzzz", "success")
+            output_callback({"out": "zzzzz"}, "success")
             return []
         job.side_effect = set_final_output
 
@@ -600,7 +600,7 @@ class TestSubmit(unittest.TestCase):
                 "tests/wf/submit_wf.cwl", "tests/submit_test_job.json"],
             stubs.capture_stdout, sys.stderr, api_client=stubs.api, keep_client=stubs.keep_client)
 
-        make_output.assert_called_with(u'Output of submit_wf.cwl', ['default'], '', 'zzzzz-4zz18-zzzzzzzzzzzzzzzz')
+        make_output.assert_called_with(u'Output of submit_wf.cwl', ['default'], '', {}, {"out": "zzzzz"})
         self.assertEqual(exited, 0)
 
     @mock.patch("cwltool.task_queue.TaskQueue")
@@ -612,7 +612,7 @@ class TestSubmit(unittest.TestCase):
         make_output.return_value = ({},final_output_c)
 
         def set_final_output(job_order, output_callback, runtimeContext):
-            output_callback("zzzzz-4zz18-zzzzzzzzzzzzzzzz", "success")
+            output_callback({"out": "zzzzz"}, "success")
             return []
         job.side_effect = set_final_output
 
@@ -621,7 +621,7 @@ class TestSubmit(unittest.TestCase):
                 "tests/wf/submit_storage_class_wf.cwl", "tests/submit_test_job.json"],
             stubs.capture_stdout, sys.stderr, api_client=stubs.api, keep_client=stubs.keep_client)
 
-        make_output.assert_called_with(u'Output of submit_storage_class_wf.cwl', ['foo', 'bar'], '', 'zzzzz-4zz18-zzzzzzzzzzzzzzzz')
+        make_output.assert_called_with(u'Output of submit_storage_class_wf.cwl', ['foo', 'bar'], '', {}, {"out": "zzzzz"})
         self.assertEqual(exited, 0)
 
     @stubs

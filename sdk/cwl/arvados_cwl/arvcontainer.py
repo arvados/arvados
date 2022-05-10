@@ -199,7 +199,7 @@ class ArvadosContainer(JobBase):
 
                 if not runtimeContext.current_container:
                     runtimeContext.current_container = arvados_cwl.util.get_current_container(self.arvrunner.api, self.arvrunner.num_retries, logger)
-                vwd.save_new(name=info["name"],
+                vwd.save_new(name=intermediate_collection_info["name"],
                              owner_uuid=runtimeContext.project_uuid,
                              ensure_unique_name=True,
                              trash_at=intermediate_collection_info["trash_at"],
@@ -342,13 +342,15 @@ class ArvadosContainer(JobBase):
             for pr in properties_req["processProperties"]:
                 container_request["properties"][pr["propertyName"]] = self.builder.do_eval(pr["propertyValue"])
 
-        container_request["output_properties"] = {}
         output_properties_req, _ = self.get_requirement("http://arvados.org/cwl#OutputCollectionProperties")
         if output_properties_req:
-            for pr in output_properties_req["outputProperties"]:
-                container_request["output_properties"][pr["propertyName"]] = self.builder.do_eval(pr["propertyValue"])
-
-        container_request["output_properties"].update(intermediate_collection_info["properties"])
+            if self.arvrunner.api._rootDesc["revision"] >= "20220510":
+                container_request["output_properties"] = {}
+                for pr in output_properties_req["outputProperties"]:
+                    container_request["output_properties"][pr["propertyName"]] = self.builder.do_eval(pr["propertyValue"])
+            else:
+                logger.warning("%s API server is too old to support setting properties on output collections.",
+                               self.arvrunner.label(self))
 
         if runtimeContext.runnerjob.startswith("arvwf:"):
             wfuuid = runtimeContext.runnerjob[6:runtimeContext.runnerjob.index("#")]
