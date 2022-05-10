@@ -32,6 +32,10 @@ h2(#main). development main (as of 2022-04-08)
 
 "previous: Upgrading to 2.4.0":#v2_4_0
 
+h3. Slurm dispatcher requires configuration update
+
+If you use the Slurm dispatcher (@crunch-dispatch-slurm@) you must add a @Services.DispatchSLURM.InternalURLs@ section to your configuration file, as shown on the "updated install page":{{site.baseurl}}/install/crunch2-slurm/install-dispatch.html.
+
 h3. Now recommending Singularity 3.9.9
 
 The compute image "build script":{{site.baseurl}}/install/crunch2-cloud/install-compute-node.html now installs Singularity 3.9.9 instead of 3.7.4. The newer version includes a bugfix that should resolve "intermittent loopback device errors":https://dev.arvados.org/issues/18489 when running containers.

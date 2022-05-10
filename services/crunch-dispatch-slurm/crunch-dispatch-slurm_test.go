@@ -2,12 +2,13 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-package main
+package dispatchslurm
 
 import (
 	"bytes"
 	"context"
 	"errors"
+	"flag"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -19,10 +20,13 @@ import (
 	"testing"
 	"time"
 
+	"git.arvados.org/arvados.git/lib/cmd"
+	"git.arvados.org/arvados.git/lib/config"
 	"git.arvados.org/arvados.git/lib/dispatchcloud"
 	"git.arvados.org/arvados.git/sdk/go/arvados"
 	"git.arvados.org/arvados.git/sdk/go/arvadosclient"
 	"git.arvados.org/arvados.git/sdk/go/arvadostest"
+	"git.arvados.org/arvados.git/sdk/go/ctxlog"
 	"git.arvados.org/arvados.git/sdk/go/dispatch"
 	"github.com/sirupsen/logrus"
 	. "gopkg.in/check.v1"
@@ -387,6 +391,7 @@ func (s *StubbedSuite) TestSbatchPartition(c *C) {
 }
 
 func (s *StubbedSuite) TestLoadLegacyConfig(c *C) {
+	log := ctxlog.TestLogger(c)
 	content := []byte(`
 Client:
   APIHost: example.com
@@ -402,36 +407,42 @@ ReserveExtraRAM: 12345
 MinRetryPeriod: 13s
 BatchSize: 99
 `)
-	tmpfile, err := ioutil.TempFile("", "example")
-	if err != nil {
-		c.Error(err)
-	}
+	tmpfile := c.MkDir() + "/config.yml"
+	err := ioutil.WriteFile(tmpfile, content, 0777)
+	c.Assert(err, IsNil)
 
-	defer os.Remove(tmpfile.Name()) // clean up
-
-	if _, err := tmpfile.Write(content); err != nil {
-		c.Error(err)
-	}
-	if err := tmpfile.Close(); err != nil {
-		c.Error(err)
-
-	}
 	os.Setenv("ARVADOS_KEEP_SERVICES", "")
-	err = s.disp.configure("crunch-dispatch-slurm", []string{"-config", tmpfile.Name()})
-	c.Check(err, IsNil)
 
-	c.Check(s.disp.cluster.Services.Controller.ExternalURL, Equals, arvados.URL{Scheme: "https", Host: "example.com", Path: "/"})
-	c.Check(s.disp.cluster.SystemRootToken, Equals, "abcdefg")
-	c.Check(s.disp.cluster.Containers.SLURM.SbatchArgumentsList, DeepEquals, []string{"--foo", "bar"})
-	c.Check(s.disp.cluster.Containers.CloudVMs.PollInterval, Equals, arvados.Duration(12*time.Second))
-	c.Check(s.disp.cluster.Containers.SLURM.PrioritySpread, Equals, int64(42))
-	c.Check(s.disp.cluster.Containers.CrunchRunCommand, Equals, "x-crunch-run")
-	c.Check(s.disp.cluster.Containers.CrunchRunArgumentsList, DeepEquals, []string{"--cgroup-parent-subsystem=memory"})
-	c.Check(s.disp.cluster.Containers.ReserveExtraRAM, Equals, arvados.ByteSize(12345))
-	c.Check(s.disp.cluster.Containers.MinRetryPeriod, Equals, arvados.Duration(13*time.Second))
-	c.Check(s.disp.cluster.API.MaxItemsPerResponse, Equals, 99)
-	c.Check(s.disp.cluster.Containers.SLURM.SbatchEnvironmentVariables, DeepEquals, map[string]string{
+	flags := flag.NewFlagSet("", flag.ContinueOnError)
+	flags.SetOutput(os.Stderr)
+	loader := config.NewLoader(&bytes.Buffer{}, log)
+	loader.SetupFlags(flags)
+	args := loader.MungeLegacyConfigArgs(log, []string{"-config", tmpfile}, "-legacy-"+string(arvados.ServiceNameDispatchSLURM)+"-config")
+	ok, _ := cmd.ParseFlags(flags, "crunch-dispatch-slurm", args, "", os.Stderr)
+	c.Check(ok, Equals, true)
+	cfg, err := loader.Load()
+	c.Assert(err, IsNil)
+	cluster, err := cfg.GetCluster("")
+	c.Assert(err, IsNil)
+
+	c.Check(cluster.Services.Controller.ExternalURL, Equals, arvados.URL{Scheme: "https", Host: "example.com", Path: "/"})
+	c.Check(cluster.SystemRootToken, Equals, "abcdefg")
+	c.Check(cluster.Containers.SLURM.SbatchArgumentsList, DeepEquals, []string{"--foo", "bar"})
+	c.Check(cluster.Containers.CloudVMs.PollInterval, Equals, arvados.Duration(12*time.Second))
+	c.Check(cluster.Containers.SLURM.PrioritySpread, Equals, int64(42))
+	c.Check(cluster.Containers.CrunchRunCommand, Equals, "x-crunch-run")
+	c.Check(cluster.Containers.CrunchRunArgumentsList, DeepEquals, []string{"--cgroup-parent-subsystem=memory"})
+	c.Check(cluster.Containers.ReserveExtraRAM, Equals, arvados.ByteSize(12345))
+	c.Check(cluster.Containers.MinRetryPeriod, Equals, arvados.Duration(13*time.Second))
+	c.Check(cluster.API.MaxItemsPerResponse, Equals, 99)
+	c.Check(cluster.Containers.SLURM.SbatchEnvironmentVariables, DeepEquals, map[string]string{
 		"ARVADOS_KEEP_SERVICES": "https://example.com/keep1 https://example.com/keep2",
 	})
+
+	// Ensure configure() copies SbatchEnvironmentVariables into
+	// the current process's environment (that's how they end up
+	// getting passed to sbatch).
+	s.disp.cluster = cluster
+	s.disp.configure()
 	c.Check(os.Getenv("ARVADOS_KEEP_SERVICES"), Equals, "https://example.com/keep1 https://example.com/keep2")
 }
