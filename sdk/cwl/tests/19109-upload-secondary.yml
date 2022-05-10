@@ -1,0 +1,7 @@
+# Copyright (C) The Arvados Authors. All rights reserved.
+#
+# SPDX-License-Identifier: Apache-2.0
+
+file1:
+  class: File
+  location: 19109-upload-secondary/file1.txt

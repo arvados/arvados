@@ -449,3 +449,16 @@
   output: {}
   tool: 18994-basename/wf_ren.cwl
   doc: "Test issue 18994 - correctly stage file with modified basename"
+
+- job: 19109-upload-secondary.yml
+  output: {
+    "out": {
+        "basename": "catted",
+        "class": "File",
+        "location": "catted",
+        "size": 20,
+        "checksum": "sha1$c4cead17cebdd829f38c48e18a28f1da72339ef7"
+    }
+  }
+  tool: 19109-upload-secondary.cwl
+  doc: "Test issue 19109 - correctly discover & upload secondary files"

@@ -128,6 +128,9 @@ def set_secondary(fsaccess, builder, inputschema, secondaryspec, primary, discov
             set_secondary(fsaccess, builder, i, secondaryspec, primary, discovered)
         return
 
+    if inputschema == "File":
+        inputschema = {"type": "File"}
+
     if isinstance(inputschema, basestring):
         sd = search_schemadef(inputschema, reversed(builder.hints+builder.requirements))
         if sd:
