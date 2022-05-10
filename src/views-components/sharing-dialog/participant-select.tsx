@@ -24,6 +24,7 @@ type ParticipantResource = GroupResource | UserResource;
 
 interface ParticipantSelectProps {
     items: Participant[];
+    excludedParticipants?: string[];
     label?: string;
     autofocus?: boolean;
     onlyPeople?: boolean;
@@ -130,11 +131,13 @@ export const ParticipantSelect = connect()(
 
             const filterUsers = new FilterBuilder()
                 .addILike('any', value)
+                .addNotIn('uuid', this.props.excludedParticipants)
                 .getFilters();
             const userItems: ListResults<any> = await userService.list({ filters: filterUsers, limit, count: "none" });
 
             const filterGroups = new FilterBuilder()
                 .addNotIn('group_class', [GroupClass.PROJECT, GroupClass.FILTER])
+                .addNotIn('uuid', this.props.excludedParticipants)
                 .addILike('name', value)
                 .getFilters();
 

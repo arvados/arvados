@@ -40,6 +40,7 @@ export const VIRTUAL_MACHINE_UPDATE_LOGIN_UUID_FIELD = 'uuid';
 export const VIRTUAL_MACHINE_ADD_LOGIN_VM_FIELD = 'vmUuid';
 export const VIRTUAL_MACHINE_ADD_LOGIN_USER_FIELD = 'user';
 export const VIRTUAL_MACHINE_ADD_LOGIN_GROUPS_FIELD = 'groups';
+export const VIRTUAL_MACHINE_ADD_LOGIN_EXCLUDE = 'excludedPerticipants';
 
 export const openUserVirtualMachines = () =>
     async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
@@ -115,8 +116,22 @@ export const loadVirtualMachinesUserData = () =>
 
 export const openAddVirtualMachineLoginDialog = (vmUuid: string) =>
     async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
-        dispatch(initialize(VIRTUAL_MACHINE_ADD_LOGIN_FORM, {[VIRTUAL_MACHINE_ADD_LOGIN_VM_FIELD]: vmUuid, [VIRTUAL_MACHINE_ADD_LOGIN_GROUPS_FIELD]: []}));
-        dispatch(dialogActions.OPEN_DIALOG( {id: VIRTUAL_MACHINE_ADD_LOGIN_DIALOG, data: {}} ));
+        // Get login permissions of vm
+        const virtualMachines = await services.virtualMachineService.list();
+        dispatch(updateResources(virtualMachines.items));
+        const logins = await services.permissionService.list({
+            filters: new FilterBuilder()
+            .addIn('head_uuid', virtualMachines.items.map(item => item.uuid))
+            .addEqual('name', PermissionLevel.CAN_LOGIN)
+            .getFilters()
+        });
+        dispatch(updateResources(logins.items));
+
+        dispatch(initialize(VIRTUAL_MACHINE_ADD_LOGIN_FORM, {
+                [VIRTUAL_MACHINE_ADD_LOGIN_VM_FIELD]: vmUuid,
+                [VIRTUAL_MACHINE_ADD_LOGIN_GROUPS_FIELD]: [],
+            }));
+        dispatch(dialogActions.OPEN_DIALOG( {id: VIRTUAL_MACHINE_ADD_LOGIN_DIALOG, data: {excludedParticipants: logins.items.map(it => it.tailUuid)}} ));
     }
 
 export const openEditVirtualMachineLoginDialog = (permissionUuid: string) =>
