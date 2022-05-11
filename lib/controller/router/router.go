@@ -407,7 +407,7 @@ func (rtr *router) addRoutes() {
 		},
 		{
 			arvados.EndpointAPIClientAuthorizationList,
-			func() interface{} { return &arvados.ListOptions{} },
+			func() interface{} { return &arvados.ListOptions{Limit: -1} },
 			func(ctx context.Context, opts interface{}) (interface{}, error) {
 				return rtr.backend.APIClientAuthorizationList(ctx, *opts.(*arvados.ListOptions))
 			},
