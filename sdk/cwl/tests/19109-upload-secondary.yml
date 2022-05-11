@@ -5,3 +5,6 @@
 file1:
   class: File
   location: 19109-upload-secondary/file1.txt
+file2:
+  class: File
+  location: 19109-upload-secondary/file2.txt

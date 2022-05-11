@@ -177,9 +177,9 @@ def set_secondary(fsaccess, builder, inputschema, secondaryspec, primary, discov
         primary["secondaryFiles"] = secondaryspec
         for i, sf in enumerate(aslist(secondaryspec)):
             if builder.cwlVersion == "v1.0":
-                pattern = builder.do_eval(sf, context=primary)
+                pattern = sf
             else:
-                pattern = builder.do_eval(sf["pattern"], context=primary)
+                pattern = sf["pattern"]
             if pattern is None:
                 continue
             if isinstance(pattern, list):
@@ -216,7 +216,20 @@ def set_secondary(fsaccess, builder, inputschema, secondaryspec, primary, discov
                     "Expression must return list, object, string or null")
 
             if pattern is not None:
-                sfpath = substitute(primary["location"], pattern)
+                if "${" in pattern or "$(" in pattern:
+                    sfname = builder.do_eval(pattern, context=primary)
+                else:
+                    sfname = substitute(primary["basename"], pattern)
+
+                if sfname is None:
+                    continue
+
+                p_location = primary["location"]
+                if "/" in p_location:
+                    sfpath = (
+                        p_location[0 : p_location.rindex("/") + 1]
+                        + sfname
+                    )
 
             required = builder.do_eval(required, context=primary)
 
