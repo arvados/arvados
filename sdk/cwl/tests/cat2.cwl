@@ -10,7 +10,7 @@ inputs:
     secondaryFiles:
       - pattern: .tbi
         required: true
-stdout: catted
+stdout: $(inputs.inp.nameroot).catted
 outputs:
   out:
     type: stdout
