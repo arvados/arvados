@@ -424,11 +424,11 @@ type CUDAFeatures struct {
 }
 
 type InstanceType struct {
-	Name            string
+	Name            string `json:"-"`
 	ProviderType    string
 	VCPUs           int
 	RAM             ByteSize
-	Scratch         ByteSize
+	Scratch         ByteSize `json:"-"`
 	IncludedScratch ByteSize
 	AddedScratch    ByteSize
 	Price           float64
