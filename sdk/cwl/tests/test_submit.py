@@ -1117,7 +1117,7 @@ class TestSubmit(unittest.TestCase):
                                                                   "portable_data_hash": "9999999999999999999999999999999b+99"}
 
         self.assertEqual("9999999999999999999999999999999b+99",
-                         arvados_cwl.runner.arvados_jobs_image(arvrunner, "arvados/jobs:"+arvados_cwl.__version__))
+                         arvados_cwl.runner.arvados_jobs_image(arvrunner, "arvados/jobs:"+arvados_cwl.__version__, arvrunner.runtimeContext))
 
 
     @stubs

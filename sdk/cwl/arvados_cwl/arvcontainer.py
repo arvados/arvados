@@ -466,7 +466,7 @@ class RunnerContainer(Runner):
             "cwd": "/var/spool/cwl",
             "priority": self.priority,
             "state": "Committed",
-            "container_image": arvados_jobs_image(self.arvrunner, self.jobs_image),
+            "container_image": arvados_jobs_image(self.arvrunner, self.jobs_image, runtimeContext),
             "mounts": {
                 "/var/lib/cwl/cwl.input.json": {
                     "kind": "json",
@@ -501,7 +501,7 @@ class RunnerContainer(Runner):
                 "portable_data_hash": "%s" % workflowcollection
             }
         else:
-            packed = packed_workflow(self.arvrunner, self.embedded_tool, self.merged_map)
+            packed = packed_workflow(self.arvrunner, self.embedded_tool, self.merged_map, runtimeContext)
             workflowpath = "/var/lib/cwl/workflow.json#main"
             container_req["mounts"]["/var/lib/cwl/workflow.json"] = {
                 "kind": "json",
@@ -551,17 +551,17 @@ class RunnerContainer(Runner):
         if runtimeContext.intermediate_storage_classes != "default" and runtimeContext.intermediate_storage_classes:
             command.append("--intermediate-storage-classes=" + runtimeContext.intermediate_storage_classes)
 
-        if self.on_error:
+        if runtimeContext.on_error:
             command.append("--on-error=" + self.on_error)
 
-        if self.intermediate_output_ttl:
-            command.append("--intermediate-output-ttl=%d" % self.intermediate_output_ttl)
+        if runtimeContext.intermediate_output_ttl:
+            command.append("--intermediate-output-ttl=%d" % runtimeContext.intermediate_output_ttl)
 
-        if self.arvrunner.trash_intermediate:
+        if runtimeContext.trash_intermediate:
             command.append("--trash-intermediate")
 
-        if self.arvrunner.project_uuid:
-            command.append("--project-uuid="+self.arvrunner.project_uuid)
+        if runtimeContext.project_uuid:
+            command.append("--project-uuid="+runtimeContext.project_uuid)
 
         if self.enable_dev:
             command.append("--enable-dev")
@@ -582,8 +582,8 @@ class RunnerContainer(Runner):
     def run(self, runtimeContext):
         runtimeContext.keepprefix = "keep:"
         job_spec = self.arvados_job_spec(runtimeContext)
-        if self.arvrunner.project_uuid:
-            job_spec["owner_uuid"] = self.arvrunner.project_uuid
+        if runtimeContext.project_uuid:
+            job_spec["owner_uuid"] = runtimeContext.project_uuid
 
         extra_submit_params = {}
         if runtimeContext.submit_runner_cluster:

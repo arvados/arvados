@@ -197,11 +197,11 @@ The 'jobs' API is no longer supported.
             handler = RuntimeStatusLoggingHandler(self.runtime_status_update)
             root_logger.addHandler(handler)
 
-        self.runtimeContext = ArvRuntimeContext(vars(arvargs))
-        self.runtimeContext.make_fs_access = partial(CollectionFsAccess,
+        self.toplevel_runtimeContext = ArvRuntimeContext(vars(arvargs))
+        self.toplevel_runtimeContext.make_fs_access = partial(CollectionFsAccess,
                                                      collection_cache=self.collection_cache)
 
-        validate_cluster_target(self, self.runtimeContext)
+        validate_cluster_target(self, self.toplevel_runtimeContext)
 
 
     def arv_make_tool(self, toolpath_object, loadingContext):
@@ -535,6 +535,8 @@ The 'jobs' API is no longer supported.
         if runtimeContext.submit_request_uuid and self.work_api != "containers":
             raise Exception("--submit-request-uuid requires containers API, but using '{}' api".format(self.work_api))
 
+        runtimeContext = runtimeContext.copy()
+
         default_storage_classes = ",".join([k for k,v in self.api.config().get("StorageClasses", {"default": {"Default": True}}).items() if v.get("Default") is True])
         if runtimeContext.storage_classes == "default":
             runtimeContext.storage_classes = default_storage_classes
@@ -544,14 +546,14 @@ The 'jobs' API is no longer supported.
         if not runtimeContext.name:
             runtimeContext.name = self.name = updated_tool.tool.get("label") or updated_tool.metadata.get("label") or os.path.basename(updated_tool.tool["id"])
 
-        if self.runtimeContext.copy_deps is None and (runtimeContext.create_workflow or runtimeContext.update_workflow):
+        if runtimeContext.copy_deps is None and (runtimeContext.create_workflow or runtimeContext.update_workflow):
             # When creating or updating workflow record, by default
             # always copy dependencies and ensure Docker images are up
             # to date.
-            self.runtimeContext.copy_deps = True
-            self.runtimeContext.match_local_docker = True
+            runtimeContext.copy_deps = True
+            runtimeContext.match_local_docker = True
 
-        if self.runtimeContext.update_workflow and self.project_uuid is None:
+        if runtimeContext.update_workflow and self.project_uuid is None:
             # If we are updating a workflow, make sure anything that
             # gets uploaded goes into the same parent project, unless
             # an alternate --project-uuid was provided.
@@ -560,7 +562,7 @@ The 'jobs' API is no longer supported.
 
         # Upload local file references in the job order.
         job_order = upload_job_order(self, "%s input" % runtimeContext.name,
-                                     updated_tool, job_order)
+                                     updated_tool, job_order, runtimeContext)
 
         # the last clause means: if it is a command line tool, and we
         # are going to wait for the result, and always_submit_runner
@@ -587,7 +589,7 @@ The 'jobs' API is no longer supported.
 
         # Upload direct dependencies of workflow steps, get back mapping of files to keep references.
         # Also uploads docker images.
-        merged_map = upload_workflow_deps(self, tool)
+        merged_map = upload_workflow_deps(self, tool, runtimeContext)
 
         # Recreate process object (ArvadosWorkflow or
         # ArvadosCommandTool) because tool document may have been
@@ -602,12 +604,13 @@ The 'jobs' API is no longer supported.
             # Create a pipeline template or workflow record and exit.
             if self.work_api == "containers":
                 uuid = upload_workflow(self, tool, job_order,
-                                        self.project_uuid,
-                                        uuid=runtimeContext.update_workflow,
-                                        submit_runner_ram=runtimeContext.submit_runner_ram,
-                                        name=runtimeContext.name,
-                                        merged_map=merged_map,
-                                        submit_runner_image=runtimeContext.submit_runner_image)
+                                       self.project_uuid,
+                                       runtimeContext,
+                                       uuid=runtimeContext.update_workflow,
+                                       submit_runner_ram=runtimeContext.submit_runner_ram,
+                                       name=runtimeContext.name,
+                                       merged_map=merged_map,
+                                       submit_runner_image=runtimeContext.submit_runner_image)
                 self.stdout.write(uuid + "\n")
                 return (None, "success")
 
@@ -616,7 +619,6 @@ The 'jobs' API is no longer supported.
         self.ignore_docker_for_reuse = runtimeContext.ignore_docker_for_reuse
         self.eval_timeout = runtimeContext.eval_timeout
 
-        runtimeContext = runtimeContext.copy()
         runtimeContext.use_container = True
         runtimeContext.tmpdir_prefix = "tmp"
         runtimeContext.work_api = self.work_api
