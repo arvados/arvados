@@ -517,7 +517,6 @@ The 'jobs' API is no longer supported.
 
         updated_tool.visit(self.check_features)
 
-        self.project_uuid = runtimeContext.project_uuid
         self.pipeline = None
         self.fs_access = runtimeContext.make_fs_access(runtimeContext.basedir)
         self.secret_store = runtimeContext.secret_store
@@ -558,7 +557,9 @@ The 'jobs' API is no longer supported.
             # gets uploaded goes into the same parent project, unless
             # an alternate --project-uuid was provided.
             existing_wf = self.api.workflows().get(uuid=runtimeContext.update_workflow).execute()
-            self.project_uuid = existing_wf["owner_uuid"]
+            runtimeContext.project_uuid = existing_wf["owner_uuid"]
+
+        self.project_uuid = runtimeContext.project_uuid
 
         # Upload local file references in the job order.
         job_order = upload_job_order(self, "%s input" % runtimeContext.name,
@@ -604,7 +605,7 @@ The 'jobs' API is no longer supported.
             # Create a pipeline template or workflow record and exit.
             if self.work_api == "containers":
                 uuid = upload_workflow(self, tool, job_order,
-                                       self.project_uuid,
+                                       runtimeContext.project_uuid,
                                        runtimeContext,
                                        uuid=runtimeContext.update_workflow,
                                        submit_runner_ram=runtimeContext.submit_runner_ram,

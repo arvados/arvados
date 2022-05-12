@@ -307,7 +307,7 @@ class ArvadosWorkflow(Workflow):
             if self.wf_pdh is None:
                 adjustFileObjs(packed, keepmount)
                 adjustDirObjs(packed, keepmount)
-                self.wf_pdh = upload_workflow_collection(self.arvrunner, shortname(self.tool["id"]), packed)
+                self.wf_pdh = upload_workflow_collection(self.arvrunner, shortname(self.tool["id"]), packed, runtimeContext)
 
         self.loadingContext = self.loadingContext.copy()
         self.loadingContext.metadata = self.loadingContext.metadata.copy()

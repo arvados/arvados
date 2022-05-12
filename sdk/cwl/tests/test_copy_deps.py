@@ -10,14 +10,14 @@ api = arvados.api()
 def check_contents(group, wf_uuid):
     contents = api.groups().contents(uuid=group["uuid"]).execute()
     if len(contents["items"]) != 3:
-        raise Exception("Expected 3 items")
+        raise Exception("Expected 3 items in "+group["uuid"]+" was "+len(contents["items"]))
 
     found = False
     for c in contents["items"]:
         if c["kind"] == "arvados#workflow" and c["uuid"] == wf_uuid:
             found = True
     if not found:
-        raise Exception("Couldn't find workflow")
+        raise Exception("Couldn't find workflow in "+group["uuid"])
 
     found = False
     for c in contents["items"]:
@@ -42,7 +42,9 @@ def test_create():
             raise Exception("Expected 0 items")
 
         # Create workflow, by default should also copy dependencies
-        wf_uuid = subprocess.check_output(["arvados-cwl-runner", "--create-workflow", "--project-uuid", group["uuid"], "19070-copy-deps.cwl"])
+        cmd = ["arvados-cwl-runner", "--create-workflow", "--project-uuid", group["uuid"], "19070-copy-deps.cwl"]
+        print(" ".join(cmd))
+        wf_uuid = subprocess.check_output(cmd)
         wf_uuid = wf_uuid.decode("utf-8").strip()
         check_contents(group, wf_uuid)
     finally:
@@ -57,7 +59,9 @@ def test_update():
             raise Exception("Expected 0 items")
 
         # Create workflow, but with --no-copy-deps it shouldn't copy anything
-        wf_uuid = subprocess.check_output(["arvados-cwl-runner", "--no-copy-deps", "--create-workflow", "--project-uuid", group["uuid"], "19070-copy-deps.cwl"])
+        cmd = ["arvados-cwl-runner", "--no-copy-deps", "--create-workflow", "--project-uuid", group["uuid"], "19070-copy-deps.cwl"]
+        print(" ".join(cmd))
+        wf_uuid = subprocess.check_output(cmd)
         wf_uuid = wf_uuid.decode("utf-8").strip()
 
         contents = api.groups().contents(uuid=group["uuid"]).execute()
@@ -72,7 +76,9 @@ def test_update():
             raise Exception("Couldn't find workflow")
 
         # Updating by default will copy missing items
-        wf_uuid = subprocess.check_output(["arvados-cwl-runner", "--update-workflow", wf_uuid, "19070-copy-deps.cwl"])
+        cmd = ["arvados-cwl-runner", "--update-workflow", wf_uuid, "19070-copy-deps.cwl"]
+        print(" ".join(cmd))
+        wf_uuid = subprocess.check_output(cmd)
         wf_uuid = wf_uuid.decode("utf-8").strip()
         check_contents(group, wf_uuid)
 
@@ -88,7 +94,9 @@ def test_execute():
             raise Exception("Expected 0 items")
 
         # Execute workflow, shouldn't copy anything.
-        wf_uuid = subprocess.check_output(["arvados-cwl-runner", "--project-uuid", group["uuid"], "19070-copy-deps.cwl"])
+        cmd = ["arvados-cwl-runner", "--project-uuid", group["uuid"], "19070-copy-deps.cwl"]
+        print(" ".join(cmd))
+        wf_uuid = subprocess.check_output(cmd)
         wf_uuid = wf_uuid.decode("utf-8").strip()
 
         contents = api.groups().contents(uuid=group["uuid"]).execute()
@@ -115,7 +123,9 @@ def test_execute():
             raise Exception("Didn't expect to find jobs image dependency")
 
         # Execute workflow with --copy-deps
-        wf_uuid = subprocess.check_output(["arvados-cwl-runner", "--project-uuid", group["uuid"], "--copy-deps", "19070-copy-deps.cwl"])
+        cmd = ["arvados-cwl-runner", "--project-uuid", group["uuid"], "--copy-deps", "19070-copy-deps.cwl"]
+        print(" ".join(cmd))
+        wf_uuid = subprocess.check_output(cmd)
         wf_uuid = wf_uuid.decode("utf-8").strip()
 
         contents = api.groups().contents(uuid=group["uuid"]).execute()
