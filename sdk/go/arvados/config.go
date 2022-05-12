@@ -528,49 +528,23 @@ type InstanceTypeMap map[string]InstanceType
 
 var errDuplicateInstanceTypeName = errors.New("duplicate instance type name")
 
-// UnmarshalJSON handles old config files that provide an array of
-// instance types instead of a hash.
+// UnmarshalJSON does special handling of InstanceTypes:
+// * populate computed fields (Name and Scratch)
+// * error out if InstancesTypes are populated as an array, which was
+//   deprecated in Arvados 1.2.0
 func (it *InstanceTypeMap) UnmarshalJSON(data []byte) error {
 	fixup := func(t InstanceType) (InstanceType, error) {
 		if t.ProviderType == "" {
 			t.ProviderType = t.Name
 		}
-		if t.Scratch == 0 {
-			t.Scratch = t.IncludedScratch + t.AddedScratch
-		} else if t.AddedScratch == 0 {
-			t.AddedScratch = t.Scratch - t.IncludedScratch
-		} else if t.IncludedScratch == 0 {
-			t.IncludedScratch = t.Scratch - t.AddedScratch
-		}
-
-		if t.Scratch != (t.IncludedScratch + t.AddedScratch) {
-			return t, fmt.Errorf("InstanceType %q: Scratch != (IncludedScratch + AddedScratch)", t.Name)
-		}
+		// If t.Scratch is set in the configuration file, it will be ignored and overwritten.
+		// It will also generate a "deprecated or unknown config entry" warning.
+		t.Scratch = t.IncludedScratch + t.AddedScratch
 		return t, nil
 	}
 
 	if len(data) > 0 && data[0] == '[' {
-		var arr []InstanceType
-		err := json.Unmarshal(data, &arr)
-		if err != nil {
-			return err
-		}
-		if len(arr) == 0 {
-			*it = nil
-			return nil
-		}
-		*it = make(map[string]InstanceType, len(arr))
-		for _, t := range arr {
-			if _, ok := (*it)[t.Name]; ok {
-				return errDuplicateInstanceTypeName
-			}
-			t, err := fixup(t)
-			if err != nil {
-				return err
-			}
-			(*it)[t.Name] = t
-		}
-		return nil
+		return fmt.Errorf("InstanceTypes must be specified as a map, not an array, see https://doc.arvados.org/admin/config.html")
 	}
 	var hash map[string]InstanceType
 	err := json.Unmarshal(data, &hash)
