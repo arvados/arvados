@@ -4,7 +4,7 @@
 
 import React from 'react';
 import { compose } from "redux";
-import { reduxForm, InjectedFormProps, WrappedFieldProps, Field, GenericField } from 'redux-form';
+import { reduxForm, InjectedFormProps, Field, GenericField } from 'redux-form';
 import { withDialog, WithDialogProps } from "store/dialog/with-dialog";
 import { FormDialog } from 'components/form-dialog/form-dialog';
 import { VIRTUAL_MACHINE_ADD_LOGIN_DIALOG, VIRTUAL_MACHINE_ADD_LOGIN_FORM, addUpdateVirtualMachineLogin, AddLoginFormData, VIRTUAL_MACHINE_ADD_LOGIN_USER_FIELD, VIRTUAL_MACHINE_ADD_LOGIN_GROUPS_FIELD } from 'store/virtual-machines/virtual-machines-actions';

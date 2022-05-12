@@ -18,7 +18,7 @@ import { PermissionLevel } from "models/permission";
 import { deleteResources, updateResources } from 'store/resources/resources-actions';
 import { Participant } from "views-components/sharing-dialog/participant-select";
 import { initialize, reset } from "redux-form";
-import { getUserDisplayName } from "models/user";
+import { getUserDisplayName, UserResource } from "models/user";
 
 export const virtualMachinesActions = unionize({
     SET_REQUESTED_DATE: ofType<string>(),
@@ -156,10 +156,15 @@ export interface AddLoginFormData {
 
 export const addUpdateVirtualMachineLogin = ({uuid, vmUuid, user, groups}: AddLoginFormData) =>
     async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
+        let userResource: UserResource | undefined = undefined;
         try {
             // Get user
-            const userResource = await services.userService.get(user.uuid);
-
+            userResource = await services.userService.get(user.uuid, false);
+        } catch (e) {
+                dispatch(snackbarActions.OPEN_SNACKBAR({ message: "Failed to get user details.", hideDuration: 2000, kind: SnackbarKind.ERROR }));
+                return;
+        }
+        try {
             if (uuid) {
                 const permission = await services.permissionService.update(uuid, {
                     tailUuid: userResource.uuid,
