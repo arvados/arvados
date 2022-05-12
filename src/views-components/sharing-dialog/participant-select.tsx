@@ -28,6 +28,7 @@ interface ParticipantSelectProps {
     label?: string;
     autofocus?: boolean;
     onlyPeople?: boolean;
+    disabled?: boolean;
 
     onBlur?: (event: React.FocusEvent<HTMLInputElement>) => void;
     onFocus?: (event: React.FocusEvent<HTMLInputElement>) => void;
@@ -72,11 +73,12 @@ export const ParticipantSelect = connect()(
                     onChange={this.handleChange}
                     onCreate={this.handleCreate}
                     onSelect={this.handleSelect}
-                    onDelete={this.handleDelete}
+                    onDelete={this.props.onDelete && !this.props.disabled ? this.handleDelete : undefined}
                     onFocus={this.props.onFocus}
                     onBlur={this.props.onBlur}
                     renderChipValue={this.renderChipValue}
-                    renderSuggestion={this.renderSuggestion} />
+                    renderSuggestion={this.renderSuggestion}
+                    disabled={this.props.disabled}/>
             );
         }
 

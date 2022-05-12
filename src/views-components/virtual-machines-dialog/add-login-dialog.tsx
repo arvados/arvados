@@ -35,7 +35,7 @@ const AddLoginFormFields = (props) => {
     return <>
         <ParticipantField
             name={VIRTUAL_MACHINE_ADD_LOGIN_USER_FIELD}
-            component={UserSelect}
+            component={props.data.updating ? ReadOnlyUserSelect : UserSelect}
             excludedParticipants={props.data.excludedParticipants}
         />
         <GroupArrayInput
@@ -45,7 +45,6 @@ const AddLoginFormFields = (props) => {
         />
     </>;
 }
-
 
 interface UserFieldProps {
     excludedParticipants: string[];
@@ -61,3 +60,10 @@ const UserSelect = (props) =>
         excludedParticipants={props.excludedParticipants}
         onSelect={props.input.onChange}
         onDelete={() => (props.input.onChange(''))} />;
+
+const ReadOnlyUserSelect = (props) =>
+        <ParticipantSelect
+            onlyPeople
+            label='User'
+            items={props.input.value ? [props.input.value] : []}
+            disabled={true} />;
