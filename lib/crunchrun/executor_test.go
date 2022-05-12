@@ -8,6 +8,7 @@ import (
 	"bytes"
 	"io"
 	"io/ioutil"
+	"net"
 	"net/http"
 	"os"
 	"strings"
@@ -172,6 +173,61 @@ func (s *executorSuite) TestExecStdoutStderr(c *C) {
 	s.checkRun(c, 0)
 	c.Check(s.stdout.String(), Equals, "foo\nbaz\n")
 	c.Check(s.stderr.String(), Equals, "barwaz\n")
+}
+
+func (s *executorSuite) TestIPAddress(c *C) {
+	s.spec.Command = []string{"nc", "-l", "-p", "1951", "-e", "printf", `HTTP/1.1 418 I'm a teapot\r\n\r\n`}
+	s.spec.EnableNetwork = true
+	c.Assert(s.executor.Create(s.spec), IsNil)
+	c.Assert(s.executor.Start(), IsNil)
+	starttime := time.Now()
+
+	ctx, cancel := context.WithDeadline(context.Background(), time.Now().Add(2*time.Second))
+	defer cancel()
+
+	for ctx.Err() == nil {
+		time.Sleep(time.Second / 10)
+		_, err := s.executor.IPAddress()
+		if err == nil {
+			break
+		}
+	}
+	ip, err := s.executor.IPAddress()
+	if c.Check(err, IsNil) && c.Check(ip, Not(Equals), "") {
+		req, err := http.NewRequest("BREW", "http://"+net.JoinHostPort(ip, "1951"), nil)
+		c.Assert(err, IsNil)
+		resp, err := http.DefaultClient.Do(req)
+		c.Assert(err, IsNil)
+		c.Check(resp.StatusCode, Equals, http.StatusTeapot)
+	}
+
+	s.executor.Stop()
+	code, _ := s.executor.Wait(ctx)
+	c.Logf("container ran for %v", time.Now().Sub(starttime))
+	c.Check(code, Equals, -1)
+}
+
+func (s *executorSuite) TestInject(c *C) {
+	s.spec.Command = []string{"sleep", "10"}
+	c.Assert(s.executor.Create(s.spec), IsNil)
+	c.Assert(s.executor.Start(), IsNil)
+	starttime := time.Now()
+
+	ctx, cancel := context.WithDeadline(context.Background(), time.Now().Add(2*time.Second))
+	defer cancel()
+
+	injectcmd := []string{"cat", "/proc/1/cmdline"}
+	cmd, err := s.executor.InjectCommand(ctx, "", "root", false, injectcmd)
+	c.Assert(err, IsNil)
+	out, err := cmd.CombinedOutput()
+	c.Logf("inject %s => %q", injectcmd, out)
+	c.Check(err, IsNil)
+	c.Check(string(out), Equals, "sleep\00010\000")
+
+	s.executor.Stop()
+	code, _ := s.executor.Wait(ctx)
+	c.Logf("container ran for %v", time.Now().Sub(starttime))
+	c.Check(code, Equals, -1)
 }
 
 func (s *executorSuite) checkRun(c *C, expectCode int) {

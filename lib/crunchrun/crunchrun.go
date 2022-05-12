@@ -1901,14 +1901,13 @@ func (command) RunCommand(prog string, args []string, stdin io.Reader, stdout, s
 		// dispatcher did not tell us which external IP
 		// address to advertise --> no gateway service
 		cr.CrunchLog.Printf("Not starting a gateway server (GatewayAddress was not provided by dispatcher)")
-	} else if de, ok := cr.executor.(*dockerExecutor); ok {
+	} else {
 		cr.gateway = Gateway{
-			Address:            gwListen,
-			AuthSecret:         gwAuthSecret,
-			ContainerUUID:      containerUUID,
-			DockerContainerID:  &de.containerID,
-			Log:                cr.CrunchLog,
-			ContainerIPAddress: dockerContainerIPAddress(&de.containerID),
+			Address:       gwListen,
+			AuthSecret:    gwAuthSecret,
+			ContainerUUID: containerUUID,
+			Target:        cr.executor,
+			Log:           cr.CrunchLog,
 		}
 		err = cr.gateway.Start()
 		if err != nil {

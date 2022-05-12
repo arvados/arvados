@@ -62,4 +62,6 @@ type containerExecutor interface {
 
 	// Name of runtime engine ("docker", "singularity")
 	Runtime() string
+
+	GatewayTarget
 }

@@ -17,30 +17,33 @@ import (
 	"os"
 	"os/exec"
 	"sync"
-	"sync/atomic"
 	"syscall"
-	"time"
 
 	"git.arvados.org/arvados.git/lib/selfsigned"
 	"git.arvados.org/arvados.git/sdk/go/ctxlog"
 	"git.arvados.org/arvados.git/sdk/go/httpserver"
 	"github.com/creack/pty"
-	dockerclient "github.com/docker/docker/client"
 	"github.com/google/shlex"
 	"golang.org/x/crypto/ssh"
 	"golang.org/x/net/context"
 )
 
+type GatewayTarget interface {
+	// Command that will execute cmd inside the container
+	InjectCommand(ctx context.Context, detachKeys, username string, usingTTY bool, cmd []string) (*exec.Cmd, error)
+
+	// IP address inside container
+	IPAddress() (string, error)
+}
+
 type Gateway struct {
-	DockerContainerID *string
-	ContainerUUID     string
-	Address           string // listen host:port; if port=0, Start() will change it to the selected port
-	AuthSecret        string
-	Log               interface {
+	ContainerUUID string
+	Address       string // listen host:port; if port=0, Start() will change it to the selected port
+	AuthSecret    string
+	Target        GatewayTarget
+	Log           interface {
 		Printf(fmt string, args ...interface{})
 	}
-	// return local ip address of running container, or "" if not available
-	ContainerIPAddress func() (string, error)
 
 	sshConfig   ssh.ServerConfig
 	requestAuth string
@@ -241,15 +244,11 @@ func (gw *Gateway) handleDirectTCPIP(ctx context.Context, newch ssh.NewChannel) 
 		return
 	}
 
-	var dstaddr string
-	if gw.ContainerIPAddress != nil {
-		dstaddr, err = gw.ContainerIPAddress()
-		if err != nil {
-			fmt.Fprintf(ch.Stderr(), "container has no IP address: %s\n", err)
-			return
-		}
-	}
-	if dstaddr == "" {
+	dstaddr, err := gw.Target.IPAddress()
+	if err != nil {
+		fmt.Fprintf(ch.Stderr(), "container has no IP address: %s\n", err)
+		return
+	} else if dstaddr == "" {
 		fmt.Fprintf(ch.Stderr(), "container has no IP address\n")
 		return
 	}
@@ -301,12 +300,25 @@ func (gw *Gateway) handleSession(ctx context.Context, newch ssh.NewChannel, deta
 				execargs = []string{"/bin/bash", "-login"}
 			}
 			go func() {
-				cmd := exec.CommandContext(ctx, "docker", "exec", "-i", "--detach-keys="+detachKeys, "--user="+username)
+				var resp struct {
+					Status uint32
+				}
+				defer func() {
+					ch.SendRequest("exit-status", false, ssh.Marshal(&resp))
+					ch.Close()
+				}()
+
+				cmd, err := gw.Target.InjectCommand(ctx, detachKeys, username, tty0 != nil, execargs)
+				if err != nil {
+					fmt.Fprintln(ch.Stderr(), err)
+					ch.CloseWrite()
+					resp.Status = 1
+					return
+				}
 				cmd.Stdin = ch
 				cmd.Stdout = ch
 				cmd.Stderr = ch.Stderr()
 				if tty0 != nil {
-					cmd.Args = append(cmd.Args, "-t")
 					cmd.Stdin = tty0
 					cmd.Stdout = tty0
 					cmd.Stderr = tty0
@@ -318,17 +330,12 @@ func (gw *Gateway) handleSession(ctx context.Context, newch ssh.NewChannel, deta
 					// Send our own debug messages to tty as well.
 					logw = tty0
 				}
-				cmd.Args = append(cmd.Args, *gw.DockerContainerID)
-				cmd.Args = append(cmd.Args, execargs...)
 				cmd.SysProcAttr = &syscall.SysProcAttr{
 					Setctty: tty0 != nil,
 					Setsid:  true,
 				}
 				cmd.Env = append(os.Environ(), termEnv...)
-				err := cmd.Run()
-				var resp struct {
-					Status uint32
-				}
+				err = cmd.Run()
 				if exiterr, ok := err.(*exec.ExitError); ok {
 					if status, ok := exiterr.Sys().(syscall.WaitStatus); ok {
 						resp.Status = uint32(status.ExitStatus())
@@ -341,8 +348,6 @@ func (gw *Gateway) handleSession(ctx context.Context, newch ssh.NewChannel, deta
 				if resp.Status == 0 && (err != nil || errClose != nil) {
 					resp.Status = 1
 				}
-				ch.SendRequest("exit-status", false, ssh.Marshal(&resp))
-				ch.Close()
 			}()
 		case "pty-req":
 			eol = "\r\n"
@@ -396,33 +401,5 @@ func (gw *Gateway) handleSession(ctx context.Context, newch ssh.NewChannel, deta
 		if req.WantReply {
 			req.Reply(ok, nil)
 		}
-	}
-}
-
-func dockerContainerIPAddress(containerID *string) func() (string, error) {
-	var saved atomic.Value
-	return func() (string, error) {
-		if ip, ok := saved.Load().(*string); ok {
-			return *ip, nil
-		}
-		docker, err := dockerclient.NewClient(dockerclient.DefaultDockerHost, "1.21", nil, nil)
-		if err != nil {
-			return "", fmt.Errorf("cannot create docker client: %s", err)
-		}
-		ctx, cancel := context.WithDeadline(context.Background(), time.Now().Add(time.Minute))
-		defer cancel()
-		ctr, err := docker.ContainerInspect(ctx, *containerID)
-		if err != nil {
-			return "", fmt.Errorf("cannot get docker container info: %s", err)
-		}
-		ip := ctr.NetworkSettings.IPAddress
-		if ip == "" {
-			// TODO: try to enable networking if it wasn't
-			// already enabled when the container was
-			// created.
-			return "", fmt.Errorf("container has no IP address")
-		}
-		saved.Store(&ip)
-		return ip, nil
 	}
 }

@@ -8,7 +8,9 @@ import (
 	"io"
 	"io/ioutil"
 	"os"
+	"os/exec"
 	"strings"
+	"sync/atomic"
 	"time"
 
 	"git.arvados.org/arvados.git/sdk/go/arvados"
@@ -27,6 +29,7 @@ type dockerExecutor struct {
 	watchdogInterval time.Duration
 	dockerclient     *dockerclient.Client
 	containerID      string
+	savedIPAddress   atomic.Value
 	doneIO           chan struct{}
 	errIO            error
 }
@@ -296,4 +299,35 @@ func (e *dockerExecutor) handleStdoutStderr(stdout, stderr io.Writer, reader io.
 
 func (e *dockerExecutor) Close() {
 	e.dockerclient.ContainerRemove(context.TODO(), e.containerID, dockertypes.ContainerRemoveOptions{Force: true})
+}
+
+func (e *dockerExecutor) InjectCommand(ctx context.Context, detachKeys, username string, usingTTY bool, injectcmd []string) (*exec.Cmd, error) {
+	cmd := exec.CommandContext(ctx, "docker", "exec", "-i", "--detach-keys="+detachKeys, "--user="+username)
+	if usingTTY {
+		cmd.Args = append(cmd.Args, "-t")
+	}
+	cmd.Args = append(cmd.Args, e.containerID)
+	cmd.Args = append(cmd.Args, injectcmd...)
+	return cmd, nil
+}
+
+func (e *dockerExecutor) IPAddress() (string, error) {
+	if ip, ok := e.savedIPAddress.Load().(*string); ok {
+		return *ip, nil
+	}
+	ctx, cancel := context.WithDeadline(context.Background(), time.Now().Add(time.Minute))
+	defer cancel()
+	ctr, err := e.dockerclient.ContainerInspect(ctx, e.containerID)
+	if err != nil {
+		return "", fmt.Errorf("cannot get docker container info: %s", err)
+	}
+	ip := ctr.NetworkSettings.IPAddress
+	if ip == "" {
+		// TODO: try to enable networking if it wasn't
+		// already enabled when the container was
+		// created.
+		return "", fmt.Errorf("container has no IP address")
+	}
+	e.savedIPAddress.Store(&ip)
+	return ip, nil
 }

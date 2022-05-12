@@ -5,6 +5,7 @@
 package crunchrun
 
 import (
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"os"
@@ -348,4 +349,12 @@ func (e *singularityExecutor) Close() {
 	if err != nil {
 		e.logf("error removing temp dir: %s", err)
 	}
+}
+
+func (e *singularityExecutor) InjectCommand(ctx context.Context, detachKeys, username string, usingTTY bool, injectcmd []string) (*exec.Cmd, error) {
+	return nil, errors.New("unimplemented")
+}
+
+func (e *singularityExecutor) IPAddress() (string, error) {
+	return "", errors.New("unimplemented")
 }
