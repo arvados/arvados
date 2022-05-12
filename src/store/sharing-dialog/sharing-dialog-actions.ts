@@ -19,7 +19,9 @@ import { differenceWith } from "lodash";
 import { withProgress } from "store/progress-indicator/with-progress";
 import { progressIndicatorActions } from 'store/progress-indicator/progress-indicator-actions';
 import { snackbarActions, SnackbarKind } from "../snackbar/snackbar-actions";
-import { extractUuidKind, ResourceKind } from "models/resource";
+import { extractUuidKind, extractUuidObjectType, ResourceKind, ResourceObjectType } from "models/resource";
+import { ApiClientAuthorizationService } from "services/api-client-authorization-service/api-client-authorization-service";
+import { resourcesActions } from "store/resources/resources-actions";
 
 export const openSharingDialog = (resourceUuid: string, refresh?: () => void) =>
     (dispatch: Dispatch) => {
@@ -41,6 +43,7 @@ export const saveSharingDialogChanges = async (dispatch: Dispatch, getState: () 
     await dispatch<any>(sendInvitations);
     dispatch(reset(SHARING_INVITATION_FORM_NAME));
     await dispatch<any>(loadSharingDialog);
+    dispatch(progressIndicatorActions.STOP_WORKING(SHARING_DIALOG_NAME));
 
     const dialog = getDialog<SharingDialogData>(getState().dialog, SHARING_DIALOG_NAME);
     if (dialog && dialog.data.refresh) {
@@ -57,31 +60,88 @@ export const sendSharingInvitations = async (dispatch: Dispatch, getState: () =>
         kind: SnackbarKind.SUCCESS,
     }));
     dispatch(progressIndicatorActions.STOP_WORKING(SHARING_DIALOG_NAME));
-    
+
     const dialog = getDialog<SharingDialogData>(getState().dialog, SHARING_DIALOG_NAME);
     if (dialog && dialog.data.refresh) {
         dialog.data.refresh();
     }
 };
 
-interface SharingDialogData {
+export interface SharingDialogData {
     resourceUuid: string;
     refresh: () => void;
 }
 
-const loadSharingDialog = async (dispatch: Dispatch, getState: () => RootState, { permissionService }: ServiceRepository) => {
+export const createSharingToken = async (dispatch: Dispatch, getState: () => RootState, { apiClientAuthorizationService }: ServiceRepository) => {
+    const dialog = getDialog<SharingDialogData>(getState().dialog, SHARING_DIALOG_NAME);
+    if (dialog) {
+        const resourceUuid = dialog.data.resourceUuid;
+        if (extractUuidObjectType(resourceUuid) === ResourceObjectType.COLLECTION) {
+            dispatch(progressIndicatorActions.START_WORKING(SHARING_DIALOG_NAME));
+            try {
+                const sharingToken = await apiClientAuthorizationService.createCollectionSharingToken(resourceUuid);
+                dispatch(resourcesActions.SET_RESOURCES([sharingToken]));
+                dispatch(snackbarActions.OPEN_SNACKBAR({
+                    message: 'Sharing URL created',
+                    hideDuration: 2000,
+                    kind: SnackbarKind.SUCCESS,
+                }));
+            } catch (e) {
+                dispatch(snackbarActions.OPEN_SNACKBAR({
+                    message: 'Failed to create sharing URL',
+                    hideDuration: 2000,
+                    kind: SnackbarKind.ERROR,
+                }));
+            } finally {
+                dispatch(progressIndicatorActions.STOP_WORKING(SHARING_DIALOG_NAME));
+            }
+        }
+    }
+};
+
+export const deleteSharingToken = (uuid: string) => async (dispatch: Dispatch, getState: () => RootState, { apiClientAuthorizationService }: ServiceRepository) => {
+    dispatch(progressIndicatorActions.START_WORKING(SHARING_DIALOG_NAME));
+    try {
+        await apiClientAuthorizationService.delete(uuid);
+        dispatch(resourcesActions.DELETE_RESOURCES([uuid]));
+        dispatch(snackbarActions.OPEN_SNACKBAR({
+            message: 'Sharing URL removed',
+            hideDuration: 2000,
+            kind: SnackbarKind.SUCCESS,
+        }));
+    } catch (e) {
+        dispatch(snackbarActions.OPEN_SNACKBAR({
+            message: 'Failed to remove sharing URL',
+            hideDuration: 2000,
+            kind: SnackbarKind.ERROR,
+        }));
+    } finally {
+        dispatch(progressIndicatorActions.STOP_WORKING(SHARING_DIALOG_NAME));
+    }
+};
+
+const loadSharingDialog = async (dispatch: Dispatch, getState: () => RootState, { permissionService, apiClientAuthorizationService }: ServiceRepository) => {
 
     const dialog = getDialog<SharingDialogData>(getState().dialog, SHARING_DIALOG_NAME);
     if (dialog) {
         dispatch(progressIndicatorActions.START_WORKING(SHARING_DIALOG_NAME));
         try {
-            const { items } = await permissionService.listResourcePermissions(dialog.data.resourceUuid);
+            const resourceUuid = dialog.data.resourceUuid;
+            const { items } = await permissionService.listResourcePermissions(resourceUuid);
             dispatch<any>(initializePublicAccessForm(items));
             await dispatch<any>(initializeManagementForm(items));
-            dispatch(progressIndicatorActions.STOP_WORKING(SHARING_DIALOG_NAME));
+            // For collections, we need to load the public sharing tokens
+            if (extractUuidObjectType(resourceUuid) === ResourceObjectType.COLLECTION) {
+                const sharingTokens = await apiClientAuthorizationService.listCollectionSharingTokens(resourceUuid);
+                dispatch(resourcesActions.SET_RESOURCES([...sharingTokens.items]));
+            }
         } catch (e) {
-            dispatch(snackbarActions.OPEN_SNACKBAR({ message: 'You do not have access to share this item', hideDuration: 2000, kind: SnackbarKind.ERROR }));
+            dispatch(snackbarActions.OPEN_SNACKBAR({
+                message: 'You do not have access to share this item',
+                hideDuration: 2000,
+                kind: SnackbarKind.ERROR }));
             dispatch(dialogActions.CLOSE_DIALOG({ id: SHARING_DIALOG_NAME }));
+        } finally {
             dispatch(progressIndicatorActions.STOP_WORKING(SHARING_DIALOG_NAME));
         }
     }
@@ -178,19 +238,14 @@ const saveManagementChanges = async (_: Dispatch, getState: () => RootState, { p
     const { user } = state.auth;
     const dialog = getDialog<string>(state.dialog, SHARING_DIALOG_NAME);
     if (dialog && user) {
-
         const { initialPermissions, permissions } = getSharingMangementFormData(state);
         const { visibility } = getSharingPublicAccessFormData(state);
 
-
         if (visibility === VisibilityLevel.PRIVATE) {
-
             for (const permission of initialPermissions) {
                 await permissionService.delete(permission.permissionUuid);
             }
-
         } else {
-
             const cancelledPermissions = differenceWith(
                 initialPermissions,
                 permissions,
@@ -204,7 +259,6 @@ const saveManagementChanges = async (_: Dispatch, getState: () => RootState, { p
             for (const permission of permissions) {
                 await permissionService.update(permission.permissionUuid, { name: permission.permissions });
             }
-
         }
     }
 };
