@@ -166,10 +166,13 @@ def set_secondary(fsaccess, builder, inputschema, secondaryspec, primary, discov
             set_secondary(fsaccess, builder, {"type": inputschema["items"]}, secondaryspec, p, discovered)
 
     elif (inputschema["type"] == "File" and
-          secondaryspec and
           isinstance(primary, Mapping) and
-          primary.get("class") == "File" and
-          "secondaryFiles" not in primary):
+          primary.get("class") == "File"):
+
+        if "secondaryFiles" in primary or not secondaryspec:
+            # Nothing to do.
+            return
+
         #
         # Found a file, check for secondaryFiles
         #
