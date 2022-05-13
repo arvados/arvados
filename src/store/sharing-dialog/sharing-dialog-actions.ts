@@ -4,7 +4,13 @@
 
 import { dialogActions } from "store/dialog/dialog-actions";
 import { withDialog } from "store/dialog/with-dialog";
-import { SHARING_DIALOG_NAME, SharingPublicAccessFormData, SHARING_PUBLIC_ACCESS_FORM_NAME, SHARING_INVITATION_FORM_NAME, SharingManagementFormData, SharingInvitationFormData, VisibilityLevel, getSharingMangementFormData, getSharingPublicAccessFormData } from './sharing-dialog-types';
+import {
+    SHARING_DIALOG_NAME,
+    SHARING_INVITATION_FORM_NAME,
+    SharingManagementFormData,
+    SharingInvitationFormData,
+    getSharingMangementFormData,
+} from './sharing-dialog-types';
 import { Dispatch } from 'redux';
 import { ServiceRepository } from "services/services";
 import { FilterBuilder } from 'services/api/filter-builder';
@@ -13,13 +19,17 @@ import { SHARING_MANAGEMENT_FORM_NAME } from 'store/sharing-dialog/sharing-dialo
 import { RootState } from 'store/store';
 import { getDialog } from 'store/dialog/dialog-reducer';
 import { PermissionLevel } from 'models/permission';
-import { getPublicGroupUuid } from "store/workflow-panel/workflow-panel-actions";
 import { PermissionResource } from 'models/permission';
 import { differenceWith } from "lodash";
 import { withProgress } from "store/progress-indicator/with-progress";
 import { progressIndicatorActions } from 'store/progress-indicator/progress-indicator-actions';
 import { snackbarActions, SnackbarKind } from "../snackbar/snackbar-actions";
-import { extractUuidKind, extractUuidObjectType, ResourceKind, ResourceObjectType } from "models/resource";
+import {
+    extractUuidKind,
+    extractUuidObjectType,
+    ResourceKind,
+    ResourceObjectType
+} from "models/resource";
 import { resourcesActions } from "store/resources/resources-actions";
 
 export const openSharingDialog = (resourceUuid: string, refresh?: () => void) =>
@@ -37,7 +47,6 @@ export const connectSharingDialogProgress = withProgress(SHARING_DIALOG_NAME);
 
 export const saveSharingDialogChanges = async (dispatch: Dispatch, getState: () => RootState) => {
     dispatch(progressIndicatorActions.START_WORKING(SHARING_DIALOG_NAME));
-    await dispatch<any>(savePublicPermissionChanges);
     await dispatch<any>(saveManagementChanges);
     await dispatch<any>(sendInvitations);
     dispatch(reset(SHARING_INVITATION_FORM_NAME));
@@ -127,7 +136,6 @@ const loadSharingDialog = async (dispatch: Dispatch, getState: () => RootState, 
         try {
             const resourceUuid = dialog.data.resourceUuid;
             const { items } = await permissionService.listResourcePermissions(resourceUuid);
-            dispatch<any>(initializePublicAccessForm(items));
             await dispatch<any>(initializeManagementForm(items));
             // For collections, we need to load the public sharing tokens
             if (extractUuidObjectType(resourceUuid) === ResourceObjectType.COLLECTION) {
@@ -167,8 +175,6 @@ const initializeManagementForm = (permissionLinks: PermissionResource[]) =>
         };
 
         const managementPermissions = permissionLinks
-            .filter(item =>
-                item.tailUuid !== getPublicGroupUuid(getState()))
             .map(({ tailUuid, name, uuid }) => ({
                 email: getEmail(tailUuid),
                 permissions: name as PermissionLevel,
@@ -183,86 +189,29 @@ const initializeManagementForm = (permissionLinks: PermissionResource[]) =>
         dispatch(initialize(SHARING_MANAGEMENT_FORM_NAME, managementFormData));
     };
 
-const initializePublicAccessForm = (permissionLinks: PermissionResource[]) =>
-    (dispatch: Dispatch, getState: () => RootState, ) => {
-
-        const [publicPermission] = permissionLinks
-            .filter(item => item.tailUuid === getPublicGroupUuid(getState()));
-
-        const publicAccessFormData: SharingPublicAccessFormData = publicPermission
-            ? {
-                visibility: VisibilityLevel.PUBLIC,
-                permissionUuid: publicPermission.uuid,
-            }
-            : {
-                visibility: permissionLinks.length > 0
-                    ? VisibilityLevel.SHARED
-                    : VisibilityLevel.PRIVATE,
-                permissionUuid: '',
-            };
-
-        dispatch(initialize(SHARING_PUBLIC_ACCESS_FORM_NAME, publicAccessFormData));
-    };
-
-const savePublicPermissionChanges = async (_: Dispatch, getState: () => RootState, { permissionService }: ServiceRepository) => {
-    const state = getState();
-    const { user } = state.auth;
-    const dialog = getDialog<SharingDialogData>(state.dialog, SHARING_DIALOG_NAME);
-    if (dialog && user) {
-        const { permissionUuid, visibility } = getSharingPublicAccessFormData(state);
-
-        if (permissionUuid) {
-            if (visibility === VisibilityLevel.PUBLIC) {
-                await permissionService.update(permissionUuid, {
-                    name: PermissionLevel.CAN_READ
-                });
-            } else {
-                await permissionService.delete(permissionUuid);
-            }
-
-        } else if (visibility === VisibilityLevel.PUBLIC) {
-
-            await permissionService.create({
-                ownerUuid: user.uuid,
-                headUuid: dialog.data.resourceUuid,
-                tailUuid: getPublicGroupUuid(state),
-                name: PermissionLevel.CAN_READ,
-            });
-        }
-    }
-};
-
 const saveManagementChanges = async (_: Dispatch, getState: () => RootState, { permissionService }: ServiceRepository) => {
     const state = getState();
     const { user } = state.auth;
     const dialog = getDialog<string>(state.dialog, SHARING_DIALOG_NAME);
     if (dialog && user) {
         const { initialPermissions, permissions } = getSharingMangementFormData(state);
-        const { visibility } = getSharingPublicAccessFormData(state);
+        const cancelledPermissions = differenceWith(
+            initialPermissions,
+            permissions,
+            (a, b) => a.permissionUuid === b.permissionUuid
+        );
 
-        if (visibility === VisibilityLevel.PRIVATE) {
-            for (const permission of initialPermissions) {
-                await permissionService.delete(permission.permissionUuid);
-            }
-        } else {
-            const cancelledPermissions = differenceWith(
-                initialPermissions,
-                permissions,
-                (a, b) => a.permissionUuid === b.permissionUuid
-            );
+        for (const { permissionUuid } of cancelledPermissions) {
+            await permissionService.delete(permissionUuid);
+        }
 
-            for (const { permissionUuid } of cancelledPermissions) {
-                await permissionService.delete(permissionUuid);
-            }
-
-            for (const permission of permissions) {
-                await permissionService.update(permission.permissionUuid, { name: permission.permissions });
-            }
+        for (const permission of permissions) {
+            await permissionService.update(permission.permissionUuid, { name: permission.permissions });
         }
     }
 };
 
-const sendInvitations = async (_: Dispatch, getState: () => RootState, { permissionService, userService }: ServiceRepository) => {
+const sendInvitations = async (_: Dispatch, getState: () => RootState, { permissionService }: ServiceRepository) => {
     const state = getState();
     const { user } = state.auth;
     const dialog = getDialog<SharingDialogData>(state.dialog, SHARING_DIALOG_NAME);
