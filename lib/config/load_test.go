@@ -311,7 +311,11 @@ Clusters:
   ManagementToken: aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
   SystemRootToken: aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
   Collections:
-   BlobSigningKey: aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa`, &logbuf).Load()
+   BlobSigningKey: aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+  InstanceTypes:
+   abc:
+    IncludedScratch: 123456
+`, &logbuf).Load()
 	c.Assert(err, check.IsNil)
 	yaml, err := yaml.Marshal(cfg)
 	c.Assert(err, check.IsNil)
