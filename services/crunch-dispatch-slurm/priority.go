@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-package main
+package dispatchslurm
 
 const defaultSpread int64 = 10
 
