@@ -18,6 +18,8 @@ import { openAdvancedTabDialog } from "store/advanced-tab/advanced-tab";
 import { toggleDetailsPanel } from 'store/details-panel/details-panel-action';
 import { copyToClipboardAction, openInNewTabAction } from "store/open-in-new-tab/open-in-new-tab.actions";
 import { openWebDavS3InfoDialog } from "store/collections/collection-info-actions";
+import { ToggleLockAction } from "../actions/lock-action";
+import { lockProject, unlockProject } from "store/projects/project-lock-actions";
 
 export const readOnlyProjectActionSet: ContextMenuActionSet = [[
     {
@@ -100,6 +102,23 @@ export const filterGroupActionSet: ContextMenuActionSet = [
     ]
 ];
 
+export const frozenActionSet: ContextMenuActionSet = [
+    [
+        {
+            component: ToggleLockAction,
+            name: 'ToggleLockAction',
+            execute: (dispatch, resource) => {
+                if (resource.isFrozen) {
+                    dispatch<any>(unlockProject(resource.uuid));
+                } else {
+                    dispatch<any>(lockProject(resource.uuid));
+                }
+
+            }
+        }
+    ]
+];
+
 export const projectActionSet: ContextMenuActionSet = [
     [
         ...filterGroupActionSet.reduce((prev, next) => prev.concat(next), []),
@@ -110,5 +129,6 @@ export const projectActionSet: ContextMenuActionSet = [
                 dispatch<any>(openProjectCreateDialog(resource.uuid));
             }
         },
+        ...frozenActionSet.reduce((prev, next) => prev.concat(next), []),
     ]
 ];

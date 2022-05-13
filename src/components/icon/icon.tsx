@@ -73,6 +73,8 @@ import ExitToApp from '@material-ui/icons/ExitToApp';
 import CheckCircleOutline from '@material-ui/icons/CheckCircleOutline';
 import RemoveCircleOutline from '@material-ui/icons/RemoveCircleOutline';
 import NotInterested from '@material-ui/icons/NotInterested';
+import Lock from '@material-ui/icons/Lock'
+import LockOpen from '@material-ui/icons/LockOpen'
 
 // Import FontAwesome icons
 import { library } from '@fortawesome/fontawesome-svg-core';
@@ -153,6 +155,8 @@ export const PaginationLeftArrowIcon: IconType = (props) => <ChevronLeft {...pro
 export const PaginationRightArrowIcon: IconType = (props) => <ChevronRight {...props} />;
 export const ProcessIcon: IconType = (props) => <BubbleChart {...props} />;
 export const ProjectIcon: IconType = (props) => <Folder {...props} />;
+export const LockIcon: IconType = (props) => <Lock {...props} />;
+export const UnlockIcon: IconType = (props) => <LockOpen {...props} />;
 export const FilterGroupIcon: IconType = (props) => <Pageview {...props} />;
 export const ProjectsIcon: IconType = (props) => <Inbox {...props} />;
 export const ProvenanceGraphIcon: IconType = (props) => <DeviceHub {...props} />;

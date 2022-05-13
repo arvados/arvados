@@ -21,6 +21,7 @@ import { extractUuidKind, ResourceKind } from 'models/resource';
 import { pluginConfig } from 'plugins';
 import { ElementListReducer } from 'common/plugintypes';
 import { Location } from 'history';
+import { ProjectResource } from 'models/project';
 
 type CssRules = 'button' | 'menuItem' | 'icon';
 
@@ -87,9 +88,10 @@ export const SidePanelButton = withStyles(styles)(
                 if (currentItemId === currentUserUUID) {
                     enabled = true;
                 } else if (matchProjectRoute(location ? location.pathname : '')) {
-                    const currentProject = getResource<GroupResource>(currentItemId)(resources);
-                    if (currentProject &&
+                    const currentProject = getResource<ProjectResource>(currentItemId)(resources);
+                    if (currentProject && currentProject.writableBy &&
                         currentProject.writableBy.indexOf(currentUserUUID || '') >= 0 &&
+                        !currentProject.frozenByUuid &&
                         !isProjectTrashed(currentProject, resources) &&
                         currentProject.groupClass !== GroupClass.FILTER) {
                         enabled = true;

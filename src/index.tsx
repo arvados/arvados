@@ -22,7 +22,7 @@ import { fetchConfig } from 'common/config';
 import servicesProvider from 'common/service-provider';
 import { addMenuActionSet, ContextMenuKind } from 'views-components/context-menu/context-menu';
 import { rootProjectActionSet } from "views-components/context-menu/action-sets/root-project-action-set";
-import { filterGroupActionSet, projectActionSet, readOnlyProjectActionSet } from "views-components/context-menu/action-sets/project-action-set";
+import { filterGroupActionSet, frozenActionSet, projectActionSet, readOnlyProjectActionSet } from "views-components/context-menu/action-sets/project-action-set";
 import { resourceActionSet } from 'views-components/context-menu/action-sets/resource-action-set';
 import { favoriteActionSet } from "views-components/context-menu/action-sets/favorite-action-set";
 import { collectionFilesActionSet, readOnlyCollectionFilesActionSet } from 'views-components/context-menu/action-sets/collection-files-action-set';
@@ -100,6 +100,12 @@ addMenuActionSet(ContextMenuKind.GROUP_MEMBER, groupMemberActionSet);
 addMenuActionSet(ContextMenuKind.COLLECTION_ADMIN, collectionAdminActionSet);
 addMenuActionSet(ContextMenuKind.PROCESS_ADMIN, processResourceAdminActionSet);
 addMenuActionSet(ContextMenuKind.PROJECT_ADMIN, projectAdminActionSet);
+addMenuActionSet(ContextMenuKind.FROZEN_PROJECT, [
+    [
+        ...frozenActionSet.reduce((prev, next) => prev.concat(next), []),
+        ...readOnlyProjectActionSet.reduce((prev, next) => prev.concat(next), []),
+    ]
+]);
 addMenuActionSet(ContextMenuKind.FILTER_GROUP_ADMIN, filterGroupAdminActionSet);
 addMenuActionSet(ContextMenuKind.PERMISSION_EDIT, permissionEditActionSet);
 

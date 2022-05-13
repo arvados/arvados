@@ -21,6 +21,7 @@ import { CollectionResource } from 'models/collection';
 import { GroupClass, GroupResource } from 'models/group';
 import { GroupContentsResource } from 'services/groups-service/groups-service';
 import { LinkResource } from 'models/link';
+import { resourceIsFrozen } from 'common/frozen-resources';
 
 export const contextMenuActions = unionize({
     OPEN_CONTEXT_MENU: ofType<{ position: ContextMenuPosition, resource: ContextMenuResource }>(),
@@ -40,6 +41,8 @@ export type ContextMenuResource = {
     isEditable?: boolean;
     outputUuid?: string;
     workflowUuid?: string;
+    isAdmin?: boolean;
+    isFrozen?: boolean;
     storageClassesDesired?: string[];
     properties?: { [key: string]: string | string[] };
 };
@@ -224,10 +227,15 @@ export const resourceUuidToContextMenuKind = (uuid: string, readonly = false) =>
         const { isAdmin: isAdminUser, uuid: userUuid } = getState().auth.user!;
         const kind = extractUuidKind(uuid);
         const resource = getResourceWithEditableStatus<GroupResource & EditableResource>(uuid, userUuid)(getState().resources);
+        const isFrozen = resourceIsFrozen(resource, getState().resources);
+        const isEditable = (isAdminUser || (resource || {} as EditableResource).isEditable) && !readonly && !isFrozen;
 
-        const isEditable = (isAdminUser || (resource || {} as EditableResource).isEditable) && !readonly;
         switch (kind) {
             case ResourceKind.PROJECT:
+                if (resource && !!(resource as any).frozenByUuid) {
+                    return ContextMenuKind.FROZEN_PROJECT;
+                }
+
                 return (isAdminUser && !readonly)
                     ? (resource && resource.groupClass !== GroupClass.FILTER)
                         ? ContextMenuKind.PROJECT_ADMIN
