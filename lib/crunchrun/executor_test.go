@@ -12,6 +12,7 @@ import (
 	"net"
 	"net/http"
 	"os"
+	"os/exec"
 	"strings"
 	"time"
 
@@ -200,6 +201,9 @@ func (s *executorSuite) TestIPAddress(c *C) {
 		resp, err := http.DefaultClient.Do(req)
 		c.Assert(err, IsNil)
 		c.Check(resp.StatusCode, Equals, http.StatusTeapot)
+	} else {
+		lsns, err := exec.Command("lsns").CombinedOutput()
+		c.Logf("lsns (err == %v):\n%s", err, lsns)
 	}
 
 	s.executor.Stop()
