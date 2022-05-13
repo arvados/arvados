@@ -32,7 +32,7 @@ from arvados.errors import ApiError
 
 import arvados_cwl.util
 from .arvcontainer import RunnerContainer
-from .runner import Runner, upload_docker, upload_job_order, upload_workflow_deps
+from .runner import Runner, upload_docker, upload_job_order, upload_workflow_deps, make_builder
 from .arvtool import ArvadosCommandTool, validate_cluster_target, ArvadosExpressionTool
 from .arvworkflow import ArvadosWorkflow, upload_workflow
 from .fsaccess import CollectionFsAccess, CollectionFetcher, collectionResolver, CollectionCache, pdh_size
@@ -795,8 +795,9 @@ The 'jobs' API is no longer supported.
             output_properties = {}
             output_properties_req, _ = tool.get_requirement("http://arvados.org/cwl#OutputCollectionProperties")
             if output_properties_req:
+                builder = make_builder(job_order, tool.hints, tool.requirements, runtimeContext, tool.metadata)
                 for pr in output_properties_req["outputProperties"]:
-                    output_properties[pr["propertyName"]] = self.builder.do_eval(pr["propertyValue"])
+                    output_properties[pr["propertyName"]] = builder.do_eval(pr["propertyValue"])
 
             self.final_output, self.final_output_collection = self.make_output_collection(self.output_name, storage_classes,
                                                                                           self.output_tags, output_properties,

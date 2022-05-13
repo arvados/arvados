@@ -349,8 +349,8 @@ class ArvadosContainer(JobBase):
                 for pr in output_properties_req["outputProperties"]:
                     container_request["output_properties"][pr["propertyName"]] = self.builder.do_eval(pr["propertyValue"])
             else:
-                logger.warning("%s API server is too old to support setting properties on output collections.",
-                               self.arvrunner.label(self))
+                logger.warning("%s API revision is %s, revision %s is required to support setting properties on output collections.",
+                               self.arvrunner.label(self), self.arvrunner.api._rootDesc["revision"], "20220510")
 
         if runtimeContext.runnerjob.startswith("arvwf:"):
             wfuuid = runtimeContext.runnerjob[6:runtimeContext.runnerjob.index("#")]
