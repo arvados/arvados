@@ -48,11 +48,13 @@ class ArvKeepdockerTestCase(unittest.TestCase, tutil.VersionChecker):
                 self.run_arv_keepdocker(['--version'], sys.stderr)
         self.assertVersionOutput(out, err)
 
+    @mock.patch('arvados.commands.keepdocker.list_images_in_arv',
+                return_value=[])
     @mock.patch('arvados.commands.keepdocker.find_image_hashes',
                 return_value=['abc123'])
     @mock.patch('arvados.commands.keepdocker.find_one_image_hash',
                 return_value='abc123')
-    def test_image_format_compatibility(self, _1, _2):
+    def test_image_format_compatibility(self, _1, _2, _3):
         old_id = hashlib.sha256(b'old').hexdigest()
         new_id = 'sha256:'+hashlib.sha256(b'new').hexdigest()
         for supported, img_id, expect_ok in [
@@ -152,11 +154,13 @@ class ArvKeepdockerTestCase(unittest.TestCase, tutil.VersionChecker):
             self.run_arv_keepdocker(['[::1]/repo/img'], sys.stderr)
         find_image_mock.assert_called_with('[::1]/repo/img', 'latest')
 
+    @mock.patch('arvados.commands.keepdocker.list_images_in_arv',
+                return_value=[])
     @mock.patch('arvados.commands.keepdocker.find_image_hashes',
                 return_value=['abc123'])
     @mock.patch('arvados.commands.keepdocker.find_one_image_hash',
                 return_value='abc123')
-    def test_collection_property_update(self, _1, _2):
+    def test_collection_property_update(self, _1, _2, _3):
         image_id = 'sha256:'+hashlib.sha256(b'image').hexdigest()
         fakeDD = arvados.api('v1')._rootDesc
         fakeDD['dockerImageFormats'] = ['v2']

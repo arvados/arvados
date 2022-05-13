@@ -18,6 +18,15 @@ if ! arv-get 20850f01122e860fb878758ac1320877+71 > /dev/null ; then
     arv-put --portable-data-hash samples/sample1_S01_R1_001.fastq.gz
 fi
 
+# Test for #18888
+# This is a standalone test because the bug was observed with this
+# command line and was thought to be due to command line handling.
 arvados-cwl-runner 18888-download_def.cwl --scripts scripts/
 
+# Test for #19070
+# The most effective way to test this seemed to be to write an
+# integration test to check for the expected behavior.
+python test_copy_deps.py
+
+# Run integration tests
 exec cwltest --test arvados-tests.yml --tool arvados-cwl-runner $@ -- --disable-reuse --compute-checksum --api=containers
