@@ -6,6 +6,7 @@ package crunchrun
 
 import (
 	"bytes"
+	"fmt"
 	"io"
 	"io/ioutil"
 	"net"
@@ -208,7 +209,11 @@ func (s *executorSuite) TestIPAddress(c *C) {
 }
 
 func (s *executorSuite) TestInject(c *C) {
+	hostdir := c.MkDir()
+	c.Assert(os.WriteFile(hostdir+"/testfile", []byte("first tube"), 0777), IsNil)
+	mountdir := fmt.Sprintf("/injecttest-%d", os.Getpid())
 	s.spec.Command = []string{"sleep", "10"}
+	s.spec.BindMounts = map[string]bindmount{mountdir: {HostPath: hostdir, ReadOnly: true}}
 	c.Assert(s.executor.Create(s.spec), IsNil)
 	c.Assert(s.executor.Start(), IsNil)
 	starttime := time.Now()
@@ -216,13 +221,23 @@ func (s *executorSuite) TestInject(c *C) {
 	ctx, cancel := context.WithDeadline(context.Background(), time.Now().Add(2*time.Second))
 	defer cancel()
 
-	injectcmd := []string{"cat", "/proc/1/cmdline"}
+	// Allow InjectCommand to fail a few times while the container
+	// is starting
+	for ctx.Err() == nil {
+		_, err := s.executor.InjectCommand(ctx, "", "root", false, []string{"true"})
+		if err == nil {
+			break
+		}
+		time.Sleep(time.Second / 10)
+	}
+
+	injectcmd := []string{"cat", mountdir + "/testfile"}
 	cmd, err := s.executor.InjectCommand(ctx, "", "root", false, injectcmd)
 	c.Assert(err, IsNil)
 	out, err := cmd.CombinedOutput()
 	c.Logf("inject %s => %q", injectcmd, out)
 	c.Check(err, IsNil)
-	c.Check(string(out), Equals, "sleep\00010\000")
+	c.Check(string(out), Equals, "first tube")
 
 	s.executor.Stop()
 	code, _ := s.executor.Wait(ctx)

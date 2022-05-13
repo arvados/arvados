@@ -28,6 +28,14 @@ func (s *singularitySuite) SetUpSuite(c *C) {
 	}
 }
 
+func (s *singularitySuite) TestInject(c *C) {
+	path, err := exec.LookPath("nsenter")
+	if err != nil || path != "/var/lib/arvados/bin/nsenter" {
+		c.Skip("looks like /var/lib/arvados/bin/nsenter is not installed -- re-run `arvados-server install`?")
+	}
+	s.executorSuite.TestInject(c)
+}
+
 var _ = Suite(&singularityStubSuite{})
 
 // singularityStubSuite tests don't really invoke singularity, so we
