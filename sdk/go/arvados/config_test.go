@@ -15,7 +15,7 @@ var _ = check.Suite(&ConfigSuite{})
 
 type ConfigSuite struct{}
 
-func (s *ConfigSuite) TestInstanceTypesAsArray(c *check.C) {
+func (s *ConfigSuite) TestStringSetAsArray(c *check.C) {
 	var cluster Cluster
 	yaml.Unmarshal([]byte(`
 API:
@@ -23,13 +23,6 @@ API:
 	c.Check(len(cluster.API.DisabledAPIs), check.Equals, 1)
 	_, ok := cluster.API.DisabledAPIs["jobs.list"]
 	c.Check(ok, check.Equals, true)
-}
-
-func (s *ConfigSuite) TestStringSetAsArray(c *check.C) {
-	var cluster Cluster
-	yaml.Unmarshal([]byte("InstanceTypes:\n- Name: foo\n"), &cluster)
-	c.Check(len(cluster.InstanceTypes), check.Equals, 1)
-	c.Check(cluster.InstanceTypes["foo"].Name, check.Equals, "foo")
 }
 
 func (s *ConfigSuite) TestInstanceTypesAsHash(c *check.C) {
@@ -42,18 +35,16 @@ func (s *ConfigSuite) TestInstanceTypesAsHash(c *check.C) {
 
 func (s *ConfigSuite) TestInstanceTypeSize(c *check.C) {
 	var it InstanceType
-	err := yaml.Unmarshal([]byte("Name: foo\nScratch: 4GB\nRAM: 4GiB\n"), &it)
+	err := yaml.Unmarshal([]byte("Name: foo\nIncludedScratch: 4GB\nRAM: 4GiB\n"), &it)
 	c.Check(err, check.IsNil)
-	c.Check(int64(it.Scratch), check.Equals, int64(4000000000))
+	c.Check(int64(it.IncludedScratch), check.Equals, int64(4000000000))
 	c.Check(int64(it.RAM), check.Equals, int64(4294967296))
 }
 
 func (s *ConfigSuite) TestInstanceTypeFixup(c *check.C) {
 	for _, confdata := range []string{
 		// Current format: map of entries
-		`{foo4: {IncludedScratch: 4GB}, foo8: {ProviderType: foo_8, Scratch: 8GB}}`,
-		// Legacy format: array of entries with key in "Name" field
-		`[{Name: foo4, IncludedScratch: 4GB}, {Name: foo8, ProviderType: foo_8, Scratch: 8GB}]`,
+		`{foo4: {IncludedScratch: 4GB}, foo8: {ProviderType: foo_8, AddedScratch: 8GB}}`,
 	} {
 		c.Log(confdata)
 		var itm InstanceTypeMap
