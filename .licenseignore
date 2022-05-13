@@ -50,6 +50,7 @@ docker/jobs/1078ECD7.key
 */script/rails
 sdk/cwl/tests/input/blorp.txt
 sdk/cwl/tests/tool/blub.txt
+sdk/cwl/tests/19109-upload-secondary/*
 sdk/cwl/tests/federation/data/*
 sdk/cwl/tests/fake-keep-mount/fake_collection_dir/.arvados#collection
 sdk/go/manifest/testdata/*_manifest
