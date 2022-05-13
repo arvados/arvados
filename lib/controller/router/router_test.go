@@ -94,6 +94,12 @@ func (s *RouterSuite) TestOptions(c *check.C) {
 		},
 		{
 			method:      "GET",
+			path:        "/arvados/v1/api_client_authorizations",
+			shouldCall:  "APIClientAuthorizationList",
+			withOptions: arvados.ListOptions{Limit: -1},
+		},
+		{
+			method:      "GET",
 			path:        "/arvados/v1/collections?limit=123&offset=456&include_trash=true&include_old_versions=1",
 			shouldCall:  "CollectionList",
 			withOptions: arvados.ListOptions{Limit: 123, Offset: 456, IncludeTrash: true, IncludeOldVersions: true},

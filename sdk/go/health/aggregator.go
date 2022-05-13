@@ -29,10 +29,14 @@ import (
 	"git.arvados.org/arvados.git/sdk/go/auth"
 	"git.arvados.org/arvados.git/sdk/go/ctxlog"
 	"github.com/ghodss/yaml"
+	"github.com/prometheus/client_golang/prometheus"
 	"github.com/sirupsen/logrus"
 )
 
-const defaultTimeout = arvados.Duration(2 * time.Second)
+const (
+	defaultTimeout = arvados.Duration(2 * time.Second)
+	maxClockSkew   = time.Minute
+)
 
 // Aggregator implements service.Handler. It handles "GET /_health/all"
 // by checking the health of all configured services on the cluster
@@ -46,6 +50,9 @@ type Aggregator struct {
 
 	// If non-nil, Log is called after handling each request.
 	Log func(*http.Request, error)
+
+	// If non-nil, report clock skew on each health-check.
+	MetricClockSkew prometheus.Gauge
 }
 
 func (agg *Aggregator) setup() {
@@ -114,6 +121,10 @@ type ClusterHealthResponse struct {
 	// anywhere."
 	Services map[arvados.ServiceName]ServiceHealth `json:"services"`
 
+	// Difference between min/max timestamps in individual
+	// health-check responses.
+	ClockSkew arvados.Duration
+
 	Errors []string `json:"errors"`
 }
 
@@ -124,7 +135,9 @@ type CheckResult struct {
 	HTTPStatusText string                 `json:",omitempty"`
 	Response       map[string]interface{} `json:"response"`
 	ResponseTime   json.Number            `json:"responseTime"`
+	ClockTime      time.Time              `json:"clockTime"`
 	Metrics        Metrics                `json:"-"`
+	respTime       time.Duration
 }
 
 type Metrics struct {
@@ -225,6 +238,33 @@ func (agg *Aggregator) ClusterHealth() ClusterHealthResponse {
 		}
 	}
 
+	var maxResponseTime time.Duration
+	var clockMin, clockMax time.Time
+	for _, result := range resp.Checks {
+		if result.ClockTime.IsZero() {
+			continue
+		}
+		if clockMin.IsZero() || result.ClockTime.Before(clockMin) {
+			clockMin = result.ClockTime
+		}
+		if result.ClockTime.After(clockMax) {
+			clockMax = result.ClockTime
+		}
+		if result.respTime > maxResponseTime {
+			maxResponseTime = result.respTime
+		}
+	}
+	skew := clockMax.Sub(clockMin)
+	resp.ClockSkew = arvados.Duration(skew)
+	if skew > maxClockSkew+maxResponseTime {
+		msg := fmt.Sprintf("clock skew detected: maximum timestamp spread is %s (exceeds warning threshold of %s)", resp.ClockSkew, arvados.Duration(maxClockSkew))
+		resp.Errors = append(resp.Errors, msg)
+		resp.Health = "ERROR"
+	}
+	if agg.MetricClockSkew != nil {
+		agg.MetricClockSkew.Set(skew.Seconds())
+	}
+
 	var newest Metrics
 	for _, result := range resp.Checks {
 		if result.Metrics.ConfigSourceTimestamp.After(newest.ConfigSourceTimestamp) {
@@ -256,7 +296,8 @@ func (agg *Aggregator) pingURL(svcURL arvados.URL) (*url.URL, error) {
 func (agg *Aggregator) ping(target *url.URL) (result CheckResult) {
 	t0 := time.Now()
 	defer func() {
-		result.ResponseTime = json.Number(fmt.Sprintf("%.6f", time.Since(t0).Seconds()))
+		result.respTime = time.Since(t0)
+		result.ResponseTime = json.Number(fmt.Sprintf("%.6f", result.respTime.Seconds()))
 	}()
 	result.Health = "ERROR"
 
@@ -304,6 +345,7 @@ func (agg *Aggregator) ping(target *url.URL) (result CheckResult) {
 		}
 	}
 	result.Health = "OK"
+	result.ClockTime, _ = time.Parse(time.RFC1123, resp.Header.Get("Date"))
 	return
 }
 
