@@ -47,12 +47,14 @@ _rootDesc = None
 
 def stubs(func):
     @functools.wraps(func)
+    @mock.patch("arvados_cwl.arvdocker.determine_image_id")
     @mock.patch("uuid.uuid4")
     @mock.patch("arvados.commands.keepdocker.list_images_in_arv")
     @mock.patch("arvados.collection.KeepClient")
     @mock.patch("arvados.keep.KeepClient")
     @mock.patch("arvados.events.subscribe")
-    def wrapped(self, events, keep_client1, keep_client2, keepdocker, uuid4, *args, **kwargs):
+    def wrapped(self, events, keep_client1, keep_client2, keepdocker,
+                uuid4, determine_image_id, *args, **kwargs):
         class Stubs(object):
             pass
         stubs = Stubs()
@@ -62,6 +64,8 @@ def stubs(func):
         uuid4.side_effect = ["df80736f-f14d-4b10-b2e3-03aa27f034bb", "df80736f-f14d-4b10-b2e3-03aa27f034b1",
                              "df80736f-f14d-4b10-b2e3-03aa27f034b2", "df80736f-f14d-4b10-b2e3-03aa27f034b3",
                              "df80736f-f14d-4b10-b2e3-03aa27f034b4", "df80736f-f14d-4b10-b2e3-03aa27f034b5"]
+
+        determine_image_id.return_value = None
 
         def putstub(p, **kwargs):
             return "%s+%i" % (hashlib.md5(p).hexdigest(), len(p))
@@ -77,7 +81,7 @@ def stubs(func):
             "arvados/jobs:123": [("zzzzz-4zz18-zzzzzzzzzzzzzd5", {})],
             "arvados/jobs:latest": [("zzzzz-4zz18-zzzzzzzzzzzzzd6", {})],
         }
-        def kd(a, b, image_name=None, image_tag=None):
+        def kd(a, b, image_name=None, image_tag=None, project_uuid=None):
             return stubs.docker_images.get("%s:%s" % (image_name, image_tag), [])
         stubs.keepdocker.side_effect = kd
 
@@ -1082,6 +1086,18 @@ class TestSubmit(unittest.TestCase):
                                                                         "link_class": "docker_image_hash",
                                                                         "name": "123456",
                                                                         "owner_uuid": "",
+                                                                        "properties": {"image_timestamp": ""}}], "items_available": 1, "offset": 0},
+                                                            {"items": [{"created_at": "",
+                                                                        "head_uuid": "zzzzz-4zz18-zzzzzzzzzzzzzzb",
+                                                                        "link_class": "docker_image_repo+tag",
+                                                                        "name": "arvados/jobs:"+arvados_cwl.__version__,
+                                                                        "owner_uuid": "",
+                                                                        "properties": {"image_timestamp": ""}}], "items_available": 1, "offset": 0},
+                                                            {"items": [{"created_at": "",
+                                                                        "head_uuid": "",
+                                                                        "link_class": "docker_image_hash",
+                                                                        "name": "123456",
+                                                                        "owner_uuid": "",
                                                                         "properties": {"image_timestamp": ""}}], "items_available": 1, "offset": 0}
         )
         find_one_image_hash.return_value = "123456"
@@ -1090,12 +1106,18 @@ class TestSubmit(unittest.TestCase):
                                                                               "owner_uuid": "",
                                                                               "manifest_text": "",
                                                                               "properties": ""
-                                                                          }], "items_available": 1, "offset": 0},)
+                                                                              }], "items_available": 1, "offset": 0},
+                                                                  {"items": [{"uuid": "zzzzz-4zz18-zzzzzzzzzzzzzzb",
+                                                                              "owner_uuid": "",
+                                                                              "manifest_text": "",
+                                                                              "properties": ""
+                                                                          }], "items_available": 1, "offset": 0})
         arvrunner.api.collections().create().execute.return_value = {"uuid": ""}
         arvrunner.api.collections().get().execute.return_value = {"uuid": "zzzzz-4zz18-zzzzzzzzzzzzzzb",
                                                                   "portable_data_hash": "9999999999999999999999999999999b+99"}
+
         self.assertEqual("9999999999999999999999999999999b+99",
-                         arvados_cwl.runner.arvados_jobs_image(arvrunner, "arvados/jobs:"+arvados_cwl.__version__))
+                         arvados_cwl.runner.arvados_jobs_image(arvrunner, "arvados/jobs:"+arvados_cwl.__version__, arvrunner.runtimeContext))
 
 
     @stubs
@@ -1599,6 +1621,9 @@ class TestCreateWorkflow(unittest.TestCase):
 
     @stubs
     def test_update(self, stubs):
+        project_uuid = 'zzzzz-j7d0g-zzzzzzzzzzzzzzz'
+        stubs.api.workflows().get().execute.return_value = {"owner_uuid": project_uuid}
+
         exited = arvados_cwl.main(
             ["--update-workflow", self.existing_workflow_uuid,
              "--debug",
@@ -1610,6 +1635,7 @@ class TestCreateWorkflow(unittest.TestCase):
                 "name": "submit_wf.cwl",
                 "description": "",
                 "definition": self.expect_workflow,
+                "owner_uuid": project_uuid
             }
         }
         stubs.api.workflows().update.assert_called_with(
@@ -1622,6 +1648,9 @@ class TestCreateWorkflow(unittest.TestCase):
 
     @stubs
     def test_update_name(self, stubs):
+        project_uuid = 'zzzzz-j7d0g-zzzzzzzzzzzzzzz'
+        stubs.api.workflows().get().execute.return_value = {"owner_uuid": project_uuid}
+
         exited = arvados_cwl.main(
             ["--update-workflow", self.existing_workflow_uuid,
              "--debug", "--name", "testing 123",
@@ -1633,6 +1662,7 @@ class TestCreateWorkflow(unittest.TestCase):
                 "name": "testing 123",
                 "description": "",
                 "definition": self.expect_workflow,
+                "owner_uuid": project_uuid
             }
         }
         stubs.api.workflows().update.assert_called_with(
