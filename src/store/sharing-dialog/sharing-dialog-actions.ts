@@ -25,9 +25,7 @@ import { withProgress } from "store/progress-indicator/with-progress";
 import { progressIndicatorActions } from 'store/progress-indicator/progress-indicator-actions';
 import { snackbarActions, SnackbarKind } from "../snackbar/snackbar-actions";
 import {
-    extractUuidKind,
     extractUuidObjectType,
-    ResourceKind,
     ResourceObjectType
 } from "models/resource";
 import { resourcesActions } from "store/resources/resources-actions";
@@ -51,22 +49,6 @@ export const saveSharingDialogChanges = async (dispatch: Dispatch, getState: () 
     await dispatch<any>(sendInvitations);
     dispatch(reset(SHARING_INVITATION_FORM_NAME));
     await dispatch<any>(loadSharingDialog);
-    dispatch(progressIndicatorActions.STOP_WORKING(SHARING_DIALOG_NAME));
-
-    const dialog = getDialog<SharingDialogData>(getState().dialog, SHARING_DIALOG_NAME);
-    if (dialog && dialog.data.refresh) {
-        dialog.data.refresh();
-    }
-};
-
-export const sendSharingInvitations = async (dispatch: Dispatch, getState: () => RootState) => {
-    dispatch(progressIndicatorActions.START_WORKING(SHARING_DIALOG_NAME));
-    await dispatch<any>(sendInvitations);
-    dispatch(closeSharingDialog());
-    dispatch(snackbarActions.OPEN_SNACKBAR({
-        message: 'Resource has been shared',
-        kind: SnackbarKind.SUCCESS,
-    }));
     dispatch(progressIndicatorActions.STOP_WORKING(SHARING_DIALOG_NAME));
 
     const dialog = getDialog<SharingDialogData>(getState().dialog, SHARING_DIALOG_NAME);
@@ -201,13 +183,11 @@ const saveManagementChanges = async (_: Dispatch, getState: () => RootState, { p
             (a, b) => a.permissionUuid === b.permissionUuid
         );
 
-        for (const { permissionUuid } of cancelledPermissions) {
-            await permissionService.delete(permissionUuid);
-        }
-
-        for (const permission of permissions) {
-            await permissionService.update(permission.permissionUuid, { name: permission.permissions });
-        }
+        const deletions = cancelledPermissions.map(({ permissionUuid }) =>
+            permissionService.delete(permissionUuid));
+        const updates = permissions.map(update =>
+            permissionService.update(update.permissionUuid, { name: update.permissions }));
+        await Promise.all([...deletions, ...updates]);
     }
 };
 
@@ -217,31 +197,13 @@ const sendInvitations = async (_: Dispatch, getState: () => RootState, { permiss
     const dialog = getDialog<SharingDialogData>(state.dialog, SHARING_DIALOG_NAME);
     if (dialog && user) {
         const invitations = getFormValues(SHARING_INVITATION_FORM_NAME)(state) as SharingInvitationFormData;
-
-        const getGroupsFromForm = invitations.invitedPeople.filter((invitation) => extractUuidKind(invitation.uuid) === ResourceKind.GROUP);
-        const getUsersFromForm = invitations.invitedPeople.filter((invitation) => extractUuidKind(invitation.uuid) === ResourceKind.USER);
-
-        const invitationDataUsers = getUsersFromForm
-            .map(person => ({
-                ownerUuid: user.uuid,
-                headUuid: dialog.data.resourceUuid,
-                tailUuid: person.uuid,
-                name: invitations.permissions
-            }));
-
-        const invitationsDataGroups = getGroupsFromForm.map(
-            group => ({
-                ownerUuid: user.uuid,
-                headUuid: dialog.data.resourceUuid,
-                tailUuid: group.uuid,
-                name: invitations.permissions
-            })
-        );
-
-        const data = invitationDataUsers.concat(invitationsDataGroups);
-
-        for (const invitation of data) {
-            await permissionService.create(invitation);
-        }
+        const data = invitations.invitedPeople.map(invitee => ({
+            ownerUuid: user.uuid,
+            headUuid: dialog.data.resourceUuid,
+            tailUuid: invitee.uuid,
+            name: invitations.permissions
+        }));
+        const changes = data.map( invitation => permissionService.create(invitation));
+        await Promise.all(changes);
     }
 };
