@@ -627,6 +627,9 @@ The 'jobs' API is no longer supported.
         runtimeContext.tmpdir_prefix = "tmp"
         runtimeContext.work_api = self.work_api
 
+        if not self.output_name:
+             self.output_name = "Output from workflow %s" % runtimeContext.name
+
         if self.work_api == "containers":
             if self.ignore_docker_for_reuse:
                 raise Exception("--ignore-docker-for-reuse not supported with containers API.")
@@ -779,8 +782,6 @@ The 'jobs' API is no longer supported.
             if workbench2 or workbench1:
                 logger.info("Output at %scollections/%s", workbench2 or workbench1, tool.final_output)
         else:
-            if self.output_name is None:
-                self.output_name = "Output of %s" % (shortname(tool.tool["id"]))
             if self.output_tags is None:
                 self.output_tags = ""
 

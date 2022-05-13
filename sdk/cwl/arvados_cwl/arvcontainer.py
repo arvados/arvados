@@ -320,7 +320,7 @@ class ArvadosContainer(JobBase):
         if runtimeContext.submit_runner_cluster:
             extra_submit_params["cluster_id"] = runtimeContext.submit_runner_cluster
 
-        container_request["output_name"] = "Output for step %s" % (self.name)
+        container_request["output_name"] = "Output from step %s" % (self.name)
         container_request["output_ttl"] = self.output_ttl
         container_request["mounts"] = mounts
         container_request["secret_mounts"] = secret_mounts
