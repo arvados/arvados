@@ -55,6 +55,7 @@ const ParticipantField = Field as new () => GenericField<UserFieldProps>;
 const UserSelect = (props) =>
     <ParticipantSelect
         onlyPeople
+        onlyActive
         label='Search for user to grant login permission'
         items={props.input.value ? [props.input.value] : []}
         excludedParticipants={props.excludedParticipants}
@@ -64,6 +65,7 @@ const UserSelect = (props) =>
 const ReadOnlyUserSelect = (props) =>
         <ParticipantSelect
             onlyPeople
+            onlyActive
             label='User'
             items={props.input.value ? [props.input.value] : []}
             disabled={true} />;

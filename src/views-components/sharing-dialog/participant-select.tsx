@@ -28,6 +28,7 @@ interface ParticipantSelectProps {
     label?: string;
     autofocus?: boolean;
     onlyPeople?: boolean;
+    onlyActive?: boolean;
     disabled?: boolean;
 
     onBlur?: (event: React.FocusEvent<HTMLInputElement>) => void;
@@ -133,6 +134,7 @@ export const ParticipantSelect = connect()(
 
             const filterUsers = new FilterBuilder()
                 .addILike('any', value)
+                .addEqual('is_active', this.props.onlyActive || undefined)
                 .addNotIn('uuid', this.props.excludedParticipants)
                 .getFilters();
             const userItems: ListResults<any> = await userService.list({ filters: filterUsers, limit, count: "none" });
