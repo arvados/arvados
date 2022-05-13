@@ -28,5 +28,9 @@ arvados-cwl-runner 18888-download_def.cwl --scripts scripts/
 # integration test to check for the expected behavior.
 python test_copy_deps.py
 
+# Test for #17004
+# Checks that the final output collection has the expected properties.
+python test_set_output_prop.py
+
 # Run integration tests
 exec cwltest --test arvados-tests.yml --tool arvados-cwl-runner $@ -- --disable-reuse --compute-checksum --api=containers
