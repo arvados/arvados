@@ -20,7 +20,6 @@ import { withProgress } from "store/progress-indicator/with-progress";
 import { progressIndicatorActions } from 'store/progress-indicator/progress-indicator-actions';
 import { snackbarActions, SnackbarKind } from "../snackbar/snackbar-actions";
 import { extractUuidKind, extractUuidObjectType, ResourceKind, ResourceObjectType } from "models/resource";
-import { ApiClientAuthorizationService } from "services/api-client-authorization-service/api-client-authorization-service";
 import { resourcesActions } from "store/resources/resources-actions";
 
 export const openSharingDialog = (resourceUuid: string, refresh?: () => void) =>

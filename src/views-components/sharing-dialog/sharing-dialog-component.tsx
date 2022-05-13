@@ -3,56 +3,99 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import React from 'react';
-import { Dialog, DialogTitle, Button, Grid, DialogContent, CircularProgress, Paper } from '@material-ui/core';
+import {
+    Dialog,
+    DialogTitle,
+    Button,
+    Grid,
+    DialogContent,
+    CircularProgress,
+    Paper,
+    Tabs,
+    Tab,
+} from '@material-ui/core';
+import {
+    StyleRulesCallback,
+    WithStyles,
+    withStyles
+} from '@material-ui/core/styles';
 import { DialogActions } from 'components/dialog-actions/dialog-actions';
-import { StyleRulesCallback, WithStyles, withStyles } from '@material-ui/core/styles';
-
+import { SharingDialogContent } from './sharing-dialog-content';
+import { SharingURLsContent } from './sharing-urls';
+import {
+    extractUuidObjectType,
+    ResourceObjectType
+} from 'models/resource';
+import { SharingInvitationForm } from './sharing-invitation-form';
 
 export interface SharingDialogDataProps {
     open: boolean;
     loading: boolean;
     saveEnabled: boolean;
-    advancedEnabled: boolean;
-    children: React.ReactNode;
+    sharedResourceUuid: string;
 }
 export interface SharingDialogActionProps {
     onClose: () => void;
-    onExited: () => void;
     onSave: () => void;
-    onAdvanced: () => void;
+    onCreateSharingToken: () => void;
+}
+enum SharingDialogTab {
+    PERMISSIONS = 0,
+    URLS = 1,
 }
 export default (props: SharingDialogDataProps & SharingDialogActionProps) => {
-    const { children, open, loading, advancedEnabled, saveEnabled, onAdvanced, onClose, onExited, onSave } = props;
+    const { open, loading, saveEnabled, sharedResourceUuid,
+        onClose, onSave, onCreateSharingToken } = props;
+    const showTabs = extractUuidObjectType(sharedResourceUuid) === ResourceObjectType.COLLECTION;
+    const [tabNr, setTabNr] = React.useState<number>(SharingDialogTab.PERMISSIONS);
+
+    // Sets up the dialog depending on the resource type
+    if (!showTabs && tabNr !== SharingDialogTab.PERMISSIONS) {
+        setTabNr(SharingDialogTab.PERMISSIONS);
+    }
+
     return <Dialog
-        {...{ open, onClose, onExited }}
+        {...{ open, onClose }}
         className="sharing-dialog"
         fullWidth
         maxWidth='sm'
-        disableBackdropClick
-        disableEscapeKeyDown>
+        disableBackdropClick={saveEnabled}
+        disableEscapeKeyDown={saveEnabled}>
         <DialogTitle>
             Sharing settings
-            </DialogTitle>
+        </DialogTitle>
+        { showTabs &&
+        <Tabs value={tabNr} onChange={(_, tb) => setTabNr(tb)}>
+            <Tab label="With users/groups" />
+            <Tab label="Sharing URLs" disabled={saveEnabled} />
+        </Tabs>
+        }
         <DialogContent>
-            {children}
+            { tabNr === SharingDialogTab.PERMISSIONS &&
+            <SharingDialogContent />
+            }
+            { tabNr === SharingDialogTab.URLS &&
+            <SharingURLsContent uuid={sharedResourceUuid} />
+            }
         </DialogContent>
         <DialogActions>
             <Grid container spacing={8}>
-                {advancedEnabled &&
-                    <Grid item>
-                        <Button
-                            color='primary'
-                            onClick={onAdvanced}>
-                            Advanced
-                    </Button>
-                    </Grid>
-                }
-                <Grid item xs />
+                { tabNr === SharingDialogTab.PERMISSIONS &&
+                <Grid item md={12}>
+                    <SharingInvitationForm />
+                </Grid> }
+                { tabNr === SharingDialogTab.URLS &&
                 <Grid item>
-                    <Button onClick={onClose}>
-                        Close
+                    <Button
+                        variant="contained"
+                        color="primary"
+                        onClick={onCreateSharingToken}>
+                        Create sharing URL
                     </Button>
                 </Grid>
+                }
+                <Grid item xs />
+                { tabNr === SharingDialogTab.PERMISSIONS &&
                 <Grid item>
                     <Button
                         variant='contained'
@@ -60,6 +103,12 @@ export default (props: SharingDialogDataProps & SharingDialogActionProps) => {
                         onClick={onSave}
                         disabled={!saveEnabled}>
                         Save
+                    </Button>
+                </Grid>
+                }
+                <Grid item>
+                    <Button onClick={onClose}>
+                        Close
                     </Button>
                 </Grid>
             </Grid>

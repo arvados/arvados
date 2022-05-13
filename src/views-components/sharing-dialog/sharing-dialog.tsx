@@ -4,48 +4,50 @@
 
 import { compose, Dispatch } from 'redux';
 import { connect } from 'react-redux';
-
-import React from 'react';
-import { connectSharingDialog, saveSharingDialogChanges, connectSharingDialogProgress, sendSharingInvitations } from 'store/sharing-dialog/sharing-dialog-actions';
-import { WithDialogProps } from 'store/dialog/with-dialog';
 import { RootState } from 'store/store';
-
-import SharingDialogComponent, { SharingDialogDataProps, SharingDialogActionProps } from './sharing-dialog-component';
-import { SharingDialogContent } from './sharing-dialog-content';
-import { connectAdvancedViewSwitch, AdvancedViewSwitchInjectedProps } from './advanced-view-switch';
-import { hasChanges } from 'store/sharing-dialog/sharing-dialog-types';
+import {
+    connectSharingDialog,
+    saveSharingDialogChanges,
+    connectSharingDialogProgress,
+    SharingDialogData,
+    createSharingToken
+} from 'store/sharing-dialog/sharing-dialog-actions';
+import { WithDialogProps } from 'store/dialog/with-dialog';
+import SharingDialogComponent, {
+    SharingDialogDataProps,
+    SharingDialogActionProps
+} from './sharing-dialog-component';
+import {
+    hasChanges,
+    SHARING_DIALOG_NAME
+} from 'store/sharing-dialog/sharing-dialog-types';
 import { WithProgressStateProps } from 'store/progress-indicator/with-progress';
+import { getDialog } from 'store/dialog/dialog-reducer';
 
-type Props = WithDialogProps<string> & AdvancedViewSwitchInjectedProps & WithProgressStateProps;
+type Props = WithDialogProps<string> & WithProgressStateProps;
 
-const mapStateToProps = (state: RootState, { advancedViewOpen, working, ...props }: Props): SharingDialogDataProps => ({
+const mapStateToProps = (state: RootState, { working, ...props }: Props): SharingDialogDataProps => {
+    const dialog = getDialog<SharingDialogData>(state.dialog, SHARING_DIALOG_NAME);
+    return ({
     ...props,
     saveEnabled: hasChanges(state),
     loading: working,
-    advancedEnabled: !advancedViewOpen,
-    children: <SharingDialogContent {...{ advancedViewOpen }} />,
-});
+    sharedResourceUuid: dialog?.data.resourceUuid || '',
+    })
+};
 
-const mapDispatchToProps = (dispatch: Dispatch, { toggleAdvancedView, advancedViewOpen, ...props }: Props): SharingDialogActionProps => ({
+const mapDispatchToProps = (dispatch: Dispatch, { ...props }: Props): SharingDialogActionProps => ({
     ...props,
     onClose: props.closeDialog,
-    onExited: () => {
-        if (advancedViewOpen) {
-            toggleAdvancedView();
-        }
-    },
     onSave: () => {
-        if (advancedViewOpen) {
-            dispatch<any>(saveSharingDialogChanges);
-        } else {
-            dispatch<any>(sendSharingInvitations);
-        }
+        dispatch<any>(saveSharingDialogChanges);
     },
-    onAdvanced: toggleAdvancedView,
+    onCreateSharingToken: () => {
+        dispatch<any>(createSharingToken);
+    }
 });
 
 export const SharingDialog = compose(
-    connectAdvancedViewSwitch,
     connectSharingDialog,
     connectSharingDialogProgress,
     connect(mapStateToProps, mapDispatchToProps)
