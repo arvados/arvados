@@ -57,7 +57,7 @@ def determine_image_id(dockerImageId):
 
 
 def arv_docker_get_image(api_client, dockerRequirement, pull_image, project_uuid,
-                         force_pull, tmp_outdir_prefix, match_local_docker):
+                         force_pull, tmp_outdir_prefix, match_local_docker, copy_deps):
     """Check if a Docker image is available in Keep, if not, upload it using arv-keepdocker."""
 
     if "http://arvados.org/cwl#dockerCollectionPDH" in dockerRequirement:
@@ -80,11 +80,21 @@ def arv_docker_get_image(api_client, dockerRequirement, pull_image, project_uuid
         image_name = sp[0]
         image_tag = sp[1] if len(sp) > 1 else "latest"
 
-        images = arvados.commands.keepdocker.list_images_in_arv(api_client, 3,
+        out_of_project_images = arvados.commands.keepdocker.list_images_in_arv(api_client, 3,
                                                                 image_name=image_name,
-                                                                image_tag=image_tag)
+                                                                image_tag=image_tag,
+                                                                project_uuid=None)
 
-        if images and match_local_docker:
+        if copy_deps:
+            # Only images that are available in the destination project
+            images = arvados.commands.keepdocker.list_images_in_arv(api_client, 3,
+                                                                    image_name=image_name,
+                                                                    image_tag=image_tag,
+                                                                    project_uuid=project_uuid)
+        else:
+            images = out_of_project_images
+
+        if match_local_docker:
             local_image_id = determine_image_id(dockerRequirement["dockerImageId"])
             if local_image_id:
                 # find it in the list
@@ -98,15 +108,25 @@ def arv_docker_get_image(api_client, dockerRequirement, pull_image, project_uuid
                     # force re-upload.
                     images = []
 
+                for i in out_of_project_images:
+                    if i[1]["dockerhash"] == local_image_id:
+                        found = True
+                        out_of_project_images = [i]
+                        break
+                if not found:
+                    # force re-upload.
+                    out_of_project_images = []
+
         if not images:
-            # Fetch Docker image if necessary.
-            try:
-                result = cwltool.docker.DockerCommandLineJob.get_image(dockerRequirement, pull_image,
-                                                              force_pull, tmp_outdir_prefix)
-                if not result:
-                    raise WorkflowException("Docker image '%s' not available" % dockerRequirement["dockerImageId"])
-            except OSError as e:
-                raise WorkflowException("While trying to get Docker image '%s', failed to execute 'docker': %s" % (dockerRequirement["dockerImageId"], e))
+            if not out_of_project_images:
+                # Fetch Docker image if necessary.
+                try:
+                    result = cwltool.docker.DockerCommandLineJob.get_image(dockerRequirement, pull_image,
+                                                                  force_pull, tmp_outdir_prefix)
+                    if not result:
+                        raise WorkflowException("Docker image '%s' not available" % dockerRequirement["dockerImageId"])
+                except OSError as e:
+                    raise WorkflowException("While trying to get Docker image '%s', failed to execute 'docker': %s" % (dockerRequirement["dockerImageId"], e))
 
             # Upload image to Arvados
             args = []
@@ -125,7 +145,8 @@ def arv_docker_get_image(api_client, dockerRequirement, pull_image, project_uuid
 
             images = arvados.commands.keepdocker.list_images_in_arv(api_client, 3,
                                                                     image_name=image_name,
-                                                                    image_tag=image_tag)
+                                                                    image_tag=image_tag,
+                                                                    project_uuid=project_uuid)
 
         if not images:
             raise WorkflowException("Could not find Docker image %s:%s" % (image_name, image_tag))

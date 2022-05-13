@@ -121,16 +121,20 @@ If there is already a Docker image in Arvados with the same name, it will use th
 
 The @--match-submitter-images@ option will check the id of the image in the local Docker instance and compare it to the id of the image already in Arvados with the same name and tag.  If they are different, it will choose the image matching the local image id, which will be uploaded it if necessary.  This helpful for development, if you locally rebuild the image with the 'latest' tag, the @--match-submitter-images@ will ensure that the newer version is used.
 
+h3(#dependencies). Dependencies
+
+Dependencies include collections and Docker images referenced by the workflow.  Dependencies are automatically uploaded by @arvados-cwl-runner@ if they are not present or need to be updated.  When running a workflow, dependencies that already exist somewhere on the Arvados instance (from a previous upload) will not be uploaded or copied, regardless of the project they are located in.  Sometimes this creates problems when sharing a workflow run with others.  In this case, use @--copy-deps@ to indicate that you want all dependencies to be copied into the destination project (specified by @--project-uuid@).
+
 h3. Command line options
 
 See "arvados-cwl-runner options":{{site.baseurl}}/user/cwl/cwl-run-options.html
 
 h2(#registering). Registering a workflow to use in Workbench
 
-Use @--create-workflow@ to register a CWL workflow with Arvados.  This enables you to share workflows with other Arvados users, and run them by clicking the <span class="btn btn-sm btn-primary"><i class="fa fa-fw fa-gear"></i> Run a process...</span> button on the Workbench Dashboard and on the command line by UUID.
+Use @--create-workflow@ to register a CWL workflow with Arvados.  Use @--project-uuid@ to upload the workflow to a specific project, along with its dependencies.  You can share the workflow with other Arvados users by sharing that project.  You can run the workflow by clicking the <span class="btn btn-sm btn-primary"><i class="fa fa-fw fa-gear"></i> Run a process...</span> button on the Workbench Dashboard, and on the command line by UUID.
 
 <notextile>
-<pre><code>~/arvados/doc/user/cwl/bwa-mem$ <span class="userinput">arvados-cwl-runner --create-workflow bwa-mem.cwl</span>
+<pre><code>~/arvados/doc/user/cwl/bwa-mem$ <span class="userinput">arvados-cwl-runner --project-uuid zzzzz-j7d0g-p32bi47ogkjke11 --create-workflow bwa-mem.cwl</span>
 arvados-cwl-runner 1.0.20160628195002, arvados-python-client 0.1.20160616015107, cwltool 1.0.20160629140624
 2016-07-01 12:21:01 arvados.arv-run[15796] INFO: Upload local files: "bwa-mem.cwl"
 2016-07-01 12:21:01 arvados.arv-run[15796] INFO: Uploaded to zzzzz-4zz18-7e0hedrmkuyoei3
@@ -142,7 +146,7 @@ zzzzz-p5p6p-rjleou1dwr167v5
 You can provide a partial input file to set default values for the workflow input parameters.  You can also use the @--name@ option to set the name of the workflow:
 
 <notextile>
-<pre><code>~/arvados/doc/user/cwl/bwa-mem$ <span class="userinput">arvados-cwl-runner --name "My workflow with defaults" --create-workflow bwa-mem.cwl bwa-mem-template.yml</span>
+<pre><code>~/arvados/doc/user/cwl/bwa-mem$ <span class="userinput">arvados-cwl-runner --name "My workflow with defaults" --project-uuid zzzzz-j7d0g-p32bi47ogkjke11 --create-workflow bwa-mem.cwl bwa-mem-template.yml</span>
 arvados-cwl-runner 1.0.20160628195002, arvados-python-client 0.1.20160616015107, cwltool 1.0.20160629140624
 2016-07-01 14:09:50 arvados.arv-run[3730] INFO: Upload local files: "bwa-mem.cwl"
 2016-07-01 14:09:50 arvados.arv-run[3730] INFO: Uploaded to zzzzz-4zz18-0f91qkovk4ml18o
@@ -150,6 +154,20 @@ arvados-cwl-runner 1.0.20160628195002, arvados-python-client 0.1.20160616015107,
 zzzzz-p5p6p-zuniv58hn8d0qd8
 </code></pre>
 </notextile>
+
+Use @--update-workflow <uuid>@ to update an existing workflow.
+
+<notextile>
+<pre><code>~/arvados/doc/user/cwl/bwa-mem$ <span class="userinput">arvados-cwl-runner --update-workflow zzzzz-p5p6p-zuniv58hn8d0qd8 bwa-mem.cwl</span>
+arvados-cwl-runner 1.0.20160628195002, arvados-python-client 0.1.20160616015107, cwltool 1.0.20160629140624
+2016-07-01 12:21:01 arvados.arv-run[15796] INFO: Upload local files: "bwa-mem.cwl"
+2016-07-01 12:21:01 arvados.arv-run[15796] INFO: Uploaded to zzzzz-4zz18-7e0hedrmkuyoei3
+2016-07-01 12:21:01 arvados.cwl-runner[15796] INFO: Created template zzzzz-p5p6p-zuniv58hn8d0qd8
+zzzzz-p5p6p-zuniv58hn8d0qd8
+</code></pre>
+</notextile>
+
+When using @--create-workflow@ or @--update-workflow@, the @--copy-deps@ and @--match-submitter-images@ options are enabled by default.
 
 h3. Running registered workflows at the command line
 
