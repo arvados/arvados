@@ -12,6 +12,7 @@ import (
 	"net"
 	"os"
 	"os/exec"
+	"os/user"
 	"regexp"
 	"sort"
 	"strconv"
@@ -24,6 +25,7 @@ import (
 
 type singularityExecutor struct {
 	logf          func(string, ...interface{})
+	fakeroot      bool // use --fakeroot flag, allow --network=bridge when non-root (currently only used by tests)
 	spec          containerSpec
 	tmpdir        string
 	child         *exec.Cmd
@@ -247,9 +249,21 @@ func (e *singularityExecutor) Create(spec containerSpec) error {
 }
 
 func (e *singularityExecutor) execCmd(path string) *exec.Cmd {
-	args := []string{path, "exec", "--containall", "--cleanenv", "--pwd", e.spec.WorkingDir, "--net"}
+	args := []string{path, "exec", "--containall", "--cleanenv", "--pwd=" + e.spec.WorkingDir}
+	if e.fakeroot {
+		args = append(args, "--fakeroot")
+	}
 	if !e.spec.EnableNetwork {
-		args = append(args, "--network=none")
+		args = append(args, "--net", "--network=none")
+	} else if u, err := user.Current(); err == nil && u.Uid == "0" || e.fakeroot {
+		// Specifying --network=bridge fails unless (a) we are
+		// root, (b) we are using --fakeroot, or (c)
+		// singularity has been configured to allow our
+		// uid/gid to use it like so:
+		//
+		// singularity config global --set 'allow net networks' bridge
+		// singularity config global --set 'allow net groups' mygroup
+		args = append(args, "--net", "--network=bridge")
 	}
 	if e.spec.CUDADeviceCount != 0 {
 		args = append(args, "--nv")

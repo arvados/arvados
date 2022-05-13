@@ -28,6 +28,21 @@ func (s *singularitySuite) SetUpSuite(c *C) {
 	}
 }
 
+func (s *singularitySuite) TearDownSuite(c *C) {
+	if s.executor != nil {
+		s.executor.Close()
+	}
+}
+
+func (s *singularitySuite) TestIPAddress(c *C) {
+	// In production, executor will choose --network=bridge
+	// because uid=0 under arvados-dispatch-cloud. But in test
+	// cases, uid!=0, which means --network=bridge is conditional
+	// on --fakeroot.
+	s.executor.(*singularityExecutor).fakeroot = true
+	s.executorSuite.TestIPAddress(c)
+}
+
 func (s *singularitySuite) TestInject(c *C) {
 	path, err := exec.LookPath("nsenter")
 	if err != nil || path != "/var/lib/arvados/bin/nsenter" {
@@ -55,6 +70,6 @@ func (s *singularityStubSuite) TestSingularityExecArgs(c *C) {
 	c.Check(err, IsNil)
 	e.imageFilename = "/fake/image.sif"
 	cmd := e.execCmd("./singularity")
-	c.Check(cmd.Args, DeepEquals, []string{"./singularity", "exec", "--containall", "--cleanenv", "--pwd", "/WorkingDir", "--net", "--network=none", "--nv", "--bind", "/hostpath:/mnt:ro", "/fake/image.sif"})
+	c.Check(cmd.Args, DeepEquals, []string{"./singularity", "exec", "--containall", "--cleanenv", "--pwd=/WorkingDir", "--net", "--network=none", "--nv", "--bind", "/hostpath:/mnt:ro", "/fake/image.sif"})
 	c.Check(cmd.Env, DeepEquals, []string{"SINGULARITYENV_FOO=bar"})
 }
