@@ -24,9 +24,12 @@ type ParticipantResource = GroupResource | UserResource;
 
 interface ParticipantSelectProps {
     items: Participant[];
+    excludedParticipants?: string[];
     label?: string;
     autofocus?: boolean;
     onlyPeople?: boolean;
+    onlyActive?: boolean;
+    disabled?: boolean;
 
     onBlur?: (event: React.FocusEvent<HTMLInputElement>) => void;
     onFocus?: (event: React.FocusEvent<HTMLInputElement>) => void;
@@ -43,9 +46,9 @@ interface ParticipantSelectState {
 const getDisplayName = (item: GroupResource | UserResource) => {
     switch (item.kind) {
         case ResourceKind.USER:
-            return getUserDisplayName(item, true);
+            return getUserDisplayName(item, true, true);
         case ResourceKind.GROUP:
-            return item.name;
+            return item.name + `(${`(${(item as Resource).uuid})`})`;
         default:
             return (item as Resource).uuid;
     }
@@ -71,11 +74,12 @@ export const ParticipantSelect = connect()(
                     onChange={this.handleChange}
                     onCreate={this.handleCreate}
                     onSelect={this.handleSelect}
-                    onDelete={this.handleDelete}
+                    onDelete={this.props.onDelete && !this.props.disabled ? this.handleDelete : undefined}
                     onFocus={this.props.onFocus}
                     onBlur={this.props.onBlur}
                     renderChipValue={this.renderChipValue}
-                    renderSuggestion={this.renderSuggestion} />
+                    renderSuggestion={this.renderSuggestion}
+                    disabled={this.props.disabled}/>
             );
         }
 
@@ -130,11 +134,14 @@ export const ParticipantSelect = connect()(
 
             const filterUsers = new FilterBuilder()
                 .addILike('any', value)
+                .addEqual('is_active', this.props.onlyActive || undefined)
+                .addNotIn('uuid', this.props.excludedParticipants)
                 .getFilters();
             const userItems: ListResults<any> = await userService.list({ filters: filterUsers, limit, count: "none" });
 
             const filterGroups = new FilterBuilder()
                 .addNotIn('group_class', [GroupClass.PROJECT, GroupClass.FILTER])
+                .addNotIn('uuid', this.props.excludedParticipants)
                 .addILike('name', value)
                 .getFilters();
 

@@ -251,7 +251,7 @@ describe('Collection panel tests', function () {
                             .should('contain', 'someKey: someValue')
                             .and('not.contain', 'anotherKey: anotherValue');
                         // Check that the file listing show both read & write operations
-                        cy.get('[data-cy=collection-files-panel]').within(() => {
+                        cy.waitForDom().get('[data-cy=collection-files-panel]').within(() => {
                             cy.get('[data-cy=collection-files-right-panel]', { timeout: 5000 })
                                 .should('contain', fileName);
                             if (isWritable) {
@@ -842,7 +842,7 @@ describe('Collection panel tests', function () {
 
                 cy.get('[data-cy=form-submit-btn]').click();
 
-                cy.get('.layout-pane-primary', { timeout: 12000 }).contains('Projects').click();
+                cy.waitForDom().get('.layout-pane-primary', { timeout: 12000 }).contains('Projects').click();
 
                 cy.get('main').contains(`Files extracted from: ${this.collection.name}`).should('exist');
             });

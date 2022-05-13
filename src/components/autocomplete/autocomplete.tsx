@@ -175,7 +175,7 @@ export class Autocomplete<Value, Suggestion> extends React.Component<Autocomplet
                 <Chip
                     label={this.renderChipValue(item)}
                     key={index}
-                    onDelete={() => onDelete ? onDelete(item, index) : undefined} />
+                    onDelete={onDelete && !this.props.disabled ? (() =>  onDelete(item, index)) : undefined} />
         );
     }
 
