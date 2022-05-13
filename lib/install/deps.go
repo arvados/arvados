@@ -199,6 +199,7 @@ func (inst *installCommand) RunCommand(prog string, args []string, stdin io.Read
 		}
 		if dev || test {
 			pkgs = append(pkgs, "squashfs-tools") // for singularity
+			pkgs = append(pkgs, "gnupg")          // for docker install recipe
 		}
 		switch {
 		case osv.Debian && osv.Major >= 11:
@@ -219,6 +220,37 @@ func (inst *installCommand) RunCommand(prog string, args []string, stdin io.Read
 		cmd.Stderr = stderr
 		err = cmd.Run()
 		if err != nil {
+			return 1
+		}
+	}
+
+	if dev || test {
+		if havedockerversion, err := exec.Command("docker", "--version").CombinedOutput(); err == nil {
+			logger.Printf("%s installed, assuming that version is ok", bytes.TrimSuffix(havedockerversion, []byte("\n")))
+		} else if osv.Debian {
+			var codename string
+			switch osv.Major {
+			case 10:
+				codename = "buster"
+			case 11:
+				codename = "bullseye"
+			default:
+				err = fmt.Errorf("don't know how to install docker-ce for debian %d", osv.Major)
+				return 1
+			}
+			err = inst.runBash(`
+rm -f /usr/share/keyrings/docker-archive-keyring.gpg
+curl -fsSL https://download.docker.com/linux/debian/gpg | gpg --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg
+echo 'deb [arch=amd64 signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/debian/ `+codename+` stable' | \
+    tee /etc/apt/sources.list.d/docker.list
+apt-get update
+DEBIAN_FRONTEND=noninteractive apt-get --yes --no-install-recommends install docker-ce
+`, stdout, stderr)
+			if err != nil {
+				return 1
+			}
+		} else {
+			err = fmt.Errorf("don't know how to install docker for osversion %v", osv)
 			return 1
 		}
 	}
