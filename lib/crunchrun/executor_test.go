@@ -183,7 +183,7 @@ func (s *executorSuite) TestIPAddress(c *C) {
 	c.Assert(s.executor.Start(), IsNil)
 	starttime := time.Now()
 
-	ctx, cancel := context.WithDeadline(context.Background(), time.Now().Add(2*time.Second))
+	ctx, cancel := context.WithDeadline(context.Background(), time.Now().Add(10*time.Second))
 	defer cancel()
 
 	for ctx.Err() == nil {

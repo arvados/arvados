@@ -36,6 +36,13 @@ type GatewayTarget interface {
 	IPAddress() (string, error)
 }
 
+type GatewayTargetStub struct{}
+
+func (GatewayTargetStub) IPAddress() (string, error) { return "127.0.0.1", nil }
+func (GatewayTargetStub) InjectCommand(ctx context.Context, detachKeys, username string, usingTTY bool, cmd []string) (*exec.Cmd, error) {
+	return exec.CommandContext(ctx, cmd[0], cmd[1:]...), nil
+}
+
 type Gateway struct {
 	ContainerUUID string
 	Address       string // listen host:port; if port=0, Start() will change it to the selected port
