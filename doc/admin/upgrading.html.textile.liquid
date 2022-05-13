@@ -39,8 +39,10 @@ We now recommend disabling nginx proxy caching for arvados-controller, to avoid 
 In your Nginx configuration file (@/etc/nginx/conf.d/arvados-api-and-controller.conf@), add the following lines to the @location /@ block with @http://controller@ (see "Update nginx configuration":{{site.baseurl}}/install/install-api-server.html#update-nginx for an example) and reload/restart Nginx (@sudo nginx -s reload@).
 
 <pre>
-    proxy_request_buffering  off;
     proxy_max_temp_file_size 0;
+    proxy_request_buffering  off;
+    proxy_buffering          off;
+    proxy_http_version       1.1;
 </pre>
 
 h3. Now recommending Singularity 3.9.9
