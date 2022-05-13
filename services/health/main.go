@@ -20,8 +20,18 @@ var (
 	command cmd.Handler = service.Command(arvados.ServiceNameHealth, newHandler)
 )
 
-func newHandler(ctx context.Context, cluster *arvados.Cluster, _ string, _ *prometheus.Registry) service.Handler {
-	return &health.Aggregator{Cluster: cluster}
+func newHandler(ctx context.Context, cluster *arvados.Cluster, _ string, reg *prometheus.Registry) service.Handler {
+	mClockSkew := prometheus.NewGauge(prometheus.GaugeOpts{
+		Namespace: "arvados",
+		Subsystem: "health",
+		Name:      "clock_skew_seconds",
+		Help:      "Clock skew observed in most recent health check",
+	})
+	reg.MustRegister(mClockSkew)
+	return &health.Aggregator{
+		Cluster:         cluster,
+		MetricClockSkew: mClockSkew,
+	}
 }
 
 func main() {
