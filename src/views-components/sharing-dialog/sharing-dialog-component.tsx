@@ -20,13 +20,13 @@ import {
     withStyles
 } from '@material-ui/core/styles';
 import { DialogActions } from 'components/dialog-actions/dialog-actions';
-import { SharingDialogContent } from './sharing-dialog-content';
 import { SharingURLsContent } from './sharing-urls';
 import {
     extractUuidObjectType,
     ResourceObjectType
 } from 'models/resource';
 import { SharingInvitationForm } from './sharing-invitation-form';
+import { SharingManagementForm } from './sharing-management-form';
 
 export interface SharingDialogDataProps {
     open: boolean;
@@ -72,7 +72,11 @@ export default (props: SharingDialogDataProps & SharingDialogActionProps) => {
         }
         <DialogContent>
             { tabNr === SharingDialogTab.PERMISSIONS &&
-            <SharingDialogContent />
+            <Grid container direction='column' spacing={24}>
+              <Grid item>
+                  <SharingManagementForm />
+              </Grid>
+            </Grid>
             }
             { tabNr === SharingDialogTab.URLS &&
             <SharingURLsContent uuid={sharedResourceUuid} />
@@ -84,6 +88,7 @@ export default (props: SharingDialogDataProps & SharingDialogActionProps) => {
                 <Grid item md={12}>
                     <SharingInvitationForm />
                 </Grid> }
+                <Grid item xs />
                 { tabNr === SharingDialogTab.URLS &&
                 <Grid item>
                     <Button
@@ -94,7 +99,6 @@ export default (props: SharingDialogDataProps & SharingDialogActionProps) => {
                     </Button>
                 </Grid>
                 }
-                <Grid item xs />
                 { tabNr === SharingDialogTab.PERMISSIONS &&
                 <Grid item>
                     <Button
@@ -102,7 +106,7 @@ export default (props: SharingDialogDataProps & SharingDialogActionProps) => {
                         color='primary'
                         onClick={onSave}
                         disabled={!saveEnabled}>
-                        Save
+                        Save changes
                     </Button>
                 </Grid>
                 }

@@ -23,8 +23,10 @@ export default () =>
 const SharingManagementFieldArray = ({ fields }: WrappedFieldArrayProps<{ email: string }>) =>
     <div>
         {
-            fields.map((field, index, fields) =>
+        fields.length > 0
+        ? fields.map((field, index, fields) =>
                 <PermissionManagementRow key={field} {...{ field, index, fields }} />)
+        : <Typography>No permissions set</Typography>
         }
         <Divider />
     </div>;
