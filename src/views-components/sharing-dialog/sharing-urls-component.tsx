@@ -66,7 +66,9 @@ export const SharingURLsComponent = withStyles(styles)((props: SharingURLsCompon
         ? `${props.sharingURLsPrefix.replace('*', props.collectionUuid)}/t=${token.apiToken}/_/`
         : `${props.sharingURLsPrefix}/c=${props.collectionUuid}/t=${token.apiToken}/_/`;
         const expDate = new Date(token.expiresAt);
-        const urlLabel = `Token ${token.apiToken.slice(0, 8)}... expiring at: ${expDate.toLocaleString()} (${moment(expDate).fromNow()})`;
+        const urlLabel = !!token.expiresAt
+        ? `Token ${token.apiToken.slice(0, 8)}... expiring at: ${expDate.toLocaleString()} (${moment(expDate).fromNow()})`
+        : `Token ${token.apiToken.slice(0, 8)}... with no expiration date`;
 
         return <Grid container alignItems='center' key={token.uuid}  className={props.classes.sharingUrlRow}>
             <Grid item>
@@ -81,7 +83,7 @@ export const SharingURLsComponent = withStyles(styles)((props: SharingURLsCompon
                     <CopyIcon />
                 </CopyToClipboard>
             </Tooltip></span>
-            <span className={props.classes.sharingUrlButton}><Tooltip title='Remove'>
+            <span data-cy='remove-url-btn' className={props.classes.sharingUrlButton}><Tooltip title='Remove'>
                 <IconButton onClick={() => props.onDeleteSharingToken(token.uuid)}>
                     <RemoveIcon />
                 </IconButton>

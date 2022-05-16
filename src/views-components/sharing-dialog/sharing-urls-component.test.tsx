@@ -57,6 +57,14 @@ describe("<SharingURLsComponent />", () => {
         expect(wrapper.find('a').at(1).props().href).toBe(`${props.collectionUuid}${sharingPrefix}/t=${props.sharingTokens[1].apiToken}/_/`);
     });
 
+    it("renders a list of URLs with no expiration", () => {
+        props.sharingTokens[0].expiresAt = null;
+        props.sharingTokens[1].expiresAt = null;
+        wrapper = mount(<SharingURLsComponent {...props} />);
+        expect(wrapper.find('a').at(0).text()).toContain(`Token aaaaaaaa... with no expiration date`);
+        expect(wrapper.find('a').at(1).text()).toContain(`Token bbbbbbbb... with no expiration date`);
+    });
+
     it("calls delete token handler when delete button is clicked", () => {
         wrapper.find('button').at(0).simulate('click');
         expect(props.onDeleteSharingToken).toHaveBeenCalledWith(props.sharingTokens[0].uuid);
