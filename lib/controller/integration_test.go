@@ -76,13 +76,14 @@ func (s *IntegrationSuite) SetUpSuite(c *check.C) {
       CloudVMs:
         Enable: true
         Driver: loopback
-        BootProbeCommand: id
+        BootProbeCommand: "rm -f /var/lock/crunch-run-broken"
         ProbeInterval: 1s
         PollInterval: 5s
         SyncInterval: 10s
         TimeoutIdle: 1s
         TimeoutBooting: 2s
       RuntimeEngine: singularity
+      CrunchRunArgumentsList: ["--broken-node-hook", "true"]
     RemoteClusters:
       z1111:
         Host: ` + hostport["z1111"] + `
