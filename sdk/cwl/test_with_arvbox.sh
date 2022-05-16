@@ -166,9 +166,9 @@ if [[ "$suite" = "integration" ]] ; then
    cd /usr/src/arvados/sdk/cwl/tests
    exec ./arvados-tests.sh $@
 elif [[ "$suite" = "conformance-v1.2" ]] ; then
-   exec cwltest --tool arvados-cwl-runner --test conformance_tests.yaml -N307 $@ -- \$EXTRA
+   exec cwltest --tool arvados-cwl-runner --test conformance_tests.yaml -Sdocker_entrypoint,timelimit_invalid_wf -N307 $@ -- \$EXTRA
 else
-   exec ./run_test.sh RUNNER=arvados-cwl-runner EXTRA="\$EXTRA" $@
+   exec cwltest --tool arvados-cwl-runner --test conformance_tests.yaml -Sdocker_entrypoint,timelimit_invalid_wf $@ -- \$EXTRA
 fi
 EOF
 

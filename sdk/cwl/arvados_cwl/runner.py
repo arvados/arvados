@@ -249,7 +249,7 @@ def set_secondary(fsaccess, builder, inputschema, secondaryspec, primary, discov
         primary["secondaryFiles"] = cmap(found)
         if discovered is not None:
             discovered[primary["location"]] = primary["secondaryFiles"]
-    elif inputschema["type"] not in primitive_types_set:
+    elif inputschema["type"] not in primitive_types_set and inputschema["type"] not in ("File", "Directory"):
         set_secondary(fsaccess, builder, inputschema["type"], secondaryspec, primary, discovered)
 
 def discover_secondary_files(fsaccess, builder, inputs, job_order, discovered=None):
