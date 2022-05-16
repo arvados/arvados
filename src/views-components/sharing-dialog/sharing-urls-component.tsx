@@ -9,6 +9,7 @@ import {
     Link,
     StyleRulesCallback,
     Tooltip,
+    Typography,
     WithStyles,
     withStyles
 } from '@material-ui/core';
@@ -57,10 +58,13 @@ export interface SharingURLsComponentActionProps {
 type SharingURLsComponentProps = SharingURLsComponentDataProps & SharingURLsComponentActionProps;
 
 export const SharingURLsComponent = withStyles(styles)((props: SharingURLsComponentProps & WithStyles<CssRules>) => <Grid container direction='column' spacing={24} className={props.classes.sharingUrlList}>
-    { props.sharingTokens
+    { props.sharingTokens.length > 0
+    ? props.sharingTokens
     .sort((a, b) => (new Date(a.expiresAt).getTime() - new Date(b.expiresAt).getTime()))
     .map(token => {
-        const url = `${props.sharingURLsPrefix}/c=${props.collectionUuid}/t=${token.apiToken}/_/`
+        const url = props.sharingURLsPrefix.includes('*')
+        ? `${props.sharingURLsPrefix.replace('*', props.collectionUuid)}/t=${token.apiToken}/_/`
+        : `${props.sharingURLsPrefix}/c=${props.collectionUuid}/t=${token.apiToken}/_/`;
         const expDate = new Date(token.expiresAt);
         const urlLabel = `Token ${token.apiToken.slice(0, 8)}... expiring at: ${expDate.toLocaleString()} (${moment(expDate).fromNow()})`;
 
@@ -84,5 +88,6 @@ export const SharingURLsComponent = withStyles(styles)((props: SharingURLsCompon
             </Tooltip></span>
             </Grid>
         </Grid>
-    }) }
+    })
+    : <Grid item><Typography>No sharing URLs</Typography></Grid> }
 </Grid>);
