@@ -46,7 +46,8 @@ describe('Sharing tests', function () {
             cy.get('.sharing-dialog').as('sharingDialog');
             cy.get('[data-cy=invite-people-field]').find('input').type(activeUser.user.email);
             cy.get('[role=tooltip]').click();
-            cy.get('@sharingDialog').contains('Save').click();
+            cy.get('@sharingDialog').contains('Save changes').click();
+            cy.get('@sharingDialog').contains('Close').click();
         });
 
         cy.createGroup(adminUser.token, {
@@ -61,7 +62,8 @@ describe('Sharing tests', function () {
             cy.get('.sharing-dialog').as('sharingDialog');
             cy.get('[data-cy=invite-people-field]').find('input').type(activeUser.user.email);
             cy.get('[role=tooltip]').click();
-            cy.get('@sharingDialog').contains('Save').click();
+            cy.get('@sharingDialog').contains('Save changes').click();
+            cy.get('@sharingDialog').contains('Close').click();
         });
 
         cy.getAll('@mySharedWritableProject', '@mySharedReadonlyProject')
@@ -95,7 +97,7 @@ describe('Sharing tests', function () {
         cy.getAll('@mySharedWritableProject')
             .then(function ([mySharedWritableProject]) {
                 cy.loginAs(activeUser);
-                
+
                 cy.get('[data-cy=side-panel-tree]').contains('Shared with me').click();
 
                 const newProjectName = `New project name ${mySharedWritableProject.name}`;
