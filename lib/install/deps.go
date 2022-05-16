@@ -338,14 +338,9 @@ make -C ./builddir install
 			}
 		}
 
-		// Allow users in the "sudo" group to use
-		// --network=bridge without --fakeroot. (Currently
-		// tests use --fakeroot anyway.)
 		err = inst.runBash(`
 install /usr/bin/nsenter /var/lib/arvados/bin/nsenter
 setcap "cap_sys_admin+pei cap_sys_chroot+pei" /var/lib/arvados/bin/nsenter
-/var/lib/arvados/bin/singularity config global --set 'allow net networks' bridge
-/var/lib/arvados/bin/singularity config global --set 'allow net groups' sudo
 `, stdout, stderr)
 		if err != nil {
 			return 1
