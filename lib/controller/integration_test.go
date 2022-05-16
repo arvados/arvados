@@ -1127,7 +1127,7 @@ func (s *IntegrationSuite) TestForwardRuntimeTokenToLoginCluster(c *check.C) {
 
 func (s *IntegrationSuite) TestRunTrivialContainer(c *check.C) {
 	outcoll := s.runContainer(c, "z1111", map[string]interface{}{
-		"command":             []string{"touch", "/out/hello_world"},
+		"command":             []string{"sh", "-c", "touch \"/out/hello world\" /out/ohai"},
 		"container_image":     "busybox:uclibc",
 		"cwd":                 "/tmp",
 		"environment":         map[string]string{},
@@ -1137,8 +1137,8 @@ func (s *IntegrationSuite) TestRunTrivialContainer(c *check.C) {
 		"priority":            1,
 		"state":               arvados.ContainerRequestStateCommitted,
 	}, 0)
-	c.Check(outcoll.ManifestText, check.Matches, `\. d41d8.* 0:0:hello_world\n`)
-	c.Check(outcoll.PortableDataHash, check.Equals, "dac08d558cfb6c9536f604ca89e3c002+53")
+	c.Check(outcoll.ManifestText, check.Matches, `\. d41d8.* 0:0:hello\\040world 0:0:ohai\n`)
+	c.Check(outcoll.PortableDataHash, check.Equals, "8fa5dee9231a724d7cf377c5a2f4907c+65")
 }
 
 func (s *IntegrationSuite) runContainer(c *check.C, clusterID string, ctrSpec map[string]interface{}, expectExitCode int) arvados.Collection {
