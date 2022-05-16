@@ -54,6 +54,10 @@ func (s *FederationSuite) SetUpSuite(c *check.C) {
       Insecure: true
     SystemLogs:
       Format: text
+    Containers:
+      CloudVMs:
+        Enable: true
+        Driver: loopback
     RemoteClusters:
       z1111:
         Host: ` + hostport["z1111"] + `
