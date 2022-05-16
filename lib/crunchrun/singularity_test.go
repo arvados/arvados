@@ -5,9 +5,11 @@
 package crunchrun
 
 import (
+	"os"
 	"os/exec"
 
 	. "gopkg.in/check.v1"
+	check "gopkg.in/check.v1"
 )
 
 var _ = Suite(&singularitySuite{})
@@ -39,6 +41,11 @@ func (s *singularitySuite) TestIPAddress(c *C) {
 	// because uid=0 under arvados-dispatch-cloud. But in test
 	// cases, uid!=0, which means --network=bridge is conditional
 	// on --fakeroot.
+	uuc, err := os.ReadFile("/proc/sys/kernel/unprivileged_userns_clone")
+	c.Check(err, check.IsNil)
+	if string(uuc) == "0\n" {
+		c.Skip("insufficient privileges to run this test case -- `singularity exec --fakeroot` requires /proc/sys/kernel/unprivileged_userns_clone = 1")
+	}
 	s.executor.(*singularityExecutor).fakeroot = true
 	s.executorSuite.TestIPAddress(c)
 }
