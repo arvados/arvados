@@ -281,7 +281,7 @@ func (e *singularityExecutor) execCmd(path string) *exec.Cmd {
 	for _, path := range binds {
 		mount := e.spec.BindMounts[path]
 		if path == e.spec.Env["HOME"] {
-			// Singularity treates $HOME as special case
+			// Singularity treats $HOME as special case
 			args = append(args, "--home", mount.HostPath+":"+path)
 		} else {
 			args = append(args, "--bind", mount.HostPath+":"+path+":"+readonlyflag[mount.ReadOnly])
@@ -295,8 +295,8 @@ func (e *singularityExecutor) execCmd(path string) *exec.Cmd {
 	env := make([]string, 0, len(e.spec.Env))
 	for k, v := range e.spec.Env {
 		if k == "HOME" {
-			// Singularity treates $HOME as special case, this is handled
-			// with --home above
+			// Singularity treats $HOME as special case,
+			// this is handled with --home above
 			continue
 		}
 		env = append(env, "SINGULARITYENV_"+k+"="+v)
