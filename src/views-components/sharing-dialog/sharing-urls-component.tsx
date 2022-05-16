@@ -55,7 +55,7 @@ export interface SharingURLsComponentActionProps {
     onCopy: (message: string) => void;
 }
 
-type SharingURLsComponentProps = SharingURLsComponentDataProps & SharingURLsComponentActionProps;
+export type SharingURLsComponentProps = SharingURLsComponentDataProps & SharingURLsComponentActionProps;
 
 export const SharingURLsComponent = withStyles(styles)((props: SharingURLsComponentProps & WithStyles<CssRules>) => <Grid container direction='column' spacing={24} className={props.classes.sharingUrlList}>
     { props.sharingTokens.length > 0
