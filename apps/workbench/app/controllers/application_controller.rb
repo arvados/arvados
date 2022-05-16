@@ -912,7 +912,8 @@ class ApplicationController < ActionController::Base
       pipelines.results.each { |pi| procs[pi] = pi.created_at }
     end
 
-    crs = ContainerRequest.limit(lim).with_count("none").order(["created_at desc"]).filter([["requesting_container_uuid", "=", nil]])
+    crs = ContainerRequest.limit(lim).with_count("none").order(["created_at desc"]).filter([["requesting_container_uuid", "=", nil]]).select(
+      ["uuid", "name", "container_uuid", "output_uuid", "state", "created_at", "modified_at"])
     crs.results.each { |c| procs[c] = c.created_at }
 
     Hash[procs.sort_by {|key, value| value}].keys.reverse.first(lim)
@@ -1244,7 +1245,7 @@ class ApplicationController < ActionController::Base
 
   # helper method to preload objects for given dataclass and uuids
   helper_method :preload_objects_for_dataclass
-  def preload_objects_for_dataclass dataclass, uuids, by_attr=nil
+  def preload_objects_for_dataclass dataclass, uuids, by_attr=nil, select_fields=nil
     @objects_for ||= {}
 
     raise ArgumentError, 'Argument is not a data class' unless dataclass.is_a? Class
@@ -1269,7 +1270,7 @@ class ApplicationController < ActionController::Base
       end
     else
       key_prefix = "request_#{Thread.current.object_id}_#{dataclass.to_s}_"
-      dataclass.where(uuid: uuids).each do |obj|
+      dataclass.where(uuid: uuids).select(select_fields).each do |obj|
         @objects_for[obj.uuid] = obj
         if dataclass == Collection
           # The collecions#index defaults to "all attributes except manifest_text"
