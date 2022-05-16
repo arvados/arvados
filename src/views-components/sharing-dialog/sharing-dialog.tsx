@@ -10,7 +10,8 @@ import {
     saveSharingDialogChanges,
     connectSharingDialogProgress,
     SharingDialogData,
-    createSharingToken
+    createSharingToken,
+    initializeManagementForm
 } from 'store/sharing-dialog/sharing-dialog-actions';
 import { WithDialogProps } from 'store/dialog/with-dialog';
 import SharingDialogComponent, {
@@ -44,6 +45,9 @@ const mapDispatchToProps = (dispatch: Dispatch, { ...props }: Props): SharingDia
     },
     onCreateSharingToken: () => {
         dispatch<any>(createSharingToken);
+    },
+    refreshPermissions: () => {
+        dispatch<any>(initializeManagementForm);
     }
 });
 

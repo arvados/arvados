@@ -19,7 +19,6 @@ import { SHARING_MANAGEMENT_FORM_NAME } from 'store/sharing-dialog/sharing-dialo
 import { RootState } from 'store/store';
 import { getDialog } from 'store/dialog/dialog-reducer';
 import { PermissionLevel } from 'models/permission';
-import { PermissionResource } from 'models/permission';
 import { differenceWith } from "lodash";
 import { withProgress } from "store/progress-indicator/with-progress";
 import { progressIndicatorActions } from 'store/progress-indicator/progress-indicator-actions';
@@ -117,8 +116,7 @@ const loadSharingDialog = async (dispatch: Dispatch, getState: () => RootState, 
         dispatch(progressIndicatorActions.START_WORKING(SHARING_DIALOG_NAME));
         try {
             const resourceUuid = dialog.data.resourceUuid;
-            const { items } = await permissionService.listResourcePermissions(resourceUuid);
-            await dispatch<any>(initializeManagementForm(items));
+            await dispatch<any>(initializeManagementForm);
             // For collections, we need to load the public sharing tokens
             if (extractUuidObjectType(resourceUuid) === ResourceObjectType.COLLECTION) {
                 const sharingTokens = await apiClientAuthorizationService.listCollectionSharingTokens(resourceUuid);
@@ -136,9 +134,15 @@ const loadSharingDialog = async (dispatch: Dispatch, getState: () => RootState, 
     }
 };
 
-const initializeManagementForm = (permissionLinks: PermissionResource[]) =>
-    async (dispatch: Dispatch, getState: () => RootState, { userService, groupsService }: ServiceRepository) => {
+export const initializeManagementForm = async (dispatch: Dispatch, getState: () => RootState, { userService, groupsService, permissionService }: ServiceRepository) => {
 
+        const dialog = getDialog<SharingDialogData>(getState().dialog, SHARING_DIALOG_NAME);
+        if (!dialog) {
+            return;
+        }
+        dispatch(progressIndicatorActions.START_WORKING(SHARING_DIALOG_NAME));
+        const resourceUuid = dialog?.data.resourceUuid;
+        const { items: permissionLinks } = await permissionService.listResourcePermissions(resourceUuid);
         const filters = new FilterBuilder()
             .addIn('uuid', permissionLinks.map(({ tailUuid }) => tailUuid))
             .getFilters();
@@ -169,6 +173,7 @@ const initializeManagementForm = (permissionLinks: PermissionResource[]) =>
         };
 
         dispatch(initialize(SHARING_MANAGEMENT_FORM_NAME, managementFormData));
+        dispatch(progressIndicatorActions.STOP_WORKING(SHARING_DIALOG_NAME));
     };
 
 const saveManagementChanges = async (_: Dispatch, getState: () => RootState, { permissionService }: ServiceRepository) => {

@@ -38,6 +38,7 @@ export interface SharingDialogActionProps {
     onClose: () => void;
     onSave: () => void;
     onCreateSharingToken: () => void;
+    refreshPermissions: () => void;
 }
 enum SharingDialogTab {
     PERMISSIONS = 0,
@@ -45,7 +46,7 @@ enum SharingDialogTab {
 }
 export default (props: SharingDialogDataProps & SharingDialogActionProps) => {
     const { open, loading, saveEnabled, sharedResourceUuid,
-        onClose, onSave, onCreateSharingToken } = props;
+        onClose, onSave, onCreateSharingToken, refreshPermissions } = props;
     const showTabs = extractUuidObjectType(sharedResourceUuid) === ResourceObjectType.COLLECTION;
     const [tabNr, setTabNr] = React.useState<number>(SharingDialogTab.PERMISSIONS);
 
@@ -65,7 +66,13 @@ export default (props: SharingDialogDataProps & SharingDialogActionProps) => {
             Sharing settings
         </DialogTitle>
         { showTabs &&
-        <Tabs value={tabNr} onChange={(_, tb) => setTabNr(tb)}>
+        <Tabs value={tabNr}
+            onChange={(_, tb) => {
+                if (tb === SharingDialogTab.PERMISSIONS) {
+                    refreshPermissions();
+                }
+                setTabNr(tb)}
+            }>
             <Tab label="With users/groups" />
             <Tab label="Sharing URLs" disabled={saveEnabled} />
         </Tabs>
