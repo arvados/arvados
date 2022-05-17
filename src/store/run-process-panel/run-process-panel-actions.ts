@@ -103,11 +103,13 @@ export const setWorkflow = (workflow: WorkflowResource, isWorkflowChanged = true
             dispatch(runProcessPanelActions.SET_STEP_CHANGED(false));
             dispatch(runProcessPanelActions.SET_SELECTED_WORKFLOW(workflow));
             dispatch<any>(loadPresets(workflow.uuid));
+            dispatch(initialize(RUN_PROCESS_BASIC_FORM, { name: workflow.name }));
             dispatch(initialize(RUN_PROCESS_ADVANCED_FORM, advancedFormValues));
         }
         if (!isWorkflowChanged) {
             dispatch(runProcessPanelActions.SET_SELECTED_WORKFLOW(workflow));
             dispatch<any>(loadPresets(workflow.uuid));
+            dispatch(initialize(RUN_PROCESS_BASIC_FORM, { name: workflow.name }));
             dispatch(initialize(RUN_PROCESS_ADVANCED_FORM, advancedFormValues));
         }
     };
@@ -173,9 +175,9 @@ export const runProcess = async (dispatch: Dispatch<any>, getState: () => RootSt
             ],
             outputPath: '/var/spool/cwl',
             priority: 1,
-            outputName: advancedForm[OUTPUT_FIELD] ? advancedForm[OUTPUT_FIELD] : undefined,
+            outputName: advancedForm[OUTPUT_FIELD] ? advancedForm[OUTPUT_FIELD] : `Output from ${basicForm.name}`,
             properties: {
-                workflowUuid: selectedWorkflow.uuid,
+                template_uuid: selectedWorkflow.uuid,
                 workflowName: selectedWorkflow.name
             },
             useExisting: false

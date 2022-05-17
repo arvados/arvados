@@ -74,7 +74,7 @@ export const ProcessDetailsAttributes = withStyles(styles, { withTheme: true })(
                 </Grid>
                 <Grid item xs={12} md={mdSize}>
                     <DetailsAttribute label='Docker Image locator'
-                    linkToUuid={containerRequest.containerImage} value={containerRequest.containerImage} />
+                        linkToUuid={containerRequest.containerImage} value={containerRequest.containerImage} />
                 </Grid>
                 <Grid item xs={12} md={mdSize}>
                     <DetailsAttribute
@@ -85,7 +85,7 @@ export const ProcessDetailsAttributes = withStyles(styles, { withTheme: true })(
                     <DetailsAttribute label='Container UUID' value={containerRequest.containerUuid} />
                 </Grid>
                 {!props.hideProcessPanelRedundantFields && <Grid item xs={12} md={mdSize}>
-                    <DetailsAttribute label='Status' value={getProcessStatus({containerRequest, container})} />
+                    <DetailsAttribute label='Status' value={getProcessStatus({ containerRequest, container })} />
                 </Grid>}
                 <Grid item xs={12} md={mdSize}>
                     <DetailsAttribute label='Created at' value={formatDate(containerRequest.createdAt)} />
@@ -112,13 +112,13 @@ export const ProcessDetailsAttributes = withStyles(styles, { withTheme: true })(
                         <DetailsAttribute classLabel={classes.link} label='Inputs' />
                     </span>
                 </Grid>
-                {containerRequest.properties.workflowUuid &&
-                <Grid item xs={12} md={mdSize}>
-                    <span onClick={() => props.openWorkflow(containerRequest.properties.workflowUuid)}>
-                        <DetailsAttribute classValue={classes.link}
-                            label='Workflow' value={containerRequest.properties.workflowName} />
-                    </span>
-                </Grid>}
+                {containerRequest.properties.template_uuid &&
+                    <Grid item xs={12} md={mdSize}>
+                        <span onClick={() => props.openWorkflow(containerRequest.properties.template_uuid)}>
+                            <DetailsAttribute classValue={classes.link}
+                                label='Workflow' value={containerRequest.properties.workflowName} />
+                        </span>
+                    </Grid>}
                 <Grid item xs={12} md={mdSize}>
                     <DetailsAttribute label='Priority' value={containerRequest.priority} />
                 </Grid>
@@ -128,13 +128,13 @@ export const ProcessDetailsAttributes = withStyles(styles, { withTheme: true })(
                 */}
                 <Grid item xs={12} md={12}>
                     <DetailsAttribute label='Properties' />
-                    { Object.keys(containerRequest.properties).length > 0
+                    {Object.keys(containerRequest.properties).length > 0
                         ? Object.keys(containerRequest.properties).map(k =>
-                                Array.isArray(containerRequest.properties[k])
+                            Array.isArray(containerRequest.properties[k])
                                 ? containerRequest.properties[k].map((v: string) =>
                                     getPropertyChip(k, v, undefined, classes.propertyTag))
                                 : getPropertyChip(k, containerRequest.properties[k], undefined, classes.propertyTag))
-                        : <div>No properties</div> }
+                        : <div>No properties</div>}
                 </Grid>
             </Grid>;
         }

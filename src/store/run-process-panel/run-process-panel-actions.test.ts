@@ -122,7 +122,7 @@ describe("run-process-panel-actions", () => {
                 priority: 1,
                 properties: {
                     workflowName: "revsort.cwl",
-                    workflowUuid: "ce8i5-7fd4e-2tlnerdkxnl4fjt",
+                    template_uuid: "ce8i5-7fd4e-2tlnerdkxnl4fjt",
                 },
                 runtimeConstraints: {
                     API: true,
