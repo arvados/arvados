@@ -8,7 +8,7 @@
 # conformance tests.
 #
 
-set -e
+set -ex
 
 if ! arv-get d7514270f356df848477718d58308cc4+94 > /dev/null ; then
     arv-put --portable-data-hash testdir/*
@@ -24,7 +24,7 @@ if ! arv-get 20850f01122e860fb878758ac1320877+71 > /dev/null ; then
 fi
 
 # Use the python executor associated with the installed OS package, if present.
-python=$(((ls /usr/share/python3*/dist/python3-arvados-cwl-runner/bin/python || echo python) | head -n1) 2>/dev/null)
+python=$(((ls /usr/share/python3*/dist/python3-arvados-cwl-runner/bin/python || echo python3) | head -n1) 2>/dev/null)
 
 # Test for #18888
 # This is a standalone test because the bug was observed with this
