@@ -83,6 +83,12 @@ fi
 
 arvbox start $config $tag
 
+# Copy the integration test suite from our local arvados clone instead
+# of using the one inside the container, so we can make changes to the
+# integration tests without necessarily having to rebuilding the
+# container image.
+docker cp -L $(readlink -f $(dirname $0)/tests) $ARVBOX_CONTAINER:/usr/src/arvados/sdk/cwl
+
 arvbox pipe <<EOF
 set -eu -o pipefail
 
@@ -134,25 +140,6 @@ export ARVADOS_API_TOKEN=\$(cat /var/lib/arvados-arvbox/superuser_token)
 
 if test -n "$build" ; then
   /usr/src/arvados/build/build-dev-docker-jobs-image.sh
-elif test "$tag" = "latest" ; then
-  arv-keepdocker --pull arvados/jobs $tag
-else
-  set +u
-  export WORKSPACE=/usr/src/arvados
-  . /usr/src/arvados/build/run-library.sh
-  TMPHERE=\$(pwd)
-  cd /usr/src/arvados
-
-  # This defines python_sdk_version and cwl_runner_version with python-style
-  # package suffixes (.dev/rc)
-  calculate_python_sdk_cwl_package_versions
-
-  cd \$TMPHERE
-  set -u
-
-  arv-keepdocker --pull arvados/jobs \$cwl_runner_version
-  docker tag arvados/jobs:\$cwl_runner_version arvados/jobs:latest
-  arv-keepdocker arvados/jobs latest
 fi
 
 EXTRA=--compute-checksum
@@ -162,13 +149,29 @@ if [[ $devcwl -eq 1 ]] ; then
 fi
 
 env
+
+# Skip docker_entrypoint test because it fails on singularity
+#
+# Skip timelimit_invalid_wf test because the timeout is very short
+# (5s) and singularity containers loading off an arv-mount take too long
+# to start and get incorrectly terminated
+#
+# Skip test 199 in the v1.1 suite because it has different output
+# depending on whether there is a pty associated with stdout (fixed in
+# the v1.2 suite)
+#
+# Skip test 307 in the v1.2 suite because the test relied on
+# secondary file behavior of cwltool that wasn't actually correct to specification
+
 if [[ "$suite" = "integration" ]] ; then
    cd /usr/src/arvados/sdk/cwl/tests
    exec ./arvados-tests.sh $@
 elif [[ "$suite" = "conformance-v1.2" ]] ; then
    exec cwltest --tool arvados-cwl-runner --test conformance_tests.yaml -Sdocker_entrypoint,timelimit_invalid_wf -N307 $@ -- \$EXTRA
-else
-   exec cwltest --tool arvados-cwl-runner --test conformance_tests.yaml -Sdocker_entrypoint,timelimit_invalid_wf $@ -- \$EXTRA
+elif [[ "$suite" = "conformance-v1.1" ]] ; then
+   exec cwltest --tool arvados-cwl-runner --test conformance_tests.yaml -Sdocker_entrypoint,timelimit_invalid_wf -N199 $@ -- \$EXTRA
+elif [[ "$suite" = "conformance-v1.0" ]] ; then
+   exec cwltest --tool arvados-cwl-runner --test v1.0/conformance_test_v1.0.yaml -Sdocker_entrypoint $@ -- \$EXTRA
 fi
 EOF
 
