@@ -83,7 +83,7 @@ fi
 
 arvbox start $config $tag
 
-docker cp $(readlink -f $(dirname $0)/tests) $ARVBOX_CONTAINER:/usr/src/arvados/sdk/cwl/tests
+docker cp -L $(readlink -f $(dirname $0)/tests) $ARVBOX_CONTAINER:/usr/src/arvados/sdk/cwl
 
 arvbox pipe <<EOF
 set -eu -o pipefail
@@ -136,25 +136,6 @@ export ARVADOS_API_TOKEN=\$(cat /var/lib/arvados-arvbox/superuser_token)
 
 if test -n "$build" ; then
   /usr/src/arvados/build/build-dev-docker-jobs-image.sh
-elif test "$tag" = "latest" ; then
-  arv-keepdocker --pull arvados/jobs $tag
-else
-  set +u
-  export WORKSPACE=/usr/src/arvados
-  . /usr/src/arvados/build/run-library.sh
-  TMPHERE=\$(pwd)
-  cd /usr/src/arvados
-
-  # This defines python_sdk_version and cwl_runner_version with python-style
-  # package suffixes (.dev/rc)
-  calculate_python_sdk_cwl_package_versions
-
-  cd \$TMPHERE
-  set -u
-
-  arv-keepdocker --pull arvados/jobs \$cwl_runner_version
-  docker tag arvados/jobs:\$cwl_runner_version arvados/jobs:latest
-  arv-keepdocker arvados/jobs latest
 fi
 
 EXTRA=--compute-checksum
