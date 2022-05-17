@@ -340,6 +340,7 @@ func (ldr *Loader) Load() (*arvados.Config, error) {
 			ldr.checkEnum("Containers.LocalKeepLogsToContainerLog", cc.Containers.LocalKeepLogsToContainerLog, "none", "all", "errors"),
 			ldr.checkEmptyKeepstores(cc),
 			ldr.checkUnlistedKeepstores(cc),
+			ldr.checkLocalKeepBlobBuffers(cc),
 			ldr.checkStorageClasses(cc),
 			ldr.checkCUDAVersions(cc),
 			// TODO: check non-empty Rendezvous on
@@ -433,6 +434,24 @@ cluster:
 		}
 		cc.StorageClasses = map[string]arvados.StorageClassConfig{"default": {Default: true}}
 		cfg.Clusters[id] = cc
+	}
+	return nil
+}
+
+func (ldr *Loader) checkLocalKeepBlobBuffers(cc arvados.Cluster) error {
+	kbb := cc.Containers.LocalKeepBlobBuffersPerVCPU
+	if kbb == 0 {
+		return nil
+	}
+	for uuid, vol := range cc.Volumes {
+		if len(vol.AccessViaHosts) > 0 {
+			ldr.Logger.Warnf("LocalKeepBlobBuffersPerVCPU is %d but will not be used because at least one volume (%s) uses AccessViaHosts -- suggest changing to 0", kbb, uuid)
+			return nil
+		}
+		if !vol.ReadOnly && vol.Replication < cc.Collections.DefaultReplication {
+			ldr.Logger.Warnf("LocalKeepBlobBuffersPerVCPU is %d but will not be used because at least one volume (%s) has lower replication than DefaultReplication (%d < %d) -- suggest changing to 0", kbb, uuid, vol.Replication, cc.Collections.DefaultReplication)
+			return nil
+		}
 	}
 	return nil
 }
