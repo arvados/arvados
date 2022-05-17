@@ -422,7 +422,7 @@ func (runner *ContainerRunner) SetupMounts() (map[string]bindmount, error) {
 		"--storage-classes", strings.Join(runner.Container.OutputStorageClasses, ","),
 		fmt.Sprintf("--crunchstat-interval=%v", runner.statInterval.Seconds())}
 
-	if runner.executor.Runtime() == "docker" {
+	if _, isdocker := runner.executor.(*dockerExecutor); isdocker {
 		arvMountCmd = append(arvMountCmd, "--allow-other")
 	}
 
@@ -1479,7 +1479,10 @@ func (runner *ContainerRunner) NewArvLogWriter(name string) (io.WriteCloser, err
 func (runner *ContainerRunner) Run() (err error) {
 	runner.CrunchLog.Printf("crunch-run %s started", cmd.Version.String())
 	runner.CrunchLog.Printf("%s", currentUserAndGroups())
-	runner.CrunchLog.Printf("Executing container '%s' using %s runtime", runner.Container.UUID, runner.executor.Runtime())
+	v, _ := exec.Command("arv-mount", "--version").CombinedOutput()
+	runner.CrunchLog.Printf("Using FUSE mount: %s", v)
+	runner.CrunchLog.Printf("Using container runtime: %s", runner.executor.Runtime())
+	runner.CrunchLog.Printf("Executing container: %s", runner.Container.UUID)
 
 	hostname, hosterr := os.Hostname()
 	if hosterr != nil {

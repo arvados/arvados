@@ -10,6 +10,7 @@ import (
 	"os"
 	"os/exec"
 	"sort"
+	"strings"
 	"syscall"
 	"time"
 
@@ -36,7 +37,13 @@ func newSingularityExecutor(logf func(string, ...interface{})) (*singularityExec
 	}, nil
 }
 
-func (e *singularityExecutor) Runtime() string { return "singularity" }
+func (e *singularityExecutor) Runtime() string {
+	buf, err := exec.Command("singularity", "--version").CombinedOutput()
+	if err != nil {
+		return "singularity (unknown version)"
+	}
+	return strings.TrimSuffix(string(buf), "\n")
+}
 
 func (e *singularityExecutor) getOrCreateProject(ownerUuid string, name string, containerClient *arvados.Client) (*arvados.Group, error) {
 	var gp arvados.GroupList

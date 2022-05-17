@@ -22,6 +22,7 @@ import (
 	"testing"
 	"time"
 
+	"git.arvados.org/arvados.git/lib/cmd"
 	"git.arvados.org/arvados.git/sdk/go/arvados"
 	"git.arvados.org/arvados.git/sdk/go/arvadosclient"
 	"git.arvados.org/arvados.git/sdk/go/arvadostest"
@@ -128,6 +129,7 @@ func (e *stubExecutor) LoadImage(imageId string, tarball string, container arvad
 	return e.loadErr
 }
 func (e *stubExecutor) Runtime() string                 { return "stub" }
+func (e *stubExecutor) Version() string                 { return "stub " + cmd.Version.String() }
 func (e *stubExecutor) Create(spec containerSpec) error { e.created = spec; return e.createErr }
 func (e *stubExecutor) Start() error                    { e.exit = make(chan int, 1); go e.runFunc(); return e.startErr }
 func (e *stubExecutor) CgroupID() string                { return "cgroupid" }
@@ -885,7 +887,8 @@ func (s *TestSuite) TestLogVersionAndRuntime(c *C) {
 	c.Assert(s.api.Logs["crunch-run"], NotNil)
 	c.Check(s.api.Logs["crunch-run"].String(), Matches, `(?ms).*crunch-run \S+ \(go\S+\) start.*`)
 	c.Check(s.api.Logs["crunch-run"].String(), Matches, `(?ms).*crunch-run process has uid=\d+\(.+\) gid=\d+\(.+\) groups=\d+\(.+\)(,\d+\(.+\))*\n.*`)
-	c.Check(s.api.Logs["crunch-run"].String(), Matches, `(?ms).*Executing container 'zzzzz-zzzzz-zzzzzzzzzzzzzzz' using stub runtime.*`)
+	c.Check(s.api.Logs["crunch-run"].String(), Matches, `(?ms).*Executing container: zzzzz-zzzzz-zzzzzzzzzzzzzzz.*`)
+	c.Check(s.api.Logs["crunch-run"].String(), Matches, `(?ms).*Using container runtime: stub.*`)
 }
 
 func (s *TestSuite) TestContainerRecordLog(c *C) {
