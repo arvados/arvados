@@ -51,7 +51,7 @@ func (s *integrationSuite) SetUpSuite(c *C) {
 
 	arvadostest.StartKeep(2, true)
 
-	out, err := exec.Command("docker", "load", "--input", busyboxDockerImage(c)).CombinedOutput()
+	out, err := exec.Command("docker", "load", "--input", arvadostest.BusyboxDockerImage(c)).CombinedOutput()
 	c.Log(string(out))
 	c.Assert(err, IsNil)
 	out, err = exec.Command("arv-keepdocker", "--no-resume", "busybox:uclibc").Output()
