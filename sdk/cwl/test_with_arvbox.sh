@@ -83,6 +83,8 @@ fi
 
 arvbox start $config $tag
 
+docker cp $(readlink -f $(dirname $0)/tests) $ARVBOX_CONTAINER:/usr/src/arvados/sdk/cwl/tests
+
 arvbox pipe <<EOF
 set -eu -o pipefail
 
@@ -170,7 +172,7 @@ elif [[ "$suite" = "conformance-v1.2" ]] ; then
 elif [[ "$suite" = "conformance-v1.1" ]] ; then
    exec cwltest --tool arvados-cwl-runner --test conformance_tests.yaml -Sdocker_entrypoint,timelimit_invalid_wf -N199 $@ -- \$EXTRA
 elif [[ "$suite" = "conformance-v1.0" ]] ; then
-   exec cwltest --tool arvados-cwl-runner --test v1.0/conformance_test_v1.0.yaml -Sdocker_entrypoint,timelimit_invalid_wf $@ -- \$EXTRA
+   exec cwltest --tool arvados-cwl-runner --test v1.0/conformance_test_v1.0.yaml -Sdocker_entrypoint $@ -- \$EXTRA
 fi
 EOF
 
