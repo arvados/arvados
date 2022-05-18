@@ -108,11 +108,12 @@ ADD $workdir/8D81803C0EBFCD88.asc /tmp/
 RUN apt-key add --no-tty /tmp/8D81803C0EBFCD88.asc && \
     rm -f /tmp/8D81803C0EBFCD88.asc
 
-RUN mkdir -p /etc/apt/sources.list.d && \
-    echo deb https://download.docker.com/linux/debian/ buster stable > /etc/apt/sources.list.d/docker.list && \
-    apt-get update && \
-    apt-get -yq --no-install-recommends install docker-ce=5:20.10.6~3-0~debian-buster && \
-    apt-get clean
+# docker is now installed by arvados-server install
+# RUN mkdir -p /etc/apt/sources.list.d && \
+#     echo deb https://download.docker.com/linux/debian/ buster stable > /etc/apt/sources.list.d/docker.list && \
+#     apt-get update && \
+#     apt-get -yq --no-install-recommends install docker-ce=5:20.10.6~3-0~debian-buster && \
+#     apt-get clean
 
 # Set UTF-8 locale
 RUN echo en_US.UTF-8 UTF-8 > /etc/locale.gen && locale-gen
