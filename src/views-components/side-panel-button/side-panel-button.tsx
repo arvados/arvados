@@ -107,7 +107,7 @@ export const SidePanelButton = withStyles(styles)(
                         <CollectionIcon className={classes.icon} /> New collection
                     </MenuItem>
                     <MenuItem data-cy='side-panel-run-process' className={classes.menuItem} onClick={this.handleRunProcessClick}>
-                        <ProcessIcon className={classes.icon} /> Run a process
+                        <ProcessIcon className={classes.icon} /> Run a workflow
                     </MenuItem>
                     <MenuItem data-cy='side-panel-new-project' className={classes.menuItem} onClick={this.handleNewProjectClick}>
                         <ProjectIcon className={classes.icon} /> New project
