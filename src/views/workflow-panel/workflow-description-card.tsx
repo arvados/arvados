@@ -14,13 +14,17 @@ import {
     TableHead,
     TableCell,
     TableBody,
-    TableRow
+    TableRow,
+    Grid,
 } from '@material-ui/core';
 import { ArvadosTheme } from 'common/custom-theme';
 import { WorkflowIcon } from 'components/icon/icon';
 import { DataTableDefaultView } from 'components/data-table-default-view/data-table-default-view';
 import { WorkflowResource, parseWorkflowDefinition, getWorkflowInputs, getInputLabel, stringifyInputType } from 'models/workflow';
-import { WorkflowGraph } from "views/workflow-panel/workflow-graph";
+// import { WorkflowGraph } from "views/workflow-panel/workflow-graph";
+import { DetailsAttribute } from 'components/details-attribute/details-attribute';
+import { ResourceOwnerWithName } from 'views-components/data-explorer/renderers';
+import { formatDate } from "common/formatters";
 
 export type CssRules = 'root' | 'tab' | 'inputTab' | 'graphTab' | 'graphTabWithChosenWorkflow' | 'descriptionTab' | 'inputsTable';
 
@@ -77,16 +81,17 @@ export const WorkflowDetailsCard = withStyles(styles)(
                 <Tabs value={value} onChange={this.handleChange} centered={true}>
                     <Tab className={classes.tab} label="Description" />
                     <Tab className={classes.tab} label="Inputs" />
-                    <Tab className={classes.tab} label="Graph" />
+                    <Tab className={classes.tab} label="Details" />
+                    {/* <Tab className={classes.tab} label="Graph" /> */}
                 </Tabs>
                 {value === 0 && <CardContent className={classes.descriptionTab}>
                     {workflow ? <div>
                         {workflow.description}
                     </div> : (
-                            <DataTableDefaultView
-                                icon={WorkflowIcon}
-                                messages={['Please select a workflow to see its description.']} />
-                        )}
+                        <DataTableDefaultView
+                            icon={WorkflowIcon}
+                            messages={['Please select a workflow to see its description.']} />
+                    )}
                 </CardContent>}
                 {value === 1 && <CardContent className={classes.inputTab}>
                     {workflow
@@ -96,12 +101,20 @@ export const WorkflowDetailsCard = withStyles(styles)(
                             messages={['Please select a workflow to see its inputs.']} />
                     }
                 </CardContent>}
+                {/* {value === 2 && <CardContent className={workflow ? classes.graphTabWithChosenWorkflow : classes.graphTab}>
+                    {workflow
+                    ? <WorkflowGraph workflow={workflow} />
+                    : <DataTableDefaultView
+                    icon={WorkflowIcon}
+                    messages={['Please select a workflow to see its visualisation.']} />
+                    }
+                    </CardContent>} */}
                 {value === 2 && <CardContent className={workflow ? classes.graphTabWithChosenWorkflow : classes.graphTab}>
                     {workflow
-                        ? <WorkflowGraph workflow={workflow} />
+                        ? <WorkflowDetailsAttributes workflow={workflow} />
                         : <DataTableDefaultView
                             icon={WorkflowIcon}
-                            messages={['Please select a workflow to see its visualisation.']} />
+                            messages={['Please select a workflow to see its details.']} />
                     }
                 </CardContent>}
             </div>;
@@ -137,3 +150,27 @@ export const WorkflowDetailsCard = withStyles(styles)(
             </Table>;
         }
     });
+
+export const WorkflowDetailsAttributes = ({ workflow }: WorkflowDetailsCardDataProps) => {
+    return <Grid container>
+        <DetailsAttribute
+            label={"Workflow UUID"}
+            linkToUuid={workflow?.uuid} />
+        <Grid item xs={12} >
+            <DetailsAttribute
+                label='Owner' linkToUuid={workflow?.ownerUuid}
+                uuidEnhancer={(uuid: string) => <ResourceOwnerWithName uuid={uuid} />} />
+        </Grid>
+        <Grid item xs={12}>
+            <DetailsAttribute label='Created at' value={formatDate(workflow?.createdAt)} />
+        </Grid>
+        <Grid item xs={12}>
+            <DetailsAttribute label='Last modified' value={formatDate(workflow?.modifiedAt)} />
+        </Grid>
+        <Grid item xs={12} >
+            <DetailsAttribute
+                label='Last modified by user' linkToUuid={workflow?.modifiedByUserUuid}
+                uuidEnhancer={(uuid: string) => <ResourceOwnerWithName uuid={uuid} />} />
+        </Grid>
+    </Grid >;
+};

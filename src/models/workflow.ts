@@ -153,7 +153,7 @@ export const getWorkflowInputs = (workflowDefinition: WorkflowResourceDefinition
 };
 
 export const getInputLabel = (input: CommandInputParameter) => {
-    return `${input.label || input.id}`;
+    return `${input.label || input.id.split('/').pop()}`;
 };
 
 export const isRequiredInput = ({ type }: CommandInputParameter) => {
