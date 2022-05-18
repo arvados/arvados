@@ -52,6 +52,7 @@ func (s *executorSuite) TearDownTest(c *C) {
 }
 
 func (s *executorSuite) TestExecTrivialContainer(c *C) {
+	c.Logf("Using container runtime: %s", s.executor.Runtime())
 	s.spec.Command = []string{"echo", "ok"}
 	s.checkRun(c, 0)
 	c.Check(s.stdout.String(), Equals, "ok\n")

@@ -55,6 +55,9 @@ Clusters:
       DispatchLSF:
         InternalURLs: {SAMPLE: {}}
         ExternalURL: ""
+      DispatchSLURM:
+        InternalURLs: {SAMPLE: {}}
+        ExternalURL: ""
       Keepproxy:
         InternalURLs: {SAMPLE: {}}
         ExternalURL: ""

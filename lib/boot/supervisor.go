@@ -365,7 +365,7 @@ func (super *Supervisor) runCluster() error {
 		runNginx{},
 		runServiceCommand{name: "controller", svc: super.cluster.Services.Controller, depends: []supervisedTask{seedDatabase{}}},
 		runServiceCommand{name: "git-httpd", svc: super.cluster.Services.GitHTTP},
-		runGoProgram{src: "services/health", svc: super.cluster.Services.Health},
+		runServiceCommand{name: "health", svc: super.cluster.Services.Health},
 		runServiceCommand{name: "keepproxy", svc: super.cluster.Services.Keepproxy, depends: []supervisedTask{runPassenger{src: "services/api"}}},
 		runServiceCommand{name: "keepstore", svc: super.cluster.Services.Keepstore},
 		runServiceCommand{name: "keep-web", svc: super.cluster.Services.WebDAV},

@@ -48,5 +48,5 @@ func (s *singularityStubSuite) TestSingularityExecArgs(c *C) {
 	e.imageFilename = "/fake/image.sif"
 	cmd := e.execCmd("./singularity")
 	c.Check(cmd.Args, DeepEquals, []string{"./singularity", "exec", "--containall", "--cleanenv", "--pwd", "/WorkingDir", "--net", "--network=none", "--nv", "--bind", "/hostpath:/mnt:ro", "/fake/image.sif"})
-	c.Check(cmd.Env, DeepEquals, []string{"SINGULARITYENV_FOO=bar"})
+	c.Check(cmd.Env, DeepEquals, []string{"SINGULARITYENV_FOO=bar", "SINGULARITY_NO_EVAL=1"})
 }

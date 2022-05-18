@@ -46,7 +46,20 @@ func newDockerExecutor(containerUUID string, logf func(string, ...interface{}), 
 	}, err
 }
 
-func (e *dockerExecutor) Runtime() string { return "docker" }
+func (e *dockerExecutor) Runtime() string {
+	v, _ := e.dockerclient.ServerVersion(context.Background())
+	info := ""
+	for _, cv := range v.Components {
+		if info != "" {
+			info += ", "
+		}
+		info += cv.Name + " " + cv.Version
+	}
+	if info == "" {
+		info = "(unknown version)"
+	}
+	return "docker " + info
+}
 
 func (e *dockerExecutor) LoadImage(imageID string, imageTarballPath string, container arvados.Container, arvMountPoint string,
 	containerClient *arvados.Client) error {

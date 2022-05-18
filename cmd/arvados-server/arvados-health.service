@@ -3,21 +3,22 @@
 # SPDX-License-Identifier: AGPL-3.0
 
 [Unit]
-Description=Arvados Crunch Dispatcher for SLURM
+Description=Arvados healthcheck server
 Documentation=https://doc.arvados.org/
 After=network.target
+AssertPathExists=/etc/arvados/config.yml
 
 # systemd>=230 (debian:9) obeys StartLimitIntervalSec in the [Unit] section
 StartLimitIntervalSec=0
 
 [Service]
 Type=notify
-ExecStart=/usr/bin/crunch-dispatch-slurm
+EnvironmentFile=-/etc/arvados/environment
+ExecStart=/usr/bin/arvados-health
 # Set a reasonable default for the open file limit
 LimitNOFILE=65536
 Restart=always
 RestartSec=1
-LimitNOFILE=1000000
 
 # systemd<=219 (centos:7, debian:8, ubuntu:trusty) obeys StartLimitInterval in the [Service] section
 StartLimitInterval=0

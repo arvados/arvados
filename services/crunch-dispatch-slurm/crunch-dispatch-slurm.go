@@ -2,31 +2,47 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-package main
-
 // Dispatcher service for Crunch that submits containers to the slurm queue.
+package dispatchslurm
 
 import (
 	"context"
-	"flag"
 	"fmt"
 	"log"
 	"math"
+	"net/http"
 	"os"
 	"regexp"
 	"strings"
 	"time"
 
 	"git.arvados.org/arvados.git/lib/cmd"
-	"git.arvados.org/arvados.git/lib/config"
 	"git.arvados.org/arvados.git/lib/dispatchcloud"
+	"git.arvados.org/arvados.git/lib/service"
 	"git.arvados.org/arvados.git/sdk/go/arvados"
 	"git.arvados.org/arvados.git/sdk/go/arvadosclient"
+	"git.arvados.org/arvados.git/sdk/go/ctxlog"
 	"git.arvados.org/arvados.git/sdk/go/dispatch"
 	"github.com/coreos/go-systemd/daemon"
-	"github.com/ghodss/yaml"
+	"github.com/prometheus/client_golang/prometheus"
 	"github.com/sirupsen/logrus"
 )
+
+var Command cmd.Handler = service.Command(arvados.ServiceNameDispatchSLURM, newHandler)
+
+func newHandler(ctx context.Context, cluster *arvados.Cluster, _ string, _ *prometheus.Registry) service.Handler {
+	logger := ctxlog.FromContext(ctx)
+	disp := &Dispatcher{logger: logger, cluster: cluster}
+	if err := disp.configure(); err != nil {
+		return service.ErrorHandler(ctx, cluster, err)
+	}
+	disp.setup()
+	go func() {
+		disp.err = disp.run()
+		close(disp.done)
+	}()
+	return disp
+}
 
 type logger interface {
 	dispatch.Logger
@@ -35,10 +51,6 @@ type logger interface {
 
 const initialNiceValue int64 = 10000
 
-var (
-	version = "dev"
-)
-
 type Dispatcher struct {
 	*dispatch.Dispatcher
 	logger  logrus.FieldLogger
@@ -46,75 +58,32 @@ type Dispatcher struct {
 	sqCheck *SqueueChecker
 	slurm   Slurm
 
+	done chan struct{}
+	err  error
+
 	Client arvados.Client
 }
 
-func main() {
-	logger := logrus.StandardLogger()
-	if os.Getenv("DEBUG") != "" {
-		logger.SetLevel(logrus.DebugLevel)
-	}
-	logger.Formatter = &logrus.JSONFormatter{
-		TimestampFormat: "2006-01-02T15:04:05.000000000Z07:00",
-	}
-	disp := &Dispatcher{logger: logger}
-	err := disp.Run(os.Args[0], os.Args[1:])
-	if err != nil {
-		logrus.Fatalf("%s", err)
-	}
+func (disp *Dispatcher) CheckHealth() error {
+	return disp.err
 }
 
-func (disp *Dispatcher) Run(prog string, args []string) error {
-	if err := disp.configure(prog, args); err != nil {
-		return err
-	}
-	disp.setup()
-	return disp.run()
+func (disp *Dispatcher) Done() <-chan struct{} {
+	return disp.done
 }
 
-// configure() loads config files. Tests skip this.
-func (disp *Dispatcher) configure(prog string, args []string) error {
+func (disp *Dispatcher) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	http.NotFound(w, r)
+}
+
+// configure() loads config files. Some tests skip this (see
+// StubbedSuite).
+func (disp *Dispatcher) configure() error {
 	if disp.logger == nil {
 		disp.logger = logrus.StandardLogger()
 	}
-	flags := flag.NewFlagSet(prog, flag.ContinueOnError)
-	flags.Usage = func() { usage(flags) }
-
-	loader := config.NewLoader(nil, disp.logger)
-	loader.SetupFlags(flags)
-
-	dumpConfig := flag.Bool(
-		"dump-config",
-		false,
-		"write current configuration to stdout and exit")
-	getVersion := flags.Bool(
-		"version",
-		false,
-		"Print version information and exit.")
-
-	args = loader.MungeLegacyConfigArgs(disp.logger, args, "-legacy-crunch-dispatch-slurm-config")
-	if ok, code := cmd.ParseFlags(flags, prog, args, "", os.Stderr); !ok {
-		os.Exit(code)
-	}
-
-	// Print version information if requested
-	if *getVersion {
-		fmt.Printf("crunch-dispatch-slurm %s\n", version)
-		return nil
-	}
-
-	disp.logger.Printf("crunch-dispatch-slurm %s started", version)
-
-	cfg, err := loader.Load()
-	if err != nil {
-		return err
-	}
-
-	if disp.cluster, err = cfg.GetCluster(""); err != nil {
-		return fmt.Errorf("config error: %s", err)
-	}
-
 	disp.logger = disp.logger.WithField("ClusterID", disp.cluster.ClusterID)
+	disp.logger.Printf("crunch-dispatch-slurm %s started", cmd.Version.String())
 
 	disp.Client.APIHost = disp.cluster.Services.Controller.ExternalURL.Host
 	disp.Client.AuthToken = disp.cluster.SystemRootToken
@@ -137,23 +106,12 @@ func (disp *Dispatcher) configure(prog string, args []string) error {
 	} else {
 		disp.logger.Warnf("Client credentials missing from config, so falling back on environment variables (deprecated).")
 	}
-
-	if *dumpConfig {
-		out, err := yaml.Marshal(cfg)
-		if err != nil {
-			return err
-		}
-		_, err = os.Stdout.Write(out)
-		if err != nil {
-			return err
-		}
-	}
-
 	return nil
 }
 
 // setup() initializes private fields after configure().
 func (disp *Dispatcher) setup() {
+	disp.done = make(chan struct{})
 	arv, err := arvadosclient.MakeArvadosClient()
 	if err != nil {
 		disp.logger.Fatalf("Error making Arvados client: %v", err)

@@ -248,13 +248,13 @@ package_go_binary cmd/arvados-server arvados-git-httpd "$FORMAT" "$ARCH" \
     "Provide authenticated http access to Arvados-hosted git repositories"
 package_go_binary services/crunch-dispatch-local crunch-dispatch-local "$FORMAT" "$ARCH" \
     "Dispatch Crunch containers on the local system"
-package_go_binary services/crunch-dispatch-slurm crunch-dispatch-slurm "$FORMAT" "$ARCH" \
+package_go_binary cmd/arvados-server crunch-dispatch-slurm "$FORMAT" "$ARCH" \
     "Dispatch Crunch containers to a SLURM cluster"
 package_go_binary cmd/arvados-server crunch-run "$FORMAT" "$ARCH" \
     "Supervise a single Crunch container"
 package_go_binary services/crunchstat crunchstat "$FORMAT" "$ARCH" \
     "Gather cpu/memory/network statistics of running Crunch jobs"
-package_go_binary services/health arvados-health "$FORMAT" "$ARCH" \
+package_go_binary cmd/arvados-server arvados-health "$FORMAT" "$ARCH" \
     "Check health of all Arvados cluster services"
 package_go_binary cmd/arvados-server keep-balance "$FORMAT" "$ARCH" \
     "Rebalance and garbage-collect data blocks stored in Arvados Keep"

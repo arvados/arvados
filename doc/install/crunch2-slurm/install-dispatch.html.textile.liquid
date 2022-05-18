@@ -26,9 +26,18 @@ This assumes you already have a Slurm cluster, and have set up all of your compu
 
 The Arvados Slurm dispatcher can run on any node that can submit requests to both the Arvados API server and the Slurm controller (via @sbatch@).  It is not resource-intensive, so you can run it on the API server node.
 
-h2(#update-config). Update config.yml (optional)
+h2(#update-config). Update config.yml
 
-Crunch-dispatch-slurm reads the common configuration file at @config.yml@.
+Crunch-dispatch-slurm reads the common configuration file at @/etc/arvados/config.yml@.
+
+Add a DispatchSLURM entry to the Services section, using the hostname where @crunch-dispatch-slurm@ will run, and an available port:
+
+<notextile>
+<pre>    Services:
+      DispatchSLURM:
+        InternalURLs:
+          "http://<code class="userinput">hostname.zzzzz.arvadosapi.com:9007</code>": {}</pre>
+</notextile>
 
 The following configuration parameters are optional.
 

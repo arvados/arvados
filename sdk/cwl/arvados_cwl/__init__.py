@@ -217,6 +217,10 @@ def arg_parser():  # type: () -> argparse.ArgumentParser
     exgroup.add_argument("--enable-preemptible", dest="enable_preemptible", default=None, action="store_true", help="Use preemptible instances. Control individual steps with arv:UsePreemptible hint.")
     exgroup.add_argument("--disable-preemptible", dest="enable_preemptible", default=None, action="store_false", help="Don't use preemptible instances.")
 
+    exgroup = parser.add_mutually_exclusive_group()
+    exgroup.add_argument("--copy-deps", dest="copy_deps", default=None, action="store_true", help="Copy dependencies into the destination project.")
+    exgroup.add_argument("--no-copy-deps", dest="copy_deps", default=None, action="store_false", help="Leave dependencies where they are.")
+
     parser.add_argument(
         "--skip-schemas",
         action="store_true",
@@ -363,5 +367,5 @@ def main(args=sys.argv[1:],
                              logger_handler=arvados.log_handler,
                              custom_schema_callback=add_arv_hints,
                              loadingContext=executor.loadingContext,
-                             runtimeContext=executor.runtimeContext,
+                             runtimeContext=executor.toplevel_runtimeContext,
                              input_required=not (arvargs.create_workflow or arvargs.update_workflow))

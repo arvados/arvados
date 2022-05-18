@@ -22,11 +22,15 @@ if test "$1" = "--only-deps" ; then
     exit
 fi
 
+API_HOST=${localip}:${services[controller-ssl]}
+
+if test -f /usr/src/workbench2/public/API_HOST ; then
+    API_HOST=$(cat /usr/src/workbench2/public/API_HOST)
+fi
+
 cat <<EOF > /usr/src/workbench2/public/config.json
 {
-  "API_HOST": "${localip}:${services[controller-ssl]}",
-  "VOCABULARY_URL": "/vocabulary-example.json",
-  "FILE_VIEWERS_CONFIG_URL": "/file-viewers-example.json"
+  "API_HOST": "$API_HOST"
 }
 EOF
 

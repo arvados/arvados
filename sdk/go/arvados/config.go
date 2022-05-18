@@ -348,6 +348,7 @@ type Services struct {
 	Controller     Service
 	DispatchCloud  Service
 	DispatchLSF    Service
+	DispatchSLURM  Service
 	GitHTTP        Service
 	GitSSH         Service
 	Health         Service
@@ -605,6 +606,7 @@ const (
 	ServiceNameController    ServiceName = "arvados-controller"
 	ServiceNameDispatchCloud ServiceName = "arvados-dispatch-cloud"
 	ServiceNameDispatchLSF   ServiceName = "arvados-dispatch-lsf"
+	ServiceNameDispatchSLURM ServiceName = "crunch-dispatch-slurm"
 	ServiceNameGitHTTP       ServiceName = "arvados-git-httpd"
 	ServiceNameHealth        ServiceName = "arvados-health"
 	ServiceNameKeepbalance   ServiceName = "keep-balance"
@@ -624,6 +626,7 @@ func (svcs Services) Map() map[ServiceName]Service {
 		ServiceNameController:    svcs.Controller,
 		ServiceNameDispatchCloud: svcs.DispatchCloud,
 		ServiceNameDispatchLSF:   svcs.DispatchLSF,
+		ServiceNameDispatchSLURM: svcs.DispatchSLURM,
 		ServiceNameGitHTTP:       svcs.GitHTTP,
 		ServiceNameHealth:        svcs.Health,
 		ServiceNameKeepbalance:   svcs.Keepbalance,

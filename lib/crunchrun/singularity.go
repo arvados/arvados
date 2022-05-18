@@ -10,6 +10,7 @@ import (
 	"os"
 	"os/exec"
 	"sort"
+	"strings"
 	"syscall"
 	"time"
 
@@ -36,7 +37,13 @@ func newSingularityExecutor(logf func(string, ...interface{})) (*singularityExec
 	}, nil
 }
 
-func (e *singularityExecutor) Runtime() string { return "singularity" }
+func (e *singularityExecutor) Runtime() string {
+	buf, err := exec.Command("singularity", "--version").CombinedOutput()
+	if err != nil {
+		return "singularity (unknown version)"
+	}
+	return strings.TrimSuffix(string(buf), "\n")
+}
 
 func (e *singularityExecutor) getOrCreateProject(ownerUuid string, name string, containerClient *arvados.Client) (*arvados.Group, error) {
 	var gp arvados.GroupList
@@ -292,6 +299,14 @@ func (e *singularityExecutor) execCmd(path string) *exec.Cmd {
 		// us to select specific devices we need to propagate that.
 		env = append(env, "SINGULARITYENV_CUDA_VISIBLE_DEVICES="+cudaVisibleDevices)
 	}
+	// Singularity's default behavior is to evaluate each
+	// SINGULARITYENV_* env var with a shell as a double-quoted
+	// string and pass the result to the contained
+	// process. Singularity 3.10+ has an option to pass env vars
+	// through literally without evaluating, which is what we
+	// want. See https://github.com/sylabs/singularity/pull/704
+	// and https://dev.arvados.org/issues/19081
+	env = append(env, "SINGULARITY_NO_EVAL=1")
 
 	args = append(args, e.imageFilename)
 	args = append(args, e.spec.Command...)
