@@ -109,7 +109,7 @@ export const WorkflowDetailsCard = withStyles(styles)(
                     messages={['Please select a workflow to see its visualisation.']} />
                     }
                     </CardContent>} */}
-                {value === 2 && <CardContent className={workflow ? classes.graphTabWithChosenWorkflow : classes.graphTab}>
+                {value === 2 && <CardContent className={classes.descriptionTab}>
                     {workflow
                         ? <WorkflowDetailsAttributes workflow={workflow} />
                         : <DataTableDefaultView
@@ -153,9 +153,11 @@ export const WorkflowDetailsCard = withStyles(styles)(
 
 export const WorkflowDetailsAttributes = ({ workflow }: WorkflowDetailsCardDataProps) => {
     return <Grid container>
-        <DetailsAttribute
-            label={"Workflow UUID"}
-            linkToUuid={workflow?.uuid} />
+        <Grid item xs={12} >
+            <DetailsAttribute
+                label={"Workflow UUID"}
+                linkToUuid={workflow?.uuid} />
+        </Grid>
         <Grid item xs={12} >
             <DetailsAttribute
                 label='Owner' linkToUuid={workflow?.ownerUuid}
