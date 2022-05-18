@@ -177,7 +177,16 @@ func (s *executorSuite) TestExecStdoutStderr(c *C) {
 }
 
 func (s *executorSuite) TestIPAddress(c *C) {
-	s.spec.Command = []string{"nc", "-l", "-p", "1951", "-e", "printf", `HTTP/1.1 418 I'm a teapot\r\n\r\n`}
+	// Listen on an available port on the host.
+	ln, err := net.Listen("tcp", net.JoinHostPort("0.0.0.0", "0"))
+	c.Assert(err, IsNil)
+	defer ln.Close()
+	_, port, err := net.SplitHostPort(ln.Addr().String())
+	c.Assert(err, IsNil)
+
+	// Start a container that listens on the same port number that
+	// is already in use on the host.
+	s.spec.Command = []string{"nc", "-l", "-p", port, "-e", "printf", `HTTP/1.1 418 I'm a teapot\r\n\r\n`}
 	s.spec.EnableNetwork = true
 	c.Assert(s.executor.Create(s.spec), IsNil)
 	c.Assert(s.executor.Start(), IsNil)
@@ -193,9 +202,13 @@ func (s *executorSuite) TestIPAddress(c *C) {
 			break
 		}
 	}
+	// When we connect to the port using s.executor.IPAddress(),
+	// we should reach the nc process running inside the
+	// container, not the net.Listen() running outside the
+	// container, even though both listen on the same port.
 	ip, err := s.executor.IPAddress()
 	if c.Check(err, IsNil) && c.Check(ip, Not(Equals), "") {
-		req, err := http.NewRequest("BREW", "http://"+net.JoinHostPort(ip, "1951"), nil)
+		req, err := http.NewRequest("BREW", "http://"+net.JoinHostPort(ip, port), nil)
 		c.Assert(err, IsNil)
 		resp, err := http.DefaultClient.Do(req)
 		c.Assert(err, IsNil)
