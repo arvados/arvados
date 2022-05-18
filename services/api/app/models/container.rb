@@ -478,7 +478,7 @@ class Container < ArvadosModel
 
   def validate_change
     permitted = [:state]
-    progress_attrs = [:progress, :runtime_status, :log, :output]
+    progress_attrs = [:progress, :runtime_status, :log, :output, :output_properties]
     final_attrs = [:exit_code, :finished_at]
 
     if self.new_record?
@@ -487,7 +487,7 @@ class Container < ArvadosModel
                      :runtime_constraints, :scheduling_parameters,
                      :secret_mounts, :runtime_token,
                      :runtime_user_uuid, :runtime_auth_scopes,
-                     :output_storage_classes, :output_properties)
+                     :output_storage_classes)
     end
 
     case self.state
