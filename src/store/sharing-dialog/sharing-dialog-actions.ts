@@ -61,14 +61,14 @@ export interface SharingDialogData {
     refresh: () => void;
 }
 
-export const createSharingToken = async (dispatch: Dispatch, getState: () => RootState, { apiClientAuthorizationService }: ServiceRepository) => {
+export const createSharingToken = (expDate: Date | undefined) => async (dispatch: Dispatch, getState: () => RootState, { apiClientAuthorizationService }: ServiceRepository) => {
     const dialog = getDialog<SharingDialogData>(getState().dialog, SHARING_DIALOG_NAME);
     if (dialog) {
         const resourceUuid = dialog.data.resourceUuid;
         if (extractUuidObjectType(resourceUuid) === ResourceObjectType.COLLECTION) {
             dispatch(progressIndicatorActions.START_WORKING(SHARING_DIALOG_NAME));
             try {
-                const sharingToken = await apiClientAuthorizationService.createCollectionSharingToken(resourceUuid);
+                const sharingToken = await apiClientAuthorizationService.createCollectionSharingToken(resourceUuid, expDate);
                 dispatch(resourcesActions.SET_RESOURCES([sharingToken]));
                 dispatch(snackbarActions.OPEN_SNACKBAR({
                     message: 'Sharing URL created',

@@ -14,17 +14,20 @@ export class ApiClientAuthorizationService extends CommonService<ApiClientAuthor
         super(serverApi, "api_client_authorizations", actions);
     }
 
-    createCollectionSharingToken(uuid: string): Promise<ApiClientAuthorization> {
+    createCollectionSharingToken(uuid: string, expDate: Date | undefined): Promise<ApiClientAuthorization> {
         if (extractUuidObjectType(uuid) !== ResourceObjectType.COLLECTION) {
             throw new Error(`UUID ${uuid} is not a collection`);
         }
-        return this.create({
+        const data = {
             scopes: [
                 `GET /arvados/v1/collections/${uuid}`,
                 `GET /arvados/v1/collections/${uuid}/`,
                 `GET /arvados/v1/keep_services/accessible`,
             ]
-        });
+        }
+        return expDate !== undefined
+            ? this.create({...data, expiresAt: expDate.toUTCString()})
+            : this.create(data);
     }
 
     listCollectionSharingTokens(uuid: string): Promise<ListResults<ApiClientAuthorization>> {

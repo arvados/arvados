@@ -24,7 +24,7 @@ describe('ApiClientAuthorizationService', () => {
             expect(() => apiClientAuthorizationService.createCollectionSharingToken("foo")).toThrowError("UUID foo is not a collection");
         });
 
-        it('should make a create request with proper scopes', async () => {
+        it('should make a create request with proper scopes and no expiration date', async () => {
             serverApi.post = jest.fn(() => Promise.resolve(
                 { data: { uuid: 'zzzzz-4zz18-0123456789abcde' } }
             ));
@@ -37,6 +37,25 @@ describe('ApiClientAuthorizationService', () => {
                         `GET /arvados/v1/collections/${uuid}/`,
                         `GET /arvados/v1/keep_services/accessible`,
                     ]
+                }
+            );
+        });
+
+        it('should make a create request with proper scopes and expiration date', async () => {
+            serverApi.post = jest.fn(() => Promise.resolve(
+                { data: { uuid: 'zzzzz-4zz18-0123456789abcde' } }
+            ));
+            const uuid = 'zzzzz-4zz18-0123456789abcde'
+            const expDate = new Date(2022, 8, 28, 12, 0, 0);
+            await apiClientAuthorizationService.createCollectionSharingToken(uuid, expDate);
+            expect(serverApi.post).toHaveBeenCalledWith(
+                '/api_client_authorizations', {
+                    scopes: [
+                        `GET /arvados/v1/collections/${uuid}`,
+                        `GET /arvados/v1/collections/${uuid}/`,
+                        `GET /arvados/v1/keep_services/accessible`,
+                    ],
+                    expires_at: expDate.toUTCString()
                 }
             );
         });
