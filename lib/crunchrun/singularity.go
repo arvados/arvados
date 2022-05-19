@@ -5,11 +5,17 @@
 package crunchrun
 
 import (
+	"bytes"
+	"errors"
 	"fmt"
 	"io/ioutil"
+	"net"
 	"os"
 	"os/exec"
+	"os/user"
+	"regexp"
 	"sort"
+	"strconv"
 	"strings"
 	"syscall"
 	"time"
@@ -20,6 +26,7 @@ import (
 
 type singularityExecutor struct {
 	logf          func(string, ...interface{})
+	fakeroot      bool // use --fakeroot flag, allow --network=bridge when non-root (currently only used by tests)
 	spec          containerSpec
 	tmpdir        string
 	child         *exec.Cmd
@@ -249,11 +256,22 @@ func (e *singularityExecutor) Create(spec containerSpec) error {
 }
 
 func (e *singularityExecutor) execCmd(path string) *exec.Cmd {
-	args := []string{path, "exec", "--containall", "--cleanenv", "--pwd", e.spec.WorkingDir}
+	args := []string{path, "exec", "--containall", "--cleanenv", "--pwd=" + e.spec.WorkingDir}
+	if e.fakeroot {
+		args = append(args, "--fakeroot")
+	}
 	if !e.spec.EnableNetwork {
 		args = append(args, "--net", "--network=none")
+	} else if u, err := user.Current(); err == nil && u.Uid == "0" || e.fakeroot {
+		// Specifying --network=bridge fails unless (a) we are
+		// root, (b) we are using --fakeroot, or (c)
+		// singularity has been configured to allow our
+		// uid/gid to use it like so:
+		//
+		// singularity config global --set 'allow net networks' bridge
+		// singularity config global --set 'allow net groups' mygroup
+		args = append(args, "--net", "--network=bridge")
 	}
-
 	if e.spec.CUDADeviceCount != 0 {
 		args = append(args, "--nv")
 	}
@@ -270,7 +288,7 @@ func (e *singularityExecutor) execCmd(path string) *exec.Cmd {
 	for _, path := range binds {
 		mount := e.spec.BindMounts[path]
 		if path == e.spec.Env["HOME"] {
-			// Singularity treates $HOME as special case
+			// Singularity treats $HOME as special case
 			args = append(args, "--home", mount.HostPath+":"+path)
 		} else {
 			args = append(args, "--bind", mount.HostPath+":"+path+":"+readonlyflag[mount.ReadOnly])
@@ -284,8 +302,8 @@ func (e *singularityExecutor) execCmd(path string) *exec.Cmd {
 	env := make([]string, 0, len(e.spec.Env))
 	for k, v := range e.spec.Env {
 		if k == "HOME" {
-			// Singularity treates $HOME as special case, this is handled
-			// with --home above
+			// Singularity treats $HOME as special case,
+			// this is handled with --home above
 			continue
 		}
 		env = append(env, "SINGULARITYENV_"+k+"="+v)
@@ -363,4 +381,119 @@ func (e *singularityExecutor) Close() {
 	if err != nil {
 		e.logf("error removing temp dir: %s", err)
 	}
+}
+
+func (e *singularityExecutor) InjectCommand(ctx context.Context, detachKeys, username string, usingTTY bool, injectcmd []string) (*exec.Cmd, error) {
+	target, err := e.containedProcess()
+	if err != nil {
+		return nil, err
+	}
+	return exec.CommandContext(ctx, "nsenter", append([]string{fmt.Sprintf("--target=%d", target), "--all"}, injectcmd...)...), nil
+}
+
+var (
+	errContainerHasNoIPAddress = errors.New("container has no IP address distinct from host")
+)
+
+func (e *singularityExecutor) IPAddress() (string, error) {
+	target, err := e.containedProcess()
+	if err != nil {
+		return "", err
+	}
+	targetIPs, err := processIPs(target)
+	if err != nil {
+		return "", err
+	}
+	selfIPs, err := processIPs(os.Getpid())
+	if err != nil {
+		return "", err
+	}
+	for ip := range targetIPs {
+		if !selfIPs[ip] {
+			return ip, nil
+		}
+	}
+	return "", errContainerHasNoIPAddress
+}
+
+func processIPs(pid int) (map[string]bool, error) {
+	fibtrie, err := os.ReadFile(fmt.Sprintf("/proc/%d/net/fib_trie", pid))
+	if err != nil {
+		return nil, err
+	}
+
+	addrs := map[string]bool{}
+	// When we see a pair of lines like this:
+	//
+	//              |-- 10.1.2.3
+	//                 /32 host LOCAL
+	//
+	// ...we set addrs["10.1.2.3"] = true
+	lines := bytes.Split(fibtrie, []byte{'\n'})
+	for linenumber, line := range lines {
+		if !bytes.HasSuffix(line, []byte("/32 host LOCAL")) {
+			continue
+		}
+		if linenumber < 1 {
+			continue
+		}
+		i := bytes.LastIndexByte(lines[linenumber-1], ' ')
+		if i < 0 || i >= len(line)-7 {
+			continue
+		}
+		addr := string(lines[linenumber-1][i+1:])
+		if net.ParseIP(addr).To4() != nil {
+			addrs[addr] = true
+		}
+	}
+	return addrs, nil
+}
+
+var (
+	errContainerNotStarted = errors.New("container has not started yet")
+	errCannotFindChild     = errors.New("failed to find any process inside the container")
+	reProcStatusPPid       = regexp.MustCompile(`\nPPid:\t(\d+)\n`)
+)
+
+// Return the PID of a process that is inside the container (not
+// necessarily the topmost/pid=1 process in the container).
+func (e *singularityExecutor) containedProcess() (int, error) {
+	if e.child == nil || e.child.Process == nil {
+		return 0, errContainerNotStarted
+	}
+	lsns, err := exec.Command("lsns").CombinedOutput()
+	if err != nil {
+		return 0, fmt.Errorf("lsns: %w", err)
+	}
+	for _, line := range bytes.Split(lsns, []byte{'\n'}) {
+		fields := bytes.Fields(line)
+		if len(fields) < 4 {
+			continue
+		}
+		if !bytes.Equal(fields[1], []byte("pid")) {
+			continue
+		}
+		pid, err := strconv.ParseInt(string(fields[3]), 10, 64)
+		if err != nil {
+			return 0, fmt.Errorf("error parsing PID field in lsns output: %q", fields[3])
+		}
+		for parent := pid; ; {
+			procstatus, err := os.ReadFile(fmt.Sprintf("/proc/%d/status", parent))
+			if err != nil {
+				break
+			}
+			m := reProcStatusPPid.FindSubmatch(procstatus)
+			if m == nil {
+				break
+			}
+			parent, err = strconv.ParseInt(string(m[1]), 10, 64)
+			if err != nil {
+				break
+			}
+			if int(parent) == e.child.Process.Pid {
+				return int(pid), nil
+			}
+		}
+	}
+	return 0, errCannotFindChild
 }
