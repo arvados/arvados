@@ -104,4 +104,26 @@ describe('Search tests', function() {
             cy.get('[data-cy=element-path]').should('contain', `/ Projects / ${colName}`);
         });
     });
+
+    it('can display owner of the item', function() {
+        const colName = `Collection ${Math.floor(Math.random() * Math.floor(999999))}`;
+
+        cy.createCollection(adminUser.token, {
+            name: colName,
+            owner_uuid: activeUser.user.uuid,
+            preserve_version: true,
+            manifest_text: ". 37b51d194a7513e45b56f6524f2d51f2+3 0:3:bar\n"
+        }).then(function() {
+            cy.loginAs(activeUser);
+
+            cy.doSearch(colName);
+
+            cy.get('[data-cy=search-results]').should('contain', colName);
+
+            cy.get('[data-cy=search-results]').contains(colName).closest('tr')
+                .within(() => {
+                    cy.get('p').contains(activeUser.user.uuid).should('contain', activeUser.user.full_name);
+                });
+        });
+    });
 });
