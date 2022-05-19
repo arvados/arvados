@@ -348,6 +348,14 @@ make -C ./builddir install
 			}
 		}
 
+		err = inst.runBash(`
+install /usr/bin/nsenter /var/lib/arvados/bin/nsenter
+setcap "cap_sys_admin+pei cap_sys_chroot+pei" /var/lib/arvados/bin/nsenter
+`, stdout, stderr)
+		if err != nil {
+			return 1
+		}
+
 		// The entry in /etc/locale.gen is "en_US.UTF-8"; once
 		// it's installed, locale -a reports it as
 		// "en_US.utf8".

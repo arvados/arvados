@@ -138,6 +138,10 @@ func (e *stubExecutor) Close()                          { e.closed = true }
 func (e *stubExecutor) Wait(context.Context) (int, error) {
 	return <-e.exit, e.waitErr
 }
+func (e *stubExecutor) InjectCommand(ctx context.Context, _, _ string, _ bool, _ []string) (*exec.Cmd, error) {
+	return nil, errors.New("unimplemented")
+}
+func (e *stubExecutor) IPAddress() (string, error) { return "", errors.New("unimplemented") }
 
 const fakeInputCollectionPDH = "ffffffffaaaaaaaa88888888eeeeeeee+1234"
 

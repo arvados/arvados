@@ -49,16 +49,14 @@ func (s *ClientSuite) TestShellGateway(c *check.C) {
 	h := hmac.New(sha256.New, []byte(arvadostest.SystemRootToken))
 	fmt.Fprint(h, uuid)
 	authSecret := fmt.Sprintf("%x", h.Sum(nil))
-	dcid := "theperthcountyconspiracy"
 	gw := crunchrun.Gateway{
-		DockerContainerID: &dcid,
-		ContainerUUID:     uuid,
-		Address:           "0.0.0.0:0",
-		AuthSecret:        authSecret,
+		ContainerUUID: uuid,
+		Address:       "0.0.0.0:0",
+		AuthSecret:    authSecret,
 		// Just forward connections to localhost instead of a
 		// container, so we can test without running a
 		// container.
-		ContainerIPAddress: func() (string, error) { return "0.0.0.0", nil },
+		Target: crunchrun.GatewayTargetStub{},
 	}
 	err := gw.Start()
 	c.Assert(err, check.IsNil)
@@ -88,9 +86,8 @@ func (s *ClientSuite) TestShellGateway(c *check.C) {
 	cmd.Env = append(cmd.Env, "ARVADOS_API_TOKEN="+arvadostest.ActiveTokenV2)
 	cmd.Stdout = &stdout
 	cmd.Stderr = &stderr
-	c.Check(cmd.Run(), check.NotNil)
-	c.Log(stderr.String())
-	c.Check(stderr.String(), check.Matches, `(?ms).*(No such container: theperthcountyconspiracy|exec: \"docker\": executable file not found in \$PATH).*`)
+	c.Check(cmd.Run(), check.IsNil)
+	c.Check(stdout.String(), check.Equals, "ok\n")
 
 	// Set up an http server, and try using "arvados-client shell"
 	// to forward traffic to it.

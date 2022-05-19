@@ -56,12 +56,11 @@ func (s *ContainerGatewaySuite) SetUpSuite(c *check.C) {
 	authKey := fmt.Sprintf("%x", h.Sum(nil))
 
 	s.gw = &crunchrun.Gateway{
-		DockerContainerID:  new(string),
-		ContainerUUID:      s.ctrUUID,
-		AuthSecret:         authKey,
-		Address:            "localhost:0",
-		Log:                ctxlog.TestLogger(c),
-		ContainerIPAddress: func() (string, error) { return "localhost", nil },
+		ContainerUUID: s.ctrUUID,
+		AuthSecret:    authKey,
+		Address:       "localhost:0",
+		Log:           ctxlog.TestLogger(c),
+		Target:        crunchrun.GatewayTargetStub{},
 	}
 	c.Assert(s.gw.Start(), check.IsNil)
 	rootctx := auth.NewContext(context.Background(), &auth.Credentials{Tokens: []string{s.cluster.SystemRootToken}})
