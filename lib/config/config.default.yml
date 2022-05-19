@@ -248,8 +248,9 @@ Clusters:
       FreezeProjectRequiresDescription: false
 
       # Project properties that must have non-empty values in order to
-      # freeze a project. Example: {"property_name": true}
-      FreezeProjectRequiresProperties: {}
+      # freeze a project. Example: "property_name": {}
+      FreezeProjectRequiresProperties:
+        SAMPLE: {}
 
       # If true, only an admin user can un-freeze a project. If false,
       # any user with "manage" permission can un-freeze.
