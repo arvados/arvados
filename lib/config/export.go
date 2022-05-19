@@ -64,6 +64,7 @@ var whitelist = map[string]bool{
 	"API.DisabledAPIs":                         false,
 	"API.FreezeProjectRequiresDescription":     true,
 	"API.FreezeProjectRequiresProperties":      true,
+	"API.FreezeProjectRequiresProperties.*":    true,
 	"API.KeepServiceRequestTimeout":            false,
 	"API.MaxConcurrentRequests":                false,
 	"API.MaxIndexDatabaseRead":                 false,
