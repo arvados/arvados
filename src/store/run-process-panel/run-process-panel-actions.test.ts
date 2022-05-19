@@ -116,7 +116,7 @@ describe("run-process-panel-actions", () => {
                 description: "basicFormTestDescription",
                 mounts: undefined,
                 name: "basicFormTestName",
-                outputName: undefined,
+                outputName: "Output from basicFormTestName",
                 outputPath: "/var/spool/cwl",
                 ownerUuid: "ce8i5-tpzed-yid70bw31f51234",
                 priority: 1,
