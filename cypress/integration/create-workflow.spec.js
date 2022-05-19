@@ -148,14 +148,14 @@ describe('Multi-file deletion tests', function () {
 
                 cy.get('[data-cy=side-panel-button]').click();
 
-                cy.get('#aside-menu-list').contains('Run a process').click();
+                cy.get('#aside-menu-list').contains('Run a workflow').click();
 
                 cy.get('@testWorkflow')
                     .then((testWorkflow) => {
                         cy.get('main').contains(testWorkflow.name).click();
                         cy.get('[data-cy=run-process-next-button]').click();
 
-                        cy.get('label').contains('#main/foo').parent('div').find('input').click();
+                        cy.get('label').contains('foo').parent('div').find('input').click();
                         cy.get('div[role=dialog]')
                             .within(() => {
                                 cy.get('p').contains('Projects').closest('div[role=button]')
@@ -174,7 +174,7 @@ describe('Multi-file deletion tests', function () {
                                 cy.get('[data-cy=ok-button]').click();
                             });
 
-                        cy.get('label').contains('#main/bar').parent('div').find('input').click();
+                        cy.get('label').contains('bar').parent('div').find('input').click();
                         cy.get('div[role=dialog]')
                             .within(() => {
                                 cy.get('p').contains('Projects').closest('div[role=button]')
@@ -193,13 +193,13 @@ describe('Multi-file deletion tests', function () {
                             });
                     });
 
-                cy.get('label').contains('#main/foo').parent('div')
+                cy.get('label').contains('foo').parent('div')
                     .within(() => {
                         cy.contains('baz');
                         cy.contains('bar');
                     });
 
-                cy.get('label').contains('#main/bar').parent('div')
+                cy.get('label').contains('bar').parent('div')
                     .within(() => {
                         cy.contains(testCollection.name);
                         cy.contains(testCollection2.name);

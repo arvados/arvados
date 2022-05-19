@@ -219,7 +219,7 @@ describe('Favorites tests', function () {
 
                 cy.get('[data-cy=side-panel-button]').click();
 
-                cy.get('#aside-menu-list').contains('Run a process').click();
+                cy.get('#aside-menu-list').contains('Run a workflow').click();
 
                 cy.get('@testWorkflow')
                     .then((testWorkflow) => {
