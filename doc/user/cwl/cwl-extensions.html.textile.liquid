@@ -58,6 +58,11 @@ hints:
       property1: value1
       property2: $(inputs.value2)
 
+  arv:OutputCollectionProperties:
+    outputProperties:
+      property1: value1
+      property2: $(inputs.value2)
+
   cwltool:CUDARequirement:
     cudaVersionMin: "11.0"
     cudaComputeCapability: "9.0"
@@ -154,7 +159,15 @@ Specify extra "properties":{{site.baseurl}}/api/methods.html#subpropertyfilters 
 
 table(table table-bordered table-condensed).
 |_. Field |_. Type |_. Description |
-|processProperties|key-value map, or list of objects with the fields {propertyName, propertyValue}|The properties that will be set on the container request.  May include expressions that reference `$(inputs)` of the current workflow or tool.|
+|processProperties|key-value map, or list of objects with the fields {propertyName, propertyValue}|The properties that will be set on the container request.  May include expressions that reference @$(inputs)@ of the current workflow or tool.|
+
+h2(#OutputCollectionProperties). arv:OutputCollectionProperties
+
+Specify custom "properties":{{site.baseurl}}/api/methods.html#subpropertyfilters that will be set on the output collection of the workflow step.
+
+table(table table-bordered table-condensed).
+|_. Field |_. Type |_. Description |
+|outputProperties|key-value map, or list of objects with the fields {propertyName, propertyValue}|The properties that will be set on the output collection.  May include expressions that reference @$(inputs)@ of the current workflow or tool.|
 
 h2(#CUDARequirement). cwltool:CUDARequirement
 

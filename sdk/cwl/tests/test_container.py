@@ -178,7 +178,7 @@ class TestContainer(unittest.TestCase):
                                                "capacity": 1073741824 }
                         },
                         'state': 'Committed',
-                        'output_name': 'Output for step test_run_'+str(enable_reuse),
+                        'output_name': 'Output from step test_run_'+str(enable_reuse),
                         'owner_uuid': 'zzzzz-8i9sb-zzzzzzzzzzzzzzz',
                         'output_path': '/var/spool/cwl',
                         'output_ttl': 0,
@@ -267,7 +267,7 @@ class TestContainer(unittest.TestCase):
                                    "capacity": 5242880000 }
             },
             'state': 'Committed',
-            'output_name': 'Output for step test_resource_requirements',
+            'output_name': 'Output from step test_resource_requirements',
             'owner_uuid': 'zzzzz-8i9sb-zzzzzzzzzzzzzzz',
             'output_path': '/var/spool/cwl',
             'output_ttl': 7200,
@@ -401,7 +401,7 @@ class TestContainer(unittest.TestCase):
                 }
             },
             'state': 'Committed',
-            'output_name': 'Output for step test_initial_work_dir',
+            'output_name': 'Output from step test_initial_work_dir',
             'owner_uuid': 'zzzzz-8i9sb-zzzzzzzzzzzzzzz',
             'output_path': '/var/spool/cwl',
             'output_ttl': 0,
@@ -489,7 +489,7 @@ class TestContainer(unittest.TestCase):
                         },
                     },
                     'state': 'Committed',
-                    "output_name": "Output for step test_run_redirect",
+                    "output_name": "Output from step test_run_redirect",
                     'owner_uuid': 'zzzzz-8i9sb-zzzzzzzzzzzzzzz',
                     'output_path': '/var/spool/cwl',
                     'output_ttl': 0,
@@ -725,7 +725,7 @@ class TestContainer(unittest.TestCase):
                                            "capacity": 1073741824 }
                     },
                     'state': 'Committed',
-                    'output_name': 'Output for step test_run_mounts',
+                    'output_name': 'Output from step test_run_mounts',
                     'owner_uuid': 'zzzzz-8i9sb-zzzzzzzzzzzzzzz',
                     'output_path': '/var/spool/cwl',
                     'output_ttl': 0,
@@ -819,7 +819,7 @@ class TestContainer(unittest.TestCase):
                                            "capacity": 1073741824 }
                     },
                     'state': 'Committed',
-                    'output_name': 'Output for step test_secrets',
+                    'output_name': 'Output from step test_secrets',
                     'owner_uuid': 'zzzzz-8i9sb-zzzzzzzzzzzzzzz',
                     'output_path': '/var/spool/cwl',
                     'output_ttl': 0,
@@ -941,7 +941,7 @@ class TestContainer(unittest.TestCase):
                                            "capacity": 1073741824 }
                     },
                     'state': 'Committed',
-                    'output_name': 'Output for step test_run_True',
+                    'output_name': 'Output from step test_run_True',
                     'owner_uuid': 'zzzzz-8i9sb-zzzzzzzzzzzzzzz',
                     'output_path': '/var/spool/cwl',
                     'output_ttl': 0,
@@ -1027,7 +1027,7 @@ class TestContainer(unittest.TestCase):
                                            "capacity": 1073741824 }
                     },
                     'state': 'Committed',
-                    'output_name': 'Output for step test_run_True',
+                    'output_name': 'Output from step test_run_True',
                     'owner_uuid': 'zzzzz-8i9sb-zzzzzzzzzzzzzzz',
                     'output_path': '/var/spool/cwl',
                     'output_ttl': 0,
@@ -1137,7 +1137,7 @@ class TestContainer(unittest.TestCase):
                                                "capacity": 1073741824 }
                         },
                         'state': 'Committed',
-                        'output_name': 'Output for step test_run_True' + ("" if test_case == 0 else "_"+str(test_case+1)),
+                        'output_name': 'Output from step test_run_True' + ("" if test_case == 0 else "_"+str(test_case+1)),
                         'owner_uuid': 'zzzzz-8i9sb-zzzzzzzzzzzzzzz',
                         'output_path': '/var/spool/cwl',
                         'output_ttl': 0,
@@ -1211,7 +1211,7 @@ class TestContainer(unittest.TestCase):
                                    "capacity": 1073741824 }
             },
             'state': 'Committed',
-            'output_name': 'Output for step test_run_True',
+            'output_name': 'Output from step test_run_True',
             'owner_uuid': 'zzzzz-8i9sb-zzzzzzzzzzzzzzz',
             'output_path': '/var/spool/cwl',
             'output_ttl': 0,
@@ -1234,7 +1234,7 @@ class TestContainer(unittest.TestCase):
         runtimeContext.match_local_docker = True
         container_request['container_image'] = '99999999999999999999999999999993+99'
         container_request['name'] = 'test_run_True_2'
-        container_request['output_name'] = 'Output for step test_run_True_2'
+        container_request['output_name'] = 'Output from step test_run_True_2'
         for j in arvtool.job({}, mock.MagicMock(), runtimeContext):
             j.run(runtimeContext)
             runner.api.container_requests().create.assert_called_with(
@@ -1324,7 +1324,7 @@ class TestContainer(unittest.TestCase):
                                                    "capacity": 1073741824 }
                             },
                             'state': 'Committed',
-                            'output_name': 'Output for step '+runtimeContext.name,
+                            'output_name': 'Output from step '+runtimeContext.name,
                             'owner_uuid': 'zzzzz-8i9sb-zzzzzzzzzzzzzzz',
                             'output_path': '/var/spool/cwl',
                             'output_ttl': 0,
@@ -1337,6 +1337,57 @@ class TestContainer(unittest.TestCase):
                             'output_storage_classes': ["default"]
                         }))
 
+
+    @mock.patch("arvados.commands.keepdocker.list_images_in_arv")
+    def test_output_properties(self, keepdocker):
+        arvados_cwl.add_arv_hints()
+        for rev in ["20210628", "20220510"]:
+            runner = mock.MagicMock()
+            runner.ignore_docker_for_reuse = False
+            runner.intermediate_output_ttl = 0
+            runner.secret_store = cwltool.secrets.SecretStore()
+            runner.api._rootDesc = {"revision": rev}
+
+            keepdocker.return_value = [("zzzzz-4zz18-zzzzzzzzzzzzzz3", "")]
+            runner.api.collections().get().execute.return_value = {
+                "portable_data_hash": "99999999999999999999999999999993+99"}
+
+            tool = cmap({
+                "inputs": [{
+                    "id": "inp",
+                    "type": "string"
+                }],
+                "outputs": [],
+                "baseCommand": "ls",
+                "arguments": [{"valueFrom": "$(runtime.outdir)"}],
+                "id": "",
+                "cwlVersion": "v1.2",
+                "class": "CommandLineTool",
+                "hints": [
+                    {
+                        "class": "http://arvados.org/cwl#OutputCollectionProperties",
+                        "outputProperties": {
+                            "foo": "bar",
+                            "baz": "$(inputs.inp)"
+                        }
+                    }
+                ]
+            })
+
+            loadingContext, runtimeContext = self.helper(runner)
+            runtimeContext.name = "test_timelimit"
+
+            arvtool = cwltool.load_tool.load_tool(tool, loadingContext)
+            arvtool.formatgraph = None
+
+            for j in arvtool.job({"inp": "quux"}, mock.MagicMock(), runtimeContext):
+                j.run(runtimeContext)
+
+            _, kwargs = runner.api.container_requests().create.call_args
+            if rev == "20220510":
+                self.assertEqual({"foo": "bar", "baz": "quux"}, kwargs['body'].get('output_properties'))
+            else:
+                self.assertEqual(None, kwargs['body'].get('output_properties'))
 
 
 class TestWorkflow(unittest.TestCase):
@@ -1466,7 +1517,7 @@ class TestWorkflow(unittest.TestCase):
                     }
                 },
                 "name": "scatterstep",
-                "output_name": "Output for step scatterstep",
+                "output_name": "Output from step scatterstep",
                 "output_path": "/var/spool/cwl",
                 "output_ttl": 0,
                 "priority": 500,
@@ -1580,7 +1631,7 @@ class TestWorkflow(unittest.TestCase):
                     u'cwl.input.yml'
                 ],
                 'use_existing': True,
-                'output_name': u'Output for step echo-subwf',
+                'output_name': u'Output from step echo-subwf',
                 'cwd': '/var/spool/cwl',
                 'output_storage_classes': ["default"]
             }))

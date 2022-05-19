@@ -75,6 +75,7 @@ type ContainerRequest struct {
 	Filters                 []Filter               `json:"filters"`
 	ContainerCount          int                    `json:"container_count"`
 	OutputStorageClasses    []string               `json:"output_storage_classes"`
+	OutputProperties        map[string]interface{} `json:"output_properties"`
 }
 
 // Mount is special behavior to attach to a filesystem path or device.
