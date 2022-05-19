@@ -17,7 +17,6 @@ import arvados.util as util
 
 from arvados._version import __version__
 
-api_client = None
 logger = logging.getLogger('arvados.arv-get')
 
 parser = argparse.ArgumentParser(
@@ -146,8 +145,6 @@ def parse_arguments(arguments, stdout, stderr):
     return args
 
 def main(arguments=None, stdout=sys.stdout, stderr=sys.stderr):
-    global api_client
-
     if stdout is sys.stdout and hasattr(stdout, 'buffer'):
         # in Python 3, write to stdout as binary
         stdout = stdout.buffer
@@ -158,8 +155,7 @@ def main(arguments=None, stdout=sys.stdout, stderr=sys.stderr):
     request_id = arvados.util.new_request_id()
     logger.info('X-Request-Id: '+request_id)
 
-    if api_client is None:
-        api_client = arvados.api('v1', request_id=request_id)
+    api_client = arvados.api('v1', request_id=request_id)
 
     r = re.search(r'^(.*?)(/.*)?$', args.locator)
     col_loc = r.group(1)

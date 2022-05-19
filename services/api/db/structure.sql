@@ -480,7 +480,8 @@ CREATE TABLE public.container_requests (
     output_ttl integer DEFAULT 0 NOT NULL,
     secret_mounts jsonb DEFAULT '{}'::jsonb,
     runtime_token text,
-    output_storage_classes jsonb DEFAULT '["default"]'::jsonb
+    output_storage_classes jsonb DEFAULT '["default"]'::jsonb,
+    output_properties jsonb DEFAULT '{}'::jsonb
 );
 
 
@@ -543,7 +544,8 @@ CREATE TABLE public.containers (
     lock_count integer DEFAULT 0 NOT NULL,
     gateway_address character varying,
     interactive_session_started boolean DEFAULT false NOT NULL,
-    output_storage_classes jsonb DEFAULT '["default"]'::jsonb
+    output_storage_classes jsonb DEFAULT '["default"]'::jsonb,
+    output_properties jsonb DEFAULT '{}'::jsonb
 );
 
 
@@ -1782,7 +1784,7 @@ CREATE INDEX container_requests_search_index ON public.container_requests USING 
 -- Name: container_requests_trgm_text_search_idx; Type: INDEX; Schema: public; Owner: -
 --
 
-CREATE INDEX container_requests_trgm_text_search_idx ON public.container_requests USING gin (((((((((((((((((((((((((((((((((((((((((((COALESCE(uuid, ''::character varying))::text || ' '::text) || (COALESCE(owner_uuid, ''::character varying))::text) || ' '::text) || (COALESCE(modified_by_client_uuid, ''::character varying))::text) || ' '::text) || (COALESCE(modified_by_user_uuid, ''::character varying))::text) || ' '::text) || (COALESCE(name, ''::character varying))::text) || ' '::text) || COALESCE(description, ''::text)) || ' '::text) || COALESCE((properties)::text, ''::text)) || ' '::text) || (COALESCE(state, ''::character varying))::text) || ' '::text) || (COALESCE(requesting_container_uuid, ''::character varying))::text) || ' '::text) || (COALESCE(container_uuid, ''::character varying))::text) || ' '::text) || COALESCE(runtime_constraints, ''::text)) || ' '::text) || (COALESCE(container_image, ''::character varying))::text) || ' '::text) || COALESCE(environment, ''::text)) || ' '::text) || (COALESCE(cwd, ''::character varying))::text) || ' '::text) || COALESCE(command, ''::text)) || ' '::text) || (COALESCE(output_path, ''::character varying))::text) || ' '::text) || COALESCE(filters, ''::text)) || ' '::text) || COALESCE(scheduling_parameters, ''::text)) || ' '::text) || (COALESCE(output_uuid, ''::character varying))::text) || ' '::text) || (COALESCE(log_uuid, ''::character varying))::text) || ' '::text) || (COALESCE(output_name, ''::character varying))::text)) public.gin_trgm_ops);
+CREATE INDEX container_requests_trgm_text_search_idx ON public.container_requests USING gin (((((((((((((((((((((((((((((((((((((((((((((COALESCE(uuid, ''::character varying))::text || ' '::text) || (COALESCE(owner_uuid, ''::character varying))::text) || ' '::text) || (COALESCE(modified_by_client_uuid, ''::character varying))::text) || ' '::text) || (COALESCE(modified_by_user_uuid, ''::character varying))::text) || ' '::text) || (COALESCE(name, ''::character varying))::text) || ' '::text) || COALESCE(description, ''::text)) || ' '::text) || COALESCE((properties)::text, ''::text)) || ' '::text) || (COALESCE(state, ''::character varying))::text) || ' '::text) || (COALESCE(requesting_container_uuid, ''::character varying))::text) || ' '::text) || (COALESCE(container_uuid, ''::character varying))::text) || ' '::text) || COALESCE(runtime_constraints, ''::text)) || ' '::text) || (COALESCE(container_image, ''::character varying))::text) || ' '::text) || COALESCE(environment, ''::text)) || ' '::text) || (COALESCE(cwd, ''::character varying))::text) || ' '::text) || COALESCE(command, ''::text)) || ' '::text) || (COALESCE(output_path, ''::character varying))::text) || ' '::text) || COALESCE(filters, ''::text)) || ' '::text) || COALESCE(scheduling_parameters, ''::text)) || ' '::text) || (COALESCE(output_uuid, ''::character varying))::text) || ' '::text) || (COALESCE(log_uuid, ''::character varying))::text) || ' '::text) || (COALESCE(output_name, ''::character varying))::text) || ' '::text) || COALESCE((output_properties)::text, ''::text))) public.gin_trgm_ops);
 
 
 --
@@ -3179,6 +3181,7 @@ INSERT INTO "schema_migrations" (version) VALUES
 ('20220224203102'),
 ('20220301155729'),
 ('20220303204419'),
-('20220401153101');
+('20220401153101'),
+('20220505112900');
 
 

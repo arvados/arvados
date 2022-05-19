@@ -61,6 +61,7 @@ table(table table-bordered table-condensed).
 |runtime_user_uuid|string|The user permission that will be granted to this container.||
 |runtime_auth_scopes|array of string|The scopes associated with the auth token used to run this container.||
 |output_storage_classes|array of strings|The storage classes that will be used for the log and output collections of this container request|default is ["default"]|
+|output_properties|hash|User metadata properties to set on the output collection.  The output collection will also have default properties "type" ("intermediate" or "output") and "container_request" (the uuid of container request that produced the collection).|
 
 h2(#priority). Priority
 

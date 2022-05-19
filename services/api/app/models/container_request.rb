@@ -24,6 +24,7 @@ class ContainerRequest < ArvadosModel
   attribute :properties, :jsonbHash, default: {}
   attribute :secret_mounts, :jsonbHash, default: {}
   attribute :output_storage_classes, :jsonbArray, default: lambda { Rails.configuration.DefaultStorageClasses }
+  attribute :output_properties, :jsonbHash, default: {}
 
   serialize :environment, Hash
   serialize :mounts, Hash
@@ -78,6 +79,7 @@ class ContainerRequest < ArvadosModel
     t.add :state
     t.add :use_existing
     t.add :output_storage_classes
+    t.add :output_properties
   end
 
   # Supported states for a container request
@@ -100,7 +102,7 @@ class ContainerRequest < ArvadosModel
   :output_path, :priority, :runtime_token,
   :runtime_constraints, :state, :container_uuid, :use_existing,
   :scheduling_parameters, :secret_mounts, :output_name, :output_ttl,
-  :output_storage_classes]
+  :output_storage_classes, :output_properties]
 
   def self.any_preemptible_instances?
     Rails.configuration.InstanceTypes.any? do |k, v|
@@ -222,11 +224,7 @@ class ContainerRequest < ArvadosModel
           owner_uuid: self.owner_uuid,
           name: coll_name,
           manifest_text: "",
-          storage_classes_desired: self.output_storage_classes,
-          properties: {
-            'type' => out_type,
-            'container_request' => uuid,
-          })
+          storage_classes_desired: self.output_storage_classes)
       end
 
       if out_type == "log"
@@ -238,11 +236,28 @@ class ContainerRequest < ArvadosModel
         manifest = dst.manifest_text
       end
 
+      merged_properties = {}
+      merged_properties['container_request'] = uuid
+
+      if out_type == 'output' and !requesting_container_uuid.nil?
+        # output of a child process, give it "intermediate" type by
+        # default.
+        merged_properties['type'] = 'intermediate'
+      else
+        merged_properties['type'] = out_type
+      end
+
+      if out_type == "output"
+        merged_properties.update(container.output_properties)
+        merged_properties.update(self.output_properties)
+      end
+
       coll.assign_attributes(
         portable_data_hash: Digest::MD5.hexdigest(manifest) + '+' + manifest.bytesize.to_s,
         manifest_text: manifest,
         trash_at: trash_at,
-        delete_at: trash_at)
+        delete_at: trash_at,
+        properties: merged_properties)
       coll.save_with_unique_name!
       self.send(out_type + '_uuid=', coll.uuid)
     end

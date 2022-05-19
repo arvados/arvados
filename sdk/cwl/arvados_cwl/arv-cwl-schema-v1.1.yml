@@ -343,3 +343,23 @@ $graph:
         _id: "@type"
         _type: "@vocab"
     usePreemptible: boolean
+
+- name: OutputCollectionProperties
+  type: record
+  extends: cwl:ProcessRequirement
+  inVocab: false
+  doc: |
+    Specify metadata properties that will be set on the output
+    collection associated with this workflow or step.
+  fields:
+    class:
+      type: string
+      doc: "Always 'arv:OutputCollectionProperties"
+      jsonldPredicate:
+        _id: "@type"
+        _type: "@vocab"
+    outputProperties:
+      type: PropertyDef[]
+      jsonldPredicate:
+        mapSubject: propertyName
+        mapPredicate: propertyValue

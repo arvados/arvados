@@ -60,6 +60,7 @@ Generally this will contain additional keys that are not present in any correspo
 |gateway_address|string|Address (host:port) of gateway server.|Internal use only.|
 |interactive_session_started|boolean|Indicates whether @arvados-client shell@ has been used to run commands in the container, which may have altered the container's behavior and output.||
 |output_storage_classes|array of strings|The storage classes that will be used for the log and output collections of this container||
+|output_properties|hash|User metadata properties to set on the output collection.|
 
 h2(#container_states). Container states
 
