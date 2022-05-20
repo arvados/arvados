@@ -48,6 +48,7 @@ func (s *AggregatorSuite) SetUpTest(c *check.C) {
 	cluster.SystemRootToken = arvadostest.SystemRootToken
 	cluster.Collections.BlobSigningKey = arvadostest.BlobSigningKey
 	cluster.Volumes["z"] = arvados.Volume{StorageClasses: map[string]bool{"default": true}}
+	cluster.Containers.LocalKeepBlobBuffersPerVCPU = 0
 	s.handler = &Aggregator{Cluster: cluster}
 	s.req = httptest.NewRequest("GET", "/_health/all", nil)
 	s.req.Header.Set("Authorization", "Bearer "+arvadostest.ManagementToken)
