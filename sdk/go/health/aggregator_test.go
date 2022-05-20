@@ -32,6 +32,7 @@ func (s *AggregatorSuite) TestInterface(c *check.C) {
 func (s *AggregatorSuite) SetUpTest(c *check.C) {
 	s.handler = &Aggregator{Cluster: &arvados.Cluster{
 		ManagementToken: arvadostest.ManagementToken,
+		Containers:      arvados.ContainersConfig{LocalKeepBlobBuffersPerVCPU: 0},
 	}}
 	s.req = httptest.NewRequest("GET", "/_health/all", nil)
 	s.req.Header.Set("Authorization", "Bearer "+arvadostest.ManagementToken)
