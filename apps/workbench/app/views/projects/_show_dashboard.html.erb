@@ -10,7 +10,7 @@ SPDX-License-Identifier: AGPL-3.0 %>
   recent_cr_containers = recent_crs.map {|cr| cr.container_uuid}.compact.uniq
   if recent_cr_containers.andand.any?
     preload_objects_for_dataclass(Container, recent_cr_containers, nil,
-				["uuid", "started_at", "finished_at", "state", "runtime_status", "created_at", "modified_at"])
+				["uuid", "started_at", "finished_at", "state", "runtime_status", "created_at", "modified_at", "exit_code"])
   end
 
   wus = {}
