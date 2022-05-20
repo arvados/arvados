@@ -13,9 +13,11 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"regexp"
+	"runtime"
 	"strings"
 	"time"
 
+	"git.arvados.org/arvados.git/lib/cmd"
 	"git.arvados.org/arvados.git/lib/config"
 	"git.arvados.org/arvados.git/sdk/go/arvados"
 	"git.arvados.org/arvados.git/sdk/go/arvadostest"
@@ -255,6 +257,40 @@ func (s *AggregatorSuite) TestClockSkew(c *check.C) {
 	}
 }
 
+func (s *AggregatorSuite) TestVersionSkew(c *check.C) {
+	// srv1: report same version
+	handler1 := healthyHandler{version: cmd.Version.String()}
+	srv1, listen1 := s.stubServer(&handler1)
+	defer srv1.Close()
+	// srv2: report same version but without " (go1.2.3)" part
+	handler2 := healthyHandler{version: strings.Fields(cmd.Version.String())[0]}
+	srv2, listen2 := s.stubServer(&handler2)
+	defer srv2.Close()
+	// srv3: report different version
+	handler3 := healthyHandler{version: "1.2.3~4 (" + runtime.Version() + ")"}
+	srv3, listen3 := s.stubServer(&handler3)
+	defer srv3.Close()
+
+	s.setAllServiceURLs(listen1)
+
+	// same version but without go1.2.3 part => OK
+	s.resp = httptest.NewRecorder()
+	arvadostest.SetServiceURL(&s.handler.Cluster.Services.RailsAPI,
+		"http://localhost"+listen2+"/")
+	s.handler.ServeHTTP(s.resp, s.req)
+	s.checkOK(c)
+
+	// different version => error
+	s.resp = httptest.NewRecorder()
+	arvadostest.SetServiceURL(&s.handler.Cluster.Services.WebDAV,
+		"http://localhost"+listen3+"/")
+	s.handler.ServeHTTP(s.resp, s.req)
+	resp := s.checkUnhealthy(c)
+	if c.Check(len(resp.Errors) > 0, check.Equals, true) {
+		c.Check(resp.Errors[0], check.Matches, `version mismatch: \Qkeep-web+http://localhost`+listen3+`\E is running 1.2.3~4 (.*) -- expected \Q`+cmd.Version.String()+`\E`)
+	}
+}
+
 func (s *AggregatorSuite) TestPingTimeout(c *check.C) {
 	s.handler.timeout = arvados.Duration(100 * time.Millisecond)
 	srv, listen := s.stubServer(&slowHandler{})
@@ -293,7 +329,7 @@ func (s *AggregatorSuite) TestCheckCommand(c *check.C) {
 	exitcode = CheckCommand.RunCommand("check", []string{"-config=" + tmpdir + "/config.yml", "-yaml"}, &bytes.Buffer{}, &stdout, &stderr)
 	c.Check(exitcode, check.Equals, 0)
 	c.Check(stderr.String(), check.Equals, "")
-	c.Check(stdout.String(), check.Matches, `(?ms).*(\n|^)health: OK\n.*`)
+	c.Check(stdout.String(), check.Matches, `(?ms).*(\n|^)Health: OK\n.*`)
 }
 
 func (s *AggregatorSuite) checkError(c *check.C) {
@@ -355,6 +391,7 @@ func (*unhealthyHandler) ServeHTTP(resp http.ResponseWriter, req *http.Request) 
 }
 
 type healthyHandler struct {
+	version    string
 	configHash string
 	configTime time.Time
 	headerDate time.Time
@@ -386,9 +423,13 @@ arvados_config_load_timestamp_seconds{sha256="%s"} %g
 # HELP arvados_config_source_timestamp_seconds Timestamp of config file when it was loaded.
 # TYPE arvados_config_source_timestamp_seconds gauge
 arvados_config_source_timestamp_seconds{sha256="%s"} %g
+# HELP arvados_version_running Indicated version is running.
+# TYPE arvados_version_running gauge
+arvados_version_running{version="%s"} 1
 `,
 			h.configHash, float64(time.Now().UnixNano())/1e9,
-			h.configHash, float64(t.UnixNano())/1e9)
+			h.configHash, float64(t.UnixNano())/1e9,
+			h.version)
 	} else {
 		http.Error(resp, "not found", http.StatusNotFound)
 	}
