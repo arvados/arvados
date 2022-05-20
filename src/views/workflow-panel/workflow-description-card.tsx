@@ -15,16 +15,14 @@ import {
     TableCell,
     TableBody,
     TableRow,
-    Grid,
 } from '@material-ui/core';
 import { ArvadosTheme } from 'common/custom-theme';
 import { WorkflowIcon } from 'components/icon/icon';
 import { DataTableDefaultView } from 'components/data-table-default-view/data-table-default-view';
-import { WorkflowResource, parseWorkflowDefinition, getWorkflowInputs, getInputLabel, stringifyInputType } from 'models/workflow';
+import { parseWorkflowDefinition, getWorkflowInputs, getInputLabel, stringifyInputType } from 'models/workflow';
 // import { WorkflowGraph } from "views/workflow-panel/workflow-graph";
-import { DetailsAttribute } from 'components/details-attribute/details-attribute';
-import { ResourceOwnerWithName } from 'views-components/data-explorer/renderers';
-import { formatDate } from "common/formatters";
+
+import { WorkflowDetailsCardDataProps, WorkflowDetailsAttributes } from 'views-components/details-panel/workflow-details';
 
 export type CssRules = 'root' | 'tab' | 'inputTab' | 'graphTab' | 'graphTabWithChosenWorkflow' | 'descriptionTab' | 'inputsTable';
 
@@ -57,10 +55,6 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
         tableLayout: 'fixed',
     },
 });
-
-interface WorkflowDetailsCardDataProps {
-    workflow?: WorkflowResource;
-}
 
 type WorkflowDetailsCardProps = WorkflowDetailsCardDataProps & WithStyles<CssRules>;
 
@@ -150,29 +144,3 @@ export const WorkflowDetailsCard = withStyles(styles)(
             </Table>;
         }
     });
-
-export const WorkflowDetailsAttributes = ({ workflow }: WorkflowDetailsCardDataProps) => {
-    return <Grid container>
-        <Grid item xs={12} >
-            <DetailsAttribute
-                label={"Workflow UUID"}
-                linkToUuid={workflow?.uuid} />
-        </Grid>
-        <Grid item xs={12} >
-            <DetailsAttribute
-                label='Owner' linkToUuid={workflow?.ownerUuid}
-                uuidEnhancer={(uuid: string) => <ResourceOwnerWithName uuid={uuid} />} />
-        </Grid>
-        <Grid item xs={12}>
-            <DetailsAttribute label='Created at' value={formatDate(workflow?.createdAt)} />
-        </Grid>
-        <Grid item xs={12}>
-            <DetailsAttribute label='Last modified' value={formatDate(workflow?.modifiedAt)} />
-        </Grid>
-        <Grid item xs={12} >
-            <DetailsAttribute
-                label='Last modified by user' linkToUuid={workflow?.modifiedByUserUuid}
-                uuidEnhancer={(uuid: string) => <ResourceOwnerWithName uuid={uuid} />} />
-        </Grid>
-    </Grid >;
-};

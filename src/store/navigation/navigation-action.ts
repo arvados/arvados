@@ -8,6 +8,7 @@ import { ResourceKind, extractUuidKind } from 'models/resource';
 import { SidePanelTreeCategory } from '../side-panel-tree/side-panel-tree-actions';
 import { Routes, getGroupUrl, getNavUrl, getUserProfileUrl } from 'routes/routes';
 import { RootState } from 'store/store';
+import { openDetailsPanel } from 'store/details-panel/details-panel-action';
 import { ServiceRepository } from 'services/services';
 import { pluginConfig } from 'plugins';
 import { snackbarActions, SnackbarKind } from 'store/snackbar/snackbar-actions';
@@ -39,6 +40,9 @@ export const navigateTo = (uuid: string) =>
                 return;
             case ResourceKind.VIRTUAL_MACHINE:
                 dispatch<any>(navigateToAdminVirtualMachines);
+                return;
+            case ResourceKind.WORKFLOW:
+                dispatch<any>(openDetailsPanel(uuid));
                 return;
         }
 
