@@ -261,6 +261,8 @@ export const resourceUuidToContextMenuKind = (uuid: string, readonly = false) =>
                 return ContextMenuKind.ROOT_PROJECT;
             case ResourceKind.LINK:
                 return ContextMenuKind.LINK;
+            case ResourceKind.WORKFLOW:
+                return ContextMenuKind.WORKFLOW;
             default:
                 return;
         }

@@ -70,7 +70,7 @@ export const addMenuActionSet = (name: string, itemSet: ContextMenuActionSet) =>
 
 const emptyActionSet: ContextMenuActionSet = [];
 const getMenuActionSet = (resource?: ContextMenuResource): ContextMenuActionSet => (
-   resource ? menuActionSets.get(resource.menuKind) || emptyActionSet : emptyActionSet
+    resource ? menuActionSets.get(resource.menuKind) || emptyActionSet : emptyActionSet
 );
 
 export enum ContextMenuKind {
@@ -110,4 +110,5 @@ export enum ContextMenuKind {
     GROUP_MEMBER = "GroupMember",
     PERMISSION_EDIT = "PermissionEdit",
     LINK = "Link",
+    WORKFLOW = "Workflow",
 }
