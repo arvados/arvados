@@ -29,7 +29,10 @@ func (s *BuildSuite) TestBuildAndInstall(c *check.C) {
 		c.Skip("skipping docker tests in short mode")
 	} else if _, err := exec.Command("docker", "info").CombinedOutput(); err != nil {
 		c.Skip("skipping docker tests because docker is not available")
+	} else if os.Getenv("ENABLE_DOCKER_TESTS") == "" {
+		c.Skip("docker tests temporarily disabled if ENABLE_DOCKER_TESTS is not set, see https://dev.arvados.org/issues/15370#note-31")
 	}
+
 	tmpdir := c.MkDir()
 	defer os.RemoveAll(tmpdir)
 	err := os.Chmod(tmpdir, 0755)
