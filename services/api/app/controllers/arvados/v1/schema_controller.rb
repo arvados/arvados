@@ -37,7 +37,7 @@ class Arvados::V1::SchemaController < ApplicationController
         # format is YYYYMMDD, must be fixed width (needs to be lexically
         # sortable), updated manually, may be used by clients to
         # determine availability of API server features.
-        revision: "20220222",
+        revision: "20220510",
         source_version: AppVersion.hash,
         sourceVersion: AppVersion.hash, # source_version should be deprecated in the future
         packageVersion: AppVersion.package_version,

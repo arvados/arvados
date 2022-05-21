@@ -32,7 +32,7 @@ from arvados.errors import ApiError
 
 import arvados_cwl.util
 from .arvcontainer import RunnerContainer
-from .runner import Runner, upload_docker, upload_job_order, upload_workflow_deps
+from .runner import Runner, upload_docker, upload_job_order, upload_workflow_deps, make_builder
 from .arvtool import ArvadosCommandTool, validate_cluster_target, ArvadosExpressionTool
 from .arvworkflow import ArvadosWorkflow, upload_workflow
 from .fsaccess import CollectionFsAccess, CollectionFetcher, collectionResolver, CollectionCache, pdh_size
@@ -404,7 +404,7 @@ The 'jobs' API is no longer supported.
                 with SourceLine(obj, i, UnsupportedRequirement, logger.isEnabledFor(logging.DEBUG)):
                     self.check_features(v, parentfield=parentfield)
 
-    def make_output_collection(self, name, storage_classes, tagsString, outputObj):
+    def make_output_collection(self, name, storage_classes, tagsString, output_properties, outputObj):
         outputObj = copy.deepcopy(outputObj)
 
         files = []
@@ -456,7 +456,9 @@ The 'jobs' API is no longer supported.
             res = str(json.dumps(outputObj, sort_keys=True, indent=4, separators=(',',': '), ensure_ascii=False))
             f.write(res)
 
-        final.save_new(name=name, owner_uuid=self.project_uuid, storage_classes=storage_classes, ensure_unique_name=True)
+
+        final.save_new(name=name, owner_uuid=self.project_uuid, storage_classes=storage_classes,
+                       ensure_unique_name=True, properties=output_properties)
 
         logger.info("Final output collection %s \"%s\" (%s)", final.portable_data_hash(),
                     final.api_response()["name"],
@@ -486,6 +488,7 @@ The 'jobs' API is no longer supported.
                 self.api.containers().update(uuid=current['uuid'],
                                              body={
                                                  'output': self.final_output_collection.portable_data_hash(),
+                                                 'output_properties': self.final_output_collection.get_properties(),
                                              }).execute(num_retries=self.num_retries)
                 self.api.collections().update(uuid=self.final_output_collection.manifest_locator(),
                                               body={
@@ -623,6 +626,9 @@ The 'jobs' API is no longer supported.
         runtimeContext.use_container = True
         runtimeContext.tmpdir_prefix = "tmp"
         runtimeContext.work_api = self.work_api
+
+        if not self.output_name:
+             self.output_name = "Output from workflow %s" % runtimeContext.name
 
         if self.work_api == "containers":
             if self.ignore_docker_for_reuse:
@@ -776,8 +782,6 @@ The 'jobs' API is no longer supported.
             if workbench2 or workbench1:
                 logger.info("Output at %scollections/%s", workbench2 or workbench1, tool.final_output)
         else:
-            if self.output_name is None:
-                self.output_name = "Output of %s" % (shortname(tool.tool["id"]))
             if self.output_tags is None:
                 self.output_tags = ""
 
@@ -788,7 +792,16 @@ The 'jobs' API is no longer supported.
             else:
                 storage_classes = runtimeContext.storage_classes.strip().split(",")
 
-            self.final_output, self.final_output_collection = self.make_output_collection(self.output_name, storage_classes, self.output_tags, self.final_output)
+            output_properties = {}
+            output_properties_req, _ = tool.get_requirement("http://arvados.org/cwl#OutputCollectionProperties")
+            if output_properties_req:
+                builder = make_builder(job_order, tool.hints, tool.requirements, runtimeContext, tool.metadata)
+                for pr in output_properties_req["outputProperties"]:
+                    output_properties[pr["propertyName"]] = builder.do_eval(pr["propertyValue"])
+
+            self.final_output, self.final_output_collection = self.make_output_collection(self.output_name, storage_classes,
+                                                                                          self.output_tags, output_properties,
+                                                                                          self.final_output)
             self.set_crunch_output()
 
         if runtimeContext.compute_checksum:

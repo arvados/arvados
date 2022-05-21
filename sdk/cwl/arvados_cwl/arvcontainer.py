@@ -146,6 +146,8 @@ class ArvadosContainer(JobBase):
                     mounts[targetdir]["path"] = path
             prevdir = targetdir + "/"
 
+        intermediate_collection_info = arvados_cwl.util.get_intermediate_collection_info(self.name, runtimeContext.current_container, runtimeContext.intermediate_output_ttl)
+
         with Perf(metrics, "generatefiles %s" % self.name):
             if self.generatefiles["listing"]:
                 vwd = arvados.collection.Collection(api_client=self.arvrunner.api,
@@ -197,12 +199,11 @@ class ArvadosContainer(JobBase):
 
                 if not runtimeContext.current_container:
                     runtimeContext.current_container = arvados_cwl.util.get_current_container(self.arvrunner.api, self.arvrunner.num_retries, logger)
-                info = arvados_cwl.util.get_intermediate_collection_info(self.name, runtimeContext.current_container, runtimeContext.intermediate_output_ttl)
-                vwd.save_new(name=info["name"],
+                vwd.save_new(name=intermediate_collection_info["name"],
                              owner_uuid=runtimeContext.project_uuid,
                              ensure_unique_name=True,
-                             trash_at=info["trash_at"],
-                             properties=info["properties"])
+                             trash_at=intermediate_collection_info["trash_at"],
+                             properties=intermediate_collection_info["properties"])
 
                 prev = None
                 for f, p in sorteditems:
@@ -319,7 +320,7 @@ class ArvadosContainer(JobBase):
         if runtimeContext.submit_runner_cluster:
             extra_submit_params["cluster_id"] = runtimeContext.submit_runner_cluster
 
-        container_request["output_name"] = "Output for step %s" % (self.name)
+        container_request["output_name"] = "Output from step %s" % (self.name)
         container_request["output_ttl"] = self.output_ttl
         container_request["mounts"] = mounts
         container_request["secret_mounts"] = secret_mounts
@@ -340,6 +341,16 @@ class ArvadosContainer(JobBase):
         if properties_req:
             for pr in properties_req["processProperties"]:
                 container_request["properties"][pr["propertyName"]] = self.builder.do_eval(pr["propertyValue"])
+
+        output_properties_req, _ = self.get_requirement("http://arvados.org/cwl#OutputCollectionProperties")
+        if output_properties_req:
+            if self.arvrunner.api._rootDesc["revision"] >= "20220510":
+                container_request["output_properties"] = {}
+                for pr in output_properties_req["outputProperties"]:
+                    container_request["output_properties"][pr["propertyName"]] = self.builder.do_eval(pr["propertyValue"])
+            else:
+                logger.warning("%s API revision is %s, revision %s is required to support setting properties on output collections.",
+                               self.arvrunner.label(self), self.arvrunner.api._rootDesc["revision"], "20220510")
 
         if runtimeContext.runnerjob.startswith("arvwf:"):
             wfuuid = runtimeContext.runnerjob[6:runtimeContext.runnerjob.index("#")]

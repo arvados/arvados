@@ -49,11 +49,14 @@ class ArvadosGetTestCase(run_test_server.TestCaseWithServers,
                                   'bar.txt' : 'bar',
                                   'subdir/baz.txt' : 'baz',
                               }):
-        c = collection.Collection()
+        api = arvados.api()
+        c = collection.Collection(api_client=api)
         for path, data in listitems(contents):
             with c.open(path, 'wb') as f:
                 f.write(data)
         c.save_new()
+
+        api.close_connections()
 
         return (c.manifest_locator(),
                 c.portable_data_hash(),

@@ -238,7 +238,7 @@ Clusters:
         InternalURLs:
           "http://host.example:12345": {}
     Volumes:
-      zzzzz-nyw5e-aaaaaaaaaaaaaaa: {}
+      zzzzz-nyw5e-aaaaaaaaaaaaaaa: {Replication: 2}
 `, &logbuf).Load()
 	c.Assert(err, check.IsNil)
 	c.Log(logbuf.String())
@@ -649,6 +649,31 @@ Clusters:
 	c.Assert(err, check.IsNil)
 	c.Check(cc.InstanceTypes, check.HasLen, 1)
 	c.Check(cc.InstanceTypes["a"].VCPUs, check.Equals, 9)
+}
+
+func (s *LoadSuite) TestWarnUnusedLocalKeep(c *check.C) {
+	var logbuf bytes.Buffer
+	_, err := testLoader(c, `
+Clusters:
+ z1111:
+  Volumes:
+   z:
+    Replication: 1
+`, &logbuf).Load()
+	c.Assert(err, check.IsNil)
+	c.Check(logbuf.String(), check.Matches, `(?ms).*LocalKeepBlobBuffersPerVCPU is 1 but will not be used because at least one volume \(z\) has lower replication than DefaultReplication \(1 < 2\) -- suggest changing to 0.*`)
+
+	logbuf.Reset()
+	_, err = testLoader(c, `
+Clusters:
+ z1111:
+  Volumes:
+   z:
+    AccessViaHosts:
+     "http://0.0.0.0:12345": {}
+`, &logbuf).Load()
+	c.Assert(err, check.IsNil)
+	c.Check(logbuf.String(), check.Matches, `(?ms).*LocalKeepBlobBuffersPerVCPU is 1 but will not be used because at least one volume \(z\) uses AccessViaHosts -- suggest changing to 0.*`)
 }
 
 func (s *LoadSuite) TestImplicitStorageClasses(c *check.C) {

@@ -133,6 +133,10 @@ def _patch_http_request(http, api_token):
     http._request_id = util.new_request_id
     return http
 
+def _close_connections(self):
+    for conn in self._http.connections.values():
+        conn.close()
+
 # Monkey patch discovery._cast() so objects and arrays get serialized
 # with json.dumps() instead of str().
 _cast_orig = apiclient_discovery._cast
@@ -254,6 +258,7 @@ def api(version=None, cache=True, host=None, token=None, insecure=False,
     svc.request_id = request_id
     svc.config = lambda: util.get_config_once(svc)
     svc.vocabulary = lambda: util.get_vocabulary_once(svc)
+    svc.close_connections = types.MethodType(_close_connections, svc)
     kwargs['http'].max_request_size = svc._rootDesc.get('maxRequestSize', 0)
     kwargs['http'].cache = None
     kwargs['http']._request_id = lambda: svc.request_id or util.new_request_id()

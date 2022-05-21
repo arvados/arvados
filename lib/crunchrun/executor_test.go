@@ -6,7 +6,11 @@ package crunchrun
 
 import (
 	"bytes"
+	"fmt"
 	"io"
+	"net"
+	"net/http"
+	"os"
 	"strings"
 	"time"
 
@@ -145,6 +149,91 @@ func (s *executorSuite) TestExecStdoutStderr(c *C) {
 	s.checkRun(c, 0)
 	c.Check(s.stdout.String(), Equals, "foo\nbaz\n")
 	c.Check(s.stderr.String(), Equals, "barwaz\n")
+}
+
+func (s *executorSuite) TestIPAddress(c *C) {
+	// Listen on an available port on the host.
+	ln, err := net.Listen("tcp", net.JoinHostPort("0.0.0.0", "0"))
+	c.Assert(err, IsNil)
+	defer ln.Close()
+	_, port, err := net.SplitHostPort(ln.Addr().String())
+	c.Assert(err, IsNil)
+
+	// Start a container that listens on the same port number that
+	// is already in use on the host.
+	s.spec.Command = []string{"nc", "-l", "-p", port, "-e", "printf", `HTTP/1.1 418 I'm a teapot\r\n\r\n`}
+	s.spec.EnableNetwork = true
+	c.Assert(s.executor.Create(s.spec), IsNil)
+	c.Assert(s.executor.Start(), IsNil)
+	starttime := time.Now()
+
+	ctx, cancel := context.WithDeadline(context.Background(), time.Now().Add(10*time.Second))
+	defer cancel()
+
+	for ctx.Err() == nil {
+		time.Sleep(time.Second / 10)
+		_, err := s.executor.IPAddress()
+		if err == nil {
+			break
+		}
+	}
+	// When we connect to the port using s.executor.IPAddress(),
+	// we should reach the nc process running inside the
+	// container, not the net.Listen() running outside the
+	// container, even though both listen on the same port.
+	ip, err := s.executor.IPAddress()
+	if c.Check(err, IsNil) && c.Check(ip, Not(Equals), "") {
+		req, err := http.NewRequest("BREW", "http://"+net.JoinHostPort(ip, port), nil)
+		c.Assert(err, IsNil)
+		resp, err := http.DefaultClient.Do(req)
+		c.Assert(err, IsNil)
+		c.Check(resp.StatusCode, Equals, http.StatusTeapot)
+	}
+
+	s.executor.Stop()
+	code, _ := s.executor.Wait(ctx)
+	c.Logf("container ran for %v", time.Now().Sub(starttime))
+	c.Check(code, Equals, -1)
+
+	c.Logf("stdout:\n%s\n\n", s.stdout.String())
+	c.Logf("stderr:\n%s\n\n", s.stderr.String())
+}
+
+func (s *executorSuite) TestInject(c *C) {
+	hostdir := c.MkDir()
+	c.Assert(os.WriteFile(hostdir+"/testfile", []byte("first tube"), 0777), IsNil)
+	mountdir := fmt.Sprintf("/injecttest-%d", os.Getpid())
+	s.spec.Command = []string{"sleep", "10"}
+	s.spec.BindMounts = map[string]bindmount{mountdir: {HostPath: hostdir, ReadOnly: true}}
+	c.Assert(s.executor.Create(s.spec), IsNil)
+	c.Assert(s.executor.Start(), IsNil)
+	starttime := time.Now()
+
+	ctx, cancel := context.WithDeadline(context.Background(), time.Now().Add(2*time.Second))
+	defer cancel()
+
+	// Allow InjectCommand to fail a few times while the container
+	// is starting
+	for ctx.Err() == nil {
+		_, err := s.executor.InjectCommand(ctx, "", "root", false, []string{"true"})
+		if err == nil {
+			break
+		}
+		time.Sleep(time.Second / 10)
+	}
+
+	injectcmd := []string{"cat", mountdir + "/testfile"}
+	cmd, err := s.executor.InjectCommand(ctx, "", "root", false, injectcmd)
+	c.Assert(err, IsNil)
+	out, err := cmd.CombinedOutput()
+	c.Logf("inject %s => %q", injectcmd, out)
+	c.Check(err, IsNil)
+	c.Check(string(out), Equals, "first tube")
+
+	s.executor.Stop()
+	code, _ := s.executor.Wait(ctx)
+	c.Logf("container ran for %v", time.Now().Sub(starttime))
+	c.Check(code, Equals, -1)
 }
 
 func (s *executorSuite) checkRun(c *C, expectCode int) {
