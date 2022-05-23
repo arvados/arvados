@@ -70,4 +70,5 @@ export enum CollectionType {
     GENERAL = 'nil',
     OUTPUT = 'output',
     LOG = 'log',
+    INTERMEDIATE = 'intermediate',
 }

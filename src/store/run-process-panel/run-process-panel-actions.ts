@@ -48,7 +48,7 @@ export type RunProcessPanelAction = UnionOf<typeof runProcessPanelActions>;
 export const loadRunProcessPanel = () =>
     async (dispatch: Dispatch<any>, getState: () => RootState, services: ServiceRepository) => {
         try {
-            dispatch(setBreadcrumbs([{ label: 'Run Process' }]));
+            dispatch(setBreadcrumbs([{ label: 'Run workflow' }]));
             const response = await services.workflowService.list();
             dispatch(runProcessPanelActions.SET_WORKFLOWS(response.items));
         } catch (e) {

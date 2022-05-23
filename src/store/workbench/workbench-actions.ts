@@ -58,7 +58,7 @@ import {
     sharedWithMePanelActions
 } from 'store/shared-with-me-panel/shared-with-me-panel-actions';
 import { CopyFormDialogData } from 'store/copy-dialog/copy-dialog';
-import { loadWorkflowPanel, workflowPanelActions } from 'store/workflow-panel/workflow-panel-actions';
+import { workflowPanelActions } from 'store/workflow-panel/workflow-panel-actions';
 import { loadSshKeysPanel } from 'store/auth/auth-action-ssh';
 import { loadLinkAccountPanel, linkAccountPanelActions } from 'store/link-account-panel/link-account-panel-actions';
 import { loadSiteManagerPanel } from 'store/auth/auth-action-session';
@@ -456,12 +456,6 @@ export const loadRunProcess = handleFirstTimeLoad(
         await dispatch<any>(loadRunProcessPanel());
     }
 );
-
-export const loadWorkflow = handleFirstTimeLoad(async (dispatch: Dispatch<any>) => {
-    dispatch(activateSidePanelTreeItem(SidePanelTreeCategory.WORKFLOWS));
-    await dispatch(loadWorkflowPanel());
-    dispatch(setSidePanelBreadcrumbs(SidePanelTreeCategory.WORKFLOWS));
-});
 
 export const loadPublicFavorites = () =>
     handleFirstTimeLoad(

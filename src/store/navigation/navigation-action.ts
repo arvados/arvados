@@ -62,9 +62,6 @@ export const navigateTo = (uuid: string) =>
             case SidePanelTreeCategory.SHARED_WITH_ME:
                 dispatch(navigateToSharedWithMe);
                 return;
-            case SidePanelTreeCategory.WORKFLOWS:
-                dispatch(navigateToWorkflows);
-                return;
             case SidePanelTreeCategory.TRASH:
                 dispatch(navigateToTrash);
                 return;

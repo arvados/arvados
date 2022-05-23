@@ -39,6 +39,7 @@ export enum CollectionTypeFilter {
     GENERAL_COLLECTION = 'General',
     OUTPUT_COLLECTION = 'Output',
     LOG_COLLECTION = 'Log',
+    INTERMEDIATE_COLLECTION = 'Intermediate',
 }
 
 export enum ProcessTypeFilter {
@@ -84,6 +85,7 @@ export const getInitialResourceTypeFilters = pipe(
         initFilter(ObjectTypeFilter.COLLECTION),
         initFilter(CollectionTypeFilter.GENERAL_COLLECTION, ObjectTypeFilter.COLLECTION),
         initFilter(CollectionTypeFilter.OUTPUT_COLLECTION, ObjectTypeFilter.COLLECTION),
+        initFilter(CollectionTypeFilter.INTERMEDIATE_COLLECTION, ObjectTypeFilter.COLLECTION),
         initFilter(CollectionTypeFilter.LOG_COLLECTION, ObjectTypeFilter.COLLECTION),
     ),
     initFilter(ObjectTypeFilter.WORKFLOW)
@@ -115,6 +117,7 @@ export const getTrashPanelTypeFilters = pipe(
     initFilter(ObjectTypeFilter.COLLECTION),
     initFilter(CollectionTypeFilter.GENERAL_COLLECTION, ObjectTypeFilter.COLLECTION),
     initFilter(CollectionTypeFilter.OUTPUT_COLLECTION, ObjectTypeFilter.COLLECTION),
+    initFilter(CollectionTypeFilter.INTERMEDIATE_COLLECTION, ObjectTypeFilter.COLLECTION),
     initFilter(CollectionTypeFilter.LOG_COLLECTION, ObjectTypeFilter.COLLECTION),
 );
 
@@ -173,6 +176,10 @@ const collectionTypeToPropertyValue = (type: CollectionTypeFilter) => {
             return CollectionType.OUTPUT;
         case CollectionTypeFilter.LOG_COLLECTION:
             return CollectionType.LOG;
+        case CollectionTypeFilter.INTERMEDIATE_COLLECTION:
+            return CollectionType.INTERMEDIATE;
+        default:
+            return CollectionType.GENERAL;
     }
 };
 
