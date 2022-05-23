@@ -15,6 +15,9 @@ import { initialize } from 'redux-form';
 import { RUN_PROCESS_BASIC_FORM } from 'views/run-process-panel/run-process-basic-form';
 import { RUN_PROCESS_INPUTS_FORM } from 'views/run-process-panel/run-process-inputs-form';
 import { RUN_PROCESS_ADVANCED_FORM } from 'views/run-process-panel/run-process-advanced-form';
+import { getResource, ResourcesState } from 'store/resources/resources';
+import { ProjectResource } from 'models/project';
+import { UserResource } from 'models/user';
 
 export const WORKFLOW_PANEL_ID = "workflowPanel";
 const UUID_PREFIX_PROPERTY_NAME = 'uuidPrefix';
@@ -50,12 +53,14 @@ export const openRunProcess = (workflowUuid: string, ownerUuid?: string, name?: 
             dispatch<any>(loadPresets(workflow.uuid));
 
             dispatch(initialize(RUN_PROCESS_ADVANCED_FORM, getWorkflowRunnerSettings(workflow)));
+            let owner;
             if (ownerUuid) {
                 dispatch(runProcessPanelActions.SET_PROCESS_OWNER_UUID(ownerUuid));
+                owner = getResource<ProjectResource | UserResource>(ownerUuid)(getState().resources);
             }
-            if (name) {
-                dispatch(initialize(RUN_PROCESS_BASIC_FORM, { name }));
-            }
+
+            dispatch(initialize(RUN_PROCESS_BASIC_FORM, { name, owner }));
+
             if (inputObj) {
                 dispatch(initialize(RUN_PROCESS_INPUTS_FORM, inputObj));
             }

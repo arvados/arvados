@@ -4,12 +4,12 @@
 
 import React from 'react';
 import { connect, DispatchProp } from 'react-redux';
-import { Field } from 'redux-form';
+import { Field, WrappedFieldProps } from 'redux-form';
 import { Input, Dialog, DialogTitle, DialogContent, DialogActions, Button } from '@material-ui/core';
 import {
     GenericCommandInputParameter
 } from 'models/workflow';
-import { GenericInputProps, GenericInput } from './generic-input';
+import { GenericInput, GenericInputProps } from './generic-input';
 import { ProjectsTreePicker } from 'views-components/projects-tree-picker/projects-tree-picker';
 import { initProjectsTreePicker } from 'store/tree-picker/tree-picker-actions';
 import { TreeItem } from 'components/tree/tree';
@@ -17,17 +17,16 @@ import { ProjectsTreePickerItem } from 'views-components/projects-tree-picker/ge
 import { ProjectResource } from 'models/project';
 import { ResourceKind } from 'models/resource';
 
-const WORKFLOW_OWNER_PROJECT = "WORKFLOW_OWNER_PROJECT";
+export type ProjectCommandInputParameter = GenericCommandInputParameter<ProjectResource, ProjectResource>;
 
 export interface ProjectInputProps {
+    input: ProjectCommandInputParameter;
     options?: { showOnlyOwned: boolean, showOnlyWritable: boolean };
 }
-export const ProjectInput = ({ options }: ProjectInputProps) =>
+export const ProjectInput = ({ input, options }: ProjectInputProps) =>
     <Field
-        name={WORKFLOW_OWNER_PROJECT}
-        commandInput={{
-            label: "Owner project"
-        }}
+        name={input.id}
+        commandInput={input}
         component={ProjectInputComponent as any}
         format={format}
         {...{
@@ -41,7 +40,7 @@ interface ProjectInputComponentState {
     project?: ProjectResource;
 }
 
-const ProjectInputComponent = connect()(
+export const ProjectInputComponent = connect()(
     class ProjectInputComponent extends React.Component<GenericInputProps & DispatchProp & {
         options?: { showOnlyOwned: boolean, showOnlyWritable: boolean };
     }, ProjectInputComponentState> {
@@ -51,7 +50,7 @@ const ProjectInputComponent = connect()(
 
         componentDidMount() {
             this.props.dispatch<any>(
-                initProjectsTreePicker(WORKFLOW_OWNER_PROJECT));
+                initProjectsTreePicker(this.props.commandInput.id));
         }
 
         render() {
@@ -106,8 +105,7 @@ const ProjectInputComponent = connect()(
                 <DialogTitle>Choose a project</DialogTitle>
                 <DialogContent>
                     <ProjectsTreePicker
-                        pickerId={WORKFLOW_OWNER_PROJECT}
-                        includeCollections
+                        pickerId={this.props.commandInput.id}
                         options={this.props.options}
                         toggleItemActive={this.setProject} />
                 </DialogContent>
