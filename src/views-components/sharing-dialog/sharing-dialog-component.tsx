@@ -38,6 +38,7 @@ import {
 } from 'material-ui-pickers';
 import DateFnsUtils from "@date-io/date-fns";
 import moment from 'moment';
+import { SharingPublicAccessForm } from './sharing-public-access-form';
 
 export interface SharingDialogDataProps {
     open: boolean;
@@ -101,9 +102,12 @@ export default (props: SharingDialogDataProps & SharingDialogActionProps) => {
         <DialogContent>
             { tabNr === SharingDialogTab.PERMISSIONS &&
             <Grid container direction='column' spacing={24}>
-              <Grid item>
-                  <SharingManagementForm />
-              </Grid>
+                <Grid item>
+                    <SharingPublicAccessForm />
+                </Grid>
+                <Grid item>
+                    <SharingManagementForm />
+                </Grid>
             </Grid>
             }
             { tabNr === SharingDialogTab.URLS &&
