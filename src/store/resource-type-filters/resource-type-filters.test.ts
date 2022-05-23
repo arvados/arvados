@@ -47,11 +47,26 @@ describe("serializeResourceTypeFilters", () => {
             deselectNode(ObjectTypeFilter.PROCESS),
             deselectNode(CollectionTypeFilter.GENERAL_COLLECTION),
             deselectNode(CollectionTypeFilter.LOG_COLLECTION),
+            deselectNode(CollectionTypeFilter.INTERMEDIATE_COLLECTION),
         )();
 
         const serializedFilters = serializeResourceTypeFilters(filters);
         expect(serializedFilters)
             .toEqual(`["uuid","is_a",["${ResourceKind.PROJECT}","${ResourceKind.COLLECTION}"]],["collections.properties.type","in",["output"]]`);
+    });
+
+    it("should serialize intermediate collections and projects", () => {
+        const filters = pipe(
+            () => getInitialResourceTypeFilters(),
+            deselectNode(ObjectTypeFilter.PROCESS),
+            deselectNode(CollectionTypeFilter.GENERAL_COLLECTION),
+            deselectNode(CollectionTypeFilter.LOG_COLLECTION),
+            deselectNode(CollectionTypeFilter.OUTPUT_COLLECTION),
+        )();
+
+        const serializedFilters = serializeResourceTypeFilters(filters);
+        expect(serializedFilters)
+            .toEqual(`["uuid","is_a",["${ResourceKind.PROJECT}","${ResourceKind.COLLECTION}"]],["collections.properties.type","in",["intermediate"]]`);
     });
 
     it("should serialize general and log collections", () => {
