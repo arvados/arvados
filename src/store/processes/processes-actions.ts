@@ -60,7 +60,7 @@ export const reRunProcess = (processUuid: string, workflowUuid: string) =>
             const stringifiedDefinition = JSON.stringify(process.mounts[MOUNT_PATH_CWL_WORKFLOW].content);
             const newWorkflow = { ...workflow, definition: stringifiedDefinition };
 
-            const basicInitialData: RunProcessBasicFormData = { name: `Copy of: ${process.name}`, description: process.description };
+            const basicInitialData: RunProcessBasicFormData = { name: `Copy of: ${process.name}`, description: process.description, ownerUuid: workflow.ownerUuid };
             dispatch<any>(initialize(RUN_PROCESS_BASIC_FORM, basicInitialData));
 
             const advancedInitialData: RunProcessAdvancedFormData = {
