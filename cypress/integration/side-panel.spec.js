@@ -62,7 +62,6 @@ describe('Side panel tests', function() {
             {url: '/shared-with-me', label: 'Shared with me'},
             {url: '/public-favorites', label: 'Public Favorites'},
             {url: '/favorites', label: 'My Favorites'},
-            // {url: '/workflows', label: 'Workflows'},
             {url: '/all_processes', label: 'All Processes'},
             {url: '/trash', label: 'Trash'},
         ].map(function(section) {

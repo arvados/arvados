@@ -21,7 +21,6 @@ import { ArvadosTheme } from 'common/custom-theme';
 import { WorkflowIcon } from 'components/icon/icon';
 import { DataTableDefaultView } from 'components/data-table-default-view/data-table-default-view';
 import { WorkflowResource, parseWorkflowDefinition, getWorkflowInputs, getInputLabel, stringifyInputType } from 'models/workflow';
-// import { WorkflowGraph } from "views/workflow-panel/workflow-graph";
 import { DetailsAttribute } from 'components/details-attribute/details-attribute';
 import { ResourceOwnerWithName } from 'views-components/data-explorer/renderers';
 import { formatDate } from "common/formatters";
@@ -82,7 +81,6 @@ export const WorkflowDetailsCard = withStyles(styles)(
                     <Tab className={classes.tab} label="Description" />
                     <Tab className={classes.tab} label="Inputs" />
                     <Tab className={classes.tab} label="Details" />
-                    {/* <Tab className={classes.tab} label="Graph" /> */}
                 </Tabs>
                 {value === 0 && <CardContent className={classes.descriptionTab}>
                     {workflow ? <div>
@@ -101,14 +99,6 @@ export const WorkflowDetailsCard = withStyles(styles)(
                             messages={['Please select a workflow to see its inputs.']} />
                     }
                 </CardContent>}
-                {/* {value === 2 && <CardContent className={workflow ? classes.graphTabWithChosenWorkflow : classes.graphTab}>
-                    {workflow
-                    ? <WorkflowGraph workflow={workflow} />
-                    : <DataTableDefaultView
-                    icon={WorkflowIcon}
-                    messages={['Please select a workflow to see its visualisation.']} />
-                    }
-                    </CardContent>} */}
                 {value === 2 && <CardContent className={classes.descriptionTab}>
                     {workflow
                         ? <WorkflowDetailsAttributes workflow={workflow} />
