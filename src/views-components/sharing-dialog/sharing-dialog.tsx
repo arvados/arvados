@@ -43,8 +43,8 @@ const mapDispatchToProps = (dispatch: Dispatch, { ...props }: Props): SharingDia
     onSave: () => {
         dispatch<any>(saveSharingDialogChanges);
     },
-    onCreateSharingToken: () => {
-        dispatch<any>(createSharingToken);
+    onCreateSharingToken: (d: Date) => () => {
+        dispatch<any>(createSharingToken(d));
     },
     refreshPermissions: () => {
         dispatch<any>(initializeManagementForm);
