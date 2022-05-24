@@ -1710,6 +1710,24 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@date-io/core@npm:^1.3.13":
+  version: 1.3.13
+  resolution: "@date-io/core@npm:1.3.13"
+  checksum: 5a9e9d1de20f0346a3c7d2d5946190caef4bfb0b64d82ba1f4c566657a9192667c94ebe7f438d11d4286d9c190974daad4fb2159294225cd8af4d9a140239879
+  languageName: node
+  linkType: hard
+
+"@date-io/date-fns@npm:1":
+  version: 1.3.13
+  resolution: "@date-io/date-fns@npm:1.3.13"
+  dependencies:
+    "@date-io/core": ^1.3.13
+  peerDependencies:
+    date-fns: ^2.0.0
+  checksum: 0026c0e538ea4add57a11936ff6bdb07e99f25275f8bb28c4702bbb7e82c3a41b3e8124132aa719180d462c01a26a3b4801e41b7349cdb73813749d4bf5e8fbd
+  languageName: node
+  linkType: hard
+
 "@fortawesome/fontawesome-common-types@npm:^0.2.28":
   version: 0.2.35
   resolution: "@fortawesome/fontawesome-common-types@npm:0.2.35"
@@ -2716,6 +2734,15 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@types/react-text-mask@npm:^5.4.3":
+  version: 5.4.11
+  resolution: "@types/react-text-mask@npm:5.4.11"
+  dependencies:
+    "@types/react": "*"
+  checksum: 4defba1467e61b73bfdae74d0b1bea0f27846aabf5283f137fa372ef05bf23accfdf04fffaba33272e9eff5abf00a74863e9c24ca6974c731d73f3fae6efc577
+  languageName: node
+  linkType: hard
+
 "@types/react-transition-group@npm:^2.0.8":
   version: 2.9.2
   resolution: "@types/react-transition-group@npm:2.9.2"
@@ -3710,6 +3737,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "arvados-workbench-2@workspace:."
   dependencies:
+    "@date-io/date-fns": 1
     "@fortawesome/fontawesome-svg-core": 1.2.28
     "@fortawesome/free-solid-svg-icons": 5.13.0
     "@fortawesome/react-fontawesome": 0.1.9
@@ -3752,6 +3780,7 @@ __metadata:
     classnames: 2.2.6
     cwlts: 1.15.29
     cypress: 6.3.0
+    date-fns: ^2.28.0
     debounce: 1.2.0
     elliptic: 6.5.4
     enzyme: 3.11.0
@@ -3767,6 +3796,7 @@ __metadata:
     lodash-es: 4.17.14
     lodash.mergewith: 4.6.2
     lodash.template: 4.5.0
+    material-ui-pickers: ^2.2.4
     mem: 4.0.0
     moment: 2.29.1
     node-sass: ^4.9.4
@@ -5325,6 +5355,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"clsx@npm:^1.0.2":
+  version: 1.1.1
+  resolution: "clsx@npm:1.1.1"
+  checksum: ff052650329773b9b245177305fc4c4dc3129f7b2be84af4f58dc5defa99538c61d4207be7419405a5f8f3d92007c954f4daba5a7b74e563d5de71c28c830063
+  languageName: node
+  linkType: hard
+
 "co@npm:^4.6.0":
   version: 4.6.0
   resolution: "co@npm:4.6.0"
@@ -6264,6 +6301,13 @@ __metadata:
   version: 1.30.1
   resolution: "date-fns@npm:1.30.1"
   checksum: 86b1f3269cbb1f3ee5ac9959775ea6600436f4ee2b78430cd427b41a0c9fabf740b1a5d401c085f3003539a6f4755c7c56c19fbd70ce11f6f673f6bc8075b710
+  languageName: node
+  linkType: hard
+
+"date-fns@npm:^2.28.0":
+  version: 2.28.0
+  resolution: "date-fns@npm:2.28.0"
+  checksum: a0516b2e4f99b8bffc6cc5193349f185f195398385bdcaf07f17c2c4a24473c99d933eb0018be4142a86a6d46cb0b06be6440ad874f15e795acbedd6fd727a1f
   languageName: node
   linkType: hard
 
@@ -11738,6 +11782,25 @@ __metadata:
   languageName: node
   linkType: hard
 
+"material-ui-pickers@npm:^2.2.4":
+  version: 2.2.4
+  resolution: "material-ui-pickers@npm:2.2.4"
+  dependencies:
+    "@types/react-text-mask": ^5.4.3
+    clsx: ^1.0.2
+    react-event-listener: ^0.6.6
+    react-text-mask: ^5.4.3
+    react-transition-group: ^2.5.3
+    tslib: ^1.9.3
+  peerDependencies:
+    "@material-ui/core": ^3.2.0
+    prop-types: ^15.6.0
+    react: ^16.3.0
+    react-dom: ^16.3.0
+  checksum: be93e30a824c347ede9f82c6adc92748807ebc9665f00ed86b62b580748ca03470823871337d554659d6a6cb6d5898d3636a7fed9e4f2d9cbfa295c196d8c008
+  languageName: node
+  linkType: hard
+
 "md5.js@npm:^1.3.4":
   version: 1.3.5
   resolution: "md5.js@npm:1.3.5"
@@ -14501,6 +14564,17 @@ __metadata:
   languageName: node
   linkType: hard
 
+"prop-types@npm:^15.5.6":
+  version: 15.8.1
+  resolution: "prop-types@npm:15.8.1"
+  dependencies:
+    loose-envify: ^1.4.0
+    object-assign: ^4.1.1
+    react-is: ^16.13.1
+  checksum: c056d3f1c057cb7ff8344c645450e14f088a915d078dcda795041765047fa080d38e5d626560ccaac94a4e16e3aa15f3557c1a9a8d1174530955e992c675e459
+  languageName: node
+  linkType: hard
+
 "proxy-addr@npm:~2.0.5":
   version: 2.0.7
   resolution: "proxy-addr@npm:2.0.7"
@@ -14858,7 +14932,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"react-event-listener@npm:^0.6.2":
+"react-event-listener@npm:^0.6.2, react-event-listener@npm:^0.6.6":
   version: 0.6.6
   resolution: "react-event-listener@npm:0.6.6"
   dependencies:
@@ -15095,6 +15169,17 @@ __metadata:
   languageName: node
   linkType: hard
 
+"react-text-mask@npm:^5.4.3":
+  version: 5.4.3
+  resolution: "react-text-mask@npm:5.4.3"
+  dependencies:
+    prop-types: ^15.5.6
+  peerDependencies:
+    react: ^0.14.0 || ^15.0.0 || ^16.0.0
+  checksum: ee9c560f47d2f67d0193636eeea36852503d6d7bfd16d75ecb8170256606923d786bbb3511971deedbd01136340acf597fe2b6ba0be3cddb2a17a602767eb7b9
+  languageName: node
+  linkType: hard
+
 "react-transition-group@npm:2.5.0":
   version: 2.5.0
   resolution: "react-transition-group@npm:2.5.0"
@@ -15110,7 +15195,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"react-transition-group@npm:^2.2.1":
+"react-transition-group@npm:^2.2.1, react-transition-group@npm:^2.5.3":
   version: 2.9.0
   resolution: "react-transition-group@npm:2.9.0"
   dependencies:
@@ -17661,7 +17746,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"tslib@npm:^1.8.0, tslib@npm:^1.8.1, tslib@npm:^1.9.0":
+"tslib@npm:^1.8.0, tslib@npm:^1.8.1, tslib@npm:^1.9.0, tslib@npm:^1.9.3":
   version: 1.14.1
   resolution: "tslib@npm:1.14.1"
   checksum: dbe628ef87f66691d5d2959b3e41b9ca0045c3ee3c7c7b906cc1e328b39f199bb1ad9e671c39025bd56122ac57dfbf7385a94843b1cc07c60a4db74795829acd

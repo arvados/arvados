@@ -71,6 +71,7 @@ describe('Group manage tests', function() {
             });
         cy.get('[role=tooltip]').click();
         cy.get('.sharing-dialog').contains('Save').click();
+        cy.get('.sharing-dialog').contains('Close').click();
 
         // Check that both users are present with appropriate permissions
         cy.get('[data-cy=group-members-data-explorer]')

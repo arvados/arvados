@@ -4,48 +4,68 @@
 
 import { compose, Dispatch } from 'redux';
 import { connect } from 'react-redux';
-
-import React from 'react';
-import { connectSharingDialog, saveSharingDialogChanges, connectSharingDialogProgress, sendSharingInvitations } from 'store/sharing-dialog/sharing-dialog-actions';
-import { WithDialogProps } from 'store/dialog/with-dialog';
 import { RootState } from 'store/store';
-
-import SharingDialogComponent, { SharingDialogDataProps, SharingDialogActionProps } from './sharing-dialog-component';
-import { SharingDialogContent } from './sharing-dialog-content';
-import { connectAdvancedViewSwitch, AdvancedViewSwitchInjectedProps } from './advanced-view-switch';
-import { hasChanges } from 'store/sharing-dialog/sharing-dialog-types';
+import {
+    connectSharingDialog,
+    saveSharingDialogChanges,
+    connectSharingDialogProgress,
+    SharingDialogData,
+    createSharingToken,
+    initializeManagementForm
+} from 'store/sharing-dialog/sharing-dialog-actions';
+import { WithDialogProps } from 'store/dialog/with-dialog';
+import SharingDialogComponent, {
+    SharingDialogDataProps,
+    SharingDialogActionProps
+} from './sharing-dialog-component';
+import {
+    getSharingPublicAccessFormData,
+    hasChanges,
+    SHARING_DIALOG_NAME,
+    VisibilityLevel
+} from 'store/sharing-dialog/sharing-dialog-types';
 import { WithProgressStateProps } from 'store/progress-indicator/with-progress';
+import { getDialog } from 'store/dialog/dialog-reducer';
+import { filterResources } from 'store/resources/resources';
+import { ApiClientAuthorization } from 'models/api-client-authorization';
+import { ResourceKind } from 'models/resource';
 
-type Props = WithDialogProps<string> & AdvancedViewSwitchInjectedProps & WithProgressStateProps;
+type Props = WithDialogProps<string> & WithProgressStateProps;
 
-const mapStateToProps = (state: RootState, { advancedViewOpen, working, ...props }: Props): SharingDialogDataProps => ({
+const mapStateToProps = (state: RootState, { working, ...props }: Props): SharingDialogDataProps => {
+    const dialog = getDialog<SharingDialogData>(state.dialog, SHARING_DIALOG_NAME);
+    const sharedResourceUuid = dialog?.data.resourceUuid || '';
+    return ({
     ...props,
     saveEnabled: hasChanges(state),
     loading: working,
-    advancedEnabled: !advancedViewOpen,
-    children: <SharingDialogContent {...{ advancedViewOpen }} />,
-});
+    sharedResourceUuid,
+    sharingURLsNr: (filterResources(
+        (resource: ApiClientAuthorization) =>
+            resource.kind === ResourceKind.API_CLIENT_AUTHORIZATION  &&
+            resource.scopes.includes(`GET /arvados/v1/collections/${sharedResourceUuid}`) &&
+            resource.scopes.includes(`GET /arvados/v1/collections/${sharedResourceUuid}/`) &&
+            resource.scopes.includes('GET /arvados/v1/keep_services/accessible')
+        )(state.resources) as ApiClientAuthorization[]).length,
+    privateAccess: getSharingPublicAccessFormData(state)?.visibility === VisibilityLevel.PRIVATE,
+    })
+};
 
-const mapDispatchToProps = (dispatch: Dispatch, { toggleAdvancedView, advancedViewOpen, ...props }: Props): SharingDialogActionProps => ({
+const mapDispatchToProps = (dispatch: Dispatch, { ...props }: Props): SharingDialogActionProps => ({
     ...props,
     onClose: props.closeDialog,
-    onExited: () => {
-        if (advancedViewOpen) {
-            toggleAdvancedView();
-        }
-    },
     onSave: () => {
-        if (advancedViewOpen) {
-            dispatch<any>(saveSharingDialogChanges);
-        } else {
-            dispatch<any>(sendSharingInvitations);
-        }
+        dispatch<any>(saveSharingDialogChanges);
     },
-    onAdvanced: toggleAdvancedView,
+    onCreateSharingToken: (d: Date) => () => {
+        dispatch<any>(createSharingToken(d));
+    },
+    refreshPermissions: () => {
+        dispatch<any>(initializeManagementForm);
+    }
 });
 
 export const SharingDialog = compose(
-    connectAdvancedViewSwitch,
     connectSharingDialog,
     connectSharingDialogProgress,
     connect(mapStateToProps, mapDispatchToProps)

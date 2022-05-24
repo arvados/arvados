@@ -5,6 +5,7 @@ Clusters:
     API:
       RequestTimeout: 30s
       VocabularyPath: ""
+      MaxTokenLifetime: 24h
     TLS:
       Insecure: true
     Collections:
