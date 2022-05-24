@@ -19,21 +19,35 @@ import SharingDialogComponent, {
     SharingDialogActionProps
 } from './sharing-dialog-component';
 import {
+    getSharingPublicAccessFormData,
     hasChanges,
-    SHARING_DIALOG_NAME
+    SHARING_DIALOG_NAME,
+    VisibilityLevel
 } from 'store/sharing-dialog/sharing-dialog-types';
 import { WithProgressStateProps } from 'store/progress-indicator/with-progress';
 import { getDialog } from 'store/dialog/dialog-reducer';
+import { filterResources } from 'store/resources/resources';
+import { ApiClientAuthorization } from 'models/api-client-authorization';
+import { ResourceKind } from 'models/resource';
 
 type Props = WithDialogProps<string> & WithProgressStateProps;
 
 const mapStateToProps = (state: RootState, { working, ...props }: Props): SharingDialogDataProps => {
     const dialog = getDialog<SharingDialogData>(state.dialog, SHARING_DIALOG_NAME);
+    const sharedResourceUuid = dialog?.data.resourceUuid || '';
     return ({
     ...props,
     saveEnabled: hasChanges(state),
     loading: working,
-    sharedResourceUuid: dialog?.data.resourceUuid || '',
+    sharedResourceUuid,
+    sharingURLsNr: (filterResources(
+        (resource: ApiClientAuthorization) =>
+            resource.kind === ResourceKind.API_CLIENT_AUTHORIZATION  &&
+            resource.scopes.includes(`GET /arvados/v1/collections/${sharedResourceUuid}`) &&
+            resource.scopes.includes(`GET /arvados/v1/collections/${sharedResourceUuid}/`) &&
+            resource.scopes.includes('GET /arvados/v1/keep_services/accessible')
+        )(state.resources) as ApiClientAuthorization[]).length,
+    privateAccess: getSharingPublicAccessFormData(state)?.visibility === VisibilityLevel.PRIVATE,
     })
 };
 

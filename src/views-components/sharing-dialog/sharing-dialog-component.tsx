@@ -45,6 +45,8 @@ export interface SharingDialogDataProps {
     loading: boolean;
     saveEnabled: boolean;
     sharedResourceUuid: string;
+    sharingURLsNr: number;
+    privateAccess: boolean;
 }
 export interface SharingDialogActionProps {
     onClose: () => void;
@@ -58,6 +60,7 @@ enum SharingDialogTab {
 }
 export default (props: SharingDialogDataProps & SharingDialogActionProps) => {
     const { open, loading, saveEnabled, sharedResourceUuid,
+        sharingURLsNr, privateAccess,
         onClose, onSave, onCreateSharingToken, refreshPermissions } = props;
     const showTabs = extractUuidObjectType(sharedResourceUuid) === ResourceObjectType.COLLECTION;
     const [tabNr, setTabNr] = React.useState<number>(SharingDialogTab.PERMISSIONS);
@@ -96,7 +99,7 @@ export default (props: SharingDialogDataProps & SharingDialogActionProps) => {
                 setTabNr(tb)}
             }>
             <Tab label="With users/groups" />
-            <Tab label="Sharing URLs" disabled={saveEnabled} />
+            <Tab label={`Sharing URLs ${sharingURLsNr > 0 ? '('+sharingURLsNr+')' : ''}`} disabled={saveEnabled} />
         </Tabs>
         }
         <DialogContent>
@@ -119,7 +122,8 @@ export default (props: SharingDialogDataProps & SharingDialogActionProps) => {
                 { tabNr === SharingDialogTab.PERMISSIONS &&
                 <Grid item md={12}>
                     <SharingInvitationForm />
-                </Grid> }
+                </Grid>
+                }
                 { tabNr === SharingDialogTab.URLS && withExpiration && <>
                 <Grid item container direction='row' md={12}>
                     <MuiPickersUtilsProvider utils={DateFnsUtils}>
@@ -145,7 +149,15 @@ export default (props: SharingDialogDataProps & SharingDialogActionProps) => {
                         Maximum expiration date may be limited by the cluster configuration.
                     </Typography>
                 </Grid>
-                </> }
+                </>
+                }
+                { tabNr === SharingDialogTab.PERMISSIONS && privateAccess && sharingURLsNr > 0 &&
+                <Grid item md={12}>
+                    <Typography variant='caption' align='center' color='error'>
+                        Although there aren't specific permissions set, this is publicly accessible via Sharing URL(s).
+                    </Typography>
+                </Grid>
+                }
                 <Grid item xs />
                 { tabNr === SharingDialogTab.URLS && <>
                 <Grid item><FormControlLabel
@@ -160,7 +172,8 @@ export default (props: SharingDialogDataProps & SharingDialogActionProps) => {
                         Create sharing URL
                     </Button>
                 </Grid>
-                </>}
+                </>
+                }
                 { tabNr === SharingDialogTab.PERMISSIONS &&
                 <Grid item>
                     <Button onClick={onSave} variant="contained" color="primary"
