@@ -82,7 +82,6 @@ describe('workflow-panel-actions', () => {
         await openRunProcess("zzzzz-7fd4e-0123456789abcde", "zzzzz-tpzed-0123456789abcde", "testing", { inputparm: "value" })(dispatchWrapper, store.getState, services);
         expect(dispatchMock).toHaveBeenCalledWith(runProcessPanelActions.SET_WORKFLOWS(wflist));
         expect(dispatchMock).toHaveBeenCalledWith(runProcessPanelActions.SET_SELECTED_WORKFLOW(wflist[0]));
-        expect(dispatchMock).toHaveBeenCalledWith(runProcessPanelActions.SET_PROCESS_OWNER_UUID("zzzzz-tpzed-0123456789abcde"));
         expect(dispatchMock).toHaveBeenCalledWith(initialize(RUN_PROCESS_BASIC_FORM, { name: "testing" }));
         expect(dispatchMock).toHaveBeenCalledWith(initialize(RUN_PROCESS_INPUTS_FORM, { inputparm: "value" }));
     });
