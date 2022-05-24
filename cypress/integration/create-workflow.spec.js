@@ -73,7 +73,7 @@ describe('Multi-file deletion tests', function () {
 
             cy.get('[data-cy=run-process-next-button]').click();
 
-            cy.get('[data-cy=new-process-panel]').contains('Run Process').should('be.disabled');
+            cy.get('[data-cy=new-process-panel]').contains('Run workflow').should('be.disabled');
 
             cy.get('[data-cy=new-process-panel]')
                 .within(() => {
@@ -105,7 +105,7 @@ describe('Multi-file deletion tests', function () {
             cy.get('@chooseFileDialog').find('button').contains('Ok').click();
 
             cy.get('[data-cy=new-process-panel]')
-                .find('button').contains('Run Process').should('not.be.disabled');
+                .find('button').contains('Run workflow').should('not.be.disabled');
         });
     });
 
