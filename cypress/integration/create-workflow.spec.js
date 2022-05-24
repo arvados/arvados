@@ -78,7 +78,7 @@ describe('Multi-file deletion tests', function () {
             cy.get('[data-cy=new-process-panel]')
                 .within(() => {
                     cy.get('[name=name]').type(`Workflow name (${Math.floor(Math.random() * 999999)})`);
-                    cy.get('[readonly]').click();
+                    cy.contains('input').next().click();
                 });
 
             cy.get('[data-cy=choose-a-file-dialog]').as('chooseFileDialog');
