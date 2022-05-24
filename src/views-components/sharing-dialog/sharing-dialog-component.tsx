@@ -73,7 +73,7 @@ export default (props: SharingDialogDataProps & SharingDialogActionProps) => {
         if (!withExpiration) {
             setExpDate(undefined);
         } else {
-            setExpDate(moment().add(1, 'hour').toDate());
+            setExpDate(moment().add(2, 'hour').minutes(0).seconds(0).toDate());
         }
     }, [withExpiration]);
 
@@ -155,6 +155,7 @@ export default (props: SharingDialogDataProps & SharingDialogActionProps) => {
                 </Grid>
                 <Grid item>
                     <Button variant="contained" color="primary"
+                        disabled={expDate !== undefined && expDate <= new Date()}
                         onClick={onCreateSharingToken(expDate)}>
                         Create sharing URL
                     </Button>
