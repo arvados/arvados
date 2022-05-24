@@ -102,7 +102,11 @@ export const setWorkflow = (workflow: WorkflowResource, isWorkflowChanged = true
 
         const advancedFormValues = getWorkflowRunnerSettings(workflow);
 
-        const owner = getResource<ProjectResource | UserResource>(getState().runProcessPanel.processOwnerUuid)(getState().resources);
+        let owner = getResource<ProjectResource | UserResource>(getState().runProcessPanel.processOwnerUuid)(getState().resources);
+        const userUuid = getUserUuid(getState());
+        if (!owner || !userUuid || owner.writableBy.indexOf(userUuid) === -1) {
+            owner = undefined;
+        }
 
         if (isStepChanged && isWorkflowChanged) {
             dispatch(runProcessPanelActions.SET_STEP_CHANGED(false));

@@ -29,7 +29,7 @@ export const RunProcessBasicForm =
                     <Field
                         name='name'
                         component={TextField as any}
-                        label="Enter a new name for run process"
+                        label="Name for this workflow run"
                         required
                         validate={PROCESS_NAME_VALIDATION} />
                 </Grid>
@@ -37,7 +37,7 @@ export const RunProcessBasicForm =
                     <Field
                         name='description'
                         component={TextField as any}
-                        label="Enter a description for run process" />
+                        label="Optional description of this workflow run" />
                 </Grid>
                 <Grid item xs={12} md={6}>
                     <ProjectInput input={{

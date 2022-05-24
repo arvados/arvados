@@ -18,6 +18,7 @@ import { RUN_PROCESS_ADVANCED_FORM } from 'views/run-process-panel/run-process-a
 import { getResource, ResourcesState } from 'store/resources/resources';
 import { ProjectResource } from 'models/project';
 import { UserResource } from 'models/user';
+import { getUserUuid } from "common/getuser";
 
 export const WORKFLOW_PANEL_ID = "workflowPanel";
 const UUID_PREFIX_PROPERTY_NAME = 'uuidPrefix';
@@ -55,8 +56,15 @@ export const openRunProcess = (workflowUuid: string, ownerUuid?: string, name?: 
             dispatch(initialize(RUN_PROCESS_ADVANCED_FORM, getWorkflowRunnerSettings(workflow)));
             let owner;
             if (ownerUuid) {
-                dispatch(runProcessPanelActions.SET_PROCESS_OWNER_UUID(ownerUuid));
+                // Must be writable.
+                const userUuid = getUserUuid(getState());
                 owner = getResource<ProjectResource | UserResource>(ownerUuid)(getState().resources);
+                if (!owner || !userUuid || owner.writableBy.indexOf(userUuid) === -1) {
+                    owner = undefined;
+                }
+            }
+            if (owner) {
+                dispatch(runProcessPanelActions.SET_PROCESS_OWNER_UUID(owner.uuid));
             }
 
             dispatch(initialize(RUN_PROCESS_BASIC_FORM, { name, owner }));

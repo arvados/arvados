@@ -4,7 +4,7 @@
 
 import React from 'react';
 import { connect, DispatchProp } from 'react-redux';
-import { Field, WrappedFieldProps } from 'redux-form';
+import { Field } from 'redux-form';
 import { Input, Dialog, DialogTitle, DialogContent, DialogActions, Button } from '@material-ui/core';
 import {
     GenericCommandInputParameter
@@ -16,8 +16,12 @@ import { TreeItem } from 'components/tree/tree';
 import { ProjectsTreePickerItem } from 'views-components/projects-tree-picker/generic-projects-tree-picker';
 import { ProjectResource } from 'models/project';
 import { ResourceKind } from 'models/resource';
+import { RootState } from 'store/store';
+import { getUserUuid } from 'common/getuser';
 
 export type ProjectCommandInputParameter = GenericCommandInputParameter<ProjectResource, ProjectResource>;
+
+const require: any = (value?: ProjectResource) => (value === undefined);
 
 export interface ProjectInputProps {
     input: ProjectCommandInputParameter;
@@ -29,6 +33,7 @@ export const ProjectInput = ({ input, options }: ProjectInputProps) =>
         commandInput={input}
         component={ProjectInputComponent as any}
         format={format}
+        validate={require}
         {...{
             options
         }} />;
@@ -40,8 +45,14 @@ interface ProjectInputComponentState {
     project?: ProjectResource;
 }
 
-export const ProjectInputComponent = connect()(
-    class ProjectInputComponent extends React.Component<GenericInputProps & DispatchProp & {
+interface HasUserUuid {
+    userUuid: string;
+};
+
+const mapStateToProps = (state: RootState) => ({ userUuid: getUserUuid(state) });
+
+export const ProjectInputComponent = connect(mapStateToProps)(
+    class ProjectInputComponent extends React.Component<GenericInputProps & DispatchProp & HasUserUuid & {
         options?: { showOnlyOwned: boolean, showOnlyWritable: boolean };
     }, ProjectInputComponentState> {
         state: ProjectInputComponentState = {
@@ -81,6 +92,8 @@ export const ProjectInputComponent = connect()(
             }
         }
 
+        invalid = () => (!this.state.project || this.state.project.writableBy.indexOf(this.props.userUuid) === -1);
+
         renderInput() {
             return <GenericInput
                 component={props =>
@@ -112,7 +125,7 @@ export const ProjectInputComponent = connect()(
                 <DialogActions>
                     <Button onClick={this.closeDialog}>Cancel</Button>
                     <Button
-                        disabled={!this.state.project}
+                        disabled={this.invalid()}
                         variant='contained'
                         color='primary'
                         onClick={this.submit}>Ok</Button>
