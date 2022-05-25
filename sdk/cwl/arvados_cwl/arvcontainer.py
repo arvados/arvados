@@ -37,6 +37,9 @@ from ._version import __version__
 logger = logging.getLogger('arvados.cwl-runner')
 metrics = logging.getLogger('arvados.cwl-runner.metrics')
 
+def cleanup_name_for_collection(name):
+    return name.replace("/", " ")
+
 class ArvadosContainer(JobBase):
     """Submit and manage a Crunch container request for executing a CWL CommandLineTool."""
 
@@ -320,7 +323,7 @@ class ArvadosContainer(JobBase):
         if runtimeContext.submit_runner_cluster:
             extra_submit_params["cluster_id"] = runtimeContext.submit_runner_cluster
 
-        container_request["output_name"] = "Output from step %s" % (self.name)
+        container_request["output_name"] = cleanup_name_for_collection("Output from step %s" % (self.name))
         container_request["output_ttl"] = self.output_ttl
         container_request["mounts"] = mounts
         container_request["secret_mounts"] = secret_mounts

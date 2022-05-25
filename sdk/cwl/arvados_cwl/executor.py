@@ -31,7 +31,7 @@ from arvados.keep import KeepClient
 from arvados.errors import ApiError
 
 import arvados_cwl.util
-from .arvcontainer import RunnerContainer
+from .arvcontainer import RunnerContainer, cleanup_name_for_collection
 from .runner import Runner, upload_docker, upload_job_order, upload_workflow_deps, make_builder
 from .arvtool import ArvadosCommandTool, validate_cluster_target, ArvadosExpressionTool
 from .arvworkflow import ArvadosWorkflow, upload_workflow
@@ -629,6 +629,8 @@ The 'jobs' API is no longer supported.
 
         if not self.output_name:
              self.output_name = "Output from workflow %s" % runtimeContext.name
+
+        self.output_name  = cleanup_name_for_collection(self.output_name)
 
         if self.work_api == "containers":
             if self.ignore_docker_for_reuse:
