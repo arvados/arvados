@@ -35,6 +35,14 @@ Options:
       Subnet id for AWS otherwise packer will pick the default one for the VPC
   --aws-ebs-autoscale (default: false)
       Install the AWS EBS autoscaler daemon.
+  --aws-associate-public-ip (default: true if building for AWS)
+      Associate a public IP address with the node used for building the compute image.
+      Required when the machine running packer can not reach the node used for building
+      the compute image via its private IP.
+      Note: if the subnet has "Auto-assign public IPv4 address" enabled, disabling this
+      flag will have no effect.
+  --aws-ena-support (default: true if building for AWS)
+      Enable enhanced networking
   --gcp-project-id (default: false, required if building for GCP)
       GCP project id
   --gcp-account-file (default: false, required if building for GCP)
@@ -76,6 +84,8 @@ AWS_SOURCE_AMI=
 AWS_VPC_ID=
 AWS_SUBNET_ID=
 AWS_EBS_AUTOSCALE=
+AWS_ASSOCIATE_PUBLIC_IP=true
+AWS_ENA_SUPPORT=true
 GCP_PROJECT_ID=
 GCP_ACCOUNT_FILE=
 GCP_ZONE=
@@ -91,7 +101,7 @@ MKSQUASHFS_MEM=256M
 NVIDIA_GPU_SUPPORT=
 
 PARSEDOPTS=$(getopt --name "$0" --longoptions \
-    help,json-file:,arvados-cluster-id:,aws-source-ami:,aws-profile:,aws-secrets-file:,aws-region:,aws-vpc-id:,aws-subnet-id:,aws-ebs-autoscale,gcp-project-id:,gcp-account-file:,gcp-zone:,azure-secrets-file:,azure-resource-group:,azure-location:,azure-sku:,azure-cloud-environment:,ssh_user:,resolver:,reposuffix:,public-key-file:,mksquashfs-mem:,nvidia-gpu-support,debug \
+    help,json-file:,arvados-cluster-id:,aws-source-ami:,aws-profile:,aws-secrets-file:,aws-region:,aws-vpc-id:,aws-subnet-id:,aws-ebs-autoscale,aws-associate-public-ip:,aws-ena-support:,gcp-project-id:,gcp-account-file:,gcp-zone:,azure-secrets-file:,azure-resource-group:,azure-location:,azure-sku:,azure-cloud-environment:,ssh_user:,resolver:,reposuffix:,public-key-file:,mksquashfs-mem:,nvidia-gpu-support,debug \
     -- "" "$@")
 if [ $? -ne 0 ]; then
     exit 1
@@ -131,6 +141,12 @@ while [ $# -gt 0 ]; do
             ;;
         --aws-ebs-autoscale)
             AWS_EBS_AUTOSCALE=1
+            ;;
+        --aws-associate-public-ip)
+            AWS_ASSOCIATE_PUBLIC_IP="$2"; shift
+            ;;
+        --aws-ena-support)
+            AWS_ENA_SUPPORT="$2"; shift
             ;;
         --gcp-project-id)
             GCP_PROJECT_ID="$2"; shift
@@ -226,25 +242,36 @@ if [[ ! -z "$AZURE_SECRETS_FILE" ]]; then
 fi
 
 
+AWS=0
 EXTRA2=""
 
 if [[ -n "$AWS_SOURCE_AMI" ]]; then
   EXTRA2+=" -var aws_source_ami=$AWS_SOURCE_AMI"
+  AWS=1
 fi
 if [[ -n "$AWS_PROFILE" ]]; then
   EXTRA2+=" -var aws_profile=$AWS_PROFILE"
+  AWS=1
 fi
 if [[ -n "$AWS_VPC_ID" ]]; then
-  EXTRA2+=" -var vpc_id=$AWS_VPC_ID -var associate_public_ip_address=true "
+  EXTRA2+=" -var vpc_id=$AWS_VPC_ID"
+  AWS=1
 fi
 if [[ -n "$AWS_SUBNET_ID" ]]; then
-  EXTRA2+=" -var subnet_id=$AWS_SUBNET_ID -var associate_public_ip_address=true "
+  EXTRA2+=" -var subnet_id=$AWS_SUBNET_ID"
+  AWS=1
 fi
 if [[ -n "$AWS_DEFAULT_REGION" ]]; then
   EXTRA2+=" -var aws_default_region=$AWS_DEFAULT_REGION"
+  AWS=1
 fi
 if [[ -n "$AWS_EBS_AUTOSCALE" ]]; then
   EXTRA2+=" -var aws_ebs_autoscale=$AWS_EBS_AUTOSCALE"
+  AWS=1
+fi
+if [[ $AWS -eq 1 ]]; then
+  EXTRA2+=" -var aws_associate_public_ip_address=$AWS_ASSOCIATE_PUBLIC_IP"
+  EXTRA2+=" -var aws_ena_support=$AWS_ENA_SUPPORT"
 fi
 if [[ -n "$GCP_PROJECT_ID" ]]; then
   EXTRA2+=" -var project_id=$GCP_PROJECT_ID"
