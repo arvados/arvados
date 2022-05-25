@@ -713,9 +713,18 @@ const userFromID =
             return { uuid: props.uuid, userFullname };
         });
 
+const ownerFromResourceId = 
+    compose(
+        connect((state: RootState, props: { uuid: string }) => {
+            const childResource = getResource<GroupContentsResource & UserResource>(props.uuid)(state.resources);
+            return { uuid: childResource ? (childResource as Resource).ownerUuid : '' };
+        }),
+        userFromID
+    );
+
 export const ResourceOwnerWithName =
     compose(
-        userFromID,
+        ownerFromResourceId,
         withStyles({}, { withTheme: true }))
         ((props: { uuid: string, userFullname: string, dispatch: Dispatch, theme: ArvadosTheme }) => {
             const { uuid, userFullname, dispatch, theme } = props;
