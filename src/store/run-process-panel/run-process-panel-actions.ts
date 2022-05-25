@@ -21,6 +21,9 @@ import {
 } from 'views/run-process-panel/run-process-advanced-form';
 import { dialogActions } from 'store/dialog/dialog-actions';
 import { setBreadcrumbs } from 'store/breadcrumbs/breadcrumbs-actions';
+import { getResource } from 'store/resources/resources';
+import { ProjectResource } from "models/project";
+import { UserResource } from "models/user";
 
 export const runProcessPanelActions = unionize({
     SET_PROCESS_PATHNAME: ofType<string>(),
@@ -99,15 +102,23 @@ export const setWorkflow = (workflow: WorkflowResource, isWorkflowChanged = true
 
         const advancedFormValues = getWorkflowRunnerSettings(workflow);
 
+        let owner = getResource<ProjectResource | UserResource>(getState().runProcessPanel.processOwnerUuid)(getState().resources);
+        const userUuid = getUserUuid(getState());
+        if (!owner || !userUuid || owner.writableBy.indexOf(userUuid) === -1) {
+            owner = undefined;
+        }
+
         if (isStepChanged && isWorkflowChanged) {
             dispatch(runProcessPanelActions.SET_STEP_CHANGED(false));
             dispatch(runProcessPanelActions.SET_SELECTED_WORKFLOW(workflow));
             dispatch<any>(loadPresets(workflow.uuid));
+            dispatch(initialize(RUN_PROCESS_BASIC_FORM, { name: workflow.name, owner }));
             dispatch(initialize(RUN_PROCESS_ADVANCED_FORM, advancedFormValues));
         }
         if (!isWorkflowChanged) {
             dispatch(runProcessPanelActions.SET_SELECTED_WORKFLOW(workflow));
             dispatch<any>(loadPresets(workflow.uuid));
+            dispatch(initialize(RUN_PROCESS_BASIC_FORM, { name: workflow.name, owner }));
             dispatch(initialize(RUN_PROCESS_ADVANCED_FORM, advancedFormValues));
         }
     };
@@ -144,7 +155,7 @@ export const runProcess = async (dispatch: Dispatch<any>, getState: () => RootSt
     const userUuid = getUserUuid(getState());
     if (!userUuid) { return; }
     const { processOwnerUuid, selectedWorkflow } = state.runProcessPanel;
-    const ownerUUid = processOwnerUuid ? processOwnerUuid : userUuid;
+    const ownerUUid = basicForm.owner ? basicForm.owner.uuid : (processOwnerUuid ? processOwnerUuid : userUuid);
     if (selectedWorkflow) {
         const advancedForm = getFormValues(RUN_PROCESS_ADVANCED_FORM)(state) as RunProcessAdvancedFormData || getWorkflowRunnerSettings(selectedWorkflow);
         const newProcessData = {
@@ -173,9 +184,9 @@ export const runProcess = async (dispatch: Dispatch<any>, getState: () => RootSt
             ],
             outputPath: '/var/spool/cwl',
             priority: 1,
-            outputName: advancedForm[OUTPUT_FIELD] ? advancedForm[OUTPUT_FIELD] : undefined,
+            outputName: advancedForm[OUTPUT_FIELD] ? advancedForm[OUTPUT_FIELD] : `Output from ${basicForm.name}`,
             properties: {
-                workflowUuid: selectedWorkflow.uuid,
+                template_uuid: selectedWorkflow.uuid,
                 workflowName: selectedWorkflow.name
             },
             useExisting: false

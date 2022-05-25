@@ -14,13 +14,13 @@ import {
     TableHead,
     TableCell,
     TableBody,
-    TableRow
+    TableRow,
 } from '@material-ui/core';
 import { ArvadosTheme } from 'common/custom-theme';
 import { WorkflowIcon } from 'components/icon/icon';
 import { DataTableDefaultView } from 'components/data-table-default-view/data-table-default-view';
-import { WorkflowResource, parseWorkflowDefinition, getWorkflowInputs, getInputLabel, stringifyInputType } from 'models/workflow';
-import { WorkflowGraph } from "views/workflow-panel/workflow-graph";
+import { parseWorkflowDefinition, getWorkflowInputs, getInputLabel, stringifyInputType } from 'models/workflow';
+import { WorkflowDetailsCardDataProps, WorkflowDetailsAttributes } from 'views-components/details-panel/workflow-details';
 
 export type CssRules = 'root' | 'tab' | 'inputTab' | 'graphTab' | 'graphTabWithChosenWorkflow' | 'descriptionTab' | 'inputsTable';
 
@@ -54,10 +54,6 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     },
 });
 
-interface WorkflowDetailsCardDataProps {
-    workflow?: WorkflowResource;
-}
-
 type WorkflowDetailsCardProps = WorkflowDetailsCardDataProps & WithStyles<CssRules>;
 
 export const WorkflowDetailsCard = withStyles(styles)(
@@ -77,16 +73,16 @@ export const WorkflowDetailsCard = withStyles(styles)(
                 <Tabs value={value} onChange={this.handleChange} centered={true}>
                     <Tab className={classes.tab} label="Description" />
                     <Tab className={classes.tab} label="Inputs" />
-                    <Tab className={classes.tab} label="Graph" />
+                    <Tab className={classes.tab} label="Details" />
                 </Tabs>
                 {value === 0 && <CardContent className={classes.descriptionTab}>
                     {workflow ? <div>
                         {workflow.description}
                     </div> : (
-                            <DataTableDefaultView
-                                icon={WorkflowIcon}
-                                messages={['Please select a workflow to see its description.']} />
-                        )}
+                        <DataTableDefaultView
+                            icon={WorkflowIcon}
+                            messages={['Please select a workflow to see its description.']} />
+                    )}
                 </CardContent>}
                 {value === 1 && <CardContent className={classes.inputTab}>
                     {workflow
@@ -96,12 +92,12 @@ export const WorkflowDetailsCard = withStyles(styles)(
                             messages={['Please select a workflow to see its inputs.']} />
                     }
                 </CardContent>}
-                {value === 2 && <CardContent className={workflow ? classes.graphTabWithChosenWorkflow : classes.graphTab}>
+                {value === 2 && <CardContent className={classes.descriptionTab}>
                     {workflow
-                        ? <WorkflowGraph workflow={workflow} />
+                        ? <WorkflowDetailsAttributes workflow={workflow} />
                         : <DataTableDefaultView
                             icon={WorkflowIcon}
-                            messages={['Please select a workflow to see its visualisation.']} />
+                            messages={['Please select a workflow to see its details.']} />
                     }
                 </CardContent>}
             </div>;

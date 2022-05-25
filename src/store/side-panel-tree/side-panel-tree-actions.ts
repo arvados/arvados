@@ -23,7 +23,6 @@ export enum SidePanelTreeCategory {
     PROJECTS = 'Projects',
     SHARED_WITH_ME = 'Shared with me',
     PUBLIC_FAVORITES = 'Public Favorites',
-    WORKFLOWS = 'Workflows',
     FAVORITES = 'My Favorites',
     TRASH = 'Trash',
     ALL_PROCESSES = 'All Processes',
@@ -52,7 +51,6 @@ let SIDE_PANEL_CATEGORIES: string[] = [
     SidePanelTreeCategory.SHARED_WITH_ME,
     SidePanelTreeCategory.PUBLIC_FAVORITES,
     SidePanelTreeCategory.FAVORITES,
-    SidePanelTreeCategory.WORKFLOWS,
     SidePanelTreeCategory.GROUPS,
     SidePanelTreeCategory.ALL_PROCESSES,
     SidePanelTreeCategory.TRASH

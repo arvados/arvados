@@ -23,6 +23,8 @@ export const resourceLabel = (type: string, subtype = '') => {
             return "Group";
         case ResourceKind.VIRTUAL_MACHINE:
             return "Virtual Machine";
+        case ResourceKind.WORKFLOW:
+            return "Workflow";
         default:
             return "Unknown";
     }

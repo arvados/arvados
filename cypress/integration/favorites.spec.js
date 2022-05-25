@@ -219,13 +219,16 @@ describe('Favorites tests', function () {
 
                 cy.get('[data-cy=side-panel-button]').click();
 
-                cy.get('#aside-menu-list').contains('Run a process').click();
+                cy.get('#aside-menu-list').contains('Run a workflow').click();
 
                 cy.get('@testWorkflow')
                     .then((testWorkflow) => {
                         cy.get('main').contains(testWorkflow.name).click();
                         cy.get('[data-cy=run-process-next-button]').click();
-                        cy.get('[readonly]').click();
+                        cy.get('[data-cy=new-process-panel]')
+                            .within(() => {
+                                cy.contains('input').next().click();
+                            });
                         cy.get('[data-cy=choose-a-file-dialog]').as('chooseFileDialog');
                         cy.get('[data-cy=projects-tree-favourites-tree-picker]').contains('Favorites').closest('ul').find('i').click();
                         cy.get('@chooseFileDialog').find(`[data-id=${mySharedWritableProject.uuid}]`);
@@ -240,7 +243,10 @@ describe('Favorites tests', function () {
                         cy.get('main').contains(testWorkflow2.name).click();
                         cy.get('button').contains('Change Workflow').click();
                         cy.get('[data-cy=run-process-next-button]').click();
-                        cy.get('[readonly]').click();
+                        cy.get('[data-cy=new-process-panel]')
+                            .within(() => {
+                                cy.contains('image_collection').next().click();
+                            });
                         cy.get('[data-cy=choose-a-directory-dialog]').as('chooseDirectoryDialog');
                         cy.get('[data-cy=projects-tree-favourites-tree-picker]').contains('Favorites').closest('ul').find('i').click();
                         cy.get('@chooseDirectoryDialog').find(`[data-id=${mySharedWritableProject.uuid}]`);

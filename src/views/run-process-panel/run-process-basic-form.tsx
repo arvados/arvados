@@ -6,14 +6,19 @@ import React from 'react';
 import { reduxForm, Field } from 'redux-form';
 import { Grid } from '@material-ui/core';
 import { TextField } from 'components/text-field/text-field';
+import { ProjectInput, ProjectCommandInputParameter } from 'views/run-process-panel/inputs/project-input';
 import { PROCESS_NAME_VALIDATION } from 'validators/validators';
+import { ProjectResource } from 'models/project';
+import { UserResource } from 'models/user';
 
 export const RUN_PROCESS_BASIC_FORM = 'runProcessBasicForm';
 
 export interface RunProcessBasicFormData {
     name: string;
     description: string;
+    owner?: ProjectResource | UserResource;
 }
+
 export const RunProcessBasicForm =
     reduxForm<RunProcessBasicFormData>({
         form: RUN_PROCESS_BASIC_FORM
@@ -24,7 +29,7 @@ export const RunProcessBasicForm =
                     <Field
                         name='name'
                         component={TextField as any}
-                        label="Enter a new name for run process"
+                        label="Name for this workflow run"
                         required
                         validate={PROCESS_NAME_VALIDATION} />
                 </Grid>
@@ -32,7 +37,14 @@ export const RunProcessBasicForm =
                     <Field
                         name='description'
                         component={TextField as any}
-                        label="Enter a description for run process" />
+                        label="Optional description of this workflow run" />
+                </Grid>
+                <Grid item xs={12} md={6}>
+                    <ProjectInput input={{
+                        id: "owner",
+                        label: "Project where the workflow will run"
+                    } as ProjectCommandInputParameter}
+                        options={{ showOnlyOwned: false, showOnlyWritable: true }} />
                 </Grid>
             </Grid>
         </form>);

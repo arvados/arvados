@@ -27,6 +27,7 @@ export enum ObjectTypeFilter {
     PROJECT = 'Project',
     PROCESS = 'Process',
     COLLECTION = 'Data collection',
+    WORKFLOW = 'Workflow',
 }
 
 export enum GroupTypeFilter {
@@ -63,6 +64,7 @@ export const getSimpleObjectTypeFilters = pipe(
     initFilter(ObjectTypeFilter.PROJECT),
     initFilter(ObjectTypeFilter.PROCESS),
     initFilter(ObjectTypeFilter.COLLECTION),
+    initFilter(ObjectTypeFilter.WORKFLOW),
 );
 
 // Using pipe() with more than 7 arguments makes the return type be 'any',
@@ -86,6 +88,8 @@ export const getInitialResourceTypeFilters = pipe(
         initFilter(CollectionTypeFilter.INTERMEDIATE_COLLECTION, ObjectTypeFilter.COLLECTION),
         initFilter(CollectionTypeFilter.LOG_COLLECTION, ObjectTypeFilter.COLLECTION),
     ),
+    initFilter(ObjectTypeFilter.WORKFLOW)
+
 );
 
 export const getInitialProcessTypeFilters = pipe(
@@ -133,6 +137,8 @@ const objectTypeToResourceKind = (type: ObjectTypeFilter) => {
             return ResourceKind.PROCESS;
         case ObjectTypeFilter.COLLECTION:
             return ResourceKind.COLLECTION;
+        case ObjectTypeFilter.WORKFLOW:
+            return ResourceKind.WORKFLOW;
     }
 };
 
