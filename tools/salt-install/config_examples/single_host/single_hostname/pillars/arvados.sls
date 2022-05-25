@@ -125,6 +125,9 @@ arvados:
         DriverParameters:
           Root: /tmp
 
+    Containers:
+      LocalKeepBlobBuffersPerVCPU: 0
+
     Users:
       NewUsersAreActive: true
       AutoAdminFirstUser: true

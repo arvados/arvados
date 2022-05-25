@@ -108,46 +108,46 @@ func (agg *Aggregator) ServeHTTP(resp http.ResponseWriter, req *http.Request) {
 
 type ClusterHealthResponse struct {
 	// "OK" if all needed services are OK, otherwise "ERROR".
-	Health string `json:"health"`
+	Health string
 
 	// An entry for each known health check of each known instance
 	// of each needed component: "instance of service S on node N
 	// reports health-check C is OK."
-	Checks map[string]CheckResult `json:"checks"`
+	Checks map[string]CheckResult
 
 	// An entry for each service type: "service S is OK." This
 	// exposes problems that can't be expressed in Checks, like
 	// "service S is needed, but isn't configured to run
 	// anywhere."
-	Services map[arvados.ServiceName]ServiceHealth `json:"services"`
+	Services map[arvados.ServiceName]ServiceHealth
 
 	// Difference between min/max timestamps in individual
 	// health-check responses.
 	ClockSkew arvados.Duration
 
-	Errors []string `json:"errors"`
+	Errors []string
 }
 
 type CheckResult struct {
-	Health         string                 `json:"health"`
-	Error          string                 `json:"error,omitempty"`
+	Health         string
+	Error          string                 `json:",omitempty"`
 	HTTPStatusCode int                    `json:",omitempty"`
-	HTTPStatusText string                 `json:",omitempty"`
-	Response       map[string]interface{} `json:"response"`
-	ResponseTime   json.Number            `json:"responseTime"`
-	ClockTime      time.Time              `json:"clockTime"`
-	Metrics        Metrics                `json:"-"`
-	respTime       time.Duration
+	Response       map[string]interface{} `json:",omitempty"`
+	ResponseTime   json.Number
+	ClockTime      time.Time
+	Metrics
+	respTime time.Duration
 }
 
 type Metrics struct {
 	ConfigSourceTimestamp time.Time
 	ConfigSourceSHA256    string
+	Version               string
 }
 
 type ServiceHealth struct {
-	Health string `json:"health"` // "OK", "ERROR", or "SKIP"
-	N      int    `json:"n"`
+	Health string // "OK", "ERROR", or "SKIP"
+	N      int
 }
 
 func (agg *Aggregator) ClusterHealth() ClusterHealthResponse {
@@ -238,6 +238,7 @@ func (agg *Aggregator) ClusterHealth() ClusterHealthResponse {
 		}
 	}
 
+	// Check for clock skew between hosts
 	var maxResponseTime time.Duration
 	var clockMin, clockMax time.Time
 	for _, result := range resp.Checks {
@@ -265,6 +266,7 @@ func (agg *Aggregator) ClusterHealth() ClusterHealthResponse {
 		agg.MetricClockSkew.Set(skew.Seconds())
 	}
 
+	// Check for mismatched config files
 	var newest Metrics
 	for _, result := range resp.Checks {
 		if result.Metrics.ConfigSourceTimestamp.After(newest.ConfigSourceTimestamp) {
@@ -284,6 +286,18 @@ func (agg *Aggregator) ClusterHealth() ClusterHealthResponse {
 			newest.ConfigSourceTimestamp.Format(time.RFC3339))
 		resp.Errors = append(resp.Errors, msg)
 		resp.Health = "ERROR"
+	}
+
+	// Check for services running a different version than we are.
+	for target, result := range resp.Checks {
+		if result.Metrics.Version != "" && !sameVersion(result.Metrics.Version, cmd.Version.String()) {
+			msg := fmt.Sprintf("version mismatch: %s is running %s -- expected %s",
+				strings.TrimSuffix(target, "/_health/ping"),
+				result.Metrics.Version,
+				cmd.Version.String())
+			resp.Errors = append(resp.Errors, msg)
+			resp.Health = "ERROR"
+		}
 	}
 	return resp
 }
@@ -329,7 +343,6 @@ func (agg *Aggregator) ping(target *url.URL) (result CheckResult) {
 		return
 	}
 	result.HTTPStatusCode = resp.StatusCode
-	result.HTTPStatusText = resp.Status
 	err = json.NewDecoder(resp.Body).Decode(&result.Response)
 	if err != nil {
 		result.Error = fmt.Sprintf("cannot decode response: %s", err)
@@ -349,7 +362,10 @@ func (agg *Aggregator) ping(target *url.URL) (result CheckResult) {
 	return
 }
 
-var reMetric = regexp.MustCompile(`([a-z_]+){sha256="([0-9a-f]+)"} (\d[\d\.e\+]+)`)
+var (
+	reConfigMetric  = regexp.MustCompile(`arvados_config_source_timestamp_seconds{sha256="([0-9a-f]+)"} (\d[\d\.e\+]+)`)
+	reVersionMetric = regexp.MustCompile(`arvados_version_running{version="([^"]+)"} 1`)
+)
 
 func (agg *Aggregator) metrics(pingURL *url.URL) (result Metrics, err error) {
 	metricsURL, err := pingURL.Parse("/metrics")
@@ -377,13 +393,13 @@ func (agg *Aggregator) metrics(pingURL *url.URL) (result Metrics, err error) {
 
 	scanner := bufio.NewScanner(resp.Body)
 	for scanner.Scan() {
-		m := reMetric.FindSubmatch(scanner.Bytes())
-		if len(m) != 4 || string(m[1]) != "arvados_config_source_timestamp_seconds" {
-			continue
+		if m := reConfigMetric.FindSubmatch(scanner.Bytes()); len(m) == 3 && len(m[1]) > 0 {
+			result.ConfigSourceSHA256 = string(m[1])
+			unixtime, _ := strconv.ParseFloat(string(m[2]), 64)
+			result.ConfigSourceTimestamp = time.UnixMicro(int64(unixtime * 1e6))
+		} else if m = reVersionMetric.FindSubmatch(scanner.Bytes()); len(m) == 2 && len(m[1]) > 0 {
+			result.Version = string(m[1])
 		}
-		result.ConfigSourceSHA256 = string(m[2])
-		unixtime, _ := strconv.ParseFloat(string(m[3]), 64)
-		result.ConfigSourceTimestamp = time.UnixMicro(int64(unixtime * 1e6))
 	}
 	if err = scanner.Err(); err != nil {
 		err = fmt.Errorf("error parsing response from %s: %w", metricsURL.String(), err)
@@ -476,4 +492,27 @@ func (ccmd checkCommand) run(ctx context.Context, prog string, args []string, st
 		return errSilent
 	}
 	return nil
+}
+
+var reGoVersion = regexp.MustCompile(` \(go\d+([\d.])*\)$`)
+
+// Return true if either a==b or the only difference is that one has a
+// " (go1.2.3)" suffix and the other does not.
+//
+// This allows us to recognize a non-Go (rails) service as the same
+// version as a Go service.
+func sameVersion(a, b string) bool {
+	if a == b {
+		return true
+	}
+	anogo := reGoVersion.ReplaceAllLiteralString(a, "")
+	bnogo := reGoVersion.ReplaceAllLiteralString(b, "")
+	if (anogo == a) != (bnogo == b) {
+		// only one of a/b has a (go1.2.3) suffix, so compare
+		// without that part
+		return anogo == bnogo
+	}
+	// both or neither has a (go1.2.3) suffix, and we already know
+	// a!=b
+	return false
 }
