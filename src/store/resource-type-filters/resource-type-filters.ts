@@ -56,6 +56,7 @@ const initFilter = (name: string, parent = '', isSelected?: boolean) =>
         active: false,
         selected: isSelected !== undefined ? isSelected : true,
         expanded: false,
+        initialState: isSelected !== undefined ? isSelected : true,
         status: TreeNodeStatus.LOADED,
     });
 

@@ -97,6 +97,7 @@ export interface TreeItem<T> {
     open: boolean;
     active: boolean;
     selected?: boolean;
+    initialState?: boolean;
     indeterminate?: boolean;
     flatTree?: boolean;
     status: TreeItemStatus;

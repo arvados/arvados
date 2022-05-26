@@ -14,6 +14,7 @@ export interface TreeNode<T = any> {
     parent: string;
     active: boolean;
     selected: boolean;
+    initialState?: boolean;
     expanded: boolean;
     status: TreeNodeStatus;
 }

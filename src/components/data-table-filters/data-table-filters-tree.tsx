@@ -76,7 +76,12 @@ export class DataTableFiltersTree extends React.Component<DataTableFilterProps> 
 }
 
 const renderItem = (item: TreeItem<DataTableFilterItem>) =>
-    <span>{item.data.name}</span>;
+    <span>
+        {item.data.name}
+        {item.initialState !== item.selected ? <>
+            *
+        </> : null}
+    </span>;
 
 const filterToTreeItem = (filters: DataTableFilters) =>
     (id: string): TreeItem<any> => {
@@ -92,6 +97,7 @@ const filterToTreeItem = (filters: DataTableFilters) =>
             items: items.length > 0 ? items : undefined,
             open: node.expanded,
             selected: node.selected,
+            initialState: node.initialState,
             indeterminate: isIndeterminate,
             status: TreeItemStatus.LOADED,
         };
