@@ -50,8 +50,8 @@ echo "deb http://apt.arvados.org/$LSB_RELEASE_CODENAME $LSB_RELEASE_CODENAME${RE
 
 # Add the arvados signing key
 cat /tmp/1078ECD7.asc | $SUDO apt-key add -
-# Add the debian keys
-wait_for_apt_locks && $SUDO DEBIAN_FRONTEND=noninteractive apt-get install --yes debian-keyring debian-archive-keyring
+# Add the debian keys (but don't abort if we can't find them, e.g. on Ubuntu where we don't need them)
+wait_for_apt_locks && $SUDO DEBIAN_FRONTEND=noninteractive apt-get install --yes debian-keyring debian-archive-keyring 2>/dev/null || true
 
 # Fix locale
 $SUDO /bin/sed -ri 's/# en_US.UTF-8 UTF-8/en_US.UTF-8 UTF-8/' /etc/locale.gen
