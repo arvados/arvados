@@ -87,6 +87,9 @@ class ActionsController < ApplicationController
             end
             if resource_class == Collection
               dst.manifest_text = Collection.select([:manifest_text]).where(uuid: src.uuid).with_count("none").first.manifest_text
+              # Fixes bug 19144: nullify some fields that are managed by keep-balance.
+              dst.storage_classes_confirmed = []
+              dst.storage_classes_confirmed_at = nil
             end
           when :move
             dst = src
