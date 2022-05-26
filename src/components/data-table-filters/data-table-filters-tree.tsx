@@ -83,6 +83,7 @@ const filterToTreeItem = (filters: DataTableFilters) =>
         const node = getNode(id)(filters) || initTreeNode({ id: '', value: 'InvalidNode' });
         const items = getNodeChildrenIds(node.id)(filters)
             .map(filterToTreeItem(filters));
+        const isIndeterminate = !node.selected && items.some(i => i.selected || i.indeterminate);
 
         return {
             active: node.active,
@@ -91,6 +92,7 @@ const filterToTreeItem = (filters: DataTableFilters) =>
             items: items.length > 0 ? items : undefined,
             open: node.expanded,
             selected: node.selected,
+            indeterminate: isIndeterminate,
             status: TreeItemStatus.LOADED,
         };
     };

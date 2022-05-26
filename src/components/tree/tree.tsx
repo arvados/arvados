@@ -97,6 +97,7 @@ export interface TreeItem<T> {
     open: boolean;
     active: boolean;
     selected?: boolean;
+    indeterminate?: boolean;
     flatTree?: boolean;
     status: TreeItemStatus;
     items?: Array<TreeItem<T>>;
@@ -292,6 +293,7 @@ export const Tree = withStyles(styles)(
                             {showSelection(it) && !useRadioButtons &&
                                 <Checkbox
                                     checked={it.selected}
+                                    indeterminate={!it.selected && it.indeterminate}
                                     className={classes.checkbox}
                                     color="primary"
                                     onClick={this.handleCheckboxChange(it)} />}
