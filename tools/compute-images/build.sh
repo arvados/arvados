@@ -17,60 +17,62 @@ Syntax:
 
 Options:
 
-  --json-file (required)
-      Path to the packer json file
-  --arvados-cluster-id (required)
-      The ID of the Arvados cluster, e.g. zzzzz
-  --aws-profile (default: false)
-      AWS profile to use (valid profile from ~/.aws/config
-  --aws-secrets-file (default: false, required if building for AWS)
-      AWS secrets file which will be sourced from this script
-  --aws-source-ami (default: false, required if building for AWS)
-      The AMI to use as base for building the images
-  --aws-region (default: us-east-1)
+  --json-file <path>
+      Path to the packer json file (required)
+  --arvados-cluster-id <xxxxx>
+      The ID of the Arvados cluster, e.g. zzzzz(required)
+  --aws-profile <profile>
+      AWS profile to use (valid profile from ~/.aws/config (optional)
+  --aws-secrets-file <path>
+      AWS secrets file which will be sourced from this script (optional)
+      When building for AWS, either an AWS profile or an AWS secrets file
+      must be provided.
+  --aws-source-ami <ami-xxxxxxxxxxxxxxxxx>
+      The AMI to use as base for building the images (required if building for AWS)
+  --aws-region <region> (default: us-east-1)
       The AWS region to use for building the images
-  --aws-vpc-id (optional)
-      VPC id for AWS, otherwise packer will pick the default one
-  --aws-subnet-id
-      Subnet id for AWS otherwise packer will pick the default one for the VPC
-  --aws-ebs-autoscale (default: false)
-      Install the AWS EBS autoscaler daemon.
-  --aws-associate-public-ip (default: true if building for AWS)
+  --aws-vpc-id <vpc-id>
+      VPC id for AWS, if not specified packer will derive from the subnet id or pick the default one.
+  --aws-subnet-id <subnet-xxxxxxxxxxxxxxxxx>
+      Subnet id for AWS, if not specified packer will pick the default one for the VPC.
+  --aws-ebs-autoscale
+      Install the AWS EBS autoscaler daemon (default: do not install the AWS EBS autoscaler).
+  --aws-associate-public-ip <true|false>
       Associate a public IP address with the node used for building the compute image.
       Required when the machine running packer can not reach the node used for building
-      the compute image via its private IP.
+      the compute image via its private IP. (default: true if building for AWS)
       Note: if the subnet has "Auto-assign public IPv4 address" enabled, disabling this
       flag will have no effect.
-  --aws-ena-support (default: true if building for AWS)
-      Enable enhanced networking
-  --gcp-project-id (default: false, required if building for GCP)
-      GCP project id
-  --gcp-account-file (default: false, required if building for GCP)
-      GCP account file
-  --gcp-zone (default: us-central1-f)
+  --aws-ena-support <true|false>
+      Enable enhanced networking (default: true if building for AWS)
+  --gcp-project-id <project-id>
+      GCP project id (required if building for GCP)
+  --gcp-account-file <path>
+      GCP account file (required if building for GCP)
+  --gcp-zone <zone> (default: us-central1-f)
       GCP zone
-  --azure-secrets-file (default: false, required if building for Azure)
-      Azure secrets file which will be sourced from this script
-  --azure-resource-group (default: false, required if building for Azure)
-      Azure resource group
-  --azure-location (default: false, required if building for Azure)
-      Azure location, e.g. centralus, eastus, westeurope
-  --azure-sku (default: unset, required if building for Azure, e.g. 16.04-LTS)
+  --azure-secrets-file <patch>
+      Azure secrets file which will be sourced from this script (required if building for Azure)
+  --azure-resource-group <resouce-group>
+      Azure resource group (required if building for Azure)
+  --azure-location <location>
+      Azure location, e.g. centralus, eastus, westeurope (required if building for Azure)
+  --azure-sku <sku> (required if building for Azure, e.g. 16.04-LTS)
       Azure SKU image to use
-  --ssh_user  (default: packer)
+  --ssh_user <user> (default: packer)
       The user packer will use to log into the image
-  --resolver (default: host's network provided)
-      The dns resolver for the machine
-  --reposuffix (default: unset)
+  --resolver <resolver_IP>
+      The dns resolver for the machine (default: host's network provided)
+  --reposuffix <suffix>
       Set this to "-dev" to track the unstable/dev Arvados repositories
-  --public-key-file (required)
-      Path to the public key file that a-d-c will use to log into the compute node
+  --public-key-file <path>
+      Path to the public key file that a-d-c will use to log into the compute node (required)
   --mksquashfs-mem (default: 256M)
       Only relevant when using Singularity. This is the amount of memory mksquashfs is allowed to use.
-  --nvidia-gpu-support (default: false)
-      Install all the necessary tooling for Nvidia GPU support
-  --debug (default: false)
-      Output debug information
+  --nvidia-gpu-support
+      Install all the necessary tooling for Nvidia GPU support (default: do not install Nvidia GPU support)
+  --debug
+      Output debug information (default: no debug output is printed)
 
 For more information, see the Arvados documentation at https://doc.arvados.org/install/crunch2-cloud/install-compute-node.html
 
