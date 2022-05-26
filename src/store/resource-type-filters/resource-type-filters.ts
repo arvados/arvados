@@ -47,7 +47,7 @@ export enum ProcessTypeFilter {
     CHILD_PROCESS = 'Child',
 }
 
-const initFilter = (name: string, parent = '', isSelected?: boolean) =>
+const initFilter = (name: string, parent = '', isSelected?: boolean, isExpanded?: boolean) =>
     setNode<DataTableFilterItem>({
         id: name,
         value: { name },
@@ -55,8 +55,8 @@ const initFilter = (name: string, parent = '', isSelected?: boolean) =>
         children: [],
         active: false,
         selected: isSelected !== undefined ? isSelected : true,
-        expanded: false,
         initialState: isSelected !== undefined ? isSelected : true,
+        expanded: isExpanded !== undefined ? isExpanded : false,
         status: TreeNodeStatus.LOADED,
     });
 
@@ -73,17 +73,17 @@ export const getSimpleObjectTypeFilters = pipe(
 export const getInitialResourceTypeFilters = pipe(
     (): DataTableFilters => createTree<DataTableFilterItem>(),
     pipe(
-        initFilter(ObjectTypeFilter.PROJECT),
+        initFilter(ObjectTypeFilter.PROJECT, '', true, true),
         initFilter(GroupTypeFilter.PROJECT, ObjectTypeFilter.PROJECT),
         initFilter(GroupTypeFilter.FILTER_GROUP, ObjectTypeFilter.PROJECT),
     ),
     pipe(
-        initFilter(ObjectTypeFilter.PROCESS),
+        initFilter(ObjectTypeFilter.PROCESS, '', false, true),
         initFilter(ProcessTypeFilter.MAIN_PROCESS, ObjectTypeFilter.PROCESS),
-        initFilter(ProcessTypeFilter.CHILD_PROCESS, ObjectTypeFilter.PROCESS)
+        initFilter(ProcessTypeFilter.CHILD_PROCESS, ObjectTypeFilter.PROCESS, false)
     ),
     pipe(
-        initFilter(ObjectTypeFilter.COLLECTION),
+        initFilter(ObjectTypeFilter.COLLECTION, '', true, true),
         initFilter(CollectionTypeFilter.GENERAL_COLLECTION, ObjectTypeFilter.COLLECTION),
         initFilter(CollectionTypeFilter.OUTPUT_COLLECTION, ObjectTypeFilter.COLLECTION),
         initFilter(CollectionTypeFilter.INTERMEDIATE_COLLECTION, ObjectTypeFilter.COLLECTION),
