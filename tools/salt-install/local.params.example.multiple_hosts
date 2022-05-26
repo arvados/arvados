@@ -82,7 +82,7 @@ LE_AWS_SECRET_ACCESS_KEY="thisistherandomstringthatisyoursecretkey"
 # Please set it to the FULL PATH to the certs dir if you're going to use a different dir
 # Default is "${SCRIPT_DIR}/certs", where the variable "SCRIPT_DIR" has the path to the
 # directory where the  "provision.sh" script was copied in the destination host.
-# CUSTOM_CERTS_DIR="${SCRIPT_DIR}/certs"
+# CUSTOM_CERTS_DIR="${SCRIPT_DIR}/local_config_dir/certs"
 # The script expects cert/key files with these basenames (matching the role except for
 # keepweb, which is split in both download/collections):
 #  "controller"

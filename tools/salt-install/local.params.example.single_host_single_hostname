@@ -53,7 +53,7 @@ SSL_MODE="self-signed"
 
 # CUSTOM_CERTS_DIR is only used when SSL_MODE is set to "bring-your-own".
 # See https://doc.arvados.org/intall/salt-single-host.html#bring-your-own for more information.
-# CUSTOM_CERTS_DIR="${SCRIPT_DIR}/certs"
+# CUSTOM_CERTS_DIR="${SCRIPT_DIR}/local_config_dir/certs"
 
 # The directory to check for the config files (pillars, states) you want to use.
 # There are a few examples under 'config_examples'.

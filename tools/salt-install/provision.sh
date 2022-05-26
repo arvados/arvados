@@ -189,7 +189,7 @@ WORKBENCH2_EXT_SSL_PORT=3001
 
 SSL_MODE="self-signed"
 USE_LETSENCRYPT_ROUTE53="no"
-CUSTOM_CERTS_DIR="${SCRIPT_DIR}/certs"
+CUSTOM_CERTS_DIR="${SCRIPT_DIR}/local_config_dir/certs"
 
 ## These are ARVADOS-related parameters
 # For a stable release, change RELEASE "production" and VERSION to the
