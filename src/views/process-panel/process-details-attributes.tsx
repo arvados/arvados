@@ -9,7 +9,7 @@ import { formatDate } from "common/formatters";
 import { resourceLabel } from "common/labels";
 import { DetailsAttribute } from "components/details-attribute/details-attribute";
 import { ResourceKind } from "models/resource";
-import { ContainerRunTime, ResourceOwnerWithName } from "views-components/data-explorer/renderers";
+import { ContainerRunTime, ResourceWithName } from "views-components/data-explorer/renderers";
 import { getProcess, getProcessStatus } from "store/processes/process";
 import { RootState } from "store/store";
 import { connect } from "react-redux";
@@ -79,7 +79,7 @@ export const ProcessDetailsAttributes = withStyles(styles, { withTheme: true })(
                 <Grid item xs={12} md={mdSize}>
                     <DetailsAttribute
                         label='Owner' linkToUuid={containerRequest.ownerUuid}
-                        uuidEnhancer={(uuid: string) => <ResourceOwnerWithName uuid={uuid} />} />
+                        uuidEnhancer={(uuid: string) => <ResourceWithName uuid={uuid} />} />
                 </Grid>
                 <Grid item xs={12} md={mdSize}>
                     <DetailsAttribute label='Container UUID' value={containerRequest.containerUuid} />

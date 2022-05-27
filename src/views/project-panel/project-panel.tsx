@@ -183,7 +183,7 @@ export const ProjectPanel = withStyles(styles)(
                         name: resource.name,
                         uuid: resource.uuid,
                         ownerUuid: resource.ownerUuid,
-                        isTrashed: ('isTrashed' in resource) ? resource.isTrashed: false,
+                        isTrashed: ('isTrashed' in resource) ? resource.isTrashed : false,
                         kind: resource.kind,
                         menuKind,
                         description: resource.description,

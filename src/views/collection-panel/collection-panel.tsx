@@ -36,7 +36,7 @@ import { getProgressIndicator } from 'store/progress-indicator/progress-indicato
 import { COLLECTION_PANEL_LOAD_FILES, loadCollectionFiles, COLLECTION_PANEL_LOAD_FILES_THRESHOLD } from 'store/collection-panel/collection-panel-files/collection-panel-files-actions';
 import { Link } from 'react-router-dom';
 import { Link as ButtonLink } from '@material-ui/core';
-import { ResourceOwnerWithName, ResponsiblePerson } from 'views-components/data-explorer/renderers';
+import { ResourceWithName, ResponsiblePerson } from 'views-components/data-explorer/renderers';
 import { MPVContainer, MPVPanelContent, MPVPanelState } from 'components/multi-panel-view/multi-panel-view';
 
 type CssRules = 'root'
@@ -146,8 +146,8 @@ export const CollectionPanel = withStyles(styles)(
             render() {
                 const { classes, item, dispatch, isWritable, isOldVersion, isLoadingFiles, tooManyFiles } = this.props;
                 const panelsData: MPVPanelState[] = [
-                    {name: "Details"},
-                    {name: "Files"},
+                    { name: "Details" },
+                    { name: "Files" },
                 ];
                 return item
                     ? <MPVContainer className={classes.root} spacing={8} direction="column" justify-content="flex-start" wrap="nowrap" panelStates={panelsData}>
@@ -195,7 +195,7 @@ export const CollectionPanel = withStyles(styles)(
                                         {isOldVersion &&
                                             <Typography className={classes.warningLabel} variant="caption">
                                                 This is an old version. Make a copy to make changes. Go to the <Link to={getCollectionUrl(item.currentVersionUuid)}>head version</Link> for sharing options.
-                                          </Typography>
+                                            </Typography>
                                         }
                                     </Grid>
                                 </Grid>
@@ -288,7 +288,7 @@ export const CollectionDetailsAttributes = (props: CollectionDetailsProps) => {
         <Grid item xs={12} md={mdSize}>
             <DetailsAttribute classLabel={classes.label} classValue={classes.value}
                 label='Owner' linkToUuid={item.ownerUuid}
-                uuidEnhancer={(uuid: string) => <ResourceOwnerWithName uuid={uuid} />} />
+                uuidEnhancer={(uuid: string) => <ResourceWithName uuid={uuid} />} />
         </Grid>
         <div data-cy="responsible-person-wrapper" ref={responsiblePersonRef}>
             <Grid item xs={12} md={12}>
@@ -341,13 +341,13 @@ export const CollectionDetailsAttributes = (props: CollectionDetailsProps) => {
         <Grid item xs={12} md={12}>
             <DetailsAttribute classLabel={classes.label} classValue={classes.value}
                 label='Properties' />
-            { Object.keys(item.properties).length > 0
+            {Object.keys(item.properties).length > 0
                 ? Object.keys(item.properties).map(k =>
-                        Array.isArray(item.properties[k])
+                    Array.isArray(item.properties[k])
                         ? item.properties[k].map((v: string) =>
                             getPropertyChip(k, v, undefined, classes.tag))
                         : getPropertyChip(k, item.properties[k], undefined, classes.tag))
-                : <div className={classes.value}>No properties</div> }
+                : <div className={classes.value}>No properties</div>}
         </Grid>
     </Grid>;
 };

@@ -16,7 +16,7 @@ import { withStyles, StyleRulesCallback, WithStyles, Button } from '@material-ui
 import { ArvadosTheme } from 'common/custom-theme';
 import { Dispatch } from 'redux';
 import { getPropertyChip } from '../resource-properties-form/property-chip';
-import { ResourceOwnerWithName } from '../data-explorer/renderers';
+import { ResourceWithName } from '../data-explorer/renderers';
 import { GroupClass } from "models/group";
 import { openProjectUpdateDialog, ProjectUpdateFormDialogData } from 'store/projects/project-update-actions';
 
@@ -41,7 +41,7 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
         marginBottom: theme.spacing.unit / 2,
     },
     editIcon: {
-        paddingRight: theme.spacing.unit/2,
+        paddingRight: theme.spacing.unit / 2,
         fontSize: '1.125rem',
     },
     editButton: {
@@ -70,21 +70,21 @@ const ProjectDetailsComponent = connect(null, mapDispatchToProps)(
     withStyles(styles)(
         ({ classes, project, onClick }: ProjectDetailsComponentProps) => <div>
             {project.groupClass !== GroupClass.FILTER ?
-                    <Button onClick={onClick({
-                        uuid: project.uuid,
-                        name: project.name,
-                        description: project.description,
-                        properties: project.properties,
-                    })}
-                        className={classes.editButton} variant='contained'
-                        data-cy='details-panel-edit-btn' color='primary' size='small'>
-                        <RenameIcon className={classes.editIcon} /> Edit
-                    </Button>
-                    : ''
-                }
+                <Button onClick={onClick({
+                    uuid: project.uuid,
+                    name: project.name,
+                    description: project.description,
+                    properties: project.properties,
+                })}
+                    className={classes.editButton} variant='contained'
+                    data-cy='details-panel-edit-btn' color='primary' size='small'>
+                    <RenameIcon className={classes.editIcon} /> Edit
+                </Button>
+                : ''
+            }
             <DetailsAttribute label='Type' value={project.groupClass === GroupClass.FILTER ? 'Filter group' : resourceLabel(ResourceKind.PROJECT)} />
             <DetailsAttribute label='Owner' linkToUuid={project.ownerUuid}
-                uuidEnhancer={(uuid: string) => <ResourceOwnerWithName uuid={uuid} />} />
+                uuidEnhancer={(uuid: string) => <ResourceWithName uuid={uuid} />} />
             <DetailsAttribute label='Last modified' value={formatDate(project.modifiedAt)} />
             <DetailsAttribute label='Created at' value={formatDate(project.createdAt)} />
             <DetailsAttribute label='UUID' linkToUuid={project.uuid} value={project.uuid} />
@@ -101,9 +101,9 @@ const ProjectDetailsComponent = connect(null, mapDispatchToProps)(
             {
                 Object.keys(project.properties).map(k =>
                     Array.isArray(project.properties[k])
-                    ? project.properties[k].map((v: string) =>
-                        getPropertyChip(k, v, undefined, classes.tag))
-                    : getPropertyChip(k, project.properties[k], undefined, classes.tag)
+                        ? project.properties[k].map((v: string) =>
+                            getPropertyChip(k, v, undefined, classes.tag))
+                        : getPropertyChip(k, project.properties[k], undefined, classes.tag)
                 )
             }
         </div>

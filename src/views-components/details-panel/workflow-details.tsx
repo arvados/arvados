@@ -8,7 +8,7 @@ import { WorkflowResource } from 'models/workflow';
 import { DetailsData } from "./details-data";
 import { DefaultView } from 'components/default-view/default-view';
 import { DetailsAttribute } from 'components/details-attribute/details-attribute';
-import { ResourceOwnerWithName } from 'views-components/data-explorer/renderers';
+import { ResourceWithName } from 'views-components/data-explorer/renderers';
 import { formatDate } from "common/formatters";
 import { Grid } from '@material-ui/core';
 import { withStyles, StyleRulesCallback, WithStyles, Button } from '@material-ui/core';
@@ -61,7 +61,7 @@ export const WorkflowDetailsAttributes = connect(null, mapDispatchToProps)(
                 <Grid item xs={12} >
                     <DetailsAttribute
                         label='Owner' linkToUuid={workflow?.ownerUuid}
-                        uuidEnhancer={(uuid: string) => <ResourceOwnerWithName uuid={uuid} />} />
+                        uuidEnhancer={(uuid: string) => <ResourceWithName uuid={uuid} />} />
                 </Grid>
                 <Grid item xs={12}>
                     <DetailsAttribute label='Created at' value={formatDate(workflow?.createdAt)} />
@@ -72,7 +72,7 @@ export const WorkflowDetailsAttributes = connect(null, mapDispatchToProps)(
                 <Grid item xs={12} >
                     <DetailsAttribute
                         label='Last modified by user' linkToUuid={workflow?.modifiedByUserUuid}
-                        uuidEnhancer={(uuid: string) => <ResourceOwnerWithName uuid={uuid} />} />
+                        uuidEnhancer={(uuid: string) => <ResourceWithName uuid={uuid} />} />
                 </Grid>
             </Grid >;
         }));
