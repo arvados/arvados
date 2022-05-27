@@ -630,4 +630,4 @@ export const CollectionPanelFiles = withStyles(styles)(connect((state: RootState
                 </div>
             </div>
         </div>
-    </div>}));
+    </div></div>}));
