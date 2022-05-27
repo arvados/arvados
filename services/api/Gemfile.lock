@@ -153,7 +153,7 @@ GEM
     power_assert (1.1.4)
     public_suffix (4.0.6)
     racc (1.6.0)
-    rack (2.2.3)
+    rack (2.2.3.1)
     rack-test (1.1.0)
       rack (>= 1.0, < 3)
     rails (5.2.6.3)
