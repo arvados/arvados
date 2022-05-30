@@ -222,7 +222,7 @@ func (s *integrationSuite) TestRunTrivialContainerWithLocalKeepstore(c *C) {
 	s.SetUpTest(c)
 	s.stdin.Reset()
 	s.testRunTrivialContainer(c)
-	c.Check(s.logFiles["crunch-run.txt"], Matches, `(?ms).*not starting a local keepstore process because a volume \(zzzzz-nyw5e-000000000000000\) uses AccessViaHosts\n.*`)
+	c.Check(s.logFiles["crunch-run.txt"], Matches, `(?ms).*not starting a local keepstore process because a volume \(zzzzz-nyw5e-00000000000000\d\) uses AccessViaHosts\n.*`)
 
 	// Check that config read errors are logged
 	s.SetUpTest(c)
