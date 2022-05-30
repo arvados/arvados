@@ -15,7 +15,6 @@ import { loadDetailsPanel } from 'store/details-panel/details-panel-action';
 
 export const collectionPanelActions = unionize({
     SET_COLLECTION: ofType<CollectionResource>(),
-    LOAD_COLLECTION_SUCCESS: ofType<{ item: CollectionResource }>(),
 });
 
 export type CollectionPanelAction = UnionOf<typeof collectionPanelActions>;
@@ -27,7 +26,7 @@ export const loadCollectionPanel = (uuid: string, forceReload = false) =>
             ? item
             : await services.collectionService.get(uuid);
         dispatch<any>(loadDetailsPanel(collection.uuid));
-        dispatch(collectionPanelActions.LOAD_COLLECTION_SUCCESS({ item: collection }));
+        dispatch(collectionPanelActions.SET_COLLECTION(collection));
         dispatch(resourcesActions.SET_RESOURCES([collection]));
         return collection;
     };

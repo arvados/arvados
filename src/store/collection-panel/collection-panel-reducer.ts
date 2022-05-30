@@ -20,5 +20,4 @@ export const collectionPanelReducer = (state: CollectionPanelState = initialStat
              ...state,
              item,
         }),
-        LOAD_COLLECTION_SUCCESS: ({ item }) => ({ ...state, item }),
     });
