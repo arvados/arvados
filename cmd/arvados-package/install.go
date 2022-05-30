@@ -134,7 +134,7 @@ exec arvados-server boot -listen-host=0.0.0.0 -no-workbench2=false $bootargs
 }
 
 func dockerImageExists(ctx context.Context, name string) (bool, error) {
-	cli, err := client.NewEnvClient()
+	cli, err := client.NewClient(client.DefaultDockerHost, "1.21", nil, nil)
 	if err != nil {
 		return false, err
 	}

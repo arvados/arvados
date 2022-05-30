@@ -137,7 +137,7 @@ func build(ctx context.Context, opts opts, stdin io.Reader, stdout, stderr io.Wr
 }
 
 func dockerRm(ctx context.Context, name string) error {
-	cli, err := client.NewEnvClient()
+	cli, err := client.NewClient(client.DefaultDockerHost, "1.21", nil, nil)
 	if err != nil {
 		return err
 	}
