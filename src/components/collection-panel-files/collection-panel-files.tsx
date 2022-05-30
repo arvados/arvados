@@ -10,7 +10,7 @@ import AutoSizer from "react-virtualized-auto-sizer";
 import servicesProvider from 'common/service-provider';
 import { CustomizeTableIcon, DownloadIcon } from 'components/icon/icon';
 import { SearchInput } from 'components/search-input/search-input';
-import { ListItemIcon, StyleRulesCallback, Theme, WithStyles, withStyles, Tooltip, IconButton, Checkbox, CircularProgress, Button } from '@material-ui/core';
+import { ListItemIcon, StyleRulesCallback, Theme, WithStyles, withStyles, Tooltip, IconButton, Checkbox, CircularProgress, Button, Typography } from '@material-ui/core';
 import { FileTreeData } from '../file-tree/file-tree-data';
 import { TreeItem, TreeItemStatus } from '../tree/tree';
 import { RootState } from 'store/store';
@@ -466,14 +466,6 @@ export const CollectionPanelFiles = withStyles(styles)(connect((state: RootState
                 </IconButton>
             </Tooltip>
         </div>
-        <div className={classes.wrapper}>
-            <div className={classNames(classes.leftPanel, path.length > 1 ? classes.leftPanelVisible : classes.leftPanelHidden)}  data-cy="collection-files-left-panel">
-                <Tooltip title="Go back" className={path.length > 1 ? classes.backButton : classes.backButtonHidden}>
-                    <IconButton onClick={() => setPath([...path.slice(0, path.length -1)])}>
-                        <BackIcon />
-                    </IconButton>
-                </Tooltip>
-            </div>
             <div className={classes.wrapper}>
                 <div className={classNames(classes.leftPanel, path.length > 1 ? classes.leftPanelVisible : classes.leftPanelHidden)}  data-cy="collection-files-left-panel">
                     <Tooltip title="Go back" className={path.length > 1 ? classes.backButton : classes.backButtonHidden}>
@@ -499,6 +491,7 @@ export const CollectionPanelFiles = withStyles(styles)(connect((state: RootState
                                         >
                                             {
                                                 ({ index, style }) => {
+                                                    console.log("Left Data ROW: ", filtered[index]);
                                                     const { id, type, name } = filtered[index];
 
                                                     return <div
@@ -527,60 +520,6 @@ export const CollectionPanelFiles = withStyles(styles)(connect((state: RootState
 
                     </div>
                 </div>
-                <div className={classes.rightPanel} data-cy="collection-files-right-panel">
-                    <div className={classes.searchWrapper}>
-                        <SearchInput selfClearProp={rightKey} label="Search" value={rightSearch} onSearch={setRightSearch} />
-                    </div>
-                    {
-                        isWritable &&
-                        <Button
-                            className={classes.uploadButton}
-                            data-cy='upload-button'
-                            onClick={() => {
-                                onUploadDataClick(rightKey === leftKey ? undefined : rightKey);
-                            }}
-                            variant='contained'
-                            color='primary'
-                            size='small'>
-                            <DownloadIcon className={classes.uploadIcon} />
-                            Upload data
-                        </Button>
-                    }
-                    <div className={classes.dataWrapper}>
-                        {
-                            rightData && !isLoading ?
-                                <AutoSizer defaultHeight={500}>
-                                    {({ height, width }) => {
-                                        const filtered = rightData.filter(({ name }) => name.indexOf(rightSearch) > -1);
-
-                        return !!filtered.length
-                        ? <FixedSizeList height={height} itemCount={filtered.length}
-                            itemSize={35} width={width}>{ ({ index, style }) => {
-                            console.log("Left Data ROW: ", filtered[index]);
-                            const { id, type, name } = filtered[index];
-
-                            return <div data-id={id} style={style} data-item="true"
-                                data-type={type} data-parent-path={name} key={id}
-                                className={classNames(classes.row, getActiveClass(name))}>
-                                    { getItemIcon(type, getActiveClass(name)) }
-                                    <div className={classes.rowName}>
-                                        {name}
-                                    </div>
-                                    { getActiveClass(name)
-                                    ? <SidePanelRightArrowIcon style={{
-                                        display: 'inline',
-                                        marginTop: '5px',
-                                        marginLeft: '5px' }} />
-                                    : null }
-                            </div>;
-                        } }</FixedSizeList>
-                        : <div className={classes.rowEmpty}>No directories available</div>
-                    } }</AutoSizer>
-                    : <div className={classes.row}>
-                        <CircularProgress className={classes.loader} size={30} />
-                    </div> }
-                </div>
-            </div>
             <div className={classes.rightPanel}>
                 <div className={classes.searchWrapper}>
                     <SearchInput selfClearProp={rightKey} label="Search" value={rightSearch} onSearch={setRightSearch} />
@@ -588,7 +527,7 @@ export const CollectionPanelFiles = withStyles(styles)(connect((state: RootState
                 { isWritable &&
                 <Button className={classes.uploadButton} data-cy='upload-button'
                     onClick={() => {
-                        onUploadDataClick();
+                        onUploadDataClick(rightKey === leftKey ? undefined : rightKey);
                     }}
                     variant='contained' color='primary' size='small'>
                     <DownloadIcon className={classes.uploadIcon} />
@@ -630,4 +569,4 @@ export const CollectionPanelFiles = withStyles(styles)(connect((state: RootState
                 </div>
             </div>
         </div>
-    </div></div>}));
+    </div>}));
