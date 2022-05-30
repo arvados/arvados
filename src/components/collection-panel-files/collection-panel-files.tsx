@@ -42,7 +42,6 @@ import { getInlineFileUrl, sanitizeToken } from 'views-components/context-menu/a
 import _ from 'lodash';
 
 export interface CollectionPanelFilesProps {
-    items: any;
     isWritable: boolean;
     onUploadDataClick: (targetLocation?: string) => void;
     onSearchChange: (searchValue: string) => void;
@@ -232,7 +231,7 @@ export const CollectionPanelFiles = withStyles(styles)(connect((state: RootState
 }))((props: CollectionPanelFilesProps & WithStyles<CssRules> & { auth: AuthState }) => {
     const diff = difference(props, prevState);
     prevState = props;
-    console.log('---> render CollectionPanel <------', diff);
+    console.log('---> render CollectionPanelFiles <------', diff);
     const { classes, onItemMenuOpen, onUploadDataClick, isWritable, dispatch, collectionPanelFiles, collectionPanel } = props;
     const { apiToken, config } = props.auth;
 
