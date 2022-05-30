@@ -10,14 +10,31 @@ import AutoSizer from "react-virtualized-auto-sizer";
 import servicesProvider from 'common/service-provider';
 import { CustomizeTableIcon, DownloadIcon } from 'components/icon/icon';
 import { SearchInput } from 'components/search-input/search-input';
-import { ListItemIcon, StyleRulesCallback, Theme, WithStyles, withStyles, Tooltip, IconButton, Checkbox, CircularProgress, Button, Typography } from '@material-ui/core';
+import {
+    ListItemIcon,
+    StyleRulesCallback,
+    Theme,
+    WithStyles,
+    withStyles,
+    Tooltip,
+    IconButton,
+    Checkbox,
+    CircularProgress,
+    Button,
+} from '@material-ui/core';
 import { FileTreeData } from '../file-tree/file-tree-data';
 import { TreeItem, TreeItemStatus } from '../tree/tree';
 import { RootState } from 'store/store';
 import { WebDAV, WebDAVRequestConfig } from 'common/webdav';
 import { AuthState } from 'store/auth/auth-reducer';
 import { extractFilesData } from 'services/collection-service/collection-service-files-response';
-import { DefaultIcon, DirectoryIcon, FileIcon, BackIcon, SidePanelRightArrowIcon } from 'components/icon/icon';
+import {
+    DefaultIcon,
+    DirectoryIcon,
+    FileIcon,
+    BackIcon,
+    SidePanelRightArrowIcon
+} from 'components/icon/icon';
 import { setCollectionFiles } from 'store/collection-panel/collection-panel-files/collection-panel-files-actions';
 import { sortBy } from 'lodash';
 import { formatFileSize } from 'common/formatters';
@@ -40,7 +57,29 @@ export interface CollectionPanelFilesProps {
     collectionPanel: any;
 }
 
-type CssRules = "backButton" | "backButtonHidden" | "pathPanelPathWrapper" | "uploadButton" | "uploadIcon" | "loader" | "wrapper" | "dataWrapper" | "row" | "rowEmpty" | "leftPanel" | "rightPanel" | "pathPanel" | "pathPanelItem" | "rowName" | "listItemIcon" | "rowActive" | "pathPanelMenu" | "rowSelection" | "leftPanelHidden" | "leftPanelVisible" | "searchWrapper" | "searchWrapperHidden";
+type CssRules = "backButton"
+    | "backButtonHidden"
+    | "pathPanelPathWrapper"
+    | "uploadButton"
+    | "uploadIcon"
+    | "loader"
+    | "wrapper"
+    | "dataWrapper"
+    | "row"
+    | "rowEmpty"
+    | "leftPanel"
+    | "rightPanel"
+    | "pathPanel"
+    | "pathPanelItem"
+    | "rowName"
+    | "listItemIcon"
+    | "rowActive"
+    | "pathPanelMenu"
+    | "rowSelection"
+    | "leftPanelHidden"
+    | "leftPanelVisible"
+    | "searchWrapper"
+    | "searchWrapperHidden";
 
 const styles: StyleRulesCallback<CssRules> = (theme: Theme) => ({
     wrapper: {
@@ -447,18 +486,15 @@ export const CollectionPanelFiles = withStyles(styles)(connect((state: RootState
     return <div data-cy="collection-files-panel" onClick={handleClick} ref={parentRef}>
         <div className={classes.pathPanel}>
             <div className={classes.pathPanelPathWrapper}>
-                { path.map((p: string, index: number) => <span
-                    key={`${index}-${p}`}
-                    data-item="true"
-                    className={classes.pathPanelItem}
-                    data-breadcrumb-path={p}
-                >
+            { path.map( (p: string, index: number) =>
+                <span key={`${index}-${p}`} data-item="true"
+                className={classes.pathPanelItem} data-breadcrumb-path={p}>
                     <span className={classes.rowActive}>{index === 0 ? 'Home' : p}</span> <b>/</b>&nbsp;
-                </span>) }
+                </span>)
+            }
             </div>
             <Tooltip className={classes.pathPanelMenu} title="More options" disableFocusListener>
-                <IconButton
-                    data-cy='collection-files-panel-options-btn'
+                <IconButton data-cy='collection-files-panel-options-btn'
                     onClick={(ev) => {
                         onOptionsMenuOpen(ev, isWritable);
                     }}>
@@ -466,60 +502,45 @@ export const CollectionPanelFiles = withStyles(styles)(connect((state: RootState
                 </IconButton>
             </Tooltip>
         </div>
-            <div className={classes.wrapper}>
-                <div className={classNames(classes.leftPanel, path.length > 1 ? classes.leftPanelVisible : classes.leftPanelHidden)}  data-cy="collection-files-left-panel">
-                    <Tooltip title="Go back" className={path.length > 1 ? classes.backButton : classes.backButtonHidden}>
-                        <IconButton onClick={() => setPath([...path.slice(0, path.length -1)])}>
-                            <BackIcon />
-                        </IconButton>
-                    </Tooltip>
-                    <div className={path.length > 1 ? classes.searchWrapper : classes.searchWrapperHidden}>
-                        <SearchInput selfClearProp={leftKey} label="Search" value={leftSearch} onSearch={setLeftSearch} />
-                    </div>
-                    <div className={classes.dataWrapper}>
-                        {
-                            leftData ?
-                                <AutoSizer defaultWidth={0}>
-                                    {({ height, width }) => {
-                                        const filtered = leftData.filter(({ name }) => name.indexOf(leftSearch) > -1);
-
-                                        return !!filtered.length ? <FixedSizeList
-                                            height={height}
-                                            itemCount={filtered.length}
-                                            itemSize={35}
-                                            width={width}
-                                        >
-                                            {
-                                                ({ index, style }) => {
-                                                    console.log("Left Data ROW: ", filtered[index]);
-                                                    const { id, type, name } = filtered[index];
-
-                                                    return <div
-                                                        data-id={id}
-                                                        style={style}
-                                                        data-item="true"
-                                                        data-type={type}
-                                                        data-parent-path={name}
-                                                        className={classNames(classes.row, getActiveClass(name))}
-                                                        key={id}>
-                                                            {getItemIcon(type, getActiveClass(name))}
-                                                            <div className={classes.rowName}>
-                                                                {name}
-                                                            </div>
-                                                            {
-                                                                getActiveClass(name) ? <SidePanelRightArrowIcon
-                                                                    style={{ display: 'inline', marginTop: '5px', marginLeft: '5px' }} /> : null
-                                                            }
-                                                    </div>;
-                                                }
-                                            }
-                                        </FixedSizeList> : <div className={classes.rowEmpty}>No directories available</div>
-                                    }}
-                                </AutoSizer> : <div className={classes.row}><CircularProgress className={classes.loader} size={30} /></div>
-                        }
-
-                    </div>
+        <div className={classes.wrapper}>
+            <div className={classNames(classes.leftPanel, path.length > 1 ? classes.leftPanelVisible : classes.leftPanelHidden)}  data-cy="collection-files-left-panel">
+                <Tooltip title="Go back" className={path.length > 1 ? classes.backButton : classes.backButtonHidden}>
+                    <IconButton onClick={() => setPath([...path.slice(0, path.length -1)])}>
+                        <BackIcon />
+                    </IconButton>
+                </Tooltip>
+                <div className={path.length > 1 ? classes.searchWrapper : classes.searchWrapperHidden}>
+                    <SearchInput selfClearProp={leftKey} label="Search" value={leftSearch} onSearch={setLeftSearch} />
                 </div>
+                <div className={classes.dataWrapper}>{ leftData
+                ? <AutoSizer defaultWidth={0}>{({ height, width }) => {
+                    const filtered = leftData.filter(({ name }) => name.indexOf(leftSearch) > -1);
+                    return !!filtered.length
+                    ? <FixedSizeList height={height} itemCount={filtered.length}
+                        itemSize={35} width={width}>{ ({ index, style }) => {
+                        console.log("Left Data ROW: ", filtered[index]);
+                        const { id, type, name } = filtered[index];
+                        return <div data-id={id} style={style} data-item="true"
+                            data-type={type} data-parent-path={name}
+                            className={classNames(classes.row, getActiveClass(name))}
+                            key={id}>
+                                { getItemIcon(type, getActiveClass(name)) }
+                                <div className={classes.rowName}>
+                                    {name}
+                                </div>
+                                { getActiveClass(name)
+                                ? <SidePanelRightArrowIcon
+                                    style={{ display: 'inline', marginTop: '5px', marginLeft: '5px' }} />
+                                : null
+                                }
+                        </div>;
+                    }}</FixedSizeList>
+                    : <div className={classes.rowEmpty}>No directories available</div>
+                    }}
+                </AutoSizer>
+                : <div className={classes.row}><CircularProgress className={classes.loader} size={30} /></div> }
+                </div>
+            </div>
             <div className={classes.rightPanel}>
                 <div className={classes.searchWrapper}>
                     <SearchInput selfClearProp={rightKey} label="Search" value={rightSearch} onSearch={setRightSearch} />
@@ -537,7 +558,6 @@ export const CollectionPanelFiles = withStyles(styles)(connect((state: RootState
                     ? <AutoSizer defaultHeight={500}>{({ height, width }) => {
                         const filtered = rightData.filter(({ name }) => name.indexOf(rightSearch) > -1);
                         console.log("Right Data: ", filtered);
-
                         return !!filtered.length
                         ? <FixedSizeList height={height} itemCount={filtered.length}
                             itemSize={35} width={width}>{ ({ index, style }) => {

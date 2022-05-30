@@ -3,10 +3,9 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import React from 'react';
-import { DefaultIcon, WorkflowIcon } from 'components/icon/icon';
+import { WorkflowIcon } from 'components/icon/icon';
 import { WorkflowResource } from 'models/workflow';
 import { DetailsData } from "./details-data";
-import { DefaultView } from 'components/default-view/default-view';
 import { DetailsAttribute } from 'components/details-attribute/details-attribute';
 import { ResourceWithName } from 'views-components/data-explorer/renderers';
 import { formatDate } from "common/formatters";
