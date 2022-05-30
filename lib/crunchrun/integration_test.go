@@ -249,9 +249,6 @@ func (s *integrationSuite) testRunTrivialContainer(c *C) {
 	if err := exec.Command("which", s.engine).Run(); err != nil {
 		c.Skip(fmt.Sprintf("%s: %s", s.engine, err))
 	}
-	if s.engine == "docker" && os.Getenv("ENABLE_DOCKER_TESTS") == "" {
-		c.Skip("docker tests temporarily disabled if ENABLE_DOCKER_TESTS is not set, see https://dev.arvados.org/issues/15370#note-31")
-	}
 	s.cr.Command = []string{"sh", "-c", "cat /mnt/in/inputfile >/mnt/out/inputfile && cat /mnt/json >/mnt/out/json && ! touch /mnt/in/shouldbereadonly && mkdir /mnt/out/emptydir"}
 	s.setup(c)
 
