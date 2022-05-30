@@ -248,8 +248,8 @@ export const CollectionPanelFiles = withStyles(styles)(connect((state: RootState
     };
 
     const parentRef = React.useRef(null);
-    const [path, setPath]: any = React.useState([]);
-    const [pathData, setPathData]: any = React.useState({});
+    const [path, setPath] = React.useState<string[]>([]);
+    const [pathData, setPathData] = React.useState({});
     const [isLoading, setIsLoading] = React.useState(false);
     const [leftSearch, setLeftSearch] = React.useState('');
     const [rightSearch, setRightSearch] = React.useState('');
@@ -277,7 +277,7 @@ export const CollectionPanelFiles = withStyles(styles)(connect((state: RootState
                 const dataExists = !!pathData[key];
                 const runningRequest = pathPromise[key];
 
-                if ((!dataExists || ignoreCache) && (!runningRequest || ignoreCache)) {
+                if (ignoreCache || (!dataExists && !runningRequest)) {
                     if (!isLoading) {
                         setIsLoading(true);
                     }
@@ -377,13 +377,12 @@ export const CollectionPanelFiles = withStyles(styles)(connect((state: RootState
                 onItemMenuOpen(event, item, isWritable);
             }
         },
-        [onItemMenuOpen, isWritable, rightData] // eslint-disable-line react-hooks/exhaustive-deps
-    );
+        [onItemMenuOpen, isWritable, rightData]);
 
     React.useEffect(() => {
         let node = null;
 
-        if (parentRef && parentRef.current) {
+        if (parentRef?.current) {
             console.log('---> useEffect parentRef:', parentRef);
             node = parentRef.current;
             (node as any).addEventListener('contextmenu', handleRightClick);
@@ -502,7 +501,7 @@ export const CollectionPanelFiles = withStyles(styles)(connect((state: RootState
             </Tooltip>
         </div>
         <div className={classes.wrapper}>
-            <div className={classNames(classes.leftPanel, path.length > 1 ? classes.leftPanelVisible : classes.leftPanelHidden)}  data-cy="collection-files-left-panel">
+            <div className={classNames(classes.leftPanel, path.length > 1 ? classes.leftPanelVisible : classes.leftPanelHidden)} data-cy="collection-files-left-panel">
                 <Tooltip title="Go back" className={path.length > 1 ? classes.backButton : classes.backButtonHidden}>
                     <IconButton onClick={() => setPath([...path.slice(0, path.length -1)])}>
                         <BackIcon />
@@ -540,7 +539,7 @@ export const CollectionPanelFiles = withStyles(styles)(connect((state: RootState
                 : <div className={classes.row}><CircularProgress className={classes.loader} size={30} /></div> }
                 </div>
             </div>
-            <div className={classes.rightPanel}>
+            <div className={classes.rightPanel} data-cy="collection-files-right-panel">
                 <div className={classes.searchWrapper}>
                     <SearchInput selfClearProp={rightKey} label="Search" value={rightSearch} onSearch={setRightSearch} />
                 </div>
