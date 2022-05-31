@@ -1148,15 +1148,14 @@ func (s *IntegrationSuite) runContainer(c *check.C, clusterID string, ctrSpec ma
 
 	c.Log("[docker load]")
 	out, err := exec.Command("docker", "load", "--input", arvadostest.BusyboxDockerImage(c)).CombinedOutput()
-	c.Logf("[docker load done] %s", out)
+	c.Logf("[docker load output] %s", out)
 	c.Check(err, check.IsNil)
 
 	c.Log("[arv-keepdocker]")
 	akd := exec.Command("arv-keepdocker", "--no-resume", "busybox:uclibc")
 	akd.Env = append(os.Environ(), "ARVADOS_API_HOST="+ac.APIHost, "ARVADOS_API_HOST_INSECURE=1", "ARVADOS_API_TOKEN="+ac.AuthToken)
-	c.Logf("[arv-keepdocker env] %q", akd.Env)
 	out, err = akd.CombinedOutput()
-	c.Logf("[arv-keepdocker done] %s", out)
+	c.Logf("[arv-keepdocker output]\n%s", out)
 	c.Check(err, check.IsNil)
 
 	var cr arvados.ContainerRequest
