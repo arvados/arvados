@@ -39,7 +39,6 @@ import { setCollectionFiles } from 'store/collection-panel/collection-panel-file
 import { sortBy } from 'lodash';
 import { formatFileSize } from 'common/formatters';
 import { getInlineFileUrl, sanitizeToken } from 'views-components/context-menu/actions/helpers';
-import _ from 'lodash';
 
 export interface CollectionPanelFilesProps {
     isWritable: boolean;
@@ -213,25 +212,11 @@ const styles: StyleRulesCallback<CssRules> = (theme: Theme) => ({
 
 const pathPromise = {};
 
-let prevState = {};
-function difference(object, base) {
-	function changes(object, base) {
-		return _.transform(object, function(result, value, key) {
-			if (!_.isEqual(value, base[key])) {
-				result[key] = (_.isObject(value) && _.isObject(base[key])) ? changes(value, base[key]) : value;
-			}
-		});
-	}
-	return changes(object, base);
-}
 export const CollectionPanelFiles = withStyles(styles)(connect((state: RootState) => ({
     auth: state.auth,
     collectionPanel: state.collectionPanel,
     collectionPanelFiles: state.collectionPanelFiles,
 }))((props: CollectionPanelFilesProps & WithStyles<CssRules> & { auth: AuthState }) => {
-    const diff = difference(props, prevState);
-    prevState = props;
-    console.log('---> render CollectionPanelFiles <------', diff);
     const { classes, onItemMenuOpen, onUploadDataClick, isWritable, dispatch, collectionPanelFiles, collectionPanel } = props;
     const { apiToken, config } = props.auth;
 
@@ -262,14 +247,12 @@ export const CollectionPanelFiles = withStyles(styles)(connect((state: RootState
 
     React.useEffect(() => {
         if (props.currentItemUuid) {
-            console.log(' --> useEffect current UUID: ', props.currentItemUuid);
             setPathData({});
             setPath([props.currentItemUuid]);
         }
     }, [props.currentItemUuid]);
 
     const fetchData = (keys, ignoreCache = false) => {
-        console.log('---> fetchData', keys);
         const keyArray = Array.isArray(keys) ? keys : [keys];
 
         Promise.all(keyArray.filter(key => !!key)
@@ -284,7 +267,6 @@ export const CollectionPanelFiles = withStyles(styles)(connect((state: RootState
 
                     pathPromise[key] = true;
 
-                    console.log('>>> fetching data for key', key);
                     return webdavClient.propfind(`c=${key}`, webDAVRequestConfig);
                 }
 
@@ -295,7 +277,6 @@ export const CollectionPanelFiles = withStyles(styles)(connect((state: RootState
         .then((requests) => {
             const newState = requests.map((request, index) => {
                 if (request && request.responseXML != null) {
-                    console.log(">>> got data for key", keyArray[index]);
                     const key = keyArray[index];
                     const result: any = extractFilesData(request.responseXML);
                     const sortedResult = sortBy(result, (n) => n.name).sort((n1, n2) => {
@@ -325,7 +306,6 @@ export const CollectionPanelFiles = withStyles(styles)(connect((state: RootState
 
     React.useEffect(() => {
         if (rightKey) {
-            console.log('---> useEffect rightKey:', rightKey);
             fetchData(rightKey);
             setLeftSearch('');
             setRightSearch('');
@@ -335,7 +315,6 @@ export const CollectionPanelFiles = withStyles(styles)(connect((state: RootState
     const currentPDH = (collectionPanel.item || {}).portableDataHash;
     React.useEffect(() => {
         if (currentPDH) {
-            console.log('---> useEffect PDH change:', currentPDH);
             // Avoid fetching the same content level twice
             if (leftKey !== rightKey) {
                 fetchData([leftKey, rightKey], true);
@@ -347,7 +326,6 @@ export const CollectionPanelFiles = withStyles(styles)(connect((state: RootState
 
     React.useEffect(() => {
         if (rightData) {
-            console.log('---> useEffect rightData:', rightData, 'search:', rightSearch);
             const filtered = rightData.filter(({ name }) => name.indexOf(rightSearch) > -1);
             setCollectionFiles(filtered, false)(dispatch);
         }
@@ -383,7 +361,6 @@ export const CollectionPanelFiles = withStyles(styles)(connect((state: RootState
         let node = null;
 
         if (parentRef?.current) {
-            console.log('---> useEffect parentRef:', parentRef);
             node = parentRef.current;
             (node as any).addEventListener('contextmenu', handleRightClick);
         }
@@ -516,7 +493,6 @@ export const CollectionPanelFiles = withStyles(styles)(connect((state: RootState
                     return !!filtered.length
                     ? <FixedSizeList height={height} itemCount={filtered.length}
                         itemSize={35} width={width}>{ ({ index, style }) => {
-                        console.log("Left Data ROW: ", filtered[index]);
                         const { id, type, name } = filtered[index];
                         return <div data-id={id} style={style} data-item="true"
                             data-type={type} data-parent-path={name}
@@ -555,11 +531,9 @@ export const CollectionPanelFiles = withStyles(styles)(connect((state: RootState
                 <div className={classes.dataWrapper}>{ rightData && !isLoading
                     ? <AutoSizer defaultHeight={500}>{({ height, width }) => {
                         const filtered = rightData.filter(({ name }) => name.indexOf(rightSearch) > -1);
-                        console.log("Right Data: ", filtered);
                         return !!filtered.length
                         ? <FixedSizeList height={height} itemCount={filtered.length}
                             itemSize={35} width={width}>{ ({ index, style }) => {
-                                console.log("Right Data ROW: ", filtered[index]);
                                 const { id, type, name, size } = filtered[index];
 
                                 return <div style={style} data-id={id} data-item="true"
