@@ -22,12 +22,15 @@ export type CollectionPanelAction = UnionOf<typeof collectionPanelActions>;
 export const loadCollectionPanel = (uuid: string, forceReload = false) =>
     async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
         const { collectionPanel: { item } } = getState();
-        const collection = (item && item.uuid === uuid && !forceReload)
-            ? item
-            : await services.collectionService.get(uuid);
+        let collection: CollectionResource | null = null;
+        if (!item || item.uuid !== uuid || forceReload) {
+            collection = await services.collectionService.get(uuid);
+            dispatch(collectionPanelActions.SET_COLLECTION(collection));
+            dispatch(resourcesActions.SET_RESOURCES([collection]));
+        } else {
+            collection = item;
+        }
         dispatch<any>(loadDetailsPanel(collection.uuid));
-        dispatch(collectionPanelActions.SET_COLLECTION(collection));
-        dispatch(resourcesActions.SET_RESOURCES([collection]));
         return collection;
     };
 

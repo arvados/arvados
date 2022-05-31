@@ -295,7 +295,7 @@ export const loadCollection = (uuid: string) =>
             if (userUuid) {
                 const match = await loadGroupContentsResource({ uuid, userUuid, services });
                 match({
-                    OWNED: async collection => {
+                    OWNED: collection => {
                         dispatch(collectionPanelActions.SET_COLLECTION(collection as CollectionResource));
                         dispatch(updateResources([collection]));
                         dispatch(activateSidePanelTreeItem(collection.ownerUuid));
