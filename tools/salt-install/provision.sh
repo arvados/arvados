@@ -582,11 +582,27 @@ if [ -z "${ROLES}" ]; then
     fi
     grep -q "letsencrypt" ${P_DIR}/top.sls || echo "    - letsencrypt" >> ${P_DIR}/top.sls
 
-    # As the pillar differ whether we use LE or custom certs, we need to do a final edition on them
-    for c in controller websocket workbench workbench2 webshell download collections keepproxy; do
-      sed -i "s/__CERT_REQUIRES__/cmd: create-initial-cert-${c}.${CLUSTER}.${DOMAIN}*/g;
-              s#__CERT_PEM__#/etc/letsencrypt/live/${c}.${CLUSTER}.${DOMAIN}/fullchain.pem#g;
-              s#__CERT_KEY__#/etc/letsencrypt/live/${c}.${CLUSTER}.${DOMAIN}/privkey.pem#g" \
+    hosts=("controller" "websocket" "workbench" "workbench2" "webshell" "keepproxy")
+    if [ ${USE_SINGLE_HOSTNAME} = "no" ]; then
+      hosts+=("download" "collections")
+    else
+      hosts+=("keepweb")
+    fi
+
+    for c in "${hosts[@]}"; do
+      # Are we in a single-host-single-hostname env?
+      if [ "${USE_SINGLE_HOSTNAME}" = "yes" ]; then
+        # Are we in a single-host-single-hostname env?
+        CERT_NAME=${HOSTNAME_EXT}
+      else
+        # We are in a multiple-hostnames env
+        CERT_NAME=${c}.${CLUSTER}.${DOMAIN}
+      fi
+
+      # As the pillar differs whether we use LE or custom certs, we need to do a final edition on them
+      sed -i "s/__CERT_REQUIRES__/cmd: create-initial-cert-${CERT_NAME}*/g;
+              s#__CERT_PEM__#/etc/letsencrypt/live/${CERT_NAME}/fullchain.pem#g;
+              s#__CERT_KEY__#/etc/letsencrypt/live/${CERT_NAME}/privkey.pem#g" \
       ${P_DIR}/nginx_${c}_configuration.sls
     done
   else
