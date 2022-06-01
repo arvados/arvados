@@ -217,6 +217,7 @@ if [ "$NVIDIA_GPU_SUPPORT" == "1" ]; then
 
   # Install CUDA
   $SUDO apt-key adv --fetch-keys https://developer.download.nvidia.com/compute/cuda/repos/$DIST/x86_64/7fa2af80.pub
+  $SUDO apt-key adv --fetch-keys https://developer.download.nvidia.com/compute/cuda/repos/$DIST/x86_64/3bf863cc.pub
   $SUDO apt-get -y install software-properties-common
   $SUDO add-apt-repository "deb https://developer.download.nvidia.com/compute/cuda/repos/$DIST/x86_64/ /"
   # Ubuntu 18.04's add-apt-repository does not understand 'contrib'
