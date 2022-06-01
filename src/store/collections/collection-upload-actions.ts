@@ -6,14 +6,10 @@ import { Dispatch } from 'redux';
 import { RootState } from 'store/store';
 import { ServiceRepository } from 'services/services';
 import { dialogActions } from 'store/dialog/dialog-actions';
-import { loadCollectionFiles } from '../collection-panel/collection-panel-files/collection-panel-files-actions';
 import { snackbarActions, SnackbarKind } from 'store/snackbar/snackbar-actions';
 import { fileUploaderActions } from 'store/file-uploader/file-uploader-actions';
 import { reset, startSubmit, stopSubmit } from 'redux-form';
 import { progressIndicatorActions } from "store/progress-indicator/progress-indicator-actions";
-import { collectionPanelFilesAction } from 'store/collection-panel/collection-panel-files/collection-panel-files-actions';
-import { createTree } from 'models/tree';
-import { loadCollectionPanel } from '../collection-panel/collection-panel-action';
 import * as WorkbenchActions from 'store/workbench/workbench-actions';
 
 export const uploadCollectionFiles = (collectionUuid: string, targetLocation?: string) =>
@@ -40,10 +36,7 @@ export const submitCollectionFiles = (targetLocation?: string) =>
             try {
                 dispatch(progressIndicatorActions.START_WORKING(COLLECTION_UPLOAD_FILES_DIALOG));
                 dispatch(startSubmit(COLLECTION_UPLOAD_FILES_DIALOG));
-                await dispatch<any>(uploadCollectionFiles(currentCollection.uuid, targetLocation))
-                    .then(() => dispatch<any>(collectionPanelFilesAction.SET_COLLECTION_FILES({ files: createTree() })));
-                dispatch<any>(loadCollectionFiles(currentCollection.uuid));
-                dispatch<any>(loadCollectionPanel(currentCollection.uuid));
+                await dispatch<any>(uploadCollectionFiles(currentCollection.uuid, targetLocation));
                 dispatch(closeUploadCollectionFilesDialog());
                 dispatch(snackbarActions.OPEN_SNACKBAR({
                     message: 'Data has been uploaded.',

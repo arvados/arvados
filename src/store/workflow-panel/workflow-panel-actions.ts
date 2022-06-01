@@ -9,13 +9,18 @@ import { bindDataExplorerActions } from 'store/data-explorer/data-explorer-actio
 import { propertiesActions } from 'store/properties/properties-actions';
 import { getProperty } from 'store/properties/properties';
 import { navigateToRunProcess } from 'store/navigation/navigation-action';
-import { goToStep, runProcessPanelActions, loadPresets, getWorkflowRunnerSettings } from 'store/run-process-panel/run-process-panel-actions';
+import {
+    goToStep,
+    runProcessPanelActions,
+    loadPresets,
+    getWorkflowRunnerSettings
+} from 'store/run-process-panel/run-process-panel-actions';
 import { snackbarActions } from 'store/snackbar/snackbar-actions';
 import { initialize } from 'redux-form';
 import { RUN_PROCESS_BASIC_FORM } from 'views/run-process-panel/run-process-basic-form';
 import { RUN_PROCESS_INPUTS_FORM } from 'views/run-process-panel/run-process-inputs-form';
 import { RUN_PROCESS_ADVANCED_FORM } from 'views/run-process-panel/run-process-advanced-form';
-import { getResource, ResourcesState } from 'store/resources/resources';
+import { getResource } from 'store/resources/resources';
 import { ProjectResource } from 'models/project';
 import { UserResource } from 'models/user';
 import { getUserUuid } from "common/getuser";

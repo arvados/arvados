@@ -10,24 +10,38 @@ import AutoSizer from "react-virtualized-auto-sizer";
 import servicesProvider from 'common/service-provider';
 import { CustomizeTableIcon, DownloadIcon } from 'components/icon/icon';
 import { SearchInput } from 'components/search-input/search-input';
-import { ListItemIcon, StyleRulesCallback, Theme, WithStyles, withStyles, Tooltip, IconButton, Checkbox, CircularProgress, Button } from '@material-ui/core';
+import {
+    ListItemIcon,
+    StyleRulesCallback,
+    Theme,
+    WithStyles,
+    withStyles,
+    Tooltip,
+    IconButton,
+    Checkbox,
+    CircularProgress,
+    Button,
+} from '@material-ui/core';
 import { FileTreeData } from '../file-tree/file-tree-data';
 import { TreeItem, TreeItemStatus } from '../tree/tree';
 import { RootState } from 'store/store';
 import { WebDAV, WebDAVRequestConfig } from 'common/webdav';
 import { AuthState } from 'store/auth/auth-reducer';
 import { extractFilesData } from 'services/collection-service/collection-service-files-response';
-import { DefaultIcon, DirectoryIcon, FileIcon, BackIcon, SidePanelRightArrowIcon } from 'components/icon/icon';
+import {
+    DefaultIcon,
+    DirectoryIcon,
+    FileIcon,
+    BackIcon,
+    SidePanelRightArrowIcon
+} from 'components/icon/icon';
 import { setCollectionFiles } from 'store/collection-panel/collection-panel-files/collection-panel-files-actions';
 import { sortBy } from 'lodash';
 import { formatFileSize } from 'common/formatters';
 import { getInlineFileUrl, sanitizeToken } from 'views-components/context-menu/actions/helpers';
 
 export interface CollectionPanelFilesProps {
-    items: any;
     isWritable: boolean;
-    isLoading: boolean;
-    tooManyFiles: boolean;
     onUploadDataClick: (targetLocation?: string) => void;
     onSearchChange: (searchValue: string) => void;
     onItemMenuOpen: (event: React.MouseEvent<HTMLElement>, item: TreeItem<FileTreeData>, isWritable: boolean) => void;
@@ -35,14 +49,35 @@ export interface CollectionPanelFilesProps {
     onSelectionToggle: (event: React.MouseEvent<HTMLElement>, item: TreeItem<FileTreeData>) => void;
     onCollapseToggle: (id: string, status: TreeItemStatus) => void;
     onFileClick: (id: string) => void;
-    loadFilesFunc: () => void;
     currentItemUuid: any;
     dispatch: Function;
     collectionPanelFiles: any;
     collectionPanel: any;
 }
 
-type CssRules = "backButton" | "backButtonHidden" | "pathPanelPathWrapper" | "uploadButton" | "uploadIcon" | "loader" | "wrapper" | "dataWrapper" | "row" | "rowEmpty" | "leftPanel" | "rightPanel" | "pathPanel" | "pathPanelItem" | "rowName" | "listItemIcon" | "rowActive" | "pathPanelMenu" | "rowSelection" | "leftPanelHidden" | "leftPanelVisible" | "searchWrapper" | "searchWrapperHidden";
+type CssRules = "backButton"
+    | "backButtonHidden"
+    | "pathPanelPathWrapper"
+    | "uploadButton"
+    | "uploadIcon"
+    | "loader"
+    | "wrapper"
+    | "dataWrapper"
+    | "row"
+    | "rowEmpty"
+    | "leftPanel"
+    | "rightPanel"
+    | "pathPanel"
+    | "pathPanelItem"
+    | "rowName"
+    | "listItemIcon"
+    | "rowActive"
+    | "pathPanelMenu"
+    | "rowSelection"
+    | "leftPanelHidden"
+    | "leftPanelVisible"
+    | "searchWrapper"
+    | "searchWrapperHidden";
 
 const styles: StyleRulesCallback<CssRules> = (theme: Theme) => ({
     wrapper: {
@@ -198,8 +233,8 @@ export const CollectionPanelFiles = withStyles(styles)(connect((state: RootState
     };
 
     const parentRef = React.useRef(null);
-    const [path, setPath]: any = React.useState([]);
-    const [pathData, setPathData]: any = React.useState({});
+    const [path, setPath] = React.useState<string[]>([]);
+    const [pathData, setPathData] = React.useState({});
     const [isLoading, setIsLoading] = React.useState(false);
     const [leftSearch, setLeftSearch] = React.useState('');
     const [rightSearch, setRightSearch] = React.useState('');
@@ -220,12 +255,12 @@ export const CollectionPanelFiles = withStyles(styles)(connect((state: RootState
     const fetchData = (keys, ignoreCache = false) => {
         const keyArray = Array.isArray(keys) ? keys : [keys];
 
-        Promise.all(keyArray
+        Promise.all(keyArray.filter(key => !!key)
             .map((key) => {
                 const dataExists = !!pathData[key];
                 const runningRequest = pathPromise[key];
 
-                if ((!dataExists || ignoreCache) && (!runningRequest || ignoreCache)) {
+                if (ignoreCache || (!dataExists && !runningRequest)) {
                     if (!isLoading) {
                         setIsLoading(true);
                     }
@@ -239,34 +274,34 @@ export const CollectionPanelFiles = withStyles(styles)(connect((state: RootState
             })
             .filter((promise) => !!promise)
         )
-            .then((requests) => {
-                const newState = requests.map((request, index) => {
-                    if (request && request.responseXML != null) {
-                        const key = keyArray[index];
-                        const result: any = extractFilesData(request.responseXML);
-                        const sortedResult = sortBy(result, (n) => n.name).sort((n1, n2) => {
-                            if (n1.type === 'directory' && n2.type !== 'directory') {
-                                return -1;
-                            }
-                            if (n1.type !== 'directory' && n2.type === 'directory') {
-                                return 1;
-                            }
-                            return 0;
-                        });
+        .then((requests) => {
+            const newState = requests.map((request, index) => {
+                if (request && request.responseXML != null) {
+                    const key = keyArray[index];
+                    const result: any = extractFilesData(request.responseXML);
+                    const sortedResult = sortBy(result, (n) => n.name).sort((n1, n2) => {
+                        if (n1.type === 'directory' && n2.type !== 'directory') {
+                            return -1;
+                        }
+                        if (n1.type !== 'directory' && n2.type === 'directory') {
+                            return 1;
+                        }
+                        return 0;
+                    });
 
-                        return { [key]: sortedResult };
-                    }
-                    return {};
-                }).reduce((prev, next) => {
-                    return { ...next, ...prev };
-                }, {});
+                    return { [key]: sortedResult };
+                }
+                return {};
+            }).reduce((prev, next) => {
+                return { ...next, ...prev };
+            }, {});
 
-                setPathData({ ...pathData, ...newState });
-            })
-            .finally(() => {
-                setIsLoading(false);
-                keyArray.forEach(key => delete pathPromise[key]);
-            });
+            setPathData({ ...pathData, ...newState });
+        })
+        .finally(() => {
+            setIsLoading(false);
+            keyArray.forEach(key => delete pathPromise[key]);
+        });
     };
 
     React.useEffect(() => {
@@ -280,7 +315,12 @@ export const CollectionPanelFiles = withStyles(styles)(connect((state: RootState
     const currentPDH = (collectionPanel.item || {}).portableDataHash;
     React.useEffect(() => {
         if (currentPDH) {
-            fetchData([leftKey, rightKey], true);
+            // Avoid fetching the same content level twice
+            if (leftKey !== rightKey) {
+                fetchData([leftKey, rightKey], true);
+            } else {
+                fetchData(rightKey, true);
+            }
         }
     }, [currentPDH]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -315,13 +355,12 @@ export const CollectionPanelFiles = withStyles(styles)(connect((state: RootState
                 onItemMenuOpen(event, item, isWritable);
             }
         },
-        [onItemMenuOpen, isWritable, rightData] // eslint-disable-line react-hooks/exhaustive-deps
-    );
+        [onItemMenuOpen, isWritable, rightData]);
 
     React.useEffect(() => {
         let node = null;
 
-        if (parentRef && parentRef.current) {
+        if (parentRef?.current) {
             node = parentRef.current;
             (node as any).addEventListener('contextmenu', handleRightClick);
         }
@@ -419,149 +458,107 @@ export const CollectionPanelFiles = withStyles(styles)(connect((state: RootState
         [props.onOptionsMenuOpen] // eslint-disable-line react-hooks/exhaustive-deps
     );
 
-    return (
-        <div data-cy="collection-files-panel" onClick={handleClick} ref={parentRef}>
-            <div className={classes.pathPanel}>
-                <div className={classes.pathPanelPathWrapper}>
-                    {
-                        path
-                            .map((p: string, index: number) => <span
-                                key={`${index}-${p}`}
-                                data-item="true"
-                                className={classes.pathPanelItem}
-                                data-breadcrumb-path={p}
-                            >
-                                <span className={classes.rowActive}>{index === 0 ? 'Home' : p}</span> <b>/</b>&nbsp;
-                            </span>)
-                    }
-                </div>
-                <Tooltip className={classes.pathPanelMenu} title="More options" disableFocusListener>
-                    <IconButton
-                        data-cy='collection-files-panel-options-btn'
-                        onClick={(ev) => {
-                            onOptionsMenuOpen(ev, isWritable);
-                        }}>
-                        <CustomizeTableIcon />
+    return <div data-cy="collection-files-panel" onClick={handleClick} ref={parentRef}>
+        <div className={classes.pathPanel}>
+            <div className={classes.pathPanelPathWrapper}>
+            { path.map( (p: string, index: number) =>
+                <span key={`${index}-${p}`} data-item="true"
+                className={classes.pathPanelItem} data-breadcrumb-path={p}>
+                    <span className={classes.rowActive}>{index === 0 ? 'Home' : p}</span> <b>/</b>&nbsp;
+                </span>)
+            }
+            </div>
+            <Tooltip className={classes.pathPanelMenu} title="More options" disableFocusListener>
+                <IconButton data-cy='collection-files-panel-options-btn'
+                    onClick={(ev) => {
+                        onOptionsMenuOpen(ev, isWritable);
+                    }}>
+                    <CustomizeTableIcon />
+                </IconButton>
+            </Tooltip>
+        </div>
+        <div className={classes.wrapper}>
+            <div className={classNames(classes.leftPanel, path.length > 1 ? classes.leftPanelVisible : classes.leftPanelHidden)} data-cy="collection-files-left-panel">
+                <Tooltip title="Go back" className={path.length > 1 ? classes.backButton : classes.backButtonHidden}>
+                    <IconButton onClick={() => setPath([...path.slice(0, path.length -1)])}>
+                        <BackIcon />
                     </IconButton>
                 </Tooltip>
-            </div>
-            <div className={classes.wrapper}>
-                <div className={classNames(classes.leftPanel, path.length > 1 ? classes.leftPanelVisible : classes.leftPanelHidden)}  data-cy="collection-files-left-panel">
-                    <Tooltip title="Go back" className={path.length > 1 ? classes.backButton : classes.backButtonHidden}>
-                        <IconButton onClick={() => setPath([...path.slice(0, path.length -1)])}>
-                            <BackIcon />
-                        </IconButton>
-                    </Tooltip>
-                    <div className={path.length > 1 ? classes.searchWrapper : classes.searchWrapperHidden}>
-                        <SearchInput selfClearProp={leftKey} label="Search" value={leftSearch} onSearch={setLeftSearch} />
-                    </div>
-                    <div className={classes.dataWrapper}>
-                        {
-                            leftData ?
-                                <AutoSizer defaultWidth={0}>
-                                    {({ height, width }) => {
-                                        const filtered = leftData.filter(({ name }) => name.indexOf(leftSearch) > -1);
-
-                                        return !!filtered.length ? <FixedSizeList
-                                            height={height}
-                                            itemCount={filtered.length}
-                                            itemSize={35}
-                                            width={width}
-                                        >
-                                            {
-                                                ({ index, style }) => {
-                                                    const { id, type, name } = filtered[index];
-
-                                                    return <div
-                                                        data-id={id}
-                                                        style={style}
-                                                        data-item="true"
-                                                        data-type={type}
-                                                        data-parent-path={name}
-                                                        className={classNames(classes.row, getActiveClass(name))}
-                                                        key={id}>
-                                                            {getItemIcon(type, getActiveClass(name))}
-                                                            <div className={classes.rowName}>
-                                                                {name}
-                                                            </div>
-                                                            {
-                                                                getActiveClass(name) ? <SidePanelRightArrowIcon
-                                                                    style={{ display: 'inline', marginTop: '5px', marginLeft: '5px' }} /> : null
-                                                            }
-                                                    </div>;
-                                                }
-                                            }
-                                        </FixedSizeList> : <div className={classes.rowEmpty}>No directories available</div>
-                                    }}
-                                </AutoSizer> : <div className={classes.row}><CircularProgress className={classes.loader} size={30} /></div>
-                        }
-
-                    </div>
+                <div className={path.length > 1 ? classes.searchWrapper : classes.searchWrapperHidden}>
+                    <SearchInput selfClearProp={leftKey} label="Search" value={leftSearch} onSearch={setLeftSearch} />
                 </div>
-                <div className={classes.rightPanel} data-cy="collection-files-right-panel">
-                    <div className={classes.searchWrapper}>
-                        <SearchInput selfClearProp={rightKey} label="Search" value={rightSearch} onSearch={setRightSearch} />
-                    </div>
-                    {
-                        isWritable &&
-                        <Button
-                            className={classes.uploadButton}
-                            data-cy='upload-button'
-                            onClick={() => {
-                                onUploadDataClick(rightKey === leftKey ? undefined : rightKey);
-                            }}
-                            variant='contained'
-                            color='primary'
-                            size='small'>
-                            <DownloadIcon className={classes.uploadIcon} />
-                            Upload data
-                        </Button>
-                    }
-                    <div className={classes.dataWrapper}>
-                        {
-                            rightData && !isLoading ?
-                                <AutoSizer defaultHeight={500}>
-                                    {({ height, width }) => {
-                                        const filtered = rightData.filter(({ name }) => name.indexOf(rightSearch) > -1);
+                <div className={classes.dataWrapper}>{ leftData
+                ? <AutoSizer defaultWidth={0}>{({ height, width }) => {
+                    const filtered = leftData.filter(({ name }) => name.indexOf(leftSearch) > -1);
+                    return !!filtered.length
+                    ? <FixedSizeList height={height} itemCount={filtered.length}
+                        itemSize={35} width={width}>{ ({ index, style }) => {
+                        const { id, type, name } = filtered[index];
+                        return <div data-id={id} style={style} data-item="true"
+                            data-type={type} data-parent-path={name}
+                            className={classNames(classes.row, getActiveClass(name))}
+                            key={id}>
+                                { getItemIcon(type, getActiveClass(name)) }
+                                <div className={classes.rowName}>
+                                    {name}
+                                </div>
+                                { getActiveClass(name)
+                                ? <SidePanelRightArrowIcon
+                                    style={{ display: 'inline', marginTop: '5px', marginLeft: '5px' }} />
+                                : null
+                                }
+                        </div>;
+                    }}</FixedSizeList>
+                    : <div className={classes.rowEmpty}>No directories available</div>
+                    }}
+                </AutoSizer>
+                : <div className={classes.row}><CircularProgress className={classes.loader} size={30} /></div> }
+                </div>
+            </div>
+            <div className={classes.rightPanel} data-cy="collection-files-right-panel">
+                <div className={classes.searchWrapper}>
+                    <SearchInput selfClearProp={rightKey} label="Search" value={rightSearch} onSearch={setRightSearch} />
+                </div>
+                { isWritable &&
+                <Button className={classes.uploadButton} data-cy='upload-button'
+                    onClick={() => {
+                        onUploadDataClick(rightKey === leftKey ? undefined : rightKey);
+                    }}
+                    variant='contained' color='primary' size='small'>
+                    <DownloadIcon className={classes.uploadIcon} />
+                    Upload data
+                </Button> }
+                <div className={classes.dataWrapper}>{ rightData && !isLoading
+                    ? <AutoSizer defaultHeight={500}>{({ height, width }) => {
+                        const filtered = rightData.filter(({ name }) => name.indexOf(rightSearch) > -1);
+                        return !!filtered.length
+                        ? <FixedSizeList height={height} itemCount={filtered.length}
+                            itemSize={35} width={width}>{ ({ index, style }) => {
+                                const { id, type, name, size } = filtered[index];
 
-                                        return !!filtered.length ? <FixedSizeList
-                                            height={height}
-                                            itemCount={filtered.length}
-                                            itemSize={35}
-                                            width={width}
-                                        >
-                                            {
-                                                ({ index, style }) => {
-                                                    const { id, type, name, size } = filtered[index];
-
-                                                    return <div
-                                                        style={style}
-                                                        data-id={id}
-                                                        data-item="true"
-                                                        data-type={type}
-                                                        data-subfolder-path={name}
-                                                        className={classes.row} key={id}>
-                                                        <Checkbox
-                                                            color="primary"
-                                                            className={classes.rowSelection}
-                                                            checked={collectionPanelFiles[id] ? collectionPanelFiles[id].value.selected : false}
-                                                        />&nbsp;
-                                                    {getItemIcon(type, null)} <div className={classes.rowName}>
-                                                            {name}
-                                                        </div>
-                                                        <span className={classes.rowName} style={{ marginLeft: 'auto', marginRight: '1rem' }}>
-                                                            {formatFileSize(size)}
-                                                        </span>
-                                                    </div>
-                                                }
-                                            }
-                                        </FixedSizeList> : <div className={classes.rowEmpty}>This collection is empty</div>
-                                    }}
-                                </AutoSizer> : <div className={classes.row}><CircularProgress className={classes.loader} size={30} /></div>
-                        }
-                    </div>
+                                return <div style={style} data-id={id} data-item="true"
+                                    data-type={type} data-subfolder-path={name}
+                                    className={classes.row} key={id}>
+                                    <Checkbox color="primary"
+                                        className={classes.rowSelection}
+                                        checked={collectionPanelFiles[id] ? collectionPanelFiles[id].value.selected : false}
+                                    />&nbsp;
+                                    {getItemIcon(type, null)}
+                                    <div className={classes.rowName}>
+                                        {name}
+                                    </div>
+                                    <span className={classes.rowName} style={{
+                                        marginLeft: 'auto', marginRight: '1rem' }}>
+                                        { formatFileSize(size) }
+                                    </span>
+                                </div>
+                            } }</FixedSizeList>
+                        : <div className={classes.rowEmpty}>This collection is empty</div>
+                    }}</AutoSizer>
+                    : <div className={classes.row}>
+                        <CircularProgress className={classes.loader} size={30} />
+                    </div> }
                 </div>
             </div>
         </div>
-    );
-}));
+    </div>}));

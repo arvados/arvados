@@ -261,7 +261,7 @@ describe('Collection panel tests', function () {
                         });
                         // Test context menus
                         cy.get('[data-cy=collection-files-panel]')
-                            .contains(fileName).rightclick({ force: true });
+                            .contains(fileName).rightclick();
                         cy.get('[data-cy=context-menu]')
                             .should('contain', 'Download')
                             .and('not.contain', 'Open in new tab')
@@ -270,7 +270,7 @@ describe('Collection panel tests', function () {
                             .and(`${isWritable ? '' : 'not.'}contain`, 'Remove');
                         cy.get('body').click(); // Collapse the menu
                         cy.get('[data-cy=collection-files-panel]')
-                            .contains(subDirName).rightclick({ force: true });
+                            .contains(subDirName).rightclick();
                         cy.get('[data-cy=context-menu]')
                             .should('not.contain', 'Download')
                             .and('not.contain', 'Open in new tab')
@@ -368,7 +368,7 @@ describe('Collection panel tests', function () {
 
                 ['subdir', 'G%C3%BCnter\'s%20file', 'table%&?*2'].forEach((subdir) => {
                     cy.get('[data-cy=collection-files-panel]')
-                        .contains('bar').rightclick({force: true});
+                        .contains('bar').rightclick();
                     cy.get('[data-cy=context-menu]')
                         .contains('Rename')
                         .click();
@@ -381,9 +381,9 @@ describe('Collection panel tests', function () {
                     cy.get('[data-cy=collection-files-panel]')
                         .should('not.contain', 'bar')
                         .and('contain', subdir);
-                    cy.wait(1000);
                     cy.get('[data-cy=collection-files-panel]').contains(subdir).click();
-                    // Rename 'subdir/foo' to 'foo'
+
+                    // Rename 'subdir/foo' to 'bar'
                     cy.wait(1000);
                     cy.get('[data-cy=collection-files-panel]')
                         .contains('foo').rightclick();
@@ -399,7 +399,6 @@ describe('Collection panel tests', function () {
                         });
                     cy.get('[data-cy=form-submit-btn]').click();
 
-                    cy.wait(1000);
                     cy.get('[data-cy=collection-files-panel]')
                         .contains('Home')
                         .click();
@@ -1034,6 +1033,14 @@ describe('Collection panel tests', function () {
 
                     cy.goToPath(`/collections/${testCollection1.uuid}`);
 
+                    // Confirm initial collection state.
+                    cy.get('[data-cy=collection-files-panel]')
+                        .contains('bar').should('exist');
+                    cy.get('[data-cy=collection-files-panel]')
+                        .contains('5mb_a.bin').should('not.exist');
+                    cy.get('[data-cy=collection-files-panel]')
+                        .contains('5mb_b.bin').should('not.exist');
+
                     cy.get('[data-cy=upload-button]').click();
 
                     cy.fixture('files/5mb.bin', 'base64').then(content => {
@@ -1043,9 +1050,25 @@ describe('Collection panel tests', function () {
                         cy.get('[data-cy=form-submit-btn]').click();
 
                         cy.get('button[aria-label=Remove]').should('exist');
-                        cy.get('button[aria-label=Remove]').click({ multiple: true, force: true });
+                        cy.get('button[aria-label=Remove]')
+                            .click({ multiple: true, force: true });
 
                         cy.get('[data-cy=form-submit-btn]').should('not.exist');
+
+                        // Confirm final collection state.
+                        cy.get('[data-cy=collection-files-panel]')
+                            .contains('bar').should('exist');
+                        // The following fails, but doesn't seem to happen
+                        // in the real world. Maybe there's a race between
+                        // the PUT request finishing and the 'Remove' button
+                        // dissapearing, because sometimes just one of the 2
+                        // files gets uploaded.
+                        // Maybe this will be needed to simulate a slow network:
+                        // https://docs.cypress.io/api/commands/intercept#Convenience-functions-1
+                        // cy.get('[data-cy=collection-files-panel]')
+                        //     .contains('5mb_a.bin').should('not.exist');
+                        // cy.get('[data-cy=collection-files-panel]')
+                        //     .contains('5mb_b.bin').should('not.exist');
                     });
                 });
         });

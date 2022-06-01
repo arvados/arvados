@@ -55,7 +55,7 @@ export const updateCollection = (collection: CollectionUpdateFormDialogData) =>
             properties: collection.properties }
         ).then(updatedCollection => {
             updatedCollection = {...cachedCollection, ...updatedCollection};
-            dispatch(collectionPanelActions.LOAD_COLLECTION_SUCCESS({ item: updatedCollection as CollectionResource }));
+            dispatch(collectionPanelActions.SET_COLLECTION(updatedCollection));
             dispatch(dialogActions.CLOSE_DIALOG({ id: COLLECTION_UPDATE_FORM_NAME }));
             dispatch(progressIndicatorActions.STOP_WORKING(COLLECTION_UPDATE_FORM_NAME));
             dispatch(snackbarActions.OPEN_SNACKBAR({
