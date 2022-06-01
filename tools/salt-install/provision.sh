@@ -262,7 +262,7 @@ if grep -q 'fixme_or_this_wont_work' ${CONFIG_FILE} ; then
 fi
 
 if ! grep -qE '^[[:alnum:]]{5}$' <<<${CLUSTER} ; then
-  echo >&2 "ERROR: <CLUSTER> must be exactly 5 alphanumeric characters long"
+  echo >&2 "ERROR: <CLUSTER> must be exactly 5 lowercase alphanumeric characters long"
   echo >&2 "Fix the cluster name in the 'local.params' file and re-run the provision script"
   exit 1
 fi
