@@ -34,7 +34,7 @@ export class DataTableFiltersTree extends React.Component<DataTableFilterProps> 
             levelIndentation={hasSubfilters ? 20 : 0}
             itemRightPadding={20}
             items={filtersToTree(filters)}
-            render={renderItem}
+            render={this.props.mutuallyExclusive ? renderRadioItem : renderItem}
             showSelection
             useRadioButtons={this.props.mutuallyExclusive}
             disableRipple
@@ -81,6 +81,11 @@ const renderItem = (item: TreeItem<DataTableFilterItem>) =>
         {item.initialState !== item.selected ? <>
             *
         </> : null}
+    </span>;
+
+const renderRadioItem = (item: TreeItem<DataTableFilterItem>) =>
+    <span>
+        {item.data.name}
     </span>;
 
 const filterToTreeItem = (filters: DataTableFilters) =>
