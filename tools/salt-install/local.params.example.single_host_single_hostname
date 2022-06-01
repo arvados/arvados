@@ -5,7 +5,7 @@
 
 # These are the basic parameters to configure the installation
 
-# The Arvados cluster ID, needs to be five alphanumeric characters.
+# The Arvados cluster ID, needs to be 5 lowercase alphanumeric characters.
 CLUSTER="cluster_fixme_or_this_wont_work"
 
 # The domainname for your cluster's hosts
