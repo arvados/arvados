@@ -362,7 +362,7 @@ func (ldr *Loader) checkClusterID(label, clusterID string, emptyStringOk bool) e
 	if emptyStringOk && clusterID == "" {
 		return nil
 	} else if !acceptableClusterIDRe.MatchString(clusterID) {
-		return fmt.Errorf("%s: cluster ID should be 5 alphanumeric characters", label)
+		return fmt.Errorf("%s: cluster ID should be 5 lowercase alphanumeric characters", label)
 	}
 	return nil
 }

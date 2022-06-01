@@ -406,7 +406,7 @@ Clusters:
 		if v != nil {
 			c.Logf("%#v", v.Clusters)
 		}
-		c.Check(err, check.ErrorMatches, `.*cluster ID should be 5 alphanumeric characters.*`)
+		c.Check(err, check.ErrorMatches, `.*cluster ID should be 5 lowercase alphanumeric characters.*`)
 	}
 }
 
