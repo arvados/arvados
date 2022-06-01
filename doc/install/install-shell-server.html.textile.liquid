@@ -10,7 +10,7 @@ SPDX-License-Identifier: CC-BY-SA-3.0
 {% endcomment %}
 
 # "Introduction":#introduction
-# "Install Dependecies and SDKs":#dependencies
+# "Install Dependencies and SDKs":#dependencies
 # "Install git and curl":#install-packages
 # "Update Git Config":#config-git
 # "Create record for VM":#vm-record
@@ -31,7 +31,7 @@ A single-user shell node should be set up so that it only stores Arvados access 
 
 In the multi-user shell node case, a malicious user with @root@ access could access other user's Arvados tokens.  Users should only be given @root@ access on a multi-user shell node if you would trust them them to be Arvados administrators.  Be aware that with access to the @docker@ daemon, it is trival to gain *root* access to any file on the system, so giving users @docker@ access should be considered equivalent to @root@ access.
 
-h2(#dependencies). Install Dependecies and SDKs
+h2(#dependencies). Install Dependencies and SDKs
 
 # "Install Ruby and Bundler":ruby.html
 # "Install the Python SDK":{{site.baseurl}}/sdk/python/sdk-python.html
