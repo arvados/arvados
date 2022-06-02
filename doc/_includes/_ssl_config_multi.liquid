@@ -1,0 +1,52 @@
+{% comment %}
+Copyright (C) The Arvados Authors. All rights reserved.
+
+SPDX-License-Identifier: CC-BY-SA-3.0
+{% endcomment %}
+
+h2(#certificates). Choose the SSL configuration (SSL_MODE)
+
+Arvados requires an SSL certificate to work correctly. This installer supports these options:
+
+* @self-signed@: let the installer create self-signed certificates
+* @lets-encrypt@: automatically obtain and install an SSL certificates for your hostnames
+* @bring-your-own@: supply your own certificates in the `certs` directory
+
+h3(#self-signed). Using self-signed certificates
+
+To make the installer use self-signed certificates, change the configuration like this:
+
+<notextile>
+<pre><code>SSL_MODE="self-signed"
+</code></pre>
+</notextile>
+
+When connecting to the Arvados web interface for the first time, you will need to accept the self-signed certificates as trusted to bypass the browser warnings. This can be a little tricky to do. Alternatively, you can also install the self-signed root certificate in your browser, see <a href="#ca_root_certificate">below</a>.
+
+h3(#lets-encrypt). Using a Let's Encrypt certificate
+
+In the default configuration, this installer gets a valid certificate via Let's Encrypt. If you have the <b>CLUSTER.DOMAIN</b> domain in a route53 zone, you can set <b>USE_LETSENCRYPT_ROUTE53</b> to <b>YES</b> and supply appropriate credentials so that Let's Encrypt can use dns-01 validation to get the appropriate certificates.
+
+<notextile>
+<pre><code>SSL_MODE="lets-encrypt"
+USE_LETSENCRYPT_ROUTE53="yes"
+LE_AWS_REGION="us-east-1"
+LE_AWS_ACCESS_KEY_ID="AKIABCDEFGHIJKLMNOPQ"
+LE_AWS_SECRET_ACCESS_KEY="thisistherandomstringthatisyoursecretkey"
+</code></pre>
+</notextile>
+
+Please note that when using AWS, EC2 instances can have a default hostname that ends with <i>amazonaws.com</i>. Let's Encrypt has a blacklist of domain names for which it will not issue certificates, and that blacklist includes the <i>amazonaws.com</i> domain, which means the default hostname can not be used to get a certificate from Let's Encrypt.
+
+h3(#bring-your-own). Bring your own certificates
+
+To supply your own certificates, change the configuration like this:
+
+<notextile>
+<pre><code>SSL_MODE="bring-your-own"
+</code></pre>
+</notextile>
+
+{% include 'multi_host_install_custom_certificates' %}
+
+All certificate files will be used by nginx. You may need to include intermediate certificates in your certificate files. See "the nginx documentation":http://nginx.org/en/docs/http/configuring_https_servers.html#chains for more details.

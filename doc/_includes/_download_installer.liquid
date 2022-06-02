@@ -1,0 +1,20 @@
+{% comment %}
+Copyright (C) The Arvados Authors. All rights reserved.
+
+SPDX-License-Identifier: CC-BY-SA-3.0
+{% endcomment %}
+
+{% include 'branchname' %}
+
+This procedure will install all the main Arvados components to get you up and running in a single host.
+
+This is a package-based installation method, however the installation script is currently distributed in source form via @git@:
+
+<notextile>
+<pre><code>git clone https://git.arvados.org/arvados.git
+git checkout {{ branchname }}
+cd arvados/tools/salt-install
+</code></pre>
+</notextile>
+
+The @provision.sh@ script will help you deploy Arvados by preparing your environment to be able to run the installer, then running it. The actual installer is located in the "arvados-formula git repository":https://git.arvados.org/arvados-formula.git/tree/refs/heads/{{ branchname }} and will be cloned during the running of the @provision.sh@ script.  The installer is built using "Saltstack":https://saltproject.io/ and @provision.sh@ performs the install using master-less mode.
