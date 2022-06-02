@@ -12,7 +12,7 @@ SPDX-License-Identifier: CC-BY-SA-3.0
 # "Introduction":#introduction
 # "Prerequisites and planning":#prerequisites
 # "Download the installer":#download
-# "Copy the configuration files":#copy_config
+# "Copy and customize the configuration files":#copy_config
 # "Choose the SSL configuration":#certificates
 ## "Using a self-signed certificates":#self-signed
 ## "Using a Let's Encrypt certificates":#lets-encrypt
@@ -71,7 +71,7 @@ h2(#download). Download the installer
 
 {% include 'download_installer' %}
 
-h2(#copy_config). Copy the configuration files
+h2(#copy_config). Copy and customize the configuration files
 
 <notextile>
 <pre><code>cp local.params.example.multiple_hosts local.params
@@ -83,11 +83,13 @@ Edit the variables in the <i>local.params</i> file. Pay attention to the <notext
 
 {% include 'ssl_config_multi' %}
 
-h3(#create_a_compute_image). Create a compute image
+h2(#create_a_compute_image). Create a compute image
 
-In a multi-host installation, containers are dispatched in docker daemons running in the <i>compute instances</i>, which need some special setup. We provide a "compute image builder script":https://github.com/arvados/arvados/tree/main/tools/compute-images that you can use to build a template image following "these instructions":https://doc.arvados.org/main/install/crunch2-cloud/install-compute-node.html. Once you have that image created, you will need to update the <i>pillars/arvados.sls</i> file with the AMI ID and the private ssh key for the dispatcher.
+{% include 'branchname' %}
 
-h3(#further_customization). Further customization of the installation (modifying the salt pillars and states)
+In a multi-host installation, containers are dispatched in docker daemons running in the <i>compute instances</i>, which need some special setup. We provide a "compute image builder script":https://github.com/arvados/arvados/tree/{{ branchname }}/tools/compute-images that you can use to build a template image following "these instructions":https://doc.arvados.org/install/crunch2-cloud/install-compute-node.html. Once you have that image created, you will need to update the <i>pillars/arvados.sls</i> file with the AMI ID and the private ssh key for the dispatcher.
+
+h2(#further_customization). Further customization of the installation (modifying the salt pillars and states)
 
 You will need further customization to suit your environment, which can be done editing the Saltstack pillars and states files. Pay particular attention to the <i>pillars/arvados.sls</i> file, where you will need to provide some information that describes your environment.
 

@@ -32,7 +32,7 @@ Using the default configuration, this installation method has a number of limita
 
 * all services run on the same machine, and they will compete for resources. This includes any compute jobs.
 * it uses the local machine disk for Keep storage (under the @/tmp@ directory). There may not be a lot of space available.
-* it installs the @crunch-dispatch-local@ dispatcher, which can run just eight concurrent CWL jobs. These jobs will be executed on the same machine that runs all the Arvados services and may well starve them of resources.
+* it installs the @crunch-dispatch-local@ dispatcher, which has a limit of eight concurrent jobs. These jobs will be executed on the same machine that runs all the Arvados services and may well starve them of resources.
 
 It is possible to start with the single host installation method and modify the Arvados configuration file later to address these limitations. E.g. switch to a "different storage volume setup":{{site.baseurl}}/install/configure-s3-object-storage.html for Keep, and switch to "the cloud dispatcher":{{site.baseurl}}/install/crunch2-cloud/install-dispatch-cloud.html to provision compute resources dynamically.
 
@@ -59,7 +59,7 @@ cp -r config_examples/single_host/single_hostname local_config_dir
 
 Edit the variables in the <i>local.params</i> file. Pay attention to the <notextile><b>*_PORT, *_TOKEN</b> and <b>*_KEY</b></notextile> variables. The *SSL_MODE* variable is discussed in the next section.
 
-{% include 'ssl_config' %}
+{% include 'ssl_config_single' %}
 
 h2(#further_customization). Further customization of the installation (modifying the salt pillars and states)
 
@@ -67,7 +67,7 @@ If you want or need further customization, you can edit the Saltstack pillars an
 
 h2(#run_provision_script). Run the provision.sh script
 
-When you finished customizing the configuration, you are ready to copy the files to the host (if needed) and run the @provision.sh@ script:
+When you finished customizing the configuration, you are ready to copy the files to the target host where Arvados will be installed, and run the @provision.sh@ script there:
 
 <notextile>
 <pre><code>scp -r provision.sh local* tests user@host:
@@ -75,7 +75,7 @@ ssh user@host sudo ./provision.sh
 </code></pre>
 </notextile>
 
-and wait for it to finish. The script will need 5 to 10 minutes to install and configure everything.
+Wait for it to finish. The script will need 5 to 10 minutes to install and configure everything.
 
 If everything goes OK, you'll get final output that looks similar to this:
 
