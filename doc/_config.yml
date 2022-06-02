@@ -209,8 +209,6 @@ navbar:
     - Docker quick start:
       - install/arvbox.html.textile.liquid
     - Installation with Salt:
-      - install/salt.html.textile.liquid
-      - install/salt-vagrant.html.textile.liquid
       - install/salt-single-host.html.textile.liquid
       - install/salt-multi-host.html.textile.liquid
     - Arvados on Kubernetes:
