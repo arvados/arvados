@@ -69,6 +69,7 @@ apps/workbench_integration (*)
 apps/workbench_benchmark
 apps/workbench_profile
 cmd/arvados-client
+cmd/arvados-package
 cmd/arvados-server
 doc
 lib/cli
@@ -742,7 +743,7 @@ do_test() {
 
 go_ldflags() {
     version=${ARVADOS_VERSION:-$(git log -n1 --format=%H)-dev}
-    echo "-X git.arvados.org/arvados.git/lib/cmd.version=${version} -X main.version=${version}"
+    echo "-X git.arvados.org/arvados.git/lib/cmd.version=${version} -X main.version=${version} -s -w"
 }
 
 do_test_once() {
@@ -760,6 +761,10 @@ do_test_once() {
     then
         covername="coverage-$(echo "$1" | sed -e 's/\//_/g')"
         coverflags=("-covermode=count" "-coverprofile=$WORKSPACE/tmp/.$covername.tmp")
+        testflags=()
+        if [[ "$1" == "cmd/arvados-package" ]]; then
+            testflags+=("-timeout" "20m")
+        fi
         # We do "go install" here to catch compilation errors
         # before trying "go test". Otherwise, coverage-reporting
         # mode makes Go show the wrong line numbers when reporting
@@ -770,11 +775,11 @@ do_test_once() {
         then
             # "go test -check.vv giturl" doesn't work, but this
             # does:
-            go test ${short:+-short} ${testargs[$1]}
+            go test ${short:+-short} ${testflags[@]} ${testargs[$1]}
         else
             # The above form gets verbose even when testargs is
             # empty, so use this form in such cases:
-            go test ${short:+-short} ${coverflags[@]} "git.arvados.org/arvados.git/$1"
+            go test ${short:+-short} ${testflags[@]} ${coverflags[@]} "git.arvados.org/arvados.git/$1"
         fi
         result=${result:-$?}
         if [[ -f "$WORKSPACE/tmp/.$covername.tmp" ]]

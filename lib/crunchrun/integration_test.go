@@ -20,6 +20,7 @@ import (
 	"git.arvados.org/arvados.git/sdk/go/arvadostest"
 	"git.arvados.org/arvados.git/sdk/go/ctxlog"
 	"git.arvados.org/arvados.git/sdk/go/keepclient"
+	"git.arvados.org/arvados.git/services/keepstore"
 	. "gopkg.in/check.v1"
 )
 
@@ -51,7 +52,7 @@ func (s *integrationSuite) SetUpSuite(c *C) {
 
 	arvadostest.StartKeep(2, true)
 
-	out, err := exec.Command("docker", "load", "--input", busyboxDockerImage(c)).CombinedOutput()
+	out, err := exec.Command("docker", "load", "--input", arvadostest.BusyboxDockerImage(c)).CombinedOutput()
 	c.Log(string(out))
 	c.Assert(err, IsNil)
 	out, err = exec.Command("arv-keepdocker", "--no-resume", "busybox:uclibc").Output()
@@ -193,6 +194,14 @@ func (s *integrationSuite) TestRunTrivialContainerWithLocalKeepstore(c *C) {
 			volume.AccessViaHosts = nil
 			volume.Replication = 2
 			cluster.Volumes[uuid] = volume
+
+			var v keepstore.UnixVolume
+			err = json.Unmarshal(volume.DriverParameters, &v)
+			c.Assert(err, IsNil)
+			err = os.Mkdir(v.Root, 0777)
+			if !os.IsExist(err) {
+				c.Assert(err, IsNil)
+			}
 		}
 		cluster.Containers.LocalKeepLogsToContainerLog = trial.logConfig
 
@@ -222,7 +231,7 @@ func (s *integrationSuite) TestRunTrivialContainerWithLocalKeepstore(c *C) {
 	s.SetUpTest(c)
 	s.stdin.Reset()
 	s.testRunTrivialContainer(c)
-	c.Check(s.logFiles["crunch-run.txt"], Matches, `(?ms).*not starting a local keepstore process because a volume \(zzzzz-nyw5e-000000000000000\) uses AccessViaHosts\n.*`)
+	c.Check(s.logFiles["crunch-run.txt"], Matches, `(?ms).*not starting a local keepstore process because a volume \(zzzzz-nyw5e-00000000000000\d\) uses AccessViaHosts\n.*`)
 
 	// Check that config read errors are logged
 	s.SetUpTest(c)
@@ -248,9 +257,6 @@ func (s *integrationSuite) TestRunTrivialContainerWithLocalKeepstore(c *C) {
 func (s *integrationSuite) testRunTrivialContainer(c *C) {
 	if err := exec.Command("which", s.engine).Run(); err != nil {
 		c.Skip(fmt.Sprintf("%s: %s", s.engine, err))
-	}
-	if s.engine == "docker" && os.Getenv("ENABLE_DOCKER_TESTS") == "" {
-		c.Skip("docker tests temporarily disabled if ENABLE_DOCKER_TESTS is not set, see https://dev.arvados.org/issues/15370#note-31")
 	}
 	s.cr.Command = []string{"sh", "-c", "cat /mnt/in/inputfile >/mnt/out/inputfile && cat /mnt/json >/mnt/out/json && ! touch /mnt/in/shouldbereadonly && mkdir /mnt/out/emptydir"}
 	s.setup(c)

@@ -16,6 +16,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"git.arvados.org/arvados.git/lib/crunchrun"
 	"git.arvados.org/arvados.git/sdk/go/ctxlog"
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/client"
@@ -137,7 +138,7 @@ func build(ctx context.Context, opts opts, stdin io.Reader, stdout, stderr io.Wr
 }
 
 func dockerRm(ctx context.Context, name string) error {
-	cli, err := client.NewEnvClient()
+	cli, err := client.NewClient(client.DefaultDockerHost, crunchrun.DockerAPIVersion, nil, nil)
 	if err != nil {
 		return err
 	}

@@ -565,10 +565,6 @@ yarn install
 			"cmd/arvados-server",
 			"services/crunch-dispatch-local",
 			"services/crunch-dispatch-slurm",
-			"services/health",
-			"services/keep-balance",
-			"services/keepstore",
-			"services/ws",
 		} {
 			fmt.Fprintf(stderr, "building %s...\n", srcdir)
 			cmd := exec.Command("go", "install", "-ldflags", "-X git.arvados.org/arvados.git/lib/cmd.version="+inst.PackageVersion+" -X main.version="+inst.PackageVersion+" -s -w")

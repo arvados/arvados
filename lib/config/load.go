@@ -16,6 +16,7 @@ import (
 	"io/ioutil"
 	"os"
 	"regexp"
+	"runtime"
 	"strconv"
 	"strings"
 	"time"
@@ -25,6 +26,7 @@ import (
 	"github.com/imdario/mergo"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/sirupsen/logrus"
+	"golang.org/x/sys/unix"
 )
 
 //go:embed config.default.yml
@@ -297,7 +299,10 @@ func (ldr *Loader) Load() (*arvados.Config, error) {
 			ldr.loadOldKeepBalanceConfig,
 		)
 	}
-	loadFuncs = append(loadFuncs, ldr.setImplicitStorageClasses)
+	loadFuncs = append(loadFuncs,
+		ldr.setImplicitStorageClasses,
+		ldr.setLoopbackInstanceType,
+	)
 	for _, f := range loadFuncs {
 		err = f(&cfg)
 		if err != nil {
@@ -413,6 +418,67 @@ func (ldr *Loader) checkEnum(label, value string, accepted ...string) error {
 		}
 	}
 	return fmt.Errorf("%s: unacceptable value %q: must be one of %q", label, value, accepted)
+}
+
+func (ldr *Loader) setLoopbackInstanceType(cfg *arvados.Config) error {
+	for id, cc := range cfg.Clusters {
+		if !cc.Containers.CloudVMs.Enable || cc.Containers.CloudVMs.Driver != "loopback" {
+			continue
+		}
+		if len(cc.InstanceTypes) == 1 {
+			continue
+		}
+		if len(cc.InstanceTypes) > 1 {
+			return fmt.Errorf("Clusters.%s.InstanceTypes: cannot use multiple InstanceTypes with loopback driver", id)
+		}
+		// No InstanceTypes configured. Fill in implicit
+		// default.
+		hostram, err := getHostRAM()
+		if err != nil {
+			return err
+		}
+		scratch, err := getFilesystemSize(os.TempDir())
+		if err != nil {
+			return err
+		}
+		cc.InstanceTypes = arvados.InstanceTypeMap{"localhost": {
+			Name:            "localhost",
+			ProviderType:    "localhost",
+			VCPUs:           runtime.NumCPU(),
+			RAM:             hostram,
+			Scratch:         scratch,
+			IncludedScratch: scratch,
+		}}
+		cfg.Clusters[id] = cc
+	}
+	return nil
+}
+
+func getFilesystemSize(path string) (arvados.ByteSize, error) {
+	var stat unix.Statfs_t
+	err := unix.Statfs(path, &stat)
+	if err != nil {
+		return 0, err
+	}
+	return arvados.ByteSize(stat.Blocks * uint64(stat.Bsize)), nil
+}
+
+var reMemTotal = regexp.MustCompile(`(^|\n)MemTotal: *(\d+) kB\n`)
+
+func getHostRAM() (arvados.ByteSize, error) {
+	buf, err := os.ReadFile("/proc/meminfo")
+	if err != nil {
+		return 0, err
+	}
+	m := reMemTotal.FindSubmatch(buf)
+	if m == nil {
+		return 0, errors.New("error parsing /proc/meminfo: no MemTotal")
+	}
+	kb, err := strconv.ParseInt(string(m[2]), 10, 64)
+	if err != nil {
+		return 0, fmt.Errorf("error parsing /proc/meminfo: %q: %w", m[2], err)
+	}
+	return arvados.ByteSize(kb) * 1024, nil
 }
 
 func (ldr *Loader) setImplicitStorageClasses(cfg *arvados.Config) error {

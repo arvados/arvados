@@ -13,6 +13,7 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	mathrand "math/rand"
 	"sort"
 	"strings"
 	"sync"
@@ -774,6 +775,13 @@ func (wp *Pool) runProbes() {
 
 	workers := []cloud.InstanceID{}
 	for range probeticker.C {
+		// Add some jitter. Without this, if probeInterval is
+		// a multiple of syncInterval and sync is
+		// instantaneous (as with the loopback driver), the
+		// first few probes race with sync operations and
+		// don't update the workers.
+		time.Sleep(time.Duration(mathrand.Int63n(int64(wp.probeInterval) / 23)))
+
 		workers = workers[:0]
 		wp.mtx.Lock()
 		for id, wkr := range wp.workers {
@@ -900,7 +908,7 @@ func (wp *Pool) loadRunnerData() error {
 	}
 	wp.runnerData = buf
 	wp.runnerMD5 = md5.Sum(buf)
-	wp.runnerCmd = fmt.Sprintf("/var/lib/arvados/crunch-run~%x", wp.runnerMD5)
+	wp.runnerCmd = fmt.Sprintf("/tmp/arvados-crunch-run/crunch-run~%x", wp.runnerMD5)
 	return nil
 }
 

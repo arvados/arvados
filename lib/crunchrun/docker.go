@@ -23,6 +23,14 @@ import (
 // Docker daemon won't let you set a limit less than ~10 MiB
 const minDockerRAM = int64(16 * 1024 * 1024)
 
+// DockerAPIVersion is the API version we use to communicate with the
+// docker service.  The oldest OS we support is Ubuntu 18.04 (bionic)
+// which originally shipped docker 1.17.12 / API 1.35 so there is no
+// reason to use an older API version.  See
+// https://dev.arvados.org/issues/15370#note-38 and
+// https://docs.docker.com/engine/api/.
+const DockerAPIVersion = "1.35"
+
 type dockerExecutor struct {
 	containerUUID    string
 	logf             func(string, ...interface{})
@@ -37,7 +45,7 @@ type dockerExecutor struct {
 func newDockerExecutor(containerUUID string, logf func(string, ...interface{}), watchdogInterval time.Duration) (*dockerExecutor, error) {
 	// API version 1.21 corresponds to Docker 1.9, which is
 	// currently the minimum version we want to support.
-	client, err := dockerclient.NewClient(dockerclient.DefaultDockerHost, "1.21", nil, nil)
+	client, err := dockerclient.NewClient(dockerclient.DefaultDockerHost, DockerAPIVersion, nil, nil)
 	if watchdogInterval < 1 {
 		watchdogInterval = time.Minute
 	}
