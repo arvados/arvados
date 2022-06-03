@@ -20,11 +20,15 @@ import { getUserUuid } from 'common/getuser';
 import { GroupResource, isBuiltinGroup } from 'models/group';
 import { ArvadosTheme } from 'common/custom-theme';
 
-type CssRules = "root";
+type CssRules = "root" | "content";
 
 const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     root: {
         width: '100%',
+    },
+    content: {
+        // reserve space for the tab bar
+        height: `calc(100% - ${theme.spacing.unit * 7}px)`,
     }
 });
 
@@ -168,50 +172,52 @@ export const GroupDetailsPanel = withStyles(styles)(connect(
                       <Tab data-cy="group-details-members-tab" label="MEMBERS" />
                       <Tab data-cy="group-details-permissions-tab" label="PERMISSIONS" />
                   </Tabs>
-                  {value === 0 &&
-                      <DataExplorer
-                          id={GROUP_DETAILS_MEMBERS_PANEL_ID}
-                          data-cy="group-members-data-explorer"
-                          onRowClick={noop}
-                          onRowDoubleClick={noop}
-                          onContextMenu={noop}
-                          contextMenuColumn={false}
-                          defaultViewIcon={UserPanelIcon}
-                          defaultViewMessages={[MEMBERS_DEFAULT_MESSAGE]}
-                          hideColumnSelector
-                          hideSearchInput
-                          actions={
-                                this.props.groupCanManage &&
-                                <Grid container justify='flex-end'>
-                                    <Button
-                                      data-cy="group-member-add"
-                                      variant="contained"
-                                      color="primary"
-                                      onClick={this.props.onAddUser}>
-                                      <AddIcon /> Add user
-                                    </Button>
-                                </Grid>
-                          }
-                          paperProps={{
-                              elevation: 0,
-                          }} />
-                  }
-                  {value === 1 &&
-                      <DataExplorer
-                          id={GROUP_DETAILS_PERMISSIONS_PANEL_ID}
-                          data-cy="group-permissions-data-explorer"
-                          onRowClick={noop}
-                          onRowDoubleClick={noop}
-                          onContextMenu={noop}
-                          contextMenuColumn={false}
-                          defaultViewIcon={KeyIcon}
-                          defaultViewMessages={[PERMISSIONS_DEFAULT_MESSAGE]}
-                          hideColumnSelector
-                          hideSearchInput
-                          paperProps={{
-                              elevation: 0,
-                          }} />
-                  }
+                  <div className={this.props.classes.content}>
+                    {value === 0 &&
+                        <DataExplorer
+                            id={GROUP_DETAILS_MEMBERS_PANEL_ID}
+                            data-cy="group-members-data-explorer"
+                            onRowClick={noop}
+                            onRowDoubleClick={noop}
+                            onContextMenu={noop}
+                            contextMenuColumn={false}
+                            defaultViewIcon={UserPanelIcon}
+                            defaultViewMessages={[MEMBERS_DEFAULT_MESSAGE]}
+                            hideColumnSelector
+                            hideSearchInput
+                            actions={
+                                    this.props.groupCanManage &&
+                                    <Grid container justify='flex-end'>
+                                        <Button
+                                        data-cy="group-member-add"
+                                        variant="contained"
+                                        color="primary"
+                                        onClick={this.props.onAddUser}>
+                                        <AddIcon /> Add user
+                                        </Button>
+                                    </Grid>
+                            }
+                            paperProps={{
+                                elevation: 0,
+                            }} />
+                    }
+                    {value === 1 &&
+                        <DataExplorer
+                            id={GROUP_DETAILS_PERMISSIONS_PANEL_ID}
+                            data-cy="group-permissions-data-explorer"
+                            onRowClick={noop}
+                            onRowDoubleClick={noop}
+                            onContextMenu={noop}
+                            contextMenuColumn={false}
+                            defaultViewIcon={KeyIcon}
+                            defaultViewMessages={[PERMISSIONS_DEFAULT_MESSAGE]}
+                            hideColumnSelector
+                            hideSearchInput
+                            paperProps={{
+                                elevation: 0,
+                            }} />
+                    }
+                  </div>
                 </Paper>
             );
         }
