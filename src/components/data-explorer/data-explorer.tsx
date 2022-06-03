@@ -11,7 +11,7 @@ import { SearchInput } from 'components/search-input/search-input';
 import { ArvadosTheme } from "common/custom-theme";
 import { createTree } from 'models/tree';
 import { DataTableFilters } from 'components/data-table-filters/data-table-filters-tree';
-import { CloseIcon, MaximizeIcon, MoreOptionsIcon } from 'components/icon/icon';
+import { CloseIcon, IconType, MaximizeIcon, MoreOptionsIcon } from 'components/icon/icon';
 import { PaperProps } from '@material-ui/core/Paper';
 import { MPVPanelProps } from 'components/multi-panel-view/multi-panel-view';
 
@@ -64,7 +64,8 @@ interface DataExplorerDataProps<T> {
     rowsPerPageOptions: number[];
     page: number;
     contextMenuColumn: boolean;
-    dataTableDefaultView?: React.ReactNode;
+    defaultViewIcon?: IconType;
+    defaultViewMessages?: string[];
     working?: boolean;
     currentRefresh?: string;
     currentRoute?: string;
@@ -149,7 +150,7 @@ export const DataExplorer = withStyles(styles)(
                 columns, onContextMenu, onFiltersChange, onSortToggle, extractKey,
                 rowsPerPage, rowsPerPageOptions, onColumnToggle, searchLabel, searchValue, onSearch,
                 items, itemsAvailable, onRowClick, onRowDoubleClick, classes,
-                dataTableDefaultView, hideColumnSelector, actions, paperProps, hideSearchInput,
+                defaultViewIcon, defaultViewMessages, hideColumnSelector, actions, paperProps, hideSearchInput,
                 paperKey, fetchMode, currentItemUuid, title,
                 doHidePanel, doMaximizePanel, panelName, panelMaximized, elementPath
             } = this.props;
@@ -197,7 +198,8 @@ export const DataExplorer = withStyles(styles)(
                     onSortToggle={onSortToggle}
                     extractKey={extractKey}
                     working={this.state.showLoading}
-                    defaultView={dataTableDefaultView}
+                    defaultViewIcon={defaultViewIcon}
+                    defaultViewMessages={defaultViewMessages}
                     currentItemUuid={currentItemUuid}
                     currentRoute={paperKey} /></Grid>
                 <Grid item xs><Toolbar className={classes.footer}>

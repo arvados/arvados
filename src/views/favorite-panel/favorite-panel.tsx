@@ -31,7 +31,6 @@ import { navigateTo } from 'store/navigation/navigation-action';
 import { ContainerRequestState } from "models/container-request";
 import { FavoritesState } from 'store/favorites/favorites-reducer';
 import { RootState } from 'store/store';
-import { DataTableDefaultView } from 'components/data-table-default-view/data-table-default-view';
 import { createTree } from 'models/tree';
 import { getSimpleObjectTypeFilters } from 'store/resource-type-filters/resource-type-filters';
 import { getResource, ResourcesState } from 'store/resources/resources';
@@ -185,12 +184,9 @@ export const FavoritePanel = withStyles(styles)(
                     onRowDoubleClick={this.handleRowDoubleClick}
                     onContextMenu={this.handleContextMenu}
                     contextMenuColumn={true}
-                    dataTableDefaultView={
-                        <DataTableDefaultView
-                            icon={FavoriteIcon}
-                            messages={['Your favorites list is empty.']}
-                            />
-                    } /></div>;
+                    defaultViewIcon={FavoriteIcon}
+                    defaultViewMessages={['Your favorites list is empty.']} />
+                </div>;
             }
         }
     )

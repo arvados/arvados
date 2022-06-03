@@ -16,12 +16,13 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
         marginBottom: theme.spacing.unit * 4,
     },
 });
-type DataTableDefaultViewDataProps = Partial<Pick<DefaultViewDataProps, 'icon' | 'messages'>>;
+type DataTableDefaultViewDataProps = Partial<Pick<DefaultViewDataProps, 'icon' | 'messages' | 'filtersApplied'>>;
 type DataTableDefaultViewProps = DataTableDefaultViewDataProps & WithStyles<CssRules>;
 
 export const DataTableDefaultView = withStyles(styles)(
     ({ classes, ...props }: DataTableDefaultViewProps) => {
         const icon = props.icon || DetailsIcon;
-        const messages = props.messages || ['No items found'];
+        const filterWarning: string[] = props.filtersApplied ? ['Filters are applied to the data.'] : [];
+        const messages = filterWarning.concat(props.messages || ['No items found']);
         return <DefaultView {...classes} {...{ icon, messages }} />;
     });

@@ -198,6 +198,19 @@ export const initTreeNode = <T>(data: Pick<TreeNode<T>, 'id' | 'value'> & { pare
     ...data,
 });
 
+export const getTreeDirty = (id: string) => <T>(tree: Tree<T>): boolean => {
+    const node = getNode(id)(tree);
+    const children = getNodeDescendants(id)(tree);
+    return (node
+            && node.initialState !== undefined
+            && node.selected !== node.initialState
+            )
+            || children.some(child =>
+                child.initialState !== undefined
+                && child.selected !== child.initialState
+            );
+}
+
 const toggleDescendantsSelection = (id: string) => <T>(tree: Tree<T>) => {
     const node = getNode(id)(tree);
     if (node) {
@@ -228,7 +241,6 @@ const toggleParentNodeSelection = (id: string) => <T>(tree: Tree<T>) => {
     }
     return tree;
 };
-
 
 const mapNodeValue = <T, R>(mapFn: (value: T) => R) => (node: TreeNode<T>): TreeNode<R> =>
     ({ ...node, value: mapFn(node.value) });

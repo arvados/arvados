@@ -12,7 +12,6 @@ import { ShareMeIcon } from 'components/icon/icon';
 import { ResourcesState, getResource } from 'store/resources/resources';
 import { navigateTo } from "store/navigation/navigation-action";
 import { loadDetailsPanel } from "store/details-panel/details-panel-action";
-import { DataTableDefaultView } from 'components/data-table-default-view/data-table-default-view';
 import { SHARED_WITH_ME_PANEL_ID } from 'store/shared-with-me-panel/shared-with-me-panel-actions';
 import {
     openContextMenu,
@@ -55,11 +54,9 @@ export const SharedWithMePanel = withStyles(styles)(
                     onRowDoubleClick={this.handleRowDoubleClick}
                     onContextMenu={this.handleContextMenu}
                     contextMenuColumn={false}
-                    dataTableDefaultView={
-                        <DataTableDefaultView
-                            icon={ShareMeIcon}
-                            messages={['No shared items']} />
-                    } /></div>;
+                    defaultViewIcon={ShareMeIcon}
+                    defaultViewMessages={['No shared items']} />
+                </div>;
             }
 
             handleContextMenu = (event: React.MouseEvent<HTMLElement>, resourceUuid: string) => {

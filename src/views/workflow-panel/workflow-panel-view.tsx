@@ -5,7 +5,6 @@
 import React from 'react';
 import { DataExplorer } from "views-components/data-explorer/data-explorer";
 import { WorkflowIcon } from 'components/icon/icon';
-import { DataTableDefaultView } from 'components/data-table-default-view/data-table-default-view';
 import { WORKFLOW_PANEL_ID } from 'store/workflow-panel/workflow-panel-actions';
 import {
     ResourceLastModifiedDate,
@@ -131,7 +130,8 @@ export const WorkflowPanelView = (props: WorkflowPanelProps) => {
                 onRowDoubleClick={props.handleRowDoubleClick}
                 contextMenuColumn={false}
                 onContextMenu={e => e}
-                dataTableDefaultView={<DataTableDefaultView icon={WorkflowIcon} />} />
+                defaultViewIcon={WorkflowIcon}
+                defaultViewMessages={['Workflow list is empty.']} />
         </Grid>
         <Grid item xs={6}>
             <Paper style={{ height: '100%' }}>

@@ -15,7 +15,7 @@ import { GROUP_DETAILS_MEMBERS_PANEL_ID, GROUP_DETAILS_PERMISSIONS_PANEL_ID, ope
 import { openContextMenu } from 'store/context-menu/context-menu-actions';
 import { ResourcesState, getResource } from 'store/resources/resources';
 import { Grid, Button, Tabs, Tab, Paper, WithStyles, withStyles, StyleRulesCallback } from '@material-ui/core';
-import { AddIcon } from 'components/icon/icon';
+import { AddIcon, UserPanelIcon, KeyIcon } from 'components/icon/icon';
 import { getUserUuid } from 'common/getuser';
 import { GroupResource, isBuiltinGroup } from 'models/group';
 import { ArvadosTheme } from 'common/custom-theme';
@@ -43,6 +43,9 @@ export enum GroupDetailsPanelPermissionsColumnNames {
     UUID = "UUID",
     REMOVE = "Remove",
 }
+
+const MEMBERS_DEFAULT_MESSAGE = 'Members list is empty.';
+const PERMISSIONS_DEFAULT_MESSAGE = 'Permissions list is empty.';
 
 export const groupDetailsMembersPanelColumns: DataColumns<string> = [
     {
@@ -173,6 +176,8 @@ export const GroupDetailsPanel = withStyles(styles)(connect(
                           onRowDoubleClick={noop}
                           onContextMenu={noop}
                           contextMenuColumn={false}
+                          defaultViewIcon={UserPanelIcon}
+                          defaultViewMessages={[MEMBERS_DEFAULT_MESSAGE]}
                           hideColumnSelector
                           hideSearchInput
                           actions={
@@ -199,6 +204,8 @@ export const GroupDetailsPanel = withStyles(styles)(connect(
                           onRowDoubleClick={noop}
                           onContextMenu={noop}
                           contextMenuColumn={false}
+                          defaultViewIcon={KeyIcon}
+                          defaultViewMessages={[PERMISSIONS_DEFAULT_MESSAGE]}
                           hideColumnSelector
                           hideSearchInput
                           paperProps={{
