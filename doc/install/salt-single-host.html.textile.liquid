@@ -11,7 +11,8 @@ SPDX-License-Identifier: CC-BY-SA-3.0
 
 # "Limitations of the single host install":#limitations
 # "Prerequisites":#prerequisites
-# "Download the installer":#single_host
+# "Download the installer":#download
+# "Copy the configuration files":#copy_config
 # "Choose the SSL configuration":#certificates
 ## "Using a self-signed certificate":#self-signed
 ## "Using a Let's Encrypt certificate":#lets-encrypt
@@ -31,13 +32,11 @@ Using the default configuration, this installation method has a number of limita
 
 * all services run on the same machine, and they will compete for resources. This includes any compute jobs.
 * it uses the local machine disk for Keep storage (under the @/tmp@ directory). There may not be a lot of space available.
-* it installs the @crunch-dispatch-local@ dispatcher, which can run just eight concurrent CWL jobs. These jobs will be executed on the same machine that runs all the Arvados services and may well starve them of resources.
+* it installs the @crunch-dispatch-local@ dispatcher, which has a limit of eight concurrent jobs. These jobs will be executed on the same machine that runs all the Arvados services and may well starve them of resources.
 
 It is possible to start with the single host installation method and modify the Arvados configuration file later to address these limitations. E.g. switch to a "different storage volume setup":{{site.baseurl}}/install/configure-s3-object-storage.html for Keep, and switch to "the cloud dispatcher":{{site.baseurl}}/install/crunch2-cloud/install-dispatch-cloud.html to provision compute resources dynamically.
 
-h2(#prerequisites). Prerequisites and planning
-
-Prerequisites:
+h2(#prerequisites). Prerequisites
 
 * git
 * a dedicated (virtual) machine for your Arvados server with at least 2 cores and 8 GiB of RAM, running a "supported Arvados distribution":{{site.baseurl}}/install/install-manual-prerequisites.html#supportedlinux
@@ -46,24 +45,11 @@ Prerequisites:
 * port 80 needs to be reachable from everywhere on the internet (only when using "Let's Encrypt":#lets-encrypt)
 * an SSL certificate matching the hostname in use (only when using "bring your own certificate":#bring-your-own)
 
-h2(#single_host). Download the installer
+h2(#download). Download the installer
 
-{% include 'branchname' %}
+{% include 'download_installer' %}
 
-This procedure will install all the main Arvados components to get you up and running in a single host.
-
-This is a package-based installation method, however the installation script is currently distributed in source form via @git@:
-
-<notextile>
-<pre><code>git clone https://git.arvados.org/arvados.git
-git checkout {{ branchname }}
-cd arvados/tools/salt-install
-</code></pre>
-</notextile>
-
-The @provision.sh@ script will help you deploy Arvados by preparing your environment to be able to run the installer, then running it. The actual installer is located in the "arvados-formula git repository":https://git.arvados.org/arvados-formula.git/tree/refs/heads/{{ branchname }} and will be cloned during the running of the @provision.sh@ script.  The installer is built using "Saltstack":https://saltproject.io/ and @provision.sh@ performs the install using master-less mode.
-
-First, copy the configuration files:
+h2(#copy_config). Copy the configuration files
 
 <notextile>
 <pre><code>cp local.params.example.single_host_single_hostname local.params
@@ -71,58 +57,9 @@ cp -r config_examples/single_host/single_hostname local_config_dir
 </code></pre>
 </notextile>
 
-Edit the variables in the <i>local.params</i> file. Pay attention to the <b>*_PORT, *_TOKEN</b> and <b>*KEY</b> variables. The *SSL_MODE* variable is discussed in the next section.
+Edit the variables in the <i>local.params</i> file. Pay attention to the <notextile><b>*_PORT, *_TOKEN</b> and <b>*_KEY</b></notextile> variables. The *SSL_MODE* variable is discussed in the next section.
 
-h2(#certificates). Choose the SSL configuration (SSL_MODE)
-
-Arvados requires an SSL certificate to work correctly. This installer supports these options:
-
-* @self-signed@: let the installer create a self-signed certificate
-* @lets-encrypt@: automatically obtain and install an SSL certificate for your hostname
-* @bring-your-own@: supply your own certificate in the `certs` directory
-
-h3(#self-signed). Using a self-signed certificate
-
-In the default configuration, this installer uses self-signed certificate(s):
-
-<notextile>
-<pre><code>SSL_MODE="self-signed"
-</code></pre>
-</notextile>
-
-When connecting to the Arvados web interface for the first time, you will need to accept the self-signed certificate as trusted to bypass the browser warnings.
-
-h3(#lets-encrypt). Using a Let's Encrypt certificate
-
-To automatically get a valid certificate via Let's Encrypt, change the configuration like this:
-
-<notextile>
-<pre><code>SSL_MODE="lets-encrypt"
-</code></pre>
-</notextile>
-
-The hostname for your Arvados cluster must be defined in @HOSTNAME_EXT@ and resolve to the public IP address of your Arvados instance, so that Let's Encrypt can validate the domainname ownership and issue the certificate.
-
-When using AWS, EC2 instances can have a default hostname that ends with <i>amazonaws.com</i>. Let's Encrypt has a blacklist of domain names for which it will not issue certificates, and that blacklist includes the <i>amazonaws.com</i> domain, which means the default hostname can not be used to get a certificate from Let's Encrypt.
-
-h3(#bring-your-own). Bring your own certificate
-
-To supply your own certificate, change the configuration like this:
-
-<notextile>
-<pre><code>SSL_MODE="bring-your-own"
-</code></pre>
-</notextile>
-
-Copy your certificate files to the directory specified with the variable @CUSTOM_CERTS_DIR@. The provision script will find it there. The certificate and its key need to be copied to a file named after @HOSTNAME_EXT@. For example, if @HOSTNAME_EXT@ is defined as @my-arvados.example.net@, the script will look for
-
-<notextile>
-<pre><code>${CUSTOM_CERTS_DIR}/my-arvados.example.net.crt
-${CUSTOM_CERTS_DIR}/my-arvados.example.net.key
-</code></pre>
-</notextile>
-
-All certificate files will be used by nginx. You may need to include intermediate certificates in your certificate file. See "the nginx documentation":http://nginx.org/en/docs/http/configuring_https_servers.html#chains for more details.
+{% include 'ssl_config_single' %}
 
 h2(#further_customization). Further customization of the installation (modifying the salt pillars and states)
 
@@ -130,7 +67,7 @@ If you want or need further customization, you can edit the Saltstack pillars an
 
 h2(#run_provision_script). Run the provision.sh script
 
-When you finished customizing the configuration, you are ready to copy the files to the host (if needed) and run the @provision.sh@ script:
+When you finished customizing the configuration, you are ready to copy the files to the target host where Arvados will be installed, and run the @provision.sh@ script there:
 
 <notextile>
 <pre><code>scp -r provision.sh local* tests user@host:
@@ -138,7 +75,7 @@ ssh user@host sudo ./provision.sh
 </code></pre>
 </notextile>
 
-and wait for it to finish. The script will need 5 to 10 minutes to install and configure everything.
+Wait for it to finish. The script will need 5 to 10 minutes to install and configure everything.
 
 If everything goes OK, you'll get final output that looks similar to this:
 
@@ -148,38 +85,7 @@ arvados: Failed:      0
 </code></pre>
 </notextile>
 
-h2(#ca_root_certificate). Install the CA root certificate (SSL_MODE=self-signed only)
-
-Arvados uses SSL to encrypt communications. The web interface uses AJAX which will silently fail if the certificate is not valid or signed by an unknown Certification Authority.
-
-For this reason, the @arvados-formula@ has a helper state to create a root certificate to authorize Arvados services. The @provision.sh@ script will leave a copy of the generated CA's certificate (@arvados-snakeoil-ca.pem@) in the script's directory so you can add it to your workstation.
-
-Installing the root certificate into your web browser will prevent security errors when accessing Arvados services with your web browser.
-
-# Go to the certificate manager in your browser.
-#* In Chrome, this can be found under "Settings &rarr; Advanced &rarr; Manage Certificates" or by entering @chrome://settings/certificates@ in the URL bar.
-#* In Firefox, this can be found under "Preferences &rarr; Privacy & Security" or entering @about:preferences#privacy@ in the URL bar and then choosing "View Certificates...".
-# Select the "Authorities" tab, then press the "Import" button.  Choose @arvados-snakeoil-ca.pem@
-
-The certificate will be added under the "Arvados Formula".
-
-To access your Arvados instance using command line clients (such as arv-get and arv-put) without security errors, install the certificate into the OS certificate storage.
-
-* On Debian/Ubuntu:
-
-<notextile>
-<pre><code>cp arvados-root-cert.pem /usr/local/share/ca-certificates/
-/usr/sbin/update-ca-certificates
-</code></pre>
-</notextile>
-
-* On CentOS:
-
-<notextile>
-<pre><code>cp arvados-root-cert.pem /etc/pki/ca-trust/source/anchors/
-/usr/bin/update-ca-trust
-</code></pre>
-</notextile>
+{% include 'install_ca_cert' %}
 
 h2(#initial_user). Initial user and login
 

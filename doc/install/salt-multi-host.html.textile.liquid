@@ -10,33 +10,38 @@ SPDX-License-Identifier: CC-BY-SA-3.0
 {% endcomment %}
 
 # "Introduction":#introduction
-# "Hosts preparation":#hosts_preparation
-## "Create a compute image":#create_a_compute_image
-# "Multi host install using the provision.sh script":#multi_host
-# "Choose the desired configuration":#choose_configuration
-## "Multiple hosts / multiple hostnames":#multi_host_multi_hostnames
-## "Further customization of the installation (modifying the salt pillars and states)":#further_customization
+# "Prerequisites and planning":#prerequisites
+# "Download the installer":#download
+# "Copy and customize the configuration files":#copy_config
+# "Choose the SSL configuration":#certificates
+## "Using a self-signed certificates":#self-signed
+## "Using a Let's Encrypt certificates":#lets-encrypt
+## "Bring your own certificates":#bring-your-own
+# "Create a compute image":#create_a_compute_image
+# "Further customization of the installation (modifying the salt pillars and states)":#further_customization
 # "Installation order":#installation_order
 # "Run the provision.sh script":#run_provision_script
+# "Install the CA root certificate":#ca_root_certificate
 # "Initial user and login":#initial_user
 # "Test the installed cluster running a simple workflow":#test_install
 # "After the installation":#post_install
 
 h2(#introduction). Introduction
 
-Arvados components can be installed in a distributed infrastructure, whether it is an "on-prem" with physical or virtual hosts, or a cloud environment.
+This multi host installer is an AWS specific example that is generally useful, but will likely need to be adapted for your environment. The installer is highly configurable.
 
-As infrastructures vary a great deal from site to site, these instructions should be considered more as 'guidelines' than fixed steps to follow.
+h2(#prerequisites). Prerequisites and planning
 
-We provide an "installer script":salt.html that can help you deploy the different Arvados components. At the time of writing, the provided examples are suitable to install Arvados on AWS.
+Prerequisites:
 
+* git
+* a number of (virtual) machines for your Arvados cluster with at least 2 cores and 8 GiB of RAM, running a "supported Arvados distribution":{{site.baseurl}}/install/install-manual-prerequisites.html#supportedlinux
+* a number of DNS hostnames that resolve to the IP addresses of your Arvados hosts
+* ports 443 need to be reachable from your client (configurable in @local.params@, see below)
+* port 80 needs to be reachable from everywhere on the internet (only when using "Let's Encrypt":#lets-encrypt without Route53 integration)
+* SSL certificatse matching the hostnames in use (only when using "bring your own certificates":#bring-your-own)
 
-
-h2(#hosts_preparation). Hosts preparation
-
-In order to run Arvados on a multi-host installation, there are a few requirements that your infrastructure has to fulfill.
-
-These instructions explain how to setup a multi-host environment that is suitable for production use of Arvados.
+Planning:
 
 We suggest distributing the Arvados components in the following way, creating at least 6 hosts:
 
@@ -55,55 +60,36 @@ We suggest distributing the Arvados components in the following way, creating at
 # KEEPPROXY node:
 ## arvados keepproxy
 ## arvados keepweb
-# KEEPSTOREs (at least 2)
+# KEEPSTORE nodes (at least 2)
 ## arvados keepstore
 # SHELL node (optional):
 ## arvados shell
 
-Note that these hosts can be virtual machines in your infrastructure and they don't need to be physical machines.
+If your infrastructure differs from the setup proposed above (ie, using RDS or an existing DB server), remember that you will need to edit the configuration files for the scripts so they work with your infrastructure.
 
-Again, if your infrastructure differs from the setup proposed above (ie, using RDS or an existing DB server), remember that you will need to edit the configuration files for the scripts so they work with your infrastructure.
+h2(#download). Download the installer
 
-h2(#multi_host). Multi host install using the provision.sh script
+{% include 'download_installer' %}
 
-{% include 'branchname' %}
+h2(#copy_config). Copy and customize the configuration files
 
-This is a package-based installation method. Start with the @provision.sh@ script which is available by cloning the @{{ branchname }}@ branch from "https://git.arvados.org/arvados.git":https://git.arvados.org/arvados.git . The @provision.sh@ script and its supporting files can be found in the "arvados/tools/salt-install":https://git.arvados.org/arvados.git/tree/refs/heads/{{ branchname }}:/tools/salt-install directory in the Arvados git repository.
-
-This procedure will install all the main Arvados components to get you up and running in a multi-host environment.
-
-The @provision.sh@ script will help you deploy Arvados by preparing your environment to be able to run the installer, then running it. The actual installer is located at "arvados-formula":https://git.arvados.org/arvados-formula.git/tree/refs/heads/{{ branchname }} and will be cloned during the running of the @provision.sh@ script.  The installer is built using "Saltstack":https://saltproject.io/ and @provision.sh@ performs the install using master-less mode.
-
-After setting up a few variables in a config file (next step), you'll be ready to run it and get Arvados deployed.
-
-h3(#create_a_compute_image). Create a compute image
-
-In a multi-host installation, containers are dispatched in docker daemons running in the <i>compute instances</i>, which need some special setup. We provide a "compute image builder script":https://github.com/arvados/arvados/tree/main/tools/compute-images that you can use to build a template image following "these instructions":https://doc.arvados.org/main/install/crunch2-cloud/install-compute-node.html . Once you have that image created, you can use the image ID in the Arvados configuration in the next steps.
-
-h2(#choose_configuration). Choose the desired configuration
-
-For documentation's sake, we will use the cluster name <i>arva2</i> and the domain <i>arv.local</i>. If you don't change them as required in the next steps, installation won't proceed.
-
-We will try to provide a few Arvados' multi host installation configurations examples for different infrastructure providers. Currently only AWS is available but they can be used with almost any provider with little changes.
-
-You need to copy one of the example configuration files and directory, and edit them to suit your needs.
-
-h3(#multi_host_multi_hostnames). Multiple hosts / multiple hostnames
 <notextile>
 <pre><code>cp local.params.example.multiple_hosts local.params
 cp -r config_examples/multi_host/aws local_config_dir
 </code></pre>
 </notextile>
 
-Edit the variables in the <i>local.params</i> file. Pay attention to the <b>*_INT_IP, *_TOKEN</b> and <b>*KEY</b> variables. Those variables will be used to do a search and replace on the <i>pillars/*</i> in place of any matching __VARIABLE__.
+Edit the variables in the <i>local.params</i> file. Pay attention to the <notextile><b>*_INT_IP, *_TOKEN</b> and <b>*_KEY</b></notextile> variables. The *SSL_MODE* variable is discussed in the next section.
 
-The <i>multi_host</i> example includes Let's Encrypt salt code to automatically request and install the certificates for the public-facing hosts (API/controller, Workbench, Keepproxy/Keepweb) using AWS' Route53.
+{% include 'ssl_config_multi' %}
 
-{% include 'multi_host_install_custom_certificates' %}
+h2(#create_a_compute_image). Create a compute image
 
-If you want to use valid certificates provided by Let's Encrypt, set the variable <i>SSL_MODE=lets-encrypt</i> and make sure that all the FQDNs that you will use for the public-facing applications (API/controller, Workbench, Keepproxy/Keepweb) are reachable.
+{% include 'branchname' %}
 
-h3(#further_customization). Further customization of the installation (modifying the salt pillars and states)
+In a multi-host installation, containers are dispatched in docker daemons running in the <i>compute instances</i>, which need some special setup. We provide a "compute image builder script":https://github.com/arvados/arvados/tree/{{ branchname }}/tools/compute-images that you can use to build a template image following "these instructions":https://doc.arvados.org/install/crunch2-cloud/install-compute-node.html. Once you have that image created, you will need to update the <i>pillars/arvados.sls</i> file with the AMI ID and the private ssh key for the dispatcher.
+
+h2(#further_customization). Further customization of the installation (modifying the salt pillars and states)
 
 You will need further customization to suit your environment, which can be done editing the Saltstack pillars and states files. Pay particular attention to the <i>pillars/arvados.sls</i> file, where you will need to provide some information that describes your environment.
 
@@ -180,6 +166,8 @@ h4. Shell (here we copy the CLI test workflow too)
 ssh user@host sudo ./provision.sh --config local.params --roles shell
 </code></pre>
 </notextile>
+
+{% include 'install_ca_cert' %}
 
 h2(#initial_user). Initial user and login
 
