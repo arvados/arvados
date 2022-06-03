@@ -14,6 +14,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"git.arvados.org/arvados.git/lib/crunchrun"
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/client"
 )
@@ -134,7 +135,7 @@ exec arvados-server boot -listen-host=0.0.0.0 -no-workbench2=false $bootargs
 }
 
 func dockerImageExists(ctx context.Context, name string) (bool, error) {
-	cli, err := client.NewEnvClient()
+	cli, err := client.NewClient(client.DefaultDockerHost, crunchrun.DockerAPIVersion, nil, nil)
 	if err != nil {
 		return false, err
 	}

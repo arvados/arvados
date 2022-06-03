@@ -28,8 +28,9 @@ var railsEnv = []string{
 // Install a Rails application's dependencies, including phusion
 // passenger.
 type installPassenger struct {
-	src     string
-	depends []supervisedTask
+	src       string // path to app in source tree
+	varlibdir string // path to app (relative to /var/lib/arvados) in OS package: "railsapi" or "workbench1"
+	depends   []supervisedTask
 }
 
 func (runner installPassenger) String() string {
@@ -49,33 +50,61 @@ func (runner installPassenger) Run(ctx context.Context, fail func(error), super 
 	passengerInstallMutex.Lock()
 	defer passengerInstallMutex.Unlock()
 
+	appdir := runner.src
+	if super.ClusterType == "test" {
+		// In the multi-cluster test setup, if we run multiple
+		// Rails instances directly from the source tree, they
+		// step on one another's files in {source}/tmp, log,
+		// etc. So instead we copy the source directory into a
+		// temp dir and run the Rails app from there.
+		appdir = filepath.Join(super.tempdir, runner.varlibdir)
+		err = super.RunProgram(ctx, super.tempdir, runOptions{}, "mkdir", "-p", appdir)
+		if err != nil {
+			return err
+		}
+		err = super.RunProgram(ctx, filepath.Join(super.SourcePath, runner.src), runOptions{}, "rsync",
+			"-a", "--no-owner", "--no-group", "--delete-after", "--delete-excluded",
+			"--exclude", "/coverage",
+			"--exclude", "/log",
+			"--exclude", "/node_modules",
+			"--exclude", "/tmp",
+			"--exclude", "/public/assets",
+			"--exclude", "/vendor",
+			"--exclude", "/config/environments",
+			"./",
+			appdir+"/")
+		if err != nil {
+			return err
+		}
+	}
+
 	var buf bytes.Buffer
-	err = super.RunProgram(ctx, runner.src, runOptions{output: &buf}, "gem", "list", "--details", "bundler")
+	err = super.RunProgram(ctx, appdir, runOptions{output: &buf}, "gem", "list", "--details", "bundler")
 	if err != nil {
 		return err
 	}
 	for _, version := range []string{"2.2.19"} {
 		if !strings.Contains(buf.String(), "("+version+")") {
-			err = super.RunProgram(ctx, runner.src, runOptions{}, "gem", "install", "--user", "--conservative", "--no-document", "bundler:2.2.19")
+			err = super.RunProgram(ctx, appdir, runOptions{}, "gem", "install", "--user", "--conservative", "--no-document", "bundler:2.2.19")
 			if err != nil {
 				return err
 			}
 			break
 		}
 	}
-	err = super.RunProgram(ctx, runner.src, runOptions{}, "bundle", "install", "--jobs", "4", "--path", filepath.Join(os.Getenv("HOME"), ".gem"))
+	err = super.RunProgram(ctx, appdir, runOptions{}, "bundle", "install", "--jobs", "4", "--path", filepath.Join(os.Getenv("HOME"), ".gem"))
 	if err != nil {
 		return err
 	}
-	err = super.RunProgram(ctx, runner.src, runOptions{}, "bundle", "exec", "passenger-config", "build-native-support")
+	err = super.RunProgram(ctx, appdir, runOptions{}, "bundle", "exec", "passenger-config", "build-native-support")
 	if err != nil {
 		return err
 	}
-	err = super.RunProgram(ctx, runner.src, runOptions{}, "bundle", "exec", "passenger-config", "install-standalone-runtime")
+	err = super.RunProgram(ctx, appdir, runOptions{}, "bundle", "exec", "passenger-config", "install-standalone-runtime")
 	if err != nil {
 		return err
 	}
-	err = super.RunProgram(ctx, runner.src, runOptions{}, "bundle", "exec", "passenger-config", "validate-install")
+	err = super.RunProgram(ctx, appdir, runOptions{}, "bundle", "exec", "passenger-config", "validate-install")
 	if err != nil && !strings.Contains(err.Error(), "exit status 2") {
 		// Exit code 2 indicates there were warnings (like
 		// "other passenger installations have been detected",
@@ -88,7 +117,7 @@ func (runner installPassenger) Run(ctx context.Context, fail func(error), super 
 
 type runPassenger struct {
 	src       string // path to app in source tree
-	varlibdir string // path to app (relative to /var/lib/arvados) in OS package
+	varlibdir string // path to app (relative to /var/lib/arvados) in OS package: "railsapi" or "workbench1"
 	svc       arvados.Service
 	depends   []supervisedTask
 }
@@ -107,9 +136,12 @@ func (runner runPassenger) Run(ctx context.Context, fail func(error), super *Sup
 		return fmt.Errorf("bug: no internalPort for %q: %v (%#v)", runner, err, runner.svc)
 	}
 	var appdir string
-	if super.ClusterType == "production" {
+	switch super.ClusterType {
+	case "production":
 		appdir = "/var/lib/arvados/" + runner.varlibdir
-	} else {
+	case "test":
+		appdir = filepath.Join(super.tempdir, runner.varlibdir)
+	default:
 		appdir = runner.src
 	}
 	loglevel := "4"

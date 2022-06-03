@@ -1282,7 +1282,9 @@ Clusters:
         # need to be detected and cleaned up manually.
         TagKeyPrefix: Arvados
 
-        # Cloud driver: "azure" (Microsoft Azure) or "ec2" (Amazon AWS).
+        # Cloud driver: "azure" (Microsoft Azure), "ec2" (Amazon AWS),
+        # or "loopback" (run containers on dispatch host for testing
+        # purposes).
         Driver: ec2
 
         # Cloud-specific driver parameters.

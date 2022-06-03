@@ -160,6 +160,9 @@ func (initcmd *initCommand) RunCommand(prog string, args []string, stdin io.Read
       {{end}}
     Containers:
       DispatchPrivateKey: {{printf "%q" .GenerateSSHPrivateKey}}
+      CloudVMs:
+        Enable: true
+        Driver: loopback
     ManagementToken: {{printf "%q" ( .RandomHex 50 )}}
     PostgreSQL:
       Connection:

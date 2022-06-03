@@ -370,14 +370,14 @@ func (super *Supervisor) runCluster() error {
 		runServiceCommand{name: "keepstore", svc: super.cluster.Services.Keepstore},
 		runServiceCommand{name: "keep-web", svc: super.cluster.Services.WebDAV},
 		runServiceCommand{name: "ws", svc: super.cluster.Services.Websocket, depends: []supervisedTask{seedDatabase{}}},
-		installPassenger{src: "services/api"},
-		runPassenger{src: "services/api", varlibdir: "railsapi", svc: super.cluster.Services.RailsAPI, depends: []supervisedTask{createCertificates{}, seedDatabase{}, installPassenger{src: "services/api"}}},
+		installPassenger{src: "services/api", varlibdir: "railsapi"},
+		runPassenger{src: "services/api", varlibdir: "railsapi", svc: super.cluster.Services.RailsAPI, depends: []supervisedTask{createCertificates{}, seedDatabase{}, installPassenger{src: "services/api", varlibdir: "railsapi"}}},
 		seedDatabase{},
 	}
 	if !super.NoWorkbench1 {
 		tasks = append(tasks,
-			installPassenger{src: "apps/workbench", depends: []supervisedTask{seedDatabase{}}}, // dependency ensures workbench doesn't delay api install/startup
-			runPassenger{src: "apps/workbench", varlibdir: "workbench1", svc: super.cluster.Services.Workbench1, depends: []supervisedTask{installPassenger{src: "apps/workbench"}}},
+			installPassenger{src: "apps/workbench", varlibdir: "workbench1", depends: []supervisedTask{seedDatabase{}}}, // dependency ensures workbench doesn't delay api install/startup
+			runPassenger{src: "apps/workbench", varlibdir: "workbench1", svc: super.cluster.Services.Workbench1, depends: []supervisedTask{installPassenger{src: "apps/workbench", varlibdir: "workbench1"}}},
 		)
 	}
 	if !super.NoWorkbench2 {
@@ -387,8 +387,12 @@ func (super *Supervisor) runCluster() error {
 	}
 	if super.ClusterType != "test" {
 		tasks = append(tasks,
-			runServiceCommand{name: "dispatch-cloud", svc: super.cluster.Services.DispatchCloud},
 			runServiceCommand{name: "keep-balance", svc: super.cluster.Services.Keepbalance},
+		)
+	}
+	if super.cluster.Containers.CloudVMs.Enable {
+		tasks = append(tasks,
+			runServiceCommand{name: "dispatch-cloud", svc: super.cluster.Services.DispatchCloud},
 		)
 	}
 	super.tasksReady = map[string]chan bool{}
@@ -824,9 +828,6 @@ func (super *Supervisor) autofillConfig() error {
 		&super.cluster.Services.Workbench1,
 		&super.cluster.Services.Workbench2,
 	} {
-		if svc == &super.cluster.Services.DispatchCloud && super.ClusterType == "test" {
-			continue
-		}
 		if svc.ExternalURL.Host == "" {
 			port, err := nextPort(defaultExtHost)
 			if err != nil {
