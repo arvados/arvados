@@ -28,7 +28,7 @@ export const ToggleLockAction = withRouter(connect(mapStateToProps)((props: { is
             </ListItemIcon>
             <ListItemText style={{ textDecoration: 'none' }}>
                 {props.isLocked
-                    ? <>Unlock project</>
-                    : <>Lock project</>}
+                    ? <>Unfreeze project</>
+                    : <>Freeze project</>}
             </ListItemText>
         </ListItem >));

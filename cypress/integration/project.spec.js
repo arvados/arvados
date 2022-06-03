@@ -261,7 +261,7 @@ describe('Project tests', function() {
         });
     });
 
-    describe.only('Frozen projects', () => {
+    describe('Frozen projects', () => {
         beforeEach(() => {  
             cy.createGroup(activeUser.token, {
                 name: `Main project ${Math.floor(Math.random() * 999999)}`,
@@ -296,11 +296,11 @@ describe('Project tests', function() {
 
                 cy.get('[data-cy=project-panel]').contains(mainProject.name).rightclick();
 
-                cy.get('[data-cy=context-menu]').contains('Lock').click();
+                cy.get('[data-cy=context-menu]').contains('Freeze').click();
 
                 cy.get('[data-cy=project-panel]').contains(mainProject.name).rightclick();
 
-                cy.get('[data-cy=context-menu]').contains('Lock').should('not.exist');
+                cy.get('[data-cy=context-menu]').contains('Freeze').should('not.exist');
             });
         });
 
@@ -310,7 +310,7 @@ describe('Project tests', function() {
 
                 cy.get('[data-cy=project-panel]').contains(mainProject.name).rightclick();
 
-                cy.get('[data-cy=context-menu]').contains('Lock').click();
+                cy.get('[data-cy=context-menu]').contains('Freeze').click();
 
                 cy.get('[data-cy=project-panel]').contains(mainProject.name).click();
 
@@ -328,11 +328,11 @@ describe('Project tests', function() {
 
                 cy.get('main').contains(adminProject.name).rightclick();
 
-                cy.get('[data-cy=context-menu]').contains('Lock').click();
+                cy.get('[data-cy=context-menu]').contains('Freeze').click();
 
                 cy.get('main').contains(adminProject.name).rightclick();
 
-                cy.get('[data-cy=context-menu]').contains('Lock').should('exist');
+                cy.get('[data-cy=context-menu]').contains('Freeze').should('exist');
             });
         });
 
@@ -342,17 +342,17 @@ describe('Project tests', function() {
 
                 cy.get('main').contains(adminProject.name).rightclick();
 
-                cy.get('[data-cy=context-menu]').contains('Lock').click();
+                cy.get('[data-cy=context-menu]').contains('Freeze').click();
 
                 cy.wait(1000);
 
                 cy.get('main').contains(adminProject.name).rightclick();
 
-                cy.get('[data-cy=context-menu]').contains('Unlock').click();
+                cy.get('[data-cy=context-menu]').contains('Unfreeze').click();
 
                 cy.get('main').contains(adminProject.name).rightclick();
                 
-                cy.get('[data-cy=context-menu]').contains('Lock').should('exist');
+                cy.get('[data-cy=context-menu]').contains('Freeze').should('exist');
             });
         });
     });

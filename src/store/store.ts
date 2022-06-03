@@ -73,6 +73,7 @@ import { ALL_PROCESSES_PANEL_ID } from './all-processes-panel/all-processes-pane
 import { Config } from 'common/config';
 import { pluginConfig } from 'plugins';
 import { MiddlewareListReducer } from 'common/plugintypes';
+import { breadcrumbsMiddleware } from './breadcrumbs/breadcrumbs-middleware';
 
 declare global {
     interface Window {
@@ -174,6 +175,7 @@ export function configureStore(history: History, services: ServiceRepository, co
         publicFavoritesMiddleware,
         collectionsContentAddress,
         subprocessMiddleware,
+        breadcrumbsMiddleware,
     ];
 
     const reduceMiddlewaresFn: (a: Middleware[],

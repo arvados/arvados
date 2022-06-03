@@ -7,12 +7,13 @@ import { Button, Grid, StyleRulesCallback, WithStyles, Typography, Tooltip } fro
 import ChevronRightIcon from '@material-ui/icons/ChevronRight';
 import { withStyles } from '@material-ui/core';
 import { IllegalNamingWarning } from '../warning/warning';
-import { IconType } from 'components/icon/icon';
+import { IconType, LockIcon } from 'components/icon/icon';
 import grey from '@material-ui/core/colors/grey';
 
 export interface Breadcrumb {
     label: string;
     icon?: IconType;
+    isFrozen?: boolean;
 }
 
 type CssRules = "item" | "currentItem" | "label" | "icon";
@@ -63,6 +64,9 @@ export const Breadcrumbs = withStyles(styles)(
                             onClick={() => onClick(item)}
                             onContextMenu={event => onContextMenu(event, item)}>
                             <Icon className={classes.icon} />
+                            {
+                                item.isFrozen ? <LockIcon className={classes.icon} /> : null
+                            }
                             <Typography
                                 noWrap
                                 color="inherit"
