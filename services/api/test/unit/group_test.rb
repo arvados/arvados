@@ -398,66 +398,70 @@ update links set tail_uuid='#{g5}' where uuid='#{l1.uuid}'
         properties: {'frobity' => 'bar baz'})
       assert ok, proj.errors.messages.inspect
 
-      # Once project is frozen, cannot create new items inside it or
-      # its descendants
-      [proj, proj_inner].each do |frozen|
-        assert_raises do
-          collections(:collection_owned_by_active).update_attributes!(owner_uuid: frozen.uuid)
-        end
-        assert_raises do
-          Collection.create!(owner_uuid: frozen.uuid, name: 'inside-frozen-project')
-        end
-        assert_raises do
-          Group.create!(owner_uuid: frozen.uuid, group_class: 'project', name: 'inside-frozen-project')
-        end
-        cr = ContainerRequest.new(test_cr_attrs.merge(owner_uuid: frozen.uuid))
-        assert_raises ArvadosModel::PermissionDeniedError do
-          cr.save
-        end
-        assert_match /frozen/, cr.errors.inspect
-        # Check the frozen-parent condition is the only reason save failed.
-        cr.owner_uuid = users(:active).uuid
-        assert cr.save
-        cr.destroy
-      end
-
-      # Once project is frozen, cannot change name/contents, move,
-      # trash, or delete the project or anything beneath it
-      [proj, proj_inner, coll].each do |frozen|
-        assert_raises(StandardError, "should reject rename of #{frozen.uuid} (#{frozen.name}) with parent #{frozen.owner_uuid}") do
-          frozen.update_attributes!(name: 'foo2')
-        end
-        frozen.reload
-
-        if frozen.is_a?(Collection)
-          assert_raises(StandardError, "should reject manifest change of #{frozen.uuid}") do
-            frozen.update_attributes!(manifest_text: ". d41d8cd98f00b204e9800998ecf8427e+0 0:0:foo\n")
+      [:active, :admin].each do |u|
+        act_as_user users(u) do
+          # Once project is frozen, cannot create new items inside it or
+          # its descendants
+          [proj, proj_inner].each do |frozen|
+            assert_raises do
+              collections(:collection_owned_by_active).update_attributes!(owner_uuid: frozen.uuid)
+            end
+            assert_raises do
+              Collection.create!(owner_uuid: frozen.uuid, name: 'inside-frozen-project')
+            end
+            assert_raises do
+              Group.create!(owner_uuid: frozen.uuid, group_class: 'project', name: 'inside-frozen-project')
+            end
+            cr = ContainerRequest.new(test_cr_attrs.merge(owner_uuid: frozen.uuid))
+            assert_raises ArvadosModel::PermissionDeniedError do
+              cr.save
+            end
+            assert_match /frozen/, cr.errors.inspect
+            # Check the frozen-parent condition is the only reason save failed.
+            cr.owner_uuid = users(u).uuid
+            assert cr.save
+            cr.destroy
           end
-        else
-          assert_raises(StandardError, "should reject moving a project into #{frozen.uuid}") do
-            groups(:private).update_attributes!(owner_uuid: frozen.uuid)
-          end
-        end
-        frozen.reload
 
-        assert_raises(StandardError, "should reject moving #{frozen.uuid} to a different parent project") do
-          frozen.update_attributes!(owner_uuid: groups(:private).uuid)
-        end
-        frozen.reload
-        assert_raises(StandardError, "should reject setting trash_at of #{frozen.uuid}") do
-          frozen.update_attributes!(trash_at: db_current_time)
-        end
-        frozen.reload
-        assert_raises(StandardError, "should reject setting delete_at of #{frozen.uuid}") do
-          frozen.update_attributes!(delete_at: db_current_time)
-        end
-        frozen.reload
-        assert_raises(StandardError, "should reject delete of #{frozen.uuid}") do
-          frozen.destroy
-        end
-        frozen.reload
-        if frozen != proj
-          assert_equal [], frozen.writable_by
+          # Once project is frozen, cannot change name/contents, move,
+          # trash, or delete the project or anything beneath it
+          [proj, proj_inner, coll].each do |frozen|
+            assert_raises(StandardError, "should reject rename of #{frozen.uuid} (#{frozen.name}) with parent #{frozen.owner_uuid}") do
+              frozen.update_attributes!(name: 'foo2')
+            end
+            frozen.reload
+
+            if frozen.is_a?(Collection)
+              assert_raises(StandardError, "should reject manifest change of #{frozen.uuid}") do
+                frozen.update_attributes!(manifest_text: ". d41d8cd98f00b204e9800998ecf8427e+0 0:0:foo\n")
+              end
+            else
+              assert_raises(StandardError, "should reject moving a project into #{frozen.uuid}") do
+                groups(:private).update_attributes!(owner_uuid: frozen.uuid)
+              end
+            end
+            frozen.reload
+
+            assert_raises(StandardError, "should reject moving #{frozen.uuid} to a different parent project") do
+              frozen.update_attributes!(owner_uuid: groups(:private).uuid)
+            end
+            frozen.reload
+            assert_raises(StandardError, "should reject setting trash_at of #{frozen.uuid}") do
+              frozen.update_attributes!(trash_at: db_current_time)
+            end
+            frozen.reload
+            assert_raises(StandardError, "should reject setting delete_at of #{frozen.uuid}") do
+              frozen.update_attributes!(delete_at: db_current_time)
+            end
+            frozen.reload
+            assert_raises(StandardError, "should reject delete of #{frozen.uuid}") do
+              frozen.destroy
+            end
+            frozen.reload
+            if frozen != proj
+              assert_equal [], frozen.writable_by
+            end
+          end
         end
       end
 

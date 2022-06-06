@@ -110,7 +110,6 @@ class User < ArvadosModel
   end
 
   def can?(actions)
-    return true if is_admin
     actions.each do |action, target|
       unless target.nil?
         if target.respond_to? :uuid
@@ -126,7 +125,7 @@ class User < ArvadosModel
 
       user_uuids_subquery = USER_UUIDS_SUBQUERY_TEMPLATE % {user: "$1", perm_level: "$3"}
 
-      unless ActiveRecord::Base.connection.
+      if !is_admin && !ActiveRecord::Base.connection.
         exec_query(%{
 SELECT 1 FROM #{PERMISSION_VIEW}
   WHERE user_uuid in (#{user_uuids_subquery}) and
