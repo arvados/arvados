@@ -273,6 +273,22 @@ class ArvadosModel < ApplicationRecord
     end.compact.uniq
   end
 
+  def can_write
+    if respond_to?(:frozen_by_uuid) && frozen_by_uuid
+      return false
+    else
+      return owner_uuid == current_user.uuid ||
+             current_user.is_admin ||
+             current_user.can?(write: uuid)
+    end
+  end
+
+  def can_manage
+    return owner_uuid == current_user.uuid ||
+           current_user.is_admin ||
+           current_user.can?(manage: uuid)
+  end
+
   # Return a query with read permissions restricted to the union of the
   # permissions of the members of users_list, i.e. if something is readable by
   # any user in users_list, it will be readable in the query returned by this
