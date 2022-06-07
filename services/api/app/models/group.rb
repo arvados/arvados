@@ -48,6 +48,15 @@ class Group < ArvadosModel
     t.add :can_manage
   end
 
+  protected
+
+  def self.attributes_required_columns
+    super.merge(
+                'can_write' => ['owner_uuid', 'uuid'],
+                'can_manage' => ['owner_uuid', 'uuid'],
+                )
+  end
+
   def ensure_filesystem_compatible_name
     # project and filter groups need filesystem-compatible names, but others
     # don't.

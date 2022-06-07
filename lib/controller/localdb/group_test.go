@@ -157,6 +157,17 @@ func (s *GroupSuite) TestCanWriteCanManageResponses(c *check.C) {
 	c.Check(subproject.CanWrite, check.Equals, true)
 	c.Check(subproject.CanManage, check.Equals, true)
 
+	projlist, err := s.localdb.GroupList(ctxUser1, arvados.ListOptions{
+		Limit:   -1,
+		Filters: []arvados.Filter{{"uuid", "in", []string{project.UUID, subproject.UUID}}},
+	})
+	c.Assert(err, check.IsNil)
+	c.Assert(projlist.Items, check.HasLen, 2)
+	for _, p := range projlist.Items {
+		c.Check(p.CanWrite, check.Equals, true)
+		c.Check(p.CanManage, check.Equals, true)
+	}
+
 	// Give 2nd user permission to read
 	permlink, err := s.localdb.LinkCreate(ctxAdmin, arvados.CreateOptions{
 		Attrs: map[string]interface{}{
@@ -228,4 +239,30 @@ func (s *GroupSuite) TestCanWriteCanManageResponses(c *check.C) {
 	c.Assert(err, check.IsNil)
 	c.Check(subproject2.CanWrite, check.Equals, false)
 	c.Check(subproject2.CanManage, check.Equals, true)
+
+	u, err := s.localdb.UserGet(ctxUser1, arvados.GetOptions{
+		UUID: arvadostest.ActiveUserUUID,
+	})
+	c.Assert(err, check.IsNil)
+	c.Check(u.CanWrite, check.Equals, true)
+	c.Check(u.CanManage, check.Equals, true)
+
+	for _, selectParam := range [][]string{
+		nil,
+		{"can_write", "can_manage"},
+	} {
+		c.Logf("selectParam: %+v", selectParam)
+		ulist, err := s.localdb.UserList(ctxUser1, arvados.ListOptions{
+			Limit:   -1,
+			Filters: []arvados.Filter{{"uuid", "=", arvadostest.ActiveUserUUID}},
+			Select:  selectParam,
+		})
+		c.Assert(err, check.IsNil)
+		c.Assert(ulist.Items, check.HasLen, 1)
+		c.Logf("%+v", ulist.Items)
+		for _, u := range ulist.Items {
+			c.Check(u.CanWrite, check.Equals, true)
+			c.Check(u.CanManage, check.Equals, true)
+		}
+	}
 }

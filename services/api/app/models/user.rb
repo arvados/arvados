@@ -584,6 +584,13 @@ SELECT target_uuid, perm_level
 
   protected
 
+  def self.attributes_required_columns
+    super.merge(
+                'can_write' => ['owner_uuid', 'uuid'],
+                'can_manage' => ['owner_uuid', 'uuid'],
+                )
+  end
+
   def change_all_uuid_refs(old_uuid:, new_uuid:)
     ActiveRecord::Base.descendants.reject(&:abstract_class?).each do |klass|
       klass.columns.each do |col|
