@@ -58,6 +58,13 @@ func (s *singularitySuite) TestInject(c *C) {
 	s.executorSuite.TestInject(c)
 }
 
+func (s *singularitySuite) TestExecLongArg(c *C) {
+	// singularity 3.9.9 fails with:
+	// FATAL:   while initializing starter command: while copying engine configuration: engine configuration too big > 1048448
+	c.Skip("known bug/limitation, see https://dev.arvados.org/issues/18765")
+	s.executorSuite.TestExecLongArg(c)
+}
+
 var _ = Suite(&singularityStubSuite{})
 
 // singularityStubSuite tests don't really invoke singularity, so we

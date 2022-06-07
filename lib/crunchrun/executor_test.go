@@ -140,6 +140,22 @@ func (s *executorSuite) TestExecCleanEnv(c *C) {
 	}
 	c.Check(got, DeepEquals, s.spec.Env)
 }
+
+func (s *executorSuite) TestExecLongArg(c *C) {
+	hostdir := c.MkDir()
+	c.Assert(os.WriteFile(hostdir+"/testfile", []byte("last tube"), 0777), IsNil)
+	s.spec.BindMounts = map[string]bindmount{}
+	for n := 0; n < 9600; n++ {
+		s.spec.BindMounts[fmt.Sprintf("/longargtest-%d", n)] = bindmount{HostPath: hostdir + "/testfile", ReadOnly: true}
+	}
+	s.spec.Command = []string{"/bin/sh", "-c", fmt.Sprintf("printf %%s %123000.123000s a", " ")}
+	c.Logf("command arg[2] len is %d", len(s.spec.Command[2]))
+	s.checkRun(c, 0)
+	if !c.Check(s.stdout.String(), Equals, "a") {
+		c.Logf("stderr:\n%s\n", s.stderr.String())
+	}
+}
+
 func (s *executorSuite) TestExecEnableNetwork(c *C) {
 	for _, enable := range []bool{false, true} {
 		s.SetUpTest(c)
