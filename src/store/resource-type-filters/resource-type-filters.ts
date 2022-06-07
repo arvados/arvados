@@ -164,7 +164,7 @@ const serializeObjectTypeFilters = ({ fb, selectedFilters }: ReturnType<typeof c
     return {
         fb: typeFilters.length > 0
             ? fb.addIsA('uuid', typeFilters.map(objectTypeToResourceKind))
-            : fb,
+            : fb.addIsA('uuid', ResourceKind.NONE),
         selectedFilters,
     };
 };
