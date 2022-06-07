@@ -13,7 +13,6 @@ import { ResourceCreatedAtDate, ProcessStatus, ContainerRunTime } from 'views-co
 import { ProcessIcon } from 'components/icon/icon';
 import { ResourceName } from 'views-components/data-explorer/renderers';
 import { SUBPROCESS_PANEL_ID } from 'store/subprocess-panel/subprocess-panel-actions';
-import { DataTableDefaultView } from 'components/data-table-default-view/data-table-default-view';
 import { createTree } from 'models/tree';
 import { getInitialProcessStatusFilters } from 'store/resource-type-filters/resource-type-filters';
 import { ResourcesState } from 'store/resources/resources';
@@ -88,11 +87,8 @@ export const SubprocessPanelRoot = (props: SubprocessPanelProps & MPVPanelProps)
         onRowDoubleClick={props.onItemDoubleClick}
         onContextMenu={(event, item) => props.onContextMenu(event, item, props.resources)}
         contextMenuColumn={true}
-        dataTableDefaultView={
-            <DataTableDefaultView
-                icon={ProcessIcon}
-                messages={DEFAULT_VIEW_MESSAGES} />
-        }
+        defaultViewIcon={ProcessIcon}
+        defaultViewMessages={DEFAULT_VIEW_MESSAGES}
         doHidePanel={props.doHidePanel}
         doMaximizePanel={props.doMaximizePanel}
         panelMaximized={props.panelMaximized}

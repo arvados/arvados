@@ -27,7 +27,6 @@ import { loadDetailsPanel } from 'store/details-panel/details-panel-action';
 import { navigateTo } from 'store/navigation/navigation-action';
 import { ContainerRequestState } from "models/container-request";
 import { RootState } from 'store/store';
-import { DataTableDefaultView } from 'components/data-table-default-view/data-table-default-view';
 import { createTree } from 'models/tree';
 import { getInitialProcessStatusFilters, getInitialProcessTypeFilters } from 'store/resource-type-filters/resource-type-filters';
 import { getProcess } from 'store/processes/process';
@@ -151,10 +150,8 @@ export const AllProcessesPanel = withStyles(styles)(
                     onRowDoubleClick={this.handleRowDoubleClick}
                     onContextMenu={this.handleContextMenu}
                     contextMenuColumn={true}
-                    dataTableDefaultView={ <DataTableDefaultView
-                        icon={ProcessIcon}
-                        messages={['Processes list empty.']}
-                        /> } />
+                    defaultViewIcon={ProcessIcon}
+                    defaultViewMessages={['Processes list empty.']} />
                 </div>
             }
         }

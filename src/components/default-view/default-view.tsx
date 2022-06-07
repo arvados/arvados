@@ -27,6 +27,7 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
 export interface DefaultViewDataProps {
     classRoot?: string;
     messages: string[];
+    filtersApplied?: boolean;
     classMessage?: string;
     icon: IconType;
     classIcon?: string;

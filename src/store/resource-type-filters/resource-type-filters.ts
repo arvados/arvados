@@ -25,9 +25,9 @@ export enum ProcessStatusFilter {
 
 export enum ObjectTypeFilter {
     PROJECT = 'Project',
-    PROCESS = 'Process',
-    COLLECTION = 'Data collection',
     WORKFLOW = 'Workflow',
+    COLLECTION = 'Data collection',
+    DEFINITION = 'Definition',
 }
 
 export enum GroupTypeFilter {
@@ -43,11 +43,11 @@ export enum CollectionTypeFilter {
 }
 
 export enum ProcessTypeFilter {
-    MAIN_PROCESS = 'Main',
-    CHILD_PROCESS = 'Child',
+    MAIN_PROCESS = 'Runs',
+    CHILD_PROCESS = 'Intermediate Steps',
 }
 
-const initFilter = (name: string, parent = '', isSelected?: boolean) =>
+const initFilter = (name: string, parent = '', isSelected?: boolean, isExpanded?: boolean) =>
     setNode<DataTableFilterItem>({
         id: name,
         value: { name },
@@ -55,16 +55,17 @@ const initFilter = (name: string, parent = '', isSelected?: boolean) =>
         children: [],
         active: false,
         selected: isSelected !== undefined ? isSelected : true,
-        expanded: false,
+        initialState: isSelected !== undefined ? isSelected : true,
+        expanded: isExpanded !== undefined ? isExpanded : false,
         status: TreeNodeStatus.LOADED,
     });
 
 export const getSimpleObjectTypeFilters = pipe(
     (): DataTableFilters => createTree<DataTableFilterItem>(),
     initFilter(ObjectTypeFilter.PROJECT),
-    initFilter(ObjectTypeFilter.PROCESS),
-    initFilter(ObjectTypeFilter.COLLECTION),
     initFilter(ObjectTypeFilter.WORKFLOW),
+    initFilter(ObjectTypeFilter.COLLECTION),
+    initFilter(ObjectTypeFilter.DEFINITION),
 );
 
 // Using pipe() with more than 7 arguments makes the return type be 'any',
@@ -72,23 +73,23 @@ export const getSimpleObjectTypeFilters = pipe(
 export const getInitialResourceTypeFilters = pipe(
     (): DataTableFilters => createTree<DataTableFilterItem>(),
     pipe(
-        initFilter(ObjectTypeFilter.PROJECT),
+        initFilter(ObjectTypeFilter.PROJECT, '', true, true),
         initFilter(GroupTypeFilter.PROJECT, ObjectTypeFilter.PROJECT),
         initFilter(GroupTypeFilter.FILTER_GROUP, ObjectTypeFilter.PROJECT),
     ),
     pipe(
-        initFilter(ObjectTypeFilter.PROCESS),
-        initFilter(ProcessTypeFilter.MAIN_PROCESS, ObjectTypeFilter.PROCESS),
-        initFilter(ProcessTypeFilter.CHILD_PROCESS, ObjectTypeFilter.PROCESS)
+        initFilter(ObjectTypeFilter.WORKFLOW, '', false, true),
+        initFilter(ObjectTypeFilter.DEFINITION, ObjectTypeFilter.WORKFLOW),
+        initFilter(ProcessTypeFilter.MAIN_PROCESS, ObjectTypeFilter.WORKFLOW),
+        initFilter(ProcessTypeFilter.CHILD_PROCESS, ObjectTypeFilter.WORKFLOW, false),
     ),
     pipe(
-        initFilter(ObjectTypeFilter.COLLECTION),
+        initFilter(ObjectTypeFilter.COLLECTION, '', true, true),
         initFilter(CollectionTypeFilter.GENERAL_COLLECTION, ObjectTypeFilter.COLLECTION),
         initFilter(CollectionTypeFilter.OUTPUT_COLLECTION, ObjectTypeFilter.COLLECTION),
         initFilter(CollectionTypeFilter.INTERMEDIATE_COLLECTION, ObjectTypeFilter.COLLECTION),
         initFilter(CollectionTypeFilter.LOG_COLLECTION, ObjectTypeFilter.COLLECTION),
     ),
-    initFilter(ObjectTypeFilter.WORKFLOW)
 
 );
 
@@ -133,11 +134,11 @@ const objectTypeToResourceKind = (type: ObjectTypeFilter) => {
     switch (type) {
         case ObjectTypeFilter.PROJECT:
             return ResourceKind.PROJECT;
-        case ObjectTypeFilter.PROCESS:
+        case ObjectTypeFilter.WORKFLOW:
             return ResourceKind.PROCESS;
         case ObjectTypeFilter.COLLECTION:
             return ResourceKind.COLLECTION;
-        case ObjectTypeFilter.WORKFLOW:
+        case ObjectTypeFilter.DEFINITION:
             return ResourceKind.WORKFLOW;
     }
 };
@@ -155,7 +156,7 @@ const serializeObjectTypeFilters = ({ fb, selectedFilters }: ReturnType<typeof c
             ? set.add(ObjectTypeFilter.COLLECTION)
             : set,
         set => processFilters.length > 0
-            ? set.add(ObjectTypeFilter.PROCESS)
+            ? set.add(ObjectTypeFilter.WORKFLOW)
             : set,
         set => Array.from(set)
     )();
@@ -163,7 +164,7 @@ const serializeObjectTypeFilters = ({ fb, selectedFilters }: ReturnType<typeof c
     return {
         fb: typeFilters.length > 0
             ? fb.addIsA('uuid', typeFilters.map(objectTypeToResourceKind))
-            : fb,
+            : fb.addIsA('uuid', ResourceKind.NONE),
         selectedFilters,
     };
 };

@@ -12,7 +12,6 @@ import {
 import { CollectionIcon } from 'components/icon/icon';
 import { ArvadosTheme } from 'common/custom-theme';
 import { BackIcon } from 'components/icon/icon';
-import { DataTableDefaultView } from 'components/data-table-default-view/data-table-default-view';
 import { COLLECTIONS_CONTENT_ADDRESS_PANEL_ID } from 'store/collections-content-address-panel/collections-content-address-panel-actions';
 import { DataExplorer } from "views-components/data-explorer/data-explorer";
 import { Dispatch } from 'redux';
@@ -165,12 +164,10 @@ export const CollectionsContentAddressPanel = withStyles(styles)(
                         onContextMenu={this.props.onContextMenu(this.props.resources)}
                         contextMenuColumn={true}
                         title={`Content address: ${this.props.match.params.id}`}
-                        dataTableDefaultView={
-                            <DataTableDefaultView
-                                icon={CollectionIcon}
-                                messages={['Collections with this content address not found.']} />
-                        } /></div>
-                    </div>;
+                        defaultViewIcon={CollectionIcon}
+                        defaultViewMessages={['Collections with this content address not found.']} />
+                    </div>
+                </div>;
             }
         }
     )

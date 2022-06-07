@@ -20,7 +20,6 @@ import {
     UserResourceAccountStatus,
 } from "views-components/data-explorer/renderers";
 import { navigateToUserProfile } from "store/navigation/navigation-action";
-import { DataTableDefaultView } from 'components/data-table-default-view/data-table-default-view';
 import { createTree } from 'models/tree';
 import { compose, Dispatch } from 'redux';
 import { UserResource } from 'models/user';
@@ -148,11 +147,8 @@ export const UserPanel = compose(
                         paperProps={{
                             elevation: 0,
                         }}
-                        dataTableDefaultView={
-                            <DataTableDefaultView
-                                icon={ShareMeIcon}
-                                messages={['Your user list is empty.']} />
-                        } />
+                        defaultViewIcon={ShareMeIcon}
+                        defaultViewMessages={['Your user list is empty.']} />
                 </Paper>;
             }
 

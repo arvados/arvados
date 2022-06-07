@@ -30,7 +30,6 @@ import { loadDetailsPanel } from 'store/details-panel/details-panel-action';
 import { navigateTo } from 'store/navigation/navigation-action';
 import { ContainerRequestState } from "models/container-request";
 import { RootState } from 'store/store';
-import { DataTableDefaultView } from 'components/data-table-default-view/data-table-default-view';
 import { createTree } from 'models/tree';
 import { getSimpleObjectTypeFilters } from 'store/resource-type-filters/resource-type-filters';
 import { PUBLIC_FAVORITE_PANEL_ID } from 'store/public-favorites-panel/public-favorites-action';
@@ -169,11 +168,9 @@ export const PublicFavoritePanel = withStyles(styles)(
                     onRowDoubleClick={this.props.onItemDoubleClick}
                     onContextMenu={this.props.onContextMenu(this.props.resources)}
                     contextMenuColumn={true}
-                    dataTableDefaultView={
-                        <DataTableDefaultView
-                            icon={PublicFavoriteIcon}
-                            messages={['Public favorites list is empty.']} />
-                    } /></div>;
+                    defaultViewIcon={PublicFavoriteIcon}
+                    defaultViewMessages={['Public favorites list is empty.']} />
+                </div>;
             }
         }
     )

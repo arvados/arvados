@@ -7,7 +7,6 @@ import { LINK_PANEL_ID } from 'store/link-panel/link-panel-actions';
 import { DataExplorer } from 'views-components/data-explorer/data-explorer';
 import { SortDirection } from 'components/data-table/data-column';
 import { DataColumns } from 'components/data-table/data-table';
-import { DataTableDefaultView } from 'components/data-table-default-view/data-table-default-view';
 import { ResourcesState } from 'store/resources/resources';
 import { ShareMeIcon } from 'components/icon/icon';
 import { createTree } from 'models/tree';
@@ -94,9 +93,7 @@ export const LinkPanelRoot = withStyles(styles)((props: LinkPanelRootProps) => {
         contextMenuColumn={true}
         hideColumnSelector
         hideSearchInput
-        dataTableDefaultView={
-            <DataTableDefaultView
-                icon={ShareMeIcon}
-                messages={['Your link list is empty.']} />
-        }/></div>;
+        defaultViewIcon={ShareMeIcon}
+        defaultViewMessages={['Your link list is empty.']} />
+    </div>;
 });

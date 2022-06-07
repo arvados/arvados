@@ -30,7 +30,6 @@ import { loadDetailsPanel } from "store/details-panel/details-panel-action";
 import { toggleTrashed } from "store/trash/trash-actions";
 import { ContextMenuKind } from "views-components/context-menu/context-menu";
 import { Dispatch } from "redux";
-import { DataTableDefaultView } from 'components/data-table-default-view/data-table-default-view';
 import { createTree } from 'models/tree';
 import {
     getTrashPanelTypeFilters
@@ -155,11 +154,9 @@ export const TrashPanel = withStyles(styles)(
                     onRowDoubleClick={this.handleRowDoubleClick}
                     onContextMenu={this.handleContextMenu}
                     contextMenuColumn={false}
-                    dataTableDefaultView={
-                        <DataTableDefaultView
-                            icon={TrashIcon}
-                            messages={['Your trash list is empty.']}/>
-                    } /></div>;
+                    defaultViewIcon={TrashIcon}
+                    defaultViewMessages={['Your trash list is empty.']} />
+                </div>;
             }
 
             handleContextMenu = (event: React.MouseEvent<HTMLElement>, resourceUuid: string) => {

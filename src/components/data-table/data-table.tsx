@@ -9,8 +9,8 @@ import { DataColumn, SortDirection } from './data-column';
 import { DataTableDefaultView } from '../data-table-default-view/data-table-default-view';
 import { DataTableFilters } from '../data-table-filters/data-table-filters-tree';
 import { DataTableFiltersPopover } from '../data-table-filters/data-table-filters-popover';
-import { countNodes } from 'models/tree';
-import { PendingIcon } from 'components/icon/icon';
+import { countNodes, getTreeDirty } from 'models/tree';
+import { IconType, PendingIcon } from 'components/icon/icon';
 import { SvgIconProps } from '@material-ui/core/SvgIcon';
 import ArrowDownwardIcon from '@material-ui/icons/ArrowDownward';
 
@@ -31,7 +31,8 @@ export interface DataTableDataProps<T> {
     onFiltersChange: (filters: DataTableFilters, column: DataColumn<T>) => void;
     extractKey?: (item: T) => React.Key;
     working?: boolean;
-    defaultView?: React.ReactNode;
+    defaultViewIcon?: IconType;
+    defaultViewMessages?: string[];
     currentItemUuid?: string;
     currentRoute?: string;
 }
@@ -105,15 +106,17 @@ export const DataTable = withStyles(styles)(
                                 icon={PendingIcon}
                                 messages={['Loading data, please wait.']} />
                         </div> }
-                    {items.length === 0 && !working && this.renderNoItemsPlaceholder()}
+                    {items.length === 0 && !working && this.renderNoItemsPlaceholder(this.props.columns)}
                 </div>
             </div>;
         }
 
-        renderNoItemsPlaceholder = () => {
-            return this.props.defaultView
-                ? this.props.defaultView
-                : <DataTableDefaultView />;
+        renderNoItemsPlaceholder = (columns: DataColumns<T>) => {
+            const dirty = columns.some((column) => getTreeDirty('')(column.filters));
+            return <DataTableDefaultView
+                icon={this.props.defaultViewIcon}
+                messages={this.props.defaultViewMessages}
+                filtersApplied={dirty} />;
         }
 
         renderHeadCell = (column: DataColumn<T>, index: number) => {
