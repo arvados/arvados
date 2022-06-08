@@ -118,13 +118,14 @@ export const deleteSharingToken = (uuid: string) => async (dispatch: Dispatch, g
 const loadSharingDialog = async (dispatch: Dispatch, getState: () => RootState, { apiClientAuthorizationService }: ServiceRepository) => {
 
     const dialog = getDialog<SharingDialogData>(getState().dialog, SHARING_DIALOG_NAME);
+    const sharingURLsDisabled = getState().auth.config.clusterConfig.Workbench.DisableSharingURLsUI;
     if (dialog) {
         dispatch(progressIndicatorActions.START_WORKING(SHARING_DIALOG_NAME));
         try {
             const resourceUuid = dialog.data.resourceUuid;
             await dispatch<any>(initializeManagementForm);
             // For collections, we need to load the public sharing tokens
-            if (extractUuidObjectType(resourceUuid) === ResourceObjectType.COLLECTION) {
+            if (!sharingURLsDisabled && extractUuidObjectType(resourceUuid) === ResourceObjectType.COLLECTION) {
                 const sharingTokens = await apiClientAuthorizationService.listCollectionSharingTokens(resourceUuid);
                 dispatch(resourcesActions.SET_RESOURCES([...sharingTokens.items]));
             }
