@@ -45,7 +45,7 @@ class CollectionsTest < ActionDispatch::IntegrationTest
     Rails.configuration.Workbench.DisableSharingURLsUI = true
     coll_uuid = api_fixture("collections", "collection_owned_by_active", "uuid")
     visit page_with_token("active_trustedclient", "/collections/#{coll_uuid}")
-    assert_no_selector 'input', text: 'Create sharing link'
+    assert_no_selector 'div#sharing-button'
   end
 
   test "creating and uncreating a sharing link" do
@@ -53,7 +53,7 @@ class CollectionsTest < ActionDispatch::IntegrationTest
     download_link_re =
       Regexp.new(Regexp.escape("/c=#{coll_uuid}/"))
     visit page_with_token("active_trustedclient", "/collections/#{coll_uuid}")
-    assert_selector 'input', text: 'Create sharing link'
+    assert_selector 'div#sharing-button'
     within "#sharing-button" do
       check_sharing(:on, download_link_re)
       check_sharing(:off, download_link_re)
