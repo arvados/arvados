@@ -40,13 +40,11 @@ SPDX-License-Identifier: AGPL-3.0 %>
         </h3>
       </div>
       <div class="panel-body">
-        <!--
-        <input type="text" class="form-control" placeholder="Search"/>
-        -->
-
+        <% if !Rails.configuration.Workbench.DisableSharingURLsUI %>
         <div id="sharing-button">
           <%= render partial: 'sharing_button' %>
         </div>
+        <% end %>
 
         <div style="height:0.5em;"></div>
         <% if @projects.andand.any? %>
