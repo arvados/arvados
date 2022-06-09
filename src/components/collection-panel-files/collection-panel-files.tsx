@@ -8,7 +8,7 @@ import { connect } from 'react-redux';
 import { FixedSizeList } from "react-window";
 import AutoSizer from "react-virtualized-auto-sizer";
 import servicesProvider from 'common/service-provider';
-import { CustomizeTableIcon, DownloadIcon } from 'components/icon/icon';
+import { CustomizeTableIcon, DownloadIcon, MoreOptionsIcon } from 'components/icon/icon';
 import { SearchInput } from 'components/search-input/search-input';
 import {
     ListItemIcon,
@@ -60,6 +60,8 @@ type CssRules = "backButton"
     | "pathPanelPathWrapper"
     | "uploadButton"
     | "uploadIcon"
+    | "moreOptionsButton"
+    | "moreOptions"
     | "loader"
     | "wrapper"
     | "dataWrapper"
@@ -207,7 +209,18 @@ const styles: StyleRulesCallback<CssRules> = (theme: Theme) => ({
     },
     uploadButton: {
         float: 'right',
-    }
+    },
+    moreOptionsButton: {
+        width: theme.spacing.unit * 3,
+        height: theme.spacing.unit * 3,
+        marginRight: theme.spacing.unit,
+        marginTop: 'auto',
+        marginBottom: 'auto',
+        justifyContent: 'center',
+    },
+    moreOptions: {
+        position: 'absolute'
+    },
 });
 
 const pathPromise = {};
@@ -375,17 +388,23 @@ export const CollectionPanelFiles = withStyles(styles)(connect((state: RootState
     const handleClick = React.useCallback(
         (event: any) => {
             let isCheckbox = false;
+            let isMoreButton = false;
             let elem = event.target;
 
             if (elem.type === 'checkbox') {
                 isCheckbox = true;
+            }
+            // The "More options" button click event could be triggered on its
+            // internal graphic element.
+            else if ((elem.dataset && elem.dataset.id === 'moreOptions') || (elem.parentNode && elem.parentNode.dataset && elem.parentNode.dataset.id === 'moreOptions')) {
+                isMoreButton = true;
             }
 
             while (elem && elem.dataset && !elem.dataset.item) {
                 elem = elem.parentNode;
             }
 
-            if (elem && elem.dataset && !isCheckbox) {
+            if (elem && elem.dataset && !isCheckbox && !isMoreButton) {
                 const { parentPath, subfolderPath, breadcrumbPath, type } = elem.dataset;
 
                 if (breadcrumbPath) {
@@ -417,6 +436,14 @@ export const CollectionPanelFiles = withStyles(styles)(connect((state: RootState
                 const { id } = elem.dataset;
                 const item = collectionPanelFiles[id];
                 props.onSelectionToggle(event, item);
+            }
+            if (isMoreButton) {
+                const { id } = elem.dataset;
+                const item: any = {
+                    id,
+                    data: rightData.find((elem) => elem.id === id),
+                };
+                onItemMenuOpen(event, item, isWritable);
             }
         },
         [path, setPath, collectionPanelFiles] // eslint-disable-line react-hooks/exhaustive-deps
@@ -551,6 +578,12 @@ export const CollectionPanelFiles = withStyles(styles)(connect((state: RootState
                                         marginLeft: 'auto', marginRight: '1rem' }}>
                                         { formatFileSize(size) }
                                     </span>
+                                    <Tooltip title="More options" disableFocusListener>
+                                        <IconButton data-id='moreOptions'
+                                            className={classes.moreOptionsButton}>
+                                            <MoreOptionsIcon data-cy='file-item-options-btn' data-id='moreOptions' className={classes.moreOptions} />
+                                        </IconButton>
+                                    </Tooltip>
                                 </div>
                             } }</FixedSizeList>
                         : <div className={classes.rowEmpty}>This collection is empty</div>
