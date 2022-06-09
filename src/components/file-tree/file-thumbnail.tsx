@@ -11,7 +11,7 @@ import { getInlineFileUrl, sanitizeToken } from "views-components/context-menu/a
 import { connect } from "react-redux";
 import { RootState } from "store/store";
 
-export interface FileThumbnailProps {
+interface FileThumbnailProps {
     file: FileTreeData;
 }
 
