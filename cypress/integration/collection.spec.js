@@ -278,6 +278,13 @@ describe('Collection panel tests', function () {
                             .and(`${isWritable ? '' : 'not.'}contain`, 'Rename')
                             .and(`${isWritable ? '' : 'not.'}contain`, 'Remove');
                         cy.get('body').click(); // Collapse the menu
+                        // File/dir item 'more options' button
+                        cy.get('[data-cy=file-item-options-btn')
+                            .first()
+                            .click()
+                        cy.get('[data-cy=context-menu]')
+                            .should(`${isWritable ? '' : 'not.'}contain`, 'Remove');
+                        cy.get('body').click(); // Collapse the menu
                         // Hamburger 'more options' menu button
                         cy.get('[data-cy=collection-files-panel-options-btn]')
                             .click()

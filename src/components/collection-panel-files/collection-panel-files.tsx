@@ -580,8 +580,11 @@ export const CollectionPanelFiles = withStyles(styles)(connect((state: RootState
                                     </span>
                                     <Tooltip title="More options" disableFocusListener>
                                         <IconButton data-id='moreOptions'
+                                            data-cy='file-item-options-btn'
                                             className={classes.moreOptionsButton}>
-                                            <MoreOptionsIcon data-cy='file-item-options-btn' data-id='moreOptions' className={classes.moreOptions} />
+                                            <MoreOptionsIcon
+                                                data-id='moreOptions'
+                                                className={classes.moreOptions} />
                                         </IconButton>
                                     </Tooltip>
                                 </div>
