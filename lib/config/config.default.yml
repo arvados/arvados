@@ -1526,6 +1526,11 @@ Clusters:
       ShowUserAgreementInline: false
       SecretKeyBase: ""
 
+      # Set this configuration to true to avoid providing an easy way for users
+      # to share data with unauthenticated users; this may be necessary on
+      # installations where strict data access controls are needed.
+      DisableSharingURLsUI: false
+
       # Scratch directory used by the remote repository browsing
       # feature. If it doesn't exist, it (and any missing parents) will be
       # created using mkdir_p.
