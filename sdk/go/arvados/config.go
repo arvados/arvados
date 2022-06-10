@@ -257,6 +257,7 @@ type Cluster struct {
 		ArvadosDocsite                   string
 		ArvadosPublicDataDocURL          string
 		DefaultOpenIdPrefix              string
+		DisableSharingURLsUI             bool
 		EnableGettingStartedPopup        bool
 		EnablePublicProjectsPage         bool
 		FileViewersConfigURL             string
