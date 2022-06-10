@@ -124,6 +124,14 @@ class User < ArvadosModel
       end
       next if target_uuid == self.uuid
 
+      if action == :write && target && !target.new_record? &&
+         target.respond_to?(:frozen_by_uuid) &&
+         target.frozen_by_uuid_was
+        # Just an optimization to skip the PERMISSION_VIEW and
+        # FrozenGroup queries below
+        return false
+      end
+
       target_owner_uuid = target.owner_uuid if target.respond_to? :owner_uuid
 
       user_uuids_subquery = USER_UUIDS_SUBQUERY_TEMPLATE % {user: "$1", perm_level: "$3"}
