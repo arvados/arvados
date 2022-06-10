@@ -47,6 +47,7 @@ export interface SharingDialogDataProps {
     sharedResourceUuid: string;
     sharingURLsNr: number;
     privateAccess: boolean;
+    sharingURLsDisabled: boolean;
 }
 export interface SharingDialogActionProps {
     onClose: () => void;
@@ -58,11 +59,13 @@ enum SharingDialogTab {
     PERMISSIONS = 0,
     URLS = 1,
 }
-export default (props: SharingDialogDataProps & SharingDialogActionProps) => {
+export type SharingDialogComponentProps = SharingDialogDataProps & SharingDialogActionProps;
+
+export default (props: SharingDialogComponentProps) => {
     const { open, loading, saveEnabled, sharedResourceUuid,
-        sharingURLsNr, privateAccess,
+        sharingURLsNr, privateAccess, sharingURLsDisabled,
         onClose, onSave, onCreateSharingToken, refreshPermissions } = props;
-    const showTabs = extractUuidObjectType(sharedResourceUuid) === ResourceObjectType.COLLECTION;
+    const showTabs = !sharingURLsDisabled && extractUuidObjectType(sharedResourceUuid) === ResourceObjectType.COLLECTION;
     const [tabNr, setTabNr] = React.useState<number>(SharingDialogTab.PERMISSIONS);
     const [expDate, setExpDate] = React.useState<Date>();
     const [withExpiration, setWithExpiration] = React.useState<boolean>(false);
@@ -151,7 +154,8 @@ export default (props: SharingDialogDataProps & SharingDialogActionProps) => {
                 </Grid>
                 </>
                 }
-                { tabNr === SharingDialogTab.PERMISSIONS && privateAccess && sharingURLsNr > 0 &&
+                { tabNr === SharingDialogTab.PERMISSIONS && !sharingURLsDisabled &&
+                    privateAccess && sharingURLsNr > 0 &&
                 <Grid item md={12}>
                     <Typography variant='caption' align='center' color='error'>
                         Although there aren't specific permissions set, this is publicly accessible via Sharing URL(s).

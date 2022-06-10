@@ -35,18 +35,21 @@ type Props = WithDialogProps<string> & WithProgressStateProps;
 const mapStateToProps = (state: RootState, { working, ...props }: Props): SharingDialogDataProps => {
     const dialog = getDialog<SharingDialogData>(state.dialog, SHARING_DIALOG_NAME);
     const sharedResourceUuid = dialog?.data.resourceUuid || '';
+    const sharingURLsDisabled = state.auth.config.clusterConfig.Workbench.DisableSharingURLsUI;
     return ({
     ...props,
     saveEnabled: hasChanges(state),
     loading: working,
     sharedResourceUuid,
-    sharingURLsNr: (filterResources(
-        (resource: ApiClientAuthorization) =>
+    sharingURLsDisabled,
+    sharingURLsNr: !sharingURLsDisabled
+        ? (filterResources( (resource: ApiClientAuthorization) =>
             resource.kind === ResourceKind.API_CLIENT_AUTHORIZATION  &&
             resource.scopes.includes(`GET /arvados/v1/collections/${sharedResourceUuid}`) &&
             resource.scopes.includes(`GET /arvados/v1/collections/${sharedResourceUuid}/`) &&
             resource.scopes.includes('GET /arvados/v1/keep_services/accessible')
-        )(state.resources) as ApiClientAuthorization[]).length,
+        )(state.resources) as ApiClientAuthorization[]).length
+        : 0,
     privateAccess: getSharingPublicAccessFormData(state)?.visibility === VisibilityLevel.PRIVATE,
     })
 };
