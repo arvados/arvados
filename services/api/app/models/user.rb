@@ -72,6 +72,8 @@ class User < ArvadosModel
     t.add :is_invited
     t.add :prefs
     t.add :writable_by
+    t.add :can_write
+    t.add :can_manage
   end
 
   ALL_PERMISSIONS = {read: true, write: true, manage: true}
@@ -120,6 +122,14 @@ class User < ArvadosModel
         end
       end
       next if target_uuid == self.uuid
+
+      if action == :write && target && !target.new_record? &&
+         target.respond_to?(:frozen_by_uuid) &&
+         target.frozen_by_uuid_was
+        # Just an optimization to skip the PERMISSION_VIEW and
+        # FrozenGroup queries below
+        return false
+      end
 
       target_owner_uuid = target.owner_uuid if target.respond_to? :owner_uuid
 
@@ -580,6 +590,13 @@ SELECT target_uuid, perm_level
   end
 
   protected
+
+  def self.attributes_required_columns
+    super.merge(
+                'can_write' => ['owner_uuid', 'uuid'],
+                'can_manage' => ['owner_uuid', 'uuid'],
+                )
+  end
 
   def change_all_uuid_refs(old_uuid:, new_uuid:)
     ActiveRecord::Base.descendants.reject(&:abstract_class?).each do |klass|

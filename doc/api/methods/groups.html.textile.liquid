@@ -30,7 +30,9 @@ table(table table-bordered table-condensed).
 @"role"@|
 |description|text|||
 |properties|hash|User-defined metadata, may be used in queries using "subproperty filters":{{site.baseurl}}/api/methods.html#subpropertyfilters ||
-|writable_by|array|List of UUID strings identifying Users and other Groups that have write permission for this Group.  Only users who are allowed to administer the Group will receive a full list.  Other users will receive a partial list that includes the Group's owner_uuid and (if applicable) their own user UUID.||
+|writable_by|array|(Deprecated) List of UUID strings identifying Users and other Groups that have write permission for this Group.  Users who are allowed to administer the Group will receive a list of user/group UUIDs that have permission via explicit permission links; permissions via parent/ancestor groups are not taken into account.  Other users will receive a partial list including only the Group's owner_uuid and (if applicable) their own user UUID.||
+|can_write|boolean|True if the current user has write permission on this group.||
+|can_manage|boolean|True if the current user has manage permission on this group.||
 |trash_at|datetime|If @trash_at@ is non-null and in the past, this group and all objects directly or indirectly owned by the group will be hidden from API calls.  May be untrashed.||
 |delete_at|datetime|If @delete_at@ is non-null and in the past, the group and all objects directly or indirectly owned by the group may be permanently deleted.||
 |is_trashed|datetime|True if @trash_at@ is in the past, false if not.||

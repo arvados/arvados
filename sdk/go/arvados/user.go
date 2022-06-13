@@ -26,6 +26,8 @@ type User struct {
 	ModifiedByClientUUID string                 `json:"modified_by_client_uuid"`
 	Prefs                map[string]interface{} `json:"prefs"`
 	WritableBy           []string               `json:"writable_by,omitempty"`
+	CanWrite             bool                   `json:"can_write"`
+	CanManage            bool                   `json:"can_manage"`
 }
 
 // UserList is an arvados#userList resource.

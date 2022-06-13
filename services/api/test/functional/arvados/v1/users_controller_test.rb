@@ -674,6 +674,12 @@ The Arvados team.
     get(:index)
     check_non_admin_index
     check_readable_users_index [:spectator], [:inactive, :active]
+    json_response["items"].each do |u|
+      if u["uuid"] == users(:spectator).uuid
+        assert_equal true, u["can_write"]
+        assert_equal true, u["can_manage"]
+      end
+    end
   end
 
   test "non-admin user gets only safe attributes from users#show" do
@@ -1079,7 +1085,7 @@ The Arvados team.
   end
 
   NON_ADMIN_USER_DATA = ["uuid", "kind", "is_active", "email", "first_name",
-                         "last_name", "username"].sort
+                         "last_name", "username", "can_write", "can_manage"].sort
 
   def check_non_admin_index
     assert_response :success

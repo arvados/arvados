@@ -44,6 +44,17 @@ class Group < ArvadosModel
     t.add :is_trashed
     t.add :properties
     t.add :frozen_by_uuid
+    t.add :can_write
+    t.add :can_manage
+  end
+
+  protected
+
+  def self.attributes_required_columns
+    super.merge(
+                'can_write' => ['owner_uuid', 'uuid'],
+                'can_manage' => ['owner_uuid', 'uuid'],
+                )
   end
 
   def ensure_filesystem_compatible_name

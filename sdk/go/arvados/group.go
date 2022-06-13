@@ -27,6 +27,8 @@ type Group struct {
 	WritableBy           []string               `json:"writable_by,omitempty"`
 	Description          string                 `json:"description"`
 	FrozenByUUID         string                 `json:"frozen_by_uuid"`
+	CanWrite             bool                   `json:"can_write"`
+	CanManage            bool                   `json:"can_manage"`
 }
 
 // GroupList is an arvados#groupList resource.

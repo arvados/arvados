@@ -553,6 +553,8 @@ var userAttrsCachedFromLoginCluster = map[string]bool{
 	"owner_uuid":              false,
 	"uuid":                    false,
 	"writable_by":             false,
+	"can_write":               false,
+	"can_manage":              false,
 }
 
 func (conn *Conn) batchUpdateUsers(ctx context.Context,

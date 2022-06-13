@@ -273,6 +273,26 @@ class ArvadosModel < ApplicationRecord
     end.compact.uniq
   end
 
+  def can_write
+    if respond_to?(:frozen_by_uuid) && frozen_by_uuid
+      # This special case is needed to return the correct value from a
+      # "freeze project" API, during which writable status changes
+      # from true to false.
+      #
+      # current_user.can?(write: self) returns true (which is correct
+      # in the context of permission-checking hooks) but the can_write
+      # value we're returning to the caller here represents the state
+      # _after_ the update, i.e., false.
+      return false
+    else
+      return current_user.can?(write: self)
+    end
+  end
+
+  def can_manage
+    return current_user.can?(manage: self)
+  end
+
   # Return a query with read permissions restricted to the union of the
   # permissions of the members of users_list, i.e. if something is readable by
   # any user in users_list, it will be readable in the query returned by this
