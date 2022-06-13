@@ -418,6 +418,20 @@ describe('Collection panel tests', function () {
             });
     });
 
+    it('shows collection owner', () => {
+        cy.createCollection(adminUser.token, {
+            name: `Test collection ${Math.floor(Math.random() * 999999)}`,
+            owner_uuid: activeUser.user.uuid,
+            manifest_text: ". 37b51d194a7513e45b56f6524f2d51f2+3 0:3:bar\n"
+        })
+            .as('testCollection').then((testCollection) => {
+                cy.loginAs(activeUser);
+                cy.goToPath(`/collections/${testCollection.uuid}`);
+                cy.wait(5000);
+                cy.get('[data-cy=collection-info-panel]').contains(`Collection User`);
+            });
+    });
+
     it('tries to rename a file with illegal names', function () {
         // Creates the collection using the admin token so we can set up
         // a bogus manifest text without block signatures.

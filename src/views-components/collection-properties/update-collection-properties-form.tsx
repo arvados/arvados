@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import { reduxForm, reset } from 'redux-form';
+import { reduxForm, change } from 'redux-form';
 import { withStyles } from '@material-ui/core';
 import {
     COLLECTION_UPDATE_FORM_NAME,
@@ -13,6 +13,7 @@ import {
     ResourcePropertiesFormData
 } from 'views-components/resource-properties-form/resource-properties-form';
 import { addPropertyToResourceForm } from 'store/resources/resources-actions';
+import { PROPERTY_VALUE_FIELD_NAME } from 'views-components/resource-properties-form/property-value-field';
 
 const Form = withStyles(
     ({ spacing }) => (
@@ -27,6 +28,6 @@ export const UpdateCollectionPropertiesForm = reduxForm<ResourcePropertiesFormDa
     form: COLLECTION_UPDATE_PROPERTIES_FORM_NAME,
     onSubmit: (data, dispatch) => {
         dispatch(addPropertyToResourceForm(data, COLLECTION_UPDATE_FORM_NAME));
-        dispatch(reset(COLLECTION_UPDATE_PROPERTIES_FORM_NAME));
+        dispatch(change(COLLECTION_UPDATE_PROPERTIES_FORM_NAME, PROPERTY_VALUE_FIELD_NAME, ''));
     }
 })(Form);
