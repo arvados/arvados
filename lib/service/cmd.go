@@ -114,7 +114,7 @@ func (c *command) RunCommand(prog string, args []string, stdin io.Reader, stdout
 
 	// Now that we've read the config, replace the bootstrap
 	// logger with a new one according to the logging config.
-	log = ctxlog.New(stderr, cluster.SystemLogs.Format, cluster.SystemLogs.LogLevel)
+	log = ctxlog.New(stderr, cluster.SystemLogs.Format, "debug")
 	logger := log.WithFields(logrus.Fields{
 		"PID":       os.Getpid(),
 		"ClusterID": cluster.ClusterID,

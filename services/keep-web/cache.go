@@ -234,6 +234,7 @@ func (c *cache) GetSession(token string) (arvados.CustomFileSystem, *cachedSessi
 	sess, _ := ent.(*cachedSession)
 	expired := false
 	if sess == nil {
+		c.logger.Debugf("no cached session for token %31.31s", token)
 		c.metrics.sessionMisses.Inc()
 		sess = &cachedSession{
 			expire: now.Add(c.cluster.Collections.WebDAVCache.TTL.Duration()),
@@ -251,9 +252,11 @@ func (c *cache) GetSession(token string) (arvados.CustomFileSystem, *cachedSessi
 		sess.keepclient = keepclient.New(sess.arvadosclient)
 		c.sessions.Add(token, sess)
 	} else if sess.expire.Before(now) {
+		c.logger.Debugf("expired session for token %31.31s", token)
 		c.metrics.sessionMisses.Inc()
 		expired = true
 	} else {
+		c.logger.Debugf("using cached session for token %31.31s", token)
 		c.metrics.sessionHits.Inc()
 	}
 	select {
@@ -262,8 +265,10 @@ func (c *cache) GetSession(token string) (arvados.CustomFileSystem, *cachedSessi
 	}
 	fs, _ := sess.fs.Load().(arvados.CustomFileSystem)
 	if fs != nil && !expired {
+		c.logger.Debug("using existing fs from cached session")
 		return fs, sess, nil
 	}
+	c.logger.Debug("creating new fs for cached session")
 	fs = sess.client.SiteFileSystem(sess.keepclient)
 	fs.ForwardSlashNameSubstitution(c.cluster.Collections.ForwardSlashNameSubstitution)
 	sess.fs.Store(fs)
@@ -284,12 +289,14 @@ func (c *cache) pruneSessions() {
 		s := ent.(*cachedSession)
 		if s.expire.Before(now) {
 			c.sessions.Remove(token)
+			c.logger.Debugf("removed session for token %31.31s (expired %s)", token, s.expire)
 			continue
 		}
 		if fs, ok := s.fs.Load().(arvados.CustomFileSystem); ok {
 			size += fs.MemorySize()
 		}
 	}
+	c.logger.Debugf("pruneSessions: current size is %d, max/2 is %d", size, c.cluster.Collections.WebDAVCache.MaxCollectionBytes/2)
 	// Remove tokens until reaching size limit, starting with the
 	// least frequently used entries (which Keys() returns last).
 	for i := len(keys) - 1; i >= 0; i-- {
@@ -307,7 +314,9 @@ func (c *cache) pruneSessions() {
 			continue
 		}
 		c.sessions.Remove(token)
-		size -= fs.MemorySize()
+		fssize := fs.MemorySize()
+		size -= fssize
+		c.logger.Debugf("removed session for token %31.31s (size was %d, remaining size is %d)", token, fssize, size)
 	}
 }
 
