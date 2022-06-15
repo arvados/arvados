@@ -366,9 +366,8 @@ type Services struct {
 }
 
 type Service struct {
-	ListenAddress string
-	InternalURLs  map[URL]ServiceInstance
-	ExternalURL   URL
+	InternalURLs map[URL]ServiceInstance
+	ExternalURL  URL
 }
 
 type TestUser struct {
@@ -402,6 +401,7 @@ func (su URL) String() string {
 }
 
 type ServiceInstance struct {
+	ListenURL  URL
 	Rendezvous string `json:",omitempty"`
 }
 

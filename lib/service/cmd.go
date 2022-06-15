@@ -223,6 +223,18 @@ func interceptHealthReqs(mgtToken string, checkHealth func() error, next http.Ha
 	return ifCollectionInHost(next, mux)
 }
 
+// Determine listenURL (addr:port where server should bind) and
+// internalURL (target url that client should connect to) for a
+// service.
+//
+// If the config does not specify ListenURL, we check all of the
+// configured InternalURLs. If there is exactly one that matches our
+// hostname, or exactly one that matches a local interface address,
+// then we use that as listenURL.
+//
+// Note that listenURL and internalURL may use different protocols
+// (e.g., listenURL is http, but the service sits behind a proxy, so
+// clients connect using https).
 func getListenAddr(svcs arvados.Services, prog arvados.ServiceName, log logrus.FieldLogger) (arvados.URL, arvados.URL, error) {
 	svc, ok := svcs.Map()[prog]
 	if !ok {
@@ -236,51 +248,34 @@ func getListenAddr(svcs arvados.Services, prog arvados.ServiceName, log logrus.F
 		if url.Path == "" {
 			url.Path = "/"
 		}
-		internalURL := arvados.URL(*url)
-		listenURL := arvados.URL(*url)
-		if svc.ListenAddress != "" {
-			listenURL.Host = svc.ListenAddress
-		}
-		return listenURL, internalURL, nil
-	}
-
-	if svc.ListenAddress != "" {
-		scheme := ""
-		for internalURL := range svc.InternalURLs {
-			if internalURL.Host == svc.ListenAddress {
-				if len(svc.InternalURLs) > 1 {
-					log.Warnf("possible configuration error: multiple InternalURLs entries exist for %s but only %q will ever be used because it matches ListenAddress", prog, internalURL.String())
+		for internalURL, conf := range svc.InternalURLs {
+			if internalURL.String() == url.String() {
+				listenURL := conf.ListenURL
+				if listenURL.Host == "" {
+					listenURL = internalURL
 				}
-				return internalURL, internalURL, nil
-			}
-			switch scheme {
-			case "":
-				scheme = internalURL.Scheme
-			case internalURL.Scheme:
-			default:
-				scheme = "-" // different InternalURLs have different schemes
+				return listenURL, internalURL, nil
 			}
 		}
-		if scheme == "-" {
-			return arvados.URL{}, arvados.URL{}, fmt.Errorf("cannot use ListenAddress %q: InternalURLs use multiple schemes and none have host %q", svc.ListenAddress, svc.ListenAddress)
-		}
-		if scheme == "" {
-			// No entries at all in InternalURLs
-			scheme = "http"
-		}
-		listenURL := arvados.URL{}
-		listenURL.Host = svc.ListenAddress
-		listenURL.Scheme = scheme
-		listenURL.Path = "/"
-		return listenURL, listenURL, nil
+		log.Warnf("possible configuration error: listening on %s (from $ARVADOS_SERVICE_INTERNAL_URL) even though configuration does not have a matching InternalURLs entry", url)
+		internalURL := arvados.URL(*url)
+		return internalURL, internalURL, nil
 	}
 
 	errors := []string{}
-	for internalURL := range svc.InternalURLs {
-		listener, err := net.Listen("tcp", internalURL.Host)
+	for internalURL, conf := range svc.InternalURLs {
+		listenURL := conf.ListenURL
+		if listenURL.Host == "" {
+			// If ListenURL is not specified, assume
+			// InternalURL is also usable as the listening
+			// proto/addr/port (i.e., simple case with no
+			// intermediate proxy/routing)
+			listenURL = internalURL
+		}
+		listener, err := net.Listen("tcp", listenURL.Host)
 		if err == nil {
 			listener.Close()
-			return internalURL, internalURL, nil
+			return listenURL, internalURL, nil
 		} else if strings.Contains(err.Error(), "cannot assign requested address") {
 			// If 'Host' specifies a different server than
 			// the current one, it'll resolve the hostname
@@ -288,7 +283,7 @@ func getListenAddr(svcs arvados.Services, prog arvados.ServiceName, log logrus.F
 			// can't bind an IP address it doesn't own.
 			continue
 		} else {
-			errors = append(errors, fmt.Sprintf("tried %v, got %v", internalURL, err))
+			errors = append(errors, fmt.Sprintf("%s: %s", listenURL, err))
 		}
 	}
 	if len(errors) > 0 {
