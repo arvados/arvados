@@ -49,6 +49,16 @@ SPDX-License-Identifier: CC-BY-SA-3.0
       </div>
     </div>
 
+{% comment %}
+The div with id "old-version-warning" is automatically enabled by the Apache
+config under certain conditions, as described at
+https://dev.arvados.org/projects/ops/wiki/Docarvadosorg.  Changing the class
+should be safe, but please double check the matching and substitution that is
+done in the Apache config to be sure before you modify this div.
+{% endcomment %}
+   <div class="alert alert-block alert-info" style="display: none;" id="old-version-warning">
+     WARNING - you are viewing the documentation for an old version of Arvados. For the latest version, click <a href="/">here</a>.
+   </div>
    <div class="alert alert-block alert-info" style="display: none;" id="annotate-notify">
      <div style="margin-top: -26px; font-size: 12pt">Hey!  You can use the annotation sidebar from <a href="https://hypothes.is">hypothes.is</a> to make public comments and private notes
        <span style="font-size: 32pt">&rarr;</span></div>
