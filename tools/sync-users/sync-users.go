@@ -58,9 +58,11 @@ func main() {
 }
 
 type ConfigParams struct {
-	Path    string
-	Verbose bool
-	Client  *arvados.Client
+	Client             *arvados.Client
+	CurrentUser        arvados.User
+	DeactivateUnlisted bool
+	Path               string
+	Verbose            bool
 }
 
 func ParseFlags(cfg *ConfigParams) error {
@@ -78,6 +80,10 @@ func ParseFlags(cfg *ConfigParams) error {
 		flags.PrintDefaults()
 	}
 
+	deactivateUnlisted := flags.Bool(
+		"deactivate-unlisted",
+		false,
+		"Deactivate users that are not in the input file.")
 	verbose := flags.Bool(
 		"verbose",
 		false,
@@ -105,6 +111,7 @@ func ParseFlags(cfg *ConfigParams) error {
 		return fmt.Errorf("input file path invalid")
 	}
 
+	cfg.DeactivateUnlisted = *deactivateUnlisted
 	cfg.Path = *srcPath
 	cfg.Verbose = *verbose
 
@@ -126,8 +133,12 @@ func GetConfig() (cfg ConfigParams, err error) {
 		return cfg, fmt.Errorf("error getting the current user: %s", err)
 	}
 	if !u.IsAdmin {
-		return cfg, fmt.Errorf("current user (%s) is not an admin user", u.UUID)
+		return cfg, fmt.Errorf("current user %q is not an admin user", u.UUID)
 	}
+	if cfg.Verbose {
+		log.Printf("Running as admin user %q", u.UUID)
+	}
+	cfg.CurrentUser = u
 
 	return cfg, nil
 }
@@ -141,6 +152,7 @@ func doMain(cfg *ConfigParams) error {
 	defer f.Close()
 
 	allUsers := make(map[string]arvados.User)
+	processedUsers := make(map[string]bool)
 	results, err := GetAll(cfg.Client, "users", arvados.ResourceListParams{}, &UserList{})
 	if err != nil {
 		return fmt.Errorf("error getting all users: %s", err)
@@ -149,6 +161,7 @@ func doMain(cfg *ConfigParams) error {
 	for _, item := range results {
 		u := item.(arvados.User)
 		allUsers[strings.ToLower(u.Email)] = u
+		processedUsers[strings.ToLower(u.Email)] = false
 	}
 
 	loadedRecords, err := LoadInputFile(f)
@@ -159,14 +172,42 @@ func doMain(cfg *ConfigParams) error {
 
 	updatesSucceeded, updatesFailed := 0, 0
 	for _, record := range loadedRecords {
+		if record.Email == cfg.CurrentUser.Email {
+			log.Printf("Skipping current user %q from processing", record.Email)
+			continue
+		}
 		if updated, err := ProcessRecord(cfg, record, allUsers); err != nil {
 			log.Printf("error processing record %q: %s", record.Email, err)
 			updatesFailed++
 		} else if updated {
+			processedUsers[strings.ToLower(record.Email)] = true
 			updatesSucceeded++
 		}
 	}
-	log.Printf("Updated %d account(s), failed to update %d account(s)", updatesSucceeded, updatesFailed)
+
+	if cfg.DeactivateUnlisted {
+		for email, user := range allUsers {
+			if user.UUID == cfg.CurrentUser.UUID {
+				log.Printf("Skipping current user deactivation: %s", user.UUID)
+				continue
+			}
+			if !processedUsers[email] {
+				if cfg.Verbose {
+					log.Printf("Deactivating unlisted user %q", user.UUID)
+				}
+				var updatedUser arvados.User
+				if err := UnsetupUser(cfg.Client, user.UUID, &updatedUser); err != nil {
+					log.Printf("error deactivating unlisted user %q: %s", user.UUID, err)
+					updatesFailed++
+				} else {
+					allUsers[email] = updatedUser
+					updatesSucceeded++
+				}
+			}
+		}
+	}
+
+	log.Printf("Updated %d user(s), failed to update %d user(s)", updatesSucceeded, updatesFailed)
 
 	return nil
 }
@@ -181,13 +222,22 @@ type userRecord struct {
 
 // ProcessRecord creates or updates a user based on the given record
 func ProcessRecord(cfg *ConfigParams, record userRecord, allUsers map[string]arvados.User) (bool, error) {
+	if cfg.Verbose {
+		log.Printf("Processing record for user %q", record.Email)
+	}
+
 	wantedActiveStatus := strconv.FormatBool(record.Active)
 	wantedAdminStatus := strconv.FormatBool(record.Admin)
+	createRequired := false
 	updateRequired := false
 	// Check if user exists, set its active & admin status.
 	var user arvados.User
 	user, ok := allUsers[record.Email]
 	if !ok {
+		if cfg.Verbose {
+			log.Printf("User %q does not exist, creating", record.Email)
+		}
+		createRequired = true
 		err := CreateUser(cfg.Client, &user, map[string]string{
 			"email":      record.Email,
 			"first_name": record.FirstName,
@@ -198,12 +248,13 @@ func ProcessRecord(cfg *ConfigParams, record userRecord, allUsers map[string]arv
 		if err != nil {
 			return false, fmt.Errorf("error creating user %q: %s", record.Email, err)
 		}
-		updateRequired = true
-		log.Printf("Created user %q", record.Email)
 	}
 	if record.Active != user.IsActive {
 		updateRequired = true
 		if record.Active {
+			if cfg.Verbose {
+				log.Printf("User %q is inactive, activating", record.Email)
+			}
 			// Here we assume the 'setup' is done elsewhere if needed.
 			err := UpdateUser(cfg.Client, user.UUID, &user, map[string]string{
 				"is_active": wantedActiveStatus,
@@ -213,6 +264,9 @@ func ProcessRecord(cfg *ConfigParams, record userRecord, allUsers map[string]arv
 				return false, fmt.Errorf("error updating user %q: %s", record.Email, err)
 			}
 		} else {
+			if cfg.Verbose {
+				log.Printf("User %q is active, deactivating", record.Email)
+			}
 			err := UnsetupUser(cfg.Client, user.UUID, &user)
 			if err != nil {
 				return false, fmt.Errorf("error deactivating user %q: %s", record.Email, err)
@@ -221,6 +275,9 @@ func ProcessRecord(cfg *ConfigParams, record userRecord, allUsers map[string]arv
 	}
 	// Inactive users cannot be admins.
 	if user.IsActive && record.Admin != user.IsAdmin {
+		if cfg.Verbose {
+			log.Printf("User %q is active, changing admin status to %v", record.Email, record.Admin)
+		}
 		updateRequired = true
 		err := UpdateUser(cfg.Client, user.UUID, &user, map[string]string{
 			"is_admin": wantedAdminStatus,
@@ -230,11 +287,14 @@ func ProcessRecord(cfg *ConfigParams, record userRecord, allUsers map[string]arv
 		}
 	}
 	allUsers[record.Email] = user
+	if createRequired {
+		log.Printf("Created user %q", record.Email)
+	}
 	if updateRequired {
 		log.Printf("Updated user %q", record.Email)
 	}
 
-	return updateRequired, nil
+	return createRequired || updateRequired, nil
 }
 
 // LoadInputFile reads the input file and returns a list of user records
