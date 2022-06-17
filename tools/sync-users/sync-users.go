@@ -59,9 +59,12 @@ func main() {
 
 type ConfigParams struct {
 	Client             *arvados.Client
+	ClusterID          string
 	CurrentUser        arvados.User
 	DeactivateUnlisted bool
 	Path               string
+	SysUserUUID        string
+	AnonUserUUID       string
 	Verbose            bool
 }
 
@@ -136,9 +139,26 @@ func GetConfig() (cfg ConfigParams, err error) {
 		return cfg, fmt.Errorf("current user %q is not an admin user", u.UUID)
 	}
 	if cfg.Verbose {
-		log.Printf("Running as admin user %q", u.UUID)
+		log.Printf("Running as admin user %q (%s)", u.Email, u.UUID)
 	}
 	cfg.CurrentUser = u
+
+	var ac struct {
+		ClusterID string
+		Login     struct {
+			LoginCluster string
+		}
+	}
+	err = cfg.Client.RequestAndDecode(&ac, "GET", "arvados/v1/config", nil, nil)
+	if err != nil {
+		return cfg, fmt.Errorf("error getting the exported config: %s", err)
+	}
+	if ac.Login.LoginCluster != "" && ac.Login.LoginCluster != ac.ClusterID {
+		return cfg, fmt.Errorf("cannot run on a cluster other than the login cluster")
+	}
+	cfg.SysUserUUID = ac.ClusterID + "-tpzed-000000000000000"
+	cfg.AnonUserUUID = ac.ClusterID + "-tpzed-anonymouspublic"
+	cfg.ClusterID = ac.ClusterID
 
 	return cfg, nil
 }
@@ -157,7 +177,7 @@ func doMain(cfg *ConfigParams) error {
 	if err != nil {
 		return fmt.Errorf("error getting all users: %s", err)
 	}
-	log.Printf("Found %d users", len(results))
+	log.Printf("Found %d users in cluster %q", len(results), cfg.ClusterID)
 	for _, item := range results {
 		u := item.(arvados.User)
 		allUsers[strings.ToLower(u.Email)] = u
@@ -187,13 +207,21 @@ func doMain(cfg *ConfigParams) error {
 
 	if cfg.DeactivateUnlisted {
 		for email, user := range allUsers {
-			if user.UUID == cfg.CurrentUser.UUID {
-				log.Printf("Skipping current user deactivation: %s", user.UUID)
+			switch user.UUID {
+			case cfg.SysUserUUID, cfg.AnonUserUUID:
+				if cfg.Verbose {
+					log.Printf("Skipping system user deactivation: %s", user.UUID)
+				}
+				continue
+			case cfg.CurrentUser.UUID:
+				if cfg.Verbose {
+					log.Printf("Skipping current user deactivation: %s (%s)", user.Email, user.UUID)
+				}
 				continue
 			}
-			if !processedUsers[email] {
+			if !processedUsers[email] && allUsers[email].IsActive {
 				if cfg.Verbose {
-					log.Printf("Deactivating unlisted user %q", user.UUID)
+					log.Printf("Deactivating unlisted user %q (%s)", user.Email, user.UUID)
 				}
 				var updatedUser arvados.User
 				if err := UnsetupUser(cfg.Client, user.UUID, &updatedUser); err != nil {
@@ -242,8 +270,8 @@ func ProcessRecord(cfg *ConfigParams, record userRecord, allUsers map[string]arv
 			"email":      record.Email,
 			"first_name": record.FirstName,
 			"last_name":  record.LastName,
-			"is_active":  strconv.FormatBool(record.Active),
-			"is_admin":   strconv.FormatBool(record.Admin),
+			"is_active":  wantedActiveStatus,
+			"is_admin":   wantedAdminStatus,
 		})
 		if err != nil {
 			return false, fmt.Errorf("error creating user %q: %s", record.Email, err)
