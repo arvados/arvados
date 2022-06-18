@@ -379,6 +379,10 @@ func (conn *Conn) ContainerSSH(ctx context.Context, options arvados.ContainerSSH
 	return conn.chooseBackend(options.UUID).ContainerSSH(ctx, options)
 }
 
+func (conn *Conn) ContainerGatewayTunnel(ctx context.Context, options arvados.ContainerGatewayTunnelOptions) (arvados.ConnectionResponse, error) {
+	return conn.chooseBackend(options.UUID).ContainerGatewayTunnel(ctx, options)
+}
+
 func (conn *Conn) ContainerRequestList(ctx context.Context, options arvados.ListOptions) (arvados.ContainerRequestList, error) {
 	return conn.generated_ContainerRequestList(ctx, options)
 }

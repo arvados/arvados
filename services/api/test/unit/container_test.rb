@@ -958,6 +958,7 @@ class ContainerTest < ActiveSupport::TestCase
         Thread.current[:user] = auth.user
       end
 
+      assert c.update_attributes(gateway_address: "127.0.0.1:9")
       assert c.update_attributes(output: collections(:collection_owned_by_active).portable_data_hash)
       assert c.update_attributes(runtime_status: {'warning' => 'something happened'})
       assert c.update_attributes(progress: 0.5)

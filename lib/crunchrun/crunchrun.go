@@ -1916,6 +1916,7 @@ func (command) RunCommand(prog string, args []string, stdin io.Reader, stdout, s
 			ContainerUUID: containerUUID,
 			Target:        cr.executor,
 			Log:           cr.CrunchLog,
+			ArvadosClient: cr.dispatcherClient,
 		}
 		err = cr.gateway.Start()
 		if err != nil {

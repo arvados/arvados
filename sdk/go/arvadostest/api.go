@@ -113,6 +113,10 @@ func (as *APIStub) ContainerSSH(ctx context.Context, options arvados.ContainerSS
 	as.appendCall(ctx, as.ContainerSSH, options)
 	return arvados.ContainerSSHConnection{}, as.Error
 }
+func (as *APIStub) ContainerGatewayTunnel(ctx context.Context, options arvados.ContainerGatewayTunnelOptions) (arvados.ConnectionResponse, error) {
+	as.appendCall(ctx, as.ContainerGatewayTunnel, options)
+	return arvados.ConnectionResponse{}, as.Error
+}
 func (as *APIStub) ContainerRequestCreate(ctx context.Context, options arvados.CreateOptions) (arvados.ContainerRequest, error) {
 	as.appendCall(ctx, as.ContainerRequestCreate, options)
 	return arvados.ContainerRequest{}, as.Error

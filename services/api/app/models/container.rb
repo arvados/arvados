@@ -498,9 +498,9 @@ class Container < ArvadosModel
       permitted.push :priority
 
     when Running
-      permitted.push :priority, :output_properties, *progress_attrs
+      permitted.push :priority, :output_properties, :gateway_address, *progress_attrs
       if self.state_changed?
-        permitted.push :started_at, :gateway_address
+        permitted.push :started_at
       end
       if !self.interactive_session_started_was
         permitted.push :interactive_session_started

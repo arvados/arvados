@@ -245,6 +245,13 @@ func (rtr *router) addRoutes() {
 			},
 		},
 		{
+			arvados.EndpointContainerGatewayTunnel,
+			func() interface{} { return &arvados.ContainerGatewayTunnelOptions{} },
+			func(ctx context.Context, opts interface{}) (interface{}, error) {
+				return rtr.backend.ContainerGatewayTunnel(ctx, *opts.(*arvados.ContainerGatewayTunnelOptions))
+			},
+		},
+		{
 			arvados.EndpointGroupCreate,
 			func() interface{} { return &arvados.CreateOptions{} },
 			func(ctx context.Context, opts interface{}) (interface{}, error) {
