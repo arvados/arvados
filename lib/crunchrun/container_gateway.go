@@ -267,7 +267,8 @@ func (gw *Gateway) handleSSH(w http.ResponseWriter, req *http.Request) {
 		http.Error(w, "path not found", http.StatusNotFound)
 		return
 	}
-	if want := req.Header.Get("X-Arvados-Target-Uuid"); want != gw.ContainerUUID {
+	req.ParseForm()
+	if want := req.Form.Get("uuid"); want != gw.ContainerUUID {
 		http.Error(w, fmt.Sprintf("misdirected request: meant for %q but received by crunch-run %q", want, gw.ContainerUUID), http.StatusBadGateway)
 		return
 	}
@@ -275,8 +276,8 @@ func (gw *Gateway) handleSSH(w http.ResponseWriter, req *http.Request) {
 		http.Error(w, "bad X-Arvados-Authorization header", http.StatusUnauthorized)
 		return
 	}
-	detachKeys := req.Header.Get("X-Arvados-Detach-Keys")
-	username := req.Header.Get("X-Arvados-Login-Username")
+	detachKeys := req.Form.Get("detach_keys")
+	username := req.Form.Get("login_username")
 	if username == "" {
 		username = "root"
 	}

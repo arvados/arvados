@@ -97,6 +97,7 @@ type ContainerSSHOptions struct {
 	UUID          string `json:"uuid"`
 	DetachKeys    string `json:"detach_keys"`
 	LoginUsername string `json:"login_username"`
+	NoForward     bool   `json:"no_forward"`
 }
 
 type ContainerSSHConnection ConnectionResponse

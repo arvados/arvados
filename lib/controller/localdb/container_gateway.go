@@ -147,14 +147,21 @@ func (conn *Conn) ContainerSSH(ctx context.Context, opts arvados.ContainerSSHOpt
 		Host:   ctr.GatewayAddress,
 		Path:   "/ssh",
 	}
+	postform := url.Values{
+		"uuid":           {opts.UUID},
+		"detach_keys":    {opts.DetachKeys},
+		"login_username": {opts.LoginUsername},
+		"no_forward":     {"true"},
+	}
+	postdata := postform.Encode()
 	bufw.WriteString("POST " + u.String() + " HTTP/1.1\r\n")
 	bufw.WriteString("Host: " + u.Host + "\r\n")
 	bufw.WriteString("Upgrade: ssh\r\n")
-	bufw.WriteString("X-Arvados-Target-Uuid: " + opts.UUID + "\r\n")
 	bufw.WriteString("X-Arvados-Authorization: " + requestAuth + "\r\n")
-	bufw.WriteString("X-Arvados-Detach-Keys: " + opts.DetachKeys + "\r\n")
-	bufw.WriteString("X-Arvados-Login-Username: " + opts.LoginUsername + "\r\n")
+	bufw.WriteString("Content-Type: application/x-www-form-urlencoded\r\n")
+	fmt.Fprintf(bufw, "Content-Length: %d\r\n", len(postdata))
 	bufw.WriteString("\r\n")
+	bufw.WriteString(postdata)
 	bufw.Flush()
 	resp, err := http.ReadResponse(bufr, &http.Request{Method: "GET"})
 	if err != nil {
