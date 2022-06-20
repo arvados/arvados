@@ -5,8 +5,10 @@
 package keepweb
 
 import (
+	"os"
 	"sync"
 	"sync/atomic"
+	"syscall"
 	"time"
 
 	"git.arvados.org/arvados.git/sdk/go/arvados"
@@ -169,7 +171,14 @@ func (c *cache) setup() {
 	c.chPruneSessions = make(chan struct{}, 1)
 	go func() {
 		for range c.chPruneSessions {
+			max := 30 * time.Second
+			timeout := time.AfterFunc(max, func() {
+				c.logger.Errorf("bug: pruneSessions took longer than %s, suspect deadlock", max)
+				p, _ := os.FindProcess(os.Getpid())
+				p.Signal(syscall.SIGABRT)
+			})
 			c.pruneSessions()
+			timeout.Stop()
 		}
 	}()
 }
