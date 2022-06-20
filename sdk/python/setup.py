@@ -55,6 +55,7 @@ setup(name='arvados-python-client',
           'ruamel.yaml >=0.15.54, <0.17.11',
           'setuptools',
           'ws4py >=0.4.2',
+          'protobuf<4.0.0dev'
       ],
       classifiers=[
           'Programming Language :: Python :: 3',
