@@ -415,7 +415,7 @@ func (n *treenode) MemorySize() (size int64) {
 	for _, inode := range n.inodes {
 		size += inode.MemorySize()
 	}
-	return
+	return 64 + size
 }
 
 type fileSystem struct {

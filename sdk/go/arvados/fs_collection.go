@@ -1159,15 +1159,17 @@ func (dn *dirnode) MemorySize() (size int64) {
 		case *dirnode:
 			size += node.MemorySize()
 		case *filenode:
+			size += 64
 			for _, seg := range node.segments {
 				switch seg := seg.(type) {
 				case *memSegment:
 					size += int64(seg.Len())
 				}
+				size += 64
 			}
 		}
 	}
-	return
+	return 64 + size
 }
 
 // caller must have write lock.
