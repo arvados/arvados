@@ -190,33 +190,29 @@ func doMain(cfg *ConfigParams) error {
 	}
 	log.Printf("Loaded %d records from input file", len(loadedRecords))
 
-	updatesSucceeded, updatesFailed := 0, 0
+	updatesSucceeded := map[string]bool{}
+	updatesFailed := map[string]bool{}
+	updatesSkipped := map[string]bool{}
+
 	for _, record := range loadedRecords {
+		processedUsers[record.Email] = true
 		if record.Email == cfg.CurrentUser.Email {
+			updatesSkipped[record.Email] = true
 			log.Printf("Skipping current user %q from processing", record.Email)
 			continue
 		}
 		if updated, err := ProcessRecord(cfg, record, allUsers); err != nil {
 			log.Printf("error processing record %q: %s", record.Email, err)
-			updatesFailed++
+			updatesFailed[record.Email] = true
 		} else if updated {
-			processedUsers[strings.ToLower(record.Email)] = true
-			updatesSucceeded++
+			updatesSucceeded[record.Email] = true
 		}
 	}
 
 	if cfg.DeactivateUnlisted {
 		for email, user := range allUsers {
-			switch user.UUID {
-			case cfg.SysUserUUID, cfg.AnonUserUUID:
-				if cfg.Verbose {
-					log.Printf("Skipping system user deactivation: %s", user.UUID)
-				}
-				continue
-			case cfg.CurrentUser.UUID:
-				if cfg.Verbose {
-					log.Printf("Skipping current user deactivation: %s (%s)", user.Email, user.UUID)
-				}
+			if shouldSkip(cfg, user) {
+				updatesSkipped[email] = true
 				continue
 			}
 			if !processedUsers[email] && allUsers[email].IsActive {
@@ -226,18 +222,28 @@ func doMain(cfg *ConfigParams) error {
 				var updatedUser arvados.User
 				if err := UnsetupUser(cfg.Client, user.UUID, &updatedUser); err != nil {
 					log.Printf("error deactivating unlisted user %q: %s", user.UUID, err)
-					updatesFailed++
+					updatesFailed[email] = true
 				} else {
 					allUsers[email] = updatedUser
-					updatesSucceeded++
+					updatesSucceeded[email] = true
 				}
 			}
 		}
 	}
 
-	log.Printf("Updated %d user(s), failed to update %d user(s)", updatesSucceeded, updatesFailed)
+	log.Printf("User update successes: %d, skips: %d, failures: %d", len(updatesSucceeded), len(updatesSkipped), len(updatesFailed))
 
 	return nil
+}
+
+func shouldSkip(cfg *ConfigParams, user arvados.User) bool {
+	switch user.UUID {
+	case cfg.SysUserUUID, cfg.AnonUserUUID:
+		return true
+	case cfg.CurrentUser.UUID:
+		return true
+	}
+	return false
 }
 
 type userRecord struct {
