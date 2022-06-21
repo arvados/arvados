@@ -82,7 +82,8 @@ describe('Project tests', function() {
         .then(function() {
             expect(this.projects).to.have.lengthOf(1);
             expect(this.projects[0].properties).to.deep.equal(
-                {IDTAGCOLORS: 'IDVALCOLORS3'});
+                // Pink is not in the test vocab
+                {IDTAGCOLORS: ['IDVALCOLORS1', 'IDVALCOLORS3', 'Pink']});
         });
     });
 
@@ -245,7 +246,7 @@ describe('Project tests', function() {
         cy.getAll('@mainProject')
             .then(function ([mainProject]) {
                 cy.loginAs(adminUser);
-                
+
                 cy.get('[data-cy=side-panel-tree]').contains('Groups').click();
 
                 cy.get('[data-cy=uuid]').eq(0).invoke('text').then(uuid => {
