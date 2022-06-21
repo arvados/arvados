@@ -11,6 +11,7 @@ import (
 	"net/http"
 	"os"
 	"strings"
+	"sync"
 	"syscall"
 	"time"
 
@@ -371,4 +372,118 @@ func (s *SiteFSSuite) TestSnapshotSplice(c *check.C) {
 		c.Check(err, check.IsNil)
 		c.Check(string(buf), check.Equals, string(thisfile))
 	}
+}
+
+func (s *SiteFSSuite) TestLocks(c *check.C) {
+	DebugLocksPanicMode = false
+	done := make(chan struct{})
+	defer close(done)
+	ticker := time.NewTicker(2 * time.Second)
+	go func() {
+		for {
+			timeout := time.AfterFunc(5*time.Second, func() {
+				// c.FailNow() doesn't break deadlock, but this sure does
+				panic("timed out -- deadlock?")
+			})
+			select {
+			case <-done:
+				timeout.Stop()
+				return
+			case <-ticker.C:
+				c.Logf("MemorySize == %d", s.fs.MemorySize())
+			}
+			timeout.Stop()
+		}
+	}()
+	ncolls := 5
+	ndirs := 3
+	nfiles := 5
+	projects := make([]Group, 5)
+	for pnum := range projects {
+		c.Logf("make project %d", pnum)
+		err := s.client.RequestAndDecode(&projects[pnum], "POST", "arvados/v1/groups", nil, map[string]interface{}{
+			"group": map[string]string{
+				"name":        fmt.Sprintf("TestLocks project %d", pnum),
+				"owner_uuid":  fixtureAProjectUUID,
+				"group_class": "project",
+			},
+			"ensure_unique_name": true,
+		})
+		c.Assert(err, check.IsNil)
+		for cnum := 0; cnum < ncolls; cnum++ {
+			c.Logf("make project %d collection %d", pnum, cnum)
+			var coll Collection
+			err = s.client.RequestAndDecode(&coll, "POST", "arvados/v1/collections", nil, map[string]interface{}{
+				"collection": map[string]string{
+					"name":       fmt.Sprintf("TestLocks collection %d", cnum),
+					"owner_uuid": projects[pnum].UUID,
+				},
+			})
+			c.Assert(err, check.IsNil)
+			for d1num := 0; d1num < ndirs; d1num++ {
+				s.fs.Mkdir(fmt.Sprintf("/by_id/%s/dir1-%d", coll.UUID, d1num), 0777)
+				for d2num := 0; d2num < ndirs; d2num++ {
+					s.fs.Mkdir(fmt.Sprintf("/by_id/%s/dir1-%d/dir2-%d", coll.UUID, d1num, d2num), 0777)
+					for fnum := 0; fnum < nfiles; fnum++ {
+						f, err := s.fs.OpenFile(fmt.Sprintf("/by_id/%s/dir1-%d/dir2-%d/file-%d", coll.UUID, d1num, d2num, fnum), os.O_CREATE|os.O_RDWR, 0755)
+						c.Assert(err, check.IsNil)
+						f.Close()
+						f, err = s.fs.OpenFile(fmt.Sprintf("/by_id/%s/dir1-%d/file-%d", coll.UUID, d1num, fnum), os.O_CREATE|os.O_RDWR, 0755)
+						c.Assert(err, check.IsNil)
+						f.Close()
+					}
+				}
+			}
+		}
+	}
+	c.Log("sync")
+	s.fs.Sync()
+	var wg sync.WaitGroup
+	for n := 0; n < 100; n++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			for pnum, project := range projects {
+				c.Logf("read project %d", pnum)
+				if pnum%2 == 0 {
+					f, err := s.fs.Open(fmt.Sprintf("/by_id/%s", project.UUID))
+					c.Assert(err, check.IsNil)
+					f.Readdir(-1)
+					f.Close()
+				}
+				for cnum := 0; cnum < ncolls; cnum++ {
+					c.Logf("read project %d collection %d", pnum, cnum)
+					if pnum%2 == 0 {
+						f, err := s.fs.Open(fmt.Sprintf("/by_id/%s/TestLocks collection %d", project.UUID, cnum))
+						c.Assert(err, check.IsNil)
+						_, err = f.Readdir(-1)
+						c.Assert(err, check.IsNil)
+						f.Close()
+					}
+					if pnum%3 == 0 {
+						for d1num := 0; d1num < ndirs; d1num++ {
+							f, err := s.fs.Open(fmt.Sprintf("/by_id/%s/TestLocks collection %d/dir1-%d", project.UUID, cnum, d1num))
+							c.Assert(err, check.IsNil)
+							fis, err := f.Readdir(-1)
+							c.Assert(err, check.IsNil)
+							c.Assert(fis, check.HasLen, ndirs+nfiles)
+							f.Close()
+						}
+					}
+					for d1num := 0; d1num < ndirs; d1num++ {
+						for d2num := 0; d2num < ndirs; d2num++ {
+							f, err := s.fs.Open(fmt.Sprintf("/by_id/%s/TestLocks collection %d/dir1-%d/dir2-%d", project.UUID, cnum, d1num, d2num))
+							c.Assert(err, check.IsNil)
+							fis, err := f.Readdir(-1)
+							c.Assert(err, check.IsNil)
+							c.Assert(fis, check.HasLen, nfiles)
+							f.Close()
+						}
+					}
+				}
+			}
+		}()
+	}
+	wg.Wait()
+	c.Logf("MemorySize == %d", s.fs.MemorySize())
 }
