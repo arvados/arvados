@@ -83,7 +83,7 @@ describe('Project tests', function() {
             expect(this.projects).to.have.lengthOf(1);
             expect(this.projects[0].properties).to.deep.equal(
                 // Pink is not in the test vocab
-                {IDTAGCOLORS: ['IDVALCOLORS1', 'IDVALCOLORS3', 'Pink']});
+                {IDTAGCOLORS: ['IDVALCOLORS3', 'Pink', 'IDVALCOLORS1']});
         });
     });
 
