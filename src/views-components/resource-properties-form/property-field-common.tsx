@@ -14,6 +14,7 @@ export interface VocabularyProp {
 
 export interface ValidationProp {
     skipValidation?: boolean;
+    clearPropertyKeyOnSelect?: boolean;
 }
 
 export const mapStateToProps = (state: RootState, ownProps: ValidationProp): VocabularyProp & ValidationProp => ({
