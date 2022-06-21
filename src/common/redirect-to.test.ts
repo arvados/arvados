@@ -36,7 +36,7 @@ describe('redirect-to', () => {
             delete window.location;
             window.location = {
                 ...locationTemplate,
-                href: `${location.href}?redirectTo=${redirectTo}`,
+                href: `${location.href}?redirectToPreview=${redirectTo}`,
             } as any;
             Object.defineProperty(window, 'localStorage', {
                 value: {
@@ -51,7 +51,7 @@ describe('redirect-to', () => {
             storeRedirects();
 
             // then
-            expect(window.localStorage.setItem).toHaveBeenCalledWith('redirectTo', redirectTo);
+            expect(window.localStorage.setItem).toHaveBeenCalledWith('redirectToPreview', redirectTo);
         });
     });
 
@@ -60,7 +60,7 @@ describe('redirect-to', () => {
             delete window.location;
             window.location = {
                 ...locationTemplate,
-                href: `${location.href}?redirectTo=${redirectTo}`,
+                href: `${location.href}?redirectToPreview=${redirectTo}`,
             } as any;;
             Object.defineProperty(window, 'localStorage', {
                 value: {

@@ -2,34 +2,57 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
+import { getInlineFileUrl } from 'views-components/context-menu/actions/helpers';
 import { Config } from './config';
 
-const REDIRECT_TO_KEY = 'redirectTo';
+export const REDIRECT_TO_DOWNLOAD_KEY = 'redirectToDownload';
+export const REDIRECT_TO_PREVIEW_KEY = 'redirectToPreview';
+
+const getRedirectKeyFromUrl = (href: string): string | null => {
+    switch (true) {
+        case href.indexOf(REDIRECT_TO_DOWNLOAD_KEY) > -1:
+            return REDIRECT_TO_DOWNLOAD_KEY;
+        case href.indexOf(REDIRECT_TO_PREVIEW_KEY) > -1:
+            return REDIRECT_TO_PREVIEW_KEY;
+        default:
+            return null;
+    }
+}
+
+const getRedirectKeyFromStorage = (localStorage: Storage): string | null => {
+    if (localStorage.getItem(REDIRECT_TO_DOWNLOAD_KEY)) {
+        return REDIRECT_TO_DOWNLOAD_KEY;
+    } else if (localStorage.getItem(REDIRECT_TO_PREVIEW_KEY)) {
+        return REDIRECT_TO_PREVIEW_KEY;
+    }
+    return null;
+}
 
 export const storeRedirects = () => {
-    let redirectUrl;
     const { location: { href }, localStorage } = window;
+    const redirectKey = getRedirectKeyFromUrl(href);
 
-    if (href.indexOf(REDIRECT_TO_KEY) > -1) {
-        redirectUrl = href.split(`${REDIRECT_TO_KEY}=`)[1];
-    }
-
-    if (localStorage && redirectUrl) {
-        localStorage.setItem(REDIRECT_TO_KEY, redirectUrl);
+    if (localStorage && redirectKey) {
+        localStorage.setItem(redirectKey, href.split(`${redirectKey}=`)[1]);
     }
 };
 
 export const handleRedirects = (token: string, config: Config) => {
     const { localStorage } = window;
-    const { keepWebServiceUrl } = config;
+    const { keepWebServiceUrl, keepWebInlineServiceUrl } = config;
 
-    if (localStorage && localStorage.getItem(REDIRECT_TO_KEY)) {
-        const redirectUrl = localStorage.getItem(REDIRECT_TO_KEY);
-        localStorage.removeItem(REDIRECT_TO_KEY);
+    if (localStorage) {
+        const redirectKey = getRedirectKeyFromStorage(localStorage);
+        const redirectPath = redirectKey ? localStorage.getItem(redirectKey) : '';
+        redirectKey && localStorage.removeItem(redirectKey);
 
-        if (redirectUrl) {
-            const sep = redirectUrl.indexOf("?") > -1 ? "&" : "?";
-            window.location.href = `${keepWebServiceUrl}${redirectUrl}${sep}api_token=${token}`;
+        if (redirectKey && redirectPath) {
+            const sep = redirectPath.indexOf("?") > -1 ? "&" : "?";
+            let redirectUrl = `${keepWebServiceUrl}${redirectPath}${sep}api_token=${token}`;
+            if (redirectKey === REDIRECT_TO_PREVIEW_KEY) {
+                redirectUrl = getInlineFileUrl(redirectUrl, keepWebServiceUrl, keepWebInlineServiceUrl);
+            }
+            window.location.href = redirectUrl;
         }
     }
 };
