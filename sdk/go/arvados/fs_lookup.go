@@ -6,7 +6,6 @@ package arvados
 
 import (
 	"os"
-	"sync"
 	"time"
 )
 
@@ -21,9 +20,8 @@ type lookupnode struct {
 	stale   func(time.Time) bool
 
 	// internal fields
-	staleLock sync.Mutex
-	staleAll  time.Time
-	staleOne  map[string]time.Time
+	staleAll time.Time
+	staleOne map[string]time.Time
 }
 
 // Sync flushes pending writes for loaded children and, if successful,
@@ -33,29 +31,28 @@ func (ln *lookupnode) Sync() error {
 	if err != nil {
 		return err
 	}
-	ln.staleLock.Lock()
+	ln.Lock()
 	ln.staleAll = time.Time{}
 	ln.staleOne = nil
-	ln.staleLock.Unlock()
+	ln.Unlock()
 	return nil
 }
 
 func (ln *lookupnode) Readdir() ([]os.FileInfo, error) {
-	ln.staleLock.Lock()
-	defer ln.staleLock.Unlock()
+	ln.Lock()
 	checkTime := time.Now()
 	if ln.stale(ln.staleAll) {
 		all, err := ln.loadAll(ln)
 		if err != nil {
+			ln.Unlock()
 			return nil, err
 		}
 		for _, child := range all {
-			ln.treenode.Lock()
 			_, err = ln.treenode.Child(child.FileInfo().Name(), func(inode) (inode, error) {
 				return child, nil
 			})
-			ln.treenode.Unlock()
 			if err != nil {
+				ln.Unlock()
 				return nil, err
 			}
 		}
@@ -65,6 +62,7 @@ func (ln *lookupnode) Readdir() ([]os.FileInfo, error) {
 		// newer than ln.staleAll. Reclaim memory.
 		ln.staleOne = nil
 	}
+	ln.Unlock()
 	return ln.treenode.Readdir()
 }
 
@@ -72,8 +70,6 @@ func (ln *lookupnode) Readdir() ([]os.FileInfo, error) {
 // children, instead calling loadOne when a non-existing child is
 // looked up.
 func (ln *lookupnode) Child(name string, replace func(inode) (inode, error)) (inode, error) {
-	ln.staleLock.Lock()
-	defer ln.staleLock.Unlock()
 	checkTime := time.Now()
 	var existing inode
 	var err error
