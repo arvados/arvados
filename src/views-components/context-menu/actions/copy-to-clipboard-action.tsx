@@ -11,7 +11,7 @@ import { getClipboardUrl } from "./helpers";
 export const CopyToClipboardAction = (props: { href?: any, download?: any, onClick?: () => void, kind?: string, currentCollectionUuid?: string; }) => {
     const copyToClipboard = () => {
         if (props.href) {
-            const clipboardUrl = getClipboardUrl(props.href);
+            const clipboardUrl = getClipboardUrl(props.href, true, true);
             copy(clipboardUrl);
         }
 

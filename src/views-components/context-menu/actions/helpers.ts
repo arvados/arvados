@@ -2,6 +2,7 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
+import { REDIRECT_TO_DOWNLOAD_KEY, REDIRECT_TO_PREVIEW_KEY } from "common/redirect-to";
 import { extractUuidKind, ResourceKind } from "models/resource";
 
 export const sanitizeToken = (href: string, tokenAsQueryParam = true): string => {
@@ -13,11 +14,12 @@ export const sanitizeToken = (href: string, tokenAsQueryParam = true): string =>
     return `${[prefix, ...rest].join('/')}${tokenAsQueryParam ? `${sep}api_token=${token}` : ''}`;
 };
 
-export const getClipboardUrl = (href: string, shouldSanitizeToken = true): string => {
+export const getClipboardUrl = (href: string, shouldSanitizeToken = true, inline = false): string => {
     const { origin } = window.location;
     const url = shouldSanitizeToken ? sanitizeToken(href, false) : href;
+    const redirectKey = inline ? REDIRECT_TO_PREVIEW_KEY : REDIRECT_TO_DOWNLOAD_KEY;
 
-    return shouldSanitizeToken ? `${origin}?redirectTo=${url}` : `${origin}${url}`;
+    return shouldSanitizeToken ? `${origin}?${redirectKey}=${url}` : `${origin}${url}`;
 };
 
 export const getInlineFileUrl = (url: string, keepWebSvcUrl: string, keepWebInlineSvcUrl: string): string => {
