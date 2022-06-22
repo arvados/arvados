@@ -848,7 +848,8 @@ func (super *Supervisor) autofillConfig() error {
 			}
 		}
 		if super.NoWorkbench1 && svc == &super.cluster.Services.Workbench1 ||
-			super.NoWorkbench2 && svc == &super.cluster.Services.Workbench2 {
+			super.NoWorkbench2 && svc == &super.cluster.Services.Workbench2 ||
+			!super.cluster.Containers.CloudVMs.Enable && svc == &super.cluster.Services.DispatchCloud {
 			// When workbench1 is disabled, it gets an
 			// ExternalURL (so we have a valid listening
 			// port to write in our Nginx config) but no
