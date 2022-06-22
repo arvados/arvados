@@ -10,6 +10,7 @@ import (
 	"encoding/json"
 	"io"
 	"net"
+	"net/http"
 
 	"github.com/sirupsen/logrus"
 )
@@ -100,13 +101,11 @@ type ContainerSSHOptions struct {
 	NoForward     bool   `json:"no_forward"`
 }
 
-type ContainerSSHConnection ConnectionResponse
-
 type ConnectionResponse struct {
-	Conn          net.Conn           `json:"-"`
-	Bufrw         *bufio.ReadWriter  `json:"-"`
-	Logger        logrus.FieldLogger `json:"-"`
-	UpgradeHeader string             `json:"-"`
+	Conn   net.Conn           `json:"-"`
+	Bufrw  *bufio.ReadWriter  `json:"-"`
+	Logger logrus.FieldLogger `json:"-"`
+	Header http.Header        `json:"-"`
 }
 
 type ContainerGatewayTunnelOptions struct {
@@ -264,7 +263,7 @@ type API interface {
 	ContainerDelete(ctx context.Context, options DeleteOptions) (Container, error)
 	ContainerLock(ctx context.Context, options GetOptions) (Container, error)
 	ContainerUnlock(ctx context.Context, options GetOptions) (Container, error)
-	ContainerSSH(ctx context.Context, options ContainerSSHOptions) (ContainerSSHConnection, error)
+	ContainerSSH(ctx context.Context, options ContainerSSHOptions) (ConnectionResponse, error)
 	ContainerGatewayTunnel(ctx context.Context, options ContainerGatewayTunnelOptions) (ConnectionResponse, error)
 	ContainerRequestCreate(ctx context.Context, options CreateOptions) (ContainerRequest, error)
 	ContainerRequestUpdate(ctx context.Context, options UpdateOptions) (ContainerRequest, error)

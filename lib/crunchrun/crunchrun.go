@@ -1917,6 +1917,20 @@ func (command) RunCommand(prog string, args []string, stdin io.Reader, stdout, s
 			Target:        cr.executor,
 			Log:           cr.CrunchLog,
 			ArvadosClient: cr.dispatcherClient,
+			UpdateTunnelURL: func(url string) {
+				if gwListen != "" {
+					// prefer connecting directly
+					return
+				}
+				// direct connection won't work, so we
+				// use the gateway_address field to
+				// indicate the internalURL of the
+				// controller process that has the
+				// current tunnel connection.
+				cr.gateway.Address = "tunnel " + url
+				cr.DispatcherArvClient.Update("containers", containerUUID,
+					arvadosclient.Dict{"container": arvadosclient.Dict{"gateway_address": cr.gateway.Address}}, nil)
+			},
 		}
 		err = cr.gateway.Start()
 		if err != nil {

@@ -73,6 +73,11 @@ type Gateway struct {
 	// address is unknown or not routable from controller.
 	ArvadosClient *arvados.Client
 
+	// When a tunnel is connected or reconnected, this func (if
+	// not nil) will be called with the InternalURL of the
+	// controller process at the other end of the tunnel.
+	UpdateTunnelURL func(url string)
+
 	sshConfig   ssh.ServerConfig
 	requestAuth string
 	respondAuth string
@@ -208,6 +213,9 @@ func (gw *Gateway) runTunnel(addr string) error {
 	mux, err := yamux.Client(tun.Conn, nil)
 	if err != nil {
 		return fmt.Errorf("error setting up mux client end: %s", err)
+	}
+	if url := tun.Header.Get("X-Arvados-Internal-Url"); url != "" && gw.UpdateTunnelURL != nil {
+		gw.UpdateTunnelURL(url)
 	}
 	for {
 		muxconn, err := mux.Accept()

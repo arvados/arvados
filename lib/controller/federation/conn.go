@@ -375,7 +375,7 @@ func (conn *Conn) ContainerUnlock(ctx context.Context, options arvados.GetOption
 	return conn.chooseBackend(options.UUID).ContainerUnlock(ctx, options)
 }
 
-func (conn *Conn) ContainerSSH(ctx context.Context, options arvados.ContainerSSHOptions) (arvados.ContainerSSHConnection, error) {
+func (conn *Conn) ContainerSSH(ctx context.Context, options arvados.ContainerSSHOptions) (arvados.ConnectionResponse, error) {
 	return conn.chooseBackend(options.UUID).ContainerSSH(ctx, options)
 }
 

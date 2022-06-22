@@ -176,6 +176,7 @@ var boolParams = map[string]bool{
 	"bypass_federation":       true,
 	"recursive":               true,
 	"exclude_home_project":    true,
+	"no_forward":              true,
 }
 
 func stringToBool(s string) bool {

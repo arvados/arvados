@@ -21,7 +21,9 @@ func (cresp ConnectionResponse) ServeHTTP(w http.ResponseWriter, req *http.Reque
 		return
 	}
 	w.Header().Set("Connection", "upgrade")
-	w.Header().Set("Upgrade", cresp.UpgradeHeader)
+	for k, v := range cresp.Header {
+		w.Header()[k] = v
+	}
 	w.WriteHeader(http.StatusSwitchingProtocols)
 	conn, bufrw, err := hj.Hijack()
 	if err != nil {
@@ -32,7 +34,7 @@ func (cresp ConnectionResponse) ServeHTTP(w http.ResponseWriter, req *http.Reque
 
 	var bytesIn, bytesOut int64
 	var wg sync.WaitGroup
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancel(req.Context())
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
@@ -44,7 +46,7 @@ func (cresp ConnectionResponse) ServeHTTP(w http.ResponseWriter, req *http.Reque
 			bytesOut += n
 		}
 		if err != nil {
-			ctxlog.FromContext(req.Context()).WithError(err).Error("error copying downstream")
+			ctxlog.FromContext(ctx).WithError(err).Error("error copying downstream")
 		}
 	}()
 	wg.Add(1)
@@ -58,17 +60,14 @@ func (cresp ConnectionResponse) ServeHTTP(w http.ResponseWriter, req *http.Reque
 			bytesIn += n
 		}
 		if err != nil {
-			ctxlog.FromContext(req.Context()).WithError(err).Error("error copying upstream")
+			ctxlog.FromContext(ctx).WithError(err).Error("error copying upstream")
 		}
 	}()
-	<-ctx.Done()
+	wg.Wait()
 	if cresp.Logger != nil {
-		go func() {
-			wg.Wait()
-			cresp.Logger.WithFields(logrus.Fields{
-				"bytesIn":  bytesIn,
-				"bytesOut": bytesOut,
-			}).Info("closed connection")
-		}()
+		cresp.Logger.WithFields(logrus.Fields{
+			"bytesIn":  bytesIn,
+			"bytesOut": bytesOut,
+		}).Info("closed connection")
 	}
 }

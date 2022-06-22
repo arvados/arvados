@@ -23,6 +23,7 @@ import (
 
 	"git.arvados.org/arvados.git/sdk/go/arvados"
 	"git.arvados.org/arvados.git/sdk/go/auth"
+	"git.arvados.org/arvados.git/sdk/go/ctxlog"
 	"git.arvados.org/arvados.git/sdk/go/httpserver"
 )
 
@@ -331,21 +332,17 @@ func (conn *Conn) ContainerUnlock(ctx context.Context, options arvados.GetOption
 // ContainerSSH returns a connection to the out-of-band SSH server for
 // a running container. If the returned error is nil, the caller is
 // responsible for closing sshconn.Conn.
-func (conn *Conn) ContainerSSH(ctx context.Context, options arvados.ContainerSSHOptions) (sshconn arvados.ContainerSSHConnection, err error) {
+func (conn *Conn) ContainerSSH(ctx context.Context, options arvados.ContainerSSHOptions) (sshconn arvados.ConnectionResponse, err error) {
 	u, err := conn.baseURL.Parse("/" + strings.Replace(arvados.EndpointContainerSSH.Path, "{uuid}", options.UUID, -1))
 	if err != nil {
 		err = fmt.Errorf("url.Parse: %w", err)
 		return
 	}
-	u.RawQuery = url.Values{
+	return conn.socket(ctx, u, "ssh", url.Values{
 		"detach_keys":    {options.DetachKeys},
 		"login_username": {options.LoginUsername},
-	}.Encode()
-	resp, err := conn.socket(ctx, u, "ssh", nil)
-	if err != nil {
-		return
-	}
-	return arvados.ContainerSSHConnection(resp), nil
+		"no_forward":     {fmt.Sprintf("%v", options.NoForward)},
+	})
 }
 
 // ContainerGatewayTunnel returns a connection to a yamux session on
@@ -376,8 +373,7 @@ func (conn *Conn) socket(ctx context.Context, u *url.URL, upgradeHeader string, 
 	}
 	netconn, err := tls.Dial("tcp", addr, &tls.Config{InsecureSkipVerify: insecure})
 	if err != nil {
-		err = fmt.Errorf("tls.Dial: %w", err)
-		return
+		return connresp, fmt.Errorf("tls.Dial: %w", err)
 	}
 	defer func() {
 		if err != nil {
@@ -389,10 +385,9 @@ func (conn *Conn) socket(ctx context.Context, u *url.URL, upgradeHeader string, 
 
 	tokens, err := conn.tokenProvider(ctx)
 	if err != nil {
-		return
+		return connresp, err
 	} else if len(tokens) < 1 {
-		err = httpserver.ErrorWithStatus(errors.New("unauthorized"), http.StatusUnauthorized)
-		return
+		return connresp, httpserver.ErrorWithStatus(errors.New("unauthorized"), http.StatusUnauthorized)
 	}
 	postdata := postform.Encode()
 	bufw.WriteString("POST " + u.String() + " HTTP/1.1\r\n")
@@ -402,18 +397,16 @@ func (conn *Conn) socket(ctx context.Context, u *url.URL, upgradeHeader string, 
 	bufw.WriteString("Content-Type: application/x-www-form-urlencoded\r\n")
 	fmt.Fprintf(bufw, "Content-Length: %d\r\n", len(postdata))
 	bufw.WriteString("\r\n")
-	if len(postdata) > 0 {
-		bufw.WriteString(postdata)
-	}
+	bufw.WriteString(postdata)
 	bufw.Flush()
-	resp, err := http.ReadResponse(bufr, &http.Request{Method: "GET"})
+	resp, err := http.ReadResponse(bufr, &http.Request{Method: "POST"})
 	if err != nil {
-		err = fmt.Errorf("http.ReadResponse: %w", err)
-		return
+		return connresp, fmt.Errorf("http.ReadResponse: %w", err)
 	}
+	defer resp.Body.Close()
 	if resp.StatusCode != http.StatusSwitchingProtocols {
-		defer resp.Body.Close()
-		body, _ := ioutil.ReadAll(resp.Body)
+		ctxlog.FromContext(ctx).Infof("rpc.Conn.socket: server %s did not switch protocols, got status %s", u.String(), resp.Status)
+		body, _ := ioutil.ReadAll(io.LimitReader(resp.Body, 10000))
 		var message string
 		var errDoc httpserver.ErrorResponse
 		if err := json.Unmarshal(body, &errDoc); err == nil {
@@ -421,17 +414,16 @@ func (conn *Conn) socket(ctx context.Context, u *url.URL, upgradeHeader string, 
 		} else {
 			message = fmt.Sprintf("%q", body)
 		}
-		err = fmt.Errorf("server did not provide a tunnel: %s (HTTP %d)", message, resp.StatusCode)
-		return
+		return connresp, fmt.Errorf("server did not provide a tunnel: %s %s", resp.Status, message)
 	}
 	if strings.ToLower(resp.Header.Get("Upgrade")) != upgradeHeader ||
 		strings.ToLower(resp.Header.Get("Connection")) != "upgrade" {
-		err = fmt.Errorf("bad response from server: Upgrade %q Connection %q", resp.Header.Get("Upgrade"), resp.Header.Get("Connection"))
-		return
+		return connresp, fmt.Errorf("bad response from server: Upgrade %q Connection %q", resp.Header.Get("Upgrade"), resp.Header.Get("Connection"))
 	}
 	connresp.Conn = netconn
 	connresp.Bufrw = &bufio.ReadWriter{Reader: bufr, Writer: bufw}
-	return
+	connresp.Header = resp.Header
+	return connresp, nil
 }
 
 func (conn *Conn) ContainerRequestCreate(ctx context.Context, options arvados.CreateOptions) (arvados.ContainerRequest, error) {

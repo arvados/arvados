@@ -13,10 +13,13 @@ import (
 	"io/ioutil"
 	"net"
 	"net/http/httptest"
+	"net/url"
+	"strings"
 	"time"
 
 	"git.arvados.org/arvados.git/lib/config"
 	"git.arvados.org/arvados.git/lib/controller/router"
+	"git.arvados.org/arvados.git/lib/controller/rpc"
 	"git.arvados.org/arvados.git/lib/crunchrun"
 	"git.arvados.org/arvados.git/sdk/go/arvados"
 	"git.arvados.org/arvados.git/sdk/go/arvadostest"
@@ -60,6 +63,11 @@ func (s *ContainerGatewaySuite) SetUpSuite(c *check.C) {
 	rtr := router.New(s.localdb, router.Config{})
 	srv := httptest.NewUnstartedServer(rtr)
 	srv.StartTLS()
+	// the test setup doesn't use lib/service so
+	// service.URLFromContext() returns nothing -- instead, this
+	// is how we advertise our internal URL and enable
+	// proxy-to-other-controller mode,
+	forceInternalURLForTest = &arvados.URL{Scheme: "https", Host: srv.Listener.Addr().String()}
 	ac := &arvados.Client{
 		APIHost:   srv.Listener.Addr().String(),
 		AuthToken: arvadostest.Dispatch1Token,
@@ -278,13 +286,46 @@ func (s *ContainerGatewaySuite) TestCreateTunnel(c *check.C) {
 	c.Check(conn.Conn, check.NotNil)
 }
 
-func (s *ContainerGatewaySuite) TestConnectThroughTunnel(c *check.C) {
+func (s *ContainerGatewaySuite) TestConnectThroughTunnelWithProxyOK(c *check.C) {
+	forceProxyForTest = true
+	defer func() { forceProxyForTest = false }()
+	s.cluster.Services.Controller.InternalURLs[*forceInternalURLForTest] = arvados.ServiceInstance{}
+	defer delete(s.cluster.Services.Controller.InternalURLs, *forceInternalURLForTest)
+	s.testConnectThroughTunnel(c, "")
+}
+
+func (s *ContainerGatewaySuite) TestConnectThroughTunnelWithProxyError(c *check.C) {
+	forceProxyForTest = true
+	defer func() { forceProxyForTest = false }()
+	// forceInternalURLForTest shouldn't be used because it isn't
+	// listed in s.cluster.Services.Controller.InternalURLs
+	s.testConnectThroughTunnel(c, `.*tunnel endpoint is invalid.*`)
+}
+
+func (s *ContainerGatewaySuite) TestConnectThroughTunnelNoProxyOK(c *check.C) {
+	s.testConnectThroughTunnel(c, "")
+}
+
+func (s *ContainerGatewaySuite) testConnectThroughTunnel(c *check.C, expectErrorMatch string) {
+	rootctx := auth.NewContext(context.Background(), &auth.Credentials{Tokens: []string{s.cluster.SystemRootToken}})
+	// Until the tunnel starts up, set gateway_address to a value
+	// that can't work. We want to ensure the only way we can
+	// reach the gateway is through the tunnel.
+	gwaddr := "127.0.0.1:0"
 	tungw := &crunchrun.Gateway{
 		ContainerUUID: s.ctrUUID,
 		AuthSecret:    s.gw.AuthSecret,
 		Log:           ctxlog.TestLogger(c),
 		Target:        crunchrun.GatewayTargetStub{},
 		ArvadosClient: s.gw.ArvadosClient,
+		UpdateTunnelURL: func(url string) {
+			c.Logf("UpdateTunnelURL(%q)", url)
+			gwaddr = "tunnel " + url
+			s.localdb.ContainerUpdate(rootctx, arvados.UpdateOptions{
+				UUID: s.ctrUUID,
+				Attrs: map[string]interface{}{
+					"gateway_address": gwaddr}})
+		},
 	}
 	c.Assert(tungw.Start(), check.IsNil)
 
@@ -294,26 +335,30 @@ func (s *ContainerGatewaySuite) TestConnectThroughTunnel(c *check.C) {
 	c.Assert(err, check.IsNil)
 	c.Check(host, check.Equals, "127.0.0.1")
 
-	// Set the gateway_address field to 127.0.0.1:badport to
-	// ensure the ContainerSSH() handler connects through the
-	// tunnel, rather than the gateway server on 127.0.0.1 (which
-	// wouldn't work IRL where controller and gateway are on
-	// different hosts, but would allow the test to cheat).
-	rootctx := auth.NewContext(context.Background(), &auth.Credentials{Tokens: []string{s.cluster.SystemRootToken}})
 	_, err = s.localdb.ContainerUpdate(rootctx, arvados.UpdateOptions{
 		UUID: s.ctrUUID,
 		Attrs: map[string]interface{}{
 			"state":           arvados.ContainerStateRunning,
-			"gateway_address": "127.0.0.1:0"}})
+			"gateway_address": gwaddr}})
 	c.Assert(err, check.IsNil)
 
-	ctr, err := s.localdb.ContainerGet(s.ctx, arvados.GetOptions{UUID: s.ctrUUID})
-	c.Check(err, check.IsNil)
-	c.Check(ctr.InteractiveSessionStarted, check.Equals, false)
-	c.Check(ctr.GatewayAddress, check.Equals, "127.0.0.1:0")
+	for deadline := time.Now().Add(5 * time.Second); time.Now().Before(deadline); time.Sleep(time.Second / 2) {
+		ctr, err := s.localdb.ContainerGet(s.ctx, arvados.GetOptions{UUID: s.ctrUUID})
+		c.Assert(err, check.IsNil)
+		c.Check(ctr.InteractiveSessionStarted, check.Equals, false)
+		c.Logf("ctr.GatewayAddress == %s", ctr.GatewayAddress)
+		if strings.HasPrefix(ctr.GatewayAddress, "tunnel ") {
+			break
+		}
+	}
 
 	c.Log("connecting to gateway through tunnel")
-	sshconn, err := s.localdb.ContainerSSH(s.ctx, arvados.ContainerSSHOptions{UUID: s.ctrUUID})
+	arpc := rpc.NewConn("", &url.URL{Scheme: "https", Host: s.gw.ArvadosClient.APIHost}, true, rpc.PassthroughTokenProvider)
+	sshconn, err := arpc.ContainerSSH(s.ctx, arvados.ContainerSSHOptions{UUID: s.ctrUUID})
+	if expectErrorMatch != "" {
+		c.Check(err, check.ErrorMatches, expectErrorMatch)
+		return
+	}
 	c.Assert(err, check.IsNil)
 	c.Assert(sshconn.Conn, check.NotNil)
 	defer sshconn.Conn.Close()
@@ -344,7 +389,7 @@ func (s *ContainerGatewaySuite) TestConnectThroughTunnel(c *check.C) {
 	case <-time.After(time.Second):
 		c.Fail()
 	}
-	ctr, err = s.localdb.ContainerGet(s.ctx, arvados.GetOptions{UUID: s.ctrUUID})
+	ctr, err := s.localdb.ContainerGet(s.ctx, arvados.GetOptions{UUID: s.ctrUUID})
 	c.Check(err, check.IsNil)
 	c.Check(ctr.InteractiveSessionStarted, check.Equals, true)
 }
