@@ -1189,15 +1189,21 @@ func (s *IntegrationSuite) runContainer(c *check.C, clusterID string, ctrSpec ma
 	deadline := time.Now().Add(time.Minute)
 wait:
 	for ; ; lastState = ctr.State {
+		if time.Now().After(deadline) {
+			c.Errorf("timed out, container request state is %q", cr.State)
+			showlogs(ctr.Log)
+			c.FailNow()
+		}
 		err = ac.RequestAndDecode(&ctr, "GET", "/arvados/v1/containers/"+cr.ContainerUUID, nil, nil)
-		c.Assert(err, check.IsNil)
+		if err != nil {
+			// container req is being auto-retried with a new container uuid
+			ac.RequestAndDecode(&cr, "GET", "/arvados/v1/container_requests/"+cr.UUID, nil, nil)
+			c.Assert(err, check.IsNil)
+			time.Sleep(time.Second / 2)
+			continue
+		}
 		switch ctr.State {
 		case lastState:
-			if time.Now().After(deadline) {
-				c.Errorf("timed out, container request state is %q", cr.State)
-				showlogs(ctr.Log)
-				c.FailNow()
-			}
 			time.Sleep(time.Second / 2)
 		case arvados.ContainerStateComplete:
 			break wait
