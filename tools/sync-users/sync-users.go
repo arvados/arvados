@@ -198,7 +198,7 @@ func doMain(cfg *ConfigParams) error {
 		processedUsers[record.Email] = true
 		if record.Email == cfg.CurrentUser.Email {
 			updatesSkipped[record.Email] = true
-			log.Printf("Skipping current user %q from processing", record.Email)
+			log.Printf("Skipping current user %q (%s) from processing", record.Email, cfg.CurrentUser.UUID)
 			continue
 		}
 		if updated, err := ProcessRecord(cfg, record, allUsers); err != nil {
@@ -213,6 +213,7 @@ func doMain(cfg *ConfigParams) error {
 		for email, user := range allUsers {
 			if shouldSkip(cfg, user) {
 				updatesSkipped[email] = true
+				log.Printf("Skipping unlisted user %q (%s) from deactivating", user.Email, user.UUID)
 				continue
 			}
 			if !processedUsers[email] && allUsers[email].IsActive {
