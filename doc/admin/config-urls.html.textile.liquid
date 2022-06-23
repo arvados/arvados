@@ -28,7 +28,7 @@ h2. Overview
 table(table table-bordered table-condensed).
 |_.Service     |_.ExternalURL required? |_.InternalURLs required?|_.InternalURLs must be reachable from other cluster nodes?|_.Note|
 |railsapi       |no                     |yes|no ^1^|InternalURLs only used by Controller|
-|controller     |yes                    |yes|no ^2^|InternalURLs only used by reverse proxy (e.g. Nginx)|
+|controller     |yes                    |yes|yes ^2,4^|InternalURLs used by reverse proxy and container shell connections|
 |arvados-dispatch-cloud|no              |yes|no ^3^|InternalURLs only used to expose Prometheus metrics|
 |arvados-dispatch-lsf|no                |yes|no ^3^|InternalURLs only used to expose Prometheus metrics|
 |git-http       |yes                    |yes|no ^2^|InternalURLs only used by reverse proxy (e.g. Nginx)|
@@ -45,6 +45,7 @@ table(table table-bordered table-condensed).
 ^1^ If @Controller@ runs on a different host than @RailsAPI@, the @InternalURLs@ will need to be reachable from the host that runs @Controller@.
 ^2^ If the reverse proxy (e.g. Nginx) does not run on the same host as the Arvados service it fronts, the @InternalURLs@ will need to be reachable from the host that runs the reverse proxy.
 ^3^ If the Prometheus metrics are not collected from the same machine that runs the service, the @InternalURLs@ will need to be reachable from the host that collects the metrics.
+^4^ If dispatching containers to HPC (Slurm/LSF) and there are multiple @Controller@ services, they must be able to connect to one another using their InternalURLs, otherwise the "tunnel connections":{{site.baseurl}}/architecture/hpc.html enabling "container shell access":{{site.baseurl}}/install/container-shell-access.html will not work.
 
 When @InternalURLs@ do not need to be reachable from other nodes, it is most secure to use loopback addresses as @InternalURLs@, e.g. @http://127.0.0.1:9005@.
 
