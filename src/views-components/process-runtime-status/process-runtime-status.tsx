@@ -26,7 +26,8 @@ type CssRules = 'root'
     | 'error'
     | 'errorColor'
     | 'warning'
-    | 'warningColor';
+    | 'warningColor'
+    | 'disabledPanelSummary';
 
 const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     root: {
@@ -65,15 +66,20 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     warningColor: {
         color: theme.customs.colors.yellow900,
     },
+    disabledPanelSummary: {
+        cursor: 'default',
+        pointerEvents: 'none',
+    }
 });
 export interface ProcessRuntimeStatusDataProps {
     runtimeStatus: RuntimeStatus | undefined;
+    containerCount: number;
 }
 
 type ProcessRuntimeStatusProps = ProcessRuntimeStatusDataProps & WithStyles<CssRules>;
 
 export const ProcessRuntimeStatus = withStyles(styles)(
-    ({ runtimeStatus, classes }: ProcessRuntimeStatusProps) => {
+    ({ runtimeStatus, containerCount, classes }: ProcessRuntimeStatusProps) => {
     return <div className={classes.root}>
         { runtimeStatus?.error &&
         <div data-cy='process-runtime-status-error'><ExpansionPanel className={classes.error} elevation={0}>
@@ -101,6 +107,15 @@ export const ProcessRuntimeStatus = withStyles(styles)(
                     {runtimeStatus?.warningDetail || 'No additional warning details available'}
                 </Typography>
             </ExpansionPanelDetails>
+        </ExpansionPanel></div>
+        }
+        { containerCount > 1 &&
+        <div data-cy='process-runtime-status-warning' ><ExpansionPanel className={classes.warning} elevation={0} expanded={false}>
+            <ExpansionPanelSummary className={classNames(classes.summary, classes.detailsText, classes.disabledPanelSummary)}>
+                <Typography className={classNames(classes.heading, classes.warningColor)}>
+                    {`Warning: Process retried ${containerCount - 1} time${containerCount > 2 ? 's' : ''} due to failure.`}
+                </Typography>
+            </ExpansionPanelSummary>
         </ExpansionPanel></div>
         }
     </div>

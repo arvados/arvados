@@ -64,7 +64,7 @@ export const ProcessDetailsAttributes = withStyles(styles, { withTheme: true })(
             const mdSize = props.twoCol ? 6 : 12;
             return <Grid container>
                 <Grid item xs={12}>
-                    <ProcessRuntimeStatus runtimeStatus={container?.runtimeStatus} />
+                    <ProcessRuntimeStatus runtimeStatus={container?.runtimeStatus} containerCount={containerRequest.containerCount} />
                 </Grid>
                 {!props.hideProcessPanelRedundantFields && <Grid item xs={12} md={mdSize}>
                     <DetailsAttribute label='Type' value={resourceLabel(ResourceKind.PROCESS)} />
