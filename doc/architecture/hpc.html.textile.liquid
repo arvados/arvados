@@ -1,0 +1,29 @@
+---
+layout: default
+navsection: architecture
+title: Dispatching containers to HPC
+...
+{% comment %}
+Copyright (C) The Arvados Authors. All rights reserved.
+
+SPDX-License-Identifier: CC-BY-SA-3.0
+{% endcomment %}
+
+Arvados can be configured to run containers on an HPC cluster using Slurm or LSF, as an alternative to "dispatching to cloud VMs":dispatchcloud.html.
+
+In this configuration, the appropriate Arvados dispatcher service -- @crunch-dispatch-slurm@ or @arvados-dispatch-lsf@ -- picks up each container as it appears in the Arvados queue and submits a short shell script as a batch job to the HPC job queue. The shell script executes the @crunch-run@ container supervisor which retrieves the container specification from the Arvados controller, starts an arv-mount process, runs the container using @docker exec@ or @singularity exec@, and sends updates (logs, outputs, exit code, etc.) back to the Arvados controller.
+
+h2. Container communication channel (reverse https tunnel)
+
+The crunch-run program runs a gateway server to facilitate the “container shell” feature. However, depending on the site's network topology, the Arvados controller may not be able to connect directly to the compute node where a given crunch-run process is running.
+
+Instead, in the HPC configuration, crunch-run connects to the Arvados controller at startup and sets up a multiplexed tunnel, allowing the controller process to connect to crunch-run's gateway server without initiating a connection to the compute node, or even knowing the compute node's IP address.
+
+This means that when a client requests a container shell connection, the traffic goes through two or three servers:
+# The client connects to a controller host C1.
+# If the multiplexed tunnel is connected to a different controller host C2, then C1 proxies the incoming request to C2, using C2's InternalURL.
+# The controller host (C1 or C2) uses the multiplexed tunnel to connect to crunch-run's container gateway.
+
+h2. Scaling
+
+The @API.MaxConcurrentRequests@ configuration should not be set too low, or the long-lived tunnel connections can starve other clients.
