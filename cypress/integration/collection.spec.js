@@ -374,7 +374,7 @@ describe('Collection panel tests', function () {
                 cy.goToPath(`/collections/${this.testCollection.uuid}`);
 
                 ['subdir', 'G%C3%BCnter\'s%20file', 'table%&?*2'].forEach((subdir) => {
-                    cy.get('[data-cy=collection-files-panel]')
+                    cy.waitForDom().get('[data-cy=collection-files-panel]')
                         .contains('bar').rightclick();
                     cy.get('[data-cy=context-menu]')
                         .contains('Rename')
@@ -642,7 +642,7 @@ describe('Collection panel tests', function () {
                     .contains(projName).and('contain', testProject.uuid);
                 // Double check that the collection is in the project
                 cy.goToPath(`/projects/${testProject.uuid}`);
-                cy.get('[data-cy=project-panel]').should('contain', collName);
+                cy.waitForDom().get('[data-cy=project-panel]').should('contain', collName);
             });
     });
 
