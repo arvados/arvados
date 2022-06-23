@@ -244,5 +244,27 @@ describe('Process tests', function() {
                 .should('contain', 'Free disk space is low')
                 .and('contain', 'No additional warning details available');
         });
+
+
+        // Force container_count for testing
+        let containerCount = 2;
+        cy.intercept({method: 'GET', url: '**/arvados/v1/container_requests/*'}, (req) => {
+            req.reply((res) => {
+                res.body.container_count = containerCount;
+            });
+        });
+
+        cy.getAll('@containerRequest').then(function([containerRequest]) {
+            cy.goToPath(`/processes/${containerRequest.uuid}`);
+            cy.get('[data-cy=process-runtime-status-retry-warning]')
+                .should('contain', 'Process retried 1 time');
+        });
+
+        cy.getAll('@containerRequest').then(function([containerRequest]) {
+            containerCount = 3;
+            cy.goToPath(`/processes/${containerRequest.uuid}`);
+            cy.get('[data-cy=process-runtime-status-retry-warning]')
+                .should('contain', 'Process retried 2 times');
+        });
     });
 });
