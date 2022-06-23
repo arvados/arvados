@@ -431,4 +431,4 @@ has_can_login_permission:
   is_active: true
   is_admin: false
   modified_at: 2015-03-26 12:34:56.789000000 Z
-  username: can-login-user
+  username: canLoginUser
