@@ -18,6 +18,8 @@ import { RUN_PROCESS_BASIC_FORM, RunProcessBasicFormData } from "views/run-proce
 import { RunProcessAdvancedFormData, RUN_PROCESS_ADVANCED_FORM } from "views/run-process-panel/run-process-advanced-form";
 import { MOUNT_PATH_CWL_WORKFLOW, MOUNT_PATH_CWL_INPUT } from 'models/process';
 import { getWorkflow, getWorkflowInputs } from "models/workflow";
+import { ProjectResource } from "models/project";
+import { UserResource } from "models/user";
 
 export const loadProcess = (containerRequestUuid: string) =>
     async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository): Promise<Process> => {
@@ -60,7 +62,8 @@ export const reRunProcess = (processUuid: string, workflowUuid: string) =>
             const stringifiedDefinition = JSON.stringify(process.mounts[MOUNT_PATH_CWL_WORKFLOW].content);
             const newWorkflow = { ...workflow, definition: stringifiedDefinition };
 
-            const basicInitialData: RunProcessBasicFormData = { name: `Copy of: ${process.name}`, description: process.description };
+            const owner = getResource<ProjectResource | UserResource>(workflow.ownerUuid)(getState().resources);
+            const basicInitialData: RunProcessBasicFormData = { name: `Copy of: ${process.name}`, description: process.description, owner };
             dispatch<any>(initialize(RUN_PROCESS_BASIC_FORM, basicInitialData));
 
             const advancedInitialData: RunProcessAdvancedFormData = {

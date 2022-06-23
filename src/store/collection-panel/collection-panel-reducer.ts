@@ -7,12 +7,10 @@ import { CollectionResource } from "models/collection";
 
 export interface CollectionPanelState {
     item: CollectionResource | null;
-    loadBigCollections: boolean;
 }
 
 const initialState = {
     item: null,
-    loadBigCollections: false,
 };
 
 export const collectionPanelReducer = (state: CollectionPanelState = initialState, action: CollectionPanelAction) =>
@@ -21,8 +19,5 @@ export const collectionPanelReducer = (state: CollectionPanelState = initialStat
         SET_COLLECTION: (item) => ({
              ...state,
              item,
-             loadBigCollections: false,
         }),
-        LOAD_COLLECTION_SUCCESS: ({ item }) => ({ ...state, item }),
-        LOAD_BIG_COLLECTIONS: (loadBigCollections) => ({ ...state, loadBigCollections}),
     });

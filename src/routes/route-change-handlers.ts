@@ -33,7 +33,6 @@ const handleLocationChange = (store: RootStore) => ({ pathname }: Location) => {
     const runProcessMatch = Routes.matchRunProcessRoute(pathname);
     const virtualMachineUserMatch = Routes.matchUserVirtualMachineRoute(pathname);
     const virtualMachineAdminMatch = Routes.matchAdminVirtualMachineRoute(pathname);
-    const workflowMatch = Routes.matchWorkflowRoute(pathname);
     const sshKeysUserMatch = Routes.matchSshKeysUserRoute(pathname);
     const sshKeysAdminMatch = Routes.matchSshKeysAdminRoute(pathname);
     const siteManagerMatch = Routes.matchSiteManagerRoute(pathname);
@@ -77,8 +76,6 @@ const handleLocationChange = (store: RootStore) => ({ pathname }: Location) => {
         store.dispatch(WorkbenchActions.loadSharedWithMe);
     } else if (runProcessMatch) {
         store.dispatch(WorkbenchActions.loadRunProcess);
-    } else if (workflowMatch) {
-        store.dispatch(WorkbenchActions.loadWorkflow);
     } else if (searchResultsMatch) {
         store.dispatch(WorkbenchActions.loadSearchResults);
     } else if (virtualMachineUserMatch) {

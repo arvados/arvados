@@ -34,7 +34,7 @@ export class DataTableFiltersTree extends React.Component<DataTableFilterProps> 
             levelIndentation={hasSubfilters ? 20 : 0}
             itemRightPadding={20}
             items={filtersToTree(filters)}
-            render={renderItem}
+            render={this.props.mutuallyExclusive ? renderRadioItem : renderItem}
             showSelection
             useRadioButtons={this.props.mutuallyExclusive}
             disableRipple
@@ -76,13 +76,24 @@ export class DataTableFiltersTree extends React.Component<DataTableFilterProps> 
 }
 
 const renderItem = (item: TreeItem<DataTableFilterItem>) =>
-    <span>{item.data.name}</span>;
+    <span>
+        {item.data.name}
+        {item.initialState !== item.selected ? <>
+            *
+        </> : null}
+    </span>;
+
+const renderRadioItem = (item: TreeItem<DataTableFilterItem>) =>
+    <span>
+        {item.data.name}
+    </span>;
 
 const filterToTreeItem = (filters: DataTableFilters) =>
     (id: string): TreeItem<any> => {
         const node = getNode(id)(filters) || initTreeNode({ id: '', value: 'InvalidNode' });
         const items = getNodeChildrenIds(node.id)(filters)
             .map(filterToTreeItem(filters));
+        const isIndeterminate = !node.selected && items.some(i => i.selected || i.indeterminate);
 
         return {
             active: node.active,
@@ -91,6 +102,8 @@ const filterToTreeItem = (filters: DataTableFilters) =>
             items: items.length > 0 ? items : undefined,
             open: node.expanded,
             selected: node.selected,
+            initialState: node.initialState,
+            indeterminate: isIndeterminate,
             status: TreeItemStatus.LOADED,
         };
     };

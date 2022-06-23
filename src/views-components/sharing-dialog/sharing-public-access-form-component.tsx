@@ -51,3 +51,4 @@ export default ({ visibility }: { visibility: VisibilityLevel }) =>
 
 const VisibilityLevelSelectComponent = ({ input }: WrappedFieldProps) =>
     <VisibilityLevelSelect fullWidth disableUnderline {...input} />;
+

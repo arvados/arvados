@@ -192,7 +192,7 @@ export const openProcessContextMenu = (event: React.MouseEvent<HTMLElement>, pro
                 name: res.name,
                 description: res.description,
                 outputUuid: res.outputUuid || '',
-                workflowUuid: res.properties.workflowUuid || '',
+                workflowUuid: res.properties.template_uuid || '',
                 menuKind: ContextMenuKind.PROCESS_RESOURCE
             }));
         }
@@ -269,6 +269,8 @@ export const resourceUuidToContextMenuKind = (uuid: string, readonly = false) =>
                 return ContextMenuKind.ROOT_PROJECT;
             case ResourceKind.LINK:
                 return ContextMenuKind.LINK;
+            case ResourceKind.WORKFLOW:
+                return ContextMenuKind.WORKFLOW;
             default:
                 return;
         }

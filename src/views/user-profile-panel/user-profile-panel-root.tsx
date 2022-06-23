@@ -24,7 +24,6 @@ import {
     IconButton,
 } from '@material-ui/core';
 import { ArvadosTheme } from 'common/custom-theme';
-import { DataTableDefaultView } from 'components/data-table-default-view/data-table-default-view';
 import { PROFILE_EMAIL_VALIDATION, PROFILE_URL_VALIDATION } from "validators/validators";
 import { USER_PROFILE_PANEL_ID } from 'store/user-profile/user-profile-actions';
 import { noop } from 'lodash';
@@ -327,11 +326,8 @@ export const UserProfilePanelRoot = withStyles(styles)(
                                     paperProps={{
                                         elevation: 0,
                                     }}
-                                    dataTableDefaultView={
-                                        <DataTableDefaultView
-                                            icon={GroupsIcon}
-                                            messages={['Group list is empty.']} />
-                                    } />
+                                    defaultViewIcon={GroupsIcon}
+                                    defaultViewMessages={['Group list is empty.']} />
                         </div>}
                 </Paper >;
             }

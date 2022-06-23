@@ -6,7 +6,7 @@ import { reduxForm } from 'redux-form';
 import { compose } from 'redux';
 import { connect } from 'react-redux';
 import SharingPublicAccessFormComponent from './sharing-public-access-form-component';
-import { SHARING_PUBLIC_ACCESS_FORM_NAME } from 'store/sharing-dialog/sharing-dialog-types';
+import { SHARING_PUBLIC_ACCESS_FORM_NAME, VisibilityLevel } from 'store/sharing-dialog/sharing-dialog-types';
 import { RootState } from 'store/store';
 import { getSharingPublicAccessFormData } from '../../store/sharing-dialog/sharing-dialog-types';
 
@@ -16,8 +16,9 @@ export const SharingPublicAccessForm = compose(
     ),
     connect(
         (state: RootState) => {
-            const { visibility } = getSharingPublicAccessFormData(state);
+            const { visibility } = getSharingPublicAccessFormData(state) || { visibility: VisibilityLevel.PRIVATE };
             return { visibility };
         }
     )
 )(SharingPublicAccessFormComponent);
+

@@ -28,7 +28,7 @@ describe('Project tests', function() {
         cy.clearLocalStorage();
     });
 
-    it('creates a new project with properties', function() {
+    it('creates a new project with multiple properties', function() {
         const projName = `Test project (${Math.floor(999999 * Math.random())})`;
         cy.loginAs(activeUser);
         cy.get('[data-cy=side-panel-button]').click();
@@ -51,9 +51,26 @@ describe('Project tests', function() {
                 cy.get('input').type('Magenta');
             });
             cy.root().submit();
+            cy.get('[data-cy=property-field-value]').within(() => {
+                cy.get('input').type('Pink');
+            });
+            cy.root().submit();
+            cy.get('[data-cy=property-field-value]').within(() => {
+                cy.get('input').type('Yellow');
+            });
+            cy.root().submit();
         });
         // Confirm proper vocabulary labels are displayed on the UI.
         cy.get('[data-cy=form-dialog]').should('contain', 'Color: Magenta');
+        cy.get('[data-cy=form-dialog]').should('contain', 'Color: Pink');
+        cy.get('[data-cy=form-dialog]').should('contain', 'Color: Yellow');
+
+        cy.get('[data-cy=resource-properties-form]').within(() => {
+            cy.get('[data-cy=property-field-key]').within(() => {
+                cy.get('input').focus();
+            });
+            cy.get('[data-cy=property-field-key]').should('not.contain', 'Color');
+        });
 
         // Create project and confirm the properties' real values.
         cy.get('[data-cy=form-submit-btn]').click();
@@ -65,7 +82,8 @@ describe('Project tests', function() {
         .then(function() {
             expect(this.projects).to.have.lengthOf(1);
             expect(this.projects[0].properties).to.deep.equal(
-                {IDTAGCOLORS: 'IDVALCOLORS3'});
+                // Pink is not in the test vocab
+                {IDTAGCOLORS: ['IDVALCOLORS3', 'Pink', 'IDVALCOLORS1']});
         });
     });
 
@@ -228,7 +246,7 @@ describe('Project tests', function() {
         cy.getAll('@mainProject')
             .then(function ([mainProject]) {
                 cy.loginAs(adminUser);
-                
+
                 cy.get('[data-cy=side-panel-tree]').contains('Groups').click();
 
                 cy.get('[data-cy=uuid]').eq(0).invoke('text').then(uuid => {
@@ -357,3 +375,4 @@ describe('Project tests', function() {
         });
     });
 });
+

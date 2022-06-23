@@ -25,7 +25,7 @@ describe('helpers', () => {
             const result = getClipboardUrl(url);
 
             // then
-            expect(result).toBe('http://localhost?redirectTo=https://example.com/c=zzzzz-4zz18-0123456789abcde/LIMS/1.html');
+            expect(result).toBe('http://localhost?redirectToDownload=https://example.com/c=zzzzz-4zz18-0123456789abcde/LIMS/1.html');
         });
     });
 

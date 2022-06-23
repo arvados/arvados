@@ -36,7 +36,6 @@ import {
 import { navigateTo } from 'store/navigation/navigation-action';
 import { getProperty } from 'store/properties/properties';
 import { PROJECT_PANEL_CURRENT_UUID } from 'store/project-panel/project-panel-action';
-import { DataTableDefaultView } from 'components/data-table-default-view/data-table-default-view';
 import { ArvadosTheme } from "common/custom-theme";
 import { createTree } from 'models/tree';
 import {
@@ -156,11 +155,9 @@ export const ProjectPanel = withStyles(styles)(
                         onRowDoubleClick={this.handleRowDoubleClick}
                         onContextMenu={this.handleContextMenu}
                         contextMenuColumn={true}
-                        dataTableDefaultView={
-                            <DataTableDefaultView
-                                icon={ProjectIcon}
-                                messages={DEFAULT_VIEW_MESSAGES} />
-                        } />
+                        defaultViewIcon={ProjectIcon}
+                        defaultViewMessages={DEFAULT_VIEW_MESSAGES}
+                    />
                 </div>;
             }
 
@@ -184,7 +181,7 @@ export const ProjectPanel = withStyles(styles)(
                         name: resource.name,
                         uuid: resource.uuid,
                         ownerUuid: resource.ownerUuid,
-                        isTrashed: ('isTrashed' in resource) ? resource.isTrashed: false,
+                        isTrashed: ('isTrashed' in resource) ? resource.isTrashed : false,
                         kind: resource.kind,
                         menuKind,
                         isAdmin,

@@ -14,18 +14,48 @@ describe('Sharing tests', function () {
         cy.getUser('admin', 'Admin', 'User', true, true)
             .as('adminUser').then(function () {
                 adminUser = this.adminUser;
-            }
-            );
+            });
         cy.getUser('collectionuser1', 'Collection', 'User', false, true)
             .as('activeUser').then(function () {
                 activeUser = this.activeUser;
-            }
-            );
+            });
     })
 
     beforeEach(function () {
         cy.clearCookies()
         cy.clearLocalStorage()
+    });
+
+    it('can create and delete sharing URLs on collections', () => {
+        const collName = 'shared-collection ' + new Date().getTime();
+        cy.createCollection(adminUser.token, {
+            name: collName,
+            owner_uuid: adminUser.uuid,
+        }).as('sharedCollection').then(function (sharedCollection) {
+            cy.loginAs(adminUser);
+
+            cy.get('main').contains(sharedCollection.name).rightclick();
+            cy.get('[data-cy=context-menu]').within(() => {
+                cy.contains('Share').click();
+            });
+            cy.get('.sharing-dialog').within(() => {
+                cy.contains('Sharing URLs').click();
+                cy.contains('Create sharing URL');
+                cy.contains('No sharing URLs');
+                cy.should('not.contain', 'Token');
+                cy.should('not.contain', 'expiring at:');
+
+                cy.contains('Create sharing URL').click();
+                cy.should('not.contain', 'No sharing URLs');
+                cy.contains('Token');
+                cy.contains('expiring at:');
+
+                cy.get('[data-cy=remove-url-btn]').find('button').click();
+                cy.contains('No sharing URLs');
+                cy.should('not.contain', 'Token');
+                cy.should('not.contain', 'expiring at:');
+            })
+        })
     });
 
     it('can share projects to other users', () => {
@@ -46,7 +76,10 @@ describe('Sharing tests', function () {
             cy.get('.sharing-dialog').as('sharingDialog');
             cy.get('[data-cy=invite-people-field]').find('input').type(activeUser.user.email);
             cy.get('[role=tooltip]').click();
-            cy.get('@sharingDialog').contains('Save').click();
+            cy.get('@sharingDialog').within(() => {
+                cy.contains('Save changes').click();
+                cy.contains('Close').click();
+            });
         });
 
         cy.createGroup(adminUser.token, {
@@ -61,7 +94,10 @@ describe('Sharing tests', function () {
             cy.get('.sharing-dialog').as('sharingDialog');
             cy.get('[data-cy=invite-people-field]').find('input').type(activeUser.user.email);
             cy.get('[role=tooltip]').click();
-            cy.get('@sharingDialog').contains('Save').click();
+            cy.get('@sharingDialog').within(() => {
+                cy.contains('Save changes').click();
+                cy.contains('Close').click();
+            });
         });
 
         cy.getAll('@mySharedWritableProject', '@mySharedReadonlyProject')
@@ -95,7 +131,7 @@ describe('Sharing tests', function () {
         cy.getAll('@mySharedWritableProject')
             .then(function ([mySharedWritableProject]) {
                 cy.loginAs(activeUser);
-                
+
                 cy.get('[data-cy=side-panel-tree]').contains('Shared with me').click();
 
                 const newProjectName = `New project name ${mySharedWritableProject.name}`;

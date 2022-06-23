@@ -50,6 +50,7 @@ export interface ClusterConfigJSON {
         }
     };
     Workbench: {
+        DisableSharingURLsUI: boolean;
         ArvadosDocsite: string;
         FileViewersConfigURL: string;
         WelcomePageHTML: string;
@@ -233,6 +234,7 @@ export const mockClusterConfigJSON = (config: Partial<ClusterConfigJSON>): Clust
         WebShell: { ExternalURL: "" },
     },
     Workbench: {
+        DisableSharingURLsUI: false,
         ArvadosDocsite: "",
         FileViewersConfigURL: "",
         WelcomePageHTML: "",

@@ -21,7 +21,7 @@ import { MoreOptionsIcon, CollectionIcon, ReadOnlyIcon, CollectionOldVersionIcon
 import { DetailsAttribute } from 'components/details-attribute/details-attribute';
 import { CollectionResource, getCollectionUrl } from 'models/collection';
 import { CollectionPanelFiles } from 'views-components/collection-panel-files/collection-panel-files';
-import { navigateToProcess, collectionPanelActions } from 'store/collection-panel/collection-panel-action';
+import { navigateToProcess } from 'store/collection-panel/collection-panel-action';
 import { getResource } from 'store/resources/resources';
 import { openContextMenu, resourceUuidToContextMenuKind } from 'store/context-menu/context-menu-actions';
 import { formatDate, formatFileSize } from "common/formatters";
@@ -32,11 +32,9 @@ import { IllegalNamingWarning } from 'components/warning/warning';
 import { GroupResource } from 'models/group';
 import { UserResource } from 'models/user';
 import { getUserUuid } from 'common/getuser';
-import { getProgressIndicator } from 'store/progress-indicator/progress-indicator-reducer';
-import { COLLECTION_PANEL_LOAD_FILES, loadCollectionFiles, COLLECTION_PANEL_LOAD_FILES_THRESHOLD } from 'store/collection-panel/collection-panel-files/collection-panel-files-actions';
 import { Link } from 'react-router-dom';
 import { Link as ButtonLink } from '@material-ui/core';
-import { ResourceOwnerWithName, ResponsiblePerson } from 'views-components/data-explorer/renderers';
+import { ResourceWithName, ResponsiblePerson } from 'views-components/data-explorer/renderers';
 import { MPVContainer, MPVPanelContent, MPVPanelState } from 'components/multi-panel-view/multi-panel-view';
 
 type CssRules = 'root'
@@ -115,14 +113,12 @@ interface CollectionPanelDataProps {
     isWritable: boolean;
     isOldVersion: boolean;
     isLoadingFiles: boolean;
-    tooManyFiles: boolean;
 }
 
-type CollectionPanelProps = CollectionPanelDataProps & DispatchProp
-    & WithStyles<CssRules> & RouteComponentProps<{ id: string }>;
+type CollectionPanelProps = CollectionPanelDataProps & DispatchProp & WithStyles<CssRules>
 
-export const CollectionPanel = withStyles(styles)(
-    connect((state: RootState, props: RouteComponentProps<{ id: string }>) => {
+export const CollectionPanel = withStyles(styles)(connect(
+    (state: RootState, props: RouteComponentProps<{ id: string }>) => {
         const currentUserUUID = getUserUuid(state);
         const item = getResource<CollectionResource>(props.match.params.id)(state.resources);
         let isWritable = false;
@@ -137,17 +133,14 @@ export const CollectionPanel = withStyles(styles)(
                 }
             }
         }
-        const loadingFilesIndicator = getProgressIndicator(COLLECTION_PANEL_LOAD_FILES)(state.progressIndicator);
-        const isLoadingFiles = (loadingFilesIndicator && loadingFilesIndicator!.working) || false;
-        const tooManyFiles = (!state.collectionPanel.loadBigCollections && item && item.fileCount > COLLECTION_PANEL_LOAD_FILES_THRESHOLD) || false;
-        return { item, isWritable, isOldVersion, isLoadingFiles, tooManyFiles };
+        return { item, isWritable, isOldVersion };
     })(
         class extends React.Component<CollectionPanelProps> {
             render() {
-                const { classes, item, dispatch, isWritable, isOldVersion, isLoadingFiles, tooManyFiles } = this.props;
+                const { classes, item, dispatch, isWritable, isOldVersion } = this.props;
                 const panelsData: MPVPanelState[] = [
-                    {name: "Details"},
-                    {name: "Files"},
+                    { name: "Details" },
+                    { name: "Files" },
                 ];
                 return item
                     ? <MPVContainer className={classes.root} spacing={8} direction="column" justify-content="flex-start" wrap="nowrap" panelStates={panelsData}>
@@ -195,7 +188,7 @@ export const CollectionPanel = withStyles(styles)(
                                         {isOldVersion &&
                                             <Typography className={classes.warningLabel} variant="caption">
                                                 This is an old version. Make a copy to make changes. Go to the <Link to={getCollectionUrl(item.currentVersionUuid)}>head version</Link> for sharing options.
-                                          </Typography>
+                                            </Typography>
                                         }
                                     </Grid>
                                 </Grid>
@@ -203,15 +196,7 @@ export const CollectionPanel = withStyles(styles)(
                         </MPVPanelContent>
                         <MPVPanelContent xs>
                             <Card className={classes.filesCard}>
-                                <CollectionPanelFiles
-                                    isWritable={isWritable}
-                                    isLoading={isLoadingFiles}
-                                    tooManyFiles={tooManyFiles}
-                                    loadFilesFunc={() => {
-                                        dispatch(collectionPanelActions.LOAD_BIG_COLLECTIONS(true));
-                                        dispatch<any>(loadCollectionFiles(this.props.item.uuid));
-                                    }
-                                    } />
+                                <CollectionPanelFiles isWritable={isWritable} />
                             </Card>
                         </MPVPanelContent>
                     </MPVContainer>
@@ -288,7 +273,7 @@ export const CollectionDetailsAttributes = (props: CollectionDetailsProps) => {
         <Grid item xs={12} md={mdSize}>
             <DetailsAttribute classLabel={classes.label} classValue={classes.value}
                 label='Owner' linkToUuid={item.ownerUuid}
-                uuidEnhancer={(uuid: string) => <ResourceOwnerWithName uuid={uuid} />} />
+                uuidEnhancer={(uuid: string) => <ResourceWithName uuid={uuid} />} />
         </Grid>
         <div data-cy="responsible-person-wrapper" ref={responsiblePersonRef}>
             <Grid item xs={12} md={12}>
@@ -341,13 +326,13 @@ export const CollectionDetailsAttributes = (props: CollectionDetailsProps) => {
         <Grid item xs={12} md={12}>
             <DetailsAttribute classLabel={classes.label} classValue={classes.value}
                 label='Properties' />
-            { Object.keys(item.properties).length > 0
+            {Object.keys(item.properties).length > 0
                 ? Object.keys(item.properties).map(k =>
-                        Array.isArray(item.properties[k])
+                    Array.isArray(item.properties[k])
                         ? item.properties[k].map((v: string) =>
                             getPropertyChip(k, v, undefined, classes.tag))
                         : getPropertyChip(k, item.properties[k], undefined, classes.tag))
-                : <div className={classes.value}>No properties</div> }
+                : <div className={classes.value}>No properties</div>}
         </Grid>
     </Grid>;
 };

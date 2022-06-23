@@ -139,7 +139,7 @@ export const parseWorkflowDefinition = (workflow: WorkflowResource): WorkflowRes
 
 export const getWorkflow = (workflowDefinition: WorkflowResourceDefinition) => {
     if (!workflowDefinition.$graph) { return undefined; }
-    const mainWorkflow = workflowDefinition.$graph.find(item => item.class === 'Workflow' && item.id === '#main');
+    const mainWorkflow = workflowDefinition.$graph.find(item => item.id === '#main');
     return mainWorkflow
         ? mainWorkflow
         : undefined;
@@ -153,7 +153,7 @@ export const getWorkflowInputs = (workflowDefinition: WorkflowResourceDefinition
 };
 
 export const getInputLabel = (input: CommandInputParameter) => {
-    return `${input.label || input.id}`;
+    return `${input.label || input.id.split('/').pop()}`;
 };
 
 export const isRequiredInput = ({ type }: CommandInputParameter) => {

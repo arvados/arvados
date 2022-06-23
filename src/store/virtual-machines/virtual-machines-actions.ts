@@ -18,7 +18,7 @@ import { PermissionLevel } from "models/permission";
 import { deleteResources, updateResources } from 'store/resources/resources-actions';
 import { Participant } from "views-components/sharing-dialog/participant-select";
 import { initialize, reset } from "redux-form";
-import { getUserDisplayName } from "models/user";
+import { getUserDisplayName, UserResource } from "models/user";
 
 export const virtualMachinesActions = unionize({
     SET_REQUESTED_DATE: ofType<string>(),
@@ -40,6 +40,7 @@ export const VIRTUAL_MACHINE_UPDATE_LOGIN_UUID_FIELD = 'uuid';
 export const VIRTUAL_MACHINE_ADD_LOGIN_VM_FIELD = 'vmUuid';
 export const VIRTUAL_MACHINE_ADD_LOGIN_USER_FIELD = 'user';
 export const VIRTUAL_MACHINE_ADD_LOGIN_GROUPS_FIELD = 'groups';
+export const VIRTUAL_MACHINE_ADD_LOGIN_EXCLUDE = 'excludedPerticipants';
 
 export const openUserVirtualMachines = () =>
     async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
@@ -115,8 +116,22 @@ export const loadVirtualMachinesUserData = () =>
 
 export const openAddVirtualMachineLoginDialog = (vmUuid: string) =>
     async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
-        dispatch(initialize(VIRTUAL_MACHINE_ADD_LOGIN_FORM, {[VIRTUAL_MACHINE_ADD_LOGIN_VM_FIELD]: vmUuid, [VIRTUAL_MACHINE_ADD_LOGIN_GROUPS_FIELD]: []}));
-        dispatch(dialogActions.OPEN_DIALOG( {id: VIRTUAL_MACHINE_ADD_LOGIN_DIALOG, data: {}} ));
+        // Get login permissions of vm
+        const virtualMachines = await services.virtualMachineService.list();
+        dispatch(updateResources(virtualMachines.items));
+        const logins = await services.permissionService.list({
+            filters: new FilterBuilder()
+            .addIn('head_uuid', virtualMachines.items.map(item => item.uuid))
+            .addEqual('name', PermissionLevel.CAN_LOGIN)
+            .getFilters()
+        });
+        dispatch(updateResources(logins.items));
+
+        dispatch(initialize(VIRTUAL_MACHINE_ADD_LOGIN_FORM, {
+                [VIRTUAL_MACHINE_ADD_LOGIN_VM_FIELD]: vmUuid,
+                [VIRTUAL_MACHINE_ADD_LOGIN_GROUPS_FIELD]: [],
+            }));
+        dispatch(dialogActions.OPEN_DIALOG( {id: VIRTUAL_MACHINE_ADD_LOGIN_DIALOG, data: {excludedParticipants: logins.items.map(it => it.tailUuid)}} ));
     }
 
 export const openEditVirtualMachineLoginDialog = (permissionUuid: string) =>
@@ -125,7 +140,7 @@ export const openEditVirtualMachineLoginDialog = (permissionUuid: string) =>
         const user = await services.userService.get(login.tailUuid);
         dispatch(initialize(VIRTUAL_MACHINE_ADD_LOGIN_FORM, {
                 [VIRTUAL_MACHINE_UPDATE_LOGIN_UUID_FIELD]: permissionUuid,
-                [VIRTUAL_MACHINE_ADD_LOGIN_USER_FIELD]: {name: getUserDisplayName(user, true), uuid: login.tailUuid},
+                [VIRTUAL_MACHINE_ADD_LOGIN_USER_FIELD]: {name: getUserDisplayName(user, true, true), uuid: login.tailUuid},
                 [VIRTUAL_MACHINE_ADD_LOGIN_GROUPS_FIELD]: login.properties.groups,
             }));
         dispatch(dialogActions.OPEN_DIALOG( {id: VIRTUAL_MACHINE_ADD_LOGIN_DIALOG, data: {updating: true}} ));
@@ -141,10 +156,15 @@ export interface AddLoginFormData {
 
 export const addUpdateVirtualMachineLogin = ({uuid, vmUuid, user, groups}: AddLoginFormData) =>
     async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
+        let userResource: UserResource | undefined = undefined;
         try {
             // Get user
-            const userResource = await services.userService.get(user.uuid);
-
+            userResource = await services.userService.get(user.uuid, false);
+        } catch (e) {
+                dispatch(snackbarActions.OPEN_SNACKBAR({ message: "Failed to get user details.", hideDuration: 2000, kind: SnackbarKind.ERROR }));
+                return;
+        }
+        try {
             if (uuid) {
                 const permission = await services.permissionService.update(uuid, {
                     tailUuid: userResource.uuid,

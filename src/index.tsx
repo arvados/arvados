@@ -62,6 +62,7 @@ import { linkActionSet } from 'views-components/context-menu/action-sets/link-ac
 import { loadFileViewersConfig } from 'store/file-viewers/file-viewers-actions';
 import { filterGroupAdminActionSet, projectAdminActionSet } from 'views-components/context-menu/action-sets/project-admin-action-set';
 import { permissionEditActionSet } from 'views-components/context-menu/action-sets/permission-edit-action-set';
+import { workflowActionSet } from 'views-components/context-menu/action-sets/workflow-action-set';
 import { snackbarActions, SnackbarKind } from "store/snackbar/snackbar-actions";
 import { openNotFoundDialog } from './store/not-found-panel/not-found-panel-action';
 import { storeRedirects } from './common/redirect-to';
@@ -108,6 +109,7 @@ addMenuActionSet(ContextMenuKind.FROZEN_PROJECT, [
 ]);
 addMenuActionSet(ContextMenuKind.FILTER_GROUP_ADMIN, filterGroupAdminActionSet);
 addMenuActionSet(ContextMenuKind.PERMISSION_EDIT, permissionEditActionSet);
+addMenuActionSet(ContextMenuKind.WORKFLOW, workflowActionSet);
 
 storeRedirects();
 

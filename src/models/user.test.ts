@@ -34,7 +34,7 @@ describe('User', () => {
                     ownerUuid: 'zzzzz-tpzed-someusersowneruuid',
                     prefs: {}, isAdmin: false, isActive: true
                 },
-                expect: 'Some User <<someuser@example.com>>'
+                expect: 'Some User <someuser@example.com>'
             },
             {
                 caseName: 'Missing first name',

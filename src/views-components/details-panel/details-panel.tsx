@@ -18,6 +18,7 @@ import { ProjectDetails } from "./project-details";
 import { CollectionDetails } from "./collection-details";
 import { ProcessDetails } from "./process-details";
 import { EmptyDetails } from "./empty-details";
+import { WorkflowDetails } from "./workflow-details";
 import { DetailsData } from "./details-data";
 import { DetailsResource } from "models/details";
 import { Config } from 'common/config';
@@ -71,6 +72,8 @@ const getItem = (res: DetailsResource): DetailsData => {
                 return new CollectionDetails(res);
             case ResourceKind.PROCESS:
                 return new ProcessDetails(res);
+            case ResourceKind.WORKFLOW:
+                return new WorkflowDetails(res);
             default:
                 return new EmptyDetails(res);
         }
@@ -152,9 +155,9 @@ export const DetailsPanel = withStyles(styles)(
                 let shouldShowInlinePreview = false;
                 if (!('kind' in res)) {
                     shouldShowInlinePreview = isInlineFileUrlSafe(
-                      res ? res.url : "",
-                      authConfig.keepWebServiceUrl,
-                      authConfig.keepWebInlineServiceUrl
+                        res ? res.url : "",
+                        authConfig.keepWebServiceUrl,
+                        authConfig.keepWebInlineServiceUrl
                     ) || authConfig.clusterConfig.Collections.TrustAllContent;
                 }
 
@@ -191,14 +194,14 @@ export const DetailsPanel = withStyles(styles)(
                     </Grid>
                     <Grid item>
                         <Tabs onChange={this.handleChange}
-                            value={(item.getTabLabels().length >= tabNr+1) ? tabNr : 0}>
-                            { item.getTabLabels().map((tabLabel, idx) =>
+                            value={(item.getTabLabels().length >= tabNr + 1) ? tabNr : 0}>
+                            {item.getTabLabels().map((tabLabel, idx) =>
                                 <Tab key={`tab-label-${idx}`} disableRipple label={tabLabel} />)
                             }
                         </Tabs>
                     </Grid>
                     <Grid item xs className={this.props.classes.tabContainer} >
-                        {item.getDetails({tabNr, showPreview: shouldShowInlinePreview})}
+                        {item.getDetails({ tabNr, showPreview: shouldShowInlinePreview })}
                     </Grid>
                 </Grid >;
             }

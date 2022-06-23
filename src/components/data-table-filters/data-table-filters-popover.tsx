@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import React from "react";
+import React, { useEffect } from "react";
 import {
     WithStyles,
     withStyles,
@@ -23,6 +23,7 @@ import { DefaultTransformOrigin } from "components/popover/helpers";
 import { createTree } from 'models/tree';
 import { DataTableFilters, DataTableFiltersTree } from "./data-table-filters-tree";
 import { getNodeDescendants } from 'models/tree';
+import debounce from "lodash/debounce";
 
 export type CssRules = "root" | "icon" | "iconButton" | "active" | "checkbox";
 
@@ -127,7 +128,7 @@ export const DataTableFiltersPopover = withStyles(styles)(
                     open={!!this.state.anchorEl}
                     anchorOrigin={DefaultTransformOrigin}
                     transformOrigin={DefaultTransformOrigin}
-                    onClose={this.cancel}>
+                    onClose={this.close}>
                     <Card>
                         <CardContent>
                             <Typography variant="caption">
@@ -137,36 +138,21 @@ export const DataTableFiltersPopover = withStyles(styles)(
                         <DataTableFiltersTree
                             filters={this.state.filters}
                             mutuallyExclusive={this.props.mutuallyExclusive}
-                            onChange={filters => {
-                                this.setState({ filters });
-                                if (this.props.mutuallyExclusive) {
-                                    const { onChange } = this.props;
-                                    if (onChange) {
-                                        onChange(filters);
-                                    }
-                                    this.setState({ anchorEl: undefined });
-                                }
-                            }} />
+                            onChange={this.onChange} />
                         {this.props.mutuallyExclusive ||
                         <CardActions>
                             <Button
                                 color="primary"
-                                variant='contained'
-                                size="small"
-                                onClick={this.submit}>
-                                Ok
-                            </Button>
-                            <Button
-                                color="primary"
                                 variant="outlined"
                                 size="small"
-                                onClick={this.cancel}>
-                                Cancel
+                                onClick={this.close}>
+                                Close
                             </Button>
                         </CardActions >
                         }
                     </Card>
                 </Popover>
+                <this.MountHandler />
             </>;
         }
 
@@ -180,24 +166,42 @@ export const DataTableFiltersPopover = withStyles(styles)(
             this.setState({ anchorEl: this.icon.current || undefined });
         }
 
-        submit = () => {
+        onChange = (filters) => {
+            this.setState({ filters });
+            if (this.props.mutuallyExclusive) {
+                // Mutually exclusive filters apply immediately
+                const { onChange } = this.props;
+                if (onChange) {
+                    onChange(filters);
+                }
+                this.close();
+            } else {
+                // Non-mutually exclusive filters are debounced
+                this.submit();
+            }
+        }
+
+        submit = debounce (() => {
             const { onChange } = this.props;
             if (onChange) {
                 onChange(this.state.filters);
             }
-            this.setState({ anchorEl: undefined });
-        }
+        }, 1000);
 
-        cancel = () => {
+        MountHandler = () => {
+            useEffect(() => {
+                return () => {
+                    this.submit.cancel();
+                }
+            },[]);
+            return null;
+        };
+
+        close = () => {
             this.setState(prev => ({
                 ...prev,
-                filters: prev.prevFilters,
                 anchorEl: undefined
             }));
-        }
-
-        setFilters = (filters: DataTableFilters) => {
-            this.setState({ filters });
         }
 
     }

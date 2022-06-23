@@ -9,7 +9,7 @@ export function joinFilters(...filters: string[]) {
 export class FilterBuilder {
     constructor(private filters = "") { }
 
-    public addEqual(field: string, value?: string | boolean | null, resourcePrefix?: string) {
+    public addEqual(field: string, value?: string | string[] | boolean | null, resourcePrefix?: string) {
         return this.addCondition(field, "=", value, "", "", resourcePrefix);
     }
 

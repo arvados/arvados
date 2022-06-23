@@ -30,9 +30,10 @@ export const PROPERTY_KEY_FIELD_NAME = 'key';
 export const PROPERTY_KEY_FIELD_ID = 'keyID';
 
 export const PropertyKeyField = connectVocabulary(
-    ({ vocabulary, skipValidation }: VocabularyProp & ValidationProp) =>
+    ({ vocabulary, skipValidation, clearPropertyKeyOnSelect }: VocabularyProp & ValidationProp) =>
         <span data-cy='property-field-key'>
         <Field
+            clearPropertyKeyOnSelect
             name={PROPERTY_KEY_FIELD_NAME}
             component={PropertyKeyInput}
             vocabulary={vocabulary}
@@ -40,7 +41,7 @@ export const PropertyKeyField = connectVocabulary(
         </span>
 );
 
-const PropertyKeyInput = ({ vocabulary, ...props }: WrappedFieldProps & VocabularyProp) =>
+const PropertyKeyInput = ({ vocabulary, ...props }: WrappedFieldProps & VocabularyProp & { clearPropertyKeyOnSelect?: boolean }) =>
     <FormName children={data => (
         <Autocomplete
             {...buildProps(props)}
@@ -51,6 +52,11 @@ const PropertyKeyInput = ({ vocabulary, ...props }: WrappedFieldProps & Vocabula
                     ? `${s.label} (${s.synonyms.join('; ')})`
                     : s.label
             }
+            onFocus={() => {
+                if (props.clearPropertyKeyOnSelect && props.input.value) {
+                    props.meta.dispatch(reset(props.meta.form));
+                }
+            }}
             onSelect={handleSelect(PROPERTY_KEY_FIELD_ID, data.form, props.input, props.meta)}
             onBlur={() => {
                 // Case-insensitive search for the key in the vocabulary

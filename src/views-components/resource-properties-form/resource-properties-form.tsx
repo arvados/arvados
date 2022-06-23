@@ -16,16 +16,17 @@ export interface ResourcePropertiesFormData {
     [PROPERTY_KEY_FIELD_ID]: string;
     [PROPERTY_VALUE_FIELD_NAME]: string;
     [PROPERTY_VALUE_FIELD_ID]: string;
+    clearPropertyKeyOnSelect?: boolean;
 }
 
-export type ResourcePropertiesFormProps = {uuid: string; } & InjectedFormProps<ResourcePropertiesFormData, {uuid: string; }> & WithStyles<GridClassKey>;
+export type ResourcePropertiesFormProps = {uuid: string; clearPropertyKeyOnSelect?: boolean } & InjectedFormProps<ResourcePropertiesFormData, {uuid: string; }> & WithStyles<GridClassKey>;
 
-export const ResourcePropertiesForm = ({ handleSubmit, change, submitting, invalid, classes, uuid }: ResourcePropertiesFormProps ) => {
+export const ResourcePropertiesForm = ({ handleSubmit, change, submitting, invalid, classes, uuid, clearPropertyKeyOnSelect }: ResourcePropertiesFormProps ) => {
     change('uuid', uuid); // Sets the uuid field to the uuid of the resource.
     return <form data-cy='resource-properties-form' onSubmit={handleSubmit}>
         <Grid container spacing={16} classes={classes}>
             <Grid item xs>
-                <PropertyKeyField />
+                <PropertyKeyField clearPropertyKeyOnSelect />
             </Grid>
             <Grid item xs>
                 <PropertyValueField />

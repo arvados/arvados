@@ -207,22 +207,22 @@ export const ResourceLastName = connect(
         return resource || { lastName: '' };
     })(renderLastName);
 
-const renderFullName = (dispatch: Dispatch ,item: { uuid: string, firstName: string, lastName: string }, link?: boolean) => {
+const renderFullName = (dispatch: Dispatch, item: { uuid: string, firstName: string, lastName: string }, link?: boolean) => {
     const displayName = (item.firstName + " " + item.lastName).trim() || item.uuid;
     return link ? <Typography noWrap
         color="primary"
         style={{ 'cursor': 'pointer' }}
         onClick={() => dispatch<any>(navigateToUserProfile(item.uuid))}>
-            {displayName}
+        {displayName}
     </Typography> :
-    <Typography noWrap>{displayName}</Typography>;
+        <Typography noWrap>{displayName}</Typography>;
 }
 
 export const UserResourceFullName = connect(
     (state: RootState, props: { uuid: string, link?: boolean }) => {
         const resource = getResource<UserResource>(props.uuid)(state.resources);
-        return {item: resource || { uuid: '', firstName: '', lastName: '' }, link: props.link};
-    })((props: {item: {uuid: string, firstName: string, lastName: string}, link?: boolean} & DispatchProp<any>) => renderFullName(props.dispatch, props.item, props.link));
+        return { item: resource || { uuid: '', firstName: '', lastName: '' }, link: props.link };
+    })((props: { item: { uuid: string, firstName: string, lastName: string }, link?: boolean } & DispatchProp<any>) => renderFullName(props.dispatch, props.item, props.link));
 
 const renderUuid = (item: { uuid: string }) =>
     <Typography data-cy="uuid" noWrap>
@@ -231,8 +231,8 @@ const renderUuid = (item: { uuid: string }) =>
     </Typography>;
 
 export const ResourceUuid = connect((state: RootState, props: { uuid: string }) => (
-        getResource<UserResource>(props.uuid)(state.resources) || { uuid: '' }
-    ))(renderUuid);
+    getResource<UserResource>(props.uuid)(state.resources) || { uuid: '' }
+))(renderUuid);
 
 const renderEmail = (item: { email: string }) =>
     <Typography noWrap>{item.email}</Typography>;
@@ -250,17 +250,17 @@ enum UserAccountStatus {
     UNKNOWN = ''
 }
 
-const renderAccountStatus = (props: {status: UserAccountStatus}) =>
+const renderAccountStatus = (props: { status: UserAccountStatus }) =>
     <Grid container alignItems="center" wrap="nowrap" spacing={8} data-cy="account-status">
         <Grid item>
             {(() => {
-                switch(props.status) {
+                switch (props.status) {
                     case UserAccountStatus.ACTIVE:
-                        return <ActiveIcon style={{color: '#4caf50', verticalAlign: "middle"}} />;
+                        return <ActiveIcon style={{ color: '#4caf50', verticalAlign: "middle" }} />;
                     case UserAccountStatus.SETUP:
-                        return <SetupIcon style={{color: '#2196f3', verticalAlign: "middle"}} />;
+                        return <SetupIcon style={{ color: '#2196f3', verticalAlign: "middle" }} />;
                     case UserAccountStatus.INACTIVE:
-                        return <InactiveIcon style={{color: '#9e9e9e', verticalAlign: "middle"}} />;
+                        return <InactiveIcon style={{ color: '#9e9e9e', verticalAlign: "middle" }} />;
                     default:
                         return <></>;
                 }
@@ -285,37 +285,37 @@ const getUserAccountStatus = (state: RootState, props: { uuid: string }) => {
     )(state.resources);
 
     if (user) {
-        return user.isActive ? {status: UserAccountStatus.ACTIVE} : permissions.length > 0 ? {status: UserAccountStatus.SETUP} : {status: UserAccountStatus.INACTIVE};
+        return user.isActive ? { status: UserAccountStatus.ACTIVE } : permissions.length > 0 ? { status: UserAccountStatus.SETUP } : { status: UserAccountStatus.INACTIVE };
     } else {
-        return {status: UserAccountStatus.UNKNOWN};
+        return { status: UserAccountStatus.UNKNOWN };
     }
 }
 
 export const ResourceLinkTailAccountStatus = connect(
     (state: RootState, props: { uuid: string }) => {
         const link = getResource<LinkResource>(props.uuid)(state.resources);
-        return link && link.tailKind === ResourceKind.USER ? getUserAccountStatus(state, {uuid: link.tailUuid}) : {status: UserAccountStatus.UNKNOWN};
+        return link && link.tailKind === ResourceKind.USER ? getUserAccountStatus(state, { uuid: link.tailUuid }) : { status: UserAccountStatus.UNKNOWN };
     })(renderAccountStatus);
 
 export const UserResourceAccountStatus = connect(getUserAccountStatus)(renderAccountStatus);
 
 const renderIsHidden = (props: {
-                            memberLinkUuid: string,
-                            permissionLinkUuid: string,
-                            visible: boolean,
-                            canManage: boolean,
-                            setMemberIsHidden: (memberLinkUuid: string, permissionLinkUuid: string, hide: boolean) => void
-                        }) => {
+    memberLinkUuid: string,
+    permissionLinkUuid: string,
+    visible: boolean,
+    canManage: boolean,
+    setMemberIsHidden: (memberLinkUuid: string, permissionLinkUuid: string, hide: boolean) => void
+}) => {
     if (props.memberLinkUuid) {
         return <Checkbox
-                data-cy="user-visible-checkbox"
-                color="primary"
-                checked={props.visible}
-                disabled={!props.canManage}
-                onClick={(e) => {
-                    e.stopPropagation();
-                    props.setMemberIsHidden(props.memberLinkUuid, props.permissionLinkUuid, !props.visible);
-                }} />;
+            data-cy="user-visible-checkbox"
+            color="primary"
+            checked={props.visible}
+            disabled={!props.canManage}
+            onClick={(e) => {
+                e.stopPropagation();
+                props.setMemberIsHidden(props.memberLinkUuid, props.permissionLinkUuid, !props.visible);
+            }} />;
     } else {
         return <Typography />;
     }
@@ -380,7 +380,7 @@ export const VirtualMachineHostname = connect(
         return resource || { hostname: '' };
     })(renderHostname);
 
-const renderVirtualMachineLogin = (login: {user: string}) =>
+const renderVirtualMachineLogin = (login: { user: string }) =>
     <Typography noWrap>{login.user}</Typography>
 
 export const VirtualMachineLogin = connect(
@@ -388,7 +388,7 @@ export const VirtualMachineLogin = connect(
         const permission = getResource<LinkResource>(props.linkUuid)(state.resources);
         const user = getResource<UserResource>(permission?.tailUuid || '')(state.resources);
 
-        return {user: user?.username || permission?.tailUuid || ''};
+        return { user: user?.username || permission?.tailUuid || '' };
     })(renderVirtualMachineLogin);
 
 // Common methods
@@ -465,7 +465,7 @@ export const ResourceLinkClass = connect(
 
 const getResourceDisplayName = (resource: Resource): string => {
     if ((resource as UserResource).kind === ResourceKind.USER
-          && typeof (resource as UserResource).firstName !== 'undefined') {
+        && typeof (resource as UserResource).firstName !== 'undefined') {
         // We can be sure the resource is UserResource
         return getUserDisplayName(resource as UserResource);
     } else {
@@ -539,7 +539,7 @@ const renderLinkDelete = (dispatch: Dispatch, item: LinkResource, canManage: boo
                 </IconButton>
             </Typography>;
     } else {
-      return <Typography noWrap></Typography>;
+        return <Typography noWrap></Typography>;
     }
 }
 
@@ -553,7 +553,7 @@ export const ResourceLinkDelete = connect(
             canManage: link && getResourceLinkCanManage(state, link) && !isBuiltin,
         };
     })((props: { item: LinkResource, canManage: boolean } & DispatchProp<any>) =>
-      renderLinkDelete(props.dispatch, props.item, props.canManage));
+        renderLinkDelete(props.dispatch, props.item, props.canManage));
 
 export const ResourceLinkTailEmail = connect(
     (state: RootState, props: { uuid: string }) => {
@@ -736,10 +736,17 @@ const userFromID =
             return { uuid: props.uuid, userFullname };
         });
 
-export const ResourceOwnerWithName =
+const ownerFromResourceId =
     compose(
-        userFromID,
-        withStyles({}, { withTheme: true }))
+        connect((state: RootState, props: { uuid: string }) => {
+            const childResource = getResource<GroupContentsResource & UserResource>(props.uuid)(state.resources);
+            return { uuid: childResource ? (childResource as Resource).ownerUuid : '' };
+        }),
+        userFromID
+    );
+
+const _resourceWithName =
+    withStyles({}, { withTheme: true })
         ((props: { uuid: string, userFullname: string, dispatch: Dispatch, theme: ArvadosTheme }) => {
             const { uuid, userFullname, dispatch, theme } = props;
 
@@ -754,6 +761,10 @@ export const ResourceOwnerWithName =
                 {userFullname} ({uuid})
             </Typography>;
         });
+
+export const ResourceOwnerWithName = ownerFromResourceId(_resourceWithName);
+
+export const ResourceWithName = userFromID(_resourceWithName);
 
 export const UserNameFromID =
     compose(userFromID)(
@@ -821,7 +832,7 @@ export const ResponsiblePerson =
 
             return <Typography style={{ color: theme.palette.primary.main }} inline noWrap>
                 {responsiblePersonName} ({uuid})
-                </Typography>;
+            </Typography>;
         });
 
 const renderType = (type: string, subtype: string) =>
@@ -858,18 +869,18 @@ export const ProcessStatus = compose(
     withStyles({}, { withTheme: true }))
     ((props: { process?: Process, theme: ArvadosTheme }) =>
         props.process
-        ? <Chip label={getProcessStatus(props.process)}
-            style={{
-                height: props.theme.spacing.unit * 3,
-                width: props.theme.spacing.unit * 12,
-                backgroundColor: getProcessStatusColor(
-                    getProcessStatus(props.process), props.theme),
-                color: props.theme.palette.common.white,
-                fontSize: '0.875rem',
-                borderRadius: props.theme.spacing.unit * 0.625,
-            }}
-        />
-        : <Typography>-</Typography>
+            ? <Chip label={getProcessStatus(props.process)}
+                style={{
+                    height: props.theme.spacing.unit * 3,
+                    width: props.theme.spacing.unit * 12,
+                    backgroundColor: getProcessStatusColor(
+                        getProcessStatus(props.process), props.theme),
+                    color: props.theme.palette.common.white,
+                    fontSize: '0.875rem',
+                    borderRadius: props.theme.spacing.unit * 0.625,
+                }}
+            />
+            : <Typography>-</Typography>
     );
 
 export const ProcessStartDate = connect(

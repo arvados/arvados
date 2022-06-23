@@ -11,7 +11,6 @@ import { ShareMeIcon } from 'components/icon/icon';
 import { createTree } from 'models/tree';
 import { DataColumns } from 'components/data-table/data-table';
 import { SortDirection } from 'components/data-table/data-column';
-import { DataTableDefaultView } from 'components/data-table-default-view/data-table-default-view';
 import { API_CLIENT_AUTHORIZATION_PANEL_ID } from '../../store/api-client-authorizations/api-client-authorizations-actions';
 import { DataExplorer } from 'views-components/data-explorer/data-explorer';
 import { ResourcesState } from 'store/resources/resources';
@@ -141,9 +140,7 @@ export const ApiClientAuthorizationPanelRoot = withStyles(styles)(
             contextMenuColumn={true}
             hideColumnSelector
             hideSearchInput
-            dataTableDefaultView={
-                <DataTableDefaultView
-                    icon={ShareMeIcon}
-                    messages={[DEFAULT_MESSAGE]} />
-            } /></div>
+            defaultViewIcon={ShareMeIcon}
+            defaultViewMessages={[DEFAULT_MESSAGE]} />
+        </div>
 );
