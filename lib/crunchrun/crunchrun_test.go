@@ -276,7 +276,7 @@ func (client *ArvTestClient) Update(resourceType string, uuid string, parameters
 		if parameters["container"].(arvadosclient.Dict)["state"] == "Running" {
 			client.WasSetRunning = true
 		}
-	} else if resourceType == "collections" {
+	} else if resourceType == "collections" && output != nil {
 		mt := parameters["collection"].(arvadosclient.Dict)["manifest_text"].(string)
 		output.(*arvados.Collection).UUID = uuid
 		output.(*arvados.Collection).PortableDataHash = fmt.Sprintf("%x", md5.Sum([]byte(mt)))

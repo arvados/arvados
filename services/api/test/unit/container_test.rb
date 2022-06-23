@@ -933,7 +933,7 @@ class ContainerTest < ActiveSupport::TestCase
   end
 
   ["auth_uuid", "runtime_token"].each do |tok|
-    test "#{tok} can set output, progress, runtime_status, state on running container -- but not log" do
+    test "#{tok} can set output, progress, runtime_status, state, exit_code on running container -- but not log" do
       if tok == "runtime_token"
         set_user_from_auth :spectator
         c, _ = minimal_new(container_image: "9ae44d5792468c58bcf85ce7353c7027+124",
@@ -963,6 +963,7 @@ class ContainerTest < ActiveSupport::TestCase
       assert c.update_attributes(output: collections(:collection_owned_by_active).portable_data_hash)
       assert c.update_attributes(runtime_status: {'warning' => 'something happened'})
       assert c.update_attributes(progress: 0.5)
+      assert c.update_attributes(exit_code: 0)
       refute c.update_attributes(log: collections(:real_log_collection).portable_data_hash)
       c.reload
       assert c.update_attributes(state: Container::Complete, exit_code: 0)
