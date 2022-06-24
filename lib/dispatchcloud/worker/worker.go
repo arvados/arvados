@@ -418,6 +418,12 @@ func (wkr *worker) probeRunning() (running []string, reportsBroken, ok bool) {
 			// empty string following final newline
 		} else if s == "broken" {
 			reportsBroken = true
+		} else if !strings.HasPrefix(s, wkr.wp.cluster.ClusterID) {
+			// Ignore crunch-run processes that belong to
+			// a different cluster (e.g., a single host
+			// running multiple clusters with the loopback
+			// driver)
+			continue
 		} else if toks := strings.Split(s, " "); len(toks) == 1 {
 			running = append(running, s)
 		} else if toks[1] == "stale" {
