@@ -1095,6 +1095,12 @@ func (runner *ContainerRunner) WaitFinish() error {
 		}
 	}
 	runner.CrunchLog.Printf("Container exited with status code %d%s", exitcode, extra)
+	err = runner.DispatcherArvClient.Update("containers", runner.Container.UUID, arvadosclient.Dict{
+		"container": arvadosclient.Dict{"exit_code": exitcode},
+	}, nil)
+	if err != nil {
+		runner.CrunchLog.Printf("ignoring error updating exit_code: %s", err)
+	}
 
 	var returnErr error
 	if err = runner.executorStdin.Close(); err != nil {
@@ -1162,10 +1168,9 @@ func (runner *ContainerRunner) updateLogs() {
 			continue
 		}
 
-		var updated arvados.Container
 		err = runner.DispatcherArvClient.Update("containers", runner.Container.UUID, arvadosclient.Dict{
 			"container": arvadosclient.Dict{"log": saved.PortableDataHash},
-		}, &updated)
+		}, nil)
 		if err != nil {
 			runner.CrunchLog.Printf("error updating container log to %s: %s", saved.PortableDataHash, err)
 			continue
@@ -1443,13 +1448,13 @@ func (runner *ContainerRunner) UpdateContainerFinal() error {
 	if runner.LogsPDH != nil {
 		update["log"] = *runner.LogsPDH
 	}
-	if runner.finalState == "Complete" {
-		if runner.ExitCode != nil {
-			update["exit_code"] = *runner.ExitCode
-		}
-		if runner.OutputPDH != nil {
-			update["output"] = *runner.OutputPDH
-		}
+	if runner.ExitCode != nil {
+		update["exit_code"] = *runner.ExitCode
+	} else {
+		update["exit_code"] = nil
+	}
+	if runner.finalState == "Complete" && runner.OutputPDH != nil {
+		update["output"] = *runner.OutputPDH
 	}
 	return runner.DispatcherArvClient.Update("containers", runner.Container.UUID, arvadosclient.Dict{"container": update}, nil)
 }

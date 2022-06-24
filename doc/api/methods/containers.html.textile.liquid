@@ -52,8 +52,8 @@ Generally this will contain additional keys that are not present in any correspo
 |output|string|Portable data hash of the output collection.|Null if the container is not yet finished.|
 |container_image|string|Portable data hash of a collection containing the docker image used to run the container.||
 |progress|number|A number between 0.0 and 1.0 describing the fraction of work done.||
-|priority|integer|Range 0-1000.  Indicate scheduling order preference.|Currently assigned by the system as the max() of the priorities of all associated ContainerRequests.  See "container request priority":container_requests.html#priority .|
-|exit_code|integer|Process exit code.|Null if state!="Complete"|
+|priority|integer|Range 0-1000.  Indicate scheduling order preference.|Currently assigned by the system as the max() of the priorities of all associated ContainerRequests.  See "container request priority":container_requests.html#priority.|
+|exit_code|integer|Process exit code.|Null if container process has not exited yet.|
 |auth_uuid|string|UUID of a token to be passed into the container itself, used to access Keep-backed mounts, etc.  Automatically assigned.|Null if state∉{"Locked","Running"} or if @runtime_token@ was provided.|
 |locked_by_uuid|string|UUID of a token, indicating which dispatch process changed state to Locked. If null, any token can be used to lock. If not null, only the indicated token can modify this container.|Null if state∉{"Locked","Running"}|
 |runtime_token|string|A v2 token to be passed into the container itself, used to access Keep-backed mounts, etc.|Not returned in API responses.  Reset to null when state is "Complete" or "Cancelled".|

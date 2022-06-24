@@ -478,8 +478,8 @@ class Container < ArvadosModel
 
   def validate_change
     permitted = [:state]
-    progress_attrs = [:progress, :runtime_status, :log, :output, :output_properties]
-    final_attrs = [:exit_code, :finished_at]
+    progress_attrs = [:progress, :runtime_status, :log, :output, :output_properties, :exit_code]
+    final_attrs = [:finished_at]
 
     if self.new_record?
       permitted.push(:owner_uuid, :command, :container_image, :cwd,
