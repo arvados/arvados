@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
+	"regexp"
 	"strings"
 	"testing"
 
@@ -290,4 +291,92 @@ func (s *TestSuite) TestUserCreationAndUpdate(c *C) {
 		c.Assert(foundUser.IsActive, Equals, false)
 		c.Assert(foundUser.IsAdmin, Equals, false) // inactive users cannot be admins
 	}
+}
+
+func (s *TestSuite) TestDeactivateUnlisted(c *C) {
+	localUserUuidRegex := regexp.MustCompile(fmt.Sprintf("^%s-tpzed-[0-9a-z]{15}$", s.cfg.ClusterID))
+	users, err := ListUsers(s.cfg.Client)
+	c.Assert(err, IsNil)
+	previouslyActiveUsers := 0
+	for _, u := range users {
+		if u.UUID == fmt.Sprintf("%s-tpzed-anonymouspublic", s.cfg.ClusterID) && !u.IsActive {
+			// Make sure the anonymous user is active for this test
+			var au arvados.User
+			err := UpdateUser(s.cfg.Client, u.UUID, &au, map[string]string{"is_active": "true"})
+			c.Assert(err, IsNil)
+			c.Assert(au.IsActive, Equals, true)
+		}
+		if localUserUuidRegex.MatchString(u.UUID) && u.IsActive {
+			previouslyActiveUsers++
+		}
+	}
+	// At least 3 active users: System root, Anonymous and the current user.
+	// Other active users should exist from fixture.
+	c.Logf("Initial active users count: %d", previouslyActiveUsers)
+	c.Assert(previouslyActiveUsers > 3, Equals, true)
+
+	s.cfg.DeactivateUnlisted = true
+	s.cfg.Verbose = true
+	data := [][]string{
+		{"user1@example.com", "Example", "User1", "0", "0"},
+	}
+	tmpfile, err := MakeTempCSVFile(data)
+	c.Assert(err, IsNil)
+	defer os.Remove(tmpfile.Name())
+	s.cfg.Path = tmpfile.Name()
+	err = doMain(s.cfg)
+	c.Assert(err, IsNil)
+
+	users, err = ListUsers(s.cfg.Client)
+	c.Assert(err, IsNil)
+	currentlyActiveUsers := 0
+	acceptableActiveUUIDs := map[string]bool{
+		fmt.Sprintf("%s-tpzed-000000000000000", s.cfg.ClusterID): true,
+		fmt.Sprintf("%s-tpzed-anonymouspublic", s.cfg.ClusterID): true,
+		s.cfg.CurrentUser.UUID: true,
+	}
+	remainingActiveUUIDs := map[string]bool{}
+	seenUserEmails := map[string]bool{}
+	for _, u := range users {
+		if _, ok := seenUserEmails[u.Email]; ok {
+			c.Errorf("Duplicated email address %q in user list (probably from fixtures). This test requires unique email addresses.", u.Email)
+		}
+		seenUserEmails[u.Email] = true
+		if localUserUuidRegex.MatchString(u.UUID) && u.IsActive {
+			c.Logf("Found remaining active user %q (%s)", u.Email, u.UUID)
+			_, ok := acceptableActiveUUIDs[u.UUID]
+			c.Assert(ok, Equals, true)
+			remainingActiveUUIDs[u.UUID] = true
+			currentlyActiveUsers++
+		}
+	}
+	// 3 active users remaining: System root, Anonymous and the current user.
+	c.Logf("Active local users remaining: %v", remainingActiveUUIDs)
+	c.Assert(currentlyActiveUsers, Equals, 3)
+}
+
+func (s *TestSuite) TestFailOnDuplicatedEmails(c *C) {
+	for i := range []int{1, 2} {
+		isAdmin := i == 2
+		err := CreateUser(s.cfg.Client, &arvados.User{}, map[string]string{
+			"email":      "somedupedemail@example.com",
+			"first_name": fmt.Sprintf("Duped %d", i),
+			"username":   fmt.Sprintf("dupedemail%d", i),
+			"last_name":  "User",
+			"is_active":  "true",
+			"is_admin":   fmt.Sprintf("%t", isAdmin),
+		})
+		c.Assert(err, IsNil)
+	}
+	s.cfg.Verbose = true
+	data := [][]string{
+		{"user1@example.com", "Example", "User1", "0", "0"},
+	}
+	tmpfile, err := MakeTempCSVFile(data)
+	c.Assert(err, IsNil)
+	defer os.Remove(tmpfile.Name())
+	s.cfg.Path = tmpfile.Name()
+	err = doMain(s.cfg)
+	c.Assert(err, NotNil)
+	c.Assert(err, ErrorMatches, "skipped.*duplicated email address.*")
 }

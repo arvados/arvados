@@ -14,6 +14,7 @@ import (
 	"log"
 	"net/url"
 	"os"
+	"regexp"
 	"strconv"
 	"strings"
 
@@ -172,16 +173,38 @@ func doMain(cfg *ConfigParams) error {
 	defer f.Close()
 
 	allUsers := make(map[string]arvados.User)
+	dupedEmails := make(map[string][]arvados.User)
 	processedUsers := make(map[string]bool)
 	results, err := GetAll(cfg.Client, "users", arvados.ResourceListParams{}, &UserList{})
 	if err != nil {
 		return fmt.Errorf("error getting all users: %s", err)
 	}
 	log.Printf("Found %d users in cluster %q", len(results), cfg.ClusterID)
+	localUserUuidRegex := regexp.MustCompile(fmt.Sprintf("^%s-tpzed-[0-9a-z]{15}$", cfg.ClusterID))
 	for _, item := range results {
 		u := item.(arvados.User)
-		allUsers[strings.ToLower(u.Email)] = u
-		processedUsers[strings.ToLower(u.Email)] = false
+		// Remote user check
+		if !localUserUuidRegex.MatchString(u.UUID) {
+			if cfg.Verbose {
+				log.Printf("Remote user %q (%s) won't be considered for processing", u.Email, u.UUID)
+			}
+			continue
+		}
+		// Duplicated user's email check
+		email := strings.ToLower(u.Email)
+		if ul, ok := dupedEmails[email]; ok {
+			log.Printf("Duplicated email %q found in user %s", email, u.UUID)
+			dupedEmails[email] = append(ul, u)
+			continue
+		}
+		if eu, ok := allUsers[email]; ok {
+			log.Printf("Duplicated email %q found in users %s and %s", email, eu.UUID, u.UUID)
+			dupedEmails[email] = []arvados.User{eu, u}
+			delete(allUsers, email)
+			continue
+		}
+		allUsers[email] = u
+		processedUsers[email] = false
 	}
 
 	loadedRecords, err := LoadInputFile(f)
@@ -233,6 +256,17 @@ func doMain(cfg *ConfigParams) error {
 	}
 
 	log.Printf("User update successes: %d, skips: %d, failures: %d", len(updatesSucceeded), len(updatesSkipped), len(updatesFailed))
+
+	// Report duplicated emails detection
+	if len(dupedEmails) > 0 {
+		emails := make([]string, len(dupedEmails))
+		i := 0
+		for e := range dupedEmails {
+			emails[i] = e
+			i++
+		}
+		return fmt.Errorf("skipped %d duplicated email address(es) in the cluster's local user list: %v", len(dupedEmails), emails)
+	}
 
 	return nil
 }
