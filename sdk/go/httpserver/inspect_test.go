@@ -9,6 +9,8 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"strings"
+	"time"
 
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
@@ -60,10 +62,17 @@ func (s *Suite) TestInspect(c *check.C) {
 	reqcancel()
 
 	// Request context is canceled but handler hasn't returned, so
-	// we should see max abandoned request age > 0
-	resp = httptest.NewRecorder()
-	promhttp.HandlerFor(reg, promhttp.HandlerOpts{}).ServeHTTP(resp, mreq)
-	c.Check(resp.Code, check.Equals, http.StatusOK)
+	// we should see max abandoned request age > 0 and active ==
+	// 0. We might need to wait a short time for the cancel to
+	// propagate.
+	for deadline := time.Now().Add(time.Second); time.Now().Before(deadline); time.Sleep(time.Second / 100) {
+		resp = httptest.NewRecorder()
+		promhttp.HandlerFor(reg, promhttp.HandlerOpts{}).ServeHTTP(resp, mreq)
+		c.Assert(resp.Code, check.Equals, http.StatusOK)
+		if strings.Contains(resp.Body.String(), "\narvados_max_active_request_age_seconds 0\n") {
+			break
+		}
+	}
 	c.Check(resp.Body.String(), check.Matches, `(?ms).*\narvados_max_active_request_age_seconds 0\n.*`)
 	c.Check(resp.Body.String(), check.Matches, `(?ms).*\narvados_max_abandoned_request_age_seconds [0\.]*[1-9][-\d\.e]*\n.*`)
 
