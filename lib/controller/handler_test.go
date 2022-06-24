@@ -204,17 +204,21 @@ func (s *HandlerSuite) TestProxyDiscoveryDoc(c *check.C) {
 	c.Check(len(dd.Schemas), check.Not(check.Equals), 0)
 }
 
-func (s *HandlerSuite) TestRequestTimeout(c *check.C) {
-	s.cluster.API.RequestTimeout = arvados.Duration(time.Nanosecond)
-	req := httptest.NewRequest("GET", "/discovery/v1/apis/arvados/v1/rest", nil)
+// Handler should give up and exit early if request context is
+// cancelled due to client hangup, httpserver.HandlerWithDeadline,
+// etc.
+func (s *HandlerSuite) TestRequestCancel(c *check.C) {
+	ctx, cancel := context.WithCancel(context.Background())
+	req := httptest.NewRequest("GET", "/discovery/v1/apis/arvados/v1/rest", nil).WithContext(ctx)
 	resp := httptest.NewRecorder()
+	cancel()
 	s.handler.ServeHTTP(resp, req)
 	c.Check(resp.Code, check.Equals, http.StatusBadGateway)
 	var jresp httpserver.ErrorResponse
 	err := json.Unmarshal(resp.Body.Bytes(), &jresp)
 	c.Check(err, check.IsNil)
 	c.Assert(len(jresp.Errors), check.Equals, 1)
-	c.Check(jresp.Errors[0], check.Matches, `.*context deadline exceeded.*`)
+	c.Check(jresp.Errors[0], check.Matches, `.*context canceled`)
 }
 
 func (s *HandlerSuite) TestProxyWithoutToken(c *check.C) {
