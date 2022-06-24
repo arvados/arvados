@@ -870,16 +870,14 @@ class ContainerTest < ActiveSupport::TestCase
     end
   end
 
-  test "Container only set exit code on complete" do
+  test "can only change exit code while running and at completion" do
     set_user_from_auth :active
     c, _ = minimal_new
     set_user_from_auth :dispatch1
     c.lock
+    check_illegal_updates c, [{exit_code: 1}]
     c.update_attributes! state: Container::Running
-
-    check_illegal_updates c, [{exit_code: 1},
-                              {exit_code: 1, state: Container::Cancelled}]
-
+    assert c.update_attributes(exit_code: 1)
     assert c.update_attributes(exit_code: 1, state: Container::Complete)
   end
 
