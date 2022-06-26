@@ -64,8 +64,12 @@ case "$subcmd" in
 
 	source ${CONFIG_FILE}
 
+	set -x
+
 	git add -A
-	git commit -m"prepare for deploy"
+	if ! git diff --exit-code ; then
+	    git commit -m"prepare for deploy"
+	fi
 	for NODE in "${!NODES[@]}"
 	do
 	    if test $NODE = localhost ; then
