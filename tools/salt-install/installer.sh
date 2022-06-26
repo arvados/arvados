@@ -64,6 +64,7 @@ case "$subcmd" in
 
 	source ${CONFIG_FILE}
 
+	git add -A
 	git commit -m"prepare for deploy"
 	for NODE in "${!NODES[@]}"
 	do
