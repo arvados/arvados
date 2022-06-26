@@ -67,17 +67,21 @@ case "$subcmd" in
 	git commit -m"prepare for deploy"
 	for NODE in "${!NODES[@]}"
 	do
-	    if ! ssh $NODE test -d arvados-setup.git ; then
-		ssh $NODE git init --bare arvados-setup.git
-		git add remote $NODE $DEPLOY_USER@$NODE:arvados-setup.git
-		git push $NODE
-		ssh $NODE git clone arvados-setup.git arvados-setup
+	    if test $NODE = localhost ; then
+		sudo ./provision.sh --config local.params --roles ${NODES[$NODE]}
+	    else
+		if ! ssh $NODE test -d arvados-setup.git ; then
+		    ssh $NODE git init --bare arvados-setup.git
+		    git add remote $NODE $DEPLOY_USER@$NODE:arvados-setup.git
+		    git push $NODE
+		    ssh $NODE git clone arvados-setup.git arvados-setup
+		fi
+
+		git push $NODE master
+		ssh $NODE git -C arvados-setup pull
+
+		ssh $DEPLOY_USER@$NODE "cd arvados-setup && sudo ./provision.sh --config local.params --roles ${NODES[$NODE]}"
 	    fi
-
-	    git push $NODE master
-	    ssh $NODE git -C arvados-setup pull
-
-	    ssh $DEPLOY_USER@$NODE "cd arvados-setup && sudo ./provision.sh --config local.params --roles ${NODES[$NODE]}"
 	done
 	;;
     *)
