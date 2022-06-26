@@ -77,8 +77,10 @@ case "$subcmd" in
 	    else
 		if ! ssh $NODE test -d arvados-setup ; then
 		    ssh $NODE git init --bare arvados-setup.git
-		    git remote add $NODE $DEPLOY_USER@$NODE:arvados-setup.git
-		    git push $NODE
+		    if ! git remote add $NODE $DEPLOY_USER@$NODE:arvados-setup.git ; then
+			git remote set-url $NODE $DEPLOY_USER@$NODE:arvados-setup.git
+		    fi
+		    git push $NODE master
 		    ssh $NODE git clone arvados-setup.git arvados-setup
 		fi
 
