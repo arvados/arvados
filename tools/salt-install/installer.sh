@@ -127,7 +127,7 @@ case "$subcmd" in
 	    apt-get install arvados-client
 	fi
 
-	export ARVADOS_API_HOST="${CONTROLLER_INT_IP}"
+	export ARVADOS_API_HOST="${CLUSTER}.${DOMAIN}"
 	export ARVADOS_API_TOKEN="$SYSTEM_ROOT_TOKEN"
 
 	arvados-client diagnostics -internal-client
