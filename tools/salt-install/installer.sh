@@ -131,10 +131,12 @@ case "$subcmd" in
 	export ARVADOS_API_TOKEN="$SYSTEM_ROOT_TOKEN"
 
 	arvados-client diagnostics -internal-client
+	;;
     *)
 	echo "Arvados installer"
 	echo ""
 	echo "initialize   initialize the setup directory for configuration"
 	echo "deploy       deploy the configuration from the setup directory"
+	echo "diagnostics  check your install using diagnostics"
 	;;
 esac
