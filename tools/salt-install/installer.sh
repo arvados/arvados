@@ -36,6 +36,14 @@ deploynode() {
     fi
 }
 
+loadconfig() {
+    CONFIG_FILE=local.params
+    if ! test -s $CONFIG_FILE ; then
+	echo "Must be run from arvados-setup, maybe you need to 'initialize' first?"
+    fi
+    source ${CONFIG_FILE}
+}
+
 subcmd="$1"
 if test -n "$subcmd" ; then
     shift
@@ -88,12 +96,8 @@ case "$subcmd" in
 	;;
     deploy)
 	NODE=$1
-	CONFIG_FILE=local.params
-	if ! test -s $CONFIG_FILE ; then
-	    echo "Must be run from arvados-setup, maybe you need to 'initialize' first?"
-	fi
 
-	source ${CONFIG_FILE}
+	loadconfig
 
 	set -x
 
@@ -114,7 +118,19 @@ case "$subcmd" in
 	    sync
 	    deploynode
 	fi
+
 	;;
+    diagnostics)
+	loadconfig
+
+	if ! which arvados-client ; then
+	    apt-get install arvados-client
+	fi
+
+	export ARVADOS_API_HOST="${CONTROLLER_INT_IP}"
+	export ARVADOS_API_TOKEN="$SYSTEM_ROOT_TOKEN"
+
+	arvados-client diagnostics -internal-client
     *)
 	echo "Arvados installer"
 	echo ""
