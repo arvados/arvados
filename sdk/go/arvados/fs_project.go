@@ -64,7 +64,7 @@ func (fs *customFileSystem) projectsLoadOne(parent inode, uuid, name string) (in
 	if strings.Contains(coll.UUID, "-j7d0g-") {
 		// Group item was loaded into a Collection var -- but
 		// we only need the Name and UUID anyway, so it's OK.
-		return fs.newProjectNode(parent, coll.Name, coll.UUID, coll.Properties), nil
+		return fs.newProjectNode(parent, coll.Name, coll.UUID, nil), nil
 	} else if strings.Contains(coll.UUID, "-4zz18-") {
 		return deferredCollectionFS(fs, parent, coll), nil
 	} else {
@@ -123,7 +123,12 @@ func (fs *customFileSystem) projectsLoadAll(parent inode, uuid string) ([]inode,
 					continue
 				}
 				if strings.Contains(i.UUID, "-j7d0g-") {
-					inodes = append(inodes, fs.newProjectNode(parent, i.Name, i.UUID, i.Properties))
+					inodes = append(inodes, fs.newProjectNode(parent, i.Name, i.UUID, &Group{
+						UUID:       i.UUID,
+						Name:       i.Name,
+						ModifiedAt: i.ModifiedAt,
+						Properties: i.Properties,
+					}))
 				} else if strings.Contains(i.UUID, "-4zz18-") {
 					inodes = append(inodes, deferredCollectionFS(fs, parent, i))
 				} else {

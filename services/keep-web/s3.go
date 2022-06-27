@@ -387,7 +387,11 @@ func (h *handler) serveS3(w http.ResponseWriter, r *http.Request) bool {
 		if r.Method == "HEAD" && !objectNameGiven {
 			// HeadBucket
 			if err == nil && fi.IsDir() {
-				setFileInfoHeaders(w.Header(), fs, fspath)
+				err = setFileInfoHeaders(w.Header(), fs, fspath)
+				if err != nil {
+					s3ErrorResponse(w, InternalError, err.Error(), r.URL.Path, http.StatusBadGateway)
+					return true
+				}
 				w.WriteHeader(http.StatusOK)
 			} else if os.IsNotExist(err) {
 				s3ErrorResponse(w, NoSuchBucket, "The specified bucket does not exist.", r.URL.Path, http.StatusNotFound)
@@ -397,7 +401,11 @@ func (h *handler) serveS3(w http.ResponseWriter, r *http.Request) bool {
 			return true
 		}
 		if err == nil && fi.IsDir() && objectNameGiven && strings.HasSuffix(fspath, "/") && h.Cluster.Collections.S3FolderObjects {
-			setFileInfoHeaders(w.Header(), fs, fspath)
+			err = setFileInfoHeaders(w.Header(), fs, fspath)
+			if err != nil {
+				s3ErrorResponse(w, InternalError, err.Error(), r.URL.Path, http.StatusBadGateway)
+				return true
+			}
 			w.Header().Set("Content-Type", "application/x-directory")
 			w.WriteHeader(http.StatusOK)
 			return true
@@ -419,7 +427,11 @@ func (h *handler) serveS3(w http.ResponseWriter, r *http.Request) bool {
 		// shallow copy r, and change URL path
 		r := *r
 		r.URL.Path = fspath
-		setFileInfoHeaders(w.Header(), fs, fspath)
+		err = setFileInfoHeaders(w.Header(), fs, fspath)
+		if err != nil {
+			s3ErrorResponse(w, InternalError, err.Error(), r.URL.Path, http.StatusBadGateway)
+			return true
+		}
 		http.FileServer(fs).ServeHTTP(w, &r)
 		return true
 	case r.Method == http.MethodPut:
@@ -591,13 +603,13 @@ func (h *handler) serveS3(w http.ResponseWriter, r *http.Request) bool {
 	}
 }
 
-func setFileInfoHeaders(header http.Header, fs arvados.CustomFileSystem, path string) {
+func setFileInfoHeaders(header http.Header, fs arvados.CustomFileSystem, path string) error {
 	path = strings.TrimSuffix(path, "/")
 	var props map[string]interface{}
 	for {
 		fi, err := fs.Stat(path)
 		if err != nil {
-			return
+			return err
 		}
 		switch src := fi.Sys().(type) {
 		case *arvados.Collection:
@@ -605,10 +617,13 @@ func setFileInfoHeaders(header http.Header, fs arvados.CustomFileSystem, path st
 		case *arvados.Group:
 			props = src.Properties
 		default:
+			if err, ok := src.(error); ok {
+				return err
+			}
 			// Try parent
 			cut := strings.LastIndexByte(path, '/')
 			if cut < 0 {
-				return
+				return nil
 			}
 			path = path[:cut]
 			continue
@@ -626,6 +641,7 @@ func setFileInfoHeaders(header http.Header, fs arvados.CustomFileSystem, path st
 			header.Set(k, string(j))
 		}
 	}
+	return nil
 }
 
 func validMIMEHeaderKey(k string) bool {

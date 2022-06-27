@@ -53,6 +53,9 @@ func (s *IntegrationSuite) s3setup(c *check.C) s3stage {
 		"group": map[string]interface{}{
 			"group_class": "project",
 			"name":        "keep-web s3 test",
+			"properties": map[string]interface{}{
+				"project-properties-key": "project properties value",
+			},
 		},
 		"ensure_unique_name": true,
 	})
@@ -234,9 +237,9 @@ func (s *IntegrationSuite) testS3GetObject(c *check.C, bucket *s3.Bucket, prefix
 	c.Check(exists, check.Equals, true)
 }
 
-func (s *IntegrationSuite) checkMetaEquals(c *check.C, resp *http.Response, expect map[string]string) {
+func (s *IntegrationSuite) checkMetaEquals(c *check.C, hdr http.Header, expect map[string]string) {
 	got := map[string]string{}
-	for hk, hv := range resp.Header {
+	for hk, hv := range hdr {
 		if k := strings.TrimPrefix(hk, "X-Amz-Meta-"); k != hk && len(hv) == 1 {
 			got[k] = hv[0]
 		}
@@ -256,22 +259,48 @@ func (s *IntegrationSuite) TestS3PropertiesAsMetadata(c *check.C) {
 	expectSubprojectTags := map[string]string{
 		"Subproject_properties_key": "subproject properties value",
 	}
+	expectProjectTags := map[string]string{
+		"Project-Properties-Key": "project properties value",
+	}
 
+	c.Log("HEAD object with metadata from collection")
 	resp, err := stage.collbucket.Head("sailboat.txt", nil)
 	c.Assert(err, check.IsNil)
-	s.checkMetaEquals(c, resp, expectCollectionTags)
+	s.checkMetaEquals(c, resp.Header, expectCollectionTags)
 
+	c.Log("GET object with metadata from collection")
+	rdr, hdr, err := stage.collbucket.GetReaderWithHeaders("sailboat.txt")
+	c.Assert(err, check.IsNil)
+	content, err := ioutil.ReadAll(rdr)
+	c.Check(err, check.IsNil)
+	rdr.Close()
+	c.Check(content, check.HasLen, 4)
+	s.checkMetaEquals(c, hdr, expectCollectionTags)
+
+	c.Log("HEAD bucket with metadata from collection")
+	resp, err = stage.collbucket.Head("/", nil)
+	c.Assert(err, check.IsNil)
+	s.checkMetaEquals(c, resp.Header, expectCollectionTags)
+
+	c.Log("HEAD directory placeholder with metadata from collection")
 	resp, err = stage.projbucket.Head("keep-web s3 test collection/", nil)
 	c.Assert(err, check.IsNil)
-	s.checkMetaEquals(c, resp, expectCollectionTags)
+	s.checkMetaEquals(c, resp.Header, expectCollectionTags)
 
+	c.Log("HEAD file with metadata from collection")
 	resp, err = stage.projbucket.Head("keep-web s3 test collection/sailboat.txt", nil)
 	c.Assert(err, check.IsNil)
-	s.checkMetaEquals(c, resp, expectCollectionTags)
+	s.checkMetaEquals(c, resp.Header, expectCollectionTags)
 
+	c.Log("HEAD directory placeholder with metadata from subproject")
 	resp, err = stage.projbucket.Head("keep-web s3 test subproject/", nil)
 	c.Assert(err, check.IsNil)
-	s.checkMetaEquals(c, resp, expectSubprojectTags)
+	s.checkMetaEquals(c, resp.Header, expectSubprojectTags)
+
+	c.Log("HEAD bucket with metadata from project")
+	resp, err = stage.projbucket.Head("/", nil)
+	c.Assert(err, check.IsNil)
+	s.checkMetaEquals(c, resp.Header, expectProjectTags)
 }
 
 func (s *IntegrationSuite) TestS3CollectionPutObjectSuccess(c *check.C) {

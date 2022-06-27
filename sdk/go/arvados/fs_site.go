@@ -161,7 +161,8 @@ func (fs *customFileSystem) mountCollection(parent inode, id string) inode {
 	return cfs
 }
 
-func (fs *customFileSystem) newProjectNode(root inode, name, uuid string, properties map[string]interface{}) inode {
+func (fs *customFileSystem) newProjectNode(root inode, name, uuid string, proj *Group) inode {
+	var projLoading sync.Mutex
 	return &lookupnode{
 		stale:   fs.Stale,
 		loadOne: func(parent inode, name string) (inode, error) { return fs.projectsLoadOne(parent, uuid, name) },
@@ -174,10 +175,19 @@ func (fs *customFileSystem) newProjectNode(root inode, name, uuid string, proper
 				name:    name,
 				modTime: time.Now(),
 				mode:    0755 | os.ModeDir,
-				sys: &Group{
-					GroupClass: "project",
-					UUID:       uuid,
-					Properties: properties,
+				sys: func() interface{} {
+					projLoading.Lock()
+					defer projLoading.Unlock()
+					if proj != nil {
+						return proj
+					}
+					var g Group
+					err := fs.RequestAndDecode(&g, "GET", "arvados/v1/groups/"+uuid, nil, nil)
+					if err != nil {
+						return err
+					}
+					proj = &g
+					return proj
 				},
 			},
 		},
