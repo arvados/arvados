@@ -10,18 +10,18 @@ declare -A NODES
 
 sync() {
     if test "$NODE" != localhost ; then
-	if ! ssh $NODE test -d arvados-setup ; then
-	    ssh $NODE git init --bare arvados-setup.git
-	    if ! git remote add $NODE $DEPLOY_USER@$NODE:arvados-setup.git ; then
-		git remote set-url $NODE $DEPLOY_USER@$NODE:arvados-setup.git
+	if ! ssh $NODE test -d ${TARGET}.git ; then
+	    ssh $NODE git init --bare ${GITTARGET}.git
+	    if ! git remote add $NODE $DEPLOY_USER@$NODE:${GITTARGET}.git ; then
+		git remote set-url $NODE $DEPLOY_USER@$NODE:${GITTARGET}.git
 	    fi
 	    git push $NODE $BRANCH
-	    ssh $NODE git clone arvados-setup.git arvados-setup
+	    ssh $NODE git clone ${GITTARGET}.git ${GITTARGET}
 	fi
 
 	git push $NODE $BRANCH
-	ssh $NODE git -C arvados-setup checkout $BRANCH
-	ssh $NODE git -C arvados-setup pull
+	ssh $NODE git -C ${GITTARGET} checkout $BRANCH
+	ssh $NODE git -C ${GITTARGET} pull
     fi
 }
 
@@ -34,16 +34,17 @@ deploynode() {
     if test $NODE = localhost ; then
 	sudo ./provision.sh --config local.params --roles ${NODES[$NODE]}
     else
-	ssh $DEPLOY_USER@$NODE "cd arvados-setup && sudo ./provision.sh --config local.params --roles ${NODES[$NODE]}"
+	ssh $DEPLOY_USER@$NODE "cd ${GITTARGET} && sudo ./provision.sh --config local.params --roles ${NODES[$NODE]}"
     fi
 }
 
 loadconfig() {
     CONFIG_FILE=local.params
     if ! test -s $CONFIG_FILE ; then
-	echo "Must be run from arvados-setup, maybe you need to 'initialize' first?"
+	echo "Must be run from initialized setup dir, maybe you need to 'initialize' first?"
     fi
     source ${CONFIG_FILE}
+    GITTARGET=arvados-deploy-config-${CLUSTER}
 }
 
 subcmd="$1"
