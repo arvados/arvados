@@ -85,6 +85,7 @@ func (c *Collection) FileSystem(client apiClient, kc keepClient) (CollectionFile
 				name:    ".",
 				mode:    os.ModeDir | 0755,
 				modTime: modTime,
+				sys:     c,
 			},
 			inodes: make(map[string]inode),
 		},

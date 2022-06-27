@@ -39,12 +39,13 @@ type s3stage struct {
 	kc         *keepclient.KeepClient
 	proj       arvados.Group
 	projbucket *s3.Bucket
+	subproj    arvados.Group
 	coll       arvados.Collection
 	collbucket *s3.Bucket
 }
 
 func (s *IntegrationSuite) s3setup(c *check.C) s3stage {
-	var proj arvados.Group
+	var proj, subproj arvados.Group
 	var coll arvados.Collection
 	arv := arvados.NewClientFromEnv()
 	arv.AuthToken = arvadostest.ActiveToken
@@ -56,10 +57,27 @@ func (s *IntegrationSuite) s3setup(c *check.C) s3stage {
 		"ensure_unique_name": true,
 	})
 	c.Assert(err, check.IsNil)
+	err = arv.RequestAndDecode(&subproj, "POST", "arvados/v1/groups", nil, map[string]interface{}{
+		"group": map[string]interface{}{
+			"owner_uuid":  proj.UUID,
+			"group_class": "project",
+			"name":        "keep-web s3 test subproject",
+			"properties": map[string]interface{}{
+				"subproject_properties_key": "subproject properties value",
+				"invalid header key":        "this value will not be returned because key contains spaces",
+			},
+		},
+	})
+	c.Assert(err, check.IsNil)
 	err = arv.RequestAndDecode(&coll, "POST", "arvados/v1/collections", nil, map[string]interface{}{"collection": map[string]interface{}{
 		"owner_uuid":    proj.UUID,
 		"name":          "keep-web s3 test collection",
 		"manifest_text": ". d41d8cd98f00b204e9800998ecf8427e+0 0:0:emptyfile\n./emptydir d41d8cd98f00b204e9800998ecf8427e+0 0:0:.\n",
+		"properties": map[string]interface{}{
+			"string": "string value",
+			"array":  []string{"element1", "element2"},
+			"object": map[string]interface{}{"key": map[string]interface{}{"key2": "value"}},
+		},
 	}})
 	c.Assert(err, check.IsNil)
 	ac, err := arvadosclient.New(arv)
@@ -95,7 +113,8 @@ func (s *IntegrationSuite) s3setup(c *check.C) s3stage {
 			S3:   client,
 			Name: proj.UUID,
 		},
-		coll: coll,
+		subproj: subproj,
+		coll:    coll,
 		collbucket: &s3.Bucket{
 			S3:   client,
 			Name: coll.UUID,
@@ -213,6 +232,46 @@ func (s *IntegrationSuite) testS3GetObject(c *check.C, bucket *s3.Bucket, prefix
 	exists, err = bucket.Exists(prefix + "//sailboat.txt")
 	c.Check(err, check.IsNil)
 	c.Check(exists, check.Equals, true)
+}
+
+func (s *IntegrationSuite) checkMetaEquals(c *check.C, resp *http.Response, expect map[string]string) {
+	got := map[string]string{}
+	for hk, hv := range resp.Header {
+		if k := strings.TrimPrefix(hk, "X-Amz-Meta-"); k != hk && len(hv) == 1 {
+			got[k] = hv[0]
+		}
+	}
+	c.Check(got, check.DeepEquals, expect)
+}
+
+func (s *IntegrationSuite) TestS3PropertiesAsMetadata(c *check.C) {
+	stage := s.s3setup(c)
+	defer stage.teardown(c)
+
+	expectCollectionTags := map[string]string{
+		"String": "string value",
+		"Array":  `["element1","element2"]`,
+		"Object": `{"key":{"key2":"value"}}`,
+	}
+	expectSubprojectTags := map[string]string{
+		"Subproject_properties_key": "subproject properties value",
+	}
+
+	resp, err := stage.collbucket.Head("sailboat.txt", nil)
+	c.Assert(err, check.IsNil)
+	s.checkMetaEquals(c, resp, expectCollectionTags)
+
+	resp, err = stage.projbucket.Head("keep-web s3 test collection/", nil)
+	c.Assert(err, check.IsNil)
+	s.checkMetaEquals(c, resp, expectCollectionTags)
+
+	resp, err = stage.projbucket.Head("keep-web s3 test collection/sailboat.txt", nil)
+	c.Assert(err, check.IsNil)
+	s.checkMetaEquals(c, resp, expectCollectionTags)
+
+	resp, err = stage.projbucket.Head("keep-web s3 test subproject/", nil)
+	c.Assert(err, check.IsNil)
+	s.checkMetaEquals(c, resp, expectSubprojectTags)
 }
 
 func (s *IntegrationSuite) TestS3CollectionPutObjectSuccess(c *check.C) {

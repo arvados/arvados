@@ -8,12 +8,14 @@ import (
 	"crypto/hmac"
 	"crypto/sha256"
 	"encoding/base64"
+	"encoding/json"
 	"encoding/xml"
 	"errors"
 	"fmt"
 	"hash"
 	"io"
 	"net/http"
+	"net/textproto"
 	"net/url"
 	"os"
 	"path/filepath"
@@ -385,6 +387,7 @@ func (h *handler) serveS3(w http.ResponseWriter, r *http.Request) bool {
 		if r.Method == "HEAD" && !objectNameGiven {
 			// HeadBucket
 			if err == nil && fi.IsDir() {
+				setFileInfoHeaders(w.Header(), fs, fspath)
 				w.WriteHeader(http.StatusOK)
 			} else if os.IsNotExist(err) {
 				s3ErrorResponse(w, NoSuchBucket, "The specified bucket does not exist.", r.URL.Path, http.StatusNotFound)
@@ -394,6 +397,7 @@ func (h *handler) serveS3(w http.ResponseWriter, r *http.Request) bool {
 			return true
 		}
 		if err == nil && fi.IsDir() && objectNameGiven && strings.HasSuffix(fspath, "/") && h.Cluster.Collections.S3FolderObjects {
+			setFileInfoHeaders(w.Header(), fs, fspath)
 			w.Header().Set("Content-Type", "application/x-directory")
 			w.WriteHeader(http.StatusOK)
 			return true
@@ -415,6 +419,7 @@ func (h *handler) serveS3(w http.ResponseWriter, r *http.Request) bool {
 		// shallow copy r, and change URL path
 		r := *r
 		r.URL.Path = fspath
+		setFileInfoHeaders(w.Header(), fs, fspath)
 		http.FileServer(fs).ServeHTTP(w, &r)
 		return true
 	case r.Method == http.MethodPut:
@@ -584,6 +589,48 @@ func (h *handler) serveS3(w http.ResponseWriter, r *http.Request) bool {
 		s3ErrorResponse(w, InvalidRequest, "method not allowed", r.URL.Path, http.StatusMethodNotAllowed)
 		return true
 	}
+}
+
+func setFileInfoHeaders(header http.Header, fs arvados.CustomFileSystem, path string) {
+	path = strings.TrimSuffix(path, "/")
+	var props map[string]interface{}
+	for {
+		fi, err := fs.Stat(path)
+		if err != nil {
+			return
+		}
+		switch src := fi.Sys().(type) {
+		case *arvados.Collection:
+			props = src.Properties
+		case *arvados.Group:
+			props = src.Properties
+		default:
+			// Try parent
+			cut := strings.LastIndexByte(path, '/')
+			if cut < 0 {
+				return
+			}
+			path = path[:cut]
+			continue
+		}
+		break
+	}
+	for k, v := range props {
+		if !validMIMEHeaderKey(k) {
+			continue
+		}
+		k = "x-amz-meta-" + k
+		if s, ok := v.(string); ok {
+			header.Set(k, s)
+		} else if j, err := json.Marshal(v); err == nil {
+			header.Set(k, string(j))
+		}
+	}
+}
+
+func validMIMEHeaderKey(k string) bool {
+	check := "z-" + k
+	return check != textproto.CanonicalMIMEHeaderKey(check)
 }
 
 // Call fn on the given path (directory) and its contents, in

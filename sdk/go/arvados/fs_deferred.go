@@ -24,6 +24,7 @@ func deferredCollectionFS(fs FileSystem, parent inode, coll Collection) inode {
 			name:    coll.Name,
 			modTime: modTime,
 			mode:    0755 | os.ModeDir,
+			sys:     &coll,
 		},
 	}
 	return &deferrednode{wrapped: placeholder, create: func() inode {

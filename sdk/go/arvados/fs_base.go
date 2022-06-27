@@ -234,6 +234,15 @@ type fileinfo struct {
 	mode    os.FileMode
 	size    int64
 	modTime time.Time
+	// Source data structure: *Collection, *Group, or
+	// nil. Currently populated only for project dirs and
+	// top-level collection dirs; *not* populated for
+	// /by_id/{uuid} dirs (only subdirs below that). Does not stay
+	// up to date with upstream changes.
+	//
+	// Intended to support keep-web's properties-as-s3-metadata
+	// feature (https://dev.arvados.org/issues/19088).
+	sys interface{}
 }
 
 // Name implements os.FileInfo.
@@ -261,9 +270,9 @@ func (fi fileinfo) Size() int64 {
 	return fi.size
 }
 
-// Sys implements os.FileInfo.
+// Sys implements os.FileInfo. See comment in fileinfo struct.
 func (fi fileinfo) Sys() interface{} {
-	return nil
+	return fi.sys
 }
 
 type nullnode struct{}
