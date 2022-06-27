@@ -6,6 +6,8 @@
 
 set -e
 
+declare -A NODES
+
 sync() {
     if test "$NODE" != localhost ; then
 	if ! ssh $NODE test -d arvados-setup ; then
