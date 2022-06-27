@@ -9,7 +9,7 @@ set -e
 declare -A NODES
 
 sync() {
-    if test "$NODE" != localhost ; then
+    if [[ "$NODE" != localhost ]] ; then
 	if ! ssh $NODE test -d ${TARGET}.git ; then
 	    ssh $NODE git init --bare ${GITTARGET}.git
 	    if ! git remote add $NODE $DEPLOY_USER@$NODE:${GITTARGET}.git ; then
@@ -26,12 +26,12 @@ sync() {
 }
 
 deploynode() {
-    if test -z "${NODES[$NODE]}" ; then
+    if [[ -z "${NODES[$NODE]}" ]] ; then
 	echo "No roles declared for '$NODE' in local.params"
 	exit 1
     fi
 
-    if test $NODE = localhost ; then
+    if [[ "$NODE" = localhost ]] ; then
 	sudo ./provision.sh --config local.params --roles ${NODES[$NODE]}
     else
 	ssh $DEPLOY_USER@$NODE "cd ${GITTARGET} && sudo ./provision.sh --config local.params --roles ${NODES[$NODE]}"
@@ -40,7 +40,7 @@ deploynode() {
 
 loadconfig() {
     CONFIG_FILE=local.params
-    if ! test -s $CONFIG_FILE ; then
+    if [[ ! -s $CONFIG_FILE ]] ; then
 	echo "Must be run from initialized setup dir, maybe you need to 'initialize' first?"
     fi
     source ${CONFIG_FILE}
@@ -48,12 +48,12 @@ loadconfig() {
 }
 
 subcmd="$1"
-if test -n "$subcmd" ; then
+if [[ -n "$subcmd" ]] ; then
     shift
 fi
 case "$subcmd" in
     initialize)
-	if ! test -f provision.sh ; then
+	if [[ ! -f provision.sh ]] ; then
 	    echo "Must be run from arvados/tools/salt-install"
 	    exit
 	fi
@@ -63,24 +63,24 @@ case "$subcmd" in
 	SLS=$3
 
 	err=
-	if test -z "$PARAMS" -o ! -f local.params.example.$PARAMS ; then
+	if [[ -z "$PARAMS" || ! -f local.params.example.$PARAMS ]] ; then
 	    echo "Not found: local.params.example.$PARAMS"
 	    echo "Expected one of multiple_hosts, single_host_multiple_hostnames, single_host_single_hostname"
 	    err=1
 	fi
 
-	if test -z "$SLS" -o ! -d config_examples/$SLS ; then
+	if [[ -z "$SLS" || ! -d config_examples/$SLS ]] ; then
 	    echo "Not found: config_examples/$SLS"
 	    echo "Expected one of multi_host/aws, single_host/multiple_hostnames, single_host/single_hostname"
 	    err=1
 	fi
 
-	if test -z "$SETUPDIR" -o -z "$PARAMS" -o -z "$SLS" ; then
+	if [[ -z "$SETUPDIR" || -z "$PARAMS" || -z "$SLS" ]]; then
 	    echo "installer.sh <setup dir to initialize> <params template> <config template>"
 	    err=1
 	fi
 
-	if test -n "$err" ; then
+	if [[ -n "$err" ]] ; then
 	    exit 1
 	fi
 
@@ -111,9 +111,30 @@ case "$subcmd" in
 	    git commit -m"prepare for deploy"
 	fi
 
-	if test -z "$NODE"; then
+	if [[ -z "$NODE" ]]; then
 	    for NODE in "${!NODES[@]}"
 	    do
+		# Do 'database' role first,
+		if [[ "${NODES[$NODE]}" =~ database ]] ; then
+		    sync
+		    deploynode
+		    unset NODES[$NODE]
+		fi
+	    done
+
+	    for NODE in "${!NODES[@]}"
+	    do
+		# then  'api' or 'controller' roles
+		if [[ "${NODES[$NODE]}" =~ (api|controller) ]] ; then
+		    sync
+		    deploynode
+		    unset NODES[$NODE]
+		fi
+	    done
+
+	    for NODE in "${!NODES[@]}"
+	    do
+		# Everything else
 		sync
 		deploynode
 	    done
