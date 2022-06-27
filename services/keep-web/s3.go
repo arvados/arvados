@@ -14,6 +14,7 @@ import (
 	"fmt"
 	"hash"
 	"io"
+	"mime"
 	"net/http"
 	"net/textproto"
 	"net/url"
@@ -604,6 +605,14 @@ func (h *handler) serveS3(w http.ResponseWriter, r *http.Request) bool {
 }
 
 func setFileInfoHeaders(header http.Header, fs arvados.CustomFileSystem, path string) error {
+	maybeEncode := func(s string) string {
+		for _, c := range s {
+			if c > '\u007f' {
+				return mime.BEncoding.Encode("UTF-8", s)
+			}
+		}
+		return s
+	}
 	path = strings.TrimSuffix(path, "/")
 	var props map[string]interface{}
 	for {
@@ -636,9 +645,9 @@ func setFileInfoHeaders(header http.Header, fs arvados.CustomFileSystem, path st
 		}
 		k = "x-amz-meta-" + k
 		if s, ok := v.(string); ok {
-			header.Set(k, s)
+			header.Set(k, maybeEncode(s))
 		} else if j, err := json.Marshal(v); err == nil {
-			header.Set(k, string(j))
+			header.Set(k, maybeEncode(string(j)))
 		}
 	}
 	return nil

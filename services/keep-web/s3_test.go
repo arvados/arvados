@@ -11,6 +11,7 @@ import (
 	"crypto/sha256"
 	"fmt"
 	"io/ioutil"
+	"mime"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -77,9 +78,10 @@ func (s *IntegrationSuite) s3setup(c *check.C) s3stage {
 		"name":          "keep-web s3 test collection",
 		"manifest_text": ". d41d8cd98f00b204e9800998ecf8427e+0 0:0:emptyfile\n./emptydir d41d8cd98f00b204e9800998ecf8427e+0 0:0:.\n",
 		"properties": map[string]interface{}{
-			"string": "string value",
-			"array":  []string{"element1", "element2"},
-			"object": map[string]interface{}{"key": map[string]interface{}{"key2": "value"}},
+			"string":   "string value",
+			"array":    []string{"element1", "element2"},
+			"object":   map[string]interface{}{"key": map[string]interface{}{"key2": "value⛵"}},
+			"nonascii": "⛵",
 		},
 	}})
 	c.Assert(err, check.IsNil)
@@ -252,9 +254,10 @@ func (s *IntegrationSuite) TestS3PropertiesAsMetadata(c *check.C) {
 	defer stage.teardown(c)
 
 	expectCollectionTags := map[string]string{
-		"String": "string value",
-		"Array":  `["element1","element2"]`,
-		"Object": `{"key":{"key2":"value"}}`,
+		"String":   "string value",
+		"Array":    `["element1","element2"]`,
+		"Object":   mime.BEncoding.Encode("UTF-8", `{"key":{"key2":"value⛵"}}`),
+		"Nonascii": "=?UTF-8?b?4pu1?=",
 	}
 	expectSubprojectTags := map[string]string{
 		"Subproject_properties_key": "subproject properties value",
