@@ -18,7 +18,6 @@ DEPLOY_USER=root
 # The mapping of nodes to roles
 # installer.sh will log in to each of these nodes and then provision
 # it for the specified roles.
-declare -A NODES
 NODES=(
   [localhost]=api,controller,websocket,dispatcher,keepbalance,keepstore,keepproxy,keepweb,workbench,workbench2,webshell
 )

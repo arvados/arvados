@@ -19,14 +19,13 @@ DEPLOY_USER=root
 # The mapping of nodes to roles
 # installer.sh will log in to each of these nodes and then provision
 # it for the specified roles.
-declare -A NODES
 NODES=(
-  [controller.${CLUSTER}.$DOMAIN]=api,controller,websocket,dispatcher,keepbalance
-  [keep0.${CLUSTER}.$DOMAIN]=keepstore
-  [keep1.${CLUSTER}.$DOMAIN]=keepstore
-  [keep.${CLUSTER}.$DOMAIN]=keepproxy,keepweb
-  [workbench.${CLUSTER}.$DOMAIN]=workbench,workbench2,webshell
-  [shell.${CLUSTER}.$DOMAIN]=shell
+  [controller.${CLUSTER}.${DOMAIN}]=api,controller,websocket,dispatcher,keepbalance
+  [keep0.${CLUSTER}.${DOMAIN}]=keepstore
+  [keep1.${CLUSTER}.${DOMAIN}]=keepstore
+  [keep.${CLUSTER}.${DOMAIN}]=keepproxy,keepweb
+  [workbench.${CLUSTER}.${DOMAIN}]=workbench,workbench2,webshell
+  [shell.${CLUSTER}.${DOMAIN}]=shell
 )
 
 # Host SSL port where you want to point your browser to access Arvados

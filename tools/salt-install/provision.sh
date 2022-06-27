@@ -237,6 +237,8 @@ T_DIR="/tmp/cluster_tests"
 
 arguments ${@}
 
+declare -A NODES
+
 if [ -s ${CONFIG_FILE} ]; then
   source ${CONFIG_FILE}
 else
