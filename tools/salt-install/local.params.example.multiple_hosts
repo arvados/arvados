@@ -8,7 +8,8 @@
 # The Arvados cluster ID, needs to be 5 lowercase alphanumeric characters.
 CLUSTER="cluster_fixme_or_this_wont_work"
 
-# The domainname you want tou give to your cluster's hosts
+# The domain name you want to give to your cluster's hosts
+# the end result hostnames will be $SERVICE.$CLUSTER.$DOMAIN
 DOMAIN="domain_fixme_or_this_wont_work"
 
 # For multi-node installs, the ssh log in for each node
@@ -20,12 +21,12 @@ DEPLOY_USER=root
 # it for the specified roles.
 declare -A NODES
 NODES=(
-  [controller.$DOMAIN]=api,controller,websocket,dispatcher,keepbalance
-  [keep0.$DOMAIN]=keepstore
-  [keep1.$DOMAIN]=keepstore
-  [keep.$DOMAIN]=keepproxy,keepweb
-  [workbench.$DOMAIN]=workbench,workbench2,webshell
-  [shell.$DOMAIN]=shell
+  [controller.${CLUSTER}.$DOMAIN]=api,controller,websocket,dispatcher,keepbalance
+  [keep0.${CLUSTER}.$DOMAIN]=keepstore
+  [keep1.${CLUSTER}.$DOMAIN]=keepstore
+  [keep.${CLUSTER}.$DOMAIN]=keepproxy,keepweb
+  [workbench.${CLUSTER}.$DOMAIN]=workbench,workbench2,webshell
+  [shell.${CLUSTER}.$DOMAIN]=shell
 )
 
 # Host SSL port where you want to point your browser to access Arvados

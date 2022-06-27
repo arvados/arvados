@@ -6,25 +6,35 @@
 
 set -e
 
-deploynode() {
-	    if test $NODE = localhost ; then
-		sudo ./provision.sh --config local.params --roles ${NODES[$NODE]}
-	    else
-		if ! ssh $NODE test -d arvados-setup ; then
-		    ssh $NODE git init --bare arvados-setup.git
-		    if ! git remote add $NODE $DEPLOY_USER@$NODE:arvados-setup.git ; then
-			git remote set-url $NODE $DEPLOY_USER@$NODE:arvados-setup.git
-		    fi
-		    git push $NODE $BRANCH
-		    ssh $NODE git clone arvados-setup.git arvados-setup
-		fi
-
-		git push $NODE $BRANCH
-		ssh $NODE git -C arvados-setup checkout $BRANCH
-		ssh $NODE git -C arvados-setup pull
-
-		ssh $DEPLOY_USER@$NODE "cd arvados-setup && sudo ./provision.sh --config local.params --roles ${NODES[$NODE]}"
+sync() {
+    if test $NODE = localhost ; then
+	# nothing to do
+    else
+	if ! ssh $NODE test -d arvados-setup ; then
+	    ssh $NODE git init --bare arvados-setup.git
+	    if ! git remote add $NODE $DEPLOY_USER@$NODE:arvados-setup.git ; then
+		git remote set-url $NODE $DEPLOY_USER@$NODE:arvados-setup.git
 	    fi
+	    git push $NODE $BRANCH
+	    ssh $NODE git clone arvados-setup.git arvados-setup
+	fi
+
+	git push $NODE $BRANCH
+	ssh $NODE git -C arvados-setup checkout $BRANCH
+	ssh $NODE git -C arvados-setup pull
+}
+
+deploynode() {
+    if test -z "${NODES[$NODE]}" ; then
+	echo "No roles declared for '$NODE' in local.params"
+	exit 1
+    fi
+
+    if test $NODE = localhost ; then
+	sudo ./provision.sh --config local.params --roles ${NODES[$NODE]}
+    else
+	ssh $DEPLOY_USER@$NODE "cd arvados-setup && sudo ./provision.sh --config local.params --roles ${NODES[$NODE]}"
+    fi
 }
 
 subcmd="$1"
@@ -76,7 +86,7 @@ case "$subcmd" in
 	git commit -m"initial commit"
 
 	echo "setup directory initialized, now go to $SETUPDIR, edit 'local.params' and 'local_config_dir' as needed, then run 'installer.sh deploy'"
-    ;;
+	;;
     deploy)
 	NODE=$1
 	CONFIG_FILE=local.params
@@ -98,9 +108,11 @@ case "$subcmd" in
 	if test -z "$NODE"; then
 	    for NODE in "${!NODES[@]}"
 	    do
+		sync
 		deploynode
 	    done
 	else
+	    sync
 	    deploynode
 	fi
 	;;
