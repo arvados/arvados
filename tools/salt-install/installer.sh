@@ -10,7 +10,7 @@ declare -A NODES
 
 sync() {
     if [[ "$NODE" != localhost ]] ; then
-	if ! ssh $NODE test -d ${TARGET}.git ; then
+	if ! ssh $NODE test -d ${GITTARGET}.git ; then
 	    ssh $NODE git init --bare ${GITTARGET}.git
 	    if ! git remote add $NODE $DEPLOY_USER@$NODE:${GITTARGET}.git ; then
 		git remote set-url $NODE $DEPLOY_USER@$NODE:${GITTARGET}.git
