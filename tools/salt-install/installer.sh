@@ -7,9 +7,7 @@
 set -e
 
 sync() {
-    if test $NODE = localhost ; then
-	# nothing to do
-    else
+    if test "$NODE" != localhost ; then
 	if ! ssh $NODE test -d arvados-setup ; then
 	    ssh $NODE git init --bare arvados-setup.git
 	    if ! git remote add $NODE $DEPLOY_USER@$NODE:arvados-setup.git ; then
