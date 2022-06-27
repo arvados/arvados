@@ -6,6 +6,8 @@ class DatabaseController < ApplicationController
   skip_before_action :find_object_by_uuid
   skip_before_action :render_404_if_no_object
   before_action :admin_required
+  around_action :silence_logs, only: [:reset]
+
   def reset
     raise ArvadosModel::PermissionDeniedError unless Rails.env == 'test'
 
@@ -82,5 +84,18 @@ class DatabaseController < ApplicationController
 
     # Done.
     send_json success: true
+  end
+
+  protected
+
+  def silence_logs
+    Rails.logger.info("(logging level temporarily raised to :error, see #{__FILE__})")
+    orig = ActiveRecord::Base.logger.level
+    ActiveRecord::Base.logger.level = :error
+    begin
+      yield
+    ensure
+      ActiveRecord::Base.logger.level = orig
+    end
   end
 end
