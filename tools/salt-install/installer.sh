@@ -20,6 +20,7 @@ sync() {
 	git push $NODE $BRANCH
 	ssh $NODE git -C arvados-setup checkout $BRANCH
 	ssh $NODE git -C arvados-setup pull
+    fi
 }
 
 deploynode() {
