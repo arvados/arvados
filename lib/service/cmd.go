@@ -273,7 +273,15 @@ func getListenAddr(svcs arvados.Services, prog arvados.ServiceName, log logrus.F
 			// intermediate proxy/routing)
 			listenURL = internalURL
 		}
-		listener, err := net.Listen("tcp", listenURL.Host)
+		listenAddr := listenURL.Host
+		if _, _, err := net.SplitHostPort(listenAddr); err != nil {
+			// url "https://foo.example/" (with no
+			// explicit port name/number) means listen on
+			// the well-known port for the specified
+			// protocol, "foo.example:https".
+			listenAddr = net.JoinHostPort(listenAddr, listenURL.Scheme)
+		}
+		listener, err := net.Listen("tcp", listenAddr)
 		if err == nil {
 			listener.Close()
 			return listenURL, internalURL, nil
