@@ -241,10 +241,11 @@ func getListenAddr(svcs arvados.Services, prog arvados.ServiceName, log logrus.F
 		return arvados.URL{}, arvados.URL{}, fmt.Errorf("unknown service name %q", prog)
 	}
 
-	if want := os.Getenv("ARVADOS_SERVICE_INTERNAL_URL"); want == "" {
-	} else if url, err := url.Parse(want); err != nil {
-		return arvados.URL{}, arvados.URL{}, fmt.Errorf("$ARVADOS_SERVICE_INTERNAL_URL (%q): %s", want, err)
-	} else {
+	if want := os.Getenv("ARVADOS_SERVICE_INTERNAL_URL"); want != "" {
+		url, err := url.Parse(want)
+		if err != nil {
+			return arvados.URL{}, arvados.URL{}, fmt.Errorf("$ARVADOS_SERVICE_INTERNAL_URL (%q): %s", want, err)
+		}
 		if url.Path == "" {
 			url.Path = "/"
 		}
