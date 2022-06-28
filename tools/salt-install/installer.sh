@@ -40,6 +40,7 @@ deploynode() {
 
 loadconfig() {
     CONFIG_FILE=local.params
+    CONFIG_DIR=local_config_dir
     if [[ ! -s $CONFIG_FILE ]] ; then
 	echo "Must be run from initialized setup dir, maybe you need to 'initialize' first?"
     fi
@@ -102,9 +103,15 @@ case "$subcmd" in
 
 	loadconfig
 
-	set -x
+	if grep -rni 'fixme' ${CONFIG_FILE} ${CONFIG_DIR} ; then
+	    echo
+	    echo "Some parameters still need to be updated.  Please fix them and then re-run deploy."
+	    exit 1
+	fi
 
 	BRANCH=$(git branch --show-current)
+
+	set -x
 
 	git add -A
 	if ! git diff --cached --exit-code ; then

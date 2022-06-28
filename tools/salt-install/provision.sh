@@ -257,7 +257,7 @@ if [ ! -d ${CONFIG_DIR} ]; then
   exit 1
 fi
 
-if grep -q 'fixme_or_this_wont_work' ${CONFIG_FILE} ; then
+if grep -rni 'fixme' ${CONFIG_FILE} ${CONFIG_DIR} ; then
   echo >&2 "The config file ${CONFIG_FILE} has some parameters that need to be modified."
   echo >&2 "Please, fix them and re-run the provision script."
   exit 1
