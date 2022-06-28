@@ -64,14 +64,16 @@ func (*Suite) TestGetListenAddress(c *check.C) {
 		},
 		{ // implicit port 80 in InternalURLs
 			internalURLs:     map[string]string{"http://localhost/": ""},
-			expectListen:     "http://localhost/",
-			expectInternal:   "http://localhost/",
 			expectErrorMatch: `.*:80: bind: permission denied`,
 		},
 		{ // implicit port 443 in InternalURLs
 			internalURLs:   map[string]string{"https://host.example/": "http://localhost:" + unusedPort + "/"},
 			expectListen:   "http://localhost:" + unusedPort + "/",
 			expectInternal: "https://host.example/",
+		},
+		{ // implicit port 443 in ListenURL
+			internalURLs:     map[string]string{"wss://host.example/": "wss://localhost/"},
+			expectErrorMatch: `.*:443: bind: permission denied`,
 		},
 		{
 			internalURLs:   map[string]string{"https://hostname.example/": "http://localhost:8000/"},

@@ -279,7 +279,11 @@ func getListenAddr(svcs arvados.Services, prog arvados.ServiceName, log logrus.F
 			// explicit port name/number) means listen on
 			// the well-known port for the specified
 			// protocol, "foo.example:https".
-			listenAddr = net.JoinHostPort(listenAddr, listenURL.Scheme)
+			port := listenURL.Scheme
+			if port == "ws" || port == "wss" {
+				port = "http" + port[2:]
+			}
+			listenAddr = net.JoinHostPort(listenAddr, port)
 		}
 		listener, err := net.Listen("tcp", listenAddr)
 		if err == nil {
