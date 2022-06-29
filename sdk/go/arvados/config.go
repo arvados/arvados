@@ -401,6 +401,7 @@ func (su URL) String() string {
 }
 
 type ServiceInstance struct {
+	ListenURL  URL
 	Rendezvous string `json:",omitempty"`
 }
 
