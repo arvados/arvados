@@ -47,7 +47,13 @@ func (hn hijackNotifier) Hijack() (net.Conn, *bufio.ReadWriter, error) {
 // HandlerWithDeadline cancels the request context if the request
 // takes longer than the specified timeout without having its
 // connection hijacked.
+//
+// If timeout is 0, there is no deadline: HandlerWithDeadline is a
+// no-op.
 func HandlerWithDeadline(timeout time.Duration, next http.Handler) http.Handler {
+	if timeout == 0 {
+		return next
+	}
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		ctx, cancel := context.WithCancel(r.Context())
 		defer cancel()

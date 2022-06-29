@@ -22,7 +22,7 @@ func (h *testHandler) ServeHTTP(resp http.ResponseWriter, req *http.Request) {
 	<-h.okToProceed
 }
 
-func newTestHandler(maxReqs int) *testHandler {
+func newTestHandler() *testHandler {
 	return &testHandler{
 		inHandler:   make(chan struct{}),
 		okToProceed: make(chan struct{}),
@@ -30,7 +30,7 @@ func newTestHandler(maxReqs int) *testHandler {
 }
 
 func TestRequestLimiter1(t *testing.T) {
-	h := newTestHandler(10)
+	h := newTestHandler()
 	l := NewRequestLimiter(1, h, nil)
 	var wg sync.WaitGroup
 	resps := make([]*httptest.ResponseRecorder, 10)
@@ -90,7 +90,7 @@ func TestRequestLimiter1(t *testing.T) {
 }
 
 func TestRequestLimiter10(t *testing.T) {
-	h := newTestHandler(10)
+	h := newTestHandler()
 	l := NewRequestLimiter(10, h, nil)
 	var wg sync.WaitGroup
 	for i := 0; i < 10; i++ {
