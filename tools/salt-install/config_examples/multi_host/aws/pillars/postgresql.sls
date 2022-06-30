@@ -19,7 +19,7 @@ postgres:
   users:
     __CLUSTER___arvados:
       ensure: present
-      password: __DATABASE_PASSWORD__
+      password: "__DATABASE_PASSWORD__"
 
   # tablespaces:
   #   arvados_tablespace:
