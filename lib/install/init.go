@@ -74,6 +74,13 @@ func (initcmd *initCommand) RunCommand(prog string, args []string, stdin io.Read
 		return 1
 	}
 
+	confdir := "/etc/arvados"
+	conffile := confdir + "/config.yml"
+	if _, err = os.Stat(conffile); err == nil {
+		err = fmt.Errorf("config file %s already exists; delete it first if you really want to start over", conffile)
+		return 1
+	}
+
 	wwwuser, err := user.Lookup("www-data")
 	if err != nil {
 		err = fmt.Errorf("user.Lookup(%q): %w", "www-data", err)
@@ -92,15 +99,19 @@ func (initcmd *initCommand) RunCommand(prog string, args []string, stdin io.Read
 	}
 	fmt.Fprintln(stderr, "created /var/lib/arvados/keep")
 
-	err = os.Mkdir("/etc/arvados", 0750)
+	err = os.Mkdir(confdir, 0750)
 	if err != nil && !os.IsExist(err) {
-		err = fmt.Errorf("mkdir /etc/arvados: %w", err)
+		err = fmt.Errorf("mkdir %s: %w", confdir, err)
 		return 1
 	}
-	err = os.Chown("/etc/arvados", 0, wwwgid)
-	f, err := os.OpenFile("/etc/arvados/config.yml", os.O_CREATE|os.O_EXCL|os.O_WRONLY, 0644)
+	err = os.Chown(confdir, 0, wwwgid)
 	if err != nil {
-		err = fmt.Errorf("open /etc/arvados/config.yml: %w", err)
+		err = fmt.Errorf("chown 0:%d %s: %w", wwwgid, confdir, err)
+		return 1
+	}
+	f, err := os.OpenFile(conffile, os.O_CREATE|os.O_EXCL|os.O_WRONLY, 0644)
+	if err != nil {
+		err = fmt.Errorf("open %s: %w", conffile, err)
 		return 1
 	}
 	tmpl, err := template.New("config").Parse(`Clusters:
@@ -218,21 +229,21 @@ func (initcmd *initCommand) RunCommand(prog string, args []string, stdin io.Read
 	}
 	err = tmpl.Execute(f, initcmd)
 	if err != nil {
-		err = fmt.Errorf("/etc/arvados/config.yml: tmpl.Execute: %w", err)
+		err = fmt.Errorf("%s: tmpl.Execute: %w", conffile, err)
 		return 1
 	}
 	err = f.Close()
 	if err != nil {
-		err = fmt.Errorf("/etc/arvados/config.yml: close: %w", err)
+		err = fmt.Errorf("%s: close: %w", conffile, err)
 		return 1
 	}
-	fmt.Fprintln(stderr, "created /etc/arvados/config.yml")
+	fmt.Fprintln(stderr, "created", conffile)
 
 	ldr := config.NewLoader(nil, logger)
 	ldr.SkipLegacy = true
 	cfg, err := ldr.Load()
 	if err != nil {
-		err = fmt.Errorf("/etc/arvados/config.yml: %w", err)
+		err = fmt.Errorf("%s: %w", conffile, err)
 		return 1
 	}
 	cluster, err := cfg.GetCluster("")
@@ -251,7 +262,7 @@ func (initcmd *initCommand) RunCommand(prog string, args []string, stdin io.Read
 	cmd.Stderr = stderr
 	err = cmd.Run()
 	if err != nil {
-		err = fmt.Errorf("rake db:setup: %w", err)
+		err = fmt.Errorf("rake db:setup failed: %w", err)
 		return 1
 	}
 	fmt.Fprintln(stderr, "initialized database")
