@@ -40,7 +40,7 @@ const (
 	gradleversion           = "5.3.1"
 	nodejsversion           = "v12.22.11"
 	devtestDatabasePassword = "insecure_arvados_test"
-	workbench2version       = "5e020488f67b5bc919796e0dc8b0b9f3b3ff23b0"
+	workbench2version       = "2454ac35292a79594c32a80430740317ed5005cf"
 )
 
 //go:embed arvados.service
