@@ -4,13 +4,61 @@
 #
 # SPDX-License-Identifier: CC-BY-SA-3.0
 
-set -e
+#
+# installer.sh
+#
+# Helps manage the configuration in a git repository, and then deploy
+# nodes by pushing a copy of the git repository to each node and
+# running the provision script to do the actual installation and
+# configuration.
+#
 
+set -eu
+
+# The parameter file
+declare CONFIG_FILE=local.params
+
+# The salt template directory
+declare CONFIG_DIR=local_config_dir
+
+# The 5-character Arvados cluster id
+# This will be populated by loadconfig()
+declare CLUSTER
+
+# The parent domain (not including the cluster id)
+# This will be populated by loadconfig()
+declare DOMAIN
+
+# A bash associative array listing each node and mapping to the roles
+# that should be provisioned on those nodes.
+# This will be populated by loadconfig()
 declare -A NODES
 
+# The ssh user we'll use
+# This will be populated by loadconfig()
+declare DEPLOY_USER
+
+# The git repository that we'll push to on all the nodes
+# This will be populated by loadconfig()
+declare GITTARGET
+
 sync() {
+    local NODE=$1
+    local BRANCH=$2
+
+    # Synchronizes the configuration by creating a git repository on
+    # each node, pushing our branch, and updating the checkout.
+
     if [[ "$NODE" != localhost ]] ; then
 	if ! ssh $NODE test -d ${GITTARGET}.git ; then
+
+	    # Initialize the git repository (1st time case).  We're
+	    # actually going to make two repositories here because git
+	    # will complain if you try to push to a repository with a
+	    # checkout. So we're going to create a "bare" repository
+	    # and then clone a regular repository (with a checkout)
+	    # from that.
+
 	    ssh $NODE git init --bare ${GITTARGET}.git
 	    if ! git remote add $NODE $DEPLOY_USER@$NODE:${GITTARGET}.git ; then
 		git remote set-url $NODE $DEPLOY_USER@$NODE:${GITTARGET}.git
@@ -19,28 +67,37 @@ sync() {
 	    ssh $NODE git clone ${GITTARGET}.git ${GITTARGET}
 	fi
 
+	# The update case.
+	#
+	# Push to the bare repository on the remote node, then in the
+	# remote node repository with the checkout, pull the branch
+	# from the bare repository.
+
 	git push $NODE $BRANCH
-	ssh $NODE git -C ${GITTARGET} checkout $BRANCH
-	ssh $NODE git -C ${GITTARGET} pull
+	ssh $NODE "git -C ${GITTARGET} checkout ${BRANCH} && git -C ${GITTARGET} pull"
     fi
 }
 
 deploynode() {
-    if [[ -z "${NODES[$NODE]}" ]] ; then
-	echo "No roles declared for '$NODE' in local.params"
+    local NODE=$1
+    local ROLES=$2
+
+    # Deploy a node.  This runs the provision script on the node, with
+    # the appropriate roles.
+
+    if [[ -z "$ROLES" ]] ; then
+	echo "No roles declared for '$NODE' in ${CONFIG_FILE}"
 	exit 1
     fi
 
     if [[ "$NODE" = localhost ]] ; then
-	sudo ./provision.sh --config local.params --roles ${NODES[$NODE]}
+	sudo ./provision.sh --config ${CONFIG_FILE} --roles ${ROLES}
     else
-	ssh $DEPLOY_USER@$NODE "cd ${GITTARGET} && sudo ./provision.sh --config local.params --roles ${NODES[$NODE]}"
+	ssh $DEPLOY_USER@$NODE "cd ${GITTARGET} && sudo ./provision.sh --config ${CONFIG_FILE} --roles ${ROLES}"
     fi
 }
 
 loadconfig() {
-    CONFIG_FILE=local.params
-    CONFIG_DIR=local_config_dir
     if [[ ! -s $CONFIG_FILE ]] ; then
 	echo "Must be run from initialized setup dir, maybe you need to 'initialize' first?"
     fi
@@ -89,14 +146,14 @@ case "$subcmd" in
 	git init $SETUPDIR
 	cp -r *.sh tests $SETUPDIR
 
-	cp local.params.example.$PARAMS $SETUPDIR/local.params
-	cp -r config_examples/$SLS $SETUPDIR/local_config_dir
+	cp local.params.example.$PARAMS $SETUPDIR/${CONFIG_FILE}
+	cp -r config_examples/$SLS $SETUPDIR/${CONFIG_DIR}
 
 	cd $SETUPDIR
-	git add *.sh local.params local_config_dir tests
+	git add *.sh ${CONFIG_FILE} ${CONFIG_DIR} tests
 	git commit -m"initial commit"
 
-	echo "setup directory initialized, now go to $SETUPDIR, edit 'local.params' and 'local_config_dir' as needed, then run 'installer.sh deploy'"
+	echo "setup directory initialized, now go to $SETUPDIR, edit '${CONFIG_FILE}' and '${CONFIG_DIR}' as needed, then run 'installer.sh deploy'"
 	;;
     deploy)
 	NODE=$1
@@ -121,10 +178,17 @@ case "$subcmd" in
 	if [[ -z "$NODE" ]]; then
 	    for NODE in "${!NODES[@]}"
 	    do
+		# First, push the git repo to each node.  This also
+		# confirms that we have git and can log into each
+		# node.
+		sync $NODE $BRANCH
+	    done
+
+	    for NODE in "${!NODES[@]}"
+	    do
 		# Do 'database' role first,
 		if [[ "${NODES[$NODE]}" =~ database ]] ; then
-		    sync
-		    deploynode
+		    deploynode $NODE ${NODES[$NODE]}
 		    unset NODES[$NODE]
 		fi
 	    done
@@ -133,35 +197,46 @@ case "$subcmd" in
 	    do
 		# then  'api' or 'controller' roles
 		if [[ "${NODES[$NODE]}" =~ (api|controller) ]] ; then
-		    sync
-		    deploynode
+		    deploynode $NODE ${NODES[$NODE]}
 		    unset NODES[$NODE]
 		fi
 	    done
 
 	    for NODE in "${!NODES[@]}"
 	    do
-		# Everything else
-		sync
-		deploynode
+		# Everything else (we removed the nodes that we
+		# already deployed from the list)
+		deploynode $NODE ${NODES[$NODE]}
 	    done
 	else
-	    sync
-	    deploynode
+	    # Just deploy the node that was supplied on the command line.
+	    sync $NODE $BRANCH
+	    deploynode $NODE
 	fi
 
 	;;
     diagnostics)
 	loadconfig
 
+	declare LOCATION=$1
+
 	if ! which arvados-client ; then
-	    apt-get install arvados-client
+	    echo "arvados-client not found, install 'arvados-client' package with 'apt-get' or 'yum'"
+	    exit 1
+	fi
+
+	if [[ -z "$LOCATION" ]] ; then
+	    echo "Need to provide '-internal-client' or '-external-client'"
+	    echo
+	    echo "-internal-client    You are running this on the same private network as the Arvados cluster (e.g. on one of the Arvados nodes)"
+	    echo "-external-client    You are running this outside the private network of the Arvados cluster (e.g. your workstation)"
+	    exit 1
 	fi
 
 	export ARVADOS_API_HOST="${CLUSTER}.${DOMAIN}"
 	export ARVADOS_API_TOKEN="$SYSTEM_ROOT_TOKEN"
 
-	arvados-client diagnostics -internal-client
+	arvados-client diagnostics $LOCATION
 	;;
     *)
 	echo "Arvados installer"
