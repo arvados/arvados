@@ -11,6 +11,9 @@ import (
 	"io"
 	"net/http"
 	"os"
+	"path"
+	"path/filepath"
+	"strings"
 
 	"git.arvados.org/arvados.git/lib/boot"
 	"git.arvados.org/arvados.git/lib/cloud/cloudtest"
@@ -80,8 +83,21 @@ func (wb2command) RunCommand(prog string, args []string, stdin io.Reader, stdout
 		fmt.Fprintf(stderr, "json.Marshal: %s\n", err)
 		return 1
 	}
+	servefs := http.FileServer(http.Dir(args[2]))
 	mux := http.NewServeMux()
-	mux.Handle("/", http.FileServer(http.Dir(args[2])))
+	mux.Handle("/", http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+		for _, ent := range strings.Split(req.URL.Path, "/") {
+			if ent == ".." {
+				http.Error(w, "invalid URL path", http.StatusBadRequest)
+				return
+			}
+		}
+		fnm := filepath.Join(args[2], filepath.FromSlash(path.Clean("/"+req.URL.Path)))
+		if _, err := os.Stat(fnm); os.IsNotExist(err) {
+			req.URL.Path = "/"
+		}
+		servefs.ServeHTTP(w, req)
+	}))
 	mux.HandleFunc("/config.json", func(w http.ResponseWriter, _ *http.Request) {
 		w.Write(configJSON)
 	})
