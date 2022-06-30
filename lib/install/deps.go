@@ -578,19 +578,6 @@ yarn install
 			}
 		}
 
-		// Symlink user-facing Go programs /usr/bin/x ->
-		// /var/lib/arvados/bin/x
-		for _, prog := range []string{"arvados-client", "arvados-server"} {
-			err = os.Remove("/usr/bin/" + prog)
-			if err != nil && !errors.Is(err, os.ErrNotExist) {
-				return 1
-			}
-			err = os.Symlink("/var/lib/arvados/bin/"+prog, "/usr/bin/"+prog)
-			if err != nil {
-				return 1
-			}
-		}
-
 		// Copy assets from source tree to /var/lib/arvados/share
 		cmd := exec.Command("install", "-v", "-t", "/var/lib/arvados/share", filepath.Join(inst.SourcePath, "sdk/python/tests/nginx.conf"))
 		cmd.Stdout = stdout
@@ -676,6 +663,14 @@ rsync -a --delete-after build/ /var/lib/arvados/workbench2/
 			return 1
 		}
 
+		// Install arvados-cli gem (binaries go in
+		// /var/lib/arvados/bin)
+		if err = inst.runBash(`
+/var/lib/arvados/bin/gem install --conservative --no-document arvados-cli
+`, stdout, stderr); err != nil {
+			return 1
+		}
+
 		err = os.WriteFile("/lib/systemd/system/arvados.service", arvadosServiceFile, 0777)
 		if err != nil {
 			return 1
@@ -691,6 +686,19 @@ rsync -a --delete-after build/ /var/lib/arvados/workbench2/
 		err = os.Symlink("/lib/systemd/system/arvados.service", symlink)
 		if err != nil {
 			return 1
+		}
+
+		// Symlink user-facing programs /usr/bin/x ->
+		// /var/lib/arvados/bin/x
+		for _, prog := range []string{"arvados-client", "arvados-server", "arv", "arv-tag"} {
+			err = os.Remove("/usr/bin/" + prog)
+			if err != nil && !errors.Is(err, os.ErrNotExist) {
+				return 1
+			}
+			err = os.Symlink("/var/lib/arvados/bin/"+prog, "/usr/bin/"+prog)
+			if err != nil {
+				return 1
+			}
 		}
 	}
 
