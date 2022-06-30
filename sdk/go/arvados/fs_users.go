@@ -20,7 +20,7 @@ func (fs *customFileSystem) usersLoadOne(parent inode, name string) (inode, erro
 		return nil, os.ErrNotExist
 	}
 	user := resp.Items[0]
-	return fs.newProjectNode(parent, user.Username, user.UUID), nil
+	return fs.newProjectNode(parent, user.Username, user.UUID, nil), nil
 }
 
 func (fs *customFileSystem) usersLoadAll(parent inode) ([]inode, error) {
@@ -41,7 +41,7 @@ func (fs *customFileSystem) usersLoadAll(parent inode) ([]inode, error) {
 			if user.Username == "" {
 				continue
 			}
-			inodes = append(inodes, fs.newProjectNode(parent, user.Username, user.UUID))
+			inodes = append(inodes, fs.newProjectNode(parent, user.Username, user.UUID, nil))
 		}
 		params.Filters = []Filter{{"uuid", ">", resp.Items[len(resp.Items)-1].UUID}}
 	}
