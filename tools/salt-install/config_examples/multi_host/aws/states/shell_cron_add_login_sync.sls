@@ -75,6 +75,13 @@ extra_shell_cron_add_login_sync_add_{{ vm }}_arvados_virtual_machine_uuid_cron_e
     - onlyif:
       - /bin/grep -qE "[a-z0-9]{5}-2x53u-[a-z0-9]{15}" /tmp/vm_uuid_{{ vm }}
 
+extra_shell_cron_add_login_sync_add_{{ vm }}_sbin_to_path_cron_env_present:
+  cron.env_present:
+    - name: PATH
+    - value: "/bin:/usr/bin:/usr/sbin"
+    - onlyif:
+      - /bin/grep -qE "[a-z0-9]{5}-2x53u-[a-z0-9]{15}" /tmp/vm_uuid_{{ vm }}
+
 extra_shell_cron_add_login_sync_add_{{ vm }}_arvados_login_sync_cron_present:
   cron.present:
     - name: /usr/local/bin/arvados-login-sync

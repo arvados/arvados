@@ -8,8 +8,25 @@
 # The Arvados cluster ID, needs to be 5 lowercase alphanumeric characters.
 CLUSTER="cluster_fixme_or_this_wont_work"
 
-# The domainname you want tou give to your cluster's hosts
+# The domain name you want to give to your cluster's hosts
+# the end result hostnames will be $SERVICE.$CLUSTER.$DOMAIN
 DOMAIN="domain_fixme_or_this_wont_work"
+
+# For multi-node installs, the ssh log in for each node
+# must be root or able to sudo
+DEPLOY_USER=root
+
+# The mapping of nodes to roles
+# installer.sh will log in to each of these nodes and then provision
+# it for the specified roles.
+NODES=(
+  [controller.${CLUSTER}.${DOMAIN}]=api,controller,websocket,dispatcher,keepbalance
+  [keep0.${CLUSTER}.${DOMAIN}]=keepstore
+  [keep1.${CLUSTER}.${DOMAIN}]=keepstore
+  [keep.${CLUSTER}.${DOMAIN}]=keepproxy,keepweb
+  [workbench.${CLUSTER}.${DOMAIN}]=workbench,workbench2,webshell
+  [shell.${CLUSTER}.${DOMAIN}]=shell
+)
 
 # Host SSL port where you want to point your browser to access Arvados
 # Defaults to 443 for regular runs, and to 8443 when called in Vagrant.
