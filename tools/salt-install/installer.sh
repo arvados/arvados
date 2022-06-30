@@ -116,9 +116,11 @@ case "$subcmd" in
 	    exit
 	fi
 
+	set +u
 	SETUPDIR=$1
 	PARAMS=$2
 	SLS=$3
+	set -u
 
 	err=
 	if [[ -z "$PARAMS" || ! -f local.params.example.$PARAMS ]] ; then
@@ -156,7 +158,9 @@ case "$subcmd" in
 	echo "setup directory initialized, now go to $SETUPDIR, edit '${CONFIG_FILE}' and '${CONFIG_DIR}' as needed, then run 'installer.sh deploy'"
 	;;
     deploy)
+	set +u
 	NODE=$1
+	set -u
 
 	loadconfig
 
@@ -218,7 +222,9 @@ case "$subcmd" in
     diagnostics)
 	loadconfig
 
+	set +u
 	declare LOCATION=$1
+	set -u
 
 	if ! which arvados-client ; then
 	    echo "arvados-client not found, install 'arvados-client' package with 'apt-get' or 'yum'"
