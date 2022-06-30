@@ -339,6 +339,7 @@ func (initcmd *initCommand) createDB(ctx context.Context, dbconn arvados.Postgre
 		`CREATE EXTENSION IF NOT EXISTS pg_trgm`,
 	} {
 		cmd := exec.CommandContext(ctx, "sudo", "-u", "postgres", "psql", "-c", sql)
+		cmd.Dir = "/"
 		cmd.Stdout = stderr
 		cmd.Stderr = stderr
 		err := cmd.Run()
