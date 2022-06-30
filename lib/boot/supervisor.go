@@ -471,6 +471,7 @@ func (super *Supervisor) WaitReady() bool {
 			super.logger.Infof("waiting for %s to be ready", id)
 			if !super2.WaitReady() {
 				super.logger.Infof("%s startup failed", id)
+				super.Stop()
 				return false
 			}
 			super.logger.Infof("%s is ready", id)
@@ -484,6 +485,7 @@ func (super *Supervisor) WaitReady() bool {
 		select {
 		case <-ticker.C:
 		case <-super.ctx.Done():
+			super.Stop()
 			return false
 		}
 		if super.healthChecker == nil {
