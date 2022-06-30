@@ -18,6 +18,7 @@ import (
 	"os/user"
 	"regexp"
 	"strconv"
+	"strings"
 	"text/template"
 
 	"git.arvados.org/arvados.git/lib/cmd"
@@ -36,6 +37,12 @@ type initCommand struct {
 	Login              string
 	TLS                string
 	Start              bool
+
+	LoginPAM                bool
+	LoginTest               bool
+	LoginGoogle             bool
+	LoginGoogleClientID     string
+	LoginGoogleClientSecret string
 }
 
 func (initcmd *initCommand) RunCommand(prog string, args []string, stdin io.Reader, stdout, stderr io.Writer) int {
@@ -62,7 +69,7 @@ func (initcmd *initCommand) RunCommand(prog string, args []string, stdin io.Read
 	versionFlag := flags.Bool("version", false, "Write version information to stdout and exit 0")
 	flags.StringVar(&initcmd.ClusterID, "cluster-id", "", "cluster `id`, like x1234 for a dev cluster")
 	flags.StringVar(&initcmd.Domain, "domain", hostname, "cluster public DNS `name`, like x1234.arvadosapi.com")
-	flags.StringVar(&initcmd.Login, "login", "", "login `backend`: test, pam, or ''")
+	flags.StringVar(&initcmd.Login, "login", "", "login `backend`: test, pam, 'google {client-id} {client-secret}', or ''")
 	flags.StringVar(&initcmd.TLS, "tls", "none", "tls certificate `source`: acme, auto, insecure, or none")
 	flags.BoolVar(&initcmd.Start, "start", true, "start systemd service after creating config")
 	if ok, code := cmd.ParseFlags(flags, prog, args, "", stderr); !ok {
@@ -71,6 +78,21 @@ func (initcmd *initCommand) RunCommand(prog string, args []string, stdin io.Read
 		return cmd.Version.RunCommand(prog, args, stdin, stdout, stderr)
 	} else if !regexp.MustCompile(`^[a-z][a-z0-9]{4}`).MatchString(initcmd.ClusterID) {
 		err = fmt.Errorf("cluster ID %q is invalid; must be an ASCII letter followed by 4 alphanumerics (try -help)", initcmd.ClusterID)
+		return 1
+	}
+
+	if fields := strings.Fields(initcmd.Login); len(fields) == 3 && fields[0] == "google" {
+		initcmd.LoginGoogle = true
+		initcmd.LoginGoogleClientID = fields[1]
+		initcmd.LoginGoogleClientSecret = fields[2]
+	} else if initcmd.Login == "test" {
+		initcmd.LoginTest = true
+	} else if initcmd.Login == "pam" {
+		initcmd.LoginPAM = true
+	} else if initcmd.Login == "" {
+		// none; login will show an error page
+	} else {
+		err = fmt.Errorf("invalid argument to -login: %q: should be 'test', 'pam', 'google {client-id} {client-secret}', or empty")
 		return 1
 	}
 
@@ -203,26 +225,29 @@ func (initcmd *initCommand) RunCommand(prog string, args []string, stdin io.Read
         Replication: 2
     Workbench:
       SecretKeyBase: {{printf "%q" ( .RandomHex 50 )}}
+    {{if .LoginPAM}}
     Login:
-      {{if eq .Login "pam"}}
       PAM:
         Enable: true
-      {{else if eq .Login "test"}}
+    {{else if .LoginTest}}
+    Login:
       Test:
         Enable: true
         Users:
           admin:
             Email: admin@example.com
             Password: admin
-      {{else}}
-      {}
-      {{end}}
+    {{else if .LoginGoogle}}
+    Login:
+      Google:
+        Enable: true
+        ClientID: {{printf "%q" .LoginGoogleClientID}}
+        ClientSecret: {{printf "%q" .LoginGoogleClientSecret}}
+    {{end}}
+    {{if .LoginTest}}
     Users:
-      {{if eq .Login "test"}}
       AutoAdminUserWithEmail: admin@example.com
-      {{else}}
-      {}
-      {{end}}
+    {{end}}
 `)
 	if err != nil {
 		return 1
