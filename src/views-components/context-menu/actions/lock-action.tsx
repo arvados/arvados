@@ -11,13 +11,15 @@ import { ProjectResource } from "models/project";
 import { withRouter, RouteComponentProps } from "react-router";
 
 const mapStateToProps = (state: RootState, props: { onClick: () => {} }) => ({
-    isAdmin: state.auth.user!.isAdmin,
+    isAdmin: !!state.auth.user?.isAdmin,
     isLocked: !!(state.resources[state.contextMenu.resource!.uuid] as ProjectResource).frozenByUuid,
+    canManage: (state.resources[state.contextMenu.resource!.uuid] as ProjectResource).canManage,
+    canUnfreeze: !state.auth.remoteHostsConfig[state.auth.homeCluster]?.clusterConfig?.API?.UnfreezeProjectRequiresAdmin,
     onClick: props.onClick
 });
 
-export const ToggleLockAction = withRouter(connect(mapStateToProps)((props: { isLocked: boolean, isAdmin: boolean, onClick: () => void } & RouteComponentProps) =>
-    props.isLocked && !props.isAdmin ? null :
+export const ToggleLockAction = withRouter(connect(mapStateToProps)((props: { state: RootState, isAdmin: boolean, isLocked: boolean, canManage: boolean, canUnfreeze: boolean, onClick: () => void } & RouteComponentProps) =>
+    (props.canManage && !props.isLocked) || (props.isLocked && props.canManage && (props.canUnfreeze || props.isAdmin))  ? 
         < ListItem
             button
             onClick={props.onClick} >
@@ -31,4 +33,4 @@ export const ToggleLockAction = withRouter(connect(mapStateToProps)((props: { is
                     ? <>Unfreeze project</>
                     : <>Freeze project</>}
             </ListItemText>
-        </ListItem >));
+        </ListItem > : null));

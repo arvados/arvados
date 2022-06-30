@@ -338,7 +338,7 @@ describe('Project tests', function() {
             });
         });
 
-        it('should not be able to froze not owned project', () => {
+        it('should be able to froze not owned project', () => {
             cy.getAll('@adminProject').then(([adminProject]) => {
                 cy.loginAs(activeUser);
 
@@ -346,11 +346,7 @@ describe('Project tests', function() {
 
                 cy.get('main').contains(adminProject.name).rightclick();
 
-                cy.get('[data-cy=context-menu]').contains('Freeze').click();
-
-                cy.get('main').contains(adminProject.name).rightclick();
-
-                cy.get('[data-cy=context-menu]').contains('Freeze').should('exist');
+                cy.get('[data-cy=context-menu]').contains('Freeze').should('not.exist');
             });
         });
 
