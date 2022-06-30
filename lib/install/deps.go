@@ -563,7 +563,6 @@ yarn install
 		for _, srcdir := range []string{
 			"cmd/arvados-client",
 			"cmd/arvados-server",
-			"services/crunch-dispatch-local",
 			"services/crunch-dispatch-slurm",
 		} {
 			fmt.Fprintf(stderr, "building %s...\n", srcdir)
