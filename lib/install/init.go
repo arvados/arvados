@@ -201,7 +201,7 @@ func (initcmd *initCommand) RunCommand(prog string, args []string, stdin io.Read
     ManagementToken: {{printf "%q" ( .RandomHex 50 )}}
     PostgreSQL:
       Connection:
-        dbname: arvados_production
+        dbname: arvados
         host: localhost
         user: arvados
         password: {{printf "%q" .PostgreSQLPassword}}
