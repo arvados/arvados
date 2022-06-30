@@ -218,6 +218,9 @@ case "$subcmd" in
 	    deploynode $NODE
 	fi
 
+	echo
+	echo "Completed deploy, run 'installer.sh diagnostics' to verify the install"
+
 	;;
     diagnostics)
 	loadconfig
