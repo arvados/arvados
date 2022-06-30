@@ -247,13 +247,9 @@ func (super *Supervisor) runCluster() error {
 	}
 
 	if super.ListenHost == "" {
-		if urlhost := super.cluster.Services.Controller.ExternalURL.Host; urlhost != "" {
-			if h, _, _ := net.SplitHostPort(urlhost); h != "" {
-				super.ListenHost = h
-			} else {
-				super.ListenHost = urlhost
-			}
-		} else {
+		u := url.URL(super.cluster.Services.Controller.ExternalURL)
+		super.ListenHost = u.Hostname()
+		if super.ListenHost == "" {
 			super.ListenHost = "0.0.0.0"
 		}
 	}
