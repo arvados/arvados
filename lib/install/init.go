@@ -36,6 +36,7 @@ type initCommand struct {
 	PostgreSQLPassword string
 	Login              string
 	TLS                string
+	AdminEmail         string
 	Start              bool
 
 	LoginPAM                bool
@@ -70,6 +71,7 @@ func (initcmd *initCommand) RunCommand(prog string, args []string, stdin io.Read
 	flags.StringVar(&initcmd.ClusterID, "cluster-id", "", "cluster `id`, like x1234 for a dev cluster")
 	flags.StringVar(&initcmd.Domain, "domain", hostname, "cluster public DNS `name`, like x1234.arvadosapi.com")
 	flags.StringVar(&initcmd.Login, "login", "", "login `backend`: test, pam, 'google {client-id} {client-secret}', or ''")
+	flags.StringVar(&initcmd.AdminEmail, "admin-email", "", "give admin privileges to user with given `email`")
 	flags.StringVar(&initcmd.TLS, "tls", "none", "tls certificate `source`: acme, auto, insecure, or none")
 	flags.BoolVar(&initcmd.Start, "start", true, "start systemd service after creating config")
 	if ok, code := cmd.ParseFlags(flags, prog, args, "", stderr); !ok {
@@ -87,6 +89,9 @@ func (initcmd *initCommand) RunCommand(prog string, args []string, stdin io.Read
 		initcmd.LoginGoogleClientSecret = fields[2]
 	} else if initcmd.Login == "test" {
 		initcmd.LoginTest = true
+		if initcmd.AdminEmail == "" {
+			initcmd.AdminEmail = "admin@example.com"
+		}
 	} else if initcmd.Login == "pam" {
 		initcmd.LoginPAM = true
 	} else if initcmd.Login == "" {
@@ -235,7 +240,7 @@ func (initcmd *initCommand) RunCommand(prog string, args []string, stdin io.Read
         Enable: true
         Users:
           admin:
-            Email: admin@example.com
+            Email: {{printf "%q" .AdminEmail}}
             Password: admin
     {{else if .LoginGoogle}}
     Login:
@@ -244,10 +249,8 @@ func (initcmd *initCommand) RunCommand(prog string, args []string, stdin io.Read
         ClientID: {{printf "%q" .LoginGoogleClientID}}
         ClientSecret: {{printf "%q" .LoginGoogleClientSecret}}
     {{end}}
-    {{if .LoginTest}}
     Users:
-      AutoAdminUserWithEmail: admin@example.com
-    {{end}}
+      AutoAdminUserWithEmail: {{printf "%q" .AdminEmail}}
 `)
 	if err != nil {
 		return 1
