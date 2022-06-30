@@ -113,28 +113,24 @@ func (super *Supervisor) Start(ctx context.Context) {
 	super.done = make(chan struct{})
 
 	sigch := make(chan os.Signal)
-	signal.Notify(sigch, syscall.SIGINT, syscall.SIGTERM)
-	defer signal.Stop(sigch)
+	signal.Notify(sigch, syscall.SIGINT, syscall.SIGTERM, syscall.SIGHUP)
 	go func() {
-		for sig := range sigch {
-			super.logger.WithField("signal", sig).Info("caught signal")
-			if super.err == nil {
-				super.err = fmt.Errorf("caught signal %s", sig)
+		defer signal.Stop(sigch)
+		for {
+			select {
+			case <-ctx.Done():
+				return
+			case sig := <-sigch:
+				super.logger.WithField("signal", sig).Info("caught signal")
+				if super.err == nil {
+					if sig == syscall.SIGHUP {
+						super.err = errNeedConfigReload
+					} else {
+						super.err = fmt.Errorf("caught signal %s", sig)
+					}
+				}
+				super.cancel()
 			}
-			super.cancel()
-		}
-	}()
-
-	hupch := make(chan os.Signal)
-	signal.Notify(hupch, syscall.SIGHUP)
-	defer signal.Stop(hupch)
-	go func() {
-		for sig := range hupch {
-			super.logger.WithField("signal", sig).Info("caught signal")
-			if super.err == nil {
-				super.err = errNeedConfigReload
-			}
-			super.cancel()
 		}
 	}()
 
