@@ -75,9 +75,6 @@ func makeFileLoaderConfig(cluster *arvados.Cluster, logger logrus.FieldLogger) (
 
 	key := strings.TrimPrefix(cluster.TLS.Key, "file://")
 	cert := strings.TrimPrefix(cluster.TLS.Certificate, "file://")
-	if !strings.HasPrefix(key, "file://") || !strings.HasPrefix(cert, "file://") {
-	}
-	key, cert = key[7:], cert[7:]
 
 	update := func() error {
 		cert, err := tls.LoadX509KeyPair(cert, key)
