@@ -35,6 +35,7 @@ type initCommand struct {
 	PostgreSQLPassword string
 	Login              string
 	TLS                string
+	Start              bool
 }
 
 func (initcmd *initCommand) RunCommand(prog string, args []string, stdin io.Reader, stdout, stderr io.Writer) int {
@@ -63,6 +64,7 @@ func (initcmd *initCommand) RunCommand(prog string, args []string, stdin io.Read
 	flags.StringVar(&initcmd.Domain, "domain", hostname, "cluster public DNS `name`, like x1234.arvadosapi.com")
 	flags.StringVar(&initcmd.Login, "login", "", "login `backend`: test, pam, or ''")
 	flags.StringVar(&initcmd.TLS, "tls", "none", "tls certificate `source`: acme, auto, insecure, or none")
+	flags.BoolVar(&initcmd.Start, "start", true, "start systemd service after creating config")
 	if ok, code := cmd.ParseFlags(flags, prog, args, "", stderr); !ok {
 		return code
 	} else if *versionFlag {
@@ -253,6 +255,19 @@ func (initcmd *initCommand) RunCommand(prog string, args []string, stdin io.Read
 		return 1
 	}
 	fmt.Fprintln(stderr, "initialized database")
+
+	if initcmd.Start {
+		fmt.Fprintln(stderr, "starting systemd service")
+		cmd := exec.CommandContext(ctx, "systemctl", "start", "--no-block", "arvados")
+		cmd.Dir = "/"
+		cmd.Stdout = stderr
+		cmd.Stderr = stderr
+		err = cmd.Run()
+		if err != nil {
+			err = fmt.Errorf("%v: %w", cmd.Args, err)
+			return 1
+		}
+	}
 
 	return 0
 }

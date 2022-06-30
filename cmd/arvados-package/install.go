@@ -124,7 +124,7 @@ eatmydata apt-get install --reinstall -y --no-install-recommends arvados-server-
 SUDO_FORCE_REMOVE=yes apt-get autoremove -y
 
 /etc/init.d/postgresql start
-arvados-server init -cluster-id x1234 -domain=$domain -login=test $initargs
+arvados-server init -cluster-id x1234 -domain=$domain -login=test -start=false $initargs
 exec arvados-server boot -listen-host=0.0.0.0 $bootargs
 `)
 	cmd.Stdout = stdout
