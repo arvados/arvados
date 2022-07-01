@@ -6,6 +6,8 @@ package lsf
 
 import (
 	"context"
+	"crypto/hmac"
+	"crypto/sha256"
 	"errors"
 	"fmt"
 	"math"
@@ -274,7 +276,12 @@ func (disp *dispatcher) submit(container arvados.Container, crunchRunCommand []s
 	var crArgs []string
 	crArgs = append(crArgs, crunchRunCommand...)
 	crArgs = append(crArgs, container.UUID)
-	crScript := execScript(crArgs)
+
+	h := hmac.New(sha256.New, []byte(disp.Cluster.SystemRootToken))
+	fmt.Fprint(h, container.UUID)
+	authsecret := fmt.Sprintf("%x", h.Sum(nil))
+
+	crScript := execScript(crArgs, map[string]string{"GatewayAuthSecret": authsecret})
 
 	bsubArgs, err := disp.bsubArgs(container)
 	if err != nil {
@@ -353,8 +360,14 @@ func (disp *dispatcher) checkLsfQueueForOrphans() {
 	}
 }
 
-func execScript(args []string) []byte {
-	s := "#!/bin/sh\nexec"
+func execScript(args []string, env map[string]string) []byte {
+	s := "#!/bin/sh\n"
+	for k, v := range env {
+		s += k + `='`
+		s += strings.Replace(v, `'`, `'\''`, -1)
+		s += `' `
+	}
+	s += `exec`
 	for _, w := range args {
 		s += ` '`
 		s += strings.Replace(w, `'`, `'\''`, -1)

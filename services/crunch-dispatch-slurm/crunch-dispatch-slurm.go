@@ -7,6 +7,8 @@ package dispatchslurm
 
 import (
 	"context"
+	"crypto/hmac"
+	"crypto/sha256"
 	"fmt"
 	"log"
 	"math"
@@ -213,7 +215,12 @@ func (disp *Dispatcher) submit(container arvados.Container, crunchRunCommand []s
 	crArgs := append([]string(nil), crunchRunCommand...)
 	crArgs = append(crArgs, "--runtime-engine="+disp.cluster.Containers.RuntimeEngine)
 	crArgs = append(crArgs, container.UUID)
-	crScript := strings.NewReader(execScript(crArgs))
+
+	h := hmac.New(sha256.New, []byte(disp.cluster.SystemRootToken))
+	fmt.Fprint(h, container.UUID)
+	authsecret := fmt.Sprintf("%x", h.Sum(nil))
+
+	crScript := strings.NewReader(execScript(crArgs, map[string]string{"GatewayAuthSecret": authsecret}))
 
 	sbArgs, err := disp.sbatchArgs(container)
 	if err != nil {
