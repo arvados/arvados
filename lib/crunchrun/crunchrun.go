@@ -1905,32 +1905,26 @@ func (command) RunCommand(prog string, args []string, stdin io.Reader, stdout, s
 		// not safe to run a gateway service without an auth
 		// secret
 		cr.CrunchLog.Printf("Not starting a gateway server (GatewayAuthSecret was not provided by dispatcher)")
-	} else if gwListen := os.Getenv("GatewayAddress"); gwListen == "" {
-		// dispatcher did not tell us which external IP
-		// address to advertise --> no gateway service
-		cr.CrunchLog.Printf("Not starting a gateway server (GatewayAddress was not provided by dispatcher)")
 	} else {
+		gwListen := os.Getenv("GatewayAddress")
 		cr.gateway = Gateway{
 			Address:       gwListen,
 			AuthSecret:    gwAuthSecret,
 			ContainerUUID: containerUUID,
 			Target:        cr.executor,
 			Log:           cr.CrunchLog,
-			ArvadosClient: cr.dispatcherClient,
-			UpdateTunnelURL: func(url string) {
-				if gwListen != "" {
-					// prefer connecting directly
-					return
-				}
-				// direct connection won't work, so we
-				// use the gateway_address field to
-				// indicate the internalURL of the
-				// controller process that has the
-				// current tunnel connection.
+		}
+		if gwListen == "" {
+			// Direct connection won't work, so we use the
+			// gateway_address field to indicate the
+			// internalURL of the controller process that
+			// has the current tunnel connection.
+			cr.gateway.ArvadosClient = cr.dispatcherClient
+			cr.gateway.UpdateTunnelURL = func(url string) {
 				cr.gateway.Address = "tunnel " + url
 				cr.DispatcherArvClient.Update("containers", containerUUID,
 					arvadosclient.Dict{"container": arvadosclient.Dict{"gateway_address": cr.gateway.Address}}, nil)
-			},
+			}
 		}
 		err = cr.gateway.Start()
 		if err != nil {
