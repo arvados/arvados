@@ -59,21 +59,29 @@ func main() {
 }
 
 type ConfigParams struct {
+	CaseInsensitive    bool
 	Client             *arvados.Client
 	ClusterID          string
 	CurrentUser        arvados.User
 	DeactivateUnlisted bool
 	Path               string
+	UserID             string
 	SysUserUUID        string
 	AnonUserUUID       string
 	Verbose            bool
 }
 
 func ParseFlags(cfg *ConfigParams) error {
+	// Acceptable attributes to identify a user on the CSV file
+	userIDOpts := map[string]bool{
+		"email":    true, // default
+		"username": true,
+	}
+
 	flags := flag.NewFlagSet(os.Args[0], flag.ExitOnError)
 	flags.Usage = func() {
 		usageStr := `Synchronize remote users into Arvados from a CSV format file with 5 columns:
-  * 1st: E-mail address
+  * 1st: User Identifier (email or username)
   * 2nd: First name
   * 3rd: Last name
   * 4th: Active status (0 or 1)
@@ -84,10 +92,18 @@ func ParseFlags(cfg *ConfigParams) error {
 		flags.PrintDefaults()
 	}
 
+	caseInsensitive := flags.Bool(
+		"case-insensitive",
+		true,
+		"Performs case insensitive matching on user IDs. Always ON whe using 'email' user IDs.")
 	deactivateUnlisted := flags.Bool(
 		"deactivate-unlisted",
 		false,
 		"Deactivate users that are not in the input file.")
+	userID := flags.String(
+		"user-id",
+		"email",
+		"Attribute by which every user is identified. Valid values are: email and username.")
 	verbose := flags.Bool(
 		"verbose",
 		false,
@@ -114,9 +130,22 @@ func ParseFlags(cfg *ConfigParams) error {
 	if *srcPath == "" {
 		return fmt.Errorf("input file path invalid")
 	}
+	if !userIDOpts[*userID] {
+		var options []string
+		for opt := range userIDOpts {
+			options = append(options, opt)
+		}
+		return fmt.Errorf("user ID must be one of: %s", strings.Join(options, ", "))
+	}
+	if *userID == "email" {
+		// Always do case-insensitive email addresses matching
+		*caseInsensitive = true
+	}
 
+	cfg.CaseInsensitive = *caseInsensitive
 	cfg.DeactivateUnlisted = *deactivateUnlisted
 	cfg.Path = *srcPath
+	cfg.UserID = *userID
 	cfg.Verbose = *verbose
 
 	return nil
@@ -164,6 +193,18 @@ func GetConfig() (cfg ConfigParams, err error) {
 	return cfg, nil
 }
 
+// GetUserID returns the correct user id value depending on the selector
+func GetUserID(u arvados.User, idSelector string) (string, error) {
+	switch idSelector {
+	case "email":
+		return u.Email, nil
+	case "username":
+		return u.Username, nil
+	default:
+		return "", fmt.Errorf("cannot identify user by %q selector", idSelector)
+	}
+}
+
 func doMain(cfg *ConfigParams) error {
 	// Try opening the input file early, just in case there's a problem.
 	f, err := os.Open(cfg.Path)
@@ -172,7 +213,14 @@ func doMain(cfg *ConfigParams) error {
 	}
 	defer f.Close()
 
+	iCaseLog := ""
+	if cfg.UserID == "username" && cfg.CaseInsensitive {
+		iCaseLog = " - username matching requested to be case-insensitive"
+	}
+	log.Printf("%s %s started. Using %q as users id%s", os.Args[0], version, cfg.UserID, iCaseLog)
+
 	allUsers := make(map[string]arvados.User)
+	userIDToUUID := make(map[string]string) // Index by email or username
 	dupedEmails := make(map[string][]arvados.User)
 	processedUsers := make(map[string]bool)
 	results, err := GetAll(cfg.Client, "users", arvados.ResourceListParams{}, &UserList{})
@@ -183,6 +231,7 @@ func doMain(cfg *ConfigParams) error {
 	localUserUuidRegex := regexp.MustCompile(fmt.Sprintf("^%s-tpzed-[0-9a-z]{15}$", cfg.ClusterID))
 	for _, item := range results {
 		u := item.(arvados.User)
+
 		// Remote user check
 		if !localUserUuidRegex.MatchString(u.UUID) {
 			if cfg.Verbose {
@@ -190,21 +239,38 @@ func doMain(cfg *ConfigParams) error {
 			}
 			continue
 		}
-		// Duplicated user's email check
-		email := strings.ToLower(u.Email)
-		if ul, ok := dupedEmails[email]; ok {
-			log.Printf("Duplicated email %q found in user %s", email, u.UUID)
-			dupedEmails[email] = append(ul, u)
-			continue
+
+		// Duplicated user id check
+		uID, err := GetUserID(u, cfg.UserID)
+		if err != nil {
+			return err
 		}
-		if eu, ok := allUsers[email]; ok {
-			log.Printf("Duplicated email %q found in users %s and %s", email, eu.UUID, u.UUID)
-			dupedEmails[email] = []arvados.User{eu, u}
-			delete(allUsers, email)
-			continue
+		if uID == "" {
+			return fmt.Errorf("%s is empty for user with uuid %q", cfg.UserID, u.UUID)
 		}
-		allUsers[email] = u
-		processedUsers[email] = false
+		if cfg.CaseInsensitive {
+			uID = strings.ToLower(uID)
+		}
+		if alreadySeenUUID, found := userIDToUUID[uID]; found {
+			if cfg.UserID == "username" && uID != "" {
+				return fmt.Errorf("case insensitive collision for username %q between %q and %q", uID, u.UUID, alreadySeenUUID)
+			} else if cfg.UserID == "email" && uID != "" {
+				log.Printf("Duplicated email %q found in user %s - ignoring", uID, u.UUID)
+				if len(dupedEmails[uID]) == 0 {
+					dupedEmails[uID] = []arvados.User{allUsers[alreadySeenUUID]}
+				}
+				dupedEmails[uID] = append(dupedEmails[uID], u)
+				delete(allUsers, alreadySeenUUID) // Skip even the first occurrence,
+				// for security purposes.
+				continue
+			}
+		}
+		if cfg.Verbose {
+			log.Printf("Seen user %q (%s)", uID, u.UUID)
+		}
+		userIDToUUID[uID] = u.UUID
+		allUsers[u.UUID] = u
+		processedUsers[u.UUID] = false
 	}
 
 	loadedRecords, err := LoadInputFile(f)
@@ -218,38 +284,42 @@ func doMain(cfg *ConfigParams) error {
 	updatesSkipped := map[string]bool{}
 
 	for _, record := range loadedRecords {
-		processedUsers[record.Email] = true
-		if record.Email == cfg.CurrentUser.Email {
-			updatesSkipped[record.Email] = true
-			log.Printf("Skipping current user %q (%s) from processing", record.Email, cfg.CurrentUser.UUID)
+		if cfg.CaseInsensitive {
+			record.UserID = strings.ToLower(record.UserID)
+		}
+		recordUUID := userIDToUUID[record.UserID]
+		processedUsers[recordUUID] = true
+		if cfg.UserID == "email" && record.UserID == cfg.CurrentUser.Email {
+			updatesSkipped[recordUUID] = true
+			log.Printf("Skipping current user %q (%s) from processing", record.UserID, cfg.CurrentUser.UUID)
 			continue
 		}
-		if updated, err := ProcessRecord(cfg, record, allUsers); err != nil {
-			log.Printf("error processing record %q: %s", record.Email, err)
-			updatesFailed[record.Email] = true
+		if updated, err := ProcessRecord(cfg, record, userIDToUUID, allUsers); err != nil {
+			log.Printf("error processing record %q: %s", record.UserID, err)
+			updatesFailed[recordUUID] = true
 		} else if updated {
-			updatesSucceeded[record.Email] = true
+			updatesSucceeded[recordUUID] = true
 		}
 	}
 
 	if cfg.DeactivateUnlisted {
-		for email, user := range allUsers {
+		for userUUID, user := range allUsers {
 			if shouldSkip(cfg, user) {
-				updatesSkipped[email] = true
+				updatesSkipped[userUUID] = true
 				log.Printf("Skipping unlisted user %q (%s) from deactivating", user.Email, user.UUID)
 				continue
 			}
-			if !processedUsers[email] && allUsers[email].IsActive {
+			if !processedUsers[userUUID] && allUsers[userUUID].IsActive {
 				if cfg.Verbose {
-					log.Printf("Deactivating unlisted user %q (%s)", user.Email, user.UUID)
+					log.Printf("Deactivating unlisted user %q (%s)", user.Username, user.UUID)
 				}
 				var updatedUser arvados.User
 				if err := UnsetupUser(cfg.Client, user.UUID, &updatedUser); err != nil {
 					log.Printf("error deactivating unlisted user %q: %s", user.UUID, err)
-					updatesFailed[email] = true
+					updatesFailed[userUUID] = true
 				} else {
-					allUsers[email] = updatedUser
-					updatesSucceeded[email] = true
+					allUsers[userUUID] = updatedUser
+					updatesSucceeded[userUUID] = true
 				}
 			}
 		}
@@ -282,7 +352,7 @@ func shouldSkip(cfg *ConfigParams, user arvados.User) bool {
 }
 
 type userRecord struct {
-	Email     string
+	UserID    string
 	FirstName string
 	LastName  string
 	Active    bool
@@ -290,9 +360,9 @@ type userRecord struct {
 }
 
 // ProcessRecord creates or updates a user based on the given record
-func ProcessRecord(cfg *ConfigParams, record userRecord, allUsers map[string]arvados.User) (bool, error) {
+func ProcessRecord(cfg *ConfigParams, record userRecord, userIDToUUID map[string]string, allUsers map[string]arvados.User) (bool, error) {
 	if cfg.Verbose {
-		log.Printf("Processing record for user %q", record.Email)
+		log.Printf("Processing record for user %q", record.UserID)
 	}
 
 	wantedActiveStatus := strconv.FormatBool(record.Active)
@@ -301,28 +371,29 @@ func ProcessRecord(cfg *ConfigParams, record userRecord, allUsers map[string]arv
 	updateRequired := false
 	// Check if user exists, set its active & admin status.
 	var user arvados.User
-	user, ok := allUsers[record.Email]
+	recordUUID := userIDToUUID[record.UserID]
+	user, ok := allUsers[recordUUID]
 	if !ok {
 		if cfg.Verbose {
-			log.Printf("User %q does not exist, creating", record.Email)
+			log.Printf("User %q does not exist, creating", record.UserID)
 		}
 		createRequired = true
 		err := CreateUser(cfg.Client, &user, map[string]string{
-			"email":      record.Email,
+			cfg.UserID:   record.UserID,
 			"first_name": record.FirstName,
 			"last_name":  record.LastName,
 			"is_active":  wantedActiveStatus,
 			"is_admin":   wantedAdminStatus,
 		})
 		if err != nil {
-			return false, fmt.Errorf("error creating user %q: %s", record.Email, err)
+			return false, fmt.Errorf("error creating user %q: %s", record.UserID, err)
 		}
 	}
 	if record.Active != user.IsActive {
 		updateRequired = true
 		if record.Active {
 			if cfg.Verbose {
-				log.Printf("User %q is inactive, activating", record.Email)
+				log.Printf("User %q is inactive, activating", record.UserID)
 			}
 			// Here we assume the 'setup' is done elsewhere if needed.
 			err := UpdateUser(cfg.Client, user.UUID, &user, map[string]string{
@@ -330,37 +401,37 @@ func ProcessRecord(cfg *ConfigParams, record userRecord, allUsers map[string]arv
 				"is_admin":  wantedAdminStatus, // Just in case it needs to be changed.
 			})
 			if err != nil {
-				return false, fmt.Errorf("error updating user %q: %s", record.Email, err)
+				return false, fmt.Errorf("error updating user %q: %s", record.UserID, err)
 			}
 		} else {
 			if cfg.Verbose {
-				log.Printf("User %q is active, deactivating", record.Email)
+				log.Printf("User %q is active, deactivating", record.UserID)
 			}
 			err := UnsetupUser(cfg.Client, user.UUID, &user)
 			if err != nil {
-				return false, fmt.Errorf("error deactivating user %q: %s", record.Email, err)
+				return false, fmt.Errorf("error deactivating user %q: %s", record.UserID, err)
 			}
 		}
 	}
 	// Inactive users cannot be admins.
 	if user.IsActive && record.Admin != user.IsAdmin {
 		if cfg.Verbose {
-			log.Printf("User %q is active, changing admin status to %v", record.Email, record.Admin)
+			log.Printf("User %q is active, changing admin status to %v", record.UserID, record.Admin)
 		}
 		updateRequired = true
 		err := UpdateUser(cfg.Client, user.UUID, &user, map[string]string{
 			"is_admin": wantedAdminStatus,
 		})
 		if err != nil {
-			return false, fmt.Errorf("error updating user %q: %s", record.Email, err)
+			return false, fmt.Errorf("error updating user %q: %s", record.UserID, err)
 		}
 	}
-	allUsers[record.Email] = user
+	allUsers[record.UserID] = user
 	if createRequired {
-		log.Printf("Created user %q", record.Email)
+		log.Printf("Created user %q", record.UserID)
 	}
 	if updateRequired {
-		log.Printf("Updated user %q", record.Email)
+		log.Printf("Updated user %q", record.UserID)
 	}
 
 	return createRequired || updateRequired, nil
@@ -386,12 +457,12 @@ func LoadInputFile(f *os.File) (loadedRecords []userRecord, err error) {
 			err = fmt.Errorf("parsing error at line %d: expected 5 fields, found %d", lineNo, len(record))
 			return
 		}
-		email := strings.ToLower(strings.TrimSpace(record[0]))
+		userID := strings.ToLower(strings.TrimSpace(record[0]))
 		firstName := strings.TrimSpace(record[1])
 		lastName := strings.TrimSpace(record[2])
 		active := strings.TrimSpace(record[3])
 		admin := strings.TrimSpace(record[4])
-		if email == "" || firstName == "" || lastName == "" || active == "" || admin == "" {
+		if userID == "" || firstName == "" || lastName == "" || active == "" || admin == "" {
 			err = fmt.Errorf("parsing error at line %d: fields cannot be empty", lineNo)
 			return
 		}
@@ -404,7 +475,7 @@ func LoadInputFile(f *os.File) (loadedRecords []userRecord, err error) {
 			return nil, fmt.Errorf("parsing error at line %d: admin status not recognized", lineNo)
 		}
 		loadedRecords = append(loadedRecords, userRecord{
-			Email:     email,
+			UserID:    userID,
 			FirstName: firstName,
 			LastName:  lastName,
 			Active:    activeBool,
