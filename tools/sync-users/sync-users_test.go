@@ -71,6 +71,20 @@ func MakeTempCSVFile(data [][]string) (f *os.File, err error) {
 	return
 }
 
+// RecordsToStrings formats the input data suitable for MakeTempCSVFile
+func RecordsToStrings(records []userRecord) [][]string {
+	data := [][]string{}
+	for _, u := range records {
+		data = append(data, []string{
+			u.UserID,
+			u.FirstName,
+			u.LastName,
+			fmt.Sprintf("%t", u.Active),
+			fmt.Sprintf("%t", u.Admin)})
+	}
+	return data
+}
+
 func ListUsers(ac *arvados.Client) ([]arvados.User, error) {
 	var ul arvados.UserList
 	err := ac.RequestAndDecode(&ul, "GET", "/arvados/v1/users", nil, arvados.ResourceListParams{})
@@ -206,20 +220,14 @@ func (s *TestSuite) TestWrongDataFields(c *C) {
 
 // Activate and deactivate users
 func (s *TestSuite) TestUserCreationAndUpdate(c *C) {
-	testCases := []struct {
-		Email     string
-		FirstName string
-		LastName  string
-		Active    bool
-		Admin     bool
-	}{{
-		Email:     "user1@example.com",
+	testCases := []userRecord{{
+		UserID:    "user1@example.com",
 		FirstName: "Example",
 		LastName:  "User1",
 		Active:    true,
 		Admin:     false,
 	}, {
-		Email:     "admin1@example.com",
+		UserID:    "admin1@example.com",
 		FirstName: "Example",
 		LastName:  "Admin1",
 		Active:    true,
@@ -228,15 +236,17 @@ func (s *TestSuite) TestUserCreationAndUpdate(c *C) {
 	// Make sure users aren't already there from fixtures
 	for _, user := range s.users {
 		e := user.Email
-		found := e == testCases[0].Email || e == testCases[1].Email
+		found := false
+		for _, r := range testCases {
+			if e == r.UserID {
+				found = true
+				break
+			}
+		}
 		c.Assert(found, Equals, false)
 	}
 	// User creation
-	data := [][]string{
-		{testCases[0].Email, testCases[0].FirstName, testCases[0].LastName, fmt.Sprintf("%t", testCases[0].Active), fmt.Sprintf("%t", testCases[0].Admin)},
-		{testCases[1].Email, testCases[1].FirstName, testCases[1].LastName, fmt.Sprintf("%t", testCases[1].Active), fmt.Sprintf("%t", testCases[1].Admin)},
-	}
-	tmpfile, err := MakeTempCSVFile(data)
+	tmpfile, err := MakeTempCSVFile(RecordsToStrings(testCases))
 	c.Assert(err, IsNil)
 	defer os.Remove(tmpfile.Name())
 	s.cfg.Path = tmpfile.Name()
@@ -248,7 +258,7 @@ func (s *TestSuite) TestUserCreationAndUpdate(c *C) {
 	for _, tc := range testCases {
 		var foundUser arvados.User
 		for _, user := range users {
-			if user.Email == tc.Email {
+			if user.Email == tc.UserID {
 				foundUser = user
 				break
 			}
@@ -261,13 +271,10 @@ func (s *TestSuite) TestUserCreationAndUpdate(c *C) {
 		c.Assert(foundUser.IsAdmin, Equals, tc.Admin)
 	}
 	// User deactivation
-	testCases[0].Active = false
-	testCases[1].Active = false
-	data = [][]string{
-		{testCases[0].Email, testCases[0].FirstName, testCases[0].LastName, fmt.Sprintf("%t", testCases[0].Active), fmt.Sprintf("%t", testCases[0].Admin)},
-		{testCases[1].Email, testCases[1].FirstName, testCases[1].LastName, fmt.Sprintf("%t", testCases[1].Active), fmt.Sprintf("%t", testCases[1].Admin)},
+	for idx := range testCases {
+		testCases[idx].Active = false
 	}
-	tmpfile, err = MakeTempCSVFile(data)
+	tmpfile, err = MakeTempCSVFile(RecordsToStrings(testCases))
 	c.Assert(err, IsNil)
 	defer os.Remove(tmpfile.Name())
 	s.cfg.Path = tmpfile.Name()
@@ -279,7 +286,7 @@ func (s *TestSuite) TestUserCreationAndUpdate(c *C) {
 	for _, tc := range testCases {
 		var foundUser arvados.User
 		for _, user := range users {
-			if user.Email == tc.Email {
+			if user.Email == tc.UserID {
 				foundUser = user
 				break
 			}
