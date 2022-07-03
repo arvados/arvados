@@ -15,6 +15,7 @@ import (
 
 	"git.arvados.org/arvados.git/lib/cmd"
 	"git.arvados.org/arvados.git/sdk/go/ctxlog"
+	"github.com/coreos/go-systemd/daemon"
 )
 
 var Command cmd.Handler = bootCommand{}
@@ -133,6 +134,9 @@ func (bcmd bootCommand) run(ctx context.Context, prog string, args []string, std
 			fmt.Fprintln(stderr, "PASS - all services booted successfully")
 			return nil
 		}
+	}
+	if _, err := daemon.SdNotify(false, "READY=1"); err != nil {
+		super.logger.WithError(err).Errorf("error notifying init daemon")
 	}
 	// Wait for signal/crash + orderly shutdown
 	return super.Wait()
