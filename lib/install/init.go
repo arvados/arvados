@@ -154,7 +154,7 @@ func (initcmd *initCommand) RunCommand(prog string, args []string, stdin io.Read
       Websocket:
         InternalURLs:
           "http://0.0.0.0:8005/": {}
-        ExternalURL: {{printf "%q" ( print "wss://" .Domain ":4436/" ) }}
+        ExternalURL: {{printf "%q" ( print "wss://" .Domain ":4446/" ) }}
       Keepbalance:
         InternalURLs:
           "http://0.0.0.0:9019/": {}
