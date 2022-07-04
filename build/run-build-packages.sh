@@ -268,6 +268,8 @@ package_go_binary cmd/arvados-server arvados-ws "$FORMAT" "$ARCH" \
     "Arvados Websocket server"
 package_go_binary tools/sync-groups arvados-sync-groups "$FORMAT" "$ARCH" \
     "Synchronize remote groups into Arvados from an external source"
+package_go_binary tools/sync-users arvados-sync-users "$FORMAT" "$ARCH" \
+    "Synchronize remote users into Arvados from an external source"
 package_go_binary tools/keep-block-check keep-block-check "$FORMAT" "$ARCH" \
     "Verify that all data from one set of Keep servers to another was copied"
 package_go_binary tools/keep-rsync keep-rsync "$FORMAT" "$ARCH" \
