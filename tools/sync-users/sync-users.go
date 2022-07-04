@@ -94,8 +94,8 @@ func ParseFlags(cfg *ConfigParams) error {
 
 	caseInsensitive := flags.Bool(
 		"case-insensitive",
-		true,
-		"Performs case insensitive matching on user IDs. Always ON whe using 'email' user IDs.")
+		false,
+		"Performs case insensitive matching on user IDs. Always ON when using 'email' user IDs.")
 	deactivateUnlisted := flags.Bool(
 		"deactivate-unlisted",
 		false,
@@ -107,7 +107,7 @@ func ParseFlags(cfg *ConfigParams) error {
 	verbose := flags.Bool(
 		"verbose",
 		false,
-		"Log informational messages. Off by default.")
+		"Log informational messages.")
 	getVersion := flags.Bool(
 		"version",
 		false,
@@ -366,7 +366,7 @@ func ProcessRecord(cfg *ConfigParams, record userRecord, userIDToUUID map[string
 	}
 
 	wantedActiveStatus := strconv.FormatBool(record.Active)
-	wantedAdminStatus := strconv.FormatBool(record.Admin)
+	wantedAdminStatus := strconv.FormatBool(record.Active && record.Admin)
 	createRequired := false
 	updateRequired := false
 	// Check if user exists, set its active & admin status.

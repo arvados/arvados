@@ -98,6 +98,14 @@ func (s *TestSuite) TestParseFlagsWithoutPositionalArgument(c *C) {
 	os.Args = []string{"cmd", "-verbose"}
 	err := ParseFlags(&ConfigParams{})
 	c.Assert(err, NotNil)
+	c.Assert(err, ErrorMatches, ".*please provide a path to an input file.*")
+}
+
+func (s *TestSuite) TestParseFlagsWrongUserID(c *C) {
+	os.Args = []string{"cmd", "-user-id=nickname", "/tmp/somefile.csv"}
+	err := ParseFlags(&ConfigParams{})
+	c.Assert(err, NotNil)
+	c.Assert(err, ErrorMatches, ".*user ID must be one of:.*")
 }
 
 func (s *TestSuite) TestParseFlagsWithPositionalArgument(c *C) {
@@ -108,16 +116,20 @@ func (s *TestSuite) TestParseFlagsWithPositionalArgument(c *C) {
 	c.Assert(cfg.Path, Equals, "/tmp/somefile.csv")
 	c.Assert(cfg.Verbose, Equals, false)
 	c.Assert(cfg.DeactivateUnlisted, Equals, false)
+	c.Assert(cfg.UserID, Equals, "email")
+	c.Assert(cfg.CaseInsensitive, Equals, true)
 }
 
 func (s *TestSuite) TestParseFlagsWithOptionalFlags(c *C) {
 	cfg := ConfigParams{}
-	os.Args = []string{"cmd", "-verbose", "-deactivate-unlisted", "/tmp/somefile.csv"}
+	os.Args = []string{"cmd", "-verbose", "-deactivate-unlisted", "-user-id=username", "/tmp/somefile.csv"}
 	err := ParseFlags(&cfg)
 	c.Assert(err, IsNil)
 	c.Assert(cfg.Path, Equals, "/tmp/somefile.csv")
 	c.Assert(cfg.Verbose, Equals, true)
 	c.Assert(cfg.DeactivateUnlisted, Equals, true)
+	c.Assert(cfg.UserID, Equals, "username")
+	c.Assert(cfg.CaseInsensitive, Equals, false)
 }
 
 func (s *TestSuite) TestGetConfig(c *C) {
@@ -218,85 +230,118 @@ func (s *TestSuite) TestWrongDataFields(c *C) {
 	}
 }
 
-// Activate and deactivate users
+// Create, activate and deactivate users
 func (s *TestSuite) TestUserCreationAndUpdate(c *C) {
-	testCases := []userRecord{{
-		UserID:    "user1@example.com",
-		FirstName: "Example",
-		LastName:  "User1",
-		Active:    true,
-		Admin:     false,
-	}, {
-		UserID:    "admin1@example.com",
-		FirstName: "Example",
-		LastName:  "Admin1",
-		Active:    true,
-		Admin:     true,
-	}}
-	// Make sure users aren't already there from fixtures
-	for _, user := range s.users {
-		e := user.Email
-		found := false
-		for _, r := range testCases {
-			if e == r.UserID {
-				found = true
-				break
-			}
+	for _, tc := range []string{"email", "username"} {
+		uIDPrefix := tc
+		uIDSuffix := ""
+		if tc == "email" {
+			uIDSuffix = "@example.com"
 		}
-		c.Assert(found, Equals, false)
-	}
-	// User creation
-	tmpfile, err := MakeTempCSVFile(RecordsToStrings(testCases))
-	c.Assert(err, IsNil)
-	defer os.Remove(tmpfile.Name())
-	s.cfg.Path = tmpfile.Name()
-	err = doMain(s.cfg)
-	c.Assert(err, IsNil)
+		s.cfg.UserID = tc
+		records := []userRecord{{
+			UserID:    fmt.Sprintf("%suser1%s", uIDPrefix, uIDSuffix),
+			FirstName: "Example",
+			LastName:  "User1",
+			Active:    true,
+			Admin:     false,
+		}, {
+			UserID:    fmt.Sprintf("%suser2%s", uIDPrefix, uIDSuffix),
+			FirstName: "Example",
+			LastName:  "User2",
+			Active:    false, // initially inactive
+			Admin:     false,
+		}, {
+			UserID:    fmt.Sprintf("%sadmin1%s", uIDPrefix, uIDSuffix),
+			FirstName: "Example",
+			LastName:  "Admin1",
+			Active:    true,
+			Admin:     true,
+		}, {
+			UserID:    fmt.Sprintf("%sadmin2%s", uIDPrefix, uIDSuffix),
+			FirstName: "Example",
+			LastName:  "Admin2",
+			Active:    false, // initially inactive
+			Admin:     true,
+		}}
+		// Make sure users aren't already there from fixtures
+		for _, user := range s.users {
+			uID, err := GetUserID(user, s.cfg.UserID)
+			c.Assert(err, IsNil)
+			found := false
+			for _, r := range records {
+				if uID == r.UserID {
+					found = true
+					break
+				}
+			}
+			c.Assert(found, Equals, false)
+		}
+		// User creation
+		tmpfile, err := MakeTempCSVFile(RecordsToStrings(records))
+		c.Assert(err, IsNil)
+		defer os.Remove(tmpfile.Name())
+		s.cfg.Path = tmpfile.Name()
+		err = doMain(s.cfg)
+		c.Assert(err, IsNil)
 
-	users, err := ListUsers(s.cfg.Client)
-	c.Assert(err, IsNil)
-	for _, tc := range testCases {
-		var foundUser arvados.User
-		for _, user := range users {
-			if user.Email == tc.UserID {
-				foundUser = user
-				break
+		users, err := ListUsers(s.cfg.Client)
+		c.Assert(err, IsNil)
+		for _, r := range records {
+			var foundUser arvados.User
+			for _, user := range users {
+				uID, err := GetUserID(user, s.cfg.UserID)
+				c.Assert(err, IsNil)
+				if uID == r.UserID {
+					// Add an @example.com email if missing
+					// (to avoid database reset errors)
+					if tc == "username" && user.Email == "" {
+						err := UpdateUser(s.cfg.Client, user.UUID, &user, map[string]string{
+							"email": fmt.Sprintf("%s@example.com", user.Username),
+						})
+						c.Assert(err, IsNil)
+					}
+					foundUser = user
+					break
+				}
 			}
+			c.Assert(foundUser, NotNil)
+			c.Logf("Checking creation for user %q", r.UserID)
+			c.Assert(foundUser.FirstName, Equals, r.FirstName)
+			c.Assert(foundUser.LastName, Equals, r.LastName)
+			c.Assert(foundUser.IsActive, Equals, r.Active)
+			c.Assert(foundUser.IsAdmin, Equals, (r.Active && r.Admin))
 		}
-		c.Assert(foundUser, NotNil)
-		c.Logf("Checking recently created user %q", foundUser.Email)
-		c.Assert(foundUser.FirstName, Equals, tc.FirstName)
-		c.Assert(foundUser.LastName, Equals, tc.LastName)
-		c.Assert(foundUser.IsActive, Equals, true)
-		c.Assert(foundUser.IsAdmin, Equals, tc.Admin)
-	}
-	// User deactivation
-	for idx := range testCases {
-		testCases[idx].Active = false
-	}
-	tmpfile, err = MakeTempCSVFile(RecordsToStrings(testCases))
-	c.Assert(err, IsNil)
-	defer os.Remove(tmpfile.Name())
-	s.cfg.Path = tmpfile.Name()
-	err = doMain(s.cfg)
-	c.Assert(err, IsNil)
+		// User active status switch
+		for idx := range records {
+			records[idx].Active = !records[idx].Active
+		}
+		tmpfile, err = MakeTempCSVFile(RecordsToStrings(records))
+		c.Assert(err, IsNil)
+		defer os.Remove(tmpfile.Name())
+		s.cfg.Path = tmpfile.Name()
+		err = doMain(s.cfg)
+		c.Assert(err, IsNil)
 
-	users, err = ListUsers(s.cfg.Client)
-	c.Assert(err, IsNil)
-	for _, tc := range testCases {
-		var foundUser arvados.User
-		for _, user := range users {
-			if user.Email == tc.UserID {
-				foundUser = user
-				break
+		users, err = ListUsers(s.cfg.Client)
+		c.Assert(err, IsNil)
+		for _, r := range records {
+			var foundUser arvados.User
+			for _, user := range users {
+				uID, err := GetUserID(user, s.cfg.UserID)
+				c.Assert(err, IsNil)
+				if uID == r.UserID {
+					foundUser = user
+					break
+				}
 			}
+			c.Assert(foundUser, NotNil)
+			c.Logf("Checking update for user %q", r.UserID)
+			c.Assert(foundUser.FirstName, Equals, r.FirstName)
+			c.Assert(foundUser.LastName, Equals, r.LastName)
+			c.Assert(foundUser.IsActive, Equals, r.Active)
+			c.Assert(foundUser.IsAdmin, Equals, (r.Active && r.Admin))
 		}
-		c.Assert(foundUser, NotNil)
-		c.Logf("Checking recently deactivated user %q", foundUser.Email)
-		c.Assert(foundUser.FirstName, Equals, tc.FirstName)
-		c.Assert(foundUser.LastName, Equals, tc.LastName)
-		c.Assert(foundUser.IsActive, Equals, false)
-		c.Assert(foundUser.IsAdmin, Equals, false) // inactive users cannot be admins
 	}
 }
 
