@@ -359,6 +359,12 @@ type userRecord struct {
 	Admin     bool
 }
 
+func needsUpdating(user arvados.User, record userRecord) bool {
+	userData := userRecord{"", user.FirstName, user.LastName, user.IsActive, user.IsAdmin}
+	recordData := userRecord{"", record.FirstName, record.LastName, record.Active, record.Admin}
+	return userData != recordData
+}
+
 // ProcessRecord creates or updates a user based on the given record
 func ProcessRecord(cfg *ConfigParams, record userRecord, userIDToUUID map[string]string, allUsers map[string]arvados.User) (bool, error) {
 	if cfg.Verbose {
@@ -372,8 +378,8 @@ func ProcessRecord(cfg *ConfigParams, record userRecord, userIDToUUID map[string
 	// Check if user exists, set its active & admin status.
 	var user arvados.User
 	recordUUID := userIDToUUID[record.UserID]
-	user, ok := allUsers[recordUUID]
-	if !ok {
+	user, found := allUsers[recordUUID]
+	if !found {
 		if cfg.Verbose {
 			log.Printf("User %q does not exist, creating", record.UserID)
 		}
@@ -388,42 +394,43 @@ func ProcessRecord(cfg *ConfigParams, record userRecord, userIDToUUID map[string
 		if err != nil {
 			return false, fmt.Errorf("error creating user %q: %s", record.UserID, err)
 		}
-	}
-	if record.Active != user.IsActive {
+	} else if needsUpdating(user, record) {
 		updateRequired = true
 		if record.Active {
-			if cfg.Verbose {
-				log.Printf("User %q is inactive, activating", record.UserID)
+			if !user.IsActive && cfg.Verbose {
+				log.Printf("User %q (%s) is inactive, activating", record.UserID, user.UUID)
 			}
 			// Here we assume the 'setup' is done elsewhere if needed.
 			err := UpdateUser(cfg.Client, user.UUID, &user, map[string]string{
-				"is_active": wantedActiveStatus,
-				"is_admin":  wantedAdminStatus, // Just in case it needs to be changed.
+				"first_name": record.FirstName,
+				"last_name":  record.LastName,
+				"is_active":  wantedActiveStatus,
+				"is_admin":   wantedAdminStatus,
 			})
 			if err != nil {
 				return false, fmt.Errorf("error updating user %q: %s", record.UserID, err)
 			}
 		} else {
-			if cfg.Verbose {
-				log.Printf("User %q is active, deactivating", record.UserID)
+			fnChanged := user.FirstName != record.FirstName
+			lnChanged := user.LastName != record.LastName
+			if fnChanged || lnChanged {
+				err := UpdateUser(cfg.Client, user.UUID, &user, map[string]string{
+					"first_name": record.FirstName,
+					"last_name":  record.LastName,
+				})
+				if err != nil {
+					return false, fmt.Errorf("error updating user %q: %s", record.UserID, err)
+				}
 			}
-			err := UnsetupUser(cfg.Client, user.UUID, &user)
-			if err != nil {
-				return false, fmt.Errorf("error deactivating user %q: %s", record.UserID, err)
+			if user.IsActive {
+				if cfg.Verbose {
+					log.Printf("User %q is active, deactivating", record.UserID)
+				}
+				err := UnsetupUser(cfg.Client, user.UUID, &user)
+				if err != nil {
+					return false, fmt.Errorf("error deactivating user %q: %s", record.UserID, err)
+				}
 			}
-		}
-	}
-	// Inactive users cannot be admins.
-	if user.IsActive && record.Admin != user.IsAdmin {
-		if cfg.Verbose {
-			log.Printf("User %q is active, changing admin status to %v", record.UserID, record.Admin)
-		}
-		updateRequired = true
-		err := UpdateUser(cfg.Client, user.UUID, &user, map[string]string{
-			"is_admin": wantedAdminStatus,
-		})
-		if err != nil {
-			return false, fmt.Errorf("error updating user %q: %s", record.UserID, err)
 		}
 	}
 	allUsers[record.UserID] = user

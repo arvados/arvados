@@ -312,9 +312,11 @@ func (s *TestSuite) TestUserCreationAndUpdate(c *C) {
 			c.Assert(foundUser.IsActive, Equals, r.Active)
 			c.Assert(foundUser.IsAdmin, Equals, (r.Active && r.Admin))
 		}
-		// User active status switch
+		// User update
 		for idx := range records {
 			records[idx].Active = !records[idx].Active
+			records[idx].FirstName = records[idx].FirstName + "Updated"
+			records[idx].LastName = records[idx].LastName + "Updated"
 		}
 		tmpfile, err = MakeTempCSVFile(RecordsToStrings(records))
 		c.Assert(err, IsNil)
