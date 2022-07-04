@@ -78,7 +78,7 @@ const renderLinks = (fontSize: number, dispatch: Dispatch) => (text: string) => 
 
 export const ProcessLogCodeSnippet = withStyles(styles)(connect()(
     ({classes, lines, fontSize, dispatch, wordWrap}: ProcessLogCodeSnippetProps & WithStyles<CssRules> & DispatchProp) => {
-        const [followMode, setFollowMode] = useState<boolean>(false);
+        const [followMode, setFollowMode] = useState<boolean>(true);
         const scrollRef = useRef<HTMLDivElement>(null);
 
         useEffect(() => {
