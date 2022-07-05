@@ -15,6 +15,7 @@ import (
 )
 
 func (cresp ConnectionResponse) ServeHTTP(w http.ResponseWriter, req *http.Request) {
+	defer cresp.Conn.Close()
 	hj, ok := w.(http.Hijacker)
 	if !ok {
 		http.Error(w, "ResponseWriter does not support connection upgrade", http.StatusInternalServerError)
@@ -48,6 +49,7 @@ func (cresp ConnectionResponse) ServeHTTP(w http.ResponseWriter, req *http.Reque
 		if err != nil {
 			ctxlog.FromContext(ctx).WithError(err).Error("error copying downstream")
 		}
+		conn.Close()
 	}()
 	wg.Add(1)
 	go func() {
@@ -62,6 +64,7 @@ func (cresp ConnectionResponse) ServeHTTP(w http.ResponseWriter, req *http.Reque
 		if err != nil {
 			ctxlog.FromContext(ctx).WithError(err).Error("error copying upstream")
 		}
+		cresp.Conn.Close()
 	}()
 	wg.Wait()
 	if cresp.Logger != nil {
