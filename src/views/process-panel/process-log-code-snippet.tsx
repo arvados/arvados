@@ -26,6 +26,9 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
         overflow: 'auto',
         backgroundColor: '#000',
         height: `calc(100% - ${theme.spacing.unit * 4}px)`, // so that horizontal scollbar is visible
+        "& a": {
+            color: theme.palette.primary.main,
+        },
     },
     logText: {
         padding: theme.spacing.unit * 0.5,
