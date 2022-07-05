@@ -168,6 +168,10 @@ func (gw *Gateway) Start() error {
 	if err != nil {
 		return err
 	}
+	go func() {
+		err := srv.Wait()
+		gw.Log.Printf("gateway server stopped: %s", err)
+	}()
 	// Get the port number we are listening on (extPort might be
 	// "0" or a port name, in which case this will be different).
 	_, listenPort, err := net.SplitHostPort(srv.Addr)
@@ -184,6 +188,7 @@ func (gw *Gateway) Start() error {
 	// non-tunnel connections aren't available; and PORT is the
 	// port number we are listening on.
 	gw.Address = net.JoinHostPort(extHost, listenPort)
+	gw.Log.Printf("gateway server listening at %s", gw.Address)
 	if gw.ArvadosClient != nil {
 		go gw.maintainTunnel(gw.Address)
 	}
@@ -218,16 +223,16 @@ func (gw *Gateway) runTunnel(addr string) error {
 		gw.UpdateTunnelURL(url)
 	}
 	for {
-		muxconn, err := mux.Accept()
+		muxconn, err := mux.AcceptStream()
 		if err != nil {
 			return err
 		}
-		gw.Log.Printf("receiving connection from tunnel, remoteAddr %s", muxconn.RemoteAddr().String())
+		gw.Log.Printf("tunnel connection %d started", muxconn.StreamID())
 		go func() {
 			defer muxconn.Close()
 			gwconn, err := net.Dial("tcp", addr)
 			if err != nil {
-				gw.Log.Printf("error connecting to %s on behalf of tunnel connection: %s", addr, err)
+				gw.Log.Printf("tunnel connection %d: error connecting to %s: %s", muxconn.StreamID(), addr, err)
 				return
 			}
 			defer gwconn.Close()
@@ -235,13 +240,24 @@ func (gw *Gateway) runTunnel(addr string) error {
 			wg.Add(2)
 			go func() {
 				defer wg.Done()
-				io.Copy(gwconn, muxconn)
+				_, err := io.Copy(gwconn, muxconn)
+				if err != nil {
+					gw.Log.Printf("tunnel connection %d: tunnel: %s", muxconn.StreamID(), err)
+				}
+				muxconn.Close()
+				gwconn.Close()
 			}()
 			go func() {
 				defer wg.Done()
-				io.Copy(muxconn, gwconn)
+				_, err := io.Copy(muxconn, gwconn)
+				if err != nil {
+					gw.Log.Printf("tunnel connection %d: gateway: %s", muxconn.StreamID(), err)
+				}
+				gwconn.Close()
+				muxconn.Close()
 			}()
 			wg.Wait()
+			gw.Log.Printf("tunnel connection %d finished", muxconn.StreamID())
 		}()
 	}
 }
