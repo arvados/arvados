@@ -1743,6 +1743,7 @@ func (command) RunCommand(prog string, args []string, stdin io.Reader, stdout, s
 	runtimeEngine := flags.String("runtime-engine", "docker", "container runtime: docker or singularity")
 	brokenNodeHook := flags.String("broken-node-hook", "", "script to run if node is detected to be broken (for example, Docker daemon is not running)")
 	flags.Duration("check-containerd", 0, "Ignored. Exists for compatibility with older versions.")
+	version := flags.Bool("version", false, "Write version information to stdout and exit 0.")
 
 	ignoreDetachFlag := false
 	if len(args) > 0 && args[0] == "-no-detach" {
@@ -1758,6 +1759,9 @@ func (command) RunCommand(prog string, args []string, stdin io.Reader, stdout, s
 
 	if ok, code := cmd.ParseFlags(flags, prog, args, "container-uuid", stderr); !ok {
 		return code
+	} else if *version {
+		fmt.Fprintln(stdout, prog, cmd.Version.String())
+		return 0
 	} else if !*list && flags.NArg() != 1 {
 		fmt.Fprintf(stderr, "missing required argument: container-uuid (try -help)\n")
 		return 2
