@@ -25,7 +25,7 @@ class DatabaseController < ApplicationController
     unexpected_uuids = user_uuids - fixture_uuids
     if unexpected_uuids.any?
       logger.error("Running in test environment, but non-fixture users exist: " +
-                   "#{unexpected_uuids}")
+                   "#{unexpected_uuids}" + "\nMaybe test users without @example.com email addresses were created?")
       raise ArvadosModel::PermissionDeniedError
     end
 
