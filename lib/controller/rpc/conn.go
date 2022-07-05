@@ -414,7 +414,7 @@ func (conn *Conn) socket(ctx context.Context, u *url.URL, upgradeHeader string, 
 		} else {
 			message = fmt.Sprintf("%q", body)
 		}
-		return connresp, fmt.Errorf("server did not provide a tunnel: %s %s", resp.Status, message)
+		return connresp, fmt.Errorf("server did not provide a tunnel: %s: %s", resp.Status, message)
 	}
 	if strings.ToLower(resp.Header.Get("Upgrade")) != upgradeHeader ||
 		strings.ToLower(resp.Header.Get("Connection")) != "upgrade" {

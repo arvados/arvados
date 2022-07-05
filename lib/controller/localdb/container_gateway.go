@@ -187,7 +187,7 @@ func (conn *Conn) ContainerSSH(ctx context.Context, opts arvados.ContainerSSHOpt
 	})
 	err = tlsconn.HandshakeContext(ctx)
 	if err != nil {
-		return sshconn, httpserver.ErrorWithStatus(err, http.StatusBadGateway)
+		return sshconn, httpserver.ErrorWithStatus(fmt.Errorf("TLS handshake failed: %w", err), http.StatusBadGateway)
 	}
 	if respondAuth == "" {
 		tlsconn.Close()
