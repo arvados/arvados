@@ -24,7 +24,8 @@ import {
     MaximizeIcon,
     TextDecreaseIcon,
     TextIncreaseIcon,
-    WordWrapIcon
+    WordWrapOffIcon,
+    WordWrapOnIcon,
 } from 'components/icon/icon';
 import { Process } from 'store/processes/process';
 import { MPVPanelProps } from 'components/multi-panel-view/multi-panel-view';
@@ -92,7 +93,7 @@ export const ProcessLogsCard = withStyles(styles)(
     ({ classes, process, filters, selectedFilter, lines,
         onLogFilterChange, navigateToLog, onCopy,
         doHidePanel, doMaximizePanel, panelMaximized, panelName }: ProcessLogsCardProps) => {
-        const [wordWrapToggle, setWordWrapToggle] = useState<boolean>(true);
+        const [wordWrap, setWordWrap] = useState<boolean>(true);
         const [fontSize, setFontSize] = useState<number>(3);
         const fontBaseSize = 10;
         const fontStepSize = 1;
@@ -130,9 +131,9 @@ export const ProcessLogsCard = withStyles(styles)(
                             </Tooltip>
                         </Grid>
                         <Grid item>
-                            <Tooltip title="Toggle word wrapping" disableFocusListener>
-                                <IconButton onClick={() => setWordWrapToggle(!wordWrapToggle)}>
-                                    <WordWrapIcon />
+                            <Tooltip title={`${wordWrap ? 'Disable' : 'Enable'} word wrapping`} disableFocusListener>
+                                <IconButton onClick={() => setWordWrap(!wordWrap)}>
+                                    {wordWrap ? <WordWrapOffIcon /> : <WordWrapOnIcon />}
                                 </IconButton>
                             </Tooltip>
                         </Grid>
@@ -166,7 +167,7 @@ export const ProcessLogsCard = withStyles(styles)(
                             spacing={24}
                             direction='column'>
                             <Grid className={classes.logViewer} item xs>
-                                <ProcessLogCodeSnippet fontSize={fontBaseSize+(fontStepSize*fontSize)} wordWrap={wordWrapToggle} lines={lines} />
+                                <ProcessLogCodeSnippet fontSize={fontBaseSize+(fontStepSize*fontSize)} wordWrap={wordWrap} lines={lines} />
                             </Grid>
                         </Grid>
                         : <DefaultView
