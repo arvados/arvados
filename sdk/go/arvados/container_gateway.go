@@ -34,8 +34,8 @@ func (cresp ConnectionResponse) ServeHTTP(w http.ResponseWriter, req *http.Reque
 	defer conn.Close()
 
 	var bytesIn, bytesOut int64
-	var wg sync.WaitGroup
 	ctx, cancel := context.WithCancel(req.Context())
+	var wg sync.WaitGroup
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
@@ -49,7 +49,6 @@ func (cresp ConnectionResponse) ServeHTTP(w http.ResponseWriter, req *http.Reque
 		if err != nil {
 			ctxlog.FromContext(ctx).WithError(err).Error("error copying downstream")
 		}
-		conn.Close()
 	}()
 	wg.Add(1)
 	go func() {
@@ -64,13 +63,17 @@ func (cresp ConnectionResponse) ServeHTTP(w http.ResponseWriter, req *http.Reque
 		if err != nil {
 			ctxlog.FromContext(ctx).WithError(err).Error("error copying upstream")
 		}
-		cresp.Conn.Close()
 	}()
-	wg.Wait()
-	if cresp.Logger != nil {
-		cresp.Logger.WithFields(logrus.Fields{
-			"bytesIn":  bytesIn,
-			"bytesOut": bytesOut,
-		}).Info("closed connection")
-	}
+	<-ctx.Done()
+	go func() {
+		// Wait for both io.Copy goroutines to finish and increment
+		// their byte counters.
+		wg.Wait()
+		if cresp.Logger != nil {
+			cresp.Logger.WithFields(logrus.Fields{
+				"bytesIn":  bytesIn,
+				"bytesOut": bytesOut,
+			}).Info("closed connection")
+		}
+	}()
 }
