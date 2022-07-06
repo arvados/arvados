@@ -434,3 +434,39 @@ func (s *TestSuite) TestFailOnDuplicatedEmails(c *C) {
 	c.Assert(err, NotNil)
 	c.Assert(err, ErrorMatches, "skipped.*duplicated email address.*")
 }
+
+func (s *TestSuite) TestFailOnEmptyUsernames(c *C) {
+	for i := range []int{1, 2} {
+		var user arvados.User
+		err := CreateUser(s.cfg.Client, &user, map[string]string{
+			"email":      fmt.Sprintf("johndoe%d@example.com", i),
+			"username":   "",
+			"first_name": "John",
+			"last_name":  "Doe",
+			"is_active":  "true",
+			"is_admin":   "false",
+		})
+		c.Assert(err, IsNil)
+		c.Assert(user.Username, Equals, fmt.Sprintf("johndoe%d", i))
+		if i == 1 {
+			err = UpdateUser(s.cfg.Client, user.UUID, &user, map[string]string{
+				"username": "",
+			})
+			c.Assert(err, IsNil)
+			c.Assert(user.Username, Equals, "")
+		}
+	}
+
+	s.cfg.Verbose = true
+	data := [][]string{
+		{"johndoe0", "John", "Doe", "0", "0"},
+	}
+	tmpfile, err := MakeTempCSVFile(data)
+	c.Assert(err, IsNil)
+	defer os.Remove(tmpfile.Name())
+	s.cfg.Path = tmpfile.Name()
+	s.cfg.UserID = "username"
+	err = doMain(s.cfg)
+	c.Assert(err, NotNil)
+	c.Assert(err, ErrorMatches, "skipped 1 user account.*with empty username.*")
+}

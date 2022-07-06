@@ -222,6 +222,7 @@ func doMain(cfg *ConfigParams) error {
 	allUsers := make(map[string]arvados.User)
 	userIDToUUID := make(map[string]string) // Index by email or username
 	dupedEmails := make(map[string][]arvados.User)
+	emptyUserIDs := []string{}
 	processedUsers := make(map[string]bool)
 	results, err := GetAll(cfg.Client, "users", arvados.ResourceListParams{}, &UserList{})
 	if err != nil {
@@ -246,7 +247,9 @@ func doMain(cfg *ConfigParams) error {
 			return err
 		}
 		if uID == "" {
-			return fmt.Errorf("%s is empty for user with uuid %q", cfg.UserID, u.UUID)
+			emptyUserIDs = append(emptyUserIDs, u.UUID)
+			log.Printf("Empty %s found in user %s - ignoring", cfg.UserID, u.UUID)
+			continue
 		}
 		if cfg.CaseInsensitive {
 			uID = strings.ToLower(uID)
@@ -327,7 +330,7 @@ func doMain(cfg *ConfigParams) error {
 
 	log.Printf("User update successes: %d, skips: %d, failures: %d", len(updatesSucceeded), len(updatesSkipped), len(updatesFailed))
 
-	// Report duplicated emails detection
+	var errors []string
 	if len(dupedEmails) > 0 {
 		emails := make([]string, len(dupedEmails))
 		i := 0
@@ -335,7 +338,13 @@ func doMain(cfg *ConfigParams) error {
 			emails[i] = e
 			i++
 		}
-		return fmt.Errorf("skipped %d duplicated email address(es) in the cluster's local user list: %v", len(dupedEmails), emails)
+		errors = append(errors, fmt.Sprintf("skipped %d duplicated email address(es) in the cluster's local user list: %v", len(dupedEmails), emails))
+	}
+	if len(emptyUserIDs) > 0 {
+		errors = append(errors, fmt.Sprintf("skipped %d user account(s) with empty %s: %v", len(emptyUserIDs), cfg.UserID, emptyUserIDs))
+	}
+	if len(errors) > 0 {
+		return fmt.Errorf("%s", strings.Join(errors, "\n"))
 	}
 
 	return nil
