@@ -564,7 +564,7 @@ func (gw *Gateway) handleSession(ctx context.Context, newch ssh.NewChannel, deta
 			// would be a gaping security
 			// hole).
 		default:
-			fmt.Fprintf(logw, "declined request %q on ssh channel"+eol, req.Type)
+			// fmt.Fprintf(logw, "declined request %q on ssh channel"+eol, req.Type)
 		}
 		if req.WantReply {
 			req.Reply(ok, nil)
