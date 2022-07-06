@@ -492,3 +492,70 @@ func (s *TestSuite) TestFailOnEmptyUsernames(c *C) {
 	c.Assert(err, NotNil)
 	c.Assert(err, ErrorMatches, "skipped 1 user account.*with empty username.*")
 }
+
+func (s *TestSuite) TestFailOnDupedUsernameAndCaseInsensitiveMatching(c *C) {
+	for _, i := range []int{1, 2} {
+		var user arvados.User
+		emailPrefix := "john"
+		if i == 1 {
+			emailPrefix = "JOHN"
+		}
+		err := CreateUser(s.cfg.Client, &user, map[string]string{
+			"email":      fmt.Sprintf("%sdoe@example.com", emailPrefix),
+			"username":   "",
+			"first_name": "John",
+			"last_name":  "Doe",
+			"is_active":  "true",
+			"is_admin":   "false",
+		})
+		c.Assert(err, IsNil)
+		c.Assert(user.Username, Equals, fmt.Sprintf("%sdoe", emailPrefix))
+	}
+
+	s.cfg.Verbose = true
+	data := [][]string{
+		{"johndoe", "John", "Doe", "0", "0"},
+	}
+	tmpfile, err := MakeTempCSVFile(data)
+	c.Assert(err, IsNil)
+	defer os.Remove(tmpfile.Name())
+	s.cfg.Path = tmpfile.Name()
+	s.cfg.UserID = "username"
+	s.cfg.CaseInsensitive = true
+	err = doMain(s.cfg)
+	c.Assert(err, NotNil)
+	c.Assert(err, ErrorMatches, "case insensitive collision for username.*between.*and.*")
+}
+
+func (s *TestSuite) TestSuccessOnUsernameAndCaseSensitiveMatching(c *C) {
+	for _, i := range []int{1, 2} {
+		var user arvados.User
+		emailPrefix := "john"
+		if i == 1 {
+			emailPrefix = "JOHN"
+		}
+		err := CreateUser(s.cfg.Client, &user, map[string]string{
+			"email":      fmt.Sprintf("%sdoe@example.com", emailPrefix),
+			"username":   "",
+			"first_name": "John",
+			"last_name":  "Doe",
+			"is_active":  "true",
+			"is_admin":   "false",
+		})
+		c.Assert(err, IsNil)
+		c.Assert(user.Username, Equals, fmt.Sprintf("%sdoe", emailPrefix))
+	}
+
+	s.cfg.Verbose = true
+	data := [][]string{
+		{"johndoe", "John", "Doe", "0", "0"},
+	}
+	tmpfile, err := MakeTempCSVFile(data)
+	c.Assert(err, IsNil)
+	defer os.Remove(tmpfile.Name())
+	s.cfg.Path = tmpfile.Name()
+	s.cfg.UserID = "username"
+	s.cfg.CaseInsensitive = false
+	err = doMain(s.cfg)
+	c.Assert(err, IsNil)
+}
