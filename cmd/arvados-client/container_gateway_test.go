@@ -25,6 +25,7 @@ import (
 	"git.arvados.org/arvados.git/lib/crunchrun"
 	"git.arvados.org/arvados.git/sdk/go/arvados"
 	"git.arvados.org/arvados.git/sdk/go/arvadostest"
+	"git.arvados.org/arvados.git/sdk/go/ctxlog"
 	"git.arvados.org/arvados.git/sdk/go/httpserver"
 	check "gopkg.in/check.v1"
 )
@@ -53,6 +54,7 @@ func (s *ClientSuite) TestShellGateway(c *check.C) {
 		ContainerUUID: uuid,
 		Address:       "0.0.0.0:0",
 		AuthSecret:    authSecret,
+		Log:           ctxlog.TestLogger(c),
 		// Just forward connections to localhost instead of a
 		// container, so we can test without running a
 		// container.
@@ -86,6 +88,13 @@ func (s *ClientSuite) TestShellGateway(c *check.C) {
 	cmd.Env = append(cmd.Env, "ARVADOS_API_TOKEN="+arvadostest.ActiveTokenV2)
 	cmd.Stdout = &stdout
 	cmd.Stderr = &stderr
+	stdin, err := cmd.StdinPipe()
+	c.Assert(err, check.IsNil)
+	go fmt.Fprintln(stdin, "data appears on stdin, but stdin does not close; cmd should exit anyway, not hang")
+	time.AfterFunc(5*time.Second, func() {
+		c.Errorf("timed out -- remote end is probably hung waiting for us to close stdin")
+		stdin.Close()
+	})
 	c.Check(cmd.Run(), check.IsNil)
 	c.Check(stdout.String(), check.Equals, "ok\n")
 
