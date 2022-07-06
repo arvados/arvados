@@ -123,8 +123,10 @@ func ParseFlags(cfg *ConfigParams) error {
 	// Input file as a required positional argument
 	if flags.NArg() == 0 {
 		return fmt.Errorf("please provide a path to an input file")
+	} else if flags.NArg() > 1 {
+		return fmt.Errorf("please provide just one input file argument")
 	}
-	srcPath := &os.Args[flags.NFlag()+1]
+	srcPath := &os.Args[len(os.Args)-1]
 
 	// Validations
 	if *srcPath == "" {

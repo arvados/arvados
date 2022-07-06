@@ -102,7 +102,7 @@ func (s *TestSuite) TestParseFlagsWithoutPositionalArgument(c *C) {
 }
 
 func (s *TestSuite) TestParseFlagsWrongUserID(c *C) {
-	os.Args = []string{"cmd", "-user-id=nickname", "/tmp/somefile.csv"}
+	os.Args = []string{"cmd", "-user-id", "nickname", "/tmp/somefile.csv"}
 	err := ParseFlags(&ConfigParams{})
 	c.Assert(err, NotNil)
 	c.Assert(err, ErrorMatches, ".*user ID must be one of:.*")
@@ -122,7 +122,7 @@ func (s *TestSuite) TestParseFlagsWithPositionalArgument(c *C) {
 
 func (s *TestSuite) TestParseFlagsWithOptionalFlags(c *C) {
 	cfg := ConfigParams{}
-	os.Args = []string{"cmd", "-verbose", "-deactivate-unlisted", "-user-id=username", "/tmp/somefile.csv"}
+	os.Args = []string{"cmd", "-verbose", "-deactivate-unlisted", "-user-id", "username", "/tmp/somefile.csv"}
 	err := ParseFlags(&cfg)
 	c.Assert(err, IsNil)
 	c.Assert(cfg.Path, Equals, "/tmp/somefile.csv")
