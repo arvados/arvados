@@ -372,7 +372,7 @@ type userRecord struct {
 
 func needsUpdating(user arvados.User, record userRecord) bool {
 	userData := userRecord{"", user.FirstName, user.LastName, user.IsActive, user.IsAdmin}
-	recordData := userRecord{"", record.FirstName, record.LastName, record.Active, record.Admin}
+	recordData := userRecord{"", record.FirstName, record.LastName, record.Active, record.Active && record.Admin}
 	return userData != recordData
 }
 
@@ -444,7 +444,6 @@ func ProcessRecord(cfg *ConfigParams, record userRecord, userIDToUUID map[string
 			}
 		}
 	}
-	allUsers[record.UserID] = user
 	if createRequired {
 		log.Printf("Created user %q", record.UserID)
 	}
