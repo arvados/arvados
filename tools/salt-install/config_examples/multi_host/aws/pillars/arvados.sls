@@ -93,7 +93,7 @@ arvados:
     resources:
       virtual_machines:
         shell:
-          name: shell
+          name: shell.__CLUSTER__.__DOMAIN__
           backend: __SHELL_INT_IP__
           port: 4200
 

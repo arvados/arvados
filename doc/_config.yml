@@ -177,7 +177,7 @@ navbar:
       - admin/federation.html.textile.liquid
       - admin/merge-remote-account.html.textile.liquid
       - admin/migrating-providers.html.textile.liquid
-      - user/topics/arvados-sync-groups.html.textile.liquid
+      - user/topics/arvados-sync-external-sources.html.textile.liquid
       - admin/scoped-tokens.html.textile.liquid
       - admin/token-expiration-policy.html.textile.liquid
       - admin/user-activity.html.textile.liquid

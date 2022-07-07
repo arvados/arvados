@@ -70,6 +70,24 @@ h4. GetBucketVersioning
 
 Bucket versioning is presently not supported, so this will always respond that bucket versioning is not enabled.
 
+h3. Accessing collection/project properties as metadata
+
+GetObject, HeadObject, and HeadBucket return Arvados object properties as S3 metadata headers, e.g., @X-Amz-Meta-Foo: bar@.
+
+If the requested path indicates a file or directory placeholder inside a collection, or the top level of a collection, GetObject and HeadObject return the collection properties.
+
+If the requested path indicates a directory placeholder corresponding to a project, GetObject and HeadObject return the properties of the project.
+
+HeadBucket returns the properties of the collection or project corresponding to the bucket name.
+
+Non-string property values are returned in a JSON representation, e.g., @["foo","bar"]@.
+
+As in Amazon S3, property values containing non-ASCII characters are returned in BASE64-encoded form as described in RFC 2047, e.g., @=?UTF-8?b?4pu1?=@.
+
+GetBucketTagging and GetObjectTagging APIs are _not_ supported.
+
+It is not possible to modify collection or project properties using the S3 API.
+
 h3. Authorization mechanisms
 
 Keep-web accepts AWS Signature Version 4 (AWS4-HMAC-SHA256) as well as the older V2 AWS signature.

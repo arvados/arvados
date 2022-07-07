@@ -11,6 +11,17 @@ CLUSTER="cluster_fixme_or_this_wont_work"
 # The domainname for your cluster's hosts
 DOMAIN="domain_fixme_or_this_wont_work"
 
+# For multi-node installs, the ssh log in for each node
+# must be root or able to sudo
+DEPLOY_USER=root
+
+# The mapping of nodes to roles
+# installer.sh will log in to each of these nodes and then provision
+# it for the specified roles.
+NODES=(
+  [localhost]=api,controller,websocket,dispatcher,keepbalance,keepstore,keepproxy,keepweb,workbench,workbench2,webshell
+)
+
 # Set this value when installing a cluster in a single host with a single
 # hostname to access all the instances. HOSTNAME_EXT should be set to the
 # external hostname for the instance.

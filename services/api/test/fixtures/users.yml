@@ -12,6 +12,7 @@ system_user:
   modified_by_user_uuid: zzzzz-tpzed-000000000000000
   modified_at: 2014-11-27 06:38:21.208036000 Z
   email: root
+  username: root
   first_name: root
   last_name: ''
   identity_url:
@@ -171,7 +172,7 @@ spectator:
 container_runtime_token_user:
   owner_uuid: zzzzz-tpzed-000000000000000
   uuid: zzzzz-tpzed-l3skomkti0c4vg4
-  email: spectator@arvados.local
+  email: container_runtime_token_user@arvados.local
   first_name: Spect
   last_name: Ator
   identity_url: https://container_runtime_token_user.openid.local
@@ -193,6 +194,7 @@ inactive_uninvited:
   identity_url: https://inactive-uninvited-user.openid.local
   is_active: false
   is_admin: false
+  username: inactiveuninvited
   prefs: {}
 
 inactive:
@@ -216,6 +218,7 @@ inactive_but_signed_user_agreement:
   identity_url: https://inactive-but-agreeable-user.openid.local
   is_active: false
   is_admin: false
+  username: inactiveusersignedua
   prefs:
     profile:
       organization: example.com
@@ -230,6 +233,7 @@ anonymous:
   last_name: anonymouspublic
   is_active: false
   is_admin: false
+  username: anonymous
   prefs: {}
 
 job_reader:
@@ -273,17 +277,19 @@ active_no_prefs:
   identity_url: https://active_no_prefs.openid.local
   is_active: true
   is_admin: false
+  username: activenoprefs
   prefs: {}
 
 active_no_prefs_profile_no_getting_started_shown:
   owner_uuid: zzzzz-tpzed-000000000000000
   uuid: zzzzz-tpzed-a46c98d1td4aoj4
-  email: active_no_prefs_profile@arvados.local
+  email: active_no_prefs_profile_no_gs@arvados.local
   first_name: HasPrefs
   last_name: NoProfile
   identity_url: https://active_no_prefs_profile.openid.local
   is_active: true
   is_admin: false
+  username: activenoprefsprofilenogs
   prefs:
     test: abc
 
@@ -296,6 +302,7 @@ active_no_prefs_profile_with_getting_started_shown:
   identity_url: https://active_no_prefs_profile_seen_gs.openid.local
   is_active: true
   is_admin: false
+  username: activenoprefsprofile
   prefs:
     test: abc
     getting_started_shown: 2015-03-26 12:34:56.789000000 Z
@@ -308,6 +315,7 @@ active_with_prefs_profile_no_getting_started_shown:
   last_name: NoGettingStartedShown
   identity_url: https://active_nogettinstarted.openid.local
   is_active: true
+  username: activenogettinstarted
   prefs:
     profile:
       organization: example.com
@@ -372,7 +380,7 @@ fuse:
 permission_perftest:
   owner_uuid: zzzzz-tpzed-000000000000000
   uuid: zzzzz-tpzed-permissionptest
-  email: fuse@arvados.local
+  email: permission_perftest@arvados.local
   first_name: FUSE
   last_name: User
   identity_url: https://permission_perftest.openid.local
@@ -431,4 +439,4 @@ has_can_login_permission:
   is_active: true
   is_admin: false
   modified_at: 2015-03-26 12:34:56.789000000 Z
-  username: can-login-user
+  username: canLoginUser

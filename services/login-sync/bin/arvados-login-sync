@@ -10,6 +10,7 @@ require 'etc'
 require 'fileutils'
 require 'yaml'
 require 'optparse'
+require 'open3'
 
 req_envs = %w(ARVADOS_API_HOST ARVADOS_API_TOKEN ARVADOS_VIRTUAL_MACHINE_UUID)
 req_envs.each do |k|
@@ -124,11 +125,12 @@ begin
     unless pwnam[l[:username]]
       STDERR.puts "Creating account #{l[:username]}"
       # Create new user
-      unless system("useradd", "-m",
+      out, st = Open3.capture2e("useradd", "-m",
                 "-c", username,
                 "-s", "/bin/bash",
                 username)
-        STDERR.puts "Account creation failed for #{l[:username]}: #{$?}"
+      if st.exitstatus != 0
+        STDERR.puts "Account creation failed for #{l[:username]}:\n#{out}"
         next
       end
       begin
@@ -150,7 +152,10 @@ begin
       if existing_groups.index(addgroup).nil?
         # User should be in group, but isn't, so add them.
         STDERR.puts "Add user #{username} to #{addgroup} group"
-        system("usermod", "-aG", addgroup, username)
+        out, st = Open3.capture2e("usermod", "-aG", addgroup, username)
+        if st.exitstatus != 0
+          STDERR.puts "Failed to add #{username} to #{addgroup} group:\n#{out}"
+        end
       end
     end
 
@@ -158,7 +163,10 @@ begin
       if groups.index(removegroup).nil?
         # User is in a group, but shouldn't be, so remove them.
         STDERR.puts "Remove user #{username} from #{removegroup} group"
-        system("gpasswd", "-d", username, removegroup)
+        out, st = Open3.capture2e("gpasswd", "-d", username, removegroup)
+        if st.exitstatus != 0
+          STDERR.puts "Failed to remove user #{username} from #{removegroup} group:\n#{out}"
+        end
       end
     end
 
