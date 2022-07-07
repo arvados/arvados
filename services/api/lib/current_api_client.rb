@@ -84,6 +84,7 @@ module CurrentApiClient
           first_or_create!(is_active: true,
                            is_admin: true,
                            email: 'root',
+                           username: 'root',
                            first_name: 'root',
                            last_name: '')
       ensure
@@ -187,6 +188,7 @@ module CurrentApiClient
           first_or_create!(is_active: false,
                            is_admin: false,
                            email: 'anonymous',
+                           username: 'anonymous',
                            first_name: 'Anonymous',
                            last_name: '') do |u|
           u.save!
