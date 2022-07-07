@@ -141,4 +141,5 @@ const PROCESS_PANEL_LOG_EVENT_TYPES = [
     LogEventType.STDERR,
     LogEventType.STDOUT,
     LogEventType.CONTAINER,
+    LogEventType.KEEPSTORE,
 ];
