@@ -249,8 +249,10 @@ func doMain(cfg *ConfigParams) error {
 			return err
 		}
 		if uID == "" {
-			emptyUserIDs = append(emptyUserIDs, u.UUID)
-			log.Printf("Empty %s found in user %s - ignoring", cfg.UserID, u.UUID)
+			if u.UUID != cfg.AnonUserUUID && u.UUID != cfg.SysUserUUID {
+				emptyUserIDs = append(emptyUserIDs, u.UUID)
+				log.Printf("Empty %s found in user %s - ignoring", cfg.UserID, u.UUID)
+			}
 			continue
 		}
 		if cfg.CaseInsensitive {
