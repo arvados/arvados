@@ -911,6 +911,10 @@ Clusters:
 
       # Agree to Let's Encrypt terms of service and obtain
       # certificates automatically for ExternalURL domains.
+      #
+      # Note: this feature is not yet implemented in released
+      # versions, only in the alpha/prerelease arvados-server-easy
+      # package.
       Automatic: false
 
       # Use Let's Encrypt staging environment instead of production
