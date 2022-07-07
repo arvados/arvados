@@ -102,7 +102,7 @@ func (s *TestSuite) TestParseFlagsWithoutPositionalArgument(c *C) {
 }
 
 func (s *TestSuite) TestParseFlagsWrongUserID(c *C) {
-	os.Args = []string{"cmd", "-user-id=nickname", "/tmp/somefile.csv"}
+	os.Args = []string{"cmd", "-user-id", "nickname", "/tmp/somefile.csv"}
 	err := ParseFlags(&ConfigParams{})
 	c.Assert(err, NotNil)
 	c.Assert(err, ErrorMatches, ".*user ID must be one of:.*")
@@ -122,7 +122,7 @@ func (s *TestSuite) TestParseFlagsWithPositionalArgument(c *C) {
 
 func (s *TestSuite) TestParseFlagsWithOptionalFlags(c *C) {
 	cfg := ConfigParams{}
-	os.Args = []string{"cmd", "-verbose", "-deactivate-unlisted", "-user-id=username", "/tmp/somefile.csv"}
+	os.Args = []string{"cmd", "-verbose", "-deactivate-unlisted", "-user-id", "username", "/tmp/somefile.csv"}
 	err := ParseFlags(&cfg)
 	c.Assert(err, IsNil)
 	c.Assert(cfg.Path, Equals, "/tmp/somefile.csv")
@@ -349,6 +349,24 @@ func (s *TestSuite) TestUserCreationAndUpdate(c *C) {
 
 func (s *TestSuite) TestDeactivateUnlisted(c *C) {
 	localUserUuidRegex := regexp.MustCompile(fmt.Sprintf("^%s-tpzed-[0-9a-z]{15}$", s.cfg.ClusterID))
+
+	var user1 arvados.User
+	for _, nr := range []int{1, 2} {
+		var newUser arvados.User
+		err := CreateUser(s.cfg.Client, &newUser, map[string]string{
+			"email":      fmt.Sprintf("user%d@example.com", nr),
+			"first_name": "Example",
+			"last_name":  fmt.Sprintf("User%d", nr),
+			"is_active":  "true",
+			"is_admin":   "false",
+		})
+		c.Assert(err, IsNil)
+		c.Assert(newUser.IsActive, Equals, true)
+		if nr == 1 {
+			user1 = newUser // for later confirmation
+		}
+	}
+
 	users, err := ListUsers(s.cfg.Client)
 	c.Assert(err, IsNil)
 	previouslyActiveUsers := 0
@@ -364,19 +382,21 @@ func (s *TestSuite) TestDeactivateUnlisted(c *C) {
 			previouslyActiveUsers++
 		}
 	}
-	// At least 3 active users: System root, Anonymous and the current user.
-	// Other active users should exist from fixture.
+	// Active users: System root, Anonymous, current user and the
+	// ones just created (other active users may exist from fixture).
 	c.Logf("Initial active users count: %d", previouslyActiveUsers)
-	c.Assert(previouslyActiveUsers > 3, Equals, true)
+	c.Assert(previouslyActiveUsers > 5, Equals, true)
 
-	s.cfg.DeactivateUnlisted = true
-	s.cfg.Verbose = true
+	// Here we omit user2@example.com from the CSV file.
 	data := [][]string{
-		{"user1@example.com", "Example", "User1", "0", "0"},
+		{"user1@example.com", "Example", "User1", "1", "0"},
 	}
 	tmpfile, err := MakeTempCSVFile(data)
 	c.Assert(err, IsNil)
 	defer os.Remove(tmpfile.Name())
+
+	s.cfg.DeactivateUnlisted = true
+	s.cfg.Verbose = true
 	s.cfg.Path = tmpfile.Name()
 	err = doMain(s.cfg)
 	c.Assert(err, IsNil)
@@ -388,6 +408,7 @@ func (s *TestSuite) TestDeactivateUnlisted(c *C) {
 		fmt.Sprintf("%s-tpzed-000000000000000", s.cfg.ClusterID): true,
 		fmt.Sprintf("%s-tpzed-anonymouspublic", s.cfg.ClusterID): true,
 		s.cfg.CurrentUser.UUID: true,
+		user1.UUID:             true,
 	}
 	remainingActiveUUIDs := map[string]bool{}
 	seenUserEmails := map[string]bool{}
@@ -404,9 +425,10 @@ func (s *TestSuite) TestDeactivateUnlisted(c *C) {
 			currentlyActiveUsers++
 		}
 	}
-	// 3 active users remaining: System root, Anonymous and the current user.
+	// 4 active users remaining: System root, Anonymous, the current user
+	// and user1@example.com
 	c.Logf("Active local users remaining: %v", remainingActiveUUIDs)
-	c.Assert(currentlyActiveUsers, Equals, 3)
+	c.Assert(currentlyActiveUsers, Equals, 4)
 }
 
 func (s *TestSuite) TestFailOnDuplicatedEmails(c *C) {
@@ -433,4 +455,107 @@ func (s *TestSuite) TestFailOnDuplicatedEmails(c *C) {
 	err = doMain(s.cfg)
 	c.Assert(err, NotNil)
 	c.Assert(err, ErrorMatches, "skipped.*duplicated email address.*")
+}
+
+func (s *TestSuite) TestFailOnEmptyUsernames(c *C) {
+	for i := range []int{1, 2} {
+		var user arvados.User
+		err := CreateUser(s.cfg.Client, &user, map[string]string{
+			"email":      fmt.Sprintf("johndoe%d@example.com", i),
+			"username":   "",
+			"first_name": "John",
+			"last_name":  "Doe",
+			"is_active":  "true",
+			"is_admin":   "false",
+		})
+		c.Assert(err, IsNil)
+		c.Assert(user.Username, Equals, fmt.Sprintf("johndoe%d", i))
+		if i == 1 {
+			err = UpdateUser(s.cfg.Client, user.UUID, &user, map[string]string{
+				"username": "",
+			})
+			c.Assert(err, IsNil)
+			c.Assert(user.Username, Equals, "")
+		}
+	}
+
+	s.cfg.Verbose = true
+	data := [][]string{
+		{"johndoe0", "John", "Doe", "0", "0"},
+	}
+	tmpfile, err := MakeTempCSVFile(data)
+	c.Assert(err, IsNil)
+	defer os.Remove(tmpfile.Name())
+	s.cfg.Path = tmpfile.Name()
+	s.cfg.UserID = "username"
+	err = doMain(s.cfg)
+	c.Assert(err, NotNil)
+	c.Assert(err, ErrorMatches, "skipped 1 user account.*with empty username.*")
+}
+
+func (s *TestSuite) TestFailOnDupedUsernameAndCaseInsensitiveMatching(c *C) {
+	for _, i := range []int{1, 2} {
+		var user arvados.User
+		emailPrefix := "john"
+		if i == 1 {
+			emailPrefix = "JOHN"
+		}
+		err := CreateUser(s.cfg.Client, &user, map[string]string{
+			"email":      fmt.Sprintf("%sdoe@example.com", emailPrefix),
+			"username":   "",
+			"first_name": "John",
+			"last_name":  "Doe",
+			"is_active":  "true",
+			"is_admin":   "false",
+		})
+		c.Assert(err, IsNil)
+		c.Assert(user.Username, Equals, fmt.Sprintf("%sdoe", emailPrefix))
+	}
+
+	s.cfg.Verbose = true
+	data := [][]string{
+		{"johndoe", "John", "Doe", "0", "0"},
+	}
+	tmpfile, err := MakeTempCSVFile(data)
+	c.Assert(err, IsNil)
+	defer os.Remove(tmpfile.Name())
+	s.cfg.Path = tmpfile.Name()
+	s.cfg.UserID = "username"
+	s.cfg.CaseInsensitive = true
+	err = doMain(s.cfg)
+	c.Assert(err, NotNil)
+	c.Assert(err, ErrorMatches, "case insensitive collision for username.*between.*and.*")
+}
+
+func (s *TestSuite) TestSuccessOnUsernameAndCaseSensitiveMatching(c *C) {
+	for _, i := range []int{1, 2} {
+		var user arvados.User
+		emailPrefix := "john"
+		if i == 1 {
+			emailPrefix = "JOHN"
+		}
+		err := CreateUser(s.cfg.Client, &user, map[string]string{
+			"email":      fmt.Sprintf("%sdoe@example.com", emailPrefix),
+			"username":   "",
+			"first_name": "John",
+			"last_name":  "Doe",
+			"is_active":  "true",
+			"is_admin":   "false",
+		})
+		c.Assert(err, IsNil)
+		c.Assert(user.Username, Equals, fmt.Sprintf("%sdoe", emailPrefix))
+	}
+
+	s.cfg.Verbose = true
+	data := [][]string{
+		{"johndoe", "John", "Doe", "0", "0"},
+	}
+	tmpfile, err := MakeTempCSVFile(data)
+	c.Assert(err, IsNil)
+	defer os.Remove(tmpfile.Name())
+	s.cfg.Path = tmpfile.Name()
+	s.cfg.UserID = "username"
+	s.cfg.CaseInsensitive = false
+	err = doMain(s.cfg)
+	c.Assert(err, IsNil)
 }
