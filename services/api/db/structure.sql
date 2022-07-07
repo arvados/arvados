@@ -62,10 +62,10 @@ with
      permission (permission origin is self).
   */
   perm_from_start(perm_origin_uuid, target_uuid, val, traverse_owned) as (
-    
+
 WITH RECURSIVE
         traverse_graph(origin_uuid, target_uuid, val, traverse_owned, starting_set) as (
-            
+
              values (perm_origin_uuid, starting_uuid, starting_perm,
                     should_traverse_owned(starting_uuid, starting_perm),
                     (perm_origin_uuid = starting_uuid or starting_uuid not like '_____-tpzed-_______________'))
@@ -107,10 +107,10 @@ case (edges.edge_id = perm_edge_id)
        can_manage permission granted by ownership.
   */
   additional_perms(perm_origin_uuid, target_uuid, val, traverse_owned) as (
-    
+
 WITH RECURSIVE
         traverse_graph(origin_uuid, target_uuid, val, traverse_owned, starting_set) as (
-            
+
     select edges.tail_uuid as origin_uuid, edges.head_uuid as target_uuid, edges.val,
            should_traverse_owned(edges.head_uuid, edges.val),
            edges.head_uuid like '_____-j7d0g-_______________'
@@ -3182,6 +3182,7 @@ INSERT INTO "schema_migrations" (version) VALUES
 ('20220301155729'),
 ('20220303204419'),
 ('20220401153101'),
-('20220505112900');
+('20220505112900'),
+('20220707134100');
 
 
