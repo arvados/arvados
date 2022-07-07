@@ -23,6 +23,6 @@ export interface LogResource extends Resource, ResourceWithProperties {
     kind: ResourceKind.LOG;
     objectUuid: string;
     eventAt: string;
-    eventType: string;
+    eventType: LogEventType;
     summary: string;
 }
