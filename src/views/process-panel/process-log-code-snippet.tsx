@@ -95,7 +95,7 @@ export const ProcessLogCodeSnippet = withStyles(styles)(connect()(
             <div ref={scrollRef} className={classes.root}
                 onScroll={(e) => {
                     const elem = e.target as HTMLDivElement;
-                    if (elem.scrollTop + elem.clientHeight >= elem.scrollHeight) {
+                    if (elem.scrollTop + (elem.clientHeight*1.1) >= elem.scrollHeight) {
                         setFollowMode(true);
                     } else {
                         setFollowMode(false);
