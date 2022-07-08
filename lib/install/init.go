@@ -13,6 +13,7 @@ import (
 	"flag"
 	"fmt"
 	"io"
+	"net/url"
 	"os"
 	"os/exec"
 	"os/user"
@@ -23,7 +24,9 @@ import (
 
 	"git.arvados.org/arvados.git/lib/cmd"
 	"git.arvados.org/arvados.git/lib/config"
+	"git.arvados.org/arvados.git/lib/controller/rpc"
 	"git.arvados.org/arvados.git/sdk/go/arvados"
+	"git.arvados.org/arvados.git/sdk/go/auth"
 	"git.arvados.org/arvados.git/sdk/go/ctxlog"
 	"github.com/lib/pq"
 )
@@ -297,7 +300,7 @@ func (initcmd *initCommand) RunCommand(prog string, args []string, stdin io.Read
 
 	if initcmd.Start {
 		fmt.Fprintln(stderr, "starting systemd service")
-		cmd := exec.CommandContext(ctx, "systemctl", "start", "--no-block", "arvados")
+		cmd := exec.CommandContext(ctx, "systemctl", "start", "arvados")
 		cmd.Dir = "/"
 		cmd.Stdout = stderr
 		cmd.Stderr = stderr
@@ -306,7 +309,19 @@ func (initcmd *initCommand) RunCommand(prog string, args []string, stdin io.Read
 			err = fmt.Errorf("%v: %w", cmd.Args, err)
 			return 1
 		}
+
+		fmt.Fprintln(stderr, "checking controller API endpoint")
+		u := url.URL(cluster.Services.Controller.ExternalURL)
+		conn := rpc.NewConn(cluster.ClusterID, &u, cluster.TLS.Insecure, rpc.PassthroughTokenProvider)
+		ctx := auth.NewContext(context.Background(), auth.NewCredentials(cluster.SystemRootToken))
+		_, err = conn.UserGetCurrent(ctx, arvados.GetOptions{})
+		if err != nil {
+			err = fmt.Errorf("API request failed: %w", err)
+			return 1
+		}
 	}
+
+	fmt.Fprintln(stderr, "Log in to workbench2 at", cluster.Services.Workbench2.ExternalURL.String())
 
 	return 0
 }
