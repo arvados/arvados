@@ -97,7 +97,7 @@ func (initcmd *initCommand) RunCommand(prog string, args []string, stdin io.Read
 	} else if initcmd.Login == "" {
 		// none; login will show an error page
 	} else {
-		err = fmt.Errorf("invalid argument to -login: %q: should be 'test', 'pam', 'google {client-id} {client-secret}', or empty")
+		err = fmt.Errorf("invalid argument to -login: %q: should be 'test', 'pam', 'google {client-id} {client-secret}', or empty", initcmd.Login)
 		return 1
 	}
 
