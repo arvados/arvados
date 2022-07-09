@@ -122,13 +122,15 @@ func (initcmd *initCommand) RunCommand(prog string, args []string, stdin io.Read
 	}
 	initcmd.PostgreSQLPassword = initcmd.RandomHex(32)
 
+	fmt.Fprintln(stderr, "creating data storage directory /var/lib/arvados/keep ...")
 	err = os.Mkdir("/var/lib/arvados/keep", 0600)
 	if err != nil && !os.IsExist(err) {
 		err = fmt.Errorf("mkdir /var/lib/arvados/keep: %w", err)
 		return 1
 	}
-	fmt.Fprintln(stderr, "created /var/lib/arvados/keep")
+	fmt.Fprintln(stderr, "...done")
 
+	fmt.Fprintln(stderr, "creating config file", conffile, "...")
 	err = os.Mkdir(confdir, 0750)
 	if err != nil && !os.IsExist(err) {
 		err = fmt.Errorf("mkdir %s: %w", confdir, err)
@@ -139,9 +141,9 @@ func (initcmd *initCommand) RunCommand(prog string, args []string, stdin io.Read
 		err = fmt.Errorf("chown 0:%d %s: %w", wwwgid, confdir, err)
 		return 1
 	}
-	f, err := os.OpenFile(conffile, os.O_CREATE|os.O_EXCL|os.O_WRONLY, 0644)
+	f, err := os.OpenFile(conffile+".tmp", os.O_CREATE|os.O_EXCL|os.O_WRONLY, 0644)
 	if err != nil {
-		err = fmt.Errorf("open %s: %w", conffile, err)
+		err = fmt.Errorf("open %s: %w", conffile+".tmp", err)
 		return 1
 	}
 	tmpl, err := template.New("config").Parse(`Clusters:
@@ -260,15 +262,20 @@ func (initcmd *initCommand) RunCommand(prog string, args []string, stdin io.Read
 	}
 	err = tmpl.Execute(f, initcmd)
 	if err != nil {
-		err = fmt.Errorf("%s: tmpl.Execute: %w", conffile, err)
+		err = fmt.Errorf("%s: tmpl.Execute: %w", conffile+".tmp", err)
 		return 1
 	}
 	err = f.Close()
 	if err != nil {
-		err = fmt.Errorf("%s: close: %w", conffile, err)
+		err = fmt.Errorf("%s: close: %w", conffile+".tmp", err)
 		return 1
 	}
-	fmt.Fprintln(stderr, "created", conffile)
+	err = os.Rename(conffile+".tmp", conffile)
+	if err != nil {
+		err = fmt.Errorf("rename %s -> %s: %w", conffile+".tmp", conffile, err)
+		return 1
+	}
+	fmt.Fprintln(stderr, "...done")
 
 	ldr := config.NewLoader(nil, logger)
 	ldr.SkipLegacy = true
@@ -282,11 +289,14 @@ func (initcmd *initCommand) RunCommand(prog string, args []string, stdin io.Read
 		return 1
 	}
 
+	fmt.Fprintln(stderr, "creating postresql user and database...")
 	err = initcmd.createDB(ctx, cluster.PostgreSQL.Connection, stderr)
 	if err != nil {
 		return 1
 	}
+	fmt.Fprintln(stderr, "...done")
 
+	fmt.Fprintln(stderr, "initializing database...")
 	cmd := exec.CommandContext(ctx, "sudo", "-u", "www-data", "-E", "HOME=/var/www", "PATH=/var/lib/arvados/bin:"+os.Getenv("PATH"), "/var/lib/arvados/bin/bundle", "exec", "rake", "db:setup")
 	cmd.Dir = "/var/lib/arvados/railsapi"
 	cmd.Stdout = stderr
@@ -296,10 +306,10 @@ func (initcmd *initCommand) RunCommand(prog string, args []string, stdin io.Read
 		err = fmt.Errorf("rake db:setup failed: %w", err)
 		return 1
 	}
-	fmt.Fprintln(stderr, "initialized database")
+	fmt.Fprintln(stderr, "...done")
 
 	if initcmd.Start {
-		fmt.Fprintln(stderr, "starting systemd service")
+		fmt.Fprintln(stderr, "starting systemd service...")
 		cmd := exec.CommandContext(ctx, "systemctl", "start", "arvados")
 		cmd.Dir = "/"
 		cmd.Stdout = stderr
@@ -310,7 +320,7 @@ func (initcmd *initCommand) RunCommand(prog string, args []string, stdin io.Read
 			return 1
 		}
 
-		fmt.Fprintln(stderr, "checking controller API endpoint")
+		fmt.Fprintln(stderr, "checking controller API endpoint...")
 		u := url.URL(cluster.Services.Controller.ExternalURL)
 		conn := rpc.NewConn(cluster.ClusterID, &u, cluster.TLS.Insecure, rpc.PassthroughTokenProvider)
 		ctx := auth.NewContext(context.Background(), auth.NewCredentials(cluster.SystemRootToken))
@@ -319,9 +329,10 @@ func (initcmd *initCommand) RunCommand(prog string, args []string, stdin io.Read
 			err = fmt.Errorf("API request failed: %w", err)
 			return 1
 		}
+		fmt.Fprintln(stderr, "...looks good")
 	}
 
-	fmt.Fprintln(stderr, "Log in to workbench2 at", cluster.Services.Workbench2.ExternalURL.String())
+	fmt.Fprintln(stderr, "Setup complete. You should now be able to log in to workbench2 at", cluster.Services.Workbench2.ExternalURL.String())
 
 	return 0
 }
@@ -351,19 +362,17 @@ func (initcmd *initCommand) RandomHex(chars int) string {
 }
 
 func (initcmd *initCommand) createDB(ctx context.Context, dbconn arvados.PostgreSQLConnection, stderr io.Writer) error {
-	for _, sql := range []string{
-		`CREATE USER ` + pq.QuoteIdentifier(dbconn["user"]) + ` WITH SUPERUSER ENCRYPTED PASSWORD ` + pq.QuoteLiteral(dbconn["password"]),
-		`CREATE DATABASE ` + pq.QuoteIdentifier(dbconn["dbname"]) + ` WITH TEMPLATE template0 ENCODING 'utf8'`,
-		`CREATE EXTENSION IF NOT EXISTS pg_trgm`,
-	} {
-		cmd := exec.CommandContext(ctx, "sudo", "-u", "postgres", "psql", "-c", sql)
-		cmd.Dir = "/"
-		cmd.Stdout = stderr
-		cmd.Stderr = stderr
-		err := cmd.Run()
-		if err != nil {
-			return fmt.Errorf("error setting up arvados user/database: %w", err)
-		}
+	cmd := exec.CommandContext(ctx, "sudo", "-u", "postgres", "psql", "--quiet",
+		"-c", `CREATE USER `+pq.QuoteIdentifier(dbconn["user"])+` WITH SUPERUSER ENCRYPTED PASSWORD `+pq.QuoteLiteral(dbconn["password"]),
+		"-c", `CREATE DATABASE `+pq.QuoteIdentifier(dbconn["dbname"])+` WITH TEMPLATE template0 ENCODING 'utf8'`,
+		"-c", `CREATE EXTENSION IF NOT EXISTS pg_trgm`,
+	)
+	cmd.Dir = "/"
+	cmd.Stdout = stderr
+	cmd.Stderr = stderr
+	err := cmd.Run()
+	if err != nil {
+		return fmt.Errorf("error setting up arvados user/database: %w", err)
 	}
 	return nil
 }
