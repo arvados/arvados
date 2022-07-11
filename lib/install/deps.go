@@ -563,7 +563,6 @@ yarn install
 		for _, srcdir := range []string{
 			"cmd/arvados-client",
 			"cmd/arvados-server",
-			"services/crunch-dispatch-slurm",
 		} {
 			fmt.Fprintf(stderr, "building %s...\n", srcdir)
 			cmd := exec.Command("go", "install", "-ldflags", "-X git.arvados.org/arvados.git/lib/cmd.version="+inst.PackageVersion+" -X main.version="+inst.PackageVersion+" -s -w")
