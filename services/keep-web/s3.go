@@ -607,7 +607,7 @@ func (h *handler) serveS3(w http.ResponseWriter, r *http.Request) bool {
 func setFileInfoHeaders(header http.Header, fs arvados.CustomFileSystem, path string) error {
 	maybeEncode := func(s string) string {
 		for _, c := range s {
-			if c > '\u007f' {
+			if c > '\u007f' || c < ' ' {
 				return mime.BEncoding.Encode("UTF-8", s)
 			}
 		}

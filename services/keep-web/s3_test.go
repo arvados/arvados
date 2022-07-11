@@ -259,7 +259,7 @@ func (s *IntegrationSuite) TestS3PropertiesAsMetadata(c *check.C) {
 		"Array":    `["element1","element2"]`,
 		"Object":   mime.BEncoding.Encode("UTF-8", `{"key":{"key2":"value⛵"}}`),
 		"Nonascii": "=?UTF-8?b?4pu1?=",
-		"Newline":  "foo  X-Bad: header",
+		"Newline":  mime.BEncoding.Encode("UTF-8", "foo\r\nX-Bad: header"),
 	}
 	expectSubprojectTags := map[string]string{
 		"Subproject_properties_key": "subproject properties value",
