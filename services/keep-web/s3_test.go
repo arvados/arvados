@@ -82,6 +82,7 @@ func (s *IntegrationSuite) s3setup(c *check.C) s3stage {
 			"array":    []string{"element1", "element2"},
 			"object":   map[string]interface{}{"key": map[string]interface{}{"key2": "value⛵"}},
 			"nonascii": "⛵",
+			"newline":  "foo\r\nX-Bad: header",
 		},
 	}})
 	c.Assert(err, check.IsNil)
@@ -258,6 +259,7 @@ func (s *IntegrationSuite) TestS3PropertiesAsMetadata(c *check.C) {
 		"Array":    `["element1","element2"]`,
 		"Object":   mime.BEncoding.Encode("UTF-8", `{"key":{"key2":"value⛵"}}`),
 		"Nonascii": "=?UTF-8?b?4pu1?=",
+		"Newline":  "foo  X-Bad: header",
 	}
 	expectSubprojectTags := map[string]string{
 		"Subproject_properties_key": "subproject properties value",
