@@ -15,10 +15,11 @@ StartLimitIntervalSec=0
 Type=notify
 EnvironmentFile=-/etc/arvados/environment
 ExecStart=/usr/bin/arvados-server boot
-# Set a reasonable default for the open file limit
-LimitNOFILE=65536
+ExecReload=/usr/bin/arvados-server config-check
+ExecReload=kill -HUP $MAINPID
 Restart=always
 RestartSec=1
+LimitNOFILE=65536
 
 # systemd<=219 (centos:7, debian:8, ubuntu:trusty) obeys StartLimitInterval in the [Service] section
 StartLimitInterval=0
