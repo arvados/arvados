@@ -111,6 +111,23 @@ func (initcmd *initCommand) RunCommand(prog string, args []string, stdin io.Read
 		return 1
 	}
 
+	// Do the "create extension" thing early. This way, if there's
+	// no local postgresql server (a likely failure mode), we can
+	// bail out without any side effects, and the user can start
+	// over easily.
+	fmt.Fprintln(stderr, "installing pg_trgm postgresql extension...")
+	cmd := exec.CommandContext(ctx, "sudo", "-u", "postgres", "psql", "--quiet",
+		"-c", `CREATE EXTENSION IF NOT EXISTS pg_trgm`)
+	cmd.Dir = "/"
+	cmd.Stdout = stdout
+	cmd.Stderr = stderr
+	err = cmd.Run()
+	if err != nil {
+		err = fmt.Errorf("error preparing postgresql server: %w", err)
+		return 1
+	}
+	fmt.Fprintln(stderr, "...done")
+
 	wwwuser, err := user.Lookup("www-data")
 	if err != nil {
 		err = fmt.Errorf("user.Lookup(%q): %w", "www-data", err)
@@ -279,6 +296,7 @@ func (initcmd *initCommand) RunCommand(prog string, args []string, stdin io.Read
 
 	ldr := config.NewLoader(nil, logger)
 	ldr.SkipLegacy = true
+	ldr.Path = conffile // load the file we just wrote, even if $ARVADOS_CONFIG is set
 	cfg, err := ldr.Load()
 	if err != nil {
 		err = fmt.Errorf("%s: %w", conffile, err)
@@ -297,7 +315,7 @@ func (initcmd *initCommand) RunCommand(prog string, args []string, stdin io.Read
 	fmt.Fprintln(stderr, "...done")
 
 	fmt.Fprintln(stderr, "initializing database...")
-	cmd := exec.CommandContext(ctx, "sudo", "-u", "www-data", "-E", "HOME=/var/www", "PATH=/var/lib/arvados/bin:"+os.Getenv("PATH"), "/var/lib/arvados/bin/bundle", "exec", "rake", "db:setup")
+	cmd = exec.CommandContext(ctx, "sudo", "-u", "www-data", "-E", "HOME=/var/www", "PATH=/var/lib/arvados/bin:"+os.Getenv("PATH"), "/var/lib/arvados/bin/bundle", "exec", "rake", "db:setup")
 	cmd.Dir = "/var/lib/arvados/railsapi"
 	cmd.Stdout = stderr
 	cmd.Stderr = stderr
@@ -319,6 +337,7 @@ func (initcmd *initCommand) RunCommand(prog string, args []string, stdin io.Read
 			err = fmt.Errorf("%v: %w", cmd.Args, err)
 			return 1
 		}
+		fmt.Fprintln(stderr, "...done")
 
 		fmt.Fprintln(stderr, "checking controller API endpoint...")
 		u := url.URL(cluster.Services.Controller.ExternalURL)
@@ -365,7 +384,6 @@ func (initcmd *initCommand) createDB(ctx context.Context, dbconn arvados.Postgre
 	cmd := exec.CommandContext(ctx, "sudo", "-u", "postgres", "psql", "--quiet",
 		"-c", `CREATE USER `+pq.QuoteIdentifier(dbconn["user"])+` WITH SUPERUSER ENCRYPTED PASSWORD `+pq.QuoteLiteral(dbconn["password"]),
 		"-c", `CREATE DATABASE `+pq.QuoteIdentifier(dbconn["dbname"])+` WITH TEMPLATE template0 ENCODING 'utf8'`,
-		"-c", `CREATE EXTENSION IF NOT EXISTS pg_trgm`,
 	)
 	cmd.Dir = "/"
 	cmd.Stdout = stderr
