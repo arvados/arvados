@@ -168,8 +168,15 @@ describe('Process tests', function() {
             cy.getAll('@stdoutLogs', '@nodeInfoLogs', '@crunchRunLogs').then(function() {
                 cy.loginAs(activeUser);
                 cy.goToPath(`/processes/${containerRequest.uuid}`);
-                // Should should all logs
-                cy.get('[data-cy=process-logs-filter]').should('contain', 'All logs');
+                // Should show main logs by default
+                cy.get('[data-cy=process-logs-filter]').should('contain', 'Main logs');
+                cy.get('[data-cy=process-logs]')
+                    .should('contain', stdoutLogs[Math.floor(Math.random() * stdoutLogs.length)])
+                    .and('not.contain', nodeInfoLogs[Math.floor(Math.random() * nodeInfoLogs.length)])
+                    .and('contain', crunchRunLogs[Math.floor(Math.random() * crunchRunLogs.length)]);
+                // Select 'All logs'
+                cy.get('[data-cy=process-logs-filter]').click();
+                cy.get('body').contains('li', 'All logs').click();
                 cy.get('[data-cy=process-logs]')
                     .should('contain', stdoutLogs[Math.floor(Math.random() * stdoutLogs.length)])
                     .and('contain', nodeInfoLogs[Math.floor(Math.random() * nodeInfoLogs.length)])

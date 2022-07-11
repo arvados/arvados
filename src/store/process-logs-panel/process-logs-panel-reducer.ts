@@ -24,10 +24,13 @@ export const processLogsPanelReducer = (state = initialState, action: ProcessLog
             selectedFilter
         }),
         ADD_PROCESS_LOGS_PANEL_ITEM: ({ logType, log }) => {
+            const filters = state.filters.indexOf(logType) > -1
+                ? state.filters
+                : [...state.filters, logType];
             const currentLogs = state.logs[logType] || [];
             const logsOfType = [...currentLogs, log];
             const logs = { ...state.logs, [logType]: logsOfType };
-            return { ...state, logs };
+            return { ...state, logs, filters };
         },
         default: () => state,
     });

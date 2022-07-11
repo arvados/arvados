@@ -45,21 +45,25 @@ export const addProcessLogsPanelItem = (message: ResourceEventMessage<{ text: st
     async (dispatch: Dispatch, getState: () => RootState, { logService }: ServiceRepository) => {
         if (PROCESS_PANEL_LOG_EVENT_TYPES.indexOf(message.eventType) > -1) {
             const uuid = getProcessLogsPanelCurrentUuid(getState().router);
-            if (uuid) {
-                const process = getProcess(uuid)(getState().resources);
-                if (process) {
-                    const { containerRequest, container } = process;
-                    if (message.objectUuid === containerRequest.uuid
-                        || (container && message.objectUuid === container.uuid)) {
-                        dispatch(processLogsPanelActions.ADD_PROCESS_LOGS_PANEL_ITEM({
-                            logType: COMBINED_FILTER_TYPE,
-                            log: message.properties.text
-                        }));
-                        dispatch(processLogsPanelActions.ADD_PROCESS_LOGS_PANEL_ITEM({
-                            logType: message.eventType,
-                            log: message.properties.text
-                        }));
-                    }
+            if (!uuid) { return }
+            const process = getProcess(uuid)(getState().resources);
+            if (!process) { return }
+            const { containerRequest, container } = process;
+            if (message.objectUuid === containerRequest.uuid
+                || (container && message.objectUuid === container.uuid)) {
+                dispatch(processLogsPanelActions.ADD_PROCESS_LOGS_PANEL_ITEM({
+                    logType: ALL_FILTER_TYPE,
+                    log: message.properties.text
+                }));
+                dispatch(processLogsPanelActions.ADD_PROCESS_LOGS_PANEL_ITEM({
+                    logType: message.eventType,
+                    log: message.properties.text
+                }));
+                if (MAIN_EVENT_TYPES.indexOf(message.eventType) > -1) {
+                    dispatch(processLogsPanelActions.ADD_PROCESS_LOGS_PANEL_ITEM({
+                        logType: MAIN_FILTER_TYPE,
+                        log: message.properties.text
+                    }));
                 }
             }
         }
@@ -84,6 +88,9 @@ const loadContainerLogs = async (containerUuid: string, logService: LogService) 
 
 const createInitialLogPanelState = (logResources: LogResource[]) => {
     const allLogs = logsToLines(logResources);
+    const mainLogs = logsToLines(logResources.filter(
+        e => MAIN_EVENT_TYPES.indexOf(e.eventType) > -1
+    ));
     const groupedLogResources = groupBy(logResources, log => log.eventType);
     const groupedLogs = Object
         .keys(groupedLogResources)
@@ -91,8 +98,12 @@ const createInitialLogPanelState = (logResources: LogResource[]) => {
             ...grouped,
             [key]: logsToLines(groupedLogResources[key])
         }), {});
-    const filters = [COMBINED_FILTER_TYPE, ...Object.keys(groupedLogs)];
-    const logs = { [COMBINED_FILTER_TYPE]: allLogs, ...groupedLogs };
+    const filters = [MAIN_FILTER_TYPE, ALL_FILTER_TYPE, ...Object.keys(groupedLogs)];
+    const logs = {
+        [MAIN_FILTER_TYPE]: mainLogs,
+        [ALL_FILTER_TYPE]: allLogs,
+        ...groupedLogs
+    };
     return { filters, logs };
 };
 
@@ -111,7 +122,14 @@ export const navigateToLogCollection = (uuid: string) =>
 
 const MAX_AMOUNT_OF_LOGS = 10000;
 
-const COMBINED_FILTER_TYPE = 'All logs';
+const ALL_FILTER_TYPE = 'All logs';
+
+const MAIN_FILTER_TYPE = 'Main logs';
+const MAIN_EVENT_TYPES = [
+    LogEventType.CRUNCH_RUN,
+    LogEventType.STDERR,
+    LogEventType.STDOUT,
+];
 
 const PROCESS_PANEL_LOG_EVENT_TYPES = [
     LogEventType.ARV_MOUNT,
@@ -123,4 +141,5 @@ const PROCESS_PANEL_LOG_EVENT_TYPES = [
     LogEventType.STDERR,
     LogEventType.STDOUT,
     LogEventType.CONTAINER,
+    LogEventType.KEEPSTORE,
 ];
