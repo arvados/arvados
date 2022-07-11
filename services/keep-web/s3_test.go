@@ -83,6 +83,10 @@ func (s *IntegrationSuite) s3setup(c *check.C) s3stage {
 			"object":   map[string]interface{}{"key": map[string]interface{}{"key2": "value⛵"}},
 			"nonascii": "⛵",
 			"newline":  "foo\r\nX-Bad: header",
+			// This key cannot be expressed as a MIME
+			// header key, so it will be silently skipped
+			// (see "Inject" in PropertiesAsMetadata test)
+			"a: a\r\nInject": "bogus",
 		},
 	}})
 	c.Assert(err, check.IsNil)
@@ -281,6 +285,7 @@ func (s *IntegrationSuite) TestS3PropertiesAsMetadata(c *check.C) {
 	rdr.Close()
 	c.Check(content, check.HasLen, 4)
 	s.checkMetaEquals(c, hdr, expectCollectionTags)
+	c.Check(hdr["Inject"], check.IsNil)
 
 	c.Log("HEAD bucket with metadata from collection")
 	resp, err = stage.collbucket.Head("/", nil)
