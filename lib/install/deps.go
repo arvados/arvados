@@ -614,9 +614,9 @@ yarn install
 				{"touch", "log/production.log"},
 				{"chown", "-R", "--from=root", "www-data:www-data", "/var/www/.bundle", "/var/www/.gem", "/var/www/.npm", "/var/www/.passenger", "log", "tmp", "vendor", ".bundle", "Gemfile.lock", "config.ru", "config/environment.rb"},
 				{"sudo", "-u", "www-data", "/var/lib/arvados/bin/gem", "install", "--user", "--conservative", "--no-document", "bundler:" + bundlerversion},
-				{"sudo", "-u", "www-data", "/var/lib/arvados/bin/bundle", "config", "--set", "--local", "deployment", "true"},
-				{"sudo", "-u", "www-data", "/var/lib/arvados/bin/bundle", "config", "--set", "--local", "path", "/var/www/.gem"},
-				{"sudo", "-u", "www-data", "/var/lib/arvados/bin/bundle", "config", "--set", "--local", "without", "development test diagnostics performance"},
+				{"sudo", "-u", "www-data", "/var/lib/arvados/bin/bundle", "config", "set", "--local", "deployment", "true"},
+				{"sudo", "-u", "www-data", "/var/lib/arvados/bin/bundle", "config", "set", "--local", "path", "/var/www/.gem"},
+				{"sudo", "-u", "www-data", "/var/lib/arvados/bin/bundle", "config", "set", "--local", "without", "development test diagnostics performance"},
 				{"sudo", "-u", "www-data", "/var/lib/arvados/bin/bundle", "install", "--jobs", "8"},
 
 				{"chown", "www-data:www-data", ".", "public/assets"},
