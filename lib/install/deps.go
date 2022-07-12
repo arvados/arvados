@@ -586,6 +586,33 @@ yarn install
 			return 1
 		}
 
+		// Install python SDK and arv-mount in
+		// /var/lib/arvados/lib/python.
+		//
+		// setup.py writes a file in the source directory in
+		// order to include the version number in the package
+		// itself.  We don't want to write to the source tree
+		// (in "arvados-package" context it's mounted
+		// readonly) so we run setup.py in a temporary copy of
+		// the source dir.
+		if err = inst.runBash(`
+v=/var/lib/arvados/lib/python
+tmp=/var/lib/arvados/tmp/python
+python3 -m venv "$v"
+. "$v/bin/activate"
+pip3 install --no-cache-dir 'setuptools>=18.5' 'pip>=7'
+export ARVADOS_BUILDING_VERSION="`+inst.PackageVersion+`"
+for src in "`+inst.SourcePath+`/sdk/python" "`+inst.SourcePath+`/services/fuse"; do
+  rsync -a --delete-after "$src/" "$tmp/"
+  cd "$tmp"
+  python3 setup.py install
+  cd ..
+  rm -rf "$tmp"
+done
+`, stdout, stderr); err != nil {
+			return 1
+		}
+
 		// Install Rails apps to /var/lib/arvados/{railsapi,workbench1}/
 		for dstdir, srcdir := range map[string]string{
 			"railsapi":   "services/api",
@@ -693,22 +720,40 @@ rsync -a --delete-after build/ /var/lib/arvados/workbench2/
 			}
 		}
 
-		// Symlink user-facing programs /usr/bin/x ->
-		// /var/lib/arvados/bin/x
+		// Add symlinks in /usr/bin for user-facing programs
 		for _, srcdst := range [][]string{
-			{"arvados-client", "arvados-client"},
-			{"arvados-client", "arv"},
-			{"arvados-server", "arvados-server"},
-			{"arv", "arv-ruby"},
-			{"arv-tag", "arv-tag"},
+			// go
+			{"bin/arvados-client"},
+			{"bin/arvados-client", "arv"},
+			{"bin/arvados-server"},
+			// sdk/cli
+			{"bin/arv", "arv-ruby"},
+			{"bin/arv-tag"},
+			// sdk/python
+			{"lib/python/bin/arv-copy"},
+			{"lib/python/bin/arv-federation-migrate"},
+			{"lib/python/bin/arv-get"},
+			{"lib/python/bin/arv-keepdocker"},
+			{"lib/python/bin/arv-ls"},
+			{"lib/python/bin/arv-migrate-docker19"},
+			{"lib/python/bin/arv-normalize"},
+			{"lib/python/bin/arv-put"},
+			{"lib/python/bin/arv-ws"},
+			// services/fuse
+			{"lib/python/bin/arv-mount"},
 		} {
-			src := srcdst[0]
-			dst := srcdst[1]
-			err = os.Remove("/usr/bin/" + dst)
+			src := "/var/lib/arvados/" + srcdst[0]
+			if _, err = os.Stat(src); err != nil {
+				return 1
+			}
+			dst := srcdst[len(srcdst)-1]
+			_, dst = filepath.Split(dst)
+			dst = "/usr/bin/" + dst
+			err = os.Remove(dst)
 			if err != nil && !errors.Is(err, os.ErrNotExist) {
 				return 1
 			}
-			err = os.Symlink("/var/lib/arvados/bin/"+src, "/usr/bin/"+dst)
+			err = os.Symlink(src, dst)
 			if err != nil {
 				return 1
 			}
