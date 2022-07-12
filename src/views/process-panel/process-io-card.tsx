@@ -22,9 +22,10 @@ import {
     TableCell,
     Paper,
     Link,
+    Grid,
 } from '@material-ui/core';
 import { ArvadosTheme } from 'common/custom-theme';
-import { CloseIcon, ProcessIcon } from 'components/icon/icon';
+import { CloseIcon, InfoIcon, ProcessIcon } from 'components/icon/icon';
 import { MPVPanelProps } from 'components/multi-panel-view/multi-panel-view';
 import {
   BooleanCommandInputParameter,
@@ -50,6 +51,7 @@ import { File } from 'models/workflow';
 import { getInlineFileUrl } from 'views-components/context-menu/actions/helpers';
 import { AuthState } from 'store/auth/auth-reducer';
 import mime from 'mime';
+import { DefaultView } from 'components/default-view/default-view';
 
 type CssRules = 'card' | 'content' | 'title' | 'header' | 'avatar' | 'iconHeader' | 'tableWrapper' | 'tableRoot' | 'paramValue' | 'keepLink' | 'imagePreview';
 
@@ -135,16 +137,21 @@ export const ProcessIOCard = withStyles(styles)(
                     </div>
                 } />
             <CardContent className={classes.content}>
-                <Tabs value={tabState} onChange={handleChange} variant="fullWidth">
-                    <Tab label="Preview" />
-                    <Tab label="Raw" />
-                </Tabs>
-                {tabState === 0 && <div className={classes.tableWrapper}>
-                    <ProcessIOPreview data={params} />
-                    </div>}
-                {tabState === 1 && <div className={classes.tableWrapper}>
-                    <ProcessIORaw data={raw || params} />
-                    </div>}
+                {params.length ?
+                <div>
+                    <Tabs value={tabState} onChange={handleChange} variant="fullWidth">
+                        <Tab label="Preview" />
+                        <Tab label="Raw" />
+                    </Tabs>
+                    {tabState === 0 && <div className={classes.tableWrapper}>
+                        <ProcessIOPreview data={params} />
+                        </div>}
+                    {tabState === 1 && <div className={classes.tableWrapper}>
+                        <ProcessIORaw data={raw || params} />
+                        </div>}
+                </div> : <Grid container item alignItems='center' justify='center'>
+                    <DefaultView messages={["No parameters found"]} icon={InfoIcon} />
+                </Grid>}
             </CardContent>
         </Card>;
     }

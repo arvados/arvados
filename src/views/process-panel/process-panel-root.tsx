@@ -85,6 +85,8 @@ export const ProcessPanelRoot = withStyles(styles)(
     React.useEffect(() => {
         if (outputDetails.rawOutputs) {
             setProcessedOutputs(formatOutputData(outputDetails.rawOutputs, outputDetails.pdh, auth));
+        } else {
+            setProcessedOutputs([]);
         }
     }, [outputDetails, auth]);
 
