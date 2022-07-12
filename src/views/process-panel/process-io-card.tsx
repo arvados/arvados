@@ -242,10 +242,7 @@ export const getInputDisplayValue = (auth: AuthState, input: CommandInputParamet
 
         case isPrimitiveOfType(input, CWLType.DIRECTORY):
             const directory = (input as DirectoryCommandInputParameter).value;
-            return directory ? [{
-                display: getKeepUrl(directory, pdh),
-                nav: getNavUrl(auth, directory, pdh),
-            }] : [];
+            return directory ? [directoryToProcessIOValue(directory, auth, pdh)] : [];
 
         case typeof input.type === 'object' &&
             !(input.type instanceof Array) &&
@@ -272,13 +269,10 @@ export const getInputDisplayValue = (auth: AuthState, input: CommandInputParamet
 
         case isArrayOfType(input, CWLType.DIRECTORY):
             const directories = (input as DirectoryArrayCommandInputParameter).value || [];
-            return directories.map(directory => ({
-                display: getKeepUrl(directory, pdh),
-                nav: getNavUrl(auth, directory, pdh),
-            }));
+            return directories.map(directory => directoryToProcessIOValue(directory, auth, pdh));
 
         default:
-            return [{display: ''}];
+            return [];
     }
 };
 
@@ -286,22 +280,31 @@ const getKeepUrl = (file: File | Directory, pdh?: string): string => {
     const isKeepUrl = file.location?.startsWith('keep:') || false;
     const keepUrl = isKeepUrl ? file.location : pdh ? `keep:${pdh}/${file.location}` : file.location;
     return keepUrl || '';
-}
+};
 
 const getNavUrl = (auth: AuthState, file: File | Directory, pdh?: string): string => {
     let keepUrl = getKeepUrl(file, pdh).replace('keep:', '');
-    // Directory urls lack a trailing slash
-    if (!keepUrl.endsWith('/')) {
-        keepUrl += '/';
-    }
     return (getInlineFileUrl(`${auth.config.keepWebServiceUrl}/c=${keepUrl}?api_token=${auth.apiToken}`, auth.config.keepWebServiceUrl, auth.config.keepWebInlineServiceUrl));
-}
+};
 
 const getImageUrl = (auth: AuthState, file: File, pdh?: string): string => {
     const keepUrl = getKeepUrl(file, pdh).replace('keep:', '');
     return getInlineFileUrl(`${auth.config.keepWebServiceUrl}/c=${keepUrl}?api_token=${auth.apiToken}`, auth.config.keepWebServiceUrl, auth.config.keepWebInlineServiceUrl);
-}
+};
 
 const isFileImage = (basename?: string): boolean => {
     return basename ? (mime.getType(basename) || "").startsWith('image/') : false;
-}
+};
+
+const normalizeDirectoryLocation = (directory: Directory): Directory => ({
+    ...directory,
+    location: (directory.location || '').endsWith('/') ? directory.location : directory.location + '/',
+});
+
+const directoryToProcessIOValue = (directory: Directory, auth: AuthState, pdh?: string): ProcessIOValue => {
+    const normalizedDirectory = normalizeDirectoryLocation(directory);
+    return {
+        display: getKeepUrl(normalizedDirectory, pdh),
+        nav: getNavUrl(auth, normalizedDirectory, pdh),
+    };
+};
