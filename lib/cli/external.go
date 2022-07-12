@@ -57,7 +57,7 @@ func (cmd apiCallCmd) RunCommand(prog string, args []string, stdin io.Reader, st
 		return 2
 	}
 	model := split[len(split)-1]
-	return externalCmd{"arv"}.RunCommand("arv", legacyFlagsToFront(model, args), stdin, stdout, stderr)
+	return rubyArvCmd{model}.RunCommand(prog, args, stdin, stdout, stderr)
 }
 
 type rubyArvCmd struct {
@@ -65,7 +65,18 @@ type rubyArvCmd struct {
 }
 
 func (rc rubyArvCmd) RunCommand(prog string, args []string, stdin io.Reader, stdout, stderr io.Writer) int {
-	return externalCmd{"arv"}.RunCommand("arv", legacyFlagsToFront(rc.subcommand, args), stdin, stdout, stderr)
+	wrapprog := "arv-ruby"
+	if _, err := exec.LookPath(wrapprog); err != nil && !strings.Contains(prog, "arv ") {
+		// arv-ruby isn't in PATH (i.e., installation method
+		// wasn't a recent "arvados-server install", which
+		// symlinks /usr/bin/arv-ruby ->
+		// /var/lib/arvados/bin/arv), so fall back to looking
+		// for the arvados-cli program as "arv". (But don't do
+		// this if we are being run as "arv" -- that would
+		// probably cause a recursive fork bomb.)
+		wrapprog = "arv"
+	}
+	return externalCmd{wrapprog}.RunCommand(wrapprog, legacyFlagsToFront(rc.subcommand, args), stdin, stdout, stderr)
 }
 
 type externalCmd struct {
@@ -90,7 +101,7 @@ func (ec externalCmd) RunCommand(prog string, args []string, stdin io.Reader, st
 		return 1
 	case *exec.Error:
 		fmt.Fprintln(stderr, err)
-		if ec.prog == "arv" {
+		if ec.prog == "arv" || ec.prog == "arv-ruby" {
 			fmt.Fprint(stderr, rubyInstallHints)
 		} else if strings.HasPrefix(ec.prog, "arv-") {
 			fmt.Fprint(stderr, pythonInstallHints)

@@ -692,12 +692,20 @@ rsync -a --delete-after build/ /var/lib/arvados/workbench2/
 
 		// Symlink user-facing programs /usr/bin/x ->
 		// /var/lib/arvados/bin/x
-		for _, prog := range []string{"arvados-client", "arvados-server", "arv", "arv-tag"} {
-			err = os.Remove("/usr/bin/" + prog)
+		for _, srcdst := range [][]string{
+			{"arvados-client", "arvados-client"},
+			{"arvados-client", "arv"},
+			{"arvados-server", "arvados-server"},
+			{"arv", "arv-ruby"},
+			{"arv-tag", "arv-tag"},
+		} {
+			src := srcdst[0]
+			dst := srcdst[1]
+			err = os.Remove("/usr/bin/" + dst)
 			if err != nil && !errors.Is(err, os.ErrNotExist) {
 				return 1
 			}
-			err = os.Symlink("/var/lib/arvados/bin/"+prog, "/usr/bin/"+prog)
+			err = os.Symlink("/var/lib/arvados/bin/"+src, "/usr/bin/"+dst)
 			if err != nil {
 				return 1
 			}

@@ -107,6 +107,7 @@ func fpm(ctx context.Context, opts opts, stdin io.Reader, stdout, stderr io.Writ
 		"/usr/bin/arvados-client",
 		"/usr/bin/arvados-server",
 		"/usr/bin/arv",
+		"/usr/bin/arv-ruby",
 		"/usr/bin/arv-tag",
 		"/var/lib/arvados",
 		"/var/www/.gem",
