@@ -233,12 +233,7 @@ export const getInputDisplayValue = (auth: AuthState, input: CommandInputParamet
                 ...(mainFile ? [mainFile] : []),
                 ...secondaryFiles
             ];
-
-            return files.map(file => ({
-                display: getKeepUrl(file, pdh),
-                nav: getNavUrl(auth, file, pdh),
-                imageUrl: isFileImage(file.basename) ? getImageUrl(auth, file, pdh) : undefined,
-            }));
+            return files.map(file => fileToProcessIOValue(file, auth, pdh));
 
         case isPrimitiveOfType(input, CWLType.DIRECTORY):
             const directory = (input as DirectoryCommandInputParameter).value;
@@ -261,11 +256,8 @@ export const getInputDisplayValue = (auth: AuthState, input: CommandInputParamet
             return [{ display: ((input as FloatArrayCommandInputParameter).value || []).join(', ') }];
 
         case isArrayOfType(input, CWLType.FILE):
-            return ((input as FileArrayCommandInputParameter).value || []).map(file => ({
-                display: getKeepUrl(file, pdh),
-                nav: getNavUrl(auth, file, pdh),
-                imageUrl: isFileImage(file.basename) ? getImageUrl(auth, file, pdh) : undefined,
-            }));
+            return ((input as FileArrayCommandInputParameter).value || [])
+                .map(file => fileToProcessIOValue(file, auth, pdh));
 
         case isArrayOfType(input, CWLType.DIRECTORY):
             const directories = (input as DirectoryArrayCommandInputParameter).value || [];
@@ -308,3 +300,9 @@ const directoryToProcessIOValue = (directory: Directory, auth: AuthState, pdh?: 
         nav: getNavUrl(auth, normalizedDirectory, pdh),
     };
 };
+
+const fileToProcessIOValue = (file: File, auth: AuthState, pdh?: string): ProcessIOValue => ({
+    display: getKeepUrl(file, pdh),
+    nav: getNavUrl(auth, file, pdh),
+    imageUrl: isFileImage(file.basename) ? getImageUrl(auth, file, pdh) : undefined,
+});
