@@ -104,6 +104,8 @@ func fpm(ctx context.Context, opts opts, stdin io.Reader, stdout, stderr io.Writ
 		"--deb-systemd-enable",
 		"--no-deb-systemd-auto-start",
 		"--no-deb-systemd-restart-after-upgrade",
+		"--deb-suggests", "postgresql",
+		"--deb-suggests", "docker.io",
 		"/usr/bin/arvados-client",
 		"/usr/bin/arvados-server",
 		"/usr/bin/arv",
