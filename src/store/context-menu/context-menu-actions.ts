@@ -232,8 +232,8 @@ export const resourceUuidToContextMenuKind = (uuid: string, readonly = false) =>
 
         switch (kind) {
             case ResourceKind.PROJECT:
-                if (resource && !!(resource as any).frozenByUuid) {
-                    return ContextMenuKind.FROZEN_PROJECT;
+                if (isFrozen) {
+                    return isAdminUser ? ContextMenuKind.FROZEN_PROJECT_ADMIN : ContextMenuKind.FROZEN_PROJECT;
                 }
 
                 return (isAdminUser && !readonly)
@@ -254,13 +254,13 @@ export const resourceUuidToContextMenuKind = (uuid: string, readonly = false) =>
                     ? ContextMenuKind.OLD_VERSION_COLLECTION
                     : (isTrashed && isEditable)
                         ? ContextMenuKind.TRASHED_COLLECTION
-                        : (isAdminUser && !readonly)
+                        : (isAdminUser && isEditable)
                             ? ContextMenuKind.COLLECTION_ADMIN
                             : isEditable
                                 ? ContextMenuKind.COLLECTION
                                 : ContextMenuKind.READONLY_COLLECTION;
             case ResourceKind.PROCESS:
-                return (isAdminUser && !readonly)
+                return (isAdminUser && isEditable)
                     ? ContextMenuKind.PROCESS_ADMIN
                     : readonly
                         ? ContextMenuKind.READONLY_PROCESS_RESOURCE

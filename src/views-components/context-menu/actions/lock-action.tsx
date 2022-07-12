@@ -4,7 +4,7 @@
 
 import React from "react";
 import { ListItemIcon, ListItemText, ListItem } from "@material-ui/core";
-import { LockIcon, UnlockIcon } from "components/icon/icon";
+import { FreezeIcon, UnfreezeIcon } from "components/icon/icon";
 import { connect } from "react-redux";
 import { RootState } from "store/store";
 import { ProjectResource } from "models/project";
@@ -25,8 +25,8 @@ export const ToggleLockAction = withRouter(connect(mapStateToProps)((props: { st
             onClick={props.onClick} >
             <ListItemIcon>
                 {props.isLocked
-                    ? <UnlockIcon />
-                    : <LockIcon />}
+                    ? <UnfreezeIcon />
+                    : <FreezeIcon />}
             </ListItemIcon>
             <ListItemText style={{ textDecoration: 'none' }}>
                 {props.isLocked

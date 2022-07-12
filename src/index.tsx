@@ -60,7 +60,7 @@ import { groupActionSet } from 'views-components/context-menu/action-sets/group-
 import { groupMemberActionSet } from 'views-components/context-menu/action-sets/group-member-action-set';
 import { linkActionSet } from 'views-components/context-menu/action-sets/link-action-set';
 import { loadFileViewersConfig } from 'store/file-viewers/file-viewers-actions';
-import { filterGroupAdminActionSet, projectAdminActionSet } from 'views-components/context-menu/action-sets/project-admin-action-set';
+import { filterGroupAdminActionSet, frozenAdminActionSet, projectAdminActionSet } from 'views-components/context-menu/action-sets/project-admin-action-set';
 import { permissionEditActionSet } from 'views-components/context-menu/action-sets/permission-edit-action-set';
 import { workflowActionSet } from 'views-components/context-menu/action-sets/workflow-action-set';
 import { snackbarActions, SnackbarKind } from "store/snackbar/snackbar-actions";
@@ -101,12 +101,8 @@ addMenuActionSet(ContextMenuKind.GROUP_MEMBER, groupMemberActionSet);
 addMenuActionSet(ContextMenuKind.COLLECTION_ADMIN, collectionAdminActionSet);
 addMenuActionSet(ContextMenuKind.PROCESS_ADMIN, processResourceAdminActionSet);
 addMenuActionSet(ContextMenuKind.PROJECT_ADMIN, projectAdminActionSet);
-addMenuActionSet(ContextMenuKind.FROZEN_PROJECT, [
-    [
-        ...frozenActionSet.reduce((prev, next) => prev.concat(next), []),
-        ...readOnlyProjectActionSet.reduce((prev, next) => prev.concat(next), []),
-    ]
-]);
+addMenuActionSet(ContextMenuKind.FROZEN_PROJECT, frozenActionSet);
+addMenuActionSet(ContextMenuKind.FROZEN_PROJECT_ADMIN, frozenAdminActionSet);
 addMenuActionSet(ContextMenuKind.FILTER_GROUP_ADMIN, filterGroupAdminActionSet);
 addMenuActionSet(ContextMenuKind.PERMISSION_EDIT, permissionEditActionSet);
 addMenuActionSet(ContextMenuKind.WORKFLOW, workflowActionSet);

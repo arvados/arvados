@@ -7,7 +7,7 @@ import { Button, Grid, StyleRulesCallback, WithStyles, Typography, Tooltip } fro
 import ChevronRightIcon from '@material-ui/icons/ChevronRight';
 import { withStyles } from '@material-ui/core';
 import { IllegalNamingWarning } from '../warning/warning';
-import { IconType, LockIcon } from 'components/icon/icon';
+import { IconType, FreezeIcon } from 'components/icon/icon';
 import grey from '@material-ui/core/colors/grey';
 
 export interface Breadcrumb {
@@ -30,7 +30,8 @@ const styles: StyleRulesCallback<CssRules> = theme => ({
     },
     icon: {
         fontSize: 20,
-        color: grey["600"]
+        color: grey["600"],
+        marginRight: '10px'
     },
 });
 
@@ -65,7 +66,7 @@ export const Breadcrumbs = withStyles(styles)(
                             onContextMenu={event => onContextMenu(event, item)}>
                             <Icon className={classes.icon} />
                             {
-                                item.isFrozen ? <LockIcon className={classes.icon} /> : null
+                                item.isFrozen ? <FreezeIcon className={classes.icon} /> : null
                             }
                             <Typography
                                 noWrap

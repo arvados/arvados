@@ -7,7 +7,7 @@ import { ServiceRepository } from "services/services";
 import { projectPanelActions } from "store/project-panel/project-panel-action";
 import { RootState } from "store/store";
 
-export const lockProject = (uuid: string) =>
+export const freezeProject = (uuid: string) =>
     async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
         const userUUID = getState().auth.user!.uuid;
 
@@ -19,7 +19,7 @@ export const lockProject = (uuid: string) =>
         return updatedProject;
     };
 
-export const unlockProject = (uuid: string) =>
+export const unfreezeProject = (uuid: string) =>
     async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
 
         const updatedProject = await services.projectService.update(uuid, {

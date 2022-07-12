@@ -15,7 +15,7 @@ import {
 import { FavoriteStar, PublicFavoriteStar } from '../favorite-star/favorite-star';
 import { Resource, ResourceKind, TrashableResource } from 'models/resource';
 import {
-    LockIcon,
+    FreezeIcon,
     ProjectIcon,
     FilterGroupIcon,
     CollectionIcon,
@@ -100,7 +100,7 @@ const FrozenProject = (props: {item: ProjectResource}) => {
     if (props.item.frozenByUuid) {
 
         return <Tooltip onOpen={getFullName} enterDelay={500} title={<span>Project was frozen by {fullUsername}</span>}>
-            <LockIcon style={{ fontSize: "inherit" }}/>
+            <FreezeIcon style={{ fontSize: "inherit" }}/>
         </Tooltip>;
     } else {
         return null;
