@@ -677,17 +677,20 @@ rsync -a --delete-after build/ /var/lib/arvados/workbench2/
 		if err != nil {
 			return 1
 		}
-		// This is equivalent to "systemd enable", but does
-		// not depend on the systemctl program being
-		// available.
-		symlink := "/etc/systemd/system/multi-user.target.wants/arvados.service"
-		err = os.Remove(symlink)
-		if err != nil && !errors.Is(err, os.ErrNotExist) {
-			return 1
-		}
-		err = os.Symlink("/lib/systemd/system/arvados.service", symlink)
-		if err != nil {
-			return 1
+		if prod {
+			// (fpm will do this for us in the pkg case)
+			// This is equivalent to "systemd enable", but
+			// does not depend on the systemctl program
+			// being available:
+			symlink := "/etc/systemd/system/multi-user.target.wants/arvados.service"
+			err = os.Remove(symlink)
+			if err != nil && !errors.Is(err, os.ErrNotExist) {
+				return 1
+			}
+			err = os.Symlink("/lib/systemd/system/arvados.service", symlink)
+			if err != nil {
+				return 1
+			}
 		}
 
 		// Symlink user-facing programs /usr/bin/x ->
