@@ -30,6 +30,7 @@ func (Command) RunCommand(prog string, args []string, stdin io.Reader, stdout, s
 	f := flag.NewFlagSet(prog, flag.ContinueOnError)
 	f.StringVar(&diag.projectName, "project-name", "scratch area for diagnostics", "name of project to find/create in home project and use for temporary/test objects")
 	f.StringVar(&diag.logLevel, "log-level", "info", "logging level (debug, info, warning, error)")
+	f.StringVar(&diag.dockerImage, "docker-image", "alpine:latest", "image to use when running a test container")
 	f.BoolVar(&diag.checkInternal, "internal-client", false, "check that this host is considered an \"internal\" client")
 	f.BoolVar(&diag.checkExternal, "external-client", false, "check that this host is considered an \"external\" client")
 	f.IntVar(&diag.priority, "priority", 500, "priority for test container (1..1000, or 0 to skip)")
@@ -60,6 +61,7 @@ type diagnoser struct {
 	logLevel      string
 	priority      int
 	projectName   string
+	dockerImage   string
 	checkInternal bool
 	checkExternal bool
 	timeout       time.Duration
@@ -545,7 +547,7 @@ func (diag *diagnoser) runtests() {
 		err := client.RequestAndDecodeContext(ctx, &cr, "POST", "arvados/v1/container_requests", nil, map[string]interface{}{"container_request": map[string]interface{}{
 			"owner_uuid":      project.UUID,
 			"name":            fmt.Sprintf("diagnostics container request %s", timestamp),
-			"container_image": "arvados/jobs",
+			"container_image": diag.dockerImage,
 			"command":         []string{"echo", timestamp},
 			"use_existing":    false,
 			"output_path":     "/mnt/output",
