@@ -14,6 +14,7 @@ import { SnackbarKind } from '../snackbar/snackbar-actions';
 import { showWorkflowDetails } from 'store/workflow-panel/workflow-panel-actions';
 import { loadSubprocessPanel } from "../subprocess-panel/subprocess-panel-actions";
 import { initProcessLogsPanel, processLogsPanelActions } from "store/process-logs-panel/process-logs-panel-actions";
+import { CollectionFile } from "models/collection-file";
 
 export const processPanelActions = unionize({
     SET_PROCESS_PANEL_CONTAINER_REQUEST_UUID: ofType<string>(),
@@ -42,6 +43,26 @@ export const navigateToOutput = (uuid: string) =>
             dispatch<any>(navigateTo(uuid));
         } catch {
             dispatch(snackbarActions.OPEN_SNACKBAR({ message: 'This collection does not exists!', hideDuration: 2000, kind: SnackbarKind.ERROR }));
+        }
+    };
+
+export const loadOutputs = (uuid: string, setOutputs) =>
+    async (dispatch: Dispatch<any>, getState: () => RootState, services: ServiceRepository) => {
+        try {
+            const files = await services.collectionService.files(uuid);
+            const collection = await services.collectionService.get(uuid);
+            const outputFile = files.find((file) => file.name === 'cwl.output.json') as CollectionFile | undefined;
+            let outputData = outputFile ? await services.collectionService.getFileContents(outputFile) : undefined;
+            if ((outputData = JSON.parse(outputData)) && collection.portableDataHash) {
+                setOutputs({
+                    rawOutputs: outputData,
+                    pdh: collection.portableDataHash,
+                });
+            } else {
+                setOutputs({});
+            }
+        } catch {
+            setOutputs({});
         }
     };
 

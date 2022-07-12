@@ -18,13 +18,14 @@ import {
 } from 'store/process-panel/process-panel';
 import { groupBy } from 'lodash';
 import {
+    loadOutputs,
     toggleProcessPanelFilter,
 } from 'store/process-panel/process-panel-actions';
 import { cancelRunningWorkflow } from 'store/processes/processes-actions';
 import { navigateToLogCollection, setProcessLogsPanelFilter } from 'store/process-logs-panel/process-logs-panel-actions';
 import { snackbarActions, SnackbarKind } from 'store/snackbar/snackbar-actions';
 
-const mapStateToProps = ({ router, resources, processPanel, processLogsPanel }: RootState): ProcessPanelRootDataProps => {
+const mapStateToProps = ({ router, auth, resources, processPanel, processLogsPanel }: RootState): ProcessPanelRootDataProps => {
     const uuid = getProcessPanelCurrentUuid(router) || '';
     const subprocesses = getSubprocesses(uuid)(resources);
     return {
@@ -32,6 +33,7 @@ const mapStateToProps = ({ router, resources, processPanel, processLogsPanel }: 
         subprocesses: subprocesses.filter(subprocess => processPanel.filters[getProcessStatus(subprocess)]),
         filters: getFilters(processPanel, subprocesses),
         processLogsPanel: processLogsPanel,
+        auth: auth,
     };
 };
 
@@ -52,6 +54,7 @@ const mapDispatchToProps = (dispatch: Dispatch): ProcessPanelRootActionProps => 
     cancelProcess: (uuid) => dispatch<any>(cancelRunningWorkflow(uuid)),
     onLogFilterChange: (filter) => dispatch(setProcessLogsPanelFilter(filter.value)),
     navigateToLog: (uuid) => dispatch<any>(navigateToLogCollection(uuid)),
+    fetchOutputs: (uuid, setOutputs) => dispatch<any>(loadOutputs(uuid, setOutputs)),
 });
 
 const getFilters = (processPanel: ProcessPanelState, processes: Process[]) => {

@@ -156,6 +156,10 @@ export const getInputLabel = (input: CommandInputParameter) => {
     return `${input.label || input.id.split('/').pop()}`;
 };
 
+export const getInputId = (input: CommandInputParameter) => {
+    return `${input.id.split('/').pop()}`;
+};
+
 export const isRequiredInput = ({ type }: CommandInputParameter) => {
     if (type instanceof Array) {
         for (const t of type) {
