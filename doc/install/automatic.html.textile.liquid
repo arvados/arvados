@@ -22,7 +22,10 @@ h2. Prerequisites
 You will need:
 * a server host running Debian 10 (buster) or Debian 11 (bullseye).
 * a unique 5-character ID like @x9999@ for your cluster (first character should be @[a-w]@ for a long-lived / production cluster; all characters are @[a-z0-9]@).
-* a DNS name like @x9999.example.com@ that resolves to your server host (or a load balancer / proxy that passes HTTP and HTTPS requests through to your server host).
+* a DNS name like @x9999.example.com@ that resolves to your server host (or a load balancer / proxy that passes HTTP requests on port 80[1] and HTTPS requests on ports 443 and 4440-4460 through to the same port on your server host).
+* a firewall setup that allows incoming connections to ports 80[1], 443, and 4440-4460.
+
+fn1. Port 80 is only used to obtain TLS certificates automatically from Let's Encrypt. It is not needed if you have another way to provision certificates.
 
 h2. Options
 
@@ -47,7 +50,7 @@ Arvados needs a login backend. To get started quickly, add a user account on you
 h2. Initialize the cluster
 
 <pre>
-# echo > /etc/apt/sources.list.d/arvados.list "deb http://apt.arvados.org/buster buster main"
+# echo > /etc/apt/sources.list.d/arvados.list "deb http://apt.arvados.org/$(lsb_release -sc) $(lsb_release -sc) main"
 # apt update
 # apt install arvados-server-easy
 # arvados-server init -cluster-id x9999 -domain x9999.example.com -tls auto -login pam
