@@ -458,9 +458,10 @@ func (diag *diagnoser) runtests() {
 			return err
 		}
 		if len(vmlist.Items) < 1 {
-			return fmt.Errorf("no VMs found")
+			diag.warnf("no VMs found")
+		} else {
+			vm = vmlist.Items[0]
 		}
-		vm = vmlist.Items[0]
 		return nil
 	})
 
@@ -468,7 +469,8 @@ func (diag *diagnoser) runtests() {
 		ctx, cancel := context.WithDeadline(context.Background(), time.Now().Add(diag.timeout))
 		defer cancel()
 		if vm.UUID == "" {
-			return fmt.Errorf("skipping, no vm available")
+			diag.warnf("skipping, no vm available")
+			return nil
 		}
 		webshelltermurl := cluster.Services.Workbench1.ExternalURL.String() + "virtual_machines/" + vm.UUID + "/webshell/testusername"
 		diag.debugf("url %s", webshelltermurl)
@@ -496,7 +498,8 @@ func (diag *diagnoser) runtests() {
 		ctx, cancel := context.WithDeadline(context.Background(), time.Now().Add(diag.timeout))
 		defer cancel()
 		if vm.UUID == "" {
-			return fmt.Errorf("skipping, no vm available")
+			diag.warnf("skipping, no vm available")
+			return nil
 		}
 		u := cluster.Services.WebShell.ExternalURL
 		webshellurl := u.String() + vm.Hostname + "?"
