@@ -374,7 +374,7 @@ func (initcmd *initCommand) RunCommand(prog string, args []string, stdin io.Read
 			err = fmt.Errorf("%v: %w", cmd.Args, err)
 			return 1
 		}
-		cmd = exec.CommandContext(ctx, "arv", "root", "keep", "docker", "alpine")
+		cmd = exec.CommandContext(ctx, "arv", "sudo", "keep", "docker", "alpine")
 		cmd.Stdout = stderr
 		cmd.Stderr = stderr
 		err = cmd.Run()

@@ -15,12 +15,12 @@ import (
 	"git.arvados.org/arvados.git/sdk/go/ctxlog"
 )
 
-// rootCommand runs another command using API connection info and
+// sudoCommand runs another command using API connection info and
 // SystemRootToken from the system config file instead of the caller's
 // environment vars.
-type rootCommand struct{}
+type sudoCommand struct{}
 
-func (rootCommand) RunCommand(prog string, args []string, stdin io.Reader, stdout, stderr io.Writer) int {
+func (sudoCommand) RunCommand(prog string, args []string, stdin io.Reader, stdout, stderr io.Writer) int {
 	ldr := config.NewLoader(stdin, ctxlog.New(stderr, "text", "info"))
 	flags := flag.NewFlagSet(prog, flag.ContinueOnError)
 	ldr.SetupFlags(flags)
