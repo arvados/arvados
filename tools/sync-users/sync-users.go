@@ -123,8 +123,10 @@ func ParseFlags(cfg *ConfigParams) error {
 	// Input file as a required positional argument
 	if flags.NArg() == 0 {
 		return fmt.Errorf("please provide a path to an input file")
+	} else if flags.NArg() > 1 {
+		return fmt.Errorf("please provide just one input file argument")
 	}
-	srcPath := &os.Args[flags.NFlag()+1]
+	srcPath := &os.Args[len(os.Args)-1]
 
 	// Validations
 	if *srcPath == "" {
@@ -222,6 +224,7 @@ func doMain(cfg *ConfigParams) error {
 	allUsers := make(map[string]arvados.User)
 	userIDToUUID := make(map[string]string) // Index by email or username
 	dupedEmails := make(map[string][]arvados.User)
+	emptyUserIDs := []string{}
 	processedUsers := make(map[string]bool)
 	results, err := GetAll(cfg.Client, "users", arvados.ResourceListParams{}, &UserList{})
 	if err != nil {
@@ -246,7 +249,11 @@ func doMain(cfg *ConfigParams) error {
 			return err
 		}
 		if uID == "" {
-			return fmt.Errorf("%s is empty for user with uuid %q", cfg.UserID, u.UUID)
+			if u.UUID != cfg.AnonUserUUID && u.UUID != cfg.SysUserUUID {
+				emptyUserIDs = append(emptyUserIDs, u.UUID)
+				log.Printf("Empty %s found in user %s - ignoring", cfg.UserID, u.UUID)
+			}
+			continue
 		}
 		if cfg.CaseInsensitive {
 			uID = strings.ToLower(uID)
@@ -327,7 +334,7 @@ func doMain(cfg *ConfigParams) error {
 
 	log.Printf("User update successes: %d, skips: %d, failures: %d", len(updatesSucceeded), len(updatesSkipped), len(updatesFailed))
 
-	// Report duplicated emails detection
+	var errors []string
 	if len(dupedEmails) > 0 {
 		emails := make([]string, len(dupedEmails))
 		i := 0
@@ -335,7 +342,13 @@ func doMain(cfg *ConfigParams) error {
 			emails[i] = e
 			i++
 		}
-		return fmt.Errorf("skipped %d duplicated email address(es) in the cluster's local user list: %v", len(dupedEmails), emails)
+		errors = append(errors, fmt.Sprintf("skipped %d duplicated email address(es) in the cluster's local user list: %v", len(dupedEmails), emails))
+	}
+	if len(emptyUserIDs) > 0 {
+		errors = append(errors, fmt.Sprintf("skipped %d user account(s) with empty %s: %v", len(emptyUserIDs), cfg.UserID, emptyUserIDs))
+	}
+	if len(errors) > 0 {
+		return fmt.Errorf("%s", strings.Join(errors, "\n"))
 	}
 
 	return nil
@@ -361,7 +374,7 @@ type userRecord struct {
 
 func needsUpdating(user arvados.User, record userRecord) bool {
 	userData := userRecord{"", user.FirstName, user.LastName, user.IsActive, user.IsAdmin}
-	recordData := userRecord{"", record.FirstName, record.LastName, record.Active, record.Admin}
+	recordData := userRecord{"", record.FirstName, record.LastName, record.Active, record.Active && record.Admin}
 	return userData != recordData
 }
 
@@ -433,7 +446,6 @@ func ProcessRecord(cfg *ConfigParams, record userRecord, userIDToUUID map[string
 			}
 		}
 	}
-	allUsers[record.UserID] = user
 	if createRequired {
 		log.Printf("Created user %q", record.UserID)
 	}

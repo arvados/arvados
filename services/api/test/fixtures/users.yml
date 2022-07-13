@@ -12,7 +12,6 @@ system_user:
   modified_by_user_uuid: zzzzz-tpzed-000000000000000
   modified_at: 2014-11-27 06:38:21.208036000 Z
   email: root
-  username: root
   first_name: root
   last_name: ''
   identity_url:
@@ -233,7 +232,6 @@ anonymous:
   last_name: anonymouspublic
   is_active: false
   is_admin: false
-  username: anonymous
   prefs: {}
 
 job_reader:
