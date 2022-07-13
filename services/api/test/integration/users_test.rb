@@ -480,4 +480,17 @@ class UsersTest < ActionDispatch::IntegrationTest
     assert_response 403
   end
 
+  test "disabling system root user not permitted" do
+    put("/arvados/v1/users/#{users(:system_user).uuid}",
+      params: {
+        user: {is_admin: false}
+      },
+      headers: auth(:admin))
+    assert_response 422
+
+    post("/arvados/v1/users/#{users(:system_user).uuid}/unsetup",
+      params: {},
+      headers: auth(:admin))
+    assert_response 422
+  end
 end
