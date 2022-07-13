@@ -13,6 +13,8 @@ import (
 	"flag"
 	"fmt"
 	"io"
+	"net"
+	"net/http"
 	"net/url"
 	"os"
 	"os/exec"
@@ -20,7 +22,9 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+	"sync/atomic"
 	"text/template"
+	"time"
 
 	"git.arvados.org/arvados.git/lib/cmd"
 	"git.arvados.org/arvados.git/lib/config"
@@ -109,6 +113,15 @@ func (initcmd *initCommand) RunCommand(prog string, args []string, stdin io.Read
 	if _, err = os.Stat(conffile); err == nil {
 		err = fmt.Errorf("config file %s already exists; delete it first if you really want to start over", conffile)
 		return 1
+	}
+
+	err = initcmd.checkPort(ctx, "4440")
+	err = initcmd.checkPort(ctx, "443")
+	if initcmd.TLS == "auto" {
+		err = initcmd.checkPort(ctx, "80")
+		if err != nil {
+			return 1
+		}
 	}
 
 	// Do the "create extension" thing early. This way, if there's
@@ -414,6 +427,85 @@ func (initcmd *initCommand) createDB(ctx context.Context, dbconn arvados.Postgre
 	err := cmd.Run()
 	if err != nil {
 		return fmt.Errorf("error setting up arvados user/database: %w", err)
+	}
+	return nil
+}
+
+// Confirm that http://{initcmd.Domain}:{port} reaches a server that
+// we run on {port}.
+//
+// If port is "80", listening fails, and Nginx appears to be using the
+// debian-packaged default configuration that listens on port 80,
+// disable that Nginx config and try again.
+//
+// (Typically, the reason Nginx is installed is so that Arvados can
+// run an Nginx child process; the default Nginx service using config
+// from /etc/nginx is just an unfortunate side effect of installing
+// Nginx by way of the Debian package.)
+func (initcmd *initCommand) checkPort(ctx context.Context, port string) error {
+	err := initcmd.checkPortOnce(ctx, port)
+	if err == nil || port != "80" {
+		// success, or poking Nginx in the eye won't help
+		return err
+	}
+	d, err2 := os.Open("/etc/nginx/sites-enabled/.")
+	if err2 != nil {
+		return err
+	}
+	fis, err2 := d.Readdir(-1)
+	if err2 != nil || len(fis) != 1 {
+		return err
+	}
+	if target, err2 := os.Readlink("/etc/nginx/sites-enabled/default"); err2 != nil || target != "/etc/nginx/sites-available/default" {
+		return err
+	}
+	err2 = os.Remove("/etc/nginx/sites-enabled/default")
+	if err2 != nil {
+		return err
+	}
+	exec.CommandContext(ctx, "nginx", "-s", "reload").Run()
+	time.Sleep(time.Second)
+	return initcmd.checkPortOnce(ctx, port)
+}
+
+// Start an http server on 0.0.0.0:{port} and confirm that
+// http://{initcmd.Domain}:{port} reaches that server.
+func (initcmd *initCommand) checkPortOnce(ctx context.Context, port string) error {
+	b := make([]byte, 128)
+	_, err := rand.Read(b)
+	if err != nil {
+		return err
+	}
+	token := fmt.Sprintf("%x", b)
+
+	srv := http.Server{
+		Addr: net.JoinHostPort("", port),
+		Handler: http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			fmt.Fprint(w, token)
+		})}
+	var errServe atomic.Value
+	go func() {
+		errServe.Store(srv.ListenAndServe())
+	}()
+	defer srv.Close()
+	url := "http://" + net.JoinHostPort(initcmd.Domain, port) + "/probe"
+	req, err := http.NewRequestWithContext(ctx, "GET", url, nil)
+	if err != nil {
+		return err
+	}
+	resp, err := http.DefaultClient.Do(req)
+	if errServe, _ := errServe.Load().(error); errServe != nil {
+		// If server already exited, return that error
+		// (probably "can't listen"), not the request error.
+		return errServe
+	}
+	if err != nil {
+		return err
+	}
+	buf := make([]byte, len(token))
+	n, err := io.ReadFull(resp.Body, buf)
+	if string(buf[:n]) != token {
+		return fmt.Errorf("listened on port %s but %s connected to something else, returned %q, err %v", port, url, buf[:n], err)
 	}
 	return nil
 }
