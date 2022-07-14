@@ -24,6 +24,7 @@ class User < ArvadosModel
   validate :identity_url_nil_if_empty
   before_update :prevent_privilege_escalation
   before_update :prevent_inactive_admin
+  before_update :prevent_nonadmin_system_root
   before_update :verify_repositories_empty, :if => Proc.new {
     username.nil? and username_changed?
   }
@@ -301,6 +302,10 @@ SELECT target_uuid, perm_level
 
   # delete user signatures, login, repo, and vm perms, and mark as inactive
   def unsetup
+    if self.uuid == system_user_uuid
+      raise "System root user cannot be deactivated"
+    end
+
     # delete oid_login_perms for this user
     #
     # note: these permission links are obsolete, they have no effect
@@ -698,6 +703,13 @@ SELECT target_uuid, perm_level
       # that would result from this change. It's safest to assume it's
       # a mistake and disallow it outright.
       raise "Admin users cannot be inactive"
+    end
+    true
+  end
+
+  def prevent_nonadmin_system_root
+    if self.uuid == system_user_uuid and self.is_admin_changed? and !self.is_admin
+      raise "System root user cannot be non-admin"
     end
     true
   end
