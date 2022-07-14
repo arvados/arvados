@@ -32,8 +32,19 @@ func (runNginx) Run(ctx context.Context, fail func(error), super *Supervisor) er
 	if err != nil {
 		return err
 	}
+	extListenHost := "0.0.0.0"
+	if super.ClusterType == "test" {
+		// Our dynamic port number assignment strategy (choose
+		// an available port, write it in a config file, and
+		// have another process/goroutine bind to it) is prone
+		// to races when used by concurrent supervisors. In
+		// test mode we don't accept remote connections, so we
+		// can avoid collisions by using the per-cluster
+		// loopback address instead of 0.0.0.0.
+		extListenHost = super.ListenHost
+	}
 	vars := map[string]string{
-		"LISTENHOST":       "0.0.0.0",
+		"LISTENHOST":       extListenHost,
 		"UPSTREAMHOST":     super.ListenHost,
 		"SSLCERT":          filepath.Join(super.tempdir, "server.crt"),
 		"SSLKEY":           filepath.Join(super.tempdir, "server.key"),
