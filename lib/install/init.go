@@ -494,6 +494,9 @@ func (initcmd *initCommand) checkPortOnce(ctx context.Context, port string) erro
 		return err
 	}
 	resp, err := http.DefaultClient.Do(req)
+	if err == nil {
+		defer resp.Body.Close()
+	}
 	if errServe, _ := errServe.Load().(error); errServe != nil {
 		// If server already exited, return that error
 		// (probably "can't listen"), not the request error.
