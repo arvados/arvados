@@ -520,4 +520,20 @@ class UsersTest < ActionDispatch::IntegrationTest
     assert_not_nil json_response["uuid"]
     assert_equal users(:system_user).uuid, json_response["owner_uuid"]
   end
+
+  test "create users ignores provided owner_uuid field" do
+    assert_equal false, users(:admin).uuid == users(:system_user).uuid
+    post '/arvados/v1/users',
+      params: {
+        "user" => {
+          "email" => 'foo@example.com',
+          "owner_uuid" => users(:admin).uuid,
+          "username" => "barney"
+        }
+      },
+      headers: auth(:admin)
+    assert_response :success
+    assert_not_nil json_response["uuid"]
+    assert_equal users(:system_user).uuid, json_response["owner_uuid"]
+  end
 end
