@@ -92,7 +92,11 @@ func (runner installPassenger) Run(ctx context.Context, fail func(error), super 
 			break
 		}
 	}
-	err = super.RunProgram(ctx, appdir, runOptions{}, "bundle", "install", "--jobs", "4", "--path", filepath.Join(os.Getenv("HOME"), ".gem"))
+	err = super.RunProgram(ctx, appdir, runOptions{}, "bundle", "config", "--set", "local", "path", filepath.Join(os.Getenv("HOME"), ".gem"))
+	if err != nil {
+		return err
+	}
+	err = super.RunProgram(ctx, appdir, runOptions{}, "bundle", "install", "--jobs", "4")
 	if err != nil {
 		return err
 	}
