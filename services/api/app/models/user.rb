@@ -350,6 +350,11 @@ SELECT target_uuid, perm_level
     self.save!
   end
 
+  # Called from ArvadosModel
+  def set_default_owner
+    self.owner_uuid = system_user_uuid
+  end
+
   def must_unsetup_to_deactivate
     if !self.new_record? &&
        self.uuid[0..4] == Rails.configuration.Login.LoginCluster &&
