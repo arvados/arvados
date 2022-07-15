@@ -134,6 +134,7 @@ func (diag *diagnoser) runtests() {
 
 	var cluster arvados.Cluster
 	cfgpath := "arvados/v1/config"
+	cfgOK := false
 	diag.dotest(20, fmt.Sprintf("getting exported config from https://%s/%s", client.APIHost, cfgpath), func() error {
 		ctx, cancel := context.WithDeadline(context.Background(), time.Now().Add(diag.timeout))
 		defer cancel()
@@ -142,6 +143,7 @@ func (diag *diagnoser) runtests() {
 			return err
 		}
 		diag.debugf("Collections.BlobSigning = %v", cluster.Collections.BlobSigning)
+		cfgOK = true
 		return nil
 	})
 
@@ -156,6 +158,11 @@ func (diag *diagnoser) runtests() {
 		diag.debugf("user uuid = %s", user.UUID)
 		return nil
 	})
+
+	if !cfgOK {
+		diag.errorf("cannot proceed without cluster config -- aborting without running any further tests")
+		return
+	}
 
 	// uncomment to create some spurious errors
 	// cluster.Services.WebDAVDownload.ExternalURL.Host = "0.0.0.0:9"
