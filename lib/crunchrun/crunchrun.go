@@ -999,6 +999,7 @@ func (runner *ContainerRunner) CreateContainer(imageID string, bindmounts map[st
 		env["ARVADOS_API_TOKEN"] = tok
 		env["ARVADOS_API_HOST"] = os.Getenv("ARVADOS_API_HOST")
 		env["ARVADOS_API_HOST_INSECURE"] = os.Getenv("ARVADOS_API_HOST_INSECURE")
+		env["ARVADOS_KEEP_SERVICES"] = os.Getenv("ARVADOS_KEEP_SERVICES")
 	}
 	workdir := runner.Container.Cwd
 	if workdir == "." {
@@ -2045,7 +2046,8 @@ func startLocalKeepstore(configData ConfigData, logbuf io.Writer) (*exec.Cmd, er
 	// modify the cluster configuration that we feed it on stdin.
 	configData.Cluster.API.MaxKeepBlobBuffers = configData.KeepBuffers
 
-	ln, err := net.Listen("tcp", "localhost:0")
+	localaddr := localKeepstoreAddr()
+	ln, err := net.Listen("tcp", net.JoinHostPort(localaddr, "0"))
 	if err != nil {
 		return nil, err
 	}
@@ -2055,7 +2057,7 @@ func startLocalKeepstore(configData ConfigData, logbuf io.Writer) (*exec.Cmd, er
 		return nil, err
 	}
 	ln.Close()
-	url := "http://localhost:" + port
+	url := "http://" + net.JoinHostPort(localaddr, port)
 
 	fmt.Fprintf(logbuf, "starting keepstore on %s\n", url)
 
@@ -2146,4 +2148,44 @@ func currentUserAndGroups() string {
 		}
 	}
 	return s
+}
+
+// Return a suitable local interface address for a local keepstore
+// service. Currently this is the numerically lowest non-loopback ipv4
+// address assigned to a local interface that is not in any of the
+// link-local/vpn/loopback ranges 169.254/16, 100.64/10, or 127/8.
+func localKeepstoreAddr() string {
+	var ips []net.IP
+	// Ignore error (proceed with zero IPs)
+	addrs, _ := processIPs(os.Getpid())
+	for addr := range addrs {
+		ip := net.ParseIP(addr)
+		if ip == nil {
+			// invalid
+			continue
+		}
+		if ip.Mask(net.CIDRMask(8, 32)).Equal(net.IPv4(127, 0, 0, 0)) ||
+			ip.Mask(net.CIDRMask(10, 32)).Equal(net.IPv4(100, 64, 0, 0)) ||
+			ip.Mask(net.CIDRMask(16, 32)).Equal(net.IPv4(169, 254, 0, 0)) {
+			// unsuitable
+			continue
+		}
+		ips = append(ips, ip)
+	}
+	if len(ips) == 0 {
+		return "0.0.0.0"
+	}
+	sort.Slice(ips, func(ii, jj int) bool {
+		i, j := ips[ii], ips[jj]
+		if len(i) != len(j) {
+			return len(i) < len(j)
+		}
+		for x := range i {
+			if i[x] != j[x] {
+				return i[x] < j[x]
+			}
+		}
+		return false
+	})
+	return ips[0].String()
 }

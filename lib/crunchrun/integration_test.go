@@ -223,6 +223,10 @@ func (s *integrationSuite) TestRunTrivialContainerWithLocalKeepstore(c *C) {
 			c.Check(log, trial.matchGetReq, `(?ms).*"reqMethod":"GET".*`)
 			c.Check(log, trial.matchPutReq, `(?ms).*"reqMethod":"PUT".*,"reqPath":"0e3bcff26d51c895a60ea0d4585e134d".*`)
 		}
+
+		c.Check(s.logFiles["crunch-run.txt"], Matches, `(?ms).*using local keepstore process .* at http://[\d\.]{7,}:\d+.*`)
+		c.Check(s.logFiles["crunch-run.txt"], Not(Matches), `(?ms).* at http://127\..*`)
+		c.Check(s.logFiles["crunch-run.txt"], Not(Matches), `(?ms).* at http://169\.254\..*`)
 	}
 
 	// Check that (1) config is loaded from $ARVADOS_CONFIG when
