@@ -36,7 +36,7 @@ func (createCertificates) String() string {
 }
 
 func (createCertificates) Run(ctx context.Context, fail func(error), super *Supervisor) error {
-	if super.cluster.TLS.Automatic {
+	if super.cluster.TLS.ACME.Server != "" {
 		return bootAutoCert(ctx, fail, super)
 	} else if super.cluster.TLS.Key == "" && super.cluster.TLS.Certificate == "" {
 		return createSelfSignedCert(ctx, fail, super)
@@ -78,8 +78,15 @@ func bootAutoCert(ctx context.Context, fail func(error), super *Supervisor) erro
 			}
 		},
 	}
-	if super.cluster.TLS.Staging {
+	if srv := super.cluster.TLS.ACME.Server; srv == "LE" {
+		// Leaving mgr.Client == nil means use Let's Encrypt
+		// production environment
+	} else if srv == "LE-staging" {
 		mgr.Client = &acme.Client{DirectoryURL: stagingDirectoryURL}
+	} else if strings.HasPrefix(srv, "https://") {
+		mgr.Client = &acme.Client{DirectoryURL: srv}
+	} else {
+		return fmt.Errorf("autocert setup: invalid directory URL in TLS.ACME.Server: %q", srv)
 	}
 	go func() {
 		err := http.ListenAndServe(":80", mgr.HTTPHandler(nil))

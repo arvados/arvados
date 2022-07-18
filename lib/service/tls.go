@@ -21,7 +21,7 @@ import (
 )
 
 func makeTLSConfig(cluster *arvados.Cluster, logger logrus.FieldLogger) (*tls.Config, error) {
-	if cluster.TLS.Automatic {
+	if cluster.TLS.ACME.Server != "" {
 		return makeAutocertConfig(cluster, logger)
 	} else {
 		return makeFileLoaderConfig(cluster, logger)
