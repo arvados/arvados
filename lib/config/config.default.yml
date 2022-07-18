@@ -900,8 +900,8 @@ Clusters:
       Repositories: /var/lib/arvados/git/repositories
 
     TLS:
-      # Use "file:///var/lib/acme/live/example.com/cert" and ".../key"
-      # to load externally managed certificates.
+      # Use "file:///var/lib/acme/live/example.com/cert" and
+      # ".../privkey" to load externally managed certificates.
       Certificate: ""
       Key: ""
 

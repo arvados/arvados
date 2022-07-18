@@ -31,7 +31,7 @@ h2. Initialize the cluster
 # echo > /etc/apt/sources.list.d/arvados.list "deb http://apt.arvados.org/buster buster main"
 # apt-get update
 # apt-get install arvados-server-easy
-# arvados-server init -cluster-id x9999 -domain x9999.example.com -tls auto -admin-email example@gmail.com.example
+# arvados-server init -cluster-id x9999 -domain x9999.example.com -tls acme -admin-email example@gmail.com.example
 </pre>
 
 When the "init" command is finished, navigate to the link shown in the terminal (e.g., @https://x9999.example.com/token?api_token=zzzzzzzzzzzzzzzzzzzzzz@). This will log you in to your admin account.

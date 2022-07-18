@@ -44,6 +44,7 @@ type initCommand struct {
 	LoginGoogle             bool
 	LoginGoogleClientID     string
 	LoginGoogleClientSecret string
+	TLSDir                  string
 }
 
 func (initcmd *initCommand) RunCommand(prog string, args []string, stdin io.Reader, stdout, stderr io.Writer) int {
@@ -72,7 +73,7 @@ func (initcmd *initCommand) RunCommand(prog string, args []string, stdin io.Read
 	flags.StringVar(&initcmd.Domain, "domain", hostname, "cluster public DNS `name`, like x1234.arvadosapi.com")
 	flags.StringVar(&initcmd.Login, "login", "", "login `backend`: test, pam, 'google {client-id} {client-secret}', or ''")
 	flags.StringVar(&initcmd.AdminEmail, "admin-email", "", "give admin privileges to user with given `email`")
-	flags.StringVar(&initcmd.TLS, "tls", "none", "tls certificate `source`: acme, acmetool, insecure, or none")
+	flags.StringVar(&initcmd.TLS, "tls", "none", "tls certificate `source`: acme, insecure, none, or /path/to/dir containing privkey and cert files")
 	flags.BoolVar(&initcmd.Start, "start", true, "start systemd service after creating config")
 	if ok, code := cmd.ParseFlags(flags, prog, args, "", stderr); !ok {
 		return code
@@ -99,6 +100,16 @@ func (initcmd *initCommand) RunCommand(prog string, args []string, stdin io.Read
 	} else {
 		err = fmt.Errorf("invalid argument to -login: %q: should be 'test', 'pam', 'google {client-id} {client-secret}', or empty", initcmd.Login)
 		return 1
+	}
+
+	switch initcmd.TLS {
+	case "none", "acme", "insecure":
+	default:
+		if !strings.HasPrefix(initcmd.TLS, "/") {
+			err = fmt.Errorf("invalid argument to -tls: %q; see %s -help", initcmd.TLS, prog)
+			return 1
+		}
+		initcmd.TLSDir = initcmd.TLS
 	}
 
 	confdir := "/etc/arvados"
@@ -217,9 +228,9 @@ func (initcmd *initCommand) RunCommand(prog string, args []string, stdin io.Read
       {{else if eq .TLS "acme"}}
       ACME:
         Server: LE
-      {{else if eq .TLS "acmetool"}}
-      Certificate: {{printf "%q" (print "/var/lib/acme/live/" .Domain "/cert")}}
-      Key: {{printf "%q" (print "/var/lib/acme/live/" .Domain "/privkey")}}
+      {{else if ne .TLSDir ""}}
+      Certificate: {{printf "%q" (print .TLSDir "/cert")}}
+      Key: {{printf "%q" (print .TLSDir "/privkey")}}
       {{else}}
       {}
       {{end}}
