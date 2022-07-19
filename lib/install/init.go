@@ -115,10 +115,15 @@ func (initcmd *initCommand) RunCommand(prog string, args []string, stdin io.Read
 		return 1
 	}
 
-	err = initcmd.checkPort(ctx, "4440")
-	err = initcmd.checkPort(ctx, "443")
-	if initcmd.TLS == "auto" {
-		err = initcmd.checkPort(ctx, "80")
+	ports := []int{443}
+	for i := 4440; i < 4460; i++ {
+		ports = append(ports, i)
+	}
+	if initcmd.TLS == "acme" {
+		ports = append(ports, 80)
+	}
+	for _, port := range ports {
+		err = initcmd.checkPort(ctx, fmt.Sprintf("%d", port))
 		if err != nil {
 			return 1
 		}
