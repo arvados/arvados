@@ -391,7 +391,7 @@ func (s *IntegrationSuite) TestVhostRedirectQueryTokenToCookie(c *check.C) {
 	s.testVhostRedirectTokenToCookie(c, "GET",
 		arvadostest.FooCollection+".example.com/foo",
 		"?api_token="+arvadostest.ActiveToken,
-		"",
+		nil,
 		"",
 		http.StatusOK,
 		"foo",
@@ -402,7 +402,7 @@ func (s *IntegrationSuite) TestSingleOriginSecretLink(c *check.C) {
 	s.testVhostRedirectTokenToCookie(c, "GET",
 		"example.com/c="+arvadostest.FooCollection+"/t="+arvadostest.ActiveToken+"/foo",
 		"",
-		"",
+		nil,
 		"",
 		http.StatusOK,
 		"foo",
@@ -415,7 +415,7 @@ func (s *IntegrationSuite) TestSingleOriginSecretLinkBadToken(c *check.C) {
 	s.testVhostRedirectTokenToCookie(c, "GET",
 		"example.com/c="+arvadostest.FooCollection+"/t=bogus/foo",
 		"",
-		"",
+		nil,
 		"",
 		http.StatusNotFound,
 		notFoundMessage+"\n",
@@ -423,13 +423,70 @@ func (s *IntegrationSuite) TestSingleOriginSecretLinkBadToken(c *check.C) {
 }
 
 // Bad token in a cookie (even if it got there via our own
-// query-string-to-cookie redirect) is, in principle, retryable at the
-// same URL so it's 401 Unauthorized.
+// query-string-to-cookie redirect) is, in principle, retryable via
+// wb2-login-and-redirect flow.
 func (s *IntegrationSuite) TestVhostRedirectQueryTokenToBogusCookie(c *check.C) {
-	s.testVhostRedirectTokenToCookie(c, "GET",
+	// Inline
+	resp := s.testVhostRedirectTokenToCookie(c, "GET",
 		arvadostest.FooCollection+".example.com/foo",
 		"?api_token=thisisabogustoken",
+		http.Header{"Sec-Fetch-Mode": {"navigate"}},
 		"",
+		http.StatusSeeOther,
+		"",
+	)
+	u, err := url.Parse(resp.Header().Get("Location"))
+	c.Assert(err, check.IsNil)
+	c.Logf("redirected to %s", u)
+	c.Check(u.Host, check.Equals, s.handler.Cluster.Services.Workbench2.ExternalURL.Host)
+	c.Check(u.Query().Get("redirectToPreview"), check.Equals, "/c="+arvadostest.FooCollection+"/foo")
+	c.Check(u.Query().Get("redirectToDownload"), check.Equals, "")
+
+	// Download/attachment indicated by ?disposition=attachment
+	resp = s.testVhostRedirectTokenToCookie(c, "GET",
+		arvadostest.FooCollection+".example.com/foo",
+		"?api_token=thisisabogustoken&disposition=attachment",
+		http.Header{"Sec-Fetch-Mode": {"navigate"}},
+		"",
+		http.StatusSeeOther,
+		"",
+	)
+	u, err = url.Parse(resp.Header().Get("Location"))
+	c.Assert(err, check.IsNil)
+	c.Logf("redirected to %s", u)
+	c.Check(u.Host, check.Equals, s.handler.Cluster.Services.Workbench2.ExternalURL.Host)
+	c.Check(u.Query().Get("redirectToPreview"), check.Equals, "")
+	c.Check(u.Query().Get("redirectToDownload"), check.Equals, "/c="+arvadostest.FooCollection+"/foo")
+
+	// Download/attachment indicated by vhost
+	resp = s.testVhostRedirectTokenToCookie(c, "GET",
+		s.handler.Cluster.Services.WebDAVDownload.ExternalURL.Host+"/c="+arvadostest.FooCollection+"/foo",
+		"?api_token=thisisabogustoken",
+		http.Header{"Sec-Fetch-Mode": {"navigate"}},
+		"",
+		http.StatusSeeOther,
+		"",
+	)
+	u, err = url.Parse(resp.Header().Get("Location"))
+	c.Assert(err, check.IsNil)
+	c.Logf("redirected to %s", u)
+	c.Check(u.Host, check.Equals, s.handler.Cluster.Services.Workbench2.ExternalURL.Host)
+	c.Check(u.Query().Get("redirectToPreview"), check.Equals, "")
+	c.Check(u.Query().Get("redirectToDownload"), check.Equals, "/c="+arvadostest.FooCollection+"/foo")
+
+	// Without "Sec-Fetch-Mode: navigate" header, just 401.
+	s.testVhostRedirectTokenToCookie(c, "GET",
+		s.handler.Cluster.Services.WebDAVDownload.ExternalURL.Host+"/c="+arvadostest.FooCollection+"/foo",
+		"?api_token=thisisabogustoken",
+		http.Header{"Sec-Fetch-Mode": {"cors"}},
+		"",
+		http.StatusUnauthorized,
+		unauthorizedMessage+"\n",
+	)
+	s.testVhostRedirectTokenToCookie(c, "GET",
+		s.handler.Cluster.Services.WebDAVDownload.ExternalURL.Host+"/c="+arvadostest.FooCollection+"/foo",
+		"?api_token=thisisabogustoken",
+		nil,
 		"",
 		http.StatusUnauthorized,
 		unauthorizedMessage+"\n",
@@ -440,7 +497,7 @@ func (s *IntegrationSuite) TestVhostRedirectQueryTokenSingleOriginError(c *check
 	s.testVhostRedirectTokenToCookie(c, "GET",
 		"example.com/c="+arvadostest.FooCollection+"/foo",
 		"?api_token="+arvadostest.ActiveToken,
-		"",
+		nil,
 		"",
 		http.StatusBadRequest,
 		"cannot serve inline content at this URL (possible configuration error; see https://doc.arvados.org/install/install-keep-web.html#dns)\n",
@@ -454,7 +511,7 @@ func (s *IntegrationSuite) TestVhostRedirectQueryTokenRequestAttachment(c *check
 	resp := s.testVhostRedirectTokenToCookie(c, "GET",
 		arvadostest.FooCollection+".example.com/foo",
 		"?disposition=attachment&api_token="+arvadostest.ActiveToken,
-		"",
+		nil,
 		"",
 		http.StatusOK,
 		"foo",
@@ -467,7 +524,7 @@ func (s *IntegrationSuite) TestVhostRedirectQueryTokenSiteFS(c *check.C) {
 	resp := s.testVhostRedirectTokenToCookie(c, "GET",
 		"download.example.com/by_id/"+arvadostest.FooCollection+"/foo",
 		"?api_token="+arvadostest.ActiveToken,
-		"",
+		nil,
 		"",
 		http.StatusOK,
 		"foo",
@@ -480,7 +537,7 @@ func (s *IntegrationSuite) TestPastCollectionVersionFileAccess(c *check.C) {
 	resp := s.testVhostRedirectTokenToCookie(c, "GET",
 		"download.example.com/c="+arvadostest.WazVersion1Collection+"/waz",
 		"?api_token="+arvadostest.ActiveToken,
-		"",
+		nil,
 		"",
 		http.StatusOK,
 		"waz",
@@ -489,7 +546,7 @@ func (s *IntegrationSuite) TestPastCollectionVersionFileAccess(c *check.C) {
 	resp = s.testVhostRedirectTokenToCookie(c, "GET",
 		"download.example.com/by_id/"+arvadostest.WazVersion1Collection+"/waz",
 		"?api_token="+arvadostest.ActiveToken,
-		"",
+		nil,
 		"",
 		http.StatusOK,
 		"waz",
@@ -502,7 +559,7 @@ func (s *IntegrationSuite) TestVhostRedirectQueryTokenTrustAllContent(c *check.C
 	s.testVhostRedirectTokenToCookie(c, "GET",
 		"example.com/c="+arvadostest.FooCollection+"/foo",
 		"?api_token="+arvadostest.ActiveToken,
-		"",
+		nil,
 		"",
 		http.StatusOK,
 		"foo",
@@ -515,7 +572,7 @@ func (s *IntegrationSuite) TestVhostRedirectQueryTokenAttachmentOnlyHost(c *chec
 	s.testVhostRedirectTokenToCookie(c, "GET",
 		"example.com/c="+arvadostest.FooCollection+"/foo",
 		"?api_token="+arvadostest.ActiveToken,
-		"",
+		nil,
 		"",
 		http.StatusBadRequest,
 		"cannot serve inline content at this URL (possible configuration error; see https://doc.arvados.org/install/install-keep-web.html#dns)\n",
@@ -524,7 +581,7 @@ func (s *IntegrationSuite) TestVhostRedirectQueryTokenAttachmentOnlyHost(c *chec
 	resp := s.testVhostRedirectTokenToCookie(c, "GET",
 		"example.com:1234/c="+arvadostest.FooCollection+"/foo",
 		"?api_token="+arvadostest.ActiveToken,
-		"",
+		nil,
 		"",
 		http.StatusOK,
 		"foo",
@@ -536,7 +593,7 @@ func (s *IntegrationSuite) TestVhostRedirectPOSTFormTokenToCookie(c *check.C) {
 	s.testVhostRedirectTokenToCookie(c, "POST",
 		arvadostest.FooCollection+".example.com/foo",
 		"",
-		"application/x-www-form-urlencoded",
+		http.Header{"Content-Type": {"application/x-www-form-urlencoded"}},
 		url.Values{"api_token": {arvadostest.ActiveToken}}.Encode(),
 		http.StatusOK,
 		"foo",
@@ -547,7 +604,7 @@ func (s *IntegrationSuite) TestVhostRedirectPOSTFormTokenToCookie404(c *check.C)
 	s.testVhostRedirectTokenToCookie(c, "POST",
 		arvadostest.FooCollection+".example.com/foo",
 		"",
-		"application/x-www-form-urlencoded",
+		http.Header{"Content-Type": {"application/x-www-form-urlencoded"}},
 		url.Values{"api_token": {arvadostest.SpectatorToken}}.Encode(),
 		http.StatusNotFound,
 		notFoundMessage+"\n",
@@ -559,7 +616,7 @@ func (s *IntegrationSuite) TestAnonymousTokenOK(c *check.C) {
 	s.testVhostRedirectTokenToCookie(c, "GET",
 		"example.com/c="+arvadostest.HelloWorldCollection+"/Hello%20world.txt",
 		"",
-		"",
+		nil,
 		"",
 		http.StatusOK,
 		"Hello world\n",
@@ -571,7 +628,7 @@ func (s *IntegrationSuite) TestAnonymousTokenError(c *check.C) {
 	s.testVhostRedirectTokenToCookie(c, "GET",
 		"example.com/c="+arvadostest.HelloWorldCollection+"/Hello%20world.txt",
 		"",
-		"",
+		nil,
 		"",
 		http.StatusNotFound,
 		notFoundMessage+"\n",
@@ -711,14 +768,18 @@ func (s *IntegrationSuite) TestXHRNoRedirect(c *check.C) {
 	c.Check(resp.Header().Get("Access-Control-Allow-Origin"), check.Equals, "*")
 }
 
-func (s *IntegrationSuite) testVhostRedirectTokenToCookie(c *check.C, method, hostPath, queryString, contentType, reqBody string, expectStatus int, expectRespBody string) *httptest.ResponseRecorder {
+func (s *IntegrationSuite) testVhostRedirectTokenToCookie(c *check.C, method, hostPath, queryString string, reqHeader http.Header, reqBody string, expectStatus int, expectRespBody string) *httptest.ResponseRecorder {
+	if reqHeader == nil {
+		reqHeader = http.Header{}
+	}
 	u, _ := url.Parse(`http://` + hostPath + queryString)
+	c.Logf("requesting %s", u)
 	req := &http.Request{
 		Method:     method,
 		Host:       u.Host,
 		URL:        u,
 		RequestURI: u.RequestURI(),
-		Header:     http.Header{"Content-Type": {contentType}},
+		Header:     reqHeader,
 		Body:       ioutil.NopCloser(strings.NewReader(reqBody)),
 	}
 
@@ -733,15 +794,18 @@ func (s *IntegrationSuite) testVhostRedirectTokenToCookie(c *check.C, method, ho
 		return resp
 	}
 	c.Check(resp.Body.String(), check.Matches, `.*href="http://`+regexp.QuoteMeta(html.EscapeString(hostPath))+`(\?[^"]*)?".*`)
+	c.Check(strings.Split(resp.Header().Get("Location"), "?")[0], check.Equals, "http://"+hostPath)
 	cookies := (&http.Response{Header: resp.Header()}).Cookies()
 
-	u, _ = u.Parse(resp.Header().Get("Location"))
+	u, err := u.Parse(resp.Header().Get("Location"))
+	c.Assert(err, check.IsNil)
+	c.Logf("following redirect to %s", u)
 	req = &http.Request{
 		Method:     "GET",
 		Host:       u.Host,
 		URL:        u,
 		RequestURI: u.RequestURI(),
-		Header:     http.Header{},
+		Header:     reqHeader,
 	}
 	for _, c := range cookies {
 		req.AddCookie(c)
@@ -749,7 +813,10 @@ func (s *IntegrationSuite) testVhostRedirectTokenToCookie(c *check.C, method, ho
 
 	resp = httptest.NewRecorder()
 	s.handler.ServeHTTP(resp, req)
-	c.Check(resp.Header().Get("Location"), check.Equals, "")
+
+	if resp.Code != http.StatusSeeOther {
+		c.Check(resp.Header().Get("Location"), check.Equals, "")
+	}
 	return resp
 }
 
