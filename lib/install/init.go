@@ -392,7 +392,12 @@ func (initcmd *initCommand) RunCommand(prog string, args []string, stdin io.Read
 		fmt.Fprintln(stderr, "docker is not installed -- skipping step of downloading 'alpine' image")
 	}
 
-	fmt.Fprintln(stderr, "Setup complete. You should now be able to log in to workbench2 at", cluster.Services.Workbench2.ExternalURL.String())
+	fmt.Fprintf(stderr, `
+Setup complete. Next steps:
+* run 'arv sudo diagnostics'
+* log in to workbench2 at %s
+* see documentation at https://doc.arvados.org/install/automatic.html
+`, cluster.Services.Workbench2.ExternalURL.String())
 
 	return 0
 }
