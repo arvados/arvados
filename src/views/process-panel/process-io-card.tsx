@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import React, { useState } from 'react';
+import React, { ReactElement, useState } from 'react';
 import {
     StyleRulesCallback,
     WithStyles,
@@ -23,6 +23,7 @@ import {
     Paper,
     Link,
     Grid,
+    Chip,
 } from '@material-ui/core';
 import { ArvadosTheme } from 'common/custom-theme';
 import { CloseIcon, InfoIcon, ProcessIcon } from 'components/icon/icon';
@@ -53,7 +54,7 @@ import { AuthState } from 'store/auth/auth-reducer';
 import mime from 'mime';
 import { DefaultView } from 'components/default-view/default-view';
 
-type CssRules = 'card' | 'content' | 'title' | 'header' | 'avatar' | 'iconHeader' | 'tableWrapper' | 'tableRoot' | 'paramValue' | 'keepLink' | 'imagePreview';
+type CssRules = 'card' | 'content' | 'title' | 'header' | 'avatar' | 'iconHeader' | 'tableWrapper' | 'tableRoot' | 'paramValue' | 'keepLink' | 'imagePreview' | 'valArray';
 
 const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     card: {
@@ -97,6 +98,12 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     },
     imagePreview: {
         maxHeight: '15em',
+        marginRight: theme.spacing.unit,
+    },
+    valArray: {
+        display: 'flex',
+        gap: '10px',
+        flexWrap: 'wrap',
     },
 });
 
@@ -158,7 +165,7 @@ export const ProcessIOCard = withStyles(styles)(
 );
 
 export type ProcessIOValue = {
-    display: string;
+    display: ReactElement<any, any>;
     nav?: string;
     imageUrl?: string;
 }
@@ -195,7 +202,12 @@ const ProcessIOPreview = withStyles(styles)(
                         <TableCell>{param.value.map(val => (
                             <Typography className={classes.paramValue}>
                                 {val.imageUrl ? <img className={classes.imagePreview} src={val.imageUrl} alt="Inline Preview" /> : ""}
-                                {val.nav ? <Link className={classes.keepLink} onClick={() => handleClick(val.nav)}>{val.display}</Link> : val.display}
+                                {val.nav ?
+                                    <Link className={classes.keepLink} onClick={() => handleClick(val.nav)}>{val.display}</Link>
+                                    : <span className={classes.valArray}>
+                                        {val.display}
+                                    </span>
+                                }
                             </Typography>
                         ))}</TableCell>
                     </TableRow>;
@@ -224,18 +236,18 @@ type FileWithSecondaryFiles = {
 export const getInputDisplayValue = (auth: AuthState, input: CommandInputParameter | CommandOutputParameter, pdh?: string): ProcessIOValue[] => {
     switch (true) {
         case isPrimitiveOfType(input, CWLType.BOOLEAN):
-            return [{display: String((input as BooleanCommandInputParameter).value)}];
+            return [{display: <pre>{String((input as BooleanCommandInputParameter).value)}</pre> }];
 
         case isPrimitiveOfType(input, CWLType.INT):
         case isPrimitiveOfType(input, CWLType.LONG):
-            return [{display: String((input as IntCommandInputParameter).value)}];
+            return [{display: <pre>{String((input as IntCommandInputParameter).value)}</pre> }];
 
         case isPrimitiveOfType(input, CWLType.FLOAT):
         case isPrimitiveOfType(input, CWLType.DOUBLE):
-            return [{display: String((input as FloatCommandInputParameter).value)}];
+            return [{display: <pre>{String((input as FloatCommandInputParameter).value)}</pre> }];
 
         case isPrimitiveOfType(input, CWLType.STRING):
-            return [{display: (input as StringCommandInputParameter).value || ""}];
+            return [{display: <pre>{(input as StringCommandInputParameter).value || ""}</pre> }];
 
         case isPrimitiveOfType(input, CWLType.FILE):
             const mainFile = (input as FileCommandInputParameter).value;
@@ -254,18 +266,18 @@ export const getInputDisplayValue = (auth: AuthState, input: CommandInputParamet
         case typeof input.type === 'object' &&
             !(input.type instanceof Array) &&
             input.type.type === 'enum':
-            return [{ display: (input as EnumCommandInputParameter).value || '' }];
+            return [{ display: <pre>{(input as EnumCommandInputParameter).value || ''}</pre> }];
 
         case isArrayOfType(input, CWLType.STRING):
-            return [{ display: ((input as StringArrayCommandInputParameter).value || []).join(', ') }];
+            return [{ display: <>{((input as StringArrayCommandInputParameter).value || []).map((val) => <Chip label={val} />)}</> }];
 
         case isArrayOfType(input, CWLType.INT):
         case isArrayOfType(input, CWLType.LONG):
-            return [{ display: ((input as IntArrayCommandInputParameter).value || []).join(', ') }];
+            return [{ display: <>{((input as IntArrayCommandInputParameter).value || []).map((val) => <Chip label={val} />)}</> }];
 
         case isArrayOfType(input, CWLType.FLOAT):
         case isArrayOfType(input, CWLType.DOUBLE):
-            return [{ display: ((input as FloatArrayCommandInputParameter).value || []).join(', ') }];
+            return [{ display: <>{((input as FloatArrayCommandInputParameter).value || []).map((val) => <Chip label={val} />)}</> }];
 
         case isArrayOfType(input, CWLType.FILE):
             const fileArrayMainFile = ((input as FileArrayCommandInputParameter).value || []);
@@ -310,21 +322,26 @@ const isFileImage = (basename?: string): boolean => {
     return basename ? (mime.getType(basename) || "").startsWith('image/') : false;
 };
 
-const normalizeDirectoryLocation = (directory: Directory): Directory => ({
-    ...directory,
-    location: (directory.location || '').endsWith('/') ? directory.location : directory.location + '/',
-});
+const normalizeDirectoryLocation = (directory: Directory): Directory => {
+    if (!directory.location) {
+        return directory;
+    }
+    return {
+        ...directory,
+        location: (directory.location || '').endsWith('/') ? directory.location : directory.location + '/',
+    };
+};
 
 const directoryToProcessIOValue = (directory: Directory, auth: AuthState, pdh?: string): ProcessIOValue => {
     const normalizedDirectory = normalizeDirectoryLocation(directory);
     return {
-        display: getKeepUrl(normalizedDirectory, pdh),
+        display: <>{getKeepUrl(normalizedDirectory, pdh)}</>,
         nav: getNavUrl(auth, normalizedDirectory, pdh),
     };
 };
 
 const fileToProcessIOValue = (file: File, auth: AuthState, pdh?: string): ProcessIOValue => ({
-    display: getKeepUrl(file, pdh),
+    display: <>{getKeepUrl(file, pdh)}</>,
     nav: getNavUrl(auth, file, pdh),
     imageUrl: isFileImage(file.basename) ? getImageUrl(auth, file, pdh) : undefined,
 });
