@@ -227,6 +227,7 @@ func (s *integrationSuite) TestRunTrivialContainerWithLocalKeepstore(c *C) {
 		c.Check(s.logFiles["crunch-run.txt"], Matches, `(?ms).*using local keepstore process .* at http://[\d\.]{7,}:\d+.*`)
 		c.Check(s.logFiles["crunch-run.txt"], Not(Matches), `(?ms).* at http://127\..*`)
 		c.Check(s.logFiles["crunch-run.txt"], Not(Matches), `(?ms).* at http://169\.254\..*`)
+		c.Check(s.logFiles["stderr.txt"], Matches, `(?ms).*ARVADOS_KEEP_SERVICES=http://[\d\.]{7,}:\d+\n.*`)
 	}
 
 	// Check that (1) config is loaded from $ARVADOS_CONFIG when
@@ -262,7 +263,7 @@ func (s *integrationSuite) testRunTrivialContainer(c *C) {
 	if err := exec.Command("which", s.engine).Run(); err != nil {
 		c.Skip(fmt.Sprintf("%s: %s", s.engine, err))
 	}
-	s.cr.Command = []string{"sh", "-c", "cat /mnt/in/inputfile >/mnt/out/inputfile && cat /mnt/json >/mnt/out/json && ! touch /mnt/in/shouldbereadonly && mkdir /mnt/out/emptydir"}
+	s.cr.Command = []string{"sh", "-c", "env >&2 && cat /mnt/in/inputfile >/mnt/out/inputfile && cat /mnt/json >/mnt/out/json && ! touch /mnt/in/shouldbereadonly && mkdir /mnt/out/emptydir"}
 	s.setup(c)
 
 	args := []string{
