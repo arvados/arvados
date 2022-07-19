@@ -17,6 +17,7 @@ import (
 	"os/exec"
 	"os/user"
 	"path/filepath"
+	"runtime"
 	"strconv"
 	"strings"
 	"syscall"
@@ -644,7 +645,7 @@ done
 				{"sudo", "-u", "www-data", "/var/lib/arvados/bin/bundle", "config", "set", "--local", "deployment", "true"},
 				{"sudo", "-u", "www-data", "/var/lib/arvados/bin/bundle", "config", "set", "--local", "path", "/var/www/.gem"},
 				{"sudo", "-u", "www-data", "/var/lib/arvados/bin/bundle", "config", "set", "--local", "without", "development test diagnostics performance"},
-				{"sudo", "-u", "www-data", "/var/lib/arvados/bin/bundle", "install", "--jobs", "8"},
+				{"sudo", "-u", "www-data", "/var/lib/arvados/bin/bundle", "install", "--jobs", fmt.Sprintf("%d", runtime.NumCPU())},
 
 				{"chown", "www-data:www-data", ".", "public/assets"},
 				// {"sudo", "-u", "www-data", "/var/lib/arvados/bin/bundle", "config", "set", "--local", "system", "true"},
