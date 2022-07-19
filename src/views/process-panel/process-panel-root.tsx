@@ -17,8 +17,8 @@ import { getInputDisplayValue, ProcessIOCard, ProcessIOParameter } from './proce
 import { getProcessPanelLogs, ProcessLogsPanel } from 'store/process-logs-panel/process-logs-panel';
 import { ProcessLogsCard } from './process-log-card';
 import { FilterOption } from 'views/process-panel/process-log-form';
-import { getInputs } from 'store/processes/processes-actions';
-import { CommandInputParameter, getInputId } from 'models/workflow';
+import { getInputs, getOutputParameters } from 'store/processes/processes-actions';
+import { CommandInputParameter, getIOParamId } from 'models/workflow';
 import { CommandOutputParameter } from 'cwlts/mappings/v1.0/CommandOutputParameter';
 import { AuthState } from 'store/auth/auth-reducer';
 
@@ -83,12 +83,13 @@ export const ProcessPanelRoot = withStyles(styles)(
     }, [outputUuid, fetchOutputs]);
 
     React.useEffect(() => {
-        if (outputDetails.rawOutputs) {
-            setProcessedOutputs(formatOutputData(outputDetails.rawOutputs, outputDetails.pdh, auth));
+        if (outputDetails.rawOutputs && process) {
+            const outputDefinitions = getOutputParameters(process.containerRequest);
+            setProcessedOutputs(formatOutputData(outputDefinitions, outputDetails.rawOutputs, outputDetails.pdh, auth));
         } else {
             setProcessedOutputs([]);
         }
-    }, [outputDetails, auth]);
+    }, [outputDetails, auth, process]);
 
     React.useEffect(() => {
         if (process) {
@@ -154,33 +155,22 @@ export const ProcessPanelRoot = withStyles(styles)(
 
 const formatInputData = (inputs: CommandInputParameter[], auth: AuthState): ProcessIOParameter[] => {
     return inputs.map(input => {
+        const doc = Array.isArray(input.doc) ? input.doc.join(', ') : input.doc;
         return {
-            id: getInputId(input),
-            doc: input.label || "",
+            id: getIOParamId(input),
+            doc: input.label || doc || "",
             value: getInputDisplayValue(auth, input)
         };
     });
 };
 
-const formatOutputData = (rawData: any, pdh: string | undefined, auth: AuthState): ProcessIOParameter[] => {
-    if (!rawData) { return []; }
-    return Object.keys(rawData).map((id): ProcessIOParameter => {
-        const multiple = rawData[id].length > 0;
-        const outputArray = multiple ? rawData[id] : [rawData[id]];
+const formatOutputData = (definitions: CommandOutputParameter[], values: any, pdh: string | undefined, auth: AuthState): ProcessIOParameter[] => {
+    return definitions.map(output => {
+        const doc = Array.isArray(output.doc) ? output.doc.join(', ') : output.doc;
         return {
-            id,
-            doc: outputArray.map((outputParam: CommandOutputParameter) => (outputParam.doc))
-                        // Doc can be string or string[], concat conveniently works with both
-                        .reduce((acc: string[], input: string | string[]) => (acc.concat(input)), [])
-                        // Remove undefined and empty doc strings
-                        .filter(str => str)
-                        .join(", "),
-            value: outputArray.map(outputParam => getInputDisplayValue(auth, {
-                    type: outputParam.class,
-                    value: outputParam,
-                    ...outputParam
-                }, pdh, outputParam.secondaryFiles))
-                .reduce((acc: ProcessIOParameter[], params: ProcessIOParameter[]) => (acc.concat(params)), [])
+            id: getIOParamId(output),
+            doc: output.label || doc || "",
+            value: getInputDisplayValue(auth, Object.assign(output, { value: values[getIOParamId(output)] }), pdh)
         };
     });
 };

@@ -17,9 +17,10 @@ import { initialize } from "redux-form";
 import { RUN_PROCESS_BASIC_FORM, RunProcessBasicFormData } from "views/run-process-panel/run-process-basic-form";
 import { RunProcessAdvancedFormData, RUN_PROCESS_ADVANCED_FORM } from "views/run-process-panel/run-process-advanced-form";
 import { MOUNT_PATH_CWL_WORKFLOW, MOUNT_PATH_CWL_INPUT } from 'models/process';
-import { CommandInputParameter, getWorkflow, getWorkflowInputs } from "models/workflow";
+import { CommandInputParameter, getWorkflow, getWorkflowInputs, getWorkflowOutputs } from "models/workflow";
 import { ProjectResource } from "models/project";
 import { UserResource } from "models/user";
+import { CommandOutputParameter } from "cwlts/mappings/v1.0/CommandOutputParameter";
 
 export const loadProcess = (containerRequestUuid: string) =>
     async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository): Promise<Process> => {
@@ -96,6 +97,21 @@ export const getInputs = (data: any): CommandInputParameter[] => {
                 label: it.label,
                 default: data.mounts[MOUNT_PATH_CWL_INPUT].content[it.id],
                 value: data.mounts[MOUNT_PATH_CWL_INPUT].content[it.id.split('/').pop()] || [],
+                doc: it.doc
+            }
+        )
+    ) : [];
+};
+
+export const getOutputParameters = (data: any): CommandOutputParameter[] => {
+    if (!data || !data.mounts || !data.mounts[MOUNT_PATH_CWL_WORKFLOW]) { return []; }
+    const outputs = getWorkflowOutputs(data.mounts[MOUNT_PATH_CWL_WORKFLOW].content);
+    return outputs ? outputs.map(
+        (it: any) => (
+            {
+                type: it.type,
+                id: it.id,
+                label: it.label,
                 doc: it.doc
             }
         )

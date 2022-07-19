@@ -115,7 +115,7 @@ export const ProcessIOCard = withStyles(styles)(
             setTabState(value);
         }
 
-        return <Card className={classes.card}>
+        return <Card className={classes.card} data-cy="process-io-card">
             <CardHeader
                 className={classes.header}
                 classes={{
@@ -217,8 +217,11 @@ const ProcessIORaw = withStyles(styles)(
         </Paper>
 );
 
-// secondaryFiles File[] is not part of CommandOutputParameter so we pass in an extra param
-export const getInputDisplayValue = (auth: AuthState, input: CommandInputParameter | CommandOutputParameter, pdh?: string, secondaryFiles: File[] = []): ProcessIOValue[] => {
+type FileWithSecondaryFiles = {
+    secondaryFiles: File[];
+}
+
+export const getInputDisplayValue = (auth: AuthState, input: CommandInputParameter | CommandOutputParameter, pdh?: string): ProcessIOValue[] => {
     switch (true) {
         case isPrimitiveOfType(input, CWLType.BOOLEAN):
             return [{display: String((input as BooleanCommandInputParameter).value)}];
@@ -236,6 +239,8 @@ export const getInputDisplayValue = (auth: AuthState, input: CommandInputParamet
 
         case isPrimitiveOfType(input, CWLType.FILE):
             const mainFile = (input as FileCommandInputParameter).value;
+            // secondaryFiles: File[] is not part of CommandOutputParameter so we cast to access secondaryFiles
+            const secondaryFiles = ((mainFile as unknown) as FileWithSecondaryFiles)?.secondaryFiles || [];
             const files = [
                 ...(mainFile ? [mainFile] : []),
                 ...secondaryFiles
@@ -263,7 +268,17 @@ export const getInputDisplayValue = (auth: AuthState, input: CommandInputParamet
             return [{ display: ((input as FloatArrayCommandInputParameter).value || []).join(', ') }];
 
         case isArrayOfType(input, CWLType.FILE):
-            return ((input as FileArrayCommandInputParameter).value || [])
+            const fileArrayMainFile = ((input as FileArrayCommandInputParameter).value || []);
+            const fileArraySecondaryFiles = fileArrayMainFile.map((file) => (
+                ((file as unknown) as FileWithSecondaryFiles)?.secondaryFiles || []
+            )).reduce((acc: File[], params: File[]) => (acc.concat(params)), []);
+
+            const fileArrayFiles = [
+                ...fileArrayMainFile,
+                ...fileArraySecondaryFiles
+            ];
+
+            return fileArrayFiles
                 .map(file => fileToProcessIOValue(file, auth, pdh));
 
         case isArrayOfType(input, CWLType.DIRECTORY):
