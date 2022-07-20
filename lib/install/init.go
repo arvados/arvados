@@ -38,14 +38,20 @@ import (
 var InitCommand cmd.Handler = &initCommand{}
 
 type initCommand struct {
-	ClusterID          string
-	Domain             string
-	PostgreSQLPassword string
-	Login              string
-	TLS                string
-	AdminEmail         string
-	Start              bool
+	ClusterID  string
+	Domain     string
+	CreateDB   bool
+	Login      string
+	TLS        string
+	AdminEmail string
+	Start      bool
 
+	PostgreSQL struct {
+		Host     string
+		User     string
+		Password string
+		DB       string
+	}
 	LoginPAM                bool
 	LoginTest               bool
 	LoginGoogle             bool
@@ -77,6 +83,7 @@ func (initcmd *initCommand) RunCommand(prog string, args []string, stdin io.Read
 	flags.SetOutput(stderr)
 	versionFlag := flags.Bool("version", false, "Write version information to stdout and exit 0")
 	flags.StringVar(&initcmd.ClusterID, "cluster-id", "", "cluster `id`, like x1234 for a dev cluster")
+	flags.BoolVar(&initcmd.CreateDB, "create-db", true, "create an 'arvados' postgresql role and database using 'sudo -u postgres psql ...' (if false, use existing database specified by POSTGRES_HOST, POSTGRES_USER, POSTGRES_PASSWORD, and POSTGRES_DB env vars, and assume 'CREATE EXTENSION IF NOT EXISTS pg_trgm' has already been done)")
 	flags.StringVar(&initcmd.Domain, "domain", hostname, "cluster public DNS `name`, like x1234.arvadosapi.com")
 	flags.StringVar(&initcmd.Login, "login", "", "login `backend`: test, pam, 'google {client-id} {client-secret}', or ''")
 	flags.StringVar(&initcmd.AdminEmail, "admin-email", "", "give admin privileges to user with given `email`")
@@ -140,22 +147,37 @@ func (initcmd *initCommand) RunCommand(prog string, args []string, stdin io.Read
 		}
 	}
 
-	// Do the "create extension" thing early. This way, if there's
-	// no local postgresql server (a likely failure mode), we can
-	// bail out without any side effects, and the user can start
-	// over easily.
-	fmt.Fprintln(stderr, "installing pg_trgm postgresql extension...")
-	cmd := exec.CommandContext(ctx, "sudo", "-u", "postgres", "psql", "--quiet",
-		"-c", `CREATE EXTENSION IF NOT EXISTS pg_trgm`)
-	cmd.Dir = "/"
-	cmd.Stdout = stdout
-	cmd.Stderr = stderr
-	err = cmd.Run()
-	if err != nil {
-		err = fmt.Errorf("error preparing postgresql server: %w", err)
-		return 1
+	if initcmd.CreateDB {
+		// Do the "create extension" thing early. This way, if
+		// there's no local postgresql server (a likely
+		// failure mode), we can bail out without any side
+		// effects, and the user can start over easily.
+		fmt.Fprintln(stderr, "installing pg_trgm postgresql extension...")
+		cmd := exec.CommandContext(ctx, "sudo", "-u", "postgres", "psql", "--quiet",
+			"-c", `CREATE EXTENSION IF NOT EXISTS pg_trgm`)
+		cmd.Dir = "/"
+		cmd.Stdout = stdout
+		cmd.Stderr = stderr
+		err = cmd.Run()
+		if err != nil {
+			err = fmt.Errorf("error preparing postgresql server: %w", err)
+			return 1
+		}
+		fmt.Fprintln(stderr, "...done")
+		initcmd.PostgreSQL.Host = "localhost"
+		initcmd.PostgreSQL.User = "arvados"
+		initcmd.PostgreSQL.Password = initcmd.RandomHex(32)
+		initcmd.PostgreSQL.DB = "arvados"
+	} else {
+		initcmd.PostgreSQL.Host = os.Getenv("POSTGRES_HOST")
+		initcmd.PostgreSQL.User = os.Getenv("POSTGRES_USER")
+		initcmd.PostgreSQL.Password = os.Getenv("POSTGRES_PASSWORD")
+		initcmd.PostgreSQL.DB = os.Getenv("POSTGRES_DB")
+		if initcmd.PostgreSQL.Host == "" || initcmd.PostgreSQL.User == "" || initcmd.PostgreSQL.Password == "" || initcmd.PostgreSQL.DB == "" {
+			err = fmt.Errorf("missing $POSTGRES_* env var(s) for -create-db=false; see %s -help", prog)
+			return 1
+		}
 	}
-	fmt.Fprintln(stderr, "...done")
 
 	wwwuser, err := user.Lookup("www-data")
 	if err != nil {
@@ -166,7 +188,6 @@ func (initcmd *initCommand) RunCommand(prog string, args []string, stdin io.Read
 	if err != nil {
 		return 1
 	}
-	initcmd.PostgreSQLPassword = initcmd.RandomHex(32)
 
 	fmt.Fprintln(stderr, "creating data storage directory /var/lib/arvados/keep ...")
 	err = os.Mkdir("/var/lib/arvados/keep", 0600)
@@ -257,10 +278,10 @@ func (initcmd *initCommand) RunCommand(prog string, args []string, stdin io.Read
     ManagementToken: {{printf "%q" ( .RandomHex 50 )}}
     PostgreSQL:
       Connection:
-        dbname: arvados
-        host: localhost
-        user: arvados
-        password: {{printf "%q" .PostgreSQLPassword}}
+        dbname: {{printf "%q" .PostgreSQL.DB}}
+        host: {{printf "%q" .PostgreSQL.Host}}
+        user: {{printf "%q" .PostgreSQL.User}}
+        password: {{printf "%q" .PostgreSQL.Password}}
     SystemRootToken: {{printf "%q" ( .RandomHex 50 )}}
     TLS:
       {{if eq .TLS "insecure"}}
@@ -345,7 +366,7 @@ func (initcmd *initCommand) RunCommand(prog string, args []string, stdin io.Read
 	fmt.Fprintln(stderr, "...done")
 
 	fmt.Fprintln(stderr, "initializing database...")
-	cmd = exec.CommandContext(ctx, "sudo", "-u", "www-data", "-E", "HOME=/var/www", "PATH=/var/lib/arvados/bin:"+os.Getenv("PATH"), "/var/lib/arvados/bin/bundle", "exec", "rake", "db:setup")
+	cmd := exec.CommandContext(ctx, "sudo", "-u", "www-data", "-E", "HOME=/var/www", "PATH=/var/lib/arvados/bin:"+os.Getenv("PATH"), "/var/lib/arvados/bin/bundle", "exec", "rake", "db:setup")
 	cmd.Dir = "/var/lib/arvados/railsapi"
 	cmd.Stdout = stderr
 	cmd.Stderr = stderr
