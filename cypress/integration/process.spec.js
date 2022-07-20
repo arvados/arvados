@@ -276,496 +276,502 @@ describe('Process tests', function() {
     });
 
 
-    it('displays IO parameters with keep links and previews', function() {
-        const testInputs = [
-            {
-                definition: {
-                    "id": "#main/input_file",
-                    "label": "Label Description",
-                    "type": "File"
-                },
-                input: {
-                    "input_file": {
-                        "basename": "input1.tar",
-                        "class": "File",
-                        "location": "keep:00000000000000000000000000000000+01/input1.tar",
-                        "secondaryFiles": [
-                            {
-                                "basename": "input1-2.txt",
-                                "class": "File",
-                                "location": "keep:00000000000000000000000000000000+01/input1-2.txt"
-                            },
-                            {
-                                "basename": "input1-3.txt",
-                                "class": "File",
-                                "location": "keep:00000000000000000000000000000000+01/input1-3.txt"
-                            },
-                            {
-                                "basename": "input1-4.txt",
-                                "class": "File",
-                                "location": "keep:00000000000000000000000000000000+01/input1-4.txt"
-                            }
-                        ]
-                    }
-                }
+    const testInputs = [
+        {
+            definition: {
+                "id": "#main/input_file",
+                "label": "Label Description",
+                "type": "File"
             },
-            {
-                definition: {
-                    "id": "#main/input_dir",
-                    "doc": "Doc Description",
-                    "type": "Directory"
-                },
-                input: {
-                    "input_dir": {
-                        "basename": "11111111111111111111111111111111+01",
-                        "class": "Directory",
-                        "location": "keep:11111111111111111111111111111111+01"
-                    }
-                }
-            },
-            {
-                definition: {
-                    "id": "#main/input_bool",
-                    "doc": ["Doc desc 1", "Doc desc 2"],
-                    "type": "boolean"
-                },
-                input: {
-                    "input_bool": true,
-                }
-            },
-            {
-                definition: {
-                    "id": "#main/input_int",
-                    "type": "int"
-                },
-                input: {
-                    "input_int": 1,
-                }
-            },
-            {
-                definition: {
-                    "id": "#main/input_long",
-                    "type": "long"
-                },
-                input: {
-                    "input_long" : 1,
-                }
-            },
-            {
-                definition: {
-                    "id": "#main/input_float",
-                    "type": "float"
-                },
-                input: {
-                    "input_float": 1.5,
-                }
-            },
-            {
-                definition: {
-                    "id": "#main/input_double",
-                    "type": "double"
-                },
-                input: {
-                    "input_double": 1.3,
-                }
-            },
-            {
-                definition: {
-                    "id": "#main/input_string",
-                    "type": "string"
-                },
-                input: {
-                    "input_string": "Hello World",
-                }
-            },
-            {
-                definition: {
-                    "id": "#main/input_file_array",
-                    "type": {
-                      "items": "File",
-                      "type": "array"
-                    }
-                },
-                input: {
-                    "input_file_array": [
+            input: {
+                "input_file": {
+                    "basename": "input1.tar",
+                    "class": "File",
+                    "location": "keep:00000000000000000000000000000000+01/input1.tar",
+                    "secondaryFiles": [
                         {
-                            "basename": "input2.tar",
+                            "basename": "input1-2.txt",
                             "class": "File",
-                            "location": "keep:00000000000000000000000000000000+02/input2.tar"
+                            "location": "keep:00000000000000000000000000000000+01/input1-2.txt"
                         },
                         {
-                            "basename": "input3.tar",
+                            "basename": "input1-3.txt",
                             "class": "File",
-                            "location": "keep:00000000000000000000000000000000+03/input3.tar",
-                            "secondaryFiles": [
-                                {
-                                    "basename": "input3-2.txt",
-                                    "class": "File",
-                                    "location": "keep:00000000000000000000000000000000+03/input3-2.txt"
-                                }
-                            ]
-                        }
-                    ]
-                }
-            },
-            {
-                definition: {
-                    "id": "#main/input_dir_array",
-                    "type": {
-                      "items": "Directory",
-                      "type": "array"
-                    }
-                },
-                input: {
-                    "input_dir_array": [
-                        {
-                            "basename": "11111111111111111111111111111111+02",
-                            "class": "Directory",
-                            "location": "keep:11111111111111111111111111111111+02"
+                            "location": "keep:00000000000000000000000000000000+01/input1-3.txt"
                         },
                         {
-                            "basename": "11111111111111111111111111111111+03",
-                            "class": "Directory",
-                            "location": "keep:11111111111111111111111111111111+03"
+                            "basename": "input1-4.txt",
+                            "class": "File",
+                            "location": "keep:00000000000000000000000000000000+01/input1-4.txt"
                         }
-                    ]
-                }
-            },
-            {
-                definition: {
-                    "id": "#main/input_int_array",
-                    "type": {
-                      "items": "int",
-                      "type": "array"
-                    }
-                },
-                input: {
-                    "input_int_array": [
-                        1,
-                        3,
-                        5
-                    ]
-                }
-            },
-            {
-                definition: {
-                    "id": "#main/input_long_array",
-                    "type": {
-                      "items": "long",
-                      "type": "array"
-                    }
-                },
-                input: {
-                    "input_long_array": [
-                        10,
-                        20
-                    ]
-                }
-            },
-            {
-                definition: {
-                    "id": "#main/input_float_array",
-                    "type": {
-                      "items": "float",
-                      "type": "array"
-                    }
-                },
-                input: {
-                    "input_float_array": [
-                        10.2,
-                        10.4,
-                        10.6
-                    ]
-                }
-            },
-            {
-                definition: {
-                    "id": "#main/input_double_array",
-                    "type": {
-                      "items": "double",
-                      "type": "array"
-                    }
-                },
-                input: {
-                    "input_double_array": [
-                        20.1,
-                        20.2,
-                        20.3
-                    ]
-                }
-            },
-            {
-                definition: {
-                    "id": "#main/input_string_array",
-                    "type": {
-                      "items": "string",
-                      "type": "array"
-                    }
-                },
-                input: {
-                    "input_string_array": [
-                        "Hello",
-                        "World",
-                        "!"
                     ]
                 }
             }
-        ];
-
-        const testOutputs = [
-            {
-                definition: {
-                    "id": "#main/output_file",
-                    "label": "Label Description",
-                    "type": "File"
-                },
-                output: {
-                    "output_file": {
-                        "basename": "cat.png",
-                        "class": "File",
-                        "location": "cat.png"
-                    }
+        },
+        {
+            definition: {
+                "id": "#main/input_dir",
+                "doc": "Doc Description",
+                "type": "Directory"
+            },
+            input: {
+                "input_dir": {
+                    "basename": "11111111111111111111111111111111+01",
+                    "class": "Directory",
+                    "location": "keep:11111111111111111111111111111111+01"
+                }
+            }
+        },
+        {
+            definition: {
+                "id": "#main/input_bool",
+                "doc": ["Doc desc 1", "Doc desc 2"],
+                "type": "boolean"
+            },
+            input: {
+                "input_bool": true,
+            }
+        },
+        {
+            definition: {
+                "id": "#main/input_int",
+                "type": "int"
+            },
+            input: {
+                "input_int": 1,
+            }
+        },
+        {
+            definition: {
+                "id": "#main/input_long",
+                "type": "long"
+            },
+            input: {
+                "input_long" : 1,
+            }
+        },
+        {
+            definition: {
+                "id": "#main/input_float",
+                "type": "float"
+            },
+            input: {
+                "input_float": 1.5,
+            }
+        },
+        {
+            definition: {
+                "id": "#main/input_double",
+                "type": "double"
+            },
+            input: {
+                "input_double": 1.3,
+            }
+        },
+        {
+            definition: {
+                "id": "#main/input_string",
+                "type": "string"
+            },
+            input: {
+                "input_string": "Hello World",
+            }
+        },
+        {
+            definition: {
+                "id": "#main/input_file_array",
+                "type": {
+                  "items": "File",
+                  "type": "array"
                 }
             },
-            {
-                definition: {
-                    "id": "#main/output_file_with_secondary",
-                    "doc": "Doc Description",
-                    "type": "File"
-                },
-                output: {
-                    "output_file_with_secondary": {
-                        "basename": "main.dat",
+            input: {
+                "input_file_array": [
+                    {
+                        "basename": "input2.tar",
                         "class": "File",
-                        "location": "main.dat",
+                        "location": "keep:00000000000000000000000000000000+02/input2.tar"
+                    },
+                    {
+                        "basename": "input3.tar",
+                        "class": "File",
+                        "location": "keep:00000000000000000000000000000000+03/input3.tar",
                         "secondaryFiles": [
                             {
-                                "basename": "secondary.dat",
+                                "basename": "input3-2.txt",
                                 "class": "File",
-                                "location": "secondary.dat"
-                            },
-                            {
-                                "basename": "secondary2.dat",
-                                "class": "File",
-                                "location": "secondary2.dat"
+                                "location": "keep:00000000000000000000000000000000+03/input3-2.txt"
                             }
                         ]
                     }
-                }
-            },
-            {
-                definition: {
-                    "id": "#main/output_dir",
-                    "doc": ["Doc desc 1", "Doc desc 2"],
-                    "type": "Directory"
-                },
-                output: {
-                    "output_dir": {
-                        "basename": "outdir1",
-                        "class": "Directory",
-                        "location": "outdir1"
-                    }
-                }
-            },
-            {
-                definition: {
-                    "id": "#main/output_bool",
-                    "type": "boolean"
-                },
-                output: {
-                    "output_bool": true
-                }
-            },
-            {
-                definition: {
-                    "id": "#main/output_int",
-                    "type": "int"
-                },
-                output: {
-                    "output_int": 1
-                }
-            },
-            {
-                definition: {
-                    "id": "#main/output_long",
-                    "type": "long"
-                },
-                output: {
-                    "output_long": 1
-                }
-            },
-            {
-                definition: {
-                    "id": "#main/output_float",
-                    "type": "float"
-                },
-                output: {
-                    "output_float": 100.5
-                }
-            },
-            {
-                definition: {
-                    "id": "#main/output_double",
-                    "type": "double"
-                },
-                output: {
-                    "output_double": 100.3
-                }
-            },
-            {
-                definition: {
-                    "id": "#main/output_string",
-                    "type": "string"
-                },
-                output: {
-                    "output_string": "Hello output"
-                }
-            },
-            {
-                definition: {
-                    "id": "#main/output_file_array",
-                    "type": {
-                        "items": "File",
-                        "type": "array"
-                    }
-                },
-                output: {
-                    "output_file_array": [
-                        {
-                            "basename": "output2.tar",
-                            "class": "File",
-                            "location": "output2.tar"
-                        },
-                        {
-                            "basename": "output3.tar",
-                            "class": "File",
-                            "location": "output3.tar"
-                        }
-                    ]
-                }
-            },
-            {
-                definition: {
-                    "id": "#main/output_dir_array",
-                    "type": {
-                        "items": "Directory",
-                        "type": "array"
-                    }
-                },
-                output: {
-                    "output_dir_array": [
-                        {
-                            "basename": "outdir2",
-                            "class": "Directory",
-                            "location": "outdir2"
-                        },
-                        {
-                            "basename": "outdir3",
-                            "class": "Directory",
-                            "location": "outdir3"
-                        }
-                    ]
-                }
-            },
-            {
-                definition: {
-                    "id": "#main/output_int_array",
-                    "type": {
-                        "items": "int",
-                        "type": "array"
-                    }
-                },
-                output: {
-                    "output_int_array": [
-                        10,
-                        11,
-                        12
-                    ]
-                }
-            },
-            {
-                definition: {
-                    "id": "#main/output_long_array",
-                    "type": {
-                        "items": "long",
-                        "type": "array"
-                    }
-                },
-                output: {
-                    "output_long_array": [
-                        51,
-                        52
-                    ]
-                }
-            },
-            {
-                definition: {
-                    "id": "#main/output_float_array",
-                    "type": {
-                        "items": "float",
-                        "type": "array"
-                    }
-                },
-                output: {
-                    "output_float_array": [
-                        100.2,
-                        100.4,
-                        100.6
-                    ]
-                }
-            },
-            {
-                definition: {
-                    "id": "#main/output_double_array",
-                    "type": {
-                        "items": "double",
-                        "type": "array"
-                    }
-                },
-                output: {
-                    "output_double_array": [
-                        100.1,
-                        100.2,
-                        100.3
-                    ]
-                }
-            },
-            {
-                definition: {
-                    "id": "#main/output_string_array",
-                    "type": {
-                        "items": "string",
-                        "type": "array"
-                    }
-                },
-                output: {
-                    "output_string_array": [
-                        "Hello",
-                        "Output",
-                        "!"
-                    ]
-                }
+                ]
             }
-        ];
-
-        const verifyParameter = (name, doc, val) => {
-            cy.get('table tr').contains(name).parents('tr').within(() => {
-                doc && cy.contains(doc);
-                val && cy.contains(val);
-            });
-        };
-
-        const verifyImage = (name, url) => {
-            cy.get('table tr').contains(name).parents('tr').within(() => {
-                cy.get('[alt="Inline Preview"]')
-                    .should('be.visible')
-                    .and(($img) => {
-                        expect($img[0].naturalWidth).to.be.greaterThan(0);
-                        expect($img[0].src).contains(url);
-                    })
-            });
+        },
+        {
+            definition: {
+                "id": "#main/input_dir_array",
+                "type": {
+                  "items": "Directory",
+                  "type": "array"
+                }
+            },
+            input: {
+                "input_dir_array": [
+                    {
+                        "basename": "11111111111111111111111111111111+02",
+                        "class": "Directory",
+                        "location": "keep:11111111111111111111111111111111+02"
+                    },
+                    {
+                        "basename": "11111111111111111111111111111111+03",
+                        "class": "Directory",
+                        "location": "keep:11111111111111111111111111111111+03"
+                    }
+                ]
+            }
+        },
+        {
+            definition: {
+                "id": "#main/input_int_array",
+                "type": {
+                  "items": "int",
+                  "type": "array"
+                }
+            },
+            input: {
+                "input_int_array": [
+                    1,
+                    3,
+                    5
+                ]
+            }
+        },
+        {
+            definition: {
+                "id": "#main/input_long_array",
+                "type": {
+                  "items": "long",
+                  "type": "array"
+                }
+            },
+            input: {
+                "input_long_array": [
+                    10,
+                    20
+                ]
+            }
+        },
+        {
+            definition: {
+                "id": "#main/input_float_array",
+                "type": {
+                  "items": "float",
+                  "type": "array"
+                }
+            },
+            input: {
+                "input_float_array": [
+                    10.2,
+                    10.4,
+                    10.6
+                ]
+            }
+        },
+        {
+            definition: {
+                "id": "#main/input_double_array",
+                "type": {
+                  "items": "double",
+                  "type": "array"
+                }
+            },
+            input: {
+                "input_double_array": [
+                    20.1,
+                    20.2,
+                    20.3
+                ]
+            }
+        },
+        {
+            definition: {
+                "id": "#main/input_string_array",
+                "type": {
+                  "items": "string",
+                  "type": "array"
+                }
+            },
+            input: {
+                "input_string_array": [
+                    "Hello",
+                    "World",
+                    "!"
+                ]
+            }
         }
+    ];
 
+    const testOutputs = [
+        {
+            definition: {
+                "id": "#main/output_file",
+                "label": "Label Description",
+                "type": "File"
+            },
+            output: {
+                "output_file": {
+                    "basename": "cat.png",
+                    "class": "File",
+                    "location": "cat.png"
+                }
+            }
+        },
+        {
+            definition: {
+                "id": "#main/output_file_with_secondary",
+                "doc": "Doc Description",
+                "type": "File"
+            },
+            output: {
+                "output_file_with_secondary": {
+                    "basename": "main.dat",
+                    "class": "File",
+                    "location": "main.dat",
+                    "secondaryFiles": [
+                        {
+                            "basename": "secondary.dat",
+                            "class": "File",
+                            "location": "secondary.dat"
+                        },
+                        {
+                            "basename": "secondary2.dat",
+                            "class": "File",
+                            "location": "secondary2.dat"
+                        }
+                    ]
+                }
+            }
+        },
+        {
+            definition: {
+                "id": "#main/output_dir",
+                "doc": ["Doc desc 1", "Doc desc 2"],
+                "type": "Directory"
+            },
+            output: {
+                "output_dir": {
+                    "basename": "outdir1",
+                    "class": "Directory",
+                    "location": "outdir1"
+                }
+            }
+        },
+        {
+            definition: {
+                "id": "#main/output_bool",
+                "type": "boolean"
+            },
+            output: {
+                "output_bool": true
+            }
+        },
+        {
+            definition: {
+                "id": "#main/output_int",
+                "type": "int"
+            },
+            output: {
+                "output_int": 1
+            }
+        },
+        {
+            definition: {
+                "id": "#main/output_long",
+                "type": "long"
+            },
+            output: {
+                "output_long": 1
+            }
+        },
+        {
+            definition: {
+                "id": "#main/output_float",
+                "type": "float"
+            },
+            output: {
+                "output_float": 100.5
+            }
+        },
+        {
+            definition: {
+                "id": "#main/output_double",
+                "type": "double"
+            },
+            output: {
+                "output_double": 100.3
+            }
+        },
+        {
+            definition: {
+                "id": "#main/output_string",
+                "type": "string"
+            },
+            output: {
+                "output_string": "Hello output"
+            }
+        },
+        {
+            definition: {
+                "id": "#main/output_file_array",
+                "type": {
+                    "items": "File",
+                    "type": "array"
+                }
+            },
+            output: {
+                "output_file_array": [
+                    {
+                        "basename": "output2.tar",
+                        "class": "File",
+                        "location": "output2.tar"
+                    },
+                    {
+                        "basename": "output3.tar",
+                        "class": "File",
+                        "location": "output3.tar"
+                    }
+                ]
+            }
+        },
+        {
+            definition: {
+                "id": "#main/output_dir_array",
+                "type": {
+                    "items": "Directory",
+                    "type": "array"
+                }
+            },
+            output: {
+                "output_dir_array": [
+                    {
+                        "basename": "outdir2",
+                        "class": "Directory",
+                        "location": "outdir2"
+                    },
+                    {
+                        "basename": "outdir3",
+                        "class": "Directory",
+                        "location": "outdir3"
+                    }
+                ]
+            }
+        },
+        {
+            definition: {
+                "id": "#main/output_int_array",
+                "type": {
+                    "items": "int",
+                    "type": "array"
+                }
+            },
+            output: {
+                "output_int_array": [
+                    10,
+                    11,
+                    12
+                ]
+            }
+        },
+        {
+            definition: {
+                "id": "#main/output_long_array",
+                "type": {
+                    "items": "long",
+                    "type": "array"
+                }
+            },
+            output: {
+                "output_long_array": [
+                    51,
+                    52
+                ]
+            }
+        },
+        {
+            definition: {
+                "id": "#main/output_float_array",
+                "type": {
+                    "items": "float",
+                    "type": "array"
+                }
+            },
+            output: {
+                "output_float_array": [
+                    100.2,
+                    100.4,
+                    100.6
+                ]
+            }
+        },
+        {
+            definition: {
+                "id": "#main/output_double_array",
+                "type": {
+                    "items": "double",
+                    "type": "array"
+                }
+            },
+            output: {
+                "output_double_array": [
+                    100.1,
+                    100.2,
+                    100.3
+                ]
+            }
+        },
+        {
+            definition: {
+                "id": "#main/output_string_array",
+                "type": {
+                    "items": "string",
+                    "type": "array"
+                }
+            },
+            output: {
+                "output_string_array": [
+                    "Hello",
+                    "Output",
+                    "!"
+                ]
+            }
+        }
+    ];
+
+    const verifyIOParameter = (name, doc, val) => {
+        cy.get('table tr').contains(name).parents('tr').within(() => {
+            doc && cy.contains(doc);
+            if (val) {
+                if (Array.isArray(val)) {
+                    val.forEach(v => cy.contains(v));
+                } else {
+                    cy.contains(val);
+                }
+            }
+        });
+    };
+
+    const verifyIOParameterImage = (name, url) => {
+        cy.get('table tr').contains(name).parents('tr').within(() => {
+            cy.get('[alt="Inline Preview"]')
+                .should('be.visible')
+                .and(($img) => {
+                    expect($img[0].naturalWidth).to.be.greaterThan(0);
+                    expect($img[0].src).contains(url);
+                })
+        });
+    };
+
+    it('displays IO parameters with keep links and previews', function() {
         // Create output collection for real files
         cy.createCollection(adminUser.token, {
             name: `Test collection ${Math.floor(Math.random() * 999999)}`,
@@ -845,54 +851,130 @@ describe('Process tests', function() {
                 .parents('[data-cy=process-io-card]').within(() => {
                     cy.wait(2000);
                     cy.waitForDom();
-                    verifyParameter('input_file', "Label Description", 'keep:00000000000000000000000000000000+01/input1.tar');
-                    verifyParameter('input_file', "Label Description", 'keep:00000000000000000000000000000000+01/input1-2.txt');
-                    verifyParameter('input_file', "Label Description", 'keep:00000000000000000000000000000000+01/input1-3.txt');
-                    verifyParameter('input_file', "Label Description", 'keep:00000000000000000000000000000000+01/input1-4.txt');
-                    verifyParameter('input_dir', "Doc Description", 'keep:11111111111111111111111111111111+01/');
-                    verifyParameter('input_bool', "Doc desc 1, Doc desc 2", 'true');
-                    verifyParameter('input_int', null, '1');
-                    verifyParameter('input_long', null, '1');
-                    verifyParameter('input_float', null, '1.5');
-                    verifyParameter('input_double', null, '1.3');
-                    verifyParameter('input_string', null, 'Hello World');
-                    verifyParameter('input_file_array', null, 'keep:00000000000000000000000000000000+02/input2.tar');
-                    verifyParameter('input_file_array', null, 'keep:00000000000000000000000000000000+03/input3.tar');
-                    verifyParameter('input_file_array', null, 'keep:00000000000000000000000000000000+03/input3-2.txt');
-                    verifyParameter('input_dir_array', null, 'keep:11111111111111111111111111111111+02/');
-                    verifyParameter('input_dir_array', null, 'keep:11111111111111111111111111111111+03/');
-                    verifyParameter('input_int_array', null, '1, 3, 5');
-                    verifyParameter('input_long_array', null, '10, 20');
-                    verifyParameter('input_float_array', null, '10.2, 10.4, 10.6');
-                    verifyParameter('input_double_array', null, '20.1, 20.2, 20.3');
-                    verifyParameter('input_string_array', null, 'Hello, World, !');
+                    verifyIOParameter('input_file', "Label Description", 'keep:00000000000000000000000000000000+01/input1.tar');
+                    verifyIOParameter('input_file', "Label Description", 'keep:00000000000000000000000000000000+01/input1-2.txt');
+                    verifyIOParameter('input_file', "Label Description", 'keep:00000000000000000000000000000000+01/input1-3.txt');
+                    verifyIOParameter('input_file', "Label Description", 'keep:00000000000000000000000000000000+01/input1-4.txt');
+                    verifyIOParameter('input_dir', "Doc Description", 'keep:11111111111111111111111111111111+01/');
+                    verifyIOParameter('input_bool', "Doc desc 1, Doc desc 2", 'true');
+                    verifyIOParameter('input_int', null, '1');
+                    verifyIOParameter('input_long', null, '1');
+                    verifyIOParameter('input_float', null, '1.5');
+                    verifyIOParameter('input_double', null, '1.3');
+                    verifyIOParameter('input_string', null, 'Hello World');
+                    verifyIOParameter('input_file_array', null, 'keep:00000000000000000000000000000000+02/input2.tar');
+                    verifyIOParameter('input_file_array', null, 'keep:00000000000000000000000000000000+03/input3.tar');
+                    verifyIOParameter('input_file_array', null, 'keep:00000000000000000000000000000000+03/input3-2.txt');
+                    verifyIOParameter('input_dir_array', null, 'keep:11111111111111111111111111111111+02/');
+                    verifyIOParameter('input_dir_array', null, 'keep:11111111111111111111111111111111+03/');
+                    verifyIOParameter('input_int_array', null, ["1", "3", "5"]);
+                    verifyIOParameter('input_long_array', null, ["10", "20"]);
+                    verifyIOParameter('input_float_array', null, ["10.2", "10.4", "10.6"]);
+                    verifyIOParameter('input_double_array', null, ["20.1", "20.2", "20.3"]);
+                    verifyIOParameter('input_string_array', null, ["Hello", "World", "!"]);
                 });
             cy.get('[data-cy=process-io-card] h6').contains('Outputs')
                 .parents('[data-cy=process-io-card]').within((ctx) => {
                     cy.get(ctx).scrollIntoView();
                     const outPdh = testOutputCollection.portable_data_hash;
 
-                    verifyParameter('output_file', "Label Description", `keep:${outPdh}/cat.png`);
-                    verifyImage('output_file', `/c=${outPdh}/cat.png`);
-                    verifyParameter('output_file_with_secondary', "Doc Description", `keep:${outPdh}/main.dat`);
-                    verifyParameter('output_file_with_secondary', "Doc Description", `keep:${outPdh}/secondary.dat`);
-                    verifyParameter('output_file_with_secondary', "Doc Description", `keep:${outPdh}/secondary2.dat`);
-                    verifyParameter('output_dir', "Doc desc 1, Doc desc 2", `keep:${outPdh}/outdir1`);
-                    verifyParameter('output_bool', null, 'true');
-                    verifyParameter('output_int', null, '1');
-                    verifyParameter('output_long', null, '1');
-                    verifyParameter('output_float', null, '100.5');
-                    verifyParameter('output_double', null, '100.3');
-                    verifyParameter('output_string', null, 'Hello output');
-                    verifyParameter('output_file_array', null, `keep:${outPdh}/output2.tar`);
-                    verifyParameter('output_file_array', null, `keep:${outPdh}/output3.tar`);
-                    verifyParameter('output_dir_array', null, `keep:${outPdh}/outdir2`);
-                    verifyParameter('output_dir_array', null, `keep:${outPdh}/outdir3`);
-                    verifyParameter('output_int_array', null, '10, 11, 12');
-                    verifyParameter('output_long_array', null, '51, 52');
-                    verifyParameter('output_float_array', null, '100.2, 100.4, 100.6');
-                    verifyParameter('output_double_array', null, '100.1, 100.2, 100.3');
-                    verifyParameter('output_string_array', null, 'Hello, Output, !');
+                    verifyIOParameter('output_file', "Label Description", `keep:${outPdh}/cat.png`);
+                    verifyIOParameterImage('output_file', `/c=${outPdh}/cat.png`);
+                    verifyIOParameter('output_file_with_secondary', "Doc Description", `keep:${outPdh}/main.dat`);
+                    verifyIOParameter('output_file_with_secondary', "Doc Description", `keep:${outPdh}/secondary.dat`);
+                    verifyIOParameter('output_file_with_secondary', "Doc Description", `keep:${outPdh}/secondary2.dat`);
+                    verifyIOParameter('output_dir', "Doc desc 1, Doc desc 2", `keep:${outPdh}/outdir1`);
+                    verifyIOParameter('output_bool', null, 'true');
+                    verifyIOParameter('output_int', null, '1');
+                    verifyIOParameter('output_long', null, '1');
+                    verifyIOParameter('output_float', null, '100.5');
+                    verifyIOParameter('output_double', null, '100.3');
+                    verifyIOParameter('output_string', null, 'Hello output');
+                    verifyIOParameter('output_file_array', null, `keep:${outPdh}/output2.tar`);
+                    verifyIOParameter('output_file_array', null, `keep:${outPdh}/output3.tar`);
+                    verifyIOParameter('output_dir_array', null, `keep:${outPdh}/outdir2`);
+                    verifyIOParameter('output_dir_array', null, `keep:${outPdh}/outdir3`);
+                    verifyIOParameter('output_int_array', null, ["10", "11", "12"]);
+                    verifyIOParameter('output_long_array', null, ["51", "52"]);
+                    verifyIOParameter('output_float_array', null, ["100.2", "100.4", "100.6"]);
+                    verifyIOParameter('output_double_array', null, ["100.1", "100.2", "100.3"]);
+                    verifyIOParameter('output_string_array', null, ["Hello", "Output", "!"]);
+                });
+        });
+    });
+
+    it('displays IO parameters with no value', function() {
+
+        const fakeOutputUUID = 'zzzzz-4zz18-abcdefghijklmno';
+        const fakeOutputPDH = '11111111111111111111111111111111+99/';
+
+        cy.loginAs(activeUser);
+
+        // Add output uuid and inputs to container request
+        cy.intercept({method: 'GET', url: '**/arvados/v1/container_requests/*'}, (req) => {
+            req.reply((res) => {
+                res.body.output_uuid = fakeOutputUUID;
+                res.body.mounts["/var/lib/cwl/cwl.input.json"] = {
+                    content: {}
+                };
+                res.body.mounts["/var/lib/cwl/workflow.json"] = {
+                    content: {
+                        $graph: [{
+                            id: "#main",
+                            inputs: testInputs.map((input) => (input.definition)),
+                            outputs: testOutputs.map((output) => (output.definition))
+                        }]
+                    }
+                };
+            });
+        });
+
+        // Stub fake output collection
+        cy.intercept({method: 'GET', url: `**/arvados/v1/collections/${fakeOutputUUID}*`}, {
+            statusCode: 200,
+            body: {
+                uuid: fakeOutputUUID,
+                portable_data_hash: fakeOutputPDH,
+            }
+        });
+
+        // Stub fake output json
+        cy.intercept({method: 'GET', url: `**/c%3D${fakeOutputUUID}/cwl.output.json`}, {
+            statusCode: 200,
+            body: {}
+        });
+
+        cy.readFile('cypress/fixtures/webdav-propfind-outputs.xml').then((data) => {
+            // Stub webdav response, points to output json
+            cy.intercept({method: 'PROPFIND', url: '*'}, {
+                statusCode: 200,
+                body: data.replace(/zzzzz-4zz18-zzzzzzzzzzzzzzz/g, fakeOutputUUID)
+            });
+        });
+
+        createContainerRequest(
+            activeUser,
+            'test_container_request',
+            'arvados/jobs',
+            ['echo', 'hello world'],
+            false, 'Committed')
+        .as('containerRequest');
+
+        cy.getAll('@containerRequest').then(function([containerRequest]) {
+            cy.goToPath(`/processes/${containerRequest.uuid}`);
+            cy.get('[data-cy=process-io-card] h6').contains('Inputs')
+                .parents('[data-cy=process-io-card]').within(() => {
+                    cy.wait(2000);
+                    cy.waitForDom();
+                    cy.get('tbody tr').each((item) => {
+                        cy.wrap(item).contains('No value');
+                    });
+                });
+            cy.get('[data-cy=process-io-card] h6').contains('Outputs')
+                .parents('[data-cy=process-io-card]').within(() => {
+                    cy.get('tbody tr').each((item) => {
+                        cy.wrap(item).contains('No value');
+                    });
                 });
         });
     });

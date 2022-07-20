@@ -12,7 +12,7 @@ import { SubprocessFilterDataProps } from 'components/subprocess-filter/subproce
 import { MPVContainer, MPVPanelContent, MPVPanelState } from 'components/multi-panel-view/multi-panel-view';
 import { ArvadosTheme } from 'common/custom-theme';
 import { ProcessDetailsCard } from './process-details-card';
-import { getInputDisplayValue, ProcessIOCard, ProcessIOParameter } from './process-io-card';
+import { getIOParamDisplayValue, ProcessIOCard, ProcessIOParameter } from './process-io-card';
 
 import { getProcessPanelLogs, ProcessLogsPanel } from 'store/process-logs-panel/process-logs-panel';
 import { ProcessLogsCard } from './process-log-card';
@@ -159,7 +159,7 @@ const formatInputData = (inputs: CommandInputParameter[], auth: AuthState): Proc
         return {
             id: getIOParamId(input),
             doc: input.label || doc || "",
-            value: getInputDisplayValue(auth, input)
+            value: getIOParamDisplayValue(auth, input)
         };
     });
 };
@@ -170,7 +170,7 @@ const formatOutputData = (definitions: CommandOutputParameter[], values: any, pd
         return {
             id: getIOParamId(output),
             doc: output.label || doc || "",
-            value: getInputDisplayValue(auth, Object.assign(output, { value: values[getIOParamId(output)] }), pdh)
+            value: getIOParamDisplayValue(auth, Object.assign(output, { value: values[getIOParamId(output)] || [] }), pdh)
         };
     });
 };

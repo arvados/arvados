@@ -54,7 +54,7 @@ import { AuthState } from 'store/auth/auth-reducer';
 import mime from 'mime';
 import { DefaultView } from 'components/default-view/default-view';
 
-type CssRules = 'card' | 'content' | 'title' | 'header' | 'avatar' | 'iconHeader' | 'tableWrapper' | 'tableRoot' | 'paramValue' | 'keepLink' | 'imagePreview' | 'valArray';
+type CssRules = 'card' | 'content' | 'title' | 'header' | 'avatar' | 'iconHeader' | 'tableWrapper' | 'tableRoot' | 'paramValue' | 'keepLink' | 'imagePreview' | 'valArray' | 'emptyValue';
 
 const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     card: {
@@ -104,6 +104,9 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
         display: 'flex',
         gap: '10px',
         flexWrap: 'wrap',
+    },
+    emptyValue: {
+        color: theme.customs.colors.grey500,
     },
 });
 
@@ -233,51 +236,94 @@ type FileWithSecondaryFiles = {
     secondaryFiles: File[];
 }
 
-export const getInputDisplayValue = (auth: AuthState, input: CommandInputParameter | CommandOutputParameter, pdh?: string): ProcessIOValue[] => {
+export const getIOParamDisplayValue = (auth: AuthState, input: CommandInputParameter | CommandOutputParameter, pdh?: string): ProcessIOValue[] => {
     switch (true) {
         case isPrimitiveOfType(input, CWLType.BOOLEAN):
-            return [{display: <pre>{String((input as BooleanCommandInputParameter).value)}</pre> }];
+            const boolValue = (input as BooleanCommandInputParameter).value;
+
+            return boolValue !== undefined &&
+                    !(Array.isArray(boolValue) && boolValue.length === 0) ?
+                [{display: <pre>{String(boolValue)}</pre> }] :
+                [{display: <EmptyValue />}];
 
         case isPrimitiveOfType(input, CWLType.INT):
         case isPrimitiveOfType(input, CWLType.LONG):
-            return [{display: <pre>{String((input as IntCommandInputParameter).value)}</pre> }];
+            const intValue = (input as IntCommandInputParameter).value;
+
+            return intValue !== undefined &&
+                    // Missing values are empty array
+                    !(Array.isArray(intValue) && intValue.length === 0) ?
+                [{display: <pre>{String(intValue)}</pre> }]
+                : [{display: <EmptyValue />}];
 
         case isPrimitiveOfType(input, CWLType.FLOAT):
         case isPrimitiveOfType(input, CWLType.DOUBLE):
-            return [{display: <pre>{String((input as FloatCommandInputParameter).value)}</pre> }];
+            const floatValue = (input as FloatCommandInputParameter).value;
+
+            return floatValue !== undefined &&
+                    !(Array.isArray(floatValue) && floatValue.length === 0) ?
+                [{display: <pre>{String(floatValue)}</pre> }]:
+                [{display: <EmptyValue />}];
 
         case isPrimitiveOfType(input, CWLType.STRING):
-            return [{display: <pre>{(input as StringCommandInputParameter).value || ""}</pre> }];
+            const stringValue = (input as StringCommandInputParameter).value || undefined;
+
+            return stringValue !== undefined &&
+                    !(Array.isArray(stringValue) && stringValue.length === 0) ?
+                [{display: <pre>{stringValue}</pre> }] :
+                [{display: <EmptyValue />}];
 
         case isPrimitiveOfType(input, CWLType.FILE):
             const mainFile = (input as FileCommandInputParameter).value;
             // secondaryFiles: File[] is not part of CommandOutputParameter so we cast to access secondaryFiles
             const secondaryFiles = ((mainFile as unknown) as FileWithSecondaryFiles)?.secondaryFiles || [];
             const files = [
-                ...(mainFile ? [mainFile] : []),
+                ...(mainFile && !(Array.isArray(mainFile) && mainFile.length === 0) ? [mainFile] : []),
                 ...secondaryFiles
             ];
-            return files.map(file => fileToProcessIOValue(file, auth, pdh));
+
+            return files.length ?
+                files.map(file => fileToProcessIOValue(file, auth, pdh)) :
+                [{display: <EmptyValue />}];
 
         case isPrimitiveOfType(input, CWLType.DIRECTORY):
             const directory = (input as DirectoryCommandInputParameter).value;
-            return directory ? [directoryToProcessIOValue(directory, auth, pdh)] : [];
+
+            return directory !== undefined &&
+                    !(Array.isArray(directory) && directory.length === 0) ?
+                [directoryToProcessIOValue(directory, auth, pdh)] :
+                [{display: <EmptyValue />}];
 
         case typeof input.type === 'object' &&
             !(input.type instanceof Array) &&
             input.type.type === 'enum':
-            return [{ display: <pre>{(input as EnumCommandInputParameter).value || ''}</pre> }];
+            const enumValue = (input as EnumCommandInputParameter).value;
+
+            return enumValue !== undefined ?
+                [{ display: <pre>{(input as EnumCommandInputParameter).value || ''}</pre> }] :
+                [{display: <EmptyValue />}];
 
         case isArrayOfType(input, CWLType.STRING):
-            return [{ display: <>{((input as StringArrayCommandInputParameter).value || []).map((val) => <Chip label={val} />)}</> }];
+            const strArray = (input as StringArrayCommandInputParameter).value || [];
+            return strArray.length ?
+                [{ display: <>{((input as StringArrayCommandInputParameter).value || []).map((val) => <Chip label={val} />)}</> }] :
+                [{display: <EmptyValue />}];
 
         case isArrayOfType(input, CWLType.INT):
         case isArrayOfType(input, CWLType.LONG):
-            return [{ display: <>{((input as IntArrayCommandInputParameter).value || []).map((val) => <Chip label={val} />)}</> }];
+            const intArray = (input as IntArrayCommandInputParameter).value || [];
+
+            return intArray.length ?
+                [{ display: <>{((input as IntArrayCommandInputParameter).value || []).map((val) => <Chip label={val} />)}</> }] :
+                [{display: <EmptyValue />}];
 
         case isArrayOfType(input, CWLType.FLOAT):
         case isArrayOfType(input, CWLType.DOUBLE):
-            return [{ display: <>{((input as FloatArrayCommandInputParameter).value || []).map((val) => <Chip label={val} />)}</> }];
+            const floatArray = (input as FloatArrayCommandInputParameter).value || [];
+
+            return floatArray.length ?
+                [{ display: <>{floatArray.map((val) => <Chip label={val} />)}</> }] :
+                [{display: <EmptyValue />}];
 
         case isArrayOfType(input, CWLType.FILE):
             const fileArrayMainFile = ((input as FileArrayCommandInputParameter).value || []);
@@ -290,12 +336,16 @@ export const getInputDisplayValue = (auth: AuthState, input: CommandInputParamet
                 ...fileArraySecondaryFiles
             ];
 
-            return fileArrayFiles
-                .map(file => fileToProcessIOValue(file, auth, pdh));
+            return fileArrayFiles.length ?
+                fileArrayFiles.map(file => fileToProcessIOValue(file, auth, pdh)) :
+                [{display: <EmptyValue />}];
 
         case isArrayOfType(input, CWLType.DIRECTORY):
             const directories = (input as DirectoryArrayCommandInputParameter).value || [];
-            return directories.map(directory => directoryToProcessIOValue(directory, auth, pdh));
+
+            return directories.length ?
+                directories.map(directory => directoryToProcessIOValue(directory, auth, pdh)) :
+                [{display: <EmptyValue />}];
 
         default:
             return [];
@@ -345,3 +395,7 @@ const fileToProcessIOValue = (file: File, auth: AuthState, pdh?: string): Proces
     nav: getNavUrl(auth, file, pdh),
     imageUrl: isFileImage(file.basename) ? getImageUrl(auth, file, pdh) : undefined,
 });
+
+const EmptyValue = withStyles(styles)(
+    ({classes}: WithStyles<CssRules>) => <span className={classes.emptyValue}>No value</span>
+);
