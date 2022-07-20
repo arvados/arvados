@@ -12,7 +12,7 @@ nginx:
       ### STREAMS
       http:
         upstream webshell_upstream:
-          - server: 'localhost:4200 fail_timeout=10s'
+          - server: 'shell.__CLUSTER__.__DOMAIN__:4200 fail_timeout=10s'
 
   ### SITES
   servers:
