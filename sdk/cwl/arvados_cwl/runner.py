@@ -260,7 +260,8 @@ def discover_secondary_files(fsaccess, builder, inputs, job_order, discovered=No
 
 def upload_dependencies(arvrunner, name, document_loader,
                         workflowobj, uri, loadref_run, runtimeContext,
-                        include_primary=True, discovered_secondaryfiles=None):
+                        include_primary=True, discovered_secondaryfiles=None,
+                        cache=None):
     """Upload the dependencies of the workflowobj document to Keep.
 
     Returns a pathmapper object mapping local paths to keep references.  Also
@@ -279,6 +280,8 @@ def upload_dependencies(arvrunner, name, document_loader,
         defrg, _ = urllib.parse.urldefrag(joined)
         if defrg not in loaded:
             loaded.add(defrg)
+            if cache is not None and defrg in cache:
+                return cache[defrg]
             # Use fetch_text to get raw file (before preprocessing).
             text = document_loader.fetch_text(defrg)
             if isinstance(text, bytes):
@@ -286,7 +289,10 @@ def upload_dependencies(arvrunner, name, document_loader,
             else:
                 textIO = StringIO(text)
             yamlloader = YAML(typ='safe', pure=True)
-            return yamlloader.load(textIO)
+            result = yamlloader.load(textIO)
+            if cache is not None:
+                cache[defrg] = result
+            return result
         else:
             return {}
 
@@ -652,7 +658,7 @@ def upload_workflow_deps(arvrunner, tool, runtimeContext):
     document_loader = tool.doc_loader
 
     merged_map = {}
-
+    tool_dep_cache = {}
     def upload_tool_deps(deptool):
         if "id" in deptool:
             discovered_secondaryfiles = {}
@@ -664,7 +670,8 @@ def upload_workflow_deps(arvrunner, tool, runtimeContext):
                                      False,
                                      runtimeContext,
                                      include_primary=False,
-                                     discovered_secondaryfiles=discovered_secondaryfiles)
+                                     discovered_secondaryfiles=discovered_secondaryfiles,
+                                     cache=tool_dep_cache)
             document_loader.idx[deptool["id"]] = deptool
             toolmap = {}
             for k,v in pm.items():
