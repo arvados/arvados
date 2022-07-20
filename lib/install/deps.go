@@ -860,7 +860,7 @@ func prodpkgs(osv osversion) []string {
 		"libcurl3-gnutls",
 		"libxslt1.1",
 		"nginx",
-		"python",
+		"python3",
 		"sudo",
 	}
 	if osv.Debian || osv.Ubuntu {
