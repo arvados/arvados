@@ -58,10 +58,10 @@ h2. Initialize the cluster
 
 When the "init" command is finished, navigate to the link shown in the terminal (e.g., @https://x9999.example.com/@) and log in with the account you created above.
 
-Activate your new Arvados user account.
+Activate your new Arvados user account. Copy the UUID (looks like @x9999-tpzed-xxxxxxxxxxxxxxx@) from your browser's location bar and run:
 
 <pre>
-# arv sudo user setup exampleUserName
+# arv sudo user setup --uuid x9999-tpzed-xxxxxxxxxxxxxxx
 </pre>
 
 Run the diagnostics tool to ensure everything is working.
@@ -74,9 +74,9 @@ h2. Customize the cluster
 
 Things you should plan to update before using your cluster in production:
 * "Set up Google login":{{site.baseurl}}/install/setup-login.html or another authentication option.
-* Set up a wildcard TLS certificate and DNS name, or enable @TrustAllContent@ mode.
-* Update storage configuration to use a cloud storage bucket instead of the local filesystem.
-* Update CloudVMs configuration to use a cloud provider to bring up VMs on demand instead of running containers on the server host.
+* "Set up a wildcard TLS certificate and DNS name,":{{site.baseurl}}/install/install-manual-prerequisites.html#dnstls or enable @TrustAllContent@ mode.
+* Update storage configuration to use a cloud storage bucket ("S3":{{site.baseurl}}/install/configure-s3-object-storage.html or "Azure":{{site.baseurl}}/install/configure-azure-blob-storage.html) instead of the local filesystem.
+* Update "CloudVMs configuration":{{site.baseurl}}/install/crunch2-cloud/install-dispatch-cloud.html to use a cloud provider to bring up VMs on demand instead of running containers on the server host.
 
 h2. Updating configuration
 
