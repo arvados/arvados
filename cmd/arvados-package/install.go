@@ -92,7 +92,7 @@ rm /etc/apt/sources.list.d/arvados-local.list
 	if opts.Live != "" {
 		cmd.Args = append(cmd.Args,
 			"--env=domain="+opts.Live,
-			"--env=initargs=-tls=acme",
+			"--env=initargs=-tls=/var/lib/acme/live/"+opts.Live,
 			"--env=bootargs=",
 			"--publish=:443:443",
 			"--publish=:4440-4460:4440-4460",

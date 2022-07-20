@@ -900,8 +900,8 @@ Clusters:
       Repositories: /var/lib/arvados/git/repositories
 
     TLS:
-      # Use "file:///var/lib/acme/live/example.com/cert" and ".../key"
-      # to load externally managed certificates.
+      # Use "file:///var/lib/acme/live/example.com/cert" and
+      # ".../privkey" to load externally managed certificates.
       Certificate: ""
       Key: ""
 
@@ -909,17 +909,21 @@ Clusters:
       # use this in production.
       Insecure: false
 
-      # Agree to Let's Encrypt terms of service and obtain
-      # certificates automatically for ExternalURL domains.
-      #
-      # Note: this feature is not yet implemented in released
-      # versions, only in the alpha/prerelease arvados-server-easy
-      # package.
-      Automatic: false
-
-      # Use Let's Encrypt staging environment instead of production
-      # environment.
-      Staging: false
+      ACME:
+        # Obtain certificates automatically for ExternalURL domains
+        # using an ACME server and http-01 validation.
+        #
+        # To use Let's Encrypt, specify "LE".  To use the Let's
+        # Encrypt staging environment, specify "LE-staging".  To use a
+        # different ACME server, specify the full directory URL
+        # ("https://...").
+        #
+        # Note: this feature is not yet implemented in released
+        # versions, only in the alpha/prerelease arvados-server-easy
+        # package.
+        #
+        # Implies agreement with the server's terms of service.
+        Server: ""
 
     Containers:
       # List of supported Docker Registry image formats that compute nodes

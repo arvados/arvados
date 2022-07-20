@@ -53,7 +53,7 @@ h2. Initialize the cluster
 # echo > /etc/apt/sources.list.d/arvados.list "deb http://apt.arvados.org/$(lsb_release -sc) $(lsb_release -sc) main"
 # apt update
 # apt install arvados-server-easy
-# arvados-server init -cluster-id x9999 -domain x9999.example.com -tls auto -login pam
+# arvados-server init -cluster-id x9999 -domain x9999.example.com -tls acme -login pam
 </pre>
 
 When the "init" command is finished, navigate to the link shown in the terminal (e.g., @https://x9999.example.com/@) and log in with the account you created above.
