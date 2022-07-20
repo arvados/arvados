@@ -190,6 +190,7 @@ func (inst *installCommand) RunCommand(prog string, args []string, stdin io.Read
 			"uuid-dev",
 			"wget",
 			"xvfb",
+			"zlib1g-dev", // services/api
 		)
 		if test {
 			if osv.Debian && osv.Major <= 10 {
@@ -204,11 +205,13 @@ func (inst *installCommand) RunCommand(prog string, args []string, stdin io.Read
 		}
 		switch {
 		case osv.Debian && osv.Major >= 11:
-			pkgs = append(pkgs, "libcurl4", "perl-modules-5.32")
+			pkgs = append(pkgs, "g++", "libcurl4", "libcurl4-openssl-dev", "perl-modules-5.32")
 		case osv.Debian && osv.Major >= 10:
-			pkgs = append(pkgs, "libcurl4", "perl-modules")
-		default:
-			pkgs = append(pkgs, "libcurl3", "perl-modules")
+			pkgs = append(pkgs, "g++", "libcurl4", "libcurl4-openssl-dev", "perl-modules")
+		case osv.Debian || osv.Ubuntu:
+			pkgs = append(pkgs, "g++", "libcurl3", "libcurl3-openssl-dev", "perl-modules")
+		case osv.Centos:
+			pkgs = append(pkgs, "gcc", "gcc-c++", "libcurl-devel", "postgresql-devel")
 		}
 		cmd := exec.CommandContext(ctx, "apt-get")
 		if inst.EatMyData {
@@ -867,21 +870,12 @@ func prodpkgs(osv osversion) []string {
 			pkgs = append(pkgs, "python3-distutils") // sdk/cwl
 		}
 		return append(pkgs,
-			"g++",
-			"libcurl4-openssl-dev", // services/api
-			"libpq-dev",
-			"libpython2.7", // services/fuse
 			"mime-support", // keep-web
-			"zlib1g-dev",   // services/api
 		)
 	} else if osv.Centos {
 		return append(pkgs,
 			"fuse-libs", // services/fuse
-			"gcc",
-			"gcc-c++",
-			"libcurl-devel",    // services/api
-			"mailcap",          // keep-web
-			"postgresql-devel", // services/api
+			"mailcap",   // keep-web
 		)
 	} else {
 		panic("os version not supported")
