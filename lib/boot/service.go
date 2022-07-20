@@ -35,6 +35,7 @@ func (runner runServiceCommand) Run(ctx context.Context, fail func(error), super
 	if err != nil {
 		return err
 	}
+	super.wait(ctx, createCertificates{})
 	super.wait(ctx, runner.depends...)
 	for u := range runner.svc.InternalURLs {
 		u := u
@@ -46,7 +47,15 @@ func (runner runServiceCommand) Run(ctx context.Context, fail func(error), super
 		super.waitShutdown.Add(1)
 		go func() {
 			defer super.waitShutdown.Done()
-			fail(super.RunProgram(ctx, super.tempdir, runOptions{env: []string{"ARVADOS_SERVICE_INTERNAL_URL=" + u.String()}}, binfile, runner.name, "-config", super.configfile))
+			fail(super.RunProgram(ctx, super.tempdir, runOptions{
+				env: []string{
+					"ARVADOS_SERVICE_INTERNAL_URL=" + u.String(),
+					// Child process should not
+					// try to tell systemd that we
+					// are ready.
+					"NOTIFY_SOCKET=",
+				},
+			}, binfile, runner.name, "-config", super.configfile))
 		}()
 	}
 	return nil
@@ -82,6 +91,7 @@ func (runner runGoProgram) Run(ctx context.Context, fail func(error), super *Sup
 		return err
 	}
 
+	super.wait(ctx, createCertificates{})
 	super.wait(ctx, runner.depends...)
 	for u := range runner.svc.InternalURLs {
 		u := u

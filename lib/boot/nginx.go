@@ -14,6 +14,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"regexp"
+	"strings"
 
 	"git.arvados.org/arvados.git/sdk/go/arvados"
 )
@@ -31,8 +32,20 @@ func (runNginx) Run(ctx context.Context, fail func(error), super *Supervisor) er
 	if err != nil {
 		return err
 	}
+	extListenHost := "0.0.0.0"
+	if super.ClusterType == "test" {
+		// Our dynamic port number assignment strategy (choose
+		// an available port, write it in a config file, and
+		// have another process/goroutine bind to it) is prone
+		// to races when used by concurrent supervisors. In
+		// test mode we don't accept remote connections, so we
+		// can avoid collisions by using the per-cluster
+		// loopback address instead of 0.0.0.0.
+		extListenHost = super.ListenHost
+	}
 	vars := map[string]string{
-		"LISTENHOST":       super.ListenHost,
+		"LISTENHOST":       extListenHost,
+		"UPSTREAMHOST":     super.ListenHost,
 		"SSLCERT":          filepath.Join(super.tempdir, "server.crt"),
 		"SSLKEY":           filepath.Join(super.tempdir, "server.key"),
 		"ACCESSLOG":        filepath.Join(super.tempdir, "nginx_access.log"),
@@ -42,7 +55,10 @@ func (runNginx) Run(ctx context.Context, fail func(error), super *Supervisor) er
 	}
 	u := url.URL(super.cluster.Services.Controller.ExternalURL)
 	ctrlHost := u.Hostname()
-	if f, err := os.Open("/var/lib/acme/live/" + ctrlHost + "/privkey"); err == nil {
+	if strings.HasPrefix(super.cluster.TLS.Certificate, "file:/") && strings.HasPrefix(super.cluster.TLS.Key, "file:/") {
+		vars["SSLCERT"] = filepath.Clean(super.cluster.TLS.Certificate[5:])
+		vars["SSLKEY"] = filepath.Clean(super.cluster.TLS.Key[5:])
+	} else if f, err := os.Open("/var/lib/acme/live/" + ctrlHost + "/privkey"); err == nil {
 		f.Close()
 		vars["SSLCERT"] = "/var/lib/acme/live/" + ctrlHost + "/cert"
 		vars["SSLKEY"] = "/var/lib/acme/live/" + ctrlHost + "/privkey"

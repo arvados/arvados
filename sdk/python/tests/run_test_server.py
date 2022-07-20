@@ -635,6 +635,7 @@ def run_nginx():
         return
     stop_nginx()
     nginxconf = {}
+    nginxconf['UPSTREAMHOST'] = 'localhost'
     nginxconf['LISTENHOST'] = 'localhost'
     nginxconf['CONTROLLERPORT'] = internal_port_from_config("Controller")
     nginxconf['ARVADOS_API_HOST'] = "0.0.0.0:" + str(external_port_from_config("Controller"))

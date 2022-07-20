@@ -40,7 +40,7 @@ const (
 	gradleversion           = "5.3.1"
 	nodejsversion           = "v12.22.11"
 	devtestDatabasePassword = "insecure_arvados_test"
-	workbench2version       = "5e020488f67b5bc919796e0dc8b0b9f3b3ff23b0"
+	workbench2version       = "2454ac35292a79594c32a80430740317ed5005cf"
 )
 
 //go:embed arvados.service
@@ -563,7 +563,6 @@ yarn install
 		for _, srcdir := range []string{
 			"cmd/arvados-client",
 			"cmd/arvados-server",
-			"services/crunch-dispatch-local",
 			"services/crunch-dispatch-slurm",
 		} {
 			fmt.Fprintf(stderr, "building %s...\n", srcdir)
@@ -574,19 +573,6 @@ yarn install
 			cmd.Stdout = stdout
 			cmd.Stderr = stderr
 			err = cmd.Run()
-			if err != nil {
-				return 1
-			}
-		}
-
-		// Symlink user-facing Go programs /usr/bin/x ->
-		// /var/lib/arvados/bin/x
-		for _, prog := range []string{"arvados-client", "arvados-server"} {
-			err = os.Remove("/usr/bin/" + prog)
-			if err != nil && !errors.Is(err, os.ErrNotExist) {
-				return 1
-			}
-			err = os.Symlink("/var/lib/arvados/bin/"+prog, "/usr/bin/"+prog)
 			if err != nil {
 				return 1
 			}
@@ -633,8 +619,8 @@ yarn install
 
 				{"chown", "www-data:www-data", ".", "public/assets"},
 				// {"sudo", "-u", "www-data", "/var/lib/arvados/bin/bundle", "config", "set", "--local", "system", "true"},
-				{"sudo", "-u", "www-data", "ARVADOS_CONFIG=none", "RAILS_GROUPS=assets", "RAILS_ENV=production", "/var/lib/arvados/bin/bundle", "exec", "rake", "npm:install"},
-				{"sudo", "-u", "www-data", "ARVADOS_CONFIG=none", "RAILS_GROUPS=assets", "RAILS_ENV=production", "/var/lib/arvados/bin/bundle", "exec", "rake", "assets:precompile"},
+				{"sudo", "-u", "www-data", "ARVADOS_CONFIG=none", "RAILS_GROUPS=assets", "RAILS_ENV=production", "PATH=/var/lib/arvados/bin:" + os.Getenv("PATH"), "/var/lib/arvados/bin/bundle", "exec", "rake", "npm:install"},
+				{"sudo", "-u", "www-data", "ARVADOS_CONFIG=none", "RAILS_GROUPS=assets", "RAILS_ENV=production", "PATH=/var/lib/arvados/bin:" + os.Getenv("PATH"), "/var/lib/arvados/bin/bundle", "exec", "rake", "assets:precompile"},
 				{"chown", "root:root", "."},
 				{"chown", "-R", "root:root", "public/assets", "vendor"},
 
@@ -677,6 +663,14 @@ rsync -a --delete-after build/ /var/lib/arvados/workbench2/
 			return 1
 		}
 
+		// Install arvados-cli gem (binaries go in
+		// /var/lib/arvados/bin)
+		if err = inst.runBash(`
+/var/lib/arvados/bin/gem install --conservative --no-document arvados-cli
+`, stdout, stderr); err != nil {
+			return 1
+		}
+
 		err = os.WriteFile("/lib/systemd/system/arvados.service", arvadosServiceFile, 0777)
 		if err != nil {
 			return 1
@@ -692,6 +686,19 @@ rsync -a --delete-after build/ /var/lib/arvados/workbench2/
 		err = os.Symlink("/lib/systemd/system/arvados.service", symlink)
 		if err != nil {
 			return 1
+		}
+
+		// Symlink user-facing programs /usr/bin/x ->
+		// /var/lib/arvados/bin/x
+		for _, prog := range []string{"arvados-client", "arvados-server", "arv", "arv-tag"} {
+			err = os.Remove("/usr/bin/" + prog)
+			if err != nil && !errors.Is(err, os.ErrNotExist) {
+				return 1
+			}
+			err = os.Symlink("/var/lib/arvados/bin/"+prog, "/usr/bin/"+prog)
+			if err != nil {
+				return 1
+			}
 		}
 	}
 

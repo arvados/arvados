@@ -113,28 +113,24 @@ func (super *Supervisor) Start(ctx context.Context) {
 	super.done = make(chan struct{})
 
 	sigch := make(chan os.Signal)
-	signal.Notify(sigch, syscall.SIGINT, syscall.SIGTERM)
-	defer signal.Stop(sigch)
+	signal.Notify(sigch, syscall.SIGINT, syscall.SIGTERM, syscall.SIGHUP)
 	go func() {
-		for sig := range sigch {
-			super.logger.WithField("signal", sig).Info("caught signal")
-			if super.err == nil {
-				super.err = fmt.Errorf("caught signal %s", sig)
+		defer signal.Stop(sigch)
+		for {
+			select {
+			case <-ctx.Done():
+				return
+			case sig := <-sigch:
+				super.logger.WithField("signal", sig).Info("caught signal")
+				if super.err == nil {
+					if sig == syscall.SIGHUP {
+						super.err = errNeedConfigReload
+					} else {
+						super.err = fmt.Errorf("caught signal %s", sig)
+					}
+				}
+				super.cancel()
 			}
-			super.cancel()
-		}
-	}()
-
-	hupch := make(chan os.Signal)
-	signal.Notify(hupch, syscall.SIGHUP)
-	defer signal.Stop(hupch)
-	go func() {
-		for sig := range hupch {
-			super.logger.WithField("signal", sig).Info("caught signal")
-			if super.err == nil {
-				super.err = errNeedConfigReload
-			}
-			super.cancel()
 		}
 	}()
 
@@ -251,13 +247,9 @@ func (super *Supervisor) runCluster() error {
 	}
 
 	if super.ListenHost == "" {
-		if urlhost := super.cluster.Services.Controller.ExternalURL.Host; urlhost != "" {
-			if h, _, _ := net.SplitHostPort(urlhost); h != "" {
-				super.ListenHost = h
-			} else {
-				super.ListenHost = urlhost
-			}
-		} else {
+		u := url.URL(super.cluster.Services.Controller.ExternalURL)
+		super.ListenHost = u.Hostname()
+		if super.ListenHost == "" {
 			super.ListenHost = "0.0.0.0"
 		}
 	}
@@ -471,6 +463,7 @@ func (super *Supervisor) WaitReady() bool {
 			super.logger.Infof("waiting for %s to be ready", id)
 			if !super2.WaitReady() {
 				super.logger.Infof("%s startup failed", id)
+				super.Stop()
 				return false
 			}
 			super.logger.Infof("%s is ready", id)
@@ -484,6 +477,7 @@ func (super *Supervisor) WaitReady() bool {
 		select {
 		case <-ticker.C:
 		case <-super.ctx.Done():
+			super.Stop()
 			return false
 		}
 		if super.healthChecker == nil {

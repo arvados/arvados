@@ -18,6 +18,7 @@ import (
 	"os/user"
 	"regexp"
 	"strconv"
+	"strings"
 	"text/template"
 
 	"git.arvados.org/arvados.git/lib/cmd"
@@ -34,7 +35,16 @@ type initCommand struct {
 	Domain             string
 	PostgreSQLPassword string
 	Login              string
-	Insecure           bool
+	TLS                string
+	AdminEmail         string
+	Start              bool
+
+	LoginPAM                bool
+	LoginTest               bool
+	LoginGoogle             bool
+	LoginGoogleClientID     string
+	LoginGoogleClientSecret string
+	TLSDir                  string
 }
 
 func (initcmd *initCommand) RunCommand(prog string, args []string, stdin io.Reader, stdout, stderr io.Writer) int {
@@ -61,14 +71,51 @@ func (initcmd *initCommand) RunCommand(prog string, args []string, stdin io.Read
 	versionFlag := flags.Bool("version", false, "Write version information to stdout and exit 0")
 	flags.StringVar(&initcmd.ClusterID, "cluster-id", "", "cluster `id`, like x1234 for a dev cluster")
 	flags.StringVar(&initcmd.Domain, "domain", hostname, "cluster public DNS `name`, like x1234.arvadosapi.com")
-	flags.StringVar(&initcmd.Login, "login", "", "login `backend`: test, pam, or ''")
-	flags.BoolVar(&initcmd.Insecure, "insecure", false, "accept invalid TLS certificates and configure TrustAllContent (do not use in production!)")
+	flags.StringVar(&initcmd.Login, "login", "", "login `backend`: test, pam, 'google {client-id} {client-secret}', or ''")
+	flags.StringVar(&initcmd.AdminEmail, "admin-email", "", "give admin privileges to user with given `email`")
+	flags.StringVar(&initcmd.TLS, "tls", "none", "tls certificate `source`: acme, insecure, none, or /path/to/dir containing privkey and cert files")
+	flags.BoolVar(&initcmd.Start, "start", true, "start systemd service after creating config")
 	if ok, code := cmd.ParseFlags(flags, prog, args, "", stderr); !ok {
 		return code
 	} else if *versionFlag {
 		return cmd.Version.RunCommand(prog, args, stdin, stdout, stderr)
 	} else if !regexp.MustCompile(`^[a-z][a-z0-9]{4}`).MatchString(initcmd.ClusterID) {
 		err = fmt.Errorf("cluster ID %q is invalid; must be an ASCII letter followed by 4 alphanumerics (try -help)", initcmd.ClusterID)
+		return 1
+	}
+
+	if fields := strings.Fields(initcmd.Login); len(fields) == 3 && fields[0] == "google" {
+		initcmd.LoginGoogle = true
+		initcmd.LoginGoogleClientID = fields[1]
+		initcmd.LoginGoogleClientSecret = fields[2]
+	} else if initcmd.Login == "test" {
+		initcmd.LoginTest = true
+		if initcmd.AdminEmail == "" {
+			initcmd.AdminEmail = "admin@example.com"
+		}
+	} else if initcmd.Login == "pam" {
+		initcmd.LoginPAM = true
+	} else if initcmd.Login == "" {
+		// none; login will show an error page
+	} else {
+		err = fmt.Errorf("invalid argument to -login: %q: should be 'test', 'pam', 'google {client-id} {client-secret}', or empty", initcmd.Login)
+		return 1
+	}
+
+	switch initcmd.TLS {
+	case "none", "acme", "insecure":
+	default:
+		if !strings.HasPrefix(initcmd.TLS, "/") {
+			err = fmt.Errorf("invalid argument to -tls: %q; see %s -help", initcmd.TLS, prog)
+			return 1
+		}
+		initcmd.TLSDir = initcmd.TLS
+	}
+
+	confdir := "/etc/arvados"
+	conffile := confdir + "/config.yml"
+	if _, err = os.Stat(conffile); err == nil {
+		err = fmt.Errorf("config file %s already exists; delete it first if you really want to start over", conffile)
 		return 1
 	}
 
@@ -90,15 +137,19 @@ func (initcmd *initCommand) RunCommand(prog string, args []string, stdin io.Read
 	}
 	fmt.Fprintln(stderr, "created /var/lib/arvados/keep")
 
-	err = os.Mkdir("/etc/arvados", 0750)
+	err = os.Mkdir(confdir, 0750)
 	if err != nil && !os.IsExist(err) {
-		err = fmt.Errorf("mkdir /etc/arvados: %w", err)
+		err = fmt.Errorf("mkdir %s: %w", confdir, err)
 		return 1
 	}
-	err = os.Chown("/etc/arvados", 0, wwwgid)
-	f, err := os.OpenFile("/etc/arvados/config.yml", os.O_CREATE|os.O_EXCL|os.O_WRONLY, 0644)
+	err = os.Chown(confdir, 0, wwwgid)
 	if err != nil {
-		err = fmt.Errorf("open /etc/arvados/config.yml: %w", err)
+		err = fmt.Errorf("chown 0:%d %s: %w", wwwgid, confdir, err)
+		return 1
+	}
+	f, err := os.OpenFile(conffile, os.O_CREATE|os.O_EXCL|os.O_WRONLY, 0644)
+	if err != nil {
+		err = fmt.Errorf("open %s: %w", conffile, err)
 		return 1
 	}
 	tmpl, err := template.New("config").Parse(`Clusters:
@@ -113,8 +164,8 @@ func (initcmd *initCommand) RunCommand(prog string, args []string, stdin io.Read
           "http://0.0.0.0:9001/": {}
       Websocket:
         InternalURLs:
-          "http://0.0.0.0:9004/": {}
-        ExternalURL: {{printf "%q" ( print "wss://" .Domain ":4444/websocket" ) }}
+          "http://0.0.0.0:8005/": {}
+        ExternalURL: {{printf "%q" ( print "wss://" .Domain ":4446/" ) }}
       Keepbalance:
         InternalURLs:
           "http://0.0.0.0:9019/": {}
@@ -155,7 +206,7 @@ func (initcmd *initCommand) RunCommand(prog string, args []string, stdin io.Read
           "http://0.0.0.0:9011/": {}
     Collections:
       BlobSigningKey: {{printf "%q" ( .RandomHex 50 )}}
-      {{if .Insecure}}
+      {{if eq .TLS "insecure"}}
       TrustAllContent: true
       {{end}}
     Containers:
@@ -166,15 +217,23 @@ func (initcmd *initCommand) RunCommand(prog string, args []string, stdin io.Read
     ManagementToken: {{printf "%q" ( .RandomHex 50 )}}
     PostgreSQL:
       Connection:
-        dbname: arvados_production
+        dbname: arvados
         host: localhost
         user: arvados
         password: {{printf "%q" .PostgreSQLPassword}}
     SystemRootToken: {{printf "%q" ( .RandomHex 50 )}}
-    {{if .Insecure}}
     TLS:
+      {{if eq .TLS "insecure"}}
       Insecure: true
-    {{end}}
+      {{else if eq .TLS "acme"}}
+      ACME:
+        Server: LE
+      {{else if ne .TLSDir ""}}
+      Certificate: {{printf "%q" (print .TLSDir "/cert")}}
+      Key: {{printf "%q" (print .TLSDir "/privkey")}}
+      {{else}}
+      {}
+      {{end}}
     Volumes:
       {{.ClusterID}}-nyw5e-000000000000000:
         Driver: Directory
@@ -183,47 +242,48 @@ func (initcmd *initCommand) RunCommand(prog string, args []string, stdin io.Read
         Replication: 2
     Workbench:
       SecretKeyBase: {{printf "%q" ( .RandomHex 50 )}}
+    {{if .LoginPAM}}
     Login:
-      {{if eq .Login "pam"}}
       PAM:
         Enable: true
-      {{else if eq .Login "test"}}
+    {{else if .LoginTest}}
+    Login:
       Test:
         Enable: true
         Users:
           admin:
-            Email: admin@example.com
+            Email: {{printf "%q" .AdminEmail}}
             Password: admin
-      {{else}}
-      {}
-      {{end}}
+    {{else if .LoginGoogle}}
+    Login:
+      Google:
+        Enable: true
+        ClientID: {{printf "%q" .LoginGoogleClientID}}
+        ClientSecret: {{printf "%q" .LoginGoogleClientSecret}}
+    {{end}}
     Users:
-      {{if eq .Login "test"}}
-      AutoAdminUserWithEmail: admin@example.com
-      {{else}}
-      {}
-      {{end}}
+      AutoAdminUserWithEmail: {{printf "%q" .AdminEmail}}
 `)
 	if err != nil {
 		return 1
 	}
 	err = tmpl.Execute(f, initcmd)
 	if err != nil {
-		err = fmt.Errorf("/etc/arvados/config.yml: tmpl.Execute: %w", err)
+		err = fmt.Errorf("%s: tmpl.Execute: %w", conffile, err)
 		return 1
 	}
 	err = f.Close()
 	if err != nil {
-		err = fmt.Errorf("/etc/arvados/config.yml: close: %w", err)
+		err = fmt.Errorf("%s: close: %w", conffile, err)
 		return 1
 	}
-	fmt.Fprintln(stderr, "created /etc/arvados/config.yml")
+	fmt.Fprintln(stderr, "created", conffile)
 
 	ldr := config.NewLoader(nil, logger)
 	ldr.SkipLegacy = true
 	cfg, err := ldr.Load()
 	if err != nil {
-		err = fmt.Errorf("/etc/arvados/config.yml: %w", err)
+		err = fmt.Errorf("%s: %w", conffile, err)
 		return 1
 	}
 	cluster, err := cfg.GetCluster("")
@@ -242,10 +302,23 @@ func (initcmd *initCommand) RunCommand(prog string, args []string, stdin io.Read
 	cmd.Stderr = stderr
 	err = cmd.Run()
 	if err != nil {
-		err = fmt.Errorf("rake db:setup: %w", err)
+		err = fmt.Errorf("rake db:setup failed: %w", err)
 		return 1
 	}
 	fmt.Fprintln(stderr, "initialized database")
+
+	if initcmd.Start {
+		fmt.Fprintln(stderr, "starting systemd service")
+		cmd := exec.CommandContext(ctx, "systemctl", "start", "--no-block", "arvados")
+		cmd.Dir = "/"
+		cmd.Stdout = stderr
+		cmd.Stderr = stderr
+		err = cmd.Run()
+		if err != nil {
+			err = fmt.Errorf("%v: %w", cmd.Args, err)
+			return 1
+		}
+	}
 
 	return 0
 }
@@ -281,6 +354,7 @@ func (initcmd *initCommand) createDB(ctx context.Context, dbconn arvados.Postgre
 		`CREATE EXTENSION IF NOT EXISTS pg_trgm`,
 	} {
 		cmd := exec.CommandContext(ctx, "sudo", "-u", "postgres", "psql", "-c", sql)
+		cmd.Dir = "/"
 		cmd.Stdout = stderr
 		cmd.Stderr = stderr
 		err := cmd.Run()
