@@ -6,7 +6,7 @@ import { dialogActions } from 'store/dialog/dialog-actions';
 import { RootState } from 'store/store';
 import { Dispatch } from 'redux';
 import { getProcess } from 'store/processes/process';
-import { quote } from 'shell-quote';
+import shellescape from 'shell-escape';
 
 export const PROCESS_COMMAND_DIALOG_NAME = 'processCommandDialog';
 
@@ -20,7 +20,7 @@ export const openProcessCommandDialog = (processUuid: string) =>
         const process = getProcess(processUuid)(getState().resources);
         if (process) {
             const data: ProcessCommandDialogData = {
-                command: quote(process.containerRequest.command),
+                command: shellescape(process.containerRequest.command),
                 processName: process.containerRequest.name,
             };
             dispatch(dialogActions.OPEN_DIALOG({ id: PROCESS_COMMAND_DIALOG_NAME, data }));
