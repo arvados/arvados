@@ -20,7 +20,6 @@ import { toggleDetailsPanel } from 'store/details-panel/details-panel-action';
 import { snackbarActions, SnackbarKind } from "store/snackbar/snackbar-actions";
 import { openProcessInputDialog } from "store/processes/process-input-actions";
 import { navigateToOutput } from "store/process-panel/process-panel-actions";
-import { openProcessCommandDialog } from "store/processes/process-command-actions";
 import { openAdvancedTabDialog } from "store/advanced-tab/advanced-tab";
 import { TogglePublicFavoriteAction } from "../actions/public-favorite-action";
 import { togglePublicFavorite } from "store/public-favorites/public-favorites-actions";
@@ -67,13 +66,6 @@ export const readOnlyProcessResourceActionSet: ContextMenuActionSet = [[
             if(resource.outputUuid){
                 dispatch<any>(navigateToOutput(resource.outputUuid));
             }
-        }
-    },
-    {
-        icon: CommandIcon,
-        name: "Command",
-        execute: (dispatch, resource) => {
-            dispatch<any>(openProcessCommandDialog(resource.uuid));
         }
     },
     {

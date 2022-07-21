@@ -33,10 +33,8 @@ export const CodeSnippet = withStyles(styles)(
         <Typography
         component="div"
         className={classNames(classes.root, className)}>
-            {
-                lines.map((line: string, index: number) => {
-                    return <Typography key={index} className={apiResponse ? classes.space : className} component="pre">{line}</Typography>;
-                })
-            }
+            <Typography className={apiResponse ? classes.space : className} component="pre">
+                {lines.join('\n')}
+            </Typography>
         </Typography>
     );

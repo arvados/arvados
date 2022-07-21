@@ -36,7 +36,7 @@ const mapStateToProps = ({ router, resources, processPanel, processLogsPanel }: 
 };
 
 const mapDispatchToProps = (dispatch: Dispatch): ProcessPanelRootActionProps => ({
-    onLogCopyToClipboard: (message: string) => {
+    onCopyToClipboard: (message: string) => {
         dispatch<any>(snackbarActions.OPEN_SNACKBAR({
             message,
             hideDuration: 2000,
