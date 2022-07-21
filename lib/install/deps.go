@@ -17,6 +17,7 @@ import (
 	"os/exec"
 	"os/user"
 	"path/filepath"
+	"runtime"
 	"strconv"
 	"strings"
 	"syscall"
@@ -189,6 +190,7 @@ func (inst *installCommand) RunCommand(prog string, args []string, stdin io.Read
 			"uuid-dev",
 			"wget",
 			"xvfb",
+			"zlib1g-dev", // services/api
 		)
 		if test {
 			if osv.Debian && osv.Major <= 10 {
@@ -203,11 +205,13 @@ func (inst *installCommand) RunCommand(prog string, args []string, stdin io.Read
 		}
 		switch {
 		case osv.Debian && osv.Major >= 11:
-			pkgs = append(pkgs, "libcurl4", "perl-modules-5.32")
+			pkgs = append(pkgs, "g++", "libcurl4", "libcurl4-openssl-dev", "perl-modules-5.32")
 		case osv.Debian && osv.Major >= 10:
-			pkgs = append(pkgs, "libcurl4", "perl-modules")
-		default:
-			pkgs = append(pkgs, "libcurl3", "perl-modules")
+			pkgs = append(pkgs, "g++", "libcurl4", "libcurl4-openssl-dev", "perl-modules")
+		case osv.Debian || osv.Ubuntu:
+			pkgs = append(pkgs, "g++", "libcurl3", "libcurl3-openssl-dev", "perl-modules")
+		case osv.Centos:
+			pkgs = append(pkgs, "gcc", "gcc-c++", "libcurl-devel", "postgresql-devel")
 		}
 		cmd := exec.CommandContext(ctx, "apt-get")
 		if inst.EatMyData {
@@ -563,7 +567,6 @@ yarn install
 		for _, srcdir := range []string{
 			"cmd/arvados-client",
 			"cmd/arvados-server",
-			"services/crunch-dispatch-slurm",
 		} {
 			fmt.Fprintf(stderr, "building %s...\n", srcdir)
 			cmd := exec.Command("go", "install", "-ldflags", "-X git.arvados.org/arvados.git/lib/cmd.version="+inst.PackageVersion+" -X main.version="+inst.PackageVersion+" -s -w")
@@ -584,6 +587,33 @@ yarn install
 		cmd.Stderr = stderr
 		err = cmd.Run()
 		if err != nil {
+			return 1
+		}
+
+		// Install python SDK and arv-mount in
+		// /var/lib/arvados/lib/python.
+		//
+		// setup.py writes a file in the source directory in
+		// order to include the version number in the package
+		// itself.  We don't want to write to the source tree
+		// (in "arvados-package" context it's mounted
+		// readonly) so we run setup.py in a temporary copy of
+		// the source dir.
+		if err = inst.runBash(`
+v=/var/lib/arvados/lib/python
+tmp=/var/lib/arvados/tmp/python
+python3 -m venv "$v"
+. "$v/bin/activate"
+pip3 install --no-cache-dir 'setuptools>=18.5' 'pip>=7'
+export ARVADOS_BUILDING_VERSION="`+inst.PackageVersion+`"
+for src in "`+inst.SourcePath+`/sdk/python" "`+inst.SourcePath+`/services/fuse"; do
+  rsync -a --delete-after "$src/" "$tmp/"
+  cd "$tmp"
+  python3 setup.py install
+  cd ..
+  rm -rf "$tmp"
+done
+`, stdout, stderr); err != nil {
 			return 1
 		}
 
@@ -615,7 +645,10 @@ yarn install
 				{"touch", "log/production.log"},
 				{"chown", "-R", "--from=root", "www-data:www-data", "/var/www/.bundle", "/var/www/.gem", "/var/www/.npm", "/var/www/.passenger", "log", "tmp", "vendor", ".bundle", "Gemfile.lock", "config.ru", "config/environment.rb"},
 				{"sudo", "-u", "www-data", "/var/lib/arvados/bin/gem", "install", "--user", "--conservative", "--no-document", "bundler:" + bundlerversion},
-				{"sudo", "-u", "www-data", "/var/lib/arvados/bin/bundle", "install", "--deployment", "--jobs", "8", "--path", "/var/www/.gem", "--without", "development test diagnostics performance"},
+				{"sudo", "-u", "www-data", "/var/lib/arvados/bin/bundle", "config", "set", "--local", "deployment", "true"},
+				{"sudo", "-u", "www-data", "/var/lib/arvados/bin/bundle", "config", "set", "--local", "path", "/var/www/.gem"},
+				{"sudo", "-u", "www-data", "/var/lib/arvados/bin/bundle", "config", "set", "--local", "without", "development test diagnostics performance"},
+				{"sudo", "-u", "www-data", "/var/lib/arvados/bin/bundle", "install", "--jobs", fmt.Sprintf("%d", runtime.NumCPU())},
 
 				{"chown", "www-data:www-data", ".", "public/assets"},
 				// {"sudo", "-u", "www-data", "/var/lib/arvados/bin/bundle", "config", "set", "--local", "system", "true"},
@@ -675,27 +708,56 @@ rsync -a --delete-after build/ /var/lib/arvados/workbench2/
 		if err != nil {
 			return 1
 		}
-		// This is equivalent to "systemd enable", but does
-		// not depend on the systemctl program being
-		// available.
-		symlink := "/etc/systemd/system/multi-user.target.wants/arvados.service"
-		err = os.Remove(symlink)
-		if err != nil && !errors.Is(err, os.ErrNotExist) {
-			return 1
-		}
-		err = os.Symlink("/lib/systemd/system/arvados.service", symlink)
-		if err != nil {
-			return 1
-		}
-
-		// Symlink user-facing programs /usr/bin/x ->
-		// /var/lib/arvados/bin/x
-		for _, prog := range []string{"arvados-client", "arvados-server", "arv", "arv-tag"} {
-			err = os.Remove("/usr/bin/" + prog)
+		if prod {
+			// (fpm will do this for us in the pkg case)
+			// This is equivalent to "systemd enable", but
+			// does not depend on the systemctl program
+			// being available:
+			symlink := "/etc/systemd/system/multi-user.target.wants/arvados.service"
+			err = os.Remove(symlink)
 			if err != nil && !errors.Is(err, os.ErrNotExist) {
 				return 1
 			}
-			err = os.Symlink("/var/lib/arvados/bin/"+prog, "/usr/bin/"+prog)
+			err = os.Symlink("/lib/systemd/system/arvados.service", symlink)
+			if err != nil {
+				return 1
+			}
+		}
+
+		// Add symlinks in /usr/bin for user-facing programs
+		for _, srcdst := range [][]string{
+			// go
+			{"bin/arvados-client"},
+			{"bin/arvados-client", "arv"},
+			{"bin/arvados-server"},
+			// sdk/cli
+			{"bin/arv", "arv-ruby"},
+			{"bin/arv-tag"},
+			// sdk/python
+			{"lib/python/bin/arv-copy"},
+			{"lib/python/bin/arv-federation-migrate"},
+			{"lib/python/bin/arv-get"},
+			{"lib/python/bin/arv-keepdocker"},
+			{"lib/python/bin/arv-ls"},
+			{"lib/python/bin/arv-migrate-docker19"},
+			{"lib/python/bin/arv-normalize"},
+			{"lib/python/bin/arv-put"},
+			{"lib/python/bin/arv-ws"},
+			// services/fuse
+			{"lib/python/bin/arv-mount"},
+		} {
+			src := "/var/lib/arvados/" + srcdst[0]
+			if _, err = os.Stat(src); err != nil {
+				return 1
+			}
+			dst := srcdst[len(srcdst)-1]
+			_, dst = filepath.Split(dst)
+			dst = "/usr/bin/" + dst
+			err = os.Remove(dst)
+			if err != nil && !errors.Is(err, os.ErrNotExist) {
+				return 1
+			}
+			err = os.Symlink(src, dst)
 			if err != nil {
 				return 1
 			}
@@ -798,7 +860,7 @@ func prodpkgs(osv osversion) []string {
 		"libcurl3-gnutls",
 		"libxslt1.1",
 		"nginx",
-		"python",
+		"python3",
 		"sudo",
 	}
 	if osv.Debian || osv.Ubuntu {
@@ -808,21 +870,12 @@ func prodpkgs(osv osversion) []string {
 			pkgs = append(pkgs, "python3-distutils") // sdk/cwl
 		}
 		return append(pkgs,
-			"g++",
-			"libcurl4-openssl-dev", // services/api
-			"libpq-dev",
-			"libpython2.7", // services/fuse
 			"mime-support", // keep-web
-			"zlib1g-dev",   // services/api
 		)
 	} else if osv.Centos {
 		return append(pkgs,
 			"fuse-libs", // services/fuse
-			"gcc",
-			"gcc-c++",
-			"libcurl-devel",    // services/api
-			"mailcap",          // keep-web
-			"postgresql-devel", // services/api
+			"mailcap",   // keep-web
 		)
 	} else {
 		panic("os version not supported")

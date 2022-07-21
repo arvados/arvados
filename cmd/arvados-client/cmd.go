@@ -61,6 +61,7 @@ var (
 		"shell":                shellCommand{},
 		"connect-ssh":          connectSSHCommand{},
 		"diagnostics":          diagnostics.Command{},
+		"sudo":                 sudoCommand{},
 	})
 )
 

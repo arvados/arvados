@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"sync"
 
@@ -96,7 +97,7 @@ func (runner installPassenger) Run(ctx context.Context, fail func(error), super 
 	if err != nil {
 		return err
 	}
-	err = super.RunProgram(ctx, appdir, runOptions{}, "bundle", "install", "--jobs", "4")
+	err = super.RunProgram(ctx, appdir, runOptions{}, "bundle", "install", "--jobs", fmt.Sprintf("%d", runtime.NumCPU()))
 	if err != nil {
 		return err
 	}

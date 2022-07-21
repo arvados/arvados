@@ -34,21 +34,24 @@ func fpm(ctx context.Context, opts opts, stdin io.Reader, stdout, stderr io.Writ
 		return fmt.Errorf("arvados-server install failed: exit code %d", exitcode)
 	}
 
-	cmd := exec.Command("/var/lib/arvados/bin/gem", "install", "--user", "--no-document", "fpm")
-	cmd.Stdout = stdout
-	cmd.Stderr = stderr
-	err := cmd.Run()
-	if err != nil {
-		return fmt.Errorf("gem install fpm: %w", err)
-	}
-
-	cmd = exec.Command("/var/lib/arvados/bin/gem", "env", "gempath")
+	cmd := exec.Command("/var/lib/arvados/bin/gem", "env", "gempath")
 	cmd.Stderr = stderr
 	buf, err := cmd.Output() // /root/.gem/ruby/2.7.0:...
 	if err != nil || len(buf) == 0 {
 		return fmt.Errorf("gem env gempath: %w", err)
 	}
 	gempath := string(bytes.TrimRight(bytes.Split(buf, []byte{':'})[0], "\n"))
+
+	cmd = exec.Command("/var/lib/arvados/bin/gem", "install", "--user", "--no-document", "fpm")
+	cmd.Stdout = stdout
+	cmd.Stderr = stderr
+	// Avoid "WARNING: You don't have [...] in your PATH, gem
+	// executables will not run"
+	cmd.Env = append(os.Environ(), "PATH="+os.Getenv("PATH")+":"+gempath)
+	err = cmd.Run()
+	if err != nil {
+		return fmt.Errorf("gem install fpm: %w", err)
+	}
 
 	if _, err := os.Stat(gempath + "/gems/fpm-1.11.0/lib/fpm/package/deb.rb"); err == nil {
 		// Workaround for fpm bug https://github.com/jordansissel/fpm/issues/1739
@@ -97,16 +100,28 @@ func fpm(ctx context.Context, opts opts, stdin io.Reader, stdout, stderr io.Writ
 		"--verbose",
 		"--deb-use-file-permissions",
 		"--rpm-use-file-permissions",
-		"--deb-systemd", "/etc/systemd/system/multi-user.target.wants/arvados.service",
+		"--deb-systemd", "/lib/systemd/system/arvados.service",
 		"--deb-systemd-enable",
 		"--no-deb-systemd-auto-start",
 		"--no-deb-systemd-restart-after-upgrade",
-		"/lib/systemd/system/arvados.service",
+		"--deb-suggests", "postgresql",
+		"--deb-suggests", "docker.io",
 		"/usr/bin/arvados-client",
 		"/usr/bin/arvados-server",
 		"/usr/bin/arv",
+		"/usr/bin/arv-ruby",
 		"/usr/bin/arv-tag",
 		"/var/lib/arvados",
+		"/usr/bin/arv-copy",
+		"/usr/bin/arv-federation-migrate",
+		"/usr/bin/arv-get",
+		"/usr/bin/arv-keepdocker",
+		"/usr/bin/arv-ls",
+		"/usr/bin/arv-migrate-docker19",
+		"/usr/bin/arv-normalize",
+		"/usr/bin/arv-put",
+		"/usr/bin/arv-ws",
+		"/usr/bin/arv-mount",
 		"/var/www/.gem",
 		"/var/www/.passenger",
 		"/var/www/.bundle",
