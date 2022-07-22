@@ -82,6 +82,11 @@ func (s *IntegrationSuite) s3setup(c *check.C) s3stage {
 			"array":    []string{"element1", "element2"},
 			"object":   map[string]interface{}{"key": map[string]interface{}{"key2": "value⛵"}},
 			"nonascii": "⛵",
+			"newline":  "foo\r\nX-Bad: header",
+			// This key cannot be expressed as a MIME
+			// header key, so it will be silently skipped
+			// (see "Inject" in PropertiesAsMetadata test)
+			"a: a\r\nInject": "bogus",
 		},
 	}})
 	c.Assert(err, check.IsNil)
@@ -258,6 +263,7 @@ func (s *IntegrationSuite) TestS3PropertiesAsMetadata(c *check.C) {
 		"Array":    `["element1","element2"]`,
 		"Object":   mime.BEncoding.Encode("UTF-8", `{"key":{"key2":"value⛵"}}`),
 		"Nonascii": "=?UTF-8?b?4pu1?=",
+		"Newline":  mime.BEncoding.Encode("UTF-8", "foo\r\nX-Bad: header"),
 	}
 	expectSubprojectTags := map[string]string{
 		"Subproject_properties_key": "subproject properties value",
@@ -279,6 +285,7 @@ func (s *IntegrationSuite) TestS3PropertiesAsMetadata(c *check.C) {
 	rdr.Close()
 	c.Check(content, check.HasLen, 4)
 	s.checkMetaEquals(c, hdr, expectCollectionTags)
+	c.Check(hdr["Inject"], check.IsNil)
 
 	c.Log("HEAD bucket with metadata from collection")
 	resp, err = stage.collbucket.Head("/", nil)
