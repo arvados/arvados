@@ -39,14 +39,12 @@ public class KeepClient {
     private List<KeepService> keepServices;
     private List<KeepService> writableServices;
     private Map<String, KeepService> gatewayServices;
-    private final String apiToken;
     private Integer maxReplicasPerService;
     private final ConfigProvider config;
 
     public KeepClient(ConfigProvider config) {
         this.config = config;
         keepServicesApiClient = new KeepServicesApiClient(config);
-        apiToken = config.getApiToken();
     }
 
     public byte[] getDataChunk(KeepLocator keepLocator) {
@@ -122,7 +120,7 @@ public class KeepClient {
     private List<String> mapNewServices(Map<String, FileTransferHandler> rootsMap, KeepLocator locator,
                                         boolean forceRebuild, boolean needWritable, Map<String, String> headers) {
 
-        headers.putIfAbsent("Authorization", String.format("OAuth2 %s", apiToken));
+        headers.putIfAbsent("Authorization", String.format("OAuth2 %s", config.getApiToken()));
         List<String> localRoots = weightedServiceRoots(locator, forceRebuild, needWritable);
         for (String root : localRoots) {
             FileTransferHandler keepServiceLocal = new FileTransferHandler(root, headers, config);
