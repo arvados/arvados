@@ -402,29 +402,6 @@ func (initcmd *initCommand) RunCommand(prog string, args []string, stdin io.Read
 		fmt.Fprintln(stderr, "...looks good")
 	}
 
-	if out, err := exec.CommandContext(ctx, "docker", "version").CombinedOutput(); err == nil && strings.Contains(string(out), "\nServer:\n") {
-		fmt.Fprintln(stderr, "loading alpine docker image for diagnostics...")
-		cmd := exec.CommandContext(ctx, "docker", "pull", "alpine")
-		cmd.Stdout = stderr
-		cmd.Stderr = stderr
-		err = cmd.Run()
-		if err != nil {
-			err = fmt.Errorf("%v: %w", cmd.Args, err)
-			return 1
-		}
-		cmd = exec.CommandContext(ctx, "arv", "sudo", "keep", "docker", "alpine")
-		cmd.Stdout = stderr
-		cmd.Stderr = stderr
-		err = cmd.Run()
-		if err != nil {
-			err = fmt.Errorf("%v: %w", cmd.Args, err)
-			return 1
-		}
-		fmt.Fprintln(stderr, "...done")
-	} else {
-		fmt.Fprintln(stderr, "docker is not installed -- skipping step of downloading 'alpine' image")
-	}
-
 	fmt.Fprintf(stderr, `
 Setup complete. Next steps:
 * run 'arv sudo diagnostics'
