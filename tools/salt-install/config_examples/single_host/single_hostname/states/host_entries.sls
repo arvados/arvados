@@ -21,7 +21,7 @@ arvados_test_salt_states_examples_single_host_etc_hosts_host_present:
     - ip: 127.0.1.1
     - names:
       - {{ arvados.cluster.name }}.{{ arvados.cluster.domain }}
-      # FIXME! This just works for our testing.
+      # NOTE! This just works for our testing.
       # Won't work if the cluster name != host name
       {%- for entry in [
           'api',

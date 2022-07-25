@@ -22,47 +22,78 @@ Clusters:
 
     Services:
 
-      # In each of the service sections below, the keys under
-      # InternalURLs are the endpoints where the service should be
-      # listening, and reachable from other hosts in the
-      # cluster. Example:
+      # Each of the service sections below specifies InternalURLs
+      # (each with optional ListenURL) and ExternalURL.
+      #
+      # InternalURLs specify how other Arvados service processes will
+      # connect to the service. Typically these use internal hostnames
+      # and high port numbers. Example:
       #
       # InternalURLs:
-      #   "http://host1.example:12345": {}
-      #   "http://host2.example:12345": {}
+      #   "http://host1.internal.example:12345": {}
+      #   "http://host2.internal.example:12345": {}
+      #
+      # ListenURL specifies the address and port the service process's
+      # HTTP server should listen on, if different from the
+      # InternalURL itself. Example, using an intermediate TLS proxy:
+      #
+      # InternalURLs:
+      #   "https://host1.internal.example":
+      #     ListenURL: "http://10.0.0.7:12345"
+      #
+      # When there are multiple InternalURLs configured, the service
+      # process will try listening on each InternalURLs (using
+      # ListenURL if provided) until one works. If you use a ListenURL
+      # like "0.0.0.0" which can be bound on any machine, use an
+      # environment variable
+      # ARVADOS_SERVICE_INTERNAL_URL=http://host1.internal.example to
+      # control which entry to use.
+      #
+      # ExternalURL specifies how applications/clients will connect to
+      # the service, regardless of whether they are inside or outside
+      # the cluster. Example:
+      #
+      # ExternalURL: "https://keep.zzzzz.example.com/"
+      #
+      # To avoid routing internal traffic through external networks,
+      # use split-horizon DNS for ExternalURL host names: inside the
+      # cluster's private network "host.zzzzz.example.com" resolves to
+      # the host's private IP address, while outside the cluster
+      # "host.zzzzz.example.com" resolves to the host's public IP
+      # address (or its external gateway or load balancer).
 
       RailsAPI:
-        InternalURLs: {SAMPLE: {}}
+        InternalURLs: {SAMPLE: {ListenURL: ""}}
         ExternalURL: ""
       Controller:
-        InternalURLs: {SAMPLE: {}}
+        InternalURLs: {SAMPLE: {ListenURL: ""}}
         ExternalURL: ""
       Websocket:
-        InternalURLs: {SAMPLE: {}}
+        InternalURLs: {SAMPLE: {ListenURL: ""}}
         ExternalURL: ""
       Keepbalance:
-        InternalURLs: {SAMPLE: {}}
+        InternalURLs: {SAMPLE: {ListenURL: ""}}
         ExternalURL: ""
       GitHTTP:
-        InternalURLs: {SAMPLE: {}}
+        InternalURLs: {SAMPLE: {ListenURL: ""}}
         ExternalURL: ""
       GitSSH:
-        InternalURLs: {SAMPLE: {}}
+        InternalURLs: {SAMPLE: {ListenURL: ""}}
         ExternalURL: ""
       DispatchCloud:
-        InternalURLs: {SAMPLE: {}}
+        InternalURLs: {SAMPLE: {ListenURL: ""}}
         ExternalURL: ""
       DispatchLSF:
-        InternalURLs: {SAMPLE: {}}
+        InternalURLs: {SAMPLE: {ListenURL: ""}}
         ExternalURL: ""
       DispatchSLURM:
-        InternalURLs: {SAMPLE: {}}
+        InternalURLs: {SAMPLE: {ListenURL: ""}}
         ExternalURL: ""
       Keepproxy:
-        InternalURLs: {SAMPLE: {}}
+        InternalURLs: {SAMPLE: {ListenURL: ""}}
         ExternalURL: ""
       WebDAV:
-        InternalURLs: {SAMPLE: {}}
+        InternalURLs: {SAMPLE: {ListenURL: ""}}
         # Base URL for Workbench inline preview.  If blank, use
         # WebDAVDownload instead, and disable inline preview.
         # If both are empty, downloading collections from workbench
@@ -101,7 +132,7 @@ Clusters:
         ExternalURL: ""
 
       WebDAVDownload:
-        InternalURLs: {SAMPLE: {}}
+        InternalURLs: {SAMPLE: {ListenURL: ""}}
         # Base URL for download links. If blank, serve links to WebDAV
         # with disposition=attachment query param.  Unlike preview links,
         # browsers do not render attachments, so there is no risk of XSS.
@@ -117,6 +148,7 @@ Clusters:
       Keepstore:
         InternalURLs:
           SAMPLE:
+            ListenURL: ""
             # Rendezvous is normally empty/omitted. When changing the
             # URL of a Keepstore service, Rendezvous should be set to
             # the old URL (with trailing slash omitted) to preserve
@@ -124,10 +156,10 @@ Clusters:
             Rendezvous: ""
         ExternalURL: ""
       Composer:
-        InternalURLs: {SAMPLE: {}}
+        InternalURLs: {SAMPLE: {ListenURL: ""}}
         ExternalURL: ""
       WebShell:
-        InternalURLs: {SAMPLE: {}}
+        InternalURLs: {SAMPLE: {ListenURL: ""}}
         # ShellInABox service endpoint URL for a given VM.  If empty, do not
         # offer web shell logins.
         #
@@ -138,13 +170,13 @@ Clusters:
         # https://*.webshell.uuid_prefix.arvadosapi.com
         ExternalURL: ""
       Workbench1:
-        InternalURLs: {SAMPLE: {}}
+        InternalURLs: {SAMPLE: {ListenURL: ""}}
         ExternalURL: ""
       Workbench2:
-        InternalURLs: {SAMPLE: {}}
+        InternalURLs: {SAMPLE: {ListenURL: ""}}
         ExternalURL: ""
       Health:
-        InternalURLs: {SAMPLE: {}}
+        InternalURLs: {SAMPLE: {ListenURL: ""}}
         ExternalURL: ""
 
     PostgreSQL:
@@ -868,9 +900,30 @@ Clusters:
       Repositories: /var/lib/arvados/git/repositories
 
     TLS:
+      # Use "file:///var/lib/acme/live/example.com/cert" and
+      # ".../privkey" to load externally managed certificates.
       Certificate: ""
       Key: ""
+
+      # Accept invalid certificates when connecting to servers. Never
+      # use this in production.
       Insecure: false
+
+      ACME:
+        # Obtain certificates automatically for ExternalURL domains
+        # using an ACME server and http-01 validation.
+        #
+        # To use Let's Encrypt, specify "LE".  To use the Let's
+        # Encrypt staging environment, specify "LE-staging".  To use a
+        # different ACME server, specify the full directory URL
+        # ("https://...").
+        #
+        # Note: this feature is not yet implemented in released
+        # versions, only in the alpha/prerelease arvados-server-easy
+        # package.
+        #
+        # Implies agreement with the server's terms of service.
+        Server: ""
 
     Containers:
       # List of supported Docker Registry image formats that compute nodes

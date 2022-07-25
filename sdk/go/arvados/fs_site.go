@@ -77,7 +77,7 @@ func (fs *customFileSystem) MountProject(mount, uuid string) {
 	fs.root.treenode.Lock()
 	defer fs.root.treenode.Unlock()
 	fs.root.treenode.Child(mount, func(inode) (inode, error) {
-		return fs.newProjectNode(fs.root, mount, uuid), nil
+		return fs.newProjectNode(fs.root, mount, uuid, nil), nil
 	})
 }
 
@@ -140,7 +140,7 @@ func (fs *customFileSystem) mountByID(parent inode, id string) inode {
 	if strings.Contains(id, "-4zz18-") || pdhRegexp.MatchString(id) {
 		return fs.mountCollection(parent, id)
 	} else if strings.Contains(id, "-j7d0g-") {
-		return fs.newProjectNode(fs.root, id, id)
+		return fs.newProjectNode(fs.root, id, id, nil)
 	} else {
 		return nil
 	}
@@ -161,7 +161,8 @@ func (fs *customFileSystem) mountCollection(parent inode, id string) inode {
 	return cfs
 }
 
-func (fs *customFileSystem) newProjectNode(root inode, name, uuid string) inode {
+func (fs *customFileSystem) newProjectNode(root inode, name, uuid string, proj *Group) inode {
+	var projLoading sync.Mutex
 	return &lookupnode{
 		stale:   fs.Stale,
 		loadOne: func(parent inode, name string) (inode, error) { return fs.projectsLoadOne(parent, uuid, name) },
@@ -174,6 +175,20 @@ func (fs *customFileSystem) newProjectNode(root inode, name, uuid string) inode 
 				name:    name,
 				modTime: time.Now(),
 				mode:    0755 | os.ModeDir,
+				sys: func() interface{} {
+					projLoading.Lock()
+					defer projLoading.Unlock()
+					if proj != nil {
+						return proj
+					}
+					var g Group
+					err := fs.RequestAndDecode(&g, "GET", "arvados/v1/groups/"+uuid, nil, nil)
+					if err != nil {
+						return err
+					}
+					proj = &g
+					return proj
+				},
 			},
 		},
 	}

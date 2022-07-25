@@ -411,16 +411,44 @@ func (h *handler) ServeHTTP(wOrig http.ResponseWriter, r *http.Request) {
 			}
 		}
 		// The client's token was invalid (e.g., expired), or
-		// the client didn't even provide one.  Propagate the
-		// 401 to encourage the client to use a [different]
-		// token.
+		// the client didn't even provide one.  Redirect to
+		// workbench2's login-and-redirect-to-download url if
+		// this is a browser navigation request. (The redirect
+		// flow can't preserve the original method if it's not
+		// GET, and doesn't make sense if the UA is a
+		// command-line tool, is trying to load an inline
+		// image, etc.; in these cases, there's nothing we can
+		// do, so return 401 unauthorized.)
+		//
+		// Note Sec-Fetch-Mode is sent by all non-EOL
+		// browsers, except Safari.
+		// https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Sec-Fetch-Mode
 		//
 		// TODO(TC): This response would be confusing to
 		// someone trying (anonymously) to download public
 		// data that has been deleted.  Allow a referrer to
 		// provide this context somehow?
-		w.Header().Add("WWW-Authenticate", "Basic realm=\"collections\"")
-		http.Error(w, unauthorizedMessage, http.StatusUnauthorized)
+		if r.Method == http.MethodGet && r.Header.Get("Sec-Fetch-Mode") == "navigate" {
+			target := url.URL(h.Cluster.Services.Workbench2.ExternalURL)
+			redirkey := "redirectToPreview"
+			if attachment {
+				redirkey = "redirectToDownload"
+			}
+			callback := "/c=" + collectionID + "/" + strings.Join(targetPath, "/")
+			// target.RawQuery = url.Values{redirkey:
+			// {target}}.Encode() would be the obvious
+			// thing to do here, but wb2 doesn't decode
+			// this as a query param -- it takes
+			// everything after "${redirkey}=" as the
+			// target URL. If we encode "/" as "%2F" etc.,
+			// the redirect won't work.
+			target.RawQuery = redirkey + "=" + callback
+			w.Header().Add("Location", target.String())
+			w.WriteHeader(http.StatusSeeOther)
+		} else {
+			w.Header().Add("WWW-Authenticate", "Basic realm=\"collections\"")
+			http.Error(w, unauthorizedMessage, http.StatusUnauthorized)
+		}
 		return
 	}
 

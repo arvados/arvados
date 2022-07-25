@@ -16,9 +16,9 @@ The @Services@ section lists a number of Arvados services, each with an @Interna
 
 The @ExternalURL@ is the address where the service should be reachable by clients, both from inside and from outside the Arvados cluster. Some services do not expose an Arvados API, only Prometheus metrics. In that case, @ExternalURL@ is not used.
 
-The keys under @InternalURLs@ are addresses that are used by the reverse proxy (e.g. Nginx) that fronts Arvados services. The exception is the @Keepstore@ service, where clients connect directly to the addresses listed under @InternalURLs@. If a service is not fronted by a reverse proxy, e.g. when its endpoint only exposes Prometheus metrics, the intention is that metrics are collected directly from the endpoints defined in @InternalURLs@.
+The keys under @InternalURLs@ are the URLs through which Arvados system components can connect to one another, including the reverse proxy (e.g. Nginx) that fronts Arvados services. The exception is the @Keepstore@ service, where clients on the local network connect directly to @Keepstore.InternalURLs@ (while clients from outside networks connect to @Keepproxy.ExternalURL@). If a service is not fronted by a reverse proxy, e.g. when its endpoint only exposes Prometheus metrics, the intention is that metrics are collected directly from the endpoints defined in @InternalURLs@.
 
-@InternalURLs@ are also used by the service itself to figure out which address/port to listen on.
+Each entry in the @InternalURLs@ section may also indicate a @ListenURL@ to determine the protocol, address/interface, and port where the service process will listen, in case the desired listening address differs from the @InternalURLs@ key itself -- for example, when passing internal traffic through a reverse proxy.
 
 If the Arvados service lives behind a reverse proxy (e.g. Nginx), configuring the reverse proxy and the @InternalURLs@ and @ExternalURL@ values must be done in concert.
 
@@ -229,11 +229,12 @@ Consider this section for the @Controller@ service:
 {% codeblock as yaml %}
   Controller:
     InternalURLs:
-      "http://localhost:8003": {}
+      "https://ctrl-0.internal":
+        ListenURL: "http://localhost:8003"
     ExternalURL: "https://ClusterID.example.com"
 {% endcodeblock %}
 
-The @ExternalURL@ advertised is @https://ClusterID.example.com@. The @Controller@ service will start up on @localhost@ port 8003. Nginx is configured to sit in front of the @Controller@ service and terminates SSL:
+The @ExternalURL@ advertised to clients is @https://ClusterID.example.com@. The @arvados-controller@ process will listen on @localhost@ port 8003. Other Arvados service processes in the cluster can connect to this specific controller instance, using the URL @https://ctrl-0.internal@. Nginx is configured to sit in front of the @Controller@ service and terminate TLS:
 
 <notextile><pre><code>
 # This is the port where nginx expects to contact arvados-controller.
@@ -246,7 +247,7 @@ server {
   # the request is reverse proxied to the upstream 'controller'
 
   listen       443 ssl;
-  server_name  ClusterID.example.com;
+  server_name  ClusterID.example.com ctrl-0.internal;
 
   ssl_certificate     /YOUR/PATH/TO/cert.pem;
   ssl_certificate_key /YOUR/PATH/TO/cert.key;
@@ -276,4 +277,13 @@ server {
 }
 </code></pre></notextile>
 
+If the host part of @ListenURL@ is ambiguous, in the sense that more than one system host is able to listen on that address (e.g., @localhost@), configure each host's startup scripts to set the environment variable @ARVADOS_SERVICE_INTERNAL_URL@ to the @InternalURLs@ key that will reach that host. In the example above, this would be @ARVADOS_SERVICE_INTERNAL_URL=https://ctrl-0.internal@.
 
+If the cluster has just a single node running all of the Arvados server processes, configuration can be simplified:
+
+{% codeblock as yaml %}
+  Controller:
+    InternalURLs:
+      "http://localhost:8003": {}
+    ExternalURL: "https://ClusterID.example.com"
+{% endcodeblock %}

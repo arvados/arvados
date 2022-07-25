@@ -215,6 +215,7 @@ if test -z "$packages" ; then
         arvados-server
         arvados-src
         arvados-sync-groups
+        arvados-sync-users
         arvados-workbench
         arvados-workbench2
         arvados-ws

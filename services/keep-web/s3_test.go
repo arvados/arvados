@@ -11,6 +11,7 @@ import (
 	"crypto/sha256"
 	"fmt"
 	"io/ioutil"
+	"mime"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -39,12 +40,13 @@ type s3stage struct {
 	kc         *keepclient.KeepClient
 	proj       arvados.Group
 	projbucket *s3.Bucket
+	subproj    arvados.Group
 	coll       arvados.Collection
 	collbucket *s3.Bucket
 }
 
 func (s *IntegrationSuite) s3setup(c *check.C) s3stage {
-	var proj arvados.Group
+	var proj, subproj arvados.Group
 	var coll arvados.Collection
 	arv := arvados.NewClientFromEnv()
 	arv.AuthToken = arvadostest.ActiveToken
@@ -52,14 +54,40 @@ func (s *IntegrationSuite) s3setup(c *check.C) s3stage {
 		"group": map[string]interface{}{
 			"group_class": "project",
 			"name":        "keep-web s3 test",
+			"properties": map[string]interface{}{
+				"project-properties-key": "project properties value",
+			},
 		},
 		"ensure_unique_name": true,
+	})
+	c.Assert(err, check.IsNil)
+	err = arv.RequestAndDecode(&subproj, "POST", "arvados/v1/groups", nil, map[string]interface{}{
+		"group": map[string]interface{}{
+			"owner_uuid":  proj.UUID,
+			"group_class": "project",
+			"name":        "keep-web s3 test subproject",
+			"properties": map[string]interface{}{
+				"subproject_properties_key": "subproject properties value",
+				"invalid header key":        "this value will not be returned because key contains spaces",
+			},
+		},
 	})
 	c.Assert(err, check.IsNil)
 	err = arv.RequestAndDecode(&coll, "POST", "arvados/v1/collections", nil, map[string]interface{}{"collection": map[string]interface{}{
 		"owner_uuid":    proj.UUID,
 		"name":          "keep-web s3 test collection",
 		"manifest_text": ". d41d8cd98f00b204e9800998ecf8427e+0 0:0:emptyfile\n./emptydir d41d8cd98f00b204e9800998ecf8427e+0 0:0:.\n",
+		"properties": map[string]interface{}{
+			"string":   "string value",
+			"array":    []string{"element1", "element2"},
+			"object":   map[string]interface{}{"key": map[string]interface{}{"key2": "value⛵"}},
+			"nonascii": "⛵",
+			"newline":  "foo\r\nX-Bad: header",
+			// This key cannot be expressed as a MIME
+			// header key, so it will be silently skipped
+			// (see "Inject" in PropertiesAsMetadata test)
+			"a: a\r\nInject": "bogus",
+		},
 	}})
 	c.Assert(err, check.IsNil)
 	ac, err := arvadosclient.New(arv)
@@ -95,7 +123,8 @@ func (s *IntegrationSuite) s3setup(c *check.C) s3stage {
 			S3:   client,
 			Name: proj.UUID,
 		},
-		coll: coll,
+		subproj: subproj,
+		coll:    coll,
 		collbucket: &s3.Bucket{
 			S3:   client,
 			Name: coll.UUID,
@@ -213,6 +242,75 @@ func (s *IntegrationSuite) testS3GetObject(c *check.C, bucket *s3.Bucket, prefix
 	exists, err = bucket.Exists(prefix + "//sailboat.txt")
 	c.Check(err, check.IsNil)
 	c.Check(exists, check.Equals, true)
+}
+
+func (s *IntegrationSuite) checkMetaEquals(c *check.C, hdr http.Header, expect map[string]string) {
+	got := map[string]string{}
+	for hk, hv := range hdr {
+		if k := strings.TrimPrefix(hk, "X-Amz-Meta-"); k != hk && len(hv) == 1 {
+			got[k] = hv[0]
+		}
+	}
+	c.Check(got, check.DeepEquals, expect)
+}
+
+func (s *IntegrationSuite) TestS3PropertiesAsMetadata(c *check.C) {
+	stage := s.s3setup(c)
+	defer stage.teardown(c)
+
+	expectCollectionTags := map[string]string{
+		"String":   "string value",
+		"Array":    `["element1","element2"]`,
+		"Object":   mime.BEncoding.Encode("UTF-8", `{"key":{"key2":"value⛵"}}`),
+		"Nonascii": "=?UTF-8?b?4pu1?=",
+		"Newline":  mime.BEncoding.Encode("UTF-8", "foo\r\nX-Bad: header"),
+	}
+	expectSubprojectTags := map[string]string{
+		"Subproject_properties_key": "subproject properties value",
+	}
+	expectProjectTags := map[string]string{
+		"Project-Properties-Key": "project properties value",
+	}
+
+	c.Log("HEAD object with metadata from collection")
+	resp, err := stage.collbucket.Head("sailboat.txt", nil)
+	c.Assert(err, check.IsNil)
+	s.checkMetaEquals(c, resp.Header, expectCollectionTags)
+
+	c.Log("GET object with metadata from collection")
+	rdr, hdr, err := stage.collbucket.GetReaderWithHeaders("sailboat.txt")
+	c.Assert(err, check.IsNil)
+	content, err := ioutil.ReadAll(rdr)
+	c.Check(err, check.IsNil)
+	rdr.Close()
+	c.Check(content, check.HasLen, 4)
+	s.checkMetaEquals(c, hdr, expectCollectionTags)
+	c.Check(hdr["Inject"], check.IsNil)
+
+	c.Log("HEAD bucket with metadata from collection")
+	resp, err = stage.collbucket.Head("/", nil)
+	c.Assert(err, check.IsNil)
+	s.checkMetaEquals(c, resp.Header, expectCollectionTags)
+
+	c.Log("HEAD directory placeholder with metadata from collection")
+	resp, err = stage.projbucket.Head("keep-web s3 test collection/", nil)
+	c.Assert(err, check.IsNil)
+	s.checkMetaEquals(c, resp.Header, expectCollectionTags)
+
+	c.Log("HEAD file with metadata from collection")
+	resp, err = stage.projbucket.Head("keep-web s3 test collection/sailboat.txt", nil)
+	c.Assert(err, check.IsNil)
+	s.checkMetaEquals(c, resp.Header, expectCollectionTags)
+
+	c.Log("HEAD directory placeholder with metadata from subproject")
+	resp, err = stage.projbucket.Head("keep-web s3 test subproject/", nil)
+	c.Assert(err, check.IsNil)
+	s.checkMetaEquals(c, resp.Header, expectSubprojectTags)
+
+	c.Log("HEAD bucket with metadata from project")
+	resp, err = stage.projbucket.Head("/", nil)
+	c.Assert(err, check.IsNil)
+	s.checkMetaEquals(c, resp.Header, expectProjectTags)
 }
 
 func (s *IntegrationSuite) TestS3CollectionPutObjectSuccess(c *check.C) {

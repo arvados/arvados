@@ -15,6 +15,7 @@ import (
 
 	"git.arvados.org/arvados.git/lib/cmd"
 	"git.arvados.org/arvados.git/sdk/go/ctxlog"
+	"github.com/coreos/go-systemd/daemon"
 )
 
 var Command cmd.Handler = bootCommand{}
@@ -66,11 +67,11 @@ func (bcmd bootCommand) run(ctx context.Context, prog string, args []string, std
 	flags.StringVar(&super.ConfigPath, "config", "/etc/arvados/config.yml", "arvados config file `path`")
 	flags.StringVar(&super.SourcePath, "source", ".", "arvados source tree `directory`")
 	flags.StringVar(&super.ClusterType, "type", "production", "cluster `type`: development, test, or production")
-	flags.StringVar(&super.ListenHost, "listen-host", "localhost", "host name or interface address for external services, and internal services whose InternalURLs are not configured")
+	flags.StringVar(&super.ListenHost, "listen-host", "localhost", "host name or interface address for internal services whose InternalURLs are not configured")
 	flags.StringVar(&super.ControllerAddr, "controller-address", ":0", "desired controller address, `host:port` or `:port`")
 	flags.StringVar(&super.Workbench2Source, "workbench2-source", "../arvados-workbench2", "path to arvados-workbench2 source tree")
 	flags.BoolVar(&super.NoWorkbench1, "no-workbench1", false, "do not run workbench1")
-	flags.BoolVar(&super.NoWorkbench2, "no-workbench2", true, "do not run workbench2")
+	flags.BoolVar(&super.NoWorkbench2, "no-workbench2", false, "do not run workbench2")
 	flags.BoolVar(&super.OwnTemporaryDatabase, "own-temporary-database", false, "bring up a postgres server and create a temporary database")
 	timeout := flags.Duration("timeout", 0, "maximum time to wait for cluster to be ready")
 	shutdown := flags.Bool("shutdown", false, "shut down when the cluster becomes ready")
@@ -133,6 +134,9 @@ func (bcmd bootCommand) run(ctx context.Context, prog string, args []string, std
 			fmt.Fprintln(stderr, "PASS - all services booted successfully")
 			return nil
 		}
+	}
+	if _, err := daemon.SdNotify(false, "READY=1"); err != nil {
+		super.logger.WithError(err).Errorf("error notifying init daemon")
 	}
 	// Wait for signal/crash + orderly shutdown
 	return super.Wait()

@@ -8,12 +8,15 @@ import (
 	"crypto/hmac"
 	"crypto/sha256"
 	"encoding/base64"
+	"encoding/json"
 	"encoding/xml"
 	"errors"
 	"fmt"
 	"hash"
 	"io"
+	"mime"
 	"net/http"
+	"net/textproto"
 	"net/url"
 	"os"
 	"path/filepath"
@@ -385,6 +388,11 @@ func (h *handler) serveS3(w http.ResponseWriter, r *http.Request) bool {
 		if r.Method == "HEAD" && !objectNameGiven {
 			// HeadBucket
 			if err == nil && fi.IsDir() {
+				err = setFileInfoHeaders(w.Header(), fs, fspath)
+				if err != nil {
+					s3ErrorResponse(w, InternalError, err.Error(), r.URL.Path, http.StatusBadGateway)
+					return true
+				}
 				w.WriteHeader(http.StatusOK)
 			} else if os.IsNotExist(err) {
 				s3ErrorResponse(w, NoSuchBucket, "The specified bucket does not exist.", r.URL.Path, http.StatusNotFound)
@@ -394,6 +402,11 @@ func (h *handler) serveS3(w http.ResponseWriter, r *http.Request) bool {
 			return true
 		}
 		if err == nil && fi.IsDir() && objectNameGiven && strings.HasSuffix(fspath, "/") && h.Cluster.Collections.S3FolderObjects {
+			err = setFileInfoHeaders(w.Header(), fs, fspath)
+			if err != nil {
+				s3ErrorResponse(w, InternalError, err.Error(), r.URL.Path, http.StatusBadGateway)
+				return true
+			}
 			w.Header().Set("Content-Type", "application/x-directory")
 			w.WriteHeader(http.StatusOK)
 			return true
@@ -415,6 +428,11 @@ func (h *handler) serveS3(w http.ResponseWriter, r *http.Request) bool {
 		// shallow copy r, and change URL path
 		r := *r
 		r.URL.Path = fspath
+		err = setFileInfoHeaders(w.Header(), fs, fspath)
+		if err != nil {
+			s3ErrorResponse(w, InternalError, err.Error(), r.URL.Path, http.StatusBadGateway)
+			return true
+		}
 		http.FileServer(fs).ServeHTTP(w, &r)
 		return true
 	case r.Method == http.MethodPut:
@@ -584,6 +602,60 @@ func (h *handler) serveS3(w http.ResponseWriter, r *http.Request) bool {
 		s3ErrorResponse(w, InvalidRequest, "method not allowed", r.URL.Path, http.StatusMethodNotAllowed)
 		return true
 	}
+}
+
+func setFileInfoHeaders(header http.Header, fs arvados.CustomFileSystem, path string) error {
+	maybeEncode := func(s string) string {
+		for _, c := range s {
+			if c > '\u007f' || c < ' ' {
+				return mime.BEncoding.Encode("UTF-8", s)
+			}
+		}
+		return s
+	}
+	path = strings.TrimSuffix(path, "/")
+	var props map[string]interface{}
+	for {
+		fi, err := fs.Stat(path)
+		if err != nil {
+			return err
+		}
+		switch src := fi.Sys().(type) {
+		case *arvados.Collection:
+			props = src.Properties
+		case *arvados.Group:
+			props = src.Properties
+		default:
+			if err, ok := src.(error); ok {
+				return err
+			}
+			// Try parent
+			cut := strings.LastIndexByte(path, '/')
+			if cut < 0 {
+				return nil
+			}
+			path = path[:cut]
+			continue
+		}
+		break
+	}
+	for k, v := range props {
+		if !validMIMEHeaderKey(k) {
+			continue
+		}
+		k = "x-amz-meta-" + k
+		if s, ok := v.(string); ok {
+			header.Set(k, maybeEncode(s))
+		} else if j, err := json.Marshal(v); err == nil {
+			header.Set(k, maybeEncode(string(j)))
+		}
+	}
+	return nil
+}
+
+func validMIMEHeaderKey(k string) bool {
+	check := "z-" + k
+	return check != textproto.CanonicalMIMEHeaderKey(check)
 }
 
 // Call fn on the given path (directory) and its contents, in

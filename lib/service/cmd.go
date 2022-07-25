@@ -121,11 +121,11 @@ func (c *command) RunCommand(prog string, args []string, stdin io.Reader, stdout
 	})
 	ctx := ctxlog.Context(c.ctx, logger)
 
-	listenURL, err := getListenAddr(cluster.Services, c.svcName, log)
+	listenURL, internalURL, err := getListenAddr(cluster.Services, c.svcName, log)
 	if err != nil {
 		return 1
 	}
-	ctx = context.WithValue(ctx, contextKeyURL{}, listenURL)
+	ctx = context.WithValue(ctx, contextKeyURL{}, internalURL)
 
 	reg := prometheus.NewRegistry()
 	loader.RegisterMetrics(reg)
@@ -147,9 +147,10 @@ func (c *command) RunCommand(prog string, args []string, stdin io.Reader, stdout
 	instrumented := httpserver.Instrument(reg, log,
 		httpserver.HandlerWithDeadline(cluster.API.RequestTimeout.Duration(),
 			httpserver.AddRequestIDs(
-				httpserver.LogRequests(
-					interceptHealthReqs(cluster.ManagementToken, handler.CheckHealth,
-						httpserver.NewRequestLimiter(cluster.API.MaxConcurrentRequests, handler, reg))))))
+				httpserver.Inspect(reg, cluster.ManagementToken,
+					httpserver.LogRequests(
+						interceptHealthReqs(cluster.ManagementToken, handler.CheckHealth,
+							httpserver.NewRequestLimiter(cluster.API.MaxConcurrentRequests, handler, reg)))))))
 	srv := &httpserver.Server{
 		Server: http.Server{
 			Handler:     ifCollectionInHost(instrumented, instrumented.ServeAPI(cluster.ManagementToken, instrumented)),
@@ -157,8 +158,8 @@ func (c *command) RunCommand(prog string, args []string, stdin io.Reader, stdout
 		},
 		Addr: listenURL.Host,
 	}
-	if listenURL.Scheme == "https" {
-		tlsconfig, err := tlsConfigWithCertUpdater(cluster, logger)
+	if listenURL.Scheme == "https" || listenURL.Scheme == "wss" {
+		tlsconfig, err := makeTLSConfig(cluster, logger)
 		if err != nil {
 			logger.WithError(err).Errorf("cannot start %s service on %s", c.svcName, listenURL.String())
 			return 1
@@ -223,28 +224,72 @@ func interceptHealthReqs(mgtToken string, checkHealth func() error, next http.Ha
 	return ifCollectionInHost(next, mux)
 }
 
-func getListenAddr(svcs arvados.Services, prog arvados.ServiceName, log logrus.FieldLogger) (arvados.URL, error) {
+// Determine listenURL (addr:port where server should bind) and
+// internalURL (target url that client should connect to) for a
+// service.
+//
+// If the config does not specify ListenURL, we check all of the
+// configured InternalURLs. If there is exactly one that matches our
+// hostname, or exactly one that matches a local interface address,
+// then we use that as listenURL.
+//
+// Note that listenURL and internalURL may use different protocols
+// (e.g., listenURL is http, but the service sits behind a proxy, so
+// clients connect using https).
+func getListenAddr(svcs arvados.Services, prog arvados.ServiceName, log logrus.FieldLogger) (arvados.URL, arvados.URL, error) {
 	svc, ok := svcs.Map()[prog]
 	if !ok {
-		return arvados.URL{}, fmt.Errorf("unknown service name %q", prog)
+		return arvados.URL{}, arvados.URL{}, fmt.Errorf("unknown service name %q", prog)
 	}
 
-	if want := os.Getenv("ARVADOS_SERVICE_INTERNAL_URL"); want == "" {
-	} else if url, err := url.Parse(want); err != nil {
-		return arvados.URL{}, fmt.Errorf("$ARVADOS_SERVICE_INTERNAL_URL (%q): %s", want, err)
-	} else {
+	if want := os.Getenv("ARVADOS_SERVICE_INTERNAL_URL"); want != "" {
+		url, err := url.Parse(want)
+		if err != nil {
+			return arvados.URL{}, arvados.URL{}, fmt.Errorf("$ARVADOS_SERVICE_INTERNAL_URL (%q): %s", want, err)
+		}
 		if url.Path == "" {
 			url.Path = "/"
 		}
-		return arvados.URL(*url), nil
+		for internalURL, conf := range svc.InternalURLs {
+			if internalURL.String() == url.String() {
+				listenURL := conf.ListenURL
+				if listenURL.Host == "" {
+					listenURL = internalURL
+				}
+				return listenURL, internalURL, nil
+			}
+		}
+		log.Warnf("possible configuration error: listening on %s (from $ARVADOS_SERVICE_INTERNAL_URL) even though configuration does not have a matching InternalURLs entry", url)
+		internalURL := arvados.URL(*url)
+		return internalURL, internalURL, nil
 	}
 
 	errors := []string{}
-	for url := range svc.InternalURLs {
-		listener, err := net.Listen("tcp", url.Host)
+	for internalURL, conf := range svc.InternalURLs {
+		listenURL := conf.ListenURL
+		if listenURL.Host == "" {
+			// If ListenURL is not specified, assume
+			// InternalURL is also usable as the listening
+			// proto/addr/port (i.e., simple case with no
+			// intermediate proxy/routing)
+			listenURL = internalURL
+		}
+		listenAddr := listenURL.Host
+		if _, _, err := net.SplitHostPort(listenAddr); err != nil {
+			// url "https://foo.example/" (with no
+			// explicit port name/number) means listen on
+			// the well-known port for the specified
+			// protocol, "foo.example:https".
+			port := listenURL.Scheme
+			if port == "ws" || port == "wss" {
+				port = "http" + port[2:]
+			}
+			listenAddr = net.JoinHostPort(listenAddr, port)
+		}
+		listener, err := net.Listen("tcp", listenAddr)
 		if err == nil {
 			listener.Close()
-			return url, nil
+			return listenURL, internalURL, nil
 		} else if strings.Contains(err.Error(), "cannot assign requested address") {
 			// If 'Host' specifies a different server than
 			// the current one, it'll resolve the hostname
@@ -252,13 +297,13 @@ func getListenAddr(svcs arvados.Services, prog arvados.ServiceName, log logrus.F
 			// can't bind an IP address it doesn't own.
 			continue
 		} else {
-			errors = append(errors, fmt.Sprintf("tried %v, got %v", url, err))
+			errors = append(errors, fmt.Sprintf("%s: %s", listenURL, err))
 		}
 	}
 	if len(errors) > 0 {
-		return arvados.URL{}, fmt.Errorf("could not enable the %q service on this host: %s", prog, strings.Join(errors, "; "))
+		return arvados.URL{}, arvados.URL{}, fmt.Errorf("could not enable the %q service on this host: %s", prog, strings.Join(errors, "; "))
 	}
-	return arvados.URL{}, fmt.Errorf("configuration does not enable the %q service on this host", prog)
+	return arvados.URL{}, arvados.URL{}, fmt.Errorf("configuration does not enable the %q service on this host", prog)
 }
 
 type contextKeyURL struct{}

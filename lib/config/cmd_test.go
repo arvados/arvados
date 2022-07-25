@@ -217,7 +217,7 @@ Clusters:
 	code := DumpCommand.RunCommand("arvados config-dump", []string{"-config", "-"}, bytes.NewBufferString(in), &stdout, &stderr)
 	c.Check(code, check.Equals, 0)
 	c.Check(stdout.String(), check.Matches, `(?ms).*TimeoutBooting: 10m\n.*`)
-	c.Check(stdout.String(), check.Matches, `(?ms).*http://localhost:12345/: {}\n.*`)
+	c.Check(stdout.String(), check.Matches, `(?ms).*http://localhost:12345/:\n +ListenURL: ""\n.*`)
 }
 
 func (s *CommandSuite) TestDump_UnknownKey(c *check.C) {

@@ -30,6 +30,7 @@ func (Command) RunCommand(prog string, args []string, stdin io.Reader, stdout, s
 	f := flag.NewFlagSet(prog, flag.ContinueOnError)
 	f.StringVar(&diag.projectName, "project-name", "scratch area for diagnostics", "name of project to find/create in home project and use for temporary/test objects")
 	f.StringVar(&diag.logLevel, "log-level", "info", "logging level (debug, info, warning, error)")
+	f.StringVar(&diag.dockerImage, "docker-image", "alpine:latest", "image to use when running a test container")
 	f.BoolVar(&diag.checkInternal, "internal-client", false, "check that this host is considered an \"internal\" client")
 	f.BoolVar(&diag.checkExternal, "external-client", false, "check that this host is considered an \"external\" client")
 	f.IntVar(&diag.priority, "priority", 500, "priority for test container (1..1000, or 0 to skip)")
@@ -60,6 +61,7 @@ type diagnoser struct {
 	logLevel      string
 	priority      int
 	projectName   string
+	dockerImage   string
 	checkInternal bool
 	checkExternal bool
 	timeout       time.Duration
@@ -132,6 +134,7 @@ func (diag *diagnoser) runtests() {
 
 	var cluster arvados.Cluster
 	cfgpath := "arvados/v1/config"
+	cfgOK := false
 	diag.dotest(20, fmt.Sprintf("getting exported config from https://%s/%s", client.APIHost, cfgpath), func() error {
 		ctx, cancel := context.WithDeadline(context.Background(), time.Now().Add(diag.timeout))
 		defer cancel()
@@ -140,6 +143,7 @@ func (diag *diagnoser) runtests() {
 			return err
 		}
 		diag.debugf("Collections.BlobSigning = %v", cluster.Collections.BlobSigning)
+		cfgOK = true
 		return nil
 	})
 
@@ -154,6 +158,11 @@ func (diag *diagnoser) runtests() {
 		diag.debugf("user uuid = %s", user.UUID)
 		return nil
 	})
+
+	if !cfgOK {
+		diag.errorf("cannot proceed without cluster config -- aborting without running any further tests")
+		return
+	}
 
 	// uncomment to create some spurious errors
 	// cluster.Services.WebDAVDownload.ExternalURL.Host = "0.0.0.0:9"
@@ -388,29 +397,35 @@ func (diag *diagnoser) runtests() {
 	})
 
 	davurl := cluster.Services.WebDAV.ExternalURL
+	davWildcard := strings.HasPrefix(davurl.Host, "*--") || strings.HasPrefix(davurl.Host, "*.")
 	diag.dotest(110, fmt.Sprintf("checking WebDAV ExternalURL wildcard (%s)", davurl), func() error {
 		if davurl.Host == "" {
 			return fmt.Errorf("host missing - content previews will not work")
 		}
-		if !strings.HasPrefix(davurl.Host, "*--") && !strings.HasPrefix(davurl.Host, "*.") && !cluster.Collections.TrustAllContent {
+		if !davWildcard && !cluster.Collections.TrustAllContent {
 			diag.warnf("WebDAV ExternalURL has no leading wildcard and TrustAllContent==false - content previews will not work")
 		}
 		return nil
 	})
 
 	for i, trial := range []struct {
-		needcoll bool
-		status   int
-		fileurl  string
+		needcoll     bool
+		needWildcard bool
+		status       int
+		fileurl      string
 	}{
-		{false, http.StatusNotFound, strings.Replace(davurl.String(), "*", "d41d8cd98f00b204e9800998ecf8427e-0", 1) + "foo"},
-		{false, http.StatusNotFound, strings.Replace(davurl.String(), "*", "d41d8cd98f00b204e9800998ecf8427e-0", 1) + "testfile"},
-		{false, http.StatusNotFound, cluster.Services.WebDAVDownload.ExternalURL.String() + "c=d41d8cd98f00b204e9800998ecf8427e+0/_/foo"},
-		{false, http.StatusNotFound, cluster.Services.WebDAVDownload.ExternalURL.String() + "c=d41d8cd98f00b204e9800998ecf8427e+0/_/testfile"},
-		{true, http.StatusOK, strings.Replace(davurl.String(), "*", strings.Replace(collection.PortableDataHash, "+", "-", -1), 1) + "testfile"},
-		{true, http.StatusOK, cluster.Services.WebDAVDownload.ExternalURL.String() + "c=" + collection.UUID + "/_/testfile"},
+		{false, false, http.StatusNotFound, strings.Replace(davurl.String(), "*", "d41d8cd98f00b204e9800998ecf8427e-0", 1) + "foo"},
+		{false, false, http.StatusNotFound, strings.Replace(davurl.String(), "*", "d41d8cd98f00b204e9800998ecf8427e-0", 1) + "testfile"},
+		{false, false, http.StatusNotFound, cluster.Services.WebDAVDownload.ExternalURL.String() + "c=d41d8cd98f00b204e9800998ecf8427e+0/_/foo"},
+		{false, false, http.StatusNotFound, cluster.Services.WebDAVDownload.ExternalURL.String() + "c=d41d8cd98f00b204e9800998ecf8427e+0/_/testfile"},
+		{true, true, http.StatusOK, strings.Replace(davurl.String(), "*", strings.Replace(collection.PortableDataHash, "+", "-", -1), 1) + "testfile"},
+		{true, false, http.StatusOK, cluster.Services.WebDAVDownload.ExternalURL.String() + "c=" + collection.UUID + "/_/testfile"},
 	} {
 		diag.dotest(120+i, fmt.Sprintf("downloading from webdav (%s)", trial.fileurl), func() error {
+			if trial.needWildcard && !davWildcard {
+				diag.warnf("skipping collection-id-in-vhost test because WebDAV ExternalURL has no leading wildcard")
+				return nil
+			}
 			ctx, cancel := context.WithDeadline(context.Background(), time.Now().Add(diag.timeout))
 			defer cancel()
 			if trial.needcoll && collection.UUID == "" {
@@ -450,9 +465,10 @@ func (diag *diagnoser) runtests() {
 			return err
 		}
 		if len(vmlist.Items) < 1 {
-			return fmt.Errorf("no VMs found")
+			diag.warnf("no VMs found")
+		} else {
+			vm = vmlist.Items[0]
 		}
-		vm = vmlist.Items[0]
 		return nil
 	})
 
@@ -460,7 +476,8 @@ func (diag *diagnoser) runtests() {
 		ctx, cancel := context.WithDeadline(context.Background(), time.Now().Add(diag.timeout))
 		defer cancel()
 		if vm.UUID == "" {
-			return fmt.Errorf("skipping, no vm available")
+			diag.warnf("skipping, no vm available")
+			return nil
 		}
 		webshelltermurl := cluster.Services.Workbench1.ExternalURL.String() + "virtual_machines/" + vm.UUID + "/webshell/testusername"
 		diag.debugf("url %s", webshelltermurl)
@@ -488,7 +505,8 @@ func (diag *diagnoser) runtests() {
 		ctx, cancel := context.WithDeadline(context.Background(), time.Now().Add(diag.timeout))
 		defer cancel()
 		if vm.UUID == "" {
-			return fmt.Errorf("skipping, no vm available")
+			diag.warnf("skipping, no vm available")
+			return nil
 		}
 		u := cluster.Services.WebShell.ExternalURL
 		webshellurl := u.String() + vm.Hostname + "?"
@@ -545,7 +563,7 @@ func (diag *diagnoser) runtests() {
 		err := client.RequestAndDecodeContext(ctx, &cr, "POST", "arvados/v1/container_requests", nil, map[string]interface{}{"container_request": map[string]interface{}{
 			"owner_uuid":      project.UUID,
 			"name":            fmt.Sprintf("diagnostics container request %s", timestamp),
-			"container_image": "arvados/jobs",
+			"container_image": diag.dockerImage,
 			"command":         []string{"echo", timestamp},
 			"use_existing":    false,
 			"output_path":     "/mnt/output",

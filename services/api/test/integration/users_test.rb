@@ -480,4 +480,60 @@ class UsersTest < ActionDispatch::IntegrationTest
     assert_response 403
   end
 
+  test "disabling system root user not permitted" do
+    put("/arvados/v1/users/#{users(:system_user).uuid}",
+      params: {
+        user: {is_admin: false}
+      },
+      headers: auth(:admin))
+    assert_response 422
+
+    post("/arvados/v1/users/#{users(:system_user).uuid}/unsetup",
+      params: {},
+      headers: auth(:admin))
+    assert_response 422
+  end
+
+  test "creating users only accepted for admins" do
+    assert_equal false, users(:active).is_admin
+    post '/arvados/v1/users',
+      params: {
+        "user" => {
+          "email" => 'foo@example.com',
+          "username" => "barney"
+        }
+      },
+      headers: auth(:active)
+    assert_response 403
+  end
+
+  test "create users assigns the system root user as their owner" do
+    post '/arvados/v1/users',
+      params: {
+        "user" => {
+          "email" => 'foo@example.com',
+          "username" => "barney"
+        }
+      },
+      headers: auth(:admin)
+    assert_response :success
+    assert_not_nil json_response["uuid"]
+    assert_equal users(:system_user).uuid, json_response["owner_uuid"]
+  end
+
+  test "create users ignores provided owner_uuid field" do
+    assert_equal false, users(:admin).uuid == users(:system_user).uuid
+    post '/arvados/v1/users',
+      params: {
+        "user" => {
+          "email" => 'foo@example.com',
+          "owner_uuid" => users(:admin).uuid,
+          "username" => "barney"
+        }
+      },
+      headers: auth(:admin)
+    assert_response :success
+    assert_not_nil json_response["uuid"]
+    assert_equal users(:system_user).uuid, json_response["owner_uuid"]
+  end
 end

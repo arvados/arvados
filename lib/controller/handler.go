@@ -13,7 +13,6 @@ import (
 	"net/url"
 	"strings"
 	"sync"
-	"time"
 
 	"git.arvados.org/arvados.git/lib/controller/api"
 	"git.arvados.org/arvados.git/lib/controller/federation"
@@ -61,12 +60,6 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 			req.URL.Path = strings.Replace(req.URL.Path, "//", "/", -1)
 		}
 	}
-	if h.Cluster.API.RequestTimeout > 0 {
-		ctx, cancel := context.WithDeadline(req.Context(), time.Now().Add(time.Duration(h.Cluster.API.RequestTimeout)))
-		req = req.WithContext(ctx)
-		defer cancel()
-	}
-
 	h.handlerStack.ServeHTTP(w, req)
 }
 
