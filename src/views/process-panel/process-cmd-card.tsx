@@ -54,7 +54,7 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     },
 });
 
-export interface ProcessCmdCardDataProps {
+interface ProcessCmdCardDataProps {
   process: Process;
   onCopy: (text: string) => void;
 }
@@ -125,7 +125,7 @@ export const ProcessCmdCard = withStyles(styles)(
           }
         />
         <CardContent className={classes.content}>
-          <DefaultCodeSnippet lines={formattedCommand} />
+          <DefaultCodeSnippet lines={formattedCommand} linked />
         </CardContent>
       </Card>
     );
