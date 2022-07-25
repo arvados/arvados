@@ -8,12 +8,14 @@ import (
 	"bytes"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"net"
 	"net/http"
 	"os"
 	"strings"
 	"time"
 
+	"git.arvados.org/arvados.git/lib/diagnostics"
 	"git.arvados.org/arvados.git/sdk/go/arvados"
 	"git.arvados.org/arvados.git/sdk/go/arvadostest"
 	"golang.org/x/net/context"
@@ -61,6 +63,21 @@ func (s *executorSuite) TestExecTrivialContainer(c *C) {
 	s.checkRun(c, 0)
 	c.Check(s.stdout.String(), Equals, "ok\n")
 	c.Check(s.stderr.String(), Equals, "")
+}
+
+func (s *executorSuite) TestDiagnosticsImage(c *C) {
+	s.newExecutor(c)
+	imagefile := c.MkDir() + "/hello-world.tar"
+	err := ioutil.WriteFile(imagefile, diagnostics.HelloWorldDockerImage, 0777)
+	c.Assert(err, IsNil)
+	err = s.executor.LoadImage("", imagefile, arvados.Container{}, "", nil)
+	c.Assert(err, IsNil)
+
+	c.Logf("Using container runtime: %s", s.executor.Runtime())
+	s.spec.Image = "hello-world"
+	s.spec.Command = []string{"/hello"}
+	s.checkRun(c, 0)
+	c.Check(s.stdout.String(), Matches, `(?ms)\nHello from Docker!\n.*`)
 }
 
 func (s *executorSuite) TestExitStatus(c *C) {

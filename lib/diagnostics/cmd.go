@@ -59,7 +59,7 @@ func (Command) RunCommand(prog string, args []string, stdin io.Reader, stdout, s
 
 // docker save hello-world > hello-world.tar
 //go:embed hello-world.tar
-var helloWorldDockerImage []byte
+var HelloWorldDockerImage []byte
 
 type diagnoser struct {
 	stdout        io.Writer
@@ -378,7 +378,7 @@ func (diag *diagnoser) runtests() {
 	// as "sha256:{...}.tar"
 	var imageSHA2 string
 	{
-		tr := tar.NewReader(bytes.NewReader(helloWorldDockerImage))
+		tr := tar.NewReader(bytes.NewReader(HelloWorldDockerImage))
 		for {
 			hdr, err := tr.Next()
 			if err == io.EOF {
@@ -404,7 +404,7 @@ func (diag *diagnoser) runtests() {
 		if collection.UUID == "" {
 			return fmt.Errorf("skipping, no test collection")
 		}
-		req, err := http.NewRequestWithContext(ctx, "PUT", cluster.Services.WebDAVDownload.ExternalURL.String()+"c="+collection.UUID+"/sha256:"+imageSHA2+".tar", bytes.NewReader(helloWorldDockerImage))
+		req, err := http.NewRequestWithContext(ctx, "PUT", cluster.Services.WebDAVDownload.ExternalURL.String()+"c="+collection.UUID+"/sha256:"+imageSHA2+".tar", bytes.NewReader(HelloWorldDockerImage))
 		if err != nil {
 			return fmt.Errorf("BUG? http.NewRequest: %s", err)
 		}
@@ -478,7 +478,7 @@ func (diag *diagnoser) runtests() {
 			if resp.StatusCode != trial.status {
 				return fmt.Errorf("unexpected response status: %s", resp.Status)
 			}
-			if trial.status == http.StatusOK && !bytes.Equal(body, helloWorldDockerImage) {
+			if trial.status == http.StatusOK && !bytes.Equal(body, HelloWorldDockerImage) {
 				excerpt := body
 				if len(excerpt) > 128 {
 					excerpt = append([]byte(nil), body[:128]...)
