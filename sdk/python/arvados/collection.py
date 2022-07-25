@@ -827,7 +827,7 @@ class RichCollectionBase(CollectionBase):
             self.set_committed(False)
             self.notify(DEL, self, pathcomponents[0], deleteditem)
         else:
-            item.remove(pathcomponents[1])
+            item.remove(pathcomponents[1], recursive=recursive)
 
     def _clonefrom(self, source):
         for k,v in listitems(source):
