@@ -10,7 +10,7 @@ import { RootState } from 'store/store';
 import { getResource, getResourceWithEditableStatus } from '../resources/resources';
 import { UserResource } from 'models/user';
 import { isSidePanelTreeCategory } from 'store/side-panel-tree/side-panel-tree-actions';
-import { extractUuidKind, ResourceKind, EditableResource } from 'models/resource';
+import { extractUuidKind, ResourceKind, EditableResource, Resource } from 'models/resource';
 import { Process } from 'store/processes/process';
 import { RepositoryResource } from 'models/repositories';
 import { SshKeyResource } from 'models/ssh-key';
@@ -265,5 +265,19 @@ export const resourceUuidToContextMenuKind = (uuid: string, readonly = false) =>
                 return ContextMenuKind.WORKFLOW;
             default:
                 return;
+        }
+    };
+
+export const openSearchResultsContextMenu = (event: React.MouseEvent<HTMLElement>, uuid: string) =>
+    (dispatch: Dispatch, getState: () => RootState) => {
+        const res = getResource<Resource>(uuid)(getState().resources);
+        if (res) {
+            dispatch<any>(openContextMenu(event, {
+                name: '',
+                uuid: res.uuid,
+                ownerUuid: '',
+                kind: res.kind,
+                menuKind: ContextMenuKind.SEARCH_RESULTS,
+            }));
         }
     };

@@ -5,8 +5,7 @@
 import { Dispatch } from "redux";
 import { connect } from "react-redux";
 import { navigateTo } from 'store/navigation/navigation-action';
-// import { openContextMenu, resourceKindToContextMenuKind } from 'store/context-menu/context-menu-actions';
-// import { ResourceKind } from 'models/resource';
+import { openSearchResultsContextMenu } from 'store/context-menu/context-menu-actions';
 import { loadDetailsPanel } from 'store/details-panel/details-panel-action';
 import { SearchResultsPanelView } from 'views/search-results-panel/search-results-panel-view';
 import { RootState } from 'store/store';
@@ -42,7 +41,9 @@ const mapStateToProps = (rootState: RootState) => {
 };
 
 const mapDispatchToProps = (dispatch: Dispatch): SearchResultsPanelActionProps => ({
-    onContextMenu: (event, resourceUuid) => { return; },
+    onContextMenu: (event, resourceUuid) => {
+        dispatch<any>(openSearchResultsContextMenu(event, resourceUuid));
+    },
     onDialogOpen: (ownerUuid: string) => { return; },
     onItemClick: (resourceUuid: string) => {
         dispatch<any>(loadDetailsPanel(resourceUuid));

@@ -3,25 +3,11 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import copy from 'copy-to-clipboard';
-import { ResourceKind } from 'models/resource';
+import { getResourceUrl } from 'routes/routes';
 import { getClipboardUrl } from 'views-components/context-menu/actions/helpers';
 
-const getUrl = (resource: any) => {
-    let url: string | null = null;
-    const { uuid, kind } = resource;
-
-    if (kind === ResourceKind.COLLECTION) {
-        url = `/collections/${uuid}`;
-    }
-    if (kind === ResourceKind.PROJECT) {
-        url = `/projects/${uuid}`;
-    }
-
-    return url;
-};
-
 export const openInNewTabAction = (resource: any) => () => {
-    const url = getUrl(resource);
+    const url = getResourceUrl(resource.uuid);
 
     if (url) {
         window.open(`${window.location.origin}${url}`, '_blank');
@@ -29,7 +15,7 @@ export const openInNewTabAction = (resource: any) => () => {
 };
 
 export const copyToClipboardAction = (resource: any) => () => {
-    const url = getUrl(resource);
+    const url = getResourceUrl(resource.uuid);
 
     if (url) {
         copy(getClipboardUrl(url, false));
