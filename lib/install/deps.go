@@ -157,6 +157,7 @@ func (inst *installCommand) RunCommand(prog string, args []string, stdin io.Read
 			"libattr1-dev",
 			"libcrypt-ssleay-perl",
 			"libfuse-dev",
+			"libgbm1", // cypress / workbench2 tests
 			"libgnutls28-dev",
 			"libjson-perl",
 			"libpam-dev",
