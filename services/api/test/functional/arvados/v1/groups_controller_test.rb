@@ -795,7 +795,7 @@ class Arvados::V1::GroupsControllerTest < ActionController::TestCase
     {group_class: "filter", properties: {"filters":[]}},
   ].each do |params|
     test "destroy group #{params} returns object" do
-      authorize_with :active
+      authorize_with :admin
 
       group = Group.create!(params)
 

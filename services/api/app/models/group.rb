@@ -250,7 +250,6 @@ class Group < ArvadosModel
       if self.owner_uuid != system_user_uuid
         raise "Owner uuid for role must be system user"
       end
-      raise PermissionDeniedError unless current_user.can?(manage: uuid)
       true
     else
       super
@@ -273,6 +272,9 @@ class Group < ArvadosModel
       return false
     elsif frozen_by_uuid && frozen_by_uuid_was
       errors.add :uuid, "#{uuid} is frozen and cannot be modified"
+      return false
+    elsif group_class_was == 'role' && !current_user.andand.is_admin
+      errors.add :uuid, "#{uuid} is a role group and can only be modified by admin"
       return false
     else
       return true

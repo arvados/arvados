@@ -149,29 +149,59 @@ class PermissionTest < ActiveSupport::TestCase
                     ":spectator missing from writers list")
   end
 
-  test "user owns group, group can_manage object's group, user can add permissions" do
-    set_user_from_auth :admin
+  ['read', 'write', 'manage'].each do |access|
+    test "grant #{access} access through a role" do
+      set_user_from_auth :active_trustedclient
+      role = Group.create!(group_class: "role", name: "test role")
+      project = Group.create!(group_class: "project", name: "test project")
+      Link.create!(link_class: 'permission',
+                   name: "can_#{access}",
+                   tail_uuid: role.uuid,
+                   head_uuid: project.uuid)
+      collection = Collection.create!(owner_uuid: project.uuid, name: "test collection")
 
-    owner_grp = Group.create!(owner_uuid: users(:active).uuid, group_class: "role")
+      set_user_from_auth :admin
+      [:spectator, :project_viewer].each do |u|
+        Link.create!(link_class: 'permission',
+                     name: 'can_manage',
+                     tail_uuid: users(u).uuid,
+                     head_uuid: role.uuid)
+        Link.create!(link_class: 'permission',
+                     name: 'can_read',
+                     tail_uuid: role.uuid,
+                     head_uuid: users(u).uuid)
+      end
 
-    sp_grp = Group.create!(group_class: "project")
-
-    Link.create!(link_class: 'permission',
-                 name: 'can_manage',
-                 tail_uuid: owner_grp.uuid,
-                 head_uuid: sp_grp.uuid)
-
-    sp = Collection.create!(owner_uuid: sp_grp.uuid)
-
-    # active user owns owner_grp, which has can_manage permission on sp_grp
-    # user should be able to add permissions on sp.
-    set_user_from_auth :active_trustedclient
-    test_perm = Link.create(tail_uuid: users(:active).uuid,
-                            head_uuid: sp.uuid,
-                            link_class: 'permission',
-                            name: 'can_write')
-    assert test_perm.save, "could not save new permission on target object"
-    assert test_perm.destroy, "could not delete new permission on target object"
+      set_user_from_auth :spectator
+      if access == 'read'
+        assert_raises do
+          Collection.where(uuid: collection.uuid).first.update_attributes!(name: 'renamed test collection')
+        end
+      else
+        assert Collection.where(uuid: collection.uuid).first.update_attributes(name: 'renamed test collection')
+      end
+      if access == 'manage'
+        # "spectator" user belongs to role, which has can_manage
+        # permission on project, so should be able to add/remove
+        # permissions on collection inside project.
+        test_perm = Link.create(tail_uuid: users(:spectator).uuid,
+                                head_uuid: collection.uuid,
+                                link_class: 'permission',
+                                name: 'can_write')
+        assert test_perm.save, lambda { test_perm.errors.inspect }
+        assert test_perm.destroy
+      else
+        assert_raises do
+          Link.create!(tail_uuid: users(:spectator).uuid,
+                       head_uuid: collection.uuid,
+                       link_class: 'permission',
+                       name: 'can_write')
+        end
+      end
+      assert_raises(ArvadosModel::PermissionDeniedError) do
+        Group.where(uuid: role.uuid).first.update_attributes(name: 'user tried to rename a role')
+      end
+    end
   end
 
   # bug #3091
