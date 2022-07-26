@@ -7,7 +7,7 @@ import { ToggleFavoriteAction } from "../actions/favorite-action";
 import { toggleFavorite } from "store/favorites/favorites-actions";
 import {
     RenameIcon, ShareIcon, MoveToIcon, CopyIcon, DetailsIcon,
-    RemoveIcon, ReRunProcessIcon, InputIcon, OutputIcon, CommandIcon,
+    RemoveIcon, ReRunProcessIcon, InputIcon, OutputIcon,
     AdvancedIcon
 } from "components/icon/icon";
 import { favoritePanelActions } from "store/favorite-panel/favorite-panel-action";
