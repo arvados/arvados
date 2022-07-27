@@ -126,4 +126,50 @@ describe('Search tests', function() {
                 });
         });
     });
+
+    it.only('shows search context menu', function() {
+        const colName = `Collection ${Math.floor(Math.random() * Math.floor(999999))}`;
+
+        cy.createCollection(adminUser.token, {
+            name: colName,
+            owner_uuid: activeUser.user.uuid,
+            preserve_version: true,
+            manifest_text: ". 37b51d194a7513e45b56f6524f2d51f2+3 0:3:bar\n"
+        }).then(function(testCollection) {
+            cy.loginAs(activeUser);
+
+            cy.doSearch(colName);
+
+            // Stub new window
+            cy.window().then(win => {
+                cy.stub(win, 'open').as('Open')
+            });
+
+            cy.get('[data-cy=search-results]').contains(colName).rightclick();
+            cy.get('[data-cy=context-menu]').within((ctx) => {
+                // Check that there are 4 items in the menu
+                cy.get(ctx).children().should('have.length', 4);
+                cy.contains('Advanced');
+                cy.contains('Copy to clipboard');
+                cy.contains('Open in new tab');
+                cy.contains('View details');
+
+                cy.contains('Copy to clipboard').click();
+                cy.window().then((win) => {
+                    win.navigator.clipboard.readText().then((text) => {
+                        expect(text).to.endWith(`/collections/${testCollection.uuid}`);
+                    });
+                });
+
+            });
+
+
+            cy.get('[data-cy=search-results]').contains(colName).rightclick();
+            cy.get('[data-cy=context-menu]').within((ctx) => {
+                cy.contains('Open in new tab').click();
+                cy.get('@Open').should('have.been.calledOnceWith', `${window.location.origin}/collections/${testCollection.uuid}`)
+            });
+
+        });
+    });
 });
