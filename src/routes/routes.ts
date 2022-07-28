@@ -66,7 +66,10 @@ export const getResourceUrl = (uuid: string) => {
     }
 };
 
-export const getNavUrl = (uuid: string, config: FederationConfig) => {
+/**
+ * @returns A relative or federated url for the given uuid, with a token for federated WB1 urls
+ */
+export const getNavUrl = (uuid: string, config: FederationConfig, includeToken: boolean = true): string => {
     const path = getResourceUrl(uuid) || "";
     const cls = uuid.substring(0, 5);
     if (cls === config.localCluster || extractUuidKind(uuid) === ResourceKind.USER || COLLECTION_PDH_REGEX.exec(uuid)) {
@@ -83,7 +86,9 @@ export const getNavUrl = (uuid: string, config: FederationConfig) => {
             u = new URL(config.remoteHostsConfig[cls].workbench2Url);
         } else {
             u = new URL(config.remoteHostsConfig[cls].workbenchUrl);
-            u.search = "api_token=" + config.sessions.filter((s) => s.clusterId === cls)[0].token;
+            if (includeToken) {
+                u.search = "api_token=" + config.sessions.filter((s) => s.clusterId === cls)[0].token;
+            }
         }
         u.pathname = path;
         return u.toString();

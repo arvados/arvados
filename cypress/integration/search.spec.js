@@ -127,7 +127,7 @@ describe('Search tests', function() {
         });
     });
 
-    it.only('shows search context menu', function() {
+    it('shows search context menu', function() {
         const colName = `Collection ${Math.floor(Math.random() * Math.floor(999999))}`;
 
         cy.createCollection(adminUser.token, {
