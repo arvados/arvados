@@ -365,7 +365,7 @@ class Arvados::V1::GroupsController < ApplicationController
     end
 
     # Only error out when every searchable object type errored out
-    if !any_success
+    if !any_success && error_by_class.size > 0
       error_msg = error_by_class.collect do |klass, err|
         "#{err} on object type #{klass}"
       end.join("\n")
