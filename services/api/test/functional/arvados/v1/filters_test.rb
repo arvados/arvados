@@ -236,6 +236,58 @@ class Arvados::V1::FiltersTest < ActionController::TestCase
                  json_response['errors'].join(' '))
   end
 
+  test "groups contents with properties filter succeeds on objects with properties field" do
+    @controller = Arvados::V1::GroupsController.new
+    authorize_with :admin
+    get :contents, params: {
+      filters: [
+        ['properties', 'exists', 'foo'],
+        ['uuid', 'is_a', ["arvados#group","arvados#collection","arvados#containerRequest"]],
+      ]
+    }
+    assert_response 200
+    assert json_response['items'].length == 0
+  end
+
+  # Tests bug #19297
+  test "groups contents with properties filter succeeds on some objects with properties field" do
+    @controller = Arvados::V1::GroupsController.new
+    authorize_with :admin
+    get :contents, params: {
+      filters: [
+        ['properties', 'exists', 'foo'],
+        ['uuid', 'is_a', ["arvados#group","arvados#workflow"]],
+      ]
+    }
+    assert_response 200
+    assert json_response['items'].length == 0
+  end
+
+  # Tests bug #19297
+  test "groups contents with properties filter fails on objects without properties field" do
+    @controller = Arvados::V1::GroupsController.new
+    authorize_with :admin
+    get :contents, params: {
+      filters: [
+        ['properties', 'exists', 'foo'],
+        ['uuid', 'is_a', ["arvados#workflow"]],
+      ]
+    }
+    assert_response 422
+    assert_match(/Invalid attribute 'properties' for operator 'exists'.*on object type Workflow/, json_response['errors'].join(' '))
+  end
+
+  test "groups contents without filters and limit=0, count=none" do
+    @controller = Arvados::V1::GroupsController.new
+    authorize_with :admin
+    get :contents, params: {
+      limit: 0,
+      count: 'none',
+    }
+    assert_response 200
+    assert json_response['items'].length == 0
+  end
+
   test "replication_desired = 2" do
     @controller = Arvados::V1::CollectionsController.new
     authorize_with :admin
