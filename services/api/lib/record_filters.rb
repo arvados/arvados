@@ -136,7 +136,7 @@ module RecordFilters
             raise ArgumentError.new("Invalid operator for subproperty search '#{operator}'")
           end
         elsif operator == "exists"
-          if col.type != :jsonb
+          if col.nil? or col.type != :jsonb
             raise ArgumentError.new("Invalid attribute '#{attr}' for operator '#{operator}' in filter")
           end
 

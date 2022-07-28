@@ -263,6 +263,9 @@ class Arvados::V1::GroupsController < ApplicationController
     included_by_uuid = {}
 
     seen_last_class = false
+    error_by_class = {}
+    any_success = false
+
     klasses.each do |klass|
       # check if current klass is same as params['last_object_class']
       seen_last_class = true if((params['count'].andand.==('none')) and
@@ -318,7 +321,19 @@ class Arvados::V1::GroupsController < ApplicationController
       # Adjust the limit based on number of objects fetched so far
       klass_limit = limit_all - all_objects.count
       @limit = klass_limit
-      apply_where_limit_order_params klass
+
+      begin
+        apply_where_limit_order_params klass
+      rescue ArgumentError => e
+        if e.inspect =~ /Invalid attribute '.+' for operator '.+' in filter/ or
+          e.inspect =~ /Invalid attribute '.+' for subproperty filter/
+          error_by_class[klass.name] = e
+          next
+        end
+        raise
+      else
+        any_success = true
+      end
 
       # This actually fetches the objects
       klass_object_list = object_list(model_class: klass)
@@ -347,6 +362,14 @@ class Arvados::V1::GroupsController < ApplicationController
           end
         end
       end
+    end
+
+    # Only error out when every searchable object type errored out
+    if !any_success && error_by_class.size > 0
+      error_msg = error_by_class.collect do |klass, err|
+        "#{err} on object type #{klass}"
+      end.join("\n")
+      raise ArgumentError.new(error_msg)
     end
 
     if params["include"]
