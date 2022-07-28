@@ -16,6 +16,8 @@ import { mount, configure } from 'enzyme';
 import Adapter from 'enzyme-adapter-react-16';
 import CopyToClipboard from 'react-copy-to-clipboard';
 import { TokenDialogComponent } from './token-dialog';
+import { combineReducers, createStore } from 'redux';
+import { Provider } from 'react-redux';
 
 configure({ adapter: new Adapter() });
 
@@ -24,6 +26,7 @@ jest.mock('toggle-selection', () => () => () => null);
 describe('<CurrentTokenDialog />', () => {
   let props;
   let wrapper;
+  let store;
 
   beforeEach(() => {
     props = {
@@ -33,11 +36,25 @@ describe('<CurrentTokenDialog />', () => {
       open: true,
       dispatch: jest.fn(),
     };
+
+    const initialAuthState = {
+      localCluster: "zzzzz",
+      remoteHostsConfig: {},
+      sessions: {},
+    };
+
+    store = createStore(combineReducers({
+      auth: (state: any = initialAuthState, action: any) => state,
+    }));
   });
 
   describe('Get API Token dialog', () => {
     beforeEach(() => {
-      wrapper = mount(<TokenDialogComponent {...props} />);
+      wrapper = mount(
+        <Provider store={store}>
+          <TokenDialogComponent {...props} />
+        </Provider>
+      );
     });
 
     it('should include API host and token', () => {
@@ -51,7 +68,10 @@ describe('<CurrentTokenDialog />', () => {
 
       const someDate = '2140-01-01T00:00:00.000Z'
       props.tokenExpiration = new Date(someDate);
-      wrapper = mount(<TokenDialogComponent {...props} />);
+      wrapper = mount(
+        <Provider store={store}>
+          <TokenDialogComponent {...props} />
+        </Provider>);
       expect(wrapper.html()).toContain(props.tokenExpiration.toLocaleString());
     });
 
@@ -60,14 +80,20 @@ describe('<CurrentTokenDialog />', () => {
       expect(wrapper.html()).not.toContain('GET NEW TOKEN');
 
       props.canCreateNewTokens = true;
-      wrapper = mount(<TokenDialogComponent {...props} />);
+      wrapper = mount(
+        <Provider store={store}>
+          <TokenDialogComponent {...props} />
+        </Provider>);
       expect(wrapper.html()).toContain('GET NEW TOKEN');
     });
   });
 
   describe('copy to clipboard button', () => {
     beforeEach(() => {
-      wrapper = mount(<TokenDialogComponent {...props} />);
+      wrapper = mount(
+        <Provider store={store}>
+          <TokenDialogComponent {...props} />
+        </Provider>);
     });
 
     it('should copy API TOKEN to the clipboard', () => {

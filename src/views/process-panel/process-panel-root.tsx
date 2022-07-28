@@ -15,6 +15,7 @@ import { ProcessDetailsCard } from './process-details-card';
 import { getProcessPanelLogs, ProcessLogsPanel } from 'store/process-logs-panel/process-logs-panel';
 import { ProcessLogsCard } from './process-log-card';
 import { FilterOption } from 'views/process-panel/process-log-form';
+import { ProcessCmdCard } from './process-cmd-card';
 
 type CssRules = 'root';
 
@@ -37,13 +38,14 @@ export interface ProcessPanelRootActionProps {
     cancelProcess: (uuid: string) => void;
     onLogFilterChange: (filter: FilterOption) => void;
     navigateToLog: (uuid: string) => void;
-    onLogCopyToClipboard: (uuid: string) => void;
+    onCopyToClipboard: (uuid: string) => void;
 }
 
 export type ProcessPanelRootProps = ProcessPanelRootDataProps & ProcessPanelRootActionProps & WithStyles<CssRules>;
 
 const panelsData: MPVPanelState[] = [
     {name: "Details"},
+    {name: "Command"},
     {name: "Logs", visible: true},
     {name: "Subprocesses"},
 ];
@@ -59,9 +61,14 @@ export const ProcessPanelRoot = withStyles(styles)(
                     cancelProcess={props.cancelProcess}
                 />
             </MPVPanelContent>
+            <MPVPanelContent forwardProps xs="auto" data-cy="process-cmd">
+                <ProcessCmdCard
+                    onCopy={props.onCopyToClipboard}
+                    process={process} />
+            </MPVPanelContent>
             <MPVPanelContent forwardProps xs maxHeight='50%' data-cy="process-logs">
                 <ProcessLogsCard
-                    onCopy={props.onLogCopyToClipboard}
+                    onCopy={props.onCopyToClipboard}
                     process={process}
                     lines={getProcessPanelLogs(processLogsPanel)}
                     selectedFilter={{
