@@ -11,6 +11,7 @@ import (
 	"net/http"
 	"os"
 	"strings"
+	"sync"
 	"time"
 
 	"git.arvados.org/arvados.git/lib/controller/railsproxy"
@@ -18,6 +19,7 @@ import (
 	"git.arvados.org/arvados.git/sdk/go/arvados"
 	"git.arvados.org/arvados.git/sdk/go/ctxlog"
 	"git.arvados.org/arvados.git/sdk/go/httpserver"
+	"github.com/hashicorp/yamux"
 	"github.com/sirupsen/logrus"
 )
 
@@ -31,6 +33,8 @@ type Conn struct {
 	lastVocabularyRefreshCheck time.Time
 	lastVocabularyError        error
 	loginController
+	gwTunnels     map[string]*yamux.Session
+	gwTunnelsLock sync.Mutex
 }
 
 func NewConn(cluster *arvados.Cluster) *Conn {

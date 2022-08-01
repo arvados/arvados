@@ -160,7 +160,9 @@ Options:
 		fmt.Fprintf(stderr, "target UUID is not a container or container request UUID: %s\n", targetUUID)
 		return 1
 	}
-	sshconn, err := rpcconn.ContainerSSH(context.TODO(), arvados.ContainerSSHOptions{
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	sshconn, err := rpcconn.ContainerSSH(ctx, arvados.ContainerSSHOptions{
 		UUID:          targetUUID,
 		DetachKeys:    *detachKeys,
 		LoginUsername: loginUsername,
@@ -176,7 +178,6 @@ Options:
 		return 0
 	}
 
-	ctx, cancel := context.WithCancel(context.Background())
 	go func() {
 		defer cancel()
 		_, err := io.Copy(stdout, sshconn.Conn)

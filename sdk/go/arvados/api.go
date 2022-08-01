@@ -10,6 +10,7 @@ import (
 	"encoding/json"
 	"io"
 	"net"
+	"net/http"
 
 	"github.com/sirupsen/logrus"
 )
@@ -47,7 +48,8 @@ var (
 	EndpointContainerDelete               = APIEndpoint{"DELETE", "arvados/v1/containers/{uuid}", ""}
 	EndpointContainerLock                 = APIEndpoint{"POST", "arvados/v1/containers/{uuid}/lock", ""}
 	EndpointContainerUnlock               = APIEndpoint{"POST", "arvados/v1/containers/{uuid}/unlock", ""}
-	EndpointContainerSSH                  = APIEndpoint{"GET", "arvados/v1/connect/{uuid}/ssh", ""} // move to /containers after #17014 fixes routing
+	EndpointContainerSSH                  = APIEndpoint{"POST", "arvados/v1/connect/{uuid}/ssh", ""}            // move to /containers after #17014 fixes routing
+	EndpointContainerGatewayTunnel        = APIEndpoint{"POST", "arvados/v1/connect/{uuid}/gateway_tunnel", ""} // move to /containers after #17014 fixes routing
 	EndpointContainerRequestCreate        = APIEndpoint{"POST", "arvados/v1/container_requests", "container_request"}
 	EndpointContainerRequestUpdate        = APIEndpoint{"PATCH", "arvados/v1/container_requests/{uuid}", "container_request"}
 	EndpointContainerRequestGet           = APIEndpoint{"GET", "arvados/v1/container_requests/{uuid}", ""}
@@ -96,12 +98,19 @@ type ContainerSSHOptions struct {
 	UUID          string `json:"uuid"`
 	DetachKeys    string `json:"detach_keys"`
 	LoginUsername string `json:"login_username"`
+	NoForward     bool   `json:"no_forward"`
 }
 
-type ContainerSSHConnection struct {
+type ConnectionResponse struct {
 	Conn   net.Conn           `json:"-"`
 	Bufrw  *bufio.ReadWriter  `json:"-"`
 	Logger logrus.FieldLogger `json:"-"`
+	Header http.Header        `json:"-"`
+}
+
+type ContainerGatewayTunnelOptions struct {
+	UUID       string `json:"uuid"`
+	AuthSecret string `json:"auth_secret"`
 }
 
 type GetOptions struct {
@@ -254,7 +263,8 @@ type API interface {
 	ContainerDelete(ctx context.Context, options DeleteOptions) (Container, error)
 	ContainerLock(ctx context.Context, options GetOptions) (Container, error)
 	ContainerUnlock(ctx context.Context, options GetOptions) (Container, error)
-	ContainerSSH(ctx context.Context, options ContainerSSHOptions) (ContainerSSHConnection, error)
+	ContainerSSH(ctx context.Context, options ContainerSSHOptions) (ConnectionResponse, error)
+	ContainerGatewayTunnel(ctx context.Context, options ContainerGatewayTunnelOptions) (ConnectionResponse, error)
 	ContainerRequestCreate(ctx context.Context, options CreateOptions) (ContainerRequest, error)
 	ContainerRequestUpdate(ctx context.Context, options UpdateOptions) (ContainerRequest, error)
 	ContainerRequestGet(ctx context.Context, options GetOptions) (ContainerRequest, error)

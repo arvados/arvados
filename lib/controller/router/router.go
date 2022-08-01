@@ -245,6 +245,24 @@ func (rtr *router) addRoutes() {
 			},
 		},
 		{
+			// arvados-client built before commit
+			// bdc29d3129f6d75aa9ce0a24ffb849a272b06f08
+			// used GET with params in headers instead of
+			// POST form
+			arvados.APIEndpoint{"GET", "arvados/v1/connect/{uuid}/ssh", ""},
+			func() interface{} { return &arvados.ContainerSSHOptions{} },
+			func(ctx context.Context, opts interface{}) (interface{}, error) {
+				return nil, httpError(http.StatusGone, fmt.Errorf("API endpoint is obsolete -- please upgrade your arvados-client program"))
+			},
+		},
+		{
+			arvados.EndpointContainerGatewayTunnel,
+			func() interface{} { return &arvados.ContainerGatewayTunnelOptions{} },
+			func(ctx context.Context, opts interface{}) (interface{}, error) {
+				return rtr.backend.ContainerGatewayTunnel(ctx, *opts.(*arvados.ContainerGatewayTunnelOptions))
+			},
+		},
+		{
 			arvados.EndpointGroupCreate,
 			func() interface{} { return &arvados.CreateOptions{} },
 			func(ctx context.Context, opts interface{}) (interface{}, error) {

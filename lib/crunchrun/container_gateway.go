@@ -14,16 +14,22 @@ import (
 	"io"
 	"net"
 	"net/http"
+	"net/url"
 	"os"
 	"os/exec"
 	"sync"
 	"syscall"
+	"time"
 
+	"git.arvados.org/arvados.git/lib/controller/rpc"
 	"git.arvados.org/arvados.git/lib/selfsigned"
+	"git.arvados.org/arvados.git/sdk/go/arvados"
+	"git.arvados.org/arvados.git/sdk/go/auth"
 	"git.arvados.org/arvados.git/sdk/go/ctxlog"
 	"git.arvados.org/arvados.git/sdk/go/httpserver"
 	"github.com/creack/pty"
 	"github.com/google/shlex"
+	"github.com/hashicorp/yamux"
 	"golang.org/x/crypto/ssh"
 	"golang.org/x/net/context"
 )
@@ -45,12 +51,32 @@ func (GatewayTargetStub) InjectCommand(ctx context.Context, detachKeys, username
 
 type Gateway struct {
 	ContainerUUID string
-	Address       string // listen host:port; if port=0, Start() will change it to the selected port
-	AuthSecret    string
-	Target        GatewayTarget
-	Log           interface {
+	// Caller should set Address to "", or "host:0" or "host:port"
+	// where host is a known external IP address; port is a
+	// desired port number to listen on; and ":0" chooses an
+	// available dynamic port.
+	//
+	// If Address is "", Start() listens only on the loopback
+	// interface (and changes Address to "127.0.0.1:port").
+	// Otherwise it listens on all interfaces.
+	//
+	// If Address is "host:0", Start() updates Address to
+	// "host:port".
+	Address    string
+	AuthSecret string
+	Target     GatewayTarget
+	Log        interface {
 		Printf(fmt string, args ...interface{})
 	}
+	// If non-nil, set up a ContainerGatewayTunnel, so that the
+	// controller can connect to us even if our external IP
+	// address is unknown or not routable from controller.
+	ArvadosClient *arvados.Client
+
+	// When a tunnel is connected or reconnected, this func (if
+	// not nil) will be called with the InternalURL of the
+	// controller process at the other end of the tunnel.
+	UpdateTunnelURL func(url string)
 
 	sshConfig   ssh.ServerConfig
 	requestAuth string
@@ -99,7 +125,22 @@ func (gw *Gateway) Start() error {
 	// from arvados-controller, and PORT is either the desired
 	// port where we should run our gateway server, or "0" if we
 	// should choose an available port.
-	host, port, err := net.SplitHostPort(gw.Address)
+	extAddr := gw.Address
+	// Generally we can't know which local interface corresponds
+	// to an externally reachable IP address, so if we expect to
+	// be reachable by external hosts, we listen on all
+	// interfaces.
+	listenHost := ""
+	if extAddr == "" {
+		// If the dispatcher doesn't tell us our external IP
+		// address, controller will only be able to connect
+		// through the tunnel (see runTunnel), so our gateway
+		// server only needs to listen on the loopback
+		// interface.
+		extAddr = "127.0.0.1:0"
+		listenHost = "127.0.0.1"
+	}
+	extHost, extPort, err := net.SplitHostPort(extAddr)
 	if err != nil {
 		return err
 	}
@@ -121,24 +162,102 @@ func (gw *Gateway) Start() error {
 				Certificates: []tls.Certificate{cert},
 			},
 		},
-		Addr: ":" + port,
+		Addr: net.JoinHostPort(listenHost, extPort),
 	}
 	err = srv.Start()
 	if err != nil {
 		return err
 	}
-	// Get the port number we are listening on (the port might be
+	go func() {
+		err := srv.Wait()
+		gw.Log.Printf("gateway server stopped: %s", err)
+	}()
+	// Get the port number we are listening on (extPort might be
 	// "0" or a port name, in which case this will be different).
-	_, port, err = net.SplitHostPort(srv.Addr)
+	_, listenPort, err := net.SplitHostPort(srv.Addr)
 	if err != nil {
 		return err
 	}
-	// When changing state to Running, we will set
-	// gateway_address to "HOST:PORT" where HOST is our
-	// external hostname/IP as provided by arvados-dispatch-cloud,
-	// and PORT is the port number we ended up listening on.
-	gw.Address = net.JoinHostPort(host, port)
+	// When changing state to Running, the caller will want to set
+	// gateway_address to a "HOST:PORT" that, if controller
+	// connects to it, will reach this gateway server.
+	//
+	// The most likely thing to work is: HOST is our external
+	// hostname/IP as provided by the caller
+	// (arvados-dispatch-cloud) or 127.0.0.1 to indicate
+	// non-tunnel connections aren't available; and PORT is the
+	// port number we are listening on.
+	gw.Address = net.JoinHostPort(extHost, listenPort)
+	gw.Log.Printf("gateway server listening at %s", gw.Address)
+	if gw.ArvadosClient != nil {
+		go gw.maintainTunnel(gw.Address)
+	}
 	return nil
+}
+
+func (gw *Gateway) maintainTunnel(addr string) {
+	for ; ; time.Sleep(5 * time.Second) {
+		err := gw.runTunnel(addr)
+		gw.Log.Printf("runTunnel: %s", err)
+	}
+}
+
+// runTunnel connects to controller and sets up a tunnel through
+// which controller can connect to the gateway server at the given
+// addr.
+func (gw *Gateway) runTunnel(addr string) error {
+	ctx := auth.NewContext(context.Background(), auth.NewCredentials(gw.ArvadosClient.AuthToken))
+	arpc := rpc.NewConn("", &url.URL{Scheme: "https", Host: gw.ArvadosClient.APIHost}, gw.ArvadosClient.Insecure, rpc.PassthroughTokenProvider)
+	tun, err := arpc.ContainerGatewayTunnel(ctx, arvados.ContainerGatewayTunnelOptions{
+		UUID:       gw.ContainerUUID,
+		AuthSecret: gw.AuthSecret,
+	})
+	if err != nil {
+		return fmt.Errorf("error creating gateway tunnel: %s", err)
+	}
+	mux, err := yamux.Client(tun.Conn, nil)
+	if err != nil {
+		return fmt.Errorf("error setting up mux client end: %s", err)
+	}
+	if url := tun.Header.Get("X-Arvados-Internal-Url"); url != "" && gw.UpdateTunnelURL != nil {
+		gw.UpdateTunnelURL(url)
+	}
+	for {
+		muxconn, err := mux.AcceptStream()
+		if err != nil {
+			return err
+		}
+		gw.Log.Printf("tunnel connection %d started", muxconn.StreamID())
+		go func() {
+			defer muxconn.Close()
+			gwconn, err := net.Dial("tcp", addr)
+			if err != nil {
+				gw.Log.Printf("tunnel connection %d: error connecting to %s: %s", muxconn.StreamID(), addr, err)
+				return
+			}
+			defer gwconn.Close()
+			var wg sync.WaitGroup
+			wg.Add(2)
+			go func() {
+				defer wg.Done()
+				_, err := io.Copy(gwconn, muxconn)
+				if err != nil {
+					gw.Log.Printf("tunnel connection %d: mux end: %s", muxconn.StreamID(), err)
+				}
+				gwconn.Close()
+			}()
+			go func() {
+				defer wg.Done()
+				_, err := io.Copy(muxconn, gwconn)
+				if err != nil {
+					gw.Log.Printf("tunnel connection %d: gateway end: %s", muxconn.StreamID(), err)
+				}
+				muxconn.Close()
+			}()
+			wg.Wait()
+			gw.Log.Printf("tunnel connection %d finished", muxconn.StreamID())
+		}()
+	}
 }
 
 // handleSSH connects to an SSH server that allows the caller to run
@@ -166,11 +285,12 @@ func (gw *Gateway) handleSSH(w http.ResponseWriter, req *http.Request) {
 	// In future we'll handle browser traffic too, but for now the
 	// only traffic we expect is an SSH tunnel from
 	// (*lib/controller/localdb.Conn)ContainerSSH()
-	if req.Method != "GET" || req.Header.Get("Upgrade") != "ssh" {
+	if req.Method != "POST" || req.Header.Get("Upgrade") != "ssh" {
 		http.Error(w, "path not found", http.StatusNotFound)
 		return
 	}
-	if want := req.Header.Get("X-Arvados-Target-Uuid"); want != gw.ContainerUUID {
+	req.ParseForm()
+	if want := req.Form.Get("uuid"); want != gw.ContainerUUID {
 		http.Error(w, fmt.Sprintf("misdirected request: meant for %q but received by crunch-run %q", want, gw.ContainerUUID), http.StatusBadGateway)
 		return
 	}
@@ -178,8 +298,8 @@ func (gw *Gateway) handleSSH(w http.ResponseWriter, req *http.Request) {
 		http.Error(w, "bad X-Arvados-Authorization header", http.StatusUnauthorized)
 		return
 	}
-	detachKeys := req.Header.Get("X-Arvados-Detach-Keys")
-	username := req.Header.Get("X-Arvados-Login-Username")
+	detachKeys := req.Form.Get("detach_keys")
+	username := req.Form.Get("login_username")
 	if username == "" {
 		username = "root"
 	}
@@ -204,7 +324,9 @@ func (gw *Gateway) handleSSH(w http.ResponseWriter, req *http.Request) {
 	ctx := req.Context()
 
 	conn, newchans, reqs, err := ssh.NewServerConn(netconn, &gw.sshConfig)
-	if err != nil {
+	if err == io.EOF {
+		return
+	} else if err != nil {
 		gw.Log.Printf("ssh.NewServerConn: %s", err)
 		return
 	}
@@ -278,9 +400,11 @@ func (gw *Gateway) handleDirectTCPIP(ctx context.Context, newch ssh.NewChannel) 
 func (gw *Gateway) handleSession(ctx context.Context, newch ssh.NewChannel, detachKeys, username string) {
 	ch, reqs, err := newch.Accept()
 	if err != nil {
-		gw.Log.Printf("accept session channel: %s", err)
+		gw.Log.Printf("error accepting session channel: %s", err)
 		return
 	}
+	defer ch.Close()
+
 	var pty0, tty0 *os.File
 	// Where to send errors/messages for the client to see
 	logw := io.Writer(ch.Stderr())
@@ -289,10 +413,28 @@ func (gw *Gateway) handleSession(ctx context.Context, newch ssh.NewChannel, deta
 	eol := "\n"
 	// Env vars to add to child process
 	termEnv := []string(nil)
-	for req := range reqs {
+
+	started := 0
+	wantClose := make(chan struct{})
+	for {
+		var req *ssh.Request
+		select {
+		case r, ok := <-reqs:
+			if !ok {
+				return
+			}
+			req = r
+		case <-wantClose:
+			return
+		}
 		ok := false
 		switch req.Type {
 		case "shell", "exec":
+			if started++; started != 1 {
+				// RFC 4254 6.5: "Only one of these
+				// requests can succeed per channel."
+				break
+			}
 			ok = true
 			var payload struct {
 				Command string
@@ -312,7 +454,7 @@ func (gw *Gateway) handleSession(ctx context.Context, newch ssh.NewChannel, deta
 				}
 				defer func() {
 					ch.SendRequest("exit-status", false, ssh.Marshal(&resp))
-					ch.Close()
+					close(wantClose)
 				}()
 
 				cmd, err := gw.Target.InjectCommand(ctx, detachKeys, username, tty0 != nil, execargs)
@@ -322,20 +464,39 @@ func (gw *Gateway) handleSession(ctx context.Context, newch ssh.NewChannel, deta
 					resp.Status = 1
 					return
 				}
-				cmd.Stdin = ch
-				cmd.Stdout = ch
-				cmd.Stderr = ch.Stderr()
 				if tty0 != nil {
 					cmd.Stdin = tty0
 					cmd.Stdout = tty0
 					cmd.Stderr = tty0
-					var wg sync.WaitGroup
-					defer wg.Wait()
-					wg.Add(2)
-					go func() { io.Copy(ch, pty0); wg.Done() }()
-					go func() { io.Copy(pty0, ch); wg.Done() }()
+					go io.Copy(ch, pty0)
+					go io.Copy(pty0, ch)
 					// Send our own debug messages to tty as well.
 					logw = tty0
+				} else {
+					// StdinPipe may seem
+					// superfluous here, but it's
+					// not: it causes cmd.Run() to
+					// return when the subprocess
+					// exits. Without it, Run()
+					// waits for stdin to close,
+					// which causes "ssh ... echo
+					// ok" (with the client's
+					// stdin connected to a
+					// terminal or something) to
+					// hang.
+					stdin, err := cmd.StdinPipe()
+					if err != nil {
+						fmt.Fprintln(ch.Stderr(), err)
+						ch.CloseWrite()
+						resp.Status = 1
+						return
+					}
+					go func() {
+						io.Copy(stdin, ch)
+						stdin.Close()
+					}()
+					cmd.Stdout = ch
+					cmd.Stderr = ch.Stderr()
 				}
 				cmd.SysProcAttr = &syscall.SysProcAttr{
 					Setctty: tty0 != nil,
@@ -403,7 +564,7 @@ func (gw *Gateway) handleSession(ctx context.Context, newch ssh.NewChannel, deta
 			// would be a gaping security
 			// hole).
 		default:
-			// fmt.Fprintf(logw, "declining %q req"+eol, req.Type)
+			// fmt.Fprintf(logw, "declined request %q on ssh channel"+eol, req.Type)
 		}
 		if req.WantReply {
 			req.Reply(ok, nil)

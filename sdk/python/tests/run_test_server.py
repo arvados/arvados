@@ -831,6 +831,7 @@ def setup_config():
                     "JobsAPI": {
                         "GitInternalDir": os.path.join(SERVICES_SRC_DIR, 'api', 'tmp', 'internal.git'),
                     },
+                    "LocalKeepBlobBuffersPerVCPU": 0,
                     "SupportedDockerImageFormats": {"v1": {}},
                     "ShellAccess": {
                         "Admin": True,

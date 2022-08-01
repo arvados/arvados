@@ -28,6 +28,7 @@ import (
 	"git.arvados.org/arvados.git/lib/service"
 	"git.arvados.org/arvados.git/sdk/go/arvados"
 	"git.arvados.org/arvados.git/sdk/go/health"
+	dispatchslurm "git.arvados.org/arvados.git/services/crunch-dispatch-slurm"
 	"git.arvados.org/arvados.git/services/githttpd"
 	keepbalance "git.arvados.org/arvados.git/services/keep-balance"
 	keepweb "git.arvados.org/arvados.git/services/keep-web"
@@ -53,6 +54,7 @@ var (
 		"crunch-run":         crunchrun.Command,
 		"dispatch-cloud":     dispatchcloud.Command,
 		"dispatch-lsf":       lsf.DispatchCommand,
+		"dispatch-slurm":     dispatchslurm.Command,
 		"git-httpd":          githttpd.Command,
 		"health":             healthCommand,
 		"install":            install.Command,

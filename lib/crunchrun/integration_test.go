@@ -229,12 +229,24 @@ func (s *integrationSuite) TestRunTrivialContainerWithLocalKeepstore(c *C) {
 		c.Check(s.logFiles["crunch-run.txt"], Not(Matches), `(?ms).* at http://169\.254\..*`)
 		c.Check(s.logFiles["stderr.txt"], Matches, `(?ms).*ARVADOS_KEEP_SERVICES=http://[\d\.]{7,}:\d+\n.*`)
 	}
+}
 
+func (s *integrationSuite) TestRunTrivialContainerWithNoLocalKeepstore(c *C) {
 	// Check that (1) config is loaded from $ARVADOS_CONFIG when
 	// not provided on stdin and (2) if a local keepstore is not
 	// started, crunch-run.txt explains why not.
 	s.SetUpTest(c)
 	s.stdin.Reset()
+	s.testRunTrivialContainer(c)
+	c.Check(s.logFiles["crunch-run.txt"], Matches, `(?ms).*not starting a local keepstore process because KeepBuffers=0 in config\n.*`)
+
+	s.SetUpTest(c)
+	s.args = []string{"-config", c.MkDir() + "/config.yaml"}
+	s.stdin.Reset()
+	buf, err := ioutil.ReadFile(os.Getenv("ARVADOS_CONFIG"))
+	c.Assert(err, IsNil)
+	err = ioutil.WriteFile(s.args[1], bytes.Replace(buf, []byte("LocalKeepBlobBuffersPerVCPU: 0"), []byte("LocalKeepBlobBuffersPerVCPU: 1"), -1), 0666)
+	c.Assert(err, IsNil)
 	s.testRunTrivialContainer(c)
 	c.Check(s.logFiles["crunch-run.txt"], Matches, `(?ms).*not starting a local keepstore process because a volume \(zzzzz-nyw5e-00000000000000\d\) uses AccessViaHosts\n.*`)
 
@@ -248,7 +260,7 @@ func (s *integrationSuite) TestRunTrivialContainerWithLocalKeepstore(c *C) {
 	s.SetUpTest(c)
 	s.args = []string{"-config", c.MkDir() + "/config-unreadable.yaml"}
 	s.stdin.Reset()
-	err := ioutil.WriteFile(s.args[1], []byte{}, 0)
+	err = ioutil.WriteFile(s.args[1], []byte{}, 0)
 	c.Check(err, IsNil)
 	s.testRunTrivialContainer(c)
 	c.Check(s.logFiles["crunch-run.txt"], Matches, `(?ms).*could not load config file \Q`+s.args[1]+`\E:.* permission denied\n.*`)

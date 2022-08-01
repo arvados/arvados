@@ -23,6 +23,7 @@ func (s *ScriptSuite) TestExecScript(c *C) {
 		{[]string{`foo"`, "'waz 'qux\n"}, `exec 'foo"' ''\''waz '\''qux` + "\n" + `'`},
 	} {
 		c.Logf("%+v -> %+v", test.args, test.script)
-		c.Check(execScript(test.args), Equals, "#!/bin/sh\n"+test.script+"\n")
+		c.Check(execScript(test.args, nil), Equals, "#!/bin/sh\n"+test.script+"\n")
 	}
+	c.Check(execScript([]string{"sh", "-c", "echo $foo"}, map[string]string{"foo": "b'ar"}), Equals, "#!/bin/sh\nfoo='b'\\''ar' exec 'sh' '-c' 'echo $foo'\n")
 }

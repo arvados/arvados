@@ -1744,6 +1744,7 @@ func (command) RunCommand(prog string, args []string, stdin io.Reader, stdout, s
 	runtimeEngine := flags.String("runtime-engine", "docker", "container runtime: docker or singularity")
 	brokenNodeHook := flags.String("broken-node-hook", "", "script to run if node is detected to be broken (for example, Docker daemon is not running)")
 	flags.Duration("check-containerd", 0, "Ignored. Exists for compatibility with older versions.")
+	version := flags.Bool("version", false, "Write version information to stdout and exit 0.")
 
 	ignoreDetachFlag := false
 	if len(args) > 0 && args[0] == "-no-detach" {
@@ -1759,6 +1760,9 @@ func (command) RunCommand(prog string, args []string, stdin io.Reader, stdout, s
 
 	if ok, code := cmd.ParseFlags(flags, prog, args, "container-uuid", stderr); !ok {
 		return code
+	} else if *version {
+		fmt.Fprintln(stdout, prog, cmd.Version.String())
+		return 0
 	} else if !*list && flags.NArg() != 1 {
 		fmt.Fprintf(stderr, "missing required argument: container-uuid (try -help)\n")
 		return 2
@@ -1906,17 +1910,26 @@ func (command) RunCommand(prog string, args []string, stdin io.Reader, stdout, s
 		// not safe to run a gateway service without an auth
 		// secret
 		cr.CrunchLog.Printf("Not starting a gateway server (GatewayAuthSecret was not provided by dispatcher)")
-	} else if gwListen := os.Getenv("GatewayAddress"); gwListen == "" {
-		// dispatcher did not tell us which external IP
-		// address to advertise --> no gateway service
-		cr.CrunchLog.Printf("Not starting a gateway server (GatewayAddress was not provided by dispatcher)")
 	} else {
+		gwListen := os.Getenv("GatewayAddress")
 		cr.gateway = Gateway{
 			Address:       gwListen,
 			AuthSecret:    gwAuthSecret,
 			ContainerUUID: containerUUID,
 			Target:        cr.executor,
 			Log:           cr.CrunchLog,
+		}
+		if gwListen == "" {
+			// Direct connection won't work, so we use the
+			// gateway_address field to indicate the
+			// internalURL of the controller process that
+			// has the current tunnel connection.
+			cr.gateway.ArvadosClient = cr.dispatcherClient
+			cr.gateway.UpdateTunnelURL = func(url string) {
+				cr.gateway.Address = "tunnel " + url
+				cr.DispatcherArvClient.Update("containers", containerUUID,
+					arvadosclient.Dict{"container": arvadosclient.Dict{"gateway_address": cr.gateway.Address}}, nil)
+			}
 		}
 		err = cr.gateway.Start()
 		if err != nil {

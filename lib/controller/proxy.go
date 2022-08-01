@@ -63,10 +63,13 @@ func (p *proxy) Do(
 			hdrOut[k] = v
 		}
 	}
-	xff := reqIn.RemoteAddr
-	if xffIn := reqIn.Header.Get("X-Forwarded-For"); xffIn != "" {
-		xff = xffIn + "," + xff
+	xff := ""
+	for _, xffIn := range reqIn.Header["X-Forwarded-For"] {
+		if xffIn != "" {
+			xff += xffIn + ","
+		}
 	}
+	xff += reqIn.RemoteAddr
 	hdrOut.Set("X-Forwarded-For", xff)
 	if hdrOut.Get("X-Forwarded-Proto") == "" {
 		hdrOut.Set("X-Forwarded-Proto", reqIn.URL.Scheme)

@@ -161,6 +161,7 @@ navbar:
     - Computation with Crunch:
       - api/execution.html.textile.liquid
       - architecture/dispatchcloud.html.textile.liquid
+      - architecture/hpc.html.textile.liquid
       - architecture/singularity.html.textile.liquid
     - Other:
       - api/permission-model.html.textile.liquid
