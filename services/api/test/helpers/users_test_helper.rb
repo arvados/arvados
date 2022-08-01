@@ -3,6 +3,8 @@
 # SPDX-License-Identifier: AGPL-3.0
 
 module UsersTestHelper
+  include CurrentApiClient
+
   def verify_link(response_items, link_object_name, expect_link, link_class,
         link_name, head_uuid, tail_uuid, head_kind, fetch_object, class_name)
     link = find_obj_in_resp response_items, 'arvados#link', link_object_name
@@ -75,13 +77,10 @@ module UsersTestHelper
       assert !vm_login_perms.any?, "expected all vm_login_perms deleted"
     end
 
-    group = Group.where(name: 'All users').select do |g|
-      g[:uuid].match(/-f+$/)
-    end.first
     group_read_perms = Link.where(tail_uuid: uuid,
-                                  head_uuid: group[:uuid],
+                                  head_uuid: all_users_group_uuid,
                                   link_class: 'permission',
-                                  name: 'can_read')
+                                  name: 'can_manage')
     if expect_group_perms
       assert group_read_perms.any?, "expected all users group read perms"
     else

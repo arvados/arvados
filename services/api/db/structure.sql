@@ -254,8 +254,6 @@ $$;
 
 SET default_tablespace = '';
 
-SET default_with_oids = false;
-
 --
 -- Name: api_client_authorizations; Type: TABLE; Schema: public; Owner: -
 --
@@ -3182,6 +3180,7 @@ INSERT INTO "schema_migrations" (version) VALUES
 ('20220301155729'),
 ('20220303204419'),
 ('20220401153101'),
-('20220505112900');
+('20220505112900'),
+('20220726034131');
 
 
