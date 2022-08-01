@@ -581,6 +581,7 @@ The 'jobs' API is no longer supported.
 
         loadingContext = self.loadingContext.copy()
         loadingContext.do_validate = False
+        loadingContext.disable_js_validation = True
         if submitting:
             loadingContext.do_update = False
             # Document may have been auto-updated. Reload the original
