@@ -5,8 +5,10 @@
 package diagnostics
 
 import (
+	"archive/tar"
 	"bytes"
 	"context"
+	_ "embed"
 	"flag"
 	"fmt"
 	"io"
@@ -30,7 +32,7 @@ func (Command) RunCommand(prog string, args []string, stdin io.Reader, stdout, s
 	f := flag.NewFlagSet(prog, flag.ContinueOnError)
 	f.StringVar(&diag.projectName, "project-name", "scratch area for diagnostics", "name of project to find/create in home project and use for temporary/test objects")
 	f.StringVar(&diag.logLevel, "log-level", "info", "logging level (debug, info, warning, error)")
-	f.StringVar(&diag.dockerImage, "docker-image", "alpine:latest", "image to use when running a test container")
+	f.StringVar(&diag.dockerImage, "docker-image", "", "image to use when running a test container (default: use embedded hello-world image)")
 	f.BoolVar(&diag.checkInternal, "internal-client", false, "check that this host is considered an \"internal\" client")
 	f.BoolVar(&diag.checkExternal, "external-client", false, "check that this host is considered an \"external\" client")
 	f.IntVar(&diag.priority, "priority", 500, "priority for test container (1..1000, or 0 to skip)")
@@ -54,6 +56,10 @@ func (Command) RunCommand(prog string, args []string, stdin io.Reader, stdout, s
 		return 1
 	}
 }
+
+// docker save hello-world > hello-world.tar
+//go:embed hello-world.tar
+var HelloWorldDockerImage []byte
 
 type diagnoser struct {
 	stdout        io.Writer
@@ -368,13 +374,37 @@ func (diag *diagnoser) runtests() {
 		}()
 	}
 
+	// Read hello-world.tar to find image ID, so we can upload it
+	// as "sha256:{...}.tar"
+	var imageSHA2 string
+	{
+		tr := tar.NewReader(bytes.NewReader(HelloWorldDockerImage))
+		for {
+			hdr, err := tr.Next()
+			if err == io.EOF {
+				break
+			}
+			if err != nil {
+				diag.errorf("internal error/bug: cannot read embedded docker image tar file: %s", err)
+				return
+			}
+			if s := strings.TrimSuffix(hdr.Name, ".json"); len(s) == 64 && s != hdr.Name {
+				imageSHA2 = s
+			}
+		}
+		if imageSHA2 == "" {
+			diag.errorf("internal error/bug: cannot find {sha256}.json file in embedded docker image tar file")
+			return
+		}
+	}
+
 	diag.dotest(100, "uploading file via webdav", func() error {
 		ctx, cancel := context.WithDeadline(context.Background(), time.Now().Add(diag.timeout))
 		defer cancel()
 		if collection.UUID == "" {
 			return fmt.Errorf("skipping, no test collection")
 		}
-		req, err := http.NewRequestWithContext(ctx, "PUT", cluster.Services.WebDAVDownload.ExternalURL.String()+"c="+collection.UUID+"/testfile", bytes.NewBufferString("testfiledata"))
+		req, err := http.NewRequestWithContext(ctx, "PUT", cluster.Services.WebDAVDownload.ExternalURL.String()+"c="+collection.UUID+"/sha256:"+imageSHA2+".tar", bytes.NewReader(HelloWorldDockerImage))
 		if err != nil {
 			return fmt.Errorf("BUG? http.NewRequest: %s", err)
 		}
@@ -419,7 +449,7 @@ func (diag *diagnoser) runtests() {
 		{false, false, http.StatusNotFound, cluster.Services.WebDAVDownload.ExternalURL.String() + "c=d41d8cd98f00b204e9800998ecf8427e+0/_/foo"},
 		{false, false, http.StatusNotFound, cluster.Services.WebDAVDownload.ExternalURL.String() + "c=d41d8cd98f00b204e9800998ecf8427e+0/_/testfile"},
 		{true, true, http.StatusOK, strings.Replace(davurl.String(), "*", strings.Replace(collection.PortableDataHash, "+", "-", -1), 1) + "testfile"},
-		{true, false, http.StatusOK, cluster.Services.WebDAVDownload.ExternalURL.String() + "c=" + collection.UUID + "/_/testfile"},
+		{true, false, http.StatusOK, cluster.Services.WebDAVDownload.ExternalURL.String() + "c=" + collection.UUID + "/_/sha256:" + imageSHA2 + ".tar"},
 	} {
 		diag.dotest(120+i, fmt.Sprintf("downloading from webdav (%s)", trial.fileurl), func() error {
 			if trial.needWildcard && !davWildcard {
@@ -448,8 +478,13 @@ func (diag *diagnoser) runtests() {
 			if resp.StatusCode != trial.status {
 				return fmt.Errorf("unexpected response status: %s", resp.Status)
 			}
-			if trial.status == http.StatusOK && string(body) != "testfiledata" {
-				return fmt.Errorf("unexpected response content: %q", body)
+			if trial.status == http.StatusOK && !bytes.Equal(body, HelloWorldDockerImage) {
+				excerpt := body
+				if len(excerpt) > 128 {
+					excerpt = append([]byte(nil), body[:128]...)
+					excerpt = append(excerpt, []byte("[...]")...)
+				}
+				return fmt.Errorf("unexpected response content: len %d, %q", len(body), excerpt)
 			}
 			return nil
 		})
@@ -555,16 +590,25 @@ func (diag *diagnoser) runtests() {
 			return fmt.Errorf("skipping, no project to work in")
 		}
 
+		timestamp := time.Now().Format(time.RFC3339)
+		ctrCommand := []string{"echo", timestamp}
+		if diag.dockerImage == "" {
+			if collection.UUID == "" {
+				return fmt.Errorf("skipping, no test collection to use as docker image")
+			}
+			diag.dockerImage = collection.PortableDataHash
+			ctrCommand = []string{"/hello"}
+		}
+
 		var cr arvados.ContainerRequest
 		ctx, cancel := context.WithDeadline(context.Background(), time.Now().Add(diag.timeout))
 		defer cancel()
 
-		timestamp := time.Now().Format(time.RFC3339)
 		err := client.RequestAndDecodeContext(ctx, &cr, "POST", "arvados/v1/container_requests", nil, map[string]interface{}{"container_request": map[string]interface{}{
 			"owner_uuid":      project.UUID,
 			"name":            fmt.Sprintf("diagnostics container request %s", timestamp),
 			"container_image": diag.dockerImage,
-			"command":         []string{"echo", timestamp},
+			"command":         ctrCommand,
 			"use_existing":    false,
 			"output_path":     "/mnt/output",
 			"output_name":     fmt.Sprintf("diagnostics output %s", timestamp),
