@@ -22,6 +22,8 @@ import { projectPanelActions } from 'store/project-panel/project-panel-action';
 import { GroupClass } from "models/group";
 import { Participant } from "views-components/sharing-dialog/participant-select";
 import { ProjectProperties } from "./project-create-actions";
+import { getResource } from "store/resources/resources";
+import { ProjectResource } from "models/project";
 
 export interface ProjectUpdateFormDialogData {
     uuid: string;
@@ -37,7 +39,9 @@ export const PROJECT_UPDATE_FORM_SELECTOR = formValueSelector(PROJECT_UPDATE_FOR
 
 export const openProjectUpdateDialog = (resource: ProjectUpdateFormDialogData) =>
     (dispatch: Dispatch, getState: () => RootState) => {
-        dispatch(initialize(PROJECT_UPDATE_FORM_NAME, resource));
+        // Get complete project resource from store to handle consumers passing in partial resources
+        const project = getResource<ProjectResource>(resource.uuid)(getState().resources);
+        dispatch(initialize(PROJECT_UPDATE_FORM_NAME, project));
         dispatch(dialogActions.OPEN_DIALOG({
             id: PROJECT_UPDATE_FORM_NAME,
             data: {

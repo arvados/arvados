@@ -38,7 +38,7 @@ ResourcePropertiesListActionProps & WithStyles<CssRules>;
 
 const List = withStyles(styles)(
     ({ classes, handleDelete, properties }: ResourcePropertiesListProps) =>
-        <div>
+        <div data-cy="resource-properties-list">
             {properties &&
                 Object.keys(properties).map(k =>
                     Array.isArray(properties[k])
