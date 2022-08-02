@@ -932,6 +932,10 @@ def scandeps(
 
     """
 
+    if do_normalize:
+        import pprint
+        pprint.pprint(doc)
+
     r: Optional[MutableSequence[CWLObjectType]] = None
     if isinstance(doc, MutableMapping):
         if "id" in doc:
