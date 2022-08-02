@@ -660,6 +660,7 @@ def run_nginx():
     nginxconf['ACCESSLOG'] = _logfilename('nginx_access')
     nginxconf['ERRORLOG'] = _logfilename('nginx_error')
     nginxconf['TMPDIR'] = TEST_TMPDIR + '/nginx'
+    nginxconf['INTERNALSUBNETS'] = '169.254.0.0/16 0;'
 
     conftemplatefile = os.path.join(MY_DIRNAME, 'nginx.conf')
     conffile = os.path.join(TEST_TMPDIR, 'nginx.conf')
