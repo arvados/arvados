@@ -665,7 +665,7 @@ def upload_workflow_deps(arvrunner, tool, runtimeContext):
     def upload_tool_deps(deptool):
         if "id" in deptool:
             discovered_secondaryfiles = {}
-            with Perf(metrics, "upload_dependencies %s" % shortname(deptool["id"]):
+            with Perf(metrics, "upload_dependencies %s" % shortname(deptool["id"])):
                 pm = upload_dependencies(arvrunner,
                                          "%s dependencies" % (shortname(deptool["id"])),
                                          document_loader,
