@@ -329,7 +329,7 @@ def upload_dependencies(arvrunner, name, document_loader,
     scanobj = workflowobj
     if "id" in workflowobj and not workflowobj["id"].startswith("_:"):
         defrg, _ = urllib.parse.urldefrag(workflowobj["id"])
-        if cache is not None and defrg in cache:
+        if cache is not None and defrg not in cache:
             # if we haven't seen this file before, want raw file
             # content (before preprocessing) to ensure that external
             # references like $include haven't already been inlined.
