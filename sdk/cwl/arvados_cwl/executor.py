@@ -594,6 +594,7 @@ The 'jobs' API is no longer supported.
 
         # Upload direct dependencies of workflow steps, get back mapping of files to keep references.
         # Also uploads docker images.
+        logger.info("Uploading workflow dependencies")
         merged_map = upload_workflow_deps(self, tool, runtimeContext)
 
         # Recreate process object (ArvadosWorkflow or

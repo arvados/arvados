@@ -49,8 +49,10 @@ from .pathmapper import ArvPathMapper, trim_listing, collection_pdh_pattern, col
 from ._version import __version__
 from . import done
 from . context import ArvRuntimeContext
+from .perf import Perf
 
 logger = logging.getLogger('arvados.cwl-runner')
+metrics = logging.getLogger('arvados.cwl-runner.metrics')
 
 def trim_anonymous_location(obj):
     """Remove 'location' field from File and Directory literals.
@@ -653,7 +655,8 @@ FileUpdates = namedtuple("FileUpdates", ["resolved", "secondaryFiles"])
 def upload_workflow_deps(arvrunner, tool, runtimeContext):
     # Ensure that Docker images needed by this workflow are available
 
-    upload_docker(arvrunner, tool, runtimeContext)
+    with Perf(metrics, "upload_docker"):
+        upload_docker(arvrunner, tool, runtimeContext)
 
     document_loader = tool.doc_loader
 
@@ -662,16 +665,17 @@ def upload_workflow_deps(arvrunner, tool, runtimeContext):
     def upload_tool_deps(deptool):
         if "id" in deptool:
             discovered_secondaryfiles = {}
-            pm = upload_dependencies(arvrunner,
-                                     "%s dependencies" % (shortname(deptool["id"])),
-                                     document_loader,
-                                     deptool,
-                                     deptool["id"],
-                                     False,
-                                     runtimeContext,
-                                     include_primary=False,
-                                     discovered_secondaryfiles=discovered_secondaryfiles,
-                                     cache=tool_dep_cache)
+            with Perf(metrics, "upload_dependencies %s" % shortname(deptool["id"]):
+                pm = upload_dependencies(arvrunner,
+                                         "%s dependencies" % (shortname(deptool["id"])),
+                                         document_loader,
+                                         deptool,
+                                         deptool["id"],
+                                         False,
+                                         runtimeContext,
+                                         include_primary=False,
+                                         discovered_secondaryfiles=discovered_secondaryfiles,
+                                         cache=tool_dep_cache)
             document_loader.idx[deptool["id"]] = deptool
             toolmap = {}
             for k,v in pm.items():
