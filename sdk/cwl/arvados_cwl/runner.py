@@ -944,45 +944,24 @@ def scandeps(
                     base = df
 
         if doc.get("class") in ("File", "Directory") and "location" in urlfields:
-            u = cast(Optional[str], doc.get("location", doc.get("path")))
-            if u and not u.startswith("_:"):
-                deps = {
-                    "class": doc["class"],
-                    "location": urljoin(base, u),
-                }  # type: CWLObjectType
-                if "basename" in doc:
-                    deps["basename"] = doc["basename"]
-                if doc["class"] == "Directory" and "listing" in doc:
-                    deps["listing"] = doc["listing"]
-                if doc["class"] == "File" and "secondaryFiles" in doc:
-                    sd = scandeps(
-                        base,
-                        cast(
-                            Union[CWLObjectType, MutableSequence[CWLObjectType]],
-                            doc["secondaryFiles"],
-                        ),
-                        reffields,
-                        urlfields,
-                        loadref,
-                        urljoin=urljoin,
-                        nestdirs=nestdirs,
-                        do_normalize=False,
-                    )
-                    if sd:
-                        deps["secondaryFiles"] = cast(
-                            CWLOutputAtomType,
-                            sd
-                        )
-                if nestdirs:
-                    deps = nestdir(base, deps)
-                if r is None:
-                    r = []
-                r.append(deps)
-            else:
-                if doc["class"] == "Directory" and "listing" in doc:
-                    sd = scandeps(
+            with Perf(metrics, "File or Directory with location"):
+                u = cast(Optional[str], doc.get("location", doc.get("path")))
+                if u and not u.startswith("_:"):
+                    deps = {
+                        "class": doc["class"],
+                        "location": urljoin(base, u),
+                    }  # type: CWLObjectType
+                    if "basename" in doc:
+                        deps["basename"] = doc["basename"]
+                    if doc["class"] == "Directory" and "listing" in doc:
+                        deps["listing"] = doc["listing"]
+                    if doc["class"] == "File" and "secondaryFiles" in doc:
+                        sd = scandeps(
                             base,
-                            cast(MutableSequence[CWLObjectType], doc["listing"]),
+                            cast(
+                                Union[CWLObjectType, MutableSequence[CWLObjectType]],
+                                doc["secondaryFiles"],
+                            ),
                             reffields,
                             urlfields,
                             loadref,
@@ -990,34 +969,36 @@ def scandeps(
                             nestdirs=nestdirs,
                             do_normalize=False,
                         )
-                    if sd:
-                        if r is None:
-                            r = []
-                        r.extend(sd)
-                elif doc["class"] == "File" and "secondaryFiles" in doc:
-                    sd = scandeps(
-                            base,
-                            cast(MutableSequence[CWLObjectType], doc["secondaryFiles"]),
-                            reffields,
-                            urlfields,
-                            loadref,
-                            urljoin=urljoin,
-                            nestdirs=nestdirs,
-                            do_normalize=False,
-                        )
-                    if sd:
-                        if r is None:
-                            r = sd
-                        else:
-                            r.extend(sd)
-
-        for k, v in doc.items():
-            if k in reffields:
-                for u2 in aslist(v):
-                    if isinstance(u2, MutableMapping):
+                        if sd:
+                            deps["secondaryFiles"] = cast(
+                                CWLOutputAtomType,
+                                sd
+                            )
+                    if nestdirs:
+                        deps = nestdir(base, deps)
+                    if r is None:
+                        r = []
+                    r.append(deps)
+                else:
+                    if doc["class"] == "Directory" and "listing" in doc:
                         sd = scandeps(
                                 base,
-                                u2,
+                                cast(MutableSequence[CWLObjectType], doc["listing"]),
+                                reffields,
+                                urlfields,
+                                loadref,
+                                urljoin=urljoin,
+                                nestdirs=nestdirs,
+                                do_normalize=False,
+                            )
+                        if sd:
+                            if r is None:
+                                r = []
+                            r.extend(sd)
+                    elif doc["class"] == "File" and "secondaryFiles" in doc:
+                        sd = scandeps(
+                                base,
+                                cast(MutableSequence[CWLObjectType], doc["secondaryFiles"]),
                                 reffields,
                                 urlfields,
                                 loadref,
@@ -1030,48 +1011,70 @@ def scandeps(
                                 r = sd
                             else:
                                 r.extend(sd)
-                    else:
-                        subid = urljoin(base, u2)
-                        basedf, _ = urllib.parse.urldefrag(base)
-                        subiddf, _ = urllib.parse.urldefrag(subid)
-                        if basedf == subiddf:
-                            continue
-                        sub = cast(
-                            Union[MutableSequence[CWLObjectType], CWLObjectType],
-                            loadref(base, u2),
-                        )
-                        deps2 = {
-                            "class": "File",
-                            "location": subid,
-                            "format": CWL_IANA,
-                        }  # type: CWLObjectType
-                        sf = scandeps(
-                            subid,
-                            sub,
-                            reffields,
-                            urlfields,
-                            loadref,
-                            urljoin=urljoin,
-                            nestdirs=nestdirs,
-                            do_normalize=False,
-                        )
-                        if sf:
-                            deps2["secondaryFiles"] = cast(
-                                MutableSequence[CWLOutputAtomType], mergedirs(sf)
+
+        for k, v in doc.items():
+            if k in reffields:
+                with Perf(metrics, "k in reffields"):
+                    for u2 in aslist(v):
+                        if isinstance(u2, MutableMapping):
+                            sd = scandeps(
+                                    base,
+                                    u2,
+                                    reffields,
+                                    urlfields,
+                                    loadref,
+                                    urljoin=urljoin,
+                                    nestdirs=nestdirs,
+                                    do_normalize=False,
+                                )
+                            if sd:
+                                if r is None:
+                                    r = sd
+                                else:
+                                    r.extend(sd)
+                        else:
+                            subid = urljoin(base, u2)
+                            basedf, _ = urllib.parse.urldefrag(base)
+                            subiddf, _ = urllib.parse.urldefrag(subid)
+                            if basedf == subiddf:
+                                continue
+                            sub = cast(
+                                Union[MutableSequence[CWLObjectType], CWLObjectType],
+                                loadref(base, u2),
                             )
+                            deps2 = {
+                                "class": "File",
+                                "location": subid,
+                                "format": CWL_IANA,
+                            }  # type: CWLObjectType
+                            sf = scandeps(
+                                subid,
+                                sub,
+                                reffields,
+                                urlfields,
+                                loadref,
+                                urljoin=urljoin,
+                                nestdirs=nestdirs,
+                                do_normalize=False,
+                            )
+                            if sf:
+                                deps2["secondaryFiles"] = cast(
+                                    MutableSequence[CWLOutputAtomType], mergedirs(sf)
+                                )
+                            if nestdirs:
+                                deps2 = nestdir(base, deps2)
+                            if r is None:
+                                r = []
+                            r.append(deps2)
+            elif k in urlfields and k != "location":
+                with Perf(metrics, "k in urlfields"):
+                    for u3 in aslist(v):
+                        deps = {"class": "File", "location": urljoin(base, u3)}
                         if nestdirs:
-                            deps2 = nestdir(base, deps2)
+                            deps = nestdir(base, deps)
                         if r is None:
                             r = []
-                        r.append(deps2)
-            elif k in urlfields and k != "location":
-                for u3 in aslist(v):
-                    deps = {"class": "File", "location": urljoin(base, u3)}
-                    if nestdirs:
-                        deps = nestdir(base, deps)
-                    if r is None:
-                        r = []
-                    r.append(deps)
+                        r.append(deps)
             elif doc.get("class") in ("File", "Directory") and k in (
                 "listing",
                 "secondaryFiles",
@@ -1079,9 +1082,28 @@ def scandeps(
                 # should be handled earlier.
                 pass
             else:
+                with Perf(metrics, "k is something else"):
+                    sd = scandeps(
+                            base,
+                            cast(Union[MutableSequence[CWLObjectType], CWLObjectType], v),
+                            reffields,
+                            urlfields,
+                            loadref,
+                            urljoin=urljoin,
+                            nestdirs=nestdirs,
+                            do_normalize=False,
+                        )
+                    if sd:
+                        if r is None:
+                            r = sd
+                        else:
+                            r.extend(sd)
+    elif isinstance(doc, MutableSequence):
+        with Perf(metrics, "d in doc"):
+            for d in doc:
                 sd = scandeps(
                         base,
-                        cast(Union[MutableSequence[CWLObjectType], CWLObjectType], v),
+                        d,
                         reffields,
                         urlfields,
                         loadref,
@@ -1089,27 +1111,10 @@ def scandeps(
                         nestdirs=nestdirs,
                         do_normalize=False,
                     )
-                if sd:
-                    if r is None:
-                        r = sd
-                    else:
-                        r.extend(sd)
-    elif isinstance(doc, MutableSequence):
-        for d in doc:
-            sd = scandeps(
-                    base,
-                    d,
-                    reffields,
-                    urlfields,
-                    loadref,
-                    urljoin=urljoin,
-                    nestdirs=nestdirs,
-                    do_normalize=False,
-                )
-            if r is None:
-                r = sd
-            else:
-                r.extend(sd)
+                if r is None:
+                    r = sd
+                else:
+                    r.extend(sd)
 
     if r and do_normalize:
         normalizeFilesDirs(r)
