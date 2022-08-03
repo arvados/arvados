@@ -41,7 +41,8 @@ setup(name='arvados-cwl-runner',
           'arvados-python-client{}'.format(pysdk_dep),
           'setuptools',
           'ciso8601 >= 2.0.0',
-          'networkx < 2.6'
+          'networkx < 2.6',
+          'msgpack==1.0.3'
       ],
       data_files=[
           ('share/doc/arvados-cwl-runner', ['LICENSE-2.0.txt', 'README.rst']),
