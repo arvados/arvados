@@ -66,6 +66,7 @@ export class AllProcessesPanelMiddlewareService extends DataExplorerMiddlewareSe
     }
 }
 
+// Until the api supports unselecting fields, we need a list of all other fields to omit mounts
 export const containerRequestFieldsNoMounts = [
     "command",
     "container_count_max",
