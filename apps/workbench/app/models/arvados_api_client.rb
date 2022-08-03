@@ -40,7 +40,7 @@ class ArvadosApiClient
     def initialize(request_url, api_response)
       @api_status = api_response.status_code
       @api_response_s = api_response.content
-      @api_response = Oj.load(@api_response_s, :symbol_keys => true)
+      @api_response = Oj.strict_load(@api_response_s, :symbol_keys => true)
       errors = @api_response[:errors]
       if errors.respond_to?(:join)
         errors = errors.join("\n\n")
@@ -167,7 +167,7 @@ class ArvadosApiClient
     end
 
     begin
-      resp = Oj.load(msg.content, :symbol_keys => true)
+      resp = Oj.strict_load(msg.content, :symbol_keys => true)
     rescue Oj::ParseError
       resp = nil
     end
