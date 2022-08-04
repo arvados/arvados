@@ -158,7 +158,7 @@ class ActiveSupport::TestCase
     }
   end
   def json_response
-    Oj.load(@response.body)
+    Oj.safe_load(@response.body)
   end
 end
 

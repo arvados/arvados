@@ -167,7 +167,7 @@ class ActionsController < ApplicationController
     flash = {}
 
     # set owner_uuid to current project, provided it is writable
-    action_data = Oj.load(params['action_data'] || "{}")
+    action_data = Oj.safe_load(params['action_data'] || "{}")
     if action_data['current_project_uuid'] and
         current_project = Group.find?(action_data['current_project_uuid']) and
         current_project.writable_by.andand.include?(current_user.uuid)

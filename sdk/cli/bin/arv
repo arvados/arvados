@@ -172,7 +172,7 @@ def edit_and_commit_object initial_obj, tmp_stem, global_opts, &block
         # Load the new object
         newobj = case global_opts[:format]
                  when 'json'
-                   Oj.load(newcontent)
+                   Oj.safe_load(newcontent)
                  when 'yaml'
                    YAML.load(newcontent)
                  else
