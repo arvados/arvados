@@ -7,7 +7,7 @@ import { ToggleFavoriteAction } from "../actions/favorite-action";
 import { toggleFavorite } from "store/favorites/favorites-actions";
 import {
     RenameIcon, ShareIcon, MoveToIcon, CopyIcon, DetailsIcon,
-    RemoveIcon, ReRunProcessIcon, InputIcon, OutputIcon,
+    RemoveIcon, ReRunProcessIcon, OutputIcon,
     AdvancedIcon
 } from "components/icon/icon";
 import { favoritePanelActions } from "store/favorite-panel/favorite-panel-action";
@@ -18,7 +18,6 @@ import { openSharingDialog } from "store/sharing-dialog/sharing-dialog-actions";
 import { openRemoveProcessDialog, reRunProcess } from "store/processes/processes-actions";
 import { toggleDetailsPanel } from 'store/details-panel/details-panel-action';
 import { snackbarActions, SnackbarKind } from "store/snackbar/snackbar-actions";
-import { openProcessInputDialog } from "store/processes/process-input-actions";
 import { navigateToOutput } from "store/process-panel/process-panel-actions";
 import { openAdvancedTabDialog } from "store/advanced-tab/advanced-tab";
 import { TogglePublicFavoriteAction } from "../actions/public-favorite-action";
@@ -50,13 +49,6 @@ export const readOnlyProcessResourceActionSet: ContextMenuActionSet = [[
             } else {
                 dispatch(snackbarActions.OPEN_SNACKBAR({ message: `You can't re-run this process`, hideDuration: 2000, kind: SnackbarKind.ERROR }));
             }
-        }
-    },
-    {
-        icon: InputIcon,
-        name: "Inputs",
-        execute: (dispatch, resource) => {
-            dispatch<any>(openProcessInputDialog(resource.uuid));
         }
     },
     {
