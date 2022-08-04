@@ -565,8 +565,9 @@ The 'jobs' API is no longer supported.
         self.project_uuid = runtimeContext.project_uuid
 
         # Upload local file references in the job order.
-        job_order = upload_job_order(self, "%s input" % runtimeContext.name,
-                                     updated_tool, job_order, runtimeContext)
+        with Perf(metrics, "upload_job_order"):
+            job_order = upload_job_order(self, "%s input" % runtimeContext.name,
+                                         updated_tool, job_order, runtimeContext)
 
         # the last clause means: if it is a command line tool, and we
         # are going to wait for the result, and always_submit_runner
@@ -581,19 +582,23 @@ The 'jobs' API is no longer supported.
 
         loadingContext = self.loadingContext.copy()
         loadingContext.do_validate = False
+        loadingContext.disable_js_validation = True
         if submitting:
             loadingContext.do_update = False
             # Document may have been auto-updated. Reload the original
             # document with updating disabled because we want to
             # submit the document with its original CWL version, not
             # the auto-updated one.
-            tool = load_tool(updated_tool.tool["id"], loadingContext)
+            with Perf(metrics, "load_tool original"):
+                tool = load_tool(updated_tool.tool["id"], loadingContext)
         else:
             tool = updated_tool
 
         # Upload direct dependencies of workflow steps, get back mapping of files to keep references.
         # Also uploads docker images.
-        merged_map = upload_workflow_deps(self, tool, runtimeContext)
+        logger.info("Uploading workflow dependencies")
+        with Perf(metrics, "upload_workflow_deps"):
+            merged_map = upload_workflow_deps(self, tool, runtimeContext)
 
         # Recreate process object (ArvadosWorkflow or
         # ArvadosCommandTool) because tool document may have been
@@ -602,7 +607,8 @@ The 'jobs' API is no longer supported.
         loadingContext.loader = tool.doc_loader
         loadingContext.avsc_names = tool.doc_schema
         loadingContext.metadata = tool.metadata
-        tool = load_tool(tool.tool, loadingContext)
+        with Perf(metrics, "load_tool"):
+            tool = load_tool(tool.tool, loadingContext)
 
         if runtimeContext.update_workflow or runtimeContext.create_workflow:
             # Create a pipeline template or workflow record and exit.
