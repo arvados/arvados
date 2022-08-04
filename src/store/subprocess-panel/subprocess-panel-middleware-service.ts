@@ -24,6 +24,7 @@ import { ProcessStatusFilter, buildProcessStatusFilters } from '../resource-type
 import { ContainerRequestResource } from 'models/container-request';
 import { progressIndicatorActions } from '../progress-indicator/progress-indicator-actions';
 import { loadMissingProcessesInformation } from '../project-panel/project-panel-middleware-service';
+import { containerRequestFieldsNoMounts } from 'store/all-processes-panel/all-processes-panel-middleware-service';
 
 export class SubprocessMiddlewareService extends DataExplorerMiddlewareService {
     constructor(private services: ServiceRepository, id: string) {
@@ -40,7 +41,10 @@ export class SubprocessMiddlewareService extends DataExplorerMiddlewareService {
             api.dispatch(progressIndicatorActions.START_WORKING(this.getId()));
             const parentContainerRequest = await this.services.containerRequestService.get(parentContainerRequestUuid);
             const containerRequests = await this.services.containerRequestService.list(
-                { ...getParams(dataExplorer, parentContainerRequest) });
+                {
+                    ...getParams(dataExplorer, parentContainerRequest) ,
+                    select: containerRequestFieldsNoMounts
+                });
 
             api.dispatch(progressIndicatorActions.PERSIST_STOP_WORKING(this.getId()));
             api.dispatch(updateResources(containerRequests.items));
