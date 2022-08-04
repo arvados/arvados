@@ -564,7 +564,7 @@ module ApplicationHelper
                      "data-emptytext" => "none",
                      "data-placement" => "bottom",
                      "data-type" => "select",
-                     "data-source" => (opt_empty_selection + primary_type[:symbols].map {|i| {:value => i, :text => i} }).to_json,
+                     "data-source" => (opt_empty_selection + primary_type[:symbols].map {|i| {:value => cwl_shortname(i), :text => cwl_shortname(i)} }).to_json,
                      "data-url" => url_for(action: "update", id: object.uuid, controller: object.class.to_s.pluralize.underscore, merge: true),
                      "data-title" => "Set value for #{cwl_shortname(input_schema[:id])}",
                      "data-name" => dn,
