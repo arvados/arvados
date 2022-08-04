@@ -32,7 +32,7 @@ export const initialDataExplorer: DataExplorer = {
     itemsAvailable: 0,
     page: 0,
     rowsPerPage: 50,
-    rowsPerPageOptions: [50, 100, 200, 500],
+    rowsPerPageOptions: [10, 20, 50, 100, 200, 500],
     searchValue: "",
     requestState: DataTableRequestState.IDLE
 };
