@@ -19,7 +19,7 @@ DEPLOY_USER=root
 # installer.sh will log in to each of these nodes and then provision
 # it for the specified roles.
 NODES=(
-  [localhost]=api,controller,websocket,dispatcher,keepbalance,keepstore,keepproxy,keepweb,workbench,workbench2,webshell
+  [localhost]=api,controller,websocket,dispatcher,keepbalance,keepstore,keepproxy,keepweb,workbench,workbench2,webshell,shell
 )
 
 # Set this value when installing a cluster in a single host with a single
