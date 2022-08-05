@@ -625,7 +625,7 @@ if [ -z "${ROLES}" ]; then
     echo "extra_custom_certs_dir: /srv/salt/certs" > ${P_DIR}/extra_custom_certs.sls
     echo "extra_custom_certs:" >> ${P_DIR}/extra_custom_certs.sls
 
-    for c in controller websocket workbench workbench2 webshell keepweb keepproxy; do
+    for c in controller websocket workbench workbench2 webshell keepweb keepproxy shell; do
       # Are we in a single-host-single-hostname env?
       if [ "${USE_SINGLE_HOSTNAME}" = "yes" ]; then
         # Are we in a single-host-single-hostname env?
