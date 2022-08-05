@@ -38,14 +38,15 @@ GitHub Security Lab (GHSL) reported a remote code execution (RCE)
 vulnerability in the Arvados Workbench that allows authenticated attackers
 to execute arbitrary code via specially crafted JSON payloads.
 
-This vulnerability is fixed in 2.4.2.
+This vulnerability is fixed in 2.4.2 ("#19316":https://dev.arvados.org/issues/19316).
 
-We believe the vulnerability exists in all versions of Arvados up to 2.4.1.
+It is likely that this vulnerability exists in all versions of Arvados up to 2.4.1.
 
 This vulnerability is specific to the Ruby on Rails Workbench
 application ("Workbench 1").  We do not believe any other Arvados
-components, including the TypesScript based Workbench ("Workbench 2")
-or API Server, are vulnerable to this attack.
+components, including the TypesScript browser-based Workbench
+application ("Workbench 2") or API Server, are vulnerable to this
+attack.
 
 h3. CVE-2022-31163 and CVE-2022-32224
 
