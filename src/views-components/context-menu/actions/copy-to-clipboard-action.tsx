@@ -6,12 +6,12 @@ import React from "react";
 import copy from 'copy-to-clipboard';
 import { ListItemIcon, ListItemText, ListItem } from "@material-ui/core";
 import { Link } from "components/icon/icon";
-import { getClipboardUrl } from "./helpers";
+import { getCollectionItemClipboardUrl } from "./helpers";
 
 export const CopyToClipboardAction = (props: { href?: any, download?: any, onClick?: () => void, kind?: string, currentCollectionUuid?: string; }) => {
     const copyToClipboard = () => {
         if (props.href) {
-            const clipboardUrl = getClipboardUrl(props.href, true, true);
+            const clipboardUrl = getCollectionItemClipboardUrl(props.href, true, true);
             copy(clipboardUrl);
         }
 

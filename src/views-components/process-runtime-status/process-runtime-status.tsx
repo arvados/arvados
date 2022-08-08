@@ -7,6 +7,7 @@ import {
     ExpansionPanel,
     ExpansionPanelDetails,
     ExpansionPanelSummary,
+    Paper,
     StyleRulesCallback,
     Typography,
     withStyles,
@@ -26,7 +27,8 @@ type CssRules = 'root'
     | 'error'
     | 'errorColor'
     | 'warning'
-    | 'warningColor';
+    | 'warningColor'
+    | 'paperRoot';
 
 const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     root: {
@@ -65,15 +67,21 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     warningColor: {
         color: theme.customs.colors.yellow900,
     },
+    paperRoot: {
+        minHeight: theme.spacing.unit * 6,
+        display: 'flex',
+        alignItems: 'center',
+    },
 });
 export interface ProcessRuntimeStatusDataProps {
     runtimeStatus: RuntimeStatus | undefined;
+    containerCount: number;
 }
 
 type ProcessRuntimeStatusProps = ProcessRuntimeStatusDataProps & WithStyles<CssRules>;
 
 export const ProcessRuntimeStatus = withStyles(styles)(
-    ({ runtimeStatus, classes }: ProcessRuntimeStatusProps) => {
+    ({ runtimeStatus, containerCount, classes }: ProcessRuntimeStatusProps) => {
     return <div className={classes.root}>
         { runtimeStatus?.error &&
         <div data-cy='process-runtime-status-error'><ExpansionPanel className={classes.error} elevation={0}>
@@ -102,6 +110,15 @@ export const ProcessRuntimeStatus = withStyles(styles)(
                 </Typography>
             </ExpansionPanelDetails>
         </ExpansionPanel></div>
+        }
+        { containerCount > 1 &&
+        <div data-cy='process-runtime-status-retry-warning' >
+            <Paper className={classNames(classes.warning, classes.paperRoot)} elevation={0}>
+                <Typography className={classNames(classes.heading, classes.summary, classes.warningColor)}>
+                    {`Warning: Process retried ${containerCount - 1} time${containerCount > 2 ? 's' : ''} due to failure.`}
+                </Typography>
+            </Paper>
+        </div>
         }
     </div>
 });

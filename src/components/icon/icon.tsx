@@ -77,6 +77,7 @@ import NotInterested from '@material-ui/icons/NotInterested';
 // Import FontAwesome icons
 import { library } from '@fortawesome/fontawesome-svg-core';
 import { faPencilAlt, faSlash, faUsers, faEllipsisH } from '@fortawesome/free-solid-svg-icons';
+import { FormatAlignLeft } from '@material-ui/icons';
 library.add(
     faPencilAlt,
     faSlash,
@@ -194,7 +195,8 @@ export const CanReadIcon: IconType = (props) => <RemoveRedEye {...props} />;
 export const CanWriteIcon: IconType = (props) => <Edit {...props} />;
 export const CanManageIcon: IconType = (props) => <Computer {...props} />;
 export const AddUserIcon: IconType = (props) => <PersonAdd {...props} />;
-export const WordWrapIcon: IconType = (props) => <WrapText {...props} />;
+export const WordWrapOnIcon: IconType = (props) => <WrapText {...props} />;
+export const WordWrapOffIcon: IconType = (props) => <FormatAlignLeft {...props} />;
 export const TextIncreaseIcon: IconType = (props) => <TextIncrease {...props} />;
 export const TextDecreaseIcon: IconType = (props) => <TextDecrease {...props} />;
 export const DeactivateUserIcon: IconType = (props) => <NotInterested {...props} />;

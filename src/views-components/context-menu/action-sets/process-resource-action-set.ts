@@ -7,7 +7,7 @@ import { ToggleFavoriteAction } from "../actions/favorite-action";
 import { toggleFavorite } from "store/favorites/favorites-actions";
 import {
     RenameIcon, ShareIcon, MoveToIcon, CopyIcon, DetailsIcon,
-    RemoveIcon, ReRunProcessIcon, InputIcon, OutputIcon, CommandIcon,
+    RemoveIcon, ReRunProcessIcon, OutputIcon,
     AdvancedIcon
 } from "components/icon/icon";
 import { favoritePanelActions } from "store/favorite-panel/favorite-panel-action";
@@ -18,9 +18,7 @@ import { openSharingDialog } from "store/sharing-dialog/sharing-dialog-actions";
 import { openRemoveProcessDialog, reRunProcess } from "store/processes/processes-actions";
 import { toggleDetailsPanel } from 'store/details-panel/details-panel-action';
 import { snackbarActions, SnackbarKind } from "store/snackbar/snackbar-actions";
-import { openProcessInputDialog } from "store/processes/process-input-actions";
 import { navigateToOutput } from "store/process-panel/process-panel-actions";
-import { openProcessCommandDialog } from "store/processes/process-command-actions";
 import { openAdvancedTabDialog } from "store/advanced-tab/advanced-tab";
 import { TogglePublicFavoriteAction } from "../actions/public-favorite-action";
 import { togglePublicFavorite } from "store/public-favorites/public-favorites-actions";
@@ -54,26 +52,12 @@ export const readOnlyProcessResourceActionSet: ContextMenuActionSet = [[
         }
     },
     {
-        icon: InputIcon,
-        name: "Inputs",
-        execute: (dispatch, resource) => {
-            dispatch<any>(openProcessInputDialog(resource.uuid));
-        }
-    },
-    {
         icon: OutputIcon,
         name: "Outputs",
         execute: (dispatch, resource) => {
             if(resource.outputUuid){
                 dispatch<any>(navigateToOutput(resource.outputUuid));
             }
-        }
-    },
-    {
-        icon: CommandIcon,
-        name: "Command",
-        execute: (dispatch, resource) => {
-            dispatch<any>(openProcessCommandDialog(resource.uuid));
         }
     },
     {

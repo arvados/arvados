@@ -17,12 +17,13 @@ export enum LogEventType {
     STDOUT = 'stdout',
     STDERR = 'stderr',
     CONTAINER = 'container',
+    KEEPSTORE = 'keepstore',
 }
 
 export interface LogResource extends Resource, ResourceWithProperties {
     kind: ResourceKind.LOG;
     objectUuid: string;
     eventAt: string;
-    eventType: string;
+    eventType: LogEventType;
     summary: string;
 }

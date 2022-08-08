@@ -13,10 +13,12 @@ import {
 import grey from '@material-ui/core/colors/grey';
 import { ArvadosTheme } from 'common/custom-theme';
 import { Link, Typography } from '@material-ui/core';
-import { navigateTo } from 'store/navigation/navigation-action';
+import { navigationNotAvailable } from 'store/navigation/navigation-action';
 import { Dispatch } from 'redux';
 import { connect, DispatchProp } from 'react-redux';
 import classNames from 'classnames';
+import { FederationConfig, getNavUrl } from 'routes/routes';
+import { RootState } from 'store/store';
 
 type CssRules = 'root' | 'wordWrap' | 'logText';
 
@@ -26,6 +28,9 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
         overflow: 'auto',
         backgroundColor: '#000',
         height: `calc(100% - ${theme.spacing.unit * 4}px)`, // so that horizontal scollbar is visible
+        "& a": {
+            color: theme.palette.primary.main,
+        },
     },
     logText: {
         padding: theme.spacing.unit * 0.5,
@@ -55,7 +60,11 @@ interface ProcessLogCodeSnippetProps {
     wordWrap?: boolean;
 }
 
-const renderLinks = (fontSize: number, dispatch: Dispatch) => (text: string) => {
+interface ProcessLogCodeSnippetAuthProps {
+    auth: FederationConfig;
+}
+
+const renderLinks = (fontSize: number, auth: FederationConfig, dispatch: Dispatch) => (text: string) => {
     // Matches UUIDs & PDHs
     const REGEX = /[a-z0-9]{5}-[a-z0-9]{5}-[a-z0-9]{15}|[0-9a-f]{32}\+\d+/g;
     const links = text.match(REGEX);
@@ -67,7 +76,14 @@ const renderLinks = (fontSize: number, dispatch: Dispatch) => (text: string) => 
         <React.Fragment key={index}>
             {part}
             {links[index] &&
-            <Link onClick={() => dispatch<any>(navigateTo(links[index]))}
+            <Link onClick={() => {
+                const url = getNavUrl(links[index], auth)
+                if (url) {
+                    window.open(`${window.location.origin}${url}`, '_blank');
+                } else {
+                    dispatch(navigationNotAvailable(links[index]));
+                }
+            }}
                 style={ {cursor: 'pointer'} }>
                 {links[index]}
             </Link>}
@@ -76,9 +92,13 @@ const renderLinks = (fontSize: number, dispatch: Dispatch) => (text: string) => 
     </Typography>;
 };
 
-export const ProcessLogCodeSnippet = withStyles(styles)(connect()(
-    ({classes, lines, fontSize, dispatch, wordWrap}: ProcessLogCodeSnippetProps & WithStyles<CssRules> & DispatchProp) => {
-        const [followMode, setFollowMode] = useState<boolean>(false);
+const mapStateToProps = (state: RootState): ProcessLogCodeSnippetAuthProps => ({
+    auth: state.auth,
+});
+
+export const ProcessLogCodeSnippet = withStyles(styles)(connect(mapStateToProps)(
+    ({classes, lines, fontSize, auth, dispatch, wordWrap}: ProcessLogCodeSnippetProps & WithStyles<CssRules> & ProcessLogCodeSnippetAuthProps & DispatchProp) => {
+        const [followMode, setFollowMode] = useState<boolean>(true);
         const scrollRef = useRef<HTMLDivElement>(null);
 
         useEffect(() => {
@@ -92,7 +112,7 @@ export const ProcessLogCodeSnippet = withStyles(styles)(connect()(
             <div ref={scrollRef} className={classes.root}
                 onScroll={(e) => {
                     const elem = e.target as HTMLDivElement;
-                    if (elem.scrollTop + elem.clientHeight >= elem.scrollHeight) {
+                    if (elem.scrollTop + (elem.clientHeight*1.1) >= elem.scrollHeight) {
                         setFollowMode(true);
                     } else {
                         setFollowMode(false);
@@ -101,7 +121,7 @@ export const ProcessLogCodeSnippet = withStyles(styles)(connect()(
                 { lines.map((line: string, index: number) =>
                 <Typography key={index} component="pre"
                     className={classNames(classes.logText, wordWrap ? classes.wordWrap : undefined)}>
-                    {renderLinks(fontSize, dispatch)(line)}
+                    {renderLinks(fontSize, auth, dispatch)(line)}
                 </Typography>
                 ) }
             </div>

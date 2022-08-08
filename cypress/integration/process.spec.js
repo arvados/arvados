@@ -168,8 +168,15 @@ describe('Process tests', function() {
             cy.getAll('@stdoutLogs', '@nodeInfoLogs', '@crunchRunLogs').then(function() {
                 cy.loginAs(activeUser);
                 cy.goToPath(`/processes/${containerRequest.uuid}`);
-                // Should should all logs
-                cy.get('[data-cy=process-logs-filter]').should('contain', 'All logs');
+                // Should show main logs by default
+                cy.get('[data-cy=process-logs-filter]').should('contain', 'Main logs');
+                cy.get('[data-cy=process-logs]')
+                    .should('contain', stdoutLogs[Math.floor(Math.random() * stdoutLogs.length)])
+                    .and('not.contain', nodeInfoLogs[Math.floor(Math.random() * nodeInfoLogs.length)])
+                    .and('contain', crunchRunLogs[Math.floor(Math.random() * crunchRunLogs.length)]);
+                // Select 'All logs'
+                cy.get('[data-cy=process-logs-filter]').click();
+                cy.get('body').contains('li', 'All logs').click();
                 cy.get('[data-cy=process-logs]')
                     .should('contain', stdoutLogs[Math.floor(Math.random() * stdoutLogs.length)])
                     .and('contain', nodeInfoLogs[Math.floor(Math.random() * nodeInfoLogs.length)])
@@ -243,6 +250,28 @@ describe('Process tests', function() {
             cy.get('[data-cy=process-runtime-status-warning]')
                 .should('contain', 'Free disk space is low')
                 .and('contain', 'No additional warning details available');
+        });
+
+
+        // Force container_count for testing
+        let containerCount = 2;
+        cy.intercept({method: 'GET', url: '**/arvados/v1/container_requests/*'}, (req) => {
+            req.reply((res) => {
+                res.body.container_count = containerCount;
+            });
+        });
+
+        cy.getAll('@containerRequest').then(function([containerRequest]) {
+            cy.goToPath(`/processes/${containerRequest.uuid}`);
+            cy.get('[data-cy=process-runtime-status-retry-warning]')
+                .should('contain', 'Process retried 1 time');
+        });
+
+        cy.getAll('@containerRequest').then(function([containerRequest]) {
+            containerCount = 3;
+            cy.goToPath(`/processes/${containerRequest.uuid}`);
+            cy.get('[data-cy=process-runtime-status-retry-warning]')
+                .should('contain', 'Process retried 2 times');
         });
     });
 });

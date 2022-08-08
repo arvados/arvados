@@ -66,6 +66,7 @@ import { workflowActionSet } from 'views-components/context-menu/action-sets/wor
 import { snackbarActions, SnackbarKind } from "store/snackbar/snackbar-actions";
 import { openNotFoundDialog } from './store/not-found-panel/not-found-panel-action';
 import { storeRedirects } from './common/redirect-to';
+import { searchResultsActionSet } from 'views-components/context-menu/action-sets/search-results-action-set';
 
 console.log(`Starting arvados [${getBuildInfo()}]`);
 
@@ -106,6 +107,7 @@ addMenuActionSet(ContextMenuKind.FROZEN_PROJECT_ADMIN, frozenAdminActionSet);
 addMenuActionSet(ContextMenuKind.FILTER_GROUP_ADMIN, filterGroupAdminActionSet);
 addMenuActionSet(ContextMenuKind.PERMISSION_EDIT, permissionEditActionSet);
 addMenuActionSet(ContextMenuKind.WORKFLOW, workflowActionSet);
+addMenuActionSet(ContextMenuKind.SEARCH_RESULTS, searchResultsActionSet);
 
 storeRedirects();
 
