@@ -152,12 +152,12 @@ class ApplicationController < ActionController::Base
     if params[:filters]
       filters = params[:filters]
       if filters.is_a? String
-        filters = Oj.load filters
+        filters = Oj.safe_load filters
       elsif filters.is_a? Array
         filters = filters.collect do |filter|
           if filter.is_a? String
             # Accept filters[]=["foo","=","bar"]
-            Oj.load filter
+            Oj.safe_load filter
           else
             # Accept filters=[["foo","=","bar"]]
             filter
@@ -361,7 +361,7 @@ class ApplicationController < ActionController::Base
     @updates.keys.each do |attr|
       if @object.send(attr).is_a? Hash
         if @updates[attr].is_a? String
-          @updates[attr] = Oj.load @updates[attr]
+          @updates[attr] = Oj.safe_load @updates[attr]
         end
         if params[:merge] || params["merge_#{attr}".to_sym]
           # Merge provided Hash with current Hash, instead of

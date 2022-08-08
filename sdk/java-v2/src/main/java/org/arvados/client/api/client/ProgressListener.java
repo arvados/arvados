@@ -10,5 +10,5 @@ package org.arvados.client.api.client;
 @FunctionalInterface
 public interface ProgressListener {
 
-    void updateProgress(long num);
+    void updateProgress(long uploadedBytes);
 }

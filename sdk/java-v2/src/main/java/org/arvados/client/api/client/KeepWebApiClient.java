@@ -9,7 +9,10 @@ package org.arvados.client.api.client;
 
 import okhttp3.HttpUrl;
 import okhttp3.Request;
+import okhttp3.RequestBody;
 import org.arvados.client.config.ConfigProvider;
+
+import java.io.File;
 
 public class KeepWebApiClient extends BaseApiClient {
 
@@ -32,6 +35,16 @@ public class KeepWebApiClient extends BaseApiClient {
                 .delete()
                 .build();
 
+        return newCall(request);
+    }
+
+    public String upload(String collectionUuid, File file, ProgressListener progressListener) {
+        RequestBody requestBody = new CountingFileRequestBody(file, progressListener);
+
+        Request request = getRequestBuilder()
+                .url(getUrlBuilder(collectionUuid, file.getName()).build())
+                .put(requestBody)
+                .build();
         return newCall(request);
     }
 

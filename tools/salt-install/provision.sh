@@ -198,7 +198,7 @@ CUSTOM_CERTS_DIR="${SCRIPT_DIR}/local_config_dir/certs"
 # The "local.params.example.*" files already set "RELEASE=production"
 # to deploy  production-ready packages
 RELEASE="production"
-VERSION="2.4.1-1"
+VERSION="2.4.2-1"
 
 # These are arvados-formula-related parameters
 # An arvados-formula tag. For a stable release, this should be a
@@ -614,7 +614,7 @@ if [ -z "${ROLES}" ]; then
     echo "extra_custom_certs_dir: /srv/salt/certs" > ${P_DIR}/extra_custom_certs.sls
     echo "extra_custom_certs:" >> ${P_DIR}/extra_custom_certs.sls
 
-    for c in controller websocket workbench workbench2 webshell keepweb keepproxy; do
+    for c in controller websocket workbench workbench2 webshell keepweb keepproxy shell; do
       # Are we in a single-host-single-hostname env?
       if [ "${USE_SINGLE_HOSTNAME}" = "yes" ]; then
         # Are we in a single-host-single-hostname env?

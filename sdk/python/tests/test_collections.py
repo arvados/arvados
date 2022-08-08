@@ -969,6 +969,20 @@ class NewCollectionTestCase(unittest.TestCase, CollectionTestMixin):
         with self.assertRaises(arvados.errors.ArgumentError):
             c.remove("")
 
+    def test_remove_recursive(self):
+        c = Collection('. 781e5e245d69b566979b86e28d23f2c7+10 0:10:a/b/c/d/efg.txt 0:10:xyz.txt\n')
+        self.assertEqual(". 781e5e245d69b566979b86e28d23f2c7+10 0:10:xyz.txt\n./a/b/c/d 781e5e245d69b566979b86e28d23f2c7+10 0:10:efg.txt\n", c.portable_manifest_text())
+        self.assertIn("a", c)
+        self.assertEqual(1, len(c["a"].keys()))
+        # cannot remove non-empty directory with default recursive=False
+        with self.assertRaises(OSError):
+            c.remove("a/b")
+        with self.assertRaises(OSError):
+            c.remove("a/b/c/d")
+        c.remove("a/b", recursive=True)
+        self.assertEqual(0, len(c["a"].keys()))
+        self.assertEqual(". 781e5e245d69b566979b86e28d23f2c7+10 0:10:xyz.txt\n./a d41d8cd98f00b204e9800998ecf8427e+0 0:0:\\056\n", c.portable_manifest_text())
+
     def test_find(self):
         c = Collection('. 781e5e245d69b566979b86e28d23f2c7+10 0:10:count1.txt 0:10:count2.txt\n')
         self.assertIs(c.find("."), c)

@@ -28,6 +28,40 @@ TODO: extract this information based on git commit messages and generate changel
 <div class="releasenotes">
 </notextile>
 
+h2(#v2_4_2). v2.4.2 (2022-08-09)
+
+"previous: Upgrading to 2.4.1":#v2_4_1
+
+h3. GHSL-2022-063
+
+GitHub Security Lab (GHSL) reported a remote code execution (RCE)
+vulnerability in the Arvados Workbench that allows authenticated attackers
+to execute arbitrary code via specially crafted JSON payloads.
+
+This vulnerability is fixed in 2.4.2 ("#19316":https://dev.arvados.org/issues/19316).
+
+It is likely that this vulnerability exists in all versions of Arvados up to 2.4.1.
+
+This vulnerability is specific to the Ruby on Rails Workbench
+application ("Workbench 1").  We do not believe any other Arvados
+components, including the TypesScript browser-based Workbench
+application ("Workbench 2") or API Server, are vulnerable to this
+attack.
+
+h3. CVE-2022-31163 and CVE-2022-32224
+
+As a precaution, Arvados 2.4.2 has includes security updates for Ruby
+on Rails and the TZInfo Ruby gem.  However, there are no known
+exploits in Arvados based on these CVEs.
+
+h3. Disable Sharing URLs UI
+
+There is now a configuration option @Workbench.DisableSharingURLsUI@
+for admins to disable the user interface for "sharing link" feature
+(URLs which can be sent to users to access the data in a specific
+collection in Arvados without an Arvados account), for organizations
+where sharing links violate their data sharing policy.
+
 h2(#v2_4_1). v2.4.1 (2022-06-02)
 
 "previous: Upgrading to 2.4.0":#v2_4_0
