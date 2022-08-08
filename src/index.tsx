@@ -150,6 +150,8 @@ fetchConfig()
 
         const store = configureStore(history, services, config);
 
+        servicesProvider.setStore(store);
+
         store.subscribe(initListener(history, store, services, config));
         store.dispatch(initAuth(config));
         store.dispatch(setBuildInfo());

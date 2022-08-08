@@ -112,7 +112,6 @@ export const freezeProjectAction = {
         } else {
             dispatch(freezeProject(resource.uuid));
         }
-
     }
 }
 

@@ -5,6 +5,7 @@
 import { Dispatch } from "redux";
 import { ServiceRepository } from "services/services";
 import { projectPanelActions } from "store/project-panel/project-panel-action";
+import { loadResource } from "store/resources/resources-actions";
 import { RootState } from "store/store";
 
 export const freezeProject = (uuid: string) =>
@@ -16,6 +17,7 @@ export const freezeProject = (uuid: string) =>
         });
 
         dispatch(projectPanelActions.REQUEST_ITEMS());
+        dispatch<any>(loadResource(uuid, false));
         return updatedProject;
     };
 
@@ -27,5 +29,6 @@ export const unfreezeProject = (uuid: string) =>
         });
 
         dispatch(projectPanelActions.REQUEST_ITEMS());
+        dispatch<any>(loadResource(uuid, false));
         return updatedProject;
     };

@@ -22,6 +22,7 @@ import { GroupClass, GroupResource } from 'models/group';
 import { GroupContentsResource } from 'services/groups-service/groups-service';
 import { LinkResource } from 'models/link';
 import { resourceIsFrozen } from 'common/frozen-resources';
+import { ProjectResource } from 'models/project';
 
 export const contextMenuActions = unionize({
     OPEN_CONTEXT_MENU: ofType<{ position: ContextMenuPosition, resource: ContextMenuResource }>(),
@@ -165,6 +166,7 @@ export const openProjectContextMenu = (event: React.MouseEvent<HTMLElement>, res
                 description: res.description,
                 ownerUuid: res.ownerUuid,
                 isTrashed: ('isTrashed' in res) ? res.isTrashed : false,
+                isFrozen: !!(res as ProjectResource).frozenByUuid,
             }));
         }
     };
