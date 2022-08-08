@@ -83,6 +83,8 @@ class Container < ArvadosModel
     t.add :interactive_session_started
     t.add :output_storage_classes
     t.add :output_properties
+    t.add :cost
+    t.add :subrequests_cost
   end
 
   # Supported states for a container
@@ -478,8 +480,9 @@ class Container < ArvadosModel
 
   def validate_change
     permitted = [:state]
-    progress_attrs = [:progress, :runtime_status, :log, :output, :output_properties, :exit_code]
     final_attrs = [:finished_at]
+    progress_attrs = [:progress, :runtime_status, :subrequests_cost, :cost,
+                      :log, :output, :output_properties, :exit_code]
 
     if self.new_record?
       permitted.push(:owner_uuid, :command, :container_image, :cwd,
@@ -516,7 +519,7 @@ class Container < ArvadosModel
       when Running
         permitted.push :finished_at, *progress_attrs
       when Queued, Locked
-        permitted.push :finished_at, :log, :runtime_status
+        permitted.push :finished_at, :log, :runtime_status, :cost
       end
 
     else
@@ -719,6 +722,7 @@ class Container < ArvadosModel
               cr.with_lock do
                 leave_modified_by_user_alone do
                   # Use row locking because this increments container_count
+                  cr.cumulative_cost += self.cost + self.subrequests_cost
                   cr.container_uuid = c.uuid
                   cr.save!
                 end

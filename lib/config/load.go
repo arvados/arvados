@@ -448,6 +448,7 @@ func (ldr *Loader) setLoopbackInstanceType(cfg *arvados.Config) error {
 			RAM:             hostram,
 			Scratch:         scratch,
 			IncludedScratch: scratch,
+			Price:           1.0,
 		}}
 		cfg.Clusters[id] = cc
 	}

@@ -140,6 +140,7 @@ type ContainerRunner struct {
 	MkArvClient   func(token string) (IArvadosClient, IKeepClient, *arvados.Client, error)
 	finalState    string
 	parentTemp    string
+	costStartTime time.Time
 
 	keepstoreLogger  io.WriteCloser
 	keepstoreLogbuf  *bufThenWrite
@@ -1457,6 +1458,10 @@ func (runner *ContainerRunner) UpdateContainerFinal() error {
 	if runner.finalState == "Complete" && runner.OutputPDH != nil {
 		update["output"] = *runner.OutputPDH
 	}
+	var it arvados.InstanceType
+	if j := os.Getenv("InstanceType"); j != "" && json.Unmarshal([]byte(j), &it) == nil && it.Price > 0 {
+		update["cost"] = it.Price * time.Now().Sub(runner.costStartTime).Seconds() / time.Hour.Seconds()
+	}
 	return runner.DispatcherArvClient.Update("containers", runner.Container.UUID, arvadosclient.Dict{"container": update}, nil)
 }
 
@@ -1489,6 +1494,7 @@ func (runner *ContainerRunner) Run() (err error) {
 	runner.CrunchLog.Printf("Using FUSE mount: %s", v)
 	runner.CrunchLog.Printf("Using container runtime: %s", runner.executor.Runtime())
 	runner.CrunchLog.Printf("Executing container: %s", runner.Container.UUID)
+	runner.costStartTime = time.Now()
 
 	hostname, hosterr := os.Hostname()
 	if hosterr != nil {

@@ -62,6 +62,7 @@ table(table table-bordered table-condensed).
 |runtime_auth_scopes|array of string|The scopes associated with the auth token used to run this container.||
 |output_storage_classes|array of strings|The storage classes that will be used for the log and output collections of this container request|default is ["default"]|
 |output_properties|hash|User metadata properties to set on the output collection.  The output collection will also have default properties "type" ("intermediate" or "output") and "container_request" (the uuid of container request that produced the collection).|
+|cumulative_cost|number|Estimated cost of the cloud VMs used to satisfy the request, including retried attempts and completed subrequests, but not including reused containers.|0 if container was reused or VM price information was not available.|
 
 h2(#priority). Priority
 
