@@ -962,7 +962,7 @@ func (h *handler) determineCollection(fs arvados.CustomFileSystem, path string) 
 	var i int
 	for i = 0; i < len(segments); i++ {
 		dir := append([]string{}, segments[0:i]...)
-		dir = append(dir, ".arvados#collection")
+		dir = append(dir, ".arvados#collection_id")
 		f, err := fs.OpenFile(strings.Join(dir, "/"), os.O_RDONLY, 0)
 		if f != nil {
 			defer f.Close()

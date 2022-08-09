@@ -954,6 +954,17 @@ func (dn *dirnode) Child(name string, replace func(inode) (inode, error)) (inode
 		gn.SetParent(dn, name)
 		return gn, nil
 	}
+	if dn == dn.fs.rootnode() && name == ".arvados#collection_id" {
+		gn := &getternode{Getter: func() ([]byte, error) {
+			data, err := json.Marshal(Collection{UUID: dn.fs.uuid})
+			if err == nil {
+				data = append(data, '\n')
+			}
+			return data, err
+		}}
+		gn.SetParent(dn, name)
+		return gn, nil
+	}
 	return dn.treenode.Child(name, replace)
 }
 
