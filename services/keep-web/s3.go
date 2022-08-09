@@ -13,6 +13,7 @@ import (
 	"fmt"
 	"hash"
 	"io"
+	"mime"
 	"net/http"
 	"net/url"
 	"os"
@@ -415,6 +416,18 @@ func (h *handler) serveS3(w http.ResponseWriter, r *http.Request) bool {
 		// shallow copy r, and change URL path
 		r := *r
 		r.URL.Path = fspath
+
+		// Determine content-type from file extension. But
+		// unlike the default http.FileServer behavior, if
+		// mime.TypeByExtension returns nothing, use
+		// "application/octet-stream" instead of sniffing
+		// content.
+		ctype := mime.TypeByExtension(filepath.Ext(fspath))
+		if ctype == "" {
+			ctype = "application/octet-stream"
+		}
+		w.Header().Set("Content-Type", ctype)
+
 		http.FileServer(fs).ServeHTTP(w, &r)
 		return true
 	case r.Method == http.MethodPut:
