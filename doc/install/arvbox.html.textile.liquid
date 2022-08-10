@@ -16,15 +16,16 @@ h2. Quick start
 <pre>
 $ curl -O https://git.arvados.org/arvados.git/blob_plain/refs/heads/main:/tools/arvbox/bin/arvbox
 $ chmod +x arvbox
-$ ./arvbox start localdemo latest
+$ ./arvbox start localdemo
+$ ./arvbox root-cert
 $ ./arvbox adduser demouser demo@example.com
 </pre>
 
-You can now log in as @demouser@ using the password you selected.
+You will then need to "install the arvbox root certificate":#root-cert .  After that, you can now log in to Workbench as @demouser@ with the password you selected.
 
 h2. Requirements
 
-* Linux 3.x+ and Docker 1.9+
+* Linux 3.x+ and Docker 1.10+
 * Minimum of 3 GiB of RAM  + additional memory to run jobs
 * Minimum of 3 GiB of disk + storage for actual data
 
@@ -68,7 +69,7 @@ removeuser <username>
 listusers          list user logins
 </pre>
 
-h2. Install root certificate
+h2(#root-cert). Install root certificate
 
 Arvbox creates root certificate to authorize Arvbox services.  Installing the root certificate into your web browser will prevent security errors when accessing Arvbox services with your web browser.  Every  Arvbox instance generates a new root signing key.
 
