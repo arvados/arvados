@@ -93,6 +93,10 @@ COPY --from=base $GOPATH/bin/arvados-server $GOPATH/bin/arvados-server
 RUN $GOPATH/bin/arvados-server --version
 RUN $GOPATH/bin/arvados-server install -type test
 
+RUN npm install -g yarn && \
+    ln -sfv /var/lib/arvados/node-$(node --version)-linux-x64/bin/yarn /usr/local/bin/ && \
+    ln -sfv /var/lib/arvados/node-$(node --version)-linux-x64/bin/yarnpkg /usr/local/bin/
+
 RUN /etc/init.d/postgresql start && \
     su postgres -c 'dropuser arvados' && \
     su postgres -c 'createuser -s arvbox' && \
