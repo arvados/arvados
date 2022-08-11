@@ -83,7 +83,8 @@ export const loadVirtualMachinesAdminData = () =>
             filters: new FilterBuilder()
             .addIn('head_uuid', virtualMachines.items.map(item => item.uuid))
             .addEqual('name', PermissionLevel.CAN_LOGIN)
-            .getFilters()
+            .getFilters(),
+            limit: 1000
         });
         dispatch(updateResources(logins.items));
         dispatch(virtualMachinesActions.SET_LINKS(logins));
@@ -92,7 +93,8 @@ export const loadVirtualMachinesAdminData = () =>
             filters: new FilterBuilder()
             .addIn('uuid', logins.items.map(item => item.tailUuid))
             .getFilters(),
-            count: "none"
+            count: "none", // Necessary for federated queries
+            limit: 1000
         });
         dispatch(updateResources(users.items));
 
