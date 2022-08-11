@@ -68,9 +68,10 @@ const treePickerToTreeItems = (tree: Ttree<any>, resources: ResourcesState) =>
         const node = getNode(id)(tree) || initTreeNode({ id: '', value: 'InvalidNode' });
         const items = getNodeChildrenIds(node.id)(tree)
             .map(treePickerToTreeItems(tree, resources));
+        const resource = resources[node.id];
         return {
             active: node.active,
-            data: resources[node.id] || node.value,
+            data: resource ? { ...resource, name: node.value.name || node.value } : undefined || node.value,
             id: node.id,
             items: items.length > 0 ? items : undefined,
             open: node.expanded,
