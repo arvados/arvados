@@ -397,6 +397,7 @@ func (diag *diagnoser) runtests() {
 			return
 		}
 	}
+	tarfilename := "sha256:" + imageSHA2 + ".tar"
 
 	diag.dotest(100, "uploading file via webdav", func() error {
 		ctx, cancel := context.WithDeadline(context.Background(), time.Now().Add(diag.timeout))
@@ -404,7 +405,7 @@ func (diag *diagnoser) runtests() {
 		if collection.UUID == "" {
 			return fmt.Errorf("skipping, no test collection")
 		}
-		req, err := http.NewRequestWithContext(ctx, "PUT", cluster.Services.WebDAVDownload.ExternalURL.String()+"c="+collection.UUID+"/sha256:"+imageSHA2+".tar", bytes.NewReader(HelloWorldDockerImage))
+		req, err := http.NewRequestWithContext(ctx, "PUT", cluster.Services.WebDAVDownload.ExternalURL.String()+"c="+collection.UUID+"/"+tarfilename, bytes.NewReader(HelloWorldDockerImage))
 		if err != nil {
 			return fmt.Errorf("BUG? http.NewRequest: %s", err)
 		}
@@ -445,11 +446,11 @@ func (diag *diagnoser) runtests() {
 		fileurl      string
 	}{
 		{false, false, http.StatusNotFound, strings.Replace(davurl.String(), "*", "d41d8cd98f00b204e9800998ecf8427e-0", 1) + "foo"},
-		{false, false, http.StatusNotFound, strings.Replace(davurl.String(), "*", "d41d8cd98f00b204e9800998ecf8427e-0", 1) + "testfile"},
+		{false, false, http.StatusNotFound, strings.Replace(davurl.String(), "*", "d41d8cd98f00b204e9800998ecf8427e-0", 1) + tarfilename},
 		{false, false, http.StatusNotFound, cluster.Services.WebDAVDownload.ExternalURL.String() + "c=d41d8cd98f00b204e9800998ecf8427e+0/_/foo"},
-		{false, false, http.StatusNotFound, cluster.Services.WebDAVDownload.ExternalURL.String() + "c=d41d8cd98f00b204e9800998ecf8427e+0/_/testfile"},
-		{true, true, http.StatusOK, strings.Replace(davurl.String(), "*", strings.Replace(collection.PortableDataHash, "+", "-", -1), 1) + "testfile"},
-		{true, false, http.StatusOK, cluster.Services.WebDAVDownload.ExternalURL.String() + "c=" + collection.UUID + "/_/sha256:" + imageSHA2 + ".tar"},
+		{false, false, http.StatusNotFound, cluster.Services.WebDAVDownload.ExternalURL.String() + "c=d41d8cd98f00b204e9800998ecf8427e+0/_/" + tarfilename},
+		{true, true, http.StatusOK, strings.Replace(davurl.String(), "*", strings.Replace(collection.PortableDataHash, "+", "-", -1), 1) + tarfilename},
+		{true, false, http.StatusOK, cluster.Services.WebDAVDownload.ExternalURL.String() + "c=" + collection.UUID + "/_/" + tarfilename},
 	} {
 		diag.dotest(120+i, fmt.Sprintf("downloading from webdav (%s)", trial.fileurl), func() error {
 			if trial.needWildcard && !davWildcard {
