@@ -12,6 +12,7 @@ interface ChipsInputProps<Value> {
     values: Value[];
     getLabel?: (value: Value) => string;
     onChange: (value: Value[]) => void;
+    onPartialInput?: (value: boolean) => void;
     handleFocus?: (e: any) => void;
     handleBlur?: (e: any) => void;
     chipsClassName?: string;
@@ -54,6 +55,9 @@ export const ChipsInput = withStyles(styles)(
 
         setText = (event: React.ChangeEvent<HTMLInputElement>) => {
             this.setState({ text: event.target.value }, () => {
+                // Update partial input status
+                this.props.onPartialInput && this.props.onPartialInput(this.state.text !== '');
+
                 // If pattern is provided, check for delimiter
                 if (this.props.pattern) {
                     const matches = this.state.text.match(this.props.pattern);
@@ -92,6 +96,7 @@ export const ChipsInput = withStyles(styles)(
                     this.setState({ text: '' });
                     this.props.onChange([...this.props.values, newValue]);
                 }
+                this.props.onPartialInput && this.props.onPartialInput(false);
             }
         }
 
