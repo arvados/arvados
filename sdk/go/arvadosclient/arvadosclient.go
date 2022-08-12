@@ -166,16 +166,20 @@ func MakeTLSConfig(insecure bool) *tls.Config {
 // fields from configuration files but still need to use the
 // arvadosclient.ArvadosClient package.
 func New(c *arvados.Client) (*ArvadosClient, error) {
-	ac := &ArvadosClient{
-		Scheme:      "https",
-		ApiServer:   c.APIHost,
-		ApiToken:    c.AuthToken,
-		ApiInsecure: c.Insecure,
-		Client: &http.Client{
+	hc := c.Client
+	if hc == nil {
+		hc = &http.Client{
 			Timeout: 5 * time.Minute,
 			Transport: &http.Transport{
 				TLSClientConfig: MakeTLSConfig(c.Insecure)},
-		},
+		}
+	}
+	ac := &ArvadosClient{
+		Scheme:            "https",
+		ApiServer:         c.APIHost,
+		ApiToken:          c.AuthToken,
+		ApiInsecure:       c.Insecure,
+		Client:            hc,
 		External:          false,
 		Retries:           2,
 		KeepServiceURIs:   c.KeepServiceURIs,

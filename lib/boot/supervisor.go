@@ -308,6 +308,7 @@ func (super *Supervisor) runCluster() error {
 	if super.ClusterType != "production" {
 		super.prependEnv("PATH", super.tempdir+"/bin:")
 	}
+	super.setEnv("ARVADOS_SERVER_ADDRESS", super.ListenHost)
 
 	// Now that we have the config, replace the bootstrap logger
 	// with a new one according to the logging config.
