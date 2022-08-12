@@ -51,14 +51,24 @@ describe('Virtual machine login manage tests', function() {
                   })
             });
         cy.get('[role=tooltip]').click();
-        cy.get('[data-cy=form-dialog]')
+        cy.get('[data-cy=form-dialog]').as('add-login-dialog')
             .should('contain', 'Add login permission')
             .within(() => {
                 cy.get('label')
                   .contains('Add groups')
                   .parent()
                   .within(() => {
-                    cy.get('input').type('docker sudo{enter}');
+                    cy.get('input').type('docker ');
+                    // Veryfy submit enabled (form has changed)
+                    cy.get('@add-login-dialog').within(() => {
+                        cy.get('[data-cy=form-submit-btn]').should('be.enabled');
+                    });
+                    cy.get('input').type('sudo');
+                    // Veryfy submit disabled (partial input in chips)
+                    cy.get('@add-login-dialog').within(() => {
+                        cy.get('[data-cy=form-submit-btn]').should('be.disabled');
+                    });
+                    cy.get('input').type('{enter}');
                   })
             });
         cy.get('[data-cy=form-dialog]').within(() => {
