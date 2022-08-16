@@ -2,48 +2,430 @@
 % Please edit documentation in R/Collection.R
 \name{Collection}
 \alias{Collection}
-\title{Collection}
+\title{R6 Class Representing Arvados Collection}
 \description{
-Collection class provides interface for working with Arvados collections.
+Collection class provides interface for working with Arvados collections,
+for exaplme actions like creating, updating, moving or removing are possible.
 }
-\section{Usage}{
-
-\preformatted{collection = Collection$new(arv, uuid)}
-}
-
-\section{Arguments}{
-
-\describe{
-  \item{arv}{Arvados object.}
-  \item{uuid}{UUID of a collection.}
-}
-}
-
-\section{Methods}{
-
-\describe{
-  \item{add(content)}{Adds ArvadosFile or Subcollection specified by content to the collection.}
-  \item{create(files)}{Creates one or more ArvadosFiles and adds them to the collection at specified path.}
-  \item{remove(fileNames)}{Remove one or more files from the collection.}
-  \item{move(content, destination)}{Moves ArvadosFile or Subcollection to another location in the collection.}
-  \item{copy(content, destination)}{Copies ArvadosFile or Subcollection to another location in the collection.}
-  \item{getFileListing()}{Returns collections file content as character vector.}
-  \item{get(relativePath)}{If relativePath is valid, returns ArvadosFile or Subcollection specified by relativePath, else returns NULL.}
-}
-}
-
 \examples{
-\dontrun{
-arv <- Arvados$new("your Arvados token", "example.arvadosapi.com")
-collection <- Collection$new(arv, "uuid")
 
-createdFiles <- collection$create(c("main.cpp", lib.dll), "cpp/src/")
+## ------------------------------------------------
+## Method `Collection$new`
+## ------------------------------------------------
 
-collection$remove("location/to/my/file.cpp")
+collection <- Collection$new(arv, CollectionUUID)
 
-collection$move("folder/file.cpp", "file.cpp")
+## ------------------------------------------------
+## Method `Collection$readArvFile`
+## ------------------------------------------------
 
-arvadosFile <- collection$get("location/to/my/file.cpp")
-arvadosSubcollection <- collection$get("location/to/my/directory/")
+collection <- Collection$new(arv, collectionUUID)
+readFile <- collection$readArvFile(arvadosFile, istable = 'yes')                    # table
+readFile <- collection$readArvFile(arvadosFile, istable = 'no')                     # text
+readFile <- collection$readArvFile(arvadosFile)                                     # xlsx, csv, tsv, rds, rdata
+readFile <- collection$readArvFile(arvadosFile, fileclass = 'lala')                 # fasta
+readFile <- collection$readArvFile(arvadosFile, Ncol= 4, Nrow = 32)                 # binary, only numbers
+readFile <- collection$readArvFile(arvadosFile, Ncol = 5, Nrow = 150, istable = "factor") # binary with factor or text
+
+## ------------------------------------------------
+## Method `Collection$writeFile`
+## ------------------------------------------------
+
+collection <- Collection$new(arv, collectionUUID)
+writeFile <- collection$writeFile("myoutput.csv", file, istable = NULL)             # csv
+writeFile <- collection$writeFile("myoutput.fasta", file, istable = NULL)           # fasta
+writeFile <- collection$writeFile("myoutputtable.txt", file, istable = "yes")       # txt table
+writeFile <- collection$writeFile("myoutputtext.txt", file, istable = "no")         # txt text
+writeFile <- collection$writeFile("myoutputbinary.dat", file)                       # binary
+writeFile <- collection$writeFile("myoutputxlsx.xlsx", file)                        # xlsx
+
+## ------------------------------------------------
+## Method `Collection$create`
+## ------------------------------------------------
+
+collection <- arv$collections_create(name = collectionTitle, description = collectionDescription, owner_uuid = collectionOwner, properties = list("ROX37196928443768648" = "ROX37742976443830153"))
+
+## ------------------------------------------------
+## Method `Collection$remove`
+## ------------------------------------------------
+
+collection$remove(fileName.format)
+
+## ------------------------------------------------
+## Method `Collection$move`
+## ------------------------------------------------
+
+collection$move("fileName.format", path)
+
+## ------------------------------------------------
+## Method `Collection$copy`
+## ------------------------------------------------
+
+copied <- collection$copy("oldName.format", "newName.format")
+
+## ------------------------------------------------
+## Method `Collection$refresh`
+## ------------------------------------------------
+
+collection$refresh()
+
+## ------------------------------------------------
+## Method `Collection$getFileListing`
+## ------------------------------------------------
+
+list <- collection$getFileListing()
+
+## ------------------------------------------------
+## Method `Collection$get`
+## ------------------------------------------------
+
+arvadosFile <- collection$get(fileName)
+}
+\seealso{
+\code{\link{https://github.com/arvados/arvados/tree/main/sdk/R}}
+}
+\section{Public fields}{
+\if{html}{\out{<div class="r6-fields">}}
+\describe{
+\item{\code{uuid}}{Autentic for Collection UUID.}
+}
+\if{html}{\out{</div>}}
+}
+\section{Methods}{
+\subsection{Public methods}{
+\itemize{
+\item \href{#method-new}{\code{Collection$new()}}
+\item \href{#method-add}{\code{Collection$add()}}
+\item \href{#method-readArvFile}{\code{Collection$readArvFile()}}
+\item \href{#method-writeFile}{\code{Collection$writeFile()}}
+\item \href{#method-create}{\code{Collection$create()}}
+\item \href{#method-remove}{\code{Collection$remove()}}
+\item \href{#method-move}{\code{Collection$move()}}
+\item \href{#method-copy}{\code{Collection$copy()}}
+\item \href{#method-refresh}{\code{Collection$refresh()}}
+\item \href{#method-getFileListing}{\code{Collection$getFileListing()}}
+\item \href{#method-get}{\code{Collection$get()}}
+\item \href{#method-getRESTService}{\code{Collection$getRESTService()}}
+\item \href{#method-setRESTService}{\code{Collection$setRESTService()}}
+}
+}
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-new"></a>}}
+\if{latex}{\out{\hypertarget{method-new}{}}}
+\subsection{Method \code{new()}}{
+Initialize new enviroment.
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{Collection$new(api, uuid)}\if{html}{\out{</div>}}
+}
+
+\subsection{Arguments}{
+\if{html}{\out{<div class="arguments">}}
+\describe{
+\item{\code{api}}{Arvados enviroment.}
+
+\item{\code{uuid}}{The UUID Autentic for Collection UUID.}
+}
+\if{html}{\out{</div>}}
+}
+\subsection{Returns}{
+A new `Collection` object.
+}
+\subsection{Examples}{
+\if{html}{\out{<div class="r example copy">}}
+\preformatted{collection <- Collection$new(arv, CollectionUUID)
+}
+\if{html}{\out{</div>}}
+
+}
+
+}
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-add"></a>}}
+\if{latex}{\out{\hypertarget{method-add}{}}}
+\subsection{Method \code{add()}}{
+Adds ArvadosFile or Subcollection specified by content to the collection. Used only with ArvadosFile or Subcollection.
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{Collection$add(content, relativePath = "")}\if{html}{\out{</div>}}
+}
+
+\subsection{Arguments}{
+\if{html}{\out{<div class="arguments">}}
+\describe{
+\item{\code{content}}{Content to be added.}
+
+\item{\code{relativePath}}{Path to add content.}
+}
+\if{html}{\out{</div>}}
+}
+}
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-readArvFile"></a>}}
+\if{latex}{\out{\hypertarget{method-readArvFile}{}}}
+\subsection{Method \code{readArvFile()}}{
+Read file content.
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{Collection$readArvFile(
+  file,
+  con,
+  sep = ",",
+  istable = NULL,
+  fileclass = "SeqFastadna",
+  Ncol = NULL,
+  Nrow = NULL,
+  wantedFunction = NULL
+)}\if{html}{\out{</div>}}
+}
+
+\subsection{Arguments}{
+\if{html}{\out{<div class="arguments">}}
+\describe{
+\item{\code{file}}{Name of the file.}
+
+\item{\code{sep}}{Separator used in reading tsv, csv file format.}
+
+\item{\code{istable}}{Used in reading txt file to check if the file is table or not.}
+
+\item{\code{fileclass}}{Used in reading fasta file to set file class.}
+
+\item{\code{Ncol}}{Used in reading binary file to set numbers of columns in data.frame.}
+
+\item{\code{Nrow}}{Used in reading binary file to set numbers of rows in data.frame size.}
+
+\item{\code{col}}{Collection from which the file is read.}
+}
+\if{html}{\out{</div>}}
+}
+\subsection{Examples}{
+\if{html}{\out{<div class="r example copy">}}
+\preformatted{collection <- Collection$new(arv, collectionUUID)
+readFile <- collection$readArvFile(arvadosFile, istable = 'yes')                    # table
+readFile <- collection$readArvFile(arvadosFile, istable = 'no')                     # text
+readFile <- collection$readArvFile(arvadosFile)                                     # xlsx, csv, tsv, rds, rdata
+readFile <- collection$readArvFile(arvadosFile, fileclass = 'lala')                 # fasta
+readFile <- collection$readArvFile(arvadosFile, Ncol= 4, Nrow = 32)                 # binary, only numbers
+readFile <- collection$readArvFile(arvadosFile, Ncol = 5, Nrow = 150, istable = "factor") # binary with factor or text
+}
+\if{html}{\out{</div>}}
+
+}
+
+}
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-writeFile"></a>}}
+\if{latex}{\out{\hypertarget{method-writeFile}{}}}
+\subsection{Method \code{writeFile()}}{
+Write file content
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{Collection$writeFile(name, file, istable = NULL, seqName = NULL)}\if{html}{\out{</div>}}
+}
+
+\subsection{Arguments}{
+\if{html}{\out{<div class="arguments">}}
+\describe{
+\item{\code{name}}{Name of the file.}
+
+\item{\code{file}}{File to be saved.}
+
+\item{\code{istable}}{Used in writing txt file to check if the file is table or not.}
+}
+\if{html}{\out{</div>}}
+}
+\subsection{Examples}{
+\if{html}{\out{<div class="r example copy">}}
+\preformatted{collection <- Collection$new(arv, collectionUUID)
+writeFile <- collection$writeFile("myoutput.csv", file, istable = NULL)             # csv
+writeFile <- collection$writeFile("myoutput.fasta", file, istable = NULL)           # fasta
+writeFile <- collection$writeFile("myoutputtable.txt", file, istable = "yes")       # txt table
+writeFile <- collection$writeFile("myoutputtext.txt", file, istable = "no")         # txt text
+writeFile <- collection$writeFile("myoutputbinary.dat", file)                       # binary
+writeFile <- collection$writeFile("myoutputxlsx.xlsx", file)                        # xlsx
+}
+\if{html}{\out{</div>}}
+
+}
+
+}
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-create"></a>}}
+\if{latex}{\out{\hypertarget{method-create}{}}}
+\subsection{Method \code{create()}}{
+Creates one or more ArvadosFiles and adds them to the collection at specified path.
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{Collection$create(files)}\if{html}{\out{</div>}}
+}
+
+\subsection{Arguments}{
+\if{html}{\out{<div class="arguments">}}
+\describe{
+\item{\code{files}}{Content to be created.}
+}
+\if{html}{\out{</div>}}
+}
+\subsection{Examples}{
+\if{html}{\out{<div class="r example copy">}}
+\preformatted{collection <- arv$collections_create(name = collectionTitle, description = collectionDescription, owner_uuid = collectionOwner, properties = list("ROX37196928443768648" = "ROX37742976443830153"))
+}
+\if{html}{\out{</div>}}
+
+}
+
+}
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-remove"></a>}}
+\if{latex}{\out{\hypertarget{method-remove}{}}}
+\subsection{Method \code{remove()}}{
+Remove one or more files from the collection.
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{Collection$remove(paths)}\if{html}{\out{</div>}}
+}
+
+\subsection{Arguments}{
+\if{html}{\out{<div class="arguments">}}
+\describe{
+\item{\code{paths}}{Content to be removed.}
+}
+\if{html}{\out{</div>}}
+}
+\subsection{Examples}{
+\if{html}{\out{<div class="r example copy">}}
+\preformatted{collection$remove(fileName.format)
+}
+\if{html}{\out{</div>}}
+
+}
+
+}
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-move"></a>}}
+\if{latex}{\out{\hypertarget{method-move}{}}}
+\subsection{Method \code{move()}}{
+Moves ArvadosFile or Subcollection to another location in the collection.
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{Collection$move(content, destination)}\if{html}{\out{</div>}}
+}
+
+\subsection{Arguments}{
+\if{html}{\out{<div class="arguments">}}
+\describe{
+\item{\code{content}}{Content to be moved.}
+
+\item{\code{destination}}{Path to move content.}
+}
+\if{html}{\out{</div>}}
+}
+\subsection{Examples}{
+\if{html}{\out{<div class="r example copy">}}
+\preformatted{collection$move("fileName.format", path)
+}
+\if{html}{\out{</div>}}
+
+}
+
+}
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-copy"></a>}}
+\if{latex}{\out{\hypertarget{method-copy}{}}}
+\subsection{Method \code{copy()}}{
+Copies ArvadosFile or Subcollection to another location in the collection.
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{Collection$copy(content, destination)}\if{html}{\out{</div>}}
+}
+
+\subsection{Arguments}{
+\if{html}{\out{<div class="arguments">}}
+\describe{
+\item{\code{content}}{Content to be moved.}
+
+\item{\code{destination}}{Path to move content.}
+}
+\if{html}{\out{</div>}}
+}
+\subsection{Examples}{
+\if{html}{\out{<div class="r example copy">}}
+\preformatted{copied <- collection$copy("oldName.format", "newName.format")
+}
+\if{html}{\out{</div>}}
+
+}
+
+}
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-refresh"></a>}}
+\if{latex}{\out{\hypertarget{method-refresh}{}}}
+\subsection{Method \code{refresh()}}{
+Refreshes the environment.
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{Collection$refresh()}\if{html}{\out{</div>}}
+}
+
+\subsection{Examples}{
+\if{html}{\out{<div class="r example copy">}}
+\preformatted{collection$refresh()
+}
+\if{html}{\out{</div>}}
+
+}
+
+}
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-getFileListing"></a>}}
+\if{latex}{\out{\hypertarget{method-getFileListing}{}}}
+\subsection{Method \code{getFileListing()}}{
+Returns collections file content as character vector.
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{Collection$getFileListing()}\if{html}{\out{</div>}}
+}
+
+\subsection{Examples}{
+\if{html}{\out{<div class="r example copy">}}
+\preformatted{list <- collection$getFileListing()
+}
+\if{html}{\out{</div>}}
+
+}
+
+}
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-get"></a>}}
+\if{latex}{\out{\hypertarget{method-get}{}}}
+\subsection{Method \code{get()}}{
+If relativePath is valid, returns ArvadosFile or Subcollection specified by relativePath, else returns NULL.
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{Collection$get(relativePath)}\if{html}{\out{</div>}}
+}
+
+\subsection{Arguments}{
+\if{html}{\out{<div class="arguments">}}
+\describe{
+\item{\code{relativePath}}{Path from content is taken.}
+}
+\if{html}{\out{</div>}}
+}
+\subsection{Examples}{
+\if{html}{\out{<div class="r example copy">}}
+\preformatted{arvadosFile <- collection$get(fileName)
+}
+\if{html}{\out{</div>}}
+
+}
+
+}
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-getRESTService"></a>}}
+\if{latex}{\out{\hypertarget{method-getRESTService}{}}}
+\subsection{Method \code{getRESTService()}}{
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{Collection$getRESTService()}\if{html}{\out{</div>}}
+}
+
+}
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-setRESTService"></a>}}
+\if{latex}{\out{\hypertarget{method-setRESTService}{}}}
+\subsection{Method \code{setRESTService()}}{
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{Collection$setRESTService(newRESTService)}\if{html}{\out{</div>}}
+}
+
 }
 }

@@ -2,48 +2,249 @@
 % Please edit documentation in R/Subcollection.R
 \name{Subcollection}
 \alias{Subcollection}
-\title{Subcollection}
+\title{R6 Class Representing a Subcollection}
 \description{
 Subcollection class represents a folder inside Arvados collection.
 It is essentially a composite of arvadosFiles and other subcollections.
 }
-\section{Usage}{
-
-\preformatted{subcollection = Subcollection$new(name)}
-}
-
-\section{Arguments}{
-
-\describe{
-  \item{name}{Name of the subcollection.}
-}
-}
-
 \section{Methods}{
+\subsection{Public methods}{
+\itemize{
+\item \href{#method-new}{\code{Subcollection$new()}}
+\item \href{#method-getName}{\code{Subcollection$getName()}}
+\item \href{#method-getRelativePath}{\code{Subcollection$getRelativePath()}}
+\item \href{#method-add}{\code{Subcollection$add()}}
+\item \href{#method-remove}{\code{Subcollection$remove()}}
+\item \href{#method-getFileListing}{\code{Subcollection$getFileListing()}}
+\item \href{#method-getSizeInBytes}{\code{Subcollection$getSizeInBytes()}}
+\item \href{#method-move}{\code{Subcollection$move()}}
+\item \href{#method-copy}{\code{Subcollection$copy()}}
+\item \href{#method-duplicate}{\code{Subcollection$duplicate()}}
+\item \href{#method-get}{\code{Subcollection$get()}}
+\item \href{#method-getFirst}{\code{Subcollection$getFirst()}}
+\item \href{#method-setCollection}{\code{Subcollection$setCollection()}}
+\item \href{#method-getCollection}{\code{Subcollection$getCollection()}}
+\item \href{#method-getParent}{\code{Subcollection$getParent()}}
+\item \href{#method-setParent}{\code{Subcollection$setParent()}}
+}
+}
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-new"></a>}}
+\if{latex}{\out{\hypertarget{method-new}{}}}
+\subsection{Method \code{new()}}{
+Initialize new enviroment.
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{Subcollection$new(name)}\if{html}{\out{</div>}}
+}
 
+\subsection{Arguments}{
+\if{html}{\out{<div class="arguments">}}
 \describe{
-  \item{getName()}{Returns name of the subcollection.}
-  \item{getRelativePath()}{Returns subcollection path relative to the root.}
-  \item{add(content)}{Adds ArvadosFile or Subcollection specified by content to the subcollection.}
-  \item{remove(name)}{Removes ArvadosFile or Subcollection specified by name from the subcollection.}
-  \item{get(relativePath)}{If relativePath is valid, returns ArvadosFile or Subcollection specified by relativePath, else returns NULL.}
-  \item{getFileListing()}{Returns subcollections file content as character vector.}
-  \item{getSizeInBytes()}{Returns subcollections content size in bytes.}
-  \item{move(destination)}{Moves subcollection to a new location inside collection.}
-  \item{copy(destination)}{Copies subcollection to a new location inside collection.}
+\item{\code{name}}{Name of the new enviroment.}
+}
+\if{html}{\out{</div>}}
+}
+\subsection{Returns}{
+A new `Subcollection` object.
 }
 }
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-getName"></a>}}
+\if{latex}{\out{\hypertarget{method-getName}{}}}
+\subsection{Method \code{getName()}}{
+Returns name of the file.
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{Subcollection$getName()}\if{html}{\out{</div>}}
+}
 
-\examples{
-\dontrun{
-myFolder <- Subcollection$new("myFolder")
-myFile   <- ArvadosFile$new("myFile")
+}
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-getRelativePath"></a>}}
+\if{latex}{\out{\hypertarget{method-getRelativePath}{}}}
+\subsection{Method \code{getRelativePath()}}{
+Returns Subcollection's path relative to the root.
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{Subcollection$getRelativePath()}\if{html}{\out{</div>}}
+}
 
-myFolder$add(myFile)
-myFolder$get("myFile")
-myFolder$remove("myFile")
+}
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-add"></a>}}
+\if{latex}{\out{\hypertarget{method-add}{}}}
+\subsection{Method \code{add()}}{
+Adds ArvadosFile or Subcollection specified by content to the Subcollection.
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{Subcollection$add(content)}\if{html}{\out{</div>}}
+}
 
-myFolder$move("newLocation/myFolder")
-myFolder$copy("newLocation/myFolder")
+\subsection{Arguments}{
+\if{html}{\out{<div class="arguments">}}
+\describe{
+\item{\code{content}}{Content to be added.}
+}
+\if{html}{\out{</div>}}
+}
+}
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-remove"></a>}}
+\if{latex}{\out{\hypertarget{method-remove}{}}}
+\subsection{Method \code{remove()}}{
+Removes ArvadosFile or Subcollection specified by name from the Subcollection.
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{Subcollection$remove(name)}\if{html}{\out{</div>}}
+}
+
+\subsection{Arguments}{
+\if{html}{\out{<div class="arguments">}}
+\describe{
+\item{\code{name}}{Name of the file to be removed.}
+}
+\if{html}{\out{</div>}}
+}
+}
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-getFileListing"></a>}}
+\if{latex}{\out{\hypertarget{method-getFileListing}{}}}
+\subsection{Method \code{getFileListing()}}{
+Returns Subcollections file content as character vector.
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{Subcollection$getFileListing(fullPath = TRUE)}\if{html}{\out{</div>}}
+}
+
+\subsection{Arguments}{
+\if{html}{\out{<div class="arguments">}}
+\describe{
+\item{\code{fullPath}}{Checking if the path to file exists.}
+}
+\if{html}{\out{</div>}}
+}
+}
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-getSizeInBytes"></a>}}
+\if{latex}{\out{\hypertarget{method-getSizeInBytes}{}}}
+\subsection{Method \code{getSizeInBytes()}}{
+Returns subcollections content size in bytes.
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{Subcollection$getSizeInBytes()}\if{html}{\out{</div>}}
+}
+
+}
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-move"></a>}}
+\if{latex}{\out{\hypertarget{method-move}{}}}
+\subsection{Method \code{move()}}{
+Moves Subcollection to a new location inside collection.
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{Subcollection$move(destination)}\if{html}{\out{</div>}}
+}
+
+\subsection{Arguments}{
+\if{html}{\out{<div class="arguments">}}
+\describe{
+\item{\code{destination}}{Path to move the file.}
+}
+\if{html}{\out{</div>}}
+}
+}
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-copy"></a>}}
+\if{latex}{\out{\hypertarget{method-copy}{}}}
+\subsection{Method \code{copy()}}{
+Copies Subcollection to a new location inside collection.
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{Subcollection$copy(destination)}\if{html}{\out{</div>}}
+}
+
+\subsection{Arguments}{
+\if{html}{\out{<div class="arguments">}}
+\describe{
+\item{\code{destination}}{Path to copy the file.}
+}
+\if{html}{\out{</div>}}
+}
+}
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-duplicate"></a>}}
+\if{latex}{\out{\hypertarget{method-duplicate}{}}}
+\subsection{Method \code{duplicate()}}{
+Duplicate Subcollection and gives it a new name.
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{Subcollection$duplicate(newName = NULL)}\if{html}{\out{</div>}}
+}
+
+\subsection{Arguments}{
+\if{html}{\out{<div class="arguments">}}
+\describe{
+\item{\code{newName}}{New name for duplicated file.}
+}
+\if{html}{\out{</div>}}
+}
+}
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-get"></a>}}
+\if{latex}{\out{\hypertarget{method-get}{}}}
+\subsection{Method \code{get()}}{
+If name is valid, returns ArvadosFile or Subcollection specified by relativePath, else returns NULL.
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{Subcollection$get(name)}\if{html}{\out{</div>}}
+}
+
+\subsection{Arguments}{
+\if{html}{\out{<div class="arguments">}}
+\describe{
+\item{\code{name}}{Name of the file.}
+}
+\if{html}{\out{</div>}}
+}
+}
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-getFirst"></a>}}
+\if{latex}{\out{\hypertarget{method-getFirst}{}}}
+\subsection{Method \code{getFirst()}}{
+Returns files in Subcollection.
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{Subcollection$getFirst()}\if{html}{\out{</div>}}
+}
+
+}
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-setCollection"></a>}}
+\if{latex}{\out{\hypertarget{method-setCollection}{}}}
+\subsection{Method \code{setCollection()}}{
+Sets Collection by its UUID.
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{Subcollection$setCollection(collection, setRecursively = TRUE)}\if{html}{\out{</div>}}
+}
+
+}
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-getCollection"></a>}}
+\if{latex}{\out{\hypertarget{method-getCollection}{}}}
+\subsection{Method \code{getCollection()}}{
+Returns Collection of Subcollection.
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{Subcollection$getCollection()}\if{html}{\out{</div>}}
+}
+
+}
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-getParent"></a>}}
+\if{latex}{\out{\hypertarget{method-getParent}{}}}
+\subsection{Method \code{getParent()}}{
+Returns Collection UUID.
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{Subcollection$getParent()}\if{html}{\out{</div>}}
+}
+
+}
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-setParent"></a>}}
+\if{latex}{\out{\hypertarget{method-setParent}{}}}
+\subsection{Method \code{setParent()}}{
+Sets new Collection.
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{Subcollection$setParent(newParent)}\if{html}{\out{</div>}}
+}
+
 }
 }

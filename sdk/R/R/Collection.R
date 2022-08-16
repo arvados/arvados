@@ -2,62 +2,43 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-#' Collection
+#' R6 Class Representing Arvados Collection
 #'
-#' Collection class provides interface for working with Arvados collections.
+#' @description
+#' Collection class provides interface for working with Arvados collections,
+#' for exaplme actions like creating, updating, moving or removing are possible.
 #'
-#' @section Usage:
-#' \preformatted{collection = Collection$new(arv, uuid)}
+#' @seealso
+#' \code{\link{https://github.com/arvados/arvados/tree/main/sdk/R}}
 #'
-#' @section Arguments:
-#' \describe{
-#'   \item{arv}{Arvados object.}
-#'   \item{uuid}{UUID of a collection.}
-#' }
-#'
-#' @section Methods:
-#' \describe{
-#'   \item{add(content)}{Adds ArvadosFile or Subcollection specified by content to the collection.}
-#'   \item{create(files)}{Creates one or more ArvadosFiles and adds them to the collection at specified path.}
-#'   \item{remove(fileNames)}{Remove one or more files from the collection.}
-#'   \item{move(content, destination)}{Moves ArvadosFile or Subcollection to another location in the collection.}
-#'   \item{copy(content, destination)}{Copies ArvadosFile or Subcollection to another location in the collection.}
-#'   \item{getFileListing()}{Returns collections file content as character vector.}
-#'   \item{get(relativePath)}{If relativePath is valid, returns ArvadosFile or Subcollection specified by relativePath, else returns NULL.}
-#' }
-#'
-#' @name Collection
-#' @examples
-#' \dontrun{
-#' arv <- Arvados$new("your Arvados token", "example.arvadosapi.com")
-#' collection <- Collection$new(arv, "uuid")
-#'
-#' createdFiles <- collection$create(c("main.cpp", lib.dll), "cpp/src/")
-#'
-#' collection$remove("location/to/my/file.cpp")
-#'
-#' collection$move("folder/file.cpp", "file.cpp")
-#'
-#' arvadosFile <- collection$get("location/to/my/file.cpp")
-#' arvadosSubcollection <- collection$get("location/to/my/directory/")
-#' }
-NULL
-
 #' @export
+
 Collection <- R6::R6Class(
 
     "Collection",
 
     public = list(
 
-		uuid = NULL,
+        #' @field uuid Autentic for Collection UUID.
+        uuid = NULL,
 
-		initialize = function(api, uuid)
+        #' @description
+        #' Initialize new enviroment.
+        #' @param api Arvados enviroment.
+        #' @param uuid The UUID Autentic for Collection UUID.
+        #' @return A new `Collection` object.
+        #' @examples
+        #' collection <- Collection$new(arv, CollectionUUID)
+        initialize = function(api, uuid)
         {
             private$REST <- api$getRESTService()
             self$uuid <- uuid
         },
 
+        #' @description
+        #' Adds ArvadosFile or Subcollection specified by content to the collection. Used only with ArvadosFile or Subcollection.
+        #' @param content Content to be added.
+        #' @param relativePath Path to add content.
         add = function(content, relativePath = "")
         {
             if(is.null(private$tree))
@@ -98,6 +79,180 @@ Collection <- R6::R6Class(
             }
         },
 
+        #' @description
+        #' Read file content.
+        #' @param file Name of the file.
+        #' @param col Collection from which the file is read.
+        #' @param sep  Separator used in reading tsv, csv file format.
+        #' @param istable Used in reading txt file to check if the file is table or not.
+        #' @param fileclass Used in reading fasta file to set file class.
+        #' @param Ncol Used in reading binary file to set numbers of columns in data.frame.
+        #' @param Nrow Used in reading binary file to set numbers of rows in data.frame size.
+        #' @examples
+        #' collection <- Collection$new(arv, collectionUUID)
+        #' readFile <- collection$readArvFile(arvadosFile, istable = 'yes')                    # table
+        #' readFile <- collection$readArvFile(arvadosFile, istable = 'no')                     # text
+        #' readFile <- collection$readArvFile(arvadosFile)                                     # xlsx, csv, tsv, rds, rdata
+        #' readFile <- collection$readArvFile(arvadosFile, fileclass = 'fasta')                # fasta
+        #' readFile <- collection$readArvFile(arvadosFile, Ncol= 4, Nrow = 32)                 # binary, only numbers
+        #' readFile <- collection$readArvFile(arvadosFile, Ncol = 5, Nrow = 150, istable = "factor") # binary with factor or text
+        readArvFile = function(file, con, sep = ',', istable = NULL, fileclass = "SeqFastadna", Ncol = NULL, Nrow = NULL, wantedFunction = NULL)
+        {
+            arvFile <- self$get(file)
+            FileName <- arvFile$getName()
+            FileName <- tolower(FileName)
+            FileFormat <- gsub(".*\\.", "", FileName)
+
+            # set enviroment
+            ARVADOS_API_TOKEN <- Sys.getenv("ARVADOS_API_TOKEN")
+            ARVADOS_API_HOST <- Sys.getenv("ARVADOS_API_HOST")
+            my_collection <- self$uuid
+            key <- gsub("/", "_", ARVADOS_API_TOKEN)
+
+            Sys.setenv(
+                "AWS_ACCESS_KEY_ID" = key,
+                "AWS_SECRET_ACCESS_KEY" = key,
+                "AWS_DEFAULT_REGION" = "collections",
+                "AWS_S3_ENDPOINT" = gsub("api[.]", "", ARVADOS_API_HOST))
+
+            if (FileFormat == "txt") {
+                if (is.null(istable)){
+                    stop(paste('You need to paste whether it is a text or table file'))
+                } else if (istable == 'no') {
+                    fileContent <- arvFile$read("text") # used to read
+                    fileContent <- gsub("[\r\n]", " ", fileContent)
+                } else if (istable == 'yes') {
+                    arvConnection <- arvFile$connection("r") # used to make possible use different function later
+                    fileContent <- read.table(arvConnection)
+                }
+            }
+            else if (FileFormat  == "xlsx") {
+                fileContent <- aws.s3::s3read_using(FUN = openxlsx::read.xlsx, object = file, bucket = my_collection)
+            }
+            else if (FileFormat == "csv" || FileFormat == "tsv") {
+                arvConnection <- arvFile$connection("r")
+                if (FileFormat == "tsv"){
+                    mytable <- read.table(arvConnection, sep = '\t')
+                } else if (FileFormat == "csv" & sep == '\t') {
+                    mytable <- read.table(arvConnection, sep = '\t')
+                } else if (FileFormat == "csv") {
+                    mytable <- read.table(arvConnection, sep = ',')
+                } else {
+                    stop(paste('File format not supported, use arvadosFile$connection() and customise it'))
+                }
+            }
+            else if (FileFormat == "fasta") {
+                fastafile <- aws.s3::s3read_using(FUN = seqinr::read.fasta, as.string = TRUE, object = file, bucket = my_collection)
+            }
+            else if (FileFormat == "dat" || FileFormat == "bin") {
+                fileContent <- gzcon(arvFile$connection("rb"))
+
+                # function to precess data to binary format
+                read_bin.file <- function(fileContent) {
+                    # read binfile
+                    column.names <- readBin(fileContent, character(), n = Ncol)
+                    bindata <- readBin(fileContent, numeric(), Nrow*Ncol+Ncol)
+                    # check
+                    res <- which(bindata < 0.0000001)
+                    if (is.list(res)) {
+                        bindata <- bindata[-res]
+                    } else {
+                        bindata <- bindata
+                    }
+                    # make a dataframe
+                    data <- data.frame(matrix(data = NA, nrow = Nrow, ncol = Ncol))
+                    for (i in 1:Ncol) {
+                        data[,i] <- bindata[(1+Nrow*(i-1)):(Nrow*i)]
+                    }
+                    colnames(data) = column.names
+
+                    len <- which(is.na(data[,Ncol])) # error if sth went wrong
+                    if (length(len) == 0) {
+                        data
+                    } else {
+                        stop(paste("there is a factor or text in the table, customize the function by typing more arguments"))
+                    }
+                }
+                if (is.null(Nrow) | is.null(Ncol)){
+                    stop(paste('You need to specify numbers of columns and rows'))
+                }
+                if (is.null(istable)) {
+                    fileContent <- read_bin.file(fileContent) # call a function
+                } else if (istable == "factor") { # if there is a table with col name
+                    fileContent <- read_bin.file(fileContent)
+                }
+            }
+            else if (FileFormat == "rds" || FileFormat == "rdata") {
+                arvConnection <- arvFile$connection("rb")
+                mytable <- readRDS(gzcon(arvConnection))
+            }
+            else {
+                stop(parse(('File format not supported, use arvadosFile$connection() and customise it')))
+            }
+        },
+
+        #' @description
+        #' Write file content
+        #' @param name Name of the file.
+        #' @param file File to be saved.
+        #' @param istable Used in writing txt file to check if the file is table or not.
+        #' @examples
+        #' collection <- Collection$new(arv, collectionUUID)
+        #' writeFile <- collection$writeFile("myoutput.csv", file, istable = NULL)             # csv
+        #' writeFile <- collection$writeFile("myoutput.fasta", file, istable = NULL)           # fasta
+        #' writeFile <- collection$writeFile("myoutputtable.txt", file, istable = "yes")       # txt table
+        #' writeFile <- collection$writeFile("myoutputtext.txt", file, istable = "no")         # txt text
+        #' writeFile <- collection$writeFile("myoutputbinary.dat", file)                       # binary
+        #' writeFile <- collection$writeFile("myoutputxlsx.xlsx", file)                        # xlsx
+        writeFile = function(name, file, istable = NULL, seqName = NULL)
+        {
+            # prepare file and connection
+            arvFile <- collection$create(name)[[1]]
+            arvFile <- collection$get(name)
+            arvConnection <- arvFile$connection("w")
+            # get file format
+            FileName <- arvFile$getName()
+            FileName <- tolower(FileName)
+            FileFormat <- gsub(".*\\.", "", FileName)
+
+            # set enviroment
+            ARVADOS_API_TOKEN <- Sys.getenv("ARVADOS_API_TOKEN")
+            ARVADOS_API_HOST <- Sys.getenv("ARVADOS_API_HOST")
+            my_collection <- self$uuid
+            key <- gsub("/", "_", ARVADOS_API_TOKEN)
+
+            Sys.setenv(
+                "AWS_ACCESS_KEY_ID" = key,
+                "AWS_SECRET_ACCESS_KEY" = key,
+                "AWS_DEFAULT_REGION" = "collections",
+                "AWS_S3_ENDPOINT" = gsub("api[.]", "", ARVADOS_API_HOST))
+
+            if (FileFormat == "txt") {
+                if (istable == "yes") {
+                    aws.s3::s3write_using(file, FUN = write.table, object = name, bucket = my_collection)
+                } else if (istable == "no") {
+                    aws.s3::s3write_using(file, FUN = writeChar, object = name, bucket = my_collection)
+                } else {
+                    stop(paste("Specify parametr istable"))
+                }
+            } else if (FileFormat == "csv") {
+                aws.s3::s3write_using(file, FUN = write.csv, object = name, bucket = my_collection)
+            } else if (FileFormat == "fasta") {
+                aws.s3::s3write_using(file, FUN = seqinr::write.fasta, name = seqName, object = name, bucket = my_collection)
+            } else if (FileFormat == "xlsx") {
+                aws.s3::s3write_using(file, FUN = openxlsx::write.xlsx, object = name, bucket = my_collection)
+            } else if (FileFormat == "dat" || FileFormat == "bin") {
+                aws.s3::s3write_using(file, FUN = writeBin, object = name, bucket = my_collection)
+            } else {
+                stop(parse(('File format not supported, use arvadosFile$connection() and customise it')))
+            }
+        },
+
+        #' @description
+        #' Creates one or more ArvadosFiles and adds them to the collection at specified path.
+        #' @param files Content to be created.
+        #' @examples
+        #' collection <- arv$collections_create(name = collectionTitle, description = collectionDescription, owner_uuid = collectionOwner, properties = list("ROX37196928443768648" = "ROX37742976443830153"))
         create = function(files)
         {
             if(is.null(private$tree))
@@ -116,7 +271,7 @@ Collection <- R6::R6Class(
 
                     private$REST$create(file, self$uuid)
                     newTreeBranch$setCollection(self)
-		    newTreeBranch
+                    newTreeBranch
                 })
             }
             else
@@ -127,6 +282,11 @@ Collection <- R6::R6Class(
             }
         },
 
+        #' @description
+        #' Remove one or more files from the collection.
+        #' @param paths Content to be removed.
+        #' @examples
+        #' collection$remove(fileName.format)
         remove = function(paths)
         {
             if(is.null(private$tree))
@@ -160,6 +320,12 @@ Collection <- R6::R6Class(
             }
         },
 
+        #' @description
+        #' Moves ArvadosFile or Subcollection to another location in the collection.
+        #' @param content Content to be moved.
+        #' @param destination Path to move content.
+        #' @examples
+        #' collection$move("fileName.format", path)
         move = function(content, destination)
         {
             if(is.null(private$tree))
@@ -175,6 +341,12 @@ Collection <- R6::R6Class(
             elementToMove$move(destination)
         },
 
+        #' @description
+        #' Copies ArvadosFile or Subcollection to another location in the collection.
+        #' @param content Content to be moved.
+        #' @param destination Path to move content.
+        #' @examples
+        #' copied <- collection$copy("oldName.format", "newName.format")
         copy = function(content, destination)
         {
             if(is.null(private$tree))
@@ -190,6 +362,10 @@ Collection <- R6::R6Class(
             elementToCopy$copy(destination)
         },
 
+        #' @description
+        #' Refreshes the environment.
+        #' @examples
+        #' collection$refresh()
         refresh = function()
         {
             if(!is.null(private$tree))
@@ -199,6 +375,10 @@ Collection <- R6::R6Class(
             }
         },
 
+        #' @description
+        #' Returns collections file content as character vector.
+        #' @examples
+        #' list <- collection$getFileListing()
         getFileListing = function()
         {
             if(is.null(private$tree))
@@ -208,10 +388,15 @@ Collection <- R6::R6Class(
             content[order(tolower(content))]
         },
 
+        #' @description
+        #' If relativePath is valid, returns ArvadosFile or Subcollection specified by relativePath, else returns NULL.
+        #' @param relativePath Path from content is taken.
+        #' @examples
+        #' arvadosFile <- collection$get(fileName)
         get = function(relativePath)
         {
             if(is.null(private$tree))
-                private$generateCollectionTreeStructure()
+                private$generateCollectionTreeStructure(relativePath)
 
             private$tree$getElement(relativePath)
         },
@@ -219,14 +404,14 @@ Collection <- R6::R6Class(
         getRESTService = function() private$REST,
         setRESTService = function(newRESTService) private$REST <- newRESTService
     ),
-
     private = list(
 
         REST        = NULL,
+        #' @tree beautiful tree of sth
         tree        = NULL,
         fileContent = NULL,
 
-        generateCollectionTreeStructure = function()
+        generateCollectionTreeStructure = function(relativePath = NULL)
         {
             if(is.null(self$uuid))
                 stop("Collection uuid is not defined.")
@@ -234,7 +419,7 @@ Collection <- R6::R6Class(
             if(is.null(private$REST))
                 stop("REST service is not defined.")
 
-            private$fileContent <- private$REST$getCollectionContent(self$uuid)
+            private$fileContent <- private$REST$getCollectionContent(self$uuid, relativePath)
             private$tree <- CollectionTree$new(private$fileContent, self)
         }
     ),
@@ -254,3 +439,10 @@ print.Collection = function(x, ...)
     cat(paste0("Type: ", "\"", "Arvados Collection", "\""), sep = "\n")
     cat(paste0("uuid: ", "\"", x$uuid,               "\""), sep = "\n")
 }
+
+
+
+
+
+
+

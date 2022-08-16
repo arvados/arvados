@@ -2,57 +2,434 @@
 % Please edit documentation in R/ArvadosFile.R
 \name{ArvadosFile}
 \alias{ArvadosFile}
-\title{ArvadosFile}
+\title{R6 Class Representing a ArvadosFile}
 \description{
 ArvadosFile class represents a file inside Arvados collection.
 }
-\section{Usage}{
-
-\preformatted{file = ArvadosFile$new(name)}
-}
-
-\section{Arguments}{
-
-\describe{
-  \item{name}{Name of the file.}
-}
-}
-
-\section{Methods}{
-
-\describe{
-  \item{getName()}{Returns name of the file.}
-  \item{getRelativePath()}{Returns file path relative to the root.}
-  \item{read(contentType = "raw", offset = 0, length = 0)}{Read file content.}
-  \item{write(content, contentType = "text/html")}{Write to file (override current content of the file).}
-  \item{connection(rw)}{Get connection opened in "read" or "write" mode.}
-  \item{flush()}{Write connections content to a file (override current content of the file).}
-  \item{remove(name)}{Removes ArvadosFile or Subcollection specified by name from the subcollection.}
-  \item{getSizeInBytes()}{Returns file size in bytes.}
-  \item{move(destination)}{Moves file to a new location inside collection.}
-  \item{copy(destination)}{Copies file to a new location inside collection.}
-}
-}
-
 \examples{
-\dontrun{
-myFile <- ArvadosFile$new("myFile")
 
+## ------------------------------------------------
+## Method `ArvadosFile$new`
+## ------------------------------------------------
+
+myFile   <- ArvadosFile$new("myFile")
+
+## ------------------------------------------------
+## Method `ArvadosFile$getName`
+## ------------------------------------------------
+
+arvadosFile$getName()
+
+## ------------------------------------------------
+## Method `ArvadosFile$getFileListing`
+## ------------------------------------------------
+
+arvadosFile$getFileListing()
+
+## ------------------------------------------------
+## Method `ArvadosFile$getSizeInBytes`
+## ------------------------------------------------
+
+arvadosFile$getSizeInBytes()
+
+## ------------------------------------------------
+## Method `ArvadosFile$read`
+## ------------------------------------------------
+
+collection <- Collection$new(arv, collectionUUID)
+arvadosFile <- collection$get(fileName)
+fileContent <- arvadosFile$read("text")
+
+## ------------------------------------------------
+## Method `ArvadosFile$connection`
+## ------------------------------------------------
+
+collection <- Collection$new(arv, collectionUUID)
+arvadosFile <- collection$get(fileName)
+arvConnection <- arvadosFile$connection("w")
+
+## ------------------------------------------------
+## Method `ArvadosFile$flush`
+## ------------------------------------------------
+
+collection <- Collection$new(arv, collectionUUID)
+arvadosFile <- collection$get(fileName)
 myFile$write("This is new file content")
-fileContent <- myFile$read()
-fileContent <- myFile$read("text")
-fileContent <- myFile$read("raw", offset = 8, length = 4)
-
-#Write a table:
-arvConnection <- myFile$connection("w")
-write.table(mytable, arvConnection)
 arvadosFile$flush()
 
-#Read a table:
-arvConnection <- myFile$connection("r")
-mytable <- read.table(arvConnection)
+## ------------------------------------------------
+## Method `ArvadosFile$write`
+## ------------------------------------------------
 
-myFile$move("newFolder/myFile")
-myFile$copy("newFolder/myFile")
+collection <- Collection$new(arv, collectionUUID)
+arvadosFile <- collection$get(fileName)
+myFile$write("This is new file content")
+
+## ------------------------------------------------
+## Method `ArvadosFile$move`
+## ------------------------------------------------
+
+arvadosFile$move(newPath)
+
+## ------------------------------------------------
+## Method `ArvadosFile$copy`
+## ------------------------------------------------
+
+arvadosFile$copy("NewName.format")
+}
+\section{Methods}{
+\subsection{Public methods}{
+\itemize{
+\item \href{#method-new}{\code{ArvadosFile$new()}}
+\item \href{#method-getName}{\code{ArvadosFile$getName()}}
+\item \href{#method-getFileListing}{\code{ArvadosFile$getFileListing()}}
+\item \href{#method-getSizeInBytes}{\code{ArvadosFile$getSizeInBytes()}}
+\item \href{#method-get}{\code{ArvadosFile$get()}}
+\item \href{#method-getFirst}{\code{ArvadosFile$getFirst()}}
+\item \href{#method-getCollection}{\code{ArvadosFile$getCollection()}}
+\item \href{#method-setCollection}{\code{ArvadosFile$setCollection()}}
+\item \href{#method-getRelativePath}{\code{ArvadosFile$getRelativePath()}}
+\item \href{#method-getParent}{\code{ArvadosFile$getParent()}}
+\item \href{#method-setParent}{\code{ArvadosFile$setParent()}}
+\item \href{#method-read}{\code{ArvadosFile$read()}}
+\item \href{#method-connection}{\code{ArvadosFile$connection()}}
+\item \href{#method-flush}{\code{ArvadosFile$flush()}}
+\item \href{#method-write}{\code{ArvadosFile$write()}}
+\item \href{#method-move}{\code{ArvadosFile$move()}}
+\item \href{#method-copy}{\code{ArvadosFile$copy()}}
+\item \href{#method-duplicate}{\code{ArvadosFile$duplicate()}}
+}
+}
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-new"></a>}}
+\if{latex}{\out{\hypertarget{method-new}{}}}
+\subsection{Method \code{new()}}{
+Initialize new enviroment.
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{ArvadosFile$new(name)}\if{html}{\out{</div>}}
+}
+
+\subsection{Arguments}{
+\if{html}{\out{<div class="arguments">}}
+\describe{
+\item{\code{name}}{Name of the new enviroment.}
+}
+\if{html}{\out{</div>}}
+}
+\subsection{Returns}{
+A new `ArvadosFile` object.
+}
+\subsection{Examples}{
+\if{html}{\out{<div class="r example copy">}}
+\preformatted{myFile   <- ArvadosFile$new("myFile")
+}
+\if{html}{\out{</div>}}
+
+}
+
+}
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-getName"></a>}}
+\if{latex}{\out{\hypertarget{method-getName}{}}}
+\subsection{Method \code{getName()}}{
+Returns name of the file.
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{ArvadosFile$getName()}\if{html}{\out{</div>}}
+}
+
+\subsection{Examples}{
+\if{html}{\out{<div class="r example copy">}}
+\preformatted{arvadosFile$getName()
+}
+\if{html}{\out{</div>}}
+
+}
+
+}
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-getFileListing"></a>}}
+\if{latex}{\out{\hypertarget{method-getFileListing}{}}}
+\subsection{Method \code{getFileListing()}}{
+Returns collections file content as character vector.
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{ArvadosFile$getFileListing(fullpath = TRUE)}\if{html}{\out{</div>}}
+}
+
+\subsection{Arguments}{
+\if{html}{\out{<div class="arguments">}}
+\describe{
+\item{\code{fullPath}}{Checking if TRUE.}
+}
+\if{html}{\out{</div>}}
+}
+\subsection{Examples}{
+\if{html}{\out{<div class="r example copy">}}
+\preformatted{arvadosFile$getFileListing()
+}
+\if{html}{\out{</div>}}
+
+}
+
+}
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-getSizeInBytes"></a>}}
+\if{latex}{\out{\hypertarget{method-getSizeInBytes}{}}}
+\subsection{Method \code{getSizeInBytes()}}{
+Returns collections content size in bytes.
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{ArvadosFile$getSizeInBytes()}\if{html}{\out{</div>}}
+}
+
+\subsection{Examples}{
+\if{html}{\out{<div class="r example copy">}}
+\preformatted{arvadosFile$getSizeInBytes()
+}
+\if{html}{\out{</div>}}
+
+}
+
+}
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-get"></a>}}
+\if{latex}{\out{\hypertarget{method-get}{}}}
+\subsection{Method \code{get()}}{
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{ArvadosFile$get(fileLikeObjectName)}\if{html}{\out{</div>}}
+}
+
+}
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-getFirst"></a>}}
+\if{latex}{\out{\hypertarget{method-getFirst}{}}}
+\subsection{Method \code{getFirst()}}{
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{ArvadosFile$getFirst()}\if{html}{\out{</div>}}
+}
+
+}
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-getCollection"></a>}}
+\if{latex}{\out{\hypertarget{method-getCollection}{}}}
+\subsection{Method \code{getCollection()}}{
+Returns collection UUID.
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{ArvadosFile$getCollection()}\if{html}{\out{</div>}}
+}
+
+}
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-setCollection"></a>}}
+\if{latex}{\out{\hypertarget{method-setCollection}{}}}
+\subsection{Method \code{setCollection()}}{
+Sets new collection.
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{ArvadosFile$setCollection(collection, setRecursively = TRUE)}\if{html}{\out{</div>}}
+}
+
+}
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-getRelativePath"></a>}}
+\if{latex}{\out{\hypertarget{method-getRelativePath}{}}}
+\subsection{Method \code{getRelativePath()}}{
+Returns file path relative to the root.
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{ArvadosFile$getRelativePath()}\if{html}{\out{</div>}}
+}
+
+}
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-getParent"></a>}}
+\if{latex}{\out{\hypertarget{method-getParent}{}}}
+\subsection{Method \code{getParent()}}{
+Returns project UUID.
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{ArvadosFile$getParent()}\if{html}{\out{</div>}}
+}
+
+}
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-setParent"></a>}}
+\if{latex}{\out{\hypertarget{method-setParent}{}}}
+\subsection{Method \code{setParent()}}{
+Sets project collection.
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{ArvadosFile$setParent(newParent)}\if{html}{\out{</div>}}
+}
+
+}
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-read"></a>}}
+\if{latex}{\out{\hypertarget{method-read}{}}}
+\subsection{Method \code{read()}}{
+Read file content.
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{ArvadosFile$read(contentType = "raw", offset = 0, length = 0)}\if{html}{\out{</div>}}
+}
+
+\subsection{Arguments}{
+\if{html}{\out{<div class="arguments">}}
+\describe{
+\item{\code{contentType}}{Type of content. Possible is "text", "raw".}
+
+\item{\code{offset}}{Describes the location of a piece of data compared to another location}
+
+\item{\code{length}}{Length of content}
+}
+\if{html}{\out{</div>}}
+}
+\subsection{Examples}{
+\if{html}{\out{<div class="r example copy">}}
+\preformatted{collection <- Collection$new(arv, collectionUUID)
+arvadosFile <- collection$get(fileName)
+fileContent <- arvadosFile$read("text")
+}
+\if{html}{\out{</div>}}
+
+}
+
+}
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-connection"></a>}}
+\if{latex}{\out{\hypertarget{method-connection}{}}}
+\subsection{Method \code{connection()}}{
+Get connection opened in "read" or "write" mode.
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{ArvadosFile$connection(rw)}\if{html}{\out{</div>}}
+}
+
+\subsection{Arguments}{
+\if{html}{\out{<div class="arguments">}}
+\describe{
+\item{\code{rw}}{Type of connection.}
+}
+\if{html}{\out{</div>}}
+}
+\subsection{Examples}{
+\if{html}{\out{<div class="r example copy">}}
+\preformatted{collection <- Collection$new(arv, collectionUUID)
+arvadosFile <- collection$get(fileName)
+arvConnection <- arvadosFile$connection("w")
+}
+\if{html}{\out{</div>}}
+
+}
+
+}
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-flush"></a>}}
+\if{latex}{\out{\hypertarget{method-flush}{}}}
+\subsection{Method \code{flush()}}{
+Write connections content to a file or override current content of the file.
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{ArvadosFile$flush()}\if{html}{\out{</div>}}
+}
+
+\subsection{Examples}{
+\if{html}{\out{<div class="r example copy">}}
+\preformatted{collection <- Collection$new(arv, collectionUUID)
+arvadosFile <- collection$get(fileName)
+myFile$write("This is new file content")
+arvadosFile$flush()
+}
+\if{html}{\out{</div>}}
+
+}
+
+}
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-write"></a>}}
+\if{latex}{\out{\hypertarget{method-write}{}}}
+\subsection{Method \code{write()}}{
+Write to file or override current content of the file.
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{ArvadosFile$write(content, contentType = "text/html")}\if{html}{\out{</div>}}
+}
+
+\subsection{Arguments}{
+\if{html}{\out{<div class="arguments">}}
+\describe{
+\item{\code{content}}{File to write.}
+
+\item{\code{contentType}}{Type of content. Possible is "text", "raw".}
+}
+\if{html}{\out{</div>}}
+}
+\subsection{Examples}{
+\if{html}{\out{<div class="r example copy">}}
+\preformatted{collection <- Collection$new(arv, collectionUUID)
+arvadosFile <- collection$get(fileName)
+myFile$write("This is new file content")
+}
+\if{html}{\out{</div>}}
+
+}
+
+}
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-move"></a>}}
+\if{latex}{\out{\hypertarget{method-move}{}}}
+\subsection{Method \code{move()}}{
+Moves file to a new location inside collection.
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{ArvadosFile$move(destination)}\if{html}{\out{</div>}}
+}
+
+\subsection{Arguments}{
+\if{html}{\out{<div class="arguments">}}
+\describe{
+\item{\code{destination}}{Path to new folder.}
+}
+\if{html}{\out{</div>}}
+}
+\subsection{Examples}{
+\if{html}{\out{<div class="r example copy">}}
+\preformatted{arvadosFile$move(newPath)
+}
+\if{html}{\out{</div>}}
+
+}
+
+}
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-copy"></a>}}
+\if{latex}{\out{\hypertarget{method-copy}{}}}
+\subsection{Method \code{copy()}}{
+Copies file to a new location inside collection.
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{ArvadosFile$copy(destination)}\if{html}{\out{</div>}}
+}
+
+\subsection{Arguments}{
+\if{html}{\out{<div class="arguments">}}
+\describe{
+\item{\code{destination}}{Path to new folder.}
+}
+\if{html}{\out{</div>}}
+}
+\subsection{Examples}{
+\if{html}{\out{<div class="r example copy">}}
+\preformatted{arvadosFile$copy("NewName.format")
+}
+\if{html}{\out{</div>}}
+
+}
+
+}
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-duplicate"></a>}}
+\if{latex}{\out{\hypertarget{method-duplicate}{}}}
+\subsection{Method \code{duplicate()}}{
+Duplicate file and gives it a new name.
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{ArvadosFile$duplicate(newName = NULL)}\if{html}{\out{</div>}}
+}
+
+\subsection{Arguments}{
+\if{html}{\out{<div class="arguments">}}
+\describe{
+\item{\code{newName}}{New name for duplicated file.}
+}
+\if{html}{\out{</div>}}
+}
 }
 }

@@ -2,205 +2,2910 @@
 % Please edit documentation in R/Arvados.R
 \name{Arvados}
 \alias{Arvados}
-\title{Arvados}
+\title{R6 Class Representing a Arvados}
 \description{
-Arvados class gives users ability to access Arvados REST API.
+Arvados class gives users ability to access Arvados REST API. It also allowes user to manipulate collections (and projects?)
 }
-\section{Usage}{
-
-\preformatted{arv = Arvados$new(authToken = NULL, hostName = NULL, numRetries = 0)}
-}
-
-\section{Arguments}{
-
-\describe{
-	\item{authToken}{Authentification token. If not specified ARVADOS_API_TOKEN environment variable will be used.}
-	\item{hostName}{Host name. If not specified ARVADOS_API_HOST environment variable will be used.}
-	\item{numRetries}{Number which specifies how many times to retry failed service requests.}
-}
-}
-
-\section{Methods}{
-
-\describe{
-	\item{}{\code{\link{api_client_authorizations.create}}}
-	\item{}{\code{\link{api_client_authorizations.create_system_auth}}}
-	\item{}{\code{\link{api_client_authorizations.current}}}
-	\item{}{\code{\link{api_client_authorizations.delete}}}
-	\item{}{\code{\link{api_client_authorizations.get}}}
-	\item{}{\code{\link{api_client_authorizations.list}}}
-	\item{}{\code{\link{api_client_authorizations.update}}}
-	\item{}{\code{\link{api_clients.create}}}
-	\item{}{\code{\link{api_clients.delete}}}
-	\item{}{\code{\link{api_clients.get}}}
-	\item{}{\code{\link{api_clients.list}}}
-	\item{}{\code{\link{api_clients.update}}}
-	\item{}{\code{\link{authorized_keys.create}}}
-	\item{}{\code{\link{authorized_keys.delete}}}
-	\item{}{\code{\link{authorized_keys.get}}}
-	\item{}{\code{\link{authorized_keys.list}}}
-	\item{}{\code{\link{authorized_keys.update}}}
-	\item{}{\code{\link{collections.create}}}
-	\item{}{\code{\link{collections.delete}}}
-	\item{}{\code{\link{collections.get}}}
-	\item{}{\code{\link{collections.list}}}
-	\item{}{\code{\link{collections.provenance}}}
-	\item{}{\code{\link{collections.trash}}}
-	\item{}{\code{\link{collections.untrash}}}
-	\item{}{\code{\link{collections.update}}}
-	\item{}{\code{\link{collections.used_by}}}
-	\item{}{\code{\link{container_requests.create}}}
-	\item{}{\code{\link{container_requests.delete}}}
-	\item{}{\code{\link{container_requests.get}}}
-	\item{}{\code{\link{container_requests.list}}}
-	\item{}{\code{\link{container_requests.update}}}
-	\item{}{\code{\link{containers.auth}}}
-	\item{}{\code{\link{containers.create}}}
-	\item{}{\code{\link{containers.current}}}
-	\item{}{\code{\link{containers.delete}}}
-	\item{}{\code{\link{containers.get}}}
-	\item{}{\code{\link{containers.list}}}
-	\item{}{\code{\link{containers.lock}}}
-	\item{}{\code{\link{containers.secret_mounts}}}
-	\item{}{\code{\link{containers.unlock}}}
-	\item{}{\code{\link{containers.update}}}
-	\item{}{\code{\link{groups.contents}}}
-	\item{}{\code{\link{groups.create}}}
-	\item{}{\code{\link{groups.delete}}}
-	\item{}{\code{\link{groups.get}}}
-	\item{}{\code{\link{groups.list}}}
-	\item{}{\code{\link{groups.trash}}}
-	\item{}{\code{\link{groups.untrash}}}
-	\item{}{\code{\link{groups.update}}}
-	\item{}{\code{\link{humans.create}}}
-	\item{}{\code{\link{humans.delete}}}
-	\item{}{\code{\link{humans.get}}}
-	\item{}{\code{\link{humans.list}}}
-	\item{}{\code{\link{humans.update}}}
-	\item{}{\code{\link{jobs.cancel}}}
-	\item{}{\code{\link{jobs.create}}}
-	\item{}{\code{\link{jobs.delete}}}
-	\item{}{\code{\link{jobs.get}}}
-	\item{}{\code{\link{jobs.list}}}
-	\item{}{\code{\link{jobs.lock}}}
-	\item{}{\code{\link{jobs.queue}}}
-	\item{}{\code{\link{jobs.queue_size}}}
-	\item{}{\code{\link{jobs.update}}}
-	\item{}{\code{\link{job_tasks.create}}}
-	\item{}{\code{\link{job_tasks.delete}}}
-	\item{}{\code{\link{job_tasks.get}}}
-	\item{}{\code{\link{job_tasks.list}}}
-	\item{}{\code{\link{job_tasks.update}}}
-	\item{}{\code{\link{keep_disks.create}}}
-	\item{}{\code{\link{keep_disks.delete}}}
-	\item{}{\code{\link{keep_disks.get}}}
-	\item{}{\code{\link{keep_disks.list}}}
-	\item{}{\code{\link{keep_disks.ping}}}
-	\item{}{\code{\link{keep_disks.update}}}
-	\item{}{\code{\link{keep_services.accessible}}}
-	\item{}{\code{\link{keep_services.create}}}
-	\item{}{\code{\link{keep_services.delete}}}
-	\item{}{\code{\link{keep_services.get}}}
-	\item{}{\code{\link{keep_services.list}}}
-	\item{}{\code{\link{keep_services.update}}}
-	\item{}{\code{\link{links.create}}}
-	\item{}{\code{\link{links.delete}}}
-	\item{}{\code{\link{links.get}}}
-	\item{}{\code{\link{links.get_permissions}}}
-	\item{}{\code{\link{links.list}}}
-	\item{}{\code{\link{links.update}}}
-	\item{}{\code{\link{logs.create}}}
-	\item{}{\code{\link{logs.delete}}}
-	\item{}{\code{\link{logs.get}}}
-	\item{}{\code{\link{logs.list}}}
-	\item{}{\code{\link{logs.update}}}
-	\item{}{\code{\link{nodes.create}}}
-	\item{}{\code{\link{nodes.delete}}}
-	\item{}{\code{\link{nodes.get}}}
-	\item{}{\code{\link{nodes.list}}}
-	\item{}{\code{\link{nodes.ping}}}
-	\item{}{\code{\link{nodes.update}}}
-	\item{}{\code{\link{pipeline_instances.cancel}}}
-	\item{}{\code{\link{pipeline_instances.create}}}
-	\item{}{\code{\link{pipeline_instances.delete}}}
-	\item{}{\code{\link{pipeline_instances.get}}}
-	\item{}{\code{\link{pipeline_instances.list}}}
-	\item{}{\code{\link{pipeline_instances.update}}}
-	\item{}{\code{\link{pipeline_templates.create}}}
-	\item{}{\code{\link{pipeline_templates.delete}}}
-	\item{}{\code{\link{pipeline_templates.get}}}
-	\item{}{\code{\link{pipeline_templates.list}}}
-	\item{}{\code{\link{pipeline_templates.update}}}
-	\item{}{\code{\link{projects.create}}}
-	\item{}{\code{\link{projects.delete}}}
-	\item{}{\code{\link{projects.get}}}
-	\item{}{\code{\link{projects.list}}}
-	\item{}{\code{\link{projects.update}}}
-	\item{}{\code{\link{repositories.create}}}
-	\item{}{\code{\link{repositories.delete}}}
-	\item{}{\code{\link{repositories.get}}}
-	\item{}{\code{\link{repositories.get_all_permissions}}}
-	\item{}{\code{\link{repositories.list}}}
-	\item{}{\code{\link{repositories.update}}}
-	\item{}{\code{\link{specimens.create}}}
-	\item{}{\code{\link{specimens.delete}}}
-	\item{}{\code{\link{specimens.get}}}
-	\item{}{\code{\link{specimens.list}}}
-	\item{}{\code{\link{specimens.update}}}
-	\item{}{\code{\link{traits.create}}}
-	\item{}{\code{\link{traits.delete}}}
-	\item{}{\code{\link{traits.get}}}
-	\item{}{\code{\link{traits.list}}}
-	\item{}{\code{\link{traits.update}}}
-	\item{}{\code{\link{user_agreements.create}}}
-	\item{}{\code{\link{user_agreements.delete}}}
-	\item{}{\code{\link{user_agreements.get}}}
-	\item{}{\code{\link{user_agreements.list}}}
-	\item{}{\code{\link{user_agreements.new}}}
-	\item{}{\code{\link{user_agreements.sign}}}
-	\item{}{\code{\link{user_agreements.signatures}}}
-	\item{}{\code{\link{user_agreements.update}}}
-	\item{}{\code{\link{users.activate}}}
-	\item{}{\code{\link{users.create}}}
-	\item{}{\code{\link{users.current}}}
-	\item{}{\code{\link{users.delete}}}
-	\item{}{\code{\link{users.get}}}
-	\item{}{\code{\link{users.list}}}
-	\item{}{\code{\link{users.merge}}}
-	\item{}{\code{\link{users.setup}}}
-	\item{}{\code{\link{users.system}}}
-	\item{}{\code{\link{users.unsetup}}}
-	\item{}{\code{\link{users.update}}}
-	\item{}{\code{\link{virtual_machines.create}}}
-	\item{}{\code{\link{virtual_machines.delete}}}
-	\item{}{\code{\link{virtual_machines.get}}}
-	\item{}{\code{\link{virtual_machines.get_all_logins}}}
-	\item{}{\code{\link{virtual_machines.list}}}
-	\item{}{\code{\link{virtual_machines.logins}}}
-	\item{}{\code{\link{virtual_machines.update}}}
-	\item{}{\code{\link{workflows.create}}}
-	\item{}{\code{\link{workflows.delete}}}
-	\item{}{\code{\link{workflows.get}}}
-	\item{}{\code{\link{workflows.list}}}
-	\item{}{\code{\link{workflows.update}}}
-}
-}
-
 \examples{
-\dontrun{
-arv <- Arvados$new("your Arvados token", "example.arvadosapi.com")
 
-collection <- arv$collections.get("uuid")
+## ------------------------------------------------
+## Method `Arvados$new`
+## ------------------------------------------------
 
-collectionList <- arv$collections.list(list(list("name", "like", "Test\%")))
-collectionList <- listAll(arv$collections.list, list(list("name", "like", "Test\%")))
+arv <- Arvados$new(authToken = "ARVADOS_API_TOKEN", hostName = "ARVADOS_API_HOST", numRetries = 3)
 
-deletedCollection <- arv$collections.delete("uuid")
+## ------------------------------------------------
+## Method `Arvados$project_exist`
+## ------------------------------------------------
 
-updatedCollection <- arv$collections.update(list(name = "New name", description = "New description"),
-                                            "uuid")
+arv$project_exist(uuid = projectUUID)
 
-createdCollection <- arv$collections.create(list(name = "Example",
-                                                 description = "This is a test collection"))
+## ------------------------------------------------
+## Method `Arvados$project_get`
+## ------------------------------------------------
+
+project <- arv$project_get(uuid = projectUUID)
+
+## ------------------------------------------------
+## Method `Arvados$project_create`
+## ------------------------------------------------
+
+Properties <- list() # should contain a list of new properties to be added
+new_project <- arv$project_create(name = "project name", description = "project description", owner_uuid = "project UUID", properties = NULL, ensureUniqueName = "false")
+
+## ------------------------------------------------
+## Method `Arvados$project_properties_set`
+## ------------------------------------------------
+
+Properties <- list() # should contain a list of new properties to be added
+arv$project_properties_set(Properties, uuid)
+
+## ------------------------------------------------
+## Method `Arvados$project_properties_append`
+## ------------------------------------------------
+
+newProperties <- list() # should contain a list of new properties to be added
+arv$project_properties_append(properties = newProperties, uuid)
+
+## ------------------------------------------------
+## Method `Arvados$project_properties_get`
+## ------------------------------------------------
+
+arv$project_properties_get(projectUUID)
+
+## ------------------------------------------------
+## Method `Arvados$project_properties_delete`
+## ------------------------------------------------
+
+Properties <- list() # should contain a list of new properties to be added
+arv$project_properties_delete(Properties,  projectUUID)
+
+## ------------------------------------------------
+## Method `Arvados$project_update`
+## ------------------------------------------------
+
+newProperties <- list() # should contain a list of new properties to be added
+arv$project_update(name = "new project name", properties = newProperties, uuid = projectUUID)
+
+## ------------------------------------------------
+## Method `Arvados$project_list`
+## ------------------------------------------------
+
+listOfprojects <- arv$project_list(list(list("owner_uuid", "=", projectUUID))) # Sample query which show projects within the project of a given UUID
+
+## ------------------------------------------------
+## Method `Arvados$collections_create`
+## ------------------------------------------------
+
+Properties <- list() # should contain a list of new properties to be added
+arv$collections_create(name = "collectionTitle", description = "collectionDescription", ownerUUID = "collectionOwner", properties = Properties)
+
+## ------------------------------------------------
+## Method `Arvados$collections_update`
+## ------------------------------------------------
+
+collection <- arv$collections_create(name = "newCollectionTitle", description = "newCollectionDescription", ownerUUID = "collectionOwner", properties = NULL)
+
+## ------------------------------------------------
+## Method `Arvados$collections_delete`
+## ------------------------------------------------
+
+arv$collection_delete(collectionUUID)
+
+## ------------------------------------------------
+## Method `Arvados$collections_provenance`
+## ------------------------------------------------
+
+collection <- arv$collections_provenance(collectionUUID)
+
+## ------------------------------------------------
+## Method `Arvados$collections_trash`
+## ------------------------------------------------
+
+arv$collections_trash(collectionUUID)
+
+## ------------------------------------------------
+## Method `Arvados$collections_untrash`
+## ------------------------------------------------
+
+arv$collections_untrash(collectionUUID)
+
+## ------------------------------------------------
+## Method `Arvados$collections_list`
+## ------------------------------------------------
+
+collectionList <- arv$collections.list(list(list("name", "=", "Example")))
+
+## ------------------------------------------------
+## Method `Arvados$project_permission_give`
+## ------------------------------------------------
+
+arv$project_permission_give(type = "can_read", uuid = objectUUID, user = userUUID)
+
+## ------------------------------------------------
+## Method `Arvados$project_permission_refuse`
+## ------------------------------------------------
+
+arv$project_permission_refuse(type = "can_read", uuid = objectUUID, user = userUUID)
+
+## ------------------------------------------------
+## Method `Arvados$project_permission_update`
+## ------------------------------------------------
+
+arv$project_permission_update(typeOld = "can_read", typeNew = "can_write", uuid = objectUUID, user = userUUID)
+
+## ------------------------------------------------
+## Method `Arvados$project_permission_check`
+## ------------------------------------------------
+
+arv$project_permission_check(type = "can_read", uuid = objectUUID, user = userUUID)
+}
+\section{Methods}{
+\subsection{Public methods}{
+\itemize{
+\item \href{#method-new}{\code{Arvados$new()}}
+\item \href{#method-project_exist}{\code{Arvados$project_exist()}}
+\item \href{#method-project_get}{\code{Arvados$project_get()}}
+\item \href{#method-project_create}{\code{Arvados$project_create()}}
+\item \href{#method-project_properties_set}{\code{Arvados$project_properties_set()}}
+\item \href{#method-project_properties_append}{\code{Arvados$project_properties_append()}}
+\item \href{#method-project_properties_get}{\code{Arvados$project_properties_get()}}
+\item \href{#method-project_properties_delete}{\code{Arvados$project_properties_delete()}}
+\item \href{#method-project_update}{\code{Arvados$project_update()}}
+\item \href{#method-project_list}{\code{Arvados$project_list()}}
+\item \href{#method-project_delete}{\code{Arvados$project_delete()}}
+\item \href{#method-api_clients_get}{\code{Arvados$api_clients_get()}}
+\item \href{#method-api_clients_create}{\code{Arvados$api_clients_create()}}
+\item \href{#method-api_clients_update}{\code{Arvados$api_clients_update()}}
+\item \href{#method-api_clients_delete}{\code{Arvados$api_clients_delete()}}
+\item \href{#method-api_clients_list}{\code{Arvados$api_clients_list()}}
+\item \href{#method-api_client_authorizations_get}{\code{Arvados$api_client_authorizations_get()}}
+\item \href{#method-api_client_authorizations_create}{\code{Arvados$api_client_authorizations_create()}}
+\item \href{#method-api_client_authorizations_update}{\code{Arvados$api_client_authorizations_update()}}
+\item \href{#method-api_client_authorizations_delete}{\code{Arvados$api_client_authorizations_delete()}}
+\item \href{#method-api_client_authorizations_create_system_auth}{\code{Arvados$api_client_authorizations_create_system_auth()}}
+\item \href{#method-api_client_authorizations_current}{\code{Arvados$api_client_authorizations_current()}}
+\item \href{#method-api_client_authorizations_list}{\code{Arvados$api_client_authorizations_list()}}
+\item \href{#method-authorized_keys_get}{\code{Arvados$authorized_keys_get()}}
+\item \href{#method-authorized_keys_create}{\code{Arvados$authorized_keys_create()}}
+\item \href{#method-authorized_keys_update}{\code{Arvados$authorized_keys_update()}}
+\item \href{#method-authorized_keys_delete}{\code{Arvados$authorized_keys_delete()}}
+\item \href{#method-authorized_keys_list}{\code{Arvados$authorized_keys_list()}}
+\item \href{#method-collections_get}{\code{Arvados$collections_get()}}
+\item \href{#method-collections_create}{\code{Arvados$collections_create()}}
+\item \href{#method-collections_update}{\code{Arvados$collections_update()}}
+\item \href{#method-collections_delete}{\code{Arvados$collections_delete()}}
+\item \href{#method-collections_provenance}{\code{Arvados$collections_provenance()}}
+\item \href{#method-collections_used_by}{\code{Arvados$collections_used_by()}}
+\item \href{#method-collections_trash}{\code{Arvados$collections_trash()}}
+\item \href{#method-collections_untrash}{\code{Arvados$collections_untrash()}}
+\item \href{#method-collections_list}{\code{Arvados$collections_list()}}
+\item \href{#method-containers_get}{\code{Arvados$containers_get()}}
+\item \href{#method-containers_create}{\code{Arvados$containers_create()}}
+\item \href{#method-containers_update}{\code{Arvados$containers_update()}}
+\item \href{#method-containers_delete}{\code{Arvados$containers_delete()}}
+\item \href{#method-containers_auth}{\code{Arvados$containers_auth()}}
+\item \href{#method-containers_lock}{\code{Arvados$containers_lock()}}
+\item \href{#method-containers_unlock}{\code{Arvados$containers_unlock()}}
+\item \href{#method-containers_secret_mounts}{\code{Arvados$containers_secret_mounts()}}
+\item \href{#method-containers_current}{\code{Arvados$containers_current()}}
+\item \href{#method-containers_list}{\code{Arvados$containers_list()}}
+\item \href{#method-container_requests_get}{\code{Arvados$container_requests_get()}}
+\item \href{#method-container_requests_create}{\code{Arvados$container_requests_create()}}
+\item \href{#method-container_requests_update}{\code{Arvados$container_requests_update()}}
+\item \href{#method-container_requests_delete}{\code{Arvados$container_requests_delete()}}
+\item \href{#method-container_requests_list}{\code{Arvados$container_requests_list()}}
+\item \href{#method-groups_get}{\code{Arvados$groups_get()}}
+\item \href{#method-groups_create}{\code{Arvados$groups_create()}}
+\item \href{#method-groups_update}{\code{Arvados$groups_update()}}
+\item \href{#method-groups_delete}{\code{Arvados$groups_delete()}}
+\item \href{#method-groups_contents}{\code{Arvados$groups_contents()}}
+\item \href{#method-groups_shared}{\code{Arvados$groups_shared()}}
+\item \href{#method-groups_trash}{\code{Arvados$groups_trash()}}
+\item \href{#method-groups_untrash}{\code{Arvados$groups_untrash()}}
+\item \href{#method-groups_list}{\code{Arvados$groups_list()}}
+\item \href{#method-keep_services_get}{\code{Arvados$keep_services_get()}}
+\item \href{#method-keep_services_create}{\code{Arvados$keep_services_create()}}
+\item \href{#method-keep_services_update}{\code{Arvados$keep_services_update()}}
+\item \href{#method-keep_services_delete}{\code{Arvados$keep_services_delete()}}
+\item \href{#method-keep_services_accessible}{\code{Arvados$keep_services_accessible()}}
+\item \href{#method-keep_services_list}{\code{Arvados$keep_services_list()}}
+\item \href{#method-project_permission_give}{\code{Arvados$project_permission_give()}}
+\item \href{#method-project_permission_refuse}{\code{Arvados$project_permission_refuse()}}
+\item \href{#method-project_permission_update}{\code{Arvados$project_permission_update()}}
+\item \href{#method-project_permission_check}{\code{Arvados$project_permission_check()}}
+\item \href{#method-links_get}{\code{Arvados$links_get()}}
+\item \href{#method-links_create}{\code{Arvados$links_create()}}
+\item \href{#method-links_update}{\code{Arvados$links_update()}}
+\item \href{#method-links_delete}{\code{Arvados$links_delete()}}
+\item \href{#method-links_list}{\code{Arvados$links_list()}}
+\item \href{#method-links_get_permissions}{\code{Arvados$links_get_permissions()}}
+\item \href{#method-logs_get}{\code{Arvados$logs_get()}}
+\item \href{#method-logs_create}{\code{Arvados$logs_create()}}
+\item \href{#method-logs_update}{\code{Arvados$logs_update()}}
+\item \href{#method-logs_delete}{\code{Arvados$logs_delete()}}
+\item \href{#method-logs_list}{\code{Arvados$logs_list()}}
+\item \href{#method-users_get}{\code{Arvados$users_get()}}
+\item \href{#method-users_create}{\code{Arvados$users_create()}}
+\item \href{#method-users_update}{\code{Arvados$users_update()}}
+\item \href{#method-users_delete}{\code{Arvados$users_delete()}}
+\item \href{#method-users_current}{\code{Arvados$users_current()}}
+\item \href{#method-users_system}{\code{Arvados$users_system()}}
+\item \href{#method-users_activate}{\code{Arvados$users_activate()}}
+\item \href{#method-users_setup}{\code{Arvados$users_setup()}}
+\item \href{#method-users_unsetup}{\code{Arvados$users_unsetup()}}
+\item \href{#method-users_merge}{\code{Arvados$users_merge()}}
+\item \href{#method-users_list}{\code{Arvados$users_list()}}
+\item \href{#method-repositories_get}{\code{Arvados$repositories_get()}}
+\item \href{#method-repositories_create}{\code{Arvados$repositories_create()}}
+\item \href{#method-repositories_update}{\code{Arvados$repositories_update()}}
+\item \href{#method-repositories_delete}{\code{Arvados$repositories_delete()}}
+\item \href{#method-repositories_get_all_permissions}{\code{Arvados$repositories_get_all_permissions()}}
+\item \href{#method-repositories_list}{\code{Arvados$repositories_list()}}
+\item \href{#method-virtual_machines_get}{\code{Arvados$virtual_machines_get()}}
+\item \href{#method-virtual_machines_create}{\code{Arvados$virtual_machines_create()}}
+\item \href{#method-virtual_machines_update}{\code{Arvados$virtual_machines_update()}}
+\item \href{#method-virtual_machines_delete}{\code{Arvados$virtual_machines_delete()}}
+\item \href{#method-virtual_machines_logins}{\code{Arvados$virtual_machines_logins()}}
+\item \href{#method-virtual_machines_get_all_logins}{\code{Arvados$virtual_machines_get_all_logins()}}
+\item \href{#method-virtual_machines_list}{\code{Arvados$virtual_machines_list()}}
+\item \href{#method-workflows_get}{\code{Arvados$workflows_get()}}
+\item \href{#method-workflows_create}{\code{Arvados$workflows_create()}}
+\item \href{#method-workflows_update}{\code{Arvados$workflows_update()}}
+\item \href{#method-workflows_delete}{\code{Arvados$workflows_delete()}}
+\item \href{#method-workflows_list}{\code{Arvados$workflows_list()}}
+\item \href{#method-user_agreements_get}{\code{Arvados$user_agreements_get()}}
+\item \href{#method-user_agreements_create}{\code{Arvados$user_agreements_create()}}
+\item \href{#method-user_agreements_update}{\code{Arvados$user_agreements_update()}}
+\item \href{#method-user_agreements_delete}{\code{Arvados$user_agreements_delete()}}
+\item \href{#method-user_agreements_signatures}{\code{Arvados$user_agreements_signatures()}}
+\item \href{#method-user_agreements_sign}{\code{Arvados$user_agreements_sign()}}
+\item \href{#method-user_agreements_list}{\code{Arvados$user_agreements_list()}}
+\item \href{#method-user_agreements_new}{\code{Arvados$user_agreements_new()}}
+\item \href{#method-configs_get}{\code{Arvados$configs_get()}}
+\item \href{#method-getHostName}{\code{Arvados$getHostName()}}
+\item \href{#method-getToken}{\code{Arvados$getToken()}}
+\item \href{#method-setRESTService}{\code{Arvados$setRESTService()}}
+\item \href{#method-getRESTService}{\code{Arvados$getRESTService()}}
+}
+}
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-new"></a>}}
+\if{latex}{\out{\hypertarget{method-new}{}}}
+\subsection{Method \code{new()}}{
+Initialize new enviroment.
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{Arvados$new(authToken = NULL, hostName = NULL, numRetries = 0)}\if{html}{\out{</div>}}
+}
+
+\subsection{Arguments}{
+\if{html}{\out{<div class="arguments">}}
+\describe{
+\item{\code{authToken}}{ARVADOS_API_TOKEN from 'Get API Token' on Arvados.}
+
+\item{\code{hostName}}{ARVADOS_API_HOST from 'Get API Token' on Arvados.}
+
+\item{\code{numRetries}}{Specify number of times to retry failed service requests.}
+}
+\if{html}{\out{</div>}}
+}
+\subsection{Returns}{
+A new `Arvados` object.
+}
+\subsection{Examples}{
+\if{html}{\out{<div class="r example copy">}}
+\preformatted{arv <- Arvados$new(authToken = "ARVADOS_API_TOKEN", hostName = "ARVADOS_API_HOST", numRetries = 3)
+}
+\if{html}{\out{</div>}}
+
+}
+
+}
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-project_exist"></a>}}
+\if{latex}{\out{\hypertarget{method-project_exist}{}}}
+\subsection{Method \code{project_exist()}}{
+project_exist enables checking if the project with such a UUID exist.
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{Arvados$project_exist(uuid)}\if{html}{\out{</div>}}
+}
+
+\subsection{Arguments}{
+\if{html}{\out{<div class="arguments">}}
+\describe{
+\item{\code{uuid}}{The UUID of a project or a file.}
+}
+\if{html}{\out{</div>}}
+}
+\subsection{Examples}{
+\if{html}{\out{<div class="r example copy">}}
+\preformatted{arv$project_exist(uuid = projectUUID)
+}
+\if{html}{\out{</div>}}
+
+}
+
+}
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-project_get"></a>}}
+\if{latex}{\out{\hypertarget{method-project_get}{}}}
+\subsection{Method \code{project_get()}}{
+project_get returns the demanded project.
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{Arvados$project_get(uuid)}\if{html}{\out{</div>}}
+}
+
+\subsection{Arguments}{
+\if{html}{\out{<div class="arguments">}}
+\describe{
+\item{\code{uuid}}{The UUID of the Group in question.}
+}
+\if{html}{\out{</div>}}
+}
+\subsection{Examples}{
+\if{html}{\out{<div class="r example copy">}}
+\preformatted{project <- arv$project_get(uuid = projectUUID)
+}
+\if{html}{\out{</div>}}
+
+}
+
+}
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-project_create"></a>}}
+\if{latex}{\out{\hypertarget{method-project_create}{}}}
+\subsection{Method \code{project_create()}}{
+project_create creates a new project of a given name and description.
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{Arvados$project_create(
+  name,
+  description,
+  ownerUUID,
+  properties = NULL,
+  ensureUniqueName = "false"
+)}\if{html}{\out{</div>}}
+}
+
+\subsection{Arguments}{
+\if{html}{\out{<div class="arguments">}}
+\describe{
+\item{\code{name}}{Name of the project.}
+
+\item{\code{description}}{Description of the project.}
+
+\item{\code{ownerUUID}}{The UUID of the maternal project to created one.}
+
+\item{\code{properties}}{List of the properties of the project.}
+
+\item{\code{ensureUniqueName}}{Adjust name to ensure uniqueness instead of returning an error.}
+}
+\if{html}{\out{</div>}}
+}
+\subsection{Examples}{
+\if{html}{\out{<div class="r example copy">}}
+\preformatted{Properties <- list() # should contain a list of new properties to be added
+new_project <- arv$project_create(name = "project name", description = "project description", owner_uuid = "project UUID", properties = NULL, ensureUniqueName = "false")
+}
+\if{html}{\out{</div>}}
+
+}
+
+}
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-project_properties_set"></a>}}
+\if{latex}{\out{\hypertarget{method-project_properties_set}{}}}
+\subsection{Method \code{project_properties_set()}}{
+project_properties_set is a method defined in Arvados class that enables setting properties. Allows to set or overwrite the properties. In case there are set already it overwrites them.
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{Arvados$project_properties_set(listProperties, uuid)}\if{html}{\out{</div>}}
+}
+
+\subsection{Arguments}{
+\if{html}{\out{<div class="arguments">}}
+\describe{
+\item{\code{listProperties}}{List of new properties.}
+
+\item{\code{uuid}}{The UUID of a project or a file.}
+}
+\if{html}{\out{</div>}}
+}
+\subsection{Examples}{
+\if{html}{\out{<div class="r example copy">}}
+\preformatted{Properties <- list() # should contain a list of new properties to be added
+arv$project_properties_set(Properties, uuid)
+}
+\if{html}{\out{</div>}}
+
+}
+
+}
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-project_properties_append"></a>}}
+\if{latex}{\out{\hypertarget{method-project_properties_append}{}}}
+\subsection{Method \code{project_properties_append()}}{
+project_properties_append is a method defined in Arvados class that enables appending properties. Allows to add new properties.
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{Arvados$project_properties_append(properties, uuid)}\if{html}{\out{</div>}}
+}
+
+\subsection{Arguments}{
+\if{html}{\out{<div class="arguments">}}
+\describe{
+\item{\code{uuid}}{The UUID of a project or a file.}
+
+\item{\code{listOfNewProperties}}{List of new properties.}
+}
+\if{html}{\out{</div>}}
+}
+\subsection{Examples}{
+\if{html}{\out{<div class="r example copy">}}
+\preformatted{newProperties <- list() # should contain a list of new properties to be added
+arv$project_properties_append(properties = newProperties, uuid)
+}
+\if{html}{\out{</div>}}
+
+}
+
+}
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-project_properties_get"></a>}}
+\if{latex}{\out{\hypertarget{method-project_properties_get}{}}}
+\subsection{Method \code{project_properties_get()}}{
+project_properties_get is a method defined in Arvados class that returns properties.
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{Arvados$project_properties_get(uuid)}\if{html}{\out{</div>}}
+}
+
+\subsection{Arguments}{
+\if{html}{\out{<div class="arguments">}}
+\describe{
+\item{\code{uuid}}{The UUID of a project or a file.}
+}
+\if{html}{\out{</div>}}
+}
+\subsection{Examples}{
+\if{html}{\out{<div class="r example copy">}}
+\preformatted{arv$project_properties_get(projectUUID)
+}
+\if{html}{\out{</div>}}
+
+}
+
+}
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-project_properties_delete"></a>}}
+\if{latex}{\out{\hypertarget{method-project_properties_delete}{}}}
+\subsection{Method \code{project_properties_delete()}}{
+project_properties_delete is a method defined in Arvados class that deletes list of properties.
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{Arvados$project_properties_delete(oneProp, uuid)}\if{html}{\out{</div>}}
+}
+
+\subsection{Arguments}{
+\if{html}{\out{<div class="arguments">}}
+\describe{
+\item{\code{oneProp}}{Property to be deleted.}
+
+\item{\code{uuid}}{The UUID of a project or a file.}
+}
+\if{html}{\out{</div>}}
+}
+\subsection{Examples}{
+\if{html}{\out{<div class="r example copy">}}
+\preformatted{Properties <- list() # should contain a list of new properties to be added
+arv$project_properties_delete(Properties,  projectUUID)
+}
+\if{html}{\out{</div>}}
+
+}
+
+}
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-project_update"></a>}}
+\if{latex}{\out{\hypertarget{method-project_update}{}}}
+\subsection{Method \code{project_update()}}{
+project_update enables updating project. New name, description and properties may be given.
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{Arvados$project_update(..., uuid)}\if{html}{\out{</div>}}
+}
+
+\subsection{Arguments}{
+\if{html}{\out{<div class="arguments">}}
+\describe{
+\item{\code{...}}{Feature to be updated (name, description, properties).}
+
+\item{\code{uuid}}{The UUID of a project in question.}
+}
+\if{html}{\out{</div>}}
+}
+\subsection{Examples}{
+\if{html}{\out{<div class="r example copy">}}
+\preformatted{newProperties <- list() # should contain a list of new properties to be added
+arv$project_update(name = "new project name", properties = newProperties, uuid = projectUUID)
+}
+\if{html}{\out{</div>}}
+
+}
+
+}
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-project_list"></a>}}
+\if{latex}{\out{\hypertarget{method-project_list}{}}}
+\subsection{Method \code{project_list()}}{
+project_list enables listing project by its name, uuid, properties, permissions.
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{Arvados$project_list(
+  filters = NULL,
+  where = NULL,
+  order = NULL,
+  select = NULL,
+  distinct = NULL,
+  limit = "100",
+  offset = "0",
+  count = "exact",
+  includeTrash = NULL
+)}\if{html}{\out{</div>}}
+}
+
+\subsection{Arguments}{
+\if{html}{\out{<div class="arguments">}}
+\describe{
+\item{\code{includeTrash}}{Include items whose is_trashed attribute is true.}
+
+\item{\code{uuid}}{The UUID of a project in question.}
+
+\item{\code{recursive}}{Include contents from child groups recursively.}
+}
+\if{html}{\out{</div>}}
+}
+\subsection{Examples}{
+\if{html}{\out{<div class="r example copy">}}
+\preformatted{listOfprojects <- arv$project_list(list(list("owner_uuid", "=", projectUUID))) # Sample query which show projects within the project of a given UUID
+}
+\if{html}{\out{</div>}}
+
+}
+
+}
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-project_delete"></a>}}
+\if{latex}{\out{\hypertarget{method-project_delete}{}}}
+\subsection{Method \code{project_delete()}}{
+project_delete trashes project of a given uuid. It can be restored from trash or deleted permanently.
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{Arvados$project_delete(uuid)}\if{html}{\out{</div>}}
+}
+
+\subsection{Arguments}{
+\if{html}{\out{<div class="arguments">}}
+\describe{
+\item{\code{uuid}}{The UUID of the Group in question.}
+}
+\if{html}{\out{</div>}}
+}
+}
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-api_clients_get"></a>}}
+\if{latex}{\out{\hypertarget{method-api_clients_get}{}}}
+\subsection{Method \code{api_clients_get()}}{
+api_clients_get is a method defined in Arvados class.
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{Arvados$api_clients_get(uuid)}\if{html}{\out{</div>}}
+}
+
+\subsection{Arguments}{
+\if{html}{\out{<div class="arguments">}}
+\describe{
+\item{\code{uuid}}{The UUID of the apiClient in question.}
+}
+\if{html}{\out{</div>}}
+}
+}
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-api_clients_create"></a>}}
+\if{latex}{\out{\hypertarget{method-api_clients_create}{}}}
+\subsection{Method \code{api_clients_create()}}{
+api_clients_create is a method defined in Arvados class.
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{Arvados$api_clients_create(
+  apiClient,
+  ensureUniqueName = "false",
+  clusterID = NULL
+)}\if{html}{\out{</div>}}
+}
+
+\subsection{Arguments}{
+\if{html}{\out{<div class="arguments">}}
+\describe{
+\item{\code{apiClient}}{apiClient object.}
+
+\item{\code{ensureUniqueName}}{Adjust name to ensure uniqueness instead of returning an error.}
+
+\item{\code{clusterID}}{Create object on a remote federated cluster instead of the current one.}
+}
+\if{html}{\out{</div>}}
+}
+}
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-api_clients_update"></a>}}
+\if{latex}{\out{\hypertarget{method-api_clients_update}{}}}
+\subsection{Method \code{api_clients_update()}}{
+api_clients_update is a method defined in Arvados class.
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{Arvados$api_clients_update(apiClient, uuid)}\if{html}{\out{</div>}}
+}
+
+\subsection{Arguments}{
+\if{html}{\out{<div class="arguments">}}
+\describe{
+\item{\code{apiClient}}{apiClient object.}
+
+\item{\code{uuid}}{The UUID of the apiClient in question.}
+}
+\if{html}{\out{</div>}}
+}
+}
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-api_clients_delete"></a>}}
+\if{latex}{\out{\hypertarget{method-api_clients_delete}{}}}
+\subsection{Method \code{api_clients_delete()}}{
+api_clients_delete is a method defined in Arvados class.
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{Arvados$api_clients_delete(uuid)}\if{html}{\out{</div>}}
+}
+
+\subsection{Arguments}{
+\if{html}{\out{<div class="arguments">}}
+\describe{
+\item{\code{uuid}}{The UUID of the apiClient in question.}
+}
+\if{html}{\out{</div>}}
+}
+}
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-api_clients_list"></a>}}
+\if{latex}{\out{\hypertarget{method-api_clients_list}{}}}
+\subsection{Method \code{api_clients_list()}}{
+api_clients_list is a method defined in Arvados class.
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{Arvados$api_clients_list(
+  filters = NULL,
+  where = NULL,
+  order = NULL,
+  select = NULL,
+  distinct = NULL,
+  limit = "100",
+  offset = "0",
+  count = "exact",
+  clusterID = NULL,
+  bypassFederation = NULL
+)}\if{html}{\out{</div>}}
+}
+
+\subsection{Arguments}{
+\if{html}{\out{<div class="arguments">}}
+\describe{
+\item{\code{clusterID}}{List objects on a remote federated cluster instead of the current one.}
+
+\item{\code{bypassFederation}}{Bypass federation behavior, list items from local instance database only.}
+}
+\if{html}{\out{</div>}}
+}
+}
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-api_client_authorizations_get"></a>}}
+\if{latex}{\out{\hypertarget{method-api_client_authorizations_get}{}}}
+\subsection{Method \code{api_client_authorizations_get()}}{
+api_client_authorizations_get is a method defined in Arvados class.
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{Arvados$api_client_authorizations_get(uuid)}\if{html}{\out{</div>}}
+}
+
+\subsection{Arguments}{
+\if{html}{\out{<div class="arguments">}}
+\describe{
+\item{\code{uuid}}{The UUID of the apiClientAuthorization in question.}
+}
+\if{html}{\out{</div>}}
+}
+}
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-api_client_authorizations_create"></a>}}
+\if{latex}{\out{\hypertarget{method-api_client_authorizations_create}{}}}
+\subsection{Method \code{api_client_authorizations_create()}}{
+api_client_authorizations_create is a method defined in Arvados class.
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{Arvados$api_client_authorizations_create(
+  apiClientAuthorization,
+  ensureUniqueName = "false",
+  clusterID = NULL
+)}\if{html}{\out{</div>}}
+}
+
+\subsection{Arguments}{
+\if{html}{\out{<div class="arguments">}}
+\describe{
+\item{\code{apiClientAuthorization}}{apiClientAuthorization object.}
+
+\item{\code{ensureUniqueName}}{Adjust name to ensure uniqueness instead of returning an error on (ownerUUID, name) collision_}
+
+\item{\code{clusterID}}{Create object on a remote federated cluster instead of the current one.}
+}
+\if{html}{\out{</div>}}
+}
+}
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-api_client_authorizations_update"></a>}}
+\if{latex}{\out{\hypertarget{method-api_client_authorizations_update}{}}}
+\subsection{Method \code{api_client_authorizations_update()}}{
+api_client_authorizations_update is a method defined in Arvados class.
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{Arvados$api_client_authorizations_update(apiClientAuthorization, uuid)}\if{html}{\out{</div>}}
+}
+
+\subsection{Arguments}{
+\if{html}{\out{<div class="arguments">}}
+\describe{
+\item{\code{apiClientAuthorization}}{apiClientAuthorization object.}
+
+\item{\code{uuid}}{The UUID of the apiClientAuthorization in question.}
+}
+\if{html}{\out{</div>}}
+}
+}
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-api_client_authorizations_delete"></a>}}
+\if{latex}{\out{\hypertarget{method-api_client_authorizations_delete}{}}}
+\subsection{Method \code{api_client_authorizations_delete()}}{
+api_client_authorizations_delete is a method defined in Arvados class.
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{Arvados$api_client_authorizations_delete(uuid)}\if{html}{\out{</div>}}
+}
+
+\subsection{Arguments}{
+\if{html}{\out{<div class="arguments">}}
+\describe{
+\item{\code{uuid}}{The UUID of the apiClientAuthorization in question.}
+}
+\if{html}{\out{</div>}}
+}
+}
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-api_client_authorizations_create_system_auth"></a>}}
+\if{latex}{\out{\hypertarget{method-api_client_authorizations_create_system_auth}{}}}
+\subsection{Method \code{api_client_authorizations_create_system_auth()}}{
+api_client_authorizations_create_system_auth is a method defined in Arvados class.
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{Arvados$api_client_authorizations_create_system_auth(
+  apiClientID = NULL,
+  scopes = NULL
+)}\if{html}{\out{</div>}}
+}
+
+}
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-api_client_authorizations_current"></a>}}
+\if{latex}{\out{\hypertarget{method-api_client_authorizations_current}{}}}
+\subsection{Method \code{api_client_authorizations_current()}}{
+api_client_authorizations_current is a method defined in Arvados class.
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{Arvados$api_client_authorizations_current()}\if{html}{\out{</div>}}
+}
+
+}
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-api_client_authorizations_list"></a>}}
+\if{latex}{\out{\hypertarget{method-api_client_authorizations_list}{}}}
+\subsection{Method \code{api_client_authorizations_list()}}{
+api_client_authorizations_list is a method defined in Arvados class.
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{Arvados$api_client_authorizations_list(
+  filters = NULL,
+  where = NULL,
+  order = NULL,
+  select = NULL,
+  distinct = NULL,
+  limit = "100",
+  offset = "0",
+  count = "exact",
+  clusterID = NULL,
+  bypassFederation = NULL
+)}\if{html}{\out{</div>}}
+}
+
+\subsection{Arguments}{
+\if{html}{\out{<div class="arguments">}}
+\describe{
+\item{\code{clusterID}}{List objects on a remote federated cluster instead of the current one.}
+
+\item{\code{bypassFederation}}{Bypass federation behavior, list items from local instance database only.}
+}
+\if{html}{\out{</div>}}
+}
+}
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-authorized_keys_get"></a>}}
+\if{latex}{\out{\hypertarget{method-authorized_keys_get}{}}}
+\subsection{Method \code{authorized_keys_get()}}{
+authorized_keys_get is a method defined in Arvados class.
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{Arvados$authorized_keys_get(uuid)}\if{html}{\out{</div>}}
+}
+
+\subsection{Arguments}{
+\if{html}{\out{<div class="arguments">}}
+\describe{
+\item{\code{uuid}}{The UUID of the authorizedKey in question.}
+}
+\if{html}{\out{</div>}}
+}
+}
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-authorized_keys_create"></a>}}
+\if{latex}{\out{\hypertarget{method-authorized_keys_create}{}}}
+\subsection{Method \code{authorized_keys_create()}}{
+authorized_keys_create is a method defined in Arvados class.
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{Arvados$authorized_keys_create(
+  authorizedKey,
+  ensureUniqueName = "false",
+  clusterID = NULL
+)}\if{html}{\out{</div>}}
+}
+
+\subsection{Arguments}{
+\if{html}{\out{<div class="arguments">}}
+\describe{
+\item{\code{authorizedKey}}{authorizedKey object.}
+
+\item{\code{ensureUniqueName}}{Adjust name to ensure uniqueness instead of returning an error.}
+
+\item{\code{clusterID}}{Create object on a remote federated cluster instead of the current one.}
+}
+\if{html}{\out{</div>}}
+}
+}
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-authorized_keys_update"></a>}}
+\if{latex}{\out{\hypertarget{method-authorized_keys_update}{}}}
+\subsection{Method \code{authorized_keys_update()}}{
+authorized_keys_update is a method defined in Arvados class.
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{Arvados$authorized_keys_update(authorizedKey, uuid)}\if{html}{\out{</div>}}
+}
+
+\subsection{Arguments}{
+\if{html}{\out{<div class="arguments">}}
+\describe{
+\item{\code{authorizedKey}}{authorizedKey object.}
+
+\item{\code{uuid}}{The UUID of the authorizedKey in question.}
+}
+\if{html}{\out{</div>}}
+}
+}
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-authorized_keys_delete"></a>}}
+\if{latex}{\out{\hypertarget{method-authorized_keys_delete}{}}}
+\subsection{Method \code{authorized_keys_delete()}}{
+authorized_keys_delete is a method defined in Arvados class.
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{Arvados$authorized_keys_delete(uuid)}\if{html}{\out{</div>}}
+}
+
+\subsection{Arguments}{
+\if{html}{\out{<div class="arguments">}}
+\describe{
+\item{\code{uuid}}{The UUID of the authorizedKey in question.}
+}
+\if{html}{\out{</div>}}
+}
+}
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-authorized_keys_list"></a>}}
+\if{latex}{\out{\hypertarget{method-authorized_keys_list}{}}}
+\subsection{Method \code{authorized_keys_list()}}{
+authorized_keys_list is a method defined in Arvados class.
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{Arvados$authorized_keys_list(
+  filters = NULL,
+  where = NULL,
+  order = NULL,
+  select = NULL,
+  distinct = NULL,
+  limit = "100",
+  offset = "0",
+  count = "exact",
+  clusterID = NULL,
+  bypassFederation = NULL
+)}\if{html}{\out{</div>}}
+}
+
+\subsection{Arguments}{
+\if{html}{\out{<div class="arguments">}}
+\describe{
+\item{\code{clusterID}}{List objects on a remote federated cluster instead of the current one.}
+
+\item{\code{bypassFederation}}{Bypass federation behavior, list items from local instance database only.}
+}
+\if{html}{\out{</div>}}
+}
+}
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-collections_get"></a>}}
+\if{latex}{\out{\hypertarget{method-collections_get}{}}}
+\subsection{Method \code{collections_get()}}{
+collections_get is a method defined in Arvados class.
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{Arvados$collections_get(uuid)}\if{html}{\out{</div>}}
+}
+
+\subsection{Arguments}{
+\if{html}{\out{<div class="arguments">}}
+\describe{
+\item{\code{uuid}}{The UUID of the Collection in question.
+collection <- arv$collections_get(uuid = collectionUUID)}
+}
+\if{html}{\out{</div>}}
+}
+}
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-collections_create"></a>}}
+\if{latex}{\out{\hypertarget{method-collections_create}{}}}
+\subsection{Method \code{collections_create()}}{
+collections_create is a method defined in Arvados class that enables collections creation.
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{Arvados$collections_create(
+  name,
+  description,
+  ownerUUID = NULL,
+  properties = NULL,
+  ensureUniqueName = "false",
+  clusterID = NULL
+)}\if{html}{\out{</div>}}
+}
+
+\subsection{Arguments}{
+\if{html}{\out{<div class="arguments">}}
+\describe{
+\item{\code{name}}{Name of the collection.}
+
+\item{\code{description}}{Description of the collection.}
+
+\item{\code{ownerUUID}}{UUID of the maternal project to created one.}
+
+\item{\code{properties}}{Properties of the collection.}
+
+\item{\code{ensureUniqueName}}{Adjust name to ensure uniqueness instead of returning an error.}
+
+\item{\code{clusterID}}{Create object on a remote federated cluster instead of the current one.}
+}
+\if{html}{\out{</div>}}
+}
+\subsection{Examples}{
+\if{html}{\out{<div class="r example copy">}}
+\preformatted{Properties <- list() # should contain a list of new properties to be added
+arv$collections_create(name = "collectionTitle", description = "collectionDescription", ownerUUID = "collectionOwner", properties = Properties)
+}
+\if{html}{\out{</div>}}
+
+}
+
+}
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-collections_update"></a>}}
+\if{latex}{\out{\hypertarget{method-collections_update}{}}}
+\subsection{Method \code{collections_update()}}{
+collections_update is a method defined in Arvados class.
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{Arvados$collections_update(
+  name,
+  description,
+  ownerUUID = NULL,
+  properties = NULL,
+  uuid
+)}\if{html}{\out{</div>}}
+}
+
+\subsection{Arguments}{
+\if{html}{\out{<div class="arguments">}}
+\describe{
+\item{\code{name}}{New name of the collection.}
+
+\item{\code{description}}{New description of the collection.}
+
+\item{\code{ownerUUID}}{UUID of the maternal project to created one.}
+
+\item{\code{properties}}{New list of properties of the collection.}
+
+\item{\code{uuid}}{The UUID of the Collection in question.}
+}
+\if{html}{\out{</div>}}
+}
+\subsection{Examples}{
+\if{html}{\out{<div class="r example copy">}}
+\preformatted{collection <- arv$collections_create(name = "newCollectionTitle", description = "newCollectionDescription", ownerUUID = "collectionOwner", properties = NULL)
+}
+\if{html}{\out{</div>}}
+
+}
+
+}
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-collections_delete"></a>}}
+\if{latex}{\out{\hypertarget{method-collections_delete}{}}}
+\subsection{Method \code{collections_delete()}}{
+collections_delete is a method defined in Arvados class.
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{Arvados$collections_delete(uuid)}\if{html}{\out{</div>}}
+}
+
+\subsection{Arguments}{
+\if{html}{\out{<div class="arguments">}}
+\describe{
+\item{\code{uuid}}{The UUID of the Collection in question.}
+}
+\if{html}{\out{</div>}}
+}
+\subsection{Examples}{
+\if{html}{\out{<div class="r example copy">}}
+\preformatted{arv$collection_delete(collectionUUID)
+}
+\if{html}{\out{</div>}}
+
+}
+
+}
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-collections_provenance"></a>}}
+\if{latex}{\out{\hypertarget{method-collections_provenance}{}}}
+\subsection{Method \code{collections_provenance()}}{
+collections_provenance is a method defined in Arvados class, it returns the collection by uuid.
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{Arvados$collections_provenance(uuid)}\if{html}{\out{</div>}}
+}
+
+\subsection{Arguments}{
+\if{html}{\out{<div class="arguments">}}
+\describe{
+\item{\code{uuid}}{The UUID of the Collection in question.}
+}
+\if{html}{\out{</div>}}
+}
+\subsection{Examples}{
+\if{html}{\out{<div class="r example copy">}}
+\preformatted{collection <- arv$collections_provenance(collectionUUID)
+}
+\if{html}{\out{</div>}}
+
+}
+
+}
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-collections_used_by"></a>}}
+\if{latex}{\out{\hypertarget{method-collections_used_by}{}}}
+\subsection{Method \code{collections_used_by()}}{
+collections_used_by is a method defined in Arvados class, it returns collection by portable_data_hash.
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{Arvados$collections_used_by(uuid)}\if{html}{\out{</div>}}
+}
+
+\subsection{Arguments}{
+\if{html}{\out{<div class="arguments">}}
+\describe{
+\item{\code{uuid}}{The UUID of the Collection in question.}
+}
+\if{html}{\out{</div>}}
+}
+}
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-collections_trash"></a>}}
+\if{latex}{\out{\hypertarget{method-collections_trash}{}}}
+\subsection{Method \code{collections_trash()}}{
+collections_trash is a method defined in Arvados class, it moves collection to trash.
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{Arvados$collections_trash(uuid)}\if{html}{\out{</div>}}
+}
+
+\subsection{Arguments}{
+\if{html}{\out{<div class="arguments">}}
+\describe{
+\item{\code{uuid}}{The UUID of the Collection in question.}
+}
+\if{html}{\out{</div>}}
+}
+\subsection{Examples}{
+\if{html}{\out{<div class="r example copy">}}
+\preformatted{arv$collections_trash(collectionUUID)
+}
+\if{html}{\out{</div>}}
+
+}
+
+}
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-collections_untrash"></a>}}
+\if{latex}{\out{\hypertarget{method-collections_untrash}{}}}
+\subsection{Method \code{collections_untrash()}}{
+collections_untrash is a method defined in Arvados class, it moves collection from trash to project.
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{Arvados$collections_untrash(uuid)}\if{html}{\out{</div>}}
+}
+
+\subsection{Arguments}{
+\if{html}{\out{<div class="arguments">}}
+\describe{
+\item{\code{uuid}}{The UUID of the Collection in question.}
+}
+\if{html}{\out{</div>}}
+}
+\subsection{Examples}{
+\if{html}{\out{<div class="r example copy">}}
+\preformatted{arv$collections_untrash(collectionUUID)
+}
+\if{html}{\out{</div>}}
+
+}
+
+}
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-collections_list"></a>}}
+\if{latex}{\out{\hypertarget{method-collections_list}{}}}
+\subsection{Method \code{collections_list()}}{
+collections_list is a method defined in Arvados class.
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{Arvados$collections_list(
+  filters = NULL,
+  where = NULL,
+  order = NULL,
+  select = NULL,
+  distinct = NULL,
+  limit = "100",
+  offset = "0",
+  count = "exact",
+  clusterID = NULL,
+  bypassFederation = NULL,
+  includeTrash = NULL,
+  includeOldVersions = NULL
+)}\if{html}{\out{</div>}}
+}
+
+\subsection{Arguments}{
+\if{html}{\out{<div class="arguments">}}
+\describe{
+\item{\code{clusterID}}{List objects on a remote federated cluster instead of the current one.}
+
+\item{\code{bypassFederation}}{Bypass federation behavior, list items from local instance database only.}
+
+\item{\code{includeTrash}}{Include collections whose is_trashed attribute is true.}
+
+\item{\code{includeOldVersions}}{Include past collection versions.}
+}
+\if{html}{\out{</div>}}
+}
+\subsection{Examples}{
+\if{html}{\out{<div class="r example copy">}}
+\preformatted{collectionList <- arv$collections.list(list(list("name", "=", "Example")))
+}
+\if{html}{\out{</div>}}
+
+}
+
+}
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-containers_get"></a>}}
+\if{latex}{\out{\hypertarget{method-containers_get}{}}}
+\subsection{Method \code{containers_get()}}{
+containers_get is a method defined in Arvados class.
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{Arvados$containers_get(uuid)}\if{html}{\out{</div>}}
+}
+
+\subsection{Arguments}{
+\if{html}{\out{<div class="arguments">}}
+\describe{
+\item{\code{uuid}}{The UUID of the Container in question.}
+}
+\if{html}{\out{</div>}}
+}
+}
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-containers_create"></a>}}
+\if{latex}{\out{\hypertarget{method-containers_create}{}}}
+\subsection{Method \code{containers_create()}}{
+containers_create is a method defined in Arvados class.
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{Arvados$containers_create(
+  container,
+  ensureUniqueName = "false",
+  clusterID = NULL
+)}\if{html}{\out{</div>}}
+}
+
+\subsection{Arguments}{
+\if{html}{\out{<div class="arguments">}}
+\describe{
+\item{\code{container}}{Container object.}
+
+\item{\code{ensureUniqueName}}{Adjust name to ensure uniqueness instead of returning an error.}
+
+\item{\code{clusterID}}{Create object on a remote federated cluster instead of the current one.}
+}
+\if{html}{\out{</div>}}
+}
+}
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-containers_update"></a>}}
+\if{latex}{\out{\hypertarget{method-containers_update}{}}}
+\subsection{Method \code{containers_update()}}{
+containers_update is a method defined in Arvados class.
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{Arvados$containers_update(container, uuid)}\if{html}{\out{</div>}}
+}
+
+\subsection{Arguments}{
+\if{html}{\out{<div class="arguments">}}
+\describe{
+\item{\code{container}}{Container object.}
+
+\item{\code{uuid}}{The UUID of the Container in question.}
+}
+\if{html}{\out{</div>}}
+}
+}
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-containers_delete"></a>}}
+\if{latex}{\out{\hypertarget{method-containers_delete}{}}}
+\subsection{Method \code{containers_delete()}}{
+containers_delete is a method defined in Arvados class.
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{Arvados$containers_delete(uuid)}\if{html}{\out{</div>}}
+}
+
+\subsection{Arguments}{
+\if{html}{\out{<div class="arguments">}}
+\describe{
+\item{\code{uuid}}{The UUID of the Container in question.}
+}
+\if{html}{\out{</div>}}
+}
+}
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-containers_auth"></a>}}
+\if{latex}{\out{\hypertarget{method-containers_auth}{}}}
+\subsection{Method \code{containers_auth()}}{
+containers_auth is a method defined in Arvados class.
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{Arvados$containers_auth(uuid)}\if{html}{\out{</div>}}
+}
+
+\subsection{Arguments}{
+\if{html}{\out{<div class="arguments">}}
+\describe{
+\item{\code{uuid}}{The UUID of the Container in question.}
+}
+\if{html}{\out{</div>}}
+}
+}
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-containers_lock"></a>}}
+\if{latex}{\out{\hypertarget{method-containers_lock}{}}}
+\subsection{Method \code{containers_lock()}}{
+containers_lock is a method defined in Arvados class.
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{Arvados$containers_lock(uuid)}\if{html}{\out{</div>}}
+}
+
+\subsection{Arguments}{
+\if{html}{\out{<div class="arguments">}}
+\describe{
+\item{\code{uuid}}{The UUID of the Container in question.}
+}
+\if{html}{\out{</div>}}
+}
+}
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-containers_unlock"></a>}}
+\if{latex}{\out{\hypertarget{method-containers_unlock}{}}}
+\subsection{Method \code{containers_unlock()}}{
+containers_unlock is a method defined in Arvados class.
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{Arvados$containers_unlock(uuid)}\if{html}{\out{</div>}}
+}
+
+\subsection{Arguments}{
+\if{html}{\out{<div class="arguments">}}
+\describe{
+\item{\code{uuid}}{The UUID of the Container in question.}
+}
+\if{html}{\out{</div>}}
+}
+}
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-containers_secret_mounts"></a>}}
+\if{latex}{\out{\hypertarget{method-containers_secret_mounts}{}}}
+\subsection{Method \code{containers_secret_mounts()}}{
+containers_secret_mounts is a method defined in Arvados class.
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{Arvados$containers_secret_mounts(uuid)}\if{html}{\out{</div>}}
+}
+
+\subsection{Arguments}{
+\if{html}{\out{<div class="arguments">}}
+\describe{
+\item{\code{uuid}}{The UUID of the Container in question.}
+}
+\if{html}{\out{</div>}}
+}
+}
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-containers_current"></a>}}
+\if{latex}{\out{\hypertarget{method-containers_current}{}}}
+\subsection{Method \code{containers_current()}}{
+containers_current is a method defined in Arvados class.
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{Arvados$containers_current()}\if{html}{\out{</div>}}
+}
+
+}
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-containers_list"></a>}}
+\if{latex}{\out{\hypertarget{method-containers_list}{}}}
+\subsection{Method \code{containers_list()}}{
+containers_list is a method defined in Arvados class.
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{Arvados$containers_list(
+  filters = NULL,
+  where = NULL,
+  order = NULL,
+  select = NULL,
+  distinct = NULL,
+  limit = "100",
+  offset = "0",
+  count = "exact",
+  clusterID = NULL,
+  bypassFederation = NULL
+)}\if{html}{\out{</div>}}
+}
+
+\subsection{Arguments}{
+\if{html}{\out{<div class="arguments">}}
+\describe{
+\item{\code{clusterID}}{List objects on a remote federated cluster instead of the current one.}
+
+\item{\code{bypassFederation}}{Bypass federation behavior, list items from local instance database only.}
+}
+\if{html}{\out{</div>}}
+}
+}
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-container_requests_get"></a>}}
+\if{latex}{\out{\hypertarget{method-container_requests_get}{}}}
+\subsection{Method \code{container_requests_get()}}{
+container_requests_get is a method defined in Arvados class.
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{Arvados$container_requests_get(uuid)}\if{html}{\out{</div>}}
+}
+
+\subsection{Arguments}{
+\if{html}{\out{<div class="arguments">}}
+\describe{
+\item{\code{uuid}}{The UUID of the containerRequest in question.}
+}
+\if{html}{\out{</div>}}
+}
+}
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-container_requests_create"></a>}}
+\if{latex}{\out{\hypertarget{method-container_requests_create}{}}}
+\subsection{Method \code{container_requests_create()}}{
+container_requests_create is a method defined in Arvados class.
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{Arvados$container_requests_create(
+  containerRequest,
+  ensureUniqueName = "false",
+  clusterID = NULL
+)}\if{html}{\out{</div>}}
+}
+
+\subsection{Arguments}{
+\if{html}{\out{<div class="arguments">}}
+\describe{
+\item{\code{containerRequest}}{containerRequest object.}
+
+\item{\code{ensureUniqueName}}{Adjust name to ensure uniqueness instead of returning an error.}
+
+\item{\code{clusterID}}{Create object on a remote federated cluster instead of the current one.}
+}
+\if{html}{\out{</div>}}
+}
+}
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-container_requests_update"></a>}}
+\if{latex}{\out{\hypertarget{method-container_requests_update}{}}}
+\subsection{Method \code{container_requests_update()}}{
+container_requests_update is a method defined in Arvados class.
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{Arvados$container_requests_update(containerRequest, uuid)}\if{html}{\out{</div>}}
+}
+
+\subsection{Arguments}{
+\if{html}{\out{<div class="arguments">}}
+\describe{
+\item{\code{containerRequest}}{containerRequest object.}
+
+\item{\code{uuid}}{The UUID of the containerRequest in question.}
+}
+\if{html}{\out{</div>}}
+}
+}
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-container_requests_delete"></a>}}
+\if{latex}{\out{\hypertarget{method-container_requests_delete}{}}}
+\subsection{Method \code{container_requests_delete()}}{
+container_requests_delete is a method defined in Arvados class.
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{Arvados$container_requests_delete(uuid)}\if{html}{\out{</div>}}
+}
+
+\subsection{Arguments}{
+\if{html}{\out{<div class="arguments">}}
+\describe{
+\item{\code{uuid}}{The UUID of the containerRequest in question.}
+}
+\if{html}{\out{</div>}}
+}
+}
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-container_requests_list"></a>}}
+\if{latex}{\out{\hypertarget{method-container_requests_list}{}}}
+\subsection{Method \code{container_requests_list()}}{
+container_requests_list is a method defined in Arvados class.
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{Arvados$container_requests_list(
+  filters = NULL,
+  where = NULL,
+  order = NULL,
+  select = NULL,
+  distinct = NULL,
+  limit = "100",
+  offset = "0",
+  count = "exact",
+  clusterID = NULL,
+  bypassFederation = NULL,
+  includeTrash = NULL
+)}\if{html}{\out{</div>}}
+}
+
+\subsection{Arguments}{
+\if{html}{\out{<div class="arguments">}}
+\describe{
+\item{\code{clusterID}}{List objects on a remote federated cluster instead of the current one.}
+
+\item{\code{bypassFederation}}{bypass federation behavior, list items from local instance database only}
+
+\item{\code{includeTrash}}{Include container requests whose owner project is trashed.}
+}
+\if{html}{\out{</div>}}
+}
+}
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-groups_get"></a>}}
+\if{latex}{\out{\hypertarget{method-groups_get}{}}}
+\subsection{Method \code{groups_get()}}{
+groups_get is a method defined in Arvados class.
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{Arvados$groups_get(uuid)}\if{html}{\out{</div>}}
+}
+
+\subsection{Arguments}{
+\if{html}{\out{<div class="arguments">}}
+\describe{
+\item{\code{uuid}}{The UUID of the Group in question.}
+}
+\if{html}{\out{</div>}}
+}
+}
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-groups_create"></a>}}
+\if{latex}{\out{\hypertarget{method-groups_create}{}}}
+\subsection{Method \code{groups_create()}}{
+groups_create is a method defined in Arvados class that supports project creation.
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{Arvados$groups_create(
+  group,
+  ensureUniqueName = "false",
+  clusterID = NULL,
+  async = "false"
+)}\if{html}{\out{</div>}}
+}
+
+\subsection{Arguments}{
+\if{html}{\out{<div class="arguments">}}
+\describe{
+\item{\code{group}}{Group object.}
+
+\item{\code{ensureUniqueName}}{Adjust name to ensure uniqueness instead of returning an error.}
+
+\item{\code{clusterID}}{Create object on a remote federated cluster instead of the current one.}
+
+\item{\code{async}}{Defer permissions update.}
+}
+\if{html}{\out{</div>}}
+}
+}
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-groups_update"></a>}}
+\if{latex}{\out{\hypertarget{method-groups_update}{}}}
+\subsection{Method \code{groups_update()}}{
+groups_update is a method defined in Arvados class.
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{Arvados$groups_update(group, uuid, async = "false")}\if{html}{\out{</div>}}
+}
+
+\subsection{Arguments}{
+\if{html}{\out{<div class="arguments">}}
+\describe{
+\item{\code{group}}{Group object.}
+
+\item{\code{uuid}}{The UUID of the Group in question.}
+
+\item{\code{async}}{Defer permissions update.}
+}
+\if{html}{\out{</div>}}
+}
+}
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-groups_delete"></a>}}
+\if{latex}{\out{\hypertarget{method-groups_delete}{}}}
+\subsection{Method \code{groups_delete()}}{
+groups_delete is a method defined in Arvados class.
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{Arvados$groups_delete(uuid)}\if{html}{\out{</div>}}
+}
+
+\subsection{Arguments}{
+\if{html}{\out{<div class="arguments">}}
+\describe{
+\item{\code{uuid}}{The UUID of the Group in question.}
+}
+\if{html}{\out{</div>}}
+}
+}
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-groups_contents"></a>}}
+\if{latex}{\out{\hypertarget{method-groups_contents}{}}}
+\subsection{Method \code{groups_contents()}}{
+groups_contents is a method defined in Arvados class.
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{Arvados$groups_contents(
+  filters = NULL,
+  where = NULL,
+  order = NULL,
+  distinct = NULL,
+  limit = "100",
+  offset = "0",
+  count = "exact",
+  clusterID = NULL,
+  bypassFederation = NULL,
+  includeTrash = NULL,
+  uuid = NULL,
+  recursive = NULL,
+  include = NULL
+)}\if{html}{\out{</div>}}
+}
+
+\subsection{Arguments}{
+\if{html}{\out{<div class="arguments">}}
+\describe{
+\item{\code{clusterID}}{List objects on a remote federated cluster instead of the current one.}
+
+\item{\code{bypassFederation}}{Bypass federation behavior, list items from local instance database only.}
+
+\item{\code{includeTrash}}{Include items whose is_trashed attribute is true.}
+
+\item{\code{recursive}}{Include contents from child groups recursively.}
+
+\item{\code{include}}{Include objects referred to by listed field in "included" (only ownerUUID).}
+}
+\if{html}{\out{</div>}}
+}
+}
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-groups_shared"></a>}}
+\if{latex}{\out{\hypertarget{method-groups_shared}{}}}
+\subsection{Method \code{groups_shared()}}{
+groups_shared is a method defined in Arvados class.
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{Arvados$groups_shared(
+  filters = NULL,
+  where = NULL,
+  order = NULL,
+  select = NULL,
+  distinct = NULL,
+  limit = "100",
+  offset = "0",
+  count = "exact",
+  clusterID = NULL,
+  bypassFederation = NULL,
+  includeTrash = NULL,
+  include = NULL
+)}\if{html}{\out{</div>}}
+}
+
+\subsection{Arguments}{
+\if{html}{\out{<div class="arguments">}}
+\describe{
+\item{\code{clusterID}}{List objects on a remote federated cluster instead of the current one.}
+
+\item{\code{bypassFederation}}{Bypass federation behavior, list items from local instance database only.}
+
+\item{\code{includeTrash}}{Include items whose is_trashed attribute is true.}
+}
+\if{html}{\out{</div>}}
+}
+}
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-groups_trash"></a>}}
+\if{latex}{\out{\hypertarget{method-groups_trash}{}}}
+\subsection{Method \code{groups_trash()}}{
+groups_trash is a method defined in Arvados class.
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{Arvados$groups_trash(uuid)}\if{html}{\out{</div>}}
+}
+
+\subsection{Arguments}{
+\if{html}{\out{<div class="arguments">}}
+\describe{
+\item{\code{uuid}}{The UUID of the Group in question.}
+}
+\if{html}{\out{</div>}}
+}
+}
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-groups_untrash"></a>}}
+\if{latex}{\out{\hypertarget{method-groups_untrash}{}}}
+\subsection{Method \code{groups_untrash()}}{
+groups_untrash is a method defined in Arvados class.
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{Arvados$groups_untrash(uuid)}\if{html}{\out{</div>}}
+}
+
+\subsection{Arguments}{
+\if{html}{\out{<div class="arguments">}}
+\describe{
+\item{\code{uuid}}{The UUID of the Group in question.}
+}
+\if{html}{\out{</div>}}
+}
+}
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-groups_list"></a>}}
+\if{latex}{\out{\hypertarget{method-groups_list}{}}}
+\subsection{Method \code{groups_list()}}{
+groups_list is a method defined in Arvados class.
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{Arvados$groups_list(
+  filters = NULL,
+  where = NULL,
+  order = NULL,
+  select = NULL,
+  distinct = NULL,
+  limit = "100",
+  offset = "0",
+  count = "exact",
+  clusterID = NULL,
+  bypassFederation = NULL,
+  includeTrash = NULL
+)}\if{html}{\out{</div>}}
+}
+
+\subsection{Arguments}{
+\if{html}{\out{<div class="arguments">}}
+\describe{
+\item{\code{clusterID}}{List objects on a remote federated cluster instead of the current one.}
+
+\item{\code{bypassFederation}}{Bypass federation behavior, list items from local instance database only.}
+
+\item{\code{includeTrash}}{Include items whose is_trashed attribute is true.}
+}
+\if{html}{\out{</div>}}
+}
+}
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-keep_services_get"></a>}}
+\if{latex}{\out{\hypertarget{method-keep_services_get}{}}}
+\subsection{Method \code{keep_services_get()}}{
+keep_services_get is a method defined in Arvados class.
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{Arvados$keep_services_get(uuid)}\if{html}{\out{</div>}}
+}
+
+\subsection{Arguments}{
+\if{html}{\out{<div class="arguments">}}
+\describe{
+\item{\code{uuid}}{The UUID of the keepService in question.}
+}
+\if{html}{\out{</div>}}
+}
+}
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-keep_services_create"></a>}}
+\if{latex}{\out{\hypertarget{method-keep_services_create}{}}}
+\subsection{Method \code{keep_services_create()}}{
+keep_services_create is a method defined in Arvados class.
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{Arvados$keep_services_create(
+  keepService,
+  ensureUniqueName = "false",
+  clusterID = NULL
+)}\if{html}{\out{</div>}}
+}
+
+\subsection{Arguments}{
+\if{html}{\out{<div class="arguments">}}
+\describe{
+\item{\code{keepService}}{keepService object.}
+
+\item{\code{ensureUniqueName}}{Adjust name to ensure uniqueness instead of returning an error.}
+
+\item{\code{clusterID}}{Create object on a remote federated cluster instead of the current one.}
+}
+\if{html}{\out{</div>}}
+}
+}
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-keep_services_update"></a>}}
+\if{latex}{\out{\hypertarget{method-keep_services_update}{}}}
+\subsection{Method \code{keep_services_update()}}{
+keep_services_update is a method defined in Arvados class.
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{Arvados$keep_services_update(keepService, uuid)}\if{html}{\out{</div>}}
+}
+
+\subsection{Arguments}{
+\if{html}{\out{<div class="arguments">}}
+\describe{
+\item{\code{keepService}}{keepService object.}
+
+\item{\code{uuid}}{The UUID of the keepService in question.}
+}
+\if{html}{\out{</div>}}
+}
+}
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-keep_services_delete"></a>}}
+\if{latex}{\out{\hypertarget{method-keep_services_delete}{}}}
+\subsection{Method \code{keep_services_delete()}}{
+keep_services_delete is a method defined in Arvados class.
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{Arvados$keep_services_delete(uuid)}\if{html}{\out{</div>}}
+}
+
+\subsection{Arguments}{
+\if{html}{\out{<div class="arguments">}}
+\describe{
+\item{\code{uuid}}{The UUID of the keepService in question.}
+}
+\if{html}{\out{</div>}}
+}
+}
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-keep_services_accessible"></a>}}
+\if{latex}{\out{\hypertarget{method-keep_services_accessible}{}}}
+\subsection{Method \code{keep_services_accessible()}}{
+keep_services_accessible is a method defined in Arvados class.
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{Arvados$keep_services_accessible()}\if{html}{\out{</div>}}
+}
+
+}
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-keep_services_list"></a>}}
+\if{latex}{\out{\hypertarget{method-keep_services_list}{}}}
+\subsection{Method \code{keep_services_list()}}{
+keep_services_list is a method defined in Arvados class.
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{Arvados$keep_services_list(
+  filters = NULL,
+  where = NULL,
+  order = NULL,
+  select = NULL,
+  distinct = NULL,
+  limit = "100",
+  offset = "0",
+  count = "exact",
+  clusterID = NULL,
+  bypassFederation = NULL
+)}\if{html}{\out{</div>}}
+}
+
+\subsection{Arguments}{
+\if{html}{\out{<div class="arguments">}}
+\describe{
+\item{\code{clusterID}}{List objects on a remote federated cluster instead of the current one.}
+
+\item{\code{bypassFederation}}{Bypass federation behavior, list items from local instance database only.}
+}
+\if{html}{\out{</div>}}
+}
+}
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-project_permission_give"></a>}}
+\if{latex}{\out{\hypertarget{method-project_permission_give}{}}}
+\subsection{Method \code{project_permission_give()}}{
+project_permission_give is a method defined in Arvados class that enables sharing files with another users.
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{Arvados$project_permission_give(type, uuid, user)}\if{html}{\out{</div>}}
+}
+
+\subsection{Arguments}{
+\if{html}{\out{<div class="arguments">}}
+\describe{
+\item{\code{type}}{Possible options are can_read or can_write or can_manage.}
+
+\item{\code{uuid}}{The UUID of a project or a file.}
+
+\item{\code{user}}{The UUID of the person that gets the permission.}
+}
+\if{html}{\out{</div>}}
+}
+\subsection{Examples}{
+\if{html}{\out{<div class="r example copy">}}
+\preformatted{arv$project_permission_give(type = "can_read", uuid = objectUUID, user = userUUID)
+}
+\if{html}{\out{</div>}}
+
+}
+
+}
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-project_permission_refuse"></a>}}
+\if{latex}{\out{\hypertarget{method-project_permission_refuse}{}}}
+\subsection{Method \code{project_permission_refuse()}}{
+project_permission_refuse is a method defined in Arvados class that unables sharing files with another users.
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{Arvados$project_permission_refuse(type, uuid, user)}\if{html}{\out{</div>}}
+}
+
+\subsection{Arguments}{
+\if{html}{\out{<div class="arguments">}}
+\describe{
+\item{\code{type}}{Possible options are can_read or can_write or can_manage.}
+
+\item{\code{uuid}}{The UUID of a project or a file.}
+
+\item{\code{user}}{The UUID of a person that permissions are taken from.}
+}
+\if{html}{\out{</div>}}
+}
+\subsection{Examples}{
+\if{html}{\out{<div class="r example copy">}}
+\preformatted{arv$project_permission_refuse(type = "can_read", uuid = objectUUID, user = userUUID)
+}
+\if{html}{\out{</div>}}
+
+}
+
+}
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-project_permission_update"></a>}}
+\if{latex}{\out{\hypertarget{method-project_permission_update}{}}}
+\subsection{Method \code{project_permission_update()}}{
+project_permission_update is a method defined in Arvados class that enables updating permissions.
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{Arvados$project_permission_update(typeOld, typeNew, uuid, user)}\if{html}{\out{</div>}}
+}
+
+\subsection{Arguments}{
+\if{html}{\out{<div class="arguments">}}
+\describe{
+\item{\code{typeOld}}{Old option.}
+
+\item{\code{typeNew}}{New option like can_read or can_write or can_manage.}
+
+\item{\code{uuid}}{The UUID of a project or a file.}
+
+\item{\code{user}}{The UUID of the person that the permission is being updated.}
+}
+\if{html}{\out{</div>}}
+}
+\subsection{Examples}{
+\if{html}{\out{<div class="r example copy">}}
+\preformatted{arv$project_permission_update(typeOld = "can_read", typeNew = "can_write", uuid = objectUUID, user = userUUID)
+}
+\if{html}{\out{</div>}}
+
+}
+
+}
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-project_permission_check"></a>}}
+\if{latex}{\out{\hypertarget{method-project_permission_check}{}}}
+\subsection{Method \code{project_permission_check()}}{
+project_permission_check is a method defined in Arvados class that enables checking file permissions.
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{Arvados$project_permission_check(uuid, user, type = NULL)}\if{html}{\out{</div>}}
+}
+
+\subsection{Arguments}{
+\if{html}{\out{<div class="arguments">}}
+\describe{
+\item{\code{uuid}}{The UUID of a project or a file.}
+
+\item{\code{user}}{The UUID of the person that the permission is being updated.}
+
+\item{\code{type}}{Possible options are can_read or can_write or can_manage.}
+}
+\if{html}{\out{</div>}}
+}
+\subsection{Examples}{
+\if{html}{\out{<div class="r example copy">}}
+\preformatted{arv$project_permission_check(type = "can_read", uuid = objectUUID, user = userUUID)
+}
+\if{html}{\out{</div>}}
+
+}
+
+}
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-links_get"></a>}}
+\if{latex}{\out{\hypertarget{method-links_get}{}}}
+\subsection{Method \code{links_get()}}{
+links_get is a method defined in Arvados class.
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{Arvados$links_get(uuid)}\if{html}{\out{</div>}}
+}
+
+\subsection{Arguments}{
+\if{html}{\out{<div class="arguments">}}
+\describe{
+\item{\code{uuid}}{The UUID of the Link in question.}
+}
+\if{html}{\out{</div>}}
+}
+}
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-links_create"></a>}}
+\if{latex}{\out{\hypertarget{method-links_create}{}}}
+\subsection{Method \code{links_create()}}{
+links_create is a method defined in Arvados class.
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{Arvados$links_create(link, ensureUniqueName = "false", clusterID = NULL)}\if{html}{\out{</div>}}
+}
+
+\subsection{Arguments}{
+\if{html}{\out{<div class="arguments">}}
+\describe{
+\item{\code{link}}{Link object.}
+
+\item{\code{ensureUniqueName}}{Adjust name to ensure uniqueness instead of returning an error.}
+
+\item{\code{clusterID}}{Create object on a remote federated cluster instead of the current one.}
+}
+\if{html}{\out{</div>}}
+}
+}
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-links_update"></a>}}
+\if{latex}{\out{\hypertarget{method-links_update}{}}}
+\subsection{Method \code{links_update()}}{
+links_update is a method defined in Arvados class.
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{Arvados$links_update(link, uuid, async = "false")}\if{html}{\out{</div>}}
+}
+
+\subsection{Arguments}{
+\if{html}{\out{<div class="arguments">}}
+\describe{
+\item{\code{link}}{Link object.}
+
+\item{\code{uuid}}{The UUID of the Link in question.}
+}
+\if{html}{\out{</div>}}
+}
+}
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-links_delete"></a>}}
+\if{latex}{\out{\hypertarget{method-links_delete}{}}}
+\subsection{Method \code{links_delete()}}{
+links_delete is a method defined in Arvados class.
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{Arvados$links_delete(uuid)}\if{html}{\out{</div>}}
+}
+
+\subsection{Arguments}{
+\if{html}{\out{<div class="arguments">}}
+\describe{
+\item{\code{uuid}}{The UUID of the Link in question.}
+}
+\if{html}{\out{</div>}}
+}
+}
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-links_list"></a>}}
+\if{latex}{\out{\hypertarget{method-links_list}{}}}
+\subsection{Method \code{links_list()}}{
+links_list is a method defined in Arvados class.
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{Arvados$links_list(
+  filters = NULL,
+  where = NULL,
+  order = NULL,
+  select = NULL,
+  distinct = NULL,
+  limit = "100",
+  offset = "0",
+  count = "exact",
+  clusterID = NULL,
+  bypassFederation = NULL
+)}\if{html}{\out{</div>}}
+}
+
+\subsection{Arguments}{
+\if{html}{\out{<div class="arguments">}}
+\describe{
+\item{\code{clusterID}}{List objects on a remote federated cluster instead of the current one.}
+
+\item{\code{bypassFederation}}{Bypass federation behavior, list items from local instance database only.}
+}
+\if{html}{\out{</div>}}
+}
+}
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-links_get_permissions"></a>}}
+\if{latex}{\out{\hypertarget{method-links_get_permissions}{}}}
+\subsection{Method \code{links_get_permissions()}}{
+links_get_permissions is a method defined in Arvados class.
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{Arvados$links_get_permissions(uuid)}\if{html}{\out{</div>}}
+}
+
+\subsection{Arguments}{
+\if{html}{\out{<div class="arguments">}}
+\describe{
+\item{\code{uuid}}{The UUID of the Log in question.}
+}
+\if{html}{\out{</div>}}
+}
+}
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-logs_get"></a>}}
+\if{latex}{\out{\hypertarget{method-logs_get}{}}}
+\subsection{Method \code{logs_get()}}{
+logs_get is a method defined in Arvados class.
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{Arvados$logs_get(uuid)}\if{html}{\out{</div>}}
+}
+
+\subsection{Arguments}{
+\if{html}{\out{<div class="arguments">}}
+\describe{
+\item{\code{uuid}}{The UUID of the Log in question.}
+}
+\if{html}{\out{</div>}}
+}
+}
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-logs_create"></a>}}
+\if{latex}{\out{\hypertarget{method-logs_create}{}}}
+\subsection{Method \code{logs_create()}}{
+logs_create is a method defined in Arvados class.
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{Arvados$logs_create(log, ensureUniqueName = "false", clusterID = NULL)}\if{html}{\out{</div>}}
+}
+
+\subsection{Arguments}{
+\if{html}{\out{<div class="arguments">}}
+\describe{
+\item{\code{log}}{Log object.}
+
+\item{\code{ensureUniqueName}}{Adjust name to ensure uniqueness instead of returning an error.}
+
+\item{\code{clusterID}}{Create object on a remote federated cluster instead of the current one.}
+}
+\if{html}{\out{</div>}}
+}
+}
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-logs_update"></a>}}
+\if{latex}{\out{\hypertarget{method-logs_update}{}}}
+\subsection{Method \code{logs_update()}}{
+logs_update is a method defined in Arvados class.
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{Arvados$logs_update(log, uuid)}\if{html}{\out{</div>}}
+}
+
+\subsection{Arguments}{
+\if{html}{\out{<div class="arguments">}}
+\describe{
+\item{\code{log}}{Log object.}
+
+\item{\code{uuid}}{The UUID of the Log in question.}
+}
+\if{html}{\out{</div>}}
+}
+}
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-logs_delete"></a>}}
+\if{latex}{\out{\hypertarget{method-logs_delete}{}}}
+\subsection{Method \code{logs_delete()}}{
+logs_delete is a method defined in Arvados class.
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{Arvados$logs_delete(uuid)}\if{html}{\out{</div>}}
+}
+
+\subsection{Arguments}{
+\if{html}{\out{<div class="arguments">}}
+\describe{
+\item{\code{uuid}}{The UUID of the Log in question.}
+}
+\if{html}{\out{</div>}}
+}
+}
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-logs_list"></a>}}
+\if{latex}{\out{\hypertarget{method-logs_list}{}}}
+\subsection{Method \code{logs_list()}}{
+logs_list is a method defined in Arvados class.
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{Arvados$logs_list(
+  filters = NULL,
+  where = NULL,
+  order = NULL,
+  select = NULL,
+  distinct = NULL,
+  limit = "100",
+  offset = "0",
+  count = "exact",
+  clusterID = NULL,
+  bypassFederation = NULL
+)}\if{html}{\out{</div>}}
+}
+
+\subsection{Arguments}{
+\if{html}{\out{<div class="arguments">}}
+\describe{
+\item{\code{clusterID}}{List objects on a remote federated cluster instead of the current one.}
+
+\item{\code{bypassFederation}}{Bypass federation behavior, list items from local instance database only.}
+}
+\if{html}{\out{</div>}}
+}
+}
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-users_get"></a>}}
+\if{latex}{\out{\hypertarget{method-users_get}{}}}
+\subsection{Method \code{users_get()}}{
+users_get is a method defined in Arvados class.
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{Arvados$users_get(uuid)}\if{html}{\out{</div>}}
+}
+
+\subsection{Arguments}{
+\if{html}{\out{<div class="arguments">}}
+\describe{
+\item{\code{uuid}}{The UUID of the User in question.}
+}
+\if{html}{\out{</div>}}
+}
+}
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-users_create"></a>}}
+\if{latex}{\out{\hypertarget{method-users_create}{}}}
+\subsection{Method \code{users_create()}}{
+users_create is a method defined in Arvados class.
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{Arvados$users_create(user, ensureUniqueName = "false", clusterID = NULL)}\if{html}{\out{</div>}}
+}
+
+\subsection{Arguments}{
+\if{html}{\out{<div class="arguments">}}
+\describe{
+\item{\code{user}}{User object.}
+
+\item{\code{ensureUniqueName}}{Adjust name to ensure uniqueness instead of returning an error.}
+
+\item{\code{clusterID}}{Create object on a remote federated cluster instead of the current one.}
+}
+\if{html}{\out{</div>}}
+}
+}
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-users_update"></a>}}
+\if{latex}{\out{\hypertarget{method-users_update}{}}}
+\subsection{Method \code{users_update()}}{
+users_update is a method defined in Arvados class.
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{Arvados$users_update(user, uuid, bypassFederation = NULL)}\if{html}{\out{</div>}}
+}
+
+\subsection{Arguments}{
+\if{html}{\out{<div class="arguments">}}
+\describe{
+\item{\code{user}}{User object.}
+
+\item{\code{uuid}}{The UUID of the User in question.}
+}
+\if{html}{\out{</div>}}
+}
+}
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-users_delete"></a>}}
+\if{latex}{\out{\hypertarget{method-users_delete}{}}}
+\subsection{Method \code{users_delete()}}{
+users_delete is a method defined in Arvados class.
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{Arvados$users_delete(uuid)}\if{html}{\out{</div>}}
+}
+
+\subsection{Arguments}{
+\if{html}{\out{<div class="arguments">}}
+\describe{
+\item{\code{uuid}}{The UUID of the User in question.}
+}
+\if{html}{\out{</div>}}
+}
+}
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-users_current"></a>}}
+\if{latex}{\out{\hypertarget{method-users_current}{}}}
+\subsection{Method \code{users_current()}}{
+users_current is a method defined in Arvados class.
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{Arvados$users_current()}\if{html}{\out{</div>}}
+}
+
+}
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-users_system"></a>}}
+\if{latex}{\out{\hypertarget{method-users_system}{}}}
+\subsection{Method \code{users_system()}}{
+users_system is a method defined in Arvados class.
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{Arvados$users_system()}\if{html}{\out{</div>}}
+}
+
+}
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-users_activate"></a>}}
+\if{latex}{\out{\hypertarget{method-users_activate}{}}}
+\subsection{Method \code{users_activate()}}{
+users_activate is a method defined in Arvados class.
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{Arvados$users_activate(uuid)}\if{html}{\out{</div>}}
+}
+
+\subsection{Arguments}{
+\if{html}{\out{<div class="arguments">}}
+\describe{
+\item{\code{uuid}}{The UUID of the User in question.}
+}
+\if{html}{\out{</div>}}
+}
+}
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-users_setup"></a>}}
+\if{latex}{\out{\hypertarget{method-users_setup}{}}}
+\subsection{Method \code{users_setup()}}{
+users_setup is a method defined in Arvados class.
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{Arvados$users_setup(
+  uuid = NULL,
+  user = NULL,
+  repo_name = NULL,
+  vm_uuid = NULL,
+  send_notification_email = "false"
+)}\if{html}{\out{</div>}}
+}
+
+}
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-users_unsetup"></a>}}
+\if{latex}{\out{\hypertarget{method-users_unsetup}{}}}
+\subsection{Method \code{users_unsetup()}}{
+users_unsetup is a method defined in Arvados class.
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{Arvados$users_unsetup(uuid)}\if{html}{\out{</div>}}
+}
+
+\subsection{Arguments}{
+\if{html}{\out{<div class="arguments">}}
+\describe{
+\item{\code{uuid}}{The UUID of the User in question.}
+}
+\if{html}{\out{</div>}}
+}
+}
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-users_merge"></a>}}
+\if{latex}{\out{\hypertarget{method-users_merge}{}}}
+\subsection{Method \code{users_merge()}}{
+users_merge is a method defined in Arvados class.
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{Arvados$users_merge(
+  newOwnerUUID,
+  newUserToken = NULL,
+  redirectToNewUser = NULL,
+  oldUserUUID = NULL,
+  newUserUUID = NULL
+)}\if{html}{\out{</div>}}
+}
+
+}
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-users_list"></a>}}
+\if{latex}{\out{\hypertarget{method-users_list}{}}}
+\subsection{Method \code{users_list()}}{
+users_list is a method defined in Arvados class.
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{Arvados$users_list(
+  filters = NULL,
+  where = NULL,
+  order = NULL,
+  select = NULL,
+  distinct = NULL,
+  limit = "100",
+  offset = "0",
+  count = "exact",
+  clusterID = NULL,
+  bypassFederation = NULL
+)}\if{html}{\out{</div>}}
+}
+
+\subsection{Arguments}{
+\if{html}{\out{<div class="arguments">}}
+\describe{
+\item{\code{clusterID}}{List objects on a remote federated cluster instead of the current one.}
+
+\item{\code{bypassFederation}}{Bypass federation behavior, list items from local instance database only.}
+}
+\if{html}{\out{</div>}}
+}
+}
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-repositories_get"></a>}}
+\if{latex}{\out{\hypertarget{method-repositories_get}{}}}
+\subsection{Method \code{repositories_get()}}{
+repositories_get is a method defined in Arvados class.
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{Arvados$repositories_get(uuid)}\if{html}{\out{</div>}}
+}
+
+\subsection{Arguments}{
+\if{html}{\out{<div class="arguments">}}
+\describe{
+\item{\code{uuid}}{The UUID of the Repository in question.}
+}
+\if{html}{\out{</div>}}
+}
+}
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-repositories_create"></a>}}
+\if{latex}{\out{\hypertarget{method-repositories_create}{}}}
+\subsection{Method \code{repositories_create()}}{
+repositories_create is a method defined in Arvados class.
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{Arvados$repositories_create(
+  repository,
+  ensureUniqueName = "false",
+  clusterID = NULL
+)}\if{html}{\out{</div>}}
+}
+
+\subsection{Arguments}{
+\if{html}{\out{<div class="arguments">}}
+\describe{
+\item{\code{repository}}{Repository object.}
+
+\item{\code{ensureUniqueName}}{Adjust name to ensure uniqueness instead of returning an error.}
+
+\item{\code{clusterID}}{Create object on a remote federated cluster instead of the current one.}
+}
+\if{html}{\out{</div>}}
+}
+}
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-repositories_update"></a>}}
+\if{latex}{\out{\hypertarget{method-repositories_update}{}}}
+\subsection{Method \code{repositories_update()}}{
+repositories_update is a method defined in Arvados class.
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{Arvados$repositories_update(repository, uuid)}\if{html}{\out{</div>}}
+}
+
+\subsection{Arguments}{
+\if{html}{\out{<div class="arguments">}}
+\describe{
+\item{\code{repository}}{Repository object.}
+
+\item{\code{uuid}}{The UUID of the Repository in question.}
+}
+\if{html}{\out{</div>}}
+}
+}
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-repositories_delete"></a>}}
+\if{latex}{\out{\hypertarget{method-repositories_delete}{}}}
+\subsection{Method \code{repositories_delete()}}{
+repositories_delete is a method defined in Arvados class.
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{Arvados$repositories_delete(uuid)}\if{html}{\out{</div>}}
+}
+
+\subsection{Arguments}{
+\if{html}{\out{<div class="arguments">}}
+\describe{
+\item{\code{uuid}}{The UUID of the Repository in question.}
+}
+\if{html}{\out{</div>}}
+}
+}
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-repositories_get_all_permissions"></a>}}
+\if{latex}{\out{\hypertarget{method-repositories_get_all_permissions}{}}}
+\subsection{Method \code{repositories_get_all_permissions()}}{
+repositories_get_all_permissions is a method defined in Arvados class.
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{Arvados$repositories_get_all_permissions()}\if{html}{\out{</div>}}
+}
+
+}
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-repositories_list"></a>}}
+\if{latex}{\out{\hypertarget{method-repositories_list}{}}}
+\subsection{Method \code{repositories_list()}}{
+repositories_list is a method defined in Arvados class.
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{Arvados$repositories_list(
+  filters = NULL,
+  where = NULL,
+  order = NULL,
+  select = NULL,
+  distinct = NULL,
+  limit = "100",
+  offset = "0",
+  count = "exact",
+  clusterID = NULL,
+  bypassFederation = NULL
+)}\if{html}{\out{</div>}}
+}
+
+\subsection{Arguments}{
+\if{html}{\out{<div class="arguments">}}
+\describe{
+\item{\code{clusterID}}{List objects on a remote federated cluster instead of the current one.}
+
+\item{\code{bypassFederation}}{Bypass federation behavior, list items from local instance database only.}
+}
+\if{html}{\out{</div>}}
+}
+}
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-virtual_machines_get"></a>}}
+\if{latex}{\out{\hypertarget{method-virtual_machines_get}{}}}
+\subsection{Method \code{virtual_machines_get()}}{
+virtual_machines_get is a method defined in Arvados class.
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{Arvados$virtual_machines_get(uuid)}\if{html}{\out{</div>}}
+}
+
+\subsection{Arguments}{
+\if{html}{\out{<div class="arguments">}}
+\describe{
+\item{\code{uuid}}{The UUID of the virtualMachine in question.}
+}
+\if{html}{\out{</div>}}
+}
+}
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-virtual_machines_create"></a>}}
+\if{latex}{\out{\hypertarget{method-virtual_machines_create}{}}}
+\subsection{Method \code{virtual_machines_create()}}{
+virtual_machines_create is a method defined in Arvados class.
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{Arvados$virtual_machines_create(
+  virtualMachine,
+  ensureUniqueName = "false",
+  clusterID = NULL
+)}\if{html}{\out{</div>}}
+}
+
+\subsection{Arguments}{
+\if{html}{\out{<div class="arguments">}}
+\describe{
+\item{\code{virtualMachine}}{virtualMachine object.}
+
+\item{\code{ensureUniqueName}}{Adjust name to ensure uniqueness instead of returning an error.}
+
+\item{\code{clusterID}}{Create object on a remote federated cluster instead of the current one.}
+}
+\if{html}{\out{</div>}}
+}
+}
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-virtual_machines_update"></a>}}
+\if{latex}{\out{\hypertarget{method-virtual_machines_update}{}}}
+\subsection{Method \code{virtual_machines_update()}}{
+virtual_machines_update is a method defined in Arvados class.
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{Arvados$virtual_machines_update(virtualMachine, uuid)}\if{html}{\out{</div>}}
+}
+
+\subsection{Arguments}{
+\if{html}{\out{<div class="arguments">}}
+\describe{
+\item{\code{virtualMachine}}{virtualMachine object.}
+
+\item{\code{uuid}}{The UUID of the virtualMachine in question.}
+}
+\if{html}{\out{</div>}}
+}
+}
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-virtual_machines_delete"></a>}}
+\if{latex}{\out{\hypertarget{method-virtual_machines_delete}{}}}
+\subsection{Method \code{virtual_machines_delete()}}{
+virtual_machines_delete is a method defined in Arvados class.
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{Arvados$virtual_machines_delete(uuid)}\if{html}{\out{</div>}}
+}
+
+\subsection{Arguments}{
+\if{html}{\out{<div class="arguments">}}
+\describe{
+\item{\code{uuid}}{The UUID of the virtualMachine in question.}
+}
+\if{html}{\out{</div>}}
+}
+}
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-virtual_machines_logins"></a>}}
+\if{latex}{\out{\hypertarget{method-virtual_machines_logins}{}}}
+\subsection{Method \code{virtual_machines_logins()}}{
+virtual_machines_logins is a method defined in Arvados class.
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{Arvados$virtual_machines_logins(uuid)}\if{html}{\out{</div>}}
+}
+
+\subsection{Arguments}{
+\if{html}{\out{<div class="arguments">}}
+\describe{
+\item{\code{uuid}}{The UUID of the virtualMachine in question.}
+}
+\if{html}{\out{</div>}}
+}
+}
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-virtual_machines_get_all_logins"></a>}}
+\if{latex}{\out{\hypertarget{method-virtual_machines_get_all_logins}{}}}
+\subsection{Method \code{virtual_machines_get_all_logins()}}{
+virtual_machines_get_all_logins is a method defined in Arvados class.
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{Arvados$virtual_machines_get_all_logins()}\if{html}{\out{</div>}}
+}
+
+}
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-virtual_machines_list"></a>}}
+\if{latex}{\out{\hypertarget{method-virtual_machines_list}{}}}
+\subsection{Method \code{virtual_machines_list()}}{
+virtual_machines_list is a method defined in Arvados class.
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{Arvados$virtual_machines_list(
+  filters = NULL,
+  where = NULL,
+  order = NULL,
+  select = NULL,
+  distinct = NULL,
+  limit = "100",
+  offset = "0",
+  count = "exact",
+  clusterID = NULL,
+  bypassFederation = NULL
+)}\if{html}{\out{</div>}}
+}
+
+\subsection{Arguments}{
+\if{html}{\out{<div class="arguments">}}
+\describe{
+\item{\code{clusterID}}{List objects on a remote federated cluster instead of the current one.}
+
+\item{\code{bypassFederation}}{bypass federation behavior, list items from local instance database only}
+}
+\if{html}{\out{</div>}}
+}
+}
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-workflows_get"></a>}}
+\if{latex}{\out{\hypertarget{method-workflows_get}{}}}
+\subsection{Method \code{workflows_get()}}{
+workflows_get is a method defined in Arvados class.
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{Arvados$workflows_get(uuid)}\if{html}{\out{</div>}}
+}
+
+\subsection{Arguments}{
+\if{html}{\out{<div class="arguments">}}
+\describe{
+\item{\code{uuid}}{The UUID of the Workflow in question.}
+}
+\if{html}{\out{</div>}}
+}
+}
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-workflows_create"></a>}}
+\if{latex}{\out{\hypertarget{method-workflows_create}{}}}
+\subsection{Method \code{workflows_create()}}{
+workflows_create is a method defined in Arvados class.
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{Arvados$workflows_create(
+  workflow,
+  ensureUniqueName = "false",
+  clusterID = NULL
+)}\if{html}{\out{</div>}}
+}
+
+\subsection{Arguments}{
+\if{html}{\out{<div class="arguments">}}
+\describe{
+\item{\code{workflow}}{Workflow object.}
+
+\item{\code{ensureUniqueName}}{Adjust name to ensure uniqueness instead of returning an error.}
+
+\item{\code{clusterID}}{Create object on a remote federated cluster instead of the current one.}
+}
+\if{html}{\out{</div>}}
+}
+}
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-workflows_update"></a>}}
+\if{latex}{\out{\hypertarget{method-workflows_update}{}}}
+\subsection{Method \code{workflows_update()}}{
+workflows_update is a method defined in Arvados class.
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{Arvados$workflows_update(workflow, uuid)}\if{html}{\out{</div>}}
+}
+
+\subsection{Arguments}{
+\if{html}{\out{<div class="arguments">}}
+\describe{
+\item{\code{workflow}}{Workflow object.}
+
+\item{\code{uuid}}{The UUID of the Workflow in question.}
+}
+\if{html}{\out{</div>}}
+}
+}
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-workflows_delete"></a>}}
+\if{latex}{\out{\hypertarget{method-workflows_delete}{}}}
+\subsection{Method \code{workflows_delete()}}{
+workflows_delete is a method defined in Arvados class.
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{Arvados$workflows_delete(uuid)}\if{html}{\out{</div>}}
+}
+
+\subsection{Arguments}{
+\if{html}{\out{<div class="arguments">}}
+\describe{
+\item{\code{uuid}}{The UUID of the Workflow in question.}
+}
+\if{html}{\out{</div>}}
+}
+}
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-workflows_list"></a>}}
+\if{latex}{\out{\hypertarget{method-workflows_list}{}}}
+\subsection{Method \code{workflows_list()}}{
+workflows_list is a method defined in Arvados class.
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{Arvados$workflows_list(
+  filters = NULL,
+  where = NULL,
+  order = NULL,
+  select = NULL,
+  distinct = NULL,
+  limit = "100",
+  offset = "0",
+  count = "exact",
+  clusterID = NULL,
+  bypassFederation = NULL
+)}\if{html}{\out{</div>}}
+}
+
+\subsection{Arguments}{
+\if{html}{\out{<div class="arguments">}}
+\describe{
+\item{\code{clusterID}}{List objects on a remote federated cluster instead of the current one.}
+
+\item{\code{bypassFederation}}{Bypass federation behavior, list items from local instance database only.}
+}
+\if{html}{\out{</div>}}
+}
+}
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-user_agreements_get"></a>}}
+\if{latex}{\out{\hypertarget{method-user_agreements_get}{}}}
+\subsection{Method \code{user_agreements_get()}}{
+user_agreements_get is a method defined in Arvados class.
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{Arvados$user_agreements_get(uuid)}\if{html}{\out{</div>}}
+}
+
+\subsection{Arguments}{
+\if{html}{\out{<div class="arguments">}}
+\describe{
+\item{\code{uuid}}{The UUID of the userAgreement in question.}
+}
+\if{html}{\out{</div>}}
+}
+}
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-user_agreements_create"></a>}}
+\if{latex}{\out{\hypertarget{method-user_agreements_create}{}}}
+\subsection{Method \code{user_agreements_create()}}{
+user_agreements_create is a method defined in Arvados class.
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{Arvados$user_agreements_create(
+  userAgreement,
+  ensureUniqueName = "false",
+  clusterID = NULL
+)}\if{html}{\out{</div>}}
+}
+
+\subsection{Arguments}{
+\if{html}{\out{<div class="arguments">}}
+\describe{
+\item{\code{userAgreement}}{userAgreement object.}
+
+\item{\code{ensureUniqueName}}{Adjust name to ensure uniqueness instead of returning an error.}
+
+\item{\code{clusterID}}{Create object on a remote federated cluster instead of the current one.}
+}
+\if{html}{\out{</div>}}
+}
+}
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-user_agreements_update"></a>}}
+\if{latex}{\out{\hypertarget{method-user_agreements_update}{}}}
+\subsection{Method \code{user_agreements_update()}}{
+user_agreements_update is a method defined in Arvados class.
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{Arvados$user_agreements_update(userAgreement, uuid)}\if{html}{\out{</div>}}
+}
+
+\subsection{Arguments}{
+\if{html}{\out{<div class="arguments">}}
+\describe{
+\item{\code{userAgreement}}{userAgreement object.}
+
+\item{\code{uuid}}{The UUID of the userAgreement in question.}
+}
+\if{html}{\out{</div>}}
+}
+}
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-user_agreements_delete"></a>}}
+\if{latex}{\out{\hypertarget{method-user_agreements_delete}{}}}
+\subsection{Method \code{user_agreements_delete()}}{
+user_agreements_delete is a method defined in Arvados class.
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{Arvados$user_agreements_delete(uuid)}\if{html}{\out{</div>}}
+}
+
+\subsection{Arguments}{
+\if{html}{\out{<div class="arguments">}}
+\describe{
+\item{\code{uuid}}{The UUID of the userAgreement in question.}
+}
+\if{html}{\out{</div>}}
+}
+}
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-user_agreements_signatures"></a>}}
+\if{latex}{\out{\hypertarget{method-user_agreements_signatures}{}}}
+\subsection{Method \code{user_agreements_signatures()}}{
+user_agreements_signatures is a method defined in Arvados class.
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{Arvados$user_agreements_signatures()}\if{html}{\out{</div>}}
+}
+
+}
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-user_agreements_sign"></a>}}
+\if{latex}{\out{\hypertarget{method-user_agreements_sign}{}}}
+\subsection{Method \code{user_agreements_sign()}}{
+user_agreements_sign is a method defined in Arvados class.
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{Arvados$user_agreements_sign()}\if{html}{\out{</div>}}
+}
+
+}
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-user_agreements_list"></a>}}
+\if{latex}{\out{\hypertarget{method-user_agreements_list}{}}}
+\subsection{Method \code{user_agreements_list()}}{
+user_agreements_list is a method defined in Arvados class.
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{Arvados$user_agreements_list(
+  filters = NULL,
+  where = NULL,
+  order = NULL,
+  select = NULL,
+  distinct = NULL,
+  limit = "100",
+  offset = "0",
+  count = "exact",
+  clusterID = NULL,
+  bypassFederation = NULL
+)}\if{html}{\out{</div>}}
+}
+
+\subsection{Arguments}{
+\if{html}{\out{<div class="arguments">}}
+\describe{
+\item{\code{clusterID}}{List objects on a remote federated cluster instead of the current one.}
+
+\item{\code{bypassFederation}}{Bypass federation behavior, list items from local instance database only.}
+}
+\if{html}{\out{</div>}}
+}
+}
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-user_agreements_new"></a>}}
+\if{latex}{\out{\hypertarget{method-user_agreements_new}{}}}
+\subsection{Method \code{user_agreements_new()}}{
+user_agreements_new is a method defined in Arvados class.
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{Arvados$user_agreements_new()}\if{html}{\out{</div>}}
+}
+
+}
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-configs_get"></a>}}
+\if{latex}{\out{\hypertarget{method-configs_get}{}}}
+\subsection{Method \code{configs_get()}}{
+configs_get is a method defined in Arvados class.
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{Arvados$configs_get()}\if{html}{\out{</div>}}
+}
+
+}
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-getHostName"></a>}}
+\if{latex}{\out{\hypertarget{method-getHostName}{}}}
+\subsection{Method \code{getHostName()}}{
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{Arvados$getHostName()}\if{html}{\out{</div>}}
+}
+
+}
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-getToken"></a>}}
+\if{latex}{\out{\hypertarget{method-getToken}{}}}
+\subsection{Method \code{getToken()}}{
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{Arvados$getToken()}\if{html}{\out{</div>}}
+}
+
+}
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-setRESTService"></a>}}
+\if{latex}{\out{\hypertarget{method-setRESTService}{}}}
+\subsection{Method \code{setRESTService()}}{
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{Arvados$setRESTService(newREST)}\if{html}{\out{</div>}}
+}
+
+}
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-getRESTService"></a>}}
+\if{latex}{\out{\hypertarget{method-getRESTService}{}}}
+\subsection{Method \code{getRESTService()}}{
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{Arvados$getRESTService()}\if{html}{\out{</div>}}
+}
+
 }
 }
