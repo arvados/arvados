@@ -55,7 +55,7 @@ arv link list --filters '[["link_class", "=", "permission"],
   ["head_uuid", "=", "the_group_uuid"]]' | jq .items[].tail_uuid
 </pre>
 
-h2. Share a project with a group
+h2(#share-project). Share a project with a group
 
 This will give all members of the group @can_manage@ access.
 
@@ -78,7 +78,7 @@ arv link list --filters '[["link_class", "=", "permission"],
   ["tail_uuid", "=", "the_group_uuid"]]' | jq .items[].head_uuid
 </pre>
 
-h2. Stop sharing a project with a group
+h2(#stop-sharing-project). Stop sharing a project with a group
 
 This will remove access for members of the group.
 

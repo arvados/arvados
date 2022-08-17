@@ -10,14 +10,36 @@ Copyright (C) The Arvados Authors. All rights reserved.
 SPDX-License-Identifier: CC-BY-SA-3.0
 {% endcomment %}
 
-h2. Cancel a container request
+# "Cancel a container request":#cancel-a-container-request
+# "Cancel all container requests":#cancel-all-container-requests
+# "List completed container requests":#list-completed-container-requests
+# "Get input of a CWL workflow":#get-input-of-a-cwl-workflow
+# "Get output of a CWL workflow":#get-output-of-a-cwl-workflow
+# "Get state of a CWL workflow":#get-state-of-a-cwl-workflow
+# "List input of child requests":#list-input-of-child-requests
+# "List output of child requests":#list-output-of-child-requests
+# "List failed child requests":#list-failed-child-requests
+# "Get log of a child request":#get-log-of-a-child-request
+# "Create a collection sharing link":#sharing-link
+# "Combine two or more collections":#combine-two-or-more-collections
+# "Upload a file into a new collection":#upload-a-file-into-a-new-collection
+# "Download a file from a collection":#download-a-file-from-a-collection
+# "Copy files from a collection to a new collection":#copy-files-from-a-collection-to-a-new-collection
+# "Copy files from a collection to another collection":#copy-files-from-a-collection-to-another-collection
+# "Delete a file from an existing collection":#delete-a-file-from-an-existing-collection
+# "Listing records with paging":#listing-records-with-paging
+# "Querying the vocabulary definition":#querying-the-vocabulary-definition
+# "Translating between vocabulary identifiers and labels":#translating-between-vocabulary-identifiers-and-labels
+# "Create a Project":#create-a-project
+
+h2(#cancel-a-container-request). Cancel a container request
 
 {% codeblock as python %}
 import arvados
 arvados.api().container_requests().update(uuid=container_request_uuid, body={"priority": 0}).execute()
 {% endcodeblock %}
 
-h2. Cancel all container requests
+h2(#cancel-all-container-requests). Cancel all container requests
 
 {% codeblock as python %}
 import arvados
@@ -27,7 +49,7 @@ for container_request in result:
     api.container_requests().update(uuid=container_request["uuid"], body={"priority": 0}).execute()
 {% endcodeblock %}
 
-h2. List completed container requests
+h2(#list-completed-container-requests). List completed container requests
 
 {% codeblock as python %}
 import arvados
@@ -42,7 +64,7 @@ for container_request in result:
     print("%s, %s, %s" % (container_request["uuid"], container_request["name"], "Success" if container["exit_code"] == 0 else "Failed"))
 {% endcodeblock %}
 
-h2. Get input of a CWL workflow
+h2(#get-input-of-a-cwl-workflow). Get input of a CWL workflow
 
 {% codeblock as python %}
 import arvados
@@ -52,7 +74,7 @@ container_request = api.container_requests().get(uuid=container_request_uuid).ex
 print(container_request["mounts"]["/var/lib/cwl/cwl.input.json"])
 {% endcodeblock %}
 
-h2. Get output of a CWL workflow
+h2(#get-output-of-a-cwl-workflow). Get output of a CWL workflow
 
 {% codeblock as python %}
 import arvados
@@ -64,7 +86,7 @@ collection = arvados.collection.CollectionReader(container_request["output_uuid"
 print(collection.open("cwl.output.json").read())
 {% endcodeblock %}
 
-h2. Get state of a CWL workflow
+h2(#get-state-of-a-cwl-workflow). Get state of a CWL workflow
 
 {% codeblock as python %}
 import arvados
@@ -93,7 +115,7 @@ container_request_uuid = 'zzzzz-xvhdp-zzzzzzzzzzzzzzz'
 print(get_cr_state(container_request_uuid))
 {% endcodeblock %}
 
-h2. List input of child requests
+h2(#list-input-of-child-requests). List input of child requests
 
 {% codeblock as python %}
 import arvados
@@ -112,7 +134,7 @@ for c in child_requests["items"]:
             print("  %s" % m["portable_data_hash"])
 {% endcodeblock %}
 
-h2. List output of child requests
+h2(#list-output-of-child-requests). List output of child requests
 
 {% codeblock as python %}
 import arvados
@@ -131,7 +153,7 @@ for c in child_requests["items"]:
     print("%s -> %s" % (c["name"], uuid_to_pdh[c["output_uuid"]]))
 {% endcodeblock %}
 
-h2. List failed child requests
+h2(#list-failed-child-requests). List failed child requests
 
 {% codeblock as python %}
 import arvados
@@ -149,7 +171,7 @@ for c in cancelled_child_containers["items"]:
     print("%s (%s)" % (child_containers[c["uuid"]]["name"], child_containers[c["uuid"]]["uuid"]))
 {% endcodeblock %}
 
-h2. Get log of a child request
+h2(#get-log-of-a-child-request). Get log of a child request
 
 {% codeblock as python %}
 import arvados
@@ -177,7 +199,7 @@ token = api.api_client_authorizations().create(body={"api_client_authorization":
 print("%s/c=%s/t=%s/_/" % (download, collection_uuid, token["api_token"]))
 {% endcodeblock %}
 
-h2. Combine two or more collections
+h2(#combine-two-or-more-collections). Combine two or more collections
 
 Note, if two collections have files of the same name, the contents will be concatenated in the resulting manifest.
 
@@ -185,7 +207,7 @@ Note, if two collections have files of the same name, the contents will be conca
 import arvados
 import arvados.collection
 api = arvados.api()
-project_uuid = "zzzzz-tpzed-zzzzzzzzzzzzzzz"
+project_uuid = "zzzzz-j7d0g-zzzzzzzzzzzzzzz"
 collection_uuids = ["zzzzz-4zz18-aaaaaaaaaaaaaaa", "zzzzz-4zz18-bbbbbbbbbbbbbbb"]
 combined_manifest = ""
 for u in collection_uuids:
@@ -195,7 +217,7 @@ newcol = arvados.collection.Collection(combined_manifest)
 newcol.save_new(name="My combined collection", owner_uuid=project_uuid)
 {% endcodeblock %}
 
-h2. Upload a file into a new collection
+h2(#upload-a-file-into-a-new-collection). Upload a file into a new collection
 
 {% codeblock as python %}
 import arvados
@@ -217,7 +239,7 @@ c.save_new(name=collection_name, owner_uuid=project_uuid)
 print("Saved %s to %s" % (collection_name, c.manifest_locator()))
 {% endcodeblock %}
 
-h2. Download a file from a collection
+h2(#download-a-file-from-a-collection). Download a file from a collection
 
 {% codeblock as python %}
 import arvados
@@ -237,7 +259,7 @@ with c.open(filename, "rb") as reader:
 print("Finished downloading %s" % filename)
 {% endcodeblock %}
 
-h2. Copy files from a collection to a new collection
+h2(#copy-files-from-a-collection-to-a-new-collection). Copy files from a collection to a new collection
 
 {% codeblock as python %}
 import arvados.collection
@@ -258,7 +280,7 @@ target.save_new(name=target_name, owner_uuid=target_project)
 print("Created collection %s" % target.manifest_locator())
 {% endcodeblock %}
 
-h2. Copy files from a collection to another collection
+h2(#copy-files-from-a-collection-to-another-collection). Copy files from a collection to another collection
 
 {% codeblock as python %}
 import arvados.collection
@@ -277,7 +299,7 @@ for f in files_to_copy:
 target.save()
 {% endcodeblock %}
 
-h2. Delete a file from an existing collection
+h2(#delete-a-file-from-an-existing-collection). Delete a file from an existing collection
 
 {% codeblock as python %}
 import arvados
@@ -287,7 +309,7 @@ c.remove("file2.txt")
 c.save()
 {% endcodeblock %}
 
-h2. Listing records with paging
+h2(#listing-records-with-paging). Listing records with paging
 
 Use the @arvados.util.keyset_list_all@ helper method to iterate over all the records matching an optional filter.  This method handles paging internally and returns results incrementally using a Python iterator.  The first parameter of the method takes a @list@ method of an Arvados resource (@collections@, @container_requests@, etc).
 
@@ -299,7 +321,7 @@ for c in arvados.util.keyset_list_all(api.collections().list, filters=[["name", 
     print("got collection " + c["uuid"])
 {% endcodeblock %}
 
-h2. Querying the vocabulary definition
+h2(#querying-the-vocabulary-definition). Querying the vocabulary definition
 
 The Python SDK provides facilities to interact with the "active metadata vocabulary":{{ site.baseurl }}/admin/metadata-vocabulary.html in the system. The developer can do key and value lookups in a case-insensitive manner:
 
@@ -319,7 +341,7 @@ voc['size']['Small'].identifier
 # Example output: 'IDVALSIZES2'
 {% endcodeblock %}
 
-h2. Translating between vocabulary identifiers and labels
+h2(#translating-between-vocabulary-identifiers-and-labels). Translating between vocabulary identifiers and labels
 
 Client software might need to present properties to the user in a human-readable form or take input from the user without requiring them to remember identifiers. For these cases, there're a couple of conversion methods that take a dictionary as input like this:
 
@@ -331,4 +353,22 @@ voc.convert_to_labels({'IDTAGIMPORTANCES': 'IDVALIMPORTANCES1'})
 # Example output: {'Importance': 'Critical'}
 voc.convert_to_identifiers({'creature': 'elephant'})
 # Example output: {'IDTAGANIMALS': 'IDVALANIMALS3'}
+{% endcodeblock %}
+
+h2(#create-a-project). Create a Project
+
+{% codeblock as python %}
+import arvados
+
+parent_project_uuid = "zzzzz-j7d0g-zzzzzzzzzzzzzzz"
+project_name = "My project"
+
+g = arvados.api().groups().create(body={
+  "group": {
+    "group_class": "project",
+    "owner_uuid": parent_project_uuid,
+    "name": project_name,
+  }}).execute()
+
+print("New project uuid is", g["uuid"])
 {% endcodeblock %}
