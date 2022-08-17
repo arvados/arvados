@@ -36,6 +36,7 @@ import { Link } from 'react-router-dom';
 import { Link as ButtonLink } from '@material-ui/core';
 import { ResourceWithName, ResponsiblePerson } from 'views-components/data-explorer/renderers';
 import { MPVContainer, MPVPanelContent, MPVPanelState } from 'components/multi-panel-view/multi-panel-view';
+import { resourceIsFrozen } from 'common/frozen-resources';
 
 type CssRules = 'root'
     | 'button'
@@ -133,6 +134,11 @@ export const CollectionPanel = withStyles(styles)(connect(
                 }
             }
         }
+
+        if (item) {
+            isWritable = !resourceIsFrozen(item, state.resources);
+        }
+
         return { item, isWritable, isOldVersion };
     })(
         class extends React.Component<CollectionPanelProps> {
