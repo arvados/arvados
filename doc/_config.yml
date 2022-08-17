@@ -89,6 +89,7 @@ navbar:
       - sdk/cli/index.html.textile.liquid
       - sdk/cli/reference.html.textile.liquid
       - sdk/cli/subcommands.html.textile.liquid
+      - sdk/cli/project-management.html.textile.liquid
     - Go:
       - sdk/go/index.html.textile.liquid
       - sdk/go/example.html.textile.liquid
@@ -172,21 +173,21 @@ navbar:
     - Users and Groups:
       - admin/user-management.html.textile.liquid
       - admin/user-management-cli.html.textile.liquid
+      - admin/group-management.html.textile.liquid
       - admin/reassign-ownership.html.textile.liquid
       - admin/link-accounts.html.textile.liquid
-      - admin/group-management.html.textile.liquid
       - admin/federation.html.textile.liquid
       - admin/merge-remote-account.html.textile.liquid
       - admin/migrating-providers.html.textile.liquid
       - user/topics/arvados-sync-external-sources.html.textile.liquid
       - admin/scoped-tokens.html.textile.liquid
       - admin/token-expiration-policy.html.textile.liquid
-      - admin/user-activity.html.textile.liquid
     - Monitoring:
       - admin/logging.html.textile.liquid
       - admin/metrics.html.textile.liquid
       - admin/health-checks.html.textile.liquid
       - admin/management-token.html.textile.liquid
+      - admin/user-activity.html.textile.liquid
     - Data Management:
       - admin/collection-versioning.html.textile.liquid
       - admin/collection-managed-properties.html.textile.liquid

@@ -1,7 +1,7 @@
 ---
 layout: default
 navsection: admin
-title: Group management
+title: Role group management at the CLI
 ...
 
 {% comment %}
@@ -12,7 +12,7 @@ SPDX-License-Identifier: CC-BY-SA-3.0
 
 This page describes how to manage groups at the command line.  You should be familiar with the "permission system":{{site.baseurl}}/api/permission-model.html .
 
-h2. Create a group
+h2. Create a role group
 
 User groups are entries in the "groups" table with @"group_class": "role"@.
 
@@ -20,7 +20,7 @@ User groups are entries in the "groups" table with @"group_class": "role"@.
 arv group create --group '{"name": "My new group", "group_class": "role"}'
 </pre>
 
-h2(#add). Add a user to a group
+h2(#add). Add a user to a role group
 
 There are two separate permissions associated with group membership.  The first link grants the user @can_manage@ permission to manage things that the group can manage.  The second link grants permission for other users of the group to see that this user is part of the group.
 
@@ -40,13 +40,13 @@ arv link create --link '{
 
 A user can also be given read-only access to a group.  In that case, the first link should be created with @can_read@ instead of @can_manage@.
 
-h2. List groups
+h2. List role groups
 
 <pre>
 arv group list --filters '[["group_class", "=", "role"]]'
 </pre>
 
-h2. List members of a group
+h2. List members of a role group
 
 Use the command "jq":https://stedolan.github.io/jq/ to extract the tail_uuid of each permission link which has the user uuid.
 
@@ -55,9 +55,9 @@ arv link list --filters '[["link_class", "=", "permission"],
   ["head_uuid", "=", "the_group_uuid"]]' | jq .items[].tail_uuid
 </pre>
 
-h2. Share a project with a group
+h2(#share-project). Share a project with a role group
 
-This will give all members of the group @can_manage@ access.
+Members of the role group will have access to the project based on their level of access to the role group.
 
 <pre>
 arv link create --link '{
@@ -67,7 +67,7 @@ arv link create --link '{
   "head_uuid": "the_project_uuid"}'
 </pre>
 
-A project can also be shared read-only.  In that case, the first link should be created with @can_read@ instead of @can_manage@.
+A project can also be shared read-only.  In that case, the link @name@ should be @can_read@ instead of @can_manage@.
 
 h2. List things shared with the group
 
@@ -78,7 +78,7 @@ arv link list --filters '[["link_class", "=", "permission"],
   ["tail_uuid", "=", "the_group_uuid"]]' | jq .items[].head_uuid
 </pre>
 
-h2. Stop sharing a project with a group
+h2(#stop-sharing-project). Stop sharing a project with a group
 
 This will remove access for members of the group.
 
@@ -91,7 +91,7 @@ arv --format=uuid link list --filters '[["link_class", "=", "permission"],
 arv link delete --uuid each_link_uuid
 </pre>
 
-h2. Remove user from a group
+h2. Remove user from a role group
 
 The first step is to find the permission link objects.  The second step is to delete them.
 
