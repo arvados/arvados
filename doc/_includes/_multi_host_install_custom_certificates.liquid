@@ -8,16 +8,16 @@ Copy your certificates to the directory specified with the variable @CUSTOM_CERT
 
 The script expects cert/key files with these basenames (matching the role except for <i>keepweb</i>, which is split in both <i>download / collections</i>):
 
-* "controller"
-* "websocket"
-* "workbench"
-* "workbench2"
-* "webshell"
-* "download"         # Part of keepweb
-* "collections"      # Part of keepweb
-* "keepproxy"
+# @controller@
+# @websocket@        # note: corresponds to default domain @ws.${CLUSTER}.${DOMAIN}@
+# @keepproxy@        # note: corresponds to default domain @keep.${CLUSTER}.${DOMAIN}@
+# @download@         # Part of keepweb
+# @collections@      # Part of keepweb -- important note, this should be a wildcard for @*.collections.${CLUSTER}.${DOMAIN}@
+# @workbench@
+# @workbench2@
+# @webshell@
 
-E.g. for 'keepproxy', the script will look for
+For example, for the 'keepproxy' service the script will expect to find this certificate:
 
 <notextile>
 <pre><code>${CUSTOM_CERTS_DIR}/keepproxy.crt
@@ -26,3 +26,5 @@ ${CUSTOM_CERTS_DIR}/keepproxy.key
 </notextile>
 
 Make sure that all the FQDNs that you will use for the public-facing applications (API/controller, Workbench, Keepproxy/Keepweb) are reachable.
+
+It may be easier to create a single certificate wh
