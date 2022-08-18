@@ -169,17 +169,12 @@ def main(arguments=None):
             users[owner].append([loguuid, event_at,"Updated project %s" % (getname(e["properties"]["new_attributes"]))])
 
         elif e["event_type"] in ("create", "update") and e["object_uuid"][6:11] == "gj3su":
-            since_last = None
-            if len(users[owner]) > 0 and users[owner][-1][-1].endswith("activity"):
-                sp = users[owner][-1][-1].split(" ")
-                start = users[owner][-1][1]
-                since_last = ciso8601.parse_datetime(event_at) - ciso8601.parse_datetime(sp[1]+" "+sp[2])
-                span = ciso8601.parse_datetime(event_at) - ciso8601.parse_datetime(start)
+            # Don't log token activity, it is too noisy (bug #19179)
+            pass
 
-            if since_last is not None and since_last < datetime.timedelta(minutes=61):
-                users[owner][-1] = [loguuid, start,"to %s (%02d:%02d) Account activity" % (event_at, span.days*24 + int(span.seconds/3600), int((span.seconds % 3600)/60))]
-            else:
-                users[owner].append([loguuid, event_at,"to %s (0:00) Account activity" % (event_at)])
+        # We want to report when a user goes through the login
+        # process, but controller doesn't do that yet, so revisit
+        # this when #19388 is done.
 
         elif e["event_type"] == "create" and e["object_uuid"][6:11] == "o0j2j":
             if e["properties"]["new_attributes"]["link_class"] == "tag":
@@ -235,8 +230,14 @@ def main(arguments=None):
         csvwriter = csv.writer(sys.stdout, dialect='unix')
 
     for k,v in users.items():
+        # Skip system user
         if k is None or k.endswith("-tpzed-000000000000000"):
             continue
+
+        # Skip users with no activity to report
+        if not v:
+            continue
+
         if not args.csv:
           print(getuserinfo(arv, k))
           for ev in v:
