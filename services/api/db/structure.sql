@@ -481,7 +481,8 @@ CREATE TABLE public.container_requests (
     secret_mounts jsonb DEFAULT '{}'::jsonb,
     runtime_token text,
     output_storage_classes jsonb DEFAULT '["default"]'::jsonb,
-    output_properties jsonb DEFAULT '{}'::jsonb
+    output_properties jsonb DEFAULT '{}'::jsonb,
+    cumulative_cost double precision DEFAULT 0.0 NOT NULL
 );
 
 
@@ -545,7 +546,9 @@ CREATE TABLE public.containers (
     gateway_address character varying,
     interactive_session_started boolean DEFAULT false NOT NULL,
     output_storage_classes jsonb DEFAULT '["default"]'::jsonb,
-    output_properties jsonb DEFAULT '{}'::jsonb
+    output_properties jsonb DEFAULT '{}'::jsonb,
+    cost double precision DEFAULT 0.0 NOT NULL,
+    subrequests_cost double precision DEFAULT 0.0 NOT NULL
 );
 
 
@@ -3182,6 +3185,7 @@ INSERT INTO "schema_migrations" (version) VALUES
 ('20220301155729'),
 ('20220303204419'),
 ('20220401153101'),
-('20220505112900');
+('20220505112900'),
+('20220804133317');
 
 

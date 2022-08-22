@@ -1245,6 +1245,8 @@ func (s *IntegrationSuite) runContainer(c *check.C, clusterID string, token stri
 			time.Sleep(time.Second / 2)
 		}
 	}
+	c.Logf("cr.CumulativeCost == %f", cr.CumulativeCost)
+	c.Check(cr.CumulativeCost, check.Not(check.Equals), 0.0)
 	if expectExitCode >= 0 {
 		c.Check(ctr.State, check.Equals, arvados.ContainerStateComplete)
 		c.Check(ctr.ExitCode, check.Equals, expectExitCode)

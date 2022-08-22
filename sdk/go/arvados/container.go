@@ -38,6 +38,8 @@ type Container struct {
 	RuntimeToken              string                 `json:"runtime_token"`
 	AuthUUID                  string                 `json:"auth_uuid"`
 	Log                       string                 `json:"log"`
+	Cost                      float64                `json:"cost"`
+	SubrequestsCost           float64                `json:"subrequests_cost"`
 }
 
 // ContainerRequest is an arvados#container_request resource.
@@ -77,6 +79,7 @@ type ContainerRequest struct {
 	ContainerCount          int                    `json:"container_count"`
 	OutputStorageClasses    []string               `json:"output_storage_classes"`
 	OutputProperties        map[string]interface{} `json:"output_properties"`
+	CumulativeCost          float64                `json:"cumulative_cost"`
 }
 
 // Mount is special behavior to attach to a filesystem path or device.

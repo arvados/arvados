@@ -231,11 +231,12 @@ class ContainerRequestTest < ActiveSupport::TestCase
 
     act_as_system_user do
       Container.find_by_uuid(cr.container_uuid).
-        update_attributes!(state: Container::Cancelled)
+        update_attributes!(state: Container::Cancelled, cost: 1.25)
     end
 
     cr.reload
     assert_equal "Final", cr.state
+    assert_equal 1.25, cr.cumulative_cost
     assert_equal users(:active).uuid, cr.modified_by_user_uuid
   end
 
@@ -261,12 +262,14 @@ class ContainerRequestTest < ActiveSupport::TestCase
     log_pdh = 'fa7aeb5140e2848d39b416daeef4ffc5+45'
     act_as_system_user do
       c.update_attributes!(state: Container::Complete,
+                           cost: 1.25,
                            output: output_pdh,
                            log: log_pdh)
     end
 
     cr.reload
     assert_equal "Final", cr.state
+    assert_equal 1.25, cr.cumulative_cost
     assert_equal users(:active).uuid, cr.modified_by_user_uuid
 
     assert_not_nil cr.output_uuid
@@ -788,6 +791,7 @@ class ContainerRequestTest < ActiveSupport::TestCase
     prev_container_uuid = cr.container_uuid
 
     act_as_system_user do
+      c.update_attributes!(cost: 0.5, subrequests_cost: 1.25)
       c.update_attributes!(state: Container::Cancelled)
     end
 
@@ -800,6 +804,9 @@ class ContainerRequestTest < ActiveSupport::TestCase
 
     c = act_as_system_user do
       c = Container.find_by_uuid(cr.container_uuid)
+      c.update_attributes!(state: Container::Locked)
+      c.update_attributes!(state: Container::Running)
+      c.update_attributes!(cost: 0.125)
       c.update_attributes!(state: Container::Cancelled)
       c
     end
@@ -809,6 +816,7 @@ class ContainerRequestTest < ActiveSupport::TestCase
     assert_equal "Final", cr.state
     assert_equal prev_container_uuid, cr.container_uuid
     assert_not_equal cr2.container_uuid, cr.container_uuid
+    assert_equal 1.875, cr.cumulative_cost
   end
 
   test "Retry on container cancelled with runtime_token" do
@@ -1509,6 +1517,65 @@ class ContainerRequestTest < ActiveSupport::TestCase
         assert_equal expect_prop.symbolize_keys, output.properties.symbolize_keys
       end
     end
+  end
+
+  test "Cumulative cost includes retried attempts but not reused containers" do
+    set_user_from_auth :active
+    cr = create_minimal_req!(priority: 5, state: "Committed", container_count_max: 3)
+    c = Container.find_by_uuid cr.container_uuid
+    act_as_system_user do
+      c.update_attributes!(state: Container::Locked)
+      c.update_attributes!(state: Container::Running)
+      c.update_attributes!(state: Container::Cancelled, cost: 3)
+    end
+    cr.reload
+    assert_equal 3, cr.cumulative_cost
+
+    c = Container.find_by_uuid cr.container_uuid
+    lock_and_run c
+    c.reload
+    assert_equal 0, c.subrequests_cost
+
+    # cr2 is a child/subrequest
+    cr2 = with_container_auth(c) do
+      create_minimal_req!(priority: 10, state: "Committed", container_count_max: 1, command: ["echo", "foo2"])
+    end
+    assert_equal c.uuid, cr2.requesting_container_uuid
+    c2 = Container.find_by_uuid cr2.container_uuid
+    act_as_system_user do
+      c2.update_attributes!(state: Container::Locked)
+      c2.update_attributes!(state: Container::Running)
+      logc = Collection.new(owner_uuid: system_user_uuid,
+                            manifest_text: ". ef772b2f28e2c8ca84de45466ed19ee9+7815 0:0:arv-mount.txt\n")
+      logc.save!
+      c2.update_attributes!(state: Container::Complete,
+                            exit_code: 0,
+                            output: '1f4b0bc7583c2a7f9102c395f4ffc5e3+45',
+                            log: logc.portable_data_hash,
+                            cost: 7)
+    end
+    c.reload
+    assert_equal 7, c.subrequests_cost
+
+    # cr3 is an identical child/subrequest, will reuse c2
+    cr3 = with_container_auth(c) do
+      create_minimal_req!(priority: 10, state: "Committed", container_count_max: 1, command: ["echo", "foo2"])
+    end
+    assert_equal c.uuid, cr3.requesting_container_uuid
+    c3 = Container.find_by_uuid cr3.container_uuid
+    assert_equal c2.uuid, c3.uuid
+    assert_equal Container::Complete, c3.state
+    c.reload
+    assert_equal 7, c.subrequests_cost
+
+    act_as_system_user do
+      c.update_attributes!(state: Container::Complete, exit_code: 0, cost: 9)
+    end
+
+    c.reload
+    assert_equal 7, c.subrequests_cost
+    cr.reload
+    assert_equal 3+7+9, cr.cumulative_cost
   end
 
 end

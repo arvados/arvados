@@ -33,6 +33,7 @@ class ContainerRequest < ArvadosModel
   serialize :scheduling_parameters, Hash
 
   after_find :fill_container_defaults_after_find
+  after_initialize { @state_was_when_initialized = self.state_was } # see finalize_if_needed
   before_validation :fill_field_defaults, :if => :new_record?
   before_validation :fill_container_defaults
   validates :command, :container_image, :output_path, :cwd, :presence => true
@@ -80,6 +81,7 @@ class ContainerRequest < ArvadosModel
     t.add :use_existing
     t.add :output_storage_classes
     t.add :output_properties
+    t.add :cumulative_cost
   end
 
   # Supported states for a container request
@@ -173,6 +175,30 @@ class ContainerRequest < ArvadosModel
   def finalize!
     container = Container.find_by_uuid(container_uuid)
     if !container.nil?
+      # We don't want to add the container cost if the container was
+      # already finished when this CR was committed. But we are
+      # running in an after_save hook after a lock/reload, so
+      # state_was has already been updated to Committed regardless.
+      # Hence the need for @state_was_when_initialized.
+      if @state_was_when_initialized == Committed
+        # Add the final container cost to our cumulative cost (which
+        # may already be non-zero from previous attempts if
+        # container_count_max > 1).
+        self.cumulative_cost += container.cost + container.subrequests_cost
+      end
+
+      # Add our cumulative cost to the subrequests_cost of the
+      # requesting container, if any.
+      if self.requesting_container_uuid
+        Container.where(
+          uuid: self.requesting_container_uuid,
+          state: Container::Running,
+        ).each do |c|
+          c.subrequests_cost += self.cumulative_cost
+          c.save!
+        end
+      end
+
       update_collections(container: container)
 
       if container.state == Container::Complete
@@ -461,7 +487,7 @@ class ContainerRequest < ArvadosModel
 
     case self.state
     when Committed
-      permitted.push :priority, :container_count_max, :container_uuid
+      permitted.push :priority, :container_count_max, :container_uuid, :cumulative_cost
 
       if self.priority.nil?
         self.errors.add :priority, "cannot be nil"
@@ -478,7 +504,7 @@ class ContainerRequest < ArvadosModel
     when Final
       if self.state_was == Committed
         # "Cancel" means setting priority=0, state=Committed
-        permitted.push :priority
+        permitted.push :priority, :cumulative_cost
 
         if current_user.andand.is_admin
           permitted.push :output_uuid, :log_uuid
