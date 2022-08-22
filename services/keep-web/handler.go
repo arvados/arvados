@@ -909,17 +909,18 @@ func (h *handler) logUploadOrDownload(
 		collection, filepath = h.determineCollection(fs, filepath)
 	}
 	if collection != nil {
-		log = log.WithField("collection_uuid", collection.UUID).
-			WithField("collection_file_path", filepath)
-		props["collection_uuid"] = collection.UUID
+		log = log.WithField("collection_file_path", filepath)
 		props["collection_file_path"] = filepath
-		// h.determineCollection populates the collection_uuid prop with the PDH, if
-		// this collection is being accessed via PDH. In that case, blank the
-		// collection_uuid field so that consumers of the log entries can rely on it
-		// being a UUID, or blank. The PDH remains available via the
-		// portable_data_hash property.
-		if props["collection_uuid"] == collection.PortableDataHash {
-			props["collection_uuid"] = ""
+		// h.determineCollection populates the collection_uuid
+		// prop with the PDH, if this collection is being
+		// accessed via PDH. For logging, we use a different
+		// field depending on whether it's a UUID or PDH.
+		if len(collection.UUID) > 32 {
+			log = log.WithField("portable_data_hash", collection.UUID)
+			props["portable_data_hash"] = collection.UUID
+		} else {
+			log = log.WithField("collection_uuid", collection.UUID)
+			props["collection_uuid"] = collection.UUID
 		}
 	}
 	if r.Method == "PUT" || r.Method == "POST" {
@@ -958,29 +959,27 @@ func (h *handler) logUploadOrDownload(
 }
 
 func (h *handler) determineCollection(fs arvados.CustomFileSystem, path string) (*arvados.Collection, string) {
-	segments := strings.Split(path, "/")
-	var i int
-	for i = 0; i < len(segments); i++ {
-		dir := append([]string{}, segments[0:i]...)
-		dir = append(dir, ".arvados#collection")
-		f, err := fs.OpenFile(strings.Join(dir, "/"), os.O_RDONLY, 0)
-		if f != nil {
-			defer f.Close()
-		}
-		if err != nil {
-			if !os.IsNotExist(err) {
-				return nil, ""
-			}
-			continue
-		}
-		// err is nil so we found it.
-		decoder := json.NewDecoder(f)
-		var collection arvados.Collection
-		err = decoder.Decode(&collection)
+	target := strings.TrimSuffix(path, "/")
+	for {
+		fi, err := fs.Stat(target)
 		if err != nil {
 			return nil, ""
 		}
-		return &collection, strings.Join(segments[i:], "/")
+		switch src := fi.Sys().(type) {
+		case *arvados.Collection:
+			return src, strings.TrimPrefix(path[len(target):], "/")
+		case *arvados.Group:
+			return nil, ""
+		default:
+			if _, ok := src.(error); ok {
+				return nil, ""
+			}
+		}
+		// Try parent
+		cut := strings.LastIndexByte(target, '/')
+		if cut < 0 {
+			return nil, ""
+		}
+		target = target[:cut]
 	}
-	return nil, ""
 }
