@@ -151,7 +151,11 @@ func (bsm *BlockStateMap) GetConfirmedReplication(blkids []arvados.SizedDigest, 
 		for _, c := range classes {
 			perclass[c] = 0
 		}
-		for _, r := range bsm.get(blkid).Replicas {
+		bs, ok := bsm.entries[blkid]
+		if !ok {
+			return 0
+		}
+		for _, r := range bs.Replicas {
 			total += r.KeepMount.Replication
 			mntclasses := r.KeepMount.StorageClasses
 			if len(mntclasses) == 0 {

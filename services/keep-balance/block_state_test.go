@@ -5,6 +5,7 @@
 package main
 
 import (
+	"sync"
 	"time"
 
 	"git.arvados.org/arvados.git/sdk/go/arvados"
@@ -91,4 +92,26 @@ func (s *confirmedReplicationSuite) TestBlocksOnMultipleMounts(c *check.C) {
 	c.Check(n, check.Equals, 2)
 	n = s.blockStateMap.GetConfirmedReplication([]arvados.SizedDigest{knownBlkid(40), knownBlkid(41)}, nil)
 	c.Check(n, check.Equals, 4)
+}
+
+func (s *confirmedReplicationSuite) TestConcurrency(c *check.C) {
+	var wg sync.WaitGroup
+	for i := 1000; i < 1256; i++ {
+		i := i
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			n := s.blockStateMap.GetConfirmedReplication([]arvados.SizedDigest{knownBlkid(i), knownBlkid(i)}, []string{"default"})
+			c.Check(n, check.Equals, 0)
+		}()
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			n := s.blockStateMap.GetConfirmedReplication([]arvados.SizedDigest{knownBlkid(10)}, []string{"default"})
+			c.Check(n, check.Equals, 1)
+			n = s.blockStateMap.GetConfirmedReplication([]arvados.SizedDigest{knownBlkid(20)}, []string{"default"})
+			c.Check(n, check.Equals, 2)
+		}()
+	}
+	wg.Wait()
 }
