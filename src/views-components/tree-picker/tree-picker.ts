@@ -39,7 +39,6 @@ const mapStateToProps =
     <T>(state: RootState, props: TreePickerProps<T>): Pick<TreeProps<T>, 'items' | 'disableRipple' | 'itemsMap'> => {
         const itemsIdMap: Map<string, TreeItem<T>> = new Map();
         const tree = state.treePicker[props.pickerId] || createTree();
-
         return {
             disableRipple: true,
             items: getNodeChildrenIds('')(tree)

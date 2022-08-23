@@ -59,12 +59,10 @@ export const ProjectInputComponent = connect(mapStateToProps)(
             open: false,
         };
 
-        componentDidMount() {
+        render() {
             this.props.dispatch<any>(
                 initProjectsTreePicker(this.props.commandInput.id));
-        }
 
-        render() {
             return <>
                 {this.renderInput()}
                 {this.renderDialog()}
@@ -109,7 +107,7 @@ export const ProjectInputComponent = connect(mapStateToProps)(
         }
 
         renderDialog() {
-            return <Dialog
+            return this.state.open ? <Dialog
                 open={this.state.open}
                 onClose={this.closeDialog}
                 fullWidth
@@ -130,7 +128,7 @@ export const ProjectInputComponent = connect(mapStateToProps)(
                         color='primary'
                         onClick={this.submit}>Ok</Button>
                 </DialogActions>
-            </Dialog>;
+            </Dialog> : null;
         }
 
     });

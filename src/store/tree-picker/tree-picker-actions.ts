@@ -119,7 +119,6 @@ export const loadProject = (params: LoadProjectParams) =>
         )(new FilterBuilder());
 
         const { items } = await services.groupsService.contents(loadShared ? '' : id, { filters, excludeHomeProject: loadShared || undefined });
-
         dispatch<any>(receiveTreePickerData<GroupContentsResource>({
             id,
             pickerId,
