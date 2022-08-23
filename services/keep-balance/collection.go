@@ -152,7 +152,7 @@ func (bal *Balancer) updateCollections(ctx context.Context, c *arvados.Client, c
 	// Use about 1 goroutine per 2 CPUs. Based on experiments with
 	// a 2-core host, using more concurrent database
 	// calls/transactions makes this process slower, not faster.
-	for i := 0; i < runtime.NumCPU()+1/2; i++ {
+	for i := 0; i < (runtime.NumCPU()+1)/2; i++ {
 		wg.Add(1)
 		goSendErr(errs, func() error {
 			defer wg.Done()
