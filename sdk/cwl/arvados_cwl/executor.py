@@ -252,6 +252,11 @@ The 'jobs' API is no longer supported.
         Called when there's a need to report errors, warnings or just
         activity statuses, for example in the RuntimeStatusLoggingHandler.
         """
+
+        if kind not in ('error', 'warning'):
+            # Ignore any other status kind
+            return
+
         with self.workflow_eval_lock:
             current = None
             try:
@@ -261,32 +266,35 @@ The 'jobs' API is no longer supported.
             if current is None:
                 return
             runtime_status = current.get('runtime_status', {})
-            if kind in ('error', 'warning'):
-                updatemessage = runtime_status.get(kind, "")
-                if not updatemessage:
-                    updatemessage = message
 
-                # Subsequent messages tacked on in detail
-                updatedetail = runtime_status.get(kind+'Detail', "")
-                maxlines = 40
-                if updatedetail.count("\n") < maxlines:
-                    if updatedetail:
-                        updatedetail += "\n"
-                    updatedetail += message + "\n"
+            original_updatemessage = updatemessage = runtime_status.get(kind, "")
+            if not updatemessage:
+                updatemessage = message
 
-                    if detail:
-                        updatedetail += detail + "\n"
+            # Subsequent messages tacked on in detail
+            original_updatedetail = updatedetail = runtime_status.get(kind+'Detail', "")
+            maxlines = 40
+            if updatedetail.count("\n") < maxlines:
+                if updatedetail:
+                    updatedetail += "\n"
+                updatedetail += message + "\n"
 
-                    if updatedetail.count("\n") >= maxlines:
-                        updatedetail += "\nSome messages may have been omitted.  Check the full log."
+                if detail:
+                    updatedetail += detail + "\n"
 
-                runtime_status.update({
-                    kind: updatemessage,
-                    kind+'Detail': updatedetail,
-                })
-            else:
-                # Ignore any other status kind
+                if updatedetail.count("\n") >= maxlines:
+                    updatedetail += "\nSome messages may have been omitted.  Check the full log."
+
+            if updatemessage == original_updatemessage and updatedetail == original_updatedetail:
+                # don't waste time doing an update if nothing changed
+                # (usually because we exceeded the max lines)
                 return
+
+            runtime_status.update({
+                kind: updatemessage,
+                kind+'Detail': updatedetail,
+            })
+
             try:
                 self.api.containers().update(uuid=current['uuid'],
                                             body={
