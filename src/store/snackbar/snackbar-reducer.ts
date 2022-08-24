@@ -29,10 +29,21 @@ export const snackbarReducer = (state = initialState, action: SnackbarAction) =>
                 })
             };
         },
-        CLOSE_SNACKBAR: () => ({
-            ...state,
-            open: false
-        }),
+        CLOSE_SNACKBAR: (payload) => {
+            let newMessages: any = [...state.messages];// state.messages.filter(({ message }) => message !== payload);
+
+            if (JSON.stringify(payload) === '{}') {
+                newMessages.pop();
+            } else {
+                newMessages = state.messages.filter(({ message }) => message !== payload);
+            }
+
+            return {
+                ...state,
+                messages: newMessages,
+                open: newMessages.length > 0
+            }
+        },
         SHIFT_MESSAGES: () => {
             const messages = state.messages.filter((m, idx) => idx > 0);
             return {

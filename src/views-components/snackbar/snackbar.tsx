@@ -27,7 +27,7 @@ interface SnackbarDataProps {
 }
 
 interface SnackbarEventProps {
-    onClose?: (event: React.SyntheticEvent<any>, reason: string) => void;
+    onClose?: (event: React.SyntheticEvent<any>, reason: string, message?: string) => void;
     onExited: () => void;
     onClick: (uuid: string) => void;
 }
@@ -43,9 +43,9 @@ const mapStateToProps = (state: RootState): SnackbarDataProps => {
 };
 
 const mapDispatchToProps = (dispatch: Dispatch): SnackbarEventProps => ({
-    onClose: (event: any, reason: string) => {
+    onClose: (event: any, reason: string, message: '') => {
         if (reason !== "clickaway") {
-            dispatch(snackbarActions.CLOSE_SNACKBAR());
+            dispatch(snackbarActions.CLOSE_SNACKBAR(message));
         }
     },
     onExited: () => {
@@ -116,6 +116,7 @@ export const Snackbar = withStyles(styles)(connect(mapStateToProps, mapDispatchT
                             const [Icon, cssClass] = variants[message.kind];
 
                             return <SnackbarContent
+                                key={message.message}
                                 className={classNames(cssClass, classes.snackbarContent)}
                                 aria-describedby="client-snackbar"
                                 message={
@@ -140,7 +141,7 @@ const actions = (props: SnackbarMessage, onClick, onClose, classes) => {
             key="close"
             aria-label="Close"
             color="inherit"
-            onClick={e => onClose && onClose(e, '')}>
+            onClick={e => onClose && onClose(e, '', props.message)}>
             <CloseIcon className={classes.icon} />
         </IconButton>
     ];
