@@ -54,7 +54,7 @@ active_user_member_of_all_users_group:
   updated_at: 2014-01-24 20:42:26 -0800
   tail_uuid: zzzzz-tpzed-xurymjxw79nv3jz
   link_class: permission
-  name: can_read
+  name: can_write
   head_uuid: zzzzz-j7d0g-fffffffffffffff
   properties: {}
 
@@ -110,7 +110,7 @@ spectator_user_member_of_all_users_group:
   updated_at: 2014-01-24 20:42:26 -0800
   tail_uuid: zzzzz-tpzed-l1s2piq4t4mps8r
   link_class: permission
-  name: can_read
+  name: can_write
   head_uuid: zzzzz-j7d0g-fffffffffffffff
   properties: {}
 
@@ -124,7 +124,7 @@ inactive_user_member_of_all_users_group:
   updated_at: 2013-12-26T20:52:21Z
   tail_uuid: zzzzz-tpzed-x9kqpd79egh49c7
   link_class: permission
-  name: can_read
+  name: can_write
   head_uuid: zzzzz-j7d0g-fffffffffffffff
   properties: {}
 
@@ -138,7 +138,7 @@ inactive_signed_ua_user_member_of_all_users_group:
   updated_at: 2013-12-26T20:52:21Z
   tail_uuid: zzzzz-tpzed-7sg468ezxwnodxs
   link_class: permission
-  name: can_read
+  name: can_write
   head_uuid: zzzzz-j7d0g-fffffffffffffff
   properties: {}
 
@@ -433,7 +433,7 @@ project_viewer_member_of_all_users_group:
   updated_at: 2015-07-28T21:34:41.361747000Z
   tail_uuid: zzzzz-tpzed-projectviewer1a
   link_class: permission
-  name: can_read
+  name: can_write
   head_uuid: zzzzz-j7d0g-fffffffffffffff
   properties: {}
 
@@ -1044,7 +1044,7 @@ user1-with-load_member_of_all_users_group:
   updated_at: 2014-01-24 20:42:26 -0800
   tail_uuid: zzzzz-tpzed-user1withloadab
   link_class: permission
-  name: can_read
+  name: can_write
   head_uuid: zzzzz-j7d0g-fffffffffffffff
   properties: {}
 
