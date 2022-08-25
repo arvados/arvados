@@ -21,7 +21,6 @@ import {
     TableRow,
     TableCell,
     Paper,
-    Link,
     Grid,
     Chip,
 } from '@material-ui/core';
@@ -53,6 +52,12 @@ import { getInlineFileUrl } from 'views-components/context-menu/actions/helpers'
 import { AuthState } from 'store/auth/auth-reducer';
 import mime from 'mime';
 import { DefaultView } from 'components/default-view/default-view';
+import { getNavUrl } from 'routes/routes';
+import { Link as RouterLink } from 'react-router-dom';
+import { Link as MuiLink } from '@material-ui/core';
+import { InputCollectionMount } from 'store/processes/processes-actions';
+import { connect } from 'react-redux';
+import { RootState } from 'store/store';
 
 type CssRules = 'card' | 'content' | 'title' | 'header' | 'avatar' | 'iconHeader' | 'tableWrapper' | 'tableRoot' | 'paramValue' | 'keepLink' | 'imagePreview' | 'valArray' | 'emptyValue';
 
@@ -94,6 +99,9 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
         alignItems: 'center',
     },
     keepLink: {
+        color: theme.palette.primary.main,
+        textDecoration: 'none',
+        overflowWrap: 'break-word',
         cursor: 'pointer',
     },
     imagePreview: {
@@ -104,22 +112,30 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
         display: 'flex',
         gap: '10px',
         flexWrap: 'wrap',
+        '& span': {
+            display: 'inline',
+        }
     },
     emptyValue: {
         color: theme.customs.colors.grey500,
     },
 });
 
+export enum ProcessIOCardType {
+    INPUT = 'Inputs',
+    OUTPUT = 'Outputs',
+}
 export interface ProcessIOCardDataProps {
-    label: string;
+    label: ProcessIOCardType;
     params: ProcessIOParameter[];
     raw?: any;
+    mounts?: InputCollectionMount[];
 }
 
 type ProcessIOCardProps = ProcessIOCardDataProps & WithStyles<CssRules> & MPVPanelProps;
 
 export const ProcessIOCard = withStyles(styles)(
-    ({ classes, label, params, raw, doHidePanel, panelName }: ProcessIOCardProps) => {
+    ({ classes, label, params, raw, mounts, doHidePanel, panelName }: ProcessIOCardProps) => {
         const [tabState, setTabState] = useState(0);
         const handleChange = (event: React.MouseEvent<HTMLElement>, value: number) => {
             setTabState(value);
@@ -147,21 +163,30 @@ export const ProcessIOCard = withStyles(styles)(
                     </div>
                 } />
             <CardContent className={classes.content}>
-                {params.length ?
                 <div>
                     <Tabs value={tabState} onChange={handleChange} variant="fullWidth">
                         <Tab label="Preview" />
                         <Tab label="Raw" />
+                        {label === ProcessIOCardType.INPUT && <Tab label="Input Mounts" />}
                     </Tabs>
                     {tabState === 0 && <div className={classes.tableWrapper}>
-                        <ProcessIOPreview data={params} />
+                        {params.length ?
+                            <ProcessIOPreview data={params} /> :
+                            <Grid container item alignItems='center' justify='center'>
+                                <DefaultView messages={["No parameters found"]} icon={InfoIcon} />
+                            </Grid>}
                         </div>}
                     {tabState === 1 && <div className={classes.tableWrapper}>
-                        <ProcessIORaw data={raw || params} />
+                        {params.length ?
+                            <ProcessIORaw data={raw || params} /> :
+                            <Grid container item alignItems='center' justify='center'>
+                                <DefaultView messages={["No parameters found"]} icon={InfoIcon} />
+                            </Grid>}
                         </div>}
-                </div> : <Grid container item alignItems='center' justify='center'>
-                    <DefaultView messages={["No parameters found"]} icon={InfoIcon} />
-                </Grid>}
+                    {tabState === 2 && <div className={classes.tableWrapper}>
+                        {label === ProcessIOCardType.INPUT && <ProcessInputMounts mounts={mounts || []} />}
+                        </div>}
+                </div>
             </CardContent>
         </Card>;
     }
@@ -169,7 +194,6 @@ export const ProcessIOCard = withStyles(styles)(
 
 export type ProcessIOValue = {
     display: ReactElement<any, any>;
-    nav?: string;
     imageUrl?: string;
 }
 
@@ -187,7 +211,7 @@ type ProcessIOPreviewProps = ProcessIOPreviewDataProps & WithStyles<CssRules>;
 
 const ProcessIOPreview = withStyles(styles)(
     ({ classes, data }: ProcessIOPreviewProps) =>
-        <Table className={classes.tableRoot} aria-label="simple table">
+        <Table className={classes.tableRoot} aria-label="Process IO Preview">
             <TableHead>
                 <TableRow>
                     <TableCell>Label</TableCell>
@@ -205,12 +229,9 @@ const ProcessIOPreview = withStyles(styles)(
                         <TableCell>{param.value.map(val => (
                             <Typography className={classes.paramValue}>
                                 {val.imageUrl ? <img className={classes.imagePreview} src={val.imageUrl} alt="Inline Preview" /> : ""}
-                                {val.nav ?
-                                    <Link className={classes.keepLink} onClick={() => handleClick(val.nav)}>{val.display}</Link>
-                                    : <span className={classes.valArray}>
-                                        {val.display}
-                                    </span>
-                                }
+                                <span className={classes.valArray}>
+                                    {val.display}
+                                </span>
                             </Typography>
                         ))}</TableCell>
                     </TableRow>;
@@ -231,6 +252,35 @@ const ProcessIORaw = withStyles(styles)(
             </pre>
         </Paper>
 );
+
+interface ProcessInputMountsDataProps {
+    mounts: InputCollectionMount[];
+}
+
+type ProcessInputMountsProps = ProcessInputMountsDataProps & WithStyles<CssRules>;
+
+const ProcessInputMounts = withStyles(styles)(connect((state: RootState) => ({
+    auth: state.auth,
+}))(({ mounts, classes, auth }: ProcessInputMountsProps & { auth: AuthState }) => (
+    <Table className={classes.tableRoot} aria-label="Process Input Mounts">
+        <TableHead>
+            <TableRow>
+                <TableCell>Path</TableCell>
+                <TableCell>Portable Data Hash</TableCell>
+            </TableRow>
+        </TableHead>
+        <TableBody>
+            {mounts.map(mount => (
+                <TableRow key={mount.path}>
+                    <TableCell><pre>{mount.path}</pre></TableCell>
+                    <TableCell>
+                        <RouterLink to={getNavUrl(mount.pdh, auth)} className={classes.keepLink}>{mount.pdh}</RouterLink>
+                    </TableCell>
+                </TableRow>
+            ))}
+        </TableBody>
+    </Table>
+)));
 
 type FileWithSecondaryFiles = {
     secondaryFiles: File[];
@@ -358,7 +408,34 @@ const getKeepUrl = (file: File | Directory, pdh?: string): string => {
     return keepUrl || '';
 };
 
-const getNavUrl = (auth: AuthState, file: File | Directory, pdh?: string): string => {
+interface KeepUrlProps {
+    auth: AuthState;
+    res: File | Directory;
+    pdh?: string;
+}
+
+const KeepUrlBase = withStyles(styles)(({auth, res, pdh, classes}: KeepUrlProps & WithStyles<CssRules>) => {
+    const keepUrl = getKeepUrl(res, pdh);
+    const pdhUrl = keepUrl ? keepUrl.split('/').slice(0, 1)[0] : '';
+    // Passing a pdh always returns a relative wb2 collection url
+    const pdhWbPath = getNavUrl(pdhUrl.replace('keep:', ''), auth);
+    return pdhUrl && pdhWbPath ?
+        <RouterLink to={pdhWbPath} className={classes.keepLink}>{pdhUrl}</RouterLink> :
+        <></>;
+});
+
+const KeepUrlPath = withStyles(styles)(({auth, res, pdh, classes}: KeepUrlProps & WithStyles<CssRules>) => {
+    const keepUrl = getKeepUrl(res, pdh);
+    const keepUrlParts = keepUrl ? keepUrl.split('/') : [];
+    const keepUrlPath = keepUrlParts.length > 1 ? keepUrlParts.slice(1).join('/') : '';
+
+    const keepUrlPathNav = getKeepNavUrl(auth, res, pdh);
+    return keepUrlPath && keepUrlPathNav ?
+        <MuiLink className={classes.keepLink} onClick={() => handleClick(keepUrlPathNav)}>{keepUrlPath}</MuiLink> :
+        <></>;
+});
+
+const getKeepNavUrl = (auth: AuthState, file: File | Directory, pdh?: string): string => {
     let keepUrl = getKeepUrl(file, pdh).replace('keep:', '');
     return (getInlineFileUrl(`${auth.config.keepWebServiceUrl}/c=${keepUrl}?api_token=${auth.apiToken}`, auth.config.keepWebServiceUrl, auth.config.keepWebInlineServiceUrl));
 };
@@ -385,16 +462,20 @@ const normalizeDirectoryLocation = (directory: Directory): Directory => {
 const directoryToProcessIOValue = (directory: Directory, auth: AuthState, pdh?: string): ProcessIOValue => {
     const normalizedDirectory = normalizeDirectoryLocation(directory);
     return {
-        display: <>{getKeepUrl(normalizedDirectory, pdh)}</>,
-        nav: getNavUrl(auth, normalizedDirectory, pdh),
+        display: <span>
+            <KeepUrlBase auth={auth} res={normalizedDirectory} pdh={pdh}/>/<KeepUrlPath auth={auth} res={normalizedDirectory} pdh={pdh}/>
+        </span>,
     };
 };
 
-const fileToProcessIOValue = (file: File, auth: AuthState, pdh?: string): ProcessIOValue => ({
-    display: <>{getKeepUrl(file, pdh)}</>,
-    nav: getNavUrl(auth, file, pdh),
-    imageUrl: isFileImage(file.basename) ? getImageUrl(auth, file, pdh) : undefined,
-});
+const fileToProcessIOValue = (file: File, auth: AuthState, pdh?: string): ProcessIOValue => {
+    return {
+        display: <span>
+            <KeepUrlBase auth={auth} res={file} pdh={pdh}/>/<KeepUrlPath auth={auth} res={file} pdh={pdh}/>
+        </span>,
+        imageUrl: isFileImage(file.basename) ? getImageUrl(auth, file, pdh) : undefined,
+    }
+};
 
 const EmptyValue = withStyles(styles)(
     ({classes}: WithStyles<CssRules>) => <span className={classes.emptyValue}>No value</span>

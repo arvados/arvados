@@ -103,6 +103,25 @@ export const getInputs = (data: any): CommandInputParameter[] => {
     ) : [];
 };
 
+export type InputCollectionMount = {
+    path: string;
+    pdh: string;
+}
+
+export const getInputCollectionMounts = (data: any): InputCollectionMount[] => {
+    if (!data || !data.mounts) { return []; }
+    return Object.keys(data.mounts)
+        .map(key => ({
+            ...data.mounts[key],
+            path: key,
+        }))
+        .filter(mount => mount.kind === 'collection')
+        .map(mount => ({
+            path: mount.path,
+            pdh: mount.portable_data_hash,
+        }));
+};
+
 export const getOutputParameters = (data: any): CommandOutputParameter[] => {
     if (!data || !data.mounts || !data.mounts[MOUNT_PATH_CWL_WORKFLOW]) { return []; }
     const outputs = getWorkflowOutputs(data.mounts[MOUNT_PATH_CWL_WORKFLOW].content);

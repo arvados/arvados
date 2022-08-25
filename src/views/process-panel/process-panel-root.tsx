@@ -12,12 +12,12 @@ import { SubprocessFilterDataProps } from 'components/subprocess-filter/subproce
 import { MPVContainer, MPVPanelContent, MPVPanelState } from 'components/multi-panel-view/multi-panel-view';
 import { ArvadosTheme } from 'common/custom-theme';
 import { ProcessDetailsCard } from './process-details-card';
-import { getIOParamDisplayValue, ProcessIOCard, ProcessIOParameter } from './process-io-card';
+import { getIOParamDisplayValue, ProcessIOCard, ProcessIOCardType, ProcessIOParameter } from './process-io-card';
 
 import { getProcessPanelLogs, ProcessLogsPanel } from 'store/process-logs-panel/process-logs-panel';
 import { ProcessLogsCard } from './process-log-card';
 import { FilterOption } from 'views/process-panel/process-log-form';
-import { getInputs, getOutputParameters } from 'store/processes/processes-actions';
+import { getInputs, getInputCollectionMounts, getOutputParameters } from 'store/processes/processes-actions';
 import { CommandInputParameter, getIOParamId } from 'models/workflow';
 import { CommandOutputParameter } from 'cwlts/mappings/v1.0/CommandOutputParameter';
 import { AuthState } from 'store/auth/auth-reducer';
@@ -76,6 +76,8 @@ export const ProcessPanelRoot = withStyles(styles)(
     const outputUuid = process?.containerRequest.outputUuid;
     const requestUuid = process?.containerRequest.uuid;
 
+    const inputMounts = getInputCollectionMounts(process?.containerRequest);
+
     React.useEffect(() => {
         if (outputUuid) {
             fetchOutputs(outputUuid, setOutputs);
@@ -126,14 +128,15 @@ export const ProcessPanelRoot = withStyles(styles)(
             </MPVPanelContent>
             <MPVPanelContent forwardProps xs="auto" data-cy="process-inputs">
                 <ProcessIOCard
-                    label="Inputs"
+                    label={ProcessIOCardType.INPUT}
                     params={processedInputs}
                     raw={rawInputs}
+                    mounts={inputMounts}
                  />
             </MPVPanelContent>
             <MPVPanelContent forwardProps xs="auto" data-cy="process-outputs">
                 <ProcessIOCard
-                    label="Outputs"
+                    label={ProcessIOCardType.OUTPUT}
                     params={processedOutputs}
                     raw={outputDetails.rawOutputs}
                  />
