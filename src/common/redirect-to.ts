@@ -7,6 +7,7 @@ import { Config } from './config';
 
 export const REDIRECT_TO_DOWNLOAD_KEY = 'redirectToDownload';
 export const REDIRECT_TO_PREVIEW_KEY = 'redirectToPreview';
+export const REDIRECT_TO_KEY = 'redirectTo';
 
 const getRedirectKeyFromUrl = (href: string): string | null => {
     switch (true) {
@@ -14,6 +15,8 @@ const getRedirectKeyFromUrl = (href: string): string | null => {
             return REDIRECT_TO_DOWNLOAD_KEY;
         case href.indexOf(REDIRECT_TO_PREVIEW_KEY) > -1:
             return REDIRECT_TO_PREVIEW_KEY;
+        case href.indexOf(`${REDIRECT_TO_KEY}=`) > -1:
+            return REDIRECT_TO_KEY;
         default:
             return null;
     }
@@ -32,8 +35,11 @@ export const storeRedirects = () => {
     const { location: { href }, localStorage } = window;
     const redirectKey = getRedirectKeyFromUrl(href);
 
-    if (localStorage && redirectKey) {
-        localStorage.setItem(redirectKey, href.split(`${redirectKey}=`)[1]);
+    // Change old redirectTo -> redirectToPreview when storing redirect
+    const redirectStoreKey = redirectKey === REDIRECT_TO_KEY ? REDIRECT_TO_PREVIEW_KEY : redirectKey;
+
+    if (localStorage && redirectKey && redirectStoreKey) {
+        localStorage.setItem(redirectStoreKey, href.split(`${redirectKey}=`)[1]);
     }
 };
 
