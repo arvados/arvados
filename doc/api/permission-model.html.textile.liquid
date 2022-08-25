@@ -103,6 +103,8 @@ A user can only read a container record if the user has read permission to a con
 *can_manage* access to a user grants can_manage access to the user, _and everything owned by that user_ .
 If a user A *can_read* role R, and role R *can_manage* user B, then user A *can_read* user B _and everything owned by that user_ .
 
+Modifying a role group requires *can_manage* permission (by contrast, *can_write* is sufficient to modify project groups and other object types).
+
 h2(#system). System user and group
 
 A privileged user account exists for the use by internal Arvados components.  This user manages system objects which should not be "owned" by any particular user.  The system user uuid is @{siteprefix}-tpzed-000000000000000@.

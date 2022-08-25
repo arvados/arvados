@@ -40,7 +40,7 @@ class UsersTest < ActionDispatch::IntegrationTest
     verify_link response_items, 'arvados#repository', true, 'permission', 'can_manage',
         'foo/usertestrepo', created['uuid'], 'arvados#repository', true, 'Repository'
 
-    verify_link response_items, 'arvados#group', true, 'permission', 'can_read',
+    verify_link response_items, 'arvados#group', true, 'permission', 'can_write',
         'All users', created['uuid'], 'arvados#group', true, 'Group'
 
     verify_link response_items, 'arvados#virtualMachine', false, 'permission', 'can_login',
@@ -85,7 +85,7 @@ class UsersTest < ActionDispatch::IntegrationTest
     verify_link response_items, 'arvados#repository', true, 'permission', 'can_manage',
         'foo/usertestrepo', created['uuid'], 'arvados#repository', true, 'Repository'
 
-    verify_link response_items, 'arvados#group', true, 'permission', 'can_read',
+    verify_link response_items, 'arvados#group', true, 'permission', 'can_write',
         'All users', created['uuid'], 'arvados#group', true, 'Group'
 
     verify_link response_items, 'arvados#virtualMachine', true, 'permission', 'can_login',
@@ -113,7 +113,7 @@ class UsersTest < ActionDispatch::IntegrationTest
 
     # two new links: system_group, and 'All users' group.
 
-    verify_link response_items, 'arvados#group', true, 'permission', 'can_read',
+    verify_link response_items, 'arvados#group', true, 'permission', 'can_write',
         'All users', created['uuid'], 'arvados#group', true, 'Group'
 
     verify_link response_items, 'arvados#virtualMachine', false, 'permission', 'can_login',
@@ -135,7 +135,7 @@ class UsersTest < ActionDispatch::IntegrationTest
     assert_equal 'foo@example.com', created['email'], 'expected input email'
 
      # verify links
-    verify_link response_items, 'arvados#group', true, 'permission', 'can_read',
+    verify_link response_items, 'arvados#group', true, 'permission', 'can_write',
         'All users', created['uuid'], 'arvados#group', true, 'Group'
 
     verify_link response_items, 'arvados#repository', true, 'permission', 'can_manage',
@@ -163,7 +163,7 @@ class UsersTest < ActionDispatch::IntegrationTest
     assert_equal created['email'], 'foo@example.com', 'expected original email'
 
     # verify links
-    verify_link response_items, 'arvados#group', true, 'permission', 'can_read',
+    verify_link response_items, 'arvados#group', true, 'permission', 'can_write',
         'All users', created['uuid'], 'arvados#group', true, 'Group'
 
     verify_link response_items, 'arvados#virtualMachine', true, 'permission', 'can_login',
@@ -187,7 +187,7 @@ class UsersTest < ActionDispatch::IntegrationTest
 
     # four extra links: system_group, login, group, repo and vm
 
-    verify_link response_items, 'arvados#group', true, 'permission', 'can_read',
+    verify_link response_items, 'arvados#group', true, 'permission', 'can_write',
         'All users', created['uuid'], 'arvados#group', true, 'Group'
 
     verify_link response_items, 'arvados#repository', true, 'permission', 'can_manage',
