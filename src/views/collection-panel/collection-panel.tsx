@@ -135,7 +135,7 @@ export const CollectionPanel = withStyles(styles)(connect(
             }
         }
 
-        if (item) {
+        if (item && !isWritable) {
             isWritable = !resourceIsFrozen(item, state.resources);
         }
 
