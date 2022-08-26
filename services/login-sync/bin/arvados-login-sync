@@ -42,9 +42,14 @@ begin
     debug = true
   end
   arv = Arvados.new({ :suppress_ssl_warnings => false })
-  logincluster_arv = Arvados.new({ :api_host => (ENV['LOGINCLUSTER_ARVADOS_API_HOST'] || ENV['ARVADOS_API_HOST']),
-                                   :api_token => (ENV['LOGINCLUSTER_ARVADOS_API_TOKEN'] || ENV['ARVADOS_API_TOKEN']),
-                      :suppress_ssl_warnings => false })
+  logincluster_host = ENV['ARVADOS_API_HOST']
+  logincluster_name = arv.cluster_config['Login']['LoginCluster'] or ''
+
+  if logincluster_name != '' and logincluster_name != arv.cluster_config['ClusterID']
+    logincluster_host = arv.cluster_config['RemoteClusters'][logincluster_name]['Host']
+  end
+  logincluster_arv = Arvados.new({ :api_host => logincluster_host,
+                                   :suppress_ssl_warnings => false })
 
   vm_uuid = ENV['ARVADOS_VIRTUAL_MACHINE_UUID']
 
@@ -219,9 +224,9 @@ begin
         userEnv = IO::read(tokenfile)
         if (m = /^ARVADOS_API_TOKEN=(.*?\n)/m.match(userEnv))
           begin
-            tmp_arv = Arvados.new({ :api_host => (ENV['LOGINCLUSTER_ARVADOS_API_HOST'] || ENV['ARVADOS_API_HOST']),
-                                   :api_token => (m[1]),
-                      :suppress_ssl_warnings => false })
+            tmp_arv = Arvados.new({ :api_host => logincluster_host,
+                                    :api_token => (m[1]),
+                                    :suppress_ssl_warnings => false })
             tmp_arv.user.current
           rescue Arvados::TransactionFailedError => e
             if e.to_s =~ /401 Unauthorized/
