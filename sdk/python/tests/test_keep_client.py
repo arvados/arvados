@@ -202,6 +202,7 @@ class KeepProxyTestCase(run_test_server.TestCaseWithServers):
                          'wrong content from Keep.get(md5("baz"))')
         self.assertTrue(keep_client.using_proxy)
 
+    @unittest.skip("https://dev.arvados.org/issues/17344#note-23")
     def test_KeepProxyTest2(self):
         # Don't instantiate the proxy directly, but set the X-External-Client
         # header.  The API server should direct us to the proxy.
