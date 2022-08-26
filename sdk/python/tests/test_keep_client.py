@@ -202,23 +202,6 @@ class KeepProxyTestCase(run_test_server.TestCaseWithServers):
                          'wrong content from Keep.get(md5("baz"))')
         self.assertTrue(keep_client.using_proxy)
 
-    @unittest.skip("https://dev.arvados.org/issues/17344#note-23")
-    def test_KeepProxyTest2(self):
-        # Don't instantiate the proxy directly, but set the X-External-Client
-        # header.  The API server should direct us to the proxy.
-        arvados.config.settings()['ARVADOS_EXTERNAL_CLIENT'] = 'true'
-        keep_client = arvados.KeepClient(api_client=self.api_client,
-                                         proxy='', local_store='')
-        baz_locator = keep_client.put('baz2')
-        self.assertRegex(
-            baz_locator,
-            '^91f372a266fe2bf2823cb8ec7fda31ce\+4',
-            'wrong md5 hash from Keep.put("baz2"): ' + baz_locator)
-        self.assertEqual(keep_client.get(baz_locator),
-                         b'baz2',
-                         'wrong content from Keep.get(md5("baz2"))')
-        self.assertTrue(keep_client.using_proxy)
-
     def test_KeepProxyTestMultipleURIs(self):
         # Test using ARVADOS_KEEP_SERVICES env var overriding any
         # existing proxy setting and setting multiple proxies
@@ -254,6 +237,17 @@ class KeepClientServiceTestCase(unittest.TestCase, tutil.ApiClientMock):
             service_type='proxy', service_host='100::1', service_port=10, count=1))[0]
         self.assertEqual('100::1', service.hostname)
         self.assertEqual(10, service.port)
+
+    def test_recognize_proxy_services_in_controller_response(self):
+        keep_client = arvados.KeepClient(api_client=self.mock_keep_services(
+            service_type='proxy', service_host='localhost', service_port=9, count=1))
+        try:
+            # this will fail, but it ensures we get the service
+            # discovery response
+            keep_client.put('baz2')
+        except:
+            pass
+        self.assertTrue(keep_client.using_proxy)
 
     def test_insecure_disables_tls_verify(self):
         api_client = self.mock_keep_services(count=1)
