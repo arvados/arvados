@@ -28,9 +28,13 @@ TODO: extract this information based on git commit messages and generate changel
 <div class="releasenotes">
 </notextile>
 
-h2(#main). development main (as of 2022-08-09)
+h2(#main). development main (as of 2022-08-26)
 
 "previous: Upgrading to 2.4.2":#v2_4_2
+
+h3. Login-sync script requires configuration update on LoginCluster federations
+
+If you have @arvados-login-sync@ running on a satellite cluster, please update the environment variable settings by removing the @LOGINCLUSTER_ARVADOS_API_*@ variables and setting @ARVADOS_API_TOKEN@ to a LoginCluster's admin token, as described on the "updated install page":{{site.baseurl}}/install/install-shell-server.html#arvados-login-sync.
 
 h2(#v2_4_2). v2.4.2 (2022-08-09)
 
