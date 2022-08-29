@@ -115,7 +115,9 @@ export const getInputCollectionMounts = (data: any): InputCollectionMount[] => {
             ...data.mounts[key],
             path: key,
         }))
-        .filter(mount => mount.kind === 'collection')
+        .filter(mount => mount.kind === 'collection' &&
+                mount.portable_data_hash &&
+                mount.path)
         .map(mount => ({
             path: mount.path,
             pdh: mount.portable_data_hash,

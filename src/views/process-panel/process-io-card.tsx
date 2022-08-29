@@ -58,6 +58,7 @@ import { Link as MuiLink } from '@material-ui/core';
 import { InputCollectionMount } from 'store/processes/processes-actions';
 import { connect } from 'react-redux';
 import { RootState } from 'store/store';
+import { ProcessOutputCollectionFiles } from './process-output-collection-files';
 
 type CssRules = 'card' | 'content' | 'title' | 'header' | 'avatar' | 'iconHeader' | 'tableWrapper' | 'tableRoot' | 'paramValue' | 'keepLink' | 'imagePreview' | 'valArray' | 'emptyValue';
 
@@ -130,12 +131,13 @@ export interface ProcessIOCardDataProps {
     params: ProcessIOParameter[];
     raw?: any;
     mounts?: InputCollectionMount[];
+    outputUuid?: string;
 }
 
 type ProcessIOCardProps = ProcessIOCardDataProps & WithStyles<CssRules> & MPVPanelProps;
 
 export const ProcessIOCard = withStyles(styles)(
-    ({ classes, label, params, raw, mounts, doHidePanel, panelName }: ProcessIOCardProps) => {
+    ({ classes, label, params, raw, mounts, outputUuid, doHidePanel, panelName }: ProcessIOCardProps) => {
         const [tabState, setTabState] = useState(0);
         const handleChange = (event: React.MouseEvent<HTMLElement>, value: number) => {
             setTabState(value);
@@ -168,6 +170,7 @@ export const ProcessIOCard = withStyles(styles)(
                         <Tab label="Preview" />
                         <Tab label="Raw" />
                         {label === ProcessIOCardType.INPUT && <Tab label="Input Mounts" />}
+                        {label === ProcessIOCardType.OUTPUT && <Tab label="Output Collection" />}
                     </Tabs>
                     {tabState === 0 && <div className={classes.tableWrapper}>
                         {params.length ?
@@ -185,6 +188,7 @@ export const ProcessIOCard = withStyles(styles)(
                         </div>}
                     {tabState === 2 && <div className={classes.tableWrapper}>
                         {label === ProcessIOCardType.INPUT && <ProcessInputMounts mounts={mounts || []} />}
+                        {label === ProcessIOCardType.OUTPUT && <ProcessOutputCollectionFiles isWritable={false} currentItemUuid={outputUuid} />}
                         </div>}
                 </div>
             </CardContent>

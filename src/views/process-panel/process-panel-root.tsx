@@ -139,6 +139,7 @@ export const ProcessPanelRoot = withStyles(styles)(
                     label={ProcessIOCardType.OUTPUT}
                     params={processedOutputs}
                     raw={outputDetails.rawOutputs}
+                    outputUuid={outputUuid || ""}
                  />
             </MPVPanelContent>
             <MPVPanelContent forwardProps xs maxHeight='50%' data-cy="process-children">
