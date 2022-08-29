@@ -507,7 +507,7 @@ func (c *cache) GetTokenUser(token string) (*arvados.User, error) {
 	c.metrics.apiCalls.Inc()
 	var current arvados.User
 
-	err = sess.client.RequestAndDecode(&current, "GET", "/arvados/v1/users/current", nil, nil)
+	err = sess.client.RequestAndDecode(&current, "GET", "arvados/v1/users/current", nil, nil)
 	if err != nil {
 		return nil, err
 	}
