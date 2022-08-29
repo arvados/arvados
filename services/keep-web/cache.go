@@ -276,7 +276,7 @@ func (c *cache) pruneSessions() {
 	now := time.Now()
 	var size int64
 	keys := c.sessions.Keys()
-	for _, token := range keys {
+	for idx, token := range keys {
 		ent, ok := c.sessions.Peek(token)
 		if !ok {
 			continue
@@ -284,6 +284,7 @@ func (c *cache) pruneSessions() {
 		s := ent.(*cachedSession)
 		if s.expire.Before(now) {
 			c.sessions.Remove(token)
+			keys[idx] = ""
 			continue
 		}
 		if fs, ok := s.fs.Load().(arvados.CustomFileSystem); ok {
@@ -294,6 +295,12 @@ func (c *cache) pruneSessions() {
 	// least frequently used entries (which Keys() returns last).
 	for i := len(keys) - 1; i >= 0; i-- {
 		token := keys[i]
+		if token == "" {
+			// removed this session in the loop above;
+			// don't prune it, even if it's already been
+			// reinserted.
+			continue
+		}
 		if size <= c.cluster.Collections.WebDAVCache.MaxCollectionBytes/2 {
 			break
 		}
