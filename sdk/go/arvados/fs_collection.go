@@ -442,8 +442,8 @@ func (fs *collectionFileSystem) Flush(path string, shortBlocks bool) error {
 }
 
 func (fs *collectionFileSystem) MemorySize() int64 {
-	fs.fileSystem.root.Lock()
-	defer fs.fileSystem.root.Unlock()
+	fs.fileSystem.root.RLock()
+	defer fs.fileSystem.root.RUnlock()
 	return fs.fileSystem.root.(*dirnode).MemorySize()
 }
 
@@ -1153,8 +1153,7 @@ func (dn *dirnode) flush(ctx context.Context, names []string, opts flushOpts) er
 func (dn *dirnode) MemorySize() (size int64) {
 	for _, name := range dn.sortedNames() {
 		node := dn.inodes[name]
-		node.Lock()
-		defer node.Unlock()
+		node.RLock()
 		switch node := node.(type) {
 		case *dirnode:
 			size += node.MemorySize()
@@ -1168,6 +1167,7 @@ func (dn *dirnode) MemorySize() (size int64) {
 				size += 64
 			}
 		}
+		node.RUnlock()
 	}
 	return 64 + size
 }
