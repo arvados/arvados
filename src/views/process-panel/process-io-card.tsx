@@ -97,7 +97,8 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     },
     paramValue: {
         display: 'flex',
-        alignItems: 'center',
+        alignItems: 'flex-start',
+        flexDirection: 'column',
     },
     keepLink: {
         color: theme.palette.primary.main,
@@ -107,7 +108,8 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     },
     imagePreview: {
         maxHeight: '15em',
-        marginRight: theme.spacing.unit,
+        maxWidth: '15em',
+        marginBottom: theme.spacing.unit,
     },
     valArray: {
         display: 'flex',
