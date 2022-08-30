@@ -9,13 +9,12 @@ import { formatDate } from "common/formatters";
 import { resourceLabel } from "common/labels";
 import { DetailsAttribute } from "components/details-attribute/details-attribute";
 import { ResourceKind } from "models/resource";
-import { ContainerRunTime, ResourceWithName } from "views-components/data-explorer/renderers";
+import { CollectionName, ContainerRunTime, ResourceWithName } from "views-components/data-explorer/renderers";
 import { getProcess, getProcessStatus } from "store/processes/process";
 import { RootState } from "store/store";
 import { connect } from "react-redux";
 import { ProcessResource } from "models/process";
 import { ContainerResource } from "models/container";
-import { openProcessInputDialog } from "store/processes/process-input-actions";
 import { navigateToOutput, openWorkflow } from "store/process-panel/process-panel-actions";
 import { ArvadosTheme } from "common/custom-theme";
 import { ProcessRuntimeStatus } from "views-components/process-runtime-status/process-runtime-status";
@@ -44,13 +43,11 @@ const mapStateToProps = (state: RootState, props: { request: ProcessResource }) 
 };
 
 interface ProcessDetailsAttributesActionProps {
-    openProcessInputDialog: (uuid: string) => void;
     navigateToOutput: (uuid: string) => void;
     openWorkflow: (uuid: string) => void;
 }
 
 const mapDispatchToProps = (dispatch: Dispatch): ProcessDetailsAttributesActionProps => ({
-    openProcessInputDialog: (uuid) => dispatch<any>(openProcessInputDialog(uuid)),
     navigateToOutput: (uuid) => dispatch<any>(navigateToOutput(uuid)),
     openWorkflow: (uuid) => dispatch<any>(openWorkflow(uuid)),
 });
@@ -105,12 +102,10 @@ export const ProcessDetailsAttributes = withStyles(styles, { withTheme: true })(
                     <DetailsAttribute label='Requesting Container UUID' value={containerRequest.requestingContainerUuid || "(none)"} />
                 </Grid>
                 <Grid item xs={6}>
-                    <span onClick={() => props.navigateToOutput(containerRequest.outputUuid!)}>
-                        <DetailsAttribute classLabel={classes.link} label='Outputs' />
-                    </span>
-                    <span onClick={() => props.openProcessInputDialog(containerRequest.uuid)}>
-                        <DetailsAttribute classLabel={classes.link} label='Inputs' />
-                    </span>
+                    <DetailsAttribute label='Output Collection' />
+                    {containerRequest.outputUuid && <span onClick={() => props.navigateToOutput(containerRequest.outputUuid!)}>
+                        <CollectionName className={classes.link} uuid={containerRequest.outputUuid} />
+                    </span>}
                 </Grid>
                 {containerRequest.properties.template_uuid &&
                     <Grid item xs={12} md={mdSize}>

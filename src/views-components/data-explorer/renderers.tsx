@@ -839,6 +839,16 @@ export const CollectionStatus = connect((state: RootState, props: { uuid: string
         : <Typography>head version</Typography>
 );
 
+export const CollectionName = connect((state: RootState, props: { uuid: string, className?: string }) => {
+    return {
+                collection: getResource<CollectionResource>(props.uuid)(state.resources),
+                uuid: props.uuid,
+                className: props.className,
+            };
+})((props: { collection: CollectionResource, uuid: string, className?: string }) =>
+        <Typography className={props.className}>{props.collection?.name || props.uuid}</Typography>
+);
+
 export const ProcessStatus = compose(
     connect((state: RootState, props: { uuid: string }) => {
         return { process: getProcess(props.uuid)(state.resources) };

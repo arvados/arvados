@@ -27,6 +27,11 @@ export const loadProcess = (containerRequestUuid: string) =>
         const containerRequest = await services.containerRequestService.get(containerRequestUuid);
         dispatch<any>(updateResources([containerRequest]));
 
+        if (containerRequest.outputUuid) {
+            const collection = await services.collectionService.get(containerRequest.outputUuid);
+            dispatch<any>(updateResources([collection]));
+        }
+
         if (containerRequest.containerUuid) {
             const container = await services.containerService.get(containerRequest.containerUuid);
             dispatch<any>(updateResources([container]));
