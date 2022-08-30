@@ -102,7 +102,6 @@ func main() {
 		if client.Insecure {
 			os.Setenv("ARVADOS_API_HOST_INSECURE", "1")
 		}
-		os.Setenv("ARVADOS_EXTERNAL_CLIENT", "")
 	} else {
 		logger.Warnf("Client credentials missing from config, so falling back on environment variables (deprecated).")
 	}

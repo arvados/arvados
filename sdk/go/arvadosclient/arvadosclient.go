@@ -103,10 +103,6 @@ type ArvadosClient struct {
 	// Client object shared by client requests.  Supports HTTP KeepAlive.
 	Client *http.Client
 
-	// If true, sets the X-External-Client header to indicate
-	// the client is outside the cluster.
-	External bool
-
 	// Base URIs of Keep services, e.g., {"https://host1:8443",
 	// "https://host2:8443"}.  If this is nil, Keep clients will
 	// use the arvados.v1.keep_services.accessible API to discover
@@ -180,7 +176,6 @@ func New(c *arvados.Client) (*ArvadosClient, error) {
 		ApiToken:          c.AuthToken,
 		ApiInsecure:       c.Insecure,
 		Client:            hc,
-		External:          false,
 		Retries:           2,
 		KeepServiceURIs:   c.KeepServiceURIs,
 		lastClosedIdlesAt: time.Now(),
@@ -191,15 +186,9 @@ func New(c *arvados.Client) (*ArvadosClient, error) {
 
 // MakeArvadosClient creates a new ArvadosClient using the standard
 // environment variables ARVADOS_API_HOST, ARVADOS_API_TOKEN,
-// ARVADOS_API_HOST_INSECURE, ARVADOS_EXTERNAL_CLIENT, and
-// ARVADOS_KEEP_SERVICES.
-func MakeArvadosClient() (ac *ArvadosClient, err error) {
-	ac, err = New(arvados.NewClientFromEnv())
-	if err != nil {
-		return
-	}
-	ac.External = StringBool(os.Getenv("ARVADOS_EXTERNAL_CLIENT"))
-	return
+// ARVADOS_API_HOST_INSECURE, and ARVADOS_KEEP_SERVICES.
+func MakeArvadosClient() (*ArvadosClient, error) {
+	return New(arvados.NewClientFromEnv())
 }
 
 // CallRaw is the same as Call() but returns a Reader that reads the
@@ -279,9 +268,6 @@ func (c *ArvadosClient) CallRaw(method string, resourceType string, uuid string,
 		req.Header.Add("Authorization", fmt.Sprintf("OAuth2 %s", c.ApiToken))
 		if c.RequestID != "" {
 			req.Header.Add("X-Request-Id", c.RequestID)
-		}
-		if c.External {
-			req.Header.Add("X-External-Client", "1")
 		}
 
 		resp, err = c.Client.Do(req)

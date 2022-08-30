@@ -926,7 +926,6 @@ class TestCaseWithServers(unittest.TestCase):
         cls._orig_config = arvados.config.settings().copy()
         cls._cleanup_funcs = []
         os.environ.pop('ARVADOS_KEEP_SERVICES', None)
-        os.environ.pop('ARVADOS_EXTERNAL_CLIENT', None)
         for server_kwargs, start_func, stop_func in (
                 (cls.MAIN_SERVER, run, reset),
                 (cls.WS_SERVER, run_ws, stop_ws),

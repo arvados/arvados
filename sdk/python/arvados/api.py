@@ -66,9 +66,6 @@ def _intercept_http_request(self, uri, method="GET", headers={}, **kwargs):
             self.max_request_size < len(kwargs['body'])):
             raise apiclient_errors.MediaUploadSizeError("Request size %i bytes exceeds published limit of %i bytes" % (len(kwargs['body']), self.max_request_size))
 
-        if config.get("ARVADOS_EXTERNAL_CLIENT", "") == "true":
-            headers['X-External-Client'] = '1'
-
         headers['Authorization'] = 'OAuth2 %s' % self.arvados_api_token
 
         retryable = method in [

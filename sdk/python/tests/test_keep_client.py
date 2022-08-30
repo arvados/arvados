@@ -184,7 +184,6 @@ class KeepProxyTestCase(run_test_server.TestCaseWithServers):
         cls.api_client = arvados.api('v1')
 
     def tearDown(self):
-        arvados.config.settings().pop('ARVADOS_EXTERNAL_CLIENT', None)
         super(KeepProxyTestCase, self).tearDown()
 
     def test_KeepProxyTest1(self):

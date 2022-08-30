@@ -118,7 +118,6 @@ func setupConfigFile(c *C, fileName string) string {
 	fileContent += "ARVADOS_API_TOKEN=" + arvadostest.DataManagerToken + "\n"
 	fileContent += "\n"
 	fileContent += "ARVADOS_API_HOST_INSECURE=" + os.Getenv("ARVADOS_API_HOST_INSECURE") + "\n"
-	fileContent += " ARVADOS_EXTERNAL_CLIENT = false \n"
 	fileContent += " NotANameValuePairAndShouldGetIgnored \n"
 	fileContent += "ARVADOS_BLOB_SIGNING_KEY=abcdefg\n"
 
@@ -291,7 +290,6 @@ func (s *ServerRequiredSuite) TestLoadConfig(c *C) {
 	c.Assert(config.APIHost, Equals, os.Getenv("ARVADOS_API_HOST"))
 	c.Assert(config.APIToken, Equals, arvadostest.DataManagerToken)
 	c.Assert(config.APIHostInsecure, Equals, arvadosclient.StringBool(os.Getenv("ARVADOS_API_HOST_INSECURE")))
-	c.Assert(config.ExternalClient, Equals, false)
 	c.Assert(blobSigningKey, Equals, "abcdefg")
 }
 
