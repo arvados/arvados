@@ -443,8 +443,6 @@ func (fs *collectionFileSystem) Flush(path string, shortBlocks bool) error {
 }
 
 func (fs *collectionFileSystem) MemorySize() int64 {
-	fs.fileSystem.root.RLock()
-	defer fs.fileSystem.root.RUnlock()
 	return fs.fileSystem.root.(*dirnode).MemorySize()
 }
 
@@ -574,6 +572,19 @@ func (fn *filenode) Parent() inode {
 
 func (fn *filenode) FS() FileSystem {
 	return fn.fs
+}
+
+func (fn *filenode) MemorySize() (size int64) {
+	fn.RLock()
+	defer fn.RUnlock()
+	size = 64
+	for _, seg := range fn.segments {
+		size += 64
+		if seg, ok := seg.(*memSegment); ok {
+			size += int64(seg.Len())
+		}
+	}
+	return
 }
 
 // Read reads file data from a single segment, starting at startPtr,
@@ -1150,27 +1161,18 @@ func (dn *dirnode) flush(ctx context.Context, names []string, opts flushOpts) er
 	return cg.Wait()
 }
 
-// caller must have write lock.
 func (dn *dirnode) MemorySize() (size int64) {
-	for _, name := range dn.sortedNames() {
-		node := dn.inodes[name]
-		node.RLock()
-		switch node := node.(type) {
-		case *dirnode:
-			size += node.MemorySize()
-		case *filenode:
-			size += 64
-			for _, seg := range node.segments {
-				switch seg := seg.(type) {
-				case *memSegment:
-					size += int64(seg.Len())
-				}
-				size += 64
-			}
-		}
-		node.RUnlock()
+	dn.RLock()
+	todo := make([]inode, 0, len(dn.inodes))
+	for _, node := range dn.inodes {
+		todo = append(todo, node)
 	}
-	return 64 + size
+	dn.RUnlock()
+	size = 64
+	for _, node := range todo {
+		size += node.MemorySize()
+	}
+	return
 }
 
 // caller must have write lock.
