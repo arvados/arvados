@@ -539,7 +539,7 @@ export const CollectionPanelFiles = withStyles(styles)(connect((state: RootState
                     : <div className={classes.rowEmpty}>No directories available</div>
                     }}
                 </AutoSizer>
-                : <div className={classes.row}><CircularProgress className={classes.loader} size={30} /></div> }
+                : <div data-cy="collection-loader" className={classes.row}><CircularProgress className={classes.loader} size={30} /></div> }
                 </div>
             </div>
             <div className={classes.rightPanel} data-cy="collection-files-right-panel">

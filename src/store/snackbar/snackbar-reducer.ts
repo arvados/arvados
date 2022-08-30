@@ -32,10 +32,10 @@ export const snackbarReducer = (state = initialState, action: SnackbarAction) =>
         CLOSE_SNACKBAR: (payload) => {
             let newMessages: any = [...state.messages];// state.messages.filter(({ message }) => message !== payload);
 
-            if (JSON.stringify(payload) === '{}') {
+            if (payload === undefined || JSON.stringify(payload) === '{}') {
                 newMessages.pop();
             } else {
-                newMessages = state.messages.filter(({ message }) => message !== payload);
+                newMessages = state.messages.filter((message, index) => index !== payload);
             }
 
             return {

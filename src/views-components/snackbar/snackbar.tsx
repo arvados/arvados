@@ -43,9 +43,9 @@ const mapStateToProps = (state: RootState): SnackbarDataProps => {
 };
 
 const mapDispatchToProps = (dispatch: Dispatch): SnackbarEventProps => ({
-    onClose: (event: any, reason: string, message: '') => {
+    onClose: (event: any, reason: string, id: undefined) => {
         if (reason !== "clickaway") {
-            dispatch(snackbarActions.CLOSE_SNACKBAR(message));
+            dispatch(snackbarActions.CLOSE_SNACKBAR(id));
         }
     },
     onExited: () => {
@@ -112,11 +112,11 @@ export const Snackbar = withStyles(styles)(connect(mapStateToProps, mapDispatchT
                 autoHideDuration={props.autoHideDuration}>
                 <div data-cy="snackbar">
                     {
-                         props.messages.map(message => {
+                         props.messages.map((message, index) => {
                             const [Icon, cssClass] = variants[message.kind];
 
                             return <SnackbarContent
-                                key={message.message}
+                                key={`${index}-${message.message}`}
                                 className={classNames(cssClass, classes.snackbarContent)}
                                 aria-describedby="client-snackbar"
                                 message={
@@ -125,7 +125,7 @@ export const Snackbar = withStyles(styles)(connect(mapStateToProps, mapDispatchT
                                         {message.message}
                                     </span>
                                 }
-                                action={actions(message, props.onClick, props.onClose, classes)}
+                                action={actions(message, props.onClick, props.onClose, classes, index)}
                             />
                          })
                     }
@@ -135,13 +135,13 @@ export const Snackbar = withStyles(styles)(connect(mapStateToProps, mapDispatchT
     }
 ));
 
-const actions = (props: SnackbarMessage, onClick, onClose, classes) => {
+const actions = (props: SnackbarMessage, onClick, onClose, classes, index) => {
     const actions = [
         <IconButton
             key="close"
             aria-label="Close"
             color="inherit"
-            onClick={e => onClose && onClose(e, '', props.message)}>
+            onClick={e => onClose && onClose(e, '', index)}>
             <CloseIcon className={classes.icon} />
         </IconButton>
     ];
