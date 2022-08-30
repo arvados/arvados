@@ -68,13 +68,16 @@ export class AuthService {
         }
     }
 
+    public setTargetUrl(url: string) {
+        localStorage.setItem(TARGET_URL, url);
+    }
+
     public removeTargetURL() {
         localStorage.removeItem(TARGET_URL);
-        sessionStorage.removeItem(TARGET_URL);
     }
 
     public getTargetURL() {
-        return this.getStorage().getItem(TARGET_URL);
+        return localStorage.getItem(TARGET_URL);
     }
 
     public removeApiToken() {
@@ -113,7 +116,7 @@ export class AuthService {
         const currentUrl = `${window.location.protocol}//${window.location.host}/token`;
         const homeClusterHost = remoteHosts[homeCluster];
         const rd = new URL(window.location.href);
-        this.getStorage().setItem(TARGET_URL, rd.pathname + rd.search);
+        this.setTargetUrl(rd.pathname + rd.search);
         window.location.assign(`https://${homeClusterHost}/login?${(uuidPrefix !== homeCluster && homeCluster !== loginCluster) ? "remote=" + uuidPrefix + "&" : ""}return_to=${currentUrl}`);
     }
 

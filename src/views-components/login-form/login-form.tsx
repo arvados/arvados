@@ -12,6 +12,7 @@ import { AxiosPromise } from 'axios';
 import { DispatchProp } from 'react-redux';
 import { saveApiToken } from 'store/auth/auth-action';
 import { navigateToRootProject } from 'store/navigation/navigation-action';
+import { replace } from 'react-router-redux';
 
 type CssRules = 'root' | 'loginBtn' | 'card' | 'wrapper' | 'progress';
 
@@ -87,8 +88,11 @@ export const LoginForm = withStyles(styles)(
                 setSubmitting(false);
                 if (response.data.uuid && response.data.api_token) {
                     const apiToken = `v2/${response.data.uuid}/${response.data.api_token}`;
+                    const rd = new URL(window.location.href);
+                    const rdUrl = rd.pathname + rd.search;
                     dispatch<any>(saveApiToken(apiToken)).finally(
-                        () => dispatch(navigateToRootProject));
+                        () => rdUrl === '/' ? dispatch(navigateToRootProject) : dispatch(replace(rdUrl))
+                    );
                 } else {
                     setError(true);
                     setHelperText(response.data.message || 'Please try again');

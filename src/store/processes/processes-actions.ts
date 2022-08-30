@@ -40,12 +40,54 @@ export const loadProcess = (containerRequestUuid: string) =>
         return { containerRequest };
     };
 
-export const loadContainers = (filters: string) =>
+export const loadContainers = (filters: string, loadMounts: boolean = true) =>
     async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
-        const { items } = await services.containerService.list({ filters });
+        let args: any = { filters };
+        if (!loadMounts) {
+            args.select = containerFieldsNoMounts;
+        }
+        const { items } = await services.containerService.list(args);
         dispatch<any>(updateResources(items));
         return items;
     };
+
+// Until the api supports unselecting fields, we need a list of all other fields to omit mounts
+const containerFieldsNoMounts = [
+    "auth_uuid",
+    "command",
+    "container_image",
+    "created_at",
+    "cwd",
+    "environment",
+    "etag",
+    "exit_code",
+    "finished_at",
+    "gateway_address",
+    "href",
+    "interactive_session_started",
+    "kind",
+    "lock_count",
+    "locked_by_uuid",
+    "log",
+    "modified_at",
+    "modified_by_client_uuid",
+    "modified_by_user_uuid",
+    "output_path",
+    "output_properties",
+    "output_storage_classes",
+    "output",
+    "owner_uuid",
+    "priority",
+    "progress",
+    "runtime_auth_scopes",
+    "runtime_constraints",
+    "runtime_status",
+    "runtime_user_uuid",
+    "scheduling_parameters",
+    "started_at",
+    "state",
+    "uuid",
+]
 
 export const cancelRunningWorkflow = (uuid: string) =>
     async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {

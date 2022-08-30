@@ -21,6 +21,7 @@ import { getInputs, getInputCollectionMounts, getOutputParameters } from 'store/
 import { CommandInputParameter, getIOParamId } from 'models/workflow';
 import { CommandOutputParameter } from 'cwlts/mappings/v1.0/CommandOutputParameter';
 import { AuthState } from 'store/auth/auth-reducer';
+import { ProcessCmdCard } from './process-cmd-card';
 
 type CssRules = 'root';
 
@@ -44,7 +45,7 @@ export interface ProcessPanelRootActionProps {
     cancelProcess: (uuid: string) => void;
     onLogFilterChange: (filter: FilterOption) => void;
     navigateToLog: (uuid: string) => void;
-    onLogCopyToClipboard: (uuid: string) => void;
+    onCopyToClipboard: (uuid: string) => void;
     fetchOutputs: (uuid: string, fetchOutputs) => void;
 }
 
@@ -57,6 +58,7 @@ type OutputDetails = {
 
 const panelsData: MPVPanelState[] = [
     {name: "Details"},
+    {name: "Command"},
     {name: "Logs", visible: true},
     {name: "Inputs"},
     {name: "Outputs"},
@@ -110,9 +112,14 @@ export const ProcessPanelRoot = withStyles(styles)(
                     cancelProcess={props.cancelProcess}
                 />
             </MPVPanelContent>
+            <MPVPanelContent forwardProps xs="auto" data-cy="process-cmd">
+                <ProcessCmdCard
+                    onCopy={props.onCopyToClipboard}
+                    process={process} />
+            </MPVPanelContent>
             <MPVPanelContent forwardProps xs maxHeight='50%' data-cy="process-logs">
                 <ProcessLogsCard
-                    onCopy={props.onLogCopyToClipboard}
+                    onCopy={props.onCopyToClipboard}
                     process={process}
                     lines={getProcessPanelLogs(processLogsPanel)}
                     selectedFilter={{
