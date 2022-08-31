@@ -84,10 +84,6 @@
     "destination": "/tmp/usr-local-bin-ensure-encrypted-partitions-aws-ebs-autoscale.sh"
   },{
     "type": "file",
-    "source": "scripts/create-ebs-volume-nvme.patch",
-    "destination": "/tmp/create-ebs-volume-nvme.patch"
-  },{
-    "type": "file",
     "source": "{{user `public_key_file`}}",
     "destination": "/tmp/crunch-authorized_keys"
   },{
