@@ -187,13 +187,9 @@ else
   unzip -q /tmp/awscliv2.zip -d /tmp && $SUDO /tmp/aws/install
   # Pinned to v2.4.5 because we apply a patch below
   #export EBS_AUTOSCALE_VERSION=$(curl --silent "https://api.github.com/repos/awslabs/amazon-ebs-autoscale/releases/latest" | jq -r .tag_name)
-  export EBS_AUTOSCALE_VERSION="v2.4.5"
-  cd /opt && $SUDO git clone https://github.com/awslabs/amazon-ebs-autoscale.git
+  export EBS_AUTOSCALE_VERSION="5ca6e24e05787b8ae1184c2a10db80053ddd3038"
+  cd /opt && $SUDO git clone https://github.com/arvados/amazon-ebs-autoscale.git
   cd /opt/amazon-ebs-autoscale && $SUDO git checkout $EBS_AUTOSCALE_VERSION
-  $SUDO patch -p1 < /tmp/create-ebs-volume-nvme.patch
-
-  # This script really requires bash and the shebang line is wrong
-  $SUDO sed -i 's|^#!/bin/sh|#!/bin/bash|' /opt/amazon-ebs-autoscale/bin/ebs-autoscale
 
   # Set up the cloud-init script that makes use of the AWS EBS autoscaler
   $SUDO mv /tmp/usr-local-bin-ensure-encrypted-partitions-aws-ebs-autoscale.sh /usr/local/bin/ensure-encrypted-partitions.sh
