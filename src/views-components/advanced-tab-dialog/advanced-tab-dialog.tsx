@@ -7,9 +7,11 @@ import { Dialog, DialogActions, Button, StyleRulesCallback, WithStyles, withStyl
 import { WithDialogProps } from 'store/dialog/with-dialog';
 import { withDialog } from "store/dialog/with-dialog";
 import { compose } from 'redux';
-import { ADVANCED_TAB_DIALOG } from "store/advanced-tab/advanced-tab";
+import { AdvancedTabDialogData, ADVANCED_TAB_DIALOG } from "store/advanced-tab/advanced-tab";
 import { DefaultCodeSnippet } from "components/default-code-snippet/default-code-snippet";
 import { MetadataTab } from 'views-components/advanced-tab-dialog/metadataTab';
+import { LinkResource } from "models/link";
+import { ListResults } from "services/common-service/common-service";
 
 type CssRules = 'content' | 'codeSnippet' | 'spacing';
 
@@ -34,7 +36,7 @@ export const AdvancedTabDialog = compose(
     withDialog(ADVANCED_TAB_DIALOG),
     withStyles(styles),
 )(
-    class extends React.Component<WithDialogProps<any> & WithStyles<CssRules>>{
+    class extends React.Component<WithDialogProps<AdvancedTabDialogData> & WithStyles<CssRules>>{
         state = {
             value: 0,
         };
@@ -78,8 +80,8 @@ export const AdvancedTabDialog = compose(
                 <DialogContent className={classes.content}>
                     {value === 0 && <div>{dialogContentExample(apiResponse, classes)}</div>}
                     {value === 1 && <div>
-                        {metadata !== '' && metadata.items.length > 0 ?
-                            <MetadataTab items={metadata.items} uuid={uuid} />
+                        {metadata !== '' && (metadata as ListResults<LinkResource>).items.length > 0 ?
+                            <MetadataTab items={(metadata as ListResults<LinkResource>).items} uuid={uuid} />
                             : dialogContentHeader('(No metadata links found)')}
                     </div>}
                     {value === 2 && dialogContent(pythonHeader, pythonExample, classes)}
@@ -110,8 +112,14 @@ const dialogContentHeader = (header: string) =>
         {header}
     </DialogContentText>;
 
-const dialogContentExample = (example: string, classes: any) =>
-    <DefaultCodeSnippet
+const dialogContentExample = (example: JSX.Element | string, classes: any) => {
+    // Pass string to lines param or JSX to child props
+    const stringData = example && (example as string).length ? (example as string) : undefined;
+    return <DefaultCodeSnippet
         apiResponse
         className={classes.codeSnippet}
-        lines={[example]} />;
+        lines={stringData ? [stringData] : []}
+    >
+        {example as JSX.Element || null}
+    </DefaultCodeSnippet>;
+}
