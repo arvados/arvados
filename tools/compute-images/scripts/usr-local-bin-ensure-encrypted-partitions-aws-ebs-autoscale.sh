@@ -24,7 +24,7 @@ if [ -d /etc/sv/docker.io ]
 then
   sv stop docker.io || service stop docker.io || true
 else
-  service docker stop || true
+  systemctl disable --now docker.service docker.socket || true
 fi
 
 ensure_umount "$MOUNTPATH/docker/aufs"
@@ -44,7 +44,7 @@ then
   ## runit
   sv up docker.io
 else
-  service docker start
+  systemctl enable --now docker.service docker.socket
 fi
 
 end=$((SECONDS+60))
