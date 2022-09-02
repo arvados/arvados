@@ -14,7 +14,7 @@ export const sshKeyActionSet: ContextMenuActionSet = [[{
         dispatch<any>(openSshKeyAttributesDialog(uuid));
     }
 }, {
-    name: "Advanced",
+    name: "API Details",
     icon: AdvancedIcon,
     execute: (dispatch, { uuid }) => {
         dispatch<any>(openAdvancedTabDialog(uuid));
