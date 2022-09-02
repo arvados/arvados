@@ -23,6 +23,11 @@ import (
 // Docker daemon won't let you set a limit less than ~10 MiB
 const minDockerRAM = int64(16 * 1024 * 1024)
 
+// Number of consecutive "inspect container" failures before
+// concluding Docker is unresponsive, giving up, and cancelling the
+// container.
+const dockerWatchdogThreshold = 3
+
 type dockerExecutor struct {
 	containerUUID    string
 	logf             func(string, ...interface{})
@@ -217,17 +222,17 @@ func (e *dockerExecutor) Wait(ctx context.Context) (int, error) {
 				// kill it.
 				return
 			} else if err != nil {
-				e.logf("Error inspecting container: %s", err)
-				watchdogErr <- err
-				return
+				watchdogErr <- fmt.Errorf("error inspecting container: %s", err)
 			} else if ctr.State == nil || !(ctr.State.Running || ctr.State.Status == "created") {
-				watchdogErr <- fmt.Errorf("Container is not running: State=%v", ctr.State)
-				return
+				watchdogErr <- fmt.Errorf("container is not running: State=%v", ctr.State)
+			} else {
+				watchdogErr <- nil
 			}
 		}
 	}()
 
 	waitOk, waitErr := e.dockerclient.ContainerWait(ctx, e.containerID, dockercontainer.WaitConditionNotRunning)
+	errors := 0
 	for {
 		select {
 		case waitBody := <-waitOk:
@@ -242,7 +247,16 @@ func (e *dockerExecutor) Wait(ctx context.Context) (int, error) {
 			return -1, ctx.Err()
 
 		case err := <-watchdogErr:
-			return -1, err
+			if err == nil {
+				errors = 0
+			} else {
+				e.logf("docker watchdog: %s", err)
+				errors++
+				if errors >= dockerWatchdogThreshold {
+					e.logf("docker watchdog: giving up")
+					return -1, err
+				}
+			}
 		}
 	}
 }
