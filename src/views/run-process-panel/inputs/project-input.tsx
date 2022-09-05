@@ -59,10 +59,12 @@ export const ProjectInputComponent = connect(mapStateToProps)(
             open: false,
         };
 
-        render() {
+        componentDidMount() {
             this.props.dispatch<any>(
                 initProjectsTreePicker(this.props.commandInput.id));
+        }
 
+        render() {
             return <>
                 {this.renderInput()}
                 {this.renderDialog()}
@@ -70,6 +72,7 @@ export const ProjectInputComponent = connect(mapStateToProps)(
         }
 
         openDialog = () => {
+            this.componentDidMount();
             this.setState({ open: true });
         }
 
