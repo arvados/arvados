@@ -14,7 +14,7 @@ export const linkActionSet: ContextMenuActionSet = [[{
         dispatch<any>(openLinkAttributesDialog(uuid));
     }
 }, {
-    name: "Advanced",
+    name: "API Details",
     icon: AdvancedIcon,
     execute: (dispatch, { uuid }) => {
         dispatch<any>(openAdvancedTabDialog(uuid));
