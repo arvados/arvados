@@ -11,6 +11,7 @@ import (
 	"encoding/json"
 	"errors"
 	"io"
+	"os"
 	"os/exec"
 	"os/user"
 	"strings"
@@ -57,6 +58,14 @@ func (is *instanceSet) Create(it arvados.InstanceType, _ cloud.ImageID, tags clo
 	defer is.mtx.Unlock()
 	if len(is.instances) > 0 {
 		return nil, errQuota
+	}
+	// A crunch-run process running in a previous instance may
+	// have marked the node as broken. In the loopback scenario a
+	// destroy+create cycle doesn't fix whatever was broken -- but
+	// nothing else will either, so the best we can do is remove
+	// the "broken" flag and try again.
+	if err := os.Remove("/var/lock/crunch-run-broken"); err != nil && !errors.Is(err, os.ErrNotExist) {
+		return nil, err
 	}
 	u, err := user.Current()
 	if err != nil {
