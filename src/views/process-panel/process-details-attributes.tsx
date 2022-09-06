@@ -96,6 +96,11 @@ export const ProcessDetailsAttributes = withStyles(styles, { withTheme: true })(
                     <DetailsAttribute label='Finished at' value={container ? formatDate(container.finishedAt) : "(none)"} />
                 </Grid>
                 <Grid item xs={12} md={mdSize}>
+                    <DetailsAttribute
+                        label='Container started by' linkToUuid={container ? container.runtimeUserUuid : ""}
+                        uuidEnhancer={(uuid: string) => <ResourceWithName uuid={uuid} />} />
+                </Grid>
+                <Grid item xs={12} md={mdSize}>
                     <DetailsAttribute label='Container run time'>
                         <ContainerRunTime uuid={containerRequest.uuid} />
                     </DetailsAttribute>

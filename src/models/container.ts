@@ -29,6 +29,7 @@ export interface ContainerResource extends Resource {
     mounts: MountType[];
     runtimeConstraints: RuntimeConstraints;
     runtimeStatus: RuntimeStatus;
+    runtimeUserUuid: string;
     schedulingParameters: SchedulingParameters;
     output: string | null;
     containerImage: string;

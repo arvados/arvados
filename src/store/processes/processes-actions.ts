@@ -35,6 +35,10 @@ export const loadProcess = (containerRequestUuid: string) =>
         if (containerRequest.containerUuid) {
             const container = await services.containerService.get(containerRequest.containerUuid);
             dispatch<any>(updateResources([container]));
+            if (container.runtimeUserUuid) {
+                const runtimeUser = await services.userService.get(container.runtimeUserUuid);
+                dispatch<any>(updateResources([runtimeUser]));
+            }
             return { containerRequest, container };
         }
         return { containerRequest };
