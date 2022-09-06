@@ -113,6 +113,22 @@ describe('Process tests', function() {
         });
     });
 
+    it('shows process details', function() {
+        const crName = 'test_container_request';
+        createContainerRequest(
+            activeUser,
+            crName,
+            'arvados/jobs',
+            ['echo', 'hello world'],
+            false, 'Committed')
+        .then(function(containerRequest) {
+            cy.loginAs(activeUser);
+            cy.goToPath(`/processes/${containerRequest.uuid}`);
+            cy.get('[data-cy=process-details]').should('contain', crName);
+            cy.get('[data-cy=process-details-attributes-runtime-user]').contains(`Active User (${activeUser.user.uuid})`);
+        });
+    });
+
     it('filters process logs by event type', function() {
         const nodeInfoLogs = [
             'Host Information',
