@@ -64,7 +64,9 @@ func (is *instanceSet) Create(it arvados.InstanceType, _ cloud.ImageID, tags clo
 	// destroy+create cycle doesn't fix whatever was broken -- but
 	// nothing else will either, so the best we can do is remove
 	// the "broken" flag and try again.
-	if err := os.Remove("/var/lock/crunch-run-broken"); err != nil && !errors.Is(err, os.ErrNotExist) {
+	if err := os.Remove("/var/lock/crunch-run-broken"); err == nil {
+		is.logger.Info("removed /var/lock/crunch-run-broken")
+	} else if !errors.Is(err, os.ErrNotExist) {
 		return nil, err
 	}
 	u, err := user.Current()
