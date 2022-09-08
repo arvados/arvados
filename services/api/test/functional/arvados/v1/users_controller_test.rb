@@ -151,7 +151,7 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
     verify_link response_items, 'arvados#repository', true, 'permission', 'can_manage',
         "foo/#{repo_name}", created['uuid'], 'arvados#repository', true, 'Repository'
 
-    verify_link response_items, 'arvados#group', true, 'permission', 'can_read',
+    verify_link response_items, 'arvados#group', true, 'permission', 'can_write',
         'All users', created['uuid'], 'arvados#group', true, 'Group'
 
     verify_link response_items, 'arvados#virtualMachine', false, 'permission', 'can_login',
@@ -335,7 +335,7 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
     # two extra links; system_group, and group
     verify_links_added 2
 
-    verify_link response_items, 'arvados#group', true, 'permission', 'can_read',
+    verify_link response_items, 'arvados#group', true, 'permission', 'can_write',
         'All users', response_object['uuid'], 'arvados#group', true, 'Group'
 
     verify_link response_items, 'arvados#repository', false, 'permission', 'can_manage',
@@ -420,7 +420,7 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
     verify_link response_items, 'arvados#repository', true, 'permission', 'can_manage',
         'foo/usertestrepo', created['uuid'], 'arvados#repository', true, 'Repository'
 
-    verify_link response_items, 'arvados#group', true, 'permission', 'can_read',
+    verify_link response_items, 'arvados#group', true, 'permission', 'can_write',
         'All users', created['uuid'], 'arvados#group', true, 'Group'
 
     verify_link response_items, 'arvados#virtualMachine', false, 'permission', 'can_login',
@@ -458,7 +458,7 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
     verify_link response_items, 'arvados#repository', true, 'permission', 'can_manage',
         'foo/usertestrepo', created['uuid'], 'arvados#repository', true, 'Repository'
 
-    verify_link response_items, 'arvados#group', true, 'permission', 'can_read',
+    verify_link response_items, 'arvados#group', true, 'permission', 'can_write',
         'All users', created['uuid'], 'arvados#group', true, 'Group'
 
     verify_link response_items, 'arvados#virtualMachine', true, 'permission', 'can_login',
@@ -511,7 +511,7 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
     assert_equal active_user[:email], created['email'], 'expected input email'
 
      # verify links
-    verify_link response_items, 'arvados#group', true, 'permission', 'can_read',
+    verify_link response_items, 'arvados#group', true, 'permission', 'can_write',
         'All users', created['uuid'], 'arvados#group', true, 'Group'
 
     verify_link response_items, 'arvados#repository', true, 'permission', 'can_manage',
@@ -545,7 +545,7 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
     assert_equal active_user['email'], created['email'], 'expected original email'
 
     # verify links
-    verify_link response_items, 'arvados#group', true, 'permission', 'can_read',
+    verify_link response_items, 'arvados#group', true, 'permission', 'can_write',
         'All users', created['uuid'], 'arvados#group', true, 'Group'
 
     assert_equal(repos_count, repos_query.count)
@@ -666,7 +666,7 @@ The Arvados team.
     assert_equal active_user['uuid'], json_response['uuid']
     updated = User.where(uuid: active_user['uuid']).first
     assert_equal(true, updated.is_active)
-    assert_equal({read: true}, updated.group_permissions[all_users_group_uuid])
+    assert_equal({read: true, write: true}, updated.group_permissions[all_users_group_uuid])
   end
 
   test "non-admin user can get basic information about readable users" do

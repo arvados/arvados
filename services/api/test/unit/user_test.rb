@@ -465,7 +465,7 @@ class UserTest < ActiveSupport::TestCase
       verify_user resp_user, email
 
       group_perm = find_obj_in_resp response, 'Link', 'arvados#group'
-      verify_link group_perm, 'permission', 'can_read', resp_user[:uuid], nil
+      verify_link group_perm, 'permission', 'can_write', resp_user[:uuid], groups(:all_users).uuid
 
       group_perm2 = find_obj_in_resp response, 'Link', 'arvados#user'
       if visible
@@ -499,7 +499,7 @@ class UserTest < ActiveSupport::TestCase
     verify_user resp_user, email
 
     group_perm = find_obj_in_resp response, 'Link', 'arvados#group'
-    verify_link group_perm, 'permission', 'can_read', resp_user[:uuid], nil
+    verify_link group_perm, 'permission', 'can_write', resp_user[:uuid], groups(:all_users).uuid
 
     repo_perm = find_obj_in_resp response, 'Link', 'arvados#repository'
     verify_link repo_perm, 'permission', 'can_manage', resp_user[:uuid], nil
@@ -522,7 +522,7 @@ class UserTest < ActiveSupport::TestCase
     verify_user resp_user, email
 
     group_perm = find_obj_in_resp response, 'Link', 'arvados#group'
-    verify_link group_perm, 'permission', 'can_read', resp_user[:uuid], nil
+    verify_link group_perm, 'permission', 'can_write', resp_user[:uuid], groups(:all_users).uuid
 
     group_perm2 = find_obj_in_resp response, 'Link', 'arvados#user'
     verify_link group_perm2, 'permission', 'can_read', groups(:all_users).uuid, nil
@@ -534,7 +534,7 @@ class UserTest < ActiveSupport::TestCase
     assert_equal user.uuid, resp_user[:uuid], 'expected uuid not found'
 
     group_perm = find_obj_in_resp response, 'Link', 'arvados#group'
-    verify_link group_perm, 'permission', 'can_read', resp_user[:uuid], nil
+    verify_link group_perm, 'permission', 'can_write', resp_user[:uuid], groups(:all_users).uuid
 
     repo_perm = find_obj_in_resp response, 'Link', 'arvados#repository'
     verify_link repo_perm, 'permission', 'can_manage', resp_user[:uuid], nil
@@ -550,7 +550,7 @@ class UserTest < ActiveSupport::TestCase
     assert_equal user.uuid, resp_user[:uuid], 'expected uuid not found'
 
     group_perm = find_obj_in_resp response, 'Link', 'arvados#group'
-    verify_link group_perm, 'permission', 'can_read', resp_user[:uuid], nil
+    verify_link group_perm, 'permission', 'can_write', resp_user[:uuid], groups(:all_users).uuid
 
     repo_perm = find_obj_in_resp response, 'Link', 'arvados#repository'
     verify_link repo_perm, 'permission', 'can_manage', resp_user[:uuid], nil
@@ -625,7 +625,7 @@ class UserTest < ActiveSupport::TestCase
     # check user setup
     verify_link_exists(Rails.configuration.Users.AutoSetupNewUsers || active,
                        groups(:all_users).uuid, user.uuid,
-                       "permission", "can_read")
+                       "permission", "can_write")
 
     # Check for repository.
     if named_repo = (prior_repo or

@@ -250,7 +250,7 @@ class Group < ArvadosModel
       if self.owner_uuid != system_user_uuid
         raise "Owner uuid for role must be system user"
       end
-      raise PermissionDeniedError unless current_user.can?(manage: uuid)
+      raise PermissionDeniedError.new("role group cannot be modified without can_manage permission") unless current_user.can?(manage: uuid)
       true
     else
       super
