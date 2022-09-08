@@ -108,7 +108,6 @@ type apiConfig struct {
 	APIToken        string
 	APIHost         string
 	APIHostInsecure bool
-	ExternalClient  bool
 }
 
 // Load config from given file
@@ -152,8 +151,6 @@ func readConfigFromFile(filename string) (config apiConfig, blobSigningKey strin
 				config.APIHost = value
 			case "ARVADOS_API_HOST_INSECURE":
 				config.APIHostInsecure = arvadosclient.StringBool(value)
-			case "ARVADOS_EXTERNAL_CLIENT":
-				config.ExternalClient = arvadosclient.StringBool(value)
 			case "ARVADOS_BLOB_SIGNING_KEY":
 				blobSigningKey = value
 			}
@@ -171,7 +168,6 @@ func setupKeepClient(config apiConfig, keepServicesJSON string, blobSignatureTTL
 		ApiInsecure: config.APIHostInsecure,
 		Client: &http.Client{Transport: &http.Transport{
 			TLSClientConfig: &tls.Config{InsecureSkipVerify: config.APIHostInsecure}}},
-		External: config.ExternalClient,
 	}
 
 	// If keepServicesJSON is provided, use it instead of service discovery

@@ -146,7 +146,6 @@ func runProxy(c *C, bogusClientToken bool, loadKeepstoresFromConfig bool, kp *ar
 		TestProxyUUID: "http://" + srv.Addr,
 	}
 	kc.SetServiceRoots(sr, sr, sr)
-	kc.Arvados.External = true
 	return srv, kc, logbuf
 }
 

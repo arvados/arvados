@@ -660,6 +660,7 @@ def run_nginx():
     nginxconf['ACCESSLOG'] = _logfilename('nginx_access')
     nginxconf['ERRORLOG'] = _logfilename('nginx_error')
     nginxconf['TMPDIR'] = TEST_TMPDIR + '/nginx'
+    nginxconf['INTERNALSUBNETS'] = '169.254.0.0/16 0;'
 
     conftemplatefile = os.path.join(MY_DIRNAME, 'nginx.conf')
     conffile = os.path.join(TEST_TMPDIR, 'nginx.conf')
@@ -925,7 +926,6 @@ class TestCaseWithServers(unittest.TestCase):
         cls._orig_config = arvados.config.settings().copy()
         cls._cleanup_funcs = []
         os.environ.pop('ARVADOS_KEEP_SERVICES', None)
-        os.environ.pop('ARVADOS_EXTERNAL_CLIENT', None)
         for server_kwargs, start_func, stop_func in (
                 (cls.MAIN_SERVER, run, reset),
                 (cls.WS_SERVER, run_ws, stop_ws),

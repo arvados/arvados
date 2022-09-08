@@ -15,6 +15,7 @@ import (
 	"io/fs"
 	"io/ioutil"
 	"log"
+	"net"
 	"net/http"
 	"net/url"
 	"os"
@@ -94,7 +95,40 @@ func NewClientFromConfig(cluster *Cluster) (*Client, error) {
 	if ctrlURL.Host == "" {
 		return nil, fmt.Errorf("no host in config Services.Controller.ExternalURL: %v", ctrlURL)
 	}
+	var hc *http.Client
+	if srvaddr := os.Getenv("ARVADOS_SERVER_ADDRESS"); srvaddr != "" {
+		// When this client is used to make a request to
+		// https://{ctrlhost}:port/ (any port), it dials the
+		// indicated port on ARVADOS_SERVER_ADDRESS instead.
+		//
+		// This is invoked by arvados-server boot to ensure
+		// that server->server traffic (e.g.,
+		// keepproxy->controller) only hits local interfaces,
+		// even if the Controller.ExternalURL host is a load
+		// balancer / gateway and not a local interface
+		// address (e.g., when running on a cloud VM).
+		//
+		// This avoids unnecessary delay/cost of routing
+		// external traffic, and also allows controller to
+		// recognize other services as internal clients based
+		// on the connection source address.
+		divertedHost := (*url.URL)(&cluster.Services.Controller.ExternalURL).Hostname()
+		var dialer net.Dialer
+		hc = &http.Client{
+			Transport: &http.Transport{
+				TLSClientConfig: &tls.Config{InsecureSkipVerify: cluster.TLS.Insecure},
+				DialContext: func(ctx context.Context, network, addr string) (net.Conn, error) {
+					host, port, err := net.SplitHostPort(addr)
+					if err == nil && network == "tcp" && host == divertedHost {
+						addr = net.JoinHostPort(srvaddr, port)
+					}
+					return dialer.DialContext(ctx, network, addr)
+				},
+			},
+		}
+	}
 	return &Client{
+		Client:   hc,
 		Scheme:   ctrlURL.Scheme,
 		APIHost:  ctrlURL.Host,
 		Insecure: cluster.TLS.Insecure,

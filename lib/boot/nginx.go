@@ -5,6 +5,7 @@
 package boot
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"io/ioutil"
@@ -17,6 +18,7 @@ import (
 	"strings"
 
 	"git.arvados.org/arvados.git/sdk/go/arvados"
+	"github.com/sirupsen/logrus"
 )
 
 // Run an Nginx process that proxies the supervisor's configured
@@ -46,6 +48,7 @@ func (runNginx) Run(ctx context.Context, fail func(error), super *Supervisor) er
 	vars := map[string]string{
 		"LISTENHOST":       extListenHost,
 		"UPSTREAMHOST":     super.ListenHost,
+		"INTERNALSUBNETS":  internalSubnets(super.logger),
 		"SSLCERT":          filepath.Join(super.tempdir, "server.crt"),
 		"SSLKEY":           filepath.Join(super.tempdir, "server.key"),
 		"ACCESSLOG":        filepath.Join(super.tempdir, "nginx_access.log"),
@@ -149,4 +152,28 @@ func (runNginx) Run(ctx context.Context, fail func(error), super *Supervisor) er
 		testurl.Host = net.JoinHostPort(testurl.Host, testurl.Scheme)
 	}
 	return waitForConnect(ctx, testurl.Host)
+}
+
+// Return 0 or more local subnets as "geo" fragments for Nginx config,
+// e.g., "1.2.3.0/24 0; 10.1.0.0/16 0;".
+func internalSubnets(logger logrus.FieldLogger) string {
+	iproutes, err := exec.Command("ip", "route").CombinedOutput()
+	if err != nil {
+		logger.Warnf("treating all clients as external because `ip route` failed: %s (%q)", err, iproutes)
+		return ""
+	}
+	subnets := ""
+	for _, line := range bytes.Split(iproutes, []byte("\n")) {
+		fields := strings.Fields(string(line))
+		if len(fields) > 2 && fields[1] == "dev" {
+			// lan example:
+			// 192.168.86.0/24 dev ens3 proto kernel scope link src 192.168.86.196
+			// gcp example (private subnet):
+			// 10.47.0.0/24 dev eth0 proto kernel scope link src 10.47.0.5
+			// gcp example (no private subnet):
+			// 10.128.0.1 dev ens4 scope link
+			subnets += fields[0] + " 0; "
+		}
+	}
+	return subnets
 }

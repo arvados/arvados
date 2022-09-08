@@ -367,7 +367,6 @@ func (s *ServerNotRequiredSuite) TestLoadConfig(c *C) {
 	c.Assert(srcConfig.APIHost, Equals, os.Getenv("ARVADOS_API_HOST"))
 	c.Assert(srcConfig.APIToken, Equals, arvadostest.SystemRootToken)
 	c.Assert(srcConfig.APIHostInsecure, Equals, arvadosclient.StringBool(os.Getenv("ARVADOS_API_HOST_INSECURE")))
-	c.Assert(srcConfig.ExternalClient, Equals, false)
 
 	dstConfig, _, err := loadConfig(dstConfigFile)
 	c.Check(err, IsNil)
@@ -375,7 +374,6 @@ func (s *ServerNotRequiredSuite) TestLoadConfig(c *C) {
 	c.Assert(dstConfig.APIHost, Equals, os.Getenv("ARVADOS_API_HOST"))
 	c.Assert(dstConfig.APIToken, Equals, arvadostest.SystemRootToken)
 	c.Assert(dstConfig.APIHostInsecure, Equals, arvadosclient.StringBool(os.Getenv("ARVADOS_API_HOST_INSECURE")))
-	c.Assert(dstConfig.ExternalClient, Equals, false)
 
 	c.Assert(srcBlobSigningKey, Equals, "abcdefg")
 }
@@ -412,7 +410,6 @@ func setupConfigFile(c *C, name string) *os.File {
 	fileContent := "ARVADOS_API_HOST=" + os.Getenv("ARVADOS_API_HOST") + "\n"
 	fileContent += "ARVADOS_API_TOKEN=" + arvadostest.SystemRootToken + "\n"
 	fileContent += "ARVADOS_API_HOST_INSECURE=" + os.Getenv("ARVADOS_API_HOST_INSECURE") + "\n"
-	fileContent += "ARVADOS_EXTERNAL_CLIENT=false\n"
 	fileContent += "ARVADOS_BLOB_SIGNING_KEY=abcdefg"
 
 	_, err = file.Write([]byte(fileContent))

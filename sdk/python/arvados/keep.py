@@ -159,7 +159,6 @@ class Keep(object):
                config.get('ARVADOS_API_TOKEN'),
                config.flag_is_true('ARVADOS_API_HOST_INSECURE'),
                config.get('ARVADOS_KEEP_PROXY'),
-               config.get('ARVADOS_EXTERNAL_CLIENT') == 'true',
                os.environ.get('KEEP_LOCAL_STORE'))
         if (global_client_object is None) or (cls._last_key != key):
             global_client_object = KeepClient()

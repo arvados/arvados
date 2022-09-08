@@ -282,7 +282,7 @@ func (super *Supervisor) runCluster() error {
 	if err != nil {
 		return err
 	}
-	conffile, err := os.OpenFile(filepath.Join(super.wwwtempdir, "config.yml"), os.O_CREATE|os.O_WRONLY, 0644)
+	conffile, err := os.OpenFile(filepath.Join(super.wwwtempdir, "config.yml"), os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0644)
 	if err != nil {
 		return err
 	}
@@ -308,6 +308,7 @@ func (super *Supervisor) runCluster() error {
 	if super.ClusterType != "production" {
 		super.prependEnv("PATH", super.tempdir+"/bin:")
 	}
+	super.setEnv("ARVADOS_SERVER_ADDRESS", super.ListenHost)
 
 	// Now that we have the config, replace the bootstrap logger
 	// with a new one according to the logging config.
