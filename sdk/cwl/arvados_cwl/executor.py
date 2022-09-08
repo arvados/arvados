@@ -523,11 +523,13 @@ The 'jobs' API is no longer supported.
     def get_git_info(self, tool):
         in_a_git_repo = False
         cwd = None
+        filepath = None
 
         if tool.tool["id"].startswith("file://"):
             # check if git is installed
             try:
-                cwd = os.path.dirname(uri_file_path(tool.tool["id"]))
+                filepath = uri_file_path(tool.tool["id"])
+                cwd = os.path.dirname(filepath)
                 subprocess.run(["git", "log", "--format=%H", "-n1", "HEAD"], cwd=cwd, check=True, capture_output=True, text=True)
                 in_a_git_repo = True
             except Exception as e:
@@ -543,6 +545,8 @@ The 'jobs' API is no longer supported.
             git_origin = subprocess.run(["git", "remote", "get-url", "origin"], cwd=cwd, capture_output=True, text=True).stdout
             git_status = subprocess.run(["git", "status", "--untracked-files=no", "--porcelain"], cwd=cwd, capture_output=True, text=True).stdout
             git_describe = subprocess.run(["git", "describe", "--always"], cwd=cwd, capture_output=True, text=True).stdout
+            git_toplevel = subprocess.run(["git", "rev-parse", "--show-toplevel"], cwd=cwd, capture_output=True, text=True).stdout
+            git_path = filepath[len(git_toplevel):]
 
             gitproperties = {
                 "http://arvados.org/cwl#gitCommit": git_commit.strip(),
@@ -552,6 +556,7 @@ The 'jobs' API is no longer supported.
                 "http://arvados.org/cwl#gitOrigin": git_origin.strip(),
                 "http://arvados.org/cwl#gitStatus": git_status.strip(),
                 "http://arvados.org/cwl#gitDescribe": git_describe.strip(),
+                "http://arvados.org/cwl#gitPath": git_path.strip(),
             }
         else:
             for g in ("http://arvados.org/cwl#gitCommit",
@@ -560,7 +565,8 @@ The 'jobs' API is no longer supported.
                       "http://arvados.org/cwl#gitBranch",
                       "http://arvados.org/cwl#gitOrigin",
                       "http://arvados.org/cwl#gitStatus",
-                      "http://arvados.org/cwl#gitDescribe"):
+                      "http://arvados.org/cwl#gitDescribe",
+                      "http://arvados.org/cwl#gitPath"):
                 if g in tool.metadata:
                     gitproperties[g] = tool.metadata[g]
 
@@ -571,7 +577,7 @@ The 'jobs' API is no longer supported.
 
         git_info = self.get_git_info(updated_tool)
         if git_info:
-            logger.info("Provenance of %s", updated_tool.tool["id"])
+            logger.info("Git provenance of %s", updated_tool.tool["id"])
             for g in git_info:
                 if git_info[g]:
                     logger.info("  %s: %s", g.split("#", 1)[1], git_info[g])
