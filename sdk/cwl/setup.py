@@ -36,8 +36,8 @@ setup(name='arvados-cwl-runner',
       # file to determine what version of cwltool and schema-salad to
       # build.
       install_requires=[
-          'cwltool==3.1.20220623174452',
-          'schema-salad==8.3.20220801194920',
+          'cwltool==3.1.20220907141119',
+          'schema-salad==8.3.20220825114525',
           'arvados-python-client{}'.format(pysdk_dep),
           'setuptools',
           'ciso8601 >= 2.0.0',
