@@ -559,7 +559,7 @@ The 'jobs' API is no longer supported.
                       "http://arvados.org/cwl#gitOrigin",
                       "http://arvados.org/cwl#gitStatus"):
                 if g in tool.metadata:
-                    gitproperties = tool.metadata[g]
+                    gitproperties[g] = tool.metadata[g]
 
         return gitproperties
 
