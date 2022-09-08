@@ -142,10 +142,5 @@ func fpm(ctx context.Context, opts opts, stdin io.Reader, stdout, stderr io.Writ
 		}
 	}
 
-	cmd = exec.Command("ls", "-l", pkgfile)
-	cmd.Stdout = stdout
-	cmd.Stderr = stderr
-	_ = cmd.Run()
-
 	return nil
 }
