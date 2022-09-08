@@ -542,6 +542,7 @@ The 'jobs' API is no longer supported.
             git_branch = subprocess.run(["git", "branch", "--show-current"], cwd=cwd, capture_output=True, text=True).stdout
             git_origin = subprocess.run(["git", "remote", "get-url", "origin"], cwd=cwd, capture_output=True, text=True).stdout
             git_status = subprocess.run(["git", "status", "--untracked-files=no", "--porcelain"], cwd=cwd, capture_output=True, text=True).stdout
+            git_describe = subprocess.run(["git", "describe", "--always"], cwd=cwd, capture_output=True, text=True).stdout
 
             gitproperties = {
                 "http://arvados.org/cwl#gitCommit": git_commit.strip(),
@@ -550,6 +551,7 @@ The 'jobs' API is no longer supported.
                 "http://arvados.org/cwl#gitBranch": git_branch.strip(),
                 "http://arvados.org/cwl#gitOrigin": git_origin.strip(),
                 "http://arvados.org/cwl#gitStatus": git_status.strip(),
+                "http://arvados.org/cwl#gitDescribe": git_describe.strip(),
             }
         else:
             for g in ("http://arvados.org/cwl#gitCommit",
@@ -557,7 +559,8 @@ The 'jobs' API is no longer supported.
                       "http://arvados.org/cwl#gitCommitter",
                       "http://arvados.org/cwl#gitBranch",
                       "http://arvados.org/cwl#gitOrigin",
-                      "http://arvados.org/cwl#gitStatus"):
+                      "http://arvados.org/cwl#gitStatus",
+                      "http://arvados.org/cwl#gitDescribe"):
                 if g in tool.metadata:
                     gitproperties[g] = tool.metadata[g]
 
@@ -606,7 +609,10 @@ The 'jobs' API is no longer supported.
             runtimeContext.intermediate_storage_classes = default_storage_classes
 
         if not runtimeContext.name:
-            runtimeContext.name = self.name = updated_tool.tool.get("label") or updated_tool.metadata.get("label") or os.path.basename(updated_tool.tool["id"])
+            self.name = updated_tool.tool.get("label") or updated_tool.metadata.get("label") or os.path.basename(updated_tool.tool["id"])
+            if git_info.get("http://arvados.org/cwl#gitDescribe"):
+                self.name = "%s (%s)" % (self.name, git_info.get("http://arvados.org/cwl#gitDescribe"))
+            runtimeContext.name = self.name
 
         if runtimeContext.copy_deps is None and (runtimeContext.create_workflow or runtimeContext.update_workflow):
             # When creating or updating workflow record, by default
