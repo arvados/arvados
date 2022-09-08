@@ -577,7 +577,7 @@ The 'jobs' API is no longer supported.
 
         git_info = self.get_git_info(updated_tool)
         if git_info:
-            logger.info("Git provenance of %s", updated_tool.tool["id"])
+            logger.info("Git provenance")
             for g in git_info:
                 if git_info[g]:
                     logger.info("  %s: %s", g.split("#", 1)[1], git_info[g])
