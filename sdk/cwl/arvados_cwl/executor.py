@@ -520,7 +520,8 @@ The 'jobs' API is no longer supported.
             for req in job_reqs:
                 tool.requirements.append(req)
 
-    def get_git_info(self, tool):
+    @staticmethod
+    def get_git_info(tool):
         in_a_git_repo = False
         cwd = None
         filepath = None

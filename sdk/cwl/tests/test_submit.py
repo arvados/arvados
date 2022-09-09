@@ -19,6 +19,7 @@ import sys
 import unittest
 import cwltool.process
 import re
+import os
 
 from io import BytesIO
 
@@ -273,8 +274,16 @@ def stubs(wfname='submit_wf.cwl'):
             stubs.api.pipeline_instances().create().execute.return_value = stubs.pipeline_create
             stubs.api.pipeline_instances().get().execute.return_value = stubs.pipeline_with_job
 
-            with open("tests/wf/submit_wf_packed.cwl") as f:
+            cwd = os.getcwd()
+            filepath = os.path.join(cwd, "tests/wf/submit_wf_packed.cwl")
+            with open(filepath) as f:
                 expect_packed_workflow = yaml.round_trip_load(f)
+
+            expect_packed_workflow["id"] = "file://" + filepath
+            mocktool = mock.NonCallableMock(tool=expect_packed_workflow, metadata=expect_packed_workflow)
+
+            git_info = arvados_cwl.executor.ArvCwlExecutor.get_git_info(mocktool)
+            expect_packed_workflow.update(git_info)
 
             stubs.expect_container_spec = {
                 'priority': 500,
