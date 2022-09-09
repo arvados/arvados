@@ -212,6 +212,10 @@ def arg_parser():  # type: () -> argparse.ArgumentParser
                         action="store_true", default=False,
                         help=argparse.SUPPRESS)
 
+    parser.add_argument("--fast-parser", dest="fast_parser",
+                        action="store_true", default=False,
+                        help=argparse.SUPPRESS)
+
     parser.add_argument("--thread-count", type=int,
                         default=0, help="Number of threads to use for job submit and output collection.")
 
