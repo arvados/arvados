@@ -17,6 +17,7 @@ import copy
 import json
 import re
 from functools import partial
+import subprocess
 import time
 import urllib
 
@@ -24,6 +25,7 @@ from cwltool.errors import WorkflowException
 import cwltool.workflow
 from schema_salad.sourceline import SourceLine
 import schema_salad.validate as validate
+from schema_salad.ref_resolver import file_uri, uri_file_path
 
 import arvados
 import arvados.config
@@ -518,8 +520,74 @@ The 'jobs' API is no longer supported.
             for req in job_reqs:
                 tool.requirements.append(req)
 
+    @staticmethod
+    def get_git_info(tool):
+        in_a_git_repo = False
+        cwd = None
+        filepath = None
+
+        if tool.tool["id"].startswith("file://"):
+            # check if git is installed
+            try:
+                filepath = uri_file_path(tool.tool["id"])
+                cwd = os.path.dirname(filepath)
+                subprocess.run(["git", "log", "--format=%H", "-n1", "HEAD"], cwd=cwd, check=True, capture_output=True, text=True)
+                in_a_git_repo = True
+            except Exception as e:
+                pass
+
+        gitproperties = {}
+
+        if in_a_git_repo:
+            git_commit = subprocess.run(["git", "log", "--format=%H", "-n1", "HEAD"], cwd=cwd, capture_output=True, text=True).stdout
+            git_date = subprocess.run(["git", "log", "--format=%cD", "-n1", "HEAD"], cwd=cwd, capture_output=True, text=True).stdout
+            git_committer = subprocess.run(["git", "log", "--format=%cn <%ce>", "-n1", "HEAD"], cwd=cwd, capture_output=True, text=True).stdout
+            git_branch = subprocess.run(["git", "branch", "--show-current"], cwd=cwd, capture_output=True, text=True).stdout
+            git_origin = subprocess.run(["git", "remote", "get-url", "origin"], cwd=cwd, capture_output=True, text=True).stdout
+            git_status = subprocess.run(["git", "status", "--untracked-files=no", "--porcelain"], cwd=cwd, capture_output=True, text=True).stdout
+            git_describe = subprocess.run(["git", "describe", "--always"], cwd=cwd, capture_output=True, text=True).stdout
+            git_toplevel = subprocess.run(["git", "rev-parse", "--show-toplevel"], cwd=cwd, capture_output=True, text=True).stdout
+            git_path = filepath[len(git_toplevel):]
+
+            gitproperties = {
+                "http://arvados.org/cwl#gitCommit": git_commit.strip(),
+                "http://arvados.org/cwl#gitDate": git_date.strip(),
+                "http://arvados.org/cwl#gitCommitter": git_committer.strip(),
+                "http://arvados.org/cwl#gitBranch": git_branch.strip(),
+                "http://arvados.org/cwl#gitOrigin": git_origin.strip(),
+                "http://arvados.org/cwl#gitStatus": git_status.strip(),
+                "http://arvados.org/cwl#gitDescribe": git_describe.strip(),
+                "http://arvados.org/cwl#gitPath": git_path.strip(),
+            }
+        else:
+            for g in ("http://arvados.org/cwl#gitCommit",
+                      "http://arvados.org/cwl#gitDate",
+                      "http://arvados.org/cwl#gitCommitter",
+                      "http://arvados.org/cwl#gitBranch",
+                      "http://arvados.org/cwl#gitOrigin",
+                      "http://arvados.org/cwl#gitStatus",
+                      "http://arvados.org/cwl#gitDescribe",
+                      "http://arvados.org/cwl#gitPath"):
+                if g in tool.metadata:
+                    gitproperties[g] = tool.metadata[g]
+
+        return gitproperties
+
+    def set_container_request_properties(self, container, properties):
+        resp = self.api.container_requests().list(filters=[["container_uuid", "=", container["uuid"]]], select=["uuid", "properties"]).execute(num_retries=self.num_retries)
+        for cr in resp["items"]:
+            cr["properties"].update({k.replace("http://arvados.org/cwl#", "arv:"): v for k, v in properties.items()})
+            self.api.container_requests().update(uuid=cr["uuid"], body={"container_request": {"properties": cr["properties"]}}).execute(num_retries=self.num_retries)
+
     def arv_executor(self, updated_tool, job_order, runtimeContext, logger=None):
         self.debug = runtimeContext.debug
+
+        git_info = self.get_git_info(updated_tool)
+        if git_info:
+            logger.info("Git provenance")
+            for g in git_info:
+                if git_info[g]:
+                    logger.info("  %s: %s", g.split("#", 1)[1], git_info[g])
 
         workbench1 = self.api.config()["Services"]["Workbench1"]["ExternalURL"]
         workbench2 = self.api.config()["Services"]["Workbench2"]["ExternalURL"]
@@ -554,7 +622,10 @@ The 'jobs' API is no longer supported.
             runtimeContext.intermediate_storage_classes = default_storage_classes
 
         if not runtimeContext.name:
-            runtimeContext.name = self.name = updated_tool.tool.get("label") or updated_tool.metadata.get("label") or os.path.basename(updated_tool.tool["id"])
+            self.name = updated_tool.tool.get("label") or updated_tool.metadata.get("label") or os.path.basename(updated_tool.tool["id"])
+            if git_info.get("http://arvados.org/cwl#gitDescribe"):
+                self.name = "%s (%s)" % (self.name, git_info.get("http://arvados.org/cwl#gitDescribe"))
+            runtimeContext.name = self.name
 
         if runtimeContext.copy_deps is None and (runtimeContext.create_workflow or runtimeContext.update_workflow):
             # When creating or updating workflow record, by default
@@ -628,7 +699,8 @@ The 'jobs' API is no longer supported.
                                        submit_runner_ram=runtimeContext.submit_runner_ram,
                                        name=runtimeContext.name,
                                        merged_map=merged_map,
-                                       submit_runner_image=runtimeContext.submit_runner_image)
+                                       submit_runner_image=runtimeContext.submit_runner_image,
+                                       git_info=git_info)
                 self.stdout.write(uuid + "\n")
                 return (None, "success")
 
@@ -690,7 +762,8 @@ The 'jobs' API is no longer supported.
                                            priority=runtimeContext.priority,
                                            secret_store=self.secret_store,
                                            collection_cache_size=runtimeContext.collection_cache_size,
-                                           collection_cache_is_default=self.should_estimate_cache_size)
+                                           collection_cache_is_default=self.should_estimate_cache_size,
+                                           git_info=git_info)
                 else:
                     runtimeContext.runnerjob = tool.tool["id"]
 
@@ -710,6 +783,7 @@ The 'jobs' API is no longer supported.
         current_container = arvados_cwl.util.get_current_container(self.api, self.num_retries, logger)
         if current_container:
             logger.info("Running inside container %s", current_container.get("uuid"))
+            self.set_container_request_properties(current_container, git_info)
 
         self.poll_api = arvados.api('v1', timeout=runtimeContext.http_timeout)
         self.polling_thread = threading.Thread(target=self.poll_states)

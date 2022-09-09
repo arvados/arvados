@@ -604,7 +604,7 @@ def upload_docker(arvrunner, tool, runtimeContext):
             upload_docker(arvrunner, s.embedded_tool, runtimeContext)
 
 
-def packed_workflow(arvrunner, tool, merged_map, runtimeContext):
+def packed_workflow(arvrunner, tool, merged_map, runtimeContext, git_info):
     """Create a packed workflow.
 
     A "packed" workflow is one where all the components have been combined into a single document."""
@@ -644,6 +644,11 @@ def packed_workflow(arvrunner, tool, merged_map, runtimeContext):
             for l in v:
                 visit(l, cur_id)
     visit(packed, None)
+
+    if git_info:
+        for g in git_info:
+            packed[g] = git_info[g]
+
     return packed
 
 
@@ -794,7 +799,8 @@ class Runner(Process):
                  intermediate_output_ttl=0, merged_map=None,
                  priority=None, secret_store=None,
                  collection_cache_size=256,
-                 collection_cache_is_default=True):
+                 collection_cache_is_default=True,
+                 git_info=None):
 
         loadingContext = loadingContext.copy()
         loadingContext.metadata = updated_tool.metadata.copy()
@@ -823,6 +829,7 @@ class Runner(Process):
         self.priority = priority
         self.secret_store = secret_store
         self.enable_dev = loadingContext.enable_dev
+        self.git_info = git_info
 
         self.submit_runner_cores = 1
         self.submit_runner_ram = 1024  # defaut 1 GiB
