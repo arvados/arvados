@@ -671,9 +671,6 @@ else
       ;;
       "api")
         # States
-        # FIXME: https://dev.arvados.org/issues/17352
-        grep -q "postgres.client" ${S_DIR}/top.sls || echo "    - postgres.client" >> ${S_DIR}/top.sls
-
         grep -q "    - logrotate" ${S_DIR}/top.sls || echo "    - logrotate" >> ${S_DIR}/top.sls
         if grep -q "    - nginx.*$" ${S_DIR}/top.sls; then
           sed -i s/"^    - nginx.*$"/"    - nginx.passenger"/g ${S_DIR}/top.sls
