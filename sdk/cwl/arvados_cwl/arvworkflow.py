@@ -40,9 +40,10 @@ sum_res_pars = ("outdirMin", "outdirMax")
 def upload_workflow(arvRunner, tool, job_order, project_uuid,
                     runtimeContext, uuid=None,
                     submit_runner_ram=0, name=None, merged_map=None,
-                    submit_runner_image=None):
+                    submit_runner_image=None,
+                    git_info=None):
 
-    packed = packed_workflow(arvRunner, tool, merged_map, runtimeContext)
+    packed = packed_workflow(arvRunner, tool, merged_map, runtimeContext, git_info)
 
     adjustDirObjs(job_order, trim_listing)
     adjustFileObjs(job_order, trim_anonymous_location)

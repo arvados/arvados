@@ -19,6 +19,7 @@ import sys
 import unittest
 import cwltool.process
 import re
+import os
 
 from io import BytesIO
 
@@ -45,7 +46,7 @@ import ruamel.yaml as yaml
 
 _rootDesc = None
 
-def stubs(wfname='submit_wf.cwl'):
+def stubs(wfdetails=('submit_wf.cwl', None)):
     def outer_wrapper(func, *rest):
         @functools.wraps(func)
         @mock.patch("arvados_cwl.arvdocker.determine_image_id")
@@ -58,6 +59,10 @@ def stubs(wfname='submit_wf.cwl'):
                     uuid4, determine_image_id, *args, **kwargs):
             class Stubs(object):
                 pass
+
+            wfname = wfdetails[0]
+            wfpath = wfdetails[1]
+
             stubs = Stubs()
             stubs.events = events
             stubs.keepdocker = keepdocker
@@ -273,8 +278,27 @@ def stubs(wfname='submit_wf.cwl'):
             stubs.api.pipeline_instances().create().execute.return_value = stubs.pipeline_create
             stubs.api.pipeline_instances().get().execute.return_value = stubs.pipeline_with_job
 
-            with open("tests/wf/submit_wf_packed.cwl") as f:
+            cwd = os.getcwd()
+            filepath = os.path.join(cwd, "tests/wf/submit_wf_packed.cwl")
+            with open(filepath) as f:
                 expect_packed_workflow = yaml.round_trip_load(f)
+
+            if wfpath is None:
+                wfpath = wfname
+
+            gitinfo_workflow = copy.deepcopy(expect_packed_workflow)
+            gitinfo_workflow["$graph"][0]["id"] = "file://%s/tests/wf/%s" % (cwd, wfpath)
+            mocktool = mock.NonCallableMock(tool=gitinfo_workflow["$graph"][0], metadata=gitinfo_workflow)
+
+            git_info = arvados_cwl.executor.ArvCwlExecutor.get_git_info(mocktool)
+            expect_packed_workflow.update(git_info)
+
+            git_props = {"arv:"+k.split("#", 1)[1]: v for k,v in git_info.items()}
+
+            if wfname == wfpath:
+                container_name = "%s (%s)" % (wfpath, git_props["arv:gitDescribe"])
+            else:
+                container_name = wfname
 
             stubs.expect_container_spec = {
                 'priority': 500,
@@ -321,12 +345,12 @@ def stubs(wfname='submit_wf.cwl'):
                             '--no-log-timestamps', '--disable-validate', '--disable-color',
                             '--eval-timeout=20', '--thread-count=0',
                             '--enable-reuse', "--collection-cache-size=256",
-                            '--output-name=Output from workflow '+wfname,
+                            '--output-name=Output from workflow '+container_name,
                             '--debug', '--on-error=continue',
                             '/var/lib/cwl/workflow.json#main', '/var/lib/cwl/cwl.input.json'],
-                'name': wfname,
+                'name': container_name,
                 'container_image': '999999999999999999999999999999d3+99',
-                'output_name': 'Output from workflow '+wfname,
+                'output_name': 'Output from workflow %s' % (container_name),
                 'output_path': '/var/spool/cwl',
                 'cwd': '/var/spool/cwl',
                 'runtime_constraints': {
@@ -335,7 +359,7 @@ def stubs(wfname='submit_wf.cwl'):
                     'ram': (1024+256)*1024*1024
                 },
                 'use_existing': False,
-                'properties': {},
+                'properties': git_props,
                 'secret_mounts': {}
             }
 
@@ -444,7 +468,7 @@ class TestSubmit(unittest.TestCase):
                          stubs.expect_container_request_uuid + '\n')
         self.assertEqual(exited, 0)
 
-    @stubs('submit_wf_no_reuse.cwl')
+    @stubs(('submit_wf_no_reuse.cwl', None))
     def test_submit_container_reuse_disabled_by_workflow(self, stubs):
         exited = arvados_cwl.main(
             ["--submit", "--no-wait", "--api=containers", "--debug",
@@ -453,13 +477,7 @@ class TestSubmit(unittest.TestCase):
         self.assertEqual(exited, 0)
 
         expect_container = copy.deepcopy(stubs.expect_container_spec)
-        expect_container["command"] = [
-            'arvados-cwl-runner', '--local', '--api=containers',
-            '--no-log-timestamps', '--disable-validate', '--disable-color',
-            '--eval-timeout=20', '--thread-count=0',
-            '--disable-reuse', "--collection-cache-size=256",
-            '--output-name=Output from workflow submit_wf_no_reuse.cwl', '--debug', '--on-error=continue',
-            '/var/lib/cwl/workflow.json#main', '/var/lib/cwl/cwl.input.json']
+        expect_container["command"] = ["--disable-reuse" if v == "--enable-reuse" else v for v in expect_container["command"]]
         expect_container["use_existing"] = False
         expect_container["mounts"]["/var/lib/cwl/workflow.json"]["content"]["$graph"][1]["hints"] = [
             {
@@ -891,7 +909,7 @@ class TestSubmit(unittest.TestCase):
                          stubs.expect_container_request_uuid + '\n')
         self.assertEqual(exited, 0)
 
-    @stubs('hello container 123')
+    @stubs(('hello container 123', 'submit_wf.cwl'))
     def test_submit_container_name(self, stubs):
         exited = arvados_cwl.main(
             ["--submit", "--no-wait", "--api=containers", "--debug", "--name=hello container 123",
@@ -1042,7 +1060,7 @@ class TestSubmit(unittest.TestCase):
                          stubs.expect_container_request_uuid + '\n')
         self.assertEqual(exited, 0)
 
-    @stubs('submit_wf_runner_resources.cwl')
+    @stubs(('submit_wf_runner_resources.cwl', None))
     def test_submit_wf_runner_resources(self, stubs):
         exited = arvados_cwl.main(
             ["--submit", "--no-wait", "--api=containers", "--debug",
@@ -1066,13 +1084,7 @@ class TestSubmit(unittest.TestCase):
         expect_container["mounts"]["/var/lib/cwl/workflow.json"]["content"]["$namespaces"] = {
             "arv": "http://arvados.org/cwl#",
         }
-        expect_container['command'] = ['arvados-cwl-runner', '--local', '--api=containers',
-                        '--no-log-timestamps', '--disable-validate', '--disable-color',
-                        '--eval-timeout=20', '--thread-count=0',
-                        '--enable-reuse', "--collection-cache-size=512",
-                                       '--output-name=Output from workflow submit_wf_runner_resources.cwl',
-                                       '--debug', '--on-error=continue',
-                        '/var/lib/cwl/workflow.json#main', '/var/lib/cwl/cwl.input.json']
+        expect_container["command"] = ["--collection-cache-size=512" if v == "--collection-cache-size=256" else v for v in expect_container["command"]]
 
         stubs.api.container_requests().create.assert_called_with(
             body=JsonDiffMatcher(expect_container))
@@ -1470,7 +1482,7 @@ class TestSubmit(unittest.TestCase):
         finally:
             cwltool_logger.removeHandler(stderr_logger)
 
-    @stubs('submit_wf_process_properties.cwl')
+    @stubs(('submit_wf_process_properties.cwl', None))
     def test_submit_set_process_properties(self, stubs):
         exited = arvados_cwl.main(
             ["--submit", "--no-wait", "--api=containers", "--debug",
@@ -1500,14 +1512,14 @@ class TestSubmit(unittest.TestCase):
             "arv": "http://arvados.org/cwl#"
         }
 
-        expect_container["properties"] = {
+        expect_container["properties"].update({
             "baz": "blorp.txt",
             "foo": "bar",
             "quux": {
                 "q1": 1,
                 "q2": 2
             }
-        }
+        })
 
         stubs.api.container_requests().create.assert_called_with(
             body=JsonDiffMatcher(expect_container))

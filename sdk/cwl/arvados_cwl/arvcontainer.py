@@ -453,7 +453,7 @@ class ArvadosContainer(JobBase):
 class RunnerContainer(Runner):
     """Submit and manage a container that runs arvados-cwl-runner."""
 
-    def arvados_job_spec(self, runtimeContext):
+    def arvados_job_spec(self, runtimeContext, git_info):
         """Create an Arvados container request for this workflow.
 
         The returned dict can be used to create a container passed as
@@ -515,7 +515,7 @@ class RunnerContainer(Runner):
                 "portable_data_hash": "%s" % workflowcollection
             }
         else:
-            packed = packed_workflow(self.arvrunner, self.embedded_tool, self.merged_map, runtimeContext)
+            packed = packed_workflow(self.arvrunner, self.embedded_tool, self.merged_map, runtimeContext, git_info)
             workflowpath = "/var/lib/cwl/workflow.json#main"
             container_req["mounts"]["/var/lib/cwl/workflow.json"] = {
                 "kind": "json",
@@ -523,6 +523,8 @@ class RunnerContainer(Runner):
             }
             if self.embedded_tool.tool.get("id", "").startswith("arvwf:"):
                 container_req["properties"]["template_uuid"] = self.embedded_tool.tool["id"][6:33]
+
+        container_req["properties"].update({k.replace("http://arvados.org/cwl#", "arv:"): v for k, v in git_info.items()})
 
         properties_req, _ = self.embedded_tool.get_requirement("http://arvados.org/cwl#ProcessProperties")
         if properties_req:
@@ -595,7 +597,7 @@ class RunnerContainer(Runner):
 
     def run(self, runtimeContext):
         runtimeContext.keepprefix = "keep:"
-        job_spec = self.arvados_job_spec(runtimeContext)
+        job_spec = self.arvados_job_spec(runtimeContext, self.git_info)
         if runtimeContext.project_uuid:
             job_spec["owner_uuid"] = runtimeContext.project_uuid
 
