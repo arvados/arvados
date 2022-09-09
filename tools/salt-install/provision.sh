@@ -582,6 +582,7 @@ if [ -z "${ROLES}" ]; then
   echo "    - nginx_webshell_configuration" >> ${P_DIR}/top.sls
   echo "    - nginx_workbench2_configuration" >> ${P_DIR}/top.sls
   echo "    - nginx_workbench_configuration" >> ${P_DIR}/top.sls
+  echo "    - logrotate_wb1" >> ${P_DIR}/top.sls
   echo "    - postgresql" >> ${P_DIR}/top.sls
 
   # We need to tweak the Nginx's pillar depending whether we want plan nginx or nginx+passenger
@@ -707,6 +708,7 @@ else
       "controller" | "websocket" | "workbench" | "workbench2" | "webshell" | "keepweb" | "keepproxy")
         # States
         if [ "${R}" = "workbench" ]; then
+          grep -q "    - logrotate" ${S_DIR}/top.sls || echo "    - logrotate" >> ${S_DIR}/top.sls
           NGINX_INSTALL_SOURCE="install_from_phusionpassenger"
           if grep -q "    - nginx$" ${S_DIR}/top.sls; then
             sed -i s/"^    - nginx.*$"/"    - nginx.passenger"/g ${S_DIR}/top.sls
@@ -739,6 +741,9 @@ else
           grep -q "arvados.${R}" ${S_DIR}/top.sls || echo "    - arvados.${R}" >> ${S_DIR}/top.sls
         fi
         # Pillars
+        if [ "${R}" = "workbench" ]; then
+          grep -q "logrotate_wb1" ${P_DIR}/top.sls || echo "    - logrotate_wb1" >> ${P_DIR}/top.sls
+        fi
         grep -q "nginx_passenger" ${P_DIR}/top.sls          || echo "    - nginx_passenger" >> ${P_DIR}/top.sls
         grep -q "nginx_${R}_configuration" ${P_DIR}/top.sls || echo "    - nginx_${R}_configuration" >> ${P_DIR}/top.sls
         # Special case for keepweb
