@@ -843,6 +843,7 @@ class Runner(Process):
         self.secret_store = secret_store
         self.enable_dev = loadingContext.enable_dev
         self.git_info = git_info
+        self.fast_parser = loadingContext.fast_parser
 
         self.submit_runner_cores = 1
         self.submit_runner_ram = 1024  # defaut 1 GiB

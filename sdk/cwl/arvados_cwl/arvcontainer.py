@@ -604,7 +604,7 @@ class RunnerContainer(Runner):
         if runtimeContext.enable_preemptible is False:
             command.append("--disable-preemptible")
 
-        if runtimeContext.fast_parser:
+        if self.fast_parser:
             command.append("--fast-parser")
 
         command.extend([workflowpath, "/var/lib/cwl/cwl.input.json"])
