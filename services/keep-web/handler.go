@@ -30,11 +30,10 @@ import (
 )
 
 type handler struct {
-	Cache      cache
-	Cluster    *arvados.Cluster
-	clientPool *arvadosclient.ClientPool
-	setupOnce  sync.Once
-	webdavLS   webdav.LockSystem
+	Cache     cache
+	Cluster   *arvados.Cluster
+	setupOnce sync.Once
+	webdavLS  webdav.LockSystem
 }
 
 var urlPDHDecoder = strings.NewReplacer(" ", "+", "-", "+")
@@ -56,10 +55,6 @@ func parseCollectionIDFromURL(s string) string {
 }
 
 func (h *handler) setup() {
-	// Errors will be handled at the client pool.
-	arv, _ := arvados.NewClientFromConfig(h.Cluster)
-	h.clientPool = arvadosclient.MakeClientPoolWith(arv)
-
 	keepclient.DefaultBlockCache.MaxBlocks = h.Cluster.Collections.WebDAVCache.MaxBlockEntries
 
 	// Even though we don't accept LOCK requests, every webdav
@@ -373,13 +368,6 @@ func (h *handler) ServeHTTP(wOrig http.ResponseWriter, r *http.Request) {
 		stripParts++
 	}
 
-	arv := h.clientPool.Get()
-	if arv == nil {
-		http.Error(w, "client pool error: "+h.clientPool.Err().Error(), http.StatusInternalServerError)
-		return
-	}
-	defer h.clientPool.Put(arv)
-
 	dirOpenMode := os.O_RDONLY
 	if writeMethod[r.Method] {
 		dirOpenMode = os.O_RDWR
@@ -595,28 +583,6 @@ func (h *handler) ServeHTTP(wOrig http.ResponseWriter, r *http.Request) {
 			ctxlog.FromContext(r.Context()).Errorf("stat.Size()==%d but only wrote %d bytes; read(1024) returns %d, %v", fi.Size(), wrote, n, err)
 		}
 	}
-}
-
-func (h *handler) getClients(reqID, token string) (arv *arvadosclient.ArvadosClient, kc *keepclient.KeepClient, client *arvados.Client, release func(), err error) {
-	arv = h.clientPool.Get()
-	if arv == nil {
-		err = h.clientPool.Err()
-		return
-	}
-	release = func() { h.clientPool.Put(arv) }
-	arv.ApiToken = token
-	kc, err = keepclient.MakeKeepClient(arv)
-	if err != nil {
-		release()
-		return
-	}
-	kc.RequestID = reqID
-	client = (&arvados.Client{
-		APIHost:   arv.ApiServer,
-		AuthToken: arv.ApiToken,
-		Insecure:  arv.ApiInsecure,
-	}).WithRequestID(reqID)
-	return
 }
 
 var dirListingTemplate = `<!DOCTYPE HTML>
