@@ -701,7 +701,7 @@ The 'jobs' API is no longer supported.
         loadingContext.loader = tool.doc_loader
         loadingContext.avsc_names = tool.doc_schema
         loadingContext.metadata = tool.metadata
-        loadingContext.codegen_idx = {}
+        loadingContext.skip_resolve_all = True
         with Perf(metrics, "load_tool"):
             tool = load_tool(tool.tool, loadingContext)
 
