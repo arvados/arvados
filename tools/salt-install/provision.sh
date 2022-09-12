@@ -206,12 +206,17 @@ VERSION="2.4.2-1"
 # ARVADOS_TAG="2.2.0"
 # BRANCH="main"
 
+# We pin the salt version to avoid potential incompatibilities when a new
+# stable version is released.
+SALT_VERSION="3004"
+
 # Other formula versions we depend on
 POSTGRES_TAG="v0.44.0"
 NGINX_TAG="v2.8.1"
 DOCKER_TAG="v2.4.2"
 LOCALE_TAG="v0.3.4"
 LETSENCRYPT_TAG="v2.1.0"
+LOGROTATE_TAG="v0.14.0"
 
 # Salt's dir
 DUMP_SALT_CONFIG_DIR=""
@@ -305,7 +310,7 @@ else
     echo "Salt already installed"
   else
     curl -L https://bootstrap.saltstack.com -o /tmp/bootstrap_salt.sh
-    sh /tmp/bootstrap_salt.sh -XdfP -x python3
+    sh /tmp/bootstrap_salt.sh -XdfP -x python3 stable ${SALT_VERSION}
     /bin/systemctl stop salt-minion.service
     /bin/systemctl disable salt-minion.service
   fi
@@ -331,34 +336,43 @@ mkdir -p ${S_DIR} ${F_DIR} ${P_DIR} ${T_DIR}
 # Get the formula and dependencies
 cd ${F_DIR} || exit 1
 echo "Cloning formulas"
-rm -rf ${F_DIR}/* || exit 1
-git clone --quiet https://github.com/saltstack-formulas/docker-formula.git ${F_DIR}/docker
-( cd docker && git checkout --quiet tags/"${DOCKER_TAG}" -b "${DOCKER_TAG}" )
+test -d docker && ( cd docker && git fetch ) \
+  || git clone --quiet https://github.com/saltstack-formulas/docker-formula.git ${F_DIR}/docker
+( cd docker && git checkout --quiet tags/"${DOCKER_TAG}" )
 
 echo "...locale"
-git clone --quiet https://github.com/saltstack-formulas/locale-formula.git ${F_DIR}/locale
-( cd locale && git checkout --quiet tags/"${LOCALE_TAG}" -b "${LOCALE_TAG}" )
+test -d locale && ( cd locale && git fetch ) \
+  || git clone --quiet https://github.com/saltstack-formulas/locale-formula.git ${F_DIR}/locale
+( cd locale && git checkout --quiet tags/"${LOCALE_TAG}" )
 
 echo "...nginx"
-git clone --quiet https://github.com/saltstack-formulas/nginx-formula.git ${F_DIR}/nginx
-( cd nginx && git checkout --quiet tags/"${NGINX_TAG}" -b "${NGINX_TAG}" )
+test -d nginx && ( cd nginx && git fetch ) \
+  || git clone --quiet https://github.com/saltstack-formulas/nginx-formula.git ${F_DIR}/nginx
+( cd nginx && git checkout --quiet tags/"${NGINX_TAG}" )
 
 echo "...postgres"
-git clone --quiet https://github.com/saltstack-formulas/postgres-formula.git ${F_DIR}/postgres
-( cd postgres && git checkout --quiet tags/"${POSTGRES_TAG}" -b "${POSTGRES_TAG}" )
+test -d postgres && ( cd postgres && git fetch ) \
+  || git clone --quiet https://github.com/saltstack-formulas/postgres-formula.git ${F_DIR}/postgres
+( cd postgres && git checkout --quiet tags/"${POSTGRES_TAG}" )
 
 echo "...letsencrypt"
-git clone --quiet https://github.com/saltstack-formulas/letsencrypt-formula.git ${F_DIR}/letsencrypt
-( cd letsencrypt && git checkout --quiet tags/"${LETSENCRYPT_TAG}" -b "${LETSENCRYPT_TAG}" )
+test -d letsencrypt && ( cd letsencrypt && git fetch ) \
+  || git clone --quiet https://github.com/saltstack-formulas/letsencrypt-formula.git ${F_DIR}/letsencrypt
+( cd letsencrypt && git checkout --quiet tags/"${LETSENCRYPT_TAG}" )
+
+echo "...logrotate"
+test -d logrotate && ( cd logrotate && git fetch ) \
+  || git clone --quiet https://github.com/saltstack-formulas/logrotate-formula.git ${F_DIR}/logrotate
+( cd logrotate && git checkout --quiet tags/"${LOGROTATE_TAG}" )
 
 echo "...arvados"
-git clone --quiet https://git.arvados.org/arvados-formula.git ${F_DIR}/arvados
+test -d arvados || git clone --quiet https://git.arvados.org/arvados-formula.git ${F_DIR}/arvados
 
 # If we want to try a specific branch of the formula
 if [ "x${BRANCH}" != "x" ]; then
   ( cd ${F_DIR}/arvados && git checkout --quiet -t origin/"${BRANCH}" -b "${BRANCH}" )
 elif [ "x${ARVADOS_TAG}" != "x" ]; then
-( cd ${F_DIR}/arvados && git checkout --quiet tags/"${ARVADOS_TAG}" -b "${ARVADOS_TAG}" )
+  ( cd ${F_DIR}/arvados && git checkout --quiet tags/"${ARVADOS_TAG}" -b "${ARVADOS_TAG}" )
 fi
 
 if [ "x${VAGRANT}" = "xyes" ]; then
@@ -555,6 +569,7 @@ if [ -z "${ROLES}" ]; then
   fi
 
   echo "    - postgres" >> ${S_DIR}/top.sls
+  echo "    - logrotate" >> ${S_DIR}/top.sls
   echo "    - docker.software" >> ${S_DIR}/top.sls
   echo "    - arvados" >> ${S_DIR}/top.sls
   echo "    - extra.shell_sudo_passwordless" >> ${S_DIR}/top.sls
@@ -564,6 +579,7 @@ if [ -z "${ROLES}" ]; then
   # Pillars
   echo "    - docker" >> ${P_DIR}/top.sls
   echo "    - nginx_api_configuration" >> ${P_DIR}/top.sls
+  echo "    - logrotate_api" >> ${P_DIR}/top.sls
   echo "    - nginx_controller_configuration" >> ${P_DIR}/top.sls
   echo "    - nginx_keepproxy_configuration" >> ${P_DIR}/top.sls
   echo "    - nginx_keepweb_configuration" >> ${P_DIR}/top.sls
@@ -572,6 +588,7 @@ if [ -z "${ROLES}" ]; then
   echo "    - nginx_webshell_configuration" >> ${P_DIR}/top.sls
   echo "    - nginx_workbench2_configuration" >> ${P_DIR}/top.sls
   echo "    - nginx_workbench_configuration" >> ${P_DIR}/top.sls
+  echo "    - logrotate_wb1" >> ${P_DIR}/top.sls
   echo "    - postgresql" >> ${P_DIR}/top.sls
 
   # We need to tweak the Nginx's pillar depending whether we want plan nginx or nginx+passenger
@@ -661,8 +678,7 @@ else
       ;;
       "api")
         # States
-        # FIXME: https://dev.arvados.org/issues/17352
-        grep -q "postgres.client" ${S_DIR}/top.sls || echo "    - postgres.client" >> ${S_DIR}/top.sls
+        grep -q "    - logrotate" ${S_DIR}/top.sls || echo "    - logrotate" >> ${S_DIR}/top.sls
         if grep -q "    - nginx.*$" ${S_DIR}/top.sls; then
           sed -i s/"^    - nginx.*$"/"    - nginx.passenger"/g ${S_DIR}/top.sls
         else
@@ -685,6 +701,7 @@ else
         fi
         grep -q "arvados.${R}" ${S_DIR}/top.sls    || echo "    - arvados.${R}" >> ${S_DIR}/top.sls
         # Pillars
+        grep -q "logrotate_api" ${P_DIR}/top.sls            || echo "    - logrotate_api" >> ${P_DIR}/top.sls
         grep -q "aws_credentials" ${P_DIR}/top.sls          || echo "    - aws_credentials" >> ${P_DIR}/top.sls
         grep -q "postgresql" ${P_DIR}/top.sls               || echo "    - postgresql" >> ${P_DIR}/top.sls
         grep -q "nginx_passenger" ${P_DIR}/top.sls          || echo "    - nginx_passenger" >> ${P_DIR}/top.sls
@@ -697,6 +714,7 @@ else
       "controller" | "websocket" | "workbench" | "workbench2" | "webshell" | "keepweb" | "keepproxy")
         # States
         if [ "${R}" = "workbench" ]; then
+          grep -q "    - logrotate" ${S_DIR}/top.sls || echo "    - logrotate" >> ${S_DIR}/top.sls
           NGINX_INSTALL_SOURCE="install_from_phusionpassenger"
           if grep -q "    - nginx$" ${S_DIR}/top.sls; then
             sed -i s/"^    - nginx.*$"/"    - nginx.passenger"/g ${S_DIR}/top.sls
@@ -729,6 +747,9 @@ else
           grep -q "arvados.${R}" ${S_DIR}/top.sls || echo "    - arvados.${R}" >> ${S_DIR}/top.sls
         fi
         # Pillars
+        if [ "${R}" = "workbench" ]; then
+          grep -q "logrotate_wb1" ${P_DIR}/top.sls || echo "    - logrotate_wb1" >> ${P_DIR}/top.sls
+        fi
         grep -q "nginx_passenger" ${P_DIR}/top.sls          || echo "    - nginx_passenger" >> ${P_DIR}/top.sls
         grep -q "nginx_${R}_configuration" ${P_DIR}/top.sls || echo "    - nginx_${R}_configuration" >> ${P_DIR}/top.sls
         # Special case for keepweb
