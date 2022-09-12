@@ -697,10 +697,11 @@ The 'jobs' API is no longer supported.
         # Recreate process object (ArvadosWorkflow or
         # ArvadosCommandTool) because tool document may have been
         # updated by upload_workflow_deps in ways that modify
-        # inheritance of hints or requirements.
+        # hints or requirements.
         loadingContext.loader = tool.doc_loader
         loadingContext.avsc_names = tool.doc_schema
         loadingContext.metadata = tool.metadata
+        loadingContext.codegen_idx = {}
         with Perf(metrics, "load_tool"):
             tool = load_tool(tool.tool, loadingContext)
 
