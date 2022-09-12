@@ -14,7 +14,6 @@ import (
 	"net/http"
 	"net/url"
 	"os"
-	"path/filepath"
 	"sort"
 	"strconv"
 	"strings"
@@ -274,11 +273,6 @@ func (h *handler) ServeHTTP(wOrig http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	if collectionID == "" && !useSiteFS {
-		http.Error(w, notFoundMessage, http.StatusNotFound)
-		return
-	}
-
 	forceReload := false
 	if cc := r.Header.Get("Cache-Control"); strings.Contains(cc, "no-cache") || strings.Contains(cc, "must-revalidate") {
 		forceReload = true
@@ -319,11 +313,6 @@ func (h *handler) ServeHTTP(wOrig http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if useSiteFS {
-		h.serveSiteFS(w, r, reqTokens, credentialsOK, attachment)
-		return
-	}
-
 	targetPath := pathParts[stripParts:]
 	if tokens == nil && len(targetPath) > 0 && strings.HasPrefix(targetPath[0], "t=") {
 		// http://ID.example/t=TOKEN/PATH...
@@ -336,6 +325,25 @@ func (h *handler) ServeHTTP(wOrig http.ResponseWriter, r *http.Request) {
 		pathToken = true
 		targetPath = targetPath[1:]
 		stripParts++
+	}
+
+	fsprefix := ""
+	if useSiteFS {
+		if writeMethod[r.Method] {
+			http.Error(w, errReadOnly.Error(), http.StatusMethodNotAllowed)
+			return
+		}
+		if len(reqTokens) == 0 {
+			w.Header().Add("WWW-Authenticate", "Basic realm=\"collections\"")
+			http.Error(w, unauthorizedMessage, http.StatusUnauthorized)
+			return
+		}
+		tokens = reqTokens
+	} else if collectionID == "" {
+		http.Error(w, notFoundMessage, http.StatusNotFound)
+		return
+	} else {
+		fsprefix = "by_id/" + collectionID + "/"
 	}
 
 	if tokens == nil {
@@ -393,7 +401,7 @@ func (h *handler) ServeHTTP(wOrig http.ResponseWriter, r *http.Request) {
 			http.Error(w, "cache error: "+err.Error(), http.StatusInternalServerError)
 			return
 		}
-		f, err := fs.OpenFile("by_id/"+collectionID, dirOpenMode, 0)
+		f, err := fs.OpenFile(fsprefix, dirOpenMode, 0)
 		if errors.As(err, &statusErr) && statusErr.HTTPStatus() == http.StatusForbidden {
 			// collection id is outside token scope
 			validToken[token] = true
@@ -485,12 +493,22 @@ func (h *handler) ServeHTTP(wOrig http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if r.Method == http.MethodGet || r.Method == http.MethodHead {
+		targetfnm := fsprefix + strings.Join(pathParts[stripParts:], "/")
+		if fi, err := sessionFS.Stat(targetfnm); err == nil && fi.IsDir() {
+			if !strings.HasSuffix(r.URL.Path, "/") {
+				h.seeOtherWithCookie(w, r, r.URL.Path+"/", credentialsOK)
+			} else {
+				h.serveDirectory(w, r, fi.Name(), sessionFS, targetfnm, !useSiteFS)
+			}
+			return
+		}
+	}
+
 	var basename string
 	if len(targetPath) > 0 {
 		basename = targetPath[len(targetPath)-1]
 	}
-	applyContentDispositionHdr(w, r, basename, attachment)
-
 	if arvadosclient.PDHMatch(collectionID) && writeMethod[r.Method] {
 		http.Error(w, errReadOnly.Error(), http.StatusMethodNotAllowed)
 		return
@@ -499,7 +517,7 @@ func (h *handler) ServeHTTP(wOrig http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Not permitted", http.StatusForbidden)
 		return
 	}
-	h.logUploadOrDownload(r, session.arvadosclient, sessionFS, "by_id/"+collectionID+"/"+strings.Join(targetPath, "/"), nil, tokenUser)
+	h.logUploadOrDownload(r, session.arvadosclient, sessionFS, fsprefix+strings.Join(targetPath, "/"), nil, tokenUser)
 
 	if writeMethod[r.Method] {
 		// Save the collection only if/when all
@@ -516,7 +534,7 @@ func (h *handler) ServeHTTP(wOrig http.ResponseWriter, r *http.Request) {
 		// subsequent read requests.
 		client := session.client.WithRequestID(r.Header.Get("X-Request-Id"))
 		sessionFS = client.SiteFileSystem(session.keepclient)
-		writingDir, err := sessionFS.OpenFile("by_id/"+collectionID, os.O_RDONLY, 0)
+		writingDir, err := sessionFS.OpenFile(fsprefix, os.O_RDONLY, 0)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
@@ -544,11 +562,14 @@ func (h *handler) ServeHTTP(wOrig http.ResponseWriter, r *http.Request) {
 				return nil
 			}}
 	}
+	if r.Method == http.MethodGet {
+		applyContentDispositionHdr(w, r, basename, attachment)
+	}
 	wh := webdav.Handler{
 		Prefix: "/" + strings.Join(pathParts[:stripParts], "/"),
 		FileSystem: &webdavFS{
 			collfs:        sessionFS,
-			prefix:        "by_id/" + collectionID + "/",
+			prefix:        fsprefix,
 			writing:       writeMethod[r.Method],
 			alwaysReadEOF: r.Method == "PROPFIND",
 		},
@@ -558,17 +579,6 @@ func (h *handler) ServeHTTP(wOrig http.ResponseWriter, r *http.Request) {
 				ctxlog.FromContext(r.Context()).WithError(err).Error("error reported by webdav handler")
 			}
 		},
-	}
-	if r.Method == http.MethodGet || r.Method == http.MethodHead {
-		targetfnm := "by_id/" + collectionID + "/" + strings.Join(pathParts[stripParts:], "/")
-		if fi, err := sessionFS.Stat(targetfnm); err == nil && fi.IsDir() {
-			if !strings.HasSuffix(r.URL.Path, "/") {
-				h.seeOtherWithCookie(w, r, r.URL.Path+"/", credentialsOK)
-			} else {
-				h.serveDirectory(w, r, fi.Name(), sessionFS, targetfnm, true)
-			}
-			return
-		}
 	}
 	wh.ServeHTTP(w, r)
 	if r.Method == http.MethodGet && w.WroteStatus() == http.StatusOK {
@@ -607,66 +617,6 @@ func (h *handler) getClients(reqID, token string) (arv *arvadosclient.ArvadosCli
 		Insecure:  arv.ApiInsecure,
 	}).WithRequestID(reqID)
 	return
-}
-
-func (h *handler) serveSiteFS(w http.ResponseWriter, r *http.Request, tokens []string, credentialsOK, attachment bool) {
-	if len(tokens) == 0 {
-		w.Header().Add("WWW-Authenticate", "Basic realm=\"collections\"")
-		http.Error(w, unauthorizedMessage, http.StatusUnauthorized)
-		return
-	}
-	if writeMethod[r.Method] {
-		http.Error(w, errReadOnly.Error(), http.StatusMethodNotAllowed)
-		return
-	}
-
-	fs, sess, user, err := h.Cache.GetSession(tokens[0])
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-	f, err := fs.Open(r.URL.Path)
-	if os.IsNotExist(err) {
-		http.Error(w, err.Error(), http.StatusNotFound)
-		return
-	} else if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-	defer f.Close()
-	if fi, err := f.Stat(); err == nil && fi.IsDir() && r.Method == "GET" {
-		if !strings.HasSuffix(r.URL.Path, "/") {
-			h.seeOtherWithCookie(w, r, r.URL.Path+"/", credentialsOK)
-		} else {
-			h.serveDirectory(w, r, fi.Name(), fs, r.URL.Path, false)
-		}
-		return
-	}
-
-	if !h.userPermittedToUploadOrDownload(r.Method, user) {
-		http.Error(w, "Not permitted", http.StatusForbidden)
-		return
-	}
-	h.logUploadOrDownload(r, sess.arvadosclient, fs, r.URL.Path, nil, user)
-
-	if r.Method == "GET" {
-		_, basename := filepath.Split(r.URL.Path)
-		applyContentDispositionHdr(w, r, basename, attachment)
-	}
-	wh := webdav.Handler{
-		FileSystem: &webdavFS{
-			collfs:        fs,
-			writing:       writeMethod[r.Method],
-			alwaysReadEOF: r.Method == "PROPFIND",
-		},
-		LockSystem: h.webdavLS,
-		Logger: func(_ *http.Request, err error) {
-			if err != nil {
-				ctxlog.FromContext(r.Context()).WithError(err).Error("error reported by webdav handler")
-			}
-		},
-	}
-	wh.ServeHTTP(w, r)
 }
 
 var dirListingTemplate = `<!DOCTYPE HTML>
