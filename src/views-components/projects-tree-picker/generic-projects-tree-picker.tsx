@@ -10,7 +10,7 @@ import { TreeItem, TreeItemStatus } from 'components/tree/tree';
 import { ProjectResource } from "models/project";
 import { treePickerActions } from "store/tree-picker/tree-picker-actions";
 import { ListItemTextIcon } from "components/list-item-text-icon/list-item-text-icon";
-import { ProjectIcon, InputIcon, IconType, CollectionIcon } from 'components/icon/icon';
+import { ProjectIcon, FileInputIcon, IconType, CollectionIcon } from 'components/icon/icon';
 import { loadProject, loadCollection } from 'store/tree-picker/tree-picker-actions';
 import { GroupContentsResource } from 'services/groups-service/groups-service';
 import { CollectionDirectory, CollectionFile, CollectionFileType } from 'models/collection-file';
@@ -104,7 +104,7 @@ const getProjectPickerIcon = ({ data }: TreeItem<ProjectsTreePickerItem>, rootIc
     } else if ('type' in data) {
         switch (data.type) {
             case CollectionFileType.FILE:
-                return InputIcon;
+                return FileInputIcon;
             default:
                 return ProjectIcon;
         }

@@ -25,7 +25,7 @@ import {
     Chip,
 } from '@material-ui/core';
 import { ArvadosTheme } from 'common/custom-theme';
-import { CloseIcon, InfoIcon, ProcessIcon } from 'components/icon/icon';
+import { CloseIcon, InfoIcon, ProcessIcon, InputIcon, OutputIcon } from 'components/icon/icon';
 import { MPVPanelProps } from 'components/multi-panel-view/multi-panel-view';
 import {
   BooleanCommandInputParameter,
@@ -144,6 +144,7 @@ export const ProcessIOCard = withStyles(styles)(
         const handleChange = (event: React.MouseEvent<HTMLElement>, value: number) => {
             setTabState(value);
         }
+        const PanelIcon = label == ProcessIOCardType.INPUT ? InputIcon : OutputIcon;
 
         return <Card className={classes.card} data-cy="process-io-card">
             <CardHeader
@@ -152,7 +153,7 @@ export const ProcessIOCard = withStyles(styles)(
                     content: classes.title,
                     avatar: classes.avatar,
                 }}
-                avatar={<ProcessIcon className={classes.iconHeader} />}
+                avatar={<PanelIcon className={classes.iconHeader} />}
                 title={
                     <Typography noWrap variant='h6' color='inherit'>
                         {label}
