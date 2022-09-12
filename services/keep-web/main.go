@@ -16,10 +16,6 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 )
 
-var (
-	version = "dev"
-)
-
 var Command = service.Command(arvados.ServiceNameKeepweb, newHandlerOrErrorHandler)
 
 func newHandlerOrErrorHandler(ctx context.Context, cluster *arvados.Cluster, token string, reg *prometheus.Registry) service.Handler {

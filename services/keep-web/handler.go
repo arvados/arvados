@@ -19,6 +19,7 @@ import (
 	"strings"
 	"sync"
 
+	"git.arvados.org/arvados.git/lib/cmd"
 	"git.arvados.org/arvados.git/sdk/go/arvados"
 	"git.arvados.org/arvados.git/sdk/go/arvadosclient"
 	"git.arvados.org/arvados.git/sdk/go/auth"
@@ -63,7 +64,7 @@ func (h *handler) setup() {
 }
 
 func (h *handler) serveStatus(w http.ResponseWriter, r *http.Request) {
-	json.NewEncoder(w).Encode(struct{ Version string }{version})
+	json.NewEncoder(w).Encode(struct{ Version string }{cmd.Version.String()})
 }
 
 // updateOnSuccess wraps httpserver.ResponseWriter. If the handler
