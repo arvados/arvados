@@ -3,7 +3,9 @@
 #
 # SPDX-License-Identifier: AGPL-3.0
 
-### LOGROTATE
+# Refer to logrotate-formula's documentation for information about customization
+# https://github.com/salt-formulas/salt-formula-logrotate/blob/master/README.rst
+
 logrotate:
   jobs:
     arvados-workbench:
