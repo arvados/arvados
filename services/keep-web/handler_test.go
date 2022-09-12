@@ -366,6 +366,24 @@ func (s *IntegrationSuite) TestVhostPortMatch(c *check.C) {
 	}
 }
 
+func (s *IntegrationSuite) do(method string, urlstring string, token string, hdr http.Header) (*http.Request, *httptest.ResponseRecorder) {
+	u := mustParseURL(urlstring)
+	if hdr == nil && token != "" {
+		hdr = http.Header{"Authorization": {"Bearer " + token}}
+	} else if hdr == nil {
+		hdr = http.Header{}
+	} else if token != "" {
+		panic("must not pass both token and hdr")
+	}
+	return s.doReq(&http.Request{
+		Method:     method,
+		Host:       u.Host,
+		URL:        u,
+		RequestURI: u.RequestURI(),
+		Header:     hdr,
+	})
+}
+
 func (s *IntegrationSuite) doReq(req *http.Request) (*http.Request, *httptest.ResponseRecorder) {
 	resp := httptest.NewRecorder()
 	s.handler.ServeHTTP(resp, req)
@@ -406,6 +424,26 @@ func (s *IntegrationSuite) TestSingleOriginSecretLink(c *check.C) {
 		"",
 		http.StatusOK,
 		"foo",
+	)
+}
+
+func (s *IntegrationSuite) TestCollectionSharingToken(c *check.C) {
+	s.testVhostRedirectTokenToCookie(c, "GET",
+		"example.com/c="+arvadostest.FooFileCollectionUUID+"/t="+arvadostest.FooFileCollectionSharingToken+"/foo",
+		"",
+		nil,
+		"",
+		http.StatusOK,
+		"foo",
+	)
+	// Same valid sharing token, but requesting a different collection
+	s.testVhostRedirectTokenToCookie(c, "GET",
+		"example.com/c="+arvadostest.FooCollection+"/t="+arvadostest.FooFileCollectionSharingToken+"/foo",
+		"",
+		nil,
+		"",
+		http.StatusNotFound,
+		notFoundMessage+"\n",
 	)
 }
 
@@ -1245,7 +1283,7 @@ func copyHeader(h http.Header) http.Header {
 }
 
 func (s *IntegrationSuite) checkUploadDownloadRequest(c *check.C, req *http.Request,
-	successCode int, direction string, perm bool, userUuid string, collectionUuid string, filepath string) {
+	successCode int, direction string, perm bool, userUuid, collectionUuid, collectionPDH, filepath string) {
 
 	client := arvados.NewClientFromEnv()
 	client.AuthToken = arvadostest.AdminToken
@@ -1258,6 +1296,7 @@ func (s *IntegrationSuite) checkUploadDownloadRequest(c *check.C, req *http.Requ
 	c.Check(err, check.IsNil)
 	c.Check(logentries.Items, check.HasLen, 1)
 	lastLogId := logentries.Items[0].ID
+	c.Logf("lastLogId: %d", lastLogId)
 
 	var logbuf bytes.Buffer
 	logger := logrus.New()
@@ -1274,6 +1313,7 @@ func (s *IntegrationSuite) checkUploadDownloadRequest(c *check.C, req *http.Requ
 		deadline := time.Now().Add(time.Second)
 		for {
 			c.Assert(time.Now().After(deadline), check.Equals, false, check.Commentf("timed out waiting for log entry"))
+			logentries = arvados.LogList{}
 			err = client.RequestAndDecode(&logentries, "GET", "arvados/v1/logs", nil,
 				arvados.ResourceListParams{
 					Filters: []arvados.Filter{
@@ -1288,6 +1328,7 @@ func (s *IntegrationSuite) checkUploadDownloadRequest(c *check.C, req *http.Requ
 				logentries.Items[0].ID > lastLogId &&
 				logentries.Items[0].ObjectUUID == userUuid &&
 				logentries.Items[0].Properties["collection_uuid"] == collectionUuid &&
+				(collectionPDH == "" || logentries.Items[0].Properties["portable_data_hash"] == collectionPDH) &&
 				logentries.Items[0].Properties["collection_file_path"] == filepath {
 				break
 			}
@@ -1321,7 +1362,7 @@ func (s *IntegrationSuite) TestDownloadLoggingPermission(c *check.C) {
 				},
 			}
 			s.checkUploadDownloadRequest(c, req, http.StatusOK, "download", adminperm,
-				arvadostest.AdminUserUUID, arvadostest.FooCollection, "foo")
+				arvadostest.AdminUserUUID, arvadostest.FooCollection, arvadostest.FooCollectionPDH, "foo")
 
 			// Test user permission
 			req = &http.Request{
@@ -1334,7 +1375,7 @@ func (s *IntegrationSuite) TestDownloadLoggingPermission(c *check.C) {
 				},
 			}
 			s.checkUploadDownloadRequest(c, req, http.StatusOK, "download", userperm,
-				arvadostest.ActiveUserUUID, arvadostest.FooCollection, "foo")
+				arvadostest.ActiveUserUUID, arvadostest.FooCollection, arvadostest.FooCollectionPDH, "foo")
 		}
 	}
 
@@ -1354,7 +1395,7 @@ func (s *IntegrationSuite) TestDownloadLoggingPermission(c *check.C) {
 			},
 		}
 		s.checkUploadDownloadRequest(c, req, http.StatusOK, "download", true,
-			arvadostest.ActiveUserUUID, arvadostest.MultilevelCollection1, "dir1/subdir/file1")
+			arvadostest.ActiveUserUUID, arvadostest.MultilevelCollection1, arvadostest.MultilevelCollection1PDH, "dir1/subdir/file1")
 	}
 
 	u = mustParseURL("http://" + strings.Replace(arvadostest.FooCollectionPDH, "+", "-", 1) + ".keep-web.example/foo")
@@ -1368,7 +1409,7 @@ func (s *IntegrationSuite) TestDownloadLoggingPermission(c *check.C) {
 		},
 	}
 	s.checkUploadDownloadRequest(c, req, http.StatusOK, "download", true,
-		arvadostest.ActiveUserUUID, arvadostest.FooCollection, "foo")
+		arvadostest.ActiveUserUUID, "", arvadostest.FooCollectionPDH, "foo")
 }
 
 func (s *IntegrationSuite) TestUploadLoggingPermission(c *check.C) {
@@ -1408,7 +1449,7 @@ func (s *IntegrationSuite) TestUploadLoggingPermission(c *check.C) {
 				Body: io.NopCloser(bytes.NewReader([]byte("bar"))),
 			}
 			s.checkUploadDownloadRequest(c, req, http.StatusCreated, "upload", adminperm,
-				arvadostest.AdminUserUUID, coll.UUID, "bar")
+				arvadostest.AdminUserUUID, coll.UUID, "", "bar")
 
 			// Test user permission
 			req = &http.Request{
@@ -1422,7 +1463,7 @@ func (s *IntegrationSuite) TestUploadLoggingPermission(c *check.C) {
 				Body: io.NopCloser(bytes.NewReader([]byte("bar"))),
 			}
 			s.checkUploadDownloadRequest(c, req, http.StatusCreated, "upload", userperm,
-				arvadostest.ActiveUserUUID, coll.UUID, "bar")
+				arvadostest.ActiveUserUUID, coll.UUID, "", "bar")
 		}
 	}
 }

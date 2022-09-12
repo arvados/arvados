@@ -1221,8 +1221,8 @@ func (s *CollectionFSSuite) TestFlushFullBlocksOnly(c *check.C) {
 			c.Assert(err, check.IsNil)
 		}
 	}
-	inodebytes := int64((nDirs*(67*2+1) + 1) * 64)
-	c.Check(fs.MemorySize(), check.Equals, int64(nDirs*67<<20)+inodebytes)
+	inodebytes := int64((nDirs*(67+1) + 1) * 64)
+	c.Check(fs.MemorySize(), check.Equals, int64(nDirs*67*(1<<20+8))+inodebytes)
 	c.Check(flushed, check.Equals, int64(0))
 
 	waitForFlush := func(expectUnflushed, expectFlushed int64) {
@@ -1233,27 +1233,29 @@ func (s *CollectionFSSuite) TestFlushFullBlocksOnly(c *check.C) {
 	}
 
 	// Nothing flushed yet
-	waitForFlush((nDirs*67)<<20+inodebytes, 0)
+	waitForFlush(nDirs*67*(1<<20+8)+inodebytes, 0)
 
 	// Flushing a non-empty dir "/" is non-recursive and there are
 	// no top-level files, so this has no effect
 	fs.Flush("/", false)
-	waitForFlush((nDirs*67)<<20+inodebytes, 0)
+	waitForFlush(nDirs*67*(1<<20+8)+inodebytes, 0)
 
 	// Flush the full block in dir0
 	fs.Flush("dir0", false)
-	waitForFlush((nDirs*67-64)<<20+inodebytes, 64<<20)
+	bigloclen := int64(32 + 9 + 51 + 40) // md5 + "+" + "67xxxxxx" + "+Axxxxxx..." + 40 (see (*dirnode)MemorySize)
+	waitForFlush((nDirs*67-64)*(1<<20+8)+inodebytes+bigloclen*64, 64<<20)
 
 	err = fs.Flush("dir-does-not-exist", false)
 	c.Check(err, check.NotNil)
 
 	// Flush full blocks in all dirs
 	fs.Flush("", false)
-	waitForFlush(nDirs*3<<20+inodebytes, nDirs*64<<20)
+	waitForFlush(nDirs*3*(1<<20+8)+inodebytes+bigloclen*64*nDirs, nDirs*64<<20)
 
 	// Flush non-full blocks, too
 	fs.Flush("", true)
-	waitForFlush(inodebytes, nDirs*67<<20)
+	smallloclen := int64(32 + 8 + 51 + 40) // md5 + "+" + "3xxxxxx" + "+Axxxxxx..." + 40 (see (*dirnode)MemorySize)
+	waitForFlush(inodebytes+bigloclen*64*nDirs+smallloclen*3*nDirs, nDirs*67<<20)
 }
 
 // Even when writing lots of files/dirs from different goroutines, as

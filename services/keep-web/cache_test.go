@@ -6,17 +6,21 @@ package keepweb
 
 import (
 	"bytes"
+	"net/http"
+	"net/http/httptest"
+	"regexp"
+	"strings"
+	"time"
 
 	"git.arvados.org/arvados.git/sdk/go/arvados"
-	"git.arvados.org/arvados.git/sdk/go/arvadosclient"
 	"git.arvados.org/arvados.git/sdk/go/arvadostest"
-	"git.arvados.org/arvados.git/sdk/go/ctxlog"
-	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/common/expfmt"
 	"gopkg.in/check.v1"
 )
 
-func (s *UnitSuite) checkCacheMetrics(c *check.C, reg *prometheus.Registry, regs ...string) {
+func (s *IntegrationSuite) checkCacheMetrics(c *check.C, regs ...string) {
+	s.handler.Cache.updateGauges()
+	reg := s.handler.Cache.registry
 	mfs, err := reg.Gather()
 	c.Check(err, check.IsNil)
 	buf := &bytes.Buffer{}
@@ -25,131 +29,139 @@ func (s *UnitSuite) checkCacheMetrics(c *check.C, reg *prometheus.Registry, regs
 		c.Check(enc.Encode(mf), check.IsNil)
 	}
 	mm := buf.String()
+	// Remove comments to make the "value vs. regexp" failure
+	// output easier to read.
+	mm = regexp.MustCompile(`(?m)^#.*\n`).ReplaceAllString(mm, "")
 	for _, reg := range regs {
-		c.Check(mm, check.Matches, `(?ms).*collectioncache_`+reg+`\n.*`)
+		c.Check(mm, check.Matches, `(?ms).*keepweb_sessions_`+reg+`\n.*`)
 	}
 }
 
-func (s *UnitSuite) TestCache(c *check.C) {
-	arv, err := arvadosclient.MakeArvadosClient()
-	c.Assert(err, check.Equals, nil)
-
-	cache := &cache{
-		cluster:  s.cluster,
-		logger:   ctxlog.TestLogger(c),
-		registry: prometheus.NewRegistry(),
-	}
-
+func (s *IntegrationSuite) TestCache(c *check.C) {
 	// Hit the same collection 5 times using the same token. Only
 	// the first req should cause an API call; the next 4 should
 	// hit all caches.
-	arv.ApiToken = arvadostest.AdminToken
-	var coll *arvados.Collection
+	u := mustParseURL("http://" + arvadostest.FooCollection + ".keep-web.example/foo")
+	req := &http.Request{
+		Method:     "GET",
+		Host:       u.Host,
+		URL:        u,
+		RequestURI: u.RequestURI(),
+		Header: http.Header{
+			"Authorization": {"Bearer " + arvadostest.ActiveToken},
+		},
+	}
 	for i := 0; i < 5; i++ {
-		coll, err = cache.Get(arv, arvadostest.FooCollection, false)
-		c.Check(err, check.Equals, nil)
-		c.Assert(coll, check.NotNil)
-		c.Check(coll.PortableDataHash, check.Equals, arvadostest.FooCollectionPDH)
-		c.Check(coll.ManifestText[:2], check.Equals, ". ")
+		resp := httptest.NewRecorder()
+		s.handler.ServeHTTP(resp, req)
+		c.Check(resp.Code, check.Equals, http.StatusOK)
 	}
-	s.checkCacheMetrics(c, cache.registry,
-		"requests 5",
+	s.checkCacheMetrics(c,
 		"hits 4",
-		"pdh_hits 4",
-		"api_calls 1")
+		"misses 1",
+		"active 1")
 
-	// Hit the same collection 2 more times, this time requesting
-	// it by PDH and using a different token. The first req should
-	// miss the permission cache and fetch the new manifest; the
-	// second should hit the Collection cache and skip the API
-	// lookup.
-	arv.ApiToken = arvadostest.ActiveToken
-
-	coll2, err := cache.Get(arv, arvadostest.FooCollectionPDH, false)
-	c.Check(err, check.Equals, nil)
-	c.Assert(coll2, check.NotNil)
-	c.Check(coll2.PortableDataHash, check.Equals, arvadostest.FooCollectionPDH)
-	c.Check(coll2.ManifestText[:2], check.Equals, ". ")
-	c.Check(coll2.ManifestText, check.Not(check.Equals), coll.ManifestText)
-
-	s.checkCacheMetrics(c, cache.registry,
-		"requests 6",
-		"hits 4",
-		"pdh_hits 4",
-		"api_calls 2")
-
-	coll2, err = cache.Get(arv, arvadostest.FooCollectionPDH, false)
-	c.Check(err, check.Equals, nil)
-	c.Assert(coll2, check.NotNil)
-	c.Check(coll2.PortableDataHash, check.Equals, arvadostest.FooCollectionPDH)
-	c.Check(coll2.ManifestText[:2], check.Equals, ". ")
-
-	s.checkCacheMetrics(c, cache.registry,
-		"requests 7",
-		"hits 5",
-		"pdh_hits 4",
-		"api_calls 2")
-
-	// Alternating between two collections N times should produce
-	// only 2 more API calls.
-	arv.ApiToken = arvadostest.AdminToken
-	for i := 0; i < 20; i++ {
-		var target string
-		if i%2 == 0 {
-			target = arvadostest.HelloWorldCollection
-		} else {
-			target = arvadostest.FooBarDirCollection
-		}
-		_, err := cache.Get(arv, target, false)
-		c.Check(err, check.Equals, nil)
+	// Hit a shared collection 3 times using PDH, using a
+	// different token.
+	u2 := mustParseURL("http://" + strings.Replace(arvadostest.BarFileCollectionPDH, "+", "-", 1) + ".keep-web.example/bar")
+	req2 := &http.Request{
+		Method:     "GET",
+		Host:       u2.Host,
+		URL:        u2,
+		RequestURI: u2.RequestURI(),
+		Header: http.Header{
+			"Authorization": {"Bearer " + arvadostest.SpectatorToken},
+		},
 	}
-	s.checkCacheMetrics(c, cache.registry,
-		"requests 27",
-		"hits 23",
-		"pdh_hits 22",
-		"api_calls 4")
+	for i := 0; i < 3; i++ {
+		resp2 := httptest.NewRecorder()
+		s.handler.ServeHTTP(resp2, req2)
+		c.Check(resp2.Code, check.Equals, http.StatusOK)
+	}
+	s.checkCacheMetrics(c,
+		"hits 6",
+		"misses 2",
+		"active 2")
+
+	// Alternating between two collections/tokens N times should
+	// use the existing sessions.
+	for i := 0; i < 7; i++ {
+		resp := httptest.NewRecorder()
+		s.handler.ServeHTTP(resp, req)
+		c.Check(resp.Code, check.Equals, http.StatusOK)
+
+		resp2 := httptest.NewRecorder()
+		s.handler.ServeHTTP(resp2, req2)
+		c.Check(resp2.Code, check.Equals, http.StatusOK)
+	}
+	s.checkCacheMetrics(c,
+		"hits 20",
+		"misses 2",
+		"active 2")
 }
 
-func (s *UnitSuite) TestCacheForceReloadByPDH(c *check.C) {
-	arv, err := arvadosclient.MakeArvadosClient()
-	c.Assert(err, check.Equals, nil)
+func (s *IntegrationSuite) TestForceReloadPDH(c *check.C) {
+	filename := strings.Replace(time.Now().Format(time.RFC3339Nano), ":", ".", -1)
+	manifest := ". d41d8cd98f00b204e9800998ecf8427e+0 0:0:" + filename + "\n"
+	pdh := arvados.PortableDataHash(manifest)
+	client := arvados.NewClientFromEnv()
+	client.AuthToken = arvadostest.ActiveToken
 
-	cache := &cache{
-		cluster:  s.cluster,
-		logger:   ctxlog.TestLogger(c),
-		registry: prometheus.NewRegistry(),
-	}
+	_, resp := s.do("GET", "http://"+strings.Replace(pdh, "+", "-", 1)+".keep-web.example/"+filename, arvadostest.ActiveToken, nil)
+	c.Check(resp.Code, check.Equals, http.StatusNotFound)
 
-	for _, forceReload := range []bool{false, true, false, true} {
-		_, err := cache.Get(arv, arvadostest.FooCollectionPDH, forceReload)
-		c.Check(err, check.Equals, nil)
-	}
+	var coll arvados.Collection
+	err := client.RequestAndDecode(&coll, "POST", "arvados/v1/collections", nil, map[string]interface{}{
+		"collection": map[string]string{
+			"manifest_text": manifest,
+		},
+	})
+	c.Assert(err, check.IsNil)
+	defer client.RequestAndDecode(nil, "DELETE", "arvados/v1/collections/"+coll.UUID, nil, nil)
+	c.Assert(coll.PortableDataHash, check.Equals, pdh)
 
-	s.checkCacheMetrics(c, cache.registry,
-		"requests 4",
-		"hits 3",
-		"pdh_hits 0",
-		"api_calls 1")
+	_, resp = s.do("GET", "http://"+strings.Replace(pdh, "+", "-", 1)+".keep-web.example/"+filename, "", http.Header{
+		"Authorization": {"Bearer " + arvadostest.ActiveToken},
+		"Cache-Control": {"must-revalidate"},
+	})
+	c.Check(resp.Code, check.Equals, http.StatusOK)
+
+	_, resp = s.do("GET", "http://"+strings.Replace(pdh, "+", "-", 1)+".keep-web.example/missingfile", "", http.Header{
+		"Authorization": {"Bearer " + arvadostest.ActiveToken},
+		"Cache-Control": {"must-revalidate"},
+	})
+	c.Check(resp.Code, check.Equals, http.StatusNotFound)
 }
 
-func (s *UnitSuite) TestCacheForceReloadByUUID(c *check.C) {
-	arv, err := arvadosclient.MakeArvadosClient()
-	c.Assert(err, check.Equals, nil)
+func (s *IntegrationSuite) TestForceReloadUUID(c *check.C) {
+	client := arvados.NewClientFromEnv()
+	client.AuthToken = arvadostest.ActiveToken
+	var coll arvados.Collection
+	err := client.RequestAndDecode(&coll, "POST", "arvados/v1/collections", nil, map[string]interface{}{
+		"collection": map[string]string{
+			"manifest_text": ". d41d8cd98f00b204e9800998ecf8427e+0 0:0:oldfile\n",
+		},
+	})
+	c.Assert(err, check.IsNil)
+	defer client.RequestAndDecode(nil, "DELETE", "arvados/v1/collections/"+coll.UUID, nil, nil)
 
-	cache := &cache{
-		cluster:  s.cluster,
-		logger:   ctxlog.TestLogger(c),
-		registry: prometheus.NewRegistry(),
-	}
-
-	for _, forceReload := range []bool{false, true, false, true} {
-		_, err := cache.Get(arv, arvadostest.FooCollection, forceReload)
-		c.Check(err, check.Equals, nil)
-	}
-
-	s.checkCacheMetrics(c, cache.registry,
-		"requests 4",
-		"hits 3",
-		"pdh_hits 3",
-		"api_calls 3")
+	_, resp := s.do("GET", "http://"+coll.UUID+".keep-web.example/newfile", arvadostest.ActiveToken, nil)
+	c.Check(resp.Code, check.Equals, http.StatusNotFound)
+	_, resp = s.do("GET", "http://"+coll.UUID+".keep-web.example/oldfile", arvadostest.ActiveToken, nil)
+	c.Check(resp.Code, check.Equals, http.StatusOK)
+	_, resp = s.do("GET", "http://"+coll.UUID+".keep-web.example/newfile", arvadostest.ActiveToken, nil)
+	c.Check(resp.Code, check.Equals, http.StatusNotFound)
+	err = client.RequestAndDecode(&coll, "PATCH", "arvados/v1/collections/"+coll.UUID, nil, map[string]interface{}{
+		"collection": map[string]string{
+			"manifest_text": ". d41d8cd98f00b204e9800998ecf8427e+0 0:0:oldfile 0:0:newfile\n",
+		},
+	})
+	c.Assert(err, check.IsNil)
+	_, resp = s.do("GET", "http://"+coll.UUID+".keep-web.example/newfile", arvadostest.ActiveToken, nil)
+	c.Check(resp.Code, check.Equals, http.StatusNotFound)
+	_, resp = s.do("GET", "http://"+coll.UUID+".keep-web.example/newfile", "", http.Header{
+		"Authorization": {"Bearer " + arvadostest.ActiveToken},
+		"Cache-Control": {"must-revalidate"},
+	})
+	c.Check(resp.Code, check.Equals, http.StatusOK)
 }

@@ -32,6 +32,7 @@ const (
 	HelloWorldPdh           = "55713e6a34081eb03609e7ad5fcad129+62"
 
 	MultilevelCollection1                        = "zzzzz-4zz18-pyw8yp9g3pr7irn"
+	MultilevelCollection1PDH                     = "f9ddda46bb293b6847da984e3aa735db+290"
 	StorageClassesDesiredDefaultConfirmedDefault = "zzzzz-4zz18-3t236wr12769tga"
 	StorageClassesDesiredArchiveConfirmedDefault = "zzzzz-4zz18-3t236wr12769qqa"
 	EmptyCollectionUUID                          = "zzzzz-4zz18-gs9ooj1h9sd5mde"
@@ -83,8 +84,11 @@ const (
 	Repository2UUID = "zzzzz-s0uqq-382brsig8rp3667"
 	Repository2Name = "active/foo2"
 
-	FooCollectionSharingTokenUUID = "zzzzz-gj3su-gf02tdm4g1z3e3u"
-	FooCollectionSharingToken     = "iknqgmunrhgsyfok8uzjlwun9iscwm3xacmzmg65fa1j1lpdss"
+	FooFileCollectionUUID             = "zzzzz-4zz18-znfnqtbbv4spc3w"
+	FooFileCollectionSharingTokenUUID = "zzzzz-gj3su-gf02tdm4g1z3e3u"
+	FooFileCollectionSharingToken     = "iknqgmunrhgsyfok8uzjlwun9iscwm3xacmzmg65fa1j1lpdss"
+	BarFileCollectionUUID             = "zzzzz-4zz18-ehbhgtheo8909or"
+	BarFileCollectionPDH              = "fa7aeb5140e2848d39b416daeef4ffc5+45"
 
 	WorkflowWithDefinitionYAMLUUID = "zzzzz-7fd4e-validworkfloyml"
 
