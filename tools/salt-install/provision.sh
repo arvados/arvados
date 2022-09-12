@@ -336,27 +336,33 @@ mkdir -p ${S_DIR} ${F_DIR} ${P_DIR} ${T_DIR}
 # Get the formula and dependencies
 cd ${F_DIR} || exit 1
 echo "Cloning formulas"
-test -d docker || git clone --quiet https://github.com/saltstack-formulas/docker-formula.git ${F_DIR}/docker
+test -d docker && ( cd docker && git fetch ) \
+  || git clone --quiet https://github.com/saltstack-formulas/docker-formula.git ${F_DIR}/docker
 ( cd docker && git checkout --quiet tags/"${DOCKER_TAG}" )
 
 echo "...locale"
-test -d locale || git clone --quiet https://github.com/saltstack-formulas/locale-formula.git ${F_DIR}/locale
+test -d locale && ( cd locale && git fetch ) \
+  || git clone --quiet https://github.com/saltstack-formulas/locale-formula.git ${F_DIR}/locale
 ( cd locale && git checkout --quiet tags/"${LOCALE_TAG}" )
 
 echo "...nginx"
-test -d nginx || git clone --quiet https://github.com/saltstack-formulas/nginx-formula.git ${F_DIR}/nginx
+test -d nginx && ( cd nginx && git fetch ) \
+  || git clone --quiet https://github.com/saltstack-formulas/nginx-formula.git ${F_DIR}/nginx
 ( cd nginx && git checkout --quiet tags/"${NGINX_TAG}" )
 
 echo "...postgres"
-test -d postgres || git clone --quiet https://github.com/saltstack-formulas/postgres-formula.git ${F_DIR}/postgres
+test -d postgres && ( cd postgres && git fetch ) \
+  || git clone --quiet https://github.com/saltstack-formulas/postgres-formula.git ${F_DIR}/postgres
 ( cd postgres && git checkout --quiet tags/"${POSTGRES_TAG}" )
 
 echo "...letsencrypt"
-test -d letsencrypt || git clone --quiet https://github.com/saltstack-formulas/letsencrypt-formula.git ${F_DIR}/letsencrypt
+test -d letsencrypt && ( cd letsencrypt && git fetch ) \
+  || git clone --quiet https://github.com/saltstack-formulas/letsencrypt-formula.git ${F_DIR}/letsencrypt
 ( cd letsencrypt && git checkout --quiet tags/"${LETSENCRYPT_TAG}" )
 
 echo "...logrotate"
-test -d logrotate || git clone --quiet https://github.com/saltstack-formulas/logrotate-formula.git ${F_DIR}/logrotate
+test -d logrotate && ( cd logrotate && git fetch ) \
+  || git clone --quiet https://github.com/saltstack-formulas/logrotate-formula.git ${F_DIR}/logrotate
 ( cd logrotate && git checkout --quiet tags/"${LOGROTATE_TAG}" )
 
 echo "...arvados"
