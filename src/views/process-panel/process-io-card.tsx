@@ -170,10 +170,10 @@ export const ProcessIOCard = withStyles(styles)(
             <CardContent className={classes.content}>
                 <div>
                     <Tabs value={tabState} onChange={handleChange} variant="fullWidth">
-                        <Tab label="Preview" />
-                        <Tab label="Raw" />
-                        {label === ProcessIOCardType.INPUT && <Tab label="Input Mounts" />}
-                        {label === ProcessIOCardType.OUTPUT && <Tab label="Output Collection" />}
+                        <Tab label="Parameters" />
+                        <Tab label="JSON" />
+                        {label === ProcessIOCardType.INPUT && <Tab label="Collections" />}
+                        {label === ProcessIOCardType.OUTPUT && <Tab label="Collection" />}
                     </Tabs>
                     {tabState === 0 && <div className={classes.tableWrapper}>
                         {params.length ?
