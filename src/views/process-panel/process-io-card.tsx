@@ -59,6 +59,7 @@ import { InputCollectionMount } from 'store/processes/processes-actions';
 import { connect } from 'react-redux';
 import { RootState } from 'store/store';
 import { ProcessOutputCollectionFiles } from './process-output-collection-files';
+import { Process } from 'store/processes/process';
 
 type CssRules = 'card' | 'content' | 'title' | 'header' | 'avatar' | 'iconHeader' | 'tableWrapper' | 'tableRoot' | 'paramValue' | 'keepLink' | 'imagePreview' | 'valArray' | 'emptyValue';
 
@@ -129,6 +130,7 @@ export enum ProcessIOCardType {
     OUTPUT = 'Outputs',
 }
 export interface ProcessIOCardDataProps {
+    process: Process;
     label: ProcessIOCardType;
     params: ProcessIOParameter[];
     raw?: any;
@@ -139,11 +141,12 @@ export interface ProcessIOCardDataProps {
 type ProcessIOCardProps = ProcessIOCardDataProps & WithStyles<CssRules> & MPVPanelProps;
 
 export const ProcessIOCard = withStyles(styles)(
-    ({ classes, label, params, raw, mounts, outputUuid, doHidePanel, panelName }: ProcessIOCardProps) => {
-        const [tabState, setTabState] = useState(0);
-        const handleChange = (event: React.MouseEvent<HTMLElement>, value: number) => {
-            setTabState(value);
+    ({ classes, label, params, raw, mounts, outputUuid, doHidePanel, panelName, process }: ProcessIOCardProps) => {
+        const [mainProcTabState, setMainProcTabState] = useState(0);
+        const handleMainProcTabChange = (event: React.MouseEvent<HTMLElement>, value: number) => {
+            setMainProcTabState(value);
         }
+
         const PanelIcon = label == ProcessIOCardType.INPUT ? InputIcon : OutputIcon;
 
         return <Card className={classes.card} data-cy="process-io-card">
@@ -169,30 +172,38 @@ export const ProcessIOCard = withStyles(styles)(
                 } />
             <CardContent className={classes.content}>
                 <div>
-                    <Tabs value={tabState} onChange={handleChange} variant="fullWidth">
-                        <Tab label="Parameters" />
-                        <Tab label="JSON" />
-                        {label === ProcessIOCardType.INPUT && <Tab label="Collections" />}
-                        {label === ProcessIOCardType.OUTPUT && <Tab label="Collection" />}
-                    </Tabs>
-                    {tabState === 0 && <div className={classes.tableWrapper}>
-                        {params.length ?
-                            <ProcessIOPreview data={params} /> :
-                            <Grid container item alignItems='center' justify='center'>
-                                <DefaultView messages={["No parameters found"]} icon={InfoIcon} />
-                            </Grid>}
-                        </div>}
-                    {tabState === 1 && <div className={classes.tableWrapper}>
-                        {params.length ?
-                            <ProcessIORaw data={raw || params} /> :
-                            <Grid container item alignItems='center' justify='center'>
-                                <DefaultView messages={["No parameters found"]} icon={InfoIcon} />
-                            </Grid>}
-                        </div>}
-                    {tabState === 2 && <div className={classes.tableWrapper}>
-                        {label === ProcessIOCardType.INPUT && <ProcessInputMounts mounts={mounts || []} />}
-                        {label === ProcessIOCardType.OUTPUT && <ProcessOutputCollectionFiles isWritable={false} currentItemUuid={outputUuid} />}
-                        </div>}
+                    {!process.containerRequest.requestingContainerUuid ?
+                        (<>
+                            <Tabs value={mainProcTabState} onChange={handleMainProcTabChange} variant="fullWidth">
+                                <Tab label="Parameters" />
+                                <Tab label="JSON" />
+                            </Tabs>
+                            {mainProcTabState === 0 && <div className={classes.tableWrapper}>
+                                {params.length ?
+                                    <ProcessIOPreview data={params} /> :
+                                    <Grid container item alignItems='center' justify='center'>
+                                        <DefaultView messages={["No parameters found"]} icon={InfoIcon} />
+                                    </Grid>}
+                                </div>}
+                            {mainProcTabState === 1 && <div className={classes.tableWrapper}>
+                                {params.length ?
+                                    <ProcessIORaw data={raw || params} /> :
+                                    <Grid container item alignItems='center' justify='center'>
+                                        <DefaultView messages={["No parameters found"]} icon={InfoIcon} />
+                                    </Grid>}
+                                </div>}
+                        </>) :
+                        (<>
+                            <Tabs value={0} variant="fullWidth">
+                                {label === ProcessIOCardType.INPUT && <Tab label="Collections" />}
+                                {label === ProcessIOCardType.OUTPUT && <Tab label="Collection" />}
+                            </Tabs>
+                            <div className={classes.tableWrapper}>
+                                {label === ProcessIOCardType.INPUT && <ProcessInputMounts mounts={mounts || []} />}
+                                {label === ProcessIOCardType.OUTPUT && <ProcessOutputCollectionFiles isWritable={false} currentItemUuid={outputUuid} />}
+                            </div>
+                        </>)
+                    }
                 </div>
             </CardContent>
         </Card>;

@@ -136,6 +136,7 @@ export const ProcessPanelRoot = withStyles(styles)(
             <MPVPanelContent forwardProps xs="auto" data-cy="process-inputs">
                 <ProcessIOCard
                     label={ProcessIOCardType.INPUT}
+                    process={process}
                     params={processedInputs}
                     raw={rawInputs}
                     mounts={inputMounts}
@@ -144,6 +145,7 @@ export const ProcessPanelRoot = withStyles(styles)(
             <MPVPanelContent forwardProps xs="auto" data-cy="process-outputs">
                 <ProcessIOCard
                     label={ProcessIOCardType.OUTPUT}
+                    process={process}
                     params={processedOutputs}
                     raw={outputDetails.rawOutputs}
                     outputUuid={outputUuid || ""}
