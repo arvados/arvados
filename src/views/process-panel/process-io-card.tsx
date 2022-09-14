@@ -442,7 +442,7 @@ const KeepUrlBase = withStyles(styles)(({auth, res, pdh, classes}: KeepUrlProps 
     // Passing a pdh always returns a relative wb2 collection url
     const pdhWbPath = getNavUrl(pdhUrl.replace('keep:', ''), auth);
     return pdhUrl && pdhWbPath ?
-        <RouterLink to={pdhWbPath} className={classes.keepLink}>{pdhUrl}</RouterLink> :
+        <Tooltip title={"View collection in Workbench"}><RouterLink to={pdhWbPath} className={classes.keepLink}>{pdhUrl}</RouterLink></Tooltip> :
         <></>;
 });
 
@@ -453,8 +453,9 @@ const KeepUrlPath = withStyles(styles)(({auth, res, pdh, classes}: KeepUrlProps 
 
     const keepUrlPathNav = getKeepNavUrl(auth, res, pdh);
     return keepUrlPath && keepUrlPathNav ?
-        <MuiLink className={classes.keepLink} onClick={() => handleClick(keepUrlPathNav)}>{keepUrlPath}</MuiLink> :
-        <></>;
+        <Tooltip title={"View in keep-web"}><MuiLink className={classes.keepLink} onClick={() => handleClick(keepUrlPathNav)}>{keepUrlPath}</MuiLink></Tooltip> :
+        // Show No value for root collection io that lacks path part
+        <EmptyValue />;
 });
 
 const getKeepNavUrl = (auth: AuthState, file: File | Directory, pdh?: string): string => {
