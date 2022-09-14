@@ -30,6 +30,7 @@ export interface CodeSnippetDataProps {
     className?: string;
     apiResponse?: boolean;
     linked?: boolean;
+    children?: JSX.Element;
 }
 
 interface CodeSnippetAuthProps {
@@ -43,11 +44,12 @@ const mapStateToProps = (state: RootState): CodeSnippetAuthProps => ({
 });
 
 export const CodeSnippet = withStyles(styles)(connect(mapStateToProps)(
-    ({ classes, lines, linked, className, apiResponse, dispatch, auth }: CodeSnippetProps & CodeSnippetAuthProps & DispatchProp) =>
+    ({ classes, lines, linked, className, apiResponse, dispatch, auth, children }: CodeSnippetProps & CodeSnippetAuthProps & DispatchProp) =>
         <Typography
         component="div"
         className={classNames(classes.root, className)}>
             <Typography className={apiResponse ? classes.space : className} component="pre">
+                {children}
                 {linked ?
                     lines.map((line, index) => <React.Fragment key={index}>{renderLinks(auth, dispatch)(line)}{`\n`}</React.Fragment>) :
                     lines.join('\n')

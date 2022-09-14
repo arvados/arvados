@@ -301,7 +301,7 @@ describe('Project tests', function() {
 
                     cy.get('main').contains(projectName).rightclick();
 
-                    cy.get('[data-cy=context-menu]').contains('Advanced').click();
+                    cy.get('[data-cy=context-menu]').contains('API Details').click();
 
                     cy.get('[role=tablist]').contains('METADATA').click();
 

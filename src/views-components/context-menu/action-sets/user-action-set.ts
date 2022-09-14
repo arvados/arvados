@@ -32,7 +32,7 @@ export const userActionSet: ContextMenuActionSet = [[{
         dispatch<any>(openUserProjects(uuid));
     }
 }, {
-    name: "Advanced",
+    name: "API Details",
     icon: AdvancedIcon,
     execute: (dispatch, { uuid }) => {
         dispatch<any>(openAdvancedTabDialog(uuid));

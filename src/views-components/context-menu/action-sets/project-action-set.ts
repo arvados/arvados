@@ -52,7 +52,7 @@ export const readOnlyProjectActionSet: ContextMenuActionSet = [[
     },
     {
         icon: AdvancedIcon,
-        name: "Advanced",
+        name: "API Details",
         execute: (dispatch, resource) => {
             dispatch<any>(openAdvancedTabDialog(resource.uuid));
         }

@@ -20,7 +20,7 @@ export const groupActionSet: ContextMenuActionSet = [[{
         dispatch<any>(openGroupAttributes(uuid));
     }
 }, {
-    name: "Advanced",
+    name: "API Details",
     icon: AdvancedIcon,
     execute: (dispatch, resource) => {
         dispatch<any>(openAdvancedTabDialog(resource.uuid));

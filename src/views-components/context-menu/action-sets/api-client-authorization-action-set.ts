@@ -17,7 +17,7 @@ export const apiClientAuthorizationActionSet: ContextMenuActionSet = [[{
         dispatch<any>(openApiClientAuthorizationAttributesDialog(uuid));
     }
 }, {
-    name: "Advanced",
+    name: "API Details",
     icon: AdvancedIcon,
     execute: (dispatch, { uuid }) => {
         dispatch<any>(openAdvancedTabDialog(uuid));

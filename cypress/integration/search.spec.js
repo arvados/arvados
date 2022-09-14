@@ -241,7 +241,7 @@ describe('Search tests', function() {
             cy.get('[data-cy=context-menu]').within((ctx) => {
                 // Check that there are 4 items in the menu
                 cy.get(ctx).children().should('have.length', 4);
-                cy.contains('Advanced');
+                cy.contains('API Details');
                 cy.contains('Copy to clipboard');
                 cy.contains('Open in new tab');
                 cy.contains('View details');
