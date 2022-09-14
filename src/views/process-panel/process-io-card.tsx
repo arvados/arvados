@@ -95,6 +95,10 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     },
     tableRoot: {
         width: '100%',
+        '& thead th': {
+            verticalAlign: 'bottom',
+            paddingBottom: '10px',
+        }
     },
     paramValue: {
         display: 'flex',
