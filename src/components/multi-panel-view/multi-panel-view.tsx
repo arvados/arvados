@@ -123,12 +123,12 @@ const MPVContainerComponent = ({children, panelStates, classes, ...props}: MPVCo
             (panelStates[idx] &&
                 (panelStates[idx].visible || panelStates[idx].visible === undefined)));
     const [panelVisibility, setPanelVisibility] = useState<boolean[]>(visibility);
-    const [brightenedPanel, setBrightenedPanel] = useState<number>(-1);
+    const [highlightedPanel, setHighlightedPanel] = useState<number>(-1);
     const [selectedPanel, setSelectedPanel] = useState<number>(-1);
     const panelRef = useRef<any>(null);
 
     let panels: JSX.Element[] = [];
-    let toggles: JSX.Element[] = [];
+    let buttons: JSX.Element[] = [];
 
     if (isArray(children)) {
         for (let idx = 0; idx < children.length; idx++) {
@@ -168,16 +168,16 @@ const MPVContainerComponent = ({children, panelStates, classes, ...props}: MPVCo
             const panelIsMaximized = panelVisibility[idx] &&
                 panelVisibility.filter(e => e).length === 1;
 
-            toggles = [
-                ...toggles,
+            buttons = [
+                ...buttons,
                 <Tooltip title={btnTooltip} disableFocusListener>
                     <Button variant={btnVariant} size="small" color="primary"
                         className={classNames(classes.button)}
                         onMouseEnter={() => {
-                            setBrightenedPanel(idx);
+                            setHighlightedPanel(idx);
                         }}
                         onMouseLeave={() => {
-                            setBrightenedPanel(-1);
+                            setHighlightedPanel(-1);
                         }}
                         onClick={showFn(idx)}>
                             {panelName}
@@ -189,7 +189,7 @@ const MPVContainerComponent = ({children, panelStates, classes, ...props}: MPVCo
             const aPanel =
                 <MPVHideablePanel key={idx} visible={panelVisibility[idx]} name={panelName}
                     panelRef={(idx === selectedPanel) ? panelRef : undefined}
-                    maximized={panelIsMaximized} illuminated={idx === brightenedPanel}
+                    maximized={panelIsMaximized} illuminated={idx === highlightedPanel}
                     doHidePanel={hideFn(idx)} doMaximizePanel={maximizeFn(idx)}>
                     {children[idx]}
                 </MPVHideablePanel>;
@@ -199,9 +199,10 @@ const MPVContainerComponent = ({children, panelStates, classes, ...props}: MPVCo
 
     return <Grid container {...props}>
         <Grid container item direction="row">
-            { toggles.map((tgl, idx) => <Grid item key={idx}>{tgl}</Grid>) }
+            { buttons.map((tgl, idx) => <Grid item key={idx}>{tgl}</Grid>) }
         </Grid>
-        <Grid container item {...props} xs className={classes.content}>
+        <Grid container item {...props} xs className={classes.content}
+            onScroll={() => setSelectedPanel(-1)}>
             { panelVisibility.includes(true)
                 ? panels
                 : <Grid container item alignItems='center' justify='center'>
