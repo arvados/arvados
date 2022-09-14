@@ -124,6 +124,7 @@ const MPVContainerComponent = ({children, panelStates, classes, ...props}: MPVCo
                 (panelStates[idx].visible || panelStates[idx].visible === undefined)));
     const [panelVisibility, setPanelVisibility] = useState<boolean[]>(visibility);
     const [brightenedPanel, setBrightenedPanel] = useState<number>(-1);
+    const [selectedPanel, setSelectedPanel] = useState<number>(-1);
     const panelRef = useRef<any>(null);
 
     let panels: JSX.Element[] = [];
@@ -137,6 +138,7 @@ const MPVContainerComponent = ({children, panelStates, classes, ...props}: MPVCo
                     true,
                     ...panelVisibility.slice(idx+1)
                 ]);
+                setSelectedPanel(idx);
             };
             const hideFn = (idx: number) => () => {
                 setPanelVisibility([
@@ -159,25 +161,22 @@ const MPVContainerComponent = ({children, panelStates, classes, ...props}: MPVCo
             const panelName = panelStates === undefined
                 ? `Panel ${idx+1}`
                 : (panelStates[idx] && panelStates[idx].name) || `Panel ${idx+1}`;
-            const toggleVariant = "outlined";
-            const toggleTooltip = panelVisibility[idx]
+            const btnVariant = "outlined";
+            const btnTooltip = panelVisibility[idx]
                 ? ''
                 :`Show ${panelName} panel`;
             const panelIsMaximized = panelVisibility[idx] &&
                 panelVisibility.filter(e => e).length === 1;
 
-            let brightenerTimer: NodeJS.Timer;
             toggles = [
                 ...toggles,
-                <Tooltip title={toggleTooltip} disableFocusListener>
-                    <Button variant={toggleVariant} size="small" color="primary"
+                <Tooltip title={btnTooltip} disableFocusListener>
+                    <Button variant={btnVariant} size="small" color="primary"
                         className={classNames(classes.button)}
                         onMouseEnter={() => {
-                            brightenerTimer = setTimeout(
-                                () => setBrightenedPanel(idx), 100);
+                            setBrightenedPanel(idx);
                         }}
                         onMouseLeave={() => {
-                            brightenerTimer && clearTimeout(brightenerTimer);
                             setBrightenedPanel(-1);
                         }}
                         onClick={showFn(idx)}>
@@ -189,7 +188,7 @@ const MPVContainerComponent = ({children, panelStates, classes, ...props}: MPVCo
 
             const aPanel =
                 <MPVHideablePanel key={idx} visible={panelVisibility[idx]} name={panelName}
-                    panelRef={(idx === brightenedPanel) ? panelRef : undefined}
+                    panelRef={(idx === selectedPanel) ? panelRef : undefined}
                     maximized={panelIsMaximized} illuminated={idx === brightenedPanel}
                     doHidePanel={hideFn(idx)} doMaximizePanel={maximizeFn(idx)}>
                     {children[idx]}
