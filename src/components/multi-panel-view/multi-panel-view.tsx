@@ -155,16 +155,15 @@ const MPVContainerComponent = ({children, panelStates, classes, ...props}: MPVCo
                     ...panelVisibility.slice(idx+1).map(() => false),
                 ])
             };
-            const toggleIcon = panelVisibility[idx]
-                ? <VisibleIcon className={classNames(classes.buttonIcon)} />
-                : <InvisibleIcon className={classNames(classes.buttonIcon)}/>
             const panelName = panelStates === undefined
                 ? `Panel ${idx+1}`
                 : (panelStates[idx] && panelStates[idx].name) || `Panel ${idx+1}`;
-            const btnVariant = "outlined";
+            const btnVariant = panelVisibility[idx]
+                ? "contained"
+                : "outlined";
             const btnTooltip = panelVisibility[idx]
-                ? ''
-                :`Show ${panelName} panel`;
+                ? ``
+                :`Open ${panelName} panel`;
             const panelIsMaximized = panelVisibility[idx] &&
                 panelVisibility.filter(e => e).length === 1;
 
@@ -181,7 +180,6 @@ const MPVContainerComponent = ({children, panelStates, classes, ...props}: MPVCo
                         }}
                         onClick={showFn(idx)}>
                             {panelName}
-                            {toggleIcon}
                     </Button>
                 </Tooltip>
             ];
