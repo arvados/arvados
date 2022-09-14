@@ -22,6 +22,7 @@ const (
 	// Importing arvadostest would be an import cycle, so these
 	// fixtures are duplicated here [until fs moves to a separate
 	// package].
+	fixtureActiveUserUUID               = "zzzzz-tpzed-xurymjxw79nv3jz"
 	fixtureActiveToken                  = "3kg6k6lzmp9kj5cpkcoxie963cmvjahbt2fod9zru30k1jqdmi"
 	fixtureAProjectUUID                 = "zzzzz-j7d0g-v955i6s2oi1cbso"
 	fixtureThisFilterGroupUUID          = "zzzzz-j7d0g-thisfiltergroup"
@@ -95,6 +96,55 @@ func (s *SiteFSSuite) TestUpdateStorageClasses(c *check.C) {
 	c.Assert(err, check.IsNil)
 	err = s.fs.Sync()
 	c.Assert(err, check.ErrorMatches, `.*stub does not write storage class "archive"`)
+}
+
+func (s *SiteFSSuite) TestSameCollectionDifferentPaths(c *check.C) {
+	s.fs.MountProject("home", "")
+	var coll Collection
+	err := s.client.RequestAndDecode(&coll, "POST", "arvados/v1/collections", nil, map[string]interface{}{
+		"collection": map[string]interface{}{
+			"owner_uuid": fixtureAProjectUUID,
+			"name":       fmt.Sprintf("test collection %d", time.Now().UnixNano()),
+		},
+	})
+	c.Assert(err, check.IsNil)
+
+	viaProjID := "by_id/" + fixtureAProjectUUID + "/" + coll.Name
+	viaProjName := "home/A Project/" + coll.Name
+	viaCollID := "by_id/" + coll.UUID
+	for n, dirs := range [][]string{
+		{viaCollID, viaProjID, viaProjName},
+		{viaCollID, viaProjName, viaProjID},
+		{viaProjID, viaProjName, viaCollID},
+		{viaProjID, viaCollID, viaProjName},
+		{viaProjName, viaCollID, viaProjID},
+		{viaProjName, viaProjID, viaCollID},
+	} {
+		filename := fmt.Sprintf("file %d", n)
+		f := make([]File, 3)
+		for i, dir := range dirs {
+			path := dir + "/" + filename
+			mode := os.O_RDWR
+			if i == 0 {
+				mode |= os.O_CREATE
+				c.Logf("create %s", path)
+			} else {
+				c.Logf("open %s", path)
+			}
+			f[i], err = s.fs.OpenFile(path, mode, 0777)
+			c.Assert(err, check.IsNil, check.Commentf("n=%d i=%d path=%s", n, i, path))
+			defer f[i].Close()
+		}
+		_, err = io.WriteString(f[0], filename)
+		c.Assert(err, check.IsNil)
+		_, err = f[1].Seek(0, io.SeekEnd)
+		c.Assert(err, check.IsNil)
+		_, err = io.WriteString(f[1], filename)
+		c.Assert(err, check.IsNil)
+		buf, err := io.ReadAll(f[2])
+		c.Assert(err, check.IsNil)
+		c.Check(string(buf), check.Equals, filename+filename)
+	}
 }
 
 func (s *SiteFSSuite) TestByUUIDAndPDH(c *check.C) {

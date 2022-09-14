@@ -6,7 +6,9 @@ package arvados
 
 import (
 	"log"
+	"os"
 	"strings"
+	"time"
 )
 
 func (fs *customFileSystem) defaultUUID(uuid string) (string, error) {
@@ -64,9 +66,18 @@ func (fs *customFileSystem) projectsLoadOne(parent inode, uuid, name string) (in
 	if strings.Contains(coll.UUID, "-j7d0g-") {
 		// Group item was loaded into a Collection var -- but
 		// we only need the Name and UUID anyway, so it's OK.
-		return fs.newProjectNode(parent, coll.Name, coll.UUID, nil), nil
+		return &hardlink{
+			inode: fs.projectSingleton(coll.UUID, &Group{
+				UUID:       coll.UUID,
+				Name:       coll.Name,
+				ModifiedAt: coll.ModifiedAt,
+				Properties: coll.Properties,
+			}),
+			parent: parent,
+			name:   coll.Name,
+		}, nil
 	} else if strings.Contains(coll.UUID, "-4zz18-") {
-		return deferredCollectionFS(fs, parent, coll), nil
+		return fs.newDeferredCollectionDir(parent, name, coll.UUID, coll.ModifiedAt), nil
 	} else {
 		log.Printf("group contents: unrecognized UUID in response: %q", coll.UUID)
 		return nil, ErrInvalidArgument
@@ -105,10 +116,14 @@ func (fs *customFileSystem) projectsLoadAll(parent inode, uuid string) ([]inode,
 		}
 
 		for {
-			// The groups content endpoint returns Collection and Group (project)
-			// objects. This function only accesses the UUID and Name field. Both
-			// collections and groups have those fields, so it is easier to just treat
-			// the ObjectList that comes back as a CollectionList.
+			// The groups content endpoint returns
+			// Collection and Group (project)
+			// objects. This function only accesses the
+			// UUID, Name, and ModifiedAt fields. Both
+			// collections and groups have those fields,
+			// so it is easier to just treat the
+			// ObjectList that comes back as a
+			// CollectionList.
 			var resp CollectionList
 			err = fs.RequestAndDecode(&resp, "GET", "arvados/v1/groups/"+uuid+"/contents", nil, params)
 			if err != nil {
@@ -125,14 +140,14 @@ func (fs *customFileSystem) projectsLoadAll(parent inode, uuid string) ([]inode,
 					continue
 				}
 				if strings.Contains(i.UUID, "-j7d0g-") {
-					inodes = append(inodes, fs.newProjectNode(parent, i.Name, i.UUID, &Group{
+					inodes = append(inodes, fs.newProjectDir(parent, i.Name, i.UUID, &Group{
 						UUID:       i.UUID,
 						Name:       i.Name,
 						ModifiedAt: i.ModifiedAt,
 						Properties: i.Properties,
 					}))
 				} else if strings.Contains(i.UUID, "-4zz18-") {
-					inodes = append(inodes, deferredCollectionFS(fs, parent, i))
+					inodes = append(inodes, fs.newDeferredCollectionDir(parent, i.Name, i.UUID, i.ModifiedAt))
 				} else {
 					log.Printf("group contents: unrecognized UUID in response: %q", i.UUID)
 					return nil, ErrInvalidArgument
@@ -142,4 +157,33 @@ func (fs *customFileSystem) projectsLoadAll(parent inode, uuid string) ([]inode,
 		}
 	}
 	return inodes, nil
+}
+
+func (fs *customFileSystem) newProjectDir(parent inode, name, uuid string, proj *Group) inode {
+	return &hardlink{inode: fs.projectSingleton(uuid, proj), parent: parent, name: name}
+}
+
+func (fs *customFileSystem) newDeferredCollectionDir(parent inode, name, uuid string, modTime time.Time) inode {
+	if modTime.IsZero() {
+		modTime = time.Now()
+	}
+	placeholder := &treenode{
+		fs:     fs,
+		parent: parent,
+		inodes: nil,
+		fileinfo: fileinfo{
+			name:    name,
+			modTime: modTime,
+			mode:    0755 | os.ModeDir,
+			sys:     func() interface{} { return &Collection{UUID: uuid, Name: name, ModifiedAt: modTime} },
+		},
+	}
+	return &deferrednode{wrapped: placeholder, create: func() inode {
+		node, err := fs.collectionSingleton(uuid)
+		if err != nil {
+			log.Printf("BUG: unhandled error: %s", err)
+			return placeholder
+		}
+		return &hardlink{inode: node, parent: parent, name: name}
+	}}
 }
