@@ -896,7 +896,7 @@ describe('Process tests', function() {
             cy.get('[data-cy=process-io-card] h6').contains('Outputs')
                 .parents('[data-cy=process-io-card]').within((ctx) => {
                     cy.get(ctx).scrollIntoView();
-                    cy.get('[data-cy="io-preview-image-toggle"]').click();
+                    cy.waitForDom().get('[data-cy="io-preview-image-toggle"]').click();
                     const outPdh = testOutputCollection.portable_data_hash;
 
                     verifyIOParameter('output_file', null, "Label Description", 'cat.png', `keep:${outPdh}`);
