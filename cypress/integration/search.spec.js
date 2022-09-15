@@ -105,7 +105,7 @@ describe('Search tests', function() {
         });
     });
 
-    it.only('can search items using quotes', function() {
+    it('can search items using quotes', function() {
         const random = Math.floor(Math.random() * Math.floor(999999));
         const colName = `Collection ${random}`;
         const colName2 = `Collection test ${random}`;
