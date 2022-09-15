@@ -172,7 +172,7 @@ const formatInputData = (inputs: CommandInputParameter[], auth: AuthState): Proc
         return {
             id: getIOParamId(input),
             label: input.label || "",
-            doc: doc.substring(0,50),
+            doc: doc.substring(0,50) + (doc.length > 50 ? "..." : ""),
             value: getIOParamDisplayValue(auth, input)
         };
     });
@@ -184,7 +184,7 @@ const formatOutputData = (definitions: CommandOutputParameter[], values: any, pd
         return {
             id: getIOParamId(output),
             label: output.label || "",
-            doc: doc.substring(0,50),
+            doc: doc.substring(0,50) + (doc.length > 50 ? "..." : ""),
             value: getIOParamDisplayValue(auth, Object.assign(output, { value: values[getIOParamId(output)] || [] }), pdh)
         };
     });
