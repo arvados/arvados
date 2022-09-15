@@ -168,10 +168,11 @@ export const ProcessPanelRoot = withStyles(styles)(
 
 const formatInputData = (inputs: CommandInputParameter[], auth: AuthState): ProcessIOParameter[] => {
     return inputs.map(input => {
-        const doc = Array.isArray(input.doc) ? input.doc.join(', ') : input.doc;
+        const doc = Array.isArray(input.doc) ? input.doc.join(', ') : input.doc || "";
         return {
             id: getIOParamId(input),
-            doc: input.label || doc || "",
+            label: input.label || "",
+            doc: doc.substring(0,50),
             value: getIOParamDisplayValue(auth, input)
         };
     });
@@ -179,10 +180,11 @@ const formatInputData = (inputs: CommandInputParameter[], auth: AuthState): Proc
 
 const formatOutputData = (definitions: CommandOutputParameter[], values: any, pdh: string | undefined, auth: AuthState): ProcessIOParameter[] => {
     return definitions.map(output => {
-        const doc = Array.isArray(output.doc) ? output.doc.join(', ') : output.doc;
+        const doc = Array.isArray(output.doc) ? output.doc.join(', ') : output.doc || "";
         return {
             id: getIOParamId(output),
-            doc: output.label || doc || "",
+            label: output.label || "",
+            doc: doc.substring(0,50),
             value: getIOParamDisplayValue(auth, Object.assign(output, { value: values[getIOParamId(output)] || [] }), pdh)
         };
     });

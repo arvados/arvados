@@ -74,6 +74,7 @@ import RemoveCircleOutline from '@material-ui/icons/RemoveCircleOutline';
 import NotInterested from '@material-ui/icons/NotInterested';
 import Archive from '@material-ui/icons/Archive';
 import Unarchive from '@material-ui/icons/Unarchive';
+import Image from '@material-ui/icons/Image';
 
 // Import FontAwesome icons
 import { library } from '@fortawesome/fontawesome-svg-core';
@@ -192,3 +193,4 @@ export const LoginAsIcon: IconType = (props) => <ExitToApp {...props} />;
 export const ActiveIcon: IconType = (props) => <CheckCircleOutline {...props} />;
 export const SetupIcon: IconType = (props) => <RemoveCircleOutline {...props} />;
 export const InactiveIcon: IconType = (props) => <NotInterested {...props} />;
+export const ImageIcon: IconType = (props) => <Image {...props} />;
