@@ -59,8 +59,6 @@ import SettingsEthernet from '@material-ui/icons/SettingsEthernet';
 import Star from '@material-ui/icons/Star';
 import StarBorder from '@material-ui/icons/StarBorder';
 import Warning from '@material-ui/icons/Warning';
-import Visibility from '@material-ui/icons/Visibility';
-import VisibilityOff from '@material-ui/icons/VisibilityOff';
 import VpnKey from '@material-ui/icons/VpnKey';
 import LinkOutlined from '@material-ui/icons/LinkOutlined';
 import RemoveRedEye from '@material-ui/icons/RemoveRedEye';
