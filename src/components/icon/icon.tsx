@@ -171,8 +171,6 @@ export const SidePanelRightArrowIcon: IconType = (props) => <PlayArrow {...props
 export const TrashIcon: IconType = (props) => <Delete {...props} />;
 export const UserPanelIcon: IconType = (props) => <Person {...props} />;
 export const UsedByIcon: IconType = (props) => <Folder {...props} />;
-export const VisibleIcon: IconType = (props) => <Visibility {...props} />;
-export const InvisibleIcon: IconType = (props) => <VisibilityOff {...props} />;
 export const WorkflowIcon: IconType = (props) => <Code {...props} />;
 export const WarningIcon: IconType = (props) => <Warning style={{ color: '#fbc02d', height: '30px', width: '30px' }} {...props} />;
 export const Link: IconType = (props) => <LinkOutlined {...props} />;

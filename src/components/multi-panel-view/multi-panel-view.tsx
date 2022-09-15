@@ -15,7 +15,7 @@ import {
 import { GridProps } from '@material-ui/core/Grid';
 import { isArray } from 'lodash';
 import { DefaultView } from 'components/default-view/default-view';
-import { InfoIcon, InvisibleIcon, VisibleIcon } from 'components/icon/icon';
+import { InfoIcon } from 'components/icon/icon';
 import { ReactNodeArray } from 'prop-types';
 import classNames from 'classnames';
 
