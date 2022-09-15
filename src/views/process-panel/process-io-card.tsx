@@ -213,7 +213,7 @@ export const ProcessIOCard = withStyles(styles)(connect(null, mapDispatchToProps
                 action={
                     <div>
                         { mainProcess && <Tooltip title={"Toggle Image Preview"} disableFocusListener>
-                            <IconButton onClick={() =>{setShowImagePreview(!showImagePreview)}}>{showImagePreview ? <VisibleIcon /> : <InvisibleIcon />}</IconButton>
+                            <IconButton data-cy="io-preview-image-toggle" onClick={() =>{setShowImagePreview(!showImagePreview)}}>{showImagePreview ? <VisibleIcon /> : <InvisibleIcon />}</IconButton>
                         </Tooltip> }
                         { doHidePanel &&
                         <Tooltip title={`Close ${panelName || 'panel'}`} disableFocusListener>
@@ -306,7 +306,7 @@ const ProcessIOPreview = withStyles(styles)(
                     const rowClass = rest.length > 0 ? classes.halfRow : undefined;
 
                     return <>
-                        <TableRow key={param.id} className={rowClass}>
+                        <TableRow className={rowClass} data-cy="process-io-param">
                             <TableCell>
                                 {param.id}
                             </TableCell>

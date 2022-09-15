@@ -747,16 +747,36 @@ describe('Process tests', function() {
         }
     ];
 
-    const verifyIOParameter = (name, doc, val) => {
-        cy.get('table tr').contains(name).parents('tr').within(() => {
+    const verifyIOParameter = (name, label, doc, val, collection, multipleRows) => {
+        cy.get('table tr').contains(name).parents('tr').within(($mainRow) => {
             doc && cy.contains(doc);
-            if (val) {
-                if (Array.isArray(val)) {
-                    val.forEach(v => cy.contains(v));
-                } else {
-                    cy.contains(val);
+
+            if (multipleRows) {
+                cy.get($mainRow).nextUntil('[data-cy="process-io-param"]').as('secondaryRows');
+                if (val) {
+                    if (Array.isArray(val)) {
+                        val.forEach(v => cy.get('@secondaryRows').contains(v));
+                    } else {
+                        cy.get('@secondaryRows').contains(val);
+                    }
+                }
+                if (collection) {
+                    cy.get('@secondaryRows').contains(collection);
+                }
+            } else {
+                if (val) {
+                    if (Array.isArray(val)) {
+                        val.forEach(v => cy.contains(v));
+                    } else {
+                        cy.contains(val);
+                    }
+                }
+                if (collection) {
+                    cy.contains(collection);
                 }
             }
+
+
         });
     };
 
@@ -851,54 +871,55 @@ describe('Process tests', function() {
                 .parents('[data-cy=process-io-card]').within(() => {
                     cy.wait(2000);
                     cy.waitForDom();
-                    verifyIOParameter('input_file', "Label Description", 'keep:00000000000000000000000000000000+01/input1.tar');
-                    verifyIOParameter('input_file', "Label Description", 'keep:00000000000000000000000000000000+01/input1-2.txt');
-                    verifyIOParameter('input_file', "Label Description", 'keep:00000000000000000000000000000000+01/input1-3.txt');
-                    verifyIOParameter('input_file', "Label Description", 'keep:00000000000000000000000000000000+01/input1-4.txt');
-                    verifyIOParameter('input_dir', "Doc Description", 'keep:11111111111111111111111111111111+01/');
-                    verifyIOParameter('input_bool', "Doc desc 1, Doc desc 2", 'true');
-                    verifyIOParameter('input_int', null, '1');
-                    verifyIOParameter('input_long', null, '1');
-                    verifyIOParameter('input_float', null, '1.5');
-                    verifyIOParameter('input_double', null, '1.3');
-                    verifyIOParameter('input_string', null, 'Hello World');
-                    verifyIOParameter('input_file_array', null, 'keep:00000000000000000000000000000000+02/input2.tar');
-                    verifyIOParameter('input_file_array', null, 'keep:00000000000000000000000000000000+03/input3.tar');
-                    verifyIOParameter('input_file_array', null, 'keep:00000000000000000000000000000000+03/input3-2.txt');
-                    verifyIOParameter('input_dir_array', null, 'keep:11111111111111111111111111111111+02/');
-                    verifyIOParameter('input_dir_array', null, 'keep:11111111111111111111111111111111+03/');
-                    verifyIOParameter('input_int_array', null, ["1", "3", "5"]);
-                    verifyIOParameter('input_long_array', null, ["10", "20"]);
-                    verifyIOParameter('input_float_array', null, ["10.2", "10.4", "10.6"]);
-                    verifyIOParameter('input_double_array', null, ["20.1", "20.2", "20.3"]);
-                    verifyIOParameter('input_string_array', null, ["Hello", "World", "!"]);
+                    verifyIOParameter('input_file', null, "Label Description", 'input1.tar', 'keep:00000000000000000000000000000000+01');
+                    verifyIOParameter('input_file', null, "Label Description", 'input1-2.txt', 'keep:00000000000000000000000000000000+01', true);
+                    verifyIOParameter('input_file', null, "Label Description", 'input1-3.txt', 'keep:00000000000000000000000000000000+01', true);
+                    verifyIOParameter('input_file', null, "Label Description", 'input1-4.txt', 'keep:00000000000000000000000000000000+01', true);
+                    verifyIOParameter('input_dir', null, "Doc Description", 'No value', 'keep:11111111111111111111111111111111+01');
+                    verifyIOParameter('input_bool', null, "Doc desc 1, Doc desc 2", 'true');
+                    verifyIOParameter('input_int', null, null, '1');
+                    verifyIOParameter('input_long', null, null, '1');
+                    verifyIOParameter('input_float', null, null, '1.5');
+                    verifyIOParameter('input_double', null, null, '1.3');
+                    verifyIOParameter('input_string', null, null, 'Hello World');
+                    verifyIOParameter('input_file_array', null, null, 'input2.tar', 'keep:00000000000000000000000000000000+02');
+                    verifyIOParameter('input_file_array', null, null, 'input3.tar', 'keep:00000000000000000000000000000000+03', true);
+                    verifyIOParameter('input_file_array', null, null, 'input3-2.txt', 'keep:00000000000000000000000000000000+03', true);
+                    verifyIOParameter('input_dir_array', null, null, 'No value', 'keep:11111111111111111111111111111111+02');
+                    verifyIOParameter('input_dir_array', null, null, 'No value', 'keep:11111111111111111111111111111111+03', true);
+                    verifyIOParameter('input_int_array', null, null, ["1", "3", "5"]);
+                    verifyIOParameter('input_long_array', null, null, ["10", "20"]);
+                    verifyIOParameter('input_float_array', null, null, ["10.2", "10.4", "10.6"]);
+                    verifyIOParameter('input_double_array', null, null, ["20.1", "20.2", "20.3"]);
+                    verifyIOParameter('input_string_array', null, null, ["Hello", "World", "!"]);
                 });
             cy.get('[data-cy=process-io-card] h6').contains('Outputs')
                 .parents('[data-cy=process-io-card]').within((ctx) => {
                     cy.get(ctx).scrollIntoView();
+                    cy.get('[data-cy="io-preview-image-toggle"]').click();
                     const outPdh = testOutputCollection.portable_data_hash;
 
-                    verifyIOParameter('output_file', "Label Description", `keep:${outPdh}/cat.png`);
+                    verifyIOParameter('output_file', null, "Label Description", 'cat.png', `keep:${outPdh}`);
                     verifyIOParameterImage('output_file', `/c=${outPdh}/cat.png`);
-                    verifyIOParameter('output_file_with_secondary', "Doc Description", `keep:${outPdh}/main.dat`);
-                    verifyIOParameter('output_file_with_secondary', "Doc Description", `keep:${outPdh}/secondary.dat`);
-                    verifyIOParameter('output_file_with_secondary', "Doc Description", `keep:${outPdh}/secondary2.dat`);
-                    verifyIOParameter('output_dir', "Doc desc 1, Doc desc 2", `keep:${outPdh}/outdir1`);
-                    verifyIOParameter('output_bool', null, 'true');
-                    verifyIOParameter('output_int', null, '1');
-                    verifyIOParameter('output_long', null, '1');
-                    verifyIOParameter('output_float', null, '100.5');
-                    verifyIOParameter('output_double', null, '100.3');
-                    verifyIOParameter('output_string', null, 'Hello output');
-                    verifyIOParameter('output_file_array', null, `keep:${outPdh}/output2.tar`);
-                    verifyIOParameter('output_file_array', null, `keep:${outPdh}/output3.tar`);
-                    verifyIOParameter('output_dir_array', null, `keep:${outPdh}/outdir2`);
-                    verifyIOParameter('output_dir_array', null, `keep:${outPdh}/outdir3`);
-                    verifyIOParameter('output_int_array', null, ["10", "11", "12"]);
-                    verifyIOParameter('output_long_array', null, ["51", "52"]);
-                    verifyIOParameter('output_float_array', null, ["100.2", "100.4", "100.6"]);
-                    verifyIOParameter('output_double_array', null, ["100.1", "100.2", "100.3"]);
-                    verifyIOParameter('output_string_array', null, ["Hello", "Output", "!"]);
+                    verifyIOParameter('output_file_with_secondary', null, "Doc Description", 'main.dat', `keep:${outPdh}`);
+                    verifyIOParameter('output_file_with_secondary', null, "Doc Description", 'secondary.dat', `keep:${outPdh}`, true);
+                    verifyIOParameter('output_file_with_secondary', null, "Doc Description", 'secondary2.dat', `keep:${outPdh}`, true);
+                    verifyIOParameter('output_dir', null, "Doc desc 1, Doc desc 2", 'outdir1', `keep:${outPdh}`);
+                    verifyIOParameter('output_bool', null, null, 'true');
+                    verifyIOParameter('output_int', null, null, '1');
+                    verifyIOParameter('output_long', null, null, '1');
+                    verifyIOParameter('output_float', null, null, '100.5');
+                    verifyIOParameter('output_double', null, null, '100.3');
+                    verifyIOParameter('output_string', null, null, 'Hello output');
+                    verifyIOParameter('output_file_array', null, null, 'output2.tar', `keep:${outPdh}`);
+                    verifyIOParameter('output_file_array', null, null, 'output3.tar', `keep:${outPdh}`, true);
+                    verifyIOParameter('output_dir_array', null, null, 'outdir2', `keep:${outPdh}`);
+                    verifyIOParameter('output_dir_array', null, null, 'outdir3', `keep:${outPdh}`, true);
+                    verifyIOParameter('output_int_array', null, null, ["10", "11", "12"]);
+                    verifyIOParameter('output_long_array', null, null, ["51", "52"]);
+                    verifyIOParameter('output_float_array', null, null, ["100.2", "100.4", "100.6"]);
+                    verifyIOParameter('output_double_array', null, null, ["100.1", "100.2", "100.3"]);
+                    verifyIOParameter('output_string_array', null, null, ["Hello", "Output", "!"]);
                 });
         });
     });
