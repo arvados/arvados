@@ -266,6 +266,8 @@ func (fs *customFileSystem) collectionSingleton(id string) (inode, error) {
 		return n, nil
 	}
 	fs.byID[id] = cfs
+	fs.byIDRoot.Lock()
+	defer fs.byIDRoot.Unlock()
 	fs.byIDRoot.Child(id, func(inode) (inode, error) { return cfs, nil })
 	return cfs, nil
 }
@@ -335,6 +337,18 @@ type hardlink struct {
 	inode
 	parent inode
 	name   string
+}
+
+// If the wrapped inode is a filesystem, rootnode returns the wrapped
+// fs's rootnode, otherwise inode itself. This allows
+// (*fileSystem)Rename() to lock the root node of a hardlink-wrapped
+// filesystem.
+func (hl *hardlink) rootnode() inode {
+	if node, ok := hl.inode.(interface{ rootnode() inode }); ok {
+		return node.rootnode()
+	} else {
+		return hl.inode
+	}
 }
 
 func (hl *hardlink) Sync() error {

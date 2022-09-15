@@ -77,7 +77,7 @@ func (fs *customFileSystem) projectsLoadOne(parent inode, uuid, name string) (in
 			name:   coll.Name,
 		}, nil
 	} else if strings.Contains(coll.UUID, "-4zz18-") {
-		return fs.newDeferredCollectionDir(parent, name, coll.UUID, coll.ModifiedAt), nil
+		return fs.newDeferredCollectionDir(parent, name, coll.UUID, coll.ModifiedAt, coll.Properties), nil
 	} else {
 		log.Printf("group contents: unrecognized UUID in response: %q", coll.UUID)
 		return nil, ErrInvalidArgument
@@ -147,7 +147,7 @@ func (fs *customFileSystem) projectsLoadAll(parent inode, uuid string) ([]inode,
 						Properties: i.Properties,
 					}))
 				} else if strings.Contains(i.UUID, "-4zz18-") {
-					inodes = append(inodes, fs.newDeferredCollectionDir(parent, i.Name, i.UUID, i.ModifiedAt))
+					inodes = append(inodes, fs.newDeferredCollectionDir(parent, i.Name, i.UUID, i.ModifiedAt, i.Properties))
 				} else {
 					log.Printf("group contents: unrecognized UUID in response: %q", i.UUID)
 					return nil, ErrInvalidArgument
@@ -163,7 +163,7 @@ func (fs *customFileSystem) newProjectDir(parent inode, name, uuid string, proj 
 	return &hardlink{inode: fs.projectSingleton(uuid, proj), parent: parent, name: name}
 }
 
-func (fs *customFileSystem) newDeferredCollectionDir(parent inode, name, uuid string, modTime time.Time) inode {
+func (fs *customFileSystem) newDeferredCollectionDir(parent inode, name, uuid string, modTime time.Time, props map[string]interface{}) inode {
 	if modTime.IsZero() {
 		modTime = time.Now()
 	}
@@ -175,7 +175,7 @@ func (fs *customFileSystem) newDeferredCollectionDir(parent inode, name, uuid st
 			name:    name,
 			modTime: modTime,
 			mode:    0755 | os.ModeDir,
-			sys:     func() interface{} { return &Collection{UUID: uuid, Name: name, ModifiedAt: modTime} },
+			sys:     func() interface{} { return &Collection{UUID: uuid, Name: name, ModifiedAt: modTime, Properties: props} },
 		},
 	}
 	return &deferrednode{wrapped: placeholder, create: func() inode {

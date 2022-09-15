@@ -367,7 +367,7 @@ func (s *IntegrationSuite) testS3PutObjectSuccess(c *check.C, bucket *s3.Bucket,
 		if !c.Check(err, check.NotNil) {
 			continue
 		}
-		c.Check(err.(*s3.Error).StatusCode, check.Equals, 404)
+		c.Check(err.(*s3.Error).StatusCode, check.Equals, http.StatusNotFound)
 		c.Check(err.(*s3.Error).Code, check.Equals, `NoSuchKey`)
 		if !c.Check(err, check.ErrorMatches, `The specified key does not exist.`) {
 			continue
@@ -393,10 +393,11 @@ func (s *IntegrationSuite) testS3PutObjectSuccess(c *check.C, bucket *s3.Bucket,
 
 		// Check that the change is immediately visible via
 		// (non-S3) webdav request.
-		_, resp := s.do("GET", "http://"+collUUID+".keep-web.example/"+trial.path, "", http.Header{
-			"Authorization": {"Bearer " + arvadostest.ActiveToken},
-		})
+		_, resp := s.do("GET", "http://"+collUUID+".keep-web.example/"+trial.path, arvadostest.ActiveTokenV2, nil)
 		c.Check(resp.Code, check.Equals, http.StatusOK)
+		if !strings.HasSuffix(trial.path, "/") {
+			c.Check(resp.Body.Len(), check.Equals, trial.size)
+		}
 	}
 }
 

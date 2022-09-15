@@ -315,7 +315,8 @@ func (h *handler) serveS3(w http.ResponseWriter, r *http.Request) bool {
 		s3ErrorResponse(w, InternalError, err.Error(), r.URL.Path, http.StatusInternalServerError)
 		return true
 	}
-	if r.Method == http.MethodGet || r.Method == http.MethodHead {
+	readfs := fs
+	if writeMethod[r.Method] {
 		// Create a FileSystem for this request, to avoid
 		// exposing incomplete write operations to concurrent
 		// requests.
@@ -514,14 +515,12 @@ func (h *handler) serveS3(w http.ResponseWriter, r *http.Request) bool {
 				return true
 			}
 		}
-		err = fs.Sync()
+		err = h.syncCollection(fs, readfs, fspath)
 		if err != nil {
 			err = fmt.Errorf("sync failed: %w", err)
 			s3ErrorResponse(w, InternalError, err.Error(), r.URL.Path, http.StatusInternalServerError)
 			return true
 		}
-		// Ensure a subsequent read operation will see the changes.
-		h.Cache.ResetSession(token)
 		w.WriteHeader(http.StatusOK)
 		return true
 	case r.Method == http.MethodDelete:
@@ -568,20 +567,41 @@ func (h *handler) serveS3(w http.ResponseWriter, r *http.Request) bool {
 			s3ErrorResponse(w, InvalidArgument, err.Error(), r.URL.Path, http.StatusBadRequest)
 			return true
 		}
-		err = fs.Sync()
+		err = h.syncCollection(fs, readfs, fspath)
 		if err != nil {
 			err = fmt.Errorf("sync failed: %w", err)
 			s3ErrorResponse(w, InternalError, err.Error(), r.URL.Path, http.StatusInternalServerError)
 			return true
 		}
-		// Ensure a subsequent read operation will see the changes.
-		h.Cache.ResetSession(token)
 		w.WriteHeader(http.StatusNoContent)
 		return true
 	default:
 		s3ErrorResponse(w, InvalidRequest, "method not allowed", r.URL.Path, http.StatusMethodNotAllowed)
 		return true
 	}
+}
+
+func (h *handler) syncCollection(srcfs, dstfs arvados.CustomFileSystem, path string) error {
+	coll, _ := h.determineCollection(srcfs, path)
+	if coll == nil || coll.UUID == "" {
+		return errors.New("could not determine collection to sync")
+	}
+	d, err := srcfs.OpenFile("by_id/"+coll.UUID, os.O_RDWR, 0777)
+	if err != nil {
+		return err
+	}
+	defer d.Close()
+	err = d.Sync()
+	snap, err := d.Snapshot()
+	if err != nil {
+		return err
+	}
+	dstd, err := dstfs.OpenFile("by_id/"+coll.UUID, os.O_RDWR, 0777)
+	if err != nil {
+		return err
+	}
+	defer dstd.Close()
+	return dstd.Splice(snap)
 }
 
 func setFileInfoHeaders(header http.Header, fs arvados.CustomFileSystem, path string) error {
