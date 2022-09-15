@@ -12,17 +12,6 @@
 
 set -o pipefail
 
-_exit_handler() {
-  local rc="$?"
-  trap - EXIT
-  if [ "$rc" -ne 0 ]; then
-    echo "Error occurred ($rc) while running $0 at line $1 : $BASH_COMMAND"
-  fi
-  exit "$rc"
-}
-
-trap '_exit_handler $LINENO' EXIT ERR
-
 # capture the directory that the script is running from
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 
@@ -366,9 +355,9 @@ echo "...arvados"
 git clone --quiet https://git.arvados.org/arvados-formula.git ${F_DIR}/arvados
 
 # If we want to try a specific branch of the formula
-if [ "x${BRANCH}" != "x" -a $(git rev-parse --abbrev-ref HEAD) != "${BRANCH}" ]; then
+if [ "x${BRANCH}" != "x" ]; then
   ( cd ${F_DIR}/arvados && git checkout --quiet -t origin/"${BRANCH}" -b "${BRANCH}" )
-elif [ "x${ARVADOS_TAG}" != "x" -a $(git rev-parse --abbrev-ref HEAD) != "${ARVADOS_TAG}" ]; then
+elif [ "x${ARVADOS_TAG}" != "x" ]; then
 ( cd ${F_DIR}/arvados && git checkout --quiet tags/"${ARVADOS_TAG}" -b "${ARVADOS_TAG}" )
 fi
 
@@ -706,7 +695,6 @@ else
         sed -i "s/__NGINX_INSTALL_SOURCE__/${NGINX_INSTALL_SOURCE}/g" ${P_DIR}/nginx_passenger.sls
       ;;
       "controller" | "websocket" | "workbench" | "workbench2" | "webshell" | "keepweb" | "keepproxy")
-        NGINX_INSTALL_SOURCE="install_from_repo"
         # States
         if [ "${R}" = "workbench" ]; then
           NGINX_INSTALL_SOURCE="install_from_phusionpassenger"
@@ -787,7 +775,7 @@ else
                     s#__CERT_PEM__#/etc/nginx/ssl/arvados-${R}.pem#g;
                     s#__CERT_KEY__#/etc/nginx/ssl/arvados-${R}.key#g" \
             ${P_DIR}/nginx_${R}_configuration.sls
-            grep -q ${R}$ ${P_DIR}/extra_custom_certs.sls || echo "  - ${R}" >> ${P_DIR}/extra_custom_certs.sls
+            grep -q ${R} ${P_DIR}/extra_custom_certs.sls || echo "  - ${R}" >> ${P_DIR}/extra_custom_certs.sls
           fi
         fi
         # We need to tweak the Nginx's pillar depending whether we want plain nginx or nginx+passenger
@@ -832,17 +820,15 @@ fi
 
 # Leave a copy of the Arvados CA so the user can copy it where it's required
 if [ "$DEV_MODE" = "yes" ]; then
-  ARVADOS_SNAKEOIL_CA_DEST_FILE="${SCRIPT_DIR}/${CLUSTER}.${DOMAIN}-arvados-snakeoil-ca.pem"
-
+  echo "Copying the Arvados CA certificate to the installer dir, so you can import it"
   # If running in a vagrant VM, also add default user to docker group
   if [ "x${VAGRANT}" = "xyes" ]; then
+    cp /etc/ssl/certs/arvados-snakeoil-ca.pem /vagrant/${CLUSTER}.${DOMAIN}-arvados-snakeoil-ca.pem
+
     echo "Adding the vagrant user to the docker group"
     usermod -a -G docker vagrant
-    ARVADOS_SNAKEOIL_CA_DEST_FILE="/vagrant/${CLUSTER}.${DOMAIN}-arvados-snakeoil-ca.pem"
-  fi
-  if [ -f /etc/ssl/certs/arvados-snakeoil-ca.pem ]; then
-    echo "Copying the Arvados CA certificate to the installer dir, so you can import it"
-    cp /etc/ssl/certs/arvados-snakeoil-ca.pem ${ARVADOS_SNAKEOIL_CA_DEST_FILE}
+  else
+    cp /etc/ssl/certs/arvados-snakeoil-ca.pem ${SCRIPT_DIR}/${CLUSTER}.${DOMAIN}-arvados-snakeoil-ca.pem
   fi
 fi
 
