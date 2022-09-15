@@ -3,6 +3,7 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import React, { ReactElement, useState } from 'react';
+import { Dispatch } from 'redux';
 import {
     StyleRulesCallback,
     WithStyles,
@@ -60,8 +61,9 @@ import { connect } from 'react-redux';
 import { RootState } from 'store/store';
 import { ProcessOutputCollectionFiles } from './process-output-collection-files';
 import { Process } from 'store/processes/process';
+import { navigateTo } from 'store/navigation/navigation-action';
 
-type CssRules = 'card' | 'content' | 'title' | 'header' | 'avatar' | 'iconHeader' | 'tableWrapper' | 'tableRoot' | 'paramValue' | 'keepLink' | 'imagePreview' | 'valArray' | 'emptyValue' | 'halfRow' | 'symmetricTabs' | 'imagePlaceholder' | 'rowWithPreview';
+type CssRules = 'card' | 'content' | 'title' | 'header' | 'avatar' | 'iconHeader' | 'tableWrapper' | 'tableRoot' | 'paramValue' | 'keepLink' | 'collectionLink' | 'imagePreview' | 'valArray' | 'emptyValue' | 'halfRow' | 'symmetricTabs' | 'imagePlaceholder' | 'rowWithPreview';
 
 const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     card: {
@@ -110,6 +112,15 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
         textDecoration: 'none',
         overflowWrap: 'break-word',
         cursor: 'pointer',
+    },
+    collectionLink: {
+        margin: '10px',
+        '& a': {
+            color: theme.palette.primary.main,
+            textDecoration: 'none',
+            overflowWrap: 'break-word',
+            cursor: 'pointer',
+        }
     },
     imagePreview: {
         maxHeight: '15em',
@@ -164,10 +175,18 @@ export interface ProcessIOCardDataProps {
     outputUuid?: string;
 }
 
-type ProcessIOCardProps = ProcessIOCardDataProps & WithStyles<CssRules> & MPVPanelProps;
+export interface ProcessIOCardActionProps {
+    navigateTo: (uuid: string) => void;
+}
 
-export const ProcessIOCard = withStyles(styles)(
-    ({ classes, label, params, raw, mounts, outputUuid, doHidePanel, panelName, process }: ProcessIOCardProps) => {
+const mapDispatchToProps = (dispatch: Dispatch): ProcessIOCardActionProps => ({
+    navigateTo: (uuid) => dispatch<any>(navigateTo(uuid)),
+});
+
+type ProcessIOCardProps = ProcessIOCardDataProps & ProcessIOCardActionProps & WithStyles<CssRules> & MPVPanelProps;
+
+export const ProcessIOCard = withStyles(styles)(connect(null, mapDispatchToProps)(
+    ({ classes, label, params, raw, mounts, outputUuid, doHidePanel, panelName, process, navigateTo }: ProcessIOCardProps) => {
         const [mainProcTabState, setMainProcTabState] = useState(0);
         const handleMainProcTabChange = (event: React.MouseEvent<HTMLElement>, value: number) => {
             setMainProcTabState(value);
@@ -232,7 +251,13 @@ export const ProcessIOCard = withStyles(styles)(
                             </Tabs>
                             <div className={classes.tableWrapper}>
                                 {label === ProcessIOCardType.INPUT && <ProcessInputMounts mounts={mounts || []} />}
-                                {label === ProcessIOCardType.OUTPUT && <ProcessOutputCollectionFiles isWritable={false} currentItemUuid={outputUuid} />}
+                                {label === ProcessIOCardType.OUTPUT && <>
+                                    {outputUuid && <Typography className={classes.collectionLink}>
+                                        Output Collection: <MuiLink className={classes.keepLink} onClick={() => {navigateTo(outputUuid)}}>
+                                        {outputUuid}
+                                    </MuiLink></Typography>}
+                                    <ProcessOutputCollectionFiles isWritable={false} currentItemUuid={outputUuid} />
+                                </>}
                             </div>
                         </>)
                     }
@@ -240,7 +265,7 @@ export const ProcessIOCard = withStyles(styles)(
             </CardContent>
         </Card>;
     }
-);
+));
 
 export type ProcessIOValue = {
     display: ReactElement<any, any>;
