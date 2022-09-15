@@ -61,7 +61,7 @@ import { RootState } from 'store/store';
 import { ProcessOutputCollectionFiles } from './process-output-collection-files';
 import { Process } from 'store/processes/process';
 
-type CssRules = 'card' | 'content' | 'title' | 'header' | 'avatar' | 'iconHeader' | 'tableWrapper' | 'tableRoot' | 'paramValue' | 'keepLink' | 'imagePreview' | 'valArray' | 'emptyValue';
+type CssRules = 'card' | 'content' | 'title' | 'header' | 'avatar' | 'iconHeader' | 'tableWrapper' | 'tableRoot' | 'paramValue' | 'keepLink' | 'imagePreview' | 'valArray' | 'emptyValue' | 'symmetricTabs';
 
 const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     card: {
@@ -127,6 +127,11 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     emptyValue: {
         color: theme.customs.colors.grey500,
     },
+    symmetricTabs: {
+        '& button': {
+            flexBasis: '0',
+        }
+    },
 });
 
 export enum ProcessIOCardType {
@@ -178,7 +183,7 @@ export const ProcessIOCard = withStyles(styles)(
                 <div>
                     {!process.containerRequest.requestingContainerUuid ?
                         (<>
-                            <Tabs value={mainProcTabState} onChange={handleMainProcTabChange} variant="fullWidth">
+                            <Tabs value={mainProcTabState} onChange={handleMainProcTabChange} variant="fullWidth" className={classes.symmetricTabs}>
                                 <Tab label="Parameters" />
                                 <Tab label="JSON" />
                             </Tabs>
@@ -198,7 +203,7 @@ export const ProcessIOCard = withStyles(styles)(
                                 </div>}
                         </>) :
                         (<>
-                            <Tabs value={0} variant="fullWidth">
+                            <Tabs value={0} variant="fullWidth" className={classes.symmetricTabs}>
                                 {label === ProcessIOCardType.INPUT && <Tab label="Collections" />}
                                 {label === ProcessIOCardType.OUTPUT && <Tab label="Collection" />}
                             </Tabs>
