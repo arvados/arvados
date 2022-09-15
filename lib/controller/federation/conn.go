@@ -276,6 +276,9 @@ func (conn *Conn) CollectionGet(ctx context.Context, options arvados.GetOptions)
 		}
 		return c, err
 	}
+	if len(options.UUID) < 34 || options.UUID[32] != '+' {
+		return arvados.Collection{}, httpErrorf(http.StatusNotFound, "invalid UUID or PDH %q", options.UUID)
+	}
 	// UUID is a PDH
 	first := make(chan arvados.Collection, 1)
 	err := conn.tryLocalThenRemotes(ctx, options.ForwardedFor, func(ctx context.Context, remoteID string, be backend) error {

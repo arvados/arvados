@@ -987,8 +987,8 @@ collection_with_list_prop_odd:
     listprop: [elem1, elem3, 5]
 
 collection_with_list_prop_even:
-  uuid: zzzzz-4zz18-listpropertyeven
-  current_version_uuid: zzzzz-4zz18-listpropertyeven
+  uuid: zzzzz-4zz18-listpropertyevn
+  current_version_uuid: zzzzz-4zz18-listpropertyevn
   portable_data_hash: fa7aeb5140e2848d39b416daeef4ffc5+45
   owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz
   created_at: 2015-02-13T17:22:54Z
@@ -1002,8 +1002,8 @@ collection_with_list_prop_even:
     listprop: [elem2, 4, elem6, ELEM8]
 
 collection_with_listprop_elem1:
-  uuid: zzzzz-4zz18-listpropelem1
-  current_version_uuid: zzzzz-4zz18-listpropelem1
+  uuid: zzzzz-4zz18-listpropelemen1
+  current_version_uuid: zzzzz-4zz18-listpropelemen1
   portable_data_hash: fa7aeb5140e2848d39b416daeef4ffc5+45
   owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz
   created_at: 2015-02-13T17:22:54Z
