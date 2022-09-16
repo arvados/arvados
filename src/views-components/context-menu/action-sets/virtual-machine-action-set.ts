@@ -14,7 +14,7 @@ export const virtualMachineActionSet: ContextMenuActionSet = [[{
         dispatch<any>(openVirtualMachineAttributes(uuid));
     }
 }, {
-    name: "Advanced",
+    name: "API Details",
     icon: AdvancedIcon,
     execute: (dispatch, { uuid }) => {
         dispatch<any>(openAdvancedTabDialog(uuid));

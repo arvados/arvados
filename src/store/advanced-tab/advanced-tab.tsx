@@ -26,8 +26,9 @@ import React from 'react';
 
 export const ADVANCED_TAB_DIALOG = 'advancedTabDialog';
 
-interface AdvancedTabDialogData {
-    apiResponse: any;
+export interface AdvancedTabDialogData {
+    uuid: string;
+    apiResponse: JSX.Element;
     metadata: ListResults<LinkResource> | string;
     user: UserResource | string;
     pythonHeader: string;
@@ -290,7 +291,7 @@ interface AdvancedTabData {
     uuid: string;
     metadata: ListResults<LinkResource> | string;
     user: UserResource | string;
-    apiResponseKind: any;
+    apiResponseKind: (apiResponse) => JSX.Element;
     data: AdvanceResponseData;
     resourceKind: AdvanceResourceKind;
     resourcePrefix: AdvanceResourcePrefix;
@@ -370,7 +371,7 @@ const stringify = (item: string | null | number | boolean) =>
 const stringifyObject = (item: any) =>
     JSON.stringify(item, null, 2) || 'null';
 
-const containerRequestApiResponse = (apiResponse: ContainerRequestResource) => {
+const containerRequestApiResponse = (apiResponse: ContainerRequestResource): JSX.Element => {
     const { uuid, ownerUuid, createdAt, modifiedAt, modifiedByClientUuid, modifiedByUserUuid, name, description, properties, state, requestingContainerUuid, containerUuid,
         containerCountMax, mounts, runtimeConstraints, containerImage, environment, cwd, command, outputPath, priority, expiresAt, filters, containerCount,
         useExisting, schedulingParameters, outputUuid, logUuid, outputName, outputTtl } = apiResponse;
@@ -409,7 +410,7 @@ const containerRequestApiResponse = (apiResponse: ContainerRequestResource) => {
     return <span style={{ marginLeft: '-15px' }}>{'{'} {response} {'\n'} <span style={{ marginLeft: '-15px' }}>{'}'}</span></span>;
 };
 
-const collectionApiResponse = (apiResponse: CollectionResource) => {
+const collectionApiResponse = (apiResponse: CollectionResource): JSX.Element => {
     const { uuid, ownerUuid, createdAt, modifiedAt, modifiedByClientUuid, modifiedByUserUuid, name, description, properties, portableDataHash, replicationDesired,
         replicationConfirmedAt, replicationConfirmed, deleteAt, trashAt, isTrashed, storageClassesDesired,
         storageClassesConfirmed, storageClassesConfirmedAt, currentVersionUuid, version, preserveVersion, fileCount, fileSizeTotal } = apiResponse;
@@ -442,7 +443,7 @@ const collectionApiResponse = (apiResponse: CollectionResource) => {
     return <span style={{ marginLeft: '-15px' }}>{'{'} {response} {'\n'} <span style={{ marginLeft: '-15px' }}>{'}'}</span></span>;
 };
 
-const groupRequestApiResponse = (apiResponse: ProjectResource) => {
+const groupRequestApiResponse = (apiResponse: ProjectResource): JSX.Element => {
     const { uuid, ownerUuid, createdAt, modifiedAt, modifiedByClientUuid, modifiedByUserUuid, name, description, groupClass, trashAt, isTrashed, deleteAt, properties, writableBy } = apiResponse;
     const response = `
 "uuid": "${uuid}",
@@ -463,7 +464,7 @@ const groupRequestApiResponse = (apiResponse: ProjectResource) => {
     return <span style={{ marginLeft: '-15px' }}>{'{'} {response} {'\n'} <span style={{ marginLeft: '-15px' }}>{'}'}</span></span>;
 };
 
-const repositoryApiResponse = (apiResponse: RepositoryResource) => {
+const repositoryApiResponse = (apiResponse: RepositoryResource): JSX.Element => {
     const { uuid, ownerUuid, createdAt, modifiedAt, modifiedByClientUuid, modifiedByUserUuid, name, cloneUrls } = apiResponse;
     const response = `
 "uuid": "${uuid}",
@@ -478,7 +479,7 @@ const repositoryApiResponse = (apiResponse: RepositoryResource) => {
     return <span style={{ marginLeft: '-15px' }}>{'{'} {response} {'\n'} <span style={{ marginLeft: '-15px' }}>{'}'}</span></span>;
 };
 
-const sshKeyApiResponse = (apiResponse: SshKeyResource) => {
+const sshKeyApiResponse = (apiResponse: SshKeyResource): JSX.Element => {
     const { uuid, ownerUuid, createdAt, modifiedAt, modifiedByClientUuid, modifiedByUserUuid, name, authorizedUserUuid, expiresAt } = apiResponse;
     const response = `
 "uuid": "${uuid}",
@@ -493,7 +494,7 @@ const sshKeyApiResponse = (apiResponse: SshKeyResource) => {
     return <span style={{ marginLeft: '-15px' }}>{'{'} {response} {'\n'} <span style={{ marginLeft: '-15px' }}>{'}'}</span></span>;
 };
 
-const virtualMachineApiResponse = (apiResponse: VirtualMachinesResource) => {
+const virtualMachineApiResponse = (apiResponse: VirtualMachinesResource): JSX.Element => {
     const { uuid, ownerUuid, createdAt, modifiedAt, modifiedByClientUuid, modifiedByUserUuid, hostname } = apiResponse;
     const response = `
 "hostname": ${stringify(hostname)},
@@ -508,7 +509,7 @@ const virtualMachineApiResponse = (apiResponse: VirtualMachinesResource) => {
     return <span style={{ marginLeft: '-15px' }}>{'{'} {response} {'\n'} <span style={{ marginLeft: '-15px' }}>{'}'}</span></span>;
 };
 
-const keepServiceApiResponse = (apiResponse: KeepServiceResource) => {
+const keepServiceApiResponse = (apiResponse: KeepServiceResource): JSX.Element => {
     const {
         uuid, readOnly, serviceHost, servicePort, serviceSslFlag, serviceType,
         ownerUuid, createdAt, modifiedAt, modifiedByClientUuid, modifiedByUserUuid
@@ -529,7 +530,7 @@ const keepServiceApiResponse = (apiResponse: KeepServiceResource) => {
     return <span style={{ marginLeft: '-15px' }}>{'{'} {response} {'\n'} <span style={{ marginLeft: '-15px' }}>{'}'}</span></span>;
 };
 
-const userApiResponse = (apiResponse: UserResource) => {
+const userApiResponse = (apiResponse: UserResource): JSX.Element => {
     const {
         uuid, ownerUuid, createdAt, modifiedAt, modifiedByClientUuid, modifiedByUserUuid,
         email, firstName, lastName, username, isActive, isAdmin, prefs, defaultOwnerUuid,
@@ -554,7 +555,7 @@ const userApiResponse = (apiResponse: UserResource) => {
     return <span style={{ marginLeft: '-15px' }}>{'{'} {response} {'\n'} <span style={{ marginLeft: '-15px' }}>{'}'}</span></span>;
 };
 
-const apiClientAuthorizationApiResponse = (apiResponse: ApiClientAuthorization) => {
+const apiClientAuthorizationApiResponse = (apiResponse: ApiClientAuthorization): JSX.Element => {
     const {
         uuid, ownerUuid, apiToken, apiClientId, userId, createdByIpAddress, lastUsedByIpAddress,
         lastUsedAt, expiresAt, defaultOwnerUuid, scopes, updatedAt, createdAt
@@ -577,7 +578,7 @@ const apiClientAuthorizationApiResponse = (apiResponse: ApiClientAuthorization) 
     return <span style={{ marginLeft: '-15px' }}>{'{'} {response} {'\n'} <span style={{ marginLeft: '-15px' }}>{'}'}</span></span>;
 };
 
-const linkApiResponse = (apiResponse: LinkResource) => {
+const linkApiResponse = (apiResponse: LinkResource): JSX.Element => {
     const {
         uuid, name, headUuid, properties, headKind, tailUuid, tailKind, linkClass,
         ownerUuid, createdAt, modifiedAt, modifiedByClientUuid, modifiedByUserUuid
