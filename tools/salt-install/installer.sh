@@ -102,7 +102,7 @@ loadconfig() {
 	echo "Must be run from initialized setup dir, maybe you need to 'initialize' first?"
     fi
     source ${CONFIG_FILE}
-    GITTARGET=.arvados-deploy-config-${CLUSTER}
+    GITTARGET=arvados-deploy-config-${CLUSTER}
 }
 
 subcmd="$1"
