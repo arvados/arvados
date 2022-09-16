@@ -57,6 +57,7 @@ func (ctrl *pamLoginController) UserAuthenticate(ctx context.Context, opts arvad
 	if err != nil {
 		return arvados.APIClientAuthorization{}, err
 	}
+	// Check that the given credentials are valid.
 	err = tx.Authenticate(pam.DisallowNullAuthtok)
 	if err != nil {
 		err = fmt.Errorf("PAM: %s", err)
@@ -76,6 +77,15 @@ func (ctrl *pamLoginController) UserAuthenticate(ctx context.Context, opts arvad
 	}
 	if errorMessage != "" {
 		return arvados.APIClientAuthorization{}, httpserver.ErrorWithStatus(errors.New(errorMessage), http.StatusUnauthorized)
+	}
+	// Check that the account/user is permitted to access this host.
+	err = tx.AcctMgmt(pam.DisallowNullAuthtok)
+	if err != nil {
+		err = fmt.Errorf("PAM: %s", err)
+		if errorMessage != "" {
+			err = fmt.Errorf("%s; %q", err, errorMessage)
+		}
+		return arvados.APIClientAuthorization{}, httpserver.ErrorWithStatus(err, http.StatusUnauthorized)
 	}
 	user, err := tx.GetItem(pam.User)
 	if err != nil {
