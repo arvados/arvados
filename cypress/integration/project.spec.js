@@ -85,6 +85,39 @@ describe('Project tests', function() {
                 // Pink is not in the test vocab
                 {IDTAGCOLORS: ['IDVALCOLORS3', 'Pink', 'IDVALCOLORS1']});
         });
+
+        // Open project edit via breadcrumbs
+        cy.get('[data-cy=breadcrumbs]').contains(projName).rightclick();
+        cy.get('[data-cy=context-menu]').contains('Edit').click();
+        cy.get('[data-cy=form-dialog]').within(() => {
+            cy.get('[data-cy=resource-properties-list]').within(() => {
+                cy.get('div[role=button]').contains('Color: Magenta');
+                cy.get('div[role=button]').contains('Color: Pink');
+                cy.get('div[role=button]').contains('Color: Yellow');
+            });
+        });
+        // Add another property
+        cy.get('[data-cy=resource-properties-form]').within(() => {
+            cy.get('[data-cy=property-field-key]').within(() => {
+                cy.get('input').type('Animal');
+            });
+            cy.get('[data-cy=property-field-value]').within(() => {
+                cy.get('input').type('Dog');
+            });
+            cy.root().submit();
+        });
+        cy.get('[data-cy=form-submit-btn]').click();
+        // Reopen edit via breadcrumbs and verify properties
+        cy.get('[data-cy=breadcrumbs]').contains(projName).rightclick();
+        cy.get('[data-cy=context-menu]').contains('Edit').click();
+        cy.get('[data-cy=form-dialog]').within(() => {
+            cy.get('[data-cy=resource-properties-list]').within(() => {
+                cy.get('div[role=button]').contains('Color: Magenta');
+                cy.get('div[role=button]').contains('Color: Pink');
+                cy.get('div[role=button]').contains('Color: Yellow');
+                cy.get('div[role=button]').contains('Animal: Dog');
+            });
+        });
     });
 
     it('creates new project on home project and then a subproject inside it', function() {
@@ -268,7 +301,7 @@ describe('Project tests', function() {
 
                     cy.get('main').contains(projectName).rightclick();
 
-                    cy.get('[data-cy=context-menu]').contains('Advanced').click();
+                    cy.get('[data-cy=context-menu]').contains('API Details').click();
 
                     cy.get('[role=tablist]').contains('METADATA').click();
 

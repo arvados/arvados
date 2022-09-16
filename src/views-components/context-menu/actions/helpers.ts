@@ -14,7 +14,10 @@ export const sanitizeToken = (href: string, tokenAsQueryParam = true): string =>
     return `${[prefix, ...rest].join('/')}${tokenAsQueryParam ? `${sep}api_token=${token}` : ''}`;
 };
 
-export const getClipboardUrl = (href: string, shouldSanitizeToken = true, inline = false): string => {
+/**
+ * @returns A shareable token-free WB2 url that redirects to keep-web after login
+ */
+export const getCollectionItemClipboardUrl = (href: string, shouldSanitizeToken = true, inline = false): string => {
     const { origin } = window.location;
     const url = shouldSanitizeToken ? sanitizeToken(href, false) : href;
     const redirectKey = inline ? REDIRECT_TO_PREVIEW_KEY : REDIRECT_TO_DOWNLOAD_KEY;

@@ -114,6 +114,7 @@ coproc arvboot (~/go/bin/arvados-server boot \
     -type test \
     -config ${TMPDIR}/arvados.yml \
     -no-workbench1 \
+    -no-workbench2 \
     -own-temporary-database \
     -timeout 20m 2> ${ARVADOS_LOG})
 trap cleanup ERR EXIT

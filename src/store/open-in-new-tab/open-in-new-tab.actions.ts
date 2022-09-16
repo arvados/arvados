@@ -3,35 +3,25 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import copy from 'copy-to-clipboard';
-import { ResourceKind } from 'models/resource';
-import { getClipboardUrl } from 'views-components/context-menu/actions/helpers';
+import { Dispatch } from 'redux';
+import { getNavUrl } from 'routes/routes';
+import { RootState } from 'store/store';
 
-const getUrl = (resource: any) => {
-    let url: string | null = null;
-    const { uuid, kind } = resource;
+export const openInNewTabAction = (resource: any) => (dispatch: Dispatch, getState: () => RootState) => {
+    const url = getNavUrl(resource.uuid, getState().auth);
 
-    if (kind === ResourceKind.COLLECTION) {
-        url = `/collections/${uuid}`;
-    }
-    if (kind === ResourceKind.PROJECT) {
-        url = `/projects/${uuid}`;
-    }
-
-    return url;
-};
-
-export const openInNewTabAction = (resource: any) => () => {
-    const url = getUrl(resource);
-
-    if (url) {
+    if (url[0] === '/') {
         window.open(`${window.location.origin}${url}`, '_blank');
+    } else if (url.length) {
+        window.open(url, '_blank');
     }
 };
 
-export const copyToClipboardAction = (resource: any) => () => {
-    const url = getUrl(resource);
+export const copyToClipboardAction = (resource: any) => (dispatch: Dispatch, getState: () => RootState) => {
+    // Copy to clipboard omits token to avoid accidental sharing
+    const url = getNavUrl(resource.uuid, getState().auth, false);
 
     if (url) {
-        copy(getClipboardUrl(url, false));
+        copy(url);
     }
 };

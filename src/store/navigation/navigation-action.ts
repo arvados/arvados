@@ -14,7 +14,7 @@ import { pluginConfig } from 'plugins';
 import { snackbarActions, SnackbarKind } from 'store/snackbar/snackbar-actions';
 import { USERS_PANEL_LABEL, MY_ACCOUNT_PANEL_LABEL } from 'store/breadcrumbs/breadcrumbs-actions';
 
-const navigationNotAvailable = (id: string) =>
+export const navigationNotAvailable = (id: string) =>
     snackbarActions.OPEN_SNACKBAR({
         message: `${id} not available`,
         hideDuration: 3000,

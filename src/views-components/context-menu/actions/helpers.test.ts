@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import { sanitizeToken, getClipboardUrl, getInlineFileUrl } from "./helpers";
+import { sanitizeToken, getCollectionItemClipboardUrl, getInlineFileUrl } from "./helpers";
 
 describe('helpers', () => {
     // given
@@ -22,7 +22,7 @@ describe('helpers', () => {
     describe('getClipboardUrl', () => {
         it('should add redirectTo query param', () => {
             // when
-            const result = getClipboardUrl(url);
+            const result = getCollectionItemClipboardUrl(url);
 
             // then
             expect(result).toBe('http://localhost?redirectToDownload=https://example.com/c=zzzzz-4zz18-0123456789abcde/LIMS/1.html');

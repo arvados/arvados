@@ -33,7 +33,6 @@ import { MoveProjectDialog } from 'views-components/dialog-forms/move-project-di
 import { MoveCollectionDialog } from 'views-components/dialog-forms/move-collection-dialog';
 import { FilesUploadCollectionDialog } from 'views-components/dialog-forms/files-upload-collection-dialog';
 import { PartialCopyCollectionDialog } from 'views-components/dialog-forms/partial-copy-collection-dialog';
-import { ProcessCommandDialog } from 'views-components/process-command-dialog/process-command-dialog';
 import { RemoveProcessDialog } from 'views-components/process-remove-dialog/process-remove-dialog';
 import { MainContentBar } from 'views-components/main-content-bar/main-content-bar';
 import { Grid } from '@material-ui/core';
@@ -241,7 +240,6 @@ export const WorkbenchPanel =
             <PublicKeyDialog />
             <PartialCopyCollectionDialog />
             <PartialCopyToCollectionDialog />
-            <ProcessCommandDialog />
             <ProcessInputDialog />
             <RestoreCollectionVersionDialog />
             <RemoveApiClientAuthorizationDialog />

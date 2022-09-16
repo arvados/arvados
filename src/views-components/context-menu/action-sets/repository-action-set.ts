@@ -21,7 +21,7 @@ export const repositoryActionSet: ContextMenuActionSet = [[{
         dispatch<any>(openSharingDialog(uuid));
     }
 }, {
-    name: "Advanced",
+    name: "API Details",
     icon: AdvancedIcon,
     execute: (dispatch, resource) => {
         dispatch<any>(openAdvancedTabDialog(resource.uuid));

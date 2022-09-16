@@ -59,8 +59,6 @@ import SettingsEthernet from '@material-ui/icons/SettingsEthernet';
 import Star from '@material-ui/icons/Star';
 import StarBorder from '@material-ui/icons/StarBorder';
 import Warning from '@material-ui/icons/Warning';
-import Visibility from '@material-ui/icons/Visibility';
-import VisibilityOff from '@material-ui/icons/VisibilityOff';
 import VpnKey from '@material-ui/icons/VpnKey';
 import LinkOutlined from '@material-ui/icons/LinkOutlined';
 import RemoveRedEye from '@material-ui/icons/RemoveRedEye';
@@ -77,6 +75,7 @@ import NotInterested from '@material-ui/icons/NotInterested';
 // Import FontAwesome icons
 import { library } from '@fortawesome/fontawesome-svg-core';
 import { faPencilAlt, faSlash, faUsers, faEllipsisH } from '@fortawesome/free-solid-svg-icons';
+import { FormatAlignLeft } from '@material-ui/icons';
 library.add(
     faPencilAlt,
     faSlash,
@@ -170,8 +169,6 @@ export const SidePanelRightArrowIcon: IconType = (props) => <PlayArrow {...props
 export const TrashIcon: IconType = (props) => <Delete {...props} />;
 export const UserPanelIcon: IconType = (props) => <Person {...props} />;
 export const UsedByIcon: IconType = (props) => <Folder {...props} />;
-export const VisibleIcon: IconType = (props) => <Visibility {...props} />;
-export const InvisibleIcon: IconType = (props) => <VisibilityOff {...props} />;
 export const WorkflowIcon: IconType = (props) => <Code {...props} />;
 export const WarningIcon: IconType = (props) => <Warning style={{ color: '#fbc02d', height: '30px', width: '30px' }} {...props} />;
 export const Link: IconType = (props) => <LinkOutlined {...props} />;
@@ -180,7 +177,8 @@ export const CanReadIcon: IconType = (props) => <RemoveRedEye {...props} />;
 export const CanWriteIcon: IconType = (props) => <Edit {...props} />;
 export const CanManageIcon: IconType = (props) => <Computer {...props} />;
 export const AddUserIcon: IconType = (props) => <PersonAdd {...props} />;
-export const WordWrapIcon: IconType = (props) => <WrapText {...props} />;
+export const WordWrapOnIcon: IconType = (props) => <WrapText {...props} />;
+export const WordWrapOffIcon: IconType = (props) => <FormatAlignLeft {...props} />;
 export const TextIncreaseIcon: IconType = (props) => <TextIncrease {...props} />;
 export const TextDecreaseIcon: IconType = (props) => <TextDecrease {...props} />;
 export const DeactivateUserIcon: IconType = (props) => <NotInterested {...props} />;
