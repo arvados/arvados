@@ -192,7 +192,7 @@ describe('Collection panel tests', function () {
             });
     });
 
-    it.only('shows collection by URL', function () {
+    it('shows collection by URL', function () {
         cy.loginAs(activeUser);
         [true, false].map(function (isWritable) {
             // Using different file names to avoid test flakyness: the second iteration
