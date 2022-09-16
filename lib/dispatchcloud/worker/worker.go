@@ -233,6 +233,7 @@ func (wkr *worker) probeAndUpdate() {
 		booted   bool
 		ctrUUIDs []string
 		ok       bool
+		stdout   []byte // from probeBooted
 		stderr   []byte // from probeBooted
 	)
 
@@ -250,7 +251,7 @@ func (wkr *worker) probeAndUpdate() {
 	logger := wkr.logger.WithField("ProbeStart", probeStart)
 
 	if !booted {
-		booted, stderr = wkr.probeBooted()
+		booted, stdout, stderr = wkr.probeBooted()
 		if !booted {
 			// Pretend this probe succeeded if another
 			// concurrent attempt succeeded.
@@ -287,8 +288,8 @@ func (wkr *worker) probeAndUpdate() {
 		// boot/recover before the timeout expired).
 		dur := probeStart.Sub(wkr.probed)
 		if wkr.shutdownIfBroken(dur) {
-			// stderr from failed run-probes will have
-			// been logged already, but boot-probe
+			// stdout+stderr from failed run-probes will
+			// have been logged already, but boot-probe
 			// failures are normal so they are logged only
 			// at Debug level. This is our chance to log
 			// some evidence about why the node never
@@ -297,6 +298,7 @@ func (wkr *worker) probeAndUpdate() {
 				wkr.reportBootOutcome(BootOutcomeFailed)
 				logger.WithFields(logrus.Fields{
 					"Duration": dur,
+					"stdout":   string(stdout),
 					"stderr":   string(stderr),
 				}).Info("boot failed")
 			}
@@ -444,7 +446,7 @@ func (wkr *worker) probeRunning() (running []string, reportsBroken, ok bool) {
 	return
 }
 
-func (wkr *worker) probeBooted() (ok bool, stderr []byte) {
+func (wkr *worker) probeBooted() (ok bool, stdout, stderr []byte) {
 	cmd := wkr.wp.bootProbeCommand
 	if cmd == "" {
 		cmd = "true"
@@ -457,21 +459,25 @@ func (wkr *worker) probeBooted() (ok bool, stderr []byte) {
 	})
 	if err != nil {
 		logger.WithError(err).Debug("boot probe failed")
-		return false, stderr
+		return false, stdout, stderr
 	}
 	logger.Info("boot probe succeeded")
 	if err = wkr.wp.loadRunnerData(); err != nil {
 		wkr.logger.WithError(err).Warn("cannot boot worker: error loading runner binary")
-		return false, stderr
+		return false, stdout, stderr
 	} else if len(wkr.wp.runnerData) == 0 {
 		// Assume crunch-run is already installed
-	} else if _, stderr2, err := wkr.copyRunnerData(); err != nil {
-		wkr.logger.WithError(err).WithField("stderr", string(stderr2)).Warn("error copying runner binary")
-		return false, stderr2
+	} else if stdout2, stderr2, err := wkr.copyRunnerData(); err != nil {
+		wkr.logger.WithError(err).WithFields(logrus.Fields{
+			"stdout": string(stdout2),
+			"stderr": string(stderr2),
+		}).Warn("error copying runner binary")
+		return false, stdout2, stderr2
 	} else {
+		stdout = append(stdout, stdout2...)
 		stderr = append(stderr, stderr2...)
 	}
-	return true, stderr
+	return true, stdout, stderr
 }
 
 func (wkr *worker) copyRunnerData() (stdout, stderr []byte, err error) {
