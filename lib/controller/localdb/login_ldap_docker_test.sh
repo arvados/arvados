@@ -160,7 +160,7 @@ objectClass: inetOrgPerson
 objectClass: posixAccount
 objectClass: top
 objectClass: shadowAccount
-shadowMax: 180
+shadowMax: -1
 shadowMin: 1
 shadowWarning: 7
 shadowLastChange: 10701
@@ -168,6 +168,26 @@ loginShell: /bin/bash
 uidNumber: 11111
 gidNumber: 11111
 homeDirectory: /home/foo-bar
+userPassword: ${passwordhash}
+
+dn: uid=expired,dc=example,dc=org
+uid: expired
+cn: "Exp Ired"
+givenName: Exp
+sn: Ired
+mail: expired@example.com
+objectClass: inetOrgPerson
+objectClass: posixAccount
+objectClass: top
+objectClass: shadowAccount
+shadowMax: 180
+shadowMin: 1
+shadowWarning: 7
+shadowLastChange: 10701
+loginShell: /bin/bash
+uidNumber: 11112
+gidNumber: 11111
+homeDirectory: /home/expired
 userPassword: ${passwordhash}
 EOF
 
@@ -225,6 +245,13 @@ if [[ "${config_method}" = ldap ]]; then
     check_contains "${resp}" '{"errors":["LDAP: Authentication failure (with username \"foo-bar\" and password)"]}'
 else
     check_contains "${resp}" '{"errors":["PAM: Authentication failure (with username \"foo-bar\" and password)"]}'
+fi
+
+if [[ "${config_method}" = pam ]]; then
+    echo >&2 "Testing expired credentials"
+    resp="$(set -x; curl -s --include -d username=expired -d password=secret "http://0.0.0.0:${ctrlport}/arvados/v1/users/authenticate" | tee $debug)"
+    check_contains "${resp}" "HTTP/1.1 401"
+    check_contains "${resp}" '{"errors":["PAM: Authentication failure; \"You are required to change your LDAP password immediately.\""]}'
 fi
 
 echo >&2 "Testing authentication success"
