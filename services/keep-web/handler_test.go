@@ -987,6 +987,78 @@ func (s *IntegrationSuite) testDirectoryListing(c *check.C) {
 	}
 }
 
+// see https://dev.arvados.org/issues/19502
+func (s *IntegrationSuite) TestUpdateIdenticalCollection(c *check.C) {
+	s.testServer.Config.cluster.Services.WebDAVDownload.ExternalURL.Host = "example.com"
+	arv := arvados.NewClientFromEnv()
+	var collections [2]arvados.Collection
+	for i := range collections {
+		err := arv.RequestAndDecode(&collections[i], "POST", "arvados/v1/collections", nil, map[string]interface{}{
+			"collection": map[string]string{
+				"owner_uuid":    arvadostest.ActiveUserUUID,
+				"manifest_text": ". acbd18db4cc2f85cedef654fccc4a4d8+3 0:3:foo.txt\n",
+				"name":          "keep-web test collection",
+			},
+			"ensure_unique_name": true,
+		})
+		c.Assert(err, check.IsNil)
+		defer arv.RequestAndDecode(nil, "DELETE", "arvados/v1/collections/"+collections[i].UUID, nil, nil)
+	}
+	// Warm up the cache with collection 1 (uuid1=>pdh and
+	// pdh=>collection1) followed by collection 2 (uuid2=>pdh and
+	// pdh=>collection2)
+	for _, coll := range collections {
+		u, _ := url.Parse("http://example.com/c=" + coll.UUID + "/foo.txt")
+		req := &http.Request{
+			Method:     "GET",
+			Host:       u.Host,
+			URL:        u,
+			RequestURI: u.RequestURI(),
+			Header: http.Header{
+				"Authorization": {"Bearer " + arvadostest.ActiveToken},
+			},
+		}
+		resp := httptest.NewRecorder()
+		s.testServer.Handler.ServeHTTP(resp, req)
+		c.Check(resp.Code, check.Equals, http.StatusOK)
+	}
+	// Delete a file from the 1st collection (this will use the
+	// cached collection record, which was fetched with uuid2)
+	{
+		u, _ := url.Parse("http://example.com/c=" + collections[0].UUID + "/foo.txt")
+		req := &http.Request{
+			Method:     "DELETE",
+			Host:       u.Host,
+			URL:        u,
+			RequestURI: u.RequestURI(),
+			Header: http.Header{
+				"Authorization": {"Bearer " + arvadostest.ActiveToken},
+			},
+		}
+		resp := httptest.NewRecorder()
+		s.testServer.Handler.ServeHTTP(resp, req)
+		c.Check(resp.Code, check.Equals, http.StatusNoContent)
+	}
+	// Ensure the 1st collection was modified, not the 2nd one
+	for i, coll := range collections {
+		c.Logf("fetch collection #%d", i)
+		u, _ := url.Parse("http://example.com/c=" + coll.UUID + "/foo.txt")
+		req := &http.Request{
+			Method:     "GET",
+			Host:       u.Host,
+			URL:        u,
+			RequestURI: u.RequestURI(),
+			Header: http.Header{
+				"Authorization": {"Bearer " + arvadostest.ActiveToken},
+				"Cache-Control": {"no-cache"},
+			},
+		}
+		resp := httptest.NewRecorder()
+		s.testServer.Handler.ServeHTTP(resp, req)
+		c.Check(resp.Code == http.StatusOK, check.Equals, i == 1)
+	}
+}
+
 func (s *IntegrationSuite) TestDeleteLastFile(c *check.C) {
 	arv := arvados.NewClientFromEnv()
 	var newCollection arvados.Collection

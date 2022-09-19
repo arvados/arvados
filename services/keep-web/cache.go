@@ -334,7 +334,11 @@ func (c *cache) Get(arv *arvadosclient.ArvadosClient, targetID string, forceRelo
 		// We looked up UUID->PDH very recently, and we still
 		// have the manifest for that PDH.
 		c.logger.Debugf("cache(%s): have pdh %s and refresh not needed", targetID, pdh)
-		return cached, nil
+		return &arvados.Collection{
+			UUID:             targetID,
+			ManifestText:     cached.ManifestText,
+			PortableDataHash: pdh,
+		}, nil
 	} else {
 		// Get current PDH for this UUID (and confirm we still
 		// have read permission).  Most likely, the cached PDH
@@ -350,13 +354,21 @@ func (c *cache) Get(arv *arvadosclient.ArvadosClient, targetID string, forceRelo
 			// PDH has not changed, cached manifest is
 			// correct.
 			c.logger.Debugf("cache(%s): verified cached pdh %s is still correct", targetID, pdh)
-			return cached, nil
+			return &arvados.Collection{
+				UUID:             targetID,
+				ManifestText:     cached.ManifestText,
+				PortableDataHash: pdh,
+			}, nil
 		}
 		if cached := c.lookupCollection(arv.ApiToken + "\000" + current.PortableDataHash); cached != nil {
 			// PDH changed, and we already have the
 			// manifest for that new PDH.
 			c.logger.Debugf("cache(%s): cached pdh %s was stale, new pdh is %s and manifest is already in cache", targetID, pdh, current.PortableDataHash)
-			return cached, nil
+			return &arvados.Collection{
+				UUID:             targetID,
+				ManifestText:     cached.ManifestText,
+				PortableDataHash: current.PortableDataHash,
+			}, nil
 		}
 	}
 
