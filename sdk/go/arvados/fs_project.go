@@ -78,6 +78,7 @@ func (fs *customFileSystem) projectsLoadAll(parent inode, uuid string) ([]inode,
 		return nil, err
 	}
 
+	pagesize := 100000
 	var inodes []inode
 
 	// When #17424 is resolved, remove the outer loop here and use
@@ -98,6 +99,8 @@ func (fs *customFileSystem) projectsLoadAll(parent inode, uuid string) ([]inode,
 			Count:   "none",
 			Filters: filters,
 			Order:   "uuid",
+			Select:  []string{"uuid", "name", "modified_at", "properties"},
+			Limit:   &pagesize,
 		}
 
 		for {

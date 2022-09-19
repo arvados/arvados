@@ -486,7 +486,13 @@ func (h *handler) ServeHTTP(wOrig http.ResponseWriter, r *http.Request) {
 
 	// Check configured permission
 	_, sess, err := h.Config.Cache.GetSession(arv.ApiToken)
+	if err != nil {
+		http.Error(w, "session cache: "+err.Error(), http.StatusInternalServerError)
+	}
 	tokenUser, err = h.Config.Cache.GetTokenUser(arv.ApiToken)
+	if err != nil {
+		http.Error(w, "user lookup: "+err.Error(), http.StatusInternalServerError)
+	}
 
 	if webdavMethod[r.Method] {
 		if !h.userPermittedToUploadOrDownload(r.Method, tokenUser) {
