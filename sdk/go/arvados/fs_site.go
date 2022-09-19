@@ -158,10 +158,10 @@ func (fs *customFileSystem) mountCollection(parent inode, id string) (inode, err
 	if len(id) != 27 {
 		// This means id is a PDH, and controller/railsapi
 		// returned one of (possibly) many collections with
-		// that PDH. We don't want to expose (e.g., through
-		// Sys()) the metadata from that collection -- only
-		// the fields that are common to all matching
-		// collections, i.e., PDH and manifest.
+		// that PDH. Even if controller returns more fields
+		// besides PDH and manifest text (which are equal for
+		// all matching collections), we don't want to expose
+		// them (e.g., through Sys()).
 		coll = Collection{
 			PortableDataHash: coll.PortableDataHash,
 			ManifestText:     coll.ManifestText,
