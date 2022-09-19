@@ -214,6 +214,11 @@ func (s *integrationSuite) TestRunTrivialContainerWithLocalKeepstore(c *C) {
 			c.Check(log, trial.matchGetReq, `(?ms).*"reqMethod":"GET".*`)
 			c.Check(log, trial.matchPutReq, `(?ms).*"reqMethod":"PUT".*,"reqPath":"0e3bcff26d51c895a60ea0d4585e134d".*`)
 		}
+
+		c.Check(s.logFiles["crunch-run.txt"], Matches, `(?ms).*using local keepstore process .* at http://[\d\.]{7,}:\d+.*`)
+		c.Check(s.logFiles["crunch-run.txt"], Not(Matches), `(?ms).* at http://127\..*`)
+		c.Check(s.logFiles["crunch-run.txt"], Not(Matches), `(?ms).* at http://169\.254\..*`)
+		c.Check(s.logFiles["stderr.txt"], Matches, `(?ms).*ARVADOS_KEEP_SERVICES=http://[\d\.]{7,}:\d+\n.*`)
 	}
 
 	// Check that (1) config is loaded from $ARVADOS_CONFIG when
@@ -252,7 +257,7 @@ func (s *integrationSuite) testRunTrivialContainer(c *C) {
 	if s.engine == "docker" && os.Getenv("ENABLE_DOCKER_TESTS") == "" {
 		c.Skip("docker tests temporarily disabled if ENABLE_DOCKER_TESTS is not set, see https://dev.arvados.org/issues/15370#note-31")
 	}
-	s.cr.Command = []string{"sh", "-c", "cat /mnt/in/inputfile >/mnt/out/inputfile && cat /mnt/json >/mnt/out/json && ! touch /mnt/in/shouldbereadonly && mkdir /mnt/out/emptydir"}
+	s.cr.Command = []string{"sh", "-c", "env >&2 && cat /mnt/in/inputfile >/mnt/out/inputfile && cat /mnt/json >/mnt/out/json && ! touch /mnt/in/shouldbereadonly && mkdir /mnt/out/emptydir"}
 	s.setup(c)
 
 	args := []string{
