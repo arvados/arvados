@@ -420,10 +420,20 @@ func (n *treenode) Sync() error {
 }
 
 func (n *treenode) MemorySize() (size int64) {
+	// To avoid making other callers wait while we count the
+	// entire filesystem size, we lock the node only long enough
+	// to copy the list of children. We accept that the resulting
+	// size will sometimes be misleading (e.g., we will
+	// double-count an item that moves from A to B after we check
+	// A's size but before we check B's size).
 	n.RLock()
-	defer n.RUnlock()
 	debugPanicIfNotLocked(n, false)
+	todo := make([]inode, 0, len(n.inodes))
 	for _, inode := range n.inodes {
+		todo = append(todo, inode)
+	}
+	n.RUnlock()
+	for _, inode := range todo {
 		size += inode.MemorySize()
 	}
 	return 64 + size
