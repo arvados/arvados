@@ -26,7 +26,7 @@ import {
     Chip,
 } from '@material-ui/core';
 import { ArvadosTheme } from 'common/custom-theme';
-import { CloseIcon, ImageIcon, InfoIcon, InputIcon, InvisibleIcon, OutputIcon, VisibleIcon } from 'components/icon/icon';
+import { CloseIcon, ImageIcon, InfoIcon, InputIcon, ImageOffIcon, OutputIcon } from 'components/icon/icon';
 import { MPVPanelProps } from 'components/multi-panel-view/multi-panel-view';
 import {
   BooleanCommandInputParameter,
@@ -213,7 +213,7 @@ export const ProcessIOCard = withStyles(styles)(connect(null, mapDispatchToProps
                 action={
                     <div>
                         { mainProcess && <Tooltip title={"Toggle Image Preview"} disableFocusListener>
-                            <IconButton data-cy="io-preview-image-toggle" onClick={() =>{setShowImagePreview(!showImagePreview)}}>{showImagePreview ? <VisibleIcon /> : <InvisibleIcon />}</IconButton>
+                            <IconButton data-cy="io-preview-image-toggle" onClick={() =>{setShowImagePreview(!showImagePreview)}}>{showImagePreview ? <ImageIcon /> : <ImageOffIcon />}</IconButton>
                         </Tooltip> }
                         { doHidePanel &&
                         <Tooltip title={`Close ${panelName || 'panel'}`} disableFocusListener>
