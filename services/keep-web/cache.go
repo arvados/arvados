@@ -116,6 +116,7 @@ type cachedPDH struct {
 	expire  time.Time
 	refresh time.Time
 	pdh     string
+	mtime   time.Time
 }
 
 type cachedCollection struct {
@@ -214,6 +215,7 @@ func (c *cache) Update(client *arvados.Client, coll arvados.Collection, fs arvad
 		expire:  time.Now().Add(time.Duration(c.config.TTL)),
 		refresh: time.Now().Add(time.Duration(c.config.UUIDTTL)),
 		pdh:     updated.PortableDataHash,
+		mtime:   updated.ModifiedAt,
 	})
 	return nil
 }
@@ -309,6 +311,7 @@ func (c *cache) Get(arv *arvadosclient.ArvadosClient, targetID string, forceRelo
 
 	var pdhRefresh bool
 	var pdh string
+	var mtime time.Time
 	if arvadosclient.PDHMatch(targetID) {
 		pdh = targetID
 	} else if ent, cached := c.pdhs.Get(targetID); cached {
@@ -317,6 +320,7 @@ func (c *cache) Get(arv *arvadosclient.ArvadosClient, targetID string, forceRelo
 			c.pdhs.Remove(targetID)
 		} else {
 			pdh = ent.pdh
+			mtime = ent.mtime
 			pdhRefresh = forceReload || time.Now().After(ent.refresh)
 			c.metrics.pdhHits.Inc()
 		}
@@ -338,6 +342,7 @@ func (c *cache) Get(arv *arvadosclient.ArvadosClient, targetID string, forceRelo
 			UUID:             targetID,
 			ManifestText:     cached.ManifestText,
 			PortableDataHash: pdh,
+			ModifiedAt:       mtime,
 		}, nil
 	} else {
 		// Get current PDH for this UUID (and confirm we still
@@ -358,6 +363,7 @@ func (c *cache) Get(arv *arvadosclient.ArvadosClient, targetID string, forceRelo
 				UUID:             targetID,
 				ManifestText:     cached.ManifestText,
 				PortableDataHash: pdh,
+				ModifiedAt:       current.ModifiedAt,
 			}, nil
 		}
 		if cached := c.lookupCollection(arv.ApiToken + "\000" + current.PortableDataHash); cached != nil {
@@ -368,6 +374,7 @@ func (c *cache) Get(arv *arvadosclient.ArvadosClient, targetID string, forceRelo
 				UUID:             targetID,
 				ManifestText:     cached.ManifestText,
 				PortableDataHash: current.PortableDataHash,
+				ModifiedAt:       current.ModifiedAt,
 			}, nil
 		}
 	}
@@ -387,6 +394,7 @@ func (c *cache) Get(arv *arvadosclient.ArvadosClient, targetID string, forceRelo
 			expire:  exp,
 			refresh: time.Now().Add(time.Duration(c.config.UUIDTTL)),
 			pdh:     retrieved.PortableDataHash,
+			mtime:   retrieved.ModifiedAt,
 		})
 	}
 	c.collections.Add(arv.ApiToken+"\000"+retrieved.PortableDataHash, &cachedCollection{
