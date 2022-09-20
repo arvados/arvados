@@ -154,8 +154,8 @@ const styles: StyleRulesCallback<CssRules> = (theme: Theme) => ({
         marginTop: '-15px',
     },
     pathPanel: {
-        padding: '1rem',
-        marginBottom: '1rem',
+        padding: '0.5rem',
+        marginBottom: '0.5rem',
         backgroundColor: '#fff',
         boxShadow: '0px 1px 3px 0px rgb(0 0 0 / 20%), 0px 1px 1px 0px rgb(0 0 0 / 14%), 0px 2px 1px -1px rgb(0 0 0 / 12%)',
     },
@@ -164,7 +164,7 @@ const styles: StyleRulesCallback<CssRules> = (theme: Theme) => ({
     },
     leftPanel: {
         flex: 0,
-        padding: '1rem',
+        padding: '0 1rem 1rem',
         marginRight: '1rem',
         whiteSpace: 'nowrap',
         position: 'relative',
@@ -195,8 +195,8 @@ const styles: StyleRulesCallback<CssRules> = (theme: Theme) => ({
     rightPanel: {
         flex: '50%',
         padding: '1rem',
-        paddingTop: '2rem',
-        marginTop: '-1rem',
+        paddingTop: '0.5rem',
+        marginTop: '-0.5rem',
         position: 'relative',
         backgroundColor: '#fff',
         boxShadow: '0px 3px 3px 0px rgb(0 0 0 / 20%), 0px 3px 1px 0px rgb(0 0 0 / 14%), 0px 3px 1px -1px rgb(0 0 0 / 12%)',
