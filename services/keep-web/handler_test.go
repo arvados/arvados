@@ -1261,7 +1261,7 @@ func copyHeader(h http.Header) http.Header {
 }
 
 func (s *IntegrationSuite) checkUploadDownloadRequest(c *check.C, h *handler, req *http.Request,
-	successCode int, direction string, perm bool, userUuid string, collectionUuid string, filepath string) {
+	successCode int, direction string, perm bool, userUuid string, collectionUuid interface{}, filepath string) {
 
 	client := s.testServer.Config.Client
 	client.AuthToken = arvadostest.AdminToken
@@ -1386,7 +1386,7 @@ func (s *IntegrationSuite) TestDownloadLoggingPermission(c *check.C) {
 		},
 	}
 	s.checkUploadDownloadRequest(c, &h, req, http.StatusOK, "download", true,
-		arvadostest.ActiveUserUUID, arvadostest.FooCollection, "foo")
+		arvadostest.ActiveUserUUID, nil, "foo")
 }
 
 func (s *IntegrationSuite) TestUploadLoggingPermission(c *check.C) {
