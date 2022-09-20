@@ -6,6 +6,7 @@ package main
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"html"
 	"html/template"
@@ -490,7 +491,11 @@ func (h *handler) ServeHTTP(wOrig http.ResponseWriter, r *http.Request) {
 		http.Error(w, "session cache: "+err.Error(), http.StatusInternalServerError)
 	}
 	tokenUser, err = h.Config.Cache.GetTokenUser(arv.ApiToken)
-	if err != nil {
+	if e := (interface{ HTTPStatus() int })(nil); errors.As(err, &e) && e.HTTPStatus() == http.StatusForbidden {
+		// Ignore expected error looking up user record when
+		// using a scoped token that allows getting
+		// collections/X but not users/current
+	} else if err != nil {
 		http.Error(w, "user lookup: "+err.Error(), http.StatusInternalServerError)
 	}
 
