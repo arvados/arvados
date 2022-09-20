@@ -276,7 +276,6 @@ export type ProcessIOValue = {
 export type ProcessIOParameter = {
     id: string;
     label: string;
-    doc: string;
     value: ProcessIOValue[];
 }
 
@@ -294,7 +293,6 @@ const ProcessIOPreview = withStyles(styles)(
                 <TableRow>
                     <TableCell>Name</TableCell>
                     <TableCell>Label</TableCell>
-                    <TableCell>Description</TableCell>
                     <TableCell>Value</TableCell>
                     <TableCell>Collection</TableCell>
                 </TableRow>
@@ -311,7 +309,6 @@ const ProcessIOPreview = withStyles(styles)(
                                 {param.id}
                             </TableCell>
                             <TableCell >{param.label}</TableCell>
-                            <TableCell >{param.doc}</TableCell>
                             <TableCell>
                                 {firstVal && <ProcessValuePreview value={firstVal} showImagePreview={showImagePreview} />}
                             </TableCell>
@@ -323,7 +320,6 @@ const ProcessIOPreview = withStyles(styles)(
                         </TableRow>
                         {rest.map((val, i) => (
                             <TableRow className={(i < rest.length-1) ? rowClass : undefined}>
-                                <TableCell />
                                 <TableCell />
                                 <TableCell />
                                 <TableCell>
