@@ -581,6 +581,8 @@ func (h *handler) serveS3(w http.ResponseWriter, r *http.Request) bool {
 	}
 }
 
+// Save modifications to the indicated collection in srcfs, then (if
+// successful) ensure they are also reflected in dstfs.
 func (h *handler) syncCollection(srcfs, dstfs arvados.CustomFileSystem, path string) error {
 	coll, _ := h.determineCollection(srcfs, path)
 	if coll == nil || coll.UUID == "" {
@@ -592,6 +594,9 @@ func (h *handler) syncCollection(srcfs, dstfs arvados.CustomFileSystem, path str
 	}
 	defer d.Close()
 	err = d.Sync()
+	if err != nil {
+		return err
+	}
 	snap, err := d.Snapshot()
 	if err != nil {
 		return err
