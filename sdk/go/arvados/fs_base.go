@@ -641,7 +641,15 @@ func (fs *fileSystem) Rename(oldname, newname string) error {
 	}
 	locked := map[sync.Locker]bool{}
 	for i := len(needLock) - 1; i >= 0; i-- {
-		if n := needLock[i]; !locked[n] {
+		n := needLock[i]
+		if fs, ok := n.(FileSystem); ok {
+			// Lock the fs's root dir directly, not
+			// through the fs. Otherwise our "locked" map
+			// would not reliably prevent double-locking
+			// the fs's root dir.
+			n = fs.rootnode()
+		}
+		if !locked[n] {
 			n.Lock()
 			defer n.Unlock()
 			locked[n] = true

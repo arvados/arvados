@@ -695,7 +695,7 @@ func (s *ServerRequiredSuite) TestCollectionSharingToken(c *C) {
 	defer srv.Close()
 	hash, _, err := kc.PutB([]byte("shareddata"))
 	c.Check(err, IsNil)
-	kc.Arvados.ApiToken = arvadostest.FooCollectionSharingToken
+	kc.Arvados.ApiToken = arvadostest.FooFileCollectionSharingToken
 	rdr, _, _, err := kc.Get(hash)
 	c.Assert(err, IsNil)
 	data, err := ioutil.ReadAll(rdr)

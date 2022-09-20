@@ -494,17 +494,8 @@ func (ldr *Loader) loadOldKeepWebConfig(cfg *arvados.Config) error {
 	if oc.Cache.TTL != nil {
 		cluster.Collections.WebDAVCache.TTL = *oc.Cache.TTL
 	}
-	if oc.Cache.UUIDTTL != nil {
-		cluster.Collections.WebDAVCache.UUIDTTL = *oc.Cache.UUIDTTL
-	}
-	if oc.Cache.MaxCollectionEntries != nil {
-		cluster.Collections.WebDAVCache.MaxCollectionEntries = *oc.Cache.MaxCollectionEntries
-	}
 	if oc.Cache.MaxCollectionBytes != nil {
 		cluster.Collections.WebDAVCache.MaxCollectionBytes = *oc.Cache.MaxCollectionBytes
-	}
-	if oc.Cache.MaxUUIDEntries != nil {
-		cluster.Collections.WebDAVCache.MaxUUIDEntries = *oc.Cache.MaxUUIDEntries
 	}
 	if oc.AnonymousTokens != nil {
 		if len(*oc.AnonymousTokens) > 0 {

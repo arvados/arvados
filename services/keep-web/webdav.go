@@ -36,7 +36,10 @@ var (
 // existence automatically so sequences like "mkcol foo; put foo/bar"
 // work as expected.
 type webdavFS struct {
-	collfs  arvados.FileSystem
+	collfs arvados.FileSystem
+	// prefix works like fs.Sub: Stat(name) calls
+	// Stat(prefix+name) in the wrapped filesystem.
+	prefix  string
 	writing bool
 	// webdav PROPFIND reads the first few bytes of each file
 	// whose filename extension isn't recognized, which is
@@ -56,7 +59,7 @@ func (fs *webdavFS) makeparents(name string) {
 	}
 	dir = dir[:len(dir)-1]
 	fs.makeparents(dir)
-	fs.collfs.Mkdir(dir, 0755)
+	fs.collfs.Mkdir(fs.prefix+dir, 0755)
 }
 
 func (fs *webdavFS) Mkdir(ctx context.Context, name string, perm os.FileMode) error {
@@ -65,7 +68,7 @@ func (fs *webdavFS) Mkdir(ctx context.Context, name string, perm os.FileMode) er
 	}
 	name = strings.TrimRight(name, "/")
 	fs.makeparents(name)
-	return fs.collfs.Mkdir(name, 0755)
+	return fs.collfs.Mkdir(fs.prefix+name, 0755)
 }
 
 func (fs *webdavFS) OpenFile(ctx context.Context, name string, flag int, perm os.FileMode) (f webdav.File, err error) {
@@ -73,7 +76,7 @@ func (fs *webdavFS) OpenFile(ctx context.Context, name string, flag int, perm os
 	if writing {
 		fs.makeparents(name)
 	}
-	f, err = fs.collfs.OpenFile(name, flag, perm)
+	f, err = fs.collfs.OpenFile(fs.prefix+name, flag, perm)
 	if !fs.writing {
 		// webdav module returns 404 on all OpenFile errors,
 		// but returns 405 Method Not Allowed if OpenFile()
@@ -93,7 +96,7 @@ func (fs *webdavFS) OpenFile(ctx context.Context, name string, flag int, perm os
 }
 
 func (fs *webdavFS) RemoveAll(ctx context.Context, name string) error {
-	return fs.collfs.RemoveAll(name)
+	return fs.collfs.RemoveAll(fs.prefix + name)
 }
 
 func (fs *webdavFS) Rename(ctx context.Context, oldName, newName string) error {
@@ -106,14 +109,14 @@ func (fs *webdavFS) Rename(ctx context.Context, oldName, newName string) error {
 		newName = strings.TrimSuffix(newName, "/")
 	}
 	fs.makeparents(newName)
-	return fs.collfs.Rename(oldName, newName)
+	return fs.collfs.Rename(fs.prefix+oldName, fs.prefix+newName)
 }
 
 func (fs *webdavFS) Stat(ctx context.Context, name string) (os.FileInfo, error) {
 	if fs.writing {
 		fs.makeparents(name)
 	}
-	return fs.collfs.Stat(name)
+	return fs.collfs.Stat(fs.prefix + name)
 }
 
 type writeFailer struct {

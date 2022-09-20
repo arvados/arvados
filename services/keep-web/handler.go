@@ -14,12 +14,12 @@ import (
 	"net/http"
 	"net/url"
 	"os"
-	"path/filepath"
 	"sort"
 	"strconv"
 	"strings"
 	"sync"
 
+	"git.arvados.org/arvados.git/lib/cmd"
 	"git.arvados.org/arvados.git/sdk/go/arvados"
 	"git.arvados.org/arvados.git/sdk/go/arvadosclient"
 	"git.arvados.org/arvados.git/sdk/go/auth"
@@ -31,17 +31,16 @@ import (
 )
 
 type handler struct {
-	Cache      cache
-	Cluster    *arvados.Cluster
-	clientPool *arvadosclient.ClientPool
-	setupOnce  sync.Once
-	webdavLS   webdav.LockSystem
+	Cache     cache
+	Cluster   *arvados.Cluster
+	setupOnce sync.Once
+	webdavLS  webdav.LockSystem
 }
 
 var urlPDHDecoder = strings.NewReplacer(" ", "+", "-", "+")
 
-var notFoundMessage = "404 Not found\r\n\r\nThe requested path was not found, or you do not have permission to access it.\r"
-var unauthorizedMessage = "401 Unauthorized\r\n\r\nA valid Arvados token must be provided to access this resource.\r"
+var notFoundMessage = "Not Found"
+var unauthorizedMessage = "401 Unauthorized\r\n\r\nA valid Arvados token must be provided to access this resource.\r\n"
 
 // parseCollectionIDFromURL returns a UUID or PDH if s is a UUID or a
 // PDH (even if it is a PDH with "+" replaced by " " or "-");
@@ -57,10 +56,6 @@ func parseCollectionIDFromURL(s string) string {
 }
 
 func (h *handler) setup() {
-	// Errors will be handled at the client pool.
-	arv, _ := arvados.NewClientFromConfig(h.Cluster)
-	h.clientPool = arvadosclient.MakeClientPoolWith(arv)
-
 	keepclient.DefaultBlockCache.MaxBlocks = h.Cluster.Collections.WebDAVCache.MaxBlockEntries
 
 	// Even though we don't accept LOCK requests, every webdav
@@ -69,14 +64,15 @@ func (h *handler) setup() {
 }
 
 func (h *handler) serveStatus(w http.ResponseWriter, r *http.Request) {
-	json.NewEncoder(w).Encode(struct{ Version string }{version})
+	json.NewEncoder(w).Encode(struct{ Version string }{cmd.Version.String()})
 }
 
 // updateOnSuccess wraps httpserver.ResponseWriter. If the handler
 // sends an HTTP header indicating success, updateOnSuccess first
-// calls the provided update func. If the update func fails, a 500
-// response is sent, and the status code and body sent by the handler
-// are ignored (all response writes return the update error).
+// calls the provided update func. If the update func fails, an error
+// response is sent (using the error's HTTP status or 500 if none),
+// and the status code and body sent by the handler are ignored (all
+// response writes return the update error).
 type updateOnSuccess struct {
 	httpserver.ResponseWriter
 	logger     logrus.FieldLogger
@@ -101,10 +97,11 @@ func (uos *updateOnSuccess) WriteHeader(code int) {
 		if code >= 200 && code < 400 {
 			if uos.err = uos.update(); uos.err != nil {
 				code := http.StatusInternalServerError
-				if err, ok := uos.err.(*arvados.TransactionError); ok {
-					code = err.StatusCode
+				var he interface{ HTTPStatus() int }
+				if errors.As(uos.err, &he) {
+					code = he.HTTPStatus()
 				}
-				uos.logger.WithError(uos.err).Errorf("update() returned error type %T, changing response to HTTP %d", uos.err, code)
+				uos.logger.WithError(uos.err).Errorf("update() returned %T error, changing response to HTTP %d", uos.err, code)
 				http.Error(uos.ResponseWriter, uos.err.Error(), code)
 				return
 			}
@@ -272,11 +269,6 @@ func (h *handler) ServeHTTP(wOrig http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	if collectionID == "" && !useSiteFS {
-		http.Error(w, notFoundMessage, http.StatusNotFound)
-		return
-	}
-
 	forceReload := false
 	if cc := r.Header.Get("Cache-Control"); strings.Contains(cc, "no-cache") || strings.Contains(cc, "must-revalidate") {
 		forceReload = true
@@ -317,11 +309,6 @@ func (h *handler) ServeHTTP(wOrig http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if useSiteFS {
-		h.serveSiteFS(w, r, reqTokens, credentialsOK, attachment)
-		return
-	}
-
 	targetPath := pathParts[stripParts:]
 	if tokens == nil && len(targetPath) > 0 && strings.HasPrefix(targetPath[0], "t=") {
 		// http://ID.example/t=TOKEN/PATH...
@@ -334,6 +321,25 @@ func (h *handler) ServeHTTP(wOrig http.ResponseWriter, r *http.Request) {
 		pathToken = true
 		targetPath = targetPath[1:]
 		stripParts++
+	}
+
+	fsprefix := ""
+	if useSiteFS {
+		if writeMethod[r.Method] {
+			http.Error(w, errReadOnly.Error(), http.StatusMethodNotAllowed)
+			return
+		}
+		if len(reqTokens) == 0 {
+			w.Header().Add("WWW-Authenticate", "Basic realm=\"collections\"")
+			http.Error(w, unauthorizedMessage, http.StatusUnauthorized)
+			return
+		}
+		tokens = reqTokens
+	} else if collectionID == "" {
+		http.Error(w, notFoundMessage, http.StatusNotFound)
+		return
+	} else {
+		fsprefix = "by_id/" + collectionID + "/"
 	}
 
 	if tokens == nil {
@@ -363,37 +369,60 @@ func (h *handler) ServeHTTP(wOrig http.ResponseWriter, r *http.Request) {
 		stripParts++
 	}
 
-	arv := h.clientPool.Get()
-	if arv == nil {
-		http.Error(w, "client pool error: "+h.clientPool.Err().Error(), http.StatusInternalServerError)
-		return
+	dirOpenMode := os.O_RDONLY
+	if writeMethod[r.Method] {
+		dirOpenMode = os.O_RDWR
 	}
-	defer h.clientPool.Put(arv)
 
-	var collection *arvados.Collection
+	validToken := make(map[string]bool)
+	var token string
 	var tokenUser *arvados.User
-	tokenResult := make(map[string]int)
-	for _, arv.ApiToken = range tokens {
-		var err error
-		collection, err = h.Cache.Get(arv, collectionID, forceReload)
-		if err == nil {
-			// Success
-			break
+	var sessionFS arvados.CustomFileSystem
+	var session *cachedSession
+	var collectionDir arvados.File
+	for _, token = range tokens {
+		var statusErr interface{ HTTPStatus() int }
+		fs, sess, user, err := h.Cache.GetSession(token)
+		if errors.As(err, &statusErr) && statusErr.HTTPStatus() == http.StatusUnauthorized {
+			// bad token
+			continue
+		} else if err != nil {
+			http.Error(w, "cache error: "+err.Error(), http.StatusInternalServerError)
+			return
 		}
-		if srvErr, ok := err.(arvadosclient.APIServerError); ok {
-			switch srvErr.HttpStatusCode {
-			case 404, 401:
-				// Token broken or insufficient to
-				// retrieve collection
-				tokenResult[arv.ApiToken] = srvErr.HttpStatusCode
-				continue
-			}
+		f, err := fs.OpenFile(fsprefix, dirOpenMode, 0)
+		if errors.As(err, &statusErr) && statusErr.HTTPStatus() == http.StatusForbidden {
+			// collection id is outside token scope
+			validToken[token] = true
+			continue
 		}
-		// Something more serious is wrong
-		http.Error(w, "cache error: "+err.Error(), http.StatusInternalServerError)
-		return
+		validToken[token] = true
+		if os.IsNotExist(err) {
+			// collection does not exist or is not
+			// readable using this token
+			continue
+		} else if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		defer f.Close()
+
+		collectionDir, sessionFS, session, tokenUser = f, fs, sess, user
+		break
 	}
-	if collection == nil {
+	if forceReload {
+		err := collectionDir.Sync()
+		if err != nil {
+			var statusErr interface{ HTTPStatus() int }
+			if errors.As(err, &statusErr) {
+				http.Error(w, err.Error(), statusErr.HTTPStatus())
+			} else {
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+			}
+			return
+		}
+	}
+	if session == nil {
 		if pathToken || !credentialsOK {
 			// Either the URL is a "secret sharing link"
 			// that didn't work out (and asking the client
@@ -404,9 +433,9 @@ func (h *handler) ServeHTTP(wOrig http.ResponseWriter, r *http.Request) {
 			return
 		}
 		for _, t := range reqTokens {
-			if tokenResult[t] == 404 {
-				// The client provided valid token(s), but the
-				// collection was not found.
+			if validToken[t] {
+				// The client provided valid token(s),
+				// but the collection was not found.
 				http.Error(w, notFoundMessage, http.StatusNotFound)
 				return
 			}
@@ -453,215 +482,108 @@ func (h *handler) ServeHTTP(wOrig http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	kc, err := keepclient.MakeKeepClient(arv)
-	if err != nil {
-		http.Error(w, "error setting up keep client: "+err.Error(), http.StatusInternalServerError)
-		return
+	if r.Method == http.MethodGet || r.Method == http.MethodHead {
+		targetfnm := fsprefix + strings.Join(pathParts[stripParts:], "/")
+		if fi, err := sessionFS.Stat(targetfnm); err == nil && fi.IsDir() {
+			if !strings.HasSuffix(r.URL.Path, "/") {
+				h.seeOtherWithCookie(w, r, r.URL.Path+"/", credentialsOK)
+			} else {
+				h.serveDirectory(w, r, fi.Name(), sessionFS, targetfnm, !useSiteFS)
+			}
+			return
+		}
 	}
-	kc.RequestID = r.Header.Get("X-Request-Id")
 
 	var basename string
 	if len(targetPath) > 0 {
 		basename = targetPath[len(targetPath)-1]
 	}
-	applyContentDispositionHdr(w, r, basename, attachment)
-
-	client := (&arvados.Client{
-		APIHost:   arv.ApiServer,
-		AuthToken: arv.ApiToken,
-		Insecure:  arv.ApiInsecure,
-	}).WithRequestID(r.Header.Get("X-Request-Id"))
-
-	fs, err := collection.FileSystem(client, kc)
-	if err != nil {
-		http.Error(w, "error creating collection filesystem: "+err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	writefs, writeOK := fs.(arvados.CollectionFileSystem)
-	targetIsPDH := arvadosclient.PDHMatch(collectionID)
-	if (targetIsPDH || !writeOK) && writeMethod[r.Method] {
+	if arvadosclient.PDHMatch(collectionID) && writeMethod[r.Method] {
 		http.Error(w, errReadOnly.Error(), http.StatusMethodNotAllowed)
 		return
 	}
-
-	// Check configured permission
-	_, sess, err := h.Cache.GetSession(arv.ApiToken)
-	if err != nil {
-		http.Error(w, "session cache: "+err.Error(), http.StatusInternalServerError)
-	}
-	tokenUser, err = h.Cache.GetTokenUser(arv.ApiToken)
-	if e := (interface{ HTTPStatus() int })(nil); errors.As(err, &e) && e.HTTPStatus() == http.StatusForbidden {
-		// Ignore expected error looking up user record when
-		// using a scoped token that allows getting
-		// collections/X but not users/current
-	} else if err != nil {
-		http.Error(w, "user lookup: "+err.Error(), http.StatusInternalServerError)
-	}
-
-	if webdavMethod[r.Method] {
-		if !h.userPermittedToUploadOrDownload(r.Method, tokenUser) {
-			http.Error(w, "Not permitted", http.StatusForbidden)
-			return
-		}
-		h.logUploadOrDownload(r, sess.arvadosclient, nil, strings.Join(targetPath, "/"), collection, tokenUser)
-
-		if writeMethod[r.Method] {
-			// Save the collection only if/when all
-			// webdav->filesystem operations succeed --
-			// and send a 500 error if the modified
-			// collection can't be saved.
-			w = &updateOnSuccess{
-				ResponseWriter: w,
-				logger:         ctxlog.FromContext(r.Context()),
-				update: func() error {
-					return h.Cache.Update(client, *collection, writefs)
-				}}
-		}
-		h := webdav.Handler{
-			Prefix: "/" + strings.Join(pathParts[:stripParts], "/"),
-			FileSystem: &webdavFS{
-				collfs:        fs,
-				writing:       writeMethod[r.Method],
-				alwaysReadEOF: r.Method == "PROPFIND",
-			},
-			LockSystem: h.webdavLS,
-			Logger: func(_ *http.Request, err error) {
-				if err != nil {
-					ctxlog.FromContext(r.Context()).WithError(err).Error("error reported by webdav handler")
-				}
-			},
-		}
-		h.ServeHTTP(w, r)
-		return
-	}
-
-	openPath := "/" + strings.Join(targetPath, "/")
-	f, err := fs.Open(openPath)
-	if os.IsNotExist(err) {
-		// Requested non-existent path
-		http.Error(w, notFoundMessage, http.StatusNotFound)
-		return
-	} else if err != nil {
-		// Some other (unexpected) error
-		http.Error(w, "open: "+err.Error(), http.StatusInternalServerError)
-		return
-	}
-	defer f.Close()
-	if stat, err := f.Stat(); err != nil {
-		// Can't get Size/IsDir (shouldn't happen with a collectionFS!)
-		http.Error(w, "stat: "+err.Error(), http.StatusInternalServerError)
-	} else if stat.IsDir() && !strings.HasSuffix(r.URL.Path, "/") {
-		// If client requests ".../dirname", redirect to
-		// ".../dirname/". This way, relative links in the
-		// listing for "dirname" can always be "fnm", never
-		// "dirname/fnm".
-		h.seeOtherWithCookie(w, r, r.URL.Path+"/", credentialsOK)
-	} else if stat.IsDir() {
-		h.serveDirectory(w, r, collection.Name, fs, openPath, true)
-	} else {
-		if !h.userPermittedToUploadOrDownload(r.Method, tokenUser) {
-			http.Error(w, "Not permitted", http.StatusForbidden)
-			return
-		}
-		h.logUploadOrDownload(r, sess.arvadosclient, nil, strings.Join(targetPath, "/"), collection, tokenUser)
-
-		http.ServeContent(w, r, basename, stat.ModTime(), f)
-		if wrote := int64(w.WroteBodyBytes()); wrote != stat.Size() && w.WroteStatus() == http.StatusOK {
-			// If we wrote fewer bytes than expected, it's
-			// too late to change the real response code
-			// or send an error message to the client, but
-			// at least we can try to put some useful
-			// debugging info in the logs.
-			n, err := f.Read(make([]byte, 1024))
-			ctxlog.FromContext(r.Context()).Errorf("stat.Size()==%d but only wrote %d bytes; read(1024) returns %d, %v", stat.Size(), wrote, n, err)
-		}
-	}
-}
-
-func (h *handler) getClients(reqID, token string) (arv *arvadosclient.ArvadosClient, kc *keepclient.KeepClient, client *arvados.Client, release func(), err error) {
-	arv = h.clientPool.Get()
-	if arv == nil {
-		err = h.clientPool.Err()
-		return
-	}
-	release = func() { h.clientPool.Put(arv) }
-	arv.ApiToken = token
-	kc, err = keepclient.MakeKeepClient(arv)
-	if err != nil {
-		release()
-		return
-	}
-	kc.RequestID = reqID
-	client = (&arvados.Client{
-		APIHost:   arv.ApiServer,
-		AuthToken: arv.ApiToken,
-		Insecure:  arv.ApiInsecure,
-	}).WithRequestID(reqID)
-	return
-}
-
-func (h *handler) serveSiteFS(w http.ResponseWriter, r *http.Request, tokens []string, credentialsOK, attachment bool) {
-	if len(tokens) == 0 {
-		w.Header().Add("WWW-Authenticate", "Basic realm=\"collections\"")
-		http.Error(w, unauthorizedMessage, http.StatusUnauthorized)
-		return
-	}
-	if writeMethod[r.Method] {
-		http.Error(w, errReadOnly.Error(), http.StatusMethodNotAllowed)
-		return
-	}
-
-	fs, sess, err := h.Cache.GetSession(tokens[0])
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-	fs.ForwardSlashNameSubstitution(h.Cluster.Collections.ForwardSlashNameSubstitution)
-	f, err := fs.Open(r.URL.Path)
-	if os.IsNotExist(err) {
-		http.Error(w, err.Error(), http.StatusNotFound)
-		return
-	} else if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-	defer f.Close()
-	if fi, err := f.Stat(); err == nil && fi.IsDir() && r.Method == "GET" {
-		if !strings.HasSuffix(r.URL.Path, "/") {
-			h.seeOtherWithCookie(w, r, r.URL.Path+"/", credentialsOK)
-		} else {
-			h.serveDirectory(w, r, fi.Name(), fs, r.URL.Path, false)
-		}
-		return
-	}
-
-	tokenUser, err := h.Cache.GetTokenUser(tokens[0])
 	if !h.userPermittedToUploadOrDownload(r.Method, tokenUser) {
 		http.Error(w, "Not permitted", http.StatusForbidden)
 		return
 	}
-	h.logUploadOrDownload(r, sess.arvadosclient, fs, r.URL.Path, nil, tokenUser)
+	h.logUploadOrDownload(r, session.arvadosclient, sessionFS, fsprefix+strings.Join(targetPath, "/"), nil, tokenUser)
 
-	if r.Method == "GET" {
-		_, basename := filepath.Split(r.URL.Path)
+	if writeMethod[r.Method] {
+		// Save the collection only if/when all
+		// webdav->filesystem operations succeed --
+		// and send a 500 error if the modified
+		// collection can't be saved.
+		//
+		// Perform the write in a separate sitefs, so
+		// concurrent read operations on the same
+		// collection see the previous saved
+		// state. After the write succeeds and the
+		// collection record is updated, we reset the
+		// session so the updates are visible in
+		// subsequent read requests.
+		client := session.client.WithRequestID(r.Header.Get("X-Request-Id"))
+		sessionFS = client.SiteFileSystem(session.keepclient)
+		writingDir, err := sessionFS.OpenFile(fsprefix, os.O_RDONLY, 0)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		defer writingDir.Close()
+		w = &updateOnSuccess{
+			ResponseWriter: w,
+			logger:         ctxlog.FromContext(r.Context()),
+			update: func() error {
+				err := writingDir.Sync()
+				var te arvados.TransactionError
+				if errors.As(err, &te) {
+					err = te
+				}
+				if err != nil {
+					return err
+				}
+				// Sync the changes to the persistent
+				// sessionfs for this token.
+				snap, err := writingDir.Snapshot()
+				if err != nil {
+					return err
+				}
+				collectionDir.Splice(snap)
+				return nil
+			}}
+	}
+	if r.Method == http.MethodGet {
 		applyContentDispositionHdr(w, r, basename, attachment)
 	}
 	wh := webdav.Handler{
-		Prefix: "/",
+		Prefix: "/" + strings.Join(pathParts[:stripParts], "/"),
 		FileSystem: &webdavFS{
-			collfs:        fs,
+			collfs:        sessionFS,
+			prefix:        fsprefix,
 			writing:       writeMethod[r.Method],
 			alwaysReadEOF: r.Method == "PROPFIND",
 		},
 		LockSystem: h.webdavLS,
-		Logger: func(_ *http.Request, err error) {
+		Logger: func(r *http.Request, err error) {
 			if err != nil {
 				ctxlog.FromContext(r.Context()).WithError(err).Error("error reported by webdav handler")
 			}
 		},
 	}
 	wh.ServeHTTP(w, r)
+	if r.Method == http.MethodGet && w.WroteStatus() == http.StatusOK {
+		wrote := int64(w.WroteBodyBytes())
+		fnm := strings.Join(pathParts[stripParts:], "/")
+		fi, err := wh.FileSystem.Stat(r.Context(), fnm)
+		if err == nil && fi.Size() != wrote {
+			var n int
+			f, err := wh.FileSystem.OpenFile(r.Context(), fnm, os.O_RDONLY, 0)
+			if err == nil {
+				n, err = f.Read(make([]byte, 1024))
+				f.Close()
+			}
+			ctxlog.FromContext(r.Context()).Errorf("stat.Size()==%d but only wrote %d bytes; read(1024) returns %d, %v", fi.Size(), wrote, n, err)
+		}
+	}
 }
 
 var dirListingTemplate = `<!DOCTYPE HTML>
@@ -971,9 +893,14 @@ func (h *handler) logUploadOrDownload(
 
 func (h *handler) determineCollection(fs arvados.CustomFileSystem, path string) (*arvados.Collection, string) {
 	target := strings.TrimSuffix(path, "/")
-	for {
+	for cut := len(target); cut >= 0; cut = strings.LastIndexByte(target, '/') {
+		target = target[:cut]
 		fi, err := fs.Stat(target)
-		if err != nil {
+		if os.IsNotExist(err) {
+			// creating a new file/dir, or download
+			// destined to fail
+			continue
+		} else if err != nil {
 			return nil, ""
 		}
 		switch src := fi.Sys().(type) {
@@ -986,11 +913,6 @@ func (h *handler) determineCollection(fs arvados.CustomFileSystem, path string) 
 				return nil, ""
 			}
 		}
-		// Try parent
-		cut := strings.LastIndexByte(target, '/')
-		if cut < 0 {
-			return nil, ""
-		}
-		target = target[:cut]
 	}
+	return nil, ""
 }

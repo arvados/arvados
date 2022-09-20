@@ -27,9 +27,7 @@ import (
 	"time"
 
 	"git.arvados.org/arvados.git/sdk/go/arvados"
-	"git.arvados.org/arvados.git/sdk/go/arvadosclient"
 	"git.arvados.org/arvados.git/sdk/go/ctxlog"
-	"git.arvados.org/arvados.git/sdk/go/keepclient"
 	"github.com/AdRoll/goamz/s3"
 )
 
@@ -312,33 +310,17 @@ func (h *handler) serveS3(w http.ResponseWriter, r *http.Request) bool {
 		return false
 	}
 
-	var err error
-	var fs arvados.CustomFileSystem
-	var arvclient *arvadosclient.ArvadosClient
+	fs, sess, tokenUser, err := h.Cache.GetSession(token)
+	if err != nil {
+		s3ErrorResponse(w, InternalError, err.Error(), r.URL.Path, http.StatusInternalServerError)
+		return true
+	}
 	if r.Method == http.MethodGet || r.Method == http.MethodHead {
-		// Use a single session (cached FileSystem) across
-		// multiple read requests.
-		var sess *cachedSession
-		fs, sess, err = h.Cache.GetSession(token)
-		if err != nil {
-			s3ErrorResponse(w, InternalError, err.Error(), r.URL.Path, http.StatusInternalServerError)
-			return true
-		}
-		arvclient = sess.arvadosclient
-	} else {
 		// Create a FileSystem for this request, to avoid
 		// exposing incomplete write operations to concurrent
 		// requests.
-		var kc *keepclient.KeepClient
-		var release func()
-		var client *arvados.Client
-		arvclient, kc, client, release, err = h.getClients(r.Header.Get("X-Request-Id"), token)
-		if err != nil {
-			s3ErrorResponse(w, InternalError, err.Error(), r.URL.Path, http.StatusInternalServerError)
-			return true
-		}
-		defer release()
-		fs = client.SiteFileSystem(kc)
+		client := sess.client.WithRequestID(r.Header.Get("X-Request-Id"))
+		fs = client.SiteFileSystem(sess.keepclient)
 		fs.ForwardSlashNameSubstitution(h.Cluster.Collections.ForwardSlashNameSubstitution)
 	}
 
@@ -418,12 +400,11 @@ func (h *handler) serveS3(w http.ResponseWriter, r *http.Request) bool {
 			return true
 		}
 
-		tokenUser, err := h.Cache.GetTokenUser(token)
 		if !h.userPermittedToUploadOrDownload(r.Method, tokenUser) {
 			http.Error(w, "Not permitted", http.StatusForbidden)
 			return true
 		}
-		h.logUploadOrDownload(r, arvclient, fs, fspath, nil, tokenUser)
+		h.logUploadOrDownload(r, sess.arvadosclient, fs, fspath, nil, tokenUser)
 
 		// shallow copy r, and change URL path
 		r := *r
@@ -514,12 +495,11 @@ func (h *handler) serveS3(w http.ResponseWriter, r *http.Request) bool {
 			}
 			defer f.Close()
 
-			tokenUser, err := h.Cache.GetTokenUser(token)
 			if !h.userPermittedToUploadOrDownload(r.Method, tokenUser) {
 				http.Error(w, "Not permitted", http.StatusForbidden)
 				return true
 			}
-			h.logUploadOrDownload(r, arvclient, fs, fspath, nil, tokenUser)
+			h.logUploadOrDownload(r, sess.arvadosclient, fs, fspath, nil, tokenUser)
 
 			_, err = io.Copy(f, r.Body)
 			if err != nil {

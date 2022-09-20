@@ -5,6 +5,7 @@
 package arvados
 
 import (
+	"net/http"
 	"os"
 	"strings"
 	"sync"
@@ -136,29 +137,43 @@ func (fs *customFileSystem) newNode(name string, perm os.FileMode, modTime time.
 	return nil, ErrInvalidOperation
 }
 
-func (fs *customFileSystem) mountByID(parent inode, id string) inode {
+func (fs *customFileSystem) mountByID(parent inode, id string) (inode, error) {
 	if strings.Contains(id, "-4zz18-") || pdhRegexp.MatchString(id) {
 		return fs.mountCollection(parent, id)
 	} else if strings.Contains(id, "-j7d0g-") {
-		return fs.newProjectNode(fs.root, id, id, nil)
+		return fs.newProjectNode(fs.root, id, id, nil), nil
 	} else {
-		return nil
+		return nil, nil
 	}
 }
 
-func (fs *customFileSystem) mountCollection(parent inode, id string) inode {
+func (fs *customFileSystem) mountCollection(parent inode, id string) (inode, error) {
 	var coll Collection
 	err := fs.RequestAndDecode(&coll, "GET", "arvados/v1/collections/"+id, nil, nil)
-	if err != nil {
-		return nil
+	if statusErr, ok := err.(interface{ HTTPStatus() int }); ok && statusErr.HTTPStatus() == http.StatusNotFound {
+		return nil, nil
+	} else if err != nil {
+		return nil, err
+	}
+	if len(id) != 27 {
+		// This means id is a PDH, and controller/railsapi
+		// returned one of (possibly) many collections with
+		// that PDH. Even if controller returns more fields
+		// besides PDH and manifest text (which are equal for
+		// all matching collections), we don't want to expose
+		// them (e.g., through Sys()).
+		coll = Collection{
+			PortableDataHash: coll.PortableDataHash,
+			ManifestText:     coll.ManifestText,
+		}
 	}
 	newfs, err := coll.FileSystem(fs, fs)
 	if err != nil {
-		return nil
+		return nil, err
 	}
 	cfs := newfs.(*collectionFileSystem)
 	cfs.SetParent(parent, id)
-	return cfs
+	return cfs, nil
 }
 
 func (fs *customFileSystem) newProjectNode(root inode, name, uuid string, proj *Group) inode {
@@ -202,15 +217,19 @@ func (fs *customFileSystem) newProjectNode(root inode, name, uuid string, proj *
 // treenode, or nil for ENOENT.
 type vdirnode struct {
 	treenode
-	create func(parent inode, name string) inode
+	create func(parent inode, name string) (inode, error)
 }
 
 func (vn *vdirnode) Child(name string, replace func(inode) (inode, error)) (inode, error) {
 	return vn.treenode.Child(name, func(existing inode) (inode, error) {
 		if existing == nil && vn.create != nil {
-			existing = vn.create(vn, name)
-			if existing != nil {
-				existing.SetParent(vn, name)
+			newnode, err := vn.create(vn, name)
+			if err != nil {
+				return nil, err
+			}
+			if newnode != nil {
+				newnode.SetParent(vn, name)
+				existing = newnode
 				vn.treenode.fileinfo.modTime = time.Now()
 			}
 		}

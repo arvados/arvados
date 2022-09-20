@@ -29,6 +29,7 @@ import (
 	"git.arvados.org/arvados.git/sdk/go/ctxlog"
 	"git.arvados.org/arvados.git/sdk/go/httpserver"
 	"git.arvados.org/arvados.git/sdk/go/keepclient"
+	"github.com/prometheus/client_golang/prometheus"
 	check "gopkg.in/check.v1"
 )
 
@@ -49,17 +50,17 @@ func (s *IntegrationSuite) TestNoToken(c *check.C) {
 	} {
 		hdr, body, _ := s.runCurl(c, token, "collections.example.com", "/collections/"+arvadostest.FooCollection+"/foo")
 		c.Check(hdr, check.Matches, `(?s)HTTP/1.1 404 Not Found\r\n.*`)
-		c.Check(body, check.Equals, notFoundMessage+"\n")
+		c.Check(strings.TrimSpace(body), check.Equals, notFoundMessage)
 
 		if token != "" {
 			hdr, body, _ = s.runCurl(c, token, "collections.example.com", "/collections/download/"+arvadostest.FooCollection+"/"+token+"/foo")
 			c.Check(hdr, check.Matches, `(?s)HTTP/1.1 404 Not Found\r\n.*`)
-			c.Check(body, check.Equals, notFoundMessage+"\n")
+			c.Check(strings.TrimSpace(body), check.Equals, notFoundMessage)
 		}
 
 		hdr, body, _ = s.runCurl(c, token, "collections.example.com", "/bad-route")
 		c.Check(hdr, check.Matches, `(?s)HTTP/1.1 404 Not Found\r\n.*`)
-		c.Check(body, check.Equals, notFoundMessage+"\n")
+		c.Check(strings.TrimSpace(body), check.Equals, notFoundMessage)
 	}
 }
 
@@ -92,7 +93,7 @@ func (s *IntegrationSuite) Test404(c *check.C) {
 		hdr, body, _ := s.runCurl(c, arvadostest.ActiveToken, "collections.example.com", uri)
 		c.Check(hdr, check.Matches, "(?s)HTTP/1.1 404 Not Found\r\n.*")
 		if len(body) > 0 {
-			c.Check(body, check.Equals, notFoundMessage+"\n")
+			c.Check(strings.TrimSpace(body), check.Equals, notFoundMessage)
 		}
 	}
 }
@@ -475,15 +476,7 @@ func (s *IntegrationSuite) TestMetrics(c *check.C) {
 	c.Check(summaries["request_duration_seconds/get/200"].SampleCount, check.Equals, "3")
 	c.Check(summaries["request_duration_seconds/get/404"].SampleCount, check.Equals, "1")
 	c.Check(summaries["time_to_status_seconds/get/404"].SampleCount, check.Equals, "1")
-	c.Check(counters["arvados_keepweb_collectioncache_requests//"].Value, check.Equals, int64(2))
-	c.Check(counters["arvados_keepweb_collectioncache_api_calls//"].Value, check.Equals, int64(2))
-	c.Check(counters["arvados_keepweb_collectioncache_hits//"].Value, check.Equals, int64(1))
-	c.Check(counters["arvados_keepweb_collectioncache_pdh_hits//"].Value, check.Equals, int64(1))
-	c.Check(gauges["arvados_keepweb_collectioncache_cached_manifests//"].Value, check.Equals, float64(1))
-	// FooCollection's cached manifest size is 45 ("1f4b0....+45")
-	// plus one 51-byte blob signature; session fs counts 3 inodes
-	// * 64 bytes.
-	c.Check(gauges["arvados_keepweb_sessions_cached_collection_bytes//"].Value, check.Equals, float64(45+51+64*3))
+	c.Check(gauges["arvados_keepweb_sessions_cached_session_bytes//"].Value, check.Equals, float64(384))
 
 	// If the Host header indicates a collection, /metrics.json
 	// refers to a file in the collection -- the metrics handler
@@ -529,7 +522,7 @@ func (s *IntegrationSuite) SetUpTest(c *check.C) {
 
 	ctx := ctxlog.Context(context.Background(), logger)
 
-	s.handler = newHandlerOrErrorHandler(ctx, cluster, cluster.SystemRootToken, nil).(*handler)
+	s.handler = newHandlerOrErrorHandler(ctx, cluster, cluster.SystemRootToken, prometheus.NewRegistry()).(*handler)
 	s.testServer = httptest.NewUnstartedServer(
 		httpserver.AddRequestIDs(
 			httpserver.LogRequests(
