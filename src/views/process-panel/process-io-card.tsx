@@ -293,12 +293,13 @@ interface ProcessIOPreviewDataProps {
 type ProcessIOPreviewProps = ProcessIOPreviewDataProps & WithStyles<CssRules>;
 
 const ProcessIOPreview = withStyles(styles)(
-    ({ classes, data, showImagePreview }: ProcessIOPreviewProps) =>
-        <Table className={classes.tableRoot} aria-label="Process IO Preview">
+    ({ classes, data, showImagePreview }: ProcessIOPreviewProps) => {
+        const showLabel = data.some((param: ProcessIOParameter) => param.label);
+        return <Table className={classes.tableRoot} aria-label="Process IO Preview">
             <TableHead>
                 <TableRow>
                     <TableCell>Name</TableCell>
-                    <TableCell>Label</TableCell>
+                    {showLabel && <TableCell>Label</TableCell>}
                     <TableCell>Value</TableCell>
                     <TableCell>Collection</TableCell>
                 </TableRow>
@@ -314,7 +315,7 @@ const ProcessIOPreview = withStyles(styles)(
                             <TableCell>
                                 {param.id}
                             </TableCell>
-                            <TableCell >{param.label}</TableCell>
+                            {showLabel && <TableCell >{param.label}</TableCell>}
                             <TableCell>
                                 {firstVal && <ProcessValuePreview value={firstVal} showImagePreview={showImagePreview} />}
                             </TableCell>
@@ -327,7 +328,7 @@ const ProcessIOPreview = withStyles(styles)(
                         {rest.map((val, i) => (
                             <TableRow className={(i < rest.length-1) ? rowClass : undefined}>
                                 <TableCell />
-                                <TableCell />
+                                {showLabel && <TableCell />}
                                 <TableCell>
                                     <ProcessValuePreview value={val} showImagePreview={showImagePreview} />
                                 </TableCell>
@@ -341,8 +342,8 @@ const ProcessIOPreview = withStyles(styles)(
                     </>;
                 })}
             </TableBody>
-        </Table>
-);
+        </Table>;
+});
 
 interface ProcessValuePreviewProps {
     value: ProcessIOValue;
