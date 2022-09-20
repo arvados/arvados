@@ -32,9 +32,11 @@ h2(#main). development main (as of 2022-08-09)
 
 "previous: Upgrading to 2.4.2":#v2_4_2
 
-h3. Renamed keep-web metrics
+h3. Renamed keep-web metrics and WebDAV configs
 
 Metrics previously reported by keep-web (@arvados_keepweb_collectioncache_requests@, @..._hits@, @..._pdh_hits@, @..._api_calls@, @..._cached_manifests@, and @arvados_keepweb_sessions_cached_collection_bytes@) have been replaced with @arvados_keepweb_cached_session_bytes@.
+
+The config entries @Collections.WebDAVCache.UUIDTTL@, @...MaxCollectionEntries@, and @...MaxUUIDEntries@ are no longer used, and should be removed from your config file.
 
 h2(#v2_4_2). v2.4.2 (2022-08-09)
 

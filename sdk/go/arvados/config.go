@@ -61,13 +61,10 @@ func (sc *Config) GetCluster(clusterID string) (*Cluster, error) {
 }
 
 type WebDAVCacheConfig struct {
-	TTL                  Duration
-	UUIDTTL              Duration
-	MaxBlockEntries      int
-	MaxCollectionEntries int
-	MaxCollectionBytes   int64
-	MaxUUIDEntries       int
-	MaxSessions          int
+	TTL                Duration
+	MaxBlockEntries    int
+	MaxCollectionBytes int64
+	MaxSessions        int
 }
 
 type UploadDownloadPermission struct {

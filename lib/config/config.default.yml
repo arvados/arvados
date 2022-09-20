@@ -611,20 +611,16 @@ Clusters:
         # Time to cache manifests, permission checks, and sessions.
         TTL: 300s
 
-        # Time to cache collection state.
-        UUIDTTL: 5s
-
         # Block cache entries. Each block consumes up to 64 MiB RAM.
         MaxBlockEntries: 20
 
-        # Collection cache entries.
-        MaxCollectionEntries: 1000
-
-        # Approximate memory limit (in bytes) for collection cache.
+        # Approximate memory limit (in bytes) for session cache.
+        #
+        # Note this applies to the in-memory representation of
+        # projects and collections -- metadata, block locators,
+        # filenames, etc. -- excluding cached file content, which is
+        # limited by MaxBlockEntries.
         MaxCollectionBytes: 100000000
-
-        # UUID cache entries.
-        MaxUUIDEntries: 1000
 
         # Persistent sessions.
         MaxSessions: 100
