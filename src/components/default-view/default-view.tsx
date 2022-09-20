@@ -29,7 +29,7 @@ export interface DefaultViewDataProps {
     messages: string[];
     filtersApplied?: boolean;
     classMessage?: string;
-    icon: IconType;
+    icon?: IconType;
     classIcon?: string;
 }
 
@@ -38,7 +38,7 @@ type DefaultViewProps = DefaultViewDataProps & WithStyles<CssRules>;
 export const DefaultView = withStyles(styles)(
     ({ classes, classRoot, messages, classMessage, icon: Icon, classIcon }: DefaultViewProps) =>
         <Typography className={classnames([classes.root, classRoot])} component="div">
-            <Icon className={classnames([classes.icon, classIcon])} />
+            {Icon && <Icon className={classnames([classes.icon, classIcon])} />}
             {messages.map((msg: string, index: number) => {
                 return <Typography key={index}
                     className={classnames([classes.message, classMessage])}>{msg}</Typography>;
