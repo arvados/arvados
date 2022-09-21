@@ -476,7 +476,7 @@ func (s *IntegrationSuite) TestMetrics(c *check.C) {
 	c.Check(summaries["request_duration_seconds/get/200"].SampleCount, check.Equals, "3")
 	c.Check(summaries["request_duration_seconds/get/404"].SampleCount, check.Equals, "1")
 	c.Check(summaries["time_to_status_seconds/get/404"].SampleCount, check.Equals, "1")
-	c.Check(gauges["arvados_keepweb_sessions_cached_session_bytes//"].Value, check.Equals, float64(384))
+	c.Check(gauges["arvados_keepweb_sessions_cached_session_bytes//"].Value, check.Equals, float64(469))
 
 	// If the Host header indicates a collection, /metrics.json
 	// refers to a file in the collection -- the metrics handler
