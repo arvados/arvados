@@ -125,7 +125,7 @@ export const Snackbar = withStyles(styles)(connect(mapStateToProps, mapDispatchT
                                         {message.message}
                                     </span>
                                 }
-                                action={actions(message, props.onClick, props.onClose, classes, index)}
+                                action={actions(message, props.onClick, props.onClose, classes, index, props.autoHideDuration)}
                             />
                          })
                     }
@@ -135,7 +135,11 @@ export const Snackbar = withStyles(styles)(connect(mapStateToProps, mapDispatchT
     }
 ));
 
-const actions = (props: SnackbarMessage, onClick, onClose, classes, index) => {
+const actions = (props: SnackbarMessage, onClick, onClose, classes, index, autoHideDuration) => {
+    if (onClose && autoHideDuration) {
+        setTimeout(onClose, autoHideDuration);
+    }
+
     const actions = [
         <IconButton
             key="close"
