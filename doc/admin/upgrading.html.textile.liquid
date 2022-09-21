@@ -28,6 +28,22 @@ TODO: extract this information based on git commit messages and generate changel
 <div class="releasenotes">
 </notextile>
 
+h2(#v2_4_2). v2.4.3 (2022-09-21)
+
+"previous: Upgrading to 2.4.2":#v2_4_2
+
+h3. Fixed PAM authentication security vulnerability
+
+In Arvados 2.4.2 and earlier, when using PAM authentication, if a user
+presented valid credentials but the account is disabled or otherwise
+not allowed to access the host, it would still be accepted for access
+to Arvados.  From 2.4.3 onwards, Arvados now also checks that the
+account is permitted to access the host before completing the PAM login
+process.
+
+Other authentication methods (LDAP, OpenID Connect) are not affected
+by this flaw.
+
 h2(#v2_4_2). v2.4.2 (2022-08-09)
 
 "previous: Upgrading to 2.4.1":#v2_4_1
