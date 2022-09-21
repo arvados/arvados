@@ -65,7 +65,18 @@ export class FilterBuilder {
     }
 
     public addFullTextSearch(value: string) {
-        const terms = value.trim().split(/(\s+)/);
+        const regex = /"[^"]*"/;
+        const matches: any[] = [];
+
+        let match = value.match(regex);
+
+        while (match) {
+            value = value.replace(match[0], "");
+            matches.push(match[0].replace(/"/g, ''));
+            match = value.match(regex);
+        }
+
+        const terms = value.trim().split(/(\s+)/).concat(matches);
         terms.forEach(term => {
             if (term !== " ") {
                 this.addCondition("any", "ilike", term, "%", "%");
