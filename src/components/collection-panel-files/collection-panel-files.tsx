@@ -328,12 +328,7 @@ export const CollectionPanelFiles = withStyles(styles)(connect((state: RootState
     const currentPDH = (collectionPanel.item || {}).portableDataHash;
     React.useEffect(() => {
         if (currentPDH) {
-            // Avoid fetching the same content level twice
-            if (leftKey !== rightKey) {
-                fetchData([leftKey, rightKey], true);
-            } else {
-                fetchData(rightKey, true);
-            }
+            fetchData([leftKey, rightKey], true);
         }
     }, [currentPDH]); // eslint-disable-line react-hooks/exhaustive-deps
 
