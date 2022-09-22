@@ -101,7 +101,10 @@ func (h *Handler) setup() {
 	h.federation = federation.New(h.Cluster, &healthFuncs)
 	rtr := router.New(h.federation, router.Config{
 		MaxRequestSize: h.Cluster.API.MaxRequestSize,
-		WrapCalls:      api.ComposeWrappers(ctrlctx.WrapCallsInTransactions(h.db), oidcAuthorizer.WrapCalls),
+		WrapCalls: api.ComposeWrappers(
+			ctrlctx.WrapCallsInTransactions(h.db),
+			oidcAuthorizer.WrapCalls,
+			ctrlctx.WrapCallsWithAuth(h.Cluster)),
 	})
 
 	healthRoutes := health.Routes{"ping": func() error { _, err := h.db(context.TODO()); return err }}
