@@ -153,16 +153,6 @@ func (fs *customFileSystem) newNode(name string, perm os.FileMode, modTime time.
 }
 
 func (fs *customFileSystem) newCollectionOrProjectHardlink(parent inode, id string) (inode, error) {
-	fs.byIDLock.Lock()
-	n := fs.byID[id]
-	if n != nil {
-		// Avoid the extra remote API lookup if we already
-		// have a singleton for this ID.
-		fs.byIDLock.Unlock()
-		return &hardlink{inode: n, parent: parent, name: id}, nil
-	}
-	fs.byIDLock.Unlock()
-
 	if strings.Contains(id, "-4zz18-") || pdhRegexp.MatchString(id) {
 		node, err := fs.collectionSingleton(id)
 		if os.IsNotExist(err) {
@@ -172,13 +162,22 @@ func (fs *customFileSystem) newCollectionOrProjectHardlink(parent inode, id stri
 		}
 		return &hardlink{inode: node, parent: parent, name: id}, nil
 	} else if strings.Contains(id, "-j7d0g-") || strings.Contains(id, "-tpzed-") {
-		proj, err := fs.getProject(id)
-		if os.IsNotExist(err) {
-			return nil, nil
-		} else if err != nil {
-			return nil, err
+		fs.byIDLock.Lock()
+		node := fs.byID[id]
+		fs.byIDLock.Unlock()
+		if node == nil {
+			// Look up the project synchronously before
+			// calling projectSingleton (otherwise we
+			// wouldn't detect a nonexistent project until
+			// it's too late to return ErrNotExist).
+			proj, err := fs.getProject(id)
+			if os.IsNotExist(err) {
+				return nil, nil
+			} else if err != nil {
+				return nil, err
+			}
+			node = fs.projectSingleton(id, proj)
 		}
-		node := fs.projectSingleton(id, proj)
 		return &hardlink{inode: node, parent: parent, name: id}, nil
 	} else {
 		return nil, nil
@@ -242,12 +241,13 @@ func (fs *customFileSystem) getProject(uuid string) (*Group, error) {
 }
 
 func (fs *customFileSystem) collectionSingleton(id string) (inode, error) {
+	// Return existing singleton, if we have it
 	fs.byIDLock.Lock()
-	if n := fs.byID[id]; n != nil {
-		fs.byIDLock.Unlock()
-		return n, nil
-	}
+	existing := fs.byID[id]
 	fs.byIDLock.Unlock()
+	if existing != nil {
+		return existing, nil
+	}
 
 	coll, err := fs.getCollection(id)
 	if err != nil {
@@ -260,11 +260,17 @@ func (fs *customFileSystem) collectionSingleton(id string) (inode, error) {
 	cfs := newfs.(*collectionFileSystem)
 	cfs.SetParent(fs.byIDRoot, id)
 
+	// Check again in case another goroutine has added a node to
+	// fs.byID since we checked above.
 	fs.byIDLock.Lock()
 	defer fs.byIDLock.Unlock()
-	if n := fs.byID[id]; n != nil {
-		return n, nil
+	if existing = fs.byID[id]; existing != nil {
+		// Other goroutine won the race. Discard the node we
+		// just made, and return the race winner.
+		return existing, nil
 	}
+	// We won the race. Save the new node in fs.byID and
+	// fs.byIDRoot.
 	fs.byID[id] = cfs
 	fs.byIDRoot.Lock()
 	defer fs.byIDRoot.Unlock()
