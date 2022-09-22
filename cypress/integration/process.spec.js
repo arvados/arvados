@@ -749,7 +749,7 @@ describe('Process tests', function() {
 
     const verifyIOParameter = (name, label, doc, val, collection, multipleRows) => {
         cy.get('table tr').contains(name).parents('tr').within(($mainRow) => {
-            doc && cy.contains(doc);
+            label && cy.contains(label);
 
             if (multipleRows) {
                 cy.get($mainRow).nextUntil('[data-cy="process-io-param"]').as('secondaryRows');
