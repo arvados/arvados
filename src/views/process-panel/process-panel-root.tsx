@@ -133,7 +133,7 @@ export const ProcessPanelRoot = withStyles(styles)(
                     navigateToLog={props.navigateToLog}
                 />
             </MPVPanelContent>
-            <MPVPanelContent forwardProps xs="auto" data-cy="process-inputs">
+            <MPVPanelContent forwardProps xs maxHeight='50%' data-cy="process-inputs">
                 <ProcessIOCard
                     label={ProcessIOCardType.INPUT}
                     process={process}
@@ -142,7 +142,7 @@ export const ProcessPanelRoot = withStyles(styles)(
                     mounts={inputMounts}
                  />
             </MPVPanelContent>
-            <MPVPanelContent forwardProps xs="auto" data-cy="process-outputs">
+            <MPVPanelContent forwardProps xs maxHeight='50%' data-cy="process-outputs">
                 <ProcessIOCard
                     label={ProcessIOCardType.OUTPUT}
                     process={process}

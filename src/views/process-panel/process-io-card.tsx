@@ -26,7 +26,7 @@ import {
     Chip,
 } from '@material-ui/core';
 import { ArvadosTheme } from 'common/custom-theme';
-import { CloseIcon, ImageIcon, InfoIcon, InputIcon, ImageOffIcon, OutputIcon } from 'components/icon/icon';
+import { CloseIcon, ImageIcon, InputIcon, ImageOffIcon, OutputIcon, MaximizeIcon } from 'components/icon/icon';
 import { MPVPanelProps } from 'components/multi-panel-view/multi-panel-view';
 import {
   BooleanCommandInputParameter,
@@ -82,6 +82,7 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
         paddingTop: theme.spacing.unit * 0.5
     },
     content: {
+        height: `calc(100% - ${theme.spacing.unit * 7}px - ${theme.spacing.unit * 1.5}px)`,
         padding: theme.spacing.unit * 1.0,
         paddingTop: theme.spacing.unit * 0.5,
         '&:last-child': {
@@ -93,6 +94,7 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
         paddingTop: theme.spacing.unit * 0.5
     },
     tableWrapper: {
+        height: `calc(100% - ${theme.spacing.unit * 6}px)`,
         overflow: 'auto',
     },
     tableRoot: {
@@ -186,7 +188,7 @@ const mapDispatchToProps = (dispatch: Dispatch): ProcessIOCardActionProps => ({
 type ProcessIOCardProps = ProcessIOCardDataProps & ProcessIOCardActionProps & WithStyles<CssRules> & MPVPanelProps;
 
 export const ProcessIOCard = withStyles(styles)(connect(null, mapDispatchToProps)(
-    ({ classes, label, params, raw, mounts, outputUuid, doHidePanel, panelName, process, navigateTo }: ProcessIOCardProps) => {
+    ({ classes, label, params, raw, mounts, outputUuid, doHidePanel, doMaximizePanel, panelMaximized, panelName, process, navigateTo }: ProcessIOCardProps) => {
         const [mainProcTabState, setMainProcTabState] = useState(0);
         const handleMainProcTabChange = (event: React.MouseEvent<HTMLElement>, value: number) => {
             setMainProcTabState(value);
@@ -215,6 +217,10 @@ export const ProcessIOCard = withStyles(styles)(connect(null, mapDispatchToProps
                         { mainProcess && <Tooltip title={"Toggle Image Preview"} disableFocusListener>
                             <IconButton data-cy="io-preview-image-toggle" onClick={() =>{setShowImagePreview(!showImagePreview)}}>{showImagePreview ? <ImageIcon /> : <ImageOffIcon />}</IconButton>
                         </Tooltip> }
+                        { doMaximizePanel && !panelMaximized &&
+                        <Tooltip title={`Maximize ${panelName || 'panel'}`} disableFocusListener>
+                            <IconButton onClick={doMaximizePanel}><MaximizeIcon /></IconButton>
+                        </Tooltip> }
                         { doHidePanel &&
                         <Tooltip title={`Close ${panelName || 'panel'}`} disableFocusListener>
                             <IconButton onClick={doHidePanel}><CloseIcon /></IconButton>
@@ -222,52 +228,50 @@ export const ProcessIOCard = withStyles(styles)(connect(null, mapDispatchToProps
                     </div>
                 } />
             <CardContent className={classes.content}>
-                <div>
-                    {mainProcess ?
-                        (<>
-                            {params.length ?
-                                <>
-                                    <Tabs value={mainProcTabState} onChange={handleMainProcTabChange} variant="fullWidth" className={classes.symmetricTabs}>
-                                        <Tab label="Parameters" />
-                                        <Tab label="JSON" />
-                                    </Tabs>
-                                    {mainProcTabState === 0 && <div className={classes.tableWrapper}>
-                                            <ProcessIOPreview data={params} showImagePreview={showImagePreview} />
-                                        </div>}
-                                    {mainProcTabState === 1 && <div className={classes.tableWrapper}>
-                                            <ProcessIORaw data={raw || params} />
-                                        </div>}
-                                </> :
-                                <Grid container item alignItems='center' justify='center'>
-                                    <DefaultView messages={["No parameters found"]} />
-                                </Grid>
-                            }
-                        </>) :
-                        (<>
-                            {((mounts && mounts.length) || outputUuid) ?
-                                <>
-                                    <Tabs value={0} variant="fullWidth" className={classes.symmetricTabs}>
-                                        {label === ProcessIOCardType.INPUT && <Tab label="Collections" />}
-                                        {label === ProcessIOCardType.OUTPUT && <Tab label="Collection" />}
-                                    </Tabs>
-                                    <div className={classes.tableWrapper}>
-                                        {label === ProcessIOCardType.INPUT && <ProcessInputMounts mounts={mounts || []} />}
-                                        {label === ProcessIOCardType.OUTPUT && <>
-                                            {outputUuid && <Typography className={classes.collectionLink}>
-                                                Output Collection: <MuiLink className={classes.keepLink} onClick={() => {navigateTo(outputUuid || "")}}>
-                                                {outputUuid}
-                                            </MuiLink></Typography>}
-                                            <ProcessOutputCollectionFiles isWritable={false} currentItemUuid={outputUuid} />
-                                        </>}
-                                    </div>
-                                </> :
-                                <Grid container item alignItems='center' justify='center'>
-                                    <DefaultView messages={["No collection(s) found"]} />
-                                </Grid>
-                            }
-                        </>)
-                    }
-                </div>
+                {mainProcess ?
+                    (<>
+                        {params.length ?
+                            <>
+                                <Tabs value={mainProcTabState} onChange={handleMainProcTabChange} variant="fullWidth" className={classes.symmetricTabs}>
+                                    <Tab label="Parameters" />
+                                    <Tab label="JSON" />
+                                </Tabs>
+                                {mainProcTabState === 0 && <div className={classes.tableWrapper}>
+                                        <ProcessIOPreview data={params} showImagePreview={showImagePreview} />
+                                    </div>}
+                                {mainProcTabState === 1 && <div className={classes.tableWrapper}>
+                                        <ProcessIORaw data={raw || params} />
+                                    </div>}
+                            </> :
+                            <Grid container item alignItems='center' justify='center'>
+                                <DefaultView messages={["No parameters found"]} />
+                            </Grid>
+                        }
+                    </>) :
+                    (<>
+                        {((mounts && mounts.length) || outputUuid) ?
+                            <>
+                                <Tabs value={0} variant="fullWidth" className={classes.symmetricTabs}>
+                                    {label === ProcessIOCardType.INPUT && <Tab label="Collections" />}
+                                    {label === ProcessIOCardType.OUTPUT && <Tab label="Collection" />}
+                                </Tabs>
+                                <div className={classes.tableWrapper}>
+                                    {label === ProcessIOCardType.INPUT && <ProcessInputMounts mounts={mounts || []} />}
+                                    {label === ProcessIOCardType.OUTPUT && <>
+                                        {outputUuid && <Typography className={classes.collectionLink}>
+                                            Output Collection: <MuiLink className={classes.keepLink} onClick={() => {navigateTo(outputUuid || "")}}>
+                                            {outputUuid}
+                                        </MuiLink></Typography>}
+                                        <ProcessOutputCollectionFiles isWritable={false} currentItemUuid={outputUuid} />
+                                    </>}
+                                </div>
+                            </> :
+                            <Grid container item alignItems='center' justify='center'>
+                                <DefaultView messages={["No collection(s) found"]} />
+                            </Grid>
+                        }
+                    </>)
+                }
             </CardContent>
         </Card>;
     }
