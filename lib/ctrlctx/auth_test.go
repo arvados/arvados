@@ -8,6 +8,7 @@ import (
 	"context"
 
 	"git.arvados.org/arvados.git/lib/config"
+	"git.arvados.org/arvados.git/sdk/go/arvadostest"
 	"git.arvados.org/arvados.git/sdk/go/auth"
 	"git.arvados.org/arvados.git/sdk/go/ctxlog"
 	"github.com/jmoiron/sqlx"
@@ -29,10 +30,10 @@ func (*DatabaseSuite) TestAuthContext(c *check.C) {
 
 	// valid tokens
 	for _, token := range []string{
-		"3kg6k6lzmp9kj5cpkcoxie963cmvjahbt2fod9zru30k1jqdmi",
-		"v2/zzzzz-gj3su-077z32aux8dg2s1/3kg6k6lzmp9kj5cpkcoxie963cmvjahbt2fod9zru30k1jqdmi",
-		"v2/zzzzz-gj3su-077z32aux8dg2s1/3kg6k6lzmp9kj5cpkcoxie963cmvjahbt2fod9zru30k1jqdmi/asdfasdfasdf",
-		"v2/zzzzz-gj3su-077z32aux8dg2s1/3kg6k6lzmp9kj5cpkcoxie963cmvjahbt2fod9zru30k1jqdmi", // cached
+		arvadostest.ActiveToken,
+		arvadostest.ActiveTokenV2,
+		arvadostest.ActiveTokenV2 + "/asdfasdfasdf",
+		arvadostest.ActiveTokenV2, // cached
 	} {
 		ok, err := dbwrapper(authwrapper(func(ctx context.Context, opts interface{}) (interface{}, error) {
 			user, aca, err := CurrentAuth(ctx)
@@ -49,8 +50,10 @@ func (*DatabaseSuite) TestAuthContext(c *check.C) {
 
 	// bad tokens
 	for _, token := range []string{
-		"3kg6k6lzmp9kj5cpkcoxie963cmvjahbt2fod9zru30k1jqdmI", // note last char mangled
-		"v2/zzzzz-gj3su-077z32aux8dg2s1/",
+		arvadostest.ActiveToken + "X",
+		arvadostest.ActiveTokenV2 + "X",
+		arvadostest.ActiveTokenV2[:30], // "v2/{uuid}"
+		arvadostest.ActiveTokenV2[:31], // "v2/{uuid}/"
 		"bogus",
 		"",
 	} {
