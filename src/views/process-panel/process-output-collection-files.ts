@@ -14,7 +14,6 @@ import { openContextMenu, openCollectionFilesContextMenu } from 'store/context-m
 import { openUploadCollectionFilesDialog } from 'store/collections/collection-upload-actions';
 import { ResourceKind } from "models/resource";
 import { openDetailsPanel } from 'store/details-panel/details-panel-action';
-import { StyleRulesCallback, Theme, withStyles } from "@material-ui/core";
 
 const mapDispatchToProps = (dispatch: Dispatch): Pick<CollectionPanelFilesProps, 'onSearchChange' | 'onFileClick' | 'onUploadDataClick' | 'onCollapseToggle' | 'onSelectionToggle' | 'onItemMenuOpen' | 'onOptionsMenuOpen'> => ({
     onUploadDataClick: (targetLocation?: string) => {
@@ -56,16 +55,4 @@ const mapDispatchToProps = (dispatch: Dispatch): Pick<CollectionPanelFilesProps,
     },
 });
 
-type CssRules = "wrapper"
-    | "dataWrapper"
-    | "leftPanel"
-    | "rightPanel";
-
-const styles: StyleRulesCallback<CssRules> = (theme: Theme) => ({
-    wrapper: {},
-    dataWrapper: {},
-    leftPanel: {},
-    rightPanel: {},
-});
-
-export const ProcessOutputCollectionFiles = withStyles(styles)(connect(null, mapDispatchToProps)(Component));
+export const ProcessOutputCollectionFiles = connect(null, mapDispatchToProps)(Component);
