@@ -10,7 +10,6 @@ import (
 	"errors"
 	"io"
 	"os"
-	"path/filepath"
 	"strings"
 
 	check "gopkg.in/check.v1"
@@ -102,14 +101,16 @@ func (s *SiteFSSuite) TestFilterGroup(c *check.C) {
 
 func (s *SiteFSSuite) TestCurrentUserHome(c *check.C) {
 	s.fs.MountProject("home", "")
-	s.testHomeProject(c, "/home")
+	s.testHomeProject(c, "/home", "home")
 }
 
 func (s *SiteFSSuite) TestUsersDir(c *check.C) {
-	s.testHomeProject(c, "/users/active")
+	// /users/active is a hardlink to a dir whose name is the UUID
+	// of the active user
+	s.testHomeProject(c, "/users/active", fixtureActiveUserUUID)
 }
 
-func (s *SiteFSSuite) testHomeProject(c *check.C, path string) {
+func (s *SiteFSSuite) testHomeProject(c *check.C, path, expectRealName string) {
 	f, err := s.fs.Open(path)
 	c.Assert(err, check.IsNil)
 	fis, err := f.Readdir(-1)
@@ -130,8 +131,7 @@ func (s *SiteFSSuite) testHomeProject(c *check.C, path string) {
 	fi, err := f.Stat()
 	c.Assert(err, check.IsNil)
 	c.Check(fi.IsDir(), check.Equals, true)
-	_, basename := filepath.Split(path)
-	c.Check(fi.Name(), check.Equals, basename)
+	c.Check(fi.Name(), check.Equals, expectRealName)
 
 	f, err = s.fs.Open(path + "/A Project/A Subproject")
 	c.Assert(err, check.IsNil)
@@ -263,14 +263,10 @@ func (s *SiteFSSuite) TestProjectUpdatedByOther(c *check.C) {
 
 	err = project.Sync()
 	c.Check(err, check.IsNil)
-	_, err = s.fs.Open("/home/A Project/oob/test.txt")
-	c.Check(err, check.IsNil)
-
-	// Sync again to mark the project dir as stale, so the
-	// collection gets reloaded from the controller on next
-	// lookup.
-	err = project.Sync()
-	c.Check(err, check.IsNil)
+	f, err = s.fs.Open("/home/A Project/oob/test.txt")
+	if c.Check(err, check.IsNil) {
+		f.Close()
+	}
 
 	// Ensure collection was flushed by Sync
 	var latest Collection
@@ -288,10 +284,17 @@ func (s *SiteFSSuite) TestProjectUpdatedByOther(c *check.C) {
 	})
 	c.Assert(err, check.IsNil)
 
+	// Sync again to reload collection.
+	err = project.Sync()
+	c.Check(err, check.IsNil)
+
+	// Check test.txt deletion is reflected in fs.
 	_, err = s.fs.Open("/home/A Project/oob/test.txt")
 	c.Check(err, check.NotNil)
-	_, err = s.fs.Open("/home/A Project/oob")
-	c.Check(err, check.IsNil)
+	f, err = s.fs.Open("/home/A Project/oob")
+	if c.Check(err, check.IsNil) {
+		f.Close()
+	}
 
 	err = s.client.RequestAndDecode(nil, "DELETE", "arvados/v1/collections/"+oob.UUID, nil, nil)
 	c.Assert(err, check.IsNil)

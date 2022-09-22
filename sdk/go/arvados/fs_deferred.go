@@ -5,44 +5,9 @@
 package arvados
 
 import (
-	"log"
 	"os"
 	"sync"
-	"time"
 )
-
-func deferredCollectionFS(fs FileSystem, parent inode, coll Collection) inode {
-	modTime := coll.ModifiedAt
-	if modTime.IsZero() {
-		modTime = time.Now()
-	}
-	placeholder := &treenode{
-		fs:     fs,
-		parent: parent,
-		inodes: nil,
-		fileinfo: fileinfo{
-			name:    coll.Name,
-			modTime: modTime,
-			mode:    0755 | os.ModeDir,
-			sys:     func() interface{} { return &coll },
-		},
-	}
-	return &deferrednode{wrapped: placeholder, create: func() inode {
-		err := fs.RequestAndDecode(&coll, "GET", "arvados/v1/collections/"+coll.UUID, nil, nil)
-		if err != nil {
-			log.Printf("BUG: unhandled error: %s", err)
-			return placeholder
-		}
-		newfs, err := coll.FileSystem(fs, fs)
-		if err != nil {
-			log.Printf("BUG: unhandled error: %s", err)
-			return placeholder
-		}
-		cfs := newfs.(*collectionFileSystem)
-		cfs.SetParent(parent, coll.Name)
-		return cfs
-	}}
-}
 
 // A deferrednode wraps an inode that's expensive to build. Initially,
 // it responds to basic directory functions by proxying to the given

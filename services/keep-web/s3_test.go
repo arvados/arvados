@@ -316,14 +316,14 @@ func (s *IntegrationSuite) TestS3PropertiesAsMetadata(c *check.C) {
 func (s *IntegrationSuite) TestS3CollectionPutObjectSuccess(c *check.C) {
 	stage := s.s3setup(c)
 	defer stage.teardown(c)
-	s.testS3PutObjectSuccess(c, stage.collbucket, "")
+	s.testS3PutObjectSuccess(c, stage.collbucket, "", stage.coll.UUID)
 }
 func (s *IntegrationSuite) TestS3ProjectPutObjectSuccess(c *check.C) {
 	stage := s.s3setup(c)
 	defer stage.teardown(c)
-	s.testS3PutObjectSuccess(c, stage.projbucket, stage.coll.Name+"/")
+	s.testS3PutObjectSuccess(c, stage.projbucket, stage.coll.Name+"/", stage.coll.UUID)
 }
-func (s *IntegrationSuite) testS3PutObjectSuccess(c *check.C, bucket *s3.Bucket, prefix string) {
+func (s *IntegrationSuite) testS3PutObjectSuccess(c *check.C, bucket *s3.Bucket, prefix string, collUUID string) {
 	for _, trial := range []struct {
 		path        string
 		size        int
@@ -367,7 +367,7 @@ func (s *IntegrationSuite) testS3PutObjectSuccess(c *check.C, bucket *s3.Bucket,
 		if !c.Check(err, check.NotNil) {
 			continue
 		}
-		c.Check(err.(*s3.Error).StatusCode, check.Equals, 404)
+		c.Check(err.(*s3.Error).StatusCode, check.Equals, http.StatusNotFound)
 		c.Check(err.(*s3.Error).Code, check.Equals, `NoSuchKey`)
 		if !c.Check(err, check.ErrorMatches, `The specified key does not exist.`) {
 			continue
@@ -390,6 +390,14 @@ func (s *IntegrationSuite) testS3PutObjectSuccess(c *check.C, bucket *s3.Bucket,
 		c.Check(err, check.IsNil)
 		c.Check(buf2, check.HasLen, len(buf))
 		c.Check(bytes.Equal(buf, buf2), check.Equals, true)
+
+		// Check that the change is immediately visible via
+		// (non-S3) webdav request.
+		_, resp := s.do("GET", "http://"+collUUID+".keep-web.example/"+trial.path, arvadostest.ActiveTokenV2, nil)
+		c.Check(resp.Code, check.Equals, http.StatusOK)
+		if !strings.HasSuffix(trial.path, "/") {
+			c.Check(resp.Body.Len(), check.Equals, trial.size)
+		}
 	}
 }
 
