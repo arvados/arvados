@@ -185,7 +185,9 @@ For @ClusterID@, fill in your cluster ID. The @VPC@ and @Subnet@ should be confi
 
 h3(#aws-ebs-autoscaler). Autoscaling compute node scratch space
 
-If you want to add the "AWS EBS autoscaler":https://github.com/awslabs/amazon-ebs-autoscale daemon in your images, add the @--aws-ebs-autoscale@ flag to the "the build script":#building. Doing so will make the compute image scratch space scale automatically as needed.
+Arvados supports "AWS EBS autoscaler":https://github.com/awslabs/amazon-ebs-autoscale .  This feature automatically expands the scratch space on the compute node on demand by 200 GB at a time, up to 5 TB.
+
+If you want to add the daemon in your images, add the @--aws-ebs-autoscale@ flag to the "the build script":#building.
 
 The AWS EBS autoscaler daemon will be installed with this configuration:
 
@@ -214,53 +216,9 @@ The AWS EBS autoscaler daemon will be installed with this configuration:
 }
 </code></pre></notextile>
 
-Changing the configuration is left as an exercise for the reader.
+Changing the ebs-autoscale configuration is left as an exercise for the reader.
 
-Using this feature also requires a few Arvados configuration changes in @config.yml@:
-
-* The @Containers/InstanceTypes@ list should be modified so that all @AddedScratch@ lines are removed, and the @IncludedScratch@ value should be set to a (fictional) high number. This way, the scratch space requirements will be met by all the defined instance type. For example:
-
-<notextile><pre><code>    InstanceTypes:
-      c5large:
-        ProviderType: c5.large
-        VCPUs: 2
-        RAM: 4GiB
-        IncludedScratch: 16TB
-        Price: 0.085
-      m5large:
-        ProviderType: m5.large
-        VCPUs: 2
-        RAM: 8GiB
-        IncludedScratch: 16TB
-        Price: 0.096
-...
-</code></pre></notextile>
-
-* You will also need to create an IAM role in AWS with these permissions:
-
-<notextile><pre><code>{
-    "Version": "2012-10-17",
-    "Statement": [
-        {
-            "Effect": "Allow",
-            "Action": [
-                "ec2:AttachVolume",
-                "ec2:DescribeVolumeStatus",
-                "ec2:DescribeVolumes",
-                "ec2:DescribeTags",
-                "ec2:ModifyInstanceAttribute",
-                "ec2:DescribeVolumeAttribute",
-                "ec2:CreateVolume",
-                "ec2:DeleteVolume",
-                "ec2:CreateTags"
-            ],
-            "Resource": "*"
-        }
-    ]
-}
-</code></pre></notextile>
-
-Then, in @config.yml@ set @Containers/CloudVMs/DriverParameters/IAMInstanceProfile@ to the name of the IAM role. This will make @arvados-dispatch-cloud@ pass an IAMInstanceProfile to the compute nodes as they start up, giving them sufficient permissions to attach and grow EBS volumes.
+This feature also requires a few Arvados configuration changes, described in "EBS-Autoscale configuration"#aws-ebs-autoscaler .
 
 h2(#azure). Build an Azure image
 

@@ -33,7 +33,7 @@ h2(#update-config). Update config.yml
 
 h3. Configure CloudVMs
 
-Add or update the following portions of your cluster configuration file, @config.yml@. Refer to "config.defaults.yml":{{site.baseurl}}/admin/config.html for information about additional configuration options. The @DispatchPrivateKey@ should be the *private* key generated in "the previous section":install-compute-node.html#sshkeypair.
+Add or update the following portions of your cluster configuration file, @config.yml@. Refer to "config.defaults.yml":{{site.baseurl}}/admin/config.html for information about additional configuration options. The @DispatchPrivateKey@ should be the *private* key generated in "Create a SSH keypair":install-compute-node.html#sshkeypair .
 
 <notextile>
 <pre><code>    Services:
@@ -76,7 +76,7 @@ Add or update the following portions of your cluster configuration file, @config
 
 h3(#GPUsupport). NVIDIA GPU support
 
-To specify instance types with NVIDIA GPUs, you must include an additional @CUDA@ section:
+To specify instance types with NVIDIA GPUs, "the compute image must be built with CUDA support":install-compute-node.html#nvidia , and you must include an additional @CUDA@ section:
 
 <notextile>
 <pre><code>    InstanceTypes:
@@ -95,15 +95,64 @@ To specify instance types with NVIDIA GPUs, you must include an additional @CUDA
 
 The @DriverVersion@ is the version of the CUDA toolkit installed in your compute image (in X.Y format, do not include the patchlevel).  The @HardwareCapability@ is the CUDA compute capability of the GPUs available for this instance type.  The @DeviceCount@ is the number of GPU cores available for this instance type.
 
+h3(#aws-ebs-autoscaler). EBS Autoscale configuration
+
+See "Autoscaling compute node scratch space":install-compute-node.html#aws-ebs-autoscaler for details about compute image configuration.
+
+The @Containers.InstanceTypes@ list should be modified so that all @AddedScratch@ lines are removed, and the @IncludedScratch@ value should be set to 5 TB. This way, the scratch space requirements will be met by all the defined instance type. For example:
+
+<notextile><pre><code>    InstanceTypes:
+      c5large:
+        ProviderType: c5.large
+        VCPUs: 2
+        RAM: 4GiB
+        IncludedScratch: 5TB
+        Price: 0.085
+      m5large:
+        ProviderType: m5.large
+        VCPUs: 2
+        RAM: 8GiB
+        IncludedScratch: 5TB
+        Price: 0.096
+...
+</code></pre></notextile>
+
+You will also need to create an IAM role in AWS with these permissions:
+
+<notextile><pre><code>{
+    "Statement": [
+        {
+            "Effect": "Allow",
+            "Action": [
+                "ec2:AttachVolume",
+                "ec2:DescribeVolumeStatus",
+                "ec2:DescribeVolumes",
+                "ec2:DescribeTags",
+                "ec2:ModifyInstanceAttribute",
+                "ec2:DescribeVolumeAttribute",
+                "ec2:CreateVolume",
+                "ec2:DeleteVolume",
+                "ec2:CreateTags"
+            ],
+            "Resource": "*"
+        }
+    ]
+}
+</code></pre></notextile>
+
+Then set @Containers.CloudVMs.DriverParameters.IAMInstanceProfile@ to the name of the IAM role. This will make @arvados-dispatch-cloud@ pass an IAM instance profile to the compute nodes when they start up, giving them sufficient permissions to attach and grow EBS volumes.
+
 h3. AWS Credentials for Local Keepstore on Compute node
 
-When @Containers/LocalKeepBlobBuffersPerVCPU@ is non-zero, the compute node will spin up a local Keepstore service for faster storage access. If Keep is backed by S3, the compute node will need to be able to access the S3 bucket.
+When @Containers.LocalKeepBlobBuffersPerVCPU@ is non-zero, the compute node will spin up a local Keepstore service for direct storage access. If Keep is backed by S3, the compute node will need to be able to access the S3 bucket.
 
-If the AWS credentials for S3 access are configured in @config.yml@ (i.e. @Volumes/DriverParameters/AccessKeyID@ and @Volumes/DriverParameters/SecretAccessKey@), these credentials will be made available to the local Keepstore on the compute node to access S3 directly and no further configuration is necessary.
+If the AWS credentials for S3 access are configured in @config.yml@ (i.e. @Volumes.DriverParameters.AccessKeyID@ and @Volumes.DriverParameters.SecretAccessKey@), these credentials will be made available to the local Keepstore on the compute node to access S3 directly and no further configuration is necessary.
 
-Alternatively, if an IAM role is configured in @config.yml@ (i.e. @Volumes/DriverParameters/IAMRole@), the name of an instance profile that corresponds to this role ("often identical to the name of the IAM role":https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/iam-roles-for-amazon-ec2.html#ec2-instance-profile) must be configured in the @CloudVMs/DriverParameters/IAMInstanceProfile@ parameter.
+Alternatively, if an IAM role is configured in @config.yml@ (i.e. @Volumes.DriverParameters.IAMRole@), the name of an instance profile that corresponds to this role ("often identical to the name of the IAM role":https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/iam-roles-for-amazon-ec2.html#ec2-instance-profile) must be configured in the @CloudVMs.DriverParameters.IAMInstanceProfile@ parameter.
 
-Finally, if @config.yml@ does not have @Volumes/DriverParameters/AccessKeyID@, @Volumes/DriverParameters/SecretAccessKey@ or @Volumes/DriverParameters/IAMRole@ defined, Keepstore uses the IAM role attached to the node, whatever it may be called. The @CloudVMs/DriverParameters/IAMInstanceProfile@ parameter must then still be configured with the name of a profile whose IAM role has permission to access the S3 bucket(s). That way, @arvados-dispatch-cloud@ can attach the IAM role to the compute node as it is created.
+*If you are also using EBS Autoscale feature, the role in IAMInstanceProfile must have both ec2 and s3 permissions.*
+
+Finally, if @config.yml@ does not have @Volumes.DriverParameters.AccessKeyID@, @Volumes.DriverParameters.SecretAccessKey@ or @Volumes.DriverParameters.IAMRole@ defined, Keepstore uses the IAM role attached to the node, whatever it may be called. The @CloudVMs.DriverParameters.IAMInstanceProfile@ parameter must then still be configured with the name of a profile whose IAM role has permission to access the S3 bucket(s). That way, @arvados-dispatch-cloud@ can attach the IAM role to the compute node as it is created.
 
 h3. Minimal configuration example for Amazon EC2
 
@@ -130,14 +179,13 @@ The <span class="userinput">ImageID</span> value is the compute node image that 
 </code></pre>
 </notextile>
 
-h3(#IAM). Example IAM policy
+h3(#IAM). Example IAM policy for cloud dispatcher
 
 Example policy for the IAM role used by the cloud dispatcher:
 
 <notextile>
 <pre>
 {
-    "Version": "2012-10-17",
     "Id": "arvados-dispatch-cloud policy",
     "Statement": [
         {

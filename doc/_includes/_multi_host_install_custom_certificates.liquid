@@ -42,7 +42,10 @@ Make sure that all the FQDNs that you will use for the public-facing application
 Note: because the installer currently looks for a different certificate file for each service, if you use a single certificate, we recommend creating a symlink for each certificate and key file to the primary certificate and key, e.g.
 
 <notextile>
-<pre><code>ln -s xarv1.crt ${CUSTOM_CERTS_DIR}/keepproxy.crt
+<pre><code>ln -s xarv1.crt ${CUSTOM_CERTS_DIR}/controller.crt
+ln -s xarv1.key ${CUSTOM_CERTS_DIR}/controller.key
+ln -s xarv1.crt ${CUSTOM_CERTS_DIR}/keepproxy.crt
 ln -s xarv1.key ${CUSTOM_CERTS_DIR}/keepproxy.key
+...
 </code></pre>
 </notextile>
