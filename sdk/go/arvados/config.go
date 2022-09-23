@@ -248,6 +248,7 @@ type Cluster struct {
 		PreferDomainForUsername               string
 		UserSetupMailText                     string
 		RoleGroupsVisibleToAll                bool
+		ActivityLoggingPeriod                 Duration
 	}
 	StorageClasses map[string]StorageClassConfig
 	Volumes        map[string]Volume

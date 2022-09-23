@@ -226,6 +226,7 @@ var whitelist = map[string]bool{
 	"TLS.Key":                                             false,
 	"Users":                                               true,
 	"Users.ActivatedUsersAreVisibleToOthers":              false,
+	"Users.ActivityLoggingPeriod":                         false,
 	"Users.AdminNotifierEmailFrom":                        false,
 	"Users.AnonymousUserToken":                            true,
 	"Users.AutoAdminFirstUser":                            false,

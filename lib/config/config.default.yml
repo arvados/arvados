@@ -373,6 +373,18 @@ Clusters:
       # cluster.
       RoleGroupsVisibleToAll: true
 
+      # During each period, a log entry with event_type="activity"
+      # will be recorded for each user who is active during that
+      # period. The object_uuid attribute will indicate the user's
+      # UUID.
+      #
+      # Multiple log entries for the same user may be generated during
+      # a period if there are multiple controller processes or a
+      # controller process is restarted.
+      #
+      # Use 0 to disable activity logging.
+      ActivityLoggingPeriod: 24h
+
     AuditLogs:
       # Time to keep audit logs, in seconds. (An audit log is a row added
       # to the "logs" table in the PostgreSQL database each time an

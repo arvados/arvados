@@ -12,6 +12,7 @@ import (
 	"git.arvados.org/arvados.git/lib/controller/api"
 	"git.arvados.org/arvados.git/sdk/go/ctxlog"
 	"github.com/jmoiron/sqlx"
+
 	// sqlx needs lib/pq to talk to PostgreSQL
 	_ "github.com/lib/pq"
 )
@@ -107,6 +108,26 @@ func New(ctx context.Context, getdb func(context.Context) (*sqlx.DB, error)) (co
 	}
 }
 
+// NewTx starts a new transaction. The caller is responsible for
+// calling Commit or Rollback. This is suitable for database queries
+// that are separate from the API transaction (see CurrentTx), e.g.,
+// ones that will be committed even if the API call fails, or held
+// open after the API call finishes.
+func NewTx(ctx context.Context) (*sqlx.Tx, error) {
+	txn, ok := ctx.Value(contextKeyTransaction).(*transaction)
+	if !ok {
+		return nil, ErrNoTransaction
+	}
+	db, err := txn.getdb(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return db.Beginx()
+}
+
+// CurrentTx returns a transaction that will be committed after the
+// current API call completes, or rolled back if the current API call
+// returns an error.
 func CurrentTx(ctx context.Context) (*sqlx.Tx, error) {
 	txn, ok := ctx.Value(contextKeyTransaction).(*transaction)
 	if !ok {

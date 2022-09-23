@@ -7,6 +7,7 @@ package arvados
 import (
 	"bytes"
 	"context"
+	"crypto/rand"
 	"crypto/tls"
 	"encoding/json"
 	"errors"
@@ -15,6 +16,7 @@ import (
 	"io/fs"
 	"io/ioutil"
 	"log"
+	"math/big"
 	"net"
 	"net/http"
 	"net/url"
@@ -598,4 +600,14 @@ func (c *Client) PathForUUID(method, uuid string) (string, error) {
 		path = path[1:]
 	}
 	return path, nil
+}
+
+var maxUUIDInt = (&big.Int{}).Exp(big.NewInt(36), big.NewInt(15), nil)
+
+func RandomUUID(clusterID, infix string) string {
+	n, err := rand.Int(rand.Reader, maxUUIDInt)
+	if err != nil {
+		panic(err)
+	}
+	return clusterID + "-" + infix + "-" + n.Text(36)
 }

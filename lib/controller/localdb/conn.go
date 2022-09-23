@@ -33,8 +33,11 @@ type Conn struct {
 	lastVocabularyRefreshCheck time.Time
 	lastVocabularyError        error
 	loginController
-	gwTunnels     map[string]*yamux.Session
-	gwTunnelsLock sync.Mutex
+	gwTunnels        map[string]*yamux.Session
+	gwTunnelsLock    sync.Mutex
+	activeUsers      map[string]bool
+	activeUsersLock  sync.Mutex
+	activeUsersReset time.Time
 }
 
 func NewConn(cluster *arvados.Cluster) *Conn {

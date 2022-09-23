@@ -9,7 +9,6 @@ import (
 	"crypto/hmac"
 	"crypto/sha256"
 	"database/sql"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -20,6 +19,7 @@ import (
 	"git.arvados.org/arvados.git/lib/controller/api"
 	"git.arvados.org/arvados.git/sdk/go/arvados"
 	"git.arvados.org/arvados.git/sdk/go/auth"
+	"github.com/ghodss/yaml"
 )
 
 var (
@@ -135,7 +135,7 @@ func (ac *authcache) lookup(ctx context.Context, cluster *arvados.Cluster, token
 	var args []interface{}
 	if len(token) > 30 && strings.HasPrefix(token, "v2/") && token[30] == '/' {
 		fields := strings.Split(token, "/")
-		cond = `aca.uuid=$1 and aca.api_token=$2`
+		cond = `aca.uuid = $1 and aca.api_token = $2`
 		args = []interface{}{fields[1], fields[2]}
 	} else {
 		// Bare token or OIDC access token
@@ -145,24 +145,26 @@ func (ac *authcache) lookup(ctx context.Context, cluster *arvados.Cluster, token
 		cond = `aca.api_token in ($1, $2)`
 		args = []interface{}{token, hmac}
 	}
-	var scopesJSON []byte
+	var expiresAt sql.NullTime
+	var scopesYAML []byte
 	err = tx.QueryRowContext(ctx, `
 select aca.uuid, aca.expires_at, aca.api_token, aca.scopes, users.uuid, users.is_active, users.is_admin
  from api_client_authorizations aca
  left join users on aca.user_id = users.id
  where `+cond+`
  and (expires_at is null or expires_at > current_timestamp at time zone 'UTC')`, args...).Scan(
-		&aca.UUID, &aca.ExpiresAt, &aca.APIToken, &scopesJSON,
+		&aca.UUID, &expiresAt, &aca.APIToken, &scopesYAML,
 		&user.UUID, &user.IsActive, &user.IsAdmin)
 	if err == sql.ErrNoRows {
 		return nil, nil, nil
 	} else if err != nil {
 		return nil, nil, err
 	}
-	if len(scopesJSON) > 0 {
-		err = json.Unmarshal(scopesJSON, &aca.Scopes)
+	aca.ExpiresAt = expiresAt.Time
+	if len(scopesYAML) > 0 {
+		err = yaml.Unmarshal(scopesYAML, &aca.Scopes)
 		if err != nil {
-			return nil, nil, err
+			return nil, nil, fmt.Errorf("loading scopes for %s: %w", aca.UUID, err)
 		}
 	}
 	ent = &authcacheent{
