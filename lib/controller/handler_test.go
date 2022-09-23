@@ -19,6 +19,7 @@ import (
 	"testing"
 	"time"
 
+	"git.arvados.org/arvados.git/lib/controller/rpc"
 	"git.arvados.org/arvados.git/sdk/go/arvados"
 	"git.arvados.org/arvados.git/sdk/go/arvadostest"
 	"git.arvados.org/arvados.git/sdk/go/auth"
@@ -492,5 +493,40 @@ func (s *HandlerSuite) TestTrashSweep(c *check.C) {
 			break
 		}
 		time.Sleep(time.Second / 10)
+	}
+}
+
+func (s *HandlerSuite) TestLogActivity(c *check.C) {
+	s.cluster.SystemRootToken = arvadostest.SystemRootToken
+	s.cluster.Users.ActivityLoggingPeriod = arvados.Duration(24 * time.Hour)
+	s.handler.CheckHealth()
+
+	testServer := newServerFromIntegrationTestEnv(c)
+	testServer.Server.Handler = httpserver.AddRequestIDs(httpserver.LogRequests(s.handler))
+	c.Assert(testServer.Start(), check.IsNil)
+	defer testServer.Close()
+
+	u, _ := url.Parse("http://" + testServer.Addr)
+	client := rpc.NewConn(s.cluster.ClusterID, u, true, rpc.PassthroughTokenProvider)
+
+	starttime := time.Now()
+	for i := 0; i < 4; i++ {
+		for _, token := range []string{
+			arvadostest.ActiveTokenV2,
+			arvadostest.ActiveToken,
+			arvadostest.SpectatorToken,
+		} {
+			ctx := auth.NewContext(s.ctx, &auth.Credentials{Tokens: []string{token}})
+			_, err := client.CollectionList(ctx, arvados.ListOptions{})
+			c.Assert(err, check.IsNil)
+		}
+	}
+	db, err := s.handler.db(s.ctx)
+	c.Assert(err, check.IsNil)
+	for _, userUUID := range []string{arvadostest.ActiveUserUUID, arvadostest.SpectatorUserUUID} {
+		var rows int
+		err = db.QueryRowContext(s.ctx, `select count(uuid) from logs where object_uuid = $1 and event_at > $2`, arvadostest.ActiveUserUUID, starttime.UTC()).Scan(&rows)
+		c.Assert(err, check.IsNil)
+		c.Check(rows, check.Equals, 1, check.Commentf("expect 1 row for user uuid %s", userUUID))
 	}
 }
