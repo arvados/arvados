@@ -11,23 +11,29 @@ SPDX-License-Identifier: CC-BY-SA-3.0
 
 # "Introduction":#introduction
 # "Prerequisites and planning":#prerequisites
+# "Hosts":#hosts
 # "Download the installer":#download
 # "Initialize the installer":#copy_config
+# "Edit local.params":#localparams
+# "Configure Keep storage":#keep
 # "Choose the SSL configuration":#certificates
 ## "Using a self-signed certificates":#self-signed
 ## "Using a Let's Encrypt certificates":#lets-encrypt
 ## "Bring your own certificates":#bring-your-own
 # "Create a compute image":#create_a_compute_image
-# "Further customization of the installation (modifying the salt pillars and states)":#further_customization
+# "Further customization of the installation":#further_customization
 # "Begin installation":#installation
+## "Run diagnostics to confirming the cluster is working":#test-install
+## "Debugging issues":#debugging
+## "Iterating on config changes":#iterating
+## "Common problems and solutions":#common-problems
 # "Install the CA root certificate":#ca_root_certificate
 # "Initial user and login":#initial_user
-# "Test the installed cluster running a simple workflow":#test_install
 # "After the installation":#post_install
 
 h2(#introduction). Introduction
 
-This multi host installer is the recommendend way to set up a production Arvados cluster.  These instructions include speciic details for installing on Amazon Web Services (AWS), which are marked as "AWS specific".  However with additional customization the installer can be used as a template for deployment on other cloud provider or HPC systems.
+This multi host installer is the recommendend way to set up a production Arvados cluster.  These instructions include specific details for installing on Amazon Web Services (AWS), which are marked as "AWS specific".  However with additional customization the installer can be used as a template for deployment on other cloud provider or HPC systems.
 
 h2(#prerequisites). Prerequisites and planning
 
@@ -55,9 +61,15 @@ We recommend "creating an S3 bucket":https://docs.aws.amazon.com/AmazonS3/latest
 
 Then create an IAM role called @${CLUSTER}-keepstore-00-iam-role@ which has "permission to read and write the bucket":https://docs.aws.amazon.com/IAM/latest/UserGuide/id_roles_create.html
 
-h3. Machines
+h3. Other IAM Roles (AWS specific)
 
-You will need to allocate (virtual) machines for the fixed infrastructure of the Arvados cluster.  These machines should have at least 2 cores and 8 GiB of RAM, running a "supported Arvados distribution":{{site.baseurl}}/install/install-manual-prerequisites.html#supportedlinux
+
+
+h2(#hosts). Hosts
+
+You will need to allocate several hosts (physical or virtual machines) for the fixed infrastructure of the Arvados cluster.  These machines should have at least 2 cores and 8 GiB of RAM, running a supported Linux distribution.
+
+{% include 'supportedlinux' %}
 
 Allocate these as appropriate for your site.  On AWS you may choose to do it manually with the AWS console, or using a DevOps tool such as CloudFormation or Terraform.
 
@@ -101,7 +113,7 @@ Additional prerequisites when preparing machines to run the installer:
 ## @webshell.${CLUSTER}.${DOMAIN}@
 ## @shell.${CLUSTER}.${DOMAIN}@
 
-(AWS specific) The machine that runs the arvados cloud dispatcher will need an "IAM role that allows it to create EC2 instances, see here for details .":https://doc.arvados.org/v2.4/install/crunch2-cloud/install-dispatch-cloud.html
+(AWS specific) The machine that runs the arvados cloud dispatcher will need an "IAM role that allows it to create EC2 instances, see here for details .":https://doc.arvados.org/v2.4/install/crunch2-cloud/install-dispatch-cloud.html#IAM
 
 If your infrastructure differs from the setup proposed above (ie, different hostnames, or using AWS RDS or an existing DB server), you can still use the installer, but additional customization will be necessary.
 
@@ -111,16 +123,16 @@ h2(#download). Download the installer
 {% assign config_examples_src = 'multi_host/aws'%}
 {% include 'download_installer' %}
 
-h2. Edit @local.params@
+h2(#localparams). Edit @local.params@
 
 This can be found wherever you choose to initialize the install files (@~/setup-arvados-xarv1@ in these examples).
 
 # Set @CLUSTER@ to the 5-character cluster identifier (e.g "xarv1")
 # Set @DOMAIN@ to the base DNS domain of the environment, e.g. "example.com"
 # Edit Internal IP settings. Since services share hosts, some hosts are the same.
-# Edit @CLUSTER_INT_CIDR@, this should be the CIDR of the private network that Arvados is running on, e.g. the VPC
-	AWS Specific: Go to the AWS console and into the VPC service, there is a column in
-	this table view of the VPCs that gives the CIDR for the VPC (IPv4 CIDR).
+# Edit @CLUSTER_INT_CIDR@, this should be the CIDR of the private network that Arvados is running on, e.g. the VPC.
+CIDR stands for "Classless Inter-Domain Routing" and describes which portion of the IP address that refers to the network.  For example 192.168.3.0/24 means that the first 24 bits are the network (192.168.3) and the last 8 bits are a specific host on that network.
+_AWS Specific: Go to the AWS console and into the VPC service, there is a column in this table view of the VPCs that gives the CIDR for the VPC (IPv4 CIDR)._
 # Set @INITIAL_USER_EMAIL@ to your email address, as you will be the first admin user of the system.
 # Set each @KEY@ / @TOKEN@ to a random string
 	Here's an easy way to create five random tokens:
@@ -134,13 +146,19 @@ done
    With backslash quoting the special characters it should appear like this in local.params:
 <pre><code>DATABASE_PASSWORD="Cq\&WU\<A\'\]p\?j"</code></pre>
 
+h2(#keep). Configure Keep storage
+
+The @multi_host/aws@ template uses S3 for storage.  Arvados also supports "filesystem storage":configure-fs-storage.html and "Azure blob storage":configure-azure-blob-storage.html .  Keep storage configuration can be found in @local_config_dir/pillars/arvados.sls@ in the section @arvados.cluster.Volumes@.
+
+h3. Object storage in S3 (AWS Specific)
+
+Open @local_config_dir/pillars/arvados.sls@ and edit as follows:
+
+# In the @arvados.cluster.Volumes@ section, set @Region@ to the appropriate AWS region (e.g. 'us-east-1')
+# Set @IAMRole@ to the name of the `KeepstoreRole` generated by CloudFormation.  Just use the part after the '/' (not the arn:aws:iam.... stuff at the beginning).
+# Set @Bucket@ to the value of `KeepBucket1`
+
 {% include 'ssl_config_multi' %}
-
-h2(#create_a_compute_image). Configure Keep on S3 (AWS specific)
-
-Once you have that image created, Open @local_config_dir/pillars/arvados.sls@ and edit as follows:
-
-1. In the @arvados.cluster.Volumes@ section, set @Region@ to the appropriate AWS region (e.g. 'us-east-1')
 
 h2(#create_a_compute_image). Create a compute image
 
@@ -181,6 +199,8 @@ Run this in ~/arvados-setup-xarv1:
 
 This will deploy all the nodes.  It will take a while and produce a lot of logging.  If it runs into an error, it will stop.
 
+h3(#test-install). Run diagnostics to confirming the cluster is working
+
 When everything has finished, you can run the diagnostics.
 
 Depending on where you are running the installer, you need to provide @-internal-client@ or @-external-client@.
@@ -193,7 +213,7 @@ You are an "external client" if you running the diagnostics from your workstatio
 ./installer.sh diagnostics (-internal-client|-external-client)
 </pre>
 
-h3. Diagnosing issues
+h3(#debugging). Debugging issues
 
 Most service logs go to @/var/log/syslog@
 
@@ -213,15 +233,21 @@ You can iterate on the config and maintain the cluster by making changes to @loc
 
 If you are debugging a configuration issue on a specific node, you can speed up the cycle a bit by deploying just one node:
 
-@installer.sh deploy keep0.xarv1.example.com@
+<pre>
+./installer.sh deploy keep0.xarv1.example.com@
+</pre>
 
 However, once you have a final configuration, you should run a full deploy to ensure that the configuration has been synchronized on all the nodes.
 
-h3. Common problems and solutions
+h3(#common-problems). Common problems and solutions
 
-* (AWS Specific) If the AMI wasn't built with ENA (extended networking) support and the instance type requires it, it'll fail to start.  You'll see an error in syslog on the node that runs @arvados-dispatch-cloud@.  The solution is to build a new AMI with --aws-ena-support true
+h4. Missing ENA support (AWS Specific)
 
-* The arvados-api-server package sets up the database as a post-install script.  If the database host or password wasn't set correctly (or quoted correctly) at the time that package is installed, it won't be able to set up the database.
+If the AMI wasn't built with ENA (extended networking) support and the instance type requires it, it'll fail to start.  You'll see an error in syslog on the node that runs @arvados-dispatch-cloud@.  The solution is to build a new AMI with --aws-ena-support true
+
+h4. PG::UndefinedTable: ERROR:  relation \"api_clients\" does not exist
+
+The arvados-api-server package sets up the database as a post-install script.  If the database host or password wasn't set correctly (or quoted correctly) at the time that package is installed, it won't be able to set up the database.
 
 This will manifest as an error like this:
 
@@ -232,14 +258,14 @@ This will manifest as an error like this:
 If this happens, you need to
 
 1. correct the database information
-2. run "installer.sh deploy xngs2.rdcloud.bms.com" to update the configuration on the API/controller node
+2. run @./installer.sh deploy xarv1.example.com@ to update the configuration on the API/controller node
 3. On the API/controller server node, run this command to re-run the post-install script, which will set up the database:
 
 <pre>
 dpkg-reconfigure arvados-api-server
 </pre>
 
-4. Re-run 'installer.sh deploy' again to synchronize everything, and so that the install steps that need to contact the API server are run successfully.
+4. Re-run @./installer.sh deploy@ again to synchronize everything, and so that the install steps that need to contact the API server are run successfully.
 
 {% include 'install_ca_cert' %}
 
@@ -256,98 +282,6 @@ Assuming you didn't change these values in the @local.params@ file, the initial 
 * User: 'admin'
 * Password: 'password'
 * Email: 'admin@${CLUSTER}.${DOMAIN}'
-
-h2(#test_install). Test the installed cluster running a simple workflow
-
-As part of the installation, the @provision.sh@ script saves a simple example test workflow in the @/tmp/cluster_tests@ directory in the @shell@ node. If you want to run it, just ssh to the node, then run:
-
-<notextile>
-<pre><code>cd /tmp/cluster_tests
-sudo /run-test.sh
-</code></pre>
-</notextile>
-
-It will create a test user (by default, the same one as the admin user), upload a small workflow and run it. If everything goes OK, the output should similar to this (some output was shortened for clarity):
-
-<notextile>
-<pre><code>Creating Arvados Standard Docker Images project
-Arvados project uuid is 'arva2-j7d0g-0prd8cjlk6kfl7y'
-{
- ...
- "uuid":"arva2-o0j2j-n4zu4cak5iifq2a",
- "owner_uuid":"arva2-tpzed-000000000000000",
- ...
-}
-Uploading arvados/jobs' docker image to the project
-2.1.1: Pulling from arvados/jobs
-8559a31e96f4: Pulling fs layer
-...
-Status: Downloaded newer image for arvados/jobs:2.1.1
-docker.io/arvados/jobs:2.1.1
-2020-11-23 21:43:39 arvados.arv_put[32678] INFO: Creating new cache file at /home/vagrant/.cache/arvados/arv-put/c59256eda1829281424c80f588c7cc4d
-2020-11-23 21:43:46 arvados.arv_put[32678] INFO: Collection saved as 'Docker image arvados jobs:2.1.1 sha256:0dd50'
-arva2-4zz18-1u5pvbld7cvxuy2
-Creating initial user ('admin')
-Setting up user ('admin')
-{
- "items":[
-  {
-   ...
-   "owner_uuid":"arva2-tpzed-000000000000000",
-   ...
-   "uuid":"arva2-o0j2j-1ownrdne0ok9iox"
-  },
-  {
-   ...
-   "owner_uuid":"arva2-tpzed-000000000000000",
-   ...
-   "uuid":"arva2-o0j2j-1zbeyhcwxc1tvb7"
-  },
-  {
-   ...
-   "email":"admin@arva2.arv.local",
-   ...
-   "owner_uuid":"arva2-tpzed-000000000000000",
-   ...
-   "username":"admin",
-   "uuid":"arva2-tpzed-3wrm93zmzpshrq2",
-   ...
-  }
- ],
- "kind":"arvados#HashList"
-}
-Activating user 'admin'
-{
- ...
- "email":"admin@arva2.arv.local",
- ...
- "username":"admin",
- "uuid":"arva2-tpzed-3wrm93zmzpshrq2",
- ...
-}
-Running test CWL workflow
-INFO /usr/bin/cwl-runner 2.1.1, arvados-python-client 2.1.1, cwltool 3.0.20200807132242
-INFO Resolved 'hasher-workflow.cwl' to 'file:///tmp/cluster_tests/hasher-workflow.cwl'
-...
-INFO Using cluster arva2 (https://arva2.arv.local:8443/)
-INFO Upload local files: "test.txt"
-INFO Uploaded to ea34d971b71d5536b4f6b7d6c69dc7f6+50 (arva2-4zz18-c8uvwqdry4r8jao)
-INFO Using collection cache size 256 MiB
-INFO [container hasher-workflow.cwl] submitted container_request arva2-xvhdp-v1bkywd58gyocwm
-INFO [container hasher-workflow.cwl] arva2-xvhdp-v1bkywd58gyocwm is Final
-INFO Overall process status is success
-INFO Final output collection d6c69a88147dde9d52a418d50ef788df+123
-{
-    "hasher_out": {
-        "basename": "hasher3.md5sum.txt",
-        "class": "File",
-        "location": "keep:d6c69a88147dde9d52a418d50ef788df+123/hasher3.md5sum.txt",
-        "size": 95
-    }
-}
-INFO Final process status is success
-</code></pre>
-</notextile>
 
 h2(#post_install). After the installation
 

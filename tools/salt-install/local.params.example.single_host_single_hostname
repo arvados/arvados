@@ -22,9 +22,11 @@ NODES=(
   [localhost]=database,api,controller,websocket,dispatcher,keepbalance,keepstore,keepproxy,keepweb,workbench,workbench2,webshell,shell
 )
 
-# Set this value when installing a cluster in a single host with a single
-# hostname to access all the instances. HOSTNAME_EXT should be set to the
-# external hostname for the instance.
+# HOSTNAME_EXT must be set to the address that users will use to
+# connect to the instance (e.g. what they will type into the URL bar
+# of the browser to get to workbench).  If you haven't given the
+# instance a working DNS name, you might need to use an IP address
+# here.
 HOSTNAME_EXT="hostname_ext_fixme_or_this_wont_work"
 
 # The internal IP address for the host.

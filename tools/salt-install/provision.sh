@@ -840,17 +840,19 @@ if [ -d /etc/cloud/cloud.cfg.d ]; then
 fi
 
 # Leave a copy of the Arvados CA so the user can copy it where it's required
-if [ "$DEV_MODE" = "yes" ]; then
-  echo "Copying the Arvados CA certificate to the installer dir, so you can import it"
-  # If running in a vagrant VM, also add default user to docker group
+if [ "${SSL_MODE}" = "self-signed" ]; then
+  echo "Copying the Arvados CA certificate '${CLUSTER}.${DOMAIN}-arvados-snakeoil-ca.crt' to the installer dir, so you can import it"
   if [ "x${VAGRANT}" = "xyes" ]; then
     cp /etc/ssl/certs/arvados-snakeoil-ca.pem /vagrant/${CLUSTER}.${DOMAIN}-arvados-snakeoil-ca.pem
+  else
+    cp /etc/ssl/certs/arvados-snakeoil-ca.pem ${SCRIPT_DIR}/${CLUSTER}.${DOMAIN}-arvados-snakeoil-ca.crt
+  fi
+fi
 
+if [ "x${VAGRANT}" = "xyes" ]; then
+    # If running in a vagrant VM, also add default user to docker group
     echo "Adding the vagrant user to the docker group"
     usermod -a -G docker vagrant
-  else
-    cp /etc/ssl/certs/arvados-snakeoil-ca.pem ${SCRIPT_DIR}/${CLUSTER}.${DOMAIN}-arvados-snakeoil-ca.pem
-  fi
 fi
 
 # Test that the installation finished correctly

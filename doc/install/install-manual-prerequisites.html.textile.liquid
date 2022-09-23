@@ -24,24 +24,10 @@ The Arvados storage subsystem is called "keep".  The compute subsystem is called
 # "Arvados Cluster ID":#clusterid
 # "DNS and TLS":#dnstls
 
+
 h2(#supportedlinux). Supported GNU/Linux distributions
 
-table(table table-bordered table-condensed).
-|_. Distribution|_. State|_. Last supported Arvados version|
-|CentOS 7|Supported|Latest|
-|Debian 11 ("bullseye")|Supported|Latest|
-|Debian 10 ("buster")|Supported|Latest|
-|Ubuntu 20.04 ("focal")|Supported|Latest|
-|Ubuntu 18.04 ("bionic")|Supported|Latest|
-|Ubuntu 16.04 ("xenial")|EOL|2.1.2|
-|Debian 9 ("stretch")|EOL|2.1.2|
-|Debian 8 ("jessie")|EOL|1.4.3|
-|Ubuntu 14.04 ("trusty")|EOL|1.4.3|
-|Ubuntu 12.04 ("precise")|EOL|8ed7b6dd5d4df93a3f37096afe6d6f81c2a7ef6e (2017-05-03)|
-|Debian 7 ("wheezy")|EOL|997479d1408139e96ecdb42a60b4f727f814f6c9 (2016-12-28)|
-|CentOS 6 |EOL|997479d1408139e96ecdb42a60b4f727f814f6c9 (2016-12-28)|
-
-Arvados packages are published for current Debian releases (until the EOL date), current Ubuntu LTS releases (until the end of standard support), and the latest version of CentOS.
+{% include 'supportedlinux' %}
 
 h2(#components). Choosing which components to install
 

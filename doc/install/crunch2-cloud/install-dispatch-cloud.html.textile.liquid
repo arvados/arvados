@@ -130,6 +130,8 @@ The <span class="userinput">ImageID</span> value is the compute node image that 
 </code></pre>
 </notextile>
 
+h3(#IAM). Example IAM policy
+
 Example policy for the IAM role used by the cloud dispatcher:
 
 <notextile>
@@ -141,13 +143,19 @@ Example policy for the IAM role used by the cloud dispatcher:
         {
             "Effect": "Allow",
             "Action": [
-                "iam:PassRole",
-                "ec2:DescribeKeyPairs",
-                "ec2:ImportKeyPair",
-                "ec2:RunInstances",
-                "ec2:DescribeInstances",
-                "ec2:CreateTags",
-                "ec2:TerminateInstances"
+                  "ec2:CreateTags",
+                  "ec2:Describe*",
+                  "ec2:CreateImage",
+                  "ec2:CreateKeyPair",
+                  "ec2:ImportKeyPair",
+                  "ec2:DeleteKeyPair",
+                  "ec2:RunInstances",
+                  "ec2:StopInstances",
+                  "ec2:TerminateInstances",
+                  "ec2:ModifyInstanceAttribute",
+                  "ec2:CreateSecurityGroup",
+                  "ec2:DeleteSecurityGroup",
+                  "iam:PassRole"
             ],
             "Resource": "*"
         }

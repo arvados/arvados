@@ -10,29 +10,54 @@ Arvados uses SSL to encrypt communications. The web interface uses AJAX which wi
 
 For this reason, the @arvados-formula@ has a helper state to create a root certificate to authorize Arvados services. The @provision.sh@ script will leave a copy of the generated CA's certificate (@arvados-snakeoil-ca.pem@) in the script's directory so you can add it to your workstation.
 
+h3. Web Browser
+
 Installing the root certificate into your web browser will prevent security errors when accessing Arvados services with your web browser.
 
-# Go to the certificate manager in your browser.
-#* In Chrome, this can be found under "Settings &rarr; Advanced &rarr; Manage Certificates" or by entering @chrome://settings/certificates@ in the URL bar.
-#* In Firefox, this can be found under "Preferences &rarr; Privacy &amp; Security" or entering @about:preferences#privacy@ in the URL bar and then choosing "View Certificates...".
-# Select the "Authorities" tab, then press the "Import" button.  Choose @arvados-snakeoil-ca.pem@
+h4. Chrome
 
-The certificate will be added under the "Arvados Formula".
+# Go to "Settings &rarr; Privacy and Security &rarr; Security &rarr; Manage Certificates" or enter @chrome://settings/certificates@ in the URL bar.
+# *Click on the "Authorities" tab*  (it is not selected by default)
+# Click on the "Import" button
+# Choose @arvados-snakeoil-ca.pem@
+# Tick the checkbox next to "Trust this certificate for identifying websites"
+# Hit OK
+# The certificate should appear in the list of Authorities under "Arvados"
 
-To access your Arvados instance using command line clients (such as arv-get and arv-put) without security errors, install the certificate into the OS certificate storage.
+h4. Firefox
 
-* On Debian/Ubuntu:
+# Go to "Preferences &rarr; Privacy &amp; Security" or enter @about:preferences#privacy@ in the URL bar
+# Scroll down to the *Certificates* section
+# Click on the button "View Certificates...".
+# Make sure the "Authorities" tab is selected
+# Press the "Import..." button.
+# Choose @arvados-snakeoil-ca.pem@
+# Tick the checkbox next to "Trust this CA to identify websites"
+# Hit OK
+# The certificate should appear in the list of Authorities under "Arvados"
+
+h4. Other browsers (Safari, etc)
+
+The process will be similar to that of Chrome and Firefox, but the exact user interface will be different.  If you can't figure it out, try searching for "how do I install a custom certificate authority in <my browser>".
+
+h3. Installation on Linux OS certificate storage
+
+To access your Arvados instance using command line clients (such as @arv-get@ and @arv-put@) without security errors, install the certificate into the OS certificate storage.
+
+h4. Debian/Ubuntu
+
+*Important* the certificate file added to @ca-certificates@ must have the extension @.crt@ or it won't be recognized.
 
 <notextile>
-<pre><code>cp arvados-root-cert.pem /usr/local/share/ca-certificates/
+<pre><code>cp arvados-snakeoil-ca.pem /usr/local/share/ca-certificates/arvados-snakeoil-ca.crt
 /usr/sbin/update-ca-certificates
 </code></pre>
 </notextile>
 
-* On CentOS:
+h4. CentOS
 
 <notextile>
-<pre><code>cp arvados-root-cert.pem /etc/pki/ca-trust/source/anchors/
+<pre><code>cp arvados-snakeoil-ca.pem /etc/pki/ca-trust/source/anchors/
 /usr/bin/update-ca-trust
 </code></pre>
 </notextile>

@@ -4,6 +4,18 @@ Copyright (C) The Arvados Authors. All rights reserved.
 SPDX-License-Identifier: CC-BY-SA-3.0
 {% endcomment %}
 
+You will need certificates for each DNS name and DNS wildcard previously described in the "Hosts":#hosts .
+
+To simplify certificate management, we recommend creating a single certificate with all of the hostnames, or creating a wildcard certificate that covers all possible hostnames (with the following patterns in subjectAltName):
+
+<pre>
+xarv1.example.com
+*.xarv1.example.com
+*.collections.xarv1.example.com
+</pre>
+
+(Replacing xarv1 with your own ${CLUSTER}.${DOMAIN})
+
 Copy your certificates to the directory specified with the variable @CUSTOM_CERTS_DIR@ in the remote directory where you copied the @provision.sh@ script. The provision script will find the certificates there.
 
 The script expects cert/key files with these basenames (matching the role except for <i>keepweb</i>, which is split in both <i>download / collections</i>):
@@ -27,4 +39,10 @@ ${CUSTOM_CERTS_DIR}/keepproxy.key
 
 Make sure that all the FQDNs that you will use for the public-facing applications (API/controller, Workbench, Keepproxy/Keepweb) are reachable.
 
-It may be easier to create a single certificate wh
+Note: because the installer currently looks for a different certificate file for each service, if you use a single certificate, we recommend creating a symlink for each certificate and key file to the primary certificate and key, e.g.
+
+<notextile>
+<pre><code>ln -s xarv1.crt ${CUSTOM_CERTS_DIR}/keepproxy.crt
+ln -s xarv1.key ${CUSTOM_CERTS_DIR}/keepproxy.key
+</code></pre>
+</notextile>

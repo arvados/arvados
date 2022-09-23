@@ -20,15 +20,12 @@ Arvados components can be installed and configured in a number of different ways
 <div class="offset1">
 table(table table-bordered table-condensed).
 |||\5=. Appropriate for|
-||_. Setup difficulty|_. Multiuser/networked access|_. Workflow Development and Testing|_. Large Scale Production|_. Development of Arvados|_. Arvados Evaluation|
-|"Arvados-in-a-box":arvbox.html (arvbox)|Easy|no|yes|no|yes|yes|
-|"Installation with Salt":salt-single-host.html (single host)|Easy|no|yes|no|yes|yes|
-|"Installation with Salt":salt-multi-host.html (multi host)|Moderate|yes|yes|yes|yes|yes|
-|"Arvados on Kubernetes":arvados-on-kubernetes.html|Easy ^1^|yes|yes ^2^|no ^2^|no|yes|
-|"Manual installation":install-manual-prerequisites.html|Hard|yes|yes|yes|no|no|
-|"Cluster Operation Subscription supported by Curii":mailto:info@curii.com|N/A ^3^|yes|yes|yes|yes|yes|
+||_. Setup difficulty|_. Arvados Evaluation|_. Workflow Development|_. Production at Scale|
+|"Arvados-in-a-box":arvbox.html (arvbox)|Easy|yes|limited|no|
+|"Arados Installer":salt-single-host.html (single host)|Easy|yes|limited|no|
+|"Arados Installer":salt-multi-host.html (multi host)|Moderate|yes|yes|yes|
+|"Manual installation":install-manual-prerequisites.html|Difficult|yes|yes|yes|
+|"Cluster Operation Subscription supported by Curii":https://curii.com|N/A ^1^|yes|yes|yes|
 </div>
 
-* ^1^ Assumes a Kubernetes cluster is available
-* ^2^ Arvados on Kubernetes is under development and not yet ready for production use
-* ^3^ No user installation necessary, Curii run and managed
+* ^1^ No user installation necessary, Curii run and managed
