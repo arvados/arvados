@@ -403,5 +403,31 @@ describe('Project tests', function() {
             });
         });
     });
+
+    it('copies project URL to clipboard', () => {
+        const projectName = `Test project (${Math.floor(999999 * Math.random())})`;
+
+        cy.loginAs(activeUser);
+        cy.get('[data-cy=side-panel-button]').click();
+        cy.get('[data-cy=side-panel-new-project]').click();
+        cy.get('[data-cy=form-dialog]')
+            .should('contain', 'New Project')
+            .within(() => {
+                cy.get('[data-cy=name-field]').within(() => {
+                    cy.get('input').type(projectName);
+                });
+                cy.get('[data-cy=form-submit-btn]').click();
+            });
+
+        cy.get('[data-cy=side-panel-tree]').contains('Projects').click();
+        cy.get('[data-cy=project-panel]').contains(projectName).rightclick();
+        cy.get('[data-cy=context-menu]').contains('Copy to clipboard').click();
+        cy.window().then((win) => (
+            win.navigator.clipboard.readText().then((text) => {
+                expect(text).to.match(/https\:\/\/localhost\:[0-9]+\/projects\/[a-z0-9]{5}-[a-z0-9]{5}-[a-z0-9]{15}/,);
+            })
+        ));
+
+    });
 });
 

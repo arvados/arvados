@@ -105,6 +105,39 @@ describe('Search tests', function() {
         });
     });
 
+    it('can search items using quotes', function() {
+        const random = Math.floor(Math.random() * Math.floor(999999));
+        const colName = `Collection ${random}`;
+        const colName2 = `Collection test ${random}`;
+
+        // Creates the collection using the admin token so we can set up
+        // a bogus manifest text without block signatures.
+        cy.createCollection(adminUser.token, {
+            name: colName,
+            owner_uuid: activeUser.user.uuid,
+            preserve_version: true,
+            manifest_text: ". 37b51d194a7513e45b56f6524f2d51f2+3 0:3:bar\n"
+        }).as('collection1');
+
+        cy.createCollection(adminUser.token, {
+            name: colName2,
+            owner_uuid: activeUser.user.uuid,
+            preserve_version: true,
+            manifest_text: ". 37b51d194a7513e45b56f6524f2d51f2+3 0:3:bar\n"
+        }).as('collection2');
+
+        cy.getAll('@collection1', '@collection2')
+            .then(function() {
+                cy.loginAs(activeUser);
+
+                cy.doSearch(colName);
+                cy.get('[data-cy=search-results] table tbody tr').should('have.length', 2);
+
+                cy.doSearch(`"${colName}"`);
+                cy.get('[data-cy=search-results] table tbody tr').should('have.length', 1);
+            });
+    });
+
     it('can display owner of the item', function() {
         const colName = `Collection ${Math.floor(Math.random() * Math.floor(999999))}`;
 

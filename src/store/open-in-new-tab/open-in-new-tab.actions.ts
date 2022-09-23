@@ -21,7 +21,9 @@ export const copyToClipboardAction = (resource: any) => (dispatch: Dispatch, get
     // Copy to clipboard omits token to avoid accidental sharing
     const url = getNavUrl(resource.uuid, getState().auth, false);
 
-    if (url) {
+    if (url[0] === '/') {
+        copy(`${window.location.origin}${url}`);
+    } else if (url.length) {
         copy(url);
     }
 };
