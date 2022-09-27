@@ -37,7 +37,7 @@ Gem::Specification.new do |s|
   s.files       = ["bin/arvados-login-sync", "agpl-3.0.txt"]
   s.executables << "arvados-login-sync"
   s.required_ruby_version = '>= 2.1.0'
-  s.add_runtime_dependency 'arvados', '> 2.4.2'
+  s.add_runtime_dependency 'arvados', '> 2.4.3'
   s.add_runtime_dependency 'launchy', '< 2.5'
   # We need at least version 0.8.7.3, cf. https://dev.arvados.org/issues/15673
   s.add_dependency('arvados-google-api-client', '>= 0.8.7.3', '< 0.8.9')
