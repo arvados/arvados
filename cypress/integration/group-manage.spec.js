@@ -268,7 +268,7 @@ describe('Group manage tests', function() {
                     cy.get('[data-cy=user-visible-checkbox] input').should('be.disabled');
                     cy.get('[data-cy=resource-delete-button]').should('be.disabled');
                     // cy.get('[data-cy=edit-permission-button]').should('not.exist');
-                });
+                // });
 
             // Check permissions actions
             cy.get('[data-cy=group-details-permissions-tab]').click();
