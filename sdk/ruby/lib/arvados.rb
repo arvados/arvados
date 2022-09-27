@@ -7,6 +7,7 @@ require 'active_support/inflector'
 require 'json'
 require 'fileutils'
 require 'andand'
+require 'net/http'
 
 require 'arvados/google_api_client'
 
@@ -186,6 +187,15 @@ class Arvados
     end
 
     @config = config
+  end
+
+  def cluster_config
+    return @cluster_config if @cluster_config
+
+    uri = URI("https://#{config()["ARVADOS_API_HOST"]}/arvados/v1/config")
+    cc = JSON.parse(Net::HTTP.get(uri))
+
+    @cluster_config = cc
   end
 
   class Model
