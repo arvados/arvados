@@ -254,7 +254,7 @@ describe('Group manage tests', function() {
             .should('not.contain', groupName + ' (renamed)');
     });
 
-    it('disables group-related controls for built-in groups', function() {
+    it.only('disables group-related controls for built-in groups', function() {
         cy.loginAs(adminUser);
 
         ['All users', 'Anonymous users', 'System group'].forEach((builtInGroup) => {
