@@ -9,9 +9,14 @@ Copyright (C) The Arvados Authors. All rights reserved.
 SPDX-License-Identifier: CC-BY-SA-3.0
 {% endcomment %}
 
-Keepstore can store data in object storage compatible with the S3 API, such as Amazon S3, Google Cloud Storage, or Ceph RADOS.
+Keepstore can store data in object storage compatible with the S3 API, such as Amazon S3, Google Cloud Storage, Ceph RADOS, NetApp StorageGRID, and others.
 
 Volumes are configured in the @Volumes@ section of the cluster configuration file.
+
+# "Configuration example":#example
+# "IAM Policy":#IAM
+
+h2(#example). Configuration example
 
 {% include 'assign_volume_uuid' %}
 
@@ -120,3 +125,24 @@ Two S3 drivers are available. Historically, Arvados has used the @goamz@ driver 
 The @aws-sdk-go-v2@ does not support the old S3 v2 signing algorithm. This will not affect interacting with AWS S3, but it might be an issue when Keep is backed by a very old version of a third party S3-compatible service.
 
 The @aws-sdk-go-v2@ driver can improve read performance by 50-100% over the @goamz@ driver, but it has not had as much production use. See the "wiki":https://dev.arvados.org/projects/arvados/wiki/Keep_real_world_performance_numbers for details.
+
+h2(#IAM). IAM Policy
+
+On Amazon, VMs which will access the S3 bucket (these include keepstore and compute nodes) will need an IAM policy with "permission that can read, write, list and delete objects in the bucket":https://docs.aws.amazon.com/IAM/latest/UserGuide/id_roles_create.html .  Here is an example policy:
+
+<notextile>
+<pre>
+{
+    "Id": "arvados-keepstore policy",
+    "Statement": [
+        {
+            "Effect": "Allow",
+            "Action": [
+                  "s3:*"
+            ],
+            "Resource": "arn:aws:s3:::xarv1-nyw5e-000000000000000-volume"
+        }
+    ]
+}
+</pre>
+</notextile>

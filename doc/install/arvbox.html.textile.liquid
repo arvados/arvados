@@ -11,23 +11,50 @@ SPDX-License-Identifier: CC-BY-SA-3.0
 
 Arvbox is a Docker-based self-contained development, demonstration and testing environment for Arvados.  It is not intended for production use.
 
-h2. Quick start
-
-<pre>
-$ curl -O https://git.arvados.org/arvados.git/blob_plain/refs/heads/{{ branchname }}:/tools/arvbox/bin/arvbox
-$ chmod +x arvbox
-$ ./arvbox start localdemo
-$ ./arvbox root-cert
-$ ./arvbox adduser demouser demo@example.com
-</pre>
-
-You will then need to "install the arvbox root certificate":#root-cert .  After that, you can now log in to Workbench as @demouser@ with the password you selected.
-
 h2. Requirements
 
 * Linux 3.x+ and Docker 1.10+
-* Minimum of 3 GiB of RAM  + additional memory to run jobs
-* Minimum of 3 GiB of disk + storage for actual data
+* Minimum of 4 GiB of RAM  + additional memory to run jobs
+* Minimum of 4 GiB of disk + storage for actual data
+
+h2. Quick start
+
+{% include 'branchname' %}
+
+<notextile>
+<pre><code>$ <span class="userinput">curl -O <a href="https://git.arvados.org/arvados.git/blob_plain/refs/heads/{{branchname}}:/tools/arvbox/bin/arvbox">https://git.arvados.org/arvados.git/blob_plain/refs/heads/{{branchname}}:/tools/arvbox/bin/arvbox</a></span>
+$ <span class="userinput">chmod +x arvbox</span>
+$ <span class="userinput">./arvbox start localdemo</span>
+
+Arvados-in-a-box starting
+
+Waiting for workbench2 websockets workbench webshell keep-web controller keepproxy api keepstore1 arv-git-httpd keepstore0 sdk vm ...
+...
+
+Your Arvados-in-a-box is ready!
+
+$ <span class="userinput">./arvbox adduser demouser demo@example.com</span>
+Password for demouser:
+Added demouser
+</code></pre>
+</notextile>
+
+You will then need to "install the arvbox root certificate":#root-cert .  After that, you can now log in to Workbench as @demouser@ with the password you selected.
+
+h2(#root-cert). Install root certificate
+
+Arvbox creates root certificate to authorize Arvbox services.  Installing the root certificate into your web browser will prevent security errors when accessing Arvbox services with your web browser.  Every  Arvbox instance generates a new root signing key.
+
+Export the root certificate with this command:
+
+<pre>
+$ ./arvbox root-cert
+Certificate copied to /home/ubuntu/arvbox-root-cert.crt
+</pre>
+
+{% assign ca_cert_name = 'arvbox-root-cert.crt' %}
+
+{% include 'install_ca_cert' %}
 
 h2. Usage
 
@@ -62,42 +89,12 @@ pipe               run a bash script piped in from stdin
 sv <start|stop|restart> <service>
                    change state of service inside arvbox
 clone <from> <to>  clone dev arvbox
-adduser <username> <email>
+adduser <username> <email> [password]
                    add a user login
 removeuser <username>
                    remove user login
 listusers          list user logins
 </pre>
-
-h2(#root-cert). Install root certificate
-
-Arvbox creates root certificate to authorize Arvbox services.  Installing the root certificate into your web browser will prevent security errors when accessing Arvbox services with your web browser.  Every  Arvbox instance generates a new root signing key.
-
-# Export the certificate using @arvbox root-cert@
-# Go to the certificate manager in your browser.
-#* In Chrome, this can be found under "Settings &rarr; Advanced &rarr; Manage Certificates" or by entering @chrome://settings/certificates@ in the URL bar.
-#* In Firefox, this can be found under "Preferences &rarr; Privacy & Security" or entering @about:preferences#privacy@ in the URL bar and then choosing "View Certificates...".
-# Select the "Authorities" tab, then press the "Import" button.  Choose @arvbox-root-cert.pem@
-
-The certificate will be added under the "Arvados testing" organization as "arvbox testing root CA".
-
-To access your Arvbox instance using command line clients (such as arv-get and arv-put) without security errors, install the certificate into the OS certificate storage.
-
-h3. On Debian/Ubuntu:
-
-<notextile>
-<pre><code>cp arvbox-root-cert.pem /usr/local/share/ca-certificates/
-/usr/sbin/update-ca-certificates
-</code></pre>
-</notextile>
-
-h3. On CentOS:
-
-<notextile>
-<pre><code>cp arvbox-root-cert.pem /etc/pki/ca-trust/source/anchors/
-/usr/bin/update-ca-trust
-</code></pre>
-</notextile>
 
 h2. Configs
 

@@ -4,9 +4,9 @@ Copyright (C) The Arvados Authors. All rights reserved.
 SPDX-License-Identifier: CC-BY-SA-3.0
 {% endcomment %}
 
-You will need certificates for each DNS name and DNS wildcard previously described in the "Hosts":#hosts .
+You will need certificates for each DNS name and DNS wildcard previously listed in the "DNS hostnames for each service":#DNS .
 
-To simplify certificate management, we recommend creating a single certificate with all of the hostnames, or creating a wildcard certificate that covers all possible hostnames (with the following patterns in subjectAltName):
+To simplify certificate management, we recommend creating a single certificate for all of the hostnames, or creating a wildcard certificate that covers all possible hostnames (with the following patterns in subjectAltName):
 
 <pre>
 xarv1.example.com
@@ -21,15 +21,15 @@ Copy your certificates to the directory specified with the variable @CUSTOM_CERT
 The script expects cert/key files with these basenames (matching the role except for <i>keepweb</i>, which is split in both <i>download / collections</i>):
 
 # @controller@
-# @websocket@        # note: corresponds to default domain @ws.${CLUSTER}.${DOMAIN}@
-# @keepproxy@        # note: corresponds to default domain @keep.${CLUSTER}.${DOMAIN}@
-# @download@         # Part of keepweb
-# @collections@      # Part of keepweb -- important note, this should be a wildcard for @*.collections.${CLUSTER}.${DOMAIN}@
+# @websocket@        -- note: corresponds to default domain @ws.${CLUSTER}.${DOMAIN}@
+# @keepproxy@        -- note: corresponds to default domain @keep.${CLUSTER}.${DOMAIN}@
+# @download@         -- Part of keepweb
+# @collections@      -- Part of keepweb, must be a wildcard for @*.collections.${CLUSTER}.${DOMAIN}@
 # @workbench@
 # @workbench2@
 # @webshell@
 
-For example, for the 'keepproxy' service the script will expect to find this certificate:
+For example, for the @keepproxy@ service the script will expect to find this certificate:
 
 <notextile>
 <pre><code>${CUSTOM_CERTS_DIR}/keepproxy.crt

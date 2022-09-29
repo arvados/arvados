@@ -1,7 +1,7 @@
 ---
 layout: default
 navsection: installguide
-title: Multi host Arvados
+title: Multi-Host Arvados
 ...
 {% comment %}
 Copyright (C) The Arvados Authors. All rights reserved.
@@ -17,17 +17,15 @@ SPDX-License-Identifier: CC-BY-SA-3.0
 # "Edit local.params":#localparams
 # "Configure Keep storage":#keep
 # "Choose the SSL configuration":#certificates
-## "Using a self-signed certificates":#self-signed
 ## "Using a Let's Encrypt certificates":#lets-encrypt
 ## "Bring your own certificates":#bring-your-own
 # "Create a compute image":#create_a_compute_image
-# "Further customization of the installation":#further_customization
 # "Begin installation":#installation
+# "Further customization of the installation":#further_customization
 # "Confirm the cluster is working":#test-install
 ## "Debugging issues":#debugging
 ## "Iterating on config changes":#iterating
 ## "Common problems and solutions":#common-problems
-# "Install the CA root certificate":#ca_root_certificate
 # "Initial user and login":#initial_user
 # "After the installation":#post_install
 
@@ -57,26 +55,9 @@ When you do so, you need to configure a couple of additional things:
 
 h3(#keep-bucket). S3 Bucket (AWS specific)
 
-We recommend "creating an S3 bucket":https://docs.aws.amazon.com/AmazonS3/latest/userguide/Welcome.html for data storage named @${CLUSTER}-nyw5e-000000000000000-volume@
+We recommend "creating an S3 bucket":https://docs.aws.amazon.com/AmazonS3/latest/userguide/Welcome.html for data storage named @${CLUSTER}-nyw5e-000000000000000-volume@.  We recommend creating an IAM role called @${CLUSTER}-keepstore-00-iam-role@ with a "policy that can read, write, list and delete objects in the bucket":configure-s3-object-storage.html#IAM .  With the example cluster id @xargv1@ the bucket would be called @xarv1-nyw5e-000000000000000-volume@ and the role would be called @xarv1-keepstore-00-iam-role@.
 
-Then create an IAM role called @${CLUSTER}-keepstore-00-iam-role@ which has "permission to read and write the bucket":https://docs.aws.amazon.com/IAM/latest/UserGuide/id_roles_create.html .  Here is an example policy:
-
-<notextile>
-<pre>
-{
-    "Id": "arvados-keepstore policy",
-    "Statement": [
-        {
-            "Effect": "Allow",
-            "Action": [
-                  "s3:*"
-            ],
-            "Resource": "arn:aws:s3:::xarv1-nyw5e-000000000000000-volume"
-        }
-    ]
-}
-</pre>
-</notextile>
+These names are recommended because they are default names used in the configuration template.  If you use different names, you will need to edit the configuration template later.
 
 h2(#hosts). Required hosts
 
@@ -84,7 +65,7 @@ You will need to allocate several hosts (physical or virtual machines) for the f
 
 {% include 'supportedlinux' %}
 
-Allocate the following hosts as appropriate for your site.  On AWS you may choose to do it manually with the AWS console, or using a DevOps tool such as CloudFormation or Terraform.
+Allocate the following hosts as appropriate for your site.  On AWS you may choose to do it manually with the AWS console, or using a DevOps tool such as CloudFormation or Terraform.  With the exception of "keep0" and "keep1", all of these hosts should have external (public) IP addresses if you intend for them to be accessible outside of the private network or VPC.
 
 The installer will set up the Arvados services on your machines.  Here is the default assignment of services to machines:
 
@@ -107,28 +88,35 @@ The installer will set up the Arvados services on your machines.  Here is the de
 # SHELL node  (optional)
 ## arvados shell       (recommended hostname @shell.${CLUSTER}.${DOMAIN}@)
 
-Additional prerequisites when preparing machines to run the installer:
+h3(#DNS). DNS hostnames for each service
 
-# root or passwordless sudo access
-# from the account where you are performing the install, passwordless @ssh@ to each machine (meaning, the client's public key added to @~/.ssh/authorized_keys@ on each node)
+You will need a DNS entry for each service.  In the default configuration these are:
+
+# @controller.${CLUSTER}.${DOMAIN}@
+# @ws.${CLUSTER}.${DOMAIN}@
+# @keep0.${CLUSTER}.${DOMAIN}@
+# @keep1.${CLUSTER}.${DOMAIN}@
+# @keep.${CLUSTER}.${DOMAIN}@
+# @download.${CLUSTER}.${DOMAIN}@
+# @*.collections.${CLUSTER}.${DOMAIN}@  -- important note, this must be a wildcard DNS, resolving to the @keepweb@ service
+# @workbench.${CLUSTER}.${DOMAIN}@
+# @workbench2.${CLUSTER}.${DOMAIN}@
+# @webshell.${CLUSTER}.${DOMAIN}@
+# @shell.${CLUSTER}.${DOMAIN}@
+
+h3. Additional prerequisites when preparing machines to run the installer
+
+# from the account where you are performing the install, passwordless @ssh@ to each machine
+This means the client's public key should added to @~/.ssh/authorized_keys@ on each node.
+# passwordless @sudo@ access on the account on each machine you will @ssh@ in to
+This usually means adding the account to the @sudo@ group and having a rule like this in @/etc/sudoers.d/arvados_passwordless@ that allows members of group @sudo@ to execute any command without entering a password.
+<pre>%sudo ALL=(ALL:ALL) NOPASSWD:ALL</pre>
 # @git@ installed on each machine
 # port 443 reachable by clients
-# DNS hostnames for each service
-## @controller.${CLUSTER}.${DOMAIN}@
-## @ws.${CLUSTER}.${DOMAIN}@
-## @keep0.${CLUSTER}.${DOMAIN}@
-## @keep1.${CLUSTER}.${DOMAIN}@
-## @keep.${CLUSTER}.${DOMAIN}@
-## @download.${CLUSTER}.${DOMAIN}@
-## @*.collections.${CLUSTER}.${DOMAIN}@  -- important note, this should be a wildcard DNS, going to the keepweb service
-## @workbench.${CLUSTER}.${DOMAIN}@
-## @workbench2.${CLUSTER}.${DOMAIN}@
-## @webshell.${CLUSTER}.${DOMAIN}@
-## @shell.${CLUSTER}.${DOMAIN}@
 
-(AWS specific) The machine that runs the arvados cloud dispatcher will need an "IAM role that allows it to create EC2 instances, see here for details .":{{site.baseurl}}/install/crunch2-cloud/install-dispatch-cloud.html
+(AWS specific) The machine that runs the arvados cloud dispatcher will need an "IAM role that allows it to manage EC2 instances.":{{site.baseurl}}/install/crunch2-cloud/install-dispatch-cloud.html#IAM
 
-If your infrastructure differs from the setup proposed above (ie, different hostnames, or using an external DB server such as AWS RDS), you can still use the installer, but "additional customization may be necessary":#further_customization .
+If your infrastructure differs from the setup proposed above (ie, different hostnames), you can still use the installer, but "additional customization may be necessary":#further_customization .
 
 h2(#download). Download the installer
 
@@ -142,7 +130,7 @@ This can be found wherever you choose to initialize the install files (@~/setup-
 
 # Set @CLUSTER@ to the 5-character cluster identifier (e.g "xarv1")
 # Set @DOMAIN@ to the base DNS domain of the environment, e.g. "example.com"
-# Edit Internal IP settings. Since services share hosts, some hosts are the same.
+# Edit Internal IP settings. Since services share hosts, some hosts are the same.  See "note about /etc/hosts":#etchosts
 # Edit @CLUSTER_INT_CIDR@, this should be the CIDR of the private network that Arvados is running on, e.g. the VPC.
 CIDR stands for "Classless Inter-Domain Routing" and describes which portion of the IP address that refers to the network.  For example 192.168.3.0/24 means that the first 24 bits are the network (192.168.3) and the last 8 bits are a specific host on that network.
 _AWS Specific: Go to the AWS console and into the VPC service, there is a column in this table view of the VPCs that gives the CIDR for the VPC (IPv4 CIDR)._
@@ -153,62 +141,46 @@ _AWS Specific: Go to the AWS console and into the VPC service, there is a column
   tr -dc A-Za-z0-9 </dev/urandom | head -c 32 ; echo ''
 done
 </code></pre>
-# Set @DATABASE_PASSWORD@ to a random string
+# Set @DATABASE_PASSWORD@ to a random string (unless you "already have a database":#ext-database then you should set it to that database's password)
    Important! If this contains any non-alphanumeric characters, in particular ampersand ('&'), it is necessary to add backslash quoting.
-   For example, if the password is `Cq&WU<A']p?j`
+   For example, if the password is @Lq&MZ<V']d?j@
    With backslash quoting the special characters it should appear like this in local.params:
-<pre><code>DATABASE_PASSWORD="Cq\&WU\<A\'\]p\?j"</code></pre>
+<pre><code>DATABASE_PASSWORD="Lq\&MZ\<V\'\]d\?j"</code></pre>
+
+h3(#etchosts). Note on @/etc/hosts@
+
+Because Arvados services are typically accessed by external clients, they are likely to have both a public IP address and a internal IP address.
+
+On cloud providers such as AWS, sending internal traffic to a service's public IP address can incur egress costs and throttling.  Thus it is very important for internal traffic to stay on the internal network.  The installer implements this by updating @/etc/hosts@ on each node to associate each service's hostname with the internal IP address, so that when Arvados services communicate with one another, they always use the internal network address.  This is NOT a substitute for DNS, you still need to set up DNS names for all of the services that have public IP addresses (it does, however, avoid a complex "split-horizon" DNS configuration).
+
+It is important to be aware of this because if you mistype the IP address for any of the @*_INT_IP@ variables, hosts may unexpectedly fail to be able to communicate with one another.  If this happens, check and edit as necessary the file @/etc/hosts@ on the host that is failing to make an outgoing connection.
 
 h2(#keep). Configure Keep storage
 
-The @multi_host/aws@ template uses S3 for storage.  Arvados also supports "filesystem storage":configure-fs-storage.html and "Azure blob storage":configure-azure-blob-storage.html .  Keep storage configuration can be found in in the section @arvados.cluster.Volumes@ of @local_config_dir/pillars/arvados.sls@.
+The @multi_host/aws@ template uses S3 for storage.  Arvados also supports "filesystem storage":configure-fs-storage.html and "Azure blob storage":configure-azure-blob-storage.html .  Keep storage configuration can be found in in the @arvados.cluster.Volumes@ section of @local_config_dir/pillars/arvados.sls@.
 
 h3. Object storage in S3 (AWS Specific)
 
 Open @local_config_dir/pillars/arvados.sls@ and edit as follows:
 
-# In the @arvados.cluster.Volumes@ section, set @Region@ to the appropriate AWS region (e.g. 'us-east-1')
-# Set @Bucket@ to the value of "keepstore role you created earlier":#keep-bucket
+# In the @arvados.cluster.Volumes.DriverParameters@ section, set @Region@ to the appropriate AWS region (e.g. 'us-east-1')
+
+If you did not "follow the recommendend naming scheme":#keep-bucket for either the bucket or role, you'll need to update these parameters as well:
+
+# Set @Bucket@ to the value of "keepstore bucket you created earlier":#keep-bucket
 # Set @IAMRole@ to "keepstore role you created earlier":#keep-bucket
 
 {% include 'ssl_config_multi' %}
 
-h2(#create_a_compute_image). Create a compute image
-
-{% include 'branchname' %}
-
-On cloud installations, containers are dispatched in Docker daemons running in the _compute instances_, which need some additional setup.
-
-*Start by following "the instructions build a cloud compute node image":{{site.baseurl}}/install/crunch2-cloud/install-compute-node.html using the "compute image builder script":https://github.com/arvados/arvados/tree/{{ branchname }}/tools/compute-images* .
-
-Once you have that image created, Open @local_config_dir/pillars/arvados.sls@ and edit as follows (AWS specific settings described here, configuration for Azure is similar):
-
-# In the @arvados.cluster.Containers.CloudVMs@ section:
-## Set @ImageID@ to the AMI produced by Packer
-## Set @Region@ to the appropriate AWS region
-## Set @AdminUsername@ to the admin user account on the image
-## Set the @SecurityGroupIDs@ list to the VPC security group which you set up to allow SSH connections to these nodes
-## Set @SubnetID@ to the value of SubnetId of your VPC
-# Update @arvados.cluster.Containers.DispatchPrivateKey@ and paste the contents of the @~/.ssh/id_dispatcher@ file you generated in an earlier step.
-# Update @arvados.cluster.InstanceTypes@ as necessary. If m5/c5 node types are not available, replace them with m4/c4. You'll need to double check the values for Price and IncludedScratch/AddedScratch for each type that is changed.
-
-h2(#further_customization). Further customization of the installation (optional)
-
-If you are installing on AWS and following the naming conventions recommend in this guide, then likely no further configuration is necessary and you can begin installation.
-
-A couple of common customizations are described here.  Other changes may require editing the Saltstack pillars and states files found in @local_config_dir@.  In particular, @local_config_dir/pillars/arvados.sls@ has the template used to produce the Arvados configuration file that is distributed to all the nodes.
-
-Any extra salt _state_ files you add under @local_config_dir/states@ will be added to the salt run and applied to the hosts.
-
-h3(#authentication). Using a different authentication provider
+h2(#authentication). Configure your authentication provider (optional, recommended)
 
 By default, the installer will use the "Test" provider, which is a list of usernames and cleartext passwords stored in the Arvados config file.  *This is low security configuration and you are strongly advised to configure one of the other "supported authentication methods":setup-login.html* .
 
-h3(#ext-database). Using an external database (optional)
+h2(#ext-database). Using an external database (optional)
 
-Arvados requires a database that is compatible with PostgreSQL 9.5 or later.
+The standard behavior of the installer is to install and configure PostgreSQL for use by Arvados.  You can optionally configure it to use a separately managed database instead.
 
-For example, Arvados is known to work with Amazon Aurora (note: even idle, Arvados constantly accesses the database, so we strongly advise using "provisioned" mode).
+Arvados requires a database that is compatible with PostgreSQL 9.5 or later.  For example, Arvados is known to work with Amazon Aurora (note: even idle, Arvados services will periodically poll the database, so we strongly advise using "provisioned" mode).
 
 # In @local.params@, remove 'database' from the list of roles assigned to the controller node:
 <pre><code>NODES=(
@@ -222,19 +194,45 @@ For example, Arvados is known to work with Amazon Aurora (note: even idle, Arvad
 # In @local.params@, set @DATABASE_PASSWORD@ to the correct value.  "See the previous section describing correct quoting":#localparams
 # In @local_config_dir/pillars/arvados.sls@ you may need to adjust the database name and user.  This can be found in the section @arvados.cluster.database@.
 
+h2(#further_customization). Further customization of the installation (optional)
+
+If you are installing on AWS and have followed all of the naming conventions recommend in this guide, you probably don't need to do any further customization.
+
+If you are installing on a different cloud provider or on HPC, other changes may require editing the Saltstack pillars and states files found in @local_config_dir@.  In particular, @local_config_dir/pillars/arvados.sls@ contains the template (in the @arvados.cluster@ section) used to produce the Arvados configuration file that is distributed to all the nodes.  Consult the "Configuration reference":config.html for a comprehensive list of configuration keys.
+
+Any extra Salt "state" files you add under @local_config_dir/states@ will be added to the Salt run and applied to the hosts.
+
+h2(#create_a_compute_image). Create a compute image
+
+{% include 'branchname' %}
+
+On cloud installations, containers are dispatched in Docker daemons running in the _compute instances_, which need some additional setup.  If you will use a HPC scheduler such as SLURM you can skip this section.
+
+*Start by following "the instructions to build a cloud compute node image":{{site.baseurl}}/install/crunch2-cloud/install-compute-node.html using the "compute image builder script":https://github.com/arvados/arvados/tree/{{ branchname }}/tools/compute-images* .
+
+Once you have that image created, Open @local_config_dir/pillars/arvados.sls@ and edit as follows (AWS specific settings described here, other cloud providers will have similar settings in their respective configuration section):
+
+# In the @arvados.cluster.Containers.CloudVMs@ section:
+## Set @ImageID@ to the AMI produced by Packer
+## Set @DriverParameters.Region@ to the appropriate AWS region
+## Set @DriverParameters.AdminUsername@ to the admin user account on the image
+## Set the @DriverParameters.SecurityGroupIDs@ list to the VPC security group which you set up to allow SSH connections to these nodes
+## Set @DriverParameters.SubnetID@ to the value of SubnetId of your VPC
+# Update @arvados.cluster.Containers.DispatchPrivateKey@ and paste the contents of the @~/.ssh/id_dispatcher@ file you generated in an earlier step.
+# Update @arvados.cluster.InstanceTypes@ as necessary.  The example instance types are for AWS, other cloud providers will of course have different instance types with different names and specifications.
+(AWS specific) If m5/c5 node types are not available, replace them with m4/c4. You'll need to double check the values for Price and IncludedScratch/AddedScratch for each type that is changed.
+
 h2(#installation). Begin installation
 
 At this point, you are ready to run the installer script in deploy mode that will conduct all of the Arvados installation.
 
-Run this in @~/arvados-setup-xarv1@:
+Run this in the @~/arvados-setup-xarv1@ directory:
 
 <pre>
 ./installer.sh deploy
 </pre>
 
-This will deploy all the nodes.  It will take a while and produce a lot of logging.  If it runs into an error, it will stop.
-
-{% include 'install_ca_cert' %}
+This will install and configure Arvados on all the nodes.  It will take a while and produce a lot of logging.  If it runs into an error, it will stop.
 
 h2(#test-install). Confirm the cluster is working
 
@@ -242,15 +240,17 @@ When everything has finished, you can run the diagnostics.
 
 Depending on where you are running the installer, you need to provide @-internal-client@ or @-external-client@.
 
-If you are running the diagnostics from one of the Arvados machines inside the VPC, you want @-internal-client@ .
+If you are running the diagnostics from one of the Arvados machines inside the private network, you want @-internal-client@ .
 
-You are an "external client" if you running the diagnostics from your workstation outside of the VPC.
+You are an "external client" if you running the diagnostics from your workstation outside of the private network.
 
 <pre>
 ./installer.sh diagnostics (-internal-client|-external-client)
 </pre>
 
 h3(#debugging). Debugging issues
+
+The installer records log files for each deployment.
 
 Most service logs go to @/var/log/syslog@.
 
@@ -292,7 +292,7 @@ If this happens, you need to
 
 1. correct the database information
 2. run @./installer.sh deploy xarv1.example.com@ to update the configuration on the API/controller node
-3. On the API/controller server node, run this command to re-run the post-install script, which will set up the database:
+3. Log in to the API/controller server node, then run this command to re-run the post-install script, which will set up the database:
 
 <pre>
 dpkg-reconfigure arvados-api-server
@@ -310,9 +310,9 @@ At this point you should be able to log into the Arvados cluster. The initial UR
 
 https://workbench.${CLUSTER}.${DOMAIN}
 
-If you did not "configure a different authentication provider":#authentication you will be using the "Test" provider, and the provision script creates an initial user for testing purposes. This user is configured as administrator of the newly created cluster.  It uses the values of @INITIAL_USER@ and @INITIAL_USER_PASSWORD@ the @local.params@ file.
+If you did *not* "configure a different authentication provider":#authentication you will be using the "Test" provider, and the provision script creates an initial user for testing purposes. This user is configured as administrator of the newly created cluster.  It uses the values of @INITIAL_USER@ and @INITIAL_USER_PASSWORD@ the @local.params@ file.
 
-If you did configure a different authentication provider, the first user to log in will automatically be given Arvados admin privileges.
+If you *did* configure a different authentication provider, the first user to log in will automatically be given Arvados admin privileges.
 
 h2(#post_install). After the installation
 
@@ -320,6 +320,6 @@ As part of the operation of @installer.sh@, it automatically creates a @git@ rep
 
 As described in "Iterating on config changes":#iterating you may use @installer.sh deploy@ to re-run the Salt to deploy configuration changes and upgrades.  However, be aware that the configuration templates created for you by @installer.sh@ are a snapshot which are not automatically kept up to date.
 
-When deploying upgrades, consult the "Arvados upgrade notes":{{site.baseurl}}/admin/upgrading.html to see if changes need to be made to the configuration file template in @local_config_dir/pillars/arvados.sls@.
+When deploying upgrades, consult the "Arvados upgrade notes":{{site.baseurl}}/admin/upgrading.html to see if changes need to be made to the configuration file template in @local_config_dir/pillars/arvados.sls@.  To specify the version to upgrade to, set the @VERSION@ parameter in @local.params@.
 
 See also "Maintenance and upgrading":{{site.baseurl}}/admin/maintenance-and-upgrading.html for more information.

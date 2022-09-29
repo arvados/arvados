@@ -4,14 +4,6 @@ Copyright (C) The Arvados Authors. All rights reserved.
 SPDX-License-Identifier: CC-BY-SA-3.0
 {% endcomment %}
 
-h2(#ca_root_certificate). Install the CA root certificate (SSL_MODE=self-signed only)
-
-*If you are not using self-signed certificates (you selected SSL_MODE=lets-encrypt or SSL_MODE=bring-your-own), skip this section.*
-
-Arvados uses SSL to encrypt communications. The web interface uses AJAX which will silently fail if the certificate is not valid or signed by an unknown Certification Authority.
-
-For this reason, the @arvados-formula@ has a helper state to create a root certificate to authorize Arvados services. The @provision.sh@ script will leave a copy of the generated CA's certificate (@arvados-snakeoil-ca.pem@) in the script's directory so you can add it to your workstation.
-
 h3. Web Browser
 
 Installing the root certificate into your web browser will prevent security errors when accessing Arvados services with your web browser.
@@ -21,7 +13,7 @@ h4. Chrome
 # Go to "Settings &rarr; Privacy and Security &rarr; Security &rarr; Manage Certificates" or enter @chrome://settings/certificates@ in the URL bar.
 # *Click on the "Authorities" tab*  (it is not selected by default)
 # Click on the "Import" button
-# Choose @arvados-snakeoil-ca.pem@
+# Choose @{{ca_cert_name}}@
 # Tick the checkbox next to "Trust this certificate for identifying websites"
 # Hit OK
 # The certificate should appear in the list of Authorities under "Arvados"
@@ -33,14 +25,14 @@ h4. Firefox
 # Click on the button "View Certificates...".
 # Make sure the "Authorities" tab is selected
 # Press the "Import..." button.
-# Choose @arvados-snakeoil-ca.pem@
+# Choose @{{ca_cert_name}}@
 # Tick the checkbox next to "Trust this CA to identify websites"
 # Hit OK
 # The certificate should appear in the list of Authorities under "Arvados"
 
 h4. Other browsers (Safari, etc)
 
-The process will be similar to that of Chrome and Firefox, but the exact user interface will be different.  If you can't figure it out, try searching for "how do I install a custom certificate authority in <my browser>".
+The process will be similar to that of Chrome and Firefox, but the exact user interface will be different.  If you can't figure it out, try searching for "how do I install a custom certificate authority in (my browser)".
 
 h3. Installation on Linux OS certificate storage
 
@@ -51,7 +43,7 @@ h4. Debian/Ubuntu
 *Important* the certificate file added to @ca-certificates@ must have the extension @.crt@ or it won't be recognized.
 
 <notextile>
-<pre><code>cp arvados-snakeoil-ca.pem /usr/local/share/ca-certificates/arvados-snakeoil-ca.crt
+<pre><code>cp {{ca_cert_name}} /usr/local/share/ca-certificates/arvados-snakeoil-ca.crt
 /usr/sbin/update-ca-certificates
 </code></pre>
 </notextile>
@@ -59,7 +51,7 @@ h4. Debian/Ubuntu
 h4. CentOS
 
 <notextile>
-<pre><code>cp arvados-snakeoil-ca.pem /etc/pki/ca-trust/source/anchors/
+<pre><code>cp {{ca_cert_name}} /etc/pki/ca-trust/source/anchors/
 /usr/bin/update-ca-trust
 </code></pre>
 </notextile>

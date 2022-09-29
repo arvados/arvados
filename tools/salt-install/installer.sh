@@ -90,10 +90,12 @@ deploynode() {
 	exit 1
     fi
 
+    logfile=deploy-${NODE}-$(date -Iseconds).log
+
     if [[ "$NODE" = localhost ]] ; then
-	sudo ./provision.sh --config ${CONFIG_FILE} --roles ${ROLES}
+	sudo ./provision.sh --config ${CONFIG_FILE} --roles ${ROLES} 2>&1 | tee $logfile
     else
-	ssh $DEPLOY_USER@$NODE "cd ${GITTARGET} && sudo ./provision.sh --config ${CONFIG_FILE} --roles ${ROLES}"
+	ssh $DEPLOY_USER@$NODE "cd ${GITTARGET} && sudo ./provision.sh --config ${CONFIG_FILE} --roles ${ROLES}" 2>&1 | tee $logfile
     fi
 }
 
@@ -152,7 +154,9 @@ case "$subcmd" in
 	cp -r config_examples/$SLS $SETUPDIR/${CONFIG_DIR}
 
 	cd $SETUPDIR
-	git add *.sh ${CONFIG_FILE} ${CONFIG_DIR} tests
+	echo '*.log' > .gitignore
+
+	git add *.sh ${CONFIG_FILE} ${CONFIG_DIR} tests .gitignore
 	git commit -m"initial commit"
 
 	echo "setup directory initialized, now go to $SETUPDIR, edit '${CONFIG_FILE}' and '${CONFIG_DIR}' as needed, then run 'installer.sh deploy'"

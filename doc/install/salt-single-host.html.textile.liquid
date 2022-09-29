@@ -85,6 +85,14 @@ arvados: Failed:      0
 </code></pre>
 </notextile>
 
+h2(#ca_root_certificate). Install the CA root certificate (SSL_MODE=self-signed only)
+
+*If you are not using self-signed certificates (you selected SSL_MODE=lets-encrypt or SSL_MODE=bring-your-own), skip this section.*
+
+Arvados uses SSL to encrypt communications. The web interface uses AJAX which will silently fail if the certificate is not valid or signed by an unknown Certification Authority.
+
+For this reason, the @arvados-formula@ has a helper state to create a root certificate to authorize Arvados services. The @provision.sh@ script will leave a copy of the generated CA's certificate (@arvados-snakeoil-ca.pem@) in the script's directory so you can add it to your workstation.
+
 {% include 'install_ca_cert' %}
 
 h2(#initial_user). Initial user and login
