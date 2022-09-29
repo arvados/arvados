@@ -49,8 +49,10 @@ export const navigateToOutput = (uuid: string) =>
 export const loadOutputs = (uuid: string, setOutputs) =>
     async (dispatch: Dispatch<any>, getState: () => RootState, services: ServiceRepository) => {
         try {
-            const files = await services.collectionService.files(uuid);
-            const collection = await services.collectionService.get(uuid);
+            const filesPromise = services.collectionService.files(uuid);
+            const collectionPromise = services.collectionService.get(uuid);
+            const [files, collection] = await Promise.all([filesPromise, collectionPromise]);
+
             const outputFile = files.find((file) => file.name === 'cwl.output.json') as CollectionFile | undefined;
             let outputData = outputFile ? await services.collectionService.getFileContents(outputFile) : undefined;
             if ((outputData = JSON.parse(outputData)) && collection.portableDataHash) {
