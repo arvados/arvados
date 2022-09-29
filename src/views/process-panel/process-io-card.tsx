@@ -553,9 +553,14 @@ export const getIOParamDisplayValue = (auth: AuthState, input: CommandInputParam
     }
 };
 
+/*
+ * @returns keep url without keep: prefix
+ */
 const getKeepUrl = (file: File | Directory, pdh?: string): string => {
     const isKeepUrl = file.location?.startsWith('keep:') || false;
-    const keepUrl = isKeepUrl ? file.location : pdh ? `keep:${pdh}/${file.location}` : file.location;
+    const keepUrl = isKeepUrl ?
+                        file.location?.replace('keep:', '') :
+                        pdh ? `${pdh}/${file.location}` : file.location;
     return keepUrl || '';
 };
 
@@ -569,7 +574,7 @@ const KeepUrlBase = withStyles(styles)(({auth, res, pdh, classes}: KeepUrlProps 
     const keepUrl = getKeepUrl(res, pdh);
     const pdhUrl = keepUrl ? keepUrl.split('/').slice(0, 1)[0] : '';
     // Passing a pdh always returns a relative wb2 collection url
-    const pdhWbPath = getNavUrl(pdhUrl.replace('keep:', ''), auth);
+    const pdhWbPath = getNavUrl(pdhUrl, auth);
     return pdhUrl && pdhWbPath ?
         <Tooltip title={"View collection in Workbench"}><RouterLink to={pdhWbPath} className={classes.keepLink}>{pdhUrl}</RouterLink></Tooltip> :
         <></>;
@@ -588,12 +593,12 @@ const KeepUrlPath = withStyles(styles)(({auth, res, pdh, classes}: KeepUrlProps 
 });
 
 const getKeepNavUrl = (auth: AuthState, file: File | Directory, pdh?: string): string => {
-    let keepUrl = getKeepUrl(file, pdh).replace('keep:', '');
+    let keepUrl = getKeepUrl(file, pdh);
     return (getInlineFileUrl(`${auth.config.keepWebServiceUrl}/c=${keepUrl}?api_token=${auth.apiToken}`, auth.config.keepWebServiceUrl, auth.config.keepWebInlineServiceUrl));
 };
 
 const getImageUrl = (auth: AuthState, file: File, pdh?: string): string => {
-    const keepUrl = getKeepUrl(file, pdh).replace('keep:', '');
+    const keepUrl = getKeepUrl(file, pdh);
     return getInlineFileUrl(`${auth.config.keepWebServiceUrl}/c=${keepUrl}?api_token=${auth.apiToken}`, auth.config.keepWebServiceUrl, auth.config.keepWebInlineServiceUrl);
 };
 
