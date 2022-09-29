@@ -63,7 +63,25 @@ import { ProcessOutputCollectionFiles } from './process-output-collection-files'
 import { Process } from 'store/processes/process';
 import { navigateTo } from 'store/navigation/navigation-action';
 
-type CssRules = 'card' | 'content' | 'title' | 'header' | 'avatar' | 'iconHeader' | 'tableWrapper' | 'tableRoot' | 'paramValue' | 'keepLink' | 'collectionLink' | 'imagePreview' | 'valArray' | 'emptyValue' | 'halfRow' | 'symmetricTabs' | 'imagePlaceholder' | 'rowWithPreview';
+type CssRules =
+  | "card"
+  | "content"
+  | "title"
+  | "header"
+  | "avatar"
+  | "iconHeader"
+  | "tableWrapper"
+  | "tableRoot"
+  | "paramValue"
+  | "keepLink"
+  | "collectionLink"
+  | "imagePreview"
+  | "valArray"
+  | "emptyValue"
+  | "halfRow"
+  | "symmetricTabs"
+  | "imagePlaceholder"
+  | "rowWithPreview";
 
 const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     card: {
@@ -102,6 +120,9 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
         '& thead th': {
             verticalAlign: 'bottom',
             paddingBottom: '10px',
+        },
+        '& td, & th': {
+            paddingRight: '25px',
         }
     },
     paramValue: {
