@@ -68,17 +68,24 @@ const panelsData: MPVPanelState[] = [
 export const ProcessPanelRoot = withStyles(styles)(
     ({ process, auth, processLogsPanel, fetchOutputs, ...props }: ProcessPanelRootProps) => {
 
-    const [outputDetails, setOutputs] = useState<OutputDetails>({});
-    const [rawInputs, setInputs] = useState<CommandInputParameter[]>([]);
+    const [outputDetails, setOutputs] = useState<OutputDetails | undefined>(undefined);
+    const [rawInputs, setInputs] = useState<CommandInputParameter[] | undefined>(undefined);
 
-
-    const [processedOutputs, setProcessedOutputs] = useState<ProcessIOParameter[]>([]);
-    const [processedInputs, setProcessedInputs] = useState<ProcessIOParameter[]>([]);
+    const [processedOutputs, setProcessedOutputs] = useState<ProcessIOParameter[] | undefined>(undefined);
+    const [processedInputs, setProcessedInputs] = useState<ProcessIOParameter[] | undefined>(undefined);
 
     const outputUuid = process?.containerRequest.outputUuid;
     const requestUuid = process?.containerRequest.uuid;
 
     const inputMounts = getInputCollectionMounts(process?.containerRequest);
+
+    // Resets state when changing processes
+    React.useEffect(() => {
+        setOutputs(undefined);
+        setInputs(undefined);
+        setProcessedOutputs(undefined);
+        setProcessedInputs(undefined);
+    }, [requestUuid]);
 
     React.useEffect(() => {
         if (outputUuid) {
@@ -87,11 +94,9 @@ export const ProcessPanelRoot = withStyles(styles)(
     }, [outputUuid, fetchOutputs]);
 
     React.useEffect(() => {
-        if (outputDetails.rawOutputs && process) {
+        if (outputDetails !== undefined && outputDetails.rawOutputs && process) {
             const outputDefinitions = getOutputParameters(process.containerRequest);
             setProcessedOutputs(formatOutputData(outputDefinitions, outputDetails.rawOutputs, outputDetails.pdh, auth));
-        } else {
-            setProcessedOutputs([]);
         }
     }, [outputDetails, auth, process]);
 
@@ -149,7 +154,7 @@ export const ProcessPanelRoot = withStyles(styles)(
                     label={ProcessIOCardType.OUTPUT}
                     process={process}
                     params={processedOutputs}
-                    raw={outputDetails.rawOutputs}
+                    raw={outputDetails?.rawOutputs}
                     outputUuid={outputUuid || ""}
                  />
             </MPVPanelContent>

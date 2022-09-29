@@ -24,6 +24,7 @@ import {
     Paper,
     Grid,
     Chip,
+    CircularProgress,
 } from '@material-ui/core';
 import { ArvadosTheme } from 'common/custom-theme';
 import { CloseIcon, ImageIcon, InputIcon, ImageOffIcon, OutputIcon, MaximizeIcon } from 'components/icon/icon';
@@ -192,7 +193,7 @@ export enum ProcessIOCardType {
 export interface ProcessIOCardDataProps {
     process: Process;
     label: ProcessIOCardType;
-    params: ProcessIOParameter[];
+    params?: ProcessIOParameter[];
     raw?: any;
     mounts?: InputCollectionMount[];
     outputUuid?: string;
@@ -251,7 +252,10 @@ export const ProcessIOCard = withStyles(styles)(connect(null, mapDispatchToProps
             <CardContent className={classes.content}>
                 {mainProcess ?
                     (<>
-                        {params.length ?
+                        {params === undefined && <Grid container item alignItems='center' justify='center'>
+                            <CircularProgress />
+                        </Grid>}
+                        {params && params.length > 0 &&
                             <>
                                 <Tabs value={mainProcTabState} onChange={handleMainProcTabChange} variant="fullWidth" className={classes.symmetricTabs}>
                                     <Tab label="Parameters" />
@@ -263,12 +267,12 @@ export const ProcessIOCard = withStyles(styles)(connect(null, mapDispatchToProps
                                 {mainProcTabState === 1 && <div className={classes.tableWrapper}>
                                         <ProcessIORaw data={raw || params} />
                                     </div>}
-                            </> :
-                            <Grid container item alignItems='center' justify='center'>
-                                <DefaultView messages={["No parameters found"]} />
-                            </Grid>
-                        }
+                            </>}
+                        {params && params.length === 0 && <Grid container item alignItems='center' justify='center'>
+                            <DefaultView messages={["No parameters found"]} />
+                        </Grid>}
                     </>) :
+                    // Subprocess
                     (<>
                         {((mounts && mounts.length) || outputUuid) ?
                             <>
