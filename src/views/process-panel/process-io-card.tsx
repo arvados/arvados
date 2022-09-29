@@ -587,7 +587,7 @@ const KeepUrlPath = withStyles(styles)(({auth, res, pdh, classes}: KeepUrlProps 
 
     const keepUrlPathNav = getKeepNavUrl(auth, res, pdh);
     return keepUrlPath && keepUrlPathNav ?
-        <Tooltip title={"View in keep-web"}><MuiLink className={classes.keepLink} onClick={() => handleClick(keepUrlPathNav)}>{keepUrlPath}</MuiLink></Tooltip> :
+        <Tooltip title={"View in keep-web"}><a className={classes.keepLink} href={keepUrlPathNav} target="_blank">{keepUrlPath}</a></Tooltip> :
         // Show No value for root collection io that lacks path part
         <EmptyValue />;
 });
