@@ -17,7 +17,7 @@ import { getIOParamDisplayValue, ProcessIOCard, ProcessIOCardType, ProcessIOPara
 import { getProcessPanelLogs, ProcessLogsPanel } from 'store/process-logs-panel/process-logs-panel';
 import { ProcessLogsCard } from './process-log-card';
 import { FilterOption } from 'views/process-panel/process-log-form';
-import { getInputs, getInputCollectionMounts, getOutputParameters } from 'store/processes/processes-actions';
+import { getInputs, getInputCollectionMounts, getOutputParameters, getRawInputs } from 'store/processes/processes-actions';
 import { CommandInputParameter, getIOParamId } from 'models/workflow';
 import { CommandOutputParameter } from 'cwlts/mappings/v1.0/CommandOutputParameter';
 import { AuthState } from 'store/auth/auth-reducer';
@@ -97,9 +97,11 @@ export const ProcessPanelRoot = withStyles(styles)(
 
     React.useEffect(() => {
         if (process) {
-            const rawInputs = getInputs(process.containerRequest);
+            const rawInputs = getRawInputs(process.containerRequest);
             setInputs(rawInputs);
-            setProcessedInputs(formatInputData(rawInputs, auth));
+
+            const inputs = getInputs(process.containerRequest);
+            setProcessedInputs(formatInputData(inputs, auth));
         }
     }, [requestUuid, auth, process]);
 

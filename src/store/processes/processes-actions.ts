@@ -133,6 +133,11 @@ export const reRunProcess = (processUuid: string, workflowUuid: string) =>
         }
     };
 
+export const getRawInputs = (data: any): CommandInputParameter[] | undefined => {
+    if (!data || !data.mounts || !data.mounts[MOUNT_PATH_CWL_INPUT]) { return undefined; }
+    return (data.mounts[MOUNT_PATH_CWL_INPUT].content);
+}
+
 export const getInputs = (data: any): CommandInputParameter[] => {
     if (!data || !data.mounts || !data.mounts[MOUNT_PATH_CWL_WORKFLOW]) { return []; }
     const inputs = getWorkflowInputs(data.mounts[MOUNT_PATH_CWL_WORKFLOW].content);
