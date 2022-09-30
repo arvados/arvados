@@ -203,17 +203,21 @@ server {
 
 h2(#confirm-working). Confirm working installation
 
-Confirm working controller:
+We recommend using the "Cluster diagnostics tool.":diagnostics.html  The first few tests (10, 20, 30) will succeed if you have a working API server and controller.  Of course, tests for services that you have not yet installed and configured will fail.
+
+Here are some other checks you can perform manually.
+
+h3. Confirm working controller
 
 <notextile><pre><code>$ curl https://<span class="userinput">ClusterID.example.com</span>/arvados/v1/config
 </code></pre></notextile>
 
-Confirm working Rails API server:
+h3. Confirm working Rails API server
 
 <notextile><pre><code>$ curl https://<span class="userinput">ClusterID.example.com</span>/discovery/v1/apis/arvados/v1/rest
 </code></pre></notextile>
 
-Confirm that you can use the system root token to act as the system root user:
+h3. Confirm that you can use the system root token to act as the system root user
 
 <notextile><pre><code>$ curl -H "Authorization: Bearer $system_root_token" https://<span class="userinput">ClusterID.example.com</span>/arvados/v1/users/current
 </code></pre></notextile>

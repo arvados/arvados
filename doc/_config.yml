@@ -228,6 +228,7 @@ navbar:
       - admin/maintenance-and-upgrading.html.textile.liquid
     - Core:
       - install/install-api-server.html.textile.liquid
+      - install/diagnostics.html.textile.liquid
     - Keep:
       - install/install-keepstore.html.textile.liquid
       - install/configure-fs-storage.html.textile.liquid

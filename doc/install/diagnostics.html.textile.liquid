@@ -1,0 +1,53 @@
+---
+layout: default
+navsection: installguide
+title: Cluster diagnostics tool
+
+...
+{% comment %}
+Copyright (C) The Arvados Authors. All rights reserved.
+
+SPDX-License-Identifier: CC-BY-SA-3.0
+{% endcomment %}
+
+The @diagnostics@ subcommand of @arvados-client@ performs a variety of checks to help confirm that your Arvados installation has been properly configured.  It is extremely helpful to validate that your install is successful.
+
+Here is an example of it in action:
+
+<pre>
+root@api:~$ apt-get install arvados-client
+root@api:~$ export ARVADOS_API_HOST=ClusterID.example.com
+root@api:~$ export ARVADOS_API_TOKEN=YourSytemRootTokenHere
+root@api:~$ arvados-client diagnostics -external-client
+INFO      10: getting discovery document from https://ClusterID.example.com/discovery/v1/apis/arvados/v1/rest
+INFO      20: getting exported config from https://ClusterID.example.com/arvados/v1/config
+INFO      30: getting current user record
+INFO      40: connecting to service endpoint https://keep.ClusterID.example.com/
+INFO      41: connecting to service endpoint https://*.collections.ClusterID.example.com/
+INFO      42: connecting to service endpoint https://download.ClusterID.example.com/
+INFO      43: connecting to service endpoint wss://ws.ClusterID.example.com/websocket
+INFO      44: connecting to service endpoint https://workbench.ClusterID.example.com/
+INFO      45: connecting to service endpoint https://workbench2.ClusterID.example.com/
+INFO      50: checking CORS headers at https://ClusterID.example.com/
+INFO      51: checking CORS headers at https://keep.ClusterID.example.com/d41d8cd98f00b204e9800998ecf8427e+0
+INFO      52: checking CORS headers at https://download.ClusterID.example.com/
+INFO      60: checking internal/external client detection
+INFO      61: reading+writing via keep service at https://keep.ClusterID.example.com:443/
+INFO      80: finding/creating "scratch area for diagnostics" project
+INFO      90: creating temporary collection
+INFO     100: uploading file via webdav
+INFO     110: checking WebDAV ExternalURL wildcard (https://*.collections.ClusterID.example.com/)
+INFO     120: downloading from webdav (https://d41d8cd98f00b204e9800998ecf8427e-0.collections.ClusterID.example.com/foo)
+INFO     121: downloading from webdav (https://d41d8cd98f00b204e9800998ecf8427e-0.collections.ClusterID.example.com/sha256:feb5d9fea6a5e9606aa995e879d862b825965ba48de054caab5ef356dc6b3412.tar)
+INFO     122: downloading from webdav (https://download.ClusterID.example.com/c=d41d8cd98f00b204e9800998ecf8427e+0/_/foo)
+INFO     123: downloading from webdav (https://download.ClusterID.example.com/c=d41d8cd98f00b204e9800998ecf8427e+0/_/sha256:feb5d9fea6a5e9606aa995e879d862b825965ba48de054caab5ef356dc6b3412.tar)
+INFO     124: downloading from webdav (https://a15a27cbc1c7d2d4a0d9e02529aaec7e-128.collections.ClusterID.example.com/sha256:feb5d9fea6a5e9606aa995e879d862b825965ba48de054caab5ef356dc6b3412.tar)
+INFO     125: downloading from webdav (https://download.ClusterID.example.com/c=ce8i5-4zz18-bkfvq2skqqf78xd/_/sha256:feb5d9fea6a5e9606aa995e879d862b825965ba48de054caab5ef356dc6b3412.tar)
+INFO     130: getting list of virtual machines
+INFO     140: getting workbench1 webshell page
+INFO     150: connecting to webshell service
+INFO     160: running a container
+INFO      ... container request submitted, waiting up to 10m for container to run
+INFO    9990: deleting temporary collection
+INFO    --- no errors ---
+</pre>
