@@ -12,6 +12,11 @@ SPDX-License-Identifier: CC-BY-SA-3.0
 
 The @diagnostics@ subcommand of @arvados-client@ performs a variety of checks to help confirm that your Arvados installation has been properly configured.  It is extremely helpful to validate that your install is successful.
 
+Depending on where you are running the installer, you need to provide @-internal-client@ or @-external-client@.
+
+* If you are running the diagnostics from one of the Arvados machines inside the private network, you want @-internal-client@.
+* If you running the diagnostics from your workstation outside of the private network, you should use @-external-client@.
+
 Here is an example of it in action:
 
 <pre>
