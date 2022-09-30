@@ -21,7 +21,7 @@ In the default configuration, this installer uses self-signed certificate(s):
 </code></pre>
 </notextile>
 
-When connecting to the Arvados web interface for the first time, you will need to accept the self-signed certificate as trusted to bypass the browser warnings. This can be a little tricky to do. Alternatively, you can also install the self-signed root certificate in your browser, see <a href="#ca_root_certificate">below</a>.
+This works everywhere and does not require that you have a domain name.  However, after installation, users will need to "install the self-signed root certificate in the browser.":#ca_root_certificate"
 
 h3(#lets-encrypt). Using a Let's Encrypt certificate
 
@@ -32,7 +32,7 @@ To automatically get a valid certificate via Let's Encrypt, change the configura
 </code></pre>
 </notextile>
 
-The hostname for your Arvados cluster must be defined in @HOSTNAME_EXT@ and resolve to the public IP address of your Arvados instance, so that Let's Encrypt can validate the domainname ownership and issue the certificate.
+This requires that you have a "real" hostname that you control.  The hostname for your Arvados cluster must be defined in @HOSTNAME_EXT@ and resolve to the public IP address of your Arvados instance, so that Let's Encrypt can validate the domainname ownership and issue the certificate.
 
 When using AWS, EC2 instances can have a default hostname that ends with <i>amazonaws.com</i>. Let's Encrypt has a blacklist of domain names for which it will not issue certificates, and that blacklist includes the <i>amazonaws.com</i> domain, which means the default hostname can not be used to get a certificate from Let's Encrypt.
 

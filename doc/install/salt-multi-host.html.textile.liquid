@@ -106,13 +106,13 @@ You will need a DNS entry for each service.  In the default configuration these 
 
 h3. Additional prerequisites when preparing machines to run the installer
 
-# from the account where you are performing the install, passwordless @ssh@ to each machine
+# From the account where you are performing the install, passwordless @ssh@ to each machine
 This means the client's public key should added to @~/.ssh/authorized_keys@ on each node.
-# passwordless @sudo@ access on the account on each machine you will @ssh@ in to
+# Passwordless @sudo@ access on the account on each machine you will @ssh@ in to
 This usually means adding the account to the @sudo@ group and having a rule like this in @/etc/sudoers.d/arvados_passwordless@ that allows members of group @sudo@ to execute any command without entering a password.
 <pre>%sudo ALL=(ALL:ALL) NOPASSWD:ALL</pre>
 # @git@ installed on each machine
-# port 443 reachable by clients
+# Port 443 reachable by clients
 
 (AWS specific) The machine that runs the arvados cloud dispatcher will need an "IAM role that allows it to manage EC2 instances.":{{site.baseurl}}/install/crunch2-cloud/install-dispatch-cloud.html#IAM
 
@@ -293,11 +293,7 @@ If this happens, you need to
 1. correct the database information
 2. run @./installer.sh deploy xarv1.example.com@ to update the configuration on the API/controller node
 3. Log in to the API/controller server node, then run this command to re-run the post-install script, which will set up the database:
-
-<pre>
-dpkg-reconfigure arvados-api-server
-</pre>
-
+<pre>dpkg-reconfigure arvados-api-server</pre>
 4. Re-run @./installer.sh deploy@ again to synchronize everything, and so that the install steps that need to contact the API server are run successfully.
 
 h4. Missing ENA support (AWS Specific)
