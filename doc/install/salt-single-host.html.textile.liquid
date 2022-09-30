@@ -59,7 +59,7 @@ You will need a dedicated (virtual) machine for your Arvados server with at leas
 The single host install stores user data in a PostgreSQL database (usually found under @/var/lib/postgresql@) and as Keep blocks that are stored as files under @/var/lib/arvados/@.
 Arvados logs are also kept in @/var/log@ and @/var/www/arvados-api/shared/log@.  Accordingly, you should ensure that the disk partition containing @/var@ has adequate storage for your planned usage.  We suggest starting with 50GiB of free space.
 
-h3(#DNS). DNS hostnames for each service
+h3(#DNS). DNS hostnames for each service (multi-hostname only)
 
 If you are using a single hostname for all services (they will be distingushed by listening port), you can skip this section.
 
