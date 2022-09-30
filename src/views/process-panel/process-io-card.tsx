@@ -82,7 +82,8 @@ type CssRules =
   | "halfRow"
   | "symmetricTabs"
   | "imagePlaceholder"
-  | "rowWithPreview";
+  | "rowWithPreview"
+  | "labelColumn";
 
 const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     card: {
@@ -183,7 +184,10 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     },
     rowWithPreview: {
         verticalAlign: 'bottom',
-    }
+    },
+    labelColumn: {
+        minWidth: '120px',
+    },
 });
 
 export enum ProcessIOCardType {
@@ -328,7 +332,7 @@ const ProcessIOPreview = withStyles(styles)(
             <TableHead>
                 <TableRow>
                     <TableCell>Name</TableCell>
-                    {showLabel && <TableCell>Label</TableCell>}
+                    {showLabel && <TableCell className={classes.labelColumn}>Label</TableCell>}
                     <TableCell>Value</TableCell>
                     <TableCell>Collection</TableCell>
                 </TableRow>
@@ -389,11 +393,6 @@ const ProcessValuePreview = withStyles(styles)(
             </span>
         </Typography>
 )
-
-const handleClick = (url) => {
-    window.open(url, '_blank');
-}
-
 
 interface ProcessIORawDataProps {
     data: ProcessIOParameter[];
@@ -591,7 +590,7 @@ const KeepUrlPath = withStyles(styles)(({auth, res, pdh, classes}: KeepUrlProps 
 
     const keepUrlPathNav = getKeepNavUrl(auth, res, pdh);
     return keepUrlPath && keepUrlPathNav ?
-        <Tooltip title={"View in keep-web"}><a className={classes.keepLink} href={keepUrlPathNav} target="_blank">{keepUrlPath}</a></Tooltip> :
+        <Tooltip title={"View in keep-web"}><a className={classes.keepLink} href={keepUrlPathNav} target="_blank" rel="noopener noreferrer">{keepUrlPath}</a></Tooltip> :
         // Show No value for root collection io that lacks path part
         <EmptyValue />;
 });
