@@ -43,7 +43,7 @@ declare DEPLOY_USER
 declare GITTARGET
 
 checktools() {
-    MISSING=''
+    local MISSING=''
     for a in git ip ; do
 	if ! which $a ; then
 	    MISSING="$MISSING $a"
@@ -99,8 +99,9 @@ deploynode() {
     # the appropriate roles.
 
     if [[ -z "$ROLES" ]] ; then
-	echo "No roles declared for '$NODE' in ${CONFIG_FILE}"
-	exit 1
+	echo "No roles specified for $NODE, will deploy all roles"
+    else
+	ROLES="--roles ${ROLES}"
     fi
 
     logfile=deploy-${NODE}-$(date -Iseconds).log
@@ -110,9 +111,9 @@ deploynode() {
 	if [[ $(whoami) != 'root' ]] ; then
 	    SUDO=sudo
 	fi
-	$SUDO ./provision.sh --config ${CONFIG_FILE} --roles ${ROLES} 2>&1 | tee $logfile
+	$SUDO ./provision.sh --config ${CONFIG_FILE} ${ROLES} 2>&1 | tee $logfile
     else
-	ssh $DEPLOY_USER@$NODE "cd ${GITTARGET} && sudo ./provision.sh --config ${CONFIG_FILE} --roles ${ROLES}" 2>&1 | tee $logfile
+	ssh $DEPLOY_USER@$NODE "cd ${GITTARGET} && sudo ./provision.sh --config ${CONFIG_FILE} ${ROLES}" 2>&1 | tee $logfile
     fi
 }
 
@@ -124,7 +125,10 @@ loadconfig() {
     GITTARGET=arvados-deploy-config-${CLUSTER}
 }
 
+set +u
 subcmd="$1"
+set -u
+
 if [[ -n "$subcmd" ]] ; then
     shift
 fi
@@ -217,7 +221,7 @@ case "$subcmd" in
 	    do
 		# Do 'database' role first,
 		if [[ "${NODES[$NODE]}" =~ database ]] ; then
-		    deploynode $NODE ${NODES[$NODE]}
+		    deploynode $NODE "${NODES[$NODE]}"
 		    unset NODES[$NODE]
 		fi
 	    done
@@ -226,7 +230,7 @@ case "$subcmd" in
 	    do
 		# then  'api' or 'controller' roles
 		if [[ "${NODES[$NODE]}" =~ (api|controller) ]] ; then
-		    deploynode $NODE ${NODES[$NODE]}
+		    deploynode $NODE "${NODES[$NODE]}"
 		    unset NODES[$NODE]
 		fi
 	    done
@@ -235,12 +239,12 @@ case "$subcmd" in
 	    do
 		# Everything else (we removed the nodes that we
 		# already deployed from the list)
-		deploynode $NODE ${NODES[$NODE]}
+		deploynode $NODE "${NODES[$NODE]}"
 	    done
 	else
 	    # Just deploy the node that was supplied on the command line.
 	    sync $NODE $BRANCH
-	    deploynode $NODE
+	    deploynode $NODE ""
 	fi
 
 	echo
