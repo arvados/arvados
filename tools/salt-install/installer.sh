@@ -42,6 +42,19 @@ declare DEPLOY_USER
 # This will be populated by loadconfig()
 declare GITTARGET
 
+checktools() {
+    MISSING=''
+    for a in git ip ; do
+	if ! which $a ; then
+	    MISSING="$MISSING $a"
+	fi
+    done
+    if [[ -n "$MISSING" ]] ; then
+	echo "Some tools are missing, please make sure you have the 'git' and 'iproute2' packages installed"
+	exit 1
+    fi
+}
+
 sync() {
     local NODE=$1
     local BRANCH=$2
@@ -122,6 +135,8 @@ case "$subcmd" in
 	    exit
 	fi
 
+	checktools
+
 	set +u
 	SETUPDIR=$1
 	PARAMS=$2
@@ -169,6 +184,8 @@ case "$subcmd" in
 	set +u
 	NODE=$1
 	set -u
+
+	checktools
 
 	loadconfig
 

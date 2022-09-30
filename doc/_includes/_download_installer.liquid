@@ -20,9 +20,12 @@ The @install.sh@ and @provision.sh@ scripts will help you deploy Arvados by prep
 
 h2(#copy_config). Initialize the installer
 
+Replace "xarv1" with the cluster id you selected earlier.
+
 <notextile>
-<pre><code>./installer.sh initialize ~/setup-arvados-xarv1 {{local_params_src}} {{config_examples_src}}
-cd ~/setup-arvados-xarv1
+<pre><code>CLUSTER=xarv1
+./installer.sh initialize ~/setup-arvados-${CLUSTER} {{local_params_src}} {{config_examples_src}}
+cd ~/setup-arvados-${CLUSTER}
 </code></pre>
 </notextile>
 
