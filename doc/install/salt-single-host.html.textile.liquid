@@ -56,6 +56,8 @@ You will need a dedicated (virtual) machine for your Arvados server with at leas
 
 {% include 'supportedlinux' %}
 
+Note: if you want to try out Arvados inside a Docker container, use "Arvbox":arvbox.html.  The package-based install method uses @systemd@ to manage services; lightweight container images generally lack an init system and other tools that the installer requires.
+
 The single host install stores user data in a PostgreSQL database (usually found under @/var/lib/postgresql@) and as Keep blocks that are stored as files under @/var/lib/arvados/@.
 Arvados logs are also kept in @/var/log@ and @/var/www/arvados-api/shared/log@.  Accordingly, you should ensure that the disk partition containing @/var@ has adequate storage for your planned usage.  We suggest starting with 50GiB of free space.
 
