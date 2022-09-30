@@ -93,7 +93,11 @@ deploynode() {
     logfile=deploy-${NODE}-$(date -Iseconds).log
 
     if [[ "$NODE" = localhost ]] ; then
-	sudo ./provision.sh --config ${CONFIG_FILE} --roles ${ROLES} 2>&1 | tee $logfile
+	SUDO=''
+	if [[ $(whoami) != 'root' ]] ; then
+	    SUDO=sudo
+	fi
+	$SUDO ./provision.sh --config ${CONFIG_FILE} --roles ${ROLES} 2>&1 | tee $logfile
     else
 	ssh $DEPLOY_USER@$NODE "cd ${GITTARGET} && sudo ./provision.sh --config ${CONFIG_FILE} --roles ${ROLES}" 2>&1 | tee $logfile
     fi

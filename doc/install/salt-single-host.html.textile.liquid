@@ -83,7 +83,7 @@ This is described in more detail in "DNS entries and TLS certificates":install-m
 
 h3. Additional prerequisites
 
-# Passwordless @sudo@ access on the account where you are doing the install
+# root or passwordless @sudo@ access on the account where you are doing the install
 this usually means adding the account to the @sudo@ group and having a rule like this in @/etc/sudoers.d/arvados_passwordless@ that allows members of group @sudo@ to execute any command without entering a password.
 <pre>%sudo all=(all:all) nopasswd:all</pre>
 # @git@ installed on the machine
@@ -94,8 +94,8 @@ this usually means adding the account to the @sudo@ group and having a rule like
 
 h2(#download). Download the installer
 
-{% assign local_params_src = single_host_single_hostname' %}
-{% assign config_examples_src = 'single_host/single_hostname'%}
+{% assign local_params_src = 'single_host_single_hostname' %}
+{% assign config_examples_src = 'single_host/single_hostname' %}
 {% include 'download_installer' %}
 
 If you are using multiple hostname configuration, substitute 'multiple_hostnames' where it says 'single_hostname' in the command above.
