@@ -247,6 +247,7 @@ case "$subcmd" in
 	    deploynode $NODE ""
 	fi
 
+	set +x
 	echo
 	echo "Completed deploy, run 'installer.sh diagnostics' to verify the install"
 
