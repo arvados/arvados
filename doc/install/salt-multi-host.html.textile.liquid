@@ -88,6 +88,8 @@ The installer will set up the Arvados services on your machines.  Here is the de
 # SHELL node  (optional)
 ## arvados shell       (recommended hostname @shell.${CLUSTER}.${DOMAIN}@)
 
+When using the database installed by Arvados (and not an "external database":#ext-database), the database is stored under @/var/lib/postgresql@.  Arvados logs are also kept in @/var/log@ and @/var/www/arvados-api/shared/log@.  Accordingly, you should ensure that the disk partition containing @/var@ has adequate storage for your planned usage.  We suggest starting with 50GiB of free space on the database host.
+
 h3(#DNS). DNS hostnames for each service
 
 You will need a DNS entry for each service.  In the default configuration these are:
