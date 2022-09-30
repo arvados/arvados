@@ -247,8 +247,8 @@ navbar:
       - install/install-shell-server.html.textile.liquid
       - install/install-webshell.html.textile.liquid
       - install/install-arv-git-httpd.html.textile.liquid
-    - Containers API (all):
-      - install/install-jobs-image.html.textile.liquid
+#    - Containers API (all):
+#      - install/install-jobs-image.html.textile.liquid
     - Containers API (cloud):
       - install/crunch2-cloud/install-compute-node.html.textile.liquid
       - install/crunch2-cloud/install-dispatch-cloud.html.textile.liquid
