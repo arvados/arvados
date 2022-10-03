@@ -9,7 +9,8 @@ export const resourceIsFrozen = (resource: any, resources): boolean => {
     let isFrozen: boolean = !!resource.frozenByUuid;
     let ownerUuid: string | undefined = resource?.ownerUuid;
 
-    while(!isFrozen && !!ownerUuid && resource.uuid !== ownerUuid) {
+    while(!isFrozen && !!ownerUuid && ownerUuid.indexOf('000000000000000') === -1) {
+        console.log(isFrozen, ownerUuid, resource.uuid, resource);
         const parentResource: ProjectResource | undefined = getResource<ProjectResource>(ownerUuid)(resources);
         isFrozen = !!parentResource?.frozenByUuid;
         ownerUuid = parentResource?.ownerUuid;
