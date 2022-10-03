@@ -91,6 +91,8 @@ class ArvadosContainer(JobBase):
         container_request["state"] = "Committed"
         container_request.setdefault("properties", {})
 
+        container_request["properties"]["cwl_input"] = self.joborder
+
         runtime_constraints = {}
 
         if runtimeContext.project_uuid:
@@ -437,6 +439,13 @@ class ArvadosContainer(JobBase):
 
             if container["output"]:
                 outputs = done.done_outputs(self, container, "/tmp", self.outdir, "/keep")
+
+            properties = record["properties"].copy()
+            properties["cwl_output"] = outputs
+            self.arvrunner.api.container_requests().update(
+                uuid=self.uuid,
+                body={"container_request": {"properties": properties}}
+            ).execute(num_retries=self.arvrunner.num_retries)
         except WorkflowException as e:
             # Only include a stack trace if in debug mode.
             # A stack trace may obfuscate more useful output about the workflow.
