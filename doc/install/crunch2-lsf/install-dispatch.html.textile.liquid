@@ -62,7 +62,7 @@ Alternatively, you can arrange for the arvados-dispatch-lsf process to run as an
 </notextile>
 
 
-h3(#SbatchArguments). Containers.LSF.BsubArgumentsList
+h3(#BsubArgumentsList). Containers.LSF.BsubArgumentsList
 
 When arvados-dispatch-lsf invokes @bsub@, you can add arguments to the command by specifying @BsubArgumentsList@.  You can use this to send the jobs to specific cluster partitions or add resource requests.  Set @BsubArgumentsList@ to an array of strings.
 
@@ -87,7 +87,7 @@ For example:
 
 Note that the default value for @BsubArgumentsList@ uses the @-o@ and @-e@ arguments to write stdout/stderr data to files in @/tmp@ on the compute nodes, which is helpful for troubleshooting installation/configuration problems. Ensure you have something in place to delete old files from @/tmp@, or adjust these arguments accordingly.
 
-h3(#SbatchArguments). Containers.LSF.BsubCUDAArguments
+h3(#BsubCUDAArguments). Containers.LSF.BsubCUDAArguments
 
 If the container requests access to GPUs (@runtime_constraints.cuda.device_count@ of the container request is greater than zero), the command line arguments in @BsubCUDAArguments@ will be added to the command line _after_ @BsubArgumentsList@.  This should consist of the additional @bsub@ flags your site requires to schedule the job on a node with GPU support.  Set @BsubCUDAArguments@ to an array of strings.  For example:
 
@@ -98,7 +98,7 @@ If the container requests access to GPUs (@runtime_constraints.cuda.device_count
 </pre>
 </notextile>
 
-h3(#PollPeriod). Containers.PollInterval
+h3(#PollInterval). Containers.PollInterval
 
 arvados-dispatch-lsf polls the API server periodically for new containers to run.  The @PollInterval@ option controls how often this poll happens.  Set this to a string of numbers suffixed with one of the time units @s@, @m@, or @h@.  For example:
 
@@ -122,7 +122,7 @@ Supports suffixes @KB@, @KiB@, @MB@, @MiB@, @GB@, @GiB@, @TB@, @TiB@, @PB@, @PiB
 </notextile>
 
 
-h3(#CrunchRunCommand-network). Containers.CrunchRunArgumentList: Using host networking for containers
+h3(#CrunchRunArgumentList). Containers.CrunchRunArgumentList: Using host networking for containers
 
 Older Linux kernels (prior to 3.18) have bugs in network namespace handling which can lead to compute node lockups.  This by is indicated by blocked kernel tasks in "Workqueue: netns cleanup_net".   If you are experiencing this problem, as a workaround you can disable use of network namespaces by Docker across the cluster.  Be aware this reduces container isolation, which may be a security risk.
 
@@ -133,6 +133,37 @@ Older Linux kernels (prior to 3.18) have bugs in network namespace handling whic
         - <b>"-container-network-mode=host"</b></code>
 </pre>
 </notextile>
+
+
+h3(#InstanceTypes). InstanceTypes: Avoid submitting jobs with unsatisfiable resource constraints
+
+LSF does not provide feedback when a submitted job's RAM, CPU, or disk space constraints cannot be satisfied by any node: the job will wait in the queue indefinitely with "pending" status, reported by Arvados as "queued".
+
+As a workaround, you can configure @InstanceTypes@ with your LSF cluster's compute node sizes. Arvados will use these sizes to determine when a container is impossible to run, and cancel it instead of submitting an LSF job.
+
+Apart from detecting non-runnable containers, the configured instance types will not have any effect on scheduling.
+
+<notextile>
+<pre>    InstanceTypes:
+      most-ram:
+        VCPUs: 8
+        RAM: 640GiB
+        IncludedScratch: 640GB
+      most-cpus:
+        VCPUs: 32
+        RAM: 256GiB
+        IncludedScratch: 640GB
+      gpu:
+        VCPUs: 8
+        RAM: 256GiB
+        IncludedScratch: 640GB
+        CUDA:
+          DriverVersion: "11.4"
+          HardwareCapability: "7.5"
+          DeviceCount: 1
+</pre>
+</notextile>
+
 
 {% assign arvados_component = 'arvados-dispatch-lsf' %}
 
