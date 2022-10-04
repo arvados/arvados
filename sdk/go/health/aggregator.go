@@ -223,7 +223,8 @@ func (agg *Aggregator) ClusterHealth() ClusterHealthResponse {
 	for svcName, sh := range resp.Services {
 		switch svcName {
 		case arvados.ServiceNameDispatchCloud,
-			arvados.ServiceNameDispatchLSF:
+			arvados.ServiceNameDispatchLSF,
+			arvados.ServiceNameDispatchSLURM:
 			// ok to not run any given dispatcher
 		case arvados.ServiceNameHealth,
 			arvados.ServiceNameWorkbench1,
