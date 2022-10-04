@@ -57,7 +57,7 @@ export const viewDetailsAction = {
 
 export const advancedAction = {
     icon: AdvancedIcon,
-    name: "Advanced",
+    name: "API Details",
     execute: (dispatch, resource) => {
         dispatch(openAdvancedTabDialog(resource.uuid));
     }
