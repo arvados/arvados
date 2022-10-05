@@ -186,7 +186,7 @@ class TestContainer(unittest.TestCase):
                         'command': ['ls', '/var/spool/cwl'],
                         'cwd': '/var/spool/cwl',
                         'scheduling_parameters': {},
-                        'properties': {},
+                        'properties': {'cwl_input': {}},
                         'secret_mounts': {},
                         'output_storage_classes': ["default"]
                     }))
@@ -277,7 +277,7 @@ class TestContainer(unittest.TestCase):
             'scheduling_parameters': {
                 'partitions': ['blurb']
             },
-            'properties': {},
+            'properties': {'cwl_input': {}},
             'secret_mounts': {},
             'output_storage_classes': ["default"]
         }
@@ -410,7 +410,7 @@ class TestContainer(unittest.TestCase):
             'cwd': '/var/spool/cwl',
             'scheduling_parameters': {
             },
-            'properties': {},
+            'properties': {'cwl_input': {}},
             'secret_mounts': {},
             'output_storage_classes': ["default"]
         }
@@ -497,7 +497,7 @@ class TestContainer(unittest.TestCase):
                     'command': ['ls', '/var/spool/cwl'],
                     'cwd': '/var/spool/cwl',
                     'scheduling_parameters': {},
-                    'properties': {},
+                    'properties': {'cwl_input': {}},
                     'secret_mounts': {},
                     'output_storage_classes': ["default"]
                 }))
@@ -733,7 +733,38 @@ class TestContainer(unittest.TestCase):
                     'command': ['ls', '/var/spool/cwl'],
                     'cwd': '/var/spool/cwl',
                     'scheduling_parameters': {},
-                    'properties': {},
+                    'properties': {'cwl_input': {
+                        "p1": {
+                            "basename": "99999999999999999999999999999994+44",
+                            "class": "Directory",
+                            "dirname": "/keep",
+                            "http://arvados.org/cwl#collectionUUID": "zzzzz-4zz18-zzzzzzzzzzzzzzz",
+                            "listing": [
+                                {
+                                    "basename": "file1",
+                                    "class": "File",
+                                    "dirname": "/keep/99999999999999999999999999999994+44",
+                                    "location": "keep:99999999999999999999999999999994+44/file1",
+                                    "nameext": "",
+                                    "nameroot": "file1",
+                                    "path": "/keep/99999999999999999999999999999994+44/file1",
+                                    "size": 0
+                                },
+                                {
+                                    "basename": "file2",
+                                    "class": "File",
+                                    "dirname": "/keep/99999999999999999999999999999994+44",
+                                    "location": "keep:99999999999999999999999999999994+44/file2",
+                                    "nameext": "",
+                                    "nameroot": "file2",
+                                    "path": "/keep/99999999999999999999999999999994+44/file2",
+                                    "size": 0
+                                }
+                            ],
+                            "location": "keep:99999999999999999999999999999994+44",
+                            "path": "/keep/99999999999999999999999999999994+44"
+                        }
+                    }},
                     'secret_mounts': {},
                     'output_storage_classes': ["default"]
                 }))
@@ -827,7 +858,7 @@ class TestContainer(unittest.TestCase):
                     'command': ['md5sum', 'example.conf'],
                     'cwd': '/var/spool/cwl',
                     'scheduling_parameters': {},
-                    'properties': {},
+                    'properties': {'cwl_input': job_order},
                     "secret_mounts": {
                         "/var/spool/cwl/example.conf": {
                             "content": "username: user\npassword: blorp\n",
@@ -949,7 +980,7 @@ class TestContainer(unittest.TestCase):
                     'command': ['ls', '/var/spool/cwl'],
                     'cwd': '/var/spool/cwl',
                     'scheduling_parameters': {},
-                    'properties': {},
+                    'properties': {'cwl_input': {}},
                     'secret_mounts': {},
                     'output_storage_classes': ["foo_sc", "bar_sc"]
                 }))
@@ -1037,6 +1068,7 @@ class TestContainer(unittest.TestCase):
                     'scheduling_parameters': {},
                     'properties': {
                         "baz": "blorp",
+                        "cwl_input": {"x": "blorp"},
                         "foo": "bar",
                         "quux": {
                             "q1": 1,
@@ -1145,7 +1177,7 @@ class TestContainer(unittest.TestCase):
                         'command': ['nvidia-smi'],
                         'cwd': '/var/spool/cwl',
                         'scheduling_parameters': {},
-                        'properties': {},
+                        'properties': {'cwl_input': {}},
                         'secret_mounts': {},
                         'output_storage_classes': ["default"]
                     }))
@@ -1219,7 +1251,7 @@ class TestContainer(unittest.TestCase):
             'command': ['echo'],
             'cwd': '/var/spool/cwl',
             'scheduling_parameters': {},
-            'properties': {},
+            'properties': {'cwl_input': {}},
             'secret_mounts': {},
             'output_storage_classes': ["default"]
         }
@@ -1332,7 +1364,7 @@ class TestContainer(unittest.TestCase):
                             'command': ['ls', '/var/spool/cwl'],
                             'cwd': '/var/spool/cwl',
                             'scheduling_parameters': sched,
-                            'properties': {},
+                            'properties': {'cwl_input': {}},
                             'secret_mounts': {},
                             'output_storage_classes': ["default"]
                         }))
@@ -1521,7 +1553,19 @@ class TestWorkflow(unittest.TestCase):
                 "output_path": "/var/spool/cwl",
                 "output_ttl": 0,
                 "priority": 500,
-                "properties": {},
+                "properties": {'cwl_input': {
+                        "fileblub": {
+                            "basename": "token.txt",
+                            "class": "File",
+                            "dirname": "/keep/99999999999999999999999999999999+118",
+                            "location": "keep:99999999999999999999999999999999+118/token.txt",
+                            "nameext": ".txt",
+                            "nameroot": "token",
+                            "path": "/keep/99999999999999999999999999999999+118/token.txt",
+                            "size": 0
+                        },
+                        "sleeptime": 5
+                }},
                 "runtime_constraints": {
                     "ram": 1073741824,
                     "vcpus": 1
@@ -1594,7 +1638,7 @@ class TestWorkflow(unittest.TestCase):
                 'name': u'echo-subwf',
                 'secret_mounts': {},
                 'runtime_constraints': {'API': True, 'vcpus': 3, 'ram': 1073741824},
-                'properties': {},
+                'properties': {'cwl_input': {}},
                 'priority': 500,
                 'mounts': {
                     '/var/spool/cwl/cwl.input.yml': {
