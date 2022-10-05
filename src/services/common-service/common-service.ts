@@ -156,7 +156,9 @@ export class CommonService<T> {
             );
         } else {
             // Using the POST special case to avoid URI length 414 errors.
-            const formData = new FormData();
+            // We must use urlencoded post body since api doesn't support form data
+            // const formData = new FormData();
+            const formData = new URLSearchParams();
             formData.append("_method", "GET");
             Object.keys(params).forEach(key => {
                 if (params[key] !== undefined) {
@@ -164,11 +166,7 @@ export class CommonService<T> {
                 }
             });
             return CommonService.defaultResponse(
-                this.serverApi.post(`/${this.resourceType}`, formData, {
-                    params: {
-                        _method: 'GET'
-                    }
-                }),
+                this.serverApi.post(`/${this.resourceType}`, formData, {}),
                 this.actions,
                 showErrors
             );
