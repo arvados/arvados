@@ -16,12 +16,15 @@ import (
 	"net"
 	"net/http"
 	"net/url"
+	"os"
 	"strings"
 	"time"
 
 	"git.arvados.org/arvados.git/lib/cmd"
+	"git.arvados.org/arvados.git/lib/config"
 	"git.arvados.org/arvados.git/sdk/go/arvados"
 	"git.arvados.org/arvados.git/sdk/go/ctxlog"
+	"git.arvados.org/arvados.git/sdk/go/health"
 	"github.com/sirupsen/logrus"
 )
 
@@ -124,6 +127,30 @@ func (diag *diagnoser) runtests() {
 		diag.errorf("ARVADOS_API_HOST and ARVADOS_API_TOKEN environment variables are not set -- aborting without running any tests")
 		return
 	}
+
+	diag.dotest(5, "running health check (same as `arvados-server check`)", func() error {
+		ldr := config.NewLoader(&bytes.Buffer{}, ctxlog.New(&bytes.Buffer{}, "text", "info"))
+		ldr.SetupFlags(flag.NewFlagSet("diagnostics", flag.ContinueOnError))
+		cfg, err := ldr.Load()
+		if err != nil {
+			diag.infof("skipping because config could not be loaded: %s", err)
+			return nil
+		}
+		cluster, err := cfg.GetCluster("")
+		if err != nil {
+			return err
+		}
+		if cluster.SystemRootToken != os.Getenv("ARVADOS_API_TOKEN") {
+			diag.infof("skipping because provided token is not SystemRootToken")
+		}
+		agg := &health.Aggregator{Cluster: cluster}
+		resp := agg.ClusterHealth()
+		for _, e := range resp.Errors {
+			diag.errorf("health check: %s", e)
+		}
+		diag.infof("health check: reported clock skew %v", resp.ClockSkew)
+		return nil
+	})
 
 	var dd arvados.DiscoveryDocument
 	ddpath := "discovery/v1/apis/arvados/v1/rest"
