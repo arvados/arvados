@@ -62,7 +62,7 @@ extra_snakeoil_certs_arvados_snakeoil_ca_cmd_run:
     - name: |
         # These dirs are not too CentOS-ish, but this is a helper script
         # and they should be enough
-	/bin/bash -c "mkdir -p /etc/ssl/certs/ /etc/ssl/private/ && \
+        /bin/bash -c "mkdir -p /etc/ssl/certs/ /etc/ssl/private/ && \
         openssl req \
           -new \
           -nodes \

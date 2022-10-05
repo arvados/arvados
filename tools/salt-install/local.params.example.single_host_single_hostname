@@ -19,7 +19,7 @@ DEPLOY_USER=root
 # installer.sh will log in to each of these nodes and then provision
 # it for the specified roles.
 NODES=(
-  [localhost]=database,api,controller,websocket,dispatcher,keepbalance,keepstore,keepproxy,keepweb,workbench,workbench2,webshell,shell
+  [localhost]=''
 )
 
 # HOSTNAME_EXT must be set to the address that users will use to
