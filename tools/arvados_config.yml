@@ -17,7 +17,7 @@ Clusters:
       ManagedProperties:
         original_owner_uuid: {Function: original_owner, Protected: true}
       WebDAVCache:
-        UUIDTTL: 0s
+        TTL: 0s
     Login:
       PAM:
         Enable: true
