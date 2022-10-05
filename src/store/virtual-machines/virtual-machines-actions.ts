@@ -105,11 +105,13 @@ export const loadVirtualMachinesAdminData = () =>
 export const loadVirtualMachinesUserData = () =>
     async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
         dispatch<any>(loadRequestedDate());
+        const user = getState().auth.user;
         const virtualMachines = await services.virtualMachineService.list();
         const virtualMachinesUuids = virtualMachines.items.map(it => it.uuid);
         const links = await services.linkService.list({
             filters: new FilterBuilder()
                 .addIn("head_uuid", virtualMachinesUuids)
+                .addEqual("tail_uuid", user?.uuid)
                 .getFilters()
         });
         dispatch(virtualMachinesActions.SET_VIRTUAL_MACHINES(virtualMachines));
