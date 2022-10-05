@@ -170,6 +170,19 @@ func (disp *dispatcher) runContainer(_ *dispatch.Dispatcher, ctr arvados.Contain
 	if ctr.State != dispatch.Locked {
 		// already started by prior invocation
 	} else if _, ok := disp.lsfqueue.Lookup(ctr.UUID); !ok {
+		if _, err := dispatchcloud.ChooseInstanceType(disp.Cluster, &ctr); errors.As(err, &dispatchcloud.ConstraintsNotSatisfiableError{}) {
+			err := disp.arvDispatcher.Arv.Update("containers", ctr.UUID, arvadosclient.Dict{
+				"container": map[string]interface{}{
+					"runtime_status": map[string]string{
+						"error": err.Error(),
+					},
+				},
+			}, nil)
+			if err != nil {
+				return fmt.Errorf("error setting runtime_status on %s: %s", ctr.UUID, err)
+			}
+			return disp.arvDispatcher.UpdateState(ctr.UUID, dispatch.Cancelled)
+		}
 		disp.logger.Printf("Submitting container %s to LSF", ctr.UUID)
 		cmd := []string{disp.Cluster.Containers.CrunchRunCommand}
 		cmd = append(cmd, "--runtime-engine="+disp.Cluster.Containers.RuntimeEngine)
@@ -184,9 +197,8 @@ func (disp *dispatcher) runContainer(_ *dispatch.Dispatcher, ctr arvados.Contain
 	defer disp.logger.Printf("Done monitoring container %s", ctr.UUID)
 
 	go func(uuid string) {
-		cancelled := false
 		for ctx.Err() == nil {
-			qent, ok := disp.lsfqueue.Lookup(uuid)
+			_, ok := disp.lsfqueue.Lookup(uuid)
 			if !ok {
 				// If the container disappears from
 				// the lsf queue, there is no point in
@@ -195,25 +207,6 @@ func (disp *dispatcher) runContainer(_ *dispatch.Dispatcher, ctr arvados.Contain
 				disp.logger.Printf("container %s job disappeared from LSF queue", uuid)
 				cancel()
 				return
-			}
-			if !cancelled && qent.Stat == "PEND" && strings.Contains(qent.PendReason, "There are no suitable hosts for the job") {
-				disp.logger.Printf("container %s: %s", uuid, qent.PendReason)
-				err := disp.arvDispatcher.Arv.Update("containers", uuid, arvadosclient.Dict{
-					"container": map[string]interface{}{
-						"runtime_status": map[string]string{
-							"error": qent.PendReason,
-						},
-					},
-				}, nil)
-				if err != nil {
-					disp.logger.Printf("error setting runtime_status on %s: %s", uuid, err)
-					continue // retry
-				}
-				err = disp.arvDispatcher.UpdateState(uuid, dispatch.Cancelled)
-				if err != nil {
-					continue // retry (UpdateState() already logged the error)
-				}
-				cancelled = true
 			}
 		}
 	}(ctr.UUID)

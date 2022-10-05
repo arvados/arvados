@@ -32,6 +32,7 @@ var _ = check.Suite(&suite{})
 type suite struct {
 	disp          *dispatcher
 	crTooBig      arvados.ContainerRequest
+	crPending     arvados.ContainerRequest
 	crCUDARequest arvados.ContainerRequest
 }
 
@@ -46,6 +47,13 @@ func (s *suite) SetUpTest(c *check.C) {
 	c.Assert(err, check.IsNil)
 	cluster.Containers.CloudVMs.PollInterval = arvados.Duration(time.Second / 4)
 	cluster.Containers.MinRetryPeriod = arvados.Duration(time.Second / 4)
+	cluster.InstanceTypes = arvados.InstanceTypeMap{
+		"biggest_available_node": arvados.InstanceType{
+			RAM:             100 << 30, // 100 GiB
+			VCPUs:           4,
+			IncludedScratch: 100 << 30,
+			Scratch:         100 << 30,
+		}}
 	s.disp = newHandler(context.Background(), cluster, arvadostest.Dispatch1Token, prometheus.NewRegistry()).(*dispatcher)
 	s.disp.lsfcli.stubCommand = func(string, ...string) *exec.Cmd {
 		return exec.Command("bash", "-c", "echo >&2 unimplemented stub; false")
@@ -55,6 +63,23 @@ func (s *suite) SetUpTest(c *check.C) {
 			"runtime_constraints": arvados.RuntimeConstraints{
 				RAM:   1000000000000,
 				VCPUs: 1,
+			},
+			"container_image":     arvadostest.DockerImage112PDH,
+			"command":             []string{"sleep", "1"},
+			"mounts":              map[string]arvados.Mount{"/mnt/out": {Kind: "tmp", Capacity: 1000}},
+			"output_path":         "/mnt/out",
+			"state":               arvados.ContainerRequestStateCommitted,
+			"priority":            1,
+			"container_count_max": 1,
+		},
+	})
+	c.Assert(err, check.IsNil)
+
+	err = arvados.NewClientFromEnv().RequestAndDecode(&s.crPending, "POST", "arvados/v1/container_requests", nil, map[string]interface{}{
+		"container_request": map[string]interface{}{
+			"runtime_constraints": arvados.RuntimeConstraints{
+				RAM:   100000000,
+				VCPUs: 2,
 			},
 			"container_image":     arvadostest.DockerImage112PDH,
 			"command":             []string{"sleep", "1"},
@@ -150,15 +175,15 @@ func (stub lsfstub) stubCommand(s *suite, c *check.C) func(prog string, args ...
 				fakejobq[nextjobid] = args[1]
 				nextjobid++
 				mtx.Unlock()
-			case s.crTooBig.ContainerUUID:
+			case s.crPending.ContainerUUID:
 				c.Check(args, check.DeepEquals, []string{
-					"-J", s.crTooBig.ContainerUUID,
-					"-n", "1",
-					"-D", "954187MB",
-					"-R", "rusage[mem=954187MB:tmp=256MB] span[hosts=1]",
-					"-R", "select[mem>=954187MB]",
+					"-J", s.crPending.ContainerUUID,
+					"-n", "2",
+					"-D", "608MB",
+					"-R", "rusage[mem=608MB:tmp=256MB] span[hosts=1]",
+					"-R", "select[mem>=608MB]",
 					"-R", "select[tmp>=256MB]",
-					"-R", "select[ncpus>=1]"})
+					"-R", "select[ncpus>=2]"})
 				mtx.Lock()
 				fakejobq[nextjobid] = args[1]
 				nextjobid++
@@ -187,7 +212,7 @@ func (stub lsfstub) stubCommand(s *suite, c *check.C) func(prog string, args ...
 			var records []map[string]interface{}
 			for jobid, uuid := range fakejobq {
 				stat, reason := "RUN", ""
-				if uuid == s.crTooBig.ContainerUUID {
+				if uuid == s.crPending.ContainerUUID {
 					// The real bjobs output includes a trailing ';' here:
 					stat, reason = "PEND", "There are no suitable hosts for the job;"
 				}
@@ -242,21 +267,26 @@ func (s *suite) TestSubmit(c *check.C) {
 			c.Error("timed out")
 			break
 		}
+		// "crTooBig" should never be submitted to lsf because
+		// it is bigger than any configured instance type
+		if ent, ok := s.disp.lsfqueue.Lookup(s.crTooBig.ContainerUUID); ok {
+			c.Errorf("Lookup(crTooBig) == true, ent = %#v", ent)
+			break
+		}
 		// "queuedcontainer" should be running
 		if _, ok := s.disp.lsfqueue.Lookup(arvadostest.QueuedContainerUUID); !ok {
 			c.Log("Lookup(queuedcontainer) == false")
+			continue
+		}
+		// "crPending" should be pending
+		if ent, ok := s.disp.lsfqueue.Lookup(s.crPending.ContainerUUID); !ok {
+			c.Logf("Lookup(crPending) == false", ent)
 			continue
 		}
 		// "lockedcontainer" should be cancelled because it
 		// has priority 0 (no matching container requests)
 		if ent, ok := s.disp.lsfqueue.Lookup(arvadostest.LockedContainerUUID); ok {
 			c.Logf("Lookup(lockedcontainer) == true, ent = %#v", ent)
-			continue
-		}
-		// "crTooBig" should be cancelled because lsf stub
-		// reports there is no suitable instance type
-		if ent, ok := s.disp.lsfqueue.Lookup(s.crTooBig.ContainerUUID); ok {
-			c.Logf("Lookup(crTooBig) == true, ent = %#v", ent)
 			continue
 		}
 		var ctr arvados.Container
@@ -275,7 +305,7 @@ func (s *suite) TestSubmit(c *check.C) {
 			c.Logf("container %s is not in the LSF queue but its arvados record has not been updated to state==Cancelled (state is %q)", s.crTooBig.ContainerUUID, ctr.State)
 			continue
 		} else {
-			c.Check(ctr.RuntimeStatus["error"], check.Equals, "There are no suitable hosts for the job;")
+			c.Check(ctr.RuntimeStatus["error"], check.Equals, "constraints not satisfiable by any configured instance type")
 		}
 		c.Log("reached desired state")
 		break
