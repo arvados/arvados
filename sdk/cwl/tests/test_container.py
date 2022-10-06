@@ -543,7 +543,8 @@ class TestContainer(unittest.TestCase):
             "output_uuid": "zzzzz-4zz18-zzzzzzzzzzzzzz2",
             "uuid": "zzzzz-xvhdp-zzzzzzzzzzzzzzz",
             "container_uuid": "zzzzz-8i9sb-zzzzzzzzzzzzzzz",
-            "modified_at": "2017-05-26T12:01:22Z"
+            "modified_at": "2017-05-26T12:01:22Z",
+            "properties": {}
         })
 
         self.assertFalse(api.collections().create.called)
@@ -636,7 +637,8 @@ class TestContainer(unittest.TestCase):
             "output_uuid": "zzzzz-4zz18-zzzzzzzzzzzzzz2",
             "uuid": "zzzzz-xvhdp-zzzzzzzzzzzzzzz",
             "container_uuid": "zzzzz-8i9sb-zzzzzzzzzzzzzzz",
-            "modified_at": "2017-05-26T12:01:22Z"
+            "modified_at": "2017-05-26T12:01:22Z",
+            "properties": {}
         })
 
         rts_mock.assert_called_with(
