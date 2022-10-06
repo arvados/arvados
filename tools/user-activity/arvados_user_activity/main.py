@@ -95,20 +95,20 @@ def getuserinfocsv(arv, uuid):
 collectionNameCache = {}
 def getCollectionName(arv, uuid, pdh):
     lookupField = uuid
-    filters = [["uuid","=",uuid]]
+    filters = [["uuid", "=", uuid]]
     cached = uuid in collectionNameCache
     # look up by uuid if it is available, fall back to look up by pdh
-    if len(uuid) != 27:
+    if uuid is None or len(uuid) != 27:
         # Look up by pdh. Note that this can be misleading; the download could
         # have happened from a collection with the same pdh but different name.
         # We arbitrarily pick the oldest collection with the pdh to lookup the
         # name, if the uuid for the request is not known.
         lookupField = pdh
-        filters = [["portable_data_hash","=",pdh]]
+        filters = [["portable_data_hash", "=", pdh]]
         cached = pdh in collectionNameCache
 
     if not cached:
-        u = arv.collections().list(filters=filters,order="created_at",limit=1).execute().get("items")
+        u = arv.collections().list(filters=filters, order="created_at", limit=1).execute().get("items")
         if len(u) < 1:
             return "(deleted)"
         collectionNameCache[lookupField] = u[0]["name"]
@@ -208,20 +208,19 @@ def main(arguments=None):
                 users[owner].append([loguuid, event_at, "Deleted collection %s" % (getname(e["properties"]["old_attributes"]))])
 
         elif e["event_type"] == "file_download":
-                users.setdefault(e["object_uuid"], [])
-                users[e["object_uuid"]].append([loguuid, event_at, "Downloaded file \"%s\" from \"%s\" (%s) (%s)" % (
-                                                                                       e["properties"].get("collection_file_path") or e["properties"].get("reqPath"),
-                                                                                       getCollectionName(arv, e["properties"].get("collection_uuid"), e["properties"].get("portable_data_hash")),
-                                                                                       e["properties"].get("collection_uuid"),
-                                                                                       e["properties"].get("portable_data_hash"))])
-
+            users.setdefault(e["object_uuid"], [])
+            users[e["object_uuid"]].append([loguuid, event_at, "Downloaded file \"%s\" from \"%s\" (%s) (%s)" % (
+                e["properties"].get("collection_file_path") or e["properties"].get("reqPath"),
+                getCollectionName(arv, e["properties"].get("collection_uuid"), e["properties"].get("portable_data_hash")),
+                e["properties"].get("collection_uuid"),
+                e["properties"].get("portable_data_hash"))])
 
         elif e["event_type"] == "file_upload":
-                users.setdefault(e["object_uuid"], [])
-                users[e["object_uuid"]].append([loguuid, event_at, "Uploaded file \"%s\" to \"%s\" (%s)" % (
-                                                                                    e["properties"].get("collection_file_path") or e["properties"].get("reqPath"),
-                                                                                    getCollectionName(arv, e["properties"].get("collection_uuid"), e["properties"].get("portable_data_hash")),
-                                                                                    e["properties"].get("collection_uuid"))])
+            users.setdefault(e["object_uuid"], [])
+            users[e["object_uuid"]].append([loguuid, event_at, "Uploaded file \"%s\" to \"%s\" (%s)" % (
+                e["properties"].get("collection_file_path") or e["properties"].get("reqPath"),
+                getCollectionName(arv, e["properties"].get("collection_uuid"), e["properties"].get("portable_data_hash")),
+                e["properties"].get("collection_uuid"))])
 
         else:
             users[owner].append([loguuid, event_at, "%s %s %s" % (e["event_type"], e["object_kind"], e["object_uuid"])])
