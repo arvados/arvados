@@ -136,6 +136,10 @@ export const Snackbar = withStyles(styles)(connect(mapStateToProps, mapDispatchT
 ));
 
 const actions = (props: SnackbarMessage, onClick, onClose, classes, index, autoHideDuration) => {
+    if (onClose && autoHideDuration) {
+        setTimeout(onClose, autoHideDuration + 1000);
+    }
+
     const actions = [
         <IconButton
             key="close"
