@@ -136,8 +136,9 @@ describe("CommonResourceService", () => {
         await commonResourceService.list({ filters: tooBig });
         expect(axiosMock.history.get.length).toBe(0);
         expect(axiosMock.history.post.length).toBe(1);
-        expect(axiosMock.history.post[0].data.get('filters')).toBe(`[${tooBig}]`);
-        expect(axiosMock.history.post[0].params._method).toBe('GET');
+        const postParams = new URLSearchParams(axiosMock.history.post[0].data);
+        expect(postParams.get('filters')).toBe(`[${tooBig}]`);
+        expect(postParams.get('_method')).toBe('GET');
     });
 
     it("#list using GET when query string is not too big", async () => {

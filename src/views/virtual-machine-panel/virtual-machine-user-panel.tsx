@@ -19,7 +19,7 @@ import { CopyIcon } from 'components/icon/icon';
 import CopyToClipboard from 'react-copy-to-clipboard';
 import { snackbarActions, SnackbarKind } from 'store/snackbar/snackbar-actions';
 
-type CssRules = 'button' | 'codeSnippet' | 'link' | 'linkIcon' | 'rightAlign' | 'cardWithoutMachines' | 'icon' | 'chipsRoot' | 'copyIcon' | 'webshellButton';
+type CssRules = 'button' | 'codeSnippet' | 'link' | 'linkIcon' | 'rightAlign' | 'cardWithoutMachines' | 'icon' | 'chipsRoot' | 'copyIcon' | 'tableWrapper' | 'webshellButton';
 
 const EXTRA_TOKEN = "exraToken";
 
@@ -71,6 +71,9 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
         '& svg': {
             fontSize: '1rem'
         }
+    },
+    tableWrapper: {
+        overflowX: 'auto',
     },
     webshellButton: {
         textTransform: "initial",
@@ -176,7 +179,9 @@ const CardContentWithVirtualMachines = (props: VirtualMachineProps) =>
                             </Tooltip>
                         </a>
                     </div>
-                    {virtualMachinesTable(props)}
+                    <div className={props.classes.tableWrapper}>
+                        {virtualMachinesTable(props)}
+                    </div>
                 </span>
 
             </CardContent>

@@ -9,7 +9,7 @@ import { withDialog, WithDialogProps } from "store/dialog/with-dialog";
 import { FormDialog } from 'components/form-dialog/form-dialog';
 import { VIRTUAL_MACHINE_ADD_LOGIN_DIALOG, VIRTUAL_MACHINE_ADD_LOGIN_FORM, addUpdateVirtualMachineLogin, AddLoginFormData, VIRTUAL_MACHINE_ADD_LOGIN_USER_FIELD, VIRTUAL_MACHINE_ADD_LOGIN_GROUPS_FIELD } from 'store/virtual-machines/virtual-machines-actions';
 import { ParticipantSelect } from 'views-components/sharing-dialog/participant-select';
-import { GroupArrayInput } from 'views-components/virtual-machines-dialog/group-array-input';
+import { GroupArrayInput, GroupArrayDataProps } from 'views-components/virtual-machines-dialog/group-array-input';
 
 export const VirtualMachineAddLoginDialog = compose(
     withDialog(VIRTUAL_MACHINE_ADD_LOGIN_DIALOG),
@@ -20,16 +20,25 @@ export const VirtualMachineAddLoginDialog = compose(
         }
     })
 )(
-    (props: CreateGroupDialogComponentProps) =>
-        <FormDialog
+    (props: CreateGroupDialogComponentProps) => {
+        const [hasPartialGroupInput, setPartialGroupInput] = React.useState<boolean>(false);
+
+        return <FormDialog
             dialogTitle={props.data.updating ? "Update login permission" : "Add login permission"}
             formFields={AddLoginFormFields}
             submitLabel={props.data.updating ? "Update" : "Add"}
             {...props}
-        />
+            data={{
+                ...props.data,
+                setPartialGroupInput,
+                hasPartialGroupInput,
+            }}
+            invalid={props.invalid || hasPartialGroupInput}
+        />;
+    }
 );
 
-type CreateGroupDialogComponentProps = WithDialogProps<{updating: boolean}> & InjectedFormProps<AddLoginFormData>;
+type CreateGroupDialogComponentProps = WithDialogProps<{updating: boolean}> & GroupArrayDataProps & InjectedFormProps<AddLoginFormData>;
 
 const AddLoginFormFields = (props) => {
     return <>
@@ -42,6 +51,8 @@ const AddLoginFormFields = (props) => {
             name={VIRTUAL_MACHINE_ADD_LOGIN_GROUPS_FIELD}
             input={{id:"Add groups to VM login (eg: docker, sudo)", disabled:false}}
             required={false}
+            setPartialGroupInput={props.data.setPartialGroupInput}
+            hasPartialGroupInput={props.data.hasPartialGroupInput}
         />
     </>;
 }
