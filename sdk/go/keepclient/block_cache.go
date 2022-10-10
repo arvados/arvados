@@ -5,6 +5,7 @@
 package keepclient
 
 import (
+	"fmt"
 	"io"
 	"sort"
 	"strconv"
@@ -93,8 +94,11 @@ func (c *BlockCache) Get(kc *KeepClient, locator string) ([]byte, error) {
 				data = make([]byte, size, bufsize)
 				_, err = io.ReadFull(rdr, data)
 				err2 := rdr.Close()
-				if err == nil {
-					err = err2
+				if err == nil && err2 != nil {
+					err = fmt.Errorf("close(): %w", err2)
+				}
+				if err != nil {
+					err = fmt.Errorf("Get %s: %w", locator, err)
 				}
 			}
 			c.mtx.Lock()
