@@ -256,23 +256,25 @@ export const ProcessIOCard = withStyles(styles)(connect(null, mapDispatchToProps
             <CardContent className={classes.content}>
                 {mainProcess ?
                     (<>
-                        {params === undefined && <Grid container item alignItems='center' justify='center'>
+                        {/* raw is undefined until params are loaded */}
+                        {raw === undefined && <Grid container item alignItems='center' justify='center'>
                             <CircularProgress />
                         </Grid>}
-                        {params && params.length > 0 &&
+                        {raw && Object.keys(raw).length > 0 &&
                             <>
                                 <Tabs value={mainProcTabState} onChange={handleMainProcTabChange} variant="fullWidth" className={classes.symmetricTabs}>
-                                    <Tab label="Parameters" />
+                                    {/* params will be empty on processes without workflow definitions in mounts, so we only show raw */}
+                                    {(params && params.length) && <Tab label="Parameters" />}
                                     <Tab label="JSON" />
                                 </Tabs>
-                                {mainProcTabState === 0 && <div className={classes.tableWrapper}>
+                                {(mainProcTabState === 0 && params && params.length > 0) && <div className={classes.tableWrapper}>
                                         <ProcessIOPreview data={params} showImagePreview={showImagePreview} />
                                     </div>}
-                                {mainProcTabState === 1 && <div className={classes.tableWrapper}>
-                                        <ProcessIORaw data={raw || params} />
+                                {(mainProcTabState === 1 || !params || !(params.length > 0)) && <div className={classes.tableWrapper}>
+                                        <ProcessIORaw data={raw} />
                                     </div>}
                             </>}
-                        {params && params.length === 0 && <Grid container item alignItems='center' justify='center'>
+                        {raw && Object.keys(raw).length === 0 && <Grid container item alignItems='center' justify='center'>
                             <DefaultView messages={["No parameters found"]} />
                         </Grid>}
                     </>) :

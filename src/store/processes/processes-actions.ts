@@ -133,13 +133,22 @@ export const reRunProcess = (processUuid: string, workflowUuid: string) =>
         }
     };
 
+/*
+ * Fetches raw inputs from containerRequest mounts with fallback to properties
+ */
 export const getRawInputs = (data: any): CommandInputParameter[] | undefined => {
-    if (!data || !data.mounts || !data.mounts[MOUNT_PATH_CWL_INPUT]) { return undefined; }
-    return (data.mounts[MOUNT_PATH_CWL_INPUT].content);
+    if (!data) { return undefined; }
+    const mountInput = data.mounts?.[MOUNT_PATH_CWL_INPUT]?.content;
+    const propsInput = data.properties?.cwl_input;
+    if (!mountInput && !propsInput) { return undefined; }
+    return (mountInput || propsInput);
 }
 
 export const getInputs = (data: any): CommandInputParameter[] => {
     if (!data || !data.mounts || !data.mounts[MOUNT_PATH_CWL_WORKFLOW]) { return []; }
+    const content  = getRawInputs(data) as any;
+    if (!content) { return []; }
+
     const inputs = getWorkflowInputs(data.mounts[MOUNT_PATH_CWL_WORKFLOW].content);
     return inputs ? inputs.map(
         (it: any) => (
@@ -147,13 +156,21 @@ export const getInputs = (data: any): CommandInputParameter[] => {
                 type: it.type,
                 id: it.id,
                 label: it.label,
-                default: data.mounts[MOUNT_PATH_CWL_INPUT].content[it.id],
-                value: data.mounts[MOUNT_PATH_CWL_INPUT].content[it.id.split('/').pop()] || [],
+                default: content[it.id],
+                value: content[it.id.split('/').pop()] || [],
                 doc: it.doc
             }
         )
     ) : [];
 };
+
+/*
+ * Fetches raw outputs from containerRequest properties
+ */
+export const getRawOutputs = (data: any): CommandInputParameter[] | undefined => {
+    if (!data || !data.properties || !data.properties.cwl_output) { return undefined; }
+    return (data.properties.cwl_output);
+}
 
 export type InputCollectionMount = {
     path: string;

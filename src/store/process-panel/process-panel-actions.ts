@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import { unionize, ofType, UnionOf } from "common/unionize";
-import { loadProcess } from 'store/processes/processes-actions';
+import { getRawOutputs, loadProcess } from 'store/processes/processes-actions';
 import { Dispatch } from 'redux';
 import { ProcessStatus } from 'store/processes/process';
 import { RootState } from 'store/store';
@@ -15,6 +15,7 @@ import { showWorkflowDetails } from 'store/workflow-panel/workflow-panel-actions
 import { loadSubprocessPanel } from "../subprocess-panel/subprocess-panel-actions";
 import { initProcessLogsPanel, processLogsPanelActions } from "store/process-logs-panel/process-logs-panel-actions";
 import { CollectionFile } from "models/collection-file";
+import { ContainerRequestResource } from "models/container-request";
 
 export const processPanelActions = unionize({
     SET_PROCESS_PANEL_CONTAINER_REQUEST_UUID: ofType<string>(),
@@ -46,22 +47,30 @@ export const navigateToOutput = (uuid: string) =>
         }
     };
 
-export const loadOutputs = (uuid: string, setOutputs) =>
+export const loadOutputs = (containerRequest: ContainerRequestResource, setOutputs) =>
     async (dispatch: Dispatch<any>, getState: () => RootState, services: ServiceRepository) => {
+        if (!containerRequest.outputUuid) {setOutputs({}); return;};
         try {
-            const filesPromise = services.collectionService.files(uuid);
-            const collectionPromise = services.collectionService.get(uuid);
+            const propsOutputs = getRawOutputs(containerRequest);
+            const filesPromise = services.collectionService.files(containerRequest.outputUuid);
+            const collectionPromise = services.collectionService.get(containerRequest.outputUuid);
             const [files, collection] = await Promise.all([filesPromise, collectionPromise]);
 
-            const outputFile = files.find((file) => file.name === 'cwl.output.json') as CollectionFile | undefined;
-            let outputData = outputFile ? await services.collectionService.getFileContents(outputFile) : undefined;
-            if ((outputData = JSON.parse(outputData)) && collection.portableDataHash) {
-                setOutputs({
-                    rawOutputs: outputData,
-                    pdh: collection.portableDataHash,
-                });
+            // If has propsOutput, skip fetching cwl.output.json
+            if (propsOutputs !== undefined) {
+                setOutputs({rawOutputs: propsOutputs, pdh: collection.portableDataHash});
             } else {
-                setOutputs({});
+                // Fetch outputs from keep
+                const outputFile = files.find((file) => file.name === 'cwl.output.json') as CollectionFile | undefined;
+                let outputData = outputFile ? await services.collectionService.getFileContents(outputFile) : undefined;
+                if ((outputData = JSON.parse(outputData)) && collection.portableDataHash) {
+                    setOutputs({
+                        rawOutputs: outputData,
+                        pdh: collection.portableDataHash,
+                    });
+                } else {
+                    setOutputs({});
+                }
             }
         } catch {
             setOutputs({});

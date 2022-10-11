@@ -22,6 +22,7 @@ import { CommandInputParameter, getIOParamId } from 'models/workflow';
 import { CommandOutputParameter } from 'cwlts/mappings/v1.0/CommandOutputParameter';
 import { AuthState } from 'store/auth/auth-reducer';
 import { ProcessCmdCard } from './process-cmd-card';
+import { ContainerRequestResource } from 'models/container-request';
 
 type CssRules = 'root';
 
@@ -46,7 +47,7 @@ export interface ProcessPanelRootActionProps {
     onLogFilterChange: (filter: FilterOption) => void;
     navigateToLog: (uuid: string) => void;
     onCopyToClipboard: (uuid: string) => void;
-    fetchOutputs: (uuid: string, fetchOutputs) => void;
+    fetchOutputs: (containerRequest: ContainerRequestResource, fetchOutputs) => void;
 }
 
 export type ProcessPanelRootProps = ProcessPanelRootDataProps & ProcessPanelRootActionProps & WithStyles<CssRules>;
@@ -77,6 +78,8 @@ export const ProcessPanelRoot = withStyles(styles)(
     const outputUuid = process?.containerRequest.outputUuid;
     const requestUuid = process?.containerRequest.uuid;
 
+    const containerRequest = process?.containerRequest;
+
     const inputMounts = getInputCollectionMounts(process?.containerRequest);
 
     // Resets state when changing processes
@@ -87,28 +90,32 @@ export const ProcessPanelRoot = withStyles(styles)(
         setProcessedInputs(undefined);
     }, [requestUuid]);
 
+    // Fetch raw output (async for fetching from keep)
     React.useEffect(() => {
-        if (outputUuid) {
-            fetchOutputs(outputUuid, setOutputs);
+        if (containerRequest) {
+            fetchOutputs(containerRequest, setOutputs);
         }
-    }, [outputUuid, fetchOutputs]);
+    }, [containerRequest, fetchOutputs]);
 
+    // Format raw output into ProcessIOParameter[] when it changes
     React.useEffect(() => {
-        if (outputDetails !== undefined && outputDetails.rawOutputs && process) {
-            const outputDefinitions = getOutputParameters(process.containerRequest);
+        if (outputDetails !== undefined && outputDetails.rawOutputs && containerRequest) {
+            const outputDefinitions = getOutputParameters(containerRequest);
             setProcessedOutputs(formatOutputData(outputDefinitions, outputDetails.rawOutputs, outputDetails.pdh, auth));
         }
-    }, [outputDetails, auth, process]);
+    }, [outputDetails, auth, containerRequest]);
 
+    // Fetch raw inputs and format into ProcessIOParameter[]
+    //   Can be sync because inputs are either already in containerRequest mounts or props
     React.useEffect(() => {
-        if (process) {
-            const rawInputs = getRawInputs(process.containerRequest);
+        if (containerRequest) {
+            const rawInputs = getRawInputs(containerRequest);
             setInputs(rawInputs);
 
-            const inputs = getInputs(process.containerRequest);
+            const inputs = getInputs(containerRequest);
             setProcessedInputs(formatInputData(inputs, auth));
         }
-    }, [requestUuid, auth, process]);
+    }, [requestUuid, auth, containerRequest]);
 
     return process
         ? <MPVContainer className={props.classes.root} spacing={8} panelStates={panelsData}  justify-content="flex-start" direction="column" wrap="nowrap">

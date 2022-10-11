@@ -54,7 +54,7 @@ const mapDispatchToProps = (dispatch: Dispatch): ProcessPanelRootActionProps => 
     cancelProcess: (uuid) => dispatch<any>(cancelRunningWorkflow(uuid)),
     onLogFilterChange: (filter) => dispatch(setProcessLogsPanelFilter(filter.value)),
     navigateToLog: (uuid) => dispatch<any>(navigateToLogCollection(uuid)),
-    fetchOutputs: (uuid, setOutputs) => dispatch<any>(loadOutputs(uuid, setOutputs)),
+    fetchOutputs: (containerRequest, setOutputs) => dispatch<any>(loadOutputs(containerRequest, setOutputs)),
 });
 
 const getFilters = (processPanel: ProcessPanelState, processes: Process[]) => {
