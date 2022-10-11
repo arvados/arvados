@@ -98,11 +98,30 @@ describe("<SearchInput />", () => {
     describe("on input target change", () => {
         it("clears the input value on selfClearProp change", () => {
             const searchInput = mount(<SearchInput selfClearProp="abc" value="123" onSearch={onSearch} debounce={1000}/>);
-            searchInput.setProps({ selfClearProp: 'aaa' });
-            jest.runTimersToTime(1000);
+            // initial no clear call
+            jest.runTimersToTime(0);
+            searchInput.setProps({ selfClearProp: '111' });
+            expect(onSearch).not.toBeCalledWith("");
+            expect(onSearch).toHaveBeenCalledTimes(0);
+
+            // second call trigger input clear
+            searchInput.setProps({ selfClearProp: 'aaa111' });
+            jest.runTimersToTime(0);
             expect(onSearch).toBeCalledWith("");
             expect(onSearch).toHaveBeenCalledTimes(1);
+
+            // third call trigger not input clear beacuse of the same selfClearProp value
+            searchInput.setProps({ selfClearProp: 'aaa111', value: '321' });
+            jest.runTimersToTime(0);
+            expect(onSearch).toBeCalledWith("");
+            expect(onSearch).toHaveBeenCalledTimes(1);
+            expect(searchInput.props().value).toBe('321');
+
+            // third call trigger input clear beacuse of different selfClearProp value
+            searchInput.setProps({ selfClearProp: 'aaa222' });
+            jest.runTimersToTime(0);
+            expect(onSearch).toBeCalledWith("");
+            expect(onSearch).toHaveBeenCalledTimes(2);
         });
     });
-
 });

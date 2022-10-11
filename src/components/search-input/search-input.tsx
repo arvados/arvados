@@ -48,8 +48,9 @@ type SearchInputProps = SearchInputDataProps & SearchInputActionProps & WithStyl
 interface SearchInputState {
     value: string;
     label: string;
-    selfClearProp: string;
 }
+
+let selfClearPropState = '';
 
 export const DEFAULT_SEARCH_DEBOUNCE = 1000;
 
@@ -57,8 +58,7 @@ export const SearchInput = withStyles(styles)(
     class extends React.Component<SearchInputProps> {
         state: SearchInputState = {
             value: "",
-            label: "",
-            selfClearProp: ""
+            label: ""
         };
 
         timeout: number;
@@ -97,9 +97,11 @@ export const SearchInput = withStyles(styles)(
             if (nextProps.value !== this.props.value) {
                 this.setState({ value: nextProps.value });
             }
-            if (this.state.value !== '' && nextProps.selfClearProp && nextProps.selfClearProp !== this.state.selfClearProp) {
-                this.props.onSearch('');
-                this.setState({ selfClearProp: nextProps.selfClearProp });
+            if (this.state.value !== '' && nextProps.selfClearProp && nextProps.selfClearProp !== selfClearPropState) {
+                if (selfClearPropState !== '') {
+                    this.props.onSearch('');
+                }
+                selfClearPropState = nextProps.selfClearProp;
             }
         }
 
