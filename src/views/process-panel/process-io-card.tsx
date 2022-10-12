@@ -63,6 +63,7 @@ import { RootState } from 'store/store';
 import { ProcessOutputCollectionFiles } from './process-output-collection-files';
 import { Process } from 'store/processes/process';
 import { navigateTo } from 'store/navigation/navigation-action';
+import classNames from 'classnames';
 
 type CssRules =
   | "card"
@@ -78,6 +79,7 @@ type CssRules =
   | "collectionLink"
   | "imagePreview"
   | "valArray"
+  | "secondaryVal"
   | "emptyValue"
   | "halfRow"
   | "symmetricTabs"
@@ -159,6 +161,9 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
         '& span': {
             display: 'inline',
         }
+    },
+    secondaryVal: {
+        paddingLeft: '20px',
     },
     emptyValue: {
         color: theme.customs.colors.grey500,
@@ -320,6 +325,7 @@ export type ProcessIOValue = {
     display: ReactElement<any, any>;
     imageUrl?: string;
     collection?: ReactElement<any, any>;
+    secondary?: boolean;
 }
 
 export type ProcessIOParameter = {
@@ -398,7 +404,7 @@ const ProcessValuePreview = withStyles(styles)(
         <Typography className={classes.paramValue}>
             {value.imageUrl && showImagePreview ? <img className={classes.imagePreview} src={value.imageUrl} alt="Inline Preview" /> : ""}
             {value.imageUrl && !showImagePreview ? <ImagePlaceholder /> : ""}
-            <span className={classes.valArray}>
+            <span className={classNames(classes.valArray, value.secondary && classes.secondaryVal)}>
                 {value.display}
             </span>
         </Typography>
@@ -497,7 +503,7 @@ export const getIOParamDisplayValue = (auth: AuthState, input: CommandInputParam
             ];
 
             return files.length ?
-                files.map(file => fileToProcessIOValue(file, auth, pdh)) :
+                files.map((file, i) => fileToProcessIOValue(file, (i > 0), auth, pdh)) :
                 [{display: <EmptyValue />}];
 
         case isPrimitiveOfType(input, CWLType.DIRECTORY):
@@ -540,18 +546,20 @@ export const getIOParamDisplayValue = (auth: AuthState, input: CommandInputParam
                 [{display: <EmptyValue />}];
 
         case isArrayOfType(input, CWLType.FILE):
-            const fileArrayMainFile = ((input as FileArrayCommandInputParameter).value || []);
-            const fileArraySecondaryFiles = fileArrayMainFile.map((file) => (
-                ((file as unknown) as FileWithSecondaryFiles)?.secondaryFiles || []
-            )).reduce((acc: File[], params: File[]) => (acc.concat(params)), []);
+            const fileArrayMainFiles = ((input as FileArrayCommandInputParameter).value || []);
 
-            const fileArrayFiles = [
-                ...fileArrayMainFile,
-                ...fileArraySecondaryFiles
-            ];
+            // Convert each main file into separate arrays of ProcessIOValue to preserve secondaryFile grouping
+            const fileArrayValues = fileArrayMainFiles.map((mainFile: File): ProcessIOValue[] => {
+                const secondaryFiles = ((mainFile as unknown) as FileWithSecondaryFiles)?.secondaryFiles || [];
+                return [
+                    fileToProcessIOValue(mainFile, false, auth, pdh),
+                    ...(secondaryFiles.map(file => fileToProcessIOValue(file, true, auth, pdh)))
+                ];
+            // Reduce each mainFile/secondaryFile group into single array preserving ordering
+            }).reduce((acc: ProcessIOValue[], mainFile: ProcessIOValue[]) => (acc.concat(mainFile)), []);
 
-            return fileArrayFiles.length ?
-                fileArrayFiles.map(file => fileToProcessIOValue(file, auth, pdh)) :
+            return fileArrayValues.length ?
+                fileArrayValues :
                 [{display: <EmptyValue />}];
 
         case isArrayOfType(input, CWLType.DIRECTORY):
@@ -637,9 +645,10 @@ const directoryToProcessIOValue = (directory: Directory, auth: AuthState, pdh?: 
     };
 };
 
-const fileToProcessIOValue = (file: File, auth: AuthState, pdh?: string): ProcessIOValue => {
+const fileToProcessIOValue = (file: File, secondary: boolean, auth: AuthState, pdh?: string): ProcessIOValue => {
     return {
         display: <KeepUrlPath auth={auth} res={file} pdh={pdh}/>,
+        secondary,
         imageUrl: isFileImage(file.basename) ? getImageUrl(auth, file, pdh) : undefined,
         collection: <KeepUrlBase auth={auth} res={file} pdh={pdh}/>,
     }
