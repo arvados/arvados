@@ -291,6 +291,7 @@ var whitelist = map[string]bool{
 	"Workbench.UserProfileFormFields.*.*.*":               true,
 	"Workbench.UserProfileFormMessage":                    true,
 	"Workbench.WelcomePageHTML":                           true,
+	"Workbench.BannerURL":                                 true,
 }
 
 func redactUnsafe(m map[string]interface{}, mPrefix, lookupPrefix string) error {
