@@ -225,6 +225,10 @@ export const ProcessIOCard = withStyles(styles)(connect(null, mapDispatchToProps
         const PanelIcon = label === ProcessIOCardType.INPUT ? InputIcon : OutputIcon;
         const mainProcess = !process.containerRequest.requestingContainerUuid;
 
+        const loading = raw === undefined || params === undefined;
+        const hasRaw = !!(raw && Object.keys(raw).length > 0);
+        const hasParams = !!(params && params.length > 0);
+
         return <Card className={classes.card} data-cy="process-io-card">
             <CardHeader
                 className={classes.header}
@@ -257,20 +261,24 @@ export const ProcessIOCard = withStyles(styles)(connect(null, mapDispatchToProps
                 {mainProcess ?
                     (<>
                         {/* raw is undefined until params are loaded */}
-                        {raw === undefined && <Grid container item alignItems='center' justify='center'>
+                        {loading && <Grid container item alignItems='center' justify='center'>
                             <CircularProgress />
                         </Grid>}
-                        {raw && Object.keys(raw).length > 0 &&
+                        {/* Once loaded, either raw or params may still be empty
+                          *   Raw when all params are empty
+                          *   Params when raw is provided by containerRequest properties but workflow mount is absent for preview
+                          */}
+                        {(!loading && (hasRaw || hasParams)) &&
                             <>
                                 <Tabs value={mainProcTabState} onChange={handleMainProcTabChange} variant="fullWidth" className={classes.symmetricTabs}>
                                     {/* params will be empty on processes without workflow definitions in mounts, so we only show raw */}
-                                    {(params && params.length) && <Tab label="Parameters" />}
+                                    {hasParams && <Tab label="Parameters" />}
                                     <Tab label="JSON" />
                                 </Tabs>
-                                {(mainProcTabState === 0 && params && params.length > 0) && <div className={classes.tableWrapper}>
+                                {(mainProcTabState === 0 && params && hasParams) && <div className={classes.tableWrapper}>
                                         <ProcessIOPreview data={params} showImagePreview={showImagePreview} />
                                     </div>}
-                                {(mainProcTabState === 1 || !params || !(params.length > 0)) && <div className={classes.tableWrapper}>
+                                {(mainProcTabState === 1 || !hasParams) && <div className={classes.tableWrapper}>
                                         <ProcessIORaw data={raw} />
                                     </div>}
                             </>}
