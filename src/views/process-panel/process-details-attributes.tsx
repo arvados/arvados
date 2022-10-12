@@ -59,6 +59,8 @@ export const ProcessDetailsAttributes = withStyles(styles, { withTheme: true })(
             const container = props.container;
             const classes = props.classes;
             const mdSize = props.twoCol ? 6 : 12;
+            const filteredPropertyKeys = Object.keys(containerRequest.properties)
+                                            .filter(k => (typeof containerRequest.properties[k] !== 'object'));
             return <Grid container>
                 <Grid item xs={12}>
                     <ProcessRuntimeStatus runtimeStatus={container?.runtimeStatus} containerCount={containerRequest.containerCount} />
@@ -123,8 +125,8 @@ export const ProcessDetailsAttributes = withStyles(styles, { withTheme: true })(
                 */}
                 <Grid item xs={12} md={12}>
                     <DetailsAttribute label='Properties' />
-                    {Object.keys(containerRequest.properties).length > 0
-                        ? Object.keys(containerRequest.properties).map(k =>
+                    {filteredPropertyKeys.length > 0
+                        ? filteredPropertyKeys.map(k =>
                             Array.isArray(containerRequest.properties[k])
                                 ? containerRequest.properties[k].map((v: string) =>
                                     getPropertyChip(k, v, undefined, classes.propertyTag))
