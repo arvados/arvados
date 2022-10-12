@@ -1716,6 +1716,10 @@ Clusters:
       # This feature is disabled when set to zero.
       IdleTimeout: 0s
 
+      # URL to a file that is a fragment of text or HTML which should
+      # be rendered in Workbench as a banner.
+      BannerURL: ""
+
       # Workbench welcome screen, this is HTML text that will be
       # incorporated directly onto the page.
       WelcomePageHTML: |
