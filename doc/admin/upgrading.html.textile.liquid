@@ -33,6 +33,10 @@ h2(#main). development main (as of 2022-09-21)
 
 "previous: Upgrading to 2.4.3":#v2_4_3
 
+h3. Login-sync script requires configuration update on LoginCluster federations
+
+If you have @arvados-login-sync@ running on a satellite cluster, please update the environment variable settings by removing the @LOGINCLUSTER_ARVADOS_API_*@ variables and setting @ARVADOS_API_TOKEN@ to a LoginCluster's admin token, as described on the "updated install page":{{site.baseurl}}/install/install-shell-server.html#arvados-login-sync.
+
 h3. Renamed keep-web metrics and WebDAV configs
 
 Metrics previously reported by keep-web (@arvados_keepweb_collectioncache_requests@, @..._hits@, @..._pdh_hits@, @..._api_calls@, @..._cached_manifests@, and @arvados_keepweb_sessions_cached_collection_bytes@) have been replaced with @arvados_keepweb_cached_session_bytes@.

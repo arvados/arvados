@@ -23,13 +23,13 @@ Arvados support for shell nodes allows you to use Arvados permissions to grant L
 
 A shell node runs the @arvados-login-sync@ service to manage user accounts, and typically has Arvados utilities and SDKs pre-installed.  Users are allowed to log in and run arbitrary programs.  For optimal performance, the Arvados shell server should be on the same LAN as the Arvados cluster.
 
-Because Arvados @config.yml@ _contains secrets_ it should not *not* be present on shell nodes.
+Because Arvados @config.yml@ _contains secrets_ it should *not* be present on shell nodes.
 
 Shell nodes should be separate virtual machines from the VMs running other Arvados services.  You may choose to grant root access to users so that they can customize the node, for example, installing new programs.  This has security considerations depending on whether a shell node is single-user or multi-user.
 
 A single-user shell node should be set up so that it only stores Arvados access tokens that belong to that user.  In that case, that user can be safely granted root access without compromising other Arvados users.
 
-In the multi-user shell node case, a malicious user with @root@ access could access other user's Arvados tokens.  Users should only be given @root@ access on a multi-user shell node if you would trust them them to be Arvados administrators.  Be aware that with access to the @docker@ daemon, it is trival to gain *root* access to any file on the system, so giving users @docker@ access should be considered equivalent to @root@ access.
+In the multi-user shell node case, a malicious user with @root@ access could access other user's Arvados tokens.  Users should only be given @root@ access on a multi-user shell node if you would trust them to be Arvados administrators.  Be aware that with access to the @docker@ daemon, it is trival to gain *root* access to any file on the system, so giving users @docker@ access should be considered equivalent to @root@ access.
 
 h2(#dependencies). Install Dependencies and SDKs
 
@@ -101,17 +101,15 @@ EOF</span></code>
 </pre>
 </notextile>
 
-h3. Part of a LoginCLuster federation
+h3. Part of a LoginCluster federation
 
-If this cluster is part of a "federation with centralized user management":../admin/federation.html#LoginCluster , the login sync script also needs to be given the host and user token for the login cluster.
+If the cluster is part of a "federation with centralized user management":../admin/federation.html#LoginCluster , the login sync script needs to be given an admin token from the login cluster.
 
 <notextile>
 <pre>
 <code>shellserver:# <span class="userinput">umask 0700; tee /etc/cron.d/arvados-login-sync &lt;&lt;EOF
 ARVADOS_API_HOST="<strong>ClusterID.example.com</strong>"
-ARVADOS_API_TOKEN="<strong>xxxxxxxxxxxxxxxxx</strong>"
-LOGINCLUSTER_ARVADOS_API_HOST="<strong>LoginClusterID.example.com</strong>"
-LOGINCLUSTER_ARVADOS_API_TOKEN="<strong>yyyyyyyyyyyyyyyyy</strong>"
+ARVADOS_API_TOKEN="<strong>yyyloginclusteradmintokenyyyy</strong>"
 ARVADOS_VIRTUAL_MACHINE_UUID="<strong>zzzzz-2x53u-zzzzzzzzzzzzzzz</strong>"
 */2 * * * * root arvados-login-sync
 EOF</span></code>
