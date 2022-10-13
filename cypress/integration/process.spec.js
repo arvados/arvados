@@ -872,9 +872,9 @@ describe('Process tests', function() {
                     cy.wait(2000);
                     cy.waitForDom();
                     verifyIOParameter('input_file', null, "Label Description", 'input1.tar', '00000000000000000000000000000000+01');
-                    verifyIOParameter('input_file', null, "Label Description", 'input1-2.txt', '00000000000000000000000000000000+01', true);
-                    verifyIOParameter('input_file', null, "Label Description", 'input1-3.txt', '00000000000000000000000000000000+01', true);
-                    verifyIOParameter('input_file', null, "Label Description", 'input1-4.txt', '00000000000000000000000000000000+01', true);
+                    verifyIOParameter('input_file', null, "Label Description", 'input1-2.txt', undefined, true);
+                    verifyIOParameter('input_file', null, "Label Description", 'input1-3.txt', undefined, true);
+                    verifyIOParameter('input_file', null, "Label Description", 'input1-4.txt', undefined, true);
                     verifyIOParameter('input_dir', null, "Doc Description", 'No value', '11111111111111111111111111111111+01');
                     verifyIOParameter('input_bool', null, "Doc desc 1, Doc desc 2", 'true');
                     verifyIOParameter('input_int', null, null, '1');
@@ -883,8 +883,8 @@ describe('Process tests', function() {
                     verifyIOParameter('input_double', null, null, '1.3');
                     verifyIOParameter('input_string', null, null, 'Hello World');
                     verifyIOParameter('input_file_array', null, null, 'input2.tar', '00000000000000000000000000000000+02');
-                    verifyIOParameter('input_file_array', null, null, 'input3.tar', '00000000000000000000000000000000+03', true);
-                    verifyIOParameter('input_file_array', null, null, 'input3-2.txt', '00000000000000000000000000000000+03', true);
+                    verifyIOParameter('input_file_array', null, null, 'input3.tar', undefined, true);
+                    verifyIOParameter('input_file_array', null, null, 'input3-2.txt', undefined, true);
                     verifyIOParameter('input_dir_array', null, null, 'No value', '11111111111111111111111111111111+02');
                     verifyIOParameter('input_dir_array', null, null, 'No value', '11111111111111111111111111111111+03', true);
                     verifyIOParameter('input_int_array', null, null, ["1", "3", "5"]);
@@ -902,8 +902,8 @@ describe('Process tests', function() {
                     verifyIOParameter('output_file', null, "Label Description", 'cat.png', `${outPdh}`);
                     verifyIOParameterImage('output_file', `/c=${outPdh}/cat.png`);
                     verifyIOParameter('output_file_with_secondary', null, "Doc Description", 'main.dat', `${outPdh}`);
-                    verifyIOParameter('output_file_with_secondary', null, "Doc Description", 'secondary.dat', `${outPdh}`, true);
-                    verifyIOParameter('output_file_with_secondary', null, "Doc Description", 'secondary2.dat', `${outPdh}`, true);
+                    verifyIOParameter('output_file_with_secondary', null, "Doc Description", 'secondary.dat', undefined, true);
+                    verifyIOParameter('output_file_with_secondary', null, "Doc Description", 'secondary2.dat', undefined, true);
                     verifyIOParameter('output_dir', null, "Doc desc 1, Doc desc 2", 'outdir1', `${outPdh}`);
                     verifyIOParameter('output_bool', null, null, 'true');
                     verifyIOParameter('output_int', null, null, '1');
@@ -912,9 +912,9 @@ describe('Process tests', function() {
                     verifyIOParameter('output_double', null, null, '100.3');
                     verifyIOParameter('output_string', null, null, 'Hello output');
                     verifyIOParameter('output_file_array', null, null, 'output2.tar', `${outPdh}`);
-                    verifyIOParameter('output_file_array', null, null, 'output3.tar', `${outPdh}`, true);
+                    verifyIOParameter('output_file_array', null, null, 'output3.tar', undefined, true);
                     verifyIOParameter('output_dir_array', null, null, 'outdir2', `${outPdh}`);
-                    verifyIOParameter('output_dir_array', null, null, 'outdir3', `${outPdh}`, true);
+                    verifyIOParameter('output_dir_array', null, null, 'outdir3', undefined, true);
                     verifyIOParameter('output_int_array', null, null, ["10", "11", "12"]);
                     verifyIOParameter('output_long_array', null, null, ["51", "52"]);
                     verifyIOParameter('output_float_array', null, null, ["100.2", "100.4", "100.6"]);

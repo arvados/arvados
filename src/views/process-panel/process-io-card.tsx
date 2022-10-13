@@ -501,9 +501,10 @@ export const getIOParamDisplayValue = (auth: AuthState, input: CommandInputParam
                 ...(mainFile && !(Array.isArray(mainFile) && mainFile.length === 0) ? [mainFile] : []),
                 ...secondaryFiles
             ];
+            const mainFilePdhUrl = mainFile ? getResourcePdhUrl(mainFile, pdh) : "";
 
             return files.length ?
-                files.map((file, i) => fileToProcessIOValue(file, (i > 0), auth, pdh)) :
+                files.map((file, i) => fileToProcessIOValue(file, (i > 0), auth, pdh, (i > 0 ? mainFilePdhUrl : ""))) :
                 [{display: <EmptyValue />}];
 
         case isPrimitiveOfType(input, CWLType.DIRECTORY):
@@ -547,13 +548,15 @@ export const getIOParamDisplayValue = (auth: AuthState, input: CommandInputParam
 
         case isArrayOfType(input, CWLType.FILE):
             const fileArrayMainFiles = ((input as FileArrayCommandInputParameter).value || []);
+            const firstMainFilePdh = fileArrayMainFiles.length > 0 ? getResourcePdhUrl(fileArrayMainFiles[0], pdh) : "";
 
             // Convert each main file into separate arrays of ProcessIOValue to preserve secondaryFile grouping
-            const fileArrayValues = fileArrayMainFiles.map((mainFile: File): ProcessIOValue[] => {
+            const fileArrayValues = fileArrayMainFiles.map((mainFile: File, i): ProcessIOValue[] => {
                 const secondaryFiles = ((mainFile as unknown) as FileWithSecondaryFiles)?.secondaryFiles || [];
                 return [
-                    fileToProcessIOValue(mainFile, false, auth, pdh),
-                    ...(secondaryFiles.map(file => fileToProcessIOValue(file, true, auth, pdh)))
+                    // Pass firstMainFilePdh to secondary files and every main file besides the first to hide pdh if equal
+                    fileToProcessIOValue(mainFile, false, auth, pdh, i > 0 ? firstMainFilePdh : ""),
+                    ...(secondaryFiles.map(file => fileToProcessIOValue(file, true, auth, pdh, firstMainFilePdh)))
                 ];
             // Reduce each mainFile/secondaryFile group into single array preserving ordering
             }).reduce((acc: ProcessIOValue[], mainFile: ProcessIOValue[]) => (acc.concat(mainFile)), []);
@@ -591,9 +594,13 @@ interface KeepUrlProps {
     pdh?: string;
 }
 
-const KeepUrlBase = withStyles(styles)(({auth, res, pdh, classes}: KeepUrlProps & WithStyles<CssRules>) => {
+const getResourcePdhUrl = (res: File | Directory, pdh?: string): string => {
     const keepUrl = getKeepUrl(res, pdh);
-    const pdhUrl = keepUrl ? keepUrl.split('/').slice(0, 1)[0] : '';
+    return keepUrl ? keepUrl.split('/').slice(0, 1)[0] : '';
+};
+
+const KeepUrlBase = withStyles(styles)(({auth, res, pdh, classes}: KeepUrlProps & WithStyles<CssRules>) => {
+    const pdhUrl = getResourcePdhUrl(res, pdh);
     // Passing a pdh always returns a relative wb2 collection url
     const pdhWbPath = getNavUrl(pdhUrl, auth);
     return pdhUrl && pdhWbPath ?
@@ -645,12 +652,13 @@ const directoryToProcessIOValue = (directory: Directory, auth: AuthState, pdh?: 
     };
 };
 
-const fileToProcessIOValue = (file: File, secondary: boolean, auth: AuthState, pdh?: string): ProcessIOValue => {
+const fileToProcessIOValue = (file: File, secondary: boolean, auth: AuthState, pdh: string | undefined, mainFilePdh: string): ProcessIOValue => {
+    const resourcePdh = getResourcePdhUrl(file, pdh);
     return {
         display: <KeepUrlPath auth={auth} res={file} pdh={pdh}/>,
         secondary,
         imageUrl: isFileImage(file.basename) ? getImageUrl(auth, file, pdh) : undefined,
-        collection: <KeepUrlBase auth={auth} res={file} pdh={pdh}/>,
+        collection: (resourcePdh !== mainFilePdh) ? <KeepUrlBase auth={auth} res={file} pdh={pdh}/> : <></>,
     }
 };
 
