@@ -78,6 +78,7 @@ const FileInputComponent = connect()(
         }
 
         openDialog = () => {
+            this.componentDidMount();
             this.setState({ open: true });
         }
 

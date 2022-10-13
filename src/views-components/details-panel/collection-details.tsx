@@ -8,7 +8,7 @@ import { CollectionResource } from 'models/collection';
 import { DetailsData } from "./details-data";
 import { CollectionDetailsAttributes } from 'views/collection-panel/collection-panel';
 import { RootState } from 'store/store';
-import { filterResources, getResource } from 'store/resources/resources';
+import { filterResources, getResource, ResourcesState } from 'store/resources/resources';
 import { connect } from 'react-redux';
 import { Button, Grid, ListItem, StyleRulesCallback, Typography, withStyles, WithStyles } from '@material-ui/core';
 import { formatDate, formatFileSize } from 'common/formatters';
@@ -17,6 +17,7 @@ import { Dispatch } from 'redux';
 import { navigateTo } from 'store/navigation/navigation-action';
 import { openContextMenu, resourceUuidToContextMenuKind } from 'store/context-menu/context-menu-actions';
 import { openCollectionUpdateDialog } from 'store/collections/collection-update-actions';
+import { resourceIsFrozen } from 'common/frozen-resources';
 
 export type CssRules = 'versionBrowserHeader'
     | 'versionBrowserItem'
@@ -82,6 +83,7 @@ export class CollectionDetails extends DetailsData<CollectionResource> {
 }
 
 interface CollectionInfoDataProps {
+    resources: ResourcesState;
     currentCollection: CollectionResource | undefined;
 }
 
@@ -91,6 +93,7 @@ interface CollectionInfoDispatchProps {
 
 const ciMapStateToProps = (state: RootState): CollectionInfoDataProps => {
     return {
+        resources: state.resources,
         currentCollection: getResource<CollectionResource>(state.detailsPanel.resourceUuid)(state.resources),
     };
 };
@@ -110,10 +113,11 @@ type CollectionInfoProps = CollectionInfoDataProps & CollectionInfoDispatchProps
 
 const CollectionInfo = withStyles(styles)(
     connect(ciMapStateToProps, ciMapDispatchToProps)(
-        ({ currentCollection, editCollection, classes }: CollectionInfoProps) =>
+        ({ currentCollection, resources, editCollection, classes }: CollectionInfoProps) =>
             currentCollection !== undefined
                 ? <div>
                     <Button
+                        disabled={resourceIsFrozen(currentCollection, resources)}
                         className={classes.editButton} variant='contained'
                         data-cy='details-panel-edit-btn' color='primary' size='small'
                         onClick={() => editCollection(currentCollection)}>

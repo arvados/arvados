@@ -7,15 +7,17 @@ import { Button, Grid, StyleRulesCallback, WithStyles, Typography, Tooltip } fro
 import ChevronRightIcon from '@material-ui/icons/ChevronRight';
 import { withStyles } from '@material-ui/core';
 import { IllegalNamingWarning } from '../warning/warning';
-import { IconType } from 'components/icon/icon';
+import { IconType, FreezeIcon } from 'components/icon/icon';
 import grey from '@material-ui/core/colors/grey';
+import { ResourceBreadcrumb } from 'store/breadcrumbs/breadcrumbs-actions';
+import { ResourcesState } from 'store/resources/resources';
 
 export interface Breadcrumb {
     label: string;
     icon?: IconType;
 }
 
-type CssRules = "item" | "currentItem" | "label" | "icon";
+type CssRules = "item" | "currentItem" | "label" | "icon" | "frozenIcon";
 
 const styles: StyleRulesCallback<CssRules> = theme => ({
     item: {
@@ -29,18 +31,25 @@ const styles: StyleRulesCallback<CssRules> = theme => ({
     },
     icon: {
         fontSize: 20,
-        color: grey["600"]
+        color: grey["600"],
+        marginRight: '10px',
+    },
+    frozenIcon: {
+        fontSize: 20,
+        color: grey["600"],
+        marginLeft: '10px',
     },
 });
 
 export interface BreadcrumbsProps {
-    items: Breadcrumb[];
-    onClick: (breadcrumb: Breadcrumb) => void;
-    onContextMenu: (event: React.MouseEvent<HTMLElement>, breadcrumb: Breadcrumb) => void;
+    items: ResourceBreadcrumb[];
+    resources: ResourcesState;
+    onClick: (breadcrumb: ResourceBreadcrumb) => void;
+    onContextMenu: (event: React.MouseEvent<HTMLElement>, breadcrumb: ResourceBreadcrumb) => void;
 }
 
 export const Breadcrumbs = withStyles(styles)(
-    ({ classes, onClick, onContextMenu, items }: BreadcrumbsProps & WithStyles<CssRules>) =>
+    ({ classes, onClick, onContextMenu, items, resources }: BreadcrumbsProps & WithStyles<CssRules>) =>
     <Grid container data-cy='breadcrumbs' alignItems="center" wrap="nowrap">
     {
         items.map((item, index) => {
@@ -69,6 +78,9 @@ export const Breadcrumbs = withStyles(styles)(
                                 className={classes.label}>
                                 {item.label}
                             </Typography>
+                            {
+                                (resources[item.uuid] as any)?.frozenByUuid ? <FreezeIcon className={classes.frozenIcon} /> : null
+                            }
                         </Button>
                     </Tooltip>
                     {!isLastItem && <ChevronRightIcon color="inherit" className={classes.item} />}

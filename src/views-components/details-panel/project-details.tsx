@@ -19,6 +19,9 @@ import { getPropertyChip } from '../resource-properties-form/property-chip';
 import { ResourceWithName } from '../data-explorer/renderers';
 import { GroupClass } from "models/group";
 import { openProjectUpdateDialog, ProjectUpdateFormDialogData } from 'store/projects/project-update-actions';
+import { RootState } from 'store/store';
+import { ResourcesState } from 'store/resources/resources';
+import { resourceIsFrozen } from 'common/frozen-resources';
 
 export class ProjectDetails extends DetailsData<ProjectResource> {
     getIcon(className?: string) {
@@ -59,6 +62,12 @@ interface ProjectDetailsComponentActionProps {
     onClick: (prj: ProjectUpdateFormDialogData) => () => void;
 }
 
+const mapStateToProps = (state: RootState): { resources: ResourcesState } => {
+    return {
+        resources: state.resources
+    };
+};
+
 const mapDispatchToProps = (dispatch: Dispatch) => ({
     onClick: (prj: ProjectUpdateFormDialogData) =>
         () => dispatch<any>(openProjectUpdateDialog(prj)),
@@ -66,9 +75,9 @@ const mapDispatchToProps = (dispatch: Dispatch) => ({
 
 type ProjectDetailsComponentProps = ProjectDetailsComponentDataProps & ProjectDetailsComponentActionProps & WithStyles<CssRules>;
 
-const ProjectDetailsComponent = connect(null, mapDispatchToProps)(
+const ProjectDetailsComponent = connect(mapStateToProps, mapDispatchToProps)(
     withStyles(styles)(
-        ({ classes, project, onClick }: ProjectDetailsComponentProps) => <div>
+        ({ classes, project, resources, onClick }: ProjectDetailsComponentProps & { resources: ResourcesState }) => <div>
             {project.groupClass !== GroupClass.FILTER ?
                 <Button onClick={onClick({
                     uuid: project.uuid,
@@ -76,6 +85,7 @@ const ProjectDetailsComponent = connect(null, mapDispatchToProps)(
                     description: project.description,
                     properties: project.properties,
                 })}
+                    disabled={resourceIsFrozen(project, resources)}
                     className={classes.editButton} variant='contained'
                     data-cy='details-panel-edit-btn' color='primary' size='small'>
                     <RenameIcon className={classes.editIcon} /> Edit

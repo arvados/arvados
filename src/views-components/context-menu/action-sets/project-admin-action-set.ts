@@ -7,30 +7,56 @@ import { TogglePublicFavoriteAction } from "views-components/context-menu/action
 import { togglePublicFavorite } from "store/public-favorites/public-favorites-actions";
 import { publicFavoritePanelActions } from "store/public-favorites-panel/public-favorites-action";
 
-import { projectActionSet, filterGroupActionSet } from "views-components/context-menu/action-sets/project-action-set";
+import { shareAction, toggleFavoriteAction, openInNewTabMenuAction, copyToClipboardMenuAction, viewDetailsAction, advancedAction, openWith3rdPartyClientAction, freezeProjectAction, editProjectAction, moveToAction, toggleTrashAction, newProjectAction } from "views-components/context-menu/action-sets/project-action-set";
+
+export const togglePublicFavoriteAction = {
+    component: TogglePublicFavoriteAction,
+    name: 'TogglePublicFavoriteAction',
+    execute: (dispatch, resource) => {
+        dispatch(togglePublicFavorite(resource)).then(() => {
+            dispatch(publicFavoritePanelActions.REQUEST_ITEMS());
+        });
+}}
 
 export const projectAdminActionSet: ContextMenuActionSet = [[
-    ...projectActionSet.reduce((prev, next) => prev.concat(next), []),
-    {
-        component: TogglePublicFavoriteAction,
-        name: 'TogglePublicFavoriteAction',
-        execute: (dispatch, resource) => {
-            dispatch<any>(togglePublicFavorite(resource)).then(() => {
-                dispatch<any>(publicFavoritePanelActions.REQUEST_ITEMS());
-            });
-        }
-    }
+    toggleFavoriteAction,
+    openInNewTabMenuAction,
+    copyToClipboardMenuAction,
+    viewDetailsAction,
+    advancedAction,
+    openWith3rdPartyClientAction,
+    editProjectAction,
+    shareAction,
+    moveToAction,
+    toggleTrashAction,
+    newProjectAction,
+    freezeProjectAction,
+    togglePublicFavoriteAction
 ]];
 
 export const filterGroupAdminActionSet: ContextMenuActionSet = [[
-    ...filterGroupActionSet.reduce((prev, next) => prev.concat(next), []),
-    {
-        component: TogglePublicFavoriteAction,
-        name: 'TogglePublicFavoriteAction',
-        execute: (dispatch, resource) => {
-            dispatch<any>(togglePublicFavorite(resource)).then(() => {
-                dispatch<any>(publicFavoritePanelActions.REQUEST_ITEMS());
-            });
-        }
-    }
+    toggleFavoriteAction,
+    openInNewTabMenuAction,
+    copyToClipboardMenuAction,
+    viewDetailsAction,
+    advancedAction,
+    openWith3rdPartyClientAction,
+    editProjectAction,
+    shareAction,
+    moveToAction,
+    toggleTrashAction,
+    togglePublicFavoriteAction
+]];
+
+
+export const frozenAdminActionSet: ContextMenuActionSet = [[
+    shareAction,
+    togglePublicFavoriteAction,
+    toggleFavoriteAction,
+    openInNewTabMenuAction,
+    copyToClipboardMenuAction,
+    viewDetailsAction,
+    advancedAction,
+    openWith3rdPartyClientAction,
+    freezeProjectAction
 ]];

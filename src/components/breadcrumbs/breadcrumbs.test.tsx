@@ -15,6 +15,7 @@ configure({ adapter: new Adapter() });
 describe("<Breadcrumbs />", () => {
 
     let onClick: () => void;
+    let resources = {};
 
     beforeEach(() => {
         onClick = jest.fn();
@@ -24,7 +25,7 @@ describe("<Breadcrumbs />", () => {
         const items = [
             { label: 'breadcrumb 1' }
         ];
-        const breadcrumbs = shallow(<Breadcrumbs items={items} onClick={onClick} onContextMenu={jest.fn()} />).dive();
+        const breadcrumbs = shallow(<Breadcrumbs items={items} resources={resources} onClick={onClick} onContextMenu={jest.fn()} />).dive();
         expect(breadcrumbs.find(Button)).toHaveLength(1);
         expect(breadcrumbs.find(ChevronRightIcon)).toHaveLength(0);
     });
@@ -34,7 +35,7 @@ describe("<Breadcrumbs />", () => {
             { label: 'breadcrumb 1' },
             { label: 'breadcrumb 2' }
         ];
-        const breadcrumbs = shallow(<Breadcrumbs items={items} onClick={onClick} onContextMenu={jest.fn()} />).dive();
+        const breadcrumbs = shallow(<Breadcrumbs items={items} resources={resources} onClick={onClick} onContextMenu={jest.fn()} />).dive();
         expect(breadcrumbs.find(Button)).toHaveLength(2);
         expect(breadcrumbs.find(ChevronRightIcon)).toHaveLength(1);
     });
@@ -44,7 +45,7 @@ describe("<Breadcrumbs />", () => {
             { label: 'breadcrumb 1' },
             { label: 'breadcrumb 2' }
         ];
-        const breadcrumbs = shallow(<Breadcrumbs items={items} onClick={onClick} onContextMenu={jest.fn()} />).dive();
+        const breadcrumbs = shallow(<Breadcrumbs items={items} resources={resources} onClick={onClick} onContextMenu={jest.fn()} />).dive();
         breadcrumbs.find(Button).at(1).simulate('click');
         expect(onClick).toBeCalledWith(items[1]);
     });
