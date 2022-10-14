@@ -152,11 +152,11 @@ export const initializeManagementForm = async (dispatch: Dispatch, getState: () 
         const { items: permissionLinks } = await permissionService.listResourcePermissions(resourceUuid);
         dispatch<any>(initializePublicAccessForm(permissionLinks));
         const filters = new FilterBuilder()
-            .addIn('uuid', permissionLinks.map(({ tailUuid }) => tailUuid))
+            .addIn('uuid', Array.from(new Set(permissionLinks.map(({ tailUuid }) => tailUuid))))
             .getFilters();
 
-        const { items: users } = await userService.list({ filters, count: "none" });
-        const { items: groups } = await groupsService.list({ filters, count: "none" });
+        const { items: users } = await userService.list({ filters, count: "none", limit: 1000 });
+        const { items: groups } = await groupsService.list({ filters, count: "none", limit: 1000 });
 
         const getEmail = (tailUuid: string) => {
             const user = users.find(({ uuid }) => uuid === tailUuid);
