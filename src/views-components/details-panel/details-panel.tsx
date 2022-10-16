@@ -27,6 +27,7 @@ import { getResource } from 'store/resources/resources';
 import { toggleDetailsPanel, SLIDE_TIMEOUT, openDetailsPanel } from 'store/details-panel/details-panel-action';
 import { FileDetails } from 'views-components/details-panel/file-details';
 import { getNode } from 'models/tree';
+import { resourceIsFrozen } from 'common/frozen-resources';
 
 type CssRules = 'root' | 'container' | 'opened' | 'headerContainer' | 'headerIcon' | 'tabContainer';
 
@@ -87,7 +88,14 @@ const mapStateToProps = ({ auth, detailsPanel, resources, collectionPanelFiles }
     const file = resource
         ? undefined
         : getNode(detailsPanel.resourceUuid)(collectionPanelFiles);
+
+    let isFrozen = false;
+    if (resource) {
+        isFrozen = resourceIsFrozen(resource, resources);
+    }
+
     return {
+        isFrozen,
         authConfig: auth.config,
         isOpened: detailsPanel.isOpened,
         tabNr: detailsPanel.tabNr,
@@ -111,6 +119,7 @@ export interface DetailsPanelDataProps {
     isOpened: boolean;
     tabNr: number;
     res: DetailsResource;
+    isFrozen: boolean;
 }
 
 type DetailsPanelProps = DetailsPanelDataProps & WithStyles<CssRules>;

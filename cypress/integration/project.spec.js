@@ -312,6 +312,98 @@ describe('Project tests', function() {
         });
     });
 
+    describe('Frozen projects', () => {
+        beforeEach(() => {  
+            cy.createGroup(activeUser.token, {
+                name: `Main project ${Math.floor(Math.random() * 999999)}`,
+                group_class: 'project',
+            }).as('mainProject');
+    
+            cy.createGroup(adminUser.token, {
+                name: `Admin project ${Math.floor(Math.random() * 999999)}`,
+                group_class: 'project',
+            }).as('adminProject').then((mainProject) => {
+                cy.shareWith(adminUser.token, activeUser.user.uuid, mainProject.uuid, 'can_write');
+            });
+
+            cy.get('@mainProject').then((mainProject) => {
+                cy.createGroup(adminUser.token, {
+                    name : `Sub project ${Math.floor(Math.random() * 999999)}`,
+                    group_class: 'project',
+                    owner_uuid: mainProject.uuid,
+                }).as('subProject');
+
+                cy.createCollection(adminUser.token, {
+                    name: `Main collection ${Math.floor(Math.random() * 999999)}`,
+                    owner_uuid: mainProject.uuid,
+                    manifest_text: "./subdir 37b51d194a7513e45b56f6524f2d51f2+3 0:3:foo\n. 37b51d194a7513e45b56f6524f2d51f2+3 0:3:bar\n"
+                }).as('mainCollection');        
+            });
+        });
+
+        it('should be able to froze own project', () => {
+            cy.getAll('@mainProject').then(([mainProject]) => {
+                cy.loginAs(activeUser);
+
+                cy.get('[data-cy=project-panel]').contains(mainProject.name).rightclick();
+
+                cy.get('[data-cy=context-menu]').contains('Freeze').click();
+
+                cy.get('[data-cy=project-panel]').contains(mainProject.name).rightclick();
+
+                cy.get('[data-cy=context-menu]').contains('Freeze').should('not.exist');
+            });
+        });
+
+        it('should not be able to modify items within the frozen project', () => {
+            cy.getAll('@mainProject', '@mainCollection').then(([mainProject, mainCollection]) => {
+                cy.loginAs(activeUser);
+
+                cy.get('[data-cy=project-panel]').contains(mainProject.name).rightclick();
+
+                cy.get('[data-cy=context-menu]').contains('Freeze').click();
+
+                cy.get('[data-cy=project-panel]').contains(mainProject.name).click();
+
+                cy.get('[data-cy=project-panel]').contains(mainCollection.name).rightclick();
+
+                cy.get('[data-cy=context-menu]').contains('Move to trash').should('not.exist');
+            });
+        });
+
+        it('should be able to froze not owned project', () => {
+            cy.getAll('@adminProject').then(([adminProject]) => {
+                cy.loginAs(activeUser);
+
+                cy.get('[data-cy=side-panel-tree]').contains('Shared with me').click();
+
+                cy.get('main').contains(adminProject.name).rightclick();
+
+                cy.get('[data-cy=context-menu]').contains('Freeze').should('not.exist');
+            });
+        });
+
+        it('should be able to unfroze project if user is an admin', () => {
+            cy.getAll('@adminProject').then(([adminProject]) => {
+                cy.loginAs(adminUser);
+
+                cy.get('main').contains(adminProject.name).rightclick();
+
+                cy.get('[data-cy=context-menu]').contains('Freeze').click();
+
+                cy.wait(1000);
+
+                cy.get('main').contains(adminProject.name).rightclick();
+
+                cy.get('[data-cy=context-menu]').contains('Unfreeze').click();
+
+                cy.get('main').contains(adminProject.name).rightclick();
+                
+                cy.get('[data-cy=context-menu]').contains('Freeze').should('exist');
+            });
+        });
+    });
+
     it('copies project URL to clipboard', () => {
         const projectName = `Test project (${Math.floor(999999 * Math.random())})`;
 
@@ -338,3 +430,4 @@ describe('Project tests', function() {
 
     });
 });
+

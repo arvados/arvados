@@ -21,6 +21,8 @@ import { CollectionResource } from 'models/collection';
 import { GroupClass, GroupResource } from 'models/group';
 import { GroupContentsResource } from 'services/groups-service/groups-service';
 import { LinkResource } from 'models/link';
+import { resourceIsFrozen } from 'common/frozen-resources';
+import { ProjectResource } from 'models/project';
 
 export const contextMenuActions = unionize({
     OPEN_CONTEXT_MENU: ofType<{ position: ContextMenuPosition, resource: ContextMenuResource }>(),
@@ -40,6 +42,8 @@ export type ContextMenuResource = {
     isEditable?: boolean;
     outputUuid?: string;
     workflowUuid?: string;
+    isAdmin?: boolean;
+    isFrozen?: boolean;
     storageClassesDesired?: string[];
     properties?: { [key: string]: string | string[] };
 };
@@ -162,6 +166,7 @@ export const openProjectContextMenu = (event: React.MouseEvent<HTMLElement>, res
                 description: res.description,
                 ownerUuid: res.ownerUuid,
                 isTrashed: ('isTrashed' in res) ? res.isTrashed : false,
+                isFrozen: !!(res as ProjectResource).frozenByUuid,
             }));
         }
     };
@@ -224,10 +229,15 @@ export const resourceUuidToContextMenuKind = (uuid: string, readonly = false) =>
         const { isAdmin: isAdminUser, uuid: userUuid } = getState().auth.user!;
         const kind = extractUuidKind(uuid);
         const resource = getResourceWithEditableStatus<GroupResource & EditableResource>(uuid, userUuid)(getState().resources);
+        const isFrozen = resourceIsFrozen(resource, getState().resources);
+        const isEditable = (isAdminUser || (resource || {} as EditableResource).isEditable) && !readonly && !isFrozen;
 
-        const isEditable = (isAdminUser || (resource || {} as EditableResource).isEditable) && !readonly;
         switch (kind) {
             case ResourceKind.PROJECT:
+                if (isFrozen) {
+                    return isAdminUser ? ContextMenuKind.FROZEN_PROJECT_ADMIN : ContextMenuKind.FROZEN_PROJECT;
+                }
+
                 return (isAdminUser && !readonly)
                     ? (resource && resource.groupClass !== GroupClass.FILTER)
                         ? ContextMenuKind.PROJECT_ADMIN
@@ -246,13 +256,13 @@ export const resourceUuidToContextMenuKind = (uuid: string, readonly = false) =>
                     ? ContextMenuKind.OLD_VERSION_COLLECTION
                     : (isTrashed && isEditable)
                         ? ContextMenuKind.TRASHED_COLLECTION
-                        : (isAdminUser && !readonly)
+                        : (isAdminUser && isEditable)
                             ? ContextMenuKind.COLLECTION_ADMIN
                             : isEditable
                                 ? ContextMenuKind.COLLECTION
                                 : ContextMenuKind.READONLY_COLLECTION;
             case ResourceKind.PROCESS:
-                return (isAdminUser && !readonly)
+                return (isAdminUser && isEditable)
                     ? ContextMenuKind.PROCESS_ADMIN
                     : readonly
                         ? ContextMenuKind.READONLY_PROCESS_RESOURCE

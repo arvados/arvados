@@ -11,7 +11,7 @@ import { ProjectIcon } from 'components/icon/icon';
 export const HomeTreePicker = connect(() => ({
     rootItemIcon: ProjectIcon,
 }), (dispatch: Dispatch): Pick<ProjectsTreePickerProps, 'loadRootItem'> => ({
-    loadRootItem: (_, pickerId, includeCollections, includeFiles) => {
-        dispatch<any>(loadUserProject(pickerId, includeCollections, includeFiles));
+    loadRootItem: (_, pickerId, includeCollections, includeFiles, options) => {
+        dispatch<any>(loadUserProject(pickerId, includeCollections, includeFiles, options));
     },
 }))(ProjectsTreePicker);

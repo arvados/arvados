@@ -83,6 +83,20 @@ library.add(
     faEllipsisH,
 );
 
+export const FreezeIcon = (props: any) =>
+    <span {...props}>
+        <span className='fas fa-snowflake' />
+    </span>
+
+export const UnfreezeIcon = (props: any) =>
+    <div {...props}>
+        <div className="fa-layers fa-1x fa-fw">
+            <span className="fas fa-slash"
+                data-fa-mask="fas fa-snowflake" data-fa-transform="down-1.5" />
+            <span className="fas fa-slash" />
+        </div>
+    </div>;
+
 export const PendingIcon = (props: any) =>
     <span {...props}>
         <span className='fas fa-ellipsis-h' />

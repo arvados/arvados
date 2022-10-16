@@ -79,6 +79,8 @@ export enum ContextMenuKind {
     PROJECT = "Project",
     FILTER_GROUP = "FilterGroup",
     READONLY_PROJECT = 'ReadOnlyProject',
+    FROZEN_PROJECT = 'FrozenProject',
+    FROZEN_PROJECT_ADMIN = 'FrozenProjectAdmin',
     PROJECT_ADMIN = "ProjectAdmin",
     FILTER_GROUP_ADMIN = "FilterGroupAdmin",
     RESOURCE = "Resource",

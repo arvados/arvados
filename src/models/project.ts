@@ -5,6 +5,8 @@
 import { GroupClass, GroupResource } from "./group";
 
 export interface ProjectResource extends GroupResource {
+    frozenByUuid: null|string;
+    canManage: boolean;
     groupClass: GroupClass.PROJECT | GroupClass.FILTER | GroupClass.ROLE;
 }
 
