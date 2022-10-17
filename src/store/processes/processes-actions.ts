@@ -135,12 +135,14 @@ export const reRunProcess = (processUuid: string, workflowUuid: string) =>
 
 /*
  * Fetches raw inputs from containerRequest mounts with fallback to properties
+ * Returns undefined if containerRequest not loaded
+ * Returns [] if inputs not found in mounts or props
  */
 export const getRawInputs = (data: any): CommandInputParameter[] | undefined => {
     if (!data) { return undefined; }
     const mountInput = data.mounts?.[MOUNT_PATH_CWL_INPUT]?.content;
     const propsInput = data.properties?.cwl_input;
-    if (!mountInput && !propsInput) { return undefined; }
+    if (!mountInput && !propsInput) { return []; }
     return (mountInput || propsInput);
 }
 
@@ -166,6 +168,7 @@ export const getInputs = (data: any): CommandInputParameter[] => {
 
 /*
  * Fetches raw outputs from containerRequest properties
+ * Assumes containerRequest is loaded
  */
 export const getRawOutputs = (data: any): CommandInputParameter[] | undefined => {
     if (!data || !data.properties || !data.properties.cwl_output) { return undefined; }

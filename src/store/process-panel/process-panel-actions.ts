@@ -63,17 +63,17 @@ export const loadOutputs = (containerRequest: ContainerRequestResource, setOutpu
                 // Fetch outputs from keep
                 const outputFile = files.find((file) => file.name === 'cwl.output.json') as CollectionFile | undefined;
                 let outputData = outputFile ? await services.collectionService.getFileContents(outputFile) : undefined;
-                if ((outputData = JSON.parse(outputData)) && collection.portableDataHash) {
+                if (outputData && (outputData = JSON.parse(outputData)) && collection.portableDataHash) {
                     setOutputs({
                         rawOutputs: outputData,
                         pdh: collection.portableDataHash,
                     });
                 } else {
-                    setOutputs({});
+                    setOutputs({rawOutputs: {}});
                 }
             }
         } catch {
-            setOutputs({});
+            setOutputs({rawOutputs: {}});
         }
     };
 
