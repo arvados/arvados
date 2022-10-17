@@ -875,7 +875,7 @@ describe('Process tests', function() {
                     verifyIOParameter('input_file', null, "Label Description", 'input1-2.txt', undefined, true);
                     verifyIOParameter('input_file', null, "Label Description", 'input1-3.txt', undefined, true);
                     verifyIOParameter('input_file', null, "Label Description", 'input1-4.txt', undefined, true);
-                    verifyIOParameter('input_dir', null, "Doc Description", 'No value', '11111111111111111111111111111111+01');
+                    verifyIOParameter('input_dir', null, "Doc Description", '/', '11111111111111111111111111111111+01');
                     verifyIOParameter('input_bool', null, "Doc desc 1, Doc desc 2", 'true');
                     verifyIOParameter('input_int', null, null, '1');
                     verifyIOParameter('input_long', null, null, '1');
@@ -885,8 +885,8 @@ describe('Process tests', function() {
                     verifyIOParameter('input_file_array', null, null, 'input2.tar', '00000000000000000000000000000000+02');
                     verifyIOParameter('input_file_array', null, null, 'input3.tar', undefined, true);
                     verifyIOParameter('input_file_array', null, null, 'input3-2.txt', undefined, true);
-                    verifyIOParameter('input_dir_array', null, null, 'No value', '11111111111111111111111111111111+02');
-                    verifyIOParameter('input_dir_array', null, null, 'No value', '11111111111111111111111111111111+03', true);
+                    verifyIOParameter('input_dir_array', null, null, '/', '11111111111111111111111111111111+02');
+                    verifyIOParameter('input_dir_array', null, null, '/', '11111111111111111111111111111111+03', true);
                     verifyIOParameter('input_int_array', null, null, ["1", "3", "5"]);
                     verifyIOParameter('input_long_array', null, null, ["10", "20"]);
                     verifyIOParameter('input_float_array', null, null, ["10.2", "10.4", "10.6"]);
