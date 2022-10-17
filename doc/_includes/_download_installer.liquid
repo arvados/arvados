@@ -9,7 +9,7 @@ SPDX-License-Identifier: CC-BY-SA-3.0
 This is a package-based installation method, however the installation script is currently distributed in source form via @git@. We recommend checking out the git tree on your local workstation, not directly on the target(s) where you want to install and run Arvados.
 
 <notextile>
-<pre><code>git clone https://git.arvados.org/arvados.git
+<pre><code>git clone https://github.com/arvados/arvados.git
 cd arvados
 git checkout {{ branchname }}
 cd tools/salt-install
@@ -29,6 +29,6 @@ cd ~/setup-arvados-${CLUSTER}
 </code></pre>
 </notextile>
 
-This creates a git repository in @~/setup-arvados-xarv1@.  The @installer.sh@ will record all the configuration changes you make, as well as using @git push@ to synchronize configuration edits across all the nodes.
+This creates a git repository in @~/setup-arvados-xarv1@.  The @installer.sh@ will record all the configuration changes you make, as well as using @git push@ to synchronize configuration edits if you have multiple nodes.
 
 Important!  All further commands must be run in the @~/setup-arvados-xarv1@

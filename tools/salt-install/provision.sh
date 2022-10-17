@@ -831,7 +831,7 @@ if [ "${DUMP_CONFIG}" = "yes" ]; then
 fi
 
 # Now run the install
-salt-call --local state.apply -l ${LOG_LEVEL}
+salt-call --state-output=mixed --local state.apply -l ${LOG_LEVEL}
 
 # Finally, make sure that /etc/hosts is not overwritten on reboot
 if [ -d /etc/cloud/cloud.cfg.d ]; then

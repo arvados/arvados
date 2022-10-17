@@ -2,9 +2,12 @@
 #
 # SPDX-License-Identifier: AGPL-3.0
 
-/var/lib/arvados/keep:
+var_lib_arvados_keep_dir:
   file.directory:
+    - name: /var/lib/arvados/keep
     - user: root
     - group: root
     - mode: '0770'
-    - makedirs: True
+    - makedirs: true
+    - require_in:
+      - pkg: {{ arvados.keepstore.pkg.name }}

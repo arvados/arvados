@@ -20,8 +20,8 @@ SPDX-License-Identifier: CC-BY-SA-3.0
 # "Configure your authentication provider":#authentication
 # "Further customization of the installation":#further_customization
 # "Begin installation":#installation
-# "Confirm the cluster is working":#test-install
 # "Install the CA root certificate":#ca_root_certificate
+# "Confirm the cluster is working":#test-install
 # "Initial user and login":#initial_user
 # "After the installation":#post_install
 
@@ -87,7 +87,7 @@ h3. Additional prerequisites
 
 # root or passwordless @sudo@ access on the account where you are doing the install
 this usually means adding the account to the @sudo@ group and having a rule like this in @/etc/sudoers.d/arvados_passwordless@ that allows members of group @sudo@ to execute any command without entering a password.
-<pre>%sudo all=(all:all) nopasswd:all</pre>
+<pre>%sudo ALL=(ALL:ALL) NOPASSWD:ALL</pre>
 # @git@ installed on the machine
 # Port 443 reachable by clients
 # For the single-host install, ports 8800-8805 also need to be reachable from your client (configurable in @local.params@, see below)
@@ -145,9 +145,25 @@ Run this in the @~/arvados-setup-xarv1@ directory:
 ./installer.sh deploy
 </pre>
 
+h2(#ca_root_certificate). Install the CA root certificate (SSL_MODE=self-signed only)
+
+*If you are not using self-signed certificates (you selected SSL_MODE=lets-encrypt or SSL_MODE=bring-your-own), skip this section.*
+
+Arvados uses SSL to encrypt communications. The web interface uses AJAX which will silently fail if the certificate is not valid or signed by an unknown Certification Authority.
+
+For this reason, the installer has the option to create its own a root certificate to authorize Arvados services. The installer script will leave a copy of the generated CA's certificate  (something like @xarv1.example.com-arvados-snakeoil-ca.crt@) in the script's directory so you can add it to your workstation.
+
+{% assign ca_cert_name = 'xarv1.example.com-arvados-snakeoil-ca.crt' %}
+
+{% include 'install_ca_cert' %}
+
 h2(#test-install). Confirm the cluster is working
 
-When everything has finished, you can run the diagnostics.
+When everything has finished, you can run the diagnostics.  This requires the `arvados-client` package:
+
+<pre>
+apt-get install arvados-client
+</pre>
 
 Depending on where you are running the installer, you need to provide @-internal-client@ or @-external-client@.
 
@@ -198,18 +214,6 @@ If this happens, you need to
 # Log in to the server, then run this command to re-run the post-install script, which will set up the database:
 <pre>dpkg-reconfigure arvados-api-server</pre>
 # Re-run @./installer.sh deploy@ again to synchronize everything, and so that the install steps that need to contact the API server are run successfully.
-
-h2(#ca_root_certificate). Install the CA root certificate (SSL_MODE=self-signed only)
-
-*If you are not using self-signed certificates (you selected SSL_MODE=lets-encrypt or SSL_MODE=bring-your-own), skip this section.*
-
-Arvados uses SSL to encrypt communications. The web interface uses AJAX which will silently fail if the certificate is not valid or signed by an unknown Certification Authority.
-
-For this reason, the installer has the option to create its own a root certificate to authorize Arvados services. The installer script will leave a copy of the generated CA's certificate  (something like @xarv1.example.com-arvados-snakeoil-ca.crt@) in the script's directory so you can add it to your workstation.
-
-{% assign ca_cert_name = 'xarv1.example.com-arvados-snakeoil-ca.crt' %}
-
-{% include 'install_ca_cert' %}
 
 h2(#initial_user). Initial user and login
 

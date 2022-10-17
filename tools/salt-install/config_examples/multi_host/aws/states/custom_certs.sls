@@ -12,7 +12,7 @@ extra_custom_certs_file_directory_certs_dir:
     - name: /etc/nginx/ssl
     - require:
       - pkg: nginx_install
-
+l
   {%- for cert in certs %}
     {%- set cert_file = 'arvados-' ~ cert ~ '.pem' %}
     {#- set csr_file = 'arvados-' ~ cert ~ '.csr' #}
