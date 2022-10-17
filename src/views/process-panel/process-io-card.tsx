@@ -548,14 +548,14 @@ export const getIOParamDisplayValue = (auth: AuthState, input: CommandInputParam
 
         case isArrayOfType(input, CWLType.FILE):
             const fileArrayMainFiles = ((input as FileArrayCommandInputParameter).value || []);
-            const firstMainFilePdh = fileArrayMainFiles.length > 0 ? getResourcePdhUrl(fileArrayMainFiles[0], pdh) : "";
+            const firstMainFilePdh = (fileArrayMainFiles.length > 0 && fileArrayMainFiles[0]) ? getResourcePdhUrl(fileArrayMainFiles[0], pdh) : "";
 
             // Convert each main file into separate arrays of ProcessIOValue to preserve secondaryFile grouping
             const fileArrayValues = fileArrayMainFiles.map((mainFile: File, i): ProcessIOValue[] => {
                 const secondaryFiles = ((mainFile as unknown) as FileWithSecondaryFiles)?.secondaryFiles || [];
                 return [
                     // Pass firstMainFilePdh to secondary files and every main file besides the first to hide pdh if equal
-                    fileToProcessIOValue(mainFile, false, auth, pdh, i > 0 ? firstMainFilePdh : ""),
+                    ...(mainFile ? [fileToProcessIOValue(mainFile, false, auth, pdh, i > 0 ? firstMainFilePdh : "")] : []),
                     ...(secondaryFiles.map(file => fileToProcessIOValue(file, true, auth, pdh, firstMainFilePdh)))
                 ];
             // Reduce each mainFile/secondaryFile group into single array preserving ordering
