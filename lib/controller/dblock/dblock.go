@@ -15,8 +15,9 @@ import (
 )
 
 var (
-	TrashSweep = &DBLocker{key: 10001}
-	retryDelay = 5 * time.Second
+	TrashSweep        = &DBLocker{key: 10001}
+	ContainerLogSweep = &DBLocker{key: 10002}
+	retryDelay        = 5 * time.Second
 )
 
 // DBLocker uses pg_advisory_lock to maintain a cluster-wide lock for

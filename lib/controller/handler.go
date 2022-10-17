@@ -155,6 +155,7 @@ func (h *Handler) setup() {
 	}
 
 	go h.trashSweepWorker()
+	go h.containerLogSweepWorker()
 }
 
 var errDBConnection = errors.New("database connection error")
