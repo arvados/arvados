@@ -37,11 +37,11 @@ h2(#prerequisites). Prerequisites and planning
 
 h3. Cluster ID and base domain
 
-Choose a 5-character cluster identifier that will represent the cluster.  Here are "guidelines on choosing a cluster identifier":../architecture/federation.html#cluster_id .  Only lowercase letters and digits 0-9 are allowed.  Examples will use @xarv1@ or ${CLUSTER}, you should substitute the cluster id you have selected.
+Choose a 5-character cluster identifier that will represent the cluster.  Here are "guidelines on choosing a cluster identifier":../architecture/federation.html#cluster_id .  Only lowercase letters and digits 0-9 are allowed.  Examples will use @xarv1@ or @${CLUSTER}@, you should substitute the cluster id you have selected.
 
-Determine the base domain for the cluster.  This will be referred to as ${DOMAIN}
+Determine the base domain for the cluster.  This will be referred to as @${DOMAIN}@.
 
-For example, if CLUSTER is "xarv1" and DOMAIN is "example.com", then "controller.${CLUSTER}.${DOMAIN}" means "controller.xargv1.example.com".
+For example, if CLUSTER is @xarv1@ and DOMAIN is @example.com@, then @controller.${CLUSTER}.${DOMAIN}@" means @controller.xargv1.example.com@.
 
 h3. Virtual Private Cloud (AWS specific)
 
@@ -308,7 +308,7 @@ h2(#initial_user). Initial user and login
 
 At this point you should be able to log into the Arvados cluster. The initial URL will be
 
-https://workbench.${CLUSTER}.${DOMAIN}
+https://workbench.@${CLUSTER}.${DOMAIN}@
 
 If you did *not* "configure a different authentication provider":#authentication you will be using the "Test" provider, and the provision script creates an initial user for testing purposes. This user is configured as administrator of the newly created cluster.  It uses the values of @INITIAL_USER@ and @INITIAL_USER_PASSWORD@ the @local.params@ file.
 
