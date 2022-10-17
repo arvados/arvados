@@ -287,7 +287,7 @@ export const ProcessIOCard = withStyles(styles)(connect(null, mapDispatchToProps
                                         <ProcessIORaw data={raw} />
                                     </div>}
                             </>}
-                        {!loading && raw && Object.keys(raw).length === 0 && <Grid container item alignItems='center' justify='center'>
+                        {!loading && !hasRaw && !hasParams && <Grid container item alignItems='center' justify='center'>
                             <DefaultView messages={["No parameters found"]} />
                         </Grid>}
                     </>) :
