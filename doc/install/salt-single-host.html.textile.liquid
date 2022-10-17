@@ -29,11 +29,11 @@ h2(#limitations). Limitations of the single host install
 
 *NOTE: The single host installation is a good choice for evaluating Arvados, but it is not recommended for production use.*
 
-Using the default configuration, has a number of limitations:
+Using the default configuration, the single host install has scaling limitations compared to a production multi-host install:
 
-* All services run on the same machine, and they will compete for resources. This includes any compute jobs.
-* It uses the local machine disk for Keep storage (under the @/tmp@ directory). There may not be a lot of space available.
-* It installs the @crunch-dispatch-local@ dispatcher, which has a limit of eight concurrent jobs. These jobs will be executed on the same machine that runs all the Arvados services may compete for resources.
+* It uses the local disk for Keep storage (under the @/var/lib/arvados@ directory).
+* It uses the @crunch-dispatch-local@ dispatcher, which has a limit of eight concurrent jobs.
+* Because jobs and Arvados services all run on the same machine, they will compete for CPU/RAM resources.
 
 h2(#prerequisites). Prerequisites and planning
 
@@ -59,7 +59,7 @@ You will need a dedicated (virtual) machine for your Arvados server with at leas
 Note: if you want to try out Arvados inside a Docker container, use "Arvbox":arvbox.html.  The package-based install method uses @systemd@ to manage services; lightweight container images generally lack an init system and other tools that the installer requires.
 
 The single host install stores user data in a PostgreSQL database (usually found under @/var/lib/postgresql@) and as Keep blocks that are stored as files under @/var/lib/arvados/@.
-Arvados logs are also kept in @/var/log@ and @/var/www/arvados-api/shared/log@.  Accordingly, you should ensure that the disk partition containing @/var@ has adequate storage for your planned usage.  We suggest starting with 50GiB of free space.
+Arvados logs are also kept in @/var/log@ and @/var/www/arvados-api/shared/log@.  Accordingly, you should ensure that the disk partition containing @/var@ has adequate storage for your planned usage.  We suggest starting with at least 50GiB of free space.
 
 h3(#DNS). DNS hostnames for each service (multi-hostname only)
 
