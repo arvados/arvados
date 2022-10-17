@@ -193,6 +193,26 @@ func (as *APIStub) LinkDelete(ctx context.Context, options arvados.DeleteOptions
 	as.appendCall(ctx, as.LinkDelete, options)
 	return arvados.Link{}, as.Error
 }
+func (as *APIStub) LogCreate(ctx context.Context, options arvados.CreateOptions) (arvados.Log, error) {
+	as.appendCall(ctx, as.LogCreate, options)
+	return arvados.Log{}, as.Error
+}
+func (as *APIStub) LogUpdate(ctx context.Context, options arvados.UpdateOptions) (arvados.Log, error) {
+	as.appendCall(ctx, as.LogUpdate, options)
+	return arvados.Log{}, as.Error
+}
+func (as *APIStub) LogGet(ctx context.Context, options arvados.GetOptions) (arvados.Log, error) {
+	as.appendCall(ctx, as.LogGet, options)
+	return arvados.Log{}, as.Error
+}
+func (as *APIStub) LogList(ctx context.Context, options arvados.ListOptions) (arvados.LogList, error) {
+	as.appendCall(ctx, as.LogList, options)
+	return arvados.LogList{}, as.Error
+}
+func (as *APIStub) LogDelete(ctx context.Context, options arvados.DeleteOptions) (arvados.Log, error) {
+	as.appendCall(ctx, as.LogDelete, options)
+	return arvados.Log{}, as.Error
+}
 func (as *APIStub) SpecimenCreate(ctx context.Context, options arvados.CreateOptions) (arvados.Specimen, error) {
 	as.appendCall(ctx, as.SpecimenCreate, options)
 	return arvados.Specimen{}, as.Error
