@@ -614,9 +614,8 @@ const KeepUrlPath = withStyles(styles)(({auth, res, pdh, classes}: KeepUrlProps 
     const keepUrlPath = keepUrlParts.length > 1 ? keepUrlParts.slice(1).join('/') : '';
 
     const keepUrlPathNav = getKeepNavUrl(auth, res, pdh);
-    return keepUrlPath && keepUrlPathNav ?
-        <Tooltip title={"View in keep-web"}><a className={classes.keepLink} href={keepUrlPathNav} target="_blank" rel="noopener noreferrer">{keepUrlPath}</a></Tooltip> :
-        // Show No value for root collection io that lacks path part
+    return keepUrlPathNav ?
+        <Tooltip title={"View in keep-web"}><a className={classes.keepLink} href={keepUrlPathNav} target="_blank" rel="noopener noreferrer">{keepUrlPath || '/'}</a></Tooltip> :
         <EmptyValue />;
 });
 
