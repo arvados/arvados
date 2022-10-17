@@ -10,4 +10,4 @@ var_lib_arvados_keep_dir:
     - mode: '0770'
     - makedirs: true
     - require_in:
-      - pkg: {{ arvados.keepstore.pkg.name }}
+      - pkg: keepstore
