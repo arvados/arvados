@@ -153,10 +153,10 @@ func NewClientFromConfig(cluster *Cluster) (*Client, error) {
 // Space characters are trimmed when reading the settings file, so
 // these are equivalent:
 //
-//   ARVADOS_API_HOST=localhost\n
-//   ARVADOS_API_HOST=localhost\r\n
-//   ARVADOS_API_HOST = localhost \n
-//   \tARVADOS_API_HOST = localhost\n
+//	ARVADOS_API_HOST=localhost\n
+//	ARVADOS_API_HOST=localhost\r\n
+//	ARVADOS_API_HOST = localhost \n
+//	\tARVADOS_API_HOST = localhost\n
 func NewClientFromEnv() *Client {
 	vars := map[string]string{}
 	home := os.Getenv("HOME")
@@ -330,11 +330,11 @@ func (c *Client) DoAndDecode(dst interface{}, req *http.Request) error {
 
 // Convert an arbitrary struct to url.Values. For example,
 //
-//     Foo{Bar: []int{1,2,3}, Baz: "waz"}
+//	Foo{Bar: []int{1,2,3}, Baz: "waz"}
 //
 // becomes
 //
-//     url.Values{`bar`:`{"a":[1,2,3]}`,`Baz`:`waz`}
+//	url.Values{`bar`:`{"a":[1,2,3]}`,`Baz`:`waz`}
 //
 // params itself is returned if it is already an url.Values.
 func anythingToValues(params interface{}) (url.Values, error) {

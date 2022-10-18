@@ -535,9 +535,11 @@ type InstanceTypeMap map[string]InstanceType
 var errDuplicateInstanceTypeName = errors.New("duplicate instance type name")
 
 // UnmarshalJSON does special handling of InstanceTypes:
-// * populate computed fields (Name and Scratch)
-// * error out if InstancesTypes are populated as an array, which was
-//   deprecated in Arvados 1.2.0
+//
+// - populate computed fields (Name and Scratch)
+//
+// - error out if InstancesTypes are populated as an array, which was
+// deprecated in Arvados 1.2.0
 func (it *InstanceTypeMap) UnmarshalJSON(data []byte) error {
 	fixup := func(t InstanceType) (InstanceType, error) {
 		if t.ProviderType == "" {
