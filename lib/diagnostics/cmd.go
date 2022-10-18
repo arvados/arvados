@@ -157,11 +157,15 @@ func (diag *diagnoser) runtests() {
 		}
 		if cluster.SystemRootToken != os.Getenv("ARVADOS_API_TOKEN") {
 			diag.infof("skipping because provided token is not SystemRootToken")
+			return nil
 		}
 		agg := &health.Aggregator{Cluster: cluster}
 		resp := agg.ClusterHealth()
 		for _, e := range resp.Errors {
 			diag.errorf("health check: %s", e)
+		}
+		if len(resp.Errors) > 0 {
+			diag.infof("consider running `arvados-server check -yaml` for a comprehensive report")
 		}
 		diag.verbosef("reported clock skew = %v", resp.ClockSkew)
 		reported := map[string]bool{}
