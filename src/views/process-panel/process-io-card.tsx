@@ -95,7 +95,7 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     },
     header: {
         paddingTop: theme.spacing.unit,
-        paddingBottom: theme.spacing.unit,
+        paddingBottom: 0,
     },
     iconHeader: {
         fontSize: '1.875rem',
@@ -108,7 +108,7 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     content: {
         height: `calc(100% - ${theme.spacing.unit * 7}px - ${theme.spacing.unit * 1.5}px)`,
         padding: theme.spacing.unit * 1.0,
-        paddingTop: theme.spacing.unit * 0.5,
+        paddingTop: 0,
         '&:last-child': {
             paddingBottom: theme.spacing.unit * 1,
         }
