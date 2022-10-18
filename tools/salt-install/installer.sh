@@ -272,7 +272,7 @@ case "$subcmd" in
 	    exit 1
 	fi
 
-	export ARVADOS_API_HOST="${CLUSTER}.${DOMAIN}"
+	export ARVADOS_API_HOST="${CLUSTER}.${DOMAIN}:${CONTROLLER_EXT_SSL_PORT}"
 	export ARVADOS_API_TOKEN="$SYSTEM_ROOT_TOKEN"
 
 	arvados-client diagnostics $LOCATION
