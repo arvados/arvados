@@ -60,4 +60,14 @@ func (s *DurationSuite) TestUnmarshalJSON(c *check.C) {
 	err = json.Unmarshal([]byte(`{"D":"60s"}`), &d)
 	c.Check(err, check.IsNil)
 	c.Check(d.D.Duration(), check.Equals, time.Minute)
+
+	d.D = Duration(time.Second)
+	err = json.Unmarshal([]byte(`{"D":"0"}`), &d)
+	c.Check(err, check.IsNil)
+	c.Check(d.D.Duration(), check.Equals, time.Duration(0))
+
+	d.D = Duration(time.Second)
+	err = json.Unmarshal([]byte(`{"D":0}`), &d)
+	c.Check(err, check.IsNil)
+	c.Check(d.D.Duration(), check.Equals, time.Duration(0))
 }
