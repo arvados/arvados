@@ -64,6 +64,7 @@ import { ProcessOutputCollectionFiles } from './process-output-collection-files'
 import { Process } from 'store/processes/process';
 import { navigateTo } from 'store/navigation/navigation-action';
 import classNames from 'classnames';
+import { DefaultCodeSnippet } from 'components/default-code-snippet/default-code-snippet';
 
 type CssRules =
   | "card"
@@ -417,9 +418,7 @@ interface ProcessIORawDataProps {
 const ProcessIORaw = withStyles(styles)(
     ({ data }: ProcessIORawDataProps) =>
         <Paper elevation={0}>
-            <pre>
-                {JSON.stringify(data, null, 2)}
-            </pre>
+            <DefaultCodeSnippet lines={[JSON.stringify(data, null, 2)]} linked />
         </Paper>
 );
 
