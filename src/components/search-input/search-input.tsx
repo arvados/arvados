@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import React from 'react';
+import React, {useState, useEffect} from 'react';
 import { IconButton, StyleRulesCallback, withStyles, WithStyles, FormControl, InputLabel, Input, InputAdornment, Tooltip } from '@material-ui/core';
 import SearchIcon from '@material-ui/icons/Search';
 
@@ -45,84 +45,81 @@ interface SearchInputActionProps {
 
 type SearchInputProps = SearchInputDataProps & SearchInputActionProps & WithStyles<CssRules>;
 
-interface SearchInputState {
-    value: string;
-    label: string;
-}
+// interface SearchInputState {
+//     value: string;
+//     label: string;
+// }
 
-let selfClearPropState = '';
+// let selfClearPropState = '';
 
 export const DEFAULT_SEARCH_DEBOUNCE = 1000;
 
-export const SearchInput = withStyles(styles)(
-    class extends React.Component<SearchInputProps> {
-        state: SearchInputState = {
-            value: "",
-            label: ""
+const SearchInputComponent = (props: SearchInputProps) => {
+    const [timeout, setTimeout] = useState(1);
+    const [value, setValue] = useState("");
+    const [label, setLabel] = useState("Search");
+    const [selfClearProp, setSelfClearProp] = useState("");
+
+    useEffect(() => {
+        if (props.value) {
+            setValue(props.value);
+        }
+        if (props.label) {
+            setLabel(props.label);
+        }
+
+        return () => {
+            setValue("");
+            clearTimeout(timeout);
         };
+    }, [props.value, props.label]); // eslint-disable-line react-hooks/exhaustive-deps
 
-        timeout: number;
-
-        render() {
-            return <form onSubmit={this.handleSubmit}>
-                <FormControl>
-                    <InputLabel>{this.state.label}</InputLabel>
-                    <Input
-                        type="text"
-                        data-cy="search-input"
-                        value={this.state.value}
-                        onChange={this.handleChange}
-                        endAdornment={
-                            <InputAdornment position="end">
-                                <Tooltip title='Search'>
-                                    <IconButton
-                                        onClick={this.handleSubmit}>
-                                        <SearchIcon />
-                                    </IconButton>
-                                </Tooltip>
-                            </InputAdornment>
-                        } />
-                </FormControl>
-            </form>;
+    useEffect(() => {
+        if (selfClearProp !== props.selfClearProp) {
+            setValue("");
+            setSelfClearProp(props.selfClearProp);
+            handleChange({ target: { value: "" } } as any);
         }
+    }, [props.selfClearProp]); // eslint-disable-line react-hooks/exhaustive-deps
 
-        componentDidMount() {
-            this.setState({
-                value: this.props.value,
-                label: this.props.label || 'Search'
-            });
-        }
+    const handleSubmit = (event: React.FormEvent<HTMLElement>) => {
+        event.preventDefault();
+        clearTimeout(timeout);
+        props.onSearch(value);
+    };
 
-        componentWillReceiveProps(nextProps: SearchInputProps) {
-            if (nextProps.value !== this.props.value) {
-                this.setState({ value: nextProps.value });
-            }
-            if (this.state.value !== '' && nextProps.selfClearProp && nextProps.selfClearProp !== selfClearPropState) {
-                if (selfClearPropState !== '') {
-                    this.props.onSearch('');
-                }
-                selfClearPropState = nextProps.selfClearProp;
-            }
-        }
+    const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+        const { target: { value: eventValue } } = event;
+        clearTimeout(timeout);
+        setValue(eventValue);
+        setTimeout(window.setTimeout(
+            () => {
+                props.onSearch(eventValue);
+            },
+            props.debounce || DEFAULT_SEARCH_DEBOUNCE
+        ));
+    };
 
-        componentWillUnmount() {
-            clearTimeout(this.timeout);
-        }
+    return <form onSubmit={handleSubmit}>
+        <FormControl>
+            <InputLabel>{label}</InputLabel>
+            <Input
+                type="text"
+                data-cy="search-input"
+                value={value}
+                onChange={handleChange}
+                endAdornment={
+                    <InputAdornment position="end">
+                        <Tooltip title='Search'>
+                            <IconButton
+                                onClick={handleSubmit}>
+                                <SearchIcon />
+                            </IconButton>
+                        </Tooltip>
+                    </InputAdornment>
+                } />
+        </FormControl>
+    </form>;
+}
 
-        handleSubmit = (event: React.FormEvent<HTMLElement>) => {
-            event.preventDefault();
-            clearTimeout(this.timeout);
-            this.props.onSearch(this.state.value);
-        }
-
-        handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-            clearTimeout(this.timeout);
-            this.setState({ value: event.target.value });
-            this.timeout = window.setTimeout(
-                () => this.props.onSearch(this.state.value),
-                this.props.debounce || DEFAULT_SEARCH_DEBOUNCE
-            );
-
-        }
-    }
-);
+export const SearchInput = withStyles(styles)(SearchInputComponent);
