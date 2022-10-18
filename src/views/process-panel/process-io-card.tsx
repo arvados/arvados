@@ -81,8 +81,9 @@ type CssRules =
   | "imagePreview"
   | "valArray"
   | "secondaryVal"
+  | "secondaryRow"
   | "emptyValue"
-  | "halfRow"
+  | "noBorderRow"
   | "symmetricTabs"
   | "imagePlaceholder"
   | "rowWithPreview"
@@ -166,10 +167,16 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     secondaryVal: {
         paddingLeft: '20px',
     },
+    secondaryRow: {
+        height: '29px',
+        verticalAlign: 'top',
+        position: 'relative',
+        top: '-9px',
+    },
     emptyValue: {
         color: theme.customs.colors.grey500,
     },
-    halfRow: {
+    noBorderRow: {
         '& td': {
             borderBottom: 'none',
         }
@@ -358,10 +365,12 @@ const ProcessIOPreview = withStyles(styles)(
                 {data.map((param: ProcessIOParameter) => {
                     const firstVal = param.value.length > 0 ? param.value[0] : undefined;
                     const rest = param.value.slice(1);
-                    const rowClass = rest.length > 0 ? classes.halfRow : undefined;
+                    const mainRowClasses = {
+                        [classes.noBorderRow]: (rest.length > 0),
+                    };
 
                     return <>
-                        <TableRow className={rowClass} data-cy="process-io-param">
+                        <TableRow className={classNames(mainRowClasses)} data-cy="process-io-param">
                             <TableCell>
                                 {param.id}
                             </TableCell>
@@ -375,8 +384,12 @@ const ProcessIOPreview = withStyles(styles)(
                                 </Typography>
                             </TableCell>
                         </TableRow>
-                        {rest.map((val, i) => (
-                            <TableRow className={(i < rest.length-1) ? rowClass : undefined}>
+                        {rest.map((val, i) => {
+                            const rowClasses = {
+                                [classes.noBorderRow]: (i < rest.length-1),
+                                [classes.secondaryRow]: val.secondary,
+                            };
+                            return <TableRow className={classNames(rowClasses)}>
                                 <TableCell />
                                 {showLabel && <TableCell />}
                                 <TableCell>
@@ -388,7 +401,7 @@ const ProcessIOPreview = withStyles(styles)(
                                     </Typography>
                                 </TableCell>
                             </TableRow>
-                        ))}
+                        })}
                     </>;
                 })}
             </TableBody>
