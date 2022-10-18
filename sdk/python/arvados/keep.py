@@ -26,6 +26,7 @@ import socket
 import ssl
 import sys
 import threading
+import resource
 from . import timer
 import urllib.parse
 
@@ -39,6 +40,7 @@ import arvados.config as config
 import arvados.errors
 import arvados.retry as retry
 import arvados.util
+import arvados.diskcache
 
 _logger = logging.getLogger('arvados.keep')
 global_client_object = None
@@ -174,11 +176,36 @@ class Keep(object):
         return Keep.global_client_object().put(data, **kwargs)
 
 class KeepBlockCache(object):
-    # Default RAM cache is 256MiB
-    def __init__(self, cache_max=(256 * 1024 * 1024)):
+    def __init__(self, cache_max=0, max_slots=0, disk_cache=False, disk_cache_dir=None):
         self.cache_max = cache_max
         self._cache = []
         self._cache_lock = threading.Lock()
+        self._max_slots = max_slots
+        self._disk_cache = disk_cache
+        self._disk_cache_dir = disk_cache_dir
+
+        if self._disk_cache and self._disk_cache_dir is None:
+            self._disk_cache_dir = os.path.join(os.path.expanduser("~"), ".cache", "arvados", "keep")
+            os.makedirs(self._disk_cache_dir, mode=0o700, exist_ok=True)
+
+        if self._max_slots == 0:
+            if self._disk_cache:
+                # default set max slots to half of maximum file handles
+                self._max_slots = resource.getrlimit(resource.RLIMIT_NOFILE)[0] / 2
+            else:
+                self._max_slots = 1024
+
+        if self.cache_max == 0:
+            if self._disk_cache:
+                fs = os.statvfs(self._disk_cache_dir)
+                avail = (fs.f_bavail * fs.f_bsize) / 2
+                # Half the available space or max_slots * 64 MiB
+                self.cache_max = min(avail, (self._max_slots * 64 * 1024 * 1024))
+            else:
+                # 256 GiB in RAM
+                self.cache_max = (256 * 1024 * 1024)
+
+        self.cache_max = max(self.cache_max, 64 * 1024 * 1024)
 
     class CacheSlot(object):
         __slots__ = ("locator", "ready", "content")
@@ -202,6 +229,9 @@ class KeepBlockCache(object):
             else:
                 return len(self.content)
 
+        def evict(self):
+            pass
+
     def cap_cache(self):
         '''Cap the cache size to self.cache_max'''
         with self._cache_lock:
@@ -209,9 +239,10 @@ class KeepBlockCache(object):
             # None (that means there was an error reading the block).
             self._cache = [c for c in self._cache if not (c.ready.is_set() and c.content is None)]
             sm = sum([slot.size() for slot in self._cache])
-            while len(self._cache) > 0 and sm > self.cache_max:
+            while len(self._cache) > 0 and (sm > self.cache_max or len(self._cache) > self._max_slots):
                 for i in range(len(self._cache)-1, -1, -1):
                     if self._cache[i].ready.is_set():
+                        self._cache[i].evict()
                         del self._cache[i]
                         break
                 sm = sum([slot.size() for slot in self._cache])
@@ -225,6 +256,12 @@ class KeepBlockCache(object):
                     # move it to the front
                     del self._cache[i]
                     self._cache.insert(0, n)
+                return n
+        if self._disk_cache:
+            # see if it exists on disk
+            n = arvados.diskcache.DiskCacheSlot.get_from_disk(locator, self._disk_cache_dir)
+            if n is not None:
+                self._cache.insert(0, n)
                 return n
         return None
 
@@ -241,7 +278,10 @@ class KeepBlockCache(object):
                 return n, False
             else:
                 # Add a new cache slot for the locator
-                n = KeepBlockCache.CacheSlot(locator)
+                if self._disk_cache:
+                    n = arvados.diskcache.DiskCacheSlot(locator, self._disk_cache_dir)
+                else:
+                    n = KeepBlockCache.CacheSlot(locator)
                 self._cache.insert(0, n)
                 return n, True
 

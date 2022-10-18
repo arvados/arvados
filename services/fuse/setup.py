@@ -59,6 +59,6 @@ setup(name='arvados_fuse',
           'Programming Language :: Python :: 3',
       ],
       test_suite='tests',
-      tests_require=['pbr<1.7.0', 'mock>=1.0', 'PyYAML'],
+      tests_require=['pbr<1.7.0', 'mock>=1.0', 'PyYAML', 'parameterized',],
       zip_safe=False
       )

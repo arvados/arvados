@@ -16,6 +16,7 @@ import subprocess
 import time
 import unittest
 import tempfile
+import parameterized
 
 import arvados
 import arvados_fuse as fuse
@@ -54,7 +55,7 @@ class AssertWithTimeout(object):
         else:
             self.done = True
 
-
+@parameterized.parameterized_class([{"disk_cache": True}, {"disk_cache": False}])
 class FuseMountTest(MountTestBase):
     def setUp(self):
         super(FuseMountTest, self).setUp()
@@ -125,6 +126,7 @@ class FuseMountTest(MountTestBase):
                 self.assertEqual(v, f.read().decode())
 
 
+@parameterized.parameterized_class([{"disk_cache": True}, {"disk_cache": False}])
 class FuseMagicTest(MountTestBase):
     def setUp(self, api=None):
         super(FuseMagicTest, self).setUp(api=api)
@@ -283,6 +285,7 @@ def fuseSharedTestHelper(mounttmp):
 
     Test().runTest()
 
+@parameterized.parameterized_class([{"disk_cache": True}, {"disk_cache": False}])
 class FuseSharedTest(MountTestBase):
     def runTest(self):
         self.make_mount(fuse.SharedDirectory,
@@ -343,6 +346,7 @@ def fuseModifyFileTestHelperReadEndContents(mounttmp):
                 self.assertEqual("plnp", f.read())
     Test().runTest()
 
+@parameterized.parameterized_class([{"disk_cache": True}, {"disk_cache": False}])
 class FuseModifyFileTest(MountTestBase):
     def runTest(self):
         collection = arvados.collection.Collection(api_client=self.api)
@@ -363,6 +367,7 @@ class FuseModifyFileTest(MountTestBase):
         self.pool.apply(fuseModifyFileTestHelperReadEndContents, (self.mounttmp,))
 
 
+@parameterized.parameterized_class([{"disk_cache": True}, {"disk_cache": False}])
 class FuseAddFileToCollectionTest(MountTestBase):
     def runTest(self):
         collection = arvados.collection.Collection(api_client=self.api)
@@ -385,6 +390,7 @@ class FuseAddFileToCollectionTest(MountTestBase):
         self.assertEqual(["file1.txt", "file2.txt"], sorted(d1))
 
 
+@parameterized.parameterized_class([{"disk_cache": True}, {"disk_cache": False}])
 class FuseRemoveFileFromCollectionTest(MountTestBase):
     def runTest(self):
         collection = arvados.collection.Collection(api_client=self.api)
@@ -416,6 +422,7 @@ def fuseCreateFileTestHelper(mounttmp):
                 pass
     Test().runTest()
 
+@parameterized.parameterized_class([{"disk_cache": True}, {"disk_cache": False}])
 class FuseCreateFileTest(MountTestBase):
     def runTest(self):
         collection = arvados.collection.Collection(api_client=self.api)
@@ -459,6 +466,7 @@ def fuseWriteFileTestHelperReadFile(mounttmp):
                 self.assertEqual(f.read(), "Hello world!")
     Test().runTest()
 
+@parameterized.parameterized_class([{"disk_cache": True}, {"disk_cache": False}])
 class FuseWriteFileTest(MountTestBase):
     def runTest(self):
         collection = arvados.collection.Collection(api_client=self.api)
@@ -507,6 +515,7 @@ def fuseUpdateFileTestHelper(mounttmp):
 
     Test().runTest()
 
+@parameterized.parameterized_class([{"disk_cache": True}, {"disk_cache": False}])
 class FuseUpdateFileTest(MountTestBase):
     def runTest(self):
         collection = arvados.collection.Collection(api_client=self.api)
