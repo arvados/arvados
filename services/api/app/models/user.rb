@@ -308,25 +308,20 @@ SELECT target_uuid, perm_level
 
     # delete oid_login_perms for this user
     #
-    # note: these permission links are obsolete, they have no effect
-    # on anything and they are not created for new users.
+    # note: these permission links are obsolete anyway: they have no
+    # effect on anything and they are not created for new users.
     Link.where(tail_uuid: self.email,
                link_class: 'permission',
                name: 'can_login').destroy_all
 
-    # delete repo_perms for this user
+    # Delete all sharing permissions so (a) the user doesn't
+    # automatically regain access to anything if re-setup in future,
+    # (b) the user doesn't appear in "currently shared with" lists
+    # shown to other users.
+    #
+    # Notably this includes the can_read -> "all users" group
+    # permission.
     Link.where(tail_uuid: self.uuid,
-               link_class: 'permission',
-               name: 'can_manage').destroy_all
-
-    # delete vm_login_perms for this user
-    Link.where(tail_uuid: self.uuid,
-               link_class: 'permission',
-               name: 'can_login').destroy_all
-
-    # delete "All users" group read permissions for this user
-    Link.where(tail_uuid: self.uuid,
-               head_uuid: all_users_group_uuid,
                link_class: 'permission').destroy_all
 
     # delete any signatures by this user

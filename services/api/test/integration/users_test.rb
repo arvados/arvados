@@ -203,6 +203,22 @@ class UsersTest < ActionDispatch::IntegrationTest
       ApiClientAuthorization.create!(user: User.find_by_uuid(created['uuid']), api_client: ApiClient.all.first).api_token
     end
 
+    # share project and collections with the new user
+    act_as_system_user do
+      Link.create!(tail_uuid: created['uuid'],
+                   head_uuid: groups(:aproject).uuid,
+                   link_class: 'permission',
+                   name: 'can_manage')
+      Link.create!(tail_uuid: created['uuid'],
+                   head_uuid: collections(:collection_owned_by_active).uuid,
+                   link_class: 'permission',
+                   name: 'can_read')
+      Link.create!(tail_uuid: created['uuid'],
+                   head_uuid: collections(:collection_owned_by_active_with_file_stats).uuid,
+                   link_class: 'permission',
+                   name: 'can_write')
+    end
+
     assert_equal 1, ApiClientAuthorization.where(user_id: User.find_by_uuid(created['uuid']).id).size, 'expected token not found'
 
     post "/arvados/v1/users/#{created['uuid']}/unsetup", params: {}, headers: auth(:admin)
@@ -213,6 +229,8 @@ class UsersTest < ActionDispatch::IntegrationTest
     assert_not_nil created2['uuid'], 'expected uuid for the newly created user'
     assert_equal created['uuid'], created2['uuid'], 'expected uuid not found'
     assert_equal 0, ApiClientAuthorization.where(user_id: User.find_by_uuid(created['uuid']).id).size, 'token should have been deleted by user unsetup'
+    # check permissions are deleted
+    assert_empty Link.where(tail_uuid: created['uuid'])
 
     verify_link_existence created['uuid'], created['email'], false, false, false, false, false
   end
