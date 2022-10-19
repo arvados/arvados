@@ -45,17 +45,10 @@ interface SearchInputActionProps {
 
 type SearchInputProps = SearchInputDataProps & SearchInputActionProps & WithStyles<CssRules>;
 
-// interface SearchInputState {
-//     value: string;
-//     label: string;
-// }
-
-// let selfClearPropState = '';
-
 export const DEFAULT_SEARCH_DEBOUNCE = 1000;
 
 const SearchInputComponent = (props: SearchInputProps) => {
-    const [timeout, setTimeout] = useState(1);
+    const [timeout, setTimeout] = useState(0);
     const [value, setValue] = useState("");
     const [label, setLabel] = useState("Search");
     const [selfClearProp, setSelfClearProp] = useState("");
@@ -92,11 +85,12 @@ const SearchInputComponent = (props: SearchInputProps) => {
         const { target: { value: eventValue } } = event;
         clearTimeout(timeout);
         setValue(eventValue);
+
         setTimeout(window.setTimeout(
             () => {
                 props.onSearch(eventValue);
             },
-            props.debounce || DEFAULT_SEARCH_DEBOUNCE
+             props.debounce || DEFAULT_SEARCH_DEBOUNCE
         ));
     };
 
