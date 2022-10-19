@@ -104,6 +104,11 @@ describe("<SearchInput />", () => {
             expect(onSearch).toBeCalledWith("");
             expect(onSearch).toHaveBeenCalledTimes(1);
 
+            // component should not clear on same selfClearProp
+            searchInput.setProps({ selfClearProp: 'abc' });
+            jest.runTimersToTime(1000);
+            expect(onSearch).toHaveBeenCalledTimes(1);
+
             // component should clear on selfClearProp change
             searchInput.setProps({ selfClearProp: '111' });
             jest.runTimersToTime(1000);
