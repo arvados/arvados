@@ -8,6 +8,7 @@ import os
 import traceback
 import stat
 import tempfile
+import fcntl
 
 class DiskCacheSlot(object):
     __slots__ = ("locator", "ready", "content", "cachedir")
@@ -45,6 +46,10 @@ class DiskCacheSlot(object):
             f = tempfile.NamedTemporaryFile(dir=blockdir, delete=False)
             tmpfile = f.name
             os.chmod(tmpfile, stat.S_IRUSR | stat.S_IWUSR)
+
+            # aquire a shared lock, this tells other processes that
+            # we're using this block and to please not delete it.
+            fcntl.flock(f, fcntl.LOCK_SH)
 
             f.write(value)
             f.flush()
@@ -86,9 +91,36 @@ class DiskCacheSlot(object):
             blockdir = os.path.join(self.cachedir, self.locator[0:3])
             final = os.path.join(blockdir, self.locator)
             try:
-                os.remove(final)
+                with open(final, "rb") as f:
+                    # unlock,
+                    fcntl.flock(f, fcntl.LOCK_UN)
+
+                    # try to get an exclusive lock, this ensures other
+                    # processes are not using the block.  It is
+                    # nonblocking and will throw an exception if we
+                    # can't get it, which is fine because that means
+                    # we just won't try to delete it.
+                    #
+                    # I should note here, the file locking is not
+                    # strictly necessary, we could just remove it and
+                    # the kernel would ensure that the underlying
+                    # inode remains available as long as other
+                    # processes still have the file open.  However, if
+                    # you have multiple processes sharing the cache
+                    # and deleting each other's files, you'll end up
+                    # with a bunch of ghost files that don't show up
+                    # in the file system but are still taking up
+                    # space, which isn't particularly user friendly.
+                    # The locking strategy ensures that cache blocks
+                    # in use remain visible.
+                    #
+                    fcntl.flock(filehandle, fcntl.LOCK_EX | fcntl.LOCK_NB)
+
+                    os.remove(final)
+                    return True
             except OSError:
                 pass
+            return False
 
     @staticmethod
     def get_from_disk(locator, cachedir):
@@ -97,6 +129,10 @@ class DiskCacheSlot(object):
 
         try:
             filehandle = open(final, "rb")
+
+            # aquire a shared lock, this tells other processes that
+            # we're using this block and to please not delete it.
+            fcntl.flock(filehandle, fcntl.LOCK_SH)
 
             content = mmap.mmap(filehandle.fileno(), 0, access=mmap.ACCESS_READ)
             dc = DiskCacheSlot(locator, cachedir)

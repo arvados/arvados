@@ -235,7 +235,7 @@ class KeepBlockCache(object):
                 return len(self.content)
 
         def evict(self):
-            pass
+            return True
 
     def cap_cache(self):
         '''Cap the cache size to self.cache_max'''
@@ -246,11 +246,25 @@ class KeepBlockCache(object):
             sm = sum([slot.size() for slot in self._cache])
             while len(self._cache) > 0 and (sm > self.cache_max or len(self._cache) > self._max_slots):
                 for i in range(len(self._cache)-1, -1, -1):
+                    # start from the back, find a slot that is a candidate to evict
                     if self._cache[i].ready.is_set():
-                        self._cache[i].evict()
+                        sz = self._cache[i].size()
+
+                        # If evict returns false it means the
+                        # underlying disk cache couldn't lock the file
+                        # for deletion because another process was using
+                        # it. Don't count it as reducing the amount
+                        # of data in the cache, find something else to
+                        # throw out.
+                        if self._cache[i].evict():
+                            sm -= sz
+
+                        # either way we forget about it.  either the
+                        # other process will delete it, or if we need
+                        # it again and it is still there, we'll find
+                        # it on disk.
                         del self._cache[i]
                         break
-                sm = sum([slot.size() for slot in self._cache])
 
     def _get(self, locator):
         # Test if the locator is already in the cache
