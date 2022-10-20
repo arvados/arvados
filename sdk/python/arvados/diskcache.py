@@ -8,8 +8,6 @@ import os
 import traceback
 import stat
 import tempfile
-import hashlib
-import fcntl
 
 class DiskCacheSlot(object):
     __slots__ = ("locator", "ready", "content", "cachedir")
@@ -47,10 +45,6 @@ class DiskCacheSlot(object):
             f = tempfile.NamedTemporaryFile(dir=blockdir, delete=False)
             tmpfile = f.name
             os.chmod(tmpfile, stat.S_IRUSR | stat.S_IWUSR)
-
-            # aquire a shared lock, this tells other processes that
-            # we're using this block and to please not delete it.
-            fcntl.flock(f, fcntl.LOCK_SH)
 
             f.write(value)
             f.flush()
@@ -92,35 +86,23 @@ class DiskCacheSlot(object):
             blockdir = os.path.join(self.cachedir, self.locator[0:3])
             final = os.path.join(blockdir, self.locator)
             try:
-                # If we can't upgrade our shared lock to an exclusive
-                # lock, it'll throw an error, that's fine and
-                # desirable, it means another process has a lock and
-                # we shouldn't delete the block.
-                fcntl.flock(f, fcntl.LOCK_EX | fcntl.LOCK_NB)
                 os.remove(final)
             except OSError:
                 pass
 
     @staticmethod
     def get_from_disk(locator, cachedir):
-        # Get it, check it, return it
         blockdir = os.path.join(cachedir, locator[0:3])
         final = os.path.join(blockdir, locator)
 
         try:
             filehandle = open(final, "rb")
 
-            # aquire a shared lock, this tells other processes that
-            # we're using this block and to please not delete it.
-            fcntl.flock(f, fcntl.LOCK_SH)
-
             content = mmap.mmap(filehandle.fileno(), 0, access=mmap.ACCESS_READ)
-            disk_md5 = hashlib.md5(content).hexdigest()
-            if disk_md5 == locator:
-                dc = DiskCacheSlot(locator, cachedir)
-                dc.content = content
-                dc.ready.set()
-                return dc
+            dc = DiskCacheSlot(locator, cachedir)
+            dc.content = content
+            dc.ready.set()
+            return dc
         except FileNotFoundError:
             pass
         except Exception as e:
@@ -129,36 +111,36 @@ class DiskCacheSlot(object):
         return None
 
     @staticmethod
-    def cleanup_cachedir(cachedir, maxsize):
+    def init_cache(cachedir, maxslots):
+        # map in all the files in the cache directory, up to max slots.
+        # after max slots, try to delete the excess blocks.
+        #
+        # this gives the calling process ownership of all the blocks
+
         blocks = []
-        totalsize = 0
         for root, dirs, files in os.walk(cachedir):
             for name in files:
                 blockpath = os.path.join(root, name)
                 res = os.stat(blockpath)
-                blocks.append((blockpath, res.st_size, res.st_atime))
-                totalsize += res.st_size
+                blocks.append((name, res.st_atime))
 
-        if totalsize <= maxsize:
-            return
+        # sort by access time (atime), going from most recently
+        # accessed (highest timestamp) to least recently accessed
+        # (lowest timestamp).
+        blocks.sort(key=lambda x: x[1], reverse=True)
 
-        # sort by atime, so the blocks accessed the longest time in
-        # the past get deleted first.
-        blocks.sort(key=lambda x: x[2])
+        # Map in all the files we found, up to maxslots, if we exceed
+        # maxslots, start throwing things out.
+        cachelist = []
+        for b in blocks:
+            got = DiskCacheSlot.get_from_disk(b[0], cachedir)
+            if got is None:
+                continue
+            if len(cachelist) < maxslots:
+                cachelist.append(got)
+            else:
+                # we found more blocks than maxslots, try to
+                # throw it out of the cache.
+                got.evict()
 
-        # go through the list and try deleting blocks until we're
-        # below the target size and/or we run out of blocks
-        i = 0
-        while i < len(blocks) and totalsize > maxsize:
-            try:
-                with open(blocks[i][0], "rb") as f:
-                    # If we can't get an exclusive lock, it'll
-                    # throw an error, that's fine and desirable,
-                    # it means another process has a lock and we
-                    # shouldn't delete the block.
-                    fcntl.flock(f, fcntl.LOCK_EX | fcntl.LOCK_NB)
-                    os.remove(block)
-                    totalsize -= blocks[i][1]
-            except OSError:
-                pass
-            i += 1
+        return cachelist
