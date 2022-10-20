@@ -88,7 +88,7 @@ arvados:
     resources:
       virtual_machines:
         shell:
-          name: __HOSTNAME_EXT__
+          name: shell.__HOSTNAME_EXT__
           backend: 127.0.0.1
           port: 4200
 
