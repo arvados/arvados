@@ -496,6 +496,35 @@ func (s *HandlerSuite) TestTrashSweep(c *check.C) {
 	}
 }
 
+func (s *HandlerSuite) TestContainerLogSweep(c *check.C) {
+	s.cluster.SystemRootToken = arvadostest.SystemRootToken
+	s.cluster.Containers.Logging.SweepInterval = arvados.Duration(time.Second / 10)
+	s.handler.CheckHealth()
+	ctx := auth.NewContext(s.ctx, &auth.Credentials{Tokens: []string{arvadostest.ActiveTokenV2}})
+	logentry, err := s.handler.federation.LogCreate(ctx, arvados.CreateOptions{Attrs: map[string]interface{}{
+		"object_uuid": arvadostest.CompletedContainerUUID,
+		"event_type":  "stderr",
+		"properties": map[string]interface{}{
+			"text": "test trash sweep\n",
+		},
+	}})
+	c.Assert(err, check.IsNil)
+	defer s.handler.federation.LogDelete(ctx, arvados.DeleteOptions{UUID: logentry.UUID})
+	deadline := time.Now().Add(5 * time.Second)
+	for {
+		if time.Now().After(deadline) {
+			c.Log("timed out")
+			c.FailNow()
+		}
+		logentries, err := s.handler.federation.LogList(ctx, arvados.ListOptions{Filters: []arvados.Filter{{"uuid", "=", logentry.UUID}}, Limit: -1})
+		c.Assert(err, check.IsNil)
+		if len(logentries.Items) == 0 {
+			break
+		}
+		time.Sleep(time.Second / 10)
+	}
+}
+
 func (s *HandlerSuite) TestLogActivity(c *check.C) {
 	s.cluster.SystemRootToken = arvadostest.SystemRootToken
 	s.cluster.Users.ActivityLoggingPeriod = arvados.Duration(24 * time.Hour)

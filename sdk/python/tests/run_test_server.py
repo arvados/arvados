@@ -833,6 +833,9 @@ def setup_config():
                         "GitInternalDir": os.path.join(SERVICES_SRC_DIR, 'api', 'tmp', 'internal.git'),
                     },
                     "LocalKeepBlobBuffersPerVCPU": 0,
+                    "Logging": {
+                        "SweepInterval": 0, # disable, otherwise test cases can't acquire dblock
+                    },
                     "SupportedDockerImageFormats": {"v1": {}},
                     "ShellAccess": {
                         "Admin": True,

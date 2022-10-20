@@ -513,9 +513,9 @@ type filenodePtr struct {
 //
 // After seeking:
 //
-//     ptr.segmentIdx == len(filenode.segments) // i.e., at EOF
-//     ||
-//     filenode.segments[ptr.segmentIdx].Len() > ptr.segmentOff
+//	ptr.segmentIdx == len(filenode.segments) // i.e., at EOF
+//	||
+//	filenode.segments[ptr.segmentIdx].Len() > ptr.segmentOff
 func (fn *filenode) seek(startPtr filenodePtr) (ptr filenodePtr) {
 	ptr = startPtr
 	if ptr.off < 0 {

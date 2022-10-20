@@ -33,6 +33,10 @@ h2(#main). development main (as of 2022-10-14)
 
 "previous: Upgrading to 2.4.3":#v2_4_3
 
+h3. Old container logs are automatically deleted from PostgreSQL
+
+Cached copies of log entries from containers that finished more than 1 month ago are now deleted automatically (this only affects the "live" logs saved in the PostgreSQL database, not log collections saved in Keep). If you have an existing cron job that runs @rake db:delete_old_container_logs@, you can remove it. See configuration options @Containers.Logging.MaxAge@ and @Containers.Logging.SweepInterval@.
+
 h3. Fixed salt installer template file to support container shell access
 
 If you manage your cluster using the salt installer, you may want to update it to the latest version, use the appropriate @config_examples@ subdirectory and re-reploy with your custom @local.params@ file so that the @arvados-controller@'s @nginx@ configuration file gets fixed.

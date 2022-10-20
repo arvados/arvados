@@ -5,6 +5,7 @@
 package arvados
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"strings"
@@ -17,6 +18,13 @@ type Duration time.Duration
 
 // UnmarshalJSON implements json.Unmarshaler.
 func (d *Duration) UnmarshalJSON(data []byte) error {
+	if bytes.Equal(data, []byte(`"0"`)) || bytes.Equal(data, []byte(`0`)) {
+		// Unitless 0 is not accepted by ParseDuration, but we
+		// accept it as a reasonable spelling of 0
+		// nanoseconds.
+		*d = 0
+		return nil
+	}
 	if data[0] == '"' {
 		return d.Set(string(data[1 : len(data)-1]))
 	}
