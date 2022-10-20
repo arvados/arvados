@@ -49,7 +49,7 @@ func (h *Handler) containerLogSweepWorker() {
 DELETE FROM logs
  USING containers
  WHERE logs.object_uuid=containers.uuid
- AND logs.event_type in ('stdout', 'stderr', 'arv-mount', 'crunch-run', 'crunchstat')
+ AND logs.event_type in ('stdout', 'stderr', 'arv-mount', 'crunch-run', 'crunchstat', 'hoststat', 'node', 'container', 'keepstore')
  AND containers.log IS NOT NULL
  AND now() - containers.finished_at > $1::interval`,
 			h.Cluster.Containers.Logging.MaxAge.String())
