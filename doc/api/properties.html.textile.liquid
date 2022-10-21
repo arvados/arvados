@@ -23,8 +23,8 @@ table(table table-bordered table-condensed).
 |container_request|collection|string|The UUID of the container request that produced an output or log collection.|
 |docker-image-repo-tag|collection|string|For collections containing a Docker image, the repo/name:tag identifier|
 |container_uuid|collection|string|The UUID of the container that produced a collection (set on collections with type=log)|
-|cwl_inputs|object|container_request|On an intermediate container request, the CWL workflow-level input parameters used to generate the container request|
-|cwl_outputs|object|container_request|On an intermediate container request, the CWL workflow-level output parameters collected from the container request|
+|cwl_input|object|container_request|On an intermediate container request, the CWL workflow-level input parameters used to generate the container request|
+|cwl_output|object|container_request|On an intermediate container request, the CWL workflow-level output parameters collected from the container request|
 |template_uuid|string|container_request|For a workflow runner container request, the workflow record that was used to launch it.|
 |username|string|link|For a "can_login":permission-model.html#links permission link, the unix username on the VM that the user will have.|
 |groups|array of string|link|For a "can_login":permission-model.html#links permission link, the unix groups on the VM that the user will be added to.|
