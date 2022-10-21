@@ -49,7 +49,8 @@ export const navigateToOutput = (uuid: string) =>
 
 export const loadOutputs = (containerRequest: ContainerRequestResource, setOutputs) =>
     async (dispatch: Dispatch<any>, getState: () => RootState, services: ServiceRepository) => {
-        if (!containerRequest.outputUuid) {setOutputs({}); return;};
+        const noOutputs = {rawOutputs: {}};
+        if (!containerRequest.outputUuid) {setOutputs(noOutputs); return;};
         try {
             const propsOutputs = getRawOutputs(containerRequest);
             const filesPromise = services.collectionService.files(containerRequest.outputUuid);
@@ -69,11 +70,11 @@ export const loadOutputs = (containerRequest: ContainerRequestResource, setOutpu
                         pdh: collection.portableDataHash,
                     });
                 } else {
-                    setOutputs({rawOutputs: {}});
+                    setOutputs(noOutputs);
                 }
             }
         } catch {
-            setOutputs({rawOutputs: {}});
+            setOutputs(noOutputs);
         }
     };
 
