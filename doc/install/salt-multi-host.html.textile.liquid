@@ -41,7 +41,7 @@ Choose a 5-character cluster identifier that will represent the cluster.  Here a
 
 Determine the base domain for the cluster.  This will be referred to as @${DOMAIN}@.
 
-For example, if CLUSTER is @xarv1@ and DOMAIN is @example.com@, then @controller.${CLUSTER}.${DOMAIN}@" means @controller.xargv1.example.com@.
+For example, if CLUSTER is @xarv1@ and DOMAIN is @example.com@, then @controller.${CLUSTER}.${DOMAIN}@" means @controller.xarv1.example.com@.
 
 h3. Virtual Private Cloud (AWS specific)
 
@@ -55,7 +55,7 @@ When you do so, you need to configure a couple of additional things:
 
 h3(#keep-bucket). S3 Bucket (AWS specific)
 
-We recommend "creating an S3 bucket":https://docs.aws.amazon.com/AmazonS3/latest/userguide/Welcome.html for data storage named @${CLUSTER}-nyw5e-000000000000000-volume@.  We recommend creating an IAM role called @${CLUSTER}-keepstore-00-iam-role@ with a "policy that can read, write, list and delete objects in the bucket":configure-s3-object-storage.html#IAM .  With the example cluster id @xargv1@ the bucket would be called @xarv1-nyw5e-000000000000000-volume@ and the role would be called @xarv1-keepstore-00-iam-role@.
+We recommend "creating an S3 bucket":https://docs.aws.amazon.com/AmazonS3/latest/userguide/Welcome.html for data storage named @${CLUSTER}-nyw5e-000000000000000-volume@.  We recommend creating an IAM role called @${CLUSTER}-keepstore-00-iam-role@ with a "policy that can read, write, list and delete objects in the bucket":configure-s3-object-storage.html#IAM .  With the example cluster id @xarv1@ the bucket would be called @xarv1-nyw5e-000000000000000-volume@ and the role would be called @xarv1-keepstore-00-iam-role@.
 
 These names are recommended because they are default names used in the configuration template.  If you use different names, you will need to edit the configuration template later.
 
