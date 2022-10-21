@@ -109,11 +109,15 @@ export const ProcessPanelRoot = withStyles(styles)(
     //   Can be sync because inputs are either already in containerRequest mounts or props
     React.useEffect(() => {
         if (containerRequest) {
-            const rawInputs = getRawInputs(containerRequest);
-            setInputs(rawInputs);
-
-            const inputs = getInputs(containerRequest);
-            setProcessedInputs(formatInputData(inputs, auth));
+            // Since mounts can disappear and reappear, only set inputs if raw / processed inputs is undefined or new inputs has content
+            const newRawInputs = getRawInputs(containerRequest);
+            if (rawInputs === undefined || newRawInputs && newRawInputs.length) {
+                setInputs(newRawInputs);
+            }
+            const newInputs = getInputs(containerRequest);
+            if (processedInputs === undefined || newInputs && newInputs.length) {
+                setProcessedInputs(formatInputData(newInputs, auth));
+            }
         }
     }, [requestUuid, auth, containerRequest]);
 
