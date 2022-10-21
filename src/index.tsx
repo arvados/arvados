@@ -22,7 +22,7 @@ import { fetchConfig } from 'common/config';
 import servicesProvider from 'common/service-provider';
 import { addMenuActionSet, ContextMenuKind } from 'views-components/context-menu/context-menu';
 import { rootProjectActionSet } from "views-components/context-menu/action-sets/root-project-action-set";
-import { filterGroupActionSet, projectActionSet, readOnlyProjectActionSet } from "views-components/context-menu/action-sets/project-action-set";
+import { filterGroupActionSet, frozenActionSet, projectActionSet, readOnlyProjectActionSet } from "views-components/context-menu/action-sets/project-action-set";
 import { resourceActionSet } from 'views-components/context-menu/action-sets/resource-action-set';
 import { favoriteActionSet } from "views-components/context-menu/action-sets/favorite-action-set";
 import { collectionFilesActionSet, readOnlyCollectionFilesActionSet } from 'views-components/context-menu/action-sets/collection-files-action-set';
@@ -60,7 +60,7 @@ import { groupActionSet } from 'views-components/context-menu/action-sets/group-
 import { groupMemberActionSet } from 'views-components/context-menu/action-sets/group-member-action-set';
 import { linkActionSet } from 'views-components/context-menu/action-sets/link-action-set';
 import { loadFileViewersConfig } from 'store/file-viewers/file-viewers-actions';
-import { filterGroupAdminActionSet, projectAdminActionSet } from 'views-components/context-menu/action-sets/project-admin-action-set';
+import { filterGroupAdminActionSet, frozenAdminActionSet, projectAdminActionSet } from 'views-components/context-menu/action-sets/project-admin-action-set';
 import { permissionEditActionSet } from 'views-components/context-menu/action-sets/permission-edit-action-set';
 import { workflowActionSet } from 'views-components/context-menu/action-sets/workflow-action-set';
 import { snackbarActions, SnackbarKind } from "store/snackbar/snackbar-actions";
@@ -102,6 +102,8 @@ addMenuActionSet(ContextMenuKind.GROUP_MEMBER, groupMemberActionSet);
 addMenuActionSet(ContextMenuKind.COLLECTION_ADMIN, collectionAdminActionSet);
 addMenuActionSet(ContextMenuKind.PROCESS_ADMIN, processResourceAdminActionSet);
 addMenuActionSet(ContextMenuKind.PROJECT_ADMIN, projectAdminActionSet);
+addMenuActionSet(ContextMenuKind.FROZEN_PROJECT, frozenActionSet);
+addMenuActionSet(ContextMenuKind.FROZEN_PROJECT_ADMIN, frozenAdminActionSet);
 addMenuActionSet(ContextMenuKind.FILTER_GROUP_ADMIN, filterGroupAdminActionSet);
 addMenuActionSet(ContextMenuKind.PERMISSION_EDIT, permissionEditActionSet);
 addMenuActionSet(ContextMenuKind.WORKFLOW, workflowActionSet);
@@ -149,6 +151,8 @@ fetchConfig()
         servicesProvider.setServices(services);
 
         const store = configureStore(history, services, config);
+
+        servicesProvider.setStore(store);
 
         store.subscribe(initListener(history, store, services, config));
         store.dispatch(initAuth(config));

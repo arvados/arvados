@@ -66,7 +66,7 @@ const mapDispatchToProps = (dispatch: Dispatch, { loadRootItem, includeCollectio
                 dispatch<any>(
                     data.kind === ResourceKind.COLLECTION
                         ? loadCollection(id, pickerId)
-                        : loadProject({ id, pickerId, includeCollections, includeFiles })
+                        : loadProject({ id, pickerId, includeCollections, includeFiles, options })
                 );
             } else if (!('type' in data) && loadRootItem) {
                 loadRootItem(item as TreeItem<ProjectsTreePickerRootItem>, pickerId, includeCollections, includeFiles, options);

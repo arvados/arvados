@@ -72,6 +72,7 @@ export const ProjectInputComponent = connect(mapStateToProps)(
         }
 
         openDialog = () => {
+            this.componentDidMount();
             this.setState({ open: true });
         }
 
@@ -109,7 +110,7 @@ export const ProjectInputComponent = connect(mapStateToProps)(
         }
 
         renderDialog() {
-            return <Dialog
+            return this.state.open ? <Dialog
                 open={this.state.open}
                 onClose={this.closeDialog}
                 fullWidth
@@ -130,7 +131,7 @@ export const ProjectInputComponent = connect(mapStateToProps)(
                         color='primary'
                         onClick={this.submit}>Ok</Button>
                 </DialogActions>
-            </Dialog>;
+            </Dialog> : null;
         }
 
     });

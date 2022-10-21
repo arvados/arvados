@@ -45,6 +45,7 @@ import {
 import { GroupContentsResource } from 'services/groups-service/groups-service';
 import { GroupClass, GroupResource } from 'models/group';
 import { CollectionResource } from 'models/collection';
+import { resourceIsFrozen } from 'common/frozen-resources';
 
 type CssRules = 'root' | "button";
 
@@ -165,7 +166,7 @@ export const ProjectPanel = withStyles(styles)(
             }
 
             handleContextMenu = (event: React.MouseEvent<HTMLElement>, resourceUuid: string) => {
-                const { resources } = this.props;
+                const { resources, isAdmin } = this.props;
                 const resource = getResource<GroupContentsResource>(resourceUuid)(resources);
                 // When viewing the contents of a filter group, all contents should be treated as read only.
                 let readonly = false;
@@ -183,6 +184,8 @@ export const ProjectPanel = withStyles(styles)(
                         isTrashed: ('isTrashed' in resource) ? resource.isTrashed : false,
                         kind: resource.kind,
                         menuKind,
+                        isAdmin,
+                        isFrozen: resourceIsFrozen(resource, resources),
                         description: resource.description,
                         storageClassesDesired: (resource as CollectionResource).storageClassesDesired,
                         properties: ('properties' in resource) ? resource.properties : {},

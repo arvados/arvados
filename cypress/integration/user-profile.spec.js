@@ -76,7 +76,7 @@ describe('User profile tests', function() {
     }) {
         cy.get('[data-cy=user-profile-panel-options-btn]').click();
         cy.get('[data-cy=context-menu]').within(() => {
-            cy.get('[role=button]').contains('Advanced');
+            cy.get('[role=button]').contains('API Details');
 
             cy.get('[role=button]').should(account ? 'contain' : 'not.contain', 'Account Settings');
             cy.get('[role=button]').should(activate ? 'contain' : 'not.contain', 'Activate User');

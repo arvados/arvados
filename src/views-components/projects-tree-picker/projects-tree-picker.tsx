@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import React from 'react';
-import { values, memoize, pipe } from 'lodash/fp';
+import { values, pipe } from 'lodash/fp';
 import { HomeTreePicker } from 'views-components/projects-tree-picker/home-tree-picker';
 import { SharedTreePicker } from 'views-components/projects-tree-picker/shared-tree-picker';
 import { FavoritesTreePicker } from 'views-components/projects-tree-picker/favorites-tree-picker';
@@ -46,5 +46,5 @@ export const ProjectsTreePicker = ({ pickerId, ...props }: ProjectsTreePickerPro
     </div>;
 };
 
-const getRelatedTreePickers = memoize(pipe(getProjectsTreePickerIds, values));
+const getRelatedTreePickers = pipe(getProjectsTreePickerIds, values);
 const disableActivation = [SHARED_PROJECT_ID, FAVORITES_PROJECT_ID];

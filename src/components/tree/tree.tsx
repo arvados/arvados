@@ -5,7 +5,7 @@
 import React from 'react';
 import { List, ListItem, ListItemIcon, Checkbox, Radio, Collapse } from "@material-ui/core";
 import { StyleRulesCallback, withStyles, WithStyles } from '@material-ui/core/styles';
-import { CollectionIcon, DefaultIcon, DirectoryIcon, FileIcon, ProjectIcon, FilterGroupIcon } from 'components/icon/icon';
+import { CollectionIcon, DefaultIcon, DirectoryIcon, FileIcon, ProjectIcon, FilterGroupIcon, FreezeIcon } from 'components/icon/icon';
 import { ReactElement } from "react";
 import CircularProgress from '@material-ui/core/CircularProgress';
 import classnames from "classnames";
@@ -26,7 +26,8 @@ type CssRules = 'list'
     | 'toggableIcon'
     | 'checkbox'
     | 'childItem'
-    | 'childItemIcon';
+    | 'childItemIcon'
+    | 'frozenIcon';
 
 const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     list: {
@@ -83,6 +84,11 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     active: {
         color: theme.palette.primary.main,
     },
+    frozenIcon: {
+        fontSize: 20,
+        color: theme.palette.grey["600"],
+        marginLeft: '10px',
+    },
 });
 
 export enum TreeItemStatus {
@@ -102,6 +108,7 @@ export interface TreeItem<T> {
     flatTree?: boolean;
     status: TreeItemStatus;
     items?: Array<TreeItem<T>>;
+    isFrozen?: boolean;
 }
 
 export interface TreeProps<T> {
@@ -253,6 +260,9 @@ const FlatTree = (props: FlatTreeProps) =>
                             <span style={{ fontSize: '0.875rem' }}>
                                 {item.data.name}
                             </span>
+                            {
+                                !!item.data.frozenByUuid ? <FreezeIcon className={props.classes.frozenIcon} /> : null
+                            }
                         </span>
                     </div>
                 </div>)
@@ -270,7 +280,6 @@ export const Tree = withStyles(styles)(
                 : () => this.props.showSelection ? true : false;
 
             const { levelIndentation = 20, itemRightPadding = 20 } = this.props;
-
             return <List className={list}>
                 {items && items.map((it: TreeItem<T>, idx: number) =>
                     <div key={`item/${level}/${it.id}`}>

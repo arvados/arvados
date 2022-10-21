@@ -13,6 +13,9 @@ interface WorkbenchConfig {
 }
 
 export interface ClusterConfigJSON {
+    API: {
+        UnfreezeProjectRequiresAdmin: boolean
+    },
     ClusterID: string;
     RemoteClusters: {
         [key: string]: {
@@ -222,6 +225,9 @@ export const mapRemoteHosts = (clusterConfigJSON: ClusterConfigJSON, config: Con
 };
 
 export const mockClusterConfigJSON = (config: Partial<ClusterConfigJSON>): ClusterConfigJSON => ({
+    API: {
+        UnfreezeProjectRequiresAdmin: false,
+    },
     ClusterID: "",
     RemoteClusters: {},
     Services: {

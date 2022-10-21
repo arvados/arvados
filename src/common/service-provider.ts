@@ -6,6 +6,7 @@ class ServicesProvider {
 
     private static instance: ServicesProvider;
 
+    private store;
     private services;
 
     private constructor() {}
@@ -29,6 +30,20 @@ class ServicesProvider {
             throw "Please check if services have been set in the index.ts before the app is initiated"; // eslint-disable-line no-throw-literal
         }
         return this.services;
+    }
+
+    public setStore(newStore): void {
+        if (!this.store) {
+            this.store = newStore;
+        }
+    }
+
+    public getStore() {
+        if (!this.store) {
+            throw "Please check if store has been set in the index.ts before the app is initiated"; // eslint-disable-line no-throw-literal
+        }
+
+        return this.store;
     }
 }
 

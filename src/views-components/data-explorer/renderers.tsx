@@ -15,6 +15,7 @@ import {
 import { FavoriteStar, PublicFavoriteStar } from '../favorite-star/favorite-star';
 import { Resource, ResourceKind, TrashableResource } from 'models/resource';
 import {
+    FreezeIcon,
     ProjectIcon,
     FilterGroupIcon,
     CollectionIcon,
@@ -59,6 +60,7 @@ import { openPermissionEditContextMenu } from 'store/context-menu/context-menu-a
 import { getUserUuid } from 'common/getuser';
 import { VirtualMachinesResource } from 'models/virtual-machines';
 import { CopyToClipboardSnackbar } from 'components/copy-to-clipboard-snackbar/copy-to-clipboard-snackbar';
+import { ProjectResource } from 'models/project';
 
 const renderName = (dispatch: Dispatch, item: GroupContentsResource) => {
 
@@ -79,10 +81,31 @@ const renderName = (dispatch: Dispatch, item: GroupContentsResource) => {
             <Typography variant="caption">
                 <FavoriteStar resourceUuid={item.uuid} />
                 <PublicFavoriteStar resourceUuid={item.uuid} />
+                {
+                    item.kind === ResourceKind.PROJECT && <FrozenProject item={item} />
+                }
             </Typography>
         </Grid>
     </Grid>;
 };
+
+const FrozenProject = (props: {item: ProjectResource}) => {
+    const [fullUsername, setFullusername] = React.useState<any>(null);
+    const getFullName = React.useCallback(() => {
+        if (props.item.frozenByUuid) {
+            setFullusername(<UserNameFromID uuid={props.item.frozenByUuid} />);
+        }
+    }, [props.item, setFullusername])
+
+    if (props.item.frozenByUuid) {
+
+        return <Tooltip onOpen={getFullName} enterDelay={500} title={<span>Project was frozen by {fullUsername}</span>}>
+            <FreezeIcon style={{ fontSize: "inherit" }}/>
+        </Tooltip>;
+    } else {
+        return null;
+    }
+}
 
 export const ResourceName = connect(
     (state: RootState, props: { uuid: string }) => {
@@ -745,7 +768,7 @@ export const ResourceWithName = userFromID(_resourceWithName);
 
 export const UserNameFromID =
     compose(userFromID)(
-        (props: { uuid: string, userFullname: string, dispatch: Dispatch }) => {
+        (props: { uuid: string, displayAsText?: string, userFullname: string, dispatch: Dispatch }) => {
             const { uuid, userFullname, dispatch } = props;
 
             if (userFullname === '') {

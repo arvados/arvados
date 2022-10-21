@@ -59,8 +59,6 @@ import SettingsEthernet from '@material-ui/icons/SettingsEthernet';
 import Star from '@material-ui/icons/Star';
 import StarBorder from '@material-ui/icons/StarBorder';
 import Warning from '@material-ui/icons/Warning';
-import Visibility from '@material-ui/icons/Visibility';
-import VisibilityOff from '@material-ui/icons/VisibilityOff';
 import VpnKey from '@material-ui/icons/VpnKey';
 import LinkOutlined from '@material-ui/icons/LinkOutlined';
 import RemoveRedEye from '@material-ui/icons/RemoveRedEye';
@@ -85,6 +83,20 @@ library.add(
     faUsers,
     faEllipsisH,
 );
+
+export const FreezeIcon = (props: any) =>
+    <span {...props}>
+        <span className='fas fa-snowflake' />
+    </span>
+
+export const UnfreezeIcon = (props: any) =>
+    <div {...props}>
+        <div className="fa-layers fa-1x fa-fw">
+            <span className="fas fa-slash"
+                data-fa-mask="fas fa-snowflake" data-fa-transform="down-1.5" />
+            <span className="fas fa-slash" />
+        </div>
+    </div>;
 
 export const PendingIcon = (props: any) =>
     <span {...props}>
@@ -184,8 +196,6 @@ export const SidePanelRightArrowIcon: IconType = (props) => <PlayArrow {...props
 export const TrashIcon: IconType = (props) => <Delete {...props} />;
 export const UserPanelIcon: IconType = (props) => <Person {...props} />;
 export const UsedByIcon: IconType = (props) => <Folder {...props} />;
-export const VisibleIcon: IconType = (props) => <Visibility {...props} />;
-export const InvisibleIcon: IconType = (props) => <VisibilityOff {...props} />;
 export const WorkflowIcon: IconType = (props) => <Code {...props} />;
 export const WarningIcon: IconType = (props) => <Warning style={{ color: '#fbc02d', height: '30px', width: '30px' }} {...props} />;
 export const Link: IconType = (props) => <LinkOutlined {...props} />;

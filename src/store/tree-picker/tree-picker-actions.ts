@@ -103,10 +103,11 @@ interface LoadProjectParams {
     includeFiles?: boolean;
     includeFilterGroups?: boolean;
     loadShared?: boolean;
+    options?: { showOnlyOwned: boolean; showOnlyWritable: boolean; };
 }
 export const loadProject = (params: LoadProjectParams) =>
     async (dispatch: Dispatch, _: () => RootState, services: ServiceRepository) => {
-        const { id, pickerId, includeCollections = false, includeFiles = false, includeFilterGroups = false, loadShared = false } = params;
+        const { id, pickerId, includeCollections = false, includeFiles = false, includeFilterGroups = false, loadShared = false, options } = params;
 
         dispatch(treePickerActions.LOAD_TREE_PICKER_NODE({ id, pickerId }));
 
@@ -118,7 +119,6 @@ export const loadProject = (params: LoadProjectParams) =>
         )(new FilterBuilder());
 
         const { items } = await services.groupsService.contents(loadShared ? '' : id, { filters, excludeHomeProject: loadShared || undefined });
-
         dispatch<any>(receiveTreePickerData<GroupContentsResource>({
             id,
             pickerId,
@@ -126,6 +126,11 @@ export const loadProject = (params: LoadProjectParams) =>
                     if (!includeFilterGroups && (item as GroupResource).groupClass && (item as GroupResource).groupClass === GroupClass.FILTER) {
                         return false;
                     }
+
+                    if (options && options.showOnlyWritable && item.hasOwnProperty('frozenByUuid') && (item as ProjectResource).frozenByUuid) {
+                        return false;
+                    }
+
                     return true;
                 }),
             extractNodeData: item => ({
@@ -183,11 +188,11 @@ export const initUserProject = (pickerId: string) =>
             }));
         }
     };
-export const loadUserProject = (pickerId: string, includeCollections = false, includeFiles = false) =>
+export const loadUserProject = (pickerId: string, includeCollections = false, includeFiles = false, options?: { showOnlyOwned: boolean, showOnlyWritable: boolean } ) =>
     async (dispatch: Dispatch<any>, getState: () => RootState, services: ServiceRepository) => {
         const uuid = getUserUuid(getState());
         if (uuid) {
-            dispatch(loadProject({ id: uuid, pickerId, includeCollections, includeFiles }));
+            dispatch(loadProject({ id: uuid, pickerId, includeCollections, includeFiles, options }));
         }
     };
 
@@ -240,6 +245,7 @@ interface LoadFavoritesProjectParams {
     pickerId: string;
     includeCollections?: boolean;
     includeFiles?: boolean;
+    options?: { showOnlyOwned: boolean, showOnlyWritable: boolean };
 }
 
 export const loadFavoritesProject = (params: LoadFavoritesProjectParams,
@@ -262,6 +268,10 @@ export const loadFavoritesProject = (params: LoadFavoritesProjectParams,
                 pickerId,
                 data: items.filter((item) => {
                     if (options.showOnlyWritable && (item as GroupResource).writableBy && (item as GroupResource).writableBy.indexOf(uuid) === -1) {
+                        return false;
+                    }
+
+                    if (options.showOnlyWritable && item.hasOwnProperty('frozenByUuid') && (item as ProjectResource).frozenByUuid) {
                         return false;
                     }
 
@@ -301,7 +311,13 @@ export const loadPublicFavoritesProject = (params: LoadFavoritesProjectParams) =
         dispatch<any>(receiveTreePickerData<LinkResource>({
             id: 'Public Favorites',
             pickerId,
-            data: items,
+            data: items.filter(item => {
+                if (params.options && params.options.showOnlyWritable && item.hasOwnProperty('frozenByUuid') && (item as any).frozenByUuid) {
+                    return false;
+                }
+
+                return true;
+            }),
             extractNodeData: item => ({
                 id: item.headUuid,
                 value: item,

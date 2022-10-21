@@ -18,97 +18,155 @@ import { openAdvancedTabDialog } from "store/advanced-tab/advanced-tab";
 import { toggleDetailsPanel } from 'store/details-panel/details-panel-action';
 import { copyToClipboardAction, openInNewTabAction } from "store/open-in-new-tab/open-in-new-tab.actions";
 import { openWebDavS3InfoDialog } from "store/collections/collection-info-actions";
+import { ToggleLockAction } from "../actions/lock-action";
+import { freezeProject, unfreezeProject } from "store/projects/project-lock-actions";
+
+export const toggleFavoriteAction = {
+    component: ToggleFavoriteAction,
+    name: 'ToggleFavoriteAction',
+    execute: (dispatch, resource) => {
+        dispatch(toggleFavorite(resource)).then(() => {
+            dispatch(favoritePanelActions.REQUEST_ITEMS());
+        });
+    }
+};
+
+export const openInNewTabMenuAction = {
+    icon: OpenIcon,
+    name: "Open in new tab",
+    execute: (dispatch, resource) => {
+        dispatch(openInNewTabAction(resource));
+    }
+};
+
+export const copyToClipboardMenuAction = {
+    icon: Link,
+    name: "Copy to clipboard",
+    execute: (dispatch, resource) => {
+        dispatch(copyToClipboardAction(resource));
+    }
+};
+
+export const viewDetailsAction = {
+    icon: DetailsIcon,
+    name: "View details",
+    execute: dispatch => {
+        dispatch(toggleDetailsPanel());
+    }
+}
+
+export const advancedAction = {
+    icon: AdvancedIcon,
+    name: "API Details",
+    execute: (dispatch, resource) => {
+        dispatch(openAdvancedTabDialog(resource.uuid));
+    }
+}
+
+export const openWith3rdPartyClientAction = {
+    icon: FolderSharedIcon,
+    name: "Open with 3rd party client",
+    execute: (dispatch, resource) => {
+        dispatch(openWebDavS3InfoDialog(resource.uuid));
+    }
+}
+
+export const editProjectAction = {
+    icon: RenameIcon,
+    name: "Edit project",
+    execute: (dispatch, resource) => {
+        dispatch(openProjectUpdateDialog(resource));
+    }
+}
+
+export const shareAction = {
+    icon: ShareIcon,
+    name: "Share",
+    execute: (dispatch, { uuid }) => {
+        dispatch(openSharingDialog(uuid));
+    }
+}
+
+export const moveToAction = {
+    icon: MoveToIcon,
+    name: "Move to",
+    execute: (dispatch, resource) => {
+        dispatch(openMoveProjectDialog(resource));
+    }
+}
+
+export const toggleTrashAction = {
+    component: ToggleTrashAction,
+    name: 'ToggleTrashAction',
+    execute: (dispatch, resource) => {
+        dispatch(toggleProjectTrashed(resource.uuid, resource.ownerUuid, resource.isTrashed!!));
+    }
+}
+
+export const freezeProjectAction = {
+    component: ToggleLockAction,
+    name: 'ToggleLockAction',
+    execute: (dispatch, resource) => {
+        if (resource.isFrozen) {
+            dispatch(unfreezeProject(resource.uuid));
+        } else {
+            dispatch(freezeProject(resource.uuid));
+        }
+    }
+}
+
+export const newProjectAction: any = {
+    icon: NewProjectIcon,
+    name: "New project",
+    execute: (dispatch, resource): void => {
+        dispatch(openProjectCreateDialog(resource.uuid));
+    }
+}
 
 export const readOnlyProjectActionSet: ContextMenuActionSet = [[
-    {
-        component: ToggleFavoriteAction,
-        name: 'ToggleFavoriteAction',
-        execute: (dispatch, resource) => {
-            dispatch<any>(toggleFavorite(resource)).then(() => {
-                dispatch<any>(favoritePanelActions.REQUEST_ITEMS());
-            });
-        }
-    },
-    {
-        icon: OpenIcon,
-        name: "Open in new tab",
-        execute: (dispatch, resource) => {
-            dispatch<any>(openInNewTabAction(resource));
-        }
-    },
-    {
-        icon: Link,
-        name: "Copy to clipboard",
-        execute: (dispatch, resource) => {
-            dispatch<any>(copyToClipboardAction(resource));
-        }
-    },
-    {
-        icon: DetailsIcon,
-        name: "View details",
-        execute: dispatch => {
-            dispatch<any>(toggleDetailsPanel());
-        }
-    },
-    {
-        icon: AdvancedIcon,
-        name: "Advanced",
-        execute: (dispatch, resource) => {
-            dispatch<any>(openAdvancedTabDialog(resource.uuid));
-        }
-    },
-    {
-        icon: FolderSharedIcon,
-        name: "Open with 3rd party client",
-        execute: (dispatch, resource) => {
-            dispatch<any>(openWebDavS3InfoDialog(resource.uuid));
-        }
-    },
+    toggleFavoriteAction,
+    openInNewTabMenuAction,
+    copyToClipboardMenuAction,
+    viewDetailsAction,
+    advancedAction,
+    openWith3rdPartyClientAction,
 ]];
 
-export const filterGroupActionSet: ContextMenuActionSet = [
-    [
-        ...readOnlyProjectActionSet.reduce((prev, next) => prev.concat(next), []),
-        {
-            icon: RenameIcon,
-            name: "Edit project",
-            execute: (dispatch, resource) => {
-                dispatch<any>(openProjectUpdateDialog(resource));
-            }
-        },
-        {
-            icon: ShareIcon,
-            name: "Share",
-            execute: (dispatch, { uuid }) => {
-                dispatch<any>(openSharingDialog(uuid));
-            }
-        },
-        {
-            icon: MoveToIcon,
-            name: "Move to",
-            execute: (dispatch, resource) => {
-                dispatch<any>(openMoveProjectDialog(resource));
-            }
-        },
-        {
-            component: ToggleTrashAction,
-            name: 'ToggleTrashAction',
-            execute: (dispatch, resource) => {
-                dispatch<any>(toggleProjectTrashed(resource.uuid, resource.ownerUuid, resource.isTrashed!!));
-            }
-        },
-    ]
-];
+export const filterGroupActionSet: ContextMenuActionSet = [[
+    toggleFavoriteAction,
+    openInNewTabMenuAction,
+    copyToClipboardMenuAction,
+    viewDetailsAction,
+    advancedAction,
+    openWith3rdPartyClientAction,
+    editProjectAction,
+    shareAction,
+    moveToAction,
+    toggleTrashAction,
+]];
 
-export const projectActionSet: ContextMenuActionSet = [
-    [
-        ...filterGroupActionSet.reduce((prev, next) => prev.concat(next), []),
-        {
-            icon: NewProjectIcon,
-            name: "New project",
-            execute: (dispatch, resource) => {
-                dispatch<any>(openProjectCreateDialog(resource.uuid));
-            }
-        },
-    ]
-];
+export const frozenActionSet: ContextMenuActionSet = [[
+    shareAction,
+    toggleFavoriteAction,
+    openInNewTabMenuAction,
+    copyToClipboardMenuAction,
+    viewDetailsAction,
+    advancedAction,
+    openWith3rdPartyClientAction,
+    freezeProjectAction
+]];
+
+export const projectActionSet: ContextMenuActionSet = [[
+    toggleFavoriteAction,
+    openInNewTabMenuAction,
+    copyToClipboardMenuAction,
+    viewDetailsAction,
+    advancedAction,
+    openWith3rdPartyClientAction,
+    editProjectAction,
+    shareAction,
+    moveToAction,
+    toggleTrashAction,
+    newProjectAction,
+    freezeProjectAction,
+]];

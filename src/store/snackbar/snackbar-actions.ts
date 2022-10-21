@@ -20,7 +20,7 @@ export enum SnackbarKind {
 
 export const snackbarActions = unionize({
     OPEN_SNACKBAR: ofType<{message: string; hideDuration?: number, kind?: SnackbarKind, link?: string}>(),
-    CLOSE_SNACKBAR: ofType<{}>(),
+    CLOSE_SNACKBAR: ofType<{}|null>(),
     SHIFT_MESSAGES: ofType<{}>()
 });
 

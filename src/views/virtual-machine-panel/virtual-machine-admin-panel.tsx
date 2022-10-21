@@ -16,7 +16,7 @@ import { VirtualMachineLogins, VirtualMachinesResource } from 'models/virtual-ma
 import { openVirtualMachinesContextMenu } from 'store/context-menu/context-menu-actions';
 import { ResourceUuid, VirtualMachineHostname, VirtualMachineLogin } from 'views-components/data-explorer/renderers';
 
-type CssRules = 'moreOptionsButton' | 'moreOptions' | 'chipsRoot';
+type CssRules = 'moreOptionsButton' | 'moreOptions' | 'chipsRoot' | 'vmTableWrapper';
 
 const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     moreOptionsButton: {
@@ -30,6 +30,9 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     },
     chipsRoot: {
         margin: `0px -${theme.spacing.unit / 2}px`,
+    },
+    vmTableWrapper: {
+        overflowX: 'auto',
     },
 });
 
@@ -95,7 +98,7 @@ export const VirtualMachineAdminPanel = compose(
 const CardContentWithVirtualMachines = (props: VirtualMachineProps) =>
     <Grid item xs={12}>
         <Card>
-            <CardContent>
+            <CardContent className={props.classes.vmTableWrapper}>
                 {virtualMachinesTable(props)}
             </CardContent>
         </Card>

@@ -83,7 +83,8 @@ export const loadVirtualMachinesAdminData = () =>
             filters: new FilterBuilder()
             .addIn('head_uuid', virtualMachines.items.map(item => item.uuid))
             .addEqual('name', PermissionLevel.CAN_LOGIN)
-            .getFilters()
+            .getFilters(),
+            limit: 1000
         });
         dispatch(updateResources(logins.items));
         dispatch(virtualMachinesActions.SET_LINKS(logins));
@@ -92,7 +93,8 @@ export const loadVirtualMachinesAdminData = () =>
             filters: new FilterBuilder()
             .addIn('uuid', logins.items.map(item => item.tailUuid))
             .getFilters(),
-            count: "none"
+            count: "none", // Necessary for federated queries
+            limit: 1000
         });
         dispatch(updateResources(users.items));
 
@@ -103,11 +105,13 @@ export const loadVirtualMachinesAdminData = () =>
 export const loadVirtualMachinesUserData = () =>
     async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
         dispatch<any>(loadRequestedDate());
+        const user = getState().auth.user;
         const virtualMachines = await services.virtualMachineService.list();
         const virtualMachinesUuids = virtualMachines.items.map(it => it.uuid);
         const links = await services.linkService.list({
             filters: new FilterBuilder()
                 .addIn("head_uuid", virtualMachinesUuids)
+                .addEqual("tail_uuid", user?.uuid)
                 .getFilters()
         });
         dispatch(virtualMachinesActions.SET_VIRTUAL_MACHINES(virtualMachines));
