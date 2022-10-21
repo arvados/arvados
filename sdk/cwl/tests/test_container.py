@@ -534,6 +534,7 @@ class TestContainer(unittest.TestCase):
         arvjob.successCodes = [0]
         arvjob.outdir = "/var/spool/cwl"
         arvjob.output_ttl = 3600
+        arvjob.uuid = "zzzzz-xvhdp-zzzzzzzzzzzzzz1"
 
         arvjob.collect_outputs.return_value = {"out": "stuff"}
 
@@ -553,6 +554,10 @@ class TestContainer(unittest.TestCase):
         arvjob.collect_outputs.assert_called_with("keep:abc+123", 0)
         arvjob.output_callback.assert_called_with({"out": "stuff"}, "success")
         runner.add_intermediate_output.assert_called_with("zzzzz-4zz18-zzzzzzzzzzzzzz2")
+
+        runner.api.container_requests().update.assert_called_with(uuid="zzzzz-xvhdp-zzzzzzzzzzzzzz1",
+                                                                  body={'container_request': {'properties': {'cwl_output': {'out': 'stuff'}}}})
+
 
     # Test to make sure we dont call runtime_status_update if we already did
     # some where higher up in the call stack

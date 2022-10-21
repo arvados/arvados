@@ -131,6 +131,7 @@ navbar:
       - api/keep-s3.html.textile.liquid
       - api/keep-web-urls.html.textile.liquid
       - api/projects.html.textile.liquid
+      - api/properties.html.textile.liquid
       - api/methods/collections.html.textile.liquid
       - api/methods/repositories.html.textile.liquid
     - Container engine:

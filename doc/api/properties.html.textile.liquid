@@ -1,0 +1,50 @@
+---
+layout: default
+navsection: api
+title: "Metadata properties"
+...
+{% comment %}
+Copyright (C) The Arvados Authors. All rights reserved.
+
+SPDX-License-Identifier: CC-BY-SA-3.0
+{% endcomment %}
+
+Arvados allows you to attach arbitrary properties to @collection@, @container_request@, @link@ and @group@ records that have a @properties@ field.  These are key-value pairs, where the value is a valid JSON type (string, number, null, boolean, array, object).
+
+Searching for records using properties is described in "Filtering on subproperties":methods.html#subpropertyfilters .
+
+h2. Reserved properties
+
+The following properties are set by Arvados components.
+
+table(table table-bordered table-condensed).
+|_. Property name|_. Appears on|_. Value type|_.Description|
+|type|collection|string|Appears on collections to indicates the contents or usage. See below for details.|
+|container_request|collection|string|The UUID of the container request that produced an output or log collection.|
+|docker-image-repo-tag|collection|string|For collections containing a Docker image, the repo/name:tag identifier|
+|container_uuid|collection|string|The UUID of the container that produced a collection (set on collections with type=log)|
+|cwl_inputs|object|container_request|On an intermediate container request, the CWL workflow-level input parameters used to generate the container request|
+|cwl_outputs|object|container_request|On an intermediate container request, the CWL workflow-level output parameters collected from the container request|
+|template_uuid|string|container_request|For a workflow runner container request, the workflow record that was used to launch it.|
+|username|string|link|For a "can_login":permission-model.html#links permission link, the unix username on the VM that the user will have.|
+|groups|array of string|link|For a "can_login":permission-model.html#links permission link, the unix groups on the VM that the user will be added to.|
+|image_timestamp|string|link|When resolving a Docker image name and multiple links are found with @link_class=docker_image_repo+tag@ and same @link_name@, the @image_timestamp@ is used to determine precedence (most recent wins).|
+|filters|array of array of string|group|Used to define "filter groups":projects.html#filtergroup|
+
+h3. Collection "type" values
+
+Meaningful values of the @type@ property.
+
+table(table table-bordered table-condensed).
+|_. Type|_.Description|
+|log|The collection contains log files from a container run.|
+|output|The collection contains the output of a top-level container run (this is a container request where @requesting_container_uuid@  is null).|
+|intermediate|The collection contains the output of a child container run (this is a container request where @requesting_container_uuid@ is non-empty).|
+
+h2. Controlling user-supplied properties
+
+Arvados can be configured with a vocabulary file that lists valid properties and the range of valid values for those properties.  This is described in "Metadata vocabulary":{{site.baseurl}}/admin/metadata-vocabulary.html .
+
+Arvados offers options to set properties automatically and/or prevent certain properties, once set, from being changed by non-admin users.  This is described in "Configuring collection's managed properties":{{site.baseurl}}/admin/collection-managed-properties.html .
+
+The admin can require that certain properties must be non-empty before "freezing a project":methods/groups.html#frozen .
