@@ -9,7 +9,7 @@ Copyright (C) The Arvados Authors. All rights reserved.
 SPDX-License-Identifier: CC-BY-SA-3.0
 {% endcomment %}
 
-Arvados allows you to attach arbitrary properties to @collection@, @container_request@, @link@ and @group@ records that have a @properties@ field.  These are key-value pairs, where the value is a valid JSON type (string, number, null, boolean, array, object).
+Arvados allows you to attach arbitrary properties to "collection":methods/collections.html, "container_request":methods/container_requests.html, "link":methods/links.html and "group":methods/groups.html records that have a @properties@ field.  These are key-value pairs, where the value is a valid JSON type (string, number, null, boolean, array, object).
 
 Searching for records using properties is described in "Filtering on subproperties":methods.html#subpropertyfilters .
 
@@ -23,13 +23,13 @@ table(table table-bordered table-condensed).
 |container_request|collection|string|The UUID of the container request that produced an output or log collection.|
 |docker-image-repo-tag|collection|string|For collections containing a Docker image, the repo/name:tag identifier|
 |container_uuid|collection|string|The UUID of the container that produced a collection (set on collections with type=log)|
-|cwl_input|object|container_request|On an intermediate container request, the CWL workflow-level input parameters used to generate the container request|
-|cwl_output|object|container_request|On an intermediate container request, the CWL workflow-level output parameters collected from the container request|
-|template_uuid|string|container_request|For a workflow runner container request, the workflow record that was used to launch it.|
-|username|string|link|For a "can_login":permission-model.html#links permission link, the unix username on the VM that the user will have.|
-|groups|array of string|link|For a "can_login":permission-model.html#links permission link, the unix groups on the VM that the user will be added to.|
-|image_timestamp|string|link|When resolving a Docker image name and multiple links are found with @link_class=docker_image_repo+tag@ and same @link_name@, the @image_timestamp@ is used to determine precedence (most recent wins).|
-|filters|array of array of string|group|Used to define "filter groups":projects.html#filtergroup|
+|cwl_input|container_request|object|On an intermediate container request, the CWL workflow-level input parameters used to generate the container request|
+|cwl_output|container_request|object|On an intermediate container request, the CWL workflow-level output parameters collected from the container request|
+|template_uuid|container_request|string|For a workflow runner container request, the workflow record that was used to launch it.|
+|username|link|string|For a "can_login":permission-model.html#links permission link, the unix username on the VM that the user will have.|
+|groups|link|array of string|For a "can_login":permission-model.html#links permission link, the unix groups on the VM that the user will be added to.|
+|image_timestamp|link|string|When resolving a Docker image name and multiple links are found with @link_class=docker_image_repo+tag@ and same @link_name@, the @image_timestamp@ is used to determine precedence (most recent wins).|
+|filters|group|array of array of string|Used to define "filter groups":projects.html#filtergroup|
 
 h3. Collection "type" values
 
