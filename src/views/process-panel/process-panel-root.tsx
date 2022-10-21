@@ -70,6 +70,7 @@ export const ProcessPanelRoot = withStyles(styles)(
     ({ process, auth, processLogsPanel, fetchOutputs, ...props }: ProcessPanelRootProps) => {
 
     const [outputDetails, setOutputs] = useState<OutputDetails | undefined>(undefined);
+    const [outputDefinitions, setOutputDefinitions] = useState<CommandOutputParameter[]>([]);
     const [rawInputs, setInputs] = useState<CommandInputParameter[] | undefined>(undefined);
 
     const [processedOutputs, setProcessedOutputs] = useState<ProcessIOParameter[] | undefined>(undefined);
@@ -85,6 +86,7 @@ export const ProcessPanelRoot = withStyles(styles)(
     // Resets state when changing processes
     React.useEffect(() => {
         setOutputs(undefined);
+        setOutputDefinitions([]);
         setInputs(undefined);
         setProcessedOutputs(undefined);
         setProcessedInputs(undefined);
@@ -100,7 +102,11 @@ export const ProcessPanelRoot = withStyles(styles)(
     // Format raw output into ProcessIOParameter[] when it changes
     React.useEffect(() => {
         if (outputDetails !== undefined && outputDetails.rawOutputs && containerRequest) {
-            const outputDefinitions = getOutputParameters(containerRequest);
+            const newOutputDefinitions = getOutputParameters(containerRequest);
+            // Avoid setting output definitions back to [] when mounts briefly go missing
+            if (newOutputDefinitions.length) {
+                setOutputDefinitions(newOutputDefinitions);
+            }
             setProcessedOutputs(formatOutputData(outputDefinitions, outputDetails.rawOutputs, outputDetails.pdh, auth));
         }
     }, [outputDetails, auth, containerRequest]);
