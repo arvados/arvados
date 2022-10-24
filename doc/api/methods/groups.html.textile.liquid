@@ -38,7 +38,7 @@ table(table table-bordered table-condensed).
 |is_trashed|datetime|True if @trash_at@ is in the past, false if not.||
 |frozen_by_uuid|string|For a frozen project, indicates the user who froze the project; null in all other cases. When a project is frozen, no further changes can be made to the project or its contents, even by admins. Attempting to add new items or modify, rename, move, trash, or delete the project or its contents, including any subprojects, will return an error.||
 
-h3. Frozen projects
+h3(#frozen). Frozen projects
 
 A user with @manage@ permission can set the @frozen_by_uuid@ attribute of a @project@ group to their own user UUID. Once this is done, no further changes can be made to the project or its contents, including subprojects.
 
