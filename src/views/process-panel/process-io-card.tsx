@@ -210,8 +210,8 @@ export enum ProcessIOCardType {
 export interface ProcessIOCardDataProps {
     process: Process;
     label: ProcessIOCardType;
-    params?: ProcessIOParameter[];
-    raw?: any;
+    params: ProcessIOParameter[] | null;
+    raw: any;
     mounts?: InputCollectionMount[];
     outputUuid?: string;
 }
@@ -238,7 +238,7 @@ export const ProcessIOCard = withStyles(styles)(connect(null, mapDispatchToProps
         const PanelIcon = label === ProcessIOCardType.INPUT ? InputIcon : OutputIcon;
         const mainProcess = !process.containerRequest.requestingContainerUuid;
 
-        const loading = raw === undefined || params === undefined;
+        const loading = raw === null || raw === undefined || params === null;
         const hasRaw = !!(raw && Object.keys(raw).length > 0);
         const hasParams = !!(params && params.length > 0);
 

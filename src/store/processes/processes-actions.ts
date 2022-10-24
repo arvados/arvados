@@ -147,6 +147,7 @@ export const getRawInputs = (data: any): CommandInputParameter[] | undefined => 
 }
 
 export const getInputs = (data: any): CommandInputParameter[] => {
+    // Definitions from mounts are needed so we return early if missing
     if (!data || !data.mounts || !data.mounts[MOUNT_PATH_CWL_WORKFLOW]) { return []; }
     const content  = getRawInputs(data) as any;
     if (!content) { return []; }

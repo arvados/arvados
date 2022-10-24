@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import React, { useState } from 'react';
+import React from 'react';
 import { Grid, StyleRulesCallback, WithStyles, withStyles } from '@material-ui/core';
 import { DefaultView } from 'components/default-view/default-view';
 import { ProcessIcon } from 'components/icon/icon';
@@ -12,17 +12,18 @@ import { SubprocessFilterDataProps } from 'components/subprocess-filter/subproce
 import { MPVContainer, MPVPanelContent, MPVPanelState } from 'components/multi-panel-view/multi-panel-view';
 import { ArvadosTheme } from 'common/custom-theme';
 import { ProcessDetailsCard } from './process-details-card';
-import { getIOParamDisplayValue, ProcessIOCard, ProcessIOCardType, ProcessIOParameter } from './process-io-card';
+import { ProcessIOCard, ProcessIOCardType, ProcessIOParameter } from './process-io-card';
 
 import { getProcessPanelLogs, ProcessLogsPanel } from 'store/process-logs-panel/process-logs-panel';
 import { ProcessLogsCard } from './process-log-card';
 import { FilterOption } from 'views/process-panel/process-log-form';
-import { getInputs, getInputCollectionMounts, getOutputParameters, getRawInputs } from 'store/processes/processes-actions';
-import { CommandInputParameter, getIOParamId } from 'models/workflow';
+import { getInputCollectionMounts } from 'store/processes/processes-actions';
+import { CommandInputParameter } from 'models/workflow';
 import { CommandOutputParameter } from 'cwlts/mappings/v1.0/CommandOutputParameter';
 import { AuthState } from 'store/auth/auth-reducer';
 import { ProcessCmdCard } from './process-cmd-card';
 import { ContainerRequestResource } from 'models/container-request';
+import { OutputDetails } from 'store/process-panel/process-panel';
 
 type CssRules = 'root';
 
@@ -38,6 +39,11 @@ export interface ProcessPanelRootDataProps {
     filters: Array<SubprocessFilterDataProps>;
     processLogsPanel: ProcessLogsPanel;
     auth: AuthState;
+    inputRaw: CommandInputParameter[] | null;
+    inputParams: ProcessIOParameter[] | null;
+    outputRaw: OutputDetails | null;
+    outputDefinitions: CommandOutputParameter[];
+    outputParams: ProcessIOParameter[] | null;
 }
 
 export interface ProcessPanelRootActionProps {
@@ -47,15 +53,13 @@ export interface ProcessPanelRootActionProps {
     onLogFilterChange: (filter: FilterOption) => void;
     navigateToLog: (uuid: string) => void;
     onCopyToClipboard: (uuid: string) => void;
-    fetchOutputs: (containerRequest: ContainerRequestResource, fetchOutputs) => void;
+    loadInputs: (containerRequest: ContainerRequestResource) => void;
+    loadOutputs: (containerRequest: ContainerRequestResource) => void;
+    loadOutputDefinitions: (containerRequest: ContainerRequestResource) => void;
+    updateOutputParams: () => void;
 }
 
 export type ProcessPanelRootProps = ProcessPanelRootDataProps & ProcessPanelRootActionProps & WithStyles<CssRules>;
-
-type OutputDetails = {
-    rawOutputs?: any;
-    pdh?: string;
-}
 
 const panelsData: MPVPanelState[] = [
     {name: "Details"},
@@ -67,72 +71,41 @@ const panelsData: MPVPanelState[] = [
 ];
 
 export const ProcessPanelRoot = withStyles(styles)(
-    ({ process, auth, processLogsPanel, fetchOutputs, ...props }: ProcessPanelRootProps) => {
-
-    const [outputDetails, setOutputs] = useState<OutputDetails | undefined>(undefined);
-    const [outputDefinitions, setOutputDefinitions] = useState<CommandOutputParameter[]>([]);
-    const [rawInputs, setInputs] = useState<CommandInputParameter[] | undefined>(undefined);
-
-    const [processedOutputs, setProcessedOutputs] = useState<ProcessIOParameter[] | undefined>(undefined);
-    const [processedInputs, setProcessedInputs] = useState<ProcessIOParameter[] | undefined>(undefined);
+    ({
+        process,
+        auth,
+        processLogsPanel,
+        inputRaw,
+        inputParams,
+        outputRaw,
+        outputDefinitions,
+        outputParams,
+        loadInputs,
+        loadOutputs,
+        loadOutputDefinitions,
+        updateOutputParams,
+        ...props
+    }: ProcessPanelRootProps) => {
 
     const outputUuid = process?.containerRequest.outputUuid;
-    const requestUuid = process?.containerRequest.uuid;
-
     const containerRequest = process?.containerRequest;
-
     const inputMounts = getInputCollectionMounts(process?.containerRequest);
 
-    // Resets state when changing processes
-    React.useEffect(() => {
-        setOutputs(undefined);
-        setOutputDefinitions([]);
-        setInputs(undefined);
-        setProcessedOutputs(undefined);
-        setProcessedInputs(undefined);
-    }, [requestUuid]);
-
-    // Fetch raw output (async for fetching from keep)
     React.useEffect(() => {
         if (containerRequest) {
-            fetchOutputs(containerRequest, setOutputs);
+            // Load inputs from mounts or props
+            loadInputs(containerRequest);
+            // Fetch raw output (loads from props or keep)
+            loadOutputs(containerRequest);
+            // Loads output definitions from mounts into store
+            loadOutputDefinitions(containerRequest);
         }
-    }, [containerRequest, fetchOutputs]);
+    }, [containerRequest, loadInputs, loadOutputs, loadOutputDefinitions]);
 
-    // Fetch outputDefinitons from mounts whenever containerRequest is updated
+    // Trigger processing output params when raw or definitions change
     React.useEffect(() => {
-        if (containerRequest && containerRequest.mounts) {
-            const newOutputDefinitions = getOutputParameters(containerRequest);
-            // Avoid setting output definitions to [] when mounts briefly go missing
-            if (newOutputDefinitions.length) {
-                setOutputDefinitions(newOutputDefinitions);
-            }
-        }
-    }, [containerRequest]);
-
-    // Format raw output into ProcessIOParameter[] when it changes
-    React.useEffect(() => {
-        if (outputDetails !== undefined && outputDetails.rawOutputs) {
-            // Update processed outputs as long as outputDetails is loaded (or failed to load with {} rawOutputs)
-            setProcessedOutputs(formatOutputData(outputDefinitions, outputDetails.rawOutputs, outputDetails.pdh, auth));
-        }
-    }, [outputDetails, auth, outputDefinitions]);
-
-    // Fetch raw inputs and format into ProcessIOParameter[]
-    //   Can be sync because inputs are either already in containerRequest mounts or props
-    React.useEffect(() => {
-        if (containerRequest) {
-            // Since mounts can disappear and reappear, only set inputs if raw / processed inputs is undefined or new inputs has content
-            const newRawInputs = getRawInputs(containerRequest);
-            if (rawInputs === undefined || (newRawInputs && newRawInputs.length)) {
-                setInputs(newRawInputs);
-            }
-            const newInputs = getInputs(containerRequest);
-            if (processedInputs === undefined || (newInputs && newInputs.length)) {
-                setProcessedInputs(formatInputData(newInputs, auth));
-            }
-        }
-    }, [requestUuid, auth, containerRequest, processedInputs, rawInputs]);
+        updateOutputParams();
+    }, [outputRaw, outputDefinitions, updateOutputParams]);
 
     return process
         ? <MPVContainer className={props.classes.root} spacing={8} panelStates={panelsData}  justify-content="flex-start" direction="column" wrap="nowrap">
@@ -168,8 +141,8 @@ export const ProcessPanelRoot = withStyles(styles)(
                 <ProcessIOCard
                     label={ProcessIOCardType.INPUT}
                     process={process}
-                    params={processedInputs}
-                    raw={rawInputs}
+                    params={inputParams}
+                    raw={inputRaw}
                     mounts={inputMounts}
                  />
             </MPVPanelContent>
@@ -177,8 +150,8 @@ export const ProcessPanelRoot = withStyles(styles)(
                 <ProcessIOCard
                     label={ProcessIOCardType.OUTPUT}
                     process={process}
-                    params={processedOutputs}
-                    raw={outputDetails?.rawOutputs}
+                    params={outputParams}
+                    raw={outputRaw?.rawOutputs}
                     outputUuid={outputUuid || ""}
                  />
             </MPVPanelContent>
@@ -196,23 +169,3 @@ export const ProcessPanelRoot = withStyles(styles)(
         </Grid>;
     }
 );
-
-const formatInputData = (inputs: CommandInputParameter[], auth: AuthState): ProcessIOParameter[] => {
-    return inputs.map(input => {
-        return {
-            id: getIOParamId(input),
-            label: input.label || "",
-            value: getIOParamDisplayValue(auth, input)
-        };
-    });
-};
-
-const formatOutputData = (definitions: CommandOutputParameter[], values: any, pdh: string | undefined, auth: AuthState): ProcessIOParameter[] => {
-    return definitions.map(output => {
-        return {
-            id: getIOParamId(output),
-            label: output.label || "",
-            value: getIOParamDisplayValue(auth, Object.assign(output, { value: values[getIOParamId(output)] || [] }), pdh)
-        };
-    });
-};
