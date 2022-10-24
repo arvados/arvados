@@ -28,6 +28,10 @@ var (
 	version               = "dev"
 )
 
+type logger interface {
+	Printf(string, ...interface{})
+}
+
 func main() {
 	reporter := crunchstat.Reporter{
 		Logger: log.New(os.Stderr, "crunchstat: ", 0),
@@ -55,9 +59,11 @@ func main() {
 	reporter.Logger.Printf("crunchstat %s started", version)
 
 	if reporter.CgroupRoot == "" {
-		reporter.Logger.Fatal("error: must provide -cgroup-root")
+		reporter.Logger.Printf("error: must provide -cgroup-root")
+		os.Exit(2)
 	} else if signalOnDeadPPID < 0 {
-		reporter.Logger.Fatalf("-signal-on-dead-ppid=%d is invalid (use a positive signal number, or 0 to disable)", signalOnDeadPPID)
+		reporter.Logger.Printf("-signal-on-dead-ppid=%d is invalid (use a positive signal number, or 0 to disable)", signalOnDeadPPID)
+		os.Exit(2)
 	}
 	reporter.PollPeriod = time.Duration(*pollMsec) * time.Millisecond
 
@@ -76,17 +82,19 @@ func main() {
 		if status, ok := err.Sys().(syscall.WaitStatus); ok {
 			os.Exit(status.ExitStatus())
 		} else {
-			reporter.Logger.Fatalln("ExitError without WaitStatus:", err)
+			reporter.Logger.Printf("ExitError without WaitStatus: %v", err)
+			os.Exit(1)
 		}
 	} else if err != nil {
-		reporter.Logger.Fatalln("error in cmd.Wait:", err)
+		reporter.Logger.Printf("error running command: %v", err)
+		os.Exit(1)
 	}
 }
 
-func runCommand(argv []string, logger *log.Logger) error {
+func runCommand(argv []string, logger logger) error {
 	cmd := exec.Command(argv[0], argv[1:]...)
 
-	logger.Println("Running", argv)
+	logger.Printf("Running %v", argv)
 
 	// Child process will use our stdin and stdout pipes
 	// (we close our copies below)
@@ -100,7 +108,7 @@ func runCommand(argv []string, logger *log.Logger) error {
 		if cmd.Process != nil {
 			cmd.Process.Signal(catch)
 		}
-		logger.Println("notice: caught signal:", catch)
+		logger.Printf("notice: caught signal: %v", catch)
 	}(sigChan)
 	signal.Notify(sigChan, syscall.SIGTERM)
 	signal.Notify(sigChan, syscall.SIGINT)
@@ -113,24 +121,30 @@ func runCommand(argv []string, logger *log.Logger) error {
 	// Funnel stderr through our channel
 	stderrPipe, err := cmd.StderrPipe()
 	if err != nil {
-		logger.Fatalln("error in StderrPipe:", err)
+		logger.Printf("error in StderrPipe: %v", err)
+		return err
 	}
 
 	// Run subprocess
 	if err := cmd.Start(); err != nil {
-		logger.Fatalln("error in cmd.Start:", err)
+		logger.Printf("error in cmd.Start: %v", err)
+		return err
 	}
 
 	// Close stdin/stdout in this (parent) process
 	os.Stdin.Close()
 	os.Stdout.Close()
 
-	copyPipeToChildLog(stderrPipe, log.New(os.Stderr, "", 0))
+	err = copyPipeToChildLog(stderrPipe, log.New(os.Stderr, "", 0))
+	if err != nil {
+		cmd.Process.Kill()
+		return err
+	}
 
 	return cmd.Wait()
 }
 
-func sendSignalOnDeadPPID(intvl time.Duration, signum, ppidOrig int, cmd *exec.Cmd, logger *log.Logger) {
+func sendSignalOnDeadPPID(intvl time.Duration, signum, ppidOrig int, cmd *exec.Cmd, logger logger) {
 	ticker := time.NewTicker(intvl)
 	for range ticker.C {
 		ppid := os.Getppid()
@@ -152,7 +166,7 @@ func sendSignalOnDeadPPID(intvl time.Duration, signum, ppidOrig int, cmd *exec.C
 	}
 }
 
-func copyPipeToChildLog(in io.ReadCloser, logger *log.Logger) {
+func copyPipeToChildLog(in io.ReadCloser, logger logger) error {
 	reader := bufio.NewReaderSize(in, MaxLogLine)
 	var prefix string
 	for {
@@ -160,13 +174,13 @@ func copyPipeToChildLog(in io.ReadCloser, logger *log.Logger) {
 		if err == io.EOF {
 			break
 		} else if err != nil {
-			logger.Fatal("error reading child stderr:", err)
+			return fmt.Errorf("error reading child stderr: %w", err)
 		}
 		var suffix string
 		if isPrefix {
 			suffix = "[...]"
 		}
-		logger.Print(prefix, string(line), suffix)
+		logger.Printf("%s%s%s", prefix, string(line), suffix)
 		// Set up prefix for following line
 		if isPrefix {
 			prefix = "[...]"
@@ -174,5 +188,5 @@ func copyPipeToChildLog(in io.ReadCloser, logger *log.Logger) {
 			prefix = ""
 		}
 	}
-	in.Close()
+	return in.Close()
 }

@@ -6,12 +6,25 @@ package crunchstat
 
 import (
 	"bufio"
+	"bytes"
 	"io"
 	"log"
 	"os"
 	"regexp"
 	"testing"
+	"time"
+
+	"github.com/sirupsen/logrus"
+	. "gopkg.in/check.v1"
 )
+
+func Test(t *testing.T) {
+	TestingT(t)
+}
+
+var _ = Suite(&suite{})
+
+type suite struct{}
 
 func bufLogger() (*log.Logger, *bufio.Reader) {
 	r, w := io.Pipe()
@@ -19,7 +32,7 @@ func bufLogger() (*log.Logger, *bufio.Reader) {
 	return logger, bufio.NewReader(r)
 }
 
-func TestReadAllOrWarnFail(t *testing.T) {
+func (s *suite) TestReadAllOrWarnFail(c *C) {
 	logger, rcv := bufLogger()
 	rep := Reporter{Logger: logger}
 
@@ -35,32 +48,57 @@ func TestReadAllOrWarnFail(t *testing.T) {
 		// reading, but reading from byte 0 returns an error.
 		f, err := os.Open("/proc/self/mem")
 		if err != nil {
-			t.Fatalf("Opening /proc/self/mem: %s", err)
+			c.Fatalf("Opening /proc/self/mem: %s", err)
 		}
 		if x, err := rep.readAllOrWarn(f); err == nil {
-			t.Fatalf("Expected error, got %v", x)
+			c.Fatalf("Expected error, got %v", x)
 		}
 	}
 	<-done
 	if err != nil {
-		t.Fatal(err)
+		c.Fatal(err)
 	} else if matched, err := regexp.MatchString("^warning: read /proc/self/mem: .*", string(msg)); err != nil || !matched {
-		t.Fatalf("Expected error message about unreadable file, got \"%s\"", msg)
+		c.Fatalf("Expected error message about unreadable file, got \"%s\"", msg)
 	}
 }
 
-func TestReadAllOrWarnSuccess(t *testing.T) {
+func (s *suite) TestReadAllOrWarnSuccess(c *C) {
 	rep := Reporter{Logger: log.New(os.Stderr, "", 0)}
 
 	f, err := os.Open("./crunchstat_test.go")
 	if err != nil {
-		t.Fatalf("Opening ./crunchstat_test.go: %s", err)
+		c.Fatalf("Opening ./crunchstat_test.go: %s", err)
 	}
 	data, err := rep.readAllOrWarn(f)
 	if err != nil {
-		t.Fatalf("got error %s", err)
+		c.Fatalf("got error %s", err)
 	}
 	if matched, err := regexp.MatchString("\npackage crunchstat\n", string(data)); err != nil || !matched {
-		t.Fatalf("data failed regexp: err %v, matched %v", err, matched)
+		c.Fatalf("data failed regexp: err %v, matched %v", err, matched)
 	}
+}
+
+func (s *suite) TestReportPIDs(c *C) {
+	var logbuf bytes.Buffer
+	logger := logrus.New()
+	logger.Out = &logbuf
+	r := Reporter{
+		Logger:     logger,
+		CgroupRoot: "/sys/fs/cgroup",
+		PollPeriod: time.Second,
+	}
+	r.Start()
+	r.ReportPID("init", 1)
+	r.ReportPID("test_process", os.Getpid())
+	r.ReportPID("nonexistent", 12345) // should be silently ignored/omitted
+	for deadline := time.Now().Add(10 * time.Second); ; time.Sleep(time.Millisecond) {
+		if time.Now().After(deadline) {
+			c.Error("timed out")
+			break
+		}
+		if regexp.MustCompile(`(!?ms).*procmem \d+ init \d+ test_process.*`).MatchString(logbuf.String()) {
+			break
+		}
+	}
+	c.Logf("%s", logbuf.String())
 }
