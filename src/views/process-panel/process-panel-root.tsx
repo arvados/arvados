@@ -99,17 +99,24 @@ export const ProcessPanelRoot = withStyles(styles)(
         }
     }, [containerRequest, fetchOutputs]);
 
-    // Format raw output into ProcessIOParameter[] when it changes
+    // Fetch outputDefinitons from mounts whenever containerRequest is updated
     React.useEffect(() => {
-        if (outputDetails !== undefined && outputDetails.rawOutputs && containerRequest) {
+        if (containerRequest && containerRequest.mounts) {
             const newOutputDefinitions = getOutputParameters(containerRequest);
-            // Avoid setting output definitions back to [] when mounts briefly go missing
+            // Avoid setting output definitions to [] when mounts briefly go missing
             if (newOutputDefinitions.length) {
                 setOutputDefinitions(newOutputDefinitions);
             }
+        }
+    }, [containerRequest]);
+
+    // Format raw output into ProcessIOParameter[] when it changes
+    React.useEffect(() => {
+        if (outputDetails !== undefined && outputDetails.rawOutputs) {
+            // Update processed outputs as long as outputDetails is loaded (or failed to load with {} rawOutputs)
             setProcessedOutputs(formatOutputData(outputDefinitions, outputDetails.rawOutputs, outputDetails.pdh, auth));
         }
-    }, [outputDetails, auth, containerRequest, outputDefinitions]);
+    }, [outputDetails, auth, outputDefinitions]);
 
     // Fetch raw inputs and format into ProcessIOParameter[]
     //   Can be sync because inputs are either already in containerRequest mounts or props
