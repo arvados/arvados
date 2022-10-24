@@ -109,7 +109,7 @@ export const ProcessPanelRoot = withStyles(styles)(
             }
             setProcessedOutputs(formatOutputData(outputDefinitions, outputDetails.rawOutputs, outputDetails.pdh, auth));
         }
-    }, [outputDetails, auth, containerRequest]);
+    }, [outputDetails, auth, containerRequest, outputDefinitions]);
 
     // Fetch raw inputs and format into ProcessIOParameter[]
     //   Can be sync because inputs are either already in containerRequest mounts or props
@@ -117,15 +117,15 @@ export const ProcessPanelRoot = withStyles(styles)(
         if (containerRequest) {
             // Since mounts can disappear and reappear, only set inputs if raw / processed inputs is undefined or new inputs has content
             const newRawInputs = getRawInputs(containerRequest);
-            if (rawInputs === undefined || newRawInputs && newRawInputs.length) {
+            if (rawInputs === undefined || (newRawInputs && newRawInputs.length)) {
                 setInputs(newRawInputs);
             }
             const newInputs = getInputs(containerRequest);
-            if (processedInputs === undefined || newInputs && newInputs.length) {
+            if (processedInputs === undefined || (newInputs && newInputs.length)) {
                 setProcessedInputs(formatInputData(newInputs, auth));
             }
         }
-    }, [requestUuid, auth, containerRequest]);
+    }, [requestUuid, auth, containerRequest, processedInputs, rawInputs]);
 
     return process
         ? <MPVContainer className={props.classes.root} spacing={8} panelStates={panelsData}  justify-content="flex-start" direction="column" wrap="nowrap">
