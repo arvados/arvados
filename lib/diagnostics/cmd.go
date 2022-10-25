@@ -62,6 +62,7 @@ func (Command) RunCommand(prog string, args []string, stdin io.Reader, stdout, s
 }
 
 // docker save hello-world > hello-world.tar
+//
 //go:embed hello-world.tar
 var HelloWorldDockerImage []byte
 
@@ -156,7 +157,7 @@ func (diag *diagnoser) runtests() {
 			return err
 		}
 		if cluster.SystemRootToken != os.Getenv("ARVADOS_API_TOKEN") {
-			diag.infof("skipping because provided token is not SystemRootToken")
+			diag.infof("skipping because SystemRootToken read from %s does not match $ARVADOS_API_TOKEN (consider using 'arvados-client sudo diagnostics' to load endpoint and token from config file instead of environment)", ldr.Path)
 			return nil
 		}
 		agg := &health.Aggregator{Cluster: cluster}
