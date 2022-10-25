@@ -5,9 +5,7 @@
 package crunchstat
 
 import (
-	"bufio"
 	"bytes"
-	"io"
 	"log"
 	"os"
 	"regexp"
@@ -26,56 +24,31 @@ var _ = Suite(&suite{})
 
 type suite struct{}
 
-func bufLogger() (*log.Logger, *bufio.Reader) {
-	r, w := io.Pipe()
-	logger := log.New(w, "", 0)
-	return logger, bufio.NewReader(r)
-}
-
 func (s *suite) TestReadAllOrWarnFail(c *C) {
-	logger, rcv := bufLogger()
-	rep := Reporter{Logger: logger}
+	var logger bytes.Buffer
+	rep := Reporter{Logger: log.New(&logger, "", 0)}
 
-	done := make(chan bool)
-	var msg []byte
-	var err error
-	go func() {
-		msg, err = rcv.ReadBytes('\n')
-		close(done)
-	}()
-	{
-		// The special file /proc/self/mem can be opened for
-		// reading, but reading from byte 0 returns an error.
-		f, err := os.Open("/proc/self/mem")
-		if err != nil {
-			c.Fatalf("Opening /proc/self/mem: %s", err)
-		}
-		if x, err := rep.readAllOrWarn(f); err == nil {
-			c.Fatalf("Expected error, got %v", x)
-		}
-	}
-	<-done
-	if err != nil {
-		c.Fatal(err)
-	} else if matched, err := regexp.MatchString("^warning: read /proc/self/mem: .*", string(msg)); err != nil || !matched {
-		c.Fatalf("Expected error message about unreadable file, got \"%s\"", msg)
-	}
+	// The special file /proc/self/mem can be opened for
+	// reading, but reading from byte 0 returns an error.
+	f, err := os.Open("/proc/self/mem")
+	c.Assert(err, IsNil)
+	defer f.Close()
+	_, err = rep.readAllOrWarn(f)
+	c.Check(err, NotNil)
+	c.Check(logger.String(), Matches, "^warning: read /proc/self/mem: .*\n")
 }
 
 func (s *suite) TestReadAllOrWarnSuccess(c *C) {
-	rep := Reporter{Logger: log.New(os.Stderr, "", 0)}
+	var logbuf bytes.Buffer
+	rep := Reporter{Logger: log.New(&logbuf, "", 0)}
 
 	f, err := os.Open("./crunchstat_test.go")
-	if err != nil {
-		c.Fatalf("Opening ./crunchstat_test.go: %s", err)
-	}
+	c.Assert(err, IsNil)
+	defer f.Close()
 	data, err := rep.readAllOrWarn(f)
-	if err != nil {
-		c.Fatalf("got error %s", err)
-	}
-	if matched, err := regexp.MatchString("\npackage crunchstat\n", string(data)); err != nil || !matched {
-		c.Fatalf("data failed regexp: err %v, matched %v", err, matched)
-	}
+	c.Check(err, IsNil)
+	c.Check(string(data), Matches, "(?ms).*\npackage crunchstat\n.*")
+	c.Check(logbuf.String(), Equals, "")
 }
 
 func (s *suite) TestReportPIDs(c *C) {
@@ -96,7 +69,7 @@ func (s *suite) TestReportPIDs(c *C) {
 			c.Error("timed out")
 			break
 		}
-		if regexp.MustCompile(`(!?ms).*procmem \d+ init \d+ test_process.*`).MatchString(logbuf.String()) {
+		if regexp.MustCompile(`(?ms).*procmem \d+ init \d+ test_process.*`).MatchString(logbuf.String()) {
 			break
 		}
 	}
