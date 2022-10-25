@@ -56,7 +56,7 @@ func estimateDockerImageSize(collectionPDH string) int64 {
 // EstimateScratchSpace estimates how much available disk space (in
 // bytes) is needed to run the container by summing the capacity
 // requested by 'tmp' mounts plus disk space required to load the
-// Docker image.
+// Docker image plus arv-mount block cache.
 func EstimateScratchSpace(ctr *arvados.Container) (needScratch int64) {
 	for _, m := range ctr.Mounts {
 		if m.Kind == "tmp" {
@@ -79,6 +79,9 @@ func EstimateScratchSpace(ctr *arvados.Container) (needScratch int64) {
 
 	// Now reserve space for the extracted image on disk.
 	needScratch += dockerImageSize
+
+	// Now reserve space the arv-mount disk cache
+	needScratch += ctr.RuntimeConstraints.KeepCacheDisk
 
 	return
 }
