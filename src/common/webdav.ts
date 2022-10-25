@@ -30,6 +30,12 @@ export class WebDAV {
             data
         })
 
+    get = (url: string, config: WebDAVRequestConfig = {}) =>
+        this.request({
+            ...config, url,
+            method: 'GET'
+        })
+
     upload = (url: string, files: File[], config: WebDAVRequestConfig = {}) => {
         return Promise.all(
             files.map(file => this.request({
@@ -88,7 +94,7 @@ export class WebDAV {
                 Object.assign(window, { cancelTokens: {} });
             }
 
-            (window as any).cancelTokens[config.url] = () => { 
+            (window as any).cancelTokens[config.url] = () => {
                 resolve(r);
                 r.abort();
             }

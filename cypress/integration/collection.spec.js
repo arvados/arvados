@@ -208,7 +208,7 @@ describe('Collection panel tests', function () {
                 // a bogus manifest text without block signatures.
                 cy.doRequest('GET', '/arvados/v1/config', null, null)
                     .its('body').should((clusterConfig) => {
-                      expect(clusterConfig.Collections, "clusterConfig").to.have.property("TrustAllContent", false);
+                      expect(clusterConfig.Collections, "clusterConfig").to.have.property("TrustAllContent", true);
                       expect(clusterConfig.Services, "clusterConfig").to.have.property("WebDAV").have.property("ExternalURL");
                       expect(clusterConfig.Services, "clusterConfig").to.have.property("WebDAVDownload").have.property("ExternalURL");
                       const inlineUrl = clusterConfig.Services.WebDAV.ExternalURL !== ""
@@ -264,7 +264,7 @@ describe('Collection panel tests', function () {
                             .contains(fileName).rightclick();
                         cy.get('[data-cy=context-menu]')
                             .should('contain', 'Download')
-                            .and('not.contain', 'Open in new tab')
+                            .and('contain', 'Open in new tab')
                             .and('contain', 'Copy to clipboard')
                             .and(`${isWritable ? '' : 'not.'}contain`, 'Rename')
                             .and(`${isWritable ? '' : 'not.'}contain`, 'Remove');
@@ -273,7 +273,7 @@ describe('Collection panel tests', function () {
                             .contains(subDirName).rightclick();
                         cy.get('[data-cy=context-menu]')
                             .should('not.contain', 'Download')
-                            .and('not.contain', 'Open in new tab')
+                            .and('contain', 'Open in new tab')
                             .and('contain', 'Copy to clipboard')
                             .and(`${isWritable ? '' : 'not.'}contain`, 'Rename')
                             .and(`${isWritable ? '' : 'not.'}contain`, 'Remove');

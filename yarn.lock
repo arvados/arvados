@@ -3777,6 +3777,7 @@ __metadata:
     lodash.template: 4.5.0
     material-ui-pickers: ^2.2.4
     mem: 4.0.0
+    mime: ^3.0.0
     moment: 2.29.1
     node-sass: ^4.9.4
     node-sass-chokidar: 1.5.0
@@ -12002,6 +12003,15 @@ __metadata:
   bin:
     mime: cli.js
   checksum: dd3c93d433d41a09f6a1cfa969b653b769899f3bd573e7bfcea33bdc8b0cc4eba57daa2f95937369c2bd2b6d39d62389b11a4309fe40d1d3a1b736afdedad0ff
+  languageName: node
+  linkType: hard
+
+"mime@npm:^3.0.0":
+  version: 3.0.0
+  resolution: "mime@npm:3.0.0"
+  bin:
+    mime: cli.js
+  checksum: f43f9b7bfa64534e6b05bd6062961681aeb406a5b53673b53b683f27fcc4e739989941836a355eef831f4478923651ecc739f4a5f6e20a76487b432bfd4db928
   languageName: node
   linkType: hard
 
