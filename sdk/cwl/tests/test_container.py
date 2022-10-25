@@ -201,6 +201,7 @@ class TestContainer(unittest.TestCase):
         runner.intermediate_output_ttl = 3600
         runner.secret_store = cwltool.secrets.SecretStore()
         runner.api._rootDesc = {"revision": "20210628"}
+        runner.api.config.return_value = {"Containers": {"DefaultKeepCacheDisk": 0}}
 
         keepdocker.return_value = [("zzzzz-4zz18-zzzzzzzzzzzzzz3", "")]
         runner.api.collections().get().execute.return_value = {
