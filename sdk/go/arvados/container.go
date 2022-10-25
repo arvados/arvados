@@ -107,11 +107,12 @@ type CUDARuntimeConstraints struct {
 // RuntimeConstraints specify a container's compute resources (RAM,
 // CPU) and network connectivity.
 type RuntimeConstraints struct {
-	API          bool                   `json:"API"`
-	RAM          int64                  `json:"ram"`
-	VCPUs        int                    `json:"vcpus"`
-	KeepCacheRAM int64                  `json:"keep_cache_ram"`
-	CUDA         CUDARuntimeConstraints `json:"cuda"`
+	API           bool                   `json:"API"`
+	RAM           int64                  `json:"ram"`
+	VCPUs         int                    `json:"vcpus"`
+	KeepCacheRAM  int64                  `json:"keep_cache_ram"`
+	KeepCacheDisk int64                  `json:"keep_cache_disk"`
+	CUDA          CUDARuntimeConstraints `json:"cuda"`
 }
 
 // SchedulingParameters specify a container's scheduling parameters

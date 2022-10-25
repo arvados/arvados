@@ -953,8 +953,15 @@ Clusters:
       # troubleshooting purposes.
       LogReuseDecisions: false
 
-      # Default value for keep_cache_ram of a container's runtime_constraints.
-      DefaultKeepCacheRAM: 268435456
+      # Default value for keep_cache_ram of a container's
+      # runtime_constraints.  Note: this gets added to the RAM request
+      # used to allocate a VM or submit an HPC job
+      DefaultKeepCacheRAM: 0
+
+      # Default value for keep_cache_disk of a container's
+      # runtime_constraints.  Note: this gets added to the disk
+      # request used to allocate a VM or submit an HPC job
+      DefaultKeepCacheDisk: 8589934592
 
       # Number of times a container can be unlocked before being
       # automatically cancelled.

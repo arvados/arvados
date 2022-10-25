@@ -959,6 +959,7 @@ class ArvadosModel < ApplicationRecord
         'hardware_capability' => '',
       },
       'keep_cache_ram' => 0,
+      'keep_cache_disk' => 0,
       'ram' => 0,
       'vcpus' => 0,
     }.merge(attributes['runtime_constraints'] || {})

@@ -227,6 +227,10 @@ class Container < ArvadosModel
     if rc['keep_cache_ram'] == 0
       rc['keep_cache_ram'] = Rails.configuration.Containers.DefaultKeepCacheRAM
     end
+    if rc['keep_cache_disk'] == 0 and rc['keep_cache_ram'] == 0
+      # Only set if keep_cache_ram isn't set.
+      rc['keep_cache_disk'] = Rails.configuration.Containers.DefaultKeepCacheDisk
+    end
     rc
   end
 
