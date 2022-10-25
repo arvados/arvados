@@ -14,6 +14,7 @@ import (
 	"io"
 	"io/ioutil"
 	"os"
+	"regexp"
 	"sort"
 	"strconv"
 	"strings"
@@ -52,6 +53,7 @@ type Reporter struct {
 		Printf(fmt string, args ...interface{})
 	}
 
+	kernelPageSize      int64
 	reportedStatFile    map[string]string
 	lastNetSample       map[string]ioSample
 	lastDiskIOSample    map[string]ioSample
@@ -274,6 +276,32 @@ func (r *Reporter) doMemoryStats() {
 	}
 	r.Logger.Printf("mem%s\n", outstat.String())
 
+	if r.kernelPageSize == 0 {
+		// assign "don't try again" value in case we give up
+		// and return without assigning the real value
+		r.kernelPageSize = -1
+		buf, err := os.ReadFile("/proc/self/smaps")
+		if err != nil {
+			r.Logger.Printf("error reading /proc/self/smaps: %s", err)
+			return
+		}
+		m := regexp.MustCompile(`\nKernelPageSize:\s*(\d+) kB\n`).FindSubmatch(buf)
+		if len(m) != 2 {
+			r.Logger.Printf("error parsing /proc/self/smaps: KernelPageSize not found")
+			return
+		}
+		size, err := strconv.ParseInt(string(m[1]), 10, 64)
+		if err != nil {
+			r.Logger.Printf("error parsing /proc/self/smaps: KernelPageSize %q: %s", m[1], err)
+			return
+		}
+		r.kernelPageSize = size * 1024
+	} else if r.kernelPageSize < 0 {
+		// already failed to determine page size, don't keep
+		// trying/logging
+		return
+	}
+
 	r.reportPIDsMu.Lock()
 	defer r.reportPIDsMu.Unlock()
 	procnames := make([]string, 0, len(r.reportPIDs))
@@ -303,11 +331,11 @@ func (r *Reporter) doMemoryStats() {
 		// rss is the 24th field in .../stat, and fields[0]
 		// here is the last char ')' of the 2nd field, so
 		// rss is fields[22]
-		rss, err := strconv.Atoi(string(fields[22]))
+		rss, err := strconv.ParseInt(string(fields[22]), 10, 64)
 		if err != nil {
 			continue
 		}
-		procmem += fmt.Sprintf(" %d %s", rss, procname)
+		procmem += fmt.Sprintf(" %d %s", rss*r.kernelPageSize, procname)
 	}
 	if procmem != "" {
 		r.Logger.Printf("procmem%s\n", procmem)

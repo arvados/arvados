@@ -9,6 +9,7 @@ import (
 	"log"
 	"os"
 	"regexp"
+	"strconv"
 	"testing"
 	"time"
 
@@ -69,7 +70,14 @@ func (s *suite) TestReportPIDs(c *C) {
 			c.Error("timed out")
 			break
 		}
-		if regexp.MustCompile(`(?ms).*procmem \d+ init \d+ test_process.*`).MatchString(logbuf.String()) {
+		if m := regexp.MustCompile(`(?ms).*procmem \d+ init (\d+) test_process.*`).FindSubmatch(logbuf.Bytes()); len(m) > 0 {
+			size, err := strconv.ParseInt(string(m[1]), 10, 64)
+			c.Check(err, IsNil)
+			// Expect >1 MiB and <100 MiB -- otherwise we
+			// are probably misinterpreting /proc/N/stat
+			// or multiplying by the wrong page size.
+			c.Check(size > 1000000, Equals, true)
+			c.Check(size < 100000000, Equals, true)
 			break
 		}
 	}
