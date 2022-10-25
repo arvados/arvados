@@ -179,10 +179,10 @@ func (stub lsfstub) stubCommand(s *suite, c *check.C) func(prog string, args ...
 				c.Check(args, check.DeepEquals, []string{
 					"-J", s.crPending.ContainerUUID,
 					"-n", "2",
-					"-D", "608MB",
-					"-R", "rusage[mem=608MB:tmp=256MB] span[hosts=1]",
-					"-R", "select[mem>=608MB]",
-					"-R", "select[tmp>=256MB]",
+					"-D", "352MB",
+					"-R", "rusage[mem=352MB:tmp=8448MB] span[hosts=1]",
+					"-R", "select[mem>=352MB]",
+					"-R", "select[tmp>=8448MB]",
 					"-R", "select[ncpus>=2]"})
 				mtx.Lock()
 				fakejobq[nextjobid] = args[1]
