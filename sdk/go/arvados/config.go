@@ -446,6 +446,7 @@ type ContainersConfig struct {
 	CrunchRunCommand              string
 	CrunchRunArgumentsList        []string
 	DefaultKeepCacheRAM           ByteSize
+	DefaultKeepCacheDisk          ByteSize
 	DispatchPrivateKey            string
 	LogReuseDecisions             bool
 	MaxComputeVMs                 int

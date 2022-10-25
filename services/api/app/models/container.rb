@@ -310,6 +310,15 @@ class Container < ArvadosModel
       # records that don't have a 'cuda' section in runtime_constraints
       resolved_runtime_constraints << resolved_runtime_constraints[0].except('cuda')
     end
+    if resolved_runtime_constraints[0]['keep_cache_disk'] == 0
+      # If no disk cache requested, extend search to include older container
+      # records that don't have a 'keep_cache_disk' field in runtime_constraints
+      if resolved_runtime_constraints.length == 2
+        # exclude the one that also excludes CUDA
+        resolved_runtime_constraints << resolved_runtime_constraints[1].except('keep_cache_disk')
+      end
+      resolved_runtime_constraints << resolved_runtime_constraints[0].except('keep_cache_disk')
+    end
 
     candidates = candidates.where_serialized(:runtime_constraints, resolved_runtime_constraints, md5: true, multivalue: true)
     log_reuse_info(candidates) { "after filtering on runtime_constraints #{attrs[:runtime_constraints].inspect}" }

@@ -951,6 +951,10 @@ class ArvadosModel < ApplicationRecord
   # value in the database to an implicit zero/false value in an update
   # request.
   def fill_container_defaults
+    # Make sure this is correctly sorted by key, because we merge in
+    # whatever is in the database on top of it, this will be the order
+    # that gets used downstream rather than the order the keys appear
+    # in the database.
     self.runtime_constraints = {
       'API' => false,
       'cuda' => {
@@ -958,8 +962,8 @@ class ArvadosModel < ApplicationRecord
         'driver_version' => '',
         'hardware_capability' => '',
       },
-      'keep_cache_ram' => 0,
       'keep_cache_disk' => 0,
+      'keep_cache_ram' => 0,
       'ram' => 0,
       'vcpus' => 0,
     }.merge(attributes['runtime_constraints'] || {})
