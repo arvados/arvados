@@ -13,10 +13,12 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
-	"log"
 	"os"
+	"regexp"
+	"sort"
 	"strconv"
 	"strings"
+	"sync"
 	"syscall"
 	"time"
 )
@@ -47,13 +49,19 @@ type Reporter struct {
 	TempDir string
 
 	// Where to write statistics. Must not be nil.
-	Logger *log.Logger
+	Logger interface {
+		Printf(fmt string, args ...interface{})
+	}
 
+	kernelPageSize      int64
 	reportedStatFile    map[string]string
 	lastNetSample       map[string]ioSample
 	lastDiskIOSample    map[string]ioSample
 	lastCPUSample       cpuSample
 	lastDiskSpaceSample diskSpaceSample
+
+	reportPIDs   map[string]int
+	reportPIDsMu sync.Mutex
 
 	done    chan struct{} // closed when we should stop reporting
 	flushed chan struct{} // closed when we have made our last report
@@ -74,6 +82,17 @@ func (r *Reporter) Start() {
 	r.done = make(chan struct{})
 	r.flushed = make(chan struct{})
 	go r.run()
+}
+
+// ReportPID starts reporting stats for a specified process.
+func (r *Reporter) ReportPID(name string, pid int) {
+	r.reportPIDsMu.Lock()
+	defer r.reportPIDsMu.Unlock()
+	if r.reportPIDs == nil {
+		r.reportPIDs = map[string]int{name: pid}
+	} else {
+		r.reportPIDs[name] = pid
+	}
 }
 
 // Stop reporting. Do not call more than once, or before calling
@@ -256,6 +275,71 @@ func (r *Reporter) doMemoryStats() {
 		}
 	}
 	r.Logger.Printf("mem%s\n", outstat.String())
+
+	if r.kernelPageSize == 0 {
+		// assign "don't try again" value in case we give up
+		// and return without assigning the real value
+		r.kernelPageSize = -1
+		buf, err := os.ReadFile("/proc/self/smaps")
+		if err != nil {
+			r.Logger.Printf("error reading /proc/self/smaps: %s", err)
+			return
+		}
+		m := regexp.MustCompile(`\nKernelPageSize:\s*(\d+) kB\n`).FindSubmatch(buf)
+		if len(m) != 2 {
+			r.Logger.Printf("error parsing /proc/self/smaps: KernelPageSize not found")
+			return
+		}
+		size, err := strconv.ParseInt(string(m[1]), 10, 64)
+		if err != nil {
+			r.Logger.Printf("error parsing /proc/self/smaps: KernelPageSize %q: %s", m[1], err)
+			return
+		}
+		r.kernelPageSize = size * 1024
+	} else if r.kernelPageSize < 0 {
+		// already failed to determine page size, don't keep
+		// trying/logging
+		return
+	}
+
+	r.reportPIDsMu.Lock()
+	defer r.reportPIDsMu.Unlock()
+	procnames := make([]string, 0, len(r.reportPIDs))
+	for name := range r.reportPIDs {
+		procnames = append(procnames, name)
+	}
+	sort.Strings(procnames)
+	procmem := ""
+	for _, procname := range procnames {
+		pid := r.reportPIDs[procname]
+		buf, err := os.ReadFile(fmt.Sprintf("/proc/%d/stat", pid))
+		if err != nil {
+			continue
+		}
+		// If the executable name contains a ')' char,
+		// /proc/$pid/stat will look like '1234 (exec name)) S
+		// 123 ...' -- the last ')' is the end of the 2nd
+		// field.
+		paren := bytes.LastIndexByte(buf, ')')
+		if paren < 0 {
+			continue
+		}
+		fields := bytes.SplitN(buf[paren:], []byte{' '}, 24)
+		if len(fields) < 24 {
+			continue
+		}
+		// rss is the 24th field in .../stat, and fields[0]
+		// here is the last char ')' of the 2nd field, so
+		// rss is fields[22]
+		rss, err := strconv.ParseInt(string(fields[22]), 10, 64)
+		if err != nil {
+			continue
+		}
+		procmem += fmt.Sprintf(" %d %s", rss*r.kernelPageSize, procname)
+	}
+	if procmem != "" {
+		r.Logger.Printf("procmem%s\n", procmem)
+	}
 }
 
 func (r *Reporter) doNetworkStats() {

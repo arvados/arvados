@@ -142,6 +142,7 @@ type ContainerRunner struct {
 	parentTemp    string
 	costStartTime time.Time
 
+	keepstore        *exec.Cmd
 	keepstoreLogger  io.WriteCloser
 	keepstoreLogbuf  *bufThenWrite
 	statLogger       io.WriteCloser
@@ -660,6 +661,9 @@ func (runner *ContainerRunner) SetupMounts() (map[string]bindmount, error) {
 	if err != nil {
 		return nil, fmt.Errorf("while trying to start arv-mount: %v", err)
 	}
+	if runner.hoststatReporter != nil && runner.ArvMount != nil {
+		runner.hoststatReporter.ReportPID("arv-mount", runner.ArvMount.Process.Pid)
+	}
 
 	for _, p := range collectionPaths {
 		_, err = os.Stat(p)
@@ -733,6 +737,7 @@ func (runner *ContainerRunner) startHoststat() error {
 		PollPeriod: runner.statInterval,
 	}
 	runner.hoststatReporter.Start()
+	runner.hoststatReporter.ReportPID("crunch-run", os.Getpid())
 	return nil
 }
 
@@ -1569,6 +1574,9 @@ func (runner *ContainerRunner) Run() (err error) {
 	if err != nil {
 		return
 	}
+	if runner.keepstore != nil {
+		runner.hoststatReporter.ReportPID("keepstore", runner.keepstore.Process.Pid)
+	}
 
 	// set up FUSE mount and binds
 	bindmounts, err = runner.SetupMounts()
@@ -1853,6 +1861,7 @@ func (command) RunCommand(prog string, args []string, stdin io.Reader, stdout, s
 		return 1
 	}
 
+	cr.keepstore = keepstore
 	if keepstore == nil {
 		// Log explanation (if any) for why we're not running
 		// a local keepstore.
