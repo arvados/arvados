@@ -20,10 +20,16 @@ func (h *Handler) periodicWorker(workerName string, interval time.Duration, lock
 		logger.Debugf("interval is %v, not running worker", interval)
 		return
 	}
-	locker.Lock(ctx, h.db)
+	if !locker.Lock(ctx, h.db) {
+		// context canceled
+		return
+	}
 	defer locker.Unlock()
 	for time.Sleep(interval); ctx.Err() == nil; time.Sleep(interval) {
-		locker.Check()
+		if !locker.Check() {
+			// context canceled
+			return
+		}
 		err := run(ctx)
 		if err != nil {
 			logger.WithError(err).Infof("%s failed", workerName)

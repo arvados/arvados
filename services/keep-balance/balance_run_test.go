@@ -6,6 +6,7 @@ package keepbalance
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -372,7 +373,7 @@ func (s *runSuite) TestRefuseZeroCollections(c *check.C) {
 	trashReqs := s.stub.serveKeepstoreTrash()
 	pullReqs := s.stub.serveKeepstorePull()
 	srv := s.newServer(&opts)
-	_, err = srv.runOnce()
+	_, err = srv.runOnce(context.Background())
 	c.Check(err, check.ErrorMatches, "received zero collections")
 	c.Check(trashReqs.Count(), check.Equals, 4)
 	c.Check(pullReqs.Count(), check.Equals, 0)
@@ -391,7 +392,7 @@ func (s *runSuite) TestRefuseNonAdmin(c *check.C) {
 	trashReqs := s.stub.serveKeepstoreTrash()
 	pullReqs := s.stub.serveKeepstorePull()
 	srv := s.newServer(&opts)
-	_, err := srv.runOnce()
+	_, err := srv.runOnce(context.Background())
 	c.Check(err, check.ErrorMatches, "current user .* is not .* admin user")
 	c.Check(trashReqs.Count(), check.Equals, 0)
 	c.Check(pullReqs.Count(), check.Equals, 0)
@@ -417,7 +418,7 @@ func (s *runSuite) TestRefuseSameDeviceDifferentVolumes(c *check.C) {
 	trashReqs := s.stub.serveKeepstoreTrash()
 	pullReqs := s.stub.serveKeepstorePull()
 	srv := s.newServer(&opts)
-	_, err := srv.runOnce()
+	_, err := srv.runOnce(context.Background())
 	c.Check(err, check.ErrorMatches, "cannot continue with config errors.*")
 	c.Check(trashReqs.Count(), check.Equals, 0)
 	c.Check(pullReqs.Count(), check.Equals, 0)
@@ -442,7 +443,7 @@ func (s *runSuite) TestWriteLostBlocks(c *check.C) {
 	s.stub.serveKeepstorePull()
 	srv := s.newServer(&opts)
 	c.Assert(err, check.IsNil)
-	_, err = srv.runOnce()
+	_, err = srv.runOnce(context.Background())
 	c.Check(err, check.IsNil)
 	lost, err := ioutil.ReadFile(lostf.Name())
 	c.Assert(err, check.IsNil)
@@ -463,7 +464,7 @@ func (s *runSuite) TestDryRun(c *check.C) {
 	trashReqs := s.stub.serveKeepstoreTrash()
 	pullReqs := s.stub.serveKeepstorePull()
 	srv := s.newServer(&opts)
-	bal, err := srv.runOnce()
+	bal, err := srv.runOnce(context.Background())
 	c.Check(err, check.IsNil)
 	for _, req := range collReqs.reqs {
 		c.Check(req.Form.Get("include_trash"), check.Equals, "true")
@@ -493,7 +494,7 @@ func (s *runSuite) TestCommit(c *check.C) {
 	trashReqs := s.stub.serveKeepstoreTrash()
 	pullReqs := s.stub.serveKeepstorePull()
 	srv := s.newServer(&opts)
-	bal, err := srv.runOnce()
+	bal, err := srv.runOnce(context.Background())
 	c.Check(err, check.IsNil)
 	c.Check(trashReqs.Count(), check.Equals, 8)
 	c.Check(pullReqs.Count(), check.Equals, 4)
@@ -533,13 +534,14 @@ func (s *runSuite) TestRunForever(c *check.C) {
 	trashReqs := s.stub.serveKeepstoreTrash()
 	pullReqs := s.stub.serveKeepstorePull()
 
-	stop := make(chan interface{})
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
 	s.config.Collections.BalancePeriod = arvados.Duration(time.Millisecond)
 	srv := s.newServer(&opts)
 
 	done := make(chan bool)
 	go func() {
-		srv.runForever(stop)
+		srv.runForever(ctx)
 		close(done)
 	}()
 
@@ -550,7 +552,7 @@ func (s *runSuite) TestRunForever(c *check.C) {
 	for t0 := time.Now(); pullReqs.Count() < 16 && time.Since(t0) < 10*time.Second; {
 		time.Sleep(time.Millisecond)
 	}
-	stop <- true
+	cancel()
 	<-done
 	c.Check(pullReqs.Count() >= 16, check.Equals, true)
 	c.Check(trashReqs.Count(), check.Equals, pullReqs.Count()+4)

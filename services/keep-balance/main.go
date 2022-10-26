@@ -112,7 +112,7 @@ func (command) RunCommand(prog string, args []string, stdin io.Reader, stdout, s
 				Routes: health.Routes{"ping": srv.CheckHealth},
 			}
 
-			go srv.run()
+			go srv.run(ctx)
 			return srv
 		}).RunCommand(prog, args, stdin, stdout, stderr)
 }

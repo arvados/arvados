@@ -23,7 +23,9 @@ import (
 	"syscall"
 	"time"
 
+	"git.arvados.org/arvados.git/lib/controller/dblock"
 	"git.arvados.org/arvados.git/sdk/go/arvados"
+	"git.arvados.org/arvados.git/sdk/go/ctxlog"
 	"git.arvados.org/arvados.git/sdk/go/keepclient"
 	"github.com/jmoiron/sqlx"
 	"github.com/sirupsen/logrus"
@@ -70,13 +72,20 @@ type Balancer struct {
 //
 // Typical usage:
 //
-//   runOptions, err = (&Balancer{}).Run(config, runOptions)
-func (bal *Balancer) Run(client *arvados.Client, cluster *arvados.Cluster, runOptions RunOptions) (nextRunOptions RunOptions, err error) {
+//	runOptions, err = (&Balancer{}).Run(config, runOptions)
+func (bal *Balancer) Run(ctx context.Context, client *arvados.Client, cluster *arvados.Cluster, runOptions RunOptions) (nextRunOptions RunOptions, err error) {
 	nextRunOptions = runOptions
+
+	ctxlog.FromContext(ctx).Info("acquiring active lock")
+	if !dblock.KeepBalanceActive.Lock(ctx, func(context.Context) (*sqlx.DB, error) { return bal.DB, nil }) {
+		// context canceled
+		return
+	}
+	defer dblock.KeepBalanceActive.Unlock()
 
 	defer bal.time("sweep", "wall clock time to run one full sweep")()
 
-	ctx, cancel := context.WithDeadline(context.Background(), time.Now().Add(cluster.Collections.BalanceTimeout.Duration()))
+	ctx, cancel := context.WithDeadline(ctx, time.Now().Add(cluster.Collections.BalanceTimeout.Duration()))
 	defer cancel()
 
 	var lbFile *os.File
