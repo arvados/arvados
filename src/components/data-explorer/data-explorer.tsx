@@ -190,7 +190,7 @@ export const DataExplorer = withStyles(styles)(
                                         <Tooltip title={`Maximize ${panelName || 'panel'}`} disableFocusListener>
                                             <IconButton onClick={doMaximizePanel}><MaximizeIcon /></IconButton>
                                         </Tooltip> }
-                                    { doHidePanel &&
+                                    { doHidePanel && !panelMaximized &&
                                         <Tooltip title={`Close ${panelName || 'panel'}`} disableFocusListener>
                                             <IconButton onClick={doHidePanel}><CloseIcon /></IconButton>
                                         </Tooltip> }

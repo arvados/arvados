@@ -153,11 +153,10 @@ export const ProcessLogsCard = withStyles(styles)(
                         <Tooltip title={`Maximize ${panelName || 'panel'}`} disableFocusListener>
                             <IconButton onClick={doMaximizePanel}><MaximizeIcon /></IconButton>
                         </Tooltip> }
-                        { doHidePanel && <Grid item>
-                            <Tooltip title={`Close ${panelName || 'panel'}`} disableFocusListener>
-                                <IconButton onClick={doHidePanel}><CloseIcon /></IconButton>
-                            </Tooltip>
-                        </Grid> }
+                        { doHidePanel && !panelMaximized &&
+                        <Tooltip title={`Close ${panelName || 'panel'}`} disableFocusListener>
+                            <IconButton onClick={doHidePanel}><CloseIcon /></IconButton>
+                        </Tooltip> }
                     </Grid>}
                     title={
                         <Typography noWrap variant='h6' className={classes.title}>
