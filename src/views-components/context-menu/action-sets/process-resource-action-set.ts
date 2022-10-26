@@ -8,7 +8,8 @@ import { toggleFavorite } from "store/favorites/favorites-actions";
 import {
     RenameIcon, ShareIcon, MoveToIcon, CopyIcon, DetailsIcon,
     RemoveIcon, ReRunProcessIcon, OutputIcon,
-    AdvancedIcon
+    AdvancedIcon,
+    OpenIcon
 } from "components/icon/icon";
 import { favoritePanelActions } from "store/favorite-panel/favorite-panel-action";
 import { openMoveProcessDialog } from 'store/processes/process-move-actions';
@@ -23,6 +24,7 @@ import { openAdvancedTabDialog } from "store/advanced-tab/advanced-tab";
 import { TogglePublicFavoriteAction } from "../actions/public-favorite-action";
 import { togglePublicFavorite } from "store/public-favorites/public-favorites-actions";
 import { publicFavoritePanelActions } from "store/public-favorites-panel/public-favorites-action";
+import { openInNewTabAction } from "store/open-in-new-tab/open-in-new-tab.actions";
 
 export const readOnlyProcessResourceActionSet: ContextMenuActionSet = [[
     {
@@ -31,6 +33,13 @@ export const readOnlyProcessResourceActionSet: ContextMenuActionSet = [[
             dispatch<any>(toggleFavorite(resource)).then(() => {
                 dispatch<any>(favoritePanelActions.REQUEST_ITEMS());
             });
+        }
+    },
+    {
+        icon: OpenIcon,
+        name: "Open in new tab",
+        execute: (dispatch, resource) => {
+            dispatch<any>(openInNewTabAction(resource));
         }
     },
     {
