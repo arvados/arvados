@@ -11,7 +11,13 @@ import { SearchInput } from 'components/search-input/search-input';
 import { ArvadosTheme } from "common/custom-theme";
 import { createTree } from 'models/tree';
 import { DataTableFilters } from 'components/data-table-filters/data-table-filters-tree';
-import { CloseIcon, IconType, MaximizeIcon, MoreOptionsIcon } from 'components/icon/icon';
+import {
+    CloseIcon,
+    IconType,
+    MaximizeIcon,
+    UnMaximizeIcon,
+    MoreOptionsIcon
+} from 'components/icon/icon';
 import { PaperProps } from '@material-ui/core/Paper';
 import { MPVPanelProps } from 'components/multi-panel-view/multi-panel-view';
 
@@ -152,7 +158,7 @@ export const DataExplorer = withStyles(styles)(
                 items, itemsAvailable, onRowClick, onRowDoubleClick, classes,
                 defaultViewIcon, defaultViewMessages, hideColumnSelector, actions, paperProps, hideSearchInput,
                 paperKey, fetchMode, currentItemUuid, title,
-                doHidePanel, doMaximizePanel, panelName, panelMaximized, elementPath
+                doHidePanel, doMaximizePanel, doUnMaximizePanel, panelName, panelMaximized, elementPath
             } = this.props;
 
             return <Paper className={classes.root} {...paperProps} key={paperKey} data-cy={this.props["data-cy"]}>
@@ -176,6 +182,10 @@ export const DataExplorer = withStyles(styles)(
                                             columns={columns}
                                             onColumnToggle={onColumnToggle} />}
                                     </Grid>
+                                    { doUnMaximizePanel && panelMaximized &&
+                                    <Tooltip title={`Unmaximize ${panelName || 'panel'}`} disableFocusListener>
+                                        <IconButton onClick={doUnMaximizePanel}><UnMaximizeIcon /></IconButton>
+                                    </Tooltip> }
                                     { doMaximizePanel && !panelMaximized &&
                                         <Tooltip title={`Maximize ${panelName || 'panel'}`} disableFocusListener>
                                             <IconButton onClick={doMaximizePanel}><MaximizeIcon /></IconButton>

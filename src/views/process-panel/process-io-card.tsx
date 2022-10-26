@@ -27,7 +27,15 @@ import {
     CircularProgress,
 } from '@material-ui/core';
 import { ArvadosTheme } from 'common/custom-theme';
-import { CloseIcon, ImageIcon, InputIcon, ImageOffIcon, OutputIcon, MaximizeIcon } from 'components/icon/icon';
+import {
+    CloseIcon,
+    ImageIcon,
+    InputIcon,
+    ImageOffIcon,
+    OutputIcon,
+    MaximizeIcon,
+    UnMaximizeIcon
+} from 'components/icon/icon';
 import { MPVPanelProps } from 'components/multi-panel-view/multi-panel-view';
 import {
   BooleanCommandInputParameter,
@@ -227,7 +235,7 @@ const mapDispatchToProps = (dispatch: Dispatch): ProcessIOCardActionProps => ({
 type ProcessIOCardProps = ProcessIOCardDataProps & ProcessIOCardActionProps & WithStyles<CssRules> & MPVPanelProps;
 
 export const ProcessIOCard = withStyles(styles)(connect(null, mapDispatchToProps)(
-    ({ classes, label, params, raw, mounts, outputUuid, doHidePanel, doMaximizePanel, panelMaximized, panelName, process, navigateTo }: ProcessIOCardProps) => {
+    ({ classes, label, params, raw, mounts, outputUuid, doHidePanel, doMaximizePanel, doUnMaximizePanel, panelMaximized, panelName, process, navigateTo }: ProcessIOCardProps) => {
         const [mainProcTabState, setMainProcTabState] = useState(0);
         const handleMainProcTabChange = (event: React.MouseEvent<HTMLElement>, value: number) => {
             setMainProcTabState(value);
@@ -259,6 +267,10 @@ export const ProcessIOCard = withStyles(styles)(connect(null, mapDispatchToProps
                     <div>
                         { mainProcess && <Tooltip title={"Toggle Image Preview"} disableFocusListener>
                             <IconButton data-cy="io-preview-image-toggle" onClick={() =>{setShowImagePreview(!showImagePreview)}}>{showImagePreview ? <ImageIcon /> : <ImageOffIcon />}</IconButton>
+                        </Tooltip> }
+                        { doUnMaximizePanel && panelMaximized &&
+                        <Tooltip title={`Unmaximize ${panelName || 'panel'}`} disableFocusListener>
+                            <IconButton onClick={doUnMaximizePanel}><UnMaximizeIcon /></IconButton>
                         </Tooltip> }
                         { doMaximizePanel && !panelMaximized &&
                         <Tooltip title={`Maximize ${panelName || 'panel'}`} disableFocusListener>

@@ -91,6 +91,7 @@ export const SubprocessPanelRoot = (props: SubprocessPanelProps & MPVPanelProps)
         defaultViewMessages={DEFAULT_VIEW_MESSAGES}
         doHidePanel={props.doHidePanel}
         doMaximizePanel={props.doMaximizePanel}
+        doUnMaximizePanel={props.doUnMaximizePanel}
         panelMaximized={props.panelMaximized}
         panelName={props.panelName} />;
 };
