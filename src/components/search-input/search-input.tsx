@@ -3,34 +3,15 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import React, {useState, useEffect} from 'react';
-import { IconButton, StyleRulesCallback, withStyles, WithStyles, FormControl, InputLabel, Input, InputAdornment, Tooltip } from '@material-ui/core';
+import {
+    IconButton,
+    FormControl,
+    InputLabel,
+    Input,
+    InputAdornment,
+    Tooltip,
+} from '@material-ui/core';
 import SearchIcon from '@material-ui/icons/Search';
-
-type CssRules = 'container' | 'input' | 'button';
-
-const styles: StyleRulesCallback<CssRules> = theme => {
-    return {
-        container: {
-            position: 'relative',
-            width: '100%'
-        },
-        input: {
-            border: 'none',
-            borderRadius: theme.spacing.unit / 4,
-            boxSizing: 'border-box',
-            padding: theme.spacing.unit,
-            paddingRight: theme.spacing.unit * 4,
-            width: '100%',
-        },
-        button: {
-            position: 'absolute',
-            top: theme.spacing.unit / 2,
-            right: theme.spacing.unit / 2,
-            width: theme.spacing.unit * 3,
-            height: theme.spacing.unit * 3
-        }
-    };
-};
 
 interface SearchInputDataProps {
     value: string;
@@ -43,11 +24,11 @@ interface SearchInputActionProps {
     debounce?: number;
 }
 
-type SearchInputProps = SearchInputDataProps & SearchInputActionProps & WithStyles<CssRules>;
+type SearchInputProps = SearchInputDataProps & SearchInputActionProps;
 
 export const DEFAULT_SEARCH_DEBOUNCE = 1000;
 
-const SearchInputComponent = (props: SearchInputProps) => {
+export const SearchInput = (props: SearchInputProps) => {
     const [timeout, setTimeout] = useState(0);
     const [value, setValue] = useState("");
     const [label, setLabel] = useState("Search");
@@ -114,6 +95,4 @@ const SearchInputComponent = (props: SearchInputProps) => {
                 } />
         </FormControl>
     </form>;
-}
-
-export const SearchInput = withStyles(styles)(SearchInputComponent);
+};
