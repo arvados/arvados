@@ -22,6 +22,7 @@ import {
     CopyIcon,
     LogIcon,
     MaximizeIcon,
+    UnMaximizeIcon,
     TextDecreaseIcon,
     TextIncreaseIcon,
     WordWrapOffIcon,
@@ -92,7 +93,7 @@ type ProcessLogsCardProps = ProcessLogsCardDataProps
 export const ProcessLogsCard = withStyles(styles)(
     ({ classes, process, filters, selectedFilter, lines,
         onLogFilterChange, navigateToLog, onCopy,
-        doHidePanel, doMaximizePanel, panelMaximized, panelName }: ProcessLogsCardProps) => {
+        doHidePanel, doMaximizePanel, doUnMaximizePanel, panelMaximized, panelName }: ProcessLogsCardProps) => {
         const [wordWrap, setWordWrap] = useState<boolean>(true);
         const [fontSize, setFontSize] = useState<number>(3);
         const fontBaseSize = 10;
@@ -144,15 +145,18 @@ export const ProcessLogsCard = withStyles(styles)(
                                 </IconButton>
                             </Tooltip>
                         </Grid>
+                        { doUnMaximizePanel && panelMaximized &&
+                        <Tooltip title={`Unmaximize ${panelName || 'panel'}`} disableFocusListener>
+                            <IconButton onClick={doUnMaximizePanel}><UnMaximizeIcon /></IconButton>
+                        </Tooltip> }
                         { doMaximizePanel && !panelMaximized &&
                         <Tooltip title={`Maximize ${panelName || 'panel'}`} disableFocusListener>
                             <IconButton onClick={doMaximizePanel}><MaximizeIcon /></IconButton>
                         </Tooltip> }
-                        { doHidePanel && <Grid item>
-                            <Tooltip title={`Close ${panelName || 'panel'}`} disableFocusListener>
-                                <IconButton onClick={doHidePanel}><CloseIcon /></IconButton>
-                            </Tooltip>
-                        </Grid> }
+                        { doHidePanel &&
+                        <Tooltip title={`Close ${panelName || 'panel'}`} disableFocusListener>
+                            <IconButton disabled={panelMaximized} onClick={doHidePanel}><CloseIcon /></IconButton>
+                        </Tooltip> }
                     </Grid>}
                     title={
                         <Typography noWrap variant='h6' className={classes.title}>
