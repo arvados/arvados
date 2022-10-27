@@ -126,6 +126,7 @@ describe('Process tests', function() {
             cy.goToPath(`/processes/${containerRequest.uuid}`);
             cy.get('[data-cy=process-details]').should('contain', crName);
             cy.get('[data-cy=process-details-attributes-runtime-user]').contains(`Active User (${activeUser.user.uuid})`);
+            cy.get('[data-cy=process-details-attributes-modifiedby-user]').contains(`zzzzz-tpzed-000000000000000`);
         });
     });
 

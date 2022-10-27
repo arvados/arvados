@@ -95,16 +95,21 @@ export const ProcessDetailsAttributes = withStyles(styles, { withTheme: true })(
                 <Grid item xs={12} md={mdSize}>
                     <DetailsAttribute label='Finished at' value={container ? formatDate(container.finishedAt) : "(none)"} />
                 </Grid>
-                <Grid item xs={12} md={mdSize} data-cy="process-details-attributes-runtime-user">
-                    <DetailsAttribute
-                        label='Container started by' linkToUuid={container ? container.runtimeUserUuid : ""}
-                        uuidEnhancer={(uuid: string) => <ResourceWithName uuid={uuid} />} />
-                </Grid>
                 <Grid item xs={12} md={mdSize}>
                     <DetailsAttribute label='Container run time'>
                         <ContainerRunTime uuid={containerRequest.uuid} />
                     </DetailsAttribute>
                 </Grid>
+                {(container && container.modifiedByUserUuid) && <Grid item xs={12} md={mdSize} data-cy="process-details-attributes-modifiedby-user">
+                    <DetailsAttribute
+                        label='Submitted by' linkToUuid={container.modifiedByUserUuid}
+                        uuidEnhancer={(uuid: string) => <ResourceWithName uuid={uuid} />} />
+                </Grid>}
+                {(container && container.runtimeUserUuid && container.runtimeUserUuid !== container.modifiedByUserUuid) && <Grid item xs={12} md={mdSize} data-cy="process-details-attributes-runtime-user">
+                    <DetailsAttribute
+                        label='Run as' linkToUuid={container.runtimeUserUuid}
+                        uuidEnhancer={(uuid: string) => <ResourceWithName uuid={uuid} />} />
+                </Grid>}
                 <Grid item xs={12} md={mdSize}>
                     <DetailsAttribute label='Requesting Container UUID' value={containerRequest.requestingContainerUuid || "(none)"} />
                 </Grid>
