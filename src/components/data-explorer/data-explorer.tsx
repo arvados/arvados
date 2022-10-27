@@ -25,11 +25,11 @@ type CssRules = 'searchBox' | 'headerMenu' | "toolbar" | "footer" | "root" | 'mo
 
 const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     searchBox: {
-        paddingBottom: theme.spacing.unit * 2
+        paddingBottom: 0,
     },
     toolbar: {
-        paddingTop: theme.spacing.unit,
-        paddingRight: theme.spacing.unit * 2,
+        paddingTop: 0,
+        paddingRight: theme.spacing.unit,
     },
     footer: {
         overflow: 'auto'
@@ -42,8 +42,8 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     },
     title: {
         display: 'inline-block',
-        paddingLeft: theme.spacing.unit * 3,
-        paddingTop: theme.spacing.unit * 3,
+        paddingLeft: theme.spacing.unit * 2,
+        paddingTop: theme.spacing.unit * 2,
         fontSize: '18px'
     },
     dataTable: {
@@ -55,7 +55,7 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     },
     headerMenu: {
         float: 'right',
-        display: 'inline-block'
+        display: 'inline-block',
     }
 });
 
@@ -169,19 +169,17 @@ export const DataExplorer = withStyles(styles)(
                             (!hideColumnSelector || !hideSearchInput || !!actions) &&
                             <Grid className={classes.headerMenu} item xs>
                                 <Toolbar className={classes.toolbar}>
-                                    <Grid container justify="space-between" wrap="nowrap" alignItems="center">
-                                        {!hideSearchInput && <div className={classes.searchBox}>
-                                            {!hideSearchInput && <SearchInput
-                                                label={searchLabel}
-                                                value={searchValue}
-                                                selfClearProp={currentItemUuid}
-                                                onSearch={onSearch} />}
-                                        </div>}
-                                        {actions}
-                                        {!hideColumnSelector && <ColumnSelector
-                                            columns={columns}
-                                            onColumnToggle={onColumnToggle} />}
-                                    </Grid>
+                                    {!hideSearchInput && <div className={classes.searchBox}>
+                                        {!hideSearchInput && <SearchInput
+                                            label={searchLabel}
+                                            value={searchValue}
+                                            selfClearProp={currentItemUuid}
+                                            onSearch={onSearch} />}
+                                    </div>}
+                                    {actions}
+                                    {!hideColumnSelector && <ColumnSelector
+                                        columns={columns}
+                                        onColumnToggle={onColumnToggle} />}
                                     { doUnMaximizePanel && panelMaximized &&
                                     <Tooltip title={`Unmaximize ${panelName || 'panel'}`} disableFocusListener>
                                         <IconButton onClick={doUnMaximizePanel}><UnMaximizeIcon /></IconButton>
