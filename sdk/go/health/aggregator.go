@@ -135,6 +135,7 @@ type CheckResult struct {
 	Response       map[string]interface{} `json:",omitempty"`
 	ResponseTime   json.Number
 	ClockTime      time.Time
+	Server         string // "Server" header in http response
 	Metrics
 	respTime time.Duration
 }
@@ -360,6 +361,7 @@ func (agg *Aggregator) ping(target *url.URL) (result CheckResult) {
 	}
 	result.Health = "OK"
 	result.ClockTime, _ = time.Parse(time.RFC1123, resp.Header.Get("Date"))
+	result.Server = resp.Header.Get("Server")
 	return
 }
 
