@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import React from 'react';
+import React, { useState, useCallback } from 'react';
 import { StyleRulesCallback, WithStyles, withStyles } from '@material-ui/core/styles';
 import { Route, Switch } from "react-router";
 import { ProjectPanel } from "views/project-panel/project-panel";
@@ -185,6 +185,18 @@ const reduceRoutesFn: (a: React.ReactElement[],
 
 routes = React.createElement(React.Fragment, null, pluginConfig.centerPanelList.reduce(reduceRoutesFn, React.Children.toArray(routes.props.children)));
 
+const Banner = () => {
+    const [visible, setVisible] = useState(true);
+    const hideBanner = useCallback(() => setVisible(false), []);
+
+    return visible ? 
+        <div id="banner" onClick={hideBanner} className="app-banner">
+            <span>
+            This is important message
+            </span>
+        </div> : null;
+}
+
 export const WorkbenchPanel =
     withStyles(styles)((props: WorkbenchPanelProps) =>
         <Grid container item xs className={props.classes.root}>
@@ -270,6 +282,7 @@ export const WorkbenchPanel =
             <VirtualMachineAttributesDialog />
             <FedLogin />
             <WebDavS3InfoDialog />
+            <Banner />
             {React.createElement(React.Fragment, null, pluginConfig.dialogs)}
         </Grid>
     );
