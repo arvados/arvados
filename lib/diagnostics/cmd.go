@@ -157,8 +157,7 @@ func (diag *diagnoser) runtests() {
 			return err
 		}
 		if cluster.SystemRootToken != os.Getenv("ARVADOS_API_TOKEN") {
-			diag.infof("skipping because SystemRootToken read from %s does not match $ARVADOS_API_TOKEN (consider using 'arvados-client sudo diagnostics' to load endpoint and token from config file instead of environment)", ldr.Path)
-			return nil
+			return fmt.Errorf("diagnostics usage error: %s is readable but SystemRootToken does not match $ARVADOS_API_TOKEN (to fix, either run 'arvados-client sudo diagnostics' to load everything from config file, or set ARVADOS_CONFIG=- to load nothing from config file)", ldr.Path)
 		}
 		agg := &health.Aggregator{Cluster: cluster}
 		resp := agg.ClusterHealth()
