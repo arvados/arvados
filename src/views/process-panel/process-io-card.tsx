@@ -276,9 +276,9 @@ export const ProcessIOCard = withStyles(styles)(connect(null, mapDispatchToProps
                         <Tooltip title={`Maximize ${panelName || 'panel'}`} disableFocusListener>
                             <IconButton onClick={doMaximizePanel}><MaximizeIcon /></IconButton>
                         </Tooltip> }
-                        { doHidePanel && !panelMaximized &&
+                        { doHidePanel &&
                         <Tooltip title={`Close ${panelName || 'panel'}`} disableFocusListener>
-                            <IconButton onClick={doHidePanel}><CloseIcon /></IconButton>
+                            <IconButton disabled={panelMaximized} onClick={doHidePanel}><CloseIcon /></IconButton>
                         </Tooltip> }
                     </div>
                 } />

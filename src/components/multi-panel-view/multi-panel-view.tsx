@@ -86,7 +86,7 @@ export const MPVPanelContent = ({doHidePanel, doMaximizePanel, doUnMaximizePanel
     ...props}: MPVPanelContentProps) => {
     useEffect(() => {
         if (panelRef && panelRef.current) {
-            panelRef.current.scrollIntoView({behavior: 'smooth'});
+            panelRef.current.scrollIntoView({alignToTop: true});
         }
     }, [panelRef]);
 
