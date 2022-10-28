@@ -106,8 +106,8 @@ describe('Process tests', function() {
                 },
                 event_type: 'stdout'
             }).then(function(log) {
-                cy.get('[data-cy=process-logs]')
-                    .should('not.contain', 'No logs yet', {timeout: 7000})
+                cy.get('[data-cy=process-logs]', {timeout: 7000})
+                    .should('not.contain', 'No logs yet')
                     .and('contain', 'hello world');
             })
         });
@@ -206,7 +206,7 @@ describe('Process tests', function() {
                 cy.loginAs(activeUser);
                 cy.goToPath(`/processes/${containerRequest.uuid}`);
                 // Should show main logs by default
-                cy.get('[data-cy=process-logs-filter]').should('contain', 'Main logs');
+                cy.get('[data-cy=process-logs-filter]', {timeout: 7000}).should('contain', 'Main logs');
                 cy.get('[data-cy=process-logs]')
                     .should('contain', stdoutLogs[Math.floor(Math.random() * stdoutLogs.length)])
                     .and('not.contain', nodeInfoLogs[Math.floor(Math.random() * nodeInfoLogs.length)])
