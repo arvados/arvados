@@ -21,6 +21,7 @@ var (
 	ContainerLogSweep  = &DBLocker{key: 10002}
 	KeepBalanceService = &DBLocker{key: 10003} // keep-balance service in periodic-sweep loop
 	KeepBalanceActive  = &DBLocker{key: 10004} // keep-balance sweep in progress (either -once=true or service loop)
+	Dispatch           = &DBLocker{key: 10005} // any dispatcher running
 	retryDelay         = 5 * time.Second
 )
 

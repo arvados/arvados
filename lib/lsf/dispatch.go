@@ -18,6 +18,8 @@ import (
 	"time"
 
 	"git.arvados.org/arvados.git/lib/cmd"
+	"git.arvados.org/arvados.git/lib/controller/dblock"
+	"git.arvados.org/arvados.git/lib/ctrlctx"
 	"git.arvados.org/arvados.git/lib/dispatchcloud"
 	"git.arvados.org/arvados.git/lib/service"
 	"git.arvados.org/arvados.git/sdk/go/arvados"
@@ -58,6 +60,7 @@ type dispatcher struct {
 	Registry  *prometheus.Registry
 
 	logger        logrus.FieldLogger
+	dbConnector   ctrlctx.DBConnector
 	lsfcli        lsfcli
 	lsfqueue      lsfqueue
 	arvDispatcher *dispatch.Dispatcher
@@ -73,7 +76,9 @@ type dispatcher struct {
 func (disp *dispatcher) Start() {
 	disp.initOnce.Do(func() {
 		disp.init()
+		dblock.Dispatch.Lock(context.Background(), disp.dbConnector.GetDB)
 		go func() {
+			defer dblock.Dispatch.Unlock()
 			disp.checkLsfQueueForOrphans()
 			err := disp.arvDispatcher.Run(disp.Context)
 			if err != nil {
@@ -125,6 +130,7 @@ func (disp *dispatcher) init() {
 		lsfcli: &disp.lsfcli,
 	}
 	disp.ArvClient.AuthToken = disp.AuthToken
+	disp.dbConnector = ctrlctx.DBConnector{PostgreSQL: disp.Cluster.PostgreSQL}
 	disp.stop = make(chan struct{}, 1)
 	disp.stopped = make(chan struct{})
 

@@ -15,6 +15,7 @@ import (
 	"sync"
 	"time"
 
+	"git.arvados.org/arvados.git/lib/config"
 	"git.arvados.org/arvados.git/lib/dispatchcloud/test"
 	"git.arvados.org/arvados.git/sdk/go/arvados"
 	"git.arvados.org/arvados.git/sdk/go/arvadostest"
@@ -49,8 +50,16 @@ func (s *DispatcherSuite) SetUpTest(c *check.C) {
 		MinTimeBetweenCreateCalls: time.Millisecond,
 	}
 
+	// We need the postgresql connection info from the integration
+	// test config.
+	cfg, err := config.NewLoader(nil, ctxlog.FromContext(s.ctx)).Load()
+	c.Assert(err, check.IsNil)
+	testcluster, err := cfg.GetCluster("")
+	c.Assert(err, check.IsNil)
+
 	s.cluster = &arvados.Cluster{
 		ManagementToken: "test-management-token",
+		PostgreSQL:      testcluster.PostgreSQL,
 		Containers: arvados.ContainersConfig{
 			CrunchRunCommand:       "crunch-run",
 			CrunchRunArgumentsList: []string{"--foo", "--extra='args'"},

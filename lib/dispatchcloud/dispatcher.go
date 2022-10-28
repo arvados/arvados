@@ -15,6 +15,8 @@ import (
 	"time"
 
 	"git.arvados.org/arvados.git/lib/cloud"
+	"git.arvados.org/arvados.git/lib/controller/dblock"
+	"git.arvados.org/arvados.git/lib/ctrlctx"
 	"git.arvados.org/arvados.git/lib/dispatchcloud/container"
 	"git.arvados.org/arvados.git/lib/dispatchcloud/scheduler"
 	"git.arvados.org/arvados.git/lib/dispatchcloud/sshexecutor"
@@ -53,6 +55,7 @@ type dispatcher struct {
 	Registry      *prometheus.Registry
 	InstanceSetID cloud.InstanceSetID
 
+	dbConnector ctrlctx.DBConnector
 	logger      logrus.FieldLogger
 	instanceSet cloud.InstanceSet
 	pool        pool
@@ -118,6 +121,7 @@ func (disp *dispatcher) setup() {
 
 func (disp *dispatcher) initialize() {
 	disp.logger = ctxlog.FromContext(disp.Context)
+	disp.dbConnector = ctrlctx.DBConnector{PostgreSQL: disp.Cluster.PostgreSQL}
 
 	disp.ArvClient.AuthToken = disp.AuthToken
 
@@ -143,6 +147,7 @@ func (disp *dispatcher) initialize() {
 	if err != nil {
 		disp.logger.Fatalf("error initializing driver: %s", err)
 	}
+	dblock.Dispatch.Lock(disp.Context, disp.dbConnector.GetDB)
 	disp.instanceSet = instanceSet
 	disp.pool = worker.NewPool(disp.logger, disp.ArvClient, disp.Registry, disp.InstanceSetID, disp.instanceSet, disp.newExecutor, disp.sshKey.PublicKey(), disp.Cluster)
 	disp.queue = container.NewQueue(disp.logger, disp.Registry, disp.typeChooser, disp.ArvClient)
@@ -175,6 +180,7 @@ func (disp *dispatcher) initialize() {
 }
 
 func (disp *dispatcher) run() {
+	defer dblock.Dispatch.Unlock()
 	defer close(disp.stopped)
 	defer disp.instanceSet.Stop()
 	defer disp.pool.Stop()

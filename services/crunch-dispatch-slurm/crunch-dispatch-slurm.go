@@ -19,6 +19,8 @@ import (
 	"time"
 
 	"git.arvados.org/arvados.git/lib/cmd"
+	"git.arvados.org/arvados.git/lib/controller/dblock"
+	"git.arvados.org/arvados.git/lib/ctrlctx"
 	"git.arvados.org/arvados.git/lib/dispatchcloud"
 	"git.arvados.org/arvados.git/lib/service"
 	"git.arvados.org/arvados.git/sdk/go/arvados"
@@ -55,10 +57,11 @@ const initialNiceValue int64 = 10000
 
 type Dispatcher struct {
 	*dispatch.Dispatcher
-	logger  logrus.FieldLogger
-	cluster *arvados.Cluster
-	sqCheck *SqueueChecker
-	slurm   Slurm
+	logger      logrus.FieldLogger
+	cluster     *arvados.Cluster
+	sqCheck     *SqueueChecker
+	slurm       Slurm
+	dbConnector ctrlctx.DBConnector
 
 	done chan struct{}
 	err  error
@@ -90,6 +93,7 @@ func (disp *Dispatcher) configure() error {
 	disp.Client.APIHost = disp.cluster.Services.Controller.ExternalURL.Host
 	disp.Client.AuthToken = disp.cluster.SystemRootToken
 	disp.Client.Insecure = disp.cluster.TLS.Insecure
+	disp.dbConnector = ctrlctx.DBConnector{PostgreSQL: disp.cluster.PostgreSQL}
 
 	if disp.Client.APIHost != "" || disp.Client.AuthToken != "" {
 		// Copy real configs into env vars so [a]
@@ -137,6 +141,8 @@ func (disp *Dispatcher) setup() {
 }
 
 func (disp *Dispatcher) run() error {
+	dblock.Dispatch.Lock(context.Background(), disp.dbConnector.GetDB)
+	defer dblock.Dispatch.Unlock()
 	defer disp.sqCheck.Stop()
 
 	if disp.cluster != nil && len(disp.cluster.InstanceTypes) > 0 {

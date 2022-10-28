@@ -477,7 +477,7 @@ func (s *HandlerSuite) TestTrashSweep(c *check.C) {
 	coll, err := s.handler.federation.CollectionCreate(ctx, arvados.CreateOptions{Attrs: map[string]interface{}{"name": "test trash sweep"}, EnsureUniqueName: true})
 	c.Assert(err, check.IsNil)
 	defer s.handler.federation.CollectionDelete(ctx, arvados.DeleteOptions{UUID: coll.UUID})
-	db, err := s.handler.db(s.ctx)
+	db, err := s.handler.dbConnector.GetDB(s.ctx)
 	c.Assert(err, check.IsNil)
 	_, err = db.ExecContext(s.ctx, `update collections set trash_at = $1, delete_at = $2 where uuid = $3`, time.Now().UTC().Add(time.Second/10), time.Now().UTC().Add(time.Hour), coll.UUID)
 	c.Assert(err, check.IsNil)
@@ -550,7 +550,7 @@ func (s *HandlerSuite) TestLogActivity(c *check.C) {
 			c.Assert(err, check.IsNil)
 		}
 	}
-	db, err := s.handler.db(s.ctx)
+	db, err := s.handler.dbConnector.GetDB(s.ctx)
 	c.Assert(err, check.IsNil)
 	for _, userUUID := range []string{arvadostest.ActiveUserUUID, arvadostest.SpectatorUserUUID} {
 		var rows int
