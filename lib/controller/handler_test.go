@@ -284,6 +284,7 @@ func (s *HandlerSuite) TestLogoutGoogle(c *check.C) {
 }
 
 func (s *HandlerSuite) TestValidateV1APIToken(c *check.C) {
+	c.Assert(s.handler.CheckHealth(), check.IsNil)
 	req := httptest.NewRequest("GET", "/arvados/v1/users/current", nil)
 	user, ok, err := s.handler.validateAPItoken(req, arvadostest.ActiveToken)
 	c.Assert(err, check.IsNil)
@@ -295,6 +296,7 @@ func (s *HandlerSuite) TestValidateV1APIToken(c *check.C) {
 }
 
 func (s *HandlerSuite) TestValidateV2APIToken(c *check.C) {
+	c.Assert(s.handler.CheckHealth(), check.IsNil)
 	req := httptest.NewRequest("GET", "/arvados/v1/users/current", nil)
 	user, ok, err := s.handler.validateAPItoken(req, arvadostest.ActiveTokenV2)
 	c.Assert(err, check.IsNil)
@@ -337,6 +339,7 @@ func (s *HandlerSuite) TestLogTokenUUID(c *check.C) {
 }
 
 func (s *HandlerSuite) TestCreateAPIToken(c *check.C) {
+	c.Assert(s.handler.CheckHealth(), check.IsNil)
 	req := httptest.NewRequest("GET", "/arvados/v1/users/current", nil)
 	auth, err := s.handler.createAPItoken(req, arvadostest.ActiveUserUUID, nil)
 	c.Assert(err, check.IsNil)
