@@ -100,12 +100,12 @@ export const ProcessDetailsAttributes = withStyles(styles, { withTheme: true })(
                         <ContainerRunTime uuid={containerRequest.uuid} />
                     </DetailsAttribute>
                 </Grid>
-                {(container && container.modifiedByUserUuid) && <Grid item xs={12} md={mdSize} data-cy="process-details-attributes-modifiedby-user">
+                {(containerRequest && containerRequest.modifiedByUserUuid) && <Grid item xs={12} md={mdSize} data-cy="process-details-attributes-modifiedby-user">
                     <DetailsAttribute
-                        label='Submitted by' linkToUuid={container.modifiedByUserUuid}
+                        label='Submitted by' linkToUuid={containerRequest.modifiedByUserUuid}
                         uuidEnhancer={(uuid: string) => <ResourceWithName uuid={uuid} />} />
                 </Grid>}
-                {(container && container.runtimeUserUuid && container.runtimeUserUuid !== container.modifiedByUserUuid) && <Grid item xs={12} md={mdSize} data-cy="process-details-attributes-runtime-user">
+                {(container && container.runtimeUserUuid && container.runtimeUserUuid !== containerRequest.modifiedByUserUuid) && <Grid item xs={12} md={mdSize} data-cy="process-details-attributes-runtime-user">
                     <DetailsAttribute
                         label='Run as' linkToUuid={container.runtimeUserUuid}
                         uuidEnhancer={(uuid: string) => <ResourceWithName uuid={uuid} />} />

@@ -114,19 +114,38 @@ describe('Process tests', function() {
     });
 
     it('shows process details', function() {
-        const crName = 'test_container_request';
         createContainerRequest(
             activeUser,
-            crName,
+            `test_container_request ${Math.floor(Math.random() * 999999)}`,
             'arvados/jobs',
             ['echo', 'hello world'],
             false, 'Committed')
         .then(function(containerRequest) {
             cy.loginAs(activeUser);
             cy.goToPath(`/processes/${containerRequest.uuid}`);
-            cy.get('[data-cy=process-details]').should('contain', crName);
-            cy.get('[data-cy=process-details-attributes-runtime-user]').contains(`Active User (${activeUser.user.uuid})`);
+            cy.get('[data-cy=process-details]').should('contain', containerRequest.name);
+            cy.get('[data-cy=process-details-attributes-modifiedby-user]').contains(`Active User (${activeUser.user.uuid})`);
+        });
+
+        // Fake submitted by another user
+        cy.intercept({method: 'GET', url: '**/arvados/v1/container_requests/*'}, (req) => {
+            req.reply((res) => {
+                res.body.modified_by_user_uuid = 'zzzzz-tpzed-000000000000000';
+            });
+        });
+
+        createContainerRequest(
+            activeUser,
+            `test_container_request ${Math.floor(Math.random() * 999999)}`,
+            'arvados/jobs',
+            ['echo', 'hello world'],
+            false, 'Committed')
+        .then(function(containerRequest) {
+            cy.loginAs(activeUser);
+            cy.goToPath(`/processes/${containerRequest.uuid}`);
+            cy.get('[data-cy=process-details]').should('contain', containerRequest.name);
             cy.get('[data-cy=process-details-attributes-modifiedby-user]').contains(`zzzzz-tpzed-000000000000000`);
+            cy.get('[data-cy=process-details-attributes-runtime-user]').contains(`Active User (${activeUser.user.uuid})`);
         });
     });
 
