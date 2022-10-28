@@ -44,7 +44,7 @@ func (s *suite) SetUpSuite(c *check.C) {
 }
 
 func (s *suite) TestLock(c *check.C) {
-	retryDelay = time.Millisecond
+	retryDelay = 10 * time.Millisecond
 
 	var logbuf bytes.Buffer
 	logger := ctxlog.New(&logbuf, "text", "debug")
