@@ -107,7 +107,7 @@ describe('Process tests', function() {
                 event_type: 'stdout'
             }).then(function(log) {
                 cy.get('[data-cy=process-logs]')
-                    .should('not.contain', 'No logs yet')
+                    .should('not.contain', 'No logs yet', {timeout: 7000})
                     .and('contain', 'hello world');
             })
         });
@@ -300,14 +300,14 @@ describe('Process tests', function() {
 
         cy.getAll('@containerRequest').then(function([containerRequest]) {
             cy.goToPath(`/processes/${containerRequest.uuid}`);
-            cy.get('[data-cy=process-runtime-status-retry-warning]')
+            cy.get('[data-cy=process-runtime-status-retry-warning]', {timeout: 7000})
                 .should('contain', 'Process retried 1 time');
         });
 
         cy.getAll('@containerRequest').then(function([containerRequest]) {
             containerCount = 3;
             cy.goToPath(`/processes/${containerRequest.uuid}`);
-            cy.get('[data-cy=process-runtime-status-retry-warning]')
+            cy.get('[data-cy=process-runtime-status-retry-warning]', {timeout: 7000})
                 .should('contain', 'Process retried 2 times');
         });
     });
