@@ -193,12 +193,18 @@ func (s *DispatcherSuite) TestDispatchToStubDriver(c *check.C) {
 	err := s.disp.CheckHealth()
 	c.Check(err, check.IsNil)
 
-	select {
-	case <-done:
-		c.Logf("containers finished (%s), waiting for instances to shutdown and queue to clear", time.Since(start))
-	case <-time.After(10 * time.Second):
-		c.Fatalf("timed out; still waiting for %d containers: %q", len(waiting), waiting)
+	for len(waiting) > 0 {
+		waswaiting := len(waiting)
+		select {
+		case <-done:
+			// loop will end because len(waiting)==0
+		case <-time.After(3 * time.Second):
+			if len(waiting) >= waswaiting {
+				c.Fatalf("timed out; no progress in 3s while waiting for %d containers: %q", len(waiting), waiting)
+			}
+		}
 	}
+	c.Logf("containers finished (%s), waiting for instances to shutdown and queue to clear", time.Since(start))
 
 	deadline := time.Now().Add(5 * time.Second)
 	for range time.NewTicker(10 * time.Millisecond).C {
