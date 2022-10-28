@@ -465,10 +465,7 @@ def upload_dependencies(arvrunner, name, document_loader,
                                  builder_job_order,
                                  discovered)
 
-    _jobloaderctx = jobloaderctx.copy()
-    loader = schema_salad.ref_resolver.Loader(_jobloaderctx, fetcher_constructor=document_loader.fetcher_constructor)
-
-    copied, _ = loader.resolve_all(copy.deepcopy(cmap(workflowobj)), base_url=uri, checklinks=False)
+    copied, _ = document_loader.resolve_all(copy.deepcopy(cmap(workflowobj)), base_url=uri, checklinks=False)
     visit_class(copied, ("CommandLineTool", "Workflow"), discover_default_secondary_files)
 
     for d in list(discovered):
@@ -698,9 +695,12 @@ def upload_job_order(arvrunner, name, tool, job_order, runtimeContext):
                              tool.tool["inputs"],
                              job_order)
 
+    _jobloaderctx = jobloaderctx.copy()
+    jobloader = schema_salad.ref_resolver.Loader(_jobloaderctx, fetcher_constructor=tool.doc_loader.fetcher_constructor)
+
     jobmapper = upload_dependencies(arvrunner,
                                     name,
-                                    tool.doc_loader,
+                                    jobloader,
                                     job_order,
                                     job_order.get("id", "#"),
                                     False,
@@ -728,27 +728,36 @@ def upload_workflow_deps(arvrunner, tool, runtimeContext):
 
     merged_map = {}
     tool_dep_cache = {}
+
+    todo = []
+
+    # Standard traversal is top down, we want to go bottom up, so use
+    # the visitor to accumalate a list of nodes to visit, then
+    # visit them in reverse order.
     def upload_tool_deps(deptool):
         if "id" in deptool:
-            discovered_secondaryfiles = {}
-            with Perf(metrics, "upload_dependencies %s" % shortname(deptool["id"])):
-                pm = upload_dependencies(arvrunner,
-                                         "%s dependencies" % (shortname(deptool["id"])),
-                                         document_loader,
-                                         deptool,
-                                         deptool["id"],
-                                         False,
-                                         runtimeContext,
-                                         include_primary=False,
-                                         discovered_secondaryfiles=discovered_secondaryfiles,
-                                         cache=tool_dep_cache)
-            document_loader.idx[deptool["id"]] = deptool
-            toolmap = {}
-            for k,v in pm.items():
-                toolmap[k] = v.resolved
-            merged_map[deptool["id"]] = FileUpdates(toolmap, discovered_secondaryfiles)
+            todo.append(deptool)
 
     tool.visit(upload_tool_deps)
+
+    for deptool in reversed(todo):
+        discovered_secondaryfiles = {}
+        with Perf(metrics, "upload_dependencies %s" % shortname(deptool["id"])):
+            pm = upload_dependencies(arvrunner,
+                                     "%s dependencies" % (shortname(deptool["id"])),
+                                     document_loader,
+                                     deptool,
+                                     deptool["id"],
+                                     False,
+                                     runtimeContext,
+                                     include_primary=False,
+                                     discovered_secondaryfiles=discovered_secondaryfiles,
+                                     cache=tool_dep_cache)
+        document_loader.idx[deptool["id"]] = deptool
+        toolmap = {}
+        for k,v in pm.items():
+            toolmap[k] = v.resolved
+        merged_map[deptool["id"]] = FileUpdates(toolmap, discovered_secondaryfiles)
 
     return merged_map
 
