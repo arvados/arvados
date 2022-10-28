@@ -38,7 +38,7 @@ const mapStateToProps = ({ searchBar, form }: RootState): SearchBarDataProps => 
 };
 
 const mapDispatchToProps = (dispatch: Dispatch): SearchBarActionProps => ({
-    onSearch: (valueSearch: string) => dispatch<any>(searchData(valueSearch)),
+    onSearch: (valueSearch: string) => dispatch<any>(searchData(valueSearch, true)),
     onChange: (event: React.ChangeEvent<HTMLInputElement>) => dispatch<any>(changeData(event.target.value)),
     onSetView: (currentView: string) => dispatch(goToView(currentView)),
     onSubmit: (event: React.FormEvent<HTMLFormElement>) => dispatch<any>(submitData(event)),

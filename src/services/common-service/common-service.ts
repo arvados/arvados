@@ -87,11 +87,13 @@ export class CommonService<T> {
                 return mapKeys ? CommonService.mapResponseKeys(response) : response.data;
             })
             .catch(({ response }) => {
-                actions.progressFn(reqId, false);
-                const errors = CommonService.mapResponseKeys(response) as Errors;
-                errors.status = response.status;
-                actions.errorFn(reqId, errors, showErrors);
-                throw errors;
+                if (response) {
+                    actions.progressFn(reqId, false);
+                    const errors = CommonService.mapResponseKeys(response) as Errors;
+                    errors.status = response.status;
+                    actions.errorFn(reqId, errors, showErrors);
+                    throw errors;
+                }
             });
     }
 
