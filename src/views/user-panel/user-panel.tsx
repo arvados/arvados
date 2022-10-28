@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import React from 'react';
-import { WithStyles, withStyles, Paper, Button, Grid } from '@material-ui/core';
+import { WithStyles, withStyles, Paper, Typography } from '@material-ui/core';
 import { DataExplorer } from "views-components/data-explorer/data-explorer";
 import { connect, DispatchProp } from 'react-redux';
 import { DataColumns } from 'components/data-table/data-table';
@@ -23,7 +23,7 @@ import { navigateToUserProfile } from "store/navigation/navigation-action";
 import { createTree } from 'models/tree';
 import { compose, Dispatch } from 'redux';
 import { UserResource } from 'models/user';
-import { ShareMeIcon, AddIcon } from 'components/icon/icon';
+import { ShareMeIcon } from 'components/icon/icon';
 import { USERS_PANEL_ID, openUserCreateDialog } from 'store/users/users-actions';
 import { noop } from 'lodash';
 
@@ -132,18 +132,20 @@ export const UserPanel = compose(
                 return <Paper className={this.props.classes.root}>
                     <DataExplorer
                         id={USERS_PANEL_ID}
+                        title={
+                            <>
+                                <Typography>
+                                    User records are created automatically on first log in.
+                                </Typography>
+                                <Typography>
+                                    To add a new user, add them to your configured log in provider.
+                                </Typography>
+                            </>}
                         onRowClick={noop}
                         onRowDoubleClick={noop}
                         onContextMenu={this.handleContextMenu}
                         contextMenuColumn={true}
                         hideColumnSelector
-                        actions={
-                            <Grid container justify='flex-end'>
-                                <Button variant="contained" color="primary" onClick={this.props.openUserCreateDialog}>
-                                    <AddIcon /> NEW USER
-                                </Button>
-                            </Grid>
-                        }
                         paperProps={{
                             elevation: 0,
                         }}
