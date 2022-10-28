@@ -53,13 +53,14 @@ from cwltool.command_line_tool import CommandLineTool
 import cwltool.workflow
 from cwltool.process import (scandeps, UnsupportedRequirement, normalizeFilesDirs,
                              shortname, Process, fill_in_defaults)
-from cwltool.load_tool import fetch_document
+from cwltool.load_tool import fetch_document, jobloaderctx
 from cwltool.utils import aslist, adjustFileObjs, adjustDirObjs, visit_class
 from cwltool.builder import substitute
 from cwltool.pack import pack
 from cwltool.update import INTERNAL_VERSION
 from cwltool.builder import Builder
 import schema_salad.validate as validate
+import schema_salad.ref_resolver
 
 import arvados.collection
 import arvados.util
@@ -464,7 +465,10 @@ def upload_dependencies(arvrunner, name, document_loader,
                                  builder_job_order,
                                  discovered)
 
-    copied, _ = document_loader.resolve_all(copy.deepcopy(cmap(workflowobj)), base_url=uri, checklinks=False)
+    _jobloaderctx = jobloaderctx.copy()
+    loader = schema_salad.ref_resolver.Loader(_jobloaderctx, fetcher_constructor=document_loader.fetcher_constructor)
+
+    copied, _ = loader.resolve_all(copy.deepcopy(cmap(workflowobj)), base_url=uri, checklinks=False)
     visit_class(copied, ("CommandLineTool", "Workflow"), discover_default_secondary_files)
 
     for d in list(discovered):
