@@ -125,6 +125,7 @@ describe('Process tests', function() {
             cy.goToPath(`/processes/${containerRequest.uuid}`);
             cy.get('[data-cy=process-details]').should('contain', containerRequest.name);
             cy.get('[data-cy=process-details-attributes-modifiedby-user]').contains(`Active User (${activeUser.user.uuid})`);
+            cy.get('[data-cy=process-details-attributes-runtime-user]').should('not.exist');
         });
 
         // Fake submitted by another user
