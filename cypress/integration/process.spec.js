@@ -106,10 +106,47 @@ describe('Process tests', function() {
                 },
                 event_type: 'stdout'
             }).then(function(log) {
-                cy.get('[data-cy=process-logs]')
+                cy.get('[data-cy=process-logs]', {timeout: 7000})
                     .should('not.contain', 'No logs yet')
                     .and('contain', 'hello world');
             })
+        });
+    });
+
+    it('shows process details', function() {
+        createContainerRequest(
+            activeUser,
+            `test_container_request ${Math.floor(Math.random() * 999999)}`,
+            'arvados/jobs',
+            ['echo', 'hello world'],
+            false, 'Committed')
+        .then(function(containerRequest) {
+            cy.loginAs(activeUser);
+            cy.goToPath(`/processes/${containerRequest.uuid}`);
+            cy.get('[data-cy=process-details]').should('contain', containerRequest.name);
+            cy.get('[data-cy=process-details-attributes-modifiedby-user]').contains(`Active User (${activeUser.user.uuid})`);
+            cy.get('[data-cy=process-details-attributes-runtime-user]').should('not.exist');
+        });
+
+        // Fake submitted by another user
+        cy.intercept({method: 'GET', url: '**/arvados/v1/container_requests/*'}, (req) => {
+            req.reply((res) => {
+                res.body.modified_by_user_uuid = 'zzzzz-tpzed-000000000000000';
+            });
+        });
+
+        createContainerRequest(
+            activeUser,
+            `test_container_request ${Math.floor(Math.random() * 999999)}`,
+            'arvados/jobs',
+            ['echo', 'hello world'],
+            false, 'Committed')
+        .then(function(containerRequest) {
+            cy.loginAs(activeUser);
+            cy.goToPath(`/processes/${containerRequest.uuid}`);
+            cy.get('[data-cy=process-details]').should('contain', containerRequest.name);
+            cy.get('[data-cy=process-details-attributes-modifiedby-user]').contains(`zzzzz-tpzed-000000000000000`);
+            cy.get('[data-cy=process-details-attributes-runtime-user]').contains(`Active User (${activeUser.user.uuid})`);
         });
     });
 
@@ -169,7 +206,7 @@ describe('Process tests', function() {
                 cy.loginAs(activeUser);
                 cy.goToPath(`/processes/${containerRequest.uuid}`);
                 // Should show main logs by default
-                cy.get('[data-cy=process-logs-filter]').should('contain', 'Main logs');
+                cy.get('[data-cy=process-logs-filter]', {timeout: 7000}).should('contain', 'Main logs');
                 cy.get('[data-cy=process-logs]')
                     .should('contain', stdoutLogs[Math.floor(Math.random() * stdoutLogs.length)])
                     .and('not.contain', nodeInfoLogs[Math.floor(Math.random() * nodeInfoLogs.length)])
@@ -263,14 +300,14 @@ describe('Process tests', function() {
 
         cy.getAll('@containerRequest').then(function([containerRequest]) {
             cy.goToPath(`/processes/${containerRequest.uuid}`);
-            cy.get('[data-cy=process-runtime-status-retry-warning]')
+            cy.get('[data-cy=process-runtime-status-retry-warning]', {timeout: 7000})
                 .should('contain', 'Process retried 1 time');
         });
 
         cy.getAll('@containerRequest').then(function([containerRequest]) {
             containerCount = 3;
             cy.goToPath(`/processes/${containerRequest.uuid}`);
-            cy.get('[data-cy=process-runtime-status-retry-warning]')
+            cy.get('[data-cy=process-runtime-status-retry-warning]', {timeout: 7000})
                 .should('contain', 'Process retried 2 times');
         });
     });
