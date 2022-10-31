@@ -10,6 +10,7 @@ import (
 	"sync"
 
 	"git.arvados.org/arvados.git/lib/controller/api"
+	"git.arvados.org/arvados.git/sdk/go/arvados"
 	"git.arvados.org/arvados.git/sdk/go/ctxlog"
 	"github.com/jmoiron/sqlx"
 
@@ -141,4 +142,34 @@ func CurrentTx(ctx context.Context) (*sqlx.Tx, error) {
 		}
 	})
 	return txn.tx, txn.err
+}
+
+var errDBConnection = errors.New("database connection error")
+
+type DBConnector struct {
+	PostgreSQL arvados.PostgreSQL
+	pgdb       *sqlx.DB
+	mtx        sync.Mutex
+}
+
+func (dbc *DBConnector) GetDB(ctx context.Context) (*sqlx.DB, error) {
+	dbc.mtx.Lock()
+	defer dbc.mtx.Unlock()
+	if dbc.pgdb != nil {
+		return dbc.pgdb, nil
+	}
+	db, err := sqlx.Open("postgres", dbc.PostgreSQL.Connection.String())
+	if err != nil {
+		ctxlog.FromContext(ctx).WithError(err).Error("postgresql connect failed")
+		return nil, errDBConnection
+	}
+	if p := dbc.PostgreSQL.ConnectionPool; p > 0 {
+		db.SetMaxOpenConns(p)
+	}
+	if err := db.Ping(); err != nil {
+		ctxlog.FromContext(ctx).WithError(err).Error("postgresql connect succeeded but ping failed")
+		return nil, errDBConnection
+	}
+	dbc.pgdb = db
+	return db, nil
 }

@@ -37,6 +37,8 @@ func (v *Vocabulary) systemTagKeys() map[string]bool {
 		"docker-image-repo-tag": true,
 		"filters":               true,
 		"container_request":     true,
+		"cwl_input":             true,
+		"cwl_output":            true,
 	}
 }
 

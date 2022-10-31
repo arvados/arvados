@@ -70,6 +70,11 @@ var (
 	EndpointLinkGet                       = APIEndpoint{"GET", "arvados/v1/links/{uuid}", ""}
 	EndpointLinkList                      = APIEndpoint{"GET", "arvados/v1/links", ""}
 	EndpointLinkDelete                    = APIEndpoint{"DELETE", "arvados/v1/links/{uuid}", ""}
+	EndpointLogCreate                     = APIEndpoint{"POST", "arvados/v1/logs", "log"}
+	EndpointLogUpdate                     = APIEndpoint{"PATCH", "arvados/v1/logs/{uuid}", "log"}
+	EndpointLogGet                        = APIEndpoint{"GET", "arvados/v1/logs/{uuid}", ""}
+	EndpointLogList                       = APIEndpoint{"GET", "arvados/v1/logs", ""}
+	EndpointLogDelete                     = APIEndpoint{"DELETE", "arvados/v1/logs/{uuid}", ""}
 	EndpointSysTrashSweep                 = APIEndpoint{"POST", "sys/trash_sweep", ""}
 	EndpointUserActivate                  = APIEndpoint{"POST", "arvados/v1/users/{uuid}/activate", ""}
 	EndpointUserCreate                    = APIEndpoint{"POST", "arvados/v1/users", "user"}
@@ -284,6 +289,11 @@ type API interface {
 	LinkGet(ctx context.Context, options GetOptions) (Link, error)
 	LinkList(ctx context.Context, options ListOptions) (LinkList, error)
 	LinkDelete(ctx context.Context, options DeleteOptions) (Link, error)
+	LogCreate(ctx context.Context, options CreateOptions) (Log, error)
+	LogUpdate(ctx context.Context, options UpdateOptions) (Log, error)
+	LogGet(ctx context.Context, options GetOptions) (Log, error)
+	LogList(ctx context.Context, options ListOptions) (LogList, error)
+	LogDelete(ctx context.Context, options DeleteOptions) (Log, error)
 	SpecimenCreate(ctx context.Context, options CreateOptions) (Specimen, error)
 	SpecimenUpdate(ctx context.Context, options UpdateOptions) (Specimen, error)
 	SpecimenGet(ctx context.Context, options GetOptions) (Specimen, error)

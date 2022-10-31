@@ -1071,11 +1071,15 @@ Clusters:
       LocalKeepLogsToContainerLog: none
 
       Logging:
-        # When you run the db:delete_old_container_logs task, it will find
-        # containers that have been finished for at least this many seconds,
+        # Periodically (see SweepInterval) Arvados will check for
+        # containers that have been finished for at least this long,
         # and delete their stdout, stderr, arv-mount, crunch-run, and
         # crunchstat logs from the logs table.
         MaxAge: 720h
+
+        # How often to delete cached log entries for finished
+        # containers (see MaxAge).
+        SweepInterval: 12h
 
         # These two settings control how frequently log events are flushed to the
         # database.  Log lines are buffered until either crunch_log_bytes_per_event
@@ -1715,6 +1719,10 @@ Clusters:
       # Idle time after which the user's session will be auto closed.
       # This feature is disabled when set to zero.
       IdleTimeout: 0s
+
+      # URL to a file that is a fragment of text or HTML which should
+      # be rendered in Workbench as a banner.
+      BannerURL: ""
 
       # Workbench welcome screen, this is HTML text that will be
       # incorporated directly onto the page.

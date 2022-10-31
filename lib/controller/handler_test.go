@@ -284,6 +284,7 @@ func (s *HandlerSuite) TestLogoutGoogle(c *check.C) {
 }
 
 func (s *HandlerSuite) TestValidateV1APIToken(c *check.C) {
+	c.Assert(s.handler.CheckHealth(), check.IsNil)
 	req := httptest.NewRequest("GET", "/arvados/v1/users/current", nil)
 	user, ok, err := s.handler.validateAPItoken(req, arvadostest.ActiveToken)
 	c.Assert(err, check.IsNil)
@@ -295,6 +296,7 @@ func (s *HandlerSuite) TestValidateV1APIToken(c *check.C) {
 }
 
 func (s *HandlerSuite) TestValidateV2APIToken(c *check.C) {
+	c.Assert(s.handler.CheckHealth(), check.IsNil)
 	req := httptest.NewRequest("GET", "/arvados/v1/users/current", nil)
 	user, ok, err := s.handler.validateAPItoken(req, arvadostest.ActiveTokenV2)
 	c.Assert(err, check.IsNil)
@@ -337,6 +339,7 @@ func (s *HandlerSuite) TestLogTokenUUID(c *check.C) {
 }
 
 func (s *HandlerSuite) TestCreateAPIToken(c *check.C) {
+	c.Assert(s.handler.CheckHealth(), check.IsNil)
 	req := httptest.NewRequest("GET", "/arvados/v1/users/current", nil)
 	auth, err := s.handler.createAPItoken(req, arvadostest.ActiveUserUUID, nil)
 	c.Assert(err, check.IsNil)
@@ -477,7 +480,7 @@ func (s *HandlerSuite) TestTrashSweep(c *check.C) {
 	coll, err := s.handler.federation.CollectionCreate(ctx, arvados.CreateOptions{Attrs: map[string]interface{}{"name": "test trash sweep"}, EnsureUniqueName: true})
 	c.Assert(err, check.IsNil)
 	defer s.handler.federation.CollectionDelete(ctx, arvados.DeleteOptions{UUID: coll.UUID})
-	db, err := s.handler.db(s.ctx)
+	db, err := s.handler.dbConnector.GetDB(s.ctx)
 	c.Assert(err, check.IsNil)
 	_, err = db.ExecContext(s.ctx, `update collections set trash_at = $1, delete_at = $2 where uuid = $3`, time.Now().UTC().Add(time.Second/10), time.Now().UTC().Add(time.Hour), coll.UUID)
 	c.Assert(err, check.IsNil)
@@ -490,6 +493,35 @@ func (s *HandlerSuite) TestTrashSweep(c *check.C) {
 		updated, err := s.handler.federation.CollectionGet(ctx, arvados.GetOptions{UUID: coll.UUID, IncludeTrash: true})
 		c.Assert(err, check.IsNil)
 		if updated.IsTrashed {
+			break
+		}
+		time.Sleep(time.Second / 10)
+	}
+}
+
+func (s *HandlerSuite) TestContainerLogSweep(c *check.C) {
+	s.cluster.SystemRootToken = arvadostest.SystemRootToken
+	s.cluster.Containers.Logging.SweepInterval = arvados.Duration(time.Second / 10)
+	s.handler.CheckHealth()
+	ctx := auth.NewContext(s.ctx, &auth.Credentials{Tokens: []string{arvadostest.ActiveTokenV2}})
+	logentry, err := s.handler.federation.LogCreate(ctx, arvados.CreateOptions{Attrs: map[string]interface{}{
+		"object_uuid": arvadostest.CompletedContainerUUID,
+		"event_type":  "stderr",
+		"properties": map[string]interface{}{
+			"text": "test trash sweep\n",
+		},
+	}})
+	c.Assert(err, check.IsNil)
+	defer s.handler.federation.LogDelete(ctx, arvados.DeleteOptions{UUID: logentry.UUID})
+	deadline := time.Now().Add(5 * time.Second)
+	for {
+		if time.Now().After(deadline) {
+			c.Log("timed out")
+			c.FailNow()
+		}
+		logentries, err := s.handler.federation.LogList(ctx, arvados.ListOptions{Filters: []arvados.Filter{{"uuid", "=", logentry.UUID}}, Limit: -1})
+		c.Assert(err, check.IsNil)
+		if len(logentries.Items) == 0 {
 			break
 		}
 		time.Sleep(time.Second / 10)
@@ -521,7 +553,7 @@ func (s *HandlerSuite) TestLogActivity(c *check.C) {
 			c.Assert(err, check.IsNil)
 		}
 	}
-	db, err := s.handler.db(s.ctx)
+	db, err := s.handler.dbConnector.GetDB(s.ctx)
 	c.Assert(err, check.IsNil)
 	for _, userUUID := range []string{arvadostest.ActiveUserUUID, arvadostest.SpectatorUserUUID} {
 		var rows int

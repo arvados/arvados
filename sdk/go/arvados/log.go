@@ -12,12 +12,15 @@ import (
 type Log struct {
 	ID              uint64                 `json:"id"`
 	UUID            string                 `json:"uuid"`
+	OwnerUUID       string                 `json:"owner_uuid"`
 	ObjectUUID      string                 `json:"object_uuid"`
 	ObjectOwnerUUID string                 `json:"object_owner_uuid"`
 	EventType       string                 `json:"event_type"`
-	EventAt         *time.Time             `json:"event"`
+	EventAt         time.Time              `json:"event"`
+	Summary         string                 `json:"summary"`
 	Properties      map[string]interface{} `json:"properties"`
-	CreatedAt       *time.Time             `json:"created_at"`
+	CreatedAt       time.Time              `json:"created_at"`
+	ModifiedAt      time.Time              `json:"modified_at"`
 }
 
 // LogList is an arvados#logList resource.

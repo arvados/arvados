@@ -142,7 +142,7 @@ type CurrentUser struct {
 // non-nil, true, nil -- if the token is valid
 func (h *Handler) validateAPItoken(req *http.Request, token string) (*CurrentUser, bool, error) {
 	user := CurrentUser{Authorization: arvados.APIClientAuthorization{APIToken: token}}
-	db, err := h.db(req.Context())
+	db, err := h.dbConnector.GetDB(req.Context())
 	if err != nil {
 		ctxlog.FromContext(req.Context()).WithError(err).Debugf("validateAPItoken(%s): database error", token)
 		return nil, false, err
@@ -179,7 +179,7 @@ func (h *Handler) validateAPItoken(req *http.Request, token string) (*CurrentUse
 }
 
 func (h *Handler) createAPItoken(req *http.Request, userUUID string, scopes []string) (*arvados.APIClientAuthorization, error) {
-	db, err := h.db(req.Context())
+	db, err := h.dbConnector.GetDB(req.Context())
 	if err != nil {
 		return nil, err
 	}

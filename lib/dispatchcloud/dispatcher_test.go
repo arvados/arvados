@@ -15,6 +15,7 @@ import (
 	"sync"
 	"time"
 
+	"git.arvados.org/arvados.git/lib/config"
 	"git.arvados.org/arvados.git/lib/dispatchcloud/test"
 	"git.arvados.org/arvados.git/sdk/go/arvados"
 	"git.arvados.org/arvados.git/sdk/go/arvadostest"
@@ -49,8 +50,16 @@ func (s *DispatcherSuite) SetUpTest(c *check.C) {
 		MinTimeBetweenCreateCalls: time.Millisecond,
 	}
 
+	// We need the postgresql connection info from the integration
+	// test config.
+	cfg, err := config.NewLoader(nil, ctxlog.FromContext(s.ctx)).Load()
+	c.Assert(err, check.IsNil)
+	testcluster, err := cfg.GetCluster("")
+	c.Assert(err, check.IsNil)
+
 	s.cluster = &arvados.Cluster{
 		ManagementToken: "test-management-token",
+		PostgreSQL:      testcluster.PostgreSQL,
 		Containers: arvados.ContainersConfig{
 			CrunchRunCommand:       "crunch-run",
 			CrunchRunArgumentsList: []string{"--foo", "--extra='args'"},
@@ -184,12 +193,18 @@ func (s *DispatcherSuite) TestDispatchToStubDriver(c *check.C) {
 	err := s.disp.CheckHealth()
 	c.Check(err, check.IsNil)
 
-	select {
-	case <-done:
-		c.Logf("containers finished (%s), waiting for instances to shutdown and queue to clear", time.Since(start))
-	case <-time.After(10 * time.Second):
-		c.Fatalf("timed out; still waiting for %d containers: %q", len(waiting), waiting)
+	for len(waiting) > 0 {
+		waswaiting := len(waiting)
+		select {
+		case <-done:
+			// loop will end because len(waiting)==0
+		case <-time.After(3 * time.Second):
+			if len(waiting) >= waswaiting {
+				c.Fatalf("timed out; no progress in 3s while waiting for %d containers: %q", len(waiting), waiting)
+			}
+		}
 	}
+	c.Logf("containers finished (%s), waiting for instances to shutdown and queue to clear", time.Since(start))
 
 	deadline := time.Now().Add(5 * time.Second)
 	for range time.NewTicker(10 * time.Millisecond).C {

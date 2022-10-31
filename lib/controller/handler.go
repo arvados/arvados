@@ -6,7 +6,6 @@ package controller
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"net/http"
 	"net/http/httptest"
@@ -21,10 +20,8 @@ import (
 	"git.arvados.org/arvados.git/lib/controller/router"
 	"git.arvados.org/arvados.git/lib/ctrlctx"
 	"git.arvados.org/arvados.git/sdk/go/arvados"
-	"git.arvados.org/arvados.git/sdk/go/ctxlog"
 	"git.arvados.org/arvados.git/sdk/go/health"
 	"git.arvados.org/arvados.git/sdk/go/httpserver"
-	"github.com/jmoiron/sqlx"
 
 	// sqlx needs lib/pq to talk to PostgreSQL
 	_ "github.com/lib/pq"
@@ -40,8 +37,7 @@ type Handler struct {
 	proxy          *proxy
 	secureClient   *http.Client
 	insecureClient *http.Client
-	pgdb           *sqlx.DB
-	pgdbMtx        sync.Mutex
+	dbConnector    ctrlctx.DBConnector
 }
 
 func (h *Handler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
@@ -65,7 +61,7 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 
 func (h *Handler) CheckHealth() error {
 	h.setupOnce.Do(h.setup)
-	_, err := h.db(context.TODO())
+	_, err := h.dbConnector.GetDB(context.TODO())
 	if err != nil {
 		return err
 	}
@@ -97,17 +93,18 @@ func (h *Handler) setup() {
 	mux := http.NewServeMux()
 	healthFuncs := make(map[string]health.Func)
 
-	oidcAuthorizer := localdb.OIDCAccessTokenAuthorizer(h.Cluster, h.db)
+	h.dbConnector = ctrlctx.DBConnector{PostgreSQL: h.Cluster.PostgreSQL}
+	oidcAuthorizer := localdb.OIDCAccessTokenAuthorizer(h.Cluster, h.dbConnector.GetDB)
 	h.federation = federation.New(h.Cluster, &healthFuncs)
 	rtr := router.New(h.federation, router.Config{
 		MaxRequestSize: h.Cluster.API.MaxRequestSize,
 		WrapCalls: api.ComposeWrappers(
-			ctrlctx.WrapCallsInTransactions(h.db),
+			ctrlctx.WrapCallsInTransactions(h.dbConnector.GetDB),
 			oidcAuthorizer.WrapCalls,
 			ctrlctx.WrapCallsWithAuth(h.Cluster)),
 	})
 
-	healthRoutes := health.Routes{"ping": func() error { _, err := h.db(context.TODO()); return err }}
+	healthRoutes := health.Routes{"ping": func() error { _, err := h.dbConnector.GetDB(context.TODO()); return err }}
 	for name, f := range healthFuncs {
 		healthRoutes[name] = f
 	}
@@ -155,31 +152,7 @@ func (h *Handler) setup() {
 	}
 
 	go h.trashSweepWorker()
-}
-
-var errDBConnection = errors.New("database connection error")
-
-func (h *Handler) db(ctx context.Context) (*sqlx.DB, error) {
-	h.pgdbMtx.Lock()
-	defer h.pgdbMtx.Unlock()
-	if h.pgdb != nil {
-		return h.pgdb, nil
-	}
-
-	db, err := sqlx.Open("postgres", h.Cluster.PostgreSQL.Connection.String())
-	if err != nil {
-		ctxlog.FromContext(ctx).WithError(err).Error("postgresql connect failed")
-		return nil, errDBConnection
-	}
-	if p := h.Cluster.PostgreSQL.ConnectionPool; p > 0 {
-		db.SetMaxOpenConns(p)
-	}
-	if err := db.Ping(); err != nil {
-		ctxlog.FromContext(ctx).WithError(err).Error("postgresql connect succeeded but ping failed")
-		return nil, errDBConnection
-	}
-	h.pgdb = db
-	return db, nil
+	go h.containerLogSweepWorker()
 }
 
 type middlewareFunc func(http.ResponseWriter, *http.Request, http.Handler)

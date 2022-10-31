@@ -321,6 +321,13 @@ func (s *AggregatorSuite) TestCheckCommand(c *check.C) {
 
 	exitcode := CheckCommand.RunCommand("check", []string{"-config=" + tmpdir + "/config.yml"}, &bytes.Buffer{}, &stdout, &stderr)
 	c.Check(exitcode, check.Equals, 0)
+	c.Check(stderr.String(), check.Equals, "health check OK\n")
+	c.Check(stdout.String(), check.Equals, "")
+
+	stdout.Reset()
+	stderr.Reset()
+	exitcode = CheckCommand.RunCommand("check", []string{"-quiet", "-config=" + tmpdir + "/config.yml"}, &bytes.Buffer{}, &stdout, &stderr)
+	c.Check(exitcode, check.Equals, 0)
 	c.Check(stderr.String(), check.Equals, "")
 	c.Check(stdout.String(), check.Equals, "")
 
