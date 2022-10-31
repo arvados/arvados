@@ -100,7 +100,7 @@ export const formatPropertyValue = (pv: PropertyValue, vocabulary?: Vocabulary) 
     return "";
 };
 
-export const formatContainerCost = (cost: number) => {
+export const formatContainerCost = (cost: number): string => {
     const decimalPlaces = 3;
 
     const factor = Math.pow(10, decimalPlaces);
