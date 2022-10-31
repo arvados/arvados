@@ -77,10 +77,10 @@ export const ProcessDetailsAttributes = withStyles(styles, { withTheme: true })(
                     <DetailsAttribute label='Type' value={resourceLabel(ResourceKind.PROCESS)} />
                 </Grid>}
                 <Grid item xs={12} md={mdSize}>
-                    <DetailsAttribute label='Container Request UUID' linkToUuid={containerRequest.uuid} value={containerRequest.uuid} />
+                    <DetailsAttribute label='Container request UUID' linkToUuid={containerRequest.uuid} value={containerRequest.uuid} />
                 </Grid>
                 <Grid item xs={12} md={mdSize}>
-                    <DetailsAttribute label='Docker Image locator'
+                    <DetailsAttribute label='Docker image locator'
                         linkToUuid={containerRequest.containerImage} value={containerRequest.containerImage} />
                 </Grid>
                 <Grid item xs={12} md={mdSize}>
@@ -119,19 +119,19 @@ export const ProcessDetailsAttributes = withStyles(styles, { withTheme: true })(
                         uuidEnhancer={(uuid: string) => <ResourceWithName uuid={uuid} />} />
                 </Grid>}
                 <Grid item xs={12} md={mdSize}>
-                    <DetailsAttribute label='Requesting Container UUID' value={containerRequest.requestingContainerUuid || "(none)"} />
+                    <DetailsAttribute label='Requesting container UUID' value={containerRequest.requestingContainerUuid || "(none)"} />
                 </Grid>
                 <Grid item xs={6}>
-                    <DetailsAttribute label='Output Collection' />
+                    <DetailsAttribute label='Output collection' />
                     {containerRequest.outputUuid && <span onClick={() => props.navigateToOutput(containerRequest.outputUuid!)}>
                         <CollectionName className={classes.link} uuid={containerRequest.outputUuid} />
                     </span>}
                 </Grid>
                 {container && container.cost > 0 && <Grid item xs={12} md={mdSize}>
-                        <DetailsAttribute label='Container Cost ' value={formatContainerCost(container.cost)} />
+                        <DetailsAttribute label='Cost ' value={formatContainerCost(container.cost)} />
                 </Grid>}
                 {containerRequest && containerRequest.cumulativeCost > 0 && subprocesses.length > 0 && <Grid item xs={12} md={mdSize}>
-                    <DetailsAttribute label='Container &amp; Subprocess Cost' value={formatContainerCost(containerRequest.cumulativeCost)} />
+                    <DetailsAttribute label='Container &amp; subprocess cost' value={formatContainerCost(containerRequest.cumulativeCost)} />
                 </Grid>}
                 {containerRequest.properties.template_uuid &&
                     <Grid item xs={12} md={mdSize}>
