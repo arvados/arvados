@@ -62,6 +62,8 @@ type s3AWSbucket struct {
 // aws-sdk-go based on the UseAWSS3v2Driver feature flag
 func chooseS3VolumeDriver(cluster *arvados.Cluster, volume arvados.Volume, logger logrus.FieldLogger, metrics *volumeMetricsVecs) (Volume, error) {
 	v := &S3Volume{cluster: cluster, volume: volume, metrics: metrics}
+	// Default value will be overriden if it happens to be defined in the config
+	v.S3VolumeDriverParameters.UseAWSS3v2Driver = true
 	err := json.Unmarshal(volume.DriverParameters, v)
 	if err != nil {
 		return nil, err

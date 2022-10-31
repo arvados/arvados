@@ -29,9 +29,14 @@ TODO: extract this information based on git commit messages and generate changel
 </notextile>
 
 
-h2(#main). development main (as of 2022-10-14)
+h2(#main). development main (as of 2022-10-31)
 
 "previous: Upgrading to 2.4.3":#v2_4_3
+
+h3. New keepstore S3 driver enabled by default
+
+A more actively maintained S3 client library is now enabled by default for keeepstore services. The previous driver is still available for use in case of unknown issues. To use the old driver, set @DriverParameters.UseAWSS3v2Driver@ to @false@ on the appropriate @Volumes@ config entries.
+h2(#main). development main (as of 2022-10-14)
 
 h3. Old container logs are automatically deleted from PostgreSQL
 

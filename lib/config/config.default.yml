@@ -1499,7 +1499,7 @@ Clusters:
           RaceWindow: 24h
           PrefixLength: 0
           # Use aws-s3-go (v2) instead of goamz
-          UseAWSS3v2Driver: false
+          UseAWSS3v2Driver: true
 
           # For S3 driver, potentially unsafe tuning parameter,
           # intentionally excluded from main documentation.
