@@ -469,3 +469,13 @@
   }
   tool: 19109-upload-secondary.cwl
   doc: "Test issue 19109 - correctly discover & upload secondary files"
+
+- job: 19678-name-id.yml
+  output: {
+    "processed_name": {
+        "first": "foo",
+        "last": "bar"
+    }
+  }
+  tool: 19678-name-id.cwl
+  doc: "Test issue 19678 - non-string type input parameter called 'name'"
