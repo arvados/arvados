@@ -5,7 +5,7 @@
 import React from "react";
 import { Grid, StyleRulesCallback, withStyles } from "@material-ui/core";
 import { Dispatch } from 'redux';
-import { formatDate } from "common/formatters";
+import { formatContainerCost, formatDate } from "common/formatters";
 import { resourceLabel } from "common/labels";
 import { DetailsAttribute } from "components/details-attribute/details-attribute";
 import { ResourceKind } from "models/resource";
@@ -19,6 +19,8 @@ import { navigateToOutput, openWorkflow } from "store/process-panel/process-pane
 import { ArvadosTheme } from "common/custom-theme";
 import { ProcessRuntimeStatus } from "views-components/process-runtime-status/process-runtime-status";
 import { getPropertyChip } from "views-components/resource-properties-form/property-chip";
+import { ContainerRequestResource } from "models/container-request";
+import { filterResources } from "store/resources/resources";
 
 type CssRules = 'link' | 'propertyTag';
 
@@ -37,8 +39,13 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
 });
 
 const mapStateToProps = (state: RootState, props: { request: ProcessResource }) => {
+    const process = getProcess(props.request.uuid)(state.resources);
     return {
-        container: getProcess(props.request.uuid)(state.resources)?.container,
+        container: process?.container,
+        subprocesses: filterResources((resource: ContainerRequestResource) =>
+            resource.kind === ResourceKind.CONTAINER_REQUEST &&
+            resource.requestingContainerUuid === process?.containerRequest.containerUuid
+        )(state.resources),
     };
 };
 
@@ -54,9 +61,10 @@ const mapDispatchToProps = (dispatch: Dispatch): ProcessDetailsAttributesActionP
 
 export const ProcessDetailsAttributes = withStyles(styles, { withTheme: true })(
     connect(mapStateToProps, mapDispatchToProps)(
-        (props: { request: ProcessResource, container?: ContainerResource, twoCol?: boolean, hideProcessPanelRedundantFields?: boolean, classes: Record<CssRules, string> } & ProcessDetailsAttributesActionProps) => {
+        (props: { request: ProcessResource, container?: ContainerResource, subprocesses: ContainerRequestResource[], twoCol?: boolean, hideProcessPanelRedundantFields?: boolean, classes: Record<CssRules, string> } & ProcessDetailsAttributesActionProps) => {
             const containerRequest = props.request;
             const container = props.container;
+            const subprocesses = props.subprocesses;
             const classes = props.classes;
             const mdSize = props.twoCol ? 6 : 12;
             const filteredPropertyKeys = Object.keys(containerRequest.properties)
@@ -119,6 +127,12 @@ export const ProcessDetailsAttributes = withStyles(styles, { withTheme: true })(
                         <CollectionName className={classes.link} uuid={containerRequest.outputUuid} />
                     </span>}
                 </Grid>
+                {container && container.cost && <Grid item xs={12} md={mdSize}>
+                        <DetailsAttribute label='Container Cost ' value={formatContainerCost(container.cost)} />
+                </Grid>}
+                {containerRequest && containerRequest.cumulativeCost && subprocesses.length > 0 && <Grid item xs={12} md={mdSize}>
+                    <DetailsAttribute label='Container &amp; Subprocess Cost' value={formatContainerCost(containerRequest.cumulativeCost)} />
+                </Grid>}
                 {containerRequest.properties.template_uuid &&
                     <Grid item xs={12} md={mdSize}>
                         <span onClick={() => props.openWorkflow(containerRequest.properties.template_uuid)}>

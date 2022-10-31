@@ -25,6 +25,7 @@ export interface ContainerResource extends Resource {
     environment: {};
     cwd: string;
     command: string[];
+    cost: number;
     outputPath: string;
     mounts: MountType[];
     runtimeConstraints: RuntimeConstraints;

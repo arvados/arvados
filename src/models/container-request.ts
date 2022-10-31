@@ -19,6 +19,7 @@ export interface ContainerRequestResource extends Resource, ResourceWithProperti
     description: string;
     state: ContainerRequestState;
     requestingContainerUuid: string | null;
+    cumulativeCost: number;
     containerUuid: string | null;
     containerCountMax: number;
     mounts: {[path: string]: MountType};
