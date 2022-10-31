@@ -127,10 +127,10 @@ export const ProcessDetailsAttributes = withStyles(styles, { withTheme: true })(
                         <CollectionName className={classes.link} uuid={containerRequest.outputUuid} />
                     </span>}
                 </Grid>
-                {container && container.cost && <Grid item xs={12} md={mdSize}>
+                {container && container.cost > 0 && <Grid item xs={12} md={mdSize}>
                         <DetailsAttribute label='Container Cost ' value={formatContainerCost(container.cost)} />
                 </Grid>}
-                {containerRequest && containerRequest.cumulativeCost && subprocesses.length > 0 && <Grid item xs={12} md={mdSize}>
+                {containerRequest && containerRequest.cumulativeCost > 0 && subprocesses.length > 0 && <Grid item xs={12} md={mdSize}>
                     <DetailsAttribute label='Container &amp; Subprocess Cost' value={formatContainerCost(containerRequest.cumulativeCost)} />
                 </Grid>}
                 {containerRequest.properties.template_uuid &&
