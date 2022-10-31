@@ -69,10 +69,6 @@ type Balancer struct {
 // subsequent balance operation.
 //
 // Run should only be called once on a given Balancer object.
-//
-// Typical usage:
-//
-//	runOptions, err = (&Balancer{}).Run(config, runOptions)
 func (bal *Balancer) Run(ctx context.Context, client *arvados.Client, cluster *arvados.Cluster, runOptions RunOptions) (nextRunOptions RunOptions, err error) {
 	nextRunOptions = runOptions
 
