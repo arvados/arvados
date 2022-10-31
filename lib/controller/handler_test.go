@@ -284,6 +284,7 @@ func (s *HandlerSuite) TestLogoutGoogle(c *check.C) {
 }
 
 func (s *HandlerSuite) TestValidateV1APIToken(c *check.C) {
+	c.Assert(s.handler.CheckHealth(), check.IsNil)
 	req := httptest.NewRequest("GET", "/arvados/v1/users/current", nil)
 	user, ok, err := s.handler.validateAPItoken(req, arvadostest.ActiveToken)
 	c.Assert(err, check.IsNil)
@@ -295,6 +296,7 @@ func (s *HandlerSuite) TestValidateV1APIToken(c *check.C) {
 }
 
 func (s *HandlerSuite) TestValidateV2APIToken(c *check.C) {
+	c.Assert(s.handler.CheckHealth(), check.IsNil)
 	req := httptest.NewRequest("GET", "/arvados/v1/users/current", nil)
 	user, ok, err := s.handler.validateAPItoken(req, arvadostest.ActiveTokenV2)
 	c.Assert(err, check.IsNil)
@@ -337,6 +339,7 @@ func (s *HandlerSuite) TestLogTokenUUID(c *check.C) {
 }
 
 func (s *HandlerSuite) TestCreateAPIToken(c *check.C) {
+	c.Assert(s.handler.CheckHealth(), check.IsNil)
 	req := httptest.NewRequest("GET", "/arvados/v1/users/current", nil)
 	auth, err := s.handler.createAPItoken(req, arvadostest.ActiveUserUUID, nil)
 	c.Assert(err, check.IsNil)
@@ -477,7 +480,7 @@ func (s *HandlerSuite) TestTrashSweep(c *check.C) {
 	coll, err := s.handler.federation.CollectionCreate(ctx, arvados.CreateOptions{Attrs: map[string]interface{}{"name": "test trash sweep"}, EnsureUniqueName: true})
 	c.Assert(err, check.IsNil)
 	defer s.handler.federation.CollectionDelete(ctx, arvados.DeleteOptions{UUID: coll.UUID})
-	db, err := s.handler.db(s.ctx)
+	db, err := s.handler.dbConnector.GetDB(s.ctx)
 	c.Assert(err, check.IsNil)
 	_, err = db.ExecContext(s.ctx, `update collections set trash_at = $1, delete_at = $2 where uuid = $3`, time.Now().UTC().Add(time.Second/10), time.Now().UTC().Add(time.Hour), coll.UUID)
 	c.Assert(err, check.IsNil)
@@ -550,7 +553,7 @@ func (s *HandlerSuite) TestLogActivity(c *check.C) {
 			c.Assert(err, check.IsNil)
 		}
 	}
-	db, err := s.handler.db(s.ctx)
+	db, err := s.handler.dbConnector.GetDB(s.ctx)
 	c.Assert(err, check.IsNil)
 	for _, userUUID := range []string{arvadostest.ActiveUserUUID, arvadostest.SpectatorUserUUID} {
 		var rows int

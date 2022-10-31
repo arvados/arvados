@@ -20,10 +20,16 @@ func (h *Handler) periodicWorker(workerName string, interval time.Duration, lock
 		logger.Debugf("interval is %v, not running worker", interval)
 		return
 	}
-	locker.Lock(ctx, h.db)
+	if !locker.Lock(ctx, h.dbConnector.GetDB) {
+		// context canceled
+		return
+	}
 	defer locker.Unlock()
 	for time.Sleep(interval); ctx.Err() == nil; time.Sleep(interval) {
-		locker.Check()
+		if !locker.Check() {
+			// context canceled
+			return
+		}
 		err := run(ctx)
 		if err != nil {
 			logger.WithError(err).Infof("%s failed", workerName)
@@ -41,7 +47,7 @@ func (h *Handler) trashSweepWorker() {
 
 func (h *Handler) containerLogSweepWorker() {
 	h.periodicWorker("container log sweep", h.Cluster.Containers.Logging.SweepInterval.Duration(), dblock.ContainerLogSweep, func(ctx context.Context) error {
-		db, err := h.db(ctx)
+		db, err := h.dbConnector.GetDB(ctx)
 		if err != nil {
 			return err
 		}
