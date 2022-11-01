@@ -75,10 +75,9 @@ run_bundler() {
 	BUNDLER=$PWD/bin/bundle
     fi
 
-    if test "$(flock $GEMLOCK /var/lib/arvados/bin/gem list | grep arvados | grep dev | wc -l)" = "0" ; then
-        cd /usr/src/arvados/sdk/ruby
-        /var/lib/arvados/bin/gem build arvados.gemspec && flock $GEMLOCK /var/lib/arvados/bin/gem install `ls -1 *.gem | sort -r | head -n1`
-        cd -
+    if test -z "$(flock $GEMLOCK /var/lib/arvados/bin/gem list | grep arvados | grep dev)" ; then
+        (cd /usr/src/arvados/sdk/ruby && \
+        /var/lib/arvados/bin/gem build arvados.gemspec && flock $GEMLOCK /var/lib/arvados/bin/gem install `ls -1 *.gem | sort -r | head -n1`)
     fi
     if ! flock $GEMLOCK $BUNDLER install --verbose --local --no-deployment $frozen "$@" ; then
         flock $GEMLOCK $BUNDLER install --verbose --no-deployment $frozen "$@"
