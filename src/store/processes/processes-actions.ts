@@ -60,6 +60,7 @@ const containerFieldsNoMounts = [
     "auth_uuid",
     "command",
     "container_image",
+    "cost",
     "created_at",
     "cwd",
     "environment",
