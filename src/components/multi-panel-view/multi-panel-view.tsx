@@ -67,6 +67,7 @@ interface MPVPanelDataProps {
     panelRef?: MutableRefObject<any>;
     forwardProps?: boolean;
     maxHeight?: string;
+    minHeight?: string;
 }
 
 interface MPVPanelActionProps {
@@ -82,7 +83,7 @@ type MPVPanelContentProps = {children: ReactElement} & MPVPanelProps & GridProps
 
 // Grid item compatible component for layout and MPV props passing
 export const MPVPanelContent = ({doHidePanel, doMaximizePanel, doUnMaximizePanel, panelName,
-    panelMaximized, panelIlluminated, panelRef, forwardProps, maxHeight,
+    panelMaximized, panelIlluminated, panelRef, forwardProps, maxHeight, minHeight,
     ...props}: MPVPanelContentProps) => {
     useEffect(() => {
         if (panelRef && panelRef.current) {
@@ -90,11 +91,11 @@ export const MPVPanelContent = ({doHidePanel, doMaximizePanel, doUnMaximizePanel
         }
     }, [panelRef]);
 
-    const mh = panelMaximized
+    const maxH = panelMaximized
         ? '100%'
         : maxHeight;
 
-    return <Grid item style={{maxHeight: mh}} {...props}>
+    return <Grid item style={{maxHeight: maxH, minHeight}} {...props}>
         <span ref={panelRef} /> {/* Element to scroll to when the panel is selected */}
         <Paper style={{height: '100%'}} elevation={panelIlluminated ? 8 : 0}>
             { forwardProps

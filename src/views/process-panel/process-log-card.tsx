@@ -55,6 +55,7 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     },
     logViewer: {
         height: '100%',
+        overflowY: 'scroll', // Required for MacOS's Safari -- See #19687
     },
     logViewerContainer: {
         height: '100%',

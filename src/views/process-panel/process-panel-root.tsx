@@ -121,7 +121,7 @@ export const ProcessPanelRoot = withStyles(styles)(
                     onCopy={props.onCopyToClipboard}
                     process={process} />
             </MPVPanelContent>
-            <MPVPanelContent forwardProps xs maxHeight='50%' data-cy="process-logs">
+            <MPVPanelContent forwardProps xs minHeight='50%' data-cy="process-logs">
                 <ProcessLogsCard
                     onCopy={props.onCopyToClipboard}
                     process={process}
