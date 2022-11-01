@@ -190,17 +190,24 @@ class KeepBlockCache(object):
 
         if self._max_slots == 0:
             if self._disk_cache:
-                # default set max slots to half of maximum file handles
+                # default max slots to half of maximum file handles
+                # NOFILE typically defaults to 1024 on Linux so this
+                # will be 512 slots.
                 self._max_slots = resource.getrlimit(resource.RLIMIT_NOFILE)[0] / 2
             else:
-                self._max_slots = 1024
+                # RAM cache slots
+                self._max_slots = 512
 
         if self.cache_max == 0:
             if self._disk_cache:
                 fs = os.statvfs(self._disk_cache_dir)
-                avail = (fs.f_bavail * fs.f_bsize) / 2
-                # Half the available space or max_slots * 64 MiB
-                self.cache_max = min(avail, (self._max_slots * 64 * 1024 * 1024))
+                avail = (fs.f_bavail * fs.f_bsize) / 4
+                maxdisk = int((fs.f_blocks * fs.f_bsize) * 0.10)
+                # pick smallest of:
+                # 10% of total disk size
+                # 25% of available space
+                # max_slots * 64 MiB
+                self.cache_max = min(min(maxdisk, avail), (self._max_slots * 64 * 1024 * 1024))
             else:
                 # 256 GiB in RAM
                 self.cache_max = (256 * 1024 * 1024)

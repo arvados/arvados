@@ -1308,6 +1308,11 @@ class Collection(RichCollectionBase):
         super(Collection, self).__init__(parent)
         self._api_client = api_client
         self._keep_client = keep_client
+
+        # Use the keep client from ThreadSafeApiCache
+        if self._keep_client is None and isinstance(self._api_client, ThreadSafeApiCache):
+            self._keep_client = self._api_client.keep
+
         self._block_manager = block_manager
         self.replication_desired = replication_desired
         self._storage_classes_desired = storage_classes_desired
