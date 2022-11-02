@@ -34,7 +34,8 @@ import {
     ImageOffIcon,
     OutputIcon,
     MaximizeIcon,
-    UnMaximizeIcon
+    UnMaximizeIcon,
+    InfoIcon
 } from 'components/icon/icon';
 import { MPVPanelProps } from 'components/multi-panel-view/multi-panel-view';
 import {
@@ -484,37 +485,33 @@ export const getIOParamDisplayValue = (auth: AuthState, input: CommandInputParam
     switch (true) {
         case isPrimitiveOfType(input, CWLType.BOOLEAN):
             const boolValue = (input as BooleanCommandInputParameter).value;
-
             return boolValue !== undefined &&
                     !(Array.isArray(boolValue) && boolValue.length === 0) ?
-                [{display: <pre>{String(boolValue)}</pre> }] :
+                [{display: renderPrimitiveValue(boolValue, false) }] :
                 [{display: <EmptyValue />}];
 
         case isPrimitiveOfType(input, CWLType.INT):
         case isPrimitiveOfType(input, CWLType.LONG):
             const intValue = (input as IntCommandInputParameter).value;
-
             return intValue !== undefined &&
                     // Missing values are empty array
                     !(Array.isArray(intValue) && intValue.length === 0) ?
-                [{display: <pre>{String(intValue)}</pre> }]
+                [{display: renderPrimitiveValue(intValue, false) }]
                 : [{display: <EmptyValue />}];
 
         case isPrimitiveOfType(input, CWLType.FLOAT):
         case isPrimitiveOfType(input, CWLType.DOUBLE):
             const floatValue = (input as FloatCommandInputParameter).value;
-
             return floatValue !== undefined &&
                     !(Array.isArray(floatValue) && floatValue.length === 0) ?
-                [{display: <pre>{String(floatValue)}</pre> }]:
+                [{display: renderPrimitiveValue(floatValue, false) }]:
                 [{display: <EmptyValue />}];
 
         case isPrimitiveOfType(input, CWLType.STRING):
             const stringValue = (input as StringCommandInputParameter).value || undefined;
-
             return stringValue !== undefined &&
                     !(Array.isArray(stringValue) && stringValue.length === 0) ?
-                [{display: <pre>{stringValue}</pre> }] :
+                [{display: renderPrimitiveValue(stringValue, false) }] :
                 [{display: <EmptyValue />}];
 
         case isPrimitiveOfType(input, CWLType.FILE):
@@ -526,14 +523,12 @@ export const getIOParamDisplayValue = (auth: AuthState, input: CommandInputParam
                 ...secondaryFiles
             ];
             const mainFilePdhUrl = mainFile ? getResourcePdhUrl(mainFile, pdh) : "";
-
             return files.length ?
                 files.map((file, i) => fileToProcessIOValue(file, (i > 0), auth, pdh, (i > 0 ? mainFilePdhUrl : ""))) :
                 [{display: <EmptyValue />}];
 
         case isPrimitiveOfType(input, CWLType.DIRECTORY):
             const directory = (input as DirectoryCommandInputParameter).value;
-
             return directory !== undefined &&
                     !(Array.isArray(directory) && directory.length === 0) ?
                 [directoryToProcessIOValue(directory, auth, pdh)] :
@@ -543,31 +538,28 @@ export const getIOParamDisplayValue = (auth: AuthState, input: CommandInputParam
             !(input.type instanceof Array) &&
             input.type.type === 'enum':
             const enumValue = (input as EnumCommandInputParameter).value;
-
-            return enumValue !== undefined ?
-                [{ display: <pre>{(input as EnumCommandInputParameter).value || ''}</pre> }] :
+            return enumValue !== undefined && enumValue ?
+                [{ display: <pre>{enumValue}</pre> }] :
                 [{display: <EmptyValue />}];
 
         case isArrayOfType(input, CWLType.STRING):
             const strArray = (input as StringArrayCommandInputParameter).value || [];
             return strArray.length ?
-                [{ display: <>{((input as StringArrayCommandInputParameter).value || []).map((val) => <Chip label={val} />)}</> }] :
+                [{ display: <>{strArray.map((val) => renderPrimitiveValue(val, true))}</> }] :
                 [{display: <EmptyValue />}];
 
         case isArrayOfType(input, CWLType.INT):
         case isArrayOfType(input, CWLType.LONG):
             const intArray = (input as IntArrayCommandInputParameter).value || [];
-
             return intArray.length ?
-                [{ display: <>{((input as IntArrayCommandInputParameter).value || []).map((val) => <Chip label={val} />)}</> }] :
+                [{ display: <>{intArray.map((val) => renderPrimitiveValue(val, true))}</> }] :
                 [{display: <EmptyValue />}];
 
         case isArrayOfType(input, CWLType.FLOAT):
         case isArrayOfType(input, CWLType.DOUBLE):
             const floatArray = (input as FloatArrayCommandInputParameter).value || [];
-
             return floatArray.length ?
-                [{ display: <>{floatArray.map((val) => <Chip label={val} />)}</> }] :
+                [{ display: <>{floatArray.map((val) => renderPrimitiveValue(val, true))}</> }] :
                 [{display: <EmptyValue />}];
 
         case isArrayOfType(input, CWLType.FILE):
@@ -591,13 +583,21 @@ export const getIOParamDisplayValue = (auth: AuthState, input: CommandInputParam
 
         case isArrayOfType(input, CWLType.DIRECTORY):
             const directories = (input as DirectoryArrayCommandInputParameter).value || [];
-
             return directories.length ?
                 directories.map(directory => directoryToProcessIOValue(directory, auth, pdh)) :
                 [{display: <EmptyValue />}];
 
         default:
-            return [];
+            return [{display: <UnsupportedValue />}];
+    }
+};
+
+const renderPrimitiveValue = (value: any, asChip: boolean) => {
+    const isObject = typeof value === 'object';
+    if (!isObject) {
+        return asChip ? <Chip label={String(value)} /> : <pre>{String(value)}</pre>;
+    } else {
+        return asChip ? <UnsupportedValueChip /> : <UnsupportedValue />;
     }
 };
 
@@ -668,6 +668,8 @@ const normalizeDirectoryLocation = (directory: Directory): Directory => {
 };
 
 const directoryToProcessIOValue = (directory: Directory, auth: AuthState, pdh?: string): ProcessIOValue => {
+    if (isExternalValue(directory)) {return {display: <UnsupportedValue />}}
+
     const normalizedDirectory = normalizeDirectoryLocation(directory);
     return {
         display: <KeepUrlPath auth={auth} res={normalizedDirectory} pdh={pdh}/>,
@@ -676,6 +678,8 @@ const directoryToProcessIOValue = (directory: Directory, auth: AuthState, pdh?: 
 };
 
 const fileToProcessIOValue = (file: File, secondary: boolean, auth: AuthState, pdh: string | undefined, mainFilePdh: string): ProcessIOValue => {
+    if (isExternalValue(file)) {return {display: <UnsupportedValue />}}
+
     const resourcePdh = getResourcePdhUrl(file, pdh);
     return {
         display: <KeepUrlPath auth={auth} res={file} pdh={pdh}/>,
@@ -685,8 +689,20 @@ const fileToProcessIOValue = (file: File, secondary: boolean, auth: AuthState, p
     }
 };
 
+const isExternalValue = (val: any) =>
+    Object.keys(val).includes('$import') ||
+    Object.keys(val).includes('$include')
+
 const EmptyValue = withStyles(styles)(
     ({classes}: WithStyles<CssRules>) => <span className={classes.emptyValue}>No value</span>
+);
+
+const UnsupportedValue = withStyles(styles)(
+    ({classes}: WithStyles<CssRules>) => <span className={classes.emptyValue}>Cannot display value</span>
+);
+
+const UnsupportedValueChip = withStyles(styles)(
+    ({classes}: WithStyles<CssRules>) => <Chip icon={<InfoIcon />} label={"Cannot display value"} />
 );
 
 const ImagePlaceholder = withStyles(styles)(
