@@ -56,15 +56,12 @@ func (v *S3Volume) check() error {
 		return errors.New("DriverParameters: RaceWindow must not be negative")
 	}
 
-	var ok bool
-	v.region, ok = aws.Regions[v.Region]
 	if v.Endpoint == "" {
+		r, ok := aws.Regions[v.Region]
 		if !ok {
 			return fmt.Errorf("unrecognized region %+q; try specifying endpoint instead", v.Region)
 		}
-	} else if ok {
-		return fmt.Errorf("refusing to use AWS region name %+q with endpoint %+q; "+
-			"specify empty endpoint or use a different region name", v.Region, v.Endpoint)
+		v.region = r
 	} else {
 		v.region = aws.Region{
 			Name:                 v.Region,
