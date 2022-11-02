@@ -184,19 +184,25 @@ func (v *S3AWSVolume) check(ec2metadataHostname string) error {
 			if v.Endpoint != "" && service == "s3" {
 				return aws.Endpoint{
 					URL:           v.Endpoint,
-					SigningRegion: v.Region,
+					SigningRegion: region,
 				}, nil
 			} else if service == "ec2metadata" && ec2metadataHostname != "" {
 				return aws.Endpoint{
 					URL: ec2metadataHostname,
 				}, nil
+			} else {
+				return defaultResolver.ResolveEndpoint(service, region)
 			}
-
-			return defaultResolver.ResolveEndpoint(service, region)
 		}
 		cfg.EndpointResolver = aws.EndpointResolverFunc(myCustomResolver)
 	}
-
+	if v.Region == "" {
+		// Endpoint is already specified (otherwise we would
+		// have errored out above), but Region is also
+		// required by the aws sdk, in order to determine
+		// SignatureVersions.
+		v.Region = "us-east-1"
+	}
 	cfg.Region = v.Region
 
 	// Zero timeouts mean "wait forever", which is a bad

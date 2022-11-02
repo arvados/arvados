@@ -46,8 +46,9 @@ Volumes are configured in the @Volumes@ section of the cluster configuration fil
           AccessKeyID: <span class="userinput">""</span>
           SecretAccessKey: <span class="userinput">""</span>
 
-          # Storage provider region. For Google Cloud Storage, use ""
-          # or omit.
+          # Storage provider region. If Endpoint is specified, the
+          # region determines the request signing method, and defaults
+          # to "us-east-1".
           Region: <span class="userinput">us-east-1</span>
 
           # Storage provider endpoint. For Amazon S3, use "" or
