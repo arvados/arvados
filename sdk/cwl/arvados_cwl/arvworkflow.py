@@ -13,6 +13,8 @@ import logging
 from schema_salad.sourceline import SourceLine, cmap
 import schema_salad.ref_resolver
 
+import arvados.collection
+
 from cwltool.pack import pack
 from cwltool.load_tool import fetch_document, resolve_and_validate_document
 from cwltool.process import shortname
@@ -36,6 +38,57 @@ metrics = logging.getLogger('arvados.cwl-runner.metrics')
 
 max_res_pars = ("coresMin", "coresMax", "ramMin", "ramMax", "tmpdirMin", "tmpdirMax")
 sum_res_pars = ("outdirMin", "outdirMax")
+
+def make_wrapper_workflow(arvRunner, main, packed, project_uuid, name):
+    col = arvados.collection.Collection(api_client=arvRunner.api,
+                                        keep_client=arvRunner.keep_client)
+
+    with col.open("workflow.json", "wt") as f:
+        json.dump(packed, f, sort_keys=True, indent=4, separators=(',',': '))
+
+    pdh = col.portable_data_hash()
+
+    existing = arvRunner.api.collections().list(filters=[["portable_data_hash", "=", pdh], ["owner_uuid", "=", project_uuid]]).execute(num_retries=arvRunner.num_retries)
+    if len(existing["items"]) == 0:
+        col.save_new(name=name, owner_uuid=project_uuid, ensure_unique_name=True)
+
+    # now construct the wrapper
+
+    step = {
+        "id": "#main/step",
+        "in": [],
+        "out": [],
+        "run": "keep:%s/workflow.json#main" % pdh
+    }
+
+    wrapper = {
+        "class": "Workflow",
+        "id": "#main",
+        "inputs": main["inputs"],
+        "outputs": [],
+        "steps": [step]
+    }
+
+    for i in main["inputs"]:
+        step["in"].append({
+            "id": "#main/step/%s" % shortname(i["id"]),
+            "source": i["id"]
+        })
+
+    for i in main["outputs"]:
+        step["out"].append({"id": "#main/step/%s" % shortname(i["id"])})
+        wrapper["outputs"].append({"outputSource": "#main/step/%s" % shortname(i["id"]),
+                                   "type": i["type"],
+                                   "id": i["id"]})
+
+    wrapper["requirements"] = [{"class": "SubworkflowFeatureRequirement"}]
+
+    if main.get("requirements"):
+        wrapper["requirements"].extend(main["requirements"])
+    if main.get("hints"):
+        wrapper["hints"] = main["hints"]
+
+    return json.dumps({"cwlVersion": "v1.2", "$graph": [wrapper]}, sort_keys=True, indent=4, separators=(',',': '))
 
 def upload_workflow(arvRunner, tool, job_order, project_uuid,
                     runtimeContext, uuid=None,
@@ -84,11 +137,13 @@ def upload_workflow(arvRunner, tool, job_order, project_uuid,
 
     main["hints"] = hints
 
+    wrapper = make_wrapper_workflow(arvRunner, main, packed, project_uuid, name)
+
     body = {
         "workflow": {
             "name": name,
             "description": tool.tool.get("doc", ""),
-            "definition":json.dumps(packed, sort_keys=True, indent=4, separators=(',',': '))
+            "definition": wrapper
         }}
     if project_uuid:
         body["workflow"]["owner_uuid"] = project_uuid

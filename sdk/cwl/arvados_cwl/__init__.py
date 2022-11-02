@@ -359,7 +359,7 @@ def main(args=sys.argv[1:],
         # unit tests.
         stdout = None
 
-    if arvargs.submit and arvargs.wait is False and arvargs.workflow.startswith("arvwf:"):
+    if arvargs.submit and arvargs.workflow.startswith("arvwf:"):
         executor.loadingContext.do_validate = False
         executor.fast_submit = True
 

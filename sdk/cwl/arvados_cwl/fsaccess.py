@@ -244,10 +244,11 @@ class CollectionFetcher(DefaultFetcher):
         try:
             if url.startswith("http://arvados.org/cwl"):
                 return True
-            if url.startswith("keep:"):
-                return self.fsaccess.exists(url)
-            if url.startswith("arvwf:"):
-                if self.fetch_text(url):
+            urld, _ = urllib.parse.urldefrag(url)
+            if urld.startswith("keep:"):
+                return self.fsaccess.exists(urld)
+            if urld.startswith("arvwf:"):
+                if self.fetch_text(urld):
                     return True
         except arvados.errors.NotFoundError:
             return False
