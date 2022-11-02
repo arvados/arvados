@@ -147,8 +147,13 @@ class ArvadosWorkflowStep(WorkflowStep):
                  **argv
                 ):  # type: (...) -> None
 
-        super(ArvadosWorkflowStep, self).__init__(toolpath_object, pos, loadingContext, *argc, **argv)
-        self.tool["class"] = "WorkflowStep"
+        if arvrunner.fast_submit:
+            self.tool = toolpath_object
+            self.tool["inputs"] = []
+            self.tool["outputs"] = []
+        else:
+            super(ArvadosWorkflowStep, self).__init__(toolpath_object, pos, loadingContext, *argc, **argv)
+            self.tool["class"] = "WorkflowStep"
         self.arvrunner = arvrunner
 
     def job(self, joborder, output_callback, runtimeContext):

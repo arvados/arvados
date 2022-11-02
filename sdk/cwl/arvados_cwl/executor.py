@@ -137,6 +137,7 @@ class ArvCwlExecutor(object):
         self.fs_access = None
         self.secret_store = None
         self.stdout = stdout
+        self.fast_submit = False
 
         if keep_client is not None:
             self.keep_client = keep_client
@@ -594,7 +595,8 @@ The 'jobs' API is no longer supported.
         controller = self.api.config()["Services"]["Controller"]["ExternalURL"]
         logger.info("Using cluster %s (%s)", self.api.config()["ClusterID"], workbench2 or workbench1 or controller)
 
-        updated_tool.visit(self.check_features)
+        if not self.fast_submit:
+            updated_tool.visit(self.check_features)
 
         self.pipeline = None
         self.fs_access = runtimeContext.make_fs_access(runtimeContext.basedir)
@@ -662,7 +664,7 @@ The 'jobs' API is no longer supported.
         loadingContext = self.loadingContext.copy()
         loadingContext.do_validate = False
         loadingContext.disable_js_validation = True
-        if submitting:
+        if submitting and not self.fast_submit:
             loadingContext.do_update = False
             # Document may have been auto-updated. Reload the original
             # document with updating disabled because we want to
@@ -675,9 +677,12 @@ The 'jobs' API is no longer supported.
 
         # Upload direct dependencies of workflow steps, get back mapping of files to keep references.
         # Also uploads docker images.
-        logger.info("Uploading workflow dependencies")
-        with Perf(metrics, "upload_workflow_deps"):
-            merged_map = upload_workflow_deps(self, tool, runtimeContext)
+        if not self.fast_submit:
+            logger.info("Uploading workflow dependencies")
+            with Perf(metrics, "upload_workflow_deps"):
+                merged_map = upload_workflow_deps(self, tool, runtimeContext)
+        else:
+            merged_map = {}
 
         # Recreate process object (ArvadosWorkflow or
         # ArvadosCommandTool) because tool document may have been
