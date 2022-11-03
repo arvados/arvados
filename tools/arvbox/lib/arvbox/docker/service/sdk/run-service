@@ -14,6 +14,9 @@ cat > ~/.pip/pip.conf <<EOF
 download_cache = /var/lib/pip
 EOF
 
+cd /usr/src/arvados/sdk/ruby
+run_bundler --binstubs=binstubs
+
 cd /usr/src/arvados/sdk/cli
 run_bundler --binstubs=binstubs
 
