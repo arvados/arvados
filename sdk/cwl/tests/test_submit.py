@@ -393,7 +393,7 @@ class TestSubmit(unittest.TestCase):
         root_logger.handlers = handlers
 
     @mock.patch("time.sleep")
-    @stubs
+    @stubs()
     def test_submit_invalid_runner_ram(self, stubs, tm):
         exited = arvados_cwl.main(
             ["--submit", "--no-wait", "--debug", "--submit-runner-ram=-2048",
@@ -402,7 +402,7 @@ class TestSubmit(unittest.TestCase):
         self.assertEqual(exited, 1)
 
 
-    @stubs
+    @stubs()
     def test_submit_container(self, stubs):
         exited = arvados_cwl.main(
             ["--submit", "--no-wait", "--api=containers", "--debug",
@@ -432,7 +432,7 @@ class TestSubmit(unittest.TestCase):
         self.assertEqual(exited, 0)
 
 
-    @stubs
+    @stubs()
     def test_submit_container_tool(self, stubs):
         # test for issue #16139
         exited = arvados_cwl.main(
@@ -444,7 +444,7 @@ class TestSubmit(unittest.TestCase):
                          stubs.expect_container_request_uuid + '\n')
         self.assertEqual(exited, 0)
 
-    @stubs
+    @stubs()
     def test_submit_container_no_reuse(self, stubs):
         exited = arvados_cwl.main(
             ["--submit", "--no-wait", "--api=containers", "--debug", "--disable-reuse",
@@ -496,7 +496,7 @@ class TestSubmit(unittest.TestCase):
                          stubs.expect_container_request_uuid + '\n')
 
 
-    @stubs
+    @stubs()
     def test_submit_container_on_error(self, stubs):
         exited = arvados_cwl.main(
             ["--submit", "--no-wait", "--api=containers", "--debug", "--on-error=stop",
@@ -518,7 +518,7 @@ class TestSubmit(unittest.TestCase):
                          stubs.expect_container_request_uuid + '\n')
         self.assertEqual(exited, 0)
 
-    @stubs
+    @stubs()
     def test_submit_container_output_name(self, stubs):
         output_name = "test_output_name"
 
@@ -542,7 +542,7 @@ class TestSubmit(unittest.TestCase):
                          stubs.expect_container_request_uuid + '\n')
         self.assertEqual(exited, 0)
 
-    @stubs
+    @stubs()
     def test_submit_storage_classes(self, stubs):
         exited = arvados_cwl.main(
             ["--debug", "--submit", "--no-wait", "--api=containers", "--storage-classes=foo",
@@ -565,7 +565,7 @@ class TestSubmit(unittest.TestCase):
                          stubs.expect_container_request_uuid + '\n')
         self.assertEqual(exited, 0)
 
-    @stubs
+    @stubs()
     def test_submit_multiple_storage_classes(self, stubs):
         exited = arvados_cwl.main(
             ["--debug", "--submit", "--no-wait", "--api=containers", "--storage-classes=foo,bar", "--intermediate-storage-classes=baz",
@@ -591,7 +591,7 @@ class TestSubmit(unittest.TestCase):
     @mock.patch("cwltool.task_queue.TaskQueue")
     @mock.patch("arvados_cwl.arvworkflow.ArvadosWorkflow.job")
     @mock.patch("arvados_cwl.executor.ArvCwlExecutor.make_output_collection")
-    @stubs
+    @stubs()
     def test_storage_classes_correctly_propagate_to_make_output_collection(self, stubs, make_output, job, tq):
         final_output_c = arvados.collection.Collection()
         make_output.return_value = ({},final_output_c)
@@ -612,7 +612,7 @@ class TestSubmit(unittest.TestCase):
     @mock.patch("cwltool.task_queue.TaskQueue")
     @mock.patch("arvados_cwl.arvworkflow.ArvadosWorkflow.job")
     @mock.patch("arvados_cwl.executor.ArvCwlExecutor.make_output_collection")
-    @stubs
+    @stubs()
     def test_default_storage_classes_correctly_propagate_to_make_output_collection(self, stubs, make_output, job, tq):
         final_output_c = arvados.collection.Collection()
         make_output.return_value = ({},final_output_c)
@@ -634,7 +634,7 @@ class TestSubmit(unittest.TestCase):
     @mock.patch("cwltool.task_queue.TaskQueue")
     @mock.patch("arvados_cwl.arvworkflow.ArvadosWorkflow.job")
     @mock.patch("arvados_cwl.executor.ArvCwlExecutor.make_output_collection")
-    @stubs
+    @stubs()
     def test_storage_class_hint_to_make_output_collection(self, stubs, make_output, job, tq):
         final_output_c = arvados.collection.Collection()
         make_output.return_value = ({},final_output_c)
@@ -652,7 +652,7 @@ class TestSubmit(unittest.TestCase):
         make_output.assert_called_with(u'Output of submit_storage_class_wf.cwl', ['foo', 'bar'], '', {}, {"out": "zzzzz"})
         self.assertEqual(exited, 0)
 
-    @stubs
+    @stubs()
     def test_submit_container_output_ttl(self, stubs):
         exited = arvados_cwl.main(
             ["--submit", "--no-wait", "--api=containers", "--debug", "--intermediate-output-ttl", "3600",
@@ -675,7 +675,7 @@ class TestSubmit(unittest.TestCase):
                          stubs.expect_container_request_uuid + '\n')
         self.assertEqual(exited, 0)
 
-    @stubs
+    @stubs()
     def test_submit_container_trash_intermediate(self, stubs):
         exited = arvados_cwl.main(
             ["--submit", "--no-wait", "--api=containers", "--debug", "--trash-intermediate",
@@ -698,7 +698,7 @@ class TestSubmit(unittest.TestCase):
                          stubs.expect_container_request_uuid + '\n')
         self.assertEqual(exited, 0)
 
-    @stubs
+    @stubs()
     def test_submit_container_output_tags(self, stubs):
         output_tags = "tag0,tag1,tag2"
 
@@ -722,7 +722,7 @@ class TestSubmit(unittest.TestCase):
                          stubs.expect_container_request_uuid + '\n')
         self.assertEqual(exited, 0)
 
-    @stubs
+    @stubs()
     def test_submit_container_runner_ram(self, stubs):
         exited = arvados_cwl.main(
             ["--submit", "--no-wait", "--api=containers", "--debug", "--submit-runner-ram=2048",
@@ -740,7 +740,7 @@ class TestSubmit(unittest.TestCase):
 
     @mock.patch("arvados.collection.CollectionReader")
     @mock.patch("time.sleep")
-    @stubs
+    @stubs()
     def test_submit_file_keepref(self, stubs, tm, collectionReader):
         collectionReader().exists.return_value = True
         collectionReader().find.return_value = arvados.arvfile.ArvadosFile(mock.MagicMock(), "blorp.txt")
@@ -752,7 +752,7 @@ class TestSubmit(unittest.TestCase):
 
     @mock.patch("arvados.collection.CollectionReader")
     @mock.patch("time.sleep")
-    @stubs
+    @stubs()
     def test_submit_keepref(self, stubs, tm, reader):
         with open("tests/wf/expect_arvworkflow.cwl") as f:
             reader().open().__enter__().read.return_value = f.read()
@@ -813,7 +813,7 @@ class TestSubmit(unittest.TestCase):
         self.assertEqual(exited, 0)
 
     @mock.patch("time.sleep")
-    @stubs
+    @stubs()
     def test_submit_arvworkflow(self, stubs, tm):
         with open("tests/wf/expect_arvworkflow.cwl") as f:
             stubs.api.workflows().get().execute.return_value = {"definition": f.read(), "name": "a test workflow"}
@@ -924,7 +924,7 @@ class TestSubmit(unittest.TestCase):
                          stubs.expect_container_request_uuid + '\n')
         self.assertEqual(exited, 0)
 
-    @stubs
+    @stubs()
     def test_submit_missing_input(self, stubs):
         exited = arvados_cwl.main(
             ["--submit", "--no-wait", "--api=containers", "--debug",
@@ -938,7 +938,7 @@ class TestSubmit(unittest.TestCase):
             stubs.capture_stdout, sys.stderr, api_client=stubs.api, keep_client=stubs.keep_client)
         self.assertEqual(exited, 1)
 
-    @stubs
+    @stubs()
     def test_submit_container_project(self, stubs):
         project_uuid = 'zzzzz-j7d0g-zzzzzzzzzzzzzzz'
         stubs.api.groups().get().execute.return_value = {"group_class": "project"}
@@ -964,7 +964,7 @@ class TestSubmit(unittest.TestCase):
                          stubs.expect_container_request_uuid + '\n')
         self.assertEqual(exited, 0)
 
-    @stubs
+    @stubs()
     def test_submit_container_eval_timeout(self, stubs):
         exited = arvados_cwl.main(
             ["--submit", "--no-wait", "--api=containers", "--debug", "--eval-timeout=60",
@@ -985,7 +985,7 @@ class TestSubmit(unittest.TestCase):
                          stubs.expect_container_request_uuid + '\n')
         self.assertEqual(exited, 0)
 
-    @stubs
+    @stubs()
     def test_submit_container_collection_cache(self, stubs):
         exited = arvados_cwl.main(
             ["--submit", "--no-wait", "--api=containers", "--debug", "--collection-cache-size=500",
@@ -1007,7 +1007,7 @@ class TestSubmit(unittest.TestCase):
                          stubs.expect_container_request_uuid + '\n')
         self.assertEqual(exited, 0)
 
-    @stubs
+    @stubs()
     def test_submit_container_thread_count(self, stubs):
         exited = arvados_cwl.main(
             ["--submit", "--no-wait", "--api=containers", "--debug", "--thread-count=20",
@@ -1028,7 +1028,7 @@ class TestSubmit(unittest.TestCase):
                          stubs.expect_container_request_uuid + '\n')
         self.assertEqual(exited, 0)
 
-    @stubs
+    @stubs()
     def test_submit_container_runner_image(self, stubs):
         exited = arvados_cwl.main(
             ["--submit", "--no-wait", "--api=containers", "--debug", "--submit-runner-image=arvados/jobs:123",
@@ -1044,7 +1044,7 @@ class TestSubmit(unittest.TestCase):
                          stubs.expect_container_request_uuid + '\n')
         self.assertEqual(exited, 0)
 
-    @stubs
+    @stubs()
     def test_submit_priority(self, stubs):
         exited = arvados_cwl.main(
             ["--submit", "--no-wait", "--api=containers", "--debug", "--priority=669",
@@ -1148,7 +1148,7 @@ class TestSubmit(unittest.TestCase):
                          arvados_cwl.runner.arvados_jobs_image(arvrunner, "arvados/jobs:"+arvados_cwl.__version__, arvrunner.runtimeContext))
 
 
-    @stubs
+    @stubs()
     def test_submit_secrets(self, stubs):
         exited = arvados_cwl.main(
             ["--submit", "--no-wait", "--api=containers", "--debug",
@@ -1318,7 +1318,7 @@ class TestSubmit(unittest.TestCase):
                          stubs.expect_container_request_uuid + '\n')
         self.assertEqual(exited, 0)
 
-    @stubs
+    @stubs()
     def test_submit_request_uuid(self, stubs):
         stubs.api._rootDesc["remoteHosts"]["zzzzz"] = "123"
         stubs.expect_container_request_uuid = "zzzzz-xvhdp-yyyyyyyyyyyyyyy"
@@ -1340,7 +1340,7 @@ class TestSubmit(unittest.TestCase):
                          stubs.expect_container_request_uuid + '\n')
         self.assertEqual(exited, 0)
 
-    @stubs
+    @stubs()
     def test_submit_container_cluster_id(self, stubs):
         stubs.api._rootDesc["remoteHosts"]["zbbbb"] = "123"
 
@@ -1357,7 +1357,7 @@ class TestSubmit(unittest.TestCase):
                          stubs.expect_container_request_uuid + '\n')
         self.assertEqual(exited, 0)
 
-    @stubs
+    @stubs()
     def test_submit_validate_cluster_id(self, stubs):
         stubs.api._rootDesc["remoteHosts"]["zbbbb"] = "123"
         exited = arvados_cwl.main(
@@ -1366,7 +1366,7 @@ class TestSubmit(unittest.TestCase):
             stubs.capture_stdout, sys.stderr, api_client=stubs.api, keep_client=stubs.keep_client)
         self.assertEqual(exited, 1)
 
-    @stubs
+    @stubs()
     def test_submit_validate_project_uuid(self, stubs):
         # Fails with bad cluster prefix
         exited = arvados_cwl.main(
@@ -1392,7 +1392,7 @@ class TestSubmit(unittest.TestCase):
 
 
     @mock.patch("arvados.collection.CollectionReader")
-    @stubs
+    @stubs()
     def test_submit_uuid_inputs(self, stubs, collectionReader):
         collectionReader().exists.return_value = True
         collectionReader().find.return_value = arvados.arvfile.ArvadosFile(mock.MagicMock(), "file1.txt")
@@ -1427,7 +1427,7 @@ class TestSubmit(unittest.TestCase):
                          stubs.expect_container_request_uuid + '\n')
         self.assertEqual(exited, 0)
 
-    @stubs
+    @stubs()
     def test_submit_mismatched_uuid_inputs(self, stubs):
         def list_side_effect(**kwargs):
             m = mock.MagicMock()
@@ -1460,7 +1460,7 @@ class TestSubmit(unittest.TestCase):
                 cwltool_logger.removeHandler(stderr_logger)
 
     @mock.patch("arvados.collection.CollectionReader")
-    @stubs
+    @stubs()
     def test_submit_unknown_uuid_inputs(self, stubs, collectionReader):
         collectionReader().find.return_value = arvados.arvfile.ArvadosFile(mock.MagicMock(), "file1.txt")
         capture_stderr = StringIO()
@@ -1528,7 +1528,7 @@ class TestSubmit(unittest.TestCase):
         self.assertEqual(exited, 0)
 
 
-    @stubs
+    @stubs()
     def test_submit_enable_preemptible(self, stubs):
         exited = arvados_cwl.main(
             ["--submit", "--no-wait", "--api=containers", "--debug", "--enable-preemptible",
@@ -1549,7 +1549,7 @@ class TestSubmit(unittest.TestCase):
                          stubs.expect_container_request_uuid + '\n')
         self.assertEqual(exited, 0)
 
-    @stubs
+    @stubs()
     def test_submit_disable_preemptible(self, stubs):
         exited = arvados_cwl.main(
             ["--submit", "--no-wait", "--api=containers", "--debug", "--disable-preemptible",
@@ -1587,7 +1587,7 @@ class TestCreateWorkflow(unittest.TestCase):
         handlers = [h for h in root_logger.handlers if not isinstance(h, arvados_cwl.executor.RuntimeStatusLoggingHandler)]
         root_logger.handlers = handlers
 
-    @stubs
+    @stubs()
     def test_create(self, stubs):
         project_uuid = 'zzzzz-j7d0g-zzzzzzzzzzzzzzz'
         stubs.api.groups().get().execute.return_value = {"group_class": "project"}
@@ -1617,7 +1617,7 @@ class TestCreateWorkflow(unittest.TestCase):
                          stubs.expect_workflow_uuid + '\n')
         self.assertEqual(exited, 0)
 
-    @stubs
+    @stubs()
     def test_create_name(self, stubs):
         project_uuid = 'zzzzz-j7d0g-zzzzzzzzzzzzzzz'
         stubs.api.groups().get().execute.return_value = {"group_class": "project"}
@@ -1649,7 +1649,7 @@ class TestCreateWorkflow(unittest.TestCase):
         self.assertEqual(exited, 0)
 
 
-    @stubs
+    @stubs()
     def test_update(self, stubs):
         project_uuid = 'zzzzz-j7d0g-zzzzzzzzzzzzzzz'
         stubs.api.workflows().get().execute.return_value = {"owner_uuid": project_uuid}
@@ -1676,7 +1676,7 @@ class TestCreateWorkflow(unittest.TestCase):
         self.assertEqual(exited, 0)
 
 
-    @stubs
+    @stubs()
     def test_update_name(self, stubs):
         project_uuid = 'zzzzz-j7d0g-zzzzzzzzzzzzzzz'
         stubs.api.workflows().get().execute.return_value = {"owner_uuid": project_uuid}
@@ -1702,7 +1702,7 @@ class TestCreateWorkflow(unittest.TestCase):
                          self.existing_workflow_uuid + '\n')
         self.assertEqual(exited, 0)
 
-    @stubs
+    @stubs()
     def test_create_collection_per_tool(self, stubs):
         project_uuid = 'zzzzz-j7d0g-zzzzzzzzzzzzzzz'
         stubs.api.groups().get().execute.return_value = {"group_class": "project"}
@@ -1732,7 +1732,7 @@ class TestCreateWorkflow(unittest.TestCase):
                          stubs.expect_workflow_uuid + '\n')
         self.assertEqual(exited, 0)
 
-    @stubs
+    @stubs()
     def test_create_with_imports(self, stubs):
         project_uuid = 'zzzzz-j7d0g-zzzzzzzzzzzzzzz'
         stubs.api.groups().get().execute.return_value = {"group_class": "project"}
@@ -1751,7 +1751,7 @@ class TestCreateWorkflow(unittest.TestCase):
                          stubs.expect_workflow_uuid + '\n')
         self.assertEqual(exited, 0)
 
-    @stubs
+    @stubs()
     def test_create_with_no_input(self, stubs):
         project_uuid = 'zzzzz-j7d0g-zzzzzzzzzzzzzzz'
         stubs.api.groups().get().execute.return_value = {"group_class": "project"}
