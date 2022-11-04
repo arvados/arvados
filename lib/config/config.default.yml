@@ -878,16 +878,28 @@ Clusters:
       # by going through login again.
       IssueTrustedTokens: true
 
-      # When the token is returned to a client, the token itself may
-      # be restricted from viewing/creating other tokens based on whether
-      # the client is "trusted" or not.  The local Workbench1 and
-      # Workbench2 are trusted by default, but if this is a
-      # LoginCluster, you probably want to include the other Workbench
-      # instances in the federation in this list.
+      # Origins (scheme://host[:port]) of clients trusted to receive
+      # new tokens via login process.  The ExternalURLs of the local
+      # Workbench1 and Workbench2 are trusted implicitly and do not
+      # need to be listed here.  If this is a LoginCluster, you
+      # probably want to include the other Workbench instances in the
+      # federation in this list.
+      #
+      # Example:
+      #
+      # TrustedClients:
+      #   "https://workbench.other-cluster.example": {}
+      #   "https://workbench2.other-cluster.example": {}
       TrustedClients:
-        SAMPLE:
-          "https://workbench.federate1.example": {}
-          "https://workbench.federate2.example": {}
+        SAMPLE: {}
+
+      # Treat any origin whose host part is a private IP address
+      # (e.g., http://10.0.0.123/) as if it were listed in
+      # TrustedClients.
+      #
+      # Intended only for test/development use. Not appropriate for
+      # production use.
+      TrustPrivateNetworks: false
 
     Git:
       # Path to git or gitolite-shell executable. Each authenticated
