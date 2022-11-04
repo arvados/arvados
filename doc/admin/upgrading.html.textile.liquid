@@ -33,6 +33,10 @@ h2(#main). development main (as of 2022-10-31)
 
 "previous: Upgrading to 2.4.3":#v2_4_3
 
+h3. Google or OpenID Connect login restricted to trusted clients
+
+If you use OpenID Connect or Google login, and your users log in from a web application other than the Workbench1 and Workbench2 @ExternalURL@ addresses in your configuration file, the additional URL(s) must be listed explicitly in @Login.TrustedClients@, otherwise login will fail. Previously, login would succeed with a less-privileged token.
+
 h3. New keepstore S3 driver enabled by default
 
 A more actively maintained S3 client library is now enabled by default for keeepstore services. The previous driver is still available for use in case of unknown issues. To use the old driver, set @DriverParameters.UseAWSS3v2Driver@ to @false@ on the appropriate @Volumes@ config entries.
