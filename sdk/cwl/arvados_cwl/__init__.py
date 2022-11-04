@@ -36,6 +36,7 @@ from arvados.api import OrderedJsonModel
 from .perf import Perf
 from ._version import __version__
 from .executor import ArvCwlExecutor
+from .fsaccess import workflow_uuid_pattern
 
 # These aren't used directly in this file but
 # other code expects to import them from here
@@ -359,7 +360,7 @@ def main(args=sys.argv[1:],
         # unit tests.
         stdout = None
 
-    if arvargs.submit and arvargs.workflow.startswith("arvwf:"):
+    if arvargs.submit and (arvargs.workflow.startswith("arvwf:") or workflow_uuid_pattern.match(arvargs.workflow)):
         executor.loadingContext.do_validate = False
         executor.fast_submit = True
 
