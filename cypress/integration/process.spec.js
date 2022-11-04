@@ -440,6 +440,9 @@ describe('Process tests', function() {
                                 "location": "keep:00000000000000000000000000000000+03/input3-2.txt"
                             }
                         ]
+                    },
+                    {
+                        "$import": "import_path"
                     }
                 ]
             }
@@ -463,6 +466,9 @@ describe('Process tests', function() {
                         "basename": "11111111111111111111111111111111+03",
                         "class": "Directory",
                         "location": "keep:11111111111111111111111111111111+03"
+                    },
+                    {
+                        "$import": "import_path"
                     }
                 ]
             }
@@ -479,7 +485,10 @@ describe('Process tests', function() {
                 "input_int_array": [
                     1,
                     3,
-                    5
+                    5,
+                    {
+                        "$import": "import_path"
+                    }
                 ]
             }
         },
@@ -494,7 +503,10 @@ describe('Process tests', function() {
             input: {
                 "input_long_array": [
                     10,
-                    20
+                    20,
+                    {
+                        "$import": "import_path"
+                    }
                 ]
             }
         },
@@ -510,7 +522,10 @@ describe('Process tests', function() {
                 "input_float_array": [
                     10.2,
                     10.4,
-                    10.6
+                    10.6,
+                    {
+                        "$import": "import_path"
+                    }
                 ]
             }
         },
@@ -526,7 +541,10 @@ describe('Process tests', function() {
                 "input_double_array": [
                     20.1,
                     20.2,
-                    20.3
+                    20.3,
+                    {
+                        "$import": "import_path"
+                    }
                 ]
             }
         },
@@ -542,8 +560,77 @@ describe('Process tests', function() {
                 "input_string_array": [
                     "Hello",
                     "World",
-                    "!"
+                    "!",
+                    {
+                        "$import": "import_path"
+                    }
                 ]
+            }
+        },
+        {
+            definition: {
+                "id": "#main/input_bool_include",
+                "type": "boolean"
+            },
+            input: {
+                "input_bool_include": {
+                    "$include": "include_path"
+                }
+            }
+        },
+        {
+            definition: {
+                "id": "#main/input_int_include",
+                "type": "int"
+            },
+            input: {
+                "input_int_include": {
+                    "$include": "include_path"
+                }
+            }
+        },
+        {
+            definition: {
+                "id": "#main/input_float_include",
+                "type": "float"
+            },
+            input: {
+                "input_float_include": {
+                    "$include": "include_path"
+                }
+            }
+        },
+        {
+            definition: {
+                "id": "#main/input_string_include",
+                "type": "string"
+            },
+            input: {
+                "input_string_include": {
+                    "$include": "include_path"
+                }
+            }
+        },
+        {
+            definition: {
+                "id": "#main/input_file_include",
+                "type": "File"
+            },
+            input: {
+                "input_file_include": {
+                    "$include": "include_path"
+                }
+            }
+        },
+        {
+            definition: {
+                "id": "#main/input_directory_include",
+                "type": "Directory"
+            },
+            input: {
+                "input_directory_include": {
+                    "$include": "include_path"
+                }
             }
         }
     ];
@@ -920,13 +1007,21 @@ describe('Process tests', function() {
                     verifyIOParameter('input_file_array', null, null, 'input2.tar', '00000000000000000000000000000000+02');
                     verifyIOParameter('input_file_array', null, null, 'input3.tar', undefined, true);
                     verifyIOParameter('input_file_array', null, null, 'input3-2.txt', undefined, true);
+                    verifyIOParameter('input_file_array', null, null, 'Cannot display value', undefined, true);
                     verifyIOParameter('input_dir_array', null, null, '/', '11111111111111111111111111111111+02');
                     verifyIOParameter('input_dir_array', null, null, '/', '11111111111111111111111111111111+03', true);
-                    verifyIOParameter('input_int_array', null, null, ["1", "3", "5"]);
-                    verifyIOParameter('input_long_array', null, null, ["10", "20"]);
-                    verifyIOParameter('input_float_array', null, null, ["10.2", "10.4", "10.6"]);
-                    verifyIOParameter('input_double_array', null, null, ["20.1", "20.2", "20.3"]);
-                    verifyIOParameter('input_string_array', null, null, ["Hello", "World", "!"]);
+                    verifyIOParameter('input_dir_array', null, null, 'Cannot display value', undefined, true);
+                    verifyIOParameter('input_int_array', null, null, ["1", "3", "5", "Cannot display value"]);
+                    verifyIOParameter('input_long_array', null, null, ["10", "20", "Cannot display value"]);
+                    verifyIOParameter('input_float_array', null, null, ["10.2", "10.4", "10.6", "Cannot display value"]);
+                    verifyIOParameter('input_double_array', null, null, ["20.1", "20.2", "20.3", "Cannot display value"]);
+                    verifyIOParameter('input_string_array', null, null, ["Hello", "World", "!", "Cannot display value"]);
+                    verifyIOParameter('input_bool_include', null, null, "Cannot display value");
+                    verifyIOParameter('input_int_include', null, null, "Cannot display value");
+                    verifyIOParameter('input_float_include', null, null, "Cannot display value");
+                    verifyIOParameter('input_string_include', null, null, "Cannot display value");
+                    verifyIOParameter('input_file_include', null, null, "Cannot display value");
+                    verifyIOParameter('input_directory_include', null, null, "Cannot display value");
                 });
             cy.get('[data-cy=process-io-card] h6').contains('Outputs')
                 .parents('[data-cy=process-io-card]').within((ctx) => {
