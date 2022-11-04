@@ -151,6 +151,15 @@ def http_to_keep(api, project_uuid, url, utcnow=datetime.datetime.utcnow):
 
 
     collectionname = "Downloaded from %s" % urllib.parse.quote(url, safe='')
+
+    # max length - space to add a timestamp used by ensure_unique_name
+    max_name_len = 254 - 28
+
+    if len(collectionname) > max_name_len:
+        over = len(collectionname) - max_name_len
+        split = int(max_name_len/2)
+        collectionname = collectionname[0:split] + "…" + collectionname[split+over:]
+
     c.save_new(name=collectionname, owner_uuid=project_uuid, ensure_unique_name=True)
 
     api.collections().update(uuid=c.manifest_locator(), body={"collection":{"properties": properties}}).execute()
