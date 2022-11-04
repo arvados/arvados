@@ -39,6 +39,7 @@ class ArvRuntimeContext(RuntimeContext):
         self.match_local_docker = False
         self.enable_preemptible = None
         self.copy_deps = None
+        self.defer_downloads = False
 
         super(ArvRuntimeContext, self).__init__(kwargs)
 

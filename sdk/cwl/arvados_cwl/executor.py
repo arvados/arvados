@@ -206,6 +206,8 @@ The 'jobs' API is no longer supported.
         self.toplevel_runtimeContext.make_fs_access = partial(CollectionFsAccess,
                                                      collection_cache=self.collection_cache)
 
+        self.defer_downloads = arvargs.submit and arvargs.defer_downloads
+
         validate_cluster_target(self, self.toplevel_runtimeContext)
 
 
