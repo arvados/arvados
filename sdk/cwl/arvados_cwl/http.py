@@ -119,10 +119,13 @@ def http_to_keep(api, project_uuid, url, utcnow=datetime.datetime.utcnow):
         if "ETag" in properties and len(properties["ETag"]) > 2:
             etags[properties["ETag"]] = item
 
+    logger.debug("Found ETags %s", etags)
+
     properties = {}
     headers = {}
     if etags:
         headers['If-None-Match'] = ', '.join([etag_quote(k) for k,v in etags.items()])
+    logger.debug("Sending GET request with headers %s", headers)
     req = requests.get(url, stream=True, allow_redirects=True, headers=headers)
 
     if req.status_code not in (200, 304):
