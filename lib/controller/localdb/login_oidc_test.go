@@ -669,14 +669,15 @@ func (s *OIDCLoginSuite) TestValidateLoginRedirectTarget(c *check.C) {
 		{true, false, "https://app.example.com/"},
 		{true, false, "https://app.example.com:443/foo?bar=baz"},
 		// non-listed hostname => deny (regardless of TrustPrivateNetworks)
-		{false, false, "https://localhost/"},
-		{false, true, "https://localhost/"},
+		{false, false, "https://bad.example/"},
 		{false, true, "https://bad.example/"},
 		// non-listed non-private IP addr => deny (regardless of TrustPrivateNetworks)
 		{false, true, "https://1.2.3.4/"},
 		{false, true, "https://1.2.3.4/"},
 		{false, true, "https://[ab::cd]:1234/"},
-		// non-listed private IP addr => accept only if TrustPrivateNetworks is set
+		// localhost or non-listed private IP addr => accept only if TrustPrivateNetworks is set
+		{false, false, "https://localhost/"},
+		{true, true, "https://localhost/"},
 		{false, false, "https://[10.9.8.7]:80/foo"},
 		{true, true, "https://[10.9.8.7]:80/foo"},
 		{false, false, "https://[::1]:80/foo"},
