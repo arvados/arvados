@@ -35,7 +35,7 @@ h2(#main). development main (as of 2022-10-31)
 
 h3. Google or OpenID Connect login restricted to trusted clients
 
-If you use OpenID Connect or Google login, and your users log in from a web application other than the Workbench1 and Workbench2 @ExternalURL@ addresses in your configuration file, the additional URL(s) must be listed explicitly in @Login.TrustedClients@, otherwise login will fail. Previously, login would succeed with a less-privileged token.
+If you use OpenID Connect or Google login, and your cluster serves as the @LoginCluster@ in a federation _or_ your users log in from a web application other than the Workbench1 and Workbench2 @ExternalURL@ addresses in your configuration file, the additional web application URLs (e.g., the other clusters' Workbench addresses) must be listed explicitly in @Login.TrustedClients@, otherwise login will fail. Previously, login would succeed with a less-privileged token.
 
 h3. New keepstore S3 driver enabled by default
 
