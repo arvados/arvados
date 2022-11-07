@@ -160,6 +160,9 @@ class ArvPathMapper(PathMapper):
         if loc.startswith("_:"):
             return True
 
+        if self.arvrunner.defer_downloads and (loc.startswith("http:") or loc.startswith("https:")):
+            return False
+
         i = loc.rfind("/")
         if i > -1:
             loc_prefix = loc[:i+1]

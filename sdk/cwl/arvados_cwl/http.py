@@ -166,6 +166,7 @@ def http_to_keep(api, project_uuid, url, utcnow=datetime.datetime.utcnow):
                     logger.info("%d downloaded, %3.2f MiB/s", count, (bps / (1024*1024)))
                 checkpoint = loopnow
 
+    logger.info("Download complete")
 
     collectionname = "Downloaded from %s" % urllib.parse.quote(url, safe='')
 
