@@ -272,15 +272,16 @@ func (s *HandlerSuite) TestProxyNotFound(c *check.C) {
 }
 
 func (s *HandlerSuite) TestLogoutGoogle(c *check.C) {
+	s.cluster.Services.Workbench2.ExternalURL = arvados.URL{Scheme: "https", Host: "wb2.example", Path: "/"}
 	s.cluster.Login.Google.Enable = true
 	s.cluster.Login.Google.ClientID = "test"
-	req := httptest.NewRequest("GET", "https://0.0.0.0:1/logout?return_to=https://example.com/foo", nil)
+	req := httptest.NewRequest("GET", "https://0.0.0.0:1/logout?return_to=https://wb2.example/", nil)
 	resp := httptest.NewRecorder()
 	s.handler.ServeHTTP(resp, req)
 	if !c.Check(resp.Code, check.Equals, http.StatusFound) {
 		c.Log(resp.Body.String())
 	}
-	c.Check(resp.Header().Get("Location"), check.Equals, "https://example.com/foo")
+	c.Check(resp.Header().Get("Location"), check.Equals, "https://wb2.example/")
 }
 
 func (s *HandlerSuite) TestValidateV1APIToken(c *check.C) {

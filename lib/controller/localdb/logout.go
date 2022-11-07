@@ -33,6 +33,8 @@ func logout(ctx context.Context, cluster *arvados.Cluster, opts arvados.LogoutOp
 		} else {
 			target = cluster.Services.Workbench1.ExternalURL.String()
 		}
+	} else if err := validateLoginRedirectTarget(cluster, target); err != nil {
+		return arvados.LogoutResponse{}, httpserver.ErrorWithStatus(fmt.Errorf("invalid return_to parameter: %s", err), http.StatusBadRequest)
 	}
 	return arvados.LogoutResponse{RedirectLocation: target}, nil
 }

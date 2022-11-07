@@ -8,6 +8,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"net"
 	"net/http"
 	"os"
 	"sync"
@@ -164,6 +165,26 @@ func (conn *Conn) Login(ctx context.Context, opts arvados.LoginOptions) (arvados
 func (conn *Conn) UserAuthenticate(ctx context.Context, opts arvados.UserAuthenticateOptions) (arvados.APIClientAuthorization, error) {
 	return conn.loginController.UserAuthenticate(ctx, opts)
 }
+
+var privateNetworks = func() (nets []*net.IPNet) {
+	for _, s := range []string{
+		"127.0.0.0/8",
+		"10.0.0.0/8",
+		"172.16.0.0/12",
+		"192.168.0.0/16",
+		"169.254.0.0/16",
+		"::1/128",
+		"fe80::/10",
+		"fc00::/7",
+	} {
+		_, n, err := net.ParseCIDR(s)
+		if err != nil {
+			panic(fmt.Sprintf("privateNetworks: %q: %s", s, err))
+		}
+		nets = append(nets, n)
+	}
+	return
+}()
 
 func httpErrorf(code int, format string, args ...interface{}) error {
 	return httpserver.ErrorWithStatus(fmt.Errorf(format, args...), code)

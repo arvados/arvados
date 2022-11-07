@@ -103,7 +103,8 @@ func (s *TestUserSuite) TestLoginForm(c *check.C) {
 }
 
 func (s *TestUserSuite) TestExpireTokenOnLogout(c *check.C) {
-	returnTo := "https://localhost:12345/logout"
+	s.cluster.Login.TrustPrivateNetworks = true
+	returnTo := "https://[::1]:12345/logout"
 	for _, trial := range []struct {
 		requestToken      string
 		expiringTokenUUID string

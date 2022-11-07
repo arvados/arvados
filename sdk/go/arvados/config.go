@@ -200,11 +200,12 @@ type Cluster struct {
 			Enable bool
 			Users  map[string]TestUser
 		}
-		LoginCluster       string
-		RemoteTokenRefresh Duration
-		TokenLifetime      Duration
-		TrustedClients     map[string]struct{}
-		IssueTrustedTokens bool
+		LoginCluster         string
+		RemoteTokenRefresh   Duration
+		TokenLifetime        Duration
+		TrustedClients       map[URL]struct{}
+		TrustPrivateNetworks bool
+		IssueTrustedTokens   bool
 	}
 	Mail struct {
 		MailchimpAPIKey                string
@@ -395,7 +396,7 @@ func (su *URL) UnmarshalText(text []byte) error {
 }
 
 func (su URL) MarshalText() ([]byte, error) {
-	return []byte(fmt.Sprintf("%s", (*url.URL)(&su).String())), nil
+	return []byte(su.String()), nil
 }
 
 func (su URL) String() string {

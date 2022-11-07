@@ -65,13 +65,13 @@ func (conn *Conn) generated_CollectionList(ctx context.Context, options arvados.
 // Call fn on one or more local/remote backends if opts indicates a
 // federation-wide list query, i.e.:
 //
-// * There is at least one filter of the form
-//   ["uuid","in",[a,b,c,...]] or ["uuid","=",a]
+//   - There is at least one filter of the form
+//     ["uuid","in",[a,b,c,...]] or ["uuid","=",a]
 //
-// * One or more of the supplied UUIDs (a,b,c,...) has a non-local
-//   prefix.
+//   - One or more of the supplied UUIDs (a,b,c,...) has a non-local
+//     prefix.
 //
-// * There are no other filters
+//   - There are no other filters
 //
 // (If opts doesn't indicate a federation-wide list query, fn is just
 // called once with the local backend.)
@@ -79,29 +79,29 @@ func (conn *Conn) generated_CollectionList(ctx context.Context, options arvados.
 // fn is called more than once only if the query meets the following
 // restrictions:
 //
-// * Count=="none"
+//   - Count=="none"
 //
-// * Limit<0
+//   - Limit<0
 //
-// * len(Order)==0
+//   - len(Order)==0
 //
-// * Each filter is either "uuid = ..." or "uuid in [...]".
+//   - Each filter is either "uuid = ..." or "uuid in [...]".
 //
-// * The maximum possible response size (total number of objects that
-//   could potentially be matched by all of the specified filters)
-//   exceeds the local cluster's response page size limit.
+//   - The maximum possible response size (total number of objects
+//     that could potentially be matched by all of the specified
+//     filters) exceeds the local cluster's response page size limit.
 //
 // If the query involves multiple backends but doesn't meet these
 // restrictions, an error is returned without calling fn.
 //
 // Thus, the caller can assume that either:
 //
-// * splitListRequest() returns an error, or
+//   - splitListRequest() returns an error, or
 //
-// * fn is called exactly once, or
+//   - fn is called exactly once, or
 //
-// * fn is called more than once, with options that satisfy the above
-//   restrictions.
+//   - fn is called more than once, with options that satisfy the above
+//     restrictions.
 //
 // Each call to fn indicates a single (local or remote) backend and a
 // corresponding options argument suitable for sending to that

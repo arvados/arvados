@@ -43,11 +43,10 @@ class ApiClient < ArvadosModel
   def norm url
     # normalize URL for comparison
     url = URI(url.to_s)
-    if url.scheme == "https"
-      url.port == "443"
-    end
-    if url.scheme == "http"
-      url.port == "80"
+    if url.scheme == "https" && url.port == ""
+      url.port = "443"
+    elsif url.scheme == "http" && url.port == ""
+      url.port = "80"
     end
     url.path = "/"
     url

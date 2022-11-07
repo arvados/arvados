@@ -42,6 +42,7 @@ type OIDCLoginSuite struct {
 	cluster      *arvados.Cluster
 	localdb      *Conn
 	railsSpy     *arvadostest.Proxy
+	trustedURL   *arvados.URL
 	fakeProvider *arvadostest.OIDCProvider
 }
 
@@ -53,6 +54,8 @@ func (s *OIDCLoginSuite) TearDownSuite(c *check.C) {
 }
 
 func (s *OIDCLoginSuite) SetUpTest(c *check.C) {
+	s.trustedURL = &arvados.URL{Scheme: "https", Host: "app.example.com", Path: "/"}
+
 	s.fakeProvider = arvadostest.NewOIDCProvider(c)
 	s.fakeProvider.AuthEmail = "active-user@arvados.local"
 	s.fakeProvider.AuthEmailVerified = true
@@ -70,6 +73,7 @@ func (s *OIDCLoginSuite) SetUpTest(c *check.C) {
 	s.cluster.Login.Google.Enable = true
 	s.cluster.Login.Google.ClientID = "test%client$id"
 	s.cluster.Login.Google.ClientSecret = "test#client/secret"
+	s.cluster.Login.TrustedClients = map[arvados.URL]struct{}{*s.trustedURL: {}}
 	s.cluster.Users.PreferDomainForUsername = "PreferDomainForUsername.example.com"
 	s.fakeProvider.ValidClientID = "test%client$id"
 	s.fakeProvider.ValidClientSecret = "test#client/secret"
@@ -88,9 +92,26 @@ func (s *OIDCLoginSuite) TearDownTest(c *check.C) {
 }
 
 func (s *OIDCLoginSuite) TestGoogleLogout(c *check.C) {
+	s.cluster.Login.TrustedClients[arvados.URL{Scheme: "https", Host: "foo.example", Path: "/"}] = struct{}{}
+	s.cluster.Login.TrustPrivateNetworks = false
+
 	resp, err := s.localdb.Logout(context.Background(), arvados.LogoutOptions{ReturnTo: "https://foo.example.com/bar"})
+	c.Check(err, check.NotNil)
+	c.Check(resp.RedirectLocation, check.Equals, "")
+
+	resp, err = s.localdb.Logout(context.Background(), arvados.LogoutOptions{ReturnTo: "https://127.0.0.1/bar"})
+	c.Check(err, check.NotNil)
+	c.Check(resp.RedirectLocation, check.Equals, "")
+
+	resp, err = s.localdb.Logout(context.Background(), arvados.LogoutOptions{ReturnTo: "https://foo.example/bar"})
 	c.Check(err, check.IsNil)
-	c.Check(resp.RedirectLocation, check.Equals, "https://foo.example.com/bar")
+	c.Check(resp.RedirectLocation, check.Equals, "https://foo.example/bar")
+
+	s.cluster.Login.TrustPrivateNetworks = true
+
+	resp, err = s.localdb.Logout(context.Background(), arvados.LogoutOptions{ReturnTo: "https://192.168.1.1/bar"})
+	c.Check(err, check.IsNil)
+	c.Check(resp.RedirectLocation, check.Equals, "https://192.168.1.1/bar")
 }
 
 func (s *OIDCLoginSuite) TestGoogleLogin_Start_Bogus(c *check.C) {
@@ -116,6 +137,13 @@ func (s *OIDCLoginSuite) TestGoogleLogin_Start(c *check.C) {
 		c.Check(state.Remote, check.Equals, remote)
 		c.Check(state.ReturnTo, check.Equals, "https://app.example.com/foo?bar")
 	}
+}
+
+func (s *OIDCLoginSuite) TestGoogleLogin_UnknownClient(c *check.C) {
+	resp, err := s.localdb.Login(context.Background(), arvados.LoginOptions{ReturnTo: "https://bad-app.example.com/foo?bar"})
+	c.Check(err, check.IsNil)
+	c.Check(resp.RedirectLocation, check.Equals, "")
+	c.Check(resp.HTML.String(), check.Matches, `(?ms).*requesting site is not listed in TrustedClients.*`)
 }
 
 func (s *OIDCLoginSuite) TestGoogleLogin_InvalidCode(c *check.C) {
@@ -613,15 +641,68 @@ func (s *OIDCLoginSuite) startLogin(c *check.C, checks ...func(url.Values)) (sta
 	// the provider, just grab state from the redirect URL.
 	resp, err := s.localdb.Login(context.Background(), arvados.LoginOptions{ReturnTo: "https://app.example.com/foo?bar"})
 	c.Check(err, check.IsNil)
+	c.Check(resp.HTML.String(), check.Not(check.Matches), `(?ms).*error:.*`)
 	target, err := url.Parse(resp.RedirectLocation)
 	c.Check(err, check.IsNil)
 	state = target.Query().Get("state")
-	c.Check(state, check.Not(check.Equals), "")
+	if !c.Check(state, check.Not(check.Equals), "") {
+		c.Logf("Redirect target: %q", target)
+		c.Logf("HTML: %q", resp.HTML)
+	}
 	for _, fn := range checks {
 		fn(target.Query())
 	}
 	s.cluster.Login.OpenIDConnect.AuthenticationRequestParameters = map[string]string{"testkey": "testvalue"}
 	return
+}
+
+func (s *OIDCLoginSuite) TestValidateLoginRedirectTarget(c *check.C) {
+	for _, trial := range []struct {
+		permit       bool
+		trustPrivate bool
+		url          string
+	}{
+		// wb1, wb2 => accept
+		{true, false, s.cluster.Services.Workbench1.ExternalURL.String()},
+		{true, false, s.cluster.Services.Workbench2.ExternalURL.String()},
+		// explicitly listed host => accept
+		{true, false, "https://app.example.com/"},
+		{true, false, "https://app.example.com:443/foo?bar=baz"},
+		// non-listed hostname => deny (regardless of TrustPrivateNetworks)
+		{false, false, "https://localhost/"},
+		{false, true, "https://localhost/"},
+		{false, true, "https://bad.example/"},
+		// non-listed non-private IP addr => deny (regardless of TrustPrivateNetworks)
+		{false, true, "https://1.2.3.4/"},
+		{false, true, "https://1.2.3.4/"},
+		{false, true, "https://[ab::cd]:1234/"},
+		// non-listed private IP addr => accept only if TrustPrivateNetworks is set
+		{false, false, "https://[10.9.8.7]:80/foo"},
+		{true, true, "https://[10.9.8.7]:80/foo"},
+		{false, false, "https://[::1]:80/foo"},
+		{true, true, "https://[::1]:80/foo"},
+		{true, true, "http://192.168.1.1/"},
+		{true, true, "http://172.17.2.0/"},
+		// bad url => deny
+		{false, true, "https://10.1.1.1:blorp/foo"},        // non-numeric port
+		{false, true, "https://app.example.com:blorp/foo"}, // non-numeric port
+		{false, true, "https://]:443"},
+		{false, true, "https://"},
+		{false, true, "https:"},
+		{false, true, ""},
+		// explicitly listed host but different port, protocol, or user/pass => deny
+		{false, true, "http://app.example.com/"},
+		{false, true, "http://app.example.com:443/"},
+		{false, true, "https://app.example.com:80/"},
+		{false, true, "https://app.example.com:4433/"},
+		{false, true, "https://u:p@app.example.com:443/foo?bar=baz"},
+	} {
+		c.Logf("trial %+v", trial)
+		s.cluster.Login.TrustPrivateNetworks = trial.trustPrivate
+		err := validateLoginRedirectTarget(s.cluster, trial.url)
+		c.Check(err == nil, check.Equals, trial.permit)
+	}
+
 }
 
 func getCallbackAuthInfo(c *check.C, railsSpy *arvadostest.Proxy) (authinfo rpc.UserSessionAuthInfo) {
