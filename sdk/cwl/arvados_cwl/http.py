@@ -77,7 +77,9 @@ def changed(url, properties, now):
     remember_headers(url, properties, req.headers, now)
 
     if req.status_code != 200:
-        raise Exception("Got status %s" % req.status_code)
+        # Sometimes endpoints are misconfigured and will deny HEAD but
+        # allow GET so instead of failing here, we'll try GET If-None-Match
+        return True
 
     pr = properties[url]
     if "ETag" in pr and "ETag" in req.headers:
@@ -90,6 +92,8 @@ def http_to_keep(api, project_uuid, url, utcnow=datetime.datetime.utcnow):
     r = api.collections().list(filters=[["properties", "exists", url]]).execute()
 
     now = utcnow()
+
+    etags = {}
 
     for item in r["items"]:
         properties = item["properties"]
@@ -104,13 +108,26 @@ def http_to_keep(api, project_uuid, url, utcnow=datetime.datetime.utcnow):
             cr = arvados.collection.CollectionReader(item["portable_data_hash"], api_client=api)
             return "keep:%s/%s" % (item["portable_data_hash"], list(cr.keys())[0])
 
-    properties = {}
-    req = requests.get(url, stream=True, allow_redirects=True)
+        if "ETag" in properties:
+            etags[properties["ETag"]] = item
 
-    if req.status_code != 200:
+    properties = {}
+    headers = {}
+    if etags:
+        headers['If-None-Match'] = ', '.join(['"%s"' % k for k,v in etags.items()])
+    req = requests.get(url, stream=True, allow_redirects=True, headers=headers)
+
+    if req.status_code not in (200, 304):
         raise Exception("Failed to download '%s' got status %s " % (url, req.status_code))
 
     remember_headers(url, properties, req.headers, now)
+
+    if req.status_code == 304 and "ETag" in req.headers and req.headers["ETag"] in etags:
+        item = etags[req.headers["ETag"]]
+        item["properties"].update(properties)
+        api.collections().update(uuid=item["uuid"], body={"collection":{"properties": item["properties"]}}).execute()
+        cr = arvados.collection.CollectionReader(item["portable_data_hash"], api_client=api)
+        return "keep:%s/%s" % (item["portable_data_hash"], list(cr.keys())[0])
 
     if "Content-Length" in properties[url]:
         cl = int(properties[url]["Content-Length"])
