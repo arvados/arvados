@@ -88,6 +88,14 @@ def changed(url, properties, now):
 
     return True
 
+def etag_quote(etag):
+    # if it already has leading and trailing quotes, do nothing
+    if etag[0] == '"' and etag[-1] == '"':
+        return etag
+    else:
+        # Add quotes.
+        return '"' + etag + '"'
+
 def http_to_keep(api, project_uuid, url, utcnow=datetime.datetime.utcnow):
     r = api.collections().list(filters=[["properties", "exists", url]]).execute()
 
@@ -108,13 +116,13 @@ def http_to_keep(api, project_uuid, url, utcnow=datetime.datetime.utcnow):
             cr = arvados.collection.CollectionReader(item["portable_data_hash"], api_client=api)
             return "keep:%s/%s" % (item["portable_data_hash"], list(cr.keys())[0])
 
-        if "ETag" in properties:
+        if "ETag" in properties and len(properties["ETag"]) > 2:
             etags[properties["ETag"]] = item
 
     properties = {}
     headers = {}
     if etags:
-        headers['If-None-Match'] = ', '.join(['"%s"' % k for k,v in etags.items()])
+        headers['If-None-Match'] = ', '.join([etag_quote(k) for k,v in etags.items()])
     req = requests.get(url, stream=True, allow_redirects=True, headers=headers)
 
     if req.status_code not in (200, 304):
