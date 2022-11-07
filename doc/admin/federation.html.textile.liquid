@@ -25,11 +25,11 @@ Clusters:
   clsr1:
     RemoteClusters:
       clsr2:
-        Host: api.cluster2.com
+        Host: api.cluster2.example
         Proxy: true
 	ActivateUsers: true
       clsr3:
-        Host: api.cluster3.com
+        Host: api.cluster3.example
         Proxy: true
 	ActivateUsers: false
 </pre>
@@ -82,8 +82,10 @@ Clusters:
   clsr1:
     Login:
       TrustedClients:
-        "https://workbench.cluster2.com": {}
-        "https://workbench.cluster3.com": {}
+        "https://workbench.cluster2.example": {}
+        "https://workbench2.cluster2.example": {}
+        "https://workbench.cluster3.example": {}
+        "https://workbench2.cluster3.example": {}
 </pre>
 
 h2. Testing
@@ -91,7 +93,7 @@ h2. Testing
 Following the above example, let's suppose @clsr1@ is our "home cluster", that is to say, we use our @clsr1@ user account as our federated identity and both @clsr2@ and @clsr3@ remote clusters are set up to allow users from @clsr1@ and to auto-activate them. The first thing to do would be to log into a remote workbench using the local user token. This can be done following these steps:
 
 1. Log into the local workbench and get the user token
-2. Visit the remote workbench specifying the local user token by URL: @https://workbench.cluster2.com?api_token=token_from_clsr1@
+2. Visit the remote workbench specifying the local user token by URL: @https://workbench.cluster2.example?api_token=token_from_clsr1@
 3. You should now be logged into @clsr2@ with your account from @clsr1@
 
 To further test the federation setup, you can create a collection on @clsr2@, uploading some files and copying its UUID. Next, logged into a shell node on your home cluster you should be able to get that collection by running:
