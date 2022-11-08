@@ -186,6 +186,9 @@ func validateLoginRedirectTarget(cluster *arvados.Cluster, returnTo string) erro
 		return nil
 	}
 	if cluster.Login.TrustPrivateNetworks {
+		if u.Hostname() == "localhost" {
+			return nil
+		}
 		if ip := net.ParseIP(u.Hostname()); len(ip) > 0 {
 			for _, n := range privateNetworks {
 				if n.Contains(ip) {
