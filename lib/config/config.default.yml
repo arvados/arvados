@@ -893,9 +893,9 @@ Clusters:
       TrustedClients:
         SAMPLE: {}
 
-      # Treat any origin whose host part is a private IP address
-      # (e.g., http://10.0.0.123/) as if it were listed in
-      # TrustedClients.
+      # Treat any origin whose host part is "localhost" or a private
+      # IP address (e.g., http://10.0.0.123:3000/) as if it were
+      # listed in TrustedClients.
       #
       # Intended only for test/development use. Not appropriate for
       # production use.
