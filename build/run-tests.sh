@@ -58,7 +58,7 @@ defaults to $HOME/arvados-api-server if that directory exists.
 
 More information and background:
 
-https://arvados.org/projects/arvados/wiki/Running_tests
+https://dev.arvados.org/projects/arvados/wiki/Running_tests
 
 Available tests:
 
