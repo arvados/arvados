@@ -186,7 +186,7 @@ GEM
       rails (>= 3.2)
     oj (3.7.12)
     os (1.1.1)
-    passenger (6.0.2)
+    passenger (6.0.15)
       rack
       rake (>= 0.8.1)
     piwik_analytics (1.0.2)
