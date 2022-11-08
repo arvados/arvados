@@ -1028,7 +1028,7 @@ Clusters:
 
       # Extra RAM to reserve on the node, in addition to
       # the amount specified in the container's RuntimeConstraints
-      ReserveExtraRAM: 256MiB
+      ReserveExtraRAM: 550MiB
 
       # Minimum time between two attempts to run the same container
       MinRetryPeriod: 0s
