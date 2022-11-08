@@ -17,6 +17,6 @@ module VersionHelper
 
   # URL for browsing source code for the given version.
   def version_link_target version
-    "https://arvados.org/projects/arvados/repository/changes?rev=#{version.sub(/-.*/, "")}"
+    "https://dev.arvados.org/projects/arvados/repository/changes?rev=#{version.sub(/-.*/, "")}"
   end
 end
