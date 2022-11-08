@@ -207,6 +207,7 @@ The 'jobs' API is no longer supported.
                                                      collection_cache=self.collection_cache)
 
         self.defer_downloads = arvargs.submit and arvargs.defer_downloads
+        self.varying_url_params = arvargs.varying_url_params
 
         validate_cluster_target(self, self.toplevel_runtimeContext)
 

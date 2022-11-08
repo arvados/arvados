@@ -72,7 +72,7 @@ def remember_headers(url, properties, headers, now):
         properties[url]["Date"] = my_formatdate(now)
 
 
-def changed(url, properties, now):
+def changed(url, clean_url, properties, now):
     req = requests.head(url, allow_redirects=True)
     remember_headers(url, properties, req.headers, now)
 
@@ -81,7 +81,7 @@ def changed(url, properties, now):
         # allow GET so instead of failing here, we'll try GET If-None-Match
         return True
 
-    pr = properties[url]
+    pr = properties[clean_url]
     if "ETag" in pr and "ETag" in req.headers:
         if pr["ETag"] == req.headers["ETag"]:
             return False
@@ -96,8 +96,17 @@ def etag_quote(etag):
         # Add quotes.
         return '"' + etag + '"'
 
-def http_to_keep(api, project_uuid, url, utcnow=datetime.datetime.utcnow):
-    r = api.collections().list(filters=[["properties", "exists", url]]).execute()
+
+def http_to_keep(api, project_uuid, url, utcnow=datetime.datetime.utcnow, varying_url_params=""):
+    varying_params = [s.strip() for s in varying_url_params.split(",")]
+
+    parsed = urllib.parse.urlparse(url)
+    query = [q for q in urllib.parse.parse_qsl(parsed.query)
+             if q[0] not in varying_params]
+    clean_url = urllib.parse.urlunparse((parsed.scheme, parsed.netloc, parsed.path, parsed.params,
+                                         urllib.parse.urlencode(query),  parsed.fragment))
+
+    r = api.collections().list(filters=[["properties", "exists", clean_url]]).execute()
 
     now = utcnow()
 
@@ -105,12 +114,12 @@ def http_to_keep(api, project_uuid, url, utcnow=datetime.datetime.utcnow):
 
     for item in r["items"]:
         properties = item["properties"]
-        if fresh_cache(url, properties, now):
+        if fresh_cache(clean_url, properties, now):
             # Do nothing
             cr = arvados.collection.CollectionReader(item["portable_data_hash"], api_client=api)
             return "keep:%s/%s" % (item["portable_data_hash"], list(cr.keys())[0])
 
-        if not changed(url, properties, now):
+        if not changed(url, clean_url, properties, now):
             # ETag didn't change, same content, just update headers
             api.collections().update(uuid=item["uuid"], body={"collection":{"properties": properties}}).execute()
             cr = arvados.collection.CollectionReader(item["portable_data_hash"], api_client=api)
@@ -131,7 +140,7 @@ def http_to_keep(api, project_uuid, url, utcnow=datetime.datetime.utcnow):
     if req.status_code not in (200, 304):
         raise Exception("Failed to download '%s' got status %s " % (url, req.status_code))
 
-    remember_headers(url, properties, req.headers, now)
+    remember_headers(clean_url, properties, req.headers, now)
 
     if req.status_code == 304 and "ETag" in req.headers and req.headers["ETag"] in etags:
         item = etags[req.headers["ETag"]]
@@ -140,8 +149,8 @@ def http_to_keep(api, project_uuid, url, utcnow=datetime.datetime.utcnow):
         cr = arvados.collection.CollectionReader(item["portable_data_hash"], api_client=api)
         return "keep:%s/%s" % (item["portable_data_hash"], list(cr.keys())[0])
 
-    if "Content-Length" in properties[url]:
-        cl = int(properties[url]["Content-Length"])
+    if "Content-Length" in properties[clean_url]:
+        cl = int(properties[clean_url]["Content-Length"])
         logger.info("Downloading %s (%s bytes)", url, cl)
     else:
         cl = None
@@ -156,7 +165,7 @@ def http_to_keep(api, project_uuid, url, utcnow=datetime.datetime.utcnow):
         else:
             name = grp.group(4)
     else:
-        name = urllib.parse.urlparse(url).path.split("/")[-1]
+        name = parsed.path.split("/")[-1]
 
     count = 0
     start = time.time()
@@ -179,7 +188,7 @@ def http_to_keep(api, project_uuid, url, utcnow=datetime.datetime.utcnow):
 
     logger.info("Download complete")
 
-    collectionname = "Downloaded from %s" % urllib.parse.quote(url, safe='')
+    collectionname = "Downloaded from %s" % urllib.parse.quote(clean_url, safe='')
 
     # max length - space to add a timestamp used by ensure_unique_name
     max_name_len = 254 - 28
