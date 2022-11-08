@@ -290,13 +290,13 @@ def stubs(wfdetails=('submit_wf.cwl', None)):
             gitinfo_workflow["$graph"][0]["id"] = "file://%s/tests/wf/%s" % (cwd, wfpath)
             mocktool = mock.NonCallableMock(tool=gitinfo_workflow["$graph"][0], metadata=gitinfo_workflow)
 
-            git_info = arvados_cwl.executor.ArvCwlExecutor.get_git_info(mocktool)
-            expect_packed_workflow.update(git_info)
+            stubs.git_info = arvados_cwl.executor.ArvCwlExecutor.get_git_info(mocktool)
+            expect_packed_workflow.update(stubs.git_info)
 
-            git_props = {"arv:"+k.split("#", 1)[1]: v for k,v in git_info.items()}
+            stubs.git_props = {"arv:"+k.split("#", 1)[1]: v for k,v in stubs.git_info.items()}
 
             if wfname == wfpath:
-                container_name = "%s (%s)" % (wfpath, git_props["arv:gitDescribe"])
+                container_name = "%s (%s)" % (wfpath, stubs.git_props["arv:gitDescribe"])
             else:
                 container_name = wfname
 
@@ -359,7 +359,7 @@ def stubs(wfdetails=('submit_wf.cwl', None)):
                     'ram': (1024+256)*1024*1024
                 },
                 'use_existing': False,
-                'properties': git_props,
+                'properties': stubs.git_props,
                 'secret_mounts': {}
             }
 
@@ -414,7 +414,7 @@ class TestSubmit(unittest.TestCase):
                 'manifest_text':
                 '. 979af1245a12a1fed634d4222473bfdc+16 0:16:blorp.txt\n',
                 'replication_desired': None,
-                'name': 'submit_wf.cwl input (169f39d466a5438ac4a90e779bf750c7+53)',
+                'name': 'submit_wf.cwl ('+ stubs.git_props["arv:gitDescribe"] +') input (169f39d466a5438ac4a90e779bf750c7+53)',
             }), ensure_unique_name=False),
             mock.call(body=JsonDiffMatcher({
                 'manifest_text':
@@ -457,7 +457,7 @@ class TestSubmit(unittest.TestCase):
             '--no-log-timestamps', '--disable-validate', '--disable-color',
             '--eval-timeout=20', '--thread-count=0',
             '--disable-reuse', "--collection-cache-size=256",
-            "--output-name=Output from workflow submit_wf.cwl",
+            '--output-name=Output from workflow submit_wf.cwl (%s)' % stubs.git_props["arv:gitDescribe"],
             '--debug', '--on-error=continue',
             '/var/lib/cwl/workflow.json#main', '/var/lib/cwl/cwl.input.json']
         expect_container["use_existing"] = False
@@ -508,7 +508,7 @@ class TestSubmit(unittest.TestCase):
                                        '--no-log-timestamps', '--disable-validate', '--disable-color',
                                        '--eval-timeout=20', '--thread-count=0',
                                        '--enable-reuse', "--collection-cache-size=256",
-                                       "--output-name=Output from workflow submit_wf.cwl",
+                                       '--output-name=Output from workflow submit_wf.cwl (%s)' % stubs.git_props["arv:gitDescribe"],
                                        '--debug', '--on-error=stop',
                                        '/var/lib/cwl/workflow.json#main', '/var/lib/cwl/cwl.input.json']
 
@@ -554,7 +554,7 @@ class TestSubmit(unittest.TestCase):
                                        '--no-log-timestamps', '--disable-validate', '--disable-color',
                                        '--eval-timeout=20', '--thread-count=0',
                                        '--enable-reuse', "--collection-cache-size=256",
-                                       '--output-name=Output from workflow submit_wf.cwl',
+                                       '--output-name=Output from workflow submit_wf.cwl (%s)' % stubs.git_props["arv:gitDescribe"],
                                        "--debug",
                                        "--storage-classes=foo", '--on-error=continue',
                                        '/var/lib/cwl/workflow.json#main', '/var/lib/cwl/cwl.input.json']
@@ -577,7 +577,7 @@ class TestSubmit(unittest.TestCase):
                                        '--no-log-timestamps', '--disable-validate', '--disable-color',
                                        '--eval-timeout=20', '--thread-count=0',
                                        '--enable-reuse', "--collection-cache-size=256",
-                                       "--output-name=Output from workflow submit_wf.cwl",
+                                       '--output-name=Output from workflow submit_wf.cwl (%s)' % stubs.git_props["arv:gitDescribe"],
                                        "--debug",
                                        "--storage-classes=foo,bar", "--intermediate-storage-classes=baz", '--on-error=continue',
                                        '/var/lib/cwl/workflow.json#main', '/var/lib/cwl/cwl.input.json']
@@ -602,11 +602,11 @@ class TestSubmit(unittest.TestCase):
         job.side_effect = set_final_output
 
         exited = arvados_cwl.main(
-            ["--debug", "--local", "--storage-classes=foo",
+            ["--debug", "--local", "--storage-classes=foo", "--disable-git",
                 "tests/wf/submit_wf.cwl", "tests/submit_test_job.json"],
             stubs.capture_stdout, sys.stderr, api_client=stubs.api, keep_client=stubs.keep_client)
 
-        make_output.assert_called_with(u'Output of submit_wf.cwl', ['foo'], '', {}, {"out": "zzzzz"})
+        make_output.assert_called_with(u'Output from workflow submit_wf.cwl', ['foo'], '', {}, {"out": "zzzzz"})
         self.assertEqual(exited, 0)
 
     @mock.patch("cwltool.task_queue.TaskQueue")
@@ -624,11 +624,11 @@ class TestSubmit(unittest.TestCase):
         job.side_effect = set_final_output
 
         exited = arvados_cwl.main(
-            ["--debug", "--local",
+            ["--debug", "--local", "--disable-git",
                 "tests/wf/submit_wf.cwl", "tests/submit_test_job.json"],
             stubs.capture_stdout, sys.stderr, api_client=stubs.api, keep_client=stubs.keep_client)
 
-        make_output.assert_called_with(u'Output of submit_wf.cwl', ['default'], '', {}, {"out": "zzzzz"})
+        make_output.assert_called_with(u'Output from workflow submit_wf.cwl', ['default'], '', {}, {"out": "zzzzz"})
         self.assertEqual(exited, 0)
 
     @mock.patch("cwltool.task_queue.TaskQueue")
@@ -645,11 +645,11 @@ class TestSubmit(unittest.TestCase):
         job.side_effect = set_final_output
 
         exited = arvados_cwl.main(
-            ["--debug", "--local",
+            ["--debug", "--local", "--disable-git",
                 "tests/wf/submit_storage_class_wf.cwl", "tests/submit_test_job.json"],
             stubs.capture_stdout, sys.stderr, api_client=stubs.api, keep_client=stubs.keep_client)
 
-        make_output.assert_called_with(u'Output of submit_storage_class_wf.cwl', ['foo', 'bar'], '', {}, {"out": "zzzzz"})
+        make_output.assert_called_with(u'Output from workflow submit_storage_class_wf.cwl', ['foo', 'bar'], '', {}, {"out": "zzzzz"})
         self.assertEqual(exited, 0)
 
     @stubs()
@@ -664,7 +664,8 @@ class TestSubmit(unittest.TestCase):
                                        '--no-log-timestamps', '--disable-validate', '--disable-color',
                                        '--eval-timeout=20', '--thread-count=0',
                                        '--enable-reuse', "--collection-cache-size=256",
-                                       "--output-name=Output from workflow submit_wf.cwl", '--debug',
+                                       '--output-name=Output from workflow submit_wf.cwl (%s)' % stubs.git_props["arv:gitDescribe"],
+                                       '--debug',
                                        '--on-error=continue',
                                        "--intermediate-output-ttl=3600",
                                        '/var/lib/cwl/workflow.json#main', '/var/lib/cwl/cwl.input.json']
@@ -688,6 +689,7 @@ class TestSubmit(unittest.TestCase):
                                        '--no-log-timestamps', '--disable-validate', '--disable-color',
                                        '--eval-timeout=20', '--thread-count=0',
                                        '--enable-reuse', "--collection-cache-size=256",
+                                       '--output-name=Output from workflow submit_wf.cwl (%s)' % stubs.git_props["arv:gitDescribe"],
                                        '--debug', '--on-error=continue',
                                        "--trash-intermediate",
                                        '/var/lib/cwl/workflow.json#main', '/var/lib/cwl/cwl.input.json']
@@ -712,7 +714,7 @@ class TestSubmit(unittest.TestCase):
                                        '--no-log-timestamps', '--disable-validate', '--disable-color',
                                        '--eval-timeout=20', '--thread-count=0',
                                        '--enable-reuse', "--collection-cache-size=256",
-                                       "--output-name=Output from workflow submit_wf.cwl",
+                                       '--output-name=Output from workflow submit_wf.cwl (%s)' % stubs.git_props["arv:gitDescribe"],
                                        "--output-tags="+output_tags, '--debug', '--on-error=continue',
                                        '/var/lib/cwl/workflow.json#main', '/var/lib/cwl/cwl.input.json']
 
@@ -819,7 +821,7 @@ class TestSubmit(unittest.TestCase):
             stubs.api.workflows().get().execute.return_value = {"definition": f.read(), "name": "a test workflow"}
 
         exited = arvados_cwl.main(
-            ["--submit", "--no-wait", "--api=containers", "--debug",
+            ["--submit", "--no-wait", "--api=containers", "--debug", "--disable-git",
              "962eh-7fd4e-gkbzl62qqtfig37", "-x", "XxX"],
             stubs.capture_stdout, sys.stderr, api_client=stubs.api)
 
@@ -863,8 +865,7 @@ class TestSubmit(unittest.TestCase):
                                 'requirements': [
                                     {
                                         'dockerPull': 'debian:buster-slim',
-                                        'class': 'DockerRequirement',
-                                        "http://arvados.org/cwl#dockerCollectionPDH": "999999999999999999999999999999d4+99"
+                                        'class': 'DockerRequirement'
                                     }
                                 ],
                                 'id': '#submit_tool.cwl',
@@ -888,8 +889,11 @@ class TestSubmit(unittest.TestCase):
             'command': ['arvados-cwl-runner', '--local', '--api=containers',
                         '--no-log-timestamps', '--disable-validate', '--disable-color',
                         '--eval-timeout=20', '--thread-count=0',
-                        '--enable-reuse', "--collection-cache-size=256", '--debug', '--on-error=continue',
+                        '--enable-reuse', "--collection-cache-size=256",
+                        "--output-name=Output from workflow a test workflow",
+                        '--debug', '--on-error=continue',
                         '/var/lib/cwl/workflow.json#main', '/var/lib/cwl/cwl.input.json'],
+            'output_name': 'Output from workflow a test workflow',
             'cwd': '/var/spool/cwl',
             'runtime_constraints': {
                 'API': True,
@@ -953,7 +957,8 @@ class TestSubmit(unittest.TestCase):
                                        '--no-log-timestamps', '--disable-validate', '--disable-color',
                                        "--eval-timeout=20", "--thread-count=0",
                                        '--enable-reuse', "--collection-cache-size=256",
-                                       "--output-name=Output from workflow submit_wf.cwl", '--debug',
+                                       '--output-name=Output from workflow submit_wf.cwl (%s)' % stubs.git_props["arv:gitDescribe"],
+                                       '--debug',
                                        '--on-error=continue',
                                        '--project-uuid='+project_uuid,
                                        '/var/lib/cwl/workflow.json#main', '/var/lib/cwl/cwl.input.json']
@@ -976,6 +981,7 @@ class TestSubmit(unittest.TestCase):
                                        '--no-log-timestamps', '--disable-validate', '--disable-color',
                                        '--eval-timeout=60.0', '--thread-count=0',
                                        '--enable-reuse', "--collection-cache-size=256",
+                                       '--output-name=Output from workflow submit_wf.cwl (%s)' % stubs.git_props["arv:gitDescribe"],
                                        '--debug', '--on-error=continue',
                                        '/var/lib/cwl/workflow.json#main', '/var/lib/cwl/cwl.input.json']
 
@@ -997,6 +1003,7 @@ class TestSubmit(unittest.TestCase):
                                        '--no-log-timestamps', '--disable-validate', '--disable-color',
                                        '--eval-timeout=20', '--thread-count=0',
                                        '--enable-reuse', "--collection-cache-size=500",
+                                       '--output-name=Output from workflow submit_wf.cwl (%s)' % stubs.git_props["arv:gitDescribe"],
                                        '--debug', '--on-error=continue',
                                        '/var/lib/cwl/workflow.json#main', '/var/lib/cwl/cwl.input.json']
         expect_container["runtime_constraints"]["ram"] = (1024+500)*1024*1024
@@ -1019,6 +1026,7 @@ class TestSubmit(unittest.TestCase):
                                        '--no-log-timestamps', '--disable-validate', '--disable-color',
                                        '--eval-timeout=20', '--thread-count=20',
                                        '--enable-reuse', "--collection-cache-size=256",
+                                       '--output-name=Output from workflow submit_wf.cwl (%s)' % stubs.git_props["arv:gitDescribe"],
                                        '--debug', '--on-error=continue',
                                        '/var/lib/cwl/workflow.json#main', '/var/lib/cwl/cwl.input.json']
 
@@ -1155,6 +1163,9 @@ class TestSubmit(unittest.TestCase):
                 "tests/wf/secret_wf.cwl", "tests/secret_test_job.yml"],
             stubs.capture_stdout, sys.stderr, api_client=stubs.api, keep_client=stubs.keep_client)
 
+        stubs.git_props["arv:gitPath"] = "sdk/cwl/tests/wf/secret_wf.cwl"
+        stubs.git_info["http://arvados.org/cwl#gitPath"] = "sdk/cwl/tests/wf/secret_wf.cwl"
+
         expect_container = {
             "command": [
                 "arvados-cwl-runner",
@@ -1167,8 +1178,8 @@ class TestSubmit(unittest.TestCase):
                 '--thread-count=0',
                 "--enable-reuse",
                 "--collection-cache-size=256",
-                '--output-name=Output from workflow secret_wf.cwl'
-                '--debug',
+                '--output-name=Output from workflow secret_wf.cwl (%s)' % stubs.git_props["arv:gitDescribe"],
+                "--debug",
                 "--on-error=continue",
                 "/var/lib/cwl/workflow.json#main",
                 "/var/lib/cwl/cwl.input.json"
@@ -1292,11 +1303,11 @@ class TestSubmit(unittest.TestCase):
                     "path": "/var/spool/cwl/cwl.output.json"
                 }
             },
-            "name": "secret_wf.cwl",
-            "output_name": "Output from workflow secret_wf.cwl",
+            "name": "secret_wf.cwl (%s)" % stubs.git_props["arv:gitDescribe"],
+            "output_name": "Output from workflow secret_wf.cwl (%s)" % stubs.git_props["arv:gitDescribe"],
             "output_path": "/var/spool/cwl",
             "priority": 500,
-            "properties": {},
+            "properties": stubs.git_props,
             "runtime_constraints": {
                 "API": True,
                 "ram": 1342177280,
@@ -1311,6 +1322,8 @@ class TestSubmit(unittest.TestCase):
             "state": "Committed",
             "use_existing": False
         }
+
+        expect_container["mounts"]["/var/lib/cwl/workflow.json"]["content"].update(stubs.git_info)
 
         stubs.api.container_requests().create.assert_called_with(
             body=JsonDiffMatcher(expect_container))
@@ -1537,11 +1550,13 @@ class TestSubmit(unittest.TestCase):
 
         expect_container = copy.deepcopy(stubs.expect_container_spec)
         expect_container['command'] = ['arvados-cwl-runner', '--local', '--api=containers',
-                        '--no-log-timestamps', '--disable-validate', '--disable-color',
-                        '--eval-timeout=20', '--thread-count=0',
-                        '--enable-reuse', "--collection-cache-size=256", '--debug', '--on-error=continue',
+                                       '--no-log-timestamps', '--disable-validate', '--disable-color',
+                                       '--eval-timeout=20', '--thread-count=0',
+                                       '--enable-reuse', "--collection-cache-size=256",
+                                       '--output-name=Output from workflow submit_wf.cwl (%s)' % stubs.git_props["arv:gitDescribe"],
+                                       '--debug', '--on-error=continue',
                                        '--enable-preemptible',
-                        '/var/lib/cwl/workflow.json#main', '/var/lib/cwl/cwl.input.json']
+                                       '/var/lib/cwl/workflow.json#main', '/var/lib/cwl/cwl.input.json']
 
         stubs.api.container_requests().create.assert_called_with(
             body=JsonDiffMatcher(expect_container))
@@ -1558,11 +1573,13 @@ class TestSubmit(unittest.TestCase):
 
         expect_container = copy.deepcopy(stubs.expect_container_spec)
         expect_container['command'] = ['arvados-cwl-runner', '--local', '--api=containers',
-                        '--no-log-timestamps', '--disable-validate', '--disable-color',
-                        '--eval-timeout=20', '--thread-count=0',
-                        '--enable-reuse', "--collection-cache-size=256", '--debug', '--on-error=continue',
+                                       '--no-log-timestamps', '--disable-validate', '--disable-color',
+                                       '--eval-timeout=20', '--thread-count=0',
+                                       '--enable-reuse', "--collection-cache-size=256",
+                                       '--output-name=Output from workflow submit_wf.cwl (%s)' % stubs.git_props["arv:gitDescribe"],
+                                       '--debug', '--on-error=continue',
                                        '--disable-preemptible',
-                        '/var/lib/cwl/workflow.json#main', '/var/lib/cwl/cwl.input.json']
+                                       '/var/lib/cwl/workflow.json#main', '/var/lib/cwl/cwl.input.json']
 
         stubs.api.container_requests().create.assert_called_with(
             body=JsonDiffMatcher(expect_container))
@@ -1574,7 +1591,7 @@ class TestSubmit(unittest.TestCase):
 class TestCreateWorkflow(unittest.TestCase):
     existing_workflow_uuid = "zzzzz-7fd4e-validworkfloyml"
     expect_workflow = StripYAMLComments(
-        open("tests/wf/expect_upload_packed.cwl").read().rstrip())
+        open("tests/wf/expect_upload_wrapper.cwl").read().rstrip())
 
     def setUp(self):
         cwltool.process._names = set()
@@ -1596,6 +1613,7 @@ class TestCreateWorkflow(unittest.TestCase):
             ["--create-workflow", "--debug",
              "--api=containers",
              "--project-uuid", project_uuid,
+             "--disable-git",
              "tests/wf/submit_wf.cwl", "tests/submit_test_job.json"],
             stubs.capture_stdout, sys.stderr, api_client=stubs.api)
 
@@ -1627,6 +1645,7 @@ class TestCreateWorkflow(unittest.TestCase):
              "--api=containers",
              "--project-uuid", project_uuid,
              "--name", "testing 123",
+             "--disable-git",
              "tests/wf/submit_wf.cwl", "tests/submit_test_job.json"],
             stubs.capture_stdout, sys.stderr, api_client=stubs.api)
 
@@ -1657,6 +1676,7 @@ class TestCreateWorkflow(unittest.TestCase):
         exited = arvados_cwl.main(
             ["--update-workflow", self.existing_workflow_uuid,
              "--debug",
+             "--disable-git",
              "tests/wf/submit_wf.cwl", "tests/submit_test_job.json"],
             stubs.capture_stdout, sys.stderr, api_client=stubs.api)
 
@@ -1684,6 +1704,7 @@ class TestCreateWorkflow(unittest.TestCase):
         exited = arvados_cwl.main(
             ["--update-workflow", self.existing_workflow_uuid,
              "--debug", "--name", "testing 123",
+             "--disable-git",
              "tests/wf/submit_wf.cwl", "tests/submit_test_job.json"],
             stubs.capture_stdout, sys.stderr, api_client=stubs.api)
 
@@ -1711,10 +1732,11 @@ class TestCreateWorkflow(unittest.TestCase):
             ["--create-workflow", "--debug",
              "--api=containers",
              "--project-uuid", project_uuid,
+             "--disable-git",
              "tests/collection_per_tool/collection_per_tool.cwl"],
             stubs.capture_stdout, sys.stderr, api_client=stubs.api)
 
-        toolfile = "tests/collection_per_tool/collection_per_tool_packed.cwl"
+        toolfile = "tests/collection_per_tool/collection_per_tool_wrapper.cwl"
         expect_workflow = StripYAMLComments(open(toolfile).read().rstrip())
 
         body = {

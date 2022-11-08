@@ -112,6 +112,7 @@ class ArvCwlExecutor(object):
             arvargs.output_tags = None
             arvargs.thread_count = 1
             arvargs.collection_cache_size = None
+            arvargs.git_info = True
 
         self.api = api_client
         self.processes = {}
@@ -138,6 +139,7 @@ class ArvCwlExecutor(object):
         self.secret_store = None
         self.stdout = stdout
         self.fast_submit = False
+        self.git_info = arvargs.git_info
 
         if keep_client is not None:
             self.keep_client = keep_client
@@ -583,7 +585,7 @@ The 'jobs' API is no longer supported.
     def arv_executor(self, updated_tool, job_order, runtimeContext, logger=None):
         self.debug = runtimeContext.debug
 
-        git_info = self.get_git_info(updated_tool)
+        git_info = self.get_git_info(updated_tool) if self.git_info else {}
         if git_info:
             logger.info("Git provenance")
             for g in git_info:
