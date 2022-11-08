@@ -232,7 +232,6 @@ if test -z "$packages" ; then
         keep-rsync
         keep-block-check
         keep-web
-        libarvados-perl
         libpam-arvados-go
         python3-cwltest
         python3-arvados-fuse

@@ -696,40 +696,6 @@ handle_arvados_src () {
   )
 }
 
-# Usage: handle_libarvados_perl
-handle_libarvados_perl () {
-  if [[ -n "$ONLY_BUILD" ]] && [[ "$ONLY_BUILD" != "libarvados-perl" ]] ; then
-    debug_echo -e "Skipping build of libarvados-perl package."
-    return 0
-  fi
-  # The perl sdk subdirectory is so old that it has no tag in its history,
-  # which causes version_at_commit.sh to fail. Just rebuild it every time.
-  cd "$WORKSPACE"
-  libarvados_perl_version="$(version_from_git)"
-  cd "$WORKSPACE/sdk/perl"
-
-  cd $WORKSPACE/packages/$TARGET
-  test_package_presence libarvados-perl "$libarvados_perl_version"
-
-  if [[ "$?" == "0" ]]; then
-    cd "$WORKSPACE/sdk/perl"
-
-    if [[ -e Makefile ]]; then
-      make realclean >"$STDOUT_IF_DEBUG"
-    fi
-    find -maxdepth 1 \( -name 'MANIFEST*' -or -name "libarvados-perl*.$FORMAT" \) \
-        -delete
-    rm -rf install
-
-    perl Makefile.PL INSTALL_BASE=install >"$STDOUT_IF_DEBUG" && \
-        make install INSTALLDIRS=perl >"$STDOUT_IF_DEBUG" && \
-        fpm_build "$WORKSPACE/sdk/perl" install/lib/=/usr/share libarvados-perl \
-        dir "$libarvados_perl_version" install/man/=/usr/share/man \
-        "$WORKSPACE/apache-2.0.txt=/usr/share/doc/libarvados-perl/apache-2.0.txt" && \
-        mv --no-clobber libarvados-perl*.$FORMAT "$WORKSPACE/packages/$TARGET/"
-  fi
-}
-
 # Build python packages with a virtualenv built-in
 # Usage: fpm_build_virtualenv arvados-python-client sdk/python [deb|rpm] [amd64|arm64]
 fpm_build_virtualenv () {
