@@ -63,7 +63,7 @@ sync() {
     # each node, pushing our branch, and updating the checkout.
 
     if [[ "$NODE" != localhost ]] ; then
-	if ! ssh $NODE test -d ${GITTARGET}.git ; then
+	if ! ssh $DEPLOY_USER@$NODE test -d ${GITTARGET}.git ; then
 
 	    # Initialize the git repository (1st time case).  We're
 	    # actually going to make two repositories here because git
@@ -72,12 +72,12 @@ sync() {
 	    # and then clone a regular repository (with a checkout)
 	    # from that.
 
-	    ssh $NODE git init --bare ${GITTARGET}.git
+	    ssh $DEPLOY_USER@$NODE git init --bare ${GITTARGET}.git
 	    if ! git remote add $NODE $DEPLOY_USER@$NODE:${GITTARGET}.git ; then
-		git remote set-url $NODE $DEPLOY_USER@$NODE:${GITTARGET}.git
+			git remote set-url $NODE $DEPLOY_USER@$NODE:${GITTARGET}.git
 	    fi
 	    git push $NODE $BRANCH
-	    ssh $NODE git clone ${GITTARGET}.git ${GITTARGET}
+	    ssh $DEPLOY_USER@$NODE git clone ${GITTARGET}.git ${GITTARGET}
 	fi
 
 	# The update case.
@@ -87,7 +87,7 @@ sync() {
 	# from the bare repository.
 
 	git push $NODE $BRANCH
-	ssh $NODE "git -C ${GITTARGET} checkout ${BRANCH} && git -C ${GITTARGET} pull"
+	ssh $DEPLOY_USER@$NODE "git -C ${GITTARGET} checkout ${BRANCH} && git -C ${GITTARGET} pull"
     fi
 }
 
