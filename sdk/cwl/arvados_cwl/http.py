@@ -74,17 +74,21 @@ def remember_headers(url, properties, headers, now):
 
 def changed(url, clean_url, properties, now):
     req = requests.head(url, allow_redirects=True)
-    remember_headers(url, properties, req.headers, now)
 
     if req.status_code != 200:
         # Sometimes endpoints are misconfigured and will deny HEAD but
         # allow GET so instead of failing here, we'll try GET If-None-Match
         return True
 
-    pr = properties[clean_url]
-    if "ETag" in pr and "ETag" in req.headers:
-        if pr["ETag"] == req.headers["ETag"]:
-            return False
+    etag = properties[url].get("ETag")
+
+    if url in properties:
+        del properties[url]
+    remember_headers(clean_url, properties, req.headers, now)
+
+    if "ETag" in req.headers and etag == req.headers["ETag"]:
+        # Didn't change
+        return False
 
     return True
 
@@ -97,36 +101,51 @@ def etag_quote(etag):
         return '"' + etag + '"'
 
 
-def http_to_keep(api, project_uuid, url, utcnow=datetime.datetime.utcnow, varying_url_params=""):
+def http_to_keep(api, project_uuid, url, utcnow=datetime.datetime.utcnow, varying_url_params="", prefer_cached_downloads=False):
     varying_params = [s.strip() for s in varying_url_params.split(",")]
 
     parsed = urllib.parse.urlparse(url)
     query = [q for q in urllib.parse.parse_qsl(parsed.query)
              if q[0] not in varying_params]
-    clean_url = urllib.parse.urlunparse((parsed.scheme, parsed.netloc, parsed.path, parsed.params,
-                                         urllib.parse.urlencode(query),  parsed.fragment))
 
-    r = api.collections().list(filters=[["properties", "exists", clean_url]]).execute()
+    clean_url = urllib.parse.urlunparse((parsed.scheme, parsed.netloc, parsed.path, parsed.params,
+                                         urllib.parse.urlencode(query, safe="/"),  parsed.fragment))
+
+    r1 = api.collections().list(filters=[["properties", "exists", url]]).execute()
+
+    if clean_url == url:
+        items = r1["items"]
+    else:
+        r2 = api.collections().list(filters=[["properties", "exists", clean_url]]).execute()
+        items = r1["items"] + r2["items"]
 
     now = utcnow()
 
     etags = {}
 
-    for item in r["items"]:
+    for item in items:
         properties = item["properties"]
-        if fresh_cache(clean_url, properties, now):
-            # Do nothing
+
+        if clean_url in properties:
+            cache_url = clean_url
+        elif url in properties:
+            cache_url = url
+        else:
+            return False
+
+        if prefer_cached_downloads or fresh_cache(cache_url, properties, now):
+            # HTTP caching rules say we should use the cache
             cr = arvados.collection.CollectionReader(item["portable_data_hash"], api_client=api)
             return "keep:%s/%s" % (item["portable_data_hash"], list(cr.keys())[0])
 
-        if not changed(url, clean_url, properties, now):
+        if not changed(cache_url, clean_url, properties, now):
             # ETag didn't change, same content, just update headers
             api.collections().update(uuid=item["uuid"], body={"collection":{"properties": properties}}).execute()
             cr = arvados.collection.CollectionReader(item["portable_data_hash"], api_client=api)
             return "keep:%s/%s" % (item["portable_data_hash"], list(cr.keys())[0])
 
-        if "ETag" in properties and len(properties["ETag"]) > 2:
-            etags[properties["ETag"]] = item
+        if "ETag" in properties[cache_url] and len(properties[cache_url]["ETag"]) > 2:
+            etags[properties[cache_url]["ETag"]] = item
 
     logger.debug("Found ETags %s", etags)
 

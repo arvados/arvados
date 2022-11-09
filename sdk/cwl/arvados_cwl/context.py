@@ -41,6 +41,7 @@ class ArvRuntimeContext(RuntimeContext):
         self.copy_deps = None
         self.defer_downloads = False
         self.varying_url_params = ""
+        self.prefer_cached_downloads = False
 
         super(ArvRuntimeContext, self).__init__(kwargs)
 

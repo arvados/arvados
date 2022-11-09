@@ -224,6 +224,9 @@ def arg_parser():  # type: () -> argparse.ArgumentParser
     parser.add_argument("--varying-url-params", type=str, default="",
                         help="A comma separated list of URL query parameters that should be ignored when storing HTTP URLs in Keep.")
 
+    parser.add_argument("--prefer-cached-downloads", action="store_true", default=False,
+                        help="If a HTTP URL is found in Keep, skip upstream URL freshness check (will not notice if the upstream has changed, but also not error if upstream is unavailable).")
+
     exgroup = parser.add_mutually_exclusive_group()
     exgroup.add_argument("--enable-preemptible", dest="enable_preemptible", default=None, action="store_true", help="Use preemptible instances. Control individual steps with arv:UsePreemptible hint.")
     exgroup.add_argument("--disable-preemptible", dest="enable_preemptible", default=None, action="store_false", help="Don't use preemptible instances.")
