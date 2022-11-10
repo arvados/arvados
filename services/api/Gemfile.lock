@@ -146,7 +146,7 @@ GEM
     oj (3.9.2)
     optimist (3.0.0)
     os (1.1.1)
-    passenger (6.0.2)
+    passenger (6.0.15)
       rack
       rake (>= 0.8.1)
     pg (1.1.4)
