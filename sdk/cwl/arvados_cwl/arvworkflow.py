@@ -58,7 +58,8 @@ def make_wrapper_workflow(arvRunner, main, packed, project_uuid, name):
         "id": "#main/step",
         "in": [],
         "out": [],
-        "run": "keep:%s/workflow.json#main" % pdh
+        "run": "keep:%s/workflow.json#main" % pdh,
+        "label": name
     }
 
     newinputs = []
