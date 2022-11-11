@@ -61,10 +61,26 @@ def make_wrapper_workflow(arvRunner, main, packed, project_uuid, name):
         "run": "keep:%s/workflow.json#main" % pdh
     }
 
+    newinputs = []
+    for i in main["inputs"]:
+        inp = {}
+        # Make sure to only copy known fields that are meaningful at
+        # the workflow level. In practice this ensures that if we're
+        # wrapping a CommandLineTool we don't grab inputBinding.
+        # Right now also excludes extension fields, which is fine,
+        # Arvados doesn't currently look for any extension fields on
+        # input parameters.
+        for f in ("type", "label", "secondaryFiles", "streamable",
+                  "doc", "id", "format", "loadContents",
+                  "loadListing", "default"):
+            if f in i:
+                inp[f] = i[f]
+        newinputs.append(inp)
+
     wrapper = {
         "class": "Workflow",
         "id": "#main",
-        "inputs": main["inputs"],
+        "inputs": newinputs,
         "outputs": [],
         "steps": [step]
     }
