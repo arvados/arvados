@@ -55,7 +55,7 @@ def make_wrapper_workflow(arvRunner, main, packed, project_uuid, name):
     # now construct the wrapper
 
     step = {
-        "id": "#main/step",
+        "id": "#main/" + name,
         "in": [],
         "out": [],
         "run": "keep:%s/workflow.json#main" % pdh,
