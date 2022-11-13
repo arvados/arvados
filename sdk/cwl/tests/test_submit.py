@@ -1592,6 +1592,8 @@ class TestCreateWorkflow(unittest.TestCase):
     existing_workflow_uuid = "zzzzz-7fd4e-validworkfloyml"
     expect_workflow = StripYAMLComments(
         open("tests/wf/expect_upload_wrapper.cwl").read().rstrip())
+    expect_workflow_altname = StripYAMLComments(
+        open("tests/wf/expect_upload_wrapper_altname.cwl").read().rstrip())
 
     def setUp(self):
         cwltool.process._names = set()
@@ -1657,7 +1659,7 @@ class TestCreateWorkflow(unittest.TestCase):
                 "owner_uuid": project_uuid,
                 "name": "testing 123",
                 "description": "",
-                "definition": self.expect_workflow,
+                "definition": self.expect_workflow_altname,
             }
         }
         stubs.api.workflows().create.assert_called_with(
@@ -1712,7 +1714,7 @@ class TestCreateWorkflow(unittest.TestCase):
             "workflow": {
                 "name": "testing 123",
                 "description": "",
-                "definition": self.expect_workflow,
+                "definition": self.expect_workflow_altname,
                 "owner_uuid": project_uuid
             }
         }

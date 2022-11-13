@@ -63,7 +63,7 @@
             ],
             "steps": [
                 {
-                    "id": "#main/submit_wf.cwl",
+                    "id": "#main/testing 123",
                     "in": [
                         {
                             "id": "#main/step/x",
@@ -78,7 +78,7 @@
                             "source": "#main/z"
                         }
                     ],
-                    "label": "submit_wf.cwl",
+                    "label": "testing 123",
                     "out": [],
                     "run": "keep:f1c2b0c514a5fb9b2a8b5b38a31bab66+61/workflow.json#main"
                 }
