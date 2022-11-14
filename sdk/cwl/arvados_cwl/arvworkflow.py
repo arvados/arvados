@@ -13,6 +13,8 @@ import logging
 from schema_salad.sourceline import SourceLine, cmap
 import schema_salad.ref_resolver
 
+import arvados.collection
+
 from cwltool.pack import pack
 from cwltool.load_tool import fetch_document, resolve_and_validate_document
 from cwltool.process import shortname
@@ -36,6 +38,84 @@ metrics = logging.getLogger('arvados.cwl-runner.metrics')
 
 max_res_pars = ("coresMin", "coresMax", "ramMin", "ramMax", "tmpdirMin", "tmpdirMax")
 sum_res_pars = ("outdirMin", "outdirMax")
+
+def make_wrapper_workflow(arvRunner, main, packed, project_uuid, name, git_info, tool):
+    col = arvados.collection.Collection(api_client=arvRunner.api,
+                                        keep_client=arvRunner.keep_client)
+
+    with col.open("workflow.json", "wt") as f:
+        json.dump(packed, f, sort_keys=True, indent=4, separators=(',',': '))
+
+    pdh = col.portable_data_hash()
+
+    toolname = tool.tool.get("label") or tool.metadata.get("label") or os.path.basename(tool.tool["id"])
+    if git_info and git_info.get("http://arvados.org/cwl#gitDescribe"):
+        toolname = "%s (%s)" % (toolname, git_info.get("http://arvados.org/cwl#gitDescribe"))
+
+    existing = arvRunner.api.collections().list(filters=[["portable_data_hash", "=", pdh], ["owner_uuid", "=", project_uuid]]).execute(num_retries=arvRunner.num_retries)
+    if len(existing["items"]) == 0:
+        col.save_new(name=toolname, owner_uuid=project_uuid, ensure_unique_name=True)
+
+    # now construct the wrapper
+
+    step = {
+        "id": "#main/" + toolname,
+        "in": [],
+        "out": [],
+        "run": "keep:%s/workflow.json#main" % pdh,
+        "label": name
+    }
+
+    newinputs = []
+    for i in main["inputs"]:
+        inp = {}
+        # Make sure to only copy known fields that are meaningful at
+        # the workflow level. In practice this ensures that if we're
+        # wrapping a CommandLineTool we don't grab inputBinding.
+        # Right now also excludes extension fields, which is fine,
+        # Arvados doesn't currently look for any extension fields on
+        # input parameters.
+        for f in ("type", "label", "secondaryFiles", "streamable",
+                  "doc", "id", "format", "loadContents",
+                  "loadListing", "default"):
+            if f in i:
+                inp[f] = i[f]
+        newinputs.append(inp)
+
+    wrapper = {
+        "class": "Workflow",
+        "id": "#main",
+        "inputs": newinputs,
+        "outputs": [],
+        "steps": [step]
+    }
+
+    for i in main["inputs"]:
+        step["in"].append({
+            "id": "#main/step/%s" % shortname(i["id"]),
+            "source": i["id"]
+        })
+
+    for i in main["outputs"]:
+        step["out"].append({"id": "#main/step/%s" % shortname(i["id"])})
+        wrapper["outputs"].append({"outputSource": "#main/step/%s" % shortname(i["id"]),
+                                   "type": i["type"],
+                                   "id": i["id"]})
+
+    wrapper["requirements"] = [{"class": "SubworkflowFeatureRequirement"}]
+
+    if main.get("requirements"):
+        wrapper["requirements"].extend(main["requirements"])
+    if main.get("hints"):
+        wrapper["hints"] = main["hints"]
+
+    doc = {"cwlVersion": "v1.2", "$graph": [wrapper]}
+
+    if git_info:
+        for g in git_info:
+            doc[g] = git_info[g]
+
+    return json.dumps(doc, sort_keys=True, indent=4, separators=(',',': '))
 
 def upload_workflow(arvRunner, tool, job_order, project_uuid,
                     runtimeContext, uuid=None,
@@ -84,11 +164,13 @@ def upload_workflow(arvRunner, tool, job_order, project_uuid,
 
     main["hints"] = hints
 
+    wrapper = make_wrapper_workflow(arvRunner, main, packed, project_uuid, name, git_info, tool)
+
     body = {
         "workflow": {
             "name": name,
             "description": tool.tool.get("doc", ""),
-            "definition":json.dumps(packed, sort_keys=True, indent=4, separators=(',',': '))
+            "definition": wrapper
         }}
     if project_uuid:
         body["workflow"]["owner_uuid"] = project_uuid
@@ -147,8 +229,13 @@ class ArvadosWorkflowStep(WorkflowStep):
                  **argv
                 ):  # type: (...) -> None
 
-        super(ArvadosWorkflowStep, self).__init__(toolpath_object, pos, loadingContext, *argc, **argv)
-        self.tool["class"] = "WorkflowStep"
+        if arvrunner.fast_submit:
+            self.tool = toolpath_object
+            self.tool["inputs"] = []
+            self.tool["outputs"] = []
+        else:
+            super(ArvadosWorkflowStep, self).__init__(toolpath_object, pos, loadingContext, *argc, **argv)
+            self.tool["class"] = "WorkflowStep"
         self.arvrunner = arvrunner
 
     def job(self, joborder, output_callback, runtimeContext):

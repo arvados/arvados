@@ -36,6 +36,7 @@ from arvados.api import OrderedJsonModel
 from .perf import Perf
 from ._version import __version__
 from .executor import ArvCwlExecutor
+from .fsaccess import workflow_uuid_pattern
 
 # These aren't used directly in this file but
 # other code expects to import them from here
@@ -199,6 +200,10 @@ def arg_parser():  # type: () -> argparse.ArgumentParser
                         action="store_false", default=True,
                         help=argparse.SUPPRESS)
 
+    parser.add_argument("--disable-git", dest="git_info",
+                        action="store_false", default=True,
+                        help=argparse.SUPPRESS)
+
     parser.add_argument("--disable-color", dest="enable_color",
                         action="store_false", default=True,
                         help=argparse.SUPPRESS)
@@ -358,6 +363,10 @@ def main(args=sys.argv[1:],
         # since we still want to be able to capture stdout for the
         # unit tests.
         stdout = None
+
+    if arvargs.submit and (arvargs.workflow.startswith("arvwf:") or workflow_uuid_pattern.match(arvargs.workflow)):
+        executor.loadingContext.do_validate = False
+        executor.fast_submit = True
 
     return cwltool.main.main(args=arvargs,
                              stdout=stdout,
