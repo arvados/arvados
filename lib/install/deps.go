@@ -30,7 +30,7 @@ import (
 
 var Command cmd.Handler = &installCommand{}
 
-const goversion = "1.17.7"
+const goversion = "1.18.8"
 
 const (
 	rubyversion             = "2.7.5"
