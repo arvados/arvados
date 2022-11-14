@@ -155,17 +155,14 @@ func (inst *installCommand) RunCommand(prog string, args []string, stdin io.Read
 			"default-jre-headless",
 			"gettext",
 			"libattr1-dev",
-			"libcrypt-ssleay-perl",
 			"libfuse-dev",
 			"libgbm1", // cypress / workbench2 tests
 			"libgnutls28-dev",
-			"libjson-perl",
 			"libpam-dev",
 			"libpcre3-dev",
 			"libpq-dev",
 			"libreadline-dev",
 			"libssl-dev",
-			"libwww-perl",
 			"libxml2-dev",
 			"libxslt1-dev",
 			"linkchecker",
@@ -206,11 +203,11 @@ func (inst *installCommand) RunCommand(prog string, args []string, stdin io.Read
 		}
 		switch {
 		case osv.Debian && osv.Major >= 11:
-			pkgs = append(pkgs, "g++", "libcurl4", "libcurl4-openssl-dev", "perl-modules-5.32")
+			pkgs = append(pkgs, "g++", "libcurl4", "libcurl4-openssl-dev")
 		case osv.Debian && osv.Major >= 10:
-			pkgs = append(pkgs, "g++", "libcurl4", "libcurl4-openssl-dev", "perl-modules")
+			pkgs = append(pkgs, "g++", "libcurl4", "libcurl4-openssl-dev")
 		case osv.Debian || osv.Ubuntu:
-			pkgs = append(pkgs, "g++", "libcurl3", "libcurl3-openssl-dev", "perl-modules")
+			pkgs = append(pkgs, "g++", "libcurl3", "libcurl3-openssl-dev")
 		case osv.Centos:
 			pkgs = append(pkgs, "gcc", "gcc-c++", "libcurl-devel", "postgresql-devel")
 		}
