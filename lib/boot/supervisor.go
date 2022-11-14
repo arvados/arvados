@@ -356,20 +356,24 @@ func (super *Supervisor) runCluster() error {
 		createCertificates{},
 		runPostgreSQL{},
 		runNginx{},
-		runServiceCommand{name: "controller", svc: super.cluster.Services.Controller, depends: []supervisedTask{seedDatabase{}}},
+		railsDatabase{},
+		runServiceCommand{name: "controller", svc: super.cluster.Services.Controller, depends: []supervisedTask{railsDatabase{}}},
 		runServiceCommand{name: "git-httpd", svc: super.cluster.Services.GitHTTP},
 		runServiceCommand{name: "health", svc: super.cluster.Services.Health},
 		runServiceCommand{name: "keepproxy", svc: super.cluster.Services.Keepproxy, depends: []supervisedTask{runPassenger{src: "services/api"}}},
 		runServiceCommand{name: "keepstore", svc: super.cluster.Services.Keepstore},
 		runServiceCommand{name: "keep-web", svc: super.cluster.Services.WebDAV},
-		runServiceCommand{name: "ws", svc: super.cluster.Services.Websocket, depends: []supervisedTask{seedDatabase{}}},
+		runServiceCommand{name: "ws", svc: super.cluster.Services.Websocket, depends: []supervisedTask{railsDatabase{}}},
 		installPassenger{src: "services/api", varlibdir: "railsapi"},
-		runPassenger{src: "services/api", varlibdir: "railsapi", svc: super.cluster.Services.RailsAPI, depends: []supervisedTask{createCertificates{}, seedDatabase{}, installPassenger{src: "services/api", varlibdir: "railsapi"}}},
-		seedDatabase{},
+		runPassenger{src: "services/api", varlibdir: "railsapi", svc: super.cluster.Services.RailsAPI, depends: []supervisedTask{
+			createCertificates{},
+			installPassenger{src: "services/api", varlibdir: "railsapi"},
+			railsDatabase{},
+		}},
 	}
 	if !super.NoWorkbench1 {
 		tasks = append(tasks,
-			installPassenger{src: "apps/workbench", varlibdir: "workbench1", depends: []supervisedTask{seedDatabase{}}}, // dependency ensures workbench doesn't delay api install/startup
+			installPassenger{src: "apps/workbench", varlibdir: "workbench1", depends: []supervisedTask{railsDatabase{}}}, // dependency ensures workbench doesn't delay api install/startup
 			runPassenger{src: "apps/workbench", varlibdir: "workbench1", svc: super.cluster.Services.Workbench1, depends: []supervisedTask{installPassenger{src: "apps/workbench", varlibdir: "workbench1"}}},
 		)
 	}
