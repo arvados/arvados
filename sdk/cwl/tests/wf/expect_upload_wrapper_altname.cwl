@@ -63,7 +63,7 @@
             ],
             "steps": [
                 {
-                    "id": "#main/testing 123",
+                    "id": "#main/submit_wf.cwl",
                     "in": [
                         {
                             "id": "#main/step/x",
