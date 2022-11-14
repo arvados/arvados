@@ -80,7 +80,10 @@ func (*NodeSizeSuite) TestChoose(c *check.C) {
 			"costly": {Price: 4.4, RAM: 4000000000, VCPUs: 8, Scratch: 2 * GiB, Name: "costly"},
 		},
 	} {
-		best, err := ChooseInstanceType(&arvados.Cluster{InstanceTypes: menu, Containers: arvados.ContainersConfig{ReserveExtraRAM: 268435456}}, &arvados.Container{
+		best, err := ChooseInstanceType(&arvados.Cluster{InstanceTypes: menu, Containers: arvados.ContainersConfig{
+			LocalKeepBlobBuffersPerVCPU: 1,
+			ReserveExtraRAM:             268435456,
+		}}, &arvados.Container{
 			Mounts: map[string]arvados.Mount{
 				"/tmp": {Kind: "tmp", Capacity: 2 * int64(GiB)},
 			},
@@ -98,7 +101,30 @@ func (*NodeSizeSuite) TestChoose(c *check.C) {
 	}
 }
 
-func (*NodeSizeSuite) TestChoosePreemptable(c *check.C) {
+func (*NodeSizeSuite) TestChooseWithBlobBuffersOverhead(c *check.C) {
+	menu := map[string]arvados.InstanceType{
+		"nearly": {Price: 2.2, RAM: 4000000000, VCPUs: 4, Scratch: 2 * GiB, Name: "small"},
+		"best":   {Price: 3.3, RAM: 8000000000, VCPUs: 4, Scratch: 2 * GiB, Name: "best"},
+		"costly": {Price: 4.4, RAM: 12000000000, VCPUs: 8, Scratch: 2 * GiB, Name: "costly"},
+	}
+	best, err := ChooseInstanceType(&arvados.Cluster{InstanceTypes: menu, Containers: arvados.ContainersConfig{
+		LocalKeepBlobBuffersPerVCPU: 16, // 1 GiB per vcpu => 2 GiB
+		ReserveExtraRAM:             268435456,
+	}}, &arvados.Container{
+		Mounts: map[string]arvados.Mount{
+			"/tmp": {Kind: "tmp", Capacity: 2 * int64(GiB)},
+		},
+		RuntimeConstraints: arvados.RuntimeConstraints{
+			VCPUs:        2,
+			RAM:          987654321,
+			KeepCacheRAM: 123456789,
+		},
+	})
+	c.Check(err, check.IsNil)
+	c.Check(best.Name, check.Equals, "best")
+}
+
+func (*NodeSizeSuite) TestChoosePreemptible(c *check.C) {
 	menu := map[string]arvados.InstanceType{
 		"costly":      {Price: 4.4, RAM: 4000000000, VCPUs: 8, Scratch: 2 * GiB, Preemptible: true, Name: "costly"},
 		"almost best": {Price: 2.2, RAM: 2000000000, VCPUs: 4, Scratch: 2 * GiB, Name: "almost best"},
