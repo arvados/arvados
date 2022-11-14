@@ -39,7 +39,7 @@ metrics = logging.getLogger('arvados.cwl-runner.metrics')
 max_res_pars = ("coresMin", "coresMax", "ramMin", "ramMax", "tmpdirMin", "tmpdirMax")
 sum_res_pars = ("outdirMin", "outdirMax")
 
-def make_wrapper_workflow(arvRunner, main, packed, project_uuid, name):
+def make_wrapper_workflow(arvRunner, main, packed, project_uuid, name, git_info, tool):
     col = arvados.collection.Collection(api_client=arvRunner.api,
                                         keep_client=arvRunner.keep_client)
 
@@ -48,14 +48,18 @@ def make_wrapper_workflow(arvRunner, main, packed, project_uuid, name):
 
     pdh = col.portable_data_hash()
 
+    toolname = tool.tool.get("label") or tool.metadata.get("label") or os.path.basename(tool.tool["id"])
+    if git_info and git_info.get("http://arvados.org/cwl#gitDescribe"):
+        toolname = "%s (%s)" % (toolname, git_info.get("http://arvados.org/cwl#gitDescribe"))
+
     existing = arvRunner.api.collections().list(filters=[["portable_data_hash", "=", pdh], ["owner_uuid", "=", project_uuid]]).execute(num_retries=arvRunner.num_retries)
     if len(existing["items"]) == 0:
-        col.save_new(name=name, owner_uuid=project_uuid, ensure_unique_name=True)
+        col.save_new(name=toolname, owner_uuid=project_uuid, ensure_unique_name=True)
 
     # now construct the wrapper
 
     step = {
-        "id": "#main/" + name,
+        "id": "#main/" + toolname,
         "in": [],
         "out": [],
         "run": "keep:%s/workflow.json#main" % pdh,
@@ -105,7 +109,13 @@ def make_wrapper_workflow(arvRunner, main, packed, project_uuid, name):
     if main.get("hints"):
         wrapper["hints"] = main["hints"]
 
-    return json.dumps({"cwlVersion": "v1.2", "$graph": [wrapper]}, sort_keys=True, indent=4, separators=(',',': '))
+    doc = {"cwlVersion": "v1.2", "$graph": [wrapper]}
+
+    if git_info:
+        for g in git_info:
+            doc[g] = git_info[g]
+
+    return json.dumps(doc, sort_keys=True, indent=4, separators=(',',': '))
 
 def upload_workflow(arvRunner, tool, job_order, project_uuid,
                     runtimeContext, uuid=None,
@@ -154,7 +164,7 @@ def upload_workflow(arvRunner, tool, job_order, project_uuid,
 
     main["hints"] = hints
 
-    wrapper = make_wrapper_workflow(arvRunner, main, packed, project_uuid, name)
+    wrapper = make_wrapper_workflow(arvRunner, main, packed, project_uuid, name, git_info, tool)
 
     body = {
         "workflow": {
