@@ -17,12 +17,11 @@ import { ResourceKind } from 'models/resource';
 import { GroupResource } from 'models/group';
 import { extractUuidKind } from 'models/resource';
 import { UserResource } from 'models/user';
-import { containerRequestFieldsNoMounts } from 'store/all-processes-panel/all-processes-panel-middleware-service';
 import { FilterBuilder } from 'services/api/filter-builder';
 import { ProcessResource } from 'models/process';
 import { OrderBuilder } from 'services/api/order-builder';
 import { Breadcrumb } from 'components/breadcrumbs/breadcrumbs';
-import { ContainerRequestResource } from 'models/container-request';
+import { ContainerRequestResource, containerRequestFieldsNoMounts } from 'models/container-request';
 import { CollectionIcon, IconType, ProcessBreadcrumbIcon, ProjectIcon } from 'components/icon/icon';
 import { CollectionResource } from 'models/collection';
 
