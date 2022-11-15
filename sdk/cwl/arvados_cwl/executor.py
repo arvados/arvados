@@ -70,6 +70,10 @@ class RuntimeStatusLoggingHandler(logging.Handler):
             kind = 'error'
         elif record.levelno >= logging.WARNING:
             kind = 'warning'
+        if kind == 'warning' and record.name == "salad":
+            # Don't send validation warnings to runtime status,
+            # they're noisy and unhelpful.
+            return
         if kind is not None and self.updatingRuntimeStatus is not True:
             self.updatingRuntimeStatus = True
             try:
