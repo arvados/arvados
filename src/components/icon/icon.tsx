@@ -56,6 +56,7 @@ import RestoreFromTrash from '@material-ui/icons/History';
 import Search from '@material-ui/icons/Search';
 import SettingsApplications from '@material-ui/icons/SettingsApplications';
 import SettingsEthernet from '@material-ui/icons/SettingsEthernet';
+import Settings from '@material-ui/icons/Settings';
 import Star from '@material-ui/icons/Star';
 import StarBorder from '@material-ui/icons/StarBorder';
 import Warning from '@material-ui/icons/Warning';
@@ -216,3 +217,4 @@ export const ActiveIcon: IconType = (props) => <CheckCircleOutline {...props} />
 export const SetupIcon: IconType = (props) => <RemoveCircleOutline {...props} />;
 export const InactiveIcon: IconType = (props) => <NotInterested {...props} />;
 export const ImageIcon: IconType = (props) => <Image {...props} />;
+export const ProcessBreadcrumbIcon: IconType = (props) => <Settings {...props} />;

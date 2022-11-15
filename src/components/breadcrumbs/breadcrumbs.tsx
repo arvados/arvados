@@ -9,12 +9,12 @@ import { withStyles } from '@material-ui/core';
 import { IllegalNamingWarning } from '../warning/warning';
 import { IconType, FreezeIcon } from 'components/icon/icon';
 import grey from '@material-ui/core/colors/grey';
-import { ResourceBreadcrumb } from 'store/breadcrumbs/breadcrumbs-actions';
 import { ResourcesState } from 'store/resources/resources';
 
 export interface Breadcrumb {
     label: string;
     icon?: IconType;
+    uuid: string;
 }
 
 type CssRules = "item" | "currentItem" | "label" | "icon" | "frozenIcon";
@@ -42,10 +42,10 @@ const styles: StyleRulesCallback<CssRules> = theme => ({
 });
 
 export interface BreadcrumbsProps {
-    items: ResourceBreadcrumb[];
+    items: Breadcrumb[];
     resources: ResourcesState;
-    onClick: (breadcrumb: ResourceBreadcrumb) => void;
-    onContextMenu: (event: React.MouseEvent<HTMLElement>, breadcrumb: ResourceBreadcrumb) => void;
+    onClick: (breadcrumb: Breadcrumb) => void;
+    onContextMenu: (event: React.MouseEvent<HTMLElement>, breadcrumb: Breadcrumb) => void;
 }
 
 export const Breadcrumbs = withStyles(styles)(
