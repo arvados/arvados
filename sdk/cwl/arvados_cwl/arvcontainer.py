@@ -595,6 +595,12 @@ class RunnerContainer(Runner):
         if runtimeContext.enable_preemptible is False:
             command.append("--disable-preemptible")
 
+        if runtimeContext.varying_url_params:
+            command.append("--varying-url-params="+runtimeContext.varying_url_params)
+
+        if runtimeContext.prefer_cached_downloads:
+            command.append("--prefer-cached-downloads")
+
         command.extend([workflowpath, "/var/lib/cwl/cwl.input.json"])
 
         container_req["command"] = command
