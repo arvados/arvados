@@ -113,6 +113,8 @@ class ArvCwlExecutor(object):
             arvargs.thread_count = 1
             arvargs.collection_cache_size = None
             arvargs.git_info = True
+            arvargs.submit = False
+            arvargs.defer_downloads = False
 
         self.api = api_client
         self.processes = {}
@@ -205,6 +207,8 @@ The 'jobs' API is no longer supported.
         self.toplevel_runtimeContext = ArvRuntimeContext(vars(arvargs))
         self.toplevel_runtimeContext.make_fs_access = partial(CollectionFsAccess,
                                                      collection_cache=self.collection_cache)
+
+        self.defer_downloads = arvargs.submit and arvargs.defer_downloads
 
         validate_cluster_target(self, self.toplevel_runtimeContext)
 
@@ -361,8 +365,8 @@ The 'jobs' API is no longer supported.
                     page = keys[:pageSize]
                     try:
                         proc_states = table.list(filters=[["uuid", "in", page]]).execute(num_retries=self.num_retries)
-                    except Exception:
-                        logger.exception("Error checking states on API server: %s")
+                    except Exception as e:
+                        logger.exception("Error checking states on API server: %s", e)
                         remain_wait = self.poll_interval
                         continue
 
