@@ -172,3 +172,28 @@ Apart from detecting non-runnable containers, the configured instance types will
 {% include 'start_service' %}
 
 {% include 'restart_api' %}
+
+h2(#confirm-working). Confirm working installation
+
+On the dispatch node, start monitoring the arvados-dispatch-lsf logs:
+
+<notextile>
+<pre><code># <span class="userinput">journalctl -o cat -fu arvados-dispatch-lsf.service</span>
+</code></pre>
+</notextile>
+
+In another terminal window, use the diagnostics tool to run a simple container.
+
+<notextile>
+<pre><code># <span class="userinput">arvados-client sudo diagnostics</span>
+INFO       5: running health check (same as `arvados-server check`)
+INFO      10: getting discovery document from https://zzzzz.arvadosapi.com/discovery/v1/apis/arvados/v1/rest
+...
+INFO     160: running a container
+INFO      ... container request submitted, waiting up to 10m for container to run
+</code></pre>
+</notextile>
+
+After performing a number of other quick tests, this will submit a new container request and wait for it to finish.
+
+While the diagnostics tool is waiting, the @arvados-dispatch-lsf@ logs will show details about submitting an LSF job to run the container.

@@ -324,39 +324,27 @@ h2(#confirm-working). Confirm working installation
 On the dispatch node, start monitoring the arvados-dispatch-cloud logs:
 
 <notextile>
-<pre><code>~$ <span class="userinput">sudo journalctl -o cat -fu arvados-dispatch-cloud.service</span>
+<pre><code># <span class="userinput">journalctl -o cat -fu arvados-dispatch-cloud.service</span>
 </code></pre>
 </notextile>
 
-"Make sure to install the arvados/jobs image.":../install-jobs-image.html
-
-Submit a simple container request:
+In another terminal window, use the diagnostics tool to run a simple container.
 
 <notextile>
-<pre><code>shell:~$ <span class="userinput">arv container_request create --container-request '{
-  "name":            "test",
-  "state":           "Committed",
-  "priority":        1,
-  "container_image": "arvados/jobs:latest",
-  "command":         ["echo", "Hello, Crunch!"],
-  "output_path":     "/out",
-  "mounts": {
-    "/out": {
-      "kind":        "tmp",
-      "capacity":    1000
-    }
-  },
-  "runtime_constraints": {
-    "vcpus": 1,
-    "ram": 1048576
-  }
-}'</span>
+<pre><code># <span class="userinput">arvados-client sudo diagnostics</span>
+INFO       5: running health check (same as `arvados-server check`)
+INFO      10: getting discovery document from https://zzzzz.arvadosapi.com/discovery/v1/apis/arvados/v1/rest
+...
+INFO     160: running a container
+INFO      ... container request submitted, waiting up to 10m for container to run
 </code></pre>
 </notextile>
 
-This command should return a record with a @container_uuid@ field.  Once @arvados-dispatch-cloud@ polls the API server for new containers to run, you should see it dispatch that same container.
+After performing a number of other quick tests, this will submit a new container request and wait for it to finish.
 
-The @arvados-dispatch-cloud@ API provides a list of queued and running jobs and cloud instances. Use your @ManagementToken@ to test the dispatcher's endpoint. For example, when one container is running:
+While the diagnostics tool is waiting, the @arvados-dispatch-cloud@ logs will show details about creating a cloud instance, waiting for it to be ready, and scheduling the new container on it.
+
+You can also use the "arvados-dispatch-cloud API":{{site.baseurl}}/api/dispatch.html to get a list of queued and running jobs and cloud instances. Use your @ManagementToken@ to test the dispatcher's endpoint. For example, when one container is running:
 
 <notextile>
 <pre><code>~$ <span class="userinput">curl -sH "Authorization: Bearer $token" http://localhost:9006/arvados/v1/dispatch/containers</span>
@@ -395,8 +383,6 @@ The @arvados-dispatch-cloud@ API provides a list of queued and running jobs and 
 </notextile>
 
 A similar request can be made to the @http://localhost:9006/arvados/v1/dispatch/instances@ endpoint.
-
-When the container finishes, the dispatcher will log it.
 
 After the container finishes, you can get the container record by UUID *from a shell server* to see its results:
 
