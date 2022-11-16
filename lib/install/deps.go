@@ -30,18 +30,18 @@ import (
 
 var Command cmd.Handler = &installCommand{}
 
-const goversion = "1.17.7"
+const goversion = "1.18.8"
 
 const (
-	rubyversion             = "2.7.5"
+	rubyversion             = "2.7.6"
 	bundlerversion          = "2.2.19"
 	singularityversion      = "3.9.9"
 	pjsversion              = "1.9.8"
 	geckoversion            = "0.24.0"
 	gradleversion           = "5.3.1"
-	nodejsversion           = "v12.22.11"
+	nodejsversion           = "v12.22.12"
 	devtestDatabasePassword = "insecure_arvados_test"
-	workbench2version       = "2454ac35292a79594c32a80430740317ed5005cf"
+	workbench2version       = "e30e54d674c95ee15e296c71e471c1555bdc5a38" // 2.4.3
 )
 
 //go:embed arvados.service
@@ -507,6 +507,7 @@ setcap "cap_sys_admin+pei cap_sys_chroot+pei" /var/lib/arvados/bin/nsenter
 		} else {
 			err = inst.runBash(`
 NJS=`+nodejsversion+`
+rm -rf /var/lib/arvados/node-*-linux-x64
 wget --progress=dot:giga -O- https://nodejs.org/dist/${NJS}/node-${NJS}-linux-x64.tar.xz | sudo tar -C /var/lib/arvados -xJf -
 ln -sfv /var/lib/arvados/node-${NJS}-linux-x64/bin/{node,npm} /usr/local/bin/
 `, stdout, stderr)

@@ -48,6 +48,7 @@ setup(name='arvados-python-client',
       install_requires=[
           'ciso8601 >=2.0.0',
           'future',
+          'google-api-core <2.11.0', # 2.11.0rc1 is incompatible with google-auth<2
           'google-api-python-client >=1.6.2, <2',
           'google-auth<2',
           'httplib2 >=0.9.2, <0.20.2',
