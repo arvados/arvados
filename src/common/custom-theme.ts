@@ -5,8 +5,10 @@
 import { createMuiTheme } from '@material-ui/core/styles';
 import { ThemeOptions, Theme } from '@material-ui/core/styles/createMuiTheme';
 import blue from '@material-ui/core/colors/blue';
+import cyan from '@material-ui/core/colors/cyan';
 import grey from '@material-ui/core/colors/grey';
 import green from '@material-ui/core/colors/green';
+import lightGreen from '@material-ui/core/colors/lightGreen';
 import yellow from '@material-ui/core/colors/yellow';
 import red from '@material-ui/core/colors/red';
 import teal from '@material-ui/core/colors/teal';
@@ -22,6 +24,10 @@ export interface ArvadosTheme extends Theme {
 }
 
 interface Colors {
+    cyan100: string;
+    cyan200: string;
+    lightGreen300: string;
+    lightGreen400: string;
     green700: string;
     yellow100: string;
     yellow700: string;
@@ -29,6 +35,8 @@ interface Colors {
     red100: string;
     red900: string;
     blue500: string;
+    grey300: string;
+    grey400: string;
     grey500: string;
     purple: string;
     orange: string;
@@ -46,6 +54,10 @@ export const themeOptions: ArvadosThemeOptions = {
     },
     customs: {
         colors: {
+            lightGreen300: lightGreen["300"],
+            lightGreen400: lightGreen["400"],
+            cyan100: cyan["100"],
+            cyan200: cyan["200"],
             green700: green["700"],
             yellow100: yellow["100"],
             yellow700: yellow["700"],
@@ -53,6 +65,8 @@ export const themeOptions: ArvadosThemeOptions = {
             red100: red["100"],
             red900: red['900'],
             blue500: blue['500'],
+            grey300: grey["300"],
+            grey400: grey["400"],
             grey500: grey500,
             purple: arvadosPurple,
             orange: '#f0ad4e',
