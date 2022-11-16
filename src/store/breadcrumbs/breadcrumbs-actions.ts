@@ -38,23 +38,16 @@ const resourceToBreadcrumbIcon = (resource: CollectionResource | ContainerReques
     switch (resource.kind) {
         case ResourceKind.PROJECT:
             return ProjectIcon;
-            break;
-
         case ResourceKind.PROCESS:
             return ProcessBreadcrumbIcon;
-            break;
-
         case ResourceKind.COLLECTION:
             return CollectionIcon;
-            break;
-
         default:
             return undefined;
-            break;
     }
 }
 
-const resourceToBreadcrumb = (resource: CollectionResource | ContainerRequestResource | GroupResource) => ({
+const resourceToBreadcrumb = (resource: CollectionResource | ContainerRequestResource | GroupResource): Breadcrumb => ({
     label: resource.name,
     uuid: resource.uuid,
     icon: resourceToBreadcrumbIcon(resource),
@@ -80,6 +73,8 @@ export const setSidePanelBreadcrumbs = (uuid: string) =>
             const collectionItem = item ? item : await services.collectionService.get(currentUuid);
             const parentProcessItem = await getCollectionParent(collectionItem)(services);
             if (parentProcessItem) {
+                const mainProcessItem = await getProcessParent(parentProcessItem)(services);
+                mainProcessItem && breadcrumbs.push(resourceToBreadcrumb(mainProcessItem));
                 breadcrumbs.push(resourceToBreadcrumb(parentProcessItem));
             }
             dispatch(setBreadcrumbs(breadcrumbs, collectionItem));
@@ -120,6 +115,8 @@ export const setCategoryBreadcrumbs = (uuid: string, category: string) =>
             const collectionItem = item ? item : await services.collectionService.get(currentUuid);
             const parentProcessItem = await getCollectionParent(collectionItem)(services);
             if (parentProcessItem) {
+                const mainProcessItem = await getProcessParent(parentProcessItem)(services);
+                mainProcessItem && breadcrumbs.push(resourceToBreadcrumb(mainProcessItem));
                 breadcrumbs.push(resourceToBreadcrumb(parentProcessItem));
             }
             dispatch(setBreadcrumbs(breadcrumbs, collectionItem));
