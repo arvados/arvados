@@ -318,9 +318,9 @@ func (diag *diagnoser) runtests() {
 		isInternal := found["proxy"] == 0 && len(keeplist.Items) > 0
 		isExternal := found["proxy"] > 0 && found["proxy"] == len(keeplist.Items)
 		if isExternal {
-			diag.verbosef("controller returned only proxy services, this host is treated as \"external\"")
+			diag.infof("controller returned only proxy services, this host is treated as \"external\"")
 		} else if isInternal {
-			diag.verbosef("controller returned only non-proxy services, this host is treated as \"internal\"")
+			diag.infof("controller returned only non-proxy services, this host is treated as \"internal\"")
 		}
 		if (diag.checkInternal && !isInternal) || (diag.checkExternal && !isExternal) {
 			return fmt.Errorf("expecting internal=%v external=%v, but found internal=%v external=%v", diag.checkInternal, diag.checkExternal, isInternal, isExternal)

@@ -184,6 +184,7 @@ navbar:
       - admin/logging.html.textile.liquid
       - admin/metrics.html.textile.liquid
       - admin/health-checks.html.textile.liquid
+      - admin/diagnostics.html.textile.liquid
       - admin/management-token.html.textile.liquid
       - admin/user-activity.html.textile.liquid
     - Data Management:
