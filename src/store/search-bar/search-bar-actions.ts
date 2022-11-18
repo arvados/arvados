@@ -2,6 +2,7 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
+import axios from "axios";
 import { ofType, unionize, UnionOf } from "common/unionize";
 import { GroupContentsResource, GroupContentsResourcePrefix } from 'services/groups-service/groups-service';
 import { Dispatch } from 'redux';
@@ -62,13 +63,13 @@ export const loadRecentQueries = () =>
         return recentQueries;
     };
 
-export const searchData = (searchValue: string) =>
+export const searchData = (searchValue: string, useCancel = false) =>
     async (dispatch: Dispatch, getState: () => RootState) => {
         const currentView = getState().searchBar.currentView;
         dispatch(searchResultsPanelActions.CLEAR());
         dispatch(searchBarActions.SET_SEARCH_VALUE(searchValue));
         if (searchValue.length > 0) {
-            dispatch<any>(searchGroups(searchValue, 5));
+            dispatch<any>(searchGroups(searchValue, 5, useCancel));
             if (currentView === SearchView.BASIC) {
                 dispatch(searchBarActions.CLOSE_SEARCH_VIEW());
                 dispatch(navigateToSearchResults(searchValue));
@@ -203,26 +204,41 @@ export const submitData = (event: React.FormEvent<HTMLFormElement>) =>
         }
     };
 
-
-const searchGroups = (searchValue: string, limit: number) =>
+let cancelTokens: any[] = [];
+const searchGroups = (searchValue: string, limit: number, useCancel = false) =>
     async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
         const currentView = getState().searchBar.currentView;
 
-        if (searchValue || currentView === SearchView.ADVANCED) {
-            const { cluster: clusterId } = getAdvancedDataFromQuery(searchValue);
-            const sessions = getSearchSessions(clusterId, getState().auth.sessions);
-            const lists: ListResults<GroupContentsResource>[] = await Promise.all(sessions.map(session => {
-                const filters = queryToFilters(searchValue, session.apiRevision);
-                return services.groupsService.contents('', {
-                    filters,
-                    limit,
-                    recursive: true
-                }, session);
-            }));
-
-            const items = lists.reduce((items, list) => items.concat(list.items), [] as GroupContentsResource[]);
-            dispatch(searchBarActions.SET_SEARCH_RESULTS(items));
+        if (cancelTokens.length > 0 && useCancel) {
+            cancelTokens.forEach(cancelToken => (cancelToken as any).cancel('New search request triggered.'));
+            cancelTokens = [];
         }
+
+        setTimeout(async () => {
+            if (searchValue || currentView === SearchView.ADVANCED) {
+                const { cluster: clusterId } = getAdvancedDataFromQuery(searchValue);
+                const sessions = getSearchSessions(clusterId, getState().auth.sessions);
+                const lists: ListResults<GroupContentsResource>[] = await Promise.all(sessions.map((session, index) => {
+                    cancelTokens.push(axios.CancelToken.source());
+                    const filters = queryToFilters(searchValue, session.apiRevision);
+                    return services.groupsService.contents('', {
+                        filters,
+                        limit,
+                        recursive: true
+                    }, session, cancelTokens[index].token);
+                }));
+    
+                cancelTokens = [];
+    
+                const items = lists.reduce((items, list) => items.concat(list.items), [] as GroupContentsResource[]);
+    
+                if (lists.filter(list => !!(list as any).items).length !== lists.length) {
+                    dispatch(searchBarActions.SET_SEARCH_RESULTS([]));
+                } else {
+                    dispatch(searchBarActions.SET_SEARCH_RESULTS(items));
+                }
+            }
+        }, 10);
     };
 
 const buildQueryFromKeyMap = (data: any, keyMap: string[][]) => {

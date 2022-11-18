@@ -2,6 +2,7 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
+import { CancelToken } from 'axios';
 import { snakeCase, camelCase } from "lodash";
 import { CommonResourceService } from 'services/common-service/common-resource-service';
 import { ListResults, ListArguments } from 'services/common-service/common-service';
@@ -41,7 +42,7 @@ export class GroupsService<T extends GroupResource = GroupResource> extends Tras
         super(serverApi, "groups", actions);
     }
 
-    async contents(uuid: string, args: ContentsArguments = {}, session?: Session): Promise<ListResults<GroupContentsResource>> {
+    async contents(uuid: string, args: ContentsArguments = {}, session?: Session, cancelToken?: CancelToken): Promise<ListResults<GroupContentsResource>> {
         const { filters, order, ...other } = args;
         const params = {
             ...other,
@@ -54,6 +55,10 @@ export class GroupsService<T extends GroupResource = GroupResource> extends Tras
         if (session) {
             cfg.baseURL = session.baseUrl;
             cfg.headers = { 'Authorization': 'Bearer ' + session.token };
+        }
+
+        if (cancelToken) {
+            cfg.cancelToken = cancelToken;
         }
 
         const response = await CommonResourceService.defaultResponse(
