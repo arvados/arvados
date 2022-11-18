@@ -31,7 +31,7 @@ TODO: extract this information based on git commit messages and generate changel
 
 h2(#main). development main (as of 2022-10-31)
 
-"previous: Upgrading to 2.4.3":#v2_4_3
+"previous: Upgrading to 2.4.4":#v2_4_4
 
 h3. Google or OpenID Connect login restricted to trusted clients
 
@@ -40,7 +40,6 @@ If you use OpenID Connect or Google login, and your cluster serves as the @Login
 h3. New keepstore S3 driver enabled by default
 
 A more actively maintained S3 client library is now enabled by default for keeepstore services. The previous driver is still available for use in case of unknown issues. To use the old driver, set @DriverParameters.UseAWSS3v2Driver@ to @false@ on the appropriate @Volumes@ config entries.
-h2(#main). development main (as of 2022-10-14)
 
 h3. Old container logs are automatically deleted from PostgreSQL
 
@@ -59,6 +58,12 @@ h3. Renamed keep-web metrics and WebDAV configs
 Metrics previously reported by keep-web (@arvados_keepweb_collectioncache_requests@, @..._hits@, @..._pdh_hits@, @..._api_calls@, @..._cached_manifests@, and @arvados_keepweb_sessions_cached_collection_bytes@) have been replaced with @arvados_keepweb_cached_session_bytes@.
 
 The config entries @Collections.WebDAVCache.UUIDTTL@, @...MaxCollectionEntries@, and @...MaxUUIDEntries@ are no longer used, and should be removed from your config file.
+
+h2(#v2_4_4). v2.4.4 (2022-11-18)
+
+"previous: Upgrading to 2.4.3":#v2_4_3
+
+This update only consists of improvements to @arvados-cwl-runner@.  There are no changes to backend services.
 
 h2(#v2_4_3). v2.4.3 (2022-09-21)
 
