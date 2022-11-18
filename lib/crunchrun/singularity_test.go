@@ -59,7 +59,7 @@ func (s *singularitySuite) TestInject(c *C) {
 }
 
 func (s *singularitySuite) TestExecLongArg(c *C) {
-	// singularity 3.9.9 fails with:
+	// singularity 3.9.9 and 3.10.4 fail with:
 	// FATAL:   while initializing starter command: while copying engine configuration: engine configuration too big > 1048448
 	c.Skip("known bug/limitation, see https://dev.arvados.org/issues/18765")
 	s.executorSuite.TestExecLongArg(c)

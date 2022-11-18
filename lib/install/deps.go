@@ -35,7 +35,7 @@ const goversion = "1.18.8"
 const (
 	rubyversion             = "2.7.6"
 	bundlerversion          = "2.2.19"
-	singularityversion      = "3.9.9"
+	singularityversion      = "3.10.4"
 	pjsversion              = "1.9.8"
 	geckoversion            = "0.24.0"
 	gradleversion           = "5.3.1"
@@ -198,8 +198,13 @@ func (inst *installCommand) RunCommand(prog string, args []string, stdin io.Read
 			}
 		}
 		if dev || test {
-			pkgs = append(pkgs, "squashfs-tools") // for singularity
-			pkgs = append(pkgs, "gnupg")          // for docker install recipe
+			pkgs = append(pkgs,
+				"libglib2.0-dev", // for singularity
+				"libseccomp-dev", // for singularity
+				"seccomp",        // for singularity
+				"squashfs-tools", // for singularity
+				"gnupg",          // for docker install recipe
+			)
 		}
 		switch {
 		case osv.Debian && osv.Major >= 11:
@@ -360,7 +365,7 @@ S=`+singularityversion+`
 tmp=/var/lib/arvados/tmp/singularity
 trap "rm -r ${tmp}" ERR EXIT
 cd /var/lib/arvados/tmp
-git clone https://github.com/sylabs/singularity
+git clone --recurse-submodules https://github.com/sylabs/singularity
 cd singularity
 git checkout v${S}
 ./mconfig --prefix=/var/lib/arvados
