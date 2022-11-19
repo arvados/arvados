@@ -140,6 +140,7 @@ export const DataExplorer = withStyles(styles)(
         }
 
         componentDidMount() {
+            // console.log('DATA_EXPLORER:',this.props)
             if (this.props.onSetColumns) {
                 this.props.onSetColumns(this.props.columns);
             }

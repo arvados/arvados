@@ -10,6 +10,7 @@ import { Popover } from "../popover/popover";
 import { IconButtonProps } from '@material-ui/core/IconButton';
 import { DataColumns } from '../data-table/data-table';
 import { ArvadosTheme } from "common/custom-theme";
+import { ResourceName } from 'views-components/data-explorer/renderers';
 
 interface ColumnSelectorDataProps {
     columns: DataColumns<any>;
@@ -30,7 +31,15 @@ export type ColumnSelectorProps = ColumnSelectorDataProps & WithStyles<CssRules>
 
 export const ColumnSelector = withStyles(styles)(
     ({ columns, onColumnToggle, classes }: ColumnSelectorProps) =>
-        <Popover triggerComponent={ColumnSelectorTrigger}>
+    {console.log('COLUMN_SELECTOR',columns)
+    columns = [...columns, {
+        name:'bananas',
+        selected: false,
+        configurable: true, filters:{}, render: (uuid)=><ResourceName uuid='uuid'/>
+    }
+]
+    console.log('COLUMN_SELECTOR',columns)
+       return <Popover triggerComponent={ColumnSelectorTrigger}>
             <Paper>
                 <List dense>
                     {columns
@@ -52,7 +61,7 @@ export const ColumnSelector = withStyles(styles)(
                         )}
                 </List>
             </Paper>
-        </Popover>
+        </Popover>}
 );
 
 export const ColumnSelectorTrigger = (props: IconButtonProps) =>

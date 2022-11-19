@@ -22,12 +22,13 @@ interface Props {
 }
 
 const mapStateToProps = (state: RootState, { id }: Props) => {
+    // console.log('DATA_EXPLORER, MSTP GLOBAL STATE:', state)
     const progress = state.progressIndicator.find(p => p.id === id);
     const dataExplorerState = getDataExplorer(state.dataExplorer, id);
     const currentRoute = state.router.location ? state.router.location.pathname : '';
     const currentRefresh = localStorage.getItem(LAST_REFRESH_TIMESTAMP) || '';
     const currentItemUuid = currentRoute === '/workflows' ? state.properties.workflowPanelDetailsUuid : state.detailsPanel.resourceUuid;
-
+// console.log('DATA_EXPLORER, MSTP FILTERED:', {...dataExplorerState})
     return {
         ...dataExplorerState,
         working: !!progress?.working,

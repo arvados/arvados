@@ -87,6 +87,7 @@ type DataTableProps<T> = DataTableDataProps<T> & WithStyles<CssRules>;
 export const DataTable = withStyles(styles)(
     class Component<T> extends React.Component<DataTableProps<T>> {
         render() {
+            // console.log('DATA_TABLE, RENDER:' , this)
             const { items, classes, working } = this.props;
             return <div className={classes.root}>
                 <div className={classes.content}>
