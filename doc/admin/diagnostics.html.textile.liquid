@@ -1,0 +1,83 @@
+---
+layout: default
+navsection: admin
+title: Diagnostics
+...
+
+{% comment %}
+Copyright (C) The Arvados Authors. All rights reserved.
+
+SPDX-License-Identifier: CC-BY-SA-3.0
+{% endcomment %}
+
+The @arvados-client diagnostics@ command exercises basic cluster functionality, and identifies some common installation and configuration problems. Especially after upgrading or reconfiguring Arvados or server/network infrastructure, it can be the quickest way to identify problems.
+
+h2. Using system privileges
+
+On a server node, it is easiest to run the diagnostics command with system privileges. The word @sudo@ here instructs the @arvados-client@ command to load @Controller.ExternalURL@ and @SystemRootToken@ from @/etc/arvados/config.yml@ and use those credentials to run tests with system privileges.
+
+When run this way, diagnostics will also include "health checks":health-checks.html.
+
+<notextile><pre>
+# <span class="userinput">arvados-client sudo diagnostics</span>
+</pre></notextile>
+
+h2. Using regular user privileges
+
+On any node (server node, shell node, or a workstation outside the system network), you can also run diagnostics by setting the usual @ARVADOS_API_HOST@ and @ARVADOS_API_TOKEN@ environment variables. Typically this is done with a regular user account.
+
+<notextile><pre>
+$ <span class="userinput">export ARVADOS_API_HOST=zzzzz.arvadosapi.com</span>
+$ <span class="userinput">export ARVADOS_API_TOKEN=xxxxxxxxxx</span>
+$ <span class="userinput">arvados-client diagnostics</span>
+</pre></notextile>
+
+h2. Internal/external client detection
+
+The diagnostics output indicates whether its client connection is categorized by the server as internal or external. If you run diagnostics automatically with cron or a monitoring tool, you can use the @-internal-client@ or @-external-client@ flag to specify how you _expect_ the client to be categorized, and the test will fail otherwise. Example:
+
+<notextile><pre>
+# <span class="userinput">arvados-client sudo diagnostics -internal-client</span>
+[...]
+
+--- cut here --- error summary ---
+
+ERROR     60: checking internal/external client detection (11 ms): expecting internal=true external=false, but found internal=false external=true
+</pre></notextile>
+
+h2. Example output
+
+<notextile><pre>
+# <span class="userinput">arvados-client sudo diagnostics</span>
+INFO       5: running health check (same as `arvados-server check`)
+INFO      10: getting discovery document from https://zzzzz.arvadosapi.com/discovery/v1/apis/arvados/v1/rest
+INFO      20: getting exported config from https://zzzzz.arvadosapi.com/arvados/v1/config
+INFO      30: getting current user record
+INFO      40: connecting to service endpoint https://keep.zzzzz.arvadosapi.com/
+INFO      41: connecting to service endpoint https://*.collections.zzzzz.arvadosapi.com/
+INFO      42: connecting to service endpoint https://download.zzzzz.arvadosapi.com/
+INFO      43: connecting to service endpoint wss://ws.zzzzz.arvadosapi.com/websocket
+INFO      44: connecting to service endpoint https://workbench.zzzzz.arvadosapi.com/
+INFO      45: connecting to service endpoint https://workbench2.zzzzz.arvadosapi.com/
+INFO      50: checking CORS headers at https://zzzzz.arvadosapi.com/
+INFO      51: checking CORS headers at https://keep.zzzzz.arvadosapi.com/d41d8cd98f00b204e9800998ecf8427e+0
+INFO      52: checking CORS headers at https://download.zzzzz.arvadosapi.com/
+INFO      60: checking internal/external client detection
+INFO      61: reading+writing via keep service at https://keep.zzzzz.arvadosapi.com:443/
+INFO      80: finding/creating "scratch area for diagnostics" project
+INFO      90: creating temporary collection
+INFO     100: uploading file via webdav
+INFO     110: checking WebDAV ExternalURL wildcard (https://*.collections.zzzzz.arvadosapi.com/)
+INFO     120: downloading from webdav (https://d41d8cd98f00b204e9800998ecf8427e-0.collections.zzzzz.arvadosapi.com/foo)
+INFO     121: downloading from webdav (https://d41d8cd98f00b204e9800998ecf8427e-0.collections.zzzzz.arvadosapi.com/sha256:feb5d9fea6a5e9606aa995e879d862b825965ba48de054caab5ef356dc6b3412.tar)
+INFO     122: downloading from webdav (https://download.zzzzz.arvadosapi.com/c=d41d8cd98f00b204e9800998ecf8427e+0/_/foo)
+INFO     123: downloading from webdav (https://download.zzzzz.arvadosapi.com/c=d41d8cd98f00b204e9800998ecf8427e+0/_/sha256:feb5d9fea6a5e9606aa995e879d862b825965ba48de054caab5ef356dc6b3412.tar)
+INFO     124: downloading from webdav (https://a15a27cbc1c7d2d4a0d9e02529aaec7e-128.collections.zzzzz.arvadosapi.com/sha256:feb5d9fea6a5e9606aa995e879d862b825965ba48de054caab5ef356dc6b3412.tar)
+INFO     125: downloading from webdav (https://download.zzzzz.arvadosapi.com/c=zzzzz-4zz18-twitqma8mbvwydy/_/sha256:feb5d9fea6a5e9606aa995e879d862b825965ba48de054caab5ef356dc6b3412.tar)
+INFO     130: getting list of virtual machines
+INFO     140: getting workbench1 webshell page
+INFO     150: connecting to webshell service
+INFO     160: running a container
+INFO      ... container request submitted, waiting up to 10m for container to run
+INFO    9990: deleting temporary collection
+</pre></notextile>
