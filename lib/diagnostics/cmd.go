@@ -703,12 +703,11 @@ func (diag *diagnoser) runtests() {
 
 		timeout := 10 * time.Minute
 		diag.infof("container request submitted, waiting up to %v for container to run", arvados.Duration(timeout))
-		ctx, cancel = context.WithDeadline(context.Background(), time.Now().Add(timeout))
-		defer cancel()
+		deadline := time.Now().Add(timeout)
 
 		var c arvados.Container
-		for ; cr.State != arvados.ContainerRequestStateFinal; time.Sleep(2 * time.Second) {
-			ctx, cancel := context.WithDeadline(ctx, time.Now().Add(diag.timeout))
+		for ; cr.State != arvados.ContainerRequestStateFinal && time.Now().Before(deadline); time.Sleep(2 * time.Second) {
+			ctx, cancel := context.WithDeadline(context.Background(), time.Now().Add(diag.timeout))
 			defer cancel()
 
 			crStateWas := cr.State
@@ -728,11 +727,26 @@ func (diag *diagnoser) runtests() {
 			if c.State != cStateWas {
 				diag.debugf("container state = %s", c.State)
 			}
+
+			cancel()
 		}
 
+		if cr.State != arvados.ContainerRequestStateFinal {
+			err := client.RequestAndDecodeContext(context.Background(), &cr, "PATCH", "arvados/v1/container_requests/"+cr.UUID, nil, map[string]interface{}{
+				"container_request": map[string]interface{}{
+					"priority": 0,
+				}})
+			if err != nil {
+				diag.infof("error canceling container request %s: %s", cr.UUID, err)
+			} else {
+				diag.debugf("canceled container request %s", cr.UUID)
+			}
+			return fmt.Errorf("timed out waiting for container to finish; container request %s state was %q, container %s state was %q", cr.UUID, cr.State, c.UUID, c.State)
+		}
 		if c.State != arvados.ContainerStateComplete {
 			return fmt.Errorf("container request %s is final but container %s did not complete: container state = %q", cr.UUID, cr.ContainerUUID, c.State)
-		} else if c.ExitCode != 0 {
+		}
+		if c.ExitCode != 0 {
 			return fmt.Errorf("container exited %d", c.ExitCode)
 		}
 		return nil
