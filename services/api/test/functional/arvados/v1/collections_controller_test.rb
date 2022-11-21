@@ -374,6 +374,24 @@ EOS
            "Expected 'duplicate key' error in #{response_errors.first}")
   end
 
+  [false, true].each do |ensure_unique_name|
+    test "create failure with duplicate name, ensure_unique_name #{ensure_unique_name}" do
+      authorize_with :active
+      post :create, params: {
+             collection: {
+               owner_uuid: users(:active).uuid,
+               manifest_text: "",
+               name: "this...............................................................................................................................................................................................................................................................name is too long"
+             },
+             ensure_unique_name: ensure_unique_name
+           }
+      assert_response 422
+      # check the real error isn't masked by an
+      # ensure_unique_name-related error (#19698)
+      assert_match /value too long for type/, json_response['errors'][0]
+    end
+  end
+
   [false, true].each do |unsigned|
     test "create with duplicate name, ensure_unique_name, unsigned=#{unsigned}" do
       permit_unsigned_manifests unsigned
