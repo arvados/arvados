@@ -520,7 +520,6 @@ class ArvadosModel < ApplicationRecord
           end
         end
 
-        conn.exec_query 'SAVEPOINT save_with_unique_name'
         retry
       end
     end
