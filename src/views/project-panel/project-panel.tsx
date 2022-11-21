@@ -64,7 +64,8 @@ export enum ProjectPanelColumnNames {
     TYPE = "Type",
     OWNER = "Owner",
     FILE_SIZE = "File size",
-    LAST_MODIFIED = "Last modified"
+    LAST_MODIFIED = "Last modified",
+    UUID = "UUID"
 }
 
 export interface ProjectPanelFilter extends DataTableFilterItem {
@@ -116,6 +117,14 @@ export const projectPanelColumns: DataColumns<string> = [
         sortDirection: SortDirection.DESC,
         filters: createTree(),
         render: uuid => <ResourceLastModifiedDate uuid={uuid} />
+    },
+    {
+        name: ProjectPanelColumnNames.UUID,
+        selected: true,
+        configurable: true,
+        sortDirection: SortDirection.DESC,
+        filters: createTree(),
+        render: uuid =><>{uuid}</>
     }
 ];
 

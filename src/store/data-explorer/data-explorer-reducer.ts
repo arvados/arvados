@@ -110,8 +110,12 @@ export const dataExplorerReducer = (
     default: () => state,
   });
 };
-export const getDataExplorer = (state: DataExplorerState, id: string) =>
-  state[id] || initialDataExplorer;
+export const getDataExplorer = (state: DataExplorerState, id: string) => {
+  const returnValue = state[id] || initialDataExplorer;
+  //lisa
+  //   console.log('GETDATAEXPLORER RETURN:', state[id]);
+  return returnValue;
+};
 
 export const getSortColumn = (dataExplorer: DataExplorer) =>
   dataExplorer.columns.find(

@@ -98,6 +98,7 @@ export const DataTable = withStyles(styles)(
                             </TableRow>
                         </TableHead>
                         <TableBody className={classes.tableBody}>
+                            {console.log('TABLEBODY>ITEMS',items, "THIS ?", this)}
                             { !working && items.map(this.renderBodyRow) }
                         </TableBody>
                     </Table>
@@ -168,11 +169,12 @@ export const DataTable = withStyles(styles)(
                 onContextMenu={this.handleRowContextMenu(item)}
                 onDoubleClick={event => onRowDoubleClick && onRowDoubleClick(event, item)}
                 selected={item === currentItemUuid}>
-                {this.mapVisibleColumns((column, index) => (
-                    <TableCell key={column.key || index} className={currentRoute === '/workflows' ? classes.tableCellWorkflows : classes.tableCell}>
+                {this.mapVisibleColumns((column, index) => {
+                    console.log('RENDERBODYROW', column.render(item))
+                    return <TableCell key={column.key || index} className={currentRoute === '/workflows' ? classes.tableCellWorkflows : classes.tableCell}>
                         {column.render(item)}
                     </TableCell>
-                ))}
+        })}
             </TableRow>;
         }
 

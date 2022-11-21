@@ -31,14 +31,16 @@ export type ColumnSelectorProps = ColumnSelectorDataProps & WithStyles<CssRules>
 
 export const ColumnSelector = withStyles(styles)(
     ({ columns, onColumnToggle, classes }: ColumnSelectorProps) =>
-    {console.log('COLUMN_SELECTOR',columns)
-    columns = [...columns, {
-        name:'bananas',
-        selected: false,
-        configurable: true, filters:{}, render: (uuid)=><ResourceName uuid='uuid'/>
-    }
-]
-    console.log('COLUMN_SELECTOR',columns)
+    {
+//         // console.log('COLUMN_SELECTOR',columns)
+//     columns = [...columns, {
+//         name:'bananas',
+//         selected: false,
+//         configurable: true, filters:{}, render: (uuid)=><ResourceName uuid='bananas'/>
+//     }
+// ]
+// //lisa
+//     // console.log('COLUMN_SELECTOR',columns)
        return <Popover triggerComponent={ColumnSelectorTrigger}>
             <Paper>
                 <List dense>
