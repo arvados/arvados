@@ -36,6 +36,7 @@ from arvados.api import OrderedJsonModel
 from .perf import Perf
 from ._version import __version__
 from .executor import ArvCwlExecutor
+from .fsaccess import workflow_uuid_pattern
 
 # These aren't used directly in this file but
 # other code expects to import them from here
@@ -199,6 +200,10 @@ def arg_parser():  # type: () -> argparse.ArgumentParser
                         action="store_false", default=True,
                         help=argparse.SUPPRESS)
 
+    parser.add_argument("--disable-git", dest="git_info",
+                        action="store_false", default=True,
+                        help=argparse.SUPPRESS)
+
     parser.add_argument("--disable-color", dest="enable_color",
                         action="store_false", default=True,
                         help=argparse.SUPPRESS)
@@ -212,6 +217,15 @@ def arg_parser():  # type: () -> argparse.ArgumentParser
 
     parser.add_argument("--http-timeout", type=int,
                         default=5*60, dest="http_timeout", help="API request timeout in seconds. Default is 300 seconds (5 minutes).")
+
+    parser.add_argument("--defer-downloads", action="store_true", default=False,
+                        help="When submitting a workflow, defer downloading HTTP URLs to workflow launch instead of downloading to Keep before submit.")
+
+    parser.add_argument("--varying-url-params", type=str, default="",
+                        help="A comma separated list of URL query parameters that should be ignored when storing HTTP URLs in Keep.")
+
+    parser.add_argument("--prefer-cached-downloads", action="store_true", default=False,
+                        help="If a HTTP URL is found in Keep, skip upstream URL freshness check (will not notice if the upstream has changed, but also not error if upstream is unavailable).")
 
     exgroup = parser.add_mutually_exclusive_group()
     exgroup.add_argument("--enable-preemptible", dest="enable_preemptible", default=None, action="store_true", help="Use preemptible instances. Control individual steps with arv:UsePreemptible hint.")
@@ -358,6 +372,10 @@ def main(args=sys.argv[1:],
         # since we still want to be able to capture stdout for the
         # unit tests.
         stdout = None
+
+    if arvargs.submit and (arvargs.workflow.startswith("arvwf:") or workflow_uuid_pattern.match(arvargs.workflow)):
+        executor.loadingContext.do_validate = False
+        executor.fast_submit = True
 
     return cwltool.main.main(args=arvargs,
                              stdout=stdout,
