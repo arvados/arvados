@@ -295,3 +295,15 @@ def make_block_cache(disk_cache):
         shutil.rmtree(disk_cache_dir, ignore_errors=True)
     block_cache = arvados.keep.KeepBlockCache(disk_cache=disk_cache)
     return block_cache
+
+
+class DiskCacheBase:
+    def make_block_cache(self, disk_cache):
+        self.disk_cache_dir = tempfile.mkdtemp() if disk_cache else None
+        block_cache = arvados.keep.KeepBlockCache(disk_cache=disk_cache,
+                                                  disk_cache_dir=self.disk_cache_dir)
+        return block_cache
+
+    def tearDown(self):
+        if self.disk_cache_dir:
+            shutil.rmtree(self.disk_cache_dir)
