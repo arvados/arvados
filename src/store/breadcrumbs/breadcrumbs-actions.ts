@@ -151,16 +151,22 @@ const getProcessParent = (childProcess: ContainerRequestResource) =>
 
 const getCollectionParent = (collection: CollectionResource) =>
     async (services: ServiceRepository): Promise<ContainerRequestResource | undefined> => {
-        const parentProcesses = await services.containerRequestService.list({
+        const parentOutputPromise = services.containerRequestService.list({
             order: new OrderBuilder<ProcessResource>().addAsc('createdAt').getOrder(),
             filters: new FilterBuilder().addEqual('output_uuid', collection.uuid).getFilters(),
             select: containerRequestFieldsNoMounts,
         });
-        if (parentProcesses.items.length > 0) {
-            return parentProcesses.items[0];
-        } else {
-            return undefined;
-        }
+        const parentLogPromise = services.containerRequestService.list({
+            order: new OrderBuilder<ProcessResource>().addAsc('createdAt').getOrder(),
+            filters: new FilterBuilder().addEqual('log_uuid', collection.uuid).getFilters(),
+            select: containerRequestFieldsNoMounts,
+        });
+        const [parentOutput, parentLog] = await Promise.all([parentOutputPromise, parentLogPromise]);
+        return parentOutput.items.length > 0 ?
+                parentOutput.items[0] :
+                parentLog.items.length > 0 ?
+                    parentLog.items[0] :
+                    undefined;
     }
 
 
