@@ -52,17 +52,19 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
         opacity: 1
     },
     label: {
-        textTransform: "none"
+        textTransform: "none",
+        paddingRight: '3px',
+        paddingLeft: '3px',
     },
     icon: {
         fontSize: 20,
         color: grey["600"],
-        marginRight: '10px',
+        marginRight: '5px',
     },
     frozenIcon: {
         fontSize: 20,
         color: grey["600"],
-        marginLeft: '10px',
+        marginLeft: '3px',
     },
 });
 
