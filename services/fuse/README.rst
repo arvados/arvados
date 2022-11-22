@@ -66,5 +66,5 @@ $ apt-get install python-dev pkg-config libfuse-dev libattr1-dev
 This package is one part of the Arvados source package, and it has
 integration tests to check interoperability with other Arvados
 components.  Our `hacking guide
-<https://arvados.org/projects/arvados/wiki/Hacking_Python_SDK>`_
+<https://dev.arvados.org/projects/arvados/wiki/Hacking_Python_SDK>`_
 describes how to set up a development environment and run tests.

@@ -76,7 +76,7 @@ func main() {
 	}
 	err = tx.Authenticate(pam.DisallowNullAuthtok)
 	if err != nil {
-		err = fmt.Errorf("PAM: %s (message = %q)", err, errorMessage)
+		err = fmt.Errorf("PAM: %s (message = %q, sentPassword = %v)", err, errorMessage, sentPassword)
 		logrus.WithError(err).Print("authentication failed")
 		os.Exit(1)
 	}

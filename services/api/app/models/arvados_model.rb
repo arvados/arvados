@@ -478,11 +478,10 @@ class ArvadosModel < ApplicationRecord
       conn.exec_query 'SAVEPOINT save_with_unique_name'
       begin
         save!
+        conn.exec_query 'RELEASE SAVEPOINT save_with_unique_name'
       rescue ActiveRecord::RecordNotUnique => rn
         raise if max_retries == 0
         max_retries -= 1
-
-        conn.exec_query 'ROLLBACK TO SAVEPOINT save_with_unique_name'
 
         # Dig into the error to determine if it is specifically calling out a
         # (owner_uuid, name) uniqueness violation.  In this specific case, and
@@ -501,6 +500,8 @@ class ArvadosModel < ApplicationRecord
         detail = err.result.error_field(PG::Result::PG_DIAG_MESSAGE_DETAIL)
         raise unless /^Key \(owner_uuid, name\)=\([a-z0-9]{5}-[a-z0-9]{5}-[a-z0-9]{15}, .*?\) already exists\./.match detail
 
+        conn.exec_query 'ROLLBACK TO SAVEPOINT save_with_unique_name'
+
         new_name = "#{name_was} (#{db_current_time.utc.iso8601(3)})"
         if new_name == name
           # If the database is fast enough to do two attempts in the
@@ -518,10 +519,8 @@ class ArvadosModel < ApplicationRecord
             self[:current_version_uuid] = nil
           end
         end
-        conn.exec_query 'SAVEPOINT save_with_unique_name'
+
         retry
-      ensure
-        conn.exec_query 'RELEASE SAVEPOINT save_with_unique_name'
       end
     end
   end

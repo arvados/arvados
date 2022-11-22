@@ -70,6 +70,10 @@ class RuntimeStatusLoggingHandler(logging.Handler):
             kind = 'error'
         elif record.levelno >= logging.WARNING:
             kind = 'warning'
+        if kind == 'warning' and record.name == "salad":
+            # Don't send validation warnings to runtime status,
+            # they're noisy and unhelpful.
+            return
         if kind is not None and self.updatingRuntimeStatus is not True:
             self.updatingRuntimeStatus = True
             try:
@@ -112,6 +116,9 @@ class ArvCwlExecutor(object):
             arvargs.output_tags = None
             arvargs.thread_count = 1
             arvargs.collection_cache_size = None
+            arvargs.git_info = True
+            arvargs.submit = False
+            arvargs.defer_downloads = False
 
         self.api = api_client
         self.processes = {}
@@ -137,6 +144,8 @@ class ArvCwlExecutor(object):
         self.fs_access = None
         self.secret_store = None
         self.stdout = stdout
+        self.fast_submit = False
+        self.git_info = arvargs.git_info
 
         if keep_client is not None:
             self.keep_client = keep_client
@@ -202,6 +211,8 @@ The 'jobs' API is no longer supported.
         self.toplevel_runtimeContext = ArvRuntimeContext(vars(arvargs))
         self.toplevel_runtimeContext.make_fs_access = partial(CollectionFsAccess,
                                                      collection_cache=self.collection_cache)
+
+        self.defer_downloads = arvargs.submit and arvargs.defer_downloads
 
         validate_cluster_target(self, self.toplevel_runtimeContext)
 
@@ -358,8 +369,8 @@ The 'jobs' API is no longer supported.
                     page = keys[:pageSize]
                     try:
                         proc_states = table.list(filters=[["uuid", "in", page]]).execute(num_retries=self.num_retries)
-                    except Exception:
-                        logger.exception("Error checking states on API server: %s")
+                    except Exception as e:
+                        logger.exception("Error checking states on API server: %s", e)
                         remain_wait = self.poll_interval
                         continue
 
@@ -582,7 +593,7 @@ The 'jobs' API is no longer supported.
     def arv_executor(self, updated_tool, job_order, runtimeContext, logger=None):
         self.debug = runtimeContext.debug
 
-        git_info = self.get_git_info(updated_tool)
+        git_info = self.get_git_info(updated_tool) if self.git_info else {}
         if git_info:
             logger.info("Git provenance")
             for g in git_info:
@@ -594,7 +605,8 @@ The 'jobs' API is no longer supported.
         controller = self.api.config()["Services"]["Controller"]["ExternalURL"]
         logger.info("Using cluster %s (%s)", self.api.config()["ClusterID"], workbench2 or workbench1 or controller)
 
-        updated_tool.visit(self.check_features)
+        if not self.fast_submit:
+            updated_tool.visit(self.check_features)
 
         self.pipeline = None
         self.fs_access = runtimeContext.make_fs_access(runtimeContext.basedir)
@@ -662,7 +674,7 @@ The 'jobs' API is no longer supported.
         loadingContext = self.loadingContext.copy()
         loadingContext.do_validate = False
         loadingContext.disable_js_validation = True
-        if submitting:
+        if submitting and not self.fast_submit:
             loadingContext.do_update = False
             # Document may have been auto-updated. Reload the original
             # document with updating disabled because we want to
@@ -675,9 +687,12 @@ The 'jobs' API is no longer supported.
 
         # Upload direct dependencies of workflow steps, get back mapping of files to keep references.
         # Also uploads docker images.
-        logger.info("Uploading workflow dependencies")
-        with Perf(metrics, "upload_workflow_deps"):
-            merged_map = upload_workflow_deps(self, tool, runtimeContext)
+        if not self.fast_submit:
+            logger.info("Uploading workflow dependencies")
+            with Perf(metrics, "upload_workflow_deps"):
+                merged_map = upload_workflow_deps(self, tool, runtimeContext)
+        else:
+            merged_map = {}
 
         # Recreate process object (ArvadosWorkflow or
         # ArvadosCommandTool) because tool document may have been

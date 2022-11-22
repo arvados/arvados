@@ -37,7 +37,7 @@ class ReportIssueTest < ActionDispatch::IntegrationTest
       assert page.has_button?('Close'), 'No button - Close'
       assert page.has_no_button?('Send problem report'), 'Found button - Send problem report'
       history_links = all('a').select do |a|
-        a[:href] =~ %r!^https://arvados.org/projects/arvados/repository/changes\?rev=[0-9a-f]+$!
+        a[:href] =~ %r!^https://dev.arvados.org/projects/arvados/repository/changes\?rev=[0-9a-f]+$!
       end
       assert_operator(2, :<=, history_links.count,
                       "Should have found two links to revision history " +

@@ -10,6 +10,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"net"
 	"net/http"
 	"net/url"
 	"strings"
@@ -161,4 +162,40 @@ func (conn *Conn) CreateAPIClientAuthorization(ctx context.Context, rootToken st
 		}
 	}
 	return
+}
+
+func validateLoginRedirectTarget(cluster *arvados.Cluster, returnTo string) error {
+	u, err := url.Parse(returnTo)
+	if err != nil {
+		return err
+	}
+	u, err = u.Parse("/")
+	if err != nil {
+		return err
+	}
+	if u.Port() == "80" && u.Scheme == "http" {
+		u.Host = u.Hostname()
+	} else if u.Port() == "443" && u.Scheme == "https" {
+		u.Host = u.Hostname()
+	}
+	if _, ok := cluster.Login.TrustedClients[arvados.URL(*u)]; ok {
+		return nil
+	}
+	if u.String() == cluster.Services.Workbench1.ExternalURL.String() ||
+		u.String() == cluster.Services.Workbench2.ExternalURL.String() {
+		return nil
+	}
+	if cluster.Login.TrustPrivateNetworks {
+		if u.Hostname() == "localhost" {
+			return nil
+		}
+		if ip := net.ParseIP(u.Hostname()); len(ip) > 0 {
+			for _, n := range privateNetworks {
+				if n.Contains(ip) {
+					return nil
+				}
+			}
+		}
+	}
+	return fmt.Errorf("requesting site is not listed in TrustedClients config")
 }

@@ -116,6 +116,9 @@ func (ctrl *oidcLoginController) Login(ctx context.Context, opts arvados.LoginOp
 		if opts.ReturnTo == "" {
 			return loginError(errors.New("missing return_to parameter"))
 		}
+		if err := validateLoginRedirectTarget(ctrl.Parent.cluster, opts.ReturnTo); err != nil {
+			return loginError(fmt.Errorf("invalid return_to parameter: %s", err))
+		}
 		state := ctrl.newOAuth2State([]byte(ctrl.Cluster.SystemRootToken), opts.Remote, opts.ReturnTo)
 		var authparams []oauth2.AuthCodeOption
 		for k, v := range ctrl.AuthParams {

@@ -45,6 +45,7 @@ func (s *suite) SetUpTest(c *check.C) {
 	c.Assert(err, check.IsNil)
 	cluster, err := cfg.GetCluster("")
 	c.Assert(err, check.IsNil)
+	cluster.Containers.ReserveExtraRAM = 256 << 20
 	cluster.Containers.CloudVMs.PollInterval = arvados.Duration(time.Second / 4)
 	cluster.Containers.MinRetryPeriod = arvados.Duration(time.Second / 4)
 	cluster.InstanceTypes = arvados.InstanceTypeMap{

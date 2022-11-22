@@ -91,6 +91,8 @@ class ArvadosContainer(JobBase):
         container_request["state"] = "Committed"
         container_request.setdefault("properties", {})
 
+        container_request["properties"]["cwl_input"] = self.joborder
+
         runtime_constraints = {}
 
         if runtimeContext.project_uuid:
@@ -441,6 +443,13 @@ class ArvadosContainer(JobBase):
 
             if container["output"]:
                 outputs = done.done_outputs(self, container, "/tmp", self.outdir, "/keep")
+
+            properties = record["properties"].copy()
+            properties["cwl_output"] = outputs
+            self.arvrunner.api.container_requests().update(
+                uuid=self.uuid,
+                body={"container_request": {"properties": properties}}
+            ).execute(num_retries=self.arvrunner.num_retries)
         except WorkflowException as e:
             # Only include a stack trace if in debug mode.
             # A stack trace may obfuscate more useful output about the workflow.
@@ -518,6 +527,15 @@ class RunnerContainer(Runner):
                 "kind": "collection",
                 "portable_data_hash": "%s" % workflowcollection
             }
+        elif self.embedded_tool.tool.get("id", "").startswith("arvwf:"):
+            workflowpath = "/var/lib/cwl/workflow.json#main"
+            record = self.arvrunner.api.workflows().get(uuid=self.embedded_tool.tool["id"][6:33]).execute(num_retries=self.arvrunner.num_retries)
+            packed = yaml.safe_load(record["definition"])
+            container_req["mounts"]["/var/lib/cwl/workflow.json"] = {
+                "kind": "json",
+                "content": packed
+            }
+            container_req["properties"]["template_uuid"] = self.embedded_tool.tool["id"][6:33]
         else:
             packed = packed_workflow(self.arvrunner, self.embedded_tool, self.merged_map, runtimeContext, git_info)
             workflowpath = "/var/lib/cwl/workflow.json#main"
@@ -525,8 +543,6 @@ class RunnerContainer(Runner):
                 "kind": "json",
                 "content": packed
             }
-            if self.embedded_tool.tool.get("id", "").startswith("arvwf:"):
-                container_req["properties"]["template_uuid"] = self.embedded_tool.tool["id"][6:33]
 
         container_req["properties"].update({k.replace("http://arvados.org/cwl#", "arv:"): v for k, v in git_info.items()})
 
@@ -591,6 +607,12 @@ class RunnerContainer(Runner):
 
         if runtimeContext.enable_preemptible is False:
             command.append("--disable-preemptible")
+
+        if runtimeContext.varying_url_params:
+            command.append("--varying-url-params="+runtimeContext.varying_url_params)
+
+        if runtimeContext.prefer_cached_downloads:
+            command.append("--prefer-cached-downloads")
 
         command.extend([workflowpath, "/var/lib/cwl/cwl.input.json"])
 

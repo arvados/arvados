@@ -6,6 +6,7 @@ package keepbalance
 
 import (
 	"bytes"
+	"context"
 	"io"
 	"os"
 	"strings"
@@ -97,7 +98,7 @@ func (s *integrationSuite) TestBalanceAPIFixtures(c *check.C) {
 			Logger:  logger,
 			Metrics: newMetrics(prometheus.NewRegistry()),
 		}
-		nextOpts, err := bal.Run(s.client, s.config, opts)
+		nextOpts, err := bal.Run(context.Background(), s.client, s.config, opts)
 		c.Check(err, check.IsNil)
 		c.Check(nextOpts.SafeRendezvousState, check.Not(check.Equals), "")
 		c.Check(nextOpts.CommitPulls, check.Equals, true)

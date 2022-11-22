@@ -41,25 +41,27 @@ func (s *LoginSuite) TestDeferToLoginCluster(c *check.C) {
 }
 
 func (s *LoginSuite) TestLogout(c *check.C) {
+	otherOrigin := arvados.URL{Scheme: "https", Host: "app.example.com", Path: "/"}
+	otherURL := "https://app.example.com/foo"
 	s.cluster.Services.Workbench1.ExternalURL = arvados.URL{Scheme: "https", Host: "workbench1.example.com"}
 	s.cluster.Services.Workbench2.ExternalURL = arvados.URL{Scheme: "https", Host: "workbench2.example.com"}
+	s.cluster.Login.TrustedClients = map[arvados.URL]struct{}{otherOrigin: {}}
 	s.addHTTPRemote(c, "zhome", &arvadostest.APIStub{})
 	s.cluster.Login.LoginCluster = "zhome"
 	// s.fed is already set by SetUpTest, but we need to
 	// reinitialize with the above config changes.
 	s.fed = New(s.cluster, nil)
 
-	returnTo := "https://app.example.com/foo?bar"
 	for _, trial := range []struct {
 		token    string
 		returnTo string
 		target   string
 	}{
 		{token: "", returnTo: "", target: s.cluster.Services.Workbench2.ExternalURL.String()},
-		{token: "", returnTo: returnTo, target: returnTo},
-		{token: "zzzzzzzzzzzzzzzzzzzzz", returnTo: returnTo, target: returnTo},
-		{token: "v2/zzzzz-aaaaa-aaaaaaaaaaaaaaa/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", returnTo: returnTo, target: returnTo},
-		{token: "v2/zhome-aaaaa-aaaaaaaaaaaaaaa/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", returnTo: returnTo, target: "http://" + s.cluster.RemoteClusters["zhome"].Host + "/logout?" + url.Values{"return_to": {returnTo}}.Encode()},
+		{token: "", returnTo: otherURL, target: otherURL},
+		{token: "zzzzzzzzzzzzzzzzzzzzz", returnTo: otherURL, target: otherURL},
+		{token: "v2/zzzzz-aaaaa-aaaaaaaaaaaaaaa/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", returnTo: otherURL, target: otherURL},
+		{token: "v2/zhome-aaaaa-aaaaaaaaaaaaaaa/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", returnTo: otherURL, target: "http://" + s.cluster.RemoteClusters["zhome"].Host + "/logout?" + url.Values{"return_to": {otherURL}}.Encode()},
 	} {
 		c.Logf("trial %#v", trial)
 		ctx := s.ctx

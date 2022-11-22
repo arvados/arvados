@@ -878,16 +878,28 @@ Clusters:
       # by going through login again.
       IssueTrustedTokens: true
 
-      # When the token is returned to a client, the token itself may
-      # be restricted from viewing/creating other tokens based on whether
-      # the client is "trusted" or not.  The local Workbench1 and
-      # Workbench2 are trusted by default, but if this is a
-      # LoginCluster, you probably want to include the other Workbench
-      # instances in the federation in this list.
+      # Origins (scheme://host[:port]) of clients trusted to receive
+      # new tokens via login process.  The ExternalURLs of the local
+      # Workbench1 and Workbench2 are trusted implicitly and do not
+      # need to be listed here.  If this is a LoginCluster, you
+      # probably want to include the other Workbench instances in the
+      # federation in this list.
+      #
+      # Example:
+      #
+      # TrustedClients:
+      #   "https://workbench.other-cluster.example": {}
+      #   "https://workbench2.other-cluster.example": {}
       TrustedClients:
-        SAMPLE:
-          "https://workbench.federate1.example": {}
-          "https://workbench.federate2.example": {}
+        SAMPLE: {}
+
+      # Treat any origin whose host part is "localhost" or a private
+      # IP address (e.g., http://10.0.0.123:3000/) as if it were
+      # listed in TrustedClients.
+      #
+      # Intended only for test/development use. Not appropriate for
+      # production use.
+      TrustPrivateNetworks: false
 
     Git:
       # Path to git or gitolite-shell executable. Each authenticated
@@ -1023,7 +1035,7 @@ Clusters:
 
       # Extra RAM to reserve on the node, in addition to
       # the amount specified in the container's RuntimeConstraints
-      ReserveExtraRAM: 256MiB
+      ReserveExtraRAM: 550MiB
 
       # Minimum time between two attempts to run the same container
       MinRetryPeriod: 0s
@@ -1078,11 +1090,15 @@ Clusters:
       LocalKeepLogsToContainerLog: none
 
       Logging:
-        # When you run the db:delete_old_container_logs task, it will find
-        # containers that have been finished for at least this many seconds,
+        # Periodically (see SweepInterval) Arvados will check for
+        # containers that have been finished for at least this long,
         # and delete their stdout, stderr, arv-mount, crunch-run, and
         # crunchstat logs from the logs table.
         MaxAge: 720h
+
+        # How often to delete cached log entries for finished
+        # containers (see MaxAge).
+        SweepInterval: 12h
 
         # These two settings control how frequently log events are flushed to the
         # database.  Log lines are buffered until either crunch_log_bytes_per_event
@@ -1502,7 +1518,7 @@ Clusters:
           RaceWindow: 24h
           PrefixLength: 0
           # Use aws-s3-go (v2) instead of goamz
-          UseAWSS3v2Driver: false
+          UseAWSS3v2Driver: true
 
           # For S3 driver, potentially unsafe tuning parameter,
           # intentionally excluded from main documentation.

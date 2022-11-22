@@ -194,6 +194,7 @@ var whitelist = map[string]bool{
 	"Login.Test.Users":                                    false,
 	"Login.TokenLifetime":                                 false,
 	"Login.TrustedClients":                                false,
+	"Login.TrustPrivateNetworks":                          false,
 	"Mail":                                                true,
 	"Mail.EmailFrom":                                      false,
 	"Mail.IssueReporterEmailFrom":                         false,
@@ -265,6 +266,7 @@ var whitelist = map[string]bool{
 	"Workbench.ApplicationMimetypesWithViewIcon.*":        true,
 	"Workbench.ArvadosDocsite":                            true,
 	"Workbench.ArvadosPublicDataDocURL":                   true,
+	"Workbench.BannerURL":                                 true,
 	"Workbench.DefaultOpenIdPrefix":                       false,
 	"Workbench.DisableSharingURLsUI":                      true,
 	"Workbench.EnableGettingStartedPopup":                 true,
@@ -292,7 +294,6 @@ var whitelist = map[string]bool{
 	"Workbench.UserProfileFormFields.*.*.*":               true,
 	"Workbench.UserProfileFormMessage":                    true,
 	"Workbench.WelcomePageHTML":                           true,
-	"Workbench.BannerURL":                                 true,
 }
 
 func redactUnsafe(m map[string]interface{}, mPrefix, lookupPrefix string) error {

@@ -29,8 +29,43 @@ Health check endpoints return a JSON object with the field @health@.  This has a
 }
 </pre>
 
-h2. Healthcheck aggregator
+h2. Health check aggregator
 
 The service @arvados-health@ performs health checks on all configured services and returns a single value of @OK@ or @ERROR@ for the entire cluster.  It exposes the endpoint @/_health/all@ .
 
 The healthcheck aggregator uses the @Services@ section of the cluster-wide @config.yml@ configuration file.
+
+h2. Health check command
+
+The @arvados-server check@ command is another way to perform the same health checks as the health check aggregator service. It does not depend on the aggregator service.
+
+If all checks pass, it writes @health check OK@ to stderr (unless the @-quiet@ flag is used) and exits 0. Otherwise, it writes error messages to stderr and exits with error status.
+
+@arvados-server check -yaml@ outputs a YAML document on stdout with additional details about each service endpoint that was checked.
+
+{% codeblock as yaml %}
+Checks:
+  "arvados-api-server+http://localhost:8004/_health/ping":
+    ClockTime: "2022-11-16T16:08:57Z"
+    ConfigSourceSHA256: e2c086ae3dd290cf029cb3fe79146529622279b6280cf6cd17dc8d8c30daa57f
+    ConfigSourceTimestamp: "2022-11-07T18:08:24.539545Z"
+    HTTPStatusCode: 200
+    Health: OK
+    Response:
+      health: OK
+    ResponseTime: 0.017159
+    Server: nginx/1.14.0 + Phusion Passenger(R) 6.0.15
+    Version: 2.5.0~dev20221116141533
+  "arvados-controller+http://localhost:8003/_health/ping":
+    ClockTime: "2022-11-16T16:08:57Z"
+    ConfigSourceSHA256: e2c086ae3dd290cf029cb3fe79146529622279b6280cf6cd17dc8d8c30daa57f
+    ConfigSourceTimestamp: "2022-11-07T18:08:24.539545Z"
+    HTTPStatusCode: 200
+    Health: OK
+    Response:
+      health: OK
+    ResponseTime: 0.004748
+    Server: ""
+    Version: 2.5.0~dev20221116141533 (go1.18.8)
+# ...
+{% endcodeblock %}

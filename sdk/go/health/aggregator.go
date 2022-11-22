@@ -135,6 +135,7 @@ type CheckResult struct {
 	Response       map[string]interface{} `json:",omitempty"`
 	ResponseTime   json.Number
 	ClockTime      time.Time
+	Server         string // "Server" header in http response
 	Metrics
 	respTime time.Duration
 }
@@ -360,6 +361,7 @@ func (agg *Aggregator) ping(target *url.URL) (result CheckResult) {
 	}
 	result.Health = "OK"
 	result.ClockTime, _ = time.Parse(time.RFC1123, resp.Header.Get("Date"))
+	result.Server = resp.Header.Get("Server")
 	return
 }
 
@@ -453,7 +455,7 @@ func (ccmd checkCommand) run(ctx context.Context, prog string, args []string, st
 	versionFlag := flags.Bool("version", false, "Write version information to stdout and exit 0")
 	timeout := flags.Duration("timeout", defaultTimeout.Duration(), "Maximum time to wait for health responses")
 	quiet := flags.Bool("quiet", false, "Silent on success (suppress 'health check OK' message on stderr)")
-	outputYAML := flags.Bool("yaml", false, "Output full health report in YAML format (default mode shows errors as plain text, is silent on success)")
+	outputYAML := flags.Bool("yaml", false, "Output full health report in YAML format (default mode prints 'health check OK' or plain text errors)")
 	if ok, _ := cmd.ParseFlags(flags, prog, args, "", stderr); !ok {
 		// cmd.ParseFlags already reported the error
 		return errSilent

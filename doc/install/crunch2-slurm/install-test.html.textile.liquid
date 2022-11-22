@@ -31,35 +31,23 @@ Make sure all of your compute nodes are set up with "Docker":../crunch2/install-
 On the dispatch node, start monitoring the crunch-dispatch-slurm logs:
 
 <notextile>
-<pre><code>~$ <span class="userinput">sudo journalctl -o cat -fu crunch-dispatch-slurm.service</span>
+<pre><code># <span class="userinput">journalctl -o cat -fu crunch-dispatch-slurm.service</span>
 </code></pre>
 </notextile>
 
-Submit a simple container request:
+In another terminal window, use the diagnostics tool to run a simple container.
 
 <notextile>
-<pre><code>shell:~$ <span class="userinput">arv container_request create --container-request '{
-  "name":            "test",
-  "state":           "Committed",
-  "priority":        1,
-  "container_image": "arvados/jobs:latest",
-  "command":         ["echo", "Hello, Crunch!"],
-  "output_path":     "/out",
-  "mounts": {
-    "/out": {
-      "kind":        "tmp",
-      "capacity":    1000
-    }
-  },
-  "runtime_constraints": {
-    "vcpus": 1,
-    "ram": 8388608
-  }
-}'</span>
+<pre><code># <span class="userinput">arvados-client sudo diagnostics</span>
+INFO       5: running health check (same as `arvados-server check`)
+INFO      10: getting discovery document from https://zzzzz.arvadosapi.com/discovery/v1/apis/arvados/v1/rest
+...
+INFO     160: running a container
+INFO      ... container request submitted, waiting up to 10m for container to run
 </code></pre>
 </notextile>
 
-This command should return a record with a @container_uuid@ field.  Once @crunch-dispatch-slurm@ polls the API server for new containers to run, you should see it dispatch that same container.  It will log messages like:
+Once @crunch-dispatch-slurm@ polls the API server for new containers to run, you should see it dispatch the new container.  It will log messages like:
 
 <notextile>
 <pre><code>2016/08/05 13:52:54 Monitoring container zzzzz-dz642-hdp2vpu9nq14tx0 started

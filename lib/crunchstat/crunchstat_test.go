@@ -5,62 +5,81 @@
 package crunchstat
 
 import (
-	"bufio"
-	"io"
+	"bytes"
 	"log"
 	"os"
 	"regexp"
+	"strconv"
 	"testing"
+	"time"
+
+	"github.com/sirupsen/logrus"
+	. "gopkg.in/check.v1"
 )
 
-func bufLogger() (*log.Logger, *bufio.Reader) {
-	r, w := io.Pipe()
-	logger := log.New(w, "", 0)
-	return logger, bufio.NewReader(r)
+func Test(t *testing.T) {
+	TestingT(t)
 }
 
-func TestReadAllOrWarnFail(t *testing.T) {
-	logger, rcv := bufLogger()
-	rep := Reporter{Logger: logger}
+var _ = Suite(&suite{})
 
-	done := make(chan bool)
-	var msg []byte
-	var err error
-	go func() {
-		msg, err = rcv.ReadBytes('\n')
-		close(done)
-	}()
-	{
-		// The special file /proc/self/mem can be opened for
-		// reading, but reading from byte 0 returns an error.
-		f, err := os.Open("/proc/self/mem")
-		if err != nil {
-			t.Fatalf("Opening /proc/self/mem: %s", err)
-		}
-		if x, err := rep.readAllOrWarn(f); err == nil {
-			t.Fatalf("Expected error, got %v", x)
-		}
-	}
-	<-done
-	if err != nil {
-		t.Fatal(err)
-	} else if matched, err := regexp.MatchString("^warning: read /proc/self/mem: .*", string(msg)); err != nil || !matched {
-		t.Fatalf("Expected error message about unreadable file, got \"%s\"", msg)
-	}
+type suite struct{}
+
+func (s *suite) TestReadAllOrWarnFail(c *C) {
+	var logger bytes.Buffer
+	rep := Reporter{Logger: log.New(&logger, "", 0)}
+
+	// The special file /proc/self/mem can be opened for
+	// reading, but reading from byte 0 returns an error.
+	f, err := os.Open("/proc/self/mem")
+	c.Assert(err, IsNil)
+	defer f.Close()
+	_, err = rep.readAllOrWarn(f)
+	c.Check(err, NotNil)
+	c.Check(logger.String(), Matches, "^warning: read /proc/self/mem: .*\n")
 }
 
-func TestReadAllOrWarnSuccess(t *testing.T) {
-	rep := Reporter{Logger: log.New(os.Stderr, "", 0)}
+func (s *suite) TestReadAllOrWarnSuccess(c *C) {
+	var logbuf bytes.Buffer
+	rep := Reporter{Logger: log.New(&logbuf, "", 0)}
 
 	f, err := os.Open("./crunchstat_test.go")
-	if err != nil {
-		t.Fatalf("Opening ./crunchstat_test.go: %s", err)
-	}
+	c.Assert(err, IsNil)
+	defer f.Close()
 	data, err := rep.readAllOrWarn(f)
-	if err != nil {
-		t.Fatalf("got error %s", err)
+	c.Check(err, IsNil)
+	c.Check(string(data), Matches, "(?ms).*\npackage crunchstat\n.*")
+	c.Check(logbuf.String(), Equals, "")
+}
+
+func (s *suite) TestReportPIDs(c *C) {
+	var logbuf bytes.Buffer
+	logger := logrus.New()
+	logger.Out = &logbuf
+	r := Reporter{
+		Logger:     logger,
+		CgroupRoot: "/sys/fs/cgroup",
+		PollPeriod: time.Second,
 	}
-	if matched, err := regexp.MatchString("\npackage crunchstat\n", string(data)); err != nil || !matched {
-		t.Fatalf("data failed regexp: err %v, matched %v", err, matched)
+	r.Start()
+	r.ReportPID("init", 1)
+	r.ReportPID("test_process", os.Getpid())
+	r.ReportPID("nonexistent", 12345) // should be silently ignored/omitted
+	for deadline := time.Now().Add(10 * time.Second); ; time.Sleep(time.Millisecond) {
+		if time.Now().After(deadline) {
+			c.Error("timed out")
+			break
+		}
+		if m := regexp.MustCompile(`(?ms).*procmem \d+ init (\d+) test_process.*`).FindSubmatch(logbuf.Bytes()); len(m) > 0 {
+			size, err := strconv.ParseInt(string(m[1]), 10, 64)
+			c.Check(err, IsNil)
+			// Expect >1 MiB and <100 MiB -- otherwise we
+			// are probably misinterpreting /proc/N/stat
+			// or multiplying by the wrong page size.
+			c.Check(size > 1000000, Equals, true)
+			c.Check(size < 100000000, Equals, true)
+			break
+		}
 	}
+	c.Logf("%s", logbuf.String())
 }

@@ -32,7 +32,7 @@ ENV DEBIAN_FRONTEND noninteractive
 
 SHELL ["/bin/bash", "-c"]
 # Install dependencies.
-RUN yum -q -y install make automake gcc gcc-c++ libyaml-devel patch readline-devel zlib-devel libffi-devel openssl-devel bzip2 libtool bison sqlite-devel rpm-build git perl-ExtUtils-MakeMaker libattr-devel nss-devel libcurl-devel which tar unzip scl-utils centos-release-scl postgresql-devel fuse-devel xz-libs git wget pam-devel
+RUN yum -q -y install make automake gcc gcc-c++ libyaml-devel patch readline-devel zlib-devel libffi-devel openssl-devel bzip2 libtool bison sqlite-devel rpm-build git libattr-devel nss-devel libcurl-devel which tar unzip scl-utils centos-release-scl postgresql-devel fuse-devel xz-libs git wget pam-devel
 
 # Install RVM
 ADD generated/mpapis.asc /tmp/

@@ -238,6 +238,8 @@ func (s *VocabularySuite) TestNewVocabulary(c *check.C) {
 					"docker-image-repo-tag": true,
 					"filters":               true,
 					"container_request":     true,
+					"cwl_input":             true,
+					"cwl_output":            true,
 				},
 				StrictTags: false,
 				Tags: map[string]VocabularyTag{

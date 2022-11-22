@@ -103,9 +103,6 @@ navbar:
       - sdk/java-v2/index.html.textile.liquid
       - sdk/java-v2/example.html.textile.liquid
       - sdk/java-v2/javadoc.html.textile.liquid
-    - Perl:
-      - sdk/perl/index.html.textile.liquid
-      - sdk/perl/example.html.textile.liquid
   api:
     - Concepts:
       - api/index.html.textile.liquid
@@ -132,6 +129,7 @@ navbar:
       - api/keep-s3.html.textile.liquid
       - api/keep-web-urls.html.textile.liquid
       - api/projects.html.textile.liquid
+      - api/properties.html.textile.liquid
       - api/methods/collections.html.textile.liquid
       - api/methods/repositories.html.textile.liquid
     - Container engine:
@@ -186,6 +184,7 @@ navbar:
       - admin/logging.html.textile.liquid
       - admin/metrics.html.textile.liquid
       - admin/health-checks.html.textile.liquid
+      - admin/diagnostics.html.textile.liquid
       - admin/management-token.html.textile.liquid
       - admin/user-activity.html.textile.liquid
     - Data Management:

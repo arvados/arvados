@@ -515,6 +515,26 @@ func (conn *Conn) LinkDelete(ctx context.Context, options arvados.DeleteOptions)
 	return conn.chooseBackend(options.UUID).LinkDelete(ctx, options)
 }
 
+func (conn *Conn) LogCreate(ctx context.Context, options arvados.CreateOptions) (arvados.Log, error) {
+	return conn.chooseBackend(options.ClusterID).LogCreate(ctx, options)
+}
+
+func (conn *Conn) LogUpdate(ctx context.Context, options arvados.UpdateOptions) (arvados.Log, error) {
+	return conn.chooseBackend(options.UUID).LogUpdate(ctx, options)
+}
+
+func (conn *Conn) LogGet(ctx context.Context, options arvados.GetOptions) (arvados.Log, error) {
+	return conn.chooseBackend(options.UUID).LogGet(ctx, options)
+}
+
+func (conn *Conn) LogList(ctx context.Context, options arvados.ListOptions) (arvados.LogList, error) {
+	return conn.generated_LogList(ctx, options)
+}
+
+func (conn *Conn) LogDelete(ctx context.Context, options arvados.DeleteOptions) (arvados.Log, error) {
+	return conn.chooseBackend(options.UUID).LogDelete(ctx, options)
+}
+
 func (conn *Conn) SpecimenList(ctx context.Context, options arvados.ListOptions) (arvados.SpecimenList, error) {
 	return conn.generated_SpecimenList(ctx, options)
 }

@@ -58,7 +58,7 @@ defaults to $HOME/arvados-api-server if that directory exists.
 
 More information and background:
 
-https://arvados.org/projects/arvados/wiki/Running_tests
+https://dev.arvados.org/projects/arvados/wiki/Running_tests
 
 Available tests:
 
@@ -150,7 +150,6 @@ VENVDIR=
 VENV3DIR=
 PYTHONPATH=
 GEMHOME=
-PERLINSTALLBASE=
 R_LIBS=
 export LANG=en_US.UTF-8
 
@@ -232,14 +231,6 @@ sanity_checks() {
     echo -n 'nginx: '
     PATH="$PATH:/sbin:/usr/sbin:/usr/local/sbin" nginx -v \
         || fatal "No nginx. Try: apt-get install nginx"
-    echo -n 'perl: '
-    perl -v | grep version \
-        || fatal "No perl. Try: apt-get install perl"
-    for mod in ExtUtils::MakeMaker JSON LWP Net::SSL; do
-        echo -n "perl $mod: "
-        perl -e "use $mod; print \"\$$mod::VERSION\\n\"" \
-            || fatal "No $mod. Try: apt-get install perl-modules libcrypt-ssleay-perl libjson-perl libwww-perl"
-    done
     echo -n 'gitolite: '
     which gitolite \
         || fatal "No gitolite. Try: apt-get install gitolite3"
@@ -621,7 +612,7 @@ initialize() {
     fi
 
     # Set up temporary install dirs (unless existing dirs were supplied)
-    for tmpdir in VENV3DIR GOPATH GEMHOME PERLINSTALLBASE R_LIBS
+    for tmpdir in VENV3DIR GOPATH GEMHOME R_LIBS
     do
         if [[ -z "${!tmpdir}" ]]; then
             eval "$tmpdir"="$temp/$tmpdir"
@@ -632,9 +623,6 @@ initialize() {
     done
 
     rm -vf "${WORKSPACE}/tmp/*.log"
-
-    export PERLINSTALLBASE
-    export PERL5LIB="$PERLINSTALLBASE/lib/perl5${PERL5LIB:+:$PERL5LIB}"
 
     export R_LIBS
 
@@ -928,12 +916,6 @@ install_sdk/R() {
   fi
 }
 
-install_sdk/perl() {
-    cd "$WORKSPACE/sdk/perl" \
-        && perl Makefile.PL INSTALL_BASE="$PERLINSTALLBASE" \
-        && make install INSTALLDIRS=perl
-}
-
 install_sdk/cli() {
     install_gem arvados-cli sdk/cli
 }
@@ -1097,7 +1079,6 @@ install_deps() {
     do_install env
     do_install cmd/arvados-server go
     do_install sdk/cli
-    do_install sdk/perl
     do_install sdk/python pip "${VENV3DIR}/bin/"
     do_install sdk/ruby
     do_install services/api
@@ -1110,7 +1091,6 @@ install_all() {
     do_install doc
     do_install sdk/ruby
     do_install sdk/R
-    do_install sdk/perl
     do_install sdk/cli
     do_install services/login-sync
     for p in "${pythonstuff[@]}"

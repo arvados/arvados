@@ -62,6 +62,8 @@ type s3AWSbucket struct {
 // aws-sdk-go based on the UseAWSS3v2Driver feature flag
 func chooseS3VolumeDriver(cluster *arvados.Cluster, volume arvados.Volume, logger logrus.FieldLogger, metrics *volumeMetricsVecs) (Volume, error) {
 	v := &S3Volume{cluster: cluster, volume: volume, metrics: metrics}
+	// Default value will be overriden if it happens to be defined in the config
+	v.S3VolumeDriverParameters.UseAWSS3v2Driver = true
 	err := json.Unmarshal(volume.DriverParameters, v)
 	if err != nil {
 		return nil, err
@@ -182,19 +184,25 @@ func (v *S3AWSVolume) check(ec2metadataHostname string) error {
 			if v.Endpoint != "" && service == "s3" {
 				return aws.Endpoint{
 					URL:           v.Endpoint,
-					SigningRegion: v.Region,
+					SigningRegion: region,
 				}, nil
 			} else if service == "ec2metadata" && ec2metadataHostname != "" {
 				return aws.Endpoint{
 					URL: ec2metadataHostname,
 				}, nil
+			} else {
+				return defaultResolver.ResolveEndpoint(service, region)
 			}
-
-			return defaultResolver.ResolveEndpoint(service, region)
 		}
 		cfg.EndpointResolver = aws.EndpointResolverFunc(myCustomResolver)
 	}
-
+	if v.Region == "" {
+		// Endpoint is already specified (otherwise we would
+		// have errored out above), but Region is also
+		// required by the aws sdk, in order to determine
+		// SignatureVersions.
+		v.Region = "us-east-1"
+	}
 	cfg.Region = v.Region
 
 	// Zero timeouts mean "wait forever", which is a bad

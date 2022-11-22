@@ -38,6 +38,7 @@ func (Command) RunCommand(prog string, args []string, stdin io.Reader, stdout, s
 	f.StringVar(&diag.dockerImage, "docker-image", "", "image to use when running a test container (default: use embedded hello-world image)")
 	f.BoolVar(&diag.checkInternal, "internal-client", false, "check that this host is considered an \"internal\" client")
 	f.BoolVar(&diag.checkExternal, "external-client", false, "check that this host is considered an \"external\" client")
+	f.BoolVar(&diag.verbose, "v", false, "verbose: include more information in report")
 	f.IntVar(&diag.priority, "priority", 500, "priority for test container (1..1000, or 0 to skip)")
 	f.DurationVar(&diag.timeout, "timeout", 10*time.Second, "timeout for http requests")
 	if ok, code := cmd.ParseFlags(f, prog, args, "", stderr); !ok {
@@ -61,6 +62,7 @@ func (Command) RunCommand(prog string, args []string, stdin io.Reader, stdout, s
 }
 
 // docker save hello-world > hello-world.tar
+//
 //go:embed hello-world.tar
 var HelloWorldDockerImage []byte
 
@@ -73,6 +75,7 @@ type diagnoser struct {
 	dockerImage   string
 	checkInternal bool
 	checkExternal bool
+	verbose       bool
 	timeout       time.Duration
 	logger        *logrus.Logger
 	errors        []string
@@ -85,6 +88,12 @@ func (diag *diagnoser) debugf(f string, args ...interface{}) {
 
 func (diag *diagnoser) infof(f string, args ...interface{}) {
 	diag.logger.Infof("  ... "+f, args...)
+}
+
+func (diag *diagnoser) verbosef(f string, args ...interface{}) {
+	if diag.verbose {
+		diag.logger.Infof("  ... "+f, args...)
+	}
 }
 
 func (diag *diagnoser) warnf(f string, args ...interface{}) {
@@ -128,6 +137,13 @@ func (diag *diagnoser) runtests() {
 		return
 	}
 
+	hostname, err := os.Hostname()
+	if err != nil {
+		diag.warnf("error getting hostname: %s")
+	} else {
+		diag.verbosef("hostname = %s", hostname)
+	}
+
 	diag.dotest(5, "running health check (same as `arvados-server check`)", func() error {
 		ldr := config.NewLoader(&bytes.Buffer{}, ctxlog.New(&bytes.Buffer{}, "text", "info"))
 		ldr.SetupFlags(flag.NewFlagSet("diagnostics", flag.ContinueOnError))
@@ -141,14 +157,39 @@ func (diag *diagnoser) runtests() {
 			return err
 		}
 		if cluster.SystemRootToken != os.Getenv("ARVADOS_API_TOKEN") {
-			diag.infof("skipping because provided token is not SystemRootToken")
+			return fmt.Errorf("diagnostics usage error: %s is readable but SystemRootToken does not match $ARVADOS_API_TOKEN (to fix, either run 'arvados-client sudo diagnostics' to load everything from config file, or set ARVADOS_CONFIG=- to load nothing from config file)", ldr.Path)
 		}
 		agg := &health.Aggregator{Cluster: cluster}
 		resp := agg.ClusterHealth()
 		for _, e := range resp.Errors {
 			diag.errorf("health check: %s", e)
 		}
-		diag.infof("health check: reported clock skew %v", resp.ClockSkew)
+		if len(resp.Errors) > 0 {
+			diag.infof("consider running `arvados-server check -yaml` for a comprehensive report")
+		}
+		diag.verbosef("reported clock skew = %v", resp.ClockSkew)
+		reported := map[string]bool{}
+		for _, result := range resp.Checks {
+			version := strings.SplitN(result.Metrics.Version, " (go", 2)[0]
+			if version != "" && !reported[version] {
+				diag.verbosef("arvados version = %s", version)
+				reported[version] = true
+			}
+		}
+		reported = map[string]bool{}
+		for _, result := range resp.Checks {
+			if result.Server != "" && !reported[result.Server] {
+				diag.verbosef("http frontend version = %s", result.Server)
+				reported[result.Server] = true
+			}
+		}
+		reported = map[string]bool{}
+		for _, result := range resp.Checks {
+			if sha := result.ConfigSourceSHA256; sha != "" && !reported[sha] {
+				diag.verbosef("config file sha256 = %s", sha)
+				reported[sha] = true
+			}
+		}
 		return nil
 	})
 
@@ -161,7 +202,7 @@ func (diag *diagnoser) runtests() {
 		if err != nil {
 			return err
 		}
-		diag.debugf("BlobSignatureTTL = %d", dd.BlobSignatureTTL)
+		diag.verbosef("BlobSignatureTTL = %d", dd.BlobSignatureTTL)
 		return nil
 	})
 
@@ -175,7 +216,7 @@ func (diag *diagnoser) runtests() {
 		if err != nil {
 			return err
 		}
-		diag.debugf("Collections.BlobSigning = %v", cluster.Collections.BlobSigning)
+		diag.verbosef("Collections.BlobSigning = %v", cluster.Collections.BlobSigning)
 		cfgOK = true
 		return nil
 	})
@@ -188,7 +229,7 @@ func (diag *diagnoser) runtests() {
 		if err != nil {
 			return err
 		}
-		diag.debugf("user uuid = %s", user.UUID)
+		diag.verbosef("user uuid = %s", user.UUID)
 		return nil
 	})
 
@@ -277,9 +318,9 @@ func (diag *diagnoser) runtests() {
 		isInternal := found["proxy"] == 0 && len(keeplist.Items) > 0
 		isExternal := found["proxy"] > 0 && found["proxy"] == len(keeplist.Items)
 		if isExternal {
-			diag.debugf("controller returned only proxy services, this host is treated as \"external\"")
+			diag.infof("controller returned only proxy services, this host is treated as \"external\"")
 		} else if isInternal {
-			diag.debugf("controller returned only non-proxy services, this host is treated as \"internal\"")
+			diag.infof("controller returned only non-proxy services, this host is treated as \"internal\"")
 		}
 		if (diag.checkInternal && !isInternal) || (diag.checkExternal && !isExternal) {
 			return fmt.Errorf("expecting internal=%v external=%v, but found internal=%v external=%v", diag.checkInternal, diag.checkExternal, isInternal, isExternal)
@@ -356,7 +397,7 @@ func (diag *diagnoser) runtests() {
 		}
 		if len(grplist.Items) > 0 {
 			project = grplist.Items[0]
-			diag.debugf("using existing project, uuid = %s", project.UUID)
+			diag.verbosef("using existing project, uuid = %s", project.UUID)
 			return nil
 		}
 		diag.debugf("list groups: ok, no results")
@@ -367,7 +408,7 @@ func (diag *diagnoser) runtests() {
 		if err != nil {
 			return fmt.Errorf("create project: %s", err)
 		}
-		diag.debugf("created project, uuid = %s", project.UUID)
+		diag.verbosef("created project, uuid = %s", project.UUID)
 		return nil
 	})
 
@@ -387,7 +428,7 @@ func (diag *diagnoser) runtests() {
 		if err != nil {
 			return err
 		}
-		diag.debugf("ok, uuid = %s", collection.UUID)
+		diag.verbosef("ok, uuid = %s", collection.UUID)
 		return nil
 	})
 
@@ -657,17 +698,16 @@ func (diag *diagnoser) runtests() {
 		if err != nil {
 			return err
 		}
-		diag.debugf("container request uuid = %s", cr.UUID)
-		diag.debugf("container uuid = %s", cr.ContainerUUID)
+		diag.verbosef("container request uuid = %s", cr.UUID)
+		diag.verbosef("container uuid = %s", cr.ContainerUUID)
 
 		timeout := 10 * time.Minute
 		diag.infof("container request submitted, waiting up to %v for container to run", arvados.Duration(timeout))
-		ctx, cancel = context.WithDeadline(context.Background(), time.Now().Add(timeout))
-		defer cancel()
+		deadline := time.Now().Add(timeout)
 
 		var c arvados.Container
-		for ; cr.State != arvados.ContainerRequestStateFinal; time.Sleep(2 * time.Second) {
-			ctx, cancel := context.WithDeadline(ctx, time.Now().Add(diag.timeout))
+		for ; cr.State != arvados.ContainerRequestStateFinal && time.Now().Before(deadline); time.Sleep(2 * time.Second) {
+			ctx, cancel := context.WithDeadline(context.Background(), time.Now().Add(diag.timeout))
 			defer cancel()
 
 			crStateWas := cr.State
@@ -687,11 +727,26 @@ func (diag *diagnoser) runtests() {
 			if c.State != cStateWas {
 				diag.debugf("container state = %s", c.State)
 			}
+
+			cancel()
 		}
 
+		if cr.State != arvados.ContainerRequestStateFinal {
+			err := client.RequestAndDecodeContext(context.Background(), &cr, "PATCH", "arvados/v1/container_requests/"+cr.UUID, nil, map[string]interface{}{
+				"container_request": map[string]interface{}{
+					"priority": 0,
+				}})
+			if err != nil {
+				diag.infof("error canceling container request %s: %s", cr.UUID, err)
+			} else {
+				diag.debugf("canceled container request %s", cr.UUID)
+			}
+			return fmt.Errorf("timed out waiting for container to finish; container request %s state was %q, container %s state was %q", cr.UUID, cr.State, c.UUID, c.State)
+		}
 		if c.State != arvados.ContainerStateComplete {
 			return fmt.Errorf("container request %s is final but container %s did not complete: container state = %q", cr.UUID, cr.ContainerUUID, c.State)
-		} else if c.ExitCode != 0 {
+		}
+		if c.ExitCode != 0 {
 			return fmt.Errorf("container exited %d", c.ExitCode)
 		}
 		return nil

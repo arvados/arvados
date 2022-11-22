@@ -207,11 +207,6 @@ fi
 # Required due to CVE-2022-24765
 git config --global --add safe.directory /arvados
 
-# Perl packages
-debug_echo -e "\nPerl packages\n"
-
-handle_libarvados_perl
-
 # Ruby gems
 debug_echo -e "\nRuby gems\n"
 

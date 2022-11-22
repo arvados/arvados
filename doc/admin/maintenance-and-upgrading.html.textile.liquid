@@ -52,6 +52,8 @@ If you know which Arvados service uses the specific configuration that was modif
 
 To check for services that have not restarted since the configuration file was updated, run the @arvados-server check@ command on each system node.
 
+To test functionality and check for common problems, run the @arvados-client sudo diagnostics@ command on a system node.
+
 h2(#upgrading). Upgrading Arvados
 
 Upgrading Arvados typically involves the following steps:
@@ -68,3 +70,4 @@ Upgrading Arvados typically involves the following steps:
 # Run @arvados-server config-check@ to detect configuration errors or deprecated entries.
 # Verify that the Arvados services were restarted as part of the package upgrades.
 # Run @arvados-server check@ to detect services that did not restart properly.
+# Run @arvados-client sudo diagnostics@ to test functionality.
