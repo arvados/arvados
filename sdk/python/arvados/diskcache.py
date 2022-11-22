@@ -9,6 +9,7 @@ import traceback
 import stat
 import tempfile
 import fcntl
+import time
 import errno
 import logging
 
@@ -143,7 +144,7 @@ class DiskCacheSlot(object):
                     # The locking strategy ensures that cache blocks
                     # in use remain visible.
                     #
-                    fcntl.flock(filehandle, fcntl.LOCK_EX | fcntl.LOCK_NB)
+                    fcntl.flock(f, fcntl.LOCK_EX | fcntl.LOCK_NB)
 
                     os.remove(final)
                     return True
