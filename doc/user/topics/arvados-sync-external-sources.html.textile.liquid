@@ -65,6 +65,8 @@ Users can be identified by their email address or username: the tool will check 
 
 Permission level can be one of the following: @can_read@, @can_write@ or @can_manage@, giving the group member read, read/write or managing privileges on the group. For backwards compatibility purposes, if any record omits the third (permission) field, it will default to @can_write@ permission. You can read more about permissions on the "group management admin guide":{{ site.baseurl }}/admin/group-management.html.
 
+When using @arvados-sync-groups@, consider setting @Users.CreateRoleGroups: false@ in your "cluster configuration":{{site.baseurl}}/admin/config.html to prevent users from creating additional groups.
+
 h2. Options
 
 The following command line options are supported:

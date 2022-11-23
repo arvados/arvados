@@ -532,4 +532,24 @@ update links set tail_uuid='#{g5}' where uuid='#{l1.uuid}'
       assert proj.update_attributes(frozen_by_uuid: users(:active).uuid)
     end
   end
+
+  [
+    [false, :admin, true],
+    [false, :active, false],
+    [true, :admin, true],
+    [true, :active, true],
+  ].each do |conf, user, allowed|
+    test "config.Users.CreateRoleGroups conf=#{conf}, user=#{user}" do
+      Rails.configuration.Users.CreateRoleGroups = conf
+      act_as_user users(user) do
+        if allowed
+          Group.create!(name: 'admin-created', group_class: 'role')
+        else
+          assert_raises(ArvadosModel::PermissionDeniedError) do
+            Group.create!(name: 'user-created', group_class: 'role')
+          end
+        end
+      end
+    end
+  end
 end

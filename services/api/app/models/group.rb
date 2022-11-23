@@ -268,6 +268,18 @@ class Group < ArvadosModel
     end
   end
 
+  def permission_to_create
+    if !super
+      return false
+    elsif group_class == "role" &&
+       !Rails.configuration.Users.CreateRoleGroups &&
+       !current_user.andand.is_admin
+      raise PermissionDeniedError.new("this cluster does not allow users to create role groups")
+    else
+      return true
+    end
+  end
+
   def permission_to_update
     if !super
       return false
