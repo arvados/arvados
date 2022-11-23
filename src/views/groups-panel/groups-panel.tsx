@@ -85,6 +85,7 @@ export const GroupsPanel = withStyles(styles)(connect(
     class GroupsPanel extends React.Component<GroupsPanelProps & WithStyles<CssRules>> {
 
         render() {
+            console.log('GROUPSPANEL', this)
             return (
                 <div className={this.props.classes.root}><DataExplorer
                     id={GROUPS_PANEL_ID}

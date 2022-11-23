@@ -17,10 +17,12 @@ import { SortDirection } from 'components/data-table/data-column';
 import { ResourceKind, Resource } from 'models/resource';
 import {
     ResourceFileSize,
-    ResourceLastModifiedDate,
     ResourceCreatedAtDate,
+    ResourceLastModifiedDate,
+    ResourceDeleteDate,
     ProcessStatus,
     ResourceType,
+    ResourceDescription,
     ResourceOwnerWithName
 } from 'views-components/data-explorer/renderers';
 import { ProjectIcon } from 'components/icon/icon';
@@ -65,9 +67,11 @@ export enum ProjectPanelColumnNames {
     TYPE = "Type",
     OWNER = "Owner",
     FILE_SIZE = "File size",
-    LAST_MODIFIED = "Last modified",
     UUID = "UUID",
-    CREATED_AT = "Created"
+    CREATED_AT = "Date created",
+    LAST_MODIFIED = "Last modified",
+    DELETE_AT = "Delete At",
+    DESCRIPTION = "Description"
 }
 
 export interface ProjectPanelFilter extends DataTableFilterItem {
@@ -112,6 +116,21 @@ export const projectPanelColumns: DataColumns<string> = [
         filters: createTree(),
         render: uuid => <ResourceFileSize uuid={uuid} />
     },
+    
+    {
+        name: ProjectPanelColumnNames.UUID,
+        selected: false,
+        configurable: true,
+        filters: createTree(),
+        render: uuid =><>{uuid}</>
+    },
+    {
+        name: ProjectPanelColumnNames.CREATED_AT,
+        selected: false,
+        configurable: true,
+        filters: createTree(),
+        render: uuid =><ResourceCreatedAtDate uuid={uuid}/>
+    },
     {
         name: ProjectPanelColumnNames.LAST_MODIFIED,
         selected: true,
@@ -121,18 +140,19 @@ export const projectPanelColumns: DataColumns<string> = [
         render: uuid => <ResourceLastModifiedDate uuid={uuid} />
     },
     {
-        name: ProjectPanelColumnNames.UUID,
+        name: ProjectPanelColumnNames.DELETE_AT,
         selected: true,
         configurable: true,
+        sortDirection: SortDirection.DESC,
         filters: createTree(),
-        render: uuid =><>{uuid}</>
+        render: uuid => <ResourceDeleteDate uuid={uuid} />
     },
     {
-        name: ProjectPanelColumnNames.CREATED_AT,
+        name: ProjectPanelColumnNames.DESCRIPTION,
         selected: true,
         configurable: true,
         filters: createTree(),
-        render: uuid =><ResourceCreatedAtDate uuid={uuid}/>
+        render: uuid =><ResourceDescription uuid={uuid}/>
     }
 ];
 

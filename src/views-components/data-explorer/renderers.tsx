@@ -664,16 +664,16 @@ export const ResourceWorkflowStatus = connect(
         };
     })((props: { ownerUuid?: string, uuidPrefix: string }) => renderWorkflowStatus(props.uuidPrefix, props.ownerUuid));
 
-export const ResourceLastModifiedDate = connect(
-    (state: RootState, props: { uuid: string }) => {
-        const resource = getResource<GroupContentsResource>(props.uuid)(state.resources);
-        return { date: resource ? resource.modifiedAt : '' };
-    })((props: { date: string }) => renderDate(props.date));
-
 export const ResourceCreatedAtDate = connect(
     (state: RootState, props: { uuid: string }) => {
         const resource = getResource<GroupContentsResource>(props.uuid)(state.resources);
         return { date: resource ? resource.createdAt : '' };
+    })((props: { date: string }) => renderDate(props.date));
+    
+export const ResourceLastModifiedDate = connect(
+    (state: RootState, props: { uuid: string }) => {
+        const resource = getResource<GroupContentsResource>(props.uuid)(state.resources);
+        return { date: resource ? resource.modifiedAt : '' };
     })((props: { date: string }) => renderDate(props.date));
 
 export const ResourceTrashDate = connect(
@@ -722,6 +722,21 @@ export const ResourceOwnerName = connect(
         const ownerName = ownerNameState.find(it => it.uuid === resource!.ownerUuid);
         return { owner: ownerName ? ownerName!.name : resource!.ownerUuid };
     })((props: { owner: string }) => renderOwner(props.owner));
+
+    
+const renderDescription = (description: string)=>{
+    const truncatedDescription = description.slice(0, 18) + '...'
+    return <Typography title={description}>{truncatedDescription}</Typography>;
+}
+    
+export const ResourceDescription = connect(
+    (state: RootState, props: { uuid: string }) => {
+        const resource = getResource<GroupContentsResource>(props.uuid)(state.resources);
+        //testing
+        const containerRequestDescription = "This is a description for a Container Request, also known as a 'Process'. I'm still not 100% sure why one term is used over the other in practice, but I'm new here so I expect it will become clear to me when it's appropriate. This long bit of text is for testing purposes. -LK"
+        if (resource && !resource.description && resource.kind === ResourceKind.PROCESS) resource.description = containerRequestDescription
+        return { description: resource ? resource.description : '' };
+    })((props: { description: string }) => renderDescription(props.description));
 
 const userFromID =
     connect(
