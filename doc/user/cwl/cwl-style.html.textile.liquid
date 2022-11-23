@@ -234,3 +234,30 @@ steps:
         coresMin: 2
         tmpdirMin: 90000
 {% endcodeblock %}
+
+h3. Importing data into Keep
+
+You can use HTTP URLs in your input document and @arvados-cwl-runner@ will download them to Keep for you:
+
+{% codeblock as yaml %}
+fastq1:
+  class: File
+  location: https://example.com/genomes/sampleA_1.fastq
+fastq2:
+  class: File
+  location: https://example.com/genomes/sampleA_2.fastq
+{% endcodeblock %}
+
+Files are downloaded and stored in Keep collections with HTTP header information stored in metadata.  If a file was previously downloaded, @arvados-cwl-runner@ uses HTTP caching rules to decide if a file should be re-downloaded or not.
+
+@arvados-cwl-runner@ also provides several additional options to control when the download happens, and caching behavior.
+
+* ==--defer-download== will perform the download after the workflow is submitted (in the runner process on the compute node).
+* ==--varying-url-params== will ignore the listed URL query parameters from any HTTP URLs when checking if a URL has already been downloaded to Keep.
+* ==--prefer-cached-downloads== will search Keep for a copy of the HTTP URL's content and use that if found before downloading the resource. This means changes in the upstream resource won't be detected, but it also means the workflow will not fail if the upstream resource becomes inaccessible.
+
+One use of this is to import files from "AWS S3 signed URLs":https://docs.aws.amazon.com/AmazonS3/latest/userguide/ShareObjectPreSignedURL.html
+
+Here is an example usage.  The use of @--varying-url-params=AWSAccessKeyId,Signature,Expires@ is especially relevant, this removes these parameters from the cached URL, which means that if a new signed URL for the same object is generated later, it can be found in the cache.
+
+@arvados-cwl-runner --defer-download --varying-url-params=AWSAccessKeyId,Signature,Expires --prefer-cached-downloads workflow.cwl params.yml@
