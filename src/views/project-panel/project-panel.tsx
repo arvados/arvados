@@ -18,6 +18,7 @@ import { ResourceKind, Resource } from 'models/resource';
 import {
     ResourceFileSize,
     ResourceLastModifiedDate,
+    ResourceCreatedAtDate,
     ProcessStatus,
     ResourceType,
     ResourceOwnerWithName
@@ -65,7 +66,8 @@ export enum ProjectPanelColumnNames {
     OWNER = "Owner",
     FILE_SIZE = "File size",
     LAST_MODIFIED = "Last modified",
-    UUID = "UUID"
+    UUID = "UUID",
+    CREATED_AT = "Created"
 }
 
 export interface ProjectPanelFilter extends DataTableFilterItem {
@@ -122,9 +124,15 @@ export const projectPanelColumns: DataColumns<string> = [
         name: ProjectPanelColumnNames.UUID,
         selected: true,
         configurable: true,
-        sortDirection: SortDirection.DESC,
         filters: createTree(),
         render: uuid =><>{uuid}</>
+    },
+    {
+        name: ProjectPanelColumnNames.CREATED_AT,
+        selected: true,
+        configurable: true,
+        filters: createTree(),
+        render: uuid =><ResourceCreatedAtDate uuid={uuid}/>
     }
 ];
 

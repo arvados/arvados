@@ -170,7 +170,6 @@ export const loadWorkbench =
     const { auth, router } = getState();
     const { user } = auth;
     if (user) {
-      //   console.log('PREJECTPANELCOLUMNS', projectPanelColumns);
       dispatch(
         projectPanelActions.SET_COLUMNS({ columns: projectPanelColumns })
       );
