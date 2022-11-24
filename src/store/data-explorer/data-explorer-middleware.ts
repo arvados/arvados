@@ -82,8 +82,6 @@ export const dataExplorerMiddleware =
                       getState().dataExplorer,
                       service.getId()
                     );
-                    //lisa
-                    // console.log('DE_MIDDLEWARE', de);
                     const complete =
                       de.requestState === DataTableRequestState.PENDING;
                     dispatch(

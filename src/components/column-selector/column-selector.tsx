@@ -30,17 +30,7 @@ export type ColumnSelectorProps = ColumnSelectorDataProps & WithStyles<CssRules>
 
 export const ColumnSelector = withStyles(styles)(
     ({ columns, onColumnToggle, classes }: ColumnSelectorProps) =>
-    {
-//         // console.log('COLUMN_SELECTOR',columns)
-//     columns = [...columns, {
-//         name:'bananas',
-//         selected: false,
-//         configurable: true, filters:{}, render: (uuid)=><ResourceName uuid='bananas'/>
-//     }
-// ]
-// //lisa
-//     // console.log('COLUMN_SELECTOR',columns)
-       return <Popover triggerComponent={ColumnSelectorTrigger}>
+        <Popover triggerComponent={ColumnSelectorTrigger}>
             <Paper>
                 <List dense>
                     {columns
@@ -62,7 +52,7 @@ export const ColumnSelector = withStyles(styles)(
                         )}
                 </List>
             </Paper>
-        </Popover>}
+        </Popover>
 );
 
 export const ColumnSelectorTrigger = (props: IconButtonProps) =>

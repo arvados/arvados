@@ -39,8 +39,6 @@ export const getDataExplorerColumnFilters = <T>(
   columnName: string
 ): DataTableFilters => {
   const column = columns.find((c) => c.name === columnName);
-  //lisa
-  //   console.log('DATA_EXPLORER_MIDD, GETDEXCOLUMNFILTERS', column);
   return column ? column.filters : createTree();
 };
 

@@ -50,7 +50,6 @@ export const dataExplorerReducer = (
   state: DataExplorerState = {},
   action: DataExplorerAction
 ) => {
-  //   console.log('DATA_EXPLORERE_REDUCER, satate:', state);
   return dataExplorerActions.match(action, {
     CLEAR: ({ id }) =>
       update(state, id, (explorer) => ({
@@ -112,8 +111,6 @@ export const dataExplorerReducer = (
 };
 export const getDataExplorer = (state: DataExplorerState, id: string) => {
   const returnValue = state[id] || initialDataExplorer;
-  //lisa
-  //   console.log('GETDATAEXPLORER RETURN:', state[id]);
   return returnValue;
 };
 

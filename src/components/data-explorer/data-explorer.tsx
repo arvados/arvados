@@ -141,9 +141,6 @@ export const DataExplorer = withStyles(styles)(
 
         componentDidMount() {
             if (this.props.onSetColumns) {
-                //lisa
-                // console.log('DATA_EXPLORER_CDM:',this.props)
-                
                 this.props.onSetColumns(this.props.columns);
             }
             // Component just mounted, so we need to show the loading indicator.
@@ -163,8 +160,6 @@ export const DataExplorer = withStyles(styles)(
                 paperKey, fetchMode, currentItemUuid, title,
                 doHidePanel, doMaximizePanel, doUnMaximizePanel, panelName, panelMaximized, elementPath
             } = this.props;
-            //lisa
-// console.log('DATA_EXPLORER_TSX', this.props)
             return <Paper className={classes.root} {...paperProps} key={paperKey} data-cy={this.props["data-cy"]}>
                 <Grid container direction="column" wrap="nowrap" className={classes.container}>
                     <div>
