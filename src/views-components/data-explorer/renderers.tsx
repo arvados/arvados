@@ -725,14 +725,14 @@ export const ResourceOwnerName = connect(
 
     
 const renderDescription = (description: string)=>{
-    const truncatedDescription = description.slice(0, 18) + '...'
+    const truncatedDescription = description ? description.slice(0, 18) + '...' : '-'
     return <Typography title={description}>{truncatedDescription}</Typography>;
 }
     
 export const ResourceDescription = connect(
     (state: RootState, props: { uuid: string }) => {
         const resource = getResource<GroupContentsResource>(props.uuid)(state.resources);
-        //testing
+        //testing---------------
         const containerRequestDescription = "This is a description for a Container Request, also known as a 'Process'. I'm still not 100% sure why one term is used over the other in practice, but I'm new here so I expect it will become clear to me when it's appropriate. This long bit of text is for testing purposes. -LK"
         if (resource && !resource.description && resource.kind === ResourceKind.PROCESS) resource.description = containerRequestDescription
         return { description: resource ? resource.description : '' };

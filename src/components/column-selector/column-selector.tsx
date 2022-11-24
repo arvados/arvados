@@ -10,7 +10,6 @@ import { Popover } from "../popover/popover";
 import { IconButtonProps } from '@material-ui/core/IconButton';
 import { DataColumns } from '../data-table/data-table';
 import { ArvadosTheme } from "common/custom-theme";
-import { ResourceName } from 'views-components/data-explorer/renderers';
 
 interface ColumnSelectorDataProps {
     columns: DataColumns<any>;
