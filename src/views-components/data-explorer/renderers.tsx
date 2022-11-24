@@ -723,6 +723,13 @@ export const ResourceOwnerName = connect(
         return { owner: ownerName ? ownerName!.name : resource!.ownerUuid };
     })((props: { owner: string }) => renderOwner(props.owner));
 
+const renderUUID = (uuid:string) => <Typography>{uuid}</Typography>
+
+export const ResourceUUID = connect(
+    (state: RootState, props: { uuid: string }) => {
+        const resource = getResource<GroupContentsResource>(props.uuid)(state.resources);
+        return { uuid: resource ? resource.uuid : '' };
+    })((props: { uuid: string }) => renderUUID(props.uuid));
     
 const renderDescription = (description: string)=>{
     const truncatedDescription = description ? description.slice(0, 18) + '...' : '-'
@@ -733,8 +740,9 @@ export const ResourceDescription = connect(
     (state: RootState, props: { uuid: string }) => {
         const resource = getResource<GroupContentsResource>(props.uuid)(state.resources);
         //testing---------------
-        const containerRequestDescription = "This is a description for a Container Request, also known as a 'Process'. I'm still not 100% sure why one term is used over the other in practice, but I'm new here so I expect it will become clear to me when it's appropriate. This long bit of text is for testing purposes. -LK"
+        const containerRequestDescription = "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum."
         if (resource && !resource.description && resource.kind === ResourceKind.PROCESS) resource.description = containerRequestDescription
+        //testing---------------
         return { description: resource ? resource.description : '' };
     })((props: { description: string }) => renderDescription(props.description));
 

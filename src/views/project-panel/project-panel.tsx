@@ -19,9 +19,11 @@ import {
     ResourceFileSize,
     ResourceCreatedAtDate,
     ResourceLastModifiedDate,
+    ResourceTrashDate,
     ResourceDeleteDate,
     ProcessStatus,
     ResourceType,
+    ResourceUUID,
     ResourceDescription,
     ResourceOwnerWithName
 } from 'views-components/data-explorer/renderers';
@@ -70,7 +72,8 @@ export enum ProjectPanelColumnNames {
     UUID = "UUID",
     CREATED_AT = "Date created",
     LAST_MODIFIED = "Last modified",
-    DELETE_AT = "Delete At",
+    TRASH_AT = "Trash at",
+    DELETE_AT = "Delete at",
     DESCRIPTION = "Description"
 }
 
@@ -116,17 +119,16 @@ export const projectPanelColumns: DataColumns<string> = [
         filters: createTree(),
         render: uuid => <ResourceFileSize uuid={uuid} />
     },
-    
     {
         name: ProjectPanelColumnNames.UUID,
         selected: false,
         configurable: true,
         filters: createTree(),
-        render: uuid =><>{uuid}</>
+        render: uuid => <ResourceUUID uuid={uuid}/>
     },
     {
         name: ProjectPanelColumnNames.CREATED_AT,
-        selected: false,
+        selected: true,
         configurable: true,
         filters: createTree(),
         render: uuid =><ResourceCreatedAtDate uuid={uuid}/>
@@ -140,8 +142,16 @@ export const projectPanelColumns: DataColumns<string> = [
         render: uuid => <ResourceLastModifiedDate uuid={uuid} />
     },
     {
+        name: ProjectPanelColumnNames.TRASH_AT,
+        selected: false,
+        configurable: true,
+        sortDirection: SortDirection.DESC,
+        filters: createTree(),
+        render: uuid => <ResourceTrashDate uuid={uuid} />
+    },
+    {
         name: ProjectPanelColumnNames.DELETE_AT,
-        selected: true,
+        selected: false,
         configurable: true,
         sortDirection: SortDirection.DESC,
         filters: createTree(),
