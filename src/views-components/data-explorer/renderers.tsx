@@ -30,7 +30,7 @@ import {
     SetupIcon,
     InactiveIcon,
 } from 'components/icon/icon';
-import { formatDate, formatFileSize, formatTime } from 'common/formatters';
+import { formatDate, formatFileSize, formatTime, formatObjectProperties} from 'common/formatters';
 import { resourceLabel } from 'common/labels';
 import { connect, DispatchProp } from 'react-redux';
 import { RootState } from 'store/store';
@@ -723,13 +723,25 @@ export const ResourceOwnerName = connect(
         return { owner: ownerName ? ownerName!.name : resource!.ownerUuid };
     })((props: { owner: string }) => renderOwner(props.owner));
 
-const renderUUID = (uuid:string) => <Typography>{uuid}</Typography>
-
 export const ResourceUUID = connect(
     (state: RootState, props: { uuid: string }) => {
-        const resource = getResource<GroupContentsResource>(props.uuid)(state.resources);
+        const resource = getResource<CollectionResource>(props.uuid)(state.resources);
         return { uuid: resource ? resource.uuid : '' };
-    })((props: { uuid: string }) => renderUUID(props.uuid));
+    })((props: { uuid: string }) => renderUuid({uuid: props.uuid}));
+
+const renderMetadata = (metadata:any) => {
+    return <>{formatObjectProperties(metadata).map((property, i)=>
+        <Typography key={i} noWrap>{property[0]}: {property[1]}</Typography>
+    )}</>
+}
+
+export const ResourceMetadata = connect(
+    (state: RootState, props: { uuid: string }) => {
+        const resource = getResource<CollectionResource>(props.uuid)(state.resources);
+        const metadata = resource && Object.keys(resource.properties).length ? {...resource.properties} : {}
+        if(resource && resource.portableDataHash) metadata['Portable Data Hash'] = resource.portableDataHash
+        return { properties: metadata };
+    })((props: { properties: string }) => renderMetadata(props.properties));
     
 const renderDescription = (description: string)=>{
     const truncatedDescription = description ? description.slice(0, 18) + '...' : '-'

@@ -24,6 +24,7 @@ import {
     ProcessStatus,
     ResourceType,
     ResourceUUID,
+    ResourceMetadata,
     ResourceDescription,
     ResourceOwnerWithName
 } from 'views-components/data-explorer/renderers';
@@ -74,7 +75,8 @@ export enum ProjectPanelColumnNames {
     LAST_MODIFIED = "Last modified",
     TRASH_AT = "Trash at",
     DELETE_AT = "Delete at",
-    DESCRIPTION = "Description"
+    DESCRIPTION = "Description",
+    METADATA = "Metadata"
 }
 
 export interface ProjectPanelFilter extends DataTableFilterItem {
@@ -121,21 +123,28 @@ export const projectPanelColumns: DataColumns<string> = [
     },
     {
         name: ProjectPanelColumnNames.UUID,
-        selected: false,
+        selected: true,
         configurable: true,
         filters: createTree(),
         render: uuid => <ResourceUUID uuid={uuid}/>
     },
     {
-        name: ProjectPanelColumnNames.CREATED_AT,
+        name: ProjectPanelColumnNames.METADATA,
         selected: true,
+        configurable: true,
+        filters: createTree(),
+        render: uuid => <ResourceMetadata uuid={uuid}/>
+    },
+    {
+        name: ProjectPanelColumnNames.CREATED_AT,
+        selected: false,
         configurable: true,
         filters: createTree(),
         render: uuid =><ResourceCreatedAtDate uuid={uuid}/>
     },
     {
         name: ProjectPanelColumnNames.LAST_MODIFIED,
-        selected: true,
+        selected: false,
         configurable: true,
         sortDirection: SortDirection.DESC,
         filters: createTree(),
