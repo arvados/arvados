@@ -18,13 +18,14 @@ _logger = logging.getLogger('arvados.keep')
 cacheblock_suffix = ".keepcacheblock"
 
 class DiskCacheSlot(object):
-    __slots__ = ("locator", "ready", "content", "cachedir")
+    __slots__ = ("locator", "ready", "content", "cachedir", "filehandle")
 
     def __init__(self, locator, cachedir):
         self.locator = locator
         self.ready = threading.Event()
         self.content = None
         self.cachedir = cachedir
+        self.filehandle = None
 
     def get(self):
         self.ready.wait()
@@ -51,31 +52,20 @@ class DiskCacheSlot(object):
 
             final = os.path.join(blockdir, self.locator) + cacheblock_suffix
 
-            f = tempfile.NamedTemporaryFile(dir=blockdir, delete=False, prefix="tmp", suffix=cacheblock_suffix)
-            tmpfile = f.name
+            self.filehandle = tempfile.NamedTemporaryFile(dir=blockdir, delete=False, prefix="tmp", suffix=cacheblock_suffix)
+            tmpfile = self.filehandle.name
             os.chmod(tmpfile, stat.S_IRUSR | stat.S_IWUSR)
 
             # aquire a shared lock, this tells other processes that
             # we're using this block and to please not delete it.
-            fcntl.flock(f, fcntl.LOCK_SH)
+            fcntl.flock(self.filehandle, fcntl.LOCK_SH)
 
-            f.write(value)
-            f.flush()
+            self.filehandle.write(value)
+            self.filehandle.flush()
             os.rename(tmpfile, final)
             tmpfile = None
 
-            self.content = mmap.mmap(f.fileno(), 0, access=mmap.ACCESS_READ)
-        except OSError as e:
-            if e.errno == errno.ENODEV:
-                _logger.error("Unable to use disk cache: The underlying filesystem does not support memory mapping.")
-            elif e.errno == errno.ENOMEM:
-                _logger.error("Unable to use disk cache: The process's maximum number of mappings would have been exceeded.")
-            elif e.errno == errno.ENOSPC:
-                _logger.error("Unable to use disk cache: Out of disk space.")
-            else:
-                traceback.print_exc()
-        except Exception as e:
-            traceback.print_exc()
+            self.content = mmap.mmap(self.filehandle.fileno(), 0, access=mmap.ACCESS_READ)
         finally:
             if tmpfile is not None:
                 # If the tempfile hasn't been renamed on disk yet, try to delete it.
@@ -83,12 +73,6 @@ class DiskCacheSlot(object):
                     os.remove(tmpfile)
                 except:
                     pass
-            if self.content is None:
-                # Something went wrong with the disk cache, fall back
-                # to RAM cache behavior (the alternative is to cache
-                # nothing and return a read error).
-                self.content = value
-            self.ready.set()
 
     def size(self):
         if self.content is None:
@@ -120,36 +104,36 @@ class DiskCacheSlot(object):
             blockdir = os.path.join(self.cachedir, self.locator[0:3])
             final = os.path.join(blockdir, self.locator) + cacheblock_suffix
             try:
-                with open(final, "rb") as f:
-                    # unlock
-                    fcntl.flock(f, fcntl.LOCK_UN)
-                    self.content = None
+                fcntl.flock(self.filehandle, fcntl.LOCK_UN)
 
-                    # try to get an exclusive lock, this ensures other
-                    # processes are not using the block.  It is
-                    # nonblocking and will throw an exception if we
-                    # can't get it, which is fine because that means
-                    # we just won't try to delete it.
-                    #
-                    # I should note here, the file locking is not
-                    # strictly necessary, we could just remove it and
-                    # the kernel would ensure that the underlying
-                    # inode remains available as long as other
-                    # processes still have the file open.  However, if
-                    # you have multiple processes sharing the cache
-                    # and deleting each other's files, you'll end up
-                    # with a bunch of ghost files that don't show up
-                    # in the file system but are still taking up
-                    # space, which isn't particularly user friendly.
-                    # The locking strategy ensures that cache blocks
-                    # in use remain visible.
-                    #
-                    fcntl.flock(f, fcntl.LOCK_EX | fcntl.LOCK_NB)
+                # try to get an exclusive lock, this ensures other
+                # processes are not using the block.  It is
+                # nonblocking and will throw an exception if we
+                # can't get it, which is fine because that means
+                # we just won't try to delete it.
+                #
+                # I should note here, the file locking is not
+                # strictly necessary, we could just remove it and
+                # the kernel would ensure that the underlying
+                # inode remains available as long as other
+                # processes still have the file open.  However, if
+                # you have multiple processes sharing the cache
+                # and deleting each other's files, you'll end up
+                # with a bunch of ghost files that don't show up
+                # in the file system but are still taking up
+                # space, which isn't particularly user friendly.
+                # The locking strategy ensures that cache blocks
+                # in use remain visible.
+                #
+                fcntl.flock(self.filehandle, fcntl.LOCK_EX | fcntl.LOCK_NB)
 
-                    os.remove(final)
-                    return True
+                os.remove(final)
+                return True
             except OSError:
                 pass
+            finally:
+                self.filehandle = None
+                self.content = None
             return False
 
     @staticmethod
@@ -166,6 +150,7 @@ class DiskCacheSlot(object):
 
             content = mmap.mmap(filehandle.fileno(), 0, access=mmap.ACCESS_READ)
             dc = DiskCacheSlot(locator, cachedir)
+            dc.filehandle = filehandle
             dc.content = content
             dc.ready.set()
             return dc
@@ -177,7 +162,31 @@ class DiskCacheSlot(object):
         return None
 
     @staticmethod
+    def cache_usage(cachedir):
+        usage = 0
+        for root, dirs, files in os.walk(cachedir):
+            for name in files:
+                if not name.endswith(cacheblock_suffix):
+                    continue
+
+                blockpath = os.path.join(root, name)
+                res = os.stat(blockpath)
+                usage += res.st_size
+        return usage
+
+
+    @staticmethod
     def init_cache(cachedir, maxslots):
+        #
+        # First check the disk cache works at all by creating a 1 byte cache entry
+        #
+        checkexists = DiskCacheSlot.get_from_disk('0cc175b9c0f1b6a831c399e269772661', cachedir)
+        ds = DiskCacheSlot('0cc175b9c0f1b6a831c399e269772661', cachedir)
+        ds.set(b'a')
+        if checkexists is None:
+            # Don't keep the test entry around unless it existed beforehand.
+            ds.evict()
+
         # map in all the files in the cache directory, up to max slots.
         # after max slots, try to delete the excess blocks.
         #

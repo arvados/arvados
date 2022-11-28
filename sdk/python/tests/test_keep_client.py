@@ -18,6 +18,7 @@ import re
 import shutil
 import socket
 import sys
+import stat
 import tempfile
 import time
 import unittest
@@ -1584,6 +1585,8 @@ class KeepDiskCacheTestCase(unittest.TestCase, tutil.ApiClientMock):
         with tutil.mock_keep_responses(self.data, 200) as mock:
             self.assertTrue(tutil.binary_compare(keep_client.get(self.locator), self.data))
 
+        self.assertIsNotNone(keep_client.get_from_cache(self.locator))
+
         with open(os.path.join(self.disk_cache_dir, self.locator[0:3], self.locator+".keepcacheblock"), "rb") as f:
             self.assertTrue(tutil.binary_compare(f.read(), self.data))
 
@@ -1672,10 +1675,35 @@ class KeepDiskCacheTestCase(unittest.TestCase, tutil.ApiClientMock):
         self.assertTrue(os.path.exists(os.path.join(self.disk_cache_dir, self.locator[0:3], self.locator+".keepcacheblock")))
         self.assertTrue(os.path.exists(os.path.join(self.disk_cache_dir, "acb", "acbd18db4cc2f85cedef654fccc4a4d8.keepcacheblock")))
 
-
         block_cache2 = arvados.keep.KeepBlockCache(disk_cache=True,
                                                    disk_cache_dir=self.disk_cache_dir,
                                                    max_slots=1)
 
         self.assertTrue(os.path.exists(os.path.join(self.disk_cache_dir, self.locator[0:3], self.locator+".keepcacheblock")))
         self.assertTrue(os.path.exists(os.path.join(self.disk_cache_dir, "acb", "acbd18db4cc2f85cedef654fccc4a4d8.keepcacheblock")))
+
+
+
+    def test_disk_cache_error(self):
+        os.chmod(self.disk_cache_dir, stat.S_IRUSR)
+
+        # Fail during cache initialization.
+        with self.assertRaises(OSError):
+            block_cache = arvados.keep.KeepBlockCache(disk_cache=True,
+                                                      disk_cache_dir=self.disk_cache_dir)
+
+
+    def test_disk_cache_write_error(self):
+        block_cache = arvados.keep.KeepBlockCache(disk_cache=True,
+                                                  disk_cache_dir=self.disk_cache_dir)
+
+        keep_client = arvados.KeepClient(api_client=self.api_client, block_cache=block_cache)
+
+        # Make the cache dir read-only
+        os.makedirs(os.path.join(self.disk_cache_dir, self.locator[0:3]))
+        os.chmod(os.path.join(self.disk_cache_dir, self.locator[0:3]), stat.S_IRUSR)
+
+        # Cache fails
+        with self.assertRaises(arvados.errors.KeepCacheError):
+            with tutil.mock_keep_responses(self.data, 200) as mock:
+                keep_client.get(self.locator)
