@@ -46,3 +46,8 @@ output "cluster_name" {
 output "domain_name" {
   value = data.terraform_remote_state.vpc.outputs.domain_name
 }
+
+# Debian AMI's default user
+output "deploy_user" {
+  value = "admin"
+}
