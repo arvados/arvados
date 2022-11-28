@@ -105,5 +105,4 @@ resource "aws_eip_association" "eip_assoc" {
   for_each = toset(local.hostnames)
   instance_id = aws_instance.arvados_service[each.value].id
   allocation_id = data.terraform_remote_state.vpc.outputs.eip_id[each.value]
-  # private_ip_address = local.private_ip[each.value]
 }
