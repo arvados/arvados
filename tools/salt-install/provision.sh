@@ -211,7 +211,10 @@ VERSION="latest"
 SALT_VERSION="3004"
 
 # Other formula versions we depend on
-POSTGRES_TAG="v0.44.0"
+#POSTGRES_TAG="v0.44.0"
+#POSTGRES_URL="https://github.com/saltstack-formulas/postgres-formula.git"
+POSTGRES_TAG="0.45.0-bugfix327"
+POSTGRES_URL="https://github.com/arvados/postgres-formula.git"
 NGINX_TAG="v2.8.1"
 DOCKER_TAG="v2.4.2"
 LOCALE_TAG="v0.3.4"
@@ -352,7 +355,7 @@ test -d nginx && ( cd nginx && git fetch ) \
 
 echo "...postgres"
 test -d postgres && ( cd postgres && git fetch ) \
-  || git clone --quiet https://github.com/saltstack-formulas/postgres-formula.git ${F_DIR}/postgres
+  || git clone --quiet ${POSTGRES_URL} ${F_DIR}/postgres
 ( cd postgres && git checkout --quiet tags/"${POSTGRES_TAG}" )
 
 echo "...letsencrypt"
