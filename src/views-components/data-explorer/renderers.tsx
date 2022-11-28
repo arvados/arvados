@@ -726,6 +726,7 @@ export const ResourceOwnerName = connect(
 export const ResourceUUID = connect(
     (state: RootState, props: { uuid: string }) => {
         const resource = getResource<CollectionResource>(props.uuid)(state.resources);
+        console.log('COLLECTION_RESOIRCE', resource)
         return { uuid: resource ? resource.uuid : '' };
     })((props: { uuid: string }) => renderUuid({uuid: props.uuid}));
 
@@ -757,6 +758,16 @@ const renderDescription = (description: string)=>{
     const truncatedDescription = description ? description.slice(0, 18) + '...' : '-'
     return <Typography title={description}>{truncatedDescription}</Typography>;
 }
+
+const renderFileCount = (fileCount: number) =>{
+    return <Typography>{fileCount ?? '-'}</Typography>
+}
+
+export const ResourceFileCount = connect(
+    (state: RootState, props: { uuid: string }) => {
+        const resource = getResource<CollectionResource>(props.uuid)(state.resources);
+        return { fileCount: resource ? resource.fileCount: '' };
+    })((props: { fileCount: number }) => renderFileCount(props.fileCount));
 
 export const ResourceDescription = connect(
     (state: RootState, props: { uuid: string }) => {

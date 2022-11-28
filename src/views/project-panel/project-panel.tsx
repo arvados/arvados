@@ -17,6 +17,7 @@ import { SortDirection } from 'components/data-table/data-column';
 import { ResourceKind, Resource } from 'models/resource';
 import {
     ResourceFileSize,
+    ResourceFileCount,
     ResourceCreatedAtDate,
     ResourceLastModifiedDate,
     ResourceTrashDate,
@@ -71,6 +72,7 @@ export enum ProjectPanelColumnNames {
     TYPE = "Type",
     OWNER = "Owner",
     FILE_SIZE = "File size",
+    FILE_COUNT = "File count",
     UUID = "UUID",
     CREATED_AT = "Date created",
     LAST_MODIFIED = "Last modified",
@@ -122,6 +124,13 @@ export const projectPanelColumns: DataColumns<string> = [
         configurable: true,
         filters: createTree(),
         render: uuid => <ResourceFileSize uuid={uuid} />
+    },
+    {
+        name: ProjectPanelColumnNames.FILE_COUNT,
+        selected: true,
+        configurable: true,
+        filters: createTree(),
+        render: uuid =><ResourceFileCount uuid={uuid}/>
     },
     {
         name: ProjectPanelColumnNames.UUID,
@@ -182,6 +191,7 @@ export const projectPanelColumns: DataColumns<string> = [
         filters: createTree(),
         render: uuid =><ResourceVersion uuid={uuid}/>
     }
+    
 ];
 
 export const PROJECT_PANEL_ID = "projectPanel";
