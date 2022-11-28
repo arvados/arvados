@@ -25,6 +25,7 @@ import {
     ResourceType,
     ResourceUUID,
     ResourceMetadata,
+    ResourceVersion,
     ResourceDescription,
     ResourceOwnerWithName
 } from 'views-components/data-explorer/renderers';
@@ -76,7 +77,8 @@ export enum ProjectPanelColumnNames {
     TRASH_AT = "Trash at",
     DELETE_AT = "Delete at",
     DESCRIPTION = "Description",
-    METADATA = "Metadata"
+    METADATA = "Metadata",
+    VERSION = "Version"
 }
 
 export interface ProjectPanelFilter extends DataTableFilterItem {
@@ -130,7 +132,7 @@ export const projectPanelColumns: DataColumns<string> = [
     },
     {
         name: ProjectPanelColumnNames.METADATA,
-        selected: true,
+        selected: false,
         configurable: true,
         filters: createTree(),
         render: uuid => <ResourceMetadata uuid={uuid}/>
@@ -172,6 +174,13 @@ export const projectPanelColumns: DataColumns<string> = [
         configurable: true,
         filters: createTree(),
         render: uuid =><ResourceDescription uuid={uuid}/>
+    },
+    {
+        name: ProjectPanelColumnNames.VERSION,
+        selected: false,
+        configurable: true,
+        filters: createTree(),
+        render: uuid =><ResourceVersion uuid={uuid}/>
     }
 ];
 

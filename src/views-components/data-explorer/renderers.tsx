@@ -738,16 +738,26 @@ const renderMetadata = (metadata:any) => {
 export const ResourceMetadata = connect(
     (state: RootState, props: { uuid: string }) => {
         const resource = getResource<CollectionResource>(props.uuid)(state.resources);
-        const metadata = resource && Object.keys(resource.properties).length ? {...resource.properties} : {}
+        const metadata = resource && Object.keys(resource.properties).length ? resource.properties : {}
         if(resource && resource.portableDataHash) metadata['Portable Data Hash'] = resource.portableDataHash
         return { properties: metadata };
     })((props: { properties: string }) => renderMetadata(props.properties));
-    
+
+const renderVersion = (version: number) =>{
+    return <Typography>{version ?? '-'}</Typography>
+}
+
+export const ResourceVersion = connect(
+    (state: RootState, props: { uuid: string }) => {
+        const resource = getResource<CollectionResource>(props.uuid)(state.resources);
+        return { version: resource ? resource.version: '' };
+    })((props: { version: number }) => renderVersion(props.version));
+
 const renderDescription = (description: string)=>{
     const truncatedDescription = description ? description.slice(0, 18) + '...' : '-'
     return <Typography title={description}>{truncatedDescription}</Typography>;
 }
-    
+
 export const ResourceDescription = connect(
     (state: RootState, props: { uuid: string }) => {
         const resource = getResource<GroupContentsResource>(props.uuid)(state.resources);
