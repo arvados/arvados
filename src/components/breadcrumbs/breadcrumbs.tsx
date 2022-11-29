@@ -63,7 +63,7 @@ export interface BreadcrumbsProps {
 
 export const Breadcrumbs = withStyles(styles)(
     ({ classes, onClick, onContextMenu, items, resources }: BreadcrumbsProps & WithStyles<CssRules>) =>
-    <Grid container data-cy='breadcrumbs' alignItems="center" wrap="nowrap">
+    <Grid container data-cy='breadcrumbs' alignItems="center">
     {
         items.map((item, index) => {
             const isLastItem = index === items.length - 1;
