@@ -15,6 +15,7 @@ import threading
 from . import api
 from . import config
 from . import keep
+from . import util
 
 class ThreadSafeApiCache(object):
     """Thread-safe wrapper for an Arvados API client
@@ -53,13 +54,18 @@ class ThreadSafeApiCache(object):
         else:
             self._api_kwargs = api.normalize_api_kwargs(version, **api_params)
         self.api_token = self._api_kwargs['token']
+        self.request_id = self._api_kwargs.get('request_id')
         self.local = threading.local()
         self.keep = keep.KeepClient(api_client=self, **keep_params)
 
     def localapi(self):
-        if 'api' not in self.local.__dict__:
-            self.local.api = api.api_client(**self._api_kwargs)
-        return self.local.api
+        try:
+            client = self.local.api
+        except AttributeError:
+            client = api.api_client(**self._api_kwargs)
+            client._http._request_id = lambda: self.request_id or util.new_request_id()
+            self.local.api = client
+        return client
 
     def __getattr__(self, name):
         # Proxy nonexistent attributes to the thread-local API client.

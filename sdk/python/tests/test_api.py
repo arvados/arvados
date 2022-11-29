@@ -139,6 +139,27 @@ class ArvadosApiTest(run_test_server.TestCaseWithServers):
         result = api.humans().get(uuid='test').execute()
         self.assertEqual(string.hexdigits, ''.join(list(result.keys())))
 
+    def test_api_is_threadsafe(self):
+        api_kwargs = {
+            'host': os.environ['ARVADOS_API_HOST'],
+            'token': os.environ['ARVADOS_API_TOKEN'],
+            'insecure': True,
+        }
+        config_kwargs = {'apiconfig': os.environ}
+        for api_constructor, kwargs in [
+                (arvados.api, {}),
+                (arvados.api, api_kwargs),
+                (arvados.api_from_config, {}),
+                (arvados.api_from_config, config_kwargs),
+        ]:
+            sub_kwargs = "kwargs" if kwargs else "no kwargs"
+            with self.subTest(f"{api_constructor.__name__} with {sub_kwargs}"):
+                api_client = api_constructor('v1', **kwargs)
+                self.assertTrue(hasattr(api_client, 'localapi'),
+                                f"client missing localapi method")
+                self.assertTrue(hasattr(api_client, 'keep'),
+                                f"client missing keep attribute")
+
 
 class RetryREST(unittest.TestCase):
     def setUp(self):

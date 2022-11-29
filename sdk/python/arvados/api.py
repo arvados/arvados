@@ -374,6 +374,11 @@ def api(version=None, cache=True, host=None, token=None, insecure=False,
     like you would write in user configuration; or pass additional arguments
     for lower-level control over the client.
 
+    This function returns a `arvados.safeapi.ThreadSafeApiCache`, an
+    API-compatible wrapper around `googleapiclient.discovery.Resource`. If
+    you're handling concurrency yourself and/or your application is very
+    performance-sensitive, consider calling `api_client` directly.
+
     Arguments:
 
     version: str | None
@@ -398,21 +403,20 @@ def api(version=None, cache=True, host=None, token=None, insecure=False,
     Other arguments are passed directly to `api_client`. See that function's
     docstring for more information about their meaning.
     """
-    if discoveryServiceUrl or host or token:
-        # We pass `insecure` here for symmetry with `api_kwargs_from_config`.
-        client_kwargs = normalize_api_kwargs(
-            version, discoveryServiceUrl, host, token,
-            insecure=insecure,
-        )
-    else:
-        client_kwargs = api_kwargs_from_config(version)
-    return api_client(
-        **client_kwargs,
+    kwargs.update(
         cache=cache,
+        insecure=insecure,
         request_id=request_id,
         timeout=timeout,
-        **kwargs,
     )
+    if discoveryServiceUrl or host or token:
+        kwargs.update(normalize_api_kwargs(version, discoveryServiceUrl, host, token))
+    else:
+        kwargs.update(api_kwargs_from_config(version))
+    version = kwargs.pop('version')
+    # We do the import here to avoid a circular import at the top level.
+    from .safeapi import ThreadSafeApiCache
+    return ThreadSafeApiCache({}, {}, kwargs, version)
 
 def api_from_config(version=None, apiconfig=None, **kwargs):
     """Build an Arvados API client from a configuration mapping
@@ -420,6 +424,11 @@ def api_from_config(version=None, apiconfig=None, **kwargs):
     This function builds an Arvados API client from a mapping with user
     configuration. It accepts that mapping as an argument, so you can use a
     configuration that's different from what the user has set up.
+
+    This function returns a `arvados.safeapi.ThreadSafeApiCache`, an
+    API-compatible wrapper around `googleapiclient.discovery.Resource`. If
+    you're handling concurrency yourself and/or your application is very
+    performance-sensitive, consider calling `api_client` directly.
 
     Arguments:
 
@@ -435,4 +444,4 @@ def api_from_config(version=None, apiconfig=None, **kwargs):
     Other arguments are passed directly to `api_client`. See that function's
     docstring for more information about their meaning.
     """
-    return api_client(**api_kwargs_from_config(version, apiconfig, **kwargs))
+    return api(**api_kwargs_from_config(version, apiconfig, **kwargs))
