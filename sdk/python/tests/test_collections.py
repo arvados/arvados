@@ -896,7 +896,7 @@ class NewCollectionTestCase(unittest.TestCase, CollectionTestMixin):
         c1.save_new()
         loc = c1.manifest_locator()
         c2 = Collection(loc)
-        self.assertEqual(c1.manifest_text(), c2.manifest_text())
+        self.assertEqual(c1.manifest_text(strip=True), c2.manifest_text(strip=True))
         self.assertEqual(c1.replication_desired, c2.replication_desired)
 
     def test_replication_desired_not_loaded_if_provided(self):
@@ -905,7 +905,7 @@ class NewCollectionTestCase(unittest.TestCase, CollectionTestMixin):
         c1.save_new()
         loc = c1.manifest_locator()
         c2 = Collection(loc, replication_desired=2)
-        self.assertEqual(c1.manifest_text(), c2.manifest_text())
+        self.assertEqual(c1.manifest_text(strip=True), c2.manifest_text(strip=True))
         self.assertNotEqual(c1.replication_desired, c2.replication_desired)
 
     def test_storage_classes_desired_kept_on_load(self):
@@ -914,7 +914,7 @@ class NewCollectionTestCase(unittest.TestCase, CollectionTestMixin):
         c1.save_new()
         loc = c1.manifest_locator()
         c2 = Collection(loc)
-        self.assertEqual(c1.manifest_text(), c2.manifest_text())
+        self.assertEqual(c1.manifest_text(strip=True), c2.manifest_text(strip=True))
         self.assertEqual(c1.storage_classes_desired(), c2.storage_classes_desired())
 
     def test_storage_classes_change_after_save(self):
@@ -927,7 +927,7 @@ class NewCollectionTestCase(unittest.TestCase, CollectionTestMixin):
         c2.save(storage_classes=['highIO'])
         self.assertEqual(['highIO'], c2.storage_classes_desired())
         c3 = Collection(loc)
-        self.assertEqual(c1.manifest_text(), c3.manifest_text())
+        self.assertEqual(c1.manifest_text(strip=True), c3.manifest_text(strip=True))
         self.assertEqual(['highIO'], c3.storage_classes_desired())
 
     def test_storage_classes_desired_not_loaded_if_provided(self):
@@ -936,7 +936,7 @@ class NewCollectionTestCase(unittest.TestCase, CollectionTestMixin):
         c1.save_new()
         loc = c1.manifest_locator()
         c2 = Collection(loc, storage_classes_desired=['default'])
-        self.assertEqual(c1.manifest_text(), c2.manifest_text())
+        self.assertEqual(c1.manifest_text(strip=True), c2.manifest_text(strip=True))
         self.assertNotEqual(c1.storage_classes_desired(), c2.storage_classes_desired())
 
     def test_init_manifest(self):
