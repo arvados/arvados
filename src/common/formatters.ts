@@ -129,12 +129,3 @@ export const formatContainerCost = (cost: number): string => {
     return `$${rounded}`;
   }
 };
-
-export const formatObjectProperties = (untypedObj: Object) => {
-  type kVPair = [string, string];
-  let formattedObject: Array<kVPair> = [];
-  for (const key in untypedObj) {
-    formattedObject.push([key, untypedObj[key]]);
-  }
-  return formattedObject;
-};

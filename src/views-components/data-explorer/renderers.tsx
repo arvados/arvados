@@ -30,7 +30,7 @@ import {
     SetupIcon,
     InactiveIcon,
 } from 'components/icon/icon';
-import { formatDate, formatFileSize, formatTime, formatObjectProperties} from 'common/formatters';
+import { formatDate, formatFileSize, formatTime } from 'common/formatters';
 import { resourceLabel } from 'common/labels';
 import { connect, DispatchProp } from 'react-redux';
 import { RootState } from 'store/store';
@@ -61,6 +61,7 @@ import { getUserUuid } from 'common/getuser';
 import { VirtualMachinesResource } from 'models/virtual-machines';
 import { CopyToClipboardSnackbar } from 'components/copy-to-clipboard-snackbar/copy-to-clipboard-snackbar';
 import { ProjectResource } from 'models/project';
+import {ContainerRequestResource} from 'models/container-request'
 
 const renderName = (dispatch: Dispatch, item: GroupContentsResource) => {
 
@@ -664,6 +665,14 @@ export const ResourceWorkflowStatus = connect(
         };
     })((props: { ownerUuid?: string, uuidPrefix: string }) => renderWorkflowStatus(props.uuidPrefix, props.ownerUuid));
 
+const renderProcessState = (processState: string) => <Typography>{processState}</Typography>
+
+export const ResourceProcessState = connect(
+    (state: RootState, props: { uuid: string }) => {
+        const resource = getResource<ContainerRequestResource>(props.uuid)(state.resources);
+        return { state: resource?.state ? resource.state: '' };
+    })((props: { state: string }) => renderProcessState(props.state));
+
 export const ResourceCreatedAtDate = connect(
     (state: RootState, props: { uuid: string }) => {
         const resource = getResource<GroupContentsResource>(props.uuid)(state.resources);
@@ -726,23 +735,21 @@ export const ResourceOwnerName = connect(
 export const ResourceUUID = connect(
     (state: RootState, props: { uuid: string }) => {
         const resource = getResource<CollectionResource>(props.uuid)(state.resources);
-        console.log('COLLECTION_RESOIRCE', resource)
         return { uuid: resource ? resource.uuid : '' };
     })((props: { uuid: string }) => renderUuid({uuid: props.uuid}));
-
-const renderMetadata = (metadata:any) => {
-    return <>{formatObjectProperties(metadata).map((property, i)=>
-        <Typography key={i} noWrap>{property[0]}: {property[1]}</Typography>
-    )}</>
-}
-
-export const ResourceMetadata = connect(
+    
+const renderPortableDataHash = (portableDataHash:string | null) => 
+    <Typography noWrap>
+        {portableDataHash ? <>{portableDataHash}
+        <CopyToClipboardSnackbar value={portableDataHash} /></> : '-' }
+    </Typography>
+    
+export const ResourcePortableDataHash = connect(
     (state: RootState, props: { uuid: string }) => {
         const resource = getResource<CollectionResource>(props.uuid)(state.resources);
-        const metadata = resource && Object.keys(resource.properties).length ? resource.properties : {}
-        if(resource && resource.portableDataHash) metadata['Portable Data Hash'] = resource.portableDataHash
-        return { properties: metadata };
-    })((props: { properties: string }) => renderMetadata(props.properties));
+        // console.log('COLLECTION_RESOIRCE', resource)
+        return { portableDataHash: resource ? resource.portableDataHash : '' };    
+    })((props: { portableDataHash: string }) => renderPortableDataHash(props.portableDataHash));
 
 const renderVersion = (version: number) =>{
     return <Typography>{version ?? '-'}</Typography>

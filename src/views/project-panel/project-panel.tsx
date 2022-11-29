@@ -25,7 +25,8 @@ import {
     ProcessStatus,
     ResourceType,
     ResourceUUID,
-    ResourceMetadata,
+    ResourceProcessState,
+    ResourcePortableDataHash,
     ResourceVersion,
     ResourceDescription,
     ResourceOwnerWithName
@@ -74,12 +75,13 @@ export enum ProjectPanelColumnNames {
     FILE_SIZE = "File size",
     FILE_COUNT = "File count",
     UUID = "UUID",
+    STATE = 'State',
     CREATED_AT = "Date created",
     LAST_MODIFIED = "Last modified",
     TRASH_AT = "Trash at",
     DELETE_AT = "Delete at",
     DESCRIPTION = "Description",
-    METADATA = "Metadata",
+    PORTABLE_DATA_HASH = "Portable Data Hash",
     VERSION = "Version"
 }
 
@@ -140,11 +142,18 @@ export const projectPanelColumns: DataColumns<string> = [
         render: uuid => <ResourceUUID uuid={uuid}/>
     },
     {
-        name: ProjectPanelColumnNames.METADATA,
-        selected: false,
+        name: ProjectPanelColumnNames.STATE,
+        selected: true,
         configurable: true,
         filters: createTree(),
-        render: uuid => <ResourceMetadata uuid={uuid}/>
+        render: uuid => <ResourceProcessState uuid={uuid}/>
+    },
+    {
+        name: ProjectPanelColumnNames.PORTABLE_DATA_HASH,
+        selected: true,
+        configurable: true,
+        filters: createTree(),
+        render: uuid => <ResourcePortableDataHash uuid={uuid}/>
     },
     {
         name: ProjectPanelColumnNames.CREATED_AT,
