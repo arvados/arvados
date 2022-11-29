@@ -172,7 +172,7 @@ Workflows should always provide @DockerRequirement@ in the @hints@ or @requireme
 
 h3. Build a reusable library of components
 
-Build a reusable library of components.  Share tool wrappers and subworkflows between projects.  Make use of and contribute to "community maintained workflows and tools":https://github.com/common-workflow-library and tool registries such as "Dockstore":http://dockstore.org .
+Share tool wrappers and subworkflows between projects.  Make use of and contribute to "community maintained workflows and tools":https://github.com/common-workflow-library and tool registries such as "Dockstore":http://dockstore.org .
 
 h3. Supply scripts as input parameters
 
@@ -208,7 +208,7 @@ h3. Getting the temporary and output directories
 
 You can get the designated temporary directory using @$(runtime.tmpdir)@ in your CWL file, or from the @$TMPDIR@ environment variable in your script.
 
-Similarly, you can get the designated output directory using $(runtime.outdir), or from the @HOME@ environment variable in your script.
+Similarly, you can get the designated output directory using @$(runtime.outdir)@, or from the @HOME@ environment variable in your script.
 
 h3. Specifying @ResourceRequirement@
 
@@ -233,4 +233,37 @@ steps:
         ramMin: 2000
         coresMin: 2
         tmpdirMin: 90000
+{% endcodeblock %}
+
+h3. Importing data into Keep
+
+You can use HTTP URLs as File input parameters and @arvados-cwl-runner@ will download them to Keep for you:
+
+{% codeblock as yaml %}
+fastq1:
+  class: File
+  location: https://example.com/genomes/sampleA_1.fastq
+fastq2:
+  class: File
+  location: https://example.com/genomes/sampleA_2.fastq
+{% endcodeblock %}
+
+Files are downloaded and stored in Keep collections with HTTP header information stored in metadata.  If a file was previously downloaded, @arvados-cwl-runner@ uses HTTP caching rules to decide if a file should be re-downloaded or not.
+
+The default behavior is to transfer the files on the client, prior to submitting the workflow run.  This guarantees the data is available when the workflow is submitted.  However, if data transfer is time consuming and you are submitting multiple workflow runs in a row, or the node submitting the workflow has limited bandwidth, you can use the @--defer-download@ option to have the data transfer performed by workflow runner process on a compute node, after the workflow is submitted.
+
+@arvados-cwl-runner@ provides two additional options to control caching behavior.
+
+* @--varying-url-params@ will ignore the listed URL query parameters from any HTTP URLs when checking if a URL has already been downloaded to Keep.
+* @--prefer-cached-downloads@ will search Keep for the previously downloaded URL and use that if found, without checking the upstream resource. This means changes in the upstream resource won't be detected, but it also means the workflow will not fail if the upstream resource becomes inaccessible.
+
+One use of this is to import files from "AWS S3 signed URLs":https://docs.aws.amazon.com/AmazonS3/latest/userguide/ShareObjectPreSignedURL.html
+
+Here is an example usage.  The use of @--varying-url-params=AWSAccessKeyId,Signature,Expires@ is especially relevant, this removes these parameters from the cached URL, which means that if a new signed URL for the same object is generated later, it can be found in the cache.
+
+{% codeblock as sh %}
+arvados-cwl-runner --defer-download \
+                   --varying-url-params=AWSAccessKeyId,Signature,Expires \
+		   --prefer-cached-downloads \
+		   workflow.cwl params.yml
 {% endcodeblock %}
