@@ -22,7 +22,7 @@ import { ProcessResource } from 'models/process';
 import { OrderBuilder } from 'services/api/order-builder';
 import { Breadcrumb } from 'components/breadcrumbs/breadcrumbs';
 import { ContainerRequestResource, containerRequestFieldsNoMounts } from 'models/container-request';
-import { CollectionIcon, IconType, ProcessBreadcrumbIcon, ProjectIcon } from 'components/icon/icon';
+import { CollectionIcon, IconType, ProcessIcon, ProjectIcon } from 'components/icon/icon';
 import { CollectionResource } from 'models/collection';
 
 export const BREADCRUMBS = 'breadcrumbs';
@@ -39,7 +39,7 @@ const resourceToBreadcrumbIcon = (resource: CollectionResource | ContainerReques
         case ResourceKind.PROJECT:
             return ProjectIcon;
         case ResourceKind.PROCESS:
-            return ProcessBreadcrumbIcon;
+            return ProcessIcon;
         case ResourceKind.COLLECTION:
             return CollectionIcon;
         default:
