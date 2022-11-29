@@ -12,8 +12,6 @@ import grey from '@material-ui/core/colors/grey';
 import { ResourcesState } from 'store/resources/resources';
 import classNames from 'classnames';
 import { ArvadosTheme } from 'common/custom-theme';
-import { extractUuidKind, ResourceKind } from 'models/resource';
-import { ClassNameMap } from '@material-ui/core/styles/withStyles';
 
 export interface Breadcrumb {
     label: string;
@@ -21,35 +19,21 @@ export interface Breadcrumb {
     uuid: string;
 }
 
-type CssRules = "item" | "defaultItem" | "processItem" | "collectionItem" | "parentItem" | "currentItem" | "label" | "icon" | "frozenIcon";
+type CssRules = "item" | "label" | "icon" | "frozenIcon";
 
 const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     item: {
         borderRadius: '16px',
-    },
-    defaultItem: {
         backgroundColor: theme.customs.colors.grey300,
+        '&.parentItem': {
+            backgroundColor: `${theme.customs.colors.grey300}99`,
+        },
         '&:hover': {
             backgroundColor: theme.customs.colors.grey400,
-        }
-    },
-    processItem: {
-        backgroundColor: theme.customs.colors.lightGreen300,
-        '&:hover': {
-            backgroundColor: theme.customs.colors.lightGreen400,
-        }
-    },
-    collectionItem: {
-        backgroundColor: theme.customs.colors.cyan100,
-        '&:hover': {
-            backgroundColor: theme.customs.colors.cyan200,
-        }
-    },
-    parentItem: {
-        opacity: 0.75
-    },
-    currentItem: {
-        opacity: 1
+        },
+        '&.parentItem:hover': {
+            backgroundColor: `${theme.customs.colors.grey400}99`,
+        },
     },
     label: {
         textTransform: "none",
@@ -75,17 +59,6 @@ export interface BreadcrumbsProps {
     onContextMenu: (event: React.MouseEvent<HTMLElement>, breadcrumb: Breadcrumb) => void;
 }
 
-const getBreadcrumbClass = (item: Breadcrumb, classes: ClassNameMap<CssRules>): string => {
-    switch (extractUuidKind(item.uuid)) {
-        case ResourceKind.PROCESS:
-            return classes.processItem;
-        case ResourceKind.COLLECTION:
-            return classes.collectionItem;
-        default:
-            return classes.defaultItem;
-    }
-};
-
 export const Breadcrumbs = withStyles(styles)(
     ({ classes, onClick, onContextMenu, items, resources }: BreadcrumbsProps & WithStyles<CssRules>) =>
     <Grid container data-cy='breadcrumbs' alignItems="center" wrap="nowrap">
@@ -106,9 +79,8 @@ export const Breadcrumbs = withStyles(styles)(
                                     ? 'breadcrumb-last'
                                     : false}
                             className={classNames(
-                                isLastItem ? classes.currentItem : classes.parentItem,
-                                classes.item,
-                                getBreadcrumbClass(item, classes)
+                                isLastItem ? null : 'parentItem',
+                                classes.item
                             )}
                             onClick={() => onClick(item)}
                             onContextMenu={event => onContextMenu(event, item)}>
@@ -124,7 +96,7 @@ export const Breadcrumbs = withStyles(styles)(
                             }
                         </Button>
                     </Tooltip>
-                    {!isLastItem && <ChevronRightIcon color="inherit" className={classes.parentItem} />}
+                    {!isLastItem && <ChevronRightIcon color="inherit" className={'parentItem'} />}
                 </React.Fragment>
             );
         })

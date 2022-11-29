@@ -5,10 +5,8 @@
 import { createMuiTheme } from '@material-ui/core/styles';
 import { ThemeOptions, Theme } from '@material-ui/core/styles/createMuiTheme';
 import blue from '@material-ui/core/colors/blue';
-import cyan from '@material-ui/core/colors/cyan';
 import grey from '@material-ui/core/colors/grey';
 import green from '@material-ui/core/colors/green';
-import lightGreen from '@material-ui/core/colors/lightGreen';
 import yellow from '@material-ui/core/colors/yellow';
 import red from '@material-ui/core/colors/red';
 import teal from '@material-ui/core/colors/teal';
@@ -24,10 +22,6 @@ export interface ArvadosTheme extends Theme {
 }
 
 interface Colors {
-    cyan100: string;
-    cyan200: string;
-    lightGreen300: string;
-    lightGreen400: string;
     green700: string;
     yellow100: string;
     yellow700: string;
@@ -54,10 +48,6 @@ export const themeOptions: ArvadosThemeOptions = {
     },
     customs: {
         colors: {
-            lightGreen300: lightGreen["300"],
-            lightGreen400: lightGreen["400"],
-            cyan100: cyan["100"],
-            cyan200: cyan["200"],
             green700: green["700"],
             yellow100: yellow["100"],
             yellow700: yellow["700"],
