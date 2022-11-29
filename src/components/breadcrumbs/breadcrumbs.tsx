@@ -24,6 +24,7 @@ type CssRules = "item" | "label" | "icon" | "frozenIcon";
 const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     item: {
         borderRadius: '16px',
+        height: '32px',
         backgroundColor: theme.customs.colors.grey300,
         '&.parentItem': {
             backgroundColor: `${theme.customs.colors.grey300}99`,
@@ -39,6 +40,7 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
         textTransform: "none",
         paddingRight: '3px',
         paddingLeft: '3px',
+        lineHeight: '1.4',
     },
     icon: {
         fontSize: 20,
