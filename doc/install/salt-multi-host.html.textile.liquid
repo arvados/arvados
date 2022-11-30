@@ -72,20 +72,24 @@ If you are going to use Terraform to set up the infrastructure on AWS, you will 
 h2(#download). Download the installer
 
 {% assign local_params_src = 'multiple_hosts' %}
-{% assign config_examples_src = 'multi_host/aws terraform/aws'%}
+{% assign config_examples_src = 'multi_host/aws' %}
+{% assign terraform_src = 'terraform/aws' %}
 {% include 'download_installer' %}
 
 h2(#setup-infra). Set up your infrastructure
+
+## "Create AWS infrastructure with Terraform":#terraform
+## "Create required infrastructure manually":#inframanual
 
 h3(#terraform). Create AWS infrastructure with Terraform (AWS specific)
 
 We provide a set of Terraform code files that you can run to create the necessary infrastructure on Amazon Web Services.
 
-These files are located in the @arvados/tools/salt-install/terraform/aws/@ directory and are divided in three sections:
+These files are located in the @terraform@ installer directory and are divided in three sections:
 
-# The @vpc/@ subdirectory controls the network related infrastructure of your cluster, including firewall rules and split-horizon DNS resolution.
-# The @data-storage/@ subdirectory controls the stateful part of your cluster, currently only sets up the S3 bucket for holding the Keep blocks and in the future it'll also manage the database service.
-# The @services/@ subdirectory controls the hosts that will run the different services on your cluster, makes sure that they have the required software for the installer to do its job.
+# The @terraform/vpc/@ subdirectory controls the network related infrastructure of your cluster, including firewall rules and split-horizon DNS resolution.
+# The @terraform/data-storage/@ subdirectory controls the stateful part of your cluster, currently only sets up the S3 bucket for holding the Keep blocks and in the future it'll also manage the database service.
+# The @terraform/services/@ subdirectory controls the hosts that will run the different services on your cluster, makes sure that they have the required software for the installer to do its job.
 
 h4. Software requirements & considerations
 
@@ -107,7 +111,7 @@ The @data-storage/terraform.tfvars@ and @services/terraform.tfvars@ let you conf
 
 h4. Create the infrastructure
 
-Build the infrastructure by running @./installer.sh terraform@.  The last stage @services/@ will output the information needed to set up the cluster's domain and continue with the installer. for example:
+Build the infrastructure by running @./installer.sh terraform@.  The last stage will output the information needed to set up the cluster's domain and continue with the installer. for example:
 
 <pre><code>$ ./installer.sh terraform
 ...
@@ -151,11 +155,11 @@ vpc_id = "vpc-0999994998399923a"
 
 h4. Additional DNS configuration
 
-Once Terraform has completed, the infrastructure for your Arvados cluster is up and running.  You are almost ready to have the installer connect to the instances to install and configure the software.
+Once Terraform has completed, the infrastructure for your Arvados cluster is up and running.  One last piece of DNS configuration is required.
 
 The domain names for your cluster (e.g.: controller.xarv1.example.com) are managed via "Route 53":https://aws.amazon.com/route53/ and the TLS certificates will be issued using "Let's Encrypt":https://letsencrypt.org/ .
 
-You will need to configure the parent domain to delegate to the newly created zone.  In other words, you need to configure @${DOMAIN}@ (e.g. "example.com") to delegate the subdomain @${CLUSTER}.${DOMAIN}@ (e.g. "xarv1.example.com") to the nameservers that contain the Arvados hostname records created by Terraform.  You do this by creating an @NS@ record on the parent domain that refers to the appropriate name servers.  These are the domain name servers listed in the Terraform output parameter @route53_dns_ns@.
+You need to configure the parent domain to delegate to the newly created zone.  In other words, you need to configure @${DOMAIN}@ (e.g. "example.com") to delegate the subdomain @${CLUSTER}.${DOMAIN}@ (e.g. "xarv1.example.com") to the nameservers for the Arvados hostname records created by Terraform.  You do this by creating a @NS@ record on the parent domain that refers to the name servers listed in the Terraform output parameter @route53_dns_ns@.
 
 If your parent domain is also controlled by Route 53, the process will be like this:
 
@@ -167,16 +171,24 @@ If your parent domain is also controlled by Route 53, the process will be like t
 # For *Value* add the values from Terraform output parameter @route53_dns_ns@, one hostname per line, with punctuation (quotes and commas) removed.
 # Click *Create records*
 
+If the parent domain is controlled by some other service, follow the guide for the the appropriate service.
+
 h4. Other important output parameters
 
-Take note of @letsencrypt_iam_access_key_id@ and @letsencrypt_iam_secret_access_key@ for setting up @LE_AWS_*@ variables in @local.params@.  The certificates will be requested when you run the installer.
+* Take note of @letsencrypt_iam_access_key_id@ and @letsencrypt_iam_secret_access_key@ for setting up @LE_AWS_*@ variables in @local.params@.
 
 You'll see that the @letsencrypt_iam_secret_access_key@ data is obscured; to retrieve it you'll need to run the following command inside the @services/@ subdirectory:
 
 <pre><code>$ terraform output letsencrypt_iam_secret_access_key
 "FQ3+3lxxOxxUu+Nw+qx3xixxxExxxV9jFC+XxxRl"</code></pre>
 
-You'll also need @subnet_id@ and @arvados_sg_id@ to set up @DriverParameters.SubnetID@ and @DriverParameters.SecurityGroupIDs@ in @local_config_dir/pillars/arvados.sls@ for when you "create a compute image":#create_a_compute_image.
+The certificates will be requested from Let's Encrypt when you run the installer.
+
+* @vpc_cidr@ will be used to set @CLUSTER_INT_CIDR@
+
+* You'll also need @subnet_id@ and @arvados_sg_id@ to set @DriverParameters.SubnetID@ and @DriverParameters.SecurityGroupIDs@ in @local_config_dir/pillars/arvados.sls@ and when you "create a compute image":#create_a_compute_image.
+
+You can now proceed to "edit local.params":#localparams.
 
 h3(#inframanual). Create required infrastructure manually
 
@@ -249,7 +261,7 @@ This can be found wherever you choose to initialize the install files (@~/setup-
 
 # Set @CLUSTER@ to the 5-character cluster identifier (e.g "xarv1")
 # Set @DOMAIN@ to the base DNS domain of the environment, e.g. "example.com"
-# Edit Internal IP settings. Since services share hosts, some hosts are the same.  See "note about /etc/hosts":#etchosts
+# Set the @*_INT_IP@ variables with the internal (private) IP addresses of each host. Since services share hosts, some hosts are the same.  See "note about /etc/hosts":#etchosts
 # Edit @CLUSTER_INT_CIDR@, this should be the CIDR of the private network that Arvados is running on, e.g. the VPC.
 CIDR stands for "Classless Inter-Domain Routing" and describes which portion of the IP address that refers to the network.  For example 192.168.3.0/24 means that the first 24 bits are the network (192.168.3) and the last 8 bits are a specific host on that network.
 _AWS Specific: Go to the AWS console and into the VPC service, there is a column in this table view of the VPCs that gives the CIDR for the VPC (IPv4 CIDR)._
@@ -262,6 +274,7 @@ SYSTEM_ROOT_TOKEN=XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 ANONYMOUS_USER_TOKEN=XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 WORKBENCH_SECRET_KEY=XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 DATABASE_PASSWORD=XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+</code></pre>
 # Set @DATABASE_PASSWORD@ to a random string (unless you "already have a database":#ext-database then you should set it to that database's password)
    Important! If this contains any non-alphanumeric characters, in particular ampersand ('&'), it is necessary to add backslash quoting.
    For example, if the password is @Lq&MZ<V']d?j@
@@ -286,7 +299,9 @@ Open @local_config_dir/pillars/arvados.sls@ and edit as follows:
 
 # In the @arvados.cluster.Volumes.DriverParameters@ section, set @Region@ to the appropriate AWS region (e.g. 'us-east-1')
 
-If you did not "follow the recommendend naming scheme":#keep-bucket for either the bucket or role, you'll need to update these parameters as well:
+If "followed the recommendend naming scheme":#keep-bucket for both the bucket and role (or used the provided Terraform script), you're done.
+
+If you did not follow the recommendend naming scheme for either the bucket or role, you'll need to update these parameters as well:
 
 # Set @Bucket@ to the value of "keepstore bucket you created earlier":#keep-bucket
 # Set @IAMRole@ to "keepstore role you created earlier":#keep-bucket

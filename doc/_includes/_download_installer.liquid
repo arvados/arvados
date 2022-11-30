@@ -22,13 +22,24 @@ h2(#copy_config). Initialize the installer
 
 Replace "xarv1" with the cluster id you selected earlier.
 
+This creates a git repository in @~/setup-arvados-xarv1@.  The @installer.sh@ will record all the configuration changes you make, as well as using @git push@ to synchronize configuration edits if you have multiple nodes.
+
+Important!  Once you have initialized the installer directory, all further commands must be run with @~/setup-arvados-${CLUSTER}@ as the current working directory.
+
+h3. Using Terraform (AWS specific)
+
+<notextile>
+<pre><code>CLUSTER=xarv1
+./installer.sh initialize ~/setup-arvados-${CLUSTER} {{local_params_src}} {{config_examples_src}} {{terraform_src}}
+cd ~/setup-arvados-${CLUSTER}
+</code></pre>
+</notextile>
+
+h3. Without Terraform
+
 <notextile>
 <pre><code>CLUSTER=xarv1
 ./installer.sh initialize ~/setup-arvados-${CLUSTER} {{local_params_src}} {{config_examples_src}}
 cd ~/setup-arvados-${CLUSTER}
 </code></pre>
 </notextile>
-
-This creates a git repository in @~/setup-arvados-xarv1@.  The @installer.sh@ will record all the configuration changes you make, as well as using @git push@ to synchronize configuration edits if you have multiple nodes.
-
-Important!  All further commands must be run with @~/setup-arvados-xarv1@ as the current working directory.

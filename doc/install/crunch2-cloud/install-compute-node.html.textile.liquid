@@ -165,6 +165,16 @@ The desired amount of memory to make available for @mksquashfs@ can be configure
 
 h2(#aws). Build an AWS image
 
+For @ClusterID@, fill in your cluster ID.
+
+@AWSProfile@ is the name of an AWS profile in your "credentials file":https://docs.aws.amazon.com/sdk-for-go/v1/developer-guide/configuring-sdk.html#shared-credentials-file (@~/.aws/credentials@) listing the @aws_access_key_id@ and @aws_secret_access_key@ to use.
+
+The @AMI@ is the identifier for the base image to be used. Current AMIs are maintained by "Debian":https://wiki.debian.org/Cloud/AmazonEC2Image/Buster and "Ubuntu":https://cloud-images.ubuntu.com/locator/ec2/.
+
+The @VPC@ and @Subnet@ should be configured for where you want the compute image to be generated and stored.
+
+@ArvadosDispatchCloudPublicKeyPath@ should be replaced with the path to the ssh *public* key file generated in "Create an SSH keypair":#sshkeypair, above.
+
 <notextile><pre><code>~$ <span class="userinput">./build.sh --json-file arvados-images-aws.json \
            --arvados-cluster-id ClusterID \
            --aws-profile AWSProfile \
@@ -177,11 +187,6 @@ h2(#aws). Build an AWS image
 </span>
 </code></pre></notextile>
 
-For @ClusterID@, fill in your cluster ID. The @VPC@ and @Subnet@ should be configured for where you want the compute image to be generated and stored. The @AMI@ is the identifier for the base image to be used. Current AMIs are maintained by "Debian":https://wiki.debian.org/Cloud/AmazonEC2Image/Buster and "Ubuntu":https://cloud-images.ubuntu.com/locator/ec2/.
-
-@AWSProfile@ should be replaced with the name of an AWS profile with sufficient permissions to create the image.
-
-@ArvadosDispatchCloudPublicKeyPath@ should be replaced with the path to the ssh *public* key file generated in "Create an SSH keypair":#sshkeypair, above.
 
 h3(#aws-ebs-autoscaler). Autoscaling compute node scratch space
 
