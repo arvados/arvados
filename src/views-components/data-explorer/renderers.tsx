@@ -61,7 +61,6 @@ import { getUserUuid } from 'common/getuser';
 import { VirtualMachinesResource } from 'models/virtual-machines';
 import { CopyToClipboardSnackbar } from 'components/copy-to-clipboard-snackbar/copy-to-clipboard-snackbar';
 import { ProjectResource } from 'models/project';
-import {ContainerRequestResource} from 'models/container-request'
 
 const renderName = (dispatch: Dispatch, item: GroupContentsResource) => {
 
@@ -669,9 +668,9 @@ const renderProcessState = (processState: string) => <Typography>{processState |
 
 export const ResourceProcessState = connect(
     (state: RootState, props: { uuid: string }) => {
-        const resource = getResource<ContainerRequestResource>(props.uuid)(state.resources);
-        return { state: resource?.state ? resource.state: '' };
-    })((props: { state: string }) => renderProcessState(props.state));
+        const process = getProcess(props.uuid)(state.resources)
+        return { process: process?.container?.state ? process?.container?.state : '' };
+    })((props: { process: string }) => renderProcessState(props.process));
 
 export const ResourceCreatedAtDate = connect(
     (state: RootState, props: { uuid: string }) => {
@@ -747,7 +746,6 @@ const renderPortableDataHash = (portableDataHash:string | null) =>
 export const ResourcePortableDataHash = connect(
     (state: RootState, props: { uuid: string }) => {
         const resource = getResource<CollectionResource>(props.uuid)(state.resources);
-        // console.log('COLLECTION_RESOIRCE', resource)
         return { portableDataHash: resource ? resource.portableDataHash : '' };    
     })((props: { portableDataHash: string }) => renderPortableDataHash(props.portableDataHash));
 
@@ -780,8 +778,8 @@ export const ResourceDescription = connect(
     (state: RootState, props: { uuid: string }) => {
         const resource = getResource<GroupContentsResource>(props.uuid)(state.resources);
         //testing---------------
-        const containerRequestDescription = "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum."
-        if (resource && !resource.description && resource.kind === ResourceKind.PROCESS) resource.description = containerRequestDescription
+        // const containerRequestDescription = "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum."
+        // if (resource && !resource.description && resource.kind === ResourceKind.PROCESS) resource.description = containerRequestDescription
         //testing---------------
         return { description: resource ? resource.description : '' };
     })((props: { description: string }) => renderDescription(props.description));
