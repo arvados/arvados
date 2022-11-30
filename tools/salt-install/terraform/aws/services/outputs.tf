@@ -51,3 +51,7 @@ output "domain_name" {
 output "deploy_user" {
   value = "admin"
 }
+
+output "region_name" {
+  value = data.terraform_remote_state.vpc.outputs.region_name
+}
