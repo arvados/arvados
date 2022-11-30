@@ -20,7 +20,7 @@ export const formatDate = (isoDate?: string | null, utc: boolean = false) => {
     }
     return text === 'Invalid Date' ? '(none)' : text;
   }
-  return '(none)';
+  return '-';
 };
 
 export const formatFileSize = (size?: number | string) => {
@@ -36,7 +36,7 @@ export const formatFileSize = (size?: number | string) => {
     }
   }
   if ((typeof size === 'string' && size === '') || size === undefined) {
-    return '';
+    return '-';
   }
   return '0 B';
 };

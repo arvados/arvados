@@ -665,7 +665,7 @@ export const ResourceWorkflowStatus = connect(
         };
     })((props: { ownerUuid?: string, uuidPrefix: string }) => renderWorkflowStatus(props.uuidPrefix, props.ownerUuid));
 
-const renderProcessState = (processState: string) => <Typography>{processState}</Typography>
+const renderProcessState = (processState: string) => <Typography>{processState || '-'}</Typography>
 
 export const ResourceProcessState = connect(
     (state: RootState, props: { uuid: string }) => {
@@ -715,7 +715,7 @@ export const ResourceFileSize = connect(
 
 const renderOwner = (owner: string) =>
     <Typography noWrap>
-        {owner}
+        {owner || '-'}
     </Typography>;
 
 export const ResourceOwner = connect(
