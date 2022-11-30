@@ -26,6 +26,7 @@ import {
     ResourceType,
     ResourceUUID,
     ResourceProcessState,
+    ResourceParentProcess,
     ResourcePortableDataHash,
     ResourceVersion,
     ResourceDescription,
@@ -76,6 +77,7 @@ export enum ProjectPanelColumnNames {
     FILE_COUNT = "File count",
     UUID = "UUID",
     STATE = 'State',
+    PARENT_PROCESS = 'Parent process',
     CREATED_AT = "Date created",
     LAST_MODIFIED = "Last modified",
     TRASH_AT = "Trash at",
@@ -99,7 +101,7 @@ export const projectPanelColumns: DataColumns<string> = [
         render: uuid => <ResourceName uuid={uuid} />
     },
     {
-        name: "Status",
+        name: ProjectPanelColumnNames.STATUS,
         selected: true,
         configurable: true,
         mutuallyExclusiveFilters: true,
@@ -122,21 +124,21 @@ export const projectPanelColumns: DataColumns<string> = [
     },
     {
         name: ProjectPanelColumnNames.FILE_SIZE,
-        selected: true,
+        selected: false,
         configurable: true,
         filters: createTree(),
         render: uuid => <ResourceFileSize uuid={uuid} />
     },
     {
         name: ProjectPanelColumnNames.FILE_COUNT,
-        selected: true,
+        selected: false,
         configurable: true,
         filters: createTree(),
         render: uuid =><ResourceFileCount uuid={uuid}/>
     },
     {
         name: ProjectPanelColumnNames.UUID,
-        selected: true,
+        selected: false,
         configurable: true,
         filters: createTree(),
         render: uuid => <ResourceUUID uuid={uuid}/>
@@ -149,8 +151,15 @@ export const projectPanelColumns: DataColumns<string> = [
         render: uuid => <ResourceProcessState uuid={uuid}/>
     },
     {
+        name: ProjectPanelColumnNames.PARENT_PROCESS,
+        selected: false,
+        configurable: true,
+        filters: createTree(),
+        render: uuid => <ResourceParentProcess uuid={uuid}/>
+    },
+    {
         name: ProjectPanelColumnNames.PORTABLE_DATA_HASH,
-        selected: true,
+        selected: false,
         configurable: true,
         filters: createTree(),
         render: uuid => <ResourcePortableDataHash uuid={uuid}/>
@@ -188,7 +197,7 @@ export const projectPanelColumns: DataColumns<string> = [
     },
     {
         name: ProjectPanelColumnNames.DESCRIPTION,
-        selected: true,
+        selected: false,
         configurable: true,
         filters: createTree(),
         render: uuid =><ResourceDescription uuid={uuid}/>

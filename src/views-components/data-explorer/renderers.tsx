@@ -227,7 +227,7 @@ export const UserResourceFullName = connect(
 const renderUuid = (item: { uuid: string }) =>
     <Typography data-cy="uuid" noWrap>
         {item.uuid}
-        <CopyToClipboardSnackbar value={item.uuid} />
+        {(item.uuid && <CopyToClipboardSnackbar value={item.uuid} />) || '-' }
     </Typography>;
 
 export const ResourceUuid = connect((state: RootState, props: { uuid: string }) => (
@@ -669,8 +669,15 @@ const renderProcessState = (processState: string) => <Typography>{processState |
 export const ResourceProcessState = connect(
     (state: RootState, props: { uuid: string }) => {
         const process = getProcess(props.uuid)(state.resources)
-        return { process: process?.container?.state ? process?.container?.state : '' };
-    })((props: { process: string }) => renderProcessState(props.process));
+        return { state: process?.container?.state ? process?.container?.state : '' };
+    })((props: { state: string }) => renderProcessState(props.state));
+
+export const ResourceParentProcess = connect(
+    (state: RootState, props: { uuid: string }) => {
+        const process = getProcess(props.uuid)(state.resources)
+        const parentProcessUuid = process?.containerRequest?.requestingContainerUuid
+        return { parentProcess: parentProcessUuid || '' };
+    })((props: { parentProcess: string }) => renderUuid({uuid: props.parentProcess}));
 
 export const ResourceCreatedAtDate = connect(
     (state: RootState, props: { uuid: string }) => {
