@@ -11,10 +11,11 @@ SPDX-License-Identifier: CC-BY-SA-3.0
 
 # "Introduction":#introduction
 # "Prerequisites and planning":#prerequisites
-## "Create AWS infrastructure with Terraform":#terraform
-## "Create required insfrastructure manually":#inframanual
 # "Download the installer":#download
 # "Initialize the installer":#copy_config
+# "Set up your infrastructure":#setup-infra
+## "Create AWS infrastructure with Terraform":#terraform
+## "Create required infrastructure manually":#inframanual
 # "Edit local.params":#localparams
 # "Configure Keep storage":#keep
 # "Choose the SSL configuration":#certificates
@@ -44,11 +45,43 @@ Determine the base domain for the cluster.  This will be referred to as @${DOMAI
 
 For example, if CLUSTER is @xarv1@ and DOMAIN is @example.com@, then @controller.${CLUSTER}.${DOMAIN}@ means @controller.xarv1.example.com@.
 
-h3(#terraform). Create AWS infrastructure with Terraform
+h3(#DNS). DNS hostnames for each service
 
-To simplify the tedious and error-prone process of building a working cloud infrastructure for your Arvados cluster, we provide a set of Terraform code files that you can run against Amazon Web Services.
+You will need a DNS entry for each service.  When using the "Terraform script":#terraform to set up your infrastructure, these domains will be created automatically using AWS Route 53.
 
-These files are located in the @tools/salt-install/terraform/aws/@ directory and are divided in three sections:
+In the default configuration these are:
+
+# @controller.${CLUSTER}.${DOMAIN}@
+# @ws.${CLUSTER}.${DOMAIN}@
+# @keep0.${CLUSTER}.${DOMAIN}@
+# @keep1.${CLUSTER}.${DOMAIN}@
+# @keep.${CLUSTER}.${DOMAIN}@
+# @download.${CLUSTER}.${DOMAIN}@
+# @*.collections.${CLUSTER}.${DOMAIN}@  -- important note, this must be a wildcard DNS, resolving to the @keepweb@ service
+# @workbench.${CLUSTER}.${DOMAIN}@
+# @workbench2.${CLUSTER}.${DOMAIN}@
+# @webshell.${CLUSTER}.${DOMAIN}@
+# @shell.${CLUSTER}.${DOMAIN}@
+
+For more information, see "DNS entries and TLS certificates":install-manual-prerequisites.html#dnstls.
+
+h3. Install Terraform and AWS CLI (AWS specific)
+
+If you are going to use Terraform to set up the infrastructure on AWS, you will need to install the "Terraform CLI":https://developer.hashicorp.com/terraform/tutorials/aws-get-started/install-cli tool installed on your computer, as well as the "AWS CLI":https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html tool.
+
+h2(#download). Download the installer
+
+{% assign local_params_src = 'multiple_hosts' %}
+{% assign config_examples_src = 'multi_host/aws terraform/aws'%}
+{% include 'download_installer' %}
+
+h2(#setup-infra). Set up your infrastructure
+
+h3(#terraform). Create AWS infrastructure with Terraform (AWS specific)
+
+We provide a set of Terraform code files that you can run to create the necessary infrastructure on Amazon Web Services.
+
+These files are located in the @arvados/tools/salt-install/terraform/aws/@ directory and are divided in three sections:
 
 # The @vpc/@ subdirectory controls the network related infrastructure of your cluster, including firewall rules and split-horizon DNS resolution.
 # The @data-storage/@ subdirectory controls the stateful part of your cluster, currently only sets up the S3 bucket for holding the Keep blocks and in the future it'll also manage the database service.
@@ -56,39 +89,37 @@ These files are located in the @tools/salt-install/terraform/aws/@ directory and
 
 h4. Software requirements & considerations
 
-In addition of having "Terraform CLI":https://developer.hashicorp.com/terraform/tutorials/aws-get-started/install-cli tool installed on your computer, you'll also need the "AWS CLI":https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html tool and proper credentials already configured.
-
-Once all the required tools are present, as a first step you should run @terraform init@ inside each subdirectory, so that all the required modules get downloaded. If you happen to miss this step, running @terraform apply@ will just exit with a message asking for this.
-
 {% include 'notebox_begin' %}
-The Terraform state files (that keep crucial infrastructure information from the cloud) will be saved inside each subdirectory, under the @terraform.tfstate@ name. You should keep these files secure as they contain unencrypted secrets. Research on state files management best practices is left as an exercise to the reader.
+The Terraform state files (that keep crucial infrastructure information from the cloud) will be saved inside each subdirectory, under the @terraform.tfstate@ name.  These will be committed to the git repository used to coordinate deployment.  It is very important to keep this git repository secure, only sysadmins that will be responsible for maintaining your Arvados cluster should have access to it.
 {% include 'notebox_end' %}
 
 h4. Terraform code configuration
 
-Each section described above contain a @terraform.tfvars@ file with some configuration values that you should set before applying each configuration. You'll at least need to set up the cluster prefix and domain name in @vpc/terraform.tfvars@:
+Each section described above contain a @terraform.tfvars@ file with some configuration values that you should set before applying each configuration. You should set the cluster prefix and domain name in @vpc/terraform.tfvars@:
 
 <pre><code>region_name = "us-east-1"
 # cluster_name = "xarv1"
 # domain_name = "example.com"</code></pre>
 
-The other @data-storage/terraform.tfvars@ and @services/terraform.tfvars@ files already have sensible defaults so you may not need to modify them.
+If you don't set the variables @vpc/terraform.tfvars@ file, you will be asked to re-enter these parameters every time you run Terraform.
+
+The @data-storage/terraform.tfvars@ and @services/terraform.tfvars@ let you configure the location of your ssh public key (default @~/.ssh/id_rsa.pub@) and the instance type to use (default @m5a.large@).
 
 h4. Create the infrastructure
 
-The whole infrastructure needs to be built in stages by running @terraform apply@ inside each subdirectory in the order they are listed above. Each stage will output information that is needed by a following stage. The last stage @services/@ will output the information needed to set up the cluster's domain and continue with the installer, for example:
+Build the infrastructure by running @./installer.sh terraform@.  The last stage @services/@ will output the information needed to set up the cluster's domain and continue with the installer. for example:
 
-<pre><code>$ terraform apply
+<pre><code>$ ./installer.sh terraform
 ...
 Apply complete! Resources: 16 added, 0 changed, 0 destroyed.
 
 Outputs:
 
-arvados_sg_id = "sg-02fa04a2c273166d7"
+arvados_sg_id = "sg-02f999a99973999d7"
 cluster_name = "xarv1"
 deploy_user = "admin"
 domain_name = "example.com"
-letsencrypt_iam_access_key_id = "AKIA43MU4DW7K57DBVSD"
+letsencrypt_iam_access_key_id = "AKAA43MAAAWAKAADAASD"
 letsencrypt_iam_secret_access_key = <sensitive>
 private_ip = {
   "controller" = "10.1.1.1"
@@ -112,35 +143,48 @@ route53_dns_ns = tolist([
   "ns-437.awsdns-54.com",
   "ns-809.awsdns-37.net",
 ])
-subnet_id = "subnet-072a139f03938b710"
+subnet_id = "subnet-072a999f939989710"
 vpc_cidr = "10.1.0.0/16"
-vpc_id = "vpc-0934aa4738300423a"
+vpc_id = "vpc-0999994998399923a"
 </code></pre>
+
+
+h4. Additional DNS configuration
+
+Once Terraform has completed, the infrastructure for your Arvados cluster is up and running.  You are almost ready to have the installer connect to the instances to install and configure the software.
+
+The domain names for your cluster (e.g.: controller.xarv1.example.com) are managed via "Route 53":https://aws.amazon.com/route53/ and the TLS certificates will be issued using "Let's Encrypt":https://letsencrypt.org/ .
+
+You will need to configure the parent domain to delegate to the newly created zone.  In other words, you need to configure @${DOMAIN}@ (e.g. "example.com") to delegate the subdomain @${CLUSTER}.${DOMAIN}@ (e.g. "xarv1.example.com") to the nameservers that contain the Arvados hostname records created by Terraform.  You do this by creating an @NS@ record on the parent domain that refers to the appropriate name servers.  These are the domain name servers listed in the Terraform output parameter @route53_dns_ns@.
+
+If your parent domain is also controlled by Route 53, the process will be like this:
+
+# Log in to the AWS Console and navigate to the service page for *Route 53*
+# Go to the list of *Hosted zones* and click on the zone for the parent domain
+# Click on *Create record*
+# For *Record name* put the cluster id
+# For *Record type* choose @NS - Name servers for a hosted zone@
+# For *Value* add the values from Terraform output parameter @route53_dns_ns@, one hostname per line, with punctuation (quotes and commas) removed.
+# Click *Create records*
+
+h4. Other important output parameters
+
+Take note of @letsencrypt_iam_access_key_id@ and @letsencrypt_iam_secret_access_key@ for setting up @LE_AWS_*@ variables in @local.params@.  The certificates will be requested when you run the installer.
 
 You'll see that the @letsencrypt_iam_secret_access_key@ data is obscured; to retrieve it you'll need to run the following command inside the @services/@ subdirectory:
 
 <pre><code>$ terraform output letsencrypt_iam_secret_access_key
-"FQ3+3lnBOtWUu+Nw+qb3RiAGqE7DxV9jFC+XTARl"</code></pre>
+"FQ3+3lxxOxxUu+Nw+qx3xixxxExxxV9jFC+XxxRl"</code></pre>
 
-h4. Final actions
-
-At this stage, the infrastructure for your Arvados cluster is up and running, ready for the installer to connect to the instances and do the final set up.
-
-The domain name for your cluster (e.g.: xarv1.example.com) is managed via Route53 and the SSL certificates will be issued using Let's Encrypt.
-
-Take note of the domain servers listed in @route53_dns_ns@ so you can delegate the zone to them.
-
-You'll need to take note of @letsencrypt_iam_access_key_id@ and @letsencrypt_iam_secret_access_key@ for setting up @LE_AWS_*@ variables in @local.params@.
-
-You'll also need @subnet_id@ and @arvados_sg_id@ to set up @DriverParameters.SubnetID@ and @DriverParameters.SecurityGroupIDs@ in @local_config_dir/pillars/arvados.sls@ as "described below":#create_a_compute_image.
+You'll also need @subnet_id@ and @arvados_sg_id@ to set up @DriverParameters.SubnetID@ and @DriverParameters.SecurityGroupIDs@ in @local_config_dir/pillars/arvados.sls@ for when you "create a compute image":#create_a_compute_image.
 
 h3(#inframanual). Create required infrastructure manually
 
-If you would rather prefer to create/set up your infrastructure manually, below we provide some recommendations you will need to consider.
+If you will be setting up infrastructure without using the provided Terraform script, here are the recommendations you will need to consider.
 
 h4. Virtual Private Cloud (AWS specific)
 
-We recommend setting Arvados up in a "Virtual Private Cloud (VPC)":https://docs.aws.amazon.com/vpc/latest/userguide/what-is-amazon-vpc.html
+We recommend setting Arvados up in its own "Virtual Private Cloud (VPC)":https://docs.aws.amazon.com/vpc/latest/userguide/what-is-amazon-vpc.html
 
 When you do so, you need to configure a couple of additional things:
 
@@ -185,24 +229,6 @@ The installer will set up the Arvados services on your machines.  Here is the de
 
 When using the database installed by Arvados (and not an "external database":#ext-database), the database is stored under @/var/lib/postgresql@.  Arvados logs are also kept in @/var/log@ and @/var/www/arvados-api/shared/log@.  Accordingly, you should ensure that the disk partition containing @/var@ has adequate storage for your planned usage.  We suggest starting with 50GiB of free space on the database host.
 
-h4(#DNS). DNS hostnames for each service
-
-You will need a DNS entry for each service.  In the default configuration these are:
-
-# @controller.${CLUSTER}.${DOMAIN}@
-# @ws.${CLUSTER}.${DOMAIN}@
-# @keep0.${CLUSTER}.${DOMAIN}@
-# @keep1.${CLUSTER}.${DOMAIN}@
-# @keep.${CLUSTER}.${DOMAIN}@
-# @download.${CLUSTER}.${DOMAIN}@
-# @*.collections.${CLUSTER}.${DOMAIN}@  -- important note, this must be a wildcard DNS, resolving to the @keepweb@ service
-# @workbench.${CLUSTER}.${DOMAIN}@
-# @workbench2.${CLUSTER}.${DOMAIN}@
-# @webshell.${CLUSTER}.${DOMAIN}@
-# @shell.${CLUSTER}.${DOMAIN}@
-
-This is described in more detail in "DNS entries and TLS certificates":install-manual-prerequisites.html#dnstls.
-
 h4. Additional prerequisites when preparing machines to run the installer
 
 # From the account where you are performing the install, passwordless @ssh@ to each machine
@@ -217,12 +243,6 @@ This usually means adding the account to the @sudo@ group and having a rule like
 
 If your infrastructure differs from the setup proposed above (ie, different hostnames), you can still use the installer, but "additional customization may be necessary":#further_customization .
 
-h2(#download). Download the installer
-
-{% assign local_params_src = 'multiple_hosts' %}
-{% assign config_examples_src = 'multi_host/aws'%}
-{% include 'download_installer' %}
-
 h2(#localparams). Edit @local.params@
 
 This can be found wherever you choose to initialize the install files (@~/setup-arvados-xarv1@ in these examples).
@@ -234,12 +254,14 @@ This can be found wherever you choose to initialize the install files (@~/setup-
 CIDR stands for "Classless Inter-Domain Routing" and describes which portion of the IP address that refers to the network.  For example 192.168.3.0/24 means that the first 24 bits are the network (192.168.3) and the last 8 bits are a specific host on that network.
 _AWS Specific: Go to the AWS console and into the VPC service, there is a column in this table view of the VPCs that gives the CIDR for the VPC (IPv4 CIDR)._
 # Set @INITIAL_USER_EMAIL@ to your email address, as you will be the first admin user of the system.
-# Set each @KEY@ / @TOKEN@ to a random string
-	Here's an easy way to create five random tokens:
-<pre><code>for i in 1 2 3 4 5; do
-  tr -dc A-Za-z0-9 </dev/urandom | head -c 32 ; echo ''
-done
-</code></pre>
+# Set each @KEY@ / @TOKEN@ / @PASSWORD@ to a random string.  You can use @installer.sh generate-tokens@
+<pre><code>$ ./installer.sh generate-tokens
+BLOB_SIGNING_KEY=XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+MANAGEMENT_TOKEN=XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+SYSTEM_ROOT_TOKEN=XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+ANONYMOUS_USER_TOKEN=XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+WORKBENCH_SECRET_KEY=XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+DATABASE_PASSWORD=XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 # Set @DATABASE_PASSWORD@ to a random string (unless you "already have a database":#ext-database then you should set it to that database's password)
    Important! If this contains any non-alphanumeric characters, in particular ampersand ('&'), it is necessary to add backslash quoting.
    For example, if the password is @Lq&MZ<V']d?j@

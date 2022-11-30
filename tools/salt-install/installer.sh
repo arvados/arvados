@@ -145,6 +145,7 @@ case "$subcmd" in
 	SETUPDIR=$1
 	PARAMS=$2
 	SLS=$3
+	TERRAFORM=$4
 	set -u
 
 	err=
@@ -176,14 +177,42 @@ case "$subcmd" in
 	cp local.params.example.$PARAMS $SETUPDIR/${CONFIG_FILE}
 	cp -r config_examples/$SLS $SETUPDIR/${CONFIG_DIR}
 
+	if [[ -n "$TERRAFORM" ]] ; then
+	    mkdir $SETUPDIR/terraform
+	    cp -r $TERRAFORM/* $SETUPDIR/terraform/
+	fi
+
 	cd $SETUPDIR
 	echo '*.log' > .gitignore
 
 	git add *.sh ${CONFIG_FILE} ${CONFIG_DIR} tests .gitignore
 	git commit -m"initial commit"
 
-	echo "setup directory initialized, now go to $SETUPDIR, edit '${CONFIG_FILE}' and '${CONFIG_DIR}' as needed, then run 'installer.sh deploy'"
+	echo
+	echo "Setup directory $SETUPDIR initialized."
+	if [[ -n "$TERRAFORM" ]] ; then
+	    (cd $SETUPDIR/terraform/vpc && terraform init)
+	    (cd $SETUPDIR/terraform/data-storage && terraform init)
+	    (cd $SETUPDIR/terraform/services && terraform init)
+	    echo "Now go to $SETUPDIR, customize 'terraform/vpc/terraform.tfvars' as needed, then run 'installer.sh terraform'"
+	else
+	    echo "Now go to $SETUPDIR, customize '${CONFIG_FILE}' and '${CONFIG_DIR}' as needed, then run 'installer.sh deploy'"
+	fi
 	;;
+
+    terraform)
+	logfile=terraform-$(date -Iseconds).log
+	(cd terraform/vpc && terraform apply) 2>&1 | tee -a $logfile
+	(cd terraform/data-storage && terraform apply) 2>&1 | tee -a $logfile
+	(cd terraform/services && terraform apply) 2>&1 | tee -a $logfile
+	;;
+
+    generate-tokens)
+	for i in BLOB_SIGNING_KEY MANAGEMENT_TOKEN SYSTEM_ROOT_TOKEN ANONYMOUS_USER_TOKEN WORKBENCH_SECRET_KEY DATABASE_PASSWORD; do
+	    echo ${i}=$(tr -dc A-Za-z0-9 </dev/urandom | head -c 32 ; echo '')
+	done
+	;;
+
     deploy)
 	set +u
 	NODE=$1
@@ -252,6 +281,7 @@ case "$subcmd" in
 	echo "Completed deploy, run 'installer.sh diagnostics' to verify the install"
 
 	;;
+
     diagnostics)
 	loadconfig
 
@@ -277,11 +307,14 @@ case "$subcmd" in
 
 	arvados-client diagnostics $LOCATION
 	;;
+
     *)
 	echo "Arvados installer"
 	echo ""
-	echo "initialize   initialize the setup directory for configuration"
-	echo "deploy       deploy the configuration from the setup directory"
-	echo "diagnostics  check your install using diagnostics"
+	echo "initialize        initialize the setup directory for configuration"
+	echo "terraform         create cloud resources using terraform"
+	echo "generate-tokens   generate random values for tokens"
+	echo "deploy            deploy the configuration from the setup directory"
+	echo "diagnostics       check your install using diagnostics"
 	;;
 esac
