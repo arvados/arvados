@@ -44,10 +44,6 @@ if test -z "$ARVADOS_ROOT" ; then
     ARVADOS_ROOT="$ARVBOX_DATA/arvados"
 fi
 
-if test -z "$COMPOSER_ROOT" ; then
-    COMPOSER_ROOT="$ARVBOX_DATA/composer"
-fi
-
 if test -z "$WORKBENCH2_ROOT" ; then
     WORKBENCH2_ROOT="$ARVBOX_DATA/workbench2"
 fi
@@ -138,7 +134,6 @@ wait_for_arvbox() {
 docker_run_dev() {
     docker run \
            "--volume=$ARVADOS_ROOT:/usr/src/arvados:rw" \
-           "--volume=$COMPOSER_ROOT:/usr/src/composer:rw" \
            "--volume=$WORKBENCH2_ROOT:/usr/src/workbench2:rw" \
            "--volume=$PG_DATA:/var/lib/postgresql:rw" \
            "--volume=$VAR_DATA:$ARVADOS_CONTAINER_PATH:rw" \
@@ -256,10 +251,6 @@ run() {
         if ! test -d "$ARVADOS_ROOT" ; then
             git clone https://git.arvados.org/arvados.git "$ARVADOS_ROOT"
 	    git -C "$ARVADOS_ROOT" checkout $ARVADOS_BRANCH
-        fi
-        if ! test -d "$COMPOSER_ROOT" ; then
-            git clone https://github.com/arvados/composer.git "$COMPOSER_ROOT"
-            git -C "$COMPOSER_ROOT" checkout arvados-fork
         fi
         if ! test -d "$WORKBENCH2_ROOT" ; then
             git clone https://git.arvados.org/arvados-workbench2.git "$WORKBENCH2_ROOT"
@@ -613,7 +604,6 @@ case "$subcmd" in
                "$ARVBOX_BASE/$1/gopath" \
                "$ARVBOX_BASE/$1/Rlibs" \
                "$ARVBOX_BASE/$1/arvados" \
-               "$ARVBOX_BASE/$1/composer" \
                "$ARVBOX_BASE/$1/workbench2" \
                "$ARVBOX_BASE/$2"
             echo "Created new arvbox $2"

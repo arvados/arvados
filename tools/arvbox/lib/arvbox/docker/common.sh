@@ -15,6 +15,10 @@ export ARVADOS_CONTAINER_PATH=/var/lib/arvados-arvbox
 export GEM_HOME=$HOME/.gem
 GEMLOCK=$HOME/gems.lock
 
+export LANG=en_US.UTF-8
+export LANGUAGE=en_US:en
+export LC_ALL=en_US.UTF-8
+
 defaultdev=$(/sbin/ip route|awk '/default/ { print $5 }')
 dockerip=$(/sbin/ip route | grep default | awk '{ print $3 }')
 containerip=$(ip addr show $defaultdev | grep 'inet ' | sed 's/ *inet \(.*\)\/.*/\1/')
