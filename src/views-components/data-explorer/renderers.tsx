@@ -669,8 +669,15 @@ const renderProcessState = (processState: string) => <Typography>{processState |
 export const ResourceProcessState = connect(
     (state: RootState, props: { uuid: string }) => {
         const process = getProcess(props.uuid)(state.resources)
+        // console.log('PROCESS>>>', process)
         return { state: process?.container?.state ? process?.container?.state : '' };
     })((props: { state: string }) => renderProcessState(props.state));
+
+export const ResourceProcessUuid = connect(
+    (state: RootState, props: { uuid: string }) => {
+        const process = getProcess(props.uuid)(state.resources)
+        return { uuid: process?.container?.uuid ? process?.container?.uuid : '' };
+    })((props: { uuid: string }) => renderUuid({ uuid: props.uuid }));
 
 export const ResourceParentProcess = connect(
     (state: RootState, props: { uuid: string }) => {

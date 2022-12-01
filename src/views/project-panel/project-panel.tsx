@@ -25,6 +25,7 @@ import {
     ProcessStatus,
     ResourceType,
     ResourceUUID,
+    ResourceProcessUuid,
     ResourceProcessState,
     ResourceParentProcess,
     ResourcePortableDataHash,
@@ -77,6 +78,7 @@ export enum ProjectPanelColumnNames {
     FILE_COUNT = "File count",
     UUID = "UUID",
     STATE = 'State',
+    CONTAINER_UUID = "Container UUID",
     PARENT_PROCESS = 'Parent process',
     CREATED_AT = "Date created",
     LAST_MODIFIED = "Last modified",
@@ -142,6 +144,13 @@ export const projectPanelColumns: DataColumns<string> = [
         configurable: true,
         filters: createTree(),
         render: uuid => <ResourceUUID uuid={uuid}/>
+    },
+    {
+        name: ProjectPanelColumnNames.CONTAINER_UUID,
+        selected: false,
+        configurable: true,
+        filters: createTree(),
+        render: uuid => <ResourceProcessUuid uuid={uuid}/>
     },
     {
         name: ProjectPanelColumnNames.STATE,

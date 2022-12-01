@@ -23,7 +23,7 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     checkbox: {
         width: 24,
         height: 24
-    }
+    },
 });
 
 export type ColumnSelectorProps = ColumnSelectorDataProps & WithStyles<CssRules>;
