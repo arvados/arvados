@@ -28,6 +28,8 @@ Important!  Once you have initialized the installer directory, all further comma
 
 h3. Using Terraform (AWS specific)
 
+If you are going to use Terraform to set up the infrastructure on AWS, you first need to install the "Terraform CLI":https://developer.hashicorp.com/terraform/tutorials/aws-get-started/install-cli tool installed on your computer, as well as the "AWS CLI":https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html tool.  Then you can initialize the installer.
+
 <notextile>
 <pre><code>CLUSTER=xarv1
 ./installer.sh initialize ~/setup-arvados-${CLUSTER} {{local_params_src}} {{config_examples_src}} {{terraform_src}}
