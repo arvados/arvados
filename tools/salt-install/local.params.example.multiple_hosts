@@ -46,9 +46,9 @@ CLUSTER_INT_CIDR=10.0.0.0/16
 
 # Note the IPs in this example are shared between roles, as suggested in
 # https://doc.arvados.org/main/install/salt-multi-host.html
-CONTROLLER_INT_IP=10.0.0.1
-WEBSOCKET_INT_IP=10.0.0.1
-KEEP_INT_IP=10.0.0.2
+CONTROLLER_INT_IP=10.1.1.1
+WEBSOCKET_INT_IP=10.1.1.1
+KEEP_INT_IP=10.1.1.2
 # Both for collections and downloads
 KEEPWEB_INT_IP=10.1.1.2
 KEEPSTORE0_INT_IP=10.1.1.3
