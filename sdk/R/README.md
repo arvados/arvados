@@ -2,16 +2,9 @@
 [comment]: # ()
 [comment]: # (SPDX-License-Identifier: CC-BY-SA-3.0)
 
-# R SDK for Arvados <img align="right" src="man/figures/dax.png" height="240px">
+# R SDK for Arvados
 
 This SDK focuses on providing support for accessing Arvados projects, collections, and the files within collections. The API is not final and feedback is solicited from users on ways in which it could be improved.
-
-## Why Arvados?
-* Memory efficient
-* Availability
-* Many available workflows
-* Transparent
-* Fast-developing
 
 ## Key Topics
 * Installation
@@ -34,19 +27,22 @@ library('ArvadosR')
 
 > **Note**
 > On Linux, you may have to install supporting packages.
-> 
+>
 > On Centos 7, this is:
-> ```r
+> ```
 > yum install libxml2-devel openssl-devel curl-devel
 > ```
+>
 > On Debian, this is:
-> ```r
+> ```
 > apt-get install build-essential libxml2-dev libssl-dev libcurl4-gnutls-dev
 > ```
 
 
 ## Usage
+
 ### Initializing API
+
 ```r
 # use environment variables ARVADOS_API_TOKEN and ARVADOS_API_HOST
 arv <- Arvados$new()
@@ -54,21 +50,31 @@ arv <- Arvados$new()
 # provide them explicitly
 arv <- Arvados$new("your Arvados token", "example.arvadosapi.com")
 ```
+
 Optionally, add `numRetries` parameter to specify number of times to retry failed service requests. Default is 0.
+
 ```r
 arv <- Arvados$new("your Arvados token", "example.arvadosapi.com", numRetries = 3)
 ```
+
 This parameter can be set at any time using `setNumRetries`
+
 ```r
 arv$setNumRetries(5)
 ```
+
 ### Working with collections
-##### Get a collection:
+
+#### Get a collection:
+
 ```r
 collection <- arv$collections_get("uuid")
 ```
+
 Be aware that the result from `collections_get` is not a Collection class. The object returned from this method lets you access collection fields like “name” and “description”. The Collection class lets you access the files in the collection for reading and writing, and is described in the next section.
-##### List collections:
+
+#### List collections:
+
 ```r
 # offset of 0 and default limit of 100
 collectionList <- arv$collections_list(list(list("name", "like", "Test%")))
@@ -81,132 +87,200 @@ collectionList$items_available
 # items which match the filter criteria
 collectionList$items
 ```
-##### List all collections even if the number of items is greater than maximum API limit:
+
+#### List all collections even if the number of items is greater than maximum API limit:
+
 ```r
 collectionList <- listAll(arv$collections_list, list(list("name", "like", "Test%")))
 ```
-##### Delete a collection:
+
+#### Delete a collection:
+
 ```r
 deletedCollection <- arv$collections_delete("uuid")
 ```
-##### Update a collection’s metadata:
+
+#### Update a collection’s metadata:
+
 ```r
 collection <- arv$collections_update(name = "newCollectionTitle", description = "newCollectionDescription", ownerUUID = "collectionOwner", properties = NULL, uuid =  "collectionUUID")
 ```
-##### Create a new collection:
+
+#### Create a new collection:
+
 ```r
 newCollection <- arv$collections_create(name = "collectionTitle", description = "collectionDescription", ownerUUID = "collectionOwner", properties = Properties)
 ```
+
 ### Manipulating collection content
-##### Initialize a collection object:
+
+#### Initialize a collection object:
+
 ```r
 collection <- Collection$new(arv, "uuid")
 ```
-##### Get list of files:
+
+#### Get list of files:
+
 ```r
 files <- collection$getFileListing()
 ```
-##### Get ArvadosFile or Subcollection from internal tree-like structure:
+
+#### Get ArvadosFile or Subcollection from internal tree-like structure:
+
 ```r
 arvadosFile <- collection$get("location/to/my/file.cpp")
 # or
 arvadosSubcollection <- collection$get("location/to/my/directory/")
 ```
-##### Read a table:
+
+#### Read a table:
+
 ```r
 arvadosFile   <- collection$get("myinput.txt")
 arvConnection <- arvadosFile$connection("r")
 mytable       <- read.table(arvConnection)
 ```
-##### Write a table:
+
+#### Write a table:
+
 ```r
 arvadosFile   <- collection$create("myoutput.txt")[[1]]
 arvConnection <- arvadosFile$connection("w")
 write.table(mytable, arvConnection)
-arvadosFile$flush()  
+arvadosFile$flush()
 ```
-##### Write to existing file (overwrites current content of the file):
+
+#### Read a table from a tab delimited file:
+
+```r
+arvadosFile   <- collection$get("myinput.txt")
+arvConnection <- arvadosFile$connection("r")
+mytable       <- read.delim(arvConnection)
+```
+
+#### Read a gzip compressed R object:
+
+```r
+obj <- readRDS(gzcon(coll$get("abc.RDS")$connection("rb")))
+```
+
+#### Write to existing file (overwrites current content of the file):
+
 ```r
 arvadosFile <- collection$get("location/to/my/file.cpp")
-arvadosFile$write("This is new file content")  
+arvadosFile$write("This is new file content")
 ```
-##### Read whole file or just a portion of it:
+
+#### Read whole file or just a portion of it:
+
 ```r
 fileContent <- arvadosFile$read()
 fileContent <- arvadosFile$read("text")
-fileContent <- arvadosFile$read("raw", offset = 1024, length = 512)  
+fileContent <- arvadosFile$read("raw", offset = 1024, length = 512)
 ```
-##### Get ArvadosFile or Subcollection size:
+
+
+#### Get ArvadosFile or Subcollection size:
+
 ```r
 size <- arvadosFile$getSizeInBytes()
 # or
 size <- arvadosSubcollection$getSizeInBytes()
 ```
-##### Create new file in a collection (returns a vector of one or more ArvadosFile objects):
+
+#### Create new file in a collection (returns a vector of one or more ArvadosFile objects):
+
 ```r
-collection$create(files)  
+collection$create(files)
 ```
-> **Example**
-> ```r
-> mainFile <- collection$create("cpp/src/main.cpp")[[1]]
-> fileList <- collection$create(c("cpp/src/main.cpp", "cpp/src/util.h"))  
-> ```
-##### Delete file from a collection:
+
+**Example**
+
+```
+mainFile <- collection$create("cpp/src/main.cpp")[[1]]
+fileList <- collection$create(c("cpp/src/main.cpp", "cpp/src/util.h"))
+```
+
+#### Delete file from a collection:
+
 ```r
-collection$remove("location/to/my/file.cpp")  
+collection$remove("location/to/my/file.cpp")
 ```
+
 You can remove both Subcollection and ArvadosFile. If subcollection contains more files or folders they will be removed recursively.
 
 > **Note**
 > You can also remove multiple files at once:
-> ```r
-> collection$remove(c("path/to/my/file.cpp", "path/to/other/file.cpp"))  
+> ```
+> collection$remove(c("path/to/my/file.cpp", "path/to/other/file.cpp"))
 > ```
 
-##### Delete file or folder from a Subcollection:
+#### Delete file or folder from a Subcollection:
+
 ```r
 subcollection <- collection$get("mySubcollection/")
 subcollection$remove("fileInsideSubcollection.exe")
-subcollection$remove("folderInsideSubcollection/")  
+subcollection$remove("folderInsideSubcollection/")
 ```
-##### Move or rename a file or folder within a collection (moving between collections is currently not supported):
-###### Directly from collection
+
+#### Move or rename a file or folder within a collection (moving between collections is currently not supported):
+
+##### Directly from collection
+
 ```r
-collection$move("folder/file.cpp", "file.cpp")  
+collection$move("folder/file.cpp", "file.cpp")
 ```
-###### Or from file
+
+##### Or from file
+
 ```r
 file <- collection$get("location/to/my/file.cpp")
-file$move("newDestination/file.cpp")  
+file$move("newDestination/file.cpp")
 ```
-###### Or from subcollection
+
+##### Or from subcollection
+
 ```r
 subcollection <- collection$get("location/to/folder")
-subcollection$move("newDestination/folder")  
+subcollection$move("newDestination/folder")
 ```
+
 > **Note**
 > Make sure to include new file name in destination. In second example `file$move(“newDestination/”)` will not work.
-##### Copy file or folder within a collection (copying between collections is currently not supported):
-###### Directly from collection
+
+#### Copy file or folder within a collection (copying between collections is currently not supported):
+
+##### Directly from collection
+
 ```r
-collection$copy("folder/file.cpp", "file.cpp")  
+collection$copy("folder/file.cpp", "file.cpp")
 ```
-###### Or from file
+
+##### Or from file
+
 ```r
 file <- collection$get("location/to/my/file.cpp")
-file$copy("destination/file.cpp")  
+file$copy("destination/file.cpp")
 ```
-###### Or from subcollection
+
+##### Or from subcollection
+
 ```r
 subcollection <- collection$get("location/to/folder")
-subcollection$copy("destination/folder")  
+subcollection$copy("destination/folder")
 ```
+
 ### Working with Aravdos projects
-##### Get a project:
+
+#### Get a project:
+
 ```r
 project <- arv$project_get("uuid")
 ```
-##### List projects:
+
+#### List projects:
+
 ```r
 list subprojects of a project
 projects <- arv$project_list(list(list("owner_uuid", "=", "aaaaa-j7d0g-ccccccccccccccc")))
@@ -214,46 +288,61 @@ projects <- arv$project_list(list(list("owner_uuid", "=", "aaaaa-j7d0g-ccccccccc
 list projects which have names beginning with Example
 examples <- arv$project_list(list(list("name","like","Example%")))
 ```
-##### List all projects even if the number of items is greater than maximum API limit:
+
+#### List all projects even if the number of items is greater than maximum API limit:
+
 ```r
 projects <- listAll(arv$project_list, list(list("name","like","Example%")))
 ```
-###### Delete a project:
+
+##### Delete a project:
+
 ```r
 deletedProject <- arv$project_delete("uuid")
 ```
-###### Update project:
+
+##### Update project:
+
 ```r
 updatedProject <- arv$project_update(name = "new project name", properties = newProperties, uuid = "projectUUID")
 ```
-###### Create project:
+
+##### Create project:
+
 ```r
 newProject <- arv$project_create(name = "project name", description = "project description", owner_uuid = "project UUID", properties = NULL, ensureUniqueName = "false")
 ```
+
 ### Help
-##### View help page of Arvados classes by puting `?` before class name:
+
+#### View help page of Arvados classes by puting `?` before class name:
+
 ```r
 ?Arvados
 ?Collection
 ?Subcollection
 ?ArvadosFile
 ```
-##### View help page of any method defined in Arvados class by puting `?` before method name:
+
+#### View help page of any method defined in Arvados class by puting `?` before method name:
+
 ```r
 ?collections_update
 ?jobs_get
 ```
 
  <!-- Taka konwencja USAGE -->
- 
- ## Building the ArvadosR package
- ```r
+
+## Building the ArvadosR package
+
+```r
 cd arvados/sdk && R CMD build R
 ```
+
 This will create a tarball of the ArvadosR package in the current directory.
 
-
  <!-- Czy dodawać Documentation / Community / Development and Contributing / Licensing? Ale tylko do części Rowej? Wszystko? Wcale? -->
+
 ## Documentation
 
 Complete documentation, including the [User Guide](https://doc.arvados.org/user/index.html), [Installation documentation](https://doc.arvados.org/install/index.html), [Administrator documentation](https://doc.arvados.org/admin/index.html) and

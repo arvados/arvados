@@ -76,7 +76,6 @@ file "sdk/R/arvados/index.html" do |t|
     cp('css/R.css', 'sdk/R/arvados')
     docfiles = []
     Dir.chdir("../sdk/R/") do
-      STDERR.puts `Rscript createDoc.R README.Rmd #{tgt}/sdk/R/README.md 2>&1`
       Dir.entries("man").each do |rd|
         if rd[-3..-1] == ".Rd"
           htmlfile = "#{rd[0..-4]}.html"
@@ -87,7 +86,7 @@ file "sdk/R/arvados/index.html" do |t|
     end
     raise if $? != 0
 
-    File.open("sdk/R/README.md", "r") do |rd|
+    File.open("../sdk/R/README.md", "r") do |rd|
     File.open("sdk/R/index.html.md", "w") do |fn|
       fn.write(<<-EOF
 ---
@@ -97,7 +96,7 @@ navmenu: R
 title: "R SDK Overview"
 ...
 
-#{rd.read.gsub(/^```$/, "~~~").gsub(/^```(\w)$/, "~~~\\1")}
+#{rd.read}
 EOF
               )
       end
