@@ -338,15 +338,21 @@ If you are installing on a different cloud provider or on HPC, other changes may
 
 Any extra Salt "state" files you add under @local_config_dir/states@ will be added to the Salt run and applied to the hosts.
 
-h2(#create_a_compute_image). Create a compute image
+h2(#create_a_compute_image). Configure compute nodes
 
 {% include 'branchname' %}
 
-On cloud installations, containers are dispatched in Docker daemons running in the _compute instances_, which need some additional setup.  If you will use a HPC scheduler such as SLURM you can skip this section.
+If you will use fixed compute nodes with an HPC scheduler such as SLURM or LSF, you will need to "Set up your compute nodes with Docker":{{site.baseurl}}/install/crunch2/install-compute-node-docker.html or "Set up your compute nodes with Singularity":{{site.baseurl}}/install/crunch2/install-compute-node-singularity.html.
 
-*Start by following "the instructions to build a cloud compute node image":{{site.baseurl}}/install/crunch2-cloud/install-compute-node.html using the "compute image builder script":https://github.com/arvados/arvados/tree/{{ branchname }}/tools/compute-images* .
+On cloud installations, containers are dispatched in Docker daemons running in the _compute instances_, which need some additional setup.
 
-Once you have that image created, Open @local_config_dir/pillars/arvados.sls@ and edit as follows (AWS specific settings described here, other cloud providers will have similar settings in their respective configuration section):
+h3. Build the compute image
+
+Follow "the instructions to build a cloud compute node image":{{site.baseurl}}/install/crunch2-cloud/install-compute-node.html using the compute image builder script found in @arvados/tools/compute-images@ in your Arvados clone from "step 3":#download.
+
+h3. Configure the compute image
+
+Once the image has been created, open @local_config_dir/pillars/arvados.sls@ and edit as follows (AWS specific settings described here, other cloud providers will have similar settings in their respective configuration section):
 
 # In the @arvados.cluster.Containers.CloudVMs@ section:
 ## Set @ImageID@ to the AMI produced by Packer
@@ -448,7 +454,7 @@ If you *did* configure a different authentication provider, the first user to lo
 
 h2(#post_install). After the installation
 
-As part of the operation of @installer.sh@, it automatically creates a @git@ repository with your configuration templates.  You should retain this repository but be aware that it contains sensitive information (passwords and tokens used by the Arvados services).
+As part of the operation of @installer.sh@, it automatically creates a @git@ repository with your configuration templates.  You should retain this repository but *be aware that it contains sensitive information* (passwords and tokens used by the Arvados services as well as cloud credentials if you used Terraform to create the infrastructure).
 
 As described in "Iterating on config changes":#iterating you may use @installer.sh deploy@ to re-run the Salt to deploy configuration changes and upgrades.  However, be aware that the configuration templates created for you by @installer.sh@ are a snapshot which are not automatically kept up to date.
 

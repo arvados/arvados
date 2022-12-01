@@ -318,8 +318,10 @@ fi
 GOVERSION=$(grep 'const goversion =' ../../lib/install/deps.go |awk -F'"' '{print $2}')
 EXTRA2+=" -var goversion=$GOVERSION"
 
+logfile=packer-$(date -Iseconds).log
+
 echo
 packer version
 echo
-echo packer build$EXTRA -var "arvados_cluster=$ARVADOS_CLUSTER_ID"$EXTRA2 $JSON_FILE
-packer build$EXTRA -var "arvados_cluster=$ARVADOS_CLUSTER_ID"$EXTRA2 $JSON_FILE
+echo packer build$EXTRA -var "arvados_cluster=$ARVADOS_CLUSTER_ID"$EXTRA2 $JSON_FILE | tee -a $logfile
+packer build$EXTRA -var "arvados_cluster=$ARVADOS_CLUSTER_ID"$EXTRA2 $JSON_FILE 2>&1 | tee -a $logfile

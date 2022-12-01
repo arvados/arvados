@@ -14,6 +14,7 @@ SPDX-License-Identifier: CC-BY-SA-3.0
 {% include 'notebox_end' %}
 
 # "Introduction":#introduction
+# "Install Packer":#install-packer
 # "Create an SSH keypair":#sshkeypair
 # "Compute image requirements":#requirements
 # "The build script":#building
@@ -34,6 +35,9 @@ Packer templates for AWS and Azure are provided with Arvados. To use them, the f
 * credentials for your cloud account
 * configuration details for your cloud account
 
+h2(#install-packer). Install Packer
+
+"Download Packer here":https://developer.hashicorp.com/packer/downloads
 
 h2(#sshkeypair). Create a SSH keypair
 
@@ -142,9 +146,11 @@ Options:
 
 h2(#dns-resolution). DNS resolution
 
-Compute nodes must be able to resolve the hostnames of the API server and any keepstore servers to your internal IP addresses. You can do this by running an internal DNS resolver. The IP address of the resolver should be passed as the value for the @--resolver@ argument to "the build script":#building.
+Compute nodes must be able to resolve the hostnames of the API server and any keepstore servers to your internal IP addresses.  If you are on AWS and using Route 53 for your DNS, the default resolver configuration can be used with no extra options.
 
-Alternatively, the services could be hardcoded into an @/etc/hosts@ file. For example:
+You can also run your own internal DNS resolver. In that case, the IP address of the resolver should be passed as the value for the @--resolver@ argument to "the build script":#building.
+
+As a third option, the services could be hardcoded into an @/etc/hosts@ file. For example:
 
 <notextile><pre><code>10.20.30.40     <span class="userinput">ClusterID.example.com</span>
 10.20.30.41     <span class="userinput">keep1.ClusterID.example.com</span>
@@ -182,7 +188,6 @@ The @VPC@ and @Subnet@ should be configured for where you want the compute image
            --aws-vpc-id VPC \
            --aws-subnet-id Subnet \
            --ssh_user admin \
-           --resolver ResolverIP \
            --public-key-file ArvadosDispatchCloudPublicKeyPath
 </span>
 </code></pre></notextile>
