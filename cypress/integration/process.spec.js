@@ -632,6 +632,19 @@ describe('Process tests', function() {
                     "$include": "include_path"
                 }
             }
+        },
+        {
+            definition: {
+                "id": "#main/input_file_url",
+                "type": "File"
+            },
+            input: {
+                "input_file_url": {
+                    "basename": "index.html",
+                    "class": "File",
+                    "location": "http://example.com/index.html"
+                  }
+            }
         }
     ];
 
@@ -1022,6 +1035,7 @@ describe('Process tests', function() {
                     verifyIOParameter('input_string_include', null, null, "Cannot display value");
                     verifyIOParameter('input_file_include', null, null, "Cannot display value");
                     verifyIOParameter('input_directory_include', null, null, "Cannot display value");
+                    verifyIOParameter('input_file_url', null, null, "http://example.com/index.html");
                 });
             cy.get('[data-cy=process-io-card] h6').contains('Outputs')
                 .parents('[data-cy=process-io-card]').within((ctx) => {
