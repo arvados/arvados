@@ -180,6 +180,19 @@ fileContent <- arvadosFile$read("text")
 fileContent <- arvadosFile$read("raw", offset = 1024, length = 512)
 ```
 
+#### Read various file types:
+
+Chooses file type based on file name extension.  Recognized file extensions: 'txt', 'xlsx', 'csv', 'tsv', 'fasta', 'dat', 'bin', 'rds', 'rdata'.
+
+```r
+collection <- Collection$new(arv, collectionUUID)
+readFile <- collection$readArvFile(arvadosFile, istable = 'yes')                    # table
+readFile <- collection$readArvFile(arvadosFile, istable = 'no')                     # text
+readFile <- collection$readArvFile(arvadosFile)                                     # xlsx, csv, tsv, rds, rdata
+readFile <- collection$readArvFile(arvadosFile, fileclass = 'fasta')                # fasta
+readFile <- collection$readArvFile(arvadosFile, Ncol= 4, Nrow = 32)                 # binary data.frame, only numbers
+readFile <- collection$readArvFile(arvadosFile, Ncol = 5, Nrow = 150, istable = "factor") # binary data.frame with factor or text
+```
 
 #### Get ArvadosFile or Subcollection size:
 
