@@ -669,7 +669,6 @@ const renderProcessState = (processState: string) => <Typography>{processState |
 export const ResourceProcessState = connect(
     (state: RootState, props: { uuid: string }) => {
         const process = getProcess(props.uuid)(state.resources)
-        // console.log('PROCESS>>>', process)
         return { state: process?.container?.state ? process?.container?.state : '' };
     })((props: { state: string }) => renderProcessState(props.state));
 
@@ -679,12 +678,18 @@ export const ResourceProcessUuid = connect(
         return { uuid: process?.container?.uuid ? process?.container?.uuid : '' };
     })((props: { uuid: string }) => renderUuid({ uuid: props.uuid }));
 
-
 export const ResourceOutputUuid = connect(
     (state: RootState, props: { uuid: string }) => {
         const process = getProcess(props.uuid)(state.resources)
         const outputUuid = process?.containerRequest.outputUuid
         return { uuid: outputUuid ? outputUuid : '' };
+    })((props: { uuid: string }) => renderUuid({ uuid: props.uuid }));
+
+export const ResourceLogUuid = connect(
+    (state: RootState, props: { uuid: string }) => {
+        const process = getProcess(props.uuid)(state.resources)
+        const logUuid = process?.containerRequest.logUuid
+        return { uuid: logUuid ? logUuid : '' };
     })((props: { uuid: string }) => renderUuid({ uuid: props.uuid }));
 
 export const ResourceParentProcess = connect(

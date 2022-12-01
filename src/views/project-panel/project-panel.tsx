@@ -26,6 +26,7 @@ import {
     ResourceType,
     ResourceUUID,
     ResourceOutputUuid,
+    ResourceLogUuid,
     ResourceProcessUuid,
     ResourceProcessState,
     ResourceParentProcess,
@@ -81,6 +82,7 @@ export enum ProjectPanelColumnNames {
     STATE = 'State',
     CONTAINER_UUID = "Container UUID",
     OUTPUT_UUID = "Output UUID",
+    LOG_UUID = "Log UUID",
     PARENT_PROCESS = 'Parent process',
     CREATED_AT = "Date created",
     LAST_MODIFIED = "Last modified",
@@ -160,6 +162,13 @@ export const projectPanelColumns: DataColumns<string> = [
         configurable: true,
         filters: createTree(),
         render: uuid => <ResourceOutputUuid uuid={uuid}/>
+    },
+    {
+        name: ProjectPanelColumnNames.LOG_UUID,
+        selected: false,
+        configurable: true,
+        filters: createTree(),
+        render: uuid => <ResourceLogUuid uuid={uuid}/>
     },
     {
         name: ProjectPanelColumnNames.STATE,
