@@ -679,6 +679,14 @@ export const ResourceProcessUuid = connect(
         return { uuid: process?.container?.uuid ? process?.container?.uuid : '' };
     })((props: { uuid: string }) => renderUuid({ uuid: props.uuid }));
 
+
+export const ResourceOutputUuid = connect(
+    (state: RootState, props: { uuid: string }) => {
+        const process = getProcess(props.uuid)(state.resources)
+        const outputUuid = process?.containerRequest.outputUuid
+        return { uuid: outputUuid ? outputUuid : '' };
+    })((props: { uuid: string }) => renderUuid({ uuid: props.uuid }));
+
 export const ResourceParentProcess = connect(
     (state: RootState, props: { uuid: string }) => {
         const process = getProcess(props.uuid)(state.resources)
