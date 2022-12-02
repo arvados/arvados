@@ -538,9 +538,10 @@ update links set tail_uuid='#{g5}' where uuid='#{l1.uuid}'
     [false, :active, false],
     [true, :admin, true],
     [true, :active, true],
+    [true, :inactive, false],
   ].each do |conf, user, allowed|
-    test "config.Users.CreateRoleGroups conf=#{conf}, user=#{user}" do
-      Rails.configuration.Users.CreateRoleGroups = conf
+    test "config.Users.CanCreateRoleGroups conf=#{conf}, user=#{user}" do
+      Rails.configuration.Users.CanCreateRoleGroups = conf
       act_as_user users(user) do
         if allowed
           Group.create!(name: 'admin-created', group_class: 'role')

@@ -373,11 +373,11 @@ Clusters:
       # cluster.
       RoleGroupsVisibleToAll: true
 
-      # If CreateRoleGroups is true, regular (non-admin) users can
+      # If CanCreateRoleGroups is true, regular (non-admin) users can
       # create new role groups.
       #
       # If false, only admins can create new role groups.
-      CreateRoleGroups: true
+      CanCreateRoleGroups: true
 
       # During each period, a log entry with event_type="activity"
       # will be recorded for each user who is active during that
