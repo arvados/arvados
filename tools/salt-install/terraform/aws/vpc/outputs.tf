@@ -13,6 +13,10 @@ output "arvados_subnet_id" {
   value = aws_subnet.arvados_subnet.id
 }
 
+output "compute_subnet_id" {
+  value = aws_subnet.compute_subnet.id
+}
+
 output "arvados_sg_id" {
   value = aws_security_group.arvados_sg.id
 }

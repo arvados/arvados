@@ -8,16 +8,17 @@ locals {
     https: "443",
     ssh: "22",
   }
+  availability_zone = data.aws_availability_zones.available.names[0]
   hostnames = [ "controller", "workbench", "keep0", "keep1", "keepproxy", "shell" ]
   arvados_dns_zone = "${var.cluster_name}.${var.domain_name}"
   public_ip = { for k, v in aws_eip.arvados_eip: k => v.public_ip }
   private_ip = {
-    "controller": "10.1.1.1",
-    "workbench": "10.1.1.5",
-    "keepproxy": "10.1.1.2",
-    "shell": "10.1.1.7",
-    "keep0": "10.1.1.3",
-    "keep1": "10.1.1.4"
+    "controller": "10.1.1.11",
+    "workbench": "10.1.1.15",
+    "keepproxy": "10.1.1.12",
+    "shell": "10.1.1.17",
+    "keep0": "10.1.1.13",
+    "keep1": "10.1.1.14"
   }
   aliases = {
     controller: ["ws"]

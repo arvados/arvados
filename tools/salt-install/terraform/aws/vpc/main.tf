@@ -26,8 +26,13 @@ resource "aws_vpc" "arvados_vpc" {
 }
 resource "aws_subnet" "arvados_subnet" {
   vpc_id = aws_vpc.arvados_vpc.id
-  availability_zone = "${var.region_name}a"
-  cidr_block = aws_vpc.arvados_vpc.cidr_block
+  availability_zone = local.availability_zone
+  cidr_block = "10.1.1.0/24"
+}
+resource "aws_subnet" "compute_subnet" {
+  vpc_id = aws_vpc.arvados_vpc.id
+  availability_zone = local.availability_zone
+  cidr_block = "10.1.2.0/24"
 }
 
 #
@@ -37,13 +42,17 @@ resource "aws_vpc_endpoint" "s3" {
   vpc_id = aws_vpc.arvados_vpc.id
   service_name = "com.amazonaws.${var.region_name}.s3"
 }
-resource "aws_vpc_endpoint_route_table_association" "s3_route" {
+resource "aws_vpc_endpoint_route_table_association" "arvados_s3_route" {
   vpc_endpoint_id = aws_vpc_endpoint.s3.id
-  route_table_id = aws_route_table.arvados_rt.id
+  route_table_id = aws_route_table.arvados_subnet_rt.id
+}
+resource "aws_vpc_endpoint_route_table_association" "compute_s3_route" {
+  vpc_endpoint_id = aws_vpc_endpoint.s3.id
+  route_table_id = aws_route_table.compute_subnet_rt.id
 }
 
 #
-# VPC Internet access
+# Internet access for Public IP instances
 #
 resource "aws_internet_gateway" "arvados_gw" {
   vpc_id = aws_vpc.arvados_vpc.id
@@ -54,7 +63,7 @@ resource "aws_eip" "arvados_eip" {
     aws_internet_gateway.arvados_gw
   ]
 }
-resource "aws_route_table" "arvados_rt" {
+resource "aws_route_table" "arvados_subnet_rt" {
   vpc_id = aws_vpc.arvados_vpc.id
   route {
     cidr_block = "0.0.0.0/0"
@@ -63,8 +72,34 @@ resource "aws_route_table" "arvados_rt" {
 }
 resource "aws_route_table_association" "arvados_subnet_assoc" {
   subnet_id = aws_subnet.arvados_subnet.id
-  route_table_id = aws_route_table.arvados_rt.id
+  route_table_id = aws_route_table.arvados_subnet_rt.id
 }
+
+#
+# Internet access for Private IP instances
+#
+resource "aws_eip" "compute_nat_gw_eip" {
+  depends_on = [
+    aws_internet_gateway.arvados_gw
+  ]
+}
+resource "aws_nat_gateway" "compute_nat_gw" {
+  # A NAT gateway should be placed on a subnet with an internet gateway
+  subnet_id = aws_subnet.arvados_subnet.id
+  allocation_id = aws_eip.compute_nat_gw_eip.id
+}
+resource "aws_route_table" "compute_subnet_rt" {
+  vpc_id = aws_vpc.arvados_vpc.id
+  route {
+    cidr_block = "0.0.0.0/0"
+    nat_gateway_id = aws_nat_gateway.compute_nat_gw.id
+  }
+}
+resource "aws_route_table_association" "compute_subnet_assoc" {
+  subnet_id = aws_subnet.compute_subnet.id
+  route_table_id = aws_route_table.compute_subnet_rt.id
+}
+
 resource "aws_security_group" "arvados_sg" {
   name = "arvados_sg"
   vpc_id = aws_vpc.arvados_vpc.id
