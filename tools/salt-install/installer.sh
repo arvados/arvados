@@ -14,6 +14,7 @@
 #
 
 set -eu
+set -o pipefail
 
 # The parameter file
 declare CONFIG_FILE=local.params
