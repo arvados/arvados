@@ -336,11 +336,18 @@ class KeepBlockCache(object):
         except Exception as e:
             tryagain = True
 
+        # Check if we should evict things from the cache.  Either
+        # because we added a new thing or we adjusted the limits down,
+        # so we might need to push something out.
+        self.cap_cache()
+
+        if not tryagain:
+            # Done
+            return
+
         try:
-            if tryagain:
-                # There was an error.  Evict some slots and try again.
-                self.cap_cache()
-                slot.set(blob)
+            # There was an error, we ran cap_cache so try one more time.
+            slot.set(blob)
         except Exception as e:
             # It failed again.  Give up.
             raise arvados.errors.KeepCacheError("Unable to save block %s to disk cache: %s" % (slot.locator, e))
@@ -349,7 +356,6 @@ class KeepBlockCache(object):
             # slot one way or another.
             slot.ready.set()
 
-        self.cap_cache()
 
 class Counter(object):
     def __init__(self, v=0):

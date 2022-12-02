@@ -66,6 +66,8 @@ class DiskCacheSlot(object):
             tmpfile = None
 
             self.content = mmap.mmap(self.filehandle.fileno(), 0, access=mmap.ACCESS_READ)
+            # only set the event when mmap is successful
+            self.ready.set()
         finally:
             if tmpfile is not None:
                 # If the tempfile hasn't been renamed on disk yet, try to delete it.
