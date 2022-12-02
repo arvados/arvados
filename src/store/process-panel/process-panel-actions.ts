@@ -17,7 +17,7 @@ import { initProcessLogsPanel, processLogsPanelActions } from "store/process-log
 import { CollectionFile } from "models/collection-file";
 import { ContainerRequestResource } from "models/container-request";
 import { CommandOutputParameter } from 'cwlts/mappings/v1.0/CommandOutputParameter';
-import { CommandInputParameter, getIOParamId } from 'models/workflow';
+import { CommandInputParameter, getIOParamId, WorkflowInputsData } from 'models/workflow';
 import { getIOParamDisplayValue, ProcessIOParameter } from "views/process-panel/process-io-card";
 import { OutputDetails } from "./process-panel";
 import { AuthState } from "store/auth/auth-reducer";
@@ -27,7 +27,7 @@ export const processPanelActions = unionize({
     SET_PROCESS_PANEL_CONTAINER_REQUEST_UUID: ofType<string>(),
     SET_PROCESS_PANEL_FILTERS: ofType<string[]>(),
     TOGGLE_PROCESS_PANEL_FILTER: ofType<string>(),
-    SET_INPUT_RAW: ofType<CommandInputParameter[] | null>(),
+    SET_INPUT_RAW: ofType<WorkflowInputsData | null>(),
     SET_INPUT_PARAMS: ofType<ProcessIOParameter[] | null>(),
     SET_OUTPUT_RAW: ofType<OutputDetails | null>(),
     SET_OUTPUT_DEFINITIONS: ofType<CommandOutputParameter[]>(),

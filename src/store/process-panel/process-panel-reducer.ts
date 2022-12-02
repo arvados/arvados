@@ -32,7 +32,7 @@ export const processPanelReducer = (state = initialState, action: ProcessPanelAc
         SET_INPUT_RAW: inputRaw => {
             // Since mounts can disappear and reappear, only set inputs
             //   if current state is null or new inputs has content
-            if (state.inputRaw === null || (inputRaw && inputRaw.length)) {
+            if (state.inputRaw === null || (inputRaw && Object.keys(inputRaw).length)) {
                 return { ...state, inputRaw };
             } else {
                 return state;

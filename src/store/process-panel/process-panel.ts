@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import { CommandInputParameter } from 'models/workflow';
+import { WorkflowInputsData } from 'models/workflow';
 import { RouterState } from "react-router-redux";
 import { matchProcessRoute } from "routes/routes";
 import { ProcessIOParameter } from "views/process-panel/process-io-card";
@@ -16,7 +16,7 @@ export type OutputDetails = {
 export interface ProcessPanel {
     containerRequestUuid: string;
     filters: { [status: string]: boolean };
-    inputRaw: CommandInputParameter[] | null;
+    inputRaw: WorkflowInputsData | null;
     inputParams: ProcessIOParameter[] | null;
     outputRaw: OutputDetails | null;
     outputDefinitions: CommandOutputParameter[];

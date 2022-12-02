@@ -18,7 +18,7 @@ import { getProcessPanelLogs, ProcessLogsPanel } from 'store/process-logs-panel/
 import { ProcessLogsCard } from './process-log-card';
 import { FilterOption } from 'views/process-panel/process-log-form';
 import { getInputCollectionMounts } from 'store/processes/processes-actions';
-import { CommandInputParameter } from 'models/workflow';
+import { WorkflowInputsData } from 'models/workflow';
 import { CommandOutputParameter } from 'cwlts/mappings/v1.0/CommandOutputParameter';
 import { AuthState } from 'store/auth/auth-reducer';
 import { ProcessCmdCard } from './process-cmd-card';
@@ -39,7 +39,7 @@ export interface ProcessPanelRootDataProps {
     filters: Array<SubprocessFilterDataProps>;
     processLogsPanel: ProcessLogsPanel;
     auth: AuthState;
-    inputRaw: CommandInputParameter[] | null;
+    inputRaw: WorkflowInputsData | null;
     inputParams: ProcessIOParameter[] | null;
     outputRaw: OutputDetails | null;
     outputDefinitions: CommandOutputParameter[];
