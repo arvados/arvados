@@ -673,25 +673,28 @@ export const ResourceContainerUuid = connect(
 export const ResourceOutputUuid = connect(
     (state: RootState, props: { uuid: string }) => {
         const process = getProcess(props.uuid)(state.resources)
-        const outputUuid = process?.containerRequest.outputUuid
-        return { uuid: outputUuid ? outputUuid : '' };
+        return { uuid: process?.containerRequest.outputUuid || '' };
     })((props: { uuid: string }) => renderUuid({ uuid: props.uuid }));
 
 export const ResourceLogUuid = connect(
     (state: RootState, props: { uuid: string }) => {
         const process = getProcess(props.uuid)(state.resources)
-        const logUuid = process?.containerRequest.logUuid
-        return { uuid: logUuid ? logUuid : '' };
+        return { uuid: process?.containerRequest.logUuid || '' };
     })((props: { uuid: string }) => renderUuid({ uuid: props.uuid }));
 
 export const ResourceParentProcess = connect(
     (state: RootState, props: { uuid: string }) => {
         const process = getProcess(props.uuid)(state.resources)
-        const parentProcessUuid = process?.containerRequest?.requestingContainerUuid
-        return { parentProcess: parentProcessUuid || '' };
+        return { parentProcess: process?.containerRequest?.requestingContainerUuid || '' };
     })((props: { parentProcess: string }) => renderUuid({uuid: props.parentProcess}));
 
-export const ResourceCreatedAtDate = connect(
+export const ResourceModifiedByUserUuid = connect(
+    (state: RootState, props: { uuid: string }) => {
+        const process = getProcess(props.uuid)(state.resources)
+        return { userUuid: process?.containerRequest?.modifiedByUserUuid || '' };
+    })((props: { userUuid: string }) => renderUuid({uuid: props.userUuid}));
+
+    export const ResourceCreatedAtDate = connect(
     (state: RootState, props: { uuid: string }) => {
         const resource = getResource<GroupContentsResource>(props.uuid)(state.resources);
         return { date: resource ? resource.createdAt : '' };

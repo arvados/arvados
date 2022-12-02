@@ -29,6 +29,7 @@ import {
     ResourceOutputUuid,
     ResourceLogUuid,
     ResourceParentProcess,
+    ResourceModifiedByUserUuid,
     ResourcePortableDataHash,
     ResourceCreatedAtDate,
     ResourceLastModifiedDate,
@@ -84,6 +85,7 @@ export enum ProjectPanelColumnNames {
     OUTPUT_UUID = "Output UUID",
     LOG_UUID = "Log UUID",
     PARENT_PROCESS = 'Parent process UUID',
+    MODIFIED_BY_USER_UUID = 'Modified by User UUID',
     PORTABLE_DATA_HASH = "Portable data hash",
     CREATED_AT = "Date created",
     LAST_MODIFIED = "Last modified",
@@ -163,7 +165,7 @@ export const projectPanelColumns: DataColumns<string> = [
     },
     {
         name: ProjectPanelColumnNames.CONTAINER_UUID,
-        selected: false,
+        selected: true,
         configurable: true,
         filters: createTree(),
         render: uuid => <ResourceContainerUuid uuid={uuid}/>
@@ -188,6 +190,13 @@ export const projectPanelColumns: DataColumns<string> = [
         configurable: true,
         filters: createTree(),
         render: uuid => <ResourceParentProcess uuid={uuid}/>
+    },
+    {
+        name: ProjectPanelColumnNames.MODIFIED_BY_USER_UUID,
+        selected: false,
+        configurable: true,
+        filters: createTree(),
+        render: uuid => <ResourceModifiedByUserUuid uuid={uuid}/>
     },
     {
         name: ProjectPanelColumnNames.PORTABLE_DATA_HASH,
