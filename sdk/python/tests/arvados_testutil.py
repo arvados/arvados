@@ -280,3 +280,30 @@ if sys.version_info < (3, 0):
         return self.assertNotRegexpMatches(*args, **kwargs)
     unittest.TestCase.assertRegex = assertRegex
     unittest.TestCase.assertNotRegex = assertNotRegex
+
+def binary_compare(a, b):
+    if len(a) != len(b):
+        return False
+    for i in range(0, len(a)):
+        if a[i] != b[i]:
+            return False
+    return True
+
+def make_block_cache(disk_cache):
+    if disk_cache:
+        disk_cache_dir = os.path.join(os.path.expanduser("~"), ".cache", "arvados", "keep")
+        shutil.rmtree(disk_cache_dir, ignore_errors=True)
+    block_cache = arvados.keep.KeepBlockCache(disk_cache=disk_cache)
+    return block_cache
+
+
+class DiskCacheBase:
+    def make_block_cache(self, disk_cache):
+        self.disk_cache_dir = tempfile.mkdtemp() if disk_cache else None
+        block_cache = arvados.keep.KeepBlockCache(disk_cache=disk_cache,
+                                                  disk_cache_dir=self.disk_cache_dir)
+        return block_cache
+
+    def tearDown(self):
+        if self.disk_cache_dir:
+            shutil.rmtree(self.disk_cache_dir)

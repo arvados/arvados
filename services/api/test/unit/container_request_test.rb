@@ -177,6 +177,9 @@ class ContainerRequestTest < ActiveSupport::TestCase
 
     assert ({"vcpus" => 2, "ram" => 30}.to_a - cr.runtime_constraints.to_a).empty?
 
+    assert_equal 0, Rails.configuration.Containers.DefaultKeepCacheRAM
+    assert_equal 8589934592, Rails.configuration.Containers.DefaultKeepCacheDisk
+
     assert_not_nil cr.container_uuid
     c = Container.find_by_uuid cr.container_uuid
     assert_not_nil c
@@ -186,7 +189,7 @@ class ContainerRequestTest < ActiveSupport::TestCase
     assert_equal({}, c.environment)
     assert_equal({"/out" => {"kind"=>"tmp", "capacity"=>1000000}}, c.mounts)
     assert_equal "/out", c.output_path
-    assert ({"keep_cache_ram"=>268435456, "vcpus" => 2, "ram" => 30}.to_a - c.runtime_constraints.to_a).empty?
+    assert ({"keep_cache_disk"=>8589934592, "keep_cache_ram"=>0, "vcpus" => 2, "ram" => 30}.to_a - c.runtime_constraints.to_a).empty?
     assert_operator 0, :<, c.priority
 
     assert_raises(ActiveRecord::RecordInvalid) do

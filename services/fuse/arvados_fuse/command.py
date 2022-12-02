@@ -83,13 +83,20 @@ class ArgumentParser(argparse.ArgumentParser):
                             type=str, metavar='PATH', action='append', default=[],
                             help="Create a new collection, mount it in read/write mode at mountpoint/PATH, and delete it when unmounting.")
 
+
         self.add_argument('--debug', action='store_true', help="""Debug mode""")
         self.add_argument('--logfile', help="""Write debug logs and errors to the specified file (default stderr).""")
         self.add_argument('--foreground', action='store_true', help="""Run in foreground (default is to daemonize unless --exec specified)""", default=False)
         self.add_argument('--encoding', type=str, help="Character encoding to use for filesystem, default is utf-8 (see Python codec registry for list of available encodings)", default="utf-8")
 
-        self.add_argument('--file-cache', type=int, help="File data cache size, in bytes (default 256MiB)", default=256*1024*1024)
-        self.add_argument('--directory-cache', type=int, help="Directory data cache size, in bytes (default 128MiB)", default=128*1024*1024)
+        self.add_argument('--file-cache', type=int, help="File data cache size, in bytes (default 8 GiB for disk-based cache or 256 MiB with RAM-only cache)", default=0)
+        self.add_argument('--directory-cache', type=int, help="Directory data cache size, in bytes (default 128 MiB)", default=128*1024*1024)
+
+        cachetype = self.add_mutually_exclusive_group()
+        cachetype.add_argument('--ram-cache', action='store_false', dest='disk_cache', help="Use in-memory caching only", default=True)
+        cachetype.add_argument('--disk-cache', action='store_true', dest='disk_cache', help="Use disk based caching (default)", default=True)
+
+        self.add_argument('--disk-cache-dir', type=str, help="Disk cache location (default ~/.cache/arvados/keep)", default=None)
 
         self.add_argument('--disable-event-listening', action='store_true', help="Don't subscribe to events on the API server", dest="disable_event_listening", default=False)
 
@@ -213,8 +220,12 @@ class Mount(object):
         try:
             self.api = arvados.safeapi.ThreadSafeApiCache(
                 apiconfig=arvados.config.settings(),
+                # default value of file_cache is 0, this tells KeepBlockCache to
+                # choose a default based on whether disk_cache is enabled or not.
                 keep_params={
-                    'block_cache': arvados.keep.KeepBlockCache(self.args.file_cache),
+                    'block_cache': arvados.keep.KeepBlockCache(cache_max=self.args.file_cache,
+                                                               disk_cache=self.args.disk_cache,
+                                                               disk_cache_dir=self.args.disk_cache_dir),
                     'num_retries': self.args.retries,
                 })
         except KeyError as e:

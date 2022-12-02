@@ -267,7 +267,11 @@ class ArvadosContainer(JobBase):
         runtime_req, _ = self.get_requirement("http://arvados.org/cwl#RuntimeConstraints")
         if runtime_req:
             if "keep_cache" in runtime_req:
-                runtime_constraints["keep_cache_ram"] = math.ceil(runtime_req["keep_cache"] * 2**20)
+                if self.arvrunner.api.config()["Containers"].get("DefaultKeepCacheDisk", 0) > 0:
+                    # If DefaultKeepCacheDisk is non-zero it means we should use disk cache.
+                    runtime_constraints["keep_cache_disk"] = math.ceil(runtime_req["keep_cache"] * 2**20)
+                else:
+                    runtime_constraints["keep_cache_ram"] = math.ceil(runtime_req["keep_cache"] * 2**20)
             if "outputDirType" in runtime_req:
                 if runtime_req["outputDirType"] == "local_output_dir":
                     # Currently the default behavior.

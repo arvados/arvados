@@ -62,7 +62,9 @@ Upgrading Arvados typically involves the following steps:
 # Wait for the cluster to be idle and stop Arvados services.
 # Make a backup of your database, as a precaution.
 # update the configuration file for the new release, if necessary (see "Maintaining Arvados":#maintaining above)
-# rebuild and deploy the "compute node image":{{site.baseurl}}/install/crunch2-cloud/install-compute-node.html (cloud only)
+# Update compute nodes
+## (cloud) Rebuild and deploy the "compute node image":{{site.baseurl}}/install/crunch2-cloud/install-compute-node.html
+## (slurm/LSF) Upgrade the @python3-arvados-fuse@ package used on your compute nodes
 # Install new packages using @apt-get upgrade@ or @yum upgrade@.
 # Wait for package installation scripts as they perform any necessary data migrations.
 # Run @arvados-server config-check@ to detect configuration errors or deprecated entries.

@@ -16,11 +16,13 @@ import datetime
 import ciso8601
 import time
 import unittest
+import parameterized
 
 from . import run_test_server
 from arvados._ranges import Range, LocatorAndRange
 from arvados.collection import Collection, CollectionReader
 from . import arvados_testutil as tutil
+from .arvados_testutil import make_block_cache
 
 class TestResumableWriter(arvados.ResumableCollectionWriter):
     KEEP_BLOCK_SIZE = 1024  # PUT to Keep every 1K.
@@ -28,9 +30,10 @@ class TestResumableWriter(arvados.ResumableCollectionWriter):
     def current_state(self):
         return self.dump_state(copy.deepcopy)
 
-
+@parameterized.parameterized_class([{"disk_cache": True}, {"disk_cache": False}])
 class ArvadosCollectionsTest(run_test_server.TestCaseWithServers,
                              tutil.ArvadosBaseTestCase):
+    disk_cache = False
     MAIN_SERVER = {}
 
     @classmethod
@@ -40,7 +43,8 @@ class ArvadosCollectionsTest(run_test_server.TestCaseWithServers,
         run_test_server.authorize_with('admin')
         cls.api_client = arvados.api('v1')
         cls.keep_client = arvados.KeepClient(api_client=cls.api_client,
-                                             local_store=cls.local_store)
+                                             local_store=cls.local_store,
+                                             block_cache=make_block_cache(cls.disk_cache))
 
     def write_foo_bar_baz(self):
         cw = arvados.CollectionWriter(self.api_client)

@@ -428,7 +428,13 @@ func (runner *ContainerRunner) SetupMounts() (map[string]bindmount, error) {
 		arvMountCmd = append(arvMountCmd, "--allow-other")
 	}
 
-	if runner.Container.RuntimeConstraints.KeepCacheRAM > 0 {
+	if runner.Container.RuntimeConstraints.KeepCacheDisk > 0 {
+		keepcachedir, err := runner.MkTempDir(runner.parentTemp, "keepcache")
+		if err != nil {
+			return nil, fmt.Errorf("while creating keep cache temp dir: %v", err)
+		}
+		arvMountCmd = append(arvMountCmd, "--disk-cache", "--disk-cache-dir", keepcachedir, "--file-cache", fmt.Sprintf("%d", runner.Container.RuntimeConstraints.KeepCacheDisk))
+	} else if runner.Container.RuntimeConstraints.KeepCacheRAM > 0 {
 		arvMountCmd = append(arvMountCmd, "--file-cache", fmt.Sprintf("%d", runner.Container.RuntimeConstraints.KeepCacheRAM))
 	}
 

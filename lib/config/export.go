@@ -121,6 +121,7 @@ var whitelist = map[string]bool{
 	"Containers.CrunchRunArgumentsList":        false,
 	"Containers.CrunchRunCommand":              false,
 	"Containers.DefaultKeepCacheRAM":           true,
+	"Containers.DefaultKeepCacheDisk":          true,
 	"Containers.DispatchPrivateKey":            false,
 	"Containers.JobsAPI":                       true,
 	"Containers.JobsAPI.Enable":                true,

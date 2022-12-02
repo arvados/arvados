@@ -4,6 +4,7 @@
 
 from __future__ import absolute_import
 import arvados
+import arvados.keep
 import arvados_fuse as fuse
 import arvados.safeapi
 import llfuse
@@ -24,7 +25,16 @@ logger = logging.getLogger('arvados.arv-mount')
 
 from .integration_test import workerPool
 
+def make_block_cache(disk_cache):
+    if disk_cache:
+        disk_cache_dir = os.path.join(os.path.expanduser("~"), ".cache", "arvados", "keep")
+        shutil.rmtree(disk_cache_dir, ignore_errors=True)
+    block_cache = arvados.keep.KeepBlockCache(disk_cache=disk_cache)
+    return block_cache
+
 class MountTestBase(unittest.TestCase):
+    disk_cache = False
+
     def setUp(self, api=None, local_store=True):
         # The underlying C implementation of open() makes a fstat() syscall
         # with the GIL still held.  When the GETATTR message comes back to
@@ -43,7 +53,8 @@ class MountTestBase(unittest.TestCase):
         self.mounttmp = tempfile.mkdtemp()
         run_test_server.run()
         run_test_server.authorize_with("admin")
-        self.api = api if api else arvados.safeapi.ThreadSafeApiCache(arvados.config.settings())
+
+        self.api = api if api else arvados.safeapi.ThreadSafeApiCache(arvados.config.settings(), keep_params={"block_cache": make_block_cache(self.disk_cache)})
         self.llfuse_thread = None
 
     # This is a copy of Mount's method.  TODO: Refactor MountTestBase

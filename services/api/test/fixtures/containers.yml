@@ -170,6 +170,7 @@ diagnostics_completed_requester:
            ]
   runtime_constraints:
     API: true
+    keep_cache_disk: 0
     keep_cache_ram: 268435456
     ram: 1342177280
     vcpus: 1
@@ -195,6 +196,7 @@ diagnostics_completed_hasher1:
            ]
   runtime_constraints:
     API: true
+    keep_cache_disk: 0
     keep_cache_ram: 268435456
     ram: 268435456
     vcpus: 1
@@ -220,6 +222,7 @@ diagnostics_completed_hasher2:
            ]
   runtime_constraints:
     API: true
+    keep_cache_disk: 0
     keep_cache_ram: 268435456
     ram: 268435456
     vcpus: 2
@@ -245,6 +248,7 @@ diagnostics_completed_hasher3:
            ]
   runtime_constraints:
     API: true
+    keep_cache_disk: 0
     keep_cache_ram: 268435456
     ram: 268435456
     vcpus: 1
@@ -281,6 +285,7 @@ diagnostics_completed_requester2:
            ]
   runtime_constraints:
     API: true
+    keep_cache_disk: 0
     keep_cache_ram: 268435456
     ram: 1342177280
     vcpus: 1

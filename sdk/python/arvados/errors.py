@@ -82,6 +82,8 @@ class KeepReadError(KeepRequestError):
     pass
 class KeepWriteError(KeepRequestError):
     pass
+class KeepCacheError(KeepRequestError):
+    pass
 class NotFoundError(KeepReadError):
     pass
 class NotImplementedError(Exception):
