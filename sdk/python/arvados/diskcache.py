@@ -36,15 +36,18 @@ class DiskCacheSlot(object):
         try:
             if value is None:
                 self.content = None
+                self.ready.set()
                 return
 
             if len(value) == 0:
                 # Can't mmap a 0 length file
                 self.content = b''
+                self.ready.set()
                 return
 
             if self.content is not None:
                 # Has been set already
+                self.ready.set()
                 return
 
             blockdir = os.path.join(self.cachedir, self.locator[0:3])
