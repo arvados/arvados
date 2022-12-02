@@ -346,15 +346,12 @@ class KeepBlockCache(object):
             # to free up resources, which would make the operation
             # succeed.
             slot.set(blob)
-            self.cap_cache()
         except Exception as e:
             # It failed again.  Give up.
+            slot.set(None)
             raise arvados.errors.KeepCacheError("Unable to save block %s to disk cache: %s" % (slot.locator, e))
-        finally:
-            # Set the notice that that we are done with the cache
-            # slot one way or another.
-            slot.ready.set()
 
+        self.cap_cache()
 
 class Counter(object):
     def __init__(self, v=0):
