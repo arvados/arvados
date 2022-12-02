@@ -42,7 +42,7 @@ WORKBENCH1_EXT_SSL_PORT=443
 WORKBENCH2_EXT_SSL_PORT=443
 
 # Internal IPs for the configuration
-CLUSTER_INT_CIDR=10.0.0.0/16
+CLUSTER_INT_CIDR=10.1.0.0/16
 
 # Note the IPs in this example are shared between roles, as suggested in
 # https://doc.arvados.org/main/install/salt-multi-host.html
