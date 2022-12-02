@@ -19,6 +19,7 @@ Clusters:
       WebDAVCache:
         TTL: 0s
     Login:
+      TrustPrivateNetworks: true
       PAM:
         Enable: true
     StorageClasses:

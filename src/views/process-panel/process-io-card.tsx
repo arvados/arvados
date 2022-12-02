@@ -74,6 +74,7 @@ import { Process } from 'store/processes/process';
 import { navigateTo } from 'store/navigation/navigation-action';
 import classNames from 'classnames';
 import { DefaultCodeSnippet } from 'components/default-code-snippet/default-code-snippet';
+import { KEEP_URL_REGEX } from 'models/resource';
 
 type CssRules =
   | "card"
@@ -127,7 +128,8 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
         paddingTop: theme.spacing.unit * 0.5
     },
     tableWrapper: {
-        height: `calc(100% - ${theme.spacing.unit * 6}px)`,
+        height: 'auto',
+        maxHeight: `calc(100% - ${theme.spacing.unit * 4.5}px)`,
         overflow: 'auto',
     },
     tableRoot: {
@@ -657,6 +659,11 @@ const isFileImage = (basename?: string): boolean => {
     return basename ? (mime.getType(basename) || "").startsWith('image/') : false;
 };
 
+const isFileUrl = (location?: string): boolean => (
+    !!location && !KEEP_URL_REGEX.exec(location) &&
+    (location.startsWith("http://") || location.startsWith("https://"))
+);
+
 const normalizeDirectoryLocation = (directory: Directory): Directory => {
     if (!directory.location) {
         return directory;
@@ -679,6 +686,13 @@ const directoryToProcessIOValue = (directory: Directory, auth: AuthState, pdh?: 
 
 const fileToProcessIOValue = (file: File, secondary: boolean, auth: AuthState, pdh: string | undefined, mainFilePdh: string): ProcessIOValue => {
     if (isExternalValue(file)) {return {display: <UnsupportedValue />}}
+
+    if (isFileUrl(file.location)) {
+        return {
+            display: <MuiLink href={file.location} target="_blank">{file.location}</MuiLink>,
+            secondary,
+        };
+    }
 
     const resourcePdh = getResourcePdhUrl(file, pdh);
     return {
