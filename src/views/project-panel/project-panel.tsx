@@ -18,7 +18,6 @@ import { ResourceKind, Resource } from 'models/resource';
 import {
     ResourceName,
     ProcessStatus as ResourceStatus,
-    ResourceProcessState,
     ResourceType,
     ResourceOwnerWithName,
     ResourceVersion,
@@ -74,7 +73,6 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
 export enum ProjectPanelColumnNames {
     NAME = "Name",
     STATUS = "Status",
-    STATE = 'State',
     TYPE = "Type",
     OWNER = "Owner",
     VERSION = "Version",
@@ -113,13 +111,6 @@ export const projectPanelColumns: DataColumns<string> = [
         mutuallyExclusiveFilters: true,
         filters: getInitialProcessStatusFilters(),
         render: uuid => <ResourceStatus uuid={uuid} />,
-    },
-    {
-        name: ProjectPanelColumnNames.STATE,
-        selected: false,
-        configurable: true,
-        filters: createTree(),
-        render: uuid => <ResourceProcessState uuid={uuid}/>
     },
     {
         name: ProjectPanelColumnNames.TYPE,

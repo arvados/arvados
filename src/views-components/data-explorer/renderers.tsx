@@ -664,14 +664,6 @@ export const ResourceWorkflowStatus = connect(
         };
     })((props: { ownerUuid?: string, uuidPrefix: string }) => renderWorkflowStatus(props.uuidPrefix, props.ownerUuid));
 
-const renderProcessState = (processState: string) => <Typography>{processState || '-'}</Typography>
-
-export const ResourceProcessState = connect(
-    (state: RootState, props: { uuid: string }) => {
-        const process = getProcess(props.uuid)(state.resources)
-        return { state: process?.container?.state ? process?.container?.state : '' };
-    })((props: { state: string }) => renderProcessState(props.state));
-
 export const ResourceContainerUuid = connect(
     (state: RootState, props: { uuid: string }) => {
         const process = getProcess(props.uuid)(state.resources)
