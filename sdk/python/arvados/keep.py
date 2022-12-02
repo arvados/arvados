@@ -316,12 +316,10 @@ class KeepBlockCache(object):
                 return n, True
 
     def set(self, slot, blob):
-        tryagain = False
-
         try:
             slot.set(blob)
+            return
         except OSError as e:
-            tryagain = True
             if e.errno == errno.ENOMEM:
                 # Reduce max slots to current - 4, cap cache and retry
                 with self._cache_lock:
@@ -334,20 +332,21 @@ class KeepBlockCache(object):
             elif e.errno == errno.ENODEV:
                 _logger.error("Unable to use disk cache: The underlying filesystem does not support memory mapping.")
         except Exception as e:
-            tryagain = True
-
-        # Check if we should evict things from the cache.  Either
-        # because we added a new thing or we adjusted the limits down,
-        # so we might need to push something out.
-        self.cap_cache()
-
-        if not tryagain:
-            # Done
-            return
+            pass
+        finally:
+            # Check if we should evict things from the cache.  Either
+            # because we added a new thing or there was an error and
+            # we possibly adjusted the limits down, so we might need
+            # to push something out.
+            self.cap_cache()
 
         try:
-            # There was an error, we ran cap_cache so try one more time.
+            # Only gets here if there was an error the first time. The
+            # exception handler adjusts limits downward in some cases
+            # to free up resources, which would make the operation
+            # succeed.
             slot.set(blob)
+            self.cap_cache()
         except Exception as e:
             # It failed again.  Give up.
             raise arvados.errors.KeepCacheError("Unable to save block %s to disk cache: %s" % (slot.locator, e))
