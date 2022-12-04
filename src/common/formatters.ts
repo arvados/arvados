@@ -99,3 +99,17 @@ export const formatPropertyValue = (pv: PropertyValue, vocabulary?: Vocabulary) 
     }
     return "";
 };
+
+export const formatContainerCost = (cost: number): string => {
+    const decimalPlaces = 3;
+
+    const factor = Math.pow(10, decimalPlaces);
+    const rounded = Math.round(cost*factor)/factor;
+    if (cost > 0 && rounded === 0) {
+        // Display min value of 0.001
+        return `$${1/factor}`;
+    } else {
+        // Otherwise use rounded value to proper decimal places
+        return `$${rounded}`;
+    }
+};

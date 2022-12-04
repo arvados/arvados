@@ -25,10 +25,12 @@ export interface ContainerResource extends Resource {
     environment: {};
     cwd: string;
     command: string[];
+    cost: number;
     outputPath: string;
     mounts: MountType[];
     runtimeConstraints: RuntimeConstraints;
     runtimeStatus: RuntimeStatus;
+    runtimeUserUuid: string;
     schedulingParameters: SchedulingParameters;
     output: string | null;
     containerImage: string;

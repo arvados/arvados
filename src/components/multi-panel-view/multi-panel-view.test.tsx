@@ -10,7 +10,7 @@ import { Button } from "@material-ui/core";
 
 configure({ adapter: new Adapter() });
 
-const PanelMock = ({panelName, panelMaximized, doHidePanel, doMaximizePanel, panelIlluminated, panelRef, children, ...rest}) =>
+const PanelMock = ({panelName, panelMaximized, doHidePanel, doMaximizePanel, doUnMaximizePanel, panelIlluminated, panelRef, children, ...rest}) =>
     <div {...rest}>{children}</div>;
 
 describe('<MPVContainer />', () => {

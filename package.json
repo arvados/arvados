@@ -44,6 +44,7 @@
     "lodash.template": "4.5.0",
     "material-ui-pickers": "^2.2.4",
     "mem": "4.0.0",
+    "mime": "^3.0.0",
     "moment": "2.29.1",
     "parse-duration": "0.4.4",
     "prop-types": "15.7.2",

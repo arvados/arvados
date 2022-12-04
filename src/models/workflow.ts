@@ -4,6 +4,7 @@
 
 import { Resource, ResourceKind } from "./resource";
 import { safeLoad } from 'js-yaml';
+import { CommandOutputParameter } from "cwlts/mappings/v1.0/CommandOutputParameter";
 
 export interface WorkflowResource extends Resource {
     kind: ResourceKind.WORKFLOW;
@@ -152,8 +153,19 @@ export const getWorkflowInputs = (workflowDefinition: WorkflowResourceDefinition
         : undefined;
 };
 
+export const getWorkflowOutputs = (workflowDefinition: WorkflowResourceDefinition) => {
+    if (!workflowDefinition) { return undefined; }
+    return getWorkflow(workflowDefinition)
+        ? getWorkflow(workflowDefinition)!.outputs
+        : undefined;
+};
+
 export const getInputLabel = (input: CommandInputParameter) => {
     return `${input.label || input.id.split('/').pop()}`;
+};
+
+export const getIOParamId = (input: CommandInputParameter | CommandOutputParameter) => {
+    return `${input.id.split('/').pop()}`;
 };
 
 export const isRequiredInput = ({ type }: CommandInputParameter) => {

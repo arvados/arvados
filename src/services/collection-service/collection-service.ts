@@ -107,6 +107,10 @@ export class CollectionService extends TrashableResourceService<CollectionResour
         };
     }
 
+    async getFileContents(file: CollectionFile) {
+        return (await this.webdavClient.get(`c=${file.id}`)).response;
+    }
+
     private async uploadFile(collectionUuid: string, file: File, fileId: number, onProgress: UploadProgress = () => { return; }, targetLocation: string = '') {
         const fileURL = `c=${targetLocation !== '' ? targetLocation : collectionUuid}/${file.name}`.replace('//', '/');
         const requestConfig = {

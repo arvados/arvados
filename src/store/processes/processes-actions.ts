@@ -17,18 +17,28 @@ import { initialize } from "redux-form";
 import { RUN_PROCESS_BASIC_FORM, RunProcessBasicFormData } from "views/run-process-panel/run-process-basic-form";
 import { RunProcessAdvancedFormData, RUN_PROCESS_ADVANCED_FORM } from "views/run-process-panel/run-process-advanced-form";
 import { MOUNT_PATH_CWL_WORKFLOW, MOUNT_PATH_CWL_INPUT } from 'models/process';
-import { getWorkflow, getWorkflowInputs } from "models/workflow";
+import { CommandInputParameter, getWorkflow, getWorkflowInputs, getWorkflowOutputs, WorkflowInputsData } from "models/workflow";
 import { ProjectResource } from "models/project";
 import { UserResource } from "models/user";
+import { CommandOutputParameter } from "cwlts/mappings/v1.0/CommandOutputParameter";
 
 export const loadProcess = (containerRequestUuid: string) =>
     async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository): Promise<Process> => {
         const containerRequest = await services.containerRequestService.get(containerRequestUuid);
         dispatch<any>(updateResources([containerRequest]));
 
+        if (containerRequest.outputUuid) {
+            const collection = await services.collectionService.get(containerRequest.outputUuid);
+            dispatch<any>(updateResources([collection]));
+        }
+
         if (containerRequest.containerUuid) {
             const container = await services.containerService.get(containerRequest.containerUuid);
             dispatch<any>(updateResources([container]));
+            if (container.runtimeUserUuid) {
+                const runtimeUser = await services.userService.get(container.runtimeUserUuid);
+                dispatch<any>(updateResources([runtimeUser]));
+            }
             return { containerRequest, container };
         }
         return { containerRequest };
@@ -50,6 +60,7 @@ const containerFieldsNoMounts = [
     "auth_uuid",
     "command",
     "container_image",
+    "cost",
     "created_at",
     "cwd",
     "environment",
@@ -127,8 +138,27 @@ export const reRunProcess = (processUuid: string, workflowUuid: string) =>
         }
     };
 
-const getInputs = (data: any) => {
+/*
+ * Fetches raw inputs from containerRequest mounts with fallback to properties
+ * Returns undefined if containerRequest not loaded
+ * Returns {} if inputs not found in mounts or props
+ */
+export const getRawInputs = (data: any): WorkflowInputsData | undefined => {
+    if (!data) { return undefined; }
+    const mountInput = data.mounts?.[MOUNT_PATH_CWL_INPUT]?.content;
+    const propsInput = data.properties?.cwl_input;
+    if (!mountInput && !propsInput) { return {}; }
+    return (mountInput || propsInput);
+}
+
+export const getInputs = (data: any): CommandInputParameter[] => {
+    // Definitions from mounts are needed so we return early if missing
     if (!data || !data.mounts || !data.mounts[MOUNT_PATH_CWL_WORKFLOW]) { return []; }
+    const content  = getRawInputs(data) as any;
+    // Only escape if content is falsy to allow displaying definitions if no inputs are present
+    // (Don't check raw content length)
+    if (!content) { return []; }
+
     const inputs = getWorkflowInputs(data.mounts[MOUNT_PATH_CWL_WORKFLOW].content);
     return inputs ? inputs.map(
         (it: any) => (
@@ -136,7 +166,53 @@ const getInputs = (data: any) => {
                 type: it.type,
                 id: it.id,
                 label: it.label,
-                default: data.mounts[MOUNT_PATH_CWL_INPUT].content[it.id],
+                default: content[it.id],
+                value: content[it.id.split('/').pop()] || [],
+                doc: it.doc
+            }
+        )
+    ) : [];
+};
+
+/*
+ * Fetches raw outputs from containerRequest properties
+ * Assumes containerRequest is loaded
+ */
+export const getRawOutputs = (data: any): CommandInputParameter[] | undefined => {
+    if (!data || !data.properties || !data.properties.cwl_output) { return undefined; }
+    return (data.properties.cwl_output);
+}
+
+export type InputCollectionMount = {
+    path: string;
+    pdh: string;
+}
+
+export const getInputCollectionMounts = (data: any): InputCollectionMount[] => {
+    if (!data || !data.mounts) { return []; }
+    return Object.keys(data.mounts)
+        .map(key => ({
+            ...data.mounts[key],
+            path: key,
+        }))
+        .filter(mount => mount.kind === 'collection' &&
+                mount.portable_data_hash &&
+                mount.path)
+        .map(mount => ({
+            path: mount.path,
+            pdh: mount.portable_data_hash,
+        }));
+};
+
+export const getOutputParameters = (data: any): CommandOutputParameter[] => {
+    if (!data || !data.mounts || !data.mounts[MOUNT_PATH_CWL_WORKFLOW]) { return []; }
+    const outputs = getWorkflowOutputs(data.mounts[MOUNT_PATH_CWL_WORKFLOW].content);
+    return outputs ? outputs.map(
+        (it: any) => (
+            {
+                type: it.type,
+                id: it.id,
+                label: it.label,
                 doc: it.doc
             }
         )

@@ -11,7 +11,13 @@ import { SearchInput } from 'components/search-input/search-input';
 import { ArvadosTheme } from "common/custom-theme";
 import { createTree } from 'models/tree';
 import { DataTableFilters } from 'components/data-table-filters/data-table-filters-tree';
-import { CloseIcon, IconType, MaximizeIcon, MoreOptionsIcon } from 'components/icon/icon';
+import {
+    CloseIcon,
+    IconType,
+    MaximizeIcon,
+    UnMaximizeIcon,
+    MoreOptionsIcon
+} from 'components/icon/icon';
 import { PaperProps } from '@material-ui/core/Paper';
 import { MPVPanelProps } from 'components/multi-panel-view/multi-panel-view';
 
@@ -19,11 +25,11 @@ type CssRules = 'searchBox' | 'headerMenu' | "toolbar" | "footer" | "root" | 'mo
 
 const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     searchBox: {
-        paddingBottom: theme.spacing.unit * 2
+        paddingBottom: 0,
     },
     toolbar: {
-        paddingTop: theme.spacing.unit,
-        paddingRight: theme.spacing.unit * 2,
+        paddingTop: 0,
+        paddingRight: theme.spacing.unit,
     },
     footer: {
         overflow: 'auto'
@@ -36,8 +42,8 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     },
     title: {
         display: 'inline-block',
-        paddingLeft: theme.spacing.unit * 3,
-        paddingTop: theme.spacing.unit * 3,
+        paddingLeft: theme.spacing.unit * 2,
+        paddingTop: theme.spacing.unit * 2,
         fontSize: '18px'
     },
     dataTable: {
@@ -49,7 +55,7 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     },
     headerMenu: {
         float: 'right',
-        display: 'inline-block'
+        display: 'inline-block',
     }
 });
 
@@ -152,7 +158,7 @@ export const DataExplorer = withStyles(styles)(
                 items, itemsAvailable, onRowClick, onRowDoubleClick, classes,
                 defaultViewIcon, defaultViewMessages, hideColumnSelector, actions, paperProps, hideSearchInput,
                 paperKey, fetchMode, currentItemUuid, title,
-                doHidePanel, doMaximizePanel, panelName, panelMaximized, elementPath
+                doHidePanel, doMaximizePanel, doUnMaximizePanel, panelName, panelMaximized, elementPath
             } = this.props;
 
             return <Paper className={classes.root} {...paperProps} key={paperKey} data-cy={this.props["data-cy"]}>
@@ -163,26 +169,28 @@ export const DataExplorer = withStyles(styles)(
                             (!hideColumnSelector || !hideSearchInput || !!actions) &&
                             <Grid className={classes.headerMenu} item xs>
                                 <Toolbar className={classes.toolbar}>
-                                    <Grid container justify="space-between" wrap="nowrap" alignItems="center">
-                                        {!hideSearchInput && <div className={classes.searchBox}>
-                                            {!hideSearchInput && <SearchInput
-                                                label={searchLabel}
-                                                value={searchValue}
-                                                selfClearProp={currentItemUuid}
-                                                onSearch={onSearch} />}
-                                        </div>}
-                                        {actions}
-                                        {!hideColumnSelector && <ColumnSelector
-                                            columns={columns}
-                                            onColumnToggle={onColumnToggle} />}
-                                    </Grid>
+                                    {!hideSearchInput && <div className={classes.searchBox}>
+                                        {!hideSearchInput && <SearchInput
+                                            label={searchLabel}
+                                            value={searchValue}
+                                            selfClearProp={currentItemUuid}
+                                            onSearch={onSearch} />}
+                                    </div>}
+                                    {actions}
+                                    {!hideColumnSelector && <ColumnSelector
+                                        columns={columns}
+                                        onColumnToggle={onColumnToggle} />}
+                                    { doUnMaximizePanel && panelMaximized &&
+                                    <Tooltip title={`Unmaximize ${panelName || 'panel'}`} disableFocusListener>
+                                        <IconButton onClick={doUnMaximizePanel}><UnMaximizeIcon /></IconButton>
+                                    </Tooltip> }
                                     { doMaximizePanel && !panelMaximized &&
                                         <Tooltip title={`Maximize ${panelName || 'panel'}`} disableFocusListener>
                                             <IconButton onClick={doMaximizePanel}><MaximizeIcon /></IconButton>
                                         </Tooltip> }
                                     { doHidePanel &&
                                         <Tooltip title={`Close ${panelName || 'panel'}`} disableFocusListener>
-                                            <IconButton onClick={doHidePanel}><CloseIcon /></IconButton>
+                                            <IconButton disabled={panelMaximized} onClick={doHidePanel}><CloseIcon /></IconButton>
                                         </Tooltip> }
                                 </Toolbar>
                             </Grid>

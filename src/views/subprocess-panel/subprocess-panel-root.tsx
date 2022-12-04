@@ -17,6 +17,21 @@ import { createTree } from 'models/tree';
 import { getInitialProcessStatusFilters } from 'store/resource-type-filters/resource-type-filters';
 import { ResourcesState } from 'store/resources/resources';
 import { MPVPanelProps } from 'components/multi-panel-view/multi-panel-view';
+import { StyleRulesCallback, Typography, WithStyles, withStyles } from '@material-ui/core';
+import { ArvadosTheme } from 'common/custom-theme';
+
+type CssRules = 'iconHeader' | 'cardHeader';
+
+const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
+    iconHeader: {
+        fontSize: '1.875rem',
+        color: theme.customs.colors.green700,
+        marginRight: theme.spacing.unit * 2,
+    },
+    cardHeader: {
+        display: 'flex',
+    },
+});
 
 export enum SubprocessPanelColumnNames {
     NAME = "Name",
@@ -80,6 +95,18 @@ const DEFAULT_VIEW_MESSAGES = [
     'The current process may not have any or none matches current filtering.'
 ];
 
+type SubProcessesTitleProps = WithStyles<CssRules>;
+
+const SubProcessesTitle = withStyles(styles)(
+    ({classes}: SubProcessesTitleProps) =>
+        <div className={classes.cardHeader}>
+            <ProcessIcon className={classes.iconHeader} /><span></span>
+            <Typography noWrap variant='h6' color='inherit'>
+                Subprocesses
+            </Typography>
+        </div>
+);
+
 export const SubprocessPanelRoot = (props: SubprocessPanelProps & MPVPanelProps) => {
     return <DataExplorer
         id={SUBPROCESS_PANEL_ID}
@@ -91,6 +118,8 @@ export const SubprocessPanelRoot = (props: SubprocessPanelProps & MPVPanelProps)
         defaultViewMessages={DEFAULT_VIEW_MESSAGES}
         doHidePanel={props.doHidePanel}
         doMaximizePanel={props.doMaximizePanel}
+        doUnMaximizePanel={props.doUnMaximizePanel}
         panelMaximized={props.panelMaximized}
-        panelName={props.panelName} />;
+        panelName={props.panelName}
+        title={<SubProcessesTitle/>} />;
 };

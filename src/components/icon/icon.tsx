@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import React from 'react';
-import { Badge, Tooltip } from '@material-ui/core';
+import { Badge, SvgIcon, Tooltip } from '@material-ui/core';
 import Add from '@material-ui/icons/Add';
 import ArrowBack from '@material-ui/icons/ArrowBack';
 import ArrowDropDown from '@material-ui/icons/ArrowDropDown';
@@ -34,6 +34,7 @@ import Help from '@material-ui/icons/Help';
 import HelpOutline from '@material-ui/icons/HelpOutline';
 import History from '@material-ui/icons/History';
 import Inbox from '@material-ui/icons/Inbox';
+import MoveToInbox from '@material-ui/icons/MoveToInbox';
 import Info from '@material-ui/icons/Info';
 import Input from '@material-ui/icons/Input';
 import InsertDriveFile from '@material-ui/icons/InsertDriveFile';
@@ -43,7 +44,6 @@ import ListAlt from '@material-ui/icons/ListAlt';
 import Menu from '@material-ui/icons/Menu';
 import MoreVert from '@material-ui/icons/MoreVert';
 import Mail from '@material-ui/icons/Mail';
-import MoveToInbox from '@material-ui/icons/MoveToInbox';
 import Notifications from '@material-ui/icons/Notifications';
 import OpenInNew from '@material-ui/icons/OpenInNew';
 import People from '@material-ui/icons/People';
@@ -66,11 +66,13 @@ import Computer from '@material-ui/icons/Computer';
 import WrapText from '@material-ui/icons/WrapText';
 import TextIncrease from '@material-ui/icons/ZoomIn';
 import TextDecrease from '@material-ui/icons/ZoomOut';
-import CropFreeSharp from '@material-ui/icons/CropFreeSharp';
+import FullscreenSharp from '@material-ui/icons/FullscreenSharp';
+import FullscreenExitSharp from '@material-ui/icons/FullscreenExitSharp';
 import ExitToApp from '@material-ui/icons/ExitToApp';
 import CheckCircleOutline from '@material-ui/icons/CheckCircleOutline';
 import RemoveCircleOutline from '@material-ui/icons/RemoveCircleOutline';
 import NotInterested from '@material-ui/icons/NotInterested';
+import Image from '@material-ui/icons/Image';
 
 // Import FontAwesome icons
 import { library } from '@fortawesome/fontawesome-svg-core';
@@ -123,6 +125,18 @@ export const CollectionOldVersionIcon = (props: any) =>
         </Badge>
     </Tooltip>;
 
+// https://materialdesignicons.com/icon/image-off
+export const ImageOffIcon = (props: any) =>
+    <SvgIcon {...props}>
+        <path d="M21 17.2L6.8 3H19C20.1 3 21 3.9 21 5V17.2M20.7 22L19.7 21H5C3.9 21 3 20.1 3 19V4.3L2 3.3L3.3 2L22 20.7L20.7 22M16.8 18L12.9 14.1L11 16.5L8.5 13.5L5 18H16.8Z" />
+    </SvgIcon>;
+
+// https://materialdesignicons.com/icon/inbox-arrow-up
+export const OutputIcon: IconType = (props: any) =>
+    <SvgIcon {...props}>
+        <path d="M14,14H10V11H8L12,7L16,11H14V14M16,11M5,15V5H19V15H15A3,3 0 0,1 12,18A3,3 0 0,1 9,15H5M19,3H5C3.89,3 3,3.9 3,5V19A2,2 0 0,0 5,21H19A2,2 0 0,0 21,19V5A2,2 0 0,0 19,3" />
+    </SvgIcon>;
+
 export type IconType = React.SFC<{ className?: string, style?: object }>;
 
 export const AddIcon: IconType = (props) => <Add {...props} />;
@@ -150,17 +164,18 @@ export const HelpIcon: IconType = (props) => <Help {...props} />;
 export const HelpOutlineIcon: IconType = (props) => <HelpOutline {...props} />;
 export const ImportContactsIcon: IconType = (props) => <ImportContacts {...props} />;
 export const InfoIcon: IconType = (props) => <Info {...props} />;
-export const InputIcon: IconType = (props) => <InsertDriveFile {...props} />;
+export const FileInputIcon: IconType = (props) => <InsertDriveFile {...props} />;
 export const KeyIcon: IconType = (props) => <VpnKey {...props} />;
 export const LogIcon: IconType = (props) => <SettingsEthernet {...props} />;
 export const MailIcon: IconType = (props) => <Mail {...props} />;
-export const MaximizeIcon: IconType = (props) => <CropFreeSharp {...props} />;
+export const MaximizeIcon: IconType = (props) => <FullscreenSharp {...props} />;
+export const UnMaximizeIcon: IconType = (props) => <FullscreenExitSharp {...props} />;
 export const MoreOptionsIcon: IconType = (props) => <MoreVert {...props} />;
 export const MoveToIcon: IconType = (props) => <Input {...props} />;
 export const NewProjectIcon: IconType = (props) => <CreateNewFolder {...props} />;
 export const NotificationIcon: IconType = (props) => <Notifications {...props} />;
 export const OpenIcon: IconType = (props) => <OpenInNew {...props} />;
-export const OutputIcon: IconType = (props) => <MoveToInbox {...props} />;
+export const InputIcon: IconType = (props) => <MoveToInbox {...props} />;
 export const PaginationDownIcon: IconType = (props) => <ArrowDropDown {...props} />;
 export const PaginationLeftArrowIcon: IconType = (props) => <ChevronLeft {...props} />;
 export const PaginationRightArrowIcon: IconType = (props) => <ChevronRight {...props} />;
@@ -200,3 +215,4 @@ export const LoginAsIcon: IconType = (props) => <ExitToApp {...props} />;
 export const ActiveIcon: IconType = (props) => <CheckCircleOutline {...props} />;
 export const SetupIcon: IconType = (props) => <RemoveCircleOutline {...props} />;
 export const InactiveIcon: IconType = (props) => <NotInterested {...props} />;
+export const ImageIcon: IconType = (props) => <Image {...props} />;
