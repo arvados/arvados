@@ -16,29 +16,29 @@ export enum ContainerRequestState {
 export interface ContainerRequestResource
   extends Resource,
     ResourceWithProperties {
-  kind: ResourceKind.CONTAINER_REQUEST;
-  name: string;
-  description: string;
-  state: ContainerRequestState;
-  requestingContainerUuid: string | null;
-  cumulativeCost: number;
-  containerUuid: string | null;
+  command: string[];
   containerCountMax: number;
+  containerCount: number;
+  containerImage: string;
+  containerUuid: string | null;
+  cumulativeCost: number;
+  cwd: string;
+  description: string;
+  environment: any;
+  expiresAt: string;
+  filters: string;
+  kind: ResourceKind.CONTAINER_REQUEST;
+  logUuid: string | null;
   mounts: { [path: string]: MountType };
+  name: string;
+  outputName: string;
+  outputPath: string;
+  outputTtl: number;
+  outputUuid: string | null;
+  priority: number | null;
+  requestingContainerUuid: string | null;
   runtimeConstraints: RuntimeConstraints;
   schedulingParameters: SchedulingParameters;
-  containerImage: string;
-  environment: any;
-  cwd: string;
-  command: string[];
-  outputPath: string;
-  outputName: string;
-  outputTtl: number;
-  priority: number | null;
-  expiresAt: string;
+  state: ContainerRequestState;
   useExisting: boolean;
-  logUuid: string | null;
-  outputUuid: string | null;
-  filters: string;
-  containerCount: number;
 }

@@ -61,9 +61,10 @@ import { getUserUuid } from 'common/getuser';
 import { VirtualMachinesResource } from 'models/virtual-machines';
 import { CopyToClipboardSnackbar } from 'components/copy-to-clipboard-snackbar/copy-to-clipboard-snackbar';
 import { ProjectResource } from 'models/project';
+import { ProcessResource } from 'models/process';
+
 
 const renderName = (dispatch: Dispatch, item: GroupContentsResource) => {
-
     const navFunc = ("groupClass" in item && item.groupClass === GroupClass.ROLE ? navigateToGroupDetails : navigateTo);
     return <Grid container alignItems="center" wrap="nowrap" spacing={16}>
         <Grid item>
@@ -89,6 +90,7 @@ const renderName = (dispatch: Dispatch, item: GroupContentsResource) => {
     </Grid>;
 };
 
+
 const FrozenProject = (props: {item: ProjectResource}) => {
     const [fullUsername, setFullusername] = React.useState<any>(null);
     const getFullName = React.useCallback(() => {
@@ -113,6 +115,7 @@ export const ResourceName = connect(
         return resource;
     })((resource: GroupContentsResource & DispatchProp<any>) => renderName(resource.dispatch, resource));
 
+    
 const renderIcon = (item: GroupContentsResource) => {
     switch (item.kind) {
         case ResourceKind.PROJECT:
@@ -227,6 +230,11 @@ export const UserResourceFullName = connect(
 const renderUuid = (item: { uuid: string }) =>
     <Typography data-cy="uuid" noWrap>
         {item.uuid}
+        {(item.uuid && <CopyToClipboardSnackbar value={item.uuid} />) || '-' }
+    </Typography>;
+
+const renderUuidCopyIcon = (item: { uuid: string }) =>
+    <Typography data-cy="uuid" noWrap>
         {(item.uuid && <CopyToClipboardSnackbar value={item.uuid} />) || '-' }
     </Typography>;
 
@@ -670,17 +678,39 @@ export const ResourceContainerUuid = connect(
         return { uuid: process?.container?.uuid ? process?.container?.uuid : '' };
     })((props: { uuid: string }) => renderUuid({ uuid: props.uuid }));
 
+enum ColumnSelection {
+    OUTPUT_UUID = 'outputUuid',
+    LOG_UUID = 'logUuid'
+}
+
+const renderUuidLinkWithCopyIcon = (dispatch: Dispatch, item: ProcessResource, column: string) => {
+    const selectedColumnUuid = item[column]
+    return <Grid container alignItems="center" wrap="nowrap" >
+        <Grid item>
+            {selectedColumnUuid ? 
+                <Typography color="primary" style={{ width: 'auto', cursor: 'pointer' }} noWrap 
+                    onClick={() => dispatch<any>(navigateTo(selectedColumnUuid))}>
+                    {selectedColumnUuid} 
+                </Typography> 
+            : '-' }
+        </Grid>
+        <Grid item>
+            {selectedColumnUuid && renderUuidCopyIcon({ uuid: selectedColumnUuid })}
+        </Grid>
+    </Grid>;
+};
+
 export const ResourceOutputUuid = connect(
     (state: RootState, props: { uuid: string }) => {
-        const process = getProcess(props.uuid)(state.resources)
-        return { uuid: process?.containerRequest.outputUuid || '' };
-    })((props: { uuid: string }) => renderUuid({ uuid: props.uuid }));
+        const resource = getResource<ProcessResource>(props.uuid)(state.resources);
+        return resource;
+    })((process: ProcessResource & DispatchProp<any>) => renderUuidLinkWithCopyIcon(process.dispatch, process, ColumnSelection.OUTPUT_UUID));
 
 export const ResourceLogUuid = connect(
     (state: RootState, props: { uuid: string }) => {
-        const process = getProcess(props.uuid)(state.resources)
-        return { uuid: process?.containerRequest.logUuid || '' };
-    })((props: { uuid: string }) => renderUuid({ uuid: props.uuid }));
+        const resource = getResource<ProcessResource>(props.uuid)(state.resources);
+        return resource;
+    })((process: ProcessResource & DispatchProp<any>) => renderUuidLinkWithCopyIcon(process.dispatch, process, ColumnSelection.LOG_UUID));
 
 export const ResourceParentProcess = connect(
     (state: RootState, props: { uuid: string }) => {
@@ -824,11 +854,14 @@ const ownerFromResourceId =
         userFromID
     );
 
+
+
+
+
 const _resourceWithName =
     withStyles({}, { withTheme: true })
         ((props: { uuid: string, userFullname: string, dispatch: Dispatch, theme: ArvadosTheme }) => {
             const { uuid, userFullname, dispatch, theme } = props;
-
             if (userFullname === '') {
                 dispatch<any>(loadResource(uuid, false));
                 return <Typography style={{ color: theme.palette.primary.main }} inline noWrap>
@@ -844,6 +877,8 @@ const _resourceWithName =
 export const ResourceOwnerWithName = ownerFromResourceId(_resourceWithName);
 
 export const ResourceWithName = userFromID(_resourceWithName);
+
+
 
 export const UserNameFromID =
     compose(userFromID)(
