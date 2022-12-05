@@ -116,11 +116,12 @@ Apply complete! Resources: 16 added, 0 changed, 0 destroyed.
 Outputs:
 
 arvados_sg_id = "sg-02f999a99973999d7"
+arvados_subnet_id = "subnet-01234567abc"
 cluster_name = "xarv1"
+compute_subnet_id = "subnet-abcdef12345"
 deploy_user = "admin"
 domain_name = "example.com"
 letsencrypt_iam_access_key_id = "AKAA43MAAAWAKAADAASD"
-letsencrypt_iam_secret_access_key = <sensitive>
 private_ip = {
   "controller" = "10.1.1.1"
   "keep0" = "10.1.1.3"
@@ -137,15 +138,16 @@ public_ip = {
   "shell" = "44.208.155.240"
   "workbench" = "52.204.134.136"
 }
+region_name = "us-east-1"
 route53_dns_ns = tolist([
   "ns-1119.awsdns-11.org",
   "ns-1812.awsdns-34.co.uk",
   "ns-437.awsdns-54.com",
   "ns-809.awsdns-37.net",
 ])
-subnet_id = "subnet-072a999f939989710"
 vpc_cidr = "10.1.0.0/16"
 vpc_id = "vpc-0999994998399923a"
+letsencrypt_iam_secret_access_key = "XXXXXSECRETACCESSKEYXXXX"
 </code></pre>
 
 
@@ -171,18 +173,11 @@ If the parent domain is controlled by some other service, follow the guide for t
 
 h4. Other important output parameters
 
-* Take note of @letsencrypt_iam_access_key_id@ and @letsencrypt_iam_secret_access_key@ for setting up @LE_AWS_*@ variables in @local.params@.
-
-You'll see that the @letsencrypt_iam_secret_access_key@ data is obscured; to retrieve it you'll need to run the following command inside the @services/@ subdirectory:
-
-<pre><code>$ terraform output letsencrypt_iam_secret_access_key
-"FQ3+3lxxOxxUu+Nw+qx3xixxxExxxV9jFC+XxxRl"</code></pre>
-
 The certificates will be requested from Let's Encrypt when you run the installer.
 
 * @vpc_cidr@ will be used to set @CLUSTER_INT_CIDR@
 
-* You'll also need @subnet_id@ and @arvados_sg_id@ to set @DriverParameters.SubnetID@ and @DriverParameters.SecurityGroupIDs@ in @local_config_dir/pillars/arvados.sls@ and when you "create a compute image":#create_a_compute_image.
+* You'll also need @compute_subnet_id@ and @arvados_sg_id@ to set @DriverParameters.SubnetID@ and @DriverParameters.SecurityGroupIDs@ in @local_config_dir/pillars/arvados.sls@ and when you "create a compute image":#create_a_compute_image.
 
 You can now proceed to "edit local.params":#localparams.
 
