@@ -8,8 +8,8 @@ import { isRsaKey } from './is-rsa-key';
 import { isRemoteHost } from "./is-remote-host";
 import { validFilePath, validName, validNameAllowSlash } from "./valid-name";
 
-export const TAG_KEY_VALIDATION = [require, maxLength(255)];
-export const TAG_VALUE_VALIDATION = [require, maxLength(255)];
+export const TAG_KEY_VALIDATION = [maxLength(255)];
+export const TAG_VALUE_VALIDATION = [maxLength(255)];
 
 export const PROJECT_NAME_VALIDATION = [require, validName, maxLength(255)];
 export const PROJECT_NAME_VALIDATION_ALLOW_SLASH = [require, validNameAllowSlash, maxLength(255)];
