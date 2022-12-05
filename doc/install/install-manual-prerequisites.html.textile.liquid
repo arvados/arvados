@@ -24,24 +24,10 @@ The Arvados storage subsystem is called "keep".  The compute subsystem is called
 # "Arvados Cluster ID":#clusterid
 # "DNS and TLS":#dnstls
 
+
 h2(#supportedlinux). Supported GNU/Linux distributions
 
-table(table table-bordered table-condensed).
-|_. Distribution|_. State|_. Last supported Arvados version|
-|CentOS 7|Supported|Latest|
-|Debian 11 ("bullseye")|Supported|Latest|
-|Debian 10 ("buster")|Supported|Latest|
-|Ubuntu 20.04 ("focal")|Supported|Latest|
-|Ubuntu 18.04 ("bionic")|Supported|Latest|
-|Ubuntu 16.04 ("xenial")|EOL|2.1.2|
-|Debian 9 ("stretch")|EOL|2.1.2|
-|Debian 8 ("jessie")|EOL|1.4.3|
-|Ubuntu 14.04 ("trusty")|EOL|1.4.3|
-|Ubuntu 12.04 ("precise")|EOL|8ed7b6dd5d4df93a3f37096afe6d6f81c2a7ef6e (2017-05-03)|
-|Debian 7 ("wheezy")|EOL|997479d1408139e96ecdb42a60b4f727f814f6c9 (2016-12-28)|
-|CentOS 6 |EOL|997479d1408139e96ecdb42a60b4f727f814f6c9 (2016-12-28)|
-
-Arvados packages are published for current Debian releases (until the EOL date), current Ubuntu LTS releases (until the end of standard support), and the latest version of CentOS.
+{% include 'supportedlinux' %}
 
 h2(#components). Choosing which components to install
 
@@ -58,15 +44,14 @@ table(table table-bordered table-condensed).
 |"Keep-balance":install-keep-balance.html |Storage cluster maintenance daemon responsible for moving blocks to their optimal server location, adjusting block replication levels, and trashing unreferenced blocks.|Required to free deleted data from underlying storage, and to ensure proper replication and block distribution (including support for storage classes).|
 |\3=. *User interface*|
 |"Workbench":install-workbench-app.html, "Workbench2":install-workbench2-app.html |Primary graphical user interface for working with file collections and running containers.|Optional.  Depends on API server, keep-web, websockets server.|
-|"Workflow Composer":install-composer.html |Graphical user interface for editing Common Workflow Language workflows.|Optional.  Depends on git server (arvados-git-httpd).|
 |\3=. *Additional services*|
 |"Websockets server":install-ws.html |Event distribution server.|Required to view streaming container logs in Workbench.|
-|"Shell server":install-shell-server.html |Synchronize (create/delete/configure) Unix shell accounts with Arvados users.|Optional.|
-|"Git server":install-arv-git-httpd.html |Arvados-hosted git repositories, with Arvados-token based authentication.|Optional, but required by Workflow Composer.|
+|"Shell server":install-shell-server.html |Grant Arvados users access to Unix shell accounts on dedicated shell nodes.|Optional.|
+|"Git server":install-arv-git-httpd.html |Arvados-hosted git repositories, with Arvados-token based authentication.|Optional|
 |\3=. *Crunch (running containers)*|
-|"arvados-dispatch-cloud":crunch2-cloud/install-dispatch-cloud.html |Allocate and free cloud VM instances on demand based on workload.|Optional, not needed for a static Slurm cluster such as on-premises HPC.|
-|"crunch-dispatch-slurm":crunch2-slurm/install-dispatch.html |Run analysis workflows using Docker or Singularity containers distributed across a Slurm cluster.|Optional, not needed for a Cloud installation, or if you wish to use Arvados for data management only.|
-|"crunch-dispatch-lsf":crunch2-lsf/install-dispatch.html |Run analysis workflows using Docker or Singularity containers distributed across an LSF cluster.|Optional, not needed for a Cloud installation, or if you wish to use Arvados for data management only.|
+|"arvados-dispatch-cloud":crunch2-cloud/install-dispatch-cloud.html |Run analysis workflows on cloud by allocating and freeing cloud VM instances on demand.|Optional|
+|"crunch-dispatch-slurm":crunch2-slurm/install-dispatch.html |Run analysis workflows distributed across a Slurm cluster.|Optional|
+|"crunch-dispatch-lsf":crunch2-lsf/install-dispatch.html |Run analysis workflows distributed across an LSF cluster.|Optional|
 
 h2(#identity). Identity provider
 
@@ -173,8 +158,8 @@ The table below lists the required TLS certificates and DNS names in each scenar
 <div class="offset1">
 table(table table-bordered table-condensed).
 ||_. Wildcard TLS and DNS available|_. Wildcard TLS available|_. Other|
-|TLS|*.@ClusterID.example.com@
-@ClusterID.example.com@
+|TLS|@ClusterID.example.com@
+*.@ClusterID.example.com@
 *.collections.@ClusterID.example.com@|*.@ClusterID.example.com@
 @ClusterID.example.com@|@ClusterID.example.com@
 git.@ClusterID.example.com@

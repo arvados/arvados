@@ -209,13 +209,13 @@ navbar:
       - install/index.html.textile.liquid
     - Docker quick start:
       - install/arvbox.html.textile.liquid
-    - Installation with Salt:
+    - Arvados Installer:
       - install/salt-single-host.html.textile.liquid
       - install/salt-multi-host.html.textile.liquid
-    - Arvados on Kubernetes:
-      - install/arvados-on-kubernetes.html.textile.liquid
-      - install/arvados-on-kubernetes-minikube.html.textile.liquid
-      - install/arvados-on-kubernetes-GKE.html.textile.liquid
+#    - Arvados on Kubernetes:
+#      - install/arvados-on-kubernetes.html.textile.liquid
+#      - install/arvados-on-kubernetes-minikube.html.textile.liquid
+#      - install/arvados-on-kubernetes-GKE.html.textile.liquid
     - Manual installation:
       - install/install-manual-prerequisites.html.textile.liquid
       - install/packages.html.textile.liquid
@@ -228,6 +228,7 @@ navbar:
       - admin/maintenance-and-upgrading.html.textile.liquid
     - Core:
       - install/install-api-server.html.textile.liquid
+      - install/diagnostics.html.textile.liquid
     - Keep:
       - install/install-keepstore.html.textile.liquid
       - install/configure-fs-storage.html.textile.liquid
@@ -241,13 +242,13 @@ navbar:
       - install/install-ws.html.textile.liquid
       - install/install-workbench-app.html.textile.liquid
       - install/install-workbench2-app.html.textile.liquid
-      - install/install-composer.html.textile.liquid
+#      - install/install-composer.html.textile.liquid
     - Additional services:
       - install/install-shell-server.html.textile.liquid
       - install/install-webshell.html.textile.liquid
       - install/install-arv-git-httpd.html.textile.liquid
-    - Containers API (all):
-      - install/install-jobs-image.html.textile.liquid
+#    - Containers API (all):
+#      - install/install-jobs-image.html.textile.liquid
     - Containers API (cloud):
       - install/crunch2-cloud/install-compute-node.html.textile.liquid
       - install/crunch2-cloud/install-dispatch-cloud.html.textile.liquid

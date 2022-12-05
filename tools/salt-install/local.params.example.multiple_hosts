@@ -20,7 +20,7 @@ DEPLOY_USER=root
 # installer.sh will log in to each of these nodes and then provision
 # it for the specified roles.
 NODES=(
-  [controller.${CLUSTER}.${DOMAIN}]=api,controller,websocket,dispatcher,keepbalance
+  [controller.${CLUSTER}.${DOMAIN}]=database,api,controller,websocket,dispatcher,keepbalance
   [keep0.${CLUSTER}.${DOMAIN}]=keepstore
   [keep1.${CLUSTER}.${DOMAIN}]=keepstore
   [keep.${CLUSTER}.${DOMAIN}]=keepproxy,keepweb
@@ -42,37 +42,37 @@ WORKBENCH1_EXT_SSL_PORT=443
 WORKBENCH2_EXT_SSL_PORT=443
 
 # Internal IPs for the configuration
-CLUSTER_INT_CIDR=10.0.0.0/16
+CLUSTER_INT_CIDR=10.1.0.0/16
 
 # Note the IPs in this example are shared between roles, as suggested in
 # https://doc.arvados.org/main/install/salt-multi-host.html
-CONTROLLER_INT_IP=10.0.0.1
-WEBSOCKET_INT_IP=10.0.0.1
-KEEP_INT_IP=10.0.0.2
+CONTROLLER_INT_IP=10.1.1.11
+WEBSOCKET_INT_IP=10.1.1.11
+KEEP_INT_IP=10.1.1.12
 # Both for collections and downloads
-KEEPWEB_INT_IP=10.0.0.2
-KEEPSTORE0_INT_IP=10.0.0.3
-KEEPSTORE1_INT_IP=10.0.0.4
-WORKBENCH1_INT_IP=10.0.0.5
-WORKBENCH2_INT_IP=10.0.0.5
-WEBSHELL_INT_IP=10.0.0.5
-DATABASE_INT_IP=10.0.0.6
-SHELL_INT_IP=10.0.0.7
+KEEPWEB_INT_IP=10.1.1.12
+KEEPSTORE0_INT_IP=10.1.1.13
+KEEPSTORE1_INT_IP=10.1.1.14
+WORKBENCH1_INT_IP=10.1.1.15
+WORKBENCH2_INT_IP=10.1.1.15
+WEBSHELL_INT_IP=10.1.1.15
+DATABASE_INT_IP=10.1.1.11
+SHELL_INT_IP=10.1.1.17
 
 INITIAL_USER="admin"
 
 # If not specified, the initial user email will be composed as
 # INITIAL_USER@CLUSTER.DOMAIN
 INITIAL_USER_EMAIL="admin@cluster_fixme_or_this_wont_work.domain_fixme_or_this_wont_work"
-INITIAL_USER_PASSWORD="password"
+INITIAL_USER_PASSWORD="fixmepassword"
 
 # YOU SHOULD CHANGE THESE TO SOME RANDOM STRINGS
-BLOB_SIGNING_KEY=blobsigningkeymushaveatleast32characters
-MANAGEMENT_TOKEN=managementtokenmushaveatleast32characters
-SYSTEM_ROOT_TOKEN=systemroottokenmushaveatleast32characters
-ANONYMOUS_USER_TOKEN=anonymoususertokenmushaveatleast32characters
-WORKBENCH_SECRET_KEY=workbenchsecretkeymushaveatleast32characters
-DATABASE_PASSWORD=please_set_this_to_some_secure_value
+BLOB_SIGNING_KEY=fixmeblobsigningkeymushaveatleast32characters
+MANAGEMENT_TOKEN=fixmemanagementtokenmushaveatleast32characters
+SYSTEM_ROOT_TOKEN=fixmesystemroottokenmushaveatleast32characters
+ANONYMOUS_USER_TOKEN=fixmeanonymoususertokenmushaveatleast32characters
+WORKBENCH_SECRET_KEY=fixmeworkbenchsecretkeymushaveatleast32characters
+DATABASE_PASSWORD=fixmeplease_set_this_to_some_secure_value
 
 # SSL CERTIFICATES
 # Arvados requires SSL certificates to work correctly. This installer supports these options:

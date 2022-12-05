@@ -211,7 +211,10 @@ VERSION="latest"
 SALT_VERSION="3004"
 
 # Other formula versions we depend on
-POSTGRES_TAG="v0.44.0"
+#POSTGRES_TAG="v0.44.0"
+#POSTGRES_URL="https://github.com/saltstack-formulas/postgres-formula.git"
+POSTGRES_TAG="0.45.0-bugfix327"
+POSTGRES_URL="https://github.com/arvados/postgres-formula.git"
 NGINX_TAG="v2.8.1"
 DOCKER_TAG="v2.4.2"
 LOCALE_TAG="v0.3.4"
@@ -352,7 +355,7 @@ test -d nginx && ( cd nginx && git fetch ) \
 
 echo "...postgres"
 test -d postgres && ( cd postgres && git fetch ) \
-  || git clone --quiet https://github.com/saltstack-formulas/postgres-formula.git ${F_DIR}/postgres
+  || git clone --quiet ${POSTGRES_URL} ${F_DIR}/postgres
 ( cd postgres && git checkout --quiet tags/"${POSTGRES_TAG}" )
 
 echo "...letsencrypt"
@@ -631,7 +634,7 @@ if [ -z "${ROLES}" ]; then
     echo "extra_custom_certs_dir: /srv/salt/certs" > ${P_DIR}/extra_custom_certs.sls
     echo "extra_custom_certs:" >> ${P_DIR}/extra_custom_certs.sls
 
-    for c in controller websocket workbench workbench2 webshell keepweb keepproxy shell; do
+    for c in controller websocket workbench workbench2 webshell keepweb keepproxy; do
       # Are we in a single-host-single-hostname env?
       if [ "${USE_SINGLE_HOSTNAME}" = "yes" ]; then
         # Are we in a single-host-single-hostname env?
@@ -831,7 +834,7 @@ if [ "${DUMP_CONFIG}" = "yes" ]; then
 fi
 
 # Now run the install
-salt-call --local state.apply -l ${LOG_LEVEL}
+salt-call --state-output=mixed --local state.apply -l ${LOG_LEVEL}
 
 # Finally, make sure that /etc/hosts is not overwritten on reboot
 if [ -d /etc/cloud/cloud.cfg.d ]; then
@@ -840,17 +843,19 @@ if [ -d /etc/cloud/cloud.cfg.d ]; then
 fi
 
 # Leave a copy of the Arvados CA so the user can copy it where it's required
-if [ "$DEV_MODE" = "yes" ]; then
-  echo "Copying the Arvados CA certificate to the installer dir, so you can import it"
-  # If running in a vagrant VM, also add default user to docker group
+if [ "${SSL_MODE}" = "self-signed" ]; then
+  echo "Copying the Arvados CA certificate '${CLUSTER}.${DOMAIN}-arvados-snakeoil-ca.crt' to the installer dir, so you can import it"
   if [ "x${VAGRANT}" = "xyes" ]; then
     cp /etc/ssl/certs/arvados-snakeoil-ca.pem /vagrant/${CLUSTER}.${DOMAIN}-arvados-snakeoil-ca.pem
+  else
+    cp /etc/ssl/certs/arvados-snakeoil-ca.pem ${SCRIPT_DIR}/${CLUSTER}.${DOMAIN}-arvados-snakeoil-ca.crt
+  fi
+fi
 
+if [ "x${VAGRANT}" = "xyes" ]; then
+    # If running in a vagrant VM, also add default user to docker group
     echo "Adding the vagrant user to the docker group"
     usermod -a -G docker vagrant
-  else
-    cp /etc/ssl/certs/arvados-snakeoil-ca.pem ${SCRIPT_DIR}/${CLUSTER}.${DOMAIN}-arvados-snakeoil-ca.pem
-  fi
 fi
 
 # Test that the installation finished correctly

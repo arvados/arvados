@@ -4,20 +4,32 @@ Copyright (C) The Arvados Authors. All rights reserved.
 SPDX-License-Identifier: CC-BY-SA-3.0
 {% endcomment %}
 
+You will need certificates for each DNS name and DNS wildcard previously listed in the "DNS hostnames for each service":#DNS .
+
+To simplify certificate management, we recommend creating a single certificate for all of the hostnames, or creating a wildcard certificate that covers all possible hostnames (with the following patterns in subjectAltName):
+
+<pre>
+xarv1.example.com
+*.xarv1.example.com
+*.collections.xarv1.example.com
+</pre>
+
+(Replacing xarv1 with your own ${CLUSTER}.${DOMAIN})
+
 Copy your certificates to the directory specified with the variable @CUSTOM_CERTS_DIR@ in the remote directory where you copied the @provision.sh@ script. The provision script will find the certificates there.
 
 The script expects cert/key files with these basenames (matching the role except for <i>keepweb</i>, which is split in both <i>download / collections</i>):
 
-* "controller"
-* "websocket"
-* "workbench"
-* "workbench2"
-* "webshell"
-* "download"         # Part of keepweb
-* "collections"      # Part of keepweb
-* "keepproxy"
+# @controller@
+# @websocket@        -- note: corresponds to default domain @ws.${CLUSTER}.${DOMAIN}@
+# @keepproxy@        -- note: corresponds to default domain @keep.${CLUSTER}.${DOMAIN}@
+# @download@         -- Part of keepweb
+# @collections@      -- Part of keepweb, must be a wildcard for @*.collections.${CLUSTER}.${DOMAIN}@
+# @workbench@
+# @workbench2@
+# @webshell@
 
-E.g. for 'keepproxy', the script will look for
+For example, for the @keepproxy@ service the script will expect to find this certificate:
 
 <notextile>
 <pre><code>${CUSTOM_CERTS_DIR}/keepproxy.crt
@@ -26,3 +38,14 @@ ${CUSTOM_CERTS_DIR}/keepproxy.key
 </notextile>
 
 Make sure that all the FQDNs that you will use for the public-facing applications (API/controller, Workbench, Keepproxy/Keepweb) are reachable.
+
+Note: because the installer currently looks for a different certificate file for each service, if you use a single certificate, we recommend creating a symlink for each certificate and key file to the primary certificate and key, e.g.
+
+<notextile>
+<pre><code>ln -s xarv1.crt ${CUSTOM_CERTS_DIR}/controller.crt
+ln -s xarv1.key ${CUSTOM_CERTS_DIR}/controller.key
+ln -s xarv1.crt ${CUSTOM_CERTS_DIR}/keepproxy.crt
+ln -s xarv1.key ${CUSTOM_CERTS_DIR}/keepproxy.key
+...
+</code></pre>
+</notextile>

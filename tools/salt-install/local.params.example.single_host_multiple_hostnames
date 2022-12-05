@@ -19,7 +19,7 @@ DEPLOY_USER=root
 # installer.sh will log in to each of these nodes and then provision
 # it for the specified roles.
 NODES=(
-  [localhost]=api,controller,websocket,dispatcher,keepbalance,keepstore,keepproxy,keepweb,workbench,workbench2,webshell,shell
+  [localhost]=''
 )
 
 # External ports used by the Arvados services
@@ -38,12 +38,12 @@ INITIAL_USER_EMAIL="admin@cluster_fixme_or_this_wont_work.domain_fixme_or_this_w
 INITIAL_USER_PASSWORD="password"
 
 # YOU SHOULD CHANGE THESE TO SOME RANDOM STRINGS
-BLOB_SIGNING_KEY=blobsigningkeymushaveatleast32characters
-MANAGEMENT_TOKEN=managementtokenmushaveatleast32characters
-SYSTEM_ROOT_TOKEN=systemroottokenmushaveatleast32characters
-ANONYMOUS_USER_TOKEN=anonymoususertokenmushaveatleast32characters
-WORKBENCH_SECRET_KEY=workbenchsecretkeymushaveatleast32characters
-DATABASE_PASSWORD=please_set_this_to_some_secure_value
+BLOB_SIGNING_KEY=fixmeblobsigningkeymushaveatleast32characters
+MANAGEMENT_TOKEN=fixmemanagementtokenmushaveatleast32characters
+SYSTEM_ROOT_TOKEN=fixmesystemroottokenmushaveatleast32characters
+ANONYMOUS_USER_TOKEN=fixmeanonymoususertokenmushaveatleast32characters
+WORKBENCH_SECRET_KEY=fixmeworkbenchsecretkeymushaveatleast32characters
+DATABASE_PASSWORD=fixmeplease_set_this_to_some_secure_value
 
 # SSL CERTIFICATES
 # Arvados requires SSL certificates to work correctly. This installer supports these options:

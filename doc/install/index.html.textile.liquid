@@ -13,22 +13,20 @@ SPDX-License-Identifier: CC-BY-SA-3.0
 This section is about installing an Arvados cluster.  If you are just looking to install Arvados client tools and libraries, "go to the SDK section.":{{site.baseurl}}/sdk/
 {% include 'notebox_end' %}
 
-Arvados components run on GNU/Linux systems, and supports AWS, GCP and Azure cloud platforms as well as on-premises installs.  Arvados supports Debian and derivatives such as Ubuntu, as well as Red Hat and derivatives such as CentOS.  "Arvados is Free Software":{{site.baseurl}}/user/copying/copying.html and self-install installations are not limited in any way.  Commercial support and development are also available from "Curii Corporation.":mailto:info@curii.com
+Arvados components run on supported GNU/Linux distributions. The Arvados elastic compute management layer supports Amazon Web Services (AWS) and Microsoft Azure cloud platforms as well as on-premises installs using SLURM and IBM Spectrum LSF.  The Arvados storage layer supports filesystem storage (including NFS, such as IBM GPFS), Azure blob storage, Amazon S3, and systems that offer an S3-compatible API such as Ceph Object Gateway and NetApp StorageGRID.
+
+"Arvados is Free Software":{{site.baseurl}}/user/copying/copying.html and self-install installations are not limited in any way.  Commercial support and development are also available from "Curii Corporation.":https://www.curii.com/
 
 Arvados components can be installed and configured in a number of different ways.
 
 <div class="offset1">
 table(table table-bordered table-condensed).
-|||\5=. Appropriate for|
-||_. Setup difficulty|_. Multiuser/networked access|_. Workflow Development and Testing|_. Large Scale Production|_. Development of Arvados|_. Arvados Evaluation|
-|"Arvados-in-a-box":arvbox.html (arvbox)|Easy|no|yes|no|yes|yes|
-|"Installation with Salt":salt-single-host.html (single host)|Easy|no|yes|no|yes|yes|
-|"Installation with Salt":salt-multi-host.html (multi host)|Moderate|yes|yes|yes|yes|yes|
-|"Arvados on Kubernetes":arvados-on-kubernetes.html|Easy ^1^|yes|yes ^2^|no ^2^|no|yes|
-|"Manual installation":install-manual-prerequisites.html|Hard|yes|yes|yes|no|no|
-|"Cluster Operation Subscription supported by Curii":mailto:info@curii.com|N/A ^3^|yes|yes|yes|yes|yes|
+||_. Setup difficulty|_. Arvados Evaluation|_. Development|_. Production Data Management|_. Production Workflows|
+|"Arvados-in-a-box":arvbox.html (arvbox)|Easy|yes|limited|no|no|
+|"Arados Installer":salt-single-host.html (single host)|Easy|yes|limited|limited|limited|
+|"Arados Installer":salt-multi-host.html (multi host)|Moderate|yes|yes|yes|yes|
+|"Manual installation":install-manual-prerequisites.html|Difficult|yes|yes|yes|yes|
+|"Cluster Operation Subscription supported by Curii":https://curii.com|N/A ^1^|yes|yes|yes|yes|
 </div>
 
-* ^1^ Assumes a Kubernetes cluster is available
-* ^2^ Arvados on Kubernetes is under development and not yet ready for production use
-* ^3^ No user installation necessary, Curii run and managed
+^1^ No user installation necessary.  Curii engineers will install and configure Arvados in your own infrastructure.

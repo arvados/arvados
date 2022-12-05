@@ -14,6 +14,7 @@
 #
 
 set -eu
+set -o pipefail
 
 # The parameter file
 declare CONFIG_FILE=local.params
@@ -42,6 +43,19 @@ declare DEPLOY_USER
 # This will be populated by loadconfig()
 declare GITTARGET
 
+checktools() {
+    local MISSING=''
+    for a in git ip ; do
+	if ! which $a ; then
+	    MISSING="$MISSING $a"
+	fi
+    done
+    if [[ -n "$MISSING" ]] ; then
+	echo "Some tools are missing, please make sure you have the 'git' and 'iproute2' packages installed"
+	exit 1
+    fi
+}
+
 sync() {
     local NODE=$1
     local BRANCH=$2
@@ -50,7 +64,7 @@ sync() {
     # each node, pushing our branch, and updating the checkout.
 
     if [[ "$NODE" != localhost ]] ; then
-	if ! ssh $NODE test -d ${GITTARGET}.git ; then
+	if ! ssh $DEPLOY_USER@$NODE test -d ${GITTARGET}.git ; then
 
 	    # Initialize the git repository (1st time case).  We're
 	    # actually going to make two repositories here because git
@@ -59,12 +73,12 @@ sync() {
 	    # and then clone a regular repository (with a checkout)
 	    # from that.
 
-	    ssh $NODE git init --bare ${GITTARGET}.git
+	    ssh $DEPLOY_USER@$NODE git init --bare ${GITTARGET}.git
 	    if ! git remote add $NODE $DEPLOY_USER@$NODE:${GITTARGET}.git ; then
-		git remote set-url $NODE $DEPLOY_USER@$NODE:${GITTARGET}.git
+			git remote set-url $NODE $DEPLOY_USER@$NODE:${GITTARGET}.git
 	    fi
 	    git push $NODE $BRANCH
-	    ssh $NODE git clone ${GITTARGET}.git ${GITTARGET}
+	    ssh $DEPLOY_USER@$NODE git clone ${GITTARGET}.git ${GITTARGET}
 	fi
 
 	# The update case.
@@ -74,7 +88,7 @@ sync() {
 	# from the bare repository.
 
 	git push $NODE $BRANCH
-	ssh $NODE "git -C ${GITTARGET} checkout ${BRANCH} && git -C ${GITTARGET} pull"
+	ssh $DEPLOY_USER@$NODE "git -C ${GITTARGET} checkout ${BRANCH} && git -C ${GITTARGET} pull"
     fi
 }
 
@@ -86,14 +100,21 @@ deploynode() {
     # the appropriate roles.
 
     if [[ -z "$ROLES" ]] ; then
-	echo "No roles declared for '$NODE' in ${CONFIG_FILE}"
-	exit 1
+	echo "No roles specified for $NODE, will deploy all roles"
+    else
+	ROLES="--roles ${ROLES}"
     fi
 
+    logfile=deploy-${NODE}-$(date -Iseconds).log
+
     if [[ "$NODE" = localhost ]] ; then
-	sudo ./provision.sh --config ${CONFIG_FILE} --roles ${ROLES}
+	SUDO=''
+	if [[ $(whoami) != 'root' ]] ; then
+	    SUDO=sudo
+	fi
+	$SUDO ./provision.sh --config ${CONFIG_FILE} ${ROLES} 2>&1 | tee $logfile
     else
-	ssh $DEPLOY_USER@$NODE "cd ${GITTARGET} && sudo ./provision.sh --config ${CONFIG_FILE} --roles ${ROLES}"
+	ssh $DEPLOY_USER@$NODE "cd ${GITTARGET} && sudo ./provision.sh --config ${CONFIG_FILE} ${ROLES}" 2>&1 | tee $logfile
     fi
 }
 
@@ -105,7 +126,10 @@ loadconfig() {
     GITTARGET=arvados-deploy-config-${CLUSTER}
 }
 
+set +u
 subcmd="$1"
+set -u
+
 if [[ -n "$subcmd" ]] ; then
     shift
 fi
@@ -116,10 +140,13 @@ case "$subcmd" in
 	    exit
 	fi
 
+	checktools
+
 	set +u
 	SETUPDIR=$1
 	PARAMS=$2
 	SLS=$3
+	TERRAFORM=$4
 	set -u
 
 	err=
@@ -151,16 +178,49 @@ case "$subcmd" in
 	cp local.params.example.$PARAMS $SETUPDIR/${CONFIG_FILE}
 	cp -r config_examples/$SLS $SETUPDIR/${CONFIG_DIR}
 
+	if [[ -n "$TERRAFORM" ]] ; then
+	    mkdir $SETUPDIR/terraform
+	    cp -r $TERRAFORM/* $SETUPDIR/terraform/
+	fi
+
 	cd $SETUPDIR
-	git add *.sh ${CONFIG_FILE} ${CONFIG_DIR} tests
+	echo '*.log' > .gitignore
+
+	git add *.sh ${CONFIG_FILE} ${CONFIG_DIR} tests .gitignore
 	git commit -m"initial commit"
 
-	echo "setup directory initialized, now go to $SETUPDIR, edit '${CONFIG_FILE}' and '${CONFIG_DIR}' as needed, then run 'installer.sh deploy'"
+	echo
+	echo "Setup directory $SETUPDIR initialized."
+	if [[ -n "$TERRAFORM" ]] ; then
+	    (cd $SETUPDIR/terraform/vpc && terraform init)
+	    (cd $SETUPDIR/terraform/data-storage && terraform init)
+	    (cd $SETUPDIR/terraform/services && terraform init)
+	    echo "Now go to $SETUPDIR, customize 'terraform/vpc/terraform.tfvars' as needed, then run 'installer.sh terraform'"
+	else
+	    echo "Now go to $SETUPDIR, customize '${CONFIG_FILE}' and '${CONFIG_DIR}' as needed, then run 'installer.sh deploy'"
+	fi
 	;;
+
+    terraform)
+	logfile=terraform-$(date -Iseconds).log
+	(cd terraform/vpc && terraform apply) 2>&1 | tee -a $logfile
+	(cd terraform/data-storage && terraform apply) 2>&1 | tee -a $logfile
+	(cd terraform/services && terraform apply) 2>&1 | grep -v letsencrypt_iam_secret_access_key | tee -a $logfile
+	(cd terraform/services && echo -n 'letsencrypt_iam_secret_access_key = ' && terraform output letsencrypt_iam_secret_access_key) 2>&1 | tee -a $logfile
+	;;
+
+    generate-tokens)
+	for i in BLOB_SIGNING_KEY MANAGEMENT_TOKEN SYSTEM_ROOT_TOKEN ANONYMOUS_USER_TOKEN WORKBENCH_SECRET_KEY DATABASE_PASSWORD; do
+	    echo ${i}=$(tr -dc A-Za-z0-9 </dev/urandom | head -c 32 ; echo '')
+	done
+	;;
+
     deploy)
 	set +u
 	NODE=$1
 	set -u
+
+	checktools
 
 	loadconfig
 
@@ -192,7 +252,7 @@ case "$subcmd" in
 	    do
 		# Do 'database' role first,
 		if [[ "${NODES[$NODE]}" =~ database ]] ; then
-		    deploynode $NODE ${NODES[$NODE]}
+		    deploynode $NODE "${NODES[$NODE]}"
 		    unset NODES[$NODE]
 		fi
 	    done
@@ -201,7 +261,7 @@ case "$subcmd" in
 	    do
 		# then  'api' or 'controller' roles
 		if [[ "${NODES[$NODE]}" =~ (api|controller) ]] ; then
-		    deploynode $NODE ${NODES[$NODE]}
+		    deploynode $NODE "${NODES[$NODE]}"
 		    unset NODES[$NODE]
 		fi
 	    done
@@ -210,18 +270,20 @@ case "$subcmd" in
 	    do
 		# Everything else (we removed the nodes that we
 		# already deployed from the list)
-		deploynode $NODE ${NODES[$NODE]}
+		deploynode $NODE "${NODES[$NODE]}"
 	    done
 	else
 	    # Just deploy the node that was supplied on the command line.
 	    sync $NODE $BRANCH
-	    deploynode $NODE
+	    deploynode $NODE ""
 	fi
 
+	set +x
 	echo
 	echo "Completed deploy, run 'installer.sh diagnostics' to verify the install"
 
 	;;
+
     diagnostics)
 	loadconfig
 
@@ -242,16 +304,19 @@ case "$subcmd" in
 	    exit 1
 	fi
 
-	export ARVADOS_API_HOST="${CLUSTER}.${DOMAIN}"
+	export ARVADOS_API_HOST="${CLUSTER}.${DOMAIN}:${CONTROLLER_EXT_SSL_PORT}"
 	export ARVADOS_API_TOKEN="$SYSTEM_ROOT_TOKEN"
 
 	arvados-client diagnostics $LOCATION
 	;;
+
     *)
 	echo "Arvados installer"
 	echo ""
-	echo "initialize   initialize the setup directory for configuration"
-	echo "deploy       deploy the configuration from the setup directory"
-	echo "diagnostics  check your install using diagnostics"
+	echo "initialize        initialize the setup directory for configuration"
+	echo "terraform         create cloud resources using terraform"
+	echo "generate-tokens   generate random values for tokens"
+	echo "deploy            deploy the configuration from the setup directory"
+	echo "diagnostics       check your install using diagnostics"
 	;;
 esac

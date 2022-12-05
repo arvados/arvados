@@ -4,24 +4,12 @@ Copyright (C) The Arvados Authors. All rights reserved.
 SPDX-License-Identifier: CC-BY-SA-3.0
 {% endcomment %}
 
-h2(#certificates). Choose the SSL configuration (SSL_MODE)
+h2(#certificates). Choose the SSL/TLS configuration (SSL_MODE)
 
-Arvados requires an SSL certificate to work correctly. This installer supports these options:
+Arvados requires a valid TLS certificate to work correctly. This installer supports these options:
 
-* @self-signed@: let the installer create self-signed certificates
-* @lets-encrypt@: automatically obtain and install an SSL certificates for your hostnames
-* @bring-your-own@: supply your own certificates in the `certs` directory
-
-h3(#self-signed). Using self-signed certificates
-
-To make the installer use self-signed certificates, change the configuration like this:
-
-<notextile>
-<pre><code>SSL_MODE="self-signed"
-</code></pre>
-</notextile>
-
-When connecting to the Arvados web interface for the first time, you will need to accept the self-signed certificates as trusted to bypass the browser warnings. This can be a little tricky to do. Alternatively, you can also install the self-signed root certificate in your browser, see <a href="#ca_root_certificate">below</a>.
+# @lets-encrypt@: "automatically obtain and install an SSL certificates for your hostnames":#lets-encrypt
+# @bring-your-own@: "supply your own certificates in the @certs@ directory":#bring-your-own
 
 h3(#lets-encrypt). Using a Let's Encrypt certificate
 

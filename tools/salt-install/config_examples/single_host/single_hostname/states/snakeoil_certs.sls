@@ -62,21 +62,21 @@ extra_snakeoil_certs_arvados_snakeoil_ca_cmd_run:
     - name: |
         # These dirs are not too CentOS-ish, but this is a helper script
         # and they should be enough
-        mkdir -p /etc/ssl/certs/ /etc/ssl/private/ && \
+        /bin/bash -c "mkdir -p /etc/ssl/certs/ /etc/ssl/private/ && \
         openssl req \
           -new \
           -nodes \
           -sha256 \
           -x509 \
-          -subj "/C=CC/ST=Some State/O=Arvados Formula/OU=arvados-formula/CN=snakeoil-ca-{{ arvados.cluster.name }}.{{ arvados.cluster.domain }}" \
+          -subj \"/C=CC/ST=Some State/O=Arvados Formula/OU=arvados-formula/CN=snakeoil-ca-{{ arvados.cluster.name }}.{{ arvados.cluster.domain }}\" \
           -extensions x509_ext \
           -config <(cat {{ openssl_conf }} \
-                  <(printf "\n[x509_ext]\nbasicConstraints=critical,CA:true,pathlen:0\nkeyUsage=critical,keyCertSign,cRLSign")) \
+                  <(printf \"\n[x509_ext]\nbasicConstraints=critical,CA:true,pathlen:0\nkeyUsage=critical,keyCertSign,cRLSign\")) \
           -out {{ arvados_ca_cert_file }} \
           -keyout {{ arvados_ca_key_file }} \
           -days 365 && \
         cp {{ arvados_ca_cert_file }} {{ arvados_ca_cert_dest }} && \
-        {{ update_ca_cert }}
+        {{ update_ca_cert }}"
     - unless:
       - test -f {{ arvados_ca_cert_file }}
       - openssl verify -CAfile {{ arvados_ca_cert_file }} {{ arvados_ca_cert_file }}

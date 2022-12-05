@@ -28,7 +28,7 @@ nginx:
             - listen:
               - __WEBSHELL_EXT_SSL_PORT__ http2 ssl
             - index: index.html index.htm
-            - location /__HOSTNAME_EXT__:
+            - location /shell.__HOSTNAME_EXT__:
               - proxy_pass: 'http://webshell_upstream'
               - proxy_read_timeout: 90
               - proxy_connect_timeout: 90

@@ -173,18 +173,22 @@ In such cases -- for example, a site which is not reachable from the internet, w
 
 h2(#confirm-working). Confirm working installation
 
-<notextile><code><pre>
-$ curl -H "Authorization: Bearer $system_root_token" https://<span class="userinput">download.ClusterID.example.com</span>/c=59389a8f9ee9d399be35462a0f92541c-53/_/hello.txt
-</code></pre></notextile>
+We recommend using the "Cluster diagnostics tool.":diagnostics.html
+
+Here are some other checks you can perform manually.
+
+<notextile>
+<pre><code>$ curl -H "Authorization: Bearer $system_root_token" https://<span class="userinput">download.ClusterID.example.com</span>/c=59389a8f9ee9d399be35462a0f92541c-53/_/hello.txt</code></pre>
+</notextile>
 
 If wildcard collections domains are configured:
 
-<notextile><code><pre>
-$ curl -H "Authorization: Bearer $system_root_token" https://<span class="userinput">59389a8f9ee9d399be35462a0f92541c-53.collections.ClusterID.example.com</span>/hello.txt
-</code></pre></notextile>
+<notextile>
+<pre><code>$ curl -H "Authorization: Bearer $system_root_token" https://<span class="userinput">59389a8f9ee9d399be35462a0f92541c-53.collections.ClusterID.example.com</span>/hello.txt</code></pre>
+</notextile>
 
 If using a single collections preview domain:
 
-<notextile><code><pre>
-$ curl https://<span class="userinput">collections.ClusterID.example.com</span>/c=59389a8f9ee9d399be35462a0f92541c-53/t=$system_root_token/_/hello.txt
-</code></pre></notextile>
+<notextile>
+<pre><code>$ curl https://<span class="userinput">collections.ClusterID.example.com</span>/c=59389a8f9ee9d399be35462a0f92541c-53/t=$system_root_token/_/hello.txt</code></pre>
+</notextile>

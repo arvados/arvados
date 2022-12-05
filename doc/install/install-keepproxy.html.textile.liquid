@@ -92,6 +92,10 @@ Note: if the Web uploader is failing to upload data and there are no logs from k
 
 h2(#confirm-working). Confirm working installation
 
+We recommend using the "Cluster diagnostics tool.":diagnostics.html  Because Keepproxy is specifically a gateway used by outside clients, for this test you should run the diagnostics from a client machine outside the Arvados private network, and provide the @-external-client@ parameter.
+
+Here are some other checks you can perform manually.
+
 Log into a host that is on a network external to your private Arvados network.  The host should be able to contact your keepproxy server (eg @keep.ClusterID.example.com@), but not your keepstore servers (eg keep[0-9].ClusterID.example.com).
 
 @ARVADOS_API_HOST@ and @ARVADOS_API_TOKEN@ must be set in the environment.

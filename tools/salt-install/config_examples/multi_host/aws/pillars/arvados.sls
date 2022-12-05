@@ -128,7 +128,7 @@ arvados:
         -----BEGIN OPENSSH PRIVATE KEY-----
         Read https://doc.arvados.org/install/crunch2-cloud/install-compute-node.html#sshkeypair
         for details on how to create this key.
-        FIXMEFIXMEFIXMEFI
+        FIXMEFIXMEFIXME replace this with your dispatcher ssh private key
         -----END OPENSSH PRIVATE KEY-----
 
     ### VOLUMES

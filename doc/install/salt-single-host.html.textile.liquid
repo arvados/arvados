@@ -10,176 +10,231 @@ SPDX-License-Identifier: CC-BY-SA-3.0
 {% endcomment %}
 
 # "Limitations of the single host install":#limitations
-# "Prerequisites":#prerequisites
+# "Prerequisites and planning":#prerequisites
 # "Download the installer":#download
-# "Copy the configuration files":#copy_config
+# "Edit local.params":#localparams
 # "Choose the SSL configuration":#certificates
 ## "Using a self-signed certificate":#self-signed
 ## "Using a Let's Encrypt certificate":#lets-encrypt
 ## "Bring your own certificate":#bring-your-own
-# "Further customization of the installation (modifying the salt pillars and states)":#further_customization
-# "Run the provision.sh script":#run_provision_script
+# "Configure your authentication provider":#authentication
+# "Further customization of the installation":#further_customization
+# "Begin installation":#installation
 # "Install the CA root certificate":#ca_root_certificate
+# "Confirm the cluster is working":#test-install
 # "Initial user and login":#initial_user
-# "Test the installed cluster running a simple workflow":#test_install
 # "After the installation":#post_install
 
 h2(#limitations). Limitations of the single host install
 
-<b>NOTE: The single host installation is a good choice for evaluating Arvados, but it is not recommended for production use.</b>
+*NOTE: The single host installation is a good choice for evaluating Arvados, but it is not recommended for production use.*
 
-Using the default configuration, this installation method has a number of limitations:
+Using the default configuration, the single host install has scaling limitations compared to a production multi-host install:
 
-* all services run on the same machine, and they will compete for resources. This includes any compute jobs.
-* it uses the local machine disk for Keep storage (under the @/tmp@ directory). There may not be a lot of space available.
-* it installs the @crunch-dispatch-local@ dispatcher, which has a limit of eight concurrent jobs. These jobs will be executed on the same machine that runs all the Arvados services and may well starve them of resources.
+* It uses the local disk for Keep storage (under the @/var/lib/arvados@ directory).
+* It uses the @crunch-dispatch-local@ dispatcher, which has a limit of eight concurrent jobs.
+* Because jobs and Arvados services all run on the same machine, they will compete for CPU/RAM resources.
 
-It is possible to start with the single host installation method and modify the Arvados configuration file later to address these limitations. E.g. switch to a "different storage volume setup":{{site.baseurl}}/install/configure-s3-object-storage.html for Keep, and switch to "the cloud dispatcher":{{site.baseurl}}/install/crunch2-cloud/install-dispatch-cloud.html to provision compute resources dynamically.
+h2(#prerequisites). Prerequisites and planning
 
-h2(#prerequisites). Prerequisites
+h3. Cluster ID and base domain
 
-* git
-* a dedicated (virtual) machine for your Arvados server with at least 2 cores and 8 GiB of RAM, running a "supported Arvados distribution":{{site.baseurl}}/install/install-manual-prerequisites.html#supportedlinux
-* a DNS hostname that resolves to the IP address of your Arvados server
-* ports 443, 8800-8805 need to be reachable from your client (configurable in @local.params@, see below)
-* port 80 needs to be reachable from everywhere on the internet (only when using "Let's Encrypt":#lets-encrypt)
-* an SSL certificate matching the hostname in use (only when using "bring your own certificate":#bring-your-own)
+Choose a 5-character cluster identifier that will represent the cluster.  Here are "guidelines on choosing a cluster identifier":../architecture/federation.html#cluster_id .  Only lowercase letters and digits 0-9 are allowed.  Examples will use @xarv1@ or @${CLUSTER}@, you should substitute the cluster id you have selected.
+
+Determine if you will use a single hostname, or multiple hostnames.
+
+* Single hostname is simpler to set up and can even be used without a hostname at all, just a bare IP address.
+* Multiple hostnames is more similar to the recommended production configuration may make it easier to migrate to a multi-host production configuration in the future, but is more complicated as it requires adding a number of DNS entries.
+
+If you are using multiple hostnames, determine the base domain for the cluster.  This will be referred to as @${DOMAIN}@.
+
+For example, if CLUSTER is @xarv1@ and DOMAIN is @example.com@, then @controller.${CLUSTER}.${DOMAIN}@" means @controller.xarv1.example.com@.
+
+h3. Machine specification
+
+You will need a dedicated (virtual) machine for your Arvados server with at least 2 cores and 8 GiB of RAM (4+ cores / 16+ GiB recommended if you are running workflows) running a supported Linux distribution:
+
+{% include 'supportedlinux' %}
+
+Note: if you want to try out Arvados inside a Docker container, use "Arvbox":arvbox.html.  The package-based install method uses @systemd@ to manage services; lightweight container images generally lack an init system and other tools that the installer requires.
+
+The single host install stores user data in a PostgreSQL database (usually found under @/var/lib/postgresql@) and as Keep blocks that are stored as files under @/var/lib/arvados/@.
+Arvados logs are also kept in @/var/log@ and @/var/www/arvados-api/shared/log@.  Accordingly, you should ensure that the disk partition containing @/var@ has adequate storage for your planned usage.  We suggest starting with at least 50GiB of free space.
+
+h3(#DNS). DNS hostnames for each service (multi-hostname only)
+
+If you are using a single hostname for all services (they will be distingushed by listening port), you can skip this section.
+
+If you are using the multi-hostname configuration, you will need a DNS entry for each service.  If you are using "bring-your-own" TLS certificates, your certificate will need to include all of these hostnames.
+
+In the default configuration these are:
+
+# @controller.${CLUSTER}.${DOMAIN}@
+# @ws.${CLUSTER}.${DOMAIN}@
+# @keep0.${CLUSTER}.${DOMAIN}@
+# @keep1.${CLUSTER}.${DOMAIN}@
+# @keep.${CLUSTER}.${DOMAIN}@
+# @download.${CLUSTER}.${DOMAIN}@
+# @*.collections.${CLUSTER}.${DOMAIN}@  -- important note, this must be a wildcard DNS, resolving to the @keepweb@ service
+# @workbench.${CLUSTER}.${DOMAIN}@
+# @workbench2.${CLUSTER}.${DOMAIN}@
+# @webshell.${CLUSTER}.${DOMAIN}@
+# @shell.${CLUSTER}.${DOMAIN}@
+
+This is described in more detail in "DNS entries and TLS certificates":install-manual-prerequisites.html#dnstls.
+
+h3. Additional prerequisites
+
+# root or passwordless @sudo@ access on the account where you are doing the install
+this usually means adding the account to the @sudo@ group and having a rule like this in @/etc/sudoers.d/arvados_passwordless@ that allows members of group @sudo@ to execute any command without entering a password.
+<pre>%sudo ALL=(ALL:ALL) NOPASSWD:ALL</pre>
+# @git@ installed on the machine
+# Port 443 reachable by clients
+# For the single-host install, ports 8800-8805 also need to be reachable from your client (configurable in @local.params@, see below)
+# When using "Let's Encrypt":#lets-encrypt port 80 needs to be reachable from everywhere on the internet
+# When using "bring your own certificate":#bring-your-own you need TLS certificate(s) covering the hostname(s) used by Arvados
 
 h2(#download). Download the installer
 
+{% assign local_params_src = 'single_host_single_hostname' %}
+{% assign config_examples_src = 'single_host/single_hostname' %}
 {% include 'download_installer' %}
 
-h2(#copy_config). Copy the configuration files
+If you are using multiple hostname configuration, substitute 'multiple_hostnames' where it says 'single_hostname' in the command above.
 
-<notextile>
-<pre><code>cp local.params.example.single_host_single_hostname local.params
-cp -r config_examples/single_host/single_hostname local_config_dir
+h2(#localparams). Edit @local.params@
+
+This can be found wherever you choose to initialize the install files (@~/setup-arvados-xarv1@ in these examples).
+
+# Set @CLUSTER@ to the 5-character cluster identifier (e.g "xarv1")
+# Set @DOMAIN@ to the base DNS domain of the environment, e.g. "example.com"
+# Single hostname only: set @IP_INT@ to the host's IP address.
+# Single hostname only: set @HOSTNAME_EXT@ to the hostname that users will use to connect.
+# Set @INITIAL_USER_EMAIL@ to your email address, as you will be the first admin user of the system.
+# Set each @KEY@ / @TOKEN@ to a random string
+	Here's an easy way to create five random tokens:
+<pre><code>for i in 1 2 3 4 5; do
+  tr -dc A-Za-z0-9 </dev/urandom | head -c 32 ; echo ''
+done
 </code></pre>
-</notextile>
-
-Edit the variables in the <i>local.params</i> file. Pay attention to the <notextile><b>*_PORT, *_TOKEN</b> and <b>*_KEY</b></notextile> variables. The *SSL_MODE* variable is discussed in the next section.
+# Set @DATABASE_PASSWORD@ to a random string
+   Important! If this contains any non-alphanumeric characters, in particular ampersand ('&'), it is necessary to add backslash quoting.
+   For example, if the password is @Lq&MZ<V']d?j@
+   With backslash quoting the special characters it should appear like this in local.params:
+<pre><code>DATABASE_PASSWORD="Lq\&MZ\<V\'\]d\?j"</code></pre>
 
 {% include 'ssl_config_single' %}
 
-h2(#further_customization). Further customization of the installation (modifying the salt pillars and states)
+h2(#authentication). Configure your authentication provider (optional, recommended)
 
-If you want or need further customization, you can edit the Saltstack pillars and states files. Pay particular attention to the <i>pillars/arvados.sls</i> one. Any extra <i>state</i> file you add under <i>local_config_dir/states</i> will be added to the salt run and applied to the host.
+By default, the installer will use the "Test" provider, which is a list of usernames and cleartext passwords stored in the Arvados config file.  *This is low security configuration and you are strongly advised to configure one of the other "supported authentication methods":setup-login.html* .
 
-h2(#run_provision_script). Run the provision.sh script
+h2(#further_customization). Further customization of the installation (optional)
 
-When you finished customizing the configuration, you are ready to copy the files to the target host where Arvados will be installed, and run the @provision.sh@ script there:
+If you want to customize the behavior of Arvados, this may require editing the Saltstack pillars and states files found in @local_config_dir@.  In particular, @local_config_dir/pillars/arvados.sls@ contains the template (in the @arvados.cluster@ section) used to produce the Arvados configuration file.  Consult the "Configuration reference":config.html for a comprehensive list of configuration keys.
 
-<notextile>
-<pre><code>scp -r provision.sh local* tests user@host:
-ssh user@host sudo ./provision.sh
-</code></pre>
-</notextile>
+Any extra Salt "state" files you add under @local_config_dir/states@ will be added to the Salt run and applied to the hosts.
 
-Wait for it to finish. The script will need 5 to 10 minutes to install and configure everything.
+h2(#installation). Begin installation
 
-If everything goes OK, you'll get final output that looks similar to this:
+At this point, you are ready to run the installer script in deploy mode that will conduct all of the Arvados installation.
 
-<notextile>
-<pre><code>arvados: Succeeded: 151 (changed=36)
-arvados: Failed:      0
-</code></pre>
-</notextile>
+Run this in the @~/arvados-setup-xarv1@ directory:
+
+<pre>
+./installer.sh deploy
+</pre>
+
+h2(#ca_root_certificate). Install the CA root certificate (SSL_MODE=self-signed only)
+
+*If you are not using self-signed certificates (you selected SSL_MODE=lets-encrypt or SSL_MODE=bring-your-own), skip this section.*
+
+Arvados uses SSL to encrypt communications. The web interface uses AJAX which will silently fail if the certificate is not valid or signed by an unknown Certification Authority.
+
+For this reason, the installer has the option to create its own a root certificate to authorize Arvados services. The installer script will leave a copy of the generated CA's certificate  (something like @xarv1.example.com-arvados-snakeoil-ca.crt@) in the script's directory so you can add it to your workstation.
+
+{% assign ca_cert_name = 'xarv1.example.com-arvados-snakeoil-ca.crt' %}
 
 {% include 'install_ca_cert' %}
 
+h2(#test-install). Confirm the cluster is working
+
+When everything has finished, you can run the diagnostics.  This requires the `arvados-client` package:
+
+<pre>
+apt-get install arvados-client
+</pre>
+
+Depending on where you are running the installer, you need to provide @-internal-client@ or @-external-client@.
+
+If you are running the diagnostics on the same machine where you installed Arvados, you want @-internal-client@ .
+
+You are an "external client" if you running the diagnostics from your workstation outside of the private network.
+
+<pre>
+./installer.sh diagnostics (-internal-client|-external-client)
+</pre>
+
+h3(#debugging). Debugging issues
+
+The installer records log files for each deployment.
+
+Most service logs go to @/var/log/syslog@.
+
+The logs for Rails API server and for Workbench can be found in
+
+@/var/www/arvados-api/current/log/production.log@
+and
+@/var/www/arvados-workbench/current/log/production.log@
+
+on the appropriate instances.
+
+Workbench 2 is a client-side Javascript application.  If you are having trouble loading Workbench 2, check the browser's developer console (this can be found in "Tools &rarr; Developer Tools").
+
+h3(#iterating). Iterating on config changes
+
+You can iterate on the config and maintain the cluster by making changes to @local.params@ and @local_config_dir@ and running @installer.sh deploy@ again.
+
+h3(#common-problems). Common problems and solutions
+
+h4. PG::UndefinedTable: ERROR:  relation \"api_clients\" does not exist
+
+The arvados-api-server package sets up the database as a post-install script.  If the database host or password wasn't set correctly (or quoted correctly) at the time that package is installed, it won't be able to set up the database.
+
+This will manifest as an error like this:
+
+<pre>
+#<ActiveRecord::StatementInvalid: PG::UndefinedTable: ERROR:  relation \"api_clients\" does not exist
+</pre>
+
+If this happens, you need to
+
+# correct the database information
+# run @./installer.sh deploy@ to update the configuration
+# Log in to the server, then run this command to re-run the post-install script, which will set up the database:
+<pre>dpkg-reconfigure arvados-api-server</pre>
+# Re-run @./installer.sh deploy@ again to synchronize everything, and so that the install steps that need to contact the API server are run successfully.
+
 h2(#initial_user). Initial user and login
 
-At this point you should be able to log on to your new Arvados cluster. The workbench URL will be
+At this point you should be able to log into the Arvados cluster. The initial URL for the single hostname install will use the hostname or IP address you put in @HOSTNAME_EXT@:
 
-* https://@HOSTNAME_EXT@
+https://${HOSTNAME_EXT}
 
-By default, the provision script creates an initial user for testing purposes. This user is configured as administrator of the newly created cluster. The username, password and e-mail address for the initial user are configured in the @local.params@ file. Log in with the e-mail address and password.
+For the multi-hostname install, it will be:
 
-h2(#test_install). Test the installed cluster running a simple workflow
+https://workbench.@${CLUSTER}.${DOMAIN}@
 
-The @provision.sh@ script saves a simple example test workflow in the @/tmp/cluster_tests@ directory in the node. If you want to run it, just ssh to the node, change to that directory and run:
+If you did *not* "configure a different authentication provider":#authentication you will be using the "Test" provider, and the provision script creates an initial user for testing purposes. This user is configured as administrator of the newly created cluster.  It uses the values of @INITIAL_USER@ and @INITIAL_USER_PASSWORD@ the @local.params@ file.
 
-<notextile>
-<pre><code>cd /tmp/cluster_tests
-sudo ./run-test.sh
-</code></pre>
-</notextile>
-
-It will create a test user (by default, the same one as the admin user), upload a small workflow and run it. If everything goes OK, the output should similar to this (some output was shortened for clarity):
-
-<notextile>
-<pre><code>Creating Arvados Standard Docker Images project
-Arvados project uuid is 'arva2-j7d0g-0prd8cjlk6kfl7y'
-{
- ...
- "uuid":"arva2-o0j2j-n4zu4cak5iifq2a",
- "owner_uuid":"arva2-tpzed-000000000000000",
- ...
-}
-Creating initial user ('admin')
-Setting up user ('admin')
-{
- "items":[
-  {
-   ...
-   "owner_uuid":"arva2-tpzed-000000000000000",
-   ...
-   "uuid":"arva2-o0j2j-1ownrdne0ok9iox"
-  },
-  {
-   ...
-   "owner_uuid":"arva2-tpzed-000000000000000",
-   ...
-   "uuid":"arva2-o0j2j-1zbeyhcwxc1tvb7"
-  },
-  {
-   ...
-   "email":"admin@arva2.arv.local",
-   ...
-   "owner_uuid":"arva2-tpzed-000000000000000",
-   ...
-   "username":"admin",
-   "uuid":"arva2-tpzed-3wrm93zmzpshrq2",
-   ...
-  }
- ],
- "kind":"arvados#HashList"
-}
-Activating user 'admin'
-{
- ...
- "email":"admin@arva2.arv.local",
- ...
- "username":"admin",
- "uuid":"arva2-tpzed-3wrm93zmzpshrq2",
- ...
-}
-Running test CWL workflow
-INFO /usr/bin/cwl-runner 2.1.1, arvados-python-client 2.1.1, cwltool 3.0.20200807132242
-INFO Resolved 'hasher-workflow.cwl' to 'file:///tmp/cluster_tests/hasher-workflow.cwl'
-...
-INFO Using cluster arva2 (https://arva2.arv.local:8443/)
-INFO Upload local files: "test.txt"
-INFO Uploaded to ea34d971b71d5536b4f6b7d6c69dc7f6+50 (arva2-4zz18-c8uvwqdry4r8jao)
-INFO Using collection cache size 256 MiB
-INFO [container hasher-workflow.cwl] submitted container_request arva2-xvhdp-v1bkywd58gyocwm
-INFO [container hasher-workflow.cwl] arva2-xvhdp-v1bkywd58gyocwm is Final
-INFO Overall process status is success
-INFO Final output collection d6c69a88147dde9d52a418d50ef788df+123
-{
-    "hasher_out": {
-        "basename": "hasher3.md5sum.txt",
-        "class": "File",
-        "location": "keep:d6c69a88147dde9d52a418d50ef788df+123/hasher3.md5sum.txt",
-        "size": 95
-    }
-}
-INFO Final process status is success
-</code></pre>
-</notextile>
+If you *did* configure a different authentication provider, the first user to log in will automatically be given Arvados admin privileges.
 
 h2(#post_install). After the installation
 
-Once the installation is complete, it is recommended to keep a copy of your local configuration files. Committing them to version control is a good idea.
+As part of the operation of @installer.sh@, it automatically creates a @git@ repository with your configuration templates.  You should retain this repository but be aware that it contains sensitive information (passwords and tokens used by the Arvados services).
 
-Re-running the Salt-based installer is not recommended for maintaining and upgrading Arvados, please see "Maintenance and upgrading":{{site.baseurl}}/admin/maintenance-and-upgrading.html for more information.
+As described in "Iterating on config changes":#iterating you may use @installer.sh deploy@ to re-run the Salt to deploy configuration changes and upgrades.  However, be aware that the configuration templates created for you by @installer.sh@ are a snapshot which are not automatically kept up to date.
+
+When deploying upgrades, consult the "Arvados upgrade notes":{{site.baseurl}}/admin/upgrading.html to see if changes need to be made to the configuration file template in @local_config_dir/pillars/arvados.sls@.  To specify the version to upgrade to, set the @VERSION@ parameter in @local.params@.
+
+See also "Maintenance and upgrading":{{site.baseurl}}/admin/maintenance-and-upgrading.html for more information.

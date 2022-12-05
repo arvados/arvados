@@ -123,7 +123,7 @@ arvados:
         Replication: 2
         Driver: Directory
         DriverParameters:
-          Root: /tmp
+          Root: /var/lib/arvados/keep
 
     Users:
       NewUsersAreActive: true

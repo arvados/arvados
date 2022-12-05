@@ -79,6 +79,10 @@ Add each keepstore server to the @Services.Keepstore@ section of @/etc/arvados/c
 
 h2(#confirm-working). Confirm working installation
 
+We recommend using the "Cluster diagnostics tool.":diagnostics.html
+
+Here are some other checks you can perform manually.
+
 Log into a host that is on your private Arvados network.  The host should be able to contact your your keepstore servers (eg keep[0-9].ClusterID.example.com).
 
 @ARVADOS_API_HOST@ and @ARVADOS_API_TOKEN@ must be set in the environment.
@@ -92,8 +96,7 @@ Install the "Command line SDK":{{site.baseurl}}/sdk/cli/install.html
 Check that the keepstore server is in the @keep_service@ "accessible" list:
 
 <notextile>
-<pre><code>
-$ <span class="userinput">arv keep_service accessible</span>
+<pre><code>$ <span class="userinput">arv keep_service accessible</span>
 [...]
 </code></pre>
 </notextile>
