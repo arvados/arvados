@@ -17,13 +17,19 @@ interface ColumnSelectorDataProps {
     className?: string;
 }
 
-type CssRules = "checkbox";
+type CssRules = "checkbox" | "listItem" | "listItemText";
 
 const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     checkbox: {
         width: 24,
         height: 24
     },
+    listItem: {
+        padding: 0
+    },
+    listItemText: {
+        paddingTop: '0.2rem'
+    }
 });
 
 export type ColumnSelectorProps = ColumnSelectorDataProps & WithStyles<CssRules>;
@@ -39,13 +45,15 @@ export const ColumnSelector = withStyles(styles)(
                             <ListItem
                                 button
                                 key={index}
+                                className={classes.listItem}
                                 onClick={() => onColumnToggle(column)}>
                                 <Checkbox
                                     disableRipple
                                     color="primary"
                                     checked={column.selected}
                                     className={classes.checkbox} />
-                                <ListItemText>
+                                <ListItemText 
+                                    className={classes.listItemText}>
                                     {column.name}
                                 </ListItemText>
                             </ListItem>

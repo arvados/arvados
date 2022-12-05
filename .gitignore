@@ -33,6 +33,7 @@ yarn-error.log*
 
 .idea
 .vscode
+/public/config.json
 
 # see https://yarnpkg.com/getting-started/qa#which-files-should-be-gitignored
 .pnp.*
