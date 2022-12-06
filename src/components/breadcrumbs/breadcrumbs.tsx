@@ -25,15 +25,9 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     item: {
         borderRadius: '16px',
         height: '32px',
-        backgroundColor: theme.customs.colors.grey300,
+        color: theme.customs.colors.grey700,
         '&.parentItem': {
-            backgroundColor: `${theme.customs.colors.grey300}99`,
-        },
-        '&:hover': {
-            backgroundColor: theme.customs.colors.grey400,
-        },
-        '&.parentItem:hover': {
-            backgroundColor: `${theme.customs.colors.grey400}99`,
+            color: `${theme.palette.primary.main}`,
         },
     },
     label: {
@@ -84,6 +78,7 @@ export const Breadcrumbs = withStyles(styles)(
                                 isLastItem ? null : 'parentItem',
                                 classes.item
                             )}
+                            color="inherit"
                             onClick={() => onClick(item)}
                             onContextMenu={event => onContextMenu(event, item)}>
                             <Icon className={classes.icon} />

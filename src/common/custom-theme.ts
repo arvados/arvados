@@ -29,15 +29,13 @@ interface Colors {
     red100: string;
     red900: string;
     blue500: string;
-    grey300: string;
-    grey400: string;
     grey500: string;
+    grey700: string;
     purple: string;
     orange: string;
 }
 
 const arvadosPurple = '#361336';
-const grey500 = grey["500"];
 const grey600 = grey["600"];
 const grey700 = grey["700"];
 const grey900 = grey["900"];
@@ -55,9 +53,8 @@ export const themeOptions: ArvadosThemeOptions = {
             red100: red["100"],
             red900: red['900'],
             blue500: blue['500'],
-            grey300: grey["300"],
-            grey400: grey["400"],
-            grey500: grey500,
+            grey500: grey["500"],
+            grey700: grey["700"],
             purple: arvadosPurple,
             orange: '#f0ad4e',
         }
