@@ -78,7 +78,7 @@ navbar:
       - sdk/index.html.textile.liquid
     - Python:
       - sdk/python/sdk-python.html.textile.liquid
-      - sdk/python/example.html.textile.liquid
+      - sdk/python/api-client.html.textile.liquid
       - sdk/python/python.html.textile.liquid
       - sdk/python/arvados-fuse.html.textile.liquid
       - sdk/python/arvados-cwl-runner.html.textile.liquid

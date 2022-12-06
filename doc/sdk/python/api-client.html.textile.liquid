@@ -1,0 +1,177 @@
+---
+layout: default
+navsection: sdk
+navmenu: Python
+title: Arvados API Client
+...
+{% comment %}
+Copyright (C) The Arvados Authors. All rights reserved.
+
+SPDX-License-Identifier: CC-BY-SA-3.0
+{% endcomment %}
+{% comment %}
+A note about scope for future authors: This page is meant to be a general guide to using the API client. It is intentionally limited to using the general resource methods as examples, because those are widely available and should be sufficient to give the reader a general understanding of how the API client works. In my opinion we should not cover resource-specific API methods here, and instead prefer to cover them in the cookbook or reference documentation, which have a more appropriate scope.  --Brett 2022-12-06
+{% endcomment %}
+
+The Arvados Python SDK provides a complete client interface to the "Arvados API":{{site.baseurl}}/api/index.html. You can use this client interface directly to send requests to your Arvados API server, and many of the higher-level interfaces in the Python SDK accept a client object in their constructor for their use. Any Arvados software you write in Python will likely use these client objects.
+
+This document explains how to instantiate the client object, and how its methods map to the full "Arvados API":{{site.baseurl}}/api/index.html. Refer to the API documentation for full details about all available resources and methods. The rest of the Python SDK documentation after this covers the higher-level interfaces it provides.
+
+h2. Initializing the API client
+
+In the simplest case, you can import the @arvados@ module and call its @api@ method with an API version number:
+
+{% codeblock as python %}
+import arvados
+arv_client = arvados.api('v1')
+{% endcodeblock %}
+
+This will connect to the Arvados API server using the @ARVADOS_API_HOST@, @ARVADOS_API_TOKEN@, and @ARVADOS_API_HOST_INSECURE@ settings from environment variables or @~/.config/arvados/settings.conf@. You can alternatively pass these settings as arguments:
+
+{% codeblock as python %}
+import arvados
+arv_client = arvados.api(
+    'v1',
+    host='api.arvados.example.com',
+    token='ExampleToken',
+    insecure=False,
+)
+{% endcodeblock %}
+
+Either way, you can now use the @arv_client@ object to send requests to the Arvados API server you specified, using the configured token. The client object queries the API server for its supported API version and methods, so this client object will always support the same API the server does, even when there is a version mismatch between it and the Python SDK.
+
+h2. Resources, methods, and requests
+
+The API client has a method that corresponds to each "type of resource supported by the Arvados API server":{{site.baseurl}}/api/ (listed in the documentation sidebar). You call these methods without any arguments. They return a resource object you use to call a method on that resource type.
+
+Each resource object has a method that corresponds to each API method supported by that resource type. You call these methods with the keyword arguments and values documented in the API reference. They return an API request object.
+
+Each API request object has an @execute()@ method. You may pass a @num_retries@ integer argument to retry the operation that many times, with exponential back-off, in case of temporary errors like network problems. If it ultimately succeeds, it returns the kind of object documented in the API reference for that method. Usually that's a dictionary with details about the object you requested. If there's a problem, it raises an exception.
+
+Putting it all together, basic API requests usually look like:
+
+{% codeblock as python %}
+arv_object = arv_client.resource_type().api_method(
+    argument=...,
+    other_argument=...,
+).execute(num_retries=3)
+{% endcodeblock %}
+
+The following sections detail how to call "common resource methods in the API":{{site.baseurl}}/api/methods.html with more concrete examples. Additional methods may be available on specific resource types.
+
+h2. get method
+
+To fetch a single Arvados object, call the @get@ method of the resource type. You must pass a @uuid@ argument string that identifies the object to fetch. The method returns a dictionary with the object's fields.
+
+{% codeblock as python %}
+# Get a workflow and output its Common Workflow Language definition
+workflow = api.workflows().get(uuid='zzzzz-7fd4e-12345abcde67890').execute()
+print(workflow['definition'])
+{% endcodeblock %}
+
+You can pass a @select@ argument that's a list of field names to return in the included object. Doing this avoids the overhead of de/serializing and transmitting data that you won't use. Skipping a large field over a series of requests can yield a noticeable performance improvement.
+
+{% codeblock as python %}
+# Get a workflow and output its name and description.
+# Don't load the workflow definition, which might be large and we're not going to use.
+workflow = api.workflows().get(
+    uuid='zzzzz-7fd4e-12345abcde67890',
+    select=['name', 'description'],
+).execute()
+print(f"## {workflow['name']} ##\n\n{workflow['description']}")
+
+# ERROR: This raises a KeyError because we didn't load this field in
+# the `select` argument.
+workflow['created_at']
+{% endcodeblock %}
+
+h2. list method
+
+To fetch multiple Arvados objects of the same type, call the @list@ method for that resource type. The list method takes a number of arguments. Refer to the "list method API reference":{{site.baseurl}}/api/methods.html#index for details about them. The method returns a dictionary also documented at the bottom of that section. The most interesting field is @'items'@, which is a list of dictionaries where each one corresponds to an Arvados object that matched your search. To work with a single page of results:
+
+{% codeblock as python %}
+# Output the exit codes of the 10 most recently run containers.
+container_list = arv_client.containers().list(
+    limit=10,
+    order=['finished_at desc'],
+).execute()
+for container in container_list['items']:
+    print(f"{container['uuid']}: {container['exit_code']}")
+{% endcodeblock %}
+
+If you need to retrieve all of the results for a query, you may need to call the @list@ method multiple times: the default @limit@ is 100 items, and the API server will never return more than 1000. The SDK function @arvados.util.keyset_list_all@ can help orchestrate this for you. Call it with the @list@ method you want to query (don't call it yourself!) and the same keyword arguments you would pass to that method. You can control ordering by passing an @order_key@ string that names the field to use, and an @ascending@ bool that indicates whether that key should be sorted in ascending or descending order. The function returns an iterator of dictionaries, where each dictionary corresponds to an Arvados object that matched your query.
+
+{% codeblock as python %}
+# Output all the portable data hashes in a project.
+project_data = set()
+for collection in arvados.util.keyset_list_all(
+    # Note we pass the `list` method without calling it
+    arv_client.collections().list,
+    # The UUID of the project we're searching
+    filters=[['owner_uuid', '=', 'zzzzz-j7d0g-12345abcde67890']],
+):
+    project_data.add(collection['portable_data_hash'])
+print('\n'.join(project_data))
+{% endcodeblock %}
+
+When you list many objects, the following can help improve performance:
+
+* Call the list method with @count='none'@ to avoid the overhead of counting all results with each request.
+* Call the list method with a @select@ argument to only request the data you need. This cuts out some overhead from de/serializing and transferring data you won't use.
+
+h2. create method
+
+To create a new Arvados object, call the @create@ method for that resource type. You must pass a @body@ dictionary with a single item. Its key is the resource type you're creating as a string, and its value is dictionary of data fields for that resource. The method returns a dictionary with the new object's fields.
+
+If the resource type has a @name@ field, you may pass an @ensure_unique_name@ boolean argument. If true, the method will automatically update the name of the new object to make it unique if necessary.
+
+{% codeblock as python %}
+# Create a new project and output its UUID.
+project = arv_client.groups().create(
+    body={
+        'group': {
+            'name': 'Python SDK Test Project',
+            'group_class': 'project',
+        },
+    },
+    ensure_unique_name=True,
+).execute()
+print(project['uuid'])
+{% endcodeblock %}
+
+h2. update method
+
+To modify an existing Arvados object, call the @update@ method for that resource type. You must pass a @uuid@ string argument that identifies the object to update, and a @body@ dictionary @body@ with a single item. Its key is the resource type you're creating as a string, and its value is dictionary of data fields to update on the resource. The method returns a dictionary with the updated object's fields.
+
+If the resource type has a @name@ field, you may pass an @ensure_unique_name@ boolean argument. If true, the method will automatically update the name of the new object to make it unique if necessary.
+
+{% codeblock as python %}
+# Update the name of a container request,
+# finalize it to submit it to Crunch for processing,
+# and output its priority.
+submitted_container_request = arv_client.container_requests().update(
+    uuid='zzzzz-xvhdp-12345abcde67890',
+    body={
+        'container_request': {
+            'name': 'Container Request Committed by Python SDK',
+            'state': 'Committed',
+        },
+    },
+    ensure_unique_name=True,
+).execute()
+print(submitted_container_request['priority'])
+{% endcodeblock %}
+
+h2. delete method
+
+To delete an existing Arvados object, call the @delete@ method for that resource type. You must pass a @uuid@ string argument that identifies the object to delete. The method returns a dictionary with the deleted object's fields.
+
+{% codeblock as python %}
+# Delete a collection and output its name
+deleted_collection = arv_client.collections().delete(
+    uuid='zzzzz-4zz18-12345abcde67890',
+).execute()
+print(deleted_collection['name'])
+{% endcodeblock %}
+
+For resource types that support being trashed, you can untrash the object by calling the resource type's @untrash@ method with a @uuid@ argument identifying the object to restore.
