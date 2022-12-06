@@ -9,6 +9,9 @@ Copyright (C) The Arvados Authors. All rights reserved.
 
 SPDX-License-Identifier: CC-BY-SA-3.0
 {% endcomment %}
+{% comment %}
+A note about scope for future authors: This page is meant to be a general guide to using the API client. It is intentionally limited to using the general resource methods as examples, because those are widely available and should be sufficient to give the reader a general understanding of how the API client works. In my opinion we should not cover resource-specific API methods here, and instead prefer to cover them in the cookbook or reference documentation, which have a more appropriate scope.  --Brett 2022-12-06
+{% endcomment %}
 
 The Arvados Python SDK provides a complete client interface to the "Arvados API":{{site.baseurl}}/api/index.html. You can use this client interface directly to send requests to your Arvados API server, and many of the higher-level interfaces in the Python SDK accept a client object in their constructor for their use. Any Arvados software you write in Python will likely use these client objects.
 
