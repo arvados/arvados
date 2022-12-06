@@ -291,11 +291,9 @@ class ArvadosContainer(JobBase):
                     }
 
         if use_disk_cache and "keep_cache_disk" not in runtime_constraints:
-            # Cache size wasn't explicitly set so calculate a default
-            # based on 2x RAM request or 1 GB per core, whichever is
-            # smaller.  This is to avoid requesting 100s of GB of disk
-            # cache when requesting a node with a huge amount of RAM.
-            runtime_constraints["keep_cache_disk"] = min(runtime_constraints["ram"] * 2, runtime_constraints["vcpus"] * (1024*1024*1024))
+            # Cache size wasn't explicitly set so set the default to
+            # 2 GB <= the size of the RAM request <= 32 GiB
+            runtime_constraints["keep_cache_disk"] = min(max(2*1024*1024*1024, runtime_constraints["ram"]), 32*1024*1024*1024)
 
         partition_req, _ = self.get_requirement("http://arvados.org/cwl#PartitionRequirement")
         if partition_req:
