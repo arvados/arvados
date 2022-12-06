@@ -365,3 +365,39 @@ $graph:
       jsonldPredicate:
         mapSubject: propertyName
         mapPredicate: propertyValue
+
+
+- name: KeepCacheType
+  type: enum
+  symbols:
+    - ram_cache
+    - disk_cache
+  doc:
+    - |
+        ram_cache: Keep blocks will be cached in RAM only.
+    - |
+        disk_cache: Keep blocks will be cached to disk and
+        memory-mapped.  The disk cache leverages the kernel's virtual
+        memory system so "hot" data will generally still be kept in
+        RAM.
+
+- name: KeepCacheTypeRequirement
+  type: record
+  extends: cwl:ProcessRequirement
+  inVocab: false
+  doc: |
+    Choose keep cache strategy.
+  fields:
+    - name: class
+      type: string
+      doc: "'arv:KeepCacheTypeRequirement'"
+      jsonldPredicate:
+        _id: "@type"
+        _type: "@vocab"
+    - name: keepCacheType
+      type: KeepCacheType?
+      doc: |
+        Whether Keep blocks loaded by arv-mount should be kept in RAM
+        only or written to disk and memory-mapped.  The disk cache
+        leverages the kernel's virtual memory system so "hot" data will
+        generally still be kept in RAM.

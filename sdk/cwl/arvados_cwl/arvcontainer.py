@@ -264,10 +264,15 @@ class ArvadosContainer(JobBase):
         if api_req:
             runtime_constraints["API"] = True
 
+        use_disk_cache = (self.arvrunner.api.config()["Containers"].get("DefaultKeepCacheDisk", 0) > 0)
+
         runtime_req, _ = self.get_requirement("http://arvados.org/cwl#RuntimeConstraints")
         if runtime_req:
+            if "keepCacheType" in runtime_req:
+                if cache_type == "ram_cache":
+                    use_disk_cache = False
             if "keep_cache" in runtime_req:
-                if self.arvrunner.api.config()["Containers"].get("DefaultKeepCacheDisk", 0) > 0:
+                if use_disk_cache:
                     # If DefaultKeepCacheDisk is non-zero it means we should use disk cache.
                     runtime_constraints["keep_cache_disk"] = math.ceil(runtime_req["keep_cache"] * 2**20)
                 else:
@@ -281,6 +286,13 @@ class ArvadosContainer(JobBase):
                         "kind": "collection",
                         "writable": True
                     }
+
+        if use_disk_cache and "keep_cache_disk" not in runtime_constraints:
+            # Cache size wasn't explicitly set so calculate a default
+            # based on 2x RAM request or 1 GB per core, whichever is
+            # smaller.  This is to avoid requesting 100s of GB of disk
+            # cache when requesting a node with a huge amount of RAM.
+            runtime_constraints["keep_cache_disk"] = min(runtime_constraints["ram"] * 2, runtime_constraints["vcpus"] * (1024*1024*1024))
 
         partition_req, _ = self.get_requirement("http://arvados.org/cwl#PartitionRequirement")
         if partition_req:
