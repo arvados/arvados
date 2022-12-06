@@ -99,7 +99,7 @@ for container in container_list['items']:
     print(f"{container['uuid']}: {container['exit_code']}")
 {% endcodeblock %}
 
-If you need to retrieve all of the results for a list, you need to call the list method multiple times with the same search criteria and increasing @offset@ arguments until no more items are returned. The SDK function @arvados.util.keyset_list_all@ can orchestrate this for you. Call it with the @list@ method you want to query (don't call it yourself!) and the same keyword arguments you would pass to that method. You can control ordering by passing an @order_key@ string that names the field to use, and an @ascending@ bool that indicates whether that key should be sorted in ascending or descending order.
+If you need to retrieve all of the results for a query, you may need to call the @list@ method multiple times: the default @limit@ is 100 items, and the API server will never return more than 1000. The SDK function @arvados.util.keyset_list_all@ can help orchestrate this for you. Call it with the @list@ method you want to query (don't call it yourself!) and the same keyword arguments you would pass to that method. You can control ordering by passing an @order_key@ string that names the field to use, and an @ascending@ bool that indicates whether that key should be sorted in ascending or descending order. The function returns an iterator of dictionaries, where each dictionary corresponds to an Arvados object that matched your query.
 
 {% codeblock as python %}
 # Output all the portable data hashes in a project.
