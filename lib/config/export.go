@@ -237,6 +237,7 @@ var whitelist = map[string]bool{
 	"Users.AutoSetupNewUsersWithRepository":               false,
 	"Users.AutoSetupNewUsersWithVmUUID":                   false,
 	"Users.AutoSetupUsernameBlacklist":                    false,
+	"Users.CanCreateRoleGroups":                           true,
 	"Users.EmailSubjectPrefix":                            false,
 	"Users.NewInactiveUserNotificationRecipients":         false,
 	"Users.NewUserNotificationRecipients":                 false,
