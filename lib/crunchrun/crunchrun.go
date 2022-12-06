@@ -435,7 +435,7 @@ func (runner *ContainerRunner) SetupMounts() (map[string]bindmount, error) {
 		}
 		arvMountCmd = append(arvMountCmd, "--disk-cache", "--disk-cache-dir", keepcachedir, "--file-cache", fmt.Sprintf("%d", runner.Container.RuntimeConstraints.KeepCacheDisk))
 	} else if runner.Container.RuntimeConstraints.KeepCacheRAM > 0 {
-		arvMountCmd = append(arvMountCmd, "--file-cache", fmt.Sprintf("%d", runner.Container.RuntimeConstraints.KeepCacheRAM))
+		arvMountCmd = append(arvMountCmd, "--ram-cache", "--file-cache", fmt.Sprintf("%d", runner.Container.RuntimeConstraints.KeepCacheRAM))
 	}
 
 	collectionPaths := []string{}
