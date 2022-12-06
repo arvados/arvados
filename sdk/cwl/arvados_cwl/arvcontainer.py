@@ -266,11 +266,14 @@ class ArvadosContainer(JobBase):
 
         use_disk_cache = (self.arvrunner.api.config()["Containers"].get("DefaultKeepCacheDisk", 0) > 0)
 
+        keep_cache_type_req, _ = self.get_requirement("http://arvados.org/cwl#KeepCacheTypeRequirement")
+        if keep_cache_type_req:
+            if "keepCacheType" in keep_cache_type_req:
+                if keep_cache_type_req["keepCacheType"] == "ram_cache":
+                    use_disk_cache = False
+
         runtime_req, _ = self.get_requirement("http://arvados.org/cwl#RuntimeConstraints")
         if runtime_req:
-            if "keepCacheType" in runtime_req:
-                if cache_type == "ram_cache":
-                    use_disk_cache = False
             if "keep_cache" in runtime_req:
                 if use_disk_cache:
                     # If DefaultKeepCacheDisk is non-zero it means we should use disk cache.
