@@ -813,6 +813,7 @@ class ArvadosPutTest(run_test_server.TestCaseWithServers,
 
     def test_put_block_replication(self):
         self.call_main_on_test_file()
+        arv_put.api_client = None
         with mock.patch('arvados.collection.KeepClient.local_store_put') as put_mock:
             put_mock.return_value = 'acbd18db4cc2f85cedef654fccc4a4d8+3'
             self.call_main_on_test_file(['--replication', '1'])
