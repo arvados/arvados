@@ -15,13 +15,22 @@ import os
 import socket
 import string
 import unittest
+import urllib.parse as urlparse
 
 import mock
 from . import run_test_server
 
 from apiclient import errors as apiclient_errors
 from apiclient import http as apiclient_http
-from arvados.api import OrderedJsonModel, RETRY_DELAY_INITIAL, RETRY_DELAY_BACKOFF, RETRY_COUNT
+from arvados.api import (
+    api_client,
+    normalize_api_kwargs,
+    api_kwargs_from_config,
+    OrderedJsonModel,
+    RETRY_DELAY_INITIAL,
+    RETRY_DELAY_BACKOFF,
+    RETRY_COUNT,
+)
 from .arvados_testutil import fake_httplib2_response, queue_with
 
 if not mimetypes.inited:
@@ -35,6 +44,23 @@ class ArvadosApiTest(run_test_server.TestCaseWithServers):
         return (fake_httplib2_response(code, **self.ERROR_HEADERS),
                 json.dumps({'errors': errors,
                             'error_token': '1234567890+12345678'}).encode())
+
+    def _config_from_environ(self):
+        return {
+            key: value
+            for key, value in os.environ.items()
+            if key.startswith('ARVADOS_API_')
+        }
+
+    def _discoveryServiceUrl(
+            self,
+            host=None,
+            path='/discovery/v1/apis/{api}/{apiVersion}/rest',
+            scheme='https',
+    ):
+        if host is None:
+            host = os.environ['ARVADOS_API_HOST']
+        return urlparse.urlunsplit((scheme, host, path, None, None))
 
     def test_new_api_objects_with_cache(self):
         clients = [arvados.api('v1', cache=True) for index in [0, 1]]
@@ -159,6 +185,160 @@ class ArvadosApiTest(run_test_server.TestCaseWithServers):
                                 f"client missing localapi method")
                 self.assertTrue(hasattr(api_client, 'keep'),
                                 f"client missing keep attribute")
+
+    def test_api_host_constructor(self):
+        cache = True
+        insecure = True
+        client = arvados.api(
+            'v1',
+            cache,
+            os.environ['ARVADOS_API_HOST'],
+            os.environ['ARVADOS_API_TOKEN'],
+            insecure,
+        )
+        self.assertEqual(client.api_token, os.environ['ARVADOS_API_TOKEN'],
+                         "client constructed with incorrect token")
+
+    def test_api_url_constructor(self):
+        client = arvados.api(
+            'v1',
+            discoveryServiceUrl=self._discoveryServiceUrl(),
+            token=os.environ['ARVADOS_API_TOKEN'],
+            insecure=True,
+        )
+        self.assertEqual(client.api_token, os.environ['ARVADOS_API_TOKEN'],
+                         "client constructed with incorrect token")
+
+    def test_api_bad_args(self):
+        all_kwargs = {
+            'host': os.environ['ARVADOS_API_HOST'],
+            'token': os.environ['ARVADOS_API_TOKEN'],
+            'discoveryServiceUrl': self._discoveryServiceUrl(),
+        }
+        for use_keys in [
+                # Passing only a single key is missing required info
+                *([key] for key in all_kwargs.keys()),
+                # Passing all keys is a conflict
+                list(all_kwargs.keys()),
+        ]:
+            kwargs = {key: all_kwargs[key] for key in use_keys}
+            kwargs_list = ', '.join(use_keys)
+            with self.subTest(f"calling arvados.api with {kwargs_list} fails"), \
+                 self.assertRaises(ValueError):
+                arvados.api('v1', insecure=True, **kwargs)
+
+    def test_api_bad_url(self):
+        for bad_kwargs in [
+                {'discoveryServiceUrl': self._discoveryServiceUrl() + '/BadTestURL'},
+                {'version': 'BadTestVersion', 'host': os.environ['ARVADOS_API_HOST']},
+        ]:
+            bad_key = next(iter(bad_kwargs))
+            with self.subTest(f"api fails with bad {bad_key}"), \
+                 self.assertRaises(apiclient_errors.UnknownApiNameOrVersion):
+                arvados.api(**bad_kwargs, token='test_api_bad_url', insecure=True)
+
+    def test_normalize_api_good_args(self):
+        for version, discoveryServiceUrl, host in [
+                ('Test1', None, os.environ['ARVADOS_API_HOST']),
+                (None, self._discoveryServiceUrl(), None)
+        ]:
+            argname = 'discoveryServiceUrl' if host is None else 'host'
+            with self.subTest(f"normalize_api_kwargs with {argname}"):
+                actual = normalize_api_kwargs(
+                    version,
+                    discoveryServiceUrl,
+                    host,
+                    os.environ['ARVADOS_API_TOKEN'],
+                    insecure=True,
+                )
+                self.assertEqual(actual['discoveryServiceUrl'], self._discoveryServiceUrl())
+                self.assertEqual(actual['token'], os.environ['ARVADOS_API_TOKEN'])
+                self.assertEqual(actual['version'], version or 'v1')
+                self.assertTrue(actual['insecure'])
+                self.assertNotIn('host', actual)
+
+    def test_normalize_api_bad_args(self):
+        all_args = (
+            self._discoveryServiceUrl(),
+            os.environ['ARVADOS_API_HOST'],
+            os.environ['ARVADOS_API_TOKEN'],
+        )
+        for arg_index, arg_value in enumerate(all_args):
+            args = [None] * len(all_args)
+            args[arg_index] = arg_value
+            with self.subTest(f"normalize_api_kwargs with only arg #{arg_index + 1}"), \
+                 self.assertRaises(ValueError):
+                normalize_api_kwargs('v1', *args)
+        with self.subTest("normalize_api_kwargs with discoveryServiceUrl and host"), \
+             self.assertRaises(ValueError):
+            normalize_api_kwargs('v1', *all_args)
+
+    def test_api_from_config_default(self):
+        client = arvados.api_from_config('v1')
+        self.assertEqual(client.api_token, os.environ['ARVADOS_API_TOKEN'],
+                         "client constructed with incorrect token")
+
+    def test_api_from_config_explicit(self):
+        config = self._config_from_environ()
+        client = arvados.api_from_config('v1', config)
+        self.assertEqual(client.api_token, os.environ['ARVADOS_API_TOKEN'],
+                         "client constructed with incorrect token")
+
+    def test_api_from_bad_config(self):
+        base_config = self._config_from_environ()
+        for del_key in ['ARVADOS_API_HOST', 'ARVADOS_API_TOKEN']:
+            with self.subTest(f"api_from_config without {del_key} fails"), \
+                 self.assertRaises(ValueError):
+                config = dict(base_config)
+                del config[del_key]
+                arvados.api_from_config('v1', config)
+
+    def test_api_kwargs_from_good_config(self):
+        for config in [None, self._config_from_environ()]:
+            conf_type = 'default' if config is None else 'passed'
+            with self.subTest(f"api_kwargs_from_config with {conf_type} config"):
+                version = 'Test1' if config else None
+                actual = api_kwargs_from_config(version, config)
+                self.assertEqual(actual['discoveryServiceUrl'], self._discoveryServiceUrl())
+                self.assertEqual(actual['token'], os.environ['ARVADOS_API_TOKEN'])
+                self.assertEqual(actual['version'], version or 'v1')
+                self.assertTrue(actual['insecure'])
+                self.assertNotIn('host', actual)
+
+    def test_api_kwargs_from_bad_config(self):
+        base_config = self._config_from_environ()
+        for del_key in ['ARVADOS_API_HOST', 'ARVADOS_API_TOKEN']:
+            with self.subTest(f"api_kwargs_from_config without {del_key} fails"), \
+                 self.assertRaises(ValueError):
+                config = dict(base_config)
+                del config[del_key]
+                api_kwargs_from_config('v1', config)
+
+    def test_api_client_constructor(self):
+        client = api_client(
+            'v1',
+            self._discoveryServiceUrl(),
+            os.environ['ARVADOS_API_TOKEN'],
+            insecure=True,
+        )
+        self.assertEqual(client.api_token, os.environ['ARVADOS_API_TOKEN'],
+                         "client constructed with incorrect token")
+        self.assertFalse(
+            hasattr(client, 'localapi'),
+            "client has localapi method when it should not be thread-safe",
+        )
+
+    def test_api_client_bad_url(self):
+        all_args = ('v1', self._discoveryServiceUrl(), 'test_api_client_bad_url')
+        for arg_index, arg_value in [
+                (0, 'BadTestVersion'),
+                (1, all_args[1] + '/BadTestURL'),
+        ]:
+            with self.subTest(f"api_client fails with {arg_index}={arg_value!r}"), \
+                 self.assertRaises(apiclient_errors.UnknownApiNameOrVersion):
+                args = list(all_args)
+                args[arg_index] = arg_value
+                api_client(*args, insecure=True)
 
 
 class RetryREST(unittest.TestCase):
