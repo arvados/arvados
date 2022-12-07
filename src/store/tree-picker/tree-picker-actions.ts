@@ -115,33 +115,59 @@ export const loadProject = (params: LoadProjectParams) =>
             (fb: FilterBuilder) => includeCollections
                 ? fb.addIsA('uuid', [ResourceKind.PROJECT, ResourceKind.COLLECTION])
                 : fb.addIsA('uuid', [ResourceKind.PROJECT]),
+            fb => fb.addNotIn("collections.properties.type", ["intermediate", "log"]),
             fb => fb.getFilters(),
         )(new FilterBuilder());
 
-        const { items } = await services.groupsService.contents(loadShared ? '' : id, { filters, excludeHomeProject: loadShared || undefined });
+        const { items, itemsAvailable } = await services.groupsService.contents(loadShared ? '' : id, { filters, excludeHomeProject: loadShared || undefined, limit: 1000 });
+
+        if (itemsAvailable > 1000) {
+            items.push({
+                uuid: "more-items-available",
+                kind: ResourceKind.WORKFLOW,
+                name: "*** Not all items were loaded (limit 1000 items) ***",
+                description: "",
+                definition: "",
+                ownerUuid: "",
+                createdAt: "",
+                modifiedByClientUuid: "",
+                modifiedByUserUuid: "",
+                modifiedAt: "",
+                href: "",
+                etag: ""
+            });
+        }
+
         dispatch<any>(receiveTreePickerData<GroupContentsResource>({
             id,
             pickerId,
             data: items.filter((item) => {
-                    if (!includeFilterGroups && (item as GroupResource).groupClass && (item as GroupResource).groupClass === GroupClass.FILTER) {
-                        return false;
-                    }
+                if (!includeFilterGroups && (item as GroupResource).groupClass && (item as GroupResource).groupClass === GroupClass.FILTER) {
+                    return false;
+                }
 
-                    if (options && options.showOnlyWritable && item.hasOwnProperty('frozenByUuid') && (item as ProjectResource).frozenByUuid) {
-                        return false;
-                    }
+                if (options && options.showOnlyWritable && item.hasOwnProperty('frozenByUuid') && (item as ProjectResource).frozenByUuid) {
+                    return false;
+                }
 
-                    return true;
-                }),
-            extractNodeData: item => ({
-                id: item.uuid,
-                value: item,
-                status: item.kind === ResourceKind.PROJECT
-                    ? TreeNodeStatus.INITIAL
-                    : includeFiles
-                        ? TreeNodeStatus.INITIAL
-                        : TreeNodeStatus.LOADED
+                return true;
             }),
+            extractNodeData: item => (
+                item.uuid === "more-items-available" ?
+                    {
+                        id: item.uuid,
+                        value: item,
+                        status: TreeNodeStatus.LOADED
+                    }
+                    : {
+                        id: item.uuid,
+                        value: item,
+                        status: item.kind === ResourceKind.PROJECT
+                            ? TreeNodeStatus.INITIAL
+                            : includeFiles
+                                ? TreeNodeStatus.INITIAL
+                                : TreeNodeStatus.LOADED
+                    }),
         }));
     };
 
@@ -188,7 +214,7 @@ export const initUserProject = (pickerId: string) =>
             }));
         }
     };
-export const loadUserProject = (pickerId: string, includeCollections = false, includeFiles = false, options?: { showOnlyOwned: boolean, showOnlyWritable: boolean } ) =>
+export const loadUserProject = (pickerId: string, includeCollections = false, includeFiles = false, options?: { showOnlyOwned: boolean, showOnlyWritable: boolean }) =>
     async (dispatch: Dispatch<any>, getState: () => RootState, services: ServiceRepository) => {
         const uuid = getUserUuid(getState());
         if (uuid) {
