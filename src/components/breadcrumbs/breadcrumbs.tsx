@@ -19,7 +19,7 @@ export interface Breadcrumb {
     uuid: string;
 }
 
-type CssRules = "item" | "label" | "buttonLabel" | "icon" | "frozenIcon";
+type CssRules = "item" | "chevron" | "label" | "buttonLabel" | "icon" | "frozenIcon";
 
 const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     item: {
@@ -30,6 +30,9 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
         '&.parentItem': {
             color: `${theme.palette.primary.main}`,
         },
+    },
+    chevron: {
+        color: grey["600"],
     },
     label: {
         textTransform: "none",
@@ -101,7 +104,7 @@ export const Breadcrumbs = withStyles(styles)(
                             }
                         </Button>
                     </Tooltip>
-                    {!isLastItem && <ChevronRightIcon color="inherit" className={'parentItem'} />}
+                    {!isLastItem && <ChevronRightIcon color="inherit" className={classNames('parentItem', classes.chevron)} />}
                 </React.Fragment>
             );
         })
