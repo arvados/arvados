@@ -141,7 +141,7 @@ print(project['uuid'])
 
 h2. update method
 
-To modify an existing Arvados object, call the @update@ method for that resource type. You must pass a @uuid@ string argument that identifies the object to update, and a @body@ dictionary @body@ with a single item. Its key is the resource type you're creating as a string, and its value is dictionary of data fields to update on the resource. The method returns a dictionary with the updated object's fields.
+To modify an existing Arvados object, call the @update@ method for that resource type. You must pass a @uuid@ string argument that identifies the object to update, and a @body@ dictionary with a single item. Its key is the resource type you're creating as a string, and its value is dictionary of data fields to update on the resource. The method returns a dictionary with the updated object's fields.
 
 If the resource type has a @name@ field, you may pass an @ensure_unique_name@ boolean argument. If true, the method will automatically update the name of the new object to make it unique if necessary.
 
