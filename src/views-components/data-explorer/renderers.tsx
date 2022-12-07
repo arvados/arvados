@@ -811,11 +811,6 @@ export const ResourceVersion = connect(
         return { version: resource ? resource.version: '' };
     })((props: { version: number }) => renderVersion(props.version));
 
-const renderDescription = (description: string)=>{
-    const truncatedDescription = description ? description.slice(0, 18) + '...' : '-'
-    return <Typography title={description}>{truncatedDescription}</Typography>;
-}
-
 const renderFileCount = (fileCount: number) =>{
     return <Typography>{fileCount ?? '-'}</Typography>
 }
@@ -825,12 +820,6 @@ export const ResourceFileCount = connect(
         const resource = getResource<CollectionResource>(props.uuid)(state.resources);
         return { fileCount: resource ? resource.fileCount: '' };
     })((props: { fileCount: number }) => renderFileCount(props.fileCount));
-
-export const ResourceDescription = connect(
-    (state: RootState, props: { uuid: string }) => {
-        const resource = getResource<GroupContentsResource>(props.uuid)(state.resources);
-        return { description: resource ? resource.description : '' };
-    })((props: { description: string }) => renderDescription(props.description));
 
 const userFromID =
     connect(

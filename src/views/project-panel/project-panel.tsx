@@ -21,7 +21,6 @@ import {
     ResourceType,
     ResourceOwnerWithName,
     ResourceVersion,
-    ResourceDescription,
     ResourceFileSize,
     ResourceFileCount,
     ResourceUUID,
@@ -77,7 +76,6 @@ export enum ProjectPanelColumnNames {
     TYPE = "Type",
     OWNER = "Owner",
     VERSION = "Version",
-    DESCRIPTION = "Description",
     FILE_SIZE = "File size",
     FILE_COUNT = "File count",
     UUID = "UUID",
@@ -134,13 +132,6 @@ export const projectPanelColumns: DataColumns<string> = [
         configurable: true,
         filters: createTree(),
         render: uuid =><ResourceVersion uuid={uuid}/>
-    },
-    {
-        name: ProjectPanelColumnNames.DESCRIPTION,
-        selected: false,
-        configurable: true,
-        filters: createTree(),
-        render: uuid =><ResourceDescription uuid={uuid}/>
     },
     {
         name: ProjectPanelColumnNames.FILE_SIZE,
