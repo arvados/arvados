@@ -19,12 +19,13 @@ export interface Breadcrumb {
     uuid: string;
 }
 
-type CssRules = "item" | "label" | "icon" | "frozenIcon";
+type CssRules = "item" | "label" | "buttonLabel" | "icon" | "frozenIcon";
 
 const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     item: {
         borderRadius: '16px',
         height: '32px',
+        minWidth: '36px',
         color: theme.customs.colors.grey700,
         '&.parentItem': {
             color: `${theme.palette.primary.main}`,
@@ -35,6 +36,10 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
         paddingRight: '3px',
         paddingLeft: '3px',
         lineHeight: '1.4',
+    },
+    buttonLabel: {
+        overflow: 'hidden',
+        justifyContent: 'flex-start',
     },
     icon: {
         fontSize: 20,
@@ -57,7 +62,7 @@ export interface BreadcrumbsProps {
 
 export const Breadcrumbs = withStyles(styles)(
     ({ classes, onClick, onContextMenu, items, resources }: BreadcrumbsProps & WithStyles<CssRules>) =>
-    <Grid container data-cy='breadcrumbs' alignItems="center">
+    <Grid container data-cy='breadcrumbs' alignItems="center" wrap="nowrap">
     {
         items.map((item, index) => {
             const isLastItem = index === items.length - 1;
@@ -78,6 +83,9 @@ export const Breadcrumbs = withStyles(styles)(
                                 isLastItem ? null : 'parentItem',
                                 classes.item
                             )}
+                            classes={{
+                                label: classes.buttonLabel
+                            }}
                             color="inherit"
                             onClick={() => onClick(item)}
                             onContextMenu={event => onContextMenu(event, item)}>
