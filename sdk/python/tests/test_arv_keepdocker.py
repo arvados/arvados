@@ -135,11 +135,18 @@ class ArvKeepdockerTestCase(unittest.TestCase, tutil.VersionChecker):
             self.run_arv_keepdocker(['repo:tag'], sys.stderr)
         find_image_mock.assert_called_with('repo', 'tag')
 
+    def test_image_given_as_registry_repo_colon_tag(self):
         with self.assertRaises(StopTest), \
              mock.patch('arvados.commands.keepdocker.find_one_image_hash',
                         side_effect=StopTest) as find_image_mock:
             self.run_arv_keepdocker(['myreg.example:8888/repo/img:tag'], sys.stderr)
         find_image_mock.assert_called_with('myreg.example:8888/repo/img', 'tag')
+
+        with self.assertRaises(StopTest), \
+             mock.patch('arvados.commands.keepdocker.find_one_image_hash',
+                        side_effect=StopTest) as find_image_mock:
+            self.run_arv_keepdocker(['registry.hub.docker.com:443/library/debian:bullseye-slim'], sys.stderr)
+        find_image_mock.assert_called_with('registry.hub.docker.com/library/debian', 'bullseye-slim')
 
     def test_image_has_colons(self):
         with self.assertRaises(StopTest), \
@@ -153,6 +160,12 @@ class ArvKeepdockerTestCase(unittest.TestCase, tutil.VersionChecker):
                         side_effect=StopTest) as find_image_mock:
             self.run_arv_keepdocker(['[::1]/repo/img'], sys.stderr)
         find_image_mock.assert_called_with('[::1]/repo/img', 'latest')
+
+        with self.assertRaises(StopTest), \
+             mock.patch('arvados.commands.keepdocker.find_one_image_hash',
+                        side_effect=StopTest) as find_image_mock:
+            self.run_arv_keepdocker(['[::1]:8888/repo/img:tag'], sys.stderr)
+        find_image_mock.assert_called_with('[::1]:8888/repo/img', 'tag')
 
     @mock.patch('arvados.commands.keepdocker.list_images_in_arv',
                 return_value=[])

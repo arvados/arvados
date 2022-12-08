@@ -326,7 +326,7 @@ def list_images_in_arv(api_client, num_retries, image_name=None, image_tag=None,
             dockerhash = hash_link_map[collection_uuid]['name']
         except KeyError:
             dockerhash = '<unknown>'
-        name_parts = link['name'].split(':', 1)
+        name_parts = link['name'].rsplit(':', 1)
         images.append(_new_image_listing(link, dockerhash, *name_parts))
 
     # Find any image hash links that did not have a corresponding name link,
@@ -385,6 +385,16 @@ def main(arguments=None, stdout=sys.stdout, install_sig_handlers=True, api=None)
         args.image, args.tag = args.image.rsplit(':', 1)
     elif args.tag is None:
         args.tag = 'latest'
+
+    if '/' in args.image:
+        hostport, path = args.image.split('/', 1)
+        if hostport.endswith(':443'):
+            # "docker pull host:443/asdf" transparently removes the
+            # :443 (which is redundant because https is implied) and
+            # after it succeeds "docker images" will list "host/asdf",
+            # not "host:443/asdf".  If we strip the :443 then the name
+            # doesn't change underneath us.
+            args.image = '/'.join([hostport[:-4], path])
 
     # Pull the image if requested, unless the image is specified as a hash
     # that we already have.
