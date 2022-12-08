@@ -18,7 +18,7 @@ import { ProjectsTreePicker } from 'views-components/projects-tree-picker/projec
 import { connect, DispatchProp } from 'react-redux';
 import { initProjectsTreePicker } from 'store/tree-picker/tree-picker-actions';
 import { TreeItem } from 'components/tree/tree';
-import { ProjectsTreePickerItem } from 'views-components/projects-tree-picker/generic-projects-tree-picker';
+import { ProjectsTreePickerItem } from 'store/tree-picker/tree-picker-middleware';
 import { CollectionFile, CollectionFileType } from 'models/collection-file';
 
 export interface FileInputProps {
@@ -141,5 +141,3 @@ const FileInputComponent = connect()(
         }
 
     });
-
-

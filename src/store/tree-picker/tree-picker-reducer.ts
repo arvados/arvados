@@ -2,13 +2,15 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import { createTree, TreeNode, setNode, Tree, TreeNodeStatus, setNodeStatus, expandNode, deactivateNode, selectNodes, deselectNodes } from 'models/tree';
+import {
+    createTree, TreeNode, setNode, Tree, TreeNodeStatus, setNodeStatus,
+    expandNode, deactivateNode, selectNodes, deselectNodes,
+    activateNode, getNode, toggleNodeCollapse, toggleNodeSelection, appendSubtree
+} from 'models/tree';
 import { TreePicker } from "./tree-picker";
-import { treePickerActions, TreePickerAction } from "./tree-picker-actions";
+import { treePickerActions, treePickerSearchActions, TreePickerAction, TreePickerSearchAction, LoadProjectParams } from "./tree-picker-actions";
 import { compose } from "redux";
-import { activateNode, getNode, toggleNodeCollapse, toggleNodeSelection } from 'models/tree';
 import { pipe } from 'lodash/fp';
-import { appendSubtree } from 'models/tree';
 
 export const treePickerReducer = (state: TreePicker = {}, action: TreePickerAction) =>
     treePickerActions.match(action, {
@@ -18,11 +20,14 @@ export const treePickerReducer = (state: TreePicker = {}, action: TreePickerActi
         LOAD_TREE_PICKER_NODE_SUCCESS: ({ id, nodes, pickerId }) =>
             updateOrCreatePicker(state, pickerId, compose(receiveNodes(nodes)(id), setNodeStatus(id)(TreeNodeStatus.LOADED))),
 
-        APPEND_TREE_PICKER_NODE_SUBTREE: ({ id, subtree, pickerId}) =>
+        APPEND_TREE_PICKER_NODE_SUBTREE: ({ id, subtree, pickerId }) =>
             updateOrCreatePicker(state, pickerId, compose(appendSubtree(id, subtree), setNodeStatus(id)(TreeNodeStatus.LOADED))),
 
         TOGGLE_TREE_PICKER_NODE_COLLAPSE: ({ id, pickerId }) =>
             updateOrCreatePicker(state, pickerId, toggleNodeCollapse(id)),
+
+        EXPAND_TREE_PICKER_NODE: ({ id, pickerId }) =>
+            updateOrCreatePicker(state, pickerId, expandNode(id)),
 
         ACTIVATE_TREE_PICKER_NODE: ({ id, pickerId, relatedTreePickers = [] }) =>
             pipe(
@@ -70,3 +75,26 @@ const receiveNodes = <V>(nodes: Array<TreeNode<V>>) => (parent: string) => (stat
         return setNode({ ...node, parent })(tree);
     }, newState);
 };
+
+interface TreePickerSearch {
+    projectSearchValues: { [pickerId: string]: string };
+    collectionFilterValues: { [pickerId: string]: string };
+    loadProjectParams: { [pickerId: string]: LoadProjectParams };
+}
+
+export const treePickerSearchReducer = (state: TreePickerSearch = { projectSearchValues: {}, collectionFilterValues: {}, loadProjectParams: {} }, action: TreePickerSearchAction) =>
+    treePickerSearchActions.match(action, {
+        SET_TREE_PICKER_PROJECT_SEARCH: ({ pickerId, projectSearchValue }) => ({
+            ...state, projectSearchValues: { ...state.projectSearchValues, [pickerId]: projectSearchValue }
+        }),
+
+        SET_TREE_PICKER_COLLECTION_FILTER: ({ pickerId, collectionFilterValue }) => ({
+            ...state, collectionFilterValues: { ...state.collectionFilterValues, [pickerId]: collectionFilterValue }
+        }),
+
+        SET_TREE_PICKER_LOAD_PARAMS: ({ pickerId, params }) => ({
+            ...state, loadProjectParams: { ...state.loadProjectParams, [pickerId]: params }
+        }),
+
+        default: () => state
+    });

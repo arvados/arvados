@@ -14,7 +14,7 @@ import { pipe, values } from 'lodash/fp';
 import { ResourceKind } from 'models/resource';
 import { GroupContentsResource } from 'services/groups-service/groups-service';
 import { getTreePicker, TreePicker } from './tree-picker';
-import { ProjectsTreePickerItem } from 'views-components/projects-tree-picker/generic-projects-tree-picker';
+import { ProjectsTreePickerItem } from './tree-picker-middleware';
 import { OrderBuilder } from 'services/api/order-builder';
 import { ProjectResource } from 'models/project';
 import { mapTree } from '../../models/tree';
@@ -28,6 +28,7 @@ export const treePickerActions = unionize({
     LOAD_TREE_PICKER_NODE_SUCCESS: ofType<{ id: string, nodes: Array<TreeNode<any>>, pickerId: string }>(),
     APPEND_TREE_PICKER_NODE_SUBTREE: ofType<{ id: string, subtree: Tree<any>, pickerId: string }>(),
     TOGGLE_TREE_PICKER_NODE_COLLAPSE: ofType<{ id: string, pickerId: string }>(),
+    EXPAND_TREE_PICKER_NODE: ofType<{ id: string, pickerId: string }>(),
     ACTIVATE_TREE_PICKER_NODE: ofType<{ id: string, pickerId: string, relatedTreePickers?: string[] }>(),
     DEACTIVATE_TREE_PICKER_NODE: ofType<{ pickerId: string }>(),
     TOGGLE_TREE_PICKER_NODE_SELECTION: ofType<{ id: string, pickerId: string }>(),
@@ -38,6 +39,22 @@ export const treePickerActions = unionize({
 });
 
 export type TreePickerAction = UnionOf<typeof treePickerActions>;
+
+export interface LoadProjectParams {
+    includeCollections?: boolean;
+    includeFiles?: boolean;
+    includeFilterGroups?: boolean;
+    loadShared?: boolean;
+    options?: { showOnlyOwned: boolean; showOnlyWritable: boolean; };
+}
+
+export const treePickerSearchActions = unionize({
+    SET_TREE_PICKER_PROJECT_SEARCH: ofType<{ pickerId: string, projectSearchValue: string }>(),
+    SET_TREE_PICKER_COLLECTION_FILTER: ofType<{ pickerId: string, collectionFilterValue: string }>(),
+    SET_TREE_PICKER_LOAD_PARAMS: ofType<{ pickerId: string, params: LoadProjectParams }>(),
+});
+
+export type TreePickerSearchAction = UnionOf<typeof treePickerSearchActions>;
 
 export const getProjectsTreePickerIds = (pickerId: string) => ({
     home: `${pickerId}_home`,
@@ -93,10 +110,10 @@ export const receiveTreePickerData = <T>(params: ReceiveTreePickerDataParams<T>)
             nodes: data.map(item => initTreeNode(extractNodeData(item))),
             pickerId,
         }));
-        dispatch(treePickerActions.TOGGLE_TREE_PICKER_NODE_COLLAPSE({ id, pickerId }));
+        dispatch(treePickerActions.EXPAND_TREE_PICKER_NODE({ id, pickerId }));
     };
 
-interface LoadProjectParams {
+interface LoadProjectParamsWithId extends LoadProjectParams {
     id: string;
     pickerId: string;
     includeCollections?: boolean;
@@ -105,19 +122,27 @@ interface LoadProjectParams {
     loadShared?: boolean;
     options?: { showOnlyOwned: boolean; showOnlyWritable: boolean; };
 }
-export const loadProject = (params: LoadProjectParams) =>
-    async (dispatch: Dispatch, _: () => RootState, services: ServiceRepository) => {
+
+export const loadProject = (params: LoadProjectParamsWithId) =>
+    async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
         const { id, pickerId, includeCollections = false, includeFiles = false, includeFilterGroups = false, loadShared = false, options } = params;
 
         dispatch(treePickerActions.LOAD_TREE_PICKER_NODE({ id, pickerId }));
 
-        const filters = pipe(
+        let filterB = pipe(
             (fb: FilterBuilder) => includeCollections
                 ? fb.addIsA('uuid', [ResourceKind.PROJECT, ResourceKind.COLLECTION])
                 : fb.addIsA('uuid', [ResourceKind.PROJECT]),
             fb => fb.addNotIn("collections.properties.type", ["intermediate", "log"]),
-            fb => fb.getFilters(),
         )(new FilterBuilder());
+
+        const state = getState();
+
+        if (state.treePickerSearch.collectionFilterValues[pickerId]) {
+            filterB = filterB.addILike('collections.name', state.treePickerSearch.collectionFilterValues[pickerId]);
+        }
+
+        const filters = filterB.getFilters();
 
         const { items, itemsAvailable } = await services.groupsService.contents(loadShared ? '' : id, { filters, excludeHomeProject: loadShared || undefined, limit: 1000 });
 

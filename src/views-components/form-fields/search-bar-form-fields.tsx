@@ -12,7 +12,7 @@ import { HomeTreePicker } from 'views-components/projects-tree-picker/home-tree-
 import { SEARCH_BAR_ADVANCED_FORM_PICKER_ID } from 'store/search-bar/search-bar-actions';
 import { SearchBarAdvancedPropertiesView } from 'views-components/search-bar/search-bar-advanced-properties-view';
 import { TreeItem } from "components/tree/tree";
-import { ProjectsTreePickerItem } from "views-components/projects-tree-picker/generic-projects-tree-picker";
+import { ProjectsTreePickerItem } from "store/tree-picker/tree-picker-middleware";
 import { PropertyKeyField, } from 'views-components/resource-properties-form/property-key-field';
 import { PropertyValueField } from 'views-components/resource-properties-form/property-value-field';
 import { connect } from "react-redux";
@@ -36,7 +36,7 @@ interface SearchBarClusterFieldProps {
 
 export const SearchBarClusterField = connect(
     (state: RootState) => ({
-        clusters: [{key: '', value: 'Any'}].concat(
+        clusters: [{ key: '', value: 'Any' }].concat(
             state.auth.sessions
                 .filter(s => s.loggedIn)
                 .map(s => ({
@@ -46,7 +46,7 @@ export const SearchBarClusterField = connect(
     }))((props: SearchBarClusterFieldProps) => <Field
         name='cluster'
         component={NativeSelectField as any}
-        items={props.clusters}/>
+        items={props.clusters} />
     );
 
 export const SearchBarProjectField = () =>

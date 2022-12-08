@@ -17,7 +17,7 @@ import { GenericInputProps, GenericInput } from './generic-input';
 import { ProjectsTreePicker } from 'views-components/projects-tree-picker/projects-tree-picker';
 import { initProjectsTreePicker } from 'store/tree-picker/tree-picker-actions';
 import { TreeItem } from 'components/tree/tree';
-import { ProjectsTreePickerItem } from 'views-components/projects-tree-picker/generic-projects-tree-picker';
+import { ProjectsTreePickerItem } from 'store/tree-picker/tree-picker-middleware';
 import { CollectionResource } from 'models/collection';
 import { ResourceKind } from 'models/resource';
 import { ERROR_MESSAGE } from 'validators/require';
@@ -141,5 +141,3 @@ const DirectoryInputComponent = connect()(
         }
 
     });
-
-

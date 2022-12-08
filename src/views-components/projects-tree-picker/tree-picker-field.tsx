@@ -7,7 +7,7 @@ import { Typography } from "@material-ui/core";
 import { TreeItem } from "components/tree/tree";
 import { WrappedFieldProps } from 'redux-form';
 import { ProjectsTreePicker } from 'views-components/projects-tree-picker/projects-tree-picker';
-import { ProjectsTreePickerItem } from 'views-components/projects-tree-picker/generic-projects-tree-picker';
+import { ProjectsTreePickerItem } from 'store/tree-picker/tree-picker-middleware';
 import { PickerIdProp } from 'store/tree-picker/picker-id';
 
 export const ProjectTreePickerField = (props: WrappedFieldProps & PickerIdProp) =>
