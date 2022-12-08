@@ -609,5 +609,9 @@ func RandomUUID(clusterID, infix string) string {
 	if err != nil {
 		panic(err)
 	}
-	return clusterID + "-" + infix + "-" + n.Text(36)
+	nstr := n.Text(36)
+	for len(nstr) < 15 {
+		nstr = "0" + nstr
+	}
+	return clusterID + "-" + infix + "-" + nstr
 }
