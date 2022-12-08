@@ -25,12 +25,12 @@ class StopTest(Exception):
 
 
 class ArvKeepdockerTestCase(unittest.TestCase, tutil.VersionChecker):
-    def run_arv_keepdocker(self, args, err):
+    def run_arv_keepdocker(self, args, err, **kwargs):
         sys.argv = ['arv-keepdocker'] + args
         log_handler = logging.StreamHandler(err)
         arv_keepdocker.logger.addHandler(log_handler)
         try:
-            return arv_keepdocker.main()
+            return arv_keepdocker.main(**kwargs)
         finally:
             arv_keepdocker.logger.removeHandler(log_handler)
 
@@ -166,6 +166,17 @@ class ArvKeepdockerTestCase(unittest.TestCase, tutil.VersionChecker):
                         side_effect=StopTest) as find_image_mock:
             self.run_arv_keepdocker(['[::1]:8888/repo/img:tag'], sys.stderr)
         find_image_mock.assert_called_with('[::1]:8888/repo/img', 'tag')
+
+    def test_list_images_with_host_and_port(self):
+        arvados.api('v1').links().create(body={'link': {
+            'link_class': 'docker_image_repo+tag',
+            'name': 'registry.example:1234/repo:latest',
+            'head_uuid': 'zzzzz-4zz18-1v45jub259sjjgb',
+        }}).execute()
+        out = tutil.StringIO()
+        with self.assertRaises(SystemExit):
+            self.run_arv_keepdocker([], sys.stderr, stdout=out)
+        self.assertRegex(out.getvalue(), '\nregistry.example:1234/repo +latest ')
 
     @mock.patch('arvados.commands.keepdocker.list_images_in_arv',
                 return_value=[])
