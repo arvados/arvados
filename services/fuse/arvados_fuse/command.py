@@ -227,7 +227,9 @@ class Mount(object):
                                                                disk_cache=self.args.disk_cache,
                                                                disk_cache_dir=self.args.disk_cache_dir),
                     'num_retries': self.args.retries,
-                })
+                },
+                version='v1',
+            )
         except KeyError as e:
             self.logger.error("Missing environment: %s", e)
             exit(1)

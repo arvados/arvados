@@ -1411,7 +1411,7 @@ class Collection(RichCollectionBase):
     @synchronized
     def _my_api(self):
         if self._api_client is None:
-            self._api_client = ThreadSafeApiCache(self._config)
+            self._api_client = ThreadSafeApiCache(self._config, version='v1')
             if self._keep_client is None:
                 self._keep_client = self._api_client.keep
         return self._api_client

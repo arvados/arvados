@@ -1225,7 +1225,10 @@ class SlashSubstitutionTest(IntegrationTest):
 
     def setUp(self):
         super(SlashSubstitutionTest, self).setUp()
-        self.api = arvados.safeapi.ThreadSafeApiCache(arvados.config.settings())
+        self.api = arvados.safeapi.ThreadSafeApiCache(
+            arvados.config.settings(),
+            version='v1',
+        )
         self.api.config = lambda: {"Collections": {"ForwardSlashNameSubstitution": "[SLASH]"}}
         self.testcoll = self.api.collections().create(body={"name": "foo/bar/baz"}).execute()
         self.testcolleasy = self.api.collections().create(body={"name": "foo-bar-baz"}).execute()
@@ -1284,7 +1287,10 @@ class StorageClassesTest(IntegrationTest):
 
     def setUp(self):
         super(StorageClassesTest, self).setUp()
-        self.api = arvados.safeapi.ThreadSafeApiCache(arvados.config.settings())
+        self.api = arvados.safeapi.ThreadSafeApiCache(
+            arvados.config.settings(),
+            version='v1',
+        )
 
     @IntegrationTest.mount(argv=mnt_args)
     def test_collection_default_storage_classes(self):
@@ -1321,7 +1327,7 @@ class ReadonlyCollectionTest(MountTestBase):
     def runTest(self):
         settings = arvados.config.settings().copy()
         settings["ARVADOS_API_TOKEN"] = run_test_server.fixture("api_client_authorizations")["project_viewer"]["api_token"]
-        self.api = arvados.safeapi.ThreadSafeApiCache(settings)
+        self.api = arvados.safeapi.ThreadSafeApiCache(settings, version='v1')
         self.make_mount(fuse.CollectionDirectory, collection_record=self.testcollection, enable_write=False)
 
         self.pool.apply(_readonlyCollectionTestHelper, (self.mounttmp,))

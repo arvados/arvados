@@ -54,7 +54,11 @@ class MountTestBase(unittest.TestCase):
         run_test_server.run()
         run_test_server.authorize_with("admin")
 
-        self.api = api if api else arvados.safeapi.ThreadSafeApiCache(arvados.config.settings(), keep_params={"block_cache": make_block_cache(self.disk_cache)})
+        self.api = api if api else arvados.safeapi.ThreadSafeApiCache(
+            arvados.config.settings(),
+            keep_params={"block_cache": make_block_cache(self.disk_cache)},
+            version='v1',
+        )
         self.llfuse_thread = None
 
     # This is a copy of Mount's method.  TODO: Refactor MountTestBase
