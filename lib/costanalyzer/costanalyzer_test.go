@@ -35,6 +35,10 @@ func (s *Suite) TearDownSuite(c *check.C) {
 func (s *Suite) SetUpSuite(c *check.C) {
 	arvadostest.StartKeep(2, true)
 
+	// Use a small page size to exercise paging without adding
+	// lots of fixtures
+	pagesize = 2
+
 	// Get the various arvados, arvadosclient, and keep client objects
 	ac := arvados.NewClientFromEnv()
 	arv, err := arvadosclient.MakeArvadosClient()
