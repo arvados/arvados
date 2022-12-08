@@ -328,7 +328,9 @@ def main(args=sys.argv[1:],
         if api_client is None:
             api_client = arvados.safeapi.ThreadSafeApiCache(
                 api_params={"model": OrderedJsonModel(), "timeout": arvargs.http_timeout},
-                keep_params={"num_retries": 4})
+                keep_params={"num_retries": 4},
+                version='v1',
+            )
             keep_client = api_client.keep
             # Make an API object now so errors are reported early.
             api_client.users().current().execute()
