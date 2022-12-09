@@ -68,11 +68,11 @@ export const createCollection = (data: CollectionCreateFormDialogData) =>
             const error = getCommonResourceServiceError(e);
             if (error === CommonResourceServiceError.UNIQUE_NAME_VIOLATION) {
                 dispatch(stopSubmit(COLLECTION_CREATE_FORM_NAME, { name: 'Collection with the same name already exists.' } as FormErrors));
-            } else if (error === CommonResourceServiceError.NONE) {
+            } else {
                 dispatch(stopSubmit(COLLECTION_CREATE_FORM_NAME));
                 dispatch(dialogActions.CLOSE_DIALOG({ id: COLLECTION_CREATE_FORM_NAME }));
                 dispatch(snackbarActions.OPEN_SNACKBAR({
-                    message: 'Collection has not been created.',
+                    message: e.errors.join(''),
                     hideDuration: 2000,
                     kind: SnackbarKind.ERROR
                 }));
