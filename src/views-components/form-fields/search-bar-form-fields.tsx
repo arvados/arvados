@@ -17,6 +17,7 @@ import { PropertyKeyField, } from 'views-components/resource-properties-form/pro
 import { PropertyValueField } from 'views-components/resource-properties-form/property-value-field';
 import { connect } from "react-redux";
 import { RootState } from "store/store";
+import { ProjectInput, ProjectCommandInputParameter } from 'views/run-process-panel/inputs/project-input';
 
 export const SearchBarTypeField = () =>
     <Field
@@ -50,20 +51,11 @@ export const SearchBarClusterField = connect(
     );
 
 export const SearchBarProjectField = () =>
-    <Field
-        name='projectUuid'
-        component={ProjectsPicker} />;
-
-const ProjectsPicker = (props: WrappedFieldProps) =>
-    <div style={{ height: '100px', display: 'flex', flexDirection: 'column', overflow: 'overlay' }}>
-        <HomeTreePicker
-            pickerId={SEARCH_BAR_ADVANCED_FORM_PICKER_ID}
-            toggleItemActive={
-                (_: any, { id }: TreeItem<ProjectsTreePickerItem>) => {
-                    props.input.onChange(id);
-                }
-            } />
-    </div>;
+    <ProjectInput input={{
+        id: "projectObject",
+        label: "Limit search to Project"
+    } as ProjectCommandInputParameter}
+        options={{ showOnlyOwned: false, showOnlyWritable: false }} />
 
 export const SearchBarTrashField = () =>
     <Field

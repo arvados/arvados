@@ -66,8 +66,10 @@ export const expandSearchBarTreeItem = (id: string) =>
     };
 
 export const activateSearchBarProject = (id: string) =>
-    async (dispatch: Dispatch, getState: () => RootState) => {
-        const { treePicker } = getState();
+    async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
+
+
+        /*const { treePicker } = getState();
         const node = getSearchBarTreeNode(id)(treePicker);
         if (node && node.status !== TreeNodeStatus.LOADED) {
             await dispatch<any>(loadSearchBarTreeProjects(id));
@@ -78,7 +80,7 @@ export const activateSearchBarProject = (id: string) =>
             ids: getSearchBarTreeNodeAncestorsIds(id)(treePicker),
             pickerId: SEARCH_BAR_ADVANCED_FORM_PICKER_ID
         }));
-        dispatch<any>(expandSearchBarTreeItem(id));
+        dispatch<any>(expandSearchBarTreeItem(id));*/
     };
 
 
