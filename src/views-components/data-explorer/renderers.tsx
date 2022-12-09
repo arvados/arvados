@@ -1043,6 +1043,6 @@ export const ContainerRunTime = connect((state: RootState, props: { uuid: string
     }
 
     render() {
-        return renderRunTime(this.state.runtime);
+        return this.props.process ? renderRunTime(this.state.runtime) : <Typography>-</Typography>;
     }
 });

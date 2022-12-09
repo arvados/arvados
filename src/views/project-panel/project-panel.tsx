@@ -25,6 +25,7 @@ import {
     ResourceFileCount,
     ResourceUUID,
     ResourceContainerUuid,
+    ContainerRunTime,
     ResourceOutputUuid,
     ResourceLogUuid,
     ResourceParentProcess,
@@ -80,6 +81,7 @@ export enum ProjectPanelColumnNames {
     FILE_COUNT = "File Count",
     UUID = "UUID",
     CONTAINER_UUID = "Container UUID",
+    RUNTIME = "Runtime",
     OUTPUT_UUID = "Output UUID",
     LOG_UUID = "Log UUID",
     PARENT_PROCESS = 'Parent Process UUID',
@@ -160,6 +162,13 @@ export const projectPanelColumns: DataColumns<string> = [
         configurable: true,
         filters: createTree(),
         render: uuid => <ResourceContainerUuid uuid={uuid}/>
+    },
+    {
+        name: ProjectPanelColumnNames.RUNTIME,
+        selected: false,
+        configurable: true,
+        filters: createTree(),
+        render: uuid => <ContainerRunTime uuid={uuid} />
     },
     {
         name: ProjectPanelColumnNames.OUTPUT_UUID,
