@@ -20,7 +20,7 @@ import {
     ProcessStatus as ResourceStatus,
     ResourceType,
     ResourceOwnerWithName,
-    ResourceVersion,
+    ResourcePortableDataHash,
     ResourceFileSize,
     ResourceFileCount,
     ResourceUUID,
@@ -29,7 +29,7 @@ import {
     ResourceLogUuid,
     ResourceParentProcess,
     ResourceModifiedByUserUuid,
-    ResourcePortableDataHash,
+    ResourceVersion,
     ResourceCreatedAtDate,
     ResourceLastModifiedDate,
     ResourceTrashDate,
@@ -75,18 +75,18 @@ export enum ProjectPanelColumnNames {
     STATUS = "Status",
     TYPE = "Type",
     OWNER = "Owner",
-    VERSION = "Version",
-    FILE_SIZE = "File size",
-    FILE_COUNT = "File count",
+    PORTABLE_DATA_HASH = "Portable Data Hash",
+    FILE_SIZE = "File Size",
+    FILE_COUNT = "File Count",
     UUID = "UUID",
     CONTAINER_UUID = "Container UUID",
     OUTPUT_UUID = "Output UUID",
     LOG_UUID = "Log UUID",
-    PARENT_PROCESS = 'Parent process UUID',
+    PARENT_PROCESS = 'Parent Process UUID',
     MODIFIED_BY_USER_UUID = 'Modified by User UUID',
-    PORTABLE_DATA_HASH = "Portable data hash",
-    CREATED_AT = "Date created",
-    LAST_MODIFIED = "Last modified",
+    VERSION = "Version",
+    CREATED_AT = "Date Created",
+    LAST_MODIFIED = "Last Modified",
     TRASH_AT = "Trash at",
     DELETE_AT = "Delete at",
 }
@@ -127,11 +127,11 @@ export const projectPanelColumns: DataColumns<string> = [
         render: uuid => <ResourceOwnerWithName uuid={uuid} />
     },
     {
-        name: ProjectPanelColumnNames.VERSION,
+        name: ProjectPanelColumnNames.PORTABLE_DATA_HASH,
         selected: false,
         configurable: true,
         filters: createTree(),
-        render: uuid =><ResourceVersion uuid={uuid}/>
+        render: uuid => <ResourcePortableDataHash uuid={uuid}/>
     },
     {
         name: ProjectPanelColumnNames.FILE_SIZE,
@@ -190,11 +190,11 @@ export const projectPanelColumns: DataColumns<string> = [
         render: uuid => <ResourceModifiedByUserUuid uuid={uuid}/>
     },
     {
-        name: ProjectPanelColumnNames.PORTABLE_DATA_HASH,
+        name: ProjectPanelColumnNames.VERSION,
         selected: false,
         configurable: true,
         filters: createTree(),
-        render: uuid => <ResourcePortableDataHash uuid={uuid}/>
+        render: uuid =><ResourceVersion uuid={uuid}/>
     },
     {
         name: ProjectPanelColumnNames.CREATED_AT,

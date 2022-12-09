@@ -454,7 +454,7 @@ export const ResourceCluster = (props: { uuid: string }) => {
 
 // Links Resources
 const renderLinkName = (item: { name: string }) =>
-    <Typography noWrap>{item.name || '(none)'}</Typography>;
+    <Typography noWrap>{item.name || '-'}</Typography>;
 
 export const ResourceLinkName = connect(
     (state: RootState, props: { uuid: string }) => {
@@ -788,6 +788,16 @@ export const ResourceUUID = connect(
         const resource = getResource<CollectionResource>(props.uuid)(state.resources);
         return { uuid: resource ? resource.uuid : '' };
     })((props: { uuid: string }) => renderUuid({uuid: props.uuid}));
+
+const renderVersion = (version: number) =>{
+    return <Typography>{version ?? '-'}</Typography>
+}
+
+export const ResourceVersion = connect(
+    (state: RootState, props: { uuid: string }) => {
+        const resource = getResource<CollectionResource>(props.uuid)(state.resources);
+        return { version: resource ? resource.version: '' };
+    })((props: { version: number }) => renderVersion(props.version));
     
 const renderPortableDataHash = (portableDataHash:string | null) => 
     <Typography noWrap>
@@ -801,15 +811,6 @@ export const ResourcePortableDataHash = connect(
         return { portableDataHash: resource ? resource.portableDataHash : '' };    
     })((props: { portableDataHash: string }) => renderPortableDataHash(props.portableDataHash));
 
-const renderVersion = (version: number) =>{
-    return <Typography>{version ?? '-'}</Typography>
-}
-
-export const ResourceVersion = connect(
-    (state: RootState, props: { uuid: string }) => {
-        const resource = getResource<CollectionResource>(props.uuid)(state.resources);
-        return { version: resource ? resource.version: '' };
-    })((props: { version: number }) => renderVersion(props.version));
 
 const renderFileCount = (fileCount: number) =>{
     return <Typography>{fileCount ?? '-'}</Typography>
