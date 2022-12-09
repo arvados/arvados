@@ -1133,7 +1133,7 @@ func (s *IntegrationSuite) TestRunTrivialContainer(c *check.C) {
 		"environment":         map[string]string{},
 		"mounts":              map[string]arvados.Mount{"/out": {Kind: "tmp", Capacity: 10000}},
 		"output_path":         "/out",
-		"runtime_constraints": arvados.RuntimeConstraints{RAM: 100000000, VCPUs: 1},
+		"runtime_constraints": arvados.RuntimeConstraints{RAM: 100000000, VCPUs: 1, KeepCacheRAM: 1 << 26},
 		"priority":            1,
 		"state":               arvados.ContainerRequestStateCommitted,
 	}, 0)
@@ -1160,7 +1160,7 @@ func (s *IntegrationSuite) TestContainerInputOnDifferentCluster(c *check.C) {
 			"/out": {Kind: "tmp", Capacity: 10000},
 		},
 		"output_path":         "/out",
-		"runtime_constraints": arvados.RuntimeConstraints{RAM: 100000000, VCPUs: 1},
+		"runtime_constraints": arvados.RuntimeConstraints{RAM: 100000000, VCPUs: 1, KeepCacheRAM: 1 << 26},
 		"priority":            1,
 		"state":               arvados.ContainerRequestStateCommitted,
 		"container_count_max": 1,
