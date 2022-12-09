@@ -44,7 +44,6 @@ export interface LoadProjectParams {
     includeCollections?: boolean;
     includeFiles?: boolean;
     includeFilterGroups?: boolean;
-    loadShared?: boolean;
     options?: { showOnlyOwned: boolean; showOnlyWritable: boolean; };
 }
 
@@ -60,7 +59,8 @@ export const getProjectsTreePickerIds = (pickerId: string) => ({
     home: `${pickerId}_home`,
     shared: `${pickerId}_shared`,
     favorites: `${pickerId}_favorites`,
-    publicFavorites: `${pickerId}_publicFavorites`
+    publicFavorites: `${pickerId}_publicFavorites`,
+    search: `${pickerId}_search`,
 });
 
 export const getAllNodes = <Value>(pickerId: string, filter = (node: TreeNode<Value>) => true) => (state: TreePicker) =>
@@ -88,11 +88,12 @@ export const getSelectedNodes = <Value>(pickerId: string) => (state: TreePicker)
 
 export const initProjectsTreePicker = (pickerId: string) =>
     async (dispatch: Dispatch, _: () => RootState, services: ServiceRepository) => {
-        const { home, shared, favorites, publicFavorites } = getProjectsTreePickerIds(pickerId);
+        const { home, shared, favorites, publicFavorites, search } = getProjectsTreePickerIds(pickerId);
         dispatch<any>(initUserProject(home));
         dispatch<any>(initSharedProject(shared));
         dispatch<any>(initFavoritesProject(favorites));
         dispatch<any>(initPublicFavoritesProject(publicFavorites));
+        dispatch<any>(initSearchProject(search));
     };
 
 interface ReceiveTreePickerDataParams<T> {
@@ -116,35 +117,37 @@ export const receiveTreePickerData = <T>(params: ReceiveTreePickerDataParams<T>)
 interface LoadProjectParamsWithId extends LoadProjectParams {
     id: string;
     pickerId: string;
-    includeCollections?: boolean;
-    includeFiles?: boolean;
-    includeFilterGroups?: boolean;
     loadShared?: boolean;
-    options?: { showOnlyOwned: boolean; showOnlyWritable: boolean; };
+    searchProjects?: boolean;
 }
 
 export const loadProject = (params: LoadProjectParamsWithId) =>
     async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
-        const { id, pickerId, includeCollections = false, includeFiles = false, includeFilterGroups = false, loadShared = false, options } = params;
+        const { id, pickerId, includeCollections = false, includeFiles = false, includeFilterGroups = false, loadShared = false, options, searchProjects = false } = params;
 
         dispatch(treePickerActions.LOAD_TREE_PICKER_NODE({ id, pickerId }));
 
-        let filterB = pipe(
-            (fb: FilterBuilder) => includeCollections
-                ? fb.addIsA('uuid', [ResourceKind.PROJECT, ResourceKind.COLLECTION])
-                : fb.addIsA('uuid', [ResourceKind.PROJECT]),
-            fb => fb.addNotIn("collections.properties.type", ["intermediate", "log"]),
-        )(new FilterBuilder());
+        let filterB = new FilterBuilder();
+
+        filterB = (includeCollections && !searchProjects)
+            ? filterB.addIsA('uuid', [ResourceKind.PROJECT, ResourceKind.COLLECTION])
+            : filterB.addIsA('uuid', [ResourceKind.PROJECT]);
 
         const state = getState();
 
         if (state.treePickerSearch.collectionFilterValues[pickerId]) {
             filterB = filterB.addILike('collections.name', state.treePickerSearch.collectionFilterValues[pickerId]);
+        } else {
+            filterB = filterB.addNotIn("collections.properties.type", ["intermediate", "log"]);
+        }
+
+        if (searchProjects && state.treePickerSearch.projectSearchValues[pickerId]) {
+            filterB = filterB.addILike('groups.name', state.treePickerSearch.projectSearchValues[pickerId]);
         }
 
         const filters = filterB.getFilters();
 
-        const { items, itemsAvailable } = await services.groupsService.contents(loadShared ? '' : id, { filters, excludeHomeProject: loadShared || undefined, limit: 1000 });
+        const { items, itemsAvailable } = await services.groupsService.contents((loadShared || searchProjects) ? '' : id, { filters, excludeHomeProject: loadShared || undefined, limit: 1000 });
 
         if (itemsAvailable > 1000) {
             items.push({
@@ -291,6 +294,22 @@ export const initPublicFavoritesProject = (pickerId: string) =>
             }),
         }));
     };
+
+export const SEARCH_PROJECT_ID = 'Search all Projects';
+export const initSearchProject = (pickerId: string) =>
+    async (dispatch: Dispatch<any>, getState: () => RootState, services: ServiceRepository) => {
+        dispatch(receiveTreePickerData({
+            id: '',
+            pickerId,
+            data: [{ uuid: SEARCH_PROJECT_ID, name: SEARCH_PROJECT_ID }],
+            extractNodeData: value => ({
+                id: value.uuid,
+                status: TreeNodeStatus.INITIAL,
+                value,
+            }),
+        }));
+    };
+
 
 interface LoadFavoritesProjectParams {
     pickerId: string;

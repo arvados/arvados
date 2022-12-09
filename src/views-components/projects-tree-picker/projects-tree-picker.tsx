@@ -10,6 +10,7 @@ import { values, pipe } from 'lodash/fp';
 import { HomeTreePicker } from 'views-components/projects-tree-picker/home-tree-picker';
 import { SharedTreePicker } from 'views-components/projects-tree-picker/shared-tree-picker';
 import { FavoritesTreePicker } from 'views-components/projects-tree-picker/favorites-tree-picker';
+import { SearchProjectsPicker } from 'views-components/projects-tree-picker/search-projects-picker';
 import {
     getProjectsTreePickerIds, treePickerActions, treePickerSearchActions, initProjectsTreePicker,
     SHARED_PROJECT_ID, FAVORITES_PROJECT_ID
@@ -42,13 +43,13 @@ interface ProjectsTreePickerActionProps {
 }
 
 const mapStateToProps = (state: RootState, props: ToplevelPickerProps): ProjectsTreePickerSearchProps => ({
-    projectSearch: "",
-    collectionFilter: "",
+    projectSearch: state.treePickerSearch.projectSearchValues[props.pickerId],
+    collectionFilter: state.treePickerSearch.collectionFilterValues[props.pickerId],
     ...props
 });
 
 const mapDispatchToProps = (dispatch: Dispatch, props: ToplevelPickerProps): (ProjectsTreePickerActionProps & DispatchProp) => {
-    const { home, shared, favorites, publicFavorites } = getProjectsTreePickerIds(props.pickerId);
+    const { home, shared, favorites, publicFavorites, search } = getProjectsTreePickerIds(props.pickerId);
     const params = {
         includeCollections: props.includeCollections,
         includeFiles: props.includeFiles,
@@ -58,20 +59,22 @@ const mapDispatchToProps = (dispatch: Dispatch, props: ToplevelPickerProps): (Pr
     dispatch(treePickerSearchActions.SET_TREE_PICKER_LOAD_PARAMS({ pickerId: shared, params }));
     dispatch(treePickerSearchActions.SET_TREE_PICKER_LOAD_PARAMS({ pickerId: favorites, params }));
     dispatch(treePickerSearchActions.SET_TREE_PICKER_LOAD_PARAMS({ pickerId: publicFavorites, params }));
+    dispatch(treePickerSearchActions.SET_TREE_PICKER_LOAD_PARAMS({ pickerId: search, params }));
 
     return {
-        onProjectSearch: (projectSearchValue: string) => dispatch(treePickerSearchActions.SET_TREE_PICKER_PROJECT_SEARCH({ pickerId: props.pickerId, projectSearchValue })),
+        onProjectSearch: (projectSearchValue: string) => dispatch(treePickerSearchActions.SET_TREE_PICKER_PROJECT_SEARCH({ pickerId: search, projectSearchValue })),
         onCollectionFilter: (collectionFilterValue: string) => {
             dispatch(treePickerSearchActions.SET_TREE_PICKER_COLLECTION_FILTER({ pickerId: home, collectionFilterValue }));
             dispatch(treePickerSearchActions.SET_TREE_PICKER_COLLECTION_FILTER({ pickerId: shared, collectionFilterValue }));
             dispatch(treePickerSearchActions.SET_TREE_PICKER_COLLECTION_FILTER({ pickerId: favorites, collectionFilterValue }));
             dispatch(treePickerSearchActions.SET_TREE_PICKER_COLLECTION_FILTER({ pickerId: publicFavorites, collectionFilterValue }));
+            dispatch(treePickerSearchActions.SET_TREE_PICKER_COLLECTION_FILTER({ pickerId: search, collectionFilterValue }));
         },
         dispatch
     }
 };
 
-type CssRules = 'pickerHeight' | 'searchFlex' | 'searchPadding';
+type CssRules = 'pickerHeight' | 'searchFlex';
 
 const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     pickerHeight: {
@@ -91,11 +94,12 @@ export const ProjectsTreePicker = connect(mapStateToProps, mapDispatchToProps)(
         class FileInputComponent extends React.Component<ProjectsTreePickerCombinedProps> {
 
             componentDidMount() {
-                const { home, shared, favorites, publicFavorites } = getProjectsTreePickerIds(this.props.pickerId);
+                const { home, shared, favorites, publicFavorites, search } = getProjectsTreePickerIds(this.props.pickerId);
 
                 this.props.dispatch<any>(initProjectsTreePicker(this.props.pickerId));
 
-                this.props.dispatch(treePickerSearchActions.SET_TREE_PICKER_PROJECT_SEARCH({ pickerId: this.props.pickerId, projectSearchValue: "" }));
+                this.props.dispatch(treePickerSearchActions.SET_TREE_PICKER_PROJECT_SEARCH({ pickerId: search, projectSearchValue: "" }));
+                this.props.dispatch(treePickerSearchActions.SET_TREE_PICKER_COLLECTION_FILTER({ pickerId: search, collectionFilterValue: "" }));
                 this.props.dispatch(treePickerSearchActions.SET_TREE_PICKER_COLLECTION_FILTER({ pickerId: home, collectionFilterValue: "" }));
                 this.props.dispatch(treePickerSearchActions.SET_TREE_PICKER_COLLECTION_FILTER({ pickerId: shared, collectionFilterValue: "" }));
                 this.props.dispatch(treePickerSearchActions.SET_TREE_PICKER_COLLECTION_FILTER({ pickerId: favorites, collectionFilterValue: "" }));
@@ -103,9 +107,9 @@ export const ProjectsTreePicker = connect(mapStateToProps, mapDispatchToProps)(
             }
 
             componentWillUnmount() {
-                const { home, shared, favorites, publicFavorites } = getProjectsTreePickerIds(this.props.pickerId);
+                const { home, shared, favorites, publicFavorites, search } = getProjectsTreePickerIds(this.props.pickerId);
                 // Release all the state, we don't need it to hang around forever.
-                this.props.dispatch(treePickerActions.RESET_TREE_PICKER({ pickerId: this.props.pickerId }));
+                this.props.dispatch(treePickerActions.RESET_TREE_PICKER({ pickerId: search }));
                 this.props.dispatch(treePickerActions.RESET_TREE_PICKER({ pickerId: home }));
                 this.props.dispatch(treePickerActions.RESET_TREE_PICKER({ pickerId: shared }));
                 this.props.dispatch(treePickerActions.RESET_TREE_PICKER({ pickerId: favorites }));
@@ -117,7 +121,7 @@ export const ProjectsTreePicker = connect(mapStateToProps, mapDispatchToProps)(
                 const onProjectSearch = this.props.onProjectSearch;
                 const onCollectionFilter = this.props.onCollectionFilter;
 
-                const { home, shared, favorites, publicFavorites } = getProjectsTreePickerIds(pickerId);
+                const { home, shared, favorites, publicFavorites, search } = getProjectsTreePickerIds(pickerId);
                 const relatedTreePickers = getRelatedTreePickers(pickerId);
                 const p = {
                     includeCollections: this.props.includeCollections,
@@ -132,18 +136,26 @@ export const ProjectsTreePicker = connect(mapStateToProps, mapDispatchToProps)(
                         <SearchInput value="" label="Search Projects" selfClearProp='' onSearch={onProjectSearch} debounce={200} />
                         <SearchInput value="" label="Filter Collections inside Projects" selfClearProp='' onSearch={onCollectionFilter} debounce={200} />
                     </span>
-                    <div data-cy="projects-tree-home-tree-picker">
-                        <HomeTreePicker {...p} pickerId={home} />
-                    </div>
-                    <div data-cy="projects-tree-shared-tree-picker">
-                        <SharedTreePicker {...p} pickerId={shared} />
-                    </div>
-                    <div data-cy="projects-tree-public-favourites-tree-picker">
-                        <PublicFavoritesTreePicker {...p} pickerId={publicFavorites} />
-                    </div>
-                    <div data-cy="projects-tree-favourites-tree-picker">
-                        <FavoritesTreePicker {...p} pickerId={favorites} />
-                    </div>
+
+                    {this.props.projectSearch !== "" ?
+                        <div data-cy="projects-tree-search-picker">
+                            <SearchProjectsPicker {...p} pickerId={search} />
+                        </div>
+                        :
+                        <>
+                            <div data-cy="projects-tree-home-tree-picker">
+                                <HomeTreePicker {...p} pickerId={home} />
+                            </div>
+                            <div data-cy="projects-tree-shared-tree-picker">
+                                <SharedTreePicker {...p} pickerId={shared} />
+                            </div>
+                            <div data-cy="projects-tree-public-favourites-tree-picker">
+                                <PublicFavoritesTreePicker {...p} pickerId={publicFavorites} />
+                            </div>
+                            <div data-cy="projects-tree-favourites-tree-picker">
+                                <FavoritesTreePicker {...p} pickerId={favorites} />
+                            </div>
+                        </>}
                 </div >;
             }
         }));

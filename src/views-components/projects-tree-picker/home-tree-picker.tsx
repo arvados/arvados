@@ -6,10 +6,10 @@ import { connect } from 'react-redux';
 import { ProjectsTreePicker, ProjectsTreePickerProps } from 'views-components/projects-tree-picker/generic-projects-tree-picker';
 import { Dispatch } from 'redux';
 import { loadUserProject } from 'store/tree-picker/tree-picker-actions';
-import { ProjectIcon } from 'components/icon/icon';
+import { ProjectsIcon } from 'components/icon/icon';
 
 export const HomeTreePicker = connect(() => ({
-    rootItemIcon: ProjectIcon,
+    rootItemIcon: ProjectsIcon,
 }), (dispatch: Dispatch): Pick<ProjectsTreePickerProps, 'loadRootItem'> => ({
     loadRootItem: (_, pickerId, includeCollections, includeFiles, options) => {
         dispatch<any>(loadUserProject(pickerId, includeCollections, includeFiles, options));

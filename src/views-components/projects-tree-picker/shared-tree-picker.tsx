@@ -7,11 +7,12 @@ import { ProjectsTreePicker, ProjectsTreePickerProps } from 'views-components/pr
 import { Dispatch } from 'redux';
 import { ShareMeIcon } from 'components/icon/icon';
 import { loadProject } from 'store/tree-picker/tree-picker-actions';
+import { SHARED_PROJECT_ID } from 'store/tree-picker/tree-picker-actions';
 
 export const SharedTreePicker = connect(() => ({
     rootItemIcon: ShareMeIcon,
 }), (dispatch: Dispatch): Pick<ProjectsTreePickerProps, 'loadRootItem'> => ({
     loadRootItem: (_, pickerId, includeCollections, includeFiles, options) => {
-        dispatch<any>(loadProject({ id: 'Shared with me', pickerId, includeCollections, includeFiles, loadShared: true, options }));
+        dispatch<any>(loadProject({ id: SHARED_PROJECT_ID, pickerId, includeCollections, includeFiles, loadShared: true, options }));
     },
 }))(ProjectsTreePicker);
