@@ -168,15 +168,19 @@ class ArvKeepdockerTestCase(unittest.TestCase, tutil.VersionChecker):
         find_image_mock.assert_called_with('[::1]:8888/repo/img', 'tag')
 
     def test_list_images_with_host_and_port(self):
-        arvados.api('v1').links().create(body={'link': {
+        api = arvados.api('v1')
+        taglink = api.links().create(body={'link': {
             'link_class': 'docker_image_repo+tag',
             'name': 'registry.example:1234/repo:latest',
             'head_uuid': 'zzzzz-4zz18-1v45jub259sjjgb',
         }}).execute()
-        out = tutil.StringIO()
-        with self.assertRaises(SystemExit):
-            self.run_arv_keepdocker([], sys.stderr, stdout=out)
-        self.assertRegex(out.getvalue(), '\nregistry.example:1234/repo +latest ')
+        try:
+            out = tutil.StringIO()
+            with self.assertRaises(SystemExit):
+                self.run_arv_keepdocker([], sys.stderr, stdout=out)
+            self.assertRegex(out.getvalue(), '\nregistry.example:1234/repo +latest ')
+        finally:
+            api.links().delete(uuid=taglink['uuid']).execute()
 
     @mock.patch('arvados.commands.keepdocker.list_images_in_arv',
                 return_value=[])
