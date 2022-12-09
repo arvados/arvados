@@ -71,8 +71,11 @@ export const createCollection = (data: CollectionCreateFormDialogData) =>
             } else {
                 dispatch(stopSubmit(COLLECTION_CREATE_FORM_NAME));
                 dispatch(dialogActions.CLOSE_DIALOG({ id: COLLECTION_CREATE_FORM_NAME }));
+                const errMsg = e.errors
+                    ? e.errors.join('')
+                    : 'There was an error while creating the collection';
                 dispatch(snackbarActions.OPEN_SNACKBAR({
-                    message: e.errors.join(''),
+                    message: errMsg,
                     hideDuration: 2000,
                     kind: SnackbarKind.ERROR
                 }));

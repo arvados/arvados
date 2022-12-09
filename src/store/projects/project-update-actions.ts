@@ -24,6 +24,7 @@ import { Participant } from "views-components/sharing-dialog/participant-select"
 import { ProjectProperties } from "./project-create-actions";
 import { getResource } from "store/resources/resources";
 import { ProjectResource } from "models/project";
+import { snackbarActions, SnackbarKind } from "store/snackbar/snackbar-actions";
 
 export interface ProjectUpdateFormDialogData {
     uuid: string;
@@ -71,7 +72,16 @@ export const updateProject = (project: ProjectUpdateFormDialogData) =>
             const error = getCommonResourceServiceError(e);
             if (error === CommonResourceServiceError.UNIQUE_NAME_VIOLATION) {
                 dispatch(stopSubmit(PROJECT_UPDATE_FORM_NAME, { name: 'Project with the same name already exists.' } as FormErrors));
+            } else {
+                dispatch(dialogActions.CLOSE_DIALOG({ id: PROJECT_UPDATE_FORM_NAME }));
+                const errMsg = e.errors
+                    ? e.errors.join('')
+                    : 'There was an error while updating the project';
+                dispatch(snackbarActions.OPEN_SNACKBAR({
+                    message: errMsg,
+                    hideDuration: 2000,
+                    kind: SnackbarKind.ERROR }));
             }
-            return ;
+            return;
         }
     };
