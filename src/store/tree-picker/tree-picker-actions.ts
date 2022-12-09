@@ -233,7 +233,7 @@ export const initUserProject = (pickerId: string) =>
             dispatch(receiveTreePickerData({
                 id: '',
                 pickerId,
-                data: [{ uuid, name: 'Projects' }],
+                data: [{ uuid, name: 'Home Projects' }],
                 extractNodeData: value => ({
                     id: value.uuid,
                     status: TreeNodeStatus.INITIAL,
