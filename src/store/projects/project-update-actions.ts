@@ -61,7 +61,8 @@ export const updateProject = (project: ProjectUpdateFormDialogData) =>
                     name: project.name,
                     description: project.description,
                     properties: project.properties,
-                });
+                },
+                false);
             dispatch(projectPanelActions.REQUEST_ITEMS());
             dispatch(reset(PROJECT_UPDATE_FORM_NAME));
             dispatch(dialogActions.CLOSE_DIALOG({ id: PROJECT_UPDATE_FORM_NAME }));

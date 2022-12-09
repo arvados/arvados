@@ -52,7 +52,7 @@ export const updateCollection = (collection: CollectionUpdateFormDialogData) =>
             name: collection.name,
             storageClassesDesired: collection.storageClassesDesired,
             description: collection.description,
-            properties: collection.properties }
+            properties: collection.properties }, false
         ).then(updatedCollection => {
             updatedCollection = {...cachedCollection, ...updatedCollection};
             dispatch(collectionPanelActions.SET_COLLECTION(updatedCollection));
