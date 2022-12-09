@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import { getTreePicker, TreePicker } from "store/tree-picker/tree-picker";
-import { getNode, getNodeAncestorsIds, initTreeNode, TreeNodeStatus } from "models/tree";
+import { getNode, getNodeAncestorsIds, initTreeNode } from "models/tree";
 import { Dispatch } from "redux";
 import { RootState } from "store/store";
 import { getUserUuid } from "common/getuser";

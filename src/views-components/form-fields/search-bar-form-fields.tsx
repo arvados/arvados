@@ -3,16 +3,12 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import React from "react";
-import { Field, WrappedFieldProps, FieldArray } from 'redux-form';
+import { Field, FieldArray } from 'redux-form';
 import { TextField, DateTextField } from "components/text-field/text-field";
 import { CheckboxField } from 'components/checkbox-field/checkbox-field';
 import { NativeSelectField } from 'components/select-field/select-field';
 import { ResourceKind } from 'models/resource';
-import { HomeTreePicker } from 'views-components/projects-tree-picker/home-tree-picker';
-import { SEARCH_BAR_ADVANCED_FORM_PICKER_ID } from 'store/search-bar/search-bar-actions';
 import { SearchBarAdvancedPropertiesView } from 'views-components/search-bar/search-bar-advanced-properties-view';
-import { TreeItem } from "components/tree/tree";
-import { ProjectsTreePickerItem } from "store/tree-picker/tree-picker-middleware";
 import { PropertyKeyField, } from 'views-components/resource-properties-form/property-key-field';
 import { PropertyValueField } from 'views-components/resource-properties-form/property-value-field';
 import { connect } from "react-redux";
