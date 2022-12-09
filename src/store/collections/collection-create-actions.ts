@@ -59,7 +59,7 @@ export const createCollection = (data: CollectionCreateFormDialogData) =>
         let newCollection: CollectionResource | undefined;
         try {
             dispatch(progressIndicatorActions.START_WORKING(COLLECTION_CREATE_FORM_NAME));
-            newCollection = await services.collectionService.create(data);
+            newCollection = await services.collectionService.create(data, false);
             await dispatch<any>(uploadCollectionFiles(newCollection.uuid));
             dispatch(dialogActions.CLOSE_DIALOG({ id: COLLECTION_CREATE_FORM_NAME }));
             dispatch(reset(COLLECTION_CREATE_FORM_NAME));

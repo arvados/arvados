@@ -65,7 +65,7 @@ export const createProject = (project: Partial<ProjectResource>) =>
     async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
         dispatch(startSubmit(PROJECT_CREATE_FORM_NAME));
         try {
-            const newProject = await services.projectService.create(project);
+            const newProject = await services.projectService.create(project, false);
             dispatch(dialogActions.CLOSE_DIALOG({ id: PROJECT_CREATE_FORM_NAME }));
             dispatch(reset(PROJECT_CREATE_FORM_NAME));
             return newProject;
