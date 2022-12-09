@@ -25,12 +25,12 @@ class StopTest(Exception):
 
 
 class ArvKeepdockerTestCase(unittest.TestCase, tutil.VersionChecker):
-    def run_arv_keepdocker(self, args, err):
+    def run_arv_keepdocker(self, args, err, **kwargs):
         sys.argv = ['arv-keepdocker'] + args
         log_handler = logging.StreamHandler(err)
         arv_keepdocker.logger.addHandler(log_handler)
         try:
-            return arv_keepdocker.main()
+            return arv_keepdocker.main(**kwargs)
         finally:
             arv_keepdocker.logger.removeHandler(log_handler)
 
@@ -135,11 +135,18 @@ class ArvKeepdockerTestCase(unittest.TestCase, tutil.VersionChecker):
             self.run_arv_keepdocker(['repo:tag'], sys.stderr)
         find_image_mock.assert_called_with('repo', 'tag')
 
+    def test_image_given_as_registry_repo_colon_tag(self):
         with self.assertRaises(StopTest), \
              mock.patch('arvados.commands.keepdocker.find_one_image_hash',
                         side_effect=StopTest) as find_image_mock:
             self.run_arv_keepdocker(['myreg.example:8888/repo/img:tag'], sys.stderr)
         find_image_mock.assert_called_with('myreg.example:8888/repo/img', 'tag')
+
+        with self.assertRaises(StopTest), \
+             mock.patch('arvados.commands.keepdocker.find_one_image_hash',
+                        side_effect=StopTest) as find_image_mock:
+            self.run_arv_keepdocker(['registry.hub.docker.com:443/library/debian:bullseye-slim'], sys.stderr)
+        find_image_mock.assert_called_with('registry.hub.docker.com/library/debian', 'bullseye-slim')
 
     def test_image_has_colons(self):
         with self.assertRaises(StopTest), \
@@ -153,6 +160,27 @@ class ArvKeepdockerTestCase(unittest.TestCase, tutil.VersionChecker):
                         side_effect=StopTest) as find_image_mock:
             self.run_arv_keepdocker(['[::1]/repo/img'], sys.stderr)
         find_image_mock.assert_called_with('[::1]/repo/img', 'latest')
+
+        with self.assertRaises(StopTest), \
+             mock.patch('arvados.commands.keepdocker.find_one_image_hash',
+                        side_effect=StopTest) as find_image_mock:
+            self.run_arv_keepdocker(['[::1]:8888/repo/img:tag'], sys.stderr)
+        find_image_mock.assert_called_with('[::1]:8888/repo/img', 'tag')
+
+    def test_list_images_with_host_and_port(self):
+        api = arvados.api('v1')
+        taglink = api.links().create(body={'link': {
+            'link_class': 'docker_image_repo+tag',
+            'name': 'registry.example:1234/repo:latest',
+            'head_uuid': 'zzzzz-4zz18-1v45jub259sjjgb',
+        }}).execute()
+        try:
+            out = tutil.StringIO()
+            with self.assertRaises(SystemExit):
+                self.run_arv_keepdocker([], sys.stderr, stdout=out)
+            self.assertRegex(out.getvalue(), '\nregistry.example:1234/repo +latest ')
+        finally:
+            api.links().delete(uuid=taglink['uuid']).execute()
 
     @mock.patch('arvados.commands.keepdocker.list_images_in_arv',
                 return_value=[])
