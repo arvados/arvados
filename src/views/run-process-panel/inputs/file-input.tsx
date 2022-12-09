@@ -137,7 +137,7 @@ const FileInputComponent = connect()(
                         color='primary'
                         onClick={this.submit}>Ok</Button>
                 </DialogActions>
-            </Dialog>;
+            </Dialog >;
         }
 
     });
