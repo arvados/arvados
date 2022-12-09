@@ -81,7 +81,7 @@ type CssRules = 'pickerHeight' | 'searchFlex' | 'scrolledBox';
 
 const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     pickerHeight: {
-        height: "70vh"
+        height: "calc(70vh - 100px)"
     },
     searchFlex: {
         display: "flex",
@@ -89,7 +89,7 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
         paddingBottom: "1em"
     },
     scrolledBox: {
-        height: "100%",
+        height: "calc(100% - 50px)",
         overflow: "scroll"
     }
 });
@@ -142,9 +142,9 @@ export const ProjectsTreePicker = connect(mapStateToProps, mapDispatchToProps)(
                 };
                 return <div className={this.props.classes.pickerHeight} >
                     <span className={this.props.classes.searchFlex}>
-                        <SearchInput value="" label="Search all Projects" selfClearProp='' onSearch={onProjectSearch} debounce={200} />
+                        <SearchInput value="" label="Search for a Project" selfClearProp='' onSearch={onProjectSearch} debounce={200} />
                         {this.props.includeCollections &&
-                            <SearchInput value="" label="Filter Collections inside Projects" selfClearProp='' onSearch={onCollectionFilter} debounce={200} />}
+                            <SearchInput value="" label="Filter Collections list in Projects" selfClearProp='' onSearch={onCollectionFilter} debounce={200} />}
                     </span>
 
                     <div className={this.props.classes.scrolledBox}>

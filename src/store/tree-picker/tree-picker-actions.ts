@@ -136,24 +136,26 @@ export const loadProject = (params: LoadProjectParamsWithId) =>
         const state = getState();
 
         if (state.treePickerSearch.collectionFilterValues[pickerId]) {
-            filterB = filterB.addILike('collections.name', state.treePickerSearch.collectionFilterValues[pickerId]);
+            filterB = filterB.addFullTextSearch(state.treePickerSearch.collectionFilterValues[pickerId], 'collections');
         } else {
             filterB = filterB.addNotIn("collections.properties.type", ["intermediate", "log"]);
         }
 
         if (searchProjects && state.treePickerSearch.projectSearchValues[pickerId]) {
-            filterB = filterB.addILike('groups.name', state.treePickerSearch.projectSearchValues[pickerId]);
+            filterB = filterB.addFullTextSearch(state.treePickerSearch.projectSearchValues[pickerId], 'groups');
         }
 
         const filters = filterB.getFilters();
 
-        const { items, itemsAvailable } = await services.groupsService.contents((loadShared || searchProjects) ? '' : id, { filters, excludeHomeProject: loadShared || undefined, limit: 1000 });
+        const itemLimit = 200;
 
-        if (itemsAvailable > 1000) {
+        const { items, itemsAvailable } = await services.groupsService.contents((loadShared || searchProjects) ? '' : id, { filters, excludeHomeProject: loadShared || undefined, limit: itemLimit });
+
+        if (itemsAvailable > itemLimit) {
             items.push({
                 uuid: "more-items-available",
                 kind: ResourceKind.WORKFLOW,
-                name: "*** Not all items were loaded (limit 1000 items) ***",
+                name: `*** Not all items listed (${items.length} out of ${itemsAvailable}), reduce item count with search or filter ***`,
                 description: "",
                 definition: "",
                 ownerUuid: "",
@@ -208,7 +210,7 @@ export const loadCollection = (id: string, pickerId: string) =>
 
             const node = getNode(id)(picker);
             if (node && 'kind' in node.value && node.value.kind === ResourceKind.COLLECTION) {
-                const files = await services.collectionService.files(node.value.portableDataHash);
+                const files = await services.collectionService.files(node.value.uuid);
                 const tree = createCollectionFilesTree(files);
                 const sorted = sortFilesTree(tree);
                 const filesTree = mapTreeValues(services.collectionService.extendFileURL)(sorted);
