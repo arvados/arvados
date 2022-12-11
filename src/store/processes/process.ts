@@ -76,18 +76,16 @@ export const getProcessRuntime = ({ container }: Process) => {
 export const getProcessStatusColor = (status: string, { customs }: ArvadosTheme) => {
     switch (status) {
         case ProcessStatus.RUNNING:
-            return customs.colors.blue500;
+            return customs.colors.green800;
         case ProcessStatus.COMPLETED:
-            return customs.colors.green700;
         case ProcessStatus.WARNING:
-            return customs.colors.yellow700;
+            return customs.colors.green800;
         case ProcessStatus.FAILING:
-            return customs.colors.orange;
         case ProcessStatus.CANCELLED:
         case ProcessStatus.FAILED:
             return customs.colors.red900;
         default:
-            return customs.colors.grey500;
+            return customs.colors.grey600;
     }
 };
 

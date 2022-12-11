@@ -23,13 +23,16 @@ export interface ArvadosTheme extends Theme {
 
 interface Colors {
     green700: string;
+    green800: string;
     yellow100: string;
     yellow700: string;
     yellow900: string;
     red100: string;
     red900: string;
     blue500: string;
+    blue700: string;
     grey500: string;
+    grey600: string;
     purple: string;
     orange: string;
 }
@@ -47,12 +50,14 @@ export const themeOptions: ArvadosThemeOptions = {
     customs: {
         colors: {
             green700: green["700"],
+            green800: green["800"],
             yellow100: yellow["100"],
             yellow700: yellow["700"],
             yellow900: yellow["900"],
             red100: red["100"],
             red900: red['900'],
             blue500: blue['500'],
+            blue700: blue['700'],
             grey500: grey500,
             purple: arvadosPurple,
             orange: '#f0ad4e',
