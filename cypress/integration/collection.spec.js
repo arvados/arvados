@@ -628,9 +628,10 @@ describe('Collection panel tests', function () {
                 cy.get('[data-cy=form-dialog]')
                     .should('contain', 'Move to')
                     .within(() => {
+                        // must use .then to avoid selecting instead of expanding https://github.com/cypress-io/cypress/issues/5529
                         cy.get('[data-cy=projects-tree-home-tree-picker]')
                             .find('i')
-                            .click();
+                            .then(el => el.click());
                         cy.get('[data-cy=projects-tree-home-tree-picker]')
                             .contains(projName)
                             .click();
