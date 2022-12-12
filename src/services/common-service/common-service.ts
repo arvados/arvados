@@ -175,12 +175,14 @@ export class CommonService<T> {
         }
     }
 
-    update(uuid: string, data: Partial<T>) {
+    update(uuid: string, data: Partial<T>, showErrors?: boolean) {
         this.validateUuid(uuid);
         return CommonService.defaultResponse(
             this.serverApi
                 .put<T>(`/${this.resourceType}/${uuid}`, data && CommonService.mapKeys(snakeCase)(data)),
-            this.actions
+            this.actions,
+            undefined, // mapKeys
+            showErrors
         );
     }
 }

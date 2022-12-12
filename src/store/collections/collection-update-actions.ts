@@ -52,7 +52,7 @@ export const updateCollection = (collection: CollectionUpdateFormDialogData) =>
             name: collection.name,
             storageClassesDesired: collection.storageClassesDesired,
             description: collection.description,
-            properties: collection.properties }
+            properties: collection.properties }, false
         ).then(updatedCollection => {
             updatedCollection = {...cachedCollection, ...updatedCollection};
             dispatch(collectionPanelActions.SET_COLLECTION(updatedCollection));
@@ -72,8 +72,11 @@ export const updateCollection = (collection: CollectionUpdateFormDialogData) =>
                 dispatch(stopSubmit(COLLECTION_UPDATE_FORM_NAME, { name: 'Collection with the same name already exists.' } as FormErrors));
             } else {
                 dispatch(dialogActions.CLOSE_DIALOG({ id: COLLECTION_UPDATE_FORM_NAME }));
+                const errMsg = e.errors
+                    ? e.errors.join('')
+                    : 'There was an error while updating the collection';
                 dispatch(snackbarActions.OPEN_SNACKBAR({
-                    message: e.errors.join(''),
+                    message: errMsg,
                     hideDuration: 2000,
                     kind: SnackbarKind.ERROR }));
                 }

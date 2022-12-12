@@ -158,6 +158,38 @@ describe('Project tests', function() {
         cy.get('[data-cy=breadcrumb-last]').should('contain', subProjName);
     });
 
+    it('attempts to use a preexisting name creating a project', function() {
+        const name = `Test project ${Math.floor(Math.random() * 999999)}`;
+        cy.createGroup(activeUser.token, {
+            name: name,
+            group_class: 'project',
+        });
+        cy.loginAs(activeUser);
+        cy.goToPath(`/projects/${activeUser.user.uuid}`);
+
+        // Attempt to create new collection with a duplicate name
+        cy.get('[data-cy=side-panel-button]').click();
+        cy.get('[data-cy=side-panel-new-project]').click();
+        cy.get('[data-cy=form-dialog]')
+            .should('contain', 'New Project')
+            .within(() => {
+                cy.get('[data-cy=name-field]').within(() => {
+                    cy.get('input').type(name);
+                });
+                cy.get('[data-cy=form-submit-btn]').click();
+            });
+        // Error message should display, allowing editing the name
+        cy.get('[data-cy=form-dialog]').should('exist')
+            .and('contain', 'Project with the same name already exists')
+            .within(() => {
+                cy.get('[data-cy=name-field]').within(() => {
+                    cy.get('input').type(' renamed');
+                });
+                cy.get('[data-cy=form-submit-btn]').click();
+            });
+        cy.get('[data-cy=form-dialog]').should('not.exist');
+    });
+
     it('navigates to the parent project after trashing the one being displayed', function() {
         cy.createGroup(activeUser.token, {
             name: `Test root project ${Math.floor(Math.random() * 999999)}`,
@@ -313,12 +345,12 @@ describe('Project tests', function() {
     });
 
     describe('Frozen projects', () => {
-        beforeEach(() => {  
+        beforeEach(() => {
             cy.createGroup(activeUser.token, {
                 name: `Main project ${Math.floor(Math.random() * 999999)}`,
                 group_class: 'project',
             }).as('mainProject');
-    
+
             cy.createGroup(adminUser.token, {
                 name: `Admin project ${Math.floor(Math.random() * 999999)}`,
                 group_class: 'project',
@@ -337,7 +369,7 @@ describe('Project tests', function() {
                     name: `Main collection ${Math.floor(Math.random() * 999999)}`,
                     owner_uuid: mainProject.uuid,
                     manifest_text: "./subdir 37b51d194a7513e45b56f6524f2d51f2+3 0:3:foo\n. 37b51d194a7513e45b56f6524f2d51f2+3 0:3:bar\n"
-                }).as('mainCollection');        
+                }).as('mainCollection');
             });
         });
 
@@ -398,7 +430,7 @@ describe('Project tests', function() {
                 cy.get('[data-cy=context-menu]').contains('Unfreeze').click();
 
                 cy.get('main').contains(adminProject.name).rightclick();
-                
+
                 cy.get('[data-cy=context-menu]').contains('Freeze').should('exist');
             });
         });
