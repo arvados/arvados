@@ -181,7 +181,7 @@ export class CommonService<T> {
             this.serverApi
                 .put<T>(`/${this.resourceType}/${uuid}`, data && CommonService.mapKeys(snakeCase)(data)),
             this.actions,
-            false,
+            undefined, // mapKeys
             showErrors
         );
     }
