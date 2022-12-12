@@ -185,7 +185,7 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
         top: '-9px',
     },
     emptyValue: {
-        color: theme.customs.colors.grey500,
+        color: theme.customs.colors.grey600,
     },
     noBorderRow: {
         '& td': {
