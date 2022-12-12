@@ -6,6 +6,7 @@ package boot
 
 import (
 	"context"
+	"fmt"
 	"io/fs"
 	"os"
 	"path/filepath"
@@ -47,28 +48,10 @@ func (runner railsDatabase) Run(ctx context.Context, fail func(error), super *Su
 	// there are no new migrations, that would add ~2s to startup
 	// time / downtime during service restart.
 
-	todo := map[string]bool{}
-
-	// list versions in db/migrate/{version}_{name}.rb
-	fs.WalkDir(os.DirFS(appdir), "db/migrate", func(path string, d fs.DirEntry, err error) error {
-		fnm := d.Name()
-		if !strings.HasSuffix(fnm, ".rb") {
-			return nil
-		}
-		for i, c := range fnm {
-			if i > 0 && c == '_' {
-				todo[fnm[:i]] = true
-				break
-			}
-			if c < '0' || c > '9' {
-				// non-numeric character before the
-				// first '_' means this is not a
-				// migration
-				break
-			}
-		}
-		return nil
-	})
+	todo, err := migrationList(appdir)
+	if err != nil {
+		return err
+	}
 
 	// read schema_migrations table (list of migrations already
 	// applied) and remove those entries from todo
@@ -112,4 +95,36 @@ func (runner railsDatabase) Run(ctx context.Context, fail func(error), super *Su
 	}
 	defer dblock.RailsMigrations.Unlock()
 	return super.RunProgram(ctx, appdir, runOptions{env: railsEnv}, "bundle", "exec", "rake", "db:migrate")
+}
+
+func migrationList(dir string) (map[string]bool, error) {
+	todo := map[string]bool{}
+
+	// list versions in db/migrate/{version}_{name}.rb
+	err := fs.WalkDir(os.DirFS(dir), "db/migrate", func(path string, d fs.DirEntry, err error) error {
+		if d.IsDir() {
+			return nil
+		}
+		fnm := d.Name()
+		if !strings.HasSuffix(fnm, ".rb") {
+			return fmt.Errorf("unexpected file in db/migrate dir: %s", fnm)
+		}
+		for i, c := range fnm {
+			if i > 0 && c == '_' {
+				todo[fnm[:i]] = true
+				break
+			}
+			if c < '0' || c > '9' {
+				// non-numeric character before the
+				// first '_' means this is not a
+				// migration
+				return fmt.Errorf("unexpected file in db/migrate dir: %s", fnm)
+			}
+		}
+		return nil
+	})
+	if err != nil {
+		return nil, err
+	}
+	return todo, nil
 }
