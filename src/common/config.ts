@@ -15,6 +15,7 @@ interface WorkbenchConfig {
 export interface ClusterConfigJSON {
     API: {
         UnfreezeProjectRequiresAdmin: boolean
+        MaxItemsPerResponse: number
     },
     ClusterID: string;
     RemoteClusters: {
@@ -227,6 +228,7 @@ export const mapRemoteHosts = (clusterConfigJSON: ClusterConfigJSON, config: Con
 export const mockClusterConfigJSON = (config: Partial<ClusterConfigJSON>): ClusterConfigJSON => ({
     API: {
         UnfreezeProjectRequiresAdmin: false,
+        MaxItemsPerResponse: 1000,
     },
     ClusterID: "",
     RemoteClusters: {},

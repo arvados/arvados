@@ -18,6 +18,7 @@ export enum LogEventType {
     STDERR = 'stderr',
     CONTAINER = 'container',
     KEEPSTORE = 'keepstore',
+    SNIP = 'snip-line', // This type is for internal use only. See #19851
 }
 
 export interface LogResource extends Resource, ResourceWithProperties {

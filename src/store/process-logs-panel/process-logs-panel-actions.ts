@@ -8,7 +8,7 @@ import { LogEventType } from 'models/log';
 import { RootState } from 'store/store';
 import { ServiceRepository } from 'services/services';
 import { Dispatch } from 'redux';
-import { groupBy } from 'lodash';
+import { groupBy, min, reverse } from 'lodash';
 import { LogResource } from 'models/log';
 import { LogService } from 'services/log-service/log-service';
 import { ResourceEventMessage } from 'websocket/resource-event-message';
@@ -34,8 +34,9 @@ export const initProcessLogsPanel = (processUuid: string) =>
     async (dispatch: Dispatch, getState: () => RootState, { logService }: ServiceRepository) => {
         dispatch(processLogsPanelActions.RESET_PROCESS_LOGS_PANEL());
         const process = getProcess(processUuid)(getState().resources);
+        const maxPageSize = getState().auth.config.clusterConfig.API.MaxItemsPerResponse;
         if (process && process.container) {
-            const logResources = await loadContainerLogs(process.container.uuid, logService);
+            const logResources = await loadContainerLogs(process.container.uuid, logService, maxPageSize);
             const initialState = createInitialLogPanelState(logResources);
             dispatch(processLogsPanelActions.INIT_PROCESS_LOGS_PANEL(initialState));
         }
@@ -69,20 +70,44 @@ export const addProcessLogsPanelItem = (message: ResourceEventMessage<{ text: st
         }
     };
 
-const loadContainerLogs = async (containerUuid: string, logService: LogService) => {
+const loadContainerLogs = async (containerUuid: string, logService: LogService, maxPageSize: number) => {
     const requestFilters = new FilterBuilder()
         .addEqual('object_uuid', containerUuid)
         .addIn('event_type', PROCESS_PANEL_LOG_EVENT_TYPES)
         .getFilters();
-    const requestOrder = new OrderBuilder<LogResource>()
+    const requestOrderAsc = new OrderBuilder<LogResource>()
         .addAsc('eventAt')
         .getOrder();
-    const requestParams = {
-        limit: MAX_AMOUNT_OF_LOGS,
+    const requestOrderDesc = new OrderBuilder<LogResource>()
+        .addDesc('eventAt')
+        .getOrder();
+    const { items, itemsAvailable } = await logService.list({
+        limit: maxPageSize,
         filters: requestFilters,
-        order: requestOrder,
-    };
-    const { items } = await logService.list(requestParams);
+        order: requestOrderAsc,
+    });
+
+    // Request additional logs if necessary
+    const remainingLogs = itemsAvailable - items.length;
+    if (remainingLogs > 0) {
+        const { items: itemsLast } = await logService.list({
+            limit: min([maxPageSize, remainingLogs]),
+            filters: requestFilters,
+            order: requestOrderDesc,
+            count: 'none',
+        })
+        if (remainingLogs - itemsLast.length > 0) {
+            const snipLine = {
+                ...items[items.length - 1],
+                eventType: LogEventType.SNIP,
+                properties: {
+                    text: `================ 8< ================ 8< ========= Some log(s) were skipped ========= 8< ================ 8< ================`
+                },
+            }
+            return [...items, snipLine, ...reverse(itemsLast)];
+        }
+        return [...items, ...reverse(itemsLast)];
+    }
     return items;
 };
 
@@ -98,7 +123,11 @@ const createInitialLogPanelState = (logResources: LogResource[]) => {
             ...grouped,
             [key]: logsToLines(groupedLogResources[key])
         }), {});
-    const filters = [MAIN_FILTER_TYPE, ALL_FILTER_TYPE, ...Object.keys(groupedLogs)];
+    const filters = [
+        MAIN_FILTER_TYPE,
+        ALL_FILTER_TYPE,
+        ...Object.keys(groupedLogs)
+    ].filter(e => e !== LogEventType.SNIP);
     const logs = {
         [MAIN_FILTER_TYPE]: mainLogs,
         [ALL_FILTER_TYPE]: allLogs,
@@ -120,8 +149,6 @@ export const navigateToLogCollection = (uuid: string) =>
         }
     };
 
-const MAX_AMOUNT_OF_LOGS = 10000;
-
 const ALL_FILTER_TYPE = 'All logs';
 
 const MAIN_FILTER_TYPE = 'Main logs';
@@ -129,6 +156,7 @@ const MAIN_EVENT_TYPES = [
     LogEventType.CRUNCH_RUN,
     LogEventType.STDERR,
     LogEventType.STDOUT,
+    LogEventType.SNIP,
 ];
 
 const PROCESS_PANEL_LOG_EVENT_TYPES = [
@@ -142,4 +170,5 @@ const PROCESS_PANEL_LOG_EVENT_TYPES = [
     LogEventType.STDOUT,
     LogEventType.CONTAINER,
     LogEventType.KEEPSTORE,
+    LogEventType.SNIP,
 ];
