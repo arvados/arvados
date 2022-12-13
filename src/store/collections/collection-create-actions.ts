@@ -59,7 +59,7 @@ export const createCollection = (data: CollectionCreateFormDialogData) =>
         let newCollection: CollectionResource | undefined;
         try {
             dispatch(progressIndicatorActions.START_WORKING(COLLECTION_CREATE_FORM_NAME));
-            newCollection = await services.collectionService.create(data);
+            newCollection = await services.collectionService.create(data, false);
             await dispatch<any>(uploadCollectionFiles(newCollection.uuid));
             dispatch(dialogActions.CLOSE_DIALOG({ id: COLLECTION_CREATE_FORM_NAME }));
             dispatch(reset(COLLECTION_CREATE_FORM_NAME));
@@ -68,11 +68,14 @@ export const createCollection = (data: CollectionCreateFormDialogData) =>
             const error = getCommonResourceServiceError(e);
             if (error === CommonResourceServiceError.UNIQUE_NAME_VIOLATION) {
                 dispatch(stopSubmit(COLLECTION_CREATE_FORM_NAME, { name: 'Collection with the same name already exists.' } as FormErrors));
-            } else if (error === CommonResourceServiceError.NONE) {
+            } else {
                 dispatch(stopSubmit(COLLECTION_CREATE_FORM_NAME));
                 dispatch(dialogActions.CLOSE_DIALOG({ id: COLLECTION_CREATE_FORM_NAME }));
+                const errMsg = e.errors
+                    ? e.errors.join('')
+                    : 'There was an error while creating the collection';
                 dispatch(snackbarActions.OPEN_SNACKBAR({
-                    message: 'Collection has not been created.',
+                    message: errMsg,
                     hideDuration: 2000,
                     kind: SnackbarKind.ERROR
                 }));

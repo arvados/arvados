@@ -9,9 +9,9 @@ import { ListArguments } from "services/common-service/common-service";
 import { FilterBuilder, joinFilters } from "services/api/filter-builder";
 export class ProjectService extends GroupsService<ProjectResource> {
 
-    create(data: Partial<ProjectResource>) {
+    create(data: Partial<ProjectResource>, showErrors?: boolean) {
         const projectData = { ...data, groupClass: GroupClass.PROJECT };
-        return super.create(projectData);
+        return super.create(projectData, showErrors);
     }
 
     list(args: ListArguments = {}) {

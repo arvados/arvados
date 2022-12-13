@@ -26,7 +26,7 @@ export class CommonResourceService<T extends Resource> extends CommonService<T> 
         ]));
     }
 
-    create(data?: Partial<T>) {
+    create(data?: Partial<T>, showErrors?: boolean) {
         let payload: any;
         if (data !== undefined) {
             this.readOnlyFields.forEach( field => delete data[field] );
@@ -34,10 +34,10 @@ export class CommonResourceService<T extends Resource> extends CommonService<T> 
                 [this.resourceType.slice(0, -1)]: CommonService.mapKeys(snakeCase)(data),
             };
         }
-        return super.create(payload);
+        return super.create(payload, showErrors);
     }
 
-    update(uuid: string, data: Partial<T>, select?: string[]) {
+    update(uuid: string, data: Partial<T>, showErrors?: boolean, select?: string[]) {
         let payload: any;
         if (data !== undefined) {
             this.readOnlyFields.forEach( field => delete data[field] );
@@ -48,12 +48,12 @@ export class CommonResourceService<T extends Resource> extends CommonService<T> 
                 payload.select = ['uuid', ...select.map(field => snakeCase(field))];
             };
         }
-        return super.update(uuid, payload);
+        return super.update(uuid, payload, showErrors);
     }
 }
 
 export const getCommonResourceServiceError = (errorResponse: any) => {
-    if ('errors' in errorResponse && 'errorToken' in errorResponse) {
+    if ('errors' in errorResponse) {
         const error = errorResponse.errors.join('');
         switch (true) {
             case /UniqueViolation/.test(error):

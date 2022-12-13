@@ -20,6 +20,8 @@ import { ServiceRepository } from 'services/services';
 import { matchProjectRoute, matchRunProcessRoute } from 'routes/routes';
 import { RouterState } from "react-router-redux";
 import { GroupClass } from "models/group";
+import { snackbarActions, SnackbarKind } from "store/snackbar/snackbar-actions";
+import { progressIndicatorActions } from "store/progress-indicator/progress-indicator-actions";
 
 export interface ProjectCreateFormDialogData {
     ownerUuid: string;
@@ -65,7 +67,8 @@ export const createProject = (project: Partial<ProjectResource>) =>
     async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
         dispatch(startSubmit(PROJECT_CREATE_FORM_NAME));
         try {
-            const newProject = await services.projectService.create(project);
+            dispatch(progressIndicatorActions.START_WORKING(PROJECT_CREATE_FORM_NAME));
+            const newProject = await services.projectService.create(project, false);
             dispatch(dialogActions.CLOSE_DIALOG({ id: PROJECT_CREATE_FORM_NAME }));
             dispatch(reset(PROJECT_CREATE_FORM_NAME));
             return newProject;
@@ -73,7 +76,20 @@ export const createProject = (project: Partial<ProjectResource>) =>
             const error = getCommonResourceServiceError(e);
             if (error === CommonResourceServiceError.UNIQUE_NAME_VIOLATION) {
                 dispatch(stopSubmit(PROJECT_CREATE_FORM_NAME, { name: 'Project with the same name already exists.' } as FormErrors));
+            } else {
+                dispatch(stopSubmit(PROJECT_CREATE_FORM_NAME));
+                dispatch(dialogActions.CLOSE_DIALOG({ id: PROJECT_CREATE_FORM_NAME }));
+                const errMsg = e.errors
+                    ? e.errors.join('')
+                    : 'There was an error while creating the collection';
+                dispatch(snackbarActions.OPEN_SNACKBAR({
+                    message: errMsg,
+                    hideDuration: 2000,
+                    kind: SnackbarKind.ERROR
+                }));
             }
             return undefined;
+        } finally {
+            dispatch(progressIndicatorActions.STOP_WORKING(PROJECT_CREATE_FORM_NAME));
         }
     };
