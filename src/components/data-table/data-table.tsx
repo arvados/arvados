@@ -167,11 +167,10 @@ export const DataTable = withStyles(styles)(
                 onContextMenu={this.handleRowContextMenu(item)}
                 onDoubleClick={event => onRowDoubleClick && onRowDoubleClick(event, item)}
                 selected={item === currentItemUuid}>
-                {this.mapVisibleColumns((column, index) => (
-                    <TableCell key={column.key || index} className={currentRoute === '/workflows' ? classes.tableCellWorkflows : classes.tableCell}>
+                {this.mapVisibleColumns((column, index) => <TableCell key={column.key || index} className={currentRoute === '/workflows' ? classes.tableCellWorkflows : classes.tableCell}>
                         {column.render(item)}
                     </TableCell>
-                ))}
+                )}
             </TableRow>;
         }
 

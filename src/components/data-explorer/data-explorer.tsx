@@ -160,7 +160,6 @@ export const DataExplorer = withStyles(styles)(
                 paperKey, fetchMode, currentItemUuid, title,
                 doHidePanel, doMaximizePanel, doUnMaximizePanel, panelName, panelMaximized, elementPath
             } = this.props;
-
             return <Paper className={classes.root} {...paperProps} key={paperKey} data-cy={this.props["data-cy"]}>
                 <Grid container direction="column" wrap="nowrap" className={classes.container}>
                     <div>

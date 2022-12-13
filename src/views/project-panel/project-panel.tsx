@@ -16,14 +16,27 @@ import { ContainerRequestState } from 'models/container-request';
 import { SortDirection } from 'components/data-table/data-column';
 import { ResourceKind, Resource } from 'models/resource';
 import {
-    ResourceFileSize,
-    ResourceLastModifiedDate,
-    ProcessStatus,
+    ResourceName,
+    ProcessStatus as ResourceStatus,
     ResourceType,
-    ResourceOwnerWithName
+    ResourceOwnerWithName,
+    ResourcePortableDataHash,
+    ResourceFileSize,
+    ResourceFileCount,
+    ResourceUUID,
+    ResourceContainerUuid,
+    ContainerRunTime,
+    ResourceOutputUuid,
+    ResourceLogUuid,
+    ResourceParentProcess,
+    ResourceModifiedByUserUuid,
+    ResourceVersion,
+    ResourceCreatedAtDate,
+    ResourceLastModifiedDate,
+    ResourceTrashDate,
+    ResourceDeleteDate,
 } from 'views-components/data-explorer/renderers';
 import { ProjectIcon } from 'components/icon/icon';
-import { ResourceName } from 'views-components/data-explorer/renderers';
 import {
     ResourcesState,
     getResource
@@ -63,8 +76,21 @@ export enum ProjectPanelColumnNames {
     STATUS = "Status",
     TYPE = "Type",
     OWNER = "Owner",
-    FILE_SIZE = "File size",
-    LAST_MODIFIED = "Last modified"
+    PORTABLE_DATA_HASH = "Portable Data Hash",
+    FILE_SIZE = "File Size",
+    FILE_COUNT = "File Count",
+    UUID = "UUID",
+    CONTAINER_UUID = "Container UUID",
+    RUNTIME = "Runtime",
+    OUTPUT_UUID = "Output UUID",
+    LOG_UUID = "Log UUID",
+    PARENT_PROCESS = 'Parent Process UUID',
+    MODIFIED_BY_USER_UUID = 'Modified by User UUID',
+    VERSION = "Version",
+    CREATED_AT = "Date Created",
+    LAST_MODIFIED = "Last Modified",
+    TRASH_AT = "Trash at",
+    DELETE_AT = "Delete at",
 }
 
 export interface ProjectPanelFilter extends DataTableFilterItem {
@@ -81,12 +107,12 @@ export const projectPanelColumns: DataColumns<string> = [
         render: uuid => <ResourceName uuid={uuid} />
     },
     {
-        name: "Status",
+        name: ProjectPanelColumnNames.STATUS,
         selected: true,
         configurable: true,
         mutuallyExclusiveFilters: true,
         filters: getInitialProcessStatusFilters(),
-        render: uuid => <ProcessStatus uuid={uuid} />,
+        render: uuid => <ResourceStatus uuid={uuid} />,
     },
     {
         name: ProjectPanelColumnNames.TYPE,
@@ -103,11 +129,89 @@ export const projectPanelColumns: DataColumns<string> = [
         render: uuid => <ResourceOwnerWithName uuid={uuid} />
     },
     {
+        name: ProjectPanelColumnNames.PORTABLE_DATA_HASH,
+        selected: false,
+        configurable: true,
+        filters: createTree(),
+        render: uuid => <ResourcePortableDataHash uuid={uuid}/>
+    },
+    {
         name: ProjectPanelColumnNames.FILE_SIZE,
         selected: true,
         configurable: true,
         filters: createTree(),
         render: uuid => <ResourceFileSize uuid={uuid} />
+    },
+    {
+        name: ProjectPanelColumnNames.FILE_COUNT,
+        selected: false,
+        configurable: true,
+        filters: createTree(),
+        render: uuid =><ResourceFileCount uuid={uuid}/>
+    },
+    {
+        name: ProjectPanelColumnNames.UUID,
+        selected: false,
+        configurable: true,
+        filters: createTree(),
+        render: uuid => <ResourceUUID uuid={uuid}/>
+    },
+    {
+        name: ProjectPanelColumnNames.CONTAINER_UUID,
+        selected: true,
+        configurable: true,
+        filters: createTree(),
+        render: uuid => <ResourceContainerUuid uuid={uuid}/>
+    },
+    {
+        name: ProjectPanelColumnNames.RUNTIME,
+        selected: false,
+        configurable: true,
+        filters: createTree(),
+        render: uuid => <ContainerRunTime uuid={uuid} />
+    },
+    {
+        name: ProjectPanelColumnNames.OUTPUT_UUID,
+        selected: false,
+        configurable: true,
+        filters: createTree(),
+        render: uuid => <ResourceOutputUuid uuid={uuid}/>
+    },
+    {
+        name: ProjectPanelColumnNames.LOG_UUID,
+        selected: false,
+        configurable: true,
+        filters: createTree(),
+        render: uuid => <ResourceLogUuid uuid={uuid}/>
+    },
+    {
+        name: ProjectPanelColumnNames.PARENT_PROCESS,
+        selected: false,
+        configurable: true,
+        filters: createTree(),
+        render: uuid => <ResourceParentProcess uuid={uuid}/>
+    },
+    {
+        name: ProjectPanelColumnNames.MODIFIED_BY_USER_UUID,
+        selected: false,
+        configurable: true,
+        filters: createTree(),
+        render: uuid => <ResourceModifiedByUserUuid uuid={uuid}/>
+    },
+    {
+        name: ProjectPanelColumnNames.VERSION,
+        selected: false,
+        configurable: true,
+        filters: createTree(),
+        render: uuid =><ResourceVersion uuid={uuid}/>
+    },
+    {
+        name: ProjectPanelColumnNames.CREATED_AT,
+        selected: false,
+        configurable: true,
+        sortDirection: SortDirection.DESC,
+        filters: createTree(),
+        render: uuid =><ResourceCreatedAtDate uuid={uuid}/>
     },
     {
         name: ProjectPanelColumnNames.LAST_MODIFIED,
@@ -116,7 +220,24 @@ export const projectPanelColumns: DataColumns<string> = [
         sortDirection: SortDirection.DESC,
         filters: createTree(),
         render: uuid => <ResourceLastModifiedDate uuid={uuid} />
-    }
+    },
+    {
+        name: ProjectPanelColumnNames.TRASH_AT,
+        selected: false,
+        configurable: true,
+        sortDirection: SortDirection.DESC,
+        filters: createTree(),
+        render: uuid => <ResourceTrashDate uuid={uuid} />
+    },
+    {
+        name: ProjectPanelColumnNames.DELETE_AT,
+        selected: false,
+        configurable: true,
+        sortDirection: SortDirection.DESC,
+        filters: createTree(),
+        render: uuid => <ResourceDeleteDate uuid={uuid} />
+    },
+    
 ];
 
 export const PROJECT_PANEL_ID = "projectPanel";
