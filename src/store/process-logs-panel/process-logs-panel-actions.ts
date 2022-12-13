@@ -8,7 +8,7 @@ import { LogEventType } from 'models/log';
 import { RootState } from 'store/store';
 import { ServiceRepository } from 'services/services';
 import { Dispatch } from 'redux';
-import { groupBy } from 'lodash';
+import { groupBy, min, reverse } from 'lodash';
 import { LogResource } from 'models/log';
 import { LogService } from 'services/log-service/log-service';
 import { ResourceEventMessage } from 'websocket/resource-event-message';
@@ -74,15 +74,38 @@ const loadContainerLogs = async (containerUuid: string, logService: LogService) 
         .addEqual('object_uuid', containerUuid)
         .addIn('event_type', PROCESS_PANEL_LOG_EVENT_TYPES)
         .getFilters();
-    const requestOrder = new OrderBuilder<LogResource>()
+    const requestOrderAsc = new OrderBuilder<LogResource>()
         .addAsc('eventAt')
         .getOrder();
-    const requestParams = {
-        limit: MAX_AMOUNT_OF_LOGS,
+    const requestOrderDesc = new OrderBuilder<LogResource>()
+        .addDesc('eventAt')
+        .getOrder();
+    const { items, itemsAvailable } = await logService.list({
+        limit: MAX_PAGE_SIZE,
         filters: requestFilters,
-        order: requestOrder,
-    };
-    const { items } = await logService.list(requestParams);
+        order: requestOrderAsc,
+    });
+
+    // Request the remaining, or the last 1000 logs if necessary
+    const remainingLogs = itemsAvailable - MAX_PAGE_SIZE;
+    if (remainingLogs > 0) {
+        const { items: itemsLast } = await logService.list({
+            limit: min([MAX_PAGE_SIZE, remainingLogs]),
+            filters: requestFilters,
+            order: requestOrderDesc,
+        })
+        if (remainingLogs > MAX_PAGE_SIZE) {
+            const snipLine = {
+                ...items[items.length - 1],
+                eventType: LogEventType.SNIP,
+                properties: {
+                    text: `================ 8< ================ 8< ========= Some log(s) were skipped ========= 8< ================ 8< ================`
+                },
+            }
+            return [...items, snipLine, ...reverse(itemsLast)];
+        }
+        return [...items, ...reverse(itemsLast)];
+    }
     return items;
 };
 
@@ -98,7 +121,11 @@ const createInitialLogPanelState = (logResources: LogResource[]) => {
             ...grouped,
             [key]: logsToLines(groupedLogResources[key])
         }), {});
-    const filters = [MAIN_FILTER_TYPE, ALL_FILTER_TYPE, ...Object.keys(groupedLogs)];
+    const filters = [
+        MAIN_FILTER_TYPE,
+        ALL_FILTER_TYPE,
+        ...Object.keys(groupedLogs)
+    ].filter(e => e !== LogEventType.SNIP);
     const logs = {
         [MAIN_FILTER_TYPE]: mainLogs,
         [ALL_FILTER_TYPE]: allLogs,
@@ -120,7 +147,7 @@ export const navigateToLogCollection = (uuid: string) =>
         }
     };
 
-const MAX_AMOUNT_OF_LOGS = 10000;
+const MAX_PAGE_SIZE = 1000;
 
 const ALL_FILTER_TYPE = 'All logs';
 
@@ -129,6 +156,7 @@ const MAIN_EVENT_TYPES = [
     LogEventType.CRUNCH_RUN,
     LogEventType.STDERR,
     LogEventType.STDOUT,
+    LogEventType.SNIP,
 ];
 
 const PROCESS_PANEL_LOG_EVENT_TYPES = [
@@ -142,4 +170,5 @@ const PROCESS_PANEL_LOG_EVENT_TYPES = [
     LogEventType.STDOUT,
     LogEventType.CONTAINER,
     LogEventType.KEEPSTORE,
+    LogEventType.SNIP,
 ];
