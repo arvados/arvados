@@ -5,6 +5,8 @@
 package boot
 
 import (
+	"bytes"
+
 	"git.arvados.org/arvados.git/lib/config"
 	"git.arvados.org/arvados.git/sdk/go/arvadostest"
 	"git.arvados.org/arvados.git/sdk/go/ctxlog"
@@ -17,9 +19,12 @@ var _ = check.Suite(&railsDBSuite{})
 
 // Check services/api/db/migrate/*.rb match schema_migrations
 func (s *railsDBSuite) TestMigrationList(c *check.C) {
-	todo, err := migrationList("../../services/api")
+	var logbuf bytes.Buffer
+	log := ctxlog.New(&logbuf, "text", "info")
+	todo, err := migrationList("../../services/api", log)
 	c.Check(err, check.IsNil)
 	c.Check(todo["20220804133317"], check.Equals, true)
+	c.Check(logbuf.String(), check.Equals, "")
 
 	cfg, err := config.NewLoader(nil, ctxlog.TestLogger(c)).Load()
 	c.Assert(err, check.IsNil)

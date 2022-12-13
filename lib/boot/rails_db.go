@@ -6,7 +6,6 @@ package boot
 
 import (
 	"context"
-	"fmt"
 	"io/fs"
 	"os"
 	"path/filepath"
@@ -14,6 +13,7 @@ import (
 
 	"git.arvados.org/arvados.git/lib/controller/dblock"
 	"git.arvados.org/arvados.git/lib/ctrlctx"
+	"github.com/sirupsen/logrus"
 )
 
 type railsDatabase struct{}
@@ -48,7 +48,7 @@ func (runner railsDatabase) Run(ctx context.Context, fail func(error), super *Su
 	// there are no new migrations, that would add ~2s to startup
 	// time / downtime during service restart.
 
-	todo, err := migrationList(appdir)
+	todo, err := migrationList(appdir, super.logger)
 	if err != nil {
 		return err
 	}
@@ -97,7 +97,7 @@ func (runner railsDatabase) Run(ctx context.Context, fail func(error), super *Su
 	return super.RunProgram(ctx, appdir, runOptions{env: railsEnv}, "bundle", "exec", "rake", "db:migrate")
 }
 
-func migrationList(dir string) (map[string]bool, error) {
+func migrationList(dir string, log logrus.FieldLogger) (map[string]bool, error) {
 	todo := map[string]bool{}
 
 	// list versions in db/migrate/{version}_{name}.rb
@@ -107,7 +107,8 @@ func migrationList(dir string) (map[string]bool, error) {
 		}
 		fnm := d.Name()
 		if !strings.HasSuffix(fnm, ".rb") {
-			return fmt.Errorf("unexpected file in db/migrate dir: %s", fnm)
+			log.Warnf("unexpected file in db/migrate dir: %s", fnm)
+			return nil
 		}
 		for i, c := range fnm {
 			if i > 0 && c == '_' {
@@ -118,7 +119,8 @@ func migrationList(dir string) (map[string]bool, error) {
 				// non-numeric character before the
 				// first '_' means this is not a
 				// migration
-				return fmt.Errorf("unexpected file in db/migrate dir: %s", fnm)
+				log.Warnf("unexpected file in db/migrate dir: %s", fnm)
+				return nil
 			}
 		}
 		return nil
