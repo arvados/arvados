@@ -12,13 +12,14 @@ import fcntl
 import time
 import errno
 import logging
+import weakref
 
 _logger = logging.getLogger('arvados.keep')
 
 cacheblock_suffix = ".keepcacheblock"
 
 class DiskCacheSlot(object):
-    __slots__ = ("locator", "ready", "content", "cachedir", "filehandle")
+    __slots__ = ("locator", "ready", "content", "cachedir", "filehandle", "linger")
 
     def __init__(self, locator, cachedir):
         self.locator = locator
@@ -26,6 +27,7 @@ class DiskCacheSlot(object):
         self.content = None
         self.cachedir = cachedir
         self.filehandle = None
+        self.linger = None
 
     def get(self):
         self.ready.wait()
@@ -81,6 +83,13 @@ class DiskCacheSlot(object):
 
     def size(self):
         if self.content is None:
+            if self.linger is not None:
+                # If it is still lingering (object is still accessible
+                # through the weak reference) it is still taking up
+                # space.
+                content = self.linger()
+                if content is not None:
+                    return len(content)
             return 0
         else:
             return len(self.content)
@@ -138,8 +147,13 @@ class DiskCacheSlot(object):
                 pass
             finally:
                 self.filehandle = None
+                self.linger = weakref.ref(self.content)
                 self.content = None
-            return False
+        return False
+
+    def gone(self):
+        # Test if an evicted object is lingering
+        return self.content is None and (self.linger is None or self.linger() is None)
 
     @staticmethod
     def get_from_disk(locator, cachedir):
