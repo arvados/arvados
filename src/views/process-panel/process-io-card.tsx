@@ -240,8 +240,12 @@ type ProcessIOCardProps = ProcessIOCardDataProps & ProcessIOCardActionProps & Wi
 export const ProcessIOCard = withStyles(styles)(connect(null, mapDispatchToProps)(
     ({ classes, label, params, raw, mounts, outputUuid, doHidePanel, doMaximizePanel, doUnMaximizePanel, panelMaximized, panelName, process, navigateTo }: ProcessIOCardProps) => {
         const [mainProcTabState, setMainProcTabState] = useState(0);
+        const [subProcTabState, setSubProcTabState] = useState(0);
         const handleMainProcTabChange = (event: React.MouseEvent<HTMLElement>, value: number) => {
             setMainProcTabState(value);
+        }
+        const handleSubProcTabChange = (event: React.MouseEvent<HTMLElement>, value: number) => {
+            setSubProcTabState(value);
         }
 
         const [showImagePreview, setShowImagePreview] = useState(false);
@@ -252,6 +256,10 @@ export const ProcessIOCard = withStyles(styles)(connect(null, mapDispatchToProps
         const loading = raw === null || raw === undefined || params === null;
         const hasRaw = !!(raw && Object.keys(raw).length > 0);
         const hasParams = !!(params && params.length > 0);
+
+        // Subprocess
+        const hasInputMounts = !!(label === ProcessIOCardType.INPUT && mounts && mounts.length);
+        const hasOutputCollecton = !!(label === ProcessIOCardType.OUTPUT && outputUuid);
 
         return <Card className={classes.card} data-cy="process-io-card">
             <CardHeader
@@ -316,25 +324,32 @@ export const ProcessIOCard = withStyles(styles)(connect(null, mapDispatchToProps
                     </>) :
                     // Subprocess
                     (<>
-                        {((mounts && mounts.length) || outputUuid) ?
+                        {loading && <Grid container item alignItems='center' justify='center'>
+                            <CircularProgress />
+                        </Grid>}
+                        {!loading && (hasInputMounts || hasOutputCollecton || hasRaw) ?
                             <>
-                                <Tabs value={0} variant="fullWidth" className={classes.symmetricTabs}>
-                                    {label === ProcessIOCardType.INPUT && <Tab label="Collections" />}
-                                    {label === ProcessIOCardType.OUTPUT && <Tab label="Collection" />}
+                                <Tabs value={subProcTabState} onChange={handleSubProcTabChange} variant="fullWidth" className={classes.symmetricTabs}>
+                                    {hasInputMounts && <Tab label="Collections" />}
+                                    {hasOutputCollecton && <Tab label="Collection" />}
+                                    <Tab label="JSON" />
                                 </Tabs>
                                 <div className={classes.tableWrapper}>
-                                    {label === ProcessIOCardType.INPUT && <ProcessInputMounts mounts={mounts || []} />}
-                                    {label === ProcessIOCardType.OUTPUT && <>
+                                    {subProcTabState === 0 && hasInputMounts && <ProcessInputMounts mounts={mounts || []} />}
+                                    {subProcTabState === 0 && hasOutputCollecton && <>
                                         {outputUuid && <Typography className={classes.collectionLink}>
                                             Output Collection: <MuiLink className={classes.keepLink} onClick={() => {navigateTo(outputUuid || "")}}>
                                             {outputUuid}
                                         </MuiLink></Typography>}
                                         <ProcessOutputCollectionFiles isWritable={false} currentItemUuid={outputUuid} />
                                     </>}
+                                    {(subProcTabState === 1 || (!hasInputMounts && !hasOutputCollecton)) && <div className={classes.tableWrapper}>
+                                        <ProcessIORaw data={raw} />
+                                    </div>}
                                 </div>
                             </> :
                             <Grid container item alignItems='center' justify='center'>
-                                <DefaultView messages={["No collection(s) found"]} />
+                                <DefaultView messages={["No data to display"]} />
                             </Grid>
                         }
                     </>)
