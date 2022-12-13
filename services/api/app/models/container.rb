@@ -228,8 +228,10 @@ class Container < ArvadosModel
       rc['keep_cache_ram'] = Rails.configuration.Containers.DefaultKeepCacheRAM
     end
     if rc['keep_cache_disk'] == 0 and rc['keep_cache_ram'] == 0
-      # Only set if keep_cache_ram isn't set.
-      rc['keep_cache_disk'] = Rails.configuration.Containers.DefaultKeepCacheDisk
+      # If neither ram nor disk cache was specified and
+      # DefaultKeepCacheRAM==0, default to disk cache with size equal
+      # to RAM constraint (but at least 2 GiB and at most 32 GiB).
+      rc['keep_cache_disk'] = [[rc['ram'] || 0, 2 << 30].max, 32 << 30].min
     end
     rc
   end
