@@ -34,8 +34,9 @@ export const initProcessLogsPanel = (processUuid: string) =>
     async (dispatch: Dispatch, getState: () => RootState, { logService }: ServiceRepository) => {
         dispatch(processLogsPanelActions.RESET_PROCESS_LOGS_PANEL());
         const process = getProcess(processUuid)(getState().resources);
+        const maxPageSize = getState().auth.config.clusterConfig.API.MaxItemsPerResponse;
         if (process && process.container) {
-            const logResources = await loadContainerLogs(process.container.uuid, logService);
+            const logResources = await loadContainerLogs(process.container.uuid, logService, maxPageSize);
             const initialState = createInitialLogPanelState(logResources);
             dispatch(processLogsPanelActions.INIT_PROCESS_LOGS_PANEL(initialState));
         }
@@ -69,7 +70,7 @@ export const addProcessLogsPanelItem = (message: ResourceEventMessage<{ text: st
         }
     };
 
-const loadContainerLogs = async (containerUuid: string, logService: LogService) => {
+const loadContainerLogs = async (containerUuid: string, logService: LogService, maxPageSize: number) => {
     const requestFilters = new FilterBuilder()
         .addEqual('object_uuid', containerUuid)
         .addIn('event_type', PROCESS_PANEL_LOG_EVENT_TYPES)
@@ -81,20 +82,21 @@ const loadContainerLogs = async (containerUuid: string, logService: LogService) 
         .addDesc('eventAt')
         .getOrder();
     const { items, itemsAvailable } = await logService.list({
-        limit: MAX_PAGE_SIZE,
+        limit: maxPageSize,
         filters: requestFilters,
         order: requestOrderAsc,
     });
 
-    // Request the remaining, or the last 1000 logs if necessary
-    const remainingLogs = itemsAvailable - MAX_PAGE_SIZE;
+    // Request the remaining, or the last 'maxPageSize' logs if necessary
+    const remainingLogs = itemsAvailable - maxPageSize;
     if (remainingLogs > 0) {
         const { items: itemsLast } = await logService.list({
-            limit: min([MAX_PAGE_SIZE, remainingLogs]),
+            limit: min([maxPageSize, remainingLogs]),
             filters: requestFilters,
             order: requestOrderDesc,
+            count: 'none',
         })
-        if (remainingLogs > MAX_PAGE_SIZE) {
+        if (remainingLogs > maxPageSize) {
             const snipLine = {
                 ...items[items.length - 1],
                 eventType: LogEventType.SNIP,
@@ -146,8 +148,6 @@ export const navigateToLogCollection = (uuid: string) =>
             dispatch(snackbarActions.OPEN_SNACKBAR({ message: 'Could not request collection', hideDuration: 2000, kind: SnackbarKind.ERROR }));
         }
     };
-
-const MAX_PAGE_SIZE = 1000;
 
 const ALL_FILTER_TYPE = 'All logs';
 
