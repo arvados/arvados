@@ -168,8 +168,20 @@ func (dbc *DBConnector) GetDB(ctx context.Context) (*sqlx.DB, error) {
 	}
 	if err := db.Ping(); err != nil {
 		ctxlog.FromContext(ctx).WithError(err).Error("postgresql connect succeeded but ping failed")
+		db.Close()
 		return nil, errDBConnection
 	}
 	dbc.pgdb = db
 	return db, nil
+}
+
+func (dbc *DBConnector) Close() error {
+	dbc.mtx.Lock()
+	defer dbc.mtx.Unlock()
+	var err error
+	if dbc.pgdb != nil {
+		err = dbc.pgdb.Close()
+		dbc.pgdb = nil
+	}
+	return err
 }
