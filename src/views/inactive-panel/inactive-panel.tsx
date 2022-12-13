@@ -17,16 +17,8 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     root: {
         position: 'relative',
         backgroundColor: theme.palette.grey["200"],
-        '&::after': {
-            content: `''`,
-            position: 'absolute',
-            top: 0,
-            left: 0,
-            bottom: 0,
-            right: 0,
-            background: 'url("arvados-logo-big.png") no-repeat center center',
-            opacity: 0.2,
-        }
+        background: 'url("arvados-logo-big.png") no-repeat center center',
+        backgroundBlendMode: 'soft-light',
     },
     ontop: {
         zIndex: 10
@@ -58,7 +50,6 @@ export interface InactivePanelStateProps {
 }
 
 type InactivePanelProps = WithStyles<CssRules> & InactivePanelActionProps & InactivePanelStateProps;
-
 
 export const InactivePanelRoot = ({ classes, startLinking, inactivePageText, isLoginClusterFederation }: InactivePanelProps) =>
     <Grid container justify="center" alignItems="center" direction="column" spacing={24}
