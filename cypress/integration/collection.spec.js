@@ -960,6 +960,10 @@ describe('Collection panel tests', function () {
         // Confirm proper vocabulary labels are displayed on the UI.
         cy.get('[data-cy=form-dialog]').should('contain', 'Color: Magenta');
 
+        // Value field should not complain about being required just after
+        // adding a new property. See #19732
+        cy.get('[data-cy=form-dialog]').should('not.contain', 'This field is required');
+
         cy.get('[data-cy=form-submit-btn]').click();
         // Confirm that the user was taken to the newly created collection
         cy.get('[data-cy=form-dialog]').should('not.exist');
