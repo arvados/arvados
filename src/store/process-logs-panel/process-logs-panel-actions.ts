@@ -87,8 +87,8 @@ const loadContainerLogs = async (containerUuid: string, logService: LogService, 
         order: requestOrderAsc,
     });
 
-    // Request the remaining, or the last 'maxPageSize' logs if necessary
-    const remainingLogs = itemsAvailable - maxPageSize;
+    // Request additional logs if necessary
+    const remainingLogs = itemsAvailable - items.length;
     if (remainingLogs > 0) {
         const { items: itemsLast } = await logService.list({
             limit: min([maxPageSize, remainingLogs]),
@@ -96,7 +96,7 @@ const loadContainerLogs = async (containerUuid: string, logService: LogService, 
             order: requestOrderDesc,
             count: 'none',
         })
-        if (remainingLogs > maxPageSize) {
+        if (remainingLogs - itemsLast.length > 0) {
             const snipLine = {
                 ...items[items.length - 1],
                 eventType: LogEventType.SNIP,
