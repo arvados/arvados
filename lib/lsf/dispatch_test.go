@@ -79,8 +79,9 @@ func (s *suite) SetUpTest(c *check.C) {
 	err = arvados.NewClientFromEnv().RequestAndDecode(&s.crPending, "POST", "arvados/v1/container_requests", nil, map[string]interface{}{
 		"container_request": map[string]interface{}{
 			"runtime_constraints": arvados.RuntimeConstraints{
-				RAM:   100000000,
-				VCPUs: 2,
+				RAM:           100000000,
+				VCPUs:         2,
+				KeepCacheDisk: 8 << 30,
 			},
 			"container_image":     arvadostest.DockerImage112PDH,
 			"command":             []string{"sleep", "1"},
