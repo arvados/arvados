@@ -6,7 +6,7 @@ import React from 'react';
 import { connect, DispatchProp } from 'react-redux';
 import { memoize } from 'lodash/fp';
 import { Field } from 'redux-form';
-import { Input, Dialog, DialogTitle, DialogContent, DialogActions, Button } from '@material-ui/core';
+import { Input, Dialog, DialogTitle, DialogContent, DialogActions, Button, StyleRulesCallback, withStyles, WithStyles } from '@material-ui/core';
 import {
     isRequiredInput,
     DirectoryCommandInputParameter,
@@ -26,6 +26,9 @@ export interface DirectoryInputProps {
     input: DirectoryCommandInputParameter;
     options?: { showOnlyOwned: boolean, showOnlyWritable: boolean };
 }
+
+type DialogContentCssRules = 'root';
+
 export const DirectoryInput = ({ input, options }: DirectoryInputProps) =>
     <Field
         name={input.id}
@@ -114,6 +117,12 @@ const DirectoryInputComponent = connect()(
                 {...this.props} />;
         }
 
+        dialogContentStyles: StyleRulesCallback<DialogContentCssRules> = ({ spacing }) => ({
+            root: {
+                height: `${spacing.unit * 8}vh`,
+            },
+        });
+
         renderDialog() {
             return <Dialog
                 open={this.state.open}
@@ -123,11 +132,7 @@ const DirectoryInputComponent = connect()(
                 maxWidth='md'>
                 <DialogTitle>Choose a directory</DialogTitle>
                 <DialogContent>
-                    <ProjectsTreePicker
-                        pickerId={this.props.commandInput.id}
-                        includeCollections
-                        options={this.props.options}
-                        toggleItemActive={this.setDirectory} />
+                    <this.dialogContent />
                 </DialogContent>
                 <DialogActions>
                     <Button onClick={this.closeDialog}>Cancel</Button>
@@ -139,5 +144,16 @@ const DirectoryInputComponent = connect()(
                 </DialogActions>
             </Dialog>;
         }
+
+        dialogContent = withStyles(this.dialogContentStyles)(
+            ({ classes }: WithStyles<DialogContentCssRules>) =>
+                <div className={classes.root}>
+                    <ProjectsTreePicker
+                        pickerId={this.props.commandInput.id}
+                        includeCollections
+                        options={this.props.options}
+                        toggleItemActive={this.setDirectory} />
+                </div>
+        );
 
     });

@@ -12,7 +12,7 @@ import {
 } from 'models/workflow';
 import { Field } from 'redux-form';
 import { ERROR_MESSAGE } from 'validators/require';
-import { Input, Dialog, DialogTitle, DialogContent, DialogActions, Button } from '@material-ui/core';
+import { Input, Dialog, DialogTitle, DialogContent, DialogActions, Button, StyleRulesCallback, withStyles, WithStyles } from '@material-ui/core';
 import { GenericInputProps, GenericInput } from './generic-input';
 import { ProjectsTreePicker } from 'views-components/projects-tree-picker/projects-tree-picker';
 import { connect, DispatchProp } from 'react-redux';
@@ -25,6 +25,9 @@ export interface FileInputProps {
     input: FileCommandInputParameter;
     options?: { showOnlyOwned: boolean, showOnlyWritable: boolean };
 }
+
+type DialogContentCssRules = 'root';
+
 export const FileInput = ({ input, options }: FileInputProps) =>
     <Field
         name={input.id}
@@ -113,6 +116,12 @@ const FileInputComponent = connect()(
                 {...this.props} />;
         }
 
+        dialogContentStyles: StyleRulesCallback<DialogContentCssRules> = ({ spacing }) => ({
+            root: {
+                height: `${spacing.unit * 8}vh`,
+            },
+        });
+
         renderDialog() {
             return <Dialog
                 open={this.state.open}
@@ -122,12 +131,7 @@ const FileInputComponent = connect()(
                 maxWidth='md'>
                 <DialogTitle>Choose a file</DialogTitle>
                 <DialogContent>
-                    <ProjectsTreePicker
-                        pickerId={this.props.commandInput.id}
-                        includeCollections
-                        includeFiles
-                        options={this.props.options}
-                        toggleItemActive={this.setFile} />
+                    <this.dialogContent />
                 </DialogContent>
                 <DialogActions>
                     <Button onClick={this.closeDialog}>Cancel</Button>
@@ -139,5 +143,18 @@ const FileInputComponent = connect()(
                 </DialogActions>
             </Dialog >;
         }
+
+        dialogContent = withStyles(this.dialogContentStyles)(
+            ({ classes }: WithStyles<DialogContentCssRules>) =>
+                <div className={classes.root}>
+                    <ProjectsTreePicker
+                        pickerId={this.props.commandInput.id}
+                        includeCollections
+                        includeFiles
+                        options={this.props.options}
+                        toggleItemActive={this.setFile} />
+                </div>
+        );
+
 
     });

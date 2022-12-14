@@ -5,7 +5,7 @@
 import React from 'react';
 import { connect, DispatchProp } from 'react-redux';
 import { Field } from 'redux-form';
-import { Input, Dialog, DialogTitle, DialogContent, DialogActions, Button } from '@material-ui/core';
+import { Input, Dialog, DialogTitle, DialogContent, DialogActions, Button, withStyles, WithStyles, StyleRulesCallback } from '@material-ui/core';
 import {
     GenericCommandInputParameter
 } from 'models/workflow';
@@ -27,6 +27,9 @@ export interface ProjectInputProps {
     input: ProjectCommandInputParameter;
     options?: { showOnlyOwned: boolean, showOnlyWritable: boolean };
 }
+
+type DialogContentCssRules = 'root';
+
 export const ProjectInput = ({ input, options }: ProjectInputProps) =>
     <Field
         name={input.id}
@@ -109,6 +112,12 @@ export const ProjectInputComponent = connect(mapStateToProps)(
                 {...this.props} />;
         }
 
+        dialogContentStyles: StyleRulesCallback<DialogContentCssRules> = ({ spacing }) => ({
+            root: {
+                height: `${spacing.unit * 8}vh`,
+            },
+        });
+
         renderDialog() {
             return this.state.open ? <Dialog
                 open={this.state.open}
@@ -118,10 +127,7 @@ export const ProjectInputComponent = connect(mapStateToProps)(
                 maxWidth='md'>
                 <DialogTitle>Choose a project</DialogTitle>
                 <DialogContent>
-                    <ProjectsTreePicker
-                        pickerId={this.props.commandInput.id}
-                        options={this.props.options}
-                        toggleItemActive={this.setProject} />
+                    <this.dialogContent />
                 </DialogContent>
                 <DialogActions>
                     <Button onClick={this.closeDialog}>Cancel</Button>
@@ -133,5 +139,15 @@ export const ProjectInputComponent = connect(mapStateToProps)(
                 </DialogActions>
             </Dialog> : null;
         }
+
+        dialogContent = withStyles(this.dialogContentStyles)(
+            ({ classes }: WithStyles<DialogContentCssRules>) =>
+                <div className={classes.root}>
+                    <ProjectsTreePicker
+                        pickerId={this.props.commandInput.id}
+                        options={this.props.options}
+                        toggleItemActive={this.setProject} />
+                </div>
+        );
 
     });
