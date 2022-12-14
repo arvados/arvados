@@ -335,8 +335,10 @@ class KeepBlockCache(object):
                 self._resize_cache(self.cache_max, self._max_slots-1)
                 while len(self._cache) >= self._max_slots:
                     # If there isn't a slot available, need to wait
-                    # until some other cache action happens.
-                    self._cache_updating.wait()
+                    # for something to happen that releases one of the
+                    # cache slots.  Idle for 200 ms or woken up by
+                    # another thread
+                    self._cache_updating.wait(timeout=0.2)
                     self._resize_cache(self.cache_max, self._max_slots-1)
 
                 if self._disk_cache:
