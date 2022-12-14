@@ -973,13 +973,13 @@ Clusters:
 
       # Default value for keep_cache_ram of a container's
       # runtime_constraints.  Note: this gets added to the RAM request
-      # used to allocate a VM or submit an HPC job
+      # used to allocate a VM or submit an HPC job.
+      #
+      # If this is zero, container requests that don't specify RAM or
+      # disk cache size will use a disk cache, sized to the
+      # container's RAM requirement (but with minimum 2 GiB and
+      # maximum 32 GiB).
       DefaultKeepCacheRAM: 0
-
-      # Default value for keep_cache_disk of a container's
-      # runtime_constraints.  Note: this gets added to the disk
-      # request used to allocate a VM or submit an HPC job
-      DefaultKeepCacheDisk: 8589934592
 
       # Number of times a container can be unlocked before being
       # automatically cancelled.

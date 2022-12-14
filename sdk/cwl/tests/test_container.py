@@ -135,6 +135,7 @@ class TestContainer(unittest.TestCase):
             runner.intermediate_output_ttl = 0
             runner.secret_store = cwltool.secrets.SecretStore()
             runner.api._rootDesc = {"revision": "20210628"}
+            runner.api.config.return_value = {"Containers": {"DefaultKeepCacheRAM": 256<<20}}
 
             keepdocker.return_value = [("zzzzz-4zz18-zzzzzzzzzzzzzz3", "")]
             runner.api.collections().get().execute.return_value = {
@@ -201,7 +202,7 @@ class TestContainer(unittest.TestCase):
         runner.intermediate_output_ttl = 3600
         runner.secret_store = cwltool.secrets.SecretStore()
         runner.api._rootDesc = {"revision": "20210628"}
-        runner.api.config.return_value = {"Containers": {"DefaultKeepCacheDisk": 0}}
+        runner.api.config.return_value = {"Containers": {"DefaultKeepCacheRAM": 256<<20}}
 
         keepdocker.return_value = [("zzzzz-4zz18-zzzzzzzzzzzzzz3", "")]
         runner.api.collections().get().execute.return_value = {
@@ -299,6 +300,7 @@ class TestContainer(unittest.TestCase):
         runner.intermediate_output_ttl = 0
         runner.secret_store = cwltool.secrets.SecretStore()
         runner.api._rootDesc = {"revision": "20210628"}
+        runner.api.config.return_value = {"Containers": {"DefaultKeepCacheRAM": 256<<20}}
 
         keepdocker.return_value = [("zzzzz-4zz18-zzzzzzzzzzzzzz3", "")]
         runner.api.collections().get().execute.return_value = {
@@ -430,6 +432,7 @@ class TestContainer(unittest.TestCase):
         runner.intermediate_output_ttl = 0
         runner.secret_store = cwltool.secrets.SecretStore()
         runner.api._rootDesc = {"revision": "20210628"}
+        runner.api.config.return_value = {"Containers": {"DefaultKeepCacheRAM": 256<<20}}
 
         keepdocker.return_value = [("zzzzz-4zz18-zzzzzzzzzzzzzz3", "")]
         runner.api.collections().get().execute.return_value = {
@@ -663,6 +666,7 @@ class TestContainer(unittest.TestCase):
         runner.intermediate_output_ttl = 0
         runner.secret_store = cwltool.secrets.SecretStore()
         runner.api._rootDesc = {"revision": "20210628"}
+        runner.api.config.return_value = {"Containers": {"DefaultKeepCacheRAM": 256<<20}}
 
         keepdocker.return_value = [("zzzzz-4zz18-zzzzzzzzzzzzzz3", "")]
         runner.api.collections().get().execute.return_value = {
@@ -787,6 +791,7 @@ class TestContainer(unittest.TestCase):
         runner.intermediate_output_ttl = 0
         runner.secret_store = cwltool.secrets.SecretStore()
         runner.api._rootDesc = {"revision": "20210628"}
+        runner.api.config.return_value = {"Containers": {"DefaultKeepCacheRAM": 256<<20}}
 
         keepdocker.return_value = [("zzzzz-4zz18-zzzzzzzzzzzzzz3", "")]
         runner.api.collections().get().execute.return_value = {
@@ -885,6 +890,7 @@ class TestContainer(unittest.TestCase):
         runner.intermediate_output_ttl = 0
         runner.secret_store = cwltool.secrets.SecretStore()
         runner.api._rootDesc = {"revision": "20210628"}
+        runner.api.config.return_value = {"Containers": {"DefaultKeepCacheRAM": 256<<20}}
 
         keepdocker.return_value = [("zzzzz-4zz18-zzzzzzzzzzzzzz3", "")]
         runner.api.collections().get().execute.return_value = {
@@ -930,6 +936,7 @@ class TestContainer(unittest.TestCase):
         runner.intermediate_output_ttl = 0
         runner.secret_store = cwltool.secrets.SecretStore()
         runner.api._rootDesc = {"revision": "20210628"}
+        runner.api.config.return_value = {"Containers": {"DefaultKeepCacheRAM": 256<<20}}
 
         keepdocker.return_value = [("zzzzz-4zz18-zzzzzzzzzzzzzz3", "")]
         runner.api.collections().get().execute.return_value = {
@@ -1005,6 +1012,7 @@ class TestContainer(unittest.TestCase):
         runner.intermediate_output_ttl = 0
         runner.secret_store = cwltool.secrets.SecretStore()
         runner.api._rootDesc = {"revision": "20210628"}
+        runner.api.config.return_value = {"Containers": {"DefaultKeepCacheRAM": 256<<20}}
 
         keepdocker.return_value = [("zzzzz-4zz18-zzzzzzzzzzzzzz3", "")]
         runner.api.collections().get().execute.return_value = {
@@ -1100,6 +1108,7 @@ class TestContainer(unittest.TestCase):
         runner.intermediate_output_ttl = 0
         runner.secret_store = cwltool.secrets.SecretStore()
         runner.api._rootDesc = {"revision": "20210628"}
+        runner.api.config.return_value = {"Containers": {"DefaultKeepCacheRAM": 256<<20}}
 
         keepdocker.return_value = [("zzzzz-4zz18-zzzzzzzzzzzzzz3", "")]
         runner.api.collections().get().execute.return_value = {
@@ -1204,6 +1213,7 @@ class TestContainer(unittest.TestCase):
         runner.intermediate_output_ttl = 0
         runner.secret_store = cwltool.secrets.SecretStore()
         runner.api._rootDesc = {"revision": "20210628"}
+        runner.api.config.return_value = {"Containers": {"DefaultKeepCacheRAM": 256<<20}}
 
         keepdocker.return_value = [("zzzzz-4zz18-zzzzzzzzzzzzzz4", {"dockerhash": "456"}),
                                    ("zzzzz-4zz18-zzzzzzzzzzzzzz3", {"dockerhash": "123"})]
@@ -1295,6 +1305,7 @@ class TestContainer(unittest.TestCase):
                 runner.intermediate_output_ttl = 0
                 runner.secret_store = cwltool.secrets.SecretStore()
                 runner.api._rootDesc = {"revision": "20210628"}
+                runner.api.config.return_value = {"Containers": {"DefaultKeepCacheRAM": 256<<20}}
 
                 keepdocker.return_value = [("zzzzz-4zz18-zzzzzzzzzzzzzz3", "")]
                 runner.api.collections().get().execute.return_value = {
@@ -1387,6 +1398,7 @@ class TestContainer(unittest.TestCase):
             runner.intermediate_output_ttl = 0
             runner.secret_store = cwltool.secrets.SecretStore()
             runner.api._rootDesc = {"revision": rev}
+            runner.api.config.return_value = {"Containers": {"DefaultKeepCacheRAM": 256<<20}}
 
             keepdocker.return_value = [("zzzzz-4zz18-zzzzzzzzzzzzzz3", "")]
             runner.api.collections().get().execute.return_value = {
@@ -1474,6 +1486,7 @@ class TestWorkflow(unittest.TestCase):
 
         api = mock.MagicMock()
         api._rootDesc = get_rootDesc()
+        api.config.return_value = {"Containers": {"DefaultKeepCacheRAM": 256<<20}}
 
         runner = arvados_cwl.executor.ArvCwlExecutor(api)
         self.assertEqual(runner.work_api, 'containers')
@@ -1606,6 +1619,7 @@ class TestWorkflow(unittest.TestCase):
 
         api = mock.MagicMock()
         api._rootDesc = get_rootDesc()
+        api.config.return_value = {"Containers": {"DefaultKeepCacheRAM": 256<<20}}
 
         runner = arvados_cwl.executor.ArvCwlExecutor(api)
         self.assertEqual(runner.work_api, 'containers')
