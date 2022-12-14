@@ -81,7 +81,9 @@ type CssRules = 'pickerHeight' | 'searchFlex' | 'scrolledBox';
 
 const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     pickerHeight: {
-        height: "calc(70vh - 100px)"
+        height: "100%",
+        display: "flex",
+        flexDirection: "column",
     },
     searchFlex: {
         display: "flex",
@@ -89,7 +91,6 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
         paddingBottom: "1em"
     },
     scrolledBox: {
-        height: "calc(100% - 50px)",
         overflow: "scroll"
     }
 });
