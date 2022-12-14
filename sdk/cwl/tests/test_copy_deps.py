@@ -9,8 +9,8 @@ api = arvados.api()
 
 def check_contents(group, wf_uuid):
     contents = api.groups().contents(uuid=group["uuid"]).execute()
-    if len(contents["items"]) != 3:
-        raise Exception("Expected 3 items in "+group["uuid"]+" was "+len(contents["items"]))
+    if len(contents["items"]) != 4:
+        raise Exception("Expected 4 items in "+group["uuid"]+" was "+str(len(contents["items"])))
 
     found = False
     for c in contents["items"]:
@@ -32,6 +32,13 @@ def check_contents(group, wf_uuid):
             found = True
     if not found:
         raise Exception("Couldn't find jobs image dependency")
+
+    found = False
+    for c in contents["items"]:
+        if c["kind"] == "arvados#collection" and c["portable_data_hash"] == "13d3901489516f9986c9685867043d39+61":
+            found = True
+    if not found:
+        raise Exception("Couldn't find collection containing workflow")
 
 
 def test_create():
@@ -65,8 +72,8 @@ def test_update():
         wf_uuid = wf_uuid.decode("utf-8").strip()
 
         contents = api.groups().contents(uuid=group["uuid"]).execute()
-        if len(contents["items"]) != 1:
-            raise Exception("Expected 1 items")
+        if len(contents["items"]) != 2:
+            raise Exception("Expected 2 items")
 
         found = False
         for c in contents["items"]:
@@ -74,6 +81,13 @@ def test_update():
                 found = True
         if not found:
             raise Exception("Couldn't find workflow")
+
+        found = False
+        for c in contents["items"]:
+            if c["kind"] == "arvados#collection" and c["portable_data_hash"] == "13d3901489516f9986c9685867043d39+61":
+                found = True
+        if not found:
+            raise Exception("Couldn't find collection containing workflow")
 
         # Updating by default will copy missing items
         cmd = ["arvados-cwl-runner", "--update-workflow", wf_uuid, "19070-copy-deps.cwl"]
