@@ -172,7 +172,7 @@ export const DataExplorer = withStyles(styles)(
                                         {!hideSearchInput && <SearchInput
                                             label={searchLabel}
                                             value={searchValue}
-                                            selfClearProp={currentItemUuid}
+                                            selfClearProp={this.props.currentRoute || ''}
                                             onSearch={onSearch} />}
                                     </div>}
                                     {actions}
