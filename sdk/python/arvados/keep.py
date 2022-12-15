@@ -198,14 +198,18 @@ class KeepBlockCache(object):
                 # open it initially and hold the flock(), and a second
                 # hidden one used by mmap().
                 #
-                # Set max slots to 3/8 of maximum file handles.  This
-                # means we'll use at most 3/4 of total file handles.
+                # Set max slots to 1/8 of maximum file handles.  This
+                # means we'll use at most 1/4 of total file handles.
                 #
                 # NOFILE typically defaults to 1024 on Linux so this
-                # is 384 slots (768 file handles), which means we can
-                # cache up to 24 GiB of 64 MiB blocks.  This leaves
-                # 256 file handles for sockets and other stuff.
-                self._max_slots = int((resource.getrlimit(resource.RLIMIT_NOFILE)[0] * 3) / 8)
+                # is 128 slots (256 file handles), which means we can
+                # cache up to 8 GiB of 64 MiB blocks.  This leaves
+                # 768 file handles for sockets and other stuff.
+                #
+                # When we want the ability to have more cache (e.g. in
+                # arv-mount) we'll increase rlimit before calling
+                # this.
+                self._max_slots = int(resource.getrlimit(resource.RLIMIT_NOFILE)[0] / 8)
             else:
                 # RAM cache slots
                 self._max_slots = 512
