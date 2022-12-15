@@ -35,7 +35,7 @@ def check_contents(group, wf_uuid):
 
     found = False
     for c in contents["items"]:
-        if c["kind"] == "arvados#collection" and c["portable_data_hash"] == "13d3901489516f9986c9685867043d39+61":
+        if c["kind"] == "arvados#collection" and c["portable_data_hash"] == "73b7a68c78205e793a5eb9520326d3ae+61":
             found = True
     if not found:
         raise Exception("Couldn't find collection containing workflow")
@@ -49,7 +49,7 @@ def test_create():
             raise Exception("Expected 0 items")
 
         # Create workflow, by default should also copy dependencies
-        cmd = ["arvados-cwl-runner", "--create-workflow", "--project-uuid", group["uuid"], "19070-copy-deps.cwl"]
+        cmd = ["arvados-cwl-runner", "--disable-git", "--create-workflow", "--project-uuid", group["uuid"], "19070-copy-deps.cwl"]
         print(" ".join(cmd))
         wf_uuid = subprocess.check_output(cmd)
         wf_uuid = wf_uuid.decode("utf-8").strip()
@@ -66,7 +66,7 @@ def test_update():
             raise Exception("Expected 0 items")
 
         # Create workflow, but with --no-copy-deps it shouldn't copy anything
-        cmd = ["arvados-cwl-runner", "--no-copy-deps", "--create-workflow", "--project-uuid", group["uuid"], "19070-copy-deps.cwl"]
+        cmd = ["arvados-cwl-runner", "--disable-git", "--no-copy-deps", "--create-workflow", "--project-uuid", group["uuid"], "19070-copy-deps.cwl"]
         print(" ".join(cmd))
         wf_uuid = subprocess.check_output(cmd)
         wf_uuid = wf_uuid.decode("utf-8").strip()
@@ -84,13 +84,13 @@ def test_update():
 
         found = False
         for c in contents["items"]:
-            if c["kind"] == "arvados#collection" and c["portable_data_hash"] == "13d3901489516f9986c9685867043d39+61":
+            if c["kind"] == "arvados#collection" and c["portable_data_hash"] == "73b7a68c78205e793a5eb9520326d3ae+61":
                 found = True
         if not found:
             raise Exception("Couldn't find collection containing workflow")
 
         # Updating by default will copy missing items
-        cmd = ["arvados-cwl-runner", "--update-workflow", wf_uuid, "19070-copy-deps.cwl"]
+        cmd = ["arvados-cwl-runner", "--disable-git", "--update-workflow", wf_uuid, "19070-copy-deps.cwl"]
         print(" ".join(cmd))
         wf_uuid = subprocess.check_output(cmd)
         wf_uuid = wf_uuid.decode("utf-8").strip()
@@ -108,7 +108,7 @@ def test_execute():
             raise Exception("Expected 0 items")
 
         # Execute workflow, shouldn't copy anything.
-        cmd = ["arvados-cwl-runner", "--project-uuid", group["uuid"], "19070-copy-deps.cwl"]
+        cmd = ["arvados-cwl-runner", "--disable-git", "--project-uuid", group["uuid"], "19070-copy-deps.cwl"]
         print(" ".join(cmd))
         wf_uuid = subprocess.check_output(cmd)
         wf_uuid = wf_uuid.decode("utf-8").strip()
@@ -137,7 +137,7 @@ def test_execute():
             raise Exception("Didn't expect to find jobs image dependency")
 
         # Execute workflow with --copy-deps
-        cmd = ["arvados-cwl-runner", "--project-uuid", group["uuid"], "--copy-deps", "19070-copy-deps.cwl"]
+        cmd = ["arvados-cwl-runner", "--disable-git", "--project-uuid", group["uuid"], "--copy-deps", "19070-copy-deps.cwl"]
         print(" ".join(cmd))
         wf_uuid = subprocess.check_output(cmd)
         wf_uuid = wf_uuid.decode("utf-8").strip()
