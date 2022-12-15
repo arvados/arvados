@@ -26,7 +26,7 @@ export interface FileInputProps {
     options?: { showOnlyOwned: boolean, showOnlyWritable: boolean };
 }
 
-type DialogContentCssRules = 'root';
+type DialogContentCssRules = 'root' | 'pickerWrapper';
 
 export const FileInput = ({ input, options }: FileInputProps) =>
     <Field
@@ -76,7 +76,7 @@ const FileInputComponent = connect()(
         render() {
             return <>
                 {this.renderInput()}
-                {this.renderDialog()}
+                <this.dialog />
             </>;
         }
 
@@ -118,35 +118,42 @@ const FileInputComponent = connect()(
 
         dialogContentStyles: StyleRulesCallback<DialogContentCssRules> = ({ spacing }) => ({
             root: {
-                height: `${spacing.unit * 8}vh`,
+                display: 'flex',
+                flexDirection: 'column',
+            },
+            pickerWrapper: {
+                flexBasis: `${spacing.unit * 8}vh`,
+                flexShrink: 1,
+                minHeight: 0,
             },
         });
 
-        renderDialog() {
-            return <Dialog
-                open={this.state.open}
-                onClose={this.closeDialog}
-                fullWidth
-                data-cy="choose-a-file-dialog"
-                maxWidth='md'>
-                <DialogTitle>Choose a file</DialogTitle>
-                <DialogContent>
-                    <this.dialogContent />
-                </DialogContent>
-                <DialogActions>
-                    <Button onClick={this.closeDialog}>Cancel</Button>
-                    <Button
-                        disabled={!this.state.file}
-                        variant='contained'
-                        color='primary'
-                        onClick={this.submit}>Ok</Button>
-                </DialogActions>
-            </Dialog >;
-        }
+        dialog = withStyles(this.dialogContentStyles)(
+            ({ classes }: WithStyles<DialogContentCssRules>) =>
+                <Dialog
+                    open={this.state.open}
+                    onClose={this.closeDialog}
+                    fullWidth
+                    data-cy="choose-a-file-dialog"
+                    maxWidth='md'>
+                    <DialogTitle>Choose a file</DialogTitle>
+                    <DialogContent className={classes.root}>
+                        <this.dialogContent />
+                    </DialogContent>
+                    <DialogActions>
+                        <Button onClick={this.closeDialog}>Cancel</Button>
+                        <Button
+                            disabled={!this.state.file}
+                            variant='contained'
+                            color='primary'
+                            onClick={this.submit}>Ok</Button>
+                    </DialogActions>
+                </Dialog >
+        );
 
         dialogContent = withStyles(this.dialogContentStyles)(
             ({ classes }: WithStyles<DialogContentCssRules>) =>
-                <div className={classes.root}>
+                <div className={classes.pickerWrapper}>
                     <ProjectsTreePicker
                         pickerId={this.props.commandInput.id}
                         includeCollections

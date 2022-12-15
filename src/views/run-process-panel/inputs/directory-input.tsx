@@ -27,7 +27,7 @@ export interface DirectoryInputProps {
     options?: { showOnlyOwned: boolean, showOnlyWritable: boolean };
 }
 
-type DialogContentCssRules = 'root';
+type DialogContentCssRules = 'root' | 'pickerWrapper';
 
 export const DirectoryInput = ({ input, options }: DirectoryInputProps) =>
     <Field
@@ -78,7 +78,7 @@ const DirectoryInputComponent = connect()(
         render() {
             return <>
                 {this.renderInput()}
-                {this.renderDialog()}
+                <this.dialog />
             </>;
         }
 
@@ -119,41 +119,43 @@ const DirectoryInputComponent = connect()(
 
         dialogContentStyles: StyleRulesCallback<DialogContentCssRules> = ({ spacing }) => ({
             root: {
-                height: `${spacing.unit * 8}vh`,
+                display: 'flex',
+                flexDirection: 'column',
+            },
+            pickerWrapper: {
+                flexBasis: `${spacing.unit * 8}vh`,
+                flexShrink: 1,
+                minHeight: 0,
             },
         });
 
-        renderDialog() {
-            return <Dialog
-                open={this.state.open}
-                onClose={this.closeDialog}
-                fullWidth
-                data-cy="choose-a-directory-dialog"
-                maxWidth='md'>
-                <DialogTitle>Choose a directory</DialogTitle>
-                <DialogContent>
-                    <this.dialogContent />
-                </DialogContent>
-                <DialogActions>
-                    <Button onClick={this.closeDialog}>Cancel</Button>
-                    <Button
-                        disabled={!this.state.directory}
-                        variant='contained'
-                        color='primary'
-                        onClick={this.submit}>Ok</Button>
-                </DialogActions>
-            </Dialog>;
-        }
-
-        dialogContent = withStyles(this.dialogContentStyles)(
+        dialog = withStyles(this.dialogContentStyles)(
             ({ classes }: WithStyles<DialogContentCssRules>) =>
-                <div className={classes.root}>
-                    <ProjectsTreePicker
-                        pickerId={this.props.commandInput.id}
-                        includeCollections
-                        options={this.props.options}
-                        toggleItemActive={this.setDirectory} />
-                </div>
+                <Dialog
+                    open={this.state.open}
+                    onClose={this.closeDialog}
+                    fullWidth
+                    data-cy="choose-a-directory-dialog"
+                    maxWidth='md'>
+                    <DialogTitle>Choose a directory</DialogTitle>
+                    <DialogContent className={classes.root}>
+                        <div className={classes.pickerWrapper}>
+                            <ProjectsTreePicker
+                                pickerId={this.props.commandInput.id}
+                                includeCollections
+                                options={this.props.options}
+                                toggleItemActive={this.setDirectory} />
+                        </div>
+                    </DialogContent>
+                    <DialogActions>
+                        <Button onClick={this.closeDialog}>Cancel</Button>
+                        <Button
+                            disabled={!this.state.directory}
+                            variant='contained'
+                            color='primary'
+                            onClick={this.submit}>Ok</Button>
+                    </DialogActions>
+                </Dialog>
         );
 
     });

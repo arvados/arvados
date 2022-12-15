@@ -28,7 +28,7 @@ export interface ProjectInputProps {
     options?: { showOnlyOwned: boolean, showOnlyWritable: boolean };
 }
 
-type DialogContentCssRules = 'root';
+type DialogContentCssRules = 'root' | 'pickerWrapper';
 
 export const ProjectInput = ({ input, options }: ProjectInputProps) =>
     <Field
@@ -70,7 +70,7 @@ export const ProjectInputComponent = connect(mapStateToProps)(
         render() {
             return <>
                 {this.renderInput()}
-                {this.renderDialog()}
+                <this.dialog />
             </>;
         }
 
@@ -114,40 +114,42 @@ export const ProjectInputComponent = connect(mapStateToProps)(
 
         dialogContentStyles: StyleRulesCallback<DialogContentCssRules> = ({ spacing }) => ({
             root: {
-                height: `${spacing.unit * 8}vh`,
+                display: 'flex',
+                flexDirection: 'column',
+            },
+            pickerWrapper: {
+                flexBasis: `${spacing.unit * 8}vh`,
+                flexShrink: 1,
+                minHeight: 0,
             },
         });
 
-        renderDialog() {
-            return this.state.open ? <Dialog
-                open={this.state.open}
-                onClose={this.closeDialog}
-                fullWidth
-                data-cy="choose-a-project-dialog"
-                maxWidth='md'>
-                <DialogTitle>Choose a project</DialogTitle>
-                <DialogContent>
-                    <this.dialogContent />
-                </DialogContent>
-                <DialogActions>
-                    <Button onClick={this.closeDialog}>Cancel</Button>
-                    <Button
-                        disabled={this.invalid()}
-                        variant='contained'
-                        color='primary'
-                        onClick={this.submit}>Ok</Button>
-                </DialogActions>
-            </Dialog> : null;
-        }
-
-        dialogContent = withStyles(this.dialogContentStyles)(
+        dialog = withStyles(this.dialogContentStyles)(
             ({ classes }: WithStyles<DialogContentCssRules>) =>
-                <div className={classes.root}>
-                    <ProjectsTreePicker
-                        pickerId={this.props.commandInput.id}
-                        options={this.props.options}
-                        toggleItemActive={this.setProject} />
-                </div>
+                this.state.open ? <Dialog
+                    open={this.state.open}
+                    onClose={this.closeDialog}
+                    fullWidth
+                    data-cy="choose-a-project-dialog"
+                    maxWidth='md'>
+                    <DialogTitle>Choose a project</DialogTitle>
+                    <DialogContent className={classes.root}>
+                        <div className={classes.pickerWrapper}>
+                            <ProjectsTreePicker
+                                pickerId={this.props.commandInput.id}
+                                options={this.props.options}
+                                toggleItemActive={this.setProject} />
+                        </div>
+                    </DialogContent>
+                    <DialogActions>
+                        <Button onClick={this.closeDialog}>Cancel</Button>
+                        <Button
+                            disabled={this.invalid()}
+                            variant='contained'
+                            color='primary'
+                            onClick={this.submit}>Ok</Button>
+                    </DialogActions>
+                </Dialog> : null
         );
 
     });
