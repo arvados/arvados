@@ -361,35 +361,14 @@ This will create a tarball of the ArvadosR package in the current directory.
 Complete documentation, including the [User Guide](https://doc.arvados.org/user/index.html), [Installation documentation](https://doc.arvados.org/install/index.html), [Administrator documentation](https://doc.arvados.org/admin/index.html) and
 [API documentation](https://doc.arvados.org/api/index.html) is available at http://doc.arvados.org/
 
-If you wish to build the Arvados documentation from a local git clone, see
-[doc/README.textile](doc/README.textile) for instructions.
-
 ## Community
 
-[![Join the chat at https://gitter.im/arvados/community](https://badges.gitter.im/arvados/community.svg)](https://gitter.im/arvados/community?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
-
-The [Arvados community channel](https://gitter.im/arvados/community)
-channel at [gitter.im](https://gitter.im) is available for live
-discussion and support.
-
-The [Arvados developement channel](https://gitter.im/arvados/development)
-channel at [gitter.im](https://gitter.im) is used to coordinate development.
-
-The [Arvados user mailing list](http://lists.arvados.org/mailman/listinfo/arvados)
-is used to announce new versions and other news.
-
-All participants are expected to abide by the [Arvados Code of Conduct](CODE_OF_CONDUCT.md).
+Visit [Arvados Community and Getting Help](https://doc.arvados.org/user/getting_started/community.html).
 
 ## Reporting bugs
 
 [Report a bug](https://dev.arvados.org/projects/arvados/issues/new) on [dev.arvados.org](https://dev.arvados.org).
 
-## Development and Contributing
-
-See [CONTRIBUTING](CONTRIBUTING.md) for information about Arvados development and how to contribute to the Arvados project.
-
-The [development road map](https://dev.arvados.org/issues/gantt?utf8=%E2%9C%93&set_filter=1&gantt=1&f%5B%5D=project_id&op%5Bproject_id%5D=%3D&v%5Bproject_id%5D%5B%5D=49&f%5B%5D=&zoom=1) outlines some of the project priorities over the next twelve months.
-
 ## Licensing
 
-Arvados is Free Software.  See [COPYING](COPYING) for information about the open source licenses used in Arvados.
+Arvados is Free Software.  See [Arvados Free Software Licenses](https://doc.arvados.org/user/copying/copying.html) for information about the open source licenses used in Arvados.
