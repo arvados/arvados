@@ -2,46 +2,11 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-#' Subcollection
+#' R6 Class Representing a Subcollection
 #'
+#' @description
 #' Subcollection class represents a folder inside Arvados collection.
 #' It is essentially a composite of arvadosFiles and other subcollections.
-#'
-#' @section Usage:
-#' \preformatted{subcollection = Subcollection$new(name)}
-#'
-#' @section Arguments:
-#' \describe{
-#'   \item{name}{Name of the subcollection.}
-#' }
-#'
-#' @section Methods:
-#' \describe{
-#'   \item{getName()}{Returns name of the subcollection.}
-#'   \item{getRelativePath()}{Returns subcollection path relative to the root.}
-#'   \item{add(content)}{Adds ArvadosFile or Subcollection specified by content to the subcollection.}
-#'   \item{remove(name)}{Removes ArvadosFile or Subcollection specified by name from the subcollection.}
-#'   \item{get(relativePath)}{If relativePath is valid, returns ArvadosFile or Subcollection specified by relativePath, else returns NULL.}
-#'   \item{getFileListing()}{Returns subcollections file content as character vector.}
-#'   \item{getSizeInBytes()}{Returns subcollections content size in bytes.}
-#'   \item{move(destination)}{Moves subcollection to a new location inside collection.}
-#'   \item{copy(destination)}{Copies subcollection to a new location inside collection.}
-#' }
-#'
-#' @name Subcollection
-#' @examples
-#' \dontrun{
-#' myFolder <- Subcollection$new("myFolder")
-#' myFile   <- ArvadosFile$new("myFile")
-#'
-#' myFolder$add(myFile)
-#' myFolder$get("myFile")
-#' myFolder$remove("myFile")
-#'
-#' myFolder$move("newLocation/myFolder")
-#' myFolder$copy("newLocation/myFolder")
-#' }
-NULL
 
 #' @export
 Subcollection <- R6::R6Class(
@@ -50,13 +15,21 @@ Subcollection <- R6::R6Class(
 
     public = list(
 
+        #' @description
+        #' Initialize new enviroment.
+        #' @param name Name of the new enviroment.
+        #' @return A new `Subcollection` object.
         initialize = function(name)
         {
             private$name <- name
         },
 
+        #' @description
+        #' Returns name of the file.
         getName = function() private$name,
 
+        #' @description
+        #' Returns Subcollection's path relative to the root.
         getRelativePath = function()
         {
             relativePath <- c(private$name)
@@ -72,6 +45,9 @@ Subcollection <- R6::R6Class(
             paste0(relativePath, collapse = "/")
         },
 
+        #' @description
+        #' Adds ArvadosFile or Subcollection specified by content to the Subcollection.
+        #' @param content Content to be added.
         add = function(content)
         {
             if("ArvadosFile"   %in% class(content) ||
@@ -115,6 +91,9 @@ Subcollection <- R6::R6Class(
             }
         },
 
+        #' @description
+        #' Removes ArvadosFile or Subcollection specified by name from the Subcollection.
+        #' @param name Name of the file to be removed.
         remove = function(name)
         {
             if(is.character(name))
@@ -146,12 +125,17 @@ Subcollection <- R6::R6Class(
             }
         },
 
+        #' @description
+        #' Returns Subcollections file content as character vector.
+        #' @param fullPath Checking if the path to file exists.
         getFileListing = function(fullPath = TRUE)
         {
             content <- private$getContentAsCharVector(fullPath)
             content[order(tolower(content))]
         },
 
+        #' @description
+        #' Returns subcollections content size in bytes.
         getSizeInBytes = function()
         {
             if(is.null(private$collection))
@@ -164,6 +148,9 @@ Subcollection <- R6::R6Class(
             return(sum(fileSizes))
         },
 
+        #' @description
+        #' Moves Subcollection to a new location inside collection.
+        #' @param destination Path to move the file.
         move = function(destination)
         {
             if(is.null(private$collection))
@@ -196,6 +183,9 @@ Subcollection <- R6::R6Class(
             self
         },
 
+        #' @description
+        #' Copies Subcollection to a new location inside collection.
+        #' @param destination Path to copy the file.
         copy = function(destination)
         {
             if(is.null(private$collection))
@@ -227,6 +217,9 @@ Subcollection <- R6::R6Class(
             newContent
         },
 
+        #' @description
+        #' Duplicate Subcollection and gives it a new name.
+        #' @param newName New name for duplicated file.
         duplicate = function(newName = NULL)
         {
             name <- if(!is.null(newName)) newName else private$name
@@ -237,6 +230,9 @@ Subcollection <- R6::R6Class(
             root
         },
 
+        #' @description
+        #' If name is valid, returns ArvadosFile or Subcollection specified by relativePath, else returns NULL.
+        #' @param name Name of the file.
         get = function(name)
         {
             for(child in private$children)
@@ -248,14 +244,18 @@ Subcollection <- R6::R6Class(
             return(NULL)
         },
 
+        #' @description
+        #' Returns files in Subcollection.
         getFirst = function()
         {
             if(length(private$children) == 0)
-               return(NULL)
+                return(NULL)
 
             private$children[[1]]
         },
 
+        #' @description
+        #' Sets Collection by its UUID.
         setCollection = function(collection, setRecursively = TRUE)
         {
             private$collection = collection
@@ -267,10 +267,16 @@ Subcollection <- R6::R6Class(
             }
         },
 
+        #' @description
+        #' Returns Collection of Subcollection.
         getCollection = function() private$collection,
 
+        #' @description
+        #' Returns Collection UUID.
         getParent = function() private$parent,
 
+        #' @description
+        #' Sets new Collection.
         setParent = function(newParent) private$parent <- newParent
     ),
 

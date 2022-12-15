@@ -143,7 +143,7 @@ FakeRESTService <- R6::R6Class(
             self$returnContent
         },
 
-        getCollectionContent = function(uuid)
+        getCollectionContent = function(uuid, relativePath = NULL)
         {
             self$getCollectionContentCallCount <- self$getCollectionContentCallCount + 1
             self$collectionContent

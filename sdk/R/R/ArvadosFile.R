@@ -2,55 +2,10 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-#' ArvadosFile
+#' R6 Class Representing a ArvadosFile
 #'
+#' @description
 #' ArvadosFile class represents a file inside Arvados collection.
-#'
-#' @section Usage:
-#' \preformatted{file = ArvadosFile$new(name)}
-#'
-#' @section Arguments:
-#' \describe{
-#'   \item{name}{Name of the file.}
-#' }
-#'
-#' @section Methods:
-#' \describe{
-#'   \item{getName()}{Returns name of the file.}
-#'   \item{getRelativePath()}{Returns file path relative to the root.}
-#'   \item{read(contentType = "raw", offset = 0, length = 0)}{Read file content.}
-#'   \item{write(content, contentType = "text/html")}{Write to file (override current content of the file).}
-#'   \item{connection(rw)}{Get connection opened in "read" or "write" mode.}
-#'   \item{flush()}{Write connections content to a file (override current content of the file).}
-#'   \item{remove(name)}{Removes ArvadosFile or Subcollection specified by name from the subcollection.}
-#'   \item{getSizeInBytes()}{Returns file size in bytes.}
-#'   \item{move(destination)}{Moves file to a new location inside collection.}
-#'   \item{copy(destination)}{Copies file to a new location inside collection.}
-#' }
-#'
-#' @name ArvadosFile
-#' @examples
-#' \dontrun{
-#' myFile <- ArvadosFile$new("myFile")
-#'
-#' myFile$write("This is new file content")
-#' fileContent <- myFile$read()
-#' fileContent <- myFile$read("text")
-#' fileContent <- myFile$read("raw", offset = 8, length = 4)
-#'
-#' #Write a table:
-#' arvConnection <- myFile$connection("w")
-#' write.table(mytable, arvConnection)
-#' arvadosFile$flush()
-#'
-#' #Read a table:
-#' arvConnection <- myFile$connection("r")
-#' mytable <- read.table(arvConnection)
-#'
-#' myFile$move("newFolder/myFile")
-#' myFile$copy("newFolder/myFile")
-#' }
-NULL
 
 #' @export
 ArvadosFile <- R6::R6Class(
@@ -59,6 +14,12 @@ ArvadosFile <- R6::R6Class(
 
     public = list(
 
+        #' @description
+        #' Initialize new enviroment.
+        #' @param name Name of the new enviroment.
+        #' @return A new `ArvadosFile` object.
+        #' @examples
+        #' myFile   <- ArvadosFile$new("myFile")
         initialize = function(name)
         {
             if(name == "")
@@ -67,13 +28,26 @@ ArvadosFile <- R6::R6Class(
             private$name <- name
         },
 
+        #' @description
+        #' Returns name of the file.
+        #' @examples
+        #' arvadosFile$getName()
         getName = function() private$name,
 
+        #' @description
+        #' Returns collections file content as character vector.
+        #' @param fullPath Checking if TRUE.
+        #' @examples
+        #' arvadosFile$getFileListing()
         getFileListing = function(fullpath = TRUE)
         {
             self$getName()
         },
 
+        #' @description
+        #' Returns collections content size in bytes.
+        #' @examples
+        #' arvadosFile$getSizeInBytes()
         getSizeInBytes = function()
         {
             if(is.null(private$collection))
@@ -96,13 +70,19 @@ ArvadosFile <- R6::R6Class(
             return(NULL)
         },
 
+        #' @description
+        #' Returns collection UUID.
         getCollection = function() private$collection,
 
+        #' @description
+        #' Sets new collection.
         setCollection = function(collection, setRecursively = TRUE)
         {
             private$collection <- collection
         },
 
+        #' @description
+        #' Returns file path relative to the root.
         getRelativePath = function()
         {
             relativePath <- c(private$name)
@@ -118,10 +98,23 @@ ArvadosFile <- R6::R6Class(
             paste0(relativePath, collapse = "/")
         },
 
+        #' @description
+        #' Returns project UUID.
         getParent = function() private$parent,
 
+        #' @description
+        #' Sets project collection.
         setParent = function(newParent) private$parent <- newParent,
 
+        #' @description
+        #' Read file content.
+        #' @param contentType Type of content. Possible is "text", "raw".
+        #' @param offset Describes the location of a piece of data compared to another location
+        #' @param length Length of content
+        #' @examples
+        #' collection <- Collection$new(arv, collectionUUID)
+        #' arvadosFile <- collection$get(fileName)
+        #' fileContent <- arvadosFile$read("text")
         read = function(contentType = "raw", offset = 0, length = 0)
         {
             if(is.null(private$collection))
@@ -138,6 +131,13 @@ ArvadosFile <- R6::R6Class(
             fileContent
         },
 
+        #' @description
+        #' Get connection opened in "read" or "write" mode.
+        #' @param rw Type of connection.
+        #' @examples
+        #' collection <- Collection$new(arv, collectionUUID)
+        #' arvadosFile <- collection$get(fileName)
+        #' arvConnection <- arvadosFile$connection("w")
         connection = function(rw)
         {
             if (rw == "r" || rw == "rb")
@@ -155,6 +155,13 @@ ArvadosFile <- R6::R6Class(
             }
         },
 
+        #' @description
+        #' Write connections content to a file or override current content of the file.
+        #' @examples
+        #' collection <- Collection$new(arv, collectionUUID)
+        #' arvadosFile <- collection$get(fileName)
+        #' myFile$write("This is new file content")
+        #' arvadosFile$flush()
         flush = function()
         {
             v <- textConnectionValue(private$buffer)
@@ -162,6 +169,14 @@ ArvadosFile <- R6::R6Class(
             self$write(paste(v, collapse='\n'))
         },
 
+        #' @description
+        #' Write to file or override current content of the file.
+        #' @param content File to write.
+        #' @param contentType Type of content. Possible is "text", "raw".
+        #' @examples
+        #' collection <- Collection$new(arv, collectionUUID)
+        #' arvadosFile <- collection$get(fileName)
+        #' myFile$write("This is new file content")
         write = function(content, contentType = "text/html")
         {
             if(is.null(private$collection))
@@ -175,6 +190,11 @@ ArvadosFile <- R6::R6Class(
             writeResult
         },
 
+        #' @description
+        #' Moves file to a new location inside collection.
+        #' @param destination Path to new folder.
+        #' @examples
+        #' arvadosFile$move(newPath)
         move = function(destination)
         {
             if(is.null(private$collection))
@@ -207,6 +227,11 @@ ArvadosFile <- R6::R6Class(
             self
         },
 
+        #' @description
+        #' Copies file to a new location inside collection.
+        #' @param destination Path to new folder.
+        #' @examples
+        #' arvadosFile$copy("NewName.format")
         copy = function(destination)
         {
             if(is.null(private$collection))
@@ -238,6 +263,9 @@ ArvadosFile <- R6::R6Class(
             newFile
         },
 
+        #' @description
+        #' Duplicate file and gives it a new name.
+        #' @param newName New name for duplicated file.
         duplicate = function(newName = NULL)
         {
             name <- if(!is.null(newName)) newName else private$name
@@ -261,7 +289,10 @@ ArvadosFile <- R6::R6Class(
             # We also need to set content's collection to NULL because
             # add method throws exception if we try to add content that already
             # belongs to a collection.
+
             parentsCollection <- newParent$getCollection()
+            #parent$.__enclos_env__$private$children <- c(parent$.__enclos_env__$private$children, self)
+            #private$parent <- parent
             content$setCollection(NULL, setRecursively = FALSE)
             newParent$setCollection(NULL, setRecursively = FALSE)
             newParent$add(content)
@@ -273,6 +304,9 @@ ArvadosFile <- R6::R6Class(
         {
             # We temporary set parents collection to NULL. This will ensure that
             # remove method doesn't remove this file from REST.
+
+            #private$parent$.__enclos_env__$private$removeChild(private$name)
+            #private$parent <- NULL
             parent <- private$parent
             parentsCollection <- parent$getCollection()
             parent$setCollection(NULL, setRecursively = FALSE)
