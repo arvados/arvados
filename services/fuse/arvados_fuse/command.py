@@ -137,7 +137,7 @@ class Mount(object):
         try:
             nofile_limit = resource.getrlimit(resource.RLIMIT_NOFILE)
             if nofile_limit[0] < 10240:
-                resource.getslimit(resource.RLIMIT_NOFILE, min(10240, nofile_limit[1]))
+                resource.setrlimit(resource.RLIMIT_NOFILE, min(10240, nofile_limit[1]))
         except Exception as e:
             self.logger.warning("arv-mount: unable to adjust file handle limit: %s", e)
 
