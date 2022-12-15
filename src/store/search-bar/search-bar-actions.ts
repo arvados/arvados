@@ -89,6 +89,9 @@ export const searchAdvancedData = (data: SearchBarAdvancedFormData) =>
 
 export const setSearchValueFromAdvancedData = (data: SearchBarAdvancedFormData, prevData?: SearchBarAdvancedFormData) =>
     (dispatch: Dispatch, getState: () => RootState) => {
+        if (data.projectObject) {
+            data.projectUuid = data.projectObject.uuid;
+        }
         const searchValue = getState().searchBar.searchValue;
         const value = getQueryFromAdvancedData({
             ...data,
@@ -98,8 +101,11 @@ export const setSearchValueFromAdvancedData = (data: SearchBarAdvancedFormData, 
     };
 
 export const setAdvancedDataFromSearchValue = (search: string, vocabulary: Vocabulary) =>
-    async (dispatch: Dispatch) => {
+    async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
         const data = getAdvancedDataFromQuery(search, vocabulary);
+        if (data.projectUuid) {
+            data.projectObject = await services.projectService.get(data.projectUuid);
+        }
         dispatch<any>(initialize(SEARCH_BAR_ADVANCED_FORM_NAME, data));
         if (data.projectUuid) {
             await dispatch<any>(activateSearchBarProject(data.projectUuid));
@@ -227,11 +233,11 @@ const searchGroups = (searchValue: string, limit: number, useCancel = false) =>
                         recursive: true
                     }, session, cancelTokens[index].token);
                 }));
-    
+
                 cancelTokens = [];
-    
+
                 const items = lists.reduce((items, list) => items.concat(list.items), [] as GroupContentsResource[]);
-    
+
                 if (lists.filter(list => !!(list as any).items).length !== lists.length) {
                     dispatch(searchBarActions.SET_SEARCH_RESULTS([]));
                 } else {
@@ -290,7 +296,7 @@ export const getQueryFromAdvancedData = (data: SearchBarAdvancedFormData, prevDa
         };
         (data.properties || []).forEach(p =>
             fo[`prop-"${p.keyID || p.key}":"${p.valueID || p.value}"`] = `"${p.valueID || p.value}"`
-            );
+        );
         return fo;
     };
 
@@ -308,9 +314,9 @@ export const getQueryFromAdvancedData = (data: SearchBarAdvancedFormData, prevDa
             [`has:"${p.keyID || p.key}"`, `prop-"${p.keyID || p.key}":"${p.valueID || p.value}"`]
         ));
 
-    const modified = getModifiedKeysValues(flatData(data), prevData ? flatData(prevData):{});
+    const modified = getModifiedKeysValues(flatData(data), prevData ? flatData(prevData) : {});
     value = buildQueryFromKeyMap(
-        {searchValue: data.searchValue, ...modified} as SearchBarAdvancedFormData, keyMap);
+        { searchValue: data.searchValue, ...modified } as SearchBarAdvancedFormData, keyMap);
 
     value = value.trim();
     return value;

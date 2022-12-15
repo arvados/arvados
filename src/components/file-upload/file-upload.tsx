@@ -34,7 +34,8 @@ const styles: StyleRulesCallback<CssRules> = theme => ({
         width: "100%",
         height: "200px",
         position: "relative",
-        border: "1px solid rgba(0, 0, 0, 0.42)"
+        border: "1px solid rgba(0, 0, 0, 0.42)",
+        boxSizing: 'border-box',
     },
     dropzoneBorder: {
         content: "",

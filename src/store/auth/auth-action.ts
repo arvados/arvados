@@ -92,6 +92,9 @@ export const saveApiToken = (token: string) => async (dispatch: Dispatch, getSta
 
     // If the token is from a LoginCluster federation, get user & token data
     // from the token issuing cluster.
+    if (!config) {
+        return;
+    }
     const lc = (config as Config).loginCluster
     const tokenCluster = tokenParts.length === 3
         ? tokenParts[1].substring(0, 5)
@@ -127,7 +130,7 @@ export const getNewExtraToken = (reuseStored: boolean = false) =>
                 const client = await svc.apiClientAuthorizationService.get('current');
                 dispatch(authActions.SET_EXTRA_TOKEN({
                     extraApiToken: extraToken,
-                    extraApiTokenExpiration: client.expiresAt ? new Date(client.expiresAt): undefined,
+                    extraApiTokenExpiration: client.expiresAt ? new Date(client.expiresAt) : undefined,
                 }));
                 return extraToken;
             } catch (e) {
@@ -145,7 +148,7 @@ export const getNewExtraToken = (reuseStored: boolean = false) =>
             const newExtraToken = getTokenV2(client);
             dispatch(authActions.SET_EXTRA_TOKEN({
                 extraApiToken: newExtraToken,
-                extraApiTokenExpiration: client.expiresAt ? new Date(client.expiresAt): undefined,
+                extraApiTokenExpiration: client.expiresAt ? new Date(client.expiresAt) : undefined,
             }));
             return newExtraToken;
         } catch {

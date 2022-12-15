@@ -8,7 +8,7 @@ import { Dialog, DialogActions, DialogContent, DialogTitle } from '@material-ui/
 import { Button, StyleRulesCallback, WithStyles, withStyles, CircularProgress } from '@material-ui/core';
 import { WithDialogProps } from 'store/dialog/with-dialog';
 
-type CssRules = "button" | "lastButton" | "formContainer" | "dialogTitle" | "progressIndicator" | "dialogActions";
+type CssRules = "button" | "lastButton" | "form" | "formContainer" | "dialogTitle" | "progressIndicator" | "dialogActions";
 
 const styles: StyleRulesCallback<CssRules> = theme => ({
     button: {
@@ -17,6 +17,12 @@ const styles: StyleRulesCallback<CssRules> = theme => ({
     lastButton: {
         marginLeft: theme.spacing.unit,
         marginRight: "0",
+    },
+    form: {
+        display: 'flex',
+        overflowY: 'auto',
+        flexDirection: 'column',
+        flex: '0 1 auto',
     },
     formContainer: {
         display: "flex",
@@ -57,7 +63,7 @@ export const FormDialog = withStyles(styles)((props: DialogProjectProps) =>
         disableEscapeKeyDown={props.submitting}
         fullWidth
         maxWidth='md'>
-        <form data-cy='form-dialog'>
+        <form data-cy='form-dialog' className={props.classes.form}>
             <DialogTitle className={props.classes.dialogTitle}>
                 {props.dialogTitle}
             </DialogTitle>

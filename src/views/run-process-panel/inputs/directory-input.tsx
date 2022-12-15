@@ -6,7 +6,7 @@ import React from 'react';
 import { connect, DispatchProp } from 'react-redux';
 import { memoize } from 'lodash/fp';
 import { Field } from 'redux-form';
-import { Input, Dialog, DialogTitle, DialogContent, DialogActions, Button } from '@material-ui/core';
+import { Input, Dialog, DialogTitle, DialogContent, DialogActions, Button, StyleRulesCallback, withStyles, WithStyles } from '@material-ui/core';
 import {
     isRequiredInput,
     DirectoryCommandInputParameter,
@@ -17,7 +17,7 @@ import { GenericInputProps, GenericInput } from './generic-input';
 import { ProjectsTreePicker } from 'views-components/projects-tree-picker/projects-tree-picker';
 import { initProjectsTreePicker } from 'store/tree-picker/tree-picker-actions';
 import { TreeItem } from 'components/tree/tree';
-import { ProjectsTreePickerItem } from 'views-components/projects-tree-picker/generic-projects-tree-picker';
+import { ProjectsTreePickerItem } from 'store/tree-picker/tree-picker-middleware';
 import { CollectionResource } from 'models/collection';
 import { ResourceKind } from 'models/resource';
 import { ERROR_MESSAGE } from 'validators/require';
@@ -26,6 +26,9 @@ export interface DirectoryInputProps {
     input: DirectoryCommandInputParameter;
     options?: { showOnlyOwned: boolean, showOnlyWritable: boolean };
 }
+
+type DialogContentCssRules = 'root' | 'pickerWrapper';
+
 export const DirectoryInput = ({ input, options }: DirectoryInputProps) =>
     <Field
         name={input.id}
@@ -75,7 +78,7 @@ const DirectoryInputComponent = connect()(
         render() {
             return <>
                 {this.renderInput()}
-                {this.renderDialog()}
+                <this.dialog />
             </>;
         }
 
@@ -114,32 +117,45 @@ const DirectoryInputComponent = connect()(
                 {...this.props} />;
         }
 
-        renderDialog() {
-            return <Dialog
-                open={this.state.open}
-                onClose={this.closeDialog}
-                fullWidth
-                data-cy="choose-a-directory-dialog"
-                maxWidth='md'>
-                <DialogTitle>Choose a directory</DialogTitle>
-                <DialogContent>
-                    <ProjectsTreePicker
-                        pickerId={this.props.commandInput.id}
-                        includeCollections
-                        options={this.props.options}
-                        toggleItemActive={this.setDirectory} />
-                </DialogContent>
-                <DialogActions>
-                    <Button onClick={this.closeDialog}>Cancel</Button>
-                    <Button
-                        disabled={!this.state.directory}
-                        variant='contained'
-                        color='primary'
-                        onClick={this.submit}>Ok</Button>
-                </DialogActions>
-            </Dialog>;
-        }
+        dialogContentStyles: StyleRulesCallback<DialogContentCssRules> = ({ spacing }) => ({
+            root: {
+                display: 'flex',
+                flexDirection: 'column',
+            },
+            pickerWrapper: {
+                flexBasis: `${spacing.unit * 8}vh`,
+                flexShrink: 1,
+                minHeight: 0,
+            },
+        });
+
+        dialog = withStyles(this.dialogContentStyles)(
+            ({ classes }: WithStyles<DialogContentCssRules>) =>
+                <Dialog
+                    open={this.state.open}
+                    onClose={this.closeDialog}
+                    fullWidth
+                    data-cy="choose-a-directory-dialog"
+                    maxWidth='md'>
+                    <DialogTitle>Choose a directory</DialogTitle>
+                    <DialogContent className={classes.root}>
+                        <div className={classes.pickerWrapper}>
+                            <ProjectsTreePicker
+                                pickerId={this.props.commandInput.id}
+                                includeCollections
+                                options={this.props.options}
+                                toggleItemActive={this.setDirectory} />
+                        </div>
+                    </DialogContent>
+                    <DialogActions>
+                        <Button onClick={this.closeDialog}>Cancel</Button>
+                        <Button
+                            disabled={!this.state.directory}
+                            variant='contained'
+                            color='primary'
+                            onClick={this.submit}>Ok</Button>
+                    </DialogActions>
+                </Dialog>
+        );
 
     });
-
-

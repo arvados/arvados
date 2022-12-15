@@ -16,7 +16,7 @@ import { GenericInputProps, GenericInput } from './generic-input';
 import { ProjectsTreePicker } from 'views-components/projects-tree-picker/projects-tree-picker';
 import { connect, DispatchProp } from 'react-redux';
 import { initProjectsTreePicker, getSelectedNodes, treePickerActions, getProjectsTreePickerIds, getAllNodes } from 'store/tree-picker/tree-picker-actions';
-import { ProjectsTreePickerItem } from 'views-components/projects-tree-picker/generic-projects-tree-picker';
+import { ProjectsTreePickerItem } from 'store/tree-picker/tree-picker-middleware';
 import { createSelector, createStructuredSelector } from 'reselect';
 import { ChipsInput } from 'components/chips-input/chips-input';
 import { identity, values, noop } from 'lodash';
@@ -231,31 +231,17 @@ const DirectoryArrayInputComponent = connect(mapStateToProps)(
                 onBlur={this.props.input.onBlur}
                 disabled={this.props.commandInput.disabled} />
 
-        dialog = () =>
-            <Dialog
-                open={this.state.open}
-                onClose={this.closeDialog}
-                fullWidth
-                maxWidth='md' >
-                <DialogTitle>Choose collections</DialogTitle>
-                <DialogContent>
-                    <this.dialogContent />
-                </DialogContent>
-                <DialogActions>
-                    <Button onClick={this.closeDialog}>Cancel</Button>
-                    <Button
-                        data-cy='ok-button'
-                        variant='contained'
-                        color='primary'
-                        onClick={this.submit}>Ok</Button>
-                </DialogActions>
-            </Dialog>
-
         dialogContentStyles: StyleRulesCallback<DialogContentCssRules> = ({ spacing }) => ({
             root: {
                 display: 'flex',
                 flexDirection: 'column',
-                height: `${spacing.unit * 8}vh`,
+            },
+            pickerWrapper: {
+                display: 'flex',
+                flexDirection: 'column',
+                flexBasis: `${spacing.unit * 8}vh`,
+                flexShrink: 1,
+                minHeight: 0,
             },
             tree: {
                 flex: 3,
@@ -270,11 +256,33 @@ const DirectoryArrayInputComponent = connect(mapStateToProps)(
                 padding: `${spacing.unit}px 0`,
                 overflowX: 'hidden',
             },
-        })
+        });
+
+        dialog = withStyles(this.dialogContentStyles)(
+            ({ classes }: WithStyles<DialogContentCssRules>) =>
+                <Dialog
+                    open={this.state.open}
+                    onClose={this.closeDialog}
+                    fullWidth
+                    maxWidth='md' >
+                    <DialogTitle>Choose collections</DialogTitle>
+                    <DialogContent className={classes.root}>
+                        <this.dialogContent />
+                    </DialogContent>
+                    <DialogActions>
+                        <Button onClick={this.closeDialog}>Cancel</Button>
+                        <Button
+                            data-cy='ok-button'
+                            variant='contained'
+                            color='primary'
+                            onClick={this.submit}>Ok</Button>
+                    </DialogActions>
+                </Dialog>
+        );
 
         dialogContent = withStyles(this.dialogContentStyles)(
             ({ classes }: WithStyles<DialogContentCssRules>) =>
-                <div className={classes.root}>
+                <div className={classes.pickerWrapper}>
                     <div className={classes.tree}>
                         <ProjectsTreePicker
                             pickerId={this.props.commandInput.id}
@@ -298,4 +306,4 @@ const DirectoryArrayInputComponent = connect(mapStateToProps)(
 
     });
 
-type DialogContentCssRules = 'root' | 'tree' | 'divider' | 'chips';
+type DialogContentCssRules = 'root' | 'pickerWrapper' | 'tree' | 'divider' | 'chips';

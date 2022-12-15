@@ -12,18 +12,12 @@ import { treePickerActions } from "store/tree-picker/tree-picker-actions";
 import { ListItemTextIcon } from "components/list-item-text-icon/list-item-text-icon";
 import { ProjectIcon, FileInputIcon, IconType, CollectionIcon } from 'components/icon/icon';
 import { loadProject, loadCollection } from 'store/tree-picker/tree-picker-actions';
-import { GroupContentsResource } from 'services/groups-service/groups-service';
-import { CollectionDirectory, CollectionFile, CollectionFileType } from 'models/collection-file';
+import { ProjectsTreePickerItem, ProjectsTreePickerRootItem } from 'store/tree-picker/tree-picker-middleware';
 import { ResourceKind } from 'models/resource';
 import { TreePickerProps, TreePicker } from "views-components/tree-picker/tree-picker";
-import { LinkResource } from "models/link";
+import { CollectionFileType } from 'models/collection-file';
 
-export interface ProjectsTreePickerRootItem {
-    id: string;
-    name: string;
-}
 
-export type ProjectsTreePickerItem = ProjectsTreePickerRootItem | GroupContentsResource | CollectionDirectory | CollectionFile | LinkResource;
 type PickedTreePickerProps = Pick<TreePickerProps<ProjectsTreePickerItem>, 'onContextMenu' | 'toggleItemActive' | 'toggleItemOpen' | 'toggleItemSelection'>;
 
 export interface ProjectsTreePickerDataProps {
@@ -35,7 +29,7 @@ export interface ProjectsTreePickerDataProps {
     disableActivation?: string[];
     options?: { showOnlyOwned: boolean, showOnlyWritable: boolean };
     loadRootItem: (item: TreeItem<ProjectsTreePickerRootItem>, pickerId: string,
-         includeCollections?: boolean, includeFiles?: boolean, options?: { showOnlyOwned: boolean, showOnlyWritable: boolean }) => void;
+        includeCollections?: boolean, includeFiles?: boolean, options?: { showOnlyOwned: boolean, showOnlyWritable: boolean }) => void;
 }
 
 export type ProjectsTreePickerProps = ProjectsTreePickerDataProps & Partial<PickedTreePickerProps>;

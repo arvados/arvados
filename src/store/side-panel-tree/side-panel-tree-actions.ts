@@ -20,7 +20,7 @@ import { CategoriesListReducer } from 'common/plugintypes';
 import { pluginConfig } from 'plugins';
 
 export enum SidePanelTreeCategory {
-    PROJECTS = 'Projects',
+    PROJECTS = 'Home Projects',
     SHARED_WITH_ME = 'Shared with me',
     PUBLIC_FAVORITES = 'Public Favorites',
     FAVORITES = 'My Favorites',
