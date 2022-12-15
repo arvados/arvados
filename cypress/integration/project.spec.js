@@ -223,6 +223,40 @@ describe('Project tests', function() {
         });
     });
 
+    it('resets the search box only when navigating out of the current project', function() {
+        const fooProjectNameA = `Test foo project ${Math.floor(Math.random() * 999999)}`;
+        const fooProjectNameB = `Test foo project ${Math.floor(Math.random() * 999999)}`;
+        const barProjectNameA = `Test bar project ${Math.floor(Math.random() * 999999)}`;
+
+        [fooProjectNameA, fooProjectNameB, barProjectNameA].forEach(projName => {
+            cy.createGroup(activeUser.token, {
+                name: projName,
+                group_class: 'project',
+            });
+        });
+
+        cy.loginAs(activeUser);
+        cy.get('[data-cy=project-panel]')
+            .should('contain', fooProjectNameA)
+            .and('contain', fooProjectNameB)
+            .and('contain', barProjectNameA);
+
+        cy.get('[data-cy=search-input]').type('foo');
+        cy.get('[data-cy=project-panel]')
+            .should('contain', fooProjectNameA)
+            .and('contain', fooProjectNameB)
+            .and('not.contain', barProjectNameA);
+
+        // Click on the table row to select it, search should remain the same.
+        cy.get(`p:contains(${fooProjectNameA})`)
+            .parent().parent().parent().parent().click();
+        cy.get('[data-cy=search-input] input').should('have.value', 'foo');
+
+        // Click to navigate to the project, search should be reset
+        cy.get(`p:contains(${fooProjectNameA})`).click();
+        cy.get('[data-cy=search-input] input').should('not.have.value', 'foo');
+    });
+
     it('navigates to the root project after trashing the parent of the one being displayed', function() {
         cy.createGroup(activeUser.token, {
             name: `Test root project ${Math.floor(Math.random() * 999999)}`,
