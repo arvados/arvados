@@ -14,17 +14,18 @@ class UsersControllerTest < ActionController::TestCase
   test "ignore previously valid token (for deleted user), don't crash" do
     get :activity, params: {}, session: session_for(:valid_token_deleted_user)
     assert_response :redirect
-    assert_match /^#{Rails.configuration.Services.Controller.ExternalURL}\/login/, @response.redirect_url
+    assert_match /^#{Rails.configuration.Services.Workbench1.ExternalURL}users\/welcome/, @response.redirect_url
     assert_nil assigns(:my_jobs)
     assert_nil assigns(:my_ssh_keys)
   end
 
   test "expired token redirects to api server login" do
+    assert Rails.configuration.Login.Test.Enable
     get :show, params: {
       id: api_fixture('users')['active']['uuid']
     }, session: session_for(:expired_trustedclient)
     assert_response :redirect
-    assert_match /^#{Rails.configuration.Services.Controller.ExternalURL}\/login/, @response.redirect_url
+    assert_match /^#{Rails.configuration.Services.Workbench1.ExternalURL}users\/welcome/, @response.redirect_url
     assert_nil assigns(:my_jobs)
     assert_nil assigns(:my_ssh_keys)
   end
