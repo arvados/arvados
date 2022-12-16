@@ -235,17 +235,33 @@ class ArvadosApiClient
   end
 
   def arvados_login_url(params={})
-    uri = URI.parse(Rails.configuration.Services.Controller.ExternalURL.to_s)
-    if Rails.configuration.testing_override_login_url
-      uri = URI(Rails.configuration.testing_override_login_url)
+    case
+    when Rails.configuration.Login.PAM.Enable,
+         Rails.configuration.Login.LDAP.Enable,
+         Rails.configuration.Login.Test.Enable
+
+      uri = URI.parse(Rails.configuration.Services.Workbench1.ExternalURL.to_s)
+      uri.path = "/users/welcome"
+      uri.query = URI.encode_www_form(params)
+    else
+      uri = URI.parse(Rails.configuration.Services.Controller.ExternalURL.to_s)
+      if Rails.configuration.testing_override_login_url
+        uri = URI(Rails.configuration.testing_override_login_url)
+      end
+      uri.path = "/login"
+      uri.query = URI.encode_www_form(params)
     end
-    uri.path = "/login"
-    uri.query = URI.encode_www_form(params)
     uri.to_s
   end
 
   def arvados_logout_url(params={})
-    arvados_login_url(params).sub('/login','/logout')
+    uri = URI.parse(Rails.configuration.Services.Controller.ExternalURL.to_s)
+    if Rails.configuration.testing_override_login_url
+      uri = URI(Rails.configuration.testing_override_login_url)
+    end
+    uri.path = "/logout"
+    uri.query = URI.encode_www_form(params)
+    uri.to_s
   end
 
   def arvados_v1_base
