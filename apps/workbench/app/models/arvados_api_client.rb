@@ -235,6 +235,13 @@ class ArvadosApiClient
   end
 
   def arvados_login_url(params={})
+    if Rails.configuration.testing_override_login_url
+      uri = URI(Rails.configuration.testing_override_login_url)
+      uri.path = "/login"
+      uri.query = URI.encode_www_form(params)
+      return uri.to_s
+    end
+
     case
     when Rails.configuration.Login.PAM.Enable,
          Rails.configuration.Login.LDAP.Enable,
@@ -245,9 +252,6 @@ class ArvadosApiClient
       uri.query = URI.encode_www_form(params)
     else
       uri = URI.parse(Rails.configuration.Services.Controller.ExternalURL.to_s)
-      if Rails.configuration.testing_override_login_url
-        uri = URI(Rails.configuration.testing_override_login_url)
-      end
       uri.path = "/login"
       uri.query = URI.encode_www_form(params)
     end
