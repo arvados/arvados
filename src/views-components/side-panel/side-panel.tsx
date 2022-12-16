@@ -13,7 +13,7 @@ import { Grid } from '@material-ui/core';
 import { SidePanelButton } from 'views-components/side-panel-button/side-panel-button';
 import { RootState } from 'store/store';
 
-const DRAWER_WITDH = 240;
+const DRAWER_WIDTH = 240;
 
 type CssRules = 'root';
 
@@ -23,7 +23,7 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
         borderRight: `1px solid ${theme.palette.divider}`,
         height: '100%',
         overflowX: 'auto',
-        width: DRAWER_WITDH,
+        width: DRAWER_WIDTH,
     }
 });
 

@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import React from 'react';
+import React, { useState } from 'react';
 import { StyleRulesCallback, WithStyles, withStyles } from '@material-ui/core/styles';
 import { Route, Switch } from "react-router";
 import { ProjectPanel } from "views/project-panel/project-panel";
@@ -186,18 +186,20 @@ const reduceRoutesFn: (a: React.ReactElement[],
 routes = React.createElement(React.Fragment, null, pluginConfig.centerPanelList.reduce(reduceRoutesFn, React.Children.toArray(routes.props.children)));
 
 export const WorkbenchPanel =
-    withStyles(styles)((props: WorkbenchPanelProps) =>
-        <Grid container item xs className={props.classes.root}>
+    withStyles(styles)((props: WorkbenchPanelProps) =>{
+        const [collapsedState, setCollapsedState] = useState<boolean>(false)
+        return <Grid container item xs className={props.classes.root}>
             {props.sessionIdleTimeout > 0 && <AutoLogout />}
             <Grid container item xs className={props.classes.container}>
                 <SplitterLayout customClassName={props.classes.splitter} percentage={true}
                     primaryIndex={0} primaryMinSize={10}
                     secondaryInitialSize={getSplitterInitialSize()} secondaryMinSize={40}
                     onSecondaryPaneSizeChange={saveSplitterSize}>
-                    {props.isUserActive && props.isNotLinking && <Grid container item xs component='aside' direction='column' className={props.classes.asidePanel}>
+                    {props.isUserActive && props.isNotLinking && !collapsedState && <Grid container item xs component='aside' direction='column' className={props.classes.asidePanel}>
                         <SidePanel />
                     </Grid>}
                     <Grid container item xs component="main" direction="column" className={props.classes.contentWrapper}>
+                    <button onClick={()=>setCollapsedState(!collapsedState)}>collpase</button>
                         <Grid item xs>
                             {props.isNotLinking && <MainContentBar />}
                         </Grid>
@@ -271,5 +273,5 @@ export const WorkbenchPanel =
             <FedLogin />
             <WebDavS3InfoDialog />
             {React.createElement(React.Fragment, null, pluginConfig.dialogs)}
-        </Grid>
+        </Grid>}
     );
