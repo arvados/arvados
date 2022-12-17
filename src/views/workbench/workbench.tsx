@@ -187,7 +187,14 @@ routes = React.createElement(React.Fragment, null, pluginConfig.centerPanelList.
 
 export const WorkbenchPanel =
     withStyles(styles)((props: WorkbenchPanelProps) =>{
-        const [collapsedState, setCollapsedState] = useState<boolean>(false)
+        const [isExpanded, setIsExpanded] = useState<boolean>(false)
+
+        const expandRightPanel = (): void=> {
+            const rightPanel: Element = document.getElementsByClassName('layout-pane')[1]
+            rightPanel.setAttribute('style', `width: ${isExpanded ? getSplitterInitialSize() : 100}%`)
+            setIsExpanded(!isExpanded)
+        }
+
         return <Grid container item xs className={props.classes.root}>
             {props.sessionIdleTimeout > 0 && <AutoLogout />}
             <Grid container item xs className={props.classes.container}>
@@ -195,11 +202,11 @@ export const WorkbenchPanel =
                     primaryIndex={0} primaryMinSize={10}
                     secondaryInitialSize={getSplitterInitialSize()} secondaryMinSize={40}
                     onSecondaryPaneSizeChange={saveSplitterSize}>
-                    {props.isUserActive && props.isNotLinking && !collapsedState && <Grid container item xs component='aside' direction='column' className={props.classes.asidePanel}>
+                    {props.isUserActive && props.isNotLinking && <Grid container item xs component='aside' direction='column' className={props.classes.asidePanel}>
                         <SidePanel />
                     </Grid>}
                     <Grid container item xs component="main" direction="column" className={props.classes.contentWrapper}>
-                    <button onClick={()=>setCollapsedState(!collapsedState)}>collpase</button>
+                    <button onClick={expandRightPanel}>moveSplitter</button>
                         <Grid item xs>
                             {props.isNotLinking && <MainContentBar />}
                         </Grid>
