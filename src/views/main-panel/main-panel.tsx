@@ -10,6 +10,7 @@ import { isSystemWorking } from 'store/progress-indicator/progress-indicator-red
 import { isWorkbenchLoading } from 'store/workbench/workbench-actions';
 import { LinkAccountPanelStatus } from 'store/link-account-panel/link-account-panel-reducer';
 import { matchLinkAccountRoute } from 'routes/routes';
+import { toggleSidePanel } from "store/store";
 
 const mapStateToProps = (state: RootState): MainPanelRootDataProps => {
     return {
@@ -21,10 +22,17 @@ const mapStateToProps = (state: RootState): MainPanelRootDataProps => {
         isNotLinking: state.linkAccountPanel.status === LinkAccountPanelStatus.NONE || state.linkAccountPanel.status === LinkAccountPanelStatus.INITIAL,
         isLinkingPath: state.router.location ? matchLinkAccountRoute(state.router.location.pathname) !== null : false,
         siteBanner: state.auth.config.clusterConfig.Workbench.SiteName,
-        sessionIdleTimeout: parse(state.auth.config.clusterConfig.Workbench.IdleTimeout, 's') || 0
+        sessionIdleTimeout: parse(state.auth.config.clusterConfig.Workbench.IdleTimeout, 's') || 0,
+        sidePanelIsCollapsed: state.sidePanel.collapsedState,
     };
 };
 
-const mapDispatchToProps = null;
+const mapDispatchToProps = (dispatch) => {
+    return {
+        toggleSidePanel: (collapsedState)=>{
+            return dispatch(toggleSidePanel(collapsedState))
+        }
+    }
+};
 
 export const MainPanel = connect(mapStateToProps, mapDispatchToProps)(MainPanelRoot);

@@ -99,6 +99,7 @@ import { RestoreCollectionVersionDialog } from 'views-components/collections-dia
 import { WebDavS3InfoDialog } from 'views-components/webdav-s3-dialog/webdav-s3-dialog';
 import { pluginConfig } from 'plugins';
 import { ElementListReducer } from 'common/plugintypes';
+// import { toggleSidePanel } from 'store/store'
 
 type CssRules = 'root' | 'container' | 'splitter' | 'asidePanel' | 'contentWrapper' | 'content';
 
@@ -137,6 +138,7 @@ interface WorkbenchDataProps {
     isUserActive: boolean;
     isNotLinking: boolean;
     sessionIdleTimeout: number;
+    sidePanelIsCollapsed: boolean;
 }
 
 type WorkbenchPanelProps = WithStyles<CssRules> & WorkbenchDataProps;
@@ -185,16 +187,16 @@ const reduceRoutesFn: (a: React.ReactElement[],
 
 routes = React.createElement(React.Fragment, null, pluginConfig.centerPanelList.reduce(reduceRoutesFn, React.Children.toArray(routes.props.children)));
 
+const applyCollapsedState = (isCollapsed) => {
+    const rightPanel: Element = document.getElementsByClassName('layout-pane')[1]
+    if(rightPanel) {
+        rightPanel.setAttribute('style', `width: ${isCollapsed ? 100 : getSplitterInitialSize()}%`)
+    }
+}
+
 export const WorkbenchPanel =
     withStyles(styles)((props: WorkbenchPanelProps) =>{
-        const [isExpanded, setIsExpanded] = useState<boolean>(false)
-
-        const expandRightPanel = (): void=> {
-            const rightPanel: Element = document.getElementsByClassName('layout-pane')[1]
-            rightPanel.setAttribute('style', `width: ${isExpanded ? getSplitterInitialSize() : 100}%`)
-            setIsExpanded(!isExpanded)
-        }
-
+        applyCollapsedState(props.sidePanelIsCollapsed)
         return <Grid container item xs className={props.classes.root}>
             {props.sessionIdleTimeout > 0 && <AutoLogout />}
             <Grid container item xs className={props.classes.container}>
@@ -206,7 +208,6 @@ export const WorkbenchPanel =
                         <SidePanel />
                     </Grid>}
                     <Grid container item xs component="main" direction="column" className={props.classes.contentWrapper}>
-                    <button onClick={expandRightPanel}>moveSplitter</button>
                         <Grid item xs>
                             {props.isNotLinking && <MainContentBar />}
                         </Grid>

@@ -185,6 +185,22 @@ export function configureStore(history: History, services: ServiceRepository, co
     return createStore(rootReducer, enhancer);
 }
 
+//TODO: put sidePanel items in separate file and import
+export const toggleSidePanel = (collapsedState: boolean) => {
+    return (dispatch) => {
+        dispatch({type: 'TOGGLE_COLLAPSE', payload: !collapsedState})
+    }
+}
+
+const sidePanelInitialState = {
+    collapsedState: false
+}
+
+const sidePanelReducer = (state = sidePanelInitialState, action)=>{
+    if(action.type === 'TOGGLE_COLLAPSE') return {...state, collapsedState: action.payload}
+    return state
+}
+
 const createRootReducer = (services: ServiceRepository) => combineReducers({
     auth: authReducer(services),
     collectionPanel: collectionPanelReducer,
@@ -212,5 +228,6 @@ const createRootReducer = (services: ServiceRepository) => combineReducers({
     virtualMachines: virtualMachinesReducer,
     repositories: repositoriesReducer,
     keepServices: keepServicesReducer,
-    linkAccountPanel: linkAccountPanelReducer
+    linkAccountPanel: linkAccountPanelReducer,
+    sidePanel: sidePanelReducer
 });
