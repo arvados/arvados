@@ -712,4 +712,38 @@ class PermissionsTest < ActionDispatch::IntegrationTest
     assert_response :success
     assert_empty json_response['manifest_text'], "empty collection manifest_text is not empty"
   end
+
+  [['can_write', 'can_read', 'can_write'],
+   ['can_manage', 'can_write', 'can_manage'],
+   ['can_manage', 'can_read', 'can_manage'],
+   ['can_read', 'can_write', 'can_write'],
+   ['can_read', 'can_manage', 'can_manage'],
+   ['can_write', 'can_manage', 'can_manage'],
+  ].each do |perm1, perm2, expect|
+    test "creating #{perm2} permission returns existing #{perm1} link as #{expect}" do
+      link1 = act_as_system_user do
+        Link.create!({
+                       link_class: "permission",
+                       tail_uuid: users(:active).uuid,
+                       head_uuid: collections(:baz_file).uuid,
+                       name: perm1,
+                     })
+      end
+      post "/arvados/v1/links",
+           params: {
+             link: {
+               link_class: "permission",
+               tail_uuid: users(:active).uuid,
+               head_uuid: collections(:baz_file).uuid,
+               name: perm2,
+             },
+           },
+           headers: auth(:admin)
+      assert_response :success
+      assert_equal link1.uuid, json_response["uuid"]
+      assert_equal expect, json_response["name"]
+      link1.reload
+      assert_equal expect, link1.name
+    end
+  end
 end

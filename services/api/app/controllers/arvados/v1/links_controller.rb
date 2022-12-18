@@ -20,6 +20,25 @@ class Arvados::V1::LinksController < ApplicationController
 
     resource_attrs.delete :head_kind
     resource_attrs.delete :tail_kind
+
+    if resource_attrs[:link_class] == 'permission' && Link::PermLevel[resource_attrs[:name]]
+      existing = Link.where(link_class: 'permission',
+                            tail_uuid: resource_attrs[:tail_uuid],
+                            head_uuid: resource_attrs[:head_uuid],
+                            name: Link::PermLevel.keys).first
+      if existing
+        @object = existing
+        if Link::PermLevel[resource_attrs[:name]] > Link::PermLevel[existing.name]
+          # upgrade existing permission link to the requested level.
+          return update
+        else
+          # no-op: existing permission is already greater or equal to
+          # the newly requested permission.
+          return show
+        end
+      end
+    end
+
     super
   end
 
