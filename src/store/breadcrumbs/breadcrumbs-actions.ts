@@ -24,6 +24,7 @@ import { Breadcrumb } from 'components/breadcrumbs/breadcrumbs';
 import { ContainerRequestResource, containerRequestFieldsNoMounts } from 'models/container-request';
 import { CollectionIcon, IconType, ProcessIcon, ProjectIcon } from 'components/icon/icon';
 import { CollectionResource } from 'models/collection';
+import { getSidePanelIcon } from 'views-components/side-panel-tree/side-panel-tree';
 
 export const BREADCRUMBS = 'breadcrumbs';
 
@@ -57,7 +58,11 @@ const getSidePanelTreeBreadcrumbs = (uuid: string) => (treePicker: TreePicker): 
     const nodes = getSidePanelTreeBranch(uuid)(treePicker);
     return nodes.map(node =>
         typeof node.value === 'string'
-            ? { label: node.value, uuid: node.id }
+            ? {
+                label: node.value,
+                uuid: node.id,
+                icon: getSidePanelIcon(node.value)
+            }
             : resourceToBreadcrumb(node.value));
 };
 
@@ -100,7 +105,11 @@ export const setCategoryBreadcrumbs = (uuid: string, category: string) =>
         const ancestors = await services.ancestorsService.ancestors(uuid, '');
         dispatch(updateResources(ancestors));
         const initialBreadcrumbs: Breadcrumb[] = [
-            { label: category, uuid: category }
+            {
+                label: category,
+                uuid: category,
+                icon: getSidePanelIcon(category)
+            }
         ];
         const { collectionPanel: { item } } = getState();
         const path = getState().router.location!.pathname;
@@ -192,7 +201,11 @@ export const setProcessBreadcrumbs = (processUuid: string) =>
     };
 
 export const setGroupsBreadcrumbs = () =>
-    setBreadcrumbs([{ label: SidePanelTreeCategory.GROUPS }]);
+    setBreadcrumbs([{
+        label: SidePanelTreeCategory.GROUPS,
+        uuid: SidePanelTreeCategory.GROUPS,
+        icon: getSidePanelIcon(SidePanelTreeCategory.GROUPS)
+    }]);
 
 export const setGroupDetailsBreadcrumbs = (groupUuid: string) =>
     async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
@@ -200,7 +213,11 @@ export const setGroupDetailsBreadcrumbs = (groupUuid: string) =>
         const group = getResource<GroupResource>(groupUuid)(getState().resources);
 
         const breadcrumbs: Breadcrumb[] = [
-            { label: SidePanelTreeCategory.GROUPS, uuid: SidePanelTreeCategory.GROUPS },
+            {
+                label: SidePanelTreeCategory.GROUPS,
+                uuid: SidePanelTreeCategory.GROUPS,
+                icon: getSidePanelIcon(SidePanelTreeCategory.GROUPS)
+            },
             { label: group ? group.name : (await services.groupsService.get(groupUuid)).name, uuid: groupUuid },
         ];
 
