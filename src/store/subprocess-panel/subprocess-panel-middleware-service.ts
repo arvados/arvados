@@ -21,10 +21,9 @@ import { FilterBuilder, joinFilters } from 'services/api/filter-builder';
 import { subprocessPanelActions } from './subprocess-panel-actions';
 import { DataColumns } from 'components/data-table/data-table';
 import { ProcessStatusFilter, buildProcessStatusFilters } from '../resource-type-filters/resource-type-filters';
-import { ContainerRequestResource } from 'models/container-request';
+import { ContainerRequestResource, containerRequestFieldsNoMounts } from 'models/container-request';
 import { progressIndicatorActions } from '../progress-indicator/progress-indicator-actions';
 import { loadMissingProcessesInformation } from '../project-panel/project-panel-middleware-service';
-import { containerRequestFieldsNoMounts } from 'store/all-processes-panel/all-processes-panel-middleware-service';
 
 export class SubprocessMiddlewareService extends DataExplorerMiddlewareService {
     constructor(private services: ServiceRepository, id: string) {
