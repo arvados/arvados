@@ -37,6 +37,19 @@ class Arvados::V1::LinksController < ApplicationController
           return show
         end
       end
+    elsif resource_attrs[:link_class] == 'permission' &&
+          resource_attrs[:name] == 'can_login' &&
+          resource_attrs[:properties].respond_to?(:has_key?) &&
+          resource_attrs[:properties].has_key?(:username)
+      existing = Link.where(link_class: 'permission',
+                            tail_uuid: resource_attrs[:tail_uuid],
+                            head_uuid: resource_attrs[:head_uuid]).
+                   where('properties @> ?', SafeJSON.dump({'username' => resource_attrs[:properties][:username]})).
+                   first
+      if existing
+        @object = existing
+        return show
+      end
     end
 
     super
