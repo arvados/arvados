@@ -35,34 +35,38 @@ export interface MainPanelRootDataProps {
     sidePanelIsCollapsed: boolean;
 }
 
-type MainPanelRootProps = MainPanelRootDataProps & WithStyles<CssRules>;
+interface MainPanelRootDispatchProps {
+    toggleSidePanel: () => void
+}
+
+type MainPanelRootProps = MainPanelRootDataProps & MainPanelRootDispatchProps & WithStyles<CssRules>;
 
 export const MainPanelRoot = withStyles(styles)(
-    (props: MainPanelRootProps | any) =>{
-        const{ classes, loading, working, user, buildInfo, uuidPrefix,
-            isNotLinking, isLinkingPath, siteBanner, sessionIdleTimeout, sidePanelIsCollapsed } = props
-            return loading
+    ({ classes, loading, working, user, buildInfo, uuidPrefix,
+        isNotLinking, isLinkingPath, siteBanner, sessionIdleTimeout, 
+        sidePanelIsCollapsed, toggleSidePanel }: MainPanelRootProps) =>{
+        return loading
             ? <WorkbenchLoadingScreen />
             : <>
-                {isNotLinking && <MainAppBar
-                    user={user}
-                    buildInfo={buildInfo}
-                    uuidPrefix={uuidPrefix}
-                    siteBanner={siteBanner}
-                    sidePanelIsCollapsed={sidePanelIsCollapsed}
-                    toggleSidePanel={props.toggleSidePanel}
-                    >
-                    {working
-                        ? <LinearProgress color="secondary" data-cy="linear-progress" />
-                        : null}
-                </MainAppBar>}
-                <Grid container direction="column" className={classes.root}>
-                    {user
-                        ? (user.isActive || (!user.isActive && isLinkingPath)
-                        ? <WorkbenchPanel isNotLinking={isNotLinking} isUserActive={user.isActive} sessionIdleTimeout={sessionIdleTimeout} sidePanelIsCollapsed={sidePanelIsCollapsed}/>
-                        : <InactivePanel />)
-                        : <LoginPanel />}
-                </Grid>
-            </>
-}
+            {isNotLinking && <MainAppBar
+                user={user}
+                buildInfo={buildInfo}
+                uuidPrefix={uuidPrefix}
+                siteBanner={siteBanner}
+                sidePanelIsCollapsed={sidePanelIsCollapsed}
+                toggleSidePanel={toggleSidePanel}
+                >
+                {working
+                    ? <LinearProgress color="secondary" data-cy="linear-progress" />
+                    : null}
+            </MainAppBar>}
+            <Grid container direction="column" className={classes.root}>
+                {user
+                    ? (user.isActive || (!user.isActive && isLinkingPath)
+                    ? <WorkbenchPanel isNotLinking={isNotLinking} isUserActive={user.isActive} sessionIdleTimeout={sessionIdleTimeout} sidePanelIsCollapsed={sidePanelIsCollapsed}/>
+                    : <InactivePanel />)
+                    : <LoginPanel />}
+            </Grid>
+        </>
+    }
 );
