@@ -99,7 +99,6 @@ import { RestoreCollectionVersionDialog } from 'views-components/collections-dia
 import { WebDavS3InfoDialog } from 'views-components/webdav-s3-dialog/webdav-s3-dialog';
 import { pluginConfig } from 'plugins';
 import { ElementListReducer } from 'common/plugintypes';
-// import { toggleSidePanel } from 'store/store'
 
 type CssRules = 'root' | 'container' | 'splitter' | 'asidePanel' | 'contentWrapper' | 'content';
 

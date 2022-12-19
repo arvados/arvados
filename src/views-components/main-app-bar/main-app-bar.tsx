@@ -16,7 +16,6 @@ import { ReactNode } from "react";
 import { AdminMenu } from "views-components/main-app-bar/admin-menu";
 import { pluginConfig } from 'plugins';
 import { CollapseLeftPanelTrigger } from 'views-components/side-panel/side-panel'
-// import { toggleSidePanel } from "store/store";
 
 type CssRules = 'toolbar' | 'link';
 
@@ -26,7 +25,8 @@ const styles: StyleRulesCallback<CssRules> = () => ({
         color: 'inherit'
     },
     toolbar: {
-        height: '56px'
+        height: '56px',
+        paddingLeft: '0'
     }
 });
 
@@ -46,7 +46,7 @@ export const MainAppBar = withStyles(styles)(
     (props: MainAppBarProps) => {
         return <AppBar position="absolute">
             <Toolbar className={props.classes.toolbar}>
-                <CollapseLeftPanelTrigger sidepanelcollapsed={props.sidePanelIsCollapsed} 
+                <CollapseLeftPanelTrigger sidePanelIsCollapsed={props.sidePanelIsCollapsed} 
                 toggleSidePanel={props.toggleSidePanel}
                 />
                 <Grid container justify="space-between">

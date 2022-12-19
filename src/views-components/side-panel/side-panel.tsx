@@ -13,8 +13,6 @@ import { Grid, Tooltip, IconButton  } from '@material-ui/core';
 import { SidePanelButton } from 'views-components/side-panel-button/side-panel-button';
 import { RootState } from 'store/store';
 import MenuIcon from "@material-ui/icons/Menu";
-// import { IconButtonProps } from '@material-ui/core/IconButton';
-// import { toggleSidePanel } from 'store/store';
 
 const DRAWER_WIDTH = 240;
 
@@ -49,10 +47,23 @@ export const SidePanel = withStyles(styles)(
             </Grid>
     ));
 
-export const CollapseLeftPanelTrigger = (props) =>{ 
+type collapseButtonIconProps = {
+    sidePanelIsCollapsed: boolean;
+    toggleSidePanel: (collapsedState: boolean) => void
+}
+
+const collapseButtonIconStyles = {
+    menuIcon: {
+        height: '4rem',
+        width: '4rem', 
+        paddingBottom: '0.25rem'
+    }
+}
+
+export const CollapseLeftPanelTrigger = (props: collapseButtonIconProps) =>{ 
     return <Tooltip disableFocusListener title="Toggle Side Panel">
-                <IconButton onClick={()=>{props.toggleSidePanel(props.sidepanelcollapsed)}}>
-                    <MenuIcon aria-label="Toggle Side Panel" />
+                <IconButton onClick={()=>{props.toggleSidePanel(props.sidePanelIsCollapsed)}}>
+                    <MenuIcon style={collapseButtonIconStyles.menuIcon} aria-label="Toggle Side Panel" />
                 </IconButton>
             </Tooltip>
     };
