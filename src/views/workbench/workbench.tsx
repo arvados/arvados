@@ -137,6 +137,7 @@ interface WorkbenchDataProps {
     isUserActive: boolean;
     isNotLinking: boolean;
     sessionIdleTimeout: number;
+    sidePanelIsCollapsed: boolean;
 }
 
 type WorkbenchPanelProps = WithStyles<CssRules> & WorkbenchDataProps;
@@ -185,9 +186,17 @@ const reduceRoutesFn: (a: React.ReactElement[],
 
 routes = React.createElement(React.Fragment, null, pluginConfig.centerPanelList.reduce(reduceRoutesFn, React.Children.toArray(routes.props.children)));
 
+const applyCollapsedState = (isCollapsed) => {
+    const rightPanel: Element = document.getElementsByClassName('layout-pane')[1]
+    if(rightPanel) {
+        rightPanel.setAttribute('style', `width: ${isCollapsed ? 100 : getSplitterInitialSize()}%`)
+    }
+}
+
 export const WorkbenchPanel =
-    withStyles(styles)((props: WorkbenchPanelProps) =>
-        <Grid container item xs className={props.classes.root}>
+    withStyles(styles)((props: WorkbenchPanelProps) =>{
+        applyCollapsedState(props.sidePanelIsCollapsed)
+        return <Grid container item xs className={props.classes.root}>
             {props.sessionIdleTimeout > 0 && <AutoLogout />}
             <Grid container item xs className={props.classes.container}>
                 <SplitterLayout customClassName={props.classes.splitter} percentage={true}
@@ -271,5 +280,5 @@ export const WorkbenchPanel =
             <FedLogin />
             <WebDavS3InfoDialog />
             {React.createElement(React.Fragment, null, pluginConfig.dialogs)}
-        </Grid>
+        </Grid>}
     );

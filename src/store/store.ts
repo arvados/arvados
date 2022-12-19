@@ -74,6 +74,7 @@ import { ALL_PROCESSES_PANEL_ID } from './all-processes-panel/all-processes-pane
 import { Config } from 'common/config';
 import { pluginConfig } from 'plugins';
 import { MiddlewareListReducer } from 'common/plugintypes';
+import { sidePanelReducer } from './side-panel/side-panel-reducer'
 
 declare global {
     interface Window {
@@ -215,5 +216,6 @@ const createRootReducer = (services: ServiceRepository) => combineReducers({
     virtualMachines: virtualMachinesReducer,
     repositories: repositoriesReducer,
     keepServices: keepServicesReducer,
-    linkAccountPanel: linkAccountPanelReducer
+    linkAccountPanel: linkAccountPanelReducer,
+    sidePanel: sidePanelReducer
 });

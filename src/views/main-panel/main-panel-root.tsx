@@ -32,31 +32,41 @@ export interface MainPanelRootDataProps {
     isLinkingPath: boolean;
     siteBanner: string;
     sessionIdleTimeout: number;
+    sidePanelIsCollapsed: boolean;
 }
 
-type MainPanelRootProps = MainPanelRootDataProps & WithStyles<CssRules>;
+interface MainPanelRootDispatchProps {
+    toggleSidePanel: () => void
+}
+
+type MainPanelRootProps = MainPanelRootDataProps & MainPanelRootDispatchProps & WithStyles<CssRules>;
 
 export const MainPanelRoot = withStyles(styles)(
     ({ classes, loading, working, user, buildInfo, uuidPrefix,
-        isNotLinking, isLinkingPath, siteBanner, sessionIdleTimeout }: MainPanelRootProps) =>
-        loading
+        isNotLinking, isLinkingPath, siteBanner, sessionIdleTimeout, 
+        sidePanelIsCollapsed, toggleSidePanel }: MainPanelRootProps) =>{
+        return loading
             ? <WorkbenchLoadingScreen />
             : <>
-                {isNotLinking && <MainAppBar
-                    user={user}
-                    buildInfo={buildInfo}
-                    uuidPrefix={uuidPrefix}
-                    siteBanner={siteBanner}>
-                    {working
-                        ? <LinearProgress color="secondary" data-cy="linear-progress" />
-                        : null}
-                </MainAppBar>}
-                <Grid container direction="column" className={classes.root}>
-                    {user
-                        ? (user.isActive || (!user.isActive && isLinkingPath)
-                            ? <WorkbenchPanel isNotLinking={isNotLinking} isUserActive={user.isActive} sessionIdleTimeout={sessionIdleTimeout} />
-                            : <InactivePanel />)
-                        : <LoginPanel />}
-                </Grid>
-            </>
+            {isNotLinking && <MainAppBar
+                user={user}
+                buildInfo={buildInfo}
+                uuidPrefix={uuidPrefix}
+                siteBanner={siteBanner}
+                sidePanelIsCollapsed={sidePanelIsCollapsed}
+                toggleSidePanel={toggleSidePanel}
+                >
+                {working
+                    ? <LinearProgress color="secondary" data-cy="linear-progress" />
+                    : null}
+            </MainAppBar>}
+            <Grid container direction="column" className={classes.root}>
+                {user
+                    ? (user.isActive || (!user.isActive && isLinkingPath)
+                    ? <WorkbenchPanel isNotLinking={isNotLinking} isUserActive={user.isActive} sessionIdleTimeout={sessionIdleTimeout} sidePanelIsCollapsed={sidePanelIsCollapsed}/>
+                    : <InactivePanel />)
+                    : <LoginPanel />}
+            </Grid>
+        </>
+    }
 );

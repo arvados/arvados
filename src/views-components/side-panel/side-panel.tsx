@@ -9,11 +9,12 @@ import { SidePanelTree, SidePanelTreeProps } from 'views-components/side-panel-t
 import { Dispatch } from 'redux';
 import { connect } from 'react-redux';
 import { navigateFromSidePanel } from 'store/side-panel/side-panel-action';
-import { Grid } from '@material-ui/core';
+import { Grid, Tooltip, IconButton  } from '@material-ui/core';
 import { SidePanelButton } from 'views-components/side-panel-button/side-panel-button';
 import { RootState } from 'store/store';
+import MenuIcon from "@material-ui/icons/Menu";
 
-const DRAWER_WITDH = 240;
+const DRAWER_WIDTH = 240;
 
 type CssRules = 'root';
 
@@ -23,7 +24,7 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
         borderRight: `1px solid ${theme.palette.divider}`,
         height: '100%',
         overflowX: 'auto',
-        width: DRAWER_WITDH,
+        width: DRAWER_WIDTH,
     }
 });
 
@@ -45,3 +46,24 @@ export const SidePanel = withStyles(styles)(
                 <SidePanelTree {...props} />
             </Grid>
     ));
+
+type collapseButtonIconProps = {
+    sidePanelIsCollapsed: boolean;
+    toggleSidePanel: (collapsedState: boolean) => void
+}
+
+const collapseButtonIconStyles = {
+    menuIcon: {
+        height: '4rem',
+        width: '4rem', 
+        paddingBottom: '0.25rem'
+    }
+}
+
+export const CollapseLeftPanelTrigger = (props: collapseButtonIconProps) =>{ 
+    return <Tooltip disableFocusListener title="Toggle Side Panel">
+                <IconButton onClick={()=>{props.toggleSidePanel(props.sidePanelIsCollapsed)}}>
+                    <MenuIcon style={collapseButtonIconStyles.menuIcon} aria-label="Toggle Side Panel" />
+                </IconButton>
+            </Tooltip>
+    };
