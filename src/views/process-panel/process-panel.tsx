@@ -23,6 +23,7 @@ import {
     loadOutputs,
     toggleProcessPanelFilter,
     updateOutputParams,
+    loadNodeJson
 } from 'store/process-panel/process-panel-actions';
 import { cancelRunningWorkflow } from 'store/processes/processes-actions';
 import { navigateToLogCollection, setProcessLogsPanelFilter } from 'store/process-logs-panel/process-logs-panel-actions';
@@ -42,6 +43,7 @@ const mapStateToProps = ({ router, auth, resources, processPanel, processLogsPan
         outputRaw: processPanel.outputRaw,
         outputDefinitions: processPanel.outputDefinitions,
         outputParams: processPanel.outputParams,
+        nodeInfo: processPanel.nodeInfo,
     };
 };
 
@@ -65,7 +67,8 @@ const mapDispatchToProps = (dispatch: Dispatch): ProcessPanelRootActionProps => 
     loadInputs: (containerRequest) => dispatch<any>(loadInputs(containerRequest)),
     loadOutputs: (containerRequest) => dispatch<any>(loadOutputs(containerRequest)),
     loadOutputDefinitions: (containerRequest) => dispatch<any>(loadOutputDefinitions(containerRequest)),
-    updateOutputParams: () => dispatch<any>(updateOutputParams())
+    updateOutputParams: () => dispatch<any>(updateOutputParams()),
+    loadNodeJson: (containerRequest) => dispatch<any>(loadNodeJson(containerRequest)),
 });
 
 const getFilters = (processPanel: ProcessPanelState, processes: Process[]) => {
@@ -78,6 +81,6 @@ const getFilters = (processPanel: ProcessPanelState, processes: Process[]) => {
             checked: processPanel.filters[filter],
             key: filter,
         }));
-    };
+};
 
 export const ProcessPanel = connect(mapStateToProps, mapDispatchToProps)(ProcessPanelRoot);

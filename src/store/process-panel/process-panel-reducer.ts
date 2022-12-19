@@ -11,6 +11,7 @@ const initialState: ProcessPanel = {
     inputRaw: null,
     inputParams: null,
     outputRaw: null,
+    nodeInfo: null,
     outputDefinitions: [],
     outputParams: null,
 };
@@ -49,6 +50,9 @@ export const processPanelReducer = (state = initialState, action: ProcessPanelAc
         },
         SET_OUTPUT_RAW: outputRaw => {
             return { ...state, outputRaw };
+        },
+        SET_NODE_INFO: ({ nodeInfo }) => {
+            return { ...state, nodeInfo };
         },
         SET_OUTPUT_DEFINITIONS: outputDefinitions => {
             // Set output definitions is only additive to avoid clearing when mounts go temporarily missing
