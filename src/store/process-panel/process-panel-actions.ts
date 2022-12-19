@@ -19,8 +19,10 @@ import { ContainerRequestResource } from "models/container-request";
 import { CommandOutputParameter } from 'cwlts/mappings/v1.0/CommandOutputParameter';
 import { CommandInputParameter, getIOParamId, WorkflowInputsData } from 'models/workflow';
 import { getIOParamDisplayValue, ProcessIOParameter } from "views/process-panel/process-io-card";
-import { OutputDetails } from "./process-panel";
+import { OutputDetails, NodeInstanceType, NodeInfo } from "./process-panel";
 import { AuthState } from "store/auth/auth-reducer";
+import { CommonService } from "services/common-service/common-service";
+import { camelCase } from "lodash";
 
 export const processPanelActions = unionize({
     RESET_PROCESS_PANEL: ofType<{}>(),
@@ -32,6 +34,7 @@ export const processPanelActions = unionize({
     SET_OUTPUT_RAW: ofType<OutputDetails | null>(),
     SET_OUTPUT_DEFINITIONS: ofType<CommandOutputParameter[]>(),
     SET_OUTPUT_PARAMS: ofType<ProcessIOParameter[] | null>(),
+    SET_NODE_INFO: ofType<NodeInfo>(),
 });
 
 export type ProcessPanelAction = UnionOf<typeof processPanelActions>;
@@ -67,7 +70,7 @@ export const loadInputs = (containerRequest: ContainerRequestResource) =>
 
 export const loadOutputs = (containerRequest: ContainerRequestResource) =>
     async (dispatch: Dispatch<any>, getState: () => RootState, services: ServiceRepository) => {
-        const noOutputs = {rawOutputs: {}};
+        const noOutputs = { rawOutputs: {} };
         if (!containerRequest.outputUuid) {
             dispatch<ProcessPanelAction>(processPanelActions.SET_OUTPUT_RAW(noOutputs));
             return;
@@ -99,6 +102,35 @@ export const loadOutputs = (containerRequest: ContainerRequestResource) =>
             }
         } catch {
             dispatch<ProcessPanelAction>(processPanelActions.SET_OUTPUT_RAW(noOutputs));
+        }
+    };
+
+
+export const loadNodeJson = (containerRequest: ContainerRequestResource) =>
+    async (dispatch: Dispatch<any>, getState: () => RootState, services: ServiceRepository) => {
+        const noLog = { nodeInfo: null };
+        if (!containerRequest.logUuid) {
+            dispatch<ProcessPanelAction>(processPanelActions.SET_NODE_INFO(noLog));
+            return;
+        };
+        try {
+            const propsOutputs = getRawOutputs(containerRequest);
+            const filesPromise = services.collectionService.files(containerRequest.logUuid);
+            const collectionPromise = services.collectionService.get(containerRequest.logUuid);
+            const [files, collection] = await Promise.all([filesPromise, collectionPromise]);
+
+            // Fetch node.json from keep
+            const nodeFile = files.find((file) => file.name === 'node.json') as CollectionFile | undefined;
+            let nodeData = nodeFile ? await services.collectionService.getFileContents(nodeFile) : undefined;
+            if (nodeData && (nodeData = JSON.parse(nodeData))) {
+                dispatch<ProcessPanelAction>(processPanelActions.SET_NODE_INFO({
+                    nodeInfo: CommonService.mapKeys(camelCase)(nodeData) as NodeInstanceType
+                }));
+            } else {
+                dispatch<ProcessPanelAction>(processPanelActions.SET_NODE_INFO(noLog));
+            }
+        } catch {
+            dispatch<ProcessPanelAction>(processPanelActions.SET_NODE_INFO(noLog));
         }
     };
 

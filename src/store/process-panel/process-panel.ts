@@ -13,6 +13,29 @@ export type OutputDetails = {
     pdh?: string;
 }
 
+export interface CUDAFeatures {
+    driverVersion: string;
+    hardwareCapability: string;
+    deviceCount: number;
+}
+
+export interface NodeInstanceType {
+    name: string;
+    providerType: string;
+    VCPUs: number;
+    RAM: number;
+    scratch: number;
+    includedScratch: number;
+    addedScratch: number;
+    price: number;
+    preemptible: boolean;
+    CUDA: CUDAFeatures;
+};
+
+export interface NodeInfo {
+    nodeInfo: NodeInstanceType | null;
+};
+
 export interface ProcessPanel {
     containerRequestUuid: string;
     filters: { [status: string]: boolean };
@@ -21,6 +44,7 @@ export interface ProcessPanel {
     outputRaw: OutputDetails | null;
     outputDefinitions: CommandOutputParameter[];
     outputParams: ProcessIOParameter[] | null;
+    nodeInfo: NodeInstanceType | null;
 }
 
 export const getProcessPanelCurrentUuid = (router: RouterState) => {
