@@ -19,9 +19,12 @@ import { InfoIcon } from 'components/icon/icon';
 import { ReactNodeArray } from 'prop-types';
 import classNames from 'classnames';
 
-type CssRules = 'button' | 'buttonIcon' | 'content';
+type CssRules = 'root' | 'button' | 'buttonIcon' | 'content';
 
 const styles: StyleRulesCallback<CssRules> = theme => ({
+    root: {
+        marginTop: '10px',
+    },
     button: {
         padding: '2px 5px',
         marginRight: '5px',
@@ -206,7 +209,7 @@ const MPVContainerComponent = ({children, panelStates, classes, ...props}: MPVCo
         };
     };
 
-    return <Grid container {...props}>
+    return <Grid container {...props} className={classes.root}>
         <Grid container item direction="row">
             { buttons.map((tgl, idx) => <Grid item key={idx}>{tgl}</Grid>) }
         </Grid>

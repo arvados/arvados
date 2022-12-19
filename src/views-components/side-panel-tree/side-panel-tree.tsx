@@ -65,7 +65,7 @@ const getProjectPickerIcon = (item: TreeItem<ProjectResource | string>) =>
             ? FilterGroupIcon
             : ProjectIcon;
 
-const getSidePanelIcon = (category: string) => {
+export const getSidePanelIcon = (category: string) => {
     switch (category) {
         case SidePanelTreeCategory.FAVORITES:
             return FavoriteIcon;

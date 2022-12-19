@@ -15,9 +15,15 @@ import RefreshButton from "components/refresh-button/refresh-button";
 import { loadSidePanelTreeProjects } from "store/side-panel-tree/side-panel-tree-actions";
 import { Dispatch } from "redux";
 
-type CssRules = "infoTooltip";
+type CssRules = 'mainBar' | 'breadcrumbContainer' | 'infoTooltip';
 
 const styles: StyleRulesCallback<CssRules> = theme => ({
+    mainBar: {
+        flexWrap: 'nowrap',
+    },
+    breadcrumbContainer: {
+        overflow: 'hidden',
+    },
     infoTooltip: {
         marginTop: '-10px',
         marginLeft: '10px',
@@ -61,8 +67,8 @@ const mapDispatchToProps = () => (dispatch: Dispatch) => ({
 
 export const MainContentBar = connect(mapStateToProps, mapDispatchToProps)(withStyles(styles)(
     (props: MainContentBarProps & WithStyles<CssRules> & any) =>
-        <Toolbar><Grid container>
-            <Grid container item xs alignItems="center">
+        <Toolbar><Grid container className={props.classes.mainBar}>
+            <Grid container item xs alignItems="center" className={props.classes.breadcrumbContainer}>
                 <Breadcrumbs />
             </Grid>
             <Grid item>

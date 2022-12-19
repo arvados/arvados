@@ -22,23 +22,23 @@ export interface ArvadosTheme extends Theme {
 }
 
 interface Colors {
-  green700: string;
-  yellow100: string;
-  yellow700: string;
-  yellow900: string;
-  red100: string;
-  red900: string;
-  blue500: string;
-  grey500: string;
-  purple: string;
-  orange: string;
+    green700: string;
+    yellow100: string;
+    yellow700: string;
+    yellow900: string;
+    red100: string;
+    red900: string;
+    blue500: string;
+    grey500: string;
+    grey700: string;
+    purple: string;
+    orange: string;
 }
 
 const arvadosPurple = '#361336';
-const grey500 = grey['500'];
-const grey600 = grey['600'];
-const grey700 = grey['700'];
-const grey900 = grey['900'];
+const grey600 = grey["600"];
+const grey700 = grey["700"];
+const grey900 = grey["900"];
 
 export const themeOptions: ArvadosThemeOptions = {
   typography: {
@@ -46,14 +46,15 @@ export const themeOptions: ArvadosThemeOptions = {
   },
   customs: {
     colors: {
-      green700: green['700'],
-      yellow100: yellow['100'],
-      yellow700: yellow['700'],
-      yellow900: yellow['900'],
-      red100: red['100'],
+      green700: green["700"],
+      yellow100: yellow["100"],
+      yellow700: yellow["700"],
+      yellow900: yellow["900"],
+      red100: red["100"],
       red900: red['900'],
       blue500: blue['500'],
-      grey500: grey500,
+      grey500: grey["500"],
+      grey700: grey["700"],
       purple: arvadosPurple,
       orange: '#f0ad4e',
     },
