@@ -14,21 +14,21 @@ export type OutputDetails = {
 }
 
 export interface CUDAFeatures {
-    driverVersion: string;
-    hardwareCapability: string;
-    deviceCount: number;
+    DriverVersion: string;
+    HardwareCapability: string;
+    DeviceCount: number;
 }
 
 export interface NodeInstanceType {
-    name: string;
-    providerType: string;
+    Name: string;
+    ProviderType: string;
     VCPUs: number;
     RAM: number;
-    scratch: number;
-    includedScratch: number;
-    addedScratch: number;
-    price: number;
-    preemptible: boolean;
+    Scratch: number;
+    IncludedScratch: number;
+    AddedScratch: number;
+    Price: number;
+    Preemptible: boolean;
     CUDA: CUDAFeatures;
 };
 

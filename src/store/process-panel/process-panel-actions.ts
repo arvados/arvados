@@ -114,7 +114,6 @@ export const loadNodeJson = (containerRequest: ContainerRequestResource) =>
             return;
         };
         try {
-            const propsOutputs = getRawOutputs(containerRequest);
             const filesPromise = services.collectionService.files(containerRequest.logUuid);
             const collectionPromise = services.collectionService.get(containerRequest.logUuid);
             const [files, collection] = await Promise.all([filesPromise, collectionPromise]);
@@ -124,7 +123,7 @@ export const loadNodeJson = (containerRequest: ContainerRequestResource) =>
             let nodeData = nodeFile ? await services.collectionService.getFileContents(nodeFile) : undefined;
             if (nodeData && (nodeData = JSON.parse(nodeData))) {
                 dispatch<ProcessPanelAction>(processPanelActions.SET_NODE_INFO({
-                    nodeInfo: CommonService.mapKeys(camelCase)(nodeData) as NodeInstanceType
+                    nodeInfo: nodeData as NodeInstanceType
                 }));
             } else {
                 dispatch<ProcessPanelAction>(processPanelActions.SET_NODE_INFO(noLog));
