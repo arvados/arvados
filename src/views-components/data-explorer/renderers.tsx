@@ -61,9 +61,10 @@ import { getUserUuid } from 'common/getuser';
 import { VirtualMachinesResource } from 'models/virtual-machines';
 import { CopyToClipboardSnackbar } from 'components/copy-to-clipboard-snackbar/copy-to-clipboard-snackbar';
 import { ProjectResource } from 'models/project';
+import { ProcessResource } from 'models/process';
+
 
 const renderName = (dispatch: Dispatch, item: GroupContentsResource) => {
-
     const navFunc = ("groupClass" in item && item.groupClass === GroupClass.ROLE ? navigateToGroupDetails : navigateTo);
     return <Grid container alignItems="center" wrap="nowrap" spacing={16}>
         <Grid item>
@@ -89,6 +90,7 @@ const renderName = (dispatch: Dispatch, item: GroupContentsResource) => {
     </Grid>;
 };
 
+
 const FrozenProject = (props: {item: ProjectResource}) => {
     const [fullUsername, setFullusername] = React.useState<any>(null);
     const getFullName = React.useCallback(() => {
@@ -113,6 +115,7 @@ export const ResourceName = connect(
         return resource;
     })((resource: GroupContentsResource & DispatchProp<any>) => renderName(resource.dispatch, resource));
 
+    
 const renderIcon = (item: GroupContentsResource) => {
     switch (item.kind) {
         case ResourceKind.PROJECT:
@@ -227,7 +230,12 @@ export const UserResourceFullName = connect(
 const renderUuid = (item: { uuid: string }) =>
     <Typography data-cy="uuid" noWrap>
         {item.uuid}
-        <CopyToClipboardSnackbar value={item.uuid} />
+        {(item.uuid && <CopyToClipboardSnackbar value={item.uuid} />) || '-' }
+    </Typography>;
+
+const renderUuidCopyIcon = (item: { uuid: string }) =>
+    <Typography data-cy="uuid" noWrap>
+        {(item.uuid && <CopyToClipboardSnackbar value={item.uuid} />) || '-' }
     </Typography>;
 
 export const ResourceUuid = connect((state: RootState, props: { uuid: string }) => (
@@ -446,7 +454,7 @@ export const ResourceCluster = (props: { uuid: string }) => {
 
 // Links Resources
 const renderLinkName = (item: { name: string }) =>
-    <Typography noWrap>{item.name || '(none)'}</Typography>;
+    <Typography noWrap>{item.name || '-'}</Typography>;
 
 export const ResourceLinkName = connect(
     (state: RootState, props: { uuid: string }) => {
@@ -664,16 +672,68 @@ export const ResourceWorkflowStatus = connect(
         };
     })((props: { ownerUuid?: string, uuidPrefix: string }) => renderWorkflowStatus(props.uuidPrefix, props.ownerUuid));
 
+export const ResourceContainerUuid = connect(
+    (state: RootState, props: { uuid: string }) => {
+        const process = getProcess(props.uuid)(state.resources)
+        return { uuid: process?.container?.uuid ? process?.container?.uuid : '' };
+    })((props: { uuid: string }) => renderUuid({ uuid: props.uuid }));
+
+enum ColumnSelection {
+    OUTPUT_UUID = 'outputUuid',
+    LOG_UUID = 'logUuid'
+}
+
+const renderUuidLinkWithCopyIcon = (dispatch: Dispatch, item: ProcessResource, column: string) => {
+    const selectedColumnUuid = item[column]
+    return <Grid container alignItems="center" wrap="nowrap" >
+        <Grid item>
+            {selectedColumnUuid ? 
+                <Typography color="primary" style={{ width: 'auto', cursor: 'pointer' }} noWrap 
+                    onClick={() => dispatch<any>(navigateTo(selectedColumnUuid))}>
+                    {selectedColumnUuid} 
+                </Typography> 
+            : '-' }
+        </Grid>
+        <Grid item>
+            {selectedColumnUuid && renderUuidCopyIcon({ uuid: selectedColumnUuid })}
+        </Grid>
+    </Grid>;
+};
+
+export const ResourceOutputUuid = connect(
+    (state: RootState, props: { uuid: string }) => {
+        const resource = getResource<ProcessResource>(props.uuid)(state.resources);
+        return resource;
+    })((process: ProcessResource & DispatchProp<any>) => renderUuidLinkWithCopyIcon(process.dispatch, process, ColumnSelection.OUTPUT_UUID));
+
+export const ResourceLogUuid = connect(
+    (state: RootState, props: { uuid: string }) => {
+        const resource = getResource<ProcessResource>(props.uuid)(state.resources);
+        return resource;
+    })((process: ProcessResource & DispatchProp<any>) => renderUuidLinkWithCopyIcon(process.dispatch, process, ColumnSelection.LOG_UUID));
+
+export const ResourceParentProcess = connect(
+    (state: RootState, props: { uuid: string }) => {
+        const process = getProcess(props.uuid)(state.resources)
+        return { parentProcess: process?.containerRequest?.requestingContainerUuid || '' };
+    })((props: { parentProcess: string }) => renderUuid({uuid: props.parentProcess}));
+
+export const ResourceModifiedByUserUuid = connect(
+    (state: RootState, props: { uuid: string }) => {
+        const process = getProcess(props.uuid)(state.resources)
+        return { userUuid: process?.containerRequest?.modifiedByUserUuid || '' };
+    })((props: { userUuid: string }) => renderUuid({uuid: props.userUuid}));
+
+    export const ResourceCreatedAtDate = connect(
+    (state: RootState, props: { uuid: string }) => {
+        const resource = getResource<GroupContentsResource>(props.uuid)(state.resources);
+        return { date: resource ? resource.createdAt : '' };
+    })((props: { date: string }) => renderDate(props.date));
+    
 export const ResourceLastModifiedDate = connect(
     (state: RootState, props: { uuid: string }) => {
         const resource = getResource<GroupContentsResource>(props.uuid)(state.resources);
         return { date: resource ? resource.modifiedAt : '' };
-    })((props: { date: string }) => renderDate(props.date));
-
-export const ResourceCreatedAtDate = connect(
-    (state: RootState, props: { uuid: string }) => {
-        const resource = getResource<GroupContentsResource>(props.uuid)(state.resources);
-        return { date: resource ? resource.createdAt : '' };
     })((props: { date: string }) => renderDate(props.date));
 
 export const ResourceTrashDate = connect(
@@ -706,7 +766,7 @@ export const ResourceFileSize = connect(
 
 const renderOwner = (owner: string) =>
     <Typography noWrap>
-        {owner}
+        {owner || '-'}
     </Typography>;
 
 export const ResourceOwner = connect(
@@ -722,6 +782,45 @@ export const ResourceOwnerName = connect(
         const ownerName = ownerNameState.find(it => it.uuid === resource!.ownerUuid);
         return { owner: ownerName ? ownerName!.name : resource!.ownerUuid };
     })((props: { owner: string }) => renderOwner(props.owner));
+
+export const ResourceUUID = connect(
+    (state: RootState, props: { uuid: string }) => {
+        const resource = getResource<CollectionResource>(props.uuid)(state.resources);
+        return { uuid: resource ? resource.uuid : '' };
+    })((props: { uuid: string }) => renderUuid({uuid: props.uuid}));
+
+const renderVersion = (version: number) =>{
+    return <Typography>{version ?? '-'}</Typography>
+}
+
+export const ResourceVersion = connect(
+    (state: RootState, props: { uuid: string }) => {
+        const resource = getResource<CollectionResource>(props.uuid)(state.resources);
+        return { version: resource ? resource.version: '' };
+    })((props: { version: number }) => renderVersion(props.version));
+    
+const renderPortableDataHash = (portableDataHash:string | null) => 
+    <Typography noWrap>
+        {portableDataHash ? <>{portableDataHash}
+        <CopyToClipboardSnackbar value={portableDataHash} /></> : '-' }
+    </Typography>
+    
+export const ResourcePortableDataHash = connect(
+    (state: RootState, props: { uuid: string }) => {
+        const resource = getResource<CollectionResource>(props.uuid)(state.resources);
+        return { portableDataHash: resource ? resource.portableDataHash : '' };    
+    })((props: { portableDataHash: string }) => renderPortableDataHash(props.portableDataHash));
+
+
+const renderFileCount = (fileCount: number) =>{
+    return <Typography>{fileCount ?? '-'}</Typography>
+}
+
+export const ResourceFileCount = connect(
+    (state: RootState, props: { uuid: string }) => {
+        const resource = getResource<CollectionResource>(props.uuid)(state.resources);
+        return { fileCount: resource ? resource.fileCount: '' };
+    })((props: { fileCount: number }) => renderFileCount(props.fileCount));
 
 const userFromID =
     connect(
@@ -745,11 +844,14 @@ const ownerFromResourceId =
         userFromID
     );
 
+
+
+
+
 const _resourceWithName =
     withStyles({}, { withTheme: true })
         ((props: { uuid: string, userFullname: string, dispatch: Dispatch, theme: ArvadosTheme }) => {
             const { uuid, userFullname, dispatch, theme } = props;
-
             if (userFullname === '') {
                 dispatch<any>(loadResource(uuid, false));
                 return <Typography style={{ color: theme.palette.primary.main }} inline noWrap>
@@ -765,6 +867,8 @@ const _resourceWithName =
 export const ResourceOwnerWithName = ownerFromResourceId(_resourceWithName);
 
 export const ResourceWithName = userFromID(_resourceWithName);
+
+
 
 export const UserNameFromID =
     compose(userFromID)(
@@ -938,6 +1042,6 @@ export const ContainerRunTime = connect((state: RootState, props: { uuid: string
     }
 
     render() {
-        return renderRunTime(this.state.runtime);
+        return this.props.process ? renderRunTime(this.state.runtime) : <Typography>-</Typography>;
     }
 });

@@ -27,7 +27,6 @@ const mapStateToProps = (state: RootState, { id }: Props) => {
     const currentRoute = state.router.location ? state.router.location.pathname : '';
     const currentRefresh = localStorage.getItem(LAST_REFRESH_TIMESTAMP) || '';
     const currentItemUuid = currentRoute === '/workflows' ? state.properties.workflowPanelDetailsUuid : state.detailsPanel.resourceUuid;
-
     return {
         ...dataExplorerState,
         working: !!progress?.working,

@@ -89,7 +89,7 @@ const getValidation = (props: PropertyValueFieldProps) =>
 
 const matchTagValues = ({ vocabulary, propertyKeyId }: PropertyValueFieldProps) =>
     (value: string) =>
-        getTagValues(propertyKeyId, vocabulary).find(v => v.label === value)
+        getTagValues(propertyKeyId, vocabulary).find(v => !value || v.label === value)
             ? undefined
             : 'Incorrect value';
 

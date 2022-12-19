@@ -75,6 +75,55 @@ describe('Collection panel tests', function () {
         });
     });
 
+    it('attempts to use a preexisting name creating or updating a collection', function() {
+        const name = `Test collection ${Math.floor(Math.random() * 999999)}`;
+        cy.createCollection(adminUser.token, {
+            name: name,
+            owner_uuid: activeUser.user.uuid,
+            manifest_text: ". 37b51d194a7513e45b56f6524f2d51f2+3 0:3:bar\n"
+        });
+        cy.loginAs(activeUser);
+        cy.goToPath(`/projects/${activeUser.user.uuid}`);
+        cy.get('[data-cy=breadcrumb-first]').should('contain', 'Projects');
+        cy.get('[data-cy=breadcrumb-last]').should('not.exist');
+        // Attempt to create new collection with a duplicate name
+        cy.get('[data-cy=side-panel-button]').click();
+        cy.get('[data-cy=side-panel-new-collection]').click();
+        cy.get('[data-cy=form-dialog]')
+            .should('contain', 'New collection')
+            .within(() => {
+                cy.get('[data-cy=name-field]').within(() => {
+                    cy.get('input').type(name);
+                });
+                cy.get('[data-cy=form-submit-btn]').click();
+            });
+        // Error message should display, allowing editing the name
+        cy.get('[data-cy=form-dialog]').should('exist')
+            .and('contain', 'Collection with the same name already exists')
+            .within(() => {
+                cy.get('[data-cy=name-field]').within(() => {
+                    cy.get('input').type(' renamed');
+                });
+                cy.get('[data-cy=form-submit-btn]').click();
+            });
+        cy.get('[data-cy=form-dialog]').should('not.exist');
+        // Attempt to rename the collection with the duplicate name
+        cy.get('[data-cy=collection-panel-options-btn]').click();
+        cy.get('[data-cy=context-menu]').contains('Edit collection').click();
+        cy.get('[data-cy=form-dialog]')
+            .should('contain', 'Edit Collection')
+            .within(() => {
+                cy.get('[data-cy=name-field]').within(() => {
+                    cy.get('input')
+                        .type('{selectall}{backspace}')
+                        .type(name);
+                });
+                cy.get('[data-cy=form-submit-btn]').click();
+            });
+        cy.get('[data-cy=form-dialog]').should('exist')
+            .and('contain', 'Collection with the same name already exists');
+    });
+
     it('uses the property editor (from edit dialog) with vocabulary terms', function () {
         cy.createCollection(adminUser.token, {
             name: `Test collection ${Math.floor(Math.random() * 999999)}`,
@@ -628,9 +677,10 @@ describe('Collection panel tests', function () {
                 cy.get('[data-cy=form-dialog]')
                     .should('contain', 'Move to')
                     .within(() => {
+                        // must use .then to avoid selecting instead of expanding https://github.com/cypress-io/cypress/issues/5529
                         cy.get('[data-cy=projects-tree-home-tree-picker]')
                             .find('i')
-                            .click();
+                            .then(el => el.click());
                         cy.get('[data-cy=projects-tree-home-tree-picker]')
                             .contains(projName)
                             .click();
@@ -910,6 +960,10 @@ describe('Collection panel tests', function () {
         });
         // Confirm proper vocabulary labels are displayed on the UI.
         cy.get('[data-cy=form-dialog]').should('contain', 'Color: Magenta');
+
+        // Value field should not complain about being required just after
+        // adding a new property. See #19732
+        cy.get('[data-cy=form-dialog]').should('not.contain', 'This field is required');
 
         cy.get('[data-cy=form-submit-btn]').click();
         // Confirm that the user was taken to the newly created collection

@@ -82,7 +82,7 @@ describe('Multi-file deletion tests', function () {
                 });
 
             cy.get('[data-cy=choose-a-file-dialog]').as('chooseFileDialog');
-            cy.get('@chooseFileDialog').contains('Projects').closest('ul').find('i').click();
+            cy.get('@chooseFileDialog').contains('Home Projects').closest('ul').find('i').click();
 
             cy.get('@project1').then((project1) => {
                 cy.get('@chooseFileDialog').find(`[data-id=${project1.uuid}]`).find('i').click();
@@ -158,11 +158,10 @@ describe('Multi-file deletion tests', function () {
                         cy.get('label').contains('foo').parent('div').find('input').click();
                         cy.get('div[role=dialog]')
                             .within(() => {
-                                cy.get('p').contains('Projects').closest('div[role=button]')
-                                    .within(() => {
-                                        cy.get('svg[role=presentation]')
-                                            .click({ multiple: true });
-                                    });
+                                // must use .then to avoid selecting instead of expanding https://github.com/cypress-io/cypress/issues/5529
+                                cy.get('p').contains('Home Projects').closest('ul')
+                                    .find('i')
+                                    .then(el => el.click());
 
                                 cy.get(`[data-id=${testCollection.uuid}]`)
                                     .find('i').click();
@@ -177,11 +176,10 @@ describe('Multi-file deletion tests', function () {
                         cy.get('label').contains('bar').parent('div').find('input').click();
                         cy.get('div[role=dialog]')
                             .within(() => {
-                                cy.get('p').contains('Projects').closest('div[role=button]')
-                                    .within(() => {
-                                        cy.get('svg[role=presentation]')
-                                            .click({ multiple: true });
-                                    });
+                                // must use .then to avoid selecting instead of expanding https://github.com/cypress-io/cypress/issues/5529
+                                cy.get('p').contains('Home Projects').closest('ul')
+                                    .find('i')
+                                    .then(el => el.click());
 
                                 cy.get(`[data-id=${testCollection.uuid}]`)
                                     .find('input[type=checkbox]').click();

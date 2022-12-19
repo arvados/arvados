@@ -9,43 +9,58 @@ import { withStyles } from '@material-ui/core';
 import { IllegalNamingWarning } from '../warning/warning';
 import { IconType, FreezeIcon } from 'components/icon/icon';
 import grey from '@material-ui/core/colors/grey';
-import { ResourceBreadcrumb } from 'store/breadcrumbs/breadcrumbs-actions';
 import { ResourcesState } from 'store/resources/resources';
+import classNames from 'classnames';
+import { ArvadosTheme } from 'common/custom-theme';
 
 export interface Breadcrumb {
     label: string;
     icon?: IconType;
+    uuid: string;
 }
 
-type CssRules = "item" | "currentItem" | "label" | "icon" | "frozenIcon";
+type CssRules = "item" | "chevron" | "label" | "buttonLabel" | "icon" | "frozenIcon";
 
-const styles: StyleRulesCallback<CssRules> = theme => ({
+const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     item: {
-        opacity: 0.6
+        borderRadius: '16px',
+        height: '32px',
+        minWidth: '36px',
+        color: theme.customs.colors.grey700,
+        '&.parentItem': {
+            color: `${theme.palette.primary.main}`,
+        },
     },
-    currentItem: {
-        opacity: 1
+    chevron: {
+        color: grey["600"],
     },
     label: {
-        textTransform: "none"
+        textTransform: "none",
+        paddingRight: '3px',
+        paddingLeft: '3px',
+        lineHeight: '1.4',
+    },
+    buttonLabel: {
+        overflow: 'hidden',
+        justifyContent: 'flex-start',
     },
     icon: {
         fontSize: 20,
         color: grey["600"],
-        marginRight: '10px',
+        marginRight: '5px',
     },
     frozenIcon: {
         fontSize: 20,
         color: grey["600"],
-        marginLeft: '10px',
+        marginLeft: '3px',
     },
 });
 
 export interface BreadcrumbsProps {
-    items: ResourceBreadcrumb[];
+    items: Breadcrumb[];
     resources: ResourcesState;
-    onClick: (breadcrumb: ResourceBreadcrumb) => void;
-    onContextMenu: (event: React.MouseEvent<HTMLElement>, breadcrumb: ResourceBreadcrumb) => void;
+    onClick: (breadcrumb: Breadcrumb) => void;
+    onContextMenu: (event: React.MouseEvent<HTMLElement>, breadcrumb: Breadcrumb) => void;
 }
 
 export const Breadcrumbs = withStyles(styles)(
@@ -67,8 +82,14 @@ export const Breadcrumbs = withStyles(styles)(
                                 : isLastItem
                                     ? 'breadcrumb-last'
                                     : false}
+                            className={classNames(
+                                isLastItem ? null : 'parentItem',
+                                classes.item
+                            )}
+                            classes={{
+                                label: classes.buttonLabel
+                            }}
                             color="inherit"
-                            className={isLastItem ? classes.currentItem : classes.item}
                             onClick={() => onClick(item)}
                             onContextMenu={event => onContextMenu(event, item)}>
                             <Icon className={classes.icon} />
@@ -83,7 +104,7 @@ export const Breadcrumbs = withStyles(styles)(
                             }
                         </Button>
                     </Tooltip>
-                    {!isLastItem && <ChevronRightIcon color="inherit" className={classes.item} />}
+                    {!isLastItem && <ChevronRightIcon color="inherit" className={classNames('parentItem', classes.chevron)} />}
                 </React.Fragment>
             );
         })

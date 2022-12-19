@@ -35,13 +35,13 @@ export class CollectionService extends TrashableResourceService<CollectionResour
         return super.get(uuid, showErrors, selectParam, session);
     }
 
-    create(data?: Partial<CollectionResource>) {
-        return super.create({ ...data, preserveVersion: true });
+    create(data?: Partial<CollectionResource>, showErrors?: boolean) {
+        return super.create({ ...data, preserveVersion: true }, showErrors);
     }
 
-    update(uuid: string, data: Partial<CollectionResource>) {
+    update(uuid: string, data: Partial<CollectionResource>, showErrors?: boolean) {
         const select = [...Object.keys(data), 'version', 'modifiedAt'];
-        return super.update(uuid, { ...data, preserveVersion: true }, select);
+        return super.update(uuid, { ...data, preserveVersion: true }, showErrors, select);
     }
 
     async files(uuid: string) {

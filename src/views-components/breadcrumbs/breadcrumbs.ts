@@ -8,23 +8,22 @@ import { RootState } from 'store/store';
 import { Dispatch } from 'redux';
 import { navigateTo } from 'store/navigation/navigation-action';
 import { getProperty } from '../../store/properties/properties';
-import { ResourceBreadcrumb, BREADCRUMBS } from '../../store/breadcrumbs/breadcrumbs-actions';
+import { BREADCRUMBS } from '../../store/breadcrumbs/breadcrumbs-actions';
 import { openSidePanelContextMenu } from 'store/context-menu/context-menu-actions';
-import { ProjectResource } from "models/project";
 
 type BreadcrumbsDataProps = Pick<BreadcrumbsProps, 'items' | 'resources'>;
 type BreadcrumbsActionProps = Pick<BreadcrumbsProps, 'onClick' | 'onContextMenu'>;
 
 const mapStateToProps = () => ({ properties, resources }: RootState): BreadcrumbsDataProps => ({
-    items: (getProperty<ResourceBreadcrumb[]>(BREADCRUMBS)(properties) || []),
+    items: (getProperty<Breadcrumb[]>(BREADCRUMBS)(properties) || []),
     resources,
 });
 
 const mapDispatchToProps = (dispatch: Dispatch): BreadcrumbsActionProps => ({
-    onClick: ({ uuid }: Breadcrumb & ProjectResource) => {
+    onClick: ({ uuid }: Breadcrumb) => {
         dispatch<any>(navigateTo(uuid));
     },
-    onContextMenu: (event, breadcrumb: Breadcrumb & ProjectResource) => {
+    onContextMenu: (event, breadcrumb: Breadcrumb) => {
         dispatch<any>(openSidePanelContextMenu(event, breadcrumb.uuid));
     }
 });

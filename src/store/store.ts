@@ -26,7 +26,8 @@ import { AllProcessesPanelMiddlewareService } from "./all-processes-panel/all-pr
 import { collectionPanelReducer } from './collection-panel/collection-panel-reducer';
 import { dialogReducer } from './dialog/dialog-reducer';
 import { ServiceRepository } from "services/services";
-import { treePickerReducer } from './tree-picker/tree-picker-reducer';
+import { treePickerReducer, treePickerSearchReducer } from './tree-picker/tree-picker-reducer';
+import { treePickerSearchMiddleware } from './tree-picker/tree-picker-middleware';
 import { resourcesReducer } from 'store/resources/resources-reducer';
 import { propertiesReducer } from './properties/properties-reducer';
 import { fileUploaderReducer } from './file-uploader/file-uploader-reducer';
@@ -76,7 +77,7 @@ import { MiddlewareListReducer } from 'common/plugintypes';
 
 declare global {
     interface Window {
-      __REDUX_DEVTOOLS_EXTENSION_COMPOSE__?: typeof compose;
+        __REDUX_DEVTOOLS_EXTENSION_COMPOSE__?: typeof compose;
     }
 }
 
@@ -174,6 +175,7 @@ export function configureStore(history: History, services: ServiceRepository, co
         publicFavoritesMiddleware,
         collectionsContentAddress,
         subprocessMiddleware,
+        treePickerSearchMiddleware
     ];
 
     const reduceMiddlewaresFn: (a: Middleware[],
@@ -203,6 +205,7 @@ const createRootReducer = (services: ServiceRepository) => combineReducers({
     router: routerReducer,
     snackbar: snackbarReducer,
     treePicker: treePickerReducer,
+    treePickerSearch: treePickerSearchReducer,
     fileUploader: fileUploaderReducer,
     processPanel: processPanelReducer,
     progressIndicator: progressIndicatorReducer,

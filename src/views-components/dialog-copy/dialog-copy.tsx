@@ -25,7 +25,7 @@ export const DialogCopy = (props: CopyFormDialogProps & PickerIdProp) =>
 
 const CopyDialogFields = memoize((pickerId: string) =>
     () =>
-        <span>
+        <>
             <Field
                 name='name'
                 component={TextField as any}
@@ -36,4 +36,4 @@ const CopyDialogFields = memoize((pickerId: string) =>
                 component={ProjectTreePickerField}
                 validate={COPY_FILE_VALIDATION}
                 pickerId={pickerId}/>
-        </span>);
+        </>);

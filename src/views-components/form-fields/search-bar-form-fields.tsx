@@ -3,20 +3,17 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import React from "react";
-import { Field, WrappedFieldProps, FieldArray } from 'redux-form';
+import { Field, FieldArray } from 'redux-form';
 import { TextField, DateTextField } from "components/text-field/text-field";
 import { CheckboxField } from 'components/checkbox-field/checkbox-field';
 import { NativeSelectField } from 'components/select-field/select-field';
 import { ResourceKind } from 'models/resource';
-import { HomeTreePicker } from 'views-components/projects-tree-picker/home-tree-picker';
-import { SEARCH_BAR_ADVANCED_FORM_PICKER_ID } from 'store/search-bar/search-bar-actions';
 import { SearchBarAdvancedPropertiesView } from 'views-components/search-bar/search-bar-advanced-properties-view';
-import { TreeItem } from "components/tree/tree";
-import { ProjectsTreePickerItem } from "views-components/projects-tree-picker/generic-projects-tree-picker";
 import { PropertyKeyField, } from 'views-components/resource-properties-form/property-key-field';
 import { PropertyValueField } from 'views-components/resource-properties-form/property-value-field';
 import { connect } from "react-redux";
 import { RootState } from "store/store";
+import { ProjectInput, ProjectCommandInputParameter } from 'views/run-process-panel/inputs/project-input';
 
 export const SearchBarTypeField = () =>
     <Field
@@ -36,7 +33,7 @@ interface SearchBarClusterFieldProps {
 
 export const SearchBarClusterField = connect(
     (state: RootState) => ({
-        clusters: [{key: '', value: 'Any'}].concat(
+        clusters: [{ key: '', value: 'Any' }].concat(
             state.auth.sessions
                 .filter(s => s.loggedIn)
                 .map(s => ({
@@ -46,24 +43,15 @@ export const SearchBarClusterField = connect(
     }))((props: SearchBarClusterFieldProps) => <Field
         name='cluster'
         component={NativeSelectField as any}
-        items={props.clusters}/>
+        items={props.clusters} />
     );
 
 export const SearchBarProjectField = () =>
-    <Field
-        name='projectUuid'
-        component={ProjectsPicker} />;
-
-const ProjectsPicker = (props: WrappedFieldProps) =>
-    <div style={{ height: '100px', display: 'flex', flexDirection: 'column', overflow: 'overlay' }}>
-        <HomeTreePicker
-            pickerId={SEARCH_BAR_ADVANCED_FORM_PICKER_ID}
-            toggleItemActive={
-                (_: any, { id }: TreeItem<ProjectsTreePickerItem>) => {
-                    props.input.onChange(id);
-                }
-            } />
-    </div>;
+    <ProjectInput input={{
+        id: "projectObject",
+        label: "Limit search to Project"
+    } as ProjectCommandInputParameter}
+        options={{ showOnlyOwned: false, showOnlyWritable: false }} />
 
 export const SearchBarTrashField = () =>
     <Field

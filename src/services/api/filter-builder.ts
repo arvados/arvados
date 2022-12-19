@@ -64,7 +64,7 @@ export class FilterBuilder {
         return this.addCondition("properties." + field, "exists", false, "", "", resourcePrefix);
     }
 
-    public addFullTextSearch(value: string) {
+    public addFullTextSearch(value: string, table?: string) {
         const regex = /"[^"]*"/;
         const matches: any[] = [];
 
@@ -76,10 +76,15 @@ export class FilterBuilder {
             match = value.match(regex);
         }
 
+        let searchIn = 'any';
+        if (table) {
+            searchIn = table + ".any";
+        }
+
         const terms = value.trim().split(/(\s+)/).concat(matches);
         terms.forEach(term => {
             if (term !== " ") {
-                this.addCondition("any", "ilike", term, "%", "%");
+                this.addCondition(searchIn, "ilike", term, "%", "%");
             }
         });
         return this;

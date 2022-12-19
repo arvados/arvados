@@ -5,7 +5,7 @@
 import React from 'react';
 import { connect, DispatchProp } from 'react-redux';
 import { Field } from 'redux-form';
-import { Input, Dialog, DialogTitle, DialogContent, DialogActions, Button } from '@material-ui/core';
+import { Input, Dialog, DialogTitle, DialogContent, DialogActions, Button, withStyles, WithStyles, StyleRulesCallback } from '@material-ui/core';
 import {
     GenericCommandInputParameter
 } from 'models/workflow';
@@ -13,7 +13,7 @@ import { GenericInput, GenericInputProps } from './generic-input';
 import { ProjectsTreePicker } from 'views-components/projects-tree-picker/projects-tree-picker';
 import { initProjectsTreePicker } from 'store/tree-picker/tree-picker-actions';
 import { TreeItem } from 'components/tree/tree';
-import { ProjectsTreePickerItem } from 'views-components/projects-tree-picker/generic-projects-tree-picker';
+import { ProjectsTreePickerItem } from 'store/tree-picker/tree-picker-middleware';
 import { ProjectResource } from 'models/project';
 import { ResourceKind } from 'models/resource';
 import { RootState } from 'store/store';
@@ -27,6 +27,9 @@ export interface ProjectInputProps {
     input: ProjectCommandInputParameter;
     options?: { showOnlyOwned: boolean, showOnlyWritable: boolean };
 }
+
+type DialogContentCssRules = 'root' | 'pickerWrapper';
+
 export const ProjectInput = ({ input, options }: ProjectInputProps) =>
     <Field
         name={input.id}
@@ -67,7 +70,7 @@ export const ProjectInputComponent = connect(mapStateToProps)(
         render() {
             return <>
                 {this.renderInput()}
-                {this.renderDialog()}
+                <this.dialog />
             </>;
         }
 
@@ -109,29 +112,44 @@ export const ProjectInputComponent = connect(mapStateToProps)(
                 {...this.props} />;
         }
 
-        renderDialog() {
-            return this.state.open ? <Dialog
-                open={this.state.open}
-                onClose={this.closeDialog}
-                fullWidth
-                data-cy="choose-a-project-dialog"
-                maxWidth='md'>
-                <DialogTitle>Choose a project</DialogTitle>
-                <DialogContent>
-                    <ProjectsTreePicker
-                        pickerId={this.props.commandInput.id}
-                        options={this.props.options}
-                        toggleItemActive={this.setProject} />
-                </DialogContent>
-                <DialogActions>
-                    <Button onClick={this.closeDialog}>Cancel</Button>
-                    <Button
-                        disabled={this.invalid()}
-                        variant='contained'
-                        color='primary'
-                        onClick={this.submit}>Ok</Button>
-                </DialogActions>
-            </Dialog> : null;
-        }
+        dialogContentStyles: StyleRulesCallback<DialogContentCssRules> = ({ spacing }) => ({
+            root: {
+                display: 'flex',
+                flexDirection: 'column',
+            },
+            pickerWrapper: {
+                flexBasis: `${spacing.unit * 8}vh`,
+                flexShrink: 1,
+                minHeight: 0,
+            },
+        });
+
+        dialog = withStyles(this.dialogContentStyles)(
+            ({ classes }: WithStyles<DialogContentCssRules>) =>
+                this.state.open ? <Dialog
+                    open={this.state.open}
+                    onClose={this.closeDialog}
+                    fullWidth
+                    data-cy="choose-a-project-dialog"
+                    maxWidth='md'>
+                    <DialogTitle>Choose a project</DialogTitle>
+                    <DialogContent className={classes.root}>
+                        <div className={classes.pickerWrapper}>
+                            <ProjectsTreePicker
+                                pickerId={this.props.commandInput.id}
+                                options={this.props.options}
+                                toggleItemActive={this.setProject} />
+                        </div>
+                    </DialogContent>
+                    <DialogActions>
+                        <Button onClick={this.closeDialog}>Cancel</Button>
+                        <Button
+                            disabled={this.invalid()}
+                            variant='contained'
+                            color='primary'
+                            onClick={this.submit}>Ok</Button>
+                    </DialogActions>
+                </Dialog> : null
+        );
 
     });

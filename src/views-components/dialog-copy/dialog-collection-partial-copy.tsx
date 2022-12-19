@@ -24,8 +24,8 @@ export const DialogCollectionPartialCopy = (props: DialogCollectionPartialCopyPr
 export const CollectionPartialCopyFields = memoize(
     (pickerId: string) =>
         () =>
-            <div>
+            <>
                 <CollectionNameField />
                 <CollectionDescriptionField />
                 <CollectionProjectPickerField {...{ pickerId }} />
-            </div>);
+            </>);

@@ -12,19 +12,22 @@ import {
 } from 'models/workflow';
 import { Field } from 'redux-form';
 import { ERROR_MESSAGE } from 'validators/require';
-import { Input, Dialog, DialogTitle, DialogContent, DialogActions, Button } from '@material-ui/core';
+import { Input, Dialog, DialogTitle, DialogContent, DialogActions, Button, StyleRulesCallback, withStyles, WithStyles } from '@material-ui/core';
 import { GenericInputProps, GenericInput } from './generic-input';
 import { ProjectsTreePicker } from 'views-components/projects-tree-picker/projects-tree-picker';
 import { connect, DispatchProp } from 'react-redux';
 import { initProjectsTreePicker } from 'store/tree-picker/tree-picker-actions';
 import { TreeItem } from 'components/tree/tree';
-import { ProjectsTreePickerItem } from 'views-components/projects-tree-picker/generic-projects-tree-picker';
+import { ProjectsTreePickerItem } from 'store/tree-picker/tree-picker-middleware';
 import { CollectionFile, CollectionFileType } from 'models/collection-file';
 
 export interface FileInputProps {
     input: FileCommandInputParameter;
     options?: { showOnlyOwned: boolean, showOnlyWritable: boolean };
 }
+
+type DialogContentCssRules = 'root' | 'pickerWrapper';
+
 export const FileInput = ({ input, options }: FileInputProps) =>
     <Field
         name={input.id}
@@ -73,7 +76,7 @@ const FileInputComponent = connect()(
         render() {
             return <>
                 {this.renderInput()}
-                {this.renderDialog()}
+                <this.dialog />
             </>;
         }
 
@@ -113,33 +116,52 @@ const FileInputComponent = connect()(
                 {...this.props} />;
         }
 
-        renderDialog() {
-            return <Dialog
-                open={this.state.open}
-                onClose={this.closeDialog}
-                fullWidth
-                data-cy="choose-a-file-dialog"
-                maxWidth='md'>
-                <DialogTitle>Choose a file</DialogTitle>
-                <DialogContent>
+        dialogContentStyles: StyleRulesCallback<DialogContentCssRules> = ({ spacing }) => ({
+            root: {
+                display: 'flex',
+                flexDirection: 'column',
+            },
+            pickerWrapper: {
+                flexBasis: `${spacing.unit * 8}vh`,
+                flexShrink: 1,
+                minHeight: 0,
+            },
+        });
+
+        dialog = withStyles(this.dialogContentStyles)(
+            ({ classes }: WithStyles<DialogContentCssRules>) =>
+                <Dialog
+                    open={this.state.open}
+                    onClose={this.closeDialog}
+                    fullWidth
+                    data-cy="choose-a-file-dialog"
+                    maxWidth='md'>
+                    <DialogTitle>Choose a file</DialogTitle>
+                    <DialogContent className={classes.root}>
+                        <this.dialogContent />
+                    </DialogContent>
+                    <DialogActions>
+                        <Button onClick={this.closeDialog}>Cancel</Button>
+                        <Button
+                            disabled={!this.state.file}
+                            variant='contained'
+                            color='primary'
+                            onClick={this.submit}>Ok</Button>
+                    </DialogActions>
+                </Dialog >
+        );
+
+        dialogContent = withStyles(this.dialogContentStyles)(
+            ({ classes }: WithStyles<DialogContentCssRules>) =>
+                <div className={classes.pickerWrapper}>
                     <ProjectsTreePicker
                         pickerId={this.props.commandInput.id}
                         includeCollections
                         includeFiles
                         options={this.props.options}
                         toggleItemActive={this.setFile} />
-                </DialogContent>
-                <DialogActions>
-                    <Button onClick={this.closeDialog}>Cancel</Button>
-                    <Button
-                        disabled={!this.state.file}
-                        variant='contained'
-                        color='primary'
-                        onClick={this.submit}>Ok</Button>
-                </DialogActions>
-            </Dialog>;
-        }
+                </div>
+        );
+
 
     });
-
-
