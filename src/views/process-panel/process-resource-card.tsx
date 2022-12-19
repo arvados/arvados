@@ -64,7 +64,9 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     },
     sectionH3: {
         margin: "0.5em",
-        color: theme.customs.colors.grey700
+        color: theme.customs.colors.purple,
+        fontSize: "0.8125rem",
+        textTransform: "uppercase",
     }
 });
 
