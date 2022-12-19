@@ -9,7 +9,6 @@ import grey from '@material-ui/core/colors/grey';
 import green from '@material-ui/core/colors/green';
 import yellow from '@material-ui/core/colors/yellow';
 import red from '@material-ui/core/colors/red';
-import teal from '@material-ui/core/colors/teal';
 
 export interface ArvadosThemeOptions extends ThemeOptions {
     customs: any;
@@ -33,14 +32,26 @@ interface Colors {
     blue700: string;
     grey500: string;
     grey600: string;
+    grey700: string;
+    grey900: string;
     purple: string;
-    orange: string;
+    orange: string; 
+    greyL: string;
+    greyD: string;
+    darkblue: string;
 }
 
-const arvadosPurple = '#361336';
+/**
+* arvadosGreyLight is the hex equivalent of rgba(0,0,0,0.87) on #fafafa background and arvadosGreyDark is the hex equivalent of rgab(0,0,0,0.54) on #fafafa background  
+*/
+
+const arvadosDarkBlue = '#052a3c';
+const arvadosGreyLight = '#737373'; 
+const arvadosGreyDark = '#212121'; 
 const grey500 = grey["500"];
 const grey600 = grey["600"];
 const grey700 = grey["700"];
+const grey800 = grey["800"];
 const grey900 = grey["900"];
 
 export const themeOptions: ArvadosThemeOptions = {
@@ -59,8 +70,14 @@ export const themeOptions: ArvadosThemeOptions = {
             blue500: blue['500'],
             blue700: blue['700'],
             grey500: grey500,
-            purple: arvadosPurple,
+            grey600: grey600,
+            grey700: grey700,
+            grey800: grey800,
+            grey900: grey900,
+            darkblue: arvadosDarkBlue,
             orange: '#f0ad4e',
+            greyL: arvadosGreyLight,
+            greyD: arvadosGreyDark,
         }
     },
     overrides: {
@@ -71,7 +88,7 @@ export const themeOptions: ArvadosThemeOptions = {
         },
         MuiAppBar: {
             colorPrimary: {
-                backgroundColor: arvadosPurple
+                backgroundColor: arvadosDarkBlue
             }
         },
         MuiTabs: {
@@ -79,14 +96,13 @@ export const themeOptions: ArvadosThemeOptions = {
                 color: grey600
             },
             indicator: {
-                backgroundColor: arvadosPurple
+                backgroundColor: arvadosDarkBlue
             }
         },
         MuiTab: {
             root: {
                 '&$selected': {
                     fontWeight: 700,
-                    color: arvadosPurple
                 }
             }
         },
@@ -102,7 +118,7 @@ export const themeOptions: ArvadosThemeOptions = {
         },
         MuiListItemIcon: {
             root: {
-                fontSize: '1.25rem'
+                fontSize: '1.25rem',
             }
         },
         MuiCardHeader: {
@@ -111,7 +127,7 @@ export const themeOptions: ArvadosThemeOptions = {
                 alignItems: 'center'
             },
             title: {
-                color: grey700,
+                color: arvadosGreyDark, 
                 fontSize: '1.25rem'
             }
         },
@@ -148,7 +164,7 @@ export const themeOptions: ArvadosThemeOptions = {
             },
             underline: {
                 '&:after': {
-                    borderBottomColor: arvadosPurple
+                    borderBottomColor: arvadosDarkBlue
                 },
                 '&:hover:not($disabled):not($focused):not($error):before': {
                     borderBottom: '1px solid inherit'
@@ -160,7 +176,7 @@ export const themeOptions: ArvadosThemeOptions = {
                 fontSize: '0.875rem',
                 "&$focused": {
                     "&$focused:not($error)": {
-                        color: arvadosPurple
+                        color: arvadosDarkBlue
                     }
                 }
             }
@@ -168,7 +184,7 @@ export const themeOptions: ArvadosThemeOptions = {
         MuiStepIcon: {
             root: {
                 '&$active': {
-                    color: arvadosPurple
+                    color: arvadosDarkBlue
                 },
                 '&$completed': {
                     color: 'inherited'
@@ -183,8 +199,9 @@ export const themeOptions: ArvadosThemeOptions = {
     },
     palette: {
         primary: {
-            main: teal.A700,
-            dark: teal.A400,
+            main: '#017ead',
+            dark: '#015272',
+            light: '#82cffd',
             contrastText: '#fff'
         }
     },

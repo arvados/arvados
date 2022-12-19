@@ -73,14 +73,14 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     },
     iconHeader: {
         fontSize: '1.875rem',
-        color: theme.customs.colors.grey600
+        color: theme.customs.colors.greyL
     },
     tag: {
         marginRight: theme.spacing.unit / 2,
         marginBottom: theme.spacing.unit / 2
     },
     label: {
-        fontSize: '0.975rem',
+        fontSize: '0.875rem',
     },
     centeredLabel: {
         fontSize: '0.875rem',

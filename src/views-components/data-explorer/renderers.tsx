@@ -36,7 +36,7 @@ import { connect, DispatchProp } from 'react-redux';
 import { RootState } from 'store/store';
 import { getResource, filterResources } from 'store/resources/resources';
 import { GroupContentsResource } from 'services/groups-service/groups-service';
-import { getProcess, Process, getProcessStatus, getProcessStatusColor, getProcessRuntime } from 'store/processes/process';
+import { getProcess, Process, getProcessStatus, getProcessStatusStyles, getProcessRuntime } from 'store/processes/process';
 import { ArvadosTheme } from 'common/custom-theme';
 import { compose, Dispatch } from 'redux';
 import { WorkflowResource } from 'models/workflow';
@@ -883,15 +883,14 @@ export const ProcessStatus = compose(
                 style={{
                     height: props.theme.spacing.unit * 3,
                     width: props.theme.spacing.unit * 12,
-                    backgroundColor: getProcessStatusColor(
+                    ...getProcessStatusStyles(
                         getProcessStatus(props.process), props.theme),
-                    color: props.theme.palette.common.white,
                     fontSize: '0.875rem',
                     borderRadius: props.theme.spacing.unit * 0.625,
                 }}
             />
             : <Typography>-</Typography>
-    );
+        );
 
 export const ProcessStartDate = connect(
     (state: RootState, props: { uuid: string }) => {

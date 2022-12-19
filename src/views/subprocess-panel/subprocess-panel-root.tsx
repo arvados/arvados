@@ -25,7 +25,7 @@ type CssRules = 'iconHeader' | 'cardHeader';
 const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     iconHeader: {
         fontSize: '1.875rem',
-        color: theme.customs.colors.green700,
+        color: theme.customs.colors.greyL,
         marginRight: theme.spacing.unit * 2,
     },
     cardHeader: {

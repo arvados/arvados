@@ -55,7 +55,7 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
         whiteSpace: 'pre-line',
     },
     errorColor: {
-        color: theme.customs.colors.red900,
+        color: theme.customs.colors.grey700,
     },
     error: {
         backgroundColor: theme.customs.colors.red100,
@@ -65,7 +65,7 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
         backgroundColor: theme.customs.colors.yellow100,
     },
     warningColor: {
-        color: theme.customs.colors.yellow900,
+        color: theme.customs.colors.grey700,
     },
     paperRoot: {
         minHeight: theme.spacing.unit * 6,

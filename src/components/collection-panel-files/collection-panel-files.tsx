@@ -85,7 +85,7 @@ const styles: StyleRulesCallback<CssRules> = (theme: Theme) => ({
     wrapper: {
         display: 'flex',
         minHeight: '600px',
-        color: 'rgba(0, 0, 0, 0.87)',
+        color: 'rgba(0,0,0,0.87)',
         fontSize: '0.875rem',
         fontFamily: '"Roboto", "Helvetica", "Arial", sans-serif',
         fontWeight: 400,
