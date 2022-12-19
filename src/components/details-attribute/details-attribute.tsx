@@ -24,7 +24,7 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     },
     label: {
         boxSizing: 'border-box',
-        color: theme.palette.grey["500"],
+        color: theme.palette.grey["600"],
         width: '100%'
     },
     value: {
@@ -42,7 +42,7 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     },
     copyIcon: {
         marginLeft: theme.spacing.unit,
-        color: theme.palette.grey["500"],
+        color: theme.palette.grey["600"],
         cursor: 'pointer',
         display: 'inline',
         '& svg': {

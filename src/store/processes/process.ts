@@ -73,22 +73,44 @@ export const getProcessRuntime = ({ container }: Process) => {
     }
 };
 
-export const getProcessStatusColor = (status: string, { customs }: ArvadosTheme) => {
+
+export const getProcessStatusStyles = (status: string, theme: ArvadosTheme): React.CSSProperties => {
+    let color = theme.customs.colors.grey500;
+    let running = false;
     switch (status) {
         case ProcessStatus.RUNNING:
-            return customs.colors.blue500;
+            color = theme.customs.colors.green800;
+            running = true;
+            break;
         case ProcessStatus.COMPLETED:
-            return customs.colors.green700;
+            color = theme.customs.colors.green800;
+            break;
         case ProcessStatus.WARNING:
-            return customs.colors.yellow700;
+            color = theme.customs.colors.green800;
+            running = true;
+            break;
         case ProcessStatus.FAILING:
-            return customs.colors.orange;
+            color = theme.customs.colors.red900;
+            running = true;
+            break;
         case ProcessStatus.CANCELLED:
         case ProcessStatus.FAILED:
-            return customs.colors.red900;
+            color = theme.customs.colors.red900;
+            break;
         default:
-            return customs.colors.grey500;
+            color = theme.customs.colors.grey600;
+            break;
     }
+
+    // Using color and running we build the text, border, and background style properties
+    return {
+        // Set background color when not running, otherwise use white
+        backgroundColor: running ? theme.palette.common.white : color,
+        // Set text color to status color when running, else use white text for solid button
+        color: running ? color : theme.palette.common.white,
+        // Set border color when running, else omit the style entirely
+        ...(running ? {border: `1px solid ${color}`} : {}),
+    };
 };
 
 export const getProcessStatus = ({ containerRequest, container }: Process): ProcessStatus => {

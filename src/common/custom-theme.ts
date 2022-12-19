@@ -9,181 +9,202 @@ import grey from '@material-ui/core/colors/grey';
 import green from '@material-ui/core/colors/green';
 import yellow from '@material-ui/core/colors/yellow';
 import red from '@material-ui/core/colors/red';
-import teal from '@material-ui/core/colors/teal';
 
 export interface ArvadosThemeOptions extends ThemeOptions {
-  customs: any;
+    customs: any;
 }
 
 export interface ArvadosTheme extends Theme {
-  customs: {
-    colors: Colors;
-  };
+    customs: {
+        colors: Colors
+    };
 }
 
 interface Colors {
     green700: string;
+    green800: string;
     yellow100: string;
     yellow700: string;
     yellow900: string;
     red100: string;
     red900: string;
     blue500: string;
+    blue700: string;
     grey500: string;
+    grey600: string;
     grey700: string;
+    grey900: string;
     purple: string;
-    orange: string;
+    orange: string; 
+    greyL: string;
+    greyD: string;
+    darkblue: string;
 }
 
-const arvadosPurple = '#361336';
+/**
+* arvadosGreyLight is the hex equivalent of rgba(0,0,0,0.87) on #fafafa background and arvadosGreyDark is the hex equivalent of rgab(0,0,0,0.54) on #fafafa background  
+*/
+
+const arvadosDarkBlue = '#052a3c';
+const arvadosGreyLight = '#737373'; 
+const arvadosGreyDark = '#212121'; 
+const grey500 = grey["500"];
 const grey600 = grey["600"];
 const grey700 = grey["700"];
+const grey800 = grey["800"];
 const grey900 = grey["900"];
 
 export const themeOptions: ArvadosThemeOptions = {
-  typography: {
-    useNextVariants: true,
-  },
-  customs: {
-    colors: {
-      green700: green["700"],
-      yellow100: yellow["100"],
-      yellow700: yellow["700"],
-      yellow900: yellow["900"],
-      red100: red["100"],
-      red900: red['900'],
-      blue500: blue['500'],
-      grey500: grey["500"],
-      grey700: grey["700"],
-      purple: arvadosPurple,
-      orange: '#f0ad4e',
+    typography: {
+        useNextVariants: true,
     },
-  },
-  overrides: {
-    MuiTypography: {
-      body1: {
-        fontSize: '0.8125rem',
-      },
+    customs: {
+        colors: {
+            green700: green["700"],
+            green800: green["800"],
+            yellow100: yellow["100"],
+            yellow700: yellow["700"],
+            yellow900: yellow["900"],
+            red100: red["100"],
+            red900: red['900'],
+            blue500: blue['500'],
+            blue700: blue['700'],
+            grey500: grey500,
+            grey600: grey600,
+            grey700: grey700,
+            grey800: grey800,
+            grey900: grey900,
+            darkblue: arvadosDarkBlue,
+            orange: '#f0ad4e',
+            greyL: arvadosGreyLight,
+            greyD: arvadosGreyDark,
+        }
     },
-    MuiAppBar: {
-      colorPrimary: {
-        backgroundColor: arvadosPurple,
-      },
-    },
-    MuiTabs: {
-      root: {
-        color: grey600,
-      },
-      indicator: {
-        backgroundColor: arvadosPurple,
-      },
-    },
-    MuiTab: {
-      root: {
-        '&$selected': {
-          fontWeight: 700,
-          color: arvadosPurple,
+    overrides: {
+        MuiTypography: {
+            body1: {
+                fontSize: '0.8125rem'
+            }
         },
-      },
-    },
-    MuiList: {
-      root: {
-        color: grey900,
-      },
-    },
-    MuiListItemText: {
-      root: {
-        padding: 0,
-      },
-    },
-    MuiListItemIcon: {
-      root: {
-        fontSize: '1.25rem',
-      },
-    },
-    MuiCardHeader: {
-      avatar: {
-        display: 'flex',
-        alignItems: 'center',
-      },
-      title: {
-        color: grey700,
-        fontSize: '1.25rem',
-      },
-    },
-    MuiExpansionPanel: {
-      expanded: {
-        marginTop: '8px',
-      },
-    },
-    MuiExpansionPanelDetails: {
-      root: {
-        marginBottom: 0,
-        paddingBottom: '4px',
-      },
-    },
-    MuiExpansionPanelSummary: {
-      content: {
-        '&$expanded': {
-          margin: 0,
+        MuiAppBar: {
+            colorPrimary: {
+                backgroundColor: arvadosDarkBlue
+            }
         },
-        color: grey700,
-        fontSize: '1.25rem',
-        margin: 0,
-      },
-      expanded: {},
-    },
-    MuiMenuItem: {
-      root: {
-        padding: '8px 16px',
-      },
-    },
-    MuiInput: {
-      root: {
-        fontSize: '0.875rem',
-      },
-      underline: {
-        '&:after': {
-          borderBottomColor: arvadosPurple,
+        MuiTabs: {
+            root: {
+                color: grey600
+            },
+            indicator: {
+                backgroundColor: arvadosDarkBlue
+            }
         },
-        '&:hover:not($disabled):not($focused):not($error):before': {
-          borderBottom: '1px solid inherit',
+        MuiTab: {
+            root: {
+                '&$selected': {
+                    fontWeight: 700,
+                }
+            }
         },
-      },
-    },
-    MuiFormLabel: {
-      root: {
-        fontSize: '0.875rem',
-        '&$focused': {
-          '&$focused:not($error)': {
-            color: arvadosPurple,
-          },
+        MuiList: {
+            root: {
+                color: grey900
+            }
         },
-      },
-    },
-    MuiStepIcon: {
-      root: {
-        '&$active': {
-          color: arvadosPurple,
+        MuiListItemText: {
+            root: {
+                padding: 0
+            }
         },
-        '&$completed': {
-          color: 'inherited',
+        MuiListItemIcon: {
+            root: {
+                fontSize: '1.25rem',
+            }
         },
-      },
+        MuiCardHeader: {
+            avatar: {
+                display: 'flex',
+                alignItems: 'center'
+            },
+            title: {
+                color: arvadosGreyDark, 
+                fontSize: '1.25rem'
+            }
+        },
+        MuiExpansionPanel: {
+            expanded: {
+                marginTop: '8px',
+            }
+        },
+        MuiExpansionPanelDetails: {
+            root: {
+                marginBottom: 0,
+                paddingBottom: '4px',
+            }
+        },
+        MuiExpansionPanelSummary: {
+            content: {
+                '&$expanded': {
+                    margin: 0,
+                },
+                color: grey700,
+                fontSize: '1.25rem',
+                margin: 0,
+            },
+            expanded: {},
+        },
+        MuiMenuItem: {
+            root: {
+                padding: '8px 16px'
+            }
+        },
+        MuiInput: {
+            root: {
+                fontSize: '0.875rem'
+            },
+            underline: {
+                '&:after': {
+                    borderBottomColor: arvadosDarkBlue
+                },
+                '&:hover:not($disabled):not($focused):not($error):before': {
+                    borderBottom: '1px solid inherit'
+                }
+            }
+        },
+        MuiFormLabel: {
+            root: {
+                fontSize: '0.875rem',
+                "&$focused": {
+                    "&$focused:not($error)": {
+                        color: arvadosDarkBlue
+                    }
+                }
+            }
+        },
+        MuiStepIcon: {
+            root: {
+                '&$active': {
+                    color: arvadosDarkBlue
+                },
+                '&$completed': {
+                    color: 'inherited'
+                },
+            }
+        }
     },
-  },
-  mixins: {
-    toolbar: {
-      minHeight: '48px',
+    mixins: {
+        toolbar: {
+            minHeight: '48px'
+        }
     },
-  },
-  palette: {
-    primary: {
-      main: teal.A700,
-      dark: teal.A400,
-      contrastText: '#fff',
+    palette: {
+        primary: {
+            main: '#017ead',
+            dark: '#015272',
+            light: '#82cffd',
+            contrastText: '#fff'
+        }
     },
-  },
 };
 
 export const CustomTheme = createMuiTheme(themeOptions);

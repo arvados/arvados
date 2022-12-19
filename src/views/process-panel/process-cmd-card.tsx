@@ -35,7 +35,7 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     },
     iconHeader: {
         fontSize: '1.875rem',
-        color: theme.customs.colors.green700,
+        color: theme.customs.colors.greyL,
     },
     avatar: {
         alignSelf: 'flex-start',
@@ -50,7 +50,9 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     },
     title: {
         overflow: 'hidden',
-        paddingTop: theme.spacing.unit * 0.5
+        paddingTop: theme.spacing.unit * 0.5,
+        color: theme.customs.colors.greyD,
+        fontSize: '1.875rem'  
     },
 });
 

@@ -23,7 +23,7 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
         fontSize: '18px'
     },
     active: {
-        color: theme.customs.colors.green700,
+        color: theme.customs.colors.grey700,
         textDecoration: 'none',
     }
 });

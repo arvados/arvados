@@ -61,7 +61,9 @@ const styles: StyleRulesCallback<CssRules> = (theme: Theme) => ({
     },
     tableCell: {
         wordWrap: 'break-word',
-        paddingRight: '24px'
+        paddingRight: '24px',
+        color: '#737373'
+       
     },
     tableCellWorkflows: {
         '&:nth-last-child(2)': {
