@@ -50,7 +50,6 @@ export const SidePanel = withStyles(styles)(
     ));
 
 export const CollapseLeftPanelTrigger = (props) =>{ 
-    console.log(props)
     return <Tooltip disableFocusListener title="Toggle Side Panel">
                 <IconButton onClick={()=>{props.toggleSidePanel(props.sidepanelcollapsed)}}>
                     <MenuIcon aria-label="Toggle Side Panel" />

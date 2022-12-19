@@ -11,7 +11,6 @@ import { LoginPanel } from 'views/login-panel/login-panel';
 import { InactivePanel } from 'views/inactive-panel/inactive-panel';
 import { WorkbenchLoadingScreen } from 'views/workbench/workbench-loading-screen';
 import { MainAppBar } from 'views-components/main-app-bar/main-app-bar';
-import { toggleSidePanel } from 'store/store';
 
 type CssRules = 'root';
 
@@ -41,7 +40,7 @@ type MainPanelRootProps = MainPanelRootDataProps & WithStyles<CssRules>;
 export const MainPanelRoot = withStyles(styles)(
     (props: MainPanelRootProps | any) =>{
         const{ classes, loading, working, user, buildInfo, uuidPrefix,
-            isNotLinking, isLinkingPath, siteBanner, sessionIdleTimeout, sidePanelIsCollapsed: sidePanelIsCollapsed } = props
+            isNotLinking, isLinkingPath, siteBanner, sessionIdleTimeout, sidePanelIsCollapsed } = props
             return loading
             ? <WorkbenchLoadingScreen />
             : <>

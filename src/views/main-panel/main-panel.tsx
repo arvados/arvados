@@ -10,7 +10,7 @@ import { isSystemWorking } from 'store/progress-indicator/progress-indicator-red
 import { isWorkbenchLoading } from 'store/workbench/workbench-actions';
 import { LinkAccountPanelStatus } from 'store/link-account-panel/link-account-panel-reducer';
 import { matchLinkAccountRoute } from 'routes/routes';
-import { toggleSidePanel } from "store/store";
+import { toggleSidePanel } from "store/side-panel/side-panel-action";
 
 const mapStateToProps = (state: RootState): MainPanelRootDataProps => {
     return {

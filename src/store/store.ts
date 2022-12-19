@@ -73,6 +73,7 @@ import { ALL_PROCESSES_PANEL_ID } from './all-processes-panel/all-processes-pane
 import { Config } from 'common/config';
 import { pluginConfig } from 'plugins';
 import { MiddlewareListReducer } from 'common/plugintypes';
+import { sidePanelReducer } from './side-panel/side-panel-reducer'
 
 declare global {
     interface Window {
@@ -183,22 +184,6 @@ export function configureStore(history: History, services: ServiceRepository, co
 
     const enhancer = composeEnhancers(applyMiddleware(redirectToMiddleware, ...middlewares));
     return createStore(rootReducer, enhancer);
-}
-
-//TODO: put sidePanel items in separate file and import
-export const toggleSidePanel = (collapsedState: boolean) => {
-    return (dispatch) => {
-        dispatch({type: 'TOGGLE_COLLAPSE', payload: !collapsedState})
-    }
-}
-
-const sidePanelInitialState = {
-    collapsedState: false
-}
-
-const sidePanelReducer = (state = sidePanelInitialState, action)=>{
-    if(action.type === 'TOGGLE_COLLAPSE') return {...state, collapsedState: action.payload}
-    return state
 }
 
 const createRootReducer = (services: ServiceRepository) => combineReducers({
