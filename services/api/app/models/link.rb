@@ -53,12 +53,24 @@ class Link < ArvadosModel
 
   def delete_overlapping_permissions
     return if self.link_class != 'permission'
-    Link.where(link_class: 'permission',
-               tail_uuid: self.tail_uuid,
-               head_uuid: self.head_uuid,
-               name: PermLevel.keys).
-      where('uuid <> ?', self.uuid).
-      delete_all
+    if PermLevel[self.name]
+      Link.where(link_class: 'permission',
+                 tail_uuid: self.tail_uuid,
+                 head_uuid: self.head_uuid,
+                 name: PermLevel.keys).
+        where('uuid <> ?', self.uuid).
+        delete_all
+    elsif self.name == 'can_login' &&
+          self.properties.respond_to?(:has_key?) &&
+          self.properties.has_key?('username')
+      Link.where(link_class: 'permission',
+                 tail_uuid: self.tail_uuid,
+                 head_uuid: self.head_uuid,
+                 name: 'can_login').
+        where('properties @> ?', SafeJSON.dump({'username' => self.properties['username']})).
+        where('uuid <> ?', self.uuid).
+        delete_all
+    end
   end
 
   def head_kind
