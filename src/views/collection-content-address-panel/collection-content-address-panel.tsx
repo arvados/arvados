@@ -40,13 +40,13 @@ type CssRules = 'backLink' | 'backIcon' | 'root' | 'content';
 
 const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     backLink: {
-        fontSize: '14px',
+        fontSize: '12px',
         fontWeight: 600,
         display: 'flex',
         alignItems: 'center',
         padding: theme.spacing.unit,
         marginBottom: theme.spacing.unit,
-        color: theme.palette.grey["700"],
+        color: theme.palette.grey["500"],
     },
     backIcon: {
         marginRight: theme.spacing.unit

@@ -34,7 +34,7 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     },
     iconHeader: {
         fontSize: '1.875rem',
-        color: theme.customs.colors.green700,
+        color: theme.customs.colors.greyL,
     },
     avatar: {
         alignSelf: 'flex-start',
@@ -49,7 +49,8 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     },
     title: {
         overflow: 'hidden',
-        paddingTop: theme.spacing.unit * 0.5
+        paddingTop: theme.spacing.unit * 0.5,
+        color: theme.customs.colors.green700,
     },
     cancelButton: {
         paddingRight: theme.spacing.unit * 2,
@@ -81,7 +82,7 @@ export const ProcessDetailsCard = withStyles(styles)(
                 avatar={<ProcessIcon className={classes.iconHeader} />}
                 title={
                     <Tooltip title={process.containerRequest.name} placement="bottom-start">
-                        <Typography noWrap variant='h6' color='inherit'>
+                        <Typography noWrap variant='h6'>
                             {process.containerRequest.name}
                         </Typography>
                     </Tooltip>
