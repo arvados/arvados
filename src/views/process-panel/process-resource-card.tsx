@@ -47,16 +47,24 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     header: {
         paddingBottom: "0px"
     },
-    title: {},
-    avatar: {},
-    iconHeader: {},
+    title: {
+        paddingTop: theme.spacing.unit * 0.5
+    },
+    avatar: {
+        paddingTop: theme.spacing.unit * 0.5
+    },
+    iconHeader: {
+        fontSize: '1.875rem',
+        color: theme.customs.colors.green700,
+    },
     content: {
         paddingTop: "0px",
         maxHeight: `calc(100% - ${theme.spacing.unit * 4.5}px)`,
         overflow: "auto"
     },
     sectionH3: {
-        margin: "0.5em"
+        margin: "0.5em",
+        color: theme.customs.colors.grey700
     }
 });
 
@@ -109,19 +117,16 @@ export const ProcessResourceCard = withStyles(styles)(connect()(
             <CardContent className={classes.content}>
                 <Grid container>
                     <Grid item xs={4}>
-                        <h3 className={classes.sectionH3}>Requested resources</h3>
+                        <h3 className={classes.sectionH3}>Requested Resources</h3>
                         <Grid container>
                             <Grid item xs={12}>
-                                <DetailsAttribute label="cores" value={process.container?.runtimeConstraints.vcpus} />
+                                <DetailsAttribute label="Cores" value={process.container?.runtimeConstraints.vcpus} />
                             </Grid>
                             <Grid item xs={12}>
                                 <DetailsAttribute label="RAM" value={formatFileSize(process.container?.runtimeConstraints.ram)} />
                             </Grid>
                             <Grid item xs={12}>
                                 <DetailsAttribute label="Disk" value={formatFileSize(diskRequest)} />
-                            </Grid>
-                            <Grid item xs={12}>
-                                <DetailsAttribute label="API access" value={process.container?.runtimeConstraints.API.toString()} />
                             </Grid>
 
                             {process.container?.runtimeConstraints.keep_cache_ram &&
@@ -135,6 +140,10 @@ export const ProcessResourceCard = withStyles(styles)(connect()(
                                 <Grid item xs={12}>
                                     <DetailsAttribute label="Keep cache (disk)" value={formatFileSize(process.container?.runtimeConstraints.keep_cache_disk)} />
                                 </Grid> : null}
+
+                            {process.container?.runtimeConstraints.API ? <Grid item xs={12}>
+                                <DetailsAttribute label="API access" value={process.container?.runtimeConstraints.API.toString()} />
+                            </Grid> : null}
 
                             {process.container?.runtimeConstraints.cuda &&
                                 process.container?.runtimeConstraints.cuda.device_count > 0 ?
@@ -154,14 +163,14 @@ export const ProcessResourceCard = withStyles(styles)(connect()(
 
 
                     <Grid item xs={8}>
-                        <h3 className={classes.sectionH3}>Assigned instance type</h3>
+                        <h3 className={classes.sectionH3}>Assigned Instance Type</h3>
                         {nodeInfo === null ? <Grid item xs={8}>
                             No instance type recorded
                         </Grid>
                             :
                             <Grid container>
                                 <Grid item xs={6}>
-                                    <DetailsAttribute label="cores" value={nodeInfo.VCPUs} />
+                                    <DetailsAttribute label="Cores" value={nodeInfo.VCPUs} />
                                 </Grid>
 
                                 <Grid item xs={6}>
@@ -193,9 +202,17 @@ export const ProcessResourceCard = withStyles(styles)(connect()(
                                         <Grid item xs={6}>
                                             <DetailsAttribute label="CUDA devices" value={formatFileSize(nodeInfo.CUDA.DeviceCount)} />
                                         </Grid>
+
+                                        <Grid item xs={6}>
+                                        </Grid>
+
                                         <Grid item xs={6}>
                                             <DetailsAttribute label="CUDA driver version" value={formatFileSize(nodeInfo.CUDA.DriverVersion)} />
                                         </Grid>
+
+                                        <Grid item xs={6}>
+                                        </Grid>
+
                                         <Grid item xs={6}>
                                             <DetailsAttribute label="CUDA hardware capability" value={formatFileSize(nodeInfo.CUDA.HardwareCapability)} />
                                         </Grid>
