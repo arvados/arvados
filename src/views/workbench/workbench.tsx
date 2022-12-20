@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import React, { useState, useCallback } from 'react';
+import React from 'react';
 import { StyleRulesCallback, WithStyles, withStyles } from '@material-ui/core/styles';
 import { Route, Switch } from "react-router";
 import { ProjectPanel } from "views/project-panel/project-panel";
@@ -99,6 +99,7 @@ import { RestoreCollectionVersionDialog } from 'views-components/collections-dia
 import { WebDavS3InfoDialog } from 'views-components/webdav-s3-dialog/webdav-s3-dialog';
 import { pluginConfig } from 'plugins';
 import { ElementListReducer } from 'common/plugintypes';
+import { Banner } from 'views-components/baner/banner';
 
 type CssRules = 'root' | 'container' | 'splitter' | 'asidePanel' | 'contentWrapper' | 'content';
 
@@ -184,18 +185,6 @@ const reduceRoutesFn: (a: React.ReactElement[],
     b: ElementListReducer) => React.ReactElement[] = (a, b) => b(a);
 
 routes = React.createElement(React.Fragment, null, pluginConfig.centerPanelList.reduce(reduceRoutesFn, React.Children.toArray(routes.props.children)));
-
-const Banner = () => {
-    const [visible, setVisible] = useState(true);
-    const hideBanner = useCallback(() => setVisible(false), []);
-
-    return visible ? 
-        <div id="banner" onClick={hideBanner} className="app-banner">
-            <span>
-            This is important message
-            </span>
-        </div> : null;
-}
 
 export const WorkbenchPanel =
     withStyles(styles)((props: WorkbenchPanelProps) =>
