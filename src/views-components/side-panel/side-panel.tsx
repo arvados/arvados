@@ -46,7 +46,7 @@ export const SidePanel = withStyles(styles)(
             <Grid item xs>
                 {props.isCollapsed ? <SidePanelToggle /> :
                 <>
-                    <Grid style={{display: 'flex', justifyContent: 'space-between', flexWrap: 'wrap-reverse'}}>
+                    <Grid style={{display: 'flex', justifyContent: 'space-between'}}>
                         <SidePanelButton key={props.currentRoute} />
                         <SidePanelToggle/>
                     </Grid>
