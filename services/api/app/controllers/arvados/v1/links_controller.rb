@@ -22,10 +22,12 @@ class Arvados::V1::LinksController < ApplicationController
     resource_attrs.delete :tail_kind
 
     if resource_attrs[:link_class] == 'permission' && Link::PermLevel[resource_attrs[:name]]
-      existing = Link.where(link_class: 'permission',
-                            tail_uuid: resource_attrs[:tail_uuid],
-                            head_uuid: resource_attrs[:head_uuid],
-                            name: Link::PermLevel.keys).first
+      existing = Link.
+                   lock. # select ... for update
+                   where(link_class: 'permission',
+                         tail_uuid: resource_attrs[:tail_uuid],
+                         head_uuid: resource_attrs[:head_uuid],
+                         name: Link::PermLevel.keys).first
       if existing
         @object = existing
         if Link::PermLevel[resource_attrs[:name]] > Link::PermLevel[existing.name]
@@ -41,9 +43,11 @@ class Arvados::V1::LinksController < ApplicationController
           resource_attrs[:name] == 'can_login' &&
           resource_attrs[:properties].respond_to?(:has_key?) &&
           resource_attrs[:properties].has_key?(:username)
-      existing = Link.where(link_class: 'permission',
-                            tail_uuid: resource_attrs[:tail_uuid],
-                            head_uuid: resource_attrs[:head_uuid]).
+      existing = Link.
+                   lock. # select ... for update
+                   where(link_class: 'permission',
+                         tail_uuid: resource_attrs[:tail_uuid],
+                         head_uuid: resource_attrs[:head_uuid]).
                    where('properties @> ?', SafeJSON.dump({'username' => resource_attrs[:properties][:username]})).
                    first
       if existing
@@ -70,7 +74,7 @@ class Arvados::V1::LinksController < ApplicationController
 
   protected
 
-  def find_object_by_uuid
+  def find_object_by_uuid(with_lock: false)
     if params[:id] && params[:id].match(/\D/)
       params[:uuid] = params.delete :id
     end
@@ -81,7 +85,7 @@ class Arvados::V1::LinksController < ApplicationController
         .where(uuid: params[:uuid])
         .first
     elsif !current_user
-      super
+      super(with_lock: with_lock)
     else
       # The usual permission-filtering index query is unnecessarily
       # inefficient, and doesn't match all permission links that
@@ -89,11 +93,15 @@ class Arvados::V1::LinksController < ApplicationController
       # by UUID, then check whether (a) its tail_uuid is the current
       # user or (b) its head_uuid is an object the current_user
       # can_manage.
-      link = Link.unscoped.where(uuid: params[:uuid]).first
+      model = Link
+      if with_lock
+        model = model.lock
+      end
+      link = model.unscoped.where(uuid: params[:uuid]).first
       if link && link.link_class != 'permission'
         # Not a permission link. Re-fetch using generic
         # permission-filtering query.
-        super
+        super(with_lock: with_lock)
       elsif link && (current_user.uuid == link.tail_uuid ||
                      current_user.can?(manage: link.head_uuid))
         # Permission granted.

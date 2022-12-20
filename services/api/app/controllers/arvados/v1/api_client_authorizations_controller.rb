@@ -128,7 +128,7 @@ class Arvados::V1::ApiClientAuthorizationsController < ApplicationController
     super
   end
 
-  def find_object_by_uuid
+  def find_object_by_uuid(with_lock: false)
     uuid_param = params[:uuid] || params[:id]
     if (uuid_param != current_api_client_authorization.andand.uuid &&
         !Thread.current[:api_client].andand.is_trusted)
@@ -140,7 +140,11 @@ class Arvados::V1::ApiClientAuthorizationsController < ApplicationController
     @where = {}
     @filters = [['uuid', '=', uuid_param]]
     find_objects_for_index
-    @object = @objects.first
+    query = @objects
+    if with_lock
+      query = query.lock
+    end
+    @object = query.first
   end
 
   def current_api_client_is_trusted

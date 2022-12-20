@@ -15,6 +15,7 @@ class Link < ArvadosModel
   validate :permission_to_attach_to_objects
   before_update :restrict_alter_permissions
   before_update :apply_max_overlapping_permissions
+  before_create :apply_max_overlapping_permissions
   after_update :delete_overlapping_permissions
   after_update :call_update_permissions
   after_create :call_update_permissions
@@ -40,10 +41,12 @@ class Link < ArvadosModel
 
   def apply_max_overlapping_permissions
     return if self.link_class != 'permission' || !PermLevel[self.name]
-    Link.where(link_class: 'permission',
-               tail_uuid: self.tail_uuid,
-               head_uuid: self.head_uuid,
-               name: PermLevel.keys).
+    Link.
+      lock. # select ... for update
+      where(link_class: 'permission',
+            tail_uuid: self.tail_uuid,
+            head_uuid: self.head_uuid,
+            name: PermLevel.keys).
       where('uuid <> ?', self.uuid).each do |other|
       if PermLevel[other.name] > PermLevel[self.name]
         self.name = other.name
@@ -53,23 +56,32 @@ class Link < ArvadosModel
 
   def delete_overlapping_permissions
     return if self.link_class != 'permission'
+    redundant = nil
     if PermLevel[self.name]
-      Link.where(link_class: 'permission',
-                 tail_uuid: self.tail_uuid,
-                 head_uuid: self.head_uuid,
-                 name: PermLevel.keys).
-        where('uuid <> ?', self.uuid).
-        delete_all
+      redundant = Link.
+                    lock. # select ... for update
+                    where(link_class: 'permission',
+                          tail_uuid: self.tail_uuid,
+                          head_uuid: self.head_uuid,
+                          name: PermLevel.keys).
+                    where('uuid <> ?', self.uuid)
     elsif self.name == 'can_login' &&
           self.properties.respond_to?(:has_key?) &&
           self.properties.has_key?('username')
-      Link.where(link_class: 'permission',
-                 tail_uuid: self.tail_uuid,
-                 head_uuid: self.head_uuid,
-                 name: 'can_login').
-        where('properties @> ?', SafeJSON.dump({'username' => self.properties['username']})).
-        where('uuid <> ?', self.uuid).
-        delete_all
+      redundant = Link.
+                    lock. # select ... for update
+                    where(link_class: 'permission',
+                          tail_uuid: self.tail_uuid,
+                          head_uuid: self.head_uuid,
+                          name: 'can_login').
+                    where('properties @> ?', SafeJSON.dump({'username' => self.properties['username']})).
+                    where('uuid <> ?', self.uuid)
+    end
+    if redundant
+      redundant.each do |link|
+        link.clear_permissions
+      end
+      redundant.delete_all
     end
   end
 

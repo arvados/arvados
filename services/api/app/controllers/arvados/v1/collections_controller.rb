@@ -60,7 +60,7 @@ class Arvados::V1::CollectionsController < ApplicationController
     super
   end
 
-  def find_object_by_uuid
+  def find_object_by_uuid(with_lock: false)
     if loc = Keep::Locator.parse(params[:id])
       loc.strip_hints!
 
@@ -81,7 +81,11 @@ class Arvados::V1::CollectionsController < ApplicationController
       # available lifetime.
 
       select_attrs = (@select || ["manifest_text"]) | ["portable_data_hash", "trash_at"]
-      if c = Collection.
+      model = Collection
+      if with_lock
+        model = model.lock
+      end
+      if c = model.
                readable_by(*@read_users, opts).
                where({ portable_data_hash: loc.to_s }).
                order("trash_at desc").
@@ -98,7 +102,7 @@ class Arvados::V1::CollectionsController < ApplicationController
         end
       end
     else
-      super
+      super(with_lock: with_lock)
     end
   end
 

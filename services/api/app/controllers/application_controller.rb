@@ -46,7 +46,8 @@ class ApplicationController < ActionController::Base
   before_action :load_limit_offset_order_params, only: [:index, :contents]
   before_action :load_select_param
   before_action(:find_object_by_uuid,
-                except: [:index, :create] + ERROR_ACTIONS)
+                except: [:index, :create, :update] + ERROR_ACTIONS)
+  before_action :find_object_for_update, only: [:update]
   before_action :load_where_param, only: [:index, :contents]
   before_action :load_filters_param, only: [:index, :contents]
   before_action :find_objects_for_index, :only => :index
@@ -464,7 +465,11 @@ class ApplicationController < ActionController::Base
     controller_name
   end
 
-  def find_object_by_uuid
+  def find_object_for_update
+    find_object_by_uuid(with_lock: true)
+  end
+
+  def find_object_by_uuid(with_lock: false)
     if params[:id] and params[:id].match(/\D/)
       params[:uuid] = params.delete :id
     end
@@ -475,7 +480,11 @@ class ApplicationController < ActionController::Base
     @filters = []
     @objects = nil
     find_objects_for_index
-    @object = @objects.first
+    if with_lock
+      @object = @objects.lock.first
+    else
+      @object = @objects.first
+    end
   end
 
   def nullable_attributes
