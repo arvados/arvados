@@ -197,8 +197,8 @@ CUSTOM_CERTS_DIR="${SCRIPT_DIR}/local_config_dir/certs"
 # release.
 # The "local.params.example.*" files already set "RELEASE=production"
 # to deploy  production-ready packages
-RELEASE="development"
-VERSION="latest"
+RELEASE="production"
+VERSION="2.5.0-1"
 
 # These are arvados-formula-related parameters
 # An arvados-formula tag. For a stable release, this should be a
