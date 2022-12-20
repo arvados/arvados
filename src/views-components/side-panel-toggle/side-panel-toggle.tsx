@@ -13,25 +13,31 @@ type collapseButtonProps = {
   toggleSidePanel: (collapsedState: boolean) => void
 }
 
-export const COLLAPSE_ICON_SIZE = 20
+export const COLLAPSE_ICON_SIZE = 35
 
 const SidePanelToggle = (props: collapseButtonProps) =>{ 
-const collapseButtonIconStyles = {
-  root: {
-    width: `${COLLAPSE_ICON_SIZE}px`,
-    padding: '10px'
-  },
-  icon: {
+  const collapseButtonIconStyles = {
+    root: {
+      width: `${COLLAPSE_ICON_SIZE}px`,
+    },
+    icon: {
+      width: '1.5rem',
+      height: '1.5rem',
+      marginTop: '0.5rem'
+    }
   }
-}
-
 
   return <Tooltip disableFocusListener title="Toggle Side Panel">
-              <IconButton style={collapseButtonIconStyles.root} onClick={()=>{props.toggleSidePanel(props.isCollapsed)}}>
-                <div style={collapseButtonIconStyles.icon}>{props.isCollapsed ? '>' : '<'}</div>
-              </IconButton>
+            <IconButton style={collapseButtonIconStyles.root} onClick={()=>{props.toggleSidePanel(props.isCollapsed)}}>
+              <div>
+              {props.isCollapsed? 
+                <img style={collapseButtonIconStyles.icon} src='arrow-to-right.png'/>
+                :
+                <img style={{...collapseButtonIconStyles.icon, marginRight: '0.5rem'}} src='arrow-to-left.png'/>}
+              </div>
+            </IconButton>
           </Tooltip>
-  };
+};
 
 const mapStateToProps = (state: RootState) => {
   return {
