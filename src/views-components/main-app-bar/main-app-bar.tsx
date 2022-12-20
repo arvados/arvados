@@ -15,7 +15,6 @@ import { HelpMenu } from 'views-components/main-app-bar/help-menu';
 import { ReactNode } from "react";
 import { AdminMenu } from "views-components/main-app-bar/admin-menu";
 import { pluginConfig } from 'plugins';
-import { CollapseLeftPanelTrigger } from 'views-components/side-panel/side-panel'
 
 type CssRules = 'toolbar' | 'link';
 
@@ -26,7 +25,6 @@ const styles: StyleRulesCallback<CssRules> = () => ({
     },
     toolbar: {
         height: '56px',
-        paddingLeft: '0'
     }
 });
 
@@ -37,7 +35,6 @@ interface MainAppBarDataProps {
     uuidPrefix: string;
     siteBanner: string;
     sidePanelIsCollapsed: boolean;
-    toggleSidePanel: (collapsedState:boolean) => void
 }
 
 export type MainAppBarProps = MainAppBarDataProps & WithStyles<CssRules>;
@@ -46,9 +43,6 @@ export const MainAppBar = withStyles(styles)(
     (props: MainAppBarProps) => {
         return <AppBar position="absolute">
             <Toolbar className={props.classes.toolbar}>
-                <CollapseLeftPanelTrigger sidePanelIsCollapsed={props.sidePanelIsCollapsed} 
-                toggleSidePanel={props.toggleSidePanel}
-                />
                 <Grid container justify="space-between">
                     {pluginConfig.appBarLeft || <Grid container item xs={3} direction="column" justify="center">
                         <Typography variant='h6' color="inherit" noWrap>

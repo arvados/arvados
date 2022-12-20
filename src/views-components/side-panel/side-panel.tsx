@@ -13,6 +13,7 @@ import { Grid, Tooltip, IconButton  } from '@material-ui/core';
 import { SidePanelButton } from 'views-components/side-panel-button/side-panel-button';
 import { RootState } from 'store/store';
 import MenuIcon from "@material-ui/icons/Menu";
+import SidePanelToggle from 'views-components/side-panel-toggle/side-panel-toggle';
 
 const DRAWER_WIDTH = 240;
 
@@ -34,36 +35,22 @@ const mapDispatchToProps = (dispatch: Dispatch): SidePanelTreeProps => ({
     }
 });
 
-const mapStateToProps = ({ router }: RootState) => ({
+const mapStateToProps = ({ router, sidePanel }: RootState) => ({
     currentRoute: router.location ? router.location.pathname : '',
+    isCollapsed: sidePanel.collapsedState
 });
 
 export const SidePanel = withStyles(styles)(
     connect(mapStateToProps, mapDispatchToProps)(
         ({ classes, ...props }: WithStyles<CssRules> & SidePanelTreeProps & { currentRoute: string }) =>
             <Grid item xs>
-                <SidePanelButton key={props.currentRoute} />
-                <SidePanelTree {...props} />
+                {props.isCollapsed ? <SidePanelToggle /> :
+                <>
+                    <Grid style={{display: 'flex', justifyContent: 'space-between', flexWrap: 'wrap-reverse'}}>
+                        <SidePanelButton key={props.currentRoute} />
+                        <SidePanelToggle/>
+                    </Grid>
+                    <SidePanelTree {...props} />
+                </>}
             </Grid>
     ));
-
-type collapseButtonIconProps = {
-    sidePanelIsCollapsed: boolean;
-    toggleSidePanel: (collapsedState: boolean) => void
-}
-
-const collapseButtonIconStyles = {
-    menuIcon: {
-        height: '4rem',
-        width: '4rem', 
-        paddingBottom: '0.25rem'
-    }
-}
-
-export const CollapseLeftPanelTrigger = (props: collapseButtonIconProps) =>{ 
-    return <Tooltip disableFocusListener title="Toggle Side Panel">
-                <IconButton onClick={()=>{props.toggleSidePanel(props.sidePanelIsCollapsed)}}>
-                    <MenuIcon style={collapseButtonIconStyles.menuIcon} aria-label="Toggle Side Panel" />
-                </IconButton>
-            </Tooltip>
-    };

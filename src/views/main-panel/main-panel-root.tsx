@@ -54,7 +54,6 @@ export const MainPanelRoot = withStyles(styles)(
                 uuidPrefix={uuidPrefix}
                 siteBanner={siteBanner}
                 sidePanelIsCollapsed={sidePanelIsCollapsed}
-                toggleSidePanel={toggleSidePanel}
                 >
                 {working
                     ? <LinearProgress color="secondary" data-cy="linear-progress" />
