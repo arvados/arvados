@@ -133,7 +133,7 @@ export const projectPanelColumns: DataColumns<string> = [
         selected: false,
         configurable: true,
         filters: createTree(),
-        render: uuid => <ResourcePortableDataHash uuid={uuid}/>
+        render: uuid => <ResourcePortableDataHash uuid={uuid} />
     },
     {
         name: ProjectPanelColumnNames.FILE_SIZE,
@@ -147,21 +147,21 @@ export const projectPanelColumns: DataColumns<string> = [
         selected: false,
         configurable: true,
         filters: createTree(),
-        render: uuid =><ResourceFileCount uuid={uuid}/>
+        render: uuid => <ResourceFileCount uuid={uuid} />
     },
     {
         name: ProjectPanelColumnNames.UUID,
         selected: false,
         configurable: true,
         filters: createTree(),
-        render: uuid => <ResourceUUID uuid={uuid}/>
+        render: uuid => <ResourceUUID uuid={uuid} />
     },
     {
         name: ProjectPanelColumnNames.CONTAINER_UUID,
-        selected: true,
+        selected: false,
         configurable: true,
         filters: createTree(),
-        render: uuid => <ResourceContainerUuid uuid={uuid}/>
+        render: uuid => <ResourceContainerUuid uuid={uuid} />
     },
     {
         name: ProjectPanelColumnNames.RUNTIME,
@@ -175,35 +175,35 @@ export const projectPanelColumns: DataColumns<string> = [
         selected: false,
         configurable: true,
         filters: createTree(),
-        render: uuid => <ResourceOutputUuid uuid={uuid}/>
+        render: uuid => <ResourceOutputUuid uuid={uuid} />
     },
     {
         name: ProjectPanelColumnNames.LOG_UUID,
         selected: false,
         configurable: true,
         filters: createTree(),
-        render: uuid => <ResourceLogUuid uuid={uuid}/>
+        render: uuid => <ResourceLogUuid uuid={uuid} />
     },
     {
         name: ProjectPanelColumnNames.PARENT_PROCESS,
         selected: false,
         configurable: true,
         filters: createTree(),
-        render: uuid => <ResourceParentProcess uuid={uuid}/>
+        render: uuid => <ResourceParentProcess uuid={uuid} />
     },
     {
         name: ProjectPanelColumnNames.MODIFIED_BY_USER_UUID,
         selected: false,
         configurable: true,
         filters: createTree(),
-        render: uuid => <ResourceModifiedByUserUuid uuid={uuid}/>
+        render: uuid => <ResourceModifiedByUserUuid uuid={uuid} />
     },
     {
         name: ProjectPanelColumnNames.VERSION,
         selected: false,
         configurable: true,
         filters: createTree(),
-        render: uuid =><ResourceVersion uuid={uuid}/>
+        render: uuid => <ResourceVersion uuid={uuid} />
     },
     {
         name: ProjectPanelColumnNames.CREATED_AT,
@@ -211,7 +211,7 @@ export const projectPanelColumns: DataColumns<string> = [
         configurable: true,
         sortDirection: SortDirection.DESC,
         filters: createTree(),
-        render: uuid =><ResourceCreatedAtDate uuid={uuid}/>
+        render: uuid => <ResourceCreatedAtDate uuid={uuid} />
     },
     {
         name: ProjectPanelColumnNames.LAST_MODIFIED,
@@ -237,7 +237,7 @@ export const projectPanelColumns: DataColumns<string> = [
         filters: createTree(),
         render: uuid => <ResourceDeleteDate uuid={uuid} />
     },
-    
+
 ];
 
 export const PROJECT_PANEL_ID = "projectPanel";
