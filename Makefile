@@ -68,6 +68,7 @@ arvados-server-install:
 	cd cmd/arvados-server
 	go install
 	cd -
+	ls -l ~/go/bin/arvados-server
 	~/go/bin/arvados-server install -type test
 
 yarn-install: arvados-server-install
@@ -81,7 +82,7 @@ integration-tests: yarn-install
 	$(WORKSPACE)/tools/run-integration-tests.sh -a $(ARVADOS_DIRECTORY)
 
 integration-tests-in-docker: workbench2-build-image
-	docker run -ti -v$(PWD):$(PWD) -w$(PWD) workbench2-build make integration-tests
+	docker run -ti -v$(PWD):/usr/src/workbench2 -v$(ARVADOS_DIRECTORY):/usr/src/arvados -w /usr/src/workbench2 -e ARVADOS_DIRECTORY=/usr/src/arvados workbench2-build make integration-tests
 
 test: unit-tests integration-tests
 

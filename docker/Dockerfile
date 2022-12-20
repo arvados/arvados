@@ -32,3 +32,6 @@ RUN cd /usr/src/arvados && \
     go run ./cmd/arvados-server install -type test && cd .. && \
     rm -rf arvados && \
     apt-get clean
+
+RUN git config --global --add safe.directory /usr/src/arvados && \
+    git config --global --add safe.directory /usr/src/workbench2
