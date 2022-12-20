@@ -17,7 +17,7 @@ import SidePanelToggle from 'views-components/side-panel-toggle/side-panel-toggl
 
 const DRAWER_WIDTH = 240;
 
-type CssRules = 'root';
+type CssRules = 'root' | 'topButtonContainer';
 
 const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     root: {
@@ -26,6 +26,10 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
         height: '100%',
         overflowX: 'auto',
         width: DRAWER_WIDTH,
+    },
+    topButtonContainer: {
+        display: 'flex', 
+        justifyContent: 'space-between'
     }
 });
 
@@ -46,7 +50,7 @@ export const SidePanel = withStyles(styles)(
             <Grid item xs>
                 {props.isCollapsed ? <SidePanelToggle /> :
                 <>
-                    <Grid style={{display: 'flex', justifyContent: 'space-between'}}>
+                    <Grid className={classes.topButtonContainer}>
                         <SidePanelButton key={props.currentRoute} />
                         <SidePanelToggle/>
                     </Grid>

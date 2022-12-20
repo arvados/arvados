@@ -19,21 +19,23 @@ const SidePanelToggle = (props: collapseButtonProps) =>{
   const collapseButtonIconStyles = {
     root: {
       width: `${COLLAPSE_ICON_SIZE}px`,
+      height: `${COLLAPSE_ICON_SIZE}px`,
+      marginTop: '0.4rem'
     },
     icon: {
       width: '1.5rem',
       height: '1.5rem',
       marginTop: '0.5rem'
-    }
+    },
   }
 
   return <Tooltip disableFocusListener title="Toggle Side Panel">
             <IconButton style={collapseButtonIconStyles.root} onClick={()=>{props.toggleSidePanel(props.isCollapsed)}}>
               <div>
               {props.isCollapsed? 
-                <img style={collapseButtonIconStyles.icon} src='arrow-to-right.png'/>
+                <img style={{...collapseButtonIconStyles.icon, marginLeft: '0.25rem'}} src='/arrow-to-right.png'/>
                 :
-                <img style={{...collapseButtonIconStyles.icon, marginRight: '0.5rem'}} src='arrow-to-left.png'/>}
+                <img style={{...collapseButtonIconStyles.icon, marginRight: '0.5rem'}} src='/arrow-to-left.png'/>}
               </div>
             </IconButton>
           </Tooltip>
