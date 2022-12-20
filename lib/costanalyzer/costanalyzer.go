@@ -26,6 +26,8 @@ import (
 
 const timestampFormat = "2006-01-02T15:04:05"
 
+var pagesize = 1000
+
 type nodeInfo struct {
 	// Legacy (records created by Arvados Node Manager with Arvados <= 1.4.3)
 	Properties struct {
@@ -355,6 +357,35 @@ func getNode(arv *arvadosclient.ArvadosClient, ac *arvados.Client, kc *keepclien
 	return
 }
 
+func getContainerRequests(ac *arvados.Client, filters []arvados.Filter) ([]arvados.ContainerRequest, error) {
+	var allItems []arvados.ContainerRequest
+	for {
+		pagefilters := append([]arvados.Filter(nil), filters...)
+		if len(allItems) > 0 {
+			pagefilters = append(pagefilters, arvados.Filter{
+				Attr:     "uuid",
+				Operator: ">",
+				Operand:  allItems[len(allItems)-1].UUID,
+			})
+		}
+		var resp arvados.ContainerRequestList
+		err := ac.RequestAndDecode(&resp, "GET", "arvados/v1/container_requests", nil, arvados.ResourceListParams{
+			Filters: pagefilters,
+			Limit:   &pagesize,
+			Order:   "uuid",
+			Count:   "none",
+		})
+		if err != nil {
+			return nil, fmt.Errorf("error querying container_requests: %w", err)
+		}
+		if len(resp.Items) == 0 {
+			// no more pages
+			return allItems, nil
+		}
+		allItems = append(allItems, resp.Items...)
+	}
+}
+
 func handleProject(logger *logrus.Logger, uuid string, arv *arvadosclient.ArvadosClient, ac *arvados.Client, kc *keepclient.KeepClient, resultsDir string, cache bool) (cost map[string]consumption, err error) {
 	cost = make(map[string]consumption)
 
@@ -363,9 +394,7 @@ func handleProject(logger *logrus.Logger, uuid string, arv *arvadosclient.Arvado
 	if err != nil {
 		return nil, fmt.Errorf("error loading object %s: %s", uuid, err.Error())
 	}
-
-	var childCrs map[string]interface{}
-	filterset := []arvados.Filter{
+	allItems, err := getContainerRequests(ac, []arvados.Filter{
 		{
 			Attr:     "owner_uuid",
 			Operator: "=",
@@ -376,29 +405,23 @@ func handleProject(logger *logrus.Logger, uuid string, arv *arvadosclient.Arvado
 			Operator: "=",
 			Operand:  nil,
 		},
-	}
-	err = ac.RequestAndDecode(&childCrs, "GET", "arvados/v1/container_requests", nil, map[string]interface{}{
-		"filters": filterset,
-		"limit":   10000,
 	})
 	if err != nil {
 		return nil, fmt.Errorf("error querying container_requests: %s", err.Error())
 	}
-	if value, ok := childCrs["items"]; ok {
-		logger.Infof("Collecting top level container requests in project %s", uuid)
-		items := value.([]interface{})
-		for _, item := range items {
-			itemMap := item.(map[string]interface{})
-			crInfo, err := generateCrInfo(logger, itemMap["uuid"].(string), arv, ac, kc, resultsDir, cache)
-			if err != nil {
-				return nil, fmt.Errorf("error generating container_request CSV: %s", err.Error())
-			}
-			for k, v := range crInfo {
-				cost[k] = v
-			}
-		}
-	} else {
+	if len(allItems) == 0 {
 		logger.Infof("No top level container requests found in project %s", uuid)
+		return
+	}
+	logger.Infof("Collecting top level container requests in project %s", uuid)
+	for _, cr := range allItems {
+		crInfo, err := generateCrInfo(logger, cr.UUID, arv, ac, kc, resultsDir, cache)
+		if err != nil {
+			return nil, fmt.Errorf("error generating container_request CSV for %s: %s", cr.UUID, err)
+		}
+		for k, v := range crInfo {
+			cost[k] = v
+		}
 	}
 	return
 }
@@ -456,28 +479,20 @@ func generateCrInfo(logger *logrus.Logger, uuid string, arv *arvadosclient.Arvad
 	csv += tmpCsv
 	cost[container.UUID] = total
 
-	// Find all container requests that have the container we found above as requesting_container_uuid
-	var childCrs arvados.ContainerRequestList
-	filterset := []arvados.Filter{
-		{
-			Attr:     "requesting_container_uuid",
-			Operator: "=",
-			Operand:  container.UUID,
-		}}
-	err = ac.RequestAndDecode(&childCrs, "GET", "arvados/v1/container_requests", nil, map[string]interface{}{
-		"filters": filterset,
-		"limit":   10000,
-	})
-	if err != nil {
-		return nil, fmt.Errorf("error querying container_requests: %s", err.Error())
-	}
-	logger.Infof("Collecting child containers for container request %s (%s)", crUUID, container.FinishedAt)
+	// Find all container requests that have the container we
+	// found above as requesting_container_uuid.
+	allItems, err := getContainerRequests(ac, []arvados.Filter{{
+		Attr:     "requesting_container_uuid",
+		Operator: "=",
+		Operand:  container.UUID,
+	}})
+	logger.Infof("Looking up %d child containers for container %s (%s)", len(allItems), container.UUID, container.FinishedAt)
 	progressTicker := time.NewTicker(5 * time.Second)
 	defer progressTicker.Stop()
-	for i, cr2 := range childCrs.Items {
+	for i, cr2 := range allItems {
 		select {
 		case <-progressTicker.C:
-			logger.Infof("... %d of %d", i+1, len(childCrs.Items))
+			logger.Infof("... %d of %d", i+1, len(allItems))
 		default:
 		}
 		node, err := getNode(arv, ac, kc, cr2)
