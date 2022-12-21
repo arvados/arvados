@@ -163,7 +163,7 @@ export const ProcessPanelRoot = withStyles(styles)(
                         outputUuid={outputUuid || ""}
                     />
                 </MPVPanelContent>
-                <MPVPanelContent forwardProps xs maxHeight='50%' data-cy="process-resources">
+                <MPVPanelContent forwardProps xs data-cy="process-resources">
                     <ProcessResourceCard
                         process={process}
                         nodeInfo={nodeInfo}

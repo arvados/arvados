@@ -20,6 +20,7 @@ import { ArvadosTheme } from 'common/custom-theme';
 import {
     CloseIcon,
     MaximizeIcon,
+    MemoryIcon,
     UnMaximizeIcon,
     ProcessIcon
 } from 'components/icon/icon';
@@ -55,16 +56,16 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     },
     iconHeader: {
         fontSize: '1.875rem',
-        color: theme.customs.colors.green700,
+        color: theme.customs.colors.greyL,
     },
     content: {
         paddingTop: "0px",
-        maxHeight: `calc(100% - ${theme.spacing.unit * 4.5}px)`,
+        maxHeight: `calc(100% - ${theme.spacing.unit * 7.5}px)`,
         overflow: "auto"
     },
     sectionH3: {
         margin: "0.5em",
-        color: theme.customs.colors.purple,
+        color: theme.customs.colors.greyD,
         fontSize: "0.8125rem",
         textTransform: "uppercase",
     }
@@ -94,7 +95,7 @@ export const ProcessResourceCard = withStyles(styles)(connect()(
                     content: classes.title,
                     avatar: classes.avatar,
                 }}
-                avatar={<ProcessIcon className={classes.iconHeader} />}
+                avatar={<MemoryIcon className={classes.iconHeader} />}
                 title={
                     <Typography noWrap variant='h6' color='inherit'>
                         Resources
