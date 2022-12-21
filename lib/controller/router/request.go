@@ -62,6 +62,12 @@ func guessAndParse(k, v string) (interface{}, error) {
 // "collection"), it is renamed to "attrs".
 func (rtr *router) loadRequestParams(req *http.Request, attrsKey string) (map[string]interface{}, error) {
 	err := req.ParseForm()
+	if err == nil {
+		err = req.ParseMultipartForm(int64(rtr.config.MaxRequestSize))
+		if err == http.ErrNotMultipart {
+			err = nil
+		}
+	}
 	if err != nil {
 		if err.Error() == "http: request body too large" {
 			return nil, httpError(http.StatusRequestEntityTooLarge, err)

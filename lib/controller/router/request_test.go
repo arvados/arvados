@@ -8,6 +8,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"io"
+	"mime/multipart"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -116,7 +117,7 @@ func (tr *testReq) Request() *http.Request {
 	}
 	if tr.json {
 		req.Header.Set("Content-Type", "application/json")
-	} else {
+	} else if tr.header.Get("Content-Type") == "" {
 		req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 	}
 	for k, v := range tr.header {
@@ -131,11 +132,18 @@ func (tr *testReq) bodyContent() string {
 
 func (s *RouterSuite) TestAttrsInBody(c *check.C) {
 	attrs := map[string]interface{}{"foo": "bar"}
+
+	multipartBody := new(bytes.Buffer)
+	multipartWriter := multipart.NewWriter(multipartBody)
+	multipartWriter.WriteField("attrs", `{"foo":"bar"}`)
+	multipartWriter.Close()
+
 	for _, tr := range []testReq{
 		{attrsKey: "model_name", json: true, attrs: attrs},
 		{attrsKey: "model_name", json: true, attrs: attrs, jsonAttrsTop: true},
 		{attrsKey: "model_name", json: true, attrs: attrs, jsonAttrsTop: true, jsonStringParam: true},
 		{attrsKey: "model_name", json: true, attrs: attrs, jsonAttrsTop: false, jsonStringParam: true},
+		{body: multipartBody, header: http.Header{"Content-Type": []string{multipartWriter.FormDataContentType()}}},
 	} {
 		c.Logf("tr: %#v", tr)
 		req := tr.Request()
