@@ -132,6 +132,20 @@ export const ProcessResourceCard = withStyles(styles)(connect()(
                                 <DetailsAttribute label="Disk" value={formatFileSize(diskRequest)} />
                             </Grid>
 
+                            {process.container?.runtimeConstraints.cuda &&
+                                process.container?.runtimeConstraints.cuda.device_count > 0 ?
+                                <>
+                                    <Grid item xs={12}>
+                                        <DetailsAttribute label="CUDA devices" value={process.container?.runtimeConstraints.cuda.device_count} />
+                                    </Grid>
+                                    <Grid item xs={12}>
+                                        <DetailsAttribute label="CUDA driver version" value={process.container?.runtimeConstraints.cuda.driver_version} />
+                                    </Grid>
+                                    <Grid item xs={12}>
+                                        <DetailsAttribute label="CUDA hardware capability" value={process.container?.runtimeConstraints.cuda.hardware_capability} />
+                                    </Grid>
+                                </> : null}
+
                             {process.container?.runtimeConstraints.keep_cache_ram &&
                                 process.container?.runtimeConstraints.keep_cache_ram > 0 ?
                                 <Grid item xs={12}>
@@ -148,19 +162,6 @@ export const ProcessResourceCard = withStyles(styles)(connect()(
                                 <DetailsAttribute label="API access" value={process.container?.runtimeConstraints.API.toString()} />
                             </Grid> : null}
 
-                            {process.container?.runtimeConstraints.cuda &&
-                                process.container?.runtimeConstraints.cuda.device_count > 0 ?
-                                <>
-                                    <Grid item xs={12}>
-                                        <DetailsAttribute label="CUDA devices" value={process.container?.runtimeConstraints.cuda.device_count} />
-                                    </Grid>
-                                    <Grid item xs={12}>
-                                        <DetailsAttribute label="CUDA driver version" value={process.container?.runtimeConstraints.cuda.driver_version} />
-                                    </Grid>
-                                    <Grid item xs={12}>
-                                        <DetailsAttribute label="CUDA hardware capability" value={process.container?.runtimeConstraints.cuda.hardware_capability} />
-                                    </Grid>
-                                </> : null}
                         </Grid>
                     </Grid>
 
@@ -189,35 +190,31 @@ export const ProcessResourceCard = withStyles(styles)(connect()(
                                 </Grid>
 
                                 <Grid item xs={6}>
-                                    <DetailsAttribute label="Included scratch disk" value={formatFileSize(nodeInfo.IncludedScratch)} />
+                                    <DetailsAttribute label="Disk" value={formatFileSize(nodeInfo.IncludedScratch + nodeInfo.AddedScratch)} />
                                 </Grid>
 
                                 <Grid item xs={6}>
                                     <DetailsAttribute label="Preemptible" value={nodeInfo.Preemptible.toString()} />
                                 </Grid>
 
-                                <Grid item xs={6}>
-                                    <DetailsAttribute label="Added scratch disk" value={formatFileSize(nodeInfo.AddedScratch)} />
-                                </Grid>
-
                                 {nodeInfo.CUDA.DeviceCount > 0 &&
                                     <>
                                         <Grid item xs={6}>
-                                            <DetailsAttribute label="CUDA devices" value={formatFileSize(nodeInfo.CUDA.DeviceCount)} />
+                                            <DetailsAttribute label="CUDA devices" value={nodeInfo.CUDA.DeviceCount} />
                                         </Grid>
 
                                         <Grid item xs={6}>
                                         </Grid>
 
                                         <Grid item xs={6}>
-                                            <DetailsAttribute label="CUDA driver version" value={formatFileSize(nodeInfo.CUDA.DriverVersion)} />
+                                            <DetailsAttribute label="CUDA driver version" value={nodeInfo.CUDA.DriverVersion} />
                                         </Grid>
 
                                         <Grid item xs={6}>
                                         </Grid>
 
                                         <Grid item xs={6}>
-                                            <DetailsAttribute label="CUDA hardware capability" value={formatFileSize(nodeInfo.CUDA.HardwareCapability)} />
+                                            <DetailsAttribute label="CUDA hardware capability" value={nodeInfo.CUDA.HardwareCapability} />
                                         </Grid>
                                     </>
                                 }
