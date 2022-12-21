@@ -138,7 +138,14 @@ const FileInputComponent = connect()(
                     maxWidth='md'>
                     <DialogTitle>Choose a file</DialogTitle>
                     <DialogContent className={classes.root}>
-                        <this.dialogContent />
+                        <div className={classes.pickerWrapper}>
+                            <ProjectsTreePicker
+                                pickerId={this.props.commandInput.id}
+                                includeCollections
+                                includeFiles
+                                options={this.props.options}
+                                toggleItemActive={this.setFile} />
+                        </div>
                     </DialogContent>
                     <DialogActions>
                         <Button onClick={this.closeDialog}>Cancel</Button>
@@ -150,18 +157,4 @@ const FileInputComponent = connect()(
                     </DialogActions>
                 </Dialog >
         );
-
-        dialogContent = withStyles(this.dialogContentStyles)(
-            ({ classes }: WithStyles<DialogContentCssRules>) =>
-                <div className={classes.pickerWrapper}>
-                    <ProjectsTreePicker
-                        pickerId={this.props.commandInput.id}
-                        includeCollections
-                        includeFiles
-                        options={this.props.options}
-                        toggleItemActive={this.setFile} />
-                </div>
-        );
-
-
     });

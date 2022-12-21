@@ -249,7 +249,28 @@ const FileArrayInputComponent = connect(mapStateToProps)(
                     maxWidth='md' >
                     <DialogTitle>Choose files</DialogTitle>
                     <DialogContent className={classes.root}>
-                        <this.dialogContent />
+                        <div className={classes.pickerWrapper}>
+                            <div className={classes.tree}>
+                                <ProjectsTreePicker
+                                    pickerId={this.props.commandInput.id}
+                                    includeCollections
+                                    includeFiles
+                                    showSelection
+                                    options={this.props.options}
+                                    toggleItemSelection={this.refreshFiles} />
+                            </div>
+                            <Divider />
+                            <div className={classes.chips}>
+                                <Typography variant='subtitle1'>Selected files ({this.state.files.length}):</Typography>
+                                <Chips
+                                    orderable
+                                    deletable
+                                    values={this.state.files}
+                                    onChange={this.setFiles}
+                                    getLabel={(file: CollectionFile) => file.name} />
+                            </div>
+                        </div>
+
                     </DialogContent>
                     <DialogActions>
                         <Button onClick={this.closeDialog}>Cancel</Button>
@@ -260,31 +281,6 @@ const FileArrayInputComponent = connect(mapStateToProps)(
                             onClick={this.submit}>Ok</Button>
                     </DialogActions>
                 </Dialog>
-        );
-
-        dialogContent = withStyles(this.dialogContentStyles)(
-            ({ classes }: WithStyles<DialogContentCssRules>) =>
-                <div className={classes.pickerWrapper}>
-                    <div className={classes.tree}>
-                        <ProjectsTreePicker
-                            pickerId={this.props.commandInput.id}
-                            includeCollections
-                            includeFiles
-                            showSelection
-                            options={this.props.options}
-                            toggleItemSelection={this.refreshFiles} />
-                    </div>
-                    <Divider />
-                    <div className={classes.chips}>
-                        <Typography variant='subtitle1'>Selected files ({this.state.files.length}):</Typography>
-                        <Chips
-                            orderable
-                            deletable
-                            values={this.state.files}
-                            onChange={this.setFiles}
-                            getLabel={(file: CollectionFile) => file.name} />
-                    </div>
-                </div>
         );
 
     });

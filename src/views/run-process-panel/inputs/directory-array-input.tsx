@@ -267,7 +267,27 @@ const DirectoryArrayInputComponent = connect(mapStateToProps)(
                     maxWidth='md' >
                     <DialogTitle>Choose collections</DialogTitle>
                     <DialogContent className={classes.root}>
-                        <this.dialogContent />
+                        <div className={classes.pickerWrapper}>
+                            <div className={classes.tree}>
+                                <ProjectsTreePicker
+                                    pickerId={this.props.commandInput.id}
+                                    includeCollections
+                                    showSelection
+                                    options={this.props.options}
+                                    toggleItemSelection={this.refreshDirectories} />
+                            </div>
+                            <Divider />
+                            <div className={classes.chips}>
+                                <Typography variant='subtitle1'>Selected collections ({this.state.directories.length}):</Typography>
+                                <Chips
+                                    orderable
+                                    deletable
+                                    values={this.state.directories}
+                                    onChange={this.setDirectories}
+                                    getLabel={(directory: CollectionResource) => directory.name} />
+                            </div>
+                        </div>
+
                     </DialogContent>
                     <DialogActions>
                         <Button onClick={this.closeDialog}>Cancel</Button>
@@ -278,30 +298,6 @@ const DirectoryArrayInputComponent = connect(mapStateToProps)(
                             onClick={this.submit}>Ok</Button>
                     </DialogActions>
                 </Dialog>
-        );
-
-        dialogContent = withStyles(this.dialogContentStyles)(
-            ({ classes }: WithStyles<DialogContentCssRules>) =>
-                <div className={classes.pickerWrapper}>
-                    <div className={classes.tree}>
-                        <ProjectsTreePicker
-                            pickerId={this.props.commandInput.id}
-                            includeCollections
-                            showSelection
-                            options={this.props.options}
-                            toggleItemSelection={this.refreshDirectories} />
-                    </div>
-                    <Divider />
-                    <div className={classes.chips}>
-                        <Typography variant='subtitle1'>Selected collections ({this.state.directories.length}):</Typography>
-                        <Chips
-                            orderable
-                            deletable
-                            values={this.state.directories}
-                            onChange={this.setDirectories}
-                            getLabel={(directory: CollectionResource) => directory.name} />
-                    </div>
-                </div>
         );
 
     });
