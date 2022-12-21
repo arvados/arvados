@@ -113,7 +113,7 @@ export const getProcessStatusStyles = (status: string, theme: ArvadosTheme): Rea
         // Set text color to status color when running, else use white text for solid button
         color: running ? color : theme.palette.common.white,
         // Set border color when running, else omit the style entirely
-        ...(running ? {border: `1px solid ${color}`} : {}),
+        ...(running ? {border: `2px solid ${color}`} : {}),
     };
 };
 
