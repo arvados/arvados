@@ -56,8 +56,8 @@ describe('renderers', () => {
             [CR.FINAL, 1, C.COMPLETE, 0, {}, PS.COMPLETED, props.theme.customs.colors.green800, props.theme.palette.common.white],
             [CR.COMMITTED, 0, C.LOCKED, null, {}, PS.ONHOLD, props.theme.customs.colors.grey600, props.theme.palette.common.white],
             [CR.COMMITTED, 0, C.QUEUED, null, {}, PS.ONHOLD, props.theme.customs.colors.grey600, props.theme.palette.common.white],
-            [CR.COMMITTED, 1, C.LOCKED, null, {}, PS.QUEUED, props.theme.customs.colors.grey600, props.theme.palette.common.white],
-            [CR.COMMITTED, 1, C.QUEUED, null, {}, PS.QUEUED, props.theme.customs.colors.grey600, props.theme.palette.common.white],
+            [CR.COMMITTED, 1, C.LOCKED, null, {}, PS.QUEUED, props.theme.palette.common.white, props.theme.customs.colors.grey600],
+            [CR.COMMITTED, 1, C.QUEUED, null, {}, PS.QUEUED, props.theme.palette.common.white, props.theme.customs.colors.grey600],
         ].forEach(([crState, crPrio, cState, exitCode, rs, eLabel, eColor, tColor]) => {
             it(`should render the state label '${eLabel}' and color '${eColor}' for CR state=${crState}, priority=${crPrio}, C state=${cState}, exitCode=${exitCode} and RuntimeStatus=${JSON.stringify(rs)}`, () => {
                 const containerUuid = 'zzzzz-dz642-zzzzzzzzzzzzzzz';
