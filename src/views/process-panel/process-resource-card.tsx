@@ -197,7 +197,7 @@ export const ProcessResourceCard = withStyles(styles)(connect()(
                                     <DetailsAttribute label="Preemptible" value={nodeInfo.Preemptible.toString()} />
                                 </Grid>
 
-                                {nodeInfo.CUDA.DeviceCount > 0 &&
+                                {nodeInfo.CUDA && nodeInfo.CUDA.DeviceCount > 0 &&
                                     <>
                                         <Grid item xs={6}>
                                             <DetailsAttribute label="CUDA devices" value={nodeInfo.CUDA.DeviceCount} />
