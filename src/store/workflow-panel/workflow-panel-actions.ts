@@ -24,6 +24,7 @@ import { getResource } from 'store/resources/resources';
 import { ProjectResource } from 'models/project';
 import { UserResource } from 'models/user';
 import { getUserUuid } from "common/getuser";
+import { WorkflowResource, WorkflowRunnerResources, getWorkflow, getWorkflowInputs, parseWorkflowDefinition } from 'models/workflow';
 
 export const WORKFLOW_PANEL_ID = "workflowPanel";
 const UUID_PREFIX_PROPERTY_NAME = 'uuidPrefix';
@@ -73,6 +74,18 @@ export const openRunProcess = (workflowUuid: string, ownerUuid?: string, name?: 
             }
 
             dispatch(initialize(RUN_PROCESS_BASIC_FORM, { name, owner }));
+
+            const definition = parseWorkflowDefinition(workflow);
+            if (definition) {
+                const inputs = getWorkflowInputs(definition);
+                if (inputs) {
+                    const values = inputs.reduce((values, input) => ({
+                        ...values,
+                        [input.id]: input.default,
+                    }), {});
+                    dispatch(initialize(RUN_PROCESS_INPUTS_FORM, values));
+                }
+            }
 
             if (inputObj) {
                 dispatch(initialize(RUN_PROCESS_INPUTS_FORM, inputObj));
