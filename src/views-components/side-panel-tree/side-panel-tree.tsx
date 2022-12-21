@@ -20,6 +20,7 @@ import { GroupClass } from "models/group";
 export interface SidePanelTreeProps {
     onItemActivation: (id: string) => void;
     sidePanelProgress?: boolean;
+    isCollapsed?: boolean
 }
 
 type SidePanelTreeActionProps = Pick<TreePickerProps<ProjectResource | string>, 'onContextMenu' | 'toggleItemActive' | 'toggleItemOpen' | 'toggleItemSelection'>;

@@ -99,6 +99,7 @@ import { RestoreCollectionVersionDialog } from 'views-components/collections-dia
 import { WebDavS3InfoDialog } from 'views-components/webdav-s3-dialog/webdav-s3-dialog';
 import { pluginConfig } from 'plugins';
 import { ElementListReducer } from 'common/plugintypes';
+import { COLLAPSE_ICON_SIZE } from 'views-components/side-panel-toggle/side-panel-toggle'
 
 type CssRules = 'root' | 'container' | 'splitter' | 'asidePanel' | 'contentWrapper' | 'content';
 
@@ -112,7 +113,11 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     },
     splitter: {
         '& > .layout-splitter': {
-            width: '2px'
+            width: '2px',
+        },
+        '& > .layout-splitter-disabled': {
+            pointerEvents: 'none',
+            cursor: 'pointer'
         }
     },
     asidePanel: {
@@ -188,14 +193,23 @@ routes = React.createElement(React.Fragment, null, pluginConfig.centerPanelList.
 
 const applyCollapsedState = (isCollapsed) => {
     const rightPanel: Element = document.getElementsByClassName('layout-pane')[1]
+    const totalWidth: number = document.getElementsByClassName('splitter-layout')[0]?.clientWidth
+    const rightPanelExpandedWidth = ((totalWidth-COLLAPSE_ICON_SIZE)) / (totalWidth/100) 
     if(rightPanel) {
-        rightPanel.setAttribute('style', `width: ${isCollapsed ? 100 : getSplitterInitialSize()}%`)
+        rightPanel.setAttribute('style', `width: ${isCollapsed ? rightPanelExpandedWidth : getSplitterInitialSize()}%`)
     }
+    const splitter = document.getElementsByClassName('layout-splitter')[0]
+    isCollapsed ? splitter?.classList.add('layout-splitter-disabled') : splitter?.classList.remove('layout-splitter-disabled')
+    
 }
 
 export const WorkbenchPanel =
     withStyles(styles)((props: WorkbenchPanelProps) =>{
+
+        //panel size will not scale automatically on window resize, so we do it manually
+        window.addEventListener('resize', ()=>applyCollapsedState(props.sidePanelIsCollapsed))
         applyCollapsedState(props.sidePanelIsCollapsed)
+        
         return <Grid container item xs className={props.classes.root}>
             {props.sessionIdleTimeout > 0 && <AutoLogout />}
             <Grid container item xs className={props.classes.container}>
