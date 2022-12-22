@@ -103,32 +103,62 @@ func (c *command) RunCommand(prog string, args []string, stdin io.Reader, stdout
 		loader.SkipAPICalls = true
 	}
 
-	cfg, err := loader.Load()
-	if err != nil {
-		return 1
-	}
-	cluster, err := cfg.GetCluster("")
-	if err != nil {
-		return 1
-	}
-
-	// Now that we've read the config, replace the bootstrap
-	// logger with a new one according to the logging config.
-	log = ctxlog.New(stderr, cluster.SystemLogs.Format, cluster.SystemLogs.LogLevel)
-	logger := log.WithFields(logrus.Fields{
-		"PID":       os.Getpid(),
-		"ClusterID": cluster.ClusterID,
+	wantReload := make(chan struct{}, 1)
+	err = loader.WatchConfig(c.ctx, func() {
+		wantReload <- struct{}{}
 	})
-	ctx := ctxlog.Context(c.ctx, logger)
-
-	listenURL, internalURL, err := getListenAddr(cluster.Services, c.svcName, log)
 	if err != nil {
+		log.WithError(err).Error("exiting")
 		return 1
+	}
+
+	for {
+		cfg, err := loader.Load()
+		if err != nil {
+			log.WithError(err).Error("exiting")
+			return 1
+		}
+		cluster, err := cfg.GetCluster("")
+		if err != nil {
+			log.WithError(err).Error("exiting")
+			return 1
+		}
+
+		// Now that we've read the config, replace the bootstrap
+		// logger with a new one according to the logging config.
+		baseLogger := ctxlog.New(stderr, cluster.SystemLogs.Format, cluster.SystemLogs.LogLevel)
+		logger := baseLogger.WithFields(logrus.Fields{
+			"PID":       os.Getpid(),
+			"ClusterID": cluster.ClusterID,
+		})
+		ctx := ctxlog.Context(c.ctx, logger)
+		loader.Logger = logger
+
+		reg := prometheus.NewRegistry()
+		loader.RegisterMetrics(reg)
+
+		ctx, cancel := context.WithCancel(ctx)
+		defer cancel()
+		go func() {
+			<-wantReload
+			cancel()
+		}()
+		err = c.run(ctx, cluster, baseLogger, logger, reg)
+		if err != nil && ctx.Err() == nil {
+			// run returned an error, and we aren't trying
+			// to cancel/reload -- something went wrong
+			log.WithError(err).Error("exiting")
+			return 1
+		}
+	}
+}
+
+func (c *command) run(ctx context.Context, cluster *arvados.Cluster, baseLogger *logrus.Logger, logger logrus.FieldLogger, reg *prometheus.Registry) error {
+	listenURL, internalURL, err := getListenAddr(cluster.Services, c.svcName, logger)
+	if err != nil {
+		return err
 	}
 	ctx = context.WithValue(ctx, contextKeyURL{}, internalURL)
-
-	reg := prometheus.NewRegistry()
-	loader.RegisterMetrics(reg)
 
 	// arvados_version_running{version="1.2.3~4"} 1.0
 	mVersion := prometheus.NewGaugeVec(prometheus.GaugeOpts{
@@ -140,11 +170,11 @@ func (c *command) RunCommand(prog string, args []string, stdin io.Reader, stdout
 	reg.MustRegister(mVersion)
 
 	handler := c.newHandler(ctx, cluster, cluster.SystemRootToken, reg)
-	if err = handler.CheckHealth(); err != nil {
-		return 1
+	if err := handler.CheckHealth(); err != nil {
+		return err
 	}
 
-	instrumented := httpserver.Instrument(reg, log,
+	instrumented := httpserver.Instrument(reg, baseLogger,
 		httpserver.HandlerWithDeadline(cluster.API.RequestTimeout.Duration(),
 			httpserver.AddRequestIDs(
 				httpserver.Inspect(reg, cluster.ManagementToken,
@@ -162,13 +192,13 @@ func (c *command) RunCommand(prog string, args []string, stdin io.Reader, stdout
 		tlsconfig, err := makeTLSConfig(cluster, logger)
 		if err != nil {
 			logger.WithError(err).Errorf("cannot start %s service on %s", c.svcName, listenURL.String())
-			return 1
+			return err
 		}
 		srv.TLSConfig = tlsconfig
 	}
 	err = srv.Start()
 	if err != nil {
-		return 1
+		return err
 	}
 	logger.WithFields(logrus.Fields{
 		"URL":     listenURL,
@@ -191,9 +221,9 @@ func (c *command) RunCommand(prog string, args []string, stdin io.Reader, stdout
 	}()
 	err = srv.Wait()
 	if err != nil {
-		return 1
+		return err
 	}
-	return 0
+	return nil
 }
 
 // If an incoming request's target vhost has an embedded collection

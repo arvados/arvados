@@ -20,7 +20,6 @@ import (
 	"os/signal"
 	"os/user"
 	"path/filepath"
-	"reflect"
 	"strconv"
 	"strings"
 	"sync"
@@ -32,7 +31,6 @@ import (
 	"git.arvados.org/arvados.git/sdk/go/arvados"
 	"git.arvados.org/arvados.git/sdk/go/ctxlog"
 	"git.arvados.org/arvados.git/sdk/go/health"
-	"github.com/fsnotify/fsnotify"
 	"github.com/sirupsen/logrus"
 )
 
@@ -153,13 +151,17 @@ func (super *Supervisor) Start(ctx context.Context) {
 		return
 	}
 
-	if super.ConfigPath != "" && super.ConfigPath != "-" && cfg.AutoReloadConfig {
-		go watchConfig(super.ctx, super.logger, super.ConfigPath, copyConfig(cfg), func() {
-			if super.err == nil {
-				super.err = errNeedConfigReload
-			}
-			super.cancel()
-		})
+	err = loader.WatchConfig(super.ctx, func() {
+		if super.err == nil {
+			super.err = errNeedConfigReload
+		}
+		super.cancel()
+	})
+	if err != nil {
+		super.err = err
+		close(super.done)
+		super.cancel()
+		return
 	}
 
 	if len(cfg.Clusters) > 1 {
@@ -288,6 +290,7 @@ func (super *Supervisor) runCluster() error {
 	}
 	defer conffile.Close()
 	err = json.NewEncoder(conffile).Encode(arvados.Config{
+		AutoReloadConfig: false,
 		Clusters: map[string]arvados.Cluster{
 			super.cluster.ClusterID: *super.cluster}})
 	if err != nil {
@@ -1030,68 +1033,4 @@ func waitForConnect(ctx context.Context, addr string) error {
 		return nil
 	}
 	return ctx.Err()
-}
-
-func copyConfig(cfg *arvados.Config) *arvados.Config {
-	pr, pw := io.Pipe()
-	go func() {
-		err := json.NewEncoder(pw).Encode(cfg)
-		if err != nil {
-			panic(err)
-		}
-		pw.Close()
-	}()
-	cfg2 := new(arvados.Config)
-	err := json.NewDecoder(pr).Decode(cfg2)
-	if err != nil {
-		panic(err)
-	}
-	return cfg2
-}
-
-func watchConfig(ctx context.Context, logger logrus.FieldLogger, cfgPath string, prevcfg *arvados.Config, fn func()) {
-	watcher, err := fsnotify.NewWatcher()
-	if err != nil {
-		logger.WithError(err).Error("fsnotify setup failed")
-		return
-	}
-	defer watcher.Close()
-
-	err = watcher.Add(cfgPath)
-	if err != nil {
-		logger.WithError(err).Error("fsnotify watcher failed")
-		return
-	}
-
-	for {
-		select {
-		case <-ctx.Done():
-			return
-		case err, ok := <-watcher.Errors:
-			if !ok {
-				return
-			}
-			logger.WithError(err).Warn("fsnotify watcher reported error")
-		case _, ok := <-watcher.Events:
-			if !ok {
-				return
-			}
-			for len(watcher.Events) > 0 {
-				<-watcher.Events
-			}
-			loader := config.NewLoader(&bytes.Buffer{}, &logrus.Logger{Out: ioutil.Discard})
-			loader.Path = cfgPath
-			loader.SkipAPICalls = true
-			cfg, err := loader.Load()
-			if err != nil {
-				logger.WithError(err).Warn("error reloading config file after change detected; ignoring new config for now")
-			} else if reflect.DeepEqual(cfg, prevcfg) {
-				logger.Debug("config file changed but is still DeepEqual to the existing config")
-			} else {
-				logger.Debug("config changed, notifying supervisor")
-				fn()
-				prevcfg = cfg
-			}
-		}
-	}
 }

@@ -198,6 +198,10 @@ func (ldr *Loader) loadBytes(path string) (buf []byte, sourceTime, loadTime time
 	return
 }
 
+func (ldr *Loader) Unload() {
+	ldr.configdata = nil
+}
+
 func (ldr *Loader) Load() (*arvados.Config, error) {
 	if ldr.configdata == nil {
 		buf, sourceTime, loadTime, err := ldr.loadBytes(ldr.Path)

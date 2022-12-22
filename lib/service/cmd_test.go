@@ -10,11 +10,13 @@ import (
 	"context"
 	"crypto/tls"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"net"
 	"net/http"
 	"net/url"
 	"os"
+	"strings"
 	"testing"
 	"time"
 
@@ -272,4 +274,87 @@ func (th *testHandler) CheckHealth() error {
 	default:
 	}
 	return nil
+}
+
+func (*Suite) TestAutoReloadConfig(c *check.C) {
+	host := "127.0.0.1"
+	ln, err := net.Listen("tcp", net.JoinHostPort(host, "0"))
+	c.Assert(err, check.IsNil)
+	hostport := ln.Addr().String()
+	ln.Close()
+
+	cf, err := ioutil.TempFile("", "cmd_test.")
+	c.Assert(err, check.IsNil)
+	defer os.Remove(cf.Name())
+	defer cf.Close()
+	fmt.Fprintf(cf, `
+AutoReloadConfig: true
+Clusters:
+ zzzzz:
+  SystemRootToken: abcde
+  ManagementToken: firsttoken
+  Services:
+   Controller:
+    InternalURLs:
+     "http://`+hostport+`": {}
+    ExternalURL: https://zzzzz.example.com/
+`)
+	cf.Close()
+
+	serviceStartedWithToken := make(chan string)
+	serviceContextClosed := make(chan bool)
+	healthCheck := make(chan bool, 1)
+	cmd := Command(arvados.ServiceNameController, func(ctx context.Context, cluster *arvados.Cluster, token string, reg *prometheus.Registry) Handler {
+		serviceStartedWithToken <- cluster.ManagementToken
+		go func() {
+			<-ctx.Done()
+			serviceContextClosed <- true
+		}()
+		return &testHandler{ctx: ctx, healthCheck: healthCheck, handler: http.NotFoundHandler()}
+	})
+
+	testFinished := false
+	defer func() { testFinished = true }()
+	var stdin, stdout, stderr bytes.Buffer
+	go func() {
+		cmd.RunCommand("arvados-controller", []string{"-config", cf.Name()}, &stdin, &stdout, io.MultiWriter(&stderr, ctxlog.LogWriter(c.Log)))
+		if !testFinished {
+			panic("command exited before test finished")
+		}
+	}()
+
+	c.Check(<-serviceStartedWithToken, check.Equals, "firsttoken")
+	<-healthCheck
+	os.WriteFile(cf.Name()+".2", []byte(`Clusters: {zzzzz: {oops`), 0777)
+	os.Rename(cf.Name()+".2", cf.Name())
+	for deadline := time.Now().Add(time.Second); ; time.Sleep(time.Millisecond) {
+		if time.Now().After(deadline) {
+			c.Log("timed out waiting for warning about bad config file")
+			c.FailNow()
+		}
+		if strings.Contains(stderr.String(), "error reloading config file") {
+			break
+		}
+	}
+
+	os.WriteFile(cf.Name(), []byte(`
+AutoReloadConfig: true
+Clusters:
+ zzzzz:
+  SystemRootToken: abcde
+  ManagementToken: secondtoken
+  Services:
+   Controller:
+    InternalURLs:
+     "http://`+hostport+`": {}
+    ExternalURL: https://zzzzz.example.com/
+`), 0777)
+	<-serviceContextClosed
+	c.Check(<-serviceStartedWithToken, check.Equals, "secondtoken")
+	<-healthCheck
+	// Check that the new/restarted service successfully listens
+	// on the same/reused port that the first one was using.
+	resp, err := http.Get("http://" + hostport + "/")
+	c.Check(err, check.IsNil)
+	c.Check(resp.StatusCode, check.Equals, http.StatusNotFound)
 }
