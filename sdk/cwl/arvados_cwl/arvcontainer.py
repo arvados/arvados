@@ -622,7 +622,7 @@ class RunnerContainer(Runner):
         if runtimeContext.prefer_cached_downloads:
             command.append("--prefer-cached-downloads")
 
-        if runtimeContext.fast_parser:
+        if self.fast_parser:
             command.append("--fast-parser")
 
         command.extend([workflowpath, "/var/lib/cwl/cwl.input.json"])
