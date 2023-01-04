@@ -803,6 +803,12 @@ Clusters:
         # Skip TLS certificate name verification.
         InsecureTLS: false
 
+        # Mininum TLS version to negotiate when connecting to server
+        # (ldaps://... or StartTLS). It may be necessary to set this
+        # to "1.1" for compatibility with older LDAP servers. If
+        # blank, use the recommended minimum version (1.2).
+        MinTLSVersion: ""
+
         # Strip the @domain part if a user supplies an email-style
         # username with this domain. If "*", strip any user-provided
         # domain. If "", never strip the domain part. Example:

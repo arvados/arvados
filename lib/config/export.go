@@ -162,6 +162,7 @@ var whitelist = map[string]bool{
 	"Login.LDAP.EmailAttribute":                           false,
 	"Login.LDAP.Enable":                                   true,
 	"Login.LDAP.InsecureTLS":                              false,
+	"Login.LDAP.MinTLSVersion":                            false,
 	"Login.LDAP.SearchAttribute":                          false,
 	"Login.LDAP.SearchBase":                               false,
 	"Login.LDAP.SearchBindPassword":                       false,
