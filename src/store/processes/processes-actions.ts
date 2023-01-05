@@ -28,15 +28,15 @@ export const loadProcess = (containerRequestUuid: string) =>
         dispatch<any>(updateResources([containerRequest]));
 
         if (containerRequest.outputUuid) {
-            const collection = await services.collectionService.get(containerRequest.outputUuid);
+            const collection = await services.collectionService.get(containerRequest.outputUuid, false);
             dispatch<any>(updateResources([collection]));
         }
 
         if (containerRequest.containerUuid) {
-            const container = await services.containerService.get(containerRequest.containerUuid);
+            const container = await services.containerService.get(containerRequest.containerUuid, false);
             dispatch<any>(updateResources([container]));
             if (container.runtimeUserUuid) {
-                const runtimeUser = await services.userService.get(container.runtimeUserUuid);
+                const runtimeUser = await services.userService.get(container.runtimeUserUuid, false);
                 dispatch<any>(updateResources([runtimeUser]));
             }
             return { containerRequest, container };
