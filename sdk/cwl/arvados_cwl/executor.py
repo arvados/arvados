@@ -36,7 +36,7 @@ import arvados_cwl.util
 from .arvcontainer import RunnerContainer, cleanup_name_for_collection
 from .runner import Runner, upload_docker, upload_job_order, upload_workflow_deps, make_builder
 from .arvtool import ArvadosCommandTool, validate_cluster_target, ArvadosExpressionTool
-from .arvworkflow import ArvadosWorkflow, upload_workflow
+from .arvworkflow import ArvadosWorkflow, upload_workflow, new_upload_workflow
 from .fsaccess import CollectionFsAccess, CollectionFetcher, collectionResolver, CollectionCache, pdh_size
 from .perf import Perf
 from .pathmapper import NoFollowPathMapper
@@ -674,16 +674,16 @@ The 'jobs' API is no longer supported.
         loadingContext = self.loadingContext.copy()
         loadingContext.do_validate = False
         loadingContext.disable_js_validation = True
-        if submitting and not self.fast_submit:
-            loadingContext.do_update = False
-            # Document may have been auto-updated. Reload the original
-            # document with updating disabled because we want to
-            # submit the document with its original CWL version, not
-            # the auto-updated one.
-            with Perf(metrics, "load_tool original"):
-                tool = load_tool(updated_tool.tool["id"], loadingContext)
-        else:
-            tool = updated_tool
+        # if submitting and not self.fast_submit:
+        #     loadingContext.do_update = False
+        #     # Document may have been auto-updated. Reload the original
+        #     # document with updating disabled because we want to
+        #     # submit the document with its original CWL version, not
+        #     # the auto-updated one.
+        #     with Perf(metrics, "load_tool original"):
+        #         tool = load_tool(updated_tool.tool["id"], loadingContext)
+        # else:
+        tool = updated_tool
 
         # Upload direct dependencies of workflow steps, get back mapping of files to keep references.
         # Also uploads docker images.
@@ -702,13 +702,13 @@ The 'jobs' API is no longer supported.
         loadingContext.avsc_names = tool.doc_schema
         loadingContext.metadata = tool.metadata
         loadingContext.skip_resolve_all = True
-        with Perf(metrics, "load_tool"):
-            tool = load_tool(tool.tool, loadingContext)
+        #with Perf(metrics, "load_tool"):
+        #    tool = load_tool(tool.tool, loadingContext)
 
         if runtimeContext.update_workflow or runtimeContext.create_workflow:
             # Create a pipeline template or workflow record and exit.
             if self.work_api == "containers":
-                uuid = upload_workflow(self, tool, job_order,
+                uuid = new_upload_workflow(self, tool, job_order,
                                        runtimeContext.project_uuid,
                                        runtimeContext,
                                        uuid=runtimeContext.update_workflow,

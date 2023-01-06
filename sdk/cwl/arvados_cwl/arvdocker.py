@@ -121,7 +121,8 @@ def arv_docker_get_image(api_client, dockerRequirement, pull_image, project_uuid
             if not out_of_project_images:
                 # Fetch Docker image if necessary.
                 try:
-                    result = cwltool.docker.DockerCommandLineJob.get_image(dockerRequirement, pull_image,
+                    dockerjob = cwltool.docker.DockerCommandLineJob(None, None, None, None, None, None)
+                    result = dockerjob.get_image(dockerRequirement, pull_image,
                                                                   force_pull, tmp_outdir_prefix)
                     if not result:
                         raise WorkflowException("Docker image '%s' not available" % dockerRequirement["dockerImageId"])

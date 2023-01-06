@@ -9,6 +9,14 @@ import os
 import json
 import copy
 import logging
+import urllib
+from io import StringIO
+import sys
+
+from typing import (MutableSequence, MutableMapping)
+
+from ruamel.yaml import YAML
+from ruamel.yaml.comments import CommentedMap, CommentedSeq
 
 from schema_salad.sourceline import SourceLine, cmap
 import schema_salad.ref_resolver
@@ -21,6 +29,8 @@ from cwltool.process import shortname
 from cwltool.workflow import Workflow, WorkflowException, WorkflowStep
 from cwltool.utils import adjustFileObjs, adjustDirObjs, visit_class, normalizeFilesDirs
 from cwltool.context import LoadingContext
+
+from schema_salad.ref_resolver import file_uri, uri_file_path
 
 import ruamel.yaml as yaml
 
@@ -117,6 +127,133 @@ def make_wrapper_workflow(arvRunner, main, packed, project_uuid, name, git_info,
 
     return json.dumps(doc, sort_keys=True, indent=4, separators=(',',': '))
 
+def rel_ref(s, baseuri, urlexpander, merged_map):
+    uri = urlexpander(s, baseuri)
+    if baseuri in merged_map:
+        replacements = merged_map[baseuri].resolved
+        if uri in replacements:
+            return replacements[uri]
+
+    p1 = os.path.dirname(uri_file_path(baseuri))
+    p2 = os.path.dirname(uri_file_path(uri))
+    p3 = os.path.basename(uri_file_path(uri))
+    r = os.path.relpath(p2, p1)
+    if r == ".":
+        r = ""
+    print("AAA", uri, s)
+    print("BBBB", p1, p2, p3, r)
+    return os.path.join(r, p3)
+
+
+def update_refs(d, baseuri, urlexpander, merged_map, set_block_style):
+    if isinstance(d, CommentedSeq):
+        if set_block_style:
+            d.fa.set_block_style()
+        for s in d:
+            update_refs(s, baseuri, urlexpander, merged_map, set_block_style)
+    elif isinstance(d, CommentedMap):
+        if set_block_style:
+            d.fa.set_block_style()
+
+        if "id" in d:
+            baseuri = urlexpander(d["id"], baseuri, scoped_id=True)
+
+        for s in d:
+            for field in ("$include", "$import", "location", "run"):
+                if field in d and isinstance(d[field], str):
+                    d[field] = rel_ref(d[field], baseuri, urlexpander, merged_map)
+
+            if "$schemas" in d:
+                for n, s in enumerate(d["$schemas"]):
+                    d["$schemas"][n] = rel_ref(d["$schemas"][n], baseuri, urlexpander, merged_map)
+
+            update_refs(d[s], baseuri, urlexpander, merged_map, set_block_style)
+
+def new_upload_workflow(arvRunner, tool, job_order, project_uuid,
+                    runtimeContext, uuid=None,
+                    submit_runner_ram=0, name=None, merged_map=None,
+                    submit_runner_image=None,
+                    git_info=None):
+
+    firstfile = None
+    workflow_files = set()
+    import_files = set()
+    include_files = set()
+
+    for w in tool.doc_loader.idx:
+        if w.startswith("file://"):
+            workflow_files.add(urllib.parse.urldefrag(w)[0])
+            if firstfile is None:
+                firstfile = urllib.parse.urldefrag(w)[0]
+        if w.startswith("import:file://"):
+            import_files.add(urllib.parse.urldefrag(w[7:])[0])
+        if w.startswith("include:file://"):
+            include_files.add(urllib.parse.urldefrag(w[8:])[0])
+
+    all_files = workflow_files | import_files | include_files
+
+    n = 7
+    allmatch = True
+    while allmatch:
+        n += 1
+        for f in all_files:
+            if len(f)-1 < n:
+                n -= 1
+                allmatch = False
+                break
+            if f[n] != firstfile[n]:
+                allmatch = False
+                break
+
+    while firstfile[n] != "/":
+        n -= 1
+
+    prefix = firstfile[:n+1]
+
+    col = arvados.collection.Collection()
+
+    #print(merged_map.keys())
+
+    for w in workflow_files | import_files:
+        # 1. load YAML
+
+        text = tool.doc_loader.fetch_text(w)
+        if isinstance(text, bytes):
+            textIO = StringIO(text.decode('utf-8'))
+        else:
+            textIO = StringIO(text)
+
+        yamlloader = schema_salad.utils.yaml_no_ts()
+        result = yamlloader.load(textIO)
+
+        set_block_style = False
+        if result.fa.flow_style():
+            set_block_style = True
+
+        # 2. find $import, $include, $schema, run, location
+        # 3. update field value
+        update_refs(result, w, tool.doc_loader.expand_url, merged_map, set_block_style)
+
+        with col.open(w[n+1:], "wt") as f:
+            yamlloader.dump(result, stream=f)
+
+    for w in include_files:
+        with col.open(w[n+1:], "wb") as f1:
+            with open(uri_file_path(w), "rb") as f2:
+                dat = f2.read(65536)
+                while dat:
+                    f1.write(dat)
+                    dat = f2.read(65536)
+
+    toolname = tool.tool.get("label") or tool.metadata.get("label") or os.path.basename(tool.tool["id"])
+    if git_info and git_info.get("http://arvados.org/cwl#gitDescribe"):
+        toolname = "%s (%s)" % (toolname, git_info.get("http://arvados.org/cwl#gitDescribe"))
+
+    col.save_new(name=toolname, owner_uuid=arvRunner.project_uuid, ensure_unique_name=True)
+
+    return col.manifest_locator()
+
+
 def upload_workflow(arvRunner, tool, job_order, project_uuid,
                     runtimeContext, uuid=None,
                     submit_runner_ram=0, name=None, merged_map=None,
@@ -139,7 +276,7 @@ def upload_workflow(arvRunner, tool, job_order, project_uuid,
         name = tool.tool.get("label", os.path.basename(tool.tool["id"]))
 
     upload_dependencies(arvRunner, name, tool.doc_loader,
-                        packed, tool.tool["id"], False,
+                        packed, tool.tool["id"],
                         runtimeContext)
 
     wf_runner_resources = None
@@ -286,7 +423,6 @@ class ArvadosWorkflow(Workflow):
                                 self.doc_loader,
                                 joborder,
                                 joborder.get("id", "#"),
-                                False,
                                 runtimeContext)
 
             if self.wf_pdh is None:
@@ -330,7 +466,6 @@ class ArvadosWorkflow(Workflow):
                                     self.doc_loader,
                                     packed,
                                     self.tool["id"],
-                                    False,
                                     runtimeContext)
 
                 # Discover files/directories referenced by the

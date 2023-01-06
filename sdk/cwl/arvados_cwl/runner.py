@@ -295,7 +295,7 @@ def discover_secondary_files(fsaccess, builder, inputs, job_order, discovered=No
             set_secondary(fsaccess, builder, inputschema, None, primary, discovered)
 
 def upload_dependencies(arvrunner, name, document_loader,
-                        workflowobj, uri, loadref_run, runtimeContext,
+                        workflowobj, uri, runtimeContext,
                         include_primary=True, discovered_secondaryfiles=None,
                         cache=None):
     """Upload the dependencies of the workflowobj document to Keep.
@@ -303,64 +303,27 @@ def upload_dependencies(arvrunner, name, document_loader,
     Returns a pathmapper object mapping local paths to keep references.  Also
     does an in-place update of references in "workflowobj".
 
-    Use scandeps to find $import, $include, $schemas, run, File and Directory
+    Use scandeps to find $schemas, File and Directory
     fields that represent external references.
 
     If workflowobj has an "id" field, this will reload the document to ensure
     it is scanning the raw document prior to preprocessing.
     """
 
-    loaded = set()
-    def loadref(b, u):
-        joined = document_loader.fetcher.urljoin(b, u)
-        defrg, _ = urllib.parse.urldefrag(joined)
-        if defrg not in loaded:
-            loaded.add(defrg)
-            if cache is not None and defrg in cache:
-                return cache[defrg]
-            # Use fetch_text to get raw file (before preprocessing).
-            text = document_loader.fetch_text(defrg)
-            if isinstance(text, bytes):
-                textIO = StringIO(text.decode('utf-8'))
-            else:
-                textIO = StringIO(text)
-            yamlloader = YAML(typ='safe', pure=True)
-            result = yamlloader.load(textIO)
-            if cache is not None:
-                cache[defrg] = result
-            return result
-        else:
-            return {}
-
-    if loadref_run:
-        loadref_fields = set(("$import", "run"))
-    else:
-        loadref_fields = set(("$import",))
-
     scanobj = workflowobj
-    if "id" in workflowobj and not workflowobj["id"].startswith("_:"):
-        defrg, _ = urllib.parse.urldefrag(workflowobj["id"])
-        if cache is not None and defrg not in cache:
-            # if we haven't seen this file before, want raw file
-            # content (before preprocessing) to ensure that external
-            # references like $include haven't already been inlined.
-            scanobj = loadref("", workflowobj["id"])
-
     metadata = scanobj
 
-    with Perf(metrics, "scandeps include, location"):
+    with Perf(metrics, "scandeps"):
         sc_result = scandeps(uri, scanobj,
-                             loadref_fields,
-                             set(("$include", "location")),
-                             loadref, urljoin=document_loader.fetcher.urljoin,
+                             set(),
+                             set(("location",)),
+                             None, urljoin=document_loader.fetcher.urljoin,
                              nestdirs=False)
-
-    with Perf(metrics, "scandeps $schemas"):
         optional_deps = scandeps(uri, scanobj,
-                                      loadref_fields,
-                                      set(("$schemas",)),
-                                      loadref, urljoin=document_loader.fetcher.urljoin,
-                                      nestdirs=False)
+                             set(),
+                             set(("$schemas",)),
+                             None, urljoin=document_loader.fetcher.urljoin,
+                             nestdirs=False)
 
     if sc_result is None:
         sc_result = []
@@ -703,7 +666,6 @@ def upload_job_order(arvrunner, name, tool, job_order, runtimeContext):
                                     jobloader,
                                     job_order,
                                     job_order.get("id", "#"),
-                                    False,
                                     runtimeContext)
 
     if "id" in job_order:
@@ -721,8 +683,9 @@ FileUpdates = namedtuple("FileUpdates", ["resolved", "secondaryFiles"])
 def upload_workflow_deps(arvrunner, tool, runtimeContext):
     # Ensure that Docker images needed by this workflow are available
 
-    with Perf(metrics, "upload_docker"):
-        upload_docker(arvrunner, tool, runtimeContext)
+    # testing only
+    #with Perf(metrics, "upload_docker"):
+    #    upload_docker(arvrunner, tool, runtimeContext)
 
     document_loader = tool.doc_loader
 
@@ -748,7 +711,6 @@ def upload_workflow_deps(arvrunner, tool, runtimeContext):
                                      document_loader,
                                      deptool,
                                      deptool["id"],
-                                     False,
                                      runtimeContext,
                                      include_primary=False,
                                      discovered_secondaryfiles=discovered_secondaryfiles,
