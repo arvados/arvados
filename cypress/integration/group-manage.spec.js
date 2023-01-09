@@ -240,6 +240,7 @@ describe('Group manage tests', function() {
     });
 
     it('renames the group', function() {
+        cy.loginAs(adminUser);
         // Navigate to Groups
         cy.get('[data-cy=side-panel-tree]').contains('Groups').click();
 
