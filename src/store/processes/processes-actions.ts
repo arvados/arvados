@@ -109,10 +109,14 @@ export const startWorkflow = (uuid: string) =>
     async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
         try {
             const process = await services.containerRequestService.update(uuid, { priority: 1, state: ContainerRequestState.COMMITTED });
-            dispatch(snackbarActions.OPEN_SNACKBAR({ message: 'Process started', hideDuration: 2000, kind: SnackbarKind.SUCCESS }));
-            return process;
+            if (process) {
+                dispatch<any>(updateResources([process]));
+                dispatch(snackbarActions.OPEN_SNACKBAR({ message: 'Process started', hideDuration: 2000, kind: SnackbarKind.SUCCESS }));
+            } else {
+                dispatch<any>(snackbarActions.OPEN_SNACKBAR({ message: `Failed to start process`, kind: SnackbarKind.ERROR }));
+            }
         } catch (e) {
-            throw new Error('Could not cancel the process.');
+            dispatch<any>(snackbarActions.OPEN_SNACKBAR({ message: `Failed to start process`, kind: SnackbarKind.ERROR }));
         }
     };
 
