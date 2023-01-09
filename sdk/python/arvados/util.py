@@ -500,3 +500,20 @@ def get_vocabulary_once(svc):
     if not hasattr(svc, '_cached_vocabulary'):
         svc._cached_vocabulary = svc.vocabularies().get().execute()
     return svc._cached_vocabulary
+
+def trim_name(collectionname):
+    """
+    trim_name takes a record name (collection name, project name, etc)
+    and trims it to fit the 255 character name limit, with additional
+    space for the timestamp added by ensure_unique_name, by removing
+    excess characters from the middle and inserting an ellipse
+    """
+
+    max_name_len = 254 - 28
+
+    if len(collectionname) > max_name_len:
+        over = len(collectionname) - max_name_len
+        split = int(max_name_len/2)
+        collectionname = collectionname[0:split] + "…" + collectionname[split+over:]
+
+    return collectionname

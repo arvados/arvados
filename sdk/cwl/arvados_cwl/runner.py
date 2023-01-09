@@ -447,6 +447,8 @@ def upload_dependencies(arvrunner, name, document_loader,
                                single_collection=True,
                                optional_deps=optional_deps)
 
+    print("MMM", mapper._pathmap)
+
     keeprefs = set()
     def addkeepref(k):
         if k.startswith("keep:"):
@@ -489,9 +491,9 @@ def upload_dependencies(arvrunner, name, document_loader,
         p["location"] = "keep:%s%s" % (uuid_map[uuid], gp.groups()[1] if gp.groups()[1] else "")
         p[collectionUUID] = uuid
 
-    with Perf(metrics, "setloc"):
-        visit_class(workflowobj, ("File", "Directory"), setloc)
-        visit_class(discovered, ("File", "Directory"), setloc)
+    #with Perf(metrics, "setloc"):
+    #    visit_class(workflowobj, ("File", "Directory"), setloc)
+    #    visit_class(discovered, ("File", "Directory"), setloc)
 
     if discovered_secondaryfiles is not None:
         for d in discovered:
@@ -515,6 +517,8 @@ def upload_dependencies(arvrunner, name, document_loader,
                 logger.warning("Cannot find collection with portable data hash %s", kr)
                 continue
             col = col["items"][0]
+            col["name"] = arvados.util.trim_name(col["name"])
+            print("CCC name", col["name"])
             try:
                 arvrunner.api.collections().create(body={"collection": {
                     "owner_uuid": runtimeContext.project_uuid,
@@ -527,7 +531,7 @@ def upload_dependencies(arvrunner, name, document_loader,
                     "trash_at": col["trash_at"]
                 }}, ensure_unique_name=True).execute()
             except Exception as e:
-                logger.warning("Unable copy collection to destination: %s", e)
+                logger.warning("Unable to copy collection to destination: %s", e)
 
     if "$schemas" in workflowobj:
         sch = CommentedSeq()
@@ -683,7 +687,7 @@ FileUpdates = namedtuple("FileUpdates", ["resolved", "secondaryFiles"])
 def upload_workflow_deps(arvrunner, tool, runtimeContext):
     # Ensure that Docker images needed by this workflow are available
 
-    # testing only
+    # commented out for testing only, uncomment me
     #with Perf(metrics, "upload_docker"):
     #    upload_docker(arvrunner, tool, runtimeContext)
 
@@ -715,6 +719,8 @@ def upload_workflow_deps(arvrunner, tool, runtimeContext):
                                      include_primary=False,
                                      discovered_secondaryfiles=discovered_secondaryfiles,
                                      cache=tool_dep_cache)
+
+        print("PM", pm.items())
         document_loader.idx[deptool["id"]] = deptool
         toolmap = {}
         for k,v in pm.items():
