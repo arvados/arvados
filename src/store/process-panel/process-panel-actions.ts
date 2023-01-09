@@ -21,8 +21,6 @@ import { CommandInputParameter, getIOParamId, WorkflowInputsData } from 'models/
 import { getIOParamDisplayValue, ProcessIOParameter } from "views/process-panel/process-io-card";
 import { OutputDetails, NodeInstanceType, NodeInfo } from "./process-panel";
 import { AuthState } from "store/auth/auth-reducer";
-import { CommonService } from "services/common-service/common-service";
-import { camelCase } from "lodash";
 
 export const processPanelActions = unionize({
     RESET_PROCESS_PANEL: ofType<{}>(),
@@ -116,7 +114,7 @@ export const loadNodeJson = (containerRequest: ContainerRequestResource) =>
         try {
             const filesPromise = services.collectionService.files(containerRequest.logUuid);
             const collectionPromise = services.collectionService.get(containerRequest.logUuid);
-            const [files, collection] = await Promise.all([filesPromise, collectionPromise]);
+            const [files] = await Promise.all([filesPromise, collectionPromise]);
 
             // Fetch node.json from keep
             const nodeFile = files.find((file) => file.name === 'node.json') as CollectionFile | undefined;

@@ -33,9 +33,9 @@ const SidePanelToggle = (props: collapseButtonProps) => {
         <IconButton style={collapseButtonIconStyles.root} onClick={() => { props.toggleSidePanel(props.isCollapsed) }}>
             <div>
                 {props.isCollapsed ?
-                    <img style={{ ...collapseButtonIconStyles.icon, transform: "rotate(180deg)" }} src='/collapseLHS-New.svg#svgView(preserveAspectRatio(none))' />
+                    <img style={{ ...collapseButtonIconStyles.icon, transform: "rotate(180deg)" }} src='/collapseLHS-New.svg#svgView(preserveAspectRatio(none))' alt='expand button' />
                     :
-                    <img style={{ ...collapseButtonIconStyles.icon, }} src='/collapseLHS-New.svg#svgView(preserveAspectRatio(none))' />}
+                    <img style={{ ...collapseButtonIconStyles.icon, }} src='/collapseLHS-New.svg#svgView(preserveAspectRatio(none))' alt='collapse button' />}
             </div>
         </IconButton>
     </Tooltip>
