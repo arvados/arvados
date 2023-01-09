@@ -6,7 +6,7 @@ import { compose } from "redux";
 import { withDialog } from "store/dialog/with-dialog";
 import { reduxForm } from 'redux-form';
 import { PROCESS_COPY_FORM_NAME } from 'store/processes/process-copy-actions';
-import { DialogCopy } from "views-components/dialog-copy/dialog-copy";
+import { DialogProcessRerun } from "views-components/dialog-copy/dialog-process-rerun";
 import { copyProcess } from 'store/workbench/workbench-actions';
 import { CopyFormDialogData } from 'store/copy-dialog/copy-dialog';
 import { pickerId } from "store/tree-picker/picker-id";
@@ -20,4 +20,4 @@ export const CopyProcessDialog = compose(
         }
     }),
     pickerId(PROCESS_COPY_FORM_NAME),
-)(DialogCopy);
+)(DialogProcessRerun);

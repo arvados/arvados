@@ -6,7 +6,7 @@ import { ContextMenuActionSet } from "../context-menu-action-set";
 import { ToggleFavoriteAction } from "../actions/favorite-action";
 import { toggleFavorite } from "store/favorites/favorites-actions";
 import {
-    RenameIcon, ShareIcon, MoveToIcon, CopyIcon, DetailsIcon,
+    RenameIcon, ShareIcon, MoveToIcon, DetailsIcon,
     RemoveIcon, ReRunProcessIcon, OutputIcon,
     AdvancedIcon,
     OpenIcon
@@ -16,9 +16,8 @@ import { openMoveProcessDialog } from 'store/processes/process-move-actions';
 import { openProcessUpdateDialog } from "store/processes/process-update-actions";
 import { openCopyProcessDialog } from 'store/processes/process-copy-actions';
 import { openSharingDialog } from "store/sharing-dialog/sharing-dialog-actions";
-import { openRemoveProcessDialog, reRunProcess } from "store/processes/processes-actions";
+import { openRemoveProcessDialog } from "store/processes/processes-actions";
 import { toggleDetailsPanel } from 'store/details-panel/details-panel-action';
-import { snackbarActions, SnackbarKind } from "store/snackbar/snackbar-actions";
 import { navigateToOutput } from "store/process-panel/process-panel-actions";
 import { openAdvancedTabDialog } from "store/advanced-tab/advanced-tab";
 import { TogglePublicFavoriteAction } from "../actions/public-favorite-action";
@@ -43,21 +42,10 @@ export const readOnlyProcessResourceActionSet: ContextMenuActionSet = [[
         }
     },
     {
-        icon: CopyIcon,
-        name: "Copy to project",
+        icon: ReRunProcessIcon,
+        name: "Copy and re-run process",
         execute: (dispatch, resource) => {
             dispatch<any>(openCopyProcessDialog(resource));
-        }
-    },
-    {
-        icon: ReRunProcessIcon,
-        name: "Re-run process",
-        execute: (dispatch, resource) => {
-            if(resource.workflowUuid) {
-                dispatch<any>(reRunProcess(resource.uuid, resource.workflowUuid));
-            } else {
-                dispatch(snackbarActions.OPEN_SNACKBAR({ message: `You can't re-run this process`, hideDuration: 2000, kind: SnackbarKind.ERROR }));
-            }
         }
     },
     {
