@@ -49,7 +49,7 @@ setup(name='arvados-python-client',
           'ciso8601 >=2.0.0',
           'future',
           'google-api-core <2.11.0', # 2.11.0rc1 is incompatible with google-auth<2
-          'google-api-python-client >=1.6.2, <2',
+          'google-api-python-client >=2.1.0',
           'google-auth<2',
           'httplib2 >=0.9.2, <0.20.2',
           'pycurl >=7.19.5.1, <7.45.0',
