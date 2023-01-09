@@ -36,6 +36,10 @@ h2(#v2_5_0). v2.5.0 (2022-12-22)
 
 "previous: Upgrading to 2.4.4":#v2_4_4
 
+h3. Dispatchers require PostgreSQL database access
+
+All dispatchers (cloud, slurm, and LSF) now connect directly to the PostgreSQL database. Make sure these connections are supported by your network firewall rules, PostgreSQL connection settings, and PostgreSQL server configuration (pg_hba.conf) as shown in the "PostgreSQL install instructions":{{site.baseurl}}/install/install-postgresql.html.
+
 h3. Google or OpenID Connect login restricted to trusted clients
 
 If you use OpenID Connect or Google login, and your cluster serves as the @LoginCluster@ in a federation _or_ your users log in from a web application other than the Workbench1 and Workbench2 @ExternalURL@ addresses in your configuration file, the additional web application URLs (e.g., the other clusters' Workbench addresses) must be listed explicitly in @Login.TrustedClients@, otherwise login will fail. Previously, login would succeed with a less-privileged token.
