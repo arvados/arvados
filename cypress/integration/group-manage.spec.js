@@ -70,6 +70,13 @@ describe('Group manage tests', function() {
                 cy.get('[data-cy=invite-people-field] input').type("other");
             });
         cy.get('[role=tooltip]').click();
+        // Add admin to the group
+        cy.get('.sharing-dialog')
+            .should('contain', 'Sharing settings')
+            .within(() => {
+                cy.get('[data-cy=invite-people-field] input').type("admin");
+            });
+        cy.get('[role=tooltip]').click();
         cy.get('.sharing-dialog').contains('Save').click();
         cy.get('.sharing-dialog').contains('Close').click();
 
@@ -108,6 +115,27 @@ describe('Group manage tests', function() {
             .parents('tr')
             .within(() => {
                 cy.contains('Write');
+            });
+
+        // Change admin to manage
+        cy.get('[data-cy=group-members-data-explorer]')
+            .contains(adminUser.user.full_name)
+            .parents('tr')
+            .within(() => {
+                cy.contains('Read')
+                    .parents('td')
+                    .within(() => {
+                        cy.get('button').click();
+                    });
+            });
+        cy.get('[data-cy=context-menu]')
+            .contains('Manage')
+            .click();
+        cy.get('[data-cy=group-members-data-explorer]')
+            .contains(adminUser.user.full_name)
+            .parents('tr')
+            .within(() => {
+                cy.contains('Manage');
             });
     });
 
