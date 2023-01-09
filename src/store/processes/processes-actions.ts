@@ -21,6 +21,7 @@ import { CommandInputParameter, getWorkflow, getWorkflowInputs, getWorkflowOutpu
 import { ProjectResource } from "models/project";
 import { UserResource } from "models/user";
 import { CommandOutputParameter } from "cwlts/mappings/v1.0/CommandOutputParameter";
+import { ContainerRequestState } from "models/container-request";
 
 export const loadProcess = (containerRequestUuid: string) =>
     async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository): Promise<Process> => {
@@ -98,6 +99,17 @@ export const cancelRunningWorkflow = (uuid: string) =>
     async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
         try {
             const process = await services.containerRequestService.update(uuid, { priority: 0 });
+            return process;
+        } catch (e) {
+            throw new Error('Could not cancel the process.');
+        }
+    };
+
+export const startWorkflow = (uuid: string) =>
+    async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
+        try {
+            const process = await services.containerRequestService.update(uuid, { priority: 1, state: ContainerRequestState.COMMITTED });
+            dispatch(snackbarActions.OPEN_SNACKBAR({ message: 'Process started', hideDuration: 2000, kind: SnackbarKind.SUCCESS }));
             return process;
         } catch (e) {
             throw new Error('Could not cancel the process.');

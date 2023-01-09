@@ -15,12 +15,13 @@ import {
     Typography,
 } from '@material-ui/core';
 import { ArvadosTheme } from 'common/custom-theme';
-import { CloseIcon, MoreOptionsIcon, ProcessIcon } from 'components/icon/icon';
+import { CloseIcon, MoreOptionsIcon, ProcessIcon, StartIcon } from 'components/icon/icon';
 import { Process } from 'store/processes/process';
 import { MPVPanelProps } from 'components/multi-panel-view/multi-panel-view';
 import { ProcessDetailsAttributes } from './process-details-attributes';
 import { ProcessStatus } from 'views-components/data-explorer/renderers';
 import { ContainerState } from 'models/container';
+import { ContainerRequestState } from 'models/container-request';
 
 type CssRules = 'card' | 'content' | 'title' | 'header' | 'cancelButton' | 'avatar' | 'iconHeader';
 
@@ -65,13 +66,14 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
 export interface ProcessDetailsCardDataProps {
     process: Process;
     cancelProcess: (uuid: string) => void;
+    startProcess: (uuid: string) => void;
     onContextMenu: (event: React.MouseEvent<HTMLElement>) => void;
 }
 
 type ProcessDetailsCardProps = ProcessDetailsCardDataProps & WithStyles<CssRules> & MPVPanelProps;
 
 export const ProcessDetailsCard = withStyles(styles)(
-    ({ cancelProcess, onContextMenu, classes, process, doHidePanel, panelName }: ProcessDetailsCardProps) => {
+    ({ cancelProcess, startProcess, onContextMenu, classes, process, doHidePanel, panelName }: ProcessDetailsCardProps) => {
         return <Card className={classes.card}>
             <CardHeader
                 className={classes.header}
@@ -95,6 +97,14 @@ export const ProcessDetailsCard = withStyles(styles)(
                     </Tooltip>}
                 action={
                     <div>
+                        {process.containerRequest.state === ContainerRequestState.UNCOMMITTED &&
+                            <Tooltip title="Start Process" disableFocusListener>
+                                <IconButton
+                                    aria-label="Start Process"
+                                    onClick={event => startProcess(process.containerRequest.uuid)}>
+                                    <StartIcon />
+                                </IconButton>
+                            </Tooltip>}
                         {process.container && process.container.state === ContainerState.RUNNING &&
                             <span className={classes.cancelButton} onClick={() => cancelProcess(process.containerRequest.uuid)}>Cancel</span>}
                         <ProcessStatus uuid={process.containerRequest.uuid} />
