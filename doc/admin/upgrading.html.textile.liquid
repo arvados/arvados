@@ -38,7 +38,7 @@ h2(#v2_5_0). v2.5.0 (2022-12-22)
 
 h3. Dispatchers require PostgreSQL database access
 
-All dispatchers (cloud, slurm, and LSF) now connect directly to the PostgreSQL database. Make sure these connections are supported by your network firewall rules, PostgreSQL connection settings, and PostgreSQL server configuration (pg_hba.conf) as shown in the "PostgreSQL install instructions":{{site.baseurl}}/install/install-postgresql.html.
+All dispatchers (cloud, LSF, and Slurm) now connect directly to the PostgreSQL database. Make sure these connections are supported by your network firewall rules, PostgreSQL connection settings, and PostgreSQL server configuration (in @pg_hba.conf@) as shown in the "PostgreSQL install instructions":{{site.baseurl}}/install/install-postgresql.html.
 
 h3. Google or OpenID Connect login restricted to trusted clients
 
