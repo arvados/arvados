@@ -20,7 +20,7 @@ import { getTokenV2 } from 'models/api-client-authorization';
 
 export const authActions = unionize({
     LOGIN: {},
-    LOGOUT: ofType<{ deleteLinkData: boolean }>(),
+    LOGOUT: ofType<{ deleteLinkData: boolean, preservePath: boolean }>(),
     SET_CONFIG: ofType<{ config: Config }>(),
     SET_EXTRA_TOKEN: ofType<{ extraApiToken: string, extraApiTokenExpiration?: Date }>(),
     RESET_EXTRA_TOKEN: {},
@@ -113,7 +113,7 @@ export const saveApiToken = (token: string) => async (dispatch: Dispatch, getSta
         const tokenLocation = await svc.authService.getStorageType();
         dispatch(authActions.INIT_USER({ user, token, tokenExpiration, tokenLocation }));
     } catch (e) {
-        dispatch(authActions.LOGOUT({ deleteLinkData: false }));
+        dispatch(authActions.LOGOUT({ deleteLinkData: false, preservePath: false }));
     }
 };
 
@@ -163,8 +163,8 @@ export const login = (uuidPrefix: string, homeCluster: string, loginCluster: str
         dispatch(authActions.LOGIN());
     };
 
-export const logout = (deleteLinkData: boolean = false) =>
+export const logout = (deleteLinkData: boolean = false, preservePath: boolean = false) =>
     (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) =>
-        dispatch(authActions.LOGOUT({ deleteLinkData }));
+        dispatch(authActions.LOGOUT({ deleteLinkData, preservePath }))
 
 export type AuthAction = UnionOf<typeof authActions>;
