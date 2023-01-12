@@ -705,20 +705,33 @@ The 'jobs' API is no longer supported.
         #with Perf(metrics, "load_tool"):
         #    tool = load_tool(tool.tool, loadingContext)
 
-        if runtimeContext.update_workflow or runtimeContext.create_workflow:
-            # Create a pipeline template or workflow record and exit.
-            if self.work_api == "containers":
-                uuid = new_upload_workflow(self, tool, job_order,
-                                       runtimeContext.project_uuid,
-                                       runtimeContext,
-                                       uuid=runtimeContext.update_workflow,
-                                       submit_runner_ram=runtimeContext.submit_runner_ram,
-                                       name=runtimeContext.name,
-                                       merged_map=merged_map,
-                                       submit_runner_image=runtimeContext.submit_runner_image,
-                                       git_info=git_info)
+        if runtimeContext.update_workflow or runtimeContext.create_workflow or (runtimeContext.submit and not self.fast_submit):
+            # upload workflow and get back the workflow wrapper
+
+            workflow_wrapper = new_upload_workflow(self, tool, job_order,
+                                                   runtimeContext.project_uuid,
+                                                   runtimeContext,
+                                                   uuid=runtimeContext.update_workflow,
+                                                   submit_runner_ram=runtimeContext.submit_runner_ram,
+                                                   name=runtimeContext.name,
+                                                   merged_map=merged_map,
+                                                   submit_runner_image=runtimeContext.submit_runner_image,
+                                                   git_info=git_info,
+                                                   set_defaults=(runtimeContext.update_workflow or runtimeContext.create_workflow))
+
+            if runtimeContext.update_workflow or runtimeContext.create_workflow:
+                # Now create a workflow record and exit.
+                uuid = make_workflow_record(self, workflow_wrapper, runtimeContext.name, tool,
+                                            runtimeContext.project_uuid, runtimeContext.update_workflow)
                 self.stdout.write(uuid + "\n")
                 return (None, "success")
+
+            loadingContext.loader.idx["_:main"] = workflow_wrapper
+
+            # Reload just the wrapper workflow.
+            self.fast_submit = True
+            tool = load_tool(workflow_wrapper, loadingContext)
+
 
         self.apply_reqs(job_order, tool)
 

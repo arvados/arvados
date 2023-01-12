@@ -42,7 +42,7 @@ import arvados.keep
 from .matcher import JsonDiffMatcher, StripYAMLComments
 from .mock_discovery import get_rootDesc
 
-import ruamel.yaml as yaml
+import ruamel.yaml
 
 _rootDesc = None
 
@@ -179,12 +179,6 @@ def stubs(wfdetails=('submit_wf.cwl', None)):
             stubs.api.collections().create.side_effect = functools.partial(collection_createstub, created_collections)
             stubs.api.collections().get.side_effect = functools.partial(collection_getstub, created_collections)
 
-            stubs.expect_job_uuid = "zzzzz-8i9sb-zzzzzzzzzzzzzzz"
-            stubs.api.jobs().create().execute.return_value = {
-                "uuid": stubs.expect_job_uuid,
-                "state": "Queued",
-            }
-
             stubs.expect_container_request_uuid = "zzzzz-xvhdp-zzzzzzzzzzzzzzz"
             stubs.api.container_requests().create().execute.return_value = {
                 "uuid": stubs.expect_container_request_uuid,
@@ -192,96 +186,11 @@ def stubs(wfdetails=('submit_wf.cwl', None)):
                 "state": "Queued"
             }
 
-            stubs.expect_pipeline_template_uuid = "zzzzz-d1hrv-zzzzzzzzzzzzzzz"
-            stubs.api.pipeline_templates().create().execute.return_value = {
-                "uuid": stubs.expect_pipeline_template_uuid,
-            }
-            stubs.expect_job_spec = {
-                'runtime_constraints': {
-                    'docker_image': '999999999999999999999999999999d3+99',
-                    'min_ram_mb_per_node': 1024
-                },
-                'script_parameters': {
-                    'x': {
-                        'basename': 'blorp.txt',
-                        'location': 'keep:169f39d466a5438ac4a90e779bf750c7+53/blorp.txt',
-                        'class': 'File'
-                    },
-                    'y': {
-                        'basename': '99999999999999999999999999999998+99',
-                        'location': 'keep:99999999999999999999999999999998+99',
-                        'class': 'Directory'
-                    },
-                    'z': {
-                        'basename': 'anonymous',
-                        "listing": [{
-                            "basename": "renamed.txt",
-                            "class": "File",
-                            "location": "keep:99999999999999999999999999999998+99/file1.txt",
-                            "size": 0
-                        }],
-                        'class': 'Directory'
-                    },
-                    'cwl:tool': '57ad063d64c60dbddc027791f0649211+60/workflow.cwl#main'
-                },
-                'repository': 'arvados',
-                'script_version': 'master',
-                'minimum_script_version': '570509ab4d2ef93d870fd2b1f2eab178afb1bad9',
-                'script': 'cwl-runner'
-            }
-            stubs.pipeline_component = stubs.expect_job_spec.copy()
-            stubs.expect_pipeline_instance = {
-                'name': 'submit_wf.cwl',
-                'state': 'RunningOnServer',
-                'owner_uuid': None,
-                "components": {
-                    "cwl-runner": {
-                        'runtime_constraints': {'docker_image': '999999999999999999999999999999d3+99', 'min_ram_mb_per_node': 1024},
-                        'script_parameters': {
-                            'y': {"value": {'basename': '99999999999999999999999999999998+99', 'location': 'keep:99999999999999999999999999999998+99', 'class': 'Directory'}},
-                            'x': {"value": {
-                                'basename': 'blorp.txt',
-                                'class': 'File',
-                                'location': 'keep:169f39d466a5438ac4a90e779bf750c7+53/blorp.txt',
-                                "size": 16
-                            }},
-                            'z': {"value": {'basename': 'anonymous', 'class': 'Directory',
-                                  'listing': [
-                                      {
-                                          'basename': 'renamed.txt',
-                                          'class': 'File', 'location':
-                                          'keep:99999999999999999999999999999998+99/file1.txt',
-                                          'size': 0
-                                      }
-                                  ]}},
-                            'cwl:tool': '57ad063d64c60dbddc027791f0649211+60/workflow.cwl#main',
-                            'arv:debug': True,
-                            'arv:enable_reuse': True,
-                            'arv:on_error': 'continue'
-                        },
-                        'repository': 'arvados',
-                        'script_version': 'master',
-                        'minimum_script_version': '570509ab4d2ef93d870fd2b1f2eab178afb1bad9',
-                        'script': 'cwl-runner',
-                        'job': {'state': 'Queued', 'uuid': 'zzzzz-8i9sb-zzzzzzzzzzzzzzz'}
-                    }
-                }
-            }
-            stubs.pipeline_create = copy.deepcopy(stubs.expect_pipeline_instance)
-            stubs.expect_pipeline_uuid = "zzzzz-d1hrv-zzzzzzzzzzzzzzz"
-            stubs.pipeline_create["uuid"] = stubs.expect_pipeline_uuid
-            stubs.pipeline_with_job = copy.deepcopy(stubs.pipeline_create)
-            stubs.pipeline_with_job["components"]["cwl-runner"]["job"] = {
-                "uuid": "zzzzz-8i9sb-zzzzzzzzzzzzzzz",
-                "state": "Queued"
-            }
-            stubs.api.pipeline_instances().create().execute.return_value = stubs.pipeline_create
-            stubs.api.pipeline_instances().get().execute.return_value = stubs.pipeline_with_job
-
             cwd = os.getcwd()
-            filepath = os.path.join(cwd, "tests/wf/submit_wf_packed.cwl")
+            filepath = os.path.join(cwd, "tests/wf/submit_wf_wrapper.cwl")
             with open(filepath) as f:
-                expect_packed_workflow = yaml.round_trip_load(f)
+                yaml = ruamel.yaml.YAML(typ='rt', pure=True)
+                expect_packed_workflow = yaml.load(f)
 
             if wfpath is None:
                 wfpath = wfname
@@ -291,14 +200,14 @@ def stubs(wfdetails=('submit_wf.cwl', None)):
             mocktool = mock.NonCallableMock(tool=gitinfo_workflow["$graph"][0], metadata=gitinfo_workflow)
 
             stubs.git_info = arvados_cwl.executor.ArvCwlExecutor.get_git_info(mocktool)
-            expect_packed_workflow.update(stubs.git_info)
+            #expect_packed_workflow.update(stubs.git_info)
 
             stubs.git_props = {"arv:"+k.split("#", 1)[1]: v for k,v in stubs.git_info.items()}
 
-            if wfname == wfpath:
-                container_name = "%s (%s)" % (wfpath, stubs.git_props["arv:gitDescribe"])
-            else:
-                container_name = wfname
+            #if wfname == wfpath:
+            #    container_name = "%s (%s)" % (wfpath, stubs.git_props["arv:gitDescribe"])
+            #else:
+            container_name = wfname
 
             stubs.expect_container_spec = {
                 'priority': 500,
@@ -358,10 +267,11 @@ def stubs(wfdetails=('submit_wf.cwl', None)):
                     'vcpus': 1,
                     'ram': (1024+256)*1024*1024
                 },
+                'properties': {},
                 'use_existing': False,
-                'properties': stubs.git_props,
                 'secret_mounts': {}
             }
+            #'properties': stubs.git_props,
 
             stubs.expect_workflow_uuid = "zzzzz-7fd4e-zzzzzzzzzzzzzzz"
             stubs.api.workflows().create().execute.return_value = {
@@ -383,7 +293,7 @@ class TestSubmit(unittest.TestCase):
 
     def setUp(self):
         cwltool.process._names = set()
-        arvados_cwl.arvdocker.arv_docker_clear_cache()
+        #arvados_cwl.arvdocker.arv_docker_clear_cache()
 
     def tearDown(self):
         root_logger = logging.getLogger('')
@@ -405,7 +315,7 @@ class TestSubmit(unittest.TestCase):
     @stubs()
     def test_submit_container(self, stubs):
         exited = arvados_cwl.main(
-            ["--submit", "--no-wait", "--api=containers", "--debug",
+            ["--submit", "--no-wait", "--api=containers", "--debug", "--disable-git",
                 "tests/wf/submit_wf.cwl", "tests/submit_test_job.json"],
             stubs.capture_stdout, sys.stderr, api_client=stubs.api, keep_client=stubs.keep_client)
 
@@ -414,7 +324,7 @@ class TestSubmit(unittest.TestCase):
                 'manifest_text':
                 '. 979af1245a12a1fed634d4222473bfdc+16 0:16:blorp.txt\n',
                 'replication_desired': None,
-                'name': 'submit_wf.cwl ('+ stubs.git_props["arv:gitDescribe"] +') input (169f39d466a5438ac4a90e779bf750c7+53)',
+                'name': 'submit_wf.cwl input (169f39d466a5438ac4a90e779bf750c7+53)',
             }), ensure_unique_name=False),
             mock.call(body=JsonDiffMatcher({
                 'manifest_text':
@@ -1104,7 +1014,7 @@ class TestSubmit(unittest.TestCase):
     @mock.patch("cwltool.docker.DockerCommandLineJob.get_image")
     @mock.patch("arvados.api")
     def test_arvados_jobs_image(self, api, get_image, find_one_image_hash):
-        arvados_cwl.arvdocker.arv_docker_clear_cache()
+        #arvados_cwl.arvdocker.arv_docker_clear_cache()
 
         arvrunner = mock.MagicMock()
         arvrunner.project_uuid = ""
@@ -1641,7 +1551,7 @@ class TestCreateWorkflow(unittest.TestCase):
 
     def setUp(self):
         cwltool.process._names = set()
-        arvados_cwl.arvdocker.arv_docker_clear_cache()
+        #arvados_cwl.arvdocker.arv_docker_clear_cache()
 
     def tearDown(self):
         root_logger = logging.getLogger('')

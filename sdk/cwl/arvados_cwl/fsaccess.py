@@ -17,7 +17,7 @@ import logging
 import threading
 from collections import OrderedDict
 
-import ruamel.yaml as yaml
+import ruamel.yaml
 
 import cwltool.stdfsaccess
 from cwltool.pathmapper import abspath
@@ -235,7 +235,8 @@ class CollectionFetcher(DefaultFetcher):
                 return f.read()
         if url.startswith("arvwf:"):
             record = self.api_client.workflows().get(uuid=url[6:]).execute(num_retries=self.num_retries)
-            definition = yaml.round_trip_load(record["definition"])
+            yaml = ruamel.yaml.YAML(typ='rt', pure=True)
+            definition = yaml.load(record["definition"])
             definition["label"] = record["name"]
             return yaml.round_trip_dump(definition)
         return super(CollectionFetcher, self).fetch_text(url)

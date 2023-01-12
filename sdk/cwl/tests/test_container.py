@@ -8,7 +8,7 @@ from builtins import object
 import arvados_cwl
 import arvados_cwl.context
 import arvados_cwl.util
-from arvados_cwl.arvdocker import arv_docker_clear_cache
+#from arvados_cwl.arvdocker import arv_docker_clear_cache
 import copy
 import arvados.config
 import logging
@@ -61,7 +61,7 @@ class TestContainer(unittest.TestCase):
 
     def setUp(self):
         cwltool.process._names = set()
-        arv_docker_clear_cache()
+        #arv_docker_clear_cache()
 
     def tearDown(self):
         root_logger = logging.getLogger('')
@@ -128,7 +128,7 @@ class TestContainer(unittest.TestCase):
     @mock.patch("arvados.commands.keepdocker.list_images_in_arv")
     def test_run(self, keepdocker):
         for enable_reuse in (True, False):
-            arv_docker_clear_cache()
+            #arv_docker_clear_cache()
 
             runner = mock.MagicMock()
             runner.ignore_docker_for_reuse = False
@@ -929,7 +929,7 @@ class TestContainer(unittest.TestCase):
     # Hence the default resources will apply: {'cores': 1, 'ram': 1024, 'outdirSize': 1024, 'tmpdirSize': 1024}
     @mock.patch("arvados.commands.keepdocker.list_images_in_arv")
     def test_setting_storage_class(self, keepdocker):
-        arv_docker_clear_cache()
+        #arv_docker_clear_cache()
 
         runner = mock.MagicMock()
         runner.ignore_docker_for_reuse = False
@@ -1005,7 +1005,7 @@ class TestContainer(unittest.TestCase):
     # Hence the default resources will apply: {'cores': 1, 'ram': 1024, 'outdirSize': 1024, 'tmpdirSize': 1024}
     @mock.patch("arvados.commands.keepdocker.list_images_in_arv")
     def test_setting_process_properties(self, keepdocker):
-        arv_docker_clear_cache()
+        #arv_docker_clear_cache()
 
         runner = mock.MagicMock()
         runner.ignore_docker_for_reuse = False
@@ -1101,7 +1101,7 @@ class TestContainer(unittest.TestCase):
     @mock.patch("arvados.commands.keepdocker.list_images_in_arv")
     def test_cuda_requirement(self, keepdocker):
         arvados_cwl.add_arv_hints()
-        arv_docker_clear_cache()
+        #arv_docker_clear_cache()
 
         runner = mock.MagicMock()
         runner.ignore_docker_for_reuse = False
@@ -1206,7 +1206,7 @@ class TestContainer(unittest.TestCase):
     @mock.patch("arvados.commands.keepdocker.list_images_in_arv")
     def test_match_local_docker(self, keepdocker, determine_image_id):
         arvados_cwl.add_arv_hints()
-        arv_docker_clear_cache()
+        #arv_docker_clear_cache()
 
         runner = mock.MagicMock()
         runner.ignore_docker_for_reuse = False
@@ -1280,7 +1280,7 @@ class TestContainer(unittest.TestCase):
             runner.api.container_requests().create.assert_called_with(
                 body=JsonDiffMatcher(container_request))
 
-        arv_docker_clear_cache()
+        #arv_docker_clear_cache()
         runtimeContext.match_local_docker = True
         container_request['container_image'] = '99999999999999999999999999999993+99'
         container_request['name'] = 'test_run_True_2'
@@ -1298,7 +1298,7 @@ class TestContainer(unittest.TestCase):
         arvados_cwl.add_arv_hints()
         for enable_preemptible in (None, True, False):
             for preemptible_hint in (None, True, False):
-                arv_docker_clear_cache()
+                #arv_docker_clear_cache()
 
                 runner = mock.MagicMock()
                 runner.ignore_docker_for_reuse = False
@@ -1445,7 +1445,7 @@ class TestContainer(unittest.TestCase):
 class TestWorkflow(unittest.TestCase):
     def setUp(self):
         cwltool.process._names = set()
-        arv_docker_clear_cache()
+        #arv_docker_clear_cache()
 
     def helper(self, runner, enable_reuse=True):
         document_loader, avsc_names, schema_metadata, metaschema_loader = cwltool.process.get_schema("v1.0")

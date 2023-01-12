@@ -381,7 +381,7 @@ def main(args=sys.argv[1:],
         # unit tests.
         stdout = None
 
-    if arvargs.submit and (arvargs.workflow.startswith("arvwf:") or workflow_uuid_pattern.match(arvargs.workflow)):
+    if arvargs.workflow.startswith("arvwf:") or workflow_uuid_pattern.match(arvargs.workflow):
         executor.loadingContext.do_validate = False
         executor.fast_submit = True
 

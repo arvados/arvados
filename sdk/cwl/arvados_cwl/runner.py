@@ -447,17 +447,15 @@ def upload_dependencies(arvrunner, name, document_loader,
                                single_collection=True,
                                optional_deps=optional_deps)
 
-    print("MMM", mapper._pathmap)
-
     keeprefs = set()
     def addkeepref(k):
         if k.startswith("keep:"):
             keeprefs.add(collection_pdh_pattern.match(k).group(1))
 
-    def setloc(p):
+
+    def collectloc(p):
         loc = p.get("location")
         if loc and (not loc.startswith("_:")) and (not loc.startswith("keep:")):
-            p["location"] = mapper.mapper(p["location"]).resolved
             addkeepref(p["location"])
             return
 
@@ -488,12 +486,10 @@ def upload_dependencies(arvrunner, name, document_loader,
         if uuid not in uuid_map:
             raise SourceLine(p, "location", validate.ValidationException).makeError(
                 "Collection uuid %s not found" % uuid)
-        p["location"] = "keep:%s%s" % (uuid_map[uuid], gp.groups()[1] if gp.groups()[1] else "")
-        p[collectionUUID] = uuid
 
-    #with Perf(metrics, "setloc"):
-    #    visit_class(workflowobj, ("File", "Directory"), setloc)
-    #    visit_class(discovered, ("File", "Directory"), setloc)
+    with Perf(metrics, "collectloc"):
+        visit_class(workflowobj, ("File", "Directory"), collectloc)
+        visit_class(discovered, ("File", "Directory"), collectloc)
 
     if discovered_secondaryfiles is not None:
         for d in discovered:
@@ -518,7 +514,6 @@ def upload_dependencies(arvrunner, name, document_loader,
                 continue
             col = col["items"][0]
             col["name"] = arvados.util.trim_name(col["name"])
-            print("CCC name", col["name"])
             try:
                 arvrunner.api.collections().create(body={"collection": {
                     "owner_uuid": runtimeContext.project_uuid,
@@ -553,20 +548,10 @@ def upload_docker(arvrunner, tool, runtimeContext):
                 raise SourceLine(docker_req, "dockerOutputDirectory", UnsupportedRequirement).makeError(
                     "Option 'dockerOutputDirectory' of DockerRequirement not supported.")
 
-            arvados_cwl.arvdocker.arv_docker_get_image(arvrunner.api, docker_req, True,
-                                                       runtimeContext.project_uuid,
-                                                       runtimeContext.force_docker_pull,
-                                                       runtimeContext.tmp_outdir_prefix,
-                                                       runtimeContext.match_local_docker,
-                                                       runtimeContext.copy_deps)
+            arvados_cwl.arvdocker.arv_docker_get_image(arvrunner.api, docker_req, True, runtimeContext)
         else:
             arvados_cwl.arvdocker.arv_docker_get_image(arvrunner.api, {"dockerPull": "arvados/jobs:"+__version__},
-                                                       True,
-                                                       runtimeContext.project_uuid,
-                                                       runtimeContext.force_docker_pull,
-                                                       runtimeContext.tmp_outdir_prefix,
-                                                       runtimeContext.match_local_docker,
-                                                       runtimeContext.copy_deps)
+                                                       True, runtimeContext)
     elif isinstance(tool, cwltool.workflow.Workflow):
         for s in tool.steps:
             upload_docker(arvrunner, s.embedded_tool, runtimeContext)
@@ -630,6 +615,45 @@ def tag_git_version(packed):
         else:
             packed["http://schema.org/version"] = githash
 
+def setloc(mapper, p):
+    loc = p.get("location")
+    if loc and (not loc.startswith("_:")) and (not loc.startswith("keep:")):
+        p["location"] = mapper.mapper(p["location"]).resolved
+        return
+
+    if not loc:
+        return
+
+    if collectionUUID in p:
+        uuid = p[collectionUUID]
+        if uuid not in uuid_map:
+            raise SourceLine(p, collectionUUID, validate.ValidationException).makeError(
+                "Collection uuid %s not found" % uuid)
+        gp = collection_pdh_pattern.match(loc)
+        if gp and uuid_map[uuid] != gp.groups()[0]:
+            # This file entry has both collectionUUID and a PDH
+            # location. If the PDH doesn't match the one returned
+            # the API server, raise an error.
+            raise SourceLine(p, "location", validate.ValidationException).makeError(
+                "Expected collection uuid %s to be %s but API server reported %s" % (
+                    uuid, gp.groups()[0], uuid_map[p[collectionUUID]]))
+
+    gp = collection_uuid_pattern.match(loc)
+    if not gp:
+        # Not a uuid pattern (must be a pdh pattern)
+        return
+
+    uuid = gp.groups()[0]
+    if uuid not in uuid_map:
+        raise SourceLine(p, "location", validate.ValidationException).makeError(
+            "Collection uuid %s not found" % uuid)
+    p["location"] = "keep:%s%s" % (uuid_map[uuid], gp.groups()[1] if gp.groups()[1] else "")
+    p[collectionUUID] = uuid
+
+
+def update_from_mapper(workflowobj, mapper):
+    with Perf(metrics, "setloc"):
+        visit_class(workflowobj, ("File", "Directory"), partial(setloc, mapper))
 
 def upload_job_order(arvrunner, name, tool, job_order, runtimeContext):
     """Upload local files referenced in the input object and return updated input
@@ -680,6 +704,8 @@ def upload_job_order(arvrunner, name, tool, job_order, runtimeContext):
     if "job_order" in job_order:
         del job_order["job_order"]
 
+    update_from_mapper(job_order, jobmapper)
+
     return job_order
 
 FileUpdates = namedtuple("FileUpdates", ["resolved", "secondaryFiles"])
@@ -720,7 +746,6 @@ def upload_workflow_deps(arvrunner, tool, runtimeContext):
                                      discovered_secondaryfiles=discovered_secondaryfiles,
                                      cache=tool_dep_cache)
 
-        print("PM", pm.items())
         document_loader.idx[deptool["id"]] = deptool
         toolmap = {}
         for k,v in pm.items():
@@ -734,12 +759,7 @@ def arvados_jobs_image(arvrunner, img, runtimeContext):
 
     try:
         return arvados_cwl.arvdocker.arv_docker_get_image(arvrunner.api, {"dockerPull": img},
-                                                          True,
-                                                          runtimeContext.project_uuid,
-                                                          runtimeContext.force_docker_pull,
-                                                          runtimeContext.tmp_outdir_prefix,
-                                                          runtimeContext.match_local_docker,
-                                                          runtimeContext.copy_deps)
+                                                          True, runtimeContext)
     except Exception as e:
         raise Exception("Docker image %s is not available\n%s" % (img, e) )
 
@@ -783,8 +803,8 @@ class Runner(Process):
                  collection_cache_is_default=True,
                  git_info=None):
 
-        loadingContext = loadingContext.copy()
-        loadingContext.metadata = updated_tool.metadata.copy()
+        self.loadingContext = loadingContext.copy()
+        self.loadingContext.metadata = updated_tool.metadata.copy()
 
         super(Runner, self).__init__(updated_tool.tool, loadingContext)
 
@@ -809,9 +829,9 @@ class Runner(Process):
         self.intermediate_output_ttl = intermediate_output_ttl
         self.priority = priority
         self.secret_store = secret_store
-        self.enable_dev = loadingContext.enable_dev
+        self.enable_dev = self.loadingContext.enable_dev
         self.git_info = git_info
-        self.fast_parser = loadingContext.fast_parser
+        self.fast_parser = self.loadingContext.fast_parser
 
         self.submit_runner_cores = 1
         self.submit_runner_ram = 1024  # defaut 1 GiB

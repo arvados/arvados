@@ -537,19 +537,20 @@ class RunnerContainer(Runner):
             }
         elif self.embedded_tool.tool.get("id", "").startswith("arvwf:"):
             workflowpath = "/var/lib/cwl/workflow.json#main"
-            record = self.arvrunner.api.workflows().get(uuid=self.embedded_tool.tool["id"][6:33]).execute(num_retries=self.arvrunner.num_retries)
-            packed = yaml.safe_load(record["definition"])
+            #record = self.arvrunner.api.workflows().get(uuid=self.embedded_tool.tool["id"][6:33]).execute(num_retries=self.arvrunner.num_retries)
+            #packed = yaml.safe_load(record["definition"])
+            packed = self.loadingContext.loader.idx[self.embedded_tool.tool["id"]]
             container_req["mounts"]["/var/lib/cwl/workflow.json"] = {
                 "kind": "json",
                 "content": packed
             }
             container_req["properties"]["template_uuid"] = self.embedded_tool.tool["id"][6:33]
         else:
-            packed = packed_workflow(self.arvrunner, self.embedded_tool, self.merged_map, runtimeContext, git_info)
+            main = self.loadingContext.loader.idx["_:main"]
             workflowpath = "/var/lib/cwl/workflow.json#main"
             container_req["mounts"]["/var/lib/cwl/workflow.json"] = {
                 "kind": "json",
-                "content": packed
+                "content": main
             }
 
         container_req["properties"].update({k.replace("http://arvados.org/cwl#", "arv:"): v for k, v in git_info.items()})
