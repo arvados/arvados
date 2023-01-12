@@ -97,6 +97,9 @@ export const dataExplorerReducer = (
         SET_EXPLORER_SEARCH_VALUE: ({ id, searchValue }) =>
             update(state, id, (explorer) => ({ ...explorer, searchValue })),
 
+        RESET_EXPLORER_SEARCH_VALUE: ({ id }) =>
+            update(state, id, (explorer) => ({ ...explorer, searchValue: '' })),
+
         SET_REQUEST_STATE: ({ id, requestState }) =>
             update(state, id, (explorer) => ({ ...explorer, requestState })),
 
