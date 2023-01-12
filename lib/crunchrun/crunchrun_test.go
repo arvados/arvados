@@ -188,9 +188,10 @@ func (client *ArvTestClient) Create(resourceType string,
 
 	if resourceType == "collections" && output != nil {
 		mt := parameters["collection"].(arvadosclient.Dict)["manifest_text"].(string)
+		md5sum := md5.Sum([]byte(mt))
 		outmap := output.(*arvados.Collection)
-		outmap.PortableDataHash = fmt.Sprintf("%x+%d", md5.Sum([]byte(mt)), len(mt))
-		outmap.UUID = fmt.Sprintf("zzzzz-4zz18-%15.15x", md5.Sum([]byte(mt)))
+		outmap.PortableDataHash = fmt.Sprintf("%x+%d", md5sum, len(mt))
+		outmap.UUID = fmt.Sprintf("zzzzz-4zz18-%015x", md5sum[:7])
 	}
 
 	return nil
