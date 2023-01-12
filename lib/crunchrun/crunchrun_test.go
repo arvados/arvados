@@ -896,6 +896,37 @@ func (s *TestSuite) TestLogVersionAndRuntime(c *C) {
 	c.Check(s.api.Logs["crunch-run"].String(), Matches, `(?ms).*Using container runtime: stub.*`)
 }
 
+func (s *TestSuite) TestCommitNodeInfoBeforeStart(c *C) {
+	var collection_create, container_update arvadosclient.Dict
+	s.fullRunHelper(c, `{
+		"command": ["true"],
+		"container_image": "`+arvadostest.DockerImage112PDH+`",
+		"cwd": ".",
+		"environment": {},
+		"mounts": {"/tmp": {"kind": "tmp"} },
+		"output_path": "/tmp",
+		"priority": 1,
+		"runtime_constraints": {},
+		"state": "Locked",
+		"uuid": "zzzzz-dz642-202301121543210"
+	}`, nil, 0,
+		func() {
+			collection_create = s.api.CalledWith("ensure_unique_name", true)
+			container_update = s.api.CalledWith("container.state", "Running")
+		})
+
+	c.Assert(collection_create, NotNil)
+	c.Check(collection_create["collection"].(arvadosclient.Dict)["name"], Equals, "logs for zzzzz-dz642-202301121543210")
+	manifest_text := collection_create["collection"].(arvadosclient.Dict)["manifest_text"]
+	// We check that the file size is at least two digits as an easy way to
+	// check the file isn't empty.
+	c.Check(manifest_text, Matches, `\. .* \d+:\d{2,}:node-info\.txt .*\n`)
+	c.Check(manifest_text, Matches, `\. .* \d+:\d{2,}:node\.json .*\n`)
+
+	c.Assert(container_update, NotNil)
+	c.Check(container_update["container"].(arvadosclient.Dict)["log"], Matches, `zzzzz-4zz18-[0-9a-z]{15}`)
+}
+
 func (s *TestSuite) TestContainerRecordLog(c *C) {
 	s.fullRunHelper(c, `{
 		"command": ["sleep", "1"],
