@@ -216,7 +216,7 @@ def new_upload_workflow(arvRunner, tool, job_order, project_uuid,
 
     prefix = firstfile[:n+1]
 
-    col = arvados.collection.Collection()
+    col = arvados.collection.Collection(api_client=arvRunner.api)
 
     for w in workflow_files | import_files:
         # 1. load YAML
@@ -260,6 +260,11 @@ def new_upload_workflow(arvRunner, tool, job_order, project_uuid,
         "arv:workflowMain": toolfile,
     }
 
+    if git_info:
+        for g in git_info:
+            p = g.split("#", 1)[1]
+            properties["arv:"+p] = git_info[g]
+
     col.save_new(name=toolname, owner_uuid=arvRunner.project_uuid, ensure_unique_name=True, properties=properties)
 
     adjustDirObjs(job_order, trim_listing)
@@ -292,9 +297,9 @@ def new_upload_workflow(arvRunner, tool, job_order, project_uuid,
         hints.append(wf_runner_resources)
 
     # uncomment me
-    # wf_runner_resources["acrContainerImage"] = arvados_jobs_image(arvRunner,
-    #                                                               submit_runner_image or "arvados/jobs:"+__version__,
-    #                                                               runtimeContext)
+    wf_runner_resources["acrContainerImage"] = arvados_jobs_image(arvRunner,
+                                                                  submit_runner_image or "arvados/jobs:"+__version__,
+                                                                  runtimeContext)
 
     if submit_runner_ram:
         wf_runner_resources["ramMin"] = submit_runner_ram

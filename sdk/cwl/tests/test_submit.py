@@ -200,14 +200,18 @@ def stubs(wfdetails=('submit_wf.cwl', None)):
             mocktool = mock.NonCallableMock(tool=gitinfo_workflow["$graph"][0], metadata=gitinfo_workflow)
 
             stubs.git_info = arvados_cwl.executor.ArvCwlExecutor.get_git_info(mocktool)
-            #expect_packed_workflow.update(stubs.git_info)
+            expect_packed_workflow.update(stubs.git_info)
 
             stubs.git_props = {"arv:"+k.split("#", 1)[1]: v for k,v in stubs.git_info.items()}
 
-            #if wfname == wfpath:
-            #    container_name = "%s (%s)" % (wfpath, stubs.git_props["arv:gitDescribe"])
-            #else:
-            container_name = wfname
+            step_name = "%s (%s)" % (wfpath, stubs.git_props["arv:gitDescribe"])
+            if wfname == wfpath:
+                container_name = "%s (%s)" % (wfpath, stubs.git_props["arv:gitDescribe"])
+            else:
+                container_name = wfname
+
+            expect_packed_workflow["$graph"][0]["steps"][0]["id"] = "#main/"+step_name
+            expect_packed_workflow["$graph"][0]["steps"][0]["label"] = container_name
 
             stubs.expect_container_spec = {
                 'priority': 500,
@@ -267,11 +271,10 @@ def stubs(wfdetails=('submit_wf.cwl', None)):
                     'vcpus': 1,
                     'ram': (1024+256)*1024*1024
                 },
-                'properties': {},
+                'properties': stubs.git_props,
                 'use_existing': False,
                 'secret_mounts': {}
             }
-            #'properties': stubs.git_props,
 
             stubs.expect_workflow_uuid = "zzzzz-7fd4e-zzzzzzzzzzzzzzz"
             stubs.api.workflows().create().execute.return_value = {
@@ -315,7 +318,7 @@ class TestSubmit(unittest.TestCase):
     @stubs()
     def test_submit_container(self, stubs):
         exited = arvados_cwl.main(
-            ["--submit", "--no-wait", "--api=containers", "--debug", "--disable-git",
+            ["--submit", "--no-wait", "--api=containers", "--debug",
                 "tests/wf/submit_wf.cwl", "tests/submit_test_job.json"],
             stubs.capture_stdout, sys.stderr, api_client=stubs.api, keep_client=stubs.keep_client)
 
@@ -324,7 +327,7 @@ class TestSubmit(unittest.TestCase):
                 'manifest_text':
                 '. 979af1245a12a1fed634d4222473bfdc+16 0:16:blorp.txt\n',
                 'replication_desired': None,
-                'name': 'submit_wf.cwl input (169f39d466a5438ac4a90e779bf750c7+53)',
+                'name': 'submit_wf.cwl ('+ stubs.git_props["arv:gitDescribe"] +') input (169f39d466a5438ac4a90e779bf750c7+53)',
             }), ensure_unique_name=False),
             mock.call(body=JsonDiffMatcher({
                 'manifest_text':
@@ -389,16 +392,25 @@ class TestSubmit(unittest.TestCase):
         expect_container = copy.deepcopy(stubs.expect_container_spec)
         expect_container["command"] = ["--disable-reuse" if v == "--enable-reuse" else v for v in expect_container["command"]]
         expect_container["use_existing"] = False
-        expect_container["mounts"]["/var/lib/cwl/workflow.json"]["content"]["$graph"][1]["hints"] = [
+        expect_container["mounts"]["/var/lib/cwl/workflow.json"]["content"]["$graph"][0]["hints"] = [
+                {
+                    "class": "LoadListingRequirement",
+                    "loadListing": "deep_listing"
+                },
+                {
+                    "class": "NetworkAccess",
+                    "networkAccess": True
+                },
             {
-                "class": "http://arvados.org/cwl#ReuseRequirement",
+                "class": "WorkReuse",
                 "enableReuse": False,
             },
+                {
+                    "acrContainerImage": "999999999999999999999999999999d3+99",
+                    "class": "http://arvados.org/cwl#WorkflowRunnerResources"
+                }
         ]
-        expect_container["mounts"]["/var/lib/cwl/workflow.json"]["content"]["$namespaces"] = {
-            "arv": "http://arvados.org/cwl#",
-            "cwltool": "http://commonwl.org/cwltool#"
-        }
+        expect_container["mounts"]["/var/lib/cwl/workflow.json"]["content"]["$graph"][0]["steps"][0]["run"] = "keep:40eac42ef5535aca47ca5e47b5786f58+137/wf/submit_wf_no_reuse.cwl"
 
         stubs.api.container_requests().create.assert_called_with(
             body=JsonDiffMatcher(expect_container))
@@ -666,6 +678,8 @@ class TestSubmit(unittest.TestCase):
     @mock.patch("time.sleep")
     @stubs()
     def test_submit_keepref(self, stubs, tm, reader):
+        raise Exception("broken")
+
         with open("tests/wf/expect_arvworkflow.cwl") as f:
             reader().open().__enter__().read.return_value = f.read()
 
@@ -991,18 +1005,28 @@ class TestSubmit(unittest.TestCase):
             "vcpus": 2,
             "ram": (2000+512) * 2**20
         }
-        expect_container["mounts"]["/var/lib/cwl/workflow.json"]["content"]["$graph"][1]["hints"] = [
+        expect_container["mounts"]["/var/lib/cwl/workflow.json"]["content"]["$graph"][0]["hints"] = [
+                {
+                    "class": "LoadListingRequirement",
+                    "loadListing": "deep_listing"
+                },
+                {
+                    "class": "NetworkAccess",
+                    "networkAccess": True
+                },
             {
                 "class": "http://arvados.org/cwl#WorkflowRunnerResources",
+                "acrContainerImage": "999999999999999999999999999999d3+99",
                 "coresMin": 2,
                 "ramMin": 2000,
                 "keep_cache": 512
             }
         ]
-        expect_container["mounts"]["/var/lib/cwl/workflow.json"]["content"]["$namespaces"] = {
-            "arv": "http://arvados.org/cwl#",
-        }
+        #expect_container["mounts"]["/var/lib/cwl/workflow.json"]["content"]["$namespaces"] = {
+        #    "arv": "http://arvados.org/cwl#",
+        #}
         expect_container["command"] = ["--collection-cache-size=512" if v == "--collection-cache-size=256" else v for v in expect_container["command"]]
+        expect_container["mounts"]["/var/lib/cwl/workflow.json"]["content"]["$graph"][0]["steps"][0]["run"] = "keep:48136b8a3e0b5768ea179729309a365e+145/wf/submit_wf_runner_resources.cwl"
 
         stubs.api.container_requests().create.assert_called_with(
             body=JsonDiffMatcher(expect_container))
@@ -1414,7 +1438,15 @@ class TestSubmit(unittest.TestCase):
 
         expect_container = copy.deepcopy(stubs.expect_container_spec)
 
-        expect_container["mounts"]["/var/lib/cwl/workflow.json"]["content"]["$graph"][1]["hints"] = [
+        expect_container["mounts"]["/var/lib/cwl/workflow.json"]["content"]["$graph"][0]["hints"] = [
+                {
+                    "class": "LoadListingRequirement",
+                    "loadListing": "deep_listing"
+                },
+                {
+                    "class": "NetworkAccess",
+                    "networkAccess": True
+                },
             {
                 "class": "http://arvados.org/cwl#ProcessProperties",
                 "processProperties": [
@@ -1429,11 +1461,17 @@ class TestSubmit(unittest.TestCase):
                      }
                     }
                 ],
+            },
+            {
+                "acrContainerImage": "999999999999999999999999999999d3+99",
+                "class": "http://arvados.org/cwl#WorkflowRunnerResources"
             }
         ]
-        expect_container["mounts"]["/var/lib/cwl/workflow.json"]["content"]["$namespaces"] = {
-            "arv": "http://arvados.org/cwl#"
-        }
+        #expect_container["mounts"]["/var/lib/cwl/workflow.json"]["content"]["$namespaces"] = {
+        #    "arv": "http://arvados.org/cwl#"
+        #}
+
+        expect_container["mounts"]["/var/lib/cwl/workflow.json"]["content"]["$graph"][0]["steps"][0]["run"] = "keep:a068c0b781383b8a27ec5c04a355295b+147/wf/submit_wf_process_properties.cwl"
 
         expect_container["properties"].update({
             "baz": "blorp.txt",

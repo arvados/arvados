@@ -714,8 +714,8 @@ def upload_workflow_deps(arvrunner, tool, runtimeContext):
     # Ensure that Docker images needed by this workflow are available
 
     # commented out for testing only, uncomment me
-    #with Perf(metrics, "upload_docker"):
-    #    upload_docker(arvrunner, tool, runtimeContext)
+    with Perf(metrics, "upload_docker"):
+        upload_docker(arvrunner, tool, runtimeContext)
 
     document_loader = tool.doc_loader
 
@@ -816,6 +816,9 @@ class Runner(Process):
             # If reuse is permitted by command line arguments but
             # disabled by the workflow itself, disable it.
             reuse_req, _ = self.embedded_tool.get_requirement("http://arvados.org/cwl#ReuseRequirement")
+            if reuse_req:
+                enable_reuse = reuse_req["enableReuse"]
+            reuse_req, _ = self.embedded_tool.get_requirement("WorkReuse")
             if reuse_req:
                 enable_reuse = reuse_req["enableReuse"]
         self.enable_reuse = enable_reuse
