@@ -25,7 +25,10 @@ export const GROUP_REMOVE_DIALOG = 'groupRemoveDialog';
 
 export const GroupsPanelActions = bindDataExplorerActions(GROUPS_PANEL_ID);
 
-export const loadGroupsPanel = () => GroupsPanelActions.REQUEST_ITEMS();
+export const loadGroupsPanel = () => (dispatch: Dispatch) => {
+    dispatch(GroupsPanelActions.RESET_EXPLORER_SEARCH_VALUE());
+    dispatch(GroupsPanelActions.REQUEST_ITEMS());
+};
 
 export const openCreateGroupDialog = () =>
     (dispatch: Dispatch, getState: () => RootState) => {
@@ -113,7 +116,7 @@ export const createGroup = ({ name, users = [], description }: ProjectUpdateForm
             }
             dispatch(dialogActions.CLOSE_DIALOG({ id: PROJECT_CREATE_FORM_NAME }));
             dispatch(reset(PROJECT_CREATE_FORM_NAME));
-            dispatch(loadGroupsPanel());
+            dispatch<any>(loadGroupsPanel());
             dispatch(snackbarActions.OPEN_SNACKBAR({
                 message: `${newGroup.name} group has been created`,
                 kind: SnackbarKind.SUCCESS

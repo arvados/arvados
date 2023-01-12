@@ -16,10 +16,11 @@ export const projectPanelActions = bindDataExplorerActions(PROJECT_PANEL_ID);
 export const openProjectPanel = (projectUuid: string) =>
     (dispatch: Dispatch) => {
         dispatch(propertiesActions.SET_PROPERTY({ key: PROJECT_PANEL_CURRENT_UUID, value: projectUuid }));
+        dispatch(projectPanelActions.RESET_EXPLORER_SEARCH_VALUE());
         dispatch(projectPanelActions.REQUEST_ITEMS());
     };
 
 export const getProjectPanelCurrentUuid = (state: RootState) => getProperty<string>(PROJECT_PANEL_CURRENT_UUID)(state.properties);
 
-export const setIsProjectPanelTrashed = (isTrashed: boolean) => 
+export const setIsProjectPanelTrashed = (isTrashed: boolean) =>
     propertiesActions.SET_PROPERTY({ key: IS_PROJECT_PANEL_TRASHED, value: isTrashed });
