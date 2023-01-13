@@ -239,6 +239,7 @@ def new_upload_workflow(arvRunner, tool, job_order, project_uuid,
         update_refs(result, w, tool.doc_loader.expand_url, merged_map, set_block_style, runtimeContext)
 
         with col.open(w[n+1:], "wt") as f:
+            #print(yamlloader.dump(result, stream=sys.stdout))
             yamlloader.dump(result, stream=f)
 
     for w in include_files:
@@ -352,7 +353,7 @@ def new_upload_workflow(arvRunner, tool, job_order, project_uuid,
     if main.get("requirements"):
         wrapper["requirements"].extend(main["requirements"])
     if hints:
-        wrapper["hints"] = main["hints"]
+        wrapper["hints"] = hints
 
     doc = {"cwlVersion": "v1.2", "$graph": [wrapper]}
 
@@ -546,6 +547,7 @@ class ArvadosWorkflow(Workflow):
 
         discover_secondary_files(self.arvrunner.fs_access, builder,
                                  self.tool["inputs"], joborder)
+
         normalizeFilesDirs(joborder)
 
         with Perf(metrics, "subworkflow upload_deps"):

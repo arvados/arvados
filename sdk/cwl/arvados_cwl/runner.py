@@ -69,7 +69,7 @@ from ruamel.yaml import YAML
 from ruamel.yaml.comments import CommentedMap, CommentedSeq
 
 import arvados_cwl.arvdocker
-from .pathmapper import ArvPathMapper, trim_listing, collection_pdh_pattern, collection_uuid_pattern
+from .pathmapper import ArvPathMapper, trim_listing, collection_pdh_pattern, collection_uuid_pattern, MapperEnt
 from ._version import __version__
 from . import done
 from . context import ArvRuntimeContext
@@ -447,6 +447,9 @@ def upload_dependencies(arvrunner, name, document_loader,
                                single_collection=True,
                                optional_deps=optional_deps)
 
+    for k, v in uuid_map.items():
+        mapper._pathmap["keep:"+k] = MapperEnt(v, "", "", False)
+
     keeprefs = set()
     def addkeepref(k):
         if k.startswith("keep:"):
@@ -626,17 +629,18 @@ def setloc(mapper, p):
 
     if collectionUUID in p:
         uuid = p[collectionUUID]
-        if uuid not in uuid_map:
+        keepuuid = "keep:"+uuid
+        if keepuuid not in mapper:
             raise SourceLine(p, collectionUUID, validate.ValidationException).makeError(
                 "Collection uuid %s not found" % uuid)
         gp = collection_pdh_pattern.match(loc)
-        if gp and uuid_map[uuid] != gp.groups()[0]:
+        if gp and mapper.mapper(keepuuid).resolved != gp.groups()[0]:
             # This file entry has both collectionUUID and a PDH
             # location. If the PDH doesn't match the one returned
             # the API server, raise an error.
             raise SourceLine(p, "location", validate.ValidationException).makeError(
                 "Expected collection uuid %s to be %s but API server reported %s" % (
-                    uuid, gp.groups()[0], uuid_map[p[collectionUUID]]))
+                    uuid, gp.groups()[0], mapper.mapper(keepuuid).resolved))
 
     gp = collection_uuid_pattern.match(loc)
     if not gp:
@@ -644,12 +648,12 @@ def setloc(mapper, p):
         return
 
     uuid = gp.groups()[0]
-    if uuid not in uuid_map:
+    keepuuid = "keep:"+uuid
+    if keepuuid not in mapper:
         raise SourceLine(p, "location", validate.ValidationException).makeError(
             "Collection uuid %s not found" % uuid)
-    p["location"] = "keep:%s%s" % (uuid_map[uuid], gp.groups()[1] if gp.groups()[1] else "")
+    p["location"] = "keep:%s%s" % (mapper.mapper(keepuuid).resolved, gp.groups()[1] if gp.groups()[1] else "")
     p[collectionUUID] = uuid
-
 
 def update_from_mapper(workflowobj, mapper):
     with Perf(metrics, "setloc"):
@@ -705,6 +709,8 @@ def upload_job_order(arvrunner, name, tool, job_order, runtimeContext):
         del job_order["job_order"]
 
     update_from_mapper(job_order, jobmapper)
+
+    #print(json.dumps(job_order, indent=2))
 
     return job_order
 

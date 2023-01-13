@@ -69,7 +69,8 @@ def stubs(wfdetails=('submit_wf.cwl', None)):
 
             uuid4.side_effect = ["df80736f-f14d-4b10-b2e3-03aa27f034bb", "df80736f-f14d-4b10-b2e3-03aa27f034b1",
                                  "df80736f-f14d-4b10-b2e3-03aa27f034b2", "df80736f-f14d-4b10-b2e3-03aa27f034b3",
-                                 "df80736f-f14d-4b10-b2e3-03aa27f034b4", "df80736f-f14d-4b10-b2e3-03aa27f034b5"]
+                                 "df80736f-f14d-4b10-b2e3-03aa27f034b4", "df80736f-f14d-4b10-b2e3-03aa27f034b5",
+                                 "df80736f-f14d-4b10-b2e3-03aa27f034b6"]
 
             determine_image_id.return_value = None
 
@@ -393,14 +394,6 @@ class TestSubmit(unittest.TestCase):
         expect_container["command"] = ["--disable-reuse" if v == "--enable-reuse" else v for v in expect_container["command"]]
         expect_container["use_existing"] = False
         expect_container["mounts"]["/var/lib/cwl/workflow.json"]["content"]["$graph"][0]["hints"] = [
-                {
-                    "class": "LoadListingRequirement",
-                    "loadListing": "deep_listing"
-                },
-                {
-                    "class": "NetworkAccess",
-                    "networkAccess": True
-                },
             {
                 "class": "WorkReuse",
                 "enableReuse": False,
@@ -410,7 +403,7 @@ class TestSubmit(unittest.TestCase):
                     "class": "http://arvados.org/cwl#WorkflowRunnerResources"
                 }
         ]
-        expect_container["mounts"]["/var/lib/cwl/workflow.json"]["content"]["$graph"][0]["steps"][0]["run"] = "keep:40eac42ef5535aca47ca5e47b5786f58+137/wf/submit_wf_no_reuse.cwl"
+        expect_container["mounts"]["/var/lib/cwl/workflow.json"]["content"]["$graph"][0]["steps"][0]["run"] = "keep:af64a47741bcc401f230eee99c6e80ff+137/wf/submit_wf_no_reuse.cwl"
 
         stubs.api.container_requests().create.assert_called_with(
             body=JsonDiffMatcher(expect_container))
@@ -655,6 +648,13 @@ class TestSubmit(unittest.TestCase):
 
         expect_container = copy.deepcopy(stubs.expect_container_spec)
         expect_container["runtime_constraints"]["ram"] = (2048+256)*1024*1024
+        expect_container["mounts"]["/var/lib/cwl/workflow.json"]["content"]["$graph"][0]["hints"] = [
+                {
+                    "acrContainerImage": "999999999999999999999999999999d3+99",
+                    "class": "http://arvados.org/cwl#WorkflowRunnerResources",
+                    "ramMin": 2048
+                }
+        ]
 
         stubs.api.container_requests().create.assert_called_with(
             body=JsonDiffMatcher(expect_container))
@@ -968,6 +968,12 @@ class TestSubmit(unittest.TestCase):
             stubs.capture_stdout, sys.stderr, api_client=stubs.api, keep_client=stubs.keep_client)
 
         stubs.expect_container_spec["container_image"] = "999999999999999999999999999999d5+99"
+        stubs.expect_container_spec["mounts"]["/var/lib/cwl/workflow.json"]["content"]["$graph"][0]["hints"] = [
+                {
+                    "acrContainerImage": "999999999999999999999999999999d5+99",
+                    "class": "http://arvados.org/cwl#WorkflowRunnerResources"
+                }
+        ]
 
         expect_container = copy.deepcopy(stubs.expect_container_spec)
         stubs.api.container_requests().create.assert_called_with(
@@ -1006,14 +1012,6 @@ class TestSubmit(unittest.TestCase):
             "ram": (2000+512) * 2**20
         }
         expect_container["mounts"]["/var/lib/cwl/workflow.json"]["content"]["$graph"][0]["hints"] = [
-                {
-                    "class": "LoadListingRequirement",
-                    "loadListing": "deep_listing"
-                },
-                {
-                    "class": "NetworkAccess",
-                    "networkAccess": True
-                },
             {
                 "class": "http://arvados.org/cwl#WorkflowRunnerResources",
                 "acrContainerImage": "999999999999999999999999999999d3+99",
@@ -1026,7 +1024,7 @@ class TestSubmit(unittest.TestCase):
         #    "arv": "http://arvados.org/cwl#",
         #}
         expect_container["command"] = ["--collection-cache-size=512" if v == "--collection-cache-size=256" else v for v in expect_container["command"]]
-        expect_container["mounts"]["/var/lib/cwl/workflow.json"]["content"]["$graph"][0]["steps"][0]["run"] = "keep:48136b8a3e0b5768ea179729309a365e+145/wf/submit_wf_runner_resources.cwl"
+        expect_container["mounts"]["/var/lib/cwl/workflow.json"]["content"]["$graph"][0]["steps"][0]["run"] = "keep:10f1d17b8c4aad888e1dc2a93a95ceab+145/wf/submit_wf_runner_resources.cwl"
 
         stubs.api.container_requests().create.assert_called_with(
             body=JsonDiffMatcher(expect_container))
@@ -1353,6 +1351,7 @@ class TestSubmit(unittest.TestCase):
                 m.execute.return_value = {"items": []}
             return m
         stubs.api.collections().list.side_effect = list_side_effect
+        collectionReader().portable_data_hash.return_value = "99999999999999999999999999999998+99"
 
         exited = arvados_cwl.main(
             ["--submit", "--no-wait", "--api=containers", "--debug",
@@ -1439,14 +1438,6 @@ class TestSubmit(unittest.TestCase):
         expect_container = copy.deepcopy(stubs.expect_container_spec)
 
         expect_container["mounts"]["/var/lib/cwl/workflow.json"]["content"]["$graph"][0]["hints"] = [
-                {
-                    "class": "LoadListingRequirement",
-                    "loadListing": "deep_listing"
-                },
-                {
-                    "class": "NetworkAccess",
-                    "networkAccess": True
-                },
             {
                 "class": "http://arvados.org/cwl#ProcessProperties",
                 "processProperties": [
@@ -1471,7 +1462,7 @@ class TestSubmit(unittest.TestCase):
         #    "arv": "http://arvados.org/cwl#"
         #}
 
-        expect_container["mounts"]["/var/lib/cwl/workflow.json"]["content"]["$graph"][0]["steps"][0]["run"] = "keep:a068c0b781383b8a27ec5c04a355295b+147/wf/submit_wf_process_properties.cwl"
+        expect_container["mounts"]["/var/lib/cwl/workflow.json"]["content"]["$graph"][0]["steps"][0]["run"] = "keep:743a5bcaef0604899e4f4706ac525d83+147/wf/submit_wf_process_properties.cwl"
 
         expect_container["properties"].update({
             "baz": "blorp.txt",
