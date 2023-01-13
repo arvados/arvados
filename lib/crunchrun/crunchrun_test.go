@@ -1697,7 +1697,8 @@ func (s *TestSuite) TestStdoutWithMultipleMountPointsUnderOutputDir(c *C) {
 		"output_path": "/tmp",
 		"priority": 1,
 		"runtime_constraints": {},
-		"state": "Locked"
+		"state": "Locked",
+		"uuid": "zzzzz-dz642-202301130848001"
 	}`
 
 	extraMounts := []string{
@@ -1720,22 +1721,25 @@ func (s *TestSuite) TestStdoutWithMultipleMountPointsUnderOutputDir(c *C) {
 
 	c.Check(api.CalledWith("container.exit_code", 0), NotNil)
 	c.Check(api.CalledWith("container.state", "Complete"), NotNil)
-	for _, v := range api.Content {
-		if v["collection"] != nil {
-			c.Check(v["ensure_unique_name"], Equals, true)
-			collection := v["collection"].(arvadosclient.Dict)
-			if strings.Index(collection["name"].(string), "output") == 0 {
-				manifest := collection["manifest_text"].(string)
-
-				c.Check(manifest, Equals, `./a/b 307372fa8fd5c146b22ae7a45b49bc31+6 0:6:c.out
+	output_count := uint(0)
+	for _, v := range s.runner.ContainerArvClient.(*ArvTestClient).Content {
+		if v["collection"] == nil {
+			continue
+		}
+		collection := v["collection"].(arvadosclient.Dict)
+		if collection["name"].(string) != "output for zzzzz-dz642-202301130848001" {
+			continue
+		}
+		c.Check(v["ensure_unique_name"], Equals, true)
+		c.Check(collection["manifest_text"].(string), Equals, `./a/b 307372fa8fd5c146b22ae7a45b49bc31+6 0:6:c.out
 ./foo 3e426d509afffb85e06c4c96a7c15e91+27+Aa124ac75e5168396c73c0abcdefgh11234567890@569fa8c3 3e426d509afffb85e06c4c96a7c15e91+27+Aa124ac75e5168396cabcdefghij6419876543234@569fa8c4 9:18:bar 36:18:sub1file2
 ./foo/baz 3e426d509afffb85e06c4c96a7c15e91+27+Aa124ac75e5168396c73c0bcdefghijk544332211@569fa8c5 9:18:sub2file2
 ./foo/sub1 3e426d509afffb85e06c4c96a7c15e91+27+Aa124ac75e5168396cabcdefghij6419876543234@569fa8c4 0:9:file1_in_subdir1.txt 9:18:file2_in_subdir1.txt
 ./foo/sub1/subdir2 3e426d509afffb85e06c4c96a7c15e91+27+Aa124ac75e5168396c73c0bcdefghijk544332211@569fa8c5 0:9:file1_in_subdir2.txt 9:18:file2_in_subdir2.txt
 `)
-			}
-		}
+		output_count++
 	}
+	c.Check(output_count, Not(Equals), uint(0))
 }
 
 func (s *TestSuite) TestStdoutWithMountPointsUnderOutputDirDenormalizedManifest(c *C) {
@@ -1752,7 +1756,8 @@ func (s *TestSuite) TestStdoutWithMountPointsUnderOutputDirDenormalizedManifest(
 		"output_path": "/tmp",
 		"priority": 1,
 		"runtime_constraints": {},
-		"state": "Locked"
+		"state": "Locked",
+		"uuid": "zzzzz-dz642-202301130848002"
 	}`
 
 	extraMounts := []string{
@@ -1765,18 +1770,21 @@ func (s *TestSuite) TestStdoutWithMountPointsUnderOutputDirDenormalizedManifest(
 
 	c.Check(s.api.CalledWith("container.exit_code", 0), NotNil)
 	c.Check(s.api.CalledWith("container.state", "Complete"), NotNil)
-	for _, v := range s.api.Content {
-		if v["collection"] != nil {
-			collection := v["collection"].(arvadosclient.Dict)
-			if strings.Index(collection["name"].(string), "output") == 0 {
-				manifest := collection["manifest_text"].(string)
-
-				c.Check(manifest, Equals, `./a/b 307372fa8fd5c146b22ae7a45b49bc31+6 0:6:c.out
+	output_count := uint(0)
+	for _, v := range s.runner.ContainerArvClient.(*ArvTestClient).Content {
+		if v["collection"] == nil {
+			continue
+		}
+		collection := v["collection"].(arvadosclient.Dict)
+		if collection["name"].(string) != "output for zzzzz-dz642-202301130848002" {
+			continue
+		}
+		c.Check(collection["manifest_text"].(string), Equals, `./a/b 307372fa8fd5c146b22ae7a45b49bc31+6 0:6:c.out
 ./foo 3e426d509afffb85e06c4c96a7c15e91+27+Aa124ac75e5168396c73c0abcdefgh11234567890@569fa8c3 10:17:bar
 `)
-			}
-		}
+		output_count++
 	}
+	c.Check(output_count, Not(Equals), uint(0))
 }
 
 func (s *TestSuite) TestOutputError(c *C) {
