@@ -16,6 +16,7 @@ import re
 import logging
 import threading
 from collections import OrderedDict
+from io import StringIO
 
 import ruamel.yaml
 
@@ -238,7 +239,9 @@ class CollectionFetcher(DefaultFetcher):
             yaml = ruamel.yaml.YAML(typ='rt', pure=True)
             definition = yaml.load(record["definition"])
             definition["label"] = record["name"]
-            return yaml.round_trip_dump(definition)
+            stream = StringIO()
+            yaml.dump(definition, stream)
+            return stream.getvalue()
         return super(CollectionFetcher, self).fetch_text(url)
 
     def check_exists(self, url):

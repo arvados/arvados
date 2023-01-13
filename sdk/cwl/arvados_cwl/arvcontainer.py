@@ -17,7 +17,7 @@ import uuid
 import math
 
 import arvados_cwl.util
-import ruamel.yaml as yaml
+import ruamel.yaml
 
 from cwltool.errors import WorkflowException
 from cwltool.process import UnsupportedRequirement, shortname
@@ -536,10 +536,11 @@ class RunnerContainer(Runner):
                 "portable_data_hash": "%s" % workflowcollection
             }
         elif self.embedded_tool.tool.get("id", "").startswith("arvwf:"):
-            workflowpath = "/var/lib/cwl/workflow.json#main"
-            #record = self.arvrunner.api.workflows().get(uuid=self.embedded_tool.tool["id"][6:33]).execute(num_retries=self.arvrunner.num_retries)
-            #packed = yaml.safe_load(record["definition"])
-            packed = self.loadingContext.loader.idx[self.embedded_tool.tool["id"]]
+            uuid, frg = urllib.parse.urldefrag(self.embedded_tool.tool["id"])
+            workflowpath = "/var/lib/cwl/workflow.json#" + frg
+            packedtxt = self.loadingContext.loader.fetch_text(uuid)
+            yaml = ruamel.yaml.YAML(typ='safe', pure=True)
+            packed = yaml.load(packedtxt)
             container_req["mounts"]["/var/lib/cwl/workflow.json"] = {
                 "kind": "json",
                 "content": packed

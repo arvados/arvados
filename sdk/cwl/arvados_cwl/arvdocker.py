@@ -56,10 +56,10 @@ def determine_image_id(dockerImageId):
 def arv_docker_get_image(api_client, dockerRequirement, pull_image, runtimeContext):
     """Check if a Docker image is available in Keep, if not, upload it using arv-keepdocker."""
 
-    project_uuid = runtimeContext.project_uuid,
-    force_pull = runtimeContext.force_docker_pull,
-    tmp_outdir_prefix = runtimeContext.tmp_outdir_prefix,
-    match_local_docker = runtimeContext.match_local_docker,
+    project_uuid = runtimeContext.project_uuid
+    force_pull = runtimeContext.force_docker_pull
+    tmp_outdir_prefix = runtimeContext.tmp_outdir_prefix
+    match_local_docker = runtimeContext.match_local_docker
     copy_deps = runtimeContext.copy_deps
     cached_lookups = runtimeContext.cached_docker_lookups
 

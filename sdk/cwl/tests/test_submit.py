@@ -764,6 +764,7 @@ class TestSubmit(unittest.TestCase):
                     'kind': 'json',
                     'content': {
                         'cwlVersion': 'v1.0',
+                        'label': 'a test workflow',
                         '$graph': [
                             {
                                 'id': '#main',
