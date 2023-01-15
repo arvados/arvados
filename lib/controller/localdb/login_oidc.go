@@ -462,6 +462,7 @@ func (ta *oidcTokenAuthorizer) registerToken(ctx context.Context, tok string) er
 		return fmt.Errorf("error setting up OpenID Connect provider: %s", err)
 	}
 	if ok, err := ta.checkAccessTokenScope(ctx, tok); err != nil || !ok {
+		// Note checkAccessTokenScope logs any interesting errors
 		ta.cache.Add(tok, time.Now().Add(tokenCacheNegativeTTL))
 		return err
 	}
@@ -470,6 +471,7 @@ func (ta *oidcTokenAuthorizer) registerToken(ctx context.Context, tok string) er
 	}
 	userinfo, err := ta.ctrl.provider.UserInfo(ctx, oauth2.StaticTokenSource(oauth2Token))
 	if err != nil {
+		ctxlog.FromContext(ctx).WithError(err).WithField("HMAC", hmac).Info("UserInfo failed (not an OIDC token?), caching negative result")
 		ta.cache.Add(tok, time.Now().Add(tokenCacheNegativeTTL))
 		return nil
 	}
@@ -563,6 +565,6 @@ func (ta *oidcTokenAuthorizer) checkAccessTokenScope(ctx context.Context, tok st
 			return true, nil
 		}
 	}
-	ctxlog.FromContext(ctx).WithFields(logrus.Fields{"have": claims.Scope, "need": ta.ctrl.AcceptAccessTokenScope}).Infof("unacceptable access token scope")
+	ctxlog.FromContext(ctx).WithFields(logrus.Fields{"have": claims.Scope, "need": ta.ctrl.AcceptAccessTokenScope}).Info("unacceptable access token scope")
 	return false, httpserver.ErrorWithStatus(errors.New("unacceptable access token scope"), http.StatusUnauthorized)
 }
