@@ -61,7 +61,19 @@ func guessAndParse(k, v string) (interface{}, error) {
 // If the request has a parameter whose name is attrsKey (e.g.,
 // "collection"), it is renamed to "attrs".
 func (rtr *router) loadRequestParams(req *http.Request, attrsKey string) (map[string]interface{}, error) {
+	// Here we call ParseForm and ParseMultipartForm explicitly
+	// (even though ParseMultipartForm calls ParseForm if
+	// necessary) to ensure we catch errors encountered in
+	// ParseForm. In the non-multipart-form case,
+	// ParseMultipartForm returns ErrNotMultipart and hides the
+	// ParseForm error.
 	err := req.ParseForm()
+	if err == nil {
+		err = req.ParseMultipartForm(int64(rtr.config.MaxRequestSize))
+		if err == http.ErrNotMultipart {
+			err = nil
+		}
+	}
 	if err != nil {
 		if err.Error() == "http: request body too large" {
 			return nil, httpError(http.StatusRequestEntityTooLarge, err)
