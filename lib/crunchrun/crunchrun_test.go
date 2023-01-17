@@ -2087,6 +2087,7 @@ func (s *TestSuite) TestCalculateCost(c *C) {
 	// hasn't found any data), cost is calculated based on
 	// InstanceType env var
 	os.Setenv("InstanceType", `{"Price":1.2}`)
+	defer os.Unsetenv("InstanceType")
 	cost = cr.calculateCost(now)
 	c.Check(cost, Equals, 1.2)
 
