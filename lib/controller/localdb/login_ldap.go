@@ -74,9 +74,9 @@ func (ctrl *ldapLoginController) UserAuthenticate(ctx context.Context, opts arva
 
 	if conf.StartTLS {
 		var tlsconfig tls.Config
+		tlsconfig.MinVersion = uint16(conf.MinTLSVersion)
 		if conf.InsecureTLS {
 			tlsconfig.InsecureSkipVerify = true
-			tlsconfig.MinVersion = uint16(conf.MinTLSVersion)
 		} else {
 			if host, _, err := net.SplitHostPort(conf.URL.Host); err != nil {
 				// Assume SplitHostPort error means
