@@ -102,6 +102,9 @@ type Instance interface {
 	// Replace tags with the given tags
 	SetTags(InstanceTags) error
 
+	// Get recent price history, if available
+	PriceHistory() []InstancePrice
+
 	// Shut down the node
 	Destroy() error
 }
@@ -139,6 +142,11 @@ type InstanceSet interface {
 
 	// Stop any background tasks and release other resources.
 	Stop()
+}
+
+type InstancePrice struct {
+	StartTime time.Time
+	Price     float64
 }
 
 type InitCommand string

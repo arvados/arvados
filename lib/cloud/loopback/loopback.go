@@ -130,12 +130,13 @@ type instance struct {
 	sshService   test.SSHService
 }
 
-func (i *instance) ID() cloud.InstanceID     { return cloud.InstanceID(i.instanceType.ProviderType) }
-func (i *instance) String() string           { return i.instanceType.ProviderType }
-func (i *instance) ProviderType() string     { return i.instanceType.ProviderType }
-func (i *instance) Address() string          { return i.sshService.Address() }
-func (i *instance) RemoteUser() string       { return i.adminUser }
-func (i *instance) Tags() cloud.InstanceTags { return i.tags }
+func (i *instance) ID() cloud.InstanceID                { return cloud.InstanceID(i.instanceType.ProviderType) }
+func (i *instance) String() string                      { return i.instanceType.ProviderType }
+func (i *instance) ProviderType() string                { return i.instanceType.ProviderType }
+func (i *instance) Address() string                     { return i.sshService.Address() }
+func (i *instance) PriceHistory() []cloud.InstancePrice { return nil }
+func (i *instance) RemoteUser() string                  { return i.adminUser }
+func (i *instance) Tags() cloud.InstanceTags            { return i.tags }
 func (i *instance) SetTags(tags cloud.InstanceTags) error {
 	i.tags = tags
 	return nil

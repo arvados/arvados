@@ -470,3 +470,7 @@ func copyTags(src cloud.InstanceTags) cloud.InstanceTags {
 	}
 	return dst
 }
+
+func (si stubInstance) PriceHistory() []cloud.InstancePrice {
+	return nil
+}

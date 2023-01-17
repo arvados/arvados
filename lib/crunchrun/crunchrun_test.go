@@ -22,6 +22,7 @@ import (
 	"testing"
 	"time"
 
+	"git.arvados.org/arvados.git/lib/cloud"
 	"git.arvados.org/arvados.git/lib/cmd"
 	"git.arvados.org/arvados.git/sdk/go/arvados"
 	"git.arvados.org/arvados.git/sdk/go/arvadosclient"
@@ -2069,6 +2070,48 @@ func (s *TestSuite) TestSecretTextMountPoint(c *C) {
 	c.Check(s.api.CalledWith("container.exit_code", 0), NotNil)
 	c.Check(s.api.CalledWith("container.state", "Complete"), NotNil)
 	c.Check(s.runner.ContainerArvClient.(*ArvTestClient).CalledWith("collection.manifest_text", ". acbd18db4cc2f85cedef654fccc4a4d8+3 0:3:foo.txt\n"), NotNil)
+}
+
+func (s *TestSuite) TestCalculateCost(c *C) {
+	defer func(s string) { lockdir = s }(lockdir)
+	lockdir = c.MkDir()
+	now := time.Now()
+	cr := ContainerRunner{costStartTime: now.Add(-time.Hour)}
+
+	// if there's no InstanceType env var, cost is calculated as 0
+	os.Unsetenv("InstanceType")
+	cost := cr.calculateCost(now)
+	c.Check(cost, Equals, 0.0)
+
+	// with InstanceType env var and loadPrices() hasn't run (or
+	// hasn't found any data), cost is calculated based on
+	// InstanceType env var
+	os.Setenv("InstanceType", `{"Price":1.2}`)
+	cost = cr.calculateCost(now)
+	c.Check(cost, Equals, 1.2)
+
+	// first update tells us the spot price was $1/h until 30
+	// minutes ago when it increased to $2/h
+	j, err := json.Marshal([]cloud.InstancePrice{
+		{StartTime: now.Add(-4 * time.Hour), Price: 1.0},
+		{StartTime: now.Add(-time.Hour / 2), Price: 2.0},
+	})
+	c.Assert(err, IsNil)
+	os.WriteFile(lockdir+"/"+pricesfile, j, 0777)
+	cr.loadPrices()
+	cost = cr.calculateCost(now)
+	c.Check(cost, Equals, 1.5)
+
+	// next update (via --list + SIGUSR2) tells us the spot price
+	// increased to $3/h 15 minutes ago
+	j, err = json.Marshal([]cloud.InstancePrice{
+		{StartTime: now.Add(-time.Hour / 4), Price: 3.0},
+	})
+	c.Assert(err, IsNil)
+	os.WriteFile(lockdir+"/"+pricesfile, j, 0777)
+	cr.loadPrices()
+	cost = cr.calculateCost(now)
+	c.Check(cost, Equals, 1.0/2+2.0/4+3.0/4)
 }
 
 type FakeProcess struct {

@@ -6,7 +6,9 @@ package worker
 
 import (
 	"bytes"
+	"encoding/json"
 	"fmt"
+	"io"
 	"path/filepath"
 	"strings"
 	"sync"
@@ -381,7 +383,12 @@ func (wkr *worker) probeRunning() (running []string, reportsBroken, ok bool) {
 		cmd = "sudo " + cmd
 	}
 	before := time.Now()
-	stdout, stderr, err := wkr.executor.Execute(nil, cmd, nil)
+	var stdin io.Reader
+	if prices := wkr.instance.PriceHistory(); len(prices) > 0 {
+		j, _ := json.Marshal(prices)
+		stdin = bytes.NewReader(j)
+	}
+	stdout, stderr, err := wkr.executor.Execute(nil, cmd, stdin)
 	if err != nil {
 		wkr.logger.WithFields(logrus.Fields{
 			"Command": cmd,

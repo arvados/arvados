@@ -785,6 +785,10 @@ func (ai *azureInstance) Address() string {
 	}
 }
 
+func (ai *azureInstance) PriceHistory() []cloud.InstancePrice {
+	return nil
+}
+
 func (ai *azureInstance) RemoteUser() string {
 	return ai.provider.azconfig.AdminUsername
 }

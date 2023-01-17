@@ -1395,6 +1395,11 @@ Clusters:
           # the cloud dispatcher. Leave blank when not needed.
           IAMInstanceProfile: ""
 
+          # (ec2) how often to look up spot instance pricing data
+          # (only while running spot instances) for the purpose of
+          # calculating container cost estimates.
+          SpotPriceUpdateInterval: 24h
+
           # (azure) Credentials.
           SubscriptionID: ""
           ClientID: ""
