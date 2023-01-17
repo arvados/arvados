@@ -24,7 +24,7 @@ import { getResource } from 'store/resources/resources';
 import { ProjectResource } from 'models/project';
 import { UserResource } from 'models/user';
 import { getUserUuid } from "common/getuser";
-import { WorkflowResource, WorkflowRunnerResources, getWorkflow, getWorkflowInputs, parseWorkflowDefinition } from 'models/workflow';
+import { getWorkflowInputs, parseWorkflowDefinition } from 'models/workflow';
 
 export const WORKFLOW_PANEL_ID = "workflowPanel";
 const UUID_PREFIX_PROPERTY_NAME = 'uuidPrefix';

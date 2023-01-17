@@ -33,7 +33,7 @@ const mapStateToProps = (state: RootState, { id }: Props) => {
         currentRefresh: currentRefresh,
         currentRoute: currentRoute,
         paperKey: currentRoute,
-        currentItemUuid
+        currentItemUuid,
     };
 };
 

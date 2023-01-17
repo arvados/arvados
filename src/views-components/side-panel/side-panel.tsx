@@ -9,10 +9,9 @@ import { SidePanelTree, SidePanelTreeProps } from 'views-components/side-panel-t
 import { Dispatch } from 'redux';
 import { connect } from 'react-redux';
 import { navigateFromSidePanel } from 'store/side-panel/side-panel-action';
-import { Grid, Tooltip, IconButton  } from '@material-ui/core';
+import { Grid } from '@material-ui/core';
 import { SidePanelButton } from 'views-components/side-panel-button/side-panel-button';
 import { RootState } from 'store/store';
-import MenuIcon from "@material-ui/icons/Menu";
 import SidePanelToggle from 'views-components/side-panel-toggle/side-panel-toggle';
 
 const DRAWER_WIDTH = 240;
@@ -28,7 +27,7 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
         width: DRAWER_WIDTH,
     },
     topButtonContainer: {
-        display: 'flex', 
+        display: 'flex',
         justifyContent: 'space-between'
     }
 });

@@ -11,48 +11,48 @@ import { createTree } from 'models/tree';
 import { DataTableFilters } from 'components/data-table-filters/data-table-filters-tree';
 
 export abstract class DataExplorerMiddlewareService {
-  protected readonly id: string;
+    protected readonly id: string;
 
-  protected constructor(id: string) {
-    this.id = id;
-  }
+    protected constructor(id: string) {
+        this.id = id;
+    }
 
-  public getId() {
-    return this.id;
-  }
+    public getId() {
+        return this.id;
+    }
 
-  public getColumnFilters<T>(
-    columns: DataColumns<T>,
-    columnName: string
-  ): DataTableFilters {
-    return getDataExplorerColumnFilters(columns, columnName);
-  }
+    public getColumnFilters<T>(
+        columns: DataColumns<T>,
+        columnName: string
+    ): DataTableFilters {
+        return getDataExplorerColumnFilters(columns, columnName);
+    }
 
-  abstract requestItems(
-    api: MiddlewareAPI<Dispatch, RootState>,
-    criteriaChanged?: boolean
-  ): Promise<void>;
+    abstract requestItems(
+        api: MiddlewareAPI<Dispatch, RootState>,
+        criteriaChanged?: boolean
+    ): Promise<void>;
 }
 
 export const getDataExplorerColumnFilters = <T>(
-  columns: DataColumns<T>,
-  columnName: string
+    columns: DataColumns<T>,
+    columnName: string
 ): DataTableFilters => {
-  const column = columns.find((c) => c.name === columnName);
-  return column ? column.filters : createTree();
+    const column = columns.find((c) => c.name === columnName);
+    return column ? column.filters : createTree();
 };
 
 export const dataExplorerToListParams = (dataExplorer: DataExplorer) => ({
-  limit: dataExplorer.rowsPerPage,
-  offset: dataExplorer.page * dataExplorer.rowsPerPage,
+    limit: dataExplorer.rowsPerPage,
+    offset: dataExplorer.page * dataExplorer.rowsPerPage,
 });
 
 export const listResultsToDataExplorerItemsMeta = <R>({
-  itemsAvailable,
-  offset,
-  limit,
+    itemsAvailable,
+    offset,
+    limit,
 }: ListResults<R>) => ({
-  itemsAvailable,
-  page: Math.floor(offset / limit),
-  rowsPerPage: limit,
+    itemsAvailable,
+    page: Math.floor(offset / limit),
+    rowsPerPage: limit,
 });

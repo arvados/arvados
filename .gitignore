@@ -34,6 +34,7 @@ yarn-error.log*
 .idea
 .vscode
 /public/config.json
+/public/_health/
 
 # see https://yarnpkg.com/getting-started/qa#which-files-should-be-gitignored
 .pnp.*

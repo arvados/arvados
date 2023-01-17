@@ -14,7 +14,6 @@ import {
     Tooltip,
     Typography,
     Grid,
-    CircularProgress,
 } from '@material-ui/core';
 import { ArvadosTheme } from 'common/custom-theme';
 import {
@@ -22,17 +21,14 @@ import {
     MaximizeIcon,
     MemoryIcon,
     UnMaximizeIcon,
-    ProcessIcon
 } from 'components/icon/icon';
 import { MPVPanelProps } from 'components/multi-panel-view/multi-panel-view';
 import { connect } from 'react-redux';
 import { Process } from 'store/processes/process';
 import { NodeInstanceType } from 'store/process-panel/process-panel';
-import { DefaultView } from 'components/default-view/default-view';
 import { DetailsAttribute } from "components/details-attribute/details-attribute";
 import { formatFileSize } from "common/formatters";
-import { InputCollectionMount } from 'store/processes/processes-actions';
-import { MountKind, TemporaryDirectoryMount } from 'models/mount-types';
+import { MountKind } from 'models/mount-types';
 
 interface ProcessResourceCardDataProps {
     process: Process;
@@ -75,9 +71,6 @@ type ProcessResourceCardProps = ProcessResourceCardDataProps & WithStyles<CssRul
 
 export const ProcessResourceCard = withStyles(styles)(connect()(
     ({ classes, nodeInfo, doHidePanel, doMaximizePanel, doUnMaximizePanel, panelMaximized, panelName, process, }: ProcessResourceCardProps) => {
-
-        const loading = false;
-
         let diskRequest = 0;
         if (process.container?.mounts) {
             for (const mnt in process.container.mounts) {

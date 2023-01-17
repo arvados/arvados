@@ -71,7 +71,7 @@ export const SearchInput = (props: SearchInputProps) => {
             () => {
                 props.onSearch(eventValue);
             },
-             props.debounce || DEFAULT_SEARCH_DEBOUNCE
+            props.debounce || DEFAULT_SEARCH_DEBOUNCE
         ));
     };
 

@@ -27,6 +27,7 @@ export const dataExplorerActions = unionize({
     TOGGLE_COLUMN: ofType<{ id: string, columnName: string }>(),
     TOGGLE_SORT: ofType<{ id: string, columnName: string }>(),
     SET_EXPLORER_SEARCH_VALUE: ofType<{ id: string, searchValue: string }>(),
+    RESET_EXPLORER_SEARCH_VALUE: ofType<{ id: string }>(),
     SET_REQUEST_STATE: ofType<{ id: string, requestState: DataTableRequestState }>(),
 });
 
@@ -59,6 +60,8 @@ export const bindDataExplorerActions = (id: string) => ({
         dataExplorerActions.TOGGLE_SORT({ ...payload, id }),
     SET_EXPLORER_SEARCH_VALUE: (payload: { searchValue: string }) =>
         dataExplorerActions.SET_EXPLORER_SEARCH_VALUE({ ...payload, id }),
+    RESET_EXPLORER_SEARCH_VALUE: () =>
+        dataExplorerActions.RESET_EXPLORER_SEARCH_VALUE({ id }),
     SET_REQUEST_STATE: (payload: { requestState: DataTableRequestState }) =>
         dataExplorerActions.SET_REQUEST_STATE({ ...payload, id })
 });

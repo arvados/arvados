@@ -148,6 +148,7 @@ export const toggleIsAdmin = (uuid: string) =>
 
 export const loadUsersPanel = () =>
     (dispatch: Dispatch) => {
+        dispatch(userBindedActions.RESET_EXPLORER_SEARCH_VALUE());
         dispatch(userBindedActions.REQUEST_ITEMS());
     };
 
