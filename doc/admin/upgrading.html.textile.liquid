@@ -28,9 +28,13 @@ TODO: extract this information based on git commit messages and generate changel
 <div class="releasenotes">
 </notextile>
 
-h2(#main). development main (as of 2022-12-22)
+h2(#main). development main (as of 2023-01-16)
 
 "previous: Upgrading to 2.5.0":#v2_5_0
+
+h3. Slow migration on upgrade
+
+This upgrade includes a database schema update (changing an integer column in each table from 32-bit to 64-bit) that may be slow on a large installation. Expect the arvados-api-server package upgrade to take longer than usual.
 
 h2(#v2_5_0). v2.5.0 (2022-12-22)
 

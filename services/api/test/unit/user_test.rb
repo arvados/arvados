@@ -805,4 +805,10 @@ class UserTest < ActiveSupport::TestCase
     assert_nil user.identity_url
   end
 
+  test "id overflows int32" do
+    uuid = users(:active).uuid
+    ActiveRecord::Base.connection.execute "update users set id=333222111000 where uuid='#{uuid}'"
+    u = User.find_by_uuid(uuid)
+    assert_equal 333222111000, u.id
+  end
 end
