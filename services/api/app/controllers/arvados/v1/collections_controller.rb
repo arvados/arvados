@@ -82,7 +82,7 @@ class Arvados::V1::CollectionsController < ApplicationController
 
       select_attrs = (@select || ["manifest_text"]) | ["portable_data_hash", "trash_at"]
       model = Collection
-      if with_lock
+      if with_lock && Rails.configuration.API.LockBeforeUpdate
         model = model.lock
       end
       if c = model.

@@ -792,6 +792,7 @@ def setup_config():
                 "SystemRootToken": auth_token('system_user'),
                 "API": {
                     "RequestTimeout": "30s",
+                    "LockBeforeUpdate": True,
                 },
                 "Login": {
                     "Test": {

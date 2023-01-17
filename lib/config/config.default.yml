@@ -288,6 +288,9 @@ Clusters:
       # any user with "manage" permission can un-freeze.
       UnfreezeProjectRequiresAdmin: false
 
+      # (Experimental) Use row-level locking on update API calls.
+      LockBeforeUpdate: false
+
     Users:
       # Config parameters to automatically setup new users.  If enabled,
       # this users will be able to self-activate.  Enable this if you want

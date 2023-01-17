@@ -141,7 +141,7 @@ class Arvados::V1::ApiClientAuthorizationsController < ApplicationController
     @filters = [['uuid', '=', uuid_param]]
     find_objects_for_index
     query = @objects
-    if with_lock
+    if with_lock && Rails.configuration.API.LockBeforeUpdate
       query = query.lock
     end
     @object = query.first

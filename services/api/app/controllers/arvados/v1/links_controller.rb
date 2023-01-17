@@ -94,7 +94,7 @@ class Arvados::V1::LinksController < ApplicationController
       # user or (b) its head_uuid is an object the current_user
       # can_manage.
       model = Link
-      if with_lock
+      if with_lock && Rails.configuration.API.LockBeforeUpdate
         model = model.lock
       end
       link = model.unscoped.where(uuid: params[:uuid]).first

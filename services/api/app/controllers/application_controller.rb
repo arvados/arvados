@@ -480,7 +480,7 @@ class ApplicationController < ActionController::Base
     @filters = []
     @objects = nil
     find_objects_for_index
-    if with_lock
+    if with_lock && Rails.configuration.API.LockBeforeUpdate
       @object = @objects.lock.first
     else
       @object = @objects.first
