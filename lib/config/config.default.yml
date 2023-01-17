@@ -805,8 +805,12 @@ Clusters:
 
         # Mininum TLS version to negotiate when connecting to server
         # (ldaps://... or StartTLS). It may be necessary to set this
-        # to "1.1" for compatibility with older LDAP servers. If
-        # blank, use the recommended minimum version (1.2).
+        # to "1.1" for compatibility with older LDAP servers that fail
+        # with 'LDAP Result Code 200 "Network Error": TLS handshake
+        # failed (tls: server selected unsupported protocol version
+        # 301)'.
+        #
+        # If blank, use the recommended minimum version (1.2).
         MinTLSVersion: ""
 
         # Strip the @domain part if a user supplies an email-style
