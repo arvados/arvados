@@ -678,8 +678,6 @@ class TestSubmit(unittest.TestCase):
     @mock.patch("time.sleep")
     @stubs()
     def test_submit_keepref(self, stubs, tm, reader):
-        raise Exception("broken")
-
         with open("tests/wf/expect_arvworkflow.cwl") as f:
             reader().open().__enter__().read.return_value = f.read()
 
@@ -1092,7 +1090,7 @@ class TestSubmit(unittest.TestCase):
     @stubs()
     def test_submit_secrets(self, stubs):
         exited = arvados_cwl.main(
-            ["--submit", "--no-wait", "--api=containers", "--debug",
+            ["--submit", "--no-wait", "--api=containers", "--debug", "--disable-git",
                 "tests/wf/secret_wf.cwl", "tests/secret_test_job.yml"],
             stubs.capture_stdout, sys.stderr, api_client=stubs.api, keep_client=stubs.keep_client)
 
@@ -1111,7 +1109,7 @@ class TestSubmit(unittest.TestCase):
                 '--thread-count=0',
                 "--enable-reuse",
                 "--collection-cache-size=256",
-                '--output-name=Output from workflow secret_wf.cwl (%s)' % stubs.git_props["arv:gitDescribe"],
+                "--output-name=Output from workflow secret_wf.cwl",
                 "--debug",
                 "--on-error=continue",
                 "/var/lib/cwl/workflow.json#main",
@@ -1171,14 +1169,14 @@ class TestSubmit(unittest.TestCase):
                                 ],
                                 "steps": [
                                     {
-                                        "id": "#main/secret_wf.cwl (2.5.0-15-g165ec76d4)",
+                                        "id": "#main/secret_wf.cwl",
                                         "in": [
                                             {
                                                 "id": "#main/step/pw",
                                                 "source": "#main/pw"
                                             }
                                         ],
-                                        "label": "secret_wf.cwl (2.5.0-15-g165ec76d4)",
+                                        "label": "secret_wf.cwl",
                                         "out": [
                                             {"id": "#main/step/out"}
                                         ],
@@ -1200,11 +1198,11 @@ class TestSubmit(unittest.TestCase):
                     "path": "/var/spool/cwl/cwl.output.json"
                 }
             },
-            "name": "secret_wf.cwl (%s)" % stubs.git_props["arv:gitDescribe"],
-            "output_name": "Output from workflow secret_wf.cwl (%s)" % stubs.git_props["arv:gitDescribe"],
+            "name": "secret_wf.cwl",
+            "output_name": "Output from workflow secret_wf.cwl",
             "output_path": "/var/spool/cwl",
             "priority": 500,
-            "properties": stubs.git_props,
+            "properties": {},
             "runtime_constraints": {
                 "API": True,
                 "ram": 1342177280,
@@ -1219,8 +1217,6 @@ class TestSubmit(unittest.TestCase):
             "state": "Committed",
             "use_existing": False
         }
-
-        expect_container["mounts"]["/var/lib/cwl/workflow.json"]["content"].update(stubs.git_info)
 
         stubs.api.container_requests().create.assert_called_with(
             body=JsonDiffMatcher(expect_container))

@@ -204,21 +204,20 @@ def new_upload_workflow(arvRunner, tool, job_order, project_uuid,
 
     n = 7
     allmatch = True
-    while allmatch:
-        n += 1
-        for f in all_files:
-            if len(f)-1 < n:
-                n -= 1
-                allmatch = False
-                break
-            if f[n] != firstfile[n]:
-                allmatch = False
-                break
+    if firstfile:
+        while allmatch:
+            n += 1
+            for f in all_files:
+                if len(f)-1 < n:
+                    n -= 1
+                    allmatch = False
+                    break
+                if f[n] != firstfile[n]:
+                    allmatch = False
+                    break
 
-    while firstfile[n] != "/":
-        n -= 1
-
-    prefix = firstfile[:n+1]
+        while firstfile[n] != "/":
+            n -= 1
 
     col = arvados.collection.Collection(api_client=arvRunner.api)
 
