@@ -297,12 +297,17 @@ func (instanceSet *ec2InstanceSet) Instances(tags cloud.InstanceTags) (instances
 	}
 	if needAZs {
 		az := map[string]string{}
-		instanceSet.client.DescribeInstanceStatusPages(&ec2.DescribeInstanceStatusInput{}, func(page *ec2.DescribeInstanceStatusOutput, lastPage bool) bool {
+		err := instanceSet.client.DescribeInstanceStatusPages(&ec2.DescribeInstanceStatusInput{
+			IncludeAllInstances: aws.Bool(true),
+		}, func(page *ec2.DescribeInstanceStatusOutput, lastPage bool) bool {
 			for _, ent := range page.InstanceStatuses {
 				az[*ent.InstanceId] = *ent.AvailabilityZone
 			}
 			return true
 		})
+		if err != nil {
+			instanceSet.logger.Warnf("error getting instance statuses: %s", err)
+		}
 		for _, inst := range instances {
 			inst := inst.(*ec2Instance)
 			inst.availabilityZone = az[*inst.instance.InstanceId]
@@ -363,7 +368,8 @@ func (instanceSet *ec2InstanceSet) updateSpotPrices(instances []cloud.Instance) 
 	dsphi := &ec2.DescribeSpotPriceHistoryInput{
 		StartTime: aws.Time(updateTime.Add(-3 * instanceSet.ec2config.SpotPriceUpdateInterval.Duration())),
 		Filters: []*ec2.Filter{
-			&ec2.Filter{Name: aws.String("InstanceType"), Values: typeFilterValues},
+			&ec2.Filter{Name: aws.String("instance-type"), Values: typeFilterValues},
+			&ec2.Filter{Name: aws.String("product-description"), Values: []*string{aws.String("Linux/UNIX")}},
 		},
 	}
 	err := instanceSet.client.DescribeSpotPriceHistoryPages(dsphi, func(page *ec2.DescribeSpotPriceHistoryOutput, lastPage bool) bool {
@@ -503,11 +509,12 @@ func (inst *ec2Instance) VerifyHostKey(ssh.PublicKey, *ssh.Client) error {
 func (inst *ec2Instance) PriceHistory() []cloud.InstancePrice {
 	inst.provider.pricesLock.Lock()
 	defer inst.provider.pricesLock.Unlock()
-	return inst.provider.prices[priceKey{
+	pk := priceKey{
 		instanceType:     *inst.instance.InstanceType,
 		spot:             aws.StringValue(inst.instance.InstanceLifecycle) == "spot",
 		availabilityZone: inst.availabilityZone,
-	}]
+	}
+	return inst.provider.prices[pk]
 }
 
 type rateLimitError struct {

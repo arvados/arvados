@@ -287,6 +287,16 @@ func (*EC2InstanceSetSuite) TestInstancePriceHistory(c *check.C) {
 	ap, img, cluster := GetInstanceSet(c)
 	pk, _ := test.LoadTestKey(c, "../../dispatchcloud/test/sshkey_dispatch")
 	tags := cloud.InstanceTags{"arvados-ec2-driver": "test"}
+
+	defer func() {
+		instances, err := ap.Instances(tags)
+		c.Assert(err, check.IsNil)
+		for _, inst := range instances {
+			c.Logf("cleanup: destroy instance %s", inst)
+			c.Check(inst.Destroy(), check.IsNil)
+		}
+	}()
+
 	inst1, err := ap.Create(cluster.InstanceTypes["tiny-preemptible"], img, tags, "true", pk)
 	c.Assert(err, check.IsNil)
 	defer inst1.Destroy()
@@ -305,13 +315,15 @@ func (*EC2InstanceSetSuite) TestInstancePriceHistory(c *check.C) {
 		instances, err = ap.Instances(tags)
 		running := 0
 		for _, inst := range instances {
-			if inst.Address() != "" {
+			if *inst.(*ec2Instance).instance.InstanceLifecycle == "spot" {
 				running++
 			}
 		}
 		if running >= 2 {
+			c.Logf("instances are running, and identifiable as spot instances")
 			break
 		}
+		c.Logf("waiting for instances to be identifiable as spot instances...")
 		time.Sleep(10 * time.Second)
 	}
 
