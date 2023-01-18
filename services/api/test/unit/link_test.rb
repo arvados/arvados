@@ -93,4 +93,42 @@ class LinkTest < ActiveSupport::TestCase
     refute new_active_link_valid?(tail_uuid: groups(:public).uuid,
                                   head_uuid: collections(:w_a_z_file_version_1).uuid)
   end
+
+  def create_overlapping_permissions(names=[], attrs={})
+    names.map do |name|
+      link = Link.create!({
+                            link_class: "tmp",
+                            tail_uuid: users(:active).uuid,
+                            head_uuid: collections(:baz_file).uuid,
+                            name: name,
+                          }.merge(attrs).merge({name: name}))
+      ActiveRecord::Base.connection.execute "update links set link_class='permission' where uuid='#{link.uuid}'"
+      link.uuid
+    end
+  end
+
+  test "updating permission causes any conflicting links to be deleted" do
+    link1, link2 = create_overlapping_permissions(['can_read', 'can_manage'])
+    Link.find_by_uuid(link2).update_attributes!(name: 'can_write')
+    assert_empty Link.where(uuid: link1)
+  end
+
+  test "deleting permission causes any conflicting links to be deleted" do
+    rlink, wlink = create_overlapping_permissions(['can_read', 'can_write'])
+    Link.find_by_uuid(wlink).destroy
+    assert_empty Link.where(uuid: rlink)
+  end
+
+  test "updating login permission causes any conflicting links to be deleted" do
+    link1, link2 = create_overlapping_permissions(['can_login', 'can_login'], {properties: {username: 'foo1'}})
+    Link.find_by_uuid(link1).update_attributes!(properties: {'username' => 'foo2'})
+    Link.find_by_uuid(link2).update_attributes!(properties: {'username' => 'foo2'})
+    assert_empty Link.where(uuid: link1)
+  end
+
+  test "deleting login permission causes any conflicting links to be deleted" do
+    link1, link2 = create_overlapping_permissions(['can_login', 'can_login'], {properties: {username: 'foo1'}})
+    Link.find_by_uuid(link1).destroy
+    assert_empty Link.where(uuid: link2)
+  end
 end

@@ -712,4 +712,87 @@ class PermissionsTest < ActionDispatch::IntegrationTest
     assert_response :success
     assert_empty json_response['manifest_text'], "empty collection manifest_text is not empty"
   end
+
+  [['can_write', 'can_read', 'can_write'],
+   ['can_manage', 'can_write', 'can_manage'],
+   ['can_manage', 'can_read', 'can_manage'],
+   ['can_read', 'can_write', 'can_write'],
+   ['can_read', 'can_manage', 'can_manage'],
+   ['can_write', 'can_manage', 'can_manage'],
+  ].each do |perm1, perm2, expect|
+    test "creating #{perm2} permission returns existing #{perm1} link as #{expect}" do
+      link1 = act_as_system_user do
+        Link.create!({
+                       link_class: "permission",
+                       tail_uuid: users(:active).uuid,
+                       head_uuid: collections(:baz_file).uuid,
+                       name: perm1,
+                     })
+      end
+      post "/arvados/v1/links",
+           params: {
+             link: {
+               link_class: "permission",
+               tail_uuid: users(:active).uuid,
+               head_uuid: collections(:baz_file).uuid,
+               name: perm2,
+             },
+           },
+           headers: auth(:admin)
+      assert_response :success
+      assert_equal link1.uuid, json_response["uuid"]
+      assert_equal expect, json_response["name"]
+      link1.reload
+      assert_equal expect, link1.name
+    end
+  end
+
+  test "creating duplicate login permission returns existing link" do
+    link1 = act_as_system_user do
+      Link.create!({
+                     link_class: "permission",
+                     tail_uuid: users(:active).uuid,
+                     head_uuid: virtual_machines(:testvm2).uuid,
+                     name: "can_login",
+                     properties: {"username": "foo1"}
+                   })
+    end
+    link2 = act_as_system_user do
+      Link.create!({
+                     link_class: "permission",
+                     tail_uuid: users(:active).uuid,
+                     head_uuid: virtual_machines(:testvm2).uuid,
+                     name: "can_login",
+                     properties: {"username": "foo2"}
+                   })
+    end
+    link3 = act_as_system_user do
+      Link.create!({
+                     link_class: "permission",
+                     tail_uuid: users(:active).uuid,
+                     head_uuid: virtual_machines(:testvm2).uuid,
+                     name: "can_read",
+                   })
+    end
+    post "/arvados/v1/links",
+         params: {
+           link: {
+             link_class: "permission",
+             tail_uuid: users(:active).uuid,
+             head_uuid: virtual_machines(:testvm2).uuid,
+             name: "can_login",
+             properties: {"username": "foo2"},
+           },
+         },
+         headers: auth(:admin)
+    assert_response :success
+    assert_equal link2.uuid, json_response["uuid"]
+    assert_equal link2.created_at.to_date, json_response["created_at"].to_date
+    assert_equal "can_login", json_response["name"]
+    assert_equal "foo2", json_response["properties"]["username"]
+    link1.reload
+    assert_equal "foo1", link1.properties["username"]
+    link2.reload
+    assert_equal "foo2", link2.properties["username"]
+  end
 end
