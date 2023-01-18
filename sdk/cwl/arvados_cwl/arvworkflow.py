@@ -155,7 +155,7 @@ def update_refs(d, baseuri, urlexpander, merged_map, set_block_style, runtimeCon
         for i, s in enumerate(d):
             if prefix and isinstance(s, str):
                 if s.startswith(prefix):
-                    d[i] = replacePrefix+s[len(prefix)+1:]
+                    d[i] = replacePrefix+s[len(prefix):]
             else:
                 update_refs(s, baseuri, urlexpander, merged_map, set_block_style, runtimeContext, prefix, replacePrefix)
     elif isinstance(d, MutableMapping):
@@ -365,7 +365,7 @@ def new_upload_workflow(arvRunner, tool, job_order, project_uuid,
         for g in git_info:
             doc[g] = git_info[g]
 
-    update_refs(wrapper, main["id"], tool.doc_loader.expand_url, merged_map, False, runtimeContext, main["id"], "#main/")
+    update_refs(wrapper, main["id"], tool.doc_loader.expand_url, merged_map, False, runtimeContext, main["id"]+"#", "#main/")
 
     return doc
 
