@@ -54,7 +54,7 @@ table(table table-bordered table-condensed).
 |priority|integer|Range 0-1000.  Indicate scheduling order preference.|Clients are expected to submit container requests with zero priority in order to preview the container that will be used to satisfy it. Priority can be null if and only if state!="Committed".  See "below for more details":#priority .|
 |expires_at|datetime|After this time, priority is considered to be zero.|Not yet implemented.|
 |use_existing|boolean|If possible, use an existing (non-failed) container to satisfy the request instead of creating a new one.|Default is true|
-|log_uuid|string|Log collection containing log messages provided by the scheduler and crunch processes.|Null if the container has not yet completed.|
+|log_uuid|string|Log collection containing log messages provided by the scheduler and crunch processes.|Null if the container has not yet started running.|
 |output_uuid|string|Output collection created when the container finished successfully.|Null if the container has failed or not yet completed.|
 |filters|string|Additional constraints for satisfying the container_request, given in the same form as the filters parameter accepted by the container_requests.list API.|
 |runtime_token|string|A v2 token to be passed into the container itself, used to access Keep-backed mounts, etc.  |Not returned in API responses.  Reset to null when state is "Complete" or "Cancelled".|
