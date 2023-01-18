@@ -5,6 +5,7 @@
 package arvados
 
 import (
+	"crypto/tls"
 	"encoding/json"
 
 	"github.com/ghodss/yaml"
@@ -70,4 +71,20 @@ func (s *ConfigSuite) TestURLTrailingSlash(c *check.C) {
 	json.Unmarshal([]byte(`{"https://foo.example": true}`), &a)
 	json.Unmarshal([]byte(`{"https://foo.example/": true}`), &b)
 	c.Check(a, check.DeepEquals, b)
+}
+
+func (s *ConfigSuite) TestTLSVersion(c *check.C) {
+	var v struct {
+		Version TLSVersion
+	}
+	err := json.Unmarshal([]byte(`{"Version": 1.0}`), &v)
+	c.Check(err, check.IsNil)
+	c.Check(v.Version, check.Equals, TLSVersion(tls.VersionTLS10))
+
+	err = json.Unmarshal([]byte(`{"Version": "1.3"}`), &v)
+	c.Check(err, check.IsNil)
+	c.Check(v.Version, check.Equals, TLSVersion(tls.VersionTLS13))
+
+	err = json.Unmarshal([]byte(`{"Version": "1.345"}`), &v)
+	c.Check(err, check.NotNil)
 }

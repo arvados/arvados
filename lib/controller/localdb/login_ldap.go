@@ -47,7 +47,25 @@ func (ctrl *ldapLoginController) UserAuthenticate(ctx context.Context, opts arva
 	}
 
 	log = log.WithField("URL", conf.URL.String())
-	l, err := ldap.DialURL(conf.URL.String())
+	var l *ldap.Conn
+	var err error
+	if conf.URL.Scheme == "ldaps" {
+		// ldap.DialURL does not currently allow us to control
+		// tls.Config, so we need to figure out the port
+		// ourselves and call DialTLS.
+		host, port, err := net.SplitHostPort(conf.URL.Host)
+		if err != nil {
+			// Assume error means no port given
+			host = conf.URL.Host
+			port = ldap.DefaultLdapsPort
+		}
+		l, err = ldap.DialTLS("tcp", net.JoinHostPort(host, port), &tls.Config{
+			ServerName: host,
+			MinVersion: uint16(conf.MinTLSVersion),
+		})
+	} else {
+		l, err = ldap.DialURL(conf.URL.String())
+	}
 	if err != nil {
 		log.WithError(err).Error("ldap connection failed")
 		return arvados.APIClientAuthorization{}, err
@@ -56,6 +74,7 @@ func (ctrl *ldapLoginController) UserAuthenticate(ctx context.Context, opts arva
 
 	if conf.StartTLS {
 		var tlsconfig tls.Config
+		tlsconfig.MinVersion = uint16(conf.MinTLSVersion)
 		if conf.InsecureTLS {
 			tlsconfig.InsecureSkipVerify = true
 		} else {
