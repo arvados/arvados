@@ -1132,61 +1132,22 @@ class TestSubmit(unittest.TestCase):
                     "content": {
                         "$graph": [
                             {
-                                "arguments": [
-                                    "md5sum",
-                                    "example.conf"
-                                ],
-                                "class": "CommandLineTool",
-                                "hints": [
-                                    {
-                                        "class": "http://commonwl.org/cwltool#Secrets",
-                                        "secrets": [
-                                            "#secret_job.cwl/pw"
-                                        ]
-                                    }
-                                ],
-                                "id": "#secret_job.cwl",
-                                "inputs": [
-                                    {
-                                        "id": "#secret_job.cwl/pw",
-                                        "type": "string"
-                                    }
-                                ],
-                                "outputs": [
-                                    {
-                                        "id": "#secret_job.cwl/out",
-                                        "type": "File",
-                                        "outputBinding": {
-                                              "glob": "hashed_example.txt"
-                                        }
-                                    }
-                                ],
-                                "stdout": "hashed_example.txt",
-                                "requirements": [
-                                    {
-                                        "class": "InitialWorkDirRequirement",
-                                        "listing": [
-                                            {
-                                                "entry": "username: user\npassword: $(inputs.pw)\n",
-                                                "entryname": "example.conf"
-                                            }
-                                        ]
-                                    }
-                                ]
-                            },
-                            {
                                 "class": "Workflow",
                                 "hints": [
                                     {
-                                        "class": "DockerRequirement",
-                                        "dockerPull": "debian:buster-slim",
-                                        "http://arvados.org/cwl#dockerCollectionPDH": "999999999999999999999999999999d4+99"
+                                    "class": "DockerRequirement",
+                                    "dockerPull": "debian:buster-slim",
+                                    "http://arvados.org/cwl#dockerCollectionPDH": "999999999999999999999999999999d4+99"
                                     },
                                     {
                                         "class": "http://commonwl.org/cwltool#Secrets",
                                         "secrets": [
                                             "#main/pw"
                                         ]
+                                    },
+                                    {
+                                        "acrContainerImage": "999999999999999999999999999999d3+99",
+                                        "class": "http://arvados.org/cwl#WorkflowRunnerResources"
                                     }
                                 ],
                                 "id": "#main",
@@ -1199,31 +1160,34 @@ class TestSubmit(unittest.TestCase):
                                 "outputs": [
                                     {
                                         "id": "#main/out",
-                                        "outputSource": "#main/step1/out",
+                                        "outputSource": "#main/step/out",
                                         "type": "File"
+                                    }
+                                ],
+                                "requirements": [
+                                    {
+                                        "class": "SubworkflowFeatureRequirement"
                                     }
                                 ],
                                 "steps": [
                                     {
-                                        "id": "#main/step1",
+                                        "id": "#main/secret_wf.cwl (2.5.0-15-g165ec76d4)",
                                         "in": [
                                             {
-                                                "id": "#main/step1/pw",
+                                                "id": "#main/step/pw",
                                                 "source": "#main/pw"
                                             }
                                         ],
+                                        "label": "secret_wf.cwl (2.5.0-15-g165ec76d4)",
                                         "out": [
-                                            "#main/step1/out"
+                                            {"id": "#main/step/out"}
                                         ],
-                                        "run": "#secret_job.cwl"
+                                        "run": "keep:702edbfca88e907b62234556089dbce7+119/secret_wf.cwl"
                                     }
                                 ]
                             }
                         ],
-                        "$namespaces": {
-                            "cwltool": "http://commonwl.org/cwltool#"
-                        },
-                        "cwlVersion": "v1.0"
+                        "cwlVersion": "v1.2"
                     },
                     "kind": "json"
                 },

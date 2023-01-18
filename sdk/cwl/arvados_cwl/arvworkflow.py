@@ -147,13 +147,17 @@ def rel_ref(s, baseuri, urlexpander, merged_map):
     return os.path.join(r, p3)
 
 
-def update_refs(d, baseuri, urlexpander, merged_map, set_block_style, runtimeContext):
+def update_refs(d, baseuri, urlexpander, merged_map, set_block_style, runtimeContext, prefix, replacePrefix):
     if set_block_style and (isinstance(d, CommentedSeq) or isinstance(d, CommentedMap)):
         d.fa.set_block_style()
 
     if isinstance(d, MutableSequence):
-        for s in d:
-            update_refs(s, baseuri, urlexpander, merged_map, set_block_style, runtimeContext)
+        for i, s in enumerate(d):
+            if prefix and isinstance(s, str):
+                if s.startswith(prefix):
+                    d[i] = replacePrefix+s[len(prefix)+1:]
+            else:
+                update_refs(s, baseuri, urlexpander, merged_map, set_block_style, runtimeContext, prefix, replacePrefix)
     elif isinstance(d, MutableMapping):
         if "id" in d:
             baseuri = urlexpander(d["id"], baseuri, scoped_id=True)
@@ -171,7 +175,7 @@ def update_refs(d, baseuri, urlexpander, merged_map, set_block_style, runtimeCon
                 for n, s in enumerate(d["$schemas"]):
                     d["$schemas"][n] = rel_ref(d["$schemas"][n], baseuri, urlexpander, merged_map)
 
-            update_refs(d[s], baseuri, urlexpander, merged_map, set_block_style, runtimeContext)
+            update_refs(d[s], baseuri, urlexpander, merged_map, set_block_style, runtimeContext, prefix, replacePrefix)
 
 def new_upload_workflow(arvRunner, tool, job_order, project_uuid,
                         runtimeContext,
@@ -236,7 +240,7 @@ def new_upload_workflow(arvRunner, tool, job_order, project_uuid,
 
         # 2. find $import, $include, $schema, run, location
         # 3. update field value
-        update_refs(result, w, tool.doc_loader.expand_url, merged_map, set_block_style, runtimeContext)
+        update_refs(result, w, tool.doc_loader.expand_url, merged_map, set_block_style, runtimeContext, "", "")
 
         with col.open(w[n+1:], "wt") as f:
             #print(yamlloader.dump(result, stream=sys.stdout))
@@ -361,7 +365,7 @@ def new_upload_workflow(arvRunner, tool, job_order, project_uuid,
         for g in git_info:
             doc[g] = git_info[g]
 
-    update_refs(wrapper, main["id"], tool.doc_loader.expand_url, merged_map, False, runtimeContext)
+    update_refs(wrapper, main["id"], tool.doc_loader.expand_url, merged_map, False, runtimeContext, main["id"], "#main/")
 
     return doc
 

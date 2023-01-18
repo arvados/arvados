@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-cwlVersion: v1.0
+cwlVersion: v1.2
 class: Workflow
 $namespaces:
   cwltool: http://commonwl.org/cwltool#
