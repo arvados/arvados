@@ -916,8 +916,9 @@ func (s *TestSuite) TestCommitNodeInfoBeforeStart(c *C) {
 		})
 
 	c.Assert(collection_create, NotNil)
-	c.Check(collection_create["collection"].(arvadosclient.Dict)["name"], Equals, "logs for zzzzz-dz642-202301121543210")
-	manifest_text := collection_create["collection"].(arvadosclient.Dict)["manifest_text"]
+	log_collection := collection_create["collection"].(arvadosclient.Dict)
+	c.Check(log_collection["name"], Equals, "logs for zzzzz-dz642-202301121543210")
+	manifest_text := log_collection["manifest_text"].(string)
 	// We check that the file size is at least two digits as an easy way to
 	// check the file isn't empty.
 	c.Check(manifest_text, Matches, `\. .* \d+:\d{2,}:node-info\.txt .*\n`)
