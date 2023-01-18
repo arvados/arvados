@@ -595,7 +595,7 @@ func (s *TestSuite) TestUpdateContainerRunning(c *C) {
 	cr, err := NewContainerRunner(s.client, api, kc, "zzzzz-zzzzz-zzzzzzzzzzzzzzz")
 	c.Assert(err, IsNil)
 
-	err = cr.UpdateContainerRunning()
+	err = cr.UpdateContainerRunning("")
 	c.Check(err, IsNil)
 
 	c.Check(api.Content[0]["container"].(arvadosclient.Dict)["state"], Equals, "Running")
@@ -925,7 +925,11 @@ func (s *TestSuite) TestCommitNodeInfoBeforeStart(c *C) {
 	c.Check(manifest_text, Matches, `\. .+ \d+:\d{2,}:node\.json( .+)?\n`)
 
 	c.Assert(container_update, NotNil)
-	c.Check(container_update["container"].(arvadosclient.Dict)["log"], Matches, `zzzzz-4zz18-[0-9a-z]{15}`)
+	// As of Arvados 2.5.0, the container update must specify its log in PDH
+	// format for the API server to propagate it to container requests, which
+	// is what we care about for this test.
+	expect_pdh := fmt.Sprintf("%x+%d", md5.Sum([]byte(manifest_text)), len(manifest_text))
+	c.Check(container_update["container"].(arvadosclient.Dict)["log"], Equals, expect_pdh)
 }
 
 func (s *TestSuite) TestContainerRecordLog(c *C) {
