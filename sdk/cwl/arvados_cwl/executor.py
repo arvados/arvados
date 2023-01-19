@@ -36,7 +36,7 @@ import arvados_cwl.util
 from .arvcontainer import RunnerContainer, cleanup_name_for_collection
 from .runner import Runner, upload_docker, upload_job_order, upload_workflow_deps, make_builder
 from .arvtool import ArvadosCommandTool, validate_cluster_target, ArvadosExpressionTool
-from .arvworkflow import ArvadosWorkflow, upload_workflow, new_upload_workflow
+from .arvworkflow import ArvadosWorkflow, upload_workflow, new_upload_workflow, make_workflow_record
 from .fsaccess import CollectionFsAccess, CollectionFetcher, collectionResolver, CollectionCache, pdh_size
 from .perf import Perf
 from .pathmapper import NoFollowPathMapper
