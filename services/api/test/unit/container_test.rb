@@ -1063,4 +1063,150 @@ class ContainerTest < ActiveSupport::TestCase
       assert_no_secrets_logged
     end
   end
+
+  def configure_preemptible_instance_type
+    Rails.configuration.InstanceTypes = ConfigLoader.to_OrderedOptions({
+      "a1.small.pre" => {
+        "Preemptible" => true,
+        "Price" => 0.1,
+        "ProviderType" => "a1.small",
+        "VCPUs" => 1,
+        "RAM" => 1000000000,
+      },
+    })
+  end
+
+  def vary_scheduling_parameters(**kwargs)
+    # kwargs is a hash that maps scheduling parameters to an array of values.
+    # This function enumerates every possible combination of
+    # scheduling parameters from those keys and their associated values.
+    [[:_, nil]].product(
+      *kwargs.map { |(key, values)| [key.to_s].product(values) },
+    ).map { |param_pairs| Hash[param_pairs].compact }
+  end
+
+  def retry_with_scheduling_parameters(param_hashes)
+    set_user_from_auth :admin
+    containers = {}
+    requests = []
+    param_hashes.each do |scheduling_parameters|
+      container, request = minimal_new(scheduling_parameters: scheduling_parameters)
+      containers[container.uuid] = container
+      requests << request
+    end
+    refute(containers.empty?, "buggy test: no scheduling parameters enumerated")
+    assert_equal(1, containers.length)
+    _, container1 = containers.shift
+    container1.lock
+    container1.update_attributes!(state: Container::Cancelled)
+    container1.reload
+    request1 = requests.shift
+    request1.reload
+    assert_not_equal(container1.uuid, request1.container_uuid)
+    requests.each do |request|
+      request.reload
+      assert_equal(request1.container_uuid, request.container_uuid)
+    end
+    container2 = Container.find_by_uuid(request1.container_uuid)
+    assert_not_nil(container2)
+    return container2
+  end
+
+  preemptible_values = [true, false, nil]
+  preemptible_values.permutation(1).chain(
+    preemptible_values.product(preemptible_values),
+    preemptible_values.product(preemptible_values, preemptible_values),
+  ).each do |preemptible_a|
+    test "retry requests scheduled with preemptible=#{preemptible_a}" do
+      configure_preemptible_instance_type
+      param_hashes = vary_scheduling_parameters(preemptible: preemptible_a)
+      container = retry_with_scheduling_parameters(param_hashes)
+      assert_equal(preemptible_a.all?,
+                   container.scheduling_parameters["preemptible"] || false)
+    end
+  end
+
+  partition_values = [nil, [], ["alpha"], ["alpha", "bravo"], ["bravo", "charlie"]]
+  partition_values.permutation(1).chain(
+    partition_values.permutation(2),
+  ).each do |partitions_a|
+    test "retry requests scheduled with partitions=#{partitions_a}" do
+      param_hashes = vary_scheduling_parameters(partitions: partitions_a)
+      container = retry_with_scheduling_parameters(param_hashes)
+      expected = if partitions_a.any? { |value| value.nil? or value.empty? }
+                   []
+                 else
+                   partitions_a.flatten.uniq
+                 end
+      actual = container.scheduling_parameters["partitions"] || []
+      assert_equal(expected.sort, actual.sort)
+    end
+  end
+
+  runtime_values = [nil, 0, 1, 2, 3]
+  runtime_values.permutation(1).chain(
+    runtime_values.permutation(2),
+    runtime_values.permutation(3),
+  ).each do |max_run_time_a|
+    test "retry requests scheduled with max_run_time=#{max_run_time_a}" do
+      param_hashes = vary_scheduling_parameters(max_run_time: max_run_time_a)
+      container = retry_with_scheduling_parameters(param_hashes)
+      expected = if max_run_time_a.any? { |value| value.nil? or value == 0 }
+                   0
+                 else
+                   max_run_time_a.max
+                 end
+      actual = container.scheduling_parameters["max_run_time"] || 0
+      assert_equal(expected, actual)
+    end
+  end
+
+  test "retry requests with multi-varied scheduling parameters" do
+    configure_preemptible_instance_type
+    param_hashes = [{
+                     "partitions": ["alpha", "bravo"],
+                     "preemptible": true,
+                     "max_run_time": 10,
+                    }, {
+                     "partitions": ["alpha", "charlie"],
+                     "max_run_time": 20,
+                    }, {
+                     "partitions": ["bravo", "charlie"],
+                     "preemptible": false,
+                     "max_run_time": 30,
+                    }]
+    container = retry_with_scheduling_parameters(param_hashes)
+    actual = container.scheduling_parameters
+    assert_equal(["alpha", "bravo", "charlie"], actual["partitions"]&.sort)
+    assert_equal(false, actual["preemptible"] || false)
+    assert_equal(30, actual["max_run_time"])
+  end
+
+  test "retry requests with unset scheduling parameters" do
+    configure_preemptible_instance_type
+    param_hashes = vary_scheduling_parameters(
+      preemptible: [nil, true],
+      partitions: [nil, ["alpha"]],
+      max_run_time: [nil, 5],
+    )
+    container = retry_with_scheduling_parameters(param_hashes)
+    actual = container.scheduling_parameters
+    assert_equal([], actual["partitions"] || [])
+    assert_equal(false, actual["preemptible"] || false)
+    assert_equal(0, actual["max_run_time"] || 0)
+  end
+
+  test "retry requests with default scheduling parameters" do
+    configure_preemptible_instance_type
+    param_hashes = vary_scheduling_parameters(
+      preemptible: [false, true],
+      partitions: [[], ["bravo"]],
+      max_run_time: [0, 1],
+    )
+    container = retry_with_scheduling_parameters(param_hashes)
+    actual = container.scheduling_parameters
+    assert_equal([], actual["partitions"] || [])
+    assert_equal(false, actual["preemptible"] || false)
+    assert_equal(0, actual["max_run_time"] || 0)
+  end
 end
