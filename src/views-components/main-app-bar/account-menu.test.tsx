@@ -43,7 +43,7 @@ describe('<AccountMenu />', () => {
         it('should dispatch a logout action when clicked', () => {
             wrapper.find('[data-cy="logout-menuitem"]').simulate('click');
             expect(props.dispatch).toHaveBeenCalledWith({
-                payload: {deleteLinkData: true},
+                payload: {deleteLinkData: true, preservePath: false},
                 type: 'LOGOUT',
             });
         });
