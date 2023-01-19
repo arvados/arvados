@@ -589,11 +589,7 @@ def packed_workflow(arvrunner, tool, merged_map, runtimeContext, git_info):
                     v["secondaryFiles"] = merged_map[cur_id].secondaryFiles[v["location"]]
             if v.get("class") == "DockerRequirement":
                 v["http://arvados.org/cwl#dockerCollectionPDH"] = arvados_cwl.arvdocker.arv_docker_get_image(arvrunner.api, v, True,
-                                                                                                             runtimeContext.project_uuid,
-                                                                                                             runtimeContext.force_docker_pull,
-                                                                                                             runtimeContext.tmp_outdir_prefix,
-                                                                                                             runtimeContext.match_local_docker,
-                                                                                                             runtimeContext.copy_deps)
+                                                                                                             runtimeContext)
             for l in v:
                 visit(v[l], cur_id)
         if isinstance(v, list):
@@ -719,7 +715,6 @@ FileUpdates = namedtuple("FileUpdates", ["resolved", "secondaryFiles"])
 def upload_workflow_deps(arvrunner, tool, runtimeContext):
     # Ensure that Docker images needed by this workflow are available
 
-    # commented out for testing only, uncomment me
     with Perf(metrics, "upload_docker"):
         upload_docker(arvrunner, tool, runtimeContext)
 

@@ -300,7 +300,6 @@ def new_upload_workflow(arvRunner, tool, job_order, project_uuid,
         wf_runner_resources = {"class": "http://arvados.org/cwl#WorkflowRunnerResources"}
         hints.append(wf_runner_resources)
 
-    # uncomment me
     wf_runner_resources["acrContainerImage"] = arvados_jobs_image(arvRunner,
                                                                   submit_runner_image or "arvados/jobs:"+__version__,
                                                                   runtimeContext)

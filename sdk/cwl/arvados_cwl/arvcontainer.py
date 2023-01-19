@@ -250,11 +250,7 @@ class ArvadosContainer(JobBase):
         container_request["container_image"] = arv_docker_get_image(self.arvrunner.api,
                                                                     docker_req,
                                                                     runtimeContext.pull_image,
-                                                                    runtimeContext.project_uuid,
-                                                                    runtimeContext.force_docker_pull,
-                                                                    runtimeContext.tmp_outdir_prefix,
-                                                                    runtimeContext.match_local_docker,
-                                                                    runtimeContext.copy_deps)
+                                                                    runtimeContext)
 
         network_req, _ = self.get_requirement("NetworkAccess")
         if network_req:

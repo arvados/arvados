@@ -1206,7 +1206,6 @@ class TestContainer(unittest.TestCase):
     @mock.patch("arvados.commands.keepdocker.list_images_in_arv")
     def test_match_local_docker(self, keepdocker, determine_image_id):
         arvados_cwl.add_arv_hints()
-        #arv_docker_clear_cache()
 
         runner = mock.MagicMock()
         runner.ignore_docker_for_reuse = False
@@ -1280,7 +1279,7 @@ class TestContainer(unittest.TestCase):
             runner.api.container_requests().create.assert_called_with(
                 body=JsonDiffMatcher(container_request))
 
-        #arv_docker_clear_cache()
+        runtimeContext.cached_docker_lookups.clear()
         runtimeContext.match_local_docker = True
         container_request['container_image'] = '99999999999999999999999999999993+99'
         container_request['name'] = 'test_run_True_2'
