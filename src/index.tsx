@@ -132,7 +132,8 @@ fetchConfig()
                     if (error.status === 404) {
                         store.dispatch(openNotFoundDialog());
                     } else if (error.status === 401 && error.errors[0].indexOf("Not logged in") > -1) {
-                        store.dispatch(logout());
+                        // Catch auth errors when navigating and redirect to login preserving url location
+                        store.dispatch(logout(false, true));
                     } else {
                         store.dispatch(snackbarActions.OPEN_SNACKBAR({
                             message: `${error.errors
