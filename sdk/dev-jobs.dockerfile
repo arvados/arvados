@@ -28,16 +28,19 @@ RUN apt-get update -q && apt-get install -qy --no-install-recommends \
 ARG sdk
 ARG runner
 ARG salad
+ARG cwlutils
 ARG cwltool
 
 ADD python/dist/$sdk /tmp/
 ADD cwl/salad_dist/$salad /tmp/
 ADD cwl/cwltool_dist/$cwltool /tmp/
+ADD cwl/cwlutils_dist/$cwlutils /tmp/
 ADD cwl/dist/$runner /tmp/
 
 RUN $pipcmd install wheel
 RUN cd /tmp/arvados-python-client-* && $pipcmd install .
 RUN if test -d /tmp/schema-salad-* ; then cd /tmp/schema-salad-* && $pipcmd install . ; fi
+RUN if test -d /tmp/cwl-utils-* ; then cd /tmp/cwl-utils-* && $pipcmd install . ; fi
 RUN if test -d /tmp/cwltool-* ; then cd /tmp/cwltool-* && $pipcmd install . ; fi
 RUN cd /tmp/arvados-cwl-runner-* && $pipcmd install .
 

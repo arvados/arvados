@@ -23,7 +23,7 @@ import urllib
 
 from cwltool.errors import WorkflowException
 import cwltool.workflow
-from schema_salad.sourceline import SourceLine
+from schema_salad.sourceline import SourceLine, cmap
 import schema_salad.validate as validate
 from schema_salad.ref_resolver import file_uri, uri_file_path
 
@@ -705,7 +705,7 @@ The 'jobs' API is no longer supported.
         #with Perf(metrics, "load_tool"):
         #    tool = load_tool(tool.tool, loadingContext)
 
-        if runtimeContext.update_workflow or runtimeContext.create_workflow or (runtimeContext.submit and not self.fast_submit):
+        if submitting and not self.fast_submit:
             # upload workflow and get back the workflow wrapper
 
             workflow_wrapper = new_upload_workflow(self, tool, job_order,
@@ -730,7 +730,8 @@ The 'jobs' API is no longer supported.
 
             # Reload just the wrapper workflow.
             self.fast_submit = True
-            tool = load_tool(workflow_wrapper, loadingContext)
+            workflow_wrapper, _ = loadingContext.loader.resolve_all(cmap(workflow_wrapper), tool.tool["id"])
+            tool = load_tool(workflow_wrapper[0], loadingContext)
 
 
         self.apply_reqs(job_order, tool)

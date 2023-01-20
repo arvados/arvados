@@ -128,22 +128,34 @@ def make_wrapper_workflow(arvRunner, main, packed, project_uuid, name, git_info,
     return json.dumps(doc, sort_keys=True, indent=4, separators=(',',': '))
 
 def rel_ref(s, baseuri, urlexpander, merged_map):
-    uri = urlexpander(s, baseuri)
-    fileuri = urllib.parse.urldefrag(baseuri)[0]
-    if fileuri in merged_map:
-        replacements = merged_map[fileuri].resolved
-        if uri in replacements:
-            return replacements[uri]
-
     if s.startswith("keep:"):
         return s
 
-    p1 = os.path.dirname(uri_file_path(baseuri))
+    #print("BBB", s, baseuri)
+    uri = urlexpander(s, baseuri)
+    #print("CCC", uri)
+
+    fileuri = urllib.parse.urldefrag(baseuri)[0]
+
+    for u in (baseuri, fileuri):
+        if u in merged_map:
+            replacements = merged_map[u].resolved
+            #print(uri, replacements)
+            if uri in replacements:
+                return replacements[uri]
+
+    p1 = os.path.dirname(uri_file_path(fileuri))
     p2 = os.path.dirname(uri_file_path(uri))
     p3 = os.path.basename(uri_file_path(uri))
+
+    #print("PPP", p1, p2, p3)
+
     r = os.path.relpath(p2, p1)
     if r == ".":
         r = ""
+
+    #print("RRR", r)
+
     return os.path.join(r, p3)
 
 
@@ -167,9 +179,25 @@ def update_refs(d, baseuri, urlexpander, merged_map, set_block_style, runtimeCon
             d["http://arvados.org/cwl#dockerCollectionPDH"] = runtimeContext.cached_docker_lookups.get(dockerImageId)
 
         for s in d:
-            for field in ("$include", "$import", "location", "run"):
+            for field in ("location", "run", "name"):
                 if field in d and isinstance(d[field], str):
                     d[field] = rel_ref(d[field], baseuri, urlexpander, merged_map)
+
+            for field in ("$include", "$import"):
+                if field in d and isinstance(d[field], str):
+                    d[field] = rel_ref(d[field], baseuri, urlexpander, {})
+
+            basetypes = ("null", "boolean", "int", "long", "float", "double", "string", "File", "Directory")
+
+            if ("type" in d and
+                isinstance(d["type"], str) and
+                d["type"] not in basetypes):
+                d["type"] = rel_ref(d["type"], baseuri, urlexpander, merged_map)
+
+            if "inputs" in d and isinstance(d["inputs"], MutableMapping):
+                for inp in d["inputs"]:
+                    if isinstance(d["inputs"][inp], str) and d["inputs"][inp] not in basetypes:
+                        d["inputs"][inp] = rel_ref(d["inputs"][inp], baseuri, urlexpander, merged_map)
 
             if "$schemas" in d:
                 for n, s in enumerate(d["$schemas"]):
@@ -220,6 +248,8 @@ def new_upload_workflow(arvRunner, tool, job_order, project_uuid,
             n -= 1
 
     col = arvados.collection.Collection(api_client=arvRunner.api)
+
+    #print(merged_map)
 
     for w in workflow_files | import_files:
         # 1. load YAML
@@ -363,7 +393,12 @@ def new_upload_workflow(arvRunner, tool, job_order, project_uuid,
         for g in git_info:
             doc[g] = git_info[g]
 
+    #print("MMM", main["id"])
+    #print(yamlloader.dump(wrapper, stream=sys.stdout))
+
     update_refs(wrapper, main["id"], tool.doc_loader.expand_url, merged_map, False, runtimeContext, main["id"]+"#", "#main/")
+
+    #print(yamlloader.dump(wrapper, stream=sys.stdout))
 
     return doc
 
