@@ -1427,14 +1427,25 @@ func (runner *ContainerRunner) saveLogCollection(final bool) (response arvados.C
 }
 
 // UpdateContainerRunning updates the container state to "Running"
-func (runner *ContainerRunner) UpdateContainerRunning() error {
+func (runner *ContainerRunner) UpdateContainerRunning(logId string) error {
 	runner.cStateLock.Lock()
 	defer runner.cStateLock.Unlock()
 	if runner.cCancelled {
 		return ErrCancelled
 	}
-	return runner.DispatcherArvClient.Update("containers", runner.Container.UUID,
-		arvadosclient.Dict{"container": arvadosclient.Dict{"state": "Running", "gateway_address": runner.gateway.Address}}, nil)
+	updates := arvadosclient.Dict{
+		"gateway_address": runner.gateway.Address,
+		"state":           "Running",
+	}
+	if logId != "" {
+		updates["log"] = logId
+	}
+	return runner.DispatcherArvClient.Update(
+		"containers",
+		runner.Container.UUID,
+		arvadosclient.Dict{"container": updates},
+		nil,
+	)
 }
 
 // ContainerToken returns the api_token the container (and any
@@ -1625,7 +1636,14 @@ func (runner *ContainerRunner) Run() (err error) {
 		return
 	}
 
-	err = runner.UpdateContainerRunning()
+	logCollection, err := runner.saveLogCollection(false)
+	var logId string
+	if err == nil {
+		logId = logCollection.PortableDataHash
+	} else {
+		runner.CrunchLog.Printf("Error committing initial log collection: %v", err)
+	}
+	err = runner.UpdateContainerRunning(logId)
 	if err != nil {
 		return
 	}
