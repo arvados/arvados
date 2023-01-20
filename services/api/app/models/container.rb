@@ -718,6 +718,31 @@ class Container < ArvadosModel
           end
 
           if retryable_requests.any?
+            scheduling_parameters = {
+              # partitions: empty if any are empty, else the union of all parameters
+              "partitions": retryable_requests
+                              .map { |req| req.scheduling_parameters["partitions"] || [] }
+                              .reduce { |cur, new| (cur.empty? or new.empty?) ? [] : (cur | new) },
+
+              # preemptible: true if all are true, else false
+              "preemptible": retryable_requests
+                               .map { |req| req.scheduling_parameters["preemptible"] }
+                               .all?,
+
+              # max_run_time: 0 if any are 0 (unlimited), else the maximum
+              "max_run_time": retryable_requests
+                                .map { |req| req.scheduling_parameters["max_run_time"] || 0 }
+                                .reduce do |cur, new|
+                if cur == 0 or new == 0
+                  0
+                elsif new > cur
+                  new
+                else
+                  cur
+                end
+              end,
+            }
+
             c_attrs = {
               command: self.command,
               cwd: self.cwd,
@@ -726,7 +751,7 @@ class Container < ArvadosModel
               container_image: self.container_image,
               mounts: self.mounts,
               runtime_constraints: self.runtime_constraints,
-              scheduling_parameters: self.scheduling_parameters,
+              scheduling_parameters: scheduling_parameters,
               secret_mounts: prev_secret_mounts,
               runtime_token: prev_runtime_token,
               runtime_user_uuid: self.runtime_user_uuid,
