@@ -28,7 +28,7 @@ table(table table-bordered table-condensed).
 |state|string|The allowed states are "Queued", "Locked", "Running", "Cancelled" and "Complete".|See "Container states":#container_states for more details.|
 |started_at|datetime|When this container started running.|Null if container has not yet started.|
 |finished_at|datetime|When this container finished.|Null if container has not yet finished.|
-|log|string|UUID or portable data hash of a collection containing the log messages produced when executing the container.|If a running container is updated with a portable data hash in its log field, that collection will be propagated to the logs of associated container request(s). This behaivor may be extended to UUID updates in the future.|
+|log|string|Portable data hash of a collection containing the log messages produced when executing the container.|Null if container has not yet started. The dispatcher will periodically update this field for a running container.|
 |environment|hash|Environment variables and values that should be set in the container environment (@docker run --env@). This augments and (when conflicts exist) overrides environment variables given in the image's Dockerfile.|Must be equal to a ContainerRequest's environment in order to satisfy the ContainerRequest.|
 |cwd|string|Initial working directory.|Must be equal to a ContainerRequest's cwd in order to satisfy the ContainerRequest|
 |command|array of strings|Command to execute.| Must be equal to a ContainerRequest's command in order to satisfy the ContainerRequest.|
