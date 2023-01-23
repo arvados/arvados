@@ -2251,7 +2251,17 @@ func (cr *ContainerRunner) loadPrices() {
 	}
 	cr.pricesLock.Lock()
 	defer cr.pricesLock.Unlock()
+	var lastKnown time.Time
+	if len(cr.prices) > 0 {
+		lastKnown = cr.prices[0].StartTime
+	}
 	cr.prices = cloud.NormalizePriceHistory(append(prices, cr.prices...))
+	for i := len(cr.prices) - 1; i >= 0; i-- {
+		price := cr.prices[i]
+		if price.StartTime.After(lastKnown) {
+			cr.CrunchLog.Printf("Instance price changed to %#.3g at %s", price.Price, price.StartTime.UTC())
+		}
+	}
 }
 
 func (cr *ContainerRunner) calculateCost(now time.Time) float64 {

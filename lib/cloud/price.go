@@ -10,9 +10,9 @@ import (
 
 // NormalizePriceHistory de-duplicates and sorts instance prices, most
 // recent first.
-//
-// The provided slice is modified in place.
 func NormalizePriceHistory(prices []InstancePrice) []InstancePrice {
+	// copy provided slice instead of modifying it in place
+	prices = append([]InstancePrice(nil), prices...)
 	// sort by timestamp, newest first
 	sort.Slice(prices, func(i, j int) bool {
 		return prices[i].StartTime.After(prices[j].StartTime)

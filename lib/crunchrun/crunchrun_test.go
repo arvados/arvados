@@ -12,6 +12,7 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	"log"
 	"os"
 	"os/exec"
 	"regexp"
@@ -2076,7 +2077,10 @@ func (s *TestSuite) TestCalculateCost(c *C) {
 	defer func(s string) { lockdir = s }(lockdir)
 	lockdir = c.MkDir()
 	now := time.Now()
-	cr := ContainerRunner{costStartTime: now.Add(-time.Hour)}
+	cr := s.runner
+	cr.costStartTime = now.Add(-time.Hour)
+	var logbuf bytes.Buffer
+	cr.CrunchLog.Immediate = log.New(&logbuf, "", 0)
 
 	// if there's no InstanceType env var, cost is calculated as 0
 	os.Unsetenv("InstanceType")
@@ -2106,6 +2110,7 @@ func (s *TestSuite) TestCalculateCost(c *C) {
 	// next update (via --list + SIGUSR2) tells us the spot price
 	// increased to $3/h 15 minutes ago
 	j, err = json.Marshal([]cloud.InstancePrice{
+		{StartTime: now.Add(-time.Hour / 3), Price: 2.0}, // dup of -time.Hour/2 price
 		{StartTime: now.Add(-time.Hour / 4), Price: 3.0},
 	})
 	c.Assert(err, IsNil)
@@ -2113,6 +2118,10 @@ func (s *TestSuite) TestCalculateCost(c *C) {
 	cr.loadPrices()
 	cost = cr.calculateCost(now)
 	c.Check(cost, Equals, 1.0/2+2.0/4+3.0/4)
+
+	c.Logf("%s", logbuf.String())
+	c.Check(logbuf.String(), Matches, `(?ms).*Instance price changed to 1\.00 at 20.* changed to 2\.00 .* changed to 3\.00 .*`)
+	c.Check(logbuf.String(), Not(Matches), `(?ms).*changed to 2\.00 .* changed to 2\.00 .*`)
 }
 
 type FakeProcess struct {
