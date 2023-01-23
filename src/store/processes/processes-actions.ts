@@ -108,7 +108,7 @@ export const cancelRunningWorkflow = (uuid: string) =>
 export const startWorkflow = (uuid: string) =>
     async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
         try {
-            const process = await services.containerRequestService.update(uuid, { priority: 1, state: ContainerRequestState.COMMITTED });
+            const process = await services.containerRequestService.update(uuid, { state: ContainerRequestState.COMMITTED });
             if (process) {
                 dispatch<any>(updateResources([process]));
                 dispatch(snackbarActions.OPEN_SNACKBAR({ message: 'Process started', hideDuration: 2000, kind: SnackbarKind.SUCCESS }));

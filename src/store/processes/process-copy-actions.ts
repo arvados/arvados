@@ -12,6 +12,7 @@ import { CopyFormDialogData } from 'store/copy-dialog/copy-dialog';
 import { getProcess } from 'store/processes/process';
 import {snackbarActions, SnackbarKind} from 'store/snackbar/snackbar-actions';
 import { initProjectsTreePicker } from 'store/tree-picker/tree-picker-actions';
+import { ContainerRequestState } from "models/container-request";
 
 export const PROCESS_COPY_FORM_NAME = 'processCopyFormName';
 
@@ -39,17 +40,16 @@ export const copyProcess = (resource: CopyFormDialogData) =>
                 containerCountMax,
                 containerImage,
                 cwd,
+                description,
                 environment,
-                expiresAt,
-                filters,
                 kind,
                 mounts,
                 outputName,
                 outputPath,
+                outputProperties,
+                outputStorageClasses,
                 outputTtl,
-                priority,
                 properties,
-                requestingContainerUuid,
                 runtimeConstraints,
                 schedulingParameters,
                 useExisting,
@@ -59,21 +59,22 @@ export const copyProcess = (resource: CopyFormDialogData) =>
                 containerCountMax,
                 containerImage,
                 cwd,
+                description,
                 environment,
-                expiresAt,
-                filters,
                 kind,
                 mounts,
                 name: resource.name,
                 outputName,
                 outputPath,
+                outputProperties,
+                outputStorageClasses,
                 outputTtl,
                 ownerUuid: resource.ownerUuid,
-                priority,
+                priority: 500,
                 properties,
-                requestingContainerUuid,
                 runtimeConstraints,
                 schedulingParameters,
+                state: ContainerRequestState.UNCOMMITTED,
                 useExisting,
             });
             dispatch(dialogActions.CLOSE_DIALOG({ id: PROCESS_COPY_FORM_NAME }));
