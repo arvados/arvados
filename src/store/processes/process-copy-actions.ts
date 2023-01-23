@@ -34,8 +34,48 @@ export const copyProcess = (resource: CopyFormDialogData) =>
         dispatch(startSubmit(PROCESS_COPY_FORM_NAME));
         try {
             const process = await services.containerRequestService.get(resource.uuid);
-            const { kind, containerImage, outputPath, outputName, containerCountMax, command, properties, requestingContainerUuid, mounts, runtimeConstraints, schedulingParameters, environment, cwd, outputTtl, priority, expiresAt, useExisting, filters } = process;
-            await services.containerRequestService.create({ command, containerImage, outputPath, ownerUuid: resource.ownerUuid, name: resource.name, kind, outputName, containerCountMax, properties, requestingContainerUuid, mounts, runtimeConstraints, schedulingParameters, environment, cwd, outputTtl, priority, expiresAt, useExisting, filters });
+            const {
+                command,
+                containerCountMax,
+                containerImage,
+                cwd,
+                environment,
+                expiresAt,
+                filters,
+                kind,
+                mounts,
+                outputName,
+                outputPath,
+                outputTtl,
+                priority,
+                properties,
+                requestingContainerUuid,
+                runtimeConstraints,
+                schedulingParameters,
+                useExisting,
+            } = process;
+            await services.containerRequestService.create({
+                command,
+                containerCountMax,
+                containerImage,
+                cwd,
+                environment,
+                expiresAt,
+                filters,
+                kind,
+                mounts,
+                name: resource.name,
+                outputName,
+                outputPath,
+                outputTtl,
+                ownerUuid: resource.ownerUuid,
+                priority,
+                properties,
+                requestingContainerUuid,
+                runtimeConstraints,
+                schedulingParameters,
+                useExisting,
+            });
             dispatch(dialogActions.CLOSE_DIALOG({ id: PROCESS_COPY_FORM_NAME }));
             return process;
         } catch (e) {
