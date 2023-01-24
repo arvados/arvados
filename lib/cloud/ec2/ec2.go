@@ -337,7 +337,8 @@ func (instanceSet *ec2InstanceSet) updateSpotPrices(instances []cloud.Instance) 
 	updateTime := time.Now()
 	staleTime := updateTime.Add(-instanceSet.ec2config.SpotPriceUpdateInterval.Duration())
 	needUpdate := false
-	var typeFilterValues []*string
+	allTypes := map[string]bool{}
+
 	for _, inst := range instances {
 		ec2inst := inst.(*ec2Instance).instance
 		if aws.StringValue(ec2inst.InstanceLifecycle) == "spot" {
@@ -349,11 +350,15 @@ func (instanceSet *ec2InstanceSet) updateSpotPrices(instances []cloud.Instance) 
 			if instanceSet.pricesUpdated[pk].Before(staleTime) {
 				needUpdate = true
 			}
-			typeFilterValues = append(typeFilterValues, ec2inst.InstanceType)
+			allTypes[*ec2inst.InstanceType] = true
 		}
 	}
 	if !needUpdate {
 		return
+	}
+	var typeFilterValues []*string
+	for instanceType := range allTypes {
+		typeFilterValues = append(typeFilterValues, aws.String(instanceType))
 	}
 	// Get 3x update interval worth of pricing data. (Ideally the
 	// AWS API would tell us "we have shown you all of the price
