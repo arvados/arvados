@@ -383,7 +383,8 @@ def main(args=sys.argv[1:],
 
     if arvargs.workflow.startswith("arvwf:") or workflow_uuid_pattern.match(arvargs.workflow) or arvargs.workflow.startswith("keep:"):
         executor.loadingContext.do_validate = False
-        executor.fast_submit = True
+        if arvargs.submit:
+            executor.fast_submit = True
 
     return cwltool.main.main(args=arvargs,
                              stdout=stdout,
