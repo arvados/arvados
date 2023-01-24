@@ -506,6 +506,9 @@ func (inst *ec2Instance) VerifyHostKey(ssh.PublicKey, *ssh.Client) error {
 func (inst *ec2Instance) PriceHistory(instType arvados.InstanceType) []cloud.InstancePrice {
 	inst.provider.pricesLock.Lock()
 	defer inst.provider.pricesLock.Unlock()
+	// Note updateSpotPrices currently populates
+	// inst.provider.prices only for spot instances, so if
+	// spot==false here, we will return no data.
 	pk := priceKey{
 		instanceType:     *inst.instance.InstanceType,
 		spot:             aws.StringValue(inst.instance.InstanceLifecycle) == "spot",
