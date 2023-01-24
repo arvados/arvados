@@ -726,12 +726,18 @@ The 'jobs' API is no longer supported.
                 self.stdout.write(uuid + "\n")
                 return (None, "success")
 
+            loadingContext.loader.idx.clear()
             loadingContext.loader.idx["_:main"] = workflow_wrapper
+            workflow_wrapper["id"] = "_:main"
 
             # Reload just the wrapper workflow.
             self.fast_submit = True
-            workflow_wrapper, _ = loadingContext.loader.resolve_all(cmap(workflow_wrapper), tool.tool["id"])
-            tool = load_tool(workflow_wrapper[0], loadingContext)
+            #print("bah bah", loadingContext.requirements)
+            #workflow_wrapper, _ = loadingContext.loader.resolve_all(cmap(workflow_wrapper), "_:main", checklinks=True)
+
+            #tool = load_tool(workflow_wrapper[0], loadingContext)
+            #print(json.dumps(workflow_wrapper, indent=2))
+            tool = load_tool(workflow_wrapper, loadingContext)
 
 
         self.apply_reqs(job_order, tool)
