@@ -793,6 +793,7 @@ def setup_config():
                 "API": {
                     "RequestTimeout": "30s",
                     "LockBeforeUpdate": True,
+                    "VocabularyPath": os.path.join(MY_DIRNAME, 'data', 'vocabulary.json'),
                 },
                 "Login": {
                     "Test": {
