@@ -246,10 +246,6 @@ func (instanceSet *ec2InstanceSet) Create(
 		}
 	}
 
-	if instanceSet.ec2config.SpotPriceUpdateInterval <= 0 {
-		instanceSet.ec2config.SpotPriceUpdateInterval = arvados.Duration(24 * time.Hour)
-	}
-
 	rsv, err := instanceSet.client.RunInstances(&rii)
 	err = wrapError(err, &instanceSet.throttleDelayCreate)
 	if err != nil {
@@ -296,7 +292,7 @@ func (instanceSet *ec2InstanceSet) Instances(tags cloud.InstanceTags) (instances
 		}
 		dii.NextToken = dio.NextToken
 	}
-	if needAZs {
+	if needAZs && instanceSet.ec2config.SpotPriceUpdateInterval > 0 {
 		az := map[string]string{}
 		err := instanceSet.client.DescribeInstanceStatusPages(&ec2.DescribeInstanceStatusInput{
 			IncludeAllInstances: aws.Bool(true),

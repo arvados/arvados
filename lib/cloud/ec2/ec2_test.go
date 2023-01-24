@@ -191,7 +191,9 @@ func GetInstanceSet(c *check.C) (*ec2InstanceSet, cloud.ImageID, arvados.Cluster
 		return ap.(*ec2InstanceSet), cloud.ImageID(exampleCfg.ImageIDForTestSuite), cluster
 	}
 	ap := ec2InstanceSet{
-		ec2config:     ec2InstanceSetConfig{},
+		ec2config: ec2InstanceSetConfig{
+			SpotPriceUpdateInterval: arvados.Duration(time.Hour),
+		},
 		instanceSetID: "test123",
 		logger:        logrus.StandardLogger(),
 		client:        &ec2stub{c: c, reftime: time.Now().UTC()},
