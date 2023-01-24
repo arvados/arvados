@@ -13,6 +13,7 @@ import {
     CardContent,
     Tooltip,
     Typography,
+    Button,
 } from '@material-ui/core';
 import { ArvadosTheme } from 'common/custom-theme';
 import { CloseIcon, MoreOptionsIcon, ProcessIcon, StartIcon } from 'components/icon/icon';
@@ -23,7 +24,7 @@ import { ProcessStatus } from 'views-components/data-explorer/renderers';
 import { ContainerState } from 'models/container';
 import { ContainerRequestState } from 'models/container-request';
 
-type CssRules = 'card' | 'content' | 'title' | 'header' | 'cancelButton' | 'avatar' | 'iconHeader';
+type CssRules = 'card' | 'content' | 'title' | 'header' | 'cancelButton' | 'avatar' | 'iconHeader' | 'runButton';
 
 const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     card: {
@@ -60,6 +61,14 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
         "&:hover": {
             cursor: 'pointer'
         }
+    },
+    runButton: {
+        backgroundColor: theme.customs.colors.green700,
+        '&:hover': {
+            backgroundColor: theme.customs.colors.green800,
+        },
+        padding: "0px 5px 0 0",
+        marginRight: "5px",
     },
 });
 
@@ -98,13 +107,15 @@ export const ProcessDetailsCard = withStyles(styles)(
                 action={
                     <div>
                         {process.containerRequest.state === ContainerRequestState.UNCOMMITTED &&
-                            <Tooltip title="Start Process" disableFocusListener>
-                                <IconButton
-                                    aria-label="Start Process"
-                                    onClick={event => startProcess(process.containerRequest.uuid)}>
-                                    <StartIcon />
-                                </IconButton>
-                            </Tooltip>}
+                            <Button
+                                variant="contained"
+                                size="small"
+                                color="primary"
+                                className={classes.runButton}
+                                onClick={() => startProcess(process.containerRequest.uuid)}>
+                                <StartIcon />
+                                Run Process
+                            </Button>}
                         {process.container && process.container.state === ContainerState.RUNNING &&
                             <span className={classes.cancelButton} onClick={() => cancelProcess(process.containerRequest.uuid)}>Cancel</span>}
                         <ProcessStatus uuid={process.containerRequest.uuid} />
