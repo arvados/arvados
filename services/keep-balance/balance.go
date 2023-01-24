@@ -46,6 +46,7 @@ type Balancer struct {
 	Dumper  logrus.FieldLogger
 	Metrics *metrics
 
+	ChunkPrefix    string
 	LostBlocksFile string
 
 	*BlockStateMap
@@ -403,7 +404,7 @@ func (bal *Balancer) GetCurrentState(ctx context.Context, c *arvados.Client, pag
 		go func(mounts []*KeepMount) {
 			defer wg.Done()
 			bal.logf("mount %s: retrieve index from %s", mounts[0], mounts[0].KeepService)
-			idx, err := mounts[0].KeepService.IndexMount(ctx, c, mounts[0].UUID, "")
+			idx, err := mounts[0].KeepService.IndexMount(ctx, c, mounts[0].UUID, bal.ChunkPrefix)
 			if err != nil {
 				select {
 				case errs <- fmt.Errorf("%s: retrieve index: %v", mounts[0], err):
@@ -494,6 +495,20 @@ func (bal *Balancer) addCollection(coll arvados.Collection) error {
 	repl := bal.DefaultReplication
 	if coll.ReplicationDesired != nil {
 		repl = *coll.ReplicationDesired
+	}
+	if bal.ChunkPrefix != "" {
+		// Throw out blocks that don't match the requested
+		// prefix.  (We save a bit of GC work here by
+		// preallocating based on each hex digit in
+		// ChunkPrefix reducing the expected size of the
+		// filtered set by ~16x.)
+		filtered := make([]arvados.SizedDigest, 0, len(blkids)>>(4*len(bal.ChunkPrefix)-1))
+		for _, blkid := range blkids {
+			if strings.HasPrefix(string(blkid), bal.ChunkPrefix) {
+				filtered = append(filtered, blkid)
+			}
+		}
+		blkids = filtered
 	}
 	bal.Logger.Debugf("%v: %d blocks x%d", coll.UUID, len(blkids), repl)
 	// Pass pdh to IncreaseDesired only if LostBlocksFile is being

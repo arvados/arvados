@@ -30,6 +30,7 @@ type RunOptions struct {
 	CommitPulls           bool
 	CommitTrash           bool
 	CommitConfirmedFields bool
+	ChunkPrefix           string
 	Logger                logrus.FieldLogger
 	Dumper                logrus.FieldLogger
 
@@ -86,6 +87,7 @@ func (srv *Server) runOnce(ctx context.Context) (*Balancer, error) {
 		Dumper:         srv.Dumper,
 		Metrics:        srv.Metrics,
 		LostBlocksFile: srv.Cluster.Collections.BlobMissingReport,
+		ChunkPrefix:    srv.RunOptions.ChunkPrefix,
 	}
 	var err error
 	srv.RunOptions, err = bal.Run(ctx, srv.ArvClient, srv.Cluster, srv.RunOptions)

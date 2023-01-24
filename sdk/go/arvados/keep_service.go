@@ -142,16 +142,16 @@ func (s *KeepService) Untrash(ctx context.Context, c *Client, blk string) error 
 
 // IndexMount returns an unsorted list of blocks at the given mount point.
 func (s *KeepService) IndexMount(ctx context.Context, c *Client, mountUUID string, prefix string) ([]KeepServiceIndexEntry, error) {
-	return s.index(ctx, c, s.url("mounts/"+mountUUID+"/blocks?prefix="+prefix))
+	return s.index(ctx, c, prefix, s.url("mounts/"+mountUUID+"/blocks?prefix="+prefix))
 }
 
 // Index returns an unsorted list of blocks that can be retrieved from
 // this server.
 func (s *KeepService) Index(ctx context.Context, c *Client, prefix string) ([]KeepServiceIndexEntry, error) {
-	return s.index(ctx, c, s.url("index/"+prefix))
+	return s.index(ctx, c, prefix, s.url("index/"+prefix))
 }
 
-func (s *KeepService) index(ctx context.Context, c *Client, url string) ([]KeepServiceIndexEntry, error) {
+func (s *KeepService) index(ctx context.Context, c *Client, prefix, url string) ([]KeepServiceIndexEntry, error) {
 	req, err := http.NewRequestWithContext(ctx, "GET", url, nil)
 	if err != nil {
 		return nil, fmt.Errorf("NewRequestWithContext(%v): %v", url, err)
@@ -186,6 +186,9 @@ func (s *KeepService) index(ctx context.Context, c *Client, url string) ([]KeepS
 		fields := strings.Split(line, " ")
 		if len(fields) != 2 {
 			return nil, fmt.Errorf("Malformed index line %q: %d fields", line, len(fields))
+		}
+		if !strings.HasPrefix(fields[0], prefix) {
+			return nil, fmt.Errorf("Index response included block %q despite asking for prefix %q", fields[0], prefix)
 		}
 		mtime, err := strconv.ParseInt(fields[1], 10, 64)
 		if err != nil {
