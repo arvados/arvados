@@ -384,7 +384,7 @@ func (wkr *worker) probeRunning() (running []string, reportsBroken, ok bool) {
 	}
 	before := time.Now()
 	var stdin io.Reader
-	if prices := wkr.instance.PriceHistory(); len(prices) > 0 {
+	if prices := wkr.instance.PriceHistory(wkr.instType); len(prices) > 0 {
 		j, _ := json.Marshal(prices)
 		stdin = bytes.NewReader(j)
 	}

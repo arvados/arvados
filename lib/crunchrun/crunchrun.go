@@ -2298,6 +2298,12 @@ func (cr *ContainerRunner) calculateCost(now time.Time) float64 {
 	spanEnd := now
 	for _, ip := range prices {
 		spanStart := ip.StartTime
+		if spanStart.After(now) {
+			// pricing information from the future -- not
+			// expected from AWS, but possible in
+			// principle, and exercised by tests.
+			continue
+		}
 		last := false
 		if spanStart.Before(cr.costStartTime) {
 			spanStart = cr.costStartTime
@@ -2309,5 +2315,6 @@ func (cr *ContainerRunner) calculateCost(now time.Time) float64 {
 		}
 		spanEnd = spanStart
 	}
+
 	return cost
 }

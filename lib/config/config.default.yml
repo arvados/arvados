@@ -1400,6 +1400,14 @@ Clusters:
           # calculating container cost estimates.
           SpotPriceUpdateInterval: 24h
 
+          # (ec2) per-GiB-month cost of EBS volumes. Matches
+          # EBSVolumeType. Used to account for AddedScratch when
+          # calculating container cost estimates. Note that
+          # https://aws.amazon.com/ebs/pricing/ defines GB to mean
+          # GiB, so an advertised price $0.10/GB indicates a real
+          # price of $0.10/GiB and can be entered here as 0.10.
+          EBSPrice: 0.10
+
           # (azure) Credentials.
           SubscriptionID: ""
           ClientID: ""
@@ -1453,6 +1461,13 @@ Clusters:
         RAM: 128MiB
         IncludedScratch: 16GB
         AddedScratch: 0
+        # Hourly price ($), used to select node types for containers,
+        # and to calculate estimated container costs. For spot
+        # instances on EC2, this is also used as the maximum price
+        # when launching spot instances, while the estimated container
+        # cost is computed based on the current spot price according
+        # to AWS. On Azure, and on-demand instances on EC2, the price
+        # given here is used to compute container cost estimates.
         Price: 0.1
         Preemptible: false
         # Include this section if the node type includes GPU (CUDA) support

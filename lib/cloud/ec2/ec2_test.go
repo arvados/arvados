@@ -150,7 +150,7 @@ func (e *ec2stub) TerminateInstances(input *ec2.TerminateInstancesInput) (*ec2.T
 	return nil, nil
 }
 
-func GetInstanceSet(c *check.C) (cloud.InstanceSet, cloud.ImageID, arvados.Cluster) {
+func GetInstanceSet(c *check.C) (*ec2InstanceSet, cloud.ImageID, arvados.Cluster) {
 	cluster := arvados.Cluster{
 		InstanceTypes: arvados.InstanceTypeMap(map[string]arvados.InstanceType{
 			"tiny": {
@@ -188,7 +188,7 @@ func GetInstanceSet(c *check.C) (cloud.InstanceSet, cloud.ImageID, arvados.Clust
 
 		ap, err := newEC2InstanceSet(exampleCfg.DriverParameters, "test123", nil, logrus.StandardLogger())
 		c.Assert(err, check.IsNil)
-		return ap, cloud.ImageID(exampleCfg.ImageIDForTestSuite), cluster
+		return ap.(*ec2InstanceSet), cloud.ImageID(exampleCfg.ImageIDForTestSuite), cluster
 	}
 	ap := ec2InstanceSet{
 		ec2config:     ec2InstanceSetConfig{},
@@ -297,6 +297,7 @@ func (*EC2InstanceSetSuite) TestInstancePriceHistory(c *check.C) {
 		}
 	}()
 
+	ap.ec2config.EBSPrice = 0.1 // $/GiB/month
 	inst1, err := ap.Create(cluster.InstanceTypes["tiny-preemptible"], img, tags, "true", pk)
 	c.Assert(err, check.IsNil)
 	defer inst1.Destroy()
@@ -328,14 +329,19 @@ func (*EC2InstanceSetSuite) TestInstancePriceHistory(c *check.C) {
 	}
 
 	for _, inst := range instances {
-		hist := inst.PriceHistory()
+		hist := inst.PriceHistory(arvados.InstanceType{})
 		c.Logf("%s price history: %v", inst.ID(), hist)
 		c.Check(len(hist) > 0, check.Equals, true)
+
+		histWithScratch := inst.PriceHistory(arvados.InstanceType{AddedScratch: 640 << 30})
+		c.Logf("%s price history with 640 GiB scratch: %v", inst.ID(), histWithScratch)
+
 		for i, ip := range hist {
 			c.Check(ip.Price, check.Not(check.Equals), 0.0)
 			if i > 0 {
 				c.Check(ip.StartTime.Before(hist[i-1].StartTime), check.Equals, true)
 			}
+			c.Check(ip.Price < histWithScratch[i].Price, check.Equals, true)
 		}
 	}
 }

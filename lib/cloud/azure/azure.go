@@ -785,7 +785,7 @@ func (ai *azureInstance) Address() string {
 	}
 }
 
-func (ai *azureInstance) PriceHistory() []cloud.InstancePrice {
+func (ai *azureInstance) PriceHistory(arvados.InstanceType) []cloud.InstancePrice {
 	return nil
 }
 

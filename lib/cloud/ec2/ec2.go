@@ -48,6 +48,7 @@ type ec2InstanceSetConfig struct {
 	SubnetID                string
 	AdminUsername           string
 	EBSVolumeType           string
+	EBSPrice                float64
 	IAMInstanceProfile      string
 	SpotPriceUpdateInterval arvados.Duration
 }
@@ -506,7 +507,7 @@ func (inst *ec2Instance) VerifyHostKey(ssh.PublicKey, *ssh.Client) error {
 // Spot price that is in effect when your Spot Instance is running."
 // (The use of the phrase "is running", as opposed to "was launched",
 // hints that pricing is dynamic.)
-func (inst *ec2Instance) PriceHistory() []cloud.InstancePrice {
+func (inst *ec2Instance) PriceHistory(instType arvados.InstanceType) []cloud.InstancePrice {
 	inst.provider.pricesLock.Lock()
 	defer inst.provider.pricesLock.Unlock()
 	pk := priceKey{
@@ -514,7 +515,16 @@ func (inst *ec2Instance) PriceHistory() []cloud.InstancePrice {
 		spot:             aws.StringValue(inst.instance.InstanceLifecycle) == "spot",
 		availabilityZone: inst.availabilityZone,
 	}
-	return inst.provider.prices[pk]
+	var prices []cloud.InstancePrice
+	for _, price := range inst.provider.prices[pk] {
+		// ceil(added scratch space in GiB)
+		gib := (instType.AddedScratch + 1<<30 - 1) >> 30
+		monthly := inst.provider.ec2config.EBSPrice * float64(gib)
+		hourly := monthly / 30 / 24
+		price.Price += hourly
+		prices = append(prices, price)
+	}
+	return prices
 }
 
 type rateLimitError struct {

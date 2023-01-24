@@ -2119,6 +2119,9 @@ func (s *TestSuite) TestCalculateCost(c *C) {
 	cost = cr.calculateCost(now)
 	c.Check(cost, Equals, 1.0/2+2.0/4+3.0/4)
 
+	cost = cr.calculateCost(now.Add(-time.Hour / 2))
+	c.Check(cost, Equals, 0.5)
+
 	c.Logf("%s", logbuf.String())
 	c.Check(logbuf.String(), Matches, `(?ms).*Instance price changed to 1\.00 at 20.* changed to 2\.00 .* changed to 3\.00 .*`)
 	c.Check(logbuf.String(), Not(Matches), `(?ms).*changed to 2\.00 .* changed to 2\.00 .*`)

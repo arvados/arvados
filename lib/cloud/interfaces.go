@@ -102,8 +102,11 @@ type Instance interface {
 	// Replace tags with the given tags
 	SetTags(InstanceTags) error
 
-	// Get recent price history, if available
-	PriceHistory() []InstancePrice
+	// Get recent price history, if available. The InstanceType is
+	// supplied as an argument so the driver implementation can
+	// account for AddedScratch cost without requesting the volume
+	// attachment information from the provider's API.
+	PriceHistory(arvados.InstanceType) []InstancePrice
 
 	// Shut down the node
 	Destroy() error
