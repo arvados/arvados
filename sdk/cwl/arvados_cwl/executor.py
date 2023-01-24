@@ -705,6 +705,7 @@ The 'jobs' API is no longer supported.
         #with Perf(metrics, "load_tool"):
         #    tool = load_tool(tool.tool, loadingContext)
 
+        workflow_wrapper = None
         if submitting and not self.fast_submit:
             # upload workflow and get back the workflow wrapper
 
@@ -736,8 +737,11 @@ The 'jobs' API is no longer supported.
             #workflow_wrapper, _ = loadingContext.loader.resolve_all(cmap(workflow_wrapper), "_:main", checklinks=True)
 
             #tool = load_tool(workflow_wrapper[0], loadingContext)
-            #print(json.dumps(workflow_wrapper, indent=2))
+            #print("AAA", json.dumps(loadingContext.loader.idx["_:main"], indent=2))
             tool = load_tool(workflow_wrapper, loadingContext)
+
+            loadingContext.loader.idx["_:main"] = workflow_wrapper
+            #print("BBB", json.dumps(loadingContext.loader.idx["_:main"], indent=2))
 
 
         self.apply_reqs(job_order, tool)
@@ -785,8 +789,8 @@ The 'jobs' API is no longer supported.
             # Submit a runner job to run the workflow for us.
             if self.work_api == "containers":
                 if submitting:
-                    tool = RunnerContainer(self, updated_tool,
-                                           tool, loadingContext, runtimeContext.enable_reuse,
+                    loadingContext.metadata = updated_tool.metadata.copy()
+                    tool = RunnerContainer(self, tool, loadingContext, runtimeContext.enable_reuse,
                                            self.output_name,
                                            self.output_tags,
                                            submit_runner_ram=runtimeContext.submit_runner_ram,

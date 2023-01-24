@@ -224,8 +224,6 @@ def update_refs(d, baseuri, urlexpander, merged_map, set_block_style, runtimeCon
 
 def fix_schemadef(req, baseuri, urlexpander, merged_map, pdh):
     req = copy.deepcopy(req)
-    #if "id" in req:
-    #    del req["id"]
 
     for f in req["types"]:
         r = f["name"]
@@ -234,9 +232,23 @@ def fix_schemadef(req, baseuri, urlexpander, merged_map, pdh):
         merged_map.setdefault(path, FileUpdates({}, {}))
         #print("PPP", path, r, frag)
         rename = "keep:%s/%s" %(pdh, rel)
+        #rename = "#%s" % frag
         for mm in merged_map:
             merged_map[mm].resolved[r] = rename
     return req
+
+def drop_ids(d):
+    if isinstance(d, MutableSequence):
+        for i, s in enumerate(d):
+            drop_ids(s)
+    elif isinstance(d, MutableMapping):
+        for fixup in ("id", "name"):
+            if fixup in d and d[fixup].startswith("file:"):
+                del d[fixup]
+
+        for field in d:
+            drop_ids(d[field])
+
 
 def new_upload_workflow(arvRunner, tool, job_order, project_uuid,
                         runtimeContext,
@@ -447,6 +459,9 @@ def new_upload_workflow(arvRunner, tool, job_order, project_uuid,
     #print(yamlloader.dump(wrapper, stream=sys.stdout))
 
     update_refs(wrapper, main["id"], tool.doc_loader.expand_url, merged_map, False, runtimeContext, main["id"]+"#", "#main/")
+
+    # Remove any lingering file references.
+    drop_ids(wrapper)
 
     #print("HHH")
 
