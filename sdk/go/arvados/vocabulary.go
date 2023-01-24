@@ -31,6 +31,7 @@ func (v *Vocabulary) systemTagKeys() map[string]bool {
 	return map[string]bool{
 		// Collection keys - set by arvados-cwl-runner
 		"container_request": true,
+		"container_uuid":    true,
 		"type":              true,
 		// Collection keys - set by arv-keepdocker (on the way out)
 		"docker-image-repo-tag": true,

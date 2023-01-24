@@ -231,6 +231,7 @@ func (s *VocabularySuite) TestNewVocabulary(c *check.C) {
 			&Vocabulary{
 				reservedTagKeys: map[string]bool{
 					"container_request":     true,
+					"container_uuid":        true,
 					"cwl_input":             true,
 					"cwl_output":            true,
 					"docker-image-repo-tag": true,
