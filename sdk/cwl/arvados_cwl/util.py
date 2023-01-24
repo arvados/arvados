@@ -18,7 +18,7 @@ def get_intermediate_collection_info(workflow_step_name, current_container, inte
         container_uuid = None
         props = {"type": "intermediate"}
         if current_container:
-            props["container"] = current_container['uuid']
+            props["container_uuid"] = current_container['uuid']
 
         return {"name" : name, "trash_at" : trash_time, "properties" : props}
 
