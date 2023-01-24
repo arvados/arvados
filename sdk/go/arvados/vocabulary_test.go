@@ -230,16 +230,16 @@ func (s *VocabularySuite) TestNewVocabulary(c *check.C) {
 			true, "",
 			&Vocabulary{
 				reservedTagKeys: map[string]bool{
-					"type":                  true,
-					"template_uuid":         true,
-					"groups":                true,
-					"username":              true,
-					"image_timestamp":       true,
-					"docker-image-repo-tag": true,
-					"filters":               true,
 					"container_request":     true,
 					"cwl_input":             true,
 					"cwl_output":            true,
+					"docker-image-repo-tag": true,
+					"filters":               true,
+					"groups":                true,
+					"image_timestamp":       true,
+					"template_uuid":         true,
+					"type":                  true,
+					"username":              true,
 				},
 				StrictTags: false,
 				Tags: map[string]VocabularyTag{
