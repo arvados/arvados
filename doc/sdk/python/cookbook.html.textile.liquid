@@ -347,6 +347,10 @@ sharing_token = arv_client.api_client_authorizations().create(
         },
     },
 ).execute()
+plain_token = sharing_token['api_token']
+token_parts = plain_token.split('/')
+if token_parts[0] == 'v2':
+    plain_token = token_parts[2]
 
 sharing_url_parts = (
     # The scheme your Keep web server uses. Change this to 'http' if necessary.
@@ -354,7 +358,7 @@ sharing_url_parts = (
     # The hostname, and optionally port, your Keep web server uses
     'collections.zzzzz.example.com',
     # You shouldn't need to change any other items
-    f'/c={collection_uuid}/t={sharing_token["api_token"]}/_/',
+    f'/c={collection_uuid}/t={plain_token}/_/',
     None,
     None,
 )
