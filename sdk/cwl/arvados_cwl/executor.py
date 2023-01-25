@@ -34,7 +34,7 @@ from arvados.errors import ApiError
 
 import arvados_cwl.util
 from .arvcontainer import RunnerContainer, cleanup_name_for_collection
-from .runner import Runner, upload_docker, upload_job_order, upload_workflow_deps, make_builder
+from .runner import Runner, upload_docker, upload_job_order, upload_workflow_deps, make_builder, update_from_merged_map
 from .arvtool import ArvadosCommandTool, validate_cluster_target, ArvadosExpressionTool
 from .arvworkflow import ArvadosWorkflow, upload_workflow, new_upload_workflow, make_workflow_record
 from .fsaccess import CollectionFsAccess, CollectionFetcher, collectionResolver, CollectionCache, pdh_size
@@ -744,6 +744,8 @@ The 'jobs' API is no longer supported.
             loadingContext.loader.idx["_:main"] = workflow_wrapper
             #print("BBB", json.dumps(loadingContext.loader.idx["_:main"], indent=2))
 
+        if not submitting:
+            update_from_merged_map(tool, merged_map)
 
         self.apply_reqs(job_order, tool)
 

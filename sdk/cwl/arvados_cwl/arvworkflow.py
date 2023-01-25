@@ -203,14 +203,15 @@ def update_refs(d, baseuri, urlexpander, merged_map, jobmapper, set_block_style,
                 continue
 
             if field in ("$include", "$import") and isinstance(d[field], str):
-                d[field] = rel_ref(d[field], baseuri, urlexpander, {}, None)
+                d[field] = rel_ref(d[field], baseuri, urlexpander, {}, jobmapper)
                 continue
 
-            if (field == "type" and
-                isinstance(d["type"], str) and
-                not is_basetype(d["type"])):
-                d["type"] = rel_ref(d["type"], baseuri, urlexpander, merged_map, jobmapper)
-                continue
+            for t in ("type", "items"):
+                if (field == t and
+                    isinstance(d[t], str) and
+                    not is_basetype(d[t])):
+                    d[t] = rel_ref(d[t], baseuri, urlexpander, merged_map, jobmapper)
+                    continue
 
             if field == "inputs" and isinstance(d["inputs"], MutableMapping):
                 for inp in d["inputs"]:
@@ -228,13 +229,13 @@ def update_refs(d, baseuri, urlexpander, merged_map, jobmapper, set_block_style,
             update_refs(d[field], baseuri, urlexpander, merged_map, jobmapper, set_block_style, runtimeContext, prefix, replacePrefix)
 
 
-def fix_schemadef(req, baseuri, urlexpander, merged_map, pdh):
+def fix_schemadef(req, baseuri, urlexpander, merged_map, jobmapper, pdh):
     req = copy.deepcopy(req)
 
     for f in req["types"]:
         r = f["name"]
         path, frag = urllib.parse.urldefrag(r)
-        rel = rel_ref(r, baseuri, urlexpander, merged_map)
+        rel = rel_ref(r, baseuri, urlexpander, merged_map, jobmapper)
         merged_map.setdefault(path, FileUpdates({}, {}))
         #print("PPP", path, r, frag)
         rename = "keep:%s/%s" %(pdh, rel)
@@ -455,7 +456,7 @@ def new_upload_workflow(arvRunner, tool, job_order, project_uuid,
 
     for i, r in enumerate(wrapper["requirements"]):
         if r["class"] == "SchemaDefRequirement":
-            wrapper["requirements"][i] = fix_schemadef(r, main["id"], tool.doc_loader.expand_url, merged_map, col.portable_data_hash())
+            wrapper["requirements"][i] = fix_schemadef(r, main["id"], tool.doc_loader.expand_url, merged_map, jobmapper, col.portable_data_hash())
 
     # print()
     # print("merrrrged maaap", merged_map)
