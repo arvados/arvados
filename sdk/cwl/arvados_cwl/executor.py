@@ -657,7 +657,7 @@ The 'jobs' API is no longer supported.
 
         # Upload local file references in the job order.
         with Perf(metrics, "upload_job_order"):
-            job_order = upload_job_order(self, "%s input" % runtimeContext.name,
+            job_order, jobmapper = upload_job_order(self, "%s input" % runtimeContext.name,
                                          updated_tool, job_order, runtimeContext)
 
         # the last clause means: if it is a command line tool, and we
@@ -718,7 +718,8 @@ The 'jobs' API is no longer supported.
                                                    merged_map=merged_map,
                                                    submit_runner_image=runtimeContext.submit_runner_image,
                                                    git_info=git_info,
-                                                   set_defaults=(runtimeContext.update_workflow or runtimeContext.create_workflow))
+                                                   set_defaults=(runtimeContext.update_workflow or runtimeContext.create_workflow),
+                                                   jobmapper=jobmapper)
 
             if runtimeContext.update_workflow or runtimeContext.create_workflow:
                 # Now create a workflow record and exit.

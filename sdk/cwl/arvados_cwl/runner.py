@@ -334,6 +334,8 @@ def upload_dependencies(arvrunner, name, document_loader,
     if optional_deps:
         sc_result.extend(optional_deps)
 
+    #print("BOING", uri, sc_result)
+
     sc = []
     uuids = {}
 
@@ -708,7 +710,7 @@ def upload_job_order(arvrunner, name, tool, job_order, runtimeContext):
 
     #print(json.dumps(job_order, indent=2))
 
-    return job_order
+    return job_order, jobmapper
 
 FileUpdates = namedtuple("FileUpdates", ["resolved", "secondaryFiles"])
 
@@ -751,6 +753,9 @@ def upload_workflow_deps(arvrunner, tool, runtimeContext):
         toolmap = {}
         for k,v in pm.items():
             toolmap[k] = v.resolved
+
+        #print("visited", deptool["id"], toolmap, discovered_secondaryfiles)
+
         merged_map[deptool["id"]] = FileUpdates(toolmap, discovered_secondaryfiles)
 
     return merged_map

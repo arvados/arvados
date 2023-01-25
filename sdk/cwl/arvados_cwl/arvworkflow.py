@@ -12,6 +12,7 @@ import logging
 import urllib
 from io import StringIO
 import sys
+import re
 
 from typing import (MutableSequence, MutableMapping)
 
@@ -128,7 +129,7 @@ def make_wrapper_workflow(arvRunner, main, packed, project_uuid, name, git_info,
     return json.dumps(doc, sort_keys=True, indent=4, separators=(',',': '))
 
 
-def rel_ref(s, baseuri, urlexpander, merged_map):
+def rel_ref(s, baseuri, urlexpander, merged_map, jobmapper):
     if s.startswith("keep:"):
         return s
 
@@ -141,16 +142,17 @@ def rel_ref(s, baseuri, urlexpander, merged_map):
 
     fileuri = urllib.parse.urldefrag(baseuri)[0]
 
-    #print("BBB", s, baseuri)
+    #print("BBB", s, baseuri, uri)
 
     for u in (baseuri, fileuri):
         if u in merged_map:
             replacements = merged_map[u].resolved
-            #print("RRR", uri, replacements)
-            #print()
-            #print(uri, replacements)
+            #print("RRR", u, uri, replacements)
             if uri in replacements:
                 return replacements[uri]
+
+    if uri in jobmapper:
+        return jobmapper.mapper(uri).target
 
     p1 = os.path.dirname(uri_file_path(fileuri))
     p2 = os.path.dirname(uri_file_path(uri))
@@ -166,8 +168,15 @@ def rel_ref(s, baseuri, urlexpander, merged_map):
 
     return os.path.join(r, p3)
 
+def is_basetype(tp):
+    basetypes = ("null", "boolean", "int", "long", "float", "double", "string", "File", "Directory", "record", "array", "enum")
+    for b in basetypes:
+        if re.match(b+"(\[\])?\??", tp):
+            return True
+    return False
 
-def update_refs(d, baseuri, urlexpander, merged_map, set_block_style, runtimeContext, prefix, replacePrefix):
+
+def update_refs(d, baseuri, urlexpander, merged_map, jobmapper, set_block_style, runtimeContext, prefix, replacePrefix):
     if set_block_style and (isinstance(d, CommentedSeq) or isinstance(d, CommentedMap)):
         d.fa.set_block_style()
 
@@ -177,11 +186,11 @@ def update_refs(d, baseuri, urlexpander, merged_map, set_block_style, runtimeCon
                 if s.startswith(prefix):
                     d[i] = replacePrefix+s[len(prefix):]
             else:
-                update_refs(s, baseuri, urlexpander, merged_map, set_block_style, runtimeContext, prefix, replacePrefix)
+                update_refs(s, baseuri, urlexpander, merged_map, jobmapper, set_block_style, runtimeContext, prefix, replacePrefix)
     elif isinstance(d, MutableMapping):
         if "id" in d:
             baseuri = urlexpander(d["id"], baseuri, scoped_id=True)
-        elif "name" in d:
+        elif "name" in d and isinstance(d["name"], str):
             baseuri = urlexpander(d["name"], baseuri, scoped_id=True)
 
         if d.get("class") == "DockerRequirement":
@@ -190,36 +199,33 @@ def update_refs(d, baseuri, urlexpander, merged_map, set_block_style, runtimeCon
 
         for field in d:
             if field in ("location", "run", "name") and isinstance(d[field], str):
-                d[field] = rel_ref(d[field], baseuri, urlexpander, merged_map)
+                d[field] = rel_ref(d[field], baseuri, urlexpander, merged_map, jobmapper)
                 continue
 
             if field in ("$include", "$import") and isinstance(d[field], str):
-                d[field] = rel_ref(d[field], baseuri, urlexpander, {})
+                d[field] = rel_ref(d[field], baseuri, urlexpander, {}, None)
                 continue
-
-            basetypes = ("null", "boolean", "int", "long", "float", "double", "string", "File", "Directory", "record", "array", "enum")
 
             if (field == "type" and
                 isinstance(d["type"], str) and
-                d["type"] not in basetypes):
-                #print("DDD ding", d["type"])
-                d["type"] = rel_ref(d["type"], baseuri, urlexpander, merged_map)
-                #print("DDD dong", d["type"])
+                not is_basetype(d["type"])):
+                d["type"] = rel_ref(d["type"], baseuri, urlexpander, merged_map, jobmapper)
                 continue
 
             if field == "inputs" and isinstance(d["inputs"], MutableMapping):
                 for inp in d["inputs"]:
-                    if isinstance(d["inputs"][inp], str) and d["inputs"][inp] not in basetypes:
-                        #print("III", inp)
-                        d["inputs"][inp] = rel_ref(d["inputs"][inp], baseuri, urlexpander, merged_map)
+                    if isinstance(d["inputs"][inp], str) and not is_basetype(d["inputs"][inp]):
+                        d["inputs"][inp] = rel_ref(d["inputs"][inp], baseuri, urlexpander, merged_map, jobmapper)
+                    if isinstance(d["inputs"][inp], MutableMapping):
+                        update_refs(d["inputs"][inp], baseuri, urlexpander, merged_map, jobmapper, set_block_style, runtimeContext, prefix, replacePrefix)
                 continue
 
             if field == "$schemas":
                 for n, s in enumerate(d["$schemas"]):
-                    d["$schemas"][n] = rel_ref(d["$schemas"][n], baseuri, urlexpander, merged_map)
+                    d["$schemas"][n] = rel_ref(d["$schemas"][n], baseuri, urlexpander, merged_map, jobmapper)
                 continue
 
-            update_refs(d[field], baseuri, urlexpander, merged_map, set_block_style, runtimeContext, prefix, replacePrefix)
+            update_refs(d[field], baseuri, urlexpander, merged_map, jobmapper, set_block_style, runtimeContext, prefix, replacePrefix)
 
 
 def fix_schemadef(req, baseuri, urlexpander, merged_map, pdh):
@@ -242,9 +248,8 @@ def drop_ids(d):
         for i, s in enumerate(d):
             drop_ids(s)
     elif isinstance(d, MutableMapping):
-        for fixup in ("id", "name"):
-            if fixup in d and d[fixup].startswith("file:"):
-                del d[fixup]
+        if "id" in d and d["id"].startswith("file:"):
+            del d["id"]
 
         for field in d:
             drop_ids(d[field])
@@ -256,7 +261,8 @@ def new_upload_workflow(arvRunner, tool, job_order, project_uuid,
                         submit_runner_ram=0, name=None, merged_map=None,
                         submit_runner_image=None,
                         git_info=None,
-                        set_defaults=False):
+                        set_defaults=False,
+                        jobmapper=None):
 
     firstfile = None
     workflow_files = set()
@@ -314,7 +320,7 @@ def new_upload_workflow(arvRunner, tool, job_order, project_uuid,
 
         # 2. find $import, $include, $schema, run, location
         # 3. update field value
-        update_refs(result, w, tool.doc_loader.expand_url, merged_map, set_block_style, runtimeContext, "", "")
+        update_refs(result, w, tool.doc_loader.expand_url, merged_map, jobmapper, set_block_style, runtimeContext, "", "")
 
         with col.open(w[n+1:], "wt") as f:
             #print(yamlloader.dump(result, stream=sys.stdout))
@@ -454,11 +460,11 @@ def new_upload_workflow(arvRunner, tool, job_order, project_uuid,
     # print()
     # print("merrrrged maaap", merged_map)
     # print()
-    print("update_refs", main["id"], runfile)
+    #print("update_refs", main["id"], runfile)
 
     #print(yamlloader.dump(wrapper, stream=sys.stdout))
 
-    update_refs(wrapper, main["id"], tool.doc_loader.expand_url, merged_map, False, runtimeContext, main["id"]+"#", "#main/")
+    update_refs(wrapper, main["id"], tool.doc_loader.expand_url, merged_map, jobmapper, False, runtimeContext, main["id"]+"#", "#main/")
 
     # Remove any lingering file references.
     drop_ids(wrapper)
