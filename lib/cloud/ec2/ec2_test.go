@@ -85,13 +85,13 @@ func (e *ec2stub) DescribeInstances(input *ec2.DescribeInstancesInput) (*ec2.Des
 				InstanceLifecycle: aws.String("spot"),
 				InstanceType:      aws.String("t2.micro"),
 				PrivateIpAddress:  aws.String("10.1.2.3"),
-				State:             &ec2.InstanceState{Name: aws.String("running")},
+				State:             &ec2.InstanceState{Name: aws.String("running"), Code: aws.Int64(16)},
 			}, {
 				InstanceId:        aws.String("i-124"),
 				InstanceLifecycle: aws.String("spot"),
 				InstanceType:      aws.String("t2.micro"),
 				PrivateIpAddress:  aws.String("10.1.2.4"),
-				State:             &ec2.InstanceState{Name: aws.String("running")},
+				State:             &ec2.InstanceState{Name: aws.String("running"), Code: aws.Int64(16)},
 			}},
 		}},
 	}, nil
@@ -191,9 +191,6 @@ func GetInstanceSet(c *check.C) (*ec2InstanceSet, cloud.ImageID, arvados.Cluster
 		return ap.(*ec2InstanceSet), cloud.ImageID(exampleCfg.ImageIDForTestSuite), cluster
 	}
 	ap := ec2InstanceSet{
-		ec2config: ec2InstanceSetConfig{
-			SpotPriceUpdateInterval: arvados.Duration(time.Hour),
-		},
 		instanceSetID: "test123",
 		logger:        logrus.StandardLogger(),
 		client:        &ec2stub{c: c, reftime: time.Now().UTC()},
@@ -299,6 +296,7 @@ func (*EC2InstanceSetSuite) TestInstancePriceHistory(c *check.C) {
 		}
 	}()
 
+	ap.ec2config.SpotPriceUpdateInterval = arvados.Duration(time.Hour)
 	ap.ec2config.EBSPrice = 0.1 // $/GiB/month
 	inst1, err := ap.Create(cluster.InstanceTypes["tiny-preemptible"], img, tags, "true", pk)
 	c.Assert(err, check.IsNil)
@@ -318,7 +316,8 @@ func (*EC2InstanceSetSuite) TestInstancePriceHistory(c *check.C) {
 		instances, err = ap.Instances(tags)
 		running := 0
 		for _, inst := range instances {
-			if *inst.(*ec2Instance).instance.InstanceLifecycle == "spot" {
+			ec2i := inst.(*ec2Instance).instance
+			if *ec2i.InstanceLifecycle == "spot" && *ec2i.State.Code&16 != 0 {
 				running++
 			}
 		}
@@ -326,7 +325,7 @@ func (*EC2InstanceSetSuite) TestInstancePriceHistory(c *check.C) {
 			c.Logf("instances are running, and identifiable as spot instances")
 			break
 		}
-		c.Logf("waiting for instances to be identifiable as spot instances...")
+		c.Logf("waiting for instances to reach running state so their availability zone becomes visible...")
 		time.Sleep(10 * time.Second)
 	}
 
