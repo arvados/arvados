@@ -17,6 +17,9 @@ SPDX-License-Identifier: CC-BY-SA-3.0
 # "Working with projects":#working-with-projects
 ## "Create a project":#create-a-project
 ## "List the contents of a project":#list-project-contents
+# "Working with properties":#working-with-properties
+## "Translate between vocabulary identifiers and labels":#translating-between-vocabulary-identifiers-and-labels
+## "Query the vocabulary definition":#querying-the-vocabulary-definition
 # "Working with collections":#working-with-collections
 ## "Load and update an existing collection":#load-collection
 ## "Create and save a new collection":#create-collection
@@ -35,9 +38,6 @@ SPDX-License-Identifier: CC-BY-SA-3.0
 # "Working with the container request queue":#working-with-container-request-queue
 ## "List completed container requests":#list-completed-container-requests
 ## "Cancel a container request":#cancel-a-container-request
-# "Working with vocabularies":#working-with-vocabularies
-## "Query the vocabulary definition":#querying-the-vocabulary-definition
-## "Translate between vocabulary identifiers and labels":#translating-between-vocabulary-identifiers-and-labels
 
 h2(#introduction). Introduction
 
@@ -136,6 +136,72 @@ for item in arvados.util.keyset_list_all(
     include_trash=False,
 ):
     ...  # Work on item as desired
+{% endcodeblock %}
+
+h2(#working-with-properties). Working with properties
+
+Container requests, collections, groups, and links can have metadata properties set through their @properties@ field. These properties may be standardized or limited to a defined vocabulary on your cluster. This section provides basic recipes for working with all kinds of properties. For details, refer to the "Metadata properties API reference":{{ site.baseurl }}/api/properties.html.
+
+h3(#translating-between-vocabulary-identifiers-and-labels). Translate between vocabulary identifiers and labels
+
+Client software might need to present properties to the user in a human-readable form or take input from the user without requiring them to remember identifiers. The "@Vocabulary.convert_to_labels@":{{ site.baseurl }}/sdk/python/arvados/vocabulary.html#arvados.vocabulary.Vocabulary.convert_to_labels and "@Vocabulary.convert_to_identifiers@":{{ site.baseurl }}/sdk/python/arvados/vocabulary.html#arvados.vocabulary.Vocabulary.convert_to_identifiers methods help with these tasks, respectively.
+
+{% codeblock as python %}
+import arvados.vocabulary
+vocabulary = arvados.vocabulary.load_vocabulary(arv_client)
+
+# The argument should be a mapping of vocabulary keys and values using any
+# defined aliases, like this:
+#   {'Creature': 'Human', 'Priority': 'Normal'}
+# The return value will be an analogous mapping where all the aliases have
+# been translated to identifiers, like this:
+#   {'IDTAGANIMALS': 'IDVALANIMALS2', 'IDTAGIMPORTANCES': 'IDTAGIMPORTANCES1'}
+properties_by_identifier = vocabulary.convert_to_identifiers({...})
+
+# You can use this to set metadata properties on objects that support them.
+project = arv_client.groups().update(
+    uuid='zzzzz-j7d0g-12345abcde67890',
+    body={
+        'group': {
+            'properties': properties_by_identifier,
+        },
+    },
+).execute()
+
+# You can report properties to the user by their preferred name.
+print(f"{project['name']} ({project['group_class']} {project['uuid']}) updated with properties:")
+for key, value in vocabulary.convert_to_labels(project['properties']).items():
+    print(f"↳ {key}: {value}")
+{% endcodeblock %}
+
+h3(#querying-the-vocabulary-definition). Query the vocabulary definition
+
+The @arvados.vocabulary@ module provides facilities to interact with the "active metadata vocabulary":{{ site.baseurl }}/admin/metadata-vocabulary.html in the system. The "@Vocabulary@ class":{{ site.baseurl }}/sdk/python/arvados/vocabulary.html#arvados.vocabulary.Vocabulary provides a mapping-like view of a cluster's configured vocabulary.
+
+{% codeblock as python %}
+import arvados.vocabulary
+vocabulary = arvados.vocabulary.load_vocabulary(arv_client)
+
+# You can use the vocabulary object to access specific keys and values by
+# case-insensitive mapping, like this:
+#   vocabulary_value = vocabulary[key_alias][value_alias]
+# You can also access the `key_aliases` and `value_aliases` mapping
+# attributes directly to view the entire vocabulary. The example below
+# writes a plaintext table of the vocabulary.
+for vocabulary_key in set(vocabulary.key_aliases.values()):
+    print(
+        vocabulary_key.identifier,
+        vocabulary_key.preferred_label,
+        ', '.join(vocabulary_key.aliases[1:]),
+        sep='\t',
+    )
+    for vocabulary_value in set(vocabulary_key.value_aliases.values()):
+        print(
+            f'↳ {vocabulary_value.identifier}',
+            vocabulary_value.preferred_label,
+            ', '.join(vocabulary_value.aliases[1:]),
+            sep='\t',
+        )
 {% endcodeblock %}
 
 h2(#working-with-collections). Working with collections
@@ -619,68 +685,4 @@ for container_request in arvados.util.keyset_list_all(
             },
         },
     ).execute()
-{% endcodeblock %}
-
-h2(#working-with-vocabularies). Working with vocabularies
-
-h3(#querying-the-vocabulary-definition). Query the vocabulary definition
-
-The @arvados.vocabulary@ module provides facilities to interact with the "active metadata vocabulary":{{ site.baseurl }}/admin/metadata-vocabulary.html in the system. The "@Vocabulary@ class":{{ site.baseurl }}/sdk/python/arvados/vocabulary.html#arvados.vocabulary.Vocabulary provides a mapping-like view of a cluster's configured vocabulary.
-
-{% codeblock as python %}
-import arvados.vocabulary
-vocabulary = arvados.vocabulary.load_vocabulary(arv_client)
-
-# You can use the vocabulary object to access specific keys and values by
-# case-insensitive mapping, like this:
-#   vocabulary_value = vocabulary[key_alias][value_alias]
-# You can also access the `key_aliases` and `value_aliases` mapping
-# attributes directly to view the entire vocabulary. The example below
-# writes a plaintext table of the vocabulary.
-for vocabulary_key in set(vocabulary.key_aliases.values()):
-    print(
-        vocabulary_key.identifier,
-        vocabulary_key.preferred_label,
-        ', '.join(vocabulary_key.aliases[1:]),
-        sep='\t',
-    )
-    for vocabulary_value in set(vocabulary_key.value_aliases.values()):
-        print(
-            f'↳ {vocabulary_value.identifier}',
-            vocabulary_value.preferred_label,
-            ', '.join(vocabulary_value.aliases[1:]),
-            sep='\t',
-        )
-{% endcodeblock %}
-
-h3(#translating-between-vocabulary-identifiers-and-labels). Translate between vocabulary identifiers and labels
-
-Client software might need to present properties to the user in a human-readable form or take input from the user without requiring them to remember identifiers. The "@Vocabulary.convert_to_labels@":{{ site.baseurl }}/sdk/python/arvados/vocabulary.html#arvados.vocabulary.Vocabulary.convert_to_labels and "@Vocabulary.convert_to_identifiers@":{{ site.baseurl }}/sdk/python/arvados/vocabulary.html#arvados.vocabulary.Vocabulary.convert_to_identifiers methods help with these tasks, respectively.
-
-{% codeblock as python %}
-import arvados.vocabulary
-vocabulary = arvados.vocabulary.load_vocabulary(arv_client)
-
-# The argument should be a mapping of vocabulary keys and values using any
-# defined aliases, like this:
-#   {'Creature': 'Human', 'Priority': 'Normal'}
-# The return value will be an analogous mapping where all the aliases have
-# been translated to identifiers, like this:
-#   {'IDTAGANIMALS': 'IDVALANIMALS2', 'IDTAGIMPORTANCES': 'IDTAGIMPORTANCES1'}
-properties_by_identifier = vocabulary.convert_to_identifiers({...})
-
-# You can use this to set metadata properties on objects that support them.
-project = arv_client.groups().update(
-    uuid='zzzzz-j7d0g-12345abcde67890',
-    body={
-        'group': {
-            'properties': properties_by_identifier,
-        },
-    },
-).execute()
-
-# You can report properties to the user by their preferred name.
-print(f"{project['name']} ({project['group_class']} {project['uuid']}) updated with properties:")
-for key, value in vocabulary.convert_to_labels(project['properties']).items():
-    print(f"↳ {key}: {value}")
 {% endcodeblock %}
