@@ -17,6 +17,10 @@ SPDX-License-Identifier: CC-BY-SA-3.0
 # "Working with projects":#working-with-projects
 ## "Create a project":#create-a-project
 ## "List the contents of a project":#list-project-contents
+# "Working with permissions":#working-with-permissions
+## "Grant permission to an object":#grant-permission
+## "Modify permission on an object":#modify-permission
+## "Revoke permission from an object":#revoke-permission
 # "Working with properties":#working-with-properties
 ## "Update the properties of an object":#update-properties
 ## "Translate between vocabulary identifiers and labels":#translating-between-vocabulary-identifiers-and-labels
@@ -137,6 +141,93 @@ for item in arvados.util.keyset_list_all(
     include_trash=False,
 ):
     ...  # Work on item as desired
+{% endcodeblock %}
+
+h2(#working-with-permissions). Working with permissions
+
+In brief, a permission is represented in Arvados with the following values:
+
+* @link_class@ is @"permission"@.
+* @name@ is one of @"none"@, @"can_read"@, @"can_write"@, @"can_manage"@, or @"can_login"@.
+* @tail_uuid@ identifies the user or role group that receives the permission.
+* @head_uuid@ identifies the Arvados object this permission grants access to.
+
+For details, refer to the "Permissions model documentation":{{ site.baseurl }}/api/permission-model.html. Managing permissions is just a matter of ensuring the desired links exist with the standard @create@, @update@, and @delete@ methods.
+
+h3(#grant-permission). Grant permission to an object
+
+Create a link with values as documented above.
+
+{% codeblock as python %}
+permission = arv_client.links().create(
+    body={
+        'link': {
+            'link_class': 'permission',
+            # Adjust name for the level of permission you want to grant
+            'name': 'can_read',
+            # tail_uuid must identify a user or role group
+            'tail_uuid': 'zzzzz-tpzed-12345abcde67890',
+            # head_uuid can identify any Arvados object
+            'head_uuid': 'zzzzz-4zz18-12345abcde67890',
+        },
+    },
+).execute()
+{% endcodeblock %}
+
+h3(#modify-permission). Modify permission on an object
+
+To modify an existing permission—for example, to change its access level—find the existing link object for the permission, then update it with the new values you want. This example shows making all permissions on a specific collection read-only. Adjust the filters appropriately to find the permission(s) you want to modify.
+
+{% codeblock as python %}
+import arvados.util
+for permission in arvados.util.keyset_list_all(
+    # Do *not* call the method here, just pass it.
+    arv_client.links().list,
+    filters=[
+        # You should use this filter for all permission searches,
+        # to exclude other kinds of links.
+        ['link_class', '=', 'permission'],
+        # In this example, we do not want to *increase* the access level of
+        # no-permission links, and updating read-permission links would be a
+        # noop. Exclude both here.
+        ['name', 'not in', ['none', 'can_read']],
+        # Add other filters as desired.
+        ['head_uuid', '=', 'zzzzz-4zz18-12345abcde67890'],
+        ...,
+    ],
+):
+    arv_client.links().update(
+        uuid=permission['uuid'],
+        body={
+            'link': {
+                'name': 'can_read',
+            },
+       },
+    ).execute()
+{% endcodeblock %}
+
+h3(#revoke-permission). Revoke permission from an object
+
+To revoke an existing permission, find the existing link object for the permission, then delete it. This example shows revoking one user's permission to log into any virtual machines. Adjust the filters appropriately to find the permission(s) you want to revoke.
+
+{% codeblock as python %}
+import arvados.util
+for permission in arvados.util.keyset_list_all(
+    # Do *not* call the method here, just pass it.
+    arv_client.links().list,
+    filters=[
+        # You should use this filter for all permission searches,
+        # to exclude other kinds of links.
+        ['link_class', '=', 'permission'],
+        # Add other filters as desired.
+        ['name', '=', 'can_login'],
+        ['head_uuid', '=', 'zzzzz-tpzed-12345abcde67890'],
+        ...,
+    ],
+):
+    arv_client.links().delete(
+        uuid=permission['uuid'],
+    ).execute()
 {% endcodeblock %}
 
 h2(#working-with-properties). Working with properties
