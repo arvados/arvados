@@ -18,6 +18,7 @@ SPDX-License-Identifier: CC-BY-SA-3.0
 ## "Create a project":#create-a-project
 ## "List the contents of a project":#list-project-contents
 # "Working with properties":#working-with-properties
+## "Update the properties of an object":#update-properties
 ## "Translate between vocabulary identifiers and labels":#translating-between-vocabulary-identifiers-and-labels
 ## "Query the vocabulary definition":#querying-the-vocabulary-definition
 # "Working with collections":#working-with-collections
@@ -141,6 +142,26 @@ for item in arvados.util.keyset_list_all(
 h2(#working-with-properties). Working with properties
 
 Container requests, collections, groups, and links can have metadata properties set through their @properties@ field. These properties may be standardized or limited to a defined vocabulary on your cluster. This section provides basic recipes for working with all kinds of properties. For details, refer to the "Metadata properties API reference":{{ site.baseurl }}/api/properties.html.
+
+h3(#update-properties). Update the properties of an object
+
+To set an object's properties to a new value, just call the resource's @update@ method with a new @properties@ field in the body. If you want to make changes to the current set of properties, @get@ the object, build a new dictionary based on its @properties@ field, then call the resource's @update@ method with your new dictionary as the @properties@. Below is an example for a container request.
+
+{% codeblock as python %}
+container_request = arv_client.container_requests().get(
+    uuid='zzzzz-xvhdp-12345abcde67890',
+).execute()
+new_properties = dict(container_request['properties'])
+...  # Make your desired changes to new_proprties
+container_request = arv_client.container_requests().update(
+    uuid=container_request['uuid'],
+    body={
+        'container_request': {
+            'properties': new_properties,
+        },
+    },
+).execute()
+{% endcodeblock %}
 
 h3(#translating-between-vocabulary-identifiers-and-labels). Translate between vocabulary identifiers and labels
 
