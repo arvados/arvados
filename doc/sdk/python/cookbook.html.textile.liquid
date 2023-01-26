@@ -176,7 +176,7 @@ permission = arv_client.links().create(
 
 h3(#modify-permission). Modify permission on an object
 
-To modify an existing permission—for example, to change its access level—find the existing link object for the permission, then update it with the new values you want. This example shows making all permissions on a specific collection read-only. Adjust the filters appropriately to find the permission(s) you want to modify.
+To modify an existing permission—for example, to change its access level—find the existing link object for the permission, then update it with the new values you want. This example shows changing all read-write permissions on a specific collection to read-only. Adjust the filters appropriately to find the permission(s) you want to modify.
 
 {% codeblock as python %}
 import arvados.util
@@ -187,11 +187,8 @@ for permission in arvados.util.keyset_list_all(
         # You should use this filter for all permission searches,
         # to exclude other kinds of links.
         ['link_class', '=', 'permission'],
-        # In this example, we do not want to *increase* the access level of
-        # no-permission links, and updating read-permission links would be a
-        # noop. Exclude both here.
-        ['name', 'not in', ['none', 'can_read']],
         # Add other filters as desired.
+        ['name', '=', 'can_write'],
         ['head_uuid', '=', 'zzzzz-4zz18-12345abcde67890'],
         ...,
     ],
