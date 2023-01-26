@@ -188,7 +188,12 @@ def update_refs(d, baseuri, urlexpander, merged_map, jobmapper, set_block_style,
             else:
                 update_refs(s, baseuri, urlexpander, merged_map, jobmapper, set_block_style, runtimeContext, prefix, replacePrefix)
     elif isinstance(d, MutableMapping):
-        if "id" in d:
+        for field in ("id", "name"):
+            if isinstance(d.get(field), str) and d[field].startswith("_:"):
+                # blank node reference, was added in automatically, can get rid of it.
+                del d[field]
+
+        if "id" in d and not d:
             baseuri = urlexpander(d["id"], baseuri, scoped_id=True)
         elif "name" in d and isinstance(d["name"], str):
             baseuri = urlexpander(d["name"], baseuri, scoped_id=True)
@@ -352,6 +357,8 @@ def new_upload_workflow(arvRunner, tool, job_order, project_uuid,
             properties["arv:"+p] = git_info[g]
 
     col.save_new(name=toolname, owner_uuid=arvRunner.project_uuid, ensure_unique_name=True, properties=properties)
+
+    logger.info("Workflow uploaded to %s", col.manifest_locator())
 
     adjustDirObjs(job_order, trim_listing)
     adjustFileObjs(job_order, trim_anonymous_location)
