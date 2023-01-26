@@ -15,8 +15,10 @@ import (
 	"log"
 	"math"
 	"os"
+	"regexp"
 	"runtime"
 	"sort"
+	"strconv"
 	"strings"
 	"sync"
 	"sync/atomic"
@@ -25,7 +27,6 @@ import (
 
 	"git.arvados.org/arvados.git/lib/controller/dblock"
 	"git.arvados.org/arvados.git/sdk/go/arvados"
-	"git.arvados.org/arvados.git/sdk/go/ctxlog"
 	"git.arvados.org/arvados.git/sdk/go/keepclient"
 	"github.com/jmoiron/sqlx"
 	"github.com/sirupsen/logrus"
@@ -73,7 +74,7 @@ type Balancer struct {
 func (bal *Balancer) Run(ctx context.Context, client *arvados.Client, cluster *arvados.Cluster, runOptions RunOptions) (nextRunOptions RunOptions, err error) {
 	nextRunOptions = runOptions
 
-	ctxlog.FromContext(ctx).Info("acquiring active lock")
+	bal.logf("acquiring active lock")
 	if !dblock.KeepBalanceActive.Lock(ctx, func(context.Context) (*sqlx.DB, error) { return bal.DB, nil }) {
 		// context canceled
 		return
@@ -84,6 +85,8 @@ func (bal *Balancer) Run(ctx context.Context, client *arvados.Client, cluster *a
 
 	ctx, cancel := context.WithDeadline(ctx, time.Now().Add(cluster.Collections.BalanceTimeout.Duration()))
 	defer cancel()
+
+	go bal.reportMemorySize(ctx)
 
 	var lbFile *os.File
 	if bal.LostBlocksFile != "" {
@@ -153,6 +156,7 @@ func (bal *Balancer) Run(ctx context.Context, client *arvados.Client, cluster *a
 		return
 	}
 	bal.ComputeChangeSets()
+	time.Sleep(time.Second)
 	bal.PrintStatistics()
 	if err = bal.CheckSanityLate(); err != nil {
 		return
@@ -1202,6 +1206,44 @@ func (bal *Balancer) time(name, help string) func() {
 		dur := time.Since(t0)
 		observer.Observe(dur.Seconds())
 		bal.Logger.Printf("%s: took %vs", name, dur.Seconds())
+	}
+}
+
+// Log current memory usage: once now, at least once every 10 minutes,
+// and when memory grows by 40% since the last log. Stop when ctx is
+// canceled.
+func (bal *Balancer) reportMemorySize(ctx context.Context) {
+	buf, _ := os.ReadFile("/proc/self/smaps")
+	m := regexp.MustCompile(`\nKernelPageSize:\s*(\d+) kB\n`).FindSubmatch(buf)
+	var pagesize int64
+	if len(m) == 2 {
+		pagesize, _ = strconv.ParseInt(string(m[1]), 10, 64)
+		pagesize <<= 10
+	}
+	if pagesize == 0 {
+		bal.logf("cannot report memory size: failed to parse KernelPageSize from /proc/self/smaps")
+		return
+	}
+
+	var nextTime time.Time
+	var nextMem int64
+	const maxInterval = time.Minute * 10
+	const maxIncrease = 1.4
+
+	ticker := time.NewTicker(time.Second)
+	defer ticker.Stop()
+	for ctx.Err() == nil {
+		now := time.Now()
+		buf, _ := os.ReadFile("/proc/self/statm")
+		fields := strings.Split(string(buf), " ")
+		mem, _ := strconv.ParseInt(fields[0], 10, 64)
+		mem *= pagesize
+		if now.After(nextTime) || mem >= nextMem {
+			bal.logf("process virtual memory size %d", mem)
+			nextMem = int64(float64(mem) * maxIncrease)
+			nextTime = now.Add(maxInterval)
+		}
+		<-ticker.C
 	}
 }
 
