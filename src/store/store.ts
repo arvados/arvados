@@ -75,6 +75,7 @@ import { Config } from 'common/config';
 import { pluginConfig } from 'plugins';
 import { MiddlewareListReducer } from 'common/plugintypes';
 import { sidePanelReducer } from './side-panel/side-panel-reducer'
+import { tooltipsMiddleware } from './tooltips/tooltips-middleware';
 
 declare global {
     interface Window {
@@ -159,6 +160,7 @@ export function configureStore(history: History, services: ServiceRepository, co
         routerMiddleware(history),
         thunkMiddleware.withExtraArgument(services),
         authMiddleware(services),
+        tooltipsMiddleware(services),
         projectPanelMiddleware,
         favoritePanelMiddleware,
         allProcessessPanelMiddleware,
