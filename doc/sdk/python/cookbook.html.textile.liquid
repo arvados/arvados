@@ -218,7 +218,7 @@ for permission in arvados.util.keyset_list_all(
         ['link_class', '=', 'permission'],
         # Add other filters as desired.
         ['name', '=', 'can_login'],
-        ['head_uuid', '=', 'zzzzz-tpzed-12345abcde67890'],
+        ['tail_uuid', '=', 'zzzzz-tpzed-12345abcde67890'],
         ...,
     ],
 ):
