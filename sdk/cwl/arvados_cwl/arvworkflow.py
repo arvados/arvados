@@ -193,7 +193,7 @@ def update_refs(d, baseuri, urlexpander, merged_map, jobmapper, set_block_style,
                 # blank node reference, was added in automatically, can get rid of it.
                 del d[field]
 
-        if "id" in d and not d:
+        if "id" in d:
             baseuri = urlexpander(d["id"], baseuri, scoped_id=True)
         elif "name" in d and isinstance(d["name"], str):
             baseuri = urlexpander(d["name"], baseuri, scoped_id=True)
@@ -332,13 +332,20 @@ def new_upload_workflow(arvRunner, tool, job_order, project_uuid,
             #print(yamlloader.dump(result, stream=sys.stdout))
             yamlloader.dump(result, stream=f)
 
+        with col.open(os.path.join("original", w[n+1:]), "wt") as f:
+            f.write(text)
+
+
     for w in include_files:
         with col.open(w[n+1:], "wb") as f1:
-            with open(uri_file_path(w), "rb") as f2:
-                dat = f2.read(65536)
-                while dat:
-                    f1.write(dat)
+            with col.open(os.path.join("original", w[n+1:]), "wb") as f3:
+                with open(uri_file_path(w), "rb") as f2:
                     dat = f2.read(65536)
+                    while dat:
+                        f1.write(dat)
+                        f3.write(dat)
+                        dat = f2.read(65536)
+
 
     toolname = tool.tool.get("label") or tool.metadata.get("label") or os.path.basename(tool.tool["id"])
     if git_info and git_info.get("http://arvados.org/cwl#gitDescribe"):
