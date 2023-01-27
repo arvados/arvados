@@ -132,7 +132,6 @@ arvcfg.declare_config "Containers.DefaultKeepCacheRAM", Integer, :container_defa
 arvcfg.declare_config "Containers.MaxDispatchAttempts", Integer, :max_container_dispatch_attempts
 arvcfg.declare_config "Containers.MaxRetryAttempts", Integer, :container_count_max
 arvcfg.declare_config "Containers.AlwaysUsePreemptibleInstances", Boolean, :preemptible_instances
-arvcfg.declare_config "Containers.MaxComputeVMs", Integer, :max_compute_nodes
 arvcfg.declare_config "Containers.Logging.LogBytesPerEvent", Integer, :crunch_log_bytes_per_event
 arvcfg.declare_config "Containers.Logging.LogSecondsBetweenEvents", ActiveSupport::Duration, :crunch_log_seconds_between_events
 arvcfg.declare_config "Containers.Logging.LogThrottlePeriod", ActiveSupport::Duration, :crunch_log_throttle_period

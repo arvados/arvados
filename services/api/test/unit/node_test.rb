@@ -196,13 +196,12 @@ class NodeTest < ActiveSupport::TestCase
   end
 
   test 'run out of slots' do
-    Rails.configuration.Containers.MaxComputeVMs = 3
     act_as_system_user do
       Node.destroy_all
       (1..4).each do |i|
         n = Node.create!
         args = { ip: "10.0.0.#{i}", ping_secret: n.info['ping_secret'] }
-        if i <= Rails.configuration.Containers.MaxComputeVMs
+        if i <= 3 # MAX_VMS
           n.ping(args)
         else
           assert_raises do
