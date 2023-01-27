@@ -38,6 +38,8 @@ func (command) RunCommand(prog string, args []string, stdin io.Reader, stdout, s
 		"send trash requests (delete unreferenced old blocks, and excess replicas of overreplicated blocks)")
 	flags.BoolVar(&options.CommitConfirmedFields, "commit-confirmed-fields", true,
 		"update collection fields (replicas_confirmed, storage_classes_confirmed, etc.)")
+	flags.StringVar(&options.ChunkPrefix, "chunk-prefix", "",
+		"operate only on blocks with the given prefix (experimental, see https://dev.arvados.org/issues/19923)")
 	// These options are implemented by service.Command, so we
 	// don't need the vars here -- we just need the flags
 	// to pass flags.Parse().
