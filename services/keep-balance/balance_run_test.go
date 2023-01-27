@@ -450,6 +450,37 @@ func (s *runSuite) TestRefuseNonAdmin(c *check.C) {
 	c.Check(pullReqs.Count(), check.Equals, 0)
 }
 
+func (s *runSuite) TestInvalidChunkPrefix(c *check.C) {
+	for _, trial := range []struct {
+		prefix string
+		errRe  string
+	}{
+		{"123ABC", "invalid char \"A\" in chunk prefix.*"},
+		{"123xyz", "invalid char \"x\" in chunk prefix.*"},
+		{"123456789012345678901234567890123", "invalid chunk prefix .* longer than a block hash"},
+	} {
+		s.SetUpTest(c)
+		c.Logf("trying invalid prefix %q", trial.prefix)
+		opts := RunOptions{
+			CommitPulls: true,
+			CommitTrash: true,
+			ChunkPrefix: trial.prefix,
+			Logger:      ctxlog.TestLogger(c),
+		}
+		s.stub.serveCurrentUserAdmin()
+		s.stub.serveFooBarFileCollections()
+		s.stub.serveKeepServices(stubServices)
+		s.stub.serveKeepstoreMounts()
+		trashReqs := s.stub.serveKeepstoreTrash()
+		pullReqs := s.stub.serveKeepstorePull()
+		srv := s.newServer(&opts)
+		_, err := srv.runOnce(context.Background())
+		c.Check(err, check.ErrorMatches, trial.errRe)
+		c.Check(trashReqs.Count(), check.Equals, 0)
+		c.Check(pullReqs.Count(), check.Equals, 0)
+	}
+}
+
 func (s *runSuite) TestRefuseSameDeviceDifferentVolumes(c *check.C) {
 	opts := RunOptions{
 		CommitPulls: true,

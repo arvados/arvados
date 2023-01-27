@@ -275,6 +275,14 @@ func (bal *Balancer) CheckSanityEarly(c *arvados.Client) error {
 			return fmt.Errorf("config error: %s: proxy servers cannot be balanced", srv)
 		}
 	}
+	for _, c := range bal.ChunkPrefix {
+		if !strings.ContainsRune("0123456789abcdef", c) {
+			return fmt.Errorf("invalid char %q in chunk prefix %q: only lowercase hex digits make sense", string(c), bal.ChunkPrefix)
+		}
+	}
+	if len(bal.ChunkPrefix) > 32 {
+		return fmt.Errorf("invalid chunk prefix %q: longer than a block hash", bal.ChunkPrefix)
+	}
 
 	mountProblem := false
 	type deviceMount struct {
