@@ -9,7 +9,7 @@ require (
 	github.com/Azure/go-autorest/autorest/azure/auth v0.5.9
 	github.com/Azure/go-autorest/autorest/to v0.4.0
 	github.com/arvados/cgofuse v1.2.0-arvados1
-	github.com/aws/aws-sdk-go v1.25.30
+	github.com/aws/aws-sdk-go v1.44.174
 	github.com/aws/aws-sdk-go-v2 v0.23.0
 	github.com/bradleypeabody/godap v0.0.0-20170216002349-c249933bc092
 	github.com/coreos/go-oidc v2.1.0+incompatible
@@ -36,9 +36,9 @@ require (
 	github.com/prometheus/common v0.10.0
 	github.com/sirupsen/logrus v1.8.1
 	golang.org/x/crypto v0.0.0-20211117183948-ae814b36b871
-	golang.org/x/net v0.0.0-20211112202133-69e39bad7dc2
+	golang.org/x/net v0.5.0
 	golang.org/x/oauth2 v0.0.0-20200107190931-bf48bf16ab8d
-	golang.org/x/sys v0.0.0-20210809222454-d867a43fc93e
+	golang.org/x/sys v0.4.0
 	google.golang.org/api v0.20.0
 	gopkg.in/check.v1 v1.0.0-20190902080502-41f04d3bba15
 	gopkg.in/square/go-jose.v2 v2.5.1
@@ -74,7 +74,7 @@ require (
 	github.com/googleapis/gax-go/v2 v2.0.5 // indirect
 	github.com/hashicorp/yamux v0.0.0-20211028200310-0bc27b27de87 // indirect
 	github.com/jbenet/go-context v0.0.0-20150711004518-d14ea06fba99 // indirect
-	github.com/jmespath/go-jmespath v0.0.0-20180206201540-c2b33e8439af // indirect
+	github.com/jmespath/go-jmespath v0.4.0 // indirect
 	github.com/kevinburke/ssh_config v0.0.0-20171013211458-802051befeb5 // indirect
 	github.com/kr/pretty v0.2.1 // indirect
 	github.com/kr/text v0.1.0 // indirect
@@ -94,8 +94,8 @@ require (
 	github.com/src-d/gcfg v1.3.0 // indirect
 	github.com/xanzy/ssh-agent v0.1.0 // indirect
 	go.opencensus.io v0.22.3 // indirect
-	golang.org/x/text v0.3.6 // indirect
-	golang.org/x/tools v0.1.7 // indirect
+	golang.org/x/text v0.6.0 // indirect
+	golang.org/x/tools v0.1.12 // indirect
 	google.golang.org/appengine v1.6.5 // indirect
 	google.golang.org/genproto v0.0.0-20201110150050-8816d57aaa9a // indirect
 	google.golang.org/grpc v1.33.2 // indirect
