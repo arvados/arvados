@@ -1228,26 +1228,42 @@ func (bal *Balancer) reportMemorySize(ctx context.Context) {
 		pagesize <<= 10
 	}
 	if pagesize == 0 {
-		bal.logf("cannot report memory size: failed to parse KernelPageSize from /proc/self/smaps")
-		return
+		bal.logf("cannot log OS-reported memory size: failed to parse KernelPageSize from /proc/self/smaps")
+	}
+	osstats := func() string {
+		if pagesize == 0 {
+			return ""
+		}
+		buf, _ := os.ReadFile("/proc/self/statm")
+		fields := strings.Split(string(buf), " ")
+		if len(fields) < 2 {
+			return ""
+		}
+		virt, _ := strconv.ParseInt(fields[0], 10, 64)
+		virt *= pagesize
+		res, _ := strconv.ParseInt(fields[1], 10, 64)
+		res *= pagesize
+		if virt == 0 || res == 0 {
+			return ""
+		}
+		return fmt.Sprintf(" virt %d res %d", virt, res)
 	}
 
 	var nextTime time.Time
-	var nextMem int64
+	var nextMem uint64
 	const maxInterval = time.Minute * 10
 	const maxIncrease = 1.4
 
 	ticker := time.NewTicker(time.Second)
 	defer ticker.Stop()
+	var memstats runtime.MemStats
 	for ctx.Err() == nil {
 		now := time.Now()
-		buf, _ := os.ReadFile("/proc/self/statm")
-		fields := strings.Split(string(buf), " ")
-		mem, _ := strconv.ParseInt(fields[0], 10, 64)
-		mem *= pagesize
+		runtime.ReadMemStats(&memstats)
+		mem := memstats.StackInuse + memstats.HeapInuse
 		if now.After(nextTime) || mem >= nextMem {
-			bal.logf("process virtual memory size %d", mem)
-			nextMem = int64(float64(mem) * maxIncrease)
+			bal.logf("heap %d stack %d heapalloc %d%s", memstats.HeapInuse, memstats.StackInuse, memstats.HeapAlloc, osstats())
+			nextMem = uint64(float64(mem) * maxIncrease)
 			nextTime = now.Add(maxInterval)
 		}
 		<-ticker.C
