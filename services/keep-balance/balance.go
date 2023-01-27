@@ -156,7 +156,6 @@ func (bal *Balancer) Run(ctx context.Context, client *arvados.Client, cluster *a
 		return
 	}
 	bal.ComputeChangeSets()
-	time.Sleep(time.Second)
 	bal.PrintStatistics()
 	if err = bal.CheckSanityLate(); err != nil {
 		return
