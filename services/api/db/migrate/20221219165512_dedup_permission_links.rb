@@ -12,8 +12,7 @@ class DedupPermissionLinks < ActiveRecord::Migration[5.2]
          AND link_class = 'permission'
          AND name in ('can_read', 'can_write', 'can_manage')
         GROUP BY (tail_uuid, head_uuid)
-        HAVING COUNT(uuid) > 1
-        FOR UPDATE")
+        HAVING COUNT(uuid) > 1")
       rows.each do |row|
         Rails.logger.debug "DedupPermissionLinks: consolidating #{row['n']} links into #{row['uuid']}"
         link = Link.find_by_uuid(row['uuid'])
@@ -29,8 +28,7 @@ class DedupPermissionLinks < ActiveRecord::Migration[5.2]
          AND link_class = 'permission'
          AND name = 'can_login'
         GROUP BY (tail_uuid, head_uuid, properties)
-        HAVING COUNT(uuid) > 1
-        FOR UPDATE")
+        HAVING COUNT(uuid) > 1")
       rows.each do |row|
         Rails.logger.debug "DedupPermissionLinks: consolidating #{row['n']} links into #{row['uuid']}"
         link = Link.find_by_uuid(row['uuid'])
