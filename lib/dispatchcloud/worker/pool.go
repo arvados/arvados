@@ -111,6 +111,7 @@ func NewPool(logger logrus.FieldLogger, arvClient *arvados.Client, reg *promethe
 		instanceTypes:                  cluster.InstanceTypes,
 		maxProbesPerSecond:             cluster.Containers.CloudVMs.MaxProbesPerSecond,
 		maxConcurrentInstanceCreateOps: cluster.Containers.CloudVMs.MaxConcurrentInstanceCreateOps,
+		maxInstances:                   cluster.Containers.CloudVMs.MaxInstances,
 		probeInterval:                  duration(cluster.Containers.CloudVMs.ProbeInterval, defaultProbeInterval),
 		syncInterval:                   duration(cluster.Containers.CloudVMs.SyncInterval, defaultSyncInterval),
 		timeoutIdle:                    duration(cluster.Containers.CloudVMs.TimeoutIdle, defaultTimeoutIdle),
@@ -155,6 +156,7 @@ type Pool struct {
 	probeInterval                  time.Duration
 	maxProbesPerSecond             int
 	maxConcurrentInstanceCreateOps int
+	maxInstances                   int
 	timeoutIdle                    time.Duration
 	timeoutBooting                 time.Duration
 	timeoutProbe                   time.Duration
@@ -369,7 +371,7 @@ func (wp *Pool) Create(it arvados.InstanceType) bool {
 func (wp *Pool) AtQuota() bool {
 	wp.mtx.Lock()
 	defer wp.mtx.Unlock()
-	return time.Now().Before(wp.atQuotaUntil)
+	return time.Now().Before(wp.atQuotaUntil) || (wp.maxInstances > 0 && wp.maxInstances <= len(wp.workers)+len(wp.creating))
 }
 
 // SetIdleBehavior determines how the indicated instance will behave

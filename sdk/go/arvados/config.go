@@ -498,7 +498,6 @@ type ContainersConfig struct {
 	DefaultKeepCacheRAM           ByteSize
 	DispatchPrivateKey            string
 	LogReuseDecisions             bool
-	MaxComputeVMs                 int
 	MaxDispatchAttempts           int
 	MaxRetryAttempts              int
 	MinRetryPeriod                Duration
@@ -562,6 +561,7 @@ type CloudVMsConfig struct {
 	MaxCloudOpsPerSecond           int
 	MaxProbesPerSecond             int
 	MaxConcurrentInstanceCreateOps int
+	MaxInstances                   int
 	PollInterval                   Duration
 	ProbeInterval                  Duration
 	SSHPort                        string
