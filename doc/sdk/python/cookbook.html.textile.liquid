@@ -38,11 +38,14 @@ SPDX-License-Identifier: CC-BY-SA-3.0
 ## "Combine two or more collections":#combine-two-or-more-collections
 ## "Create a collection sharing link":#sharing-link
 # "Working with containers and workflow runs":#working-with-containers
-## "Get input of a container or CWL workflow run":#get-input-of-a-cwl-workflow
-## "Get output of a container or CWL workflow run":#get-output-of-a-cwl-workflow
+## "Get input of a container":#get-input-of-a-container
+## "Get input of a CWL workflow run":#get-input-of-a-cwl-workflow
+## "Get output of a container":#get-output-of-a-container
+## "Get output of a CWL workflow run":#get-output-of-a-cwl-workflow
 ## "Get logs of a container or CWL workflow run":#get-log-of-a-child-request
 ## "Get status of a container or CWL workflow run":#get-state-of-a-cwl-workflow
 ## "List child requests of a container or CWL workflow run":#list-failed-child-requests
+## "List child requests of a container request":#list-child-requests-of-container-request
 # "Working with the container request queue":#working-with-container-request-queue
 ## "List completed container requests":#list-completed-container-requests
 ## "Cancel a container request":#cancel-a-container-request
@@ -554,9 +557,9 @@ If you have experience running CWL workflows on Workbench 2, it runs through thi
 
 The UUID of the CWL runner container is recorded in the @requesting_container_uuid@ field of each container request it creates. You can list container requests with a filter on this field to inspect each step of the workflow individually, as shown below.
 
-The next few sections include two examples: a high-level example that describes how to work with any container request, and a more specific example that provides more detail about how to work with CWL workflow runs.
+The next few examples show how to perform a task with a container request generally, and then provide a more specific example of working with a CWL runner container.
 
-h3(#get-input-of-a-cwl-workflow). Get input of a container or CWL workflow run
+h3(#get-input-of-a-container). Get input of a container
 
 A container request's most varied inputs are recorded in the @mounts@ field, which can include data from Keep, specific collections, Git checkouts, and static files. You might also be interested in the @environment@, @command@, @container_image@, and @secret_mounts@ fields. Refer to the "container requests API documentation":{{ site.baseurl }}/api/methods/container_requests.html for details.
 
@@ -581,7 +584,9 @@ for mount_name, mount_source in container_request['mounts'].items():
         pprint.pprint(mount_source.get('content'))
 {% endcodeblock %}
 
-When you run a CWL workflow, the CWL inputs are stored in a JSON mount named @/var/lib/cwl/cwl.input.json@.
+h3(#get-input-of-a-cwl-workflow). Get input of a container or CWL workflow run
+
+When you run a CWL workflow, the CWL inputs are stored in the container request's @mounts@ field as a JSON mount named @/var/lib/cwl/cwl.input.json@.
 
 {% codeblock as python %}
 container_request = arv_client.container_requests().get(
@@ -591,7 +596,7 @@ cwl_input = container_request['mounts']['/var/lib/cwl/cwl.input.json']['content'
 ...  # Work with the cwl_input dictionary
 {% endcodeblock %}
 
-h3(#get-output-of-a-cwl-workflow). Get output of a container or CWL workflow run
+h3(#get-output-of-a-container). Get output of a container
 
 A container's output files are saved in a collection. The UUID of that collection is recorded in the @output_uuid@ of the container request, which you can load as you like.
 
@@ -606,7 +611,9 @@ container_output = arvados.collection.Collection(
 ...  # Work with the container_output collection object
 {% endcodeblock %}
 
-When you run a CWL workflow, the output collection includes a file named @cwl.output.json@ that provides additional information about other files in the output.
+h3(#get-output-of-a-cwl-workflow). Get output of a CWL workflow run
+
+When you run a CWL workflow, the container request's output collection includes a file named @cwl.output.json@ that provides additional information about other files in the output.
 
 {% codeblock as python %}
 import arvados.collection
@@ -694,7 +701,9 @@ for child_container_requests in arvados.util.keyset_list_all(
     ...  # Work with each child container request
 {% endcodeblock %}
 
-If your input only provides the UUID for a container request rather than a container, you can get that container request, then follow the @container_uuid@ field if it is set. (It might not be if the container request has not been dispatched yet.)
+h3(#list-child-requests-of-container-request). List child requests of a container request
+
+When a running container creates a container request to do additional work, the UUID of the source container is recorded in the @requesting_container_uuid@ field of the new container request. If all you have is the UUID of a container request, you can get that request, then list container requests with a filter where @requesting_container_uuid@ matches the @container_uuid@ of your request to find all its children.
 
 {% codeblock as python %}
 import arvados.util
