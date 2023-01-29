@@ -50,6 +50,7 @@ SPDX-License-Identifier: CC-BY-SA-3.0
 # "Working with the container request queue":#working-with-container-request-queue
 ## "List completed container requests":#list-completed-container-requests
 ## "Cancel a container request":#cancel-a-container-request
+## "Cancel multiple pending container requests":#cancel-all-container-requests
 
 h2(#introduction). Introduction
 
@@ -810,7 +811,9 @@ cancelled_container_request = arv_client.container_requests().update(
 ).execute()
 {% endcodeblock %}
 
-p(#cancel-all-container-requests). If you want to cancel many container requests, you can list container requests with the @state@ field set to @"Committed"@, a @priority@ greater than zero, and any other filters you like. Then update each container request in turn.
+h3(#cancel-all-container-requests). Cancel multiple pending container requests
+
+If you want to cancel multiple pending container requests, you can list container requests with the @state@ field set to @"Committed"@, a @priority@ greater than zero, and any other filters you like. Then update each container request to set its @priority@ field to 0. See the "containers API reference":{{ site.baseurl }}/api/methods/containers.html for details.
 
 {% codeblock as python %}
 import arvados.util
