@@ -229,7 +229,9 @@ for permission in arvados.util.keyset_list_all(
 
 h2(#working-with-properties). Working with properties
 
-Container requests, collections, groups, and links can have metadata properties set through their @properties@ field. These properties may be standardized or limited to a defined vocabulary on your cluster. This section provides basic recipes for working with all kinds of properties. For details, refer to the "Metadata properties API reference":{{ site.baseurl }}/api/properties.html.
+Container requests, collections, groups, and links can have metadata properties set through their @properties@ field. For details, refer to the "Metadata properties API reference":{{ site.baseurl }}/api/properties.html.
+
+An Arvados cluster can be configured to use a metadata vocabulary. If this is set up, the vocabulary defines standard identifiers and specific properties and their values. These identifiers can also have more human-friendly aliases. The cluster can also be configured to use the vocabulary strictly, so clients may _only_ set properties on objects that are defined in the vocabulary. For more information about configuring a metadata vocabulary, refer to the "Metadata vocabulary administration documentation":{{ site.baseurl }}/admin/metadata-vocabulary.html.
 
 h3(#update-properties). Update the properties of an object
 
