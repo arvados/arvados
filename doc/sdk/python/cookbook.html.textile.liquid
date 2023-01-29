@@ -85,7 +85,8 @@ The API provides a "dedicated groups method named @shared@":{{ site.baseurl }}/a
 
 {% codeblock as python %}
 for item in arvados.util.keyset_list_all(
-    # Do *not* call the method here, just pass it.
+    # Pass the method keyset_list_all will call to retrieve items.
+    # Do not call it yourself.
     arv_client.groups().shared,
     # Pass filters to limit what objects are returned.
     # This example returns only subprojects.
@@ -130,7 +131,8 @@ The API provides a "dedicated groups method named @contents@":{{ site.baseurl }}
 {% codeblock as python %}
 current_user = arv_client.users().current().execute()
 for item in arvados.util.keyset_list_all(
-    # Do *not* call the method here, just pass it.
+    # Pass the method keyset_list_all will call to retrieve items.
+    # Do not call it yourself.
     arv_client.groups().contents,
     # The UUID of the project whose contents we're listing.
     # Pass a user UUID to list their home project.
@@ -189,7 +191,8 @@ To modify an existing permission—for example, to change its access level—fin
 {% codeblock as python %}
 import arvados.util
 for permission in arvados.util.keyset_list_all(
-    # Do *not* call the method here, just pass it.
+    # Pass the method keyset_list_all will call to retrieve items.
+    # Do not call it yourself.
     arv_client.links().list,
     filters=[
         # You should use this filter for all permission searches,
@@ -218,7 +221,8 @@ To revoke an existing permission, find the existing link object for the permissi
 {% codeblock as python %}
 import arvados.util
 for permission in arvados.util.keyset_list_all(
-    # Do *not* call the method here, just pass it.
+    # Pass the method keyset_list_all will call to retrieve items.
+    # Do not call it yourself.
     arv_client.links().list,
     filters=[
         # You should use this filter for all permission searches,
@@ -715,7 +719,8 @@ When a running container creates a container request to do additional work, the 
 {% codeblock as python %}
 import arvados.util
 for child_container_requests in arvados.util.keyset_list_all(
-    # Do *not* call the method here, just pass it.
+    # Pass the method keyset_list_all will call to retrieve items.
+    # Do not call it yourself.
     arv_client.container_requests().list,
     filters=[
         # Note this is a container UUID, *not* a container request UUID
@@ -744,7 +749,8 @@ if parent_container_uuid is None:
     child_container_requests = ()
 else:
     child_container_requests = arvados.util.keyset_list_all(
-    # Do *not* call the method here, just pass it.
+        # Pass the method keyset_list_all will call to retrieve items.
+        # Do not call it yourself.
         arv_client.container_requests().list,
         filters=[
             ['requesting_container_uuid', '=', parent_container_uuid],
@@ -773,7 +779,8 @@ time_filter = datetime.datetime.utcnow()
 time_filter -= datetime.timedelta(days=7)
 
 for container_request in arvados.util.keyset_list_all(
-    # Do *not* call the method here, just pass it.
+    # Pass the method keyset_list_all will call to retrieve items.
+    # Do not call it yourself.
     arv_client.container_requests().list,
     filters=[
         # This is the filter you need to find completed container requests.
@@ -818,7 +825,8 @@ If you want to cancel multiple pending container requests, you can list containe
 {% codeblock as python %}
 import arvados.util
 for container_request in arvados.util.keyset_list_all(
-    # Do *not* call the method here, just pass it.
+    # Pass the method keyset_list_all will call to retrieve items.
+    # Do not call it yourself.
     arv_client.container_requests().list,
     filters=[
         # These are the filters you need to find cancellable container requests.
