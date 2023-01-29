@@ -34,6 +34,7 @@ SPDX-License-Identifier: CC-BY-SA-3.0
 ## "Upload a file to a collection":#upload-a-file-into-a-new-collection
 ## "Delete a file from a collection":#delete-a-file-from-an-existing-collection
 ## "Delete a directory from a collection recursively":#delete-a-directory-from-a-collection
+## "Walk over all files in a collection":#walk-collection
 ## "Copy a file between collections":#copy-files-from-a-collection-to-another-collection
 ## "Combine two or more collections":#combine-two-or-more-collections
 ## "Create a collection sharing link":#sharing-link
@@ -453,6 +454,32 @@ import arvados.collection
 collection = arvados.collection.Collection(...)
 collection.remove('ExampleDirectoryPath', recursive=True)
 collection.save_new(...)  # or collection.save() to update an existing collection
+{% endcodeblock %}
+
+h3(#walk-collection). Walk over all files in a collection
+
+Once you have a @Collection@ object, you can iterate over it to retrieve the names of all files and streams in it. Streams are like subdirectories: you can open them using the "@Collection.find@ method":{{ site.baseurl }}/sdk/python/python.html, and work with the files in them just like you would in the original collection. This example shows how to combine these techniques to iterate all files in a collection, including its streams.
+
+{% codeblock as python %}
+import arvados.collection
+import collections
+import pathlib
+root_collection = arvados.collection.Collection(...)
+# Start work from the base stream.
+stream_queue = collections.deque(['.'])
+while stream_queue:
+    stream_name = stream_queue.popleft()
+    collection = root_collection.find(stream_name)
+    for item_name in collection:
+        try:
+            my_file = collection.open(item_name)
+        except IsADirectoryError:
+            # item_name refers to a stream. Queue it to walk later.
+            stream_path = pathlib.Path(stream_name, item_name)
+            stream_queue.append(stream_path.as_posix())
+            continue
+        with my_file:
+            ...  # Work with my_file as desired
 {% endcodeblock %}
 
 h3(#copy-files-from-a-collection-to-another-collection). Copy a file between collections
