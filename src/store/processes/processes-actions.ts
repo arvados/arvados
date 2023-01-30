@@ -21,6 +21,7 @@ import { CommandInputParameter, getWorkflow, getWorkflowInputs, getWorkflowOutpu
 import { ProjectResource } from "models/project";
 import { UserResource } from "models/user";
 import { CommandOutputParameter } from "cwlts/mappings/v1.0/CommandOutputParameter";
+import { ContainerResource } from "models/container";
 
 export const loadProcess = (containerRequestUuid: string) =>
     async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository): Promise<Process> => {
@@ -28,17 +29,26 @@ export const loadProcess = (containerRequestUuid: string) =>
         dispatch<any>(updateResources([containerRequest]));
 
         if (containerRequest.outputUuid) {
-            const collection = await services.collectionService.get(containerRequest.outputUuid, false);
-            dispatch<any>(updateResources([collection]));
+            try {
+                const collection = await services.collectionService.get(containerRequest.outputUuid, false);
+                dispatch<any>(updateResources([collection]));
+            } catch {}
         }
 
         if (containerRequest.containerUuid) {
-            const container = await services.containerService.get(containerRequest.containerUuid, false);
-            dispatch<any>(updateResources([container]));
-            if (container.runtimeUserUuid) {
-                const runtimeUser = await services.userService.get(container.runtimeUserUuid, false);
-                dispatch<any>(updateResources([runtimeUser]));
-            }
+            let container: ContainerResource | undefined = undefined;
+            try {
+                container = await services.containerService.get(containerRequest.containerUuid, false);
+                dispatch<any>(updateResources([container]));
+            } catch {}
+
+            try{
+                if (container && container.runtimeUserUuid) {
+                    const runtimeUser = await services.userService.get(container.runtimeUserUuid, false);
+                    dispatch<any>(updateResources([runtimeUser]));
+                }
+            } catch {}
+
             return { containerRequest, container };
         }
         return { containerRequest };
