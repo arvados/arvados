@@ -1362,3 +1362,78 @@ class UnsupportedCreateTest(MountTestBase):
             with test_path.open('w'):
                 pass
         self.assertEqual(exc_check.exception.errno, errno.ENOTSUP)
+
+
+# FIXME: IMO, for consistency with the "create inside a project" case,
+# these operations should also return ENOTSUP instead of EPERM.
+# Right now they're returning EPERM because the clasess' writable() method
+# usually returns False, and the Operations class transforms that accordingly.
+# However, for cases where the mount will never be writable, I think ENOTSUP
+# is a clearer error: it lets the user know they can't fix the problem by
+# adding permissions in Arvados, etc.
+@parameterized.parameterized_class([
+    {'root_class': fusedir.MagicDirectory,
+     'preset_dir': 'by_id',
+     'preset_file': 'README',
+     },
+
+    {'root_class': fusedir.SharedDirectory,
+     'root_kwargs': {
+         'exclude': run_test_server.fixture('users')['admin']['uuid'],
+     },
+     'preset_dir': 'Active User',
+     },
+
+    {'root_class': fusedir.TagDirectory,
+     'root_kwargs': {
+         'tag': run_test_server.fixture('links')['foo_collection_tag']['name'],
+     },
+     'preset_dir': run_test_server.fixture('collections')['foo_collection_in_aproject']['uuid'],
+     },
+
+    {'root_class': fusedir.TagsDirectory,
+     'preset_dir': run_test_server.fixture('links')['foo_collection_tag']['name'],
+     },
+])
+class UnsupportedOperationsTest(UnsupportedCreateTest):
+    preset_dir = None
+    preset_file = None
+
+    def test_create(self):
+        test_path = Path(self.mounttmp, 'test_create')
+        with self.assertRaises(OSError) as exc_check:
+            with test_path.open('w'):
+                pass
+        self.assertEqual(exc_check.exception.errno, errno.EPERM)
+
+    def test_mkdir(self):
+        test_path = Path(self.mounttmp, 'test_mkdir')
+        with self.assertRaises(OSError) as exc_check:
+            test_path.mkdir()
+        self.assertEqual(exc_check.exception.errno, errno.EPERM)
+
+    def test_rename(self):
+        src_name = self.preset_dir or self.preset_file
+        if src_name is None:
+            return
+        test_src = Path(self.mounttmp, src_name)
+        test_dst = test_src.with_name('test_dst')
+        with self.assertRaises(OSError) as exc_check:
+            test_src.rename(test_dst)
+        self.assertEqual(exc_check.exception.errno, errno.EPERM)
+
+    def test_rmdir(self):
+        if self.preset_dir is None:
+            return
+        test_path = Path(self.mounttmp, self.preset_dir)
+        with self.assertRaises(OSError) as exc_check:
+            test_path.rmdir()
+        self.assertEqual(exc_check.exception.errno, errno.EPERM)
+
+    def test_unlink(self):
+        if self.preset_file is None:
+            return
+        test_path = Path(self.mounttmp, self.preset_file)
+        with self.assertRaises(OSError) as exc_check:
+            test_path.unlink()
+        self.assertEqual(exc_check.exception.errno, errno.EPERM)
