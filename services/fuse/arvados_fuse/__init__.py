@@ -329,6 +329,8 @@ def catch_exceptions(orig_func):
             raise
         except EnvironmentError as e:
             raise llfuse.FUSEError(e.errno)
+        except NotImplementedError:
+            raise llfuse.FUSEError(errno.ENOTSUP)
         except arvados.errors.KeepWriteError as e:
             _logger.error("Keep write error: " + str(e))
             raise llfuse.FUSEError(errno.EIO)

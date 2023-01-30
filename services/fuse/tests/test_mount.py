@@ -6,7 +6,9 @@ from __future__ import absolute_import
 from future.utils import viewitems
 from builtins import str
 from builtins import object
+from pathlib import Path
 from six import assertRegex
+import errno
 import json
 import llfuse
 import logging
@@ -20,6 +22,7 @@ import parameterized
 
 import arvados
 import arvados_fuse as fuse
+from arvados_fuse import fusedir
 from . import run_test_server
 
 from .integration_test import IntegrationTest
@@ -1331,3 +1334,31 @@ class ReadonlyCollectionTest(MountTestBase):
         self.make_mount(fuse.CollectionDirectory, collection_record=self.testcollection, enable_write=False)
 
         self.pool.apply(_readonlyCollectionTestHelper, (self.mounttmp,))
+
+
+@parameterized.parameterized_class([
+    {'root_class': fusedir.ProjectDirectory, 'root_kwargs': {
+        'project_object': run_test_server.fixture('users')['admin'],
+    }},
+    {'root_class': fusedir.ProjectDirectory, 'root_kwargs': {
+        'project_object': run_test_server.fixture('groups')['public'],
+    }},
+])
+class UnsupportedCreateTest(MountTestBase):
+    root_class = None
+    root_kwargs = {}
+
+    def setUp(self):
+        super().setUp()
+        if 'prefs' in self.root_kwargs.get('project_object', ()):
+            self.root_kwargs['project_object']['prefs'] = {}
+        self.make_mount(self.root_class, **self.root_kwargs)
+        # Make sure the directory knows about its top-level ents.
+        os.listdir(self.mounttmp)
+
+    def test_create(self):
+        test_path = Path(self.mounttmp, 'test_create')
+        with self.assertRaises(OSError) as exc_check:
+            with test_path.open('w'):
+                pass
+        self.assertEqual(exc_check.exception.errno, errno.ENOTSUP)
