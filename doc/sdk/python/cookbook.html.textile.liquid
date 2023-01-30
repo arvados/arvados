@@ -411,7 +411,7 @@ with (
 
 h3(#write-a-file-into-a-new-collection). Write a file to a collection
 
-Once you have a @Collection@ object, the "@Collection.open@ method":{{ site.baseurl }}/sdk/python/arvados/collection.html#arvados.collection.RichCollectionBase.open lets you open files from a collection the same way you would open files from disk using Python's built-in @open@ function. Pass a second mode argument like @'w'@ or @'a'@ to write a file in the collection. It returns a file-like object that you can use in many of the same ways you would use any other file object. This example writes @Hello, Arvados!@ to a file named @ExampleHello@ in your collection:
+Once you have a @Collection@ object, the "@Collection.open@ method":{{ site.baseurl }}/sdk/python/arvados/collection.html#arvados.collection.RichCollectionBase.open lets you open files from a collection the same way you would open files from disk using Python's built-in @open@ function. Pass a second mode argument like @'w'@, @'a'@, or @'wb'@ to write a file in the collection. It returns a file-like object that you can use in many of the same ways you would use any other file object. This example writes @Hello, Arvados!@ to a file named @ExampleHello@ in your collection:
 
 {% codeblock as python %}
 import arvados.collection
@@ -425,7 +425,7 @@ collection.save_new(...)  # or collection.save() to update an existing collectio
 
 h3(#upload-a-file-into-a-new-collection). Upload a file to a collection
 
-Once you have a @Collection@ object, the "@Collection.open@ method":{{ site.baseurl }}/sdk/python/arvados/collection.html#arvados.collection.RichCollectionBase.open lets you open files from a collection the same way you would open files from disk using Python's built-in @open@ function. Pass a second mode argument like @'w'@ or @'a'@ to write a file in the collection. It returns a file-like object that you can use in many of the same ways you would use any other file object. You can pass it as a destination to Python's standard "@shutil.copyfileobj@ function":https://docs.python.org/3/library/shutil.html#shutil.copyfileobj to upload data from a source file. This example reads @ExampleFile@ from the current working directory and uploads it into your collection as @ExampleUpload@:
+Once you have a @Collection@ object, the "@Collection.open@ method":{{ site.baseurl }}/sdk/python/arvados/collection.html#arvados.collection.RichCollectionBase.open lets you open files from a collection the same way you would open files from disk using Python's built-in @open@ function. Pass a second mode argument like @'w'@, @'a'@, or @'wb'@ to write a file in the collection. It returns a file-like object that you can use in many of the same ways you would use any other file object. You can pass it as a destination to Python's standard "@shutil.copyfileobj@ function":https://docs.python.org/3/library/shutil.html#shutil.copyfileobj to upload data from a source file. This example reads @ExampleFile@ from the current working directory and uploads it into your collection as @ExampleUpload@:
 
 {% codeblock as python %}
 import arvados.collection
