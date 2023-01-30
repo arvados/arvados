@@ -99,7 +99,7 @@ See "Common resource methods":{{site.baseurl}}/api/methods.html for more informa
 
 Required arguments are displayed in %{background:#ccffcc}green%.
 
-h3. contents
+h3(#contents). contents
 
 Retrieve a list of items owned by the group.  Use "recursive" to list objects within subprojects as well.
 
@@ -196,7 +196,7 @@ table(table table-bordered table-condensed).
 {background:#ccffcc}.|uuid|string|The UUID of the Group to untrash.|path||
 |ensure_unique_name|boolean (default false)|Rename project uniquely if untrashing it would fail with a unique name conflict.|query||
 
-h3. shared
+h3(#shared). shared
 
 This endpoint returns the toplevel set of groups to which access is granted through a chain of one or more permission links rather than through direct ownership by the current user account.  This is useful for clients which wish to browse the list of projects the user has permission to read which are not part of the "home" project tree.  Similar behavior is also available with the @exclude_home_project@ option of the "contents" endpoint.
 
