@@ -64,6 +64,59 @@ table(table table-bordered table-condensed).
 |output_properties|hash|User metadata properties to set on the output collection.  The output collection will also have default properties "type" ("intermediate" or "output") and "container_request" (the uuid of container request that produced the collection).|
 |cumulative_cost|number|Estimated cost of the cloud VMs used to satisfy the request, including retried attempts and completed subrequests, but not including reused containers.|0 if container was reused or VM price information was not available.|
 
+h2(#lifecycle). Container request lifecycle
+
+A container request may be created in the Committed state, or created in the Uncommitted state and then moved into the Committed state.
+
+Once a request is in the Committed state, Arvados locates a suitable existing container or schedules a new one. When the assigned container finishes, the request state changes to Final.
+
+A client may cancel a committed request early (before the assigned container finishes) by setting the request priority to zero.
+
+In the following diagram, the green ("go") and red ("stop") arrows indicate client-initiated transitions, and the blue arrows indicate system-initiated transitions.
+
+!{max-width:40em}{{site.baseurl}}/api/methods/container_request_lifecycle.svg!
+{% comment %}
+# svg generated using https://dreampuf.github.io/
+digraph {
+    subgraph cluster_draft {
+        label = "Draft\n(no container assigned)";
+        style = filled;
+        color = lightgrey;
+        node [color=black] [fillcolor=white] [style=filled] [shape=box];
+        uncommitted [label = "Uncommitted"];
+    }
+    subgraph cluster_active {
+        label = "Active\n(container assigned)";
+        style = filled;
+        color = lightgrey;
+        node [color=black] [fillcolor=white] [style=filled] [shape=box];
+        runnable [label = "Committed\npriority>0"];
+        node [fillcolor=lightgrey];
+        queued -> locked -> running -> complete;
+    }
+    subgraph cluster_complete {
+        label = "Complete";
+        style = filled;
+        color = lightgrey;
+        node [color=black] [fillcolor=white] [style=filled] [shape=box];
+        reqcomplete [label = "Final"];
+    }
+    subgraph cluster_cancelled {
+        label = "Cancelled";
+        style = filled;
+        color = lightgrey;
+        node [color=black] [fillcolor=white] [style=filled] [shape=box];
+        reqcancelled [label = "Final"];
+    }
+    cancelling [label = "Committed\npriority=0"] [shape=box];
+    runnable -> cancelling [color = red];
+    uncommitted -> runnable [color = darkgreen];
+    cancelling -> reqcancelled [color = blue];
+    runnable -> reqcomplete [color = blue];
+    uncommitted -> cancelling [color = red];
+}
+{% endcomment %}
+
 h2(#priority). Priority
 
 The @priority@ field has a range of 0-1000.
@@ -99,7 +152,7 @@ h2(#cancel_container). Canceling a container request
 
 A container request may be canceled by setting its priority to 0, using an update call.
 
-When a container request is canceled, it will still reflect the state of the Container it is associated with via the container_uuid attribute. If that Container is being reused by any other container_requests that are still active, i.e., not yet canceled, that Container may continue to run or be scheduled to run by the system in future. However, if no other container_requests are using that Contianer, then the Container will get canceled as well.
+When a container request is canceled, it will still reflect the state of the Container it is associated with via the container_uuid attribute. If that Container is being reused by any other container_requests that are still active, i.e., not yet canceled, that Container may continue to run or be scheduled to run by the system in future. However, if no other container_requests are using that Container, then the Container will get canceled as well.
 
 h2. Methods
 
