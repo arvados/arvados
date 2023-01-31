@@ -72,40 +72,39 @@ Once a request is in the Committed state, Arvados locates a suitable existing co
 
 A client may cancel a committed request early (before the assigned container finishes) by setting the request priority to zero.
 
-!{max-width:40em;max-height:40em}{{site.baseurl}}/api/methods/container_request_lifecycle.svg!
+!{max-width:40em;max-height:70em}{{site.baseurl}}/api/methods/container_request_lifecycle.svg!
 {% comment %}
 # svg generated using https://dreampuf.github.io/
 digraph {
-    subgraph cluster_uncommitted {
-        label = "Uncommitted";
-        style = filled;
-        color = lightgrey;
-        node [color=black] [fillcolor=white] [style=filled] [shape=box];
-        nocontainer [label = "(no container)"] [fillcolor=lightgrey];
-    }
-    subgraph cluster_committed {
-        label = "Committed";
-        style = filled;
-        color = lightgrey;
-        node [color=black] [fillcolor=white] [style=filled] [shape=box];
-        queued [label = "Queued"];
-        locked [label = "Locked"];
-        running [label = "Running"];
-        node [fillcolor=lightgrey];
-    }
-    subgraph cluster_final {
-        label = "Final";
-        style = filled;
-        color = lightgrey;
-        node [color=black] [fillcolor=white] [style=filled] [shape=box];
-        complete [label = "Complete"];
-        cancelled [label = "Cancelled"];
-    }
-    nocontainer -> queued [label = " start container by setting \n state=Committed, priority>0 "];
-    queued -> locked -> running -> complete;
-    running -> cancelled [color = red] [label = " cancel container by setting \n priority=0 "];
-}
+    graph [nojustify=true] [labeljust=l];
 
+    invisiblestart [label = ""] [color=white];
+    node [color=black] [fillcolor=white] [style=filled] [shape=box] [nojustify=true];
+    uncommitted [label = "container request:\l   state=Uncommitted\l"] [fillcolor=lightgrey];
+    committed [label = "container request:\l   state=Committed\l   priority>0\l"];
+    invisiblestart -> uncommitted [label = "user creates container request"];
+    uncommitted -> committed [label = "user assigns state=Committed, priority>0\l"];
+    queued [label = "container request:\l   state=Committed\l   priority>0\lcontainer:\l   state=Queued\l"];
+    committed -> queued [label = "Arvados creates\la new container\l"];
+    locked [label = "container request:\l   state=Committed\l   priority>0\lcontainer:\l   state=Locked\l"];
+    queued -> locked [label = "Arvados is ready\lto dispatch the container\l"];
+    running [label = "container request:\l   state=Committed\l   priority>0\lcontainer:\l   state=Running\l"];
+    locked -> running [label = "Arvados starts the\lcontainer process\l"];
+
+    node [color=black] [fillcolor=lightblue] [style=filled] [shape=box];
+    reused [label = "container request:\l   state=Final\lcontainer:\l   state=Complete\l(reused existing container)\l"];
+    latecancelled [label = "container request:\l   state=Final\lcontainer:\l   state=Cancelled\l"];
+    containerfinished [label = "container request:\l   state=Final\lcontainer:\l   state=Complete\l   exit_code=0\l"];
+    containerfailed [label = "container request:\l   state=Final\lcontainer:\l   state=Complete\l   exit_code≠0\l"];
+    reused -> latecancelled -> containerfailed -> containerfinished [style=invis];
+
+    committed -> reused [label = "Arvados selects an\lexisting container\l"];
+    queued -> latecancelled [label = "user assigns\lpriority=0"];
+    locked -> latecancelled [label = "user assigns\lpriority=0"];
+    running -> latecancelled [label = "user assigns\lpriority=0"];
+    running -> containerfailed [label = "container process\lfails\l"];
+    running -> containerfinished [label = "container process\lsucceeds\l"];
+}
 {% endcomment %}
 
 h2(#priority). Priority
