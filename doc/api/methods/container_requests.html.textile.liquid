@@ -72,49 +72,40 @@ Once a request is in the Committed state, Arvados locates a suitable existing co
 
 A client may cancel a committed request early (before the assigned container finishes) by setting the request priority to zero.
 
-In the following diagram, the green ("go") and red ("stop") arrows indicate client-initiated transitions, and the blue arrows indicate system-initiated transitions.
-
-!{max-width:40em}{{site.baseurl}}/api/methods/container_request_lifecycle.svg!
+!{max-width:40em;max-height:40em}{{site.baseurl}}/api/methods/container_request_lifecycle.svg!
 {% comment %}
 # svg generated using https://dreampuf.github.io/
 digraph {
-    subgraph cluster_draft {
-        label = "Draft\n(no container assigned)";
-        style = filled;
-        color = lightgrey;
-        node [color=black] [fillcolor=white] [style=filled] [shape=box];
-        uncommitted [label = "Uncommitted"];
+    subgraph cluster_uncommitted {
+        label = "Uncommitted";
+        style = filled;
+        color = lightgrey;
+        node [color=black] [fillcolor=white] [style=filled] [shape=box];
+        nocontainer [label = "(no container)"] [fillcolor=lightgrey];
     }
-    subgraph cluster_active {
-        label = "Active\n(container assigned)";
-        style = filled;
-        color = lightgrey;
-        node [color=black] [fillcolor=white] [style=filled] [shape=box];
-        runnable [label = "Committed\npriority>0"];
+    subgraph cluster_committed {
+        label = "Committed";
+        style = filled;
+        color = lightgrey;
+        node [color=black] [fillcolor=white] [style=filled] [shape=box];
+        queued [label = "Queued"];
+        locked [label = "Locked"];
+        running [label = "Running"];
         node [fillcolor=lightgrey];
-        queued -> locked -> running -> complete;
     }
-    subgraph cluster_complete {
-        label = "Complete";
-        style = filled;
-        color = lightgrey;
-        node [color=black] [fillcolor=white] [style=filled] [shape=box];
-        reqcomplete [label = "Final"];
+    subgraph cluster_final {
+        label = "Final";
+        style = filled;
+        color = lightgrey;
+        node [color=black] [fillcolor=white] [style=filled] [shape=box];
+        complete [label = "Complete"];
+        cancelled [label = "Cancelled"];
     }
-    subgraph cluster_cancelled {
-        label = "Cancelled";
-        style = filled;
-        color = lightgrey;
-        node [color=black] [fillcolor=white] [style=filled] [shape=box];
-        reqcancelled [label = "Final"];
-    }
-    cancelling [label = "Committed\npriority=0"] [shape=box];
-    runnable -> cancelling [color = red];
-    uncommitted -> runnable [color = darkgreen];
-    cancelling -> reqcancelled [color = blue];
-    runnable -> reqcomplete [color = blue];
-    uncommitted -> cancelling [color = red];
+    nocontainer -> queued [label = " start container by setting \n state=Committed, priority>0 "];
+    queued -> locked -> running -> complete;
+    running -> cancelled [color = red] [label = " cancel container by setting \n priority=0 "];
 }
+
 {% endcomment %}
 
 h2(#priority). Priority
