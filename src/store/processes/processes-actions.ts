@@ -22,11 +22,17 @@ import { ProjectResource } from "models/project";
 import { UserResource } from "models/user";
 import { CommandOutputParameter } from "cwlts/mappings/v1.0/CommandOutputParameter";
 import { ContainerResource } from "models/container";
+import { ContainerRequestResource } from "models/container-request";
 
 export const loadProcess = (containerRequestUuid: string) =>
-    async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository): Promise<Process> => {
-        const containerRequest = await services.containerRequestService.get(containerRequestUuid);
-        dispatch<any>(updateResources([containerRequest]));
+    async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository): Promise<Process | undefined> => {
+        let containerRequest: ContainerRequestResource | undefined = undefined;
+        try {
+            containerRequest = await services.containerRequestService.get(containerRequestUuid);
+            dispatch<any>(updateResources([containerRequest]));
+        } catch {
+            return undefined;
+        }
 
         if (containerRequest.outputUuid) {
             try {
