@@ -162,7 +162,7 @@ In brief, a permission is represented in Arvados as a link object with the follo
 * @tail_uuid@ identifies the user or role group that receives the permission.
 * @head_uuid@ identifies the Arvados object this permission grants access to.
 
-For details, refer to the "Permissions model documentation":{{ site.baseurl }}/api/permission-model.html. Managing permissions is just a matter of ensuring the desired links exist with the standard @create@, @update@, and @delete@ methods.
+For details, refer to the "Permissions model documentation":{{ site.baseurl }}/api/permission-model.html. Managing permissions is just a matter of ensuring the desired links exist using the standard @create@, @update@, and @delete@ methods.
 
 h3(#grant-permission). Grant permission to an object
 
@@ -418,7 +418,7 @@ import arvados.collection
 collection = arvados.collection.Collection(...)
 with collection.open('ExampleFile', 'w') as my_file:
     # Write to my_file as desired.
-    # This example writes "Hello, world!" to the file.
+    # This example writes "Hello, Arvados!" to the file.
     print("Hello, Arvados!", file=my_file)
 collection.save_new(...)  # or collection.save() to update an existing collection
 {% endcodeblock %}
@@ -616,7 +616,7 @@ for mount_name, mount_source in container_request['mounts'].items():
         pprint.pprint(mount_source.get('content'))
 {% endcodeblock %}
 
-h3(#get-input-of-a-cwl-workflow). Get input of a container or CWL workflow run
+h3(#get-input-of-a-cwl-workflow). Get input of a CWL workflow run
 
 When you run a CWL workflow, the CWL inputs are stored in the container request's @mounts@ field as a JSON mount named @/var/lib/cwl/cwl.input.json@.
 
