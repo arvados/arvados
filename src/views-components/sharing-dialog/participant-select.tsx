@@ -43,10 +43,10 @@ interface ParticipantSelectState {
     suggestions: ParticipantResource[];
 }
 
-const getDisplayName = (item: GroupResource | UserResource) => {
+const getDisplayName = (item: GroupResource | UserResource, detailed: boolean) => {
     switch (item.kind) {
         case ResourceKind.USER:
-            return getUserDisplayName(item, true, true);
+            return getUserDisplayName(item, detailed, detailed);
         case ResourceKind.GROUP:
             return item.name + `(${`(${(item as Resource).uuid})`})`;
         default:
@@ -91,7 +91,7 @@ export const ParticipantSelect = connect()(
         renderSuggestion(item: ParticipantResource) {
             return (
                 <ListItemText>
-                    <Typography noWrap>{getDisplayName(item)}</Typography>
+                    <Typography noWrap>{getDisplayName(item, true)}</Typography>
                 </ListItemText>
             );
         }
@@ -117,7 +117,7 @@ export const ParticipantSelect = connect()(
             const { onSelect = noop } = this.props;
             this.setState({ value: '', suggestions: [] });
             onSelect({
-                name: getDisplayName(selection),
+                name: getDisplayName(selection, false),
                 uuid,
             });
         }
