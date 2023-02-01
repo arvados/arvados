@@ -82,8 +82,8 @@ digraph {
     node [color=black] [fillcolor=white] [style=filled] [shape=box] [nojustify=true];
     uncommitted [label = "container request:\l   state=Uncommitted\l"] [fillcolor=lightgrey];
     committed [label = "container request:\l   state=Committed\l   priority>0\l"];
-    invisiblestart -> uncommitted [label = "user creates container request"];
-    uncommitted -> committed [label = "user assigns state=Committed, priority>0\l"];
+    invisiblestart -> uncommitted [label = "user creates container request"] [color=navy] [fontcolor=navy];
+    uncommitted -> committed [label = "user updates to\lstate=Committed, priority>0\l"] [color=navy] [fontcolor=navy];
     queued [label = "container request:\l   state=Committed\l   priority>0\lcontainer:\l   state=Queued\l"];
     committed -> queued [label = "Arvados creates\la new container\l"];
     locked [label = "container request:\l   state=Committed\l   priority>0\lcontainer:\l   state=Locked\l"];
@@ -96,14 +96,18 @@ digraph {
     latecancelled [label = "container request:\l   state=Final\lcontainer:\l   state=Cancelled\l"];
     containerfinished [label = "container request:\l   state=Final\lcontainer:\l   state=Complete\l   exit_code=0\l"];
     containerfailed [label = "container request:\l   state=Final\lcontainer:\l   state=Complete\l   exit_code≠0\l"];
-    reused -> latecancelled -> containerfailed -> containerfinished [style=invis];
 
     committed -> reused [label = "Arvados selects an\lexisting container\l"];
-    queued -> latecancelled [label = "user assigns\lpriority=0"];
-    locked -> latecancelled [label = "user assigns\lpriority=0"];
-    running -> latecancelled [label = "user assigns\lpriority=0"];
+    queued -> latecancelled [label = "user updates to\lpriority=0\l"] [color=navy] [fontcolor=navy];
+    locked -> latecancelled [label = "user updates to\lpriority=0\l"] [color=navy] [fontcolor=navy];
+    running -> latecancelled [label = "user updates to\lpriority=0\l"] [color=navy] [fontcolor=navy];
     running -> containerfailed [label = "container process\lfails\l"];
     running -> containerfinished [label = "container process\lsucceeds\l"];
+
+    # layout hacks
+    committed -> containerfinished [style=invis];
+    uncommitted -> latecancelled [style=invis];
+    reused -> latecancelled [style=invis];
 }
 {% endcomment %}
 
