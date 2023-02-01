@@ -579,11 +579,13 @@ export const loadProcess = (uuid: string) =>
     handleFirstTimeLoad(async (dispatch: Dispatch, getState: () => RootState) => {
         dispatch<any>(loadProcessPanel(uuid));
         const process = await dispatch<any>(processesActions.loadProcess(uuid));
-        await dispatch<any>(
-            activateSidePanelTreeItem(process.containerRequest.ownerUuid)
-        );
-        dispatch<any>(setProcessBreadcrumbs(uuid));
-        dispatch<any>(loadDetailsPanel(uuid));
+        if (process) {
+            await dispatch<any>(
+                activateSidePanelTreeItem(process.containerRequest.ownerUuid)
+            );
+            dispatch<any>(setProcessBreadcrumbs(uuid));
+            dispatch<any>(loadDetailsPanel(uuid));
+        }
     });
 
 export const updateProcess =
