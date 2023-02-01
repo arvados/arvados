@@ -37,7 +37,11 @@ Some classes are pre-defined by convention and have standard meanings attached t
 
 h3. permission
 
-See "permission links":{{site.baseurl}}/api/permission-model.html#links section of the permission model.
+The significance of permission links is discussed in the "permission links":{{site.baseurl}}/api/permission-model.html#links section of the permission model documentation.
+
+Permission links are transparently de-duplicated during create/update/delete operations. As a result these API methods have slightly different semantics.
+* When requesting to create a new permission link, the API may respond with an existing permission link that had the same @head_uuid@ and @tail_uuid@, rather than creating a new one. If the requested permission level is higher than the existing permission link, the existing link will be updated accordingly. Otherwise the existing link will be returned unchanged.
+* When deleting a permission link, any other existing links that have the same @head_uuid@ and @tail_uuid@ are also deleted.
 
 h3. star
 
