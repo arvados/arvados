@@ -39,10 +39,6 @@ h3. permission
 
 The significance of permission links is discussed in the "permission links":{{site.baseurl}}/api/permission-model.html#links section of the permission model documentation.
 
-Permission links are transparently de-duplicated during create/update/delete operations. As a result these API methods have slightly different semantics.
-* When requesting to create a new permission link, the API may respond with an existing permission link that had the same @head_uuid@ and @tail_uuid@, rather than creating a new one. If the requested permission level is higher than the existing permission link, the existing link will be updated accordingly. Otherwise the existing link will be returned unchanged.
-* When deleting a permission link, any other existing links that have the same @head_uuid@ and @tail_uuid@ are also deleted.
-
 h3. star
 
 A **star** link is a shortcut to a project that is displayed in the user interface (Workbench) as "favorites".  Users can mark their own favorites (implemented by creating or deleting **star** links).
@@ -111,6 +107,8 @@ table(table table-bordered table-condensed).
 |_. Argument |_. Type |_. Description |_. Location |_. Example |
 |link|object||query||
 
+When you create a new permission link with the same @head_uuid@ and @tail_uuid@ as an existing permission link, the API returns the existing link instead of creating a new one. If the requested permission level is higher than the existing link, the existing link is updated accordingly. Otherwise the existing link is returned unchanged.
+
 h3. delete
 
 Delete an existing Link.
@@ -120,6 +118,8 @@ Arguments:
 table(table table-bordered table-condensed).
 |_. Argument |_. Type |_. Description |_. Location |_. Example |
 {background:#ccffcc}.|uuid|string|The UUID of the Link in question.|path||
+
+When you delete a permission link, any other existing permission links that have the same @head_uuid@ and @tail_uuid@ are also deleted.
 
 h3. get
 
@@ -147,6 +147,8 @@ table(table table-bordered table-condensed).
 |_. Argument |_. Type |_. Description |_. Location |_. Example |
 {background:#ccffcc}.|uuid|string|The UUID of the Link in question.|path||
 |link|object||query||
+
+When you update a permission link such that it has the same @head_uuid@ and @tail_uuid@ as another existing permission link, the API deletes the other link. If the deleted link's permission level was higher than the newly updated link, the updated link's permission level is increased accordingly.
 
 h3. get_permissions
 
