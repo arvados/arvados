@@ -662,6 +662,7 @@ export const copyProcess =
           kind: SnackbarKind.SUCCESS,
         })
       );
+      dispatch<any>(navigateTo(process.uuid));
     } catch (e) {
       dispatch(
         snackbarActions.OPEN_SNACKBAR({

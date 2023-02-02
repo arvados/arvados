@@ -54,7 +54,7 @@ export const copyProcess = (resource: CopyFormDialogData) =>
                 schedulingParameters,
                 useExisting,
             } = process;
-            await services.containerRequestService.create({
+            const newProcess = await services.containerRequestService.create({
                 command,
                 containerCountMax,
                 containerImage,
@@ -78,7 +78,7 @@ export const copyProcess = (resource: CopyFormDialogData) =>
                 useExisting,
             });
             dispatch(dialogActions.CLOSE_DIALOG({ id: PROCESS_COPY_FORM_NAME }));
-            return process;
+            return newProcess;
         } catch (e) {
             dispatch(dialogActions.CLOSE_DIALOG({ id: PROCESS_COPY_FORM_NAME }));
             throw new Error('Could not copy the process.');
