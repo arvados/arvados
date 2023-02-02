@@ -148,7 +148,7 @@ table(table table-bordered table-condensed).
 {background:#ccffcc}.|uuid|string|The UUID of the Link in question.|path||
 |link|object||query||
 
-When you update a permission link such that it has the same @head_uuid@ and @tail_uuid@ as another existing permission link, the API deletes the other link. If the deleted link's permission level was higher than the newly updated link, the updated link's permission level is increased accordingly.
+When you update a permission link such that it has the same @head_uuid@ and @tail_uuid@ as one or more existing permission links, the API deletes the other links. If the highest permission level among the deleted links was higher than the newly updated link, the updated link's permission level is increased accordingly.
 
 h3. get_permissions
 
