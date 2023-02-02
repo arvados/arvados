@@ -18,7 +18,9 @@ If you are logged in to an Arvados VM, the Python SDK should be installed.
 
 To use the Python SDK elsewhere, you can install it "from an Arvados distribution package":#package-install or "from PyPI using pip":#pip-install.
 
+{% include 'notebox_begin_warning' %}
 As of Arvados 2.2, the Python SDK requires Python 3.6+.  The last version to support Python 2.7 is Arvados 2.0.4.
+{% include 'notebox_end' %}
 
 h2(#package-install). Option 1: Install from a distribution package
 
@@ -67,17 +69,17 @@ h2(#pip-install). Option 2: Install with pip
 
 This installation method is recommended to use the SDK in your own Python programs. If installed into a @virtualenv@, it can coexist with the system-wide installation method from a distribution package.
 
-Run @pip install arvados-python-client@ in an appropriate installation environment, such as a @virtualenv@.
-
-Note:
-
-The SDK uses @pycurl@ which depends on the @libcurl@ C library.  To build the module you may have to first install additional packages.  On Debian 10 this is:
+The SDK uses @pycurl@ which depends on the @libcurl@ C library.  To build the module you may have to first install additional packages.  On Debian 10 you can do this by running:
 
 <pre>
 $ apt-get install git build-essential python3-dev libcurl4-openssl-dev libssl-dev
 </pre>
 
+Run @pip install arvados-python-client@ in an appropriate installation environment, such as a @virtualenv@.
+
+{% include 'notebox_begin_warning' %}
 If your version of @pip@ is 1.4 or newer, the @pip install@ command might give an error: "Could not find a version that satisfies the requirement arvados-python-client". If this happens, try @pip install --pre arvados-python-client@.
+{% include 'notebox_end' %}
 
 You can test the installation by creating a client object. Ensure your "@ARVADOS_API_HOST@ and @ARVADOS_API_TOKEN@ credentials are set up correctly":{{site.baseurl}}/user/reference/api-tokens.html. Then you should be able to run the following without any errors:
 
