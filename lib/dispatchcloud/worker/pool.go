@@ -111,6 +111,7 @@ func NewPool(logger logrus.FieldLogger, arvClient *arvados.Client, reg *promethe
 		instanceTypes:                  cluster.InstanceTypes,
 		maxProbesPerSecond:             cluster.Containers.CloudVMs.MaxProbesPerSecond,
 		maxConcurrentInstanceCreateOps: cluster.Containers.CloudVMs.MaxConcurrentInstanceCreateOps,
+		maxInstances:                   cluster.Containers.CloudVMs.MaxInstances,
 		probeInterval:                  duration(cluster.Containers.CloudVMs.ProbeInterval, defaultProbeInterval),
 		syncInterval:                   duration(cluster.Containers.CloudVMs.SyncInterval, defaultSyncInterval),
 		timeoutIdle:                    duration(cluster.Containers.CloudVMs.TimeoutIdle, defaultTimeoutIdle),
@@ -155,6 +156,7 @@ type Pool struct {
 	probeInterval                  time.Duration
 	maxProbesPerSecond             int
 	maxConcurrentInstanceCreateOps int
+	maxInstances                   int
 	timeoutIdle                    time.Duration
 	timeoutBooting                 time.Duration
 	timeoutProbe                   time.Duration
@@ -302,10 +304,10 @@ func (wp *Pool) Unallocated() map[arvados.InstanceType]int {
 // pool. The worker is added immediately; instance creation runs in
 // the background.
 //
-// Create returns false if a pre-existing error state prevents it from
-// even attempting to create a new instance. Those errors are logged
-// by the Pool, so the caller does not need to log anything in such
-// cases.
+// Create returns false if a pre-existing error or a configuration
+// setting prevents it from even attempting to create a new
+// instance. Those errors are logged by the Pool, so the caller does
+// not need to log anything in such cases.
 func (wp *Pool) Create(it arvados.InstanceType) bool {
 	logger := wp.logger.WithField("InstanceType", it.Name)
 	wp.setupOnce.Do(wp.setup)
@@ -315,7 +317,9 @@ func (wp *Pool) Create(it arvados.InstanceType) bool {
 	}
 	wp.mtx.Lock()
 	defer wp.mtx.Unlock()
-	if time.Now().Before(wp.atQuotaUntil) || wp.instanceSet.throttleCreate.Error() != nil {
+	if time.Now().Before(wp.atQuotaUntil) ||
+		wp.instanceSet.throttleCreate.Error() != nil ||
+		(wp.maxInstances > 0 && wp.maxInstances <= len(wp.workers)+len(wp.creating)) {
 		return false
 	}
 	// The maxConcurrentInstanceCreateOps knob throttles the number of node create
@@ -361,15 +365,19 @@ func (wp *Pool) Create(it arvados.InstanceType) bool {
 		}
 		wp.updateWorker(inst, it)
 	}()
+	if len(wp.creating)+len(wp.workers) == wp.maxInstances {
+		logger.Infof("now at MaxInstances limit of %d instances", wp.maxInstances)
+	}
 	return true
 }
 
 // AtQuota returns true if Create is not expected to work at the
-// moment.
+// moment (e.g., cloud provider has reported quota errors, or we are
+// already at our own configured quota).
 func (wp *Pool) AtQuota() bool {
 	wp.mtx.Lock()
 	defer wp.mtx.Unlock()
-	return time.Now().Before(wp.atQuotaUntil)
+	return time.Now().Before(wp.atQuotaUntil) || (wp.maxInstances > 0 && wp.maxInstances <= len(wp.workers)+len(wp.creating))
 }
 
 // SetIdleBehavior determines how the indicated instance will behave

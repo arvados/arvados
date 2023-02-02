@@ -1005,13 +1005,6 @@ Clusters:
       # with the cancelled container.
       MaxRetryAttempts: 3
 
-      # The maximum number of compute nodes that can be in use simultaneously
-      # If this limit is reduced, any existing nodes with slot number >= new limit
-      # will not be counted against the new limit. In other words, the new limit
-      # won't be strictly enforced until those nodes with higher slot numbers
-      # go down.
-      MaxComputeVMs: 64
-
       # Schedule all child containers on preemptible instances (e.g. AWS
       # Spot Instances) even if not requested by the submitter.
       #
@@ -1326,6 +1319,15 @@ Clusters:
         # MaxConcurrentInstanceCreateOps can be increased for other cloud
         # providers too, if desired.
         MaxConcurrentInstanceCreateOps: 1
+
+        # The maximum number of instances to run at a time, or 0 for
+        # unlimited.
+        #
+        # If more instances than this are already running and busy
+        # when the dispatcher starts up, the running containers will
+        # be allowed to finish before the excess instances are shut
+        # down.
+        MaxInstances: 64
 
         # Interval between cloud provider syncs/updates ("list all
         # instances").

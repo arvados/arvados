@@ -131,7 +131,6 @@ var whitelist = map[string]bool{
 	"Containers.Logging":                       false,
 	"Containers.LogReuseDecisions":             false,
 	"Containers.LSF":                           false,
-	"Containers.MaxComputeVMs":                 false,
 	"Containers.MaxDispatchAttempts":           false,
 	"Containers.MaxRetryAttempts":              true,
 	"Containers.MinRetryPeriod":                true,
