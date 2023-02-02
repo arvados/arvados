@@ -142,15 +142,18 @@ copy_custom_cert() {
   cert_name=${2}
 
   mkdir -p /srv/salt/certs
+  chmod 700 /srv/salt/certs
 
   if [ -f ${cert_dir}/${cert_name}.crt ]; then
     cp -v ${cert_dir}/${cert_name}.crt /srv/salt/certs/arvados-${cert_name}.pem
+    chmod 600 /srv/salt/certs/arvados-${cert_name}.pem
   else
     echo "${cert_dir}/${cert_name}.crt does not exist. Exiting"
     exit 1
   fi
   if [ -f ${cert_dir}/${cert_name}.key ]; then
     cp -v ${cert_dir}/${cert_name}.key /srv/salt/certs/arvados-${cert_name}.key
+    chmod 600 /srv/salt/certs/arvados-${cert_name}.key
   else
     echo "${cert_dir}/${cert_name}.key does not exist. Exiting"
     exit 1
@@ -561,9 +564,11 @@ if [ -z "${ROLES}" ]; then
     grep -q "letsencrypt"     ${S_DIR}/top.sls || echo "    - letsencrypt" >> ${S_DIR}/top.sls
   else
     mkdir -p /srv/salt/certs
+    chmod 700 /srv/salt/certs
     if [ "${SSL_MODE}" = "bring-your-own" ]; then
       # Copy certs to formula extra/files
       cp -rv ${CUSTOM_CERTS_DIR}/* /srv/salt/certs/
+      chmod 600 /srv/salt/certs/*
       # We add the custom_certs state
       grep -q "custom_certs"    ${S_DIR}/top.sls || echo "    - extra.custom_certs" >> ${S_DIR}/top.sls
     fi

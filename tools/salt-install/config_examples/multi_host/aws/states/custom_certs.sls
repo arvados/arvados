@@ -10,8 +10,16 @@
 extra_custom_certs_file_directory_certs_dir:
   file.directory:
     - name: /etc/nginx/ssl
+    - user: root
+    - group: root
+    - dir_mode: 0750
+    - file_mode: 0640
     - require:
       - pkg: nginx_install
+    - recurse:
+      - user
+      - group
+      - mode
 
   {%- for cert in certs %}
     {%- set cert_file = 'arvados-' ~ cert ~ '.pem' %}
@@ -25,6 +33,7 @@ extra_custom_certs_file_copy_{{ c }}:
     - force: true
     - user: root
     - group: root
+    - mode: 0640
     - unless: cmp {{ dest_cert_dir }}/{{ c }} {{ orig_cert_dir }}/{{ c }}
     - require:
       - file: extra_custom_certs_file_directory_certs_dir

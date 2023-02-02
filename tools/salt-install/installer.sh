@@ -74,11 +74,13 @@ sync() {
 	    # from that.
 
 	    ssh $DEPLOY_USER@$NODE git init --bare ${GITTARGET}.git
+		ssh $DEPLOY_USER@$NODE chmod 700 ${GITTARGET}.git
 	    if ! git remote add $NODE $DEPLOY_USER@$NODE:${GITTARGET}.git ; then
 			git remote set-url $NODE $DEPLOY_USER@$NODE:${GITTARGET}.git
 	    fi
 	    git push $NODE $BRANCH
 	    ssh $DEPLOY_USER@$NODE git clone ${GITTARGET}.git ${GITTARGET}
+		ssh $DEPLOY_USER@$NODE chmod 700 ${GITTARGET}
 	fi
 
 	# The update case.
@@ -108,7 +110,7 @@ deploynode() {
     logfile=deploy-${NODE}-$(date -Iseconds).log
 
     if [[ "$NODE" = localhost ]] ; then
-	SUDO=''
+	    SUDO=''
 	if [[ $(whoami) != 'root' ]] ; then
 	    SUDO=sudo
 	fi
@@ -173,6 +175,7 @@ case "$subcmd" in
 
 	echo "Initializing $SETUPDIR"
 	git init $SETUPDIR
+	chmod 700 $SETUPDIR
 	cp -r *.sh tests $SETUPDIR
 
 	cp local.params.example.$PARAMS $SETUPDIR/${CONFIG_FILE}
