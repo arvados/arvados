@@ -75,16 +75,16 @@ The SDK uses @pycurl@ which depends on the @libcurl@ C library.  To build the mo
 $ apt-get install git build-essential python3-dev libcurl4-openssl-dev libssl-dev
 </pre>
 
-Run @pip install arvados-python-client@ in an appropriate installation environment, such as a @virtualenv@.
+Run @python3 -m pip install arvados-python-client@ in an appropriate installation environment, such as a @virtualenv@.
 
 {% include 'notebox_begin_warning' %}
-If your version of @pip@ is 1.4 or newer, the @pip install@ command might give an error: "Could not find a version that satisfies the requirement arvados-python-client". If this happens, try @pip install --pre arvados-python-client@.
+If your version of @pip@ is 1.4 or newer, the @pip install@ command might give an error: "Could not find a version that satisfies the requirement arvados-python-client". If this happens, try @python3 -m pip install --pre arvados-python-client@.
 {% include 'notebox_end' %}
 
 You can test the installation by creating a client object. Ensure your "@ARVADOS_API_HOST@ and @ARVADOS_API_TOKEN@ credentials are set up correctly":{{site.baseurl}}/user/reference/api-tokens.html. Then you should be able to run the following without any errors:
 
 <notextile>
-<pre>~$ <code class="userinput">python</code>
+<pre>~$ <code class="userinput">python3</code>
 Python 3.7.3 (default, Jul 25 2020, 13:03:44)
 [GCC 8.3.0] on linux
 Type "help", "copyright", "credits" or "license" for more information.
