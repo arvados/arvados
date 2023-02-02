@@ -16,13 +16,15 @@ h2. Installation
 
 If you are logged in to an Arvados VM, the Python SDK should be installed.
 
-To use the Python SDK elsewhere, you can install from PyPI or a distribution package.
+To use the Python SDK elsewhere, you can install it "from an Arvados distribution package":#package-install or "from PyPI using pip":#pip-install.
 
+{% include 'notebox_begin_warning' %}
 As of Arvados 2.2, the Python SDK requires Python 3.6+.  The last version to support Python 2.7 is Arvados 2.0.4.
+{% include 'notebox_end' %}
 
-h2. Option 1: Install from a distribution package
+h2(#package-install). Install from a distribution package
 
-This installation method is recommended to make the CLI tools available system-wide. It can coexist with the installation method described in option 2, below.
+This installation method is recommended to make the CLI tools available system-wide. It can coexist with the pip installation method described below.
 
 First, configure the "Arvados package repositories":../../install/packages.html
 
@@ -30,44 +32,11 @@ First, configure the "Arvados package repositories":../../install/packages.html
 
 {% include 'install_packages' %}
 
-h2. Option 2: Install with pip
-
-This installation method is recommended to use the SDK in your own Python programs. If installed into a @virtualenv@, it can coexist with the system-wide installation method from a distribution package.
-
-Run @pip install arvados-python-client@ in an appropriate installation environment, such as a @virtualenv@.
-
-Note:
-
-The SDK uses @pycurl@ which depends on the @libcurl@ C library.  To build the module you may have to first install additional packages.  On Debian 10 this is:
-
-<pre>
-$ apt-get install git build-essential python3-dev libcurl4-openssl-dev libssl-dev
-</pre>
-
-If your version of @pip@ is 1.4 or newer, the @pip install@ command might give an error: "Could not find a version that satisfies the requirement arvados-python-client". If this happens, try @pip install --pre arvados-python-client@.
-
-h2. Test installation
-
-If the SDK is installed and your @ARVADOS_API_HOST@ and @ARVADOS_API_TOKEN@ environment variables are set up correctly (see "api-tokens":{{site.baseurl}}/user/reference/api-tokens.html for details), @import arvados@ should produce no errors.
-
-If you installed with pip (option 1, above):
-
-<notextile>
-<pre>~$ <code class="userinput">python</code>
-Python 3.7.3 (default, Jul 25 2020, 13:03:44)
-[GCC 8.3.0] on linux
-Type "help", "copyright", "credits" or "license" for more information.
->>> <code class="userinput">import arvados</code>
->>> <code class="userinput">arvados.api('v1')</code>
-&lt;apiclient.discovery.Resource object at 0x233bb50&gt;
-</pre>
-</notextile>
-
-If you installed from a distribution package (option 2): the package includes a virtualenv, which means the correct Python environment needs to be loaded before the Arvados SDK can be imported. This can be done by activating the virtualenv first:
-
 {% include 'notebox_begin_warning' %}
 If you are on Ubuntu 18.04, please note that the Arvados packages that use Python depend on the python-3.8 package. This means they are installed under @/usr/share/python3.8@, not @/usr/share/python3@. You will need to update the commands below accordingly.
 {% include 'notebox_end' %}
+
+The package includes a virtualenv, which means the correct Python environment needs to be loaded before the Arvados SDK can be imported. You can test the installation by doing that, then creating a client object. Ensure your "@ARVADOS_API_HOST@ and @ARVADOS_API_TOKEN@ credentials are set up correctly":{{site.baseurl}}/user/reference/api-tokens.html. Then you should be able to run the following without any errors:
 
 <notextile>
 <pre>~$ <code class="userinput">source /usr/share/python3/dist/python3-arvados-python-client/bin/activate</code>
@@ -81,7 +50,7 @@ Type "help", "copyright", "credits" or "license" for more information.
 </pre>
 </notextile>
 
-Or alternatively, by using the Python executable from the virtualenv directly:
+Alternatively, you can run the Python executable inside the @virtualenv@ directly:
 
 <notextile>
 <pre>~$ <code class="userinput">/usr/share/python3/dist/python3-arvados-python-client/bin/python</code>
@@ -94,6 +63,35 @@ Type "help", "copyright", "credits" or "license" for more information.
 </pre>
 </notextile>
 
-h2. Usage
+After you have successfully tested your installation, proceed to the the "API client overview":api-client.html and "cookbook":cookbook.html to learn how to use the SDK.
 
-Check out the "API client overview":api-client.html and "cookbook":cookbook.html.
+h2(#pip-install). Install from PyPI with pip
+
+This installation method is recommended to use the SDK in your own Python programs. If installed into a @virtualenv@, it can coexist with the system-wide installation method from a distribution package.
+
+The SDK uses @pycurl@ which depends on the @libcurl@ C library.  To build the module you may have to first install additional packages.  On Debian 10 you can do this by running:
+
+<pre>
+$ apt-get install git build-essential python3-dev libcurl4-openssl-dev libssl-dev
+</pre>
+
+Run @python3 -m pip install arvados-python-client@ in an appropriate installation environment, such as a @virtualenv@.
+
+{% include 'notebox_begin_warning' %}
+If your version of @pip@ is 1.4 or newer, the @pip install@ command might give an error: "Could not find a version that satisfies the requirement arvados-python-client". If this happens, try @python3 -m pip install --pre arvados-python-client@.
+{% include 'notebox_end' %}
+
+You can test the installation by creating a client object. Ensure your "@ARVADOS_API_HOST@ and @ARVADOS_API_TOKEN@ credentials are set up correctly":{{site.baseurl}}/user/reference/api-tokens.html. Then you should be able to run the following without any errors:
+
+<notextile>
+<pre>~$ <code class="userinput">python3</code>
+Python 3.7.3 (default, Jul 25 2020, 13:03:44)
+[GCC 8.3.0] on linux
+Type "help", "copyright", "credits" or "license" for more information.
+>>> <code class="userinput">import arvados</code>
+>>> <code class="userinput">arvados.api('v1')</code>
+&lt;apiclient.discovery.Resource object at 0x233bb50&gt;
+</pre>
+</notextile>
+
+After you have successfully tested your installation, proceed to the the "API client overview":api-client.html and "cookbook":cookbook.html to learn how to use the SDK.
