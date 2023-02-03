@@ -64,7 +64,7 @@ export class SearchResultsMiddlewareService extends DataExplorerMiddlewareServic
                     // Request all containers for process status to be available
                     const containerRequests = response.items.filter((item) => item.kind === ResourceKind.CONTAINER_REQUEST) as ContainerRequestResource[];
                     const containerUuids = containerRequests.map(container => container.containerUuid).filter(uuid => uuid !== null) as string[];
-                    this.services.containerService
+                    containerUuids.length && this.services.containerService
                         .list({
                             filters: new FilterBuilder()
                                 .addIn('uuid', containerUuids)
