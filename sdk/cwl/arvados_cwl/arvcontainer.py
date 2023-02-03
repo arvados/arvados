@@ -544,6 +544,8 @@ class RunnerContainer(Runner):
             container_req["properties"]["template_uuid"] = self.embedded_tool.tool["id"][6:33]
         else:
             main = self.loadingContext.loader.idx["_:main"]
+            if main.get("id") == "_:main":
+                del main["id"]
             #print(json.dumps(main, indent=2))
             workflowpath = "/var/lib/cwl/workflow.json#main"
             container_req["mounts"]["/var/lib/cwl/workflow.json"] = {

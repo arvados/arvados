@@ -329,7 +329,7 @@ def new_upload_workflow(arvRunner, tool, job_order, project_uuid,
         update_refs(result, w, tool.doc_loader.expand_url, merged_map, jobmapper, set_block_style, runtimeContext, "", "")
 
         with col.open(w[n+1:], "wt") as f:
-            #print(yamlloader.dump(result, stream=sys.stdout))
+            # yamlloader.dump(result, stream=sys.stdout)
             yamlloader.dump(result, stream=f)
 
         with col.open(os.path.join("original", w[n+1:]), "wt") as f:

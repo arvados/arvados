@@ -26,7 +26,7 @@
                     "in": [],
                     "label": "collection_per_tool.cwl",
                     "out": [],
-                    "run": "keep:473135c3f4af514f85027e9e348cea45+179/collection_per_tool.cwl"
+                    "run": "keep:177002db236f41230905621862cc4230+367/collection_per_tool.cwl"
                 }
             ]
         }

@@ -70,7 +70,8 @@ def stubs(wfdetails=('submit_wf.cwl', None)):
             uuid4.side_effect = ["df80736f-f14d-4b10-b2e3-03aa27f034bb", "df80736f-f14d-4b10-b2e3-03aa27f034b1",
                                  "df80736f-f14d-4b10-b2e3-03aa27f034b2", "df80736f-f14d-4b10-b2e3-03aa27f034b3",
                                  "df80736f-f14d-4b10-b2e3-03aa27f034b4", "df80736f-f14d-4b10-b2e3-03aa27f034b5",
-                                 "df80736f-f14d-4b10-b2e3-03aa27f034b6"]
+                                 "df80736f-f14d-4b10-b2e3-03aa27f034b6", "df80736f-f14d-4b10-b2e3-03aa27f034b7",
+                                 "df80736f-f14d-4b10-b2e3-03aa27f034b8", "df80736f-f14d-4b10-b2e3-03aa27f034b9"]
 
             determine_image_id.return_value = None
 
@@ -403,7 +404,7 @@ class TestSubmit(unittest.TestCase):
                     "class": "http://arvados.org/cwl#WorkflowRunnerResources"
                 }
         ]
-        expect_container["mounts"]["/var/lib/cwl/workflow.json"]["content"]["$graph"][0]["steps"][0]["run"] = "keep:af64a47741bcc401f230eee99c6e80ff+137/wf/submit_wf_no_reuse.cwl"
+        expect_container["mounts"]["/var/lib/cwl/workflow.json"]["content"]["$graph"][0]["steps"][0]["run"] = "keep:fa5fbf21deb74f9f239daa3f5bb4b902+292/wf/submit_wf_no_reuse.cwl"
 
         stubs.api.container_requests().create.assert_called_with(
             body=JsonDiffMatcher(expect_container))
@@ -1023,7 +1024,7 @@ class TestSubmit(unittest.TestCase):
         #    "arv": "http://arvados.org/cwl#",
         #}
         expect_container["command"] = ["--collection-cache-size=512" if v == "--collection-cache-size=256" else v for v in expect_container["command"]]
-        expect_container["mounts"]["/var/lib/cwl/workflow.json"]["content"]["$graph"][0]["steps"][0]["run"] = "keep:10f1d17b8c4aad888e1dc2a93a95ceab+145/wf/submit_wf_runner_resources.cwl"
+        expect_container["mounts"]["/var/lib/cwl/workflow.json"]["content"]["$graph"][0]["steps"][0]["run"] = "keep:80b60e39456505b91d3989a1f5058b98+308/wf/submit_wf_runner_resources.cwl"
 
         stubs.api.container_requests().create.assert_called_with(
             body=JsonDiffMatcher(expect_container))
@@ -1180,7 +1181,7 @@ class TestSubmit(unittest.TestCase):
                                         "out": [
                                             {"id": "#main/step/out"}
                                         ],
-                                        "run": "keep:702edbfca88e907b62234556089dbce7+119/secret_wf.cwl"
+                                        "run": "keep:7628e49da34b93de9f4baf08a6212817+247/secret_wf.cwl"
                                     }
                                 ]
                             }
@@ -1423,7 +1424,7 @@ class TestSubmit(unittest.TestCase):
         #    "arv": "http://arvados.org/cwl#"
         #}
 
-        expect_container["mounts"]["/var/lib/cwl/workflow.json"]["content"]["$graph"][0]["steps"][0]["run"] = "keep:743a5bcaef0604899e4f4706ac525d83+147/wf/submit_wf_process_properties.cwl"
+        expect_container["mounts"]["/var/lib/cwl/workflow.json"]["content"]["$graph"][0]["steps"][0]["run"] = "keep:df44f9dd4b9467159f210f967e45417f+312/wf/submit_wf_process_properties.cwl"
 
         expect_container["properties"].update({
             "baz": "blorp.txt",
