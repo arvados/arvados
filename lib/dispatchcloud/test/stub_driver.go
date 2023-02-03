@@ -470,3 +470,7 @@ func copyTags(src cloud.InstanceTags) cloud.InstanceTags {
 	}
 	return dst
 }
+
+func (si stubInstance) PriceHistory(arvados.InstanceType) []cloud.InstancePrice {
+	return nil
+}

@@ -9,7 +9,7 @@
 //
 // Tests should be run individually and in the order they are listed in the file:
 //
-// Example azconfig.yml:
+// Example ec2config.yml:
 //
 // ImageIDForTestSuite: ami-xxxxxxxxxxxxxxxxx
 // DriverParameters:
@@ -27,6 +27,7 @@ import (
 	"flag"
 	"sync/atomic"
 	"testing"
+	"time"
 
 	"git.arvados.org/arvados.git/lib/cloud"
 	"git.arvados.org/arvados.git/lib/dispatchcloud/test"
@@ -56,6 +57,8 @@ type testConfig struct {
 }
 
 type ec2stub struct {
+	c       *check.C
+	reftime time.Time
 }
 
 func (e *ec2stub) ImportKeyPair(input *ec2.ImportKeyPairInput) (*ec2.ImportKeyPairOutput, error) {
@@ -68,13 +71,75 @@ func (e *ec2stub) DescribeKeyPairs(input *ec2.DescribeKeyPairsInput) (*ec2.Descr
 
 func (e *ec2stub) RunInstances(input *ec2.RunInstancesInput) (*ec2.Reservation, error) {
 	return &ec2.Reservation{Instances: []*ec2.Instance{{
-		InstanceId: aws.String("i-123"),
-		Tags:       input.TagSpecifications[0].Tags,
+		InstanceId:   aws.String("i-123"),
+		InstanceType: aws.String("t2.micro"),
+		Tags:         input.TagSpecifications[0].Tags,
 	}}}, nil
 }
 
 func (e *ec2stub) DescribeInstances(input *ec2.DescribeInstancesInput) (*ec2.DescribeInstancesOutput, error) {
-	return &ec2.DescribeInstancesOutput{}, nil
+	return &ec2.DescribeInstancesOutput{
+		Reservations: []*ec2.Reservation{{
+			Instances: []*ec2.Instance{{
+				InstanceId:        aws.String("i-123"),
+				InstanceLifecycle: aws.String("spot"),
+				InstanceType:      aws.String("t2.micro"),
+				PrivateIpAddress:  aws.String("10.1.2.3"),
+				State:             &ec2.InstanceState{Name: aws.String("running"), Code: aws.Int64(16)},
+			}, {
+				InstanceId:        aws.String("i-124"),
+				InstanceLifecycle: aws.String("spot"),
+				InstanceType:      aws.String("t2.micro"),
+				PrivateIpAddress:  aws.String("10.1.2.4"),
+				State:             &ec2.InstanceState{Name: aws.String("running"), Code: aws.Int64(16)},
+			}},
+		}},
+	}, nil
+}
+
+func (e *ec2stub) DescribeInstanceStatusPages(input *ec2.DescribeInstanceStatusInput, fn func(*ec2.DescribeInstanceStatusOutput, bool) bool) error {
+	fn(&ec2.DescribeInstanceStatusOutput{
+		InstanceStatuses: []*ec2.InstanceStatus{{
+			InstanceId:       aws.String("i-123"),
+			AvailabilityZone: aws.String("aa-east-1a"),
+		}, {
+			InstanceId:       aws.String("i-124"),
+			AvailabilityZone: aws.String("aa-east-1a"),
+		}},
+	}, true)
+	return nil
+}
+
+func (e *ec2stub) DescribeSpotPriceHistoryPages(input *ec2.DescribeSpotPriceHistoryInput, fn func(*ec2.DescribeSpotPriceHistoryOutput, bool) bool) error {
+	if !fn(&ec2.DescribeSpotPriceHistoryOutput{
+		SpotPriceHistory: []*ec2.SpotPrice{
+			&ec2.SpotPrice{
+				InstanceType:     aws.String("t2.micro"),
+				AvailabilityZone: aws.String("aa-east-1a"),
+				SpotPrice:        aws.String("0.005"),
+				Timestamp:        aws.Time(e.reftime.Add(-9 * time.Minute)),
+			},
+			&ec2.SpotPrice{
+				InstanceType:     aws.String("t2.micro"),
+				AvailabilityZone: aws.String("aa-east-1a"),
+				SpotPrice:        aws.String("0.015"),
+				Timestamp:        aws.Time(e.reftime.Add(-5 * time.Minute)),
+			},
+		},
+	}, false) {
+		return nil
+	}
+	fn(&ec2.DescribeSpotPriceHistoryOutput{
+		SpotPriceHistory: []*ec2.SpotPrice{
+			&ec2.SpotPrice{
+				InstanceType:     aws.String("t2.micro"),
+				AvailabilityZone: aws.String("aa-east-1a"),
+				SpotPrice:        aws.String("0.01"),
+				Timestamp:        aws.Time(e.reftime.Add(-2 * time.Minute)),
+			},
+		},
+	}, true)
+	return nil
 }
 
 func (e *ec2stub) CreateTags(input *ec2.CreateTagsInput) (*ec2.CreateTagsOutput, error) {
@@ -85,7 +150,7 @@ func (e *ec2stub) TerminateInstances(input *ec2.TerminateInstancesInput) (*ec2.T
 	return nil, nil
 }
 
-func GetInstanceSet() (cloud.InstanceSet, cloud.ImageID, arvados.Cluster, error) {
+func GetInstanceSet(c *check.C) (*ec2InstanceSet, cloud.ImageID, arvados.Cluster) {
 	cluster := arvados.Cluster{
 		InstanceTypes: arvados.InstanceTypeMap(map[string]arvados.InstanceType{
 			"tiny": {
@@ -98,7 +163,7 @@ func GetInstanceSet() (cloud.InstanceSet, cloud.ImageID, arvados.Cluster, error)
 				Preemptible:  false,
 			},
 			"tiny-with-extra-scratch": {
-				Name:         "tiny",
+				Name:         "tiny-with-extra-scratch",
 				ProviderType: "t2.micro",
 				VCPUs:        1,
 				RAM:          4000000000,
@@ -107,7 +172,7 @@ func GetInstanceSet() (cloud.InstanceSet, cloud.ImageID, arvados.Cluster, error)
 				AddedScratch: 20000000000,
 			},
 			"tiny-preemptible": {
-				Name:         "tiny",
+				Name:         "tiny-preemptible",
 				ProviderType: "t2.micro",
 				VCPUs:        1,
 				RAM:          4000000000,
@@ -119,37 +184,29 @@ func GetInstanceSet() (cloud.InstanceSet, cloud.ImageID, arvados.Cluster, error)
 	if *live != "" {
 		var exampleCfg testConfig
 		err := config.LoadFile(&exampleCfg, *live)
-		if err != nil {
-			return nil, cloud.ImageID(""), cluster, err
-		}
+		c.Assert(err, check.IsNil)
 
 		ap, err := newEC2InstanceSet(exampleCfg.DriverParameters, "test123", nil, logrus.StandardLogger())
-		return ap, cloud.ImageID(exampleCfg.ImageIDForTestSuite), cluster, err
+		c.Assert(err, check.IsNil)
+		return ap.(*ec2InstanceSet), cloud.ImageID(exampleCfg.ImageIDForTestSuite), cluster
 	}
 	ap := ec2InstanceSet{
-		ec2config:     ec2InstanceSetConfig{},
 		instanceSetID: "test123",
 		logger:        logrus.StandardLogger(),
-		client:        &ec2stub{},
+		client:        &ec2stub{c: c, reftime: time.Now().UTC()},
 		keys:          make(map[string]string),
 	}
-	return &ap, cloud.ImageID("blob"), cluster, nil
+	return &ap, cloud.ImageID("blob"), cluster
 }
 
 func (*EC2InstanceSetSuite) TestCreate(c *check.C) {
-	ap, img, cluster, err := GetInstanceSet()
-	if err != nil {
-		c.Fatal("Error making provider", err)
-	}
-
+	ap, img, cluster := GetInstanceSet(c)
 	pk, _ := test.LoadTestKey(c, "../../dispatchcloud/test/sshkey_dispatch")
-	c.Assert(err, check.IsNil)
 
 	inst, err := ap.Create(cluster.InstanceTypes["tiny"],
 		img, map[string]string{
 			"TestTagName": "test tag value",
 		}, "umask 0600; echo -n test-file-data >/var/run/test-file", pk)
-
 	c.Assert(err, check.IsNil)
 
 	tags := inst.Tags()
@@ -159,13 +216,8 @@ func (*EC2InstanceSetSuite) TestCreate(c *check.C) {
 }
 
 func (*EC2InstanceSetSuite) TestCreateWithExtraScratch(c *check.C) {
-	ap, img, cluster, err := GetInstanceSet()
-	if err != nil {
-		c.Fatal("Error making provider", err)
-	}
-
+	ap, img, cluster := GetInstanceSet(c)
 	pk, _ := test.LoadTestKey(c, "../../dispatchcloud/test/sshkey_dispatch")
-	c.Assert(err, check.IsNil)
 
 	inst, err := ap.Create(cluster.InstanceTypes["tiny-with-extra-scratch"],
 		img, map[string]string{
@@ -181,13 +233,8 @@ func (*EC2InstanceSetSuite) TestCreateWithExtraScratch(c *check.C) {
 }
 
 func (*EC2InstanceSetSuite) TestCreatePreemptible(c *check.C) {
-	ap, img, cluster, err := GetInstanceSet()
-	if err != nil {
-		c.Fatal("Error making provider", err)
-	}
-
+	ap, img, cluster := GetInstanceSet(c)
 	pk, _ := test.LoadTestKey(c, "../../dispatchcloud/test/sshkey_dispatch")
-	c.Assert(err, check.IsNil)
 
 	inst, err := ap.Create(cluster.InstanceTypes["tiny-preemptible"],
 		img, map[string]string{
@@ -203,11 +250,7 @@ func (*EC2InstanceSetSuite) TestCreatePreemptible(c *check.C) {
 }
 
 func (*EC2InstanceSetSuite) TestTagInstances(c *check.C) {
-	ap, _, _, err := GetInstanceSet()
-	if err != nil {
-		c.Fatal("Error making provider", err)
-	}
-
+	ap, _, _ := GetInstanceSet(c)
 	l, err := ap.Instances(nil)
 	c.Assert(err, check.IsNil)
 
@@ -219,13 +262,8 @@ func (*EC2InstanceSetSuite) TestTagInstances(c *check.C) {
 }
 
 func (*EC2InstanceSetSuite) TestListInstances(c *check.C) {
-	ap, _, _, err := GetInstanceSet()
-	if err != nil {
-		c.Fatal("Error making provider: ", err)
-	}
-
+	ap, _, _ := GetInstanceSet(c)
 	l, err := ap.Instances(nil)
-
 	c.Assert(err, check.IsNil)
 
 	for _, i := range l {
@@ -235,16 +273,77 @@ func (*EC2InstanceSetSuite) TestListInstances(c *check.C) {
 }
 
 func (*EC2InstanceSetSuite) TestDestroyInstances(c *check.C) {
-	ap, _, _, err := GetInstanceSet()
-	if err != nil {
-		c.Fatal("Error making provider", err)
-	}
-
+	ap, _, _ := GetInstanceSet(c)
 	l, err := ap.Instances(nil)
 	c.Assert(err, check.IsNil)
 
 	for _, i := range l {
 		c.Check(i.Destroy(), check.IsNil)
+	}
+}
+
+func (*EC2InstanceSetSuite) TestInstancePriceHistory(c *check.C) {
+	ap, img, cluster := GetInstanceSet(c)
+	pk, _ := test.LoadTestKey(c, "../../dispatchcloud/test/sshkey_dispatch")
+	tags := cloud.InstanceTags{"arvados-ec2-driver": "test"}
+
+	defer func() {
+		instances, err := ap.Instances(tags)
+		c.Assert(err, check.IsNil)
+		for _, inst := range instances {
+			c.Logf("cleanup: destroy instance %s", inst)
+			c.Check(inst.Destroy(), check.IsNil)
+		}
+	}()
+
+	ap.ec2config.SpotPriceUpdateInterval = arvados.Duration(time.Hour)
+	ap.ec2config.EBSPrice = 0.1 // $/GiB/month
+	inst1, err := ap.Create(cluster.InstanceTypes["tiny-preemptible"], img, tags, "true", pk)
+	c.Assert(err, check.IsNil)
+	defer inst1.Destroy()
+	inst2, err := ap.Create(cluster.InstanceTypes["tiny-preemptible"], img, tags, "true", pk)
+	c.Assert(err, check.IsNil)
+	defer inst2.Destroy()
+
+	// in live mode, we need to wait for the instances to reach
+	// running state before we can discover their availability
+	// zones and look up the appropriate prices.
+	var instances []cloud.Instance
+	for deadline := time.Now().Add(5 * time.Minute); ; {
+		if deadline.Before(time.Now()) {
+			c.Fatal("timed out")
+		}
+		instances, err = ap.Instances(tags)
+		running := 0
+		for _, inst := range instances {
+			ec2i := inst.(*ec2Instance).instance
+			if *ec2i.InstanceLifecycle == "spot" && *ec2i.State.Code&16 != 0 {
+				running++
+			}
+		}
+		if running >= 2 {
+			c.Logf("instances are running, and identifiable as spot instances")
+			break
+		}
+		c.Logf("waiting for instances to reach running state so their availability zone becomes visible...")
+		time.Sleep(10 * time.Second)
+	}
+
+	for _, inst := range instances {
+		hist := inst.PriceHistory(arvados.InstanceType{})
+		c.Logf("%s price history: %v", inst.ID(), hist)
+		c.Check(len(hist) > 0, check.Equals, true)
+
+		histWithScratch := inst.PriceHistory(arvados.InstanceType{AddedScratch: 640 << 30})
+		c.Logf("%s price history with 640 GiB scratch: %v", inst.ID(), histWithScratch)
+
+		for i, ip := range hist {
+			c.Check(ip.Price, check.Not(check.Equals), 0.0)
+			if i > 0 {
+				c.Check(ip.StartTime.Before(hist[i-1].StartTime), check.Equals, true)
+			}
+			c.Check(ip.Price < histWithScratch[i].Price, check.Equals, true)
+		}
 	}
 }
 

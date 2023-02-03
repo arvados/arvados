@@ -28,7 +28,7 @@ table(table table-bordered table-condensed).
 |state|string|The allowed states are "Queued", "Locked", "Running", "Cancelled" and "Complete".|See "Container states":#container_states for more details.|
 |started_at|datetime|When this container started running.|Null if container has not yet started.|
 |finished_at|datetime|When this container finished.|Null if container has not yet finished.|
-|log|string|UUID or portable data hash of a collection containing the log messages produced when executing the container.|PDH after the container is finished, otherwise UUID or null.|
+|log|string|Portable data hash of a collection containing the log messages produced when executing the container.|Null if container has not yet started. The Crunch system will periodically update this field for a running container.|
 |environment|hash|Environment variables and values that should be set in the container environment (@docker run --env@). This augments and (when conflicts exist) overrides environment variables given in the image's Dockerfile.|Must be equal to a ContainerRequest's environment in order to satisfy the ContainerRequest.|
 |cwd|string|Initial working directory.|Must be equal to a ContainerRequest's cwd in order to satisfy the ContainerRequest|
 |command|array of strings|Command to execute.| Must be equal to a ContainerRequest's command in order to satisfy the ContainerRequest.|
@@ -67,7 +67,7 @@ Generally this will contain additional keys that are not present in any correspo
 h2(#container_states). Container states
 
 table(table table-bordered table-condensed).
-|_. State|_. Sgnificance|_. Allowed next|
+|_. State&nbsp;value|_. Description|_. Allowed next|
 |Queued|Waiting for a dispatcher to lock it and try to run the container.|Locked, Cancelled|
 |Locked|A dispatcher has "taken" the container and is allocating resources for it. The container has not started yet.|Queued, Running, Cancelled|
 |Running|Resources have been allocated and the contained process has been started (or is about to start). Crunch-run _must_ set state to Running _before_ there is any possibility that user code will run in the container.|Complete, Cancelled|

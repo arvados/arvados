@@ -256,26 +256,32 @@ func (s *stubServer) serveKeepstoreMounts() *reqTracker {
 }
 
 func (s *stubServer) serveKeepstoreIndexFoo4Bar1() *reqTracker {
+	fooLine := func(mt int) string { return fmt.Sprintf("acbd18db4cc2f85cedef654fccc4a4d8+3 %d\n", 12345678+mt) }
+	barLine := "37b51d194a7513e45b56f6524f2d51f2+3 12345678\n"
 	rt := &reqTracker{}
 	s.mux.HandleFunc("/index/", func(w http.ResponseWriter, r *http.Request) {
 		count := rt.Add(r)
-		if r.Host == "keep0.zzzzz.arvadosapi.com:25107" {
-			io.WriteString(w, "37b51d194a7513e45b56f6524f2d51f2+3 12345678\n")
+		if r.Host == "keep0.zzzzz.arvadosapi.com:25107" && strings.HasPrefix(barLine, r.URL.Path[7:]) {
+			io.WriteString(w, barLine)
 		}
-		fmt.Fprintf(w, "acbd18db4cc2f85cedef654fccc4a4d8+3 %d\n\n", 12345678+count)
+		if strings.HasPrefix(fooLine(count), r.URL.Path[7:]) {
+			io.WriteString(w, fooLine(count))
+		}
+		io.WriteString(w, "\n")
 	})
 	for _, mounts := range stubMounts {
 		for i, mnt := range mounts {
 			i := i
 			s.mux.HandleFunc(fmt.Sprintf("/mounts/%s/blocks", mnt.UUID), func(w http.ResponseWriter, r *http.Request) {
 				count := rt.Add(r)
-				if i == 0 && r.Host == "keep0.zzzzz.arvadosapi.com:25107" {
-					io.WriteString(w, "37b51d194a7513e45b56f6524f2d51f2+3 12345678\n")
+				r.ParseForm()
+				if i == 0 && r.Host == "keep0.zzzzz.arvadosapi.com:25107" && strings.HasPrefix(barLine, r.Form.Get("prefix")) {
+					io.WriteString(w, barLine)
 				}
-				if i == 0 {
-					fmt.Fprintf(w, "acbd18db4cc2f85cedef654fccc4a4d8+3 %d\n", 12345678+count)
+				if i == 0 && strings.HasPrefix(fooLine(count), r.Form.Get("prefix")) {
+					io.WriteString(w, fooLine(count))
 				}
-				fmt.Fprintf(w, "\n")
+				io.WriteString(w, "\n")
 			})
 		}
 	}
@@ -283,21 +289,44 @@ func (s *stubServer) serveKeepstoreIndexFoo4Bar1() *reqTracker {
 }
 
 func (s *stubServer) serveKeepstoreIndexFoo1() *reqTracker {
+	fooLine := "acbd18db4cc2f85cedef654fccc4a4d8+3 12345678\n"
 	rt := &reqTracker{}
 	s.mux.HandleFunc("/index/", func(w http.ResponseWriter, r *http.Request) {
 		rt.Add(r)
-		io.WriteString(w, "acbd18db4cc2f85cedef654fccc4a4d8+3 12345678\n\n")
+		if r.Host == "keep0.zzzzz.arvadosapi.com:25107" && strings.HasPrefix(fooLine, r.URL.Path[7:]) {
+			io.WriteString(w, fooLine)
+		}
+		io.WriteString(w, "\n")
 	})
 	for _, mounts := range stubMounts {
 		for i, mnt := range mounts {
 			i := i
 			s.mux.HandleFunc(fmt.Sprintf("/mounts/%s/blocks", mnt.UUID), func(w http.ResponseWriter, r *http.Request) {
 				rt.Add(r)
-				if i == 0 {
-					io.WriteString(w, "acbd18db4cc2f85cedef654fccc4a4d8+3 12345678\n\n")
-				} else {
-					io.WriteString(w, "\n")
+				if i == 0 && strings.HasPrefix(fooLine, r.Form.Get("prefix")) {
+					io.WriteString(w, fooLine)
 				}
+				io.WriteString(w, "\n")
+			})
+		}
+	}
+	return rt
+}
+
+func (s *stubServer) serveKeepstoreIndexIgnoringPrefix() *reqTracker {
+	fooLine := "acbd18db4cc2f85cedef654fccc4a4d8+3 12345678\n"
+	rt := &reqTracker{}
+	s.mux.HandleFunc("/index/", func(w http.ResponseWriter, r *http.Request) {
+		rt.Add(r)
+		io.WriteString(w, fooLine)
+		io.WriteString(w, "\n")
+	})
+	for _, mounts := range stubMounts {
+		for _, mnt := range mounts {
+			s.mux.HandleFunc(fmt.Sprintf("/mounts/%s/blocks", mnt.UUID), func(w http.ResponseWriter, r *http.Request) {
+				rt.Add(r)
+				io.WriteString(w, fooLine)
+				io.WriteString(w, "\n")
 			})
 		}
 	}
@@ -379,6 +408,29 @@ func (s *runSuite) TestRefuseZeroCollections(c *check.C) {
 	c.Check(pullReqs.Count(), check.Equals, 0)
 }
 
+func (s *runSuite) TestRefuseBadIndex(c *check.C) {
+	opts := RunOptions{
+		CommitPulls: true,
+		CommitTrash: true,
+		ChunkPrefix: "abc",
+		Logger:      ctxlog.TestLogger(c),
+	}
+	s.stub.serveCurrentUserAdmin()
+	s.stub.serveFooBarFileCollections()
+	s.stub.serveKeepServices(stubServices)
+	s.stub.serveKeepstoreMounts()
+	s.stub.serveKeepstoreIndexIgnoringPrefix()
+	trashReqs := s.stub.serveKeepstoreTrash()
+	pullReqs := s.stub.serveKeepstorePull()
+	srv := s.newServer(&opts)
+	bal, err := srv.runOnce(context.Background())
+	c.Check(err, check.ErrorMatches, ".*Index response included block .* despite asking for prefix \"abc\"")
+	c.Check(trashReqs.Count(), check.Equals, 4)
+	c.Check(pullReqs.Count(), check.Equals, 0)
+	c.Check(bal.stats.trashes, check.Equals, 0)
+	c.Check(bal.stats.pulls, check.Equals, 0)
+}
+
 func (s *runSuite) TestRefuseNonAdmin(c *check.C) {
 	opts := RunOptions{
 		CommitPulls: true,
@@ -396,6 +448,37 @@ func (s *runSuite) TestRefuseNonAdmin(c *check.C) {
 	c.Check(err, check.ErrorMatches, "current user .* is not .* admin user")
 	c.Check(trashReqs.Count(), check.Equals, 0)
 	c.Check(pullReqs.Count(), check.Equals, 0)
+}
+
+func (s *runSuite) TestInvalidChunkPrefix(c *check.C) {
+	for _, trial := range []struct {
+		prefix string
+		errRe  string
+	}{
+		{"123ABC", "invalid char \"A\" in chunk prefix.*"},
+		{"123xyz", "invalid char \"x\" in chunk prefix.*"},
+		{"123456789012345678901234567890123", "invalid chunk prefix .* longer than a block hash"},
+	} {
+		s.SetUpTest(c)
+		c.Logf("trying invalid prefix %q", trial.prefix)
+		opts := RunOptions{
+			CommitPulls: true,
+			CommitTrash: true,
+			ChunkPrefix: trial.prefix,
+			Logger:      ctxlog.TestLogger(c),
+		}
+		s.stub.serveCurrentUserAdmin()
+		s.stub.serveFooBarFileCollections()
+		s.stub.serveKeepServices(stubServices)
+		s.stub.serveKeepstoreMounts()
+		trashReqs := s.stub.serveKeepstoreTrash()
+		pullReqs := s.stub.serveKeepstorePull()
+		srv := s.newServer(&opts)
+		_, err := srv.runOnce(context.Background())
+		c.Check(err, check.ErrorMatches, trial.errRe)
+		c.Check(trashReqs.Count(), check.Equals, 0)
+		c.Check(pullReqs.Count(), check.Equals, 0)
+	}
 }
 
 func (s *runSuite) TestRefuseSameDeviceDifferentVolumes(c *check.C) {
@@ -516,6 +599,37 @@ func (s *runSuite) TestCommit(c *check.C) {
 	c.Check(bufstr, check.Matches, `(?ms).*\narvados_keepbalance_changeset_compute_seconds_count 1\n.*`)
 	c.Check(bufstr, check.Matches, `(?ms).*\narvados_keep_dedup_byte_ratio [1-9].*`)
 	c.Check(bufstr, check.Matches, `(?ms).*\narvados_keep_dedup_block_ratio [1-9].*`)
+}
+
+func (s *runSuite) TestChunkPrefix(c *check.C) {
+	s.config.Collections.BlobMissingReport = c.MkDir() + "/keep-balance-lost-blocks-test-"
+	opts := RunOptions{
+		CommitPulls: true,
+		CommitTrash: true,
+		ChunkPrefix: "ac", // catch "foo" but not "bar"
+		Logger:      ctxlog.TestLogger(c),
+		Dumper:      ctxlog.TestLogger(c),
+	}
+	s.stub.serveCurrentUserAdmin()
+	s.stub.serveFooBarFileCollections()
+	s.stub.serveKeepServices(stubServices)
+	s.stub.serveKeepstoreMounts()
+	s.stub.serveKeepstoreIndexFoo4Bar1()
+	trashReqs := s.stub.serveKeepstoreTrash()
+	pullReqs := s.stub.serveKeepstorePull()
+	srv := s.newServer(&opts)
+	bal, err := srv.runOnce(context.Background())
+	c.Check(err, check.IsNil)
+	c.Check(trashReqs.Count(), check.Equals, 8)
+	c.Check(pullReqs.Count(), check.Equals, 4)
+	// "foo" block is overreplicated by 2
+	c.Check(bal.stats.trashes, check.Equals, 2)
+	// "bar" block is underreplicated but does not match prefix
+	c.Check(bal.stats.pulls, check.Equals, 0)
+
+	lost, err := ioutil.ReadFile(s.config.Collections.BlobMissingReport)
+	c.Assert(err, check.IsNil)
+	c.Check(string(lost), check.Equals, "")
 }
 
 func (s *runSuite) TestRunForever(c *check.C) {

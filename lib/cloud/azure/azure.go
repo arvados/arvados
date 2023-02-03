@@ -785,6 +785,10 @@ func (ai *azureInstance) Address() string {
 	}
 }
 
+func (ai *azureInstance) PriceHistory(arvados.InstanceType) []cloud.InstancePrice {
+	return nil
+}
+
 func (ai *azureInstance) RemoteUser() string {
 	return ai.provider.azconfig.AdminUsername
 }

@@ -29,16 +29,22 @@ type VocabularyTag struct {
 // Cannot have a constant map in Go, so we have to use a function
 func (v *Vocabulary) systemTagKeys() map[string]bool {
 	return map[string]bool{
-		"type":                  true,
-		"template_uuid":         true,
-		"groups":                true,
-		"username":              true,
-		"image_timestamp":       true,
+		// Collection keys - set by arvados-cwl-runner
+		"container_request": true,
+		"container_uuid":    true,
+		"type":              true,
+		// Collection keys - set by arv-keepdocker (on the way out)
 		"docker-image-repo-tag": true,
-		"filters":               true,
-		"container_request":     true,
-		"cwl_input":             true,
-		"cwl_output":            true,
+		// Container request keys - set by arvados-cwl-runner
+		"cwl_input":     true,
+		"cwl_output":    true,
+		"template_uuid": true,
+		// Group keys
+		"filters": true,
+		// Link keys
+		"groups":          true,
+		"image_timestamp": true,
+		"username":        true,
 	}
 }
 

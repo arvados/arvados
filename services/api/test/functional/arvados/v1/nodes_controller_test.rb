@@ -211,17 +211,6 @@ class Arvados::V1::NodesControllerTest < ActionController::TestCase
     assert_response 403
   end
 
-  test "job readable after updating other attributes" do
-    authorize_with :admin
-    post :update, params: {
-      id: nodes(:busy).uuid,
-      node: {last_ping_at: 1.second.ago},
-    }
-    assert_response :success
-    assert_equal(jobs(:nearly_finished_job).uuid, json_response["job_uuid"],
-                 "mismatched job UUID after ping update")
-  end
-
   test "node should fail ping with invalid hostname config format" do
     Rails.configuration.Containers.SLURM.Managed.AssignNodeHostname = 'compute%<slot_number>04'  # should end with "04d"
     post :ping, params: {

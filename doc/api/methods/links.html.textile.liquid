@@ -37,7 +37,7 @@ Some classes are pre-defined by convention and have standard meanings attached t
 
 h3. permission
 
-See "permission links":{{site.baseurl}}/api/permission-model.html#links section of the permission model.
+The significance of permission links is discussed in the "permission links":{{site.baseurl}}/api/permission-model.html#links section of the permission model documentation.
 
 h3. star
 
@@ -107,6 +107,8 @@ table(table table-bordered table-condensed).
 |_. Argument |_. Type |_. Description |_. Location |_. Example |
 |link|object||query||
 
+When you create a new permission link with the same @head_uuid@ and @tail_uuid@ as an existing permission link, the API returns the existing link instead of creating a new one. If the requested permission level is higher than the existing link, the existing link is updated accordingly. Otherwise the existing link is returned unchanged.
+
 h3. delete
 
 Delete an existing Link.
@@ -116,6 +118,8 @@ Arguments:
 table(table table-bordered table-condensed).
 |_. Argument |_. Type |_. Description |_. Location |_. Example |
 {background:#ccffcc}.|uuid|string|The UUID of the Link in question.|path||
+
+When you delete a permission link, any other existing permission links that have the same @head_uuid@ and @tail_uuid@ are also deleted.
 
 h3. get
 
@@ -143,6 +147,8 @@ table(table table-bordered table-condensed).
 |_. Argument |_. Type |_. Description |_. Location |_. Example |
 {background:#ccffcc}.|uuid|string|The UUID of the Link in question.|path||
 |link|object||query||
+
+When you update a permission link such that it has the same @head_uuid@ and @tail_uuid@ as one or more existing permission links, the API deletes the other links. If the highest permission level among the deleted links was higher than the newly updated link, the updated link's permission level is increased accordingly.
 
 h3. get_permissions
 

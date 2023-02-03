@@ -12,6 +12,7 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	"log"
 	"os"
 	"os/exec"
 	"regexp"
@@ -22,6 +23,7 @@ import (
 	"testing"
 	"time"
 
+	"git.arvados.org/arvados.git/lib/cloud"
 	"git.arvados.org/arvados.git/lib/cmd"
 	"git.arvados.org/arvados.git/sdk/go/arvados"
 	"git.arvados.org/arvados.git/sdk/go/arvadosclient"
@@ -188,9 +190,10 @@ func (client *ArvTestClient) Create(resourceType string,
 
 	if resourceType == "collections" && output != nil {
 		mt := parameters["collection"].(arvadosclient.Dict)["manifest_text"].(string)
+		md5sum := md5.Sum([]byte(mt))
 		outmap := output.(*arvados.Collection)
-		outmap.PortableDataHash = fmt.Sprintf("%x+%d", md5.Sum([]byte(mt)), len(mt))
-		outmap.UUID = fmt.Sprintf("zzzzz-4zz18-%15.15x", md5.Sum([]byte(mt)))
+		outmap.PortableDataHash = fmt.Sprintf("%x+%d", md5sum, len(mt))
+		outmap.UUID = fmt.Sprintf("zzzzz-4zz18-%015x", md5sum[:7])
 	}
 
 	return nil
@@ -594,7 +597,7 @@ func (s *TestSuite) TestUpdateContainerRunning(c *C) {
 	cr, err := NewContainerRunner(s.client, api, kc, "zzzzz-zzzzz-zzzzzzzzzzzzzzz")
 	c.Assert(err, IsNil)
 
-	err = cr.UpdateContainerRunning()
+	err = cr.UpdateContainerRunning("")
 	c.Check(err, IsNil)
 
 	c.Check(api.Content[0]["container"].(arvadosclient.Dict)["state"], Equals, "Running")
@@ -893,6 +896,42 @@ func (s *TestSuite) TestLogVersionAndRuntime(c *C) {
 	c.Check(s.api.Logs["crunch-run"].String(), Matches, `(?ms).*crunch-run process has uid=\d+\(.+\) gid=\d+\(.+\) groups=\d+\(.+\)(,\d+\(.+\))*\n.*`)
 	c.Check(s.api.Logs["crunch-run"].String(), Matches, `(?ms).*Executing container: zzzzz-zzzzz-zzzzzzzzzzzzzzz.*`)
 	c.Check(s.api.Logs["crunch-run"].String(), Matches, `(?ms).*Using container runtime: stub.*`)
+}
+
+func (s *TestSuite) TestCommitNodeInfoBeforeStart(c *C) {
+	var collection_create, container_update arvadosclient.Dict
+	s.fullRunHelper(c, `{
+		"command": ["true"],
+		"container_image": "`+arvadostest.DockerImage112PDH+`",
+		"cwd": ".",
+		"environment": {},
+		"mounts": {"/tmp": {"kind": "tmp"} },
+		"output_path": "/tmp",
+		"priority": 1,
+		"runtime_constraints": {},
+		"state": "Locked",
+		"uuid": "zzzzz-dz642-202301121543210"
+	}`, nil, 0,
+		func() {
+			collection_create = s.api.CalledWith("ensure_unique_name", true)
+			container_update = s.api.CalledWith("container.state", "Running")
+		})
+
+	c.Assert(collection_create, NotNil)
+	log_collection := collection_create["collection"].(arvadosclient.Dict)
+	c.Check(log_collection["name"], Equals, "logs for zzzzz-dz642-202301121543210")
+	manifest_text := log_collection["manifest_text"].(string)
+	// We check that the file size is at least two digits as an easy way to
+	// check the file isn't empty.
+	c.Check(manifest_text, Matches, `\. .+ \d+:\d{2,}:node-info\.txt( .+)?\n`)
+	c.Check(manifest_text, Matches, `\. .+ \d+:\d{2,}:node\.json( .+)?\n`)
+
+	c.Assert(container_update, NotNil)
+	// As of Arvados 2.5.0, the container update must specify its log in PDH
+	// format for the API server to propagate it to container requests, which
+	// is what we care about for this test.
+	expect_pdh := fmt.Sprintf("%x+%d", md5.Sum([]byte(manifest_text)), len(manifest_text))
+	c.Check(container_update["container"].(arvadosclient.Dict)["log"], Equals, expect_pdh)
 }
 
 func (s *TestSuite) TestContainerRecordLog(c *C) {
@@ -1696,7 +1735,8 @@ func (s *TestSuite) TestStdoutWithMultipleMountPointsUnderOutputDir(c *C) {
 		"output_path": "/tmp",
 		"priority": 1,
 		"runtime_constraints": {},
-		"state": "Locked"
+		"state": "Locked",
+		"uuid": "zzzzz-dz642-202301130848001"
 	}`
 
 	extraMounts := []string{
@@ -1719,22 +1759,25 @@ func (s *TestSuite) TestStdoutWithMultipleMountPointsUnderOutputDir(c *C) {
 
 	c.Check(api.CalledWith("container.exit_code", 0), NotNil)
 	c.Check(api.CalledWith("container.state", "Complete"), NotNil)
-	for _, v := range api.Content {
-		if v["collection"] != nil {
-			c.Check(v["ensure_unique_name"], Equals, true)
-			collection := v["collection"].(arvadosclient.Dict)
-			if strings.Index(collection["name"].(string), "output") == 0 {
-				manifest := collection["manifest_text"].(string)
-
-				c.Check(manifest, Equals, `./a/b 307372fa8fd5c146b22ae7a45b49bc31+6 0:6:c.out
+	output_count := uint(0)
+	for _, v := range s.runner.ContainerArvClient.(*ArvTestClient).Content {
+		if v["collection"] == nil {
+			continue
+		}
+		collection := v["collection"].(arvadosclient.Dict)
+		if collection["name"].(string) != "output for zzzzz-dz642-202301130848001" {
+			continue
+		}
+		c.Check(v["ensure_unique_name"], Equals, true)
+		c.Check(collection["manifest_text"].(string), Equals, `./a/b 307372fa8fd5c146b22ae7a45b49bc31+6 0:6:c.out
 ./foo 3e426d509afffb85e06c4c96a7c15e91+27+Aa124ac75e5168396c73c0abcdefgh11234567890@569fa8c3 3e426d509afffb85e06c4c96a7c15e91+27+Aa124ac75e5168396cabcdefghij6419876543234@569fa8c4 9:18:bar 36:18:sub1file2
 ./foo/baz 3e426d509afffb85e06c4c96a7c15e91+27+Aa124ac75e5168396c73c0bcdefghijk544332211@569fa8c5 9:18:sub2file2
 ./foo/sub1 3e426d509afffb85e06c4c96a7c15e91+27+Aa124ac75e5168396cabcdefghij6419876543234@569fa8c4 0:9:file1_in_subdir1.txt 9:18:file2_in_subdir1.txt
 ./foo/sub1/subdir2 3e426d509afffb85e06c4c96a7c15e91+27+Aa124ac75e5168396c73c0bcdefghijk544332211@569fa8c5 0:9:file1_in_subdir2.txt 9:18:file2_in_subdir2.txt
 `)
-			}
-		}
+		output_count++
 	}
+	c.Check(output_count, Not(Equals), uint(0))
 }
 
 func (s *TestSuite) TestStdoutWithMountPointsUnderOutputDirDenormalizedManifest(c *C) {
@@ -1751,7 +1794,8 @@ func (s *TestSuite) TestStdoutWithMountPointsUnderOutputDirDenormalizedManifest(
 		"output_path": "/tmp",
 		"priority": 1,
 		"runtime_constraints": {},
-		"state": "Locked"
+		"state": "Locked",
+		"uuid": "zzzzz-dz642-202301130848002"
 	}`
 
 	extraMounts := []string{
@@ -1764,18 +1808,21 @@ func (s *TestSuite) TestStdoutWithMountPointsUnderOutputDirDenormalizedManifest(
 
 	c.Check(s.api.CalledWith("container.exit_code", 0), NotNil)
 	c.Check(s.api.CalledWith("container.state", "Complete"), NotNil)
-	for _, v := range s.api.Content {
-		if v["collection"] != nil {
-			collection := v["collection"].(arvadosclient.Dict)
-			if strings.Index(collection["name"].(string), "output") == 0 {
-				manifest := collection["manifest_text"].(string)
-
-				c.Check(manifest, Equals, `./a/b 307372fa8fd5c146b22ae7a45b49bc31+6 0:6:c.out
+	output_count := uint(0)
+	for _, v := range s.runner.ContainerArvClient.(*ArvTestClient).Content {
+		if v["collection"] == nil {
+			continue
+		}
+		collection := v["collection"].(arvadosclient.Dict)
+		if collection["name"].(string) != "output for zzzzz-dz642-202301130848002" {
+			continue
+		}
+		c.Check(collection["manifest_text"].(string), Equals, `./a/b 307372fa8fd5c146b22ae7a45b49bc31+6 0:6:c.out
 ./foo 3e426d509afffb85e06c4c96a7c15e91+27+Aa124ac75e5168396c73c0abcdefgh11234567890@569fa8c3 10:17:bar
 `)
-			}
-		}
+		output_count++
 	}
+	c.Check(output_count, Not(Equals), uint(0))
 }
 
 func (s *TestSuite) TestOutputError(c *C) {
@@ -2069,6 +2116,60 @@ func (s *TestSuite) TestSecretTextMountPoint(c *C) {
 	c.Check(s.api.CalledWith("container.exit_code", 0), NotNil)
 	c.Check(s.api.CalledWith("container.state", "Complete"), NotNil)
 	c.Check(s.runner.ContainerArvClient.(*ArvTestClient).CalledWith("collection.manifest_text", ". acbd18db4cc2f85cedef654fccc4a4d8+3 0:3:foo.txt\n"), NotNil)
+}
+
+func (s *TestSuite) TestCalculateCost(c *C) {
+	defer func(s string) { lockdir = s }(lockdir)
+	lockdir = c.MkDir()
+	now := time.Now()
+	cr := s.runner
+	cr.costStartTime = now.Add(-time.Hour)
+	var logbuf bytes.Buffer
+	cr.CrunchLog.Immediate = log.New(&logbuf, "", 0)
+
+	// if there's no InstanceType env var, cost is calculated as 0
+	os.Unsetenv("InstanceType")
+	cost := cr.calculateCost(now)
+	c.Check(cost, Equals, 0.0)
+
+	// with InstanceType env var and loadPrices() hasn't run (or
+	// hasn't found any data), cost is calculated based on
+	// InstanceType env var
+	os.Setenv("InstanceType", `{"Price":1.2}`)
+	defer os.Unsetenv("InstanceType")
+	cost = cr.calculateCost(now)
+	c.Check(cost, Equals, 1.2)
+
+	// first update tells us the spot price was $1/h until 30
+	// minutes ago when it increased to $2/h
+	j, err := json.Marshal([]cloud.InstancePrice{
+		{StartTime: now.Add(-4 * time.Hour), Price: 1.0},
+		{StartTime: now.Add(-time.Hour / 2), Price: 2.0},
+	})
+	c.Assert(err, IsNil)
+	os.WriteFile(lockdir+"/"+pricesfile, j, 0777)
+	cr.loadPrices()
+	cost = cr.calculateCost(now)
+	c.Check(cost, Equals, 1.5)
+
+	// next update (via --list + SIGUSR2) tells us the spot price
+	// increased to $3/h 15 minutes ago
+	j, err = json.Marshal([]cloud.InstancePrice{
+		{StartTime: now.Add(-time.Hour / 3), Price: 2.0}, // dup of -time.Hour/2 price
+		{StartTime: now.Add(-time.Hour / 4), Price: 3.0},
+	})
+	c.Assert(err, IsNil)
+	os.WriteFile(lockdir+"/"+pricesfile, j, 0777)
+	cr.loadPrices()
+	cost = cr.calculateCost(now)
+	c.Check(cost, Equals, 1.0/2+2.0/4+3.0/4)
+
+	cost = cr.calculateCost(now.Add(-time.Hour / 2))
+	c.Check(cost, Equals, 0.5)
+
+	c.Logf("%s", logbuf.String())
+	c.Check(logbuf.String(), Matches, `(?ms).*Instance price changed to 1\.00 at 20.* changed to 2\.00 .* changed to 3\.00 .*`)
+	c.Check(logbuf.String(), Not(Matches), `(?ms).*changed to 2\.00 .* changed to 2\.00 .*`)
 }
 
 type FakeProcess struct {

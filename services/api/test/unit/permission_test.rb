@@ -529,7 +529,13 @@ class PermissionTest < ActiveSupport::TestCase
     assert users(:active).can?(write: col.uuid)
     assert users(:active).can?(manage: col.uuid)
 
-    l3.destroy!
+    # Creating l3 should have automatically deleted l1 and upgraded to
+    # the max permission of {l1, l3}, i.e., can_manage (see #18693) so
+    # there should be no can_read link now.
+    refute Link.where(tail_uuid: l3.tail_uuid,
+                      head_uuid: l3.head_uuid,
+                      link_class: 'permission',
+                      name: 'can_read').any?
 
     assert Collection.readable_by(users(:active)).where(uuid: col.uuid).first
     assert users(:active).can?(read: col.uuid)
@@ -575,7 +581,13 @@ class PermissionTest < ActiveSupport::TestCase
     assert users(:active).can?(write: prj.uuid)
     assert users(:active).can?(manage: prj.uuid)
 
-    l3.destroy!
+    # Creating l3 should have automatically deleted l0 and upgraded to
+    # the max permission of {l0, l3}, i.e., can_manage (see #18693) so
+    # there should be no can_read link now.
+    refute Link.where(tail_uuid: l3.tail_uuid,
+                      head_uuid: l3.head_uuid,
+                      link_class: 'permission',
+                      name: 'can_read').any?
 
     assert Group.readable_by(users(:active)).where(uuid: prj.uuid).first
     assert users(:active).can?(read: prj.uuid)

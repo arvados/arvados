@@ -10,365 +10,840 @@ Copyright (C) The Arvados Authors. All rights reserved.
 SPDX-License-Identifier: CC-BY-SA-3.0
 {% endcomment %}
 
-# "Cancel a container request":#cancel-a-container-request
-# "Cancel all container requests":#cancel-all-container-requests
-# "List completed container requests":#list-completed-container-requests
-# "Get input of a CWL workflow":#get-input-of-a-cwl-workflow
-# "Get output of a CWL workflow":#get-output-of-a-cwl-workflow
-# "Get state of a CWL workflow":#get-state-of-a-cwl-workflow
-# "List input of child requests":#list-input-of-child-requests
-# "List output of child requests":#list-output-of-child-requests
-# "List failed child requests":#list-failed-child-requests
-# "Get log of a child request":#get-log-of-a-child-request
-# "Create a collection sharing link":#sharing-link
-# "Combine two or more collections":#combine-two-or-more-collections
-# "Upload a file into a new collection":#upload-a-file-into-a-new-collection
-# "Download a file from a collection":#download-a-file-from-a-collection
-# "Copy files from a collection to a new collection":#copy-files-from-a-collection-to-a-new-collection
-# "Copy files from a collection to another collection":#copy-files-from-a-collection-to-another-collection
-# "Delete a file from an existing collection":#delete-a-file-from-an-existing-collection
-# "Listing records with paging":#listing-records-with-paging
-# "Querying the vocabulary definition":#querying-the-vocabulary-definition
-# "Translating between vocabulary identifiers and labels":#translating-between-vocabulary-identifiers-and-labels
-# "Create a Project":#create-a-project
+# "Introduction":#introduction
+# "Working with the current user":#working-with-current-user
+## "Fetch the current user":#fetch-current-user
+## "List objects shared with the current user":#list-shared-objects
+# "Working with projects":#working-with-projects
+## "Create a project":#create-a-project
+## "List the contents of a project":#list-project-contents
+# "Working with permissions":#working-with-permissions
+## "Grant permission to an object":#grant-permission
+## "Modify permission on an object":#modify-permission
+## "Revoke permission from an object":#revoke-permission
+# "Working with properties":#working-with-properties
+## "Update the properties of an object":#update-properties
+## "Translate between vocabulary identifiers and labels":#translating-between-vocabulary-identifiers-and-labels
+## "Query the vocabulary definition":#querying-the-vocabulary-definition
+# "Working with collections":#working-with-collections
+## "Load and update an existing collection":#load-collection
+## "Create and save a new collection":#create-collection
+## "Read a file from a collection":#read-a-file-from-a-collection
+## "Download a file from a collection":#download-a-file-from-a-collection
+## "Write a file to a collection":#write-a-file-into-a-new-collection
+## "Upload a file to a collection":#upload-a-file-into-a-new-collection
+## "Delete a file from a collection":#delete-a-file-from-an-existing-collection
+## "Delete a directory from a collection recursively":#delete-a-directory-from-a-collection
+## "Walk over all files in a collection":#walk-collection
+## "Copy a file between collections":#copy-files-from-a-collection-to-another-collection
+## "Combine two or more collections":#combine-two-or-more-collections
+## "Create a collection sharing link":#sharing-link
+# "Working with containers and workflow runs":#working-with-containers
+## "Get input of a container":#get-input-of-a-container
+## "Get input of a CWL workflow run":#get-input-of-a-cwl-workflow
+## "Get output of a container":#get-output-of-a-container
+## "Get output of a CWL workflow run":#get-output-of-a-cwl-workflow
+## "Get logs of a container or CWL workflow run":#get-log-of-a-child-request
+## "Get status of a container or CWL workflow run":#get-state-of-a-cwl-workflow
+## "List child requests of a container or CWL workflow run":#list-failed-child-requests
+## "List child requests of a container request":#list-child-requests-of-container-request
+# "Working with the container request queue":#working-with-container-request-queue
+## "List completed container requests":#list-completed-container-requests
+## "Cancel a container request":#cancel-a-container-request
+## "Cancel multiple pending container requests":#cancel-all-container-requests
 
-h2(#cancel-a-container-request). Cancel a container request
+h2(#introduction). Introduction
 
-{% codeblock as python %}
-import arvados
-arvados.api().container_requests().update(uuid=container_request_uuid, body={"priority": 0}).execute()
-{% endcodeblock %}
+This page provides example code to perform various high-level tasks using Arvados' Python SDK. This page assumes you've already read the "API client documentation":{{ site.baseurl }}/sdk/python/api-client.html and understand the basics of using the Python SDK client. You don't have to have the details of every API method memorized, but you should at least be comfortable with the pattern of calling a resource type, API method, and @execute()@, as well as the dictionaries these methods return.
 
-h2(#cancel-all-container-requests). Cancel all container requests
-
-{% codeblock as python %}
-import arvados
-api = arvados.api()
-result = api.container_requests().list(filters=[["state", "=", "Committed"], ["priority", ">", "0"]]).execute()["items"]
-for container_request in result:
-    api.container_requests().update(uuid=container_request["uuid"], body={"priority": 0}).execute()
-{% endcodeblock %}
-
-h2(#list-completed-container-requests). List completed container requests
-
-{% codeblock as python %}
-import arvados
-api = arvados.api()
-result = api.container_requests().list(filters=[["name", "like", name], ["state", "=", "Final"]]).execute()["items"]
-container_uuids = [cr["container_uuid"] for cr in result]
-containers = api.containers().list(filters=[["uuid", "in", container_uuids]]).execute()["items"]
-container_dict = {c["uuid"]: c for c in containers}
-
-for container_request in result:
-    container = container_dict[container_request["container_uuid"]]
-    print("%s, %s, %s" % (container_request["uuid"], container_request["name"], "Success" if container["exit_code"] == 0 else "Failed"))
-{% endcodeblock %}
-
-h2(#get-input-of-a-cwl-workflow). Get input of a CWL workflow
+The code examples assume you've built the @arv_client@ object by doing something like:
 
 {% codeblock as python %}
 import arvados
-api = arvados.api()
-container_request_uuid="zzzzz-xvhdp-zzzzzzzzzzzzzzz"
-container_request = api.container_requests().get(uuid=container_request_uuid).execute()
-print(container_request["mounts"]["/var/lib/cwl/cwl.input.json"])
+arv_client = arvados.api('v1', ...)
 {% endcodeblock %}
 
-h2(#get-output-of-a-cwl-workflow). Get output of a CWL workflow
+These examples work no matter how you call @arvados.api()@, or if you use another constructor from "@arvados.api@ module":{{ site.baseurl }}/sdk/python/arvados/api.html. Just understand that @arv_client@ represents your client object, no matter how you built it.
+
+Whenever you see the Ellipsis object @...@ in these examples, that means you may need or want to fill something in. That might be list items, function arguments, or your own code. Comments will provide additional guidance.
+
+Whenever you see the example UUID @zzzzz-zzzzz-12345abcde67890@, you should provide your own UUID from input.
+
+h2(#working-with-current-user). Working with the current user
+
+h3(#fetch-current-user). Fetch the current user
+
+The API provides a "dedicated users method named @current@":{{ site.baseurl }}/api/methods/users.html#current. It returns the user object that is authenticated by your current API token. Use this method to get the current user's UUID to use in other API calls, or include user details like name in your output.
 
 {% codeblock as python %}
-import arvados
-import arvados.collection
-api = arvados.api()
-container_request_uuid="zzzzz-xvhdp-zzzzzzzzzzzzzzz"
-container_request = api.container_requests().get(uuid=container_request_uuid).execute()
-collection = arvados.collection.CollectionReader(container_request["output_uuid"])
-print(collection.open("cwl.output.json").read())
+current_user = arv_client.users().current().execute()
 {% endcodeblock %}
 
-h2(#get-state-of-a-cwl-workflow). Get state of a CWL workflow
+h3(#list-shared-objects). List objects shared with the current user
+
+The API provides a "dedicated groups method named @shared@":{{ site.baseurl }}/api/methods/groups.html#shared to do this. Call it like you would any other list method. This example illustrates some popular arguments. Check the API reference for full details of all possible arguments.
 
 {% codeblock as python %}
-import arvados
-def get_cr_state(cr_uuid):
-    api = arvados.api()
-    cr = api.container_requests().get(uuid=cr_uuid).execute()
-    if cr['container_uuid'] is None:
-        return cr['state']
-    c = api.containers().get(uuid=cr['container_uuid']).execute()
-    if cr['state'] == 'Final' and c['state'] != 'Complete':
-        return 'Cancelled'
-    elif c['state'] in ['Locked', 'Queued']:
-        if c['priority'] == 0:
-            return 'On hold'
-        else:
-            return 'Queued'
-    elif c['state'] == 'Complete' and c['exit_code'] != 0:
-        return 'Failed'
-    elif c['state'] == 'Running':
-        if c['runtime_status'].get('error', None):
-            return 'Failing'
-        elif c['runtime_status'].get('warning', None):
-            return 'Warning'
-    return c['state']
-container_request_uuid = 'zzzzz-xvhdp-zzzzzzzzzzzzzzz'
-print(get_cr_state(container_request_uuid))
+for item in arvados.util.keyset_list_all(
+    # Pass the method keyset_list_all will call to retrieve items.
+    # Do not call it yourself.
+    arv_client.groups().shared,
+    # Pass filters to limit what objects are returned.
+    # This example returns only subprojects.
+    filters=[
+        ['uuid', 'is_a', 'arvados#group'],
+        ['group_class', '=', 'project'],
+    ],
+    # Pass order_key and ascending to control how the contents are sorted.
+    # This example lists projects in ascending creation time (the default).
+    order_key='created_at',
+    ascending=True,
+):
+    ...  # Work on item as desired
 {% endcodeblock %}
 
-h2(#list-input-of-child-requests). List input of child requests
+h2(#working-with-projects). Working with projects
+
+h3(#create-a-project). Create a project
+
+A project is represented in the Arvados API as a group with its @group_class@ field set to @"project"@.
 
 {% codeblock as python %}
-import arvados
-api = arvados.api()
-parent_request_uuid = "zzzzz-xvhdp-zzzzzzzzzzzzzzz"
-namefilter = "bwa%"  # the "like" filter uses SQL pattern match syntax
-container_request = api.container_requests().get(uuid=parent_request_uuid).execute()
-parent_container_uuid = container_request["container_uuid"]
-child_requests = api.container_requests().list(filters=[
-    ["requesting_container_uuid", "=", parent_container_uuid],
-    ["name", "like", namefilter]]).execute()
-for c in child_requests["items"]:
-    print("%s" % c["name"])
-    for m in c["mounts"].values():
-        if "portable_data_hash" in m:
-            print("  %s" % m["portable_data_hash"])
+new_project = arv_client.groups().create(
+    body={
+        'group': {
+            'group_class': 'project',
+            'name': 'Python SDK Test Project',
+            # owner_uuid can be the UUID for an Arvados user or group.
+            # Specify the UUID of an existing project to make a subproject.
+            # If not specified, the current user is the default owner.
+            'owner_uuid': 'zzzzz-j7d0g-12345abcde67890',
+        },
+    },
+    ensure_unique_name=True,
+).execute()
 {% endcodeblock %}
 
-h2(#list-output-of-child-requests). List output of child requests
+h3(#list-project-contents). List the contents of a project
+
+The API provides a "dedicated groups method named @contents@":{{ site.baseurl }}/api/methods/groups.html#contents to do this. Call it like you would any other list method. This example illustrates some popular arguments. Check the API reference for full details of all possible arguments.
 
 {% codeblock as python %}
-import arvados
-api = arvados.api()
-parent_request_uuid = "zzzzz-xvhdp-zzzzzzzzzzzzzzz"
-namefilter = "bwa%"  # the "like" filter uses SQL pattern match syntax
-container_request = api.container_requests().get(uuid=parent_request_uuid).execute()
-parent_container_uuid = container_request["container_uuid"]
-child_requests = api.container_requests().list(filters=[
-    ["requesting_container_uuid", "=", parent_container_uuid],
-    ["name", "like", namefilter]]).execute()
-output_uuids = [c["output_uuid"] for c in child_requests["items"]]
-collections = api.collections().list(filters=[["uuid", "in", output_uuids]]).execute()
-uuid_to_pdh = {c["uuid"]: c["portable_data_hash"] for c in collections["items"]}
-for c in child_requests["items"]:
-    print("%s -> %s" % (c["name"], uuid_to_pdh[c["output_uuid"]]))
+current_user = arv_client.users().current().execute()
+for item in arvados.util.keyset_list_all(
+    # Pass the method keyset_list_all will call to retrieve items.
+    # Do not call it yourself.
+    arv_client.groups().contents,
+    # The UUID of the project whose contents we're listing.
+    # Pass a user UUID to list their home project.
+    # This example lists the current user's home project.
+    uuid=current_user['uuid'],
+    # Pass filters to limit what objects are returned.
+    # This example returns only subprojects.
+    filters=[
+        ['uuid', 'is_a', 'arvados#group'],
+        ['group_class', '=', 'project'],
+    ],
+    # Pass recursive=True to include results from subprojects in the listing.
+    recursive=False,
+    # Pass include_trash=True to include objects in the listing whose
+    # trashed_at time is passed.
+    include_trash=False,
+):
+    ...  # Work on item as desired
 {% endcodeblock %}
 
-h2(#list-failed-child-requests). List failed child requests
+h2(#working-with-permissions). Working with permissions
+
+In brief, a permission is represented in Arvados as a link object with the following values:
+
+* @link_class@ is @"permission"@.
+* @name@ is one of @"can_read"@, @"can_write"@, @"can_manage"@, or @"can_login"@.
+* @tail_uuid@ identifies the user or role group that receives the permission.
+* @head_uuid@ identifies the Arvados object this permission grants access to.
+
+For details, refer to the "Permissions model documentation":{{ site.baseurl }}/api/permission-model.html. Managing permissions is just a matter of ensuring the desired links exist using the standard @create@, @update@, and @delete@ methods.
+
+h3(#grant-permission). Grant permission to an object
+
+Create a link with values as documented above.
 
 {% codeblock as python %}
-import arvados
-api = arvados.api()
-parent_request_uuid = "zzzzz-xvhdp-zzzzzzzzzzzzzzz"
-container_request = api.container_requests().get(uuid=parent_request_uuid).execute()
-parent_container_uuid = container_request["container_uuid"]
-child_requests = api.container_requests().list(filters=[
-    ["requesting_container_uuid", "=", parent_container_uuid]], limit=1000).execute()
-child_containers = {c["container_uuid"]: c for c in child_requests["items"]}
-cancelled_child_containers = api.containers().list(filters=[
-    ["exit_code", "!=", "0"],
-    ["uuid", "in", list(child_containers.keys())]], limit=1000).execute()
-for c in cancelled_child_containers["items"]:
-    print("%s (%s)" % (child_containers[c["uuid"]]["name"], child_containers[c["uuid"]]["uuid"]))
+permission = arv_client.links().create(
+    body={
+        'link': {
+            'link_class': 'permission',
+            # Adjust name for the level of permission you want to grant
+            'name': 'can_read',
+            # tail_uuid must identify a user or role group
+            'tail_uuid': 'zzzzz-tpzed-12345abcde67890',
+            # head_uuid can identify any Arvados object
+            'head_uuid': 'zzzzz-4zz18-12345abcde67890',
+        },
+    },
+).execute()
 {% endcodeblock %}
 
-h2(#get-log-of-a-child-request). Get log of a child request
+h3(#modify-permission). Modify permission on an object
 
-{% codeblock as python %}
-import arvados
-import arvados.collection
-api = arvados.api()
-container_request_uuid = "zzzzz-xvhdp-zzzzzzzzzzzzzzz"
-container_request = api.container_requests().get(uuid=container_request_uuid).execute()
-collection = arvados.collection.CollectionReader(container_request["log_uuid"])
-for c in collection:
-    if isinstance(collection.find(c), arvados.arvfile.ArvadosFile):
-        print(collection.open(c).read())
-{% endcodeblock %}
-
-h2(#sharing_link). Create a collection sharing link
-
-{% codeblock as python %}
-import arvados
-api = arvados.api()
-download="https://your.download.server"
-collection_uuid="zzzzz-4zz18-zzzzzzzzzzzzzzz"
-token = api.api_client_authorizations().create(body={"api_client_authorization":{"scopes": [
-    "GET /arvados/v1/collections/%s" % collection_uuid,
-    "GET /arvados/v1/collections/%s/" % collection_uuid,
-    "GET /arvados/v1/keep_services/accessible"]}}).execute()
-print("%s/c=%s/t=%s/_/" % (download, collection_uuid, token["api_token"]))
-{% endcodeblock %}
-
-h2(#combine-two-or-more-collections). Combine two or more collections
-
-Note, if two collections have files of the same name, the contents will be concatenated in the resulting manifest.
-
-{% codeblock as python %}
-import arvados
-import arvados.collection
-api = arvados.api()
-project_uuid = "zzzzz-j7d0g-zzzzzzzzzzzzzzz"
-collection_uuids = ["zzzzz-4zz18-aaaaaaaaaaaaaaa", "zzzzz-4zz18-bbbbbbbbbbbbbbb"]
-combined_manifest = ""
-for u in collection_uuids:
-    c = api.collections().get(uuid=u).execute()
-    combined_manifest += c["manifest_text"]
-newcol = arvados.collection.Collection(combined_manifest)
-newcol.save_new(name="My combined collection", owner_uuid=project_uuid)
-{% endcodeblock %}
-
-h2(#upload-a-file-into-a-new-collection). Upload a file into a new collection
-
-{% codeblock as python %}
-import arvados
-import arvados.collection
-
-project_uuid = "zzzzz-j7d0g-zzzzzzzzzzzzzzz"
-collection_name = "My collection"
-filename = "file1.txt"
-
-api = arvados.api()
-c = arvados.collection.Collection()
-with open(filename, "rb") as reader:
-    with c.open(filename, "wb") as writer:
-        content = reader.read(128*1024)
-        while content:
-            writer.write(content)
-            content = reader.read(128*1024)
-c.save_new(name=collection_name, owner_uuid=project_uuid)
-print("Saved %s to %s" % (collection_name, c.manifest_locator()))
-{% endcodeblock %}
-
-h2(#download-a-file-from-a-collection). Download a file from a collection
-
-{% codeblock as python %}
-import arvados
-import arvados.collection
-
-collection_uuid = "zzzzz-4zz18-zzzzzzzzzzzzzzz"
-filename = "file1.txt"
-
-api = arvados.api()
-c = arvados.collection.CollectionReader(collection_uuid)
-with c.open(filename, "rb") as reader:
-    with open(filename, "wb") as writer:
-        content = reader.read(128*1024)
-        while content:
-            writer.write(content)
-            content = reader.read(128*1024)
-print("Finished downloading %s" % filename)
-{% endcodeblock %}
-
-h2(#copy-files-from-a-collection-to-a-new-collection). Copy files from a collection to a new collection
-
-{% codeblock as python %}
-import arvados.collection
-
-source_collection = "zzzzz-4zz18-zzzzzzzzzzzzzzz"
-target_project = "zzzzz-j7d0g-zzzzzzzzzzzzzzz"
-target_name = "Files copied from source_collection"
-files_to_copy = ["folder1/sample1/sample1_R1.fastq",
-                 "folder1/sample2/sample2_R1.fastq"]
-
-source = arvados.collection.CollectionReader(source_collection)
-target = arvados.collection.Collection()
-
-for f in files_to_copy:
-    target.copy(f, "", source_collection=source)
-
-target.save_new(name=target_name, owner_uuid=target_project)
-print("Created collection %s" % target.manifest_locator())
-{% endcodeblock %}
-
-h2(#copy-files-from-a-collection-to-another-collection). Copy files from a collection to another collection
-
-{% codeblock as python %}
-import arvados.collection
-
-source_collection = "zzzzz-4zz18-zzzzzzzzzzzzzzz"
-target_collection = "zzzzz-4zz18-aaaaaaaaaaaaaaa"
-files_to_copy = ["folder1/sample1/sample1_R1.fastq",
-                 "folder1/sample2/sample2_R1.fastq"]
-
-source = arvados.collection.CollectionReader(source_collection)
-target = arvados.collection.Collection(target_collection)
-
-for f in files_to_copy:
-    target.copy(f, "", source_collection=source)
-
-target.save()
-{% endcodeblock %}
-
-h2(#delete-a-file-from-an-existing-collection). Delete a file from an existing collection
-
-{% codeblock as python %}
-import arvados
-
-c = arvados.collection.Collection("zzzzz-4zz18-zzzzzzzzzzzzzzz")
-c.remove("file2.txt")
-c.save()
-{% endcodeblock %}
-
-h2(#listing-records-with-paging). Listing records with paging
-
-Use the @arvados.util.keyset_list_all@ helper method to iterate over all the records matching an optional filter.  This method handles paging internally and returns results incrementally using a Python iterator.  The first parameter of the method takes a @list@ method of an Arvados resource (@collections@, @container_requests@, etc).
+To modify an existing permission—for example, to change its access level—find the existing link object for the permission, then update it with the new values you want. This example shows changing all read-write permissions on a specific collection to read-only. Adjust the filters appropriately to find the permission(s) you want to modify.
 
 {% codeblock as python %}
 import arvados.util
-
-api = arvados.api()
-for c in arvados.util.keyset_list_all(api.collections().list, filters=[["name", "like", "%sample123%"]]):
-    print("got collection " + c["uuid"])
+for permission in arvados.util.keyset_list_all(
+    # Pass the method keyset_list_all will call to retrieve items.
+    # Do not call it yourself.
+    arv_client.links().list,
+    filters=[
+        # You should use this filter for all permission searches,
+        # to exclude other kinds of links.
+        ['link_class', '=', 'permission'],
+        # Add other filters as desired.
+        ['name', '=', 'can_write'],
+        ['head_uuid', '=', 'zzzzz-4zz18-12345abcde67890'],
+        ...,
+    ],
+):
+    arv_client.links().update(
+        uuid=permission['uuid'],
+        body={
+            'link': {
+                'name': 'can_read',
+            },
+       },
+    ).execute()
 {% endcodeblock %}
 
-h2(#querying-the-vocabulary-definition). Querying the vocabulary definition
+h3(#revoke-permission). Revoke permission from an object
 
-The Python SDK provides facilities to interact with the "active metadata vocabulary":{{ site.baseurl }}/admin/metadata-vocabulary.html in the system. The developer can do key and value lookups in a case-insensitive manner:
+To revoke an existing permission, find the existing link object for the permission, then delete it. This example shows revoking one user's permission to log into any virtual machines. Adjust the filters appropriately to find the permission(s) you want to revoke.
 
 {% codeblock as python %}
-from arvados import api, vocabulary
-voc = vocabulary.load_vocabulary(api('v1'))
-
-[k.identifier for k in set(voc.key_aliases.values())]
-# Example output: ['IDTAGCOLORS', 'IDTAGFRUITS', 'IDTAGCOMMENT', 'IDTAGIMPORTANCES', 'IDTAGCATEGORIES', 'IDTAGSIZES', 'IDTAGANIMALS']
-voc['IDTAGSIZES'].preferred_label
-# Example output: 'Size'
-[v.preferred_label for v in set(voc['size'].value_aliases.values())]
-# Example output: ['S', 'M', 'L', 'XL', 'XS']
-voc['size']['s'].aliases
-# Example output: ['S', 'small']
-voc['size']['Small'].identifier
-# Example output: 'IDVALSIZES2'
+import arvados.util
+for permission in arvados.util.keyset_list_all(
+    # Pass the method keyset_list_all will call to retrieve items.
+    # Do not call it yourself.
+    arv_client.links().list,
+    filters=[
+        # You should use this filter for all permission searches,
+        # to exclude other kinds of links.
+        ['link_class', '=', 'permission'],
+        # Add other filters as desired.
+        ['name', '=', 'can_login'],
+        ['tail_uuid', '=', 'zzzzz-tpzed-12345abcde67890'],
+        ...,
+    ],
+):
+    arv_client.links().delete(
+        uuid=permission['uuid'],
+    ).execute()
 {% endcodeblock %}
 
-h2(#translating-between-vocabulary-identifiers-and-labels). Translating between vocabulary identifiers and labels
+h2(#working-with-properties). Working with properties
 
-Client software might need to present properties to the user in a human-readable form or take input from the user without requiring them to remember identifiers. For these cases, there're a couple of conversion methods that take a dictionary as input like this:
+Container requests, collections, groups, and links can have metadata properties set through their @properties@ field. For details, refer to the "Metadata properties API reference":{{ site.baseurl }}/api/properties.html.
+
+An Arvados cluster can be configured to use a metadata vocabulary. If this is set up, the vocabulary defines standard identifiers and specific properties and their values. These identifiers can also have more human-friendly aliases. The cluster can also be configured to use the vocabulary strictly, so clients may _only_ set properties on objects that are defined in the vocabulary. For more information about configuring a metadata vocabulary, refer to the "Metadata vocabulary administration documentation":{{ site.baseurl }}/admin/metadata-vocabulary.html.
+
+h3(#update-properties). Update the properties of an object
+
+To set an object's properties to a new value, just call the resource's @update@ method with a new @properties@ field in the body. If you want to make changes to the current set of properties, @get@ the object, build a new dictionary based on its @properties@ field, then call the resource's @update@ method with your new dictionary as the @properties@. Below is an example for a container request.
 
 {% codeblock as python %}
-from arvados import api, vocabulary
-voc = vocabulary.load_vocabulary(api('v1'))
-
-voc.convert_to_labels({'IDTAGIMPORTANCES': 'IDVALIMPORTANCES1'})
-# Example output: {'Importance': 'Critical'}
-voc.convert_to_identifiers({'creature': 'elephant'})
-# Example output: {'IDTAGANIMALS': 'IDVALANIMALS3'}
+container_request = arv_client.container_requests().get(
+    uuid='zzzzz-xvhdp-12345abcde67890',
+).execute()
+new_properties = dict(container_request['properties'])
+...  # Make your desired changes to new_proprties
+container_request = arv_client.container_requests().update(
+    uuid=container_request['uuid'],
+    body={
+        'container_request': {
+            'properties': new_properties,
+        },
+    },
+).execute()
 {% endcodeblock %}
 
-h2(#create-a-project). Create a Project
+h3(#translating-between-vocabulary-identifiers-and-labels). Translate between vocabulary identifiers and labels
+
+Client software might need to present properties to the user in a human-readable form or take input from the user without requiring them to remember identifiers. The "@Vocabulary.convert_to_labels@":{{ site.baseurl }}/sdk/python/arvados/vocabulary.html#arvados.vocabulary.Vocabulary.convert_to_labels and "@Vocabulary.convert_to_identifiers@":{{ site.baseurl }}/sdk/python/arvados/vocabulary.html#arvados.vocabulary.Vocabulary.convert_to_identifiers methods help with these tasks, respectively.
 
 {% codeblock as python %}
-import arvados
+import arvados.vocabulary
+vocabulary = arvados.vocabulary.load_vocabulary(arv_client)
 
-parent_project_uuid = "zzzzz-j7d0g-zzzzzzzzzzzzzzz"
-project_name = "My project"
+# The argument should be a mapping of vocabulary keys and values using any
+# defined aliases, like this:
+#   {'Creature': 'Human', 'Priority': 'Normal'}
+# The return value will be an analogous mapping where all the aliases have
+# been translated to identifiers, like this:
+#   {'IDTAGANIMALS': 'IDVALANIMALS2', 'IDTAGIMPORTANCES': 'IDTAGIMPORTANCES1'}
+properties_by_identifier = vocabulary.convert_to_identifiers({...})
 
-g = arvados.api().groups().create(body={
-  "group": {
-    "group_class": "project",
-    "owner_uuid": parent_project_uuid,
-    "name": project_name,
-  }}).execute()
+# You can use this to set metadata properties on objects that support them.
+project = arv_client.groups().update(
+    uuid='zzzzz-j7d0g-12345abcde67890',
+    body={
+        'group': {
+            'properties': properties_by_identifier,
+        },
+    },
+).execute()
 
-print("New project uuid is", g["uuid"])
+# You can report properties to the user by their preferred name.
+print(f"{project['name']} ({project['group_class']} {project['uuid']}) updated with properties:")
+for key, value in vocabulary.convert_to_labels(project['properties']).items():
+    print(f"↳ {key}: {value}")
+{% endcodeblock %}
+
+h3(#querying-the-vocabulary-definition). Query the vocabulary definition
+
+The @arvados.vocabulary@ module provides facilities to interact with the "active metadata vocabulary":{{ site.baseurl }}/admin/metadata-vocabulary.html in the system. The "@Vocabulary@ class":{{ site.baseurl }}/sdk/python/arvados/vocabulary.html#arvados.vocabulary.Vocabulary provides a mapping-like view of a cluster's configured vocabulary.
+
+{% codeblock as python %}
+import arvados.vocabulary
+vocabulary = arvados.vocabulary.load_vocabulary(arv_client)
+
+# You can use the vocabulary object to access specific keys and values by
+# case-insensitive mapping, like this:
+#   vocabulary_value = vocabulary[key_alias][value_alias]
+# You can also access the `key_aliases` and `value_aliases` mapping
+# attributes directly to view the entire vocabulary. The example below
+# writes a plaintext table of the vocabulary.
+for vocabulary_key in set(vocabulary.key_aliases.values()):
+    print(
+        vocabulary_key.identifier,
+        vocabulary_key.preferred_label,
+        ', '.join(vocabulary_key.aliases[1:]),
+        sep='\t',
+    )
+    for vocabulary_value in set(vocabulary_key.value_aliases.values()):
+        print(
+            f'↳ {vocabulary_value.identifier}',
+            vocabulary_value.preferred_label,
+            ', '.join(vocabulary_value.aliases[1:]),
+            sep='\t',
+        )
+{% endcodeblock %}
+
+h2(#working-with-collections). Working with collections
+
+The "@arvados.collection.Collection@ class":{{ site.baseurl }}/sdk/python/arvados/collection.html#arvados.collection.Collection provides a high-level interface to read, create, and update collections. It orchestrates multiple requests to API and Keep so you don't have to worry about the low-level details of keeping everything in sync. It uses threads to make multiple requests to Keep in parallel.
+
+This page only shows you how to perform common tasks using the @Collection@ class. To see all the supported constructor arguments and methods, refer to "the @Collection@ class documentation":{{ site.baseurl }}/sdk/python/arvados/collection.html#arvados.collection.Collection.
+
+h3(#load-collection). Load and update an existing collection
+
+Construct the @Collection@ class with the UUID of a collection you want to read. You can pass additional constructor arguments as needed.
+
+{% codeblock as python %}
+import arvados.collection
+collection = arvados.collection.Collection('zzzzz-4zz18-12345abcde67890', ...)
+{% endcodeblock %}
+
+If you make changes to the collection and want to update the existing collection, call the "@Collection.save@ method":{{ site.baseurl }}/sdk/python/arvados/collection.html#arvados.collection.Collection.save:
+
+{% codeblock as python %}
+collection.save()
+{% endcodeblock %}
+
+If you would rather save your changes as a new collection object, call the "@Collection.save_new@ method":{{ site.baseurl }}/sdk/python/arvados/collection.html#arvados.collection.Collection.save_new. This example illustrates some popular arguments. Check the API reference for full details of all possible arguments.
+
+{% codeblock as python %}
+collection.save_new(
+    name='Collection updated by Python SDK',
+    # owner_uuid can be the UUID for an Arvados user or group.
+    # Specify the UUID of a project to add this collection to it.
+    owner_uuid='zzzzz-j7d0g-12345abcde67890',
+)
+{% endcodeblock %}
+
+h3(#create-collection). Create and save a new collection
+
+Construct the @Collection@ class without an existing collection UUID or manifest text. You can pass additional constructor arguments as needed.
+
+{% codeblock as python %}
+import arvados.collection
+new_collection = arvados.collection.Collection(...)
+{% endcodeblock %}
+
+Usually you'll upload or copy files to the new collection. Once you're done with that and ready to save your changes, call the "@Collection.save_new@ method":{{ site.baseurl }}/sdk/python/arvados/collection.html#arvados.collection.Collection.save_new. This example illustrates some popular arguments. Check the API reference for full details of all possible arguments.
+
+{% codeblock as python %}
+new_collection.save_new(
+    name='Collection created by Python SDK',
+    # owner_uuid can be the UUID for an Arvados user or group.
+    # Specify the UUID of a project to add this collection to it.
+    owner_uuid='zzzzz-j7d0g-12345abcde67890',
+)
+{% endcodeblock %}
+
+h3(#read-a-file-from-a-collection). Read a file from a collection
+
+Once you have a @Collection@ object, the "@Collection.open@ method":{{ site.baseurl }}/sdk/python/arvados/collection.html#arvados.collection.RichCollectionBase.open lets you open files from a collection the same way you would open files from disk using Python's built-in @open@ function. It returns a file-like object that you can use in many of the same ways you would use any other file object. This example prints all non-empty lines from @ExampleFile@ in your collection:
+
+{% codeblock as python %}
+import arvados.collection
+collection = arvados.collection.Collection(...)
+with collection.open('ExampleFile') as my_file:
+    # Read from my_file as desired.
+    # This example prints all non-empty lines from the file to stdout.
+    for line in my_file:
+        if not line.isspace():
+            print(line, end='')
+{% endcodeblock %}
+
+h3(#download-a-file-from-a-collection). Download a file from a collection
+
+Once you have a @Collection@ object, the "@Collection.open@ method":{{ site.baseurl }}/sdk/python/arvados/collection.html#arvados.collection.RichCollectionBase.open lets you open files from a collection the same way you would open files from disk using Python's built-in @open@ function. You pass a second mode argument like @'rb'@ to open the file in binary mode. It returns a file-like object that you can use in many of the same ways you would use any other file object. You can pass it as a source to Python's standard "@shutil.copyfileobj@ function":https://docs.python.org/3/library/shutil.html#shutil.copyfileobj to download it. This code downloads @ExampleFile@ from your collection and saves it to the current working directory as @ExampleDownload@:
+
+{% codeblock as python %}
+import arvados.collection
+import shutil
+collection = arvados.collection.Collection(...)
+with (
+  collection.open('ExampleFile', 'rb') as src_file,
+  open('ExampleDownload', 'wb') as dst_file,
+):
+    shutil.copyfileobj(src_file, dst_file)
+{% endcodeblock %}
+
+h3(#write-a-file-into-a-new-collection). Write a file to a collection
+
+Once you have a @Collection@ object, the "@Collection.open@ method":{{ site.baseurl }}/sdk/python/arvados/collection.html#arvados.collection.RichCollectionBase.open lets you open files from a collection the same way you would open files from disk using Python's built-in @open@ function. Pass a second mode argument like @'w'@, @'a'@, or @'wb'@ to write a file in the collection. It returns a file-like object that you can use in many of the same ways you would use any other file object. This example writes @Hello, Arvados!@ to a file named @ExampleHello@ in your collection:
+
+{% codeblock as python %}
+import arvados.collection
+collection = arvados.collection.Collection(...)
+with collection.open('ExampleFile', 'w') as my_file:
+    # Write to my_file as desired.
+    # This example writes "Hello, Arvados!" to the file.
+    print("Hello, Arvados!", file=my_file)
+collection.save_new(...)  # or collection.save() to update an existing collection
+{% endcodeblock %}
+
+h3(#upload-a-file-into-a-new-collection). Upload a file to a collection
+
+Once you have a @Collection@ object, the "@Collection.open@ method":{{ site.baseurl }}/sdk/python/arvados/collection.html#arvados.collection.RichCollectionBase.open lets you open files from a collection the same way you would open files from disk using Python's built-in @open@ function. Pass a second mode argument like @'w'@, @'a'@, or @'wb'@ to write a file in the collection. It returns a file-like object that you can use in many of the same ways you would use any other file object. You can pass it as a destination to Python's standard "@shutil.copyfileobj@ function":https://docs.python.org/3/library/shutil.html#shutil.copyfileobj to upload data from a source file. This example reads @ExampleFile@ from the current working directory and uploads it into your collection as @ExampleUpload@:
+
+{% codeblock as python %}
+import arvados.collection
+import shutil
+collection = arvados.collection.Collection(...)
+with (
+  open('ExampleFile', 'rb') as src_file,
+  collection.open('ExampleUpload', 'wb') as dst_file,
+):
+    shutil.copyfileobj(src_file, dst_file)
+collection.save_new(...)  # or collection.save() to update an existing collection
+{% endcodeblock %}
+
+h3(#delete-a-file-from-an-existing-collection). Delete a file from a collection
+
+Once you have a @Collection@ object, call the "@Collection.remove@ method":{{ site.baseurl }}/sdk/python/arvados/collection.html#arvados.collection.Collection.remove with a file path to remove that file or directory from the collection.
+
+{% codeblock as python %}
+import arvados.collection
+collection = arvados.collection.Collection(...)
+collection.remove('ExamplePath')
+collection.save_new(...)  # or collection.save() to update an existing collection
+{% endcodeblock %}
+
+h3(#delete-a-directory-from-a-collection). Delete a directory from a collection recursively
+
+Once you have a @Collection@ object, call the "@Collection.remove@ method":{{ site.baseurl }}/sdk/python/arvados/collection.html#arvados.collection.Collection.remove with a directory path and @recursive=True@ to delete everything under that directory from the collection.
+
+{% codeblock as python %}
+import arvados.collection
+collection = arvados.collection.Collection(...)
+collection.remove('ExampleDirectoryPath', recursive=True)
+collection.save_new(...)  # or collection.save() to update an existing collection
+{% endcodeblock %}
+
+h3(#walk-collection). Walk over all files in a collection
+
+Once you have a @Collection@ object, you can iterate over it to retrieve the names of all files and streams in it. Streams are like subdirectories: you can open them using the "@Collection.find@ method":{{ site.baseurl }}/sdk/python/python.html, and work with the files in them just like you would in the original collection. This example shows how to combine these techniques to iterate all files in a collection, including its streams.
+
+{% codeblock as python %}
+import arvados.collection
+import collections
+import pathlib
+root_collection = arvados.collection.Collection(...)
+# Start work from the base stream.
+stream_queue = collections.deque(['.'])
+while stream_queue:
+    stream_name = stream_queue.popleft()
+    collection = root_collection.find(stream_name)
+    for item_name in collection:
+        try:
+            my_file = collection.open(item_name)
+        except IsADirectoryError:
+            # item_name refers to a stream. Queue it to walk later.
+            stream_path = pathlib.Path(stream_name, item_name)
+            stream_queue.append(stream_path.as_posix())
+            continue
+        with my_file:
+            ...  # Work with my_file as desired
+{% endcodeblock %}
+
+h3(#copy-files-from-a-collection-to-another-collection). Copy a file between collections
+
+Once you have one or more @Collection@ objects, call the "@Collection.copy@ method":{{ site.baseurl }}/sdk/python/arvados/collection.html#arvados.collection.RichCollectionBase.copy on the destination collection to copy files to it. This method doesn't re-upload data, so it's very efficient.
+
+{% codeblock as python %}
+import arvados.collection
+src_collection = arvados.collection.Collection(...)
+dst_collection = arvados.collection.Collection(...)
+dst_collection.copy(
+    # The path of the source file or directory to copy
+    'ExamplePath',
+    # The path where the source file or directory will be copied.
+    # Pass the empty string like this to copy it to the same path.
+    '',
+    # The collection where the source file or directory comes from.
+    # If not specified, the default is the current collection (so you'll
+    # make multiple copies of the same data in the same collection).
+    source_collection=src_collection,
+    # Pass overwrite=True to force the method to overwrite any data
+    # that already exists at the given path in the current collection.
+    overwrite=False,
+)
+dst_collection.save_new(...)  # or dst_collection.save() to update an existing collection
+{% endcodeblock %}
+
+h3(#combine-two-or-more-collections). Combine two or more collections
+
+You can concatenate manifest texts from multiple collections to create a single collection that contains all the data from the source collections. Note that if multiple source collections have data at the same path, the merged collection will have a single file at that path with concatenated data from the source collections.
+
+{% codeblock as python %}
+import arvados.collection
+
+# Retrieve all of the source collection manifest texts
+src_collection_uuid_list = [
+    'zzzzz-4zz18-111111111111111',
+    'zzzzz-4zz18-222222222222222',
+    ...,
+]
+manifest_texts = [
+    arvados.collection.Collection(uuid).manifest_text()
+    for uuid in src_collection_uuid_list
+]
+
+# Initialize a new collection object from the concatenated manifest text
+new_collection = arvados.collection.Collection(''.join(manifest_texts), ...)
+
+# Record the new collection in Arvados
+new_collection.save_new(
+    name='Collection merged by Python SDK',
+    owner_uuid='zzzzz-j7d0g-12345abcde67890',
+)
+{% endcodeblock %}
+
+h3(#sharing-link). Create a collection sharing link
+
+You can create a sharing link for a collection by creating a new API token that is only allowed to read that collection; then constructing a link to your Keep web server that includes the collection UUID and the new token.
+
+{% codeblock as python %}
+import urllib.parse
+
+# The UUID of the collection you want to share
+collection_uuid = 'zzzzz-4zz18-12345abcde67890'
+
+sharing_token_scopes = [
+    'GET /arvados/v1/keep_services/accessible',
+    f'GET /arvados/v1/collections/{collection_uuid}',
+    f'GET /arvados/v1/collections/{collection_uuid}/',
+]
+sharing_token = arv_client.api_client_authorizations().create(
+    body={
+        'api_client_authorization': {
+            'scopes': sharing_token_scopes,
+        },
+    },
+).execute()
+plain_token = sharing_token['api_token']
+token_parts = plain_token.split('/')
+if token_parts[0] == 'v2':
+    plain_token = token_parts[2]
+
+sharing_url_parts = (
+    # The scheme your Keep web server uses. Change this to 'http' if necessary.
+    'https',
+    # The hostname, and optionally port, your Keep web server uses
+    'collections.zzzzz.example.com',
+    # You shouldn't need to change any other items
+    f'/c={collection_uuid}/t={plain_token}/_/',
+    None,
+    None,
+)
+sharing_url = urllib.parse.urlunsplit(sharing_url_parts)
+print(sharing_url)
+{% endcodeblock %}
+
+h2(#working-with-containers). Working with containers
+
+If you haven't already, start by reading the "Computing with Crunch":{{ site.baseurl }}/api/execution.html guide. It provides a high-level overview of how users submit work to Arvados as container requests; how Arvados dispatches that work to containers; and how Arvados records the association and results back on the original container request record.
+
+If you have experience running CWL workflows on Workbench 2, it runs through this same API. When you start that workflow run, Workbench 2 creates a small container request to run a "CWL runner" tool with the specific inputs you gave it. Once Crunch dispatches a container for it, the CWL runner creates additional container requests to run each step of the workflow, and oversees the process until the workflow runs to completion. The UUID of this container is recorded in the @container_uuid@ field of the container request you submitted.
+
+The UUID of the CWL runner container is recorded in the @requesting_container_uuid@ field of each container request it creates. You can list container requests with a filter on this field to inspect each step of the workflow individually, as shown below.
+
+The next few examples show how to perform a task with a container request generally, and then provide a more specific example of working with a CWL runner container.
+
+h3(#get-input-of-a-container). Get input of a container
+
+A container request's most varied inputs are recorded in the @mounts@ field, which can include data from Keep, specific collections, Git checkouts, and static files. You might also be interested in the @environment@, @command@, @container_image@, and @secret_mounts@ fields. Refer to the "container requests API documentation":{{ site.baseurl }}/api/methods/container_requests.html for details.
+
+{% codeblock as python %}
+container_request = arv_client.container_requests().get(
+    uuid='zzzzz-xvhdp-12345abcde67890',
+).execute()
+# From here, you can process any of the container request's input fields.
+# Below is an example of listing all the mounts.
+import pprint
+for mount_name, mount_source in container_request['mounts'].items():
+    mount_summary = []
+    # These are the fields that define different types of mounts.
+    # Try to collect them all. Just skip any that aren't set.
+    for key in ['kind', 'uuid', 'portable_data_hash', 'commit', 'path']:
+        try:
+            mount_summary.append(mount_source[key])
+        except KeyError:
+            pass
+    print(f"{mount_name}: {' '.join(mount_summary)}")
+    if mount_source.get('kind') == 'json':
+        pprint.pprint(mount_source.get('content'))
+{% endcodeblock %}
+
+h3(#get-input-of-a-cwl-workflow). Get input of a CWL workflow run
+
+When you run a CWL workflow, the CWL inputs are stored in the container request's @mounts@ field as a JSON mount named @/var/lib/cwl/cwl.input.json@.
+
+{% codeblock as python %}
+container_request = arv_client.container_requests().get(
+    uuid='zzzzz-xvhdp-12345abcde67890',
+).execute()
+cwl_input = container_request['mounts']['/var/lib/cwl/cwl.input.json']['content']
+...  # Work with the cwl_input dictionary
+{% endcodeblock %}
+
+h3(#get-output-of-a-container). Get output of a container
+
+A container's output files are saved in a collection. The UUID of that collection is recorded in the @output_uuid@ of the container request, which you can load as you like.
+
+{% codeblock as python %}
+import arvados.collection
+container_request = arv_client.container_requests().get(
+    uuid='zzzzz-xvhdp-12345abcde67890',
+).execute()
+container_output = arvados.collection.Collection(
+    container_request.get('output_uuid'),
+)
+...  # Work with the container_output collection object
+{% endcodeblock %}
+
+h3(#get-output-of-a-cwl-workflow). Get output of a CWL workflow run
+
+When you run a CWL workflow, the container request's output collection includes a file named @cwl.output.json@ that provides additional information about other files in the output.
+
+{% codeblock as python %}
+import arvados.collection
+import json
+cwl_container_request = arv_client.container_requests().get(
+    uuid='zzzzz-xvhdp-12345abcde67890',
+).execute()
+cwl_output_collection = arvados.collection.Collection(
+    cwl_container_request['output_uuid'],
+)
+with cwl_output_collection.open('cwl.output.json') as cwl_output_file:
+    cwl_output = json.load(cwl_output_file)
+...  # Work with the cwl_output dictionary
+{% endcodeblock %}
+
+h3(#get-log-of-a-child-request). Get logs of a container or CWL workflow run
+
+A container's log files are saved in a collection. The UUID of that collection is recorded in the @log_uuid@ of the container request, which you can load as you like.
+
+{% codeblock as python %}
+import arvados.collection
+container_request = arv_client.container_requests().get(
+    uuid='zzzzz-xvhdp-12345abcde67890',
+).execute()
+log_collection = arvados.collection.Collection(
+    container_request['log_uuid'],
+)
+# From here, you can process the container's log collection any way you like.
+# Below is an example that writes the container's stderr to this process' stderr.
+import shutil
+import sys
+with log_collection.open('stderr.txt') as containter_stderr:
+    shutil.copyfileobj(container_stderr, sys.stderr)
+{% endcodeblock %}
+
+h3(#get-state-of-a-cwl-workflow). Get status of a container or CWL workflow run
+
+Workbench shows users a single status badge for container requests. This status is synthesized from different fields on the container request and associated container. This code shows how to do analogous reporting using the Python SDK.
+
+{% codeblock as python %}
+container_request = arv_client.container_requests().get(
+    uuid='zzzzz-xvhdp-12345abcde67890',
+).execute()
+if container_request['container_uuid'] is None:
+    status = container_request['state']
+else:
+    container = arv_client.containers().get(
+        uuid=container_request['container_uuid'],
+    ).execute()
+    container_state = container['state']
+    if container_state == 'Queued' or container_state == 'Locked':
+        status = "On hold" if container['priority'] == 0 else "Queued"
+    elif container_state == 'Running':
+        if container['runtime_status'].get('error'):
+            status = "Failing"
+        elif container['runtime_status'].get('warning'):
+            status = "Warning"
+        else:
+            status = container_state
+    elif container_state == 'Cancelled':
+        status = container_state
+    elif container_state == 'Complete':
+        status = "Completed" if container['exit_code'] == 0 else "Failed"
+...  # Report status as desired
+{% endcodeblock %}
+
+h3(#list-failed-child-requests). List child requests of a container or CWL workflow run
+
+When a running container creates a container request to do additional work, the UUID of the source container is recorded in the @requesting_container_uuid@ field of the new container request. You can list container requests with this filter to find requests created by a specific container.
+
+{% codeblock as python %}
+import arvados.util
+for child_container_requests in arvados.util.keyset_list_all(
+    # Pass the method keyset_list_all will call to retrieve items.
+    # Do not call it yourself.
+    arv_client.container_requests().list,
+    filters=[
+        # Note this is a container UUID, *not* a container request UUID
+        ['requesting_container_uuid', '=', 'zzzzz-dz642-12345abcde67890'],
+        # You may add other filters for your listing.
+        # For example, you could filter by 'name' to find specific kinds
+        # of steps of a CWL workflow.
+        ...,
+    ],
+):
+    ...  # Work with each child container request
+{% endcodeblock %}
+
+h3(#list-child-requests-of-container-request). List child requests of a container request
+
+When a running container creates a container request to do additional work, the UUID of the source container is recorded in the @requesting_container_uuid@ field of the new container request. If all you have is the UUID of a container request, you can get that request, then list container requests with a filter where @requesting_container_uuid@ matches the @container_uuid@ of your request to find all its children.
+
+{% codeblock as python %}
+import arvados.util
+parent_container_request = arv_client.container_requests().get(
+    uuid='zzzzz-xvhdp-12345abcde67890',
+).execute()
+parent_container_uuid = parent_container_request['container_uuid']
+if parent_container_uuid is None:
+    # No container has run for this request yet, so there cannot be child requests.
+    child_container_requests = ()
+else:
+    child_container_requests = arvados.util.keyset_list_all(
+        # Pass the method keyset_list_all will call to retrieve items.
+        # Do not call it yourself.
+        arv_client.container_requests().list,
+        filters=[
+            ['requesting_container_uuid', '=', parent_container_uuid],
+            # You may add other filters for your listing.
+            # For example, you could filter by 'name' to find specific kinds
+            # of steps of a CWL workflow.
+            ...,
+        ],
+    )
+for child_container_request in child_container_requests:
+    ...  # Work with each child container request
+{% endcodeblock %}
+
+With each child container request, you could repeat any of the recipes listed earlier in this section: examine their status, inputs, outputs, logs, and so on.
+
+h2(#working-with-container-request-queue). Working with the container request queue
+
+h3(#list-completed-container-requests). List completed container requests
+
+Completed container requests have their @state@ field set to @"Final"@. You can list container requests with this filter to find completed requests.
+
+{% codeblock as python %}
+import arvados.util
+import datetime
+time_filter = datetime.datetime.utcnow()
+time_filter -= datetime.timedelta(days=7)
+
+for container_request in arvados.util.keyset_list_all(
+    # Pass the method keyset_list_all will call to retrieve items.
+    # Do not call it yourself.
+    arv_client.container_requests().list,
+    filters=[
+        # This is the filter you need to find completed container requests.
+        ['state', '=', 'Final'],
+        # There could be many completed container requests, so you should
+        # provide additional filters. This example limits the listing to
+        # container requests from the past week.
+        ['created_at', '>=', f'{time_filter.isoformat()}Z'],
+        ...,
+    ],
+):
+    # Work with each container_request as desired.
+    # This example provides a basic status table with the container request
+    # UUID, time the request was created, and time the container finished
+    # (both in UTC).
+    print(
+        container_request['uuid'],
+        container_request['created_at'],
+        container_request['modified_at'],
+    )
+{% endcodeblock %}
+
+h3(#cancel-a-container-request). Cancel a container request
+
+To cancel a container request, update it to set its @priority@ field to 0. See the "containers API reference":{{ site.baseurl }}/api/methods/containers.html for details.
+
+{% codeblock as python %}
+cancelled_container_request = arv_client.container_requests().update(
+    uuid='zzzzz-xvhdp-12345abcde67890',
+    body={
+        'container_request': {
+            'priority': 0,
+        },
+    },
+).execute()
+{% endcodeblock %}
+
+h3(#cancel-all-container-requests). Cancel multiple pending container requests
+
+If you want to cancel multiple pending container requests, you can list container requests with the @state@ field set to @"Committed"@, a @priority@ greater than zero, and any other filters you like. Then update each container request to set its @priority@ field to 0. See the "containers API reference":{{ site.baseurl }}/api/methods/containers.html for details.
+
+{% codeblock as python %}
+import arvados.util
+for container_request in arvados.util.keyset_list_all(
+    # Pass the method keyset_list_all will call to retrieve items.
+    # Do not call it yourself.
+    arv_client.container_requests().list,
+    filters=[
+        # These are the filters you need to find cancellable container requests.
+        ['state', '=', 'Committed'],
+        ['priority', '>', 0],
+        # You can add other filters as desired.
+        # For example, you might filter on `requesting_container_uuid` to
+        # cancel only steps of one specific workflow.
+        ...,
+    ],
+):
+    cancelled_container_request = arv_client.container_requests().update(
+        uuid=container_request['uuid'],
+        body={
+            'container_request': {
+                'priority': 0,
+            },
+        },
+    ).execute()
 {% endcodeblock %}

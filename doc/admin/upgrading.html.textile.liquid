@@ -28,13 +28,27 @@ TODO: extract this information based on git commit messages and generate changel
 <div class="releasenotes">
 </notextile>
 
-h2(#main). development main (as of 2022-12-22)
+h2(#main). development main (as of 2023-01-27)
 
 "previous: Upgrading to 2.5.0":#v2_5_0
+
+h3. Default limit for cloud VM instances
+
+There is a new configuration entry @CloudVMs.MaxInstances@ (default 64) that limits the number of VMs the cloud dispatcher will run at a time. This may need to be adjusted to suit your anticipated workload.
+
+Using the obsolete configuration entry @MaxCloudVMs@, which was previously accepted in config files but not obeyed, will now result in a deprecation warning.
+
+h3. Slow migration on upgrade
+
+This upgrade includes a database schema update (changing an integer column in each table from 32-bit to 64-bit) that may be slow on a large installation. Expect the arvados-api-server package upgrade to take longer than usual.
 
 h2(#v2_5_0). v2.5.0 (2022-12-22)
 
 "previous: Upgrading to 2.4.4":#v2_4_4
+
+h3. Dispatchers require PostgreSQL database access
+
+All dispatchers (cloud, LSF, and Slurm) now connect directly to the PostgreSQL database. Make sure these connections are supported by your network firewall rules, PostgreSQL connection settings, and PostgreSQL server configuration (in @pg_hba.conf@) as shown in the "PostgreSQL install instructions":{{site.baseurl}}/install/install-postgresql.html.
 
 h3. Google or OpenID Connect login restricted to trusted clients
 

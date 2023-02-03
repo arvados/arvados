@@ -54,7 +54,7 @@ table(table table-bordered table-condensed).
 |priority|integer|Range 0-1000.  Indicate scheduling order preference.|Clients are expected to submit container requests with zero priority in order to preview the container that will be used to satisfy it. Priority can be null if and only if state!="Committed".  See "below for more details":#priority .|
 |expires_at|datetime|After this time, priority is considered to be zero.|Not yet implemented.|
 |use_existing|boolean|If possible, use an existing (non-failed) container to satisfy the request instead of creating a new one.|Default is true|
-|log_uuid|string|Log collection containing log messages provided by the scheduler and crunch processes.|Null if the container has not yet completed.|
+|log_uuid|string|Log collection containing log messages provided by the scheduler and crunch processes.|Null if the container has not yet started running.|
 |output_uuid|string|Output collection created when the container finished successfully.|Null if the container has failed or not yet completed.|
 |filters|string|Additional constraints for satisfying the container_request, given in the same form as the filters parameter accepted by the container_requests.list API.|
 |runtime_token|string|A v2 token to be passed into the container itself, used to access Keep-backed mounts, etc.  |Not returned in API responses.  Reset to null when state is "Complete" or "Cancelled".|
@@ -63,6 +63,59 @@ table(table table-bordered table-condensed).
 |output_storage_classes|array of strings|The storage classes that will be used for the log and output collections of this container request|default is ["default"]|
 |output_properties|hash|User metadata properties to set on the output collection.  The output collection will also have default properties "type" ("intermediate" or "output") and "container_request" (the uuid of container request that produced the collection).|
 |cumulative_cost|number|Estimated cost of the cloud VMs used to satisfy the request, including retried attempts and completed subrequests, but not including reused containers.|0 if container was reused or VM price information was not available.|
+
+h2(#lifecycle). Container request lifecycle
+
+A container request may be created in the Committed state, or created in the Uncommitted state and then moved into the Committed state.
+
+Once a request is in the Committed state, Arvados locates a suitable existing container or schedules a new one. When the assigned container finishes, the request state changes to Final.
+
+A client may cancel a committed request early (before the assigned container finishes) by setting the request priority to zero.
+
+!{max-width:60em;}{{site.baseurl}}/api/methods/container_request_lifecycle.svg!
+{% comment %}
+# svg generated using `graphviz -Tsvg -O`
+digraph {
+    graph [nojustify=true] [labeljust=l]
+
+    invisiblestart [label = ""] [color=white] [group=lifecycle];
+    node [color=black] [fillcolor=white] [style=filled] [shape=box] [nojustify=true];
+    uncommitted [label = "container request:\l   state=Uncommitted\l"] [fillcolor=lightgrey] [group=lifecycle];
+    {
+        rank=same;
+        committed [label = "container request:\l   state=Committed\l   priority>0\l"] [group=lifecycle];
+        reused [label = "container request:\l   state=Final\lcontainer:\l   state=Complete\l(reused existing container)\l"] [fillcolor=lightblue] [group=endstate];
+    }
+    invisiblestart -> uncommitted [label = "   user creates container request\l"] [color=navy] [fontcolor=navy];
+    uncommitted -> committed [label = "   user updates to\l      state=Committed, priority>0\l"] [color=navy] [fontcolor=navy];
+    queued [label = "container request:\l   state=Committed\l   priority>0\lcontainer:\l   state=Queued\l"] [group=lifecycle];
+    committed -> queued [label = "   Arvados creates a new container\l"];
+    {
+        rank=same;
+        locked [label = "container request:\l   state=Committed\l   priority>0\lcontainer:\l   state=Locked\l"] [group=lifecycle];
+        latecancelled [label = "container request:\l   state=Final\lcontainer:\l   state=Cancelled\l"] [fillcolor=lightblue] [group=endstate];
+    }
+    queued -> locked [label = "   Arvados is ready to dispatch the container\l"];
+    {
+        rank=same;
+        running [label = "container request:\l   state=Committed\l   priority>0\lcontainer:\l   state=Running\l"] [group=lifecycle];
+        containerfailed [label = "container request:\l   state=Final\lcontainer:\l   state=Complete\l   exit_code≠0\l"] [fillcolor=lightblue] [group=endstate];
+    }
+    locked -> running [label = "   Arvados starts the container process\l"];
+    containerfinished [label = "container request:\l   state=Final\lcontainer:\l   state=Complete\l   exit_code=0\l"] [fillcolor=lightblue] [group=lifecycle];
+
+    committed -> reused [label = "Arvados selects an existing container"] [constraint=false] [labeldistance=0.5];
+    queued -> latecancelled [label = "user updates to priority=0"] [color=navy] [fontcolor=navy];
+    locked -> latecancelled [label = "user updates to priority=0"] [color=navy] [fontcolor=navy] [constraint=false];
+    running -> latecancelled [label = "user updates to priority=0"] [color=navy] [fontcolor=navy] [constraint=false];
+    running -> containerfailed [label = "container process fails"];
+    running -> containerfinished [label = "   container process succeeds\l"];
+
+    # layout hacks
+    reused -> latecancelled [style=invis];
+    latecancelled -> containerfailed [style=invis];
+}
+{% endcomment %}
 
 h2(#priority). Priority
 
@@ -99,7 +152,7 @@ h2(#cancel_container). Canceling a container request
 
 A container request may be canceled by setting its priority to 0, using an update call.
 
-When a container request is canceled, it will still reflect the state of the Container it is associated with via the container_uuid attribute. If that Container is being reused by any other container_requests that are still active, i.e., not yet canceled, that Container may continue to run or be scheduled to run by the system in future. However, if no other container_requests are using that Contianer, then the Container will get canceled as well.
+When a container request is canceled, it will still reflect the state of the Container it is associated with via the container_uuid attribute. If that Container is being reused by any other container_requests that are still active, i.e., not yet canceled, that Container may continue to run or be scheduled to run by the system in future. However, if no other container_requests are using that Container, then the Container will get canceled as well.
 
 h2. Methods
 

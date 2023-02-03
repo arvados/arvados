@@ -29,7 +29,7 @@ class TestUtil(unittest.TestCase):
 
         self.assertEqual(info["name"], "Intermediate collection for step one")
         self.assertEqual(info["trash_at"], datetime.datetime(2018, 1, 1, 0, 2, 0, 0))
-        self.assertEqual(info["properties"], {"type" : "intermediate", "container" : "zzzzz-8i9sb-zzzzzzzzzzzzzzz"})
+        self.assertEqual(info["properties"], {"type" : "intermediate", "container_uuid" : "zzzzz-8i9sb-zzzzzzzzzzzzzzz"})
 
     def test_get_current_container_success(self):
         api = mock.MagicMock()

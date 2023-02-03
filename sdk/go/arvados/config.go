@@ -5,6 +5,7 @@
 package arvados
 
 import (
+	"crypto/tls"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -112,6 +113,7 @@ type Cluster struct {
 		FreezeProjectRequiresDescription bool
 		FreezeProjectRequiresProperties  StringSet
 		UnfreezeProjectRequiresAdmin     bool
+		LockBeforeUpdate                 bool
 	}
 	AuditLogs struct {
 		MaxAge             Duration
@@ -162,6 +164,7 @@ type Cluster struct {
 			URL                URL
 			StartTLS           bool
 			InsecureTLS        bool
+			MinTLSVersion      TLSVersion
 			StripDomain        string
 			AppendDomain       string
 			SearchAttribute    string
@@ -404,6 +407,51 @@ func (su URL) String() string {
 	return (*url.URL)(&su).String()
 }
 
+type TLSVersion uint16
+
+func (v TLSVersion) MarshalText() ([]byte, error) {
+	switch v {
+	case 0:
+		return []byte{}, nil
+	case tls.VersionTLS10:
+		return []byte("1.0"), nil
+	case tls.VersionTLS11:
+		return []byte("1.1"), nil
+	case tls.VersionTLS12:
+		return []byte("1.2"), nil
+	case tls.VersionTLS13:
+		return []byte("1.3"), nil
+	default:
+		return nil, fmt.Errorf("unsupported TLSVersion %x", v)
+	}
+}
+
+func (v *TLSVersion) UnmarshalJSON(text []byte) error {
+	if len(text) > 0 && text[0] == '"' {
+		var s string
+		err := json.Unmarshal(text, &s)
+		if err != nil {
+			return err
+		}
+		text = []byte(s)
+	}
+	switch string(text) {
+	case "":
+		*v = 0
+	case "1.0":
+		*v = tls.VersionTLS10
+	case "1.1":
+		*v = tls.VersionTLS11
+	case "1.2":
+		*v = tls.VersionTLS12
+	case "1.3":
+		*v = tls.VersionTLS13
+	default:
+		return fmt.Errorf("unsupported TLSVersion %q", text)
+	}
+	return nil
+}
+
 type ServiceInstance struct {
 	ListenURL  URL
 	Rendezvous string `json:",omitempty"`
@@ -450,7 +498,6 @@ type ContainersConfig struct {
 	DefaultKeepCacheRAM           ByteSize
 	DispatchPrivateKey            string
 	LogReuseDecisions             bool
-	MaxComputeVMs                 int
 	MaxDispatchAttempts           int
 	MaxRetryAttempts              int
 	MinRetryPeriod                Duration
@@ -514,6 +561,7 @@ type CloudVMsConfig struct {
 	MaxCloudOpsPerSecond           int
 	MaxProbesPerSecond             int
 	MaxConcurrentInstanceCreateOps int
+	MaxInstances                   int
 	PollInterval                   Duration
 	ProbeInterval                  Duration
 	SSHPort                        string

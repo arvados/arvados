@@ -28,8 +28,10 @@ h3(#centos7). CentOS 7
 ~$ <span class="userinput">scl enable rh-postgresql12 bash</span></pre></notextile>
 # Initialize the database
   <notextile><pre># <span class="userinput">postgresql-setup initdb</span></pre></notextile>
-# Configure the database to accept password connections
+# Configure the database to accept password connections from localhost
   <notextile><pre><code># <span class="userinput">sed -ri -e 's/^(host +all +all +(127\.0\.0\.1\/32|::1\/128) +)ident$/\1md5/' /var/lib/pgsql/data/pg_hba.conf</span></code></pre></notextile>
+# Configure the database to accept password connections from the local network (replace @10.9.8.0/24@ with your private network mask)
+  <notextile><pre><code># <span class="userinput">echo 'host all all 10.9.8.0/24 md5' | tee -a /var/lib/pgsql/data/pg_hba.conf</span></code></pre></notextile>
 # Configure the database to launch at boot and start now
   <notextile><pre># <span class="userinput">systemctl enable --now rh-postgresql12-postgresql</span></pre></notextile>
 
@@ -38,6 +40,8 @@ h3(#debian). Debian or Ubuntu
 Debian 10 (Buster) and Ubuntu 16.04 (Xenial) and later versions include a sufficiently recent version of Postgres.
 
 # Install PostgreSQL
-  <notextile><pre># <span class="userinput">apt-get --no-install-recommends install postgresql postgresql-contrib</span></pre></notextile>
+<notextile><pre># <span class="userinput">apt-get --no-install-recommends install postgresql postgresql-contrib</span></pre></notextile>
+# Configure PostgreSQL to accept password connections from the local network (replace @10.9.8.0/24@ with your private network mask)
+<notextile><pre># <span class="userinput">echo 'host all all 10.9.8.0/24 md5' | tee -a /etc/postgresql/*/main/pg_hba.conf</span></pre></notextile>
 # Configure the database to launch at boot and start now
 <notextile><pre># <span class="userinput">systemctl enable --now postgresql</span></pre></notextile>

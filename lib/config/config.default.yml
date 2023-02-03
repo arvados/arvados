@@ -288,6 +288,9 @@ Clusters:
       # any user with "manage" permission can un-freeze.
       UnfreezeProjectRequiresAdmin: false
 
+      # (Experimental) Use row-level locking on update API calls.
+      LockBeforeUpdate: false
+
     Users:
       # Config parameters to automatically setup new users.  If enabled,
       # this users will be able to self-activate.  Enable this if you want
@@ -803,6 +806,16 @@ Clusters:
         # Skip TLS certificate name verification.
         InsecureTLS: false
 
+        # Mininum TLS version to negotiate when connecting to server
+        # (ldaps://... or StartTLS). It may be necessary to set this
+        # to "1.1" for compatibility with older LDAP servers that fail
+        # with 'LDAP Result Code 200 "Network Error": TLS handshake
+        # failed (tls: server selected unsupported protocol version
+        # 301)'.
+        #
+        # If blank, use the recommended minimum version (1.2).
+        MinTLSVersion: ""
+
         # Strip the @domain part if a user supplies an email-style
         # username with this domain. If "*", strip any user-provided
         # domain. If "", never strip the domain part. Example:
@@ -991,13 +1004,6 @@ Clusters:
       # container_count < container_count_max on any container requests associated
       # with the cancelled container.
       MaxRetryAttempts: 3
-
-      # The maximum number of compute nodes that can be in use simultaneously
-      # If this limit is reduced, any existing nodes with slot number >= new limit
-      # will not be counted against the new limit. In other words, the new limit
-      # won't be strictly enforced until those nodes with higher slot numbers
-      # go down.
-      MaxComputeVMs: 64
 
       # Schedule all child containers on preemptible instances (e.g. AWS
       # Spot Instances) even if not requested by the submitter.
@@ -1314,6 +1320,15 @@ Clusters:
         # providers too, if desired.
         MaxConcurrentInstanceCreateOps: 1
 
+        # The maximum number of instances to run at a time, or 0 for
+        # unlimited.
+        #
+        # If more instances than this are already running and busy
+        # when the dispatcher starts up, the running containers will
+        # be allowed to finish before the excess instances are shut
+        # down.
+        MaxInstances: 64
+
         # Interval between cloud provider syncs/updates ("list all
         # instances").
         SyncInterval: 1m
@@ -1395,6 +1410,20 @@ Clusters:
           # the cloud dispatcher. Leave blank when not needed.
           IAMInstanceProfile: ""
 
+          # (ec2) how often to look up spot instance pricing data
+          # (only while running spot instances) for the purpose of
+          # calculating container cost estimates. A value of 0
+          # disables spot price lookups entirely.
+          SpotPriceUpdateInterval: 24h
+
+          # (ec2) per-GiB-month cost of EBS volumes. Matches
+          # EBSVolumeType. Used to account for AddedScratch when
+          # calculating container cost estimates. Note that
+          # https://aws.amazon.com/ebs/pricing/ defines GB to mean
+          # GiB, so an advertised price $0.10/GB indicates a real
+          # price of $0.10/GiB and can be entered here as 0.10.
+          EBSPrice: 0.10
+
           # (azure) Credentials.
           SubscriptionID: ""
           ClientID: ""
@@ -1448,6 +1477,13 @@ Clusters:
         RAM: 128MiB
         IncludedScratch: 16GB
         AddedScratch: 0
+        # Hourly price ($), used to select node types for containers,
+        # and to calculate estimated container costs. For spot
+        # instances on EC2, this is also used as the maximum price
+        # when launching spot instances, while the estimated container
+        # cost is computed based on the current spot price according
+        # to AWS. On Azure, and on-demand instances on EC2, the price
+        # given here is used to compute container cost estimates.
         Price: 0.1
         Preemptible: false
         # Include this section if the node type includes GPU (CUDA) support

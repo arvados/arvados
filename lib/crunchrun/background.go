@@ -21,6 +21,7 @@ var (
 	lockprefix = "crunch-run-"
 	locksuffix = ".lock"
 	brokenfile = "crunch-run-broken"
+	pricesfile = "crunch-run-prices.json"
 )
 
 // procinfo is saved in each process's lockfile.
@@ -183,7 +184,20 @@ func kill(uuid string, signal syscall.Signal, stdout, stderr io.Writer) error {
 }
 
 // ListProcesses lists UUIDs of active crunch-run processes.
-func ListProcesses(stdout, stderr io.Writer) int {
+func ListProcesses(stdin io.Reader, stdout, stderr io.Writer) int {
+	if buf, err := io.ReadAll(stdin); err == nil && len(buf) > 0 {
+		// write latest pricing data to disk where
+		// current/future crunch-run processes can load it
+		fnm := filepath.Join(lockdir, pricesfile)
+		fnmtmp := fmt.Sprintf("%s~%d", fnm, os.Getpid())
+		err := os.WriteFile(fnmtmp, buf, 0777)
+		if err != nil {
+			fmt.Fprintf(stderr, "error writing price data to %s: %s", fnmtmp, err)
+		} else if err = os.Rename(fnmtmp, fnm); err != nil {
+			fmt.Fprintf(stderr, "error renaming %s to %s: %s", fnmtmp, fnm, err)
+			os.Remove(fnmtmp)
+		}
+	}
 	// filepath.Walk does not follow symlinks, so we must walk
 	// lockdir+"/." in case lockdir itself is a symlink.
 	walkdir := lockdir + "/."
@@ -245,7 +259,7 @@ func ListProcesses(stdout, stderr io.Writer) int {
 			fmt.Fprintf(stderr, "%s: find process %d: %s", path, pi.PID, err)
 			return nil
 		}
-		err = proc.Signal(syscall.Signal(0))
+		err = proc.Signal(syscall.SIGUSR2)
 		if err != nil {
 			// Process is dead, even though lockfile was
 			// still locked. Most likely a stuck arv-mount

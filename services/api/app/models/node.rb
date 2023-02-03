@@ -24,6 +24,7 @@ class Node < ArvadosModel
   attr_accessor :job_readable
 
   UNUSED_NODE_IP = '127.40.4.0'
+  MAX_VMS = 3
 
   api_accessible :user, :extend => :common do |t|
     t.add :hostname
@@ -159,7 +160,7 @@ class Node < ArvadosModel
                           # query label:
                           'Node.available_slot_number',
                           # [col_id, val] for $1 vars:
-                          [[nil, Rails.configuration.Containers.MaxComputeVMs]],
+                          [[nil, MAX_VMS]],
                          ).rows.first.andand.first
   end
 
@@ -267,7 +268,7 @@ class Node < ArvadosModel
       !Rails.configuration.Containers.SLURM.Managed.DNSServerConfTemplate.to_s.empty? and
       !Rails.configuration.Containers.SLURM.Managed.AssignNodeHostname.empty?)
 
-    (0..Rails.configuration.Containers.MaxComputeVMs-1).each do |slot_number|
+    (0..MAX_VMS-1).each do |slot_number|
       hostname = hostname_for_slot(slot_number)
       hostfile = File.join Rails.configuration.Containers.SLURM.Managed.DNSServerConfDir, "#{hostname}.conf"
       if !File.exist? hostfile
