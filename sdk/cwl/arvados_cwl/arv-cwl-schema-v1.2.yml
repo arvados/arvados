@@ -401,3 +401,124 @@ $graph:
         only or written to disk and memory-mapped.  The disk cache
         leverages the kernel's virtual memory system so "hot" data will
         generally still be kept in RAM.
+
+- name: cwltool:LoopInput
+  type: record
+  fields:
+    id:
+      type: string?
+      jsonldPredicate: "@id"
+      doc: "It must reference the `id` of one of the elements in the `in` field of the step."
+    loopSource:
+      doc: |
+        Specifies one or more of the step output parameters that will
+        provide input to the loop iterations after the first one (inputs
+        of the first iteration are the step input parameters).
+      type:
+        - string?
+        - string[]?
+      jsonldPredicate:
+        "_type": "@id"
+        refScope: 1
+    linkMerge:
+      type: cwl:LinkMergeMethod?
+      jsonldPredicate: "cwl:linkMerge"
+      default: merge_nested
+      doc: |
+        The method to use to merge multiple inbound links into a single array.
+        If not specified, the default method is "merge_nested".
+    pickValue:
+      type: ["null", cwl:PickValueMethod]
+      jsonldPredicate: "cwl:pickValue"
+      doc: |
+        The method to use to choose non-null elements among multiple sources.
+    default:
+      type: ["null", Any]
+      doc: |
+        The default value for this parameter to use if either there is no
+        `source` field, or the value produced by the `source` is `null`.  The
+        default must be applied prior to scattering or evaluating `valueFrom`.
+      jsonldPredicate:
+        _id: "sld:default"
+        noLinkCheck: true
+    valueFrom:
+      type:
+        - "null"
+        - string
+        - cwl:Expression
+      jsonldPredicate: "cwl:valueFrom"
+      doc: |
+        To use valueFrom, [StepInputExpressionRequirement](#StepInputExpressionRequirement) must
+        be specified in the workflow or workflow step requirements.
+
+        If `valueFrom` is a constant string value, use this as the value for
+        this input parameter.
+
+        If `valueFrom` is a parameter reference or expression, it must be
+        evaluated to yield the actual value to be assigned to the input field.
+
+        The `self` value in the parameter reference or expression must be
+        `null` if there is no `loopSource` field, or the value of the
+        parameter(s) specified in the `loopSource` field.
+
+        The value of `inputs` in the parameter reference or expression must be
+        the input object to the previous iteration of the workflow step (or the initial
+        inputs for the first iteration).
+
+- name: cwltool:Loop
+  type: record
+  extends: cwl:ProcessRequirement
+  inVocab: false
+  doc: |
+    Prototype to enable workflow-level looping of a step.
+
+    Valid only under `requirements` of a https://www.commonwl.org/v1.2/Workflow.html#WorkflowStep.
+    Unlike other CWL requirements, Loop requirement is not propagated to inner steps.
+
+    `loopWhen` is an expansion of the CWL v1.2 `when` construct which controls
+    conditional execution.
+
+    Using `loopWhen` and `when` for the same step will produce an error.
+
+    `loopWhen` is not compatible with `scatter` at this time and combining the
+    two in the same step will produce an error.
+  fields:
+    class:
+      type: string
+      doc: 'cwltool:Loop'
+      jsonldPredicate:
+        _id: "@type"
+        _type: "@vocab"
+    loopWhen:
+      type: cwl:Expression
+      doc: |
+        Only run the step while the expression evaluates to `true`.
+        If `false` and no iteration has been performed, the step is skipped.
+
+        A skipped step produces a `null` on each output.
+
+        The `inputs` value in the expression must be the step input object.
+
+        It is an error if this expression returns a value other than `true` or `false`.
+    loop:
+      type: cwltool:LoopInput[]
+      jsonldPredicate:
+        _id: "cwltool:loop"
+        mapSubject: id
+        mapPredicate: loopSource
+      doc: |
+        Defines the input parameters of the loop iterations after the first one
+        (inputs of the first iteration are the step input parameters). If no
+        `loop` rule is specified for a given step `in` field, the initial value
+        is kept constant among all iterations.
+    outputMethod:
+      type:
+        type: enum
+        name: LoopOutputModes
+        symbols: [ last, all ]
+      default: last
+      doc:
+        - Specify the desired method of dealing with loop outputs
+        - Default. Propagates only the last computed element to the subsequent steps when the loop terminates.
+        - Propagates a single array with all output values to the subsequent steps when the loop terminates.
+
