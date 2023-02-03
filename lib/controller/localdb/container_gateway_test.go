@@ -311,7 +311,6 @@ func (s *ContainerGatewaySuite) testConnectThroughTunnel(c *check.C, expectError
 	// Until the tunnel starts up, set gateway_address to a value
 	// that can't work. We want to ensure the only way we can
 	// reach the gateway is through the tunnel.
-	gwaddr := "127.0.0.1:0"
 	tungw := &crunchrun.Gateway{
 		ContainerUUID: s.ctrUUID,
 		AuthSecret:    s.gw.AuthSecret,
@@ -320,7 +319,7 @@ func (s *ContainerGatewaySuite) testConnectThroughTunnel(c *check.C, expectError
 		ArvadosClient: s.gw.ArvadosClient,
 		UpdateTunnelURL: func(url string) {
 			c.Logf("UpdateTunnelURL(%q)", url)
-			gwaddr = "tunnel " + url
+			gwaddr := "tunnel " + url
 			s.localdb.ContainerUpdate(rootctx, arvados.UpdateOptions{
 				UUID: s.ctrUUID,
 				Attrs: map[string]interface{}{
@@ -338,8 +337,8 @@ func (s *ContainerGatewaySuite) testConnectThroughTunnel(c *check.C, expectError
 	_, err = s.localdb.ContainerUpdate(rootctx, arvados.UpdateOptions{
 		UUID: s.ctrUUID,
 		Attrs: map[string]interface{}{
-			"state":           arvados.ContainerStateRunning,
-			"gateway_address": gwaddr}})
+			"state": arvados.ContainerStateRunning,
+		}})
 	c.Assert(err, check.IsNil)
 
 	for deadline := time.Now().Add(5 * time.Second); time.Now().Before(deadline); time.Sleep(time.Second / 2) {
