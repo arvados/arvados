@@ -281,6 +281,7 @@ def add_arv_hints():
         "http://arvados.org/cwl#UsePreemptible",
         "http://arvados.org/cwl#OutputCollectionProperties",
         "http://arvados.org/cwl#KeepCacheTypeRequirement",
+        "http://commonwl.org/cwltool#Loop",
     ])
 
 def exit_signal_handler(sigcode, frame):
