@@ -120,9 +120,13 @@ export class AuthService {
         window.location.assign(`https://${homeClusterHost}/login?${(uuidPrefix !== homeCluster && homeCluster !== loginCluster) ? "remote=" + uuidPrefix + "&" : ""}return_to=${currentUrl}`);
     }
 
-    public logout(expireToken: string) {
-        const currentUrl = `${window.location.protocol}//${window.location.host}`;
-        window.location.assign(`${this.baseUrl || ""}/logout?api_token=${expireToken}&return_to=${currentUrl}`);
+    public logout(expireToken: string, preservePath: boolean) {
+        const fullUrl = new URL(window.location.href);
+        const wbBase = `${fullUrl.protocol}//${fullUrl.host}`;
+        const wbPath = fullUrl.pathname + fullUrl.search;
+        const returnTo = `${wbBase}${preservePath ? wbPath : ''}`
+
+        window.location.assign(`${this.baseUrl || ""}/logout?api_token=${expireToken}&return_to=${returnTo}`);
     }
 
     public getUserDetails = (showErrors?: boolean): Promise<User> => {

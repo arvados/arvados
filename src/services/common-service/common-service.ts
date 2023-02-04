@@ -154,6 +154,7 @@ export class CommonService<T> {
             return CommonService.defaultResponse(
                 this.serverApi.get(`/${this.resourceType}`, { params }),
                 this.actions,
+                true,
                 showErrors
             );
         } else {
@@ -170,6 +171,7 @@ export class CommonService<T> {
             return CommonService.defaultResponse(
                 this.serverApi.post(`/${this.resourceType}`, formData, {}),
                 this.actions,
+                true,
                 showErrors
             );
         }

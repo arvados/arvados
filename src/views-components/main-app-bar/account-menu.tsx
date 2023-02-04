@@ -95,7 +95,7 @@ export const AccountMenuComponent =
                 {user.isActive && accountMenuItems}
                 <Divider />
                 <MenuItem data-cy="logout-menuitem"
-                    onClick={() => dispatch(authActions.LOGOUT({ deleteLinkData: true }))}>
+                    onClick={() => dispatch(authActions.LOGOUT({ deleteLinkData: true, preservePath: false }))}>
                     Logout
 		 </MenuItem>
             </DropdownMenu>

@@ -20,11 +20,12 @@ import {
     getAdvancedDataFromQuery
 } from 'store/search-bar/search-bar-actions';
 import { getSortColumn } from "store/data-explorer/data-explorer-reducer";
-import { joinFilters } from 'services/api/filter-builder';
+import { FilterBuilder, joinFilters } from 'services/api/filter-builder';
 import { DataColumns } from 'components/data-table/data-table';
 import { serializeResourceTypeFilters } from 'store//resource-type-filters/resource-type-filters';
 import { ProjectPanelColumnNames } from 'views/project-panel/project-panel';
-import { Resource } from 'models/resource';
+import { Resource, ResourceKind } from 'models/resource';
+import { ContainerRequestResource } from 'models/container-request';
 
 export class SearchResultsMiddlewareService extends DataExplorerMiddlewareService {
     constructor(private services: ServiceRepository, id: string) {
@@ -60,6 +61,18 @@ export class SearchResultsMiddlewareService extends DataExplorerMiddlewareServic
                 .then((response) => {
                     api.dispatch(updateResources(response.items));
                     api.dispatch(appendItems(response));
+                    // Request all containers for process status to be available
+                    const containerRequests = response.items.filter((item) => item.kind === ResourceKind.CONTAINER_REQUEST) as ContainerRequestResource[];
+                    const containerUuids = containerRequests.map(container => container.containerUuid).filter(uuid => uuid !== null) as string[];
+                    containerUuids.length && this.services.containerService
+                        .list({
+                            filters: new FilterBuilder()
+                                .addIn('uuid', containerUuids)
+                                .getFilters()
+                        }, false)
+                        .then((containers) => {
+                            api.dispatch(updateResources(containers.items));
+                        });
                 }).catch(() => {
                     api.dispatch(couldNotFetchSearchResults(session.clusterId));
                 });

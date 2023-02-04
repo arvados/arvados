@@ -36,7 +36,7 @@ describe("AuthMiddleware", () => {
         window.location.assign = jest.fn();
         const next = jest.fn();
         const middleware = authMiddleware(services)(store)(next);
-        middleware(authActions.LOGOUT({deleteLinkData: false}));
+        middleware(authActions.LOGOUT({deleteLinkData: false, preservePath: false}));
         expect(window.location.assign).toBeCalledWith(
             `/logout?api_token=someToken&return_to=${location.protocol}//${location.host}`
         );

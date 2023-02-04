@@ -119,6 +119,9 @@ export const getProcessStatusStyles = (status: string, theme: ArvadosTheme): Rea
 
 export const getProcessStatus = ({ containerRequest, container }: Process): ProcessStatus => {
     switch (true) {
+        case containerRequest.containerUuid && !container:
+            return ProcessStatus.UNKNOWN;
+
         case containerRequest.state === ContainerRequestState.FINAL &&
             container?.state !== ContainerState.COMPLETE:
             // Request was finalized before its container started (or the

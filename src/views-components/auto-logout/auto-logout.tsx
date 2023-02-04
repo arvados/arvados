@@ -30,7 +30,7 @@ const mapStateToProps = (state: RootState, ownProps: any): AutoLogoutDataProps =
 });
 
 const mapDispatchToProps = (dispatch: Dispatch): AutoLogoutActionProps => ({
-    doLogout: () => dispatch<any>(logout(true)),
+    doLogout: () => dispatch<any>(logout(true, true)),
     doWarn: (message: string, duration: number) =>
         dispatch(snackbarActions.OPEN_SNACKBAR({
             message, hideDuration: duration, kind: SnackbarKind.WARNING })),
