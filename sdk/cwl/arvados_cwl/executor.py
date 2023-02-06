@@ -36,7 +36,7 @@ import arvados_cwl.util
 from .arvcontainer import RunnerContainer, cleanup_name_for_collection
 from .runner import Runner, upload_docker, upload_job_order, upload_workflow_deps, make_builder, update_from_merged_map
 from .arvtool import ArvadosCommandTool, validate_cluster_target, ArvadosExpressionTool
-from .arvworkflow import ArvadosWorkflow, upload_workflow, new_upload_workflow, make_workflow_record
+from .arvworkflow import ArvadosWorkflow, upload_workflow, make_workflow_record
 from .fsaccess import CollectionFsAccess, CollectionFetcher, collectionResolver, CollectionCache, pdh_size
 from .perf import Perf
 from .pathmapper import NoFollowPathMapper
@@ -709,17 +709,17 @@ The 'jobs' API is no longer supported.
         if submitting and not self.fast_submit:
             # upload workflow and get back the workflow wrapper
 
-            workflow_wrapper = new_upload_workflow(self, tool, job_order,
-                                                   runtimeContext.project_uuid,
-                                                   runtimeContext,
-                                                   uuid=runtimeContext.update_workflow,
-                                                   submit_runner_ram=runtimeContext.submit_runner_ram,
-                                                   name=runtimeContext.name,
-                                                   merged_map=merged_map,
-                                                   submit_runner_image=runtimeContext.submit_runner_image,
-                                                   git_info=git_info,
-                                                   set_defaults=(runtimeContext.update_workflow or runtimeContext.create_workflow),
-                                                   jobmapper=jobmapper)
+            workflow_wrapper = upload_workflow(self, tool, job_order,
+                                               runtimeContext.project_uuid,
+                                               runtimeContext,
+                                               uuid=runtimeContext.update_workflow,
+                                               submit_runner_ram=runtimeContext.submit_runner_ram,
+                                               name=runtimeContext.name,
+                                               merged_map=merged_map,
+                                               submit_runner_image=runtimeContext.submit_runner_image,
+                                               git_info=git_info,
+                                               set_defaults=(runtimeContext.update_workflow or runtimeContext.create_workflow),
+                                               jobmapper=jobmapper)
 
             if runtimeContext.update_workflow or runtimeContext.create_workflow:
                 # Now create a workflow record and exit.

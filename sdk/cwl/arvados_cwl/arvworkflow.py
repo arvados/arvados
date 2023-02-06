@@ -250,7 +250,7 @@ def drop_ids(d):
             drop_ids(d[field])
 
 
-def new_upload_workflow(arvRunner, tool, job_order, project_uuid,
+def upload_workflow(arvRunner, tool, job_order, project_uuid,
                         runtimeContext,
                         uuid=None,
                         submit_runner_ram=0, name=None, merged_map=None,
@@ -483,70 +483,6 @@ def make_workflow_record(arvRunner, doc, name, tool, project_uuid, update_uuid):
         call = arvRunner.api.workflows().create(body=body)
     return call.execute(num_retries=arvRunner.num_retries)["uuid"]
 
-
-def upload_workflow(arvRunner, tool, job_order, project_uuid,
-                    runtimeContext, uuid=None,
-                    submit_runner_ram=0, name=None, merged_map=None,
-                    submit_runner_image=None,
-                    git_info=None):
-
-    packed = packed_workflow(arvRunner, tool, merged_map, runtimeContext, git_info)
-
-    adjustDirObjs(job_order, trim_listing)
-    adjustFileObjs(job_order, trim_anonymous_location)
-    adjustDirObjs(job_order, trim_anonymous_location)
-
-    main = [p for p in packed["$graph"] if p["id"] == "#main"][0]
-    for inp in main["inputs"]:
-        sn = shortname(inp["id"])
-        if sn in job_order:
-            inp["default"] = job_order[sn]
-
-    if not name:
-        name = tool.tool.get("label", os.path.basename(tool.tool["id"]))
-
-    upload_dependencies(arvRunner, name, tool.doc_loader,
-                        packed, tool.tool["id"],
-                        runtimeContext)
-
-    wf_runner_resources = None
-
-    hints = main.get("hints", [])
-    found = False
-    for h in hints:
-        if h["class"] == "http://arvados.org/cwl#WorkflowRunnerResources":
-            wf_runner_resources = h
-            found = True
-            break
-    if not found:
-        wf_runner_resources = {"class": "http://arvados.org/cwl#WorkflowRunnerResources"}
-        hints.append(wf_runner_resources)
-
-    wf_runner_resources["acrContainerImage"] = arvados_jobs_image(arvRunner,
-                                                                  submit_runner_image or "arvados/jobs:"+__version__,
-                                                                  runtimeContext)
-
-    if submit_runner_ram:
-        wf_runner_resources["ramMin"] = submit_runner_ram
-
-    main["hints"] = hints
-
-    wrapper = make_wrapper_workflow(arvRunner, main, packed, project_uuid, name, git_info, tool)
-
-    body = {
-        "workflow": {
-            "name": name,
-            "description": tool.tool.get("doc", ""),
-            "definition": wrapper
-        }}
-    if project_uuid:
-        body["workflow"]["owner_uuid"] = project_uuid
-
-    if uuid:
-        call = arvRunner.api.workflows().update(uuid=uuid, body=body)
-    else:
-        call = arvRunner.api.workflows().create(body=body)
-    return call.execute(num_retries=arvRunner.num_retries)["uuid"]
 
 def dedup_reqs(reqs):
     dedup = {}

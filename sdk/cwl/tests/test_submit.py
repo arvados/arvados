@@ -71,7 +71,11 @@ def stubs(wfdetails=('submit_wf.cwl', None)):
                                  "df80736f-f14d-4b10-b2e3-03aa27f034b2", "df80736f-f14d-4b10-b2e3-03aa27f034b3",
                                  "df80736f-f14d-4b10-b2e3-03aa27f034b4", "df80736f-f14d-4b10-b2e3-03aa27f034b5",
                                  "df80736f-f14d-4b10-b2e3-03aa27f034b6", "df80736f-f14d-4b10-b2e3-03aa27f034b7",
-                                 "df80736f-f14d-4b10-b2e3-03aa27f034b8", "df80736f-f14d-4b10-b2e3-03aa27f034b9"]
+                                 "df80736f-f14d-4b10-b2e3-03aa27f034b8", "df80736f-f14d-4b10-b2e3-03aa27f034b9",
+                                 "df80736f-f14d-4b10-b2e3-03aa27f034c0", "df80736f-f14d-4b10-b2e3-03aa27f034c1",
+                                 "df80736f-f14d-4b10-b2e3-03aa27f034c2", "df80736f-f14d-4b10-b2e3-03aa27f034c3",
+                                 "df80736f-f14d-4b10-b2e3-03aa27f034c4", "df80736f-f14d-4b10-b2e3-03aa27f034c5",
+                                 "df80736f-f14d-4b10-b2e3-03aa27f034c6", "df80736f-f14d-4b10-b2e3-03aa27f034c7"]
 
             determine_image_id.return_value = None
 
