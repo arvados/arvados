@@ -133,21 +133,16 @@ def rel_ref(s, baseuri, urlexpander, merged_map, jobmapper):
     if s.startswith("keep:"):
         return s
 
-    #print("BBB", s, baseuri)
     uri = urlexpander(s, baseuri)
-    #print("CCC", uri)
 
     if uri.startswith("keep:"):
         return uri
 
     fileuri = urllib.parse.urldefrag(baseuri)[0]
 
-    #print("BBB", s, baseuri, uri)
-
     for u in (baseuri, fileuri):
         if u in merged_map:
             replacements = merged_map[u].resolved
-            #print("RRR", u, uri, replacements)
             if uri in replacements:
                 return replacements[uri]
 
@@ -158,13 +153,9 @@ def rel_ref(s, baseuri, urlexpander, merged_map, jobmapper):
     p2 = os.path.dirname(uri_file_path(uri))
     p3 = os.path.basename(uri_file_path(uri))
 
-    #print("PPP", p1, p2, p3)
-
     r = os.path.relpath(p2, p1)
     if r == ".":
         r = ""
-
-    #print("RRR", r)
 
     return os.path.join(r, p3)
 
@@ -242,9 +233,7 @@ def fix_schemadef(req, baseuri, urlexpander, merged_map, jobmapper, pdh):
         path, frag = urllib.parse.urldefrag(r)
         rel = rel_ref(r, baseuri, urlexpander, merged_map, jobmapper)
         merged_map.setdefault(path, FileUpdates({}, {}))
-        #print("PPP", path, r, frag)
         rename = "keep:%s/%s" %(pdh, rel)
-        #rename = "#%s" % frag
         for mm in merged_map:
             merged_map[mm].resolved[r] = rename
     return req
@@ -305,8 +294,6 @@ def new_upload_workflow(arvRunner, tool, job_order, project_uuid,
             n -= 1
 
     col = arvados.collection.Collection(api_client=arvRunner.api)
-
-    #print(merged_map)
 
     for w in workflow_files | import_files:
         # 1. load YAML
@@ -465,28 +452,14 @@ def new_upload_workflow(arvRunner, tool, job_order, project_uuid,
         for g in git_info:
             doc[g] = git_info[g]
 
-    #print("MMM", main["id"])
-    #print(yamlloader.dump(wrapper, stream=sys.stdout))
-
     for i, r in enumerate(wrapper["requirements"]):
         if r["class"] == "SchemaDefRequirement":
             wrapper["requirements"][i] = fix_schemadef(r, main["id"], tool.doc_loader.expand_url, merged_map, jobmapper, col.portable_data_hash())
-
-    # print()
-    # print("merrrrged maaap", merged_map)
-    # print()
-    #print("update_refs", main["id"], runfile)
-
-    #print(yamlloader.dump(wrapper, stream=sys.stdout))
 
     update_refs(wrapper, main["id"], tool.doc_loader.expand_url, merged_map, jobmapper, False, runtimeContext, main["id"]+"#", "#main/")
 
     # Remove any lingering file references.
     drop_ids(wrapper)
-
-    #print("HHH")
-
-    #print(yamlloader.dump(wrapper, stream=sys.stdout))
 
     return doc
 

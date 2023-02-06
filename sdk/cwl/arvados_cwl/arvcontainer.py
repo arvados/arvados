@@ -546,7 +546,6 @@ class RunnerContainer(Runner):
             main = self.loadingContext.loader.idx["_:main"]
             if main.get("id") == "_:main":
                 del main["id"]
-            #print(json.dumps(main, indent=2))
             workflowpath = "/var/lib/cwl/workflow.json#main"
             container_req["mounts"]["/var/lib/cwl/workflow.json"] = {
                 "kind": "json",

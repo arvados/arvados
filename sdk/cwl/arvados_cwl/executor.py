@@ -734,15 +734,8 @@ The 'jobs' API is no longer supported.
 
             # Reload just the wrapper workflow.
             self.fast_submit = True
-            #print("bah bah", loadingContext.requirements)
-            #workflow_wrapper, _ = loadingContext.loader.resolve_all(cmap(workflow_wrapper), "_:main", checklinks=True)
-
-            #tool = load_tool(workflow_wrapper[0], loadingContext)
-            #print("AAA", json.dumps(loadingContext.loader.idx["_:main"], indent=2))
             tool = load_tool(workflow_wrapper, loadingContext)
-
             loadingContext.loader.idx["_:main"] = workflow_wrapper
-            #print("BBB", json.dumps(loadingContext.loader.idx["_:main"], indent=2))
 
         if not submitting:
             update_from_merged_map(tool, merged_map)
