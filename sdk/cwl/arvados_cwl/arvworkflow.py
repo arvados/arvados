@@ -167,17 +167,14 @@ def is_basetype(tp):
     return False
 
 
-def update_refs(d, baseuri, urlexpander, merged_map, jobmapper, set_block_style, runtimeContext, prefix, replacePrefix):
-    if set_block_style and (isinstance(d, CommentedSeq) or isinstance(d, CommentedMap)):
-        d.fa.set_block_style()
-
+def update_refs(d, baseuri, urlexpander, merged_map, jobmapper, runtimeContext, prefix, replacePrefix):
     if isinstance(d, MutableSequence):
         for i, s in enumerate(d):
             if prefix and isinstance(s, str):
                 if s.startswith(prefix):
                     d[i] = replacePrefix+s[len(prefix):]
             else:
-                update_refs(s, baseuri, urlexpander, merged_map, jobmapper, set_block_style, runtimeContext, prefix, replacePrefix)
+                update_refs(s, baseuri, urlexpander, merged_map, jobmapper, runtimeContext, prefix, replacePrefix)
     elif isinstance(d, MutableMapping):
         for field in ("id", "name"):
             if isinstance(d.get(field), str) and d[field].startswith("_:"):
@@ -214,7 +211,7 @@ def update_refs(d, baseuri, urlexpander, merged_map, jobmapper, set_block_style,
                     if isinstance(d["inputs"][inp], str) and not is_basetype(d["inputs"][inp]):
                         d["inputs"][inp] = rel_ref(d["inputs"][inp], baseuri, urlexpander, merged_map, jobmapper)
                     if isinstance(d["inputs"][inp], MutableMapping):
-                        update_refs(d["inputs"][inp], baseuri, urlexpander, merged_map, jobmapper, set_block_style, runtimeContext, prefix, replacePrefix)
+                        update_refs(d["inputs"][inp], baseuri, urlexpander, merged_map, jobmapper, runtimeContext, prefix, replacePrefix)
                 continue
 
             if field == "$schemas":
@@ -222,7 +219,7 @@ def update_refs(d, baseuri, urlexpander, merged_map, jobmapper, set_block_style,
                     d["$schemas"][n] = rel_ref(d["$schemas"][n], baseuri, urlexpander, merged_map, jobmapper)
                 continue
 
-            update_refs(d[field], baseuri, urlexpander, merged_map, jobmapper, set_block_style, runtimeContext, prefix, replacePrefix)
+            update_refs(d[field], baseuri, urlexpander, merged_map, jobmapper, runtimeContext, prefix, replacePrefix)
 
 
 def fix_schemadef(req, baseuri, urlexpander, merged_map, jobmapper, pdh):
@@ -307,17 +304,18 @@ def upload_workflow(arvRunner, tool, job_order, project_uuid,
         yamlloader = schema_salad.utils.yaml_no_ts()
         result = yamlloader.load(textIO)
 
-        set_block_style = False
-        if result.fa.flow_style():
-            set_block_style = True
+        export_as_json = result.fa.flow_style()
 
         # 2. find $import, $include, $schema, run, location
         # 3. update field value
-        update_refs(result, w, tool.doc_loader.expand_url, merged_map, jobmapper, set_block_style, runtimeContext, "", "")
+        update_refs(result, w, tool.doc_loader.expand_url, merged_map, jobmapper, runtimeContext, "", "")
 
         with col.open(w[n+1:], "wt") as f:
             # yamlloader.dump(result, stream=sys.stdout)
-            yamlloader.dump(result, stream=f)
+            if export_as_json:
+                json.dump(result, f, indent=4, separators=(',',': '))
+            else:
+                yamlloader.dump(result, stream=f)
 
         with col.open(os.path.join("original", w[n+1:]), "wt") as f:
             f.write(text)
@@ -352,7 +350,9 @@ def upload_workflow(arvRunner, tool, job_order, project_uuid,
 
     existing = arvRunner.api.collections().list(filters=[["portable_data_hash", "=", col.portable_data_hash()],
                                                          ["owner_uuid", "=", arvRunner.project_uuid]]).execute(num_retries=arvRunner.num_retries)
+
     if len(existing["items"]) == 0:
+        toolname = toolname.replace("/", " ")
         col.save_new(name=toolname, owner_uuid=arvRunner.project_uuid, ensure_unique_name=True, properties=properties)
         logger.info("Workflow uploaded to %s", col.manifest_locator())
     else:
@@ -460,7 +460,7 @@ def upload_workflow(arvRunner, tool, job_order, project_uuid,
         if r["class"] == "SchemaDefRequirement":
             wrapper["requirements"][i] = fix_schemadef(r, main["id"], tool.doc_loader.expand_url, merged_map, jobmapper, col.portable_data_hash())
 
-    update_refs(wrapper, main["id"], tool.doc_loader.expand_url, merged_map, jobmapper, False, runtimeContext, main["id"]+"#", "#main/")
+    update_refs(wrapper, main["id"], tool.doc_loader.expand_url, merged_map, jobmapper, runtimeContext, main["id"]+"#", "#main/")
 
     # Remove any lingering file references.
     drop_ids(wrapper)
