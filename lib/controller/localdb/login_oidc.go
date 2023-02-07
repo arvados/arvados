@@ -14,8 +14,10 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"net"
 	"net/http"
 	"net/url"
+	"regexp"
 	"strings"
 	"sync"
 	"text/template"
@@ -28,7 +30,7 @@ import (
 	"git.arvados.org/arvados.git/sdk/go/auth"
 	"git.arvados.org/arvados.git/sdk/go/ctxlog"
 	"git.arvados.org/arvados.git/sdk/go/httpserver"
-	"github.com/coreos/go-oidc"
+	"github.com/coreos/go-oidc/v3/oidc"
 	lru "github.com/hashicorp/golang-lru"
 	"github.com/jmoiron/sqlx"
 	"github.com/lib/pq"
@@ -393,6 +395,9 @@ func (ta *oidcTokenAuthorizer) WrapCalls(origFunc api.RoutableFunc) api.Routable
 	}
 }
 
+// Matches error from oidc UserInfo() when receiving HTTP status 5xx
+var re5xxError = regexp.MustCompile(`^5\d\d `)
+
 // registerToken checks whether tok is a valid OIDC Access Token and,
 // if so, ensures that an api_client_authorizations row exists so that
 // RailsAPI will accept it as an Arvados token.
@@ -462,6 +467,7 @@ func (ta *oidcTokenAuthorizer) registerToken(ctx context.Context, tok string) er
 		return fmt.Errorf("error setting up OpenID Connect provider: %s", err)
 	}
 	if ok, err := ta.checkAccessTokenScope(ctx, tok); err != nil || !ok {
+		// Note checkAccessTokenScope logs any interesting errors
 		ta.cache.Add(tok, time.Now().Add(tokenCacheNegativeTTL))
 		return err
 	}
@@ -470,6 +476,21 @@ func (ta *oidcTokenAuthorizer) registerToken(ctx context.Context, tok string) er
 	}
 	userinfo, err := ta.ctrl.provider.UserInfo(ctx, oauth2.StaticTokenSource(oauth2Token))
 	if err != nil {
+		if neterr := net.Error(nil); errors.As(err, &neterr) || re5xxError.MatchString(err.Error()) {
+			// If this token is in fact a valid OIDC
+			// token, but we failed to validate it here
+			// because of a network problem or internal
+			// server error, we error out now with a 5xx
+			// error, indicating to the client that they
+			// can try again.  If we didn't error out now,
+			// the unrecognized token would eventually
+			// cause a 401 error further down the stack,
+			// which the caller would interpret as an
+			// unrecoverable failure.
+			ctxlog.FromContext(ctx).WithError(err).Debugf("treating OIDC UserInfo lookup error type %T as transient; failing request instead of forwarding token blindly", err)
+			return err
+		}
+		ctxlog.FromContext(ctx).WithError(err).WithField("HMAC", hmac).Debug("UserInfo failed (not an OIDC token?), caching negative result")
 		ta.cache.Add(tok, time.Now().Add(tokenCacheNegativeTTL))
 		return nil
 	}
@@ -563,6 +584,6 @@ func (ta *oidcTokenAuthorizer) checkAccessTokenScope(ctx context.Context, tok st
 			return true, nil
 		}
 	}
-	ctxlog.FromContext(ctx).WithFields(logrus.Fields{"have": claims.Scope, "need": ta.ctrl.AcceptAccessTokenScope}).Infof("unacceptable access token scope")
+	ctxlog.FromContext(ctx).WithFields(logrus.Fields{"have": claims.Scope, "need": ta.ctrl.AcceptAccessTokenScope}).Info("unacceptable access token scope")
 	return false, httpserver.ErrorWithStatus(errors.New("unacceptable access token scope"), http.StatusUnauthorized)
 }
