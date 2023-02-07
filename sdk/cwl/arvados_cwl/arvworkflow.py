@@ -261,6 +261,10 @@ def upload_workflow(arvRunner, tool, job_order, project_uuid,
     import_files = set()
     include_files = set()
 
+    # The document loader index will have entries for all the files
+    # that were loaded in the process of parsing the entire workflow
+    # (including subworkflows, tools, imports, etc).  We use this to
+    # get compose a list of the workflow file dependencies.
     for w in tool.doc_loader.idx:
         if w.startswith("file://"):
             workflow_files.add(urllib.parse.urldefrag(w)[0])
@@ -273,6 +277,9 @@ def upload_workflow(arvRunner, tool, job_order, project_uuid,
 
     all_files = workflow_files | import_files | include_files
 
+    # Find the longest common prefix among all the file names.  We'll
+    # use this to recreate the directory structure in a keep
+    # collection with correct relative references.
     n = 7
     allmatch = True
     if firstfile:
@@ -292,8 +299,18 @@ def upload_workflow(arvRunner, tool, job_order, project_uuid,
 
     col = arvados.collection.Collection(api_client=arvRunner.api)
 
+    # Now go through all the files and update references to other
+    # files.  We previously scanned for file dependencies, these are
+    # are passed in as merged_map.
+    #
+    # note about merged_map: we upload dependencies of each process
+    # object (CommandLineTool/Workflow) to a separate collection.
+    # That way, when the user edits something, this limits collection
+    # PDH changes to just that tool, and minimizes situations where
+    # small changes break container reuse for the whole workflow.
+    #
     for w in workflow_files | import_files:
-        # 1. load YAML
+        # 1. load the YAML  file
 
         text = tool.doc_loader.fetch_text(w)
         if isinstance(text, bytes):
@@ -304,23 +321,30 @@ def upload_workflow(arvRunner, tool, job_order, project_uuid,
         yamlloader = schema_salad.utils.yaml_no_ts()
         result = yamlloader.load(textIO)
 
+        # If the whole document is in "flow style" it is probably JSON
+        # formatted.  We'll re-export it as JSON because the
+        # ruamel.yaml round-trip mode is a lie and only preserves
+        # "block style" formatting and not "flow style" formatting.
         export_as_json = result.fa.flow_style()
 
         # 2. find $import, $include, $schema, run, location
         # 3. update field value
         update_refs(result, w, tool.doc_loader.expand_url, merged_map, jobmapper, runtimeContext, "", "")
 
+        # Write the updated file to the collection.
         with col.open(w[n+1:], "wt") as f:
-            # yamlloader.dump(result, stream=sys.stdout)
             if export_as_json:
                 json.dump(result, f, indent=4, separators=(',',': '))
             else:
                 yamlloader.dump(result, stream=f)
 
+        # Also store a verbatim copy of the original files
         with col.open(os.path.join("original", w[n+1:]), "wt") as f:
             f.write(text)
 
 
+    # Upload files referenced by $include directives, these are used
+    # unchanged and don't need to be updated.
     for w in include_files:
         with col.open(w[n+1:], "wb") as f1:
             with col.open(os.path.join("original", w[n+1:]), "wb") as f3:
@@ -331,6 +355,7 @@ def upload_workflow(arvRunner, tool, job_order, project_uuid,
                         f3.write(dat)
                         dat = f2.read(65536)
 
+    # Now collect metadata: the collection name and git properties.
 
     toolname = tool.tool.get("label") or tool.metadata.get("label") or os.path.basename(tool.tool["id"])
     if git_info and git_info.get("http://arvados.org/cwl#gitDescribe"):
@@ -348,6 +373,7 @@ def upload_workflow(arvRunner, tool, job_order, project_uuid,
             p = g.split("#", 1)[1]
             properties["arv:"+p] = git_info[g]
 
+    # Check if a collection with the same content already exists in the target project.  If so, just use that one.
     existing = arvRunner.api.collections().list(filters=[["portable_data_hash", "=", col.portable_data_hash()],
                                                          ["owner_uuid", "=", arvRunner.project_uuid]]).execute(num_retries=arvRunner.num_retries)
 
@@ -358,11 +384,10 @@ def upload_workflow(arvRunner, tool, job_order, project_uuid,
     else:
         logger.info("Workflow uploaded to %s", existing["items"][0]["uuid"])
 
-    adjustDirObjs(job_order, trim_listing)
-    adjustFileObjs(job_order, trim_anonymous_location)
-    adjustDirObjs(job_order, trim_anonymous_location)
-
-    # now construct the wrapper
+    # Now that we've updated the workflow and saved it to a
+    # collection, we're going to construct a minimal "wrapper"
+    # workflow which consists of only of input and output parameters
+    # connected to a single step that runs the real workflow.
 
     runfile = "keep:%s/%s" % (col.portable_data_hash(), toolfile)
 
@@ -395,6 +420,14 @@ def upload_workflow(arvRunner, tool, job_order, project_uuid,
 
     if submit_runner_ram:
         wf_runner_resources["ramMin"] = submit_runner_ram
+
+    # Remove a few redundant fields from the "job order" (aka input
+    # object or input parameters).  In the situation where we're
+    # creating or updating a workflow record, any values in the job
+    # order get copied over as default values for input parameters.
+    adjustDirObjs(job_order, trim_listing)
+    adjustFileObjs(job_order, trim_anonymous_location)
+    adjustDirObjs(job_order, trim_anonymous_location)
 
     newinputs = []
     for i in main["inputs"]:
@@ -446,21 +479,20 @@ def upload_workflow(arvRunner, tool, job_order, project_uuid,
     if hints:
         wrapper["hints"] = hints
 
-    # 1. check for SchemaDef
-    # 2. do what pack does
-    # 3. fix inputs
-
-    doc = {"cwlVersion": "v1.2", "$graph": [wrapper]}
-
-    if git_info:
-        for g in git_info:
-            doc[g] = git_info[g]
+    # Schema definitions (this lets you define things like record
+    # types) require a special handling.
 
     for i, r in enumerate(wrapper["requirements"]):
         if r["class"] == "SchemaDefRequirement":
             wrapper["requirements"][i] = fix_schemadef(r, main["id"], tool.doc_loader.expand_url, merged_map, jobmapper, col.portable_data_hash())
 
     update_refs(wrapper, main["id"], tool.doc_loader.expand_url, merged_map, jobmapper, runtimeContext, main["id"]+"#", "#main/")
+
+    doc = {"cwlVersion": "v1.2", "$graph": [wrapper]}
+
+    if git_info:
+        for g in git_info:
+            doc[g] = git_info[g]
 
     # Remove any lingering file references.
     drop_ids(wrapper)

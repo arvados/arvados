@@ -660,6 +660,8 @@ The 'jobs' API is no longer supported.
             job_order, jobmapper = upload_job_order(self, "%s input" % runtimeContext.name,
                                          updated_tool, job_order, runtimeContext)
 
+        # determine if we are submitting or directly executing the workflow.
+        #
         # the last clause means: if it is a command line tool, and we
         # are going to wait for the result, and always_submit_runner
         # is false, then we don't submit a runner process.
@@ -674,15 +676,6 @@ The 'jobs' API is no longer supported.
         loadingContext = self.loadingContext.copy()
         loadingContext.do_validate = False
         loadingContext.disable_js_validation = True
-        # if submitting and not self.fast_submit:
-        #     loadingContext.do_update = False
-        #     # Document may have been auto-updated. Reload the original
-        #     # document with updating disabled because we want to
-        #     # submit the document with its original CWL version, not
-        #     # the auto-updated one.
-        #     with Perf(metrics, "load_tool original"):
-        #         tool = load_tool(updated_tool.tool["id"], loadingContext)
-        # else:
         tool = updated_tool
 
         # Upload direct dependencies of workflow steps, get back mapping of files to keep references.
@@ -692,18 +685,16 @@ The 'jobs' API is no longer supported.
             with Perf(metrics, "upload_workflow_deps"):
                 merged_map = upload_workflow_deps(self, tool, runtimeContext)
         else:
+            # in the fast submit case, we are running a workflow that
+            # has already been uploaded to Arvados, so we assume all
+            # the dependencies have been pinned to keep references and
+            # there is nothing to do.
             merged_map = {}
 
-        # Recreate process object (ArvadosWorkflow or
-        # ArvadosCommandTool) because tool document may have been
-        # updated by upload_workflow_deps in ways that modify
-        # hints or requirements.
         loadingContext.loader = tool.doc_loader
         loadingContext.avsc_names = tool.doc_schema
         loadingContext.metadata = tool.metadata
         loadingContext.skip_resolve_all = True
-        #with Perf(metrics, "load_tool"):
-        #    tool = load_tool(tool.tool, loadingContext)
 
         workflow_wrapper = None
         if submitting and not self.fast_submit:
@@ -722,22 +713,30 @@ The 'jobs' API is no longer supported.
                                                jobmapper=jobmapper)
 
             if runtimeContext.update_workflow or runtimeContext.create_workflow:
-                # Now create a workflow record and exit.
+                # We're registering the workflow, so create or update
+                # the workflow record and then exit.
                 uuid = make_workflow_record(self, workflow_wrapper, runtimeContext.name, tool,
                                             runtimeContext.project_uuid, runtimeContext.update_workflow)
                 self.stdout.write(uuid + "\n")
                 return (None, "success")
 
+            # Did not register a workflow, we're going to submit
+            # it instead.
             loadingContext.loader.idx.clear()
             loadingContext.loader.idx["_:main"] = workflow_wrapper
             workflow_wrapper["id"] = "_:main"
 
-            # Reload just the wrapper workflow.
+            # Reload the minimal wrapper workflow.
             self.fast_submit = True
             tool = load_tool(workflow_wrapper, loadingContext)
             loadingContext.loader.idx["_:main"] = workflow_wrapper
 
         if not submitting:
+            # If we are going to run the workflow now (rather than
+            # submit it), we need to update the workflow document
+            # replacing file references with keep references.  If we
+            # are just going to construct a run submission, we don't
+            # need to do this.
             update_from_merged_map(tool, merged_map)
 
         self.apply_reqs(job_order, tool)
@@ -782,7 +781,10 @@ The 'jobs' API is no longer supported.
 
         runnerjob = None
         if runtimeContext.submit:
-            # Submit a runner job to run the workflow for us.
+            # We are submitting instead of running immediately.
+            #
+            # Create a "Runner job" that when run() is invoked,
+            # creates the container request to run the workflow.
             if self.work_api == "containers":
                 if submitting:
                     loadingContext.metadata = updated_tool.metadata.copy()
@@ -811,10 +813,15 @@ The 'jobs' API is no longer supported.
                            runtimeContext)
 
         if runtimeContext.submit and not runtimeContext.wait:
+            # User provided --no-wait so submit the container request,
+            # get the container request uuid, print it out, and exit.
             runnerjob = next(jobiter)
             runnerjob.run(runtimeContext)
             self.stdout.write(runnerjob.uuid+"\n")
             return (None, "success")
+
+        # We either running the workflow directly, or submitting it
+        # and will wait for a final result.
 
         current_container = arvados_cwl.util.get_current_container(self.api, self.num_retries, logger)
         if current_container:
