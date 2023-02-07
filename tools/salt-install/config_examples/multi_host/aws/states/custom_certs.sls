@@ -23,7 +23,6 @@ extra_custom_certs_file_directory_certs_dir:
 
   {%- for cert in certs %}
     {%- set cert_file = 'arvados-' ~ cert ~ '.pem' %}
-    {#- set csr_file = 'arvados-' ~ cert ~ '.csr' #}
     {%- set key_file = 'arvados-' ~ cert ~ '.key' %}
     {% for c in [cert_file, key_file] %}
 extra_custom_certs_file_copy_{{ c }}:

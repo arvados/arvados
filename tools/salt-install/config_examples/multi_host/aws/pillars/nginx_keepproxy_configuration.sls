@@ -3,6 +3,8 @@
 #
 # SPDX-License-Identifier: AGPL-3.0
 
+{%- import_yaml "ssl_key_encrypted.sls" as imported %}
+
 ### NGINX
 nginx:
   ### SERVER
@@ -55,5 +57,8 @@ nginx:
             - include: snippets/ssl_hardening_default.conf
             - ssl_certificate: __CERT_PEM__
             - ssl_certificate_key: __CERT_KEY__
+            {%- if imported.ssl_key_encrypted.enabled %}
+            - ssl_password_file: {{ imported.ssl_key_encrypted.ssl_password_file }}
+            {%- endif %}
             - access_log: /var/log/nginx/keepproxy.__CLUSTER__.__DOMAIN__.access.log combined
             - error_log: /var/log/nginx/keepproxy.__CLUSTER__.__DOMAIN__.error.log
