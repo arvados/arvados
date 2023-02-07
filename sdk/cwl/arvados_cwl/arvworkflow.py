@@ -350,9 +350,13 @@ def upload_workflow(arvRunner, tool, job_order, project_uuid,
             p = g.split("#", 1)[1]
             properties["arv:"+p] = git_info[g]
 
-    col.save_new(name=toolname, owner_uuid=arvRunner.project_uuid, ensure_unique_name=True, properties=properties)
-
-    logger.info("Workflow uploaded to %s", col.manifest_locator())
+    existing = arvRunner.api.collections().list(filters=[["portable_data_hash", "=", col.portable_data_hash()],
+                                                         ["owner_uuid", "=", arvRunner.project_uuid]]).execute(num_retries=arvRunner.num_retries)
+    if len(existing["items"]) == 0:
+        col.save_new(name=toolname, owner_uuid=arvRunner.project_uuid, ensure_unique_name=True, properties=properties)
+        logger.info("Workflow uploaded to %s", col.manifest_locator())
+    else:
+        logger.info("Workflow uploaded to %s", existing["items"][0]["uuid"])
 
     adjustDirObjs(job_order, trim_listing)
     adjustFileObjs(job_order, trim_anonymous_location)
