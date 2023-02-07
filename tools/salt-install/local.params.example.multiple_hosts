@@ -114,6 +114,11 @@ LE_AWS_SECRET_ACCESS_KEY="thisistherandomstringthatisyoursecretkey"
 # ${CUSTOM_CERTS_DIR}/keepproxy.crt
 # ${CUSTOM_CERTS_DIR}/keepproxy.key
 
+# Set the following to "yes" if the key files are encrypted and optionally set
+# a custom AWS secret name for each node to retrieve the password.
+SSL_KEY_ENCRYPTED="no"
+SSL_KEY_AWS_SECRET_NAME="${CLUSTER}-arvados-ssl-privkey-password"
+
 # The directory to check for the config files (pillars, states) you want to use.
 # There are a few examples under 'config_examples'.
 # CONFIG_DIR="local_config_dir"
