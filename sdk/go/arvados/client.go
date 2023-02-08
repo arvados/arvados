@@ -76,6 +76,12 @@ type Client struct {
 	// APIHost and AuthToken were loaded from ARVADOS_* env vars
 	// (used to customize "no host/token" error messages)
 	loadedFromEnv bool
+
+	// Track/limit concurrent outgoing API calls. Note this
+	// differs from an outgoing connection limit (a feature
+	// provided by http.Transport) when concurrent calls are
+	// multiplexed on a single http2 connection.
+	requestLimiter
 }
 
 // InsecureHTTPClient is the default http.Client used by a Client with
@@ -220,10 +226,12 @@ func NewClientFromEnv() *Client {
 
 var reqIDGen = httpserver.IDGenerator{Prefix: "req-"}
 
-// Do adds Authorization and X-Request-Id headers and then calls
+// Do adds Authorization and X-Request-Id headers, delays in order to
+// comply with rate-limiting restrictions, and then calls
 // (*http.Client)Do().
 func (c *Client) Do(req *http.Request) (*http.Response, error) {
-	if auth, _ := req.Context().Value(contextKeyAuthorization{}).(string); auth != "" {
+	ctx := req.Context()
+	if auth, _ := ctx.Value(contextKeyAuthorization{}).(string); auth != "" {
 		req.Header.Add("Authorization", auth)
 	} else if c.AuthToken != "" {
 		req.Header.Add("Authorization", "OAuth2 "+c.AuthToken)
@@ -231,7 +239,7 @@ func (c *Client) Do(req *http.Request) (*http.Response, error) {
 
 	if req.Header.Get("X-Request-Id") == "" {
 		var reqid string
-		if ctxreqid, _ := req.Context().Value(contextKeyRequestID{}).(string); ctxreqid != "" {
+		if ctxreqid, _ := ctx.Value(contextKeyRequestID{}).(string); ctxreqid != "" {
 			reqid = ctxreqid
 		} else if c.defaultRequestID != "" {
 			reqid = c.defaultRequestID
@@ -246,18 +254,34 @@ func (c *Client) Do(req *http.Request) (*http.Response, error) {
 	}
 	var cancel context.CancelFunc
 	if c.Timeout > 0 {
-		ctx := req.Context()
 		ctx, cancel = context.WithDeadline(ctx, time.Now().Add(c.Timeout))
 		req = req.WithContext(ctx)
+	} else {
+		cancel = context.CancelFunc(func() {})
 	}
+
+	c.requestLimiter.Acquire(ctx)
+	if ctx.Err() != nil {
+		c.requestLimiter.Release()
+		return nil, ctx.Err()
+	}
+
+	// Attach Release() to cancel func, see cancelOnClose below.
+	cancelOrig := cancel
+	cancel = func() {
+		c.requestLimiter.Release()
+		cancelOrig()
+	}
+
 	resp, err := c.httpClient().Do(req)
-	if err == nil && cancel != nil {
+	c.requestLimiter.Report(resp, err)
+	if err == nil {
 		// We need to call cancel() eventually, but we can't
 		// use "defer cancel()" because the context has to
 		// stay alive until the caller has finished reading
 		// the response body.
 		resp.Body = cancelOnClose{ReadCloser: resp.Body, cancel: cancel}
-	} else if cancel != nil {
+	} else {
 		cancel()
 	}
 	return resp, err
