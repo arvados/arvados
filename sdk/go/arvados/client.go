@@ -23,6 +23,7 @@ import (
 	"os"
 	"regexp"
 	"strings"
+	"sync/atomic"
 	"time"
 
 	"git.arvados.org/arvados.git/sdk/go/httpserver"
@@ -82,6 +83,8 @@ type Client struct {
 	// provided by http.Transport) when concurrent calls are
 	// multiplexed on a single http2 connection.
 	requestLimiter
+
+	last503 atomic.Value
 }
 
 // InsecureHTTPClient is the default http.Client used by a Client with
@@ -275,6 +278,9 @@ func (c *Client) Do(req *http.Request) (*http.Response, error) {
 
 	resp, err := c.httpClient().Do(req)
 	c.requestLimiter.Report(resp, err)
+	if err == nil && resp.StatusCode == http.StatusServiceUnavailable {
+		c.last503.Store(time.Now())
+	}
 	if err == nil {
 		// We need to call cancel() eventually, but we can't
 		// use "defer cancel()" because the context has to
@@ -285,6 +291,13 @@ func (c *Client) Do(req *http.Request) (*http.Response, error) {
 		cancel()
 	}
 	return resp, err
+}
+
+// Last503 returns the time of the most recent HTTP 503 (Service
+// Unavailable) response. Zero time indicates never.
+func (c *Client) Last503() time.Time {
+	t, _ := c.last503.Load().(time.Time)
+	return t
 }
 
 // cancelOnClose calls a provided CancelFunc when its wrapped

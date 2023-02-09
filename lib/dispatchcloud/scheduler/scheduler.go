@@ -31,6 +31,7 @@ import (
 // shuts down idle workers, in case they are consuming quota.
 type Scheduler struct {
 	logger              logrus.FieldLogger
+	client              *arvados.Client
 	queue               ContainerQueue
 	pool                WorkerPool
 	reg                 *prometheus.Registry
@@ -45,6 +46,9 @@ type Scheduler struct {
 	stop    chan struct{}
 	stopped chan struct{}
 
+	last503time    time.Time // last time API responded 503
+	maxConcurrency int       // dynamic container limit (0 = unlimited), see runQueue()
+
 	mContainersAllocatedNotStarted   prometheus.Gauge
 	mContainersNotAllocatedOverQuota prometheus.Gauge
 	mLongestWaitTimeSinceQueue       prometheus.Gauge
@@ -54,9 +58,10 @@ type Scheduler struct {
 //
 // Any given queue and pool should not be used by more than one
 // scheduler at a time.
-func New(ctx context.Context, queue ContainerQueue, pool WorkerPool, reg *prometheus.Registry, staleLockTimeout, queueUpdateInterval time.Duration) *Scheduler {
+func New(ctx context.Context, client *arvados.Client, queue ContainerQueue, pool WorkerPool, reg *prometheus.Registry, staleLockTimeout, queueUpdateInterval time.Duration) *Scheduler {
 	sch := &Scheduler{
 		logger:              ctxlog.FromContext(ctx),
+		client:              client,
 		queue:               queue,
 		pool:                pool,
 		reg:                 reg,
