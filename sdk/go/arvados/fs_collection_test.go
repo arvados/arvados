@@ -124,6 +124,32 @@ func (s *CollectionFSSuite) SetUpTest(c *check.C) {
 	c.Assert(err, check.IsNil)
 }
 
+func (s *CollectionFSSuite) TestSyncNonCanonicalManifest(c *check.C) {
+	var coll Collection
+	err := s.client.RequestAndDecode(&coll, "GET", "arvados/v1/collections/"+fixtureFooAndBarFilesInDirUUID, nil, nil)
+	c.Assert(err, check.IsNil)
+	mtxt := strings.Replace(coll.ManifestText, "3:3:bar 0:3:foo", "0:3:foo 3:3:bar", -1)
+	c.Assert(mtxt, check.Not(check.Equals), coll.ManifestText)
+	err = s.client.RequestAndDecode(&coll, "POST", "arvados/v1/collections", nil, map[string]interface{}{
+		"collection": map[string]interface{}{
+			"manifest_text": mtxt}})
+	c.Assert(err, check.IsNil)
+	c.Assert(mtxt, check.Equals, coll.ManifestText)
+
+	fs, err := coll.FileSystem(s.client, s.kc)
+	c.Assert(err, check.IsNil)
+	err = fs.Sync()
+	c.Check(err, check.IsNil)
+
+	// fs had no local changes, so Sync should not have saved
+	// anything back to the API/database. (If it did, we would see
+	// the manifest rewritten in canonical order.)
+	var saved Collection
+	err = s.client.RequestAndDecode(&saved, "GET", "arvados/v1/collections/"+coll.UUID, nil, nil)
+	c.Assert(err, check.IsNil)
+	c.Check(saved.ManifestText, check.Equals, mtxt)
+}
+
 func (s *CollectionFSSuite) TestHttpFileSystemInterface(c *check.C) {
 	_, ok := s.fs.(http.FileSystem)
 	c.Check(ok, check.Equals, true)
