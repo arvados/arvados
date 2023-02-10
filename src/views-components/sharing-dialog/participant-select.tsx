@@ -11,12 +11,13 @@ import { debounce } from 'debounce';
 import { ListItemText, Typography } from '@material-ui/core';
 import { noop } from 'lodash/fp';
 import { GroupClass, GroupResource } from 'models/group';
-import { getUserDisplayName, UserResource } from 'models/user';
+import { getUserDetailsString, getUserDisplayName, UserResource } from 'models/user';
 import { Resource, ResourceKind } from 'models/resource';
 import { ListResults } from 'services/common-service/common-service';
 
 export interface Participant {
     name: string;
+    tooltip: string;
     uuid: string;
 }
 
@@ -43,10 +44,21 @@ interface ParticipantSelectState {
     suggestions: ParticipantResource[];
 }
 
-const getDisplayName = (item: GroupResource | UserResource) => {
+const getDisplayName = (item: GroupResource | UserResource, detailed: boolean) => {
     switch (item.kind) {
         case ResourceKind.USER:
-            return getUserDisplayName(item, true, true);
+            return getUserDisplayName(item, detailed, detailed);
+        case ResourceKind.GROUP:
+            return item.name + `(${`(${(item as Resource).uuid})`})`;
+        default:
+            return (item as Resource).uuid;
+    }
+};
+
+const getDisplayTooltip = (item: GroupResource | UserResource) => {
+    switch (item.kind) {
+        case ResourceKind.USER:
+            return getUserDetailsString(item);
         case ResourceKind.GROUP:
             return item.name + `(${`(${(item as Resource).uuid})`})`;
         default:
@@ -78,6 +90,7 @@ export const ParticipantSelect = connect()(
                     onFocus={this.props.onFocus}
                     onBlur={this.props.onBlur}
                     renderChipValue={this.renderChipValue}
+                    renderChipTooltip={this.renderChipTooltip}
                     renderSuggestion={this.renderSuggestion}
                     disabled={this.props.disabled}/>
             );
@@ -88,10 +101,14 @@ export const ParticipantSelect = connect()(
             return name || uuid;
         }
 
+        renderChipTooltip(item: Participant) {
+            return item.tooltip;
+        }
+
         renderSuggestion(item: ParticipantResource) {
             return (
                 <ListItemText>
-                    <Typography noWrap>{getDisplayName(item)}</Typography>
+                    <Typography noWrap>{getDisplayName(item, true)}</Typography>
                 </ListItemText>
             );
         }
@@ -107,6 +124,7 @@ export const ParticipantSelect = connect()(
                 this.setState({ value: '', suggestions: [] });
                 onCreate({
                     name: '',
+                    tooltip: '',
                     uuid: this.state.value,
                 });
             }
@@ -117,7 +135,8 @@ export const ParticipantSelect = connect()(
             const { onSelect = noop } = this.props;
             this.setState({ value: '', suggestions: [] });
             onSelect({
-                name: getDisplayName(selection),
+                name: getDisplayName(selection, false),
+                tooltip: getDisplayTooltip(selection),
                 uuid,
             });
         }

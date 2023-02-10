@@ -8,7 +8,7 @@ import {
     Chip as MuiChip,
     Popper as MuiPopper,
     Paper as MuiPaper,
-    FormControl, InputLabel, StyleRulesCallback, withStyles, RootRef, ListItemText, ListItem, List, FormHelperText
+    FormControl, InputLabel, StyleRulesCallback, withStyles, RootRef, ListItemText, ListItem, List, FormHelperText, Tooltip
 } from '@material-ui/core';
 import { PopperProps } from '@material-ui/core/Popper';
 import { WithStyles } from '@material-ui/core/styles';
@@ -30,6 +30,7 @@ export interface AutocompleteProps<Item, Suggestion> {
     onDelete?: (item: Item, index: number) => void;
     onSelect?: (suggestion: Suggestion) => void;
     renderChipValue?: (item: Item) => string;
+    renderChipTooltip?: (item: Item) => string;
     renderSuggestion?: (suggestion: Suggestion) => React.ReactNode;
 }
 
@@ -171,11 +172,22 @@ export class Autocomplete<Value, Suggestion> extends React.Component<Autocomplet
         }
 
         return items.map(
-            (item, index) =>
-                <Chip
-                    label={this.renderChipValue(item)}
-                    key={index}
-                    onDelete={onDelete && !this.props.disabled ? (() =>  onDelete(item, index)) : undefined} />
+            (item, index) => {
+                const tooltip = this.props.renderChipTooltip ? this.props.renderChipTooltip(item) : '';
+                if (tooltip && tooltip.length) {
+                    return <Tooltip title={tooltip}>
+                        <Chip
+                            label={this.renderChipValue(item)}
+                            key={index}
+                            onDelete={onDelete && !this.props.disabled ? (() =>  onDelete(item, index)) : undefined} />
+                    </Tooltip>
+                } else {
+                    return <Chip
+                        label={this.renderChipValue(item)}
+                        key={index}
+                        onDelete={onDelete && !this.props.disabled ? (() =>  onDelete(item, index)) : undefined} />
+                }
+            }
         );
     }
 
