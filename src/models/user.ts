@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import { Resource, ResourceKind } from 'models/resource';
+import { Resource, ResourceKind, RESOURCE_UUID_REGEX } from 'models/resource';
 
 export type UserPrefs = {
     profile?: {
@@ -46,10 +46,17 @@ export const getUserDisplayName = (user: User, withEmail = false, withUuid = fal
 
 export const getUserDetailsString = (user: User) => {
     let parts: string[] = [];
+    const userCluster = getUserClusterID(user);
     user.username.length && parts.push(user.username);
     user.email.length && parts.push(`<${user.email}>`);
-    user.uuid.length && parts.push(`(${user.uuid})`);
+    userCluster && userCluster.length && parts.push(`(${userCluster})`);
     return parts.join(' ');
+};
+
+export const getUserClusterID = (user: User): string | undefined => {
+    const match = RESOURCE_UUID_REGEX.exec(user.uuid);
+    const parts = match ? match[0].split('-') : [];
+    return parts.length === 3 ? parts[0] : undefined;
 };
 
 export interface UserResource extends Resource, User {
