@@ -1661,7 +1661,7 @@ func (s *CollectionFSUnitSuite) TestLargeManifest(c *check.C) {
 	runtime.ReadMemStats(&memstats)
 	c.Logf("%s Alloc=%d Sys=%d", time.Now(), memstats.Alloc, memstats.Sys)
 
-	f, err := coll.FileSystem(nil, nil)
+	f, err := coll.FileSystem(NewClientFromEnv(), &keepClientStub{})
 	c.Check(err, check.IsNil)
 	c.Logf("%s loaded", time.Now())
 	c.Check(f.Size(), check.Equals, int64(42*dirCount*fileCount))
