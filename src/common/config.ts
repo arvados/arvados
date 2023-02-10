@@ -41,6 +41,17 @@ export interface ClusterConfigJSON {
     Workbench2: {
       ExternalURL: string;
     };
+    Workbench: {
+        DisableSharingURLsUI: boolean;
+        ArvadosDocsite: string;
+        FileViewersConfigURL: string;
+        WelcomePageHTML: string;
+        InactivePageHTML: string;
+        SSHHelpPageHTML: string;
+        SSHHelpHostSuffix: string;
+        SiteName: string;
+        IdleTimeout: string;
+    };
     Websocket: {
       ExternalURL: string;
     };
@@ -64,6 +75,7 @@ export interface ClusterConfigJSON {
     SSHHelpHostSuffix: string;
     SiteName: string;
     IdleTimeout: string;
+    BannerUUID: string;
   };
   Login: {
     LoginCluster: string;
@@ -268,6 +280,17 @@ export const mockClusterConfigJSON = (
     WebDAV: { ExternalURL: '' },
     WebDAVDownload: { ExternalURL: '' },
     WebShell: { ExternalURL: '' },
+    Workbench: {
+      DisableSharingURLsUI: false,
+      ArvadosDocsite: "",
+      FileViewersConfigURL: "",
+      WelcomePageHTML: "",
+      InactivePageHTML: "",
+      SSHHelpPageHTML: "",
+      SSHHelpHostSuffix: "",
+      SiteName: "",
+      IdleTimeout: "0s",
+    },
   },
   Workbench: {
     DisableSharingURLsUI: false,
@@ -279,6 +302,7 @@ export const mockClusterConfigJSON = (
     SSHHelpHostSuffix: '',
     SiteName: '',
     IdleTimeout: '0s',
+    BannerUUID: "",
   },
   Login: {
     LoginCluster: '',

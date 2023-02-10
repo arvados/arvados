@@ -5,3 +5,25 @@ body {
     width: 100vw;
     height: 100vh;
 }
+
+.app-banner {
+    width: calc(100% - 2rem);
+    height: 150px;
+    z-index: 11111;
+    position: fixed;
+    top: 0px;
+    background-color: #00bfa5;
+    border: 1px solid #01685a;
+    color: #ffffff;
+    margin: 1rem;
+    box-sizing: border-box;
+    cursor: pointer;
+}
+
+.app-banner span {
+    font-size: 2rem;
+    text-align: center;
+    display: block;
+    margin: auto;
+    padding: 2rem;
+}

@@ -14,6 +14,8 @@ import { CustomTheme } from 'common/custom-theme';
 import { createServices } from "services/services";
 import 'jest-localstorage-mock';
 
+jest.mock('views-components/baner/banner', () => ({ Banner: () => 'Banner' }))
+
 const history = createBrowserHistory();
 
 it('renders without crashing', () => {

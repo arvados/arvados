@@ -12,19 +12,21 @@ import 'tippy.js/dist/tippy.css';
 let running = false;
 let tooltipsContents = null;
 let tooltipsFetchFailed = false;
-const TOOLTIP_LOCAL_STORAGE_KEY = "TOOLTIP_LOCAL_STORAGE_KEY";
+export const TOOLTIP_LOCAL_STORAGE_KEY = "TOOLTIP_LOCAL_STORAGE_KEY";
+
+const tippySingleton = createSingleton([], {delay: 10});
 
 export const tooltipsMiddleware = (services: ServiceRepository): Middleware => (store: Store) => next => action => {
     const state: RootState = store.getState();
-    const result = localStorage.getItem(TOOLTIP_LOCAL_STORAGE_KEY);
-    const { BannerURL } = (state.auth.config.clusterConfig.Workbench as any);
+    const hideTooltip = localStorage.getItem(TOOLTIP_LOCAL_STORAGE_KEY);
+    const { BannerUUID } = (state.auth.config.clusterConfig.Workbench as any);
 
-    let bannerUUID = !!BannerURL ? BannerURL : 'tordo-4zz18-1buneu6sb8zxiti';
+    const bannerUUID = BannerUUID || 'tordo-4zz18-1buneu6sb8zxiti';
 
-    if (bannerUUID && !tooltipsContents && !result && !tooltipsFetchFailed && !running) {
+    if (bannerUUID && !tooltipsContents && !hideTooltip && !tooltipsFetchFailed && !running) {
         running = true;
         fetchTooltips(services, bannerUUID);
-    } else if (tooltipsContents && !result && !tooltipsFetchFailed) {
+    } else if (tooltipsContents && !hideTooltip && !tooltipsFetchFailed) {
         applyTooltips();
     }
 
@@ -75,5 +77,7 @@ const applyTooltips = () => {
         })
         .filter(data => !!data);
 
-        createSingleton(tippyInstances, {delay: 10});
+    if (tippyInstances.length > 0) {
+        tippySingleton.setInstances(tippyInstances);
+    }
 };

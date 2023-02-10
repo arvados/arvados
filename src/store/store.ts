@@ -74,8 +74,10 @@ import { ALL_PROCESSES_PANEL_ID } from './all-processes-panel/all-processes-pane
 import { Config } from 'common/config';
 import { pluginConfig } from 'plugins';
 import { MiddlewareListReducer } from 'common/plugintypes';
-import { sidePanelReducer } from './side-panel/side-panel-reducer'
+import { sidePanelReducer } from './side-panel/side-panel-reducer';
 import { tooltipsMiddleware } from './tooltips/tooltips-middleware';
+import { bannerReducer } from './banner/banner-reducer';
+
 
 declare global {
     interface Window {
@@ -192,6 +194,7 @@ export function configureStore(history: History, services: ServiceRepository, co
 
 const createRootReducer = (services: ServiceRepository) => combineReducers({
     auth: authReducer(services),
+    banner: bannerReducer,
     collectionPanel: collectionPanelReducer,
     collectionPanelFiles: collectionPanelFilesReducer,
     contextMenu: contextMenuReducer,
