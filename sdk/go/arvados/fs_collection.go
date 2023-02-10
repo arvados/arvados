@@ -103,7 +103,7 @@ func (c *Collection) FileSystem(client apiClient, kc keepClient) (CollectionFile
 		return nil, err
 	}
 
-	txt, err := root.marshalManifest(context.Background(), ".")
+	txt, err := root.marshalManifest(context.Background(), ".", false)
 	if err != nil {
 		return nil, err
 	}
@@ -495,7 +495,7 @@ func (fs *collectionFileSystem) MemorySize() int64 {
 func (fs *collectionFileSystem) MarshalManifest(prefix string) (string, error) {
 	fs.fileSystem.root.Lock()
 	defer fs.fileSystem.root.Unlock()
-	return fs.fileSystem.root.(*dirnode).marshalManifest(context.TODO(), prefix)
+	return fs.fileSystem.root.(*dirnode).marshalManifest(context.TODO(), prefix, true)
 }
 
 func (fs *collectionFileSystem) Size() int64 {
@@ -1229,7 +1229,7 @@ func (dn *dirnode) sortedNames() []string {
 }
 
 // caller must have write lock.
-func (dn *dirnode) marshalManifest(ctx context.Context, prefix string) (string, error) {
+func (dn *dirnode) marshalManifest(ctx context.Context, prefix string, flush bool) (string, error) {
 	cg := newContextGroup(ctx)
 	defer cg.Cancel()
 
@@ -1276,7 +1276,7 @@ func (dn *dirnode) marshalManifest(ctx context.Context, prefix string) (string, 
 	for i, name := range dirnames {
 		i, name := i, name
 		cg.Go(func() error {
-			txt, err := dn.inodes[name].(*dirnode).marshalManifest(cg.Context(), prefix+"/"+name)
+			txt, err := dn.inodes[name].(*dirnode).marshalManifest(cg.Context(), prefix+"/"+name, flush)
 			subdirs[i] = txt
 			return err
 		})
@@ -1292,7 +1292,10 @@ func (dn *dirnode) marshalManifest(ctx context.Context, prefix string) (string, 
 
 		var fileparts []filepart
 		var blocks []string
-		if err := dn.flush(cg.Context(), filenames, flushOpts{sync: true, shortBlocks: true}); err != nil {
+		if !flush {
+			// skip flush -- will fail below if anything
+			// needed flushing
+		} else if err := dn.flush(cg.Context(), filenames, flushOpts{sync: true, shortBlocks: true}); err != nil {
 			return err
 		}
 		for _, name := range filenames {
@@ -1323,10 +1326,12 @@ func (dn *dirnode) marshalManifest(ctx context.Context, prefix string) (string, 
 					}
 					streamLen += int64(seg.size)
 				default:
-					// This can't happen: we
-					// haven't unlocked since
+					// We haven't unlocked since
 					// calling flush(sync=true).
-					panic(fmt.Sprintf("can't marshal segment type %T", seg))
+					// Evidently the caller passed
+					// flush==false but there were
+					// local changes.
+					return fmt.Errorf("can't marshal segment type %T", seg)
 				}
 			}
 		}
