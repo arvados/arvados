@@ -52,6 +52,8 @@ type Scheduler struct {
 	mContainersAllocatedNotStarted   prometheus.Gauge
 	mContainersNotAllocatedOverQuota prometheus.Gauge
 	mLongestWaitTimeSinceQueue       prometheus.Gauge
+	mLast503Time                     prometheus.Gauge
+	mMaxContainerConcurrency         prometheus.Gauge
 }
 
 // New returns a new unstarted Scheduler.
@@ -101,6 +103,20 @@ func (sch *Scheduler) registerMetrics(reg *prometheus.Registry) {
 		Help:      "Current longest wait time of any container since queuing, and before the start of crunch-run.",
 	})
 	reg.MustRegister(sch.mLongestWaitTimeSinceQueue)
+	sch.mLast503Time = prometheus.NewGauge(prometheus.GaugeOpts{
+		Namespace: "arvados",
+		Subsystem: "dispatchcloud",
+		Name:      "last_503_time",
+		Help:      "Time of most recent 503 error received from API.",
+	})
+	reg.MustRegister(sch.mLast503Time)
+	sch.mMaxContainerConcurrency = prometheus.NewGauge(prometheus.GaugeOpts{
+		Namespace: "arvados",
+		Subsystem: "dispatchcloud",
+		Name:      "max_concurrent_containers",
+		Help:      "Dynamically assigned limit on number of containers scheduled concurrency, set after receiving 503 errors from API.",
+	})
+	reg.MustRegister(sch.mMaxContainerConcurrency)
 }
 
 func (sch *Scheduler) updateMetrics() {
