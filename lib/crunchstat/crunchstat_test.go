@@ -6,7 +6,6 @@ package crunchstat
 
 import (
 	"bytes"
-	"log"
 	"os"
 	"regexp"
 	"strconv"
@@ -21,13 +20,25 @@ func Test(t *testing.T) {
 	TestingT(t)
 }
 
-var _ = Suite(&suite{})
+var _ = Suite(&suite{
+	logger: logrus.New(),
+})
 
-type suite struct{}
+type suite struct {
+	logbuf bytes.Buffer
+	logger *logrus.Logger
+}
+
+func (s *suite) SetUpSuite(c *C) {
+	s.logger.Out = &s.logbuf
+}
+
+func (s *suite) SetUpTest(c *C) {
+	s.logbuf.Reset()
+}
 
 func (s *suite) TestReadAllOrWarnFail(c *C) {
-	var logger bytes.Buffer
-	rep := Reporter{Logger: log.New(&logger, "", 0)}
+	rep := Reporter{Logger: s.logger}
 
 	// The special file /proc/self/mem can be opened for
 	// reading, but reading from byte 0 returns an error.
@@ -36,12 +47,11 @@ func (s *suite) TestReadAllOrWarnFail(c *C) {
 	defer f.Close()
 	_, err = rep.readAllOrWarn(f)
 	c.Check(err, NotNil)
-	c.Check(logger.String(), Matches, "^warning: read /proc/self/mem: .*\n")
+	c.Check(s.logbuf.String(), Matches, ".* msg=\"warning: read /proc/self/mem: .*\n")
 }
 
 func (s *suite) TestReadAllOrWarnSuccess(c *C) {
-	var logbuf bytes.Buffer
-	rep := Reporter{Logger: log.New(&logbuf, "", 0)}
+	rep := Reporter{Logger: s.logger}
 
 	f, err := os.Open("./crunchstat_test.go")
 	c.Assert(err, IsNil)
@@ -49,15 +59,12 @@ func (s *suite) TestReadAllOrWarnSuccess(c *C) {
 	data, err := rep.readAllOrWarn(f)
 	c.Check(err, IsNil)
 	c.Check(string(data), Matches, "(?ms).*\npackage crunchstat\n.*")
-	c.Check(logbuf.String(), Equals, "")
+	c.Check(s.logbuf.String(), Equals, "")
 }
 
 func (s *suite) TestReportPIDs(c *C) {
-	var logbuf bytes.Buffer
-	logger := logrus.New()
-	logger.Out = &logbuf
 	r := Reporter{
-		Logger:     logger,
+		Logger:     s.logger,
 		CgroupRoot: "/sys/fs/cgroup",
 		PollPeriod: time.Second,
 	}
@@ -70,7 +77,7 @@ func (s *suite) TestReportPIDs(c *C) {
 			c.Error("timed out")
 			break
 		}
-		if m := regexp.MustCompile(`(?ms).*procmem \d+ init (\d+) test_process.*`).FindSubmatch(logbuf.Bytes()); len(m) > 0 {
+		if m := regexp.MustCompile(`(?ms).*procmem \d+ init (\d+) test_process.*`).FindSubmatch(s.logbuf.Bytes()); len(m) > 0 {
 			size, err := strconv.ParseInt(string(m[1]), 10, 64)
 			c.Check(err, IsNil)
 			// Expect >1 MiB and <100 MiB -- otherwise we
@@ -81,5 +88,5 @@ func (s *suite) TestReportPIDs(c *C) {
 			break
 		}
 	}
-	c.Logf("%s", logbuf.String())
+	c.Logf("%s", s.logbuf.String())
 }
