@@ -44,6 +44,14 @@ export const getUserDisplayName = (user: User, withEmail = false, withUuid = fal
     return parts.join(' ');
 };
 
+export const getUserDetailsString = (user: User) => {
+    let parts: string[] = [];
+    user.username.length && parts.push(user.username);
+    user.email.length && parts.push(`<${user.email}>`);
+    user.uuid.length && parts.push(`(${user.uuid})`);
+    return parts.join(' ');
+};
+
 export interface UserResource extends Resource, User {
     kind: ResourceKind.USER;
     defaultOwnerUuid: string;

@@ -11,12 +11,13 @@ import { debounce } from 'debounce';
 import { ListItemText, Typography } from '@material-ui/core';
 import { noop } from 'lodash/fp';
 import { GroupClass, GroupResource } from 'models/group';
-import { getUserDisplayName, UserResource } from 'models/user';
+import { getUserDetailsString, getUserDisplayName, UserResource } from 'models/user';
 import { Resource, ResourceKind } from 'models/resource';
 import { ListResults } from 'services/common-service/common-service';
 
 export interface Participant {
     name: string;
+    tooltip: string;
     uuid: string;
 }
 
@@ -54,6 +55,17 @@ const getDisplayName = (item: GroupResource | UserResource, detailed: boolean) =
     }
 };
 
+const getDisplayTooltip = (item: GroupResource | UserResource) => {
+    switch (item.kind) {
+        case ResourceKind.USER:
+            return getUserDetailsString(item);
+        case ResourceKind.GROUP:
+            return item.name + `(${`(${(item as Resource).uuid})`})`;
+        default:
+            return (item as Resource).uuid;
+    }
+};
+
 export const ParticipantSelect = connect()(
     class ParticipantSelect extends React.Component<ParticipantSelectProps & DispatchProp, ParticipantSelectState> {
         state: ParticipantSelectState = {
@@ -78,6 +90,7 @@ export const ParticipantSelect = connect()(
                     onFocus={this.props.onFocus}
                     onBlur={this.props.onBlur}
                     renderChipValue={this.renderChipValue}
+                    renderChipTooltip={this.renderChipTooltip}
                     renderSuggestion={this.renderSuggestion}
                     disabled={this.props.disabled}/>
             );
@@ -86,6 +99,10 @@ export const ParticipantSelect = connect()(
         renderChipValue(chipValue: Participant) {
             const { name, uuid } = chipValue;
             return name || uuid;
+        }
+
+        renderChipTooltip(item: Participant) {
+            return item.tooltip;
         }
 
         renderSuggestion(item: ParticipantResource) {
@@ -107,6 +124,7 @@ export const ParticipantSelect = connect()(
                 this.setState({ value: '', suggestions: [] });
                 onCreate({
                     name: '',
+                    tooltip: '',
                     uuid: this.state.value,
                 });
             }
@@ -118,6 +136,7 @@ export const ParticipantSelect = connect()(
             this.setState({ value: '', suggestions: [] });
             onSelect({
                 name: getDisplayName(selection, false),
+                tooltip: getDisplayTooltip(selection),
                 uuid,
             });
         }
