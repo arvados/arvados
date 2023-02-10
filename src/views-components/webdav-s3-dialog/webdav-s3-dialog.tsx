@@ -79,7 +79,7 @@ const mountainduckTemplate = ({
             <key>Port</key>
             <string>${(cyberDavStr.split(':')[2] || '443').split('/')[0]}</string>
             <key>Username</key>
-            <string>${username}</string>${isValidIpAddress(collectionsUrl.replace('https://', ``).split(':')[0])?
+            <string>${username}</string>${isValidIpAddress(collectionsUrl.replace('https://', ``).split(':')[0]) ?
             `
             <key>Path</key>
             <string>/c=${uuid}</string>` : ''}
@@ -120,8 +120,8 @@ export const WebDavS3InfoDialog = compose(
         } else {
             winDav = new URL(props.data.downloadUrl);
             cyberDav = new URL(props.data.downloadUrl);
-            winDav.pathname = `/by_id/${props.data.uuid}`;
-            cyberDav.pathname = `/by_id/${props.data.uuid}`;
+            winDav.pathname = `/c=${props.data.uuid}`;
+            cyberDav.pathname = `/c=${props.data.uuid}`;
         }
 
         cyberDav.username = props.data.username;
@@ -279,8 +279,8 @@ export const WebDavS3InfoDialog = compose(
                     </DetailsAttribute>
 
                     <p>
-                      Note: This curl command downloads single files.
-                      Append the desired filename to the end of the URL.
+                        Note: This curl command downloads single files.
+                        Append the desired filename to the end of the URL.
                     </p>
 
                 </TabPanel>
@@ -292,7 +292,7 @@ export const WebDavS3InfoDialog = compose(
                     color='primary'
                     onClick={props.closeDialog}>
                     Close
-		</Button>
+                </Button>
             </DialogActions>
 
         </Dialog >;
