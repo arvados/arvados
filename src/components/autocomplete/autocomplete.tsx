@@ -174,7 +174,7 @@ export class Autocomplete<Value, Suggestion> extends React.Component<Autocomplet
         return items.map(
             (item, index) => {
                 const tooltip = this.props.renderChipTooltip ? this.props.renderChipTooltip(item) : '';
-                if (tooltip.length) {
+                if (tooltip && tooltip.length) {
                     return <Tooltip title={tooltip}>
                         <Chip
                             label={this.renderChipValue(item)}
