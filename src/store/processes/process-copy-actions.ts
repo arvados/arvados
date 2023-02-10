@@ -12,6 +12,7 @@ import { CopyFormDialogData } from 'store/copy-dialog/copy-dialog';
 import { getProcess } from 'store/processes/process';
 import {snackbarActions, SnackbarKind} from 'store/snackbar/snackbar-actions';
 import { initProjectsTreePicker } from 'store/tree-picker/tree-picker-actions';
+import { ContainerRequestState } from "models/container-request";
 
 export const PROCESS_COPY_FORM_NAME = 'processCopyFormName';
 
@@ -34,10 +35,50 @@ export const copyProcess = (resource: CopyFormDialogData) =>
         dispatch(startSubmit(PROCESS_COPY_FORM_NAME));
         try {
             const process = await services.containerRequestService.get(resource.uuid);
-            const { kind, containerImage, outputPath, outputName, containerCountMax, command, properties, requestingContainerUuid, mounts, runtimeConstraints, schedulingParameters, environment, cwd, outputTtl, priority, expiresAt, useExisting, filters } = process;
-            await services.containerRequestService.create({ command, containerImage, outputPath, ownerUuid: resource.ownerUuid, name: resource.name, kind, outputName, containerCountMax, properties, requestingContainerUuid, mounts, runtimeConstraints, schedulingParameters, environment, cwd, outputTtl, priority, expiresAt, useExisting, filters });
+            const {
+                command,
+                containerCountMax,
+                containerImage,
+                cwd,
+                description,
+                environment,
+                kind,
+                mounts,
+                outputName,
+                outputPath,
+                outputProperties,
+                outputStorageClasses,
+                outputTtl,
+                properties,
+                runtimeConstraints,
+                schedulingParameters,
+                useExisting,
+            } = process;
+            const newProcess = await services.containerRequestService.create({
+                command,
+                containerCountMax,
+                containerImage,
+                cwd,
+                description,
+                environment,
+                kind,
+                mounts,
+                name: resource.name,
+                outputName,
+                outputPath,
+                outputProperties,
+                outputStorageClasses,
+                outputTtl,
+                ownerUuid: resource.ownerUuid,
+                priority: 500,
+                properties,
+                runtimeConstraints,
+                schedulingParameters,
+                state: ContainerRequestState.UNCOMMITTED,
+                useExisting,
+            });
             dispatch(dialogActions.CLOSE_DIALOG({ id: PROCESS_COPY_FORM_NAME }));
-            return process;
+            return newProcess;
         } catch (e) {
             dispatch(dialogActions.CLOSE_DIALOG({ id: PROCESS_COPY_FORM_NAME }));
             throw new Error('Could not copy the process.');

@@ -33,6 +33,8 @@ export interface ContainerRequestResource
   name: string;
   outputName: string;
   outputPath: string;
+  outputProperties: any;
+  outputStorageClasses: string[];
   outputTtl: number;
   outputUuid: string | null;
   priority: number | null;

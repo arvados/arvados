@@ -1144,4 +1144,33 @@ describe('Process tests', function() {
         });
     });
 
+
+    it('allows copying processes', function() {
+        const crName = 'first_container_request';
+        const copiedCrName = 'copied_container_request';
+        createContainerRequest(
+            activeUser,
+            crName,
+            'arvados/jobs',
+            ['echo', 'hello world'],
+            false, 'Committed')
+        .then(function(containerRequest) {
+            cy.loginAs(activeUser);
+            cy.goToPath(`/processes/${containerRequest.uuid}`);
+            cy.get('[data-cy=process-details]').should('contain', crName);
+
+            cy.get('[data-cy=process-details]').find('button[title="More options"]').click();
+            cy.get('ul[data-cy=context-menu]').contains("Copy and re-run process").click();
+        });
+
+        cy.get('[data-cy=form-dialog]').within(() => {
+            cy.get('input[name=name]').clear().type(copiedCrName);
+            cy.get('[data-cy=projects-tree-home-tree-picker]').click();
+            cy.get('[data-cy=form-submit-btn]').click();
+        });
+
+        cy.get('[data-cy=process-details]').should('contain', copiedCrName);
+        cy.get('[data-cy=process-details]').find('button').contains('Run Process');
+    });
+
 });

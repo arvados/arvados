@@ -39,17 +39,18 @@ export class SubprocessMiddlewareService extends DataExplorerMiddlewareService {
         try {
             api.dispatch(progressIndicatorActions.START_WORKING(this.getId()));
             const parentContainerRequest = await this.services.containerRequestService.get(parentContainerRequestUuid);
-            const containerRequests = await this.services.containerRequestService.list(
-                {
-                    ...getParams(dataExplorer, parentContainerRequest) ,
-                    select: containerRequestFieldsNoMounts
-                });
-
+            if (parentContainerRequest.containerUuid) {
+                const containerRequests = await this.services.containerRequestService.list(
+                    {
+                        ...getParams(dataExplorer, parentContainerRequest) ,
+                        select: containerRequestFieldsNoMounts
+                    });
+                api.dispatch(updateResources(containerRequests.items));
+                await api.dispatch<any>(loadMissingProcessesInformation(containerRequests.items));
+                // Populate the actual user view
+                api.dispatch(setItems(containerRequests));
+            }
             api.dispatch(progressIndicatorActions.PERSIST_STOP_WORKING(this.getId()));
-            api.dispatch(updateResources(containerRequests.items));
-            await api.dispatch<any>(loadMissingProcessesInformation(containerRequests.items));
-            // Populate the actual user view
-            api.dispatch(setItems(containerRequests));
         } catch {
             api.dispatch(progressIndicatorActions.PERSIST_STOP_WORKING(this.getId()));
             api.dispatch(couldNotFetchSubprocesses());

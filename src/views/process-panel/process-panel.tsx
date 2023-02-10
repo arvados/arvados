@@ -25,7 +25,7 @@ import {
     updateOutputParams,
     loadNodeJson
 } from 'store/process-panel/process-panel-actions';
-import { cancelRunningWorkflow } from 'store/processes/processes-actions';
+import { cancelRunningWorkflow, startWorkflow } from 'store/processes/processes-actions';
 import { navigateToLogCollection, setProcessLogsPanelFilter } from 'store/process-logs-panel/process-logs-panel-actions';
 import { snackbarActions, SnackbarKind } from 'store/snackbar/snackbar-actions';
 
@@ -62,6 +62,7 @@ const mapDispatchToProps = (dispatch: Dispatch): ProcessPanelRootActionProps => 
         dispatch<any>(toggleProcessPanelFilter(status));
     },
     cancelProcess: (uuid) => dispatch<any>(cancelRunningWorkflow(uuid)),
+    startProcess: (uuid) => dispatch<any>(startWorkflow(uuid)),
     onLogFilterChange: (filter) => dispatch(setProcessLogsPanelFilter(filter.value)),
     navigateToLog: (uuid) => dispatch<any>(navigateToLogCollection(uuid)),
     loadInputs: (containerRequest) => dispatch<any>(loadInputs(containerRequest)),

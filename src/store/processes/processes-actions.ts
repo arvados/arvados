@@ -22,7 +22,7 @@ import { ProjectResource } from "models/project";
 import { UserResource } from "models/user";
 import { CommandOutputParameter } from "cwlts/mappings/v1.0/CommandOutputParameter";
 import { ContainerResource } from "models/container";
-import { ContainerRequestResource } from "models/container-request";
+import { ContainerRequestResource, ContainerRequestState } from "models/container-request";
 
 export const loadProcess = (containerRequestUuid: string) =>
     async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository): Promise<Process | undefined> => {
@@ -117,6 +117,21 @@ export const cancelRunningWorkflow = (uuid: string) =>
             return process;
         } catch (e) {
             throw new Error('Could not cancel the process.');
+        }
+    };
+
+export const startWorkflow = (uuid: string) =>
+    async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
+        try {
+            const process = await services.containerRequestService.update(uuid, { state: ContainerRequestState.COMMITTED });
+            if (process) {
+                dispatch<any>(updateResources([process]));
+                dispatch(snackbarActions.OPEN_SNACKBAR({ message: 'Process started', hideDuration: 2000, kind: SnackbarKind.SUCCESS }));
+            } else {
+                dispatch<any>(snackbarActions.OPEN_SNACKBAR({ message: `Failed to start process`, kind: SnackbarKind.ERROR }));
+            }
+        } catch (e) {
+            dispatch<any>(snackbarActions.OPEN_SNACKBAR({ message: `Failed to start process`, kind: SnackbarKind.ERROR }));
         }
     };
 
