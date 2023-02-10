@@ -289,7 +289,7 @@ export const mockClusterConfigJSON = (
       SSHHelpPageHTML: "",
       SSHHelpHostSuffix: "",
       SiteName: "",
-      IdleTimeout: "0s",
+      IdleTimeout: "0s"
     },
   },
   Workbench: {
@@ -302,7 +302,7 @@ export const mockClusterConfigJSON = (
     SSHHelpHostSuffix: '',
     SiteName: '',
     IdleTimeout: '0s',
-    BannerUUID: "",
+    BannerUUID: ""
   },
   Login: {
     LoginCluster: '',
