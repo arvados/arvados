@@ -64,7 +64,7 @@ describe('WebDavS3InfoDialog', () => {
         );
 
         // then
-        expect(wrapper.text()).toContain("davs://bobby@download.example.com/by_id/zzzzz-4zz18-b1f8tbldjrm8885");
+        expect(wrapper.text()).toContain("davs://bobby@download.example.com/c=zzzzz-4zz18-b1f8tbldjrm8885");
     });
 
     it('render win/mac tab', () => {
@@ -79,7 +79,7 @@ describe('WebDavS3InfoDialog', () => {
         );
 
         // then
-        expect(wrapper.text()).toContain("https://download.example.com/by_id/zzzzz-4zz18-b1f8tbldjrm8885");
+        expect(wrapper.text()).toContain("https://download.example.com/c=zzzzz-4zz18-b1f8tbldjrm8885");
     });
 
     it('render s3 tab with federated token', () => {
