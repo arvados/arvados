@@ -100,6 +100,7 @@ import { WebDavS3InfoDialog } from 'views-components/webdav-s3-dialog/webdav-s3-
 import { pluginConfig } from 'plugins';
 import { ElementListReducer } from 'common/plugintypes';
 import { COLLAPSE_ICON_SIZE } from 'views-components/side-panel-toggle/side-panel-toggle'
+import { Banner } from 'views-components/baner/banner';
 
 type CssRules = 'root' | 'container' | 'splitter' | 'asidePanel' | 'contentWrapper' | 'content';
 
@@ -293,6 +294,7 @@ export const WorkbenchPanel =
             <VirtualMachineAttributesDialog />
             <FedLogin />
             <WebDavS3InfoDialog />
+            <Banner />
             {React.createElement(React.Fragment, null, pluginConfig.dialogs)}
         </Grid>}
     );
