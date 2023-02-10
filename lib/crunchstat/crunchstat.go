@@ -59,6 +59,7 @@ type Reporter struct {
 	lastDiskIOSample    map[string]ioSample
 	lastCPUSample       cpuSample
 	lastDiskSpaceSample diskSpaceSample
+	lastMemSample       memSample
 
 	reportPIDs   map[string]int
 	reportPIDsMu sync.Mutex
@@ -246,7 +247,7 @@ type memSample struct {
 	memStat    map[string]int64
 }
 
-func (r *Reporter) doMemoryStats() {
+func (r *Reporter) getMemSample() {
 	c, err := r.openStatFile("memory", "memory.stat", true)
 	if err != nil {
 		return
@@ -254,7 +255,6 @@ func (r *Reporter) doMemoryStats() {
 	defer c.Close()
 	b := bufio.NewScanner(c)
 	thisSample := memSample{time.Now(), make(map[string]int64)}
-	wantStats := [...]string{"cache", "swap", "pgmajfault", "rss"}
 	for b.Scan() {
 		var stat string
 		var val int64
@@ -263,19 +263,26 @@ func (r *Reporter) doMemoryStats() {
 		}
 		thisSample.memStat[stat] = val
 	}
+	r.lastMemSample = thisSample
+}
+
+func (r *Reporter) reportMemSample() {
 	var outstat bytes.Buffer
+	wantStats := [...]string{"cache", "swap", "pgmajfault", "rss"}
 	for _, key := range wantStats {
 		// Use "total_X" stats (entire hierarchy) if enabled,
 		// otherwise just the single cgroup -- see
 		// https://www.kernel.org/doc/Documentation/cgroup-v1/memory.txt
-		if val, ok := thisSample.memStat["total_"+key]; ok {
+		if val, ok := r.lastMemSample.memStat["total_"+key]; ok {
 			fmt.Fprintf(&outstat, " %d %s", val, key)
-		} else if val, ok := thisSample.memStat[key]; ok {
+		} else if val, ok := r.lastMemSample.memStat[key]; ok {
 			fmt.Fprintf(&outstat, " %d %s", val, key)
 		}
 	}
 	r.Logger.Printf("mem%s\n", outstat.String())
+}
 
+func (r *Reporter) doProcmemStats() {
 	if r.kernelPageSize == 0 {
 		// assign "don't try again" value in case we give up
 		// and return without assigning the real value
@@ -490,6 +497,15 @@ func (r *Reporter) doCPUStats() {
 	r.lastCPUSample = nextSample
 }
 
+func (r *Reporter) doAllStats() {
+	r.reportMemSample()
+	r.doProcmemStats()
+	r.doCPUStats()
+	r.doBlkIOStats()
+	r.doNetworkStats()
+	r.doDiskSpaceStats()
+}
+
 // Report stats periodically until we learn (via r.done) that someone
 // called Stop.
 func (r *Reporter) run() {
@@ -512,17 +528,19 @@ func (r *Reporter) run() {
 		r.Logger.Printf("notice: monitoring temp dir %s\n", r.TempDir)
 	}
 
-	ticker := time.NewTicker(r.PollPeriod)
+	r.getMemSample()
+	r.doAllStats()
+
+	memTicker := time.NewTicker(time.Second)
+	mainTicker := time.NewTicker(r.PollPeriod)
 	for {
-		r.doMemoryStats()
-		r.doCPUStats()
-		r.doBlkIOStats()
-		r.doNetworkStats()
-		r.doDiskSpaceStats()
 		select {
 		case <-r.done:
 			return
-		case <-ticker.C:
+		case <-memTicker.C:
+			r.getMemSample()
+		case <-mainTicker.C:
+			r.doAllStats()
 		}
 	}
 }
