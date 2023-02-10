@@ -188,7 +188,7 @@ func (*SchedulerSuite) TestUseIdleWorkers(c *check.C) {
 		running:   map[string]time.Time{},
 		canCreate: 0,
 	}
-	New(ctx, &queue, &pool, nil, time.Millisecond, time.Millisecond).runQueue()
+	New(ctx, arvados.NewClientFromEnv(), &queue, &pool, nil, time.Millisecond, time.Millisecond).runQueue()
 	c.Check(pool.creates, check.DeepEquals, []arvados.InstanceType{test.InstanceType(1), test.InstanceType(1), test.InstanceType(1)})
 	c.Check(pool.starts, check.DeepEquals, []string{test.ContainerUUID(4)})
 	c.Check(pool.running, check.HasLen, 1)
@@ -244,7 +244,7 @@ func (*SchedulerSuite) TestShutdownAtQuota(c *check.C) {
 			starts:    []string{},
 			canCreate: 0,
 		}
-		sch := New(ctx, &queue, &pool, nil, time.Millisecond, time.Millisecond)
+		sch := New(ctx, arvados.NewClientFromEnv(), &queue, &pool, nil, time.Millisecond, time.Millisecond)
 		sch.runQueue()
 		sch.sync()
 		sch.runQueue()
@@ -303,7 +303,7 @@ func (*SchedulerSuite) TestEqualPriorityContainers(c *check.C) {
 		starts:    []string{},
 		canCreate: 1,
 	}
-	sch := New(ctx, &queue, &pool, nil, time.Millisecond, time.Millisecond)
+	sch := New(ctx, arvados.NewClientFromEnv(), &queue, &pool, nil, time.Millisecond, time.Millisecond)
 	for i := 0; i < 30; i++ {
 		sch.runQueue()
 		sch.sync()
@@ -405,7 +405,7 @@ func (*SchedulerSuite) TestStartWhileCreating(c *check.C) {
 		},
 	}
 	queue.Update()
-	New(ctx, &queue, &pool, nil, time.Millisecond, time.Millisecond).runQueue()
+	New(ctx, arvados.NewClientFromEnv(), &queue, &pool, nil, time.Millisecond, time.Millisecond).runQueue()
 	c.Check(pool.creates, check.DeepEquals, []arvados.InstanceType{test.InstanceType(2), test.InstanceType(1)})
 	c.Check(pool.starts, check.DeepEquals, []string{uuids[6], uuids[5], uuids[3], uuids[2]})
 	running := map[string]bool{}
@@ -449,7 +449,7 @@ func (*SchedulerSuite) TestKillNonexistentContainer(c *check.C) {
 		},
 	}
 	queue.Update()
-	sch := New(ctx, &queue, &pool, nil, time.Millisecond, time.Millisecond)
+	sch := New(ctx, arvados.NewClientFromEnv(), &queue, &pool, nil, time.Millisecond, time.Millisecond)
 	c.Check(pool.running, check.HasLen, 1)
 	sch.sync()
 	for deadline := time.Now().Add(time.Second); len(pool.Running()) > 0 && time.Now().Before(deadline); time.Sleep(time.Millisecond) {
@@ -482,7 +482,7 @@ func (*SchedulerSuite) TestContainersMetrics(c *check.C) {
 	pool := stubPool{
 		unalloc: map[arvados.InstanceType]int{test.InstanceType(1): 1},
 	}
-	sch := New(ctx, &queue, &pool, nil, time.Millisecond, time.Millisecond)
+	sch := New(ctx, arvados.NewClientFromEnv(), &queue, &pool, nil, time.Millisecond, time.Millisecond)
 	sch.runQueue()
 	sch.updateMetrics()
 
@@ -494,7 +494,7 @@ func (*SchedulerSuite) TestContainersMetrics(c *check.C) {
 	// 'over quota' metric will be 1 because no workers are available and canCreate defaults
 	// to zero.
 	pool = stubPool{}
-	sch = New(ctx, &queue, &pool, nil, time.Millisecond, time.Millisecond)
+	sch = New(ctx, arvados.NewClientFromEnv(), &queue, &pool, nil, time.Millisecond, time.Millisecond)
 	sch.runQueue()
 	sch.updateMetrics()
 
@@ -527,7 +527,7 @@ func (*SchedulerSuite) TestContainersMetrics(c *check.C) {
 		unalloc: map[arvados.InstanceType]int{test.InstanceType(1): 1},
 		running: map[string]time.Time{},
 	}
-	sch = New(ctx, &queue, &pool, nil, time.Millisecond, time.Millisecond)
+	sch = New(ctx, arvados.NewClientFromEnv(), &queue, &pool, nil, time.Millisecond, time.Millisecond)
 	sch.runQueue()
 	sch.updateMetrics()
 
