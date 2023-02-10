@@ -440,6 +440,7 @@ for f in $(ls "${SOURCE_PILLARS_DIR}"/*); do
        s#__DATABASE_INT_IP__#${DATABASE_INT_IP}#g;
        s#__WORKBENCH_SECRET_KEY__#${WORKBENCH_SECRET_KEY}#g;
        s#__SSL_KEY_ENCRYPTED__#${SSL_KEY_ENCRYPTED}#g;
+       s#__SSL_KEY_AWS_REGION__#${SSL_KEY_AWS_REGION}#g;
        s#__SSL_KEY_AWS_SECRET_NAME__#${SSL_KEY_AWS_SECRET_NAME}#g" \
   "${f}" > "${P_DIR}"/$(basename "${f}")
 done
@@ -513,6 +514,7 @@ if [ -d "${SOURCE_STATES_DIR}" ]; then
          s#__WORKBENCH2_EXT_SSL_PORT__#${WORKBENCH2_EXT_SSL_PORT}#g;
          s#__WORKBENCH_SECRET_KEY__#${WORKBENCH_SECRET_KEY}#g;
          s#__SSL_KEY_ENCRYPTED__#${SSL_KEY_ENCRYPTED}#g;
+         s#__SSL_KEY_AWS_REGION__#${SSL_KEY_AWS_REGION}#g;
          s#__SSL_KEY_AWS_SECRET_NAME__#${SSL_KEY_AWS_SECRET_NAME}#g" \
     "${f}" > "${F_DIR}/extra/extra"/$(basename "${f}")
   done

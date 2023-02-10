@@ -31,11 +31,11 @@ extra_ssl_key_encrypted_password_retrieval_script:
         #!/bin/bash
 
         while [ true ]; do
-          # AWS_SHARED_CREDENTIALS_FILE is set to an non-existant path to avoid awscli
+          # AWS_SHARED_CREDENTIALS_FILE is set to /dev/null to avoid AWS's CLI
           # loading invalid credentials on nodes who use ~/.aws/credentials for other
           # purposes (e.g.: the dispatcher credentials)
           # Access to the secrets manager is given by using an instance profile.
-          AWS_SHARED_CREDENTIALS_FILE=~/nonexistant aws secretsmanager get-secret-value --secret-id {{ ssl_key_encrypted.aws_secret_name }} --region us-east-1 | jq -r .SecretString > {{ ssl_key_encrypted.ssl_password_file }}
+          AWS_SHARED_CREDENTIALS_FILE=/dev/null aws secretsmanager get-secret-value --secret-id '{{ ssl_key_encrypted.aws_secret_name }}' --region '{{ ssl_key_encrypted.aws_region }}' | jq -r .SecretString > '{{ ssl_key_encrypted.ssl_password_file }}'
           sleep 1
         done
 

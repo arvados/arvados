@@ -118,6 +118,7 @@ LE_AWS_SECRET_ACCESS_KEY="thisistherandomstringthatisyoursecretkey"
 # a custom AWS secret name for each node to retrieve the password.
 SSL_KEY_ENCRYPTED="no"
 SSL_KEY_AWS_SECRET_NAME="${CLUSTER}-arvados-ssl-privkey-password"
+SSL_KEY_AWS_REGION="us-east-1"
 
 # The directory to check for the config files (pillars, states) you want to use.
 # There are a few examples under 'config_examples'.
