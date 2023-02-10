@@ -8,7 +8,7 @@
 # (e.g. submit_tool.cwl) and uploading to Keep works as intended.
 
 class: Workflow
-cwlVersion: v1.0
+cwlVersion: v1.2
 inputs:
   - id: x
     type: File

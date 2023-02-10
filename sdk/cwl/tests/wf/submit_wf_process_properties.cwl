@@ -11,7 +11,7 @@ $namespaces:
   arv: "http://arvados.org/cwl#"
 
 class: Workflow
-cwlVersion: v1.0
+cwlVersion: v1.2
 
 hints:
   arv:ProcessProperties:

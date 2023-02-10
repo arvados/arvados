@@ -17,7 +17,7 @@ import uuid
 import math
 
 import arvados_cwl.util
-import ruamel.yaml as yaml
+import ruamel.yaml
 
 from cwltool.errors import WorkflowException
 from cwltool.process import UnsupportedRequirement, shortname
@@ -250,11 +250,7 @@ class ArvadosContainer(JobBase):
         container_request["container_image"] = arv_docker_get_image(self.arvrunner.api,
                                                                     docker_req,
                                                                     runtimeContext.pull_image,
-                                                                    runtimeContext.project_uuid,
-                                                                    runtimeContext.force_docker_pull,
-                                                                    runtimeContext.tmp_outdir_prefix,
-                                                                    runtimeContext.match_local_docker,
-                                                                    runtimeContext.copy_deps)
+                                                                    runtimeContext)
 
         network_req, _ = self.get_requirement("NetworkAccess")
         if network_req:
@@ -536,20 +532,24 @@ class RunnerContainer(Runner):
                 "portable_data_hash": "%s" % workflowcollection
             }
         elif self.embedded_tool.tool.get("id", "").startswith("arvwf:"):
-            workflowpath = "/var/lib/cwl/workflow.json#main"
-            record = self.arvrunner.api.workflows().get(uuid=self.embedded_tool.tool["id"][6:33]).execute(num_retries=self.arvrunner.num_retries)
-            packed = yaml.safe_load(record["definition"])
+            uuid, frg = urllib.parse.urldefrag(self.embedded_tool.tool["id"])
+            workflowpath = "/var/lib/cwl/workflow.json#" + frg
+            packedtxt = self.loadingContext.loader.fetch_text(uuid)
+            yaml = ruamel.yaml.YAML(typ='safe', pure=True)
+            packed = yaml.load(packedtxt)
             container_req["mounts"]["/var/lib/cwl/workflow.json"] = {
                 "kind": "json",
                 "content": packed
             }
             container_req["properties"]["template_uuid"] = self.embedded_tool.tool["id"][6:33]
         else:
-            packed = packed_workflow(self.arvrunner, self.embedded_tool, self.merged_map, runtimeContext, git_info)
+            main = self.loadingContext.loader.idx["_:main"]
+            if main.get("id") == "_:main":
+                del main["id"]
             workflowpath = "/var/lib/cwl/workflow.json#main"
             container_req["mounts"]["/var/lib/cwl/workflow.json"] = {
                 "kind": "json",
-                "content": packed
+                "content": main
             }
 
         container_req["properties"].update({k.replace("http://arvados.org/cwl#", "arv:"): v for k, v in git_info.items()})
@@ -621,6 +621,9 @@ class RunnerContainer(Runner):
 
         if runtimeContext.prefer_cached_downloads:
             command.append("--prefer-cached-downloads")
+
+        if self.fast_parser:
+            command.append("--fast-parser")
 
         command.extend([workflowpath, "/var/lib/cwl/cwl.input.json"])
 

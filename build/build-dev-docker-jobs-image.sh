@@ -16,6 +16,7 @@ Syntax:
 WORKSPACE=path         Path to the Arvados source tree to build packages from
 CWLTOOL=path           (optional) Path to cwltool git repository.
 SALAD=path             (optional) Path to schema_salad git repository.
+CWL_UTILS=path         (optional) Path to cwl-utils git repository.
 PYCMD=pythonexec       (optional) Specify the python3 executable to use in the docker image. Defaults to "python3".
 
 EOF
@@ -67,6 +68,14 @@ if [[ -n "$CWLTOOL" ]] ; then
     cp "$CWLTOOL/dist/$cwltool" $WORKSPACE/sdk/cwl/cwltool_dist
 fi
 
+rm -rf sdk/cwl/cwlutils_dist
+mkdir -p sdk/cwl/cwlutils_dist
+if [[ -n "$CWL_UTILS" ]] ; then
+    (cd "$CWL_UTILS" && python3 setup.py sdist)
+    cwlutils=$(cd "$CWL_UTILS/dist" && ls -t cwl-utils-*.tar.gz | head -n1)
+    cp "$CWL_UTILS/dist/$cwlutils" $WORKSPACE/sdk/cwl/cwlutils_dist
+fi
+
 . build/run-library.sh
 
 # This defines python_sdk_version and cwl_runner_version with python-style
@@ -74,6 +83,17 @@ fi
 calculate_python_sdk_cwl_package_versions
 
 set -x
-docker build --no-cache --build-arg sdk=$sdk --build-arg runner=$runner --build-arg salad=$salad --build-arg cwltool=$cwltool --build-arg pythoncmd=$py --build-arg pipcmd=$pipcmd -f "$WORKSPACE/sdk/dev-jobs.dockerfile" -t arvados/jobs:$cwl_runner_version "$WORKSPACE/sdk"
+docker build --no-cache \
+       --build-arg sdk=$sdk \
+       --build-arg runner=$runner \
+       --build-arg salad=$salad \
+       --build-arg cwltool=$cwltool \
+       --build-arg pythoncmd=$py \
+       --build-arg pipcmd=$pipcmd \
+       --build-arg cwlutils=$cwlutils \
+       -f "$WORKSPACE/sdk/dev-jobs.dockerfile" \
+       -t arvados/jobs:$cwl_runner_version \
+       "$WORKSPACE/sdk"
+
 echo arv-keepdocker arvados/jobs $cwl_runner_version
 arv-keepdocker arvados/jobs $cwl_runner_version

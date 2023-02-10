@@ -5,7 +5,7 @@
 # Test case for arvados-cwl-runner. Disables job/container reuse.
 
 class: Workflow
-cwlVersion: v1.0
+cwlVersion: v1.2
 $namespaces:
   arv: "http://arvados.org/cwl#"
   cwltool: "http://commonwl.org/cwltool#"
@@ -24,5 +24,5 @@ steps:
     out: []
     run: ../tool/submit_tool.cwl
 hints:
-  arv:ReuseRequirement:
+  WorkReuse:
     enableReuse: false

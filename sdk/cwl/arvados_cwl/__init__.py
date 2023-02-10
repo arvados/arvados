@@ -212,6 +212,10 @@ def arg_parser():  # type: () -> argparse.ArgumentParser
                         action="store_true", default=False,
                         help=argparse.SUPPRESS)
 
+    parser.add_argument("--fast-parser", dest="fast_parser",
+                        action="store_true", default=False,
+                        help=argparse.SUPPRESS)
+
     parser.add_argument("--thread-count", type=int,
                         default=0, help="Number of threads to use for job submit and output collection.")
 
@@ -377,9 +381,10 @@ def main(args=sys.argv[1:],
         # unit tests.
         stdout = None
 
-    if arvargs.submit and (arvargs.workflow.startswith("arvwf:") or workflow_uuid_pattern.match(arvargs.workflow)):
+    if arvargs.workflow.startswith("arvwf:") or workflow_uuid_pattern.match(arvargs.workflow) or arvargs.workflow.startswith("keep:"):
         executor.loadingContext.do_validate = False
-        executor.fast_submit = True
+        if arvargs.submit:
+            executor.fast_submit = True
 
     return cwltool.main.main(args=arvargs,
                              stdout=stdout,
