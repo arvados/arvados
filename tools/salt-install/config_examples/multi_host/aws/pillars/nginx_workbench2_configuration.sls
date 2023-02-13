@@ -49,7 +49,7 @@ nginx:
             - ssl_certificate: __CERT_PEM__
             - ssl_certificate_key: __CERT_KEY__
             {%- if ssl_key_encrypted_pillar.ssl_key_encrypted.enabled %}
-            - ssl_password_file: {{ ssl_key_encrypted_pillar.ssl_key_encrypted.ssl_password_file | yaml_dquote }}
+            - ssl_password_file: {{ '/run/arvados/' | path_join(ssl_key_encrypted_pillar.ssl_key_encrypted.privkey_password_filename) }}
             {%- endif %}
             - access_log: /var/log/nginx/workbench2.__CLUSTER__.__DOMAIN__.access.log combined
             - error_log: /var/log/nginx/workbench2.__CLUSTER__.__DOMAIN__.error.log
