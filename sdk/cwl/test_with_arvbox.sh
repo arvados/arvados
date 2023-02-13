@@ -130,6 +130,14 @@ elif [[ "$suite" != "integration" ]] ; then
    exit 1
 fi
 
+if [[ "$suite" = "conformance-v1.1" ]] ; then
+   git checkout main
+fi
+
+if [[ "$suite" = "conformance-v1.2" ]] ; then
+   git checkout 1.2.1_proposed
+fi
+
 #if [[ "$suite" != "integration" ]] ; then
 #  git pull
 #fi
@@ -149,6 +157,9 @@ if [[ $devcwl -eq 1 ]] ; then
 fi
 
 env
+
+arvados-cwl-runner --version
+cwltest --version
 
 # Skip docker_entrypoint test because it fails on singularity
 #
