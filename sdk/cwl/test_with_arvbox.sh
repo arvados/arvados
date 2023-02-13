@@ -158,6 +158,7 @@ fi
 
 env
 
+arvados-cwl-runner --version
 cwltest --version
 
 # Skip docker_entrypoint test because it fails on singularity
