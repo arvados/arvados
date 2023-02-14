@@ -116,7 +116,11 @@ export const ProcessDetailsCard = withStyles(styles)(
                                 <StartIcon />
                                 Run Process
                             </Button>}
-                        {process.container && process.container.state === ContainerState.RUNNING &&
+                        {process.container &&
+                            (process.container.state === ContainerState.RUNNING ||
+                            process.container.state === ContainerState.QUEUED) &&
+                            process.containerRequest.priority !== null &&
+                            process.containerRequest.priority > 0 &&
                             <span className={classes.cancelButton} onClick={() => cancelProcess(process.containerRequest.uuid)}>Cancel</span>}
                         <ProcessStatus uuid={process.containerRequest.uuid} />
                         <Tooltip title="More options" disableFocusListener>
