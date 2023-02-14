@@ -21,7 +21,10 @@ extra_ssl_key_encrypted_password_retrieval_script:
     - contents: |
         #!/bin/bash
 
-        # RUNTIME_DIRECTORY is provided by systemd
+        # RUNTIME_DIRECTORY is provided by systemd.
+        # NOTE: We assume systemd's set up in a way that there's just one
+        # runtime dir for this particular unit, otherwise this variable could
+        # contain multiple paths separated by a colon.
         PASSWORD_FILE="${RUNTIME_DIRECTORY}/{{ ssl_key_encrypted.privkey_password_filename }}"
 
         while [ true ]; do
@@ -47,8 +50,8 @@ extra_ssl_key_encrypted_password_retrieval_service_unit:
         After=network.target
         [Service]
         RuntimeDirectory=arvados
-        ExecStartPre=/usr/bin/mkfifo --mode=0600 %t/arvados/{{ ssl_key_encrypted.privkey_password_filename }}
-        ExecStart=/bin/bash {{ ssl_key_encrypted.privkey_password_script }}
+        ExecStartPre={{ ('/usr/bin/mkfifo --mode=0600 %t/arvados/' ~ ssl_key_encrypted.privkey_password_filename) | yaml_dquote }}
+        ExecStart={{ ('/bin/bash ' ~ ssl_key_encrypted.privkey_password_script) | yaml_dquote }}
         [Install]
         WantedBy=multi-user.target
 
