@@ -74,6 +74,7 @@
     "set-value": "2.0.1",
     "shell-escape": "^0.2.0",
     "sinon": "7.3",
+    "tippy.js": "^6.3.7",
     "tslint": "5.20.0",
     "tslint-etc": "1.6.0",
     "unionize": "2.1.2",
