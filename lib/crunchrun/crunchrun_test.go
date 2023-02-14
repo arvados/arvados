@@ -13,6 +13,8 @@ import (
 	"io"
 	"io/ioutil"
 	"log"
+	"net/http"
+	"net/http/httptest"
 	"os"
 	"os/exec"
 	"regexp"
@@ -770,6 +772,61 @@ func (s *TestSuite) TestRunAlreadyRunning(c *C) {
 	c.Check(s.api.CalledWith("container.state", "Cancelled"), IsNil)
 	c.Check(s.api.CalledWith("container.state", "Complete"), IsNil)
 	c.Check(ran, Equals, false)
+}
+
+func (s *TestSuite) TestSpotInterruptionNotice(c *C) {
+	var failedOnce bool
+	var stoptime time.Time
+	token := "fake-ec2-metadata-token"
+	stub := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if !failedOnce {
+			w.WriteHeader(http.StatusServiceUnavailable)
+			failedOnce = true
+			return
+		}
+		switch r.URL.Path {
+		case "/latest/api/token":
+			fmt.Fprintln(w, token)
+		case "/latest/meta-data/spot/instance-action":
+			if r.Header.Get("X-aws-ec2-metadata-token") != token {
+				w.WriteHeader(http.StatusUnauthorized)
+			} else if stoptime.IsZero() {
+				w.WriteHeader(http.StatusNotFound)
+			} else {
+				fmt.Fprintf(w, `{"action":"stop","time":"%s"}`, stoptime.Format(time.RFC3339))
+			}
+		default:
+			w.WriteHeader(http.StatusNotFound)
+		}
+	}))
+	defer stub.Close()
+
+	defer func(i time.Duration, u string) {
+		spotInterruptionCheckInterval = i
+		ec2MetadataBaseURL = u
+	}(spotInterruptionCheckInterval, ec2MetadataBaseURL)
+	spotInterruptionCheckInterval = time.Second / 4
+	ec2MetadataBaseURL = stub.URL
+
+	go s.runner.checkSpotInterruptionNotices()
+	s.fullRunHelper(c, `{
+    "command": ["sleep", "3"],
+    "container_image": "`+arvadostest.DockerImage112PDH+`",
+    "cwd": ".",
+    "environment": {},
+    "mounts": {"/tmp": {"kind": "tmp"} },
+    "output_path": "/tmp",
+    "priority": 1,
+    "runtime_constraints": {},
+    "state": "Locked"
+}`, nil, 0, func() {
+		time.Sleep(time.Second)
+		stoptime = time.Now().Add(time.Minute).UTC()
+		time.Sleep(time.Second)
+	})
+	c.Check(s.api.Logs["crunch-run"].String(), Matches, `(?ms).*Checking for spot interruptions every 250ms using instance metadata at http://.*`)
+	c.Check(s.api.Logs["crunch-run"].String(), Matches, `(?ms).*Error checking spot interruptions: 503 Service Unavailable.*`)
+	c.Check(s.api.Logs["crunch-run"].String(), Matches, `(?ms).*Cloud provider indicates instance action "stop" scheduled for time "`+stoptime.Format(time.RFC3339)+`".*`)
 }
 
 func (s *TestSuite) TestRunTimeExceeded(c *C) {
