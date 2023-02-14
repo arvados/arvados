@@ -49,6 +49,8 @@ extra_ssl_key_encrypted_password_retrieval_service_unit:
         Description=Arvados SSL private key password retrieval service
         After=network.target
         [Service]
+        # WARNING: the script below assumes that RuntimeDirectory only holds one
+        # path value, won't work with multiple paths.
         RuntimeDirectory=arvados
         ExecStartPre={{ ('/usr/bin/mkfifo --mode=0600 %t/arvados/' ~ ssl_key_encrypted.privkey_password_filename) | yaml_dquote }}
         ExecStart={{ ('/bin/bash ' ~ ssl_key_encrypted.privkey_password_script) | yaml_dquote }}
