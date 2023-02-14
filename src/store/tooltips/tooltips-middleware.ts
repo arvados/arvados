@@ -18,16 +18,17 @@ const tippySingleton = createSingleton([], {delay: 10});
 
 export const tooltipsMiddleware = (services: ServiceRepository): Middleware => (store: Store) => next => action => {
     const state: RootState = store.getState();
-    const hideTooltip = localStorage.getItem(TOOLTIP_LOCAL_STORAGE_KEY);
-    const { BannerUUID } = (state.auth.config.clusterConfig.Workbench as any);
 
-    const bannerUUID = BannerUUID || 'tordo-4zz18-1buneu6sb8zxiti';
-
-    if (bannerUUID && !tooltipsContents && !hideTooltip && !tooltipsFetchFailed && !running) {
-        running = true;
-        fetchTooltips(services, bannerUUID);
-    } else if (tooltipsContents && !hideTooltip && !tooltipsFetchFailed) {
-        applyTooltips();
+    if (state && state.auth && state.auth.config && state.auth.config.clusterConfig && state.auth.config.clusterConfig.Workbench) {
+        const hideTooltip = localStorage.getItem(TOOLTIP_LOCAL_STORAGE_KEY);
+        const { BannerUUID: bannerUUID } = state.auth.config.clusterConfig.Workbench;
+    
+        if (bannerUUID && !tooltipsContents && !hideTooltip && !tooltipsFetchFailed && !running) {
+            running = true;
+            fetchTooltips(services, bannerUUID);
+        } else if (tooltipsContents && !hideTooltip && !tooltipsFetchFailed) {
+            applyTooltips();
+        }
     }
 
     return next(action);
