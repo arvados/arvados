@@ -9,6 +9,7 @@
 extra_ssl_key_encrypted_required_pkgs:
   pkg.installed:
     - name: jq
+    - name: awscli
 
 extra_ssl_key_encrypted_password_retrieval_script:
   file.managed:
