@@ -277,8 +277,7 @@ func (c *Client) Do(req *http.Request) (*http.Response, error) {
 	}
 
 	resp, err := c.httpClient().Do(req)
-	c.requestLimiter.Report(resp, err)
-	if err == nil && resp.StatusCode == http.StatusServiceUnavailable {
+	if c.requestLimiter.Report(resp, err) {
 		c.last503.Store(time.Now())
 	}
 	if err == nil {

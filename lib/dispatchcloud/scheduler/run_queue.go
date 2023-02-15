@@ -62,7 +62,11 @@ func (sch *Scheduler) runQueue() {
 			sch.maxConcurrency = max
 		}
 	}
-	sch.mLast503Time.Set(float64(sch.last503time.Unix()))
+	if sch.last503time.IsZero() {
+		sch.mLast503Time.Set(0)
+	} else {
+		sch.mLast503Time.Set(float64(sch.last503time.Unix()))
+	}
 	sch.mMaxContainerConcurrency.Set(float64(sch.maxConcurrency))
 
 	sch.logger.WithFields(logrus.Fields{

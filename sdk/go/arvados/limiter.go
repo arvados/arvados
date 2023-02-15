@@ -6,7 +6,9 @@ package arvados
 
 import (
 	"context"
+	"errors"
 	"net/http"
+	"net/url"
 	"sync"
 	"time"
 )
@@ -91,13 +93,24 @@ func (rl *requestLimiter) Release() {
 
 // Report uses the return values from (*http.Client)Do() to adjust the
 // outgoing request limit (increase on success, decrease on 503).
-func (rl *requestLimiter) Report(resp *http.Response, err error) {
-	if err != nil {
-		return
-	}
+//
+// Return value is true if the response was a 503.
+func (rl *requestLimiter) Report(resp *http.Response, err error) bool {
 	rl.lock.Lock()
 	defer rl.lock.Unlock()
-	if resp.StatusCode == http.StatusServiceUnavailable {
+	is503 := false
+	if err != nil {
+		uerr := &url.Error{}
+		if errors.As(err, &uerr) && uerr.Err.Error() == "Service Unavailable" {
+			// This is how http.Client reports 503 from proxy server
+			is503 = true
+		} else {
+			return false
+		}
+	} else {
+		is503 = resp.StatusCode == http.StatusServiceUnavailable
+	}
+	if is503 {
 		if rl.limit == 0 {
 			// Concurrency was unlimited until now.
 			// Calculate new limit based on actual
@@ -112,7 +125,9 @@ func (rl *requestLimiter) Report(resp *http.Response, err error) {
 			// a second.
 			rl.quietUntil = time.Now().Add(requestLimiterQuietPeriod)
 		}
-	} else if resp.StatusCode >= 200 && resp.StatusCode < 400 && rl.limit > 0 {
+		return true
+	}
+	if err == nil && resp.StatusCode >= 200 && resp.StatusCode < 400 && rl.limit > 0 {
 		// After each non-server-error response, increase
 		// concurrency limit by at least 10% -- but not beyond
 		// 2x the highest concurrency level we've seen without
@@ -127,4 +142,5 @@ func (rl *requestLimiter) Report(resp *http.Response, err error) {
 		}
 		rl.cond.Broadcast()
 	}
+	return false
 }
