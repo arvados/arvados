@@ -1170,7 +1170,191 @@ describe('Process tests', function() {
         });
 
         cy.get('[data-cy=process-details]').should('contain', copiedCrName);
-        cy.get('[data-cy=process-details]').find('button').contains('Run Process');
+        cy.get('[data-cy=process-details]').find('button').contains('Run');
+    });
+
+    const getFakeContainer = (fakeContainerUuid) => ({
+        href: `/containers/${fakeContainerUuid}`,
+        kind: "arvados#container",
+        etag: "ecfosljpnxfari9a8m7e4yv06",
+        uuid: fakeContainerUuid,
+        owner_uuid: "zzzzz-tpzed-000000000000000",
+        created_at: "2023-02-13T15:55:47.308915000Z",
+        modified_by_client_uuid: "zzzzz-ozdt8-q6dzdi1lcc03155",
+        modified_by_user_uuid: "zzzzz-tpzed-000000000000000",
+        modified_at: "2023-02-15T19:12:45.987086000Z",
+        command: [
+          "arvados-cwl-runner",
+          "--api=containers",
+          "--local",
+          "--project-uuid=zzzzz-j7d0g-yr18k784zplfeza",
+          "/var/lib/cwl/workflow.json#main",
+          "/var/lib/cwl/cwl.input.json",
+        ],
+        container_image: "4ad7d11381df349e464694762db14e04+303",
+        cwd: "/var/spool/cwl",
+        environment: {},
+        exit_code: null,
+        finished_at: null,
+        locked_by_uuid: null,
+        log: null,
+        output: null,
+        output_path: "/var/spool/cwl",
+        progress: null,
+        runtime_constraints: {
+          API: true,
+          cuda: {
+            device_count: 0,
+            driver_version: "",
+            hardware_capability: "",
+          },
+          keep_cache_disk: 2147483648,
+          keep_cache_ram: 0,
+          ram: 1342177280,
+          vcpus: 1,
+        },
+        runtime_status: {},
+        started_at: null,
+        auth_uuid: null,
+        scheduling_parameters: {
+          max_run_time: 0,
+          partitions: [],
+          preemptible: false,
+        },
+        runtime_user_uuid: "zzzzz-tpzed-vllbpebicy84rd5",
+        runtime_auth_scopes: ["all"],
+        lock_count: 2,
+        gateway_address: null,
+        interactive_session_started: false,
+        output_storage_classes: ["default"],
+        output_properties: {},
+        cost: 0.0,
+        subrequests_cost: 0.0,
+      });
+
+    it('shows cancel button when appropriate', function() {
+        // Ignore collection requests
+        cy.intercept({method: 'GET', url: `**/arvados/v1/collections/*`}, {
+            statusCode: 200,
+            body: {}
+        });
+
+        // Uncommitted container
+        const crUncommitted = `Test process ${Math.floor(Math.random() * 999999)}`;
+        createContainerRequest(
+            activeUser,
+            crUncommitted,
+            'arvados/jobs',
+            ['echo', 'hello world'],
+            false, 'Uncommitted')
+        .then(function(containerRequest) {
+            // Navigate to process and verify run / cancel button
+            cy.goToPath(`/processes/${containerRequest.uuid}`);
+            cy.waitForDom();
+            cy.get('[data-cy=process-details]').should('contain', crUncommitted);
+            cy.get('[data-cy=process-details]').find('button').contains('Run');
+            cy.get('[data-cy=process-cancel]').should('not.exist');
+        });
+
+        // Queued container
+        const crQueued = `Test process ${Math.floor(Math.random() * 999999)}`;
+        const fakeCrUuid = 'zzzzz-dz642-000000000000001';
+        createContainerRequest(
+            activeUser,
+            crQueued,
+            'arvados/jobs',
+            ['echo', 'hello world'],
+            false, 'Committed')
+        .then(function(containerRequest) {
+            // Fake container uuid
+            cy.intercept({method: 'GET', url: `**/arvados/v1/container_requests/${containerRequest.uuid}`}, (req) => {
+                req.reply((res) => {
+                    res.body.output_uuid = fakeCrUuid;
+                    res.body.priority = 500;
+                    res.body.state = "Committed";
+                });
+            });
+
+            // Fake container
+            const container = getFakeContainer(fakeCrUuid);
+            cy.intercept({method: 'GET', url: `**/arvados/v1/container/${fakeCrUuid}`}, {
+                statusCode: 200,
+                body: {...container, state: "Queued", priority: 500}
+            });
+
+            // Navigate to process and verify cancel button
+            cy.goToPath(`/processes/${containerRequest.uuid}`);
+            cy.waitForDom();
+            cy.get('[data-cy=process-details]').should('contain', crQueued);
+            cy.get('[data-cy=process-cancel]').contains('Cancel');
+        });
+
+        // Locked container
+        const crLocked = `Test process ${Math.floor(Math.random() * 999999)}`;
+        const fakeCrLockedUuid = 'zzzzz-dz642-000000000000002';
+        createContainerRequest(
+            activeUser,
+            crLocked,
+            'arvados/jobs',
+            ['echo', 'hello world'],
+            false, 'Committed')
+        .then(function(containerRequest) {
+            // Fake container uuid
+            cy.intercept({method: 'GET', url: `**/arvados/v1/container_requests/${containerRequest.uuid}`}, (req) => {
+                req.reply((res) => {
+                    res.body.output_uuid = fakeCrLockedUuid;
+                    res.body.priority = 500;
+                    res.body.state = "Committed";
+                });
+            });
+
+            // Fake container
+            const container = getFakeContainer(fakeCrLockedUuid);
+            cy.intercept({method: 'GET', url: `**/arvados/v1/container/${fakeCrLockedUuid}`}, {
+                statusCode: 200,
+                body: {...container, state: "Locked", priority: 500}
+            });
+
+            // Navigate to process and verify cancel button
+            cy.goToPath(`/processes/${containerRequest.uuid}`);
+            cy.waitForDom();
+            cy.get('[data-cy=process-details]').should('contain', crLocked);
+            cy.get('[data-cy=process-cancel]').contains('Cancel');
+        });
+
+        // On Hold container
+        const crOnHold = `Test process ${Math.floor(Math.random() * 999999)}`;
+        const fakeCrOnHoldUuid = 'zzzzz-dz642-000000000000003';
+        createContainerRequest(
+            activeUser,
+            crOnHold,
+            'arvados/jobs',
+            ['echo', 'hello world'],
+            false, 'Committed')
+        .then(function(containerRequest) {
+            // Fake container uuid
+            cy.intercept({method: 'GET', url: `**/arvados/v1/container_requests/${containerRequest.uuid}`}, (req) => {
+                req.reply((res) => {
+                    res.body.output_uuid = fakeCrOnHoldUuid;
+                    res.body.priority = 0;
+                    res.body.state = "Committed";
+                });
+            });
+
+            // Fake container
+            const container = getFakeContainer(fakeCrOnHoldUuid);
+            cy.intercept({method: 'GET', url: `**/arvados/v1/container/${fakeCrOnHoldUuid}`}, {
+                statusCode: 200,
+                body: {...container, state: "Queued", priority: 0}
+            });
+
+            // Navigate to process and verify cancel button
+            cy.goToPath(`/processes/${containerRequest.uuid}`);
+            cy.waitForDom();
+            cy.get('[data-cy=process-details]').should('contain', crOnHold);
+            cy.get('[data-cy=process-details]').find('button').contains('Run');
+            cy.get('[data-cy=process-cancel]').should('not.exist');
+        });
     });
 
 });

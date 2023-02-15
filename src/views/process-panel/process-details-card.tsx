@@ -119,7 +119,7 @@ export const ProcessDetailsCard = withStyles(styles)(
                                 className={classes.runButton}
                                 onClick={() => runAction && runAction(process.containerRequest.uuid)}>
                                 <StartIcon />
-                                Run Process
+                                Run
                             </Button>}
                         {process.container &&
                             (process.container.state === ContainerState.QUEUED ||
