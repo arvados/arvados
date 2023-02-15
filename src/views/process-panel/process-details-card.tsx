@@ -63,10 +63,6 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
         }
     },
     runButton: {
-        backgroundColor: theme.customs.colors.green700,
-        '&:hover': {
-            backgroundColor: theme.customs.colors.green800,
-        },
         padding: "0px 5px 0 0",
         marginRight: "5px",
     },
