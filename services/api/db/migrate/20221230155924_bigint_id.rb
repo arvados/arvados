@@ -6,7 +6,7 @@ class BigintId < ActiveRecord::Migration[5.2]
   disable_ddl_transaction!
   def up
     old_value = query_value('SHOW statement_timeout')
-    execute "SET statement_timeout TO '0s'"
+    execute "SET statement_timeout TO '0'"
 
     change_column :api_client_authorizations, :id, :bigint
     change_column :api_client_authorizations, :api_client_id, :bigint
@@ -34,7 +34,7 @@ class BigintId < ActiveRecord::Migration[5.2]
     change_column :virtual_machines, :id, :bigint
     change_column :workflows, :id, :bigint
 
-    execute "SET statement_timeout TO '#{quote(old_value)}s'"
+    execute "SET statement_timeout TO #{quote(old_value)}"
   end
 
   def down
