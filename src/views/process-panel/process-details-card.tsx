@@ -76,13 +76,22 @@ export interface ProcessDetailsCardDataProps {
     process: Process;
     cancelProcess: (uuid: string) => void;
     startProcess: (uuid: string) => void;
+    resumeOnHoldWorkflow: (uuid: string) => void;
     onContextMenu: (event: React.MouseEvent<HTMLElement>) => void;
 }
 
 type ProcessDetailsCardProps = ProcessDetailsCardDataProps & WithStyles<CssRules> & MPVPanelProps;
 
 export const ProcessDetailsCard = withStyles(styles)(
-    ({ cancelProcess, startProcess, onContextMenu, classes, process, doHidePanel, panelName }: ProcessDetailsCardProps) => {
+    ({ cancelProcess, startProcess, resumeOnHoldWorkflow, onContextMenu, classes, process, doHidePanel, panelName }: ProcessDetailsCardProps) => {
+        let runAction: ((uuid: string) => void) | undefined = undefined;
+        if (process.containerRequest.state === ContainerRequestState.UNCOMMITTED) {
+            runAction = startProcess;
+        } else if (process.containerRequest.state === ContainerRequestState.COMMITTED &&
+                    process.containerRequest.priority === 0) {
+            runAction = resumeOnHoldWorkflow;
+        }
+
         return <Card className={classes.card}>
             <CardHeader
                 className={classes.header}
@@ -106,13 +115,13 @@ export const ProcessDetailsCard = withStyles(styles)(
                     </Tooltip>}
                 action={
                     <div>
-                        {process.containerRequest.state === ContainerRequestState.UNCOMMITTED &&
+                        {runAction !== undefined &&
                             <Button
                                 variant="contained"
                                 size="small"
                                 color="primary"
                                 className={classes.runButton}
-                                onClick={() => startProcess(process.containerRequest.uuid)}>
+                                onClick={() => runAction && runAction(process.containerRequest.uuid)}>
                                 <StartIcon />
                                 Run Process
                             </Button>}

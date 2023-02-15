@@ -114,9 +114,21 @@ export const cancelRunningWorkflow = (uuid: string) =>
     async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
         try {
             const process = await services.containerRequestService.update(uuid, { priority: 0 });
+            dispatch<any>(updateResources([process]));
             return process;
         } catch (e) {
             throw new Error('Could not cancel the process.');
+        }
+    };
+
+export const resumeOnHoldWorkflow = (uuid: string) =>
+    async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
+        try {
+            const process = await services.containerRequestService.update(uuid, { priority: 500 });
+            dispatch<any>(updateResources([process]));
+            return process;
+        } catch (e) {
+            throw new Error('Could not resume the process.');
         }
     };
 
