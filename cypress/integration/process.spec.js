@@ -1350,8 +1350,8 @@ describe('Process tests', function() {
 
             // Navigate to process and verify cancel button
             cy.goToPath(`/processes/${containerRequest.uuid}`);
-            cy.waitForDom();
             cy.get('[data-cy=process-details]').should('contain', crOnHold);
+            cy.waitForDom();
             cy.get('[data-cy=process-details]').find('button').contains('Run');
             cy.get('[data-cy=process-cancel]').should('not.exist');
         });
