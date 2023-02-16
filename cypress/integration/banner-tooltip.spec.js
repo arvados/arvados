@@ -65,11 +65,10 @@ describe('Collection panel tests', function () {
                 res.body.Workbench.BannerUUID = collectionUUID;
             });
         });
+        cy.wait(8000);
     });
 
     it('should re-show the banner', () => {
-        cy.wait(8000);
-
         cy.loginAs(adminUser);
 
         cy.get('[data-cy=confirmation-dialog-ok-btn]').click();
@@ -84,8 +83,6 @@ describe('Collection panel tests', function () {
 
 
     it('should show tooltips and remove tooltips as localStorage key is present', () => {
-        cy.wait(8000);
-
         cy.loginAs(adminUser);
 
         cy.get('[data-cy=side-panel-tree]').then(($el) => {
