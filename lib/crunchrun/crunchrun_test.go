@@ -1157,6 +1157,7 @@ func (s *TestSuite) TestStopOnSignal(c *C) {
 	s.executor.runFunc = func() int {
 		s.executor.created.Stdout.Write([]byte("foo\n"))
 		s.runner.SigChan <- syscall.SIGINT
+		time.Sleep(10 * time.Second)
 		return 0
 	}
 	s.testStopContainer(c)
@@ -1167,6 +1168,7 @@ func (s *TestSuite) TestStopOnArvMountDeath(c *C) {
 		s.executor.created.Stdout.Write([]byte("foo\n"))
 		s.runner.ArvMountExit <- nil
 		close(s.runner.ArvMountExit)
+		time.Sleep(10 * time.Second)
 		return 0
 	}
 	s.runner.ArvMountExit = make(chan error)
