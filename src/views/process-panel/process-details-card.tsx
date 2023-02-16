@@ -84,7 +84,10 @@ export const ProcessDetailsCard = withStyles(styles)(
         if (process.containerRequest.state === ContainerRequestState.UNCOMMITTED) {
             runAction = startProcess;
         } else if (process.containerRequest.state === ContainerRequestState.COMMITTED &&
-                    process.containerRequest.priority === 0) {
+                    process.containerRequest.priority === 0 &&
+                    // Don't show run button when container is present & running or cancelled
+                    !(process.container && (process.container.state === ContainerState.RUNNING ||
+                                            process.container.state === ContainerState.CANCELLED))) {
             runAction = resumeOnHoldWorkflow;
         }
 
