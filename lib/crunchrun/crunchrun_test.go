@@ -123,7 +123,7 @@ type stubExecutor struct {
 	stopErr     error
 	stopped     bool
 	closed      bool
-	runFunc     func()
+	runFunc     func() int
 	exit        chan int
 }
 
@@ -135,10 +135,14 @@ func (e *stubExecutor) LoadImage(imageId string, tarball string, container arvad
 func (e *stubExecutor) Runtime() string                 { return "stub" }
 func (e *stubExecutor) Version() string                 { return "stub " + cmd.Version.String() }
 func (e *stubExecutor) Create(spec containerSpec) error { e.created = spec; return e.createErr }
-func (e *stubExecutor) Start() error                    { e.exit = make(chan int, 1); go e.runFunc(); return e.startErr }
-func (e *stubExecutor) CgroupID() string                { return "cgroupid" }
-func (e *stubExecutor) Stop() error                     { e.stopped = true; go func() { e.exit <- -1 }(); return e.stopErr }
-func (e *stubExecutor) Close()                          { e.closed = true }
+func (e *stubExecutor) Start() error {
+	e.exit = make(chan int, 1)
+	go func() { e.exit <- e.runFunc() }()
+	return e.startErr
+}
+func (e *stubExecutor) CgroupID() string { return "cgroupid" }
+func (e *stubExecutor) Stop() error      { e.stopped = true; go func() { e.exit <- -1 }(); return e.stopErr }
+func (e *stubExecutor) Close()           { e.closed = true }
 func (e *stubExecutor) Wait(context.Context) (int, error) {
 	return <-e.exit, e.waitErr
 }
@@ -543,9 +547,9 @@ func dockerLog(fd byte, msg string) []byte {
 }
 
 func (s *TestSuite) TestRunContainer(c *C) {
-	s.executor.runFunc = func() {
+	s.executor.runFunc = func() int {
 		fmt.Fprintf(s.executor.created.Stdout, "Hello world\n")
-		s.executor.exit <- 0
+		return 0
 	}
 
 	var logs TestLogs
@@ -646,7 +650,7 @@ func (s *TestSuite) TestUpdateContainerCancelled(c *C) {
 
 // Used by the TestFullRun*() test below to DRY up boilerplate setup to do full
 // dress rehearsal of the Run() function, starting from a JSON container record.
-func (s *TestSuite) fullRunHelper(c *C, record string, extraMounts []string, exitCode int, fn func()) (*ArvTestClient, *ContainerRunner, string) {
+func (s *TestSuite) fullRunHelper(c *C, record string, extraMounts []string, fn func() int) (*ArvTestClient, *ContainerRunner, string) {
 	err := json.Unmarshal([]byte(record), &s.api.Container)
 	c.Assert(err, IsNil)
 	initialState := s.api.Container.State
@@ -660,10 +664,7 @@ func (s *TestSuite) fullRunHelper(c *C, record string, extraMounts []string, exi
 	c.Assert(err, IsNil)
 	c.Logf("SecretMounts decoded %v json %q", sm, secretMounts)
 
-	s.executor.runFunc = func() {
-		fn()
-		s.executor.exit <- exitCode
-	}
+	s.executor.runFunc = fn
 
 	s.runner.statInterval = 100 * time.Millisecond
 	s.runner.containerWatchdogInterval = time.Second
@@ -734,7 +735,7 @@ func (s *TestSuite) TestFullRunHello(c *C) {
     "runtime_constraints": {"vcpus":1,"ram":1000000},
     "state": "Locked",
     "output_storage_classes": ["default"]
-}`, nil, 0, func() {
+}`, nil, func() int {
 		c.Check(s.executor.created.Command, DeepEquals, []string{"echo", "hello world"})
 		c.Check(s.executor.created.Image, Equals, "sha256:d8309758b8fe2c81034ffc8a10c36460b77db7bc5e7b448c4e5b684f9d95a678")
 		c.Check(s.executor.created.Env, DeepEquals, map[string]string{"foo": "bar", "baz": "waz"})
@@ -744,6 +745,7 @@ func (s *TestSuite) TestFullRunHello(c *C) {
 		c.Check(s.executor.created.EnableNetwork, Equals, false)
 		c.Check(s.executor.created.CUDADeviceCount, Equals, 0)
 		fmt.Fprintln(s.executor.created.Stdout, "hello world")
+		return 0
 	})
 
 	c.Check(s.api.CalledWith("container.exit_code", 0), NotNil)
@@ -766,8 +768,9 @@ func (s *TestSuite) TestRunAlreadyRunning(c *C) {
     "runtime_constraints": {},
     "scheduling_parameters":{"max_run_time": 1},
     "state": "Running"
-}`, nil, 2, func() {
+}`, nil, func() int {
 		ran = true
+		return 2
 	})
 	c.Check(s.api.CalledWith("container.state", "Cancelled"), IsNil)
 	c.Check(s.api.CalledWith("container.state", "Complete"), IsNil)
@@ -819,10 +822,11 @@ func (s *TestSuite) TestSpotInterruptionNotice(c *C) {
     "priority": 1,
     "runtime_constraints": {},
     "state": "Locked"
-}`, nil, 0, func() {
+}`, nil, func() int {
 		time.Sleep(time.Second)
 		stoptime = time.Now().Add(time.Minute).UTC()
 		time.Sleep(time.Second)
+		return 0
 	})
 	c.Check(s.api.Logs["crunch-run"].String(), Matches, `(?ms).*Checking for spot interruptions every 250ms using instance metadata at http://.*`)
 	c.Check(s.api.Logs["crunch-run"].String(), Matches, `(?ms).*Error checking spot interruptions: 503 Service Unavailable.*`)
@@ -841,8 +845,9 @@ func (s *TestSuite) TestRunTimeExceeded(c *C) {
     "runtime_constraints": {},
     "scheduling_parameters":{"max_run_time": 1},
     "state": "Locked"
-}`, nil, 0, func() {
+}`, nil, func() int {
 		time.Sleep(3 * time.Second)
+		return 0
 	})
 
 	c.Check(s.api.CalledWith("container.state", "Cancelled"), NotNil)
@@ -858,8 +863,9 @@ func (s *TestSuite) TestContainerWaitFails(c *C) {
     "output_path": "/tmp",
     "priority": 1,
     "state": "Locked"
-}`, nil, 0, func() {
+}`, nil, func() int {
 		s.executor.waitErr = errors.New("Container is not running")
+		return 0
 	})
 
 	c.Check(s.api.CalledWith("container.state", "Cancelled"), NotNil)
@@ -877,8 +883,9 @@ func (s *TestSuite) TestCrunchstat(c *C) {
 		"priority": 1,
 		"runtime_constraints": {},
 		"state": "Locked"
-	}`, nil, 0, func() {
+	}`, nil, func() int {
 		time.Sleep(time.Second)
+		return 0
 	})
 
 	c.Check(s.api.CalledWith("container.exit_code", 0), NotNil)
@@ -910,10 +917,10 @@ func (s *TestSuite) TestNodeInfoLog(c *C) {
 		"priority": 1,
 		"runtime_constraints": {},
 		"state": "Locked"
-	}`, nil, 0,
-		func() {
-			time.Sleep(time.Second)
-		})
+	}`, nil, func() int {
+		time.Sleep(time.Second)
+		return 0
+	})
 
 	c.Check(s.api.CalledWith("container.exit_code", 0), NotNil)
 	c.Check(s.api.CalledWith("container.state", "Complete"), NotNil)
@@ -944,9 +951,9 @@ func (s *TestSuite) TestLogVersionAndRuntime(c *C) {
 		"priority": 1,
 		"runtime_constraints": {},
 		"state": "Locked"
-	}`, nil, 0,
-		func() {
-		})
+	}`, nil, func() int {
+		return 0
+	})
 
 	c.Assert(s.api.Logs["crunch-run"], NotNil)
 	c.Check(s.api.Logs["crunch-run"].String(), Matches, `(?ms).*crunch-run \S+ \(go\S+\) start.*`)
@@ -968,11 +975,11 @@ func (s *TestSuite) TestCommitNodeInfoBeforeStart(c *C) {
 		"runtime_constraints": {},
 		"state": "Locked",
 		"uuid": "zzzzz-dz642-202301121543210"
-	}`, nil, 0,
-		func() {
-			collection_create = s.api.CalledWith("ensure_unique_name", true)
-			container_update = s.api.CalledWith("container.state", "Running")
-		})
+	}`, nil, func() int {
+		collection_create = s.api.CalledWith("ensure_unique_name", true)
+		container_update = s.api.CalledWith("container.state", "Running")
+		return 0
+	})
 
 	c.Assert(collection_create, NotNil)
 	log_collection := collection_create["collection"].(arvadosclient.Dict)
@@ -1002,9 +1009,10 @@ func (s *TestSuite) TestContainerRecordLog(c *C) {
 		"priority": 1,
 		"runtime_constraints": {},
 		"state": "Locked"
-	}`, nil, 0,
-		func() {
+	}`, nil,
+		func() int {
 			time.Sleep(time.Second)
+			return 0
 		})
 
 	c.Check(s.api.CalledWith("container.exit_code", 0), NotNil)
@@ -1025,9 +1033,10 @@ func (s *TestSuite) TestFullRunStderr(c *C) {
     "priority": 1,
     "runtime_constraints": {},
     "state": "Locked"
-}`, nil, 1, func() {
+}`, nil, func() int {
 		fmt.Fprintln(s.executor.created.Stdout, "hello")
 		fmt.Fprintln(s.executor.created.Stderr, "world")
+		return 1
 	})
 
 	final := s.api.CalledWith("container.state", "Complete")
@@ -1050,8 +1059,9 @@ func (s *TestSuite) TestFullRunDefaultCwd(c *C) {
     "priority": 1,
     "runtime_constraints": {},
     "state": "Locked"
-}`, nil, 0, func() {
+}`, nil, func() int {
 		fmt.Fprintf(s.executor.created.Stdout, "workdir=%q", s.executor.created.WorkingDir)
+		return 0
 	})
 
 	c.Check(s.api.CalledWith("container.exit_code", 0), NotNil)
@@ -1071,8 +1081,9 @@ func (s *TestSuite) TestFullRunSetCwd(c *C) {
     "priority": 1,
     "runtime_constraints": {},
     "state": "Locked"
-}`, nil, 0, func() {
+}`, nil, func() int {
 		fmt.Fprintln(s.executor.created.Stdout, s.executor.created.WorkingDir)
+		return 0
 	})
 
 	c.Check(s.api.CalledWith("container.exit_code", 0), NotNil)
@@ -1092,8 +1103,9 @@ func (s *TestSuite) TestFullRunSetOutputStorageClasses(c *C) {
     "runtime_constraints": {},
     "state": "Locked",
     "output_storage_classes": ["foo", "bar"]
-}`, nil, 0, func() {
+}`, nil, func() int {
 		fmt.Fprintln(s.executor.created.Stdout, s.executor.created.WorkingDir)
+		return 0
 	})
 
 	c.Check(s.api.CalledWith("container.exit_code", 0), NotNil)
@@ -1115,8 +1127,9 @@ func (s *TestSuite) TestEnableCUDADeviceCount(c *C) {
     "runtime_constraints": {"cuda": {"device_count": 2}},
     "state": "Locked",
     "output_storage_classes": ["foo", "bar"]
-}`, nil, 0, func() {
+}`, nil, func() int {
 		fmt.Fprintln(s.executor.created.Stdout, "ok")
+		return 0
 	})
 	c.Check(s.executor.created.CUDADeviceCount, Equals, 2)
 }
@@ -1133,25 +1146,28 @@ func (s *TestSuite) TestEnableCUDAHardwareCapability(c *C) {
     "runtime_constraints": {"cuda": {"hardware_capability": "foo"}},
     "state": "Locked",
     "output_storage_classes": ["foo", "bar"]
-}`, nil, 0, func() {
+}`, nil, func() int {
 		fmt.Fprintln(s.executor.created.Stdout, "ok")
+		return 0
 	})
 	c.Check(s.executor.created.CUDADeviceCount, Equals, 0)
 }
 
 func (s *TestSuite) TestStopOnSignal(c *C) {
-	s.executor.runFunc = func() {
+	s.executor.runFunc = func() int {
 		s.executor.created.Stdout.Write([]byte("foo\n"))
 		s.runner.SigChan <- syscall.SIGINT
+		return 0
 	}
 	s.testStopContainer(c)
 }
 
 func (s *TestSuite) TestStopOnArvMountDeath(c *C) {
-	s.executor.runFunc = func() {
+	s.executor.runFunc = func() int {
 		s.executor.created.Stdout.Write([]byte("foo\n"))
 		s.runner.ArvMountExit <- nil
 		close(s.runner.ArvMountExit)
+		return 0
 	}
 	s.runner.ArvMountExit = make(chan error)
 	s.testStopContainer(c)
@@ -1210,8 +1226,9 @@ func (s *TestSuite) TestFullRunSetEnv(c *C) {
     "priority": 1,
     "runtime_constraints": {},
     "state": "Locked"
-}`, nil, 0, func() {
+}`, nil, func() int {
 		fmt.Fprintf(s.executor.created.Stdout, "%v", s.executor.created.Env)
+		return 0
 	})
 
 	c.Check(s.api.CalledWith("container.exit_code", 0), NotNil)
@@ -1622,8 +1639,9 @@ func (s *TestSuite) TestStdout(c *C) {
 		"state": "Locked"
 	}`
 
-	s.fullRunHelper(c, helperRecord, nil, 0, func() {
+	s.fullRunHelper(c, helperRecord, nil, func() int {
 		fmt.Fprintln(s.executor.created.Stdout, s.executor.created.Env["FROBIZ"])
+		return 0
 	})
 
 	c.Check(s.api.CalledWith("container.exit_code", 0), NotNil)
@@ -1632,7 +1650,7 @@ func (s *TestSuite) TestStdout(c *C) {
 }
 
 // Used by the TestStdoutWithWrongPath*()
-func (s *TestSuite) stdoutErrorRunHelper(c *C, record string, fn func()) (*ArvTestClient, *ContainerRunner, error) {
+func (s *TestSuite) stdoutErrorRunHelper(c *C, record string, fn func() int) (*ArvTestClient, *ContainerRunner, error) {
 	err := json.Unmarshal([]byte(record), &s.api.Container)
 	c.Assert(err, IsNil)
 	s.executor.runFunc = fn
@@ -1648,7 +1666,7 @@ func (s *TestSuite) TestStdoutWithWrongPath(c *C) {
     "mounts": {"/tmp": {"kind": "tmp"}, "stdout": {"kind": "file", "path":"/tmpa.out"} },
     "output_path": "/tmp",
     "state": "Locked"
-}`, func() {})
+}`, func() int { return 0 })
 	c.Check(err, ErrorMatches, ".*Stdout path does not start with OutputPath.*")
 }
 
@@ -1657,7 +1675,7 @@ func (s *TestSuite) TestStdoutWithWrongKindTmp(c *C) {
     "mounts": {"/tmp": {"kind": "tmp"}, "stdout": {"kind": "tmp", "path":"/tmp/a.out"} },
     "output_path": "/tmp",
     "state": "Locked"
-}`, func() {})
+}`, func() int { return 0 })
 	c.Check(err, ErrorMatches, ".*unsupported mount kind 'tmp' for stdout.*")
 }
 
@@ -1666,7 +1684,7 @@ func (s *TestSuite) TestStdoutWithWrongKindCollection(c *C) {
     "mounts": {"/tmp": {"kind": "tmp"}, "stdout": {"kind": "collection", "path":"/tmp/a.out"} },
     "output_path": "/tmp",
     "state": "Locked"
-}`, func() {})
+}`, func() int { return 0 })
 	c.Check(err, ErrorMatches, ".*unsupported mount kind 'collection' for stdout.*")
 }
 
@@ -1681,9 +1699,9 @@ func (s *TestSuite) TestFullRunWithAPI(c *C) {
     "priority": 1,
     "runtime_constraints": {"API": true},
     "state": "Locked"
-}`, nil, 0, func() {
+}`, nil, func() int {
 		c.Check(s.executor.created.Env["ARVADOS_API_HOST"], Equals, os.Getenv("ARVADOS_API_HOST"))
-		s.executor.exit <- 3
+		return 3
 	})
 	c.Check(s.api.CalledWith("container.exit_code", 3), NotNil)
 	c.Check(s.api.CalledWith("container.state", "Complete"), NotNil)
@@ -1703,8 +1721,9 @@ func (s *TestSuite) TestFullRunSetOutput(c *C) {
     "priority": 1,
     "runtime_constraints": {"API": true},
     "state": "Locked"
-}`, nil, 0, func() {
+}`, nil, func() int {
 		s.api.Container.Output = arvadostest.DockerImage112PDH
+		return 0
 	})
 
 	c.Check(s.api.CalledWith("container.exit_code", 0), NotNil)
@@ -1718,9 +1737,9 @@ func (s *TestSuite) TestArvMountRuntimeStatusWarning(c *C) {
 		ioutil.WriteFile(s.runner.ArvMountPoint+"/by_id/README", nil, 0666)
 		return s.runner.ArvMountCmd([]string{"bash", "-c", "echo >&2 Test: Keep write error: I am a teapot; sleep 3"}, "")
 	}
-	s.executor.runFunc = func() {
+	s.executor.runFunc = func() int {
 		time.Sleep(time.Second)
-		s.executor.exit <- 137
+		return 137
 	}
 	record := `{
     "command": ["sleep", "1"],
@@ -1766,8 +1785,9 @@ func (s *TestSuite) TestStdoutWithExcludeFromOutputMountPointUnderOutputDir(c *C
 
 	extraMounts := []string{"a3e8f74c6f101eae01fa08bfb4e49b3a+54"}
 
-	s.fullRunHelper(c, helperRecord, extraMounts, 0, func() {
+	s.fullRunHelper(c, helperRecord, extraMounts, func() int {
 		fmt.Fprintln(s.executor.created.Stdout, s.executor.created.Env["FROBIZ"])
+		return 0
 	})
 
 	c.Check(s.api.CalledWith("container.exit_code", 0), NotNil)
@@ -1802,8 +1822,9 @@ func (s *TestSuite) TestStdoutWithMultipleMountPointsUnderOutputDir(c *C) {
 		"a0def87f80dd594d4675809e83bd4f15+367/subdir1/subdir2/file2_in_subdir2.txt",
 	}
 
-	api, _, realtemp := s.fullRunHelper(c, helperRecord, extraMounts, 0, func() {
+	api, _, realtemp := s.fullRunHelper(c, helperRecord, extraMounts, func() int {
 		fmt.Fprintln(s.executor.created.Stdout, s.executor.created.Env["FROBIZ"])
+		return 0
 	})
 
 	c.Check(s.executor.created.BindMounts, DeepEquals, map[string]bindmount{
@@ -1859,8 +1880,9 @@ func (s *TestSuite) TestStdoutWithMountPointsUnderOutputDirDenormalizedManifest(
 		"b0def87f80dd594d4675809e83bd4f15+367/subdir1/file2_in_subdir1.txt",
 	}
 
-	s.fullRunHelper(c, helperRecord, extraMounts, 0, func() {
+	s.fullRunHelper(c, helperRecord, extraMounts, func() int {
 		fmt.Fprintln(s.executor.created.Stdout, s.executor.created.Env["FROBIZ"])
+		return 0
 	})
 
 	c.Check(s.api.CalledWith("container.exit_code", 0), NotNil)
@@ -1896,8 +1918,9 @@ func (s *TestSuite) TestOutputError(c *C) {
 		"runtime_constraints": {},
 		"state": "Locked"
 	}`
-	s.fullRunHelper(c, helperRecord, nil, 0, func() {
+	s.fullRunHelper(c, helperRecord, nil, func() int {
 		os.Symlink("/etc/hosts", s.runner.HostOutputDir+"/baz")
+		return 0
 	})
 
 	c.Check(s.api.CalledWith("container.state", "Cancelled"), NotNil)
@@ -1924,8 +1947,9 @@ func (s *TestSuite) TestStdinCollectionMountPoint(c *C) {
 		"b0def87f80dd594d4675809e83bd4f15+367/file1_in_main.txt",
 	}
 
-	api, _, _ := s.fullRunHelper(c, helperRecord, extraMounts, 0, func() {
+	api, _, _ := s.fullRunHelper(c, helperRecord, extraMounts, func() int {
 		fmt.Fprintln(s.executor.created.Stdout, s.executor.created.Env["FROBIZ"])
+		return 0
 	})
 
 	c.Check(api.CalledWith("container.exit_code", 0), NotNil)
@@ -1959,8 +1983,9 @@ func (s *TestSuite) TestStdinJsonMountPoint(c *C) {
 		"state": "Locked"
 	}`
 
-	api, _, _ := s.fullRunHelper(c, helperRecord, nil, 0, func() {
+	api, _, _ := s.fullRunHelper(c, helperRecord, nil, func() int {
 		fmt.Fprintln(s.executor.created.Stdout, s.executor.created.Env["FROBIZ"])
+		return 0
 	})
 
 	c.Check(api.CalledWith("container.exit_code", 0), NotNil)
@@ -1990,9 +2015,10 @@ func (s *TestSuite) TestStderrMount(c *C) {
     "priority": 1,
     "runtime_constraints": {},
     "state": "Locked"
-}`, nil, 1, func() {
+}`, nil, func() int {
 		fmt.Fprintln(s.executor.created.Stdout, "hello")
 		fmt.Fprintln(s.executor.created.Stderr, "oops")
+		return 1
 	})
 
 	final := api.CalledWith("container.state", "Complete")
@@ -2042,7 +2068,7 @@ func (s *TestSuite) TestFullBrokenDocker(c *C) {
     "priority": 1,
     "runtime_constraints": {},
     "state": "Locked"
-}`, nil, 0, func() {})
+}`, nil, func() int { return 0 })
 		c.Check(s.api.CalledWith("container.state", nextState), NotNil)
 		c.Check(s.api.Logs["crunch-run"].String(), Matches, "(?ms).*unable to run containers.*")
 		if s.runner.brokenNodeHook != "" {
@@ -2073,7 +2099,7 @@ func (s *TestSuite) TestBadCommand(c *C) {
     "priority": 1,
     "runtime_constraints": {},
     "state": "Locked"
-}`, nil, 0, func() {})
+}`, nil, func() int { return 0 })
 		c.Check(s.api.CalledWith("container.state", "Cancelled"), NotNil)
 		c.Check(s.api.Logs["crunch-run"].String(), Matches, "(?ms).*Possible causes:.*is missing.*")
 	}
@@ -2096,10 +2122,11 @@ func (s *TestSuite) TestSecretTextMountPoint(c *C) {
 		"state": "Locked"
 	}`
 
-	s.fullRunHelper(c, helperRecord, nil, 0, func() {
+	s.fullRunHelper(c, helperRecord, nil, func() int {
 		content, err := ioutil.ReadFile(s.runner.HostOutputDir + "/secret.conf")
 		c.Check(err, IsNil)
 		c.Check(string(content), Equals, "mypassword")
+		return 0
 	})
 
 	c.Check(s.api.CalledWith("container.exit_code", 0), NotNil)
@@ -2125,10 +2152,11 @@ func (s *TestSuite) TestSecretTextMountPoint(c *C) {
 	}`
 
 	s.SetUpTest(c)
-	s.fullRunHelper(c, helperRecord, nil, 0, func() {
+	s.fullRunHelper(c, helperRecord, nil, func() int {
 		content, err := ioutil.ReadFile(s.runner.HostOutputDir + "/secret.conf")
 		c.Check(err, IsNil)
 		c.Check(string(content), Equals, "mypassword")
+		return 0
 	})
 
 	c.Check(s.api.CalledWith("container.exit_code", 0), NotNil)
@@ -2154,7 +2182,7 @@ func (s *TestSuite) TestSecretTextMountPoint(c *C) {
 	}`
 
 	s.SetUpTest(c)
-	_, _, realtemp := s.fullRunHelper(c, helperRecord, nil, 0, func() {
+	_, _, realtemp := s.fullRunHelper(c, helperRecord, nil, func() int {
 		// secret.conf should be provisioned as a separate
 		// bind mount, i.e., it should not appear in the
 		// (fake) fuse filesystem as viewed from the host.
@@ -2164,6 +2192,7 @@ func (s *TestSuite) TestSecretTextMountPoint(c *C) {
 		}
 		err = ioutil.WriteFile(s.runner.HostOutputDir+"/.arvados#collection", []byte(`{"manifest_text":". acbd18db4cc2f85cedef654fccc4a4d8+3 0:3:foo.txt\n"}`), 0700)
 		c.Check(err, IsNil)
+		return 0
 	})
 
 	content, err := ioutil.ReadFile(realtemp + "/text1/mountdata.text")
