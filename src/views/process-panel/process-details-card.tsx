@@ -17,12 +17,10 @@ import {
 } from '@material-ui/core';
 import { ArvadosTheme } from 'common/custom-theme';
 import { CloseIcon, MoreOptionsIcon, ProcessIcon, StartIcon, StopIcon } from 'components/icon/icon';
-import { Process } from 'store/processes/process';
+import { Process, isProcessRunnable, isProcessResumable, isProcessCancelable } from 'store/processes/process';
 import { MPVPanelProps } from 'components/multi-panel-view/multi-panel-view';
 import { ProcessDetailsAttributes } from './process-details-attributes';
 import { ProcessStatus } from 'views-components/data-explorer/renderers';
-import { ContainerState } from 'models/container';
-import { ContainerRequestState } from 'models/container-request';
 import classNames from 'classnames';
 
 type CssRules = 'card' | 'content' | 'title' | 'header' | 'cancelButton' | 'avatar' | 'iconHeader' | 'actionButton';
@@ -85,13 +83,9 @@ type ProcessDetailsCardProps = ProcessDetailsCardDataProps & WithStyles<CssRules
 export const ProcessDetailsCard = withStyles(styles)(
     ({ cancelProcess, startProcess, resumeOnHoldWorkflow, onContextMenu, classes, process, doHidePanel, panelName }: ProcessDetailsCardProps) => {
         let runAction: ((uuid: string) => void) | undefined = undefined;
-        if (process.containerRequest.state === ContainerRequestState.UNCOMMITTED) {
+        if (isProcessRunnable(process)) {
             runAction = startProcess;
-        } else if (process.containerRequest.state === ContainerRequestState.COMMITTED &&
-                    process.containerRequest.priority === 0 &&
-                    // Don't show run button when container is present & running or cancelled
-                    !(process.container && (process.container.state === ContainerState.RUNNING ||
-                                            process.container.state === ContainerState.CANCELLED))) {
+        } else if (isProcessResumable(process)) {
             runAction = resumeOnHoldWorkflow;
         }
 
@@ -129,12 +123,7 @@ export const ProcessDetailsCard = withStyles(styles)(
                                 <StartIcon />
                                 Run
                             </Button>}
-                        {process.container &&
-                            (process.container.state === ContainerState.QUEUED ||
-                            process.container.state === ContainerState.LOCKED ||
-                            process.container.state === ContainerState.RUNNING) &&
-                            process.containerRequest.priority !== null &&
-                            process.containerRequest.priority > 0 &&
+                        {isProcessCancelable(process) &&
                             <Button
                                 data-cy="process-cancel-button"
                                 variant="outlined"

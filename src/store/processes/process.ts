@@ -161,6 +161,28 @@ export const getProcessStatus = ({ containerRequest, container }: Process): Proc
     }
 };
 
+export const isProcessRunnable = ({ containerRequest }: Process): boolean => (
+    containerRequest.state === ContainerRequestState.UNCOMMITTED
+);
+
+export const isProcessResumable = ({ containerRequest, container }: Process): boolean => (
+    containerRequest.state === ContainerRequestState.COMMITTED &&
+    containerRequest.priority === 0 &&
+    // Don't show run button when container is present & running or cancelled
+    !(container && (container.state === ContainerState.RUNNING ||
+                            container.state === ContainerState.CANCELLED ||
+                            container.state === ContainerState.COMPLETE))
+);
+
+export const isProcessCancelable = ({ containerRequest, container }: Process): boolean => (
+    containerRequest.priority !== null &&
+    containerRequest.priority > 0 &&
+    container !== undefined &&
+        (container.state === ContainerState.QUEUED ||
+        container.state === ContainerState.LOCKED ||
+        container.state === ContainerState.RUNNING)
+);
+
 const isSubprocess = (containerUuid: string) => (resource: Resource) =>
     resource.kind === ResourceKind.CONTAINER_REQUEST
     && (resource as ContainerRequestResource).requestingContainerUuid === containerUuid;
