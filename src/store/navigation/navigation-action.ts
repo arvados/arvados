@@ -42,7 +42,8 @@ export const navigateTo = (uuid: string) =>
                 dispatch<any>(navigateToAdminVirtualMachines);
                 return;
             case ResourceKind.WORKFLOW:
-                dispatch<any>(openDetailsPanel(uuid));
+                dispatch<any>(pushOrGoto(getNavUrl(uuid, getState().auth)));
+                // dispatch<any>(openDetailsPanel(uuid));
                 return;
         }
 

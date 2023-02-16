@@ -41,6 +41,7 @@ import { SharedWithMePanel } from 'views/shared-with-me-panel/shared-with-me-pan
 import { RunProcessPanel } from 'views/run-process-panel/run-process-panel';
 import SplitterLayout from 'react-splitter-layout';
 import { WorkflowPanel } from 'views/workflow-panel/workflow-panel';
+import { RegisteredWorkflowPanel } from 'views/workflow-panel/registered-workflow-panel';
 import { SearchResultsPanel } from 'views/search-results-panel/search-results-panel';
 import { SshKeyPanel } from 'views/ssh-key-panel/ssh-key-panel';
 import { SshKeyAdminPanel } from 'views/ssh-key-panel/ssh-key-admin-panel';
@@ -166,6 +167,7 @@ let routes = <>
     <Route path={Routes.TRASH} component={TrashPanel} />
     <Route path={Routes.SHARED_WITH_ME} component={SharedWithMePanel} />
     <Route path={Routes.RUN_PROCESS} component={RunProcessPanel} />
+    <Route path={Routes.REGISTEREDWORKFLOW} component={RegisteredWorkflowPanel} />
     <Route path={Routes.WORKFLOWS} component={WorkflowPanel} />
     <Route path={Routes.SEARCH_RESULTS} component={SearchResultsPanel} />
     <Route path={Routes.VIRTUAL_MACHINES_USER} component={VirtualMachineUserPanel} />
@@ -195,22 +197,22 @@ routes = React.createElement(React.Fragment, null, pluginConfig.centerPanelList.
 const applyCollapsedState = (isCollapsed) => {
     const rightPanel: Element = document.getElementsByClassName('layout-pane')[1]
     const totalWidth: number = document.getElementsByClassName('splitter-layout')[0]?.clientWidth
-    const rightPanelExpandedWidth = ((totalWidth-COLLAPSE_ICON_SIZE)) / (totalWidth/100) 
-    if(rightPanel) {
+    const rightPanelExpandedWidth = ((totalWidth - COLLAPSE_ICON_SIZE)) / (totalWidth / 100)
+    if (rightPanel) {
         rightPanel.setAttribute('style', `width: ${isCollapsed ? rightPanelExpandedWidth : getSplitterInitialSize()}%`)
     }
     const splitter = document.getElementsByClassName('layout-splitter')[0]
     isCollapsed ? splitter?.classList.add('layout-splitter-disabled') : splitter?.classList.remove('layout-splitter-disabled')
-    
+
 }
 
 export const WorkbenchPanel =
-    withStyles(styles)((props: WorkbenchPanelProps) =>{
+    withStyles(styles)((props: WorkbenchPanelProps) => {
 
         //panel size will not scale automatically on window resize, so we do it manually
-        window.addEventListener('resize', ()=>applyCollapsedState(props.sidePanelIsCollapsed))
+        window.addEventListener('resize', () => applyCollapsedState(props.sidePanelIsCollapsed))
         applyCollapsedState(props.sidePanelIsCollapsed)
-        
+
         return <Grid container item xs className={props.classes.root}>
             {props.sessionIdleTimeout > 0 && <AutoLogout />}
             <Grid container item xs className={props.classes.container}>
@@ -296,5 +298,6 @@ export const WorkbenchPanel =
             <WebDavS3InfoDialog />
             <Banner />
             {React.createElement(React.Fragment, null, pluginConfig.dialogs)}
-        </Grid>}
+        </Grid>
+    }
     );

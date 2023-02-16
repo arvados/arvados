@@ -31,6 +31,7 @@ export const Routes = {
     VIRTUAL_MACHINES_ADMIN: '/virtual-machines-admin',
     VIRTUAL_MACHINES_USER: '/virtual-machines-user',
     WORKFLOWS: '/workflows',
+    REGISTEREDWORKFLOW: `/workflows/:id(${RESOURCE_UUID_PATTERN})`,
     SEARCH_RESULTS: '/search-results',
     SSH_KEYS_ADMIN: `/ssh-keys-admin`,
     SSH_KEYS_USER: `/ssh-keys-user`,
@@ -61,6 +62,8 @@ export const getResourceUrl = (uuid: string) => {
             return getCollectionUrl(uuid);
         case ResourceKind.PROCESS:
             return getProcessUrl(uuid);
+        case ResourceKind.WORKFLOW:
+            return getWorkflowUrl(uuid);
         default:
             return undefined;
     }
@@ -77,12 +80,12 @@ export const getNavUrl = (uuid: string, config: FederationConfig, includeToken: 
     } else if (config.remoteHostsConfig[cls]) {
         let u: URL;
         if (config.remoteHostsConfig[cls].workbench2Url) {
-	    /* NOTE: wb2 presently doesn't support passing api_token
-	       to arbitrary page to set credentials, only through
-	       api-token route.  So for navigation to work, user needs
-	       to already be logged in.  In the future we want to just
-	       request the records and display in the current
-	       workbench instance making this redirect unnecessary. */
+            /* NOTE: wb2 presently doesn't support passing api_token
+               to arbitrary page to set credentials, only through
+               api-token route.  So for navigation to work, user needs
+               to already be logged in.  In the future we want to just
+               request the records and display in the current
+               workbench instance making this redirect unnecessary. */
             u = new URL(config.remoteHostsConfig[cls].workbench2Url);
         } else {
             u = new URL(config.remoteHostsConfig[cls].workbenchUrl);
@@ -99,6 +102,8 @@ export const getNavUrl = (uuid: string, config: FederationConfig, includeToken: 
 
 
 export const getProcessUrl = (uuid: string) => `/processes/${uuid}`;
+
+export const getWorkflowUrl = (uuid: string) => `/workflows/${uuid}`;
 
 export const getGroupUrl = (uuid: string) => `/group/${uuid}`;
 
@@ -119,6 +124,9 @@ export const matchTrashRoute = (route: string) =>
 
 export const matchAllProcessesRoute = (route: string) =>
     matchPath(route, { path: Routes.ALL_PROCESSES });
+
+export const matchRegisteredWorkflowRoute = (route: string) =>
+    matchPath<ResourceRouteParams>(route, { path: Routes.REGISTEREDWORKFLOW });
 
 export const matchProjectRoute = (route: string) =>
     matchPath<ResourceRouteParams>(route, { path: Routes.PROJECTS });

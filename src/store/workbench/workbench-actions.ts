@@ -588,6 +588,12 @@ export const loadProcess = (uuid: string) =>
         }
     });
 
+export const loadRegisteredWorkflow = (uuid: string) =>
+    handleFirstTimeLoad(async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
+        const workflow = await services.workflowService.get(uuid);
+        dispatch<any>(updateResources([workflow]));
+    });
+
 export const updateProcess =
     (data: processUpdateActions.ProcessUpdateFormDialogData) =>
         async (dispatch: Dispatch) => {
