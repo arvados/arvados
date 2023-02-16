@@ -68,9 +68,9 @@ describe('Collection panel tests', function () {
     });
 
     it('should re-show the banner', () => {
-        cy.loginAs(adminUser);
+        cy.wait(8000);
 
-        cy.wait(2000);
+        cy.loginAs(adminUser);
 
         cy.get('[data-cy=confirmation-dialog-ok-btn]').click();
 
@@ -84,9 +84,9 @@ describe('Collection panel tests', function () {
 
 
     it('should show tooltips and remove tooltips as localStorage key is present', () => {
-        cy.loginAs(adminUser);
+        cy.wait(8000);
 
-        cy.wait(2000);
+        cy.loginAs(adminUser);
 
         cy.get('[data-cy=side-panel-tree]').then(($el) => {
             const el = $el.get(0) //native DOM element
