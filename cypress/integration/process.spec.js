@@ -1252,8 +1252,8 @@ describe('Process tests', function() {
             cy.goToPath(`/processes/${containerRequest.uuid}`);
             cy.waitForDom();
             cy.get('[data-cy=process-details]').should('contain', crUncommitted);
-            cy.get('[data-cy=process-details]').find('button').contains('Run');
-            cy.get('[data-cy=process-cancel]').should('not.exist');
+            cy.get('[data-cy=process-run-button]').should('exist');
+            cy.get('[data-cy=process-cancel-button]').should('not.exist');
         });
 
         // Queued container
@@ -1286,7 +1286,7 @@ describe('Process tests', function() {
             cy.goToPath(`/processes/${containerRequest.uuid}`);
             cy.waitForDom();
             cy.get('[data-cy=process-details]').should('contain', crQueued);
-            cy.get('[data-cy=process-cancel]').contains('Cancel');
+            cy.get('[data-cy=process-cancel-button]').contains('Cancel');
         });
 
         // Locked container
@@ -1319,7 +1319,7 @@ describe('Process tests', function() {
             cy.goToPath(`/processes/${containerRequest.uuid}`);
             cy.waitForDom();
             cy.get('[data-cy=process-details]').should('contain', crLocked);
-            cy.get('[data-cy=process-cancel]').contains('Cancel');
+            cy.get('[data-cy=process-cancel-button]').contains('Cancel');
         });
 
         // On Hold container
@@ -1350,10 +1350,10 @@ describe('Process tests', function() {
 
             // Navigate to process and verify cancel button
             cy.goToPath(`/processes/${containerRequest.uuid}`);
-            cy.get('[data-cy=process-details]').should('contain', crOnHold);
             cy.waitForDom();
-            cy.get('[data-cy=process-details]').find('button').contains('Run');
-            cy.get('[data-cy=process-cancel]').should('not.exist');
+            cy.get('[data-cy=process-details]').should('contain', crOnHold);
+            cy.get('[data-cy=process-run-button]').should('exist');
+            cy.get('[data-cy=process-cancel-button]').should('not.exist');
         });
     });
 

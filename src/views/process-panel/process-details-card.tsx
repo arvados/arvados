@@ -120,6 +120,7 @@ export const ProcessDetailsCard = withStyles(styles)(
                     <div>
                         {runAction !== undefined &&
                             <Button
+                                data-cy="process-run-button"
                                 variant="contained"
                                 size="small"
                                 color="primary"
@@ -135,7 +136,7 @@ export const ProcessDetailsCard = withStyles(styles)(
                             process.containerRequest.priority !== null &&
                             process.containerRequest.priority > 0 &&
                             <Button
-                                data-cy="process-cancel"
+                                data-cy="process-cancel-button"
                                 variant="outlined"
                                 size="small"
                                 color="primary"
