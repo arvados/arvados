@@ -7,20 +7,20 @@ import {
     StyleRulesCallback,
     WithStyles,
     withStyles,
-    IconButton,
     Grid,
     Tooltip,
     Typography,
-    Card
+    Card,
+    CardHeader
 } from '@material-ui/core';
 import { connect, DispatchProp } from "react-redux";
 import { RouteComponentProps } from 'react-router';
 import { ArvadosTheme } from 'common/custom-theme';
 import { RootState } from 'store/store';
-import { MoreOptionsIcon, WorkflowIcon } from 'components/icon/icon';
+import { WorkflowIcon } from 'components/icon/icon';
 import {
     WorkflowResource, parseWorkflowDefinition, getWorkflowInputs,
-    getWorkflowOutputs, getWorkflow, getIOParamId
+    getWorkflowOutputs, getWorkflow
 } from 'models/workflow';
 import { ProcessOutputCollectionFiles } from 'views/process-panel/process-output-collection-files';
 import { WorkflowDetailsAttributes } from 'views-components/details-panel/workflow-details';
@@ -29,6 +29,8 @@ import { openContextMenu, resourceUuidToContextMenuKind } from 'store/context-me
 import { MPVContainer, MPVPanelContent, MPVPanelState } from 'components/multi-panel-view/multi-panel-view';
 import { ProcessIOCard, ProcessIOCardType, ProcessIOParameter } from 'views/process-panel/process-io-card';
 import { formatInputData, formatOutputData } from 'store/process-panel/process-panel-actions';
+import { DetailsAttribute } from 'components/details-attribute/details-attribute';
+import { getPropertyChip } from "views-components/resource-properties-form/property-chip";
 
 type CssRules = 'root'
     | 'button'
@@ -43,7 +45,11 @@ type CssRules = 'root'
     | 'centeredLabel'
     | 'warningLabel'
     | 'collectionName'
-    | 'readOnlyIcon';
+    | 'readOnlyIcon'
+    | 'header'
+    | 'title'
+    | 'avatar'
+    | 'propertyTag';
 
 const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     root: {
@@ -98,7 +104,24 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     readOnlyIcon: {
         marginLeft: theme.spacing.unit,
         fontSize: 'small',
-    }
+    },
+    header: {
+        paddingTop: theme.spacing.unit,
+        paddingBottom: theme.spacing.unit,
+    },
+    title: {
+        overflow: 'hidden',
+        paddingTop: theme.spacing.unit * 0.5,
+        color: theme.customs.colors.green700,
+    },
+    avatar: {
+        alignSelf: 'flex-start',
+        paddingTop: theme.spacing.unit * 0.5
+    },
+    propertyTag: {
+        marginRight: theme.spacing.unit / 2,
+        marginBottom: theme.spacing.unit / 2
+    },
 });
 
 interface RegisteredWorkflowPanelDataProps {
@@ -106,6 +129,7 @@ interface RegisteredWorkflowPanelDataProps {
     workflowCollection: string;
     inputParams: ProcessIOParameter[];
     outputParams: ProcessIOParameter[];
+    gitprops: { [key: string]: string; };
 }
 
 type RegisteredWorkflowPanelProps = RegisteredWorkflowPanelDataProps & DispatchProp & WithStyles<CssRules>
@@ -116,6 +140,7 @@ export const RegisteredWorkflowPanel = withStyles(styles)(connect(
         let inputParams: ProcessIOParameter[] = [];
         let outputParams: ProcessIOParameter[] = [];
         let workflowCollection = "";
+        const gitprops: { [key: string]: string; } = {};
         if (item) {
             // parse definition
             const wfdef = parseWorkflowDefinition(item);
@@ -123,7 +148,9 @@ export const RegisteredWorkflowPanel = withStyles(styles)(connect(
             const inputs = getWorkflowInputs(wfdef);
             if (inputs) {
                 inputs.forEach(elm => {
-                    elm.value = elm.default;
+                    if (elm.default !== undefined && elm.default !== null) {
+                        elm.value = elm.default;
+                    }
                 });
                 inputParams = formatInputData(inputs, state.auth);
             }
@@ -141,13 +168,18 @@ export const RegisteredWorkflowPanel = withStyles(styles)(connect(
                 }
             }
 
-            // get the properties from the collection
+            for (const elm in wfdef) {
+                if (elm.startsWith("http://arvados.org/cwl#git")) {
+                    gitprops[elm.substr(23)] = wfdef[elm]
+                }
+            }
+
         }
-        return { item, inputParams, outputParams, workflowCollection };
+        return { item, inputParams, outputParams, workflowCollection, gitprops };
     })(
         class extends React.Component<RegisteredWorkflowPanelProps> {
             render() {
-                const { classes, item, inputParams, outputParams, workflowCollection, dispatch } = this.props;
+                const { classes, item, inputParams, outputParams, workflowCollection, gitprops, dispatch } = this.props;
                 const panelsData: MPVPanelState[] = [
                     { name: "Details" },
                     { name: "Inputs" },
@@ -158,35 +190,42 @@ export const RegisteredWorkflowPanel = withStyles(styles)(connect(
                     ? <MPVContainer className={classes.root} spacing={8} direction="column" justify-content="flex-start" wrap="nowrap" panelStates={panelsData}>
                         <MPVPanelContent xs="auto" data-cy='registered-workflow-info-panel'>
                             <Card className={classes.infoCard}>
-                                <Grid container justify="space-between">
-                                    <Grid item xs={11}><span>
-                                        <WorkflowIcon className={classes.iconHeader} />
-                                        <span>
-                                            {item.name}
-                                        </span>
-                                    </span></Grid>
-                                    <Grid item xs={1} style={{ textAlign: "right" }}>
-                                        <Tooltip title="Actions" disableFocusListener>
-                                            <IconButton
-                                                data-cy='collection-panel-options-btn'
-                                                aria-label="Actions"
-                                                onClick={this.handleContextMenu}>
-                                                <MoreOptionsIcon />
-                                            </IconButton>
+                                <CardHeader
+                                    className={classes.header}
+                                    classes={{
+                                        content: classes.title,
+                                        avatar: classes.avatar,
+                                    }}
+                                    avatar={<WorkflowIcon className={classes.iconHeader} />}
+                                    title={
+                                        <Tooltip title={item.name} placement="bottom-start">
+                                            <Typography noWrap variant='h6'>
+                                                {item.name}
+                                            </Typography>
                                         </Tooltip>
-                                    </Grid>
-                                </Grid>
+                                    }
+                                    subheader={
+                                        <Tooltip title={item.description || '(no-description)'} placement="bottom-start">
+                                            <Typography noWrap variant='body1' color='inherit'>
+                                                {item.description || '(no-description)'}
+                                            </Typography>
+                                        </Tooltip>}
+                                />
+
                                 <Grid container justify="space-between">
                                     <Grid item xs={12}>
-                                        <Typography variant="caption">
-                                            {item.description}
-                                        </Typography>
                                         <WorkflowDetailsAttributes workflow={item} />
+                                    </Grid>
+
+                                    <Grid item xs={12} md={12}>
+                                        <DetailsAttribute label='Properties' />
+                                        {Object.keys(gitprops).map(k =>
+                                            getPropertyChip(k, gitprops[k], undefined, classes.propertyTag))}
                                     </Grid>
                                 </Grid>
                             </Card>
                         </MPVPanelContent>
-                        <MPVPanelContent forwardProps xs maxHeight='50%' data-cy="process-inputs">
+                        <MPVPanelContent forwardProps xs data-cy="process-inputs">
                             <ProcessIOCard
                                 label={ProcessIOCardType.INPUT}
                                 params={inputParams}
@@ -194,7 +233,7 @@ export const RegisteredWorkflowPanel = withStyles(styles)(connect(
                                 showParams={true}
                             />
                         </MPVPanelContent>
-                        <MPVPanelContent forwardProps xs maxHeight='50%' data-cy="process-outputs">
+                        <MPVPanelContent forwardProps xs data-cy="process-outputs">
                             <ProcessIOCard
                                 label={ProcessIOCardType.OUTPUT}
                                 params={outputParams}
