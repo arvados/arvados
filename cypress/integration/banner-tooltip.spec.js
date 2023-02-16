@@ -60,16 +60,17 @@ describe('Collection panel tests', function () {
     beforeEach(function () {
         cy.clearCookies();
         cy.clearLocalStorage();
-        cy.intercept({ method: 'GET', hostname: 'localhost', url: '**/arvados/v1/config?nocache=*' }, (req) => {
+        cy.intercept({ method: 'GET', url: '**/arvados/v1/config?nocache=*' }, (req) => {
             req.reply((res) => {
                 res.body.Workbench.BannerUUID = collectionUUID;
             });
         });
-        cy.wait(8000);
     });
 
     it('should re-show the banner', () => {
         cy.loginAs(adminUser);
+
+        cy.wait(2000);
 
         cy.get('[data-cy=confirmation-dialog-ok-btn]').click();
 
@@ -84,6 +85,8 @@ describe('Collection panel tests', function () {
 
     it('should show tooltips and remove tooltips as localStorage key is present', () => {
         cy.loginAs(adminUser);
+
+        cy.wait(2000);
 
         cy.get('[data-cy=side-panel-tree]').then(($el) => {
             const el = $el.get(0) //native DOM element
