@@ -16,15 +16,16 @@ import {
     Button,
 } from '@material-ui/core';
 import { ArvadosTheme } from 'common/custom-theme';
-import { CloseIcon, MoreOptionsIcon, ProcessIcon, StartIcon } from 'components/icon/icon';
+import { CloseIcon, MoreOptionsIcon, ProcessIcon, StartIcon, StopIcon } from 'components/icon/icon';
 import { Process } from 'store/processes/process';
 import { MPVPanelProps } from 'components/multi-panel-view/multi-panel-view';
 import { ProcessDetailsAttributes } from './process-details-attributes';
 import { ProcessStatus } from 'views-components/data-explorer/renderers';
 import { ContainerState } from 'models/container';
 import { ContainerRequestState } from 'models/container-request';
+import classNames from 'classnames';
 
-type CssRules = 'card' | 'content' | 'title' | 'header' | 'cancelButton' | 'avatar' | 'iconHeader' | 'runButton';
+type CssRules = 'card' | 'content' | 'title' | 'header' | 'cancelButton' | 'avatar' | 'iconHeader' | 'actionButton';
 
 const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     card: {
@@ -54,17 +55,20 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
         paddingTop: theme.spacing.unit * 0.5,
         color: theme.customs.colors.green700,
     },
-    cancelButton: {
-        paddingRight: theme.spacing.unit * 2,
-        fontSize: '14px',
-        color: theme.customs.colors.red900,
-        "&:hover": {
-            cursor: 'pointer'
-        }
-    },
-    runButton: {
+    actionButton: {
         padding: "0px 5px 0 0",
         marginRight: "5px",
+        fontSize: '0.78rem',
+    },
+    cancelButton: {
+        color: theme.customs.colors.red900,
+        borderColor: theme.customs.colors.red900,
+        '&:hover': {
+            borderColor: theme.customs.colors.red900,
+        },
+        '& svg': {
+            fontSize: '22px',
+        },
     },
 });
 
@@ -119,7 +123,7 @@ export const ProcessDetailsCard = withStyles(styles)(
                                 variant="contained"
                                 size="small"
                                 color="primary"
-                                className={classes.runButton}
+                                className={classes.actionButton}
                                 onClick={() => runAction && runAction(process.containerRequest.uuid)}>
                                 <StartIcon />
                                 Run
@@ -130,7 +134,16 @@ export const ProcessDetailsCard = withStyles(styles)(
                             process.container.state === ContainerState.RUNNING) &&
                             process.containerRequest.priority !== null &&
                             process.containerRequest.priority > 0 &&
-                            <span data-cy="process-cancel" className={classes.cancelButton} onClick={() => cancelProcess(process.containerRequest.uuid)}>Cancel</span>}
+                            <Button
+                                data-cy="process-cancel"
+                                variant="outlined"
+                                size="small"
+                                color="primary"
+                                className={classNames(classes.actionButton, classes.cancelButton)}
+                                onClick={() => cancelProcess(process.containerRequest.uuid)}>
+                                <StopIcon />
+                                Cancel
+                            </Button>}
                         <ProcessStatus uuid={process.containerRequest.uuid} />
                         <Tooltip title="More options" disableFocusListener>
                             <IconButton
