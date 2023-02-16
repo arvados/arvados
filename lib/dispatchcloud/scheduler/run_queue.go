@@ -154,8 +154,10 @@ tryrun:
 			} else if sch.pool.KillContainer(ctr.UUID, "about to start") {
 				logger.Info("not restarting yet: crunch-run process from previous attempt has not exited")
 			} else if sch.pool.StartContainer(it, ctr) {
+				logger.Trace("StartContainer => true")
 				// Success.
 			} else {
+				logger.Trace("StartContainer => false")
 				containerAllocatedWorkerBootingCount += 1
 				dontstart[it] = true
 			}
