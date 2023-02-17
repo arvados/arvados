@@ -52,6 +52,7 @@ export interface ProcessPanelRootActionProps {
     onToggle: (status: string) => void;
     cancelProcess: (uuid: string) => void;
     startProcess: (uuid: string) => void;
+    resumeOnHoldWorkflow: (uuid: string) => void;
     onLogFilterChange: (filter: FilterOption) => void;
     navigateToLog: (uuid: string) => void;
     onCopyToClipboard: (uuid: string) => void;
@@ -124,6 +125,7 @@ export const ProcessPanelRoot = withStyles(styles)(
                         onContextMenu={event => props.onContextMenu(event, process)}
                         cancelProcess={props.cancelProcess}
                         startProcess={props.startProcess}
+                        resumeOnHoldWorkflow={props.resumeOnHoldWorkflow}
                     />
                 </MPVPanelContent>
                 <MPVPanelContent forwardProps xs="auto" data-cy="process-cmd">
