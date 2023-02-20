@@ -24,19 +24,20 @@ export type ProjectCommandInputParameter = GenericCommandInputParameter<ProjectR
 const require: any = (value?: ProjectResource) => (value === undefined);
 
 export interface ProjectInputProps {
+    required?: boolean;
     input: ProjectCommandInputParameter;
     options?: { showOnlyOwned: boolean, showOnlyWritable: boolean };
 }
 
 type DialogContentCssRules = 'root' | 'pickerWrapper';
 
-export const ProjectInput = ({ input, options }: ProjectInputProps) =>
+export const ProjectInput = ({ required, input, options }: ProjectInputProps) =>
     <Field
         name={input.id}
         commandInput={input}
         component={ProjectInputComponent as any}
         format={format}
-        validate={require}
+        validate={required ? require : undefined}
         {...{
             options
         }} />;
