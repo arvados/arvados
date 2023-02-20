@@ -34,24 +34,29 @@ describe('Collection panel tests', function () {
                     .then(function ([bannerCollection]) {
 
                         collectionUUID=bannerCollection.uuid;
-        
+
                         cy.loginAs(adminUser);
-        
+
                         cy.goToPath(`/collections/${bannerCollection.uuid}`);
-        
+
                         cy.get('[data-cy=upload-button]').click();
-        
+
                         cy.fixture('files/banner.html').as('banner');
                         cy.fixture('files/tooltips.txt').as('tooltips');
-                        
+
                         cy.getAll('@banner', '@tooltips')
                             .then(([banner, tooltips]) => {
                                 console.log(tooltips)
-                                cy.get('[data-cy=drag-and-drop]').upload(btoa(banner), 'banner.html');
-                                cy.get('[data-cy=drag-and-drop]').upload(btoa(tooltips), 'tooltips.json');
+                                cy.get('[data-cy=drag-and-drop]').upload(banner, 'banner.html', false);
+                                cy.get('[data-cy=drag-and-drop]').upload(tooltips, 'tooltips.json', false);
                             });
-  
+
                         cy.get('[data-cy=form-submit-btn]').click();
+                        cy.get('[data-cy=form-submit-btn]').should('not.exist');
+                        cy.get('[data-cy=collection-files-right-panel]')
+                            .contains('banner.html').should('exist');
+                        cy.get('[data-cy=collection-files-right-panel]')
+                            .contains('tooltips.json').should('exist');
                     });
             });
             cy.on('uncaught:exception', (err, runnable) => {console.error(err)});
