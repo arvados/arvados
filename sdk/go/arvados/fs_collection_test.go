@@ -134,7 +134,13 @@ func (s *CollectionFSSuite) TestSyncNonCanonicalManifest(c *check.C) {
 		"collection": map[string]interface{}{
 			"manifest_text": mtxt}})
 	c.Assert(err, check.IsNil)
-	c.Assert(mtxt, check.Equals, coll.ManifestText)
+	// In order for the rest of the test to work as intended, the API server
+	// needs to retain the file ordering we set manually. We check that here.
+	// We can't check `mtxt == coll.ManifestText` because the API server
+	// might've returned new block signatures if the GET and POST happened in
+	// different seconds.
+	expectPattern := `\./dir1 \S+ 0:3:foo 3:3:bar\n`
+	c.Assert(coll.ManifestText, check.Matches, expectPattern)
 
 	fs, err := coll.FileSystem(s.client, s.kc)
 	c.Assert(err, check.IsNil)
@@ -147,7 +153,7 @@ func (s *CollectionFSSuite) TestSyncNonCanonicalManifest(c *check.C) {
 	var saved Collection
 	err = s.client.RequestAndDecode(&saved, "GET", "arvados/v1/collections/"+coll.UUID, nil, nil)
 	c.Assert(err, check.IsNil)
-	c.Check(saved.ManifestText, check.Equals, mtxt)
+	c.Check(saved.ManifestText, check.Matches, expectPattern)
 }
 
 func (s *CollectionFSSuite) TestHttpFileSystemInterface(c *check.C) {
