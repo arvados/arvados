@@ -9,6 +9,15 @@ import os
 import json
 import copy
 import logging
+import urllib
+from io import StringIO
+import sys
+import re
+
+from typing import (MutableSequence, MutableMapping)
+
+from ruamel.yaml import YAML
+from ruamel.yaml.comments import CommentedMap, CommentedSeq
 
 from schema_salad.sourceline import SourceLine, cmap
 import schema_salad.ref_resolver
@@ -17,16 +26,18 @@ import arvados.collection
 
 from cwltool.pack import pack
 from cwltool.load_tool import fetch_document, resolve_and_validate_document
-from cwltool.process import shortname
+from cwltool.process import shortname, uniquename
 from cwltool.workflow import Workflow, WorkflowException, WorkflowStep
 from cwltool.utils import adjustFileObjs, adjustDirObjs, visit_class, normalizeFilesDirs
 from cwltool.context import LoadingContext
+
+from schema_salad.ref_resolver import file_uri, uri_file_path
 
 import ruamel.yaml as yaml
 
 from .runner import (upload_dependencies, packed_workflow, upload_workflow_collection,
                      trim_anonymous_location, remove_redundant_fields, discover_secondary_files,
-                     make_builder, arvados_jobs_image)
+                     make_builder, arvados_jobs_image, FileUpdates)
 from .pathmapper import ArvPathMapper, trim_listing
 from .arvtool import ArvadosCommandTool, set_cluster_target
 from ._version import __version__
@@ -117,30 +128,278 @@ def make_wrapper_workflow(arvRunner, main, packed, project_uuid, name, git_info,
 
     return json.dumps(doc, sort_keys=True, indent=4, separators=(',',': '))
 
+
+def rel_ref(s, baseuri, urlexpander, merged_map, jobmapper):
+    if s.startswith("keep:"):
+        return s
+
+    uri = urlexpander(s, baseuri)
+
+    if uri.startswith("keep:"):
+        return uri
+
+    fileuri = urllib.parse.urldefrag(baseuri)[0]
+
+    for u in (baseuri, fileuri):
+        if u in merged_map:
+            replacements = merged_map[u].resolved
+            if uri in replacements:
+                return replacements[uri]
+
+    if uri in jobmapper:
+        return jobmapper.mapper(uri).target
+
+    p1 = os.path.dirname(uri_file_path(fileuri))
+    p2 = os.path.dirname(uri_file_path(uri))
+    p3 = os.path.basename(uri_file_path(uri))
+
+    r = os.path.relpath(p2, p1)
+    if r == ".":
+        r = ""
+
+    return os.path.join(r, p3)
+
+def is_basetype(tp):
+    basetypes = ("null", "boolean", "int", "long", "float", "double", "string", "File", "Directory", "record", "array", "enum")
+    for b in basetypes:
+        if re.match(b+"(\[\])?\??", tp):
+            return True
+    return False
+
+
+def update_refs(d, baseuri, urlexpander, merged_map, jobmapper, runtimeContext, prefix, replacePrefix):
+    if isinstance(d, MutableSequence):
+        for i, s in enumerate(d):
+            if prefix and isinstance(s, str):
+                if s.startswith(prefix):
+                    d[i] = replacePrefix+s[len(prefix):]
+            else:
+                update_refs(s, baseuri, urlexpander, merged_map, jobmapper, runtimeContext, prefix, replacePrefix)
+    elif isinstance(d, MutableMapping):
+        for field in ("id", "name"):
+            if isinstance(d.get(field), str) and d[field].startswith("_:"):
+                # blank node reference, was added in automatically, can get rid of it.
+                del d[field]
+
+        if "id" in d:
+            baseuri = urlexpander(d["id"], baseuri, scoped_id=True)
+        elif "name" in d and isinstance(d["name"], str):
+            baseuri = urlexpander(d["name"], baseuri, scoped_id=True)
+
+        if d.get("class") == "DockerRequirement":
+            dockerImageId = d.get("dockerImageId") or d.get("dockerPull")
+            d["http://arvados.org/cwl#dockerCollectionPDH"] = runtimeContext.cached_docker_lookups.get(dockerImageId)
+
+        for field in d:
+            if field in ("location", "run", "name") and isinstance(d[field], str):
+                d[field] = rel_ref(d[field], baseuri, urlexpander, merged_map, jobmapper)
+                continue
+
+            if field in ("$include", "$import") and isinstance(d[field], str):
+                d[field] = rel_ref(d[field], baseuri, urlexpander, {}, jobmapper)
+                continue
+
+            for t in ("type", "items"):
+                if (field == t and
+                    isinstance(d[t], str) and
+                    not is_basetype(d[t])):
+                    d[t] = rel_ref(d[t], baseuri, urlexpander, merged_map, jobmapper)
+                    continue
+
+            if field == "inputs" and isinstance(d["inputs"], MutableMapping):
+                for inp in d["inputs"]:
+                    if isinstance(d["inputs"][inp], str) and not is_basetype(d["inputs"][inp]):
+                        d["inputs"][inp] = rel_ref(d["inputs"][inp], baseuri, urlexpander, merged_map, jobmapper)
+                    if isinstance(d["inputs"][inp], MutableMapping):
+                        update_refs(d["inputs"][inp], baseuri, urlexpander, merged_map, jobmapper, runtimeContext, prefix, replacePrefix)
+                continue
+
+            if field == "$schemas":
+                for n, s in enumerate(d["$schemas"]):
+                    d["$schemas"][n] = rel_ref(d["$schemas"][n], baseuri, urlexpander, merged_map, jobmapper)
+                continue
+
+            update_refs(d[field], baseuri, urlexpander, merged_map, jobmapper, runtimeContext, prefix, replacePrefix)
+
+
+def fix_schemadef(req, baseuri, urlexpander, merged_map, jobmapper, pdh):
+    req = copy.deepcopy(req)
+
+    for f in req["types"]:
+        r = f["name"]
+        path, frag = urllib.parse.urldefrag(r)
+        rel = rel_ref(r, baseuri, urlexpander, merged_map, jobmapper)
+        merged_map.setdefault(path, FileUpdates({}, {}))
+        rename = "keep:%s/%s" %(pdh, rel)
+        for mm in merged_map:
+            merged_map[mm].resolved[r] = rename
+    return req
+
+def drop_ids(d):
+    if isinstance(d, MutableSequence):
+        for i, s in enumerate(d):
+            drop_ids(s)
+    elif isinstance(d, MutableMapping):
+        if "id" in d and d["id"].startswith("file:"):
+            del d["id"]
+
+        for field in d:
+            drop_ids(d[field])
+
+
 def upload_workflow(arvRunner, tool, job_order, project_uuid,
-                    runtimeContext, uuid=None,
-                    submit_runner_ram=0, name=None, merged_map=None,
-                    submit_runner_image=None,
-                    git_info=None):
+                        runtimeContext,
+                        uuid=None,
+                        submit_runner_ram=0, name=None, merged_map=None,
+                        submit_runner_image=None,
+                        git_info=None,
+                        set_defaults=False,
+                        jobmapper=None):
 
-    packed = packed_workflow(arvRunner, tool, merged_map, runtimeContext, git_info)
+    firstfile = None
+    workflow_files = set()
+    import_files = set()
+    include_files = set()
 
-    adjustDirObjs(job_order, trim_listing)
-    adjustFileObjs(job_order, trim_anonymous_location)
-    adjustDirObjs(job_order, trim_anonymous_location)
+    # The document loader index will have entries for all the files
+    # that were loaded in the process of parsing the entire workflow
+    # (including subworkflows, tools, imports, etc).  We use this to
+    # get compose a list of the workflow file dependencies.
+    for w in tool.doc_loader.idx:
+        if w.startswith("file://"):
+            workflow_files.add(urllib.parse.urldefrag(w)[0])
+            if firstfile is None:
+                firstfile = urllib.parse.urldefrag(w)[0]
+        if w.startswith("import:file://"):
+            import_files.add(urllib.parse.urldefrag(w[7:])[0])
+        if w.startswith("include:file://"):
+            include_files.add(urllib.parse.urldefrag(w[8:])[0])
 
-    main = [p for p in packed["$graph"] if p["id"] == "#main"][0]
-    for inp in main["inputs"]:
-        sn = shortname(inp["id"])
-        if sn in job_order:
-            inp["default"] = job_order[sn]
+    all_files = workflow_files | import_files | include_files
 
-    if not name:
-        name = tool.tool.get("label", os.path.basename(tool.tool["id"]))
+    # Find the longest common prefix among all the file names.  We'll
+    # use this to recreate the directory structure in a keep
+    # collection with correct relative references.
+    n = 7
+    allmatch = True
+    if firstfile:
+        while allmatch:
+            n += 1
+            for f in all_files:
+                if len(f)-1 < n:
+                    n -= 1
+                    allmatch = False
+                    break
+                if f[n] != firstfile[n]:
+                    allmatch = False
+                    break
 
-    upload_dependencies(arvRunner, name, tool.doc_loader,
-                        packed, tool.tool["id"], False,
-                        runtimeContext)
+        while firstfile[n] != "/":
+            n -= 1
+
+    col = arvados.collection.Collection(api_client=arvRunner.api)
+
+    # Now go through all the files and update references to other
+    # files.  We previously scanned for file dependencies, these are
+    # are passed in as merged_map.
+    #
+    # note about merged_map: we upload dependencies of each process
+    # object (CommandLineTool/Workflow) to a separate collection.
+    # That way, when the user edits something, this limits collection
+    # PDH changes to just that tool, and minimizes situations where
+    # small changes break container reuse for the whole workflow.
+    #
+    for w in workflow_files | import_files:
+        # 1. load the YAML  file
+
+        text = tool.doc_loader.fetch_text(w)
+        if isinstance(text, bytes):
+            textIO = StringIO(text.decode('utf-8'))
+        else:
+            textIO = StringIO(text)
+
+        yamlloader = schema_salad.utils.yaml_no_ts()
+        result = yamlloader.load(textIO)
+
+        # If the whole document is in "flow style" it is probably JSON
+        # formatted.  We'll re-export it as JSON because the
+        # ruamel.yaml round-trip mode is a lie and only preserves
+        # "block style" formatting and not "flow style" formatting.
+        export_as_json = result.fa.flow_style()
+
+        # 2. find $import, $include, $schema, run, location
+        # 3. update field value
+        update_refs(result, w, tool.doc_loader.expand_url, merged_map, jobmapper, runtimeContext, "", "")
+
+        # Write the updated file to the collection.
+        with col.open(w[n+1:], "wt") as f:
+            if export_as_json:
+                json.dump(result, f, indent=4, separators=(',',': '))
+            else:
+                yamlloader.dump(result, stream=f)
+
+        # Also store a verbatim copy of the original files
+        with col.open(os.path.join("original", w[n+1:]), "wt") as f:
+            f.write(text)
+
+
+    # Upload files referenced by $include directives, these are used
+    # unchanged and don't need to be updated.
+    for w in include_files:
+        with col.open(w[n+1:], "wb") as f1:
+            with col.open(os.path.join("original", w[n+1:]), "wb") as f3:
+                with open(uri_file_path(w), "rb") as f2:
+                    dat = f2.read(65536)
+                    while dat:
+                        f1.write(dat)
+                        f3.write(dat)
+                        dat = f2.read(65536)
+
+    # Now collect metadata: the collection name and git properties.
+
+    toolname = tool.tool.get("label") or tool.metadata.get("label") or os.path.basename(tool.tool["id"])
+    if git_info and git_info.get("http://arvados.org/cwl#gitDescribe"):
+        toolname = "%s (%s)" % (toolname, git_info.get("http://arvados.org/cwl#gitDescribe"))
+
+    toolfile = tool.tool["id"][n+1:]
+
+    properties = {
+        "type": "workflow",
+        "arv:workflowMain": toolfile,
+    }
+
+    if git_info:
+        for g in git_info:
+            p = g.split("#", 1)[1]
+            properties["arv:"+p] = git_info[g]
+
+    # Check if a collection with the same content already exists in the target project.  If so, just use that one.
+    existing = arvRunner.api.collections().list(filters=[["portable_data_hash", "=", col.portable_data_hash()],
+                                                         ["owner_uuid", "=", arvRunner.project_uuid]]).execute(num_retries=arvRunner.num_retries)
+
+    if len(existing["items"]) == 0:
+        toolname = toolname.replace("/", " ")
+        col.save_new(name=toolname, owner_uuid=arvRunner.project_uuid, ensure_unique_name=True, properties=properties)
+        logger.info("Workflow uploaded to %s", col.manifest_locator())
+    else:
+        logger.info("Workflow uploaded to %s", existing["items"][0]["uuid"])
+
+    # Now that we've updated the workflow and saved it to a
+    # collection, we're going to construct a minimal "wrapper"
+    # workflow which consists of only of input and output parameters
+    # connected to a single step that runs the real workflow.
+
+    runfile = "keep:%s/%s" % (col.portable_data_hash(), toolfile)
+
+    step = {
+        "id": "#main/" + toolname,
+        "in": [],
+        "out": [],
+        "run": runfile,
+        "label": name
+    }
+
+    main = tool.tool
 
     wf_runner_resources = None
 
@@ -162,24 +421,104 @@ def upload_workflow(arvRunner, tool, job_order, project_uuid,
     if submit_runner_ram:
         wf_runner_resources["ramMin"] = submit_runner_ram
 
-    main["hints"] = hints
+    # Remove a few redundant fields from the "job order" (aka input
+    # object or input parameters).  In the situation where we're
+    # creating or updating a workflow record, any values in the job
+    # order get copied over as default values for input parameters.
+    adjustDirObjs(job_order, trim_listing)
+    adjustFileObjs(job_order, trim_anonymous_location)
+    adjustDirObjs(job_order, trim_anonymous_location)
 
-    wrapper = make_wrapper_workflow(arvRunner, main, packed, project_uuid, name, git_info, tool)
+    newinputs = []
+    for i in main["inputs"]:
+        inp = {}
+        # Make sure to only copy known fields that are meaningful at
+        # the workflow level. In practice this ensures that if we're
+        # wrapping a CommandLineTool we don't grab inputBinding.
+        # Right now also excludes extension fields, which is fine,
+        # Arvados doesn't currently look for any extension fields on
+        # input parameters.
+        for f in ("type", "label", "secondaryFiles", "streamable",
+                  "doc", "format", "loadContents",
+                  "loadListing", "default"):
+            if f in i:
+                inp[f] = i[f]
+
+        if set_defaults:
+            sn = shortname(i["id"])
+            if sn in job_order:
+                inp["default"] = job_order[sn]
+
+        inp["id"] = "#main/%s" % shortname(i["id"])
+        newinputs.append(inp)
+
+    wrapper = {
+        "class": "Workflow",
+        "id": "#main",
+        "inputs": newinputs,
+        "outputs": [],
+        "steps": [step]
+    }
+
+    for i in main["inputs"]:
+        step["in"].append({
+            "id": "#main/step/%s" % shortname(i["id"]),
+            "source": "#main/%s" % shortname(i["id"])
+        })
+
+    for i in main["outputs"]:
+        step["out"].append({"id": "#main/step/%s" % shortname(i["id"])})
+        wrapper["outputs"].append({"outputSource": "#main/step/%s" % shortname(i["id"]),
+                                   "type": i["type"],
+                                   "id": "#main/%s" % shortname(i["id"])})
+
+    wrapper["requirements"] = [{"class": "SubworkflowFeatureRequirement"}]
+
+    if main.get("requirements"):
+        wrapper["requirements"].extend(main["requirements"])
+    if hints:
+        wrapper["hints"] = hints
+
+    # Schema definitions (this lets you define things like record
+    # types) require a special handling.
+
+    for i, r in enumerate(wrapper["requirements"]):
+        if r["class"] == "SchemaDefRequirement":
+            wrapper["requirements"][i] = fix_schemadef(r, main["id"], tool.doc_loader.expand_url, merged_map, jobmapper, col.portable_data_hash())
+
+    update_refs(wrapper, main["id"], tool.doc_loader.expand_url, merged_map, jobmapper, runtimeContext, main["id"]+"#", "#main/")
+
+    doc = {"cwlVersion": "v1.2", "$graph": [wrapper]}
+
+    if git_info:
+        for g in git_info:
+            doc[g] = git_info[g]
+
+    # Remove any lingering file references.
+    drop_ids(wrapper)
+
+    return doc
+
+
+def make_workflow_record(arvRunner, doc, name, tool, project_uuid, update_uuid):
+
+    wrappertext = json.dumps(doc, sort_keys=True, indent=4, separators=(',',': '))
 
     body = {
         "workflow": {
             "name": name,
             "description": tool.tool.get("doc", ""),
-            "definition": wrapper
+            "definition": wrappertext
         }}
     if project_uuid:
         body["workflow"]["owner_uuid"] = project_uuid
 
-    if uuid:
-        call = arvRunner.api.workflows().update(uuid=uuid, body=body)
+    if update_uuid:
+        call = arvRunner.api.workflows().update(uuid=update_uuid, body=body)
     else:
         call = arvRunner.api.workflows().create(body=body)
     return call.execute(num_retries=arvRunner.num_retries)["uuid"]
+
 
 def dedup_reqs(reqs):
     dedup = {}
@@ -278,6 +617,7 @@ class ArvadosWorkflow(Workflow):
 
         discover_secondary_files(self.arvrunner.fs_access, builder,
                                  self.tool["inputs"], joborder)
+
         normalizeFilesDirs(joborder)
 
         with Perf(metrics, "subworkflow upload_deps"):
@@ -286,7 +626,6 @@ class ArvadosWorkflow(Workflow):
                                 self.doc_loader,
                                 joborder,
                                 joborder.get("id", "#"),
-                                False,
                                 runtimeContext)
 
             if self.wf_pdh is None:
@@ -330,7 +669,6 @@ class ArvadosWorkflow(Workflow):
                                     self.doc_loader,
                                     packed,
                                     self.tool["id"],
-                                    False,
                                     runtimeContext)
 
                 # Discover files/directories referenced by the

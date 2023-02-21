@@ -1781,9 +1781,11 @@ Clusters:
       # This feature is disabled when set to zero.
       IdleTimeout: 0s
 
-      # URL to a file that is a fragment of text or HTML which should
-      # be rendered in Workbench as a banner.
-      BannerURL: ""
+      # UUID of a collection.  This collection should be shared with
+      # all users.  Workbench will look for a file "banner.html" in
+      # this collection and display its contents (should be
+      # HTML-formatted text) when users first log in to Workbench.
+      BannerUUID: ""
 
       # Workbench welcome screen, this is HTML text that will be
       # incorporated directly onto the page.

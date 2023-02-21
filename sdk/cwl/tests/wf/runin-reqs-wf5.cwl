@@ -15,8 +15,7 @@ inputs:
     default:
       class: File
       location: check_mem.py
-outputs:
-  out: []
+outputs: []
 requirements:
   SubworkflowFeatureRequirement: {}
   ScatterFeatureRequirement: {}

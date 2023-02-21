@@ -48,8 +48,7 @@
                                 "nameroot": "renamed",
                                 "size": 0
                             }
-                        ],
-                        "location": "_:df80736f-f14d-4b10-b2e3-03aa27f034b2"
+                        ]
                     },
                     "id": "#main/z",
                     "type": "Directory"
@@ -80,7 +79,7 @@
                     ],
                     "label": "testing 123",
                     "out": [],
-                    "run": "keep:f1c2b0c514a5fb9b2a8b5b38a31bab66+61/workflow.json#main"
+                    "run": "keep:5b4cf4181c65ad292ccba5b142d758a4+274/wf/submit_wf.cwl"
                 }
             ]
         }

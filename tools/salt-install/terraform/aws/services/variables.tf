@@ -13,3 +13,9 @@ variable "pubkey_path" {
   type = string
   default = "~/.ssh/id_rsa.pub"
 }
+
+variable "ssl_password_secret_name_suffix" {
+  description = "Name suffix for the SSL certificate's private key password AWS secret."
+  type = string
+  default = "arvados-ssl-privkey-password"
+}
