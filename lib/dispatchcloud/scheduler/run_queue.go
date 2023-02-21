@@ -13,6 +13,8 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+var quietAfter503 = time.Minute
+
 func (sch *Scheduler) runQueue() {
 	unsorted, _ := sch.queue.Entries()
 	sorted := make([]container.QueueEnt, 0, len(unsorted))
@@ -35,14 +37,52 @@ func (sch *Scheduler) runQueue() {
 	running := sch.pool.Running()
 	unalloc := sch.pool.Unallocated()
 
+	if t := sch.client.Last503(); t.After(sch.last503time) {
+		// API has sent an HTTP 503 response since last time
+		// we checked. Use current #containers - 1 as
+		// maxConcurrency, i.e., try to stay just below the
+		// level where we see 503s.
+		sch.last503time = t
+		if newlimit := len(running) - 1; newlimit < 1 {
+			sch.maxConcurrency = 1
+		} else {
+			sch.maxConcurrency = newlimit
+		}
+	} else if sch.maxConcurrency > 0 && time.Since(sch.last503time) > quietAfter503 {
+		// If we haven't seen any 503 errors lately, raise
+		// limit to ~10% beyond the current workload.
+		//
+		// As we use the added 10% to schedule more
+		// containers, len(running) will increase and we'll
+		// push the limit up further. Soon enough,
+		// maxConcurrency will get high enough to schedule the
+		// entire queue, hit pool quota, or get 503s again.
+		max := len(running)*11/10 + 1
+		if sch.maxConcurrency < max {
+			sch.maxConcurrency = max
+		}
+	}
+	if sch.last503time.IsZero() {
+		sch.mLast503Time.Set(0)
+	} else {
+		sch.mLast503Time.Set(float64(sch.last503time.Unix()))
+	}
+	sch.mMaxContainerConcurrency.Set(float64(sch.maxConcurrency))
+
 	sch.logger.WithFields(logrus.Fields{
-		"Containers": len(sorted),
-		"Processes":  len(running),
+		"Containers":     len(sorted),
+		"Processes":      len(running),
+		"maxConcurrency": sch.maxConcurrency,
 	}).Debug("runQueue")
 
 	dontstart := map[arvados.InstanceType]bool{}
 	var overquota []container.QueueEnt // entries that are unmappable because of worker pool quota
 	var containerAllocatedWorkerBootingCount int
+
+	// trying is #containers running + #containers we're trying to
+	// start. We stop trying to start more containers if this
+	// reaches the dynamic maxConcurrency limit.
+	trying := len(running)
 
 tryrun:
 	for i, ctr := range sorted {
@@ -56,8 +96,14 @@ tryrun:
 		}
 		switch ctr.State {
 		case arvados.ContainerStateQueued:
+			if sch.maxConcurrency > 0 && trying >= sch.maxConcurrency {
+				logger.Tracef("not locking: already at maxConcurrency %d", sch.maxConcurrency)
+				overquota = sorted[i:]
+				break tryrun
+			}
+			trying++
 			if unalloc[it] < 1 && sch.pool.AtQuota() {
-				logger.Debug("not locking: AtQuota and no unalloc workers")
+				logger.Trace("not locking: AtQuota and no unalloc workers")
 				overquota = sorted[i:]
 				break tryrun
 			}
@@ -68,6 +114,12 @@ tryrun:
 			go sch.lockContainer(logger, ctr.UUID)
 			unalloc[it]--
 		case arvados.ContainerStateLocked:
+			if sch.maxConcurrency > 0 && trying >= sch.maxConcurrency {
+				logger.Debugf("not starting: already at maxConcurrency %d", sch.maxConcurrency)
+				overquota = sorted[i:]
+				break tryrun
+			}
+			trying++
 			if unalloc[it] > 0 {
 				unalloc[it]--
 			} else if sch.pool.AtQuota() {
@@ -102,8 +154,10 @@ tryrun:
 			} else if sch.pool.KillContainer(ctr.UUID, "about to start") {
 				logger.Info("not restarting yet: crunch-run process from previous attempt has not exited")
 			} else if sch.pool.StartContainer(it, ctr) {
+				logger.Trace("StartContainer => true")
 				// Success.
 			} else {
+				logger.Trace("StartContainer => false")
 				containerAllocatedWorkerBootingCount += 1
 				dontstart[it] = true
 			}
@@ -115,10 +169,13 @@ tryrun:
 
 	if len(overquota) > 0 {
 		// Unlock any containers that are unmappable while
-		// we're at quota.
+		// we're at quota (but if they have already been
+		// scheduled and they're loading docker images etc.,
+		// let them run).
 		for _, ctr := range overquota {
 			ctr := ctr.Container
-			if ctr.State == arvados.ContainerStateLocked {
+			_, toolate := running[ctr.UUID]
+			if ctr.State == arvados.ContainerStateLocked && !toolate {
 				logger := sch.logger.WithField("ContainerUUID", ctr.UUID)
 				logger.Debug("unlock because pool capacity is used by higher priority containers")
 				err := sch.queue.Unlock(ctr.UUID)

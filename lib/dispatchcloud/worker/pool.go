@@ -397,10 +397,15 @@ func (wp *Pool) SetIdleBehavior(id cloud.InstanceID, idleBehavior IdleBehavior) 
 func (wp *Pool) reportSSHConnected(inst cloud.Instance) {
 	wp.mtx.Lock()
 	defer wp.mtx.Unlock()
-	wkr := wp.workers[inst.ID()]
+	wkr, ok := wp.workers[inst.ID()]
+	if !ok {
+		// race: inst was removed from the pool
+		return
+	}
 	if wkr.state != StateBooting || !wkr.firstSSHConnection.IsZero() {
-		// the node is not in booting state (can happen if a-d-c is restarted) OR
-		// this is not the first SSH connection
+		// the node is not in booting state (can happen if
+		// a-d-c is restarted) OR this is not the first SSH
+		// connection
 		return
 	}
 

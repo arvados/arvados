@@ -6,11 +6,13 @@ package dispatchcloud
 
 import (
 	"context"
+	"crypto/tls"
 	"encoding/json"
 	"io/ioutil"
 	"math/rand"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"os"
 	"sync"
 	"time"
@@ -28,11 +30,12 @@ import (
 var _ = check.Suite(&DispatcherSuite{})
 
 type DispatcherSuite struct {
-	ctx        context.Context
-	cancel     context.CancelFunc
-	cluster    *arvados.Cluster
-	stubDriver *test.StubDriver
-	disp       *dispatcher
+	ctx            context.Context
+	cancel         context.CancelFunc
+	cluster        *arvados.Cluster
+	stubDriver     *test.StubDriver
+	disp           *dispatcher
+	error503Server *httptest.Server
 }
 
 func (s *DispatcherSuite) SetUpTest(c *check.C) {
@@ -100,6 +103,13 @@ func (s *DispatcherSuite) SetUpTest(c *check.C) {
 	arvClient, err := arvados.NewClientFromConfig(s.cluster)
 	c.Check(err, check.IsNil)
 
+	s.error503Server = httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) { w.WriteHeader(http.StatusServiceUnavailable) }))
+	arvClient.Client = &http.Client{
+		Transport: &http.Transport{
+			Proxy: s.arvClientProxy(c),
+			TLSClientConfig: &tls.Config{
+				InsecureSkipVerify: true}}}
+
 	s.disp = &dispatcher{
 		Cluster:   s.cluster,
 		Context:   s.ctx,
@@ -115,6 +125,20 @@ func (s *DispatcherSuite) SetUpTest(c *check.C) {
 func (s *DispatcherSuite) TearDownTest(c *check.C) {
 	s.cancel()
 	s.disp.Close()
+	s.error503Server.Close()
+}
+
+// Intercept outgoing API requests for "/503" and respond HTTP
+// 503. This lets us force (*arvados.Client)Last503() to return
+// something.
+func (s *DispatcherSuite) arvClientProxy(c *check.C) func(*http.Request) (*url.URL, error) {
+	return func(req *http.Request) (*url.URL, error) {
+		if req.URL.Path == "/503" {
+			return url.Parse(s.error503Server.URL)
+		} else {
+			return nil, nil
+		}
+	}
 }
 
 // DispatchToStubDriver checks that the dispatcher wires everything
@@ -157,6 +181,10 @@ func (s *DispatcherSuite) TestDispatchToStubDriver(c *check.C) {
 			return
 		}
 		delete(waiting, ctr.UUID)
+		if len(waiting) == 100 {
+			// trigger scheduler maxConcurrency limit
+			s.disp.ArvClient.RequestAndDecode(nil, "GET", "503", nil, nil)
+		}
 		if len(waiting) == 0 {
 			close(done)
 		}
@@ -230,7 +258,7 @@ func (s *DispatcherSuite) TestDispatchToStubDriver(c *check.C) {
 	c.Check(resp.Body.String(), check.Matches, `(?ms).*driver_operations{error="0",operation="Destroy"} [^0].*`)
 	c.Check(resp.Body.String(), check.Matches, `(?ms).*driver_operations{error="1",operation="Create"} [^0].*`)
 	c.Check(resp.Body.String(), check.Matches, `(?ms).*driver_operations{error="1",operation="List"} 0\n.*`)
-	c.Check(resp.Body.String(), check.Matches, `(?ms).*boot_outcomes{outcome="aborted"} 0.*`)
+	c.Check(resp.Body.String(), check.Matches, `(?ms).*boot_outcomes{outcome="aborted"} [0-9]+\n.*`)
 	c.Check(resp.Body.String(), check.Matches, `(?ms).*boot_outcomes{outcome="disappeared"} [^0].*`)
 	c.Check(resp.Body.String(), check.Matches, `(?ms).*boot_outcomes{outcome="failure"} [^0].*`)
 	c.Check(resp.Body.String(), check.Matches, `(?ms).*boot_outcomes{outcome="success"} [^0].*`)
@@ -250,6 +278,8 @@ func (s *DispatcherSuite) TestDispatchToStubDriver(c *check.C) {
 	c.Check(resp.Body.String(), check.Matches, `(?ms).*run_probe_duration_seconds_sum{outcome="success"} [0-9e+.]*`)
 	c.Check(resp.Body.String(), check.Matches, `(?ms).*run_probe_duration_seconds_count{outcome="fail"} [0-9]*`)
 	c.Check(resp.Body.String(), check.Matches, `(?ms).*run_probe_duration_seconds_sum{outcome="fail"} [0-9e+.]*`)
+	c.Check(resp.Body.String(), check.Matches, `(?ms).*last_503_time [1-9][0-9e+.]*`)
+	c.Check(resp.Body.String(), check.Matches, `(?ms).*max_concurrent_containers [1-9][0-9e+.]*`)
 }
 
 func (s *DispatcherSuite) TestAPIPermissions(c *check.C) {

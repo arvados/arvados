@@ -52,7 +52,14 @@ type stubPool struct {
 func (p *stubPool) AtQuota() bool {
 	p.Lock()
 	defer p.Unlock()
-	return len(p.unalloc)+len(p.running)+len(p.unknown) >= p.quota
+	n := len(p.running)
+	for _, nn := range p.unalloc {
+		n += nn
+	}
+	for _, nn := range p.unknown {
+		n += nn
+	}
+	return n >= p.quota
 }
 func (p *stubPool) Subscribe() <-chan struct{}  { return p.notify }
 func (p *stubPool) Unsubscribe(<-chan struct{}) {}
@@ -188,7 +195,7 @@ func (*SchedulerSuite) TestUseIdleWorkers(c *check.C) {
 		running:   map[string]time.Time{},
 		canCreate: 0,
 	}
-	New(ctx, &queue, &pool, nil, time.Millisecond, time.Millisecond).runQueue()
+	New(ctx, arvados.NewClientFromEnv(), &queue, &pool, nil, time.Millisecond, time.Millisecond).runQueue()
 	c.Check(pool.creates, check.DeepEquals, []arvados.InstanceType{test.InstanceType(1), test.InstanceType(1), test.InstanceType(1)})
 	c.Check(pool.starts, check.DeepEquals, []string{test.ContainerUUID(4)})
 	c.Check(pool.running, check.HasLen, 1)
@@ -201,12 +208,8 @@ func (*SchedulerSuite) TestUseIdleWorkers(c *check.C) {
 // call Create().
 func (*SchedulerSuite) TestShutdownAtQuota(c *check.C) {
 	ctx := ctxlog.Context(context.Background(), ctxlog.TestLogger(c))
-	for quota := 1; quota < 3; quota++ {
+	for quota := 1; quota <= 3; quota++ {
 		c.Logf("quota=%d", quota)
-		shouldCreate := []arvados.InstanceType{}
-		for i := 1; i < quota; i++ {
-			shouldCreate = append(shouldCreate, test.InstanceType(3))
-		}
 		queue := test.Queue{
 			ChooseType: chooseType,
 			Containers: []arvados.Container{
@@ -244,22 +247,34 @@ func (*SchedulerSuite) TestShutdownAtQuota(c *check.C) {
 			starts:    []string{},
 			canCreate: 0,
 		}
-		sch := New(ctx, &queue, &pool, nil, time.Millisecond, time.Millisecond)
-		sch.runQueue()
+		sch := New(ctx, arvados.NewClientFromEnv(), &queue, &pool, nil, time.Millisecond, time.Millisecond)
 		sch.sync()
 		sch.runQueue()
 		sch.sync()
-		c.Check(pool.creates, check.DeepEquals, shouldCreate)
-		if len(shouldCreate) == 0 {
-			c.Check(pool.starts, check.DeepEquals, []string{})
-		} else {
+		switch quota {
+		case 1, 2:
+			// Can't create a type3 node for ctr3, so we
+			// shutdown an unallocated node (type2), and
+			// unlock both containers.
+			c.Check(pool.starts, check.HasLen, 0)
+			c.Check(pool.shutdowns, check.Equals, 1)
+			c.Check(pool.creates, check.HasLen, 0)
+			c.Check(queue.StateChanges(), check.DeepEquals, []test.QueueStateChange{
+				{UUID: test.ContainerUUID(3), From: "Locked", To: "Queued"},
+				{UUID: test.ContainerUUID(2), From: "Locked", To: "Queued"},
+			})
+		case 3:
+			// Creating a type3 instance works, so we
+			// start ctr2 on a type2 instance, and leave
+			// ctr3 locked while we wait for the new
+			// instance to come up.
 			c.Check(pool.starts, check.DeepEquals, []string{test.ContainerUUID(2)})
+			c.Check(pool.shutdowns, check.Equals, 0)
+			c.Check(pool.creates, check.DeepEquals, []arvados.InstanceType{test.InstanceType(3)})
+			c.Check(queue.StateChanges(), check.HasLen, 0)
+		default:
+			panic("test not written for quota>3")
 		}
-		c.Check(pool.shutdowns, check.Equals, 3-quota)
-		c.Check(queue.StateChanges(), check.DeepEquals, []test.QueueStateChange{
-			{UUID: "zzzzz-dz642-000000000000003", From: "Locked", To: "Queued"},
-			{UUID: "zzzzz-dz642-000000000000002", From: "Locked", To: "Queued"},
-		})
 	}
 }
 
@@ -293,24 +308,24 @@ func (*SchedulerSuite) TestEqualPriorityContainers(c *check.C) {
 	pool := stubPool{
 		quota: 2,
 		unalloc: map[arvados.InstanceType]int{
-			test.InstanceType(3): 1,
+			test.InstanceType(3): 2,
 		},
 		idle: map[arvados.InstanceType]int{
-			test.InstanceType(3): 1,
+			test.InstanceType(3): 2,
 		},
 		running:   map[string]time.Time{},
 		creates:   []arvados.InstanceType{},
 		starts:    []string{},
-		canCreate: 1,
+		canCreate: 0,
 	}
-	sch := New(ctx, &queue, &pool, nil, time.Millisecond, time.Millisecond)
+	sch := New(ctx, arvados.NewClientFromEnv(), &queue, &pool, nil, time.Millisecond, time.Millisecond)
 	for i := 0; i < 30; i++ {
 		sch.runQueue()
 		sch.sync()
 		time.Sleep(time.Millisecond)
 	}
 	c.Check(pool.shutdowns, check.Equals, 0)
-	c.Check(pool.starts, check.HasLen, 1)
+	c.Check(pool.starts, check.HasLen, 2)
 	unlocked := map[string]int{}
 	for _, chg := range queue.StateChanges() {
 		if chg.To == arvados.ContainerStateQueued {
@@ -405,7 +420,7 @@ func (*SchedulerSuite) TestStartWhileCreating(c *check.C) {
 		},
 	}
 	queue.Update()
-	New(ctx, &queue, &pool, nil, time.Millisecond, time.Millisecond).runQueue()
+	New(ctx, arvados.NewClientFromEnv(), &queue, &pool, nil, time.Millisecond, time.Millisecond).runQueue()
 	c.Check(pool.creates, check.DeepEquals, []arvados.InstanceType{test.InstanceType(2), test.InstanceType(1)})
 	c.Check(pool.starts, check.DeepEquals, []string{uuids[6], uuids[5], uuids[3], uuids[2]})
 	running := map[string]bool{}
@@ -449,7 +464,7 @@ func (*SchedulerSuite) TestKillNonexistentContainer(c *check.C) {
 		},
 	}
 	queue.Update()
-	sch := New(ctx, &queue, &pool, nil, time.Millisecond, time.Millisecond)
+	sch := New(ctx, arvados.NewClientFromEnv(), &queue, &pool, nil, time.Millisecond, time.Millisecond)
 	c.Check(pool.running, check.HasLen, 1)
 	sch.sync()
 	for deadline := time.Now().Add(time.Second); len(pool.Running()) > 0 && time.Now().Before(deadline); time.Sleep(time.Millisecond) {
@@ -482,7 +497,7 @@ func (*SchedulerSuite) TestContainersMetrics(c *check.C) {
 	pool := stubPool{
 		unalloc: map[arvados.InstanceType]int{test.InstanceType(1): 1},
 	}
-	sch := New(ctx, &queue, &pool, nil, time.Millisecond, time.Millisecond)
+	sch := New(ctx, arvados.NewClientFromEnv(), &queue, &pool, nil, time.Millisecond, time.Millisecond)
 	sch.runQueue()
 	sch.updateMetrics()
 
@@ -494,7 +509,7 @@ func (*SchedulerSuite) TestContainersMetrics(c *check.C) {
 	// 'over quota' metric will be 1 because no workers are available and canCreate defaults
 	// to zero.
 	pool = stubPool{}
-	sch = New(ctx, &queue, &pool, nil, time.Millisecond, time.Millisecond)
+	sch = New(ctx, arvados.NewClientFromEnv(), &queue, &pool, nil, time.Millisecond, time.Millisecond)
 	sch.runQueue()
 	sch.updateMetrics()
 
@@ -527,7 +542,7 @@ func (*SchedulerSuite) TestContainersMetrics(c *check.C) {
 		unalloc: map[arvados.InstanceType]int{test.InstanceType(1): 1},
 		running: map[string]time.Time{},
 	}
-	sch = New(ctx, &queue, &pool, nil, time.Millisecond, time.Millisecond)
+	sch = New(ctx, arvados.NewClientFromEnv(), &queue, &pool, nil, time.Millisecond, time.Millisecond)
 	sch.runQueue()
 	sch.updateMetrics()
 
