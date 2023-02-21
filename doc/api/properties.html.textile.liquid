@@ -15,7 +15,23 @@ Searching for records using properties is described in "Filtering on subproperti
 
 h2. Reserved properties
 
-The following properties are set by Arvados components.
+Components that ship with Arvados may automatically set properties on objects. These usually help track provenance or provide additional link metadata. These properties usually have a key that starts with @arv:@, and can always be set even when the system is configured with a strict vocabulary.
+
+table(table table-bordered table-condensed).
+|_. Property&nbsp;name|_. Appears&nbsp;on|_. Value&nbsp;type|_.Description|
+{% comment %}
+The arv:git* container properties, and the associated Git commands, primarily come from arvados_cwl.executor.ArvCwlExecutor.get_git_info.
+{% endcomment -%}
+|arv:gitBranch|container|string|When @arvados-cwl-runner@ is run from a Git checkout, this property is set with the name of the branch checked out (the output of @git rev-parse --abbrev-ref HEAD@)|
+|arv:gitCommitter|container|string|When @arvados-cwl-runner@ is run from a Git checkout, this property is set with the name and email address of the committer of the most recent commit (the output of @git log --format='%cn <%ce>' -n1 HEAD@)|
+|arv:gitCommit|container|string|When @arvados-cwl-runner@ is run from a Git checkout, this property is set with the full checksum of the most recent commit (the output of @git log --format='%H' -n1 HEAD@)|
+|arv:gitDate|container|string|When @arvados-cwl-runner@ is run from a Git checkout, this property is set with the commit date of the most recent commit in RFC 2822 format (the output of @git log --format='%cD' -n1 HEAD@)|
+|arv:gitDescribe|container|string|When @arvados-cwl-runner@ is run from a Git checkout, this property is set with the name of the most recent tag that is reachable from the most recent commit (the output of @git describe --always --tags@)|
+|arv:gitOrigin|container|string|When @arvados-cwl-runner@ is run from a Git checkout, this property is set with the URL of the remote named @origin@, if set (the output of @git remote get-url origin@)|
+|arv:gitPath|container|string|When @arvados-cwl-runner@ is run from a Git checkout, this property is set with the absolute path of the checkout on the filesystem|
+|arv:gitStatus|container|string|When @arvados-cwl-runner@ is run from a Git checkout, this property is set with a machine-readable summary of files modified in the checkout since the most recent commit (the output of @git status --untracked-files=no --porcelain@)|
+
+The following system properties predate the @arv:@ key prefix, but are still reserved and can always be set.
 
 table(table table-bordered table-condensed).
 |_. Property name|_. Appears on|_. Value type|_.Description|

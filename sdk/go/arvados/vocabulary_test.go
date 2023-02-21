@@ -301,6 +301,37 @@ func (s *VocabularySuite) TestNewVocabulary(c *check.C) {
 	}
 }
 
+func (s *VocabularySuite) TestValidSystemProperties(c *check.C) {
+	s.testVoc.StrictTags = true
+	properties := map[string]interface{}{
+		"arv:gitBranch": "main",
+		"arv:OK":        true,
+		"arv:cost":      123,
+	}
+	c.Check(s.testVoc.Check(properties), check.IsNil)
+}
+
+func (s *VocabularySuite) TestSystemPropertiesPrefixTypo(c *check.C) {
+	s.testVoc.StrictTags = true
+	for _, key := range []string{
+		// Extra characters in prefix
+		"arv :foo",
+		" arv:foo",
+		// Wrong punctuation
+		"arv.foo",
+		"arv-foo",
+		"arv_foo",
+		// Wrong case
+		"Arv:foo",
+		// Wrong word
+		"arvados",
+		"arvados:foo",
+	} {
+		properties := map[string]interface{}{key: "value"}
+		c.Check(s.testVoc.Check(properties), check.NotNil)
+	}
+}
+
 func (s *VocabularySuite) TestValidationErrors(c *check.C) {
 	tests := []struct {
 		name       string

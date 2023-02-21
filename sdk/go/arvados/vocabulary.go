@@ -26,7 +26,10 @@ type VocabularyTag struct {
 	Values map[string]VocabularyTagValue `json:"values"`
 }
 
-// Cannot have a constant map in Go, so we have to use a function
+// Cannot have a constant map in Go, so we have to use a function.
+// If you are adding a new system property, it SHOULD start with `arv:`,
+// and Check will allow it. This map is for historical exceptions that
+// predate standardizing on this prefix.
 func (v *Vocabulary) systemTagKeys() map[string]bool {
 	return map[string]bool{
 		// Collection keys - set by arvados-cwl-runner
@@ -267,7 +270,7 @@ func (v *Vocabulary) Check(data map[string]interface{}) error {
 	}
 	for key, val := range data {
 		// Checks for key validity
-		if v.reservedTagKeys[key] {
+		if strings.HasPrefix(key, "arv:") || v.reservedTagKeys[key] {
 			// Allow reserved keys to be used even if they are not defined in
 			// the vocabulary no matter its strictness.
 			continue
