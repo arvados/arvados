@@ -10,12 +10,9 @@ import (
 	"errors"
 	"fmt"
 	"reflect"
-	"regexp"
 	"strconv"
 	"strings"
 )
-
-const systemKeyPattern = `^arv:[a-zA-Z]`
 
 type Vocabulary struct {
 	reservedTagKeys map[string]bool          `json:"-"`
@@ -30,8 +27,8 @@ type VocabularyTag struct {
 }
 
 // Cannot have a constant map in Go, so we have to use a function.
-// If you are adding a new system property, it SHOULD match `systemKeyPattern`
-// above, and Check will allow it. This map is for historical exceptions that
+// If you are adding a new system property, it SHOULD start with `arv:`,
+// and Check will allow it. This map is for historical exceptions that
 // predate standardizing on this prefix.
 func (v *Vocabulary) systemTagKeys() map[string]bool {
 	return map[string]bool{
@@ -271,13 +268,9 @@ func (v *Vocabulary) Check(data map[string]interface{}) error {
 	if v == nil {
 		return nil
 	}
-	systemKeyRegexp, err := regexp.Compile(systemKeyPattern)
-	if err != nil {
-		return err
-	}
 	for key, val := range data {
 		// Checks for key validity
-		if systemKeyRegexp.MatchString(key) || v.reservedTagKeys[key] {
+		if strings.HasPrefix(key, "arv:") || v.reservedTagKeys[key] {
 			// Allow reserved keys to be used even if they are not defined in
 			// the vocabulary no matter its strictness.
 			continue

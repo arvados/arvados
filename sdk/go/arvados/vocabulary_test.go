@@ -6,7 +6,6 @@ package arvados
 
 import (
 	"encoding/json"
-	"fmt"
 	"regexp"
 	"strings"
 
@@ -312,28 +311,21 @@ func (s *VocabularySuite) TestValidSystemProperties(c *check.C) {
 	c.Check(s.testVoc.Check(properties), check.IsNil)
 }
 
-func (s *VocabularySuite) TestSystemPropertiesFirstCharacterAlphabetic(c *check.C) {
-	s.testVoc.StrictTags = true
-	properties := map[string]interface{}{"arv:": "value"}
-	c.Check(s.testVoc.Check(properties), check.NotNil)
-	// If we expand the list of allowed characters in the future, these lists
-	// may need adjustment to match.
-	for _, prefix := range []string{" ", ".", "_", "-", "1"} {
-		for _, suffix := range []string{"", "invalid"} {
-			key := fmt.Sprintf("arv:%s%s", prefix, suffix)
-			properties := map[string]interface{}{key: "value"}
-			c.Check(s.testVoc.Check(properties), check.NotNil)
-		}
-	}
-}
-
 func (s *VocabularySuite) TestSystemPropertiesPrefixTypo(c *check.C) {
 	s.testVoc.StrictTags = true
 	for _, key := range []string{
+		// Extra characters in prefix
 		"arv :foo",
+		" arv:foo",
+		// Wrong punctuation
+		"arv.foo",
+		"arv-foo",
+		"arv_foo",
+		// Wrong case
+		"Arv:foo",
+		// Wrong word
 		"arvados",
 		"arvados:foo",
-		"Arv:foo",
 	} {
 		properties := map[string]interface{}{key: "value"}
 		c.Check(s.testVoc.Check(properties), check.NotNil)
