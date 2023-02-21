@@ -24,7 +24,7 @@ NODES=(
   [keep0.${CLUSTER}.${DOMAIN}]=keepstore
   [keep1.${CLUSTER}.${DOMAIN}]=keepstore
   [keep.${CLUSTER}.${DOMAIN}]=keepproxy,keepweb
-  [workbench.${CLUSTER}.${DOMAIN}]=workbench,workbench2,webshell
+  [workbench.${CLUSTER}.${DOMAIN}]=monitoring,workbench,workbench2,webshell
   [shell.${CLUSTER}.${DOMAIN}]=shell
 )
 
@@ -147,3 +147,4 @@ RELEASE="production"
 # DOCKER_TAG="v2.4.2"
 # LOCALE_TAG="v0.3.4"
 # LETSENCRYPT_TAG="v2.1.0"
+# PROMETHEUS_TAG="v5.6.5"

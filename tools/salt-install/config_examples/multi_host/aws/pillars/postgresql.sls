@@ -5,6 +5,8 @@
 
 ### POSTGRESQL
 postgres:
+  pkgs_extra:
+    - postgresql-contrib
   use_upstream_repo: true
   version: '12'
   postgresconf: |-
@@ -20,6 +22,8 @@ postgres:
     __CLUSTER___arvados:
       ensure: present
       password: "__DATABASE_PASSWORD__"
+    prometheus:
+      ensure: present
 
   # tablespaces:
   #   arvados_tablespace:
