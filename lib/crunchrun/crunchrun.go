@@ -1203,6 +1203,8 @@ func (runner *ContainerRunner) updateLogs() {
 var spotInterruptionCheckInterval = 5 * time.Second
 var ec2MetadataBaseURL = "http://169.254.169.254"
 
+const ec2TokenTTL = time.Second * 21600
+
 func (runner *ContainerRunner) checkSpotInterruptionNotices() {
 	type ec2metadata struct {
 		Action string    `json:"action"`
@@ -1210,38 +1212,47 @@ func (runner *ContainerRunner) checkSpotInterruptionNotices() {
 	}
 	runner.CrunchLog.Printf("Checking for spot interruptions every %v using instance metadata at %s", spotInterruptionCheckInterval, ec2MetadataBaseURL)
 	var metadata ec2metadata
+	var token string
+	var tokenExp time.Time
 	check := func() error {
 		ctx, cancel := context.WithDeadline(context.Background(), time.Now().Add(time.Minute))
 		defer cancel()
-		req, err := http.NewRequestWithContext(ctx, http.MethodPut, ec2MetadataBaseURL+"/latest/api/token", nil)
+		if token == "" || tokenExp.Sub(time.Now()) < time.Minute {
+			req, err := http.NewRequestWithContext(ctx, http.MethodPut, ec2MetadataBaseURL+"/latest/api/token", nil)
+			if err != nil {
+				return err
+			}
+			req.Header.Set("X-aws-ec2-metadata-token-ttl-seconds", fmt.Sprintf("%d", int(ec2TokenTTL/time.Second)))
+			resp, err := http.DefaultClient.Do(req)
+			if err != nil {
+				return err
+			}
+			defer resp.Body.Close()
+			if resp.StatusCode != http.StatusOK {
+				return fmt.Errorf("%s", resp.Status)
+			}
+			newtoken, err := ioutil.ReadAll(resp.Body)
+			if err != nil {
+				return err
+			}
+			token = strings.TrimSpace(string(newtoken))
+			tokenExp = time.Now().Add(ec2TokenTTL)
+		}
+		req, err := http.NewRequestWithContext(ctx, http.MethodGet, ec2MetadataBaseURL+"/latest/meta-data/spot/instance-action", nil)
 		if err != nil {
 			return err
 		}
-		req.Header.Set("X-aws-ec2-metadata-token-ttl-seconds", "21600")
+		req.Header.Set("X-aws-ec2-metadata-token", token)
 		resp, err := http.DefaultClient.Do(req)
 		if err != nil {
 			return err
 		}
 		defer resp.Body.Close()
-		if resp.StatusCode != http.StatusOK {
-			return fmt.Errorf("%s", resp.Status)
-		}
-		token, err := ioutil.ReadAll(resp.Body)
-		if err != nil {
-			return err
-		}
-		req, err = http.NewRequestWithContext(ctx, http.MethodGet, ec2MetadataBaseURL+"/latest/meta-data/spot/instance-action", nil)
-		if err != nil {
-			return err
-		}
-		req.Header.Set("X-aws-ec2-metadata-token", strings.TrimSpace(string(token)))
-		resp, err = http.DefaultClient.Do(req)
-		if err != nil {
-			return err
-		}
-		defer resp.Body.Close()
 		metadata = ec2metadata{}
-		if resp.StatusCode == http.StatusNotFound {
+		switch resp.StatusCode {
+		case http.StatusOK:
+			break
+		case http.StatusNotFound:
 			// "If Amazon EC2 is not preparing to stop or
 			// terminate the instance, or if you
 			// terminated the instance yourself,
@@ -1249,7 +1260,10 @@ func (runner *ContainerRunner) checkSpotInterruptionNotices() {
 			// instance metadata and you receive an HTTP
 			// 404 error when you try to retrieve it."
 			return nil
-		} else if resp.StatusCode != http.StatusOK {
+		case http.StatusUnauthorized:
+			token = ""
+			return fmt.Errorf("%s", resp.Status)
+		default:
 			return fmt.Errorf("%s", resp.Status)
 		}
 		err = json.NewDecoder(resp.Body).Decode(&metadata)
@@ -1265,12 +1279,13 @@ func (runner *ContainerRunner) checkSpotInterruptionNotices() {
 		if err != nil {
 			runner.CrunchLog.Printf("Error checking spot interruptions: %s", err)
 			failures++
-			if failures > 3 {
-				runner.CrunchLog.Printf("Giving up on checking spot interruptions after too many errors")
+			if failures > 5 {
+				runner.CrunchLog.Printf("Giving up on checking spot interruptions after too many consecutive failures")
 				return
 			}
 			continue
 		}
+		failures = 0
 		if metadata != lastmetadata {
 			lastmetadata = metadata
 			text := fmt.Sprintf("Cloud provider indicates instance action %q scheduled for time %q", metadata.Action, metadata.Time.UTC().Format(time.RFC3339))

@@ -13,6 +13,7 @@ import (
 	"io"
 	"io/ioutil"
 	"log"
+	"math/rand"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -21,6 +22,7 @@ import (
 	"runtime/pprof"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"syscall"
 	"testing"
 	"time"
@@ -777,38 +779,50 @@ func (s *TestSuite) TestRunAlreadyRunning(c *C) {
 	c.Check(ran, Equals, false)
 }
 
-func (s *TestSuite) TestSpotInterruptionNotice(c *C) {
-	var failedOnce bool
-	var stoptime time.Time
-	token := "fake-ec2-metadata-token"
-	stub := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if !failedOnce {
+func ec2MetadataServerStub(c *C, token *string, failureRate float64, stoptime *atomic.Value) *httptest.Server {
+	failedOnce := false
+	return httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if !failedOnce || rand.Float64() < failureRate {
 			w.WriteHeader(http.StatusServiceUnavailable)
 			failedOnce = true
 			return
 		}
 		switch r.URL.Path {
 		case "/latest/api/token":
-			fmt.Fprintln(w, token)
+			fmt.Fprintln(w, *token)
 		case "/latest/meta-data/spot/instance-action":
-			if r.Header.Get("X-aws-ec2-metadata-token") != token {
+			if r.Header.Get("X-aws-ec2-metadata-token") != *token {
 				w.WriteHeader(http.StatusUnauthorized)
-			} else if stoptime.IsZero() {
+			} else if t, _ := stoptime.Load().(time.Time); t.IsZero() {
 				w.WriteHeader(http.StatusNotFound)
 			} else {
-				fmt.Fprintf(w, `{"action":"stop","time":"%s"}`, stoptime.Format(time.RFC3339))
+				fmt.Fprintf(w, `{"action":"stop","time":"%s"}`, t.Format(time.RFC3339))
 			}
 		default:
 			w.WriteHeader(http.StatusNotFound)
 		}
 	}))
+}
+
+func (s *TestSuite) TestSpotInterruptionNotice(c *C) {
+	s.testSpotInterruptionNotice(c, 0.1)
+}
+
+func (s *TestSuite) TestSpotInterruptionNoticeNotAvailable(c *C) {
+	s.testSpotInterruptionNotice(c, 1)
+}
+
+func (s *TestSuite) testSpotInterruptionNotice(c *C, failureRate float64) {
+	var stoptime atomic.Value
+	token := "fake-ec2-metadata-token"
+	stub := ec2MetadataServerStub(c, &token, failureRate, &stoptime)
 	defer stub.Close()
 
 	defer func(i time.Duration, u string) {
 		spotInterruptionCheckInterval = i
 		ec2MetadataBaseURL = u
 	}(spotInterruptionCheckInterval, ec2MetadataBaseURL)
-	spotInterruptionCheckInterval = time.Second / 4
+	spotInterruptionCheckInterval = time.Second / 8
 	ec2MetadataBaseURL = stub.URL
 
 	go s.runner.checkSpotInterruptionNotices()
@@ -824,13 +838,18 @@ func (s *TestSuite) TestSpotInterruptionNotice(c *C) {
     "state": "Locked"
 }`, nil, func() int {
 		time.Sleep(time.Second)
-		stoptime = time.Now().Add(time.Minute).UTC()
+		stoptime.Store(time.Now().Add(time.Minute).UTC())
+		token = "different-fake-ec2-metadata-token"
 		time.Sleep(time.Second)
 		return 0
 	})
-	c.Check(s.api.Logs["crunch-run"].String(), Matches, `(?ms).*Checking for spot interruptions every 250ms using instance metadata at http://.*`)
+	c.Check(s.api.Logs["crunch-run"].String(), Matches, `(?ms).*Checking for spot interruptions every 125ms using instance metadata at http://.*`)
 	c.Check(s.api.Logs["crunch-run"].String(), Matches, `(?ms).*Error checking spot interruptions: 503 Service Unavailable.*`)
-	c.Check(s.api.Logs["crunch-run"].String(), Matches, `(?ms).*Cloud provider indicates instance action "stop" scheduled for time "`+stoptime.Format(time.RFC3339)+`".*`)
+	if failureRate == 1 {
+		c.Check(s.api.Logs["crunch-run"].String(), Matches, `(?ms).*Giving up on checking spot interruptions after too many consecutive failures.*`)
+	} else {
+		c.Check(s.api.Logs["crunch-run"].String(), Matches, `(?ms).*Cloud provider indicates instance action "stop" scheduled for time "`+stoptime.Load().(time.Time).Format(time.RFC3339)+`".*`)
+	}
 }
 
 func (s *TestSuite) TestRunTimeExceeded(c *C) {
