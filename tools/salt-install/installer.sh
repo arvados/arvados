@@ -301,7 +301,7 @@ case "$subcmd" in
 	else
 	    # Just deploy the node that was supplied on the command line.
 	    sync $NODE $BRANCH
-	    deploynode $NODE ""
+	    deploynode $NODE "${NODES[$NODE]}"
 	fi
 
 	set +x

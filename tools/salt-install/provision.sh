@@ -32,6 +32,7 @@ usage() {
   echo >&2 "                                                keepbalance"
   echo >&2 "                                                keepstore"
   echo >&2 "                                                keepweb"
+  echo >&2 "                                                monitoring"
   echo >&2 "                                                shell"
   echo >&2 "                                                webshell"
   echo >&2 "                                                websocket"
@@ -108,7 +109,7 @@ arguments() {
         for i in ${2//,/ }
           do
             # Verify the role exists
-            if [[ ! "database,api,controller,keepstore,websocket,keepweb,workbench2,webshell,keepbalance,keepproxy,shell,workbench,dispatcher" == *"$i"* ]]; then
+            if [[ ! "database,api,controller,keepstore,websocket,keepweb,workbench2,webshell,keepbalance,keepproxy,shell,workbench,dispatcher,monitoring" == *"$i"* ]]; then
               echo "The role '${i}' is not a valid role"
               usage
               exit 1
@@ -220,6 +221,7 @@ DOCKER_TAG="v2.4.2"
 LOCALE_TAG="v0.3.4"
 LETSENCRYPT_TAG="v2.1.0"
 LOGROTATE_TAG="v0.14.0"
+PROMETHEUS_TAG="v5.6.5"
 
 # Salt's dir
 DUMP_SALT_CONFIG_DIR=""
@@ -357,6 +359,11 @@ echo "...postgres"
 test -d postgres && ( cd postgres && git fetch ) \
   || git clone --quiet ${POSTGRES_URL} ${F_DIR}/postgres
 ( cd postgres && git checkout --quiet tags/"${POSTGRES_TAG}" )
+
+echo "...prometheus"
+test -d prometheus && ( cd prometheus && git fetch ) \
+  || git clone --quiet https://github.com/saltstack-formulas/prometheus-formula.git ${F_DIR}/prometheus
+( cd prometheus && git checkout --quiet tags/"${PROMETHEUS_TAG}" )
 
 echo "...letsencrypt"
 test -d letsencrypt && ( cd letsencrypt && git fetch ) \
@@ -685,9 +692,49 @@ else
     case "${R}" in
       "database")
         # States
-        echo "    - postgres" >> ${S_DIR}/top.sls
+        grep -q "\- postgres$" ${S_DIR}/top.sls || echo "    - postgres" >> ${S_DIR}/top.sls
+        grep -q "prometheus" ${S_DIR}/top.sls || echo "    - prometheus" >> ${S_DIR}/top.sls
+        grep -q "extra.postgresql_mtail" ${S_DIR}/top.sls || echo "    - extra.postgresql_mtail" >> ${S_DIR}/top.sls
         # Pillars
-        echo '    - postgresql' >> ${P_DIR}/top.sls
+        grep -q "postgresql" ${P_DIR}/top.sls || echo "    - postgresql" >> ${P_DIR}/top.sls
+        grep -q "prometheus_pg_exporter" ${P_DIR}/top.sls || echo "    - prometheus_pg_exporter" >> ${P_DIR}/top.sls
+      ;;
+      "monitoring")
+        ### States ###
+        grep -q "nginx" ${S_DIR}/top.sls || echo "    - nginx" >> ${S_DIR}/top.sls
+        grep -q "prometheus" ${S_DIR}/top.sls || echo "    - prometheus" >> ${S_DIR}/top.sls
+        if [ "${SSL_MODE}" = "lets-encrypt" ]; then
+          grep -q "letsencrypt"     ${S_DIR}/top.sls || echo "    - letsencrypt" >> ${S_DIR}/top.sls
+          if [ "x${USE_LETSENCRYPT_ROUTE53}" = "xyes" ]; then
+            grep -q "aws_credentials" ${S_DIR}/top.sls || echo "    - aws_credentials" >> ${S_DIR}/top.sls
+          fi
+        elif [ "${SSL_MODE}" = "bring-your-own" ]; then
+          copy_custom_cert ${CUSTOM_CERTS_DIR} ${R}
+          if [ "${SSL_KEY_ENCRYPTED}" = "yes" ]; then
+            grep -q "ssl_key_encrypted" ${S_DIR}/top.sls || echo "    - extra.ssl_key_encrypted" >> ${S_DIR}/top.sls
+          fi
+        fi
+        ### Pillars ###
+        grep -q "nginx_${R}_configuration" ${P_DIR}/top.sls || echo "    - nginx_${R}_configuration" >> ${P_DIR}/top.sls
+        grep -q "prometheus_server" ${P_DIR}/top.sls || echo "    - prometheus_server" >> ${P_DIR}/top.sls
+        if [ "${SSL_MODE}" = "lets-encrypt" ]; then
+          grep -q "letsencrypt"     ${P_DIR}/top.sls || echo "    - letsencrypt" >> ${P_DIR}/top.sls
+          grep -q "letsencrypt_${R}_configuration" ${P_DIR}/top.sls || echo "    - letsencrypt_${R}_configuration" >> ${P_DIR}/top.sls
+          if [ "${USE_LETSENCRYPT_ROUTE53}" = "yes" ]; then
+            grep -q "aws_credentials" ${P_DIR}/top.sls || echo "    - aws_credentials" >> ${P_DIR}/top.sls
+          fi
+          sed -i "s/__CERT_REQUIRES__/cmd: create-initial-cert-${R}.${CLUSTER}.${DOMAIN}*/g;
+                  s#__CERT_PEM__#/etc/letsencrypt/live/${R}.${CLUSTER}.${DOMAIN}/fullchain.pem#g;
+                  s#__CERT_KEY__#/etc/letsencrypt/live/${R}.${CLUSTER}.${DOMAIN}/privkey.pem#g" \
+          ${P_DIR}/nginx_${R}_configuration.sls
+        elif [ "${SSL_MODE}" = "bring-your-own" ]; then
+          grep -q "ssl_key_encrypted" ${P_DIR}/top.sls || echo "    - ssl_key_encrypted" >> ${P_DIR}/top.sls
+          sed -i "s/__CERT_REQUIRES__/file: extra_custom_certs_file_copy_arvados-${R}.pem/g;
+                  s#__CERT_PEM__#/etc/nginx/ssl/arvados-${R}.pem#g;
+                  s#__CERT_KEY__#/etc/nginx/ssl/arvados-${R}.key#g" \
+            ${P_DIR}/nginx_${R}_configuration.sls
+          grep -q ${R} ${P_DIR}/extra_custom_certs.sls || echo "  - ${R}" >> ${P_DIR}/extra_custom_certs.sls
+        fi
       ;;
       "api")
         # States
