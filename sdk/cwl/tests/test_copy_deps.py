@@ -5,57 +5,39 @@
 import arvados
 import arvados.collection
 import subprocess
-import json
 
 api = arvados.api()
 
-workflow_content = """{
-    "$graph": [
-        {
-            "baseCommand": "echo",
-            "class": "CommandLineTool",
-            "cwlVersion": "v1.2",
-            "hints": [
-                {
-                    "class": "http://arvados.org/cwl#WorkflowRunnerResources"
-                }
-            ],
-            "id": "#main",
-            "inputs": [
-                {
-                    "default": {
-                        "basename": "b",
-                        "class": "File",
-                        "location": "keep:d7514270f356df848477718d58308cc4+94/b",
-                        "nameext": "",
-                        "nameroot": "b",
-                        "size": 0
-                    },
-                    "id": "#main/message",
-                    "inputBinding": {
-                        "position": 1
-                    },
-                    "type": "File"
-                }
-            ],
-            "outputs": []
-        }
-    ],
-    "cwlVersion": "v1.2"
-}"""
+workflow_content = """# Copyright (C) The Arvados Authors. All rights reserved.
+#
+# SPDX-License-Identifier: Apache-2.0
+
+cwlVersion: v1.2
+class: CommandLineTool
+baseCommand: echo
+inputs:
+  message:
+    type: File
+    inputBinding:
+      position: 1
+    default:
+      class: File
+      location: keep:d7514270f356df848477718d58308cc4+94/b
+
+outputs: []
+"""
+
+expect_file = "19070-copy-deps.cwl"
 
 def check_workflow_content(uuid):
     c = arvados.collection.Collection(uuid)
     try:
-        j = json.load(c.open("workflow.json"))
-    except IOError:
+        with c.open(expect_file) as f:
+            content = f.read()
+        match = (content == workflow_content)
+        return match
+    except:
         return False
-    # The value of "acrContainerImage" is tied to the specific version
-    # of arvados-cwl-runner so we can't just compare PDH of the whole
-    # workflow collection, it changes with every version.
-    del j["$graph"][0]["hints"][0]["acrContainerImage"]
-    print
-    return json.dumps(j, sort_keys=True, indent=4, separators=(',',': ')) == workflow_content
 
 def check_contents(group, wf_uuid):
     contents = api.groups().contents(uuid=group["uuid"]).execute()
@@ -88,7 +70,7 @@ def check_contents(group, wf_uuid):
         if c["kind"] == "arvados#collection" and check_workflow_content(c["portable_data_hash"]):
             found = True
     if not found:
-        raise Exception("Couldn't find collection containing expected workflow.json")
+        raise Exception("Couldn't find collection containing expected "+expect_file)
 
 
 def test_create():
@@ -137,7 +119,7 @@ def test_update():
             if c["kind"] == "arvados#collection" and check_workflow_content(c["portable_data_hash"]):
                 found = True
         if not found:
-            raise Exception("Couldn't find collection containing expected workflow.json")
+            raise Exception("Couldn't find collection containing expected "+expect_file)
 
         # Updating by default will copy missing items
         cmd = ["arvados-cwl-runner", "--disable-git", "--update-workflow", wf_uuid, "19070-copy-deps.cwl"]

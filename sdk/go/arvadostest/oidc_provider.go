@@ -9,6 +9,7 @@ import (
 	"crypto/rsa"
 	"encoding/base64"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -38,8 +39,9 @@ type OIDCProvider struct {
 	// send incoming /userinfo requests to HoldUserInfo (if not
 	// nil), then receive from ReleaseUserInfo (if not nil),
 	// before responding (these are used to set up races)
-	HoldUserInfo    chan *http.Request
-	ReleaseUserInfo chan struct{}
+	HoldUserInfo        chan *http.Request
+	ReleaseUserInfo     chan struct{}
+	UserInfoErrorStatus int // if non-zero, return this http status (probably 5xx)
 
 	key       *rsa.PrivateKey
 	Issuer    *httptest.Server
@@ -137,6 +139,11 @@ func (p *OIDCProvider) serveOIDC(w http.ResponseWriter, req *http.Request) {
 		}
 		if p.ReleaseUserInfo != nil {
 			<-p.ReleaseUserInfo
+		}
+		if p.UserInfoErrorStatus > 0 {
+			w.WriteHeader(p.UserInfoErrorStatus)
+			fmt.Fprintf(w, "%T error body", p)
+			return
 		}
 		authhdr := req.Header.Get("Authorization")
 		if _, err := jwt.ParseSigned(strings.TrimPrefix(authhdr, "Bearer ")); err != nil {

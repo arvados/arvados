@@ -26,7 +26,7 @@
                     "in": [],
                     "label": "collection_per_tool.cwl",
                     "out": [],
-                    "run": "keep:92045991f69a417f2f26660db67911ef+61/workflow.json#main"
+                    "run": "keep:177002db236f41230905621862cc4230+367/collection_per_tool.cwl"
                 }
             ]
         }

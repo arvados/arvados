@@ -3,6 +3,8 @@
 #
 # SPDX-License-Identifier: AGPL-3.0
 
+{%- import_yaml "ssl_key_encrypted.sls" as ssl_key_encrypted_pillar %}
+
 ### ARVADOS
 arvados:
   config:
@@ -46,5 +48,8 @@ nginx:
             - include: snippets/ssl_hardening_default.conf
             - ssl_certificate: __CERT_PEM__
             - ssl_certificate_key: __CERT_KEY__
+            {%- if ssl_key_encrypted_pillar.ssl_key_encrypted.enabled %}
+            - ssl_password_file: {{ '/run/arvados/' | path_join(ssl_key_encrypted_pillar.ssl_key_encrypted.privkey_password_filename) }}
+            {%- endif %}
             - access_log: /var/log/nginx/workbench2.__CLUSTER__.__DOMAIN__.access.log combined
             - error_log: /var/log/nginx/workbench2.__CLUSTER__.__DOMAIN__.error.log

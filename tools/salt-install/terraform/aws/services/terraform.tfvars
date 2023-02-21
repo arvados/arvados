@@ -7,3 +7,7 @@
 
 # Set the instance type for your hosts. Default: m5a.large
 # default_instance_type = "t2.micro"
+
+# AWS secret's name which holds the SSL certificate private key's password.
+# Default: "arvados-ssl-privkey-password"
+# ssl_password_secret_name_suffix = "some-name-suffix"

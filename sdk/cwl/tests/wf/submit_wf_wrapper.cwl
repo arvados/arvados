@@ -15,41 +15,14 @@
             "id": "#main",
             "inputs": [
                 {
-                    "default": {
-                        "basename": "blorp.txt",
-                        "class": "File",
-                        "location": "keep:169f39d466a5438ac4a90e779bf750c7+53/blorp.txt",
-                        "nameext": ".txt",
-                        "nameroot": "blorp",
-                        "size": 16
-                    },
                     "id": "#main/x",
                     "type": "File"
                 },
                 {
-                    "default": {
-                        "basename": "99999999999999999999999999999998+99",
-                        "class": "Directory",
-                        "location": "keep:99999999999999999999999999999998+99"
-                    },
                     "id": "#main/y",
                     "type": "Directory"
                 },
                 {
-                    "default": {
-                        "basename": "anonymous",
-                        "class": "Directory",
-                        "listing": [
-                            {
-                                "basename": "renamed.txt",
-                                "class": "File",
-                                "location": "keep:99999999999999999999999999999998+99/file1.txt",
-                                "nameext": ".txt",
-                                "nameroot": "renamed",
-                                "size": 0
-                            }
-                        ]
-                    },
                     "id": "#main/z",
                     "type": "Directory"
                 }

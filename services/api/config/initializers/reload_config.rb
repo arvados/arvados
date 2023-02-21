@@ -35,13 +35,13 @@ else
           rescue => e
             Rails.logger.info("reload_config: config file updated but could not be loaded: #{e}")
             t_lastload = t
-            continue
+            next
           end
           if hash == hash_lastload
             # If we reloaded a new or updated file, but the content is
             # identical, keep polling instead of restarting.
             t_lastload = t
-            continue
+            next
           end
 
           restartfile = Rails.root.join('tmp', 'restart.txt')

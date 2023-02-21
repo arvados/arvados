@@ -19,10 +19,6 @@ provider "aws" {
   }
 }
 
-locals {
-  pubkey_path = pathexpand(var.pubkey_path)
-  pubkey_name = "arvados-deployer-key"
-}
 resource "aws_key_pair" "deployer" {
   key_name = local.pubkey_name
   public_key = file(local.pubkey_path)
@@ -38,6 +34,15 @@ resource "aws_iam_instance_profile" "dispatcher_instance_profile" {
   role = aws_iam_role.cloud_dispatcher_iam_role.name
 }
 
+resource "aws_secretsmanager_secret" "ssl_password_secret" {
+  name = local.ssl_password_secret_name
+}
+
+resource "aws_iam_instance_profile" "default_instance_profile" {
+  name = "${local.cluster_name}_default_instance_profile"
+  role = aws_iam_role.default_iam_role.name
+}
+
 resource "aws_instance" "arvados_service" {
   for_each = toset(local.hostnames)
   ami = data.aws_ami.debian-11.image_id
@@ -50,7 +55,7 @@ resource "aws_instance" "arvados_service" {
   subnet_id = data.terraform_remote_state.vpc.outputs.arvados_subnet_id
   vpc_security_group_ids = [ data.terraform_remote_state.vpc.outputs.arvados_sg_id ]
   # This should be done in a more readable way
-  iam_instance_profile = each.value == "controller" ? aws_iam_instance_profile.dispatcher_instance_profile.name : length(regexall("^keep[0-9]+", each.value)) > 0 ? aws_iam_instance_profile.keepstore_instance_profile.name : ""
+  iam_instance_profile = each.value == "controller" ? aws_iam_instance_profile.dispatcher_instance_profile.name : length(regexall("^keep[0-9]+", each.value)) > 0 ? aws_iam_instance_profile.keepstore_instance_profile.name : aws_iam_instance_profile.default_instance_profile.name
   tags = {
     Name = "arvados_service_${each.value}"
   }
@@ -105,4 +110,33 @@ resource "aws_eip_association" "eip_assoc" {
   for_each = toset(local.hostnames)
   instance_id = aws_instance.arvados_service[each.value].id
   allocation_id = data.terraform_remote_state.vpc.outputs.eip_id[each.value]
+}
+
+resource "aws_iam_role" "default_iam_role" {
+  name = "${local.cluster_name}-default-iam-role"
+  assume_role_policy = "${file("../assumerolepolicy.json")}"
+}
+
+resource "aws_iam_policy" "ssl_privkey_password_access" {
+  name = "${local.cluster_name}_ssl_privkey_password_access"
+  policy = jsonencode({
+    Version: "2012-10-17",
+    Statement: [{
+      Effect: "Allow",
+      Action: "secretsmanager:GetSecretValue",
+      Resource: "${aws_secretsmanager_secret.ssl_password_secret.arn}"
+    }]
+  })
+}
+
+# Every service node needs access to the SSL privkey password secret for
+# nginx to be able to use it.
+resource "aws_iam_policy_attachment" "ssl_privkey_password_access_attachment" {
+  name = "${local.cluster_name}_ssl_privkey_password_access_attachment"
+  roles = [
+    aws_iam_role.cloud_dispatcher_iam_role.name,
+    aws_iam_role.default_iam_role.name,
+    data.terraform_remote_state.data-storage.outputs.keepstore_iam_role_name,
+  ]
+  policy_arn = aws_iam_policy.ssl_privkey_password_access.arn
 }

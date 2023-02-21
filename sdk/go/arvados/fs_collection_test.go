@@ -124,6 +124,38 @@ func (s *CollectionFSSuite) SetUpTest(c *check.C) {
 	c.Assert(err, check.IsNil)
 }
 
+func (s *CollectionFSSuite) TestSyncNonCanonicalManifest(c *check.C) {
+	var coll Collection
+	err := s.client.RequestAndDecode(&coll, "GET", "arvados/v1/collections/"+fixtureFooAndBarFilesInDirUUID, nil, nil)
+	c.Assert(err, check.IsNil)
+	mtxt := strings.Replace(coll.ManifestText, "3:3:bar 0:3:foo", "0:3:foo 3:3:bar", -1)
+	c.Assert(mtxt, check.Not(check.Equals), coll.ManifestText)
+	err = s.client.RequestAndDecode(&coll, "POST", "arvados/v1/collections", nil, map[string]interface{}{
+		"collection": map[string]interface{}{
+			"manifest_text": mtxt}})
+	c.Assert(err, check.IsNil)
+	// In order for the rest of the test to work as intended, the API server
+	// needs to retain the file ordering we set manually. We check that here.
+	// We can't check `mtxt == coll.ManifestText` because the API server
+	// might've returned new block signatures if the GET and POST happened in
+	// different seconds.
+	expectPattern := `\./dir1 \S+ 0:3:foo 3:3:bar\n`
+	c.Assert(coll.ManifestText, check.Matches, expectPattern)
+
+	fs, err := coll.FileSystem(s.client, s.kc)
+	c.Assert(err, check.IsNil)
+	err = fs.Sync()
+	c.Check(err, check.IsNil)
+
+	// fs had no local changes, so Sync should not have saved
+	// anything back to the API/database. (If it did, we would see
+	// the manifest rewritten in canonical order.)
+	var saved Collection
+	err = s.client.RequestAndDecode(&saved, "GET", "arvados/v1/collections/"+coll.UUID, nil, nil)
+	c.Assert(err, check.IsNil)
+	c.Check(saved.ManifestText, check.Matches, expectPattern)
+}
+
 func (s *CollectionFSSuite) TestHttpFileSystemInterface(c *check.C) {
 	_, ok := s.fs.(http.FileSystem)
 	c.Check(ok, check.Equals, true)
@@ -1635,7 +1667,7 @@ func (s *CollectionFSUnitSuite) TestLargeManifest(c *check.C) {
 	runtime.ReadMemStats(&memstats)
 	c.Logf("%s Alloc=%d Sys=%d", time.Now(), memstats.Alloc, memstats.Sys)
 
-	f, err := coll.FileSystem(nil, nil)
+	f, err := coll.FileSystem(NewClientFromEnv(), &keepClientStub{})
 	c.Check(err, check.IsNil)
 	c.Logf("%s loaded", time.Now())
 	c.Check(f.Size(), check.Equals, int64(42*dirCount*fileCount))

@@ -44,9 +44,17 @@ type CollectionFileSystem interface {
 type collectionFileSystem struct {
 	fileSystem
 	uuid           string
-	savedPDH       atomic.Value
 	replicas       int
 	storageClasses []string
+
+	// PDH returned by the server as of last sync/load.
+	loadedPDH atomic.Value
+	// PDH of the locally generated manifest as of last
+	// sync/load. This can differ from loadedPDH after loading a
+	// version that was generated with different code and sorts
+	// filenames differently than we do, for example.
+	savedPDH atomic.Value
+
 	// guessSignatureTTL tracks a lower bound for the server's
 	// configured BlobSigningTTL. The guess is initially zero, and
 	// increases when we come across a signature with an expiry
@@ -74,7 +82,7 @@ func (c *Collection) FileSystem(client apiClient, kc keepClient) (CollectionFile
 			thr:       newThrottle(concurrentWriters),
 		},
 	}
-	fs.savedPDH.Store(c.PortableDataHash)
+	fs.loadedPDH.Store(c.PortableDataHash)
 	if r := c.ReplicationDesired; r != nil {
 		fs.replicas = *r
 	}
@@ -94,6 +102,13 @@ func (c *Collection) FileSystem(client apiClient, kc keepClient) (CollectionFile
 	if err := root.loadManifest(c.ManifestText); err != nil {
 		return nil, err
 	}
+
+	txt, err := root.marshalManifest(context.Background(), ".", false)
+	if err != nil {
+		return nil, err
+	}
+	fs.savedPDH.Store(PortableDataHash(txt))
+
 	backdateTree(root, modTime)
 	fs.root = root
 	return fs, nil
@@ -296,7 +311,7 @@ func (fs *collectionFileSystem) Truncate(int64) error {
 // Return value is true if new content was loaded from upstream and
 // any unsaved local changes have been discarded.
 func (fs *collectionFileSystem) checkChangesOnServer(force bool) (bool, error) {
-	if fs.uuid == "" && fs.savedPDH.Load() == "" {
+	if fs.uuid == "" && fs.loadedPDH.Load() == "" {
 		return false, nil
 	}
 
@@ -316,6 +331,7 @@ func (fs *collectionFileSystem) checkChangesOnServer(force bool) (bool, error) {
 		return false, nil
 	}
 
+	loadedPDH, _ := fs.loadedPDH.Load().(string)
 	getparams := map[string]interface{}{"select": []string{"portable_data_hash", "manifest_text"}}
 	if fs.uuid != "" {
 		var coll Collection
@@ -323,7 +339,7 @@ func (fs *collectionFileSystem) checkChangesOnServer(force bool) (bool, error) {
 		if err != nil {
 			return false, err
 		}
-		if coll.PortableDataHash != fs.savedPDH.Load().(string) {
+		if coll.PortableDataHash != loadedPDH {
 			// collection has changed upstream since we
 			// last loaded or saved. Refresh local data,
 			// losing any unsaved local changes.
@@ -339,15 +355,16 @@ func (fs *collectionFileSystem) checkChangesOnServer(force bool) (bool, error) {
 			if err != nil {
 				return false, err
 			}
-			fs.savedPDH.Store(coll.PortableDataHash)
+			fs.loadedPDH.Store(coll.PortableDataHash)
+			fs.savedPDH.Store(newfs.(*collectionFileSystem).savedPDH.Load())
 			return true, nil
 		}
 		fs.updateSignatures(coll.ManifestText)
 		return false, nil
 	}
-	if pdh := fs.savedPDH.Load().(string); pdh != "" {
+	if loadedPDH != "" {
 		var coll Collection
-		err := fs.RequestAndDecode(&coll, "GET", "arvados/v1/collections/"+pdh, nil, getparams)
+		err := fs.RequestAndDecode(&coll, "GET", "arvados/v1/collections/"+loadedPDH, nil, getparams)
 		if err != nil {
 			return false, err
 		}
@@ -368,8 +385,9 @@ func (fs *collectionFileSystem) refreshSignature(locator string) string {
 		go fs.checkChangesOnServer(false)
 		return locator
 	}
+	loadedPDH, _ := fs.loadedPDH.Load().(string)
 	var manifests string
-	for _, id := range []string{fs.uuid, fs.savedPDH.Load().(string)} {
+	for _, id := range []string{fs.uuid, loadedPDH} {
 		if id == "" {
 			continue
 		}
@@ -405,7 +423,8 @@ func (fs *collectionFileSystem) Sync() error {
 	if err != nil {
 		return fmt.Errorf("sync failed: %s", err)
 	}
-	if PortableDataHash(txt) == fs.savedPDH.Load() {
+	savingPDH := PortableDataHash(txt)
+	if savingPDH == fs.savedPDH.Load() {
 		// No local changes since last save or initial load.
 		return nil
 	}
@@ -432,7 +451,8 @@ func (fs *collectionFileSystem) Sync() error {
 		return fmt.Errorf("sync failed: update %s: %w", fs.uuid, err)
 	}
 	fs.updateSignatures(coll.ManifestText)
-	fs.savedPDH.Store(coll.PortableDataHash)
+	fs.loadedPDH.Store(coll.PortableDataHash)
+	fs.savedPDH.Store(savingPDH)
 	return nil
 }
 
@@ -475,7 +495,7 @@ func (fs *collectionFileSystem) MemorySize() int64 {
 func (fs *collectionFileSystem) MarshalManifest(prefix string) (string, error) {
 	fs.fileSystem.root.Lock()
 	defer fs.fileSystem.root.Unlock()
-	return fs.fileSystem.root.(*dirnode).marshalManifest(context.TODO(), prefix)
+	return fs.fileSystem.root.(*dirnode).marshalManifest(context.TODO(), prefix, true)
 }
 
 func (fs *collectionFileSystem) Size() int64 {
@@ -1209,7 +1229,7 @@ func (dn *dirnode) sortedNames() []string {
 }
 
 // caller must have write lock.
-func (dn *dirnode) marshalManifest(ctx context.Context, prefix string) (string, error) {
+func (dn *dirnode) marshalManifest(ctx context.Context, prefix string, flush bool) (string, error) {
 	cg := newContextGroup(ctx)
 	defer cg.Cancel()
 
@@ -1256,7 +1276,7 @@ func (dn *dirnode) marshalManifest(ctx context.Context, prefix string) (string, 
 	for i, name := range dirnames {
 		i, name := i, name
 		cg.Go(func() error {
-			txt, err := dn.inodes[name].(*dirnode).marshalManifest(cg.Context(), prefix+"/"+name)
+			txt, err := dn.inodes[name].(*dirnode).marshalManifest(cg.Context(), prefix+"/"+name, flush)
 			subdirs[i] = txt
 			return err
 		})
@@ -1272,7 +1292,10 @@ func (dn *dirnode) marshalManifest(ctx context.Context, prefix string) (string, 
 
 		var fileparts []filepart
 		var blocks []string
-		if err := dn.flush(cg.Context(), filenames, flushOpts{sync: true, shortBlocks: true}); err != nil {
+		if !flush {
+			// skip flush -- will fail below if anything
+			// needed flushing
+		} else if err := dn.flush(cg.Context(), filenames, flushOpts{sync: true, shortBlocks: true}); err != nil {
 			return err
 		}
 		for _, name := range filenames {
@@ -1303,10 +1326,12 @@ func (dn *dirnode) marshalManifest(ctx context.Context, prefix string) (string, 
 					}
 					streamLen += int64(seg.size)
 				default:
-					// This can't happen: we
-					// haven't unlocked since
+					// We haven't unlocked since
 					// calling flush(sync=true).
-					panic(fmt.Sprintf("can't marshal segment type %T", seg))
+					// Evidently the caller passed
+					// flush==false but there were
+					// local changes.
+					return fmt.Errorf("can't marshal segment type %T", seg)
 				}
 			}
 		}

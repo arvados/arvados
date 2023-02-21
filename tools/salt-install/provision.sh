@@ -141,16 +141,16 @@ copy_custom_cert() {
   cert_dir=${1}
   cert_name=${2}
 
-  mkdir -p /srv/salt/certs
+  mkdir -p --mode=0700 /srv/salt/certs
 
   if [ -f ${cert_dir}/${cert_name}.crt ]; then
-    cp -v ${cert_dir}/${cert_name}.crt /srv/salt/certs/arvados-${cert_name}.pem
+    install --mode=0600 ${cert_dir}/${cert_name}.crt /srv/salt/certs/arvados-${cert_name}.pem
   else
     echo "${cert_dir}/${cert_name}.crt does not exist. Exiting"
     exit 1
   fi
   if [ -f ${cert_dir}/${cert_name}.key ]; then
-    cp -v ${cert_dir}/${cert_name}.key /srv/salt/certs/arvados-${cert_name}.key
+    install --mode=0600 ${cert_dir}/${cert_name}.key /srv/salt/certs/arvados-${cert_name}.key
   else
     echo "${cert_dir}/${cert_name}.key does not exist. Exiting"
     exit 1
@@ -435,7 +435,10 @@ for f in $(ls "${SOURCE_PILLARS_DIR}"/*); do
        s#__WORKBENCH1_INT_IP__#${WORKBENCH1_INT_IP}#g;
        s#__WORKBENCH2_INT_IP__#${WORKBENCH2_INT_IP}#g;
        s#__DATABASE_INT_IP__#${DATABASE_INT_IP}#g;
-       s#__WORKBENCH_SECRET_KEY__#${WORKBENCH_SECRET_KEY}#g" \
+       s#__WORKBENCH_SECRET_KEY__#${WORKBENCH_SECRET_KEY}#g;
+       s#__SSL_KEY_ENCRYPTED__#${SSL_KEY_ENCRYPTED}#g;
+       s#__SSL_KEY_AWS_REGION__#${SSL_KEY_AWS_REGION}#g;
+       s#__SSL_KEY_AWS_SECRET_NAME__#${SSL_KEY_AWS_SECRET_NAME}#g" \
   "${f}" > "${P_DIR}"/$(basename "${f}")
 done
 
@@ -506,7 +509,10 @@ if [ -d "${SOURCE_STATES_DIR}" ]; then
          s#__WEBSOCKET_EXT_SSL_PORT__#${WEBSOCKET_EXT_SSL_PORT}#g;
          s#__WORKBENCH1_EXT_SSL_PORT__#${WORKBENCH1_EXT_SSL_PORT}#g;
          s#__WORKBENCH2_EXT_SSL_PORT__#${WORKBENCH2_EXT_SSL_PORT}#g;
-         s#__WORKBENCH_SECRET_KEY__#${WORKBENCH_SECRET_KEY}#g" \
+         s#__WORKBENCH_SECRET_KEY__#${WORKBENCH_SECRET_KEY}#g;
+         s#__SSL_KEY_ENCRYPTED__#${SSL_KEY_ENCRYPTED}#g;
+         s#__SSL_KEY_AWS_REGION__#${SSL_KEY_AWS_REGION}#g;
+         s#__SSL_KEY_AWS_SECRET_NAME__#${SSL_KEY_AWS_SECRET_NAME}#g" \
     "${f}" > "${F_DIR}/extra/extra"/$(basename "${f}")
   done
 fi
@@ -558,14 +564,17 @@ if [ -z "${ROLES}" ]; then
     if [ "${USE_LETSENCRYPT_ROUTE53}" = "yes" ]; then
       grep -q "aws_credentials" ${S_DIR}/top.sls || echo "    - extra.aws_credentials" >> ${S_DIR}/top.sls
     fi
-    grep -q "letsencrypt"     ${S_DIR}/top.sls || echo "    - letsencrypt" >> ${S_DIR}/top.sls
+    grep -q "letsencrypt" ${S_DIR}/top.sls || echo "    - letsencrypt" >> ${S_DIR}/top.sls
   else
-    mkdir -p /srv/salt/certs
+    mkdir -p --mode=0700 /srv/salt/certs
     if [ "${SSL_MODE}" = "bring-your-own" ]; then
       # Copy certs to formula extra/files
-      cp -rv ${CUSTOM_CERTS_DIR}/* /srv/salt/certs/
+      install --mode=0600 ${CUSTOM_CERTS_DIR}/* /srv/salt/certs/
       # We add the custom_certs state
-      grep -q "custom_certs"    ${S_DIR}/top.sls || echo "    - extra.custom_certs" >> ${S_DIR}/top.sls
+      grep -q "custom_certs" ${S_DIR}/top.sls || echo "    - extra.custom_certs" >> ${S_DIR}/top.sls
+      if [ "${SSL_KEY_ENCRYPTED}" = "yes" ]; then
+        grep -q "ssl_key_encrypted" ${S_DIR}/top.sls || echo "    - extra.ssl_key_encrypted" >> ${S_DIR}/top.sls
+      fi
     fi
     # In self-signed mode, the certificate files will be created and put in the
     # destination directory by the snakeoil_certs.sls state file
@@ -662,6 +671,9 @@ else
   echo "    - arvados.repo" >> ${S_DIR}/top.sls
   # We add the extra_custom_certs state
   grep -q "extra.custom_certs"    ${S_DIR}/top.sls || echo "    - extra.custom_certs" >> ${S_DIR}/top.sls
+  if [ "${SSL_KEY_ENCRYPTED}" = "yes" ]; then
+    grep -q "ssl_key_encrypted" ${S_DIR}/top.sls || echo "    - extra.ssl_key_encrypted" >> ${S_DIR}/top.sls
+  fi
 
   # And we add the basic part for the certs pillar
   if [ "${SSL_MODE}" != "lets-encrypt" ]; then
@@ -784,6 +796,7 @@ else
             ${P_DIR}/nginx_${R}_configuration.sls
           fi
         else
+          grep -q "ssl_key_encrypted" ${P_DIR}/top.sls || echo "    - ssl_key_encrypted" >> ${P_DIR}/top.sls
           # As the pillar differ whether we use LE or custom certs, we need to do a final edition on them
           # Special case for keepweb
           if [ ${R} = "keepweb" ]; then

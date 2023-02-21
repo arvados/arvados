@@ -58,3 +58,7 @@ output "deploy_user" {
 output "region_name" {
   value = data.terraform_remote_state.vpc.outputs.region_name
 }
+
+output "ssl_password_secret_name" {
+  value = aws_secretsmanager_secret.ssl_password_secret.name
+}

@@ -17,9 +17,6 @@ import arvados.commands.keepdocker
 
 logger = logging.getLogger('arvados.cwl-runner')
 
-cached_lookups = {}
-cached_lookups_lock = threading.Lock()
-
 def determine_image_id(dockerImageId):
     for line in (
         subprocess.check_output(  # nosec
@@ -56,9 +53,15 @@ def determine_image_id(dockerImageId):
     return None
 
 
-def arv_docker_get_image(api_client, dockerRequirement, pull_image, project_uuid,
-                         force_pull, tmp_outdir_prefix, match_local_docker, copy_deps):
+def arv_docker_get_image(api_client, dockerRequirement, pull_image, runtimeContext):
     """Check if a Docker image is available in Keep, if not, upload it using arv-keepdocker."""
+
+    project_uuid = runtimeContext.project_uuid
+    force_pull = runtimeContext.force_docker_pull
+    tmp_outdir_prefix = runtimeContext.tmp_outdir_prefix
+    match_local_docker = runtimeContext.match_local_docker
+    copy_deps = runtimeContext.copy_deps
+    cached_lookups = runtimeContext.cached_docker_lookups
 
     if "http://arvados.org/cwl#dockerCollectionPDH" in dockerRequirement:
         return dockerRequirement["http://arvados.org/cwl#dockerCollectionPDH"]
@@ -69,11 +72,8 @@ def arv_docker_get_image(api_client, dockerRequirement, pull_image, project_uuid
         if hasattr(dockerRequirement, 'lc'):
             dockerRequirement.lc.data["dockerImageId"] = dockerRequirement.lc.data["dockerPull"]
 
-    global cached_lookups
-    global cached_lookups_lock
-    with cached_lookups_lock:
-        if dockerRequirement["dockerImageId"] in cached_lookups:
-            return cached_lookups[dockerRequirement["dockerImageId"]]
+    if dockerRequirement["dockerImageId"] in cached_lookups:
+        return cached_lookups[dockerRequirement["dockerImageId"]]
 
     with SourceLine(dockerRequirement, "dockerImageId", WorkflowException, logger.isEnabledFor(logging.DEBUG)):
         sp = dockerRequirement["dockerImageId"].split(":")
@@ -121,7 +121,8 @@ def arv_docker_get_image(api_client, dockerRequirement, pull_image, project_uuid
             if not out_of_project_images:
                 # Fetch Docker image if necessary.
                 try:
-                    result = cwltool.docker.DockerCommandLineJob.get_image(dockerRequirement, pull_image,
+                    dockerjob = cwltool.docker.DockerCommandLineJob(None, None, None, None, None, None)
+                    result = dockerjob.get_image(dockerRequirement, pull_image,
                                                                   force_pull, tmp_outdir_prefix)
                     if not result:
                         raise WorkflowException("Docker image '%s' not available" % dockerRequirement["dockerImageId"])
@@ -153,13 +154,6 @@ def arv_docker_get_image(api_client, dockerRequirement, pull_image, project_uuid
 
         pdh = api_client.collections().get(uuid=images[0][0]).execute()["portable_data_hash"]
 
-        with cached_lookups_lock:
-            cached_lookups[dockerRequirement["dockerImageId"]] = pdh
+        cached_lookups[dockerRequirement["dockerImageId"]] = pdh
 
     return pdh
-
-def arv_docker_clear_cache():
-    global cached_lookups
-    global cached_lookups_lock
-    with cached_lookups_lock:
-        cached_lookups = {}

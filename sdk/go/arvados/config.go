@@ -296,7 +296,7 @@ type Cluster struct {
 		SSHHelpPageHTML        string
 		SSHHelpHostSuffix      string
 		IdleTimeout            Duration
-		BannerURL              string
+		BannerUUID             string
 	}
 }
 
