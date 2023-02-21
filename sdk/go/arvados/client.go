@@ -82,7 +82,7 @@ type Client struct {
 	// differs from an outgoing connection limit (a feature
 	// provided by http.Transport) when concurrent calls are
 	// multiplexed on a single http2 connection.
-	requestLimiter
+	requestLimiter requestLimiter
 
 	last503 atomic.Value
 }
