@@ -410,7 +410,7 @@ func (h *handler) ServeHTTP(wOrig http.ResponseWriter, r *http.Request) {
 		collectionDir, sessionFS, session, tokenUser = f, fs, sess, user
 		break
 	}
-	if forceReload {
+	if forceReload && collectionDir != nil {
 		err := collectionDir.Sync()
 		if err != nil {
 			var statusErr interface{ HTTPStatus() int }

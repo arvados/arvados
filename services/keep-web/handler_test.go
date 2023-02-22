@@ -531,6 +531,26 @@ func (s *IntegrationSuite) TestVhostRedirectQueryTokenToBogusCookie(c *check.C) 
 	)
 }
 
+func (s *IntegrationSuite) TestVhostRedirectWithNoCache(c *check.C) {
+	resp := s.testVhostRedirectTokenToCookie(c, "GET",
+		arvadostest.FooCollection+".example.com/foo",
+		"?api_token=thisisabogustoken",
+		http.Header{
+			"Sec-Fetch-Mode": {"navigate"},
+			"Cache-Control":  {"no-cache"},
+		},
+		"",
+		http.StatusSeeOther,
+		"",
+	)
+	u, err := url.Parse(resp.Header().Get("Location"))
+	c.Assert(err, check.IsNil)
+	c.Logf("redirected to %s", u)
+	c.Check(u.Host, check.Equals, s.handler.Cluster.Services.Workbench2.ExternalURL.Host)
+	c.Check(u.Query().Get("redirectToPreview"), check.Equals, "/c="+arvadostest.FooCollection+"/foo")
+	c.Check(u.Query().Get("redirectToDownload"), check.Equals, "")
+}
+
 func (s *IntegrationSuite) TestVhostRedirectQueryTokenSingleOriginError(c *check.C) {
 	s.testVhostRedirectTokenToCookie(c, "GET",
 		"example.com/c="+arvadostest.FooCollection+"/foo",
@@ -739,7 +759,7 @@ func (s *IntegrationSuite) TestForwardSlashSubstitution(c *check.C) {
 
 	base := "http://download.example.com/by_id/" + coll.OwnerUUID + "/"
 	for tryURL, expectRegexp := range map[string]string{
-		base:                          `(?ms).*href="./` + nameShownEscaped + `/"\S+` + nameShown + `.*`,
+		base: `(?ms).*href="./` + nameShownEscaped + `/"\S+` + nameShown + `.*`,
 		base + nameShownEscaped + "/": `(?ms).*href="./filename"\S+filename.*`,
 	} {
 		u, _ := url.Parse(tryURL)
