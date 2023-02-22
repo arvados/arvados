@@ -5,6 +5,7 @@
 package keepweb
 
 import (
+	"errors"
 	"net/http"
 	"sync"
 	"sync/atomic"
@@ -168,7 +169,7 @@ func (c *cache) GetSession(token string) (arvados.CustomFileSystem, *cachedSessi
 	if user == nil || expired {
 		user = new(arvados.User)
 		err := sess.client.RequestAndDecode(user, "GET", "/arvados/v1/users/current", nil, nil)
-		if statusErr, ok := err.(interface{ HTTPStatus() int }); ok && statusErr.HTTPStatus() == http.StatusForbidden {
+		if he := errorWithHTTPStatus(nil); errors.As(err, &he) && he.HTTPStatus() == http.StatusForbidden {
 			// token is OK, but "get user id" api is out
 			// of scope -- return nil, signifying unknown
 			// user

@@ -67,6 +67,10 @@ func (h *handler) serveStatus(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(struct{ Version string }{cmd.Version.String()})
 }
 
+type errorWithHTTPStatus interface {
+	HTTPStatus() int
+}
+
 // updateOnSuccess wraps httpserver.ResponseWriter. If the handler
 // sends an HTTP header indicating success, updateOnSuccess first
 // calls the provided update func. If the update func fails, an error
@@ -97,8 +101,7 @@ func (uos *updateOnSuccess) WriteHeader(code int) {
 		if code >= 200 && code < 400 {
 			if uos.err = uos.update(); uos.err != nil {
 				code := http.StatusInternalServerError
-				var he interface{ HTTPStatus() int }
-				if errors.As(uos.err, &he) {
+				if he := errorWithHTTPStatus(nil); errors.As(uos.err, &he) {
 					code = he.HTTPStatus()
 				}
 				uos.logger.WithError(uos.err).Errorf("update() returned %T error, changing response to HTTP %d", uos.err, code)
@@ -381,7 +384,7 @@ func (h *handler) ServeHTTP(wOrig http.ResponseWriter, r *http.Request) {
 	var session *cachedSession
 	var collectionDir arvados.File
 	for _, token = range tokens {
-		var statusErr interface{ HTTPStatus() int }
+		var statusErr errorWithHTTPStatus
 		fs, sess, user, err := h.Cache.GetSession(token)
 		if errors.As(err, &statusErr) && statusErr.HTTPStatus() == http.StatusUnauthorized {
 			// bad token
@@ -413,9 +416,8 @@ func (h *handler) ServeHTTP(wOrig http.ResponseWriter, r *http.Request) {
 	if forceReload && collectionDir != nil {
 		err := collectionDir.Sync()
 		if err != nil {
-			var statusErr interface{ HTTPStatus() int }
-			if errors.As(err, &statusErr) {
-				http.Error(w, err.Error(), statusErr.HTTPStatus())
+			if he := errorWithHTTPStatus(nil); errors.As(err, &he) {
+				http.Error(w, err.Error(), he.HTTPStatus())
 			} else {
 				http.Error(w, err.Error(), http.StatusInternalServerError)
 			}
