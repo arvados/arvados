@@ -17,7 +17,7 @@ configure({ adapter: new Adapter() });
 
 describe("<DataTable />", () => {
     it("shows only selected columns", () => {
-        const columns: DataColumns<string> = [
+        const columns: DataColumns<string, string> = [
             createDataColumn({
                 name: "Column 1",
                 render: () => <span />,
@@ -49,7 +49,7 @@ describe("<DataTable />", () => {
     });
 
     it("renders column name", () => {
-        const columns: DataColumns<string> = [
+        const columns: DataColumns<string, string> = [
             createDataColumn({
                 name: "Column 1",
                 render: () => <span />,
@@ -69,7 +69,7 @@ describe("<DataTable />", () => {
     });
 
     it("uses renderHeader instead of name prop", () => {
-        const columns: DataColumns<string> = [
+        const columns: DataColumns<string, string> = [
             createDataColumn({
                 name: "Column 1",
                 renderHeader: () => <span>Column Header</span>,
@@ -90,7 +90,7 @@ describe("<DataTable />", () => {
     });
 
     it("passes column key prop to corresponding cells", () => {
-        const columns: DataColumns<string> = [
+        const columns: DataColumns<string, string> = [
             createDataColumn({
                 name: "Column 1",
                 key: "column-1-key",
@@ -113,7 +113,7 @@ describe("<DataTable />", () => {
     });
 
     it("renders items", () => {
-        const columns: DataColumns<string> = [
+        const columns: DataColumns<string, string> = [
             createDataColumn({
                 name: "Column 1",
                 render: (item) => <Typography>{item}</Typography>,
@@ -141,10 +141,10 @@ describe("<DataTable />", () => {
     });
 
     it("passes sorting props to <TableSortLabel />", () => {
-        const columns: DataColumns<string> = [
+        const columns: DataColumns<string, string> = [
             createDataColumn({
                 name: "Column 1",
-                sortDirection: SortDirection.ASC,
+                sort: {direction: SortDirection.ASC, field: "length"},
                 selected: true,
                 configurable: true,
                 render: (item) => <Typography>{item}</Typography>
@@ -164,9 +164,8 @@ describe("<DataTable />", () => {
     });
 
     it("does not display <DataTableFiltersPopover /> if there is no filters provided", () => {
-        const columns: DataColumns<string> = [{
+        const columns: DataColumns<string, string> = [{
             name: "Column 1",
-            sortDirection: SortDirection.ASC,
             selected: true,
             configurable: true,
             filters: [],
@@ -189,9 +188,8 @@ describe("<DataTable />", () => {
             () => createTree<DataTableFilterItem>(),
             setNode(initTreeNode({ id: 'filter', value: { name: 'filter' } }))
         );
-        const columns: DataColumns<string> = [{
+        const columns: DataColumns<string, string> = [{
             name: "Column 1",
-            sortDirection: SortDirection.ASC,
             selected: true,
             configurable: true,
             filters: filters(),
