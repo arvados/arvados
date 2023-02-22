@@ -24,7 +24,7 @@ import { FilterBuilder, joinFilters } from 'services/api/filter-builder';
 import { DataColumns } from 'components/data-table/data-table';
 import { serializeResourceTypeFilters } from 'store//resource-type-filters/resource-type-filters';
 import { ProjectPanelColumnNames } from 'views/project-panel/project-panel';
-import { Resource, ResourceKind } from 'models/resource';
+import { ResourceKind } from 'models/resource';
 import { ContainerRequestResource } from 'models/container-request';
 
 export class SearchResultsMiddlewareService extends DataExplorerMiddlewareService {
@@ -81,7 +81,7 @@ export class SearchResultsMiddlewareService extends DataExplorerMiddlewareServic
     }
 }
 
-const typeFilters = (columns: DataColumns<string>) => serializeResourceTypeFilters(getDataExplorerColumnFilters(columns, ProjectPanelColumnNames.TYPE));
+const typeFilters = (columns: DataColumns<string, GroupContentsResource>) => serializeResourceTypeFilters(getDataExplorerColumnFilters(columns, ProjectPanelColumnNames.TYPE));
 
 export const getParams = (dataExplorer: DataExplorer, query: string, apiRevision: number) => ({
     ...dataExplorerToListParams(dataExplorer),
@@ -95,17 +95,17 @@ export const getParams = (dataExplorer: DataExplorer, query: string, apiRevision
 });
 
 const getOrder = (dataExplorer: DataExplorer) => {
-    const sortColumn = getSortColumn(dataExplorer);
+    const sortColumn = getSortColumn<GroupContentsResource>(dataExplorer);
     const order = new OrderBuilder<GroupContentsResource>();
-    if (sortColumn) {
-        const sortDirection = sortColumn && sortColumn.sortDirection === SortDirection.ASC
+    if (sortColumn && sortColumn.sort) {
+        const sortDirection = sortColumn.sort.direction === SortDirection.ASC
             ? OrderDirection.ASC
             : OrderDirection.DESC;
 
         return order
-            .addOrder(sortDirection, sortColumn.name as keyof Resource, GroupContentsResourcePrefix.COLLECTION)
-            .addOrder(sortDirection, sortColumn.name as keyof Resource, GroupContentsResourcePrefix.PROCESS)
-            .addOrder(sortDirection, sortColumn.name as keyof Resource, GroupContentsResourcePrefix.PROJECT)
+            .addOrder(sortDirection, sortColumn.sort.field, GroupContentsResourcePrefix.COLLECTION)
+            .addOrder(sortDirection, sortColumn.sort.field, GroupContentsResourcePrefix.PROCESS)
+            .addOrder(sortDirection, sortColumn.sort.field, GroupContentsResourcePrefix.PROJECT)
             .getOrder();
     } else {
         return order.getOrder();

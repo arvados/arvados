@@ -16,7 +16,6 @@ import { OrderDirection, OrderBuilder } from 'services/api/order-builder';
 import { ListResults } from 'services/common-service/common-service';
 import { getSortColumn } from "store/data-explorer/data-explorer-reducer";
 import { ProcessResource } from 'models/process';
-import { SubprocessPanelColumnNames } from 'views/subprocess-panel/subprocess-panel-root';
 import { FilterBuilder, joinFilters } from 'services/api/filter-builder';
 import { subprocessPanelActions } from './subprocess-panel-actions';
 import { DataColumns } from 'components/data-table/data-table';
@@ -67,16 +66,15 @@ export const getParams = (
     });
 
 const getOrder = (dataExplorer: DataExplorer) => {
-    const sortColumn = getSortColumn(dataExplorer);
+    const sortColumn = getSortColumn<ProcessResource>(dataExplorer);
     const order = new OrderBuilder<ProcessResource>();
-    if (sortColumn) {
-        const sortDirection = sortColumn && sortColumn.sortDirection === SortDirection.ASC
+    if (sortColumn && sortColumn.sort) {
+        const sortDirection = sortColumn.sort.direction === SortDirection.ASC
             ? OrderDirection.ASC
             : OrderDirection.DESC;
 
-        const columnName = sortColumn && sortColumn.name === SubprocessPanelColumnNames.NAME ? "name" : "modifiedAt";
         return order
-            .addOrder(sortDirection, columnName)
+            .addOrder(sortDirection, sortColumn.sort.field)
             .getOrder();
     } else {
         return order.getOrder();
@@ -86,7 +84,7 @@ const getOrder = (dataExplorer: DataExplorer) => {
 export const getFilters = (
     dataExplorer: DataExplorer,
     parentContainerRequest: ContainerRequestResource) => {
-        const columns = dataExplorer.columns as DataColumns<string>;
+        const columns = dataExplorer.columns as DataColumns<string, ProcessResource>;
         const statusColumnFilters = getDataExplorerColumnFilters(columns, 'Status');
         const activeStatusFilter = Object.keys(statusColumnFilters).find(
             filterName => statusColumnFilters[filterName].selected

@@ -15,7 +15,6 @@ import { ListResults } from 'services/common-service/common-service';
 import { getSortColumn } from "store/data-explorer/data-explorer-reducer";
 import { LinkResource } from 'models/link';
 import { linkPanelActions } from 'store/link-panel/link-panel-actions';
-import { LinkPanelColumnNames } from 'views/link-panel/link-panel-root';
 
 export class LinkMiddlewareService extends DataExplorerMiddlewareService {
     constructor(private services: ServiceRepository, id: string) {
@@ -41,16 +40,15 @@ export const getParams = (dataExplorer: DataExplorer) => ({
 });
 
 const getOrder = (dataExplorer: DataExplorer) => {
-    const sortColumn = getSortColumn(dataExplorer);
+    const sortColumn = getSortColumn<LinkResource>(dataExplorer);
     const order = new OrderBuilder<LinkResource>();
-    if (sortColumn) {
-        const sortDirection = sortColumn && sortColumn.sortDirection === SortDirection.ASC
+    if (sortColumn && sortColumn.sort) {
+        const sortDirection = sortColumn.sort.direction === SortDirection.ASC
             ? OrderDirection.ASC
             : OrderDirection.DESC;
 
-        const columnName = sortColumn && sortColumn.name === LinkPanelColumnNames.NAME ? "name" : "modifiedAt";
         return order
-            .addOrder(sortDirection, columnName)
+            .addOrder(sortDirection, sortColumn.sort.field)
             .getOrder();
     } else {
         return order.getOrder();

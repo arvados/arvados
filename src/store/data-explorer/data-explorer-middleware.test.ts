@@ -201,7 +201,7 @@ describe("DataExplorerMiddleware", () => {
 class ServiceMock extends DataExplorerMiddlewareService {
     constructor(private config: {
         id: string,
-        columns: DataColumns<any>,
+        columns: DataColumns<any, any>,
         requestItems: (api: MiddlewareAPI) => Promise<void>
     }) {
         super(config.id);

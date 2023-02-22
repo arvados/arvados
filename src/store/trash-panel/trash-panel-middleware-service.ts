@@ -15,8 +15,7 @@ import { FilterBuilder } from "services/api/filter-builder";
 import { trashPanelActions } from "./trash-panel-action";
 import { Dispatch, MiddlewareAPI } from "redux";
 import { OrderBuilder, OrderDirection } from "services/api/order-builder";
-import { GroupContentsResourcePrefix } from "services/groups-service/groups-service";
-import { ProjectResource } from "models/project";
+import { GroupContentsResource, GroupContentsResourcePrefix } from "services/groups-service/groups-service";
 import { ProjectPanelColumnNames } from "views/project-panel/project-panel";
 import { updateFavorites } from "store/favorites/favorites-actions";
 import { updatePublicFavorites } from 'store/public-favorites/public-favorites-actions';
@@ -27,6 +26,7 @@ import { getSortColumn } from "store/data-explorer/data-explorer-reducer";
 import { serializeResourceTypeFilters } from 'store//resource-type-filters/resource-type-filters';
 import { getDataExplorerColumnFilters } from 'store/data-explorer/data-explorer-middleware-service';
 import { joinFilters } from 'services/api/filter-builder';
+import { CollectionResource } from "models/collection";
 
 export class TrashPanelMiddlewareService extends DataExplorerMiddlewareService {
     constructor(private services: ServiceRepository, id: string) {
@@ -35,8 +35,8 @@ export class TrashPanelMiddlewareService extends DataExplorerMiddlewareService {
 
     async requestItems(api: MiddlewareAPI<Dispatch, RootState>) {
         const dataExplorer = api.getState().dataExplorer[this.getId()];
-        const columns = dataExplorer.columns as DataColumns<string>;
-        const sortColumn = getSortColumn(dataExplorer);
+        const columns = dataExplorer.columns as DataColumns<string, CollectionResource>;
+        const sortColumn = getSortColumn<GroupContentsResource>(dataExplorer);
 
         const typeFilters = serializeResourceTypeFilters(getDataExplorerColumnFilters(columns, ProjectPanelColumnNames.TYPE));
 
@@ -52,17 +52,16 @@ export class TrashPanelMiddlewareService extends DataExplorerMiddlewareService {
             otherFilters,
         );
 
-        const order = new OrderBuilder<ProjectResource>();
+        const order = new OrderBuilder<GroupContentsResource>();
 
-        if (sortColumn) {
-            const sortDirection = sortColumn && sortColumn.sortDirection === SortDirection.ASC
+        if (sortColumn && sortColumn.sort) {
+            const sortDirection = sortColumn.sort.direction === SortDirection.ASC
                 ? OrderDirection.ASC
                 : OrderDirection.DESC;
 
-            const columnName = sortColumn && sortColumn.name === ProjectPanelColumnNames.NAME ? "name" : "createdAt";
             order
-                .addOrder(sortDirection, columnName, GroupContentsResourcePrefix.COLLECTION)
-                .addOrder(sortDirection, columnName, GroupContentsResourcePrefix.PROJECT);
+                .addOrder(sortDirection, sortColumn.sort.field, GroupContentsResourcePrefix.COLLECTION)
+                .addOrder(sortDirection, sortColumn.sort.field, GroupContentsResourcePrefix.PROJECT);
         }
 
         const userUuid = getUserUuid(api.getState());

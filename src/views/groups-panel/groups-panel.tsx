@@ -37,12 +37,12 @@ export enum GroupsPanelColumnNames {
     MEMBERS = "Members",
 }
 
-export const groupsPanelColumns: DataColumns<string> = [
+export const groupsPanelColumns: DataColumns<string, GroupResource> = [
     {
         name: GroupsPanelColumnNames.GROUP,
         selected: true,
         configurable: true,
-        sortDirection: SortDirection.ASC,
+        sort: {direction: SortDirection.ASC, field: "name"},
         filters: createTree(),
         render: uuid => <ResourceName uuid={uuid} />
     },

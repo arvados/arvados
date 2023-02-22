@@ -66,7 +66,7 @@ async contents(uuid: string, args: ContentsArguments = {}, session?: Session, ca
     if (cancelToken) {
       cfg.cancelToken = cancelToken;
     }
-    
+
     const response = await CommonResourceService.defaultResponse(
       this.serverApi.get(this.resourceType + pathUrl, cfg),
       this.actions,

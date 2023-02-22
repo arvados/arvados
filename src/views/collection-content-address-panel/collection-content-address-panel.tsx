@@ -67,12 +67,12 @@ enum CollectionContentAddressPanelColumnNames {
     LAST_MODIFIED = "Last modified"
 }
 
-export const collectionContentAddressPanelColumns: DataColumns<string> = [
+export const collectionContentAddressPanelColumns: DataColumns<string, CollectionResource> = [
     {
         name: CollectionContentAddressPanelColumnNames.COLLECTION_WITH_THIS_ADDRESS,
         selected: true,
         configurable: true,
-        sortDirection: SortDirection.NONE,
+        sort: {direction: SortDirection.NONE, field: "uuid"},
         filters: createTree(),
         render: uuid => <ResourceName uuid={uuid} />
     },
@@ -94,7 +94,7 @@ export const collectionContentAddressPanelColumns: DataColumns<string> = [
         name: CollectionContentAddressPanelColumnNames.LAST_MODIFIED,
         selected: true,
         configurable: true,
-        sortDirection: SortDirection.DESC,
+        sort: {direction: SortDirection.DESC, field: "modifiedAt"},
         filters: createTree(),
         render: uuid => <ResourceLastModifiedDate uuid={uuid} />
     }

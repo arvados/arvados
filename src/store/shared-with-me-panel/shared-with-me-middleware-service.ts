@@ -17,7 +17,6 @@ import { GroupContentsResource, GroupContentsResourcePrefix } from 'services/gro
 import { SortDirection } from 'components/data-table/data-column';
 import { OrderBuilder, OrderDirection } from 'services/api/order-builder';
 import { ProjectResource } from 'models/project';
-import { ProjectPanelColumnNames } from 'views/project-panel/project-panel';
 import { getSortColumn } from "store/data-explorer/data-explorer-reducer";
 import { updatePublicFavorites } from 'store/public-favorites/public-favorites-actions';
 import { FilterBuilder } from 'services/api/filter-builder';
@@ -59,24 +58,18 @@ export const getParams = (dataExplorer: DataExplorer) => ({
 });
 
 export const getOrder = (dataExplorer: DataExplorer) => {
-    const sortColumn = getSortColumn(dataExplorer);
+    const sortColumn = getSortColumn<ProjectResource>(dataExplorer);
     const order = new OrderBuilder<ProjectResource>();
-    if (sortColumn) {
-        const sortDirection = sortColumn && sortColumn.sortDirection === SortDirection.ASC
+    if (sortColumn && sortColumn.sort) {
+        const sortDirection = sortColumn.sort.direction === SortDirection.ASC
             ? OrderDirection.ASC
             : OrderDirection.DESC;
-        const columnName = sortColumn && sortColumn.name === ProjectPanelColumnNames.NAME ? "name" : "createdAt";
-        if (columnName === 'name') {
-            return order
-                .addOrder(sortDirection, columnName, GroupContentsResourcePrefix.COLLECTION)
-                .addOrder(sortDirection, columnName, GroupContentsResourcePrefix.PROCESS)
-                .addOrder(sortDirection, columnName, GroupContentsResourcePrefix.PROJECT)
-                .getOrder();
-        } else {
-            return order
-                .addOrder(sortDirection, columnName)
-                .getOrder();
-        }
+
+        return order
+            .addOrder(sortDirection, sortColumn.sort.field, GroupContentsResourcePrefix.COLLECTION)
+            .addOrder(sortDirection, sortColumn.sort.field, GroupContentsResourcePrefix.PROCESS)
+            .addOrder(sortDirection, sortColumn.sort.field, GroupContentsResourcePrefix.PROJECT)
+            .getOrder();
     } else {
         return order.getOrder();
     }

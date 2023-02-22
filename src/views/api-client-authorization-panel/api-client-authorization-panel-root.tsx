@@ -18,6 +18,7 @@ import {
     CommonUuid, TokenApiClientId, TokenApiToken, TokenCreatedByIpAddress, TokenDefaultOwnerUuid, TokenExpiresAt,
     TokenLastUsedAt, TokenLastUsedByIpAddress, TokenScopes, TokenUserId
 } from 'views-components/data-explorer/renderers';
+import { ApiClientAuthorization } from 'models/api-client-authorization';
 
 type CssRules = 'root';
 
@@ -41,12 +42,12 @@ export enum ApiClientAuthorizationPanelColumnNames {
     USER_ID = 'User ID'
 }
 
-export const apiClientAuthorizationPanelColumns: DataColumns<string> = [
+export const apiClientAuthorizationPanelColumns: DataColumns<string, ApiClientAuthorization> = [
     {
         name: ApiClientAuthorizationPanelColumnNames.UUID,
         selected: true,
         configurable: true,
-        sortDirection: SortDirection.NONE,
+        sort: {direction: SortDirection.NONE, field: "uuid"},
         filters: createTree(),
         render: uuid => <CommonUuid uuid={uuid} />
     },

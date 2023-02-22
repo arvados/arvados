@@ -109,7 +109,7 @@ export const getParams = (dataExplorer: DataExplorer, isProjectTrashed: boolean)
 });
 
 export const getFilters = (dataExplorer: DataExplorer) => {
-    const columns = dataExplorer.columns as DataColumns<string>;
+    const columns = dataExplorer.columns as DataColumns<string, ProjectResource>;
     const typeFilters = serializeResourceTypeFilters(getDataExplorerColumnFilters(columns, ProjectPanelColumnNames.TYPE));
     const statusColumnFilters = getDataExplorerColumnFilters(columns, 'Status');
     const activeStatusFilter = Object.keys(statusColumnFilters).find(
@@ -137,18 +137,17 @@ export const getFilters = (dataExplorer: DataExplorer) => {
 };
 
 export const getOrder = (dataExplorer: DataExplorer) => {
-    const sortColumn = getSortColumn(dataExplorer);
+    const sortColumn = getSortColumn<ProjectResource>(dataExplorer);
     const order = new OrderBuilder<ProjectResource>();
-    if (sortColumn) {
-        const sortDirection = sortColumn && sortColumn.sortDirection === SortDirection.ASC
+    if (sortColumn && sortColumn.sort) {
+        const sortDirection = sortColumn.sort.direction === SortDirection.ASC
             ? OrderDirection.ASC
             : OrderDirection.DESC;
 
-        const columnName = sortColumn && sortColumn.name === ProjectPanelColumnNames.NAME ? "name" : "createdAt";
         return order
-            .addOrder(sortDirection, columnName, GroupContentsResourcePrefix.COLLECTION)
-            .addOrder(sortDirection, columnName, GroupContentsResourcePrefix.PROCESS)
-            .addOrder(sortDirection, columnName, GroupContentsResourcePrefix.PROJECT)
+            .addOrder(sortDirection, sortColumn.sort.field, GroupContentsResourcePrefix.COLLECTION)
+            .addOrder(sortDirection, sortColumn.sort.field, GroupContentsResourcePrefix.PROCESS)
+            .addOrder(sortDirection, sortColumn.sort.field, GroupContentsResourcePrefix.PROJECT)
             .getOrder();
     } else {
         return order.getOrder();

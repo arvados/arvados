@@ -14,22 +14,22 @@ import { IconType, PendingIcon } from 'components/icon/icon';
 import { SvgIconProps } from '@material-ui/core/SvgIcon';
 import ArrowDownwardIcon from '@material-ui/icons/ArrowDownward';
 
-export type DataColumns<T> = Array<DataColumn<T>>;
+export type DataColumns<I, R> = Array<DataColumn<I, R>>;
 
 export enum DataTableFetchMode {
     PAGINATED,
     INFINITE
 }
 
-export interface DataTableDataProps<T> {
-    items: T[];
-    columns: DataColumns<T>;
-    onRowClick: (event: React.MouseEvent<HTMLTableRowElement>, item: T) => void;
-    onContextMenu: (event: React.MouseEvent<HTMLElement>, item: T) => void;
-    onRowDoubleClick: (event: React.MouseEvent<HTMLTableRowElement>, item: T) => void;
-    onSortToggle: (column: DataColumn<T>) => void;
-    onFiltersChange: (filters: DataTableFilters, column: DataColumn<T>) => void;
-    extractKey?: (item: T) => React.Key;
+export interface DataTableDataProps<I> {
+    items: I[];
+    columns: DataColumns<I, any>;
+    onRowClick: (event: React.MouseEvent<HTMLTableRowElement>, item: I) => void;
+    onContextMenu: (event: React.MouseEvent<HTMLElement>, item: I) => void;
+    onRowDoubleClick: (event: React.MouseEvent<HTMLTableRowElement>, item: I) => void;
+    onSortToggle: (column: DataColumn<I, any>) => void;
+    onFiltersChange: (filters: DataTableFilters, column: DataColumn<I, any>) => void;
+    extractKey?: (item: I) => React.Key;
     working?: boolean;
     defaultViewIcon?: IconType;
     defaultViewMessages?: string[];
@@ -63,7 +63,7 @@ const styles: StyleRulesCallback<CssRules> = (theme: Theme) => ({
         wordWrap: 'break-word',
         paddingRight: '24px',
         color: '#737373'
-       
+
     },
     tableCellWorkflows: {
         '&:nth-last-child(2)': {
@@ -113,7 +113,7 @@ export const DataTable = withStyles(styles)(
             </div>;
         }
 
-        renderNoItemsPlaceholder = (columns: DataColumns<T>) => {
+        renderNoItemsPlaceholder = (columns: DataColumns<T, any>) => {
             const dirty = columns.some((column) => getTreeDirty('')(column.filters));
             return <DataTableDefaultView
                 icon={this.props.defaultViewIcon}
@@ -121,8 +121,8 @@ export const DataTable = withStyles(styles)(
                 filtersApplied={dirty} />;
         }
 
-        renderHeadCell = (column: DataColumn<T>, index: number) => {
-            const { name, key, renderHeader, filters, sortDirection } = column;
+        renderHeadCell = (column: DataColumn<T, any>, index: number) => {
+            const { name, key, renderHeader, filters, sort } = column;
             const { onSortToggle, onFiltersChange, classes } = this.props;
             return <TableCell className={classes.tableCell} key={key || index}>
                 {renderHeader ?
@@ -137,10 +137,10 @@ export const DataTable = withStyles(styles)(
                             filters={filters}>
                             {name}
                         </DataTableFiltersPopover>
-                        : sortDirection
+                        : sort
                             ? <TableSortLabel
-                                active={sortDirection !== SortDirection.NONE}
-                                direction={sortDirection !== SortDirection.NONE ? sortDirection : undefined}
+                                active={sort.direction !== SortDirection.NONE}
+                                direction={sort.direction !== SortDirection.NONE ? sort.direction : undefined}
                                 IconComponent={this.ArrowIcon}
                                 hideSortIcon
                                 onClick={() =>
@@ -176,7 +176,7 @@ export const DataTable = withStyles(styles)(
             </TableRow>;
         }
 
-        mapVisibleColumns = (fn: (column: DataColumn<T>, index: number) => React.ReactElement<any>) => {
+        mapVisibleColumns = (fn: (column: DataColumn<T, any>, index: number) => React.ReactElement<any>) => {
             return this.props.columns.filter(column => column.selected).map(fn);
         }
 

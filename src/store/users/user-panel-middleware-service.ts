@@ -57,26 +57,18 @@ const getParams = (dataExplorer: DataExplorer) => ({
 });
 
 export const getOrder = (dataExplorer: DataExplorer) => {
-    const sortColumn = getSortColumn(dataExplorer);
+    const sortColumn = getSortColumn<UserResource>(dataExplorer);
     const order = new OrderBuilder<UserResource>();
-    if (sortColumn) {
-        const sortDirection = sortColumn && sortColumn.sortDirection === SortDirection.ASC
+    if (sortColumn && sortColumn.sort) {
+        const sortDirection = sortColumn.sort.direction === SortDirection.ASC
             ? OrderDirection.ASC
             : OrderDirection.DESC;
-        switch (sortColumn.name) {
-            case UserPanelColumnNames.NAME:
-                order.addOrder(sortDirection, "firstName")
-                    .addOrder(sortDirection, "lastName");
-                break;
-            case UserPanelColumnNames.UUID:
-                order.addOrder(sortDirection, "uuid");
-                break;
-            case UserPanelColumnNames.EMAIL:
-                order.addOrder(sortDirection, "email");
-                break;
-            case UserPanelColumnNames.USERNAME:
-                order.addOrder(sortDirection, "username");
-                break;
+
+        if (sortColumn.name === UserPanelColumnNames.NAME) {
+            order.addOrder(sortDirection, "firstName")
+                .addOrder(sortDirection, "lastName");
+        } else {
+            order.addOrder(sortDirection, sortColumn.sort.field);
         }
     }
     return order.getOrder();

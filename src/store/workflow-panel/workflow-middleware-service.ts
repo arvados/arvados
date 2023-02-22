@@ -11,7 +11,6 @@ import { DataExplorer, getDataExplorer } from 'store/data-explorer/data-explorer
 import { updateResources } from 'store/resources/resources-actions';
 import { FilterBuilder } from 'services/api/filter-builder';
 import { SortDirection } from 'components/data-table/data-column';
-import { WorkflowPanelColumnNames } from 'views/workflow-panel/workflow-panel-view';
 import { OrderDirection, OrderBuilder } from 'services/api/order-builder';
 import { WorkflowResource } from 'models/workflow';
 import { ListResults } from 'services/common-service/common-service';
@@ -50,15 +49,15 @@ export const getFilters = (dataExplorer: DataExplorer) => {
 };
 
 export const getOrder = (dataExplorer: DataExplorer) => {
-    const sortColumn = getSortColumn(dataExplorer);
+    const sortColumn = getSortColumn<WorkflowResource>(dataExplorer);
     const order = new OrderBuilder<WorkflowResource>();
-    if (sortColumn) {
-        const sortDirection = sortColumn && sortColumn.sortDirection === SortDirection.ASC
+    if (sortColumn && sortColumn.sort) {
+        const sortDirection = sortColumn.sort.direction === SortDirection.ASC
             ? OrderDirection.ASC
             : OrderDirection.DESC;
-        const columnName = sortColumn && sortColumn.name === WorkflowPanelColumnNames.NAME ? "name" : "modifiedAt";
+
         return order
-            .addOrder(sortDirection, columnName)
+            .addOrder(sortDirection, sortColumn.sort.field)
             .getOrder();
     } else {
         return order.getOrder();

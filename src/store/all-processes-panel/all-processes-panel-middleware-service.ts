@@ -21,9 +21,8 @@ import {
 } from "../resource-type-filters/resource-type-filters";
 import { AllProcessesPanelColumnNames } from "views/all-processes-panel/all-processes-panel";
 import { OrderBuilder, OrderDirection } from "services/api/order-builder";
-import { ProcessResource } from "models/process";
 import { SortDirection } from "components/data-table/data-column";
-import { containerRequestFieldsNoMounts } from "models/container-request";
+import { containerRequestFieldsNoMounts, ContainerRequestResource } from "models/container-request";
 
 export class AllProcessesPanelMiddlewareService extends DataExplorerMiddlewareService {
     constructor(private services: ServiceRepository, id: string) {
@@ -74,7 +73,7 @@ const getParams = ( dataExplorer: DataExplorer ) => ({
 });
 
 const getFilters = ( dataExplorer: DataExplorer ) => {
-    const columns = dataExplorer.columns as DataColumns<string>;
+    const columns = dataExplorer.columns as DataColumns<string, ContainerRequestResource>;
     const statusColumnFilters = getDataExplorerColumnFilters(columns, 'Status');
     const activeStatusFilter = Object.keys(statusColumnFilters).find(
         filterName => statusColumnFilters[filterName].selected
@@ -92,16 +91,15 @@ const getFilters = ( dataExplorer: DataExplorer ) => {
 };
 
 const getOrder = (dataExplorer: DataExplorer) => {
-    const sortColumn = getSortColumn(dataExplorer);
-    const order = new OrderBuilder<ProcessResource>();
-    if (sortColumn) {
-        const sortDirection = sortColumn && sortColumn.sortDirection === SortDirection.ASC
+    const sortColumn = getSortColumn<ContainerRequestResource>(dataExplorer);
+    const order = new OrderBuilder<ContainerRequestResource>();
+    if (sortColumn && sortColumn.sort) {
+        const sortDirection = sortColumn.sort.direction === SortDirection.ASC
             ? OrderDirection.ASC
             : OrderDirection.DESC;
 
-        const columnName = sortColumn && sortColumn.name === AllProcessesPanelColumnNames.NAME ? "name" : "createdAt";
         return order
-            .addOrder(sortDirection, columnName)
+            .addOrder(sortDirection, sortColumn.sort.field)
             .getOrder();
     } else {
         return order.getOrder();

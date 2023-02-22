@@ -14,7 +14,6 @@ import { apiClientAuthorizationsActions } from 'store/api-client-authorizations/
 import { OrderDirection, OrderBuilder } from 'services/api/order-builder';
 import { ListResults } from 'services/common-service/common-service';
 import { ApiClientAuthorization } from 'models/api-client-authorization';
-import { ApiClientAuthorizationPanelColumnNames } from 'views/api-client-authorization-panel/api-client-authorization-panel-root';
 import { SortDirection } from 'components/data-table/data-column';
 
 export class ApiClientAuthorizationMiddlewareService extends DataExplorerMiddlewareService {
@@ -41,16 +40,15 @@ export const getParams = (dataExplorer: DataExplorer) => ({
 });
 
 const getOrder = (dataExplorer: DataExplorer) => {
-    const sortColumn = getSortColumn(dataExplorer);
+    const sortColumn = getSortColumn<ApiClientAuthorization>(dataExplorer);
     const order = new OrderBuilder<ApiClientAuthorization>();
-    if (sortColumn) {
-        const sortDirection = sortColumn && sortColumn.sortDirection === SortDirection.ASC
+    if (sortColumn && sortColumn.sort) {
+        const sortDirection = sortColumn.sort.direction === SortDirection.ASC
             ? OrderDirection.ASC
             : OrderDirection.DESC;
 
-        const columnName = sortColumn && sortColumn.name === ApiClientAuthorizationPanelColumnNames.UUID ? "uuid" : "updatedAt";
         return order
-            .addOrder(sortDirection, columnName)
+            .addOrder(sortDirection, sortColumn.sort.field)
             .getOrder();
     } else {
         return order.getOrder();

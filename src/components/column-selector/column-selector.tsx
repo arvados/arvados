@@ -12,8 +12,8 @@ import { DataColumns } from '../data-table/data-table';
 import { ArvadosTheme } from "common/custom-theme";
 
 interface ColumnSelectorDataProps {
-    columns: DataColumns<any>;
-    onColumnToggle: (column: DataColumn<any>) => void;
+    columns: DataColumns<any, any>;
+    onColumnToggle: (column: DataColumn<any, any>) => void;
     className?: string;
 }
 
@@ -52,7 +52,7 @@ export const ColumnSelector = withStyles(styles)(
                                     color="primary"
                                     checked={column.selected}
                                     className={classes.checkbox} />
-                                <ListItemText 
+                                <ListItemText
                                     className={classes.listItemText}>
                                     {column.name}
                                 </ListItemText>
@@ -69,5 +69,3 @@ export const ColumnSelectorTrigger = (props: IconButtonProps) =>
             <MenuIcon aria-label="Select columns" />
         </IconButton>
     </Tooltip>;
-
-

@@ -63,7 +63,7 @@ interface DataExplorerDataProps<T> {
     fetchMode: DataTableFetchMode;
     items: T[];
     itemsAvailable: number;
-    columns: DataColumns<T>;
+    columns: DataColumns<T, any>;
     searchLabel?: string;
     searchValue: string;
     rowsPerPage: number;
@@ -86,14 +86,14 @@ interface DataExplorerDataProps<T> {
 }
 
 interface DataExplorerActionProps<T> {
-    onSetColumns: (columns: DataColumns<T>) => void;
+    onSetColumns: (columns: DataColumns<T, any>) => void;
     onSearch: (value: string) => void;
     onRowClick: (item: T) => void;
     onRowDoubleClick: (item: T) => void;
-    onColumnToggle: (column: DataColumn<T>) => void;
+    onColumnToggle: (column: DataColumn<T, any>) => void;
     onContextMenu: (event: React.MouseEvent<HTMLElement>, item: T) => void;
-    onSortToggle: (column: DataColumn<T>) => void;
-    onFiltersChange: (filters: DataTableFilters, column: DataColumn<T>) => void;
+    onSortToggle: (column: DataColumn<T, any>) => void;
+    onFiltersChange: (filters: DataTableFilters, column: DataColumn<T, any>) => void;
     onChangePage: (page: number) => void;
     onChangeRowsPerPage: (rowsPerPage: number) => void;
     onLoadMore: (page: number) => void;
@@ -260,7 +260,7 @@ export const DataExplorer = withStyles(styles)(
                 </Tooltip>
             </Grid>
 
-        contextMenuColumn: DataColumn<any> = {
+        contextMenuColumn: DataColumn<any, any> = {
             name: "Actions",
             selected: true,
             configurable: false,
