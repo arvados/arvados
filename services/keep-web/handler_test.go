@@ -551,6 +551,41 @@ func (s *IntegrationSuite) TestVhostRedirectWithNoCache(c *check.C) {
 	c.Check(u.Query().Get("redirectToDownload"), check.Equals, "")
 }
 
+func (s *IntegrationSuite) TestNoTokenWorkbench2LoginFlow(c *check.C) {
+	for _, trial := range []struct {
+		anonToken    bool
+		cacheControl string
+	}{
+		{},
+		{cacheControl: "no-cache"},
+		{anonToken: true},
+		{anonToken: true, cacheControl: "no-cache"},
+	} {
+		c.Logf("trial: %+v", trial)
+
+		if trial.anonToken {
+			s.handler.Cluster.Users.AnonymousUserToken = arvadostest.AnonymousToken
+		} else {
+			s.handler.Cluster.Users.AnonymousUserToken = ""
+		}
+		req, err := http.NewRequest("GET", "http://"+arvadostest.FooCollection+".example.com/foo", nil)
+		c.Assert(err, check.IsNil)
+		req.Header.Set("Sec-Fetch-Mode", "navigate")
+		if trial.cacheControl != "" {
+			req.Header.Set("Cache-Control", trial.cacheControl)
+		}
+		resp := httptest.NewRecorder()
+		s.handler.ServeHTTP(resp, req)
+		c.Check(resp.Code, check.Equals, http.StatusSeeOther)
+		u, err := url.Parse(resp.Header().Get("Location"))
+		c.Assert(err, check.IsNil)
+		c.Logf("redirected to %q", u)
+		c.Check(u.Host, check.Equals, s.handler.Cluster.Services.Workbench2.ExternalURL.Host)
+		c.Check(u.Query().Get("redirectToPreview"), check.Equals, "/c="+arvadostest.FooCollection+"/foo")
+		c.Check(u.Query().Get("redirectToDownload"), check.Equals, "")
+	}
+}
+
 func (s *IntegrationSuite) TestVhostRedirectQueryTokenSingleOriginError(c *check.C) {
 	s.testVhostRedirectTokenToCookie(c, "GET",
 		"example.com/c="+arvadostest.FooCollection+"/foo",
