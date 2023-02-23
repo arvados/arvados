@@ -321,7 +321,10 @@ func (runner *ContainerRunner) ArvMountCmd(cmdline []string, token string) (c *e
 			"Unhandled exception during FUSE operation",
 		},
 		ReportFunc: func(pattern, text string) {
-			runner.updateRuntimeStatus("arv-mount: "+pattern, text)
+			runner.updateRuntimeStatus(arvadosclient.Dict{
+				"warning":       "arv-mount: " + pattern,
+				"warningDetail": text,
+			})
 		},
 	}
 	c.Stdout = runner.arvMountLog
@@ -1290,7 +1293,11 @@ func (runner *ContainerRunner) checkSpotInterruptionNotices() {
 			lastmetadata = metadata
 			text := fmt.Sprintf("Cloud provider indicates instance action %q scheduled for time %q", metadata.Action, metadata.Time.UTC().Format(time.RFC3339))
 			runner.CrunchLog.Printf("%s", text)
-			runner.updateRuntimeStatus("instance interruption", text)
+			runner.updateRuntimeStatus(arvadosclient.Dict{
+				"warning":          "preemption notice",
+				"warningDetail":    text,
+				"preemptionNotice": text,
+			})
 			if proc, err := os.FindProcess(os.Getpid()); err == nil {
 				// trigger updateLogs
 				proc.Signal(syscall.SIGUSR1)
@@ -1299,13 +1306,10 @@ func (runner *ContainerRunner) checkSpotInterruptionNotices() {
 	}
 }
 
-func (runner *ContainerRunner) updateRuntimeStatus(warning, detail string) {
+func (runner *ContainerRunner) updateRuntimeStatus(status arvadosclient.Dict) {
 	err := runner.DispatcherArvClient.Update("containers", runner.Container.UUID, arvadosclient.Dict{
 		"container": arvadosclient.Dict{
-			"runtime_status": arvadosclient.Dict{
-				"warning":       warning,
-				"warningDetail": detail,
-			},
+			"runtime_status": status,
 		},
 	}, nil)
 	if err != nil {
