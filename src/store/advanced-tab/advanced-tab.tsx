@@ -20,6 +20,7 @@ import { SshKeyResource } from 'models/ssh-key';
 import { VirtualMachinesResource } from 'models/virtual-machines';
 import { UserResource } from 'models/user';
 import { LinkResource } from 'models/link';
+import { WorkflowResource } from 'models/workflow';
 import { KeepServiceResource } from 'models/keep-services';
 import { ApiClientAuthorization } from 'models/api-client-authorization';
 import React from 'react';
@@ -101,9 +102,14 @@ enum LinkData {
     PROPERTIES = 'properties'
 }
 
-type AdvanceResourceKind = CollectionData | ProcessData | ProjectData | RepositoryData | SshKeyData | VirtualMachineData | KeepServiceData | ApiClientAuthorizationsData | UserData | LinkData;
+enum WorkflowData {
+    WORKFLOW = 'workflow',
+    CREATED_AT = 'created_at'
+}
+
+type AdvanceResourceKind = CollectionData | ProcessData | ProjectData | RepositoryData | SshKeyData | VirtualMachineData | KeepServiceData | ApiClientAuthorizationsData | UserData | LinkData | WorkflowData;
 type AdvanceResourcePrefix = GroupContentsResourcePrefix | ResourcePrefix;
-type AdvanceResponseData = ContainerRequestResource | ProjectResource | CollectionResource | RepositoryResource | SshKeyResource | VirtualMachinesResource | KeepServiceResource | ApiClientAuthorization | UserResource | LinkResource | undefined;
+type AdvanceResponseData = ContainerRequestResource | ProjectResource | CollectionResource | RepositoryResource | SshKeyResource | VirtualMachinesResource | KeepServiceResource | ApiClientAuthorization | UserResource | LinkResource | WorkflowResource | undefined;
 
 export const openAdvancedTabDialog = (uuid: string) =>
     async (dispatch: Dispatch<any>, getState: () => RootState, services: ServiceRepository) => {
@@ -267,6 +273,23 @@ export const openAdvancedTabDialog = (uuid: string) =>
                 });
                 dispatch<any>(initAdvancedTabDialog(advanceDataLink));
                 break;
+            case ResourceKind.WORKFLOW:
+                const wfResources = getState().resources;
+                const dataWf = getResource<WorkflowResource>(uuid)(wfResources);
+                const advanceDataWf = advancedTabData({
+                    uuid,
+                    metadata: '',
+                    user: '',
+                    apiResponseKind: wfApiResponse,
+                    data: dataWf,
+                    resourceKind: WorkflowData.WORKFLOW,
+                    resourcePrefix: GroupContentsResourcePrefix.WORKFLOW,
+                    resourceKindProperty: WorkflowData.CREATED_AT,
+                    property: dataWf!.createdAt
+                });
+                dispatch<any>(initAdvancedTabDialog(advanceDataWf));
+                break;
+
             default:
                 dispatch(snackbarActions.OPEN_SNACKBAR({ message: "Could not open advanced tab for this resource.", hideDuration: 2000, kind: SnackbarKind.ERROR }));
         }
@@ -597,6 +620,25 @@ const linkApiResponse = (apiResponse: LinkResource): JSX.Element => {
 "modified_by_client_uuid": ${stringify(modifiedByClientUuid)},
 "modified_by_user_uuid": ${stringify(modifiedByUserUuid)},
 "properties": "${JSON.stringify(properties, null, 2)}"`;
+
+    return <span style={{ marginLeft: '-15px' }}>{'{'} {response} {'\n'} <span style={{ marginLeft: '-15px' }}>{'}'}</span></span>;
+};
+
+
+const wfApiResponse = (apiResponse: WorkflowResource): JSX.Element => {
+    const {
+        uuid, name,
+        ownerUuid, createdAt, modifiedAt, modifiedByClientUuid, modifiedByUserUuid, description, definition
+    } = apiResponse;
+    const response = `
+"uuid": "${uuid}",
+"name": "${name}",
+"owner_uuid": "${ownerUuid}",
+"created_at": "${stringify(createdAt)}",
+"modified_at": ${stringify(modifiedAt)},
+"modified_by_client_uuid": ${stringify(modifiedByClientUuid)},
+"modified_by_user_uuid": ${stringify(modifiedByUserUuid)}
+"description": ${stringify(description)}`;
 
     return <span style={{ marginLeft: '-15px' }}>{'{'} {response} {'\n'} <span style={{ marginLeft: '-15px' }}>{'}'}</span></span>;
 };

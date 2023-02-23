@@ -114,7 +114,7 @@ export const ProcessDetailsCard = withStyles(styles)(
                                 className={classes.runButton}
                                 onClick={() => startProcess(process.containerRequest.uuid)}>
                                 <StartIcon />
-                                Run Process
+                                Run Workflow
                             </Button>}
                         {process.container && process.container.state === ContainerState.RUNNING &&
                             <span className={classes.cancelButton} onClick={() => cancelProcess(process.containerRequest.uuid)}>Cancel</span>}
@@ -126,10 +126,10 @@ export const ProcessDetailsCard = withStyles(styles)(
                                 <MoreOptionsIcon />
                             </IconButton>
                         </Tooltip>
-                        { doHidePanel &&
-                        <Tooltip title={`Close ${panelName || 'panel'}`} disableFocusListener>
-                            <IconButton onClick={doHidePanel}><CloseIcon /></IconButton>
-                        </Tooltip> }
+                        {doHidePanel &&
+                            <Tooltip title={`Close ${panelName || 'panel'}`} disableFocusListener>
+                                <IconButton onClick={doHidePanel}><CloseIcon /></IconButton>
+                            </Tooltip>}
                     </div>
                 } />
             <CardContent className={classes.content}>

@@ -32,6 +32,7 @@ import {
     setGroupDetailsBreadcrumbs,
     setGroupsBreadcrumbs,
     setProcessBreadcrumbs,
+    setWorkflowBreadcrumbs,
     setSharedWithMeBreadcrumbs,
     setSidePanelBreadcrumbs,
     setTrashBreadcrumbs,
@@ -591,7 +592,13 @@ export const loadProcess = (uuid: string) =>
 export const loadRegisteredWorkflow = (uuid: string) =>
     handleFirstTimeLoad(async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
         const workflow = await services.workflowService.get(uuid);
-        dispatch<any>(updateResources([workflow]));
+        if (workflow) {
+            dispatch<any>(updateResources([workflow]));
+            await dispatch<any>(
+                activateSidePanelTreeItem(workflow.ownerUuid)
+            );
+            dispatch<any>(setWorkflowBreadcrumbs(uuid));
+        }
     });
 
 export const updateProcess =
