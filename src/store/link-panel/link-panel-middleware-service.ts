@@ -4,15 +4,12 @@
 
 import { ServiceRepository } from 'services/services';
 import { MiddlewareAPI, Dispatch } from 'redux';
-import { DataExplorerMiddlewareService, dataExplorerToListParams, listResultsToDataExplorerItemsMeta } from 'store/data-explorer/data-explorer-middleware-service';
+import { DataExplorerMiddlewareService, dataExplorerToListParams, getOrder, listResultsToDataExplorerItemsMeta } from 'store/data-explorer/data-explorer-middleware-service';
 import { RootState } from 'store/store';
 import { snackbarActions, SnackbarKind } from 'store/snackbar/snackbar-actions';
 import { DataExplorer, getDataExplorer } from 'store/data-explorer/data-explorer-reducer';
 import { updateResources } from 'store/resources/resources-actions';
-import { SortDirection } from 'components/data-table/data-column';
-import { OrderDirection, OrderBuilder } from 'services/api/order-builder';
 import { ListResults } from 'services/common-service/common-service';
-import { getSortColumn } from "store/data-explorer/data-explorer-reducer";
 import { LinkResource } from 'models/link';
 import { linkPanelActions } from 'store/link-panel/link-panel-actions';
 
@@ -36,24 +33,8 @@ export class LinkMiddlewareService extends DataExplorerMiddlewareService {
 
 export const getParams = (dataExplorer: DataExplorer) => ({
     ...dataExplorerToListParams(dataExplorer),
-    order: getOrder(dataExplorer)
+    order: getOrder<LinkResource>(dataExplorer)
 });
-
-const getOrder = (dataExplorer: DataExplorer) => {
-    const sortColumn = getSortColumn<LinkResource>(dataExplorer);
-    const order = new OrderBuilder<LinkResource>();
-    if (sortColumn && sortColumn.sort) {
-        const sortDirection = sortColumn.sort.direction === SortDirection.ASC
-            ? OrderDirection.ASC
-            : OrderDirection.DESC;
-
-        return order
-            .addOrder(sortDirection, sortColumn.sort.field)
-            .getOrder();
-    } else {
-        return order.getOrder();
-    }
-};
 
 export const setItems = (listResults: ListResults<LinkResource>) =>
     linkPanelActions.SET_ITEMS({

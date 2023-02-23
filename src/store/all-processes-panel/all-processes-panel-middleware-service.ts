@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import { DataExplorerMiddlewareService, dataExplorerToListParams, getDataExplorerColumnFilters } from "store/data-explorer/data-explorer-middleware-service";
+import { DataExplorerMiddlewareService, dataExplorerToListParams, getDataExplorerColumnFilters, getOrder } from "store/data-explorer/data-explorer-middleware-service";
 import { RootState } from "../store";
 import { ServiceRepository } from "services/services";
 import { FilterBuilder, joinFilters } from "services/api/filter-builder";
@@ -11,7 +11,7 @@ import { Dispatch, MiddlewareAPI } from "redux";
 import { resourcesActions } from "store/resources/resources-actions";
 import { snackbarActions, SnackbarKind } from 'store/snackbar/snackbar-actions';
 import { progressIndicatorActions } from 'store/progress-indicator/progress-indicator-actions';
-import { getDataExplorer, DataExplorer, getSortColumn } from "store/data-explorer/data-explorer-reducer";
+import { getDataExplorer, DataExplorer } from "store/data-explorer/data-explorer-reducer";
 import { loadMissingProcessesInformation } from "store/project-panel/project-panel-middleware-service";
 import { DataColumns } from "components/data-table/data-table";
 import {
@@ -20,8 +20,6 @@ import {
     serializeOnlyProcessTypeFilters
 } from "../resource-type-filters/resource-type-filters";
 import { AllProcessesPanelColumnNames } from "views/all-processes-panel/all-processes-panel";
-import { OrderBuilder, OrderDirection } from "services/api/order-builder";
-import { SortDirection } from "components/data-table/data-column";
 import { containerRequestFieldsNoMounts, ContainerRequestResource } from "models/container-request";
 
 export class AllProcessesPanelMiddlewareService extends DataExplorerMiddlewareService {
@@ -68,7 +66,7 @@ export class AllProcessesPanelMiddlewareService extends DataExplorerMiddlewareSe
 
 const getParams = ( dataExplorer: DataExplorer ) => ({
     ...dataExplorerToListParams(dataExplorer),
-    order: getOrder(dataExplorer),
+    order: getOrder<ContainerRequestResource>(dataExplorer),
     filters: getFilters(dataExplorer)
 });
 
@@ -88,22 +86,6 @@ const getFilters = ( dataExplorer: DataExplorer ) => {
         statusFilter,
         typeFilters
     );
-};
-
-const getOrder = (dataExplorer: DataExplorer) => {
-    const sortColumn = getSortColumn<ContainerRequestResource>(dataExplorer);
-    const order = new OrderBuilder<ContainerRequestResource>();
-    if (sortColumn && sortColumn.sort) {
-        const sortDirection = sortColumn.sort.direction === SortDirection.ASC
-            ? OrderDirection.ASC
-            : OrderDirection.DESC;
-
-        return order
-            .addOrder(sortDirection, sortColumn.sort.field)
-            .getOrder();
-    } else {
-        return order.getOrder();
-    }
 };
 
 const allProcessesPanelDataExplorerIsNotSet = () =>

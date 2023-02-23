@@ -72,7 +72,6 @@ export const favoritePanelColumns: DataColumns<string, GroupContentsResource> = 
         name: FavoritePanelColumnNames.NAME,
         selected: true,
         configurable: true,
-        // sort: {direction: SortDirection.NONE, field: "name"},
         filters: createTree(),
         render: uuid => <ResourceName uuid={uuid} />
     },
@@ -108,7 +107,6 @@ export const favoritePanelColumns: DataColumns<string, GroupContentsResource> = 
         name: FavoritePanelColumnNames.LAST_MODIFIED,
         selected: true,
         configurable: true,
-        // sort: {direction: SortDirection.DESC, field: "modifiedAt"},
         filters: createTree(),
         render: uuid => <ResourceLastModifiedDate uuid={uuid} />
     }

@@ -22,7 +22,7 @@ import { updatePublicFavorites } from 'store/public-favorites/public-favorites-a
 import { snackbarActions, SnackbarKind } from "store/snackbar/snackbar-actions";
 import { updateResources } from "store/resources/resources-actions";
 import { progressIndicatorActions } from "store/progress-indicator/progress-indicator-actions";
-import { getSortColumn } from "store/data-explorer/data-explorer-reducer";
+import { DataExplorer, getSortColumn } from "store/data-explorer/data-explorer-reducer";
 import { serializeResourceTypeFilters } from 'store//resource-type-filters/resource-type-filters';
 import { getDataExplorerColumnFilters } from 'store/data-explorer/data-explorer-middleware-service';
 import { joinFilters } from 'services/api/filter-builder';
@@ -36,7 +36,6 @@ export class TrashPanelMiddlewareService extends DataExplorerMiddlewareService {
     async requestItems(api: MiddlewareAPI<Dispatch, RootState>) {
         const dataExplorer = api.getState().dataExplorer[this.getId()];
         const columns = dataExplorer.columns as DataColumns<string, CollectionResource>;
-        const sortColumn = getSortColumn<GroupContentsResource>(dataExplorer);
 
         const typeFilters = serializeResourceTypeFilters(getDataExplorerColumnFilters(columns, ProjectPanelColumnNames.TYPE));
 
@@ -52,18 +51,6 @@ export class TrashPanelMiddlewareService extends DataExplorerMiddlewareService {
             otherFilters,
         );
 
-        const order = new OrderBuilder<GroupContentsResource>();
-
-        if (sortColumn && sortColumn.sort) {
-            const sortDirection = sortColumn.sort.direction === SortDirection.ASC
-                ? OrderDirection.ASC
-                : OrderDirection.DESC;
-
-            order
-                .addOrder(sortDirection, sortColumn.sort.field, GroupContentsResourcePrefix.COLLECTION)
-                .addOrder(sortDirection, sortColumn.sort.field, GroupContentsResourcePrefix.PROJECT);
-        }
-
         const userUuid = getUserUuid(api.getState());
         if (!userUuid) { return; }
         try {
@@ -71,7 +58,7 @@ export class TrashPanelMiddlewareService extends DataExplorerMiddlewareService {
             const listResults = await this.services.groupsService
                 .contents(userUuid, {
                     ...dataExplorerToListParams(dataExplorer),
-                    order: order.getOrder(),
+                    order: getOrder(dataExplorer),
                     filters,
                     recursive: true,
                     includeTrash: true
@@ -99,6 +86,23 @@ export class TrashPanelMiddlewareService extends DataExplorerMiddlewareService {
         }
     }
 }
+
+const getOrder = (dataExplorer: DataExplorer) => {
+    const sortColumn = getSortColumn<GroupContentsResource>(dataExplorer);
+    const order = new OrderBuilder<GroupContentsResource>();
+    if (sortColumn && sortColumn.sort) {
+        const sortDirection = sortColumn.sort.direction === SortDirection.ASC
+            ? OrderDirection.ASC
+            : OrderDirection.DESC;
+
+        return order
+            .addOrder(sortDirection, sortColumn.sort.field, GroupContentsResourcePrefix.COLLECTION)
+            .addOrder(sortDirection, sortColumn.sort.field, GroupContentsResourcePrefix.PROJECT)
+            .getOrder();
+    } else {
+        return order.getOrder();
+    }
+};
 
 const couldNotFetchTrashContents = () =>
     snackbarActions.OPEN_SNACKBAR({

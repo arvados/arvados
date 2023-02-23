@@ -4,18 +4,15 @@
 
 import { ServiceRepository } from 'services/services';
 import { MiddlewareAPI, Dispatch } from 'redux';
-import { DataExplorerMiddlewareService, dataExplorerToListParams, listResultsToDataExplorerItemsMeta } from 'store/data-explorer/data-explorer-middleware-service';
+import { DataExplorerMiddlewareService, dataExplorerToListParams, getOrder, listResultsToDataExplorerItemsMeta } from 'store/data-explorer/data-explorer-middleware-service';
 import { RootState } from 'store/store';
 import { snackbarActions, SnackbarKind } from 'store/snackbar/snackbar-actions';
 import { DataExplorer, getDataExplorer } from 'store/data-explorer/data-explorer-reducer';
 import { updateResources } from 'store/resources/resources-actions';
 import { FilterBuilder } from 'services/api/filter-builder';
-import { SortDirection } from 'components/data-table/data-column';
-import { OrderDirection, OrderBuilder } from 'services/api/order-builder';
 import { WorkflowResource } from 'models/workflow';
 import { ListResults } from 'services/common-service/common-service';
 import { workflowPanelActions } from 'store/workflow-panel/workflow-panel-actions';
-import { getSortColumn } from "store/data-explorer/data-explorer-reducer";
 
 export class WorkflowMiddlewareService extends DataExplorerMiddlewareService {
     constructor(private services: ServiceRepository, id: string) {
@@ -37,7 +34,7 @@ export class WorkflowMiddlewareService extends DataExplorerMiddlewareService {
 
 export const getParams = (dataExplorer: DataExplorer) => ({
     ...dataExplorerToListParams(dataExplorer),
-    order: getOrder(dataExplorer),
+    order: getOrder<WorkflowResource>(dataExplorer),
     filters: getFilters(dataExplorer)
 });
 
@@ -46,22 +43,6 @@ export const getFilters = (dataExplorer: DataExplorer) => {
         .addILike("name", dataExplorer.searchValue)
         .getFilters();
     return filters;
-};
-
-export const getOrder = (dataExplorer: DataExplorer) => {
-    const sortColumn = getSortColumn<WorkflowResource>(dataExplorer);
-    const order = new OrderBuilder<WorkflowResource>();
-    if (sortColumn && sortColumn.sort) {
-        const sortDirection = sortColumn.sort.direction === SortDirection.ASC
-            ? OrderDirection.ASC
-            : OrderDirection.DESC;
-
-        return order
-            .addOrder(sortDirection, sortColumn.sort.field)
-            .getOrder();
-    } else {
-        return order.getOrder();
-    }
 };
 
 export const setItems = (listResults: ListResults<WorkflowResource>) =>

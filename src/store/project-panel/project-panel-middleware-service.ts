@@ -136,7 +136,7 @@ export const getFilters = (dataExplorer: DataExplorer) => {
     );
 };
 
-export const getOrder = (dataExplorer: DataExplorer) => {
+const getOrder = (dataExplorer: DataExplorer) => {
     const sortColumn = getSortColumn<ProjectResource>(dataExplorer);
     const order = new OrderBuilder<ProjectResource>();
     if (sortColumn && sortColumn.sort) {

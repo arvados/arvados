@@ -5,16 +5,13 @@
 import { ServiceRepository } from 'services/services';
 import { MiddlewareAPI, Dispatch } from 'redux';
 import {
-    DataExplorerMiddlewareService, dataExplorerToListParams, listResultsToDataExplorerItemsMeta, getDataExplorerColumnFilters
+    DataExplorerMiddlewareService, dataExplorerToListParams, listResultsToDataExplorerItemsMeta, getDataExplorerColumnFilters, getOrder
 } from 'store/data-explorer/data-explorer-middleware-service';
 import { RootState } from 'store/store';
 import { snackbarActions, SnackbarKind } from 'store/snackbar/snackbar-actions';
 import { DataExplorer, getDataExplorer } from 'store/data-explorer/data-explorer-reducer';
 import { updateResources } from 'store/resources/resources-actions';
-import { SortDirection } from 'components/data-table/data-column';
-import { OrderDirection, OrderBuilder } from 'services/api/order-builder';
 import { ListResults } from 'services/common-service/common-service';
-import { getSortColumn } from "store/data-explorer/data-explorer-reducer";
 import { ProcessResource } from 'models/process';
 import { FilterBuilder, joinFilters } from 'services/api/filter-builder';
 import { subprocessPanelActions } from './subprocess-panel-actions';
@@ -61,25 +58,9 @@ export const getParams = (
     dataExplorer: DataExplorer,
     parentContainerRequest: ContainerRequestResource) => ({
         ...dataExplorerToListParams(dataExplorer),
-        order: getOrder(dataExplorer),
+        order: getOrder<ProcessResource>(dataExplorer),
         filters: getFilters(dataExplorer, parentContainerRequest)
     });
-
-const getOrder = (dataExplorer: DataExplorer) => {
-    const sortColumn = getSortColumn<ProcessResource>(dataExplorer);
-    const order = new OrderBuilder<ProcessResource>();
-    if (sortColumn && sortColumn.sort) {
-        const sortDirection = sortColumn.sort.direction === SortDirection.ASC
-            ? OrderDirection.ASC
-            : OrderDirection.DESC;
-
-        return order
-            .addOrder(sortDirection, sortColumn.sort.field)
-            .getOrder();
-    } else {
-        return order.getOrder();
-    }
-};
 
 export const getFilters = (
     dataExplorer: DataExplorer,

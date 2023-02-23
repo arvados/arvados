@@ -57,7 +57,7 @@ export const getParams = (dataExplorer: DataExplorer) => ({
     filters: getFilters(dataExplorer),
 });
 
-export const getOrder = (dataExplorer: DataExplorer) => {
+const getOrder = (dataExplorer: DataExplorer) => {
     const sortColumn = getSortColumn<ProjectResource>(dataExplorer);
     const order = new OrderBuilder<ProjectResource>();
     if (sortColumn && sortColumn.sort) {

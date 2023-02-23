@@ -4,17 +4,14 @@
 
 import { ServiceRepository } from 'services/services';
 import { MiddlewareAPI, Dispatch } from 'redux';
-import { DataExplorerMiddlewareService, dataExplorerToListParams, listResultsToDataExplorerItemsMeta } from 'store/data-explorer/data-explorer-middleware-service';
+import { DataExplorerMiddlewareService, dataExplorerToListParams, getOrder, listResultsToDataExplorerItemsMeta } from 'store/data-explorer/data-explorer-middleware-service';
 import { RootState } from 'store/store';
 import { snackbarActions, SnackbarKind } from 'store/snackbar/snackbar-actions';
 import { DataExplorer, getDataExplorer } from 'store/data-explorer/data-explorer-reducer';
 import { updateResources } from 'store/resources/resources-actions';
-import { getSortColumn } from "store/data-explorer/data-explorer-reducer";
 import { apiClientAuthorizationsActions } from 'store/api-client-authorizations/api-client-authorizations-actions';
-import { OrderDirection, OrderBuilder } from 'services/api/order-builder';
 import { ListResults } from 'services/common-service/common-service';
 import { ApiClientAuthorization } from 'models/api-client-authorization';
-import { SortDirection } from 'components/data-table/data-column';
 
 export class ApiClientAuthorizationMiddlewareService extends DataExplorerMiddlewareService {
     constructor(private services: ServiceRepository, id: string) {
@@ -36,24 +33,8 @@ export class ApiClientAuthorizationMiddlewareService extends DataExplorerMiddlew
 
 export const getParams = (dataExplorer: DataExplorer) => ({
     ...dataExplorerToListParams(dataExplorer),
-    order: getOrder(dataExplorer)
+    order: getOrder<ApiClientAuthorization>(dataExplorer)
 });
-
-const getOrder = (dataExplorer: DataExplorer) => {
-    const sortColumn = getSortColumn<ApiClientAuthorization>(dataExplorer);
-    const order = new OrderBuilder<ApiClientAuthorization>();
-    if (sortColumn && sortColumn.sort) {
-        const sortDirection = sortColumn.sort.direction === SortDirection.ASC
-            ? OrderDirection.ASC
-            : OrderDirection.DESC;
-
-        return order
-            .addOrder(sortDirection, sortColumn.sort.field)
-            .getOrder();
-    } else {
-        return order.getOrder();
-    }
-};
 
 export const setItems = (listResults: ListResults<ApiClientAuthorization>) =>
     apiClientAuthorizationsActions.SET_ITEMS({

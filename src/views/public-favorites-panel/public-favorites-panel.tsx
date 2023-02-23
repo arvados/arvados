@@ -70,7 +70,6 @@ export const publicFavoritePanelColumns: DataColumns<string, GroupContentsResour
         name: PublicFavoritePanelColumnNames.NAME,
         selected: true,
         configurable: true,
-        // sort: {direction: SortDirection.NONE, field: "name"},
         filters: createTree(),
         render: uuid => <ResourceName uuid={uuid} />
     },
@@ -106,7 +105,6 @@ export const publicFavoritePanelColumns: DataColumns<string, GroupContentsResour
         name: PublicFavoritePanelColumnNames.LAST_MODIFIED,
         selected: true,
         configurable: true,
-        // sort: {direction: SortDirection.DESC, field: "modifiedAt"},
         filters: createTree(),
         render: uuid => <ResourceLastModifiedDate uuid={uuid} />
     }

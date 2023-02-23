@@ -5,10 +5,13 @@
 import { Dispatch, MiddlewareAPI } from 'redux';
 import { RootState } from '../store';
 import { DataColumns } from 'components/data-table/data-table';
-import { DataExplorer } from './data-explorer-reducer';
+import { DataExplorer, getSortColumn } from './data-explorer-reducer';
 import { ListResults } from 'services/common-service/common-service';
 import { createTree } from 'models/tree';
 import { DataTableFilters } from 'components/data-table-filters/data-table-filters-tree';
+import { OrderBuilder, OrderDirection } from 'services/api/order-builder';
+import { SortDirection } from 'components/data-table/data-column';
+import { Resource } from 'models/resource';
 
 export abstract class DataExplorerMiddlewareService {
     protected readonly id: string;
@@ -46,6 +49,22 @@ export const dataExplorerToListParams = (dataExplorer: DataExplorer) => ({
     limit: dataExplorer.rowsPerPage,
     offset: dataExplorer.page * dataExplorer.rowsPerPage,
 });
+
+export const getOrder = <T extends Resource = Resource>(dataExplorer: DataExplorer) => {
+    const sortColumn = getSortColumn<T>(dataExplorer);
+    const order = new OrderBuilder<T>();
+    if (sortColumn && sortColumn.sort) {
+        const sortDirection = sortColumn.sort.direction === SortDirection.ASC
+            ? OrderDirection.ASC
+            : OrderDirection.DESC;
+
+        return order
+            .addOrder(sortDirection, sortColumn.sort.field)
+            .getOrder();
+    } else {
+        return order.getOrder();
+    }
+};
 
 export const listResultsToDataExplorerItemsMeta = <R>({
     itemsAvailable,
