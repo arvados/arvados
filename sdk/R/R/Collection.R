@@ -198,22 +198,14 @@ Collection <- R6::R6Class(
         #' @param istable Used in writing txt file to check if the file is table or not.
         #' @examples
         #' collection <- Collection$new(arv, collectionUUID)
-        #' writeFile <- collection$writeFile("myoutput.csv", file, istable = NULL)             # csv
-        #' writeFile <- collection$writeFile("myoutput.fasta", file, istable = NULL)           # fasta
-        #' writeFile <- collection$writeFile("myoutputtable.txt", file, istable = "yes")       # txt table
-        #' writeFile <- collection$writeFile("myoutputtext.txt", file, istable = "no")         # txt text
-        #' writeFile <- collection$writeFile("myoutputbinary.dat", file)                       # binary
-        #' writeFile <- collection$writeFile("myoutputxlsx.xlsx", file)                        # xlsx
-        writeFile = function(name, file, istable = NULL, seqName = NULL)
-        {
-            # prepare file and connection
-            arvFile <- collection$create(name)[[1]]
-            arvFile <- collection$get(name)
-            arvConnection <- arvFile$connection("w")
-            # get file format
-            FileName <- arvFile$getName()
-            FileName <- tolower(FileName)
-            FileFormat <- gsub(".*\\.", "", FileName)
+        #' writeFile <- collection$writeFile(name = "myoutput.csv", file = file, fileFormat = "csv", istable = NULL, collectionUUID = collectionUUID)             # csv
+        #' writeFile <- collection$writeFile(name = "myoutput.tsv", file = file, fileFormat = "tsv", istable = NULL, collectionUUID = collectionUUID)             # tsv
+        #' writeFile <- collection$writeFile(name = "myoutput.fasta", file = file, fileFormat = "fasta", istable = NULL, collectionUUID = collectionUUID)         # fasta
+        #' writeFile <- collection$writeFile(name = "myoutputtable.txt", file = file, fileFormat = "txt", istable = "yes", collectionUUID = collectionUUID)       # txt table
+        #' writeFile <- collection$writeFile(name = "myoutputtext.txt", file = file, fileFormat = "txt", istable = "no", collectionUUID = collectionUUID)         # txt text
+        #' writeFile <- collection$writeFile(name = "myoutputbinary.dat", file = file, fileFormat = "dat", collectionUUID = collectionUUID)                       # binary
+        #' writeFile <- collection$writeFile(name = "myoutputxlsx.xlsx", file = file, fileFormat = "xlsx", collectionUUID = collectionUUID)                       # xlsx
+        writeFile = function(name, file, collectionUUID, fileFormat, istable = NULL, seqName = NULL) {
 
             # set enviroment
             ARVADOS_API_TOKEN <- Sys.getenv("ARVADOS_API_TOKEN")
@@ -227,22 +219,25 @@ Collection <- R6::R6Class(
                 "AWS_DEFAULT_REGION" = "collections",
                 "AWS_S3_ENDPOINT" = gsub("api[.]", "", ARVADOS_API_HOST))
 
-            if (FileFormat == "txt") {
+            # save file
+            if (fileFormat == "txt") {
                 if (istable == "yes") {
-                    aws.s3::s3write_using(file, FUN = write.table, object = name, bucket = my_collection)
+                    aws.s3::s3write_using(file, FUN = write.table, object = name, bucket = collectionUUID)
                 } else if (istable == "no") {
-                    aws.s3::s3write_using(file, FUN = writeChar, object = name, bucket = my_collection)
+                    aws.s3::s3write_using(file, FUN = writeChar, object = name, bucket = collectionUUID)
                 } else {
                     stop(paste("Specify parametr istable"))
                 }
-            } else if (FileFormat == "csv") {
-                aws.s3::s3write_using(file, FUN = write.csv, object = name, bucket = my_collection)
-            } else if (FileFormat == "fasta") {
-                aws.s3::s3write_using(file, FUN = seqinr::write.fasta, name = seqName, object = name, bucket = my_collection)
-            } else if (FileFormat == "xlsx") {
-                aws.s3::s3write_using(file, FUN = openxlsx::write.xlsx, object = name, bucket = my_collection)
-            } else if (FileFormat == "dat" || FileFormat == "bin") {
-                aws.s3::s3write_using(file, FUN = writeBin, object = name, bucket = my_collection)
+            } else if (fileFormat == "csv") {
+                aws.s3::s3write_using(file, FUN = write.csv, object = name, bucket = collectionUUID)
+            } else if (fileFormat == "tsv") {
+                aws.s3::s3write_using(file, FUN = write.table, row.names = FALSE, sep = "\t", object = name, bucket = collectionUUID)
+            } else if (fileFormat == "fasta") {
+                aws.s3::s3write_using(file, FUN = seqinr::write.fasta, name = seqName, object = name, bucket = collectionUUID)
+            } else if (fileFormat == "xlsx") {
+                aws.s3::s3write_using(file, FUN = openxlsx::write.xlsx, object = name, bucket = collectionUUID)
+            } else if (fileFormat == "dat" || fileFormat == "bin") {
+                aws.s3::s3write_using(file, FUN = writeBin, object = name, bucket = collectionUUID)
             } else {
                 stop(parse(('File format not supported, use arvadosFile$connection() and customise it')))
             }
