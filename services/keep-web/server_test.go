@@ -48,17 +48,17 @@ func (s *IntegrationSuite) TestNoToken(c *check.C) {
 		"",
 		"bogustoken",
 	} {
-		hdr, body, _ := s.runCurl(c, token, "collections.example.com", "/collections/"+arvadostest.FooCollection+"/foo")
-		c.Check(hdr, check.Matches, `(?s)HTTP/1.1 404 Not Found\r\n.*`)
-		c.Check(strings.TrimSpace(body), check.Equals, notFoundMessage)
+		hdr, body, _ := s.runCurl(c, token, s.handler.Cluster.Services.WebDAVDownload.ExternalURL.Host, "/c="+arvadostest.FooCollection+"/foo")
+		c.Check(hdr, check.Matches, `(?s)HTTP/1.1 401 Unauthorized\r\n.*`)
+		c.Check(strings.TrimSpace(body), check.Equals, unauthorizedMessage)
 
 		if token != "" {
-			hdr, body, _ = s.runCurl(c, token, "collections.example.com", "/collections/download/"+arvadostest.FooCollection+"/"+token+"/foo")
+			hdr, body, _ = s.runCurl(c, token, s.handler.Cluster.Services.WebDAVDownload.ExternalURL.Host, "/collections/download/"+arvadostest.FooCollection+"/"+token+"/foo")
 			c.Check(hdr, check.Matches, `(?s)HTTP/1.1 404 Not Found\r\n.*`)
 			c.Check(strings.TrimSpace(body), check.Equals, notFoundMessage)
 		}
 
-		hdr, body, _ = s.runCurl(c, token, "collections.example.com", "/bad-route")
+		hdr, body, _ = s.runCurl(c, token, s.handler.Cluster.Services.WebDAVDownload.ExternalURL.Host, "/bad-route")
 		c.Check(hdr, check.Matches, `(?s)HTTP/1.1 404 Not Found\r\n.*`)
 		c.Check(strings.TrimSpace(body), check.Equals, notFoundMessage)
 	}
@@ -75,22 +75,18 @@ func (s *IntegrationSuite) Test404(c *check.C) {
 		"/download",
 		"/collections",
 		"/collections/",
-		// Implicit/generated index is not implemented yet;
-		// until then, return 404.
-		"/collections/" + arvadostest.FooCollection,
-		"/collections/" + arvadostest.FooCollection + "/",
-		"/collections/" + arvadostest.FooBarDirCollection + "/dir1",
-		"/collections/" + arvadostest.FooBarDirCollection + "/dir1/",
-		// Non-existent file in collection
-		"/collections/" + arvadostest.FooCollection + "/theperthcountyconspiracy",
+		// Non-existent file/directory
+		"/c=" + arvadostest.FooCollection + "/theperthcountyconspiracy",
+		"/c=" + arvadostest.FooCollection + "/theperthcountyconspiracy/",
 		"/collections/download/" + arvadostest.FooCollection + "/" + arvadostest.ActiveToken + "/theperthcountyconspiracy",
+		"/collections/download/" + arvadostest.FooCollection + "/" + arvadostest.ActiveToken + "/theperthcountyconspiracy/",
 		// Non-existent collection
-		"/collections/" + arvadostest.NonexistentCollection,
-		"/collections/" + arvadostest.NonexistentCollection + "/",
-		"/collections/" + arvadostest.NonexistentCollection + "/theperthcountyconspiracy",
+		"/c=" + arvadostest.NonexistentCollection,
+		"/c=" + arvadostest.NonexistentCollection + "/",
+		"/c=" + arvadostest.NonexistentCollection + "/theperthcountyconspiracy",
 		"/collections/download/" + arvadostest.NonexistentCollection + "/" + arvadostest.ActiveToken + "/theperthcountyconspiracy",
 	} {
-		hdr, body, _ := s.runCurl(c, arvadostest.ActiveToken, "collections.example.com", uri)
+		hdr, body, _ := s.runCurl(c, arvadostest.ActiveToken, s.handler.Cluster.Services.WebDAVDownload.ExternalURL.Host, uri)
 		c.Check(hdr, check.Matches, "(?s)HTTP/1.1 404 Not Found\r\n.*")
 		if len(body) > 0 {
 			c.Check(strings.TrimSpace(body), check.Equals, notFoundMessage)
@@ -264,10 +260,14 @@ func (s *IntegrationSuite) Test200(c *check.C) {
 }
 
 // Return header block and body.
-func (s *IntegrationSuite) runCurl(c *check.C, auth, host, uri string, args ...string) (hdr, bodyPart string, bodySize int64) {
+func (s *IntegrationSuite) runCurl(c *check.C, auth, hostport, uri string, args ...string) (hdr, bodyPart string, bodySize int64) {
 	curlArgs := []string{"--silent", "--show-error", "--include"}
 	testHost, testPort, _ := net.SplitHostPort(s.testServer.URL[7:])
-	curlArgs = append(curlArgs, "--resolve", host+":"+testPort+":"+testHost)
+	host, port, _ := net.SplitHostPort(hostport)
+	if port == "" {
+		port = "80"
+	}
+	curlArgs = append(curlArgs, "--connect-to", host+":"+port+":"+testHost+":"+testPort)
 	if strings.Contains(auth, " ") {
 		// caller supplied entire Authorization header value
 		curlArgs = append(curlArgs, "-H", "Authorization: "+auth)
@@ -276,7 +276,7 @@ func (s *IntegrationSuite) runCurl(c *check.C, auth, host, uri string, args ...s
 		curlArgs = append(curlArgs, "-H", "Authorization: Bearer "+auth)
 	}
 	curlArgs = append(curlArgs, args...)
-	curlArgs = append(curlArgs, "http://"+host+":"+testPort+uri)
+	curlArgs = append(curlArgs, "http://"+hostport+uri)
 	c.Log(fmt.Sprintf("curlArgs == %#v", curlArgs))
 	cmd := exec.Command("curl", curlArgs...)
 	stdout, err := cmd.StdoutPipe()

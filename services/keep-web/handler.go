@@ -40,7 +40,7 @@ type handler struct {
 var urlPDHDecoder = strings.NewReplacer(" ", "+", "-", "+")
 
 var notFoundMessage = "Not Found"
-var unauthorizedMessage = "401 Unauthorized\r\n\r\nA valid Arvados token must be provided to access this resource.\r\n"
+var unauthorizedMessage = "401 Unauthorized\n\nA valid Arvados token must be provided to access this resource."
 
 // parseCollectionIDFromURL returns a UUID or PDH if s is a UUID or a
 // PDH (even if it is a PDH with "+" replaced by " " or "-");
@@ -352,15 +352,6 @@ func (h *handler) ServeHTTP(wOrig http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	if tokens == nil {
-		if !credentialsOK {
-			http.Error(w, fmt.Sprintf("Authorization tokens are not accepted here: %v, and no anonymous user token is configured.", reasonNotAcceptingCredentials), http.StatusUnauthorized)
-		} else {
-			http.Error(w, fmt.Sprintf("No authorization token in request, and no anonymous user token is configured."), http.StatusUnauthorized)
-		}
-		return
-	}
-
 	if len(targetPath) > 0 && targetPath[0] == "_" {
 		// If a collection has a directory called "t=foo" or
 		// "_", it can be served at
@@ -377,7 +368,8 @@ func (h *handler) ServeHTTP(wOrig http.ResponseWriter, r *http.Request) {
 		dirOpenMode = os.O_RDWR
 	}
 
-	validToken := make(map[string]bool)
+	var tokenValid bool
+	var tokenScopeProblem bool
 	var token string
 	var tokenUser *arvados.User
 	var sessionFS arvados.CustomFileSystem
@@ -393,14 +385,18 @@ func (h *handler) ServeHTTP(wOrig http.ResponseWriter, r *http.Request) {
 			http.Error(w, "cache error: "+err.Error(), http.StatusInternalServerError)
 			return
 		}
-		f, err := fs.OpenFile(fsprefix, dirOpenMode, 0)
-		if errors.As(err, &statusErr) && statusErr.HTTPStatus() == http.StatusForbidden {
-			// collection id is outside token scope
-			validToken[token] = true
-			continue
+		if token != h.Cluster.Users.AnonymousUserToken {
+			tokenValid = true
 		}
-		validToken[token] = true
-		if os.IsNotExist(err) {
+		f, err := fs.OpenFile(fsprefix, dirOpenMode, 0)
+		if errors.As(err, &statusErr) &&
+			statusErr.HTTPStatus() == http.StatusForbidden &&
+			token != h.Cluster.Users.AnonymousUserToken {
+			// collection id is outside scope of supplied
+			// token
+			tokenScopeProblem = true
+			continue
+		} else if os.IsNotExist(err) {
 			// collection does not exist or is not
 			// readable using this token
 			continue
@@ -425,22 +421,27 @@ func (h *handler) ServeHTTP(wOrig http.ResponseWriter, r *http.Request) {
 		}
 	}
 	if session == nil {
-		if pathToken || !credentialsOK {
-			// Either the URL is a "secret sharing link"
-			// that didn't work out (and asking the client
-			// for additional credentials would just be
-			// confusing), or we don't even accept
-			// credentials at this path.
+		if pathToken {
+			// The URL is a "secret sharing link" that
+			// didn't work out.  Asking the client for
+			// additional credentials would just be
+			// confusing.
 			http.Error(w, notFoundMessage, http.StatusNotFound)
 			return
 		}
-		for _, t := range reqTokens {
-			if validToken[t] {
-				// The client provided valid token(s),
-				// but the collection was not found.
-				http.Error(w, notFoundMessage, http.StatusNotFound)
-				return
-			}
+		if tokenValid {
+			// The client provided valid token(s), but the
+			// collection was not found.
+			http.Error(w, notFoundMessage, http.StatusNotFound)
+			return
+		}
+		if tokenScopeProblem {
+			// The client provided a valid token but
+			// fetching a collection returned 401, which
+			// means the token scope doesn't permit
+			// fetching that collection.
+			http.Error(w, notFoundMessage, http.StatusForbidden)
+			return
 		}
 		// The client's token was invalid (e.g., expired), or
 		// the client didn't even provide one.  Redirect to
@@ -477,10 +478,18 @@ func (h *handler) ServeHTTP(wOrig http.ResponseWriter, r *http.Request) {
 			target.RawQuery = redirkey + "=" + callback
 			w.Header().Add("Location", target.String())
 			w.WriteHeader(http.StatusSeeOther)
-		} else {
-			w.Header().Add("WWW-Authenticate", "Basic realm=\"collections\"")
-			http.Error(w, unauthorizedMessage, http.StatusUnauthorized)
+			return
 		}
+		if !credentialsOK {
+			http.Error(w, fmt.Sprintf("Authorization tokens are not accepted here: %v, and no anonymous user token is configured.", reasonNotAcceptingCredentials), http.StatusUnauthorized)
+			return
+		}
+		// If none of the above cases apply, suggest the
+		// user-agent (which is either a non-browser agent
+		// like wget, or a browser that can't redirect through
+		// a login flow) prompt the user for credentials.
+		w.Header().Add("WWW-Authenticate", "Basic realm=\"collections\"")
+		http.Error(w, unauthorizedMessage, http.StatusUnauthorized)
 		return
 	}
 
