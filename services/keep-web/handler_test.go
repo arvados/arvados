@@ -443,7 +443,7 @@ func (s *IntegrationSuite) TestCollectionSharingToken(c *check.C) {
 		nil,
 		"",
 		http.StatusNotFound,
-		notFoundMessage+"\n",
+		regexp.QuoteMeta(notFoundMessage+"\n"),
 	)
 }
 
@@ -456,7 +456,7 @@ func (s *IntegrationSuite) TestSingleOriginSecretLinkBadToken(c *check.C) {
 		nil,
 		"",
 		http.StatusNotFound,
-		notFoundMessage+"\n",
+		regexp.QuoteMeta(notFoundMessage+"\n"),
 	)
 }
 
@@ -519,7 +519,7 @@ func (s *IntegrationSuite) TestVhostRedirectQueryTokenToBogusCookie(c *check.C) 
 		http.Header{"Sec-Fetch-Mode": {"cors"}},
 		"",
 		http.StatusUnauthorized,
-		unauthorizedMessage+"\n",
+		regexp.QuoteMeta(unauthorizedMessage+"\n"),
 	)
 	s.testVhostRedirectTokenToCookie(c, "GET",
 		s.handler.Cluster.Services.WebDAVDownload.ExternalURL.Host+"/c="+arvadostest.FooCollection+"/foo",
@@ -527,8 +527,63 @@ func (s *IntegrationSuite) TestVhostRedirectQueryTokenToBogusCookie(c *check.C) 
 		nil,
 		"",
 		http.StatusUnauthorized,
-		unauthorizedMessage+"\n",
+		regexp.QuoteMeta(unauthorizedMessage+"\n"),
 	)
+}
+
+func (s *IntegrationSuite) TestVhostRedirectWithNoCache(c *check.C) {
+	resp := s.testVhostRedirectTokenToCookie(c, "GET",
+		arvadostest.FooCollection+".example.com/foo",
+		"?api_token=thisisabogustoken",
+		http.Header{
+			"Sec-Fetch-Mode": {"navigate"},
+			"Cache-Control":  {"no-cache"},
+		},
+		"",
+		http.StatusSeeOther,
+		"",
+	)
+	u, err := url.Parse(resp.Header().Get("Location"))
+	c.Assert(err, check.IsNil)
+	c.Logf("redirected to %s", u)
+	c.Check(u.Host, check.Equals, s.handler.Cluster.Services.Workbench2.ExternalURL.Host)
+	c.Check(u.Query().Get("redirectToPreview"), check.Equals, "/c="+arvadostest.FooCollection+"/foo")
+	c.Check(u.Query().Get("redirectToDownload"), check.Equals, "")
+}
+
+func (s *IntegrationSuite) TestNoTokenWorkbench2LoginFlow(c *check.C) {
+	for _, trial := range []struct {
+		anonToken    bool
+		cacheControl string
+	}{
+		{},
+		{cacheControl: "no-cache"},
+		{anonToken: true},
+		{anonToken: true, cacheControl: "no-cache"},
+	} {
+		c.Logf("trial: %+v", trial)
+
+		if trial.anonToken {
+			s.handler.Cluster.Users.AnonymousUserToken = arvadostest.AnonymousToken
+		} else {
+			s.handler.Cluster.Users.AnonymousUserToken = ""
+		}
+		req, err := http.NewRequest("GET", "http://"+arvadostest.FooCollection+".example.com/foo", nil)
+		c.Assert(err, check.IsNil)
+		req.Header.Set("Sec-Fetch-Mode", "navigate")
+		if trial.cacheControl != "" {
+			req.Header.Set("Cache-Control", trial.cacheControl)
+		}
+		resp := httptest.NewRecorder()
+		s.handler.ServeHTTP(resp, req)
+		c.Check(resp.Code, check.Equals, http.StatusSeeOther)
+		u, err := url.Parse(resp.Header().Get("Location"))
+		c.Assert(err, check.IsNil)
+		c.Logf("redirected to %q", u)
+		c.Check(u.Host, check.Equals, s.handler.Cluster.Services.Workbench2.ExternalURL.Host)
+		c.Check(u.Query().Get("redirectToPreview"), check.Equals, "/c="+arvadostest.FooCollection+"/foo")
+		c.Check(u.Query().Get("redirectToDownload"), check.Equals, "")
+	}
 }
 
 func (s *IntegrationSuite) TestVhostRedirectQueryTokenSingleOriginError(c *check.C) {
@@ -538,7 +593,7 @@ func (s *IntegrationSuite) TestVhostRedirectQueryTokenSingleOriginError(c *check
 		nil,
 		"",
 		http.StatusBadRequest,
-		"cannot serve inline content at this URL (possible configuration error; see https://doc.arvados.org/install/install-keep-web.html#dns)\n",
+		regexp.QuoteMeta("cannot serve inline content at this URL (possible configuration error; see https://doc.arvados.org/install/install-keep-web.html#dns)\n"),
 	)
 }
 
@@ -613,7 +668,7 @@ func (s *IntegrationSuite) TestVhostRedirectQueryTokenAttachmentOnlyHost(c *chec
 		nil,
 		"",
 		http.StatusBadRequest,
-		"cannot serve inline content at this URL (possible configuration error; see https://doc.arvados.org/install/install-keep-web.html#dns)\n",
+		regexp.QuoteMeta("cannot serve inline content at this URL (possible configuration error; see https://doc.arvados.org/install/install-keep-web.html#dns)\n"),
 	)
 
 	resp := s.testVhostRedirectTokenToCookie(c, "GET",
@@ -645,7 +700,7 @@ func (s *IntegrationSuite) TestVhostRedirectPOSTFormTokenToCookie404(c *check.C)
 		http.Header{"Content-Type": {"application/x-www-form-urlencoded"}},
 		url.Values{"api_token": {arvadostest.SpectatorToken}}.Encode(),
 		http.StatusNotFound,
-		notFoundMessage+"\n",
+		regexp.QuoteMeta(notFoundMessage+"\n"),
 	)
 }
 
@@ -668,8 +723,8 @@ func (s *IntegrationSuite) TestAnonymousTokenError(c *check.C) {
 		"",
 		nil,
 		"",
-		http.StatusNotFound,
-		notFoundMessage+"\n",
+		http.StatusUnauthorized,
+		"Authorization tokens are not accepted here: .*\n",
 	)
 }
 
@@ -806,7 +861,7 @@ func (s *IntegrationSuite) TestXHRNoRedirect(c *check.C) {
 	c.Check(resp.Header().Get("Access-Control-Allow-Origin"), check.Equals, "*")
 }
 
-func (s *IntegrationSuite) testVhostRedirectTokenToCookie(c *check.C, method, hostPath, queryString string, reqHeader http.Header, reqBody string, expectStatus int, expectRespBody string) *httptest.ResponseRecorder {
+func (s *IntegrationSuite) testVhostRedirectTokenToCookie(c *check.C, method, hostPath, queryString string, reqHeader http.Header, reqBody string, expectStatus int, matchRespBody string) *httptest.ResponseRecorder {
 	if reqHeader == nil {
 		reqHeader = http.Header{}
 	}
@@ -824,7 +879,7 @@ func (s *IntegrationSuite) testVhostRedirectTokenToCookie(c *check.C, method, ho
 	resp := httptest.NewRecorder()
 	defer func() {
 		c.Check(resp.Code, check.Equals, expectStatus)
-		c.Check(resp.Body.String(), check.Equals, expectRespBody)
+		c.Check(resp.Body.String(), check.Matches, matchRespBody)
 	}()
 
 	s.handler.ServeHTTP(resp, req)
@@ -1038,11 +1093,7 @@ func (s *IntegrationSuite) testDirectoryListing(c *check.C) {
 			c.Check(req.URL.Path, check.Equals, trial.redirect, comment)
 		}
 		if trial.expect == nil {
-			if s.handler.Cluster.Users.AnonymousUserToken == "" {
-				c.Check(resp.Code, check.Equals, http.StatusUnauthorized, comment)
-			} else {
-				c.Check(resp.Code, check.Equals, http.StatusNotFound, comment)
-			}
+			c.Check(resp.Code, check.Equals, http.StatusUnauthorized, comment)
 		} else {
 			c.Check(resp.Code, check.Equals, http.StatusOK, comment)
 			for _, e := range trial.expect {
@@ -1063,11 +1114,7 @@ func (s *IntegrationSuite) testDirectoryListing(c *check.C) {
 		resp = httptest.NewRecorder()
 		s.handler.ServeHTTP(resp, req)
 		if trial.expect == nil {
-			if s.handler.Cluster.Users.AnonymousUserToken == "" {
-				c.Check(resp.Code, check.Equals, http.StatusUnauthorized, comment)
-			} else {
-				c.Check(resp.Code, check.Equals, http.StatusNotFound, comment)
-			}
+			c.Check(resp.Code, check.Equals, http.StatusUnauthorized, comment)
 		} else {
 			c.Check(resp.Code, check.Equals, http.StatusOK, comment)
 		}
@@ -1083,11 +1130,7 @@ func (s *IntegrationSuite) testDirectoryListing(c *check.C) {
 		resp = httptest.NewRecorder()
 		s.handler.ServeHTTP(resp, req)
 		if trial.expect == nil {
-			if s.handler.Cluster.Users.AnonymousUserToken == "" {
-				c.Check(resp.Code, check.Equals, http.StatusUnauthorized, comment)
-			} else {
-				c.Check(resp.Code, check.Equals, http.StatusNotFound, comment)
-			}
+			c.Check(resp.Code, check.Equals, http.StatusUnauthorized, comment)
 		} else {
 			c.Check(resp.Code, check.Equals, http.StatusMultiStatus, comment)
 			for _, e := range trial.expect {
