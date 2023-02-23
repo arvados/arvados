@@ -32,12 +32,13 @@ readFile <- collection$readArvFile(arvadosFile, Ncol = 5, Nrow = 150, istable = 
 ## ------------------------------------------------
 
 collection <- Collection$new(arv, collectionUUID)
-writeFile <- collection$writeFile("myoutput.csv", file, istable = NULL)             # csv
-writeFile <- collection$writeFile("myoutput.fasta", file, istable = NULL)           # fasta
-writeFile <- collection$writeFile("myoutputtable.txt", file, istable = "yes")       # txt table
-writeFile <- collection$writeFile("myoutputtext.txt", file, istable = "no")         # txt text
-writeFile <- collection$writeFile("myoutputbinary.dat", file)                       # binary
-writeFile <- collection$writeFile("myoutputxlsx.xlsx", file)                        # xlsx
+writeFile <- collection$writeFile(name = "myoutput.csv", file = file, fileFormat = "csv", istable = NULL, collectionUUID = collectionUUID)             # csv
+writeFile <- collection$writeFile(name = "myoutput.tsv", file = file, fileFormat = "tsv", istable = NULL, collectionUUID = collectionUUID)             # tsv
+writeFile <- collection$writeFile(name = "myoutput.fasta", file = file, fileFormat = "fasta", istable = NULL, collectionUUID = collectionUUID)         # fasta
+writeFile <- collection$writeFile(name = "myoutputtable.txt", file = file, fileFormat = "txt", istable = "yes", collectionUUID = collectionUUID)       # txt table
+writeFile <- collection$writeFile(name = "myoutputtext.txt", file = file, fileFormat = "txt", istable = "no", collectionUUID = collectionUUID)         # txt text
+writeFile <- collection$writeFile(name = "myoutputbinary.dat", file = file, fileFormat = "dat", collectionUUID = collectionUUID)                       # binary
+writeFile <- collection$writeFile(name = "myoutputxlsx.xlsx", file = file, fileFormat = "xlsx", collectionUUID = collectionUUID)                       # xlsx
 
 ## ------------------------------------------------
 ## Method `Collection$create`
@@ -216,7 +217,14 @@ readFile <- collection$readArvFile(arvadosFile, Ncol = 5, Nrow = 150, istable = 
 \subsection{Method \code{writeFile()}}{
 Write file content
 \subsection{Usage}{
-\if{html}{\out{<div class="r">}}\preformatted{Collection$writeFile(name, file, istable = NULL, seqName = NULL)}\if{html}{\out{</div>}}
+\if{html}{\out{<div class="r">}}\preformatted{Collection$writeFile(
+  name,
+  file,
+  collectionUUID,
+  fileFormat,
+  istable = NULL,
+  seqName = NULL
+)}\if{html}{\out{</div>}}
 }
 
 \subsection{Arguments}{
@@ -233,12 +241,13 @@ Write file content
 \subsection{Examples}{
 \if{html}{\out{<div class="r example copy">}}
 \preformatted{collection <- Collection$new(arv, collectionUUID)
-writeFile <- collection$writeFile("myoutput.csv", file, istable = NULL)             # csv
-writeFile <- collection$writeFile("myoutput.fasta", file, istable = NULL)           # fasta
-writeFile <- collection$writeFile("myoutputtable.txt", file, istable = "yes")       # txt table
-writeFile <- collection$writeFile("myoutputtext.txt", file, istable = "no")         # txt text
-writeFile <- collection$writeFile("myoutputbinary.dat", file)                       # binary
-writeFile <- collection$writeFile("myoutputxlsx.xlsx", file)                        # xlsx
+writeFile <- collection$writeFile(name = "myoutput.csv", file = file, fileFormat = "csv", istable = NULL, collectionUUID = collectionUUID)             # csv
+writeFile <- collection$writeFile(name = "myoutput.tsv", file = file, fileFormat = "tsv", istable = NULL, collectionUUID = collectionUUID)             # tsv
+writeFile <- collection$writeFile(name = "myoutput.fasta", file = file, fileFormat = "fasta", istable = NULL, collectionUUID = collectionUUID)         # fasta
+writeFile <- collection$writeFile(name = "myoutputtable.txt", file = file, fileFormat = "txt", istable = "yes", collectionUUID = collectionUUID)       # txt table
+writeFile <- collection$writeFile(name = "myoutputtext.txt", file = file, fileFormat = "txt", istable = "no", collectionUUID = collectionUUID)         # txt text
+writeFile <- collection$writeFile(name = "myoutputbinary.dat", file = file, fileFormat = "dat", collectionUUID = collectionUUID)                       # binary
+writeFile <- collection$writeFile(name = "myoutputxlsx.xlsx", file = file, fileFormat = "xlsx", collectionUUID = collectionUUID)                       # xlsx
 }
 \if{html}{\out{</div>}}
 
