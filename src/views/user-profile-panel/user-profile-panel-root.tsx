@@ -34,6 +34,7 @@ import { createTree } from 'models/tree';
 import { getResource, ResourcesState } from 'store/resources/resources';
 import { DefaultView } from 'components/default-view/default-view';
 import { CopyToClipboardSnackbar } from 'components/copy-to-clipboard-snackbar/copy-to-clipboard-snackbar';
+import { PermissionResource } from 'models/permission';
 
 type CssRules = 'root' | 'emptyRoot' | 'gridItem' | 'label' | 'readOnlyValue' | 'title' | 'description' | 'actions' | 'content' | 'copyIcon';
 
@@ -125,7 +126,7 @@ enum TABS {
 
 }
 
-export const userProfileGroupsColumns: DataColumns<string> = [
+export const userProfileGroupsColumns: DataColumns<string, PermissionResource> = [
     {
         name: UserProfileGroupsColumnNames.NAME,
         selected: true,

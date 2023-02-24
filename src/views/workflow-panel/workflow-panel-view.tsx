@@ -63,12 +63,12 @@ export enum ResourceStatus {
 //     }
 // };
 
-export const workflowPanelColumns: DataColumns<string> = [
+export const workflowPanelColumns: DataColumns<string, WorkflowResource> = [
     {
         name: WorkflowPanelColumnNames.NAME,
         selected: true,
         configurable: true,
-        sortDirection: SortDirection.ASC,
+        sort: {direction: SortDirection.ASC, field: "name"},
         filters: createTree(),
         render: (uuid: string) => <ResourceWorkflowName uuid={uuid} />
     },
@@ -101,7 +101,7 @@ export const workflowPanelColumns: DataColumns<string> = [
         name: WorkflowPanelColumnNames.LAST_MODIFIED,
         selected: true,
         configurable: true,
-        sortDirection: SortDirection.NONE,
+        sort: {direction: SortDirection.NONE, field: "modifiedAt"},
         filters: createTree(),
         render: (uuid: string) => <ResourceLastModifiedDate uuid={uuid} />
     },

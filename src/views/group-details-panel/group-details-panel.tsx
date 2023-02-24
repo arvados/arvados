@@ -19,6 +19,7 @@ import { AddIcon, UserPanelIcon, KeyIcon } from 'components/icon/icon';
 import { getUserUuid } from 'common/getuser';
 import { GroupResource, isBuiltinGroup } from 'models/group';
 import { ArvadosTheme } from 'common/custom-theme';
+import { PermissionResource } from 'models/permission';
 
 type CssRules = "root" | "content";
 
@@ -51,7 +52,7 @@ export enum GroupDetailsPanelPermissionsColumnNames {
 const MEMBERS_DEFAULT_MESSAGE = 'Members list is empty.';
 const PERMISSIONS_DEFAULT_MESSAGE = 'Permissions list is empty.';
 
-export const groupDetailsMembersPanelColumns: DataColumns<string> = [
+export const groupDetailsMembersPanelColumns: DataColumns<string, PermissionResource> = [
     {
         name: GroupDetailsPanelMembersColumnNames.FULL_NAME,
         selected: true,
@@ -96,7 +97,7 @@ export const groupDetailsMembersPanelColumns: DataColumns<string> = [
     },
 ];
 
-export const groupDetailsPermissionsPanelColumns: DataColumns<string> = [
+export const groupDetailsPermissionsPanelColumns: DataColumns<string, PermissionResource> = [
     {
         name: GroupDetailsPanelPermissionsColumnNames.NAME,
         selected: true,

@@ -25,7 +25,7 @@ import { ProcessIcon } from 'components/icon/icon';
 import { openProcessContextMenu } from 'store/context-menu/context-menu-actions';
 import { loadDetailsPanel } from 'store/details-panel/details-panel-action';
 import { navigateTo } from 'store/navigation/navigation-action';
-import { ContainerRequestState } from "models/container-request";
+import { ContainerRequestResource, ContainerRequestState } from "models/container-request";
 import { RootState } from 'store/store';
 import { createTree } from 'models/tree';
 import { getInitialProcessStatusFilters, getInitialProcessTypeFilters } from 'store/resource-type-filters/resource-type-filters';
@@ -60,12 +60,12 @@ export interface AllProcessesPanelFilter extends DataTableFilterItem {
     type: ResourceKind | ContainerRequestState;
 }
 
-export const allProcessesPanelColumns: DataColumns<string> = [
+export const allProcessesPanelColumns: DataColumns<string, ContainerRequestResource> = [
     {
         name: AllProcessesPanelColumnNames.NAME,
         selected: true,
         configurable: true,
-        sortDirection: SortDirection.NONE,
+        sort: {direction: SortDirection.NONE, field: "name"},
         filters: createTree(),
         render: uuid => <ResourceName uuid={uuid} />
     },
@@ -95,7 +95,7 @@ export const allProcessesPanelColumns: DataColumns<string> = [
         name: AllProcessesPanelColumnNames.CREATED_AT,
         selected: true,
         configurable: true,
-        sortDirection: SortDirection.DESC,
+        sort: {direction: SortDirection.DESC, field: "createdAt"},
         filters: createTree(),
         render: uuid => <ResourceCreatedAtDate uuid={uuid} />
     },

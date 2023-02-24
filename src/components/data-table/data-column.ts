@@ -6,7 +6,12 @@ import React from "react";
 import { DataTableFilters } from "../data-table-filters/data-table-filters-tree";
 import { createTree } from 'models/tree';
 
-export interface DataColumn<T> {
+/**
+ *
+ * @template I Type of dataexplorer item reference
+ * @template R Type of resource to use to restrict values of column sort.field
+ */
+export interface DataColumn<I, R> {
     key?: React.Key;
     name: string;
     selected: boolean;
@@ -17,9 +22,9 @@ export interface DataColumn<T> {
      * radio group and only one filter can be selected at a time.
      */
     mutuallyExclusiveFilters?: boolean;
-    sortDirection?: SortDirection;
+    sort?: {direction: SortDirection, field: keyof R};
     filters: DataTableFilters;
-    render: (item: T) => React.ReactElement<any>;
+    render: (item: I) => React.ReactElement<any>;
     renderHeader?: () => React.ReactElement<any>;
 }
 
@@ -29,24 +34,23 @@ export enum SortDirection {
     NONE = "none"
 }
 
-export const toggleSortDirection = <T>(column: DataColumn<T>): DataColumn<T> => {
-    return column.sortDirection
-        ? column.sortDirection === SortDirection.ASC
-            ? { ...column, sortDirection: SortDirection.DESC }
-            : { ...column, sortDirection: SortDirection.ASC }
+export const toggleSortDirection = <I, R>(column: DataColumn<I, R>): DataColumn<I, R> => {
+    return column.sort
+        ? column.sort.direction === SortDirection.ASC
+            ? { ...column, sort: {...column.sort, direction: SortDirection.DESC} }
+            : { ...column, sort: {...column.sort, direction: SortDirection.ASC} }
         : column;
 };
 
-export const resetSortDirection = <T>(column: DataColumn<T>): DataColumn<T> => {
-    return column.sortDirection ? { ...column, sortDirection: SortDirection.NONE } : column;
+export const resetSortDirection = <I, R>(column: DataColumn<I, R>): DataColumn<I, R> => {
+    return column.sort ? { ...column, sort: {...column.sort, direction: SortDirection.NONE} } : column;
 };
 
-export const createDataColumn = <T>(dataColumn: Partial<DataColumn<T>>): DataColumn<T> => ({
+export const createDataColumn = <I, R>(dataColumn: Partial<DataColumn<I, R>>): DataColumn<I, R> => ({
     key: '',
     name: '',
     selected: true,
     configurable: true,
-    sortDirection: SortDirection.NONE,
     filters: createTree(),
     render: () => React.createElement('span'),
     ...dataColumn,

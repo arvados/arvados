@@ -495,5 +495,58 @@ describe('Project tests', function() {
         ));
 
     });
-});
 
+    it('sorts displayed items correctly', () => {
+        cy.loginAs(activeUser);
+
+        cy.get('[data-cy=project-panel] button[title="Select columns"]').click();
+        cy.get('div[role=presentation] ul > div[role=button]').contains('Date Created').click();
+        cy.get('div[role=presentation] ul > div[role=button]').contains('Trash at').click();
+        cy.get('div[role=presentation] ul > div[role=button]').contains('Delete at').click();
+        cy.get('div[role=presentation] > div[aria-hidden=true]').click();
+
+        cy.intercept({method: 'GET', url: '**/arvados/v1/groups/*/contents*'}).as('filteredQuery');
+        [
+            {
+                name: "Name",
+                asc: "collections.name asc,container_requests.name asc,groups.name asc",
+                desc: "collections.name desc,container_requests.name desc,groups.name desc"
+            },
+            {
+                name: "Last Modified",
+                asc: "collections.modified_at asc,container_requests.modified_at asc,groups.modified_at asc",
+                desc: "collections.modified_at desc,container_requests.modified_at desc,groups.modified_at desc"
+            },
+            {
+                name: "Date Created",
+                asc: "collections.created_at asc,container_requests.created_at asc,groups.created_at asc",
+                desc: "collections.created_at desc,container_requests.created_at desc,groups.created_at desc"
+
+            },
+            {
+                name: "Trash at",
+                asc: "collections.trash_at asc,container_requests.trash_at asc,groups.trash_at asc",
+                desc: "collections.trash_at desc,container_requests.trash_at desc,groups.trash_at desc"
+
+            },
+            {
+                name: "Delete at",
+                asc: "collections.delete_at asc,container_requests.delete_at asc,groups.delete_at asc",
+                desc: "collections.delete_at desc,container_requests.delete_at desc,groups.delete_at desc"
+
+            },
+        ].forEach((test) => {
+            cy.get('[data-cy=project-panel] table thead th').contains(test.name).click();
+            cy.wait('@filteredQuery').then(interception => {
+                const searchParams = new URLSearchParams((new URL(interception.request.url).search));
+                expect(searchParams.get('order')).to.eq(test.asc);
+            });
+            cy.get('[data-cy=project-panel] table thead th').contains(test.name).click();
+            cy.wait('@filteredQuery').then(interception => {
+                const searchParams = new URLSearchParams((new URL(interception.request.url).search));
+                expect(searchParams.get('order')).to.eq(test.desc);
+            });
+        });
+
+    });
+});

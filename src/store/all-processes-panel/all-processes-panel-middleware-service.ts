@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import { DataExplorerMiddlewareService, dataExplorerToListParams, getDataExplorerColumnFilters } from "store/data-explorer/data-explorer-middleware-service";
+import { DataExplorerMiddlewareService, dataExplorerToListParams, getDataExplorerColumnFilters, getOrder } from "store/data-explorer/data-explorer-middleware-service";
 import { RootState } from "../store";
 import { ServiceRepository } from "services/services";
 import { FilterBuilder, joinFilters } from "services/api/filter-builder";
@@ -11,7 +11,7 @@ import { Dispatch, MiddlewareAPI } from "redux";
 import { resourcesActions } from "store/resources/resources-actions";
 import { snackbarActions, SnackbarKind } from 'store/snackbar/snackbar-actions';
 import { progressIndicatorActions } from 'store/progress-indicator/progress-indicator-actions';
-import { getDataExplorer, DataExplorer, getSortColumn } from "store/data-explorer/data-explorer-reducer";
+import { getDataExplorer, DataExplorer } from "store/data-explorer/data-explorer-reducer";
 import { loadMissingProcessesInformation } from "store/project-panel/project-panel-middleware-service";
 import { DataColumns } from "components/data-table/data-table";
 import {
@@ -20,10 +20,7 @@ import {
     serializeOnlyProcessTypeFilters
 } from "../resource-type-filters/resource-type-filters";
 import { AllProcessesPanelColumnNames } from "views/all-processes-panel/all-processes-panel";
-import { OrderBuilder, OrderDirection } from "services/api/order-builder";
-import { ProcessResource } from "models/process";
-import { SortDirection } from "components/data-table/data-column";
-import { containerRequestFieldsNoMounts } from "models/container-request";
+import { containerRequestFieldsNoMounts, ContainerRequestResource } from "models/container-request";
 
 export class AllProcessesPanelMiddlewareService extends DataExplorerMiddlewareService {
     constructor(private services: ServiceRepository, id: string) {
@@ -69,12 +66,12 @@ export class AllProcessesPanelMiddlewareService extends DataExplorerMiddlewareSe
 
 const getParams = ( dataExplorer: DataExplorer ) => ({
     ...dataExplorerToListParams(dataExplorer),
-    order: getOrder(dataExplorer),
+    order: getOrder<ContainerRequestResource>(dataExplorer),
     filters: getFilters(dataExplorer)
 });
 
 const getFilters = ( dataExplorer: DataExplorer ) => {
-    const columns = dataExplorer.columns as DataColumns<string>;
+    const columns = dataExplorer.columns as DataColumns<string, ContainerRequestResource>;
     const statusColumnFilters = getDataExplorerColumnFilters(columns, 'Status');
     const activeStatusFilter = Object.keys(statusColumnFilters).find(
         filterName => statusColumnFilters[filterName].selected
@@ -89,23 +86,6 @@ const getFilters = ( dataExplorer: DataExplorer ) => {
         statusFilter,
         typeFilters
     );
-};
-
-const getOrder = (dataExplorer: DataExplorer) => {
-    const sortColumn = getSortColumn(dataExplorer);
-    const order = new OrderBuilder<ProcessResource>();
-    if (sortColumn) {
-        const sortDirection = sortColumn && sortColumn.sortDirection === SortDirection.ASC
-            ? OrderDirection.ASC
-            : OrderDirection.DESC;
-
-        const columnName = sortColumn && sortColumn.name === AllProcessesPanelColumnNames.NAME ? "name" : "createdAt";
-        return order
-            .addOrder(sortDirection, columnName)
-            .getOrder();
-    } else {
-        return order.getOrder();
-    }
 };
 
 const allProcessesPanelDataExplorerIsNotSet = () =>

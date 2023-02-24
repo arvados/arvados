@@ -34,6 +34,7 @@ import { createTree } from 'models/tree';
 import {
     getTrashPanelTypeFilters
 } from 'store/resource-type-filters/resource-type-filters';
+import { CollectionResource } from 'models/collection';
 
 type CssRules = "toolbar" | "button" | "root";
 
@@ -83,12 +84,12 @@ export const ResourceRestore =
         </Tooltip>
     );
 
-export const trashPanelColumns: DataColumns<string> = [
+export const trashPanelColumns: DataColumns<string, CollectionResource> = [
     {
         name: TrashPanelColumnNames.NAME,
         selected: true,
         configurable: true,
-        sortDirection: SortDirection.NONE,
+        sort: {direction: SortDirection.NONE, field: "name"},
         filters: createTree(),
         render: uuid => <ResourceName uuid={uuid} />
     },
@@ -96,7 +97,6 @@ export const trashPanelColumns: DataColumns<string> = [
         name: TrashPanelColumnNames.TYPE,
         selected: true,
         configurable: true,
-        sortDirection: SortDirection.NONE,
         filters: getTrashPanelTypeFilters(),
         render: uuid => <ResourceType uuid={uuid} />,
     },
@@ -104,7 +104,7 @@ export const trashPanelColumns: DataColumns<string> = [
         name: TrashPanelColumnNames.FILE_SIZE,
         selected: true,
         configurable: true,
-        sortDirection: SortDirection.NONE,
+        sort: {direction: SortDirection.NONE, field: "fileSizeTotal"},
         filters: createTree(),
         render: uuid => <ResourceFileSize uuid={uuid} />
     },
@@ -112,7 +112,7 @@ export const trashPanelColumns: DataColumns<string> = [
         name: TrashPanelColumnNames.TRASHED_DATE,
         selected: true,
         configurable: true,
-        sortDirection: SortDirection.DESC,
+        sort: {direction: SortDirection.DESC, field: "trashAt"},
         filters: createTree(),
         render: uuid => <ResourceTrashDate uuid={uuid} />
     },
@@ -120,7 +120,7 @@ export const trashPanelColumns: DataColumns<string> = [
         name: TrashPanelColumnNames.TO_BE_DELETED,
         selected: true,
         configurable: true,
-        sortDirection: SortDirection.NONE,
+        sort: {direction: SortDirection.NONE, field: "deleteAt"},
         filters: createTree(),
         render: uuid => <ResourceDeleteDate uuid={uuid} />
     },
@@ -128,7 +128,6 @@ export const trashPanelColumns: DataColumns<string> = [
         name: '',
         selected: true,
         configurable: false,
-        sortDirection: SortDirection.NONE,
         filters: createTree(),
         render: uuid => <ResourceRestore uuid={uuid} />
     }

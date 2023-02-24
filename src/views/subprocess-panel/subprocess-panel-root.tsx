@@ -19,6 +19,7 @@ import { ResourcesState } from 'store/resources/resources';
 import { MPVPanelProps } from 'components/multi-panel-view/multi-panel-view';
 import { StyleRulesCallback, Typography, WithStyles, withStyles } from '@material-ui/core';
 import { ArvadosTheme } from 'common/custom-theme';
+import { ProcessResource } from 'models/process';
 
 type CssRules = 'iconHeader' | 'cardHeader';
 
@@ -44,12 +45,12 @@ export interface SubprocessPanelFilter extends DataTableFilterItem {
     type: ResourceKind | ContainerRequestState;
 }
 
-export const subprocessPanelColumns: DataColumns<string> = [
+export const subprocessPanelColumns: DataColumns<string, ProcessResource> = [
     {
         name: SubprocessPanelColumnNames.NAME,
         selected: true,
         configurable: true,
-        sortDirection: SortDirection.NONE,
+        sort: {direction: SortDirection.NONE, field: "name"},
         filters: createTree(),
         render: uuid => <ResourceName uuid={uuid} />
     },
@@ -65,7 +66,7 @@ export const subprocessPanelColumns: DataColumns<string> = [
         name: SubprocessPanelColumnNames.CREATED_AT,
         selected: true,
         configurable: true,
-        sortDirection: SortDirection.DESC,
+        sort: {direction: SortDirection.DESC, field: "createdAt"},
         filters: createTree(),
         render: uuid => <ResourceCreatedAtDate uuid={uuid} />
     },

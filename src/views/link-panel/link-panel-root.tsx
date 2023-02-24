@@ -16,6 +16,7 @@ import {
 from 'views-components/data-explorer/renderers';
 import { StyleRulesCallback, WithStyles, withStyles } from '@material-ui/core';
 import { ArvadosTheme } from 'common/custom-theme';
+import { LinkResource } from 'models/link';
 
 type CssRules = "root";
 
@@ -33,12 +34,12 @@ export enum LinkPanelColumnNames {
     UUID = "UUID"
 }
 
-export const linkPanelColumns: DataColumns<string> = [
+export const linkPanelColumns: DataColumns<string, LinkResource> = [
     {
         name: LinkPanelColumnNames.NAME,
         selected: true,
         configurable: true,
-        sortDirection: SortDirection.NONE,
+        sort: {direction: SortDirection.NONE, field: "name"},
         filters: createTree(),
         render: uuid => <ResourceLinkName uuid={uuid} />
     },

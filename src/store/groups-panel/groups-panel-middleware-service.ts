@@ -14,7 +14,6 @@ import { updateResources } from 'store/resources/resources-actions';
 import { OrderBuilder, OrderDirection } from 'services/api/order-builder';
 import { GroupResource, GroupClass } from 'models/group';
 import { SortDirection } from 'components/data-table/data-column';
-import { GroupsPanelColumnNames } from 'views/groups-panel/groups-panel';
 import { progressIndicatorActions } from "store/progress-indicator/progress-indicator-actions";
 
 export class GroupsPanelMiddlewareService extends DataExplorerMiddlewareService {
@@ -28,14 +27,14 @@ export class GroupsPanelMiddlewareService extends DataExplorerMiddlewareService 
         } else {
             try {
                 api.dispatch(progressIndicatorActions.START_WORKING(this.getId()));
+                const sortColumn = getSortColumn<GroupResource>(dataExplorer);
                 const order = new OrderBuilder<GroupResource>();
-                const sortColumn = getSortColumn(dataExplorer);
-                if (sortColumn) {
+                if (sortColumn && sortColumn.sort) {
                     const direction =
-                        sortColumn.sortDirection === SortDirection.ASC && sortColumn.name === GroupsPanelColumnNames.GROUP
+                        sortColumn.sort.direction === SortDirection.ASC
                             ? OrderDirection.ASC
                             : OrderDirection.DESC;
-                    order.addOrder(direction, 'name');
+                    order.addOrder(direction, sortColumn.sort.field);
                 }
                 const filters = new FilterBuilder()
                     .addEqual('group_class', GroupClass.ROLE)
