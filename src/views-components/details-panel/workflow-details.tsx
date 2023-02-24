@@ -77,32 +77,34 @@ export const getRegisteredWorkflowPanelData = (item: WorkflowResource, auth: Aut
     // parse definition
     const wfdef = parseWorkflowDefinition(item);
 
-    const inputs = getWorkflowInputs(wfdef);
-    if (inputs) {
-        inputs.forEach(elm => {
-            if (elm.default !== undefined && elm.default !== null) {
-                elm.value = elm.default;
-            }
-        });
-        inputParams = formatInputData(inputs, auth);
-    }
-
-    const outputs = getWorkflowOutputs(wfdef);
-    if (outputs) {
-        outputParams = formatOutputData(outputs, {}, undefined, auth);
-    }
-
-    const wf = getWorkflow(wfdef);
-    if (wf) {
-        const REGEX = /keep:([0-9a-f]{32}\+\d+)\/.*/;
-        if (wf["steps"]) {
-            workflowCollection = wf["steps"][0].run.match(REGEX)[1];
+    if (wfdef) {
+        const inputs = getWorkflowInputs(wfdef);
+        if (inputs) {
+            inputs.forEach(elm => {
+                if (elm.default !== undefined && elm.default !== null) {
+                    elm.value = elm.default;
+                }
+            });
+            inputParams = formatInputData(inputs, auth);
         }
-    }
 
-    for (const elm in wfdef) {
-        if (elm.startsWith("http://arvados.org/cwl#git")) {
-            gitprops[elm.substr(23)] = wfdef[elm]
+        const outputs = getWorkflowOutputs(wfdef);
+        if (outputs) {
+            outputParams = formatOutputData(outputs, {}, undefined, auth);
+        }
+
+        const wf = getWorkflow(wfdef);
+        if (wf) {
+            const REGEX = /keep:([0-9a-f]{32}\+\d+)\/.*/;
+            if (wf["steps"]) {
+                workflowCollection = wf["steps"][0].run.match(REGEX)[1];
+            }
+        }
+
+        for (const elm in wfdef) {
+            if (elm.startsWith("http://arvados.org/cwl#git")) {
+                gitprops[elm.substr(23)] = wfdef[elm]
+            }
         }
     }
 
@@ -123,7 +125,7 @@ export const WorkflowDetailsAttributes = connect(mapStateToProps, mapDispatchToP
             const data = getRegisteredWorkflowPanelData(workflow, auth);
             return <Grid container>
                 <Button onClick={workflow && onClick(workflow)} className={classes.runButton} variant='contained'
-                    data-cy='details-panel-run-btn' color='primary' size='small'>
+                    data-cy='workflow-details-panel-run-btn' color='primary' size='small'>
                     <StartIcon />
                     Run Process
                 </Button>
@@ -143,7 +145,7 @@ export const WorkflowDetailsAttributes = connect(mapStateToProps, mapDispatchToP
                 <Grid item xs={12}>
                     <DetailsAttribute label='Last modified' value={formatDate(workflow?.modifiedAt)} />
                 </Grid>
-                <Grid item xs={12} >
+                <Grid item xs={12} data-cy="workflow-details-attributes-modifiedby-user">
                     <DetailsAttribute
                         label='Last modified by user' linkToUuid={workflow?.modifiedByUserUuid}
                         uuidEnhancer={(uuid: string) => <ResourceWithName uuid={uuid} />} />
