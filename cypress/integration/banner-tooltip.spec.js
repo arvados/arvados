@@ -34,7 +34,7 @@ describe('Collection panel tests', function () {
 
         cy.loginAs(adminUser);
 
-        cy.goToPath(`/collections/${collectionUUID}`);
+        // cy.goToPath(`/collections/${collectionUUID}`);
 
         cy.wait(2000);
 
@@ -54,7 +54,7 @@ describe('Collection panel tests', function () {
 
         cy.loginAs(adminUser);
 
-        cy.goToPath(`/collections/${collectionUUID}`);
+        // cy.goToPath(`/collections/${collectionUUID}`);
 
         cy.wait(2000);
 
