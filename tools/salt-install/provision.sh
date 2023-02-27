@@ -480,6 +480,7 @@ fi
 # Replace helper state files that differ from the formula's examples
 if [ -d "${SOURCE_STATES_DIR}" ]; then
   mkdir -p "${F_DIR}"/extra/extra
+  rm -f "${F_DIR}"/extra/extra/*
 
   for f in $(ls "${SOURCE_STATES_DIR}"/*); do
     sed "s#__ANONYMOUS_USER_TOKEN__#${ANONYMOUS_USER_TOKEN}#g;
@@ -688,13 +689,17 @@ else
     grep -q "extra_custom_certs" ${P_DIR}/top.sls || echo "    - extra_custom_certs" >> ${P_DIR}/top.sls
   fi
 
+  # Prometheus state on all nodes due to the node exporter below
+  grep -q "\- prometheus$" ${S_DIR}/top.sls || echo "    - prometheus" >> ${S_DIR}/top.sls
+  # Prometheus node exporter pillar
+  grep -q "prometheus_node_exporter" ${P_DIR}/top.sls || echo "    - prometheus_node_exporter" >> ${P_DIR}/top.sls
+
   for R in ${ROLES}; do
     case "${R}" in
       "database")
         # States
         grep -q "\- postgres$" ${S_DIR}/top.sls || echo "    - postgres" >> ${S_DIR}/top.sls
-        grep -q "prometheus" ${S_DIR}/top.sls || echo "    - prometheus" >> ${S_DIR}/top.sls
-        grep -q "extra.postgresql_mtail" ${S_DIR}/top.sls || echo "    - extra.postgresql_mtail" >> ${S_DIR}/top.sls
+        grep -q "extra.prometheus_pg_exporter" ${S_DIR}/top.sls || echo "    - extra.prometheus_pg_exporter" >> ${S_DIR}/top.sls
         # Pillars
         grep -q "postgresql" ${P_DIR}/top.sls || echo "    - postgresql" >> ${P_DIR}/top.sls
         grep -q "prometheus_pg_exporter" ${P_DIR}/top.sls || echo "    - prometheus_pg_exporter" >> ${P_DIR}/top.sls
@@ -702,7 +707,6 @@ else
       "monitoring")
         ### States ###
         grep -q "nginx" ${S_DIR}/top.sls || echo "    - nginx" >> ${S_DIR}/top.sls
-        grep -q "prometheus" ${S_DIR}/top.sls || echo "    - prometheus" >> ${S_DIR}/top.sls
         if [ "${SSL_MODE}" = "lets-encrypt" ]; then
           grep -q "letsencrypt"     ${S_DIR}/top.sls || echo "    - letsencrypt" >> ${S_DIR}/top.sls
           if [ "x${USE_LETSENCRYPT_ROUTE53}" = "xyes" ]; then
