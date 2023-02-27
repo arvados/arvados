@@ -163,20 +163,20 @@ describe('Project tests', function() {
         editProjectDescription(projName, 'Test description');
 
         // Check description is set
-        verifyProjectDescription("<p>Test description</p>");
+        verifyProjectDescription(projName, "<p>Test description</p>");
 
         // Clear description
         editProjectDescription(projName, '{selectall}{backspace}');
 
         // Check description is null
-        verifyProjectDescription(null);
+        verifyProjectDescription(projName, null);
 
         // Set description to contain whitespace
         editProjectDescription(projName, '{selectall}{backspace}    x');
         editProjectDescription(projName, '{backspace}');
 
         // Check description is null
-        verifyProjectDescription(null);
+        verifyProjectDescription(projName, null);
 
     });
 
