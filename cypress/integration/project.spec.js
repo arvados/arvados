@@ -120,6 +120,66 @@ describe('Project tests', function() {
         });
     });
 
+    it('creates a project without and with description', function() {
+        const projName = `Test project (${Math.floor(999999 * Math.random())})`;
+        cy.loginAs(activeUser);
+
+        // Create project
+        cy.get('[data-cy=side-panel-button]').click();
+        cy.get('[data-cy=side-panel-new-project]').click();
+        cy.get('[data-cy=form-dialog]')
+            .should('contain', 'New Project')
+            .within(() => {
+                cy.get('[data-cy=name-field]').within(() => {
+                    cy.get('input').type(projName);
+                });
+            });
+        cy.get('[data-cy=form-submit-btn]').click();
+
+        const editProjectDescription = (name, type) => {
+            cy.get('[data-cy=side-panel-tree]').contains('Home Projects').click();
+            cy.get('[data-cy=project-panel] tbody tr').contains(name).rightclick();
+            cy.get('[data-cy=context-menu]').contains('Edit').click();
+            cy.get('[data-cy=form-dialog]').within(() => {
+                cy.get('div[contenteditable=true]')
+                    .click()
+                    .type(type);
+                cy.get('[data-cy=form-submit-btn]').click();
+            });
+        };
+
+        const verifyProjectDescription = (name, description) => {
+            cy.doRequest('GET', '/arvados/v1/groups', null, {
+                filters: `[["name", "=", "${name}"], ["group_class", "=", "project"]]`,
+            })
+            .its('body.items').as('projects')
+            .then(function() {
+                expect(this.projects).to.have.lengthOf(1);
+                expect(this.projects[0].description).to.equal(description);
+            });
+        };
+
+        // Edit description
+        editProjectDescription(projName, 'Test description');
+
+        // Check description is set
+        verifyProjectDescription("<p>Test description</p>");
+
+        // Clear description
+        editProjectDescription(projName, '{selectall}{backspace}');
+
+        // Check description is null
+        verifyProjectDescription(null);
+
+        // Set description to contain whitespace
+        editProjectDescription(projName, '{selectall}{backspace}    x');
+        editProjectDescription(projName, '{backspace}');
+
+        // Check description is null
+        verifyProjectDescription(null);
+
+    });
+
     it('creates new project on home project and then a subproject inside it', function() {
         const createProject = function(name, parentName) {
             cy.get('[data-cy=side-panel-button]').click();
