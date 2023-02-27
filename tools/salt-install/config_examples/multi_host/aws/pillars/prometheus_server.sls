@@ -9,11 +9,9 @@ prometheus:
     component:
       - prometheus
       - alertmanager
-      - blackbox_exporter
+      - node_exporter
   pkg:
     use_upstream_repo: true
-    use_upstream_archive: true
-
     component:
       prometheus:
         config:
@@ -78,3 +76,20 @@ prometheus:
                   labels:
                     instance: database.__CLUSTER__
                     cluster: __CLUSTER__
+
+            # Nodes
+            - job_name: node
+              static_configs:
+                {% for node in [
+                  'controller',
+                  'keep0',
+                  'keep1',
+                  'keep',
+                  'workbench',
+                  'shell',
+                ] %}
+                - targets: [ "{{ node }}.__CLUSTER__.__DOMAIN__:9100" ]
+                  labels:
+                    instance: "{{ node }}.__CLUSTER__"
+                    cluster: __CLUSTER__
+                {% endfor %}

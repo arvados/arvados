@@ -2,6 +2,9 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
+{%- set prometheus_pg_exporter = pillar.get('prometheus_pg_exporter', {'enabled': False}) %}
+
+{%- if prometheus_pg_exporter.enabled %}
 ### PACKAGES
 monitoring_required_pkgs:
   pkg.installed:
@@ -74,5 +77,6 @@ mtail_service:
     - require:
       - pkg: monitoring_required_pkgs
     - watch:
-      - file: /etc/mtail/postgresql.mtail
-      - file: /etc/default/mtail
+      - file: mtail_postgresql_conf
+      - file: mtail_etc_default
+{%- endif %}

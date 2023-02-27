@@ -24,19 +24,12 @@ postgres:
       password: "__DATABASE_PASSWORD__"
     prometheus:
       ensure: present
-
-  # tablespaces:
-  #   arvados_tablespace:
-  #     directory: /path/to/some/tbspace/arvados_tbsp
-  #     owner: arvados
-
   databases:
     __CLUSTER___arvados:
       owner: __CLUSTER___arvados
       template: template0
       lc_ctype: en_US.utf8
       lc_collate: en_US.utf8
-      # tablespace: arvados_tablespace
       schemas:
         public:
           owner: __CLUSTER___arvados
