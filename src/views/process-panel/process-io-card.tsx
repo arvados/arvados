@@ -255,7 +255,7 @@ export const ProcessIOCard = withStyles(styles)(connect(null, mapDispatchToProps
         const [showImagePreview, setShowImagePreview] = useState(false);
 
         const PanelIcon = label === ProcessIOCardType.INPUT ? InputIcon : OutputIcon;
-        const mainProcess = process && process!.containerRequest.requestingContainerUuid;
+        const mainProcess = !(process && process!.containerRequest.requestingContainerUuid);
 
         const loading = raw === null || raw === undefined || params === null;
         const hasRaw = !!(raw && Object.keys(raw).length > 0);
