@@ -97,7 +97,7 @@ When running a container on a spot instance, Arvados monitors the EC2 metadata e
 Example excerpt from @crunch-run.txt@:
 
 <pre>
-2023-02-21T21:12:42.350719824Z Cloud provider indicates instance action "stop" scheduled for time "2023-02-21T21:14:42Z"
+2023-02-21T21:12:42.350719824Z Cloud provider scheduled instance stop at 2023-02-21T21:14:42Z
 </pre>
 
 Example @runtime_status@:
@@ -105,8 +105,8 @@ Example @runtime_status@:
 <pre>
 {
   "warning": "preemption notice",
-  "warningDetail": "Cloud provider indicates instance action \"stop\" scheduled for time \"2023-02-21T21:14:42Z\"",
-  "preemptionNotice": "Cloud provider indicates instance action \"stop\" scheduled for time \"2023-02-21T21:14:42Z\""
+  "warningDetail": "Cloud provider scheduled instance stop at 2023-02-21T21:14:42Z",
+  "preemptionNotice": "Cloud provider scheduled instance stop at 2023-02-21T21:14:42Z"
 }
 </pre>
 

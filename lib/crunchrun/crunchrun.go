@@ -1291,7 +1291,7 @@ func (runner *ContainerRunner) checkSpotInterruptionNotices() {
 		failures = 0
 		if metadata != lastmetadata {
 			lastmetadata = metadata
-			text := fmt.Sprintf("Cloud provider indicates instance action %q scheduled for time %q", metadata.Action, metadata.Time.UTC().Format(time.RFC3339))
+			text := fmt.Sprintf("Cloud provider scheduled instance %s at %s", metadata.Action, metadata.Time.UTC().Format(time.RFC3339))
 			runner.CrunchLog.Printf("%s", text)
 			runner.updateRuntimeStatus(arvadosclient.Dict{
 				"warning":          "preemption notice",

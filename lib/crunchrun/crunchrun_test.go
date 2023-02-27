@@ -848,7 +848,7 @@ func (s *TestSuite) testSpotInterruptionNotice(c *C, failureRate float64) {
 	if failureRate == 1 {
 		c.Check(s.api.Logs["crunch-run"].String(), Matches, `(?ms).*Giving up on checking spot interruptions after too many consecutive failures.*`)
 	} else {
-		text := `Cloud provider indicates instance action "stop" scheduled for time "` + stoptime.Load().(time.Time).Format(time.RFC3339) + `"`
+		text := `Cloud provider scheduled instance stop at ` + stoptime.Load().(time.Time).Format(time.RFC3339)
 		c.Check(s.api.Logs["crunch-run"].String(), Matches, `(?ms).*`+text+`.*`)
 		c.Check(s.api.CalledWith("container.runtime_status.warning", "preemption notice"), NotNil)
 		c.Check(s.api.CalledWith("container.runtime_status.warningDetail", text), NotNil)
