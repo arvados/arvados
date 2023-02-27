@@ -97,7 +97,10 @@ export const getRegisteredWorkflowPanelData = (item: WorkflowResource, auth: Aut
         if (wf) {
             const REGEX = /keep:([0-9a-f]{32}\+\d+)\/.*/;
             if (wf["steps"]) {
-                workflowCollection = wf["steps"][0].run.match(REGEX)[1];
+                const pdh = wf["steps"][0].run.match(REGEX);
+                if (pdh) {
+                    workflowCollection = pdh[1];
+                }
             }
         }
 
