@@ -72,7 +72,11 @@ export const RichEditorTextField = withStyles(styles)(
 
         onChange = (value: any) => {
             this.setState({ value });
-            this.props.input.onChange(value.toString('html'));
+            this.props.input.onChange(
+                !!value.getEditorState().getCurrentContent().getPlainText().trim()
+                ? value.toString('html')
+                : null
+            );
         }
 
         render() {
