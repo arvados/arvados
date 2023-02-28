@@ -24,7 +24,7 @@ nginx:
         overwrite: true
         config:
           - server:
-            - server_name: mon.__CLUSTER__.__DOMAIN__
+            - server_name: prometheus.__CLUSTER__.__DOMAIN__
             - listen:
               - 80
             - location /.well-known:
@@ -39,7 +39,7 @@ nginx:
           __CERT_REQUIRES__
         config:
           - server:
-            - server_name: mon.__CLUSTER__.__DOMAIN__
+            - server_name: prometheus.__CLUSTER__.__DOMAIN__
             - listen:
               - 443 http2 ssl
             - index: index.html index.htm
@@ -58,5 +58,5 @@ nginx:
             {%- if ssl_key_encrypted_pillar.ssl_key_encrypted.enabled %}
             - ssl_password_file: {{ '/run/arvados/' | path_join(ssl_key_encrypted_pillar.ssl_key_encrypted.privkey_password_filename) }}
             {%- endif %}
-            - access_log: /var/log/nginx/mon.__CLUSTER__.__DOMAIN__.access.log combined
-            - error_log: /var/log/nginx/mon.__CLUSTER__.__DOMAIN__.error.log
+            - access_log: /var/log/nginx/prometheus.__CLUSTER__.__DOMAIN__.access.log combined
+            - error_log: /var/log/nginx/prometheus.__CLUSTER__.__DOMAIN__.error.log

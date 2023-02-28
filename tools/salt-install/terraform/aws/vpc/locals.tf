@@ -22,7 +22,7 @@ locals {
   }
   aliases = {
     controller: ["ws"]
-    workbench: ["mon", "workbench2", "webshell"]
+    workbench: ["prometheus", "workbench2", "webshell"]
     keepproxy: ["keep", "download", "*.collections"]
   }
   cname_by_host = flatten([
