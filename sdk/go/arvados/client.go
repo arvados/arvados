@@ -27,6 +27,7 @@ import (
 	"time"
 
 	"git.arvados.org/arvados.git/sdk/go/httpserver"
+	"github.com/hashicorp/go-retryablehttp"
 )
 
 // A Client is an HTTP client with an API endpoint and a set of
@@ -65,9 +66,11 @@ type Client struct {
 
 	// Timeout for requests. NewClientFromConfig and
 	// NewClientFromEnv return a Client with a default 5 minute
-	// timeout.  To disable this timeout and rely on each
-	// http.Request's context deadline instead, set Timeout to
-	// zero.
+	// timeout. Within this time, retryable errors are
+	// automatically retried with exponential backoff.
+	//
+	// To disable automatic retries, set Timeout to zero and use a
+	// context deadline to establish a maximum request time.
 	Timeout time.Duration
 
 	dd *DiscoveryDocument
@@ -227,11 +230,47 @@ func NewClientFromEnv() *Client {
 	}
 }
 
+func shouldRetry(req *http.Request, resp *http.Response, err error) bool {
+	if nerr := net.Error(nil); errors.As(err, &nerr) && nerr.Temporary() {
+		return true
+	}
+	switch req.Method {
+	case "GET", "HEAD", "PUT", "OPTIONS", "DELETE":
+	default:
+		return false
+	}
+	if uerr := new(url.Error); errors.As(err, &uerr) && uerr.Err.Error() == "Service Unavailable" {
+		// This is how http.Client reports 503 from proxy server
+		return true
+	}
+	if err != nil {
+		return false
+	}
+	switch resp.StatusCode {
+	case 408, 409, 422, 423, 500, 502, 503, 504:
+		return true
+	default:
+		return false
+	}
+}
+
 var reqIDGen = httpserver.IDGenerator{Prefix: "req-"}
 
-// Do adds Authorization and X-Request-Id headers, delays in order to
-// comply with rate-limiting restrictions, and then calls
-// (*http.Client)Do().
+var nopCancelFunc context.CancelFunc = func() {}
+
+func (c *Client) checkRetry(ctx context.Context, resp *http.Response, err error) (bool, error) {
+	if c.requestLimiter.Report(resp, err) {
+		c.last503.Store(time.Now())
+	}
+	if c.Timeout == 0 {
+		return false, err
+	}
+	return retryablehttp.DefaultRetryPolicy(ctx, resp, err)
+}
+
+// Do augments (*http.Client)Do(): adds Authorization and X-Request-Id
+// headers, delays in order to comply with rate-limiting restrictions,
+// and retries failed requests when appropriate.
 func (c *Client) Do(req *http.Request) (*http.Response, error) {
 	ctx := req.Context()
 	if auth, _ := ctx.Value(contextKeyAuthorization{}).(string); auth != "" {
@@ -255,39 +294,82 @@ func (c *Client) Do(req *http.Request) (*http.Response, error) {
 			req.Header.Set("X-Request-Id", reqid)
 		}
 	}
-	var cancel context.CancelFunc
-	if c.Timeout > 0 {
-		ctx, cancel = context.WithDeadline(ctx, time.Now().Add(c.Timeout))
-		req = req.WithContext(ctx)
-	} else {
-		cancel = context.CancelFunc(func() {})
+
+	rreq, err := retryablehttp.FromRequest(req)
+	if err != nil {
+		return nil, err
 	}
+
+	cancel := nopCancelFunc
+	var lastResp *http.Response
+	var lastRespBody io.ReadCloser
+	var lastErr error
+
+	rclient := retryablehttp.NewClient()
+	rclient.HTTPClient = c.httpClient()
+	if c.Timeout > 0 {
+		rclient.RetryWaitMax = c.Timeout / 10
+		rclient.RetryMax = 32
+		ctx, cancel = context.WithDeadline(ctx, time.Now().Add(c.Timeout))
+		rreq = rreq.WithContext(ctx)
+	} else {
+		rclient.RetryMax = 0
+	}
+	rclient.CheckRetry = func(ctx context.Context, resp *http.Response, respErr error) (bool, error) {
+		if c.requestLimiter.Report(resp, respErr) {
+			c.last503.Store(time.Now())
+		}
+		if c.Timeout == 0 {
+			return false, err
+		}
+		retrying, err := retryablehttp.DefaultRetryPolicy(ctx, resp, respErr)
+		if retrying {
+			lastResp, lastRespBody, lastErr = resp, nil, respErr
+			if respErr == nil {
+				// Save the response and body so we
+				// can return it instead of "deadline
+				// exceeded". retryablehttp.Client
+				// will drain and discard resp.body,
+				// so we need to stash it separately.
+				buf, err := ioutil.ReadAll(resp.Body)
+				if err == nil {
+					lastRespBody = io.NopCloser(bytes.NewReader(buf))
+				} else {
+					lastResp, lastErr = nil, err
+				}
+			}
+		}
+		return retrying, err
+	}
+	rclient.Logger = nil
 
 	c.requestLimiter.Acquire(ctx)
 	if ctx.Err() != nil {
 		c.requestLimiter.Release()
+		cancel()
 		return nil, ctx.Err()
 	}
-
-	// Attach Release() to cancel func, see cancelOnClose below.
-	cancelOrig := cancel
-	cancel = func() {
+	resp, err := rclient.Do(rreq)
+	if (errors.Is(err, context.DeadlineExceeded) || errors.Is(err, context.Canceled)) && (lastResp != nil || lastErr != nil) {
+		resp, err = lastResp, lastErr
+		if resp != nil {
+			resp.Body = lastRespBody
+		}
+	}
+	if err != nil {
 		c.requestLimiter.Release()
-		cancelOrig()
-	}
-
-	resp, err := c.httpClient().Do(req)
-	if c.requestLimiter.Report(resp, err) {
-		c.last503.Store(time.Now())
-	}
-	if err == nil {
-		// We need to call cancel() eventually, but we can't
-		// use "defer cancel()" because the context has to
-		// stay alive until the caller has finished reading
-		// the response body.
-		resp.Body = cancelOnClose{ReadCloser: resp.Body, cancel: cancel}
-	} else {
 		cancel()
+		return nil, err
+	}
+	// We need to call cancel() eventually, but we can't use
+	// "defer cancel()" because the context has to stay alive
+	// until the caller has finished reading the response body.
+	resp.Body = cancelOnClose{
+		ReadCloser: resp.Body,
+		cancel: func() {
+			c.requestLimiter.Release()
+			cancel()
+		},
 	}
 	return resp, err
 }
