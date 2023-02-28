@@ -719,25 +719,31 @@ else
           fi
         fi
         ### Pillars ###
-        grep -q "nginx_${R}_configuration" ${P_DIR}/top.sls || echo "    - nginx_${R}_configuration" >> ${P_DIR}/top.sls
         grep -q "prometheus_server" ${P_DIR}/top.sls || echo "    - prometheus_server" >> ${P_DIR}/top.sls
+        for SVC in prometheus; do
+          grep -q "nginx_${SVC}_configuration" ${P_DIR}/top.sls || echo "    - nginx_${SVC}_configuration" >> ${P_DIR}/top.sls
+        done
         if [ "${SSL_MODE}" = "lets-encrypt" ]; then
           grep -q "letsencrypt"     ${P_DIR}/top.sls || echo "    - letsencrypt" >> ${P_DIR}/top.sls
-          grep -q "letsencrypt_${R}_configuration" ${P_DIR}/top.sls || echo "    - letsencrypt_${R}_configuration" >> ${P_DIR}/top.sls
+          for SVC in prometheus; do
+            grep -q "letsencrypt_${SVC}_configuration" ${P_DIR}/top.sls || echo "    - letsencrypt_${SVC}_configuration" >> ${P_DIR}/top.sls
+            sed -i "s/__CERT_REQUIRES__/cmd: create-initial-cert-${SVC}.${CLUSTER}.${DOMAIN}*/g;
+                    s#__CERT_PEM__#/etc/letsencrypt/live/${SVC}.${CLUSTER}.${DOMAIN}/fullchain.pem#g;
+                    s#__CERT_KEY__#/etc/letsencrypt/live/${SVC}.${CLUSTER}.${DOMAIN}/privkey.pem#g" \
+            ${P_DIR}/nginx_${SVC}_configuration.sls
+          done
           if [ "${USE_LETSENCRYPT_ROUTE53}" = "yes" ]; then
             grep -q "aws_credentials" ${P_DIR}/top.sls || echo "    - aws_credentials" >> ${P_DIR}/top.sls
           fi
-          sed -i "s/__CERT_REQUIRES__/cmd: create-initial-cert-${R}.${CLUSTER}.${DOMAIN}*/g;
-                  s#__CERT_PEM__#/etc/letsencrypt/live/${R}.${CLUSTER}.${DOMAIN}/fullchain.pem#g;
-                  s#__CERT_KEY__#/etc/letsencrypt/live/${R}.${CLUSTER}.${DOMAIN}/privkey.pem#g" \
-          ${P_DIR}/nginx_${R}_configuration.sls
         elif [ "${SSL_MODE}" = "bring-your-own" ]; then
           grep -q "ssl_key_encrypted" ${P_DIR}/top.sls || echo "    - ssl_key_encrypted" >> ${P_DIR}/top.sls
-          sed -i "s/__CERT_REQUIRES__/file: extra_custom_certs_file_copy_arvados-${R}.pem/g;
-                  s#__CERT_PEM__#/etc/nginx/ssl/arvados-${R}.pem#g;
-                  s#__CERT_KEY__#/etc/nginx/ssl/arvados-${R}.key#g" \
-            ${P_DIR}/nginx_${R}_configuration.sls
-          grep -q ${R} ${P_DIR}/extra_custom_certs.sls || echo "  - ${R}" >> ${P_DIR}/extra_custom_certs.sls
+          for SVC in prometheus; do
+            sed -i "s/__CERT_REQUIRES__/file: extra_custom_certs_file_copy_arvados-${SVC}.pem/g;
+                    s#__CERT_PEM__#/etc/nginx/ssl/arvados-${SVC}.pem#g;
+                    s#__CERT_KEY__#/etc/nginx/ssl/arvados-${SVC}.key#g" \
+              ${P_DIR}/nginx_${SVC}_configuration.sls
+            grep -q ${SVC} ${P_DIR}/extra_custom_certs.sls || echo "  - ${SVC}" >> ${P_DIR}/extra_custom_certs.sls
+          done
         fi
       ;;
       "api")
