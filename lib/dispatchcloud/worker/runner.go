@@ -63,6 +63,9 @@ func newRemoteRunner(uuid string, wkr *worker) *remoteRunner {
 		configData.Cluster = wkr.wp.cluster
 		configData.KeepBuffers = bufs * wkr.instType.VCPUs
 	}
+	if wkr.wp.cluster.Containers.CloudVMs.Driver == "ec2" && wkr.instType.Preemptible {
+		configData.EC2SpotCheck = true
+	}
 	configJSON, err := json.Marshal(configData)
 	if err != nil {
 		panic(err)

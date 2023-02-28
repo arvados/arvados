@@ -93,6 +93,7 @@ table(table table-bordered table-condensed).
 |activity|string|A message for the end user about what state the container is currently in.|Optional.|
 |errorDetail|string|Additional structured error details.|Optional.|
 |warningDetail|string|Additional structured warning details.|Optional.|
+|preemptionNotice|string|Details about any cloud provider scheduled interruption to the instance running this container.|Existence of this key indicates the container likely was (or will soon be) @Cancelled@ due to an instance interruption.|
 
 h2(#scheduling_parameters). {% include 'container_scheduling_parameters' %}
 
