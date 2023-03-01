@@ -1025,6 +1025,33 @@ func (s *TestSuite) TestLogAllRSSThresholds(c *C) {
 	s.testLogRSSThresholds(c, 734003299, []int{90, 95, 99}, 0)
 }
 
+func (s *TestSuite) TestLogMaximaAfterRun(c *C) {
+	s.runner.cgroupRoot = "testdata/fakestat"
+	s.runner.parentTemp = c.MkDir()
+	s.fullRunHelper(c, `{
+        "command": ["true"],
+        "container_image": "`+arvadostest.DockerImage112PDH+`",
+        "cwd": ".",
+        "environment": {},
+        "mounts": {"/tmp": {"kind": "tmp"} },
+        "output_path": "/tmp",
+        "priority": 1,
+        "runtime_constraints": {"ram": 7340032000},
+        "state": "Locked"
+    }`, nil, func() int { return 0 })
+	logs := s.api.Logs["crunch-run"].String()
+	for _, expected := range []string{
+		`Maximum disk usage was \d+%, \d+/\d+ bytes`,
+		`Maximum container memory cache usage was 73400320 bytes`,
+		`Maximum container memory swap usage was 320 bytes`,
+		`Maximum container memory pgmajfault usage was 20 faults`,
+		`Maximum container memory rss usage was 10%, 734003200/7340032000 bytes`,
+		`Maximum crunch-run memory rss usage was \d+ bytes`,
+	} {
+		c.Check(logs, Matches, logLineStart+expected)
+	}
+}
+
 func (s *TestSuite) TestCommitNodeInfoBeforeStart(c *C) {
 	var collection_create, container_update arvadosclient.Dict
 	s.fullRunHelper(c, `{

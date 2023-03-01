@@ -1,2 +1,6 @@
 rss 990
 total_rss 786432000
+pgmajfault 3200
+total_cache 73400320
+total_pgmajfault 20
+total_swap 320

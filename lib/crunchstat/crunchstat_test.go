@@ -6,8 +6,10 @@ package crunchstat
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
 	"os"
+	"path"
 	"regexp"
 	"strconv"
 	"testing"
@@ -45,8 +47,9 @@ var _ = Suite(&suite{
 })
 
 type suite struct {
-	logbuf bytes.Buffer
-	logger *logrus.Logger
+	cgroupRoot string
+	logbuf     bytes.Buffer
+	logger     *logrus.Logger
 }
 
 func (s *suite) SetUpSuite(c *C) {
@@ -54,7 +57,47 @@ func (s *suite) SetUpSuite(c *C) {
 }
 
 func (s *suite) SetUpTest(c *C) {
+	s.cgroupRoot = ""
 	s.logbuf.Reset()
+}
+
+func (s *suite) tempCgroup(c *C, sourceDir string) error {
+	tempDir := c.MkDir()
+	dirents, err := os.ReadDir(sourceDir)
+	if err != nil {
+		return err
+	}
+	for _, dirent := range dirents {
+		srcData, err := os.ReadFile(path.Join(sourceDir, dirent.Name()))
+		if err != nil {
+			return err
+		}
+		destPath := path.Join(tempDir, dirent.Name())
+		err = os.WriteFile(destPath, srcData, 0o600)
+		if err != nil {
+			return err
+		}
+	}
+	s.cgroupRoot = tempDir
+	return nil
+}
+
+func (s *suite) addPidToCgroup(pid int) error {
+	if s.cgroupRoot == "" {
+		return errors.New("cgroup has not been set up for this test")
+	}
+	procsPath := path.Join(s.cgroupRoot, "cgroup.procs")
+	procsFile, err := os.OpenFile(procsPath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0o600)
+	if err != nil {
+		return err
+	}
+	pidLine := strconv.Itoa(pid) + "\n"
+	_, err = procsFile.Write([]byte(pidLine))
+	if err != nil {
+		procsFile.Close()
+		return err
+	}
+	return procsFile.Close()
 }
 
 func (s *suite) TestReadAllOrWarnFail(c *C) {
@@ -162,4 +205,57 @@ func (s *suite) TestMultipleRSSThresholdsSomePassed(c *C) {
 
 func (s *suite) TestMultipleRSSThresholdsAllPassed(c *C) {
 	s.testRSSThresholds(c, []int64{1, 2, 3}, 3)
+}
+
+func (s *suite) TestLogMaxima(c *C) {
+	err := s.tempCgroup(c, fakeRSS.cgroupRoot)
+	c.Assert(err, IsNil)
+	rep := Reporter{
+		CgroupRoot: s.cgroupRoot,
+		Logger:     s.logger,
+		PollPeriod: time.Second * 10,
+		TempDir:    s.cgroupRoot,
+	}
+	rep.Start()
+	rep.Stop()
+	rep.LogMaxima(s.logger, map[string]int64{"rss": GiB})
+	logs := s.logbuf.String()
+	c.Logf("%s", logs)
+
+	expectRSS := fmt.Sprintf(`Maximum container memory rss usage was %d%%, %d/%d bytes`,
+		100*fakeRSS.value/GiB, fakeRSS.value, GiB)
+	for _, expected := range []string{
+		`Maximum disk usage was \d+%, \d+/\d+ bytes`,
+		`Maximum container memory cache usage was 73400320 bytes`,
+		`Maximum container memory swap usage was 320 bytes`,
+		`Maximum container memory pgmajfault usage was 20 faults`,
+		expectRSS,
+	} {
+		pattern := logMsgPrefix + expected + `"`
+		c.Check(logs, Matches, pattern)
+	}
+}
+
+func (s *suite) TestLogProcessMemMax(c *C) {
+	err := s.tempCgroup(c, fakeRSS.cgroupRoot)
+	c.Assert(err, IsNil)
+	pid := os.Getpid()
+	err = s.addPidToCgroup(pid)
+	c.Assert(err, IsNil)
+
+	rep := Reporter{
+		CgroupRoot: s.cgroupRoot,
+		Logger:     s.logger,
+		PollPeriod: time.Second * 10,
+		TempDir:    s.cgroupRoot,
+	}
+	rep.ReportPID("test-run", pid)
+	rep.Start()
+	rep.Stop()
+	rep.LogProcessMemMax(s.logger)
+	logs := s.logbuf.String()
+	c.Logf("%s", logs)
+
+	pattern := logMsgPrefix + `Maximum test-run memory rss usage was \d+ bytes"`
+	c.Check(logs, Matches, pattern)
 }

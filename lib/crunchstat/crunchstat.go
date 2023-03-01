@@ -23,6 +23,9 @@ import (
 	"time"
 )
 
+// crunchstat collects all memory statistics, but only reports these.
+var memoryStats = [...]string{"cache", "swap", "pgmajfault", "rss"}
+
 type logPrinter interface {
 	Printf(fmt string, args ...interface{})
 }
@@ -70,6 +73,8 @@ type Reporter struct {
 	lastCPUSample       cpuSample
 	lastDiskSpaceSample diskSpaceSample
 	lastMemSample       memSample
+	maxDiskSpaceSample  diskSpaceSample
+	maxMemSample        map[memoryKey]int64
 
 	reportPIDs   map[string]int
 	reportPIDsMu sync.Mutex
@@ -97,6 +102,15 @@ func NewThresholdsFromPercentages(total int64, percentages []int64) (thresholds 
 		thresholds = append(thresholds, NewThresholdFromPercentage(total, percentage))
 	}
 	return
+}
+
+// memoryKey is a key into Reporter.maxMemSample.
+// Initialize it with just statName to get the host/cgroup maximum.
+// Initialize it with all fields to get that process' maximum.
+type memoryKey struct {
+	processID   int
+	processName string
+	statName    string
 }
 
 // Start starts monitoring in a new goroutine, and returns
@@ -130,10 +144,66 @@ func (r *Reporter) ReportPID(name string, pid int) {
 // Stop reporting. Do not call more than once, or before calling
 // Start.
 //
-// Nothing will be logged after Stop returns.
+// Nothing will be logged after Stop returns unless you call a Log* method.
 func (r *Reporter) Stop() {
 	close(r.done)
 	<-r.flushed
+}
+
+func (r *Reporter) reportMemoryMax(logger logPrinter, source, statName string, value, limit int64) {
+	var units string
+	switch statName {
+	case "pgmajfault":
+		units = "faults"
+	default:
+		units = "bytes"
+	}
+	if limit > 0 {
+		percentage := 100 * value / limit
+		logger.Printf("Maximum %s memory %s usage was %d%%, %d/%d %s",
+			source, statName, percentage, value, limit, units)
+	} else {
+		logger.Printf("Maximum %s memory %s usage was %d %s",
+			source, statName, value, units)
+	}
+}
+
+func (r *Reporter) LogMaxima(logger logPrinter, memLimits map[string]int64) {
+	if r.lastCPUSample.hasData {
+		logger.Printf("Total CPU usage was %f user and %f sys on %d CPUs",
+			r.lastCPUSample.user, r.lastCPUSample.sys, r.lastCPUSample.cpus)
+	}
+	for disk, sample := range r.lastDiskIOSample {
+		logger.Printf("Total disk I/O on %s was %d bytes written and %d bytes read",
+			disk, sample.txBytes, sample.rxBytes)
+	}
+	if r.maxDiskSpaceSample.hasData {
+		percentage := 100 * r.maxDiskSpaceSample.used / r.maxDiskSpaceSample.total
+		logger.Printf("Maximum disk usage was %d%%, %d/%d bytes",
+			percentage, r.maxDiskSpaceSample.used, r.maxDiskSpaceSample.total)
+	}
+	for _, statName := range memoryStats {
+		value, ok := r.maxMemSample[memoryKey{statName: "total_" + statName}]
+		if !ok {
+			value, ok = r.maxMemSample[memoryKey{statName: statName}]
+		}
+		if ok {
+			r.reportMemoryMax(logger, "container", statName, value, memLimits[statName])
+		}
+	}
+	for ifname, sample := range r.lastNetSample {
+		logger.Printf("Total network I/O on %s was %d bytes written and %d bytes read",
+			ifname, sample.txBytes, sample.rxBytes)
+	}
+}
+
+func (r *Reporter) LogProcessMemMax(logger logPrinter) {
+	for memKey, value := range r.maxMemSample {
+		if memKey.processName == "" {
+			continue
+		}
+		r.reportMemoryMax(logger, memKey.processName, memKey.statName, value, 0)
+	}
 }
 
 func (r *Reporter) readAllOrWarn(in io.Reader) ([]byte, error) {
@@ -293,6 +363,10 @@ func (r *Reporter) getMemSample() {
 			continue
 		}
 		thisSample.memStat[stat] = val
+		maxKey := memoryKey{statName: stat}
+		if val > r.maxMemSample[maxKey] {
+			r.maxMemSample[maxKey] = val
+		}
 	}
 	r.lastMemSample = thisSample
 
@@ -325,8 +399,7 @@ func (r *Reporter) getMemSample() {
 
 func (r *Reporter) reportMemSample() {
 	var outstat bytes.Buffer
-	wantStats := [...]string{"cache", "swap", "pgmajfault", "rss"}
-	for _, key := range wantStats {
+	for _, key := range memoryStats {
 		// Use "total_X" stats (entire hierarchy) if enabled,
 		// otherwise just the single cgroup -- see
 		// https://www.kernel.org/doc/Documentation/cgroup-v1/memory.txt
@@ -399,7 +472,12 @@ func (r *Reporter) doProcmemStats() {
 		if err != nil {
 			continue
 		}
-		procmem += fmt.Sprintf(" %d %s", rss*r.kernelPageSize, procname)
+		value := rss * r.kernelPageSize
+		procmem += fmt.Sprintf(" %d %s", value, procname)
+		maxKey := memoryKey{pid, procname, "rss"}
+		if value > r.maxMemSample[maxKey] {
+			r.maxMemSample[maxKey] = value
+		}
 	}
 	if procmem != "" {
 		r.Logger.Printf("procmem%s\n", procmem)
@@ -471,6 +549,9 @@ func (r *Reporter) doDiskSpaceStats() {
 		total:      s.Blocks * bs,
 		used:       (s.Blocks - s.Bfree) * bs,
 		available:  s.Bavail * bs,
+	}
+	if nextSample.used > r.maxDiskSpaceSample.used {
+		r.maxDiskSpaceSample = nextSample
 	}
 
 	var delta string
@@ -568,6 +649,7 @@ func (r *Reporter) doAllStats() {
 func (r *Reporter) run() {
 	defer close(r.flushed)
 
+	r.maxMemSample = make(map[memoryKey]int64)
 	r.reportedStatFile = make(map[string]string)
 
 	if !r.waitForCIDFile() || !r.waitForCgroup() {

@@ -734,6 +734,7 @@ func (runner *ContainerRunner) stopHoststat() error {
 		return nil
 	}
 	runner.hoststatReporter.Stop()
+	runner.hoststatReporter.LogProcessMemMax(runner.CrunchLog)
 	err := runner.hoststatLogger.Close()
 	if err != nil {
 		return fmt.Errorf("error closing hoststat logs: %v", err)
@@ -1152,6 +1153,9 @@ func (runner *ContainerRunner) WaitFinish() error {
 
 	if runner.statReporter != nil {
 		runner.statReporter.Stop()
+		runner.statReporter.LogMaxima(runner.CrunchLog, map[string]int64{
+			"rss": runner.Container.RuntimeConstraints.RAM,
+		})
 		err = runner.statLogger.Close()
 		if err != nil {
 			runner.CrunchLog.Printf("error closing crunchstat logs: %v", err)
