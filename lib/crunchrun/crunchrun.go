@@ -764,12 +764,16 @@ func (runner *ContainerRunner) startCrunchstat() error {
 	}
 	runner.statLogger = NewThrottledLogger(w)
 	runner.statReporter = &crunchstat.Reporter{
-		CID:          runner.executor.CgroupID(),
-		Logger:       log.New(runner.statLogger, "", 0),
 		CgroupParent: runner.expectCgroupParent,
 		CgroupRoot:   runner.cgroupRoot,
-		PollPeriod:   runner.statInterval,
-		TempDir:      runner.parentTemp,
+		CID:          runner.executor.CgroupID(),
+		Logger:       log.New(runner.statLogger, "", 0),
+		MemThresholds: map[string][]crunchstat.Threshold{
+			"rss": crunchstat.NewThresholdsFromPercentages(runner.Container.RuntimeConstraints.RAM, []int64{90, 95, 99}),
+		},
+		PollPeriod:      runner.statInterval,
+		TempDir:         runner.parentTemp,
+		ThresholdLogger: runner.CrunchLog,
 	}
 	runner.statReporter.Start()
 	return nil

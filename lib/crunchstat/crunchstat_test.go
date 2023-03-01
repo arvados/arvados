@@ -6,6 +6,7 @@ package crunchstat
 
 import (
 	"bytes"
+	"fmt"
 	"os"
 	"regexp"
 	"strconv"
@@ -15,6 +16,25 @@ import (
 	"github.com/sirupsen/logrus"
 	. "gopkg.in/check.v1"
 )
+
+const logMsgPrefix = `(?m)(.*\n)*.* msg="`
+const GiB = int64(1024 * 1024 * 1024)
+
+type fakeStat struct {
+	cgroupRoot string
+	statName   string
+	unit       string
+	value      int64
+}
+
+var fakeRSS = fakeStat{
+	cgroupRoot: "testdata/fakestat",
+	statName:   "mem rss",
+	unit:       "bytes",
+	// Note this is the value of total_rss, not rss, because that's what should
+	// always be reported for thresholds and maxima.
+	value: 750 * 1024 * 1024,
+}
 
 func Test(t *testing.T) {
 	TestingT(t)
@@ -89,4 +109,57 @@ func (s *suite) TestReportPIDs(c *C) {
 		}
 	}
 	c.Logf("%s", s.logbuf.String())
+}
+
+func (s *suite) testRSSThresholds(c *C, rssPercentages []int64, alertCount int) {
+	c.Assert(alertCount <= len(rssPercentages), Equals, true)
+	rep := Reporter{
+		CgroupRoot: fakeRSS.cgroupRoot,
+		Logger:     s.logger,
+		MemThresholds: map[string][]Threshold{
+			"rss": NewThresholdsFromPercentages(GiB, rssPercentages),
+		},
+		PollPeriod:      time.Second * 10,
+		ThresholdLogger: s.logger,
+	}
+	rep.Start()
+	rep.Stop()
+	logs := s.logbuf.String()
+	c.Logf("%s", logs)
+
+	for index, expectPercentage := range rssPercentages[:alertCount] {
+		var logCheck Checker
+		if index < alertCount {
+			logCheck = Matches
+		} else {
+			logCheck = Not(Matches)
+		}
+		pattern := fmt.Sprintf(`%sContainer using over %d%% of memory \(rss %d/%d bytes\)"`,
+			logMsgPrefix, expectPercentage, fakeRSS.value, GiB)
+		c.Check(logs, logCheck, pattern)
+	}
+}
+
+func (s *suite) TestZeroRSSThresholds(c *C) {
+	s.testRSSThresholds(c, []int64{}, 0)
+}
+
+func (s *suite) TestOneRSSThresholdPassed(c *C) {
+	s.testRSSThresholds(c, []int64{55}, 1)
+}
+
+func (s *suite) TestOneRSSThresholdNotPassed(c *C) {
+	s.testRSSThresholds(c, []int64{85}, 0)
+}
+
+func (s *suite) TestMultipleRSSThresholdsNonePassed(c *C) {
+	s.testRSSThresholds(c, []int64{95, 97, 99}, 0)
+}
+
+func (s *suite) TestMultipleRSSThresholdsSomePassed(c *C) {
+	s.testRSSThresholds(c, []int64{60, 70, 80, 90}, 2)
+}
+
+func (s *suite) TestMultipleRSSThresholdsAllPassed(c *C) {
+	s.testRSSThresholds(c, []int64{1, 2, 3}, 3)
 }

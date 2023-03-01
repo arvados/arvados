@@ -23,6 +23,10 @@ import (
 	"time"
 )
 
+type logPrinter interface {
+	Printf(fmt string, args ...interface{})
+}
+
 // A Reporter gathers statistics for a cgroup and writes them to a
 // log.Logger.
 type Reporter struct {
@@ -49,9 +53,15 @@ type Reporter struct {
 	TempDir string
 
 	// Where to write statistics. Must not be nil.
-	Logger interface {
-		Printf(fmt string, args ...interface{})
-	}
+	Logger logPrinter
+
+	// When stats cross thresholds configured in the fields below,
+	// they are reported to this logger.
+	ThresholdLogger logPrinter
+
+	// MemThresholds maps memory stat names to slices of thresholds.
+	// When the corresponding stat exceeds a threshold, that will be logged.
+	MemThresholds map[string][]Threshold
 
 	kernelPageSize      int64
 	reportedStatFile    map[string]string
@@ -66,6 +76,27 @@ type Reporter struct {
 
 	done    chan struct{} // closed when we should stop reporting
 	flushed chan struct{} // closed when we have made our last report
+}
+
+type Threshold struct {
+	percentage int64
+	threshold  int64
+	total      int64
+}
+
+func NewThresholdFromPercentage(total int64, percentage int64) Threshold {
+	return Threshold{
+		percentage: percentage,
+		threshold:  total * percentage / 100,
+		total:      total,
+	}
+}
+
+func NewThresholdsFromPercentages(total int64, percentages []int64) (thresholds []Threshold) {
+	for _, percentage := range percentages {
+		thresholds = append(thresholds, NewThresholdFromPercentage(total, percentage))
+	}
+	return
 }
 
 // Start starts monitoring in a new goroutine, and returns
@@ -264,6 +295,32 @@ func (r *Reporter) getMemSample() {
 		thisSample.memStat[stat] = val
 	}
 	r.lastMemSample = thisSample
+
+	if r.ThresholdLogger != nil {
+		for statName, thresholds := range r.MemThresholds {
+			statValue, ok := thisSample.memStat["total_"+statName]
+			if !ok {
+				statValue, ok = thisSample.memStat[statName]
+				if !ok {
+					continue
+				}
+			}
+			var index int
+			var statThreshold Threshold
+			for index, statThreshold = range thresholds {
+				if statValue < statThreshold.threshold {
+					break
+				} else if statThreshold.percentage > 0 {
+					r.ThresholdLogger.Printf("Container using over %d%% of memory (%s %d/%d bytes)",
+						statThreshold.percentage, statName, statValue, statThreshold.total)
+				} else {
+					r.ThresholdLogger.Printf("Container using over %d of memory (%s %s bytes)",
+						statThreshold.threshold, statName, statValue)
+				}
+			}
+			r.MemThresholds[statName] = thresholds[index:]
+		}
+	}
 }
 
 func (r *Reporter) reportMemSample() {
