@@ -88,6 +88,7 @@ func (conn *Conn) requestAndDecode(ctx context.Context, dst interface{}, ep arva
 		Scheme:     conn.baseURL.Scheme,
 		APIHost:    conn.baseURL.Host,
 		SendHeader: conn.SendHeader,
+		Timeout:    0, // disable auto-retry
 	}
 	tokens, err := conn.tokenProvider(ctx)
 	if err != nil {
