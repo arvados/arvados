@@ -193,7 +193,7 @@ func (disp *dispatcher) run() {
 	if pollInterval <= 0 {
 		pollInterval = defaultPollInterval
 	}
-	sched := scheduler.New(disp.Context, disp.ArvClient, disp.queue, disp.pool, disp.Registry, staleLockTimeout, pollInterval)
+	sched := scheduler.New(disp.Context, disp.ArvClient, disp.queue, disp.pool, disp.Registry, staleLockTimeout, pollInterval, int(float64(disp.Cluster.Containers.CloudVMs.MaxInstances)*disp.Cluster.Containers.SupervisorFraction))
 	sched.Start()
 	defer sched.Stop()
 

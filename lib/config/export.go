@@ -142,6 +142,7 @@ var whitelist = map[string]bool{
 	"Containers.ShellAccess.User":              true,
 	"Containers.SLURM":                         false,
 	"Containers.StaleLockTimeout":              false,
+	"Containers.SupervisorFraction":            false,
 	"Containers.SupportedDockerImageFormats":   true,
 	"Containers.SupportedDockerImageFormats.*": true,
 	"Git":                                  false,
