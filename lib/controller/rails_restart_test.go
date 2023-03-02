@@ -79,9 +79,11 @@ func (s *railsRestartSuite) TestConfigReload(c *check.C) {
 	for deadline := time.Now().Add(20 * time.Second); time.Now().Before(deadline); time.Sleep(time.Second) {
 		resp, err = hc.Do(req)
 		c.Assert(err, check.IsNil)
+		defer resp.Body.Close()
 		c.Check(resp.StatusCode, check.Equals, http.StatusOK)
 		body, err = ioutil.ReadAll(resp.Body)
 		c.Assert(err, check.IsNil)
+		resp.Body.Close()
 		if strings.Contains(string(body), newhash) {
 			break
 		}
