@@ -48,7 +48,8 @@ RUN /usr/bin/pip3 install 'virtualenv<20'
 # Install RVM
 ADD generated/mpapis.asc /tmp/
 ADD generated/pkuczynski.asc /tmp/
-RUN gpg --import --no-tty /tmp/mpapis.asc && \
+RUN ln -s /bin/mkdir /usr/bin/mkdir && \
+    gpg --import --no-tty /tmp/mpapis.asc && \
     gpg --import --no-tty /tmp/pkuczynski.asc && \
     curl -L https://get.rvm.io | bash -s stable && \
     /usr/local/rvm/bin/rvm install 2.7 -j $(grep -c processor /proc/cpuinfo) && \
