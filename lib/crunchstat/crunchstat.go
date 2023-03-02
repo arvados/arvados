@@ -177,7 +177,7 @@ func (r *Reporter) LogMaxima(logger logPrinter, memLimits map[string]int64) {
 		logger.Printf("Total disk I/O on %s was %d bytes written and %d bytes read",
 			disk, sample.txBytes, sample.rxBytes)
 	}
-	if r.maxDiskSpaceSample.hasData {
+	if r.maxDiskSpaceSample.total > 0 {
 		percentage := 100 * r.maxDiskSpaceSample.used / r.maxDiskSpaceSample.total
 		logger.Printf("Maximum disk usage was %d%%, %d/%d bytes",
 			percentage, r.maxDiskSpaceSample.used, r.maxDiskSpaceSample.total)
