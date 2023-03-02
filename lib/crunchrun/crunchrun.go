@@ -734,6 +734,7 @@ func (runner *ContainerRunner) stopHoststat() error {
 		return nil
 	}
 	runner.hoststatReporter.Stop()
+	runner.hoststatReporter.LogProcessMemMax(runner.CrunchLog)
 	err := runner.hoststatLogger.Close()
 	if err != nil {
 		return fmt.Errorf("error closing hoststat logs: %v", err)
@@ -764,12 +765,16 @@ func (runner *ContainerRunner) startCrunchstat() error {
 	}
 	runner.statLogger = NewThrottledLogger(w)
 	runner.statReporter = &crunchstat.Reporter{
-		CID:          runner.executor.CgroupID(),
-		Logger:       log.New(runner.statLogger, "", 0),
 		CgroupParent: runner.expectCgroupParent,
 		CgroupRoot:   runner.cgroupRoot,
-		PollPeriod:   runner.statInterval,
-		TempDir:      runner.parentTemp,
+		CID:          runner.executor.CgroupID(),
+		Logger:       log.New(runner.statLogger, "", 0),
+		MemThresholds: map[string][]crunchstat.Threshold{
+			"rss": crunchstat.NewThresholdsFromPercentages(runner.Container.RuntimeConstraints.RAM, []int64{90, 95, 99}),
+		},
+		PollPeriod:      runner.statInterval,
+		TempDir:         runner.parentTemp,
+		ThresholdLogger: runner.CrunchLog,
 	}
 	runner.statReporter.Start()
 	return nil
@@ -1148,6 +1153,9 @@ func (runner *ContainerRunner) WaitFinish() error {
 
 	if runner.statReporter != nil {
 		runner.statReporter.Stop()
+		runner.statReporter.LogMaxima(runner.CrunchLog, map[string]int64{
+			"rss": runner.Container.RuntimeConstraints.RAM,
+		})
 		err = runner.statLogger.Close()
 		if err != nil {
 			runner.CrunchLog.Printf("error closing crunchstat logs: %v", err)

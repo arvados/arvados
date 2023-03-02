@@ -20,6 +20,7 @@ import (
 	"os/exec"
 	"regexp"
 	"runtime/pprof"
+	"strconv"
 	"strings"
 	"sync"
 	"sync/atomic"
@@ -42,6 +43,8 @@ import (
 func TestCrunchExec(t *testing.T) {
 	TestingT(t)
 }
+
+const logLineStart = `(?m)(.*\n)*\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d\.\d+Z `
 
 var _ = Suite(&TestSuite{})
 
@@ -983,6 +986,70 @@ func (s *TestSuite) TestLogVersionAndRuntime(c *C) {
 	c.Check(s.api.Logs["crunch-run"].String(), Matches, `(?ms).*crunch-run process has uid=\d+\(.+\) gid=\d+\(.+\) groups=\d+\(.+\)(,\d+\(.+\))*\n.*`)
 	c.Check(s.api.Logs["crunch-run"].String(), Matches, `(?ms).*Executing container: zzzzz-zzzzz-zzzzzzzzzzzzzzz.*`)
 	c.Check(s.api.Logs["crunch-run"].String(), Matches, `(?ms).*Using container runtime: stub.*`)
+}
+
+func (s *TestSuite) testLogRSSThresholds(c *C, ram int, expected []int, notExpected int) {
+	s.runner.cgroupRoot = "testdata/fakestat"
+	s.fullRunHelper(c, `{
+		"command": ["true"],
+		"container_image": "`+arvadostest.DockerImage112PDH+`",
+		"cwd": ".",
+		"environment": {},
+		"mounts": {"/tmp": {"kind": "tmp"} },
+		"output_path": "/tmp",
+		"priority": 1,
+		"runtime_constraints": {"ram": `+strconv.Itoa(ram)+`},
+		"state": "Locked"
+	}`, nil, func() int { return 0 })
+	logs := s.api.Logs["crunch-run"].String()
+	pattern := logLineStart + `Container using over %d%% of memory \(rss 734003200/%d bytes\)`
+	var threshold int
+	for _, threshold = range expected {
+		c.Check(logs, Matches, fmt.Sprintf(pattern, threshold, ram))
+	}
+	if notExpected > threshold {
+		c.Check(logs, Not(Matches), fmt.Sprintf(pattern, notExpected, ram))
+	}
+}
+
+func (s *TestSuite) TestLogNoRSSThresholds(c *C) {
+	s.testLogRSSThresholds(c, 7340032000, []int{}, 90)
+}
+
+func (s *TestSuite) TestLogSomeRSSThresholds(c *C) {
+	onePercentRSS := 7340032
+	s.testLogRSSThresholds(c, 102*onePercentRSS, []int{90, 95}, 99)
+}
+
+func (s *TestSuite) TestLogAllRSSThresholds(c *C) {
+	s.testLogRSSThresholds(c, 734003299, []int{90, 95, 99}, 0)
+}
+
+func (s *TestSuite) TestLogMaximaAfterRun(c *C) {
+	s.runner.cgroupRoot = "testdata/fakestat"
+	s.runner.parentTemp = c.MkDir()
+	s.fullRunHelper(c, `{
+        "command": ["true"],
+        "container_image": "`+arvadostest.DockerImage112PDH+`",
+        "cwd": ".",
+        "environment": {},
+        "mounts": {"/tmp": {"kind": "tmp"} },
+        "output_path": "/tmp",
+        "priority": 1,
+        "runtime_constraints": {"ram": 7340032000},
+        "state": "Locked"
+    }`, nil, func() int { return 0 })
+	logs := s.api.Logs["crunch-run"].String()
+	for _, expected := range []string{
+		`Maximum disk usage was \d+%, \d+/\d+ bytes`,
+		`Maximum container memory cache usage was 73400320 bytes`,
+		`Maximum container memory swap usage was 320 bytes`,
+		`Maximum container memory pgmajfault usage was 20 faults`,
+		`Maximum container memory rss usage was 10%, 734003200/7340032000 bytes`,
+		`Maximum crunch-run memory rss usage was \d+ bytes`,
+	} {
+		c.Check(logs, Matches, logLineStart+expected)
+	}
 }
 
 func (s *TestSuite) TestCommitNodeInfoBeforeStart(c *C) {
