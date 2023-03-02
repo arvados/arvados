@@ -970,6 +970,7 @@ class ArvadosModel < ApplicationRecord
       'max_run_time' => 0,
       'partitions' => [],
       'preemptible' => false,
+      'supervisor' => false,
     }.merge(attributes['scheduling_parameters'] || {})
   end
 
