@@ -8,8 +8,9 @@ class Arvados::V1::ContainerRequestsControllerTest < ActionController::TestCase
   def minimal_cr
     {
       command: ['echo', 'hello'],
-      container_image: 'test',
+      container_image: 'arvados/apitestfixture:latest',
       output_path: 'test',
+      runtime_constraints: {vcpus: 1, ram: 1}
     }
   end
 
@@ -18,7 +19,7 @@ class Arvados::V1::ContainerRequestsControllerTest < ActionController::TestCase
 
     sp = {'partitions' => ['test1', 'test2']}
     post :create, params: {
-           container_request: minimal_cr.merge(scheduling_parameters: sp.dup)
+           container_request: minimal_cr.merge(scheduling_parameters: sp.dup, state: "Committed")
          }
     assert_response :success
 
@@ -26,6 +27,20 @@ class Arvados::V1::ContainerRequestsControllerTest < ActionController::TestCase
     assert_not_nil cr, 'Expected container request'
     assert_equal sp['partitions'], cr['scheduling_parameters']['partitions']
     assert_equal false, cr['scheduling_parameters']['preemptible']
+    assert_equal false, cr['scheduling_parameters']['supervisor']
+  end
+
+  test 'create a-c-r should be supervisor' do
+    authorize_with :active
+
+    post :create, params: {
+           container_request: minimal_cr.merge(command: ["arvados-cwl-runner", "my-workflow.cwl"], state: "Committed")
+         }
+    assert_response :success
+
+    cr = JSON.parse(@response.body)
+    assert_not_nil cr, 'Expected container request'
+    assert_equal true, cr['scheduling_parameters']['supervisor']
   end
 
   test "secret_mounts not in #create responses" do

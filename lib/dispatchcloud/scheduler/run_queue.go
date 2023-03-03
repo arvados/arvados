@@ -15,10 +15,6 @@ import (
 
 var quietAfter503 = time.Minute
 
-func isSupervisor(ctr arvados.Container) bool {
-	return (len(ctr.Command) > 0 && ctr.Command[0] == "arvados-cwl-runner") || ctr.SchedulingParameters.Supervisor
-}
-
 func (sch *Scheduler) runQueue() {
 	unsorted, _ := sch.queue.Entries()
 	sorted := make([]container.QueueEnt, 0, len(unsorted))
@@ -97,7 +93,7 @@ tryrun:
 			"ContainerUUID": ctr.UUID,
 			"InstanceType":  it.Name,
 		})
-		if isSupervisor(ctr) {
+		if ctr.SchedulingParameters.Supervisor {
 			supervisors += 1
 			if sch.maxSupervisors > 0 && supervisors > sch.maxSupervisors {
 				continue

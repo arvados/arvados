@@ -506,7 +506,6 @@ type ContainersConfig struct {
 	SupportedDockerImageFormats   StringSet
 	AlwaysUsePreemptibleInstances bool
 	PreemptiblePriceFactor        float64
-	SupervisorFraction            float64
 	RuntimeEngine                 string
 	LocalKeepBlobBuffersPerVCPU   int
 	LocalKeepLogsToContainerLog   string
@@ -563,6 +562,7 @@ type CloudVMsConfig struct {
 	MaxProbesPerSecond             int
 	MaxConcurrentInstanceCreateOps int
 	MaxInstances                   int
+	SupervisorFraction             float64
 	PollInterval                   Duration
 	ProbeInterval                  Duration
 	SSHPort                        string

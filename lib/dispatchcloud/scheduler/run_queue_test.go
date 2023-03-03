@@ -549,8 +549,7 @@ func (*SchedulerSuite) TestContainersMetrics(c *check.C) {
 	c.Check(int(testutil.ToFloat64(sch.mLongestWaitTimeSinceQueue)), check.Equals, 0)
 }
 
-// Assign priority=4 container to idle node. Create new instances for
-// the priority=3 and 1 containers.  Ignore the supervisor at priority 2.
+// Assign priority=4, 3 and 1 containers to idle nodes. Ignore the supervisor at priority 2.
 func (*SchedulerSuite) TestSkipSupervisors(c *check.C) {
 	ctx := ctxlog.Context(context.Background(), ctxlog.TestLogger(c))
 	queue := test.Queue{
@@ -573,7 +572,9 @@ func (*SchedulerSuite) TestSkipSupervisors(c *check.C) {
 					VCPUs: 1,
 					RAM:   1 << 30,
 				},
-				Command: []string{"arvados-cwl-runner"},
+				SchedulingParameters: arvados.SchedulingParameters{
+					Supervisor: true,
+				},
 			},
 			{
 				UUID:     test.ContainerUUID(3),
@@ -595,7 +596,9 @@ func (*SchedulerSuite) TestSkipSupervisors(c *check.C) {
 					VCPUs: 1,
 					RAM:   1 << 30,
 				},
-				Command: []string{"arvados-cwl-runner"},
+				SchedulingParameters: arvados.SchedulingParameters{
+					Supervisor: true,
+				},
 			},
 		},
 	}

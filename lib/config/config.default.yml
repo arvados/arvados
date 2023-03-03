@@ -1055,16 +1055,6 @@ Clusters:
       # Container runtime: "docker" (default) or "singularity"
       RuntimeEngine: docker
 
-      # Number of "supervisor" containers eligible to run at any given
-      # time expressed as a fraction of CloudVMs.MaxInstances. A
-      # supervisor is a container who's purpose is to submit other
-      # containers, such as a container running arvados-cwl-runner.
-      # If there is a hard limit on the amount of concurrent
-      # containers that the cluster can run, it is important to avoid
-      # crowding out the containers doing useful work with containers
-      # who just create more work.
-      SupervisorFraction: 0.3
-
       # When running a container, run a dedicated keepstore process,
       # using the specified number of 64 MiB memory buffers per
       # allocated CPU core (VCPUs in the container's runtime
@@ -1338,6 +1328,21 @@ Clusters:
         # be allowed to finish before the excess instances are shut
         # down.
         MaxInstances: 64
+
+        # Maximum fraction of CloudVMs.MaxInstances allowed to run
+        # "supervisor" containers at any given time. A supervisor is a
+        # container whose purpose is mainly to submit and manage other
+        # containers, such as arvados-cwl-runner workflow runner.
+        #
+        # If there is a hard limit on the amount of concurrent
+        # containers that the cluster can run, it is important to
+        # avoid crowding out the containers doing useful work with
+        # containers who just create more work.
+        #
+        # For example, with the default MaxInstances of 64, it will
+        # schedule at most floor(64*0.30) = 19 concurrent workflows,
+        # ensuring 45 slots are available for work.
+        SupervisorFraction: 0.30
 
         # Interval between cloud provider syncs/updates ("list all
         # instances").

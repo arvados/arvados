@@ -320,6 +320,10 @@ class ContainerRequest < ArvadosModel
       return false
     end
     if state_changed? and state == Committed and container_uuid.nil?
+      if self.command.length > 0 and self.command[0] == "arvados-cwl-runner"
+        # Special case, arvados-cwl-runner processes are always considered "supervisors"
+        self.scheduling_parameters['supervisor'] = true
+      end
       while true
         c = Container.resolve(self)
         c.lock!

@@ -729,6 +729,11 @@ class Container < ArvadosModel
                                .map { |req| req.scheduling_parameters["preemptible"] }
                                .all?,
 
+              # supervisor: true if all any true, else false
+              "supervisor": retryable_requests
+                               .map { |req| req.scheduling_parameters["supervisor"] }
+                               .any?,
+
               # max_run_time: 0 if any are 0 (unlimited), else the maximum
               "max_run_time": retryable_requests
                                 .map { |req| req.scheduling_parameters["max_run_time"] || 0 }
