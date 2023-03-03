@@ -135,6 +135,7 @@ func (h *Handler) setup() {
 
 	hs := http.NotFoundHandler()
 	hs = prepend(hs, h.proxyRailsAPI)
+	hs = prepend(hs, h.limitLogCreateRequests)
 	hs = h.setupProxyRemoteCluster(hs)
 	hs = prepend(hs, oidcAuthorizer.Middleware)
 	mux.Handle("/", hs)
