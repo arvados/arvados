@@ -444,7 +444,9 @@ for f in $(ls "${SOURCE_PILLARS_DIR}"/*); do
        s#__WORKBENCH_SECRET_KEY__#${WORKBENCH_SECRET_KEY}#g;
        s#__SSL_KEY_ENCRYPTED__#${SSL_KEY_ENCRYPTED}#g;
        s#__SSL_KEY_AWS_REGION__#${SSL_KEY_AWS_REGION}#g;
-       s#__SSL_KEY_AWS_SECRET_NAME__#${SSL_KEY_AWS_SECRET_NAME}#g" \
+       s#__SSL_KEY_AWS_SECRET_NAME__#${SSL_KEY_AWS_SECRET_NAME}#g;
+       s#__PROMETHEUS_UI_USERNAME__#${PROMETHEUS_UI_USERNAME}#g;
+       s#__PROMETHEUS_UI_PASSWORD__#${PROMETHEUS_UI_PASSWORD}#g" \
   "${f}" > "${P_DIR}"/$(basename "${f}")
 done
 
@@ -518,7 +520,9 @@ if [ -d "${SOURCE_STATES_DIR}" ]; then
          s#__WORKBENCH_SECRET_KEY__#${WORKBENCH_SECRET_KEY}#g;
          s#__SSL_KEY_ENCRYPTED__#${SSL_KEY_ENCRYPTED}#g;
          s#__SSL_KEY_AWS_REGION__#${SSL_KEY_AWS_REGION}#g;
-         s#__SSL_KEY_AWS_SECRET_NAME__#${SSL_KEY_AWS_SECRET_NAME}#g" \
+         s#__SSL_KEY_AWS_SECRET_NAME__#${SSL_KEY_AWS_SECRET_NAME}#g;
+         s#__PROMETHEUS_UI_USERNAME__#${PROMETHEUS_UI_USERNAME}#g;
+         s#__PROMETHEUS_UI_PASSWORD__#${PROMETHEUS_UI_PASSWORD}#g" \
     "${f}" > "${F_DIR}/extra/extra"/$(basename "${f}")
   done
 fi
@@ -707,16 +711,16 @@ else
       "monitoring")
         ### States ###
         grep -q "nginx" ${S_DIR}/top.sls || echo "    - nginx" >> ${S_DIR}/top.sls
+        grep -q "extra.nginx_prometheus_configuration" ${S_DIR}/top.sls || echo "    - extra.nginx_prometheus_configuration" >> ${S_DIR}/top.sls
         if [ "${SSL_MODE}" = "lets-encrypt" ]; then
           grep -q "letsencrypt"     ${S_DIR}/top.sls || echo "    - letsencrypt" >> ${S_DIR}/top.sls
           if [ "x${USE_LETSENCRYPT_ROUTE53}" = "xyes" ]; then
             grep -q "aws_credentials" ${S_DIR}/top.sls || echo "    - aws_credentials" >> ${S_DIR}/top.sls
           fi
         elif [ "${SSL_MODE}" = "bring-your-own" ]; then
-          copy_custom_cert ${CUSTOM_CERTS_DIR} ${R}
-          if [ "${SSL_KEY_ENCRYPTED}" = "yes" ]; then
-            grep -q "ssl_key_encrypted" ${S_DIR}/top.sls || echo "    - extra.ssl_key_encrypted" >> ${S_DIR}/top.sls
-          fi
+          for SVC in prometheus; do
+            copy_custom_cert ${CUSTOM_CERTS_DIR} ${SVC}
+          done
         fi
         ### Pillars ###
         grep -q "prometheus_server" ${P_DIR}/top.sls || echo "    - prometheus_server" >> ${P_DIR}/top.sls
