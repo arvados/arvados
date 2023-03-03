@@ -68,6 +68,7 @@ var whitelist = map[string]bool{
 	"API.LockBeforeUpdate":                     false,
 	"API.KeepServiceRequestTimeout":            false,
 	"API.MaxConcurrentRequests":                false,
+	"API.LogCreateRequestFraction":             false,
 	"API.MaxIndexDatabaseRead":                 false,
 	"API.MaxItemsPerResponse":                  true,
 	"API.MaxKeepBlobBuffers":                   false,

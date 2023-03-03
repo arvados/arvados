@@ -38,6 +38,7 @@ type Handler struct {
 	secureClient   *http.Client
 	insecureClient *http.Client
 	dbConnector    ctrlctx.DBConnector
+	limitLogCreate chan struct{}
 }
 
 func (h *Handler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
@@ -147,6 +148,17 @@ func (h *Handler) setup() {
 	ic.CheckRedirect = neverRedirect
 	h.insecureClient = &ic
 
+	logCreateLimit := int(float64(h.Cluster.API.MaxConcurrentRequests) * h.Cluster.API.LogCreateRequestFraction)
+	if logCreateLimit == 0 && h.Cluster.API.LogCreateRequestFraction > 0 {
+		logCreateLimit = 1
+	}
+	if logCreateLimit == 0 {
+		// can't have unlimited size channels, so just make
+		// the buffer size really big.
+		logCreateLimit = 4096
+	}
+	h.limitLogCreate = make(chan struct{}, logCreateLimit)
+
 	h.proxy = &proxy{
 		Name: "arvados-controller",
 	}
@@ -180,6 +192,20 @@ func (h *Handler) localClusterRequest(req *http.Request) (*http.Response, error)
 		client = h.insecureClient
 	}
 	return h.proxy.Do(req, urlOut, client)
+}
+
+func (h *Handler) limitLogCreateRequests(w http.ResponseWriter, req *http.Request, next http.Handler) {
+	if req.Method == http.MethodPost && strings.HasPrefix(req.URL.Path, "/arvados/v1/logs") {
+		select {
+		case h.limitLogCreate <- struct{}{}:
+			next.ServeHTTP(w, req)
+			<-h.limitLogCreate
+		default:
+			http.Error(w, "Excess log messages", http.StatusServiceUnavailable)
+		}
+		return
+	}
+	next.ServeHTTP(w, req)
 }
 
 func (h *Handler) proxyRailsAPI(w http.ResponseWriter, req *http.Request, next http.Handler) {
