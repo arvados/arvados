@@ -1329,6 +1329,21 @@ Clusters:
         # down.
         MaxInstances: 64
 
+        # Maximum fraction of CloudVMs.MaxInstances allowed to run
+        # "supervisor" containers at any given time. A supervisor is a
+        # container whose purpose is mainly to submit and manage other
+        # containers, such as arvados-cwl-runner workflow runner.
+        #
+        # If there is a hard limit on the amount of concurrent
+        # containers that the cluster can run, it is important to
+        # avoid crowding out the containers doing useful work with
+        # containers who just create more work.
+        #
+        # For example, with the default MaxInstances of 64, it will
+        # schedule at most floor(64*0.30) = 19 concurrent workflows,
+        # ensuring 45 slots are available for work.
+        SupervisorFraction: 0.30
+
         # Interval between cloud provider syncs/updates ("list all
         # instances").
         SyncInterval: 1m

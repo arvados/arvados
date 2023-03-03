@@ -121,6 +121,7 @@ type SchedulingParameters struct {
 	Partitions  []string `json:"partitions"`
 	Preemptible bool     `json:"preemptible"`
 	MaxRunTime  int      `json:"max_run_time"`
+	Supervisor  bool     `json:"supervisor"`
 }
 
 // ContainerList is an arvados#containerList resource.

@@ -84,6 +84,8 @@ func (sch *Scheduler) runQueue() {
 	// reaches the dynamic maxConcurrency limit.
 	trying := len(running)
 
+	supervisors := 0
+
 tryrun:
 	for i, ctr := range sorted {
 		ctr, it := ctr.Container, ctr.InstanceType
@@ -91,6 +93,12 @@ tryrun:
 			"ContainerUUID": ctr.UUID,
 			"InstanceType":  it.Name,
 		})
+		if ctr.SchedulingParameters.Supervisor {
+			supervisors += 1
+			if sch.maxSupervisors > 0 && supervisors > sch.maxSupervisors {
+				continue
+			}
+		}
 		if _, running := running[ctr.UUID]; running || ctr.Priority < 1 {
 			continue
 		}
