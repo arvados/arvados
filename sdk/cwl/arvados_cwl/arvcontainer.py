@@ -374,7 +374,8 @@ class ArvadosContainer(JobBase):
                 container_request["name"] = wfrecord["name"]
             container_request["properties"]["template_uuid"] = wfuuid
 
-        self.output_callback = self.arvrunner.get_wrapped_callback(self.output_callback)
+        if self.attempt_count == 0:
+            self.output_callback = self.arvrunner.get_wrapped_callback(self.output_callback)
 
         try:
             ram = runtime_constraints["ram"]
@@ -422,9 +423,6 @@ class ArvadosContainer(JobBase):
             self.output_callback({}, "permanentFail")
 
     def out_of_memory_retry(self, record, container):
-        if container["exit_code"] == 137:
-            return True
-
         logc = arvados.collection.CollectionReader(record["log_uuid"],
                                                    api_client=self.arvrunner.api,
                                                    keep_client=self.arvrunner.keep_client,
@@ -434,15 +432,16 @@ class ArvadosContainer(JobBase):
         def callback(v1, v2, v3):
             loglines[0] = v3
 
-        done.logtail(logc, callback, "", maxlen=200)
+        done.logtail(logc, callback, "", maxlen=1000)
 
-        oom_matches = r'(bad_alloc|out ?of ?memory|Container using over 95% of memory)'
+        # Check OOM killed
+        oom_matches = r'container using over 9.% of memory'
+        if container["exit_code"] == 137 and re.search(oom_matches, loglines[0], re.IGNORECASE | re.MULTILINE):
+            return True
 
-        print("Checking loglines", loglines[0])
-
-        print("Match", re.search(oom_matches, loglines[0], re.IGNORECASE | re.MULTILINE))
-
-        if re.search(oom_matches, loglines[0], re.IGNORECASE | re.MULTILINE):
+        # Check allocation failure
+        bad_alloc_matches = r'(bad_alloc|out ?of ?memory)'
+        if re.search(bad_alloc_matches, loglines[0], re.IGNORECASE | re.MULTILINE):
             return True
 
         return False
@@ -471,6 +470,7 @@ class ArvadosContainer(JobBase):
                     logger.info("%s Container failed with out of memory error, retrying with more RAM.",
                                  self.arvrunner.label(self))
                     self.job_runtime.submit_request_uuid = None
+                    self.uuid = None
                     self.run(None)
                     retried = True
                     return
