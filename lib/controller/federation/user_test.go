@@ -14,6 +14,7 @@ import (
 	"strings"
 
 	"git.arvados.org/arvados.git/lib/controller/rpc"
+	"git.arvados.org/arvados.git/lib/ctrlctx"
 	"git.arvados.org/arvados.git/sdk/go/arvados"
 	"git.arvados.org/arvados.git/sdk/go/arvadostest"
 	"git.arvados.org/arvados.git/sdk/go/auth"
@@ -30,7 +31,7 @@ type UserSuite struct {
 func (s *UserSuite) TestLoginClusterUserList(c *check.C) {
 	s.cluster.ClusterID = "local"
 	s.cluster.Login.LoginCluster = "zzzzz"
-	s.fed = New(s.cluster, nil)
+	s.fed = New(s.ctx, s.cluster, nil, (&ctrlctx.DBConnector{PostgreSQL: s.cluster.PostgreSQL}).GetDB)
 	s.addDirectRemote(c, "zzzzz", rpc.NewConn("zzzzz", &url.URL{Scheme: "https", Host: os.Getenv("ARVADOS_API_HOST")}, true, rpc.PassthroughTokenProvider))
 
 	for _, updateFail := range []bool{false, true} {
@@ -120,7 +121,7 @@ func (s *UserSuite) TestLoginClusterUserList(c *check.C) {
 func (s *UserSuite) TestLoginClusterUserGet(c *check.C) {
 	s.cluster.ClusterID = "local"
 	s.cluster.Login.LoginCluster = "zzzzz"
-	s.fed = New(s.cluster, nil)
+	s.fed = New(s.ctx, s.cluster, nil, (&ctrlctx.DBConnector{PostgreSQL: s.cluster.PostgreSQL}).GetDB)
 	s.addDirectRemote(c, "zzzzz", rpc.NewConn("zzzzz", &url.URL{Scheme: "https", Host: os.Getenv("ARVADOS_API_HOST")}, true, rpc.PassthroughTokenProvider))
 
 	opts := arvados.GetOptions{UUID: "zzzzz-tpzed-xurymjxw79nv3jz", Select: []string{"uuid", "email"}}
@@ -174,7 +175,7 @@ func (s *UserSuite) TestLoginClusterUserGet(c *check.C) {
 func (s *UserSuite) TestLoginClusterUserListBypassFederation(c *check.C) {
 	s.cluster.ClusterID = "local"
 	s.cluster.Login.LoginCluster = "zzzzz"
-	s.fed = New(s.cluster, nil)
+	s.fed = New(s.ctx, s.cluster, nil, (&ctrlctx.DBConnector{PostgreSQL: s.cluster.PostgreSQL}).GetDB)
 	s.addDirectRemote(c, "zzzzz", rpc.NewConn("zzzzz", &url.URL{Scheme: "https", Host: os.Getenv("ARVADOS_API_HOST")},
 		true, rpc.PassthroughTokenProvider))
 

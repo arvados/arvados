@@ -110,7 +110,7 @@ func (s *LDAPSuite) TearDownTest(c *check.C) {
 }
 
 func (s *LDAPSuite) TestLoginSuccess(c *check.C) {
-	conn := NewConn(s.cluster)
+	conn := NewConn(context.Background(), s.cluster, (&ctrlctx.DBConnector{PostgreSQL: s.cluster.PostgreSQL}).GetDB)
 	conn.loginController = s.ctrl
 	resp, err := conn.UserAuthenticate(s.ctx, arvados.UserAuthenticateOptions{
 		Username: "goodusername",

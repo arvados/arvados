@@ -40,6 +40,7 @@ Rails.application.routes.draw do
         get 'auth', on: :member
         post 'lock', on: :member
         post 'unlock', on: :member
+        post 'update_priority', on: :member
         get 'secret_mounts', on: :member
         get 'current', on: :collection
       end

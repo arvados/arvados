@@ -89,6 +89,10 @@ func (as *APIStub) ContainerUpdate(ctx context.Context, options arvados.UpdateOp
 	as.appendCall(ctx, as.ContainerUpdate, options)
 	return arvados.Container{}, as.Error
 }
+func (as *APIStub) ContainerPriorityUpdate(ctx context.Context, options arvados.UpdateOptions) (arvados.Container, error) {
+	as.appendCall(ctx, as.ContainerPriorityUpdate, options)
+	return arvados.Container{}, as.Error
+}
 func (as *APIStub) ContainerGet(ctx context.Context, options arvados.GetOptions) (arvados.Container, error) {
 	as.appendCall(ctx, as.ContainerGet, options)
 	return arvados.Container{}, as.Error

@@ -23,16 +23,18 @@ import (
 	"git.arvados.org/arvados.git/sdk/go/auth"
 	"git.arvados.org/arvados.git/sdk/go/ctxlog"
 	"git.arvados.org/arvados.git/sdk/go/health"
+	"github.com/jmoiron/sqlx"
 )
 
 type Conn struct {
+	bgCtx   context.Context
 	cluster *arvados.Cluster
 	local   backend
 	remotes map[string]backend
 }
 
-func New(cluster *arvados.Cluster, healthFuncs *map[string]health.Func) *Conn {
-	local := localdb.NewConn(cluster)
+func New(bgCtx context.Context, cluster *arvados.Cluster, healthFuncs *map[string]health.Func, getdb func(context.Context) (*sqlx.DB, error)) *Conn {
+	local := localdb.NewConn(bgCtx, cluster, getdb)
 	remotes := map[string]backend{}
 	for id, remote := range cluster.RemoteClusters {
 		if !remote.Proxy || id == cluster.ClusterID {
@@ -51,6 +53,7 @@ func New(cluster *arvados.Cluster, healthFuncs *map[string]health.Func) *Conn {
 	}
 
 	return &Conn{
+		bgCtx:   bgCtx,
 		cluster: cluster,
 		local:   local,
 		remotes: remotes,
@@ -360,6 +363,10 @@ func (conn *Conn) ContainerCreate(ctx context.Context, options arvados.CreateOpt
 
 func (conn *Conn) ContainerUpdate(ctx context.Context, options arvados.UpdateOptions) (arvados.Container, error) {
 	return conn.chooseBackend(options.UUID).ContainerUpdate(ctx, options)
+}
+
+func (conn *Conn) ContainerPriorityUpdate(ctx context.Context, options arvados.UpdateOptions) (arvados.Container, error) {
+	return conn.chooseBackend(options.UUID).ContainerPriorityUpdate(ctx, options)
 }
 
 func (conn *Conn) ContainerGet(ctx context.Context, options arvados.GetOptions) (arvados.Container, error) {

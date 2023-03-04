@@ -294,6 +294,13 @@ func (conn *Conn) ContainerUpdate(ctx context.Context, options arvados.UpdateOpt
 	return resp, err
 }
 
+func (conn *Conn) ContainerPriorityUpdate(ctx context.Context, options arvados.UpdateOptions) (arvados.Container, error) {
+	ep := arvados.EndpointContainerPriorityUpdate
+	var resp arvados.Container
+	err := conn.requestAndDecode(ctx, &resp, ep, nil, options)
+	return resp, err
+}
+
 func (conn *Conn) ContainerGet(ctx context.Context, options arvados.GetOptions) (arvados.Container, error) {
 	ep := arvados.EndpointContainerGet
 	var resp arvados.Container

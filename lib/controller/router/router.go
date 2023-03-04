@@ -157,6 +157,13 @@ func (rtr *router) addRoutes() {
 			},
 		},
 		{
+			arvados.EndpointContainerPriorityUpdate,
+			func() interface{} { return &arvados.UpdateOptions{} },
+			func(ctx context.Context, opts interface{}) (interface{}, error) {
+				return rtr.backend.ContainerPriorityUpdate(ctx, *opts.(*arvados.UpdateOptions))
+			},
+		},
+		{
 			arvados.EndpointContainerUpdate,
 			func() interface{} { return &arvados.UpdateOptions{} },
 			func(ctx context.Context, opts interface{}) (interface{}, error) {

@@ -70,7 +70,7 @@ func (s *FederationSuite) SetUpTest(c *check.C) {
 	ctx = ctrlctx.NewWithTransaction(ctx, s.tx)
 	s.ctx = ctx
 
-	s.fed = New(s.cluster, nil)
+	s.fed = New(ctx, s.cluster, nil, (&ctrlctx.DBConnector{PostgreSQL: s.cluster.PostgreSQL}).GetDB)
 }
 
 func (s *FederationSuite) TearDownTest(c *check.C) {

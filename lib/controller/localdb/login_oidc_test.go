@@ -23,6 +23,7 @@ import (
 
 	"git.arvados.org/arvados.git/lib/config"
 	"git.arvados.org/arvados.git/lib/controller/rpc"
+	"git.arvados.org/arvados.git/lib/ctrlctx"
 	"git.arvados.org/arvados.git/sdk/go/arvados"
 	"git.arvados.org/arvados.git/sdk/go/arvadostest"
 	"git.arvados.org/arvados.git/sdk/go/auth"
@@ -78,7 +79,7 @@ func (s *OIDCLoginSuite) SetUpTest(c *check.C) {
 	s.fakeProvider.ValidClientID = "test%client$id"
 	s.fakeProvider.ValidClientSecret = "test#client/secret"
 
-	s.localdb = NewConn(s.cluster)
+	s.localdb = NewConn(context.Background(), s.cluster, (&ctrlctx.DBConnector{PostgreSQL: s.cluster.PostgreSQL}).GetDB)
 	c.Assert(s.localdb.loginController, check.FitsTypeOf, (*oidcLoginController)(nil))
 	s.localdb.loginController.(*oidcLoginController).Issuer = s.fakeProvider.Issuer.URL
 	s.localdb.loginController.(*oidcLoginController).peopleAPIBasePath = s.fakeProvider.PeopleAPI.URL
@@ -197,7 +198,7 @@ func (s *OIDCLoginSuite) TestConfig(c *check.C) {
 	s.cluster.Login.OpenIDConnect.ClientID = "oidc-client-id"
 	s.cluster.Login.OpenIDConnect.ClientSecret = "oidc-client-secret"
 	s.cluster.Login.OpenIDConnect.AuthenticationRequestParameters = map[string]string{"testkey": "testvalue"}
-	localdb := NewConn(s.cluster)
+	localdb := NewConn(context.Background(), s.cluster, (&ctrlctx.DBConnector{PostgreSQL: s.cluster.PostgreSQL}).GetDB)
 	ctrl := localdb.loginController.(*oidcLoginController)
 	c.Check(ctrl.Issuer, check.Equals, "https://accounts.example.com/")
 	c.Check(ctrl.ClientID, check.Equals, "oidc-client-id")
@@ -212,7 +213,7 @@ func (s *OIDCLoginSuite) TestConfig(c *check.C) {
 		s.cluster.Login.Google.ClientSecret = "google-client-secret"
 		s.cluster.Login.Google.AlternateEmailAddresses = enableAltEmails
 		s.cluster.Login.Google.AuthenticationRequestParameters = map[string]string{"testkey": "testvalue"}
-		localdb = NewConn(s.cluster)
+		localdb = NewConn(context.Background(), s.cluster, (&ctrlctx.DBConnector{PostgreSQL: s.cluster.PostgreSQL}).GetDB)
 		ctrl = localdb.loginController.(*oidcLoginController)
 		c.Check(ctrl.Issuer, check.Equals, "https://accounts.google.com")
 		c.Check(ctrl.ClientID, check.Equals, "google-client-id")
@@ -477,7 +478,7 @@ func (s *OIDCLoginSuite) TestGenericOIDCLogin(c *check.C) {
 			s.railsSpy.Close()
 		}
 		s.railsSpy = arvadostest.NewProxy(c, s.cluster.Services.RailsAPI)
-		s.localdb = NewConn(s.cluster)
+		s.localdb = NewConn(context.Background(), s.cluster, (&ctrlctx.DBConnector{PostgreSQL: s.cluster.PostgreSQL}).GetDB)
 		*s.localdb.railsProxy = *rpc.NewConn(s.cluster.ClusterID, s.railsSpy.URL, true, rpc.PassthroughTokenProvider)
 
 		state := s.startLogin(c, func(form url.Values) {

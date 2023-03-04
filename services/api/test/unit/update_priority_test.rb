@@ -3,7 +3,6 @@
 # SPDX-License-Identifier: AGPL-3.0
 
 require 'test_helper'
-require 'update_priority'
 
 class UpdatePriorityTest < ActiveSupport::TestCase
   test 'priority 0 but should be >0' do

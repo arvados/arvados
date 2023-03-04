@@ -94,8 +94,12 @@ func (h *Handler) setup() {
 	healthFuncs := make(map[string]health.Func)
 
 	h.dbConnector = ctrlctx.DBConnector{PostgreSQL: h.Cluster.PostgreSQL}
+	go func() {
+		<-h.BackgroundContext.Done()
+		h.dbConnector.Close()
+	}()
 	oidcAuthorizer := localdb.OIDCAccessTokenAuthorizer(h.Cluster, h.dbConnector.GetDB)
-	h.federation = federation.New(h.Cluster, &healthFuncs)
+	h.federation = federation.New(h.BackgroundContext, h.Cluster, &healthFuncs, h.dbConnector.GetDB)
 	rtr := router.New(h.federation, router.Config{
 		MaxRequestSize: h.Cluster.API.MaxRequestSize,
 		WrapCalls: api.ComposeWrappers(

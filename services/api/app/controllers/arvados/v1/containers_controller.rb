@@ -40,6 +40,9 @@ class Arvados::V1::ContainersController < ApplicationController
       # Avoid loading more fields than we need
       @objects = @objects.select(:id, :uuid, :state, :priority, :auth_uuid, :locked_by_uuid, :lock_count)
       @select = %w(uuid state priority auth_uuid locked_by_uuid)
+    elsif action_name == 'update_priority'
+      @objects = @objects.select(:id, :uuid)
+      @select = %w(uuid)
     end
   end
 
@@ -50,6 +53,11 @@ class Arvados::V1::ContainersController < ApplicationController
 
   def unlock
     @object.unlock
+    show
+  end
+
+  def update_priority
+    @object.update_priority!
     show
   end
 
