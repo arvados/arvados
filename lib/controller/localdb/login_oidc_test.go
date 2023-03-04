@@ -21,13 +21,11 @@ import (
 	"testing"
 	"time"
 
-	"git.arvados.org/arvados.git/lib/config"
 	"git.arvados.org/arvados.git/lib/controller/rpc"
 	"git.arvados.org/arvados.git/lib/ctrlctx"
 	"git.arvados.org/arvados.git/sdk/go/arvados"
 	"git.arvados.org/arvados.git/sdk/go/arvadostest"
 	"git.arvados.org/arvados.git/sdk/go/auth"
-	"git.arvados.org/arvados.git/sdk/go/ctxlog"
 	"github.com/jmoiron/sqlx"
 	check "gopkg.in/check.v1"
 )
@@ -40,18 +38,9 @@ func Test(t *testing.T) {
 var _ = check.Suite(&OIDCLoginSuite{})
 
 type OIDCLoginSuite struct {
-	cluster      *arvados.Cluster
-	localdb      *Conn
-	railsSpy     *arvadostest.Proxy
+	localdbSuite
 	trustedURL   *arvados.URL
 	fakeProvider *arvadostest.OIDCProvider
-}
-
-func (s *OIDCLoginSuite) TearDownSuite(c *check.C) {
-	// Undo any changes/additions to the user database so they
-	// don't affect subsequent tests.
-	arvadostest.ResetEnv()
-	c.Check(arvados.NewClientFromEnv().RequestAndDecode(nil, "POST", "database/reset", nil, nil), check.IsNil)
 }
 
 func (s *OIDCLoginSuite) SetUpTest(c *check.C) {
@@ -66,10 +55,8 @@ func (s *OIDCLoginSuite) SetUpTest(c *check.C) {
 	s.fakeProvider.ValidCode = fmt.Sprintf("abcdefgh-%d", time.Now().Unix())
 	s.fakeProvider.PeopleAPIResponse = map[string]interface{}{}
 
-	cfg, err := config.NewLoader(nil, ctxlog.TestLogger(c)).Load()
-	c.Assert(err, check.IsNil)
-	s.cluster, err = cfg.GetCluster("")
-	c.Assert(err, check.IsNil)
+	s.localdbSuite.SetUpTest(c)
+
 	s.cluster.Login.Test.Enable = false
 	s.cluster.Login.Google.Enable = true
 	s.cluster.Login.Google.ClientID = "test%client$id"
@@ -79,17 +66,12 @@ func (s *OIDCLoginSuite) SetUpTest(c *check.C) {
 	s.fakeProvider.ValidClientID = "test%client$id"
 	s.fakeProvider.ValidClientSecret = "test#client/secret"
 
-	s.localdb = NewConn(context.Background(), s.cluster, (&ctrlctx.DBConnector{PostgreSQL: s.cluster.PostgreSQL}).GetDB)
+	s.localdb = NewConn(s.ctx, s.cluster, (&ctrlctx.DBConnector{PostgreSQL: s.cluster.PostgreSQL}).GetDB)
 	c.Assert(s.localdb.loginController, check.FitsTypeOf, (*oidcLoginController)(nil))
 	s.localdb.loginController.(*oidcLoginController).Issuer = s.fakeProvider.Issuer.URL
 	s.localdb.loginController.(*oidcLoginController).peopleAPIBasePath = s.fakeProvider.PeopleAPI.URL
 
-	s.railsSpy = arvadostest.NewProxy(c, s.cluster.Services.RailsAPI)
 	*s.localdb.railsProxy = *rpc.NewConn(s.cluster.ClusterID, s.railsSpy.URL, true, rpc.PassthroughTokenProvider)
-}
-
-func (s *OIDCLoginSuite) TearDownTest(c *check.C) {
-	s.railsSpy.Close()
 }
 
 func (s *OIDCLoginSuite) TestGoogleLogout(c *check.C) {

@@ -58,9 +58,8 @@ func (s *CollectionSuite) TestLogActivity(c *check.C) {
 	s.localdb.activeUsersLock.Lock()
 	s.localdb.activeUsersReset = starttime
 	s.localdb.activeUsersLock.Unlock()
-	db := arvadostest.DB(c, s.cluster)
 	wrap := api.ComposeWrappers(
-		ctrlctx.WrapCallsInTransactions(func(ctx context.Context) (*sqlx.DB, error) { return db, nil }),
+		ctrlctx.WrapCallsInTransactions(func(ctx context.Context) (*sqlx.DB, error) { return s.db, nil }),
 		ctrlctx.WrapCallsWithAuth(s.cluster))
 	collectionCreate := wrap(func(ctx context.Context, opts interface{}) (interface{}, error) {
 		return s.localdb.CollectionCreate(ctx, opts.(arvados.CreateOptions))
@@ -76,7 +75,7 @@ func (s *CollectionSuite) TestLogActivity(c *check.C) {
 		})
 		c.Assert(err, check.IsNil)
 		var uuid string
-		err = db.QueryRowContext(ctx, `select uuid from logs where object_uuid = $1 and event_at > $2`, arvadostest.ActiveUserUUID, logthreshold.UTC()).Scan(&uuid)
+		err = s.db.QueryRowContext(ctx, `select uuid from logs where object_uuid = $1 and event_at > $2`, arvadostest.ActiveUserUUID, logthreshold.UTC()).Scan(&uuid)
 		if i == 0 {
 			c.Check(err, check.IsNil)
 			c.Check(uuid, check.HasLen, 27)

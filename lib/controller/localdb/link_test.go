@@ -7,66 +7,16 @@ package localdb
 import (
 	"context"
 
-	"git.arvados.org/arvados.git/lib/config"
-	"git.arvados.org/arvados.git/lib/controller/rpc"
-	"git.arvados.org/arvados.git/lib/ctrlctx"
 	"git.arvados.org/arvados.git/sdk/go/arvados"
 	"git.arvados.org/arvados.git/sdk/go/arvadostest"
 	"git.arvados.org/arvados.git/sdk/go/auth"
-	"git.arvados.org/arvados.git/sdk/go/ctxlog"
 	check "gopkg.in/check.v1"
 )
 
 var _ = check.Suite(&LinkSuite{})
 
 type LinkSuite struct {
-	cluster  *arvados.Cluster
-	localdb  *Conn
-	railsSpy *arvadostest.Proxy
-}
-
-func (s *LinkSuite) TearDownSuite(c *check.C) {
-	// Undo any changes/additions to the user database so they
-	// don't affect subsequent tests.
-	arvadostest.ResetEnv()
-	c.Check(arvados.NewClientFromEnv().RequestAndDecode(nil, "POST", "database/reset", nil, nil), check.IsNil)
-}
-
-func (s *LinkSuite) SetUpTest(c *check.C) {
-	cfg, err := config.NewLoader(nil, ctxlog.TestLogger(c)).Load()
-	c.Assert(err, check.IsNil)
-	s.cluster, err = cfg.GetCluster("")
-	c.Assert(err, check.IsNil)
-	s.localdb = NewConn(context.Background(), s.cluster, (&ctrlctx.DBConnector{PostgreSQL: s.cluster.PostgreSQL}).GetDB)
-	s.railsSpy = arvadostest.NewProxy(c, s.cluster.Services.RailsAPI)
-	*s.localdb.railsProxy = *rpc.NewConn(s.cluster.ClusterID, s.railsSpy.URL, true, rpc.PassthroughTokenProvider)
-}
-
-func (s *LinkSuite) TearDownTest(c *check.C) {
-	s.railsSpy.Close()
-}
-
-func (s *LinkSuite) setUpVocabulary(c *check.C, testVocabulary string) {
-	if testVocabulary == "" {
-		testVocabulary = `{
-			"strict_tags": false,
-			"tags": {
-				"IDTAGIMPORTANCES": {
-					"strict": true,
-					"labels": [{"label": "Importance"}, {"label": "Priority"}],
-					"values": {
-						"IDVALIMPORTANCES1": { "labels": [{"label": "Critical"}, {"label": "Urgent"}, {"label": "High"}] },
-						"IDVALIMPORTANCES2": { "labels": [{"label": "Normal"}, {"label": "Moderate"}] },
-						"IDVALIMPORTANCES3": { "labels": [{"label": "Low"}] }
-					}
-				}
-			}
-		}`
-	}
-	voc, err := arvados.NewVocabulary([]byte(testVocabulary), []string{})
-	c.Assert(err, check.IsNil)
-	s.localdb.vocabularyCache = voc
-	s.cluster.API.VocabularyPath = "foo"
+	localdbSuite
 }
 
 func (s *LinkSuite) TestLinkCreateWithProperties(c *check.C) {

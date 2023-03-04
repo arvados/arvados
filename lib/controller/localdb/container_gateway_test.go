@@ -17,11 +17,9 @@ import (
 	"strings"
 	"time"
 
-	"git.arvados.org/arvados.git/lib/config"
 	"git.arvados.org/arvados.git/lib/controller/router"
 	"git.arvados.org/arvados.git/lib/controller/rpc"
 	"git.arvados.org/arvados.git/lib/crunchrun"
-	"git.arvados.org/arvados.git/lib/ctrlctx"
 	"git.arvados.org/arvados.git/sdk/go/arvados"
 	"git.arvados.org/arvados.git/sdk/go/arvadostest"
 	"git.arvados.org/arvados.git/sdk/go/auth"
@@ -33,27 +31,14 @@ import (
 var _ = check.Suite(&ContainerGatewaySuite{})
 
 type ContainerGatewaySuite struct {
-	cluster *arvados.Cluster
-	localdb *Conn
-	ctx     context.Context
+	localdbSuite
 	ctrUUID string
 	gw      *crunchrun.Gateway
 }
 
-func (s *ContainerGatewaySuite) TearDownSuite(c *check.C) {
-	// Undo any changes/additions to the user database so they
-	// don't affect subsequent tests.
-	arvadostest.ResetEnv()
-	c.Check(arvados.NewClientFromEnv().RequestAndDecode(nil, "POST", "database/reset", nil, nil), check.IsNil)
-}
-
-func (s *ContainerGatewaySuite) SetUpSuite(c *check.C) {
-	cfg, err := config.NewLoader(nil, ctxlog.TestLogger(c)).Load()
-	c.Assert(err, check.IsNil)
-	s.cluster, err = cfg.GetCluster("")
-	c.Assert(err, check.IsNil)
-	s.localdb = NewConn(context.Background(), s.cluster, (&ctrlctx.DBConnector{PostgreSQL: s.cluster.PostgreSQL}).GetDB)
-	s.ctx = auth.NewContext(context.Background(), &auth.Credentials{Tokens: []string{arvadostest.ActiveTokenV2}})
+func (s *ContainerGatewaySuite) SetUpTest(c *check.C) {
+	s.localdbSuite.SetUpTest(c)
+	s.ctx = auth.NewContext(s.ctx, &auth.Credentials{Tokens: []string{arvadostest.ActiveTokenV2}})
 
 	s.ctrUUID = arvadostest.QueuedContainerUUID
 
@@ -83,21 +68,14 @@ func (s *ContainerGatewaySuite) SetUpSuite(c *check.C) {
 		ArvadosClient: ac,
 	}
 	c.Assert(s.gw.Start(), check.IsNil)
-	rootctx := auth.NewContext(context.Background(), &auth.Credentials{Tokens: []string{s.cluster.SystemRootToken}})
-	_, err = s.localdb.ContainerUpdate(rootctx, arvados.UpdateOptions{
+	rootctx := auth.NewContext(s.ctx, &auth.Credentials{Tokens: []string{s.cluster.SystemRootToken}})
+	// OK if this line fails (because state is already Running
+	// from a previous test case) as long as the following line
+	// succeeds:
+	s.localdb.ContainerUpdate(rootctx, arvados.UpdateOptions{
 		UUID: s.ctrUUID,
 		Attrs: map[string]interface{}{
 			"state": arvados.ContainerStateLocked}})
-	c.Assert(err, check.IsNil)
-}
-
-func (s *ContainerGatewaySuite) SetUpTest(c *check.C) {
-	// clear any tunnel sessions started by previous test cases
-	s.localdb.gwTunnelsLock.Lock()
-	s.localdb.gwTunnels = nil
-	s.localdb.gwTunnelsLock.Unlock()
-
-	rootctx := auth.NewContext(context.Background(), &auth.Credentials{Tokens: []string{s.cluster.SystemRootToken}})
 	_, err := s.localdb.ContainerUpdate(rootctx, arvados.UpdateOptions{
 		UUID: s.ctrUUID,
 		Attrs: map[string]interface{}{
@@ -107,7 +85,7 @@ func (s *ContainerGatewaySuite) SetUpTest(c *check.C) {
 
 	s.cluster.Containers.ShellAccess.Admin = true
 	s.cluster.Containers.ShellAccess.User = true
-	_, err = arvadostest.DB(c, s.cluster).Exec(`update containers set interactive_session_started=$1 where uuid=$2`, false, s.ctrUUID)
+	_, err = s.db.Exec(`update containers set interactive_session_started=$1 where uuid=$2`, false, s.ctrUUID)
 	c.Check(err, check.IsNil)
 }
 
