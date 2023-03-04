@@ -1076,10 +1076,13 @@ class ContainerTest < ActiveSupport::TestCase
     })
   end
 
-  def vary_scheduling_parameters(**kwargs)
-    # kwargs is a hash that maps scheduling parameters to an array of values.
-    # This function enumerates every possible combination of
-    # scheduling parameters from those keys and their associated values.
+  def vary_parameters(**kwargs)
+    # kwargs is a hash that maps parameters to an array of values.
+    # This function enumerates every possible hash where each key has one of
+    # the values from its array.
+    # The output keys are strings since that's what container hash attributes
+    # want.
+    # A nil value yields a hash without that key.
     [[:_, nil]].product(
       *kwargs.map { |(key, values)| [key.to_s].product(values) },
     ).map { |param_pairs| Hash[param_pairs].compact }
@@ -1119,7 +1122,7 @@ class ContainerTest < ActiveSupport::TestCase
   ).each do |preemptible_a|
     test "retry requests scheduled with preemptible=#{preemptible_a}" do
       configure_preemptible_instance_type
-      param_hashes = vary_scheduling_parameters(preemptible: preemptible_a)
+      param_hashes = vary_parameters(preemptible: preemptible_a)
       container = retry_with_scheduling_parameters(param_hashes)
       assert_equal(preemptible_a.all?,
                    container.scheduling_parameters["preemptible"] || false)
@@ -1131,7 +1134,7 @@ class ContainerTest < ActiveSupport::TestCase
     partition_values.permutation(2),
   ).each do |partitions_a|
     test "retry requests scheduled with partitions=#{partitions_a}" do
-      param_hashes = vary_scheduling_parameters(partitions: partitions_a)
+      param_hashes = vary_parameters(partitions: partitions_a)
       container = retry_with_scheduling_parameters(param_hashes)
       expected = if partitions_a.any? { |value| value.nil? or value.empty? }
                    []
@@ -1149,7 +1152,7 @@ class ContainerTest < ActiveSupport::TestCase
     runtime_values.permutation(3),
   ).each do |max_run_time_a|
     test "retry requests scheduled with max_run_time=#{max_run_time_a}" do
-      param_hashes = vary_scheduling_parameters(max_run_time: max_run_time_a)
+      param_hashes = vary_parameters(max_run_time: max_run_time_a)
       container = retry_with_scheduling_parameters(param_hashes)
       expected = if max_run_time_a.any? { |value| value.nil? or value == 0 }
                    0
@@ -1184,7 +1187,7 @@ class ContainerTest < ActiveSupport::TestCase
 
   test "retry requests with unset scheduling parameters" do
     configure_preemptible_instance_type
-    param_hashes = vary_scheduling_parameters(
+    param_hashes = vary_parameters(
       preemptible: [nil, true],
       partitions: [nil, ["alpha"]],
       max_run_time: [nil, 5],
@@ -1198,7 +1201,7 @@ class ContainerTest < ActiveSupport::TestCase
 
   test "retry requests with default scheduling parameters" do
     configure_preemptible_instance_type
-    param_hashes = vary_scheduling_parameters(
+    param_hashes = vary_parameters(
       preemptible: [false, true],
       partitions: [[], ["bravo"]],
       max_run_time: [0, 1],
