@@ -992,6 +992,11 @@ Clusters:
       # disk cache size will use a disk cache, sized to the
       # container's RAM requirement (but with minimum 2 GiB and
       # maximum 32 GiB).
+      #
+      # Note: If you change this value, containers that used the previous
+      # default value will only be reused by container requests that
+      # explicitly specify the previous value in their keep_cache_ram
+      # runtime constraint.
       DefaultKeepCacheRAM: 0
 
       # Number of times a container can be unlocked before being
