@@ -285,6 +285,7 @@ def add_arv_hints():
         "http://arvados.org/cwl#UsePreemptible",
         "http://arvados.org/cwl#OutputCollectionProperties",
         "http://arvados.org/cwl#KeepCacheTypeRequirement",
+        "http://arvados.org/cwl#OutOfMemoryRetry",
     ])
 
 def exit_signal_handler(sigcode, frame):

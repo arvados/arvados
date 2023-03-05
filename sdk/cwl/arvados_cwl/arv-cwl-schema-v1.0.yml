@@ -456,3 +456,30 @@ $graph:
         only or written to disk and memory-mapped.  The disk cache
         leverages the kernel's virtual memory system so "hot" data will
         generally still be kept in RAM.
+
+- name: OutOfMemoryRetry
+  type: record
+  extends: cwl:ProcessRequirement
+  inVocab: false
+  doc: |
+    Detect when a failed tool run may have run out of memory, and
+    re-submit the container with more RAM.
+  fields:
+    - name: class
+      type: string
+      doc: "'arv:OutOfMemoryRetry"
+      jsonldPredicate:
+        _id: "@type"
+        _type: "@vocab"
+    - name: memoryErrorRegex
+      type: string?
+      doc: |
+        A regular expression that will be used on the text of stdout
+        and stderr produced by the tool to determine if a failed job
+        should be retried with more RAM.  By default, searches for the
+        substrings 'bad_alloc' and 'OutOfMemory'.
+    - name: memoryRetryMultipler
+      type: float
+      doc: |
+        If the container failed on its first run, re-submit the
+        container with the RAM request multiplied by this factor.

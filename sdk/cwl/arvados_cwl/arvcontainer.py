@@ -367,6 +367,12 @@ class ArvadosContainer(JobBase):
                 logger.warning("%s API revision is %s, revision %s is required to support setting properties on output collections.",
                                self.arvrunner.label(self), self.arvrunner.api._rootDesc["revision"], "20220510")
 
+        ramMultiplier = [1]
+
+        oom_retry_req, _ = self.get_requirement("http://arvados.org/cwl#OutOfMemoryRetry")
+        if oom_retry_req and oom_retry_req.get('memoryRetryMultipler'):
+            ramMultiplier.append(oom_retry_req.get('memoryRetryMultipler'))
+
         if runtimeContext.runnerjob.startswith("arvwf:"):
             wfuuid = runtimeContext.runnerjob[6:runtimeContext.runnerjob.index("#")]
             wfrecord = self.arvrunner.api.workflows().get(uuid=wfuuid).execute(num_retries=self.arvrunner.num_retries)
@@ -380,7 +386,7 @@ class ArvadosContainer(JobBase):
         try:
             ram = runtime_constraints["ram"]
 
-            for i in range(1, 4):
+            for i in ramMultiplier:
                 runtime_constraints["ram"] = ram * i
 
                 if runtimeContext.submit_request_uuid:
@@ -400,7 +406,7 @@ class ArvadosContainer(JobBase):
                     break
 
             if response["container_uuid"] is None:
-                runtime_constraints["ram"] = ram * (self.attempt_count+1)
+                runtime_constraints["ram"] = ram * ramMultiplier[self.attempt_count]
 
             container_request["state"] = "Committed"
             response = self.arvrunner.api.container_requests().update(
@@ -423,6 +429,14 @@ class ArvadosContainer(JobBase):
             self.output_callback({}, "permanentFail")
 
     def out_of_memory_retry(self, record, container):
+        oom_retry_req, _ = self.get_requirement("http://arvados.org/cwl#OutOfMemoryRetry")
+        if oom_retry_req is None:
+            return False
+
+        # Sometimes it gets killed with no warning
+        if container["exit_code"] == 137:
+            return True
+
         logc = arvados.collection.CollectionReader(record["log_uuid"],
                                                    api_client=self.arvrunner.api,
                                                    keep_client=self.arvrunner.keep_client,
@@ -434,14 +448,9 @@ class ArvadosContainer(JobBase):
 
         done.logtail(logc, callback, "", maxlen=1000)
 
-        # Check OOM killed
-        oom_matches = r'container using over 9.% of memory'
-        if container["exit_code"] == 137 and re.search(oom_matches, loglines[0], re.IGNORECASE | re.MULTILINE):
-            return True
-
         # Check allocation failure
-        bad_alloc_matches = r'(bad_alloc|out ?of ?memory)'
-        if re.search(bad_alloc_matches, loglines[0], re.IGNORECASE | re.MULTILINE):
+        oom_matches = oom_retry_req.get('memoryErrorRegex') or r'(bad_alloc|out ?of ?memory|container using over 9.% of memory)'
+        if re.search(oom_matches, loglines[0], re.IGNORECASE | re.MULTILINE):
             return True
 
         return False
@@ -466,7 +475,7 @@ class ArvadosContainer(JobBase):
                 else:
                     processStatus = "permanentFail"
 
-                if processStatus == "permanentFail" and self.out_of_memory_retry(record, container):
+                if processStatus == "permanentFail" and self.attempt_count == 1 and self.out_of_memory_retry(record, container):
                     logger.info("%s Container failed with out of memory error, retrying with more RAM.",
                                  self.arvrunner.label(self))
                     self.job_runtime.submit_request_uuid = None
