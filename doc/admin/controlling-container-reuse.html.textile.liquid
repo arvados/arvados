@@ -10,7 +10,7 @@ Copyright (C) The Arvados Authors. All rights reserved.
 SPDX-License-Identifier: CC-BY-SA-3.0
 {% endcomment %}
 
-Sometimes a container exited successfully but produced bad output, and re-running the workflow will cause it to re-use the bad container instead of running a new container.  One way to deal with this is to re-run the entire workflow with reuse disable.  Another way is for the workflow author to tweak the input data or workflow so that on re-run it produces a distinct container request.  However, for large or complex workflows both these options may be impractical.
+Sometimes a container exited successfully but produced bad output, and re-running the workflow will cause it to re-use the bad container instead of running a new container.  One way to deal with this is to re-run the entire workflow with reuse disabled.  Another way is for the workflow author to tweak the input data or workflow so that on re-run it produces a distinct container request.  However, for large or complex workflows both these options may be impractical.
 
 To prevent an individual container from being reused in later workflows, an admin can manually change the state of the bad container record from @Complete@ to @Cancelled@.  The following @arv@ command demonstrates how change a container state to @Cancelled@, where @xxxxx-xxxxx-xxxxxxxxxxxxxxx@ is the @UUID@ of the container:
 
