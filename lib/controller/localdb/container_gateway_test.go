@@ -5,7 +5,6 @@
 package localdb
 
 import (
-	"context"
 	"crypto/hmac"
 	"crypto/sha256"
 	"fmt"
@@ -20,9 +19,9 @@ import (
 	"git.arvados.org/arvados.git/lib/controller/router"
 	"git.arvados.org/arvados.git/lib/controller/rpc"
 	"git.arvados.org/arvados.git/lib/crunchrun"
+	"git.arvados.org/arvados.git/lib/ctrlctx"
 	"git.arvados.org/arvados.git/sdk/go/arvados"
 	"git.arvados.org/arvados.git/sdk/go/arvadostest"
-	"git.arvados.org/arvados.git/sdk/go/auth"
 	"git.arvados.org/arvados.git/sdk/go/ctxlog"
 	"golang.org/x/crypto/ssh"
 	check "gopkg.in/check.v1"
@@ -38,7 +37,6 @@ type ContainerGatewaySuite struct {
 
 func (s *ContainerGatewaySuite) SetUpTest(c *check.C) {
 	s.localdbSuite.SetUpTest(c)
-	s.ctx = auth.NewContext(s.ctx, &auth.Credentials{Tokens: []string{arvadostest.ActiveTokenV2}})
 
 	s.ctrUUID = arvadostest.QueuedContainerUUID
 
@@ -68,7 +66,7 @@ func (s *ContainerGatewaySuite) SetUpTest(c *check.C) {
 		ArvadosClient: ac,
 	}
 	c.Assert(s.gw.Start(), check.IsNil)
-	rootctx := auth.NewContext(s.ctx, &auth.Credentials{Tokens: []string{s.cluster.SystemRootToken}})
+	rootctx := ctrlctx.NewWithToken(s.ctx, s.cluster, s.cluster.SystemRootToken)
 	// OK if this line fails (because state is already Running
 	// from a previous test case) as long as the following line
 	// succeeds:
@@ -108,7 +106,7 @@ func (s *ContainerGatewaySuite) TestConfig(c *check.C) {
 		c.Logf("trial %#v", trial)
 		s.cluster.Containers.ShellAccess.Admin = trial.configAdmin
 		s.cluster.Containers.ShellAccess.User = trial.configUser
-		ctx := auth.NewContext(s.ctx, &auth.Credentials{Tokens: []string{trial.sendToken}})
+		ctx := ctrlctx.NewWithToken(s.ctx, s.cluster, trial.sendToken)
 		sshconn, err := s.localdb.ContainerSSH(ctx, arvados.ContainerSSHOptions{UUID: s.ctrUUID})
 		if trial.errorCode == 0 {
 			if !c.Check(err, check.IsNil) {
@@ -154,7 +152,7 @@ func (s *ContainerGatewaySuite) TestDirectTCP(c *check.C) {
 	}
 
 	c.Logf("connecting to %s", s.gw.Address)
-	sshconn, err := s.localdb.ContainerSSH(s.ctx, arvados.ContainerSSHOptions{UUID: s.ctrUUID})
+	sshconn, err := s.localdb.ContainerSSH(s.userctx, arvados.ContainerSSHOptions{UUID: s.ctrUUID})
 	c.Assert(err, check.IsNil)
 	c.Assert(sshconn.Conn, check.NotNil)
 	defer sshconn.Conn.Close()
@@ -192,7 +190,7 @@ func (s *ContainerGatewaySuite) TestDirectTCP(c *check.C) {
 
 func (s *ContainerGatewaySuite) TestConnect(c *check.C) {
 	c.Logf("connecting to %s", s.gw.Address)
-	sshconn, err := s.localdb.ContainerSSH(s.ctx, arvados.ContainerSSHOptions{UUID: s.ctrUUID})
+	sshconn, err := s.localdb.ContainerSSH(s.userctx, arvados.ContainerSSHOptions{UUID: s.ctrUUID})
 	c.Assert(err, check.IsNil)
 	c.Assert(sshconn.Conn, check.NotNil)
 	defer sshconn.Conn.Close()
@@ -223,33 +221,33 @@ func (s *ContainerGatewaySuite) TestConnect(c *check.C) {
 	case <-time.After(time.Second):
 		c.Fail()
 	}
-	ctr, err := s.localdb.ContainerGet(s.ctx, arvados.GetOptions{UUID: s.ctrUUID})
+	ctr, err := s.localdb.ContainerGet(s.userctx, arvados.GetOptions{UUID: s.ctrUUID})
 	c.Check(err, check.IsNil)
 	c.Check(ctr.InteractiveSessionStarted, check.Equals, true)
 }
 
 func (s *ContainerGatewaySuite) TestConnectFail(c *check.C) {
 	c.Log("trying with no token")
-	ctx := auth.NewContext(context.Background(), &auth.Credentials{})
+	ctx := ctrlctx.NewWithToken(s.ctx, s.cluster, "")
 	_, err := s.localdb.ContainerSSH(ctx, arvados.ContainerSSHOptions{UUID: s.ctrUUID})
 	c.Check(err, check.ErrorMatches, `.* 401 .*`)
 
 	c.Log("trying with anonymous token")
-	ctx = auth.NewContext(context.Background(), &auth.Credentials{Tokens: []string{arvadostest.AnonymousToken}})
+	ctx = ctrlctx.NewWithToken(s.ctx, s.cluster, arvadostest.AnonymousToken)
 	_, err = s.localdb.ContainerSSH(ctx, arvados.ContainerSSHOptions{UUID: s.ctrUUID})
 	c.Check(err, check.ErrorMatches, `.* 404 .*`)
 }
 
 func (s *ContainerGatewaySuite) TestCreateTunnel(c *check.C) {
 	// no AuthSecret
-	conn, err := s.localdb.ContainerGatewayTunnel(s.ctx, arvados.ContainerGatewayTunnelOptions{
+	conn, err := s.localdb.ContainerGatewayTunnel(s.userctx, arvados.ContainerGatewayTunnelOptions{
 		UUID: s.ctrUUID,
 	})
 	c.Check(err, check.ErrorMatches, `authentication error`)
 	c.Check(conn.Conn, check.IsNil)
 
 	// bogus AuthSecret
-	conn, err = s.localdb.ContainerGatewayTunnel(s.ctx, arvados.ContainerGatewayTunnelOptions{
+	conn, err = s.localdb.ContainerGatewayTunnel(s.userctx, arvados.ContainerGatewayTunnelOptions{
 		UUID:       s.ctrUUID,
 		AuthSecret: "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
 	})
@@ -257,7 +255,7 @@ func (s *ContainerGatewaySuite) TestCreateTunnel(c *check.C) {
 	c.Check(conn.Conn, check.IsNil)
 
 	// good AuthSecret
-	conn, err = s.localdb.ContainerGatewayTunnel(s.ctx, arvados.ContainerGatewayTunnelOptions{
+	conn, err = s.localdb.ContainerGatewayTunnel(s.userctx, arvados.ContainerGatewayTunnelOptions{
 		UUID:       s.ctrUUID,
 		AuthSecret: s.gw.AuthSecret,
 	})
@@ -286,7 +284,7 @@ func (s *ContainerGatewaySuite) TestConnectThroughTunnelNoProxyOK(c *check.C) {
 }
 
 func (s *ContainerGatewaySuite) testConnectThroughTunnel(c *check.C, expectErrorMatch string) {
-	rootctx := auth.NewContext(context.Background(), &auth.Credentials{Tokens: []string{s.cluster.SystemRootToken}})
+	rootctx := ctrlctx.NewWithToken(s.ctx, s.cluster, s.cluster.SystemRootToken)
 	// Until the tunnel starts up, set gateway_address to a value
 	// that can't work. We want to ensure the only way we can
 	// reach the gateway is through the tunnel.
@@ -321,7 +319,7 @@ func (s *ContainerGatewaySuite) testConnectThroughTunnel(c *check.C, expectError
 	c.Assert(err, check.IsNil)
 
 	for deadline := time.Now().Add(5 * time.Second); time.Now().Before(deadline); time.Sleep(time.Second / 2) {
-		ctr, err := s.localdb.ContainerGet(s.ctx, arvados.GetOptions{UUID: s.ctrUUID})
+		ctr, err := s.localdb.ContainerGet(s.userctx, arvados.GetOptions{UUID: s.ctrUUID})
 		c.Assert(err, check.IsNil)
 		c.Check(ctr.InteractiveSessionStarted, check.Equals, false)
 		c.Logf("ctr.GatewayAddress == %s", ctr.GatewayAddress)
@@ -332,7 +330,7 @@ func (s *ContainerGatewaySuite) testConnectThroughTunnel(c *check.C, expectError
 
 	c.Log("connecting to gateway through tunnel")
 	arpc := rpc.NewConn("", &url.URL{Scheme: "https", Host: s.gw.ArvadosClient.APIHost}, true, rpc.PassthroughTokenProvider)
-	sshconn, err := arpc.ContainerSSH(s.ctx, arvados.ContainerSSHOptions{UUID: s.ctrUUID})
+	sshconn, err := arpc.ContainerSSH(s.userctx, arvados.ContainerSSHOptions{UUID: s.ctrUUID})
 	if expectErrorMatch != "" {
 		c.Check(err, check.ErrorMatches, expectErrorMatch)
 		return
@@ -367,7 +365,7 @@ func (s *ContainerGatewaySuite) testConnectThroughTunnel(c *check.C, expectError
 	case <-time.After(time.Second):
 		c.Fail()
 	}
-	ctr, err := s.localdb.ContainerGet(s.ctx, arvados.GetOptions{UUID: s.ctrUUID})
+	ctr, err := s.localdb.ContainerGet(s.userctx, arvados.GetOptions{UUID: s.ctrUUID})
 	c.Check(err, check.IsNil)
 	c.Check(ctr.InteractiveSessionStarted, check.Equals, true)
 }

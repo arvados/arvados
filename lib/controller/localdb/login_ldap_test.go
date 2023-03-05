@@ -10,8 +10,8 @@ import (
 	"net/http"
 
 	"git.arvados.org/arvados.git/lib/controller/railsproxy"
+	"git.arvados.org/arvados.git/lib/ctrlctx"
 	"git.arvados.org/arvados.git/sdk/go/arvados"
-	"git.arvados.org/arvados.git/sdk/go/auth"
 	"git.arvados.org/arvados.git/sdk/go/ctxlog"
 	"github.com/bradleypeabody/godap"
 	check "gopkg.in/check.v1"
@@ -84,7 +84,7 @@ func (s *LDAPSuite) TestLoginSuccess(c *check.C) {
 	c.Check(resp.UUID, check.Matches, `zzzzz-gj3su-.*`)
 	c.Check(resp.Scopes, check.DeepEquals, []string{"all"})
 
-	ctx := auth.NewContext(s.ctx, &auth.Credentials{Tokens: []string{"v2/" + resp.UUID + "/" + resp.APIToken}})
+	ctx := ctrlctx.NewWithToken(s.ctx, s.cluster, "v2/"+resp.UUID+"/"+resp.APIToken)
 	user, err := railsproxy.NewConn(s.cluster).UserGetCurrent(ctx, arvados.GetOptions{})
 	c.Check(err, check.IsNil)
 	c.Check(user.Email, check.Equals, "goodusername@example.com")

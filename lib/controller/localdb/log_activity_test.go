@@ -5,16 +5,11 @@
 package localdb
 
 import (
-	"context"
 	"database/sql"
 	"time"
 
-	"git.arvados.org/arvados.git/lib/controller/api"
-	"git.arvados.org/arvados.git/lib/ctrlctx"
 	"git.arvados.org/arvados.git/sdk/go/arvados"
 	"git.arvados.org/arvados.git/sdk/go/arvadostest"
-	"git.arvados.org/arvados.git/sdk/go/auth"
-	"github.com/jmoiron/sqlx"
 	check "gopkg.in/check.v1"
 )
 
@@ -58,16 +53,9 @@ func (s *CollectionSuite) TestLogActivity(c *check.C) {
 	s.localdb.activeUsersLock.Lock()
 	s.localdb.activeUsersReset = starttime
 	s.localdb.activeUsersLock.Unlock()
-	wrap := api.ComposeWrappers(
-		ctrlctx.WrapCallsInTransactions(func(ctx context.Context) (*sqlx.DB, error) { return s.db, nil }),
-		ctrlctx.WrapCallsWithAuth(s.cluster))
-	collectionCreate := wrap(func(ctx context.Context, opts interface{}) (interface{}, error) {
-		return s.localdb.CollectionCreate(ctx, opts.(arvados.CreateOptions))
-	})
-	ctx := auth.NewContext(context.Background(), &auth.Credentials{Tokens: []string{arvadostest.ActiveTokenV2}})
 	for i := 0; i < 2; i++ {
 		logthreshold := time.Now()
-		_, err := collectionCreate(ctx, arvados.CreateOptions{
+		_, err := s.localdb.CollectionCreate(s.userctx, arvados.CreateOptions{
 			Attrs: map[string]interface{}{
 				"name": "test collection",
 			},
@@ -75,7 +63,7 @@ func (s *CollectionSuite) TestLogActivity(c *check.C) {
 		})
 		c.Assert(err, check.IsNil)
 		var uuid string
-		err = s.db.QueryRowContext(ctx, `select uuid from logs where object_uuid = $1 and event_at > $2`, arvadostest.ActiveUserUUID, logthreshold.UTC()).Scan(&uuid)
+		err = s.db.QueryRowContext(s.ctx, `select uuid from logs where object_uuid = $1 and event_at > $2`, arvadostest.ActiveUserUUID, logthreshold.UTC()).Scan(&uuid)
 		if i == 0 {
 			c.Check(err, check.IsNil)
 			c.Check(uuid, check.HasLen, 27)

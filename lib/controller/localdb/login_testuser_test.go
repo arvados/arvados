@@ -7,9 +7,9 @@ package localdb
 import (
 	"database/sql"
 
+	"git.arvados.org/arvados.git/lib/ctrlctx"
 	"git.arvados.org/arvados.git/sdk/go/arvados"
 	"git.arvados.org/arvados.git/sdk/go/arvadostest"
-	"git.arvados.org/arvados.git/sdk/go/auth"
 	check "gopkg.in/check.v1"
 )
 
@@ -91,9 +91,7 @@ func (s *TestUserSuite) TestExpireTokenOnLogout(c *check.C) {
 		{"v2/some-fake-uuid/thisdoesntexistasatoken", "", false},
 	} {
 		c.Logf("=== %#v", trial)
-		ctx := auth.NewContext(s.ctx, &auth.Credentials{
-			Tokens: []string{trial.requestToken},
-		})
+		ctx := ctrlctx.NewWithToken(s.ctx, s.cluster, trial.requestToken)
 
 		var tokenUUID string
 		var err error

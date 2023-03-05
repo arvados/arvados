@@ -5,11 +5,8 @@
 package localdb
 
 import (
-	"context"
-
 	"git.arvados.org/arvados.git/sdk/go/arvados"
 	"git.arvados.org/arvados.git/sdk/go/arvadostest"
-	"git.arvados.org/arvados.git/sdk/go/auth"
 	check "gopkg.in/check.v1"
 )
 
@@ -21,7 +18,6 @@ type LinkSuite struct {
 
 func (s *LinkSuite) TestLinkCreateWithProperties(c *check.C) {
 	s.setUpVocabulary(c, "")
-	ctx := auth.NewContext(context.Background(), &auth.Credentials{Tokens: []string{arvadostest.ActiveTokenV2}})
 
 	tests := []struct {
 		name    string
@@ -36,7 +32,7 @@ func (s *LinkSuite) TestLinkCreateWithProperties(c *check.C) {
 	for _, tt := range tests {
 		c.Log(c.TestName()+" ", tt.name)
 
-		lnk, err := s.localdb.LinkCreate(ctx, arvados.CreateOptions{
+		lnk, err := s.localdb.LinkCreate(s.userctx, arvados.CreateOptions{
 			Select: []string{"uuid", "properties"},
 			Attrs: map[string]interface{}{
 				"link_class": "star",
@@ -55,7 +51,6 @@ func (s *LinkSuite) TestLinkCreateWithProperties(c *check.C) {
 
 func (s *LinkSuite) TestLinkUpdateWithProperties(c *check.C) {
 	s.setUpVocabulary(c, "")
-	ctx := auth.NewContext(context.Background(), &auth.Credentials{Tokens: []string{arvadostest.ActiveTokenV2}})
 
 	tests := []struct {
 		name    string
@@ -69,7 +64,7 @@ func (s *LinkSuite) TestLinkUpdateWithProperties(c *check.C) {
 	}
 	for _, tt := range tests {
 		c.Log(c.TestName()+" ", tt.name)
-		lnk, err := s.localdb.LinkCreate(ctx, arvados.CreateOptions{
+		lnk, err := s.localdb.LinkCreate(s.userctx, arvados.CreateOptions{
 			Attrs: map[string]interface{}{
 				"link_class": "star",
 				"tail_uuid":  "zzzzz-j7d0g-publicfavorites",
@@ -77,7 +72,7 @@ func (s *LinkSuite) TestLinkUpdateWithProperties(c *check.C) {
 			},
 		})
 		c.Assert(err, check.IsNil)
-		lnk, err = s.localdb.LinkUpdate(ctx, arvados.UpdateOptions{
+		lnk, err = s.localdb.LinkUpdate(s.userctx, arvados.UpdateOptions{
 			UUID:   lnk.UUID,
 			Select: []string{"uuid", "properties"},
 			Attrs: map[string]interface{}{

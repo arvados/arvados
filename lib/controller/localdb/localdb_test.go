@@ -6,6 +6,7 @@ package localdb
 
 import (
 	"context"
+	"errors"
 
 	"git.arvados.org/arvados.git/lib/config"
 	"git.arvados.org/arvados.git/lib/controller/rpc"
@@ -24,6 +25,8 @@ type localdbSuite struct {
 	db          *sqlx.DB
 	dbConnector *ctrlctx.DBConnector
 	tx          *sqlx.Tx
+	txFinish    func(*error)
+	userctx     context.Context // uses ActiveUser token
 	localdb     *Conn
 	railsSpy    *arvadostest.Proxy
 }
@@ -45,18 +48,23 @@ func (s *localdbSuite) SetUpTest(c *check.C) {
 	s.dbConnector = &ctrlctx.DBConnector{PostgreSQL: s.cluster.PostgreSQL}
 	s.db, err = s.dbConnector.GetDB(s.ctx)
 	c.Assert(err, check.IsNil)
+	s.ctx, s.txFinish = ctrlctx.New(s.ctx, s.dbConnector.GetDB)
+	s.tx, err = ctrlctx.CurrentTx(s.ctx)
+	c.Assert(err, check.IsNil)
 	s.localdb = NewConn(s.ctx, s.cluster, s.dbConnector.GetDB)
 	s.railsSpy = arvadostest.NewProxy(c, s.cluster.Services.RailsAPI)
 	*s.localdb.railsProxy = *rpc.NewConn(s.cluster.ClusterID, s.railsSpy.URL, true, rpc.PassthroughTokenProvider)
-
-	s.tx, err = s.db.Beginx()
-	c.Assert(err, check.IsNil)
-	s.ctx = ctrlctx.NewWithTransaction(s.ctx, s.tx)
+	s.userctx = ctrlctx.NewWithToken(s.ctx, s.cluster, arvadostest.ActiveTokenV2)
 }
+
+var errRollbackAfterTest = errors.New("rollback after test")
 
 func (s *localdbSuite) TearDownTest(c *check.C) {
 	if s.tx != nil {
 		s.tx.Rollback()
+	}
+	if s.txFinish != nil {
+		s.txFinish(&errRollbackAfterTest)
 	}
 	if s.railsSpy != nil {
 		s.railsSpy.Close()

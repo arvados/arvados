@@ -5,11 +5,9 @@
 package localdb
 
 import (
-	"context"
-
+	"git.arvados.org/arvados.git/lib/ctrlctx"
 	"git.arvados.org/arvados.git/sdk/go/arvados"
 	"git.arvados.org/arvados.git/sdk/go/arvadostest"
-	"git.arvados.org/arvados.git/sdk/go/auth"
 	check "gopkg.in/check.v1"
 )
 
@@ -21,7 +19,6 @@ type GroupSuite struct {
 
 func (s *GroupSuite) TestGroupCreateWithProperties(c *check.C) {
 	s.setUpVocabulary(c, "")
-	ctx := auth.NewContext(context.Background(), &auth.Credentials{Tokens: []string{arvadostest.ActiveTokenV2}})
 
 	tests := []struct {
 		name    string
@@ -36,7 +33,7 @@ func (s *GroupSuite) TestGroupCreateWithProperties(c *check.C) {
 	for _, tt := range tests {
 		c.Log(c.TestName()+" ", tt.name)
 
-		grp, err := s.localdb.GroupCreate(ctx, arvados.CreateOptions{
+		grp, err := s.localdb.GroupCreate(s.userctx, arvados.CreateOptions{
 			Select: []string{"uuid", "properties"},
 			Attrs: map[string]interface{}{
 				"group_class": "project",
@@ -53,7 +50,6 @@ func (s *GroupSuite) TestGroupCreateWithProperties(c *check.C) {
 
 func (s *GroupSuite) TestGroupUpdateWithProperties(c *check.C) {
 	s.setUpVocabulary(c, "")
-	ctx := auth.NewContext(context.Background(), &auth.Credentials{Tokens: []string{arvadostest.ActiveTokenV2}})
 
 	tests := []struct {
 		name    string
@@ -67,13 +63,13 @@ func (s *GroupSuite) TestGroupUpdateWithProperties(c *check.C) {
 	}
 	for _, tt := range tests {
 		c.Log(c.TestName()+" ", tt.name)
-		grp, err := s.localdb.GroupCreate(ctx, arvados.CreateOptions{
+		grp, err := s.localdb.GroupCreate(s.userctx, arvados.CreateOptions{
 			Attrs: map[string]interface{}{
 				"group_class": "project",
 			},
 		})
 		c.Assert(err, check.IsNil)
-		grp, err = s.localdb.GroupUpdate(ctx, arvados.UpdateOptions{
+		grp, err = s.localdb.GroupUpdate(s.userctx, arvados.UpdateOptions{
 			UUID:   grp.UUID,
 			Select: []string{"uuid", "properties"},
 			Attrs: map[string]interface{}{
@@ -89,9 +85,9 @@ func (s *GroupSuite) TestGroupUpdateWithProperties(c *check.C) {
 }
 
 func (s *GroupSuite) TestCanWriteCanManageResponses(c *check.C) {
-	ctxUser1 := auth.NewContext(context.Background(), &auth.Credentials{Tokens: []string{arvadostest.ActiveTokenV2}})
-	ctxUser2 := auth.NewContext(context.Background(), &auth.Credentials{Tokens: []string{arvadostest.SpectatorToken}})
-	ctxAdmin := auth.NewContext(context.Background(), &auth.Credentials{Tokens: []string{arvadostest.AdminToken}})
+	ctxUser1 := ctrlctx.NewWithToken(s.ctx, s.cluster, arvadostest.ActiveTokenV2)
+	ctxUser2 := ctrlctx.NewWithToken(s.ctx, s.cluster, arvadostest.SpectatorToken)
+	ctxAdmin := ctrlctx.NewWithToken(s.ctx, s.cluster, arvadostest.AdminToken)
 	project, err := s.localdb.GroupCreate(ctxUser1, arvados.CreateOptions{
 		Attrs: map[string]interface{}{
 			"group_class": "project",

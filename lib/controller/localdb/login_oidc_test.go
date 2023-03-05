@@ -255,7 +255,7 @@ func (s *OIDCLoginSuite) TestOIDCAuthorizer(c *check.C) {
 	cleanup()
 	defer cleanup()
 
-	ctx := auth.NewContext(context.Background(), &auth.Credentials{Tokens: []string{accessToken}})
+	ctx := ctrlctx.NewWithToken(s.ctx, s.cluster, accessToken)
 
 	// Check behavior on 5xx/network errors (don't cache) vs 4xx
 	// (do cache)
@@ -357,7 +357,7 @@ func (s *OIDCLoginSuite) TestOIDCAuthorizer(c *check.C) {
 
 	s.fakeProvider.AccessTokenPayload = map[string]interface{}{"scope": "openid profile foobar"}
 	accessToken = s.fakeProvider.ValidAccessToken()
-	ctx = auth.NewContext(context.Background(), &auth.Credentials{Tokens: []string{accessToken}})
+	ctx = ctrlctx.NewWithToken(s.ctx, s.cluster, accessToken)
 
 	mac = hmac.New(sha256.New, []byte(s.cluster.SystemRootToken))
 	io.WriteString(mac, accessToken)
@@ -523,7 +523,7 @@ func (s *OIDCLoginSuite) TestGoogleLogin_Success(c *check.C) {
 
 	// Try using the returned Arvados token.
 	c.Logf("trying an API call with new token %q", token)
-	ctx := auth.NewContext(context.Background(), &auth.Credentials{Tokens: []string{token}})
+	ctx := ctrlctx.NewWithToken(s.ctx, s.cluster, token)
 	cl, err := s.localdb.CollectionList(ctx, arvados.ListOptions{Limit: -1})
 	c.Check(cl.ItemsAvailable, check.Not(check.Equals), 0)
 	c.Check(cl.Items, check.Not(check.HasLen), 0)
@@ -532,7 +532,7 @@ func (s *OIDCLoginSuite) TestGoogleLogin_Success(c *check.C) {
 	// Might as well check that bogus tokens aren't accepted.
 	badtoken := token + "plussomeboguschars"
 	c.Logf("trying an API call with mangled token %q", badtoken)
-	ctx = auth.NewContext(context.Background(), &auth.Credentials{Tokens: []string{badtoken}})
+	ctx = ctrlctx.NewWithToken(s.ctx, s.cluster, badtoken)
 	cl, err = s.localdb.CollectionList(ctx, arvados.ListOptions{Limit: -1})
 	c.Check(cl.Items, check.HasLen, 0)
 	c.Check(err, check.NotNil)

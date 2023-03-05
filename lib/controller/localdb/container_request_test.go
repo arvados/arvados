@@ -5,11 +5,7 @@
 package localdb
 
 import (
-	"context"
-
 	"git.arvados.org/arvados.git/sdk/go/arvados"
-	"git.arvados.org/arvados.git/sdk/go/arvadostest"
-	"git.arvados.org/arvados.git/sdk/go/auth"
 	check "gopkg.in/check.v1"
 )
 
@@ -21,7 +17,6 @@ type ContainerRequestSuite struct {
 
 func (s *ContainerRequestSuite) TestCRCreateWithProperties(c *check.C) {
 	s.setUpVocabulary(c, "")
-	ctx := auth.NewContext(context.Background(), &auth.Credentials{Tokens: []string{arvadostest.ActiveTokenV2}})
 
 	tests := []struct {
 		name    string
@@ -36,7 +31,7 @@ func (s *ContainerRequestSuite) TestCRCreateWithProperties(c *check.C) {
 	for _, tt := range tests {
 		c.Log(c.TestName()+" ", tt.name)
 
-		cnt, err := s.localdb.ContainerRequestCreate(ctx, arvados.CreateOptions{
+		cnt, err := s.localdb.ContainerRequestCreate(s.userctx, arvados.CreateOptions{
 			Select: []string{"uuid", "properties"},
 			Attrs: map[string]interface{}{
 				"command":         []string{"echo", "foo"},
@@ -67,7 +62,6 @@ func (s *ContainerRequestSuite) TestCRCreateWithProperties(c *check.C) {
 
 func (s *ContainerRequestSuite) TestCRUpdateWithProperties(c *check.C) {
 	s.setUpVocabulary(c, "")
-	ctx := auth.NewContext(context.Background(), &auth.Credentials{Tokens: []string{arvadostest.ActiveTokenV2}})
 
 	tests := []struct {
 		name    string
@@ -81,7 +75,7 @@ func (s *ContainerRequestSuite) TestCRUpdateWithProperties(c *check.C) {
 	}
 	for _, tt := range tests {
 		c.Log(c.TestName()+" ", tt.name)
-		cnt, err := s.localdb.ContainerRequestCreate(ctx, arvados.CreateOptions{
+		cnt, err := s.localdb.ContainerRequestCreate(s.userctx, arvados.CreateOptions{
 			Attrs: map[string]interface{}{
 				"command":         []string{"echo", "foo"},
 				"container_image": "arvados/apitestfixture:latest",
@@ -101,7 +95,7 @@ func (s *ContainerRequestSuite) TestCRUpdateWithProperties(c *check.C) {
 			},
 		})
 		c.Assert(err, check.IsNil)
-		cnt, err = s.localdb.ContainerRequestUpdate(ctx, arvados.UpdateOptions{
+		cnt, err = s.localdb.ContainerRequestUpdate(s.userctx, arvados.UpdateOptions{
 			UUID:   cnt.UUID,
 			Select: []string{"uuid", "properties"},
 			Attrs: map[string]interface{}{

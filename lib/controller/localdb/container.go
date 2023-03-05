@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"time"
 
+	"git.arvados.org/arvados.git/lib/ctrlctx"
 	"git.arvados.org/arvados.git/sdk/go/arvados"
 	"git.arvados.org/arvados.git/sdk/go/ctxlog"
 	"github.com/sirupsen/logrus"
@@ -33,6 +34,7 @@ func (conn *Conn) ContainerUpdate(ctx context.Context, opts arvados.UpdateOption
 // after each container update request) corrects any inconsistent
 // container priorities caused by races.
 func (conn *Conn) runContainerPriorityUpdateThread(ctx context.Context) {
+	ctx = ctrlctx.NewWithToken(ctx, conn.cluster, conn.cluster.SystemRootToken)
 	log := ctxlog.FromContext(ctx).WithField("worker", "runContainerPriorityUpdateThread")
 	ticker := time.NewTicker(5 * time.Minute)
 	for {
