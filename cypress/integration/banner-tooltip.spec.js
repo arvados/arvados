@@ -34,8 +34,6 @@ describe('Collection panel tests', function () {
 
         cy.loginAs(adminUser);
 
-        // cy.goToPath(`/collections/${collectionUUID}`);
-
         cy.wait(2000);
 
         cy.get('[data-cy=confirmation-dialog-ok-btn]').click();
@@ -53,8 +51,6 @@ describe('Collection panel tests', function () {
         setupTheEnvironment();
 
         cy.loginAs(adminUser);
-
-        // cy.goToPath(`/collections/${collectionUUID}`);
 
         cy.wait(2000);
 
