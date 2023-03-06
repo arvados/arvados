@@ -38,15 +38,15 @@ func (conn *Conn) runContainerPriorityUpdateThread(ctx context.Context) {
 	log := ctxlog.FromContext(ctx).WithField("worker", "runContainerPriorityUpdateThread")
 	ticker := time.NewTicker(5 * time.Minute)
 	for ctx.Err() == nil {
-		err := conn.containerPriorityUpdate(ctx, log)
-		if err != nil {
-			log.WithError(err).Warn("error updating container priorities")
-		}
 		select {
 		case <-ticker.C:
 		case <-conn.wantContainerPriorityUpdate:
 		case <-ctx.Done():
 			return
+		}
+		err := conn.containerPriorityUpdate(ctx, log)
+		if err != nil {
+			log.WithError(err).Warn("error updating container priorities")
 		}
 	}
 }
