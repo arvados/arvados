@@ -41,8 +41,10 @@ class Arvados::V1::ContainersController < ApplicationController
       @objects = @objects.select(:id, :uuid, :state, :priority, :auth_uuid, :locked_by_uuid, :lock_count)
       @select = %w(uuid state priority auth_uuid locked_by_uuid)
     elsif action_name == 'update_priority'
+      # We're going to reload(lock: true) in the handler, which will
+      # select all attributes, but will fail if we don't select :id
+      # now.
       @objects = @objects.select(:id, :uuid)
-      @select = %w(uuid)
     end
   end
 
@@ -57,6 +59,7 @@ class Arvados::V1::ContainersController < ApplicationController
   end
 
   def update_priority
+    @object.reload(lock: true)
     @object.update_priority!
     show
   end
