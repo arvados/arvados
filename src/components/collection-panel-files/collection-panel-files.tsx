@@ -233,11 +233,12 @@ export const CollectionPanelFiles = withStyles(styles)(connect((state: RootState
     const { classes, onItemMenuOpen, onUploadDataClick, isWritable, dispatch, collectionPanelFiles, collectionPanel } = props;
     const { apiToken, config } = props.auth;
 
-    const webdavClient = new WebDAV();
-    webdavClient.defaults.baseURL = config.keepWebServiceUrl;
-    webdavClient.defaults.headers = {
-        Authorization: `Bearer ${apiToken}`
-    };
+    const webdavClient = new WebDAV({
+        baseURL: config.keepWebServiceUrl,
+        headers: {
+            Authorization: `Bearer ${apiToken}`
+        },
+    });
 
     const webDAVRequestConfig: WebDAVRequestConfig = {
         headers: {
