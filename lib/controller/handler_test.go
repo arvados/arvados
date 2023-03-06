@@ -595,7 +595,7 @@ func (s *HandlerSuite) TestLogLimiting(c *check.C) {
 	c.Check(resp.Code, check.Equals, http.StatusServiceUnavailable)
 
 	// Other requests still succeed
-	req = httptest.NewRequest("GET", "/arvados/v1/users/current", nil)
+	req := httptest.NewRequest("GET", "/arvados/v1/users/current", nil)
 	req.Header.Set("Authorization", "Bearer "+arvadostest.ActiveToken)
 	resp = httptest.NewRecorder()
 	s.handler.ServeHTTP(resp, req)
