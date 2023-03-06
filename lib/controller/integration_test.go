@@ -72,6 +72,8 @@ func (s *IntegrationSuite) SetUpSuite(c *check.C) {
       Insecure: true
     SystemLogs:
       Format: text
+    API:
+      MaxConcurrentRequests: 128
     Containers:
       CloudVMs:
         Enable: true
