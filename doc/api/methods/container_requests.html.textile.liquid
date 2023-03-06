@@ -139,9 +139,13 @@ h2(#scheduling_parameters). {% include 'container_scheduling_parameters' %}
 
 h2(#container_reuse). Container reuse
 
-When a container request is "Committed", the system will try to find and reuse an existing Container with the same command, cwd, environment, output_path, container_image, mounts, secret_mounts, runtime_constraints, runtime_user_uuid, and runtime_auth_scopes being requested. (Hashes in the serialized fields environment, mounts and runtime_constraints use normalized key order.)
+When a container request is "Committed", the system will try to find and reuse an existing Container with the same command, cwd, environment, output_path, container_image, mounts, secret_mounts, runtime_constraints, runtime_user_uuid, and runtime_auth_scopes being requested.
+
+* The serialized fields environment, mounts, and runtime_constraints are normalized when searching.
+* The system will also search for containers with minor variations in the keep_cache_disk and keep_cache_ram runtime_constraints that should not affect the result. This searches for other common values for those constraints, so a container that used a non-default value for these constraints may not be reused by later container requests that use a different value.
 
 In order of preference, the system will use:
+
 * The first matching container to have finished successfully (i.e., reached state "Complete" with an exit_code of 0) whose log and output collections are still available.
 * The oldest matching "Running" container with the highest progress, i.e., the container that is most likely to finish first.
 * The oldest matching "Locked" container with the highest priority, i.e., the container that is most likely to start first.
