@@ -93,9 +93,9 @@ export class CollectionService extends TrashableResourceService<CollectionResour
     }
 
     extendFileURL = (file: CollectionDirectory | CollectionFile) => {
-        const baseUrl = this.webdavClient.defaults.baseURL.endsWith('/')
-            ? this.webdavClient.defaults.baseURL.slice(0, -1)
-            : this.webdavClient.defaults.baseURL;
+        const baseUrl = this.webdavClient.getBaseUrl().endsWith('/')
+            ? this.webdavClient.getBaseUrl().slice(0, -1)
+            : this.webdavClient.getBaseUrl();
         const apiToken = this.authService.getApiToken();
         const encodedApiToken = apiToken ? encodeURI(apiToken) : '';
         const userApiToken = `/t=${encodedApiToken}/`;
