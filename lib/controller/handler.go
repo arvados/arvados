@@ -194,7 +194,7 @@ func (h *Handler) limitLogCreateRequests(w http.ResponseWriter, req *http.Reques
 	if cap(h.limitLogCreate) > 0 && req.Method == http.MethodPost && strings.HasPrefix(req.URL.Path, "/arvados/v1/logs") {
 		select {
 		case h.limitLogCreate <- struct{}{}:
-			defer <-h.limitLogCreate
+			defer func() { <-h.limitLogCreate }()
 			next.ServeHTTP(w, req)
 		default:
 			http.Error(w, "Excess log messages", http.StatusServiceUnavailable)
