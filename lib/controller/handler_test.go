@@ -568,16 +568,17 @@ func (s *HandlerSuite) TestLogLimiting(c *check.C) {
 	s.handler.Cluster.API.MaxConcurrentRequests = 2
 	s.handler.Cluster.API.LogCreateRequestFraction = 0.5
 
-	// Log create succeeds
-	for i := 0; i < 2; i++ {
-		req := httptest.NewRequest("POST", "/arvados/v1/logs", strings.NewReader(`{
+	logreq := httptest.NewRequest("POST", "/arvados/v1/logs", strings.NewReader(`{
 			"log": {
                           "event_type": "test"
 			}
 		}`))
-		req.Header.Set("Authorization", "Bearer "+arvadostest.ActiveToken)
+	logreq.Header.Set("Authorization", "Bearer "+arvadostest.ActiveToken)
+
+	// Log create succeeds
+	for i := 0; i < 2; i++ {
 		resp := httptest.NewRecorder()
-		s.handler.ServeHTTP(resp, req)
+		s.handler.ServeHTTP(resp, logreq)
 		c.Check(resp.Code, check.Equals, http.StatusOK)
 		var lg arvados.Log
 		err := json.Unmarshal(resp.Body.Bytes(), &lg)
@@ -589,14 +590,8 @@ func (s *HandlerSuite) TestLogLimiting(c *check.C) {
 	s.handler.limitLogCreate <- struct{}{}
 
 	// Log create should be rejected now
-	req := httptest.NewRequest("POST", "/arvados/v1/logs", strings.NewReader(`{
-			"log": {
-                          "event_type": "test"
-			}
-		}`))
-	req.Header.Set("Authorization", "Bearer "+arvadostest.ActiveToken)
 	resp := httptest.NewRecorder()
-	s.handler.ServeHTTP(resp, req)
+	s.handler.ServeHTTP(resp, logreq)
 	c.Check(resp.Code, check.Equals, http.StatusServiceUnavailable)
 
 	// Other requests still succeed
@@ -611,28 +606,16 @@ func (s *HandlerSuite) TestLogLimiting(c *check.C) {
 	c.Check(u.UUID, check.Equals, arvadostest.ActiveUserUUID)
 
 	// log create still fails
-	req = httptest.NewRequest("POST", "/arvados/v1/logs", strings.NewReader(`{
-			"log": {
-                          "event_type": "test"
-			}
-		}`))
-	req.Header.Set("Authorization", "Bearer "+arvadostest.ActiveToken)
 	resp = httptest.NewRecorder()
-	s.handler.ServeHTTP(resp, req)
+	s.handler.ServeHTTP(resp, logreq)
 	c.Check(resp.Code, check.Equals, http.StatusServiceUnavailable)
 
 	// Pretend in-flight log is done
 	<-s.handler.limitLogCreate
 
 	// log create succeeds again
-	req = httptest.NewRequest("POST", "/arvados/v1/logs", strings.NewReader(`{
-			"log": {
-                          "event_type": "test"
-			}
-		}`))
-	req.Header.Set("Authorization", "Bearer "+arvadostest.ActiveToken)
 	resp = httptest.NewRecorder()
-	s.handler.ServeHTTP(resp, req)
+	s.handler.ServeHTTP(resp, logreq)
 	c.Check(resp.Code, check.Equals, http.StatusOK)
 
 }

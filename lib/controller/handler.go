@@ -153,11 +153,6 @@ func (h *Handler) setup() {
 	if logCreateLimit == 0 && h.Cluster.API.LogCreateRequestFraction > 0 {
 		logCreateLimit = 1
 	}
-	if logCreateLimit == 0 {
-		// can't have unlimited size channels, so just make
-		// the buffer size really big.
-		logCreateLimit = 4096
-	}
 	h.limitLogCreate = make(chan struct{}, logCreateLimit)
 
 	h.proxy = &proxy{
@@ -196,11 +191,11 @@ func (h *Handler) localClusterRequest(req *http.Request) (*http.Response, error)
 }
 
 func (h *Handler) limitLogCreateRequests(w http.ResponseWriter, req *http.Request, next http.Handler) {
-	if req.Method == http.MethodPost && strings.HasPrefix(req.URL.Path, "/arvados/v1/logs") {
+	if cap(h.limitLogCreate) > 0 && req.Method == http.MethodPost && strings.HasPrefix(req.URL.Path, "/arvados/v1/logs") {
 		select {
 		case h.limitLogCreate <- struct{}{}:
+			defer <-h.limitLogCreate
 			next.ServeHTTP(w, req)
-			<-h.limitLogCreate
 		default:
 			http.Error(w, "Excess log messages", http.StatusServiceUnavailable)
 		}

@@ -28,9 +28,19 @@ TODO: extract this information based on git commit messages and generate changel
 <div class="releasenotes">
 </notextile>
 
-h2(#main). development main (as of 2023-01-27)
+h2(#main). development main (as of 2023-03-06)
 
 "previous: Upgrading to 2.5.0":#v2_5_0
+
+h3. Default request concurrency, new limit on log requests
+
+The configuration value @API.MaxConcurrentRequests@ (the number of concurrent requests that will be accepted by a single instance of arvados-controller) now has a default value of 64, instead of being unlimited.
+
+New configuration value @API.LogCreateRequestFraction@ (default 0.50) limits requests that post live container logs to the API server, to avoid situations where log messages crowd out other more important requests.
+
+h3. New limit on concurrent workflows
+
+New configuration options @CloudVMs.SupervisorFraction@ (default 0.30) limits the number of concurrent workflow supervisors, to avoid situations where too many workflow runners crowds out actual workers.
 
 h3. Default limit for cloud VM instances
 
