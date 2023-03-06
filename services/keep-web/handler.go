@@ -117,7 +117,7 @@ var (
 	corsAllowHeadersHeader = strings.Join([]string{
 		"Authorization", "Content-Type", "Range",
 		// WebDAV request headers:
-		"Depth", "Destination", "If", "Lock-Token", "Overwrite", "Timeout",
+		"Depth", "Destination", "If", "Lock-Token", "Overwrite", "Timeout", "Cache-Control",
 	}, ", ")
 	writeMethod = map[string]bool{
 		"COPY":      true,
