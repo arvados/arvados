@@ -386,12 +386,14 @@ class ArvadosContainer(JobBase):
         try:
             ram = runtime_constraints["ram"]
 
+            self.uuid = runtimeContext.submit_request_uuid
+
             for i in ramMultiplier:
                 runtime_constraints["ram"] = ram * i
 
-                if runtimeContext.submit_request_uuid:
+                if self.uuid:
                     response = self.arvrunner.api.container_requests().update(
-                        uuid=runtimeContext.submit_request_uuid,
+                        uuid=self.uuid,
                         body=container_request,
                         **extra_submit_params
                     ).execute(num_retries=self.arvrunner.num_retries)
@@ -400,7 +402,7 @@ class ArvadosContainer(JobBase):
                         body=container_request,
                         **extra_submit_params
                     ).execute(num_retries=self.arvrunner.num_retries)
-                    runtimeContext.submit_request_uuid = response["uuid"]
+                    self.uuid = response["uuid"]
 
                 if response["container_uuid"] is not None:
                     break
@@ -410,12 +412,11 @@ class ArvadosContainer(JobBase):
 
             container_request["state"] = "Committed"
             response = self.arvrunner.api.container_requests().update(
-                uuid=runtimeContext.submit_request_uuid,
+                uuid=self.uuid,
                 body=container_request,
                 **extra_submit_params
             ).execute(num_retries=self.arvrunner.num_retries)
 
-            self.uuid = response["uuid"]
             self.arvrunner.process_submitted(self)
             self.attempt_count += 1
 
@@ -449,7 +450,7 @@ class ArvadosContainer(JobBase):
         done.logtail(logc, callback, "", maxlen=1000)
 
         # Check allocation failure
-        oom_matches = oom_retry_req.get('memoryErrorRegex') or r'(bad_alloc|out ?of ?memory|container using over 9.% of memory)'
+        oom_matches = oom_retry_req.get('memoryErrorRegex') or r'(bad_alloc|out ?of ?memory|memory ?error|container using over 9.% of memory)'
         if re.search(oom_matches, loglines[0], re.IGNORECASE | re.MULTILINE):
             return True
 

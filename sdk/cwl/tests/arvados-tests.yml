@@ -479,3 +479,18 @@
   }
   tool: 19678-name-id.cwl
   doc: "Test issue 19678 - non-string type input parameter called 'name'"
+
+- job: oom/fakeoom.yml
+  output: {}
+  tool: oom/19975-oom.cwl
+  doc: "Test feature 19975 - retry on exit 137"
+
+- job: oom/fakeoom2.yml
+  output: {}
+  tool: oom/19975-oom.cwl
+  doc: "Test feature 19975 - retry on memory error"
+
+- job: oom/fakeoom3.yml
+  output: {}
+  tool: oom/19975-oom3.cwl
+  doc: "Test feature 19975 - retry on custom error"
