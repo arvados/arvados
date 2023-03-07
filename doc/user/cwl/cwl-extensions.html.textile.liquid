@@ -195,7 +195,7 @@ table(table table-bordered table-condensed).
 
 h2(#OutOfMemoryRetry). arv:OutOfMemoryRetry
 
-Request that when a workflow step appears to have failed because it did not request enough RAM, it should be re-submitted with more RAM.  Out of memory conditions are detected either by the container being unexpectedly killed (exit code 137) or by matching a pattern in the container's output (see @memoryErrorRegex@).  Retrying will increase the base RAM request by the value of @memoryRetryMultipler@.  For example, if the original RAM request was 10 GiB and the multiplier is 1.5, then it will re-submit with 15 GiB.
+Specify that when a workflow step appears to have failed because it did not request enough RAM, it should be re-submitted with more RAM.  Out of memory conditions are detected either by the container being unexpectedly killed (exit code 137) or by matching a pattern in the container's output (see @memoryErrorRegex@).  Retrying will increase the base RAM request by the value of @memoryRetryMultipler@.  For example, if the original RAM request was 10 GiB and the multiplier is 1.5, then it will re-submit with 15 GiB.
 
 Containers are only re-submitted once.  If it fails a second time after increasing RAM, then the worklow step will still fail.
 
