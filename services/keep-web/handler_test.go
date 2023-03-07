@@ -83,7 +83,7 @@ func (s *UnitSuite) TestCORSPreflight(c *check.C) {
 	c.Check(resp.Body.String(), check.Equals, "")
 	c.Check(resp.Header().Get("Access-Control-Allow-Origin"), check.Equals, "*")
 	c.Check(resp.Header().Get("Access-Control-Allow-Methods"), check.Equals, "COPY, DELETE, GET, LOCK, MKCOL, MOVE, OPTIONS, POST, PROPFIND, PROPPATCH, PUT, RMCOL, UNLOCK")
-	c.Check(resp.Header().Get("Access-Control-Allow-Headers"), check.Equals, "Authorization, Content-Type, Range, Depth, Destination, If, Lock-Token, Overwrite, Timeout")
+	c.Check(resp.Header().Get("Access-Control-Allow-Headers"), check.Equals, "Authorization, Content-Type, Range, Depth, Destination, If, Lock-Token, Overwrite, Timeout, Cache-Control")
 
 	// Check preflight for a disallowed request
 	resp = httptest.NewRecorder()
