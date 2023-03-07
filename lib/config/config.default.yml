@@ -225,7 +225,12 @@ Clusters:
 
       # Maximum number of concurrent requests to accept in a single
       # service process, or 0 for no limit.
-      MaxConcurrentRequests: 0
+      MaxConcurrentRequests: 64
+
+      # Fraction of MaxConcurrentRequests that can be "log create"
+      # messages at any given time.  This is to prevent logging
+      # updates from crowding out more important requests.
+      LogCreateRequestFraction: 0.50
 
       # Maximum number of 64MiB memory buffers per Keepstore server process, or
       # 0 for no limit. When this limit is reached, up to

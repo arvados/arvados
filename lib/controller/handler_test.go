@@ -563,3 +563,59 @@ func (s *HandlerSuite) TestLogActivity(c *check.C) {
 		c.Check(rows, check.Equals, 1, check.Commentf("expect 1 row for user uuid %s", userUUID))
 	}
 }
+
+func (s *HandlerSuite) TestLogLimiting(c *check.C) {
+	s.handler.Cluster.API.MaxConcurrentRequests = 2
+	s.handler.Cluster.API.LogCreateRequestFraction = 0.5
+
+	logreq := httptest.NewRequest("POST", "/arvados/v1/logs", strings.NewReader(`{
+			"log": {
+                          "event_type": "test"
+			}
+		}`))
+	logreq.Header.Set("Authorization", "Bearer "+arvadostest.ActiveToken)
+
+	// Log create succeeds
+	for i := 0; i < 2; i++ {
+		resp := httptest.NewRecorder()
+		s.handler.ServeHTTP(resp, logreq)
+		c.Check(resp.Code, check.Equals, http.StatusOK)
+		var lg arvados.Log
+		err := json.Unmarshal(resp.Body.Bytes(), &lg)
+		c.Check(err, check.IsNil)
+		c.Check(lg.UUID, check.Matches, "zzzzz-57u5n-.*")
+	}
+
+	// Pretend there's a log create in flight
+	s.handler.limitLogCreate <- struct{}{}
+
+	// Log create should be rejected now
+	resp := httptest.NewRecorder()
+	s.handler.ServeHTTP(resp, logreq)
+	c.Check(resp.Code, check.Equals, http.StatusServiceUnavailable)
+
+	// Other requests still succeed
+	req := httptest.NewRequest("GET", "/arvados/v1/users/current", nil)
+	req.Header.Set("Authorization", "Bearer "+arvadostest.ActiveToken)
+	resp = httptest.NewRecorder()
+	s.handler.ServeHTTP(resp, req)
+	c.Check(resp.Code, check.Equals, http.StatusOK)
+	var u arvados.User
+	err := json.Unmarshal(resp.Body.Bytes(), &u)
+	c.Check(err, check.IsNil)
+	c.Check(u.UUID, check.Equals, arvadostest.ActiveUserUUID)
+
+	// log create still fails
+	resp = httptest.NewRecorder()
+	s.handler.ServeHTTP(resp, logreq)
+	c.Check(resp.Code, check.Equals, http.StatusServiceUnavailable)
+
+	// Pretend in-flight log is done
+	<-s.handler.limitLogCreate
+
+	// log create succeeds again
+	resp = httptest.NewRecorder()
+	s.handler.ServeHTTP(resp, logreq)
+	c.Check(resp.Code, check.Equals, http.StatusOK)
+
+}
