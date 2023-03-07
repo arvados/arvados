@@ -367,11 +367,11 @@ class ArvadosContainer(JobBase):
                 logger.warning("%s API revision is %s, revision %s is required to support setting properties on output collections.",
                                self.arvrunner.label(self), self.arvrunner.api._rootDesc["revision"], "20220510")
 
-        ramMultiplier = [1]
+        ram_multiplier = [1]
 
         oom_retry_req, _ = self.get_requirement("http://arvados.org/cwl#OutOfMemoryRetry")
         if oom_retry_req and oom_retry_req.get('memoryRetryMultipler'):
-            ramMultiplier.append(oom_retry_req.get('memoryRetryMultipler'))
+            ram_multiplier.append(oom_retry_req.get('memoryRetryMultipler'))
 
         if runtimeContext.runnerjob.startswith("arvwf:"):
             wfuuid = runtimeContext.runnerjob[6:runtimeContext.runnerjob.index("#")]
@@ -388,7 +388,7 @@ class ArvadosContainer(JobBase):
 
             self.uuid = runtimeContext.submit_request_uuid
 
-            for i in ramMultiplier:
+            for i in ram_multiplier:
                 runtime_constraints["ram"] = ram * i
 
                 if self.uuid:
@@ -408,7 +408,7 @@ class ArvadosContainer(JobBase):
                     break
 
             if response["container_uuid"] is None:
-                runtime_constraints["ram"] = ram * ramMultiplier[self.attempt_count]
+                runtime_constraints["ram"] = ram * ram_multiplier[self.attempt_count]
 
             container_request["state"] = "Committed"
             response = self.arvrunner.api.container_requests().update(
@@ -477,7 +477,7 @@ class ArvadosContainer(JobBase):
                     processStatus = "permanentFail"
 
                 if processStatus == "permanentFail" and self.attempt_count == 1 and self.out_of_memory_retry(record, container):
-                    logger.info("%s Container failed with out of memory error, retrying with more RAM.",
+                    logger.warning("%s Container failed with out of memory error, retrying with more RAM.",
                                  self.arvrunner.label(self))
                     self.job_runtime.submit_request_uuid = None
                     self.uuid = None
@@ -486,7 +486,7 @@ class ArvadosContainer(JobBase):
                     return
 
                 if rcode == 137:
-                    logger.warning("%s Container may have been killed for using too much RAM.  Try resubmitting with a higher 'ramMin'.",
+                    logger.warning("%s Container may have been killed for using too much RAM.  Try resubmitting with a higher 'ramMin' or use the arv:OutOfMemoryRetry feature.",
                                  self.arvrunner.label(self))
             else:
                 processStatus = "permanentFail"
