@@ -200,7 +200,7 @@ Request that when a workflow step appears to have failed because it did not requ
 table(table table-bordered table-condensed).
 |_. Field |_. Type |_. Description |
 |memoryRetryMultipler|float|Required, the retry will multiply the base memory request by this factor to get the retry memory request.|
-|memoryErrorRegex|string|Optional, a custom regex that, if found in the stdout, stderr or crunch-run logging of a program, will trigger a retry with greater RAM.  If not provided, the default pattern matches "out of memory" (with or without spaces), "memory error" (with or without spaces), "bad_alloc" and "container using over 90% of memory"|
+|memoryErrorRegex|string|Optional, a custom regex that, if found in the stdout, stderr or crunch-run logging of a program, will trigger a retry with greater RAM.  If not provided, the default pattern matches "out of memory" (with or without spaces), "memory error" (with or without spaces), "bad_alloc" and "container using over 90% of memory".|
 
 h2. arv:dockerCollectionPDH
 
