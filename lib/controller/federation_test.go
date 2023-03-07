@@ -32,6 +32,9 @@ import (
 var _ = check.Suite(&FederationSuite{})
 
 type FederationSuite struct {
+	ctx    context.Context
+	cancel context.CancelFunc
+
 	log logrus.FieldLogger
 	// testServer and testHandler are the controller being tested,
 	// "zhome".
@@ -48,6 +51,7 @@ type FederationSuite struct {
 }
 
 func (s *FederationSuite) SetUpTest(c *check.C) {
+	s.ctx, s.cancel = context.WithCancel(context.Background())
 	s.log = ctxlog.TestLogger(c)
 
 	s.remoteServer = newServerFromIntegrationTestEnv(c)
@@ -70,7 +74,7 @@ func (s *FederationSuite) SetUpTest(c *check.C) {
 	cluster.Collections.BlobSigningTTL = arvados.Duration(time.Hour * 24 * 14)
 	arvadostest.SetServiceURL(&cluster.Services.RailsAPI, "http://localhost:1/")
 	arvadostest.SetServiceURL(&cluster.Services.Controller, "http://localhost:/")
-	s.testHandler = &Handler{Cluster: cluster, BackgroundContext: ctxlog.Context(context.Background(), s.log)}
+	s.testHandler = &Handler{Cluster: cluster, BackgroundContext: ctxlog.Context(s.ctx, s.log)}
 	s.testServer = newServerFromIntegrationTestEnv(c)
 	s.testServer.Server.BaseContext = func(net.Listener) context.Context {
 		return ctxlog.Context(context.Background(), s.log)
@@ -115,6 +119,7 @@ func (s *FederationSuite) TearDownTest(c *check.C) {
 	if s.testServer != nil {
 		s.testServer.Close()
 	}
+	s.cancel()
 }
 
 func (s *FederationSuite) testRequest(req *http.Request) *httptest.ResponseRecorder {

@@ -8,6 +8,7 @@ import (
 	"context"
 	"net/url"
 
+	"git.arvados.org/arvados.git/lib/ctrlctx"
 	"git.arvados.org/arvados.git/sdk/go/arvados"
 	"git.arvados.org/arvados.git/sdk/go/arvadostest"
 	"git.arvados.org/arvados.git/sdk/go/auth"
@@ -50,7 +51,7 @@ func (s *LoginSuite) TestLogout(c *check.C) {
 	s.cluster.Login.LoginCluster = "zhome"
 	// s.fed is already set by SetUpTest, but we need to
 	// reinitialize with the above config changes.
-	s.fed = New(s.cluster, nil)
+	s.fed = New(s.ctx, s.cluster, nil, (&ctrlctx.DBConnector{PostgreSQL: s.cluster.PostgreSQL}).GetDB)
 
 	for _, trial := range []struct {
 		token    string

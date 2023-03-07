@@ -340,7 +340,7 @@ func OIDCAccessTokenAuthorizer(cluster *arvados.Cluster, getdb func(context.Cont
 	// We want ctrl to be nil if the chosen controller is not a
 	// *oidcLoginController, so we can ignore the 2nd return value
 	// of this type cast.
-	ctrl, _ := NewConn(cluster).loginController.(*oidcLoginController)
+	ctrl, _ := NewConn(context.Background(), cluster, getdb).loginController.(*oidcLoginController)
 	cache, err := lru.New2Q(tokenCacheSize)
 	if err != nil {
 		panic(err)

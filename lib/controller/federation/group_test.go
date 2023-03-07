@@ -5,6 +5,7 @@
 package federation
 
 import (
+	"context"
 	"errors"
 
 	"git.arvados.org/arvados.git/sdk/go/arvados"
@@ -21,7 +22,7 @@ type GroupSuite struct {
 func makeConn() (*Conn, *arvadostest.APIStub, *arvadostest.APIStub) {
 	localAPIstub := &arvadostest.APIStub{Error: errors.New("No result")}
 	remoteAPIstub := &arvadostest.APIStub{Error: errors.New("No result")}
-	return &Conn{&arvados.Cluster{ClusterID: "local"}, localAPIstub, map[string]backend{"zzzzz": remoteAPIstub}}, localAPIstub, remoteAPIstub
+	return &Conn{context.Background(), &arvados.Cluster{ClusterID: "local"}, localAPIstub, map[string]backend{"zzzzz": remoteAPIstub}}, localAPIstub, remoteAPIstub
 }
 
 func (s *UserSuite) TestGroupContents(c *check.C) {

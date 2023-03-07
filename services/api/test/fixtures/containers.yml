@@ -81,7 +81,7 @@ locked:
   owner_uuid: zzzzz-tpzed-000000000000000
   state: Locked
   locked_by_uuid: zzzzz-gj3su-k9dvestay1plssr
-  priority: 2
+  priority: 0
   created_at: <%= 2.minute.ago.to_s(:db) %>
   updated_at: <%= 2.minute.ago.to_s(:db) %>
   modified_at: <%= 2.minute.ago.to_s(:db) %>

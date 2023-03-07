@@ -50,6 +50,27 @@ func WrapCallsWithAuth(cluster *arvados.Cluster) func(api.RoutableFunc) api.Rout
 	}
 }
 
+// NewWithToken returns a context with the provided auth token.
+//
+// The incoming context must come from WrapCallsInTransactions or
+// NewWithTransaction.
+//
+// Used for attaching system auth to background threads.
+//
+// Also useful for tests, where context doesn't necessarily come from
+// a router that uses WrapCallsWithAuth.
+//
+// The returned context comes with its own token lookup cache, so
+// NewWithToken is not appropriate to use in a per-request code path.
+func NewWithToken(ctx context.Context, cluster *arvados.Cluster, token string) context.Context {
+	ctx = auth.NewContext(ctx, &auth.Credentials{Tokens: []string{token}})
+	return context.WithValue(ctx, contextKeyAuth, &authcontext{
+		authcache: &authcache{},
+		cluster:   cluster,
+		tokens:    []string{token},
+	})
+}
+
 // CurrentAuth returns the arvados.User whose privileges should be
 // used in the given context, and the arvados.APIClientAuthorization
 // the caller presented in order to authenticate the current request.

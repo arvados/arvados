@@ -21,12 +21,11 @@ import (
 	"testing"
 	"time"
 
-	"git.arvados.org/arvados.git/lib/config"
 	"git.arvados.org/arvados.git/lib/controller/rpc"
+	"git.arvados.org/arvados.git/lib/ctrlctx"
 	"git.arvados.org/arvados.git/sdk/go/arvados"
 	"git.arvados.org/arvados.git/sdk/go/arvadostest"
 	"git.arvados.org/arvados.git/sdk/go/auth"
-	"git.arvados.org/arvados.git/sdk/go/ctxlog"
 	"github.com/jmoiron/sqlx"
 	check "gopkg.in/check.v1"
 )
@@ -39,18 +38,9 @@ func Test(t *testing.T) {
 var _ = check.Suite(&OIDCLoginSuite{})
 
 type OIDCLoginSuite struct {
-	cluster      *arvados.Cluster
-	localdb      *Conn
-	railsSpy     *arvadostest.Proxy
+	localdbSuite
 	trustedURL   *arvados.URL
 	fakeProvider *arvadostest.OIDCProvider
-}
-
-func (s *OIDCLoginSuite) TearDownSuite(c *check.C) {
-	// Undo any changes/additions to the user database so they
-	// don't affect subsequent tests.
-	arvadostest.ResetEnv()
-	c.Check(arvados.NewClientFromEnv().RequestAndDecode(nil, "POST", "database/reset", nil, nil), check.IsNil)
 }
 
 func (s *OIDCLoginSuite) SetUpTest(c *check.C) {
@@ -65,10 +55,8 @@ func (s *OIDCLoginSuite) SetUpTest(c *check.C) {
 	s.fakeProvider.ValidCode = fmt.Sprintf("abcdefgh-%d", time.Now().Unix())
 	s.fakeProvider.PeopleAPIResponse = map[string]interface{}{}
 
-	cfg, err := config.NewLoader(nil, ctxlog.TestLogger(c)).Load()
-	c.Assert(err, check.IsNil)
-	s.cluster, err = cfg.GetCluster("")
-	c.Assert(err, check.IsNil)
+	s.localdbSuite.SetUpTest(c)
+
 	s.cluster.Login.Test.Enable = false
 	s.cluster.Login.Google.Enable = true
 	s.cluster.Login.Google.ClientID = "test%client$id"
@@ -78,17 +66,12 @@ func (s *OIDCLoginSuite) SetUpTest(c *check.C) {
 	s.fakeProvider.ValidClientID = "test%client$id"
 	s.fakeProvider.ValidClientSecret = "test#client/secret"
 
-	s.localdb = NewConn(s.cluster)
+	s.localdb = NewConn(s.ctx, s.cluster, (&ctrlctx.DBConnector{PostgreSQL: s.cluster.PostgreSQL}).GetDB)
 	c.Assert(s.localdb.loginController, check.FitsTypeOf, (*oidcLoginController)(nil))
 	s.localdb.loginController.(*oidcLoginController).Issuer = s.fakeProvider.Issuer.URL
 	s.localdb.loginController.(*oidcLoginController).peopleAPIBasePath = s.fakeProvider.PeopleAPI.URL
 
-	s.railsSpy = arvadostest.NewProxy(c, s.cluster.Services.RailsAPI)
 	*s.localdb.railsProxy = *rpc.NewConn(s.cluster.ClusterID, s.railsSpy.URL, true, rpc.PassthroughTokenProvider)
-}
-
-func (s *OIDCLoginSuite) TearDownTest(c *check.C) {
-	s.railsSpy.Close()
 }
 
 func (s *OIDCLoginSuite) TestGoogleLogout(c *check.C) {
@@ -197,7 +180,7 @@ func (s *OIDCLoginSuite) TestConfig(c *check.C) {
 	s.cluster.Login.OpenIDConnect.ClientID = "oidc-client-id"
 	s.cluster.Login.OpenIDConnect.ClientSecret = "oidc-client-secret"
 	s.cluster.Login.OpenIDConnect.AuthenticationRequestParameters = map[string]string{"testkey": "testvalue"}
-	localdb := NewConn(s.cluster)
+	localdb := NewConn(context.Background(), s.cluster, (&ctrlctx.DBConnector{PostgreSQL: s.cluster.PostgreSQL}).GetDB)
 	ctrl := localdb.loginController.(*oidcLoginController)
 	c.Check(ctrl.Issuer, check.Equals, "https://accounts.example.com/")
 	c.Check(ctrl.ClientID, check.Equals, "oidc-client-id")
@@ -212,7 +195,7 @@ func (s *OIDCLoginSuite) TestConfig(c *check.C) {
 		s.cluster.Login.Google.ClientSecret = "google-client-secret"
 		s.cluster.Login.Google.AlternateEmailAddresses = enableAltEmails
 		s.cluster.Login.Google.AuthenticationRequestParameters = map[string]string{"testkey": "testvalue"}
-		localdb = NewConn(s.cluster)
+		localdb = NewConn(context.Background(), s.cluster, (&ctrlctx.DBConnector{PostgreSQL: s.cluster.PostgreSQL}).GetDB)
 		ctrl = localdb.loginController.(*oidcLoginController)
 		c.Check(ctrl.Issuer, check.Equals, "https://accounts.google.com")
 		c.Check(ctrl.ClientID, check.Equals, "google-client-id")
@@ -272,7 +255,7 @@ func (s *OIDCLoginSuite) TestOIDCAuthorizer(c *check.C) {
 	cleanup()
 	defer cleanup()
 
-	ctx := auth.NewContext(context.Background(), &auth.Credentials{Tokens: []string{accessToken}})
+	ctx := ctrlctx.NewWithToken(s.ctx, s.cluster, accessToken)
 
 	// Check behavior on 5xx/network errors (don't cache) vs 4xx
 	// (do cache)
@@ -374,7 +357,7 @@ func (s *OIDCLoginSuite) TestOIDCAuthorizer(c *check.C) {
 
 	s.fakeProvider.AccessTokenPayload = map[string]interface{}{"scope": "openid profile foobar"}
 	accessToken = s.fakeProvider.ValidAccessToken()
-	ctx = auth.NewContext(context.Background(), &auth.Credentials{Tokens: []string{accessToken}})
+	ctx = ctrlctx.NewWithToken(s.ctx, s.cluster, accessToken)
 
 	mac = hmac.New(sha256.New, []byte(s.cluster.SystemRootToken))
 	io.WriteString(mac, accessToken)
@@ -477,7 +460,7 @@ func (s *OIDCLoginSuite) TestGenericOIDCLogin(c *check.C) {
 			s.railsSpy.Close()
 		}
 		s.railsSpy = arvadostest.NewProxy(c, s.cluster.Services.RailsAPI)
-		s.localdb = NewConn(s.cluster)
+		s.localdb = NewConn(context.Background(), s.cluster, (&ctrlctx.DBConnector{PostgreSQL: s.cluster.PostgreSQL}).GetDB)
 		*s.localdb.railsProxy = *rpc.NewConn(s.cluster.ClusterID, s.railsSpy.URL, true, rpc.PassthroughTokenProvider)
 
 		state := s.startLogin(c, func(form url.Values) {
@@ -540,7 +523,7 @@ func (s *OIDCLoginSuite) TestGoogleLogin_Success(c *check.C) {
 
 	// Try using the returned Arvados token.
 	c.Logf("trying an API call with new token %q", token)
-	ctx := auth.NewContext(context.Background(), &auth.Credentials{Tokens: []string{token}})
+	ctx := ctrlctx.NewWithToken(s.ctx, s.cluster, token)
 	cl, err := s.localdb.CollectionList(ctx, arvados.ListOptions{Limit: -1})
 	c.Check(cl.ItemsAvailable, check.Not(check.Equals), 0)
 	c.Check(cl.Items, check.Not(check.HasLen), 0)
@@ -549,7 +532,7 @@ func (s *OIDCLoginSuite) TestGoogleLogin_Success(c *check.C) {
 	// Might as well check that bogus tokens aren't accepted.
 	badtoken := token + "plussomeboguschars"
 	c.Logf("trying an API call with mangled token %q", badtoken)
-	ctx = auth.NewContext(context.Background(), &auth.Credentials{Tokens: []string{badtoken}})
+	ctx = ctrlctx.NewWithToken(s.ctx, s.cluster, badtoken)
 	cl, err = s.localdb.CollectionList(ctx, arvados.ListOptions{Limit: -1})
 	c.Check(cl.Items, check.HasLen, 0)
 	c.Check(err, check.NotNil)

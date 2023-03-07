@@ -20,6 +20,7 @@ import (
 	"git.arvados.org/arvados.git/sdk/go/ctxlog"
 	"git.arvados.org/arvados.git/sdk/go/httpserver"
 	"github.com/hashicorp/yamux"
+	"github.com/jmoiron/sqlx"
 	"github.com/sirupsen/logrus"
 )
 
@@ -28,6 +29,7 @@ type railsProxy = rpc.Conn
 type Conn struct {
 	cluster                    *arvados.Cluster
 	*railsProxy                // handles API methods that aren't defined on Conn itself
+	getdb                      func(context.Context) (*sqlx.DB, error)
 	vocabularyCache            *arvados.Vocabulary
 	vocabularyFileModTime      time.Time
 	lastVocabularyRefreshCheck time.Time
@@ -38,16 +40,21 @@ type Conn struct {
 	activeUsers      map[string]bool
 	activeUsersLock  sync.Mutex
 	activeUsersReset time.Time
+
+	wantContainerPriorityUpdate chan struct{}
 }
 
-func NewConn(cluster *arvados.Cluster) *Conn {
+func NewConn(bgCtx context.Context, cluster *arvados.Cluster, getdb func(context.Context) (*sqlx.DB, error)) *Conn {
 	railsProxy := railsproxy.NewConn(cluster)
 	railsProxy.RedactHostInErrors = true
 	conn := Conn{
-		cluster:    cluster,
-		railsProxy: railsProxy,
+		cluster:                     cluster,
+		railsProxy:                  railsProxy,
+		getdb:                       getdb,
+		wantContainerPriorityUpdate: make(chan struct{}, 1),
 	}
 	conn.loginController = chooseLoginController(cluster, &conn)
+	go conn.runContainerPriorityUpdateThread(bgCtx)
 	return &conn
 }
 
