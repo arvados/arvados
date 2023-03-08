@@ -7,11 +7,11 @@ import {
     StyleRulesCallback,
     WithStyles,
     withStyles,
-    Grid,
     Tooltip,
     Typography,
     Card,
     CardHeader,
+    CardContent,
     IconButton,
 } from '@material-ui/core';
 import { Dispatch } from "redux";
@@ -44,7 +44,8 @@ type CssRules = 'root'
     | 'readOnlyIcon'
     | 'header'
     | 'title'
-    | 'avatar';
+    | 'avatar'
+    | 'content';
 
 const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     root: {
@@ -54,9 +55,6 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
         cursor: 'pointer'
     },
     infoCard: {
-        paddingLeft: theme.spacing.unit * 2,
-        paddingRight: theme.spacing.unit * 2,
-        paddingBottom: theme.spacing.unit * 2,
     },
     propertiesCard: {
         padding: 0,
@@ -113,6 +111,13 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
         alignSelf: 'flex-start',
         paddingTop: theme.spacing.unit * 0.5
     },
+    content: {
+        padding: theme.spacing.unit * 1.0,
+        paddingTop: theme.spacing.unit * 0.5,
+        '&:last-child': {
+            paddingBottom: theme.spacing.unit * 1,
+        }
+    }
 });
 
 type RegisteredWorkflowPanelProps = RegisteredWorkflowPanelDataProps & DispatchProp & WithStyles<CssRules>
@@ -169,11 +174,9 @@ export const RegisteredWorkflowPanel = withStyles(styles)(connect(
 
                                 />
 
-                                <Grid container justify="space-between">
-                                    <Grid item xs={12}>
-                                        <WorkflowDetailsAttributes workflow={item} />
-                                    </Grid>
-                                </Grid>
+                                <CardContent className={classes.content}>
+                                    <WorkflowDetailsAttributes workflow={item} />
+                                </CardContent>
                             </Card>
                         </MPVPanelContent>
                         <MPVPanelContent forwardProps xs data-cy="process-inputs">

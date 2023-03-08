@@ -11,7 +11,7 @@ import {
     Grid,
     Tooltip,
     Typography,
-    Card
+    Card, CardHeader, CardContent
 } from '@material-ui/core';
 import { connect, DispatchProp } from "react-redux";
 import { RouteComponentProps } from 'react-router';
@@ -51,7 +51,11 @@ type CssRules = 'root'
     | 'centeredLabel'
     | 'warningLabel'
     | 'collectionName'
-    | 'readOnlyIcon';
+    | 'readOnlyIcon'
+    | 'header'
+    | 'title'
+    | 'avatar'
+    | 'content';
 
 const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     root: {
@@ -61,9 +65,6 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
         cursor: 'pointer'
     },
     infoCard: {
-        paddingLeft: theme.spacing.unit * 2,
-        paddingRight: theme.spacing.unit * 2,
-        paddingBottom: theme.spacing.unit * 2,
     },
     propertiesCard: {
         padding: 0,
@@ -106,6 +107,26 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     readOnlyIcon: {
         marginLeft: theme.spacing.unit,
         fontSize: 'small',
+    },
+    header: {
+        paddingTop: theme.spacing.unit,
+        paddingBottom: theme.spacing.unit,
+    },
+    title: {
+        overflow: 'hidden',
+        paddingTop: theme.spacing.unit * 0.5,
+        color: theme.customs.colors.green700,
+    },
+    avatar: {
+        alignSelf: 'flex-start',
+        paddingTop: theme.spacing.unit * 0.5
+    },
+    content: {
+        padding: theme.spacing.unit * 1.0,
+        paddingTop: theme.spacing.unit * 0.5,
+        '&:last-child': {
+            paddingBottom: theme.spacing.unit * 1,
+        }
     }
 });
 
@@ -152,24 +173,28 @@ export const CollectionPanel = withStyles(styles)(connect(
                     ? <MPVContainer className={classes.root} spacing={8} direction="column" justify-content="flex-start" wrap="nowrap" panelStates={panelsData}>
                         <MPVPanelContent xs="auto" data-cy='collection-info-panel'>
                             <Card className={classes.infoCard}>
-                                <Grid container justify="space-between">
-                                    <Grid item xs={11}><span>
-                                        <IconButton onClick={this.openCollectionDetails}>
-                                            {isOldVersion
-                                                ? <CollectionOldVersionIcon className={classes.iconHeader} />
-                                                : <CollectionIcon className={classes.iconHeader} />}
-                                        </IconButton>
-                                        <IllegalNamingWarning name={item.name} />
+                                <CardHeader
+                                    className={classes.header}
+                                    classes={{
+                                        content: classes.title,
+                                        avatar: classes.avatar,
+                                    }}
+                                    avatar={<IconButton onClick={this.openCollectionDetails}>
+                                        {isOldVersion
+                                            ? <CollectionOldVersionIcon className={classes.iconHeader} />
+                                            : <CollectionIcon className={classes.iconHeader} />}
+                                    </IconButton>}
+                                    title={
                                         <span>
+                                            <IllegalNamingWarning name={item.name} />
                                             {item.name}
                                             {isWritable ||
                                                 <Tooltip title="Read-only">
                                                     <ReadOnlyIcon data-cy="read-only-icon" className={classes.readOnlyIcon} />
-                                                </Tooltip>
-                                            }
+                                                </Tooltip>}
                                         </span>
-                                    </span></Grid>
-                                    <Grid item xs={1} style={{ textAlign: "right" }}>
+                                    }
+                                    action={
                                         <Tooltip title="Actions" disableFocusListener>
                                             <IconButton
                                                 data-cy='collection-panel-options-btn'
@@ -178,26 +203,24 @@ export const CollectionPanel = withStyles(styles)(connect(
                                                 <MoreOptionsIcon />
                                             </IconButton>
                                         </Tooltip>
-                                    </Grid>
-                                </Grid>
-                                <Grid container justify="space-between">
-                                    <Grid item xs={12}>
-                                        <Typography variant="caption">
-                                            {item.description}
+                                    }
+                                />
+                                <CardContent className={classes.content}>
+                                    <Typography variant="caption">
+                                        {item.description}
+                                    </Typography>
+                                    <CollectionDetailsAttributes item={item} classes={classes} twoCol={true} showVersionBrowser={() => dispatch<any>(openDetailsPanel(item.uuid, 1))} />
+                                    {(item.properties.container_request || item.properties.containerRequest) &&
+                                        <span onClick={() => dispatch<any>(navigateToProcess(item.properties.container_request || item.properties.containerRequest))}>
+                                            <DetailsAttribute classLabel={classes.link} label='Link to process' />
+                                        </span>
+                                    }
+                                    {isOldVersion &&
+                                        <Typography className={classes.warningLabel} variant="caption">
+                                            This is an old version. Make a copy to make changes. Go to the <Link to={getCollectionUrl(item.currentVersionUuid)}>head version</Link> for sharing options.
                                         </Typography>
-                                        <CollectionDetailsAttributes item={item} classes={classes} twoCol={true} showVersionBrowser={() => dispatch<any>(openDetailsPanel(item.uuid, 1))} />
-                                        {(item.properties.container_request || item.properties.containerRequest) &&
-                                            <span onClick={() => dispatch<any>(navigateToProcess(item.properties.container_request || item.properties.containerRequest))}>
-                                                <DetailsAttribute classLabel={classes.link} label='Link to process' />
-                                            </span>
-                                        }
-                                        {isOldVersion &&
-                                            <Typography className={classes.warningLabel} variant="caption">
-                                                This is an old version. Make a copy to make changes. Go to the <Link to={getCollectionUrl(item.currentVersionUuid)}>head version</Link> for sharing options.
-                                            </Typography>
-                                        }
-                                    </Grid>
-                                </Grid>
+                                    }
+                                </CardContent>
                             </Card>
                         </MPVPanelContent>
                         <MPVPanelContent xs>
@@ -205,7 +228,7 @@ export const CollectionPanel = withStyles(styles)(connect(
                                 <CollectionPanelFiles isWritable={isWritable} />
                             </Card>
                         </MPVPanelContent>
-                    </MPVContainer>
+                    </MPVContainer >
                     : null;
             }
 
