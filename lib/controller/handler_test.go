@@ -210,7 +210,7 @@ func (s *HandlerSuite) TestProxyDiscoveryDoc(c *check.C) {
 // etc.
 func (s *HandlerSuite) TestRequestCancel(c *check.C) {
 	ctx, cancel := context.WithCancel(context.Background())
-	req := httptest.NewRequest("GET", "/discovery/v1/apis/arvados/v1/rest", nil).WithContext(ctx)
+	req := httptest.NewRequest("GET", "/static/login_failure", nil).WithContext(ctx)
 	resp := httptest.NewRecorder()
 	cancel()
 	s.handler.ServeHTTP(resp, req)
