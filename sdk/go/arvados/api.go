@@ -43,6 +43,7 @@ var (
 	EndpointSpecimenDelete                = APIEndpoint{"DELETE", "arvados/v1/specimens/{uuid}", ""}
 	EndpointContainerCreate               = APIEndpoint{"POST", "arvados/v1/containers", "container"}
 	EndpointContainerUpdate               = APIEndpoint{"PATCH", "arvados/v1/containers/{uuid}", "container"}
+	EndpointContainerPriorityUpdate       = APIEndpoint{"POST", "arvados/v1/containers/{uuid}/update_priority", "container"}
 	EndpointContainerGet                  = APIEndpoint{"GET", "arvados/v1/containers/{uuid}", ""}
 	EndpointContainerList                 = APIEndpoint{"GET", "arvados/v1/containers", ""}
 	EndpointContainerDelete               = APIEndpoint{"DELETE", "arvados/v1/containers/{uuid}", ""}
@@ -263,6 +264,7 @@ type API interface {
 	CollectionUntrash(ctx context.Context, options UntrashOptions) (Collection, error)
 	ContainerCreate(ctx context.Context, options CreateOptions) (Container, error)
 	ContainerUpdate(ctx context.Context, options UpdateOptions) (Container, error)
+	ContainerPriorityUpdate(ctx context.Context, options UpdateOptions) (Container, error)
 	ContainerGet(ctx context.Context, options GetOptions) (Container, error)
 	ContainerList(ctx context.Context, options ListOptions) (ContainerList, error)
 	ContainerDelete(ctx context.Context, options DeleteOptions) (Container, error)

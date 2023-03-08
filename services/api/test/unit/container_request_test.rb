@@ -482,23 +482,38 @@ class ContainerRequestTest < ActiveSupport::TestCase
   end
 
   [
-    ['running_container_auth', 'zzzzz-dz642-runningcontainr', 501],
-  ].each do |token, expected, expected_priority|
-    test "create as #{token} with requesting_container_uuid set and expect output to be intermediate" do
+    [:admin, 0, "output"],
+    [:admin, 19, "output"],
+    [:admin, nil, "output"],
+    [:running_container_auth, 0, "intermediate"],
+    [:running_container_auth, 29, "intermediate"],
+    [:running_container_auth, nil, "intermediate"],
+  ].each do |token, exit_code, expect_output_type|
+    test "container with exit_code #{exit_code} has collection types set with output type #{expect_output_type}" do
+      final_state = if exit_code.nil?
+                      Container::Cancelled
+                    else
+                      Container::Complete
+                    end
       set_user_from_auth token
-      cr = create_minimal_req!
-      assert_not_nil cr.uuid, 'uuid should be set for newly created container_request'
-      assert_equal expected, cr.requesting_container_uuid
-      assert_equal expected_priority, cr.priority
+      request = create_minimal_req!(
+        container_count_max: 1,
+        priority: 500,
+        state: ContainerRequest::Committed,
+      )
+      run_container(request, final_state: final_state, exit_code: exit_code)
+      request.reload
+      assert_equal(ContainerRequest::Final, request.state)
 
-      cr.state = ContainerRequest::Committed
-      cr.save!
+      output = Collection.find_by_uuid(request.output_uuid)
+      assert_not_nil(output)
+      assert_equal(request.uuid, output.properties["container_request"])
+      assert_equal(expect_output_type, output.properties["type"])
 
-      run_container(cr)
-      cr.reload
-      output = Collection.find_by_uuid(cr.output_uuid)
-      props = {"type": "intermediate", "container_request": cr.uuid}
-      assert_equal props.symbolize_keys, output.properties.symbolize_keys
+      log = Collection.find_by_uuid(request.log_uuid)
+      assert_not_nil(log)
+      assert_equal(request.uuid, log.properties["container_request"])
+      assert_equal("log", log.properties["type"])
     end
   end
 
@@ -964,7 +979,7 @@ class ContainerRequestTest < ActiveSupport::TestCase
     assert_in_delta(delete, now + year, 10)
   end
 
-  def run_container(cr)
+  def run_container(cr, final_state: Container::Complete, exit_code: 0)
     act_as_system_user do
       logc = Collection.new(owner_uuid: system_user_uuid,
                             manifest_text: ". ef772b2f28e2c8ca84de45466ed19ee9+7815 0:0:arv-mount.txt\n")
@@ -973,8 +988,8 @@ class ContainerRequestTest < ActiveSupport::TestCase
       c = Container.find_by_uuid(cr.container_uuid)
       c.update_attributes!(state: Container::Locked)
       c.update_attributes!(state: Container::Running)
-      c.update_attributes!(state: Container::Complete,
-                           exit_code: 0,
+      c.update_attributes!(state: final_state,
+                           exit_code: exit_code,
                            output: '1f4b0bc7583c2a7f9102c395f4ffc5e3+45',
                            log: logc.portable_data_hash)
       logc.destroy

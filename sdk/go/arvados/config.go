@@ -100,6 +100,7 @@ type Cluster struct {
 		MaxIndexDatabaseRead             int
 		MaxItemsPerResponse              int
 		MaxConcurrentRequests            int
+		LogCreateRequestFraction         float64
 		MaxKeepBlobBuffers               int
 		MaxRequestAmplification          int
 		MaxRequestSize                   int
@@ -562,6 +563,7 @@ type CloudVMsConfig struct {
 	MaxProbesPerSecond             int
 	MaxConcurrentInstanceCreateOps int
 	MaxInstances                   int
+	SupervisorFraction             float64
 	PollInterval                   Duration
 	ProbeInterval                  Duration
 	SSHPort                        string

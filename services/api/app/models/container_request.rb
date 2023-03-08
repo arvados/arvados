@@ -200,7 +200,14 @@ class ContainerRequest < ArvadosModel
       end
 
       update_collections(container: container)
-
+      # update_collections makes a log collection that includes all of the logs
+      # for all of the containers associated with this request. For requests
+      # that are retried, this is the primary way users can get logs for
+      # failed containers.
+      # The code below makes a log collection that is a verbatim copy of the
+      # container's logs. This is required for container reuse: a container
+      # will not be reused if the owner cannot read a collection with its logs.
+      # See the "readable log" section of Container.find_reusable().
       if container.state == Container::Complete
         log_col = Collection.where(portable_data_hash: container.log).first
         if log_col
@@ -320,6 +327,10 @@ class ContainerRequest < ArvadosModel
       return false
     end
     if state_changed? and state == Committed and container_uuid.nil?
+      if self.command.length > 0 and self.command[0] == "arvados-cwl-runner"
+        # Special case, arvados-cwl-runner processes are always considered "supervisors"
+        self.scheduling_parameters['supervisor'] = true
+      end
       while true
         c = Container.resolve(self)
         c.lock!

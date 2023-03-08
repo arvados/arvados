@@ -5,59 +5,30 @@
 package localdb
 
 import (
-	"context"
 	"database/sql"
 
-	"git.arvados.org/arvados.git/lib/config"
-	"git.arvados.org/arvados.git/lib/controller/rpc"
 	"git.arvados.org/arvados.git/lib/ctrlctx"
 	"git.arvados.org/arvados.git/sdk/go/arvados"
 	"git.arvados.org/arvados.git/sdk/go/arvadostest"
-	"git.arvados.org/arvados.git/sdk/go/auth"
-	"git.arvados.org/arvados.git/sdk/go/ctxlog"
-	"github.com/jmoiron/sqlx"
 	check "gopkg.in/check.v1"
 )
 
 var _ = check.Suite(&TestUserSuite{})
 
 type TestUserSuite struct {
-	cluster  *arvados.Cluster
-	ctrl     *testLoginController
-	railsSpy *arvadostest.Proxy
-	db       *sqlx.DB
-
-	// transaction context
-	ctx context.Context
-	tx  *sqlx.Tx
+	localdbSuite
 }
 
-func (s *TestUserSuite) SetUpSuite(c *check.C) {
-	cfg, err := config.NewLoader(nil, ctxlog.TestLogger(c)).Load()
-	c.Assert(err, check.IsNil)
-	s.cluster, err = cfg.GetCluster("")
-	c.Assert(err, check.IsNil)
+func (s *TestUserSuite) SetUpTest(c *check.C) {
+	s.localdbSuite.SetUpTest(c)
 	s.cluster.Login.Test.Enable = true
 	s.cluster.Login.Test.Users = map[string]arvados.TestUser{
 		"valid": {Email: "valid@example.com", Password: "v@l1d"},
 	}
-	s.railsSpy = arvadostest.NewProxy(c, s.cluster.Services.RailsAPI)
-	s.ctrl = &testLoginController{
+	s.localdb.loginController = &testLoginController{
 		Cluster: s.cluster,
-		Parent:  &Conn{railsProxy: rpc.NewConn(s.cluster.ClusterID, s.railsSpy.URL, true, rpc.PassthroughTokenProvider)},
+		Parent:  s.localdb,
 	}
-	s.db = arvadostest.DB(c, s.cluster)
-}
-
-func (s *TestUserSuite) SetUpTest(c *check.C) {
-	tx, err := s.db.Beginx()
-	c.Assert(err, check.IsNil)
-	s.ctx = ctrlctx.NewWithTransaction(context.Background(), tx)
-	s.tx = tx
-}
-
-func (s *TestUserSuite) TearDownTest(c *check.C) {
-	s.tx.Rollback()
 }
 
 func (s *TestUserSuite) TestLogin(c *check.C) {
@@ -74,7 +45,7 @@ func (s *TestUserSuite) TestLogin(c *check.C) {
 		{true, "valid@example.com", "v@l1d"},
 	} {
 		c.Logf("=== %#v", trial)
-		resp, err := s.ctrl.UserAuthenticate(s.ctx, arvados.UserAuthenticateOptions{
+		resp, err := s.localdb.UserAuthenticate(s.ctx, arvados.UserAuthenticateOptions{
 			Username: trial.username,
 			Password: trial.password,
 		})
@@ -94,7 +65,7 @@ func (s *TestUserSuite) TestLogin(c *check.C) {
 }
 
 func (s *TestUserSuite) TestLoginForm(c *check.C) {
-	resp, err := s.ctrl.Login(s.ctx, arvados.LoginOptions{
+	resp, err := s.localdb.Login(s.ctx, arvados.LoginOptions{
 		ReturnTo: "https://localhost:12345/example",
 	})
 	c.Check(err, check.IsNil)
@@ -120,9 +91,7 @@ func (s *TestUserSuite) TestExpireTokenOnLogout(c *check.C) {
 		{"v2/some-fake-uuid/thisdoesntexistasatoken", "", false},
 	} {
 		c.Logf("=== %#v", trial)
-		ctx := auth.NewContext(s.ctx, &auth.Credentials{
-			Tokens: []string{trial.requestToken},
-		})
+		ctx := ctrlctx.NewWithToken(s.ctx, s.cluster, trial.requestToken)
 
 		var tokenUUID string
 		var err error
@@ -133,7 +102,7 @@ func (s *TestUserSuite) TestExpireTokenOnLogout(c *check.C) {
 			c.Check(err, check.IsNil)
 		}
 
-		resp, err := s.ctrl.Logout(ctx, arvados.LogoutOptions{
+		resp, err := s.localdb.Logout(ctx, arvados.LogoutOptions{
 			ReturnTo: returnTo,
 		})
 		c.Check(err, check.IsNil)

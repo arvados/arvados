@@ -93,3 +93,4 @@ sdk/cwl/tests/wf/indir1/hello2.txt
 sdk/cwl/tests/chipseq/data/Genomes/*
 CITATION.cff
 SECURITY.md
+*/testdata/fakestat/*

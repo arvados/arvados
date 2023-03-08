@@ -40,6 +40,25 @@ class ContainerTest < ActiveSupport::TestCase
     runtime_auth_scopes: ["all"]
   }
 
+  REUSABLE_ATTRS_SLIM = {
+    command: ["echo", "slim"],
+    container_image: "9ae44d5792468c58bcf85ce7353c7027+124",
+    cwd: "test",
+    environment: {},
+    mounts: {},
+    output_path: "test",
+    runtime_auth_scopes: ["all"],
+    runtime_constraints: {
+      "API" => false,
+      "keep_cache_disk" => 0,
+      "keep_cache_ram" => 0,
+      "ram" => 8 << 30,
+      "vcpus" => 4
+    },
+    runtime_user_uuid: "zzzzz-tpzed-xurymjxw79nv3jz",
+    secret_mounts: {},
+  }
+
   def request_only attrs
     attrs.reject {|k| [:runtime_user_uuid, :runtime_auth_scopes].include? k}
   end
@@ -1076,10 +1095,13 @@ class ContainerTest < ActiveSupport::TestCase
     })
   end
 
-  def vary_scheduling_parameters(**kwargs)
-    # kwargs is a hash that maps scheduling parameters to an array of values.
-    # This function enumerates every possible combination of
-    # scheduling parameters from those keys and their associated values.
+  def vary_parameters(**kwargs)
+    # kwargs is a hash that maps parameters to an array of values.
+    # This function enumerates every possible hash where each key has one of
+    # the values from its array.
+    # The output keys are strings since that's what container hash attributes
+    # want.
+    # A nil value yields a hash without that key.
     [[:_, nil]].product(
       *kwargs.map { |(key, values)| [key.to_s].product(values) },
     ).map { |param_pairs| Hash[param_pairs].compact }
@@ -1119,7 +1141,7 @@ class ContainerTest < ActiveSupport::TestCase
   ).each do |preemptible_a|
     test "retry requests scheduled with preemptible=#{preemptible_a}" do
       configure_preemptible_instance_type
-      param_hashes = vary_scheduling_parameters(preemptible: preemptible_a)
+      param_hashes = vary_parameters(preemptible: preemptible_a)
       container = retry_with_scheduling_parameters(param_hashes)
       assert_equal(preemptible_a.all?,
                    container.scheduling_parameters["preemptible"] || false)
@@ -1131,7 +1153,7 @@ class ContainerTest < ActiveSupport::TestCase
     partition_values.permutation(2),
   ).each do |partitions_a|
     test "retry requests scheduled with partitions=#{partitions_a}" do
-      param_hashes = vary_scheduling_parameters(partitions: partitions_a)
+      param_hashes = vary_parameters(partitions: partitions_a)
       container = retry_with_scheduling_parameters(param_hashes)
       expected = if partitions_a.any? { |value| value.nil? or value.empty? }
                    []
@@ -1149,7 +1171,7 @@ class ContainerTest < ActiveSupport::TestCase
     runtime_values.permutation(3),
   ).each do |max_run_time_a|
     test "retry requests scheduled with max_run_time=#{max_run_time_a}" do
-      param_hashes = vary_scheduling_parameters(max_run_time: max_run_time_a)
+      param_hashes = vary_parameters(max_run_time: max_run_time_a)
       container = retry_with_scheduling_parameters(param_hashes)
       expected = if max_run_time_a.any? { |value| value.nil? or value == 0 }
                    0
@@ -1184,7 +1206,7 @@ class ContainerTest < ActiveSupport::TestCase
 
   test "retry requests with unset scheduling parameters" do
     configure_preemptible_instance_type
-    param_hashes = vary_scheduling_parameters(
+    param_hashes = vary_parameters(
       preemptible: [nil, true],
       partitions: [nil, ["alpha"]],
       max_run_time: [nil, 5],
@@ -1198,7 +1220,7 @@ class ContainerTest < ActiveSupport::TestCase
 
   test "retry requests with default scheduling parameters" do
     configure_preemptible_instance_type
-    param_hashes = vary_scheduling_parameters(
+    param_hashes = vary_parameters(
       preemptible: [false, true],
       partitions: [[], ["bravo"]],
       max_run_time: [0, 1],
@@ -1208,5 +1230,112 @@ class ContainerTest < ActiveSupport::TestCase
     assert_equal([], actual["partitions"] || [])
     assert_equal(false, actual["preemptible"] || false)
     assert_equal(0, actual["max_run_time"] || 0)
+  end
+
+  def run_container(request_params, final_attrs)
+    final_attrs[:state] ||= Container::Complete
+    if final_attrs[:state] == Container::Complete
+      final_attrs[:exit_code] ||= 0
+      final_attrs[:log] ||= collections(:log_collection).portable_data_hash
+      final_attrs[:output] ||= collections(:multilevel_collection_1).portable_data_hash
+    end
+    container, request = minimal_new(request_params)
+    container.lock
+    container.update_attributes!(state: Container::Running)
+    container.update_attributes!(final_attrs)
+    return container, request
+  end
+
+  def check_reuse_with_variations(default_keep_cache_ram, vary_attr, start_value, variations)
+    container_params = REUSABLE_ATTRS_SLIM.merge(vary_attr => start_value)
+    orig_default = Rails.configuration.Containers.DefaultKeepCacheRAM
+    begin
+      Rails.configuration.Containers.DefaultKeepCacheRAM = default_keep_cache_ram
+      set_user_from_auth :admin
+      expected, _ = run_container(container_params, {})
+      variations.each do |variation|
+        full_variation = REUSABLE_ATTRS_SLIM[vary_attr].merge(variation)
+        parameters = REUSABLE_ATTRS_SLIM.merge(vary_attr => full_variation)
+        actual = Container.find_reusable(parameters)
+        assert_equal(expected.uuid, actual&.uuid,
+                     "request with #{vary_attr}=#{variation} did not reuse container")
+      end
+    ensure
+      Rails.configuration.Containers.DefaultKeepCacheRAM = orig_default
+    end
+  end
+
+  # Test that we can reuse a container with a known keep_cache_ram constraint,
+  # no matter what keep_cache_* constraints the new request uses.
+  [0, 2 << 30, 4 << 30].product(
+    [0, 1],
+    [true, false],
+  ).each do |(default_keep_cache_ram, multiplier, keep_disk_constraint)|
+    test "reuse request with DefaultKeepCacheRAM=#{default_keep_cache_ram}, keep_cache_ram*=#{multiplier}, keep_cache_disk=#{keep_disk_constraint}" do
+      runtime_constraints = REUSABLE_ATTRS_SLIM[:runtime_constraints].merge(
+        "keep_cache_ram" => default_keep_cache_ram * multiplier,
+      )
+      if not keep_disk_constraint
+        # Simulate a container that predates keep_cache_disk by deleting
+        # the constraint entirely.
+        runtime_constraints.delete("keep_cache_disk")
+      end
+      # Important values are:
+      # * 0
+      # * 2GiB, the minimum default keep_cache_disk
+      # * 8GiB, the default keep_cache_disk based on container ram
+      # * 32GiB, the maximum default keep_cache_disk
+      # Check these values and values in between.
+      vary_values = [0, 1, 2, 6, 8, 10, 32, 33].map { |v| v << 30 }.to_a
+      variations = vary_parameters(keep_cache_ram: vary_values)
+                     .chain(vary_parameters(keep_cache_disk: vary_values))
+      check_reuse_with_variations(
+        default_keep_cache_ram,
+        :runtime_constraints,
+        runtime_constraints,
+        variations,
+      )
+    end
+  end
+
+  # Test that we can reuse a container with a known keep_cache_disk constraint,
+  # no matter what keep_cache_* constraints the new request uses.
+  # keep_cache_disk values are the important values discussed in the test above.
+  [0, 2 << 30, 4 << 30]
+    .product([0, 2 << 30, 8 << 30, 32 << 30])
+    .each do |(default_keep_cache_ram, keep_cache_disk)|
+    test "reuse request with DefaultKeepCacheRAM=#{default_keep_cache_ram} and keep_cache_disk=#{keep_cache_disk}" do
+      runtime_constraints = REUSABLE_ATTRS_SLIM[:runtime_constraints].merge(
+        "keep_cache_disk" => keep_cache_disk,
+      )
+      vary_values = [0, 1, 2, 6, 8, 10, 32, 33].map { |v| v << 30 }.to_a
+      variations = vary_parameters(keep_cache_ram: vary_values)
+                     .chain(vary_parameters(keep_cache_disk: vary_values))
+      check_reuse_with_variations(
+        default_keep_cache_ram,
+        :runtime_constraints,
+        runtime_constraints,
+        variations,
+      )
+    end
+  end
+
+  # Test that a container request can reuse a container with an exactly
+  # matching keep_cache_* constraint, no matter what the defaults.
+  [0, 2 << 30, 4 << 30].product(
+    ["keep_cache_disk", "keep_cache_ram"],
+    [135790, 13 << 30, 135 << 30],
+  ).each do |(default_keep_cache_ram, constraint_key, constraint_value)|
+    test "reuse request with #{constraint_key}=#{constraint_value} and DefaultKeepCacheRAM=#{default_keep_cache_ram}" do
+      runtime_constraints = REUSABLE_ATTRS_SLIM[:runtime_constraints].merge(
+        constraint_key => constraint_value,
+      )
+      check_reuse_with_variations(
+        default_keep_cache_ram,
+        :runtime_constraints,
+        runtime_constraints,
+        [runtime_constraints],
+      )
+    end
   end
 end

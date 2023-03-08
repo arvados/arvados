@@ -38,6 +38,7 @@ type Handler struct {
 	secureClient   *http.Client
 	insecureClient *http.Client
 	dbConnector    ctrlctx.DBConnector
+	limitLogCreate chan struct{}
 }
 
 func (h *Handler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
@@ -94,8 +95,12 @@ func (h *Handler) setup() {
 	healthFuncs := make(map[string]health.Func)
 
 	h.dbConnector = ctrlctx.DBConnector{PostgreSQL: h.Cluster.PostgreSQL}
+	go func() {
+		<-h.BackgroundContext.Done()
+		h.dbConnector.Close()
+	}()
 	oidcAuthorizer := localdb.OIDCAccessTokenAuthorizer(h.Cluster, h.dbConnector.GetDB)
-	h.federation = federation.New(h.Cluster, &healthFuncs)
+	h.federation = federation.New(h.BackgroundContext, h.Cluster, &healthFuncs, h.dbConnector.GetDB)
 	rtr := router.New(h.federation, router.Config{
 		MaxRequestSize: h.Cluster.API.MaxRequestSize,
 		WrapCalls: api.ComposeWrappers(
@@ -134,6 +139,7 @@ func (h *Handler) setup() {
 
 	hs := http.NotFoundHandler()
 	hs = prepend(hs, h.proxyRailsAPI)
+	hs = prepend(hs, h.limitLogCreateRequests)
 	hs = h.setupProxyRemoteCluster(hs)
 	hs = prepend(hs, oidcAuthorizer.Middleware)
 	mux.Handle("/", hs)
@@ -146,6 +152,12 @@ func (h *Handler) setup() {
 	ic := *arvados.InsecureHTTPClient
 	ic.CheckRedirect = neverRedirect
 	h.insecureClient = &ic
+
+	logCreateLimit := int(float64(h.Cluster.API.MaxConcurrentRequests) * h.Cluster.API.LogCreateRequestFraction)
+	if logCreateLimit == 0 && h.Cluster.API.LogCreateRequestFraction > 0 {
+		logCreateLimit = 1
+	}
+	h.limitLogCreate = make(chan struct{}, logCreateLimit)
 
 	h.proxy = &proxy{
 		Name: "arvados-controller",
@@ -180,6 +192,20 @@ func (h *Handler) localClusterRequest(req *http.Request) (*http.Response, error)
 		client = h.insecureClient
 	}
 	return h.proxy.Do(req, urlOut, client)
+}
+
+func (h *Handler) limitLogCreateRequests(w http.ResponseWriter, req *http.Request, next http.Handler) {
+	if cap(h.limitLogCreate) > 0 && req.Method == http.MethodPost && strings.HasPrefix(req.URL.Path, "/arvados/v1/logs") {
+		select {
+		case h.limitLogCreate <- struct{}{}:
+			defer func() { <-h.limitLogCreate }()
+			next.ServeHTTP(w, req)
+		default:
+			http.Error(w, "Excess log messages", http.StatusServiceUnavailable)
+		}
+		return
+	}
+	next.ServeHTTP(w, req)
 }
 
 func (h *Handler) proxyRailsAPI(w http.ResponseWriter, req *http.Request, next http.Handler) {

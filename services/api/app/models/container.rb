@@ -5,7 +5,6 @@
 require 'log_reuse_info'
 require 'whitelist_update'
 require 'safe_json'
-require 'update_priority'
 
 class Container < ArvadosModel
   include ArvadosModelUpdates
@@ -51,7 +50,6 @@ class Container < ArvadosModel
   after_save :update_cr_logs
   after_save :handle_completed
   after_save :propagate_priority
-  after_commit { UpdatePriority.run_update_thread }
 
   has_many :container_requests, :foreign_key => :container_uuid, :class_name => 'ContainerRequest', :primary_key => :uuid
   belongs_to :auth, :class_name => 'ApiClientAuthorization', :foreign_key => :auth_uuid, :primary_key => :uuid
@@ -228,10 +226,7 @@ class Container < ArvadosModel
       rc['keep_cache_ram'] = Rails.configuration.Containers.DefaultKeepCacheRAM
     end
     if rc['keep_cache_disk'] == 0 and rc['keep_cache_ram'] == 0
-      # If neither ram nor disk cache was specified and
-      # DefaultKeepCacheRAM==0, default to disk cache with size equal
-      # to RAM constraint (but at least 2 GiB and at most 32 GiB).
-      rc['keep_cache_disk'] = [[rc['ram'] || 0, 2 << 30].max, 32 << 30].min
+      rc['keep_cache_disk'] = bound_keep_cache_disk(rc['ram'])
     end
     rc
   end
@@ -299,30 +294,55 @@ class Container < ArvadosModel
     candidates = candidates.where('secret_mounts_md5 = ?', secret_mounts_md5)
     log_reuse_info(candidates) { "after filtering on secret_mounts_md5 #{secret_mounts_md5.inspect}" }
 
-    if attrs[:runtime_constraints]['cuda'].nil?
-      attrs[:runtime_constraints]['cuda'] = {
-        'device_count' => 0,
-        'driver_version' => '',
-        'hardware_capability' => '',
-      }
+    resolved_runtime_constraints = resolve_runtime_constraints(attrs[:runtime_constraints])
+    # Ideally we would completely ignore Keep cache constraints when making
+    # reuse considerations, but our database structure makes that impractical.
+    # The best we can do is generate a search that matches on all likely values.
+    runtime_constraint_variations = {
+      keep_cache_disk: [
+        # Check for constraints without keep_cache_disk
+        # (containers that predate the constraint)
+        nil,
+        # Containers that use keep_cache_ram instead
+        0,
+        # The default value
+        bound_keep_cache_disk(resolved_runtime_constraints['ram']),
+        # The minimum default bound
+        bound_keep_cache_disk(0),
+        # The maximum default bound (presumably)
+        bound_keep_cache_disk(1 << 60),
+        # The requested value
+        resolved_runtime_constraints.delete('keep_cache_disk'),
+      ].uniq,
+      keep_cache_ram: [
+        # Containers that use keep_cache_disk instead
+        0,
+        # The default value
+        Rails.configuration.Containers.DefaultKeepCacheRAM,
+        # The requested value
+        resolved_runtime_constraints.delete('keep_cache_ram'),
+      ].uniq,
+    }
+    resolved_cuda = resolved_runtime_constraints['cuda']
+    if resolved_cuda.nil? or resolved_cuda['device_count'] == 0
+      runtime_constraint_variations[:cuda] = [
+        # Check for constraints without cuda
+        # (containers that predate the constraint)
+        nil,
+        # The default "don't need CUDA" value
+        {
+          'device_count' => 0,
+          'driver_version' => '',
+          'hardware_capability' => '',
+        },
+        # The requested value
+        resolved_runtime_constraints.delete('cuda')
+      ].uniq
     end
-    resolved_runtime_constraints = [resolve_runtime_constraints(attrs[:runtime_constraints])]
-    if resolved_runtime_constraints[0]['cuda']['device_count'] == 0
-      # If no CUDA requested, extend search to include older container
-      # records that don't have a 'cuda' section in runtime_constraints
-      resolved_runtime_constraints << resolved_runtime_constraints[0].except('cuda')
-    end
-    if resolved_runtime_constraints[0]['keep_cache_disk'] == 0
-      # If no disk cache requested, extend search to include older container
-      # records that don't have a 'keep_cache_disk' field in runtime_constraints
-      if resolved_runtime_constraints.length == 2
-        # exclude the one that also excludes CUDA
-        resolved_runtime_constraints << resolved_runtime_constraints[1].except('keep_cache_disk')
-      end
-      resolved_runtime_constraints << resolved_runtime_constraints[0].except('keep_cache_disk')
-    end
+    reusable_runtime_constraints = hash_product(runtime_constraint_variations)
+                                     .map { |v| resolved_runtime_constraints.merge(v) }
 
-    candidates = candidates.where_serialized(:runtime_constraints, resolved_runtime_constraints, md5: true, multivalue: true)
+    candidates = candidates.where_serialized(:runtime_constraints, reusable_runtime_constraints, md5: true, multivalue: true)
     log_reuse_info(candidates) { "after filtering on runtime_constraints #{attrs[:runtime_constraints].inspect}" }
 
     log_reuse_info { "checking for state=Complete with readable output and log..." }
@@ -446,6 +466,31 @@ class Container < ArvadosModel
   end
 
   protected
+
+  def self.bound_keep_cache_disk(value)
+    value ||= 0
+    min_value = 2 << 30
+    max_value = 32 << 30
+    if value < min_value
+      min_value
+    elsif value > max_value
+      max_value
+    else
+      value
+    end
+  end
+
+  def self.hash_product(**kwargs)
+    # kwargs is a hash that maps parameters to an array of values.
+    # This function enumerates every possible hash where each key has one of
+    # the values from its array.
+    # The output keys are strings since that's what container hash attributes
+    # want.
+    # A nil value yields a hash without that key.
+    [[:_, nil]].product(
+      *kwargs.map { |(key, values)| [key.to_s].product(values) },
+    ).map { |param_pairs| Hash[param_pairs].compact }
+  end
 
   def fill_field_defaults
     self.state ||= Queued
@@ -728,6 +773,11 @@ class Container < ArvadosModel
               "preemptible": retryable_requests
                                .map { |req| req.scheduling_parameters["preemptible"] }
                                .all?,
+
+              # supervisor: true if all any true, else false
+              "supervisor": retryable_requests
+                               .map { |req| req.scheduling_parameters["supervisor"] }
+                               .any?,
 
               # max_run_time: 0 if any are 0 (unlimited), else the maximum
               "max_run_time": retryable_requests

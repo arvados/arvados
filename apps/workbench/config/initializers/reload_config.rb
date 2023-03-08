@@ -6,11 +6,7 @@
 # services/api/config/initializers/reload_config.rb and update this
 # copy. Or find a more reasonable way to share the code.
 
-if !File.owned?(Rails.root.join('tmp'))
-  Rails.logger.debug("reload_config: not owner of #{Rails.root}/tmp, skipping")
-elsif ENV["ARVADOS_CONFIG"] == "none"
-  Rails.logger.debug("reload_config: no config in use, skipping")
-else
+def start_reload_thread
   Thread.new do
     lockfile = Rails.root.join('tmp', 'reload_config.lock')
     File.open(lockfile, File::WRONLY|File::CREAT, 0600) do |f|
@@ -67,4 +63,16 @@ else
       end
     end
   end
+end
+
+if !File.owned?(Rails.root.join('tmp'))
+  Rails.logger.debug("reload_config: not owner of #{Rails.root}/tmp, skipping")
+elsif ENV["ARVADOS_CONFIG"] == "none"
+  Rails.logger.debug("reload_config: no config in use, skipping")
+elsif defined?(PhusionPassenger)
+  PhusionPassenger.on_event(:starting_worker_process) do |forked|
+    start_reload_thread
+  end
+else
+  start_reload_thread
 end

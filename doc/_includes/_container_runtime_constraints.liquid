@@ -12,7 +12,8 @@ table(table table-bordered table-condensed).
 |_. Key|_. Type|_. Description|_. Notes|
 |ram|integer|Number of ram bytes to be used to run this process.|Optional. However, a ContainerRequest that is in "Committed" state must provide this.|
 |vcpus|integer|Number of cores to be used to run this process.|Optional. However, a ContainerRequest that is in "Committed" state must provide this.|
-|keep_cache_ram|integer|Number of keep cache bytes to be used to run this process.|Optional.|
+|keep_cache_disk|integer|When the container process accesses data from Keep via the filesystem, that data will be cached on disk, up to this amount in bytes.|Optional. If your cluster is configured to use a disk cache by default, the default size will match your @ram@ constraint, bounded between 2GiB and 32GiB.|
+|keep_cache_ram|integer|When the container process accesses data from Keep via the filesystem, that data will be cached in memory, up to this amount in bytes.|Optional. If your cluster is configured to use a RAM cache by default, the administrator sets a default cache size.|
 |API|boolean|When set, ARVADOS_API_HOST and ARVADOS_API_TOKEN will be set, and container will have networking enabled to access the Arvados API server.|Optional.|
 |cuda|object|Request CUDA GPU support, see below|Optional.|
 

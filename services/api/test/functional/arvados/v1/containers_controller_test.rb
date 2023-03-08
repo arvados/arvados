@@ -160,4 +160,12 @@ class Arvados::V1::ContainersControllerTest < ActionController::TestCase
     assert_equal "v2/#{json_response['uuid']}/#{json_response['api_token']}", api_client_authorizations(:container_runtime_token).token
     assert_equal 'arvados#apiClientAuthorization', json_response['kind']
   end
+
+  test 'update_priority' do
+    ActiveRecord::Base.connection.execute "update containers set priority=0 where uuid='#{containers(:running).uuid}'"
+    authorize_with :admin
+    post :update_priority, params: {id: containers(:running).uuid}
+    assert_response :success
+    assert_not_equal 0, Container.find_by_uuid(containers(:running).uuid).priority
+  end
 end

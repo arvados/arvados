@@ -90,6 +90,26 @@ BaseHTTPError: AuthFailure.ServiceLinkedRoleCreationNotPermitted: The provided c
 
 The account needs to have a service linked role created. This can be done by logging into the AWS account, go to _IAM Management_ &rarr; _Roles_ and create the @AWSServiceRoleForEC2Spot@ role by clicking on the @Create@ button, selecting @EC2@ service and @EC2 - Spot Instances@ use case.
 
+h3. Interruption notices
+
+When running a container on a spot instance, Arvados monitors the EC2 metadata endpoint for interruption notices. When an interruption notice is received, it is reported in a log entry in the @crunch-run.txt@ file as well as @warning@ and @preemptionNotice@ keys in the @runtime_status@ field of the affected container.
+
+Example excerpt from @crunch-run.txt@:
+
+<pre>
+2023-02-21T21:12:42.350719824Z Cloud provider scheduled instance stop at 2023-02-21T21:14:42Z
+</pre>
+
+Example @runtime_status@:
+
+<pre>
+{
+  "warning": "preemption notice",
+  "warningDetail": "Cloud provider scheduled instance stop at 2023-02-21T21:14:42Z",
+  "preemptionNotice": "Cloud provider scheduled instance stop at 2023-02-21T21:14:42Z"
+}
+</pre>
+
 h2. Preemptible instances on Azure
 
 For general information, see "Use Spot VMs in Azure":https://docs.microsoft.com/en-us/azure/virtual-machines/spot-vms.
