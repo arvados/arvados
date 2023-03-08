@@ -6,12 +6,17 @@ package controller
 
 import (
 	"context"
+	"encoding/json"
+	"errors"
 	"fmt"
+	"io/ioutil"
+	"mime"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
 	"strings"
 	"sync"
+	"time"
 
 	"git.arvados.org/arvados.git/lib/controller/api"
 	"git.arvados.org/arvados.git/lib/controller/federation"
@@ -20,6 +25,7 @@ import (
 	"git.arvados.org/arvados.git/lib/controller/router"
 	"git.arvados.org/arvados.git/lib/ctrlctx"
 	"git.arvados.org/arvados.git/sdk/go/arvados"
+	"git.arvados.org/arvados.git/sdk/go/ctxlog"
 	"git.arvados.org/arvados.git/sdk/go/health"
 	"git.arvados.org/arvados.git/sdk/go/httpserver"
 
@@ -39,6 +45,8 @@ type Handler struct {
 	insecureClient *http.Client
 	dbConnector    ctrlctx.DBConnector
 	limitLogCreate chan struct{}
+
+	cache map[string]*cacheEnt
 }
 
 func (h *Handler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
@@ -162,6 +170,9 @@ func (h *Handler) setup() {
 	h.proxy = &proxy{
 		Name: "arvados-controller",
 	}
+	h.cache = map[string]*cacheEnt{
+		"/discovery/v1/apis/arvados/v1/rest": &cacheEnt{},
+	}
 
 	go h.trashSweepWorker()
 	go h.containerLogSweepWorker()
@@ -208,7 +219,100 @@ func (h *Handler) limitLogCreateRequests(w http.ResponseWriter, req *http.Reques
 	next.ServeHTTP(w, req)
 }
 
+// cacheEnt implements a basic stale-while-revalidate cache, suitable
+// for the Arvados discovery document.
+type cacheEnt struct {
+	mtx          sync.Mutex
+	header       http.Header
+	body         []byte
+	refreshAfter time.Time
+	refreshLock  sync.Mutex
+}
+
+const cacheTTL = 5 * time.Minute
+
+func (ent *cacheEnt) refresh(path string, do func(*http.Request) (*http.Response, error)) (http.Header, []byte, error) {
+	ent.refreshLock.Lock()
+	defer ent.refreshLock.Unlock()
+	if header, body, needRefresh := ent.response(); !needRefresh {
+		// another goroutine refreshed successfully while we
+		// were waiting for refreshLock
+		return header, body, nil
+	}
+	// 0.0.0.0 is just a placeholder here -- do(), which is
+	// localClusterRequest(), will replace the scheme and host
+	// parts with the real proxy destination.
+	req, err := http.NewRequest(http.MethodGet, "http://0.0.0.0/"+path, nil)
+	if err != nil {
+		return nil, nil, err
+	}
+	resp, err := do(req)
+	if err != nil {
+		return nil, nil, err
+	}
+	if resp.StatusCode != http.StatusOK {
+		return nil, nil, fmt.Errorf("HTTP status %d", resp.StatusCode)
+	}
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return nil, nil, fmt.Errorf("Read error: %w", err)
+	}
+	header := http.Header{}
+	for _, k := range []string{"Content-Type", "Etag", "Last-Modified"} {
+		if v, ok := header[k]; ok {
+			resp.Header[k] = v
+		}
+	}
+	if mediatype, _, err := mime.ParseMediaType(header.Get("Content-Type")); err == nil && mediatype == "application/json" {
+		if !json.Valid(body) {
+			return nil, nil, errors.New("invalid JSON encoding in response")
+		}
+	}
+	ent.mtx.Lock()
+	defer ent.mtx.Unlock()
+	ent.header = header
+	ent.body = body
+	ent.refreshAfter = time.Now().Add(cacheTTL)
+	return ent.header, ent.body, nil
+}
+
+func (ent *cacheEnt) response() (http.Header, []byte, bool) {
+	ent.mtx.Lock()
+	defer ent.mtx.Unlock()
+	return ent.header, ent.body, ent.refreshAfter.Before(time.Now())
+}
+
+func (ent *cacheEnt) ServeHTTP(ctx context.Context, w http.ResponseWriter, path string, do func(*http.Request) (*http.Response, error)) {
+	header, body, needRefresh := ent.response()
+	if body == nil {
+		// need to fetch before we can return anything
+		var err error
+		header, body, err = ent.refresh(path, do)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusBadGateway)
+			return
+		}
+	} else if needRefresh {
+		// re-fetch in background
+		go func() {
+			_, _, err := ent.refresh(path, do)
+			if err != nil {
+				ctxlog.FromContext(ctx).WithError(err).WithField("path", path).Warn("error refreshing cache")
+			}
+		}()
+	}
+	for k, v := range header {
+		w.Header()[k] = v
+	}
+	w.WriteHeader(http.StatusOK)
+	w.Write(body)
+}
+
 func (h *Handler) proxyRailsAPI(w http.ResponseWriter, req *http.Request, next http.Handler) {
+	if ent, ok := h.cache[req.URL.Path]; ok && req.Method == http.MethodGet {
+		ent.ServeHTTP(req.Context(), w, req.URL.Path, h.localClusterRequest)
+		return
+	}
 	resp, err := h.localClusterRequest(req)
 	n, err := h.proxy.ForwardResponse(w, resp, err)
 	if err != nil {
