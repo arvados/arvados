@@ -123,9 +123,12 @@ SSL_KEY_ENCRYPTED="no"
 SSL_KEY_AWS_SECRET_NAME="${CLUSTER}-arvados-ssl-privkey-password"
 SSL_KEY_AWS_REGION="us-east-1"
 
-# Customize Prometheus web UI access credentials
-PROMETHEUS_UI_USERNAME=${INITIAL_USER}
-PROMETHEUS_UI_PASSWORD=${INITIAL_USER_PASSWORD}
+# Customize Prometheus & Grafana web UI access credentials
+MONITORING_USERNAME=${INITIAL_USER}
+MONITORING_PASSWORD=${INITIAL_USER_PASSWORD}
+MONITORING_EMAIL=${INITIAL_USER_EMAIL}
+# Sets the directory for Grafana dashboards
+# GRAFANA_DASHBOARDS_DIR="${SCRIPT_DIR}/local_config_dir/dashboards"
 
 # The directory to check for the config files (pillars, states) you want to use.
 # There are a few examples under 'config_examples'.
@@ -155,3 +158,4 @@ RELEASE="production"
 # LOCALE_TAG="v0.3.4"
 # LETSENCRYPT_TAG="v2.1.0"
 # PROMETHEUS_TAG="v5.6.5"
+# GRAFANA_TAG="v3.1.3"

@@ -192,6 +192,8 @@ SSL_MODE="self-signed"
 USE_LETSENCRYPT_ROUTE53="no"
 CUSTOM_CERTS_DIR="${SCRIPT_DIR}/local_config_dir/certs"
 
+GRAFANA_DASHBOARDS_DIR="${SCRIPT_DIR}/local_config_dir/dashboards"
+
 ## These are ARVADOS-related parameters
 # For a stable release, change RELEASE "production" and VERSION to the
 # package version (including the iteration, e.g. X.Y.Z-1) of the
@@ -222,6 +224,7 @@ LOCALE_TAG="v0.3.4"
 LETSENCRYPT_TAG="v2.1.0"
 LOGROTATE_TAG="v0.14.0"
 PROMETHEUS_TAG="v5.6.5"
+GRAFANA_TAG="v3.1.3"
 
 # Salt's dir
 DUMP_SALT_CONFIG_DIR=""
@@ -365,6 +368,12 @@ test -d prometheus && ( cd prometheus && git fetch ) \
   || git clone --quiet https://github.com/saltstack-formulas/prometheus-formula.git ${F_DIR}/prometheus
 ( cd prometheus && git checkout --quiet tags/"${PROMETHEUS_TAG}" )
 
+# This formula doesn't currently have release tags
+echo "...grafana"
+test -d grafana && ( cd grafana && git fetch ) \
+  || git clone --quiet https://github.com/saltstack-formulas/grafana-formula.git ${F_DIR}/grafana
+( cd grafana && git checkout --quiet "${GRAFANA_TAG}" )
+
 echo "...letsencrypt"
 test -d letsencrypt && ( cd letsencrypt && git fetch ) \
   || git clone --quiet https://github.com/saltstack-formulas/letsencrypt-formula.git ${F_DIR}/letsencrypt
@@ -445,8 +454,9 @@ for f in $(ls "${SOURCE_PILLARS_DIR}"/*); do
        s#__SSL_KEY_ENCRYPTED__#${SSL_KEY_ENCRYPTED}#g;
        s#__SSL_KEY_AWS_REGION__#${SSL_KEY_AWS_REGION}#g;
        s#__SSL_KEY_AWS_SECRET_NAME__#${SSL_KEY_AWS_SECRET_NAME}#g;
-       s#__PROMETHEUS_UI_USERNAME__#${PROMETHEUS_UI_USERNAME}#g;
-       s#__PROMETHEUS_UI_PASSWORD__#${PROMETHEUS_UI_PASSWORD}#g" \
+       s#__MONITORING_USERNAME__#${MONITORING_USERNAME}#g;
+       s#__MONITORING_EMAIL__#${MONITORING_EMAIL}#g;
+       s#__MONITORING_PASSWORD__#${MONITORING_PASSWORD}#g" \
   "${f}" > "${P_DIR}"/$(basename "${f}")
 done
 
@@ -521,8 +531,9 @@ if [ -d "${SOURCE_STATES_DIR}" ]; then
          s#__SSL_KEY_ENCRYPTED__#${SSL_KEY_ENCRYPTED}#g;
          s#__SSL_KEY_AWS_REGION__#${SSL_KEY_AWS_REGION}#g;
          s#__SSL_KEY_AWS_SECRET_NAME__#${SSL_KEY_AWS_SECRET_NAME}#g;
-         s#__PROMETHEUS_UI_USERNAME__#${PROMETHEUS_UI_USERNAME}#g;
-         s#__PROMETHEUS_UI_PASSWORD__#${PROMETHEUS_UI_PASSWORD}#g" \
+         s#__MONITORING_USERNAME__#${MONITORING_USERNAME}#g;
+         s#__MONITORING_EMAIL__#${MONITORING_EMAIL}#g;
+         s#__MONITORING_PASSWORD__#${MONITORING_PASSWORD}#g" \
     "${f}" > "${F_DIR}/extra/extra"/$(basename "${f}")
   done
 fi
@@ -709,27 +720,44 @@ else
         grep -q "prometheus_pg_exporter" ${P_DIR}/top.sls || echo "    - prometheus_pg_exporter" >> ${P_DIR}/top.sls
       ;;
       "monitoring")
+        ### Support files ###
+        GRAFANA_DASHBOARDS_DEST_DIR=/srv/salt/dashboards
+        mkdir -p "${GRAFANA_DASHBOARDS_DEST_DIR}"
+        rm -f "${GRAFANA_DASHBOARDS_DEST_DIR}"/*
+        # "ArvadosPromDataSource" is the hardcoded UID for Prometheus' datasource
+        # in Grafana.
+        for f in $(ls "${GRAFANA_DASHBOARDS_DIR}"/*.json); do
+          sed 's#${DS_PROMETHEUS}#ArvadosPromDataSource#g' \
+          "${f}" > "${GRAFANA_DASHBOARDS_DEST_DIR}"/$(basename "${f}")
+        done
+
         ### States ###
         grep -q "nginx" ${S_DIR}/top.sls || echo "    - nginx" >> ${S_DIR}/top.sls
         grep -q "extra.nginx_prometheus_configuration" ${S_DIR}/top.sls || echo "    - extra.nginx_prometheus_configuration" >> ${S_DIR}/top.sls
+
+        grep -q "\- grafana$" ${S_DIR}/top.sls || echo "    - grafana" >> ${S_DIR}/top.sls
+        grep -q "extra.grafana_datasource" ${S_DIR}/top.sls || echo "    - extra.grafana_datasource" >> ${S_DIR}/top.sls
+        grep -q "extra.grafana_dashboards" ${S_DIR}/top.sls || echo "    - extra.grafana_dashboards" >> ${S_DIR}/top.sls
+
         if [ "${SSL_MODE}" = "lets-encrypt" ]; then
           grep -q "letsencrypt"     ${S_DIR}/top.sls || echo "    - letsencrypt" >> ${S_DIR}/top.sls
           if [ "x${USE_LETSENCRYPT_ROUTE53}" = "xyes" ]; then
             grep -q "aws_credentials" ${S_DIR}/top.sls || echo "    - aws_credentials" >> ${S_DIR}/top.sls
           fi
         elif [ "${SSL_MODE}" = "bring-your-own" ]; then
-          for SVC in prometheus; do
+          for SVC in grafana prometheus; do
             copy_custom_cert ${CUSTOM_CERTS_DIR} ${SVC}
           done
         fi
         ### Pillars ###
         grep -q "prometheus_server" ${P_DIR}/top.sls || echo "    - prometheus_server" >> ${P_DIR}/top.sls
-        for SVC in prometheus; do
+        grep -q "grafana" ${P_DIR}/top.sls || echo "    - grafana" >> ${P_DIR}/top.sls
+        for SVC in grafana prometheus; do
           grep -q "nginx_${SVC}_configuration" ${P_DIR}/top.sls || echo "    - nginx_${SVC}_configuration" >> ${P_DIR}/top.sls
         done
         if [ "${SSL_MODE}" = "lets-encrypt" ]; then
           grep -q "letsencrypt"     ${P_DIR}/top.sls || echo "    - letsencrypt" >> ${P_DIR}/top.sls
-          for SVC in prometheus; do
+          for SVC in grafana prometheus; do
             grep -q "letsencrypt_${SVC}_configuration" ${P_DIR}/top.sls || echo "    - letsencrypt_${SVC}_configuration" >> ${P_DIR}/top.sls
             sed -i "s/__CERT_REQUIRES__/cmd: create-initial-cert-${SVC}.${CLUSTER}.${DOMAIN}*/g;
                     s#__CERT_PEM__#/etc/letsencrypt/live/${SVC}.${CLUSTER}.${DOMAIN}/fullchain.pem#g;
@@ -741,7 +769,7 @@ else
           fi
         elif [ "${SSL_MODE}" = "bring-your-own" ]; then
           grep -q "ssl_key_encrypted" ${P_DIR}/top.sls || echo "    - ssl_key_encrypted" >> ${P_DIR}/top.sls
-          for SVC in prometheus; do
+          for SVC in grafana prometheus; do
             sed -i "s/__CERT_REQUIRES__/file: extra_custom_certs_file_copy_arvados-${SVC}.pem/g;
                     s#__CERT_PEM__#/etc/nginx/ssl/arvados-${SVC}.pem#g;
                     s#__CERT_KEY__#/etc/nginx/ssl/arvados-${SVC}.key#g" \
