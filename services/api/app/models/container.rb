@@ -131,12 +131,12 @@ class Container < ArvadosModel
   def update_priority!
     return if ![Queued, Locked, Running].include?(state)
     p = ContainerRequest.
-        where('container_uuid=? and priority>0', uuid).
-        includes(:requesting_container).
-        lock(true).
-        map do |cr|
-      if cr.requesting_container
-        cr.requesting_container.priority
+          where('container_uuid=? and priority>0', uuid).
+          select("priority, requesting_container_uuid, created_at").
+          lock(true).
+          map do |cr|
+      if cr.requesting_container_uuid
+        Container.where(uuid: cr.requesting_container_uuid).pluck(:priority).first
       else
         (cr.priority << 50) - (cr.created_at.to_time.to_f * 1000).to_i
       end
@@ -151,12 +151,11 @@ class Container < ArvadosModel
       # priority of the parent container (ignoring requests with no
       # container assigned, because their priority doesn't matter).
       ContainerRequest.
-        where(requesting_container_uuid: self.uuid,
-              state: ContainerRequest::Committed).
-        where('container_uuid is not null').
-        includes(:container).
-        map(&:container).
-        map(&:update_priority!)
+        where('requesting_container_uuid = ? and state = ? and container_uuid is not null',
+              self.uuid, ContainerRequest::Committed).
+        pluck(:container_uuid).each do |container_uuid|
+        Container.find_by_uuid(container_uuid).update_priority!
+      end
     end
   end
 
@@ -830,19 +829,21 @@ class Container < ArvadosModel
 
           # Cancel outstanding container requests made by this container.
           ContainerRequest.
-            includes(:container).
             where(requesting_container_uuid: uuid,
-                  state: ContainerRequest::Committed).each do |cr|
-            leave_modified_by_user_alone do
-              cr.update_attributes!(priority: 0)
-              cr.container.reload
-              if cr.container.state == Container::Queued || cr.container.state == Container::Locked
-                # If the child container hasn't started yet, finalize the
-                # child CR now instead of leaving it "on hold", i.e.,
-                # Queued with priority 0.  (OTOH, if the child is already
-                # running, leave it alone so it can get cancelled the
-                # usual way, get a copy of the log collection, etc.)
-                cr.update_attributes!(state: ContainerRequest::Final)
+                  state: ContainerRequest::Committed).
+            find_in_batches(batch_size: 10) do |batch|
+            batch.each do |cr|
+              leave_modified_by_user_alone do
+                cr.set_priority_zero
+                container_state = Container.where(uuid: cr.container_uuid).pluck(:state).first
+                if container_state == Container::Queued || container_state == Container::Locked
+                  # If the child container hasn't started yet, finalize the
+                  # child CR now instead of leaving it "on hold", i.e.,
+                  # Queued with priority 0.  (OTOH, if the child is already
+                  # running, leave it alone so it can get cancelled the
+                  # usual way, get a copy of the log collection, etc.)
+                  cr.update_attributes!(state: ContainerRequest::Final)
+                end
               end
             end
           end

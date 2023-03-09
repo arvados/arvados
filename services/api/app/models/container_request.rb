@@ -300,6 +300,10 @@ class ContainerRequest < ArvadosModel
     super - ["mounts", "secret_mounts", "secret_mounts_md5", "runtime_token", "output_storage_classes"]
   end
 
+  def set_priority_zero
+    self.update_attributes!(priority: 0) if self.priority > 0 && self.state != Final
+  end
+
   protected
 
   def fill_field_defaults
@@ -562,10 +566,6 @@ class ContainerRequest < ArvadosModel
         where('uuid in (?)', [container_uuid_before_last_save, self.container_uuid].compact).
         map(&:update_priority!)
     end
-  end
-
-  def set_priority_zero
-    self.update_attributes!(priority: 0) if self.state != Final
   end
 
   def set_requesting_container_uuid
