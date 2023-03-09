@@ -238,7 +238,19 @@ func (ent *cacheEnt) refresh(path string, do func(*http.Request) (*http.Response
 		// another goroutine refreshed successfully while we
 		// were waiting for refreshLock
 		return header, body, nil
+	} else if body != nil {
+		// Cache is present, but expired. We'll try to refresh
+		// below. Meanwhile, other refresh() calls will queue
+		// up for refreshLock -- and we don't want them to
+		// turn into N upstream requests, even if upstream is
+		// failing.  (If we succeed we'll update the expiry
+		// time again below with the real cacheTTL -- this
+		// just takes care of the error case.)
+		ent.mtx.Lock()
+		ent.refreshAfter = time.Now().Add(time.Second)
+		ent.mtx.Unlock()
 	}
+
 	ctx, cancel := context.WithDeadline(context.Background(), time.Now().Add(time.Minute))
 	defer cancel()
 	// 0.0.0.0:0 is just a placeholder here -- do(), which is
