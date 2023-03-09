@@ -107,6 +107,7 @@ func (conn *Conn) containerPriorityUpdate(ctx context.Context, log logrus.FieldL
 			WHERE containers.state IN ('Queued', 'Locked', 'Running')
 			 AND containers.priority = 0
 			 AND (parent.uuid IS NULL OR parent.priority > 0)
+			ORDER BY containers.created_at
 			LIMIT 1`).Scan(&uuid)
 		if err == sql.ErrNoRows {
 			break
