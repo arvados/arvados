@@ -100,13 +100,12 @@ func (conn *Conn) containerPriorityUpdate(ctx context.Context, log logrus.FieldL
 		err := db.QueryRowxContext(ctx, `
 			SELECT containers.uuid from containers
 			JOIN container_requests
-			 ON container_requests.container_uuid=containers.uuid
+			 ON container_requests.container_uuid = containers.uuid
 			 AND container_requests.state = 'Committed' AND container_requests.priority > 0
 			LEFT JOIN containers parent
 			 ON parent.uuid = container_requests.requesting_container_uuid
 			WHERE containers.state IN ('Queued', 'Locked', 'Running')
 			 AND containers.priority = 0
-			 AND container_requests.uuid IS NOT NULL
 			 AND (parent.uuid IS NULL OR parent.priority > 0)
 			LIMIT 1`).Scan(&uuid)
 		if err == sql.ErrNoRows {
