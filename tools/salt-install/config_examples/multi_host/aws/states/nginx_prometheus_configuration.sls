@@ -4,10 +4,10 @@
 
 {%- if salt['pillar.get']('nginx:servers:managed:prometheus-ssl') %}
 
-extra_nginx_prometheus_conf_user___PROMETHEUS_UI_USERNAME__:
+extra_nginx_prometheus_conf_user___MONITORING_USERNAME__:
   webutil.user_exists:
-    - name: __PROMETHEUS_UI_USERNAME__
-    - password: {{ "__PROMETHEUS_UI_PASSWORD__" | yaml_dquote }}
+    - name: __MONITORING_USERNAME__
+    - password: {{ "__MONITORING_PASSWORD__" | yaml_dquote }}
     - htpasswd_file: /etc/nginx/htpasswd
     - options: d
     - force: true
