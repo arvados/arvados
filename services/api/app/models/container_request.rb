@@ -352,10 +352,11 @@ class ContainerRequest < ArvadosModel
       self.container_count += 1
       return if self.container_uuid_was.nil?
 
-      old_container = Container.find_by_uuid(self.container_uuid_was)
-      return if old_container.nil?
+      old_container_uuid = self.container_uuid_was
+      old_container_log = Container.where(uuid: old_container_uuid).pluck(:log).first
+      return if old_container_log.nil?
 
-      old_logs = Collection.where(portable_data_hash: old_container.log).first
+      old_logs = Collection.where(portable_data_hash: old_container_log).first
       return if old_logs.nil?
 
       log_coll = self.log_uuid.nil? ? nil : Collection.where(uuid: self.log_uuid).first
@@ -370,7 +371,7 @@ class ContainerRequest < ArvadosModel
       # copy logs from old container into CR's log collection
       src = Arv::Collection.new(old_logs.manifest_text)
       dst = Arv::Collection.new(log_coll.manifest_text)
-      dst.cp_r("./", "log for container #{old_container.uuid}", src)
+      dst.cp_r("./", "log for container #{old_container_uuid}", src)
       manifest = dst.manifest_text
 
       log_coll.assign_attributes(
