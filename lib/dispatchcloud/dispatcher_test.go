@@ -102,7 +102,8 @@ func (s *DispatcherSuite) SetUpTest(c *check.C) {
 
 	arvClient, err := arvados.NewClientFromConfig(s.cluster)
 	c.Assert(err, check.IsNil)
-	arvClient.Timeout = 0 // disable auto-retry
+	// Disable auto-retry
+	arvClient.Timeout = 0
 
 	s.error503Server = httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) { w.WriteHeader(http.StatusServiceUnavailable) }))
 	arvClient.Client = &http.Client{

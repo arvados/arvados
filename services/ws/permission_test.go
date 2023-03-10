@@ -18,7 +18,9 @@ type permSuite struct{}
 
 func (s *permSuite) TestCheck(c *check.C) {
 	client := arvados.NewClientFromEnv()
-	client.Timeout = 0 // disable auto-retry
+	// Disable auto-retry
+	client.Timeout = 0
+
 	pc := newPermChecker(*client).(*cachingPermChecker)
 	setToken := func(label, token string) {
 		c.Logf("...%s token %q", label, token)
