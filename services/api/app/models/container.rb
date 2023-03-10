@@ -831,19 +831,17 @@ class Container < ArvadosModel
           ContainerRequest.
             where(requesting_container_uuid: uuid,
                   state: ContainerRequest::Committed).
-            find_in_batches(batch_size: 10) do |batch|
-            batch.each do |cr|
-              leave_modified_by_user_alone do
-                cr.set_priority_zero
-                container_state = Container.where(uuid: cr.container_uuid).pluck(:state).first
-                if container_state == Container::Queued || container_state == Container::Locked
-                  # If the child container hasn't started yet, finalize the
-                  # child CR now instead of leaving it "on hold", i.e.,
-                  # Queued with priority 0.  (OTOH, if the child is already
-                  # running, leave it alone so it can get cancelled the
-                  # usual way, get a copy of the log collection, etc.)
-                  cr.update_attributes!(state: ContainerRequest::Final)
-                end
+            in_batches(of: 15).each do |cr|
+            leave_modified_by_user_alone do
+              cr.set_priority_zero
+              container_state = Container.where(uuid: cr.container_uuid).pluck(:state).first
+              if container_state == Container::Queued || container_state == Container::Locked
+                # If the child container hasn't started yet, finalize the
+                # child CR now instead of leaving it "on hold", i.e.,
+                # Queued with priority 0.  (OTOH, if the child is already
+                # running, leave it alone so it can get cancelled the
+                # usual way, get a copy of the log collection, etc.)
+                cr.update_attributes!(state: ContainerRequest::Final)
               end
             end
           end
