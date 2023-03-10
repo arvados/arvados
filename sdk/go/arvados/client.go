@@ -230,43 +230,9 @@ func NewClientFromEnv() *Client {
 	}
 }
 
-func shouldRetry(req *http.Request, resp *http.Response, err error) bool {
-	if nerr := net.Error(nil); errors.As(err, &nerr) && nerr.Temporary() {
-		return true
-	}
-	switch req.Method {
-	case "GET", "HEAD", "PUT", "OPTIONS", "DELETE":
-	default:
-		return false
-	}
-	if uerr := new(url.Error); errors.As(err, &uerr) && uerr.Err.Error() == "Service Unavailable" {
-		// This is how http.Client reports 503 from proxy server
-		return true
-	}
-	if err != nil {
-		return false
-	}
-	switch resp.StatusCode {
-	case 408, 409, 422, 423, 500, 502, 503, 504:
-		return true
-	default:
-		return false
-	}
-}
-
 var reqIDGen = httpserver.IDGenerator{Prefix: "req-"}
 
 var nopCancelFunc context.CancelFunc = func() {}
-
-func (c *Client) checkRetry(ctx context.Context, resp *http.Response, err error) (bool, error) {
-	if c.requestLimiter.Report(resp, err) {
-		c.last503.Store(time.Now())
-	}
-	if c.Timeout == 0 {
-		return false, err
-	}
-	return retryablehttp.DefaultRetryPolicy(ctx, resp, err)
-}
 
 // Do augments (*http.Client)Do(): adds Authorization and X-Request-Id
 // headers, delays in order to comply with rate-limiting restrictions,
