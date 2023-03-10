@@ -12,9 +12,11 @@ class SysController < ApplicationController
       # Sweep trashed collections
       Collection.
         where('delete_at is not null and delete_at < statement_timestamp()').
+        in_batches(of: 15).
         destroy_all
       Collection.
         where('is_trashed = false and trash_at < statement_timestamp()').
+        in_batches(of: 15).
         update_all('is_trashed = true')
 
       # Sweep trashed projects and their contents (as well as role
@@ -50,7 +52,7 @@ class SysController < ApplicationController
     skipped_classes = ['Group', 'User']
     ActiveRecord::Base.descendants.reject(&:abstract_class?).each do |klass|
       if !skipped_classes.include?(klass.name) && klass.columns.collect(&:name).include?('owner_uuid')
-        klass.where({owner_uuid: p_uuid}).destroy_all
+        klass.where({owner_uuid: p_uuid}).in_batches(of: 15).destroy_all
       end
     end
     # Finally delete the project itself
