@@ -831,7 +831,7 @@ class Container < ArvadosModel
           ContainerRequest.
             where(requesting_container_uuid: uuid,
                   state: ContainerRequest::Committed).
-            in_batches(of: 15).each do |cr|
+            in_batches(of: 15).each_record do |cr|
             leave_modified_by_user_alone do
               cr.set_priority_zero
               container_state = Container.where(uuid: cr.container_uuid).pluck(:state).first

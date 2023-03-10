@@ -183,11 +183,11 @@ class Arvados::V1::CollectionsController < ApplicationController
           end
         end
 
-        Container.readable_by(*@read_users).where(output: loc.to_s).in_batches(of: 15).each do |c|
+        Container.readable_by(*@read_users).where(output: loc.to_s).in_batches(of: 15).each_record do |c|
           search_edges(visited, c.uuid, :search_up)
         end
 
-        Container.readable_by(*@read_users).where(log: loc.to_s).in_batches(of: 15).each do |c|
+        Container.readable_by(*@read_users).where(log: loc.to_s).in_batches(of: 15).each_record do |c|
           search_edges(visited, c.uuid, :search_up)
         end
       elsif direction == :search_down
@@ -207,7 +207,7 @@ class Arvados::V1::CollectionsController < ApplicationController
           end
         end
 
-        Container.readable_by(*@read_users).where([Container.full_text_trgm + " like ?", "%#{loc.to_s}%"]).in_batches(of: 15).each do |c|
+        Container.readable_by(*@read_users).where([Container.full_text_trgm + " like ?", "%#{loc.to_s}%"]).in_batches(of: 15).each_record do |c|
           if c.output != loc.to_s && c.log != loc.to_s
             search_edges(visited, c.uuid, :search_down)
           end
@@ -276,11 +276,11 @@ class Arvados::V1::CollectionsController < ApplicationController
               end
             end
 
-            ContainerRequest.readable_by(*@read_users).where(output_uuid: uuid).in_batches(of: 15).each do |cr|
+            ContainerRequest.readable_by(*@read_users).where(output_uuid: uuid).in_batches(of: 15).each_record do |cr|
               search_edges(visited, cr.uuid, :search_up)
             end
 
-            ContainerRequest.readable_by(*@read_users).where(log_uuid: uuid).in_batches(of: 15).each do |cr|
+            ContainerRequest.readable_by(*@read_users).where(log_uuid: uuid).in_batches(of: 15).each_record do |cr|
               search_edges(visited, cr.uuid, :search_up)
             end
           elsif direction == :search_down
