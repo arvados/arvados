@@ -32,6 +32,10 @@ h2(#main). development main (as of 2023-03-06)
 
 "previous: Upgrading to 2.5.0":#v2_5_0
 
+h3. Slow migration on upgrade
+
+Important!  This upgrade includes a database schema update changing the integer id column in each table from 32-bit to 64-bit.  Because it touches every row in the table, on moderate to large sized installations this may be very slow (on the order of hours). Plan for the arvados-api-server package upgrade to take longer than usual.
+
 h3. Default request concurrency, new limit on log requests
 
 The configuration value @API.MaxConcurrentRequests@ (the number of concurrent requests that will be accepted by a single instance of arvados-controller) now has a default value of 64, instead of being unlimited.
@@ -48,9 +52,9 @@ There is a new configuration entry @CloudVMs.MaxInstances@ (default 64) that lim
 
 Using the obsolete configuration entry @MaxCloudVMs@, which was previously accepted in config files but not obeyed, will now result in a deprecation warning.
 
-h3. Slow migration on upgrade
+h3. Default frequency for running keep-balance has changed
 
-This upgrade includes a database schema update (changing an integer column in each table from 32-bit to 64-bit) that may be slow on a large installation. Expect the arvados-api-server package upgrade to take longer than usual.
+The frequency that @keep-balance@ will run (@Collections.BalancePeriod@) has been changed from every 10 minutes to every 6 hours.
 
 h2(#v2_5_0). v2.5.0 (2022-12-22)
 
