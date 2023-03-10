@@ -534,7 +534,7 @@ Clusters:
       #
       # If SIGUSR1 is received during an idle period between operations,
       # the next operation will start immediately.
-      BalancePeriod: 10m
+      BalancePeriod: 6h
 
       # Limits the number of collections retrieved by keep-balance per
       # API transaction. If this is zero, page size is
