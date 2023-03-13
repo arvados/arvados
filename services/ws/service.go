@@ -7,6 +7,7 @@ package ws
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"git.arvados.org/arvados.git/lib/cmd"
 	"git.arvados.org/arvados.git/lib/service"
@@ -24,6 +25,7 @@ func newHandler(ctx context.Context, cluster *arvados.Cluster, token string, reg
 	if err != nil {
 		return service.ErrorHandler(ctx, cluster, fmt.Errorf("error initializing client from cluster config: %s", err))
 	}
+	client.Timeout = time.Minute
 	eventSource := &pgEventSource{
 		DataSource:   cluster.PostgreSQL.Connection.String(),
 		MaxOpenConns: cluster.PostgreSQL.ConnectionPool,
