@@ -663,7 +663,10 @@ func (s *runSuite) TestRunForever(c *check.C) {
 	// first run should also send 4 empty trash lists at
 	// startup. We should complete all four runs in much less than
 	// a second.
-	for t0 := time.Now(); pullReqs.Count() < 16 && time.Since(t0) < 10*time.Second; {
+	for t0 := time.Now(); time.Since(t0) < 10*time.Second; {
+		if pullReqs.Count() >= 16 && trashReqs.Count() == pullReqs.Count()+4 {
+			break
+		}
 		time.Sleep(time.Millisecond)
 	}
 	cancel()
