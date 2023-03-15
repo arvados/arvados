@@ -1,0 +1,3 @@
+{
+    "[data-cy=side-panel-tree]": "This allows you to navigate through the app"
+}
