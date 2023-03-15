@@ -56,6 +56,10 @@ func (conn *Conn) containerPriorityUpdate(ctx context.Context, log logrus.FieldL
 	if err != nil {
 		return fmt.Errorf("getdb: %w", err)
 	}
+	// Stage 1: Fix containers that have priority>0 but should
+	// have priority=0 because there are no active
+	// container_requests (unfinished, priority>0) associated with
+	// them.
 	res, err := db.ExecContext(ctx, `
 		UPDATE containers
 		SET priority=0
@@ -73,6 +77,16 @@ func (conn *Conn) containerPriorityUpdate(ctx context.Context, log logrus.FieldL
 	} else if rows > 0 {
 		log.Infof("found %d containers with priority>0 and no active requests, updated to priority=0", rows)
 	}
+
+	// Stage 2: Fix containers that have priority=0 but should
+	// have priority>0 because there are active container_requests
+	// (priority>0, unfinished, and not children of cancelled
+	// containers).
+	//
+	// Fixing here means calling out to RailsAPI to compute the
+	// correct priority for the contianer and (if needed)
+	// propagate that change to child containers.
+
 	// In this loop we look for a single container that needs
 	// fixing, call out to Rails to fix it, and repeat until we
 	// don't find any more.
@@ -86,14 +100,14 @@ func (conn *Conn) containerPriorityUpdate(ctx context.Context, log logrus.FieldL
 		err := db.QueryRowxContext(ctx, `
 			SELECT containers.uuid from containers
 			JOIN container_requests
-			 ON container_requests.container_uuid=containers.uuid
+			 ON container_requests.container_uuid = containers.uuid
 			 AND container_requests.state = 'Committed' AND container_requests.priority > 0
 			LEFT JOIN containers parent
 			 ON parent.uuid = container_requests.requesting_container_uuid
 			WHERE containers.state IN ('Queued', 'Locked', 'Running')
 			 AND containers.priority = 0
-			 AND container_requests.uuid IS NOT NULL
 			 AND (parent.uuid IS NULL OR parent.priority > 0)
+			ORDER BY containers.created_at
 			LIMIT 1`).Scan(&uuid)
 		if err == sql.ErrNoRows {
 			break

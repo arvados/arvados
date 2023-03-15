@@ -131,7 +131,7 @@ class Container < ArvadosModel
   def update_priority!
     return if ![Queued, Locked, Running].include?(state)
     p = ContainerRequest.
-          where('container_uuid=? and priority>0', uuid).
+          where('container_uuid=? and priority>0 and state=?', uuid, ContainerRequest::Committed).
           select("priority, requesting_container_uuid, created_at").
           lock(true).
           map do |cr|
