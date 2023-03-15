@@ -12,6 +12,7 @@ import { TrashableResourceService } from "services/common-service/trashable-reso
 import { ApiActions } from "services/api/api-actions";
 import { customEncodeURI } from "common/url";
 import { Session } from "models/session";
+import { CommonService } from "services/common-service/common-service";
 
 export type UploadProgress = (fileId: number, loaded: number, total: number, currentTime: number) => void;
 
@@ -123,4 +124,65 @@ export class CollectionService extends TrashableResourceService<CollectionResour
         };
         return this.webdavClient.upload(fileURL, [file], requestConfig);
     }
+
+    batchFileDelete(collectionUuid: string, files: string[], showErrors?: boolean) {
+        const payload = {
+            collection: {
+                preserve_version: true
+            },
+            replace_files: files.reduce((obj, filePath) => {
+                const pathStart = filePath.startsWith('/') ? '' : '/';
+                return {
+                    ...obj,
+                    [`${pathStart}${filePath}`]: ''
+                }
+            }, {})
+        };
+
+        return CommonService.defaultResponse(
+            this.serverApi
+                .put<CollectionResource>(`/${this.resourceType}/${collectionUuid}`, payload),
+            this.actions,
+            true, // mapKeys
+            showErrors
+        );
+    }
+
+    batchFileCopy(sourcePdh: string, files: string[], destinationCollectionUuid: string, destinationCollectionPath: string, showErrors?: boolean) {
+        const pathStart = destinationCollectionPath.startsWith('/') ? '' : '/';
+        const separator = destinationCollectionPath.endsWith('/') ? '' : '/';
+        const destinationPath = `${pathStart}${destinationCollectionPath}${separator}`;
+        const payload = {
+            collection: {
+                preserve_version: true
+            },
+            replace_files: files.reduce((obj, sourceFile) => {
+                const sourcePath = sourceFile.startsWith('/') ? sourceFile : `/${sourceFile}`;
+                return {
+                    ...obj,
+                    [`${destinationPath}${sourceFile.split('/').slice(-1)}`]: `${sourcePdh}${sourcePath}`
+                };
+            }, {})
+        };
+
+        return CommonService.defaultResponse(
+            this.serverApi
+                .put<CollectionResource>(`/${this.resourceType}/${destinationCollectionUuid}`, payload),
+            this.actions,
+            true, // mapKeys
+            showErrors
+        );
+    }
+
+    batchFileMove(sourceUuid: string, sourcePdh: string, files: string[], destinationCollectionUuid: string, destinationPath: string, showErrors?: boolean) {
+        return this.batchFileCopy(sourcePdh, files, destinationCollectionUuid, destinationPath, showErrors)
+            .then(() => {
+                return this.batchFileDelete(sourceUuid, files, showErrors);
+            });
+    }
+
+    createDirectory(collectionUuid: string, path: string) {
+        return this.webdavClient.mkdir(`c=${collectionUuid}/${customEncodeURI(path)}`);
+    }
+
 }

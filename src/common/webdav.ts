@@ -88,6 +88,15 @@ export class WebDAV {
             method: 'DELETE'
         })
 
+    mkdir = (url: string, config: WebDAVRequestConfig = {}) =>
+        this.request({
+            ...config, url,
+            method: 'MKCOL',
+            headers: {
+                ...config.headers,
+            }
+        })
+
     private request = (config: RequestConfig) => {
         return new Promise<XMLHttpRequest>((resolve, reject) => {
             const r = this.createRequest();

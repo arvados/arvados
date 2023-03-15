@@ -23,10 +23,12 @@ describe('collection-service', () => {
         webdavClient = {
             delete: jest.fn(),
             upload: jest.fn(),
+            mkdir: jest.fn(),
         } as any;
         authService = {} as AuthService;
         actions = {
             progressFn: jest.fn(),
+            errorFn: jest.fn(),
         } as any;
         collectionService = new CollectionService(serverApi, webdavClient, authService, actions);
         collectionService.update = jest.fn();
@@ -165,4 +167,165 @@ describe('collection-service', () => {
             expect(webdavClient.delete).toHaveBeenCalledWith("c=zzzzz-tpzed-5o5tg0l9a57gxxx/root/1");
         });
     });
+
+    describe('batch file operations', () => {
+        it('should batch remove files', async () => {
+            serverApi.put = jest.fn(() => Promise.resolve({ data: {} }));
+            // given
+            const filePaths: string[] = ['/root/1', '/secondFile', 'barefile.txt'];
+            const collectionUUID = 'zzzzz-4zz18-5o5tg0l9a57gxxx';
+
+            // when
+            await collectionService.batchFileDelete(collectionUUID, filePaths);
+
+            // then
+            expect(serverApi.put).toHaveBeenCalledTimes(1);
+            expect(serverApi.put).toHaveBeenCalledWith(
+                `/collections/${collectionUUID}`, {
+                    collection: {
+                        preserve_version: true
+                    },
+                    replace_files: {
+                        '/root/1': '',
+                        '/secondFile': '',
+                        '/barefile.txt': '',
+                    },
+                }
+            );
+        });
+
+        it('should batch copy files', async () => {
+            serverApi.put = jest.fn(() => Promise.resolve({ data: {} }));
+            // given
+            const filePaths: string[] = ['/root/1', '/secondFile', 'barefile.txt'];
+            // const collectionUUID = 'zzzzz-4zz18-5o5tg0l9a57gxxx';
+            const collectionPDH = '8cd9ce1dfa21c635b620b1bfee7aaa08+180';
+
+            const destinationUuid = 'zzzzz-4zz18-ywq0rvhwwhkjnfq';
+            const destinationPath = '/destinationPath';
+
+            // when
+            await collectionService.batchFileCopy(collectionPDH, filePaths, destinationUuid, destinationPath);
+
+            // then
+            expect(serverApi.put).toHaveBeenCalledTimes(1);
+            expect(serverApi.put).toHaveBeenCalledWith(
+                `/collections/${destinationUuid}`, {
+                    collection: {
+                        preserve_version: true
+                    },
+                    replace_files: {
+                        [`${destinationPath}/1`]: `${collectionPDH}/root/1`,
+                        [`${destinationPath}/secondFile`]: `${collectionPDH}/secondFile`,
+                        [`${destinationPath}/barefile.txt`]: `${collectionPDH}/barefile.txt`,
+                    },
+                }
+            );
+        });
+
+        it('should batch move files', async () => {
+            serverApi.put = jest.fn(() => Promise.resolve({ data: {} }));
+            // given
+            const filePaths: string[] = ['/rootFile', '/secondFile', '/subpath/subfile', 'barefile.txt'];
+            const srcCollectionUUID = 'zzzzz-4zz18-5o5tg0l9a57gxxx';
+            const srcCollectionPDH = '8cd9ce1dfa21c635b620b1bfee7aaa08+180';
+
+            const destinationUuid = 'zzzzz-4zz18-ywq0rvhwwhkjnfq';
+            const destinationPath = '/destinationPath';
+
+            // when
+            await collectionService.batchFileMove(srcCollectionUUID, srcCollectionPDH, filePaths, destinationUuid, destinationPath);
+
+            // then
+            expect(serverApi.put).toHaveBeenCalledTimes(2);
+            // Verify copy
+            expect(serverApi.put).toHaveBeenCalledWith(
+                `/collections/${destinationUuid}`, {
+                    collection: {
+                        preserve_version: true
+                    },
+                    replace_files: {
+                        [`${destinationPath}/rootFile`]: `${srcCollectionPDH}/rootFile`,
+                        [`${destinationPath}/secondFile`]: `${srcCollectionPDH}/secondFile`,
+                        [`${destinationPath}/subfile`]: `${srcCollectionPDH}/subpath/subfile`,
+                        [`${destinationPath}/barefile.txt`]: `${srcCollectionPDH}/barefile.txt`,
+                    },
+                }
+            );
+            // Verify delete
+            expect(serverApi.put).toHaveBeenCalledWith(
+                `/collections/${srcCollectionUUID}`, {
+                    collection: {
+                        preserve_version: true
+                    },
+                    replace_files: {
+                        "/rootFile": "",
+                        "/secondFile": "",
+                        "/subpath/subfile": "",
+                        "/barefile.txt": "",
+                    },
+                }
+            );
+        });
+
+        it('should abort batch move when copy fails', async () => {
+            // Simulate failure to copy
+            serverApi.put = jest.fn(() => Promise.reject({
+                data: {},
+                response: {
+                    "errors": ["error getting snapshot of \"rootFile\" from \"8cd9ce1dfa21c635b620b1bfee7aaa08+180\": file does not exist"]
+                }
+            }));
+            // given
+            const filePaths: string[] = ['/rootFile', '/secondFile', '/subpath/subfile', 'barefile.txt'];
+            const srcCollectionUUID = 'zzzzz-4zz18-5o5tg0l9a57gxxx';
+            const srcCollectionPDH = '8cd9ce1dfa21c635b620b1bfee7aaa08+180';
+
+            const destinationUuid = 'zzzzz-4zz18-ywq0rvhwwhkjnfq';
+            const destinationPath = '/destinationPath';
+
+            // when
+            try {
+                await collectionService.batchFileMove(srcCollectionUUID, srcCollectionPDH, filePaths, destinationUuid, destinationPath);
+            } catch {}
+
+            // then
+            expect(serverApi.put).toHaveBeenCalledTimes(1);
+            // Verify copy
+            expect(serverApi.put).toHaveBeenCalledWith(
+                `/collections/${destinationUuid}`, {
+                    collection: {
+                        preserve_version: true
+                    },
+                    replace_files: {
+                        [`${destinationPath}/rootFile`]: `${srcCollectionPDH}/rootFile`,
+                        [`${destinationPath}/secondFile`]: `${srcCollectionPDH}/secondFile`,
+                        [`${destinationPath}/subfile`]: `${srcCollectionPDH}/subpath/subfile`,
+                        [`${destinationPath}/barefile.txt`]: `${srcCollectionPDH}/barefile.txt`,
+                    },
+                }
+            );
+        });
+    });
+
+    describe('createDirectory', () => {
+        it('creates empty directory', async () => {
+            // given
+            const directoryNames = {
+                'newDir': 'newDir',
+                '/fooDir': 'fooDir',
+                '/anotherPath/': 'anotherPath',
+                'trailingSlash/': 'trailingSlash',
+            };
+            const collectionUUID = 'zzzzz-tpzed-5o5tg0l9a57gxxx';
+
+            Object.keys(directoryNames).map(async (path) => {
+                // when
+                await collectionService.createDirectory(collectionUUID, path);
+                // then
+                expect(webdavClient.mkdir).toHaveBeenCalledWith(`c=${collectionUUID}/${directoryNames[path]}`);
+            });
+        });
+    });
+
 });
