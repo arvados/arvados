@@ -256,6 +256,7 @@ func (s *HandlerSuite) TestDiscoveryDocCache(c *check.C) {
 	holdReqs = make(chan struct{})
 	getDDConcurrently(5, http.StatusOK, check.Commentf("refresh cache after error condition clears")).Wait()
 	close(holdReqs)
+	waitPendingUpdates()
 	c.Check(countRailsReqs(), check.Equals, reqsBefore+1)
 }
 
