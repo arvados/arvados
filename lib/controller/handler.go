@@ -171,7 +171,7 @@ func (h *Handler) setup() {
 		Name: "arvados-controller",
 	}
 	h.cache = map[string]*cacheEnt{
-		"/discovery/v1/apis/arvados/v1/rest": &cacheEnt{},
+		"/discovery/v1/apis/arvados/v1/rest": &cacheEnt{validateDD: true},
 	}
 
 	go h.trashSweepWorker()
@@ -222,6 +222,7 @@ func (h *Handler) limitLogCreateRequests(w http.ResponseWriter, req *http.Reques
 // cacheEnt implements a basic stale-while-revalidate cache, suitable
 // for the Arvados discovery document.
 type cacheEnt struct {
+	validateDD   bool
 	mtx          sync.Mutex
 	header       http.Header
 	body         []byte
@@ -277,7 +278,14 @@ func (ent *cacheEnt) refresh(path string, do func(*http.Request) (*http.Response
 			header[k] = v
 		}
 	}
-	if mediatype, _, err := mime.ParseMediaType(header.Get("Content-Type")); err == nil && mediatype == "application/json" {
+	if ent.validateDD {
+		var dd arvados.DiscoveryDocument
+		if err := json.Unmarshal(body, &dd); err != nil {
+			return nil, nil, fmt.Errorf("error decoding JSON response: %w", err)
+		} else if dd.BasePath == "" {
+			return nil, nil, errors.New("error in discovery document: no value for basePath")
+		}
+	} else if mediatype, _, err := mime.ParseMediaType(header.Get("Content-Type")); err == nil && mediatype == "application/json" {
 		if !json.Valid(body) {
 			return nil, nil, errors.New("invalid JSON encoding in response")
 		}

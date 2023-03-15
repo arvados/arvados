@@ -131,8 +131,12 @@ func (s *HandlerSuite) TestDiscoveryDocCache(c *check.C) {
 		return &wg
 	}
 	clearCache := func() {
-		for path := range s.handler.cache {
-			s.handler.cache[path] = &cacheEnt{}
+		for _, ent := range s.handler.cache {
+			ent.refreshLock.Lock()
+			ent.mtx.Lock()
+			ent.body, ent.header, ent.refreshAfter = nil, nil, time.Time{}
+			ent.mtx.Unlock()
+			ent.refreshLock.Unlock()
 		}
 	}
 	expireCache := func() {
@@ -188,11 +192,15 @@ func (s *HandlerSuite) TestDiscoveryDocCache(c *check.C) {
 	}
 	c.Check(countRailsReqs(), check.Equals, reqsBefore+1)
 
-	// Configure railsSpy to return an error when wantError==true.
-	var wantError bool
+	// Configure railsSpy to return an error or bad content
+	// depending on flags.
+	var wantError, wantBadContent bool
 	s.railsSpy.Director = func(req *http.Request) {
 		if wantError {
 			req.Method = "MAKE-COFFEE"
+		} else if wantBadContent {
+			req.URL.Path = "/_health/ping"
+			req.Header.Set("Authorization", "Bearer "+arvadostest.ManagementToken)
 		}
 	}
 
@@ -208,9 +216,16 @@ func (s *HandlerSuite) TestDiscoveryDocCache(c *check.C) {
 	wg.Wait()
 	c.Check(countRailsReqs(), check.Equals, reqsBefore+5)
 
+	// Response status is OK but body is not a discovery document
+	wantError = false
+	wantBadContent = true
+	reqsBefore = countRailsReqs()
+	c.Check(getDD(), check.Equals, http.StatusBadGateway)
+	c.Check(countRailsReqs(), check.Equals, reqsBefore+1)
+
 	// Error condition clears => caller gets OK, cache is warmed
 	// up
-	wantError = false
+	wantBadContent = false
 	reqsBefore = countRailsReqs()
 	getDDConcurrently(5, http.StatusOK, check.Commentf("success after errors at startup")).Wait()
 	c.Check(countRailsReqs(), check.Equals, reqsBefore+1)
