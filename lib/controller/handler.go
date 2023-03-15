@@ -272,9 +272,9 @@ func (ent *cacheEnt) refresh(path string, do func(*http.Request) (*http.Response
 		return nil, nil, fmt.Errorf("Read error: %w", err)
 	}
 	header := http.Header{}
-	for _, k := range []string{"Content-Type", "Etag", "Last-Modified"} {
-		if v, ok := header[k]; ok {
-			resp.Header[k] = v
+	for k, v := range resp.Header {
+		if !dropHeaders[k] && k != "X-Request-Id" {
+			header[k] = v
 		}
 	}
 	if mediatype, _, err := mime.ParseMediaType(header.Get("Content-Type")); err == nil && mediatype == "application/json" {
