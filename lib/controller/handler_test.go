@@ -139,17 +139,18 @@ func (s *HandlerSuite) TestDiscoveryDocCache(c *check.C) {
 			ent.refreshLock.Unlock()
 		}
 	}
-	expireCache := func() {
-		for _, ent := range s.handler.cache {
-			ent.refreshAfter = time.Now()
-		}
-	}
 	waitPendingUpdates := func() {
 		for _, ent := range s.handler.cache {
 			ent.refreshLock.Lock()
 			defer ent.refreshLock.Unlock()
 			ent.mtx.Lock()
 			defer ent.mtx.Unlock()
+		}
+	}
+	expireCache := func() {
+		waitPendingUpdates()
+		for _, ent := range s.handler.cache {
+			ent.refreshAfter = time.Now()
 		}
 	}
 
@@ -208,7 +209,7 @@ func (s *HandlerSuite) TestDiscoveryDocCache(c *check.C) {
 	// make an upstream attempt for each incoming request because
 	// we have nothing better to return
 	clearCache()
-	wantError = true
+	wantError, wantBadContent = true, false
 	reqsBefore = countRailsReqs()
 	holdReqs = make(chan struct{})
 	wg = getDDConcurrently(5, http.StatusBadGateway, check.Commentf("error at startup"))
@@ -217,29 +218,29 @@ func (s *HandlerSuite) TestDiscoveryDocCache(c *check.C) {
 	c.Check(countRailsReqs(), check.Equals, reqsBefore+5)
 
 	// Response status is OK but body is not a discovery document
-	wantError = false
-	wantBadContent = true
+	wantError, wantBadContent = false, true
 	reqsBefore = countRailsReqs()
 	c.Check(getDD(), check.Equals, http.StatusBadGateway)
 	c.Check(countRailsReqs(), check.Equals, reqsBefore+1)
 
 	// Error condition clears => caller gets OK, cache is warmed
 	// up
-	wantBadContent = false
+	wantError, wantBadContent = false, false
 	reqsBefore = countRailsReqs()
 	getDDConcurrently(5, http.StatusOK, check.Commentf("success after errors at startup")).Wait()
 	c.Check(countRailsReqs(), check.Equals, reqsBefore+1)
 
 	// Error with warm cache => caller gets OK (with no attempt to
 	// re-fetch)
-	wantError = true
+	wantError, wantBadContent = true, false
 	reqsBefore = countRailsReqs()
 	getDDConcurrently(5, http.StatusOK, check.Commentf("error with warm cache")).Wait()
 	c.Check(countRailsReqs(), check.Equals, reqsBefore)
-	expireCache()
 
 	// Error with expired cache => caller gets OK with stale data
 	// while the re-fetch is attempted in the background
+	expireCache()
+	wantError, wantBadContent = true, false
 	reqsBefore = countRailsReqs()
 	holdReqs = make(chan struct{})
 	getDDConcurrently(5, http.StatusOK, check.Commentf("error with expired cache")).Wait()
@@ -249,9 +250,8 @@ func (s *HandlerSuite) TestDiscoveryDocCache(c *check.C) {
 	// arrive)
 	c.Check(countRailsReqs(), check.Equals, reqsBefore+1)
 
-	waitPendingUpdates()
 	expireCache()
-	wantError = false
+	wantError, wantBadContent = false, false
 	reqsBefore = countRailsReqs()
 	holdReqs = make(chan struct{})
 	getDDConcurrently(5, http.StatusOK, check.Commentf("refresh cache after error condition clears")).Wait()
