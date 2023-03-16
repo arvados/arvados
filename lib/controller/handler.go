@@ -226,11 +226,15 @@ type cacheEnt struct {
 	mtx          sync.Mutex
 	header       http.Header
 	body         []byte
+	expireAfter  time.Time
 	refreshAfter time.Time
 	refreshLock  sync.Mutex
 }
 
-const cacheTTL = 5 * time.Minute
+const (
+	cacheTTL    = 5 * time.Minute
+	cacheExpire = 24 * time.Hour
+)
 
 func (ent *cacheEnt) refresh(path string, do func(*http.Request) (*http.Response, error)) (http.Header, []byte, error) {
 	ent.refreshLock.Lock()
@@ -292,12 +296,16 @@ func (ent *cacheEnt) refresh(path string, do func(*http.Request) (*http.Response
 	ent.header = header
 	ent.body = body
 	ent.refreshAfter = time.Now().Add(cacheTTL)
+	ent.expireAfter = time.Now().Add(cacheExpire)
 	return ent.header, ent.body, nil
 }
 
 func (ent *cacheEnt) response() (http.Header, []byte, bool) {
 	ent.mtx.Lock()
 	defer ent.mtx.Unlock()
+	if ent.expireAfter.Before(time.Now()) {
+		ent.header, ent.body, ent.refreshAfter = nil, nil, time.Time{}
+	}
 	return ent.header, ent.body, ent.refreshAfter.Before(time.Now())
 }
 

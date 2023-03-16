@@ -147,10 +147,16 @@ func (s *HandlerSuite) TestDiscoveryDocCache(c *check.C) {
 			defer ent.mtx.Unlock()
 		}
 	}
-	expireCache := func() {
+	refreshNow := func() {
 		waitPendingUpdates()
 		for _, ent := range s.handler.cache {
 			ent.refreshAfter = time.Now()
+		}
+	}
+	expireNow := func() {
+		waitPendingUpdates()
+		for _, ent := range s.handler.cache {
+			ent.expireAfter = time.Now()
 		}
 	}
 
@@ -182,7 +188,7 @@ func (s *HandlerSuite) TestDiscoveryDocCache(c *check.C) {
 
 	// Race after expiry: concurrent reqs return the cached data
 	// but initiate a new fetch in the background.
-	expireCache()
+	refreshNow()
 	holdReqs = make(chan struct{})
 	wg = getDDConcurrently(5, http.StatusOK, check.Commentf("race after expiry"))
 	reqsBefore = countRailsReqs()
@@ -237,26 +243,55 @@ func (s *HandlerSuite) TestDiscoveryDocCache(c *check.C) {
 	getDDConcurrently(5, http.StatusOK, check.Commentf("error with warm cache")).Wait()
 	c.Check(countRailsReqs(), check.Equals, reqsBefore)
 
-	// Error with expired cache => caller gets OK with stale data
+	// Error with stale cache => caller gets OK with stale data
 	// while the re-fetch is attempted in the background
-	expireCache()
+	refreshNow()
 	wantError, wantBadContent = true, false
 	reqsBefore = countRailsReqs()
 	holdReqs = make(chan struct{})
-	getDDConcurrently(5, http.StatusOK, check.Commentf("error with expired cache")).Wait()
+	getDDConcurrently(5, http.StatusOK, check.Commentf("error with stale cache")).Wait()
 	close(holdReqs)
 	// Only one attempt to re-fetch (holdReqs ensured the first
 	// update took long enough for the last incoming request to
 	// arrive)
 	c.Check(countRailsReqs(), check.Equals, reqsBefore+1)
 
-	expireCache()
+	refreshNow()
 	wantError, wantBadContent = false, false
 	reqsBefore = countRailsReqs()
 	holdReqs = make(chan struct{})
 	getDDConcurrently(5, http.StatusOK, check.Commentf("refresh cache after error condition clears")).Wait()
 	close(holdReqs)
 	waitPendingUpdates()
+	c.Check(countRailsReqs(), check.Equals, reqsBefore+1)
+
+	// Make sure expireAfter is getting set
+	waitPendingUpdates()
+	exp := s.handler.cache["/discovery/v1/apis/arvados/v1/rest"].expireAfter.Sub(time.Now())
+	c.Check(exp > cacheTTL, check.Equals, true)
+	c.Check(exp < cacheExpire, check.Equals, true)
+
+	// After the cache *expires* it behaves as if uninitialized:
+	// each incoming request does a new upstream request until one
+	// succeeds.
+	//
+	// First check failure after expiry:
+	expireNow()
+	wantError, wantBadContent = true, false
+	reqsBefore = countRailsReqs()
+	holdReqs = make(chan struct{})
+	wg = getDDConcurrently(5, http.StatusBadGateway, check.Commentf("error after expiry"))
+	close(holdReqs)
+	wg.Wait()
+	c.Check(countRailsReqs(), check.Equals, reqsBefore+5)
+
+	// Success after expiry:
+	wantError, wantBadContent = false, false
+	reqsBefore = countRailsReqs()
+	holdReqs = make(chan struct{})
+	wg = getDDConcurrently(5, http.StatusOK, check.Commentf("success after expiry"))
+	close(holdReqs)
+	wg.Wait()
 	c.Check(countRailsReqs(), check.Equals, reqsBefore+1)
 }
 
