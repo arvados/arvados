@@ -171,7 +171,7 @@ func (h *Handler) setup() {
 		Name: "arvados-controller",
 	}
 	h.cache = map[string]*cacheEnt{
-		"/discovery/v1/apis/arvados/v1/rest": &cacheEnt{validateDD: true},
+		"/discovery/v1/apis/arvados/v1/rest": &cacheEnt{validate: validateDiscoveryDoc},
 	}
 
 	go h.trashSweepWorker()
@@ -222,7 +222,7 @@ func (h *Handler) limitLogCreateRequests(w http.ResponseWriter, req *http.Reques
 // cacheEnt implements a basic stale-while-revalidate cache, suitable
 // for the Arvados discovery document.
 type cacheEnt struct {
-	validateDD   bool
+	validate     func(body []byte) error
 	mtx          sync.Mutex
 	header       http.Header
 	body         []byte
@@ -278,12 +278,9 @@ func (ent *cacheEnt) refresh(path string, do func(*http.Request) (*http.Response
 			header[k] = v
 		}
 	}
-	if ent.validateDD {
-		var dd arvados.DiscoveryDocument
-		if err := json.Unmarshal(body, &dd); err != nil {
-			return nil, nil, fmt.Errorf("error decoding JSON response: %w", err)
-		} else if dd.BasePath == "" {
-			return nil, nil, errors.New("error in discovery document: no value for basePath")
+	if ent.validate != nil {
+		if err := ent.validate(body); err != nil {
+			return nil, nil, err
 		}
 	} else if mediatype, _, err := mime.ParseMediaType(header.Get("Content-Type")); err == nil && mediatype == "application/json" {
 		if !json.Valid(body) {
@@ -357,4 +354,16 @@ func findRailsAPI(cluster *arvados.Cluster) (*url.URL, bool, error) {
 		return nil, false, fmt.Errorf("Services.RailsAPI.InternalURLs is empty")
 	}
 	return best, cluster.TLS.Insecure, nil
+}
+
+func validateDiscoveryDoc(body []byte) error {
+	var dd arvados.DiscoveryDocument
+	err := json.Unmarshal(body, &dd)
+	if err != nil {
+		return fmt.Errorf("error decoding JSON response: %w", err)
+	}
+	if dd.BasePath == "" {
+		return errors.New("error in discovery document: no value for basePath")
+	}
+	return nil
 }
