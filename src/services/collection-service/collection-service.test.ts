@@ -240,6 +240,7 @@ describe('collection-service', () => {
                     },
                     replace_files: {
                         [newPath]: `${collectionPdh}${oldPath}`,
+                        [oldPath]: '',
                     },
                 }
             );
