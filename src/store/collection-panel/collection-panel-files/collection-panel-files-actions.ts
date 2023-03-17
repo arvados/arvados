@@ -65,10 +65,11 @@ export const removeCollectionsSelectedFiles = () =>
 
 export const FILE_REMOVE_DIALOG = 'fileRemoveDialog';
 
-export const openFileRemoveDialog = (filePath: string) =>
+export const openFileRemoveDialog = (fileUuid: string) =>
     (dispatch: Dispatch, getState: () => RootState) => {
-        const file = getNodeValue(filePath)(getState().collectionPanelFiles);
+        const file = getNodeValue(fileUuid)(getState().collectionPanelFiles);
         if (file) {
+            const filePath = getFileFullPath(file);
             const isDirectory = file.type === CollectionFileType.DIRECTORY;
             const title = isDirectory
                 ? 'Removing directory'
