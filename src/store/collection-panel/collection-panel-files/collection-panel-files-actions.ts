@@ -129,7 +129,7 @@ export const renameFile = (newFullPath: string) =>
                 dispatch(startSubmit(RENAME_FILE_DIALOG));
                 const oldPath = getFileFullPath(file);
                 const newPath = newFullPath;
-                services.collectionService.moveFile(currentCollection.uuid, oldPath, newPath).then(() => {
+                services.collectionService.renameFile(currentCollection.uuid, currentCollection.portableDataHash, oldPath, newPath).then(() => {
                     dispatch(dialogActions.CLOSE_DIALOG({ id: RENAME_FILE_DIALOG }));
                     dispatch(snackbarActions.OPEN_SNACKBAR({ message: 'File name changed.', hideDuration: 2000 }));
                 }).catch(e => {
