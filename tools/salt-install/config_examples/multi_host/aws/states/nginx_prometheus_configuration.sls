@@ -13,6 +13,7 @@ extra_nginx_prometheus_conf_user___MONITORING_USERNAME__:
     - force: true
     - require:
       - pkg: extra_nginx_prometheus_conf_pkgs
+      - pkg: nginx_install
 
 extra_nginx_prometheus_conf_pkgs:
   pkg.installed:
