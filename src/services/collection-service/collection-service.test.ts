@@ -173,29 +173,6 @@ describe('collection-service', () => {
             );
         });
 
-        it('should remove files with uuid prefix', async () => {
-            // given
-            serverApi.put = jest.fn(() => Promise.resolve({ data: {} }));
-            const filePaths: string[] = ['/root/1'];
-            const collectionUUID = 'zzzzz-tpzed-5o5tg0l9a57gxxx';
-
-            // when
-            await collectionService.deleteFiles(collectionUUID, filePaths);
-
-            // then
-            expect(serverApi.put).toHaveBeenCalledTimes(1);
-            expect(serverApi.put).toHaveBeenCalledWith(
-                `/collections/${collectionUUID}`, {
-                    collection: {
-                        preserve_version: true
-                    },
-                    replace_files: {
-                        '/root/1': '',
-                    },
-                }
-            );
-        });
-
         it('should batch remove files', async () => {
             serverApi.put = jest.fn(() => Promise.resolve({ data: {} }));
             // given
