@@ -15,7 +15,7 @@ import { CommonService } from "services/common-service/common-service";
 
 export type UploadProgress = (fileId: number, loaded: number, total: number, currentTime: number) => void;
 
-export const emptyCollectionUuid = 'd41d8cd98f00b204e9800998ecf8427e+0';
+export const emptyCollectionPdh = 'd41d8cd98f00b204e9800998ecf8427e+0';
 
 export class CollectionService extends TrashableResourceService<CollectionResource> {
     constructor(serverApi: AxiosInstance, private webdavClient: WebDAV, private authService: AuthService, actions: ApiActions) {
@@ -188,7 +188,7 @@ export class CollectionService extends TrashableResourceService<CollectionResour
     }
 
     createDirectory(collectionUuid: string, path: string, showErrors?: boolean) {
-        const fileMap = {[this.combineFilePath([path])]: emptyCollectionUuid};
+        const fileMap = {[this.combineFilePath([path])]: emptyCollectionPdh};
 
         return this.replaceFiles(collectionUuid, fileMap, showErrors);
     }

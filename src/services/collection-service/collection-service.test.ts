@@ -7,7 +7,7 @@ import MockAdapter from 'axios-mock-adapter';
 import { snakeCase } from 'lodash';
 import { CollectionResource, defaultCollectionSelectedFields } from 'models/collection';
 import { AuthService } from '../auth-service/auth-service';
-import { CollectionService, emptyCollectionUuid } from './collection-service';
+import { CollectionService, emptyCollectionPdh } from './collection-service';
 
 describe('collection-service', () => {
     let collectionService: CollectionService;
@@ -467,7 +467,7 @@ describe('collection-service', () => {
                             preserve_version: true
                         },
                         replace_files: {
-                            ["/" + directoryNames[i].out]: emptyCollectionUuid,
+                            ["/" + directoryNames[i].out]: emptyCollectionPdh,
                         },
                     }
                 );
