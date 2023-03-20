@@ -1643,11 +1643,7 @@ func (runner *ContainerRunner) Run() (err error) {
 	signal.Notify(sigusr2, syscall.SIGUSR2)
 	defer signal.Stop(sigusr2)
 	runner.loadPrices()
-	go func() {
-		for range sigusr2 {
-			runner.loadPrices()
-		}
-	}()
+	go runner.handleSIGUSR2(sigusr2)
 
 	runner.finalState = "Queued"
 
@@ -2452,4 +2448,16 @@ func (cr *ContainerRunner) calculateCost(now time.Time) float64 {
 	}
 
 	return cost
+}
+
+func (runner *ContainerRunner) handleSIGUSR2(sigchan chan os.Signal) {
+	for range sigchan {
+		runner.loadPrices()
+		update := arvadosclient.Dict{
+			"container": arvadosclient.Dict{
+				"cost": runner.calculateCost(time.Now()),
+			},
+		}
+		runner.DispatcherArvClient.Update("containers", runner.Container.UUID, update, nil)
+	}
 }
