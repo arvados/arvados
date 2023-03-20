@@ -175,17 +175,17 @@ export class Autocomplete<Value, Suggestion> extends React.Component<Autocomplet
             (item, index) => {
                 const tooltip = this.props.renderChipTooltip ? this.props.renderChipTooltip(item) : '';
                 if (tooltip && tooltip.length) {
-                    return <Tooltip title={tooltip}>
+                    return <span key={index}>
+                        <Tooltip title={tooltip}>
                         <Chip
                             label={this.renderChipValue(item)}
                             key={index}
                             onDelete={onDelete && !this.props.disabled ? (() =>  onDelete(item, index)) : undefined} />
-                    </Tooltip>
+                    </Tooltip></span>
                 } else {
-                    return <Chip
+                    return <span key={index}><Chip
                         label={this.renderChipValue(item)}
-                        key={index}
-                        onDelete={onDelete && !this.props.disabled ? (() =>  onDelete(item, index)) : undefined} />
+                        onDelete={onDelete && !this.props.disabled ? (() =>  onDelete(item, index)) : undefined} /></span>
                 }
             }
         );

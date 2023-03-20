@@ -53,4 +53,4 @@ export const getSharingPublicAccessFormData = (state: any) =>
 export const hasChanges = (state: RootState) =>
     isDirty(SHARING_PUBLIC_ACCESS_FORM_NAME)(state) ||
     isDirty(SHARING_MANAGEMENT_FORM_NAME)(state) ||
-    isDirty(SHARING_INVITATION_FORM_NAME)(state);
+    (isDirty(SHARING_INVITATION_FORM_NAME)(state) && !!state.form[SHARING_INVITATION_FORM_NAME].values?.invitedPeople.length);

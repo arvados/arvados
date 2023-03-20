@@ -36,6 +36,7 @@ const mapStateToProps = (state: RootState, { working, ...props }: Props): Sharin
     const dialog = getDialog<SharingDialogData>(state.dialog, SHARING_DIALOG_NAME);
     const sharedResourceUuid = dialog?.data.resourceUuid || '';
     const sharingURLsDisabled = state.auth.config.clusterConfig.Workbench.DisableSharingURLsUI;
+    console.log(state);
     return ({
     ...props,
     saveEnabled: hasChanges(state),
