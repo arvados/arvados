@@ -24,7 +24,7 @@ export type ProjectCommandInputParameter = GenericCommandInputParameter<ProjectR
 const require: any = (value?: ProjectResource) => (value === undefined);
 
 export interface ProjectInputProps {
-    required?: boolean;
+    required: boolean;
     input: ProjectCommandInputParameter;
     options?: { showOnlyOwned: boolean, showOnlyWritable: boolean };
 }
@@ -39,7 +39,8 @@ export const ProjectInput = ({ required, input, options }: ProjectInputProps) =>
         format={format}
         validate={required ? require : undefined}
         {...{
-            options
+            options,
+            required
         }} />;
 
 const format = (value?: ProjectResource) => value ? value.name : '';
@@ -58,6 +59,7 @@ const mapStateToProps = (state: RootState) => ({ userUuid: getUserUuid(state) })
 export const ProjectInputComponent = connect(mapStateToProps)(
     class ProjectInputComponent extends React.Component<GenericInputProps & DispatchProp & HasUserUuid & {
         options?: { showOnlyOwned: boolean, showOnlyWritable: boolean };
+        required?: boolean;
     }, ProjectInputComponentState> {
         state: ProjectInputComponentState = {
             open: false,

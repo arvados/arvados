@@ -13,12 +13,13 @@ export type GenericInputProps = WrappedFieldProps & {
 
 type GenericInputContainerProps = GenericInputProps & {
     component: React.ComponentType<GenericInputProps>;
+    required?: boolean;
 };
 export const GenericInput = ({ component: Component, ...props }: GenericInputContainerProps) => {
     return <FormGroup>
         <FormLabel
             focused={props.meta.active}
-            required={isRequiredInput(props.commandInput)}
+            required={props.required !== undefined ? props.required : isRequiredInput(props.commandInput)}
             error={props.meta.touched && !!props.meta.error}>
             {getInputLabel(props.commandInput)}
         </FormLabel>
