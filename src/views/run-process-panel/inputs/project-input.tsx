@@ -24,7 +24,7 @@ export type ProjectCommandInputParameter = GenericCommandInputParameter<ProjectR
 const require: any = (value?: ProjectResource) => (value === undefined);
 
 export interface ProjectInputProps {
-    required?: boolean;
+    required: boolean;
     input: ProjectCommandInputParameter;
     options?: { showOnlyOwned: boolean, showOnlyWritable: boolean };
 }
@@ -37,7 +37,7 @@ export const ProjectInput = ({ required, input, options }: ProjectInputProps) =>
         commandInput={input}
         component={ProjectInputComponent as any}
         format={format}
-        validate={required !== undefined ? require : undefined}
+        validate={required ? require : undefined}
         {...{
             options,
             required
