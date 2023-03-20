@@ -37,9 +37,10 @@ export const ProjectInput = ({ required, input, options }: ProjectInputProps) =>
         commandInput={input}
         component={ProjectInputComponent as any}
         format={format}
-        validate={required ? require : undefined}
+        validate={required !== undefined ? require : undefined}
         {...{
-            options
+            options,
+            required
         }} />;
 
 const format = (value?: ProjectResource) => value ? value.name : '';
@@ -58,6 +59,7 @@ const mapStateToProps = (state: RootState) => ({ userUuid: getUserUuid(state) })
 export const ProjectInputComponent = connect(mapStateToProps)(
     class ProjectInputComponent extends React.Component<GenericInputProps & DispatchProp & HasUserUuid & {
         options?: { showOnlyOwned: boolean, showOnlyWritable: boolean };
+        required?: boolean;
     }, ProjectInputComponentState> {
         state: ProjectInputComponentState = {
             open: false,

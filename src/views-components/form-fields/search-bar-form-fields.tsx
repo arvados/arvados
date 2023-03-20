@@ -47,7 +47,7 @@ export const SearchBarClusterField = connect(
     );
 
 export const SearchBarProjectField = () =>
-    <ProjectInput input={{
+    <ProjectInput required={false} input={{
         id: "projectObject",
         label: "Limit search to Project"
     } as ProjectCommandInputParameter}
