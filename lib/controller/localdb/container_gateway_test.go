@@ -11,8 +11,10 @@ import (
 	"io"
 	"io/ioutil"
 	"net"
+	"net/http"
 	"net/http/httptest"
 	"net/url"
+	"os"
 	"strings"
 	"time"
 
@@ -21,8 +23,10 @@ import (
 	"git.arvados.org/arvados.git/lib/crunchrun"
 	"git.arvados.org/arvados.git/lib/ctrlctx"
 	"git.arvados.org/arvados.git/sdk/go/arvados"
+	"git.arvados.org/arvados.git/sdk/go/arvadosclient"
 	"git.arvados.org/arvados.git/sdk/go/arvadostest"
 	"git.arvados.org/arvados.git/sdk/go/ctxlog"
+	"git.arvados.org/arvados.git/sdk/go/keepclient"
 	"golang.org/x/crypto/ssh"
 	check "gopkg.in/check.v1"
 )
@@ -188,6 +192,207 @@ func (s *ContainerGatewaySuite) TestDirectTCP(c *check.C) {
 	}
 }
 
+func (s *ContainerGatewaySuite) setupLogCollection(c *check.C, files map[string]string) {
+	client := arvados.NewClientFromEnv()
+	ac, err := arvadosclient.New(client)
+	c.Assert(err, check.IsNil)
+	kc, err := keepclient.MakeKeepClient(ac)
+	c.Assert(err, check.IsNil)
+	cfs, err := (&arvados.Collection{}).FileSystem(client, kc)
+	c.Assert(err, check.IsNil)
+	for name, content := range files {
+		for i, ch := range name {
+			if ch == '/' {
+				err := cfs.Mkdir("/"+name[:i], 0777)
+				c.Assert(err, check.IsNil)
+			}
+		}
+		f, err := cfs.OpenFile("/"+name, os.O_CREATE|os.O_WRONLY, 0777)
+		c.Assert(err, check.IsNil)
+		f.Write([]byte(content))
+		err = f.Close()
+		c.Assert(err, check.IsNil)
+	}
+	cfs.Sync()
+	s.gw.LogCollection = cfs
+}
+
+func (s *ContainerGatewaySuite) TestContainerLogViaTunnel(c *check.C) {
+	forceProxyForTest = true
+	defer func() { forceProxyForTest = false }()
+
+	s.gw = s.setupGatewayWithTunnel(c)
+	s.setupLogCollection(c, map[string]string{
+		"stderr.txt": "hello world\n",
+	})
+
+	for _, broken := range []bool{false, true} {
+		c.Logf("broken=%v", broken)
+
+		if broken {
+			delete(s.cluster.Services.Controller.InternalURLs, *forceInternalURLForTest)
+		} else {
+			s.cluster.Services.Controller.InternalURLs[*forceInternalURLForTest] = arvados.ServiceInstance{}
+			defer delete(s.cluster.Services.Controller.InternalURLs, *forceInternalURLForTest)
+		}
+
+		handler, err := s.localdb.ContainerLog(s.userctx, arvados.ContainerLogOptions{
+			UUID:          s.ctrUUID,
+			WebDAVOptions: arvados.WebDAVOptions{Path: "/stderr.txt"},
+		})
+		if broken {
+			c.Check(err, check.ErrorMatches, `.*tunnel endpoint is invalid.*`)
+			continue
+		}
+		c.Check(err, check.IsNil)
+		c.Assert(handler, check.NotNil)
+		r, err := http.NewRequestWithContext(s.userctx, "GET", "https://controller.example/arvados/v1/containers/"+s.ctrUUID+"/log/stderr.txt", nil)
+		c.Assert(err, check.IsNil)
+		r.Header.Set("Authorization", "Bearer "+arvadostest.ActiveTokenV2)
+		rec := httptest.NewRecorder()
+		handler.ServeHTTP(rec, r)
+		resp := rec.Result()
+		c.Check(resp.StatusCode, check.Equals, http.StatusOK)
+		buf, err := ioutil.ReadAll(resp.Body)
+		c.Check(err, check.IsNil)
+		c.Check(string(buf), check.Equals, "hello world\n")
+	}
+}
+
+func (s *ContainerGatewaySuite) TestContainerLogViaGateway(c *check.C) {
+	s.testContainerLog(c, true)
+}
+
+func (s *ContainerGatewaySuite) TestContainerLogViaKeepWeb(c *check.C) {
+	s.testContainerLog(c, false)
+}
+
+func (s *ContainerGatewaySuite) testContainerLog(c *check.C, viaGateway bool) {
+	s.setupLogCollection(c, map[string]string{
+		"stderr.txt":   "hello world\n",
+		"a/b/c/d.html": "<html></html>\n",
+	})
+	if !viaGateway {
+		rootctx := ctrlctx.NewWithToken(s.ctx, s.cluster, s.cluster.SystemRootToken)
+		txt, err := s.gw.LogCollection.MarshalManifest(".")
+		c.Assert(err, check.IsNil)
+		coll, err := s.localdb.CollectionCreate(rootctx, arvados.CreateOptions{
+			Attrs: map[string]interface{}{
+				"manifest_text": txt,
+			}})
+		c.Assert(err, check.IsNil)
+		_, err = s.localdb.ContainerUpdate(rootctx, arvados.UpdateOptions{
+			UUID: s.ctrUUID,
+			Attrs: map[string]interface{}{
+				"log":             coll.PortableDataHash,
+				"gateway_address": "",
+			}})
+		c.Assert(err, check.IsNil)
+		// _, err = s.localdb.ContainerUpdate(rootctx, arvados.UpdateOptions{
+		// 	UUID: s.ctrUUID,
+		// 	Attrs: map[string]interface{}{
+		// 		"state": "Cancelled",
+		// 	}})
+		// c.Assert(err, check.IsNil)
+		// gateway_address="" above already ensures localdb
+		// can't circumvent the keep-web proxy test by getting
+		// content from the container gateway; this is just
+		// extra insurance.
+		s.gw.LogCollection = nil
+	}
+	for _, trial := range []struct {
+		method       string
+		path         string
+		header       http.Header
+		expectStatus int
+		expectBodyRe string
+		expectHeader http.Header
+	}{
+		{
+			method:       "GET",
+			path:         "/stderr.txt",
+			expectStatus: http.StatusOK,
+			expectBodyRe: "hello world\n",
+			expectHeader: http.Header{
+				"Content-Type": {"text/plain; charset=utf-8"},
+			},
+		},
+		{
+			method: "GET",
+			path:   "/stderr.txt",
+			header: http.Header{
+				"Range": {"bytes=-6"},
+			},
+			expectStatus: http.StatusPartialContent,
+			expectBodyRe: "world\n",
+			expectHeader: http.Header{
+				"Content-Type":  {"text/plain; charset=utf-8"},
+				"Content-Range": {"bytes 6-11/12"},
+			},
+		},
+		{
+			method:       "OPTIONS",
+			path:         "/stderr.txt",
+			expectStatus: http.StatusOK,
+			expectBodyRe: "",
+			expectHeader: http.Header{
+				"Dav":   {"1, 2"},
+				"Allow": {"OPTIONS, LOCK, GET, HEAD, POST, DELETE, PROPPATCH, COPY, MOVE, UNLOCK, PROPFIND, PUT"},
+			},
+		},
+		{
+			method:       "PROPFIND",
+			path:         "",
+			expectStatus: http.StatusMultiStatus,
+			expectBodyRe: `.*\Q<D:displayname>stderr.txt</D:displayname>\E.*`,
+			expectHeader: http.Header{
+				"Content-Type": {"text/xml; charset=utf-8"},
+			},
+		},
+		{
+			method:       "PROPFIND",
+			path:         "/a/b/c/",
+			expectStatus: http.StatusMultiStatus,
+			expectBodyRe: `.*\Q<D:displayname>d.html</D:displayname>\E.*`,
+			expectHeader: http.Header{
+				"Content-Type": {"text/xml; charset=utf-8"},
+			},
+		},
+		{
+			method:       "GET",
+			path:         "/a/b/c/d.html",
+			expectStatus: http.StatusOK,
+			expectBodyRe: "<html></html>\n",
+			expectHeader: http.Header{
+				"Content-Type": {"text/html; charset=utf-8"},
+			},
+		},
+	} {
+		c.Logf("trial %#v", trial)
+		handler, err := s.localdb.ContainerLog(s.userctx, arvados.ContainerLogOptions{
+			UUID:          s.ctrUUID,
+			WebDAVOptions: arvados.WebDAVOptions{Path: trial.path},
+		})
+		c.Assert(err, check.IsNil)
+		c.Assert(handler, check.NotNil)
+		r, err := http.NewRequestWithContext(s.userctx, trial.method, "https://controller.example/arvados/v1/containers/"+s.ctrUUID+"/log"+trial.path, nil)
+		c.Assert(err, check.IsNil)
+		for k := range trial.header {
+			r.Header.Set(k, trial.header.Get(k))
+		}
+		rec := httptest.NewRecorder()
+		handler.ServeHTTP(rec, r)
+		resp := rec.Result()
+		c.Check(resp.StatusCode, check.Equals, trial.expectStatus)
+		for k := range trial.expectHeader {
+			c.Check(resp.Header.Get(k), check.Equals, trial.expectHeader.Get(k))
+		}
+		buf, err := ioutil.ReadAll(resp.Body)
+		c.Check(err, check.IsNil)
+		c.Check(string(buf), check.Matches, trial.expectBodyRe)
+	}
+}
+
 func (s *ContainerGatewaySuite) TestConnect(c *check.C) {
 	c.Logf("connecting to %s", s.gw.Address)
 	sshconn, err := s.localdb.ContainerSSH(s.userctx, arvados.ContainerSSHOptions{UUID: s.ctrUUID})
@@ -274,7 +479,7 @@ func (s *ContainerGatewaySuite) TestConnectThroughTunnelWithProxyOK(c *check.C) 
 func (s *ContainerGatewaySuite) TestConnectThroughTunnelWithProxyError(c *check.C) {
 	forceProxyForTest = true
 	defer func() { forceProxyForTest = false }()
-	// forceInternalURLForTest shouldn't be used because it isn't
+	// forceInternalURLForTest will not be usable because it isn't
 	// listed in s.cluster.Services.Controller.InternalURLs
 	s.testConnectThroughTunnel(c, `.*tunnel endpoint is invalid.*`)
 }
@@ -283,7 +488,7 @@ func (s *ContainerGatewaySuite) TestConnectThroughTunnelNoProxyOK(c *check.C) {
 	s.testConnectThroughTunnel(c, "")
 }
 
-func (s *ContainerGatewaySuite) testConnectThroughTunnel(c *check.C, expectErrorMatch string) {
+func (s *ContainerGatewaySuite) setupGatewayWithTunnel(c *check.C) *crunchrun.Gateway {
 	rootctx := ctrlctx.NewWithToken(s.ctx, s.cluster, s.cluster.SystemRootToken)
 	// Until the tunnel starts up, set gateway_address to a value
 	// that can't work. We want to ensure the only way we can
@@ -327,7 +532,11 @@ func (s *ContainerGatewaySuite) testConnectThroughTunnel(c *check.C, expectError
 			break
 		}
 	}
+	return tungw
+}
 
+func (s *ContainerGatewaySuite) testConnectThroughTunnel(c *check.C, expectErrorMatch string) {
+	s.setupGatewayWithTunnel(c)
 	c.Log("connecting to gateway through tunnel")
 	arpc := rpc.NewConn("", &url.URL{Scheme: "https", Host: s.gw.ArvadosClient.APIHost}, true, rpc.PassthroughTokenProvider)
 	sshconn, err := arpc.ContainerSSH(s.userctx, arvados.ContainerSSHOptions{UUID: s.ctrUUID})

@@ -8,12 +8,15 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"io"
+	"net/http"
 	"net/url"
 	"reflect"
 	"runtime"
 	"sync"
 
 	"git.arvados.org/arvados.git/sdk/go/arvados"
+	"git.arvados.org/arvados.git/sdk/go/httpserver"
 )
 
 var ErrStubUnimplemented = errors.New("stub unimplemented")
@@ -112,6 +115,22 @@ func (as *APIStub) ContainerLock(ctx context.Context, options arvados.GetOptions
 func (as *APIStub) ContainerUnlock(ctx context.Context, options arvados.GetOptions) (arvados.Container, error) {
 	as.appendCall(ctx, as.ContainerUnlock, options)
 	return arvados.Container{}, as.Error
+}
+func (as *APIStub) ContainerLog(ctx context.Context, options arvados.ContainerLogOptions) (http.Handler, error) {
+	as.appendCall(ctx, as.ContainerLog, options)
+	// Return a handler that responds with the configured
+	// error/success status.
+	return http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		if as.Error == nil {
+			w.WriteHeader(http.StatusOK)
+		} else if err := httpserver.HTTPStatusError(nil); errors.As(as.Error, &err) {
+			w.WriteHeader(err.HTTPStatus())
+			io.WriteString(w, err.Error())
+		} else {
+			w.WriteHeader(http.StatusInternalServerError)
+			io.WriteString(w, err.Error())
+		}
+	}), nil
 }
 func (as *APIStub) ContainerSSH(ctx context.Context, options arvados.ContainerSSHOptions) (arvados.ConnectionResponse, error) {
 	as.appendCall(ctx, as.ContainerSSH, options)

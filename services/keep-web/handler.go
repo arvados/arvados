@@ -20,6 +20,7 @@ import (
 	"sync"
 
 	"git.arvados.org/arvados.git/lib/cmd"
+	"git.arvados.org/arvados.git/lib/webdavfs"
 	"git.arvados.org/arvados.git/sdk/go/arvados"
 	"git.arvados.org/arvados.git/sdk/go/arvadosclient"
 	"git.arvados.org/arvados.git/sdk/go/auth"
@@ -34,7 +35,6 @@ type handler struct {
 	Cache     cache
 	Cluster   *arvados.Cluster
 	setupOnce sync.Once
-	webdavLS  webdav.LockSystem
 }
 
 var urlPDHDecoder = strings.NewReplacer(" ", "+", "-", "+")
@@ -57,10 +57,6 @@ func parseCollectionIDFromURL(s string) string {
 
 func (h *handler) setup() {
 	keepclient.DefaultBlockCache.MaxBlocks = h.Cluster.Collections.WebDAVCache.MaxBlockEntries
-
-	// Even though we don't accept LOCK requests, every webdav
-	// handler must have a non-nil LockSystem.
-	h.webdavLS = &noLockSystem{}
 }
 
 func (h *handler) serveStatus(w http.ResponseWriter, r *http.Request) {
@@ -329,7 +325,7 @@ func (h *handler) ServeHTTP(wOrig http.ResponseWriter, r *http.Request) {
 	fsprefix := ""
 	if useSiteFS {
 		if writeMethod[r.Method] {
-			http.Error(w, errReadOnly.Error(), http.StatusMethodNotAllowed)
+			http.Error(w, webdavfs.ErrReadOnly.Error(), http.StatusMethodNotAllowed)
 			return
 		}
 		if len(reqTokens) == 0 {
@@ -510,7 +506,7 @@ func (h *handler) ServeHTTP(wOrig http.ResponseWriter, r *http.Request) {
 		basename = targetPath[len(targetPath)-1]
 	}
 	if arvadosclient.PDHMatch(collectionID) && writeMethod[r.Method] {
-		http.Error(w, errReadOnly.Error(), http.StatusMethodNotAllowed)
+		http.Error(w, webdavfs.ErrReadOnly.Error(), http.StatusMethodNotAllowed)
 		return
 	}
 	if !h.userPermittedToUploadOrDownload(r.Method, tokenUser) {
@@ -567,13 +563,13 @@ func (h *handler) ServeHTTP(wOrig http.ResponseWriter, r *http.Request) {
 	}
 	wh := webdav.Handler{
 		Prefix: "/" + strings.Join(pathParts[:stripParts], "/"),
-		FileSystem: &webdavFS{
-			collfs:        sessionFS,
-			prefix:        fsprefix,
-			writing:       writeMethod[r.Method],
-			alwaysReadEOF: r.Method == "PROPFIND",
+		FileSystem: &webdavfs.FS{
+			FileSystem:    sessionFS,
+			Prefix:        fsprefix,
+			Writing:       writeMethod[r.Method],
+			AlwaysReadEOF: r.Method == "PROPFIND",
 		},
-		LockSystem: h.webdavLS,
+		LockSystem: webdavfs.NoLockSystem,
 		Logger: func(r *http.Request, err error) {
 			if err != nil {
 				ctxlog.FromContext(r.Context()).WithError(err).Error("error reported by webdav handler")

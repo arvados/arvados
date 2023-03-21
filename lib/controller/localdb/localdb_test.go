@@ -31,6 +31,10 @@ type localdbSuite struct {
 	railsSpy    *arvadostest.Proxy
 }
 
+func (s *localdbSuite) SetUpSuite(c *check.C) {
+	arvadostest.StartKeep(2, true)
+}
+
 func (s *localdbSuite) TearDownSuite(c *check.C) {
 	// Undo any changes/additions to the user database so they
 	// don't affect subsequent tests.

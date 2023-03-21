@@ -49,6 +49,7 @@ var (
 	EndpointContainerDelete               = APIEndpoint{"DELETE", "arvados/v1/containers/{uuid}", ""}
 	EndpointContainerLock                 = APIEndpoint{"POST", "arvados/v1/containers/{uuid}/lock", ""}
 	EndpointContainerUnlock               = APIEndpoint{"POST", "arvados/v1/containers/{uuid}/unlock", ""}
+	EndpointContainerLog                  = APIEndpoint{"GET", "arvados/v1/containers/{uuid}/log{path:|/.*}", ""}
 	EndpointContainerSSH                  = APIEndpoint{"POST", "arvados/v1/connect/{uuid}/ssh", ""}            // move to /containers after #17014 fixes routing
 	EndpointContainerGatewayTunnel        = APIEndpoint{"POST", "arvados/v1/connect/{uuid}/gateway_tunnel", ""} // move to /containers after #17014 fixes routing
 	EndpointContainerRequestCreate        = APIEndpoint{"POST", "arvados/v1/container_requests", "container_request"}
@@ -248,6 +249,18 @@ type BlockWriteResponse struct {
 	Replicas int
 }
 
+type WebDAVOptions struct {
+	Method string
+	Path   string
+	Header http.Header
+}
+
+type ContainerLogOptions struct {
+	UUID      string `json:"uuid"`
+	NoForward bool   `json:"no_forward"`
+	WebDAVOptions
+}
+
 type API interface {
 	ConfigGet(ctx context.Context) (json.RawMessage, error)
 	VocabularyGet(ctx context.Context) (Vocabulary, error)
@@ -270,6 +283,7 @@ type API interface {
 	ContainerDelete(ctx context.Context, options DeleteOptions) (Container, error)
 	ContainerLock(ctx context.Context, options GetOptions) (Container, error)
 	ContainerUnlock(ctx context.Context, options GetOptions) (Container, error)
+	ContainerLog(ctx context.Context, options ContainerLogOptions) (http.Handler, error)
 	ContainerSSH(ctx context.Context, options ContainerSSHOptions) (ConnectionResponse, error)
 	ContainerGatewayTunnel(ctx context.Context, options ContainerGatewayTunnelOptions) (ConnectionResponse, error)
 	ContainerRequestCreate(ctx context.Context, options CreateOptions) (ContainerRequest, error)

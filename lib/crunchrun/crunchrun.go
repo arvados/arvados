@@ -2077,6 +2077,7 @@ func (command) RunCommand(prog string, args []string, stdin io.Reader, stdout, s
 			ContainerUUID: containerUUID,
 			Target:        cr.executor,
 			Log:           cr.CrunchLog,
+			LogCollection: cr.LogCollection,
 		}
 		if gwListen == "" {
 			// Direct connection won't work, so we use the

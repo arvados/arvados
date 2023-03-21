@@ -2,7 +2,9 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-package keepweb
+// Package webdavfs adds special behaviors to an arvados.FileSystem so
+// it's suitable to use with a webdav server.
+package webdavfs
 
 import (
 	"crypto/rand"
@@ -25,32 +27,32 @@ import (
 var (
 	lockPrefix     string = uuid()
 	nextLockSuffix int64  = prand.Int63()
-	errReadOnly           = errors.New("read-only filesystem")
+	ErrReadOnly           = errors.New("read-only filesystem")
 )
 
-// webdavFS implements a webdav.FileSystem by wrapping an
+// FS implements a webdav.FileSystem by wrapping an
 // arvados.CollectionFilesystem.
 //
 // Collections don't preserve empty directories, so Mkdir is
 // effectively a no-op, and we need to make parent dirs spring into
 // existence automatically so sequences like "mkcol foo; put foo/bar"
 // work as expected.
-type webdavFS struct {
-	collfs arvados.FileSystem
-	// prefix works like fs.Sub: Stat(name) calls
+type FS struct {
+	FileSystem arvados.FileSystem
+	// Prefix works like fs.Sub: Stat(name) calls
 	// Stat(prefix+name) in the wrapped filesystem.
-	prefix  string
-	writing bool
+	Prefix  string
+	Writing bool
 	// webdav PROPFIND reads the first few bytes of each file
 	// whose filename extension isn't recognized, which is
 	// prohibitively expensive: we end up fetching multiple 64MiB
 	// blocks. Avoid this by returning EOF on all reads when
 	// handling a PROPFIND.
-	alwaysReadEOF bool
+	AlwaysReadEOF bool
 }
 
-func (fs *webdavFS) makeparents(name string) {
-	if !fs.writing {
+func (fs *FS) makeparents(name string) {
+	if !fs.Writing {
 		return
 	}
 	dir, _ := path.Split(name)
@@ -59,25 +61,25 @@ func (fs *webdavFS) makeparents(name string) {
 	}
 	dir = dir[:len(dir)-1]
 	fs.makeparents(dir)
-	fs.collfs.Mkdir(fs.prefix+dir, 0755)
+	fs.FileSystem.Mkdir(fs.Prefix+dir, 0755)
 }
 
-func (fs *webdavFS) Mkdir(ctx context.Context, name string, perm os.FileMode) error {
-	if !fs.writing {
-		return errReadOnly
+func (fs *FS) Mkdir(ctx context.Context, name string, perm os.FileMode) error {
+	if !fs.Writing {
+		return ErrReadOnly
 	}
 	name = strings.TrimRight(name, "/")
 	fs.makeparents(name)
-	return fs.collfs.Mkdir(fs.prefix+name, 0755)
+	return fs.FileSystem.Mkdir(fs.Prefix+name, 0755)
 }
 
-func (fs *webdavFS) OpenFile(ctx context.Context, name string, flag int, perm os.FileMode) (f webdav.File, err error) {
+func (fs *FS) OpenFile(ctx context.Context, name string, flag int, perm os.FileMode) (f webdav.File, err error) {
 	writing := flag&(os.O_WRONLY|os.O_RDWR|os.O_TRUNC) != 0
-	if writing {
+	if writing && fs.Writing {
 		fs.makeparents(name)
 	}
-	f, err = fs.collfs.OpenFile(fs.prefix+name, flag, perm)
-	if !fs.writing {
+	f, err = fs.FileSystem.OpenFile(fs.Prefix+name, flag, perm)
+	if !fs.Writing {
 		// webdav module returns 404 on all OpenFile errors,
 		// but returns 405 Method Not Allowed if OpenFile()
 		// succeeds but Write() or Close() fails. We'd rather
@@ -85,23 +87,23 @@ func (fs *webdavFS) OpenFile(ctx context.Context, name string, flag int, perm os
 		// file is opened for writing *or* Write() is called.
 		var err error
 		if writing {
-			err = errReadOnly
+			err = ErrReadOnly
 		}
 		f = writeFailer{File: f, err: err}
 	}
-	if fs.alwaysReadEOF {
+	if fs.AlwaysReadEOF {
 		f = readEOF{File: f}
 	}
 	return
 }
 
-func (fs *webdavFS) RemoveAll(ctx context.Context, name string) error {
-	return fs.collfs.RemoveAll(fs.prefix + name)
+func (fs *FS) RemoveAll(ctx context.Context, name string) error {
+	return fs.FileSystem.RemoveAll(fs.Prefix + name)
 }
 
-func (fs *webdavFS) Rename(ctx context.Context, oldName, newName string) error {
-	if !fs.writing {
-		return errReadOnly
+func (fs *FS) Rename(ctx context.Context, oldName, newName string) error {
+	if !fs.Writing {
+		return ErrReadOnly
 	}
 	if strings.HasSuffix(oldName, "/") {
 		// WebDAV "MOVE foo/ bar/" means rename foo to bar.
@@ -109,14 +111,14 @@ func (fs *webdavFS) Rename(ctx context.Context, oldName, newName string) error {
 		newName = strings.TrimSuffix(newName, "/")
 	}
 	fs.makeparents(newName)
-	return fs.collfs.Rename(fs.prefix+oldName, fs.prefix+newName)
+	return fs.FileSystem.Rename(fs.Prefix+oldName, fs.Prefix+newName)
 }
 
-func (fs *webdavFS) Stat(ctx context.Context, name string) (os.FileInfo, error) {
-	if fs.writing {
+func (fs *FS) Stat(ctx context.Context, name string) (os.FileInfo, error) {
+	if fs.Writing {
 		fs.makeparents(name)
 	}
-	return fs.collfs.Stat(fs.prefix + name)
+	return fs.FileSystem.Stat(fs.Prefix + name)
 }
 
 type writeFailer struct {
@@ -125,7 +127,7 @@ type writeFailer struct {
 }
 
 func (wf writeFailer) Write([]byte) (int, error) {
-	wf.err = errReadOnly
+	wf.err = ErrReadOnly
 	return 0, wf.err
 }
 
@@ -145,7 +147,7 @@ func (readEOF) Read(p []byte) (int, error) {
 	return 0, io.EOF
 }
 
-// noLockSystem implements webdav.LockSystem by returning success for
+// NoLockSystem implements webdav.LockSystem by returning success for
 // every possible locking operation, even though it has no side
 // effects such as actually locking anything. This works for a
 // read-only webdav filesystem because webdav locks only apply to
@@ -166,21 +168,23 @@ func (readEOF) Read(p []byte) (int, error) {
 // Currently this is a moot point: the LOCK and UNLOCK methods are not
 // accepted by keep-web, so it suffices to implement the
 // webdav.LockSystem interface.
+var NoLockSystem = noLockSystem{}
+
 type noLockSystem struct{}
 
-func (*noLockSystem) Confirm(time.Time, string, string, ...webdav.Condition) (func(), error) {
+func (noLockSystem) Confirm(time.Time, string, string, ...webdav.Condition) (func(), error) {
 	return noop, nil
 }
 
-func (*noLockSystem) Create(now time.Time, details webdav.LockDetails) (token string, err error) {
+func (noLockSystem) Create(now time.Time, details webdav.LockDetails) (token string, err error) {
 	return fmt.Sprintf("opaquelocktoken:%s-%x", lockPrefix, atomic.AddInt64(&nextLockSuffix, 1)), nil
 }
 
-func (*noLockSystem) Refresh(now time.Time, token string, duration time.Duration) (webdav.LockDetails, error) {
+func (noLockSystem) Refresh(now time.Time, token string, duration time.Duration) (webdav.LockDetails, error) {
 	return webdav.LockDetails{}, nil
 }
 
-func (*noLockSystem) Unlock(now time.Time, token string) error {
+func (noLockSystem) Unlock(now time.Time, token string) error {
 	return nil
 }
 

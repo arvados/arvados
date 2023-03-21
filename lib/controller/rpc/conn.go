@@ -16,6 +16,7 @@ import (
 	"io/ioutil"
 	"net"
 	"net/http"
+	"net/http/httputil"
 	"net/url"
 	"strconv"
 	"strings"
@@ -336,6 +337,19 @@ func (conn *Conn) ContainerUnlock(ctx context.Context, options arvados.GetOption
 	var resp arvados.Container
 	err := conn.requestAndDecode(ctx, &resp, ep, nil, options)
 	return resp, err
+}
+
+func (conn *Conn) ContainerLog(ctx context.Context, options arvados.ContainerLogOptions) (resp http.Handler, err error) {
+	proxy := &httputil.ReverseProxy{
+		Transport: conn.httpClient.Transport,
+		Director: func(r *http.Request) {
+			u := conn.baseURL
+			u.Path = r.URL.Path
+			u.RawQuery = fmt.Sprintf("no_forward=%v", options.NoForward)
+			r.URL = &u
+		},
+	}
+	return proxy, nil
 }
 
 // ContainerSSH returns a connection to the out-of-band SSH server for

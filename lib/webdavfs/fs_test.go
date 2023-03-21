@@ -2,8 +2,8 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-package keepweb
+package webdavfs
 
 import "golang.org/x/net/webdav"
 
-var _ webdav.FileSystem = &webdavFS{}
+var _ webdav.FileSystem = &FS{}
