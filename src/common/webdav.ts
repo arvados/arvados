@@ -9,7 +9,7 @@ export class WebDAV {
     private defaults: WebDAVDefaults = {
         baseURL: '',
         headers: {
-            'Cache-Control': 'must-revalidate'
+            'Cache-Control': 'no-cache'
         },
     };
 
@@ -94,7 +94,7 @@ export class WebDAV {
             this.defaults.baseURL = this.defaults.baseURL.replace(/\/+$/, '');
             r.open(config.method,
                 `${this.defaults.baseURL
-                    ? this.defaults.baseURL+'/'
+                    ? this.defaults.baseURL + '/'
                     : ''}${customEncodeURI(config.url)}`);
 
             const headers = { ...this.defaults.headers, ...config.headers };

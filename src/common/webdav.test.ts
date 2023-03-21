@@ -13,7 +13,7 @@ describe('WebDAV', () => {
         const request = await promise;
         expect(open).toHaveBeenCalledWith('PROPFIND', 'http://foo.com/foo');
         expect(setRequestHeader).toHaveBeenCalledWith('Authorization', 'Basic');
-        expect(setRequestHeader).toHaveBeenCalledWith('Cache-Control', 'must-revalidate');
+        expect(setRequestHeader).toHaveBeenCalledWith('Cache-Control', 'no-cache');
         expect(request).toBeInstanceOf(XMLHttpRequest);
     });
 
@@ -26,7 +26,7 @@ describe('WebDAV', () => {
         const request = await promise;
         expect(open).toHaveBeenCalledWith('PROPFIND', 'http://foo.com/foo');
         expect(setRequestHeader).toHaveBeenCalledWith('Authorization', 'Basic');
-        expect(setRequestHeader).toHaveBeenCalledWith('Cache-Control', 'must-revalidate');
+        expect(setRequestHeader).toHaveBeenCalledWith('Cache-Control', 'no-cache');
         expect(request).toBeInstanceOf(XMLHttpRequest);
     });
 
@@ -37,7 +37,7 @@ describe('WebDAV', () => {
         load();
         const request = await promise;
         expect(open).toHaveBeenCalledWith('PROPFIND', 'foo');
-        expect(setRequestHeader).toHaveBeenCalledWith('Cache-Control', 'must-revalidate');
+        expect(setRequestHeader).toHaveBeenCalledWith('Cache-Control', 'no-cache');
         expect(request).toBeInstanceOf(XMLHttpRequest);
     });
 
@@ -50,7 +50,7 @@ describe('WebDAV', () => {
         const request = await promise;
         expect(open).toHaveBeenCalledWith('PUT', 'foo');
         expect(send).toHaveBeenCalledWith('Test data');
-        expect(setRequestHeader).toHaveBeenCalledWith('Cache-Control', 'must-revalidate');
+        expect(setRequestHeader).toHaveBeenCalledWith('Cache-Control', 'no-cache');
         expect(request).toBeInstanceOf(XMLHttpRequest);
     });
 
@@ -62,7 +62,7 @@ describe('WebDAV', () => {
         const request = await promise;
         expect(open).toHaveBeenCalledWith('COPY', 'http://base/foo');
         expect(setRequestHeader).toHaveBeenCalledWith('Destination', 'http://base/foo-copy');
-        expect(setRequestHeader).toHaveBeenCalledWith('Cache-Control', 'must-revalidate');
+        expect(setRequestHeader).toHaveBeenCalledWith('Cache-Control', 'no-cache');
         expect(request).toBeInstanceOf(XMLHttpRequest);
     });
 
@@ -74,7 +74,7 @@ describe('WebDAV', () => {
         const request = await promise;
         expect(open).toHaveBeenCalledWith('COPY', 'http://base/foo');
         expect(setRequestHeader).toHaveBeenCalledWith('Destination', 'http://base/foo-copy');
-        expect(setRequestHeader).toHaveBeenCalledWith('Cache-Control', 'must-revalidate');
+        expect(setRequestHeader).toHaveBeenCalledWith('Cache-Control', 'no-cache');
         expect(request).toBeInstanceOf(XMLHttpRequest);
     });
 
@@ -86,7 +86,7 @@ describe('WebDAV', () => {
         const request = await promise;
         expect(open).toHaveBeenCalledWith('COPY', 'http://base/foo');
         expect(setRequestHeader).toHaveBeenCalledWith('Destination', 'http://base/foo-copy');
-        expect(setRequestHeader).toHaveBeenCalledWith('Cache-Control', 'must-revalidate');
+        expect(setRequestHeader).toHaveBeenCalledWith('Cache-Control', 'no-cache');
         expect(request).toBeInstanceOf(XMLHttpRequest);
     });
 
@@ -98,7 +98,7 @@ describe('WebDAV', () => {
         const request = await promise;
         expect(open).toHaveBeenCalledWith('MOVE', 'http://base/foo');
         expect(setRequestHeader).toHaveBeenCalledWith('Destination', 'http://base/foo-moved');
-        expect(setRequestHeader).toHaveBeenCalledWith('Cache-Control', 'must-revalidate');
+        expect(setRequestHeader).toHaveBeenCalledWith('Cache-Control', 'no-cache');
         expect(request).toBeInstanceOf(XMLHttpRequest);
     });
 
@@ -110,7 +110,7 @@ describe('WebDAV', () => {
         const request = await promise;
         expect(open).toHaveBeenCalledWith('MOVE', 'http://base/foo');
         expect(setRequestHeader).toHaveBeenCalledWith('Destination', 'http://base/foo-moved');
-        expect(setRequestHeader).toHaveBeenCalledWith('Cache-Control', 'must-revalidate');
+        expect(setRequestHeader).toHaveBeenCalledWith('Cache-Control', 'no-cache');
         expect(request).toBeInstanceOf(XMLHttpRequest);
     });
 
@@ -122,7 +122,7 @@ describe('WebDAV', () => {
         const request = await promise;
         expect(open).toHaveBeenCalledWith('MOVE', 'http://base/foo');
         expect(setRequestHeader).toHaveBeenCalledWith('Destination', 'http://base/foo-moved');
-        expect(setRequestHeader).toHaveBeenCalledWith('Cache-Control', 'must-revalidate');
+        expect(setRequestHeader).toHaveBeenCalledWith('Cache-Control', 'no-cache');
         expect(request).toBeInstanceOf(XMLHttpRequest);
     });
 
@@ -133,7 +133,7 @@ describe('WebDAV', () => {
         load();
         const request = await promise;
         expect(open).toHaveBeenCalledWith('DELETE', 'foo');
-        expect(setRequestHeader).toHaveBeenCalledWith('Cache-Control', 'must-revalidate');
+        expect(setRequestHeader).toHaveBeenCalledWith('Cache-Control', 'no-cache');
         expect(request).toBeInstanceOf(XMLHttpRequest);
     });
 });
