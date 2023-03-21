@@ -81,12 +81,12 @@ export class ProjectPanelMiddlewareService extends DataExplorerMiddlewareService
 export const loadMissingProcessesInformation = (resources: GroupContentsResource[]) =>
     async (dispatch: Dispatch) => {
         const containerUuids = resources.reduce((uuids, resource) => {
-            return resource.kind === ResourceKind.CONTAINER_REQUEST
-                ? resource.containerUuid
-                    ? [...uuids, resource.containerUuid]
-                    : uuids
+            return resource.kind === ResourceKind.CONTAINER_REQUEST &&
+                    resource.containerUuid &&
+                    !uuids.includes(resource.containerUuid)
+                ? [...uuids, resource.containerUuid]
                 : uuids;
-        }, []);
+        }, [] as string[]);
         if (containerUuids.length > 0) {
             await dispatch<any>(loadContainers(
                 containerUuids,
