@@ -368,7 +368,6 @@ test -d prometheus && ( cd prometheus && git fetch ) \
   || git clone --quiet https://github.com/saltstack-formulas/prometheus-formula.git ${F_DIR}/prometheus
 ( cd prometheus && git checkout --quiet tags/"${PROMETHEUS_TAG}" )
 
-# This formula doesn't currently have release tags
 echo "...grafana"
 test -d grafana && ( cd grafana && git fetch ) \
   || git clone --quiet https://github.com/saltstack-formulas/grafana-formula.git ${F_DIR}/grafana
@@ -732,7 +731,7 @@ else
         done
 
         ### States ###
-        grep -q "nginx" ${S_DIR}/top.sls || echo "    - nginx" >> ${S_DIR}/top.sls
+        grep -q "\- nginx$" ${S_DIR}/top.sls || echo "    - nginx" >> ${S_DIR}/top.sls
         grep -q "extra.nginx_prometheus_configuration" ${S_DIR}/top.sls || echo "    - extra.nginx_prometheus_configuration" >> ${S_DIR}/top.sls
 
         grep -q "\- grafana$" ${S_DIR}/top.sls || echo "    - grafana" >> ${S_DIR}/top.sls
@@ -824,7 +823,7 @@ else
             echo "    - nginx.passenger" >> ${S_DIR}/top.sls
           fi
         else
-          grep -q "nginx" ${S_DIR}/top.sls || echo "    - nginx" >> ${S_DIR}/top.sls
+          grep -q "\- nginx$" ${S_DIR}/top.sls || echo "    - nginx" >> ${S_DIR}/top.sls
         fi
         if [ "${SSL_MODE}" = "lets-encrypt" ]; then
           if [ "x${USE_LETSENCRYPT_ROUTE53}" = "xyes" ]; then
