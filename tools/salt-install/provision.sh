@@ -737,6 +737,7 @@ else
         grep -q "\- grafana$" ${S_DIR}/top.sls || echo "    - grafana" >> ${S_DIR}/top.sls
         grep -q "extra.grafana_datasource" ${S_DIR}/top.sls || echo "    - extra.grafana_datasource" >> ${S_DIR}/top.sls
         grep -q "extra.grafana_dashboards" ${S_DIR}/top.sls || echo "    - extra.grafana_dashboards" >> ${S_DIR}/top.sls
+        grep -q "extra.grafana_admin_user" ${S_DIR}/top.sls || echo "    - extra.grafana_admin_user" >> ${S_DIR}/top.sls
 
         if [ "${SSL_MODE}" = "lets-encrypt" ]; then
           grep -q "letsencrypt"     ${S_DIR}/top.sls || echo "    - letsencrypt" >> ${S_DIR}/top.sls
