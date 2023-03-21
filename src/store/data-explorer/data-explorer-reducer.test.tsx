@@ -10,13 +10,13 @@ import { SortDirection } from "../../components/data-table/data-column";
 
 describe('data-explorer-reducer', () => {
     it('should set columns', () => {
-        const columns: DataColumns<any> = [{
+        const columns: DataColumns<any, any> = [{
             name: "Column 1",
             filters: [],
             render: jest.fn(),
             selected: true,
             configurable: true,
-            sortDirection: SortDirection.NONE
+            sort: {direction: SortDirection.NONE, field: "name"}
         }];
         const state = dataExplorerReducer(undefined,
             dataExplorerActions.SET_COLUMNS({ id: "Data explorer", columns }));
@@ -24,12 +24,12 @@ describe('data-explorer-reducer', () => {
     });
 
     it('should toggle sorting', () => {
-        const columns: DataColumns<any> = [{
+        const columns: DataColumns<any, any> = [{
             name: "Column 1",
             filters: [],
             render: jest.fn(),
             selected: true,
-            sortDirection: SortDirection.ASC,
+            sort: {direction: SortDirection.ASC, field: "name"},
             configurable: true
         }, {
             name: "Column 2",
@@ -37,22 +37,22 @@ describe('data-explorer-reducer', () => {
             render: jest.fn(),
             selected: true,
             configurable: true,
-            sortDirection: SortDirection.NONE,
+            sort: {direction: SortDirection.NONE, field: "name"},
         }];
         const state = dataExplorerReducer({ "Data explorer": { ...initialDataExplorer, columns } },
             dataExplorerActions.TOGGLE_SORT({ id: "Data explorer", columnName: "Column 2" }));
-        expect(state["Data explorer"].columns[0].sortDirection).toEqual("none");
-        expect(state["Data explorer"].columns[1].sortDirection).toEqual("asc");
+        expect(state["Data explorer"].columns[0].sort.direction).toEqual("none");
+        expect(state["Data explorer"].columns[1].sort.direction).toEqual("asc");
     });
 
     it('should set filters', () => {
-        const columns: DataColumns<any> = [{
+        const columns: DataColumns<any, any> = [{
             name: "Column 1",
             filters: [],
             render: jest.fn(),
             selected: true,
             configurable: true,
-            sortDirection: SortDirection.NONE
+            sort: {direction: SortDirection.NONE, field: "name"}
         }];
 
         const filters: DataTableFilterItem[] = [{

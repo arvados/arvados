@@ -6,16 +6,28 @@ import { customEncodeURI } from "./url";
 
 export class WebDAV {
 
-    defaults: WebDAVDefaults = {
+    private defaults: WebDAVDefaults = {
         baseURL: '',
-        headers: {},
+        headers: {
+            'Cache-Control': 'no-cache'
+        },
     };
 
     constructor(config?: Partial<WebDAVDefaults>, private createRequest = () => new XMLHttpRequest()) {
         if (config) {
-            this.defaults = { ...this.defaults, ...config };
+            this.defaults = {
+                ...this.defaults,
+                ...config,
+                headers: {
+                    ...this.defaults.headers,
+                    ...config.headers
+                },
+            };
         }
     }
+
+    getBaseUrl = (): string => this.defaults.baseURL;
+    setAuthorization = (token?) => this.defaults.headers.Authorization = token;
 
     propfind = (url: string, config: WebDAVRequestConfig = {}) =>
         this.request({
@@ -82,7 +94,7 @@ export class WebDAV {
             this.defaults.baseURL = this.defaults.baseURL.replace(/\/+$/, '');
             r.open(config.method,
                 `${this.defaults.baseURL
-                    ? this.defaults.baseURL+'/'
+                    ? this.defaults.baseURL + '/'
                     : ''}${customEncodeURI(config.url)}`);
 
             const headers = { ...this.defaults.headers, ...config.headers };

@@ -9,7 +9,6 @@ import { connect, DispatchProp } from 'react-redux';
 import { DataColumns } from 'components/data-table/data-table';
 import { RouteComponentProps } from 'react-router';
 import { DataTableFilterItem } from 'components/data-table-filters/data-table-filters';
-import { SortDirection } from 'components/data-table/data-column';
 import { ResourceKind } from 'models/resource';
 import { ArvadosTheme } from 'common/custom-theme';
 import { FAVORITE_PANEL_ID } from "store/favorite-panel/favorite-panel-action";
@@ -68,12 +67,11 @@ export interface FavoritePanelFilter extends DataTableFilterItem {
     type: ResourceKind | ContainerRequestState;
 }
 
-export const favoritePanelColumns: DataColumns<string> = [
+export const favoritePanelColumns: DataColumns<string, GroupContentsResource> = [
     {
         name: FavoritePanelColumnNames.NAME,
         selected: true,
         configurable: true,
-        sortDirection: SortDirection.NONE,
         filters: createTree(),
         render: uuid => <ResourceName uuid={uuid} />
     },
@@ -109,7 +107,6 @@ export const favoritePanelColumns: DataColumns<string> = [
         name: FavoritePanelColumnNames.LAST_MODIFIED,
         selected: true,
         configurable: true,
-        sortDirection: SortDirection.DESC,
         filters: createTree(),
         render: uuid => <ResourceLastModifiedDate uuid={uuid} />
     }

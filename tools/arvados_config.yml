@@ -16,8 +16,6 @@ Clusters:
       ForwardSlashNameSubstitution: /
       ManagedProperties:
         original_owner_uuid: {Function: original_owner, Protected: true}
-      WebDAVCache:
-        TTL: 0s
     Login:
       TrustPrivateNetworks: true
       PAM:

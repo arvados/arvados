@@ -387,9 +387,11 @@ Cypress.Commands.add(
     {
         prevSubject: 'element',
     },
-    (subject, file, fileName) => {
+    (subject, file, fileName, binaryMode = true) => {
         cy.window().then(window => {
-            const blob = b64toBlob(file, '', 512);
+            const blob = binaryMode
+                ? b64toBlob(file, '', 512)
+                : new Blob([file], {type: 'text/plain'});
             const testFile = new window.File([blob], fileName);
 
             cy.wrap(subject).trigger('drop', {

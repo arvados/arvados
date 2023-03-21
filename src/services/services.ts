@@ -39,14 +39,12 @@ export function setAuthorizationHeader(services: ServiceRepository, token: strin
     services.apiClient.defaults.headers.common = {
         Authorization: `Bearer ${token}`
     };
-    services.webdavClient.defaults.headers = {
-        Authorization: `Bearer ${token}`
-    };
+    services.webdavClient.setAuthorization(`Bearer ${token}`);
 }
 
 export function removeAuthorizationHeader(services: ServiceRepository) {
     delete services.apiClient.defaults.headers.common;
-    delete services.webdavClient.defaults.headers.common;
+    services.webdavClient.setAuthorization(undefined);
 }
 
 export const createServices = (config: Config, actions: ApiActions, useApiClient?: AxiosInstance) => {
@@ -57,8 +55,9 @@ export const createServices = (config: Config, actions: ApiActions, useApiClient
     const apiClient = useApiClient || Axios.create({ headers: {} });
     apiClient.defaults.baseURL = config.baseUrl;
 
-    const webdavClient = new WebDAV();
-    webdavClient.defaults.baseURL = config.keepWebServiceUrl;
+    const webdavClient = new WebDAV({
+        baseURL: config.keepWebServiceUrl
+    });
 
     const apiClientAuthorizationService = new ApiClientAuthorizationService(apiClient, actions);
     const authorizedKeysService = new AuthorizedKeysService(apiClient, actions);

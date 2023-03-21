@@ -59,6 +59,7 @@ import { GroupContentsResource } from 'services/groups-service/groups-service';
 import { GroupClass, GroupResource } from 'models/group';
 import { CollectionResource } from 'models/collection';
 import { resourceIsFrozen } from 'common/frozen-resources';
+import { ProjectResource } from 'models/project';
 
 type CssRules = 'root' | "button";
 
@@ -97,12 +98,12 @@ export interface ProjectPanelFilter extends DataTableFilterItem {
     type: ResourceKind | ContainerRequestState;
 }
 
-export const projectPanelColumns: DataColumns<string> = [
+export const projectPanelColumns: DataColumns<string, ProjectResource> = [
     {
         name: ProjectPanelColumnNames.NAME,
         selected: true,
         configurable: true,
-        sortDirection: SortDirection.NONE,
+        sort: {direction: SortDirection.NONE, field: "name"},
         filters: createTree(),
         render: uuid => <ResourceName uuid={uuid} />
     },
@@ -209,7 +210,7 @@ export const projectPanelColumns: DataColumns<string> = [
         name: ProjectPanelColumnNames.CREATED_AT,
         selected: false,
         configurable: true,
-        sortDirection: SortDirection.DESC,
+        sort: {direction: SortDirection.NONE, field: "createdAt"},
         filters: createTree(),
         render: uuid => <ResourceCreatedAtDate uuid={uuid} />
     },
@@ -217,7 +218,7 @@ export const projectPanelColumns: DataColumns<string> = [
         name: ProjectPanelColumnNames.LAST_MODIFIED,
         selected: true,
         configurable: true,
-        sortDirection: SortDirection.DESC,
+        sort: {direction: SortDirection.DESC, field: "modifiedAt"},
         filters: createTree(),
         render: uuid => <ResourceLastModifiedDate uuid={uuid} />
     },
@@ -225,7 +226,7 @@ export const projectPanelColumns: DataColumns<string> = [
         name: ProjectPanelColumnNames.TRASH_AT,
         selected: false,
         configurable: true,
-        sortDirection: SortDirection.DESC,
+        sort: {direction: SortDirection.NONE, field: "trashAt"},
         filters: createTree(),
         render: uuid => <ResourceTrashDate uuid={uuid} />
     },
@@ -233,7 +234,7 @@ export const projectPanelColumns: DataColumns<string> = [
         name: ProjectPanelColumnNames.DELETE_AT,
         selected: false,
         configurable: true,
-        sortDirection: SortDirection.DESC,
+        sort: {direction: SortDirection.NONE, field: "deleteAt"},
         filters: createTree(),
         render: uuid => <ResourceDeleteDate uuid={uuid} />
     },

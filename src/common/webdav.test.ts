@@ -2,7 +2,6 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import { customEncodeURI } from "./url";
 import { WebDAV } from "./webdav";
 
 describe('WebDAV', () => {
@@ -14,34 +13,36 @@ describe('WebDAV', () => {
         const request = await promise;
         expect(open).toHaveBeenCalledWith('PROPFIND', 'http://foo.com/foo');
         expect(setRequestHeader).toHaveBeenCalledWith('Authorization', 'Basic');
+        expect(setRequestHeader).toHaveBeenCalledWith('Cache-Control', 'no-cache');
         expect(request).toBeInstanceOf(XMLHttpRequest);
     });
 
     it('allows to modify defaults after instantiation', async () => {
         const { open, load, setRequestHeader, createRequest } = mockCreateRequest();
-        const webdav = new WebDAV(undefined, createRequest);
-        webdav.defaults.baseURL = 'http://foo.com/';
-        webdav.defaults.headers = { Authorization: 'Basic' };
+        const webdav = new WebDAV({ baseURL: 'http://foo.com/' }, createRequest);
+        webdav.setAuthorization('Basic');
         const promise = webdav.propfind('foo');
         load();
         const request = await promise;
         expect(open).toHaveBeenCalledWith('PROPFIND', 'http://foo.com/foo');
         expect(setRequestHeader).toHaveBeenCalledWith('Authorization', 'Basic');
+        expect(setRequestHeader).toHaveBeenCalledWith('Cache-Control', 'no-cache');
         expect(request).toBeInstanceOf(XMLHttpRequest);
     });
 
     it('PROPFIND', async () => {
-        const { open, load, createRequest } = mockCreateRequest();
+        const { open, load, setRequestHeader, createRequest } = mockCreateRequest();
         const webdav = new WebDAV(undefined, createRequest);
         const promise = webdav.propfind('foo');
         load();
         const request = await promise;
         expect(open).toHaveBeenCalledWith('PROPFIND', 'foo');
+        expect(setRequestHeader).toHaveBeenCalledWith('Cache-Control', 'no-cache');
         expect(request).toBeInstanceOf(XMLHttpRequest);
     });
 
     it('PUT', async () => {
-        const { open, send, load, progress, createRequest } = mockCreateRequest();
+        const { open, send, load, progress, setRequestHeader, createRequest } = mockCreateRequest();
         const webdav = new WebDAV(undefined, createRequest);
         const promise = webdav.put('foo', 'Test data');
         progress();
@@ -49,88 +50,90 @@ describe('WebDAV', () => {
         const request = await promise;
         expect(open).toHaveBeenCalledWith('PUT', 'foo');
         expect(send).toHaveBeenCalledWith('Test data');
+        expect(setRequestHeader).toHaveBeenCalledWith('Cache-Control', 'no-cache');
         expect(request).toBeInstanceOf(XMLHttpRequest);
     });
 
     it('COPY', async () => {
         const { open, setRequestHeader, load, createRequest } = mockCreateRequest();
-        const webdav = new WebDAV(undefined, createRequest);
-        webdav.defaults.baseURL = 'http://base';
+        const webdav = new WebDAV({ baseURL: 'http://base' }, createRequest);
         const promise = webdav.copy('foo', 'foo-copy');
         load();
         const request = await promise;
         expect(open).toHaveBeenCalledWith('COPY', 'http://base/foo');
         expect(setRequestHeader).toHaveBeenCalledWith('Destination', 'http://base/foo-copy');
+        expect(setRequestHeader).toHaveBeenCalledWith('Cache-Control', 'no-cache');
         expect(request).toBeInstanceOf(XMLHttpRequest);
     });
 
     it('COPY - adds baseURL with trailing slash to Destination header', async () => {
         const { open, setRequestHeader, load, createRequest } = mockCreateRequest();
-        const webdav = new WebDAV(undefined, createRequest);
-        webdav.defaults.baseURL = 'http://base';
+        const webdav = new WebDAV({ baseURL: 'http://base' }, createRequest);
         const promise = webdav.copy('foo', 'foo-copy');
         load();
         const request = await promise;
         expect(open).toHaveBeenCalledWith('COPY', 'http://base/foo');
         expect(setRequestHeader).toHaveBeenCalledWith('Destination', 'http://base/foo-copy');
+        expect(setRequestHeader).toHaveBeenCalledWith('Cache-Control', 'no-cache');
         expect(request).toBeInstanceOf(XMLHttpRequest);
     });
 
     it('COPY - adds baseURL without trailing slash to Destination header', async () => {
         const { open, setRequestHeader, load, createRequest } = mockCreateRequest();
-        const webdav = new WebDAV(undefined, createRequest);
-        webdav.defaults.baseURL = 'http://base';
+        const webdav = new WebDAV({ baseURL: 'http://base' }, createRequest);
         const promise = webdav.copy('foo', 'foo-copy');
         load();
         const request = await promise;
         expect(open).toHaveBeenCalledWith('COPY', 'http://base/foo');
         expect(setRequestHeader).toHaveBeenCalledWith('Destination', 'http://base/foo-copy');
+        expect(setRequestHeader).toHaveBeenCalledWith('Cache-Control', 'no-cache');
         expect(request).toBeInstanceOf(XMLHttpRequest);
     });
 
     it('MOVE', async () => {
         const { open, setRequestHeader, load, createRequest } = mockCreateRequest();
-        const webdav = new WebDAV(undefined, createRequest);
-        webdav.defaults.baseURL = 'http://base';
+        const webdav = new WebDAV({ baseURL: 'http://base' }, createRequest);
         const promise = webdav.move('foo', 'foo-moved');
         load();
         const request = await promise;
         expect(open).toHaveBeenCalledWith('MOVE', 'http://base/foo');
         expect(setRequestHeader).toHaveBeenCalledWith('Destination', 'http://base/foo-moved');
+        expect(setRequestHeader).toHaveBeenCalledWith('Cache-Control', 'no-cache');
         expect(request).toBeInstanceOf(XMLHttpRequest);
     });
 
     it('MOVE - adds baseURL with trailing slash to Destination header', async () => {
         const { open, setRequestHeader, load, createRequest } = mockCreateRequest();
-        const webdav = new WebDAV(undefined, createRequest);
-        webdav.defaults.baseURL = 'http://base';
+        const webdav = new WebDAV({ baseURL: 'http://base' }, createRequest);
         const promise = webdav.move('foo', 'foo-moved');
         load();
         const request = await promise;
         expect(open).toHaveBeenCalledWith('MOVE', 'http://base/foo');
         expect(setRequestHeader).toHaveBeenCalledWith('Destination', 'http://base/foo-moved');
+        expect(setRequestHeader).toHaveBeenCalledWith('Cache-Control', 'no-cache');
         expect(request).toBeInstanceOf(XMLHttpRequest);
     });
 
     it('MOVE - adds baseURL without trailing slash to Destination header', async () => {
         const { open, setRequestHeader, load, createRequest } = mockCreateRequest();
-        const webdav = new WebDAV(undefined, createRequest);
-        webdav.defaults.baseURL = 'http://base';
+        const webdav = new WebDAV({ baseURL: 'http://base' }, createRequest);
         const promise = webdav.move('foo', 'foo-moved');
         load();
         const request = await promise;
         expect(open).toHaveBeenCalledWith('MOVE', 'http://base/foo');
         expect(setRequestHeader).toHaveBeenCalledWith('Destination', 'http://base/foo-moved');
+        expect(setRequestHeader).toHaveBeenCalledWith('Cache-Control', 'no-cache');
         expect(request).toBeInstanceOf(XMLHttpRequest);
     });
 
     it('DELETE', async () => {
-        const { open, load, createRequest } = mockCreateRequest();
+        const { open, load, setRequestHeader, createRequest } = mockCreateRequest();
         const webdav = new WebDAV(undefined, createRequest);
         const promise = webdav.delete('foo');
         load();
         const request = await promise;
         expect(open).toHaveBeenCalledWith('DELETE', 'foo');
+        expect(setRequestHeader).toHaveBeenCalledWith('Cache-Control', 'no-cache');
         expect(request).toBeInstanceOf(XMLHttpRequest);
     });
 });

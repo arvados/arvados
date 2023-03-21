@@ -16,6 +16,8 @@ src/lib/cwl-svg/*
 tools/arvados_config.yml
 cypress/fixtures/files/5mb.bin
 cypress/fixtures/files/cat.png
+cypress/fixtures/files/banner.html
+cypress/fixtures/files/tooltips.txt
 cypress/fixtures/webdav-propfind-outputs.xml
 .yarn/releases/*
 package.json

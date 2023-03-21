@@ -281,16 +281,16 @@ export const mockClusterConfigJSON = (
     WebDAVDownload: { ExternalURL: '' },
     WebShell: { ExternalURL: '' },
     Workbench: {
-        DisableSharingURLsUI: false,
-        ArvadosDocsite: "",
-        FileViewersConfigURL: "",
-        WelcomePageHTML: "",
-        InactivePageHTML: "",
-        SSHHelpPageHTML: "",
-        SSHHelpHostSuffix: "",
-        SiteName: "",
-        IdleTimeout: "0s"
-    }
+      DisableSharingURLsUI: false,
+      ArvadosDocsite: "",
+      FileViewersConfigURL: "",
+      WelcomePageHTML: "",
+      InactivePageHTML: "",
+      SSHHelpPageHTML: "",
+      SSHHelpHostSuffix: "",
+      SiteName: "",
+      IdleTimeout: "0s"
+    },
   },
   Workbench: {
     DisableSharingURLsUI: false,

@@ -39,7 +39,7 @@ const mapStateToProps = (state: RootState, { id }: Props) => {
 
 const mapDispatchToProps = () => {
     return (dispatch: Dispatch, { id, onRowClick, onRowDoubleClick, onContextMenu }: Props) => ({
-        onSetColumns: (columns: DataColumns<any>) => {
+        onSetColumns: (columns: DataColumns<any, any>) => {
             dispatch(dataExplorerActions.SET_COLUMNS({ id, columns }));
         },
 
@@ -47,15 +47,15 @@ const mapDispatchToProps = () => {
             dispatch(dataExplorerActions.SET_EXPLORER_SEARCH_VALUE({ id, searchValue }));
         },
 
-        onColumnToggle: (column: DataColumn<any>) => {
+        onColumnToggle: (column: DataColumn<any, any>) => {
             dispatch(dataExplorerActions.TOGGLE_COLUMN({ id, columnName: column.name }));
         },
 
-        onSortToggle: (column: DataColumn<any>) => {
+        onSortToggle: (column: DataColumn<any, any>) => {
             dispatch(dataExplorerActions.TOGGLE_SORT({ id, columnName: column.name }));
         },
 
-        onFiltersChange: (filters: DataTableFilters, column: DataColumn<any>) => {
+        onFiltersChange: (filters: DataTableFilters, column: DataColumn<any, any>) => {
             dispatch(dataExplorerActions.SET_FILTERS({ id, columnName: column.name, filters }));
         },
 
@@ -80,4 +80,3 @@ const mapDispatchToProps = () => {
 };
 
 export const DataExplorer = connect(mapStateToProps, mapDispatchToProps)(DataExplorerComponent);
-

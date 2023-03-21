@@ -120,6 +120,66 @@ describe('Project tests', function() {
         });
     });
 
+    it('creates a project without and with description', function() {
+        const projName = `Test project (${Math.floor(999999 * Math.random())})`;
+        cy.loginAs(activeUser);
+
+        // Create project
+        cy.get('[data-cy=side-panel-button]').click();
+        cy.get('[data-cy=side-panel-new-project]').click();
+        cy.get('[data-cy=form-dialog]')
+            .should('contain', 'New Project')
+            .within(() => {
+                cy.get('[data-cy=name-field]').within(() => {
+                    cy.get('input').type(projName);
+                });
+            });
+        cy.get('[data-cy=form-submit-btn]').click();
+
+        const editProjectDescription = (name, type) => {
+            cy.get('[data-cy=side-panel-tree]').contains('Home Projects').click();
+            cy.get('[data-cy=project-panel] tbody tr').contains(name).rightclick();
+            cy.get('[data-cy=context-menu]').contains('Edit').click();
+            cy.get('[data-cy=form-dialog]').within(() => {
+                cy.get('div[contenteditable=true]')
+                    .click()
+                    .type(type);
+                cy.get('[data-cy=form-submit-btn]').click();
+            });
+        };
+
+        const verifyProjectDescription = (name, description) => {
+            cy.doRequest('GET', '/arvados/v1/groups', null, {
+                filters: `[["name", "=", "${name}"], ["group_class", "=", "project"]]`,
+            })
+            .its('body.items').as('projects')
+            .then(function() {
+                expect(this.projects).to.have.lengthOf(1);
+                expect(this.projects[0].description).to.equal(description);
+            });
+        };
+
+        // Edit description
+        editProjectDescription(projName, 'Test description');
+
+        // Check description is set
+        verifyProjectDescription(projName, "<p>Test description</p>");
+
+        // Clear description
+        editProjectDescription(projName, '{selectall}{backspace}');
+
+        // Check description is null
+        verifyProjectDescription(projName, null);
+
+        // Set description to contain whitespace
+        editProjectDescription(projName, '{selectall}{backspace}    x');
+        editProjectDescription(projName, '{backspace}');
+
+        // Check description is null
+        verifyProjectDescription(projName, null);
+
+    });
+
     it('creates new project on home project and then a subproject inside it', function() {
         const createProject = function(name, parentName) {
             cy.get('[data-cy=side-panel-button]').click();
@@ -495,5 +555,58 @@ describe('Project tests', function() {
         ));
 
     });
-});
 
+    it('sorts displayed items correctly', () => {
+        cy.loginAs(activeUser);
+
+        cy.get('[data-cy=project-panel] button[title="Select columns"]').click();
+        cy.get('div[role=presentation] ul > div[role=button]').contains('Date Created').click();
+        cy.get('div[role=presentation] ul > div[role=button]').contains('Trash at').click();
+        cy.get('div[role=presentation] ul > div[role=button]').contains('Delete at').click();
+        cy.get('div[role=presentation] > div[aria-hidden=true]').click();
+
+        cy.intercept({method: 'GET', url: '**/arvados/v1/groups/*/contents*'}).as('filteredQuery');
+        [
+            {
+                name: "Name",
+                asc: "collections.name asc,container_requests.name asc,groups.name asc",
+                desc: "collections.name desc,container_requests.name desc,groups.name desc"
+            },
+            {
+                name: "Last Modified",
+                asc: "collections.modified_at asc,container_requests.modified_at asc,groups.modified_at asc",
+                desc: "collections.modified_at desc,container_requests.modified_at desc,groups.modified_at desc"
+            },
+            {
+                name: "Date Created",
+                asc: "collections.created_at asc,container_requests.created_at asc,groups.created_at asc",
+                desc: "collections.created_at desc,container_requests.created_at desc,groups.created_at desc"
+
+            },
+            {
+                name: "Trash at",
+                asc: "collections.trash_at asc,container_requests.trash_at asc,groups.trash_at asc",
+                desc: "collections.trash_at desc,container_requests.trash_at desc,groups.trash_at desc"
+
+            },
+            {
+                name: "Delete at",
+                asc: "collections.delete_at asc,container_requests.delete_at asc,groups.delete_at asc",
+                desc: "collections.delete_at desc,container_requests.delete_at desc,groups.delete_at desc"
+
+            },
+        ].forEach((test) => {
+            cy.get('[data-cy=project-panel] table thead th').contains(test.name).click();
+            cy.wait('@filteredQuery').then(interception => {
+                const searchParams = new URLSearchParams((new URL(interception.request.url).search));
+                expect(searchParams.get('order')).to.eq(test.asc);
+            });
+            cy.get('[data-cy=project-panel] table thead th').contains(test.name).click();
+            cy.wait('@filteredQuery').then(interception => {
+                const searchParams = new URLSearchParams((new URL(interception.request.url).search));
+                expect(searchParams.get('order')).to.eq(test.desc);
+            });
+        });
+
+    });
+});

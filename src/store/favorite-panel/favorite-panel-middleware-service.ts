@@ -8,24 +8,20 @@ import { RootState } from "../store";
 import { getUserUuid } from "common/getuser";
 import { DataColumns } from "components/data-table/data-table";
 import { ServiceRepository } from "services/services";
-import { SortDirection } from "components/data-table/data-column";
 import { FilterBuilder } from "services/api/filter-builder";
 import { updateFavorites } from "../favorites/favorites-actions";
 import { favoritePanelActions } from "./favorite-panel-action";
 import { Dispatch, MiddlewareAPI } from "redux";
-import { OrderBuilder, OrderDirection } from "services/api/order-builder";
-import { LinkResource } from "models/link";
-import { GroupContentsResource, GroupContentsResourcePrefix } from "services/groups-service/groups-service";
 import { resourcesActions } from "store/resources/resources-actions";
 import { snackbarActions, SnackbarKind } from 'store/snackbar/snackbar-actions';
 import { progressIndicatorActions } from 'store/progress-indicator/progress-indicator-actions';
 import { getDataExplorer } from "store/data-explorer/data-explorer-reducer";
 import { loadMissingProcessesInformation } from "store/project-panel/project-panel-middleware-service";
-import { getSortColumn } from "store/data-explorer/data-explorer-reducer";
 import { getDataExplorerColumnFilters } from 'store/data-explorer/data-explorer-middleware-service';
 import { serializeSimpleObjectTypeFilters } from '../resource-type-filters/resource-type-filters';
 import { ResourceKind } from "models/resource";
 import { LinkClass } from "models/link";
+import { GroupContentsResource } from "services/groups-service/groups-service";
 
 export class FavoritePanelMiddlewareService extends DataExplorerMiddlewareService {
     constructor(private services: ServiceRepository, id: string) {
@@ -37,25 +33,9 @@ export class FavoritePanelMiddlewareService extends DataExplorerMiddlewareServic
         if (!dataExplorer) {
             api.dispatch(favoritesPanelDataExplorerIsNotSet());
         } else {
-            const columns = dataExplorer.columns as DataColumns<string>;
-            const sortColumn = getSortColumn(dataExplorer);
+            const columns = dataExplorer.columns as DataColumns<string, GroupContentsResource>;
             const typeFilters = serializeSimpleObjectTypeFilters(getDataExplorerColumnFilters(columns, FavoritePanelColumnNames.TYPE));
 
-
-            const linkOrder = new OrderBuilder<LinkResource>();
-            const contentOrder = new OrderBuilder<GroupContentsResource>();
-
-            if (sortColumn && sortColumn.name === FavoritePanelColumnNames.NAME) {
-                const direction = sortColumn.sortDirection === SortDirection.ASC
-                    ? OrderDirection.ASC
-                    : OrderDirection.DESC;
-
-                linkOrder.addOrder(direction, "name");
-                contentOrder
-                    .addOrder(direction, "name", GroupContentsResourcePrefix.COLLECTION)
-                    .addOrder(direction, "name", GroupContentsResourcePrefix.PROCESS)
-                    .addOrder(direction, "name", GroupContentsResourcePrefix.PROJECT);
-            }
             try {
                 api.dispatch(progressIndicatorActions.START_WORKING(this.getId()));
                 const responseLinks = await this.services.linkService.list({

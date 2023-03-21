@@ -65,10 +65,11 @@ export const removeCollectionsSelectedFiles = () =>
 
 export const FILE_REMOVE_DIALOG = 'fileRemoveDialog';
 
-export const openFileRemoveDialog = (filePath: string) =>
+export const openFileRemoveDialog = (fileUuid: string) =>
     (dispatch: Dispatch, getState: () => RootState) => {
-        const file = getNodeValue(filePath)(getState().collectionPanelFiles);
+        const file = getNodeValue(fileUuid)(getState().collectionPanelFiles);
         if (file) {
+            const filePath = getFileFullPath(file);
             const isDirectory = file.type === CollectionFileType.DIRECTORY;
             const title = isDirectory
                 ? 'Removing directory'
@@ -129,7 +130,7 @@ export const renameFile = (newFullPath: string) =>
                 dispatch(startSubmit(RENAME_FILE_DIALOG));
                 const oldPath = getFileFullPath(file);
                 const newPath = newFullPath;
-                services.collectionService.moveFile(currentCollection.uuid, oldPath, newPath).then(() => {
+                services.collectionService.renameFile(currentCollection.uuid, currentCollection.portableDataHash, oldPath, newPath).then(() => {
                     dispatch(dialogActions.CLOSE_DIALOG({ id: RENAME_FILE_DIALOG }));
                     dispatch(snackbarActions.OPEN_SNACKBAR({ message: 'File name changed.', hideDuration: 2000 }));
                 }).catch(e => {

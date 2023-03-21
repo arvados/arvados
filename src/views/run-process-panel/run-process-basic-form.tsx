@@ -40,7 +40,7 @@ export const RunProcessBasicForm =
                         label="Optional description of this workflow run" />
                 </Grid>
                 <Grid item xs={12} md={6}>
-                    <ProjectInput input={{
+                    <ProjectInput required input={{
                         id: "owner",
                         label: "Project where the workflow will run"
                     } as ProjectCommandInputParameter}

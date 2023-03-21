@@ -5,18 +5,14 @@
 import { ServiceRepository } from 'services/services';
 import { MiddlewareAPI, Dispatch } from 'redux';
 import {
-    DataExplorerMiddlewareService, dataExplorerToListParams, listResultsToDataExplorerItemsMeta, getDataExplorerColumnFilters
+    DataExplorerMiddlewareService, dataExplorerToListParams, listResultsToDataExplorerItemsMeta, getDataExplorerColumnFilters, getOrder
 } from 'store/data-explorer/data-explorer-middleware-service';
 import { RootState } from 'store/store';
 import { snackbarActions, SnackbarKind } from 'store/snackbar/snackbar-actions';
 import { DataExplorer, getDataExplorer } from 'store/data-explorer/data-explorer-reducer';
 import { updateResources } from 'store/resources/resources-actions';
-import { SortDirection } from 'components/data-table/data-column';
-import { OrderDirection, OrderBuilder } from 'services/api/order-builder';
 import { ListResults } from 'services/common-service/common-service';
-import { getSortColumn } from "store/data-explorer/data-explorer-reducer";
 import { ProcessResource } from 'models/process';
-import { SubprocessPanelColumnNames } from 'views/subprocess-panel/subprocess-panel-root';
 import { FilterBuilder, joinFilters } from 'services/api/filter-builder';
 import { subprocessPanelActions } from './subprocess-panel-actions';
 import { DataColumns } from 'components/data-table/data-table';
@@ -62,31 +58,14 @@ export const getParams = (
     dataExplorer: DataExplorer,
     parentContainerRequest: ContainerRequestResource) => ({
         ...dataExplorerToListParams(dataExplorer),
-        order: getOrder(dataExplorer),
+        order: getOrder<ProcessResource>(dataExplorer),
         filters: getFilters(dataExplorer, parentContainerRequest)
     });
-
-const getOrder = (dataExplorer: DataExplorer) => {
-    const sortColumn = getSortColumn(dataExplorer);
-    const order = new OrderBuilder<ProcessResource>();
-    if (sortColumn) {
-        const sortDirection = sortColumn && sortColumn.sortDirection === SortDirection.ASC
-            ? OrderDirection.ASC
-            : OrderDirection.DESC;
-
-        const columnName = sortColumn && sortColumn.name === SubprocessPanelColumnNames.NAME ? "name" : "modifiedAt";
-        return order
-            .addOrder(sortDirection, columnName)
-            .getOrder();
-    } else {
-        return order.getOrder();
-    }
-};
 
 export const getFilters = (
     dataExplorer: DataExplorer,
     parentContainerRequest: ContainerRequestResource) => {
-        const columns = dataExplorer.columns as DataColumns<string>;
+        const columns = dataExplorer.columns as DataColumns<string, ProcessResource>;
         const statusColumnFilters = getDataExplorerColumnFilters(columns, 'Status');
         const activeStatusFilter = Object.keys(statusColumnFilters).find(
             filterName => statusColumnFilters[filterName].selected

@@ -51,12 +51,12 @@ export enum UserPanelColumnNames {
     USERNAME = "Username"
 }
 
-export const userPanelColumns: DataColumns<string> = [
+export const userPanelColumns: DataColumns<string, UserResource> = [
     {
         name: UserPanelColumnNames.NAME,
         selected: true,
         configurable: true,
-        sortDirection: SortDirection.NONE,
+        sort: {direction: SortDirection.NONE, field: "firstName"},
         filters: createTree(),
         render: uuid => <UserResourceFullName uuid={uuid} link={true} />
     },
@@ -64,7 +64,7 @@ export const userPanelColumns: DataColumns<string> = [
         name: UserPanelColumnNames.UUID,
         selected: true,
         configurable: true,
-        sortDirection: SortDirection.NONE,
+        sort: {direction: SortDirection.NONE, field: "uuid"},
         filters: createTree(),
         render: uuid => <ResourceUuid uuid={uuid} />
     },
@@ -72,7 +72,7 @@ export const userPanelColumns: DataColumns<string> = [
         name: UserPanelColumnNames.EMAIL,
         selected: true,
         configurable: true,
-        sortDirection: SortDirection.NONE,
+        sort: {direction: SortDirection.NONE, field: "email"},
         filters: createTree(),
         render: uuid => <ResourceEmail uuid={uuid} />
     },
@@ -94,7 +94,7 @@ export const userPanelColumns: DataColumns<string> = [
         name: UserPanelColumnNames.USERNAME,
         selected: true,
         configurable: false,
-        sortDirection: SortDirection.NONE,
+        sort: {direction: SortDirection.NONE, field: "username"},
         filters: createTree(),
         render: uuid => <ResourceUsername uuid={uuid} />
     }

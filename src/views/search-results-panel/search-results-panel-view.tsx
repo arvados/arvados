@@ -29,6 +29,7 @@ import { StyleRulesCallback, withStyles, WithStyles } from '@material-ui/core';
 import { ArvadosTheme } from 'common/custom-theme';
 import { getSearchSessions } from 'store/search-bar/search-bar-actions';
 import { camelCase } from 'lodash';
+import { GroupContentsResource } from 'services/groups-service/groups-service';
 
 export enum SearchResultsPanelColumnNames {
     CLUSTER = "Cluster",
@@ -56,7 +57,7 @@ export interface WorkflowPanelFilter extends DataTableFilterItem {
     type: ResourceKind | ContainerRequestState;
 }
 
-export const searchResultsPanelColumns: DataColumns<string> = [
+export const searchResultsPanelColumns: DataColumns<string, GroupContentsResource> = [
     {
         name: SearchResultsPanelColumnNames.CLUSTER,
         selected: true,
@@ -68,7 +69,7 @@ export const searchResultsPanelColumns: DataColumns<string> = [
         name: SearchResultsPanelColumnNames.NAME,
         selected: true,
         configurable: true,
-        sortDirection: SortDirection.NONE,
+        sort: {direction: SortDirection.NONE, field: "name"},
         filters: createTree(),
         render: (uuid: string) => <ResourceName uuid={uuid} />
     },
@@ -104,7 +105,7 @@ export const searchResultsPanelColumns: DataColumns<string> = [
         name: SearchResultsPanelColumnNames.LAST_MODIFIED,
         selected: true,
         configurable: true,
-        sortDirection: SortDirection.DESC,
+        sort: {direction: SortDirection.DESC, field: "modifiedAt"},
         filters: createTree(),
         render: uuid => <ResourceLastModifiedDate uuid={uuid} />
     }
