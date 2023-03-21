@@ -5,6 +5,7 @@
 package crunchrun
 
 import (
+	"context"
 	"crypto/hmac"
 	"crypto/rand"
 	"crypto/rsa"
@@ -33,7 +34,6 @@ import (
 	"github.com/google/shlex"
 	"github.com/hashicorp/yamux"
 	"golang.org/x/crypto/ssh"
-	"golang.org/x/net/context"
 	"golang.org/x/net/webdav"
 )
 

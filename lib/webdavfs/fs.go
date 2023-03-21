@@ -7,6 +7,7 @@
 package webdavfs
 
 import (
+	"context"
 	"crypto/rand"
 	"errors"
 	"fmt"
@@ -19,8 +20,6 @@ import (
 	"time"
 
 	"git.arvados.org/arvados.git/sdk/go/arvados"
-
-	"golang.org/x/net/context"
 	"golang.org/x/net/webdav"
 )
 
