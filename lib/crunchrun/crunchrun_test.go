@@ -18,6 +18,7 @@ import (
 	"net/http/httptest"
 	"os"
 	"os/exec"
+	"path"
 	"regexp"
 	"runtime/pprof"
 	"strconv"
@@ -2348,6 +2349,80 @@ func (s *TestSuite) TestCalculateCost(c *C) {
 	c.Logf("%s", logbuf.String())
 	c.Check(logbuf.String(), Matches, `(?ms).*Instance price changed to 1\.00 at 20.* changed to 2\.00 .* changed to 3\.00 .*`)
 	c.Check(logbuf.String(), Not(Matches), `(?ms).*changed to 2\.00 .* changed to 2\.00 .*`)
+}
+
+func (s *TestSuite) TestSIGUSR2CostUpdate(c *C) {
+	pid := os.Getpid()
+	now := time.Now()
+	pricesJSON, err := json.Marshal([]cloud.InstancePrice{
+		{StartTime: now.Add(-4 * time.Hour), Price: 2.4},
+		{StartTime: now.Add(-2 * time.Hour), Price: 2.6},
+	})
+	c.Assert(err, IsNil)
+
+	os.Setenv("InstanceType", `{"Price":2.2}`)
+	defer os.Unsetenv("InstanceType")
+	defer func(s string) { lockdir = s }(lockdir)
+	lockdir = c.MkDir()
+
+	// We can't use s.api.CalledWith because timing differences will yield
+	// different cost values across runs. getCostUpdate iterates over API
+	// calls until it finds one that sets the cost, then writes that value
+	// to the next index of costUpdates.
+	deadline := now.Add(time.Second)
+	costUpdates := make([]float64, 2)
+	costIndex := 0
+	apiIndex := 0
+	getCostUpdate := func() {
+		for ; time.Now().Before(deadline); time.Sleep(time.Second / 10) {
+			for apiIndex < len(s.api.Content) {
+				update := s.api.Content[apiIndex]
+				apiIndex++
+				var ok bool
+				var cost float64
+				if update, ok = update["container"].(arvadosclient.Dict); !ok {
+					continue
+				}
+				if cost, ok = update["cost"].(float64); !ok {
+					continue
+				}
+				c.Logf("API call #%d updates cost to %v", apiIndex-1, cost)
+				costUpdates[costIndex] = cost
+				costIndex++
+				return
+			}
+		}
+	}
+
+	s.fullRunHelper(c, `{
+		"command": ["true"],
+		"container_image": "`+arvadostest.DockerImage112PDH+`",
+		"cwd": ".",
+		"environment": {},
+		"mounts": {"/tmp": {"kind": "tmp"} },
+		"output_path": "/tmp",
+		"priority": 1,
+		"runtime_constraints": {},
+		"state": "Locked",
+		"uuid": "zzzzz-dz642-20230320101530a"
+	}`, nil, func() int {
+		s.runner.costStartTime = now.Add(-3 * time.Hour)
+		err := syscall.Kill(pid, syscall.SIGUSR2)
+		c.Check(err, IsNil, Commentf("error sending first SIGUSR2 to runner"))
+		getCostUpdate()
+
+		err = os.WriteFile(path.Join(lockdir, pricesfile), pricesJSON, 0o700)
+		c.Check(err, IsNil, Commentf("error writing JSON prices file"))
+		err = syscall.Kill(pid, syscall.SIGUSR2)
+		c.Check(err, IsNil, Commentf("error sending second SIGUSR2 to runner"))
+		getCostUpdate()
+
+		return 0
+	})
+	// Comparing with format strings makes it easy to ignore minor variations
+	// in cost across runs while keeping diagnostics pretty.
+	c.Check(fmt.Sprintf("%.3f", costUpdates[0]), Equals, "6.600")
+	c.Check(fmt.Sprintf("%.3f", costUpdates[1]), Equals, "7.600")
 }
 
 type FakeProcess struct {
