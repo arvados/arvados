@@ -23,6 +23,7 @@ import { UserResource } from "models/user";
 import { CommandOutputParameter } from "cwlts/mappings/v1.0/CommandOutputParameter";
 import { ContainerResource } from "models/container";
 import { ContainerRequestResource, ContainerRequestState } from "models/container-request";
+import { FilterBuilder } from "services/api/filter-builder";
 
 export const loadProcess = (containerRequestUuid: string) =>
     async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository): Promise<Process | undefined> => {
@@ -60,9 +61,12 @@ export const loadProcess = (containerRequestUuid: string) =>
         return { containerRequest };
     };
 
-export const loadContainers = (filters: string, loadMounts: boolean = true) =>
+export const loadContainers = (containerUuids: string[], loadMounts: boolean = true) =>
     async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
-        let args: any = { filters };
+        let args: any = {
+            filters: new FilterBuilder().addIn('uuid', containerUuids).getFilters(),
+            limit: containerUuids.length,
+         };
         if (!loadMounts) {
             args.select = containerFieldsNoMounts;
         }

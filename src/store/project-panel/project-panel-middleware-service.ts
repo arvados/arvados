@@ -89,7 +89,7 @@ export const loadMissingProcessesInformation = (resources: GroupContentsResource
         }, []);
         if (containerUuids.length > 0) {
             await dispatch<any>(loadContainers(
-                new FilterBuilder().addIn('uuid', containerUuids).getFilters(),
+                containerUuids,
                 false
             ));
         }
