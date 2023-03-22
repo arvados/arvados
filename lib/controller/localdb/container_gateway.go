@@ -157,7 +157,7 @@ func (conn *Conn) serveContainerLogViaKeepWeb(opts arvados.ContainerLogOptions, 
 	myHostname := u.Hostname()
 	var webdavBase arvados.URL
 	var ok bool
-	for webdavBase = range conn.cluster.Services.WebDAV.InternalURLs {
+	for webdavBase = range conn.cluster.Services.WebDAVDownload.InternalURLs {
 		ok = true
 		u := url.URL(webdavBase)
 		if h := u.Hostname(); h == "127.0.0.1" || h == "0.0.0.0" || h == "::1" || h == myHostname {

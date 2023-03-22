@@ -36,7 +36,7 @@ table(table table-bordered table-condensed).
 |keepproxy      |yes                    |yes|no ^2^|InternalURLs only used by reverse proxy (e.g. Nginx)|
 |keepstore      |no                     |yes|yes   |All clients connect to InternalURLs|
 |keep-balance   |no                     |yes|no ^3^|InternalURLs only used to expose Prometheus metrics|
-|keep-web       |yes                    |yes|no ^2^|InternalURLs only used by reverse proxy (e.g. Nginx)|
+|keep-web       |yes                    |yes|yes ^5^|InternalURLs used by reverse proxy and container log API|
 |websocket      |yes                    |yes|no ^2^|InternalURLs only used by reverse proxy (e.g. Nginx)|
 |workbench1     |yes                    |no|no     ||
 |workbench2     |yes                    |no|no     ||
@@ -46,6 +46,7 @@ table(table table-bordered table-condensed).
 ^2^ If the reverse proxy (e.g. Nginx) does not run on the same host as the Arvados service it fronts, the @InternalURLs@ will need to be reachable from the host that runs the reverse proxy.
 ^3^ If the Prometheus metrics are not collected from the same machine that runs the service, the @InternalURLs@ will need to be reachable from the host that collects the metrics.
 ^4^ If dispatching containers to HPC (Slurm/LSF) and there are multiple @Controller@ services, they must be able to connect to one another using their InternalURLs, otherwise the "tunnel connections":{{site.baseurl}}/architecture/hpc.html enabling "container shell access":{{site.baseurl}}/install/container-shell-access.html will not work.
+^5^ All URLs in @Services.WebDAVDownload.InternalURLs@ must be reachable by all Controller services. Alternatively, each entry in @Services.Controller.InternalURLs@ must have a corresponding entry in @Services.WebDAVDownload.InternalURLs@ with the same hostname.
 
 When @InternalURLs@ do not need to be reachable from other nodes, it is most secure to use loopback addresses as @InternalURLs@, e.g. @http://127.0.0.1:9005@.
 
