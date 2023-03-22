@@ -309,8 +309,7 @@ export const CollectionPanelFiles = withStyles(styles)(connect((state: RootState
             }).reduce((prev, next) => {
                 return { ...next, ...prev };
             }, {});
-
-            setPathData({ ...pathData, ...newState });
+            setPathData((state) => ({ ...state, ...newState }));
         })
         .finally(() => {
             setIsLoading(false);
@@ -405,7 +404,7 @@ export const CollectionPanelFiles = withStyles(styles)(connect((state: RootState
 
                 if (breadcrumbPath) {
                     const index = path.indexOf(breadcrumbPath);
-                    setPath([...path.slice(0, index + 1)]);
+                    setPath((state) => ([...state.slice(0, index + 1)]));
                 }
 
                 if (parentPath && type === 'directory') {
@@ -413,11 +412,11 @@ export const CollectionPanelFiles = withStyles(styles)(connect((state: RootState
                         path.pop()
                     }
 
-                    setPath([...path, parentPath]);
+                    setPath((state) => ([...state, parentPath]));
                 }
 
                 if (subfolderPath && type === 'directory') {
-                    setPath([...path, subfolderPath]);
+                    setPath((state) => ([...state, subfolderPath]));
                 }
 
                 if (elem.dataset.id && type === 'file') {
@@ -503,7 +502,7 @@ export const CollectionPanelFiles = withStyles(styles)(connect((state: RootState
         <div className={classes.wrapper}>
             <div className={classNames(classes.leftPanel, path.length > 1 ? classes.leftPanelVisible : classes.leftPanelHidden)} data-cy="collection-files-left-panel">
                 <Tooltip title="Go back" className={path.length > 1 ? classes.backButton : classes.backButtonHidden}>
-                    <IconButton onClick={() => setPath([...path.slice(0, path.length -1)])}>
+                    <IconButton onClick={() => setPath((state) => ([...state.slice(0, state.length -1)]))}>
                         <BackIcon />
                     </IconButton>
                 </Tooltip>
