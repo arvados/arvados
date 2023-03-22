@@ -78,16 +78,25 @@ func (conn *Conn) ContainerLog(ctx context.Context, opts arvados.ContainerLogOpt
 		var proxyErr error
 		var expectRespondAuth string
 		proxy := &httputil.ReverseProxy{
+			// Our custom Transport:
+			//
+			// - Uses a custom dialer to connect to the
+			// gateway (either directly or through a
+			// tunnel set up though ContainerTunnel)
+			//
+			// - Verifies the gateway's TLS certificate
+			// using X-Arvados-Authorization headers.
+			//
+			// This involves modifying the outgoing
+			// request header in DialTLSContext.
+			// (ReverseProxy certainly doesn't expect us
+			// to do this, but it works.)
 			Transport: &http.Transport{
 				DialTLSContext: func(ctx context.Context, network, addr string) (net.Conn, error) {
 					tlsconn, requestAuth, respondAuth, err := dial()
 					if err != nil {
 						return nil, err
 					}
-					// Modify our response header
-					// on the fly, even though
-					// ReverseProxy surely doesn't
-					// expect us to do this.
 					proxyReq.Header.Set("X-Arvados-Authorization", requestAuth)
 					expectRespondAuth = respondAuth
 					return tlsconn, nil
@@ -96,10 +105,10 @@ func (conn *Conn) ContainerLog(ctx context.Context, opts arvados.ContainerLogOpt
 			Director: func(r *http.Request) {
 				// Scheme/host of incoming r.URL are
 				// irrelevant now, and may even be
-				// missing. Ensure we have a generic
-				// syntactically correct URL for
-				// net/http to work with. (Host is
-				// ignored by our DialTLSContext.)
+				// missing. Host is ignored by our
+				// DialTLSContext, but we need a
+				// generic syntactically correct URL
+				// for net/http to work with.
 				r.URL.Scheme = "https"
 				r.URL.Host = "0.0.0.0:0"
 				r.Header.Set("X-Arvados-Container-Gateway-Uuid", opts.UUID)
@@ -107,6 +116,8 @@ func (conn *Conn) ContainerLog(ctx context.Context, opts arvados.ContainerLogOpt
 			},
 			ModifyResponse: func(resp *http.Response) error {
 				if resp.Header.Get("X-Arvados-Authorization-Response") != expectRespondAuth {
+					// Note this is how we detect
+					// an attacker-in-the-middle.
 					return httpserver.ErrorWithStatus(errors.New("bad X-Arvados-Authorization-Response header"), http.StatusBadGateway)
 				}
 				return nil
@@ -173,12 +184,21 @@ func (conn *Conn) serveContainerLogViaKeepWeb(opts arvados.ContainerLogOptions, 
 	}
 	proxy := &httputil.ReverseProxy{
 		Director: func(r *http.Request) {
-			r.Host = conn.cluster.Services.WebDAVDownload.ExternalURL.Host
 			r.URL = &url.URL{
 				Scheme: webdavBase.Scheme,
 				Host:   webdavBase.Host,
 				Path:   "/by_id/" + url.PathEscape(ctr.Log) + opts.Path,
 			}
+			// Our outgoing Host header must match
+			// WebDAVDownload.ExternalURL, otherwise
+			// keep-web does not accept an auth token.
+			r.Host = conn.cluster.Services.WebDAVDownload.ExternalURL.Host
+			// We already checked permission on the
+			// container, so we can use a root token here
+			// instead of counting on the "access to log
+			// via container request and container"
+			// permission check, which can be racy when a
+			// request gets retried with a new container.
 			r.Header.Set("Authorization", "Bearer "+conn.cluster.SystemRootToken)
 		},
 	}
@@ -465,10 +485,12 @@ func (conn *Conn) findGateway(ctx context.Context, ctr arvados.Container, noForw
 	}
 }
 
+// dialGatewayTLS negotiates a TLS connection to a container gateway
+// over the given raw connection.
 func (conn *Conn) dialGatewayTLS(ctx context.Context, ctr arvados.Container, rawconn net.Conn) (*tls.Conn, string, string, error) {
 	// crunch-run uses a self-signed / unverifiable TLS
 	// certificate, so we use the following scheme to ensure we're
-	// not talking to a MITM.
+	// not talking to an attacker-in-the-middle.
 	//
 	// 1. Compute ctrKey = HMAC-SHA256(sysRootToken,ctrUUID) --
 	// this will be the same ctrKey that a-d-c supplied to
