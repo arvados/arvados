@@ -14,7 +14,6 @@ import (
 	"io"
 	prand "math/rand"
 	"os"
-	"path"
 	"strings"
 	"sync/atomic"
 	"time"
@@ -31,16 +30,14 @@ var (
 
 // FS implements a webdav.FileSystem by wrapping an
 // arvados.CollectionFilesystem.
-//
-// Collections don't preserve empty directories, so Mkdir is
-// effectively a no-op, and we need to make parent dirs spring into
-// existence automatically so sequences like "mkcol foo; put foo/bar"
-// work as expected.
 type FS struct {
 	FileSystem arvados.FileSystem
 	// Prefix works like fs.Sub: Stat(name) calls
 	// Stat(prefix+name) in the wrapped filesystem.
-	Prefix  string
+	Prefix string
+	// If Writing is false, all write operations return errors.
+	// (Opening a file for writing succeeds -- otherwise webdav
+	// would return 404 -- but writing to it fails.)
 	Writing bool
 	// webdav PROPFIND reads the first few bytes of each file
 	// whose filename extension isn't recognized, which is
@@ -50,33 +47,16 @@ type FS struct {
 	AlwaysReadEOF bool
 }
 
-func (fs *FS) makeparents(name string) {
-	if !fs.Writing {
-		return
-	}
-	dir, _ := path.Split(name)
-	if dir == "" || dir == "/" {
-		return
-	}
-	dir = dir[:len(dir)-1]
-	fs.makeparents(dir)
-	fs.FileSystem.Mkdir(fs.Prefix+dir, 0755)
-}
-
 func (fs *FS) Mkdir(ctx context.Context, name string, perm os.FileMode) error {
 	if !fs.Writing {
 		return ErrReadOnly
 	}
 	name = strings.TrimRight(name, "/")
-	fs.makeparents(name)
 	return fs.FileSystem.Mkdir(fs.Prefix+name, 0755)
 }
 
 func (fs *FS) OpenFile(ctx context.Context, name string, flag int, perm os.FileMode) (f webdav.File, err error) {
 	writing := flag&(os.O_WRONLY|os.O_RDWR|os.O_TRUNC) != 0
-	if writing && fs.Writing {
-		fs.makeparents(name)
-	}
 	f, err = fs.FileSystem.OpenFile(fs.Prefix+name, flag, perm)
 	if !fs.Writing {
 		// webdav module returns 404 on all OpenFile errors,
@@ -109,14 +89,10 @@ func (fs *FS) Rename(ctx context.Context, oldName, newName string) error {
 		oldName = oldName[:len(oldName)-1]
 		newName = strings.TrimSuffix(newName, "/")
 	}
-	fs.makeparents(newName)
 	return fs.FileSystem.Rename(fs.Prefix+oldName, fs.Prefix+newName)
 }
 
 func (fs *FS) Stat(ctx context.Context, name string) (os.FileInfo, error) {
-	if fs.Writing {
-		fs.makeparents(name)
-	}
 	return fs.FileSystem.Stat(fs.Prefix + name)
 }
 
