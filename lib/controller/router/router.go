@@ -623,7 +623,7 @@ func (rtr *router) addRoute(endpoint arvados.APIEndpoint, defaultOpts func() int
 	if alt, ok := altMethod[endpoint.Method]; ok {
 		methods = append(methods, alt)
 	}
-	if strings.HasPrefix(endpoint.Path, strings.TrimSuffix(arvados.EndpointContainerLog.Path, "/{path:.*}")) {
+	if strings.HasSuffix(endpoint.Path, ".*}") {
 		// webdav methods
 		methods = append(methods, "OPTIONS", "PROPFIND")
 	}
