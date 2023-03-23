@@ -321,6 +321,35 @@ func (bal *balancerSuite) TestDecreaseReplTimestampCollision(c *check.C) {
 		desired:    map[string]int{"default": 2},
 		current:    slots{0, 1, 2},
 		timestamps: []int64{12345678, 10000000, 10000000}})
+	bal.try(c, tester{
+		desired:     map[string]int{"default": 0},
+		current:     slots{0, 1, 2},
+		timestamps:  []int64{12345678, 12345678, 12345678},
+		shouldTrash: slots{0},
+		shouldTrashMounts: []string{
+			bal.srvs[bal.knownRendezvous[0][0]].mounts[0].UUID}})
+	bal.try(c, tester{
+		desired:     map[string]int{"default": 2},
+		current:     slots{0, 1, 2, 5, 6},
+		timestamps:  []int64{12345678, 12345679, 10000000, 10000000, 10000000},
+		shouldTrash: slots{2},
+		shouldTrashMounts: []string{
+			bal.srvs[bal.knownRendezvous[0][2]].mounts[0].UUID}})
+	bal.try(c, tester{
+		desired:     map[string]int{"default": 2},
+		current:     slots{0, 1, 2, 5, 6},
+		timestamps:  []int64{12345678, 12345679, 12345671, 10000000, 10000000},
+		shouldTrash: slots{2, 5},
+		shouldTrashMounts: []string{
+			bal.srvs[bal.knownRendezvous[0][2]].mounts[0].UUID,
+			bal.srvs[bal.knownRendezvous[0][5]].mounts[0].UUID}})
+	bal.try(c, tester{
+		desired:     map[string]int{"default": 2},
+		current:     slots{0, 1, 2, 5, 6},
+		timestamps:  []int64{12345678, 12345679, 12345679, 10000000, 10000000},
+		shouldTrash: slots{5},
+		shouldTrashMounts: []string{
+			bal.srvs[bal.knownRendezvous[0][5]].mounts[0].UUID}})
 }
 
 func (bal *balancerSuite) TestDecreaseReplBlockTooNew(c *check.C) {

@@ -829,19 +829,49 @@ func (bal *Balancer) balanceBlock(blkid arvados.SizedDigest, blk *BlockState) ba
 	}
 	blockState := computeBlockState(slots, nil, len(blk.Replicas), 0)
 
-	var lost bool
-	var changes []string
+	// Sort the slots by rendezvous order. This ensures "trash the
+	// first of N replicas with identical timestamps" is
+	// predictable (helpful for testing) and well distributed
+	// across servers.
+	sort.Slice(slots, func(i, j int) bool {
+		si, sj := slots[i], slots[j]
+		if orderi, orderj := srvRendezvous[si.mnt.KeepService], srvRendezvous[sj.mnt.KeepService]; orderi != orderj {
+			return orderi < orderj
+		} else {
+			return rendezvousLess(si.mnt.UUID, sj.mnt.UUID, blkid)
+		}
+	})
+
+	var (
+		lost         bool
+		changes      []string
+		trashedMtime = make(map[int64]bool, len(slots))
+	)
 	for _, slot := range slots {
 		// TODO: request a Touch if Mtime is duplicated.
 		var change int
 		switch {
 		case !slot.want && slot.repl != nil && slot.repl.Mtime < bal.MinMtime:
-			slot.mnt.KeepService.AddTrash(Trash{
-				SizedDigest: blkid,
-				Mtime:       slot.repl.Mtime,
-				From:        slot.mnt,
-			})
-			change = changeTrash
+			if trashedMtime[slot.repl.Mtime] {
+				// Don't trash multiple replicas with
+				// identical timestamps. If they are
+				// multiple views of the same backing
+				// storage, asking both servers to
+				// trash is redundant and can cause
+				// races (see #20242). If they are
+				// distinct replicas that happen to
+				// have identical timestamps, we'll
+				// get this one on the next sweep.
+				change = changeNone
+			} else {
+				slot.mnt.KeepService.AddTrash(Trash{
+					SizedDigest: blkid,
+					Mtime:       slot.repl.Mtime,
+					From:        slot.mnt,
+				})
+				change = changeTrash
+				trashedMtime[slot.repl.Mtime] = true
+			}
 		case slot.repl == nil && slot.want && len(blk.Replicas) == 0:
 			lost = true
 			change = changeNone
