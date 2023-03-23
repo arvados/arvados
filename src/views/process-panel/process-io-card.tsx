@@ -404,7 +404,7 @@ const ProcessIOPreview = withStyles(styles)(
                         [classes.noBorderRow]: (rest.length > 0),
                     };
 
-                    return <>
+                    return <React.Fragment key={param.id}>
                         <TableRow className={classNames(mainRowClasses)} data-cy="process-io-param">
                             <TableCell>
                                 {param.id}
@@ -424,7 +424,7 @@ const ProcessIOPreview = withStyles(styles)(
                                 [classes.noBorderRow]: (i < rest.length - 1),
                                 [classes.secondaryRow]: val.secondary,
                             };
-                            return <TableRow className={classNames(rowClasses)}>
+                            return <TableRow className={classNames(rowClasses)} key={i}>
                                 <TableCell />
                                 {showLabel && <TableCell />}
                                 <TableCell>
@@ -437,10 +437,10 @@ const ProcessIOPreview = withStyles(styles)(
                                 </TableCell>
                             </TableRow>
                         })}
-                    </>;
+                    </React.Fragment>;
                 })}
             </TableBody>
-        </Table>;
+        </Table >;
     });
 
 interface ProcessValuePreviewProps {

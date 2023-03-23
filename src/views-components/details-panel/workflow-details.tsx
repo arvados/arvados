@@ -130,7 +130,7 @@ export const WorkflowDetailsAttributes = connect(mapStateToProps, mapDispatchToP
                 <Button onClick={workflow && onClick(workflow)} className={classes.runButton} variant='contained'
                     data-cy='workflow-details-panel-run-btn' color='primary' size='small'>
                     <StartIcon />
-                    Run Process
+                    Run Workflow
                 </Button>
                 <Grid item xs={12} >
                     <DetailsAttribute

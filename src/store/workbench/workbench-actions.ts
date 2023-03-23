@@ -32,7 +32,6 @@ import {
     setGroupDetailsBreadcrumbs,
     setGroupsBreadcrumbs,
     setProcessBreadcrumbs,
-    setWorkflowBreadcrumbs,
     setSharedWithMeBreadcrumbs,
     setSidePanelBreadcrumbs,
     setTrashBreadcrumbs,
@@ -590,14 +589,30 @@ export const loadProcess = (uuid: string) =>
     });
 
 export const loadRegisteredWorkflow = (uuid: string) =>
-    handleFirstTimeLoad(async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
-        const workflow = await services.workflowService.get(uuid);
-        if (workflow) {
-            dispatch<any>(updateResources([workflow]));
-            await dispatch<any>(
-                activateSidePanelTreeItem(workflow.ownerUuid)
-            );
-            dispatch<any>(setWorkflowBreadcrumbs(uuid));
+    handleFirstTimeLoad(async (dispatch: Dispatch,
+        getState: () => RootState,
+        services: ServiceRepository) => {
+
+        const userUuid = getUserUuid(getState());
+        if (userUuid) {
+            const match = await loadGroupContentsResource({
+                uuid,
+                userUuid,
+                services,
+            });
+            match({
+                OWNED: (workflow) => {
+                    dispatch(updateResources([workflow]));
+                    dispatch<any>(activateSidePanelTreeItem(workflow.ownerUuid));
+                    dispatch<any>(setSidePanelBreadcrumbs(workflow.ownerUuid));
+                },
+                SHARED: (workflow) => {
+                    dispatch<any>(updateResources([workflow]));
+                    dispatch<any>(activateSidePanelTreeItem(workflow.ownerUuid));
+                    dispatch<any>(setSharedWithMeBreadcrumbs(workflow.ownerUuid));
+                },
+                TRASHED: () => { }
+            });
         }
     });
 
@@ -889,8 +904,12 @@ const loadGroupContentsResource = async (params: {
             resource = await params.services.collectionService.get(params.uuid);
         } else if (kind === ResourceKind.PROJECT) {
             resource = await params.services.projectService.get(params.uuid);
-        } else {
+        } else if (kind === ResourceKind.WORKFLOW) {
+            resource = await params.services.workflowService.get(params.uuid);
+        } else if (kind === ResourceKind.CONTAINER_REQUEST) {
             resource = await params.services.containerRequestService.get(params.uuid);
+        } else {
+            throw new Error("loadGroupContentsResource unsupported kind " + kind)
         }
         handler = groupContentsHandlers.SHARED(resource);
     }

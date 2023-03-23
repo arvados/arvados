@@ -142,6 +142,9 @@ export const setCategoryBreadcrumbs = (uuid: string, category: string) =>
                 breadcrumbs.push(resourceToBreadcrumb(parentProcessItem));
             }
             dispatch(setBreadcrumbs(breadcrumbs, processItem));
+        } else if (uuidKind === ResourceKind.WORKFLOW) {
+            const workflowItem = await services.workflowService.get(currentUuid);
+            dispatch(setBreadcrumbs(breadcrumbs, workflowItem));
         }
         dispatch(setBreadcrumbs(breadcrumbs));
     };
@@ -203,15 +206,6 @@ export const setProcessBreadcrumbs = (processUuid: string) =>
         const process = getProcess(processUuid)(resources);
         if (process) {
             dispatch<any>(setProjectBreadcrumbs(process.containerRequest.ownerUuid));
-        }
-    };
-
-export const setWorkflowBreadcrumbs = (workflowUuid: string) =>
-    (dispatch: Dispatch, getState: () => RootState) => {
-        const { resources } = getState();
-        const workflow = getResource<WorkflowResource>(workflowUuid)(resources);
-        if (workflow) {
-            dispatch<any>(setProjectBreadcrumbs(workflow.ownerUuid));
         }
     };
 
