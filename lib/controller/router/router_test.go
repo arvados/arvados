@@ -259,6 +259,13 @@ func (s *RouterSuite) TestOptions(c *check.C) {
 					Header: http.Header{"Authorization": {"Bearer " + arvadostest.ActiveToken}},
 					Path:   "/"}},
 		},
+		{
+			comment:      "/logX does not route to ContainerLog",
+			method:       "GET",
+			path:         "/arvados/v1/containers/" + arvadostest.CompletedContainerUUID + "/logX",
+			shouldStatus: http.StatusNotFound,
+			shouldCall:   "",
+		},
 	} {
 		// Reset calls captured in previous trial
 		s.stub = arvadostest.APIStub{}
