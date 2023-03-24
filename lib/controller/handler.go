@@ -6,12 +6,17 @@ package controller
 
 import (
 	"context"
+	"encoding/json"
+	"errors"
 	"fmt"
+	"io/ioutil"
+	"mime"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
 	"strings"
 	"sync"
+	"time"
 
 	"git.arvados.org/arvados.git/lib/controller/api"
 	"git.arvados.org/arvados.git/lib/controller/federation"
@@ -20,6 +25,7 @@ import (
 	"git.arvados.org/arvados.git/lib/controller/router"
 	"git.arvados.org/arvados.git/lib/ctrlctx"
 	"git.arvados.org/arvados.git/sdk/go/arvados"
+	"git.arvados.org/arvados.git/sdk/go/ctxlog"
 	"git.arvados.org/arvados.git/sdk/go/health"
 	"git.arvados.org/arvados.git/sdk/go/httpserver"
 
@@ -39,6 +45,8 @@ type Handler struct {
 	insecureClient *http.Client
 	dbConnector    ctrlctx.DBConnector
 	limitLogCreate chan struct{}
+
+	cache map[string]*cacheEnt
 }
 
 func (h *Handler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
@@ -162,6 +170,9 @@ func (h *Handler) setup() {
 	h.proxy = &proxy{
 		Name: "arvados-controller",
 	}
+	h.cache = map[string]*cacheEnt{
+		"/discovery/v1/apis/arvados/v1/rest": &cacheEnt{validate: validateDiscoveryDoc},
+	}
 
 	go h.trashSweepWorker()
 	go h.containerLogSweepWorker()
@@ -208,7 +219,127 @@ func (h *Handler) limitLogCreateRequests(w http.ResponseWriter, req *http.Reques
 	next.ServeHTTP(w, req)
 }
 
+// cacheEnt implements a basic stale-while-revalidate cache, suitable
+// for the Arvados discovery document.
+type cacheEnt struct {
+	validate     func(body []byte) error
+	mtx          sync.Mutex
+	header       http.Header
+	body         []byte
+	expireAfter  time.Time
+	refreshAfter time.Time
+	refreshLock  sync.Mutex
+}
+
+const (
+	cacheTTL    = 5 * time.Minute
+	cacheExpire = 24 * time.Hour
+)
+
+func (ent *cacheEnt) refresh(path string, do func(*http.Request) (*http.Response, error)) (http.Header, []byte, error) {
+	ent.refreshLock.Lock()
+	defer ent.refreshLock.Unlock()
+	if header, body, needRefresh := ent.response(); !needRefresh {
+		// another goroutine refreshed successfully while we
+		// were waiting for refreshLock
+		return header, body, nil
+	} else if body != nil {
+		// Cache is present, but expired. We'll try to refresh
+		// below. Meanwhile, other refresh() calls will queue
+		// up for refreshLock -- and we don't want them to
+		// turn into N upstream requests, even if upstream is
+		// failing.  (If we succeed we'll update the expiry
+		// time again below with the real cacheTTL -- this
+		// just takes care of the error case.)
+		ent.mtx.Lock()
+		ent.refreshAfter = time.Now().Add(time.Second)
+		ent.mtx.Unlock()
+	}
+
+	ctx, cancel := context.WithDeadline(context.Background(), time.Now().Add(time.Minute))
+	defer cancel()
+	// 0.0.0.0:0 is just a placeholder here -- do(), which is
+	// localClusterRequest(), will replace the scheme and host
+	// parts with the real proxy destination.
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, "http://0.0.0.0:0/"+path, nil)
+	if err != nil {
+		return nil, nil, err
+	}
+	resp, err := do(req)
+	if err != nil {
+		return nil, nil, err
+	}
+	if resp.StatusCode != http.StatusOK {
+		return nil, nil, fmt.Errorf("HTTP status %d", resp.StatusCode)
+	}
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return nil, nil, fmt.Errorf("Read error: %w", err)
+	}
+	header := http.Header{}
+	for k, v := range resp.Header {
+		if !dropHeaders[k] && k != "X-Request-Id" {
+			header[k] = v
+		}
+	}
+	if ent.validate != nil {
+		if err := ent.validate(body); err != nil {
+			return nil, nil, err
+		}
+	} else if mediatype, _, err := mime.ParseMediaType(header.Get("Content-Type")); err == nil && mediatype == "application/json" {
+		if !json.Valid(body) {
+			return nil, nil, errors.New("invalid JSON encoding in response")
+		}
+	}
+	ent.mtx.Lock()
+	defer ent.mtx.Unlock()
+	ent.header = header
+	ent.body = body
+	ent.refreshAfter = time.Now().Add(cacheTTL)
+	ent.expireAfter = time.Now().Add(cacheExpire)
+	return ent.header, ent.body, nil
+}
+
+func (ent *cacheEnt) response() (http.Header, []byte, bool) {
+	ent.mtx.Lock()
+	defer ent.mtx.Unlock()
+	if ent.expireAfter.Before(time.Now()) {
+		ent.header, ent.body, ent.refreshAfter = nil, nil, time.Time{}
+	}
+	return ent.header, ent.body, ent.refreshAfter.Before(time.Now())
+}
+
+func (ent *cacheEnt) ServeHTTP(ctx context.Context, w http.ResponseWriter, path string, do func(*http.Request) (*http.Response, error)) {
+	header, body, needRefresh := ent.response()
+	if body == nil {
+		// need to fetch before we can return anything
+		var err error
+		header, body, err = ent.refresh(path, do)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusBadGateway)
+			return
+		}
+	} else if needRefresh {
+		// re-fetch in background
+		go func() {
+			_, _, err := ent.refresh(path, do)
+			if err != nil {
+				ctxlog.FromContext(ctx).WithError(err).WithField("path", path).Warn("error refreshing cache")
+			}
+		}()
+	}
+	for k, v := range header {
+		w.Header()[k] = v
+	}
+	w.WriteHeader(http.StatusOK)
+	w.Write(body)
+}
+
 func (h *Handler) proxyRailsAPI(w http.ResponseWriter, req *http.Request, next http.Handler) {
+	if ent, ok := h.cache[req.URL.Path]; ok && req.Method == http.MethodGet {
+		ent.ServeHTTP(req.Context(), w, req.URL.Path, h.localClusterRequest)
+		return
+	}
 	resp, err := h.localClusterRequest(req)
 	n, err := h.proxy.ForwardResponse(w, resp, err)
 	if err != nil {
@@ -231,4 +362,16 @@ func findRailsAPI(cluster *arvados.Cluster) (*url.URL, bool, error) {
 		return nil, false, fmt.Errorf("Services.RailsAPI.InternalURLs is empty")
 	}
 	return best, cluster.TLS.Insecure, nil
+}
+
+func validateDiscoveryDoc(body []byte) error {
+	var dd arvados.DiscoveryDocument
+	err := json.Unmarshal(body, &dd)
+	if err != nil {
+		return fmt.Errorf("error decoding JSON response: %w", err)
+	}
+	if dd.BasePath == "" {
+		return errors.New("error in discovery document: no value for basePath")
+	}
+	return nil
 }
