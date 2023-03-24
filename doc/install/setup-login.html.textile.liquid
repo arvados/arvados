@@ -35,26 +35,26 @@ Use the <a href="https://console.developers.google.com" target="_blank">Google D
 # Add the Redirect URI: @https://ClusterID.example.com/login@
 # Copy the values of *Client ID* and *Client secret* to the @Login.Google@ section of @config.yml@.
 
-<pre>
+{% codeblock as yaml %}
     Login:
       Google:
         Enable: true
         ClientID: "0000000000000-zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz.apps.googleusercontent.com"
         ClientSecret: "zzzzzzzzzzzzzzzzzzzzzzzz"
-</pre>
+{% endcodeblock %}
 
 h2(#oidc). OpenID Connect
 
 With this configuration, users will sign in with a third-party OpenID Connect provider. The provider will supply appropriate values for the issuer URL, client ID, and client secret config entries.
 
-<pre>
+{% codeblock as yaml %}
     Login:
       OpenIDConnect:
         Enable: true
         Issuer: https://accounts.example.com/
         ClientID: "0123456789abcdef"
         ClientSecret: "zzzzzzzzzzzzzzzzzzzzzzzz"
-</pre>
+{% endcodeblock %}
 
 Check the OpenIDConnect section in the "default config file":{{site.baseurl}}/admin/config.html for more details and configuration options.
 
@@ -64,7 +64,7 @@ With this configuration, authentication uses an external LDAP service like OpenL
 
 Enable LDAP authentication and provide your LDAP server's host, port, and credentials (if needed to search the directory) in @config.yml@:
 
-<pre>
+{% codeblock as yaml %}
     Login:
       LDAP:
         Enable: true
@@ -72,7 +72,7 @@ Enable LDAP authentication and provide your LDAP server's host, port, and creden
         SearchBindUser: cn=lookupuser,dc=example,dc=com
         SearchBindPassword: xxxxxxxx
         SearchBase: ou=Users,dc=example,dc=com
-</pre>
+{% endcodeblock %}
 
 The email address reported by LDAP will be used as primary key for Arvados accounts. This means *users must not be able to edit their own email addresses* in the directory.
 
@@ -90,11 +90,11 @@ With this configuration, authentication is done according to the Linux PAM ("Plu
 
 Enable PAM authentication in @config.yml@:
 
-<pre>
+{% codeblock as yaml %}
     Login:
       PAM:
         Enable: true
-</pre>
+{% endcodeblock %}
 
 Check the "default config file":{{site.baseurl}}/admin/config.html for more PAM configuration options.
 
