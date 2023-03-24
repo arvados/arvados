@@ -87,6 +87,7 @@ import {
     loadCollectionPanel,
 } from 'store/collection-panel/collection-panel-action';
 import { CollectionResource } from 'models/collection';
+import { WorkflowResource } from 'models/workflow';
 import {
     loadSearchResultsPanel,
     searchResultsPanelActions,
@@ -452,41 +453,34 @@ export const loadCollection = (uuid: string) =>
                     userUuid,
                     services,
                 });
+                let collection: CollectionResource | undefined;
+                let breadcrumbfunc: ((uuid: string) => (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => Promise<void>) | undefined;
+                let sidepanel: string | undefined;
                 match({
-                    OWNED: (collection) => {
-                        dispatch(
-                            collectionPanelActions.SET_COLLECTION(
-                                collection as CollectionResource
-                            )
-                        );
-                        dispatch(updateResources([collection]));
-                        dispatch(activateSidePanelTreeItem(collection.ownerUuid));
-                        dispatch(setSidePanelBreadcrumbs(collection.ownerUuid));
-                        dispatch(loadCollectionPanel(collection.uuid));
+                    OWNED: (thecollection) => {
+                        collection = thecollection as CollectionResource;
+                        sidepanel = collection.ownerUuid;
+                        breadcrumbfunc = setSidePanelBreadcrumbs;
                     },
-                    SHARED: (collection) => {
-                        dispatch(
-                            collectionPanelActions.SET_COLLECTION(
-                                collection as CollectionResource
-                            )
-                        );
-                        dispatch(updateResources([collection]));
-                        dispatch<any>(setSharedWithMeBreadcrumbs(collection.ownerUuid));
-                        dispatch(activateSidePanelTreeItem(collection.ownerUuid));
-                        dispatch(loadCollectionPanel(collection.uuid));
+                    SHARED: (thecollection) => {
+                        collection = thecollection as CollectionResource;
+                        sidepanel = collection.ownerUuid;
+                        breadcrumbfunc = setSharedWithMeBreadcrumbs;
                     },
-                    TRASHED: (collection) => {
-                        dispatch(
-                            collectionPanelActions.SET_COLLECTION(
-                                collection as CollectionResource
-                            )
-                        );
-                        dispatch(updateResources([collection]));
-                        dispatch(setTrashBreadcrumbs(''));
-                        dispatch(activateSidePanelTreeItem(SidePanelTreeCategory.TRASH));
-                        dispatch(loadCollectionPanel(collection.uuid));
+                    TRASHED: (thecollection) => {
+                        collection = thecollection as CollectionResource;
+                        sidepanel = SidePanelTreeCategory.TRASH;
+                        breadcrumbfunc = () => setTrashBreadcrumbs('');
                     },
                 });
+                if (collection && breadcrumbfunc && sidepanel) {
+                    dispatch(updateResources([collection]));
+                    await dispatch<any>(finishLoadingProject(collection.ownerUuid));
+                    dispatch(collectionPanelActions.SET_COLLECTION(collection));
+                    await dispatch(activateSidePanelTreeItem(sidepanel));
+                    dispatch(breadcrumbfunc(collection.ownerUuid));
+                    dispatch(loadCollectionPanel(collection.uuid));
+                }
             }
         }
     );
@@ -580,6 +574,7 @@ export const loadProcess = (uuid: string) =>
         dispatch<any>(loadProcessPanel(uuid));
         const process = await dispatch<any>(processesActions.loadProcess(uuid));
         if (process) {
+            await dispatch<any>(finishLoadingProject(process.containerRequest.ownerUuid));
             await dispatch<any>(
                 activateSidePanelTreeItem(process.containerRequest.ownerUuid)
             );
@@ -600,19 +595,25 @@ export const loadRegisteredWorkflow = (uuid: string) =>
                 userUuid,
                 services,
             });
+            let workflow: WorkflowResource | undefined;
+            let breadcrumbfunc: ((uuid: string) => (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => Promise<void>) | undefined;
             match({
-                OWNED: (workflow) => {
-                    dispatch(updateResources([workflow]));
-                    dispatch<any>(activateSidePanelTreeItem(workflow.ownerUuid));
-                    dispatch<any>(setSidePanelBreadcrumbs(workflow.ownerUuid));
+                OWNED: async (theworkflow) => {
+                    workflow = theworkflow as WorkflowResource;
+                    breadcrumbfunc = setSidePanelBreadcrumbs;
                 },
-                SHARED: (workflow) => {
-                    dispatch<any>(updateResources([workflow]));
-                    dispatch<any>(activateSidePanelTreeItem(workflow.ownerUuid));
-                    dispatch<any>(setSharedWithMeBreadcrumbs(workflow.ownerUuid));
+                SHARED: async (theworkflow) => {
+                    workflow = theworkflow as WorkflowResource;
+                    breadcrumbfunc = setSharedWithMeBreadcrumbs;
                 },
                 TRASHED: () => { }
             });
+            if (workflow && breadcrumbfunc) {
+                dispatch(updateResources([workflow]));
+                await dispatch<any>(finishLoadingProject(workflow.ownerUuid));
+                await dispatch<any>(activateSidePanelTreeItem(workflow.ownerUuid));
+                dispatch<any>(breadcrumbfunc(workflow.ownerUuid));
+            }
         }
     });
 
