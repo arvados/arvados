@@ -5,6 +5,7 @@
 package localdb
 
 import (
+	"bytes"
 	"crypto/hmac"
 	"crypto/sha256"
 	"fmt"
@@ -15,6 +16,8 @@ import (
 	"net/http/httptest"
 	"net/url"
 	"os"
+	"os/exec"
+	"path/filepath"
 	"strings"
 	"time"
 
@@ -36,6 +39,7 @@ var _ = check.Suite(&ContainerGatewaySuite{})
 type ContainerGatewaySuite struct {
 	localdbSuite
 	ctrUUID string
+	srv     *httptest.Server
 	gw      *crunchrun.Gateway
 }
 
@@ -49,15 +53,15 @@ func (s *ContainerGatewaySuite) SetUpTest(c *check.C) {
 	authKey := fmt.Sprintf("%x", h.Sum(nil))
 
 	rtr := router.New(s.localdb, router.Config{})
-	srv := httptest.NewUnstartedServer(rtr)
-	srv.StartTLS()
+	s.srv = httptest.NewUnstartedServer(rtr)
+	s.srv.StartTLS()
 	// the test setup doesn't use lib/service so
 	// service.URLFromContext() returns nothing -- instead, this
 	// is how we advertise our internal URL and enable
 	// proxy-to-other-controller mode,
-	forceInternalURLForTest = &arvados.URL{Scheme: "https", Host: srv.Listener.Addr().String()}
+	forceInternalURLForTest = &arvados.URL{Scheme: "https", Host: s.srv.Listener.Addr().String()}
 	ac := &arvados.Client{
-		APIHost:   srv.Listener.Addr().String(),
+		APIHost:   s.srv.Listener.Addr().String(),
 		AuthToken: arvadostest.Dispatch1Token,
 		Insecure:  true,
 	}
@@ -89,6 +93,11 @@ func (s *ContainerGatewaySuite) SetUpTest(c *check.C) {
 	s.cluster.Containers.ShellAccess.User = true
 	_, err = s.db.Exec(`update containers set interactive_session_started=$1 where uuid=$2`, false, s.ctrUUID)
 	c.Check(err, check.IsNil)
+}
+
+func (s *ContainerGatewaySuite) TearDownTest(c *check.C) {
+	s.srv.Close()
+	s.localdbSuite.TearDownTest(c)
 }
 
 func (s *ContainerGatewaySuite) TestConfig(c *check.C) {
@@ -385,6 +394,57 @@ func (s *ContainerGatewaySuite) testContainerLog(c *check.C, viaGateway bool) {
 		c.Check(err, check.IsNil)
 		c.Check(string(buf), check.Matches, trial.expectBodyRe)
 	}
+}
+
+func (s *ContainerGatewaySuite) TestContainerLogViaCadaver(c *check.C) {
+	out := s.runCadaver(c, arvadostest.ActiveToken, "/arvados/v1/containers/"+s.ctrUUID+"/log", "ls")
+	c.Check(out, check.Matches, `(?ms).*stderr\.txt\s+12\s.*`)
+	c.Check(out, check.Matches, `(?ms).*a\s+0\s.*`)
+
+	out = s.runCadaver(c, arvadostest.ActiveTokenV2, "/arvados/v1/containers/"+s.ctrUUID+"/log", "get stderr.txt")
+	c.Check(out, check.Matches, `(?ms).*Downloading .* to stderr\.txt: .* succeeded\..*`)
+}
+
+func (s *ContainerGatewaySuite) runCadaver(c *check.C, password, path, stdin string) string {
+	// Replace s.srv with an HTTP server, otherwise cadaver will
+	// just fail on TLS cert verification.
+	s.srv.Close()
+	rtr := router.New(s.localdb, router.Config{})
+	s.srv = httptest.NewUnstartedServer(rtr)
+	s.srv.Start()
+
+	s.setupLogCollection(c, map[string]string{
+		"stderr.txt":   "hello world\n",
+		"a/b/c/d.html": "<html></html>\n",
+	})
+
+	tempdir, err := ioutil.TempDir("", "localdb-test-")
+	c.Assert(err, check.IsNil)
+	defer os.RemoveAll(tempdir)
+
+	cmd := exec.Command("cadaver", s.srv.URL+path)
+	if password != "" {
+		cmd.Env = append(os.Environ(), "HOME="+tempdir)
+		f, err := os.OpenFile(filepath.Join(tempdir, ".netrc"), os.O_CREATE|os.O_TRUNC|os.O_WRONLY, 0600)
+		c.Assert(err, check.IsNil)
+		_, err = fmt.Fprintf(f, "default login none password %s\n", password)
+		c.Assert(err, check.IsNil)
+		c.Assert(f.Close(), check.IsNil)
+	}
+	cmd.Stdin = bytes.NewBufferString(stdin)
+	cmd.Dir = tempdir
+	stdout, err := cmd.StdoutPipe()
+	c.Assert(err, check.Equals, nil)
+	cmd.Stderr = cmd.Stdout
+	c.Logf("cmd: %v", cmd.Args)
+	go cmd.Start()
+
+	var buf bytes.Buffer
+	_, err = io.Copy(&buf, stdout)
+	c.Check(err, check.Equals, nil)
+	err = cmd.Wait()
+	c.Check(err, check.Equals, nil)
+	return buf.String()
 }
 
 func (s *ContainerGatewaySuite) TestConnect(c *check.C) {

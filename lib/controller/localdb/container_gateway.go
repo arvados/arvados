@@ -56,6 +56,13 @@ var (
 func (conn *Conn) ContainerLog(ctx context.Context, opts arvados.ContainerLogOptions) (http.Handler, error) {
 	ctr, err := conn.railsProxy.ContainerGet(ctx, arvados.GetOptions{UUID: opts.UUID, Select: []string{"uuid", "state", "gateway_address", "log"}})
 	if err != nil {
+		if se := httpserver.HTTPStatusError(nil); errors.As(err, &se) && se.HTTPStatus() == http.StatusUnauthorized {
+			// Hint to WebDAV client that we accept HTTP basic auth.
+			return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				w.Header().Set("Www-Authenticate", "Basic realm=\"collections\"")
+				w.WriteHeader(http.StatusUnauthorized)
+			}), nil
+		}
 		return nil, err
 	}
 	if ctr.GatewayAddress == "" ||
