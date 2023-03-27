@@ -288,12 +288,6 @@ func (s *ContainerGatewaySuite) testContainerLog(c *check.C, viaGateway bool) {
 				"gateway_address": "",
 			}})
 		c.Assert(err, check.IsNil)
-		// _, err = s.localdb.ContainerUpdate(rootctx, arvados.UpdateOptions{
-		// 	UUID: s.ctrUUID,
-		// 	Attrs: map[string]interface{}{
-		// 		"state": "Cancelled",
-		// 	}})
-		// c.Assert(err, check.IsNil)
 		// gateway_address="" above already ensures localdb
 		// can't circumvent the keep-web proxy test by getting
 		// content from the container gateway; this is just
