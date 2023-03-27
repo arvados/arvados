@@ -35,6 +35,27 @@ func (s *loginSuite) TestValidateLoginRedirectTarget(c *check.C) {
 		{true, "https://wb1.example/", "https://wb2.example/", "https://good.wb2.example/", "https://good.wb2.example"},
 		{true, "https://wb1.example/", "https://wb2.example/", "https://good.wb2.example:443/", "https://good.wb2.example"},
 		{true, "https://wb1.example/", "https://wb2.example/", "https://good.wb2.example:443", "https://good.wb2.example/"},
+
+		{true, "https://wb1.example/", "https://wb2.example/", "https://*.wildcard.example", "https://ok.wildcard.example/"},
+		{true, "https://wb1.example/", "https://wb2.example/", "https://*.wildcard.example", "https://ok.ok.wildcard.example/"},
+		{true, "https://wb1.example/", "https://wb2.example/", "https://*.wildcard.example", "https://[ok.ok.wildcard.example]:443/"},
+		{true, "https://wb1.example/", "https://wb2.example/", "https://[*.wildcard.example]:443", "https://ok.ok.wildcard.example/"},
+		{true, "https://wb1.example/", "https://wb2.example/", "https://*.wildcard.example:443", "https://ok.wildcard.example/"},
+		{true, "https://wb1.example/", "https://wb2.example/", "https://*.wildcard.example", "https://ok.wildcard.example:443/"},
+		{true, "https://wb1.example/", "https://wb2.example/", "https://*.wildcard.example:443", "https://ok.wildcard.example:443/"},
+
+		{false, "https://wb1.example/", "https://wb2.example/", "https://*.wildcard.example", "http://wildcard.example/"},
+		{false, "https://wb1.example/", "https://wb2.example/", "https://*.wildcard.example", "http://.wildcard.example/"},
+		{false, "https://wb1.example/", "https://wb2.example/", "https://*.wildcard.example", "http://wrongscheme.wildcard.example/"},
+		{false, "https://wb1.example/", "https://wb2.example/", "https://*.wildcard.example", "http://wrongscheme.wildcard.example:443/"},
+		{false, "https://wb1.example/", "https://wb2.example/", "https://*.wildcard.example", "https://wrongport.wildcard.example:80/"},
+		{false, "https://wb1.example/", "https://wb2.example/", "https://*.wildcard.example", "https://notmatching-wildcard.example/"},
+		{false, "https://wb1.example/", "https://wb2.example/", "https://*.wildcard.example", "http://notmatching.wildcard.example/"},
+		{false, "https://wb1.example/", "https://wb2.example/", "https://*.wildcard.example:443", "https://attacker.example/ok.wildcard.example/"},
+		{false, "https://wb1.example/", "https://wb2.example/", "https://*.wildcard.example", "https://attacker.example/ok.wildcard.example/"},
+		{false, "https://wb1.example/", "https://wb2.example/", "https://*.wildcard.example", "https://attacker.example/?https://ok.wildcard.example/"},
+		{false, "https://wb1.example/", "https://wb2.example/", "https://*.wildcard.example", "https://attacker.example/#https://ok.wildcard.example/"},
+		{false, "https://wb1.example/", "https://wb2.example/", "https://*-wildcard.example", "https://notsupported-wildcard.example/"},
 	} {
 		c.Logf("trial %+v", trial)
 		// We use json.Unmarshal() to load the test strings

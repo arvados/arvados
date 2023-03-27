@@ -909,6 +909,9 @@ Clusters:
       # probably want to include the other Workbench instances in the
       # federation in this list.
       #
+      # A wildcard like "https://*.example" will match client URLs
+      # like "https://a.example" and "https://a.b.c.example".
+      #
       # Example:
       #
       # TrustedClients:

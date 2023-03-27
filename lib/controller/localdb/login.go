@@ -175,7 +175,17 @@ func validateLoginRedirectTarget(cluster *arvados.Cluster, returnTo string) erro
 	}
 	target := origin(*u)
 	for trusted := range cluster.Login.TrustedClients {
-		if origin(url.URL(trusted)) == target {
+		trustedOrigin := origin(url.URL(trusted))
+		if trustedOrigin == target {
+			return nil
+		}
+		// If TrustedClients has https://*.bar.example, we
+		// trust https://foo.bar.example. Note origin() has
+		// already stripped the incoming Path, so we won't
+		// accidentally trust
+		// https://attacker.example/pwn.bar.example here. See
+		// tests.
+		if strings.HasPrefix(trustedOrigin, u.Scheme+"://*.") && strings.HasSuffix(target, trustedOrigin[len(u.Scheme)+4:]) {
 			return nil
 		}
 	}

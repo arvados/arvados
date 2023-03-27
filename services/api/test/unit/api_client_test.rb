@@ -40,4 +40,31 @@ class ApiClientTest < ActiveSupport::TestCase
       end
     end
   end
+
+  [
+    [true, "https://ok.example", "https://ok.example"],
+    [true, "https://ok.example:443/", "https://ok.example"],
+    [true, "https://ok.example", "https://ok.example:443/"],
+    [true, "https://ok.example", "https://ok.example/foo/bar"],
+    [true, "https://ok.example", "https://ok.example?foo/bar"],
+    [true, "https://ok.example/waz?quux", "https://ok.example/foo?bar#baz"],
+    [false, "https://ok.example", "http://ok.example"],
+    [false, "https://ok.example", "http://ok.example:443"],
+
+    [true, "https://*.wildcard.example", "https://ok.wildcard.example"],
+    [true, "https://*.wildcard.example", "https://ok.ok.ok.wildcard.example"],
+    [false, "https://*.wildcard.example", "http://wrongscheme.wildcard.example"],
+    [false, "https://*.wildcard.example", "https://wrongport.wildcard.example:80"],
+    [false, "https://*.wildcard.example", "https://ok.wildcard.example.attacker.example/"],
+    [false, "https://*.wildcard.example", "https://attacker.example/https://ok.wildcard.example/"],
+    [false, "https://*.wildcard.example", "https://attacker.example/?https://ok.wildcard.example/"],
+    [false, "https://*.wildcard.example", "https://attacker.example/#https://ok.wildcard.example/"],
+    [false, "https://*-wildcard.example", "https://notsupported-wildcard.example"],
+  ].each do |pass, trusted, current|
+    test "is_trusted(#{current}) returns #{pass} based on #{trusted} in TrustedClients" do
+      Rails.configuration.Login.TrustedClients = ActiveSupport::OrderedOptions.new
+      Rails.configuration.Login.TrustedClients[trusted.to_sym] = ActiveSupport::OrderedOptions.new
+      assert_equal pass, ApiClient.new(url_prefix: current).is_trusted
+    end
+  end
 end
