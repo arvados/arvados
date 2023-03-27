@@ -58,7 +58,7 @@ resource "aws_internet_gateway" "arvados_gw" {
   vpc_id = aws_vpc.arvados_vpc.id
 }
 resource "aws_eip" "arvados_eip" {
-  for_each = toset(local.hostnames)
+  for_each = toset(local.public_hosts)
   depends_on = [
     aws_internet_gateway.arvados_gw
   ]

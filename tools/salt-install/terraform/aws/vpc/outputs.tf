@@ -29,8 +29,16 @@ output "public_ip" {
   value = local.public_ip
 }
 
+output "public_hosts" {
+  value = local.public_hosts
+}
+
 output "private_ip" {
   value = local.private_ip
+}
+
+output "private_hosts" {
+  value = local.private_hosts
 }
 
 output "route53_dns_ns" {
