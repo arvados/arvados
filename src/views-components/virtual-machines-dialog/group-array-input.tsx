@@ -46,7 +46,6 @@ const styles = (theme: ArvadosTheme) => ({
 });
 
 export const GroupArrayInput = ({name, input, setPartialGroupInput, hasPartialGroupInput}: GroupArrayInputProps & GroupArrayDataProps) => {
-  console.log(hasPartialGroupInput);
   return <GroupArrayField
       name={name}
       commandInput={input}
