@@ -1041,7 +1041,7 @@ describe('Collection panel tests', function () {
             }).as('testCollection1');
         });
 
-        it.only('uploads a file and checks the collection UI to be fresh', () => {
+        it('uploads a file and checks the collection UI to be fresh', () => {
             cy.getAll('@testCollection1')
                 .then(function([testCollection1]) {
                     cy.loginAs(activeUser);
