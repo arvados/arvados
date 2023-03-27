@@ -181,10 +181,15 @@ case "$subcmd" in
 	if [[ -n "$TERRAFORM" ]] ; then
 	    mkdir $SETUPDIR/terraform
 	    cp -r $TERRAFORM/* $SETUPDIR/terraform/
+		cp $TERRAFORM/.gitignore $SETUPDIR/terraform/
 	fi
 
 	cd $SETUPDIR
 	echo '*.log' > .gitignore
+
+	if [[ -n "$TERRAFORM" ]] ; then
+		git add terraform
+	fi
 
 	git add *.sh ${CONFIG_FILE} ${CONFIG_DIR} tests .gitignore
 	git commit -m"initial commit"
