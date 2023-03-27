@@ -81,7 +81,8 @@ type Gateway struct {
 	// controller process at the other end of the tunnel.
 	UpdateTunnelURL func(url string)
 
-	// Source for serving WebDAV requests at /arvados/v1/{uuid}/log/
+	// Source for serving WebDAV requests at
+	// /arvados/v1/containers/{uuid}/log/
 	LogCollection arvados.CollectionFileSystem
 
 	sshConfig   ssh.ServerConfig
