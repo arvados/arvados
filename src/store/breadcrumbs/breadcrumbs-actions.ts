@@ -22,20 +22,21 @@ import { ProcessResource } from 'models/process';
 import { OrderBuilder } from 'services/api/order-builder';
 import { Breadcrumb } from 'components/breadcrumbs/breadcrumbs';
 import { ContainerRequestResource, containerRequestFieldsNoMounts } from 'models/container-request';
-import { CollectionIcon, IconType, ProcessIcon, ProjectIcon } from 'components/icon/icon';
+import { CollectionIcon, IconType, ProcessIcon, ProjectIcon, WorkflowIcon } from 'components/icon/icon';
 import { CollectionResource } from 'models/collection';
 import { getSidePanelIcon } from 'views-components/side-panel-tree/side-panel-tree';
+import { WorkflowResource } from 'models/workflow';
 
 export const BREADCRUMBS = 'breadcrumbs';
 
-export const setBreadcrumbs = (breadcrumbs: any, currentItem?: CollectionResource | ContainerRequestResource | GroupResource) => {
+export const setBreadcrumbs = (breadcrumbs: any, currentItem?: CollectionResource | ContainerRequestResource | GroupResource | WorkflowResource) => {
     if (currentItem) {
         breadcrumbs.push(resourceToBreadcrumb(currentItem));
     }
     return propertiesActions.SET_PROPERTY({ key: BREADCRUMBS, value: breadcrumbs });
 };
 
-const resourceToBreadcrumbIcon = (resource: CollectionResource | ContainerRequestResource | GroupResource): IconType | undefined => {
+const resourceToBreadcrumbIcon = (resource: CollectionResource | ContainerRequestResource | GroupResource | WorkflowResource): IconType | undefined => {
     switch (resource.kind) {
         case ResourceKind.PROJECT:
             return ProjectIcon;
@@ -43,12 +44,14 @@ const resourceToBreadcrumbIcon = (resource: CollectionResource | ContainerReques
             return ProcessIcon;
         case ResourceKind.COLLECTION:
             return CollectionIcon;
+        case ResourceKind.WORKFLOW:
+            return WorkflowIcon;
         default:
             return undefined;
     }
 }
 
-const resourceToBreadcrumb = (resource: CollectionResource | ContainerRequestResource | GroupResource): Breadcrumb => ({
+const resourceToBreadcrumb = (resource: CollectionResource | ContainerRequestResource | GroupResource | WorkflowResource): Breadcrumb => ({
     label: resource.name,
     uuid: resource.uuid,
     icon: resourceToBreadcrumbIcon(resource),
@@ -90,6 +93,9 @@ export const setSidePanelBreadcrumbs = (uuid: string) =>
                 breadcrumbs.push(resourceToBreadcrumb(parentProcessItem));
             }
             dispatch(setBreadcrumbs(breadcrumbs, processItem));
+        } else if (uuidKind === ResourceKind.WORKFLOW) {
+            const workflowItem = await services.workflowService.get(currentUuid);
+            dispatch(setBreadcrumbs(breadcrumbs, workflowItem));
         }
         dispatch(setBreadcrumbs(breadcrumbs));
     };
@@ -136,6 +142,9 @@ export const setCategoryBreadcrumbs = (uuid: string, category: string) =>
                 breadcrumbs.push(resourceToBreadcrumb(parentProcessItem));
             }
             dispatch(setBreadcrumbs(breadcrumbs, processItem));
+        } else if (uuidKind === ResourceKind.WORKFLOW) {
+            const workflowItem = await services.workflowService.get(currentUuid);
+            dispatch(setBreadcrumbs(breadcrumbs, workflowItem));
         }
         dispatch(setBreadcrumbs(breadcrumbs));
     };
@@ -172,10 +181,10 @@ const getCollectionParent = (collection: CollectionResource) =>
         });
         const [parentOutput, parentLog] = await Promise.all([parentOutputPromise, parentLogPromise]);
         return parentOutput.items.length > 0 ?
-                parentOutput.items[0] :
-                parentLog.items.length > 0 ?
-                    parentLog.items[0] :
-                    undefined;
+            parentOutput.items[0] :
+            parentLog.items.length > 0 ?
+                parentLog.items[0] :
+                undefined;
     }
 
 
@@ -234,7 +243,7 @@ export const setUserProfileBreadcrumbs = (userUuid: string) =>
     async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
         try {
             const user = getResource<UserResource>(userUuid)(getState().resources)
-                        || await services.userService.get(userUuid, false);
+                || await services.userService.get(userUuid, false);
             const breadcrumbs: Breadcrumb[] = [
                 { label: USERS_PANEL_LABEL, uuid: USERS_PANEL_LABEL },
                 { label: user ? user.username : userUuid, uuid: userUuid },

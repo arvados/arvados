@@ -120,6 +120,6 @@ const dialogContentExample = (example: JSX.Element | string, classes: any) => {
         className={classes.codeSnippet}
         lines={stringData ? [stringData] : []}
     >
-        {example as JSX.Element || null}
+        {React.isValidElement(example) ? (example as JSX.Element) : undefined}
     </DefaultCodeSnippet>;
 }

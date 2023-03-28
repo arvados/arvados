@@ -142,10 +142,10 @@ export const ProcessDetailsCard = withStyles(styles)(
                                 <MoreOptionsIcon />
                             </IconButton>
                         </Tooltip>
-                        { doHidePanel &&
-                        <Tooltip title={`Close ${panelName || 'panel'}`} disableFocusListener>
-                            <IconButton onClick={doHidePanel}><CloseIcon /></IconButton>
-                        </Tooltip> }
+                        {doHidePanel &&
+                            <Tooltip title={`Close ${panelName || 'panel'}`} disableFocusListener>
+                                <IconButton onClick={doHidePanel}><CloseIcon /></IconButton>
+                            </Tooltip>}
                     </div>
                 } />
             <CardContent className={classes.content}>

@@ -165,7 +165,7 @@ export const initProcessPanelFilters = processPanelActions.SET_PROCESS_PANEL_FIL
     ProcessStatus.CANCELLED
 ]);
 
-const formatInputData = (inputs: CommandInputParameter[], auth: AuthState): ProcessIOParameter[] => {
+export const formatInputData = (inputs: CommandInputParameter[], auth: AuthState): ProcessIOParameter[] => {
     return inputs.map(input => {
         return {
             id: getIOParamId(input),
@@ -175,7 +175,7 @@ const formatInputData = (inputs: CommandInputParameter[], auth: AuthState): Proc
     });
 };
 
-const formatOutputData = (definitions: CommandOutputParameter[], values: any, pdh: string | undefined, auth: AuthState): ProcessIOParameter[] => {
+export const formatOutputData = (definitions: CommandOutputParameter[], values: any, pdh: string | undefined, auth: AuthState): ProcessIOParameter[] => {
     return definitions.map(output => {
         return {
             id: getIOParamId(output),

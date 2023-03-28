@@ -544,7 +544,7 @@ describe('Project tests', function() {
                 });
                 cy.get('[data-cy=form-submit-btn]').click();
             });
-
+        cy.get('[data-cy=form-dialog]').should("not.exist");
         cy.get('[data-cy=side-panel-tree]').contains('Projects').click();
         cy.get('[data-cy=project-panel]').contains(projectName).should('be.visible').rightclick();
         cy.get('[data-cy=context-menu]').contains('Copy to clipboard').click();

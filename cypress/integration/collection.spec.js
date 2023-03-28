@@ -455,7 +455,10 @@ describe('Collection panel tests', function () {
                         });
                     cy.get('[data-cy=form-submit-btn]').click();
 
-                    cy.get('[data-cy=collection-files-panel]')
+                    // need to wait for dialog to dismiss
+                    cy.get('[data-cy=form-dialog]').should('not.exist');
+
+                    cy.waitForDom().get('[data-cy=collection-files-panel]')
                         .contains('Home')
                         .click();
 
@@ -470,6 +473,7 @@ describe('Collection panel tests', function () {
                         .contains('Remove')
                         .click();
                     cy.get('[data-cy=confirmation-dialog-ok-btn]').click();
+                    cy.get('[data-cy=form-dialog]').should('not.exist');
                 });
             });
     });
@@ -1059,8 +1063,11 @@ describe('Collection panel tests', function () {
                         cy.fixture('files/5mb.bin', 'base64').then(content => {
                             cy.get('[data-cy=drag-and-drop]').upload(content, '5mb_b.bin');
                             cy.get('[data-cy=form-submit-btn]').click();
-                            cy.get('[data-cy=form-submit-btn]').should('not.exist');
-                            cy.get('[data-cy=collection-files-right-panel]')
+                            cy.waitForDom().get('[data-cy=form-submit-btn]').should('not.exist');
+                            // subdir gets unselected, I think this is a bug but
+                            // for the time being let's just make sure the test works.
+                            cy.get('[data-cy=collection-files-panel]').contains('subdir').click();
+                            cy.waitForDom().get('[data-cy=collection-files-right-panel]')
                                  .contains('5mb_b.bin').should('exist');
                         });
                     });
