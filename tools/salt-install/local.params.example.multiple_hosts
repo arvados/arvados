@@ -21,7 +21,7 @@ DEPLOY_USER=root
 # it for the specified roles.
 NODES=(
   [controller.${CLUSTER}.${DOMAIN}]=database,api,controller,websocket,dispatcher,keepbalance
-  [workbench.${CLUSTER}.${DOMAIN}]=workbench,workbench2,webshell,keepproxy,keepweb
+  [workbench.${CLUSTER}.${DOMAIN}]=monitoring,workbench,workbench2,webshell,keepproxy,keepweb
   [keep0.${CLUSTER}.${DOMAIN}]=keepstore
   [shell.${CLUSTER}.${DOMAIN}]=shell
 )
