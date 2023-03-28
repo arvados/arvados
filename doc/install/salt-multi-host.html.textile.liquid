@@ -29,6 +29,7 @@ SPDX-License-Identifier: CC-BY-SA-3.0
 ## "Iterating on config changes":#iterating
 ## "Common problems and solutions":#common-problems
 # "Initial user and login":#initial_user
+# "Monitoring and Metrics":#monitoring
 # "After the installation":#post_install
 
 h2(#introduction). Introduction
@@ -62,6 +63,7 @@ In the default configuration these are:
 # @workbench2.${CLUSTER}.${DOMAIN}@
 # @webshell.${CLUSTER}.${DOMAIN}@
 # @shell.${CLUSTER}.${DOMAIN}@
+# @monitoring.${CLUSTER}.${DOMAIN}@
 
 For more information, see "DNS entries and TLS certificates":install-manual-prerequisites.html#dnstls.
 
@@ -451,6 +453,14 @@ https://workbench.@${CLUSTER}.${DOMAIN}@
 If you did *not* "configure a different authentication provider":#authentication you will be using the "Test" provider, and the provision script creates an initial user for testing purposes. This user is configured as administrator of the newly created cluster.  It uses the values of @INITIAL_USER@ and @INITIAL_USER_PASSWORD@ the @local.params@ file.
 
 If you *did* configure a different authentication provider, the first user to log in will automatically be given Arvados admin privileges.
+
+h2(#monitoring). Monitoring and Metrics
+
+You can monitor the health and performance of the system using the admin dashboard:
+
+https://grafana.@${CLUSTER}.${DOMAIN}@
+
+Use the username and password you gave in @local.conf@ to log in.
 
 h2(#post_install). After the installation
 
