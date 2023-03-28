@@ -164,6 +164,8 @@ func (conn *Conn) CreateAPIClientAuthorization(ctx context.Context, rootToken st
 	return
 }
 
+var errUserinfoInRedirectTarget = errors.New("redirect target rejected because it contains userinfo")
+
 func validateLoginRedirectTarget(cluster *arvados.Cluster, returnTo string) error {
 	u, err := url.Parse(returnTo)
 	if err != nil {
@@ -172,6 +174,9 @@ func validateLoginRedirectTarget(cluster *arvados.Cluster, returnTo string) erro
 	u, err = u.Parse("/")
 	if err != nil {
 		return err
+	}
+	if u.User != nil {
+		return errUserinfoInRedirectTarget
 	}
 	target := origin(*u)
 	for trusted := range cluster.Login.TrustedClients {
