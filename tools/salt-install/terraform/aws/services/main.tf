@@ -44,7 +44,7 @@ resource "aws_iam_instance_profile" "default_instance_profile" {
 }
 
 resource "aws_instance" "arvados_service" {
-  for_each = toset(local.hostnames)
+  for_each = toset(concat(local.public_hosts, local.private_hosts))
   ami = data.aws_ami.debian-11.image_id
   instance_type = var.default_instance_type
   key_name = local.pubkey_name
@@ -52,7 +52,7 @@ resource "aws_instance" "arvados_service" {
     "hostname": each.value
   })
   private_ip = local.private_ip[each.value]
-  subnet_id = data.terraform_remote_state.vpc.outputs.arvados_subnet_id
+  subnet_id = contains(local.public_hosts, each.value) ? data.terraform_remote_state.vpc.outputs.public_subnet_id : data.terraform_remote_state.vpc.outputs.private_subnet_id
   vpc_security_group_ids = [ data.terraform_remote_state.vpc.outputs.arvados_sg_id ]
   # This should be done in a more readable way
   iam_instance_profile = each.value == "controller" ? aws_iam_instance_profile.dispatcher_instance_profile.name : length(regexall("^keep[0-9]+", each.value)) > 0 ? aws_iam_instance_profile.keepstore_instance_profile.name : aws_iam_instance_profile.default_instance_profile.name
@@ -107,7 +107,7 @@ resource "aws_iam_policy_attachment" "cloud_dispatcher_ec2_access_attachment" {
 }
 
 resource "aws_eip_association" "eip_assoc" {
-  for_each = toset(local.hostnames)
+  for_each = toset(local.public_hosts)
   instance_id = aws_instance.arvados_service[each.value].id
   allocation_id = data.terraform_remote_state.vpc.outputs.eip_id[each.value]
 }

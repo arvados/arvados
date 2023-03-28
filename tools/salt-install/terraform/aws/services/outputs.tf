@@ -11,10 +11,10 @@ output "vpc_cidr" {
 }
 
 output "arvados_subnet_id" {
-  value = data.terraform_remote_state.vpc.outputs.arvados_subnet_id
+  value = data.terraform_remote_state.vpc.outputs.public_subnet_id
 }
 output "compute_subnet_id" {
-  value = data.terraform_remote_state.vpc.outputs.compute_subnet_id
+  value = data.terraform_remote_state.vpc.outputs.private_subnet_id
 }
 
 output "arvados_sg_id" {

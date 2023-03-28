@@ -10,6 +10,7 @@ locals {
   private_ip = data.terraform_remote_state.vpc.outputs.private_ip
   pubkey_path = pathexpand(var.pubkey_path)
   pubkey_name = "arvados-deployer-key"
-  hostnames = [ for hostname, eip_id in data.terraform_remote_state.vpc.outputs.eip_id: hostname ]
+  public_hosts = data.terraform_remote_state.vpc.outputs.public_hosts
+  private_hosts = data.terraform_remote_state.vpc.outputs.private_hosts
   ssl_password_secret_name = "${local.cluster_name}-${var.ssl_password_secret_name_suffix}"
 }

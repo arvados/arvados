@@ -9,12 +9,12 @@ output "arvados_vpc_cidr" {
   value = aws_vpc.arvados_vpc.cidr_block
 }
 
-output "arvados_subnet_id" {
-  value = aws_subnet.arvados_subnet.id
+output "public_subnet_id" {
+  value = aws_subnet.public_subnet.id
 }
 
-output "compute_subnet_id" {
-  value = aws_subnet.compute_subnet.id
+output "private_subnet_id" {
+  value = aws_subnet.private_subnet.id
 }
 
 output "arvados_sg_id" {
@@ -29,8 +29,16 @@ output "public_ip" {
   value = local.public_ip
 }
 
+output "public_hosts" {
+  value = local.public_hosts
+}
+
 output "private_ip" {
   value = local.private_ip
+}
+
+output "private_hosts" {
+  value = local.private_hosts
 }
 
 output "route53_dns_ns" {
