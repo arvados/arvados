@@ -202,11 +202,12 @@ case "$subcmd" in
 	if [[ -n "$TERRAFORM" ]] ; then
 	    mkdir $SETUPDIR/terraform
 	    cp -r $TERRAFORM/* $SETUPDIR/terraform/
-		cp $TERRAFORM/.gitignore $SETUPDIR/terraform/
 	fi
 
 	cd $SETUPDIR
 	echo '*.log' > .gitignore
+	echo '**/.terraform' >> .gitignore
+	echo '**/.infracost' >> .gitignore
 
 	if [[ -n "$TERRAFORM" ]] ; then
 		git add terraform
@@ -233,6 +234,13 @@ case "$subcmd" in
 	(cd terraform/data-storage && terraform apply -auto-approve) 2>&1 | tee -a $logfile
 	(cd terraform/services && terraform apply -auto-approve) 2>&1 | grep -v letsencrypt_iam_secret_access_key | tee -a $logfile
 	(cd terraform/services && echo -n 'letsencrypt_iam_secret_access_key = ' && terraform output letsencrypt_iam_secret_access_key) 2>&1 | tee -a $logfile
+	;;
+
+    terraform-destroy)
+	logfile=terraform-$(date -Iseconds).log
+	(cd terraform/services && terraform destroy) 2>&1 | tee -a $logfile
+	(cd terraform/data-storage && terraform destroy) 2>&1 | tee -a $logfile
+	(cd terraform/vpc && terraform destroy) 2>&1 | tee -a $logfile
 	;;
 
     generate-tokens)
@@ -341,6 +349,7 @@ case "$subcmd" in
 	echo ""
 	echo "initialize        initialize the setup directory for configuration"
 	echo "terraform         create cloud resources using terraform"
+	echo "terraform-destroy destroy cloud resources created by terraform"
 	echo "generate-tokens   generate random values for tokens"
 	echo "deploy            deploy the configuration from the setup directory"
 	echo "diagnostics       check your install using diagnostics"

@@ -95,7 +95,7 @@ The Terraform state files (that keep crucial infrastructure information from the
 
 h4. Terraform code configuration
 
-Each section described above contain a @terraform.tfvars@ file with some configuration values that you should set before applying each configuration. You should set the cluster prefix and domain name in @vpc/terraform.tfvars@:
+Each section described above contain a @terraform.tfvars@ file with some configuration values that you should set before applying each configuration. You should set the cluster prefix and domain name in @terraform/vpc/terraform.tfvars@:
 
 <pre><code>region_name = "us-east-1"
 # cluster_name = "xarv1"
@@ -104,6 +104,15 @@ Each section described above contain a @terraform.tfvars@ file with some configu
 If you don't set the variables @vpc/terraform.tfvars@ file, you will be asked to re-enter these parameters every time you run Terraform.
 
 The @data-storage/terraform.tfvars@ and @services/terraform.tfvars@ let you configure the location of your ssh public key (default @~/.ssh/id_rsa.pub@) and the instance type to use (default @m5a.large@).
+
+h4. Set credentials
+
+You will need an AWS access key and secret key to create the infrastructure.
+
+<pre><code>
+$ export AWS_ACCESS_KEY_ID="anaccesskey"
+$ export AWS_SECRET_ACCESS_KEY="asecretkey"
+</code></pre>
 
 h4. Create the infrastructure
 
@@ -253,8 +262,8 @@ This can be found wherever you choose to initialize the install files (@~/setup-
 # Set @CLUSTER@ to the 5-character cluster identifier (e.g "xarv1")
 # Set @DOMAIN@ to the base DNS domain of the environment, e.g. "example.com"
 # Set the @*_INT_IP@ variables with the internal (private) IP addresses of each host. Since services share hosts, some hosts are the same.  See "note about /etc/hosts":#etchosts
-# Edit @CLUSTER_INT_CIDR@, this should be the CIDR of the private network that Arvados is running on, e.g. the VPC.
-CIDR stands for "Classless Inter-Domain Routing" and describes which portion of the IP address that refers to the network.  For example 192.168.3.0/24 means that the first 24 bits are the network (192.168.3) and the last 8 bits are a specific host on that network.
+# Edit @CLUSTER_INT_CIDR@, this should be the CIDR of the private network that Arvados is running on, e.g. the VPC.  If you used terraform, this is emitted as @vpc_cidr@.
+_CIDR stands for "Classless Inter-Domain Routing" and describes which portion of the IP address that refers to the network.  For example 192.168.3.0/24 means that the first 24 bits are the network (192.168.3) and the last 8 bits are a specific host on that network._
 _AWS Specific: Go to the AWS console and into the VPC service, there is a column in this table view of the VPCs that gives the CIDR for the VPC (IPv4 CIDR)._
 # Set @INITIAL_USER_EMAIL@ to your email address, as you will be the first admin user of the system.
 # Set each @KEY@ / @TOKEN@ / @PASSWORD@ to a random string.  You can use @installer.sh generate-tokens@

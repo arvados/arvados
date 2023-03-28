@@ -14,7 +14,7 @@ DOMAIN="domain_fixme_or_this_wont_work"
 
 # For multi-node installs, the ssh log in for each node
 # must be root or able to sudo
-DEPLOY_USER=root
+DEPLOY_USER=admin
 
 # The mapping of nodes to roles
 # installer.sh will log in to each of these nodes and then provision
