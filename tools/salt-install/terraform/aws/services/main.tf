@@ -52,7 +52,7 @@ resource "aws_instance" "arvados_service" {
     "hostname": each.value
   })
   private_ip = local.private_ip[each.value]
-  subnet_id = data.terraform_remote_state.vpc.outputs.arvados_subnet_id
+  subnet_id = contains(local.public_hosts, each.value) ? data.terraform_remote_state.vpc.outputs.public_subnet_id : data.terraform_remote_state.vpc.outputs.private_subnet_id
   vpc_security_group_ids = [ data.terraform_remote_state.vpc.outputs.arvados_sg_id ]
   # This should be done in a more readable way
   iam_instance_profile = each.value == "controller" ? aws_iam_instance_profile.dispatcher_instance_profile.name : length(regexall("^keep[0-9]+", each.value)) > 0 ? aws_iam_instance_profile.keepstore_instance_profile.name : aws_iam_instance_profile.default_instance_profile.name

@@ -16,8 +16,8 @@ locals {
   private_ip = {
     "controller": "10.1.1.11",
     "workbench": "10.1.1.15",
-    "shell": "10.1.1.17",
-    "keep0": "10.1.1.13",
+    "shell": "10.1.2.17",
+    "keep0": "10.1.2.13",
   }
   aliases = {
     controller: ["ws"]
