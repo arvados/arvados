@@ -54,10 +54,6 @@ prometheus:
                   labels:
                     instance: keep0.__CLUSTER__
                     cluster: __CLUSTER__
-                - targets: ['__KEEPSTORE1_INT_IP__:25107']
-                  labels:
-                    instance: keep1.__CLUSTER__
-                    cluster: __CLUSTER__
             - job_name: arvados_dispatch_cloud
               bearer_token: __MANAGEMENT_TOKEN__
               static_configs:
@@ -83,8 +79,6 @@ prometheus:
                 {% for node in [
                   'controller',
                   'keep0',
-                  'keep1',
-                  'keep',
                   'workbench',
                   'shell',
                 ] %}
