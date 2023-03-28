@@ -213,7 +213,26 @@ func (h *handler) ServeHTTP(wOrig http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	pathParts := strings.Split(r.URL.Path[1:], "/")
+	webdavPrefix := ""
+	arvPath := r.URL.Path
+	if prefix := r.Header.Get("X-Webdav-Prefix"); prefix != "" {
+		// Enable a proxy (e.g., container log handler in
+		// controller) to satisfy a request for path
+		// "/foo/bar/baz.txt" using content from
+		// "//abc123-4.internal/bar/baz.txt", by adding a
+		// request header "X-Webdav-Prefix: /foo"
+		if !strings.HasPrefix(arvPath, prefix) {
+			http.Error(w, "X-Webdav-Prefix header is not a prefix of the requested path", http.StatusBadRequest)
+			return
+		}
+		arvPath = r.URL.Path[len(prefix):]
+		if arvPath == "" {
+			arvPath = "/"
+		}
+		w.Header().Set("Vary", "X-Webdav-Prefix, "+w.Header().Get("Vary"))
+		webdavPrefix = prefix
+	}
+	pathParts := strings.Split(arvPath[1:], "/")
 
 	var stripParts int
 	var collectionID string
@@ -561,8 +580,11 @@ func (h *handler) ServeHTTP(wOrig http.ResponseWriter, r *http.Request) {
 	if r.Method == http.MethodGet {
 		applyContentDispositionHdr(w, r, basename, attachment)
 	}
+	if webdavPrefix == "" {
+		webdavPrefix = "/" + strings.Join(pathParts[:stripParts], "/")
+	}
 	wh := webdav.Handler{
-		Prefix: "/" + strings.Join(pathParts[:stripParts], "/"),
+		Prefix: webdavPrefix,
 		FileSystem: &webdavfs.FS{
 			FileSystem:    sessionFS,
 			Prefix:        fsprefix,

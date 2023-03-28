@@ -191,15 +191,11 @@ func (conn *Conn) serveContainerLogViaKeepWeb(opts arvados.ContainerLogOptions, 
 	}
 	proxy := &httputil.ReverseProxy{
 		Director: func(r *http.Request) {
-			r.URL = &url.URL{
-				Scheme: webdavBase.Scheme,
-				Host:   webdavBase.Host,
-				Path:   "/by_id/" + url.PathEscape(ctr.Log) + opts.Path,
-			}
-			// Our outgoing Host header must match
-			// WebDAVDownload.ExternalURL, otherwise
-			// keep-web does not accept an auth token.
-			r.Host = conn.cluster.Services.WebDAVDownload.ExternalURL.Host
+			r.URL.Scheme = webdavBase.Scheme
+			r.URL.Host = webdavBase.Host
+			// Outgoing Host header specifies the
+			// collection ID.
+			r.Host = strings.Replace(ctr.Log, "+", "-", -1) + ".internal"
 			// We already checked permission on the
 			// container, so we can use a root token here
 			// instead of counting on the "access to log
@@ -207,6 +203,12 @@ func (conn *Conn) serveContainerLogViaKeepWeb(opts arvados.ContainerLogOptions, 
 			// permission check, which can be racy when a
 			// request gets retried with a new container.
 			r.Header.Set("Authorization", "Bearer "+conn.cluster.SystemRootToken)
+			// We can't change r.URL.Path without
+			// confusing WebDAV (request body and response
+			// headers refer to the same paths) so we tell
+			// keep-web to map the log collection onto the
+			// containers/X/log/ namespace.
+			r.Header.Set("X-Webdav-Prefix", "/arvados/v1/containers/"+ctr.UUID+"/log")
 		},
 	}
 	if conn.cluster.TLS.Insecure {

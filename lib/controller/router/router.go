@@ -662,11 +662,8 @@ func (rtr *router) addRoute(endpoint arvados.APIEndpoint, defaultOpts func() int
 		}
 		ctx := auth.NewContext(req.Context(), creds)
 		ctx = arvados.ContextWithRequestID(ctx, req.Header.Get("X-Request-Id"))
-		logger.WithFields(logrus.Fields{
-			"apiEndpoint": endpoint,
-			"apiOptsType": fmt.Sprintf("%T", opts),
-			"apiOpts":     opts,
-		}).Debug("exec")
+		req = req.WithContext(ctx)
+
 		// Extract the token UUIDs (or a placeholder for v1 tokens)
 		var tokenUUIDs []string
 		for _, t := range creds.Tokens {
@@ -683,7 +680,13 @@ func (rtr *router) addRoute(endpoint arvados.APIEndpoint, defaultOpts func() int
 				tokenUUIDs = append(tokenUUIDs, "v1 token ending in "+end)
 			}
 		}
-		httpserver.SetResponseLogFields(req.Context(), logrus.Fields{"tokenUUIDs": tokenUUIDs})
+		httpserver.SetResponseLogFields(ctx, logrus.Fields{"tokenUUIDs": tokenUUIDs})
+
+		logger.WithFields(logrus.Fields{
+			"apiEndpoint": endpoint,
+			"apiOptsType": fmt.Sprintf("%T", opts),
+			"apiOpts":     opts,
+		}).Debug("exec")
 		resp, err := exec(ctx, opts)
 		if err != nil {
 			logger.WithError(err).Debugf("returning error type %T", err)

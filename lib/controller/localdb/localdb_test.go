@@ -44,8 +44,10 @@ func (s *localdbSuite) TearDownSuite(c *check.C) {
 
 func (s *localdbSuite) SetUpTest(c *check.C) {
 	*s = localdbSuite{}
+	logger := ctxlog.TestLogger(c)
 	s.ctx, s.cancel = context.WithCancel(context.Background())
-	cfg, err := config.NewLoader(nil, ctxlog.TestLogger(c)).Load()
+	s.ctx = ctxlog.Context(s.ctx, logger)
+	cfg, err := config.NewLoader(nil, logger).Load()
 	c.Assert(err, check.IsNil)
 	s.cluster, err = cfg.GetCluster("")
 	c.Assert(err, check.IsNil)

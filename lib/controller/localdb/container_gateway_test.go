@@ -29,6 +29,7 @@ import (
 	"git.arvados.org/arvados.git/sdk/go/arvadosclient"
 	"git.arvados.org/arvados.git/sdk/go/arvadostest"
 	"git.arvados.org/arvados.git/sdk/go/ctxlog"
+	"git.arvados.org/arvados.git/sdk/go/httpserver"
 	"git.arvados.org/arvados.git/sdk/go/keepclient"
 	"golang.org/x/crypto/ssh"
 	check "gopkg.in/check.v1"
@@ -53,7 +54,7 @@ func (s *ContainerGatewaySuite) SetUpTest(c *check.C) {
 	authKey := fmt.Sprintf("%x", h.Sum(nil))
 
 	rtr := router.New(s.localdb, router.Config{})
-	s.srv = httptest.NewUnstartedServer(rtr)
+	s.srv = httptest.NewUnstartedServer(httpserver.AddRequestIDs(httpserver.LogRequests(rtr)))
 	s.srv.StartTLS()
 	// the test setup doesn't use lib/service so
 	// service.URLFromContext() returns nothing -- instead, this
@@ -201,7 +202,11 @@ func (s *ContainerGatewaySuite) TestDirectTCP(c *check.C) {
 	}
 }
 
-func (s *ContainerGatewaySuite) setupLogCollection(c *check.C, files map[string]string) {
+func (s *ContainerGatewaySuite) setupLogCollection(c *check.C) {
+	files := map[string]string{
+		"stderr.txt":   "hello world\n",
+		"a/b/c/d.html": "<html></html>\n",
+	}
 	client := arvados.NewClientFromEnv()
 	ac, err := arvadosclient.New(client)
 	c.Assert(err, check.IsNil)
@@ -226,14 +231,35 @@ func (s *ContainerGatewaySuite) setupLogCollection(c *check.C, files map[string]
 	s.gw.LogCollection = cfs
 }
 
+func (s *ContainerGatewaySuite) saveLogAndCloseGateway(c *check.C) {
+	rootctx := ctrlctx.NewWithToken(s.ctx, s.cluster, s.cluster.SystemRootToken)
+	txt, err := s.gw.LogCollection.MarshalManifest(".")
+	c.Assert(err, check.IsNil)
+	coll, err := s.localdb.CollectionCreate(rootctx, arvados.CreateOptions{
+		Attrs: map[string]interface{}{
+			"manifest_text": txt,
+		}})
+	c.Assert(err, check.IsNil)
+	_, err = s.localdb.ContainerUpdate(rootctx, arvados.UpdateOptions{
+		UUID: s.ctrUUID,
+		Attrs: map[string]interface{}{
+			"log":             coll.PortableDataHash,
+			"gateway_address": "",
+		}})
+	c.Assert(err, check.IsNil)
+	// gateway_address="" above already ensures localdb
+	// can't circumvent the keep-web proxy test by getting
+	// content from the container gateway; this is just
+	// extra insurance.
+	s.gw.LogCollection = nil
+}
+
 func (s *ContainerGatewaySuite) TestContainerLogViaTunnel(c *check.C) {
 	forceProxyForTest = true
 	defer func() { forceProxyForTest = false }()
 
 	s.gw = s.setupGatewayWithTunnel(c)
-	s.setupLogCollection(c, map[string]string{
-		"stderr.txt": "hello world\n",
-	})
+	s.setupLogCollection(c)
 
 	for _, broken := range []bool{false, true} {
 		c.Logf("broken=%v", broken)
@@ -269,40 +295,17 @@ func (s *ContainerGatewaySuite) TestContainerLogViaTunnel(c *check.C) {
 }
 
 func (s *ContainerGatewaySuite) TestContainerLogViaGateway(c *check.C) {
-	s.testContainerLog(c, true)
+	s.setupLogCollection(c)
+	s.testContainerLog(c)
 }
 
 func (s *ContainerGatewaySuite) TestContainerLogViaKeepWeb(c *check.C) {
-	s.testContainerLog(c, false)
+	s.setupLogCollection(c)
+	s.saveLogAndCloseGateway(c)
+	s.testContainerLog(c)
 }
 
-func (s *ContainerGatewaySuite) testContainerLog(c *check.C, viaGateway bool) {
-	s.setupLogCollection(c, map[string]string{
-		"stderr.txt":   "hello world\n",
-		"a/b/c/d.html": "<html></html>\n",
-	})
-	if !viaGateway {
-		rootctx := ctrlctx.NewWithToken(s.ctx, s.cluster, s.cluster.SystemRootToken)
-		txt, err := s.gw.LogCollection.MarshalManifest(".")
-		c.Assert(err, check.IsNil)
-		coll, err := s.localdb.CollectionCreate(rootctx, arvados.CreateOptions{
-			Attrs: map[string]interface{}{
-				"manifest_text": txt,
-			}})
-		c.Assert(err, check.IsNil)
-		_, err = s.localdb.ContainerUpdate(rootctx, arvados.UpdateOptions{
-			UUID: s.ctrUUID,
-			Attrs: map[string]interface{}{
-				"log":             coll.PortableDataHash,
-				"gateway_address": "",
-			}})
-		c.Assert(err, check.IsNil)
-		// gateway_address="" above already ensures localdb
-		// can't circumvent the keep-web proxy test by getting
-		// content from the container gateway; this is just
-		// extra insurance.
-		s.gw.LogCollection = nil
-	}
+func (s *ContainerGatewaySuite) testContainerLog(c *check.C) {
 	for _, trial := range []struct {
 		method       string
 		path         string
@@ -397,9 +400,16 @@ func (s *ContainerGatewaySuite) testContainerLog(c *check.C, viaGateway bool) {
 }
 
 func (s *ContainerGatewaySuite) TestContainerLogViaCadaver(c *check.C) {
+	s.setupLogCollection(c)
+
 	out := s.runCadaver(c, arvadostest.ActiveToken, "/arvados/v1/containers/"+s.ctrUUID+"/log", "ls")
 	c.Check(out, check.Matches, `(?ms).*stderr\.txt\s+12\s.*`)
 	c.Check(out, check.Matches, `(?ms).*a\s+0\s.*`)
+
+	out = s.runCadaver(c, arvadostest.ActiveTokenV2, "/arvados/v1/containers/"+s.ctrUUID+"/log", "get stderr.txt")
+	c.Check(out, check.Matches, `(?ms).*Downloading .* to stderr\.txt: .* succeeded\..*`)
+
+	s.saveLogAndCloseGateway(c)
 
 	out = s.runCadaver(c, arvadostest.ActiveTokenV2, "/arvados/v1/containers/"+s.ctrUUID+"/log", "get stderr.txt")
 	c.Check(out, check.Matches, `(?ms).*Downloading .* to stderr\.txt: .* succeeded\..*`)
@@ -410,13 +420,8 @@ func (s *ContainerGatewaySuite) runCadaver(c *check.C, password, path, stdin str
 	// just fail on TLS cert verification.
 	s.srv.Close()
 	rtr := router.New(s.localdb, router.Config{})
-	s.srv = httptest.NewUnstartedServer(rtr)
+	s.srv = httptest.NewUnstartedServer(httpserver.AddRequestIDs(httpserver.LogRequests(rtr)))
 	s.srv.Start()
-
-	s.setupLogCollection(c, map[string]string{
-		"stderr.txt":   "hello world\n",
-		"a/b/c/d.html": "<html></html>\n",
-	})
 
 	tempdir, err := ioutil.TempDir("", "localdb-test-")
 	c.Assert(err, check.IsNil)
