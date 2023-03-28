@@ -169,7 +169,6 @@ arvados:
       Keepstore:
         InternalURLs:
           'http://__KEEPSTORE0_INT_IP__:25107': {}
-          'http://__KEEPSTORE1_INT_IP__:25107': {}
       RailsAPI:
         InternalURLs:
           'http://localhost:8004': {}

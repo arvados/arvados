@@ -428,7 +428,6 @@ for f in $(ls "${SOURCE_PILLARS_DIR}"/*); do
        s#__WEBSOCKET_INT_IP__#${WEBSOCKET_INT_IP}#g;
        s#__KEEP_INT_IP__#${KEEP_INT_IP}#g;
        s#__KEEPSTORE0_INT_IP__#${KEEPSTORE0_INT_IP}#g;
-       s#__KEEPSTORE1_INT_IP__#${KEEPSTORE1_INT_IP}#g;
        s#__KEEPWEB_INT_IP__#${KEEPWEB_INT_IP}#g;
        s#__WEBSHELL_INT_IP__#${WEBSHELL_INT_IP}#g;
        s#__SHELL_INT_IP__#${SHELL_INT_IP}#g;
@@ -498,7 +497,6 @@ if [ -d "${SOURCE_STATES_DIR}" ]; then
          s#__WEBSOCKET_INT_IP__#${WEBSOCKET_INT_IP}#g;
          s#__KEEP_INT_IP__#${KEEP_INT_IP}#g;
          s#__KEEPSTORE0_INT_IP__#${KEEPSTORE0_INT_IP}#g;
-         s#__KEEPSTORE1_INT_IP__#${KEEPSTORE1_INT_IP}#g;
          s#__KEEPWEB_INT_IP__#${KEEPWEB_INT_IP}#g;
          s#__WEBSHELL_INT_IP__#${WEBSHELL_INT_IP}#g;
          s#__WORKBENCH1_INT_IP__#${WORKBENCH1_INT_IP}#g;

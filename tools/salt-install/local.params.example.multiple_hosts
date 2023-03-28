@@ -21,10 +21,8 @@ DEPLOY_USER=root
 # it for the specified roles.
 NODES=(
   [controller.${CLUSTER}.${DOMAIN}]=database,api,controller,websocket,dispatcher,keepbalance
+  [workbench.${CLUSTER}.${DOMAIN}]=workbench,workbench2,webshell,keepproxy,keepweb
   [keep0.${CLUSTER}.${DOMAIN}]=keepstore
-  [keep1.${CLUSTER}.${DOMAIN}]=keepstore
-  [keep.${CLUSTER}.${DOMAIN}]=keepproxy,keepweb
-  [workbench.${CLUSTER}.${DOMAIN}]=workbench,workbench2,webshell
   [shell.${CLUSTER}.${DOMAIN}]=shell
 )
 
@@ -48,16 +46,15 @@ CLUSTER_INT_CIDR=10.1.0.0/16
 # https://doc.arvados.org/main/install/salt-multi-host.html
 CONTROLLER_INT_IP=10.1.1.11
 WEBSOCKET_INT_IP=10.1.1.11
-KEEP_INT_IP=10.1.1.12
+KEEP_INT_IP=10.1.1.15
 # Both for collections and downloads
-KEEPWEB_INT_IP=10.1.1.12
-KEEPSTORE0_INT_IP=10.1.1.13
-KEEPSTORE1_INT_IP=10.1.1.14
+KEEPWEB_INT_IP=10.1.1.15
+KEEPSTORE0_INT_IP=10.1.2.13
 WORKBENCH1_INT_IP=10.1.1.15
 WORKBENCH2_INT_IP=10.1.1.15
 WEBSHELL_INT_IP=10.1.1.15
 DATABASE_INT_IP=10.1.1.11
-SHELL_INT_IP=10.1.1.17
+SHELL_INT_IP=10.1.2.17
 
 INITIAL_USER="admin"
 
@@ -65,6 +62,12 @@ INITIAL_USER="admin"
 # INITIAL_USER@CLUSTER.DOMAIN
 INITIAL_USER_EMAIL="admin@cluster_fixme_or_this_wont_work.domain_fixme_or_this_wont_work"
 INITIAL_USER_PASSWORD="fixmepassword"
+
+# Use a public node as a jump host for SSH sessions. This allows running the
+# installer from the outside of the cluster's local network and still reach
+# the internal servers for configuration deployment.
+# Comment out to disable.
+USE_SSH_JUMPHOST="controller.${CLUSTER}.${DOMAIN}"
 
 # YOU SHOULD CHANGE THESE TO SOME RANDOM STRINGS
 BLOB_SIGNING_KEY=fixmeblobsigningkeymushaveatleast32characters

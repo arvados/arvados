@@ -43,6 +43,10 @@ declare DEPLOY_USER
 # This will be populated by loadconfig()
 declare GITTARGET
 
+# The public host used as an SSH jump host
+# This will be populated by loadconfig()
+declare USE_SSH_JUMPHOST
+
 checktools() {
     local MISSING=''
     for a in git ip ; do
@@ -64,31 +68,33 @@ sync() {
     # each node, pushing our branch, and updating the checkout.
 
     if [[ "$NODE" != localhost ]] ; then
-	if ! ssh $DEPLOY_USER@$NODE test -d ${GITTARGET}.git ; then
+		SSH=`ssh_cmd "$NODE"`
+		GIT="eval `git_cmd $NODE`"
+		if ! $SSH $DEPLOY_USER@$NODE test -d ${GITTARGET}.git ; then
 
-	    # Initialize the git repository (1st time case).  We're
-	    # actually going to make two repositories here because git
-	    # will complain if you try to push to a repository with a
-	    # checkout. So we're going to create a "bare" repository
-	    # and then clone a regular repository (with a checkout)
-	    # from that.
+			# Initialize the git repository (1st time case).  We're
+			# actually going to make two repositories here because git
+			# will complain if you try to push to a repository with a
+			# checkout. So we're going to create a "bare" repository
+			# and then clone a regular repository (with a checkout)
+			# from that.
 
-	    ssh $DEPLOY_USER@$NODE git init --bare --shared=0600 ${GITTARGET}.git
-	    if ! git remote add $NODE $DEPLOY_USER@$NODE:${GITTARGET}.git ; then
-			git remote set-url $NODE $DEPLOY_USER@$NODE:${GITTARGET}.git
-	    fi
-	    git push $NODE $BRANCH
-	    ssh $DEPLOY_USER@$NODE "umask 0077 && git clone ${GITTARGET}.git ${GITTARGET}"
-	fi
+			$SSH $DEPLOY_USER@$NODE git init --bare --shared=0600 ${GITTARGET}.git
+			if ! $GIT remote add $NODE $DEPLOY_USER@$NODE:${GITTARGET}.git ; then
+				$GIT remote set-url $NODE $DEPLOY_USER@$NODE:${GITTARGET}.git
+			fi
+			$GIT push $NODE $BRANCH
+			$SSH $DEPLOY_USER@$NODE "umask 0077 && git clone ${GITTARGET}.git ${GITTARGET}"
+		fi
 
-	# The update case.
-	#
-	# Push to the bare repository on the remote node, then in the
-	# remote node repository with the checkout, pull the branch
-	# from the bare repository.
+		# The update case.
+		#
+		# Push to the bare repository on the remote node, then in the
+		# remote node repository with the checkout, pull the branch
+		# from the bare repository.
 
-	git push $NODE $BRANCH
-	ssh $DEPLOY_USER@$NODE "git -C ${GITTARGET} checkout ${BRANCH} && git -C ${GITTARGET} pull"
+		$GIT push $NODE $BRANCH
+		$SSH $DEPLOY_USER@$NODE "git -C ${GITTARGET} checkout ${BRANCH} && git -C ${GITTARGET} pull"
     fi
 }
 
@@ -100,30 +106,45 @@ deploynode() {
     # the appropriate roles.
 
     if [[ -z "$ROLES" ]] ; then
-	echo "No roles specified for $NODE, will deploy all roles"
+		echo "No roles specified for $NODE, will deploy all roles"
     else
-	ROLES="--roles ${ROLES}"
+		ROLES="--roles ${ROLES}"
     fi
 
     logfile=deploy-${NODE}-$(date -Iseconds).log
+	SSH=`ssh_cmd "$NODE"`
 
     if [[ "$NODE" = localhost ]] ; then
 	    SUDO=''
-	if [[ $(whoami) != 'root' ]] ; then
-	    SUDO=sudo
-	fi
-	$SUDO ./provision.sh --config ${CONFIG_FILE} ${ROLES} 2>&1 | tee $logfile
-    else
-	ssh $DEPLOY_USER@$NODE "cd ${GITTARGET} && sudo ./provision.sh --config ${CONFIG_FILE} ${ROLES}" 2>&1 | tee $logfile
+		if [[ $(whoami) != 'root' ]] ; then
+			SUDO=sudo
+		fi
+		$SUDO ./provision.sh --config ${CONFIG_FILE} ${ROLES} 2>&1 | tee $logfile
+	else
+		$SSH $DEPLOY_USER@$NODE "cd ${GITTARGET} && sudo ./provision.sh --config ${CONFIG_FILE} ${ROLES}" 2>&1 | tee $logfile
     fi
 }
 
 loadconfig() {
     if [[ ! -s $CONFIG_FILE ]] ; then
-	echo "Must be run from initialized setup dir, maybe you need to 'initialize' first?"
+		echo "Must be run from initialized setup dir, maybe you need to 'initialize' first?"
     fi
     source ${CONFIG_FILE}
     GITTARGET=arvados-deploy-config-${CLUSTER}
+}
+
+ssh_cmd() {
+	local NODE=$1
+	if [ -z "${USE_SSH_JUMPHOST}" -o "${NODE}" == "${USE_SSH_JUMPHOST}" -o "${NODE}" == "localhost" ]; then
+		echo "ssh"
+	else
+		echo "ssh -J ${DEPLOY_USER}@${USE_SSH_JUMPHOST}"
+	fi
+}
+
+git_cmd() {
+	local NODE=$1
+	echo "GIT_SSH_COMMAND=\"`ssh_cmd ${NODE}`\" git"
 }
 
 set +u
@@ -208,9 +229,9 @@ case "$subcmd" in
 
     terraform)
 	logfile=terraform-$(date -Iseconds).log
-	(cd terraform/vpc && terraform apply) 2>&1 | tee -a $logfile
-	(cd terraform/data-storage && terraform apply) 2>&1 | tee -a $logfile
-	(cd terraform/services && terraform apply) 2>&1 | grep -v letsencrypt_iam_secret_access_key | tee -a $logfile
+	(cd terraform/vpc && terraform apply -auto-approve) 2>&1 | tee -a $logfile
+	(cd terraform/data-storage && terraform apply -auto-approve) 2>&1 | tee -a $logfile
+	(cd terraform/services && terraform apply -auto-approve) 2>&1 | grep -v letsencrypt_iam_secret_access_key | tee -a $logfile
 	(cd terraform/services && echo -n 'letsencrypt_iam_secret_access_key = ' && terraform output letsencrypt_iam_secret_access_key) 2>&1 | tee -a $logfile
 	;;
 
