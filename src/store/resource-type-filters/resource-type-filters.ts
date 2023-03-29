@@ -79,16 +79,16 @@ export const getInitialResourceTypeFilters = pipe(
     ),
     pipe(
         initFilter(ObjectTypeFilter.WORKFLOW, '', false, true),
-        initFilter(ObjectTypeFilter.DEFINITION, ObjectTypeFilter.WORKFLOW),
         initFilter(ProcessTypeFilter.MAIN_PROCESS, ObjectTypeFilter.WORKFLOW),
         initFilter(ProcessTypeFilter.CHILD_PROCESS, ObjectTypeFilter.WORKFLOW, false),
+        initFilter(ObjectTypeFilter.DEFINITION, ObjectTypeFilter.WORKFLOW),
     ),
     pipe(
         initFilter(ObjectTypeFilter.COLLECTION, '', true, true),
         initFilter(CollectionTypeFilter.GENERAL_COLLECTION, ObjectTypeFilter.COLLECTION),
         initFilter(CollectionTypeFilter.OUTPUT_COLLECTION, ObjectTypeFilter.COLLECTION),
-        initFilter(CollectionTypeFilter.INTERMEDIATE_COLLECTION, ObjectTypeFilter.COLLECTION),
-        initFilter(CollectionTypeFilter.LOG_COLLECTION, ObjectTypeFilter.COLLECTION),
+        initFilter(CollectionTypeFilter.INTERMEDIATE_COLLECTION, ObjectTypeFilter.COLLECTION, false),
+        initFilter(CollectionTypeFilter.LOG_COLLECTION, ObjectTypeFilter.COLLECTION, false),
     ),
 
 );
