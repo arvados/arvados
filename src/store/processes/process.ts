@@ -26,6 +26,8 @@ export enum ProcessStatus {
     RUNNING = 'Running',
     WARNING = 'Warning',
     UNKNOWN = 'Unknown',
+    REUSED = 'Reused',
+    CANCELLING = 'Cancelling',
 }
 
 export const getProcess = (uuid: string) => (resources: ResourcesState): Process | undefined => {
@@ -83,6 +85,7 @@ export const getProcessStatusStyles = (status: string, theme: ArvadosTheme): Rea
             running = true;
             break;
         case ProcessStatus.COMPLETED:
+        case ProcessStatus.REUSED:
             color = theme.customs.colors.green800;
             break;
         case ProcessStatus.WARNING:
@@ -90,6 +93,10 @@ export const getProcessStatusStyles = (status: string, theme: ArvadosTheme): Rea
             running = true;
             break;
         case ProcessStatus.FAILING:
+            color = theme.customs.colors.red900;
+            running = true;
+            break;
+        case ProcessStatus.CANCELLING:
             color = theme.customs.colors.red900;
             running = true;
             break;
@@ -113,7 +120,7 @@ export const getProcessStatusStyles = (status: string, theme: ArvadosTheme): Rea
         // Set text color to status color when running, else use white text for solid button
         color: running ? color : theme.palette.common.white,
         // Set border color when running, else omit the style entirely
-        ...(running ? {border: `2px solid ${color}`} : {}),
+        ...(running ? { border: `2px solid ${color}` } : {}),
     };
 };
 
@@ -131,8 +138,22 @@ export const getProcessStatus = ({ containerRequest, container }: Process): Proc
         case containerRequest.state === ContainerRequestState.UNCOMMITTED:
             return ProcessStatus.DRAFT;
 
-        case container?.state === ContainerState.COMPLETE:
+        case container && container.state === ContainerState.COMPLETE:
             if (container?.exitCode === 0) {
+                if (containerRequest && container.finishedAt) {
+                    // don't compare on createdAt because the container can
+                    // have a slightly earlier creation time when it is created
+                    // in the same transaction as the container request.
+                    // use finishedAt because most people will assume "reused" means
+                    // no additional work needed to be done, it's possible
+                    // to share a running container but calling it "reused" in that case
+                    // is more likely to just be confusing.
+                    const finishedAt = new Date(container.finishedAt).getTime();
+                    const createdAt = new Date(containerRequest.createdAt).getTime();
+                    if (finishedAt < createdAt) {
+                        return ProcessStatus.REUSED;
+                    }
+                }
                 return ProcessStatus.COMPLETED;
             }
             return ProcessStatus.FAILED;
@@ -148,6 +169,9 @@ export const getProcessStatus = ({ containerRequest, container }: Process): Proc
             return ProcessStatus.QUEUED;
 
         case container?.state === ContainerState.RUNNING:
+            if (container?.priority === 0) {
+                return ProcessStatus.CANCELLING;
+            }
             if (!!container?.runtimeStatus.error) {
                 return ProcessStatus.FAILING;
             }
@@ -170,15 +194,15 @@ export const isProcessResumable = ({ containerRequest, container }: Process): bo
     containerRequest.priority === 0 &&
     // Don't show run button when container is present & running or cancelled
     !(container && (container.state === ContainerState.RUNNING ||
-                            container.state === ContainerState.CANCELLED ||
-                            container.state === ContainerState.COMPLETE))
+        container.state === ContainerState.CANCELLED ||
+        container.state === ContainerState.COMPLETE))
 );
 
 export const isProcessCancelable = ({ containerRequest, container }: Process): boolean => (
     containerRequest.priority !== null &&
     containerRequest.priority > 0 &&
     container !== undefined &&
-        (container.state === ContainerState.QUEUED ||
+    (container.state === ContainerState.QUEUED ||
         container.state === ContainerState.LOCKED ||
         container.state === ContainerState.RUNNING)
 );
