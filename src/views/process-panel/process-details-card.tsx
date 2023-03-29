@@ -59,10 +59,10 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
         fontSize: '0.78rem',
     },
     cancelButton: {
-        color: theme.customs.colors.red900,
-        borderColor: theme.customs.colors.red900,
+        color: theme.palette.common.white,
+        backgroundColor: theme.customs.colors.red900,
         '&:hover': {
-            borderColor: theme.customs.colors.red900,
+            backgroundColor: theme.customs.colors.red900,
         },
         '& svg': {
             fontSize: '22px',
@@ -126,7 +126,7 @@ export const ProcessDetailsCard = withStyles(styles)(
                         {isProcessCancelable(process) &&
                             <Button
                                 data-cy="process-cancel-button"
-                                variant="outlined"
+                                variant="contained"
                                 size="small"
                                 color="primary"
                                 className={classNames(classes.actionButton, classes.cancelButton)}

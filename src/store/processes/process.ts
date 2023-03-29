@@ -27,6 +27,7 @@ export enum ProcessStatus {
     WARNING = 'Warning',
     UNKNOWN = 'Unknown',
     REUSED = 'Reused',
+    CANCELLING = 'Cancelling',
 }
 
 export const getProcess = (uuid: string) => (resources: ResourcesState): Process | undefined => {
@@ -92,6 +93,10 @@ export const getProcessStatusStyles = (status: string, theme: ArvadosTheme): Rea
             running = true;
             break;
         case ProcessStatus.FAILING:
+            color = theme.customs.colors.red900;
+            running = true;
+            break;
+        case ProcessStatus.CANCELLING:
             color = theme.customs.colors.red900;
             running = true;
             break;
@@ -164,6 +169,9 @@ export const getProcessStatus = ({ containerRequest, container }: Process): Proc
             return ProcessStatus.QUEUED;
 
         case container?.state === ContainerState.RUNNING:
+            if (container?.priority === 0) {
+                return ProcessStatus.CANCELLING;
+            }
             if (!!container?.runtimeStatus.error) {
                 return ProcessStatus.FAILING;
             }
