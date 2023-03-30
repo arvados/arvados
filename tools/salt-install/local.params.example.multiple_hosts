@@ -133,6 +133,7 @@ MONITORING_EMAIL=${INITIAL_USER_EMAIL}
 # The directory to check for the config files (pillars, states) you want to use.
 # There are a few examples under 'config_examples'.
 # CONFIG_DIR="local_config_dir"
+
 # Extra states to apply. If you use your own subdir, change this value accordingly
 # EXTRA_STATES_DIR="${CONFIG_DIR}/states"
 

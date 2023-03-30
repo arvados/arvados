@@ -4,6 +4,17 @@
 # SPDX-License-Identifier: AGPL-3.0
 
 grafana:
+  pkg:
+    name: grafana
+    use_upstream_archive: false
+    use_upstream_repo: true
+    repo:
+      humanname: grafana_official
+      name: deb https://apt.grafana.com/ stable main
+      file: /etc/apt/sources.list.d/grafana.list
+      key_url: https://apt.grafana.com/gpg.key
+      require_in:
+        - pkg: grafana
   config:
     default:
       instance_name: __CLUSTER__.__DOMAIN__
@@ -17,4 +28,3 @@ grafana:
       http_port: 3000
       domain: grafana.__CLUSTER__.__DOMAIN__
       root_url: https://grafana.__CLUSTER__.__DOMAIN__
-
