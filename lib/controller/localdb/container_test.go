@@ -10,6 +10,7 @@ import (
 	"errors"
 	"fmt"
 	"math/rand"
+	"strings"
 	"sync"
 	"time"
 
@@ -100,7 +101,7 @@ func (s *containerSuite) TestUpdatePriorityShouldBeZero(c *C) {
 }
 
 func (s *containerSuite) TestUpdatePriorityMultiLevelWorkflow(c *C) {
-	testCtx, testCancel := context.WithDeadline(s.ctx, time.Now().Add(time.Second*20))
+	testCtx, testCancel := context.WithDeadline(s.ctx, time.Now().Add(30*time.Second))
 	defer testCancel()
 	adminCtx := ctrlctx.NewWithToken(testCtx, s.cluster, s.cluster.SystemRootToken)
 
@@ -193,8 +194,41 @@ func (s *containerSuite) TestUpdatePriorityMultiLevelWorkflow(c *C) {
 		c.Assert(err, IsNil)
 		c.Check(priority, Not(Equals), 0)
 	}
-
 	chaosCancel()
+
+	// Flood railsapi with priority updates. This can cause
+	// database deadlock: one call acquires row locks in the order
+	// {i0j0, i0, i0j1}, while another call acquires row locks in
+	// the order {i0j1, i0, i0j0}.
+	deadlockCtx, deadlockCancel := context.WithDeadline(adminCtx, time.Now().Add(30*time.Second))
+	defer deadlockCancel()
+	for _, cr := range allcrs {
+		if strings.Contains(cr.Command[2], " j ") && !strings.Contains(cr.Command[2], " k ") {
+			wg.Add(1)
+			go func() {
+				defer wg.Done()
+				for _, p := range []int{1, 2, 3, 4} {
+					var err error
+					for {
+						_, err = s.localdb.ContainerRequestUpdate(deadlockCtx, arvados.UpdateOptions{
+							UUID: cr.UUID,
+							Attrs: map[string]interface{}{
+								"priority": p,
+							},
+						})
+						if err != nil && strings.Contains(err.Error(), "TRDeadlockDetected") {
+							c.Logf("Deadlock detected (will retry): %q", err)
+							time.Sleep(time.Duration(rand.Intn(int(time.Second / 4))))
+							continue
+						}
+						c.Check(err, IsNil)
+						break
+					}
+				}
+			}()
+		}
+	}
+	wg.Wait()
 
 	// Simulate cascading cancellation of the entire tree. For
 	// this we need a goroutine to notice and cancel containers
