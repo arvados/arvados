@@ -146,7 +146,11 @@ FakeRESTService <- R6::R6Class(
         getCollectionContent = function(uuid, relativePath = NULL)
         {
             self$getCollectionContentCallCount <- self$getCollectionContentCallCount + 1
-            self$collectionContent
+            if (!is.null(relativePath)) {
+                self$collectionContent[startsWith(self$collectionContent, relativePath)]
+            } else {
+                self$collectionContent
+            }
         },
 
         getResourceSize = function(uuid, relativePathToResource)
