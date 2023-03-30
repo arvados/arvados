@@ -13,39 +13,14 @@ DOMAIN="domain_fixme_or_this_wont_work"
 
 # For multi-node installs, the ssh log in for each node
 # must be root or able to sudo
-DEPLOY_USER=root
+DEPLOY_USER=admin
 
-# The mapping of nodes to roles
-# installer.sh will log in to each of these nodes and then provision
-# it for the specified roles.
-NODES=(
-  [localhost]=''
-)
+INITIAL_USER=admin
 
-# HOSTNAME_EXT must be set to the address that users will use to
-# connect to the instance (e.g. what they will type into the URL bar
-# of the browser to get to workbench).  If you haven't given the
-# instance a working DNS name, you might need to use an IP address
-# here.
-HOSTNAME_EXT="hostname_ext_fixme_or_this_wont_work"
-
-# The internal IP address for the host.
-IP_INT="ip_int_fixme_or_this_wont_work"
-
-# External ports used by the Arvados services
-CONTROLLER_EXT_SSL_PORT=8800
-KEEP_EXT_SSL_PORT=8801
-KEEPWEB_EXT_SSL_PORT=8802
-WEBSHELL_EXT_SSL_PORT=8803
-WEBSOCKET_EXT_SSL_PORT=8804
-WORKBENCH1_EXT_SSL_PORT=8805
-WORKBENCH2_EXT_SSL_PORT=443
-
-INITIAL_USER="admin"
 # If not specified, the initial user email will be composed as
 # INITIAL_USER@CLUSTER.DOMAIN
 INITIAL_USER_EMAIL="admin@cluster_fixme_or_this_wont_work.domain_fixme_or_this_wont_work"
-INITIAL_USER_PASSWORD="password"
+INITIAL_USER_PASSWORD="fixmepassword"
 
 # Populate these values with random strings
 BLOB_SIGNING_KEY=fixmeblobsigningkeymushaveatleast32characters
@@ -80,6 +55,32 @@ MONITORING_EMAIL=${INITIAL_USER_EMAIL}
 # Sets the directory for Grafana dashboards
 # GRAFANA_DASHBOARDS_DIR="${SCRIPT_DIR}/local_config_dir/dashboards"
 
+# The mapping of nodes to roles
+# installer.sh will log in to each of these nodes and then provision
+# it for the specified roles.
+NODES=(
+  [localhost]=''
+)
+
+# HOSTNAME_EXT must be set to the address that users will use to
+# connect to the instance (e.g. what they will type into the URL bar
+# of the browser to get to workbench).  If you haven't given the
+# instance a working DNS name, you might need to use an IP address
+# here.
+HOSTNAME_EXT="hostname_ext_fixme_or_this_wont_work"
+
+# The internal IP address for the host.
+IP_INT="ip_int_fixme_or_this_wont_work"
+
+# External ports used by the Arvados services
+CONTROLLER_EXT_SSL_PORT=8800
+KEEP_EXT_SSL_PORT=8801
+KEEPWEB_EXT_SSL_PORT=8802
+WEBSHELL_EXT_SSL_PORT=8803
+WEBSOCKET_EXT_SSL_PORT=8804
+WORKBENCH1_EXT_SSL_PORT=8805
+WORKBENCH2_EXT_SSL_PORT=443
+
 # The directory to check for the config files (pillars, states) you want to use.
 # There are a few examples under 'config_examples'.
 # CONFIG_DIR="local_config_dir"
@@ -108,3 +109,5 @@ RELEASE="production"
 # DOCKER_TAG="v2.4.2"
 # LOCALE_TAG="v0.3.4"
 # LETSENCRYPT_TAG="v2.1.0"
+# PROMETHEUS_TAG="v5.6.5"
+# GRAFANA_TAG="v3.1.3"

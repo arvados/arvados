@@ -13,29 +13,14 @@ DOMAIN="domain_fixme_or_this_wont_work"
 
 # For multi-node installs, the ssh log in for each node
 # must be root or able to sudo
-DEPLOY_USER=root
+DEPLOY_USER=admin
 
-# The mapping of nodes to roles
-# installer.sh will log in to each of these nodes and then provision
-# it for the specified roles.
-NODES=(
-  [localhost]=''
-)
+INITIAL_USER=admin
 
-# External ports used by the Arvados services
-CONTROLLER_EXT_SSL_PORT=443
-KEEP_EXT_SSL_PORT=25101
-KEEPWEB_EXT_SSL_PORT=9002
-WEBSHELL_EXT_SSL_PORT=4202
-WEBSOCKET_EXT_SSL_PORT=8002
-WORKBENCH1_EXT_SSL_PORT=443
-WORKBENCH2_EXT_SSL_PORT=3001
-
-INITIAL_USER="admin"
 # If not specified, the initial user email will be composed as
 # INITIAL_USER@CLUSTER.DOMAIN
 INITIAL_USER_EMAIL="admin@cluster_fixme_or_this_wont_work.domain_fixme_or_this_wont_work"
-INITIAL_USER_PASSWORD="password"
+INITIAL_USER_PASSWORD="fixmepassword"
 
 # YOU SHOULD CHANGE THESE TO SOME RANDOM STRINGS
 BLOB_SIGNING_KEY=fixmeblobsigningkeymushaveatleast32characters
@@ -70,6 +55,22 @@ MONITORING_EMAIL=${INITIAL_USER_EMAIL}
 # Sets the directory for Grafana dashboards
 # GRAFANA_DASHBOARDS_DIR="${SCRIPT_DIR}/local_config_dir/dashboards"
 
+# The mapping of nodes to roles
+# installer.sh will log in to each of these nodes and then provision
+# it for the specified roles.
+NODES=(
+  [localhost]=''
+)
+
+# External ports used by the Arvados services
+CONTROLLER_EXT_SSL_PORT=443
+KEEP_EXT_SSL_PORT=25101
+KEEPWEB_EXT_SSL_PORT=9002
+WEBSHELL_EXT_SSL_PORT=4202
+WEBSOCKET_EXT_SSL_PORT=8002
+WORKBENCH1_EXT_SSL_PORT=443
+WORKBENCH2_EXT_SSL_PORT=3001
+
 # The directory to check for the config files (pillars, states) you want to use.
 # There are a few examples under 'config_examples'.
 # CONFIG_DIR="local_config_dir"
@@ -98,3 +99,5 @@ RELEASE="production"
 # DOCKER_TAG="v2.4.2"
 # LOCALE_TAG="v0.3.4"
 # LETSENCRYPT_TAG="v2.1.0"
+# PROMETHEUS_TAG="v5.6.5"
+# GRAFANA_TAG="v3.1.3"
