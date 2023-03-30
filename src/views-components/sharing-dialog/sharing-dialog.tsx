@@ -5,6 +5,7 @@
 import { compose, Dispatch } from 'redux';
 import { connect } from 'react-redux';
 import { RootState } from 'store/store';
+import { formValueSelector } from 'redux-form'
 import {
     connectSharingDialog,
     saveSharingDialogChanges,
@@ -22,6 +23,7 @@ import {
     getSharingPublicAccessFormData,
     hasChanges,
     SHARING_DIALOG_NAME,
+    SHARING_MANAGEMENT_FORM_NAME,
     VisibilityLevel
 } from 'store/sharing-dialog/sharing-dialog-types';
 import { WithProgressStateProps } from 'store/progress-indicator/with-progress';
@@ -32,12 +34,15 @@ import { ResourceKind } from 'models/resource';
 
 type Props = WithDialogProps<string> & WithProgressStateProps;
 
+const sharingManagementFormSelector = formValueSelector(SHARING_MANAGEMENT_FORM_NAME);
+
 const mapStateToProps = (state: RootState, { working, ...props }: Props): SharingDialogDataProps => {
     const dialog = getDialog<SharingDialogData>(state.dialog, SHARING_DIALOG_NAME);
     const sharedResourceUuid = dialog?.data.resourceUuid || '';
     const sharingURLsDisabled = state.auth.config.clusterConfig.Workbench.DisableSharingURLsUI;
     return ({
     ...props,
+    permissions: sharingManagementFormSelector(state, 'permissions'),
     saveEnabled: hasChanges(state),
     loading: working,
     sharedResourceUuid,

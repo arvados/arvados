@@ -16,6 +16,7 @@ import {
     Checkbox,
     FormControlLabel,
     Typography,
+    Tooltip,
 } from '@material-ui/core';
 import {
     StyleRulesCallback,
@@ -39,6 +40,7 @@ import {
 import DateFnsUtils from "@date-io/date-fns";
 import moment from 'moment';
 import { SharingPublicAccessForm } from './sharing-public-access-form';
+import { AddIcon } from 'components/icon/icon';
 
 export interface SharingDialogDataProps {
     open: boolean;
@@ -48,6 +50,7 @@ export interface SharingDialogDataProps {
     sharingURLsNr: number;
     privateAccess: boolean;
     sharingURLsDisabled: boolean;
+    permissions: any[];
 }
 export interface SharingDialogActionProps {
     onClose: () => void;
@@ -63,17 +66,28 @@ export type SharingDialogComponentProps = SharingDialogDataProps & SharingDialog
 
 export default (props: SharingDialogComponentProps) => {
     const { open, loading, saveEnabled, sharedResourceUuid,
-        sharingURLsNr, privateAccess, sharingURLsDisabled,
+        sharingURLsNr, privateAccess, sharingURLsDisabled, permissions,
         onClose, onSave, onCreateSharingToken, refreshPermissions } = props;
     const showTabs = !sharingURLsDisabled && extractUuidObjectType(sharedResourceUuid) === ResourceObjectType.COLLECTION;
     const [tabNr, setTabNr] = React.useState<number>(SharingDialogTab.PERMISSIONS);
     const [expDate, setExpDate] = React.useState<Date>();
     const [withExpiration, setWithExpiration] = React.useState<boolean>(false);
+    const [permissionsCount, setPermissionsCount] = React.useState<number>(0);
 
     // Sets up the dialog depending on the resource type
     if (!showTabs && tabNr !== SharingDialogTab.PERMISSIONS) {
         setTabNr(SharingDialogTab.PERMISSIONS);
     }
+
+    React.useEffect(() => {
+        if (permissions && permissions.length !== permissionsCount) {
+            if (permissionsCount > permissions.length) {
+                setTimeout(onSave, 0);
+            }
+
+            setPermissionsCount(permissions.length);
+        }
+    }, [permissions, onSave, setPermissionsCount, permissionsCount])
 
     React.useEffect(() => {
         if (!withExpiration) {
@@ -180,10 +194,12 @@ export default (props: SharingDialogComponentProps) => {
                 }
                 { tabNr === SharingDialogTab.PERMISSIONS &&
                 <Grid item>
-                    <Button onClick={onSave} variant="contained" color="primary"
-                        disabled={!saveEnabled}>
-                        Save changes
-                    </Button>
+                    <Tooltip title="Add authorization">
+                        <Button onClick={onSave} variant="contained" color="primary"
+                            disabled={!saveEnabled}>
+                            <AddIcon />
+                        </Button>
+                    </Tooltip>
                 </Grid>
                 }
                 <Grid item>
