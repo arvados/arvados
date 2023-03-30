@@ -63,7 +63,8 @@ In the default configuration these are:
 # @workbench2.${CLUSTER}.${DOMAIN}@
 # @webshell.${CLUSTER}.${DOMAIN}@
 # @shell.${CLUSTER}.${DOMAIN}@
-# @monitoring.${CLUSTER}.${DOMAIN}@
+# @prometheus.${CLUSTER}.${DOMAIN}@
+# @grafana.${CLUSTER}.${DOMAIN}@
 
 For more information, see "DNS entries and TLS certificates":install-manual-prerequisites.html#dnstls.
 
@@ -415,7 +416,7 @@ You can iterate on the config and maintain the cluster by making changes to @loc
 If you are debugging a configuration issue on a specific node, you can speed up the cycle a bit by deploying just one node:
 
 <pre>
-./installer.sh deploy keep0.xarv1.example.com@
+./installer.sh deploy keep0.xarv1.example.com
 </pre>
 
 However, once you have a final configuration, you should run a full deploy to ensure that the configuration has been synchronized on all the nodes.
