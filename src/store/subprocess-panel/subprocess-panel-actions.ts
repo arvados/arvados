@@ -12,6 +12,5 @@ export const subprocessPanelActions = bindDataExplorerActions(SUBPROCESS_PANEL_I
 
 export const loadSubprocessPanel = () =>
     (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
-        dispatch(subprocessPanelActions.CLEAR());
         dispatch(subprocessPanelActions.REQUEST_ITEMS());
     };
