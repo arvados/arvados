@@ -14,7 +14,6 @@ import {
     CardContent,
     IconButton,
 } from '@material-ui/core';
-import { Dispatch } from "redux";
 import { connect, DispatchProp } from "react-redux";
 import { RouteComponentProps } from 'react-router';
 import { ArvadosTheme } from 'common/custom-theme';

@@ -628,7 +628,7 @@ const linkApiResponse = (apiResponse: LinkResource): JSX.Element => {
 const wfApiResponse = (apiResponse: WorkflowResource): JSX.Element => {
     const {
         uuid, name,
-        ownerUuid, createdAt, modifiedAt, modifiedByClientUuid, modifiedByUserUuid, description, definition
+        ownerUuid, createdAt, modifiedAt, modifiedByClientUuid, modifiedByUserUuid, description
     } = apiResponse;
     const response = `
 "uuid": "${uuid}",
