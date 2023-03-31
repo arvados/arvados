@@ -21,8 +21,8 @@ export default () =>
     <FieldArray name='permissions' component={SharingManagementFieldArray as any} />;
 
 const SharingManagementFieldArray = ({ fields }: WrappedFieldArrayProps<{ email: string }>) =>
-    <div>{ fields.map((field, index, fields) =>
-        <PermissionManagementRow key={field} {...{ field, index, fields }} />) }
+    <div>{fields.map((field, index, fields) =>
+        <PermissionManagementRow key={field} {...{ field, index, fields }} />)}
         <Divider />
     </div>;
 
@@ -31,6 +31,7 @@ const permissionManagementRowStyles: StyleRulesCallback<'root'> = theme => ({
         padding: `${theme.spacing.unit}px 0`,
     }
 });
+
 const PermissionManagementRow = withStyles(permissionManagementRowStyles)(
     ({ field, index, fields, classes }: { field: string, index: number, fields: FieldArrayFieldsProps<{ email: string }> } & WithStyles<'root'>) =>
         <>

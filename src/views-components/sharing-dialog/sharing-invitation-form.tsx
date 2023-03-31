@@ -8,13 +8,23 @@ import { compose } from 'redux';
 import SharingInvitationFormComponent from './sharing-invitation-form-component';
 import { SHARING_INVITATION_FORM_NAME } from 'store/sharing-dialog/sharing-dialog-types';
 import { PermissionLevel } from 'models/permission';
+import { WithStyles } from '@material-ui/core/styles';
 
-export const SharingInvitationForm = compose(
-    connect(() => ({
+interface InvitationFormData {
+    permissions: PermissionLevel;
+    invitedPeople: string[];
+}
+
+interface SaveProps {
+    onSave: () => void;
+    saveEnabled: boolean;
+}
+
+export const SharingInvitationForm =
+    reduxForm<InvitationFormData, SaveProps>({
+        form: SHARING_INVITATION_FORM_NAME,
         initialValues: {
             permissions: PermissionLevel.CAN_READ,
             invitedPeople: [],
         }
-    })),
-    reduxForm({ form: SHARING_INVITATION_FORM_NAME })
-)(SharingInvitationFormComponent);
+    })(SharingInvitationFormComponent);
