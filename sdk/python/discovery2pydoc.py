@@ -42,6 +42,32 @@ NAME_KEY = operator.attrgetter('name')
 STDSTREAM_PATH = pathlib.Path('-')
 TITLECASE = operator.methodcaller('title')
 
+_ALIASED_METHODS = frozenset([
+    'destroy',
+    'index',
+    'show',
+])
+_DEPRECATED_NOTICE = '''
+
+!!! deprecated
+    This resource is deprecated in the Arvados API.
+'''
+_DEPRECATED_RESOURCES = frozenset([
+    'Humans',
+    'JobTasks',
+    'Jobs',
+    'KeepDisks',
+    'Nodes',
+    'PipelineInstances',
+    'PipelineTemplates',
+    'Specimens'
+    'Traits',
+])
+_DEPRECATED_SCHEMAS = frozenset([
+    *(name[:-1] for name in _DEPRECATED_RESOURCES),
+    *(f'{name[:-1]}List' for name in _DEPRECATED_RESOURCES),
+])
+
 _TYPE_MAP = {
     # Map the API's JavaScript-based type names to Python annotations.
     # Some of these may disappear after Arvados issue #19795 is fixed.
@@ -159,24 +185,29 @@ class Method:
             returns = 'dict[str, Any]'
         return inspect.Signature(parameters, return_annotation=returns)
 
-    def doc(self) -> str:
-        doc_lines = [self._spec['description'].splitlines()[0], '\n']
+    def doc(self, doc_slice: slice=slice(None)) -> str:
+        doc_lines = self._spec['description'].splitlines(keepends=True)[doc_slice]
+        if not doc_lines[-1].endswith('\n'):
+            doc_lines.append('\n')
         if self._required_params:
             doc_lines.append("\nRequired parameters:\n")
             doc_lines.extend(param.doc() for param in self._required_params)
         if self._optional_params:
             doc_lines.append("\nOptional parameters:\n")
             doc_lines.extend(param.doc() for param in self._optional_params)
-        return re.sub(r'\n{3,}', '\n\n', f'''
+        return f'''
     def {self.name}{self.signature()}:
 {to_docstring(''.join(doc_lines), 8)}
-''')
+'''
 
 
 def document_schema(name: str, spec: Mapping[str, Any]) -> str:
+    description = spec['description']
+    if name in _DEPRECATED_SCHEMAS:
+        description += _DEPRECATED_NOTICE
     lines = [
         f"class {name}(TypedDict, total=False):",
-        to_docstring(spec['description'], 4),
+        to_docstring(description, 4),
     ]
     for field_name, field_spec in spec['properties'].items():
         field_type = get_type_annotation(field_spec['type'])
@@ -203,10 +234,18 @@ def document_schema(name: str, spec: Mapping[str, Any]) -> str:
     return '\n'.join(lines)
 
 def document_resource(name: str, spec: Mapping[str, Any]) -> str:
-    methods = [Method(key, meth_spec) for key, meth_spec in spec['methods'].items()]
-    return f'''class {classify_name(name)}:
-    """Methods to query and manipulate Arvados {humanize_name(name)}"""
-{''.join(method.doc() for method in sorted(methods, key=NAME_KEY))}
+    class_name = classify_name(name)
+    docstring = f"Methods to query and manipulate Arvados {humanize_name(name)}"
+    if class_name in _DEPRECATED_RESOURCES:
+        docstring += _DEPRECATED_NOTICE
+    methods = [
+        Method(key, meth_spec)
+        for key, meth_spec in spec['methods'].items()
+        if key not in _ALIASED_METHODS
+    ]
+    return f'''class {class_name}:
+{to_docstring(docstring, 4)}
+{''.join(method.doc(slice(1)) for method in sorted(methods, key=NAME_KEY))}
 '''
 
 def parse_arguments(arglist: Optional[Sequence[str]]) -> argparse.Namespace:
@@ -266,8 +305,11 @@ def main(arglist: Optional[Sequence[str]]=None) -> int:
     print('''class ArvadosAPIClient:''', file=args.out_file)
     for name, _ in resources:
         class_name = classify_name(name)
+        docstring = f"Return an instance of `{class_name}` to call methods via this client"
+        if class_name in _DEPRECATED_RESOURCES:
+            docstring += _DEPRECATED_NOTICE
         method_spec = {
-            'description': f"Return an instance of `{class_name}` to call methods via this client",
+            'description': docstring,
             'parameters': {},
             'response': {
                 '$ref': class_name,
