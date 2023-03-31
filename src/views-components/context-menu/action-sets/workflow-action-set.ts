@@ -5,16 +5,10 @@
 import { ContextMenuActionSet } from "views-components/context-menu/context-menu-action-set";
 import { openRunProcess } from "store/workflow-panel/workflow-panel-actions";
 import {
-    RenameIcon,
-    ShareIcon,
-    MoveToIcon,
-    CopyIcon,
     DetailsIcon,
     AdvancedIcon,
     OpenIcon,
     Link,
-    RestoreVersionIcon,
-    FolderSharedIcon,
     StartIcon
 } from "components/icon/icon";
 import { copyToClipboardAction, openInNewTabAction } from "store/open-in-new-tab/open-in-new-tab.actions";

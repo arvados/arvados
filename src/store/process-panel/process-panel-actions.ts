@@ -12,7 +12,7 @@ import { navigateTo, navigateToWorkflows } from 'store/navigation/navigation-act
 import { snackbarActions } from 'store/snackbar/snackbar-actions';
 import { SnackbarKind } from '../snackbar/snackbar-actions';
 import { showWorkflowDetails } from 'store/workflow-panel/workflow-panel-actions';
-import { loadSubprocessPanel } from "../subprocess-panel/subprocess-panel-actions";
+import { loadSubprocessPanel, subprocessPanelActions } from "../subprocess-panel/subprocess-panel-actions";
 import { initProcessLogsPanel, processLogsPanelActions } from "store/process-logs-panel/process-logs-panel-actions";
 import { CollectionFile } from "models/collection-file";
 import { ContainerRequestResource } from "models/container-request";
@@ -40,7 +40,12 @@ export type ProcessPanelAction = UnionOf<typeof processPanelActions>;
 export const toggleProcessPanelFilter = processPanelActions.TOGGLE_PROCESS_PANEL_FILTER;
 
 export const loadProcessPanel = (uuid: string) =>
-    async (dispatch: Dispatch) => {
+    async (dispatch: Dispatch, getState: () => RootState) => {
+        // Reset subprocess data explorer if navigating to new process
+        //  Avoids resetting pagination when refreshing same process
+        if (getState().processPanel.containerRequestUuid !== uuid) {
+            dispatch(subprocessPanelActions.CLEAR());
+        }
         dispatch(processPanelActions.RESET_PROCESS_PANEL());
         dispatch(processLogsPanelActions.RESET_PROCESS_LOGS_PANEL());
         dispatch<ProcessPanelAction>(processPanelActions.SET_PROCESS_PANEL_CONTAINER_REQUEST_UUID(uuid));
