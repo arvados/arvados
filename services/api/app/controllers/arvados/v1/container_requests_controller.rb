@@ -28,4 +28,20 @@ class Arvados::V1::ContainerRequestsController < ApplicationController
         },
       })
   end
+
+  def create
+    # Lock containers table to avoid deadlock in cascading priority update (see #20240)
+    Container.transaction do
+      ActiveRecord::Base.connection.execute "LOCK TABLE containers IN SHARE ROW EXCLUSIVE MODE"
+      super
+    end
+  end
+
+  def update
+    # Lock containers table to avoid deadlock in cascading priority update (see #20240)
+    Container.transaction do
+      ActiveRecord::Base.connection.execute "LOCK TABLE containers IN SHARE ROW EXCLUSIVE MODE"
+      super
+    end
+  end
 end
