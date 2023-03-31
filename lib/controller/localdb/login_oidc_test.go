@@ -44,7 +44,7 @@ type OIDCLoginSuite struct {
 }
 
 func (s *OIDCLoginSuite) SetUpTest(c *check.C) {
-	s.trustedURL = &arvados.URL{Scheme: "https", Host: "app.example.com", Path: "/"}
+	s.trustedURL = &arvados.URL{Scheme: "https", Host: "app.example.com:443", Path: "/"}
 
 	s.fakeProvider = arvadostest.NewOIDCProvider(c)
 	s.fakeProvider.AuthEmail = "active-user@arvados.local"

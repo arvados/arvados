@@ -32,7 +32,13 @@ class ApiClient < ArvadosModel
     end
 
     Rails.configuration.Login.TrustedClients.keys.each do |url|
-      if norm_url_prefix == norm(url)
+      trusted = norm(url)
+      if norm_url_prefix == trusted
+        return true
+      end
+      if trusted.host.to_s.starts_with?("*.") &&
+         norm_url_prefix.to_s.starts_with?(trusted.scheme + "://") &&
+         norm_url_prefix.to_s.ends_with?(trusted.to_s[trusted.scheme.length + 4...])
         return true
       end
     end
@@ -49,6 +55,8 @@ class ApiClient < ArvadosModel
       url.port = "80"
     end
     url.path = "/"
+    url.query = nil
+    url.fragment = nil
     url
   end
 end
