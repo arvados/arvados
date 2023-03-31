@@ -216,11 +216,6 @@ func (s *containerSuite) TestUpdatePriorityMultiLevelWorkflow(c *C) {
 								"priority": p,
 							},
 						})
-						if err != nil && strings.Contains(err.Error(), "TRDeadlockDetected") {
-							c.Logf("Deadlock detected (will retry): %q", err)
-							time.Sleep(time.Duration(rand.Intn(int(time.Second / 4))))
-							continue
-						}
 						c.Check(err, IsNil)
 						break
 					}
