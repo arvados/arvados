@@ -42,6 +42,34 @@ NAME_KEY = operator.attrgetter('name')
 STDSTREAM_PATH = pathlib.Path('-')
 TITLECASE = operator.methodcaller('title')
 
+_TYPE_MAP = {
+    # Map the API's JavaScript-based type names to Python annotations.
+    # Some of these may disappear after Arvados issue #19795 is fixed.
+    'Array': 'list',
+    'array': 'list',
+    'boolean': 'bool',
+    # datetime fields are strings in ISO 8601 format.
+    'datetime': 'str',
+    'Hash': 'dict[str, Any]',
+    'integer': 'int',
+    'object': 'dict[str, Any]',
+    'string': 'str',
+    'text': 'str',
+}
+
+def get_type_annotation(name: str) -> str:
+    return _TYPE_MAP.get(name, name)
+
+def to_docstring(s: str, indent: int) -> str:
+    prefix = ' ' * indent
+    s = s.replace('"""', '""\"')
+    s = re.sub(r'(\n+)', r'\1' + prefix, s)
+    s = s.strip()
+    if '\n' in s:
+        return f'{prefix}"""{s}\n{prefix}"""'
+    else:
+        return f'{prefix}"""{s}"""'
+
 def transform_name(s: str, sep: str, fix_part: Callable[[str], str]) -> str:
     return sep.join(fix_part(part) for part in s.split('_'))
 
@@ -52,15 +80,6 @@ def humanize_name(s: str) -> str:
     return transform_name(s, ' ', LOWERCASE)
 
 class Parameter(inspect.Parameter):
-    _TYPE_MAP = {
-        # Map the API's JavaScript-based type names to Python annotations
-        'array': 'list',
-        'boolean': 'bool',
-        'integer': 'int',
-        'object': 'dict[str, Any]',
-        'string': 'str',
-    }
-
     def __init__(self, name: str, spec: Mapping[str, Any]) -> None:
         self.api_name = name
         self._spec = spec
@@ -69,7 +88,7 @@ class Parameter(inspect.Parameter):
         super().__init__(
             name,
             inspect.Parameter.KEYWORD_ONLY,
-            annotation=self.annotation_from_type(),
+            annotation=get_type_annotation(self._spec['type']),
             # In normal Python the presence of a default tells you whether or
             # not an argument is required. In the API the `required` flag tells
             # us that, and defaults are specified inconsistently. Don't show
@@ -79,10 +98,6 @@ class Parameter(inspect.Parameter):
             # the default value.
             default=inspect.Parameter.empty,
         )
-
-    def annotation_from_type(self) -> str:
-        src_type = self._spec['type']
-        return self._TYPE_MAP.get(src_type, src_type)
 
     def default_value(self) -> object:
         try:
@@ -111,8 +126,8 @@ class Parameter(inspect.Parameter):
         # parsers retain the definition list structure.
         description = self._spec['description'] or '\u200b'
         return f'''
-        {self.api_name}: {self.annotation}
-        : {description}{default_doc}
+{self.api_name}: {self.annotation}
+: {description}{default_doc}
 '''
 
 
@@ -138,23 +153,54 @@ class Method:
             *self._required_params,
             *self._optional_params,
         ]
-        return inspect.Signature(parameters, return_annotation='dict[str, Any]')
+        try:
+            returns = get_type_annotation(self._spec['response']['$ref'])
+        except KeyError:
+            returns = 'dict[str, Any]'
+        return inspect.Signature(parameters, return_annotation=returns)
 
     def doc(self) -> str:
+        doc_lines = [self._spec['description'].splitlines()[0], '\n']
+        if self._required_params:
+            doc_lines.append("\nRequired parameters:\n")
+            doc_lines.extend(param.doc() for param in self._required_params)
+        if self._optional_params:
+            doc_lines.append("\nOptional parameters:\n")
+            doc_lines.extend(param.doc() for param in self._optional_params)
         return re.sub(r'\n{3,}', '\n\n', f'''
     def {self.name}{self.signature()}:
-        """{self._spec['description'].splitlines()[0]}
-
-{"        Required parameters:" if self._required_params else ""}
-
-{''.join(param.doc() for param in self._required_params)}
-
-{"        Optional parameters:" if self._optional_params else ""}
-
-{''.join(param.doc() for param in self._optional_params)}
-        """
+{to_docstring(''.join(doc_lines), 8)}
 ''')
 
+
+def document_schema(name: str, spec: Mapping[str, Any]) -> str:
+    lines = [
+        f"class {name}(TypedDict, total=False):",
+        to_docstring(spec['description'], 4),
+    ]
+    for field_name, field_spec in spec['properties'].items():
+        field_type = get_type_annotation(field_spec['type'])
+        try:
+            subtype = field_spec['items']['$ref']
+        except KeyError:
+            pass
+        else:
+            field_type += f"[{get_type_annotation(subtype)}]"
+
+        field_line = f"    {field_name}: {field_type!r}"
+        try:
+            field_line += f" = {field_spec['default']!r}"
+        except KeyError:
+            pass
+        lines.append(field_line)
+
+        field_doc: str = field_spec.get('description', '')
+        if field_spec['type'] == 'datetime':
+            field_doc += "\n\nString in ISO 8601 datetime format. Pass it to `ciso8601.parse_datetime` to build a `datetime.datetime`."
+        if field_doc:
+            lines.append(to_docstring(field_doc, 4))
+    lines.append('\n')
+    return '\n'.join(lines)
 
 def document_resource(name: str, spec: Mapping[str, Any]) -> str:
     methods = [Method(key, meth_spec) for key, meth_spec in spec['methods'].items()]
@@ -207,16 +253,25 @@ def main(arglist: Optional[Sequence[str]]=None) -> int:
             )
             return os.EX_IOERR
         discovery_document = json.load(discovery_file)
-    resources = sorted(discovery_document['resources'].items())
+    print('''from typing import Any, TypedDict''', file=args.out_file)
 
+    schemas = sorted(discovery_document['schemas'].items())
+    for name, schema_spec in schemas:
+        print(document_schema(name, schema_spec), file=args.out_file)
+
+    resources = sorted(discovery_document['resources'].items())
     for name, resource_spec in resources:
         print(document_resource(name, resource_spec), file=args.out_file)
 
     print('''class ArvadosAPIClient:''', file=args.out_file)
     for name, _ in resources:
+        class_name = classify_name(name)
         method_spec = {
-            'description': f"Return an instance of `{classify_name(name)}` to call methods via this client",
+            'description': f"Return an instance of `{class_name}` to call methods via this client",
             'parameters': {},
+            'response': {
+                '$ref': class_name,
+            },
         }
         print(Method(name, method_spec).doc(), file=args.out_file)
 
