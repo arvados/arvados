@@ -16,8 +16,13 @@ const sharingPublicAccessStyles: StyleRulesCallback<'root'> = theme => ({
     }
 });
 
+interface AccessProps {
+    visibility: VisibilityLevel;
+    onSave: () => void;
+}
+
 const SharingPublicAccessForm = withStyles(sharingPublicAccessStyles)(
-    ({ classes, visibility }: WithStyles<'root'> & { visibility: VisibilityLevel }) =>
+    ({ classes, visibility, onSave }: WithStyles<'root'> & AccessProps) =>
         <>
             <Divider />
             <Grid container alignItems='center' spacing={8} className={classes.root}>
@@ -27,7 +32,7 @@ const SharingPublicAccessForm = withStyles(sharingPublicAccessStyles)(
                     </Typography>
                 </Grid>
                 <Grid item xs={4} container wrap='nowrap'>
-                    <Field name='visibility' component={VisibilityLevelSelectComponent} />
+                    <Field name='visibility' component={VisibilityLevelSelectComponent} onChange={onSave} />
                 </Grid>
             </Grid>
         </>
@@ -46,9 +51,10 @@ const renderVisibilityInfo = (visibility: VisibilityLevel) => {
     }
 };
 
-export default ({ visibility }: { visibility: VisibilityLevel }) =>
-    <SharingPublicAccessForm {...{ visibility }} />;
+const SharingPublicAccessFormComponent = ({ visibility, onSave }: AccessProps) =>
+    <SharingPublicAccessForm {...{ visibility, onSave }} />;
+
+export default SharingPublicAccessFormComponent;
 
 const VisibilityLevelSelectComponent = ({ input }: WrappedFieldProps) =>
     <VisibilityLevelSelect fullWidth disableUnderline {...input} />;
-

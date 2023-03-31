@@ -10,8 +10,12 @@ import { SHARING_PUBLIC_ACCESS_FORM_NAME, VisibilityLevel } from 'store/sharing-
 import { RootState } from 'store/store';
 import { getSharingPublicAccessFormData } from '../../store/sharing-dialog/sharing-dialog-types';
 
+interface SaveProps {
+    onSave: () => void;
+}
+
 export const SharingPublicAccessForm = compose(
-    reduxForm(
+    reduxForm<{}, SaveProps>(
         { form: SHARING_PUBLIC_ACCESS_FORM_NAME }
     ),
     connect(
@@ -21,4 +25,3 @@ export const SharingPublicAccessForm = compose(
         }
     )
 )(SharingPublicAccessFormComponent);
-
