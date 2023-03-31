@@ -16,13 +16,14 @@ import { WithStyles } from '@material-ui/core/styles';
 import withStyles from '@material-ui/core/styles/withStyles';
 import { CloseIcon } from 'components/icon/icon';
 
+const SharingManagementFormComponent = (props: { onSave: () => void; }) =>
+    <FieldArray<{ onSave: () => void }> name='permissions' component={SharingManagementFieldArray as any} props={props} />;
 
-export default () =>
-    <FieldArray name='permissions' component={SharingManagementFieldArray as any} />;
+export default SharingManagementFormComponent;
 
-const SharingManagementFieldArray = ({ fields }: WrappedFieldArrayProps<{ email: string }>) =>
+const SharingManagementFieldArray = ({ fields, onSave }: { onSave: () => void } & WrappedFieldArrayProps<{ email: string }>) =>
     <div>{fields.map((field, index, fields) =>
-        <PermissionManagementRow key={field} {...{ field, index, fields }} />)}
+        <PermissionManagementRow key={field} {...{ field, index, fields }} onSave={onSave} />)}
         <Divider />
     </div>;
 
@@ -33,7 +34,7 @@ const permissionManagementRowStyles: StyleRulesCallback<'root'> = theme => ({
 });
 
 const PermissionManagementRow = withStyles(permissionManagementRowStyles)(
-    ({ field, index, fields, classes }: { field: string, index: number, fields: FieldArrayFieldsProps<{ email: string }> } & WithStyles<'root'>) =>
+    ({ field, index, fields, classes, onSave }: { field: string, index: number, fields: FieldArrayFieldsProps<{ email: string }>, onSave: () => void; } & WithStyles<'root'>) =>
         <>
             <Divider />
             <Grid container alignItems='center' spacing={8} wrap='nowrap' className={classes.root}>
@@ -45,8 +46,10 @@ const PermissionManagementRow = withStyles(permissionManagementRowStyles)(
                         name={`${field}.permissions` as string}
                         component={PermissionSelectComponent}
                         format={formatPermissionLevel}
-                        parse={parsePermissionLevel} />
-                    <IconButton onClick={() => fields.remove(index)}>
+                        parse={parsePermissionLevel}
+                        onChange={onSave}
+                    />
+                    <IconButton onClick={() => { fields.remove(index); onSave(); }}>
                         <CloseIcon />
                     </IconButton>
                 </Grid>

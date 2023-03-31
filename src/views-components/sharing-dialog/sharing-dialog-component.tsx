@@ -80,16 +80,6 @@ export default (props: SharingDialogComponentProps) => {
     }
 
     React.useEffect(() => {
-        if (permissions && permissions.length !== permissionsCount) {
-            if (permissionsCount > permissions.length) {
-                setTimeout(onSave, 0);
-            }
-
-            setPermissionsCount(permissions.length);
-        }
-    }, [permissions, onSave, setPermissionsCount, permissionsCount])
-
-    React.useEffect(() => {
         if (!withExpiration) {
             setExpDate(undefined);
         } else {
@@ -127,7 +117,7 @@ export default (props: SharingDialogComponentProps) => {
                         <SharingPublicAccessForm />
                     </Grid>
                     <Grid item>
-                        <SharingManagementForm />
+                        <SharingManagementForm onSave={onSave} />
                     </Grid>
                 </Grid>
             }
