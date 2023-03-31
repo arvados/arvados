@@ -94,7 +94,6 @@ describe('Collection panel tests', function () {
 
                     cy.getAll('@banner', '@tooltips')
                         .then(([banner, tooltips]) => {
-                            console.log(tooltips)
                             cy.get('[data-cy=drag-and-drop]').upload(banner, 'banner.html', false);
                             cy.get('[data-cy=drag-and-drop]').upload(tooltips, 'tooltips.json', false);
                         });

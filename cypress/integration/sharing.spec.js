@@ -140,4 +140,25 @@ describe('Sharing tests', function () {
                 cy.testEditProjectOrCollection('main', mySharedWritableProject.name, newProjectName, newProjectDescription);
             });
     });
+
+    it('can share only when target users are present', () => {
+        const collName = `mySharedCollectionForUsers-${new Date().getTime()}`;
+        cy.createCollection(adminUser.token, {
+            name: collName,
+            owner_uuid: adminUser.uuid,
+        }).as('mySharedCollectionForUsers')
+
+        cy.getAll('@mySharedCollectionForUsers')
+            .then(function ([]) {
+                cy.loginAs(adminUser);
+                cy.get('[data-cy=project-panel]').contains(collName).rightclick();
+                cy.get('[data-cy=context-menu]').contains('Share').click();
+                cy.get('button').contains('Save changes').parent().should('be.disabled');
+                cy.get('[data-cy=invite-people-field] input').type('Anonymous');
+                cy.get('div[role=tooltip]').contains('anonymous').click();
+                cy.get('button').contains('Save changes').parent().should('not.be.disabled');
+                cy.get('[data-cy=invite-people-field] div[role=button]').contains('anonymous').parent().find('svg').click();
+                cy.get('button').contains('Save changes').parent().should('be.disabled');
+            });
+    });
 });

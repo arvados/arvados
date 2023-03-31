@@ -88,12 +88,19 @@ export const ParticipantSelect = connect()(
                     onSelect={this.handleSelect}
                     onDelete={this.props.onDelete && !this.props.disabled ? this.handleDelete : undefined}
                     onFocus={this.props.onFocus}
-                    onBlur={this.props.onBlur}
+                    onBlur={this.onBlur}
                     renderChipValue={this.renderChipValue}
                     renderChipTooltip={this.renderChipTooltip}
                     renderSuggestion={this.renderSuggestion}
                     disabled={this.props.disabled}/>
             );
+        }
+
+        onBlur = (e) => {
+            if (this.props.onBlur) {
+                this.props.onBlur(e);
+            }
+            setTimeout(() => this.setState({ value: '', suggestions: [] }), 200);
         }
 
         renderChipValue(chipValue: Participant) {
