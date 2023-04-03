@@ -14,11 +14,13 @@ export const SHARING_INVITATION_FORM_NAME = 'SHARING_INVITATION_FORM_NAME';
 export enum VisibilityLevel {
     PRIVATE = 'Private',
     SHARED = 'Shared',
+    ALL_USERS = 'All user accounts',
     PUBLIC = 'Public',
 }
 
 export interface SharingPublicAccessFormData {
     visibility: VisibilityLevel;
+    initialVisibility: VisibilityLevel;
     permissionUuid: string;
 }
 

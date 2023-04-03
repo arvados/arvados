@@ -21,7 +21,8 @@ export const SharingPublicAccessForm = compose(
     connect(
         (state: RootState) => {
             const { visibility } = getSharingPublicAccessFormData(state) || { visibility: VisibilityLevel.PRIVATE };
-            return { visibility };
+            const includePublic = state.auth.config.clusterConfig.Users.AnonymousUserToken.length > 0;
+            return { visibility, includePublic };
         }
     )
 )(SharingPublicAccessFormComponent);

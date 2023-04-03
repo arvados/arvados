@@ -72,7 +72,6 @@ export default (props: SharingDialogComponentProps) => {
     const [tabNr, setTabNr] = React.useState<number>(SharingDialogTab.PERMISSIONS);
     const [expDate, setExpDate] = React.useState<Date>();
     const [withExpiration, setWithExpiration] = React.useState<boolean>(false);
-    const [permissionsCount, setPermissionsCount] = React.useState<number>(0);
 
     // Sets up the dialog depending on the resource type
     if (!showTabs && tabNr !== SharingDialogTab.PERMISSIONS) {

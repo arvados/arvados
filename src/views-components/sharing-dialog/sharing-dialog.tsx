@@ -41,21 +41,21 @@ const mapStateToProps = (state: RootState, { working, ...props }: Props): Sharin
     const sharedResourceUuid = dialog?.data.resourceUuid || '';
     const sharingURLsDisabled = state.auth.config.clusterConfig.Workbench.DisableSharingURLsUI;
     return ({
-    ...props,
-    permissions: sharingManagementFormSelector(state, 'permissions'),
-    saveEnabled: hasChanges(state),
-    loading: working,
-    sharedResourceUuid,
-    sharingURLsDisabled,
-    sharingURLsNr: !sharingURLsDisabled
-        ? (filterResources( (resource: ApiClientAuthorization) =>
-            resource.kind === ResourceKind.API_CLIENT_AUTHORIZATION  &&
-            resource.scopes.includes(`GET /arvados/v1/collections/${sharedResourceUuid}`) &&
-            resource.scopes.includes(`GET /arvados/v1/collections/${sharedResourceUuid}/`) &&
-            resource.scopes.includes('GET /arvados/v1/keep_services/accessible')
-        )(state.resources) as ApiClientAuthorization[]).length
-        : 0,
-    privateAccess: getSharingPublicAccessFormData(state)?.visibility === VisibilityLevel.PRIVATE,
+        ...props,
+        permissions: sharingManagementFormSelector(state, 'permissions'),
+        saveEnabled: hasChanges(state),
+        loading: working,
+        sharedResourceUuid,
+        sharingURLsDisabled,
+        sharingURLsNr: !sharingURLsDisabled
+            ? (filterResources((resource: ApiClientAuthorization) =>
+                resource.kind === ResourceKind.API_CLIENT_AUTHORIZATION &&
+                resource.scopes.includes(`GET /arvados/v1/collections/${sharedResourceUuid}`) &&
+                resource.scopes.includes(`GET /arvados/v1/collections/${sharedResourceUuid}/`) &&
+                resource.scopes.includes('GET /arvados/v1/keep_services/accessible')
+            )(state.resources) as ApiClientAuthorization[]).length
+            : 0,
+        privateAccess: getSharingPublicAccessFormData(state)?.visibility === VisibilityLevel.PRIVATE,
     })
 };
 
@@ -63,7 +63,7 @@ const mapDispatchToProps = (dispatch: Dispatch, { ...props }: Props): SharingDia
     ...props,
     onClose: props.closeDialog,
     onSave: () => {
-        dispatch<any>(saveSharingDialogChanges);
+        setTimeout(() => dispatch<any>(saveSharingDialogChanges), 0);
     },
     onCreateSharingToken: (d: Date) => () => {
         dispatch<any>(createSharingToken(d));
@@ -78,4 +78,3 @@ export const SharingDialog = compose(
     connectSharingDialogProgress,
     connect(mapStateToProps, mapDispatchToProps)
 )(SharingDialogComponent);
-
