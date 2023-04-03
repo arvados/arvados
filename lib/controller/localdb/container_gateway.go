@@ -21,6 +21,7 @@ import (
 	"net/http"
 	"net/http/httputil"
 	"net/url"
+	"os"
 	"strings"
 
 	"git.arvados.org/arvados.git/lib/controller/rpc"
@@ -231,7 +232,7 @@ func (conn *Conn) serveEmptyDir(path string, w http.ResponseWriter, r *http.Requ
 		FileSystem: webdav.NewMemFS(),
 		LockSystem: webdavfs.NoLockSystem,
 		Logger: func(r *http.Request, err error) {
-			if err != nil {
+			if err != nil && !os.IsNotExist(err) {
 				ctxlog.FromContext(r.Context()).WithError(err).Info("webdav error on empty collection fs")
 			}
 		},

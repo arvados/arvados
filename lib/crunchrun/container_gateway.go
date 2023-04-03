@@ -326,8 +326,10 @@ func (gw *Gateway) handleLogsWebDAV(w http.ResponseWriter, r *http.Request) {
 }
 
 func (gw *Gateway) webdavLogger(r *http.Request, err error) {
-	if err != nil {
-		ctxlog.FromContext(r.Context()).WithError(err).Error("error reported by webdav handler")
+	if err != nil && !os.IsNotExist(err) {
+		ctxlog.FromContext(r.Context()).WithError(err).Info("error reported by webdav handler")
+	} else {
+		ctxlog.FromContext(r.Context()).WithError(err).Debug("webdav request log")
 	}
 }
 
