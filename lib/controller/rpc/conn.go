@@ -356,7 +356,7 @@ func (conn *Conn) ContainerLog(ctx context.Context, options arvados.ContainerLog
 // a running container. If the returned error is nil, the caller is
 // responsible for closing sshconn.Conn.
 func (conn *Conn) ContainerSSH(ctx context.Context, options arvados.ContainerSSHOptions) (sshconn arvados.ConnectionResponse, err error) {
-	u, err := conn.baseURL.Parse("/" + strings.Replace(arvados.EndpointContainerSSH.Path, "{uuid}", options.UUID, -1))
+	u, err := conn.baseURL.Parse("/" + strings.Replace(arvados.EndpointContainerSSHCompat.Path, "{uuid}", options.UUID, -1))
 	if err != nil {
 		err = fmt.Errorf("url.Parse: %w", err)
 		return
@@ -372,7 +372,7 @@ func (conn *Conn) ContainerSSH(ctx context.Context, options arvados.ContainerSSH
 // the controller. The caller should connect the returned resp.Conn to
 // a client-side yamux session.
 func (conn *Conn) ContainerGatewayTunnel(ctx context.Context, options arvados.ContainerGatewayTunnelOptions) (tunnelconn arvados.ConnectionResponse, err error) {
-	u, err := conn.baseURL.Parse("/" + strings.Replace(arvados.EndpointContainerGatewayTunnel.Path, "{uuid}", options.UUID, -1))
+	u, err := conn.baseURL.Parse("/" + strings.Replace(arvados.EndpointContainerGatewayTunnelCompat.Path, "{uuid}", options.UUID, -1))
 	if err != nil {
 		err = fmt.Errorf("url.Parse: %w", err)
 		return

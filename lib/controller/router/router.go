@@ -224,6 +224,13 @@ func (rtr *router) addRoutes() {
 			},
 		},
 		{
+			arvados.EndpointContainerSSHCompat,
+			func() interface{} { return &arvados.ContainerSSHOptions{} },
+			func(ctx context.Context, opts interface{}) (interface{}, error) {
+				return rtr.backend.ContainerSSH(ctx, *opts.(*arvados.ContainerSSHOptions))
+			},
+		},
+		{
 			// arvados-client built before commit
 			// bdc29d3129f6d75aa9ce0a24ffb849a272b06f08
 			// used GET with params in headers instead of
@@ -236,6 +243,13 @@ func (rtr *router) addRoutes() {
 		},
 		{
 			arvados.EndpointContainerGatewayTunnel,
+			func() interface{} { return &arvados.ContainerGatewayTunnelOptions{} },
+			func(ctx context.Context, opts interface{}) (interface{}, error) {
+				return rtr.backend.ContainerGatewayTunnel(ctx, *opts.(*arvados.ContainerGatewayTunnelOptions))
+			},
+		},
+		{
+			arvados.EndpointContainerGatewayTunnelCompat,
 			func() interface{} { return &arvados.ContainerGatewayTunnelOptions{} },
 			func(ctx context.Context, opts interface{}) (interface{}, error) {
 				return rtr.backend.ContainerGatewayTunnel(ctx, *opts.(*arvados.ContainerGatewayTunnelOptions))

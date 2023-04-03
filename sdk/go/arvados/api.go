@@ -50,8 +50,10 @@ var (
 	EndpointContainerLock                 = APIEndpoint{"POST", "arvados/v1/containers/{uuid}/lock", ""}
 	EndpointContainerUnlock               = APIEndpoint{"POST", "arvados/v1/containers/{uuid}/unlock", ""}
 	EndpointContainerLog                  = APIEndpoint{"GET", "arvados/v1/containers/{uuid}/log{path:|/.*}", ""}
-	EndpointContainerSSH                  = APIEndpoint{"POST", "arvados/v1/connect/{uuid}/ssh", ""}            // move to /containers after #17014 fixes routing
-	EndpointContainerGatewayTunnel        = APIEndpoint{"POST", "arvados/v1/connect/{uuid}/gateway_tunnel", ""} // move to /containers after #17014 fixes routing
+	EndpointContainerSSH                  = APIEndpoint{"POST", "arvados/v1/containers/{uuid}/ssh", ""}
+	EndpointContainerSSHCompat            = APIEndpoint{"POST", "arvados/v1/connect/{uuid}/ssh", ""} // for compatibility with arvados <2.7
+	EndpointContainerGatewayTunnel        = APIEndpoint{"POST", "arvados/v1/containers/{uuid}/gateway_tunnel", ""}
+	EndpointContainerGatewayTunnelCompat  = APIEndpoint{"POST", "arvados/v1/connect/{uuid}/gateway_tunnel", ""} // for compatibility with arvados <2.7
 	EndpointContainerRequestCreate        = APIEndpoint{"POST", "arvados/v1/container_requests", "container_request"}
 	EndpointContainerRequestUpdate        = APIEndpoint{"PATCH", "arvados/v1/container_requests/{uuid}", "container_request"}
 	EndpointContainerRequestGet           = APIEndpoint{"GET", "arvados/v1/container_requests/{uuid}", ""}
