@@ -60,4 +60,4 @@ const SharingPublicAccessFormComponent = ({ visibility, includePublic, onSave }:
 export default SharingPublicAccessFormComponent;
 
 const VisibilityLevelSelectComponent = ({ input, includePublic }: { includePublic: boolean } & WrappedFieldProps) =>
-    <VisibilityLevelSelect fullWidth disableUnderline {...input} includePublic={includePublic} />;
+    <VisibilityLevelSelect fullWidth disableUnderline includePublic={includePublic} {...input} />;

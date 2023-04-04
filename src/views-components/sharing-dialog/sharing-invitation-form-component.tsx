@@ -49,15 +49,15 @@ const StyledSharingInvitationFormComponent = withStyles(styles)(
             </Grid>
             <Grid data-cy="permission-select-field" item xs={4} container wrap='nowrap'>
                 <PermissionSelectField />
-                <Tooltip title="Add authorization">
-                    <IconButton onClick={onSave} disabled={!saveEnabled} color="primary" classes={{
-                        root: classes.addButtonRoot,
-                        colorPrimary: classes.addButtonPrimary,
-                        disabled: classes.addButtonDisabled
-                    }}>
+                <IconButton onClick={onSave} disabled={!saveEnabled} color="primary" classes={{
+                    root: classes.addButtonRoot,
+                    colorPrimary: classes.addButtonPrimary,
+                    disabled: classes.addButtonDisabled
+                }}>
+                    <Tooltip title="Add authorization">
                         <AddIcon />
-                    </IconButton>
-                </Tooltip>
+                    </Tooltip>
+                </IconButton>
             </Grid>
         </Grid >);
 

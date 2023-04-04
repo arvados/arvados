@@ -107,12 +107,14 @@ export class CommonService<T> {
         );
     }
 
-    delete(uuid: string): Promise<T> {
+    delete(uuid: string, showErrors?: boolean): Promise<T> {
         this.validateUuid(uuid);
         return CommonService.defaultResponse(
             this.serverApi
                 .delete(`/${this.resourceType}/${uuid}`),
-            this.actions
+            this.actions,
+            true, // mapKeys
+            showErrors
         );
     }
 

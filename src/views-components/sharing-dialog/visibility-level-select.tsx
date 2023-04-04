@@ -13,20 +13,20 @@ import { SelectItem } from './select-item';
 import { VisibilityLevel } from 'store/sharing-dialog/sharing-dialog-types';
 
 
-type VisibilityLevelSelectClasses = 'value';
+type VisibilityLevelSelectClasses = 'root';
 
 const VisibilityLevelSelectStyles: StyleRulesCallback<VisibilityLevelSelectClasses> = theme => ({
-    value: {
+    root: {
         marginLeft: theme.spacing.unit,
     }
 });
 export const VisibilityLevelSelect = withStyles(VisibilityLevelSelectStyles)(
-    ({ classes, ...props }: { includePublic: boolean } & SelectProps & WithStyles<VisibilityLevelSelectClasses>) =>
+    ({ classes, includePublic, ...props }: { includePublic: boolean } & SelectProps & WithStyles<VisibilityLevelSelectClasses>) =>
         <Select
             {...props}
             renderValue={renderPermissionItem}
             inputProps={{ classes }}>
-            {props.includePublic && <MenuItem value={VisibilityLevel.PUBLIC}>
+            {includePublic && <MenuItem value={VisibilityLevel.PUBLIC}>
                 {renderPermissionItem(VisibilityLevel.PUBLIC)}
             </MenuItem>}
             <MenuItem value={VisibilityLevel.ALL_USERS}>

@@ -49,8 +49,8 @@ export const connectSharingDialogProgress = withProgress(SHARING_DIALOG_NAME);
 
 export const saveSharingDialogChanges = async (dispatch: Dispatch, getState: () => RootState) => {
     dispatch(progressIndicatorActions.START_WORKING(SHARING_DIALOG_NAME));
-    await dispatch<any>(saveManagementChanges);
     await dispatch<any>(savePublicPermissionChanges);
+    await dispatch<any>(saveManagementChanges);
     await dispatch<any>(sendInvitations);
     dispatch(reset(SHARING_INVITATION_FORM_NAME));
     await dispatch<any>(loadSharingDialog);
@@ -236,7 +236,7 @@ const savePublicPermissionChanges = async (_: Dispatch, getState: () => RootStat
         // If visibility level changed, delete the previous link to public/all users.
         // On PRIVATE this link will be deleted by saveManagementChanges
         // so don't double delete (which would show an error dialog).
-        if (permissionUuid !== "" && visibility !== initialVisibility && visibility !== VisibilityLevel.PRIVATE) {
+        if (permissionUuid !== "" && visibility !== initialVisibility) {
             await permissionService.delete(permissionUuid);
         }
         if (visibility === VisibilityLevel.ALL_USERS) {
@@ -272,10 +272,16 @@ const saveManagementChanges = async (_: Dispatch, getState: () => RootState, { p
                 (a, b) => a.permissionUuid === b.permissionUuid
             );
 
-        const deletions = cancelledPermissions.map(({ permissionUuid }) =>
-            permissionService.delete(permissionUuid));
-        const updates = permissions.map(update =>
-            permissionService.update(update.permissionUuid, { name: update.permissions }));
+        const deletions = cancelledPermissions.map(async ({ permissionUuid }) => {
+            try {
+                await permissionService.delete(permissionUuid, false);
+            } catch (e) { }
+        });
+        const updates = permissions.map(async update => {
+            try {
+                await permissionService.update(update.permissionUuid, { name: update.permissions }, false);
+            } catch (e) { }
+        });
         await Promise.all([...deletions, ...updates]);
     }
 };

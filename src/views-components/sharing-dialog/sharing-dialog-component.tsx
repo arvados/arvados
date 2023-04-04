@@ -90,7 +90,7 @@ export default (props: SharingDialogComponentProps) => {
         {...{ open, onClose }}
         className="sharing-dialog"
         fullWidth
-        maxWidth='sm'
+        maxWidth='md'
         disableBackdropClick={saveEnabled}
         disableEscapeKeyDown={saveEnabled}>
         <DialogTitle>
