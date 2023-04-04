@@ -111,17 +111,18 @@ poll:
 				continue poll
 			}
 		}
-		anyNewData := false
+		newData := map[string]*bytes.Buffer{}
 		for _, fnm := range watching {
 			if size[fnm] > mark[fnm] {
-				anyNewData = true
-				_, n, err := lc.copyRange(ctx, ctrUUID, fnm, fmt.Sprintf("%d-", mark[fnm]), stdout)
+				newData[fnm] = &bytes.Buffer{}
+				_, n, err := lc.copyRange(ctx, ctrUUID, fnm, fmt.Sprintf("%d-", mark[fnm]), newData[fnm])
 				if err != nil {
 					fmt.Fprintln(stderr, err)
 				}
 				mark[fnm] += n
 			}
 		}
+		checkState := lc.display(stdout, stderr, watching, newData)
 		if containerFinished {
 			// If the caller specified a container request
 			// UUID and the container we were watching has
@@ -143,9 +144,12 @@ poll:
 			ctrUUID = newUUID
 			containerFinished = false
 			delay = 0
-		} else if anyNewData {
+			continue
+		}
+		if len(newData) > 0 {
 			delay = pollInterval
-		} else {
+		}
+		if len(newData) == 0 || checkState {
 			delay = delay * 2
 			if delay > pollInterval*5 {
 				delay = pollInterval * 5
@@ -208,6 +212,33 @@ func (lc *logsCommand) copyRange(ctx context.Context, uuid, fnm, byterange strin
 	}
 	n, err := io.Copy(out, resp.Body)
 	return rsize, n, err
+}
+
+// display some log data, formatted as desired (prefixing each line
+// with a tag indicating which file it came from, etc.).
+//
+// Return value is true if the log data contained a hint that it's a
+// good time to check whether the container is finished so we can
+// exit.
+func (lc *logsCommand) display(out, stderr io.Writer, watching []string, received map[string]*bytes.Buffer) bool {
+	checkState := false
+	for _, fnm := range watching {
+		buf := received[fnm]
+		if buf == nil || buf.Len() == 0 {
+			continue
+		}
+		for _, line := range bytes.Split(bytes.TrimSuffix(buf.Bytes(), []byte{'\n'}), []byte{'\n'}) {
+			_, err := fmt.Fprintf(out, "%-14s %s\n", fnm, line)
+			if err != nil {
+				fmt.Fprintln(stderr, err)
+			}
+			checkState = checkState ||
+				bytes.HasSuffix(line, []byte("Complete")) ||
+				bytes.HasSuffix(line, []byte("Cancelled")) ||
+				bytes.HasSuffix(line, []byte("Queued"))
+		}
+	}
+	return checkState
 }
 
 // shellCommand connects the terminal to an interactive shell on a

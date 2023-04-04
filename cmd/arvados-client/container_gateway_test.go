@@ -277,7 +277,7 @@ func (s *ClientSuite) TestContainerLog(c *check.C) {
 
 	for deadline := time.Now().Add(20 * time.Second); time.Now().Before(deadline) && !strings.Contains(stdout.String(), "--end--"); time.Sleep(time.Second / 10) {
 	}
-	c.Check(stdout.String(), check.Matches, `(?ms).*--end--\n.*`)
+	c.Check(stdout.String(), check.Matches, `(?ms).*stderr\.txt +--end--\n.*`)
 
 	mtxt, err := cfs.MarshalManifest(".")
 	c.Assert(err, check.IsNil)
