@@ -77,7 +77,7 @@ describe('Group manage tests', function() {
                 cy.get('[data-cy=invite-people-field] input').type("admin");
             });
         cy.get('[role=tooltip]').click();
-        cy.get('.sharing-dialog').contains('Save').click();
+        cy.get('.sharing-dialog').get('[data-cy=add-invited-people]').click();
         cy.get('.sharing-dialog').contains('Close').click();
 
         // Check that both users are present with appropriate permissions

@@ -53,7 +53,8 @@ const StyledSharingInvitationFormComponent = withStyles(styles)(
                     root: classes.addButtonRoot,
                     colorPrimary: classes.addButtonPrimary,
                     disabled: classes.addButtonDisabled
-                }}>
+                }}
+                    data-cy='add-invited-people'>
                     <Tooltip title="Add authorization">
                         <AddIcon />
                     </Tooltip>
