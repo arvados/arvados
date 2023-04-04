@@ -16,6 +16,7 @@ import {
     Checkbox,
     FormControlLabel,
     Typography,
+    Tooltip,
 } from '@material-ui/core';
 import {
     StyleRulesCallback,
@@ -39,6 +40,7 @@ import {
 import DateFnsUtils from "@date-io/date-fns";
 import moment from 'moment';
 import { SharingPublicAccessForm } from './sharing-public-access-form';
+import { AddIcon } from 'components/icon/icon';
 
 export interface SharingDialogDataProps {
     open: boolean;
@@ -48,6 +50,7 @@ export interface SharingDialogDataProps {
     sharingURLsNr: number;
     privateAccess: boolean;
     sharingURLsDisabled: boolean;
+    permissions: any[];
 }
 export interface SharingDialogActionProps {
     onClose: () => void;
@@ -63,7 +66,7 @@ export type SharingDialogComponentProps = SharingDialogDataProps & SharingDialog
 
 export default (props: SharingDialogComponentProps) => {
     const { open, loading, saveEnabled, sharedResourceUuid,
-        sharingURLsNr, privateAccess, sharingURLsDisabled,
+        sharingURLsNr, privateAccess, sharingURLsDisabled, permissions,
         onClose, onSave, onCreateSharingToken, refreshPermissions } = props;
     const showTabs = !sharingURLsDisabled && extractUuidObjectType(sharedResourceUuid) === ResourceObjectType.COLLECTION;
     const [tabNr, setTabNr] = React.useState<number>(SharingDialogTab.PERMISSIONS);
@@ -87,104 +90,97 @@ export default (props: SharingDialogComponentProps) => {
         {...{ open, onClose }}
         className="sharing-dialog"
         fullWidth
-        maxWidth='sm'
+        maxWidth='md'
         disableBackdropClick={saveEnabled}
         disableEscapeKeyDown={saveEnabled}>
         <DialogTitle>
             Sharing settings
         </DialogTitle>
-        { showTabs &&
-        <Tabs value={tabNr}
-            onChange={(_, tb) => {
-                if (tb === SharingDialogTab.PERMISSIONS) {
-                    refreshPermissions();
+        {showTabs &&
+            <Tabs value={tabNr}
+                onChange={(_, tb) => {
+                    if (tb === SharingDialogTab.PERMISSIONS) {
+                        refreshPermissions();
+                    }
+                    setTabNr(tb)
                 }
-                setTabNr(tb)}
-            }>
-            <Tab label="With users/groups" />
-            <Tab label={`Sharing URLs ${sharingURLsNr > 0 ? '('+sharingURLsNr+')' : ''}`} disabled={saveEnabled} />
-        </Tabs>
+                }>
+                <Tab label="With users/groups" />
+                <Tab label={`Sharing URLs ${sharingURLsNr > 0 ? '(' + sharingURLsNr + ')' : ''}`} disabled={saveEnabled} />
+            </Tabs>
         }
         <DialogContent>
-            { tabNr === SharingDialogTab.PERMISSIONS &&
-            <Grid container direction='column' spacing={24}>
-                <Grid item>
-                    <SharingPublicAccessForm />
+            {tabNr === SharingDialogTab.PERMISSIONS &&
+                <Grid container direction='column' spacing={24}>
+                    <Grid item>
+                        <SharingPublicAccessForm onSave={onSave} />
+                    </Grid>
+                    <Grid item>
+                        <SharingManagementForm onSave={onSave} />
+                    </Grid>
                 </Grid>
-                <Grid item>
-                    <SharingManagementForm />
-                </Grid>
-            </Grid>
             }
-            { tabNr === SharingDialogTab.URLS &&
-            <SharingURLsContent uuid={sharedResourceUuid} />
+            {tabNr === SharingDialogTab.URLS &&
+                <SharingURLsContent uuid={sharedResourceUuid} />
             }
         </DialogContent>
         <DialogActions>
             <Grid container spacing={8}>
-                { tabNr === SharingDialogTab.PERMISSIONS &&
-                <Grid item md={12}>
-                    <SharingInvitationForm />
-                </Grid>
+                {tabNr === SharingDialogTab.PERMISSIONS &&
+                    <Grid item md={12}>
+                        <SharingInvitationForm onSave={onSave} saveEnabled={saveEnabled} />
+                    </Grid>
                 }
-                { tabNr === SharingDialogTab.URLS && withExpiration && <>
-                <Grid item container direction='row' md={12}>
-                    <MuiPickersUtilsProvider utils={DateFnsUtils}>
-                        <BasePicker autoOk value={expDate} onChange={setExpDate}>
-                        {({ date, handleChange }) => (<>
-                            <Grid item md={6}>
-                                <Calendar date={date} minDate={new Date()} maxDate={undefined}
-                                    onChange={handleChange} />
-                            </Grid>
-                            <Grid item md={6}>
-                                <TimePickerView type="hours" date={date} ampm={false}
-                                    onMinutesChange={() => {}}
-                                    onSecondsChange={() => {}}
-                                    onHourChange={handleChange}
-                                />
-                            </Grid>
-                        </>)}
-                        </BasePicker>
-                    </MuiPickersUtilsProvider>
-                </Grid>
-                <Grid item md={12}>
-                    <Typography variant='caption' align='center'>
-                        Maximum expiration date may be limited by the cluster configuration.
-                    </Typography>
-                </Grid>
+                {tabNr === SharingDialogTab.URLS && withExpiration && <>
+                    <Grid item container direction='row' md={12}>
+                        <MuiPickersUtilsProvider utils={DateFnsUtils}>
+                            <BasePicker autoOk value={expDate} onChange={setExpDate}>
+                                {({ date, handleChange }) => (<>
+                                    <Grid item md={6}>
+                                        <Calendar date={date} minDate={new Date()} maxDate={undefined}
+                                            onChange={handleChange} />
+                                    </Grid>
+                                    <Grid item md={6}>
+                                        <TimePickerView type="hours" date={date} ampm={false}
+                                            onMinutesChange={() => { }}
+                                            onSecondsChange={() => { }}
+                                            onHourChange={handleChange}
+                                        />
+                                    </Grid>
+                                </>)}
+                            </BasePicker>
+                        </MuiPickersUtilsProvider>
+                    </Grid>
+                    <Grid item md={12}>
+                        <Typography variant='caption' align='center'>
+                            Maximum expiration date may be limited by the cluster configuration.
+                        </Typography>
+                    </Grid>
                 </>
                 }
-                { tabNr === SharingDialogTab.PERMISSIONS && !sharingURLsDisabled &&
+                {tabNr === SharingDialogTab.PERMISSIONS && !sharingURLsDisabled &&
                     privateAccess && sharingURLsNr > 0 &&
-                <Grid item md={12}>
-                    <Typography variant='caption' align='center' color='error'>
-                        Although there aren't specific permissions set, this is publicly accessible via Sharing URL(s).
-                    </Typography>
-                </Grid>
+                    <Grid item md={12}>
+                        <Typography variant='caption' align='center' color='error'>
+                            Although there aren't specific permissions set, this is publicly accessible via Sharing URL(s).
+                        </Typography>
+                    </Grid>
                 }
                 <Grid item xs />
-                { tabNr === SharingDialogTab.URLS && <>
-                <Grid item><FormControlLabel
-                    control={<Checkbox color="primary" checked={withExpiration}
-                        onChange={(e) => setWithExpiration(e.target.checked)} />}
-                    label="With expiration" />
-                </Grid>
-                <Grid item>
-                    <Button variant="contained" color="primary"
-                        disabled={expDate !== undefined && expDate <= new Date()}
-                        onClick={onCreateSharingToken(expDate)}>
-                        Create sharing URL
-                    </Button>
-                </Grid>
+                {tabNr === SharingDialogTab.URLS && <>
+                    <Grid item><FormControlLabel
+                        control={<Checkbox color="primary" checked={withExpiration}
+                            onChange={(e) => setWithExpiration(e.target.checked)} />}
+                        label="With expiration" />
+                    </Grid>
+                    <Grid item>
+                        <Button variant="contained" color="primary"
+                            disabled={expDate !== undefined && expDate <= new Date()}
+                            onClick={onCreateSharingToken(expDate)}>
+                            Create sharing URL
+                        </Button>
+                    </Grid>
                 </>
-                }
-                { tabNr === SharingDialogTab.PERMISSIONS &&
-                <Grid item>
-                    <Button onClick={onSave} variant="contained" color="primary"
-                        disabled={!saveEnabled}>
-                        Save changes
-                    </Button>
-                </Grid>
                 }
                 <Grid item>
                     <Button onClick={() => {

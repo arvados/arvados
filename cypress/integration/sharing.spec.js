@@ -77,7 +77,7 @@ describe('Sharing tests', function () {
             cy.get('[data-cy=invite-people-field]').find('input').type(activeUser.user.email);
             cy.get('[role=tooltip]').click();
             cy.get('@sharingDialog').within(() => {
-                cy.contains('Save changes').click();
+                cy.get('[data-cy=add-invited-people]').click();
                 cy.contains('Close').click();
             });
         });
@@ -95,7 +95,7 @@ describe('Sharing tests', function () {
             cy.get('[data-cy=invite-people-field]').find('input').type(activeUser.user.email);
             cy.get('[role=tooltip]').click();
             cy.get('@sharingDialog').within(() => {
-                cy.contains('Save changes').click();
+                cy.get('[data-cy=add-invited-people]').click();
                 cy.contains('Close').click();
             });
         });
@@ -153,12 +153,12 @@ describe('Sharing tests', function () {
                 cy.loginAs(adminUser);
                 cy.get('[data-cy=project-panel]').contains(collName).rightclick();
                 cy.get('[data-cy=context-menu]').contains('Share').click();
-                cy.get('button').contains('Save changes').parent().should('be.disabled');
+                cy.get('button').get('[data-cy=add-invited-people]').should('be.disabled');
                 cy.get('[data-cy=invite-people-field] input').type('Anonymous');
                 cy.get('div[role=tooltip]').contains('anonymous').click();
-                cy.get('button').contains('Save changes').parent().should('not.be.disabled');
+                cy.get('button').get('[data-cy=add-invited-people]').should('not.be.disabled');
                 cy.get('[data-cy=invite-people-field] div[role=button]').contains('anonymous').parent().find('svg').click();
-                cy.get('button').contains('Save changes').parent().should('be.disabled');
+                cy.get('button').get('[data-cy=add-invited-people]').should('be.disabled');
             });
     });
 });

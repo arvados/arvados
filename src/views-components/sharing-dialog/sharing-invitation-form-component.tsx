@@ -4,19 +4,63 @@
 
 import React from 'react';
 import { Field, WrappedFieldProps, FieldArray, WrappedFieldArrayProps } from 'redux-form';
-import { Grid, FormControl, InputLabel } from '@material-ui/core';
+import { Grid, FormControl, InputLabel, Tooltip, IconButton, StyleRulesCallback } from '@material-ui/core';
 import { PermissionSelect, parsePermissionLevel, formatPermissionLevel } from './permission-select';
 import { ParticipantSelect, Participant } from './participant-select';
+import { AddIcon } from 'components/icon/icon';
+import { WithStyles } from '@material-ui/core/styles';
+import withStyles from '@material-ui/core/styles/withStyles';
+import { ArvadosTheme } from 'common/custom-theme';
 
-export default () =>
-    <Grid container spacing={8}>
-        <Grid data-cy="invite-people-field" item xs={8}>
-            <InvitedPeopleField />
-        </Grid>
-        <Grid data-cy="permission-select-field" item xs={4}>
-            <PermissionSelectField />
-        </Grid>
-    </Grid>;
+type SharingStyles = 'root' | 'addButtonRoot' | 'addButtonPrimary' | 'addButtonDisabled';
+
+const styles: StyleRulesCallback<SharingStyles> = (theme: ArvadosTheme) => ({
+    root: {
+        padding: `${theme.spacing.unit}px 0`,
+    },
+    addButtonRoot: {
+        height: "36px",
+        width: "36px",
+        marginRight: "6px",
+        marginLeft: "6px",
+        marginTop: "12px",
+    },
+    addButtonPrimary: {
+        color: theme.palette.primary.contrastText,
+        background: theme.palette.primary.main,
+        "&:hover": {
+            background: theme.palette.primary.dark,
+        }
+    },
+    addButtonDisabled: {
+        background: 'none',
+    }
+});
+
+const SharingInvitationFormComponent = (props: { onSave: () => void, saveEnabled: boolean }) => <StyledSharingInvitationFormComponent onSave={props.onSave} saveEnabled={props.saveEnabled} />
+
+export default SharingInvitationFormComponent;
+
+const StyledSharingInvitationFormComponent = withStyles(styles)(
+    ({ onSave, saveEnabled, classes }: { onSave: () => void, saveEnabled: boolean } & WithStyles<SharingStyles>) =>
+        <Grid container spacing={8} wrap='nowrap' className={classes.root} >
+            <Grid data-cy="invite-people-field" item xs={8}>
+                <InvitedPeopleField />
+            </Grid>
+            <Grid data-cy="permission-select-field" item xs={4} container wrap='nowrap'>
+                <PermissionSelectField />
+                <IconButton onClick={onSave} disabled={!saveEnabled} color="primary" classes={{
+                    root: classes.addButtonRoot,
+                    colorPrimary: classes.addButtonPrimary,
+                    disabled: classes.addButtonDisabled
+                }}
+                    data-cy='add-invited-people'>
+                    <Tooltip title="Add authorization">
+                        <AddIcon />
+                    </Tooltip>
+                </IconButton>
+            </Grid>
+        </Grid >);
 
 const InvitedPeopleField = () =>
     <FieldArray

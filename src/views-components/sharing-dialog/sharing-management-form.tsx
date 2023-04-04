@@ -6,6 +6,10 @@ import { reduxForm } from 'redux-form';
 import SharingManagementFormComponent from './sharing-management-form-component';
 import { SHARING_MANAGEMENT_FORM_NAME } from 'store/sharing-dialog/sharing-dialog-types';
 
-export const SharingManagementForm = reduxForm(
+interface SaveProps {
+    onSave: () => void;
+}
+
+export const SharingManagementForm = reduxForm<{}, SaveProps>(
     { form: SHARING_MANAGEMENT_FORM_NAME }
 )(SharingManagementFormComponent);

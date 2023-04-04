@@ -13,21 +13,24 @@ import { SelectItem } from './select-item';
 import { VisibilityLevel } from 'store/sharing-dialog/sharing-dialog-types';
 
 
-type VisibilityLevelSelectClasses = 'value';
+type VisibilityLevelSelectClasses = 'root';
 
 const VisibilityLevelSelectStyles: StyleRulesCallback<VisibilityLevelSelectClasses> = theme => ({
-    value: {
+    root: {
         marginLeft: theme.spacing.unit,
     }
 });
 export const VisibilityLevelSelect = withStyles(VisibilityLevelSelectStyles)(
-    ({ classes, ...props }: SelectProps & WithStyles<VisibilityLevelSelectClasses>) =>
+    ({ classes, includePublic, ...props }: { includePublic: boolean } & SelectProps & WithStyles<VisibilityLevelSelectClasses>) =>
         <Select
             {...props}
             renderValue={renderPermissionItem}
             inputProps={{ classes }}>
-            <MenuItem value={VisibilityLevel.PUBLIC}>
+            {includePublic && <MenuItem value={VisibilityLevel.PUBLIC}>
                 {renderPermissionItem(VisibilityLevel.PUBLIC)}
+            </MenuItem>}
+            <MenuItem value={VisibilityLevel.ALL_USERS}>
+                {renderPermissionItem(VisibilityLevel.ALL_USERS)}
             </MenuItem>
             <MenuItem value={VisibilityLevel.SHARED}>
                 {renderPermissionItem(VisibilityLevel.SHARED)}
@@ -44,6 +47,8 @@ const getIcon = (value: string) => {
     switch (value) {
         case VisibilityLevel.PUBLIC:
             return Public;
+        case VisibilityLevel.ALL_USERS:
+            return Public;
         case VisibilityLevel.SHARED:
             return People;
         case VisibilityLevel.PRIVATE:
@@ -52,4 +57,3 @@ const getIcon = (value: string) => {
             return Lock;
     }
 };
-

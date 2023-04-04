@@ -27,6 +27,11 @@ describe("<SharingDialogComponent />", () => {
             config: {
                 keepWebServiceUrl: 'http://example.com/',
                 keepWebInlineServiceUrl: 'http://*.collections.example.com/',
+                clusterConfig: {
+                    Users: {
+                        AnonymousUserToken: ""
+                    }
+                }
             }
         }
         store = createStore(combineReducers({

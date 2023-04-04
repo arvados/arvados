@@ -103,6 +103,10 @@ export const getPublicGroupUuid = (state: RootState) => {
     const prefix = state.auth.localCluster;
     return `${prefix}-j7d0g-anonymouspublic`;
 };
+export const getAllUsersGroupUuid = (state: RootState) => {
+    const prefix = state.auth.localCluster;
+    return `${prefix}-j7d0g-fffffffffffffff`;
+};
 
 export const showWorkflowDetails = (uuid: string) =>
     propertiesActions.SET_PROPERTY({ key: WORKFLOW_PANEL_DETAILS_UUID, value: uuid });
