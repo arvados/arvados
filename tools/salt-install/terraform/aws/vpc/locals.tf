@@ -21,7 +21,7 @@ locals {
   }
   aliases = {
     controller: ["ws"]
-    workbench: ["workbench2", "webshell", "keep", "download", "*.collections"]
+    workbench: ["workbench2", "webshell", "keep", "download", "prometheus", "grafana", "*.collections"]
   }
   cname_by_host = flatten([
     for host, aliases in local.aliases : [
@@ -32,4 +32,3 @@ locals {
     ]
   ])
 }
-

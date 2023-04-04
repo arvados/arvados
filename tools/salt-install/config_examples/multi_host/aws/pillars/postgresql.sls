@@ -5,6 +5,8 @@
 
 ### POSTGRESQL
 postgres:
+  pkgs_extra:
+    - postgresql-contrib
   use_upstream_repo: true
   version: '12'
   postgresconf: |-
@@ -20,19 +22,14 @@ postgres:
     __CLUSTER___arvados:
       ensure: present
       password: "__DATABASE_PASSWORD__"
-
-  # tablespaces:
-  #   arvados_tablespace:
-  #     directory: /path/to/some/tbspace/arvados_tbsp
-  #     owner: arvados
-
+    prometheus:
+      ensure: present
   databases:
     __CLUSTER___arvados:
       owner: __CLUSTER___arvados
       template: template0
       lc_ctype: en_US.utf8
       lc_collate: en_US.utf8
-      # tablespace: arvados_tablespace
       schemas:
         public:
           owner: __CLUSTER___arvados
