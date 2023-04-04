@@ -439,7 +439,7 @@ func (conn *Conn) findGateway(ctx context.Context, ctr arvados.Container, noForw
 		return func() (net.Conn, string, string, error) {
 			rawconn, err := (&net.Dialer{}).DialContext(ctx, "tcp", ctr.GatewayAddress)
 			if err != nil {
-				err = httpserver.ErrorWithStatus(err, http.StatusServiceUnavailable)
+				return nil, "", "", httpserver.ErrorWithStatus(err, http.StatusServiceUnavailable)
 			}
 			return conn.dialGatewayTLS(ctx, ctr, rawconn)
 		}, nil, nil
@@ -461,7 +461,7 @@ func (conn *Conn) findGateway(ctx context.Context, ctr arvados.Container, noForw
 		return func() (net.Conn, string, string, error) {
 			rawconn, err := tunnel.Open()
 			if err != nil {
-				err = httpserver.ErrorWithStatus(err, http.StatusServiceUnavailable)
+				return nil, "", "", httpserver.ErrorWithStatus(err, http.StatusServiceUnavailable)
 			}
 			return conn.dialGatewayTLS(ctx, ctr, rawconn)
 		}, nil, nil
