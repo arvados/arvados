@@ -55,12 +55,13 @@ var (
 		"virtual_machine":          cli.APICall,
 		"workflow":                 cli.APICall,
 
-		"mount":                mount.Command,
-		"deduplication-report": deduplicationreport.Command,
-		"costanalyzer":         costanalyzer.Command,
-		"shell":                shellCommand{},
 		"connect-ssh":          connectSSHCommand{},
+		"costanalyzer":         costanalyzer.Command,
+		"deduplication-report": deduplicationreport.Command,
 		"diagnostics":          diagnostics.Command{},
+		"logs":                 logsCommand{},
+		"mount":                mount.Command,
+		"shell":                shellCommand{},
 		"sudo":                 sudoCommand{},
 	})
 )

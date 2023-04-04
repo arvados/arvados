@@ -340,6 +340,12 @@ func (conn *Conn) ContainerUnlock(ctx context.Context, options arvados.GetOption
 }
 
 func (conn *Conn) ContainerLog(ctx context.Context, options arvados.ContainerLogOptions) (resp http.Handler, err error) {
+	tokens, err := conn.tokenProvider(ctx)
+	if err != nil {
+		return nil, err
+	} else if len(tokens) < 1 {
+		return nil, httpserver.ErrorWithStatus(errors.New("unauthorized"), http.StatusUnauthorized)
+	}
 	proxy := &httputil.ReverseProxy{
 		Transport: conn.httpClient.Transport,
 		Director: func(r *http.Request) {
@@ -347,6 +353,7 @@ func (conn *Conn) ContainerLog(ctx context.Context, options arvados.ContainerLog
 			u.Path = r.URL.Path
 			u.RawQuery = fmt.Sprintf("no_forward=%v", options.NoForward)
 			r.URL = &u
+			r.Header.Set("Authorization", "Bearer "+tokens[0])
 		},
 	}
 	return proxy, nil
