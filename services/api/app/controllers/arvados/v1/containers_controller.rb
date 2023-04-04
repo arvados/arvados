@@ -31,7 +31,7 @@ class Arvados::V1::ContainersController < ApplicationController
   def update
     # Lock containers table to avoid deadlock in cascading priority update (see #20240)
     Container.transaction do
-      ActiveRecord::Base.connection.execute "LOCK TABLE containers IN SHARE ROW EXCLUSIVE MODE"
+      ActiveRecord::Base.connection.execute "LOCK TABLE containers IN EXCLUSIVE MODE"
       super
     end
   end
@@ -63,7 +63,7 @@ class Arvados::V1::ContainersController < ApplicationController
   def update_priority
     # Lock containers table to avoid deadlock in cascading priority update (see #20240)
     Container.transaction do
-      ActiveRecord::Base.connection.execute "LOCK TABLE containers IN SHARE ROW EXCLUSIVE MODE"
+      ActiveRecord::Base.connection.execute "LOCK TABLE containers IN EXCLUSIVE MODE"
       @object.reload(lock: true)
       @object.update_priority!
       show
