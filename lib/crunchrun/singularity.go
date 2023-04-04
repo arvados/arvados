@@ -6,6 +6,7 @@ package crunchrun
 
 import (
 	"bytes"
+	"context"
 	"errors"
 	"fmt"
 	"io/ioutil"
@@ -21,7 +22,6 @@ import (
 	"time"
 
 	"git.arvados.org/arvados.git/sdk/go/arvados"
-	"golang.org/x/net/context"
 )
 
 type singularityExecutor struct {

@@ -55,12 +55,12 @@ func guessAndParse(k, v string) (interface{}, error) {
 	// foo=["bar","baz"]?
 }
 
-// Parse req as an Arvados V1 API request and return the request
-// parameters.
+// Return a map of incoming HTTP request parameters. Also load
+// parameters into opts, unless opts is nil.
 //
 // If the request has a parameter whose name is attrsKey (e.g.,
 // "collection"), it is renamed to "attrs".
-func (rtr *router) loadRequestParams(req *http.Request, attrsKey string) (map[string]interface{}, error) {
+func (rtr *router) loadRequestParams(req *http.Request, attrsKey string, opts interface{}) (map[string]interface{}, error) {
 	// Here we call ParseForm and ParseMultipartForm explicitly
 	// (even though ParseMultipartForm calls ParseForm if
 	// necessary) to ensure we catch errors encountered in
@@ -150,6 +150,24 @@ func (rtr *router) loadRequestParams(req *http.Request, attrsKey string) (map[st
 			delete(params, "order")
 		} else {
 			params["order"] = strings.Split(order, ",")
+		}
+	}
+
+	if opts != nil {
+		// Load all path, query, and form params into opts.
+		err = rtr.transcode(params, opts)
+		if err != nil {
+			return nil, fmt.Errorf("transcode: %w", err)
+		}
+
+		// Special case: if opts has Method or Header fields, load the
+		// request method/header.
+		err = rtr.transcode(struct {
+			Method string
+			Header http.Header
+		}{req.Method, req.Header}, opts)
+		if err != nil {
+			return nil, fmt.Errorf("transcode: %w", err)
 		}
 	}
 

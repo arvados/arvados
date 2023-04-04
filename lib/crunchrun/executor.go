@@ -4,10 +4,10 @@
 package crunchrun
 
 import (
+	"context"
 	"io"
 
 	"git.arvados.org/arvados.git/sdk/go/arvados"
-	"golang.org/x/net/context"
 )
 
 type bindmount struct {

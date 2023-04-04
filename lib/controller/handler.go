@@ -147,6 +147,7 @@ func (h *Handler) setup() {
 
 	hs := http.NotFoundHandler()
 	hs = prepend(hs, h.proxyRailsAPI)
+	hs = prepend(hs, h.routeContainerEndpoints(rtr))
 	hs = prepend(hs, h.limitLogCreateRequests)
 	hs = h.setupProxyRemoteCluster(hs)
 	hs = prepend(hs, oidcAuthorizer.Middleware)
@@ -203,6 +204,24 @@ func (h *Handler) localClusterRequest(req *http.Request) (*http.Response, error)
 		client = h.insecureClient
 	}
 	return h.proxy.Do(req, urlOut, client)
+}
+
+// Route /arvados/v1/containers/{uuid}/log*, .../ssh, and
+// .../gateway_tunnel to rtr, pass everything else to next.
+//
+// (http.ServeMux doesn't let us route these without also routing
+// everything under /containers/, which we don't want yet.)
+func (h *Handler) routeContainerEndpoints(rtr http.Handler) middlewareFunc {
+	return func(w http.ResponseWriter, req *http.Request, next http.Handler) {
+		trim := strings.TrimPrefix(req.URL.Path, "/arvados/v1/containers/")
+		if trim != req.URL.Path && (strings.Index(trim, "/log") == 27 ||
+			strings.Index(trim, "/ssh") == 27 ||
+			strings.Index(trim, "/gateway_tunnel") == 27) {
+			rtr.ServeHTTP(w, req)
+		} else {
+			next.ServeHTTP(w, req)
+		}
+	}
 }
 
 func (h *Handler) limitLogCreateRequests(w http.ResponseWriter, req *http.Request, next http.Handler) {

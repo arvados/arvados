@@ -105,9 +105,11 @@ Required arguments are displayed in %{background:#ccffcc}green%.
 
 Supports federated @get@ and @list@.
 
-h2(#create). create
+h3(#create). create
 
 Create a new Container.
+
+This API requires admin privileges. In normal operation, it should not be used at all.
 
 Arguments:
 
@@ -161,3 +163,26 @@ Get the api_client_authorization record indicated by this container's auth_uuid,
 table(table table-bordered table-condensed).
 |_. Argument |_. Type |_. Description |_. Location |_. Example |
 {background:#ccffcc}.|uuid|string||path||
+
+h3. log
+
+Get container log data using WebDAV methods.
+
+This API retrieves data from the container's log collection. It can be used at any time in the container lifecycle.
+* While the container is @Queued@ or @Locked@ it returns an empty directory.
+* While the container is @Running@ it returns real-time logging data.
+* While the container is @Complete@ or @Cancelled@ it returns the final log collection.
+
+This API also supports the @Range@ request header, so it can be used to poll for and retrieve logs while the container is running.
+
+Arguments:
+
+table(table table-bordered table-condensed).
+|_. Argument |_. Type |_. Description |_. Location |_. Example |
+|method|string|Read-only WebDAV method|HTTP method|@GET@, @OPTIONS@, @PROPFIND@|
+{background:#ccffcc}.|uuid|string|The UUID of the Container in question.|path||
+|path|string|Path to a file in the log collection.|path|@/stderr.txt@|
+
+Examples:
+* @GET /arvados/v1/containers/zzzzz-dz642-0123456789abcde/log/stderr.txt@
+* @PROPFIND /arvados/v1/containers/zzzzz-dz642-0123456789abcde/log/@

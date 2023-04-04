@@ -22,7 +22,7 @@ require (
 	github.com/go-ldap/ldap v3.0.3+incompatible
 	github.com/gogo/protobuf v1.3.2
 	github.com/google/shlex v0.0.0-20191202100458-e7afc7fbc510
-	github.com/gorilla/mux v1.7.2
+	github.com/gorilla/mux v1.8.0
 	github.com/hashicorp/go-retryablehttp v0.7.2
 	github.com/hashicorp/golang-lru v0.5.1
 	github.com/hashicorp/yamux v0.0.0-20211028200310-0bc27b27de87

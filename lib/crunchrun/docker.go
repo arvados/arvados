@@ -4,6 +4,7 @@
 package crunchrun
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -17,7 +18,6 @@ import (
 	dockertypes "github.com/docker/docker/api/types"
 	dockercontainer "github.com/docker/docker/api/types/container"
 	dockerclient "github.com/docker/docker/client"
-	"golang.org/x/net/context"
 )
 
 // Docker daemon won't let you set a limit less than ~10 MiB

@@ -212,7 +212,7 @@ func (s *CollectionSuite) expectFiles(c *check.C, coll arvados.Collection, expec
 	c.Assert(err, check.IsNil)
 	kc, err := keepclient.MakeKeepClient(ac)
 	c.Assert(err, check.IsNil)
-	cfs, err := coll.FileSystem(arvados.NewClientFromEnv(), kc)
+	cfs, err := coll.FileSystem(client, kc)
 	c.Assert(err, check.IsNil)
 	var found []string
 	nonemptydirs := map[string]bool{}

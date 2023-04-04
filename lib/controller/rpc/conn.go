@@ -16,6 +16,7 @@ import (
 	"io/ioutil"
 	"net"
 	"net/http"
+	"net/http/httputil"
 	"net/url"
 	"strconv"
 	"strings"
@@ -338,11 +339,24 @@ func (conn *Conn) ContainerUnlock(ctx context.Context, options arvados.GetOption
 	return resp, err
 }
 
+func (conn *Conn) ContainerLog(ctx context.Context, options arvados.ContainerLogOptions) (resp http.Handler, err error) {
+	proxy := &httputil.ReverseProxy{
+		Transport: conn.httpClient.Transport,
+		Director: func(r *http.Request) {
+			u := conn.baseURL
+			u.Path = r.URL.Path
+			u.RawQuery = fmt.Sprintf("no_forward=%v", options.NoForward)
+			r.URL = &u
+		},
+	}
+	return proxy, nil
+}
+
 // ContainerSSH returns a connection to the out-of-band SSH server for
 // a running container. If the returned error is nil, the caller is
 // responsible for closing sshconn.Conn.
 func (conn *Conn) ContainerSSH(ctx context.Context, options arvados.ContainerSSHOptions) (sshconn arvados.ConnectionResponse, err error) {
-	u, err := conn.baseURL.Parse("/" + strings.Replace(arvados.EndpointContainerSSH.Path, "{uuid}", options.UUID, -1))
+	u, err := conn.baseURL.Parse("/" + strings.Replace(arvados.EndpointContainerSSHCompat.Path, "{uuid}", options.UUID, -1))
 	if err != nil {
 		err = fmt.Errorf("url.Parse: %w", err)
 		return
@@ -358,7 +372,7 @@ func (conn *Conn) ContainerSSH(ctx context.Context, options arvados.ContainerSSH
 // the controller. The caller should connect the returned resp.Conn to
 // a client-side yamux session.
 func (conn *Conn) ContainerGatewayTunnel(ctx context.Context, options arvados.ContainerGatewayTunnelOptions) (tunnelconn arvados.ConnectionResponse, err error) {
-	u, err := conn.baseURL.Parse("/" + strings.Replace(arvados.EndpointContainerGatewayTunnel.Path, "{uuid}", options.UUID, -1))
+	u, err := conn.baseURL.Parse("/" + strings.Replace(arvados.EndpointContainerGatewayTunnelCompat.Path, "{uuid}", options.UUID, -1))
 	if err != nil {
 		err = fmt.Errorf("url.Parse: %w", err)
 		return

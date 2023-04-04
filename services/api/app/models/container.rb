@@ -645,7 +645,7 @@ class Container < ArvadosModel
     # each requesting CR.
     return if self.final? || !saved_change_to_log?
     leave_modified_by_user_alone do
-      ContainerRequest.where(container_uuid: self.uuid).each do |cr|
+      ContainerRequest.where(container_uuid: self.uuid, state: ContainerRequest::Committed).each do |cr|
         cr.update_collections(container: self, collections: ['log'])
         cr.save!
       end

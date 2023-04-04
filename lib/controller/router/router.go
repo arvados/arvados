@@ -192,6 +192,70 @@ func (rtr *router) addRoutes() {
 			},
 		},
 		{
+			arvados.EndpointContainerLock,
+			func() interface{} {
+				return &arvados.GetOptions{Select: []string{"uuid", "state", "priority", "auth_uuid", "locked_by_uuid"}}
+			},
+			func(ctx context.Context, opts interface{}) (interface{}, error) {
+				return rtr.backend.ContainerLock(ctx, *opts.(*arvados.GetOptions))
+			},
+		},
+		{
+			arvados.EndpointContainerUnlock,
+			func() interface{} {
+				return &arvados.GetOptions{Select: []string{"uuid", "state", "priority", "auth_uuid", "locked_by_uuid"}}
+			},
+			func(ctx context.Context, opts interface{}) (interface{}, error) {
+				return rtr.backend.ContainerUnlock(ctx, *opts.(*arvados.GetOptions))
+			},
+		},
+		{
+			arvados.EndpointContainerLog,
+			func() interface{} { return &arvados.ContainerLogOptions{} },
+			func(ctx context.Context, opts interface{}) (interface{}, error) {
+				return rtr.backend.ContainerLog(ctx, *opts.(*arvados.ContainerLogOptions))
+			},
+		},
+		{
+			arvados.EndpointContainerSSH,
+			func() interface{} { return &arvados.ContainerSSHOptions{} },
+			func(ctx context.Context, opts interface{}) (interface{}, error) {
+				return rtr.backend.ContainerSSH(ctx, *opts.(*arvados.ContainerSSHOptions))
+			},
+		},
+		{
+			arvados.EndpointContainerSSHCompat,
+			func() interface{} { return &arvados.ContainerSSHOptions{} },
+			func(ctx context.Context, opts interface{}) (interface{}, error) {
+				return rtr.backend.ContainerSSH(ctx, *opts.(*arvados.ContainerSSHOptions))
+			},
+		},
+		{
+			// arvados-client built before commit
+			// bdc29d3129f6d75aa9ce0a24ffb849a272b06f08
+			// used GET with params in headers instead of
+			// POST form
+			arvados.APIEndpoint{"GET", "arvados/v1/connect/{uuid}/ssh", ""},
+			func() interface{} { return &arvados.ContainerSSHOptions{} },
+			func(ctx context.Context, opts interface{}) (interface{}, error) {
+				return nil, httpError(http.StatusGone, fmt.Errorf("API endpoint is obsolete -- please upgrade your arvados-client program"))
+			},
+		},
+		{
+			arvados.EndpointContainerGatewayTunnel,
+			func() interface{} { return &arvados.ContainerGatewayTunnelOptions{} },
+			func(ctx context.Context, opts interface{}) (interface{}, error) {
+				return rtr.backend.ContainerGatewayTunnel(ctx, *opts.(*arvados.ContainerGatewayTunnelOptions))
+			},
+		},
+		{
+			arvados.EndpointContainerGatewayTunnelCompat,
+			func() interface{} { return &arvados.ContainerGatewayTunnelOptions{} },
+			func(ctx context.Context, opts interface{}) (interface{}, error) {
+				return rtr.backend.ContainerGatewayTunnel(ctx, *opts.(*arvados.ContainerGatewayTunnelOptions))
+			},
+		},
+		{
 			arvados.EndpointContainerRequestCreate,
 			func() interface{} { return &arvados.CreateOptions{} },
 			func(ctx context.Context, opts interface{}) (interface{}, error) {
@@ -224,49 +288,6 @@ func (rtr *router) addRoutes() {
 			func() interface{} { return &arvados.DeleteOptions{} },
 			func(ctx context.Context, opts interface{}) (interface{}, error) {
 				return rtr.backend.ContainerRequestDelete(ctx, *opts.(*arvados.DeleteOptions))
-			},
-		},
-		{
-			arvados.EndpointContainerLock,
-			func() interface{} {
-				return &arvados.GetOptions{Select: []string{"uuid", "state", "priority", "auth_uuid", "locked_by_uuid"}}
-			},
-			func(ctx context.Context, opts interface{}) (interface{}, error) {
-				return rtr.backend.ContainerLock(ctx, *opts.(*arvados.GetOptions))
-			},
-		},
-		{
-			arvados.EndpointContainerUnlock,
-			func() interface{} {
-				return &arvados.GetOptions{Select: []string{"uuid", "state", "priority", "auth_uuid", "locked_by_uuid"}}
-			},
-			func(ctx context.Context, opts interface{}) (interface{}, error) {
-				return rtr.backend.ContainerUnlock(ctx, *opts.(*arvados.GetOptions))
-			},
-		},
-		{
-			arvados.EndpointContainerSSH,
-			func() interface{} { return &arvados.ContainerSSHOptions{} },
-			func(ctx context.Context, opts interface{}) (interface{}, error) {
-				return rtr.backend.ContainerSSH(ctx, *opts.(*arvados.ContainerSSHOptions))
-			},
-		},
-		{
-			// arvados-client built before commit
-			// bdc29d3129f6d75aa9ce0a24ffb849a272b06f08
-			// used GET with params in headers instead of
-			// POST form
-			arvados.APIEndpoint{"GET", "arvados/v1/connect/{uuid}/ssh", ""},
-			func() interface{} { return &arvados.ContainerSSHOptions{} },
-			func(ctx context.Context, opts interface{}) (interface{}, error) {
-				return nil, httpError(http.StatusGone, fmt.Errorf("API endpoint is obsolete -- please upgrade your arvados-client program"))
-			},
-		},
-		{
-			arvados.EndpointContainerGatewayTunnel,
-			func() interface{} { return &arvados.ContainerGatewayTunnelOptions{} },
-			func(ctx context.Context, opts interface{}) (interface{}, error) {
-				return rtr.backend.ContainerGatewayTunnel(ctx, *opts.(*arvados.ContainerGatewayTunnelOptions))
 			},
 		},
 		{
@@ -585,9 +606,23 @@ func (rtr *router) addRoutes() {
 		rtr.addRoute(route.endpoint, route.defaultOpts, exec)
 	}
 	rtr.mux.NotFoundHandler = http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+		if req.Method == "OPTIONS" {
+			// For non-webdav endpoints, return an empty
+			// response with the CORS headers we already
+			// added in ServeHTTP.
+			w.WriteHeader(http.StatusOK)
+			return
+		}
 		httpserver.Errors(w, []string{"API endpoint not found"}, http.StatusNotFound)
 	})
 	rtr.mux.MethodNotAllowedHandler = http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+		if req.Method == "OPTIONS" {
+			// For non-webdav endpoints, return an empty
+			// response with the CORS headers we already
+			// added in ServeHTTP.
+			w.WriteHeader(http.StatusOK)
+			return
+		}
 		httpserver.Errors(w, []string{"API endpoint not found"}, http.StatusMethodNotAllowed)
 	})
 }
@@ -602,22 +637,20 @@ func (rtr *router) addRoute(endpoint arvados.APIEndpoint, defaultOpts func() int
 	if alt, ok := altMethod[endpoint.Method]; ok {
 		methods = append(methods, alt)
 	}
+	if strings.HasSuffix(endpoint.Path, ".*}") {
+		// webdav methods
+		methods = append(methods, "OPTIONS", "PROPFIND")
+	}
 	rtr.mux.Methods(methods...).Path("/" + endpoint.Path).HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 		logger := ctxlog.FromContext(req.Context())
-		params, err := rtr.loadRequestParams(req, endpoint.AttrsKey)
+		opts := defaultOpts()
+		params, err := rtr.loadRequestParams(req, endpoint.AttrsKey, opts)
 		if err != nil {
 			logger.WithFields(logrus.Fields{
 				"req":      req,
 				"method":   endpoint.Method,
 				"endpoint": endpoint,
 			}).WithError(err).Debug("error loading request params")
-			rtr.sendError(w, err)
-			return
-		}
-		opts := defaultOpts()
-		err = rtr.transcode(params, opts)
-		if err != nil {
-			logger.WithField("params", params).WithError(err).Debugf("error transcoding params to %T", opts)
 			rtr.sendError(w, err)
 			return
 		}
@@ -643,11 +676,8 @@ func (rtr *router) addRoute(endpoint arvados.APIEndpoint, defaultOpts func() int
 		}
 		ctx := auth.NewContext(req.Context(), creds)
 		ctx = arvados.ContextWithRequestID(ctx, req.Header.Get("X-Request-Id"))
-		logger.WithFields(logrus.Fields{
-			"apiEndpoint": endpoint,
-			"apiOptsType": fmt.Sprintf("%T", opts),
-			"apiOpts":     opts,
-		}).Debug("exec")
+		req = req.WithContext(ctx)
+
 		// Extract the token UUIDs (or a placeholder for v1 tokens)
 		var tokenUUIDs []string
 		for _, t := range creds.Tokens {
@@ -664,7 +694,13 @@ func (rtr *router) addRoute(endpoint arvados.APIEndpoint, defaultOpts func() int
 				tokenUUIDs = append(tokenUUIDs, "v1 token ending in "+end)
 			}
 		}
-		httpserver.SetResponseLogFields(req.Context(), logrus.Fields{"tokenUUIDs": tokenUUIDs})
+		httpserver.SetResponseLogFields(ctx, logrus.Fields{"tokenUUIDs": tokenUUIDs})
+
+		logger.WithFields(logrus.Fields{
+			"apiEndpoint": endpoint,
+			"apiOptsType": fmt.Sprintf("%T", opts),
+			"apiOpts":     opts,
+		}).Debug("exec")
 		resp, err := exec(ctx, opts)
 		if err != nil {
 			logger.WithError(err).Debugf("returning error type %T", err)
@@ -680,12 +716,10 @@ func (rtr *router) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	case "login", "logout", "auth":
 	default:
 		w.Header().Set("Access-Control-Allow-Origin", "*")
-		w.Header().Set("Access-Control-Allow-Methods", "GET, HEAD, PUT, POST, PATCH, DELETE")
-		w.Header().Set("Access-Control-Allow-Headers", "Authorization, Content-Type, X-Http-Method-Override")
+		w.Header().Set("Access-Control-Allow-Methods", "GET, HEAD, OPTIONS, PROPFIND, PUT, POST, PATCH, DELETE")
+		w.Header().Set("Access-Control-Allow-Headers", "Authorization, Content-Type, Range, X-Http-Method-Override")
+		w.Header().Set("Access-Control-Expose-Headers", "Content-Range")
 		w.Header().Set("Access-Control-Max-Age", "86486400")
-	}
-	if r.Method == "OPTIONS" {
-		return
 	}
 	if r.Body != nil {
 		// Wrap r.Body in a http.MaxBytesReader(), otherwise

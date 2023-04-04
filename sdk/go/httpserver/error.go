@@ -10,6 +10,11 @@ import (
 	"net/http"
 )
 
+type HTTPStatusError interface {
+	error
+	HTTPStatus() int
+}
+
 func Errorf(status int, tmpl string, args ...interface{}) error {
 	return errorWithStatus{fmt.Errorf(tmpl, args...), status}
 }

@@ -144,6 +144,11 @@ func (s *IntegrationSuite) testCadaver(c *check.C, password string, pathFunc fun
 		},
 		{
 			path:  writePath,
+			cmd:   "mkcol newdir0/\n",
+			match: `(?ms).*Creating .* succeeded.*`,
+		},
+		{
+			path:  writePath,
 			cmd:   "move testfile newdir0/\n",
 			match: `(?ms).*Moving .* succeeded.*`,
 		},
