@@ -69,6 +69,10 @@ func (lc *logsCommand) tailf(target string, stdout, stderr io.Writer, pollInterv
 	if err != nil {
 		return err
 	}
+	err = lc.checkAPISupport(ctx, ctrUUID)
+	if err != nil {
+		return err
+	}
 	fmt.Fprintln(stderr, "connecting to container", ctrUUID)
 
 	var (
@@ -180,6 +184,43 @@ poll:
 	return nil
 }
 
+func (lc *logsCommand) srcURL(uuid, fnm string) string {
+	u := url.URL{
+		Scheme: "https",
+		Host:   lc.ac.APIHost,
+		Path:   "/arvados/v1/containers/" + uuid + "/log/" + fnm,
+	}
+	return u.String()
+}
+
+// Check whether the API is new enough to support the
+// .../containers/{uuid}/log endpoint.
+//
+// Older versions return 200 for an OPTIONS request at the .../logs/
+// API endpoint, but the response header does not have a "Dav" header.
+//
+// Note an error response with no "Dav" header is not taken to
+// indicate lack of API support. It may come from a new server that
+// has a configuration or networking problem.
+func (lc *logsCommand) checkAPISupport(ctx context.Context, uuid string) error {
+	ctx, cancel := context.WithDeadline(ctx, time.Now().Add(20*time.Second))
+	defer cancel()
+	req, err := http.NewRequestWithContext(ctx, "OPTIONS", lc.srcURL(uuid, ""), nil)
+	if err != nil {
+		return err
+	}
+	req.Header.Set("Authorization", "Bearer "+lc.ac.AuthToken)
+	resp, err := lc.ac.Client.Do(req)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode == http.StatusOK && resp.Header.Get("Dav") == "" {
+		return fmt.Errorf("server does not support container logs API (OPTIONS request returned HTTP %s, Dav: %q)", resp.Status, resp.Header.Get("Dav"))
+	}
+	return nil
+}
+
 // Retrieve specified byte range (e.g., "12-34", "1234-") from given
 // fnm and write to out.
 //
@@ -191,12 +232,7 @@ poll:
 func (lc *logsCommand) copyRange(ctx context.Context, uuid, fnm, byterange string, out io.Writer) (int64, int64, error) {
 	ctx, cancel := context.WithDeadline(ctx, time.Now().Add(20*time.Second))
 	defer cancel()
-	srcURL := url.URL{
-		Scheme: "https",
-		Host:   lc.ac.APIHost,
-		Path:   "/arvados/v1/containers/" + uuid + "/log/" + fnm,
-	}
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, srcURL.String(), nil)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, lc.srcURL(uuid, fnm), nil)
 	if err != nil {
 		return 0, 0, err
 	}
