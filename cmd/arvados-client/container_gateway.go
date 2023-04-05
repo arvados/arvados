@@ -80,6 +80,8 @@ func (lc *logsCommand) tailf(target string, stdout, stderr io.Writer, pollInterv
 		size = map[string]int64{}
 		// exit after fetching next log chunk
 		containerFinished = false
+		// has anything worked? (if so, retry after errors)
+		anySuccess = false
 	)
 
 poll:
@@ -91,6 +93,9 @@ poll:
 		for _, fnm := range watching {
 			currentsize, _, err := lc.copyRange(ctx, ctrUUID, fnm, "0-0", nil)
 			if err != nil {
+				if !anySuccess {
+					return err
+				}
 				fmt.Fprintln(stderr, err)
 				delay = pollInterval
 				continue poll
@@ -119,7 +124,10 @@ poll:
 				if err != nil {
 					fmt.Fprintln(stderr, err)
 				}
-				mark[fnm] += n
+				if n > 0 {
+					mark[fnm] += n
+					anySuccess = true
+				}
 			}
 		}
 		checkState := lc.display(stdout, stderr, watching, newData)
@@ -156,6 +164,9 @@ poll:
 			}
 			ctr, err := rpcconn.ContainerGet(ctx, arvados.GetOptions{UUID: ctrUUID, Select: []string{"state"}})
 			if err != nil {
+				if !anySuccess {
+					return err
+				}
 				fmt.Fprintln(stderr, err)
 				delay = pollInterval
 				continue
