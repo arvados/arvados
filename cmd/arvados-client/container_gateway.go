@@ -211,7 +211,8 @@ func (lc *logsCommand) copyRange(ctx context.Context, uuid, fnm, byterange strin
 		return 0, 0, nil
 	}
 	if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusPartialContent {
-		return 0, 0, fmt.Errorf("error getting %s: %s", fnm, resp.Status)
+		body, _ := io.ReadAll(io.LimitReader(resp.Body, 10000))
+		return 0, 0, fmt.Errorf("error getting %s: HTTP %s -- %s", fnm, resp.Status, bytes.TrimSuffix(body, []byte{'\n'}))
 	}
 	var rstart, rend, rsize int64
 	_, err = fmt.Sscanf(resp.Header.Get("Content-Range"), "bytes %d-%d/%d", &rstart, &rend, &rsize)
@@ -422,22 +423,22 @@ func rpcFromEnv() *rpc.Conn {
 
 func resolveToContainerUUID(rpcconn *rpc.Conn, targetUUID string) (string, error) {
 	switch {
-	case strings.Contains(targetUUID, "-dz642-"):
+	case strings.Contains(targetUUID, "-dz642-") && len(targetUUID) == 27:
 		return targetUUID, nil
-	case strings.Contains(targetUUID, "-xvhdp-"):
+	case strings.Contains(targetUUID, "-xvhdp-") && len(targetUUID) == 27:
 		crs, err := rpcconn.ContainerRequestList(context.TODO(), arvados.ListOptions{Limit: -1, Filters: []arvados.Filter{{"uuid", "=", targetUUID}}})
 		if err != nil {
 			return "", err
 		}
 		if len(crs.Items) < 1 {
-			return "", fmt.Errorf("container request %q not found\n", targetUUID)
+			return "", fmt.Errorf("container request %q not found", targetUUID)
 		}
 		cr := crs.Items[0]
 		if cr.ContainerUUID == "" {
-			return "", fmt.Errorf("no container assigned, container request state is %s\n", strings.ToLower(string(cr.State)))
+			return "", fmt.Errorf("no container assigned, container request state is %s", strings.ToLower(string(cr.State)))
 		}
 		return cr.ContainerUUID, nil
 	default:
-		return "", fmt.Errorf("target UUID is not a container or container request UUID: %s\n", targetUUID)
+		return "", fmt.Errorf("target UUID is not a container or container request UUID: %s", targetUUID)
 	}
 }
