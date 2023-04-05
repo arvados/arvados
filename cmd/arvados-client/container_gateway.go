@@ -280,10 +280,12 @@ func (lc *logsCommand) display(out, stderr io.Writer, watching []string, receive
 			if err != nil {
 				fmt.Fprintln(stderr, err)
 			}
-			checkState = checkState ||
-				bytes.HasSuffix(line, []byte("Complete")) ||
-				bytes.HasSuffix(line, []byte("Cancelled")) ||
-				bytes.HasSuffix(line, []byte("Queued"))
+			if fnm == "crunch-run.txt" {
+				checkState = checkState ||
+					bytes.HasSuffix(line, []byte("Complete")) ||
+					bytes.HasSuffix(line, []byte("Cancelled")) ||
+					bytes.HasSuffix(line, []byte("Queued"))
+			}
 		}
 	}
 	return checkState
