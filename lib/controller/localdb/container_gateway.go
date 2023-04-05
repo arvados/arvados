@@ -176,7 +176,7 @@ func (conn *Conn) serveContainerLogViaKeepWeb(opts arvados.ContainerLogOptions, 
 	myHostname := u.Hostname()
 	var webdavBase arvados.URL
 	var ok bool
-	for webdavBase = range conn.cluster.Services.WebDAVDownload.InternalURLs {
+	for webdavBase = range conn.cluster.Services.WebDAV.InternalURLs {
 		ok = true
 		u := url.URL(webdavBase)
 		if h := u.Hostname(); h == "127.0.0.1" || h == "0.0.0.0" || h == "::1" || h == myHostname {
@@ -187,7 +187,7 @@ func (conn *Conn) serveContainerLogViaKeepWeb(opts arvados.ContainerLogOptions, 
 		}
 	}
 	if !ok {
-		httpserver.Error(w, "no internalURLs configured for WebDAVDownload service", http.StatusInternalServerError)
+		httpserver.Error(w, "no internalURLs configured for WebDAV service", http.StatusInternalServerError)
 		return
 	}
 	proxy := &httputil.ReverseProxy{
