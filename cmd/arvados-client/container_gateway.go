@@ -91,7 +91,7 @@ poll:
 		// server-sent event to tell us some updated file
 		// sizes. For now, we poll.
 		for _, fnm := range watching {
-			currentsize, _, err := lc.copyRange(ctx, ctrUUID, fnm, "0-0", nil)
+			currentsize, _, err := lc.copyRange(ctx, ctrUUID, fnm, "-0", nil)
 			if err != nil {
 				if !anySuccess {
 					return err
@@ -183,7 +183,7 @@ poll:
 // Retrieve specified byte range (e.g., "12-34", "1234-") from given
 // fnm and write to out.
 //
-// If range is empty ("0-0"), out can be nil.
+// If range is empty ("-0"), out can be nil.
 //
 // Return values are current file size, bytes copied, error.
 //

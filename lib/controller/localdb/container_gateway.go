@@ -187,7 +187,7 @@ func (conn *Conn) serveContainerLogViaKeepWeb(opts arvados.ContainerLogOptions, 
 		}
 	}
 	if !ok {
-		httpserver.Error(w, "no internalURLs configured for WebDAV service", http.StatusInternalServerError)
+		httpserver.Error(w, "no internalURLs configured for WebDAVDownload service", http.StatusInternalServerError)
 		return
 	}
 	proxy := &httputil.ReverseProxy{
