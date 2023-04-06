@@ -9,22 +9,37 @@ import {
     WrappedFieldProps,
     WrappedFieldArrayProps,
     FieldArray,
-    FieldArrayFieldsProps
+    FieldArrayFieldsProps,
+    InjectedFormProps
 } from 'redux-form';
 import { PermissionSelect, formatPermissionLevel, parsePermissionLevel } from './permission-select';
 import { WithStyles } from '@material-ui/core/styles';
 import withStyles from '@material-ui/core/styles/withStyles';
 import { CloseIcon } from 'components/icon/icon';
+import { ArvadosTheme } from 'common/custom-theme';
 
-const SharingManagementFormComponent = (props: { onSave: () => void; }) =>
-    <FieldArray<{ onSave: () => void }> name='permissions' component={SharingManagementFieldArray as any} props={props} />;
+export interface SaveProps {
+    onSave: () => void;
+}
+
+const headerStyles: StyleRulesCallback<'heading'> = (theme: ArvadosTheme) => ({
+    heading: {
+        fontSize: '1.25rem',
+    }
+});
+
+export const SharingManagementFormComponent = withStyles(headerStyles)(
+    ({ classes, onSave }: WithStyles<'heading'> & SaveProps & InjectedFormProps<{}, SaveProps>) =>
+        <>
+            <Typography className={classes.heading}>People with access</Typography>
+            <FieldArray<{ onSave: () => void }> name='permissions' component={SharingManagementFieldArray as any} props={{ onSave }} />
+        </>);
 
 export default SharingManagementFormComponent;
 
 const SharingManagementFieldArray = ({ fields, onSave }: { onSave: () => void } & WrappedFieldArrayProps<{ email: string }>) =>
     <div>{fields.map((field, index, fields) =>
         <PermissionManagementRow key={field} {...{ field, index, fields }} onSave={onSave} />)}
-        <Divider />
     </div>;
 
 const permissionManagementRowStyles: StyleRulesCallback<'root'> = theme => ({
@@ -36,7 +51,6 @@ const permissionManagementRowStyles: StyleRulesCallback<'root'> = theme => ({
 const PermissionManagementRow = withStyles(permissionManagementRowStyles)(
     ({ field, index, fields, classes, onSave }: { field: string, index: number, fields: FieldArrayFieldsProps<{ email: string }>, onSave: () => void; } & WithStyles<'root'>) =>
         <>
-            <Divider />
             <Grid container alignItems='center' spacing={8} wrap='nowrap' className={classes.root}>
                 <Grid item xs={8}>
                     <Typography noWrap variant='subtitle1'>{fields.get(index).email}</Typography>
@@ -54,6 +68,7 @@ const PermissionManagementRow = withStyles(permissionManagementRowStyles)(
                     </IconButton>
                 </Grid>
             </Grid>
+            <Divider />
         </>
 );
 

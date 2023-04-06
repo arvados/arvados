@@ -90,7 +90,7 @@ export default (props: SharingDialogComponentProps) => {
         {...{ open, onClose }}
         className="sharing-dialog"
         fullWidth
-        maxWidth='md'
+        maxWidth='sm'
         disableBackdropClick={saveEnabled}
         disableEscapeKeyDown={saveEnabled}>
         <DialogTitle>
@@ -113,10 +113,13 @@ export default (props: SharingDialogComponentProps) => {
             {tabNr === SharingDialogTab.PERMISSIONS &&
                 <Grid container direction='column' spacing={24}>
                     <Grid item>
-                        <SharingPublicAccessForm onSave={onSave} />
+                        <SharingInvitationForm onSave={onSave} saveEnabled={saveEnabled} />
                     </Grid>
                     <Grid item>
                         <SharingManagementForm onSave={onSave} />
+                    </Grid>
+                    <Grid item>
+                        <SharingPublicAccessForm onSave={onSave} />
                     </Grid>
                 </Grid>
             }
@@ -126,11 +129,6 @@ export default (props: SharingDialogComponentProps) => {
         </DialogContent>
         <DialogActions>
             <Grid container spacing={8}>
-                {tabNr === SharingDialogTab.PERMISSIONS &&
-                    <Grid item md={12}>
-                        <SharingInvitationForm onSave={onSave} saveEnabled={saveEnabled} />
-                    </Grid>
-                }
                 {tabNr === SharingDialogTab.URLS && withExpiration && <>
                     <Grid item container direction='row' md={12}>
                         <MuiPickersUtilsProvider utils={DateFnsUtils}>
