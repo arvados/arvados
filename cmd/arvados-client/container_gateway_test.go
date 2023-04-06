@@ -261,23 +261,24 @@ func (s *ClientSuite) TestContainerLog(c *check.C) {
 	}})
 	c.Assert(err, check.IsNil)
 
+	const rfc3339NanoFixed = "2006-01-02T15:04:05.000000000Z07:00"
 	fCrunchrun, err := cfs.OpenFile("crunch-run.txt", os.O_CREATE|os.O_WRONLY, 0777)
 	c.Assert(err, check.IsNil)
-	_, err = fmt.Fprintln(fCrunchrun, "line 1 of crunch-run.txt")
+	_, err = fmt.Fprintf(fCrunchrun, "%s line 1 of crunch-run.txt\n", time.Now().UTC().Format(rfc3339NanoFixed))
 	c.Assert(err, check.IsNil)
 	fStderr, err := cfs.OpenFile("stderr.txt", os.O_CREATE|os.O_WRONLY, 0777)
 	c.Assert(err, check.IsNil)
-	_, err = fmt.Fprintln(fStderr, "line 1 of stderr")
+	_, err = fmt.Fprintf(fStderr, "%s line 1 of stderr\n", time.Now().UTC().Format(rfc3339NanoFixed))
 	c.Assert(err, check.IsNil)
 	time.Sleep(time.Second * 2)
-	_, err = fmt.Fprintln(fCrunchrun, "line 2 of crunch-run.txt")
+	_, err = fmt.Fprintf(fCrunchrun, "%s line 2 of crunch-run.txt", time.Now().UTC().Format(rfc3339NanoFixed))
 	c.Assert(err, check.IsNil)
-	_, err = fmt.Fprintln(fStderr, "--end--")
+	_, err = fmt.Fprintf(fStderr, "%s --end--", time.Now().UTC().Format(rfc3339NanoFixed))
 	c.Assert(err, check.IsNil)
 
 	for deadline := time.Now().Add(20 * time.Second); time.Now().Before(deadline) && !strings.Contains(stdout.String(), "--end--"); time.Sleep(time.Second / 10) {
 	}
-	c.Check(stdout.String(), check.Matches, `(?ms).*stderr\.txt +--end--\n.*`)
+	c.Check(stdout.String(), check.Matches, `(?ms).*stderr\.txt +20\S+Z --end--\n.*`)
 
 	mtxt, err := cfs.MarshalManifest(".")
 	c.Assert(err, check.IsNil)

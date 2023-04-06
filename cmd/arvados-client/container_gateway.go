@@ -16,6 +16,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"sort"
 	"strings"
 	"syscall"
 	"time"
@@ -270,22 +271,29 @@ func (lc *logsCommand) copyRange(ctx context.Context, uuid, fnm, byterange strin
 // exit.
 func (lc *logsCommand) display(out, stderr io.Writer, watching []string, received map[string]*bytes.Buffer) bool {
 	checkState := false
+	var sorted []string
 	for _, fnm := range watching {
 		buf := received[fnm]
 		if buf == nil || buf.Len() == 0 {
 			continue
 		}
 		for _, line := range bytes.Split(bytes.TrimSuffix(buf.Bytes(), []byte{'\n'}), []byte{'\n'}) {
-			_, err := fmt.Fprintf(out, "%-14s %s\n", fnm, line)
-			if err != nil {
-				fmt.Fprintln(stderr, err)
-			}
+			sorted = append(sorted, fmt.Sprintf("%-14s %s\n", fnm, line))
 			if fnm == "crunch-run.txt" {
 				checkState = checkState ||
 					bytes.HasSuffix(line, []byte("Complete")) ||
 					bytes.HasSuffix(line, []byte("Cancelled")) ||
 					bytes.HasSuffix(line, []byte("Queued"))
 			}
+		}
+	}
+	sort.Slice(sorted, func(i, j int) bool {
+		return sorted[i][15:] < sorted[j][15:]
+	})
+	for _, s := range sorted {
+		_, err := fmt.Fprint(out, s)
+		if err != nil {
+			fmt.Fprintln(stderr, err)
 		}
 	}
 	return checkState
