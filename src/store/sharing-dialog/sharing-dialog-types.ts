@@ -14,7 +14,7 @@ export const SHARING_INVITATION_FORM_NAME = 'SHARING_INVITATION_FORM_NAME';
 export enum VisibilityLevel {
     PRIVATE = 'Private',
     SHARED = 'Shared',
-    ALL_USERS = 'All user accounts',
+    ALL_USERS = 'All users',
     PUBLIC = 'Public',
 }
 
