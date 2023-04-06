@@ -74,7 +74,7 @@ export const ParticipantSelect = connect()(
         };
 
         render() {
-            const { label = 'Share' } = this.props;
+            const { label = 'Add people and groups' } = this.props;
 
             return (
                 <Autocomplete
@@ -92,7 +92,7 @@ export const ParticipantSelect = connect()(
                     renderChipValue={this.renderChipValue}
                     renderChipTooltip={this.renderChipTooltip}
                     renderSuggestion={this.renderSuggestion}
-                    disabled={this.props.disabled}/>
+                    disabled={this.props.disabled} />
             );
         }
 

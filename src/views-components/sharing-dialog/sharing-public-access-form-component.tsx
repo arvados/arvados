@@ -13,6 +13,9 @@ import { VisibilityLevel } from 'store/sharing-dialog/sharing-dialog-types';
 const sharingPublicAccessStyles: StyleRulesCallback<'root'> = theme => ({
     root: {
         padding: `${theme.spacing.unit * 2}px 0`,
+    },
+    heading: {
+        fontSize: '1.25rem',
     }
 });
 
@@ -23,9 +26,9 @@ interface AccessProps {
 }
 
 const SharingPublicAccessForm = withStyles(sharingPublicAccessStyles)(
-    ({ classes, visibility, includePublic, onSave }: WithStyles<'root'> & AccessProps) =>
+    ({ classes, visibility, includePublic, onSave }: WithStyles<'root' | 'heading'> & AccessProps) =>
         <>
-            <Divider />
+            <Typography className={classes.heading}>General access</Typography>
             <Grid container alignItems='center' spacing={8} className={classes.root}>
                 <Grid item xs={8}>
                     <Typography variant='subtitle1'>
@@ -42,13 +45,13 @@ const SharingPublicAccessForm = withStyles(sharingPublicAccessStyles)(
 const renderVisibilityInfo = (visibility: VisibilityLevel) => {
     switch (visibility) {
         case VisibilityLevel.PUBLIC:
-            return 'Anyone on the Internet can access';
+            return 'Shared with anyone on the Internet';
         case VisibilityLevel.ALL_USERS:
-            return 'All users on this cluster can access';
+            return 'Shared with all users on this cluster';
         case VisibilityLevel.SHARED:
-            return 'Specific people can access';
+            return 'Shared with specific people';
         case VisibilityLevel.PRIVATE:
-            return 'Only you can access';
+            return 'Not shared';
         default:
             return '';
     }

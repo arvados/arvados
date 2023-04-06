@@ -3,12 +3,8 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import { reduxForm } from 'redux-form';
-import SharingManagementFormComponent from './sharing-management-form-component';
+import { SharingManagementFormComponent, SaveProps } from './sharing-management-form-component';
 import { SHARING_MANAGEMENT_FORM_NAME } from 'store/sharing-dialog/sharing-dialog-types';
-
-interface SaveProps {
-    onSave: () => void;
-}
 
 export const SharingManagementForm = reduxForm<{}, SaveProps>(
     { form: SHARING_MANAGEMENT_FORM_NAME }
