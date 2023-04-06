@@ -28,13 +28,17 @@ TODO: extract this information based on git commit messages and generate changel
 <div class="releasenotes">
 </notextile>
 
-h2(#main). development main (as of 2023-03-06)
+h2(#main). development main (as of 2023-04-06)
+
+"previous: Upgrading to 2.6.0":#v2_6_0
+
+h2(#v2_6_0). v2.6.0 (2023-04-06)
 
 "previous: Upgrading to 2.5.0":#v2_5_0
 
 h3. Slow migration on upgrade
 
-Important!  This upgrade includes a database schema update changing the integer id column in each table from 32-bit to 64-bit.  Because it touches every row in the table, on moderate to large sized installations this may be very slow (on the order of hours). Plan for the arvados-api-server package upgrade to take longer than usual.
+Important!  This upgrade includes a database schema update changing the integer id column in each table from 32-bit to 64-bit.  Because it touches every row in the table, on moderate to large sized installations *this may be very slow* (on the order of hours). Plan for the arvados-api-server package upgrade to take longer than usual.
 
 h3. Default request concurrency, new limit on log requests
 
