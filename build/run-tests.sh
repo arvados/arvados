@@ -84,6 +84,7 @@ lib/crunch-run
 lib/cloud
 lib/cloud/azure
 lib/cloud/cloudtest
+lib/dispatch
 lib/dispatchcloud
 lib/dispatchcloud/container
 lib/dispatchcloud/scheduler
@@ -114,7 +115,6 @@ sdk/ruby
 sdk/go/arvados
 sdk/go/arvadosclient
 sdk/go/auth
-sdk/go/dispatch
 sdk/go/keepclient
 sdk/go/health
 sdk/go/httpserver

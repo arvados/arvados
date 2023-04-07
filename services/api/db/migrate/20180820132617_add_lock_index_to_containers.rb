@@ -4,7 +4,7 @@
 
 class AddLockIndexToContainers < ActiveRecord::Migration[4.2]
   def change
-    # For the current code in sdk/go/dispatch:
+    # For the current code in lib/dispatch:
     add_index :containers, [:locked_by_uuid, :priority]
     # For future dispatchers that use filters instead of offset for
     # more predictable paging:

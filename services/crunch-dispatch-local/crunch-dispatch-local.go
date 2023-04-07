@@ -19,9 +19,9 @@ import (
 
 	"git.arvados.org/arvados.git/lib/cmd"
 	"git.arvados.org/arvados.git/lib/config"
+	"git.arvados.org/arvados.git/lib/dispatch"
 	"git.arvados.org/arvados.git/sdk/go/arvados"
 	"git.arvados.org/arvados.git/sdk/go/arvadosclient"
-	"git.arvados.org/arvados.git/sdk/go/dispatch"
 	"github.com/sirupsen/logrus"
 )
 

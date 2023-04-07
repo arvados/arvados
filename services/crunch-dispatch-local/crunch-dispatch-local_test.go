@@ -16,11 +16,11 @@ import (
 	"testing"
 	"time"
 
+	"git.arvados.org/arvados.git/lib/dispatch"
 	"git.arvados.org/arvados.git/sdk/go/arvados"
 	"git.arvados.org/arvados.git/sdk/go/arvadosclient"
 	"git.arvados.org/arvados.git/sdk/go/arvadostest"
 	"git.arvados.org/arvados.git/sdk/go/ctxlog"
-	"git.arvados.org/arvados.git/sdk/go/dispatch"
 	. "gopkg.in/check.v1"
 )
 
