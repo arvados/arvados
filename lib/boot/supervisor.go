@@ -28,10 +28,10 @@ import (
 	"time"
 
 	"git.arvados.org/arvados.git/lib/config"
+	"git.arvados.org/arvados.git/lib/health"
 	"git.arvados.org/arvados.git/lib/service"
 	"git.arvados.org/arvados.git/sdk/go/arvados"
 	"git.arvados.org/arvados.git/sdk/go/ctxlog"
-	"git.arvados.org/arvados.git/sdk/go/health"
 	"github.com/fsnotify/fsnotify"
 	"github.com/sirupsen/logrus"
 )

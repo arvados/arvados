@@ -24,9 +24,9 @@ import (
 	"git.arvados.org/arvados.git/lib/controller/railsproxy"
 	"git.arvados.org/arvados.git/lib/controller/router"
 	"git.arvados.org/arvados.git/lib/ctrlctx"
+	"git.arvados.org/arvados.git/lib/health"
 	"git.arvados.org/arvados.git/sdk/go/arvados"
 	"git.arvados.org/arvados.git/sdk/go/ctxlog"
-	"git.arvados.org/arvados.git/sdk/go/health"
 	"git.arvados.org/arvados.git/sdk/go/httpserver"
 
 	// sqlx needs lib/pq to talk to PostgreSQL

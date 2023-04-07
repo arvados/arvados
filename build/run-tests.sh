@@ -90,6 +90,7 @@ lib/dispatchcloud/container
 lib/dispatchcloud/scheduler
 lib/dispatchcloud/sshexecutor
 lib/dispatchcloud/worker
+lib/health
 lib/mount
 lib/pam
 lib/service
@@ -116,7 +117,6 @@ sdk/go/arvados
 sdk/go/arvadosclient
 sdk/go/auth
 sdk/go/keepclient
-sdk/go/health
 sdk/go/httpserver
 sdk/go/manifest
 sdk/go/blockdigest
