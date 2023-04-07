@@ -21,11 +21,7 @@ ONBUILD RUN /usr/bin/apt-get update && /usr/bin/apt-get install -q -y gcc-aarch6
 ONBUILD RUN /bin/sed -i 's/deb http/deb [ arch=amd64 ] http/' /etc/apt/sources.list
 ONBUILD ADD ports.list /etc/apt/sources.list.d/
 ONBUILD RUN /usr/bin/dpkg --add-architecture arm64
-ONBUILD RUN /usr/bin/apt-get update && /usr/bin/apt-get install -o APT::Immediate-Configure=0 -q -y libpam0g-dev:arm64
-# Note that cross compilation support for ubuntu2004 is disabled in
-# run-library.sh because of
-# https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=983477. Hopefully
-# ubuntu2204 will have the fix introduced in debian11.
+ONBUILD RUN /usr/bin/apt-get update && /usr/bin/apt-get install -o APT::Immediate-Configure=0 -q -y libpam0g-dev:arm64 libfuse-dev:arm64
 
 FROM ubuntu:jammy as build_aarch64
 # Install go
