@@ -176,7 +176,7 @@ arvados:
       WebDAV:
         ExternalURL: 'https://*.collections.__CLUSTER__.__DOMAIN__:__KEEPWEB_EXT_SSL_PORT__/'
         InternalURLs:
-          'http://localhost:9002': {}
+          'http://__KEEPWEB_INT_IP__:9002': {}
       WebDAVDownload:
         ExternalURL: 'https://download.__CLUSTER__.__DOMAIN__:__KEEPWEB_EXT_SSL_PORT__'
       WebShell:
