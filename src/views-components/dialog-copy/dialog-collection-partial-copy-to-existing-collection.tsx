@@ -7,21 +7,21 @@ import { memoize } from "lodash/fp";
 import { FormDialog } from 'components/form-dialog/form-dialog';
 import { WithDialogProps } from 'store/dialog/with-dialog';
 import { InjectedFormProps } from 'redux-form';
-import { CollectionPartialCopyToSelectedCollectionFormData } from 'store/collections/collection-partial-copy-actions';
+import { CollectionPartialCopyToExistingCollectionFormData } from 'store/collections/collection-partial-copy-actions';
 import { PickerIdProp } from "store/tree-picker/picker-id";
 import { CollectionPickerField } from 'views-components/form-fields/collection-form-fields';
 
-type DialogCollectionPartialCopyProps = WithDialogProps<string> & InjectedFormProps<CollectionPartialCopyToSelectedCollectionFormData>;
+type DialogCollectionPartialCopyProps = WithDialogProps<string> & InjectedFormProps<CollectionPartialCopyToExistingCollectionFormData>;
 
-export const DialogCollectionPartialCopyToSelectedCollection = (props: DialogCollectionPartialCopyProps & PickerIdProp) =>
+export const DialogCollectionPartialCopyToExistingCollection = (props: DialogCollectionPartialCopyProps & PickerIdProp) =>
     <FormDialog
-        dialogTitle='Choose collection'
+        dialogTitle='Copy to existing collection'
         formFields={CollectionPartialCopyFields(props.pickerId)}
         submitLabel='Copy files'
         {...props}
     />;
 
-export const CollectionPartialCopyFields = memoize(
+const CollectionPartialCopyFields = memoize(
     (pickerId: string) =>
         () =>
             <>

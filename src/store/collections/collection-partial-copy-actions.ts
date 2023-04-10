@@ -3,7 +3,6 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import { Dispatch } from 'redux';
-import { difference } from "lodash";
 import { RootState } from 'store/store';
 import { FormErrors, initialize, startSubmit, stopSubmit } from 'redux-form';
 import { resetPickerProjectTree } from 'store/project-tree-picker/project-tree-picker-actions';
@@ -14,21 +13,22 @@ import { snackbarActions, SnackbarKind } from 'store/snackbar/snackbar-actions';
 import { getCommonResourceServiceError, CommonResourceServiceError } from 'services/common-service/common-resource-service';
 import { progressIndicatorActions } from "store/progress-indicator/progress-indicator-actions";
 import { initProjectsTreePicker } from "store/tree-picker/tree-picker-actions";
+import { updateResources } from 'store/resources/resources-actions';
 
 export const COLLECTION_PARTIAL_COPY_FORM_NAME = 'COLLECTION_PARTIAL_COPY_DIALOG';
 export const COLLECTION_PARTIAL_COPY_TO_SELECTED_COLLECTION = 'COLLECTION_PARTIAL_COPY_TO_SELECTED_DIALOG';
 
-export interface CollectionPartialCopyFormData {
+export interface CollectionPartialCopyToNewCollectionFormData {
     name: string;
     description: string;
     projectUuid: string;
 }
 
-export interface CollectionPartialCopyToSelectedCollectionFormData {
+export interface CollectionPartialCopyToExistingCollectionFormData {
     collectionUuid: string;
 }
 
-export const openCollectionPartialCopyDialog = () =>
+export const openCollectionPartialCopyToNewCollectionDialog = () =>
     (dispatch: Dispatch, getState: () => RootState) => {
         const currentCollection = getState().collectionPanel.item;
         if (currentCollection) {
@@ -44,7 +44,7 @@ export const openCollectionPartialCopyDialog = () =>
         }
     };
 
-export const copyCollectionPartial = ({ name, description, projectUuid }: CollectionPartialCopyFormData) =>
+export const copyCollectionPartialToNewCollection = ({ name, description, projectUuid }: CollectionPartialCopyToNewCollectionFormData) =>
     async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
         dispatch(startSubmit(COLLECTION_PARTIAL_COPY_FORM_NAME));
         const state = getState();
@@ -93,7 +93,7 @@ export const copyCollectionPartial = ({ name, description, projectUuid }: Collec
         }
     };
 
-export const openCollectionPartialCopyToSelectedCollectionDialog = () =>
+export const openCollectionPartialCopyToExistingCollectionDialog = () =>
     (dispatch: Dispatch, getState: () => RootState) => {
         const currentCollection = getState().collectionPanel.item;
         if (currentCollection) {
@@ -107,37 +107,24 @@ export const openCollectionPartialCopyToSelectedCollectionDialog = () =>
         }
     };
 
-export const copyCollectionPartialToSelectedCollection = ({ collectionUuid }: CollectionPartialCopyToSelectedCollectionFormData) =>
+export const copyCollectionPartialToExistingCollection = ({ collectionUuid }: CollectionPartialCopyToExistingCollectionFormData) =>
     async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
-        dispatch(startSubmit(COLLECTION_PARTIAL_COPY_TO_SELECTED_COLLECTION));
         const state = getState();
-        const currentCollection = state.collectionPanel.item;
+        // Get current collection
+        const sourceCollection = state.collectionPanel.item;
 
-        if (currentCollection && !currentCollection.manifestText) {
-            const fetchedCurrentCollection = await services.collectionService.get(currentCollection.uuid, undefined, ['manifestText']);
-            currentCollection.manifestText = fetchedCurrentCollection.manifestText;
-            currentCollection.unsignedManifestText = fetchedCurrentCollection.unsignedManifestText;
-        }
-
-        if (currentCollection) {
+        if (sourceCollection) {
             try {
+                dispatch(startSubmit(COLLECTION_PARTIAL_COPY_TO_SELECTED_COLLECTION));
                 dispatch(progressIndicatorActions.START_WORKING(COLLECTION_PARTIAL_COPY_TO_SELECTED_COLLECTION));
-                const selectedCollection = await services.collectionService.get(collectionUuid);
-                const paths = filterCollectionFilesBySelection(state.collectionPanelFiles, false).map(file => file.id);
-                const pathsToRemove = paths.filter(path => {
-                    const a = path.split('/');
-                    const fileExistsInSelectedCollection = selectedCollection.manifestText.includes(a[1]);
-                    if (fileExistsInSelectedCollection) {
-                        return path;
-                    } else {
-                        return null;
-                    }
-                });
-                const diffPathToRemove = difference(paths, pathsToRemove);
-                await services.collectionService.deleteFiles(selectedCollection.uuid, pathsToRemove.map(path => path.replace(currentCollection.uuid, collectionUuid)));
-                const collectionWithDeletedFiles = await services.collectionService.get(collectionUuid, undefined, ['uuid', 'manifestText']);
-                await services.collectionService.update(collectionUuid, { manifestText: `${collectionWithDeletedFiles.manifestText}${(currentCollection.manifestText ? currentCollection.manifestText : currentCollection.unsignedManifestText) || ''}` });
-                await services.collectionService.deleteFiles(collectionWithDeletedFiles.uuid, diffPathToRemove.map(path => path.replace(currentCollection.uuid, collectionUuid)));
+                // Get selected files
+                const paths = filterCollectionFilesBySelection(state.collectionPanelFiles, true)
+                    .map(file => file.id.replace(new RegExp(`(^${sourceCollection.uuid})`), ''));
+
+                // Copy files
+                const updatedCollection = await services.collectionService.copyFiles(sourceCollection.portableDataHash, paths, collectionUuid, '/', false);
+                dispatch(updateResources([updatedCollection]));
+
                 dispatch(dialogActions.CLOSE_DIALOG({ id: COLLECTION_PARTIAL_COPY_TO_SELECTED_COLLECTION }));
                 dispatch(snackbarActions.OPEN_SNACKBAR({
                     message: 'Files has been copied to selected collection.',

@@ -922,7 +922,7 @@ describe('Collection panel tests', function () {
                 });
 
                 cy.get('[data-cy=collection-files-panel-options-btn]').click();
-                cy.get('[data-cy=context-menu]').contains('Create a new collection with selected').click();
+                cy.get('[data-cy=context-menu]').contains('Copy selected into new collection').click();
 
                 cy.get('[data-cy=form-dialog]').contains('Projects').click();
 

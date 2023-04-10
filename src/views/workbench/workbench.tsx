@@ -32,7 +32,10 @@ import { MoveProcessDialog } from 'views-components/dialog-forms/move-process-di
 import { MoveProjectDialog } from 'views-components/dialog-forms/move-project-dialog';
 import { MoveCollectionDialog } from 'views-components/dialog-forms/move-collection-dialog';
 import { FilesUploadCollectionDialog } from 'views-components/dialog-forms/files-upload-collection-dialog';
-import { PartialCopyCollectionDialog } from 'views-components/dialog-forms/partial-copy-collection-dialog';
+import { PartialCopyToNewCollectionDialog } from 'views-components/dialog-forms/partial-copy-to-new-collection-dialog';
+import { PartialCopyToExistingCollectionDialog } from 'views-components/dialog-forms/partial-copy-to-existing-collection-dialog';
+import { PartialMoveToNewCollectionDialog } from 'views-components/dialog-forms/partial-move-to-new-collection-dialog';
+import { PartialMoveToExistingCollectionDialog } from 'views-components/dialog-forms/partial-move-to-existing-collection-dialog';
 import { RemoveProcessDialog } from 'views-components/process-remove-dialog/process-remove-dialog';
 import { MainContentBar } from 'views-components/main-content-bar/main-content-bar';
 import { Grid } from '@material-ui/core';
@@ -88,7 +91,6 @@ import { GroupAttributesDialog } from 'views-components/groups-dialog/attributes
 import { GroupDetailsPanel } from 'views/group-details-panel/group-details-panel';
 import { RemoveGroupMemberDialog } from 'views-components/groups-dialog/member-remove-dialog';
 import { GroupMemberAttributesDialog } from 'views-components/groups-dialog/member-attributes-dialog';
-import { PartialCopyToCollectionDialog } from 'views-components/dialog-forms/partial-copy-to-collection-dialog';
 import { PublicFavoritePanel } from 'views/public-favorites-panel/public-favorites-panel';
 import { LinkAccountPanel } from 'views/link-account-panel/link-account-panel';
 import { FedLogin } from './fed-login';
@@ -264,8 +266,10 @@ export const WorkbenchPanel =
             <MoveProjectDialog />
             <MultipleFilesRemoveDialog />
             <PublicKeyDialog />
-            <PartialCopyCollectionDialog />
-            <PartialCopyToCollectionDialog />
+            <PartialCopyToNewCollectionDialog />
+            <PartialCopyToExistingCollectionDialog />
+            <PartialMoveToNewCollectionDialog />
+            <PartialMoveToExistingCollectionDialog />
             <ProcessInputDialog />
             <RestoreCollectionVersionDialog />
             <RemoveApiClientAuthorizationDialog />
