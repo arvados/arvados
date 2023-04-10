@@ -275,7 +275,7 @@ If not provided, retrieved dynamically from Arvados client configuration.
     else:
         parts = urllib.parse.urlsplit(args.discovery_url)
         if not (parts.scheme or parts.netloc):
-            args.discovery_url = urllib.parse.urlunsplit(parts._replace(scheme='file'))
+            args.discovery_url = pathlib.Path(args.discovery_url).resolve().as_uri()
     if args.output_file == STDSTREAM_PATH:
         args.out_file = sys.stdout
     else:
