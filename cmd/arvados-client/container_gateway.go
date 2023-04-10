@@ -70,11 +70,13 @@ func (lc *logsCommand) tailf(target string, stdout, stderr io.Writer, pollInterv
 	if err != nil {
 		return err
 	}
+	if ctrUUID != target {
+		fmt.Fprintln(stderr, "target container UUID is", ctrUUID)
+	}
 	err = lc.checkAPISupport(ctx, ctrUUID)
 	if err != nil {
 		return err
 	}
-	fmt.Fprintln(stderr, "connecting to container", ctrUUID)
 
 	var (
 		// files to display
@@ -87,6 +89,9 @@ func (lc *logsCommand) tailf(target string, stdout, stderr io.Writer, pollInterv
 		containerFinished = false
 		// has anything worked? (if so, retry after errors)
 		anySuccess = false
+		// container UUID that we most recently displayed in a
+		// "connected, polling" message (if any)
+		reportedConnection = ""
 	)
 
 poll:
@@ -104,6 +109,10 @@ poll:
 				fmt.Fprintln(stderr, err)
 				delay = pollInterval
 				continue poll
+			}
+			if reportedConnection != ctrUUID {
+				reportedConnection = ctrUUID
+				fmt.Fprintln(stderr, "connected, polling for log data from container", ctrUUID)
 			}
 			size[fnm] = currentsize
 			if oldsize, seen := mark[fnm]; !seen && currentsize > 10000 {
