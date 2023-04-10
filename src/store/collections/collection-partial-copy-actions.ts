@@ -46,30 +46,31 @@ export const openCollectionPartialCopyToNewCollectionDialog = () =>
 
 export const copyCollectionPartialToNewCollection = ({ name, description, projectUuid }: CollectionPartialCopyToNewCollectionFormData) =>
     async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
-        dispatch(startSubmit(COLLECTION_PARTIAL_COPY_FORM_NAME));
         const state = getState();
-        const currentCollection = state.collectionPanel.item;
-        if (currentCollection) {
+        // Get current collection
+        const sourceCollection = state.collectionPanel.item;
+
+        if (sourceCollection) {
             try {
+                dispatch(startSubmit(COLLECTION_PARTIAL_COPY_FORM_NAME));
                 dispatch(progressIndicatorActions.START_WORKING(COLLECTION_PARTIAL_COPY_FORM_NAME));
-                const collectionManifestText = await services.collectionService.get(currentCollection.uuid, undefined, ['manifestText']);
-                const collectionCopy = {
+
+                // Create new collection
+                const newCollection = await services.collectionService.create({
                     name,
                     description,
                     ownerUuid: projectUuid,
                     uuid: undefined,
-                    manifestText: collectionManifestText.manifestText,
-                };
-                const newCollection = await services.collectionService.create(collectionCopy);
-                const copiedFiles = await services.collectionService.files(newCollection.uuid);
-                const paths = filterCollectionFilesBySelection(state.collectionPanelFiles, true).map(file => file.id);
-                const filesToDelete = copiedFiles.map(({ id }) => id).filter(file => {
-                    return !paths.find(path => path.indexOf(file.replace(newCollection.uuid, '')) > -1);
                 });
-                await services.collectionService.deleteFiles(
-                    newCollection.uuid,
-                    filesToDelete
-                );
+
+                // Get selected files
+                const paths = filterCollectionFilesBySelection(state.collectionPanelFiles, true)
+                    .map(file => file.id.replace(new RegExp(`(^${sourceCollection.uuid})`), ''));
+
+                // Copy files
+                const updatedCollection = await services.collectionService.copyFiles(sourceCollection.portableDataHash, paths, newCollection.uuid, '/', false);
+                dispatch(updateResources([updatedCollection]));
+
                 dispatch(dialogActions.CLOSE_DIALOG({ id: COLLECTION_PARTIAL_COPY_FORM_NAME }));
                 dispatch(snackbarActions.OPEN_SNACKBAR({
                     message: 'New collection created.',
