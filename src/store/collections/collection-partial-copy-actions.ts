@@ -55,20 +55,23 @@ export const copyCollectionPartialToNewCollection = ({ name, description, projec
                 dispatch(startSubmit(COLLECTION_PARTIAL_COPY_FORM_NAME));
                 dispatch(progressIndicatorActions.START_WORKING(COLLECTION_PARTIAL_COPY_FORM_NAME));
 
-                // Create new collection
-                const newCollection = await services.collectionService.create({
-                    name,
-                    description,
-                    ownerUuid: projectUuid,
-                    uuid: undefined,
-                });
-
                 // Get selected files
                 const paths = filterCollectionFilesBySelection(state.collectionPanelFiles, true)
                     .map(file => file.id.replace(new RegExp(`(^${sourceCollection.uuid})`), ''));
 
                 // Copy files
-                const updatedCollection = await services.collectionService.copyFiles(sourceCollection.portableDataHash, paths, newCollection.uuid, '/', false);
+                const updatedCollection = await services.collectionService.copyFiles(
+                    sourceCollection.portableDataHash,
+                    paths,
+                    {
+                        name,
+                        description,
+                        ownerUuid: projectUuid,
+                        uuid: undefined,
+                    },
+                    '/',
+                    false
+                );
                 dispatch(updateResources([updatedCollection]));
 
                 dispatch(dialogActions.CLOSE_DIALOG({ id: COLLECTION_PARTIAL_COPY_FORM_NAME }));
@@ -123,7 +126,7 @@ export const copyCollectionPartialToExistingCollection = ({ collectionUuid }: Co
                     .map(file => file.id.replace(new RegExp(`(^${sourceCollection.uuid})`), ''));
 
                 // Copy files
-                const updatedCollection = await services.collectionService.copyFiles(sourceCollection.portableDataHash, paths, collectionUuid, '/', false);
+                const updatedCollection = await services.collectionService.copyFiles(sourceCollection.portableDataHash, paths, {uuid: collectionUuid}, '/', false);
                 dispatch(updateResources([updatedCollection]));
 
                 dispatch(dialogActions.CLOSE_DIALOG({ id: COLLECTION_PARTIAL_COPY_TO_SELECTED_COLLECTION }));

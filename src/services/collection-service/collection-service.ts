@@ -12,8 +12,11 @@ import { TrashableResourceService } from "services/common-service/trashable-reso
 import { ApiActions } from "services/api/api-actions";
 import { Session } from "models/session";
 import { CommonService } from "services/common-service/common-service";
+import { snakeCase } from "lodash";
 
 export type UploadProgress = (fileId: number, loaded: number, total: number, currentTime: number) => void;
+type CollectionPartialUpdateOrCreate =  Partial<CollectionResource> & Pick<CollectionResource, "uuid"> |
+                                        Partial<CollectionResource> & Pick<CollectionResource, "ownerUuid">;
 
 export const emptyCollectionPdh = 'd41d8cd98f00b204e9800998ecf8427e+0';
 
@@ -67,21 +70,33 @@ export class CollectionService extends TrashableResourceService<CollectionResour
         }, "/");
     }
 
-    private replaceFiles(collectionUuid: string, fileMap: {}, showErrors?: boolean) {
+    private replaceFiles(data: CollectionPartialUpdateOrCreate, fileMap: {}, showErrors?: boolean) {
         const payload = {
             collection: {
-                preserve_version: true
+                preserve_version: true,
+                ...CommonService.mapKeys(snakeCase)(data),
+                // Don't send uuid in payload when creating
+                uuid: undefined,
             },
             replace_files: fileMap
         };
-
-        return CommonService.defaultResponse(
-            this.serverApi
-                .put<CollectionResource>(`/${this.resourceType}/${collectionUuid}`, payload),
-            this.actions,
-            true, // mapKeys
-            showErrors
-        );
+        if (data.uuid) {
+            return CommonService.defaultResponse(
+                this.serverApi
+                    .put<CollectionResource>(`/${this.resourceType}/${data.uuid}`, payload),
+                this.actions,
+                true, // mapKeys
+                showErrors
+            );
+        } else {
+            return CommonService.defaultResponse(
+                this.serverApi
+                    .post<CollectionResource>(`/${this.resourceType}`, payload),
+                this.actions,
+                true, // mapKeys
+                showErrors
+            );
+        }
     }
 
     async uploadFiles(collectionUuid: string, files: File[], onProgress?: UploadProgress, targetLocation: string = '') {
@@ -94,7 +109,7 @@ export class CollectionService extends TrashableResourceService<CollectionResour
     }
 
     async renameFile(collectionUuid: string, collectionPdh: string, oldPath: string, newPath: string) {
-        return this.replaceFiles(collectionUuid, {
+        return this.replaceFiles({uuid: collectionUuid}, {
             [this.combineFilePath([newPath])]: `${collectionPdh}${this.combineFilePath([oldPath])}`,
             [this.combineFilePath([oldPath])]: '',
         });
@@ -152,10 +167,10 @@ export class CollectionService extends TrashableResourceService<CollectionResour
             }
         }, {})
 
-        return this.replaceFiles(collectionUuid, fileMap, showErrors);
+        return this.replaceFiles({uuid: collectionUuid}, fileMap, showErrors);
     }
 
-    copyFiles(sourcePdh: string, files: string[], destinationCollectionUuid: string, destinationPath: string, showErrors?: boolean) {
+    copyFiles(sourcePdh: string, files: string[], destinationCollection: CollectionPartialUpdateOrCreate, destinationPath: string, showErrors?: boolean) {
         const fileMap = files.reduce((obj, sourceFile) => {
             const sourceFileName = sourceFile.split('/').filter(Boolean).slice(-1).join("");
             return {
@@ -164,11 +179,11 @@ export class CollectionService extends TrashableResourceService<CollectionResour
             };
         }, {});
 
-        return this.replaceFiles(destinationCollectionUuid, fileMap, showErrors);
+        return this.replaceFiles(destinationCollection, fileMap, showErrors);
     }
 
-    moveFiles(sourceUuid: string, sourcePdh: string, files: string[], destinationCollectionUuid: string, destinationPath: string, showErrors?: boolean) {
-        if (sourceUuid === destinationCollectionUuid) {
+    moveFiles(sourceUuid: string, sourcePdh: string, files: string[], destinationCollection: CollectionPartialUpdateOrCreate, destinationPath: string, showErrors?: boolean) {
+        if (sourceUuid === destinationCollection.uuid) {
             const fileMap = files.reduce((obj, sourceFile) => {
                 const sourceFileName = sourceFile.split('/').filter(Boolean).slice(-1).join("");
                 return {
@@ -178,9 +193,9 @@ export class CollectionService extends TrashableResourceService<CollectionResour
                 };
             }, {});
 
-            return this.replaceFiles(sourceUuid, fileMap, showErrors)
+            return this.replaceFiles({uuid: sourceUuid}, fileMap, showErrors)
         } else {
-            return this.copyFiles(sourcePdh, files, destinationCollectionUuid, destinationPath, showErrors)
+            return this.copyFiles(sourcePdh, files, destinationCollection, destinationPath, showErrors)
                 .then(() => {
                     return this.deleteFiles(sourceUuid, files, showErrors);
                 });
@@ -190,7 +205,7 @@ export class CollectionService extends TrashableResourceService<CollectionResour
     createDirectory(collectionUuid: string, path: string, showErrors?: boolean) {
         const fileMap = {[this.combineFilePath([path])]: emptyCollectionPdh};
 
-        return this.replaceFiles(collectionUuid, fileMap, showErrors);
+        return this.replaceFiles({uuid: collectionUuid}, fileMap, showErrors);
     }
 
 }

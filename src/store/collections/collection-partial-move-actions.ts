@@ -55,20 +55,24 @@ export const moveCollectionPartialToNewCollection = ({ name, description, projec
                 dispatch(startSubmit(COLLECTION_PARTIAL_MOVE_TO_NEW_COLLECTION));
                 dispatch(progressIndicatorActions.START_WORKING(COLLECTION_PARTIAL_MOVE_TO_NEW_COLLECTION));
 
-                // Create new collection
-                const newCollection = await services.collectionService.create({
-                    name,
-                    description,
-                    ownerUuid: projectUuid,
-                    uuid: undefined,
-                });
-
                 // Get selected files
                 const paths = filterCollectionFilesBySelection(state.collectionPanelFiles, true)
                     .map(file => file.id.replace(new RegExp(`(^${sourceCollection.uuid})`), ''));
 
                 // Move files
-                const updatedCollection = await services.collectionService.moveFiles(sourceCollection.uuid, sourceCollection.portableDataHash, paths, newCollection.uuid, '/', false);
+                const updatedCollection = await services.collectionService.moveFiles(
+                    sourceCollection.uuid,
+                    sourceCollection.portableDataHash,
+                    paths,
+                    {
+                        name,
+                        description,
+                        ownerUuid: projectUuid,
+                        uuid: undefined,
+                    },
+                    '/',
+                    false
+                );
                 dispatch(updateResources([updatedCollection]));
 
                 dispatch(dialogActions.CLOSE_DIALOG({ id: COLLECTION_PARTIAL_MOVE_TO_NEW_COLLECTION }));
@@ -118,7 +122,7 @@ export const moveCollectionPartialToExistingCollection = ({ collectionUuid }: Co
                     .map(file => file.id.replace(new RegExp(`(^${sourceCollection.uuid})`), ''));
 
                 // Move files
-                const updatedCollection = await services.collectionService.moveFiles(sourceCollection.uuid, sourceCollection.portableDataHash, paths, collectionUuid, '/', false);
+                const updatedCollection = await services.collectionService.moveFiles(sourceCollection.uuid, sourceCollection.portableDataHash, paths, {uuid: collectionUuid}, '/', false);
                 dispatch(updateResources([updatedCollection]));
 
                 dispatch(dialogActions.CLOSE_DIALOG({ id: COLLECTION_PARTIAL_MOVE_TO_SELECTED_COLLECTION }));

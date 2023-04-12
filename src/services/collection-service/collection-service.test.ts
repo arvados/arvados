@@ -234,7 +234,7 @@ describe('collection-service', () => {
             const destinationPath = '/destinationPath';
 
             // when
-            await collectionService.copyFiles(sourcePdh, filePaths, destinationUuid, destinationPath);
+            await collectionService.copyFiles(sourcePdh, filePaths, {uuid: destinationUuid}, destinationPath);
 
             // then
             expect(serverApi.put).toHaveBeenCalledTimes(1);
@@ -261,7 +261,7 @@ describe('collection-service', () => {
             const destinationUuid = 'zzzzz-4zz18-ywq0rvhwwhkjnfq';
             const destinationPath = '/destinationPath';
 
-            await collectionService.copyFiles(sourcePdh, filePaths, destinationUuid, destinationPath);
+            await collectionService.copyFiles(sourcePdh, filePaths, {uuid: destinationUuid}, destinationPath);
 
             expect(serverApi.put).toHaveBeenCalledTimes(1);
             expect(serverApi.put).toHaveBeenCalledWith(
@@ -285,7 +285,7 @@ describe('collection-service', () => {
             const destinationUuid = 'zzzzz-4zz18-ywq0rvhwwhkjnfq';
             const destinationPath = '/';
 
-            await collectionService.copyFiles(sourcePdh, filePaths, destinationUuid, destinationPath);
+            await collectionService.copyFiles(sourcePdh, filePaths, {uuid: destinationUuid}, destinationPath);
 
             expect(serverApi.put).toHaveBeenCalledTimes(1);
             expect(serverApi.put).toHaveBeenCalledWith(
@@ -313,7 +313,7 @@ describe('collection-service', () => {
             const destinationPath = '/destinationPath';
 
             // when
-            await collectionService.moveFiles(srcCollectionUUID, srcCollectionPdh, filePaths, destinationUuid, destinationPath);
+            await collectionService.moveFiles(srcCollectionUUID, srcCollectionPdh, filePaths, {uuid: destinationUuid}, destinationPath);
 
             // then
             expect(serverApi.put).toHaveBeenCalledTimes(2);
@@ -357,7 +357,7 @@ describe('collection-service', () => {
             const destinationPath = '/destinationPath';
 
             // when
-            await collectionService.moveFiles(srcCollectionUUID, srcCollectionPdh, filePaths, srcCollectionUUID, destinationPath);
+            await collectionService.moveFiles(srcCollectionUUID, srcCollectionPdh, filePaths, {uuid: srcCollectionUUID}, destinationPath);
 
             // then
             expect(serverApi.put).toHaveBeenCalledTimes(1);
@@ -399,7 +399,7 @@ describe('collection-service', () => {
 
             // when
             try {
-                await collectionService.moveFiles(srcCollectionUUID, srcCollectionPdh, filePaths, destinationUuid, destinationPath);
+                await collectionService.moveFiles(srcCollectionUUID, srcCollectionPdh, filePaths, {uuid: destinationUuid}, destinationPath);
             } catch {}
 
             // then
