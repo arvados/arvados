@@ -56,6 +56,9 @@ file "sdk/python/arvados/index.html" do |t|
   end
   `which pdoc`
   if $? == 0
+    p ENV
+    system("which", "python3", "pdoc")
+    system("python3", "-VV")
     raise unless system("python3", "setup.py", "build",
                         chdir: "../sdk/python", out: :err)
     raise unless system("pdoc", "--html", "-o", "sdk/python", "../sdk/python/build/lib/arvados/",
