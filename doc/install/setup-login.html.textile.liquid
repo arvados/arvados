@@ -61,6 +61,12 @@ The provider will supply an issuer URL, client ID, and client secret. Add these 
 {% endcodeblock %}
 
 Arvados can also be configured to accept provider-issued access tokens as Arvados API tokens. This can be useful for integrating third party applications.
+* If the provider-issued tokens are JWTs, Arvados can optionally check them for a specified scope before attempting to validate them. This is the recommended configuration.
+* Tokens are validated by presenting them to the UserInfo endpoint advertised by the OIDC provider.
+* Once validated, a token is cached and accepted without re-checking for up to 10 minutes.
+* A token that fails validation is cached and rejected without re-checking for up to 5 minutes.
+* Validation errors such as network errors and HTTP 5xx responses from the provider's UserInfo endpoint are not cached.
+* The OIDC token cache size is currently limited to 1000 tokens.
 
 Check the OpenIDConnect section in the "default config file":{{site.baseurl}}/admin/config.html for more details and configuration options.
 
