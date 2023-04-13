@@ -33,7 +33,12 @@ class DiscoveryDocumentTest < ActionDispatch::IntegrationTest
     assert(missing.empty?, "discovery document missing required fields")
 
     expected = JSON.pretty_generate(canonical)
-    src_path = Rails.root.join("../../doc/arvados-v1-discovery.json")
+    # Currently the Python SDK is the only component using this copy of the
+    # discovery document, and storing it with the source simplifies the build
+    # process, so it lives there. If another component wants to use it later,
+    # we might consider moving it to a more general subdirectory, but then the
+    # Python build process will need to be extended to accommodate that.
+    src_path = Rails.root.join("../../sdk/python/arvados-v1-discovery.json")
     begin
       actual = File.open(src_path) { |f| f.read }
     rescue Errno::ENOENT

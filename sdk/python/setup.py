@@ -34,8 +34,6 @@ class BuildDiscoveryPydoc(setuptools.Command):
 
     [1]: https://setuptools.pypa.io/en/latest/userguide/extension.html#setuptools.command.build.SubCommand
     """
-    DEFAULT_JSON_PATH = Path(SETUP_DIR, '..', '..', 'doc', 'arvados-v1-discovery.json')
-    DEFAULT_OUTPUT_PATH = Path('arvados', 'api_resources.py')
     NAME = 'discovery2pydoc'
     description = "build skeleton Python from the Arvados discovery document"
     editable_mode = False
@@ -46,31 +44,29 @@ class BuildDiscoveryPydoc(setuptools.Command):
 
     def initialize_options(self):
         self.build_lib = None
-        self.discovery_json = None
-        self.discovery_output = str(self.DEFAULT_OUTPUT_PATH)
+        self.discovery_json = 'arvados-v1-discovery.json'
+        self.discovery_output = str(Path('arvados', 'api_resources.py'))
+
+    def _relative_path(self, src, optname):
+        retval = Path(src)
+        if retval.is_absolute():
+            raise Exception("--{optname} should be a relative path")
+        else:
+            return retval
 
     def finalize_options(self):
         # Set self.build_lib to match whatever the build_py subcommand uses.
         self.set_undefined_options('build_py', ('build_lib', 'build_lib'))
-        if self.discovery_json is None and self.DEFAULT_JSON_PATH.exists():
-            self.discovery_json = str(self.DEFAULT_JSON_PATH)
-        out_path = Path(self.discovery_output)
-        if out_path.is_absolute():
-            raise Exception("--discovery-output should be a relative path")
-        else:
-            self.out_path = Path(self.build_lib, out_path)
+        self.json_path = self._relative_path(self.discovery_json, 'discovery-json')
+        self.out_path = Path(
+            self.build_lib,
+            self._relative_path(self.discovery_output, 'discovery-output'),
+        )
 
     def run(self):
         import discovery2pydoc
         self.mkpath(str(self.out_path.parent))
-        arglist = ['--output-file', str(self.out_path)]
-        if self.discovery_json is None:
-            print(
-                "warning: trying to load a live discovery document from configuration",
-                file=sys.stderr,
-            )
-        else:
-            arglist.append(self.discovery_json)
+        arglist = ['--output-file', str(self.out_path), str(self.json_path)]
         returncode = discovery2pydoc.main(arglist)
         if returncode != 0:
             raise Exception(f"discovery2pydoc exited {returncode}")
@@ -78,18 +74,16 @@ class BuildDiscoveryPydoc(setuptools.Command):
     def should_run(self):
         return True
 
-    # The protocol docs say that get_outputs should list *all* outputs, while
-    # get_output_mapping maps get_source_files to output file paths. Since we
-    # are generating files from outside the source tree, we should just return
-    # our output, with the source file list and output mapping both empty.
     def get_outputs(self):
         return [str(self.out_path)]
 
     def get_source_files(self):
-        return []
+        return [str(self.json_path)]
 
     def get_output_mapping(self):
-        return {}
+        return {
+            str(self.json_path): str(self.out_path),
+        }
 # Run discovery2pydoc as the first subcommand of build.
 distutils.command.build.build.sub_commands.insert(
     0, (BuildDiscoveryPydoc.NAME, BuildDiscoveryPydoc.should_run),
