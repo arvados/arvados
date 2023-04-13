@@ -317,7 +317,8 @@ If not provided, retrieved dynamically from Arvados client configuration.
 def main(arglist: Optional[Sequence[str]]=None) -> int:
     args = parse_arguments(arglist)
     with urllib.request.urlopen(args.discovery_url) as discovery_file:
-        if not (discovery_file.status is None or 200 <= discovery_file.status < 300):
+        status = discovery_file.getcode()
+        if not (status is None or 200 <= status < 300):
             print(
                 f"error getting {args.discovery_url}: server returned {discovery_file.status}",
                 file=sys.stderr,
