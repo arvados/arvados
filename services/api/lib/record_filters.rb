@@ -164,10 +164,10 @@ module RecordFilters
              !(col.andand.type == :jsonb && ['contains', '=', '<>', '!='].index(operator))
             raise ArgumentError.new("Invalid attribute '#{attr}' in filter")
           end
+          attr_type = attr_model_class.attribute_column(attr).type
 
           case operator
           when '=', '<', '<=', '>', '>=', '!=', 'like', 'ilike'
-            attr_type = attr_model_class.attribute_column(attr).type
             operator = '<>' if operator == '!='
             if operand.is_a? String
               if attr_type == :boolean
@@ -217,16 +217,23 @@ module RecordFilters
                                       "for '#{operator}' operator in filters")
             end
           when 'in', 'not in'
-            if operand.is_a? Array
-              cond_out << "#{attr_table_name}.#{attr} #{operator} (?)"
-              param_out << operand
-              if operator == 'not in' and not operand.include?(nil)
-                # explicitly allow NULL
-                cond_out[-1] = "(#{cond_out[-1]} OR #{attr_table_name}.#{attr} IS NULL)"
-              end
-            else
+            if !operand.is_a? Array
               raise ArgumentError.new("Invalid operand type '#{operand.class}' "\
                                       "for '#{operator}' operator in filters")
+            end
+            if attr_type == :integer
+              operand.each do |el|
+                if !el.is_a?(Integer) || el.bit_length > 64
+                  raise ArgumentError.new("Invalid element '#{el}' in array "\
+                                          "for integer attribute '#{attr}'")
+                end
+              end
+            end
+            cond_out << "#{attr_table_name}.#{attr} #{operator} (?)"
+            param_out << operand
+            if operator == 'not in' and not operand.include?(nil)
+              # explicitly allow NULL
+              cond_out[-1] = "(#{cond_out[-1]} OR #{attr_table_name}.#{attr} IS NULL)"
             end
           when 'is_a'
             operand = [operand] unless operand.is_a? Array

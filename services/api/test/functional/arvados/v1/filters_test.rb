@@ -52,6 +52,18 @@ class Arvados::V1::FiltersTest < ActionController::TestCase
     assert_match(/Invalid operand .* integer attribute/, json_response['errors'].join(' '))
   end
 
+  ['in', 'not in'].each do |operator|
+    test "error message for int64 overflow ('#{operator}' filter)" do
+      @controller = Arvados::V1::ContainerRequestsController.new
+      authorize_with :active
+      get :index, params: {
+            filters: [['priority', operator, [9, 123412341234123412341234]]],
+          }
+      assert_response 422
+      assert_match(/Invalid element .* integer attribute/, json_response['errors'].join(' '))
+    end
+  end
+
   test 'error message for invalid boolean operand' do
     @controller = Arvados::V1::GroupsController.new
     authorize_with :active
