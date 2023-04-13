@@ -68,6 +68,31 @@ _DEPRECATED_SCHEMAS = frozenset([
     *(f'{name[:-1]}List' for name in _DEPRECATED_RESOURCES),
 ])
 
+_LIST_PYDOC = '''
+
+This is the dictionary object returned when you call `{cls_name}s.list`.
+If you just want to iterate all objects that match your search criteria,
+consider using `arvados.util.keyset_list_all`.
+If you work with this raw object, the keys of the dictionary are documented
+below, along with their types. The `items` key maps to a list of matching
+`{cls_name}` objects.
+'''
+_MODULE_PYDOC = '''Arvados API client documentation skeleton
+
+This module documents the methods and return types provided by the Arvados API
+client. Start with `ArvadosAPIClient`, which documents the methods available
+from the API client objects constructed by `arvados.api`. The implementation is
+generated dynamically at runtime when the client object is built.
+'''
+_SCHEMA_PYDOC = '''
+
+This is the dictionary object that represents a single {cls_name} in Arvados.
+The keys of the dictionary are documented below, along with their types.
+Not every key may appear in every dictionary returned by an API call.
+Refer to the API documentation for details about how to retrieve specific keys
+if you need them.
+'''
+
 _TYPE_MAP = {
     # Map the API's JavaScript-based type names to Python annotations.
     # Some of these may disappear after Arvados issue #19795 is fixed.
@@ -205,6 +230,13 @@ def document_schema(name: str, spec: Mapping[str, Any]) -> str:
     description = spec['description']
     if name in _DEPRECATED_SCHEMAS:
         description += _DEPRECATED_NOTICE
+    if name.endswith('List'):
+        desc_fmt = _LIST_PYDOC
+        cls_name = name[:-4]
+    else:
+        desc_fmt = _SCHEMA_PYDOC
+        cls_name = name
+    description += desc_fmt.format(cls_name=cls_name)
     lines = [
         f"class {name}(TypedDict, total=False):",
         to_docstring(description, 4),
@@ -292,7 +324,11 @@ def main(arglist: Optional[Sequence[str]]=None) -> int:
             )
             return os.EX_IOERR
         discovery_document = json.load(discovery_file)
-    print('''from typing import Any, TypedDict''', file=args.out_file)
+    print(
+        to_docstring(_MODULE_PYDOC, indent=0),
+        '''from typing import Any, TypedDict''',
+        sep='\n\n', end='\n\n', file=args.out_file,
+    )
 
     schemas = sorted(discovery_document['schemas'].items())
     for name, schema_spec in schemas:
