@@ -80,14 +80,14 @@ func (*eventSourceSuite) TestEventSource(c *check.C) {
 			for i := 0; i <= si; i++ {
 				ev := <-sinks[si].Channel()
 				c.Logf("sink %d received event %d", si, i)
-				c.Check(ev.LogID, check.Equals, uint64(i))
+				c.Check(ev.LogID, check.Equals, int64(i))
 				row := ev.Detail()
 				if i == 0 {
 					// no matching row, null event
 					c.Check(row, check.IsNil)
 				} else {
 					c.Check(row, check.NotNil)
-					c.Check(row.ID, check.Equals, uint64(i))
+					c.Check(row.ID, check.Equals, int64(i))
 					c.Check(row.UUID, check.Not(check.Equals), "")
 				}
 			}

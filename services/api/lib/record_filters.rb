@@ -181,8 +181,8 @@ module RecordFilters
                 when '0', 'f', 'false', 'n', 'no'
                   operand = false
                 else
-                  raise ArgumentError("Invalid operand '#{operand}' for " \
-                                      "boolean attribute '#{attr}'")
+                  raise ArgumentError.new("Invalid operand '#{operand}' for " \
+                                          "boolean attribute '#{attr}'")
                 end
               end
               if operator == '<>'
@@ -206,6 +206,10 @@ module RecordFilters
               cond_out << "#{attr_table_name}.#{attr} #{operator} ?"
               param_out << operand
             elsif (attr_type == :integer)
+              if !operand.is_a?(Integer) || operand.bit_length > 64
+                raise ArgumentError.new("Invalid operand '#{operand}' "\
+                                        "for integer attribute '#{attr}'")
+              end
               cond_out << "#{attr_table_name}.#{attr} #{operator} ?"
               param_out << operand
             else
