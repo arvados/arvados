@@ -5,3 +5,4 @@
 include LICENSE-2.0.txt
 include README.rst
 include arvados_version.py
+include discovery2pydoc.py
