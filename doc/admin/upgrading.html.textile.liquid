@@ -32,6 +32,10 @@ h2(#main). development main (as of 2023-04-06)
 
 "previous: Upgrading to 2.6.0":#v2_6_0
 
+h3. UseAWSS3v2Driver option removed
+
+The old "v1" S3 driver for keepstore has been removed. The new "v2" implementation, which has been the default since Arvados 2.5.0, is always used. The @Volumes.*.DriverParameters.UseAWSS3v2Driver@ configuration key is no longer recognized. If your config file uses it, remove it to avoid warning messages at startup.
+
 h2(#v2_6_0). v2.6.0 (2023-04-06)
 
 "previous: Upgrading to 2.5.0":#v2_5_0
