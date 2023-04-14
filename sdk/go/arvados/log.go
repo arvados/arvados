@@ -10,7 +10,7 @@ import (
 
 // Log is an arvados#log record
 type Log struct {
-	ID              uint64                 `json:"id"`
+	ID              int64                  `json:"id"`
 	UUID            string                 `json:"uuid"`
 	OwnerUUID       string                 `json:"owner_uuid"`
 	ObjectUUID      string                 `json:"object_uuid"`
