@@ -93,6 +93,15 @@ Refer to the API documentation for details about how to retrieve specific keys
 if you need them.
 '''
 
+_MODULE_PRELUDE = '''
+import sys
+if sys.version_info < (3, 8):
+    from typing import Any
+    from typing_extensions import TypedDict
+else:
+    from typing import Any, TypedDict
+'''
+
 _TYPE_MAP = {
     # Map the API's JavaScript-based type names to Python annotations.
     # Some of these may disappear after Arvados issue #19795 is fixed.
@@ -327,8 +336,8 @@ def main(arglist: Optional[Sequence[str]]=None) -> int:
         discovery_document = json.load(discovery_file)
     print(
         to_docstring(_MODULE_PYDOC, indent=0),
-        '''from typing import Any, TypedDict''',
-        sep='\n\n', end='\n\n', file=args.out_file,
+        _MODULE_PRELUDE,
+        sep='\n', file=args.out_file,
     )
 
     schemas = sorted(discovery_document['schemas'].items())
