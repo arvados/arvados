@@ -50,7 +50,7 @@ class BuildDiscoveryPydoc(setuptools.Command):
     def _relative_path(self, src, optname):
         retval = Path(src)
         if retval.is_absolute():
-            raise Exception("--{optname} should be a relative path")
+            raise Exception(f"--{optname} should be a relative path")
         else:
             return retval
 
