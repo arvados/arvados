@@ -4,14 +4,13 @@
 # SPDX-License-Identifier: Apache-2.0
 
 from __future__ import absolute_import
-import distutils.command.build
 import os
-import setuptools
 import sys
 import re
 
 from pathlib import Path
 from setuptools import setup, find_packages
+from setuptools.command import build_py
 
 SETUP_DIR = os.path.dirname(__file__) or '.'
 README = os.path.join(SETUP_DIR, 'README.rst')
@@ -24,8 +23,8 @@ if '--short-tests-only' in sys.argv:
     short_tests_only = True
     sys.argv.remove('--short-tests-only')
 
-class BuildDiscoveryPydoc(setuptools.Command):
-    """Run discovery2pydoc as part of the build process
+class BuildPython(build_py.build_py):
+    """Extend setuptools `build_py` to generate API documentation
 
     This class implements a setuptools subcommand, so it follows
     [the SubCommand protocol][1]. Most of these methods are required by that
@@ -34,16 +33,18 @@ class BuildDiscoveryPydoc(setuptools.Command):
 
     [1]: https://setuptools.pypa.io/en/latest/userguide/extension.html#setuptools.command.build.SubCommand
     """
-    NAME = 'discovery2pydoc'
-    description = "build skeleton Python from the Arvados discovery document"
-    editable_mode = False
-    user_options = [
+    # This is implemented as functionality on top of `build_py`, rather than a
+    # dedicated subcommand, because that's the only way I can find to run this
+    # code during both `build` and `install`. setuptools' `install` command
+    # normally calls specific `build` subcommands directly, rather than calling
+    # the entire command, so it skips custom subcommands.
+    user_options = build_py.build_py.user_options + [
         ('discovery-json=', 'J', 'JSON discovery document used to build pydoc'),
         ('discovery-output=', 'O', 'relative path to write discovery document pydoc'),
     ]
 
     def initialize_options(self):
-        self.build_lib = None
+        super().initialize_options()
         self.discovery_json = 'arvados-v1-discovery.json'
         self.discovery_output = str(Path('arvados', 'api_resources.py'))
 
@@ -55,8 +56,7 @@ class BuildDiscoveryPydoc(setuptools.Command):
             return retval
 
     def finalize_options(self):
-        # Set self.build_lib to match whatever the build_py subcommand uses.
-        self.set_undefined_options('build_py', ('build_lib', 'build_lib'))
+        super().finalize_options()
         self.json_path = self._relative_path(self.discovery_json, 'discovery-json')
         self.out_path = Path(
             self.build_lib,
@@ -64,30 +64,28 @@ class BuildDiscoveryPydoc(setuptools.Command):
         )
 
     def run(self):
+        super().run()
         import discovery2pydoc
-        self.mkpath(str(self.out_path.parent))
         arglist = ['--output-file', str(self.out_path), str(self.json_path)]
         returncode = discovery2pydoc.main(arglist)
         if returncode != 0:
             raise Exception(f"discovery2pydoc exited {returncode}")
 
-    def should_run(self):
-        return True
-
     def get_outputs(self):
-        return [str(self.out_path)]
+        retval = super().get_outputs()
+        retval.append(str(self.out_path))
+        return retval
 
     def get_source_files(self):
-        return [str(self.json_path)]
+        retval = super().get_source_files()
+        retval.append(str(self.json_path))
+        return retval
 
     def get_output_mapping(self):
-        return {
-            str(self.json_path): str(self.out_path),
-        }
-# Run discovery2pydoc as the first subcommand of build.
-distutils.command.build.build.sub_commands.insert(
-    0, (BuildDiscoveryPydoc.NAME, BuildDiscoveryPydoc.should_run),
-)
+        retval = super().get_output_mapping()
+        retval[str(self.json_path)] = str(self.out_path)
+        return retval
+
 
 setup(name='arvados-python-client',
       version=version,
@@ -99,7 +97,7 @@ setup(name='arvados-python-client',
       download_url="https://github.com/arvados/arvados.git",
       license='Apache 2.0',
       cmdclass={
-          BuildDiscoveryPydoc.NAME: BuildDiscoveryPydoc,
+          'build_py': BuildPython,
       },
       packages=find_packages(),
       scripts=[
