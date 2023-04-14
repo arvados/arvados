@@ -200,7 +200,7 @@ class Method:
 
     def signature(self) -> inspect.Signature:
         parameters = [
-            inspect.Parameter('self', inspect.Parameter.POSITIONAL_ONLY),
+            inspect.Parameter('self', inspect.Parameter.POSITIONAL_OR_KEYWORD),
             *self._required_params,
             *self._optional_params,
         ]
