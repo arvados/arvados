@@ -61,7 +61,7 @@ class DatabaseController < ApplicationController
         ActiveRecord::FixtureSet.
           create_fixtures(Rails.root.join('test', 'fixtures'), fixturesets)
 
-        # Dump cache of permissions etc.
+        # Reset cache and global state
         Rails.cache.clear
         ActiveRecord::Base.connection.clear_query_cache
 
