@@ -9,7 +9,7 @@ import { WithDialogProps } from 'store/dialog/with-dialog';
 import { InjectedFormProps } from 'redux-form';
 import { CollectionPartialCopyToExistingCollectionFormData } from 'store/collections/collection-partial-copy-actions';
 import { PickerIdProp } from "store/tree-picker/picker-id";
-import { CollectionPickerField } from 'views-components/form-fields/collection-form-fields';
+import { DirectoryPickerField } from 'views-components/form-fields/collection-form-fields';
 
 type DialogCollectionPartialCopyProps = WithDialogProps<string> & InjectedFormProps<CollectionPartialCopyToExistingCollectionFormData>;
 
@@ -25,5 +25,5 @@ const CollectionPartialCopyFields = memoize(
     (pickerId: string) =>
         () =>
             <>
-                <CollectionPickerField {...{ pickerId }}/>
+                <DirectoryPickerField {...{ pickerId }}/>
             </>);

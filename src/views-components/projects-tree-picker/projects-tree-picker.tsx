@@ -25,6 +25,7 @@ import { ArvadosTheme } from 'common/custom-theme';
 export interface ToplevelPickerProps {
     pickerId: string;
     includeCollections?: boolean;
+    includeDirectories?: boolean;
     includeFiles?: boolean;
     showSelection?: boolean;
     options?: { showOnlyOwned: boolean, showOnlyWritable: boolean };
@@ -55,6 +56,7 @@ const mapDispatchToProps = (dispatch: Dispatch, props: ToplevelPickerProps): (Pr
     const { home, shared, favorites, publicFavorites, search } = getProjectsTreePickerIds(props.pickerId);
     const params = {
         includeCollections: props.includeCollections,
+        includeDirectories: props.includeDirectories,
         includeFiles: props.includeFiles,
         options: props.options
     };
@@ -133,6 +135,7 @@ export const ProjectsTreePicker = connect(mapStateToProps, mapDispatchToProps)(
                 const relatedTreePickers = getRelatedTreePickers(pickerId);
                 const p = {
                     includeCollections: this.props.includeCollections,
+                    includeDirectories: this.props.includeDirectories,
                     includeFiles: this.props.includeFiles,
                     showSelection: this.props.showSelection,
                     options: this.props.options,

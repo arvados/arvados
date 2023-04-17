@@ -12,7 +12,7 @@ import { SHARED_PROJECT_ID } from 'store/tree-picker/tree-picker-actions';
 export const SharedTreePicker = connect(() => ({
     rootItemIcon: ShareMeIcon,
 }), (dispatch: Dispatch): Pick<ProjectsTreePickerProps, 'loadRootItem'> => ({
-    loadRootItem: (_, pickerId, includeCollections, includeFiles, options) => {
-        dispatch<any>(loadProject({ id: SHARED_PROJECT_ID, pickerId, includeCollections, includeFiles, loadShared: true, options }));
+    loadRootItem: (_, pickerId, includeCollections, includeDirectories, includeFiles, options) => {
+        dispatch<any>(loadProject({ id: SHARED_PROJECT_ID, pickerId, includeCollections, includeDirectories, includeFiles, loadShared: true, options }));
     },
 }))(ProjectsTreePicker);

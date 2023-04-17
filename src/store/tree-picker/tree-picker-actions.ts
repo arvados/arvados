@@ -4,7 +4,7 @@
 
 import { unionize, ofType, UnionOf } from "common/unionize";
 import { TreeNode, initTreeNode, getNodeDescendants, TreeNodeStatus, getNode, TreePickerId, Tree } from 'models/tree';
-import { createCollectionFilesTree } from "models/collection-file";
+import { CollectionFileType, createCollectionFilesTree } from "models/collection-file";
 import { Dispatch } from 'redux';
 import { RootState } from 'store/store';
 import { getUserUuid } from "common/getuser";
@@ -42,6 +42,7 @@ export type TreePickerAction = UnionOf<typeof treePickerActions>;
 
 export interface LoadProjectParams {
     includeCollections?: boolean;
+    includeDirectories?: boolean;
     includeFiles?: boolean;
     includeFilterGroups?: boolean;
     options?: { showOnlyOwned: boolean; showOnlyWritable: boolean; };
@@ -123,7 +124,17 @@ interface LoadProjectParamsWithId extends LoadProjectParams {
 
 export const loadProject = (params: LoadProjectParamsWithId) =>
     async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
-        const { id, pickerId, includeCollections = false, includeFiles = false, includeFilterGroups = false, loadShared = false, options, searchProjects = false } = params;
+        const {
+            id,
+            pickerId,
+            includeCollections = false,
+            includeDirectories = false,
+            includeFiles = false,
+            includeFilterGroups = false,
+            loadShared = false,
+            options,
+            searchProjects = false
+        } = params;
 
         dispatch(treePickerActions.LOAD_TREE_PICKER_NODE({ id, pickerId }));
 
@@ -194,14 +205,14 @@ export const loadProject = (params: LoadProjectParamsWithId) =>
                         value: item,
                         status: item.kind === ResourceKind.PROJECT
                             ? TreeNodeStatus.INITIAL
-                            : includeFiles
+                            : includeDirectories || includeFiles
                                 ? TreeNodeStatus.INITIAL
                                 : TreeNodeStatus.LOADED
                     }),
         }));
     };
 
-export const loadCollection = (id: string, pickerId: string) =>
+export const loadCollection = (id: string, pickerId: string, includeDirectories?: boolean, includeFiles?: boolean) =>
     async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
         dispatch(treePickerActions.LOAD_TREE_PICKER_NODE({ id, pickerId }));
 
@@ -210,7 +221,11 @@ export const loadCollection = (id: string, pickerId: string) =>
 
             const node = getNode(id)(picker);
             if (node && 'kind' in node.value && node.value.kind === ResourceKind.COLLECTION) {
-                const files = await services.collectionService.files(node.value.uuid);
+                const files = (await services.collectionService.files(node.value.uuid))
+                    .filter((file) => (
+                        (includeFiles) ||
+                        (includeDirectories && file.type === CollectionFileType.DIRECTORY)
+                    ));
                 const tree = createCollectionFilesTree(files);
                 const sorted = sortFilesTree(tree);
                 const filesTree = mapTreeValues(services.collectionService.extendFileURL)(sorted);
@@ -244,11 +259,11 @@ export const initUserProject = (pickerId: string) =>
             }));
         }
     };
-export const loadUserProject = (pickerId: string, includeCollections = false, includeFiles = false, options?: { showOnlyOwned: boolean, showOnlyWritable: boolean }) =>
+export const loadUserProject = (pickerId: string, includeCollections = false, includeDirectories = false, includeFiles = false, options?: { showOnlyOwned: boolean, showOnlyWritable: boolean }) =>
     async (dispatch: Dispatch<any>, getState: () => RootState, services: ServiceRepository) => {
         const uuid = getUserUuid(getState());
         if (uuid) {
-            dispatch(loadProject({ id: uuid, pickerId, includeCollections, includeFiles, options }));
+            dispatch(loadProject({ id: uuid, pickerId, includeCollections, includeDirectories, includeFiles, options }));
         }
     };
 
@@ -316,6 +331,7 @@ export const initSearchProject = (pickerId: string) =>
 interface LoadFavoritesProjectParams {
     pickerId: string;
     includeCollections?: boolean;
+    includeDirectories?: boolean;
     includeFiles?: boolean;
     options?: { showOnlyOwned: boolean, showOnlyWritable: boolean };
 }
@@ -323,7 +339,7 @@ interface LoadFavoritesProjectParams {
 export const loadFavoritesProject = (params: LoadFavoritesProjectParams,
     options: { showOnlyOwned: boolean, showOnlyWritable: boolean } = { showOnlyOwned: true, showOnlyWritable: false }) =>
     async (dispatch: Dispatch<any>, getState: () => RootState, services: ServiceRepository) => {
-        const { pickerId, includeCollections = false, includeFiles = false } = params;
+        const { pickerId, includeCollections = false, includeDirectories = false, includeFiles = false } = params;
         const uuid = getUserUuid(getState());
         if (uuid) {
             const filters = pipe(
@@ -354,7 +370,7 @@ export const loadFavoritesProject = (params: LoadFavoritesProjectParams,
                     value: item,
                     status: item.kind === ResourceKind.PROJECT
                         ? TreeNodeStatus.INITIAL
-                        : includeFiles
+                        : includeDirectories || includeFiles
                             ? TreeNodeStatus.INITIAL
                             : TreeNodeStatus.LOADED
                 }),
@@ -364,7 +380,7 @@ export const loadFavoritesProject = (params: LoadFavoritesProjectParams,
 
 export const loadPublicFavoritesProject = (params: LoadFavoritesProjectParams) =>
     async (dispatch: Dispatch<any>, getState: () => RootState, services: ServiceRepository) => {
-        const { pickerId, includeCollections = false, includeFiles = false } = params;
+        const { pickerId, includeCollections = false, includeDirectories = false, includeFiles = false } = params;
         const uuidPrefix = getState().auth.config.uuidPrefix;
         const publicProjectUuid = `${uuidPrefix}-j7d0g-publicfavorites`;
 
@@ -395,7 +411,7 @@ export const loadPublicFavoritesProject = (params: LoadFavoritesProjectParams) =
                 value: item,
                 status: item.headKind === ResourceKind.PROJECT
                     ? TreeNodeStatus.INITIAL
-                    : includeFiles
+                    : includeDirectories || includeFiles
                         ? TreeNodeStatus.INITIAL
                         : TreeNodeStatus.LOADED
             }),
