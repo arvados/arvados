@@ -45,7 +45,11 @@ Use the <a href="https://console.developers.google.com" target="_blank">Google D
 
 h2(#oidc). OpenID Connect
 
-With this configuration, users will sign in with a third-party OpenID Connect provider. The provider will supply appropriate values for the issuer URL, client ID, and client secret config entries.
+With this configuration, users will sign in with a third-party OpenID Connect provider such as GitHub, Auth0, Okta, or PingFederate.
+
+Similar to the Google login section above, you will need to register your Arvados cluster with the provider as an application (relying party). When asked for a redirect URL or callback URL, use @https://ClusterID.example.com/login@ (the external URL of your controller service, plus @/login@).
+
+The provider will supply an issuer URL, client ID, and client secret. Add these to your Arvados configuration.
 
 {% codeblock as yaml %}
     Login:
@@ -55,6 +59,24 @@ With this configuration, users will sign in with a third-party OpenID Connect pr
         ClientID: "0123456789abcdef"
         ClientSecret: "zzzzzzzzzzzzzzzzzzzzzzzz"
 {% endcodeblock %}
+
+h3. Accepting OpenID bearer tokens as Arvados API tokens
+
+Arvados can also be configured to accept provider-issued access tokens as Arvados API tokens by setting @Login.OpenIDConnect.AcceptAccessToken@ to @true@. This can be useful for integrating third party applications.
+
+{% codeblock as yaml %}
+    Login:
+      OpenIDConnect:
+        AcceptAccessToken: true
+        AcceptAccessTokenScope: "arvados"
+{% endcodeblock %}
+
+# If the provider-issued tokens are JWTs, and @Login.OpenIDConnect.AcceptAccessTokenScope@ is not empty, Arvados will check that the token contains the configured scope, and reject tokens that do not have the configured scope.  This can be used to control which users or applications are permitted to access your Arvados instance.
+# Tokens are validated by presenting them to the UserInfo endpoint advertised by the OIDC provider.
+# Once validated, a token is cached and accepted without re-checking for up to 10 minutes.
+# A token that fails validation is cached and will not be re-checked for up to 5 minutes.
+# Network errors and HTTP 5xx responses from the provider's UserInfo endpoint are not cached.
+# The OIDC token cache size is currently limited to 1000 tokens, if the number of distinct tokens used in a 5 minute period is greater than this, tokens may be checked more frequently.
 
 Check the OpenIDConnect section in the "default config file":{{site.baseurl}}/admin/config.html for more details and configuration options.
 
