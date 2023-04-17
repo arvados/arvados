@@ -28,6 +28,16 @@ TODO: extract this information based on git commit messages and generate changel
 <div class="releasenotes">
 </notextile>
 
+h2(#v2_6_1). v2.6.1 (2023-04-17)
+
+"previous: Upgrading to 2.6.0":#v2_6_0
+
+h3. Performance improvement for permission row de-duplication migration
+
+The migration which de-duplicates permission links has been optimized.  We recommend upgrading from 2.5.0 directly to 2.6.1 in order to avoid the slow permission de-deplication migration in 2.6.0.
+
+You should still plan for the arvados-api-server package upgrade to take longer than usual due to the database schema update changing the integer id column in each table from 32-bit to 64-bit.
+
 h2(#v2_6_0). v2.6.0 (2023-04-06)
 
 "previous: Upgrading to 2.5.0":#v2_5_0
