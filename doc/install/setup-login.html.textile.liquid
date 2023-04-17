@@ -68,9 +68,10 @@ Arvados can also be configured to accept provider-issued access tokens as Arvado
     Login:
       OpenIDConnect:
         AcceptAccessToken: true
+	AcceptAccessTokenScope: "arvados"
 {% endcodeblock %}
 
-# If the provider-issued tokens are JWTs, Arvados can optionally check for the scope specified in @Login.OpenIDConnect.AcceptAccessTokenScope@ before attempting to validate them.  Tokens withou the configured the scope will not be accepted by Arvados.  This is the recommended configuration.
+# If the provider-issued tokens are JWTs, and @Login.OpenIDConnect.AcceptAccessTokenScope@ is not empty, Arvados will check that the token contains the configured scope, and reject tokens that do not have the configured scope.  This can be used to control which users or applications are permitted to access your Arvados instance.
 # Tokens are validated by presenting them to the UserInfo endpoint advertised by the OIDC provider.
 # Once validated, a token is cached and accepted without re-checking for up to 10 minutes.
 # A token that fails validation is cached and will not be re-checked for up to 5 minutes.
