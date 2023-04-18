@@ -220,6 +220,41 @@ func (conn *Conn) relativeToBaseURL(location string) string {
 	return location
 }
 
+func (conn *Conn) AuthorizedKeyCreate(ctx context.Context, options arvados.CreateOptions) (arvados.AuthorizedKey, error) {
+	ep := arvados.EndpointAuthorizedKeyCreate
+	var resp arvados.AuthorizedKey
+	err := conn.requestAndDecode(ctx, &resp, ep, nil, options)
+	return resp, err
+}
+
+func (conn *Conn) AuthorizedKeyUpdate(ctx context.Context, options arvados.UpdateOptions) (arvados.AuthorizedKey, error) {
+	ep := arvados.EndpointAuthorizedKeyUpdate
+	var resp arvados.AuthorizedKey
+	err := conn.requestAndDecode(ctx, &resp, ep, nil, options)
+	return resp, err
+}
+
+func (conn *Conn) AuthorizedKeyGet(ctx context.Context, options arvados.GetOptions) (arvados.AuthorizedKey, error) {
+	ep := arvados.EndpointAuthorizedKeyGet
+	var resp arvados.AuthorizedKey
+	err := conn.requestAndDecode(ctx, &resp, ep, nil, options)
+	return resp, err
+}
+
+func (conn *Conn) AuthorizedKeyList(ctx context.Context, options arvados.ListOptions) (arvados.AuthorizedKeyList, error) {
+	ep := arvados.EndpointAuthorizedKeyList
+	var resp arvados.AuthorizedKeyList
+	err := conn.requestAndDecode(ctx, &resp, ep, nil, options)
+	return resp, err
+}
+
+func (conn *Conn) AuthorizedKeyDelete(ctx context.Context, options arvados.DeleteOptions) (arvados.AuthorizedKey, error) {
+	ep := arvados.EndpointAuthorizedKeyDelete
+	var resp arvados.AuthorizedKey
+	err := conn.requestAndDecode(ctx, &resp, ep, nil, options)
+	return resp, err
+}
+
 func (conn *Conn) CollectionCreate(ctx context.Context, options arvados.CreateOptions) (arvados.Collection, error) {
 	ep := arvados.EndpointCollectionCreate
 	var resp arvados.Collection

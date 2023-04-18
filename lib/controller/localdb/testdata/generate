@@ -1,0 +1,25 @@
+#!/bin/bash
+# Copyright (C) The Arvados Authors. All rights reserved.
+#
+# SPDX-License-Identifier: AGPL-3.0
+
+# This script uses ssh-keygen to generate an example public key for
+# each supported type, to be used by test cases. Private keys are
+# discarded. If ${keytype}.pub already exists, it is left alone.
+
+set -e
+
+err=
+keytypes=$(ssh-keygen -_ 2>&1 | grep -- -t | tr -d '[|]' | tr ' ' '\n' | grep -vw t)
+for keytype in ${keytypes[@]}; do
+    if [[ ! -e "./${keytype}.pub" ]]; then
+        if ssh-keygen -t "${keytype}" -f "./${keytype}" -N ""; then
+            # discard private key
+            rm "./${keytype}"
+        else
+            echo >&2 "ssh-keygen -t ${keytype} failed"
+            err=1
+        fi
+    fi
+done
+exit $err

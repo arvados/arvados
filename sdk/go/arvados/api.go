@@ -27,6 +27,11 @@ var (
 	EndpointVocabularyGet                 = APIEndpoint{"GET", "arvados/v1/vocabulary", ""}
 	EndpointLogin                         = APIEndpoint{"GET", "login", ""}
 	EndpointLogout                        = APIEndpoint{"GET", "logout", ""}
+	EndpointAuthorizedKeyCreate           = APIEndpoint{"POST", "arvados/v1/authorized_keys", "authorized_key"}
+	EndpointAuthorizedKeyUpdate           = APIEndpoint{"PATCH", "arvados/v1/authorized_keys/{uuid}", "authorized_key"}
+	EndpointAuthorizedKeyGet              = APIEndpoint{"GET", "arvados/v1/authorized_keys/{uuid}", ""}
+	EndpointAuthorizedKeyList             = APIEndpoint{"GET", "arvados/v1/authorized_keys", ""}
+	EndpointAuthorizedKeyDelete           = APIEndpoint{"DELETE", "arvados/v1/authorized_keys/{uuid}", ""}
 	EndpointCollectionCreate              = APIEndpoint{"POST", "arvados/v1/collections", "collection"}
 	EndpointCollectionUpdate              = APIEndpoint{"PATCH", "arvados/v1/collections/{uuid}", "collection"}
 	EndpointCollectionGet                 = APIEndpoint{"GET", "arvados/v1/collections/{uuid}", ""}
@@ -268,6 +273,11 @@ type API interface {
 	VocabularyGet(ctx context.Context) (Vocabulary, error)
 	Login(ctx context.Context, options LoginOptions) (LoginResponse, error)
 	Logout(ctx context.Context, options LogoutOptions) (LogoutResponse, error)
+	AuthorizedKeyCreate(ctx context.Context, options CreateOptions) (AuthorizedKey, error)
+	AuthorizedKeyUpdate(ctx context.Context, options UpdateOptions) (AuthorizedKey, error)
+	AuthorizedKeyGet(ctx context.Context, options GetOptions) (AuthorizedKey, error)
+	AuthorizedKeyList(ctx context.Context, options ListOptions) (AuthorizedKeyList, error)
+	AuthorizedKeyDelete(ctx context.Context, options DeleteOptions) (AuthorizedKey, error)
 	CollectionCreate(ctx context.Context, options CreateOptions) (Collection, error)
 	CollectionUpdate(ctx context.Context, options UpdateOptions) (Collection, error)
 	CollectionGet(ctx context.Context, options GetOptions) (Collection, error)

@@ -48,6 +48,26 @@ func (as *APIStub) Logout(ctx context.Context, options arvados.LogoutOptions) (a
 	as.appendCall(ctx, as.Logout, options)
 	return arvados.LogoutResponse{}, as.Error
 }
+func (as *APIStub) AuthorizedKeyCreate(ctx context.Context, options arvados.CreateOptions) (arvados.AuthorizedKey, error) {
+	as.appendCall(ctx, as.AuthorizedKeyCreate, options)
+	return arvados.AuthorizedKey{}, as.Error
+}
+func (as *APIStub) AuthorizedKeyUpdate(ctx context.Context, options arvados.UpdateOptions) (arvados.AuthorizedKey, error) {
+	as.appendCall(ctx, as.AuthorizedKeyUpdate, options)
+	return arvados.AuthorizedKey{}, as.Error
+}
+func (as *APIStub) AuthorizedKeyGet(ctx context.Context, options arvados.GetOptions) (arvados.AuthorizedKey, error) {
+	as.appendCall(ctx, as.AuthorizedKeyGet, options)
+	return arvados.AuthorizedKey{}, as.Error
+}
+func (as *APIStub) AuthorizedKeyList(ctx context.Context, options arvados.ListOptions) (arvados.AuthorizedKeyList, error) {
+	as.appendCall(ctx, as.AuthorizedKeyList, options)
+	return arvados.AuthorizedKeyList{}, as.Error
+}
+func (as *APIStub) AuthorizedKeyDelete(ctx context.Context, options arvados.DeleteOptions) (arvados.AuthorizedKey, error) {
+	as.appendCall(ctx, as.AuthorizedKeyDelete, options)
+	return arvados.AuthorizedKey{}, as.Error
+}
 func (as *APIStub) CollectionCreate(ctx context.Context, options arvados.CreateOptions) (arvados.Collection, error) {
 	as.appendCall(ctx, as.CollectionCreate, options)
 	return arvados.Collection{}, as.Error

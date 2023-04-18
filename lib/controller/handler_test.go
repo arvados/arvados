@@ -639,7 +639,7 @@ func (s *HandlerSuite) TestGetObjects(c *check.C) {
 	testCases := map[string]map[string]bool{
 		"api_clients/" + arvadostest.TrustedWorkbenchAPIClientUUID:     nil,
 		"api_client_authorizations/" + auth.UUID:                       {"href": true, "modified_by_client_uuid": true, "modified_by_user_uuid": true},
-		"authorized_keys/" + arvadostest.AdminAuthorizedKeysUUID:       nil,
+		"authorized_keys/" + arvadostest.AdminAuthorizedKeysUUID:       {"href": true},
 		"collections/" + arvadostest.CollectionWithUniqueWordsUUID:     {"href": true},
 		"containers/" + arvadostest.RunningContainerUUID:               nil,
 		"container_requests/" + arvadostest.QueuedContainerRequestUUID: nil,
