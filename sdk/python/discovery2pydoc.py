@@ -86,7 +86,8 @@ generated dynamically at runtime when the client object is built.
 '''
 _SCHEMA_PYDOC = '''
 
-This is the dictionary object that represents a single {cls_name} in Arvados.
+This is the dictionary object that represents a single {cls_name} in Arvados
+and is returned by most `{cls_name}s` methods.
 The keys of the dictionary are documented below, along with their types.
 Not every key may appear in every dictionary returned by an API call.
 Refer to the API documentation for details about how to retrieve specific keys
