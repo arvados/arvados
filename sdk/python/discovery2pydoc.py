@@ -90,8 +90,8 @@ This is the dictionary object that represents a single {cls_name} in Arvados
 and is returned by most `{cls_name}s` methods.
 The keys of the dictionary are documented below, along with their types.
 Not every key may appear in every dictionary returned by an API call.
-Refer to the API documentation for details about how to retrieve specific keys
-if you need them.
+When a method doesn't return all the data, you can use its `select` parameter
+to list the specific keys you need. Refer to the API documentation for details.
 '''
 
 _MODULE_PRELUDE = '''
