@@ -18,7 +18,7 @@ export type DataColumns<I, R> = Array<DataColumn<I, R>>;
 
 export enum DataTableFetchMode {
     PAGINATED,
-    INFINITE
+    INFINITE,
 }
 
 export interface DataTableDataProps<I> {
@@ -37,7 +37,7 @@ export interface DataTableDataProps<I> {
     currentRoute?: string;
 }
 
-type CssRules = "tableBody" | "root" | "content" | "noItemsInfo" | 'tableCell' | 'arrow' | 'arrowButton' | 'tableCellWorkflows' | 'loader';
+type CssRules = 'tableBody' | 'root' | 'content' | 'noItemsInfo' | 'tableCellSelect' | 'tableCell' | 'arrow' | 'arrowButton' | 'tableCellWorkflows' | 'loader';
 
 const styles: StyleRulesCallback<CssRules> = (theme: Theme) => ({
     root: {
@@ -48,40 +48,42 @@ const styles: StyleRulesCallback<CssRules> = (theme: Theme) => ({
         width: '100%',
     },
     tableBody: {
-        background: theme.palette.background.paper
+        background: theme.palette.background.paper,
     },
     loader: {
         left: '50%',
         marginLeft: '-84px',
-        position: 'absolute'
+        position: 'absolute',
     },
     noItemsInfo: {
-        textAlign: "center",
-        padding: theme.spacing.unit
+        textAlign: 'center',
+        padding: theme.spacing.unit,
+    },
+    tableCellSelect: {
+        padding: '0',
     },
     tableCell: {
         wordWrap: 'break-word',
         paddingRight: '24px',
-        color: '#737373'
-
+        color: '#737373',
     },
     tableCellWorkflows: {
         '&:nth-last-child(2)': {
             padding: '0px',
-            maxWidth: '48px'
+            maxWidth: '48px',
         },
         '&:last-child': {
             padding: '0px',
             paddingRight: '24px',
-            width: '48px'
-        }
+            width: '48px',
+        },
     },
     arrow: {
-        margin: 0
+        margin: 0,
     },
     arrowButton: {
-        color: theme.palette.text.primary
-    }
+        color: theme.palette.text.primary,
+    },
 });
 
 type DataTableProps<T> = DataTableDataProps<T> & WithStyles<CssRules>;
@@ -90,99 +92,97 @@ export const DataTable = withStyles(styles)(
     class Component<T> extends React.Component<DataTableProps<T>> {
         render() {
             const { items, classes, working } = this.props;
-            return <div className={classes.root}>
-                <div className={classes.content}>
-                    <Table>
-                        <TableHead>
-                            <TableRow>
-                                {this.mapVisibleColumns(this.renderHeadCell)}
-                            </TableRow>
-                        </TableHead>
-                        <TableBody className={classes.tableBody}>
-                            { !working && items.map(this.renderBodyRow) }
-                        </TableBody>
-                    </Table>
-                    { !!working &&
-                        <div className={classes.loader}>
-                            <DataTableDefaultView
-                                icon={PendingIcon}
-                                messages={['Loading data, please wait.']} />
-                        </div> }
-                    {items.length === 0 && !working && this.renderNoItemsPlaceholder(this.props.columns)}
+            return (
+                <div className={classes.root}>
+                    <div className={classes.content}>
+                        <Table>
+                            <TableHead>
+                                <TableRow>{this.mapVisibleColumns(this.renderHeadCell)}</TableRow>
+                            </TableHead>
+                            <TableBody className={classes.tableBody}>{!working && items.map(this.renderBodyRow)}</TableBody>
+                        </Table>
+                        {!!working && (
+                            <div className={classes.loader}>
+                                <DataTableDefaultView icon={PendingIcon} messages={['Loading data, please wait.']} />
+                            </div>
+                        )}
+                        {items.length === 0 && !working && this.renderNoItemsPlaceholder(this.props.columns)}
+                    </div>
                 </div>
-            </div>;
+            );
         }
 
         renderNoItemsPlaceholder = (columns: DataColumns<T, any>) => {
             const dirty = columns.some((column) => getTreeDirty('')(column.filters));
-            return <DataTableDefaultView
-                icon={this.props.defaultViewIcon}
-                messages={this.props.defaultViewMessages}
-                filtersApplied={dirty} />;
-        }
+            return <DataTableDefaultView icon={this.props.defaultViewIcon} messages={this.props.defaultViewMessages} filtersApplied={dirty} />;
+        };
 
         renderHeadCell = (column: DataColumn<T, any>, index: number) => {
             const { name, key, renderHeader, filters, sort } = column;
             const { onSortToggle, onFiltersChange, classes } = this.props;
-            return <TableCell className={classes.tableCell} key={key || index}>
-                {renderHeader ?
-                    renderHeader() :
-                    countNodes(filters) > 0
-                        ? <DataTableFiltersPopover
+            return (
+                <TableCell className={classes.tableCell} key={key || index}>
+                    {renderHeader ? (
+                        renderHeader()
+                    ) : countNodes(filters) > 0 ? (
+                        <DataTableFiltersPopover
                             name={`${name} filters`}
                             mutuallyExclusive={column.mutuallyExclusiveFilters}
-                            onChange={filters =>
-                                onFiltersChange &&
-                                onFiltersChange(filters, column)}
-                            filters={filters}>
+                            onChange={(filters) => onFiltersChange && onFiltersChange(filters, column)}
+                            filters={filters}
+                        >
                             {name}
                         </DataTableFiltersPopover>
-                        : sort
-                            ? <TableSortLabel
-                                active={sort.direction !== SortDirection.NONE}
-                                direction={sort.direction !== SortDirection.NONE ? sort.direction : undefined}
-                                IconComponent={this.ArrowIcon}
-                                hideSortIcon
-                                onClick={() =>
-                                    onSortToggle &&
-                                    onSortToggle(column)}>
-                                {name}
-                            </TableSortLabel>
-                            : <span>
-                                {name}
-                            </span>}
-            </TableCell>;
-        }
+                    ) : sort ? (
+                        <TableSortLabel
+                            active={sort.direction !== SortDirection.NONE}
+                            direction={sort.direction !== SortDirection.NONE ? sort.direction : undefined}
+                            IconComponent={this.ArrowIcon}
+                            hideSortIcon
+                            onClick={() => onSortToggle && onSortToggle(column)}
+                        >
+                            {name}
+                        </TableSortLabel>
+                    ) : (
+                        <span>{name}</span>
+                    )}
+                </TableCell>
+            );
+        };
 
         ArrowIcon = ({ className, ...props }: SvgIconProps) => (
             <IconButton component='span' className={this.props.classes.arrowButton} tabIndex={-1}>
                 <ArrowDownwardIcon {...props} className={classnames(className, this.props.classes.arrow)} />
             </IconButton>
-        )
+        );
 
         renderBodyRow = (item: any, index: number) => {
             const { onRowClick, onRowDoubleClick, extractKey, classes, currentItemUuid, currentRoute } = this.props;
-            return <TableRow
-                hover
-                key={extractKey ? extractKey(item) : index}
-                onClick={event => onRowClick && onRowClick(event, item)}
-                onContextMenu={this.handleRowContextMenu(item)}
-                onDoubleClick={event => onRowDoubleClick && onRowDoubleClick(event, item)}
-                selected={item === currentItemUuid}>
-                {this.mapVisibleColumns((column, index) => <TableCell key={column.key || index} className={currentRoute === '/workflows' ? classes.tableCellWorkflows : classes.tableCell}>
-                        {column.render(item)}
-                    </TableCell>
-                )}
-            </TableRow>;
-        }
+            return (
+                <TableRow
+                    hover
+                    key={extractKey ? extractKey(item) : index}
+                    onClick={(event) => onRowClick && onRowClick(event, item)}
+                    onContextMenu={this.handleRowContextMenu(item)}
+                    onDoubleClick={(event) => onRowDoubleClick && onRowDoubleClick(event, item)}
+                    selected={item === currentItemUuid}
+                >
+                    {this.mapVisibleColumns((column, index) => (
+                        <TableCell
+                            key={column.key || index}
+                            className={currentRoute === '/workflows' ? classes.tableCellWorkflows : index === 0 ? classes.tableCellSelect : classes.tableCell}
+                        >
+                            {column.render(item)}
+                        </TableCell>
+                    ))}
+                </TableRow>
+            );
+        };
 
         mapVisibleColumns = (fn: (column: DataColumn<T, any>, index: number) => React.ReactElement<any>) => {
-            return this.props.columns.filter(column => column.selected).map(fn);
-        }
+            return this.props.columns.filter((column) => column.selected).map(fn);
+        };
 
-        handleRowContextMenu = (item: T) =>
-            (event: React.MouseEvent<HTMLElement>) =>
-                this.props.onContextMenu(event, item)
-
+        handleRowContextMenu = (item: T) => (event: React.MouseEvent<HTMLElement>) => this.props.onContextMenu(event, item);
     }
 );
