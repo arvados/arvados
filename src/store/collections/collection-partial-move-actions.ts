@@ -8,6 +8,7 @@ import { CommonResourceServiceError, getCommonResourceServiceError } from "servi
 import { ServiceRepository } from "services/services";
 import { filterCollectionFilesBySelection } from "store/collection-panel/collection-panel-files/collection-panel-files-state";
 import { dialogActions } from "store/dialog/dialog-actions";
+import { navigateTo } from "store/navigation/navigation-action";
 import { progressIndicatorActions } from "store/progress-indicator/progress-indicator-actions";
 import { resetPickerProjectTree } from "store/project-tree-picker/project-tree-picker-actions";
 import { updateResources } from "store/resources/resources-actions";
@@ -74,6 +75,7 @@ export const moveCollectionPartialToNewCollection = ({ name, description, projec
                     false
                 );
                 dispatch(updateResources([updatedCollection]));
+                dispatch<any>(navigateTo(updatedCollection.uuid))
 
                 dispatch(dialogActions.CLOSE_DIALOG({ id: COLLECTION_PARTIAL_MOVE_TO_NEW_COLLECTION }));
                 dispatch(snackbarActions.OPEN_SNACKBAR({

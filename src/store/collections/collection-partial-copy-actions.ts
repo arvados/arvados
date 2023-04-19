@@ -14,6 +14,7 @@ import { getCommonResourceServiceError, CommonResourceServiceError } from 'servi
 import { progressIndicatorActions } from "store/progress-indicator/progress-indicator-actions";
 import { initProjectsTreePicker } from "store/tree-picker/tree-picker-actions";
 import { updateResources } from 'store/resources/resources-actions';
+import { navigateTo } from 'store/navigation/navigation-action';
 
 export const COLLECTION_PARTIAL_COPY_FORM_NAME = 'COLLECTION_PARTIAL_COPY_DIALOG';
 export const COLLECTION_PARTIAL_COPY_TO_SELECTED_COLLECTION = 'COLLECTION_PARTIAL_COPY_TO_SELECTED_DIALOG';
@@ -73,6 +74,7 @@ export const copyCollectionPartialToNewCollection = ({ name, description, projec
                     false
                 );
                 dispatch(updateResources([updatedCollection]));
+                dispatch<any>(navigateTo(updatedCollection.uuid))
 
                 dispatch(dialogActions.CLOSE_DIALOG({ id: COLLECTION_PARTIAL_COPY_FORM_NAME }));
                 dispatch(snackbarActions.OPEN_SNACKBAR({
