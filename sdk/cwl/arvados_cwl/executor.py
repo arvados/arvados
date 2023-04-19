@@ -281,7 +281,7 @@ The 'jobs' API is no longer supported.
             runtime_status = current.get('runtime_status', {})
 
             original_updatemessage = updatemessage = runtime_status.get(kind, "")
-            if not updatemessage:
+            if kind == "activity" or not updatemessage:
                 updatemessage = message
 
             # Subsequent messages tacked on in detail
