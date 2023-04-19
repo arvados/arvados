@@ -60,9 +60,9 @@ class CurlMock:
         self.perform_was_called = True
 
         if self.head:
-            self.headerfn("HTTP/1.1 {} Status".format(self.head_response))
+            self.headerfn("HTTP/1.1 {} Status\r\n".format(self.head_response))
         else:
-            self.headerfn("HTTP/1.1 {} Status".format(self.get_response))
+            self.headerfn("HTTP/1.1 {} Status\r\n".format(self.get_response))
 
         for k,v in self.headers.items():
             self.headerfn("%s: %s" % (k,v))

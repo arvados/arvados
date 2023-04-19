@@ -173,6 +173,9 @@ class CurlDownloader(PyCurlHelper):
         else:
             self.name = self.parsedurl.path.split("/")[-1]
 
+        # Can't call curl.getinfo(pycurl.RESPONSE_CODE) until
+        # perform() is done but we need to know the status before that
+        # so we have to parse the status line ourselves.
         mt = re.match(r'^HTTP\/(\d(\.\d)?) ([1-5]\d\d) ([^\r\n\x00-\x08\x0b\x0c\x0e-\x1f\x7f]*)\r\n$', self._headers["x-status-line"])
         code = int(mt.group(3))
 
