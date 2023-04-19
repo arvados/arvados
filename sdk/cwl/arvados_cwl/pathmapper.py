@@ -26,7 +26,7 @@ from cwltool.utils import adjustFileObjs, adjustDirObjs
 from cwltool.stdfsaccess import abspath
 from cwltool.workflow import WorkflowException
 
-from .http import http_to_keep
+from arvados.http_import import http_to_keep
 
 logger = logging.getLogger('arvados.cwl-runner')
 
