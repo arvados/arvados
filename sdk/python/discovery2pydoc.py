@@ -318,10 +318,11 @@ If not provided, retrieved dynamically from Arvados client configuration.
         parts = urllib.parse.urlsplit(args.discovery_url)
         if not (parts.scheme or parts.netloc):
             args.discovery_url = pathlib.Path(args.discovery_url).resolve().as_uri()
+    # Our output is Python source, so it should be UTF-8 regardless of locale.
     if args.output_file == STDSTREAM_PATH:
-        args.out_file = sys.stdout
+        args.out_file = open(sys.stdout.fileno(), 'w', encoding='utf-8', closefd=False)
     else:
-        args.out_file = args.output_file.open('w')
+        args.out_file = args.output_file.open('w', encoding='utf-8')
     return args
 
 def main(arglist: Optional[Sequence[str]]=None) -> int:
@@ -364,6 +365,7 @@ def main(arglist: Optional[Sequence[str]]=None) -> int:
         }
         print(Method(name, method_spec).doc(), file=args.out_file)
 
+    args.out_file.close()
     return os.EX_OK
 
 if __name__ == '__main__':
