@@ -173,7 +173,10 @@ class CurlDownloader(PyCurlHelper):
         else:
             self.name = self.parsedurl.path.split("/")[-1]
 
-        if self.curl.getinfo(pycurl.RESPONSE_CODE) == 200:
+        mt = re.match(r'^HTTP\/(\d(\.\d)?) ([1-5]\d\d) ([^\r\n\x00-\x08\x0b\x0c\x0e-\x1f\x7f]*)\r\n$', self._headers["x-status-line"])
+        code = int(mt.group(3))
+
+        if code == 200:
             self.target = self.collection.open(self.name, "wb")
 
     def body_write(self, chunk):
