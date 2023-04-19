@@ -233,6 +233,9 @@ def etag_quote(etag):
 
 
 def http_to_keep(api, project_uuid, url, utcnow=datetime.datetime.utcnow, varying_url_params="", prefer_cached_downloads=False):
+
+    logger.info("Checking Keep for %s", url)
+
     varying_params = [s.strip() for s in varying_url_params.split(",")]
 
     parsed = urllib.parse.urlparse(url)
