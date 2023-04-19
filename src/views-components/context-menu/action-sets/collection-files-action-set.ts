@@ -6,9 +6,10 @@ import { ContextMenuActionSet } from "views-components/context-menu/context-menu
 import { collectionPanelFilesAction, openMultipleFilesRemoveDialog } from "store/collection-panel/collection-panel-files/collection-panel-files-actions";
 import {
     openCollectionPartialCopyToNewCollectionDialog,
-    openCollectionPartialCopyToExistingCollectionDialog
+    openCollectionPartialCopyToExistingCollectionDialog,
+    openCollectionPartialCopyToSeparateCollectionsDialog
 } from 'store/collections/collection-partial-copy-actions';
-import { openCollectionPartialMoveToExistingCollectionDialog, openCollectionPartialMoveToNewCollectionDialog } from "store/collections/collection-partial-move-actions";
+import { openCollectionPartialMoveToExistingCollectionDialog, openCollectionPartialMoveToNewCollectionDialog, openCollectionPartialMoveToSeparateCollectionsDialog } from "store/collections/collection-partial-move-actions";
 
 // These action sets are used on the multi-select actions button.
 export const readOnlyCollectionFilesActionSet: ContextMenuActionSet = [[
@@ -35,6 +36,12 @@ export const readOnlyCollectionFilesActionSet: ContextMenuActionSet = [[
         execute: dispatch => {
             dispatch<any>(openCollectionPartialCopyToExistingCollectionDialog());
         }
+    },
+    {
+        name: "Copy selected into separate collections",
+        execute: dispatch => {
+            dispatch<any>(openCollectionPartialCopyToSeparateCollectionsDialog());
+        }
     }
 ]];
 
@@ -55,6 +62,12 @@ export const collectionFilesActionSet: ContextMenuActionSet = readOnlyCollection
         name: "Move selected into existing collection",
         execute: dispatch => {
             dispatch<any>(openCollectionPartialMoveToExistingCollectionDialog());
+        }
+    },
+    {
+        name: "Move selected into separate collections",
+        execute: dispatch => {
+            dispatch<any>(openCollectionPartialMoveToSeparateCollectionsDialog());
         }
     }
 ]]);

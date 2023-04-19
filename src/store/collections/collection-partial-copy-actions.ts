@@ -18,6 +18,7 @@ import { navigateTo } from 'store/navigation/navigation-action';
 
 export const COLLECTION_PARTIAL_COPY_FORM_NAME = 'COLLECTION_PARTIAL_COPY_DIALOG';
 export const COLLECTION_PARTIAL_COPY_TO_SELECTED_COLLECTION = 'COLLECTION_PARTIAL_COPY_TO_SELECTED_DIALOG';
+export const COLLECTION_PARTIAL_COPY_TO_SEPARATE_COLLECTIONS = 'COLLECTION_PARTIAL_COPY_TO_SEPARATE_DIALOG';
 
 export interface CollectionPartialCopyToNewCollectionFormData {
     name: string;
@@ -27,6 +28,11 @@ export interface CollectionPartialCopyToNewCollectionFormData {
 
 export interface CollectionPartialCopyToExistingCollectionFormData {
     destination: {uuid: string, path?: string};
+}
+
+export interface CollectionPartialCopyToSeparateCollectionsFormData {
+    name: string;
+    projectUuid: string;
 }
 
 export const openCollectionPartialCopyToNewCollectionDialog = () =>
@@ -145,6 +151,76 @@ export const copyCollectionPartialToExistingCollection = ({ destination }: Colle
                     dispatch(snackbarActions.OPEN_SNACKBAR({ message: 'Could not copy this files to selected collection', hideDuration: 2000, kind: SnackbarKind.ERROR }));
                 }
                 dispatch(progressIndicatorActions.STOP_WORKING(COLLECTION_PARTIAL_COPY_TO_SELECTED_COLLECTION));
+            }
+        }
+    };
+
+export const openCollectionPartialCopyToSeparateCollectionsDialog = () =>
+    (dispatch: Dispatch, getState: () => RootState) => {
+        const currentCollection = getState().collectionPanel.item;
+        if (currentCollection) {
+            const initialData = {
+                name: currentCollection.name,
+                projectUuid: undefined
+            };
+            dispatch(initialize(COLLECTION_PARTIAL_COPY_TO_SEPARATE_COLLECTIONS, initialData));
+            dispatch<any>(resetPickerProjectTree());
+            dispatch<any>(initProjectsTreePicker(COLLECTION_PARTIAL_COPY_TO_SEPARATE_COLLECTIONS));
+            dispatch(dialogActions.OPEN_DIALOG({ id: COLLECTION_PARTIAL_COPY_TO_SEPARATE_COLLECTIONS, data: {} }));
+        }
+    };
+
+export const copyCollectionPartialToSeparateCollections = ({ name, projectUuid }: CollectionPartialCopyToSeparateCollectionsFormData) =>
+    async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
+        const state = getState();
+        // Get current collection
+        const sourceCollection = state.collectionPanel.item;
+
+        if (sourceCollection) {
+            try {
+                dispatch(startSubmit(COLLECTION_PARTIAL_COPY_FORM_NAME));
+                dispatch(progressIndicatorActions.START_WORKING(COLLECTION_PARTIAL_COPY_FORM_NAME));
+
+                // Get selected files
+                const paths = filterCollectionFilesBySelection(state.collectionPanelFiles, true)
+                    .map(file => file.id.replace(new RegExp(`(^${sourceCollection.uuid})`), ''));
+
+                // Copy files
+                const collections = await Promise.all(paths.map((path) =>
+                    services.collectionService.copyFiles(
+                        sourceCollection.portableDataHash,
+                        [path],
+                        {
+                            name: `File split from collection ${name}${path}`,
+                            ownerUuid: projectUuid,
+                            uuid: undefined,
+                        },
+                        '/',
+                        false
+                    )
+                ));
+                dispatch(updateResources(collections));
+
+                dispatch(dialogActions.CLOSE_DIALOG({ id: COLLECTION_PARTIAL_COPY_FORM_NAME }));
+                dispatch(snackbarActions.OPEN_SNACKBAR({
+                    message: 'New collections created.',
+                    hideDuration: 2000,
+                    kind: SnackbarKind.SUCCESS
+                }));
+                dispatch(progressIndicatorActions.STOP_WORKING(COLLECTION_PARTIAL_COPY_FORM_NAME));
+            } catch (e) {
+                const error = getCommonResourceServiceError(e);
+                console.log(e, error);
+                if (error === CommonResourceServiceError.UNIQUE_NAME_VIOLATION) {
+                    dispatch(snackbarActions.OPEN_SNACKBAR({ message: 'Collection from one or more files already exists', hideDuration: 2000, kind: SnackbarKind.ERROR }));
+                } else if (error === CommonResourceServiceError.UNKNOWN) {
+                    dispatch(dialogActions.CLOSE_DIALOG({ id: COLLECTION_PARTIAL_COPY_FORM_NAME }));
+                    dispatch(snackbarActions.OPEN_SNACKBAR({ message: 'Could not create a copy of collection', hideDuration: 2000, kind: SnackbarKind.ERROR }));
+                } else {
+                    dispatch(dialogActions.CLOSE_DIALOG({ id: COLLECTION_PARTIAL_COPY_FORM_NAME }));
+                    dispatch(snackbarActions.OPEN_SNACKBAR({ message: 'Collection has been copied but may contain incorrect files.', hideDuration: 2000, kind: SnackbarKind.ERROR }));
+                }
+                dispatch(progressIndicatorActions.STOP_WORKING(COLLECTION_PARTIAL_COPY_FORM_NAME));
             }
         }
     };

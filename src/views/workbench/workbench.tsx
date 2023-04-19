@@ -34,8 +34,10 @@ import { MoveCollectionDialog } from 'views-components/dialog-forms/move-collect
 import { FilesUploadCollectionDialog } from 'views-components/dialog-forms/files-upload-collection-dialog';
 import { PartialCopyToNewCollectionDialog } from 'views-components/dialog-forms/partial-copy-to-new-collection-dialog';
 import { PartialCopyToExistingCollectionDialog } from 'views-components/dialog-forms/partial-copy-to-existing-collection-dialog';
+import { PartialCopyToSeparateCollectionsDialog } from 'views-components/dialog-forms/partial-copy-to-separate-collections-dialog';
 import { PartialMoveToNewCollectionDialog } from 'views-components/dialog-forms/partial-move-to-new-collection-dialog';
 import { PartialMoveToExistingCollectionDialog } from 'views-components/dialog-forms/partial-move-to-existing-collection-dialog';
+import { PartialMoveToSeparateCollectionsDialog } from 'views-components/dialog-forms/partial-move-to-separate-collections-dialog';
 import { RemoveProcessDialog } from 'views-components/process-remove-dialog/process-remove-dialog';
 import { MainContentBar } from 'views-components/main-content-bar/main-content-bar';
 import { Grid } from '@material-ui/core';
@@ -268,8 +270,10 @@ export const WorkbenchPanel =
             <PublicKeyDialog />
             <PartialCopyToNewCollectionDialog />
             <PartialCopyToExistingCollectionDialog />
+            <PartialCopyToSeparateCollectionsDialog />
             <PartialMoveToNewCollectionDialog />
             <PartialMoveToExistingCollectionDialog />
+            <PartialMoveToSeparateCollectionsDialog />
             <ProcessInputDialog />
             <RestoreCollectionVersionDialog />
             <RemoveApiClientAuthorizationDialog />
