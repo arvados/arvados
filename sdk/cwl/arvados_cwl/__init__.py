@@ -358,6 +358,7 @@ def main(args=sys.argv[1:],
     # show up.
     logger.setLevel(logging.INFO)
     logging.getLogger('arvados').setLevel(logging.INFO)
+    logging.getLogger('arvados.keep').setLevel(logging.WARNING)
 
     if arvargs.debug:
         logger.setLevel(logging.DEBUG)
