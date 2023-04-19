@@ -56,8 +56,10 @@ file "sdk/python/arvados/index.html" do |t|
   end
   `which pdoc`
   if $? == 0
-    STDERR.puts `pdoc --html -o sdk/python ../sdk/python/arvados/ 2>&1`
-    raise if $? != 0
+    raise unless system("python3", "setup.py", "build",
+                        chdir: "../sdk/python", out: :err)
+    raise unless system("pdoc", "--html", "-o", "sdk/python", "../sdk/python/build/lib/arvados/",
+                        out: :err)
   else
     puts "Warning: pdoc3 not found, Python documentation will not be generated".colorize(:light_red)
   end
