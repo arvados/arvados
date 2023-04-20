@@ -182,7 +182,7 @@ func (s *ClientSuite) TestShellGateway(c *check.C) {
 	wg.Wait()
 }
 
-func (s *ClientSuite) TestContainerLog(c *check.C) {
+func (s *ClientSuite) TestContainerRequestLog(c *check.C) {
 	arvadostest.StartKeep(2, true)
 	ctx, cancel := context.WithDeadline(context.Background(), time.Now().Add(30*time.Second))
 	defer cancel()
