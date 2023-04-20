@@ -281,7 +281,7 @@ func (ps *pgEventSource) Run() {
 				ps.Logger.WithField("pqEvent", pqEvent).Error("unexpected notify from wrong channel")
 				continue
 			}
-			logID, err := strconv.ParseUint(pqEvent.Extra, 10, 64)
+			logID, err := strconv.ParseInt(pqEvent.Extra, 10, 64)
 			if err != nil {
 				ps.Logger.WithField("pqEvent", pqEvent).Error("bad notify payload")
 				continue

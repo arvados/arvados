@@ -140,7 +140,6 @@ arvados:
         Replication: 2
         Driver: S3
         DriverParameters:
-          UseAWSS3v2Driver: true
           Bucket: __CLUSTER__-nyw5e-000000000000000-volume
           IAMRole: __CLUSTER__-keepstore-00-iam-role
           Region: FIXME

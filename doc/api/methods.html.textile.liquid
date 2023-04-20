@@ -110,7 +110,7 @@ table(table table-bordered table-condensed).
 @["storage_classes_desired","=","[\"default\"]"]@|
 |@<@, @<=@, @>=@, @>@|string, number, or timestamp|Ordering comparison|@["script_version",">","123"]@|
 |@like@, @ilike@|string|SQL pattern match.  Single character match is @_@ and wildcard is @%@. The @ilike@ operator is case-insensitive|@["script_version","like","d00220fb%"]@|
-|@in@, @not in@|array of strings|Set membership|@["script_version","in",["main","d00220fb38d4b85ca8fc28a8151702a2b9d1dec5"]]@|
+|@in@, @not in@|array of strings or integers|Set membership|@["script_version","in",["main","d00220fb38d4b85ca8fc28a8151702a2b9d1dec5"]]@|
 |@is_a@|string|Arvados object type|@["head_uuid","is_a","arvados#collection"]@|
 |@exists@|string|Presence of subproperty|@["properties","exists","my_subproperty"]@|
 |@contains@|string, array of strings|Presence of one or more keys or array elements|@["storage_classes_desired", "contains", ["foo", "bar"]]@ (matches both @["foo", "bar"]@ and @["foo", "bar", "baz"]@)

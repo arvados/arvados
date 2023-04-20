@@ -33,6 +33,21 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+func init() {
+	driver["S3"] = newS3AWSVolume
+}
+
+const (
+	s3DefaultReadTimeout    = arvados.Duration(10 * time.Minute)
+	s3DefaultConnectTimeout = arvados.Duration(time.Minute)
+	maxClockSkew            = 600 * time.Second
+	nearlyRFC1123           = "Mon, 2 Jan 2006 15:04:05 GMT"
+)
+
+var (
+	ErrS3TrashDisabled = fmt.Errorf("trash function is disabled because Collections.BlobTrashLifetime=0 and DriverParameters.UnsafeDelete=false")
+)
+
 // S3AWSVolume implements Volume using an S3 bucket.
 type S3AWSVolume struct {
 	arvados.S3VolumeDriverParameters
@@ -56,24 +71,6 @@ type s3AWSbucket struct {
 	svc    *s3.Client
 	stats  s3awsbucketStats
 	mu     sync.Mutex
-}
-
-// chooseS3VolumeDriver distinguishes between the old goamz driver and
-// aws-sdk-go based on the UseAWSS3v2Driver feature flag
-func chooseS3VolumeDriver(cluster *arvados.Cluster, volume arvados.Volume, logger logrus.FieldLogger, metrics *volumeMetricsVecs) (Volume, error) {
-	v := &S3Volume{cluster: cluster, volume: volume, metrics: metrics}
-	// Default value will be overriden if it happens to be defined in the config
-	v.S3VolumeDriverParameters.UseAWSS3v2Driver = true
-	err := json.Unmarshal(volume.DriverParameters, v)
-	if err != nil {
-		return nil, err
-	}
-	if v.UseAWSS3v2Driver {
-		logger.Debugln("Using AWS S3 v2 driver")
-		return newS3AWSVolume(cluster, volume, logger, metrics)
-	}
-	logger.Debugln("Using goamz S3 driver")
-	return newS3Volume(cluster, volume, logger, metrics)
 }
 
 const (

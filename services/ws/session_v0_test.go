@@ -35,7 +35,7 @@ type v0Suite struct {
 	token        string
 	toDelete     []string
 	wg           sync.WaitGroup
-	ignoreLogID  uint64
+	ignoreLogID  int64
 }
 
 func (s *v0Suite) SetUpTest(c *check.C) {
@@ -363,8 +363,8 @@ func (s *v0Suite) testClient() (*websocket.Conn, *json.Decoder, *json.Encoder) {
 	return conn, r, w
 }
 
-func (s *v0Suite) lastLogID(c *check.C) uint64 {
-	var lastID uint64
+func (s *v0Suite) lastLogID(c *check.C) int64 {
+	var lastID int64
 	c.Assert(testDB().QueryRow(`SELECT MAX(id) FROM logs`).Scan(&lastID), check.IsNil)
 	return lastID
 }

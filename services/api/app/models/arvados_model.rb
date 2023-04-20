@@ -156,7 +156,7 @@ class ArvadosModel < ApplicationRecord
   end
 
   def self.searchable_columns operator
-    textonly_operator = !operator.match(/[<=>]/)
+    textonly_operator = !operator.match(/[<=>]/) && !operator.in?(['in', 'not in'])
     self.columns.select do |col|
       case col.type
       when :string, :text
