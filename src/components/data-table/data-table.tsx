@@ -64,6 +64,7 @@ const styles: StyleRulesCallback<CssRules> = (theme: Theme) => ({
     checkBoxCell: {
         // border: '1px dotted green',
         padding: '0',
+        cursor: 'pointer',
     },
     tableCell: {
         wordWrap: 'break-word',
@@ -89,26 +90,55 @@ const styles: StyleRulesCallback<CssRules> = (theme: Theme) => ({
     },
 });
 
-const selectedList = new Set();
+//master list for all things checked and unchecked
+const checkedList: Record<string, boolean> = {};
 
-const handleResourceSelect = (uuid) => {
-    if (selectedList.has(uuid)) selectedList.delete(uuid);
-    else selectedList.add(uuid);
-    console.log(selectedList);
+const initializeCheckedList = (items: any[]): void => {
+    for (const uuid in checkedList) {
+        if (checkedList.hasOwnProperty(uuid)) {
+            delete checkedList[uuid];
+        }
+    }
+    items.forEach((uuid) => {
+        if (!checkedList.hasOwnProperty[uuid]) {
+            checkedList[uuid] = false;
+        }
+    });
 };
+
+const handleResourceSelect = (uuid: string) => {
+    if (!checkedList[uuid]) {
+        checkedList[uuid] = true;
+    } else {
+        checkedList[uuid] = false;
+    }
+    console.log(checkedList);
+};
+
+const handleSelectAll = () => {};
+
+const handleDeselectAll = () => {};
 
 const checkBoxColumn: DataColumn<any, any> = {
     name: '',
     selected: true,
     configurable: false,
     filters: createTree(),
-    render: (item) => <Checkbox color='primary' onChange={() => handleResourceSelect(item)} />,
+    render: (item) => {
+        return <Checkbox color='primary' onClick={() => handleResourceSelect(item)} />;
+    },
 };
 
 type DataTableProps<T> = DataTableDataProps<T> & WithStyles<CssRules>;
 
 export const DataTable = withStyles(styles)(
     class Component<T> extends React.Component<DataTableProps<T>> {
+        componentDidUpdate(prevProps: Readonly<DataTableProps<T>>, prevState: Readonly<{}>, snapshot?: any): void {
+            if (prevProps.items !== this.props.items) {
+                console.log('hi');
+                initializeCheckedList(this.props.items);
+            }
+        }
         render() {
             const { items, classes, working, columns } = this.props;
             if (columns[0] !== checkBoxColumn) columns.unshift(checkBoxColumn);
@@ -140,7 +170,12 @@ export const DataTable = withStyles(styles)(
         renderHeadCell = (column: DataColumn<T, any>, index: number) => {
             const { name, key, renderHeader, filters, sort } = column;
             const { onSortToggle, onFiltersChange, classes } = this.props;
-            return (
+            return index === 0 ? (
+                <TableCell key={key || index} className={classes.checkBoxCell}>
+                    <div onClick={handleSelectAll}>select all</div>
+                    <div onClick={handleDeselectAll}>deselect all</div>
+                </TableCell>
+            ) : (
                 <TableCell className={classes.tableCell} key={key || index}>
                     {renderHeader ? (
                         renderHeader()
