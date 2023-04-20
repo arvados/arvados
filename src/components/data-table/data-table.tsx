@@ -13,7 +13,6 @@ import { countNodes, getTreeDirty } from 'models/tree';
 import { IconType, PendingIcon } from 'components/icon/icon';
 import { SvgIconProps } from '@material-ui/core/SvgIcon';
 import ArrowDownwardIcon from '@material-ui/icons/ArrowDownward';
-//lisa
 import { Checkbox } from '@material-ui/core';
 import { createTree } from 'models/tree';
 
@@ -90,24 +89,29 @@ const styles: StyleRulesCallback<CssRules> = (theme: Theme) => ({
     },
 });
 
+const selectedList = new Set();
+
+const handleResourceSelect = (uuid) => {
+    if (selectedList.has(uuid)) selectedList.delete(uuid);
+    else selectedList.add(uuid);
+    console.log(selectedList);
+};
+
 const checkBoxColumn: DataColumn<any, any> = {
-    name: 'foo',
+    name: '',
     selected: true,
     configurable: false,
     filters: createTree(),
-    render: () => <></>,
+    render: (item) => <Checkbox color='primary' onChange={() => handleResourceSelect(item)} />,
 };
 
 type DataTableProps<T> = DataTableDataProps<T> & WithStyles<CssRules>;
 
 export const DataTable = withStyles(styles)(
     class Component<T> extends React.Component<DataTableProps<T>> {
-        handleResourceSelect = (uuid) => {
-            console.log(uuid);
-        };
         render() {
-            const { items, classes, working } = this.props;
-            this.props.columns.unshift(checkBoxColumn);
+            const { items, classes, working, columns } = this.props;
+            if (columns[0] !== checkBoxColumn) columns.unshift(checkBoxColumn);
             return (
                 <div className={classes.root}>
                     <div className={classes.content}>
@@ -183,17 +187,14 @@ export const DataTable = withStyles(styles)(
                     onDoubleClick={(event) => onRowDoubleClick && onRowDoubleClick(event, item)}
                     selected={item === currentItemUuid}
                 >
-                    {this.mapVisibleColumns((column, index) => {
-                        return index === 0 ? (
-                            <TableCell key={column.key || index} className={classes.checkBoxCell}>
-                                <Checkbox color='primary' onChange={() => this.handleResourceSelect(item)} />
-                            </TableCell>
-                        ) : (
-                            <TableCell key={column.key || index} className={currentRoute === '/workflows' ? classes.tableCellWorkflows : classes.tableCell}>
-                                {column.render(item)}
-                            </TableCell>
-                        );
-                    })}
+                    {this.mapVisibleColumns((column, index) => (
+                        <TableCell
+                            key={column.key || index}
+                            className={currentRoute === '/workflows' ? classes.tableCellWorkflows : index === 0 ? classes.checkBoxCell : classes.tableCell}
+                        >
+                            {column.render(item)}
+                        </TableCell>
+                    ))}
                 </TableRow>
             );
         };
