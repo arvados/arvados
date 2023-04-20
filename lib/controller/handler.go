@@ -140,6 +140,8 @@ func (h *Handler) setup() {
 	mux.Handle("/arvados/v1/groups/", rtr)
 	mux.Handle("/arvados/v1/links", rtr)
 	mux.Handle("/arvados/v1/links/", rtr)
+	mux.Handle("/arvados/v1/authorized_keys", rtr)
+	mux.Handle("/arvados/v1/authorized_keys/", rtr)
 	mux.Handle("/login", rtr)
 	mux.Handle("/logout", rtr)
 	mux.Handle("/arvados/v1/api_client_authorizations", rtr)

@@ -94,3 +94,4 @@ sdk/cwl/tests/chipseq/data/Genomes/*
 CITATION.cff
 SECURITY.md
 */testdata/fakestat/*
+lib/controller/localdb/testdata/*.pub

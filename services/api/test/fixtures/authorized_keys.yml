@@ -5,6 +5,7 @@
 active:
   uuid: zzzzz-fngyi-12nc9ov4osp8nae
   owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz
+  modified_by_user_uuid: zzzzz-tpzed-xurymjxw79nv3jz
   authorized_user_uuid: zzzzz-tpzed-xurymjxw79nv3jz
   key_type: SSH
   name: active
@@ -13,6 +14,7 @@ active:
 admin:
   uuid: zzzzz-fngyi-g290j3i3u701duh
   owner_uuid: zzzzz-tpzed-d9tiejq69daie8f
+  modified_by_user_uuid: zzzzz-tpzed-d9tiejq69daie8f
   authorized_user_uuid: zzzzz-tpzed-d9tiejq69daie8f
   key_type: SSH
   name: admin
@@ -21,6 +23,7 @@ admin:
 spectator:
   uuid: zzzzz-fngyi-3uze1ipbnz2c2c2
   owner_uuid: zzzzz-tpzed-l1s2piq4t4mps8r
+  modified_by_user_uuid: zzzzz-tpzed-l1s2piq4t4mps8r
   authorized_user_uuid: zzzzz-tpzed-l1s2piq4t4mps8r
   key_type: SSH
   name: spectator
@@ -29,6 +32,7 @@ spectator:
 project_viewer:
   uuid: zzzzz-fngyi-5d3av1396niwcej
   owner_uuid: zzzzz-tpzed-projectviewer1a
+  modified_by_user_uuid: zzzzz-tpzed-projectviewer1a
   authorized_user_uuid: zzzzz-tpzed-projectviewer1a
   key_type: SSH
   name: project_viewer
