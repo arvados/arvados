@@ -13,6 +13,9 @@ import { countNodes, getTreeDirty } from 'models/tree';
 import { IconType, PendingIcon } from 'components/icon/icon';
 import { SvgIconProps } from '@material-ui/core/SvgIcon';
 import ArrowDownwardIcon from '@material-ui/icons/ArrowDownward';
+//lisa
+import { Checkbox } from '@material-ui/core';
+import { createTree } from 'models/tree';
 
 export type DataColumns<I, R> = Array<DataColumn<I, R>>;
 
@@ -37,7 +40,7 @@ export interface DataTableDataProps<I> {
     currentRoute?: string;
 }
 
-type CssRules = 'tableBody' | 'root' | 'content' | 'noItemsInfo' | 'tableCellSelect' | 'tableCell' | 'arrow' | 'arrowButton' | 'tableCellWorkflows' | 'loader';
+type CssRules = 'tableBody' | 'root' | 'content' | 'noItemsInfo' | 'checkBoxCell' | 'tableCell' | 'arrow' | 'arrowButton' | 'tableCellWorkflows' | 'loader';
 
 const styles: StyleRulesCallback<CssRules> = (theme: Theme) => ({
     root: {
@@ -59,7 +62,8 @@ const styles: StyleRulesCallback<CssRules> = (theme: Theme) => ({
         textAlign: 'center',
         padding: theme.spacing.unit,
     },
-    tableCellSelect: {
+    checkBoxCell: {
+        // border: '1px dotted green',
         padding: '0',
     },
     tableCell: {
@@ -86,12 +90,24 @@ const styles: StyleRulesCallback<CssRules> = (theme: Theme) => ({
     },
 });
 
+const checkBoxColumn: DataColumn<any, any> = {
+    name: 'foo',
+    selected: true,
+    configurable: false,
+    filters: createTree(),
+    render: () => <></>,
+};
+
 type DataTableProps<T> = DataTableDataProps<T> & WithStyles<CssRules>;
 
 export const DataTable = withStyles(styles)(
     class Component<T> extends React.Component<DataTableProps<T>> {
+        handleResourceSelect = (uuid) => {
+            console.log(uuid);
+        };
         render() {
             const { items, classes, working } = this.props;
+            this.props.columns.unshift(checkBoxColumn);
             return (
                 <div className={classes.root}>
                     <div className={classes.content}>
@@ -167,14 +183,17 @@ export const DataTable = withStyles(styles)(
                     onDoubleClick={(event) => onRowDoubleClick && onRowDoubleClick(event, item)}
                     selected={item === currentItemUuid}
                 >
-                    {this.mapVisibleColumns((column, index) => (
-                        <TableCell
-                            key={column.key || index}
-                            className={currentRoute === '/workflows' ? classes.tableCellWorkflows : index === 0 ? classes.tableCellSelect : classes.tableCell}
-                        >
-                            {column.render(item)}
-                        </TableCell>
-                    ))}
+                    {this.mapVisibleColumns((column, index) => {
+                        return index === 0 ? (
+                            <TableCell key={column.key || index} className={classes.checkBoxCell}>
+                                <Checkbox color='primary' onChange={() => this.handleResourceSelect(item)} />
+                            </TableCell>
+                        ) : (
+                            <TableCell key={column.key || index} className={currentRoute === '/workflows' ? classes.tableCellWorkflows : classes.tableCell}>
+                                {column.render(item)}
+                            </TableCell>
+                        );
+                    })}
                 </TableRow>
             );
         };

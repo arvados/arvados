@@ -16,7 +16,6 @@ import { ContainerRequestState } from 'models/container-request';
 import { SortDirection } from 'components/data-table/data-column';
 import { ResourceKind, Resource } from 'models/resource';
 import {
-    ResourceSelect,
     ResourceName,
     ProcessStatus as ResourceStatus,
     ResourceType,
@@ -65,7 +64,6 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
 });
 
 export enum ProjectPanelColumnNames {
-    SELECT = '',
     NAME = 'Name',
     STATUS = 'Status',
     TYPE = 'Type',
@@ -92,13 +90,6 @@ export interface ProjectPanelFilter extends DataTableFilterItem {
 }
 
 export const projectPanelColumns: DataColumns<string, ProjectResource> = [
-    {
-        name: ProjectPanelColumnNames.SELECT,
-        selected: true,
-        configurable: false,
-        filters: createTree(),
-        render: (uuid) => <ResourceSelect uuid={uuid} />,
-    },
     {
         name: ProjectPanelColumnNames.NAME,
         selected: true,

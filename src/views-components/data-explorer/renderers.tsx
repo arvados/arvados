@@ -101,14 +101,6 @@ export const ResourceName = connect((state: RootState, props: { uuid: string }) 
     return resource;
 })((resource: GroupContentsResource & DispatchProp<any>) => renderName(resource.dispatch, resource));
 
-// const renderSelect = () => <Checkbox color='primary' />;
-const renderSelect = () => <input type='checkbox'></input>;
-
-export const ResourceSelect = connect((state: RootState, props: { uuid: string }) => {
-    const resource = getResource<GroupContentsResource>(props.uuid)(state.resources);
-    return resource;
-})((resource: GroupContentsResource & DispatchProp<any>) => renderSelect());
-
 const renderIcon = (item: GroupContentsResource) => {
     switch (item.kind) {
         case ResourceKind.PROJECT:
