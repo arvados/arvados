@@ -339,19 +339,6 @@ func (conn *Conn) ContainerUnlock(ctx context.Context, options arvados.GetOption
 	return resp, err
 }
 
-func (conn *Conn) ContainerLog(ctx context.Context, options arvados.ContainerLogOptions) (resp http.Handler, err error) {
-	proxy := &httputil.ReverseProxy{
-		Transport: conn.httpClient.Transport,
-		Director: func(r *http.Request) {
-			u := conn.baseURL
-			u.Path = r.URL.Path
-			u.RawQuery = fmt.Sprintf("no_forward=%v", options.NoForward)
-			r.URL = &u
-		},
-	}
-	return proxy, nil
-}
-
 // ContainerSSH returns a connection to the out-of-band SSH server for
 // a running container. If the returned error is nil, the caller is
 // responsible for closing sshconn.Conn.
@@ -482,6 +469,19 @@ func (conn *Conn) ContainerRequestDelete(ctx context.Context, options arvados.De
 	var resp arvados.ContainerRequest
 	err := conn.requestAndDecode(ctx, &resp, ep, nil, options)
 	return resp, err
+}
+
+func (conn *Conn) ContainerRequestLog(ctx context.Context, options arvados.ContainerLogOptions) (resp http.Handler, err error) {
+	proxy := &httputil.ReverseProxy{
+		Transport: conn.httpClient.Transport,
+		Director: func(r *http.Request) {
+			u := conn.baseURL
+			u.Path = r.URL.Path
+			u.RawQuery = fmt.Sprintf("no_forward=%v", options.NoForward)
+			r.URL = &u
+		},
+	}
+	return proxy, nil
 }
 
 func (conn *Conn) GroupCreate(ctx context.Context, options arvados.CreateOptions) (arvados.Group, error) {

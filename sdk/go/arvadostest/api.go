@@ -116,22 +116,6 @@ func (as *APIStub) ContainerUnlock(ctx context.Context, options arvados.GetOptio
 	as.appendCall(ctx, as.ContainerUnlock, options)
 	return arvados.Container{}, as.Error
 }
-func (as *APIStub) ContainerLog(ctx context.Context, options arvados.ContainerLogOptions) (http.Handler, error) {
-	as.appendCall(ctx, as.ContainerLog, options)
-	// Return a handler that responds with the configured
-	// error/success status.
-	return http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
-		if as.Error == nil {
-			w.WriteHeader(http.StatusOK)
-		} else if err := httpserver.HTTPStatusError(nil); errors.As(as.Error, &err) {
-			w.WriteHeader(err.HTTPStatus())
-			io.WriteString(w, err.Error())
-		} else {
-			w.WriteHeader(http.StatusInternalServerError)
-			io.WriteString(w, err.Error())
-		}
-	}), nil
-}
 func (as *APIStub) ContainerSSH(ctx context.Context, options arvados.ContainerSSHOptions) (arvados.ConnectionResponse, error) {
 	as.appendCall(ctx, as.ContainerSSH, options)
 	return arvados.ConnectionResponse{}, as.Error
@@ -159,6 +143,22 @@ func (as *APIStub) ContainerRequestList(ctx context.Context, options arvados.Lis
 func (as *APIStub) ContainerRequestDelete(ctx context.Context, options arvados.DeleteOptions) (arvados.ContainerRequest, error) {
 	as.appendCall(ctx, as.ContainerRequestDelete, options)
 	return arvados.ContainerRequest{}, as.Error
+}
+func (as *APIStub) ContainerRequestLog(ctx context.Context, options arvados.ContainerLogOptions) (http.Handler, error) {
+	as.appendCall(ctx, as.ContainerRequestLog, options)
+	// Return a handler that responds with the configured
+	// error/success status.
+	return http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		if as.Error == nil {
+			w.WriteHeader(http.StatusOK)
+		} else if err := httpserver.HTTPStatusError(nil); errors.As(as.Error, &err) {
+			w.WriteHeader(err.HTTPStatus())
+			io.WriteString(w, err.Error())
+		} else {
+			w.WriteHeader(http.StatusInternalServerError)
+			io.WriteString(w, err.Error())
+		}
+	}), nil
 }
 func (as *APIStub) GroupCreate(ctx context.Context, options arvados.CreateOptions) (arvados.Group, error) {
 	as.appendCall(ctx, as.GroupCreate, options)

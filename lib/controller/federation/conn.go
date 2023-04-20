@@ -385,10 +385,6 @@ func (conn *Conn) ContainerUnlock(ctx context.Context, options arvados.GetOption
 	return conn.chooseBackend(options.UUID).ContainerUnlock(ctx, options)
 }
 
-func (conn *Conn) ContainerLog(ctx context.Context, options arvados.ContainerLogOptions) (http.Handler, error) {
-	return conn.chooseBackend(options.UUID).ContainerLog(ctx, options)
-}
-
 func (conn *Conn) ContainerSSH(ctx context.Context, options arvados.ContainerSSHOptions) (arvados.ConnectionResponse, error) {
 	return conn.chooseBackend(options.UUID).ContainerSSH(ctx, options)
 }
@@ -457,6 +453,10 @@ func (conn *Conn) ContainerRequestGet(ctx context.Context, options arvados.GetOp
 
 func (conn *Conn) ContainerRequestDelete(ctx context.Context, options arvados.DeleteOptions) (arvados.ContainerRequest, error) {
 	return conn.chooseBackend(options.UUID).ContainerRequestDelete(ctx, options)
+}
+
+func (conn *Conn) ContainerRequestLog(ctx context.Context, options arvados.ContainerLogOptions) (http.Handler, error) {
+	return conn.chooseBackend(options.UUID).ContainerRequestLog(ctx, options)
 }
 
 func (conn *Conn) GroupCreate(ctx context.Context, options arvados.CreateOptions) (arvados.Group, error) {

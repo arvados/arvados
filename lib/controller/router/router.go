@@ -210,13 +210,6 @@ func (rtr *router) addRoutes() {
 			},
 		},
 		{
-			arvados.EndpointContainerLog,
-			func() interface{} { return &arvados.ContainerLogOptions{} },
-			func(ctx context.Context, opts interface{}) (interface{}, error) {
-				return rtr.backend.ContainerLog(ctx, *opts.(*arvados.ContainerLogOptions))
-			},
-		},
-		{
 			arvados.EndpointContainerSSH,
 			func() interface{} { return &arvados.ContainerSSHOptions{} },
 			func(ctx context.Context, opts interface{}) (interface{}, error) {
@@ -288,6 +281,13 @@ func (rtr *router) addRoutes() {
 			func() interface{} { return &arvados.DeleteOptions{} },
 			func(ctx context.Context, opts interface{}) (interface{}, error) {
 				return rtr.backend.ContainerRequestDelete(ctx, *opts.(*arvados.DeleteOptions))
+			},
+		},
+		{
+			arvados.EndpointContainerRequestLog,
+			func() interface{} { return &arvados.ContainerLogOptions{} },
+			func(ctx context.Context, opts interface{}) (interface{}, error) {
+				return rtr.backend.ContainerRequestLog(ctx, *opts.(*arvados.ContainerLogOptions))
 			},
 		},
 		{

@@ -93,6 +93,120 @@ func (s *UnitSuite) TestCORSPreflight(c *check.C) {
 	c.Check(resp.Code, check.Equals, http.StatusMethodNotAllowed)
 }
 
+func (s *UnitSuite) TestWebdavPrefixAndSource(c *check.C) {
+	for _, trial := range []struct {
+		method   string
+		path     string
+		prefix   string
+		source   string
+		notFound bool
+		seeOther bool
+	}{
+		{
+			method: "PROPFIND",
+			path:   "/",
+		},
+		{
+			method: "PROPFIND",
+			path:   "/dir1",
+		},
+		{
+			method: "PROPFIND",
+			path:   "/dir1/",
+		},
+		{
+			method: "PROPFIND",
+			path:   "/dir1/foo",
+			prefix: "/dir1",
+			source: "/dir1",
+		},
+		{
+			method: "PROPFIND",
+			path:   "/prefix/dir1/foo",
+			prefix: "/prefix/",
+			source: "",
+		},
+		{
+			method: "PROPFIND",
+			path:   "/prefix/dir1/foo",
+			prefix: "/prefix",
+			source: "",
+		},
+		{
+			method: "PROPFIND",
+			path:   "/prefix/dir1/foo",
+			prefix: "/prefix/",
+			source: "/",
+		},
+		{
+			method: "PROPFIND",
+			path:   "/prefix/foo",
+			prefix: "/prefix/",
+			source: "/dir1/",
+		},
+		{
+			method: "GET",
+			path:   "/prefix/foo",
+			prefix: "/prefix/",
+			source: "/dir1/",
+		},
+		{
+			method: "PROPFIND",
+			path:   "/prefix/",
+			prefix: "/prefix",
+			source: "/dir1",
+		},
+		{
+			method: "PROPFIND",
+			path:   "/prefix",
+			prefix: "/prefix",
+			source: "/dir1/",
+		},
+		{
+			method:   "GET",
+			path:     "/prefix",
+			prefix:   "/prefix",
+			source:   "/dir1",
+			seeOther: true,
+		},
+		{
+			method:   "PROPFIND",
+			path:     "/dir1/foo",
+			prefix:   "",
+			source:   "/dir1",
+			notFound: true,
+		},
+	} {
+		c.Logf("trial %+v", trial)
+		u := mustParseURL("http://" + arvadostest.FooBarDirCollection + ".keep-web.example" + trial.path)
+		req := &http.Request{
+			Method:     trial.method,
+			Host:       u.Host,
+			URL:        u,
+			RequestURI: u.RequestURI(),
+			Header: http.Header{
+				"Authorization":   {"Bearer " + arvadostest.ActiveTokenV2},
+				"X-Webdav-Prefix": {trial.prefix},
+				"X-Webdav-Source": {trial.source},
+			},
+			Body: ioutil.NopCloser(bytes.NewReader(nil)),
+		}
+
+		resp := httptest.NewRecorder()
+		s.handler.ServeHTTP(resp, req)
+		if trial.notFound {
+			c.Check(resp.Code, check.Equals, http.StatusNotFound)
+		} else if trial.method == "PROPFIND" {
+			c.Check(resp.Code, check.Equals, http.StatusMultiStatus)
+			c.Check(resp.Body.String(), check.Matches, `(?ms).*>\n?$`)
+		} else if trial.seeOther {
+			c.Check(resp.Code, check.Equals, http.StatusSeeOther)
+		} else {
+			c.Check(resp.Code, check.Equals, http.StatusOK)
+		}
+	}
+}
+
 func (s *UnitSuite) TestEmptyResponse(c *check.C) {
 	for _, trial := range []struct {
 		dataExists    bool
