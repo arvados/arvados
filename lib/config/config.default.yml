@@ -543,11 +543,12 @@ Clusters:
       BalanceCollectionBatch: 0
 
       # The size of keep-balance's internal queue of
-      # collections. Higher values use more memory and improve throughput
-      # by allowing keep-balance to fetch the next page of collections
-      # while the current page is still being processed. If this is zero
-      # or omitted, pages are processed serially.
-      BalanceCollectionBuffers: 1000
+      # collections. Higher values may improve throughput by allowing
+      # keep-balance to fetch collections from the database while the
+      # current collection are still being processed, at the expense of
+      # using more memory.  If this is zero or omitted, pages are
+      # processed serially.
+      BalanceCollectionBuffers: 4
 
       # Maximum time for a rebalancing run. This ensures keep-balance
       # eventually gives up and retries if, for example, a network
