@@ -17,15 +17,16 @@ import logging
 import calendar
 import urllib.parse
 import pycurl
-from arvados.pycurl import PyCurlHelper
+import dataclasses
+from arvados._pycurlhelper import PyCurlHelper
 
 logger = logging.getLogger('arvados.http_import')
 
-def my_formatdate(dt):
+def _my_formatdate(dt):
     return email.utils.formatdate(timeval=calendar.timegm(dt.timetuple()),
                                   localtime=False, usegmt=True)
 
-def my_parsedate(text):
+def _my_parsedate(text):
     parsed = email.utils.parsedate_tz(text)
     if parsed:
         if parsed[9]:
@@ -37,7 +38,7 @@ def my_parsedate(text):
     else:
         return datetime.datetime(1970, 1, 1)
 
-def fresh_cache(url, properties, now):
+def _fresh_cache(url, properties, now):
     pr = properties[url]
     expires = None
 
@@ -49,51 +50,52 @@ def fresh_cache(url, properties, now):
 
         g = re.match(r"(s-maxage|max-age)=(\d+)", pr["Cache-Control"])
         if g:
-            expires = my_parsedate(pr["Date"]) + datetime.timedelta(seconds=int(g.group(2)))
+            expires = _my_parsedate(pr["Date"]) + datetime.timedelta(seconds=int(g.group(2)))
 
     if expires is None and "Expires" in pr:
-        expires = my_parsedate(pr["Expires"])
+        expires = _my_parsedate(pr["Expires"])
 
     if expires is None:
         # Use a default cache time of 24 hours if upstream didn't set
         # any cache headers, to reduce redundant downloads.
-        expires = my_parsedate(pr["Date"]) + datetime.timedelta(hours=24)
+        expires = _my_parsedate(pr["Date"]) + datetime.timedelta(hours=24)
 
     if not expires:
         return False
 
     return (now < expires)
 
-def remember_headers(url, properties, headers, now):
+def _remember_headers(url, properties, headers, now):
     properties.setdefault(url, {})
     for h in ("Cache-Control", "Etag", "Expires", "Date", "Content-Length"):
         if h in headers:
             properties[url][h] = headers[h]
     if "Date" not in headers:
-        properties[url]["Date"] = my_formatdate(now)
+        properties[url]["Date"] = _my_formatdate(now)
 
-class Response:
+@dataclasses.dataclass
+class _Response:
     def __init__(self, status_code, headers):
         self.status_code = status_code
         self.headers = headers
 
-class CurlDownloader(PyCurlHelper):
+class _Downloader(PyCurlHelper):
     # Wait up to 60 seconds for connection
     # How long it can be in "low bandwidth" state before it gives up
     # Low bandwidth threshold is 32 KiB/s
     DOWNLOADER_TIMEOUT = (60, 300, 32768)
 
-    def __init__(self):
-        super(CurlDownloader, self).__init__(title_case_headers=True)
+    def __init__(self, apiclient):
+        super(_Downloader, self).__init__(title_case_headers=True)
         self.curl = pycurl.Curl()
         self.curl.setopt(pycurl.NOSIGNAL, 1)
         self.curl.setopt(pycurl.OPENSOCKETFUNCTION,
                     lambda *args, **kwargs: self._socket_open(*args, **kwargs))
         self.target = None
+        self.apiclient = apiclient
 
-    def head(self, url, headers={}):
+    def head(self, url):
         get_headers = {'Accept': 'application/octet-stream'}
-        get_headers.update(headers)
         self._headers = {}
 
         self.curl.setopt(pycurl.URL, url.encode('utf-8'))
@@ -116,7 +118,7 @@ class CurlDownloader(PyCurlHelper):
                 self._socket.close()
                 self._socket = None
 
-        return Response(self.curl.getinfo(pycurl.RESPONSE_CODE), self._headers)
+        return _Response(self.curl.getinfo(pycurl.RESPONSE_CODE), self._headers)
 
     def download(self, url, headers):
         self.count = 0
@@ -152,10 +154,10 @@ class CurlDownloader(PyCurlHelper):
                 self._socket.close()
                 self._socket = None
 
-        return Response(self.curl.getinfo(pycurl.RESPONSE_CODE), self._headers)
+        return _Response(self.curl.getinfo(pycurl.RESPONSE_CODE), self._headers)
 
     def headers_received(self):
-        self.collection = arvados.collection.Collection()
+        self.collection = arvados.collection.Collection(api_client=self.apiclient)
 
         if "Content-Length" in self._headers:
             self.contentlength = int(self._headers["Content-Length"])
@@ -204,7 +206,7 @@ class CurlDownloader(PyCurlHelper):
         self.checkpoint = loopnow
 
 
-def changed(url, clean_url, properties, now, curldownloader):
+def _changed(url, clean_url, properties, now, curldownloader):
     req = curldownloader.head(url)
 
     if req.status_code != 200:
@@ -218,7 +220,7 @@ def changed(url, clean_url, properties, now, curldownloader):
 
     if url in properties:
         del properties[url]
-    remember_headers(clean_url, properties, req.headers, now)
+    _remember_headers(clean_url, properties, req.headers, now)
 
     if "Etag" in req.headers and etag == req.headers["Etag"]:
         # Didn't change
@@ -226,7 +228,7 @@ def changed(url, clean_url, properties, now, curldownloader):
 
     return True
 
-def etag_quote(etag):
+def _etag_quote(etag):
     # if it already has leading and trailing quotes, do nothing
     if etag[0] == '"' and etag[-1] == '"':
         return etag
@@ -238,6 +240,13 @@ def etag_quote(etag):
 def http_to_keep(api, project_uuid, url,
                  utcnow=datetime.datetime.utcnow, varying_url_params="",
                  prefer_cached_downloads=False):
+    """Download a file over HTTP and upload it to keep, with HTTP headers as metadata.
+
+    Before downloading the URL, checks to see if the URL already
+    exists in Keep and applies HTTP caching policy, the
+    varying_url_params and prefer_cached_downloads flags in order to
+    decide whether to use the version in Keep or re-download it.x
+    """
 
     logger.info("Checking Keep for %s", url)
 
@@ -262,7 +271,7 @@ def http_to_keep(api, project_uuid, url,
 
     etags = {}
 
-    curldownloader = CurlDownloader()
+    curldownloader = _Downloader(api)
 
     for item in items:
         properties = item["properties"]
@@ -272,28 +281,29 @@ def http_to_keep(api, project_uuid, url,
         elif url in properties:
             cache_url = url
         else:
-            return False
+            raise Exception("Shouldn't happen, got an API result for %s that doesn't have the URL in properties" % item["uuid"])
 
-        if prefer_cached_downloads or fresh_cache(cache_url, properties, now):
+        if prefer_cached_downloads or _fresh_cache(cache_url, properties, now):
             # HTTP caching rules say we should use the cache
             cr = arvados.collection.CollectionReader(item["portable_data_hash"], api_client=api)
-            return "keep:%s/%s" % (item["portable_data_hash"], list(cr.keys())[0])
+            return (item["portable_data_hash"], list(cr.keys())[0])
 
-        if not changed(cache_url, clean_url, properties, now, curldownloader):
+        if not _changed(cache_url, clean_url, properties, now, curldownloader):
             # Etag didn't change, same content, just update headers
             api.collections().update(uuid=item["uuid"], body={"collection":{"properties": properties}}).execute()
             cr = arvados.collection.CollectionReader(item["portable_data_hash"], api_client=api)
-            return "keep:%s/%s" % (item["portable_data_hash"], list(cr.keys())[0])
+            return (item["portable_data_hash"], list(cr.keys())[0])
 
-        if "Etag" in properties[cache_url] and len(properties[cache_url]["Etag"]) > 2:
-            etags[properties[cache_url]["Etag"]] = item
+        for etagstr in ("Etag", "ETag"):
+            if etagstr in properties[cache_url] and len(properties[cache_url][etagstr]) > 2:
+                etags[properties[cache_url][etagstr]] = item
 
-    logger.debug("Found Etags %s", etags)
+    logger.debug("Found ETag values %s", etags)
 
     properties = {}
     headers = {}
     if etags:
-        headers['If-None-Match'] = ', '.join([etag_quote(k) for k,v in etags.items()])
+        headers['If-None-Match'] = ', '.join([_etag_quote(k) for k,v in etags.items()])
     logger.debug("Sending GET request with headers %s", headers)
 
     logger.info("Beginning download of %s", url)
@@ -308,14 +318,14 @@ def http_to_keep(api, project_uuid, url,
     if curldownloader.target is not None:
         curldownloader.target.close()
 
-    remember_headers(clean_url, properties, req.headers, now)
+    _remember_headers(clean_url, properties, req.headers, now)
 
     if req.status_code == 304 and "Etag" in req.headers and req.headers["Etag"] in etags:
         item = etags[req.headers["Etag"]]
         item["properties"].update(properties)
         api.collections().update(uuid=item["uuid"], body={"collection":{"properties": item["properties"]}}).execute()
         cr = arvados.collection.CollectionReader(item["portable_data_hash"], api_client=api)
-        return "keep:%s/%s" % (item["portable_data_hash"], list(cr.keys())[0])
+        return (item["portable_data_hash"], list(cr.keys())[0])
 
     logger.info("Download complete")
 
@@ -331,6 +341,6 @@ def http_to_keep(api, project_uuid, url,
 
     c.save_new(name=collectionname, owner_uuid=project_uuid, ensure_unique_name=True)
 
-    api.collections().update(uuid=c.manifest_locator(), body={"collection":{"properties": properties}}) #.execute()
+    api.collections().update(uuid=c.manifest_locator(), body={"collection":{"properties": properties}}).execute()
 
-    return "keep:%s/%s" % (c.portable_data_hash(), curldownloader.name)
+    return (c.portable_data_hash(), curldownloader.name)

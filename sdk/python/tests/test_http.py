@@ -21,7 +21,7 @@ import arvados.collection
 import arvados.keep
 import pycurl
 
-from arvados.http_import import http_to_keep
+from arvados.http_to_keep import http_to_keep
 
 import ruamel.yaml as yaml
 
@@ -97,7 +97,7 @@ class TestHttpToKeep(unittest.TestCase):
         utcnow.return_value = datetime.datetime(2018, 5, 15)
 
         r = http_to_keep(api, None, "http://example.com/file1.txt", utcnow=utcnow)
-        self.assertEqual(r, "keep:99999999999999999999999999999998+99/file1.txt")
+        self.assertEqual(r, ("99999999999999999999999999999998+99", "file1.txt"))
 
         assert mockobj.url == b"http://example.com/file1.txt"
         assert mockobj.perform_was_called is True
@@ -146,7 +146,7 @@ class TestHttpToKeep(unittest.TestCase):
         utcnow.return_value = datetime.datetime(2018, 5, 16)
 
         r = http_to_keep(api, None, "http://example.com/file1.txt", utcnow=utcnow)
-        self.assertEqual(r, "keep:99999999999999999999999999999998+99/file1.txt")
+        self.assertEqual(r, ("99999999999999999999999999999998+99", "file1.txt"))
 
         assert mockobj.perform_was_called is False
 
@@ -185,7 +185,7 @@ class TestHttpToKeep(unittest.TestCase):
         utcnow.return_value = datetime.datetime(2018, 5, 16)
 
         r = http_to_keep(api, None, "http://example.com/file1.txt", utcnow=utcnow)
-        self.assertEqual(r, "keep:99999999999999999999999999999998+99/file1.txt")
+        self.assertEqual(r, ("99999999999999999999999999999998+99", "file1.txt"))
 
         assert mockobj.perform_was_called is False
 
@@ -224,7 +224,7 @@ class TestHttpToKeep(unittest.TestCase):
         utcnow.return_value = datetime.datetime(2018, 5, 17)
 
         r = http_to_keep(api, None, "http://example.com/file1.txt", utcnow=utcnow)
-        self.assertEqual(r, "keep:99999999999999999999999999999997+99/file1.txt")
+        self.assertEqual(r, ("99999999999999999999999999999997+99", "file1.txt"))
 
         assert mockobj.url == b"http://example.com/file1.txt"
         assert mockobj.perform_was_called is True
@@ -278,7 +278,7 @@ class TestHttpToKeep(unittest.TestCase):
         utcnow.return_value = datetime.datetime(2018, 5, 17)
 
         r = http_to_keep(api, None, "http://example.com/file1.txt", utcnow=utcnow)
-        self.assertEqual(r, "keep:99999999999999999999999999999998+99/file1.txt")
+        self.assertEqual(r, ("99999999999999999999999999999998+99", "file1.txt"))
 
         cm.open.assert_not_called()
 
@@ -315,7 +315,7 @@ class TestHttpToKeep(unittest.TestCase):
         utcnow.return_value = datetime.datetime(2018, 5, 15)
 
         r = http_to_keep(api, None, "http://example.com/download?fn=/file1.txt", utcnow=utcnow)
-        self.assertEqual(r, "keep:99999999999999999999999999999998+99/file1.txt")
+        self.assertEqual(r, ("99999999999999999999999999999998+99", "file1.txt"))
 
         assert mockobj.url == b"http://example.com/download?fn=/file1.txt"
 
@@ -369,7 +369,7 @@ class TestHttpToKeep(unittest.TestCase):
         utcnow.return_value = datetime.datetime(2018, 5, 17)
 
         r = http_to_keep(api, None, "http://example.com/file1.txt", utcnow=utcnow)
-        self.assertEqual(r, "keep:99999999999999999999999999999998+99/file1.txt")
+        self.assertEqual(r, ("99999999999999999999999999999998+99", "file1.txt"))
 
         print(mockobj.req_headers)
         assert mockobj.req_headers == ["Accept: application/octet-stream", "If-None-Match: \"123456\""]
@@ -418,7 +418,7 @@ class TestHttpToKeep(unittest.TestCase):
         utcnow.return_value = datetime.datetime(2018, 5, 17)
 
         r = http_to_keep(api, None, "http://example.com/file1.txt", utcnow=utcnow, prefer_cached_downloads=True)
-        self.assertEqual(r, "keep:99999999999999999999999999999998+99/file1.txt")
+        self.assertEqual(r, ("99999999999999999999999999999998+99", "file1.txt"))
 
         assert mockobj.perform_was_called is False
         cm.open.assert_not_called()
@@ -465,7 +465,7 @@ class TestHttpToKeep(unittest.TestCase):
 
             r = http_to_keep(api, None, "http://example.com/file1.txt?KeyId=123&Signature=456&Expires=789",
                                               utcnow=utcnow, varying_url_params="KeyId,Signature,Expires")
-            self.assertEqual(r, "keep:99999999999999999999999999999998+99/file1.txt")
+            self.assertEqual(r, ("99999999999999999999999999999998+99", "file1.txt"))
 
             assert mockobj.perform_was_called is True
             cm.open.assert_not_called()

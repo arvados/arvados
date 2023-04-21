@@ -354,8 +354,7 @@ def main(args=sys.argv[1:],
     # Note that unless in debug mode, some stack traces related to user
     # workflow errors may be suppressed.
 
-    # For some reason if I don't set these explicitly some logs won't
-    # show up.
+    # Set the logging on most modules INFO (instead of default which is WARNING)
     logger.setLevel(logging.INFO)
     logging.getLogger('arvados').setLevel(logging.INFO)
     logging.getLogger('arvados.keep').setLevel(logging.WARNING)
