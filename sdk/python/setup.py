@@ -59,6 +59,7 @@ setup(name='arvados-python-client',
           'protobuf<4.0.0dev',
           'pyparsing<3',
           'setuptools>=40.3.0',
+          "dataclasses ;python_version<'3.7'",
       ],
       classifiers=[
           'Programming Language :: Python :: 3',
