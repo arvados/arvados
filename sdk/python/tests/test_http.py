@@ -18,23 +18,64 @@ import datetime
 
 import arvados
 import arvados.collection
-import arvados_cwl
-import arvados_cwl.runner
 import arvados.keep
+import pycurl
 
-from .matcher import JsonDiffMatcher, StripYAMLComments
-from .mock_discovery import get_rootDesc
-
-import arvados_cwl.http
+from arvados.http_to_keep import http_to_keep
 
 import ruamel.yaml as yaml
+
+# Turns out there was already "FakeCurl" that serves the same purpose, but
+# I wrote this before I knew that.  Whoops.
+class CurlMock:
+    def __init__(self, headers = {}):
+        self.perform_was_called = False
+        self.headers = headers
+        self.get_response = 200
+        self.head_response = 200
+        self.req_headers = []
+
+    def setopt(self, op, *args):
+        if op == pycurl.URL:
+            self.url = args[0]
+        if op == pycurl.WRITEFUNCTION:
+            self.writefn = args[0]
+        if op == pycurl.HEADERFUNCTION:
+            self.headerfn = args[0]
+        if op == pycurl.NOBODY:
+            self.head = True
+        if op == pycurl.HTTPGET:
+            self.head = False
+        if op == pycurl.HTTPHEADER:
+            self.req_headers = args[0]
+
+    def getinfo(self, op):
+        if op == pycurl.RESPONSE_CODE:
+            if self.head:
+                return self.head_response
+            else:
+                return self.get_response
+
+    def perform(self):
+        self.perform_was_called = True
+
+        if self.head:
+            self.headerfn("HTTP/1.1 {} Status\r\n".format(self.head_response))
+        else:
+            self.headerfn("HTTP/1.1 {} Status\r\n".format(self.get_response))
+
+        for k,v in self.headers.items():
+            self.headerfn("%s: %s" % (k,v))
+
+        if not self.head and self.get_response == 200:
+            self.writefn(self.chunk)
 
 
 class TestHttpToKeep(unittest.TestCase):
 
-    @mock.patch("requests.get")
+    @mock.patch("pycurl.Curl")
     @mock.patch("arvados.collection.Collection")
-    def test_http_get(self, collectionmock, getmock):
+    def test_http_get(self, collectionmock, curlmock):
         api = mock.MagicMock()
 
         api.collections().list().execute.return_value = {
@@ -46,19 +87,20 @@ class TestHttpToKeep(unittest.TestCase):
         cm.portable_data_hash.return_value = "99999999999999999999999999999998+99"
         collectionmock.return_value = cm
 
-        req = mock.MagicMock()
-        req.status_code = 200
-        req.headers = {}
-        req.iter_content.return_value = ["abc"]
-        getmock.return_value = req
+        mockobj = CurlMock()
+        mockobj.chunk = b'abc'
+        def init():
+            return mockobj
+        curlmock.side_effect = init
 
         utcnow = mock.MagicMock()
         utcnow.return_value = datetime.datetime(2018, 5, 15)
 
-        r = arvados_cwl.http.http_to_keep(api, None, "http://example.com/file1.txt", utcnow=utcnow)
-        self.assertEqual(r, "keep:99999999999999999999999999999998+99/file1.txt")
+        r = http_to_keep(api, None, "http://example.com/file1.txt", utcnow=utcnow)
+        self.assertEqual(r, ("99999999999999999999999999999998+99", "file1.txt"))
 
-        getmock.assert_called_with("http://example.com/file1.txt", stream=True, allow_redirects=True, headers={})
+        assert mockobj.url == b"http://example.com/file1.txt"
+        assert mockobj.perform_was_called is True
 
         cm.open.assert_called_with("file1.txt", "wb")
         cm.save_new.assert_called_with(name="Downloaded from http%3A%2F%2Fexample.com%2Ffile1.txt",
@@ -70,9 +112,9 @@ class TestHttpToKeep(unittest.TestCase):
         ])
 
 
-    @mock.patch("requests.get")
+    @mock.patch("pycurl.Curl")
     @mock.patch("arvados.collection.CollectionReader")
-    def test_http_expires(self, collectionmock, getmock):
+    def test_http_expires(self, collectionmock, curlmock):
         api = mock.MagicMock()
 
         api.collections().list().execute.return_value = {
@@ -94,24 +136,24 @@ class TestHttpToKeep(unittest.TestCase):
         cm.keys.return_value = ["file1.txt"]
         collectionmock.return_value = cm
 
-        req = mock.MagicMock()
-        req.status_code = 200
-        req.headers = {}
-        req.iter_content.return_value = ["abc"]
-        getmock.return_value = req
+        mockobj = CurlMock()
+        mockobj.chunk = b'abc'
+        def init():
+            return mockobj
+        curlmock.side_effect = init
 
         utcnow = mock.MagicMock()
         utcnow.return_value = datetime.datetime(2018, 5, 16)
 
-        r = arvados_cwl.http.http_to_keep(api, None, "http://example.com/file1.txt", utcnow=utcnow)
-        self.assertEqual(r, "keep:99999999999999999999999999999998+99/file1.txt")
+        r = http_to_keep(api, None, "http://example.com/file1.txt", utcnow=utcnow)
+        self.assertEqual(r, ("99999999999999999999999999999998+99", "file1.txt"))
 
-        getmock.assert_not_called()
+        assert mockobj.perform_was_called is False
 
 
-    @mock.patch("requests.get")
+    @mock.patch("pycurl.Curl")
     @mock.patch("arvados.collection.CollectionReader")
-    def test_http_cache_control(self, collectionmock, getmock):
+    def test_http_cache_control(self, collectionmock, curlmock):
         api = mock.MagicMock()
 
         api.collections().list().execute.return_value = {
@@ -133,25 +175,24 @@ class TestHttpToKeep(unittest.TestCase):
         cm.keys.return_value = ["file1.txt"]
         collectionmock.return_value = cm
 
-        req = mock.MagicMock()
-        req.status_code = 200
-        req.headers = {}
-        req.iter_content.return_value = ["abc"]
-        getmock.return_value = req
+        mockobj = CurlMock()
+        mockobj.chunk = b'abc'
+        def init():
+            return mockobj
+        curlmock.side_effect = init
 
         utcnow = mock.MagicMock()
         utcnow.return_value = datetime.datetime(2018, 5, 16)
 
-        r = arvados_cwl.http.http_to_keep(api, None, "http://example.com/file1.txt", utcnow=utcnow)
-        self.assertEqual(r, "keep:99999999999999999999999999999998+99/file1.txt")
+        r = http_to_keep(api, None, "http://example.com/file1.txt", utcnow=utcnow)
+        self.assertEqual(r, ("99999999999999999999999999999998+99", "file1.txt"))
 
-        getmock.assert_not_called()
+        assert mockobj.perform_was_called is False
 
 
-    @mock.patch("requests.get")
-    @mock.patch("requests.head")
+    @mock.patch("pycurl.Curl")
     @mock.patch("arvados.collection.Collection")
-    def test_http_expired(self, collectionmock, headmock, getmock):
+    def test_http_expired(self, collectionmock, curlmock):
         api = mock.MagicMock()
 
         api.collections().list().execute.return_value = {
@@ -161,7 +202,7 @@ class TestHttpToKeep(unittest.TestCase):
                 "properties": {
                     'http://example.com/file1.txt': {
                         'Date': 'Tue, 15 May 2018 00:00:00 GMT',
-                        'Expires': 'Tue, 16 May 2018 00:00:00 GMT'
+                        'Expires': 'Wed, 16 May 2018 00:00:00 GMT'
                     }
                 }
             }]
@@ -173,20 +214,20 @@ class TestHttpToKeep(unittest.TestCase):
         cm.keys.return_value = ["file1.txt"]
         collectionmock.return_value = cm
 
-        req = mock.MagicMock()
-        req.status_code = 200
-        req.headers = {'Date': 'Tue, 17 May 2018 00:00:00 GMT'}
-        req.iter_content.return_value = ["def"]
-        getmock.return_value = req
-        headmock.return_value = req
+        mockobj = CurlMock({'Date': 'Thu, 17 May 2018 00:00:00 GMT'})
+        mockobj.chunk = b'def'
+        def init():
+            return mockobj
+        curlmock.side_effect = init
 
         utcnow = mock.MagicMock()
         utcnow.return_value = datetime.datetime(2018, 5, 17)
 
-        r = arvados_cwl.http.http_to_keep(api, None, "http://example.com/file1.txt", utcnow=utcnow)
-        self.assertEqual(r, "keep:99999999999999999999999999999997+99/file1.txt")
+        r = http_to_keep(api, None, "http://example.com/file1.txt", utcnow=utcnow)
+        self.assertEqual(r, ("99999999999999999999999999999997+99", "file1.txt"))
 
-        getmock.assert_called_with("http://example.com/file1.txt", stream=True, allow_redirects=True, headers={})
+        assert mockobj.url == b"http://example.com/file1.txt"
+        assert mockobj.perform_was_called is True
 
         cm.open.assert_called_with("file1.txt", "wb")
         cm.save_new.assert_called_with(name="Downloaded from http%3A%2F%2Fexample.com%2Ffile1.txt",
@@ -194,14 +235,13 @@ class TestHttpToKeep(unittest.TestCase):
 
         api.collections().update.assert_has_calls([
             mock.call(uuid=cm.manifest_locator(),
-                      body={"collection":{"properties": {'http://example.com/file1.txt': {'Date': 'Tue, 17 May 2018 00:00:00 GMT'}}}})
+                      body={"collection":{"properties": {'http://example.com/file1.txt': {'Date': 'Thu, 17 May 2018 00:00:00 GMT'}}}})
         ])
 
 
-    @mock.patch("requests.get")
-    @mock.patch("requests.head")
+    @mock.patch("pycurl.Curl")
     @mock.patch("arvados.collection.CollectionReader")
-    def test_http_etag(self, collectionmock, headmock, getmock):
+    def test_http_etag(self, collectionmock, curlmock):
         api = mock.MagicMock()
 
         api.collections().list().execute.return_value = {
@@ -211,8 +251,8 @@ class TestHttpToKeep(unittest.TestCase):
                 "properties": {
                     'http://example.com/file1.txt': {
                         'Date': 'Tue, 15 May 2018 00:00:00 GMT',
-                        'Expires': 'Tue, 16 May 2018 00:00:00 GMT',
-                        'ETag': '"123456"'
+                        'Expires': 'Wed, 16 May 2018 00:00:00 GMT',
+                        'Etag': '"123456"'
                     }
                 }
             }]
@@ -224,36 +264,36 @@ class TestHttpToKeep(unittest.TestCase):
         cm.keys.return_value = ["file1.txt"]
         collectionmock.return_value = cm
 
-        req = mock.MagicMock()
-        req.status_code = 200
-        req.headers = {
-            'Date': 'Tue, 17 May 2018 00:00:00 GMT',
-            'Expires': 'Tue, 19 May 2018 00:00:00 GMT',
-            'ETag': '"123456"'
-        }
-        headmock.return_value = req
+        mockobj = CurlMock({
+            'Date': 'Thu, 17 May 2018 00:00:00 GMT',
+            'Expires': 'Sat, 19 May 2018 00:00:00 GMT',
+            'Etag': '"123456"'
+        })
+        mockobj.chunk = None
+        def init():
+            return mockobj
+        curlmock.side_effect = init
 
         utcnow = mock.MagicMock()
         utcnow.return_value = datetime.datetime(2018, 5, 17)
 
-        r = arvados_cwl.http.http_to_keep(api, None, "http://example.com/file1.txt", utcnow=utcnow)
-        self.assertEqual(r, "keep:99999999999999999999999999999998+99/file1.txt")
+        r = http_to_keep(api, None, "http://example.com/file1.txt", utcnow=utcnow)
+        self.assertEqual(r, ("99999999999999999999999999999998+99", "file1.txt"))
 
-        getmock.assert_not_called()
         cm.open.assert_not_called()
 
         api.collections().update.assert_has_calls([
             mock.call(uuid=cm.manifest_locator(),
                       body={"collection":{"properties": {'http://example.com/file1.txt': {
-                          'Date': 'Tue, 17 May 2018 00:00:00 GMT',
-                          'Expires': 'Tue, 19 May 2018 00:00:00 GMT',
-                          'ETag': '"123456"'
+                          'Date': 'Thu, 17 May 2018 00:00:00 GMT',
+                          'Expires': 'Sat, 19 May 2018 00:00:00 GMT',
+                          'Etag': '"123456"'
                       }}}})
                       ])
 
-    @mock.patch("requests.get")
+    @mock.patch("pycurl.Curl")
     @mock.patch("arvados.collection.Collection")
-    def test_http_content_disp(self, collectionmock, getmock):
+    def test_http_content_disp(self, collectionmock, curlmock):
         api = mock.MagicMock()
 
         api.collections().list().execute.return_value = {
@@ -265,19 +305,19 @@ class TestHttpToKeep(unittest.TestCase):
         cm.portable_data_hash.return_value = "99999999999999999999999999999998+99"
         collectionmock.return_value = cm
 
-        req = mock.MagicMock()
-        req.status_code = 200
-        req.headers = {"Content-Disposition": "attachment; filename=file1.txt"}
-        req.iter_content.return_value = ["abc"]
-        getmock.return_value = req
+        mockobj = CurlMock({"Content-Disposition": "attachment; filename=file1.txt"})
+        mockobj.chunk = "abc"
+        def init():
+            return mockobj
+        curlmock.side_effect = init
 
         utcnow = mock.MagicMock()
         utcnow.return_value = datetime.datetime(2018, 5, 15)
 
-        r = arvados_cwl.http.http_to_keep(api, None, "http://example.com/download?fn=/file1.txt", utcnow=utcnow)
-        self.assertEqual(r, "keep:99999999999999999999999999999998+99/file1.txt")
+        r = http_to_keep(api, None, "http://example.com/download?fn=/file1.txt", utcnow=utcnow)
+        self.assertEqual(r, ("99999999999999999999999999999998+99", "file1.txt"))
 
-        getmock.assert_called_with("http://example.com/download?fn=/file1.txt", stream=True, allow_redirects=True, headers={})
+        assert mockobj.url == b"http://example.com/download?fn=/file1.txt"
 
         cm.open.assert_called_with("file1.txt", "wb")
         cm.save_new.assert_called_with(name="Downloaded from http%3A%2F%2Fexample.com%2Fdownload%3Ffn%3D%2Ffile1.txt",
@@ -288,10 +328,9 @@ class TestHttpToKeep(unittest.TestCase):
                       body={"collection":{"properties": {"http://example.com/download?fn=/file1.txt": {'Date': 'Tue, 15 May 2018 00:00:00 GMT'}}}})
         ])
 
-    @mock.patch("requests.get")
-    @mock.patch("requests.head")
+    @mock.patch("pycurl.Curl")
     @mock.patch("arvados.collection.CollectionReader")
-    def test_http_etag_if_none_match(self, collectionmock, headmock, getmock):
+    def test_http_etag_if_none_match(self, collectionmock, curlmock):
         api = mock.MagicMock()
 
         api.collections().list().execute.return_value = {
@@ -302,7 +341,7 @@ class TestHttpToKeep(unittest.TestCase):
                     'http://example.com/file1.txt': {
                         'Date': 'Tue, 15 May 2018 00:00:00 GMT',
                         'Expires': 'Tue, 16 May 2018 00:00:00 GMT',
-                        'ETag': '"123456"'
+                        'Etag': '"123456"'
                     }
                 }
             }]
@@ -314,29 +353,26 @@ class TestHttpToKeep(unittest.TestCase):
         cm.keys.return_value = ["file1.txt"]
         collectionmock.return_value = cm
 
-        # Head request fails, will try a conditional GET instead
-        req = mock.MagicMock()
-        req.status_code = 403
-        req.headers = {
-        }
-        headmock.return_value = req
+        mockobj = CurlMock({
+            'Date': 'Tue, 17 May 2018 00:00:00 GMT',
+            'Expires': 'Tue, 19 May 2018 00:00:00 GMT',
+            'Etag': '"123456"'
+        })
+        mockobj.chunk = None
+        mockobj.head_response = 403
+        mockobj.get_response = 304
+        def init():
+            return mockobj
+        curlmock.side_effect = init
 
         utcnow = mock.MagicMock()
         utcnow.return_value = datetime.datetime(2018, 5, 17)
 
-        req = mock.MagicMock()
-        req.status_code = 304
-        req.headers = {
-            'Date': 'Tue, 17 May 2018 00:00:00 GMT',
-            'Expires': 'Tue, 19 May 2018 00:00:00 GMT',
-            'ETag': '"123456"'
-        }
-        getmock.return_value = req
+        r = http_to_keep(api, None, "http://example.com/file1.txt", utcnow=utcnow)
+        self.assertEqual(r, ("99999999999999999999999999999998+99", "file1.txt"))
 
-        r = arvados_cwl.http.http_to_keep(api, None, "http://example.com/file1.txt", utcnow=utcnow)
-        self.assertEqual(r, "keep:99999999999999999999999999999998+99/file1.txt")
-
-        getmock.assert_called_with("http://example.com/file1.txt", stream=True, allow_redirects=True, headers={"If-None-Match": '"123456"'})
+        print(mockobj.req_headers)
+        assert mockobj.req_headers == ["Accept: application/octet-stream", "If-None-Match: \"123456\""]
         cm.open.assert_not_called()
 
         api.collections().update.assert_has_calls([
@@ -344,15 +380,13 @@ class TestHttpToKeep(unittest.TestCase):
                       body={"collection":{"properties": {'http://example.com/file1.txt': {
                           'Date': 'Tue, 17 May 2018 00:00:00 GMT',
                           'Expires': 'Tue, 19 May 2018 00:00:00 GMT',
-                          'ETag': '"123456"'
+                          'Etag': '"123456"'
                       }}}})
                       ])
 
-
-    @mock.patch("requests.get")
-    @mock.patch("requests.head")
+    @mock.patch("pycurl.Curl")
     @mock.patch("arvados.collection.CollectionReader")
-    def test_http_prefer_cached_downloads(self, collectionmock, headmock, getmock):
+    def test_http_prefer_cached_downloads(self, collectionmock, curlmock):
         api = mock.MagicMock()
 
         api.collections().list().execute.return_value = {
@@ -363,7 +397,7 @@ class TestHttpToKeep(unittest.TestCase):
                     'http://example.com/file1.txt': {
                         'Date': 'Tue, 15 May 2018 00:00:00 GMT',
                         'Expires': 'Tue, 16 May 2018 00:00:00 GMT',
-                        'ETag': '"123456"'
+                        'Etag': '"123456"'
                     }
                 }
             }]
@@ -375,21 +409,24 @@ class TestHttpToKeep(unittest.TestCase):
         cm.keys.return_value = ["file1.txt"]
         collectionmock.return_value = cm
 
+        mockobj = CurlMock()
+        def init():
+            return mockobj
+        curlmock.side_effect = init
+
         utcnow = mock.MagicMock()
         utcnow.return_value = datetime.datetime(2018, 5, 17)
 
-        r = arvados_cwl.http.http_to_keep(api, None, "http://example.com/file1.txt", utcnow=utcnow, prefer_cached_downloads=True)
-        self.assertEqual(r, "keep:99999999999999999999999999999998+99/file1.txt")
+        r = http_to_keep(api, None, "http://example.com/file1.txt", utcnow=utcnow, prefer_cached_downloads=True)
+        self.assertEqual(r, ("99999999999999999999999999999998+99", "file1.txt"))
 
-        headmock.assert_not_called()
-        getmock.assert_not_called()
+        assert mockobj.perform_was_called is False
         cm.open.assert_not_called()
         api.collections().update.assert_not_called()
 
-    @mock.patch("requests.get")
-    @mock.patch("requests.head")
+    @mock.patch("pycurl.Curl")
     @mock.patch("arvados.collection.CollectionReader")
-    def test_http_varying_url_params(self, collectionmock, headmock, getmock):
+    def test_http_varying_url_params(self, collectionmock, curlmock):
         for prurl in ("http://example.com/file1.txt", "http://example.com/file1.txt?KeyId=123&Signature=456&Expires=789"):
             api = mock.MagicMock()
 
@@ -401,7 +438,7 @@ class TestHttpToKeep(unittest.TestCase):
                         prurl: {
                             'Date': 'Tue, 15 May 2018 00:00:00 GMT',
                             'Expires': 'Tue, 16 May 2018 00:00:00 GMT',
-                            'ETag': '"123456"'
+                            'Etag': '"123456"'
                         }
                     }
                 }]
@@ -413,23 +450,24 @@ class TestHttpToKeep(unittest.TestCase):
             cm.keys.return_value = ["file1.txt"]
             collectionmock.return_value = cm
 
-            req = mock.MagicMock()
-            req.status_code = 200
-            req.headers = {
+            mockobj = CurlMock({
                 'Date': 'Tue, 17 May 2018 00:00:00 GMT',
                 'Expires': 'Tue, 19 May 2018 00:00:00 GMT',
-                'ETag': '"123456"'
-            }
-            headmock.return_value = req
+                'Etag': '"123456"'
+            })
+            mockobj.chunk = None
+            def init():
+                return mockobj
+            curlmock.side_effect = init
 
             utcnow = mock.MagicMock()
             utcnow.return_value = datetime.datetime(2018, 5, 17)
 
-            r = arvados_cwl.http.http_to_keep(api, None, "http://example.com/file1.txt?KeyId=123&Signature=456&Expires=789",
+            r = http_to_keep(api, None, "http://example.com/file1.txt?KeyId=123&Signature=456&Expires=789",
                                               utcnow=utcnow, varying_url_params="KeyId,Signature,Expires")
-            self.assertEqual(r, "keep:99999999999999999999999999999998+99/file1.txt")
+            self.assertEqual(r, ("99999999999999999999999999999998+99", "file1.txt"))
 
-            getmock.assert_not_called()
+            assert mockobj.perform_was_called is True
             cm.open.assert_not_called()
 
             api.collections().update.assert_has_calls([
@@ -437,6 +475,6 @@ class TestHttpToKeep(unittest.TestCase):
                           body={"collection":{"properties": {'http://example.com/file1.txt': {
                               'Date': 'Tue, 17 May 2018 00:00:00 GMT',
                               'Expires': 'Tue, 19 May 2018 00:00:00 GMT',
-                              'ETag': '"123456"'
+                              'Etag': '"123456"'
                           }}}})
                           ])
