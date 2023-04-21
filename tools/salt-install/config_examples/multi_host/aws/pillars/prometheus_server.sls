@@ -32,6 +32,22 @@ prometheus:
                   cluster: __CLUSTER__
 
             ## Arvados unique jobs
+            - job_name: arvados_ws
+              bearer_token: __MANAGEMENT_TOKEN__
+              scheme: https
+              static_configs:
+                - targets: ['ws.__CLUSTER__.__DOMAIN__:443']
+                  labels:
+                    instance: ws.__CLUSTER__
+                    cluster: __CLUSTER__
+            - job_name: arvados_controller
+              bearer_token: __MANAGEMENT_TOKEN__
+              scheme: https
+              static_configs:
+                - targets: ['__CLUSTER__.__DOMAIN__:443']
+                  labels:
+                    instance: controller.__CLUSTER__
+                    cluster: __CLUSTER__
             - job_name: keep_web
               bearer_token: __MANAGEMENT_TOKEN__
               scheme: https
