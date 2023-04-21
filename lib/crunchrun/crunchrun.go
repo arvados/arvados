@@ -1521,7 +1521,13 @@ func (runner *ContainerRunner) saveLogCollection(final bool) (response arvados.C
 	if final {
 		updates["is_trashed"] = true
 	} else {
-		exp := time.Now().Add(crunchLogUpdatePeriod * 24)
+		// We set trash_at so this collection gets
+		// automatically cleaned up eventually.  It used to be
+		// 12 hours but we had a situation where the API
+		// server was down over a weekend but the containers
+		// kept running such that the log collection got
+		// trashed, so now we make it 2 weeks.  refs #20378
+		exp := time.Now().Add(time.Duration(24*14) * time.Hour)
 		updates["trash_at"] = exp
 		updates["delete_at"] = exp
 	}
