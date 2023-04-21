@@ -18,6 +18,7 @@ import calendar
 import urllib.parse
 import pycurl
 import dataclasses
+import typing
 from arvados._pycurlhelper import PyCurlHelper
 
 logger = logging.getLogger('arvados.http_import')
@@ -75,9 +76,9 @@ def _remember_headers(url, properties, headers, now):
 
 @dataclasses.dataclass
 class _Response:
-    def __init__(self, status_code, headers):
-        self.status_code = status_code
-        self.headers = headers
+    status_code: int
+    headers: typing.Mapping[str, str]
+
 
 class _Downloader(PyCurlHelper):
     # Wait up to 60 seconds for connection
@@ -245,7 +246,7 @@ def http_to_keep(api, project_uuid, url,
     Before downloading the URL, checks to see if the URL already
     exists in Keep and applies HTTP caching policy, the
     varying_url_params and prefer_cached_downloads flags in order to
-    decide whether to use the version in Keep or re-download it.x
+    decide whether to use the version in Keep or re-download it.
     """
 
     logger.info("Checking Keep for %s", url)
@@ -286,13 +287,13 @@ def http_to_keep(api, project_uuid, url,
         if prefer_cached_downloads or _fresh_cache(cache_url, properties, now):
             # HTTP caching rules say we should use the cache
             cr = arvados.collection.CollectionReader(item["portable_data_hash"], api_client=api)
-            return (item["portable_data_hash"], list(cr.keys())[0])
+            return (item["portable_data_hash"], next(iter(cr.keys())) )
 
         if not _changed(cache_url, clean_url, properties, now, curldownloader):
             # Etag didn't change, same content, just update headers
             api.collections().update(uuid=item["uuid"], body={"collection":{"properties": properties}}).execute()
             cr = arvados.collection.CollectionReader(item["portable_data_hash"], api_client=api)
-            return (item["portable_data_hash"], list(cr.keys())[0])
+            return (item["portable_data_hash"], next(iter(cr.keys())))
 
         for etagstr in ("Etag", "ETag"):
             if etagstr in properties[cache_url] and len(properties[cache_url][etagstr]) > 2:
