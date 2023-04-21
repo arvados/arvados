@@ -63,6 +63,8 @@ gem 'rails-observers'
 gem 'rails-perftest'
 gem 'rails-controller-testing'
 
+gem 'mini_portile2', '~> 2.8', '>= 2.8.1'
+
 # arvados-google-api-client and googleauth depend on signet, but
 # signet 0.12 is incompatible with ruby 2.3.
 gem 'signet', '< 0.12'

@@ -242,6 +242,7 @@ DEPENDENCIES
   listen
   lograge
   logstash-event
+  mini_portile2 (~> 2.8, >= 2.8.1)
   minitest (= 5.10.3)
   mocha
   multi_json
@@ -265,4 +266,4 @@ DEPENDENCIES
   themes_for_rails!
 
 BUNDLED WITH
-   2.2.19
+   2.3.26
