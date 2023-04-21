@@ -128,6 +128,8 @@ setup(name='arvados-python-client',
           'ws4py >=0.4.2',
           'protobuf<4.0.0dev',
           'pyparsing<3',
+          'setuptools>=40.3.0',
+          "dataclasses ;python_version<'3.7'",
       ],
       classifiers=[
           'Programming Language :: Python :: 3',
