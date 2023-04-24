@@ -1943,6 +1943,13 @@ CREATE INDEX index_collections_on_modified_at_and_uuid ON public.collections USI
 
 
 --
+-- Name: index_collections_on_name; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_collections_on_name ON public.collections USING gin (name public.gin_trgm_ops);
+
+
+--
 -- Name: index_collections_on_owner_uuid; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -2129,6 +2136,13 @@ CREATE INDEX index_groups_on_is_trashed ON public.groups USING btree (is_trashed
 --
 
 CREATE INDEX index_groups_on_modified_at_and_uuid ON public.groups USING btree (modified_at, uuid);
+
+
+--
+-- Name: index_groups_on_name; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_groups_on_name ON public.groups USING gin (name public.gin_trgm_ops);
 
 
 --
@@ -3187,6 +3201,7 @@ INSERT INTO "schema_migrations" (version) VALUES
 ('20220726034131'),
 ('20220804133317'),
 ('20221219165512'),
-('20221230155924');
+('20221230155924'),
+('20230421142716');
 
 
