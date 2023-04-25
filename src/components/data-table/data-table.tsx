@@ -90,61 +90,83 @@ const styles: StyleRulesCallback<CssRules> = (theme: Theme) => ({
     },
 });
 
-//master list for all things checked and unchecked
-const checkedList: Record<string, boolean> = {};
-
-const initializeCheckedList = (items: any[]): void => {
-    for (const uuid in checkedList) {
-        if (checkedList.hasOwnProperty(uuid)) {
-            delete checkedList[uuid];
-        }
-    }
-    items.forEach((uuid) => {
-        if (!checkedList.hasOwnProperty[uuid]) {
-            checkedList[uuid] = false;
-        }
-    });
-};
-
-const handleResourceSelect = (uuid: string) => {
-    if (!checkedList[uuid]) {
-        checkedList[uuid] = true;
-    } else {
-        checkedList[uuid] = false;
-    }
-    console.log(checkedList);
-};
-
 const handleSelectAll = () => {};
 
 const handleDeselectAll = () => {};
 
-const checkBoxColumn: DataColumn<any, any> = {
-    name: '',
-    selected: true,
-    configurable: false,
-    filters: createTree(),
-    render: (item) => {
-        return <Checkbox color='primary' onClick={() => handleResourceSelect(item)} />;
-    },
+type DataTableState = {
+    checkedList: Record<string, boolean>;
 };
 
-type DataTableProps<T> = DataTableDataProps<T> & WithStyles<CssRules>;
+type DataTableProps<T> = DataTableDataProps<T> & WithStyles<CssRules> & DataTableState;
 
 export const DataTable = withStyles(styles)(
     class Component<T> extends React.Component<DataTableProps<T>> {
+        constructor(props) {
+            super(props);
+            this.state = {
+                checkedList: {},
+            };
+            this.initializeCheckedList = this.initializeCheckedList.bind(this);
+            this.handleResourceSelect = this.handleResourceSelect.bind(this);
+        }
+        checkBoxColumn: DataColumn<any, any> = {
+            name: 'checkBoxColumn',
+            selected: true,
+            configurable: false,
+            filters: createTree(),
+            render: (uuid) => {
+                return <input type='checkbox' name={uuid} color='primary' onChange={() => this.handleResourceSelect(uuid)}></input>;
+            },
+        };
+        initializeCheckedList = (items: any[]): void => {
+            const checkedList = this.state;
+            for (const uuid in checkedList) {
+                if (checkedList.hasOwnProperty(uuid)) {
+                    delete checkedList[uuid];
+                }
+            }
+            items.forEach((uuid) => {
+                if (!checkedList.hasOwnProperty[uuid]) {
+                    checkedList[uuid] = false;
+                }
+            });
+            console.log(this.state);
+        };
+
+        handleResourceSelect = (uuid: string) => {
+            const checkedList = this.state;
+            if (!checkedList[uuid]) {
+                checkedList[uuid] = true;
+            } else {
+                checkedList[uuid] = false;
+            }
+            console.log(checkedList);
+        };
+
         componentDidUpdate(prevProps: Readonly<DataTableProps<T>>, prevState: Readonly<{}>, snapshot?: any): void {
             if (prevProps.items !== this.props.items) {
-                console.log('hi');
-                initializeCheckedList(this.props.items);
+                this.initializeCheckedList(this.props.items);
             }
         }
         render() {
             const { items, classes, working, columns } = this.props;
-            if (columns[0] !== checkBoxColumn) columns.unshift(checkBoxColumn);
+            if (columns[0].name !== this.checkBoxColumn.name) columns.unshift(this.checkBoxColumn);
+            const firstBox: HTMLInputElement | null = document.querySelector('input[type="checkbox"]');
             return (
                 <div className={classes.root}>
                     <div className={classes.content}>
+                        <button
+                            onClick={() => {
+                                // if (firstBox) this.handleResourceSelect(firstBox?.name);
+                                if (firstBox) firstBox.click();
+                                // if (firstBox) firstBox.checked = !firstBox.checked;
+                                console.log(firstBox);
+                            }}
+                        >
+                            TEST
+                        </button>
+                        {/* <input type='checkbox'></input> */}
                         <Table>
                             <TableHead>
                                 <TableRow>{this.mapVisibleColumns(this.renderHeadCell)}</TableRow>
