@@ -360,6 +360,10 @@ func (h *handler) ServeHTTP(wOrig http.ResponseWriter, r *http.Request) {
 		fsprefix = "by_id/" + collectionID + "/"
 	}
 
+	if src := r.Header.Get("X-Webdav-Source"); strings.HasPrefix(src, "/") && !strings.Contains(src, "//") && !strings.Contains(src, "/../") {
+		fsprefix += src[1:]
+	}
+
 	if tokens == nil {
 		tokens = reqTokens
 		if h.Cluster.Users.AnonymousUserToken != "" {
@@ -593,7 +597,7 @@ func (h *handler) ServeHTTP(wOrig http.ResponseWriter, r *http.Request) {
 		},
 		LockSystem: webdavfs.NoLockSystem,
 		Logger: func(r *http.Request, err error) {
-			if err != nil {
+			if err != nil && !os.IsNotExist(err) {
 				ctxlog.FromContext(r.Context()).WithError(err).Error("error reported by webdav handler")
 			}
 		},

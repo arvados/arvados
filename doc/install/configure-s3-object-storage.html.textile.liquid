@@ -70,9 +70,6 @@ h2(#example). Configuration example
           # might be needed for other S3-compatible services.
           V2Signature: false
 
-          # Use the AWS S3 v2 Go driver instead of the goamz driver.
-          UseAWSS3v2Driver: false
-
           # By default keepstore stores data using the MD5 checksum
           # (32 hexadecimal characters) as the object name, e.g.,
           # "0123456abc...". Setting PrefixLength to 3 changes this
@@ -120,12 +117,6 @@ h2(#example). Configuration example
         # classes" in the "Admin" section of doc.arvados.org.
         StorageClasses: null
 </code></pre></notextile>
-
-Two S3 drivers are available. Historically, Arvados has used the @goamz@ driver to talk to S3-compatible services. More recently, support for the @aws-sdk-go-v2@ driver was added. This driver can be activated by setting the @UseAWSS3v2Driver@ flag to @true@.
-
-The @aws-sdk-go-v2@ does not support the old S3 v2 signing algorithm. This will not affect interacting with AWS S3, but it might be an issue when Keep is backed by a very old version of a third party S3-compatible service.
-
-The @aws-sdk-go-v2@ driver can improve read performance by 50-100% over the @goamz@ driver, but it has not had as much production use. See the "wiki":https://dev.arvados.org/projects/arvados/wiki/Keep_real_world_performance_numbers for details.
 
 h2(#IAM). IAM Policy
 

@@ -27,6 +27,11 @@ var (
 	EndpointVocabularyGet                 = APIEndpoint{"GET", "arvados/v1/vocabulary", ""}
 	EndpointLogin                         = APIEndpoint{"GET", "login", ""}
 	EndpointLogout                        = APIEndpoint{"GET", "logout", ""}
+	EndpointAuthorizedKeyCreate           = APIEndpoint{"POST", "arvados/v1/authorized_keys", "authorized_key"}
+	EndpointAuthorizedKeyUpdate           = APIEndpoint{"PATCH", "arvados/v1/authorized_keys/{uuid}", "authorized_key"}
+	EndpointAuthorizedKeyGet              = APIEndpoint{"GET", "arvados/v1/authorized_keys/{uuid}", ""}
+	EndpointAuthorizedKeyList             = APIEndpoint{"GET", "arvados/v1/authorized_keys", ""}
+	EndpointAuthorizedKeyDelete           = APIEndpoint{"DELETE", "arvados/v1/authorized_keys/{uuid}", ""}
 	EndpointCollectionCreate              = APIEndpoint{"POST", "arvados/v1/collections", "collection"}
 	EndpointCollectionUpdate              = APIEndpoint{"PATCH", "arvados/v1/collections/{uuid}", "collection"}
 	EndpointCollectionGet                 = APIEndpoint{"GET", "arvados/v1/collections/{uuid}", ""}
@@ -49,7 +54,6 @@ var (
 	EndpointContainerDelete               = APIEndpoint{"DELETE", "arvados/v1/containers/{uuid}", ""}
 	EndpointContainerLock                 = APIEndpoint{"POST", "arvados/v1/containers/{uuid}/lock", ""}
 	EndpointContainerUnlock               = APIEndpoint{"POST", "arvados/v1/containers/{uuid}/unlock", ""}
-	EndpointContainerLog                  = APIEndpoint{"GET", "arvados/v1/containers/{uuid}/log{path:|/.*}", ""}
 	EndpointContainerSSH                  = APIEndpoint{"POST", "arvados/v1/containers/{uuid}/ssh", ""}
 	EndpointContainerSSHCompat            = APIEndpoint{"POST", "arvados/v1/connect/{uuid}/ssh", ""} // for compatibility with arvados <2.7
 	EndpointContainerGatewayTunnel        = APIEndpoint{"POST", "arvados/v1/containers/{uuid}/gateway_tunnel", ""}
@@ -59,6 +63,7 @@ var (
 	EndpointContainerRequestGet           = APIEndpoint{"GET", "arvados/v1/container_requests/{uuid}", ""}
 	EndpointContainerRequestList          = APIEndpoint{"GET", "arvados/v1/container_requests", ""}
 	EndpointContainerRequestDelete        = APIEndpoint{"DELETE", "arvados/v1/container_requests/{uuid}", ""}
+	EndpointContainerRequestLog           = APIEndpoint{"GET", "arvados/v1/container_requests/{uuid}/log{path:|/.*}", ""}
 	EndpointGroupCreate                   = APIEndpoint{"POST", "arvados/v1/groups", "group"}
 	EndpointGroupUpdate                   = APIEndpoint{"PATCH", "arvados/v1/groups/{uuid}", "group"}
 	EndpointGroupGet                      = APIEndpoint{"GET", "arvados/v1/groups/{uuid}", ""}
@@ -268,6 +273,11 @@ type API interface {
 	VocabularyGet(ctx context.Context) (Vocabulary, error)
 	Login(ctx context.Context, options LoginOptions) (LoginResponse, error)
 	Logout(ctx context.Context, options LogoutOptions) (LogoutResponse, error)
+	AuthorizedKeyCreate(ctx context.Context, options CreateOptions) (AuthorizedKey, error)
+	AuthorizedKeyUpdate(ctx context.Context, options UpdateOptions) (AuthorizedKey, error)
+	AuthorizedKeyGet(ctx context.Context, options GetOptions) (AuthorizedKey, error)
+	AuthorizedKeyList(ctx context.Context, options ListOptions) (AuthorizedKeyList, error)
+	AuthorizedKeyDelete(ctx context.Context, options DeleteOptions) (AuthorizedKey, error)
 	CollectionCreate(ctx context.Context, options CreateOptions) (Collection, error)
 	CollectionUpdate(ctx context.Context, options UpdateOptions) (Collection, error)
 	CollectionGet(ctx context.Context, options GetOptions) (Collection, error)
@@ -285,7 +295,6 @@ type API interface {
 	ContainerDelete(ctx context.Context, options DeleteOptions) (Container, error)
 	ContainerLock(ctx context.Context, options GetOptions) (Container, error)
 	ContainerUnlock(ctx context.Context, options GetOptions) (Container, error)
-	ContainerLog(ctx context.Context, options ContainerLogOptions) (http.Handler, error)
 	ContainerSSH(ctx context.Context, options ContainerSSHOptions) (ConnectionResponse, error)
 	ContainerGatewayTunnel(ctx context.Context, options ContainerGatewayTunnelOptions) (ConnectionResponse, error)
 	ContainerRequestCreate(ctx context.Context, options CreateOptions) (ContainerRequest, error)
@@ -293,6 +302,7 @@ type API interface {
 	ContainerRequestGet(ctx context.Context, options GetOptions) (ContainerRequest, error)
 	ContainerRequestList(ctx context.Context, options ListOptions) (ContainerRequestList, error)
 	ContainerRequestDelete(ctx context.Context, options DeleteOptions) (ContainerRequest, error)
+	ContainerRequestLog(ctx context.Context, options ContainerLogOptions) (http.Handler, error)
 	GroupCreate(ctx context.Context, options CreateOptions) (Group, error)
 	GroupUpdate(ctx context.Context, options UpdateOptions) (Group, error)
 	GroupGet(ctx context.Context, options GetOptions) (Group, error)

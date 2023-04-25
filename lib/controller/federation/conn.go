@@ -270,6 +270,26 @@ func (conn *Conn) Logout(ctx context.Context, options arvados.LogoutOptions) (ar
 	return arvados.LogoutResponse{RedirectLocation: target.String()}, nil
 }
 
+func (conn *Conn) AuthorizedKeyCreate(ctx context.Context, options arvados.CreateOptions) (arvados.AuthorizedKey, error) {
+	return conn.chooseBackend(options.ClusterID).AuthorizedKeyCreate(ctx, options)
+}
+
+func (conn *Conn) AuthorizedKeyUpdate(ctx context.Context, options arvados.UpdateOptions) (arvados.AuthorizedKey, error) {
+	return conn.chooseBackend(options.UUID).AuthorizedKeyUpdate(ctx, options)
+}
+
+func (conn *Conn) AuthorizedKeyGet(ctx context.Context, options arvados.GetOptions) (arvados.AuthorizedKey, error) {
+	return conn.chooseBackend(options.UUID).AuthorizedKeyGet(ctx, options)
+}
+
+func (conn *Conn) AuthorizedKeyList(ctx context.Context, options arvados.ListOptions) (arvados.AuthorizedKeyList, error) {
+	return conn.generated_AuthorizedKeyList(ctx, options)
+}
+
+func (conn *Conn) AuthorizedKeyDelete(ctx context.Context, options arvados.DeleteOptions) (arvados.AuthorizedKey, error) {
+	return conn.chooseBackend(options.UUID).AuthorizedKeyDelete(ctx, options)
+}
+
 func (conn *Conn) CollectionGet(ctx context.Context, options arvados.GetOptions) (arvados.Collection, error) {
 	if len(options.UUID) == 27 {
 		// UUID is really a UUID
@@ -385,10 +405,6 @@ func (conn *Conn) ContainerUnlock(ctx context.Context, options arvados.GetOption
 	return conn.chooseBackend(options.UUID).ContainerUnlock(ctx, options)
 }
 
-func (conn *Conn) ContainerLog(ctx context.Context, options arvados.ContainerLogOptions) (http.Handler, error) {
-	return conn.chooseBackend(options.UUID).ContainerLog(ctx, options)
-}
-
 func (conn *Conn) ContainerSSH(ctx context.Context, options arvados.ContainerSSHOptions) (arvados.ConnectionResponse, error) {
 	return conn.chooseBackend(options.UUID).ContainerSSH(ctx, options)
 }
@@ -457,6 +473,10 @@ func (conn *Conn) ContainerRequestGet(ctx context.Context, options arvados.GetOp
 
 func (conn *Conn) ContainerRequestDelete(ctx context.Context, options arvados.DeleteOptions) (arvados.ContainerRequest, error) {
 	return conn.chooseBackend(options.UUID).ContainerRequestDelete(ctx, options)
+}
+
+func (conn *Conn) ContainerRequestLog(ctx context.Context, options arvados.ContainerLogOptions) (http.Handler, error) {
+	return conn.chooseBackend(options.UUID).ContainerRequestLog(ctx, options)
 }
 
 func (conn *Conn) GroupCreate(ctx context.Context, options arvados.CreateOptions) (arvados.Group, error) {

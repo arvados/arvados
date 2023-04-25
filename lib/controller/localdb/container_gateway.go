@@ -40,22 +40,45 @@ var (
 	forceInternalURLForTest *arvados.URL
 )
 
-// ContainerLog returns a WebDAV handler that reads logs from the
-// indicated container. It works by proxying the request to
+// ContainerRequestLog returns a WebDAV handler that reads logs from
+// the indicated container request. It works by proxying the incoming
+// HTTP request to
 //
-//   - the container gateway, if the container is running
+//   - the container gateway, if there is an associated container that
+//     is running
 //
-//   - a different controller process, if the container is running and
-//     the gateway is accessible through a tunnel to a different
+//   - a different controller process, if there is a running container
+//     whose gateway is accessible through a tunnel to a different
 //     controller process
 //
 //   - keep-web, if saved logs exist and there is no gateway (or the
-//     container is finished)
+//     associated container is finished)
 //
 //   - an empty-collection stub, if there is no gateway and no saved
 //     log
-func (conn *Conn) ContainerLog(ctx context.Context, opts arvados.ContainerLogOptions) (http.Handler, error) {
-	ctr, err := conn.railsProxy.ContainerGet(ctx, arvados.GetOptions{UUID: opts.UUID, Select: []string{"uuid", "state", "gateway_address", "log"}})
+//
+// For an incoming request
+//
+//	GET /arvados/v1/container_requests/{cr_uuid}/log/{c_uuid}{/c_log_path}
+//
+// The upstream request may be to {c_uuid}'s container gateway
+//
+//	GET /arvados/v1/container_requests/{cr_uuid}/log/{c_uuid}{/c_log_path}
+//	X-Webdav-Prefix: /arvados/v1/container_requests/{cr_uuid}/log/{c_uuid}
+//	X-Webdav-Source: /log
+//
+// ...or the upstream request may be to keep-web (where {cr_log_uuid}
+// is the container request log collection UUID)
+//
+//	GET /arvados/v1/container_requests/{cr_uuid}/log/{c_uuid}{/c_log_path}
+//	Host: {cr_log_uuid}.internal
+//	X-Webdav-Prefix: /arvados/v1/container_requests/{cr_uuid}/log
+//	X-Arvados-Container-Uuid: {c_uuid}
+//
+// ...or the request may be handled locally using an empty-collection
+// stub.
+func (conn *Conn) ContainerRequestLog(ctx context.Context, opts arvados.ContainerLogOptions) (http.Handler, error) {
+	cr, err := conn.railsProxy.ContainerRequestGet(ctx, arvados.GetOptions{UUID: opts.UUID, Select: []string{"uuid", "container_uuid", "log_uuid"}})
 	if err != nil {
 		if se := httpserver.HTTPStatusError(nil); errors.As(err, &se) && se.HTTPStatus() == http.StatusUnauthorized {
 			// Hint to WebDAV client that we accept HTTP basic auth.
@@ -66,10 +89,29 @@ func (conn *Conn) ContainerLog(ctx context.Context, opts arvados.ContainerLogOpt
 		}
 		return nil, err
 	}
+	ctr, err := conn.railsProxy.ContainerGet(ctx, arvados.GetOptions{UUID: cr.ContainerUUID, Select: []string{"uuid", "state", "gateway_address"}})
+	if err != nil {
+		return nil, err
+	}
+	// .../log/{ctr.UUID} is a directory where the currently
+	// assigned container's log data [will] appear (as opposed to
+	// previous attempts in .../log/{previous_ctr_uuid}). Requests
+	// that are outside that directory, and requests on a
+	// non-running container, are proxied to keep-web instead of
+	// going through the container gateway system.
+	//
+	// Side note: a depth>1 directory tree listing starting at
+	// .../{cr_uuid}/log will only include subdirectories for
+	// finished containers, i.e., will not include a subdirectory
+	// with log data for a current (unfinished) container UUID.
+	// In order to access live logs, a client must look up the
+	// container_uuid field of the container request record, and
+	// explicitly request a path under .../{cr_uuid}/log/{c_uuid}.
 	if ctr.GatewayAddress == "" ||
-		(ctr.State != arvados.ContainerStateLocked && ctr.State != arvados.ContainerStateRunning) {
+		(ctr.State != arvados.ContainerStateLocked && ctr.State != arvados.ContainerStateRunning) ||
+		!(opts.Path == "/"+ctr.UUID || strings.HasPrefix(opts.Path, "/"+ctr.UUID+"/")) {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			conn.serveContainerLogViaKeepWeb(opts, ctr, w, r)
+			conn.serveContainerRequestLogViaKeepWeb(opts, cr, w, r)
 		}), nil
 	}
 	dial, arpc, err := conn.findGateway(ctx, ctr, opts.NoForward)
@@ -78,7 +120,7 @@ func (conn *Conn) ContainerLog(ctx context.Context, opts arvados.ContainerLogOpt
 	}
 	if arpc != nil {
 		opts.NoForward = true
-		return arpc.ContainerLog(ctx, opts)
+		return arpc.ContainerRequestLog(ctx, opts)
 	}
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		r = r.WithContext(ctx)
@@ -119,7 +161,9 @@ func (conn *Conn) ContainerLog(ctx context.Context, opts arvados.ContainerLogOpt
 				// for net/http to work with.
 				r.URL.Scheme = "https"
 				r.URL.Host = "0.0.0.0:0"
-				r.Header.Set("X-Arvados-Container-Gateway-Uuid", opts.UUID)
+				r.Header.Set("X-Arvados-Container-Gateway-Uuid", ctr.UUID)
+				r.Header.Set("X-Webdav-Prefix", "/arvados/v1/container_requests/"+cr.UUID+"/log/"+ctr.UUID)
+				r.Header.Set("X-Webdav-Source", "/log")
 				proxyReq = r
 			},
 			ModifyResponse: func(resp *http.Response) error {
@@ -144,7 +188,7 @@ func (conn *Conn) ContainerLog(ctx context.Context, opts arvados.ContainerLogOpt
 		// after we decided (above) the log was not final.
 		// In that case we should proxy to keep-web.
 		ctr, err := conn.railsProxy.ContainerGet(ctx, arvados.GetOptions{
-			UUID:   opts.UUID,
+			UUID:   ctr.UUID,
 			Select: []string{"uuid", "state", "gateway_address", "log"},
 		})
 		if err != nil {
@@ -154,7 +198,7 @@ func (conn *Conn) ContainerLog(ctx context.Context, opts arvados.ContainerLogOpt
 			// No race, proxyErr was the best we can do
 			httpserver.Error(w, "proxy error: "+proxyErr.Error(), http.StatusServiceUnavailable)
 		} else {
-			conn.serveContainerLogViaKeepWeb(opts, ctr, w, r)
+			conn.serveContainerRequestLogViaKeepWeb(opts, cr, w, r)
 		}
 	}), nil
 }
@@ -163,12 +207,12 @@ func (conn *Conn) ContainerLog(ctx context.Context, opts arvados.ContainerLogOpt
 // log content by proxying to one of the configured keep-web servers.
 //
 // It tries to choose a keep-web server that is running on this host.
-func (conn *Conn) serveContainerLogViaKeepWeb(opts arvados.ContainerLogOptions, ctr arvados.Container, w http.ResponseWriter, r *http.Request) {
-	if ctr.Log == "" {
+func (conn *Conn) serveContainerRequestLogViaKeepWeb(opts arvados.ContainerLogOptions, cr arvados.ContainerRequest, w http.ResponseWriter, r *http.Request) {
+	if cr.LogUUID == "" {
 		// Special case: if no log data exists yet, we serve
 		// an empty collection by ourselves instead of
 		// proxying to keep-web.
-		conn.serveEmptyDir("/arvados/v1/containers/"+ctr.UUID+"/log", w, r)
+		conn.serveEmptyDir("/arvados/v1/container_requests/"+cr.UUID+"/log", w, r)
 		return
 	}
 	myURL, _ := service.URLFromContext(r.Context())
@@ -196,7 +240,7 @@ func (conn *Conn) serveContainerLogViaKeepWeb(opts arvados.ContainerLogOptions, 
 			r.URL.Host = webdavBase.Host
 			// Outgoing Host header specifies the
 			// collection ID.
-			r.Host = strings.Replace(ctr.Log, "+", "-", -1) + ".internal"
+			r.Host = cr.LogUUID + ".internal"
 			// We already checked permission on the
 			// container, so we can use a root token here
 			// instead of counting on the "access to log
@@ -209,7 +253,14 @@ func (conn *Conn) serveContainerLogViaKeepWeb(opts arvados.ContainerLogOptions, 
 			// headers refer to the same paths) so we tell
 			// keep-web to map the log collection onto the
 			// containers/X/log/ namespace.
-			r.Header.Set("X-Webdav-Prefix", "/arvados/v1/containers/"+ctr.UUID+"/log")
+			r.Header.Set("X-Webdav-Prefix", "/arvados/v1/container_requests/"+cr.UUID+"/log")
+			if len(opts.Path) >= 28 && opts.Path[6:13] == "-dz642-" {
+				// "/arvados/v1/container_requests/{crUUID}/log/{cUUID}..."
+				// proxies to
+				// "/log for container {cUUID}..."
+				r.Header.Set("X-Webdav-Prefix", "/arvados/v1/container_requests/"+cr.UUID+"/log/"+opts.Path[1:28])
+				r.Header.Set("X-Webdav-Source", "/log for container "+opts.Path[1:28]+"/")
+			}
 		},
 	}
 	if conn.cluster.TLS.Insecure {

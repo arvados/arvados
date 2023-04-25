@@ -164,6 +164,8 @@ func (conn *Conn) CreateAPIClientAuthorization(ctx context.Context, rootToken st
 	return
 }
 
+var errUserinfoInRedirectTarget = errors.New("redirect target rejected because it contains userinfo")
+
 func validateLoginRedirectTarget(cluster *arvados.Cluster, returnTo string) error {
 	u, err := url.Parse(returnTo)
 	if err != nil {
@@ -173,16 +175,27 @@ func validateLoginRedirectTarget(cluster *arvados.Cluster, returnTo string) erro
 	if err != nil {
 		return err
 	}
-	if u.Port() == "80" && u.Scheme == "http" {
-		u.Host = u.Hostname()
-	} else if u.Port() == "443" && u.Scheme == "https" {
-		u.Host = u.Hostname()
+	if u.User != nil {
+		return errUserinfoInRedirectTarget
 	}
-	if _, ok := cluster.Login.TrustedClients[arvados.URL(*u)]; ok {
-		return nil
+	target := origin(*u)
+	for trusted := range cluster.Login.TrustedClients {
+		trustedOrigin := origin(url.URL(trusted))
+		if trustedOrigin == target {
+			return nil
+		}
+		// If TrustedClients has https://*.bar.example, we
+		// trust https://foo.bar.example. Note origin() has
+		// already stripped the incoming Path, so we won't
+		// accidentally trust
+		// https://attacker.example/pwn.bar.example here. See
+		// tests.
+		if strings.HasPrefix(trustedOrigin, u.Scheme+"://*.") && strings.HasSuffix(target, trustedOrigin[len(u.Scheme)+4:]) {
+			return nil
+		}
 	}
-	if u.String() == cluster.Services.Workbench1.ExternalURL.String() ||
-		u.String() == cluster.Services.Workbench2.ExternalURL.String() {
+	if target == origin(url.URL(cluster.Services.Workbench1.ExternalURL)) ||
+		target == origin(url.URL(cluster.Services.Workbench2.ExternalURL)) {
 		return nil
 	}
 	if cluster.Login.TrustPrivateNetworks {
@@ -198,4 +211,20 @@ func validateLoginRedirectTarget(cluster *arvados.Cluster, returnTo string) erro
 		}
 	}
 	return fmt.Errorf("requesting site is not listed in TrustedClients config")
+}
+
+// origin returns the canonical origin of a URL, e.g.,
+// origin("https://example:443/foo") returns "https://example/"
+func origin(u url.URL) string {
+	origin := url.URL{
+		Scheme: u.Scheme,
+		Host:   u.Host,
+		Path:   "/",
+	}
+	if origin.Port() == "80" && origin.Scheme == "http" {
+		origin.Host = origin.Hostname()
+	} else if origin.Port() == "443" && origin.Scheme == "https" {
+		origin.Host = origin.Hostname()
+	}
+	return origin.String()
 }

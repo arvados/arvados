@@ -140,7 +140,6 @@ arvados:
         Replication: 2
         Driver: S3
         DriverParameters:
-          UseAWSS3v2Driver: true
           Bucket: __CLUSTER__-nyw5e-000000000000000-volume
           IAMRole: __CLUSTER__-keepstore-00-iam-role
           Region: FIXME
@@ -161,7 +160,7 @@ arvados:
           'http://__CONTROLLER_INT_IP__:9006': {}
       Keepbalance:
         InternalURLs:
-          'http://localhost:9005': {}
+          'http://__CONTROLLER_INT_IP__:9005': {}
       Keepproxy:
         ExternalURL: 'https://keep.__CLUSTER__.__DOMAIN__:__KEEP_EXT_SSL_PORT__'
         InternalURLs:
@@ -169,7 +168,6 @@ arvados:
       Keepstore:
         InternalURLs:
           'http://__KEEPSTORE0_INT_IP__:25107': {}
-          'http://__KEEPSTORE1_INT_IP__:25107': {}
       RailsAPI:
         InternalURLs:
           'http://localhost:8004': {}

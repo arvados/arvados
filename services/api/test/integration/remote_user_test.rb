@@ -55,7 +55,6 @@ class RemoteUsersTest < ActionDispatch::IntegrationTest
         SSLCertName: [["CN", WEBrick::Utils::getservername]],
         StartCallback: lambda { ready.push(true) })
       srv.mount_proc '/discovery/v1/apis/arvados/v1/rest' do |req, res|
-        Rails.cache.delete 'arvados_v1_rest_discovery'
         res.body = Arvados::V1::SchemaController.new.send(:discovery_doc).to_json
       end
       srv.mount_proc '/arvados/v1/users/current' do |req, res|

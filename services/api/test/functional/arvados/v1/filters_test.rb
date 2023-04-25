@@ -39,6 +39,41 @@ class Arvados::V1::FiltersTest < ActionController::TestCase
     assert_match(/no longer supported/, json_response['errors'].join(' '))
   end
 
+  test 'error message for int64 overflow' do
+    # some versions of ActiveRecord cast >64-bit ints to postgres
+    # numeric type, but this is never useful because database content
+    # is 64 bit.
+    @controller = Arvados::V1::LogsController.new
+    authorize_with :active
+    get :index, params: {
+      filters: [['id', '=', 123412341234123412341234]],
+    }
+    assert_response 422
+    assert_match(/Invalid operand .* integer attribute/, json_response['errors'].join(' '))
+  end
+
+  ['in', 'not in'].each do |operator|
+    test "error message for int64 overflow ('#{operator}' filter)" do
+      @controller = Arvados::V1::ContainerRequestsController.new
+      authorize_with :active
+      get :index, params: {
+            filters: [['priority', operator, [9, 123412341234123412341234]]],
+          }
+      assert_response 422
+      assert_match(/Invalid element .* integer attribute/, json_response['errors'].join(' '))
+    end
+  end
+
+  test 'error message for invalid boolean operand' do
+    @controller = Arvados::V1::GroupsController.new
+    authorize_with :active
+    get :index, params: {
+      filters: [['is_trashed', '=', 'fourty']],
+    }
+    assert_response 422
+    assert_match(/Invalid operand .* boolean attribute/, json_response['errors'].join(' '))
+  end
+
   test 'api responses provide timestamps with nanoseconds' do
     @controller = Arvados::V1::CollectionsController.new
     authorize_with :active

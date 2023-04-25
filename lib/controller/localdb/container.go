@@ -30,13 +30,15 @@ func (conn *Conn) ContainerUpdate(ctx context.Context, opts arvados.UpdateOption
 	return resp, err
 }
 
+var containerPriorityUpdateInterval = 5 * time.Minute
+
 // runContainerPriorityUpdateThread periodically (and immediately
 // after each container update request) corrects any inconsistent
 // container priorities caused by races.
 func (conn *Conn) runContainerPriorityUpdateThread(ctx context.Context) {
 	ctx = ctrlctx.NewWithToken(ctx, conn.cluster, conn.cluster.SystemRootToken)
 	log := ctxlog.FromContext(ctx).WithField("worker", "runContainerPriorityUpdateThread")
-	ticker := time.NewTicker(5 * time.Minute)
+	ticker := time.NewTicker(containerPriorityUpdateInterval)
 	for ctx.Err() == nil {
 		select {
 		case <-ticker.C:

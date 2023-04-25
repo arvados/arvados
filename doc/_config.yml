@@ -242,6 +242,7 @@ navbar:
       - install/install-ws.html.textile.liquid
       - install/install-workbench-app.html.textile.liquid
       - install/install-workbench2-app.html.textile.liquid
+      - install/workbench.html.textile.liquid
 #      - install/install-composer.html.textile.liquid
     - Additional services:
       - install/install-shell-server.html.textile.liquid

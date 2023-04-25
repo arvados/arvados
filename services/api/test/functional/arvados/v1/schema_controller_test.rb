@@ -9,7 +9,6 @@ class Arvados::V1::SchemaControllerTest < ActionController::TestCase
   setup do forget end
   teardown do forget end
   def forget
-    Rails.cache.delete 'arvados_v1_rest_discovery'
     AppVersion.forget
   end
 

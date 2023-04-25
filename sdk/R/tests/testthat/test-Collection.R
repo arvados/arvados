@@ -239,6 +239,12 @@ test_that("get returns arvados file or subcollection from internal tree structur
 
     expect_true(fishIsNotNull)
     expect_that(fish$getName(), equals("fish"))
+
+    ball <- collection$get("ball")
+    ballIsNotNull <- !is.null(ball)
+
+    expect_true(ballIsNotNull)
+    expect_that(ball$getName(), equals("ball"))
 })
 
 test_that(paste("copy copies content to a new location inside file tree",

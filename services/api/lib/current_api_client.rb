@@ -2,16 +2,6 @@
 #
 # SPDX-License-Identifier: AGPL-3.0
 
-$system_user = nil
-$system_group = nil
-$all_users_group = nil
-$anonymous_user = nil
-$anonymous_group = nil
-$anonymous_group_read_permission = nil
-$empty_collection = nil
-$public_project_group = nil
-$public_project_group_read_permission = nil
-
 module CurrentApiClient
   def current_user
     Thread.current[:user]
@@ -74,26 +64,26 @@ module CurrentApiClient
   end
 
   def system_user
-    $system_user = check_cache $system_user do
-      real_current_user = Thread.current[:user]
-      begin
-        Thread.current[:user] = User.new(is_admin: true,
-                                         is_active: true,
-                                         uuid: system_user_uuid)
+    real_current_user = Thread.current[:user]
+    begin
+      Thread.current[:user] = User.new(is_admin: true,
+                                       is_active: true,
+                                       uuid: system_user_uuid)
+      $system_user = check_cache($system_user) do
         User.where(uuid: system_user_uuid).
           first_or_create!(is_active: true,
                            is_admin: true,
                            email: 'root',
                            first_name: 'root',
                            last_name: '')
-      ensure
-        Thread.current[:user] = real_current_user
       end
+    ensure
+      Thread.current[:user] = real_current_user
     end
   end
 
   def system_group
-    $system_group = check_cache $system_group do
+    $system_group = check_cache($system_group) do
       act_as_system_user do
         ActiveRecord::Base.transaction do
           Group.where(uuid: system_group_uuid).
@@ -120,7 +110,7 @@ module CurrentApiClient
   end
 
   def all_users_group
-    $all_users_group = check_cache $all_users_group do
+    $all_users_group = check_cache($all_users_group) do
       act_as_system_user do
         ActiveRecord::Base.transaction do
           Group.where(uuid: all_users_group_uuid).
@@ -156,7 +146,7 @@ module CurrentApiClient
   end
 
   def anonymous_group
-    $anonymous_group = check_cache $anonymous_group do
+    $anonymous_group = check_cache($anonymous_group) do
       act_as_system_user do
         ActiveRecord::Base.transaction do
           Group.where(uuid: anonymous_group_uuid).
@@ -169,8 +159,7 @@ module CurrentApiClient
   end
 
   def anonymous_group_read_permission
-    $anonymous_group_read_permission =
-        check_cache $anonymous_group_read_permission do
+    $anonymous_group_read_permission = check_cache($anonymous_group_read_permission) do
       act_as_system_user do
         Link.where(tail_uuid: all_users_group.uuid,
                    head_uuid: anonymous_group.uuid,
@@ -181,7 +170,7 @@ module CurrentApiClient
   end
 
   def anonymous_user
-    $anonymous_user = check_cache $anonymous_user do
+    $anonymous_user = check_cache($anonymous_user) do
       act_as_system_user do
         User.where(uuid: anonymous_user_uuid).
           first_or_create!(is_active: false,
@@ -201,7 +190,7 @@ module CurrentApiClient
   end
 
   def public_project_group
-    $public_project_group = check_cache $public_project_group do
+    $public_project_group = check_cache($public_project_group) do
       act_as_system_user do
         ActiveRecord::Base.transaction do
           Group.where(uuid: public_project_uuid).
@@ -214,8 +203,7 @@ module CurrentApiClient
   end
 
   def public_project_read_permission
-    $public_project_group_read_permission =
-        check_cache $public_project_group_read_permission do
+    $public_project_group_read_permission = check_cache($public_project_group_read_permission) do
       act_as_system_user do
         Link.where(tail_uuid: anonymous_group.uuid,
                    head_uuid: public_project_group.uuid,
@@ -226,7 +214,7 @@ module CurrentApiClient
   end
 
   def anonymous_user_token_api_client
-    $anonymous_user_token_api_client = check_cache $anonymous_user_token_api_client do
+    $anonymous_user_token_api_client = check_cache($anonymous_user_token_api_client) do
       act_as_system_user do
         ActiveRecord::Base.transaction do
           ApiClient.find_or_create_by!(is_trusted: false, url_prefix: "", name: "AnonymousUserToken")
@@ -236,7 +224,7 @@ module CurrentApiClient
   end
 
   def system_root_token_api_client
-    $system_root_token_api_client = check_cache $system_root_token_api_client do
+    $system_root_token_api_client = check_cache($system_root_token_api_client) do
       act_as_system_user do
         ActiveRecord::Base.transaction do
           ApiClient.find_or_create_by!(is_trusted: true, url_prefix: "", name: "SystemRootToken")
@@ -250,7 +238,7 @@ module CurrentApiClient
   end
 
   def empty_collection
-    $empty_collection = check_cache $empty_collection do
+    $empty_collection = check_cache($empty_collection) do
       act_as_system_user do
         ActiveRecord::Base.transaction do
           Collection.
@@ -269,31 +257,41 @@ module CurrentApiClient
     end
   end
 
-  private
-
-  # If the given value is nil, or the cache has been cleared since it
-  # was set, yield. Otherwise, return the given value.
-  def check_cache value
-    if not Rails.env.test? and
-        ActionController::Base.cache_store.is_a? ActiveSupport::Cache::FileStore and
-        not File.owned? ActionController::Base.cache_store.cache_path
-      # If we don't own the cache dir, we're probably
-      # crunch-dispatch. Whoever we are, using this cache is likely to
-      # either fail or screw up the cache for someone else. So we'll
-      # just assume the $globals are OK to live forever.
-      #
-      # The reason for making the globals expire with the cache in the
-      # first place is to avoid leaking state between test cases: in
-      # production, we don't expect the database seeds to ever go away
-      # even when the cache is cleared, so there's no particular
-      # reason to expire our global variables.
-    else
-      Rails.cache.fetch "CurrentApiClient.$globals" do
-        value = nil
-        true
-      end
+  # Purge the module globals if necessary. If the cached value is
+  # non-nil and the globals weren't purged, return the cached
+  # value. Otherwise, call the block.
+  #
+  # Purge is only done in test mode.
+  def check_cache(cached)
+    if Rails.env != 'test'
+      return (cached || yield)
     end
-    return value unless value.nil?
-    yield
+    t = Rails.cache.fetch "CurrentApiClient.$system_globals_reset" do
+      Time.now.to_f
+    end
+    if t != $system_globals_reset
+      reset_system_globals(t)
+      yield
+    else
+      cached || yield
+    end
   end
+
+  def reset_system_globals(t)
+    $system_globals_reset = t
+    $system_user = nil
+    $system_group = nil
+    $all_users_group = nil
+    $anonymous_group = nil
+    $anonymous_group_read_permission = nil
+    $anonymous_user = nil
+    $public_project_group = nil
+    $public_project_group_read_permission = nil
+    $anonymous_user_token_api_client = nil
+    $system_root_token_api_client = nil
+    $empty_collection = nil
+  end
+  module_function :reset_system_globals
 end
+
+CurrentApiClient.reset_system_globals(0)

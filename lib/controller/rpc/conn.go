@@ -220,6 +220,41 @@ func (conn *Conn) relativeToBaseURL(location string) string {
 	return location
 }
 
+func (conn *Conn) AuthorizedKeyCreate(ctx context.Context, options arvados.CreateOptions) (arvados.AuthorizedKey, error) {
+	ep := arvados.EndpointAuthorizedKeyCreate
+	var resp arvados.AuthorizedKey
+	err := conn.requestAndDecode(ctx, &resp, ep, nil, options)
+	return resp, err
+}
+
+func (conn *Conn) AuthorizedKeyUpdate(ctx context.Context, options arvados.UpdateOptions) (arvados.AuthorizedKey, error) {
+	ep := arvados.EndpointAuthorizedKeyUpdate
+	var resp arvados.AuthorizedKey
+	err := conn.requestAndDecode(ctx, &resp, ep, nil, options)
+	return resp, err
+}
+
+func (conn *Conn) AuthorizedKeyGet(ctx context.Context, options arvados.GetOptions) (arvados.AuthorizedKey, error) {
+	ep := arvados.EndpointAuthorizedKeyGet
+	var resp arvados.AuthorizedKey
+	err := conn.requestAndDecode(ctx, &resp, ep, nil, options)
+	return resp, err
+}
+
+func (conn *Conn) AuthorizedKeyList(ctx context.Context, options arvados.ListOptions) (arvados.AuthorizedKeyList, error) {
+	ep := arvados.EndpointAuthorizedKeyList
+	var resp arvados.AuthorizedKeyList
+	err := conn.requestAndDecode(ctx, &resp, ep, nil, options)
+	return resp, err
+}
+
+func (conn *Conn) AuthorizedKeyDelete(ctx context.Context, options arvados.DeleteOptions) (arvados.AuthorizedKey, error) {
+	ep := arvados.EndpointAuthorizedKeyDelete
+	var resp arvados.AuthorizedKey
+	err := conn.requestAndDecode(ctx, &resp, ep, nil, options)
+	return resp, err
+}
+
 func (conn *Conn) CollectionCreate(ctx context.Context, options arvados.CreateOptions) (arvados.Collection, error) {
 	ep := arvados.EndpointCollectionCreate
 	var resp arvados.Collection
@@ -337,26 +372,6 @@ func (conn *Conn) ContainerUnlock(ctx context.Context, options arvados.GetOption
 	var resp arvados.Container
 	err := conn.requestAndDecode(ctx, &resp, ep, nil, options)
 	return resp, err
-}
-
-func (conn *Conn) ContainerLog(ctx context.Context, options arvados.ContainerLogOptions) (resp http.Handler, err error) {
-	tokens, err := conn.tokenProvider(ctx)
-	if err != nil {
-		return nil, err
-	} else if len(tokens) < 1 {
-		return nil, httpserver.ErrorWithStatus(errors.New("unauthorized"), http.StatusUnauthorized)
-	}
-	proxy := &httputil.ReverseProxy{
-		Transport: conn.httpClient.Transport,
-		Director: func(r *http.Request) {
-			u := conn.baseURL
-			u.Path = r.URL.Path
-			u.RawQuery = fmt.Sprintf("no_forward=%v", options.NoForward)
-			r.URL = &u
-			r.Header.Set("Authorization", "Bearer "+tokens[0])
-		},
-	}
-	return proxy, nil
 }
 
 // ContainerSSH returns a connection to the out-of-band SSH server for
@@ -489,6 +504,19 @@ func (conn *Conn) ContainerRequestDelete(ctx context.Context, options arvados.De
 	var resp arvados.ContainerRequest
 	err := conn.requestAndDecode(ctx, &resp, ep, nil, options)
 	return resp, err
+}
+
+func (conn *Conn) ContainerRequestLog(ctx context.Context, options arvados.ContainerLogOptions) (resp http.Handler, err error) {
+	proxy := &httputil.ReverseProxy{
+		Transport: conn.httpClient.Transport,
+		Director: func(r *http.Request) {
+			u := conn.baseURL
+			u.Path = r.URL.Path
+			u.RawQuery = fmt.Sprintf("no_forward=%v", options.NoForward)
+			r.URL = &u
+		},
+	}
+	return proxy, nil
 }
 
 func (conn *Conn) GroupCreate(ctx context.Context, options arvados.CreateOptions) (arvados.Group, error) {
