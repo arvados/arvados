@@ -102,23 +102,17 @@ type DataTableProps<T> = DataTableDataProps<T> & WithStyles<CssRules> & DataTabl
 
 export const DataTable = withStyles(styles)(
     class Component<T> extends React.Component<DataTableProps<T>> {
-        constructor(props) {
-            super(props);
-            this.state = {
-                checkedList: {},
-            };
-            this.initializeCheckedList = this.initializeCheckedList.bind(this);
-            this.handleResourceSelect = this.handleResourceSelect.bind(this);
-        }
+        state: DataTableState = {
+            checkedList: {},
+        };
         checkBoxColumn: DataColumn<any, any> = {
             name: 'checkBoxColumn',
             selected: true,
             configurable: false,
             filters: createTree(),
-            render: (uuid) => {
-                return <input type='checkbox' name={uuid} color='primary' onChange={() => this.handleResourceSelect(uuid)}></input>;
-            },
+            render: (uuid) => <input type='checkbox' name={uuid} color='primary' checked={this.state[uuid] ?? false} onChange={() => this.handleCheck(uuid)}></input>,
         };
+
         initializeCheckedList = (items: any[]): void => {
             const checkedList = this.state;
             for (const uuid in checkedList) {
@@ -131,24 +125,20 @@ export const DataTable = withStyles(styles)(
                     checkedList[uuid] = false;
                 }
             });
-            console.log(this.state);
         };
 
-        handleResourceSelect = (uuid: string) => {
-            const checkedList = this.state;
-            if (!checkedList[uuid]) {
-                checkedList[uuid] = true;
-            } else {
-                checkedList[uuid] = false;
-            }
-            console.log(checkedList);
-        };
-
-        componentDidUpdate(prevProps: Readonly<DataTableProps<T>>, prevState: Readonly<{}>, snapshot?: any): void {
+        componentDidUpdate(prevProps: Readonly<DataTableProps<T>>): void {
             if (prevProps.items !== this.props.items) {
                 this.initializeCheckedList(this.props.items);
             }
         }
+
+        handleCheck = async (uuid: string) => {
+            const checkedList = this.state;
+            const newCheckedList = { ...checkedList };
+            newCheckedList[uuid] = !checkedList[uuid];
+            await this.setState(newCheckedList);
+        };
         render() {
             const { items, classes, working, columns } = this.props;
             if (columns[0].name !== this.checkBoxColumn.name) columns.unshift(this.checkBoxColumn);
@@ -158,15 +148,11 @@ export const DataTable = withStyles(styles)(
                     <div className={classes.content}>
                         <button
                             onClick={() => {
-                                // if (firstBox) this.handleResourceSelect(firstBox?.name);
-                                if (firstBox) firstBox.click();
-                                // if (firstBox) firstBox.checked = !firstBox.checked;
-                                console.log(firstBox);
+                                if (firstBox) this.handleCheck(firstBox?.name);
                             }}
                         >
                             TEST
                         </button>
-                        {/* <input type='checkbox'></input> */}
                         <Table>
                             <TableHead>
                                 <TableRow>{this.mapVisibleColumns(this.renderHeadCell)}</TableRow>
