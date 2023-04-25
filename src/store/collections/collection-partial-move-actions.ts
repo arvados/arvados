@@ -14,7 +14,6 @@ import { resetPickerProjectTree } from "store/project-tree-picker/project-tree-p
 import { updateResources } from "store/resources/resources-actions";
 import { SnackbarKind, snackbarActions } from "store/snackbar/snackbar-actions";
 import { RootState } from "store/store";
-import { initProjectsTreePicker } from "store/tree-picker/tree-picker-actions";
 
 export const COLLECTION_PARTIAL_MOVE_TO_NEW_COLLECTION = 'COLLECTION_PARTIAL_MOVE_TO_NEW_DIALOG';
 export const COLLECTION_PARTIAL_MOVE_TO_SELECTED_COLLECTION = 'COLLECTION_PARTIAL_MOVE_TO_SELECTED_DIALOG';
@@ -46,7 +45,6 @@ export const openCollectionPartialMoveToNewCollectionDialog = () =>
             };
             dispatch(initialize(COLLECTION_PARTIAL_MOVE_TO_NEW_COLLECTION, initialData));
             dispatch<any>(resetPickerProjectTree());
-            dispatch<any>(initProjectsTreePicker(COLLECTION_PARTIAL_MOVE_TO_NEW_COLLECTION));
             dispatch(dialogActions.OPEN_DIALOG({ id: COLLECTION_PARTIAL_MOVE_TO_NEW_COLLECTION, data: {} }));
         }
     };
@@ -110,7 +108,6 @@ export const openCollectionPartialMoveToExistingCollectionDialog = () =>
             };
             dispatch(initialize(COLLECTION_PARTIAL_MOVE_TO_SELECTED_COLLECTION, initialData));
             dispatch<any>(resetPickerProjectTree());
-            dispatch<any>(initProjectsTreePicker(COLLECTION_PARTIAL_MOVE_TO_SELECTED_COLLECTION));
             dispatch(dialogActions.OPEN_DIALOG({ id: COLLECTION_PARTIAL_MOVE_TO_SELECTED_COLLECTION, data: {} }));
         }
     };
@@ -161,7 +158,6 @@ export const openCollectionPartialMoveToSeparateCollectionsDialog = () =>
             };
             dispatch(initialize(COLLECTION_PARTIAL_MOVE_TO_SEPARATE_COLLECTIONS, initialData));
             dispatch<any>(resetPickerProjectTree());
-            dispatch<any>(initProjectsTreePicker(COLLECTION_PARTIAL_MOVE_TO_SEPARATE_COLLECTIONS));
             dispatch(dialogActions.OPEN_DIALOG({ id: COLLECTION_PARTIAL_MOVE_TO_SEPARATE_COLLECTIONS, data: {} }));
         }
     };

@@ -12,7 +12,6 @@ import { filterCollectionFilesBySelection } from '../collection-panel/collection
 import { snackbarActions, SnackbarKind } from 'store/snackbar/snackbar-actions';
 import { getCommonResourceServiceError, CommonResourceServiceError } from 'services/common-service/common-resource-service';
 import { progressIndicatorActions } from "store/progress-indicator/progress-indicator-actions";
-import { initProjectsTreePicker } from "store/tree-picker/tree-picker-actions";
 import { updateResources } from 'store/resources/resources-actions';
 import { navigateTo } from 'store/navigation/navigation-action';
 
@@ -46,7 +45,6 @@ export const openCollectionPartialCopyToNewCollectionDialog = () =>
             };
             dispatch(initialize(COLLECTION_PARTIAL_COPY_FORM_NAME, initialData));
             dispatch<any>(resetPickerProjectTree());
-            dispatch<any>(initProjectsTreePicker(COLLECTION_PARTIAL_COPY_FORM_NAME));
             dispatch(dialogActions.OPEN_DIALOG({ id: COLLECTION_PARTIAL_COPY_FORM_NAME, data: {} }));
         }
     };
@@ -114,7 +112,6 @@ export const openCollectionPartialCopyToExistingCollectionDialog = () =>
             };
             dispatch(initialize(COLLECTION_PARTIAL_COPY_TO_SELECTED_COLLECTION, initialData));
             dispatch<any>(resetPickerProjectTree());
-            dispatch<any>(initProjectsTreePicker(COLLECTION_PARTIAL_COPY_TO_SELECTED_COLLECTION));
             dispatch(dialogActions.OPEN_DIALOG({ id: COLLECTION_PARTIAL_COPY_TO_SELECTED_COLLECTION, data: {} }));
         }
     };
@@ -165,7 +162,6 @@ export const openCollectionPartialCopyToSeparateCollectionsDialog = () =>
             };
             dispatch(initialize(COLLECTION_PARTIAL_COPY_TO_SEPARATE_COLLECTIONS, initialData));
             dispatch<any>(resetPickerProjectTree());
-            dispatch<any>(initProjectsTreePicker(COLLECTION_PARTIAL_COPY_TO_SEPARATE_COLLECTIONS));
             dispatch(dialogActions.OPEN_DIALOG({ id: COLLECTION_PARTIAL_COPY_TO_SEPARATE_COLLECTIONS, data: {} }));
         }
     };
