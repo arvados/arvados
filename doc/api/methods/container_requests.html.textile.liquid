@@ -54,7 +54,8 @@ table(table table-bordered table-condensed).
 |priority|integer|Range 0-1000.  Indicate scheduling order preference.|Clients are expected to submit container requests with zero priority in order to preview the container that will be used to satisfy it. Priority can be null if and only if state!="Committed".  See "below for more details":#priority .|
 |expires_at|datetime|After this time, priority is considered to be zero.|Not yet implemented.|
 |use_existing|boolean|If possible, use an existing (non-failed) container to satisfy the request instead of creating a new one.|Default is true|
-|log_uuid|string|Log collection containing log messages provided by the scheduler and crunch processes.|Null if the container has not yet started running.|
+|log_uuid|string|Log collection containing log messages provided by the scheduler and crunch processes.|Null if the container has not yet started running.
+To retrieve logs in real time while the container is running, use the log API (see below).|
 |output_uuid|string|Output collection created when the container finished successfully.|Null if the container has failed or not yet completed.|
 |filters|string|Additional constraints for satisfying the container_request, given in the same form as the filters parameter accepted by the container_requests.list API.|
 |runtime_token|string|A v2 token to be passed into the container itself, used to access Keep-backed mounts, etc.  |Not returned in API responses.  Reset to null when state is "Complete" or "Cancelled".|
@@ -222,3 +223,31 @@ table(table table-bordered table-condensed).
 Setting the priority of a committed container_request to 0 may cancel a running container assigned for it.
 See "Canceling a container request":{{site.baseurl}}/api/methods/container_requests.html#cancel_container for further details.
 {% include 'notebox_end' %}
+
+h3(#log). log
+
+Get container log data using WebDAV methods.
+
+This API retrieves data from the container request's log collection. It can be used at any time in the container request lifecycle.
+* Before a container has been assigned (the request is @Uncommitted@) it returns an empty directory.
+* While the container is @Queued@ or @Locked@, it returns an empty directory.
+* While the container is @Running@, @.../log/{container_uuid}/@ returns real-time logging data.
+* While the container is @Complete@ or @Cancelled@, @.../log/{container_uuid}/@ returns the final log collection.
+
+If a request results in multiple containers being run (see @container_count_max@ above), the logs from prior attempts remain available at @.../log/{old_container_uuid}/@.
+
+Currently, this API has a limitation that a directory listing at the top level @/arvados/v1/container_requests/{uuid}/log/@ does not reveal the per-container subdirectories. Instead, clients should look up the container request record and use the @container_uuid@ attribute to request files and directory listings under the per-container directory, as in the examples below.
+
+This API supports the @Range@ request header, so it can be used to poll for and retrieve logs incrementally while the container is running.
+
+Arguments:
+
+table(table table-bordered table-condensed).
+|_. Argument |_. Type |_. Description |_. Location |_. Example |
+{background:#ccffcc}.|method|string|Read-only WebDAV method|HTTP method|@GET@, @OPTIONS@, @PROPFIND@|
+{background:#ccffcc}.|uuid|string|The UUID of the container request.|path|zzzzz-xvdhp-0123456789abcde|
+{background:#ccffcc}.|path|string|Path to a file in the log collection.|path|@/zzzzz-dz642-0123456789abcde/stderr.txt@|
+
+Examples:
+* @GET /arvados/v1/container_requests/zzzzz-xvdhp-0123456789abcde/log/zzzzz-dz642-0123456789abcde/stderr.txt@
+* @PROPFIND /arvados/v1/container_requests/zzzzz-xvdhp-0123456789abcde/log/zzzzz-dz642-0123456789abcde/@

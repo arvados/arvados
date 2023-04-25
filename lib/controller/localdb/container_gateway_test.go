@@ -39,6 +39,7 @@ var _ = check.Suite(&ContainerGatewaySuite{})
 
 type ContainerGatewaySuite struct {
 	localdbSuite
+	reqUUID string
 	ctrUUID string
 	srv     *httptest.Server
 	gw      *crunchrun.Gateway
@@ -47,7 +48,29 @@ type ContainerGatewaySuite struct {
 func (s *ContainerGatewaySuite) SetUpTest(c *check.C) {
 	s.localdbSuite.SetUpTest(c)
 
-	s.ctrUUID = arvadostest.QueuedContainerUUID
+	cr, err := s.localdb.ContainerRequestCreate(s.userctx, arvados.CreateOptions{
+		Attrs: map[string]interface{}{
+			"command":             []string{"echo", time.Now().Format(time.RFC3339Nano)},
+			"container_count_max": 1,
+			"container_image":     "arvados/apitestfixture:latest",
+			"cwd":                 "/tmp",
+			"environment":         map[string]string{},
+			"output_path":         "/out",
+			"priority":            1,
+			"state":               arvados.ContainerRequestStateCommitted,
+			"mounts": map[string]interface{}{
+				"/out": map[string]interface{}{
+					"kind":     "tmp",
+					"capacity": 1000000,
+				},
+			},
+			"runtime_constraints": map[string]interface{}{
+				"vcpus": 1,
+				"ram":   2,
+			}}})
+	c.Assert(err, check.IsNil)
+	s.reqUUID = cr.UUID
+	s.ctrUUID = cr.ContainerUUID
 
 	h := hmac.New(sha256.New, []byte(s.cluster.SystemRootToken))
 	fmt.Fprint(h, s.ctrUUID)
@@ -75,15 +98,14 @@ func (s *ContainerGatewaySuite) SetUpTest(c *check.C) {
 		ArvadosClient: ac,
 	}
 	c.Assert(s.gw.Start(), check.IsNil)
+
 	rootctx := ctrlctx.NewWithToken(s.ctx, s.cluster, s.cluster.SystemRootToken)
-	// OK if this line fails (because state is already Running
-	// from a previous test case) as long as the following line
-	// succeeds:
-	s.localdb.ContainerUpdate(rootctx, arvados.UpdateOptions{
+	_, err = s.localdb.ContainerUpdate(rootctx, arvados.UpdateOptions{
 		UUID: s.ctrUUID,
 		Attrs: map[string]interface{}{
 			"state": arvados.ContainerStateLocked}})
-	_, err := s.localdb.ContainerUpdate(rootctx, arvados.UpdateOptions{
+	c.Assert(err, check.IsNil)
+	_, err = s.localdb.ContainerUpdate(rootctx, arvados.UpdateOptions{
 		UUID: s.ctrUUID,
 		Attrs: map[string]interface{}{
 			"state":           arvados.ContainerStateRunning,
@@ -243,18 +265,23 @@ func (s *ContainerGatewaySuite) saveLogAndCloseGateway(c *check.C) {
 	_, err = s.localdb.ContainerUpdate(rootctx, arvados.UpdateOptions{
 		UUID: s.ctrUUID,
 		Attrs: map[string]interface{}{
-			"log":             coll.PortableDataHash,
-			"gateway_address": "",
+			"state":     arvados.ContainerStateComplete,
+			"exit_code": 0,
+			"log":       coll.PortableDataHash,
 		}})
 	c.Assert(err, check.IsNil)
-	// gateway_address="" above already ensures localdb
-	// can't circumvent the keep-web proxy test by getting
-	// content from the container gateway; this is just
-	// extra insurance.
+	updatedReq, err := s.localdb.ContainerRequestGet(rootctx, arvados.GetOptions{UUID: s.reqUUID})
+	c.Assert(err, check.IsNil)
+	c.Logf("container request log UUID is %s", updatedReq.LogUUID)
+	crLog, err := s.localdb.CollectionGet(rootctx, arvados.GetOptions{UUID: updatedReq.LogUUID, Select: []string{"manifest_text"}})
+	c.Assert(err, check.IsNil)
+	c.Logf("collection log manifest:\n%s", crLog.ManifestText)
+	// Ensure localdb can't circumvent the keep-web proxy test by
+	// getting content from the container gateway.
 	s.gw.LogCollection = nil
 }
 
-func (s *ContainerGatewaySuite) TestContainerLogViaTunnel(c *check.C) {
+func (s *ContainerGatewaySuite) TestContainerRequestLogViaTunnel(c *check.C) {
 	forceProxyForTest = true
 	defer func() { forceProxyForTest = false }()
 
@@ -271,9 +298,9 @@ func (s *ContainerGatewaySuite) TestContainerLogViaTunnel(c *check.C) {
 			defer delete(s.cluster.Services.Controller.InternalURLs, *forceInternalURLForTest)
 		}
 
-		handler, err := s.localdb.ContainerLog(s.userctx, arvados.ContainerLogOptions{
-			UUID:          s.ctrUUID,
-			WebDAVOptions: arvados.WebDAVOptions{Path: "/stderr.txt"},
+		handler, err := s.localdb.ContainerRequestLog(s.userctx, arvados.ContainerLogOptions{
+			UUID:          s.reqUUID,
+			WebDAVOptions: arvados.WebDAVOptions{Path: "/" + s.ctrUUID + "/stderr.txt"},
 		})
 		if broken {
 			c.Check(err, check.ErrorMatches, `.*tunnel endpoint is invalid.*`)
@@ -281,7 +308,7 @@ func (s *ContainerGatewaySuite) TestContainerLogViaTunnel(c *check.C) {
 		}
 		c.Check(err, check.IsNil)
 		c.Assert(handler, check.NotNil)
-		r, err := http.NewRequestWithContext(s.userctx, "GET", "https://controller.example/arvados/v1/containers/"+s.ctrUUID+"/log/stderr.txt", nil)
+		r, err := http.NewRequestWithContext(s.userctx, "GET", "https://controller.example/arvados/v1/container_requests/"+s.reqUUID+"/log/"+s.ctrUUID+"/stderr.txt", nil)
 		c.Assert(err, check.IsNil)
 		r.Header.Set("Authorization", "Bearer "+arvadostest.ActiveTokenV2)
 		rec := httptest.NewRecorder()
@@ -294,18 +321,18 @@ func (s *ContainerGatewaySuite) TestContainerLogViaTunnel(c *check.C) {
 	}
 }
 
-func (s *ContainerGatewaySuite) TestContainerLogViaGateway(c *check.C) {
+func (s *ContainerGatewaySuite) TestContainerRequestLogViaGateway(c *check.C) {
 	s.setupLogCollection(c)
-	s.testContainerLog(c)
+	s.testContainerRequestLog(c)
 }
 
-func (s *ContainerGatewaySuite) TestContainerLogViaKeepWeb(c *check.C) {
+func (s *ContainerGatewaySuite) TestContainerRequestLogViaKeepWeb(c *check.C) {
 	s.setupLogCollection(c)
 	s.saveLogAndCloseGateway(c)
-	s.testContainerLog(c)
+	s.testContainerRequestLog(c)
 }
 
-func (s *ContainerGatewaySuite) testContainerLog(c *check.C) {
+func (s *ContainerGatewaySuite) testContainerRequestLog(c *check.C) {
 	for _, trial := range []struct {
 		method       string
 		path         string
@@ -316,7 +343,7 @@ func (s *ContainerGatewaySuite) testContainerLog(c *check.C) {
 	}{
 		{
 			method:       "GET",
-			path:         "/stderr.txt",
+			path:         s.ctrUUID + "/stderr.txt",
 			expectStatus: http.StatusOK,
 			expectBodyRe: "hello world\n",
 			expectHeader: http.Header{
@@ -325,7 +352,7 @@ func (s *ContainerGatewaySuite) testContainerLog(c *check.C) {
 		},
 		{
 			method: "GET",
-			path:   "/stderr.txt",
+			path:   s.ctrUUID + "/stderr.txt",
 			header: http.Header{
 				"Range": {"bytes=-6"},
 			},
@@ -338,7 +365,7 @@ func (s *ContainerGatewaySuite) testContainerLog(c *check.C) {
 		},
 		{
 			method:       "OPTIONS",
-			path:         "/stderr.txt",
+			path:         s.ctrUUID + "/stderr.txt",
 			expectStatus: http.StatusOK,
 			expectBodyRe: "",
 			expectHeader: http.Header{
@@ -348,25 +375,34 @@ func (s *ContainerGatewaySuite) testContainerLog(c *check.C) {
 		},
 		{
 			method:       "PROPFIND",
-			path:         "",
+			path:         s.ctrUUID + "/",
 			expectStatus: http.StatusMultiStatus,
-			expectBodyRe: `.*\Q<D:displayname>stderr.txt</D:displayname>\E.*`,
+			expectBodyRe: `.*\Q<D:displayname>stderr.txt</D:displayname>\E.*>\n?`,
 			expectHeader: http.Header{
 				"Content-Type": {"text/xml; charset=utf-8"},
 			},
 		},
 		{
 			method:       "PROPFIND",
-			path:         "/a/b/c/",
+			path:         s.ctrUUID,
 			expectStatus: http.StatusMultiStatus,
-			expectBodyRe: `.*\Q<D:displayname>d.html</D:displayname>\E.*`,
+			expectBodyRe: `.*\Q<D:displayname>stderr.txt</D:displayname>\E.*>\n?`,
+			expectHeader: http.Header{
+				"Content-Type": {"text/xml; charset=utf-8"},
+			},
+		},
+		{
+			method:       "PROPFIND",
+			path:         s.ctrUUID + "/a/b/c/",
+			expectStatus: http.StatusMultiStatus,
+			expectBodyRe: `.*\Q<D:displayname>d.html</D:displayname>\E.*>\n?`,
 			expectHeader: http.Header{
 				"Content-Type": {"text/xml; charset=utf-8"},
 			},
 		},
 		{
 			method:       "GET",
-			path:         "/a/b/c/d.html",
+			path:         s.ctrUUID + "/a/b/c/d.html",
 			expectStatus: http.StatusOK,
 			expectBodyRe: "<html></html>\n",
 			expectHeader: http.Header{
@@ -375,13 +411,13 @@ func (s *ContainerGatewaySuite) testContainerLog(c *check.C) {
 		},
 	} {
 		c.Logf("trial %#v", trial)
-		handler, err := s.localdb.ContainerLog(s.userctx, arvados.ContainerLogOptions{
-			UUID:          s.ctrUUID,
-			WebDAVOptions: arvados.WebDAVOptions{Path: trial.path},
+		handler, err := s.localdb.ContainerRequestLog(s.userctx, arvados.ContainerLogOptions{
+			UUID:          s.reqUUID,
+			WebDAVOptions: arvados.WebDAVOptions{Path: "/" + trial.path},
 		})
 		c.Assert(err, check.IsNil)
 		c.Assert(handler, check.NotNil)
-		r, err := http.NewRequestWithContext(s.userctx, trial.method, "https://controller.example/arvados/v1/containers/"+s.ctrUUID+"/log"+trial.path, nil)
+		r, err := http.NewRequestWithContext(s.userctx, trial.method, "https://controller.example/arvados/v1/container_requests/"+s.reqUUID+"/log/"+trial.path, nil)
 		c.Assert(err, check.IsNil)
 		for k := range trial.header {
 			r.Header.Set(k, trial.header.Get(k))
@@ -399,19 +435,19 @@ func (s *ContainerGatewaySuite) testContainerLog(c *check.C) {
 	}
 }
 
-func (s *ContainerGatewaySuite) TestContainerLogViaCadaver(c *check.C) {
+func (s *ContainerGatewaySuite) TestContainerRequestLogViaCadaver(c *check.C) {
 	s.setupLogCollection(c)
 
-	out := s.runCadaver(c, arvadostest.ActiveToken, "/arvados/v1/containers/"+s.ctrUUID+"/log", "ls")
+	out := s.runCadaver(c, arvadostest.ActiveToken, "/arvados/v1/container_requests/"+s.reqUUID+"/log/"+s.ctrUUID, "ls")
 	c.Check(out, check.Matches, `(?ms).*stderr\.txt\s+12\s.*`)
 	c.Check(out, check.Matches, `(?ms).*a\s+0\s.*`)
 
-	out = s.runCadaver(c, arvadostest.ActiveTokenV2, "/arvados/v1/containers/"+s.ctrUUID+"/log", "get stderr.txt")
+	out = s.runCadaver(c, arvadostest.ActiveTokenV2, "/arvados/v1/container_requests/"+s.reqUUID+"/log/"+s.ctrUUID, "get stderr.txt")
 	c.Check(out, check.Matches, `(?ms).*Downloading .* to stderr\.txt: .* succeeded\..*`)
 
 	s.saveLogAndCloseGateway(c)
 
-	out = s.runCadaver(c, arvadostest.ActiveTokenV2, "/arvados/v1/containers/"+s.ctrUUID+"/log", "get stderr.txt")
+	out = s.runCadaver(c, arvadostest.ActiveTokenV2, "/arvados/v1/container_requests/"+s.reqUUID+"/log/"+s.ctrUUID, "get stderr.txt")
 	c.Check(out, check.Matches, `(?ms).*Downloading .* to stderr\.txt: .* succeeded\..*`)
 }
 

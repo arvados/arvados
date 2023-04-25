@@ -81,14 +81,13 @@ type Gateway struct {
 	// controller process at the other end of the tunnel.
 	UpdateTunnelURL func(url string)
 
-	// Source for serving WebDAV requests at
-	// /arvados/v1/containers/{uuid}/log/
+	// Source for serving WebDAV requests with
+	// X-Webdav-Source: /log
 	LogCollection arvados.CollectionFileSystem
 
 	sshConfig   ssh.ServerConfig
 	requestAuth string
 	respondAuth string
-	logPath     string
 }
 
 // Start starts an http server that allows authenticated clients to open an
@@ -162,8 +161,6 @@ func (gw *Gateway) Start() error {
 	h.Reset()
 	h.Write([]byte(gw.requestAuth))
 	gw.respondAuth = fmt.Sprintf("%x", h.Sum(nil))
-
-	gw.logPath = "/arvados/v1/containers/" + gw.ContainerUUID + "/log"
 
 	srv := &httpserver.Server{
 		Server: http.Server{
@@ -277,6 +274,7 @@ var webdavMethod = map[string]bool{
 }
 
 func (gw *Gateway) ServeHTTP(w http.ResponseWriter, req *http.Request) {
+	w.Header().Set("Vary", "X-Arvados-Authorization, X-Arvados-Container-Gateway-Uuid, X-Webdav-Prefix, X-Webdav-Source")
 	reqUUID := req.Header.Get("X-Arvados-Container-Gateway-Uuid")
 	if reqUUID == "" {
 		// older controller versions only send UUID as query param
@@ -295,7 +293,7 @@ func (gw *Gateway) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	switch {
 	case req.Method == "POST" && req.Header.Get("Upgrade") == "ssh":
 		gw.handleSSH(w, req)
-	case req.URL.Path == gw.logPath || strings.HasPrefix(req.URL.Path, gw.logPath):
+	case req.Header.Get("X-Webdav-Source") == "/log":
 		if !webdavMethod[req.Method] {
 			http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
 			return
@@ -307,12 +305,17 @@ func (gw *Gateway) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 }
 
 func (gw *Gateway) handleLogsWebDAV(w http.ResponseWriter, r *http.Request) {
+	prefix := r.Header.Get("X-Webdav-Prefix")
+	if !strings.HasPrefix(r.URL.Path, prefix) {
+		http.Error(w, "X-Webdav-Prefix header is not a prefix of the requested path", http.StatusBadRequest)
+		return
+	}
 	if gw.LogCollection == nil {
 		http.Error(w, "Not found", http.StatusNotFound)
 		return
 	}
 	wh := webdav.Handler{
-		Prefix: gw.logPath,
+		Prefix: prefix,
 		FileSystem: &webdavfs.FS{
 			FileSystem:    gw.LogCollection,
 			Prefix:        "",
