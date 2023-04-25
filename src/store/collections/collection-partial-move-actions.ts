@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import { Dispatch } from "redux";
-import { FormErrors, initialize, startSubmit, stopSubmit } from "redux-form";
+import { initialize, startSubmit } from "redux-form";
 import { CommonResourceServiceError, getCommonResourceServiceError } from "services/common-service/common-resource-service";
 import { ServiceRepository } from "services/services";
 import { filterCollectionFilesBySelection } from "store/collection-panel/collection-panel-files/collection-panel-files-state";
@@ -14,6 +14,7 @@ import { resetPickerProjectTree } from "store/project-tree-picker/project-tree-p
 import { updateResources } from "store/resources/resources-actions";
 import { SnackbarKind, snackbarActions } from "store/snackbar/snackbar-actions";
 import { RootState } from "store/store";
+import { FileOperationLocation } from "store/tree-picker/tree-picker-actions";
 
 export const COLLECTION_PARTIAL_MOVE_TO_NEW_COLLECTION = 'COLLECTION_PARTIAL_MOVE_TO_NEW_DIALOG';
 export const COLLECTION_PARTIAL_MOVE_TO_SELECTED_COLLECTION = 'COLLECTION_PARTIAL_MOVE_TO_SELECTED_DIALOG';
@@ -26,7 +27,7 @@ export interface CollectionPartialMoveToNewCollectionFormData {
 }
 
 export interface CollectionPartialMoveToExistingCollectionFormData {
-    destination: {uuid: string, path?: string};
+    destination: FileOperationLocation;
 }
 
 export interface CollectionPartialMoveToSeparateCollectionsFormData {

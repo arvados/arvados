@@ -4,7 +4,7 @@
 
 import { unionize, ofType, UnionOf } from "common/unionize";
 import { TreeNode, initTreeNode, getNodeDescendants, TreeNodeStatus, getNode, TreePickerId, Tree } from 'models/tree';
-import { CollectionFileType, createCollectionFilesTree } from "models/collection-file";
+import { CollectionFileType, createCollectionFilesTree, getCollectionResourceCollectionUuid } from "models/collection-file";
 import { Dispatch } from 'redux';
 import { RootState } from 'store/store';
 import { getUserUuid } from "common/getuser";
@@ -481,4 +481,33 @@ const buildParams = (ownerUuid: string) => {
             .addAsc('name')
             .getOrder()
     };
+};
+
+/**
+ * Given a tree picker item, return collection uuid and path
+ *   if the item represents a valid target/destination location
+ */
+export type FileOperationLocation = {
+    uuid: string;
+    path: string;
+}
+export const getFileOperationLocation = (item: ProjectsTreePickerItem): FileOperationLocation | undefined => {
+    if ('kind' in item && item.kind === ResourceKind.COLLECTION) {
+        return {
+            uuid: item.uuid,
+            path: '/'
+        };
+    } else if ('type' in item && item.type === CollectionFileType.DIRECTORY) {
+        const uuid = getCollectionResourceCollectionUuid(item.id);
+        if (uuid) {
+            return {
+                uuid,
+                path: [item.path, item.name].join('/')
+            };
+        } else {
+            return undefined;
+        }
+    } else {
+        return undefined;
+    }
 };

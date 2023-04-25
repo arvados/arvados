@@ -59,7 +59,7 @@ export const CollectionPickerField = (props: PickerIdProp) =>
         component={CollectionTreePickerField}
         validate={COLLECTION_PROJECT_VALIDATION} />;
 
-const validateDirectory = (val) => (val ? undefined : ERROR_MESSAGE);
+const validateDirectory = (val) => (val && val.uuid ? undefined : ERROR_MESSAGE);
 
 export const DirectoryPickerField = (props: PickerIdProp) =>
     <Field

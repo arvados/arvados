@@ -12,6 +12,7 @@ import { filterCollectionFilesBySelection } from '../collection-panel/collection
 import { snackbarActions, SnackbarKind } from 'store/snackbar/snackbar-actions';
 import { getCommonResourceServiceError, CommonResourceServiceError } from 'services/common-service/common-resource-service';
 import { progressIndicatorActions } from "store/progress-indicator/progress-indicator-actions";
+import { FileOperationLocation } from "store/tree-picker/tree-picker-actions";
 import { updateResources } from 'store/resources/resources-actions';
 import { navigateTo } from 'store/navigation/navigation-action';
 
@@ -26,7 +27,7 @@ export interface CollectionPartialCopyToNewCollectionFormData {
 }
 
 export interface CollectionPartialCopyToExistingCollectionFormData {
-    destination: {uuid: string, path?: string};
+    destination: FileOperationLocation;
 }
 
 export interface CollectionPartialCopyToSeparateCollectionsFormData {
@@ -122,7 +123,7 @@ export const copyCollectionPartialToExistingCollection = ({ destination }: Colle
         // Get current collection
         const sourceCollection = state.collectionPanel.item;
 
-        if (sourceCollection && destination.uuid) {
+        if (sourceCollection && destination && destination.uuid) {
             try {
                 dispatch(startSubmit(COLLECTION_PARTIAL_COPY_TO_SELECTED_COLLECTION));
                 dispatch(progressIndicatorActions.START_WORKING(COLLECTION_PARTIAL_COPY_TO_SELECTED_COLLECTION));
