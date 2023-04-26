@@ -238,7 +238,7 @@ export const DataExplorer = withStyles(styles)(
                                 defaultViewMessages={defaultViewMessages}
                                 currentItemUuid={currentItemUuid}
                                 currentRoute={paperKey}
-                                checkedList={{}}
+                                // checkedList={{}}
                             />
                         </Grid>
                         <Grid item xs>

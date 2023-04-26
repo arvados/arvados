@@ -90,12 +90,8 @@ const styles: StyleRulesCallback<CssRules> = (theme: Theme) => ({
     },
 });
 
-const handleSelectAll = () => {};
-
-const handleDeselectAll = () => {};
-
 type DataTableState = {
-    checkedList: Record<string, boolean>;
+    // checkedList: Record<string, boolean>;
 };
 
 type DataTableProps<T> = DataTableDataProps<T> & WithStyles<CssRules> & DataTableState;
@@ -103,8 +99,17 @@ type DataTableProps<T> = DataTableDataProps<T> & WithStyles<CssRules> & DataTabl
 export const DataTable = withStyles(styles)(
     class Component<T> extends React.Component<DataTableProps<T>> {
         state: DataTableState = {
-            checkedList: {},
+            // checkedList: {},
         };
+
+        componentDidUpdate(prevProps: Readonly<DataTableProps<T>>) {
+            if (prevProps.items !== this.props.items) {
+                console.log('BEFORE INIT', this.state);
+                this.initializeCheckedList(this.props.items);
+                console.log('AFTER INIT', this.state);
+            }
+        }
+
         checkBoxColumn: DataColumn<any, any> = {
             name: 'checkBoxColumn',
             selected: true,
@@ -113,46 +118,55 @@ export const DataTable = withStyles(styles)(
             render: (uuid) => <input type='checkbox' name={uuid} color='primary' checked={this.state[uuid] ?? false} onChange={() => this.handleCheck(uuid)}></input>,
         };
 
-        initializeCheckedList = (items: any[]): void => {
-            const checkedList = this.state;
-            for (const uuid in checkedList) {
-                if (checkedList.hasOwnProperty(uuid)) {
-                    delete checkedList[uuid];
-                }
-            }
-            items.forEach((uuid) => {
+        initializeCheckedList = async (uuids: any[]) => {
+            let checkedList = this.state;
+            uuids.forEach((uuid) => {
                 if (!checkedList.hasOwnProperty[uuid]) {
                     checkedList[uuid] = false;
                 }
             });
         };
 
-        componentDidUpdate(prevProps: Readonly<DataTableProps<T>>): void {
-            if (prevProps.items !== this.props.items) {
-                this.initializeCheckedList(this.props.items);
-            }
-        }
-
-        handleCheck = async (uuid: string) => {
+        handleCheck = (uuid: string) => {
             const checkedList = this.state;
             const newCheckedList = { ...checkedList };
             newCheckedList[uuid] = !checkedList[uuid];
-            await this.setState(newCheckedList);
+            this.setState(newCheckedList);
         };
+
+        handleSelectAll = () => {
+            const newCheckedList = { ...this.state };
+            for (const key in newCheckedList) {
+                newCheckedList[key] = true;
+            }
+            this.setState(newCheckedList);
+        };
+
+        handleDeselectAll = () => {
+            const newCheckedList = { ...this.state };
+            for (const key in newCheckedList) {
+                newCheckedList[key] = false;
+            }
+            this.setState(newCheckedList);
+        };
+
+        handleInvertSelect = () => {
+            const newCheckedList = { ...this.state };
+            for (const key in newCheckedList) {
+                newCheckedList[key] = !this.state[key];
+            }
+            this.setState(newCheckedList);
+        };
+
         render() {
             const { items, classes, working, columns } = this.props;
-            if (columns[0].name !== this.checkBoxColumn.name) columns.unshift(this.checkBoxColumn);
-            const firstBox: HTMLInputElement | null = document.querySelector('input[type="checkbox"]');
+            if (columns[0].name === this.checkBoxColumn.name) columns.shift();
+            columns.unshift(this.checkBoxColumn);
+            console.log('ONCHECK', this.state);
+
             return (
                 <div className={classes.root}>
                     <div className={classes.content}>
-                        <button
-                            onClick={() => {
-                                if (firstBox) this.handleCheck(firstBox?.name);
-                            }}
-                        >
-                            TEST
-                        </button>
                         <Table>
                             <TableHead>
                                 <TableRow>{this.mapVisibleColumns(this.renderHeadCell)}</TableRow>
@@ -180,8 +194,9 @@ export const DataTable = withStyles(styles)(
             const { onSortToggle, onFiltersChange, classes } = this.props;
             return index === 0 ? (
                 <TableCell key={key || index} className={classes.checkBoxCell}>
-                    <div onClick={handleSelectAll}>select all</div>
-                    <div onClick={handleDeselectAll}>deselect all</div>
+                    <div onClick={this.handleSelectAll}>select all</div>
+                    <div onClick={this.handleDeselectAll}>deselect all</div>
+                    <div onClick={this.handleInvertSelect}>invert selection</div>
                 </TableCell>
             ) : (
                 <TableCell className={classes.tableCell} key={key || index}>
