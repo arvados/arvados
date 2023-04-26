@@ -13,8 +13,8 @@ import { countNodes, getTreeDirty } from 'models/tree';
 import { IconType, PendingIcon } from 'components/icon/icon';
 import { SvgIconProps } from '@material-ui/core/SvgIcon';
 import ArrowDownwardIcon from '@material-ui/icons/ArrowDownward';
-import { Checkbox } from '@material-ui/core';
 import { createTree } from 'models/tree';
+import arraysAreCongruent from 'validators/arrays-are-congruent';
 
 export type DataColumns<I, R> = Array<DataColumn<I, R>>;
 
@@ -97,10 +97,20 @@ export const DataTable = withStyles(styles)(
     class Component<T> extends React.Component<DataTableProps<T>> {
         state: DataTableState = {};
 
+        componentDidMount(): void {
+            this.initializeCheckedList(this.props.items);
+        }
+
         componentDidUpdate(prevProps: Readonly<DataTableProps<T>>) {
-            if (prevProps.items !== this.props.items) {
+            console.log(prevProps.items, this.props.items, this.state);
+            console.log(this.props.currentRoute);
+            if (!arraysAreCongruent(prevProps.items, this.props.items)) {
                 this.initializeCheckedList(this.props.items);
             }
+        }
+
+        componentWillUnmount(): void {
+            console.log('UNMOUNT');
         }
 
         checkBoxColumn: DataColumn<any, any> = {
