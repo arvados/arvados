@@ -3,7 +3,20 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import React from 'react';
-import { Table, TableBody, TableRow, TableCell, TableHead, TableSortLabel, StyleRulesCallback, Theme, WithStyles, withStyles, IconButton } from '@material-ui/core';
+import {
+    Table,
+    TableBody,
+    TableRow,
+    TableCell,
+    TableHead,
+    TableSortLabel,
+    StyleRulesCallback,
+    Theme,
+    WithStyles,
+    withStyles,
+    IconButton,
+    Tooltip,
+} from '@material-ui/core';
 import classnames from 'classnames';
 import { DataColumn, SortDirection } from './data-column';
 import { DataTableDefaultView } from '../data-table-default-view/data-table-default-view';
@@ -89,21 +102,26 @@ const styles: StyleRulesCallback<CssRules> = (theme: Theme) => ({
     },
 });
 
-type DataTableState = Record<string, boolean>;
+type DataTableState = {
+    isSelected: boolean;
+    checkedList: Record<string, boolean>;
+};
 
 type DataTableProps<T> = DataTableDataProps<T> & WithStyles<CssRules>;
 
 export const DataTable = withStyles(styles)(
     class Component<T> extends React.Component<DataTableProps<T>> {
-        state: DataTableState = {};
+        state: DataTableState = {
+            isSelected: false,
+            checkedList: {},
+        };
 
         componentDidMount(): void {
             this.initializeCheckedList(this.props.items);
         }
 
         componentDidUpdate(prevProps: Readonly<DataTableProps<T>>) {
-            console.log(prevProps.items, this.props.items, this.state);
-            console.log(this.props.currentRoute);
+            console.log(this.state);
             if (!arraysAreCongruent(prevProps.items, this.props.items)) {
                 this.initializeCheckedList(this.props.items);
             }
@@ -123,7 +141,7 @@ export const DataTable = withStyles(styles)(
                     type='checkbox'
                     name={uuid}
                     color='primary'
-                    checked={this.state[uuid] ?? false}
+                    checked={this.state.checkedList[uuid] ?? false}
                     onChange={() => this.handleCheck(uuid)}
                     onDoubleClick={(ev) => ev.stopPropagation()}
                 ></input>
@@ -131,7 +149,7 @@ export const DataTable = withStyles(styles)(
         };
 
         initializeCheckedList = (uuids: any[]): void => {
-            const checkedList = this.state;
+            const { checkedList } = this.state;
             uuids.forEach((uuid) => {
                 if (!checkedList.hasOwnProperty[uuid]) {
                     checkedList[uuid] = false;
@@ -139,35 +157,28 @@ export const DataTable = withStyles(styles)(
             });
         };
 
+        handleSelectorSelect = (): void => {
+            const { isSelected, checkedList } = this.state;
+            const newCheckedList = { ...checkedList };
+            for (const key in newCheckedList) {
+                newCheckedList[key] = !isSelected;
+            }
+            this.setState({ isSelected: !isSelected, checkedList: newCheckedList });
+        };
+
         handleCheck = (uuid: string): void => {
-            const newCheckedList = { ...this.state };
-            newCheckedList[uuid] = !this.state[uuid];
-            this.setState(newCheckedList);
+            const newCheckedList = { ...this.state.checkedList };
+            newCheckedList[uuid] = !this.state.checkedList[uuid];
+            this.setState({ checkedList: newCheckedList });
             console.log(newCheckedList);
         };
 
-        handleSelectAll = (): void => {
-            const newCheckedList = { ...this.state };
-            for (const key in newCheckedList) {
-                newCheckedList[key] = true;
-            }
-            this.setState(newCheckedList);
-        };
-
-        handleDeselectAll = (): void => {
-            const newCheckedList = { ...this.state };
-            for (const key in newCheckedList) {
-                newCheckedList[key] = false;
-            }
-            this.setState(newCheckedList);
-        };
-
         handleInvertSelect = (): void => {
-            const newCheckedList = { ...this.state };
+            const newCheckedList = { ...this.state.checkedList };
             for (const key in newCheckedList) {
-                newCheckedList[key] = !this.state[key];
+                newCheckedList[key] = !this.state.checkedList[key];
             }
-            this.setState(newCheckedList);
+            this.setState({ checkedList: newCheckedList });
         };
 
         render() {
@@ -205,9 +216,9 @@ export const DataTable = withStyles(styles)(
             const { onSortToggle, onFiltersChange, classes } = this.props;
             return index === 0 ? (
                 <TableCell key={key || index} className={classes.checkBoxCell}>
-                    <div onClick={this.handleSelectAll}>select all</div>
-                    <div onClick={this.handleDeselectAll}>deselect all</div>
-                    <div onClick={this.handleInvertSelect}>invert selection</div>
+                    <Tooltip title={this.state.isSelected ? 'Deselect All' : 'Select All'}>
+                        <input type='checkbox' checked={this.state.isSelected} onChange={this.handleSelectorSelect}></input>
+                    </Tooltip>
                 </TableCell>
             ) : (
                 <TableCell className={classes.tableCell} key={key || index}>
