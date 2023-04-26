@@ -104,9 +104,9 @@ export const DataTable = withStyles(styles)(
 
         componentDidUpdate(prevProps: Readonly<DataTableProps<T>>) {
             if (prevProps.items !== this.props.items) {
-                console.log('BEFORE INIT', this.state);
+                // console.log('BEFORE INIT', this.state);
                 this.initializeCheckedList(this.props.items);
-                console.log('AFTER INIT', this.state);
+                // console.log('AFTER INIT', this.state);
             }
         }
 
@@ -115,7 +115,16 @@ export const DataTable = withStyles(styles)(
             selected: true,
             configurable: false,
             filters: createTree(),
-            render: (uuid) => <input type='checkbox' name={uuid} color='primary' checked={this.state[uuid] ?? false} onChange={() => this.handleCheck(uuid)}></input>,
+            render: (uuid) => (
+                <input
+                    type='checkbox'
+                    name={uuid}
+                    color='primary'
+                    checked={this.state[uuid] ?? false}
+                    onChange={() => this.handleCheck(uuid)}
+                    onDoubleClick={(ev) => ev.stopPropagation()}
+                ></input>
+            ),
         };
 
         initializeCheckedList = async (uuids: any[]) => {
@@ -128,9 +137,8 @@ export const DataTable = withStyles(styles)(
         };
 
         handleCheck = (uuid: string) => {
-            const checkedList = this.state;
-            const newCheckedList = { ...checkedList };
-            newCheckedList[uuid] = !checkedList[uuid];
+            const newCheckedList = { ...this.state };
+            newCheckedList[uuid] = !this.state[uuid];
             this.setState(newCheckedList);
         };
 
