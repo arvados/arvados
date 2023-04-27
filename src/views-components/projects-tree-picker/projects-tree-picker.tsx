@@ -23,6 +23,7 @@ import { withStyles, StyleRulesCallback, WithStyles } from '@material-ui/core';
 import { ArvadosTheme } from 'common/custom-theme';
 
 export interface ToplevelPickerProps {
+    currentUuid?: string;
     pickerId: string;
     includeCollections?: boolean;
     includeDirectories?: boolean;
@@ -106,7 +107,7 @@ export const ProjectsTreePicker = connect(mapStateToProps, mapDispatchToProps)(
             componentDidMount() {
                 const { home, shared, favorites, publicFavorites, search } = getProjectsTreePickerIds(this.props.pickerId);
 
-                this.props.dispatch<any>(initProjectsTreePicker(this.props.pickerId));
+                this.props.dispatch<any>(initProjectsTreePicker(this.props.pickerId, this.props.currentUuid));
 
                 this.props.dispatch(treePickerSearchActions.SET_TREE_PICKER_PROJECT_SEARCH({ pickerId: search, projectSearchValue: "" }));
                 this.props.dispatch(treePickerSearchActions.SET_TREE_PICKER_COLLECTION_FILTER({ pickerId: search, collectionFilterValue: "" }));

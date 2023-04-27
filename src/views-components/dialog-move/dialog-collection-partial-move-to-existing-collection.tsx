@@ -18,6 +18,7 @@ export const DialogCollectionPartialMoveToExistingCollection = (props: DialogCol
         dialogTitle='Move to existing collection'
         formFields={CollectionPartialMoveFields(props.pickerId)}
         submitLabel='Move files'
+        enableWhenPristine
         {...props}
     />;
 

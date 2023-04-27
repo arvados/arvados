@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import { unionize, ofType, UnionOf } from "common/unionize";
-import { TreeNode, initTreeNode, getNodeDescendants, TreeNodeStatus, getNode, TreePickerId, Tree } from 'models/tree';
+import { TreeNode, initTreeNode, getNodeDescendants, TreeNodeStatus, getNode, TreePickerId, Tree, setNode, createTree } from 'models/tree';
 import { CollectionFileType, createCollectionFilesTree, getCollectionResourceCollectionUuid } from "models/collection-file";
 import { Dispatch } from 'redux';
 import { RootState } from 'store/store';
@@ -22,6 +22,7 @@ import { LinkResource, LinkClass } from "models/link";
 import { mapTreeValues } from "models/tree";
 import { sortFilesTree } from "services/collection-service/collection-service-files-response";
 import { GroupClass, GroupResource } from "models/group";
+import { CollectionResource } from "models/collection";
 
 export const treePickerActions = unionize({
     LOAD_TREE_PICKER_NODE: ofType<{ id: string, pickerId: string }>(),
@@ -52,6 +53,7 @@ export const treePickerSearchActions = unionize({
     SET_TREE_PICKER_PROJECT_SEARCH: ofType<{ pickerId: string, projectSearchValue: string }>(),
     SET_TREE_PICKER_COLLECTION_FILTER: ofType<{ pickerId: string, collectionFilterValue: string }>(),
     SET_TREE_PICKER_LOAD_PARAMS: ofType<{ pickerId: string, params: LoadProjectParams }>(),
+    REFRESH_TREE_PICKER: ofType<{ pickerId: string }>(),
 });
 
 export type TreePickerSearchAction = UnionOf<typeof treePickerSearchActions>;
@@ -87,14 +89,18 @@ export const getAllNodes = <Value>(pickerId: string, filter = (node: TreeNode<Va
 export const getSelectedNodes = <Value>(pickerId: string) => (state: TreePicker) =>
     getAllNodes<Value>(pickerId, node => node.selected)(state);
 
-export const initProjectsTreePicker = (pickerId: string) =>
-    async (dispatch: Dispatch, _: () => RootState, services: ServiceRepository) => {
+export const initProjectsTreePicker = (pickerId: string, selectedItemUuid?: string) =>
+    async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
         const { home, shared, favorites, publicFavorites, search } = getProjectsTreePickerIds(pickerId);
         dispatch<any>(initUserProject(home));
         dispatch<any>(initSharedProject(shared));
         dispatch<any>(initFavoritesProject(favorites));
         dispatch<any>(initPublicFavoritesProject(publicFavorites));
         dispatch<any>(initSearchProject(search));
+
+        if (selectedItemUuid) {
+            dispatch<any>(loadInitialValue(selectedItemUuid, pickerId));
+        }
     };
 
 interface ReceiveTreePickerDataParams<T> {
@@ -242,7 +248,7 @@ export const loadCollection = (id: string, pickerId: string, includeDirectories?
         }
     };
 
-
+export const HOME_PROJECT_ID = 'Home Projects';
 export const initUserProject = (pickerId: string) =>
     async (dispatch: Dispatch<any>, getState: () => RootState, services: ServiceRepository) => {
         const uuid = getUserUuid(getState());
@@ -250,7 +256,7 @@ export const initUserProject = (pickerId: string) =>
             dispatch(receiveTreePickerData({
                 id: '',
                 pickerId,
-                data: [{ uuid, name: 'Home Projects' }],
+                data: [{ uuid, name: HOME_PROJECT_ID }],
                 extractNodeData: value => ({
                     id: value.uuid,
                     status: TreeNodeStatus.INITIAL,
@@ -281,6 +287,36 @@ export const initSharedProject = (pickerId: string) =>
             }),
         }));
     };
+
+export const loadInitialValue = (initialValue: string, pickerId: string) =>
+    async (dispatch: Dispatch<any>, getState: () => RootState, services: ServiceRepository) => {
+        const { home, shared } = getProjectsTreePickerIds(pickerId);
+        const homeUuid = getUserUuid(getState());
+        const ancestors = (await services.ancestorsService.ancestors(initialValue, ''))
+            .filter(item =>
+                item.kind === ResourceKind.GROUP ||
+                item.kind === ResourceKind.COLLECTION
+            ) as (GroupResource | CollectionResource)[];
+
+        if (ancestors.length) {
+            const isUserHomeProject = !!(homeUuid && ancestors.some(item => item.ownerUuid === homeUuid));
+            const pickerTreeId = isUserHomeProject ? home : shared;
+            const pickerTreeRootUuid: string = (homeUuid && isUserHomeProject) ? homeUuid : SHARED_PROJECT_ID;
+
+            ancestors[0].ownerUuid = '';
+            const tree = createInitialLocationTree(ancestors, initialValue);
+            dispatch(
+                treePickerActions.APPEND_TREE_PICKER_NODE_SUBTREE({
+                    id: pickerTreeRootUuid,
+                    pickerId: pickerTreeId,
+                    subtree: tree
+                }));
+            dispatch(treePickerActions.EXPAND_TREE_PICKER_NODES({ ids: [pickerTreeRootUuid], pickerId: pickerTreeId }));
+            dispatch(treePickerActions.ACTIVATE_TREE_PICKER_NODE({ id: initialValue, pickerId: pickerTreeId }));
+            dispatch(treePickerSearchActions.REFRESH_TREE_PICKER({ pickerId: pickerTreeId }));
+        }
+
+    }
 
 export const FAVORITES_PROJECT_ID = 'Favorites';
 export const initFavoritesProject = (pickerId: string) =>
@@ -510,4 +546,22 @@ export const getFileOperationLocation = (item: ProjectsTreePickerItem): FileOper
     } else {
         return undefined;
     }
+};
+
+/**
+ * Create an expanded tree picker subtree from array of nested projects/collection
+ *   Assumes the root item of the subtree already has an empty string ownerUuid
+ */
+export const createInitialLocationTree = (data: Array<GroupResource | CollectionResource>, tailUuid: string) => {
+    return data
+        .reduce((tree, item) => setNode({
+            children: [],
+            id: item.uuid,
+            parent: item.ownerUuid,
+            value: item,
+            active: false,
+            selected: false,
+            expanded: item.uuid !== tailUuid,
+            status: item.uuid !== tailUuid ? TreeNodeStatus.LOADED : TreeNodeStatus.INITIAL,
+        })(tree), createTree<GroupResource | CollectionResource>());
 };

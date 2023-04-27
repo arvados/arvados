@@ -109,7 +109,7 @@ export const openCollectionPartialCopyToExistingCollectionDialog = () =>
         const currentCollection = getState().collectionPanel.item;
         if (currentCollection) {
             const initialData = {
-                destination: {uuid: '', destinationPath: ''}
+                destination: {uuid: currentCollection.uuid, destinationPath: ''}
             };
             dispatch(initialize(COLLECTION_PARTIAL_COPY_TO_SELECTED_COLLECTION, initialData));
             dispatch<any>(resetPickerProjectTree());

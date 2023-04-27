@@ -105,7 +105,7 @@ export const openCollectionPartialMoveToExistingCollectionDialog = () =>
         const currentCollection = getState().collectionPanel.item;
         if (currentCollection) {
             const initialData = {
-                destination: {uuid: '', path: ''}
+                destination: {uuid: currentCollection.uuid, path: ''}
             };
             dispatch(initialize(COLLECTION_PARTIAL_MOVE_TO_SELECTED_COLLECTION, initialData));
             dispatch<any>(resetPickerProjectTree());
@@ -119,7 +119,7 @@ export const moveCollectionPartialToExistingCollection = ({ destination }: Colle
         // Get current collection
         const sourceCollection = state.collectionPanel.item;
 
-        if (sourceCollection && destination.uuid) {
+        if (sourceCollection && destination && destination.uuid) {
             try {
                 dispatch(startSubmit(COLLECTION_PARTIAL_MOVE_TO_SELECTED_COLLECTION));
                 dispatch(progressIndicatorActions.START_WORKING(COLLECTION_PARTIAL_MOVE_TO_SELECTED_COLLECTION));

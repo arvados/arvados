@@ -18,6 +18,7 @@ export const DialogCollectionPartialCopyToExistingCollection = (props: DialogCol
         dialogTitle='Copy to existing collection'
         formFields={CollectionPartialCopyFields(props.pickerId)}
         submitLabel='Copy files'
+        enableWhenPristine
         {...props}
     />;
 
