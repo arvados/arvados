@@ -21,6 +21,7 @@ import classnames from 'classnames';
 import { DataColumn, SortDirection } from './data-column';
 import { DataTableDefaultView } from '../data-table-default-view/data-table-default-view';
 import { DataTableFilters } from '../data-table-filters/data-table-filters-tree';
+import { DataTableMultiselectPopover } from '../data-table-multiselect-popover/data-table-multiselect-popover';
 import { DataTableFiltersPopover } from '../data-table-filters/data-table-filters-popover';
 import { countNodes, getTreeDirty } from 'models/tree';
 import { IconType, PendingIcon } from 'components/icon/icon';
@@ -52,7 +53,19 @@ export interface DataTableDataProps<I> {
     currentRoute?: string;
 }
 
-type CssRules = 'tableBody' | 'root' | 'content' | 'noItemsInfo' | 'checkBoxCell' | 'tableCell' | 'arrow' | 'arrowButton' | 'tableCellWorkflows' | 'loader';
+type CssRules =
+    | 'tableBody'
+    | 'root'
+    | 'content'
+    | 'noItemsInfo'
+    | 'checkBoxHead'
+    | 'checkBoxCell'
+    | 'checkBox'
+    | 'tableCell'
+    | 'arrow'
+    | 'arrowButton'
+    | 'tableCellWorkflows'
+    | 'loader';
 
 const styles: StyleRulesCallback<CssRules> = (theme: Theme) => ({
     root: {
@@ -74,8 +87,15 @@ const styles: StyleRulesCallback<CssRules> = (theme: Theme) => ({
         textAlign: 'center',
         padding: theme.spacing.unit,
     },
+    checkBoxHead: {
+        padding: '0',
+        display: 'flex',
+    },
     checkBoxCell: {
         padding: '0',
+        paddingLeft: '10px',
+    },
+    checkBox: {
         cursor: 'pointer',
     },
     tableCell: {
@@ -121,14 +141,10 @@ export const DataTable = withStyles(styles)(
         }
 
         componentDidUpdate(prevProps: Readonly<DataTableProps<T>>) {
-            console.log(this.state);
+            // console.log(this.state.checkedList);
             if (!arraysAreCongruent(prevProps.items, this.props.items)) {
                 this.initializeCheckedList(this.props.items);
             }
-        }
-
-        componentWillUnmount(): void {
-            console.log('UNMOUNT');
         }
 
         checkBoxColumn: DataColumn<any, any> = {
@@ -140,7 +156,7 @@ export const DataTable = withStyles(styles)(
                 <input
                     type='checkbox'
                     name={uuid}
-                    color='primary'
+                    className={this.props.classes.checkBox}
                     checked={this.state.checkedList[uuid] ?? false}
                     onChange={() => this.handleCheck(uuid)}
                     onDoubleClick={(ev) => ev.stopPropagation()}
@@ -167,16 +183,18 @@ export const DataTable = withStyles(styles)(
         };
 
         handleCheck = (uuid: string): void => {
-            const newCheckedList = { ...this.state.checkedList };
-            newCheckedList[uuid] = !this.state.checkedList[uuid];
+            const { checkedList } = this.state;
+            const newCheckedList = { ...checkedList };
+            newCheckedList[uuid] = !checkedList[uuid];
             this.setState({ checkedList: newCheckedList });
-            console.log(newCheckedList);
+            // console.log(newCheckedList);
         };
 
         handleInvertSelect = (): void => {
-            const newCheckedList = { ...this.state.checkedList };
+            const { checkedList } = this.state;
+            const newCheckedList = { ...checkedList };
             for (const key in newCheckedList) {
-                newCheckedList[key] = !this.state.checkedList[key];
+                newCheckedList[key] = !checkedList[key];
             }
             this.setState({ checkedList: newCheckedList });
         };
@@ -216,9 +234,17 @@ export const DataTable = withStyles(styles)(
             const { onSortToggle, onFiltersChange, classes } = this.props;
             return index === 0 ? (
                 <TableCell key={key || index} className={classes.checkBoxCell}>
-                    <Tooltip title={this.state.isSelected ? 'Deselect All' : 'Select All'}>
-                        <input type='checkbox' checked={this.state.isSelected} onChange={this.handleSelectorSelect}></input>
-                    </Tooltip>
+                    <div className={classes.checkBoxHead}>
+                        <Tooltip title={this.state.isSelected ? 'Deselect All' : 'Select All'}>
+                            <input type='checkbox' className={classes.checkBox} checked={this.state.isSelected} onChange={this.handleSelectorSelect}></input>
+                        </Tooltip>
+                        <DataTableMultiselectPopover
+                            name={`${name} filters`}
+                            mutuallyExclusive={column.mutuallyExclusiveFilters}
+                            onChange={(filters) => onFiltersChange && onFiltersChange(filters, column)}
+                            filters={filters}
+                        ></DataTableMultiselectPopover>
+                    </div>
                 </TableCell>
             ) : (
                 <TableCell className={classes.tableCell} key={key || index}>
