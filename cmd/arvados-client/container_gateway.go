@@ -34,13 +34,13 @@ type logsCommand struct {
 func (lc logsCommand) RunCommand(prog string, args []string, stdin io.Reader, stdout, stderr io.Writer) int {
 	f := flag.NewFlagSet(prog, flag.ContinueOnError)
 	pollInterval := f.Duration("poll", time.Second*2, "minimum duration to wait before polling for new data")
-	if ok, code := cmd.ParseFlags(f, prog, args, "container-uuid", stderr); !ok {
+	if ok, code := cmd.ParseFlags(f, prog, args, "container-request-uuid", stderr); !ok {
 		return code
 	} else if f.NArg() < 1 {
-		fmt.Fprintf(stderr, "missing required argument: container-uuid (try -help)\n")
+		fmt.Fprintf(stderr, "missing required argument: container-request-uuid (try -help)\n")
 		return 2
 	} else if f.NArg() > 1 {
-		fmt.Fprintf(stderr, "encountered extra arguments after container-uuid (try -help)\n")
+		fmt.Fprintf(stderr, "encountered extra arguments after container-request-uuid (try -help)\n")
 		return 2
 	}
 	target := f.Args()[0]
