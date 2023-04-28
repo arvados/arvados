@@ -1174,21 +1174,37 @@ class KeepClient(object):
         try:
             locator = KeepLocator(loc_s)
             if method == "GET":
-                slot, first = self.block_cache.reserve_cache(locator.md5sum)
-                if not first:
+                while slot is None:
+                    slot, first = self.block_cache.reserve_cache(locator.md5sum)
+                    if first:
+                        # Fresh and empty "first time it is used" slot
+                        break
                     if prefetch:
-                        # this is request for a prefetch, if it is
-                        # already in flight, return immediately.
-                        # clear 'slot' to prevent finally block from
-                        # calling slot.set()
+                        # this is request for a prefetch to fill in
+                        # the cache, don't need to wait for the
+                        # result, so if it is already in flight return
+                        # immediately.  Clear 'slot' to prevent
+                        # finally block from calling slot.set()
                         slot = None
                         return None
-                    self.hits_counter.add(1)
+
                     blob = slot.get()
-                    if blob is None:
-                        raise arvados.errors.KeepReadError(
-                            "failed to read {}".format(loc_s))
-                    return blob
+                    if blob is not None:
+                        self.hits_counter.add(1)
+                        return blob
+
+                    # If blob is None, this means either
+                    #
+                    # (a) another thread was fetching this block and
+                    # failed with an error or
+                    #
+                    # (b) cache thrashing caused the slot to be
+                    # evicted (content set to None) by another thread
+                    # between the call to reserve_cache() and get().
+                    #
+                    # We'll handle these cases by reserving a new slot
+                    # and then doing a full GET request.
+                    slot = None
 
             self.misses_counter.add(1)
 
