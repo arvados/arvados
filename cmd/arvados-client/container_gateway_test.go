@@ -230,7 +230,7 @@ func (s *ClientSuite) TestContainerRequestLog(c *check.C) {
 
 	c.Log("running logs command on queued container")
 	var stdout, stderr bytes.Buffer
-	cmd := exec.CommandContext(ctx, "go", "run", ".", "logs", "-poll=250ms", cr.UUID)
+	cmd := exec.CommandContext(ctx, "go", "run", ".", "logs", "-f", "-poll=250ms", cr.UUID)
 	cmd.Env = append(cmd.Env, os.Environ()...)
 	cmd.Env = append(cmd.Env, "ARVADOS_API_TOKEN="+arvadostest.SystemRootToken)
 	cmd.Stdout = io.MultiWriter(&stdout, os.Stderr)
@@ -270,6 +270,18 @@ func (s *ClientSuite) TestContainerRequestLog(c *check.C) {
 	c.Assert(err, check.IsNil)
 	_, err = fmt.Fprintf(fStderr, "%s line 1 of stderr\n", time.Now().UTC().Format(rfc3339NanoFixed))
 	c.Assert(err, check.IsNil)
+
+	{
+		// Without "-f", just show the existing logs and
+		// exit. Timeout needs to be long enough for "go run".
+		ctxNoFollow, cancel := context.WithDeadline(ctx, time.Now().Add(time.Second*5))
+		defer cancel()
+		cmdNoFollow := exec.CommandContext(ctxNoFollow, "go", "run", ".", "logs", "-poll=250ms", cr.UUID)
+		buf, err := cmdNoFollow.CombinedOutput()
+		c.Check(err, check.IsNil)
+		c.Check(string(buf), check.Matches, `(?ms).*line 1 of stderr\n`)
+	}
+
 	time.Sleep(time.Second * 2)
 	_, err = fmt.Fprintf(fCrunchrun, "%s line 2 of crunch-run.txt", time.Now().UTC().Format(rfc3339NanoFixed))
 	c.Assert(err, check.IsNil)
@@ -304,7 +316,7 @@ func (s *ClientSuite) TestContainerRequestLog(c *check.C) {
 	{
 		ctx, cancel := context.WithDeadline(ctx, time.Now().Add(time.Second*5))
 		defer cancel()
-		cmd := exec.CommandContext(ctx, "go", "run", ".", "logs", cr.UUID)
+		cmd := exec.CommandContext(ctx, "go", "run", ".", "logs", "-f", cr.UUID)
 		cmd.Env = append(cmd.Env, os.Environ()...)
 		cmd.Env = append(cmd.Env, "ARVADOS_API_TOKEN="+arvadostest.SystemRootToken)
 		buf, err := cmd.CombinedOutput()

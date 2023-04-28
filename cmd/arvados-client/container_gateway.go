@@ -33,6 +33,7 @@ type logsCommand struct {
 
 func (lc logsCommand) RunCommand(prog string, args []string, stdin io.Reader, stdout, stderr io.Writer) int {
 	f := flag.NewFlagSet(prog, flag.ContinueOnError)
+	follow := f.Bool("f", false, "follow: poll for new data until the container finishes")
 	pollInterval := f.Duration("poll", time.Second*2, "minimum duration to wait before polling for new data")
 	if ok, code := cmd.ParseFlags(f, prog, args, "container-request-uuid", stderr); !ok {
 		return code
@@ -53,7 +54,7 @@ func (lc logsCommand) RunCommand(prog string, args []string, stdin io.Reader, st
 				InsecureSkipVerify: true}}
 	}
 
-	err := lc.tailf(target, stdout, stderr, *pollInterval)
+	err := lc.tail(target, stdout, stderr, *follow, *pollInterval)
 	if err != nil {
 		fmt.Fprintln(stderr, err)
 		return 1
@@ -61,7 +62,7 @@ func (lc logsCommand) RunCommand(prog string, args []string, stdin io.Reader, st
 	return 0
 }
 
-func (lc *logsCommand) tailf(crUUID string, stdout, stderr io.Writer, pollInterval time.Duration) error {
+func (lc *logsCommand) tail(crUUID string, stdout, stderr io.Writer, follow bool, pollInterval time.Duration) error {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
@@ -157,7 +158,7 @@ poll:
 			displayingUUID = cr.ContainerUUID
 			delay = 0
 			continue
-		} else if cr.State == arvados.ContainerRequestStateFinal {
+		} else if cr.State == arvados.ContainerRequestStateFinal || !follow {
 			break
 		} else if len(newData) > 0 {
 			delay = pollInterval
