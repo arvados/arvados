@@ -24,6 +24,9 @@ type Queue struct {
 	// must not be nil.
 	ChooseType func(*arvados.Container) (arvados.InstanceType, error)
 
+	// Mimic railsapi implementation of MaxDispatchAttempts config
+	MaxDispatchAttempts int
+
 	Logger logrus.FieldLogger
 
 	entries      map[string]container.QueueEnt
@@ -133,7 +136,15 @@ func (q *Queue) changeState(uuid string, from, to arvados.ContainerState) error 
 	q.entries[uuid] = ent
 	for i, ctr := range q.Containers {
 		if ctr.UUID == uuid {
-			q.Containers[i].State = to
+			if max := q.MaxDispatchAttempts; max > 0 && ctr.LockCount >= max && to == arvados.ContainerStateQueued {
+				q.Containers[i].State = arvados.ContainerStateCancelled
+				q.Containers[i].RuntimeStatus = map[string]interface{}{"error": fmt.Sprintf("Failed to start: lock_count == %d", ctr.LockCount)}
+			} else {
+				q.Containers[i].State = to
+				if to == arvados.ContainerStateLocked {
+					q.Containers[i].LockCount++
+				}
+			}
 			break
 		}
 	}

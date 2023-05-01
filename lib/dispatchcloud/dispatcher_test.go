@@ -151,6 +151,7 @@ func (s *DispatcherSuite) TestDispatchToStubDriver(c *check.C) {
 	Drivers["test"] = s.stubDriver
 	s.disp.setupOnce.Do(s.disp.initialize)
 	queue := &test.Queue{
+		MaxDispatchAttempts: 5,
 		ChooseType: func(ctr *arvados.Container) (arvados.InstanceType, error) {
 			return ChooseInstanceType(s.cluster, ctr)
 		},
