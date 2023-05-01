@@ -11,6 +11,7 @@ import httplib2
 
 from arvados_cwl.util import *
 from arvados.errors import ApiError
+from arvados_cwl.arvworkflow import common_prefix
 
 class MockDateTime(datetime.datetime):
     @classmethod
@@ -54,3 +55,18 @@ class TestUtil(unittest.TestCase):
 
         current_container = get_current_container(api, num_retries=0, logger=logger)
         self.assertEqual(current_container, None)
+
+    def test_common_prefix(self):
+        self.assertEqual(common_prefix("file:///foo/bar", ["file:///foo/bar/baz"]), "file:///foo/")
+        self.assertEqual(common_prefix("file:///foo", ["file:///foo", "file:///foo/bar", "file:///foo/bar/"]), "file:///")
+        self.assertEqual(common_prefix("file:///foo/", ["file:///foo/", "file:///foo/bar", "file:///foo/bar/"]), "file:///foo/")
+        self.assertEqual(common_prefix("file:///foo/bar", ["file:///foo/bar", "file:///foo/baz", "file:///foo/quux/q2"]), "file:///foo/")
+        self.assertEqual(common_prefix("file:///foo/bar/", ["file:///foo/bar/", "file:///foo/baz", "file:///foo/quux/q2"]), "file:///foo/")
+        self.assertEqual(common_prefix("file:///foo/bar/splat", ["file:///foo/bar/splat", "file:///foo/baz", "file:///foo/quux/q2"]), "file:///foo/")
+        self.assertEqual(common_prefix("file:///foo/bar/splat", ["file:///foo/bar/splat", "file:///nope", "file:///foo/quux/q2"]), "file:///")
+        self.assertEqual(common_prefix("file:///blub/foo", ["file:///blub/foo", "file:///blub/foo/bar", "file:///blub/foo/bar/"]), "file:///blub/")
+
+        # sanity check, the subsequent code strips off the prefix so
+        # just confirm the logic doesn't have a fencepost error
+        prefix = "file:///"
+        self.assertEqual("file:///foo/bar"[len(prefix):], "foo/bar")
