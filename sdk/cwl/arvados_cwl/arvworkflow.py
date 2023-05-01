@@ -41,6 +41,7 @@ from .runner import (upload_dependencies, packed_workflow, upload_workflow_colle
 from .pathmapper import ArvPathMapper, trim_listing
 from .arvtool import ArvadosCommandTool, set_cluster_target
 from ._version import __version__
+from .util import common_prefix
 
 from .perf import Perf
 
@@ -246,32 +247,6 @@ def drop_ids(d):
 
         for field in d:
             drop_ids(d[field])
-
-
-def common_prefix(firstfile, all_files):
-    n = 0
-    allmatch = True
-    if not firstfile:
-        return ""
-
-    while allmatch and n < len(firstfile)-1:
-        n += 1
-        for f in all_files:
-            if len(f)-1 < n:
-                n -= 1
-                allmatch = False
-                break
-            if f[n] != firstfile[n]:
-                allmatch = False
-                break
-
-    while n > 0 and firstfile[n] != "/":
-        n -= 1
-
-    if firstfile[n] == "/":
-        n += 1
-
-    return firstfile[:n]
 
 
 def upload_workflow(arvRunner, tool, job_order, project_uuid,

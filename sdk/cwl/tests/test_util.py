@@ -11,7 +11,7 @@ import httplib2
 
 from arvados_cwl.util import *
 from arvados.errors import ApiError
-from arvados_cwl.arvworkflow import common_prefix
+from arvados_cwl.util import common_prefix
 
 class MockDateTime(datetime.datetime):
     @classmethod
