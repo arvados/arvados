@@ -233,6 +233,11 @@ func (cq *Queue) delEnt(uuid string, state arvados.ContainerState) {
 // Caller must have lock.
 func (cq *Queue) addEnt(uuid string, ctr arvados.Container) {
 	it, err := cq.chooseType(&ctr)
+
+	// Avoid wasting memory on a large Mounts attr (we don't need
+	// it after choosing type).
+	ctr.Mounts = nil
+
 	if err != nil && (ctr.State == arvados.ContainerStateQueued || ctr.State == arvados.ContainerStateLocked) {
 		// We assume here that any chooseType error is a hard
 		// error: it wouldn't help to try again, or to leave
@@ -488,6 +493,16 @@ func (cq *Queue) fetchAll(initialParams arvados.ResourceListParams) ([]arvados.C
 		}
 		if len(list.Items) == 0 {
 			break
+		}
+
+		// Conserve memory by deleting mounts that aren't
+		// relevant to choosing the instance type.
+		for _, c := range list.Items {
+			for path, mnt := range c.Mounts {
+				if mnt.Kind != "tmp" {
+					delete(c.Mounts, path)
+				}
+			}
 		}
 
 		results = append(results, list.Items...)
