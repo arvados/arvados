@@ -495,6 +495,16 @@ func (cq *Queue) fetchAll(initialParams arvados.ResourceListParams) ([]arvados.C
 			break
 		}
 
+		// Conserve memory by deleting mounts that aren't
+		// relevant to choosing the instance type.
+		for _, c := range list.Items {
+			for path, mnt := range c.Mounts {
+				if mnt.Kind != "tmp" {
+					delete(c.Mounts, path)
+				}
+			}
+		}
+
 		results = append(results, list.Items...)
 		if len(params.Order) == 1 && params.Order == "uuid" {
 			params.Filters = append(initialParams.Filters, arvados.Filter{"uuid", ">", list.Items[len(list.Items)-1].UUID})
