@@ -168,6 +168,7 @@ func (q *Queue) Update() error {
 			upd[ctr.UUID] = ent
 		} else {
 			it, _ := q.ChooseType(&ctr)
+			ctr.Mounts = nil
 			upd[ctr.UUID] = container.QueueEnt{
 				Container:    ctr,
 				InstanceType: it,
