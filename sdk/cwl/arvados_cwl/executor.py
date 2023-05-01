@@ -370,7 +370,7 @@ The 'jobs' API is no longer supported.
                     try:
                         proc_states = table.list(filters=[["uuid", "in", page]]).execute(num_retries=self.num_retries)
                     except Exception as e:
-                        logger.exception("Error checking states on API server: %s", e)
+                        logger.warning("Temporary error checking states on API server: %s", e)
                         remain_wait = self.poll_interval
                         continue
 
