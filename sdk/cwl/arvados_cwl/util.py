@@ -34,3 +34,18 @@ def get_current_container(api, num_retries=0, logger=None):
             raise e
 
     return current_container
+
+
+def common_prefix(firstfile, all_files):
+    common_parts = firstfile.split('/')
+    common_parts[-1] = ''
+    for f in all_files:
+        f_parts = f.split('/')
+        for index, (a, b) in enumerate(zip(common_parts, f_parts)):
+            if a != b:
+                common_parts = common_parts[:index + 1]
+                common_parts[-1] = ''
+                break
+        if not any(common_parts):
+            break
+    return '/'.join(common_parts)
