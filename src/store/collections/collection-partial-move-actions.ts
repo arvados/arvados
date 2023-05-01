@@ -185,7 +185,7 @@ export const moveCollectionPartialToSeparateCollections = ({ name, projectUuid }
                         sourceCollection.portableDataHash,
                         [path],
                         {
-                            name: `File split from collection ${name}${path}`,
+                            name: `File moved from collection ${name}${path}`,
                             ownerUuid: projectUuid,
                             uuid: undefined,
                         },
