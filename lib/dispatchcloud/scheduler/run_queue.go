@@ -185,7 +185,7 @@ tryrun:
 			_, toolate := running[ctr.UUID]
 			if ctr.State == arvados.ContainerStateLocked && !toolate {
 				logger := sch.logger.WithField("ContainerUUID", ctr.UUID)
-				logger.Debug("unlock because pool capacity is used by higher priority containers")
+				logger.Info("unlock because pool capacity is used by higher priority containers")
 				err := sch.queue.Unlock(ctr.UUID)
 				if err != nil {
 					logger.WithError(err).Warn("error unlocking")
