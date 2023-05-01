@@ -105,7 +105,10 @@ func (s *DispatcherSuite) SetUpTest(c *check.C) {
 	// Disable auto-retry
 	arvClient.Timeout = 0
 
-	s.error503Server = httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) { w.WriteHeader(http.StatusServiceUnavailable) }))
+	s.error503Server = httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		c.Logf("503 stub: returning 503")
+		w.WriteHeader(http.StatusServiceUnavailable)
+	}))
 	arvClient.Client = &http.Client{
 		Transport: &http.Transport{
 			Proxy: s.arvClientProxy(c),
@@ -136,6 +139,7 @@ func (s *DispatcherSuite) TearDownTest(c *check.C) {
 func (s *DispatcherSuite) arvClientProxy(c *check.C) func(*http.Request) (*url.URL, error) {
 	return func(req *http.Request) (*url.URL, error) {
 		if req.URL.Path == "/503" {
+			c.Logf("arvClientProxy: proxying to 503 stub")
 			return url.Parse(s.error503Server.URL)
 		} else {
 			return nil, nil
@@ -186,6 +190,7 @@ func (s *DispatcherSuite) TestDispatchToStubDriver(c *check.C) {
 		delete(waiting, ctr.UUID)
 		if len(waiting) == 100 {
 			// trigger scheduler maxConcurrency limit
+			c.Logf("test: requesting 503 in order to trigger maxConcurrency limit")
 			s.disp.ArvClient.RequestAndDecode(nil, "GET", "503", nil, nil)
 		}
 		if len(waiting) == 0 {
