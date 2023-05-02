@@ -80,7 +80,7 @@ export const moveCollectionPartialToNewCollection = ({ name, description, projec
                     false
                 );
                 dispatch(updateResources([updatedCollection]));
-                dispatch<any>(navigateTo(updatedCollection.uuid))
+                dispatch<any>(navigateTo(updatedCollection.uuid));
 
                 dispatch(dialogActions.CLOSE_DIALOG({ id: COLLECTION_PARTIAL_MOVE_TO_NEW_COLLECTION }));
                 dispatch(snackbarActions.OPEN_SNACKBAR({

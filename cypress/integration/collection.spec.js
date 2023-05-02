@@ -930,7 +930,9 @@ describe('Collection panel tests', function () {
 
                 cy.waitForDom().get('.layout-pane-primary', { timeout: 12000 }).contains('Projects').click();
 
-                cy.get('main').contains(`Files extracted from: ${this.collection.name}`).should('exist');
+                cy.get('main').contains(`Files extracted from: ${this.collection.name}`).click();
+                cy.get('[data-cy=collection-files-panel]')
+                        .and('contain', 'bar');
             });
     });
 
@@ -1102,8 +1104,6 @@ describe('Collection panel tests', function () {
                 cy.get('[data-cy=form-submit-btn]').click();
 
                 cy.waitForDom().get('.layout-pane-primary', { timeout: 12000 }).contains('Projects').click();
-
-                // cy.goToPath(`/collections/${destinationCollection.uuid}`);
 
                 cy.get('main').contains(`File moved from collection ${sourceCollection.name}/bar`).click();
                 cy.get('[data-cy=collection-files-panel]')
