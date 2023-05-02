@@ -21,7 +21,6 @@ import {
 import classnames from 'classnames';
 import { DefaultTransformOrigin } from 'components/popover/helpers';
 import { createTree } from 'models/tree';
-import { DataTableFilters, DataTableFiltersTree } from './data-table-multiselect-tree';
 import { getNodeDescendants } from 'models/tree';
 import debounce from 'lodash/debounce';
 import { green, grey } from '@material-ui/core/colors';
@@ -72,45 +71,28 @@ enum SelectionMode {
     NONE = 'none',
 }
 
-export interface DataTableFilterProps {
+export interface DataTableMultiselectProps {
     name: string;
-    filters: DataTableFilters;
-    onChange?: (filters: DataTableFilters) => void;
-
-    /**
-     * When set to true, only one filter can be selected at a time.
-     */
-    mutuallyExclusive?: boolean;
-
-    /**
-     * By default `all` filters selection means that label should be grayed out.
-     * Use `none` when label is supposed to be grayed out when no filter is selected.
-     */
-    defaultSelection?: SelectionMode;
+    options: string[];
 }
 
-interface DataTableFilterState {
+interface DataTableFMultiselectPopState {
     anchorEl?: HTMLElement;
-    filters: DataTableFilters;
-    prevFilters: DataTableFilters;
 }
 
 export const DataTableMultiselectPopover = withStyles(styles)(
-    class extends React.Component<DataTableFilterProps & WithStyles<CssRules>, DataTableFilterState> {
-        state: DataTableFilterState = {
+    class extends React.Component<DataTableMultiselectProps & WithStyles<CssRules>, DataTableFMultiselectPopState> {
+        state: DataTableFMultiselectPopState = {
             anchorEl: undefined,
-            filters: createTree(),
-            prevFilters: createTree(),
         };
         icon = React.createRef<HTMLElement>();
 
         render() {
-            const { name, classes, defaultSelection = SelectionMode.ALL, children } = this.props;
-            const isActive = getNodeDescendants('')(this.state.filters).some((f) => (defaultSelection === SelectionMode.ALL ? !f.selected : f.selected));
+            const { name, classes, children, options } = this.props;
             return (
                 <>
                     <Tooltip disableFocusListener title='Multiselect Actions'>
-                        <ButtonBase className={classnames([classes.root, { [classes.active]: isActive }])} component='span' onClick={this.open} disableRipple>
+                        <ButtonBase className={classnames(classes.root)} component='span' onClick={this.open} disableRipple>
                             {children}
                             <IconButton component='span' classes={{ root: classes.iconButton }} tabIndex={-1}>
                                 <i className={classnames(['fas fa-sort-down', classes.icon])} data-fa-transform='shrink-3' ref={this.icon} />
@@ -126,16 +108,14 @@ export const DataTableMultiselectPopover = withStyles(styles)(
                     >
                         <Card>
                             <CardContent>
-                                <Typography variant='caption'>{'foo'}</Typography>
+                                <Typography variant='caption'>{'OPTIONS'}</Typography>
                             </CardContent>
-                            <DataTableFiltersTree filters={this.state.filters} mutuallyExclusive={this.props.mutuallyExclusive} onChange={this.onChange} />
-                            {this.props.mutuallyExclusive || (
-                                <CardActions>
-                                    <Button color='primary' variant='outlined' size='small' onClick={this.close}>
-                                        Close
-                                    </Button>
-                                </CardActions>
-                            )}
+                            {options.length && options.map((option, i) => <div key={i}>{option}</div>)}
+                            <CardActions>
+                                <Button color='primary' variant='outlined' size='small' onClick={this.close}>
+                                    Close
+                                </Button>
+                            </CardActions>
                         </Card>
                     </Popover>
                     <this.MountHandler />
@@ -143,34 +123,15 @@ export const DataTableMultiselectPopover = withStyles(styles)(
             );
         }
 
-        static getDerivedStateFromProps(props: DataTableFilterProps, state: DataTableFilterState): DataTableFilterState {
-            return props.filters !== state.prevFilters ? { ...state, filters: props.filters, prevFilters: props.filters } : state;
-        }
-
         open = () => {
             this.setState({ anchorEl: this.icon.current || undefined });
         };
 
-        onChange = (filters) => {
-            this.setState({ filters });
-            if (this.props.mutuallyExclusive) {
-                // Mutually exclusive filters apply immediately
-                const { onChange } = this.props;
-                if (onChange) {
-                    onChange(filters);
-                }
-                this.close();
-            } else {
-                // Non-mutually exclusive filters are debounced
-                this.submit();
-            }
-        };
-
         submit = debounce(() => {
-            const { onChange } = this.props;
-            if (onChange) {
-                onChange(this.state.filters);
-            }
+            // const { onChange } = this.props;
+            // if (onChange) {
+            //     onChange(this.state.filters);
+            // }
         }, 1000);
 
         MountHandler = () => {

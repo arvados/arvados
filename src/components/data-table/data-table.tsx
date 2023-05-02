@@ -141,7 +141,6 @@ export const DataTable = withStyles(styles)(
         }
 
         componentDidUpdate(prevProps: Readonly<DataTableProps<T>>) {
-            // console.log(this.state.checkedList);
             if (!arraysAreCongruent(prevProps.items, this.props.items)) {
                 this.initializeCheckedList(this.props.items);
             }
@@ -240,9 +239,8 @@ export const DataTable = withStyles(styles)(
                         </Tooltip>
                         <DataTableMultiselectPopover
                             name={`${name} filters`}
-                            mutuallyExclusive={column.mutuallyExclusiveFilters}
-                            onChange={(filters) => onFiltersChange && onFiltersChange(filters, column)}
-                            filters={filters}
+                            // mutuallyExclusive={column.mutuallyExclusiveFilters}
+                            options={['one', 'two', 'three']}
                         ></DataTableMultiselectPopover>
                     </div>
                 </TableCell>
