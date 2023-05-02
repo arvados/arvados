@@ -25,12 +25,10 @@ import { getNodeDescendants } from 'models/tree';
 import debounce from 'lodash/debounce';
 import { green, grey } from '@material-ui/core/colors';
 
-export type CssRules = 'root' | 'icon' | 'iconButton' | 'active' | 'checkbox';
+export type CssRules = 'root' | 'icon' | 'iconButton' | 'option';
 
 const styles: StyleRulesCallback<CssRules> = (theme: Theme) => ({
     root: {
-        // border: '1px dashed green',
-        margin: 0,
         borderRadius: '7px',
         '&:hover': {
             backgroundColor: grey[200],
@@ -39,14 +37,7 @@ const styles: StyleRulesCallback<CssRules> = (theme: Theme) => ({
             color: theme.palette.text.primary,
         },
     },
-    active: {
-        color: theme.palette.text.primary,
-        '& $iconButton': {
-            opacity: 1,
-        },
-    },
     icon: {
-        // border: '1px solid red',
         cursor: 'pointer',
         fontSize: 20,
         userSelect: 'none',
@@ -60,20 +51,28 @@ const styles: StyleRulesCallback<CssRules> = (theme: Theme) => ({
         padding: 1,
         paddingBottom: 5,
     },
-    checkbox: {
-        width: 24,
-        height: 24,
+    option: {
+        // border: '1px dashed green',
+        cursor: 'pointer',
+        display: 'flex',
+        padding: '3px 20px',
+        fontSize: '0.875rem',
+        alignItems: 'center',
+        '&:hover': {
+            backgroundColor: 'rgba(0, 0, 0, 0.08)',
+        },
     },
 });
 
-enum SelectionMode {
-    ALL = 'all',
-    NONE = 'none',
-}
+export type DataTableMultiselectOption = {
+    name: string;
+    fn: (checkedList) => void;
+};
 
 export interface DataTableMultiselectProps {
     name: string;
-    options: string[];
+    options: DataTableMultiselectOption[];
+    checkedList: Record<string, boolean>;
 }
 
 interface DataTableFMultiselectPopState {
@@ -88,7 +87,7 @@ export const DataTableMultiselectPopover = withStyles(styles)(
         icon = React.createRef<HTMLElement>();
 
         render() {
-            const { name, classes, children, options } = this.props;
+            const { name, classes, children, options, checkedList } = this.props;
             return (
                 <>
                     <Tooltip disableFocusListener title='Multiselect Actions'>
@@ -108,9 +107,14 @@ export const DataTableMultiselectPopover = withStyles(styles)(
                     >
                         <Card>
                             <CardContent>
-                                <Typography variant='caption'>{'OPTIONS'}</Typography>
+                                <Typography variant='caption'>{'Options'}</Typography>
                             </CardContent>
-                            {options.length && options.map((option, i) => <div key={i}>{option}</div>)}
+                            {options.length &&
+                                options.map((option, i) => (
+                                    <div key={i} className={classes.option} onClick={() => option.fn(checkedList)}>
+                                        {option.name}
+                                    </div>
+                                ))}
                             <CardActions>
                                 <Button color='primary' variant='outlined' size='small' onClick={this.close}>
                                     Close

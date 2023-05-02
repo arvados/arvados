@@ -29,6 +29,7 @@ import { SvgIconProps } from '@material-ui/core/SvgIcon';
 import ArrowDownwardIcon from '@material-ui/icons/ArrowDownward';
 import { createTree } from 'models/tree';
 import arraysAreCongruent from 'validators/arrays-are-congruent';
+import { DataTableMultiselectOption } from '../data-table-multiselect-popover/data-table-multiselect-popover';
 
 export type DataColumns<I, R> = Array<DataColumn<I, R>>;
 
@@ -129,6 +130,12 @@ type DataTableState = {
 
 type DataTableProps<T> = DataTableDataProps<T> & WithStyles<CssRules>;
 
+const multiselectOptions: DataTableMultiselectOption[] = [
+    { name: 'First Option', fn: (checkedList) => console.log('one', checkedList) },
+    { name: 'Second Option', fn: (checkedList) => console.log('two', checkedList) },
+    { name: 'Third Option', fn: (checkedList) => console.log('three', checkedList) },
+];
+
 export const DataTable = withStyles(styles)(
     class Component<T> extends React.Component<DataTableProps<T>> {
         state: DataTableState = {
@@ -186,7 +193,6 @@ export const DataTable = withStyles(styles)(
             const newCheckedList = { ...checkedList };
             newCheckedList[uuid] = !checkedList[uuid];
             this.setState({ checkedList: newCheckedList });
-            // console.log(newCheckedList);
         };
 
         handleInvertSelect = (): void => {
@@ -238,9 +244,9 @@ export const DataTable = withStyles(styles)(
                             <input type='checkbox' className={classes.checkBox} checked={this.state.isSelected} onChange={this.handleSelectorSelect}></input>
                         </Tooltip>
                         <DataTableMultiselectPopover
-                            name={`${name} filters`}
-                            // mutuallyExclusive={column.mutuallyExclusiveFilters}
-                            options={['one', 'two', 'three']}
+                            name={`multiselect options`}
+                            options={multiselectOptions}
+                            checkedList={this.state.checkedList}
                         ></DataTableMultiselectPopover>
                     </div>
                 </TableCell>
