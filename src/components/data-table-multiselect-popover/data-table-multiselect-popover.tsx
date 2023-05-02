@@ -50,13 +50,13 @@ const styles: StyleRulesCallback<CssRules> = (theme: Theme) => ({
         paddingBottom: 5,
     },
     optionsContainer: {
-        padding: '3px 15px',
+        paddingBottom: '3px',
         flex: 1,
     },
     option: {
         cursor: 'pointer',
         display: 'flex',
-        padding: '3px',
+        padding: '3px 15px',
         fontSize: '1rem',
         alignItems: 'center',
         '&:hover': {
