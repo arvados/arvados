@@ -20,10 +20,8 @@ import {
 } from '@material-ui/core';
 import classnames from 'classnames';
 import { DefaultTransformOrigin } from 'components/popover/helpers';
-import { createTree } from 'models/tree';
-import { getNodeDescendants } from 'models/tree';
 import debounce from 'lodash/debounce';
-import { green, grey } from '@material-ui/core/colors';
+import { grey } from '@material-ui/core/colors';
 
 export type CssRules = 'root' | 'icon' | 'iconButton' | 'optionsContainer' | 'option';
 
@@ -110,7 +108,7 @@ export const DataTableMultiselectPopover = withStyles(styles)(
                     >
                         <Card>
                             <CardContent>
-                                <Typography variant='caption'>{'Options'}</Typography>
+                                <Typography variant='caption'>{name}</Typography>
                             </CardContent>
                             <div className={classes.optionsContainer}>
                                 {options.length &&

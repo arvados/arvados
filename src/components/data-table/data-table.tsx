@@ -243,11 +243,7 @@ export const DataTable = withStyles(styles)(
                         <Tooltip title={this.state.isSelected ? 'Deselect All' : 'Select All'}>
                             <input type='checkbox' className={classes.checkBox} checked={this.state.isSelected} onChange={this.handleSelectorSelect}></input>
                         </Tooltip>
-                        <DataTableMultiselectPopover
-                            name={`multiselect options`}
-                            options={multiselectOptions}
-                            checkedList={this.state.checkedList}
-                        ></DataTableMultiselectPopover>
+                        <DataTableMultiselectPopover name={`Options`} options={multiselectOptions} checkedList={this.state.checkedList}></DataTableMultiselectPopover>
                     </div>
                 </TableCell>
             ) : (
