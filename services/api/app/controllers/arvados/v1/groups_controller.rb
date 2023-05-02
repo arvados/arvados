@@ -46,7 +46,6 @@ class Arvados::V1::GroupsController < ApplicationController
                 type: 'boolean', required: false, default: false, description: 'Include past collection versions.',
               }
             })
-    params.delete(:select)
     params
   end
 
@@ -291,9 +290,8 @@ class Arvados::V1::GroupsController < ApplicationController
         request_orders.andand.find { |r| r =~ /^#{klass.table_name}\./i || r !~ /\./ } ||
         klass.default_orders.join(", ")
 
-      @select = nil
       where_conds = filter_by_owner
-      if klass == Collection
+      if klass == Collection && @select.nil?
         @select = klass.selectable_attributes - ["manifest_text", "unsigned_manifest_text"]
       elsif klass == Group
         where_conds = where_conds.merge(group_class: ["project","filter"])

@@ -330,6 +330,27 @@ class Arvados::V1::GroupsControllerTest < ActionController::TestCase
     assert_equal 0, json_response['items'].count
   end
 
+  test 'get group-owned objects with select' do
+    authorize_with :active
+    get :contents, params: {
+      id: groups(:aproject).uuid,
+      limit: 100,
+      format: :json,
+      select: ["uuid", "collections.name"]
+    }
+    assert_response :success
+    assert_equal 17, json_response['items_available']
+    assert_equal 17, json_response['items'].count
+    json_response['items'].each do |item|
+      # Expect collections to have a name field, other items should not.
+      if item["kind"] == "arvados#collection"
+        assert !item["name"].nil?
+      else
+        assert item["name"].nil?
+      end
+    end
+  end
+
   test 'get group-owned objects with additional filter matching nothing' do
     authorize_with :active
     get :contents, params: {

@@ -101,7 +101,7 @@ class ApplicationController < ActionController::Base
   end
 
   def show
-    send_json @object.as_api_response(nil, select: @select)
+    send_json @object.as_api_response(nil, select: select_for_klass(@select, model_class))
   end
 
   def create
@@ -228,6 +228,21 @@ class ApplicationController < ActionController::Base
     @objects = model_class.apply_filters(@objects, @filters)
   end
 
+  def select_for_klass sel, model_class
+    # Filter the select fields to only the ones that apply to the
+    # given class.
+    sel.map do |column|
+      sp = column.split(".")
+      if sp.length == 2 && sp[0] == model_class.table_name
+        sp[1]
+      elsif model_class.selectable_attributes.include? column
+        column
+      else
+        nil
+      end
+    end.compact
+  end
+
   def apply_where_limit_order_params model_class=nil
     model_class ||= self.model_class
     apply_filters model_class
@@ -291,7 +306,7 @@ class ApplicationController < ActionController::Base
         # Map attribute names in @select to real column names, resolve
         # those to fully-qualified SQL column names, and pass the
         # resulting string to the select method.
-        columns_list = model_class.columns_for_attributes(@select).
+        columns_list = model_class.columns_for_attributes(select_for_klass @select, model_class).
           map { |s| "#{ar_table_name}.#{ActiveRecord::Base.connection.quote_column_name s}" }
         @objects = @objects.select(columns_list.join(", "))
       end
@@ -317,7 +332,7 @@ class ApplicationController < ActionController::Base
     return if @limit == 0 || @limit == 1
     model_class ||= self.model_class
     limit_columns = model_class.limit_index_columns_read
-    limit_columns &= model_class.columns_for_attributes(@select) if @select
+    limit_columns &= model_class.columns_for_attributes(select_for_klass @select, model_class) if @select
     return if limit_columns.empty?
     model_class.transaction do
       limit_query = @objects.
@@ -570,10 +585,10 @@ class ApplicationController < ActionController::Base
       :self_link => "",
       :offset => @offset,
       :limit => @limit,
-      :items => @objects.as_api_response(nil, {select: @select})
+      :items => @objects.as_api_response(nil, {select: select_for_klass(@select, model_class)})
     }
     if @extra_included
-      list[:included] = @extra_included.as_api_response(nil, {select: @select})
+      list[:included] = @extra_included.as_api_response(nil, {select: select_for_klass(@select, model_class)})
     end
     case params[:count]
     when nil, '', 'exact'
