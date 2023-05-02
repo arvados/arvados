@@ -166,8 +166,8 @@ describe('Multi-file deletion tests', function () {
                                 cy.get(`[data-id=${testCollection.uuid}]`)
                                     .find('i').click();
 
+                                cy.wait(1000);
                                 cy.contains('bar').closest('[data-action=TOGGLE_ACTIVE]').parent().find('input[type=checkbox]').click();
-
                                 cy.contains('baz').closest('[data-action=TOGGLE_ACTIVE]').parent().find('input[type=checkbox]').click();
 
                                 cy.get('[data-cy=ok-button]').click();
