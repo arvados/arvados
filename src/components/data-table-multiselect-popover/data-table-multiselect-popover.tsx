@@ -25,7 +25,7 @@ import { getNodeDescendants } from 'models/tree';
 import debounce from 'lodash/debounce';
 import { green, grey } from '@material-ui/core/colors';
 
-export type CssRules = 'root' | 'icon' | 'iconButton' | 'option';
+export type CssRules = 'root' | 'icon' | 'iconButton' | 'optionsContainer' | 'option';
 
 const styles: StyleRulesCallback<CssRules> = (theme: Theme) => ({
     root: {
@@ -51,12 +51,15 @@ const styles: StyleRulesCallback<CssRules> = (theme: Theme) => ({
         padding: 1,
         paddingBottom: 5,
     },
+    optionsContainer: {
+        padding: '3px 15px',
+        flex: 1,
+    },
     option: {
-        // border: '1px dashed green',
         cursor: 'pointer',
         display: 'flex',
-        padding: '3px 20px',
-        fontSize: '0.875rem',
+        padding: '3px',
+        fontSize: '1rem',
         alignItems: 'center',
         '&:hover': {
             backgroundColor: 'rgba(0, 0, 0, 0.08)',
@@ -109,12 +112,14 @@ export const DataTableMultiselectPopover = withStyles(styles)(
                             <CardContent>
                                 <Typography variant='caption'>{'Options'}</Typography>
                             </CardContent>
-                            {options.length &&
-                                options.map((option, i) => (
-                                    <div key={i} className={classes.option} onClick={() => option.fn(checkedList)}>
-                                        {option.name}
-                                    </div>
-                                ))}
+                            <div className={classes.optionsContainer}>
+                                {options.length &&
+                                    options.map((option, i) => (
+                                        <div key={i} className={classes.option} onClick={() => option.fn(checkedList)}>
+                                            {option.name}
+                                        </div>
+                                    ))}
+                            </div>
                             <CardActions>
                                 <Button color='primary' variant='outlined' size='small' onClick={this.close}>
                                     Close
