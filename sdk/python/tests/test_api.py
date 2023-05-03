@@ -27,9 +27,6 @@ from arvados.api import (
     normalize_api_kwargs,
     api_kwargs_from_config,
     OrderedJsonModel,
-    RETRY_DELAY_INITIAL,
-    RETRY_DELAY_BACKOFF,
-    RETRY_COUNT,
 )
 from .arvados_testutil import fake_httplib2_response, queue_with
 
@@ -341,7 +338,7 @@ class ArvadosApiTest(run_test_server.TestCaseWithServers):
                 api_client(*args, insecure=True)
 
 
-class RetryREST(unittest.TestCase):
+class PreCloseSocketTestCase(unittest.TestCase):
     def setUp(self):
         self.api = arvados.api('v1')
         self.assertTrue(hasattr(self.api._http, 'orig_http_request'),
@@ -352,59 +349,6 @@ class RetryREST(unittest.TestCase):
         self.api._http.orig_http_request = mock.MagicMock()
         # All requests succeed by default. Tests override as needed.
         self.api._http.orig_http_request.return_value = self.request_success
-
-    @mock.patch('time.sleep')
-    def test_socket_error_retry_get(self, sleep):
-        self.api._http.orig_http_request.side_effect = (
-            socket.error('mock error'),
-            self.request_success,
-        )
-        self.assertEqual(self.api.users().current().execute(),
-                         self.mock_response)
-        self.assertGreater(self.api._http.orig_http_request.call_count, 1,
-                           "client got the right response without retrying")
-        self.assertEqual(sleep.call_args_list,
-                         [mock.call(RETRY_DELAY_INITIAL)])
-
-    @mock.patch('time.sleep')
-    def test_same_automatic_request_id_on_retry(self, sleep):
-        self.api._http.orig_http_request.side_effect = (
-            socket.error('mock error'),
-            self.request_success,
-        )
-        self.api.users().current().execute()
-        calls = self.api._http.orig_http_request.call_args_list
-        self.assertEqual(len(calls), 2)
-        self.assertEqual(
-            calls[0][1]['headers']['X-Request-Id'],
-            calls[1][1]['headers']['X-Request-Id'])
-        self.assertRegex(calls[0][1]['headers']['X-Request-Id'], r'^req-[a-z0-9]{20}$')
-
-    @mock.patch('time.sleep')
-    def test_provided_request_id_on_retry(self, sleep):
-        self.api.request_id='fake-request-id'
-        self.api._http.orig_http_request.side_effect = (
-            socket.error('mock error'),
-            self.request_success,
-        )
-        self.api.users().current().execute()
-        calls = self.api._http.orig_http_request.call_args_list
-        self.assertEqual(len(calls), 2)
-        for call in calls:
-            self.assertEqual(call[1]['headers']['X-Request-Id'], 'fake-request-id')
-
-    @mock.patch('time.sleep')
-    def test_socket_error_retry_delay(self, sleep):
-        self.api._http.orig_http_request.side_effect = socket.error('mock')
-        self.api._http._retry_count = 3
-        with self.assertRaises(socket.error):
-            self.api.users().current().execute()
-        self.assertEqual(self.api._http.orig_http_request.call_count, 4)
-        self.assertEqual(sleep.call_args_list, [
-            mock.call(RETRY_DELAY_INITIAL),
-            mock.call(RETRY_DELAY_INITIAL * RETRY_DELAY_BACKOFF),
-            mock.call(RETRY_DELAY_INITIAL * RETRY_DELAY_BACKOFF**2),
-        ])
 
     @mock.patch('time.time', side_effect=[i*2**20 for i in range(99)])
     def test_close_old_connections_non_retryable(self, sleep):
@@ -428,18 +372,6 @@ class RetryREST(unittest.TestCase):
         self.api.users().create(body={}).execute()
         for c in mock_conns.values():
             self.assertEqual(c.close.call_count, expect)
-
-    @mock.patch('time.sleep')
-    def test_socket_error_no_retry_post(self, sleep):
-        self.api._http.orig_http_request.side_effect = (
-            socket.error('mock error'),
-            self.request_success,
-        )
-        with self.assertRaises(socket.error):
-            self.api.users().create(body={}).execute()
-        self.assertEqual(self.api._http.orig_http_request.call_count, 1,
-                         "client should try non-retryable method exactly once")
-        self.assertEqual(sleep.call_args_list, [])
 
 
 if __name__ == '__main__':
