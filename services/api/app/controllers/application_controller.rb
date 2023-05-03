@@ -229,6 +229,7 @@ class ApplicationController < ActionController::Base
   end
 
   def select_for_klass sel, model_class
+    return nil if sel.nil?
     # Filter the select fields to only the ones that apply to the
     # given class.
     sel.map do |column|
