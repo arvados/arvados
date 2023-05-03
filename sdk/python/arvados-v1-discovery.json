@@ -3055,6 +3055,12 @@
               "description": "",
               "location": "query"
             },
+            "select": {
+              "type": "array",
+              "description": "Attributes of each object to return in the response.",
+              "required": false,
+              "location": "query"
+            },
             "distinct": {
               "type": "boolean",
               "required": false,
