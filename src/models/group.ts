@@ -21,8 +21,8 @@ export interface GroupResource extends TrashableResource, ResourceWithProperties
 
 export enum GroupClass {
     PROJECT = 'project',
-    FILTER  = 'filter',
-    ROLE  = 'role',
+    FILTER = 'filter',
+    ROLE = 'role',
 }
 
 export enum BuiltinGroups {
@@ -40,3 +40,18 @@ export const isBuiltinGroup = (uuid: string) => {
     const parts = match ? match[0].split('-') : [];
     return parts.length === 3 && parts[1] === ResourceObjectType.GROUP && Object.values<string>(BuiltinGroups).includes(parts[2]);
 };
+
+export const selectedFieldsOfGroup = [
+    "uuid",
+    "name",
+    "group_class",
+    "description",
+    "properties",
+    "writable_by",
+    "can_write",
+    "can_manage",
+    "trash_at",
+    "delete_at",
+    "is_trashed",
+    "frozen_by_uuid"
+];

@@ -38,6 +38,9 @@ import {
     buildProcessStatusFilters
 } from 'store/resource-type-filters/resource-type-filters';
 import { updatePublicFavorites } from 'store/public-favorites/public-favorites-actions';
+import { selectedFieldsOfGroup } from 'models/group';
+import { defaultCollectionSelectedFields } from 'models/collection';
+import { containerRequestFieldsNoMounts } from 'models/container-request';
 
 export class ProjectPanelMiddlewareService extends DataExplorerMiddlewareService {
     constructor(private services: ServiceRepository, id: string) {
@@ -82,8 +85,8 @@ export const loadMissingProcessesInformation = (resources: GroupContentsResource
     async (dispatch: Dispatch) => {
         const containerUuids = resources.reduce((uuids, resource) => {
             return resource.kind === ResourceKind.CONTAINER_REQUEST &&
-                    resource.containerUuid &&
-                    !uuids.includes(resource.containerUuid)
+                resource.containerUuid &&
+                !uuids.includes(resource.containerUuid)
                 ? [...uuids, resource.containerUuid]
                 : uuids;
         }, [] as string[]);
@@ -105,7 +108,8 @@ export const getParams = (dataExplorer: DataExplorer, isProjectTrashed: boolean)
     ...dataExplorerToListParams(dataExplorer),
     order: getOrder(dataExplorer),
     filters: getFilters(dataExplorer),
-    includeTrash: isProjectTrashed
+    includeTrash: isProjectTrashed,
+    select: selectedFieldsOfGroup.concat(defaultCollectionSelectedFields, containerRequestFieldsNoMounts)
 });
 
 export const getFilters = (dataExplorer: DataExplorer) => {
