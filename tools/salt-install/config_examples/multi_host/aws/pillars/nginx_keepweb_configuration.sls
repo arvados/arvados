@@ -12,4 +12,4 @@ nginx:
       ### STREAMS
       http:
         upstream collections_downloads_upstream:
-          - server: 'localhost:9002 fail_timeout=10s'
+          - server: '__KEEPWEB_INT_IP__:9002 fail_timeout=10s'

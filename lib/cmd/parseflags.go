@@ -8,7 +8,12 @@ import (
 	"flag"
 	"fmt"
 	"io"
+	"reflect"
 )
+
+// Hack to enable checking whether a given FlagSet's Usage method is
+// the (private) default one.
+var defaultFlagSet = flag.NewFlagSet("none", flag.ContinueOnError)
 
 // ParseFlags calls f.Parse(args) and prints appropriate error/help
 // messages to stderr.
@@ -34,7 +39,12 @@ func ParseFlags(f FlagSet, prog string, args []string, positional string, stderr
 		}
 		return true, 0
 	case flag.ErrHelp:
-		if f, ok := f.(*flag.FlagSet); ok && f.Usage != nil {
+		// Use our own default usage func, not the one
+		// provided by the flag pkg, if the caller hasn't set
+		// one. (We use reflect to determine whether f.Usage
+		// is the private defaultUsage func that
+		// flag.NewFlagSet uses.)
+		if f, ok := f.(*flag.FlagSet); ok && f.Usage != nil && reflect.ValueOf(f.Usage).String() != reflect.ValueOf(defaultFlagSet.Usage).String() {
 			f.SetOutput(stderr)
 			f.Usage()
 		} else {
