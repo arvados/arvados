@@ -221,9 +221,10 @@ type Cluster struct {
 		EmailFrom                      string
 	}
 	SystemLogs struct {
-		LogLevel                string
-		Format                  string
-		MaxRequestLogParamsSize int
+		LogLevel                  string
+		Format                    string
+		MaxRequestLogParamsSize   int
+		RequestQueueDumpDirectory string
 	}
 	TLS struct {
 		Certificate string
