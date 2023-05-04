@@ -466,6 +466,16 @@ class ContainerRequestTest < ActiveSupport::TestCase
     assert_operator shared_grandchild.priority, :<=, grandchildren[2].priority
     assert_operator shared_grandchild.priority, :<=, children[2].priority
     assert_operator shared_grandchild.priority, :<=, parents[2].priority
+
+    # cancelling the most recent toplevel container should
+    # reprioritize all of its descendants (except the shared
+    # grandchild) to zero
+    toplevel_crs[2].update_attributes!(priority: 0)
+    (parents + children + grandchildren + [shared_grandchild]).map(&:reload)
+    assert_operator 0, :==, parents[2].priority
+    assert_operator 0, :==, children[2].priority
+    assert_operator 0, :==, grandchildren[2].priority
+    assert_operator shared_grandchild.priority, :==, grandchildren[0].priority
   end
 
   [

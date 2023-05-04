@@ -2,6 +2,8 @@
 #
 # SPDX-License-Identifier: AGPL-3.0
 
+require 'update_priorities'
+
 class Arvados::V1::ContainersController < ApplicationController
   accept_attribute_as_json :environment, Hash
   accept_attribute_as_json :mounts, Hash
@@ -26,6 +28,22 @@ class Arvados::V1::ContainersController < ApplicationController
       end
     end
     show
+  end
+
+  def update
+    if (resource_attrs.keys - [:cost, :gateway_address, :output_properties, :progress, :runtime_status]).empty?
+      # If no attributes are being updated besides these, there are no
+      # cascading changes to other rows/tables, so we should just use
+      # row locking.
+      super
+    else
+      Container.transaction do
+        # Get locks ahead of time to avoid deadlock in cascading priority
+        # update
+        row_lock_for_priority_update @object.uuid
+        super
+      end
+    end
   end
 
   def find_objects_for_index

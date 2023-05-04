@@ -130,6 +130,7 @@ class Container < ArvadosModel
   # user-assigned priority and request creation time.
   def update_priority!
     update_priorities uuid
+    reload
   end
 
   # Create a new container (or find an existing one) to satisfy the
