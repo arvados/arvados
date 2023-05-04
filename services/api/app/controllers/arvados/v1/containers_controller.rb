@@ -2,6 +2,8 @@
 #
 # SPDX-License-Identifier: AGPL-3.0
 
+require 'update_priorities'
+
 class Arvados::V1::ContainersController < ApplicationController
   accept_attribute_as_json :environment, Hash
   accept_attribute_as_json :mounts, Hash
@@ -31,15 +33,14 @@ class Arvados::V1::ContainersController < ApplicationController
   def update
     if (resource_attrs.keys - [:cost, :gateway_address, :output_properties, :progress, :runtime_status]).empty?
       # If no attributes are being updated besides these, there are no
-      # cascading changes to other rows/tables, so we should just use
-      # row locking.
-      @object.reload(lock: true)
+      # cascading changes to other rows/tables, the only lock will the
+      # single row lock on SQL UPDATE.
       super
     else
-      # Lock containers table to avoid deadlock in cascading priority
-      # update (see #20240)
       Container.transaction do
-        ActiveRecord::Base.connection.execute "LOCK TABLE containers IN EXCLUSIVE MODE"
+        # Get locks ahead of time to avoid deadlock in cascading priority
+        # update
+        row_lock_for_priority_update @object.uuid
         super
       end
     end
@@ -52,9 +53,8 @@ class Arvados::V1::ContainersController < ApplicationController
       @objects = @objects.select(:id, :uuid, :state, :priority, :auth_uuid, :locked_by_uuid, :lock_count)
       @select = %w(uuid state priority auth_uuid locked_by_uuid)
     elsif action_name == 'update_priority'
-      # We're going to reload(lock: true) in the handler, which will
-      # select all attributes, but will fail if we don't select :id
-      # now.
+      # We're going to reload in update_priority!, which will select
+      # all attributes, but will fail if we don't select :id now.
       @objects = @objects.select(:id, :uuid)
     end
   end
@@ -70,13 +70,8 @@ class Arvados::V1::ContainersController < ApplicationController
   end
 
   def update_priority
-    # Lock containers table to avoid deadlock in cascading priority update (see #20240)
-    Container.transaction do
-      ActiveRecord::Base.connection.execute "LOCK TABLE containers IN EXCLUSIVE MODE"
-      @object.reload(lock: true)
-      @object.update_priority!
-      show
-    end
+    @object.update_priority!
+    show
   end
 
   def current

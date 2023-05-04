@@ -2,6 +2,8 @@
 #
 # SPDX-License-Identifier: AGPL-3.0
 
+require 'update_priorities'
+
 class Arvados::V1::ContainerRequestsController < ApplicationController
   accept_attribute_as_json :environment, Hash
   accept_attribute_as_json :mounts, Hash
@@ -29,25 +31,17 @@ class Arvados::V1::ContainerRequestsController < ApplicationController
       })
   end
 
-  def create
-    # Lock containers table to avoid deadlock in cascading priority update (see #20240)
-    Container.transaction do
-      ActiveRecord::Base.connection.execute "LOCK TABLE containers IN EXCLUSIVE MODE"
-      super
-    end
-  end
-
   def update
-    if (resource_attrs.keys - [:owner_uuid, :name, :description, :properties]).empty?
+    if (resource_attrs.keys - [:owner_uuid, :name, :description, :properties]).empty? or @object.container_uuid.nil?
       # If no attributes are being updated besides these, there are no
-      # cascading changes to other rows/tables, so we should just use
-      # row locking.
-      @object.reload(lock: true)
+      # cascading changes to other rows/tables, the only lock will be
+      # the single row lock on SQL UPDATE.
       super
     else
-      # Lock containers table to avoid deadlock in cascading priority update (see #20240)
+      # Get locks ahead of time to avoid deadlock in cascading priority
+      # update
       Container.transaction do
-        ActiveRecord::Base.connection.execute "LOCK TABLE containers IN EXCLUSIVE MODE"
+        row_lock_for_priority_update @object.container_uuid
         super
       end
     end

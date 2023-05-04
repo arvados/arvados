@@ -562,11 +562,8 @@ class ContainerRequest < ArvadosModel
 
   def update_priority
     return unless saved_change_to_state? || saved_change_to_priority? || saved_change_to_container_uuid?
-    act_as_system_user do
-      Container.
-        where('uuid in (?)', [container_uuid_before_last_save, self.container_uuid].compact).
-        map(&:update_priority!)
-    end
+    update_priorities container_uuid_before_last_save if !container_uuid_before_last_save.nil? and container_uuid_before_last_save != self.container_uuid
+    update_priorities self.container_uuid if self.container_uuid
   end
 
   def set_requesting_container_uuid

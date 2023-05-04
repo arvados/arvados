@@ -62,10 +62,10 @@ with
      permission (permission origin is self).
   */
   perm_from_start(perm_origin_uuid, target_uuid, val, traverse_owned) as (
-    
+
 WITH RECURSIVE
         traverse_graph(origin_uuid, target_uuid, val, traverse_owned, starting_set) as (
-            
+
              values (perm_origin_uuid, starting_uuid, starting_perm,
                     should_traverse_owned(starting_uuid, starting_perm),
                     (perm_origin_uuid = starting_uuid or starting_uuid not like '_____-tpzed-_______________'))
@@ -107,10 +107,10 @@ case (edges.edge_id = perm_edge_id)
        can_manage permission granted by ownership.
   */
   additional_perms(perm_origin_uuid, target_uuid, val, traverse_owned) as (
-    
+
 WITH RECURSIVE
         traverse_graph(origin_uuid, target_uuid, val, traverse_owned, starting_set) as (
-            
+
     select edges.tail_uuid as origin_uuid, edges.head_uuid as target_uuid, edges.val,
            should_traverse_owned(edges.head_uuid, edges.val),
            edges.head_uuid like '_____-j7d0g-_______________'
@@ -191,6 +191,71 @@ $$;
 
 
 --
+-- Name: container_priority(character varying, bigint, character varying); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.container_priority(for_container_uuid character varying, inherited bigint, inherited_from character varying) RETURNS bigint
+    LANGUAGE sql
+    AS $$
+/* Determine the priority of an individual container.
+   The "inherited" priority comes from the path we followed from the root, the parent container
+   priority hasn't been updated in the table yet but we need to behave it like it has been.
+*/
+select coalesce(max(case when containers.uuid = inherited_from then inherited
+                         when containers.priority is not NULL then containers.priority
+                         else container_requests.priority * 1125899906842624::bigint - (extract(epoch from container_requests.created_at)*1000)::bigint
+                    end), 0) from
+    container_requests left outer join containers on container_requests.requesting_container_uuid = containers.uuid
+    where container_requests.container_uuid = for_container_uuid and container_requests.state = 'Committed' and container_requests.priority > 0;
+$$;
+
+
+--
+-- Name: container_tree(character varying); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.container_tree(for_container_uuid character varying) RETURNS TABLE(pri_container_uuid character varying)
+    LANGUAGE sql
+    AS $$
+/* A lighter weight version of the update_priorities query that only returns the containers in a tree,
+   used by SELECT FOR UPDATE.
+*/
+with recursive tab(upd_container_uuid) as (
+  select for_container_uuid
+union
+  select containers.uuid
+  from (tab join container_requests on tab.upd_container_uuid = container_requests.requesting_container_uuid) as child_requests
+  join containers on child_requests.container_uuid = containers.uuid
+  where containers.state in ('Queued', 'Locked', 'Running')
+)
+select upd_container_uuid from tab;
+$$;
+
+
+--
+-- Name: container_tree_priorities(character varying); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.container_tree_priorities(for_container_uuid character varying) RETURNS TABLE(pri_container_uuid character varying, upd_priority bigint)
+    LANGUAGE sql
+    AS $$
+/* Calculate the priorities of all containers starting from for_container_uuid.
+   This traverses the process tree downward and calls container_priority for each container
+   and returns a table of container uuids and their new priorities.
+*/
+with recursive tab(upd_container_uuid, upd_priority) as (
+  select for_container_uuid, container_priority(for_container_uuid, 0, '')
+union
+  select containers.uuid, container_priority(containers.uuid, child_requests.upd_priority, child_requests.upd_container_uuid)
+  from (tab join container_requests on tab.upd_container_uuid = container_requests.requesting_container_uuid) as child_requests
+  join containers on child_requests.container_uuid = containers.uuid
+  where containers.state in ('Queued', 'Locked', 'Running')
+)
+select upd_container_uuid, upd_priority from tab;
+$$;
+
+
+--
 -- Name: project_subtree_with_is_frozen(character varying, boolean); Type: FUNCTION; Schema: public; Owner: -
 --
 
@@ -253,6 +318,8 @@ $$;
 
 
 SET default_tablespace = '';
+
+SET default_with_oids = false;
 
 --
 -- Name: api_client_authorizations; Type: TABLE; Schema: public; Owner: -
@@ -3187,6 +3254,5 @@ INSERT INTO "schema_migrations" (version) VALUES
 ('20220726034131'),
 ('20220804133317'),
 ('20221219165512'),
-('20221230155924');
-
-
+('20221230155924'),
+('20230503224107');
