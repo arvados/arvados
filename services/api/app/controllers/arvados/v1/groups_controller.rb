@@ -297,6 +297,12 @@ class Arvados::V1::GroupsController < ApplicationController
         where_conds = where_conds.merge(group_class: ["project","filter"])
       end
 
+      # Make signed manifest_text not selectable because controller
+      # currently doesn't know to sign it.
+      if @select
+        @select = @select - ["manifest_text"]
+      end
+
       @filters = request_filters.map do |col, op, val|
         if !col.index('.')
           [col, op, val]
