@@ -30,7 +30,7 @@ from arvados.api import (
     api_kwargs_from_config,
     OrderedJsonModel,
 )
-from .arvados_testutil import fake_httplib2_response, queue_with
+from .arvados_testutil import fake_httplib2_response, mock_api_responses, queue_with
 
 if not mimetypes.inited:
     mimetypes.init()
@@ -38,6 +38,7 @@ if not mimetypes.inited:
 class ArvadosApiTest(run_test_server.TestCaseWithServers):
     MAIN_SERVER = {}
     ERROR_HEADERS = {'Content-Type': mimetypes.types_map['.json']}
+    RETRIED_4XX = frozenset([408, 409, 422, 423])
 
     def api_error_response(self, code, *errors):
         return (fake_httplib2_response(code, **self.ERROR_HEADERS),
@@ -148,6 +149,54 @@ class ArvadosApiTest(run_test_server.TestCaseWithServers):
         api = arvados.api('v1', timeout=1234)
         self.assertEqual(api._http.timeout, 1234,
             "Requested timeout value was 1234")
+
+    def test_4xx_retried(self):
+        client = arvados.api('v1')
+        for code in self.RETRIED_4XX:
+            name = f'retried #{code}'
+            with self.subTest(name), mock.patch('time.sleep'):
+                expected = {'username': name}
+                with mock_api_responses(
+                        client,
+                        json.dumps(expected),
+                        [code, code, 200],
+                        self.ERROR_HEADERS,
+                        'orig_http_request',
+                ):
+                    actual = client.users().current().execute()
+                self.assertEqual(actual, expected)
+
+    def test_4xx_not_retried(self):
+        client = arvados.api('v1', num_retries=3)
+        for code in [400, 401, 404]:
+            with self.subTest(f'error {code}'), mock.patch('time.sleep'):
+                with mock_api_responses(
+                        client,
+                        b'{}',
+                        [code, 200],
+                        self.ERROR_HEADERS,
+                        'orig_http_request',
+                ), self.assertRaises(arvados.errors.ApiError) as exc_check:
+                    client.users().current().execute()
+                response = exc_check.exception.args[0]
+                self.assertEqual(response.status, code)
+                self.assertEqual(response.get('status'), str(code))
+
+    def test_4xx_raised_after_retry_exhaustion(self):
+        client = arvados.api('v1', num_retries=1)
+        for code in self.RETRIED_4XX:
+            with self.subTest(f'failed {code}'), mock.patch('time.sleep'):
+                with mock_api_responses(
+                        client,
+                        b'{}',
+                        [code, code, code, 200],
+                        self.ERROR_HEADERS,
+                        'orig_http_request',
+                ), self.assertRaises(arvados.errors.ApiError) as exc_check:
+                    client.users().current().execute()
+                response = exc_check.exception.args[0]
+                self.assertEqual(response.status, code)
+                self.assertEqual(response.get('status'), str(code))
 
     def test_ordered_json_model(self):
         mock_responses = {

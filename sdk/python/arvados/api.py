@@ -32,6 +32,7 @@ from apiclient import discovery as apiclient_discovery
 from apiclient import errors as apiclient_errors
 from . import config
 from . import errors
+from . import retry
 from . import util
 from . import cache
 
@@ -45,6 +46,10 @@ MAX_IDLE_CONNECTION_DURATION = 30
 RETRY_DELAY_INITIAL = 0
 RETRY_DELAY_BACKOFF = 0
 RETRY_COUNT = 0
+
+# An unused HTTP 5xx status code to request a retry internally.
+# See _intercept_http_request. This should not be user-visible.
+_RETRY_4XX_STATUS = 545
 
 if sys.version_info >= (3,):
     httplib2.SSLHandshakeError = None
@@ -76,10 +81,15 @@ def _retry_request(http, num_retries, *args, **kwargs):
     except AttributeError:
         # `http` client object does not have a `num_retries` attribute.
         # It apparently hasn't gone through _patch_http_request, possibly
-        # because this isn't an Arvados API client. We need to continue on to
+        # because this isn't an Arvados API client. Pass through to
         # avoid interfering with other Google API clients.
-        pass
-    return _orig_retry_request(http, num_retries, *args, **kwargs)
+        return _orig_retry_request(http, num_retries, *args, **kwargs)
+    response, body = _orig_retry_request(http, num_retries, *args, **kwargs)
+    # If _intercept_http_request ran out of retries for a 4xx response,
+    # restore the original status code.
+    if response.status == _RETRY_4XX_STATUS:
+        response.status = int(response['status'])
+    return (response, body)
 apiclient.http._retry_request = _retry_request
 
 def _intercept_http_request(self, uri, method="GET", headers={}, **kwargs):
@@ -103,9 +113,15 @@ def _intercept_http_request(self, uri, method="GET", headers={}, **kwargs):
 
         self._last_request_time = time.time()
         try:
-            return self.orig_http_request(uri, method, headers=headers, **kwargs)
+            response, body = self.orig_http_request(uri, method, headers=headers, **kwargs)
         except ssl.SSLCertVerificationError as e:
             raise ssl.SSLCertVerificationError(e.args[0], "Could not connect to %s\n%s\nPossible causes: remote SSL/TLS certificate expired, or was issued by an untrusted certificate authority." % (uri, e)) from None
+        # googleapiclient only retries 403, 429, and 5xx status codes.
+        # If we got another 4xx status that we want to retry, convert it into
+        # 5xx so googleapiclient handles it the way we want.
+        if response.status in retry._HTTP_CAN_RETRY and response.status < 500:
+            response.status = _RETRY_4XX_STATUS
+        return (response, body)
     except Exception as e:
         # Prepend "[request_id] " to the error message, which we
         # assume is the first string argument passed to the exception

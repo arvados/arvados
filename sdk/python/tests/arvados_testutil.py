@@ -60,10 +60,10 @@ def mock_responses(body, *codes, **headers):
     return mock.patch('httplib2.Http.request', side_effect=queue_with((
         (fake_httplib2_response(code, **headers), body) for code in codes)))
 
-def mock_api_responses(api_client, body, codes, headers={}):
+def mock_api_responses(api_client, body, codes, headers={}, method='request'):
     if not isinstance(body, bytes) and hasattr(body, 'encode'):
         body = body.encode()
-    return mock.patch.object(api_client._http, 'request', side_effect=queue_with((
+    return mock.patch.object(api_client._http, method, side_effect=queue_with((
         (fake_httplib2_response(code, **headers), body) for code in codes)))
 
 def str_keep_locator(s):
