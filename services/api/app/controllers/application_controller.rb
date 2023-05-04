@@ -228,7 +228,7 @@ class ApplicationController < ActionController::Base
     @objects = model_class.apply_filters(@objects, @filters)
   end
 
-  def select_for_klass sel, model_class
+  def select_for_klass sel, model_class, raise_unknown=true
     return nil if sel.nil?
     # Filter the select fields to only the ones that apply to the
     # given class.
@@ -238,6 +238,8 @@ class ApplicationController < ActionController::Base
         sp[1]
       elsif model_class.selectable_attributes.include? column
         column
+      elsif raise_unknown
+        raise ArgumentError.new("Invalid attribute '#{column}' of #{model_class.name} in select parameter")
       else
         nil
       end
@@ -495,12 +497,23 @@ class ApplicationController < ActionController::Base
     @orders = []
     @filters = []
     @objects = nil
+
+    # This is a little hacky but sometimes the fields the user wants
+    # to selecting on are unrelated to the object being loaded here,
+    # for example groups#contents, so filter the fields that will be
+    # used in find_objects_for_index and then reset it below.  In some
+    # cases, code that modifies the @select list needs to set
+    # @preserve_select.
+    @preserve_select = @select
+    @select = select_for_klass(@select, self.model_class, false)
+
     find_objects_for_index
     if with_lock && Rails.configuration.API.LockBeforeUpdate
       @object = @objects.lock.first
     else
       @object = @objects.first
     end
+    @select = @preserve_select
   end
 
   def nullable_attributes

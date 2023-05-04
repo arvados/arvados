@@ -259,6 +259,20 @@ class Arvados::V1::GroupsController < ApplicationController
       end
     end
 
+    # Check that any fields in @select are valid for at least one class
+    if @select
+      all_attributes = []
+      klasses.each do |klass|
+        all_attributes.concat klass.selectable_attributes
+      end
+      @select.each do |check|
+        if !all_attributes.include? check
+          raise ArgumentError.new "Invalid attribute '#{check}' in select"
+        end
+      end
+    end
+    any_selections = @select
+
     included_by_uuid = {}
 
     seen_last_class = false
@@ -289,6 +303,8 @@ class Arvados::V1::GroupsController < ApplicationController
       request_order =
         request_orders.andand.find { |r| r =~ /^#{klass.table_name}\./i || r !~ /\./ } ||
         klass.default_orders.join(", ")
+
+      @select = select_for_klass any_selections, klass, false
 
       where_conds = filter_by_owner
       if klass == Collection && @select.nil?

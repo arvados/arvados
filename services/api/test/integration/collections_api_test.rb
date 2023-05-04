@@ -95,7 +95,7 @@ class CollectionsApiTest < ActionDispatch::IntegrationTest
       },
       headers: auth(:active)
     assert_response 422
-    assert_match(/ArgumentError: Attribute selection list cannot be empty/, json_response['errors'].join(' '))
+    assert_match(/Invalid attribute.*bogus/, json_response['errors'].join(' '))
   end
 
   test "get index with select= (invalid attribute type) responds 422" do
@@ -106,7 +106,7 @@ class CollectionsApiTest < ActionDispatch::IntegrationTest
       },
       headers: auth(:active)
     assert_response 422
-    assert_match(/ArgumentError: Attribute selection list cannot be empty/, json_response['errors'].join(' '))
+    assert_match(/Invalid attribute.*bogus/, json_response['errors'].join(' '))
   end
 
   test "controller 404 response is json" do
