@@ -12,10 +12,12 @@ import (
 	"io"
 	"net"
 	"net/http"
+	"net/http/httptest"
 	_ "net/http/pprof"
 	"net/url"
 	"os"
 	"strings"
+	"time"
 
 	"git.arvados.org/arvados.git/lib/cmd"
 	"git.arvados.org/arvados.git/lib/config"
@@ -44,6 +46,8 @@ type command struct {
 	svcName    arvados.ServiceName
 	ctx        context.Context // enables tests to shutdown service; no public API yet
 }
+
+var requestQueueDumpCheckInterval = time.Minute
 
 // Command returns a cmd.Handler that loads site config, calls
 // newHandler with the current cluster and node configs, and brings up
@@ -189,11 +193,61 @@ func (c *command) RunCommand(prog string, args []string, stdin io.Reader, stdout
 		<-handler.Done()
 		srv.Close()
 	}()
+	go c.requestQueueDumpCheck(cluster, prog, reg, &srv.Server, logger)
 	err = srv.Wait()
 	if err != nil {
 		return 1
 	}
 	return 0
+}
+
+// If SystemLogs.RequestQueueDumpDirectory is set, monitor the
+// server's incoming HTTP request queue size. When it exceeds 90% of
+// API.MaxConcurrentRequests, write the /_inspect/requests data to a
+// JSON file in the specified directory.
+func (c *command) requestQueueDumpCheck(cluster *arvados.Cluster, prog string, reg *prometheus.Registry, srv *http.Server, logger logrus.FieldLogger) {
+	outdir := cluster.SystemLogs.RequestQueueDumpDirectory
+	if outdir == "" || cluster.ManagementToken == "" {
+		return
+	}
+	logger = logger.WithField("worker", "RequestQueueDump")
+	outfile := outdir + "/" + prog + "-requests.json"
+	for range time.NewTicker(requestQueueDumpCheckInterval).C {
+		mfs, err := reg.Gather()
+		if err != nil {
+			logger.WithError(err).Warn("error getting metrics")
+			continue
+		}
+		dump := false
+		for _, mf := range mfs {
+			if mf.Name != nil && *mf.Name == "arvados_concurrent_requests" && len(mf.Metric) == 1 {
+				n := int(mf.Metric[0].GetGauge().GetValue())
+				if n > 0 && n >= cluster.API.MaxConcurrentRequests*9/10 {
+					dump = true
+					break
+				}
+			}
+		}
+		if dump {
+			req, err := http.NewRequest("GET", "/_inspect/requests", nil)
+			if err != nil {
+				logger.WithError(err).Warn("error in http.NewRequest")
+				continue
+			}
+			req.Header.Set("Authorization", "Bearer "+cluster.ManagementToken)
+			resp := httptest.NewRecorder()
+			srv.Handler.ServeHTTP(resp, req)
+			if code := resp.Result().StatusCode; code != http.StatusOK {
+				logger.WithField("StatusCode", code).Warn("error getting /_inspect/requests")
+				continue
+			}
+			err = os.WriteFile(outfile, resp.Body.Bytes(), 0777)
+			if err != nil {
+				logger.WithError(err).Warn("error writing file")
+				continue
+			}
+		}
+	}
 }
 
 // If an incoming request's target vhost has an embedded collection

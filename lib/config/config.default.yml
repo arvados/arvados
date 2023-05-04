@@ -442,6 +442,15 @@ Clusters:
       # params_truncated.
       MaxRequestLogParamsSize: 2000
 
+      # In all services except RailsAPI, periodically check whether
+      # the incoming HTTP request queue is nearly full (see
+      # MaxConcurrentRequests) and, if so, write a snapshot of the
+      # request queue to {service}-requests.json in the specified
+      # directory.
+      #
+      # Leave blank to disable.
+      RequestQueueDumpDirectory: ""
+
     Collections:
 
       # Enable access controls for data stored in Keep. This should
