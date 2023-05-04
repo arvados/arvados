@@ -28,23 +28,6 @@ class Arvados::V1::ContainersController < ApplicationController
     show
   end
 
-  def update
-    if (resource_attrs.keys - [:cost, :gateway_address, :output_properties, :progress, :runtime_status]).empty?
-      # If no attributes are being updated besides these, there are no
-      # cascading changes to other rows/tables, so we should just use
-      # row locking.
-      @object.reload(lock: true)
-      super
-    else
-      # Lock containers table to avoid deadlock in cascading priority
-      # update (see #20240)
-      Container.transaction do
-        ActiveRecord::Base.connection.execute "LOCK TABLE containers IN EXCLUSIVE MODE"
-        super
-      end
-    end
-  end
-
   def find_objects_for_index
     super
     if action_name == 'lock' || action_name == 'unlock'
@@ -70,13 +53,8 @@ class Arvados::V1::ContainersController < ApplicationController
   end
 
   def update_priority
-    # Lock containers table to avoid deadlock in cascading priority update (see #20240)
-    Container.transaction do
-      ActiveRecord::Base.connection.execute "LOCK TABLE containers IN EXCLUSIVE MODE"
-      @object.reload(lock: true)
-      @object.update_priority!
-      show
-    end
+    @object.update_priority!
+    show
   end
 
   def current

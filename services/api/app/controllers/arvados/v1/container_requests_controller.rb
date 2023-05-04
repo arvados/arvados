@@ -29,27 +29,4 @@ class Arvados::V1::ContainerRequestsController < ApplicationController
       })
   end
 
-  def create
-    # Lock containers table to avoid deadlock in cascading priority update (see #20240)
-    Container.transaction do
-      ActiveRecord::Base.connection.execute "LOCK TABLE containers IN EXCLUSIVE MODE"
-      super
-    end
-  end
-
-  def update
-    if (resource_attrs.keys - [:owner_uuid, :name, :description, :properties]).empty?
-      # If no attributes are being updated besides these, there are no
-      # cascading changes to other rows/tables, so we should just use
-      # row locking.
-      @object.reload(lock: true)
-      super
-    else
-      # Lock containers table to avoid deadlock in cascading priority update (see #20240)
-      Container.transaction do
-        ActiveRecord::Base.connection.execute "LOCK TABLE containers IN EXCLUSIVE MODE"
-        super
-      end
-    end
-  end
 end
