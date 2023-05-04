@@ -5,6 +5,7 @@
 require 'log_reuse_info'
 require 'whitelist_update'
 require 'safe_json'
+require 'update_priorities'
 
 class Container < ArvadosModel
   include ArvadosModelUpdates
@@ -49,7 +50,6 @@ class Container < ArvadosModel
   before_save :clear_runtime_status_when_queued
   after_save :update_cr_logs
   after_save :handle_completed
-  after_save :propagate_priority
 
   has_many :container_requests, :foreign_key => :container_uuid, :class_name => 'ContainerRequest', :primary_key => :uuid
   belongs_to :auth, :class_name => 'ApiClientAuthorization', :foreign_key => :auth_uuid, :primary_key => :uuid
@@ -129,34 +129,8 @@ class Container < ArvadosModel
   # priority of a user-submitted request is a function of
   # user-assigned priority and request creation time.
   def update_priority!
-    return if ![Queued, Locked, Running].include?(state)
-    p = ContainerRequest.
-          where('container_uuid=? and priority>0 and state=?', uuid, ContainerRequest::Committed).
-          select("priority, requesting_container_uuid, created_at").
-          lock(true).
-          map do |cr|
-      if cr.requesting_container_uuid
-        Container.where(uuid: cr.requesting_container_uuid).pluck(:priority).first
-      else
-        (cr.priority << 50) - (cr.created_at.to_time.to_f * 1000).to_i
-      end
-    end.max || 0
-    update_attributes!(priority: p)
-  end
-
-  def propagate_priority
-    return true unless saved_change_to_priority?
-    act_as_system_user do
-      # Update the priority of child container requests to match new
-      # priority of the parent container (ignoring requests with no
-      # container assigned, because their priority doesn't matter).
-      ContainerRequest.
-        where('requesting_container_uuid = ? and state = ? and container_uuid is not null',
-              self.uuid, ContainerRequest::Committed).
-        pluck(:container_uuid).each do |container_uuid|
-        Container.find_by_uuid(container_uuid).update_priority!
-      end
-    end
+    update_priorities uuid
+    reload
   end
 
   # Create a new container (or find an existing one) to satisfy the
