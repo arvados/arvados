@@ -21,6 +21,11 @@ nginx:
   ### PASSENGER
   passenger:
     passenger_ruby: {{ passenger_ruby }}
+    passenger_max_pool_size: {{ "__CONTROLLER_NGINX_WORKERS__" or grains['num_cpus'] }}
+    {%- if "__CONTROLLER_MAX_CONCURRENT_REQUESTS__" != "" %}
+    # Default is 100
+    passenger_max_request_queue_size: __CONTROLLER_MAX_CONCURRENT_REQUESTS__
+    {%- endif %}
 
   ### SERVER
   server:
@@ -36,7 +41,10 @@ nginx:
       # include: 'modules-enabled/*.conf'
       load_module: {{ passenger_mod }}
       {% endif %}
-      worker_processes: 4
+      worker_processes: {{ "__CONTROLLER_NGINX_WORKERS__" or grains['num_cpus'] }}
+      worker_rlimit_nofile: 4096
+      events:
+        worker_connections: 1024
 
   ### SNIPPETS
   snippets:

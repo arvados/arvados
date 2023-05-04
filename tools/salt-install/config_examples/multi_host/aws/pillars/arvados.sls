@@ -107,6 +107,12 @@ arvados:
             Email: __INITIAL_USER_EMAIL__
             Password: __INITIAL_USER_PASSWORD__
 
+    ### API
+    {%- if "__CONTROLLER_MAX_CONCURRENT_REQUESTS__" != "" %}
+    API:
+      MaxConcurrentRequests: __CONTROLLER_MAX_CONCURRENT_REQUESTS__
+    {%- endif %}
+
     ### CONTAINERS
     Containers:
       MaxRetryAttempts: 10
