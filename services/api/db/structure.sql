@@ -201,8 +201,7 @@ CREATE FUNCTION public.container_priority(for_container_uuid character varying, 
    The "inherited" priority comes from the path we followed from the root, the parent container
    priority hasn't been updated in the table yet but we need to behave it like it has been.
 */
-select coalesce(max(case when container_requests.priority = 0 then 0
-                         when containers.uuid = inherited_from then inherited
+select coalesce(max(case when containers.uuid = inherited_from then inherited
                          when containers.priority is not NULL then containers.priority
                          else container_requests.priority * 1125899906842624::bigint - (extract(epoch from container_requests.created_at)*1000)::bigint
                     end), 0) from
@@ -230,6 +229,29 @@ union
   where containers.state in ('Queued', 'Locked', 'Running')
 )
 select upd_container_uuid from tab;
+$$;
+
+
+--
+-- Name: container_tree_priorities(character varying); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.container_tree_priorities(for_container_uuid character varying) RETURNS TABLE(pri_container_uuid character varying, upd_priority bigint)
+    LANGUAGE sql
+    AS $$
+/* Calculate the priorities of all containers starting from for_container_uuid.
+   This traverses the process tree downward and calls container_priority for each container
+   and returns a table of container uuids and their new priorities.
+*/
+with recursive tab(upd_container_uuid, upd_priority) as (
+  select for_container_uuid, container_priority(for_container_uuid, 0, '')
+union
+  select containers.uuid, container_priority(containers.uuid, child_requests.upd_priority, child_requests.upd_container_uuid)
+  from (tab join container_requests on tab.upd_container_uuid = container_requests.requesting_container_uuid) as child_requests
+  join containers on child_requests.container_uuid = containers.uuid
+  where containers.state in ('Queued', 'Locked', 'Running')
+)
+select upd_container_uuid, upd_priority from tab;
 $$;
 
 
@@ -292,29 +314,6 @@ CREATE FUNCTION public.should_traverse_owned(starting_uuid character varying, st
 */
 select starting_uuid like '_____-j7d0g-_______________' or
        (starting_uuid like '_____-tpzed-_______________' and starting_perm >= 3);
-$$;
-
-
---
--- Name: update_priorities(character varying); Type: FUNCTION; Schema: public; Owner: -
---
-
-CREATE FUNCTION public.update_priorities(for_container_uuid character varying) RETURNS TABLE(pri_container_uuid character varying, upd_priority bigint)
-    LANGUAGE sql
-    AS $$
-/* Calculate the priorities of all containers starting from for_container_uuid.
-   This traverses the process tree downward and calls container_priority for each container
-   and returns a table of container uuids and their new priorities.
-*/
-with recursive tab(upd_container_uuid, upd_priority) as (
-  select for_container_uuid, container_priority(for_container_uuid, 0, '')
-union
-  select containers.uuid, container_priority(containers.uuid, child_requests.upd_priority, child_requests.upd_container_uuid)
-  from (tab join container_requests on tab.upd_container_uuid = container_requests.requesting_container_uuid) as child_requests
-  join containers on child_requests.container_uuid = containers.uuid
-  where containers.state in ('Queued', 'Locked', 'Running')
-)
-select upd_container_uuid, upd_priority from tab;
 $$;
 
 

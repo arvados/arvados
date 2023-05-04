@@ -12,8 +12,7 @@ CREATE OR REPLACE FUNCTION container_priority(for_container_uuid character varyi
    The "inherited" priority comes from the path we followed from the root, the parent container
    priority hasn't been updated in the table yet but we need to behave it like it has been.
 */
-select coalesce(max(case when container_requests.priority = 0 then 0
-                         when containers.uuid = inherited_from then inherited
+select coalesce(max(case when containers.uuid = inherited_from then inherited
                          when containers.priority is not NULL then containers.priority
                          else container_requests.priority * 1125899906842624::bigint - (extract(epoch from container_requests.created_at)*1000)::bigint
                     end), 0) from
@@ -23,7 +22,7 @@ $$;
 }
 
     ActiveRecord::Base.connection.execute %{
-CREATE OR REPLACE FUNCTION update_priorities(for_container_uuid character varying) returns table (pri_container_uuid character varying, upd_priority bigint)
+CREATE OR REPLACE FUNCTION container_tree_priorities(for_container_uuid character varying) returns table (pri_container_uuid character varying, upd_priority bigint)
     LANGUAGE sql
     AS $$
 /* Calculate the priorities of all containers starting from for_container_uuid.
@@ -64,7 +63,7 @@ $$;
 
   def down
     ActiveRecord::Base.connection.execute "DROP FUNCTION container_priority"
-    ActiveRecord::Base.connection.execute "DROP FUNCTION update_priorities"
+    ActiveRecord::Base.connection.execute "DROP FUNCTION container_tree_priorities"
     ActiveRecord::Base.connection.execute "DROP FUNCTION container_tree"
   end
 end

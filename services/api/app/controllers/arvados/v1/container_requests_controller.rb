@@ -34,11 +34,12 @@ class Arvados::V1::ContainerRequestsController < ApplicationController
   def update
     if (resource_attrs.keys - [:owner_uuid, :name, :description, :properties]).empty? or @object.container_uuid.nil?
       # If no attributes are being updated besides these, there are no
-      # cascading changes to other rows/tables, so we should just use
-      # row locking.
+      # cascading changes to other rows/tables, the only lock will be
+      # the single row lock on SQL UPDATE.
       super
     else
-      # Lock containers table to avoid deadlock in cascading priority update (see #20240)
+      # Get locks ahead of time to avoid deadlock in cascading priority
+      # update
       Container.transaction do
         row_lock_for_priority_update @object.container_uuid
         super
