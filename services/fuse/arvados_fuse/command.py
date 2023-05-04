@@ -230,6 +230,9 @@ class Mount(object):
         try:
             self.api = arvados.safeapi.ThreadSafeApiCache(
                 apiconfig=arvados.config.settings(),
+                api_params={
+                    'num_retries': self.args.retries,
+                },
                 # default value of file_cache is 0, this tells KeepBlockCache to
                 # choose a default based on whether disk_cache is enabled or not.
                 keep_params={

@@ -7,6 +7,7 @@ from builtins import str
 from builtins import range
 import arvados
 import collections
+import contextlib
 import httplib2
 import itertools
 import json
@@ -14,6 +15,7 @@ import mimetypes
 import os
 import socket
 import string
+import sys
 import unittest
 import urllib.parse as urlparse
 
@@ -336,6 +338,77 @@ class ArvadosApiTest(run_test_server.TestCaseWithServers):
                 args = list(all_args)
                 args[arg_index] = arg_value
                 api_client(*args, insecure=True)
+
+
+class ConstructNumRetriesTestCase(unittest.TestCase):
+    @staticmethod
+    def _fake_retry_request(http, num_retries, req_type, sleep, rand, uri, method, *args, **kwargs):
+        return http.request(uri, method, *args, **kwargs)
+
+    @contextlib.contextmanager
+    def patch_retry(self):
+        # We have this dedicated context manager that goes through `sys.modules`
+        # instead of just using `mock.patch` because of the unfortunate
+        # `arvados.api` name collision.
+        orig_func = sys.modules['arvados.api']._orig_retry_request
+        expect_name = 'googleapiclient.http._retry_request'
+        self.assertEqual(
+            '{0.__module__}.{0.__name__}'.format(orig_func), expect_name,
+            f"test setup problem: {expect_name} not at arvados.api._orig_retry_request",
+        )
+        retry_mock = mock.Mock(wraps=self._fake_retry_request)
+        sys.modules['arvados.api']._orig_retry_request = retry_mock
+        try:
+            yield retry_mock
+        finally:
+            sys.modules['arvados.api']._orig_retry_request = orig_func
+
+    def _iter_num_retries(self, retry_mock):
+        for call in retry_mock.call_args_list:
+            try:
+                yield call.args[1]
+            except IndexError:
+                yield call.kwargs['num_retries']
+
+    def test_default_num_retries(self):
+        with self.patch_retry() as retry_mock:
+            client = arvados.api('v1')
+        actual = set(self._iter_num_retries(retry_mock))
+        self.assertEqual(len(actual), 1)
+        self.assertTrue(actual.pop() > 6, "num_retries lower than expected")
+
+    def _test_calls(self, init_arg, call_args, expected):
+        with self.patch_retry() as retry_mock:
+            client = arvados.api('v1', num_retries=init_arg)
+            for num_retries in call_args:
+                client.users().current().execute(num_retries=num_retries)
+        actual = self._iter_num_retries(retry_mock)
+        # The constructor makes two requests with its num_retries argument:
+        # one for the discovery document, and one for the config.
+        self.assertEqual(next(actual, None), init_arg)
+        self.assertEqual(next(actual, None), init_arg)
+        self.assertEqual(list(actual), expected)
+
+    def test_discovery_num_retries(self):
+        for num_retries in [0, 5, 55]:
+            with self.subTest(f"num_retries={num_retries}"):
+                self._test_calls(num_retries, [], [])
+
+    def test_num_retries_called_le_init(self):
+        for n in [6, 10]:
+            with self.subTest(f"init_arg={n}"):
+                call_args = [n - 4, n - 2, n]
+                expected = [n] * 3
+                self._test_calls(n, call_args, expected)
+
+    def test_num_retries_called_ge_init(self):
+        for n in [0, 10]:
+            with self.subTest(f"init_arg={n}"):
+                call_args = [n, n + 4, n + 8]
+                self._test_calls(n, call_args, call_args)
+
+    def test_num_retries_called_mixed(self):
+        self._test_calls(5, [2, 6, 4, 8], [5, 6, 5, 8])
 
 
 class PreCloseSocketTestCase(unittest.TestCase):

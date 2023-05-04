@@ -538,11 +538,11 @@ class CollectionReaderTestCase(unittest.TestCase, CollectionTestMixin):
         self.mock_get_collection(client, status, 'foo_file')
         return client
 
-    def test_init_no_default_retries(self):
+    def test_init_default_retries(self):
         client = self.api_client_mock(200)
         reader = arvados.CollectionReader(self.DEFAULT_UUID, api_client=client)
         reader.manifest_text()
-        client.collections().get().execute.assert_called_with(num_retries=0)
+        client.collections().get().execute.assert_called_with(num_retries=10)
 
     def test_uuid_init_success(self):
         client = self.api_client_mock(200)

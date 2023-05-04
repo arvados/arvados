@@ -27,6 +27,7 @@ import time
 import types
 
 import apiclient
+import apiclient.http
 from apiclient import discovery as apiclient_discovery
 from apiclient import errors as apiclient_errors
 from . import config
@@ -68,6 +69,19 @@ class OrderedJsonModel(apiclient.model.JsonModel):
         return body
 
 
+_orig_retry_request = apiclient.http._retry_request
+def _retry_request(http, num_retries, *args, **kwargs):
+    try:
+        num_retries = max(num_retries, http.num_retries)
+    except AttributeError:
+        # `http` client object does not have a `num_retries` attribute.
+        # It apparently hasn't gone through _patch_http_request, possibly
+        # because this isn't an Arvados API client. We need to continue on to
+        # avoid interfering with other Google API clients.
+        pass
+    return _orig_retry_request(http, num_retries, *args, **kwargs)
+apiclient.http._retry_request = _retry_request
+
 def _intercept_http_request(self, uri, method="GET", headers={}, **kwargs):
     if not headers.get('X-Request-Id'):
         headers['X-Request-Id'] = self._request_id()
@@ -102,9 +116,10 @@ def _intercept_http_request(self, uri, method="GET", headers={}, **kwargs):
                 raise type(e)(*e.args)
         raise
 
-def _patch_http_request(http, api_token):
+def _patch_http_request(http, api_token, num_retries):
     http.arvados_api_token = api_token
     http.max_request_size = 0
+    http.num_retries = num_retries
     http.orig_http_request = http.request
     http.request = types.MethodType(_intercept_http_request, http)
     http._last_request_time = 0
@@ -157,6 +172,7 @@ def api_client(
         cache=True,
         http=None,
         insecure=False,
+        num_retries=10,
         request_id=None,
         timeout=5*60,
         **kwargs,
@@ -194,6 +210,10 @@ def api_client(
     insecure: bool
     : If true, ignore SSL certificate validation errors. Default `False`.
 
+    num_retries: int
+    : The number of times to retry each API request if it encounters a
+      temporary failure. Default 10.
+
     request_id: str | None
     : Default `X-Request-Id` header value for outgoing requests that
       don't already provide one. If `None` or omitted, generate a random
@@ -214,13 +234,14 @@ def api_client(
         )
     if http.timeout is None:
         http.timeout = timeout
-    http = _patch_http_request(http, token)
+    http = _patch_http_request(http, token, num_retries)
 
     svc = apiclient_discovery.build(
         'arvados', version,
         cache_discovery=False,
         discoveryServiceUrl=discoveryServiceUrl,
         http=http,
+        num_retries=num_retries,
         **kwargs,
     )
     svc.api_token = token

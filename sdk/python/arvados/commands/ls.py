@@ -43,7 +43,7 @@ def main(args, stdout, stderr, api_client=None, logger=None):
     args = parse_args(args)
 
     if api_client is None:
-        api_client = arvados.api('v1')
+        api_client = arvados.api('v1', num_retries=args.retries)
 
     if logger is None:
         logger = logging.getLogger('arvados.arv-ls')

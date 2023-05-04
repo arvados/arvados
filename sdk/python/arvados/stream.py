@@ -24,7 +24,7 @@ from ._normalize_stream import normalize_stream
 
 class StreamReader(object):
     def __init__(self, tokens, keep=None, debug=False, _empty=False,
-                 num_retries=0):
+                 num_retries=10):
         self._stream_name = None
         self._data_locators = []
         self._files = collections.OrderedDict()

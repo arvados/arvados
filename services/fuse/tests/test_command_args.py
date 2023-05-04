@@ -292,7 +292,7 @@ class MountErrorTest(unittest.TestCase):
 
     def test_bogus_host(self):
         arvados.config._settings["ARVADOS_API_HOST"] = "100::"
-        with self.assertRaises(SystemExit) as ex:
+        with self.assertRaises(SystemExit) as ex, mock.patch('time.sleep'):
             args = arvados_fuse.command.ArgumentParser().parse_args([self.mntdir])
             arvados_fuse.command.Mount(args, logger=self.logger).run()
         self.assertEqual(1, ex.exception.code)

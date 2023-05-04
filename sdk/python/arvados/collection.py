@@ -1256,7 +1256,7 @@ class Collection(RichCollectionBase):
     def __init__(self, manifest_locator_or_text=None,
                  api_client=None,
                  keep_client=None,
-                 num_retries=None,
+                 num_retries=10,
                  parent=None,
                  apiconfig=None,
                  block_manager=None,
@@ -1324,7 +1324,7 @@ class Collection(RichCollectionBase):
         else:
             self._config = config.settings()
 
-        self.num_retries = num_retries if num_retries is not None else 0
+        self.num_retries = num_retries
         self._manifest_locator = None
         self._manifest_text = None
         self._portable_data_hash = None
