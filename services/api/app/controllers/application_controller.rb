@@ -234,7 +234,7 @@ class ApplicationController < ActionController::Base
     # given class.
     sel.map do |column|
       sp = column.split(".")
-      if sp.length == 2 && sp[0] == model_class.table_name
+      if sp.length == 2 && sp[0] == model_class.table_name && model_class.selectable_attributes.include?(sp[1])
         sp[1]
       elsif model_class.selectable_attributes.include? column
         column
@@ -501,8 +501,8 @@ class ApplicationController < ActionController::Base
     # This is a little hacky but sometimes the fields the user wants
     # to selecting on are unrelated to the object being loaded here,
     # for example groups#contents, so filter the fields that will be
-    # used in find_objects_for_index and then reset it below.  In some
-    # cases, code that modifies the @select list needs to set
+    # used in find_objects_for_index and then reset afterwards.  In
+    # some cases, code that modifies the @select list needs to set
     # @preserve_select.
     @preserve_select = @select
     @select = select_for_klass(@select, self.model_class, false)
@@ -599,10 +599,10 @@ class ApplicationController < ActionController::Base
       :self_link => "",
       :offset => @offset,
       :limit => @limit,
-      :items => @objects.as_api_response(nil, {select: select_for_klass(@select, model_class)})
+      :items => @objects.as_api_response(nil, {select: @select})
     }
     if @extra_included
-      list[:included] = @extra_included.as_api_response(nil, {select: select_for_klass(@select, model_class)})
+      list[:included] = @extra_included.as_api_response(nil, {select: @select})
     end
     case params[:count]
     when nil, '', 'exact'

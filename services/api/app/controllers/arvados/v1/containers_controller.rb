@@ -50,6 +50,12 @@ class Arvados::V1::ContainersController < ApplicationController
     if action_name == 'lock' || action_name == 'unlock'
       # Avoid loading more fields than we need
       @objects = @objects.select(:id, :uuid, :state, :priority, :auth_uuid, :locked_by_uuid, :lock_count)
+      # This gets called from within find_object_by_uuid.
+      # find_object_by_uuid stores the original value of @select in
+      # @preserve_select, edits the value of @select, calls
+      # find_objects_for_index, then restores @select from the value
+      # of @preserve_select.  So if we want our updated value of
+      # @select here to stick, we have to set @preserve_select.
       @select = @preserve_select = %w(uuid state priority auth_uuid locked_by_uuid)
     elsif action_name == 'update_priority'
       # We're going to reload(lock: true) in the handler, which will
