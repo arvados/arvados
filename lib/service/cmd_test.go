@@ -204,7 +204,7 @@ func (*Suite) TestDumpRequests(c *check.C) {
 	defer os.Remove(cf.Name())
 	defer cf.Close()
 
-	max := 1
+	max := 24
 	fmt.Fprintf(cf, `
 Clusters:
  zzzzz:
@@ -269,9 +269,9 @@ Clusters:
 		}
 	}
 	for {
+		time.Sleep(time.Second / 100)
 		j, err := os.ReadFile(tmpdir + "/arvados-controller-requests.json")
 		if os.IsNotExist(err) && deadline.After(time.Now()) {
-			time.Sleep(time.Second / 100)
 			continue
 		}
 		c.Check(err, check.IsNil)
@@ -281,9 +281,40 @@ Clusters:
 		var loaded []struct{ URL string }
 		err = json.Unmarshal(j, &loaded)
 		c.Check(err, check.IsNil)
+		if len(loaded) < max {
+			// Dumped when #requests was >90% but <100% of
+			// limit. If we stop now, we won't be able to
+			// confirm (below) that management endpoints
+			// are still accessible when normal requests
+			// are at 100%.
+			c.Logf("loaded dumped requests, but len %d < max %d -- still waiting", len(loaded), max)
+			continue
+		}
 		c.Check(loaded, check.HasLen, max)
 		c.Check(loaded[0].URL, check.Equals, "/testpath")
 		break
+	}
+
+	for _, path := range []string{"/_inspect/requests", "/metrics"} {
+		req, err := http.NewRequest("GET", "http://localhost:12345"+path, nil)
+		c.Assert(err, check.IsNil)
+		req.Header.Set("Authorization", "Bearer bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb")
+		resp, err := client.Do(req)
+		if !c.Check(err, check.IsNil) {
+			break
+		}
+		c.Logf("got response for %s", path)
+		c.Check(resp.StatusCode, check.Equals, http.StatusOK)
+		buf, err := ioutil.ReadAll(resp.Body)
+		c.Check(err, check.IsNil)
+		switch path {
+		case "/metrics":
+			c.Check(string(buf), check.Matches, `(?ms).*arvados_concurrent_requests `+fmt.Sprintf("%d", max)+`\n.*`)
+		case "/_inspect/requests":
+			c.Check(string(buf), check.Matches, `(?ms).*"URL":"/testpath".*`)
+		default:
+			c.Error("oops, testing bug")
+		}
 	}
 	close(hold)
 	cancel()
