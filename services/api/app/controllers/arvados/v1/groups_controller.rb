@@ -46,7 +46,6 @@ class Arvados::V1::GroupsController < ApplicationController
                 type: 'boolean', required: false, default: false, description: 'Include past collection versions.',
               }
             })
-    params.delete(:select)
     params
   end
 
@@ -260,6 +259,20 @@ class Arvados::V1::GroupsController < ApplicationController
       end
     end
 
+    # Check that any fields in @select are valid for at least one class
+    if @select
+      all_attributes = []
+      klasses.each do |klass|
+        all_attributes.concat klass.selectable_attributes
+      end
+      @select.each do |check|
+        if !all_attributes.include? check
+          raise ArgumentError.new "Invalid attribute '#{check}' in select"
+        end
+      end
+    end
+    any_selections = @select
+
     included_by_uuid = {}
 
     seen_last_class = false
@@ -291,12 +304,19 @@ class Arvados::V1::GroupsController < ApplicationController
         request_orders.andand.find { |r| r =~ /^#{klass.table_name}\./i || r !~ /\./ } ||
         klass.default_orders.join(", ")
 
-      @select = nil
+      @select = select_for_klass any_selections, klass, false
+
       where_conds = filter_by_owner
-      if klass == Collection
+      if klass == Collection && @select.nil?
         @select = klass.selectable_attributes - ["manifest_text", "unsigned_manifest_text"]
       elsif klass == Group
         where_conds = where_conds.merge(group_class: ["project","filter"])
+      end
+
+      # Make signed manifest_text not selectable because controller
+      # currently doesn't know to sign it.
+      if @select
+        @select = @select - ["manifest_text"]
       end
 
       @filters = request_filters.map do |col, op, val|
