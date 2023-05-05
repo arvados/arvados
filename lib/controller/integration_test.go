@@ -1241,7 +1241,11 @@ func (s *IntegrationSuite) runContainer(c *check.C, clusterID string, token stri
 		} else {
 			if time.Now().After(deadline) {
 				c.Errorf("timed out, container state is %q", cr.State)
-				showlogs(ctr.Log)
+				if ctr.Log == "" {
+					c.Logf("=== NO LOG COLLECTION saved for container")
+				} else {
+					showlogs(ctr.Log)
+				}
 				c.FailNow()
 			}
 			time.Sleep(time.Second / 2)
