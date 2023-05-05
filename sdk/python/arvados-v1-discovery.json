@@ -3055,6 +3055,12 @@
               "description": "",
               "location": "query"
             },
+            "select": {
+              "type": "array",
+              "description": "Attributes of each object to return in the response.",
+              "required": false,
+              "location": "query"
+            },
             "distinct": {
               "type": "boolean",
               "required": false,
@@ -9189,9 +9195,6 @@
         "created_at": {
           "type": "datetime"
         },
-        "updated_at": {
-          "type": "datetime"
-        },
         "is_locked_by_uuid": {
           "type": "string"
         },
@@ -9230,9 +9233,6 @@
         },
         "components": {
           "type": "Hash"
-        },
-        "script_parameters_digest": {
-          "type": "string"
         }
       }
     },
@@ -9303,9 +9303,6 @@
           "type": "string"
         },
         "created_at": {
-          "type": "datetime"
-        },
-        "updated_at": {
           "type": "datetime"
         },
         "is_trusted": {
@@ -9383,9 +9380,6 @@
           "type": "datetime"
         },
         "created_at": {
-          "type": "datetime"
-        },
-        "updated_at": {
           "type": "datetime"
         },
         "default_owner_uuid": {
@@ -9473,9 +9467,6 @@
         },
         "created_at": {
           "type": "datetime"
-        },
-        "updated_at": {
-          "type": "datetime"
         }
       }
     },
@@ -9554,9 +9545,6 @@
         "replication_confirmed": {
           "type": "integer"
         },
-        "updated_at": {
-          "type": "datetime"
-        },
         "manifest_text": {
           "type": "text"
         },
@@ -9571,9 +9559,6 @@
         },
         "delete_at": {
           "type": "datetime"
-        },
-        "file_names": {
-          "type": "text"
         },
         "trash_at": {
           "type": "datetime"
@@ -9712,9 +9697,6 @@
         "priority": {
           "type": "integer"
         },
-        "updated_at": {
-          "type": "datetime"
-        },
         "exit_code": {
           "type": "integer"
         },
@@ -9735,9 +9717,6 @@
         },
         "runtime_auth_scopes": {
           "type": "Array"
-        },
-        "runtime_token": {
-          "type": "text"
         },
         "lock_count": {
           "type": "integer"
@@ -9876,9 +9855,6 @@
         "filters": {
           "type": "text"
         },
-        "updated_at": {
-          "type": "datetime"
-        },
         "container_count": {
           "type": "integer"
         },
@@ -9899,9 +9875,6 @@
         },
         "output_ttl": {
           "type": "integer"
-        },
-        "runtime_token": {
-          "type": "text"
         },
         "output_storage_classes": {
           "type": "Array"
@@ -9982,9 +9955,6 @@
         },
         "description": {
           "type": "string"
-        },
-        "updated_at": {
-          "type": "datetime"
         },
         "group_class": {
           "type": "string"
@@ -10071,9 +10041,6 @@
         },
         "created_at": {
           "type": "datetime"
-        },
-        "updated_at": {
-          "type": "datetime"
         }
       }
     },
@@ -10158,9 +10125,6 @@
         "created_at": {
           "type": "datetime"
         },
-        "updated_at": {
-          "type": "datetime"
-        },
         "created_by_job_task_uuid": {
           "type": "string"
         },
@@ -10235,9 +10199,6 @@
         "modified_at": {
           "type": "datetime"
         },
-        "ping_secret": {
-          "type": "string"
-        },
         "node_uuid": {
           "type": "string"
         },
@@ -10266,9 +10227,6 @@
           "type": "datetime"
         },
         "created_at": {
-          "type": "datetime"
-        },
-        "updated_at": {
           "type": "datetime"
         },
         "keep_service_uuid": {
@@ -10349,9 +10307,6 @@
           "type": "string"
         },
         "created_at": {
-          "type": "datetime"
-        },
-        "updated_at": {
           "type": "datetime"
         },
         "read_only": {
@@ -10436,9 +10391,6 @@
         },
         "properties": {
           "type": "Hash"
-        },
-        "updated_at": {
-          "type": "datetime"
         }
       }
     },
@@ -10490,6 +10442,9 @@
           "type": "string",
           "description": "Object version."
         },
+        "id": {
+          "type": "integer"
+        },
         "owner_uuid": {
           "type": "string"
         },
@@ -10515,9 +10470,6 @@
           "type": "Hash"
         },
         "created_at": {
-          "type": "datetime"
-        },
-        "updated_at": {
           "type": "datetime"
         },
         "modified_at": {
@@ -10603,16 +10555,7 @@
         "ip_address": {
           "type": "string"
         },
-        "first_ping_at": {
-          "type": "datetime"
-        },
         "last_ping_at": {
-          "type": "datetime"
-        },
-        "info": {
-          "type": "Hash"
-        },
-        "updated_at": {
           "type": "datetime"
         },
         "properties": {
@@ -10704,19 +10647,10 @@
         "prefs": {
           "type": "Hash"
         },
-        "updated_at": {
-          "type": "datetime"
-        },
-        "default_owner_uuid": {
-          "type": "string"
-        },
         "is_active": {
           "type": "boolean"
         },
         "username": {
-          "type": "string"
-        },
-        "redirect_to_user_uuid": {
           "type": "string"
         }
       }
@@ -10792,9 +10726,6 @@
         },
         "components": {
           "type": "Hash"
-        },
-        "updated_at": {
-          "type": "datetime"
         },
         "properties": {
           "type": "Hash"
@@ -10885,9 +10816,6 @@
         "components": {
           "type": "Hash"
         },
-        "updated_at": {
-          "type": "datetime"
-        },
         "description": {
           "type": "string"
         }
@@ -10958,9 +10886,6 @@
         },
         "created_at": {
           "type": "datetime"
-        },
-        "updated_at": {
-          "type": "datetime"
         }
       }
     },
@@ -11029,9 +10954,6 @@
         },
         "material": {
           "type": "string"
-        },
-        "updated_at": {
-          "type": "datetime"
         },
         "properties": {
           "type": "Hash"
@@ -11106,9 +11028,6 @@
         },
         "created_at": {
           "type": "datetime"
-        },
-        "updated_at": {
-          "type": "datetime"
         }
       }
     },
@@ -11176,9 +11095,6 @@
           "type": "string"
         },
         "created_at": {
-          "type": "datetime"
-        },
-        "updated_at": {
           "type": "datetime"
         }
       }
@@ -11254,9 +11170,6 @@
         },
         "definition": {
           "type": "text"
-        },
-        "updated_at": {
-          "type": "datetime"
         }
       }
     },
@@ -11335,9 +11248,6 @@
         "replication_confirmed": {
           "type": "integer"
         },
-        "updated_at": {
-          "type": "datetime"
-        },
         "manifest_text": {
           "type": "text"
         },
@@ -11352,9 +11262,6 @@
         },
         "delete_at": {
           "type": "datetime"
-        },
-        "file_names": {
-          "type": "text"
         },
         "trash_at": {
           "type": "datetime"

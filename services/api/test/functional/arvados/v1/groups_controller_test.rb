@@ -330,6 +330,38 @@ class Arvados::V1::GroupsControllerTest < ActionController::TestCase
     assert_equal 0, json_response['items'].count
   end
 
+  test 'get group-owned objects with select' do
+    authorize_with :active
+    get :contents, params: {
+      id: groups(:aproject).uuid,
+      limit: 100,
+      format: :json,
+      select: ["uuid", "storage_classes_desired"]
+    }
+    assert_response :success
+    assert_equal 17, json_response['items_available']
+    assert_equal 17, json_response['items'].count
+    json_response['items'].each do |item|
+      # Expect collections to have a storage_classes field, other items should not.
+      if item["kind"] == "arvados#collection"
+        assert !item["storage_classes_desired"].nil?
+      else
+        assert item["storage_classes_desired"].nil?
+      end
+    end
+  end
+
+  test 'get group-owned objects with invalid field in select' do
+    authorize_with :active
+    get :contents, params: {
+      id: groups(:aproject).uuid,
+      limit: 100,
+      format: :json,
+      select: ["uuid", "storage_classes_desire"]
+    }
+    assert_response 422
+  end
+
   test 'get group-owned objects with additional filter matching nothing' do
     authorize_with :active
     get :contents, params: {

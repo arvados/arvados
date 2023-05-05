@@ -54,6 +54,7 @@ class Group < ArvadosModel
     super.merge(
                 'can_write' => ['owner_uuid', 'uuid'],
                 'can_manage' => ['owner_uuid', 'uuid'],
+                'writable_by' => ['owner_uuid', 'uuid'],
                 )
   end
 
