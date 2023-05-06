@@ -128,13 +128,13 @@ type DataTableState = {
     checkedList: Record<string, boolean>;
 };
 
-type DataTableProps<T> = DataTableDataProps<T> & WithStyles<CssRules>;
-
 const multiselectOptions: DataTableMultiselectOption[] = [
     { name: 'First Option', fn: (checkedList) => console.log('one', checkedList) },
     { name: 'Second Option', fn: (checkedList) => console.log('two', checkedList) },
     { name: 'Third Option', fn: (checkedList) => console.log('three', checkedList) },
 ];
+
+type DataTableProps<T> = DataTableDataProps<T> & WithStyles<CssRules>;
 
 export const DataTable = withStyles(styles)(
     class Component<T> extends React.Component<DataTableProps<T>> {
@@ -147,9 +147,15 @@ export const DataTable = withStyles(styles)(
             this.initializeCheckedList(this.props.items);
         }
 
-        componentDidUpdate(prevProps: Readonly<DataTableProps<T>>) {
-            if (!arraysAreCongruent(prevProps.items, this.props.items)) {
-                this.initializeCheckedList(this.props.items);
+        componentDidUpdate(prevProps: Readonly<DataTableProps<T>>, prevState: DataTableState) {
+            const { items } = this.props;
+            const { checkedList } = this.state;
+            if (!arraysAreCongruent(prevProps.items, items)) {
+                this.state.isSelected = false;
+                this.initializeCheckedList(items);
+            }
+            if (prevState.checkedList !== checkedList) {
+                window.localStorage.setItem('selectedRows', JSON.stringify(checkedList));
             }
         }
 
@@ -173,10 +179,16 @@ export const DataTable = withStyles(styles)(
         initializeCheckedList = (uuids: any[]): void => {
             const { checkedList } = this.state;
             uuids.forEach((uuid) => {
-                if (!checkedList.hasOwnProperty[uuid]) {
+                if (!checkedList.hasOwnProperty(uuid)) {
                     checkedList[uuid] = false;
                 }
             });
+            for (const key in checkedList) {
+                if (!uuids.includes(key)) {
+                    delete checkedList[key];
+                }
+            }
+            window.localStorage.setItem('selectedRows', JSON.stringify(checkedList));
         };
 
         handleSelectorSelect = (): void => {
@@ -208,7 +220,6 @@ export const DataTable = withStyles(styles)(
             const { items, classes, working, columns } = this.props;
             if (columns[0].name === this.checkBoxColumn.name) columns.shift();
             columns.unshift(this.checkBoxColumn);
-
             return (
                 <div className={classes.root}>
                     <div className={classes.content}>
@@ -237,7 +248,7 @@ export const DataTable = withStyles(styles)(
         renderHeadCell = (column: DataColumn<T, any>, index: number) => {
             const { name, key, renderHeader, filters, sort } = column;
             const { onSortToggle, onFiltersChange, classes } = this.props;
-            return index === 0 ? (
+            return column.name === 'checkBoxColumn' ? (
                 <TableCell key={key || index} className={classes.checkBoxCell}>
                     <div className={classes.checkBoxHead}>
                         <Tooltip title={this.state.isSelected ? 'Deselect All' : 'Select All'}>
