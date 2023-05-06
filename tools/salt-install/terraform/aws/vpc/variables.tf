@@ -20,3 +20,21 @@ variable "domain_name" {
   description = "The domain name under which your Arvados cluster will be hosted"
   type = string
 }
+
+variable "private_only" {
+  description = "Don't create infrastructure reachable from the public Internet"
+  type = bool
+  default = false
+}
+
+variable "user_facing_hosts" {
+  description = "List of hostnames for nodes that hold user-accesible Arvados services"
+  type = list(string)
+  default = [ "controller", "workbench" ]
+}
+
+variable "internal_service_hosts" {
+  description = "List of hostnames for nodes that hold internal Arvados services"
+  type = list(string)
+  default = [ "keep0", "shell" ]
+}

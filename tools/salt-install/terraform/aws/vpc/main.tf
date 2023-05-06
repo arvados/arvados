@@ -135,10 +135,11 @@ resource "aws_security_group" "arvados_sg" {
 
 # PUBLIC DNS
 resource "aws_route53_zone" "public_zone" {
+  count = var.private_only ? 0 : 1
   name = local.arvados_dns_zone
 }
 resource "aws_route53_record" "public_a_record" {
-  zone_id = aws_route53_zone.public_zone.id
+  zone_id = try(local.route53_public_zone.id, "")
   for_each = local.public_ip
   name = each.key
   type = "A"
@@ -146,15 +147,20 @@ resource "aws_route53_record" "public_a_record" {
   records = [ each.value ]
 }
 resource "aws_route53_record" "main_a_record" {
-  zone_id = aws_route53_zone.public_zone.id
+  count = var.private_only ? 0 : 1
+  zone_id = try(local.route53_public_zone.id, "")
   name = ""
   type = "A"
   ttl = 300
   records = [ local.public_ip["controller"] ]
 }
 resource "aws_route53_record" "public_cname_record" {
-  zone_id = aws_route53_zone.public_zone.id
-  for_each = {for i in local.cname_by_host: i.record => "${i.cname}.${local.arvados_dns_zone}" }
+  zone_id = try(local.route53_public_zone.id, "")
+  for_each = {
+    for i in local.cname_by_host: i.record =>
+      "${i.cname}.${local.arvados_dns_zone}"
+    if var.private_only == false
+  }
   name = each.key
   type = "CNAME"
   ttl = 300
@@ -196,16 +202,19 @@ resource "aws_route53_record" "private_cname_record" {
 # Route53's credentials for Let's Encrypt
 #
 resource "aws_iam_user" "letsencrypt" {
+  count = var.private_only ? 0 : 1
   name = "${var.cluster_name}-letsencrypt"
   path = "/"
 }
 
 resource "aws_iam_access_key" "letsencrypt" {
-  user = aws_iam_user.letsencrypt.name
+  count = var.private_only ? 0 : 1
+  user = local.iam_user_letsencrypt.name
 }
 resource "aws_iam_user_policy" "letsencrypt_iam_policy" {
+  count = var.private_only ? 0 : 1
   name = "${var.cluster_name}-letsencrypt_iam_policy"
-  user = aws_iam_user.letsencrypt.name
+  user = local.iam_user_letsencrypt.name
   policy = jsonencode({
     "Version": "2012-10-17",
     "Statement": [{
@@ -223,7 +232,7 @@ resource "aws_iam_user_policy" "letsencrypt_iam_policy" {
         "route53:ChangeResourceRecordSets"
       ],
       "Resource" : [
-        "arn:aws:route53:::hostedzone/${aws_route53_zone.public_zone.id}"
+        "arn:aws:route53:::hostedzone/${local.route53_public_zone.id}"
       ]
     }]
   })

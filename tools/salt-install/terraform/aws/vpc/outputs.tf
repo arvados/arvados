@@ -41,16 +41,28 @@ output "private_hosts" {
   value = local.private_hosts
 }
 
+output "user_facing_hosts" {
+  value = var.user_facing_hosts
+}
+
+output "internal_service_hosts" {
+  value = var.internal_service_hosts
+}
+
+output "private_only" {
+  value = var.private_only
+}
+
 output "route53_dns_ns" {
-  value = aws_route53_zone.public_zone.name_servers
+  value = try(local.route53_public_zone.name_servers, [])
 }
 
 output "letsencrypt_iam_access_key_id" {
-  value = aws_iam_access_key.letsencrypt.id
+  value = try(local.iam_access_key_letsencrypt.id, "")
 }
 
 output "letsencrypt_iam_secret_access_key" {
-  value = aws_iam_access_key.letsencrypt.secret
+  value = try(local.iam_access_key_letsencrypt.secret, "")
   sensitive = true
 }
 

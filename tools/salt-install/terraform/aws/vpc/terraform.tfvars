@@ -5,3 +5,6 @@
 region_name = "us-east-1"
 # cluster_name = "xarv1"
 # domain_name = "example.com"
+
+# Uncomment this to create an non-publicly accessible Arvados cluster
+# private_only = true
