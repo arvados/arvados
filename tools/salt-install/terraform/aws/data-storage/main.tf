@@ -24,20 +24,6 @@ resource "aws_s3_bucket" "keep_volume" {
   bucket = "${local.cluster_name}-nyw5e-000000000000000-volume"
 }
 
-resource "aws_s3_bucket_acl" "keep_volume_acl" {
-  bucket = aws_s3_bucket.keep_volume.id
-  acl = "private"
-}
-
-# Avoid direct public access to Keep blocks
-resource "aws_s3_bucket_public_access_block" "keep_volume_public_access" {
-  bucket = aws_s3_bucket.keep_volume.id
-
-  block_public_acls   = true
-  block_public_policy = true
-  ignore_public_acls  = true
-}
-
 resource "aws_iam_role" "keepstore_iam_role" {
   name = "${local.cluster_name}-keepstore-00-iam-role"
   assume_role_policy = "${file("../assumerolepolicy.json")}"
