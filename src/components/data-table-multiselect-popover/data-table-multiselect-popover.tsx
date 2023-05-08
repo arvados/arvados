@@ -51,7 +51,7 @@ const styles: StyleRulesCallback<CssRules> = (theme: Theme) => ({
         paddingBottom: 5,
     },
     optionsContainer: {
-        padding: '1rem 0',
+        paddingTop: '1rem',
         flex: 1,
     },
     option: {
@@ -92,7 +92,7 @@ export const DataTableMultiselectPopover = withStyles(styles)(
             const { name, classes, children, options, checkedList } = this.props;
             return (
                 <>
-                    <Tooltip disableFocusListener title='Multiselect Options'>
+                    <Tooltip disableFocusListener title='Select Options'>
                         <ButtonBase className={classnames(classes.root)} component='span' onClick={this.open} disableRipple>
                             {children}
                             <IconButton component='span' classes={{ root: classes.iconButton }} tabIndex={-1}>
@@ -123,6 +123,11 @@ export const DataTableMultiselectPopover = withStyles(styles)(
                                         </div>
                                     ))}
                             </div>
+                            <CardActions>
+                                <Button color='primary' variant='outlined' size='small' onClick={this.close}>
+                                    Close
+                                </Button>
+                            </CardActions>
                         </Card>
                     </Popover>
                     <this.MountHandler />

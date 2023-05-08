@@ -128,12 +128,6 @@ type DataTableState = {
     checkedList: Record<string, boolean>;
 };
 
-const multiselectOptions: DataTableMultiselectOption[] = [
-    { name: 'First Option', fn: (checkedList) => console.log('one', checkedList) },
-    { name: 'Second Option', fn: (checkedList) => console.log('two', checkedList) },
-    { name: 'Third Option', fn: (checkedList) => console.log('three', checkedList) },
-];
-
 type DataTableProps<T> = DataTableDataProps<T> & WithStyles<CssRules>;
 
 export const DataTable = withStyles(styles)(
@@ -176,6 +170,12 @@ export const DataTable = withStyles(styles)(
             ),
         };
 
+        multiselectOptions: DataTableMultiselectOption[] = [
+            { name: 'All', fn: () => this.handleSelectAll() },
+            { name: 'None', fn: () => this.handleSelectNone() },
+            { name: 'Invert', fn: () => this.handleInvertSelect() },
+        ];
+
         initializeCheckedList = (uuids: any[]): void => {
             const { checkedList } = this.state;
             uuids.forEach((uuid) => {
@@ -191,20 +191,41 @@ export const DataTable = withStyles(styles)(
             window.localStorage.setItem('selectedRows', JSON.stringify(checkedList));
         };
 
-        handleSelectorSelect = (): void => {
-            const { isSelected, checkedList } = this.state;
-            const newCheckedList = { ...checkedList };
-            for (const key in newCheckedList) {
-                newCheckedList[key] = !isSelected;
+        isAllSelected = (list: Record<string, boolean>): boolean => {
+            for (const key in list) {
+                if (list[key] === false) return false;
             }
-            this.setState({ isSelected: !isSelected, checkedList: newCheckedList });
+            return true;
         };
 
         handleCheck = (uuid: string): void => {
             const { checkedList } = this.state;
             const newCheckedList = { ...checkedList };
             newCheckedList[uuid] = !checkedList[uuid];
-            this.setState({ checkedList: newCheckedList });
+            this.setState({ checkedList: newCheckedList, isSelected: this.isAllSelected(newCheckedList) });
+        };
+
+        handleSelectorSelect = (): void => {
+            const { isSelected } = this.state;
+            isSelected ? this.handleSelectNone() : this.handleSelectAll();
+        };
+
+        handleSelectAll = (): void => {
+            const { checkedList } = this.state;
+            const newCheckedList = { ...checkedList };
+            for (const key in newCheckedList) {
+                newCheckedList[key] = true;
+            }
+            this.setState({ isSelected: true, checkedList: newCheckedList });
+        };
+
+        handleSelectNone = (): void => {
+            const { checkedList } = this.state;
+            const newCheckedList = { ...checkedList };
+            for (const key in newCheckedList) {
+                newCheckedList[key] = false;
+            }
+            this.setState({ isSelected: false, checkedList: newCheckedList });
         };
 
         handleInvertSelect = (): void => {
@@ -213,7 +234,7 @@ export const DataTable = withStyles(styles)(
             for (const key in newCheckedList) {
                 newCheckedList[key] = !checkedList[key];
             }
-            this.setState({ checkedList: newCheckedList });
+            this.setState({ checkedList: newCheckedList, isSelected: this.isAllSelected(newCheckedList) });
         };
 
         render() {
@@ -254,7 +275,11 @@ export const DataTable = withStyles(styles)(
                         <Tooltip title={this.state.isSelected ? 'Deselect All' : 'Select All'}>
                             <input type='checkbox' className={classes.checkBox} checked={this.state.isSelected} onChange={this.handleSelectorSelect}></input>
                         </Tooltip>
-                        <DataTableMultiselectPopover name={`Options`} options={multiselectOptions} checkedList={this.state.checkedList}></DataTableMultiselectPopover>
+                        <DataTableMultiselectPopover
+                            name={`Options`}
+                            options={this.multiselectOptions}
+                            checkedList={this.state.checkedList}
+                        ></DataTableMultiselectPopover>
                     </div>
                 </TableCell>
             ) : (
