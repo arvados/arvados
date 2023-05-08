@@ -14,6 +14,7 @@ import { DataTableFilters } from 'components/data-table-filters/data-table-filte
 import { CloseIcon, IconType, MaximizeIcon, UnMaximizeIcon, MoreOptionsIcon } from 'components/icon/icon';
 import { PaperProps } from '@material-ui/core/Paper';
 import { MPVPanelProps } from 'components/multi-panel-view/multi-panel-view';
+import MultiselectToolbar from 'components/multiselectToolbar/MultiselectToolbar';
 
 type CssRules = 'searchBox' | 'headerMenu' | 'toolbar' | 'footer' | 'root' | 'moreOptionsButton' | 'title' | 'dataTable' | 'container';
 
@@ -48,8 +49,10 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
         height: '100%',
     },
     headerMenu: {
+        width: '100%',
         float: 'right',
-        display: 'inline-block',
+        display: 'flex',
+        justifyContent: 'space-between',
     },
 });
 
@@ -190,6 +193,7 @@ export const DataExplorer = withStyles(styles)(
                             )}
                             {(!hideColumnSelector || !hideSearchInput || !!actions) && (
                                 <Grid className={classes.headerMenu} item xs>
+                                    <MultiselectToolbar />
                                     <Toolbar className={classes.toolbar}>
                                         {!hideSearchInput && (
                                             <div className={classes.searchBox}>
