@@ -42,6 +42,7 @@ const styles: StyleRulesCallback<CssRules> = (theme: Theme) => ({
         '&:hover': {
             color: theme.palette.text.primary,
         },
+        paddingBottom: '5px',
     },
     iconButton: {
         color: theme.palette.text.primary,
@@ -50,14 +51,14 @@ const styles: StyleRulesCallback<CssRules> = (theme: Theme) => ({
         paddingBottom: 5,
     },
     optionsContainer: {
-        paddingBottom: '3px',
+        padding: '1rem 0',
         flex: 1,
     },
     option: {
         cursor: 'pointer',
         display: 'flex',
-        padding: '3px 15px',
-        fontSize: '1rem',
+        padding: '3px 2rem',
+        fontSize: '0.9rem',
         alignItems: 'center',
         '&:hover': {
             backgroundColor: 'rgba(0, 0, 0, 0.08)',
@@ -91,7 +92,7 @@ export const DataTableMultiselectPopover = withStyles(styles)(
             const { name, classes, children, options, checkedList } = this.props;
             return (
                 <>
-                    <Tooltip disableFocusListener title='Multiselect Actions'>
+                    <Tooltip disableFocusListener title='Multiselect Options'>
                         <ButtonBase className={classnames(classes.root)} component='span' onClick={this.open} disableRipple>
                             {children}
                             <IconButton component='span' classes={{ root: classes.iconButton }} tabIndex={-1}>
@@ -107,22 +108,21 @@ export const DataTableMultiselectPopover = withStyles(styles)(
                         onClose={this.close}
                     >
                         <Card>
-                            <CardContent>
-                                <Typography variant='caption'>{name}</Typography>
-                            </CardContent>
                             <div className={classes.optionsContainer}>
                                 {options.length &&
                                     options.map((option, i) => (
-                                        <div key={i} className={classes.option} onClick={() => option.fn(checkedList)}>
+                                        <div
+                                            key={i}
+                                            className={classes.option}
+                                            onClick={() => {
+                                                option.fn(checkedList);
+                                                this.close();
+                                            }}
+                                        >
                                             {option.name}
                                         </div>
                                     ))}
                             </div>
-                            <CardActions>
-                                <Button color='primary' variant='outlined' size='small' onClick={this.close}>
-                                    Close
-                                </Button>
-                            </CardActions>
                         </Card>
                     </Popover>
                     <this.MountHandler />
