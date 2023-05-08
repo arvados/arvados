@@ -136,7 +136,7 @@ resource "aws_security_group" "arvados_sg" {
 # PUBLIC DNS
 resource "aws_route53_zone" "public_zone" {
   count = var.private_only ? 0 : 1
-  name = local.arvados_dns_zone
+  name = var.domain_name
 }
 resource "aws_route53_record" "public_a_record" {
   zone_id = try(local.route53_public_zone.id, "")
@@ -158,7 +158,7 @@ resource "aws_route53_record" "public_cname_record" {
   zone_id = try(local.route53_public_zone.id, "")
   for_each = {
     for i in local.cname_by_host: i.record =>
-      "${i.cname}.${local.arvados_dns_zone}"
+      "${i.cname}.${var.domain_name}"
     if var.private_only == false
   }
   name = each.key
@@ -169,7 +169,7 @@ resource "aws_route53_record" "public_cname_record" {
 
 # PRIVATE DNS
 resource "aws_route53_zone" "private_zone" {
-  name = local.arvados_dns_zone
+  name = var.domain_name
   vpc {
     vpc_id = aws_vpc.arvados_vpc.id
   }
@@ -191,7 +191,7 @@ resource "aws_route53_record" "private_main_a_record" {
 }
 resource "aws_route53_record" "private_cname_record" {
   zone_id = aws_route53_zone.private_zone.id
-  for_each = {for i in local.cname_by_host: i.record => "${i.cname}.${local.arvados_dns_zone}" }
+  for_each = {for i in local.cname_by_host: i.record => "${i.cname}.${var.domain_name}" }
   name = each.key
   type = "CNAME"
   ttl = 300

@@ -102,7 +102,10 @@ Each section described above contain a @terraform.tfvars@ file with some configu
 
 <pre><code>region_name = "us-east-1"
 # cluster_name = "xarv1"
-# domain_name = "example.com"</code></pre>
+# domain_name = "xarv1.example.com"
+
+# Uncomment this to create an non-publicly accessible Arvados cluster
+# private_only = true</code></pre>
 
 If you don't set the variables @vpc/terraform.tfvars@ file, you will be asked to re-enter these parameters every time you run Terraform.
 

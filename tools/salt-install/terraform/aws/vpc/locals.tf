@@ -17,7 +17,6 @@ locals {
     var.internal_service_hosts,
     var.private_only ? var.user_facing_hosts : []
   )
-  arvados_dns_zone = "${var.cluster_name}.${var.domain_name}"
   public_ip = {
     for k, v in aws_eip.arvados_eip: k => v.public_ip
   }
