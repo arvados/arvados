@@ -2,6 +2,8 @@
 #
 # SPDX-License-Identifier: AGPL-3.0
 
+require 'update_priorities'
+
 class Arvados::V1::ContainersController < ApplicationController
   accept_attribute_as_json :environment, Hash
   accept_attribute_as_json :mounts, Hash
@@ -29,8 +31,18 @@ class Arvados::V1::ContainersController < ApplicationController
   end
 
   def update
-    @object.with_lock do
+    if (resource_attrs.keys - [:cost, :gateway_address, :output_properties, :progress, :runtime_status]).empty?
+      # If no attributes are being updated besides these, there are no
+      # cascading changes to other rows/tables, the only lock will the
+      # single row lock on SQL UPDATE.
       super
+    else
+      Container.transaction do
+        # Get locks ahead of time to avoid deadlock in cascading priority
+        # update
+        row_lock_for_priority_update @object.uuid
+        super
+      end
     end
   end
 
@@ -39,11 +51,16 @@ class Arvados::V1::ContainersController < ApplicationController
     if action_name == 'lock' || action_name == 'unlock'
       # Avoid loading more fields than we need
       @objects = @objects.select(:id, :uuid, :state, :priority, :auth_uuid, :locked_by_uuid, :lock_count)
-      @select = %w(uuid state priority auth_uuid locked_by_uuid)
+      # This gets called from within find_object_by_uuid.
+      # find_object_by_uuid stores the original value of @select in
+      # @preserve_select, edits the value of @select, calls
+      # find_objects_for_index, then restores @select from the value
+      # of @preserve_select.  So if we want our updated value of
+      # @select here to stick, we have to set @preserve_select.
+      @select = @preserve_select = %w(uuid state priority auth_uuid locked_by_uuid)
     elsif action_name == 'update_priority'
-      # We're going to reload(lock: true) in the handler, which will
-      # select all attributes, but will fail if we don't select :id
-      # now.
+      # We're going to reload in update_priority!, which will select
+      # all attributes, but will fail if we don't select :id now.
       @objects = @objects.select(:id, :uuid)
     end
   end
@@ -59,7 +76,6 @@ class Arvados::V1::ContainersController < ApplicationController
   end
 
   def update_priority
-    @object.reload(lock: true)
     @object.update_priority!
     show
   end

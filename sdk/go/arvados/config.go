@@ -221,9 +221,10 @@ type Cluster struct {
 		EmailFrom                      string
 	}
 	SystemLogs struct {
-		LogLevel                string
-		Format                  string
-		MaxRequestLogParamsSize int
+		LogLevel                  string
+		Format                    string
+		MaxRequestLogParamsSize   int
+		RequestQueueDumpDirectory string
 	}
 	TLS struct {
 		Certificate string
@@ -324,7 +325,6 @@ type S3VolumeDriverParameters struct {
 	Bucket             string
 	LocationConstraint bool
 	V2Signature        bool
-	UseAWSS3v2Driver   bool
 	IndexPageSize      int
 	ConnectTimeout     Duration
 	ReadTimeout        Duration

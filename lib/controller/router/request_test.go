@@ -13,6 +13,7 @@ import (
 	"net/http/httptest"
 	"net/url"
 
+	"git.arvados.org/arvados.git/sdk/go/arvados"
 	"git.arvados.org/arvados.git/sdk/go/arvadostest"
 	check "gopkg.in/check.v1"
 )
@@ -147,12 +148,15 @@ func (s *RouterSuite) TestAttrsInBody(c *check.C) {
 	} {
 		c.Logf("tr: %#v", tr)
 		req := tr.Request()
-		params, err := s.rtr.loadRequestParams(req, tr.attrsKey)
+		var opts struct{ Attrs struct{ Foo string } }
+		params, err := s.rtr.loadRequestParams(req, tr.attrsKey, &opts)
 		c.Logf("params: %#v", params)
 		c.Assert(err, check.IsNil)
 		c.Check(params, check.NotNil)
-		c.Assert(params["attrs"], check.FitsTypeOf, map[string]interface{}{})
-		c.Check(params["attrs"].(map[string]interface{})["foo"], check.Equals, "bar")
+		c.Check(opts.Attrs.Foo, check.Equals, "bar")
+		if c.Check(params["attrs"], check.FitsTypeOf, map[string]interface{}{}) {
+			c.Check(params["attrs"].(map[string]interface{})["foo"], check.Equals, "bar")
+		}
 	}
 }
 
@@ -169,11 +173,14 @@ func (s *RouterSuite) TestBoolParam(c *check.C) {
 		c.Logf("#%d, tr: %#v", i, tr)
 		req := tr.Request()
 		c.Logf("tr.body: %s", tr.bodyContent())
-		params, err := s.rtr.loadRequestParams(req, tr.attrsKey)
+		var opts struct{ EnsureUniqueName bool }
+		params, err := s.rtr.loadRequestParams(req, tr.attrsKey, &opts)
 		c.Logf("params: %#v", params)
 		c.Assert(err, check.IsNil)
-		c.Check(params, check.NotNil)
-		c.Check(params[testKey], check.Equals, false)
+		c.Check(opts.EnsureUniqueName, check.Equals, false)
+		if c.Check(params, check.NotNil) {
+			c.Check(params[testKey], check.Equals, false)
+		}
 	}
 
 	for i, tr := range []testReq{
@@ -185,11 +192,16 @@ func (s *RouterSuite) TestBoolParam(c *check.C) {
 		c.Logf("#%d, tr: %#v", i, tr)
 		req := tr.Request()
 		c.Logf("tr.body: %s", tr.bodyContent())
-		params, err := s.rtr.loadRequestParams(req, tr.attrsKey)
+		var opts struct {
+			EnsureUniqueName bool `json:"ensure_unique_name"`
+		}
+		params, err := s.rtr.loadRequestParams(req, tr.attrsKey, &opts)
 		c.Logf("params: %#v", params)
 		c.Assert(err, check.IsNil)
-		c.Check(params, check.NotNil)
-		c.Check(params[testKey], check.Equals, true)
+		c.Check(opts.EnsureUniqueName, check.Equals, true)
+		if c.Check(params, check.NotNil) {
+			c.Check(params[testKey], check.Equals, true)
+		}
 	}
 }
 
@@ -204,7 +216,7 @@ func (s *RouterSuite) TestOrderParam(c *check.C) {
 	} {
 		c.Logf("#%d, tr: %#v", i, tr)
 		req := tr.Request()
-		params, err := s.rtr.loadRequestParams(req, tr.attrsKey)
+		params, err := s.rtr.loadRequestParams(req, tr.attrsKey, nil)
 		c.Assert(err, check.IsNil)
 		c.Assert(params, check.NotNil)
 		if order, ok := params["order"]; ok && order != nil {
@@ -221,8 +233,10 @@ func (s *RouterSuite) TestOrderParam(c *check.C) {
 	} {
 		c.Logf("#%d, tr: %#v", i, tr)
 		req := tr.Request()
-		params, err := s.rtr.loadRequestParams(req, tr.attrsKey)
+		var opts arvados.ListOptions
+		params, err := s.rtr.loadRequestParams(req, tr.attrsKey, &opts)
 		c.Assert(err, check.IsNil)
+		c.Check(opts.Order, check.DeepEquals, []string{"foo", "bar desc"})
 		if _, ok := params["order"].([]string); ok {
 			c.Check(params["order"], check.DeepEquals, []string{"foo", "bar desc"})
 		} else {

@@ -80,6 +80,8 @@ In the default configuration these are:
 # @workbench2.${CLUSTER}.${DOMAIN}@
 # @webshell.${CLUSTER}.${DOMAIN}@
 # @shell.${CLUSTER}.${DOMAIN}@
+# @prometheus.${CLUSTER}.${DOMAIN}@
+# @grafana.${CLUSTER}.${DOMAIN}@
 
 This is described in more detail in "DNS entries and TLS certificates":install-manual-prerequisites.html#dnstls.
 
@@ -228,6 +230,24 @@ https://workbench.@${CLUSTER}.${DOMAIN}@
 If you did *not* "configure a different authentication provider":#authentication you will be using the "Test" provider, and the provision script creates an initial user for testing purposes. This user is configured as administrator of the newly created cluster.  It uses the values of @INITIAL_USER@ and @INITIAL_USER_PASSWORD@ the @local.params@ file.
 
 If you *did* configure a different authentication provider, the first user to log in will automatically be given Arvados admin privileges.
+
+h2(#monitoring). Monitoring and Metrics
+
+You can monitor the health and performance of the system using the admin dashboard.
+
+For the multi-hostname install, it will be:
+
+https://grafana.@${CLUSTER}.${DOMAIN}@
+
+To log in, use username "admin" and @${INITIAL_USER_PASSWORD}@ from @local.conf@.
+
+Once logged in, you will want to add the dashboards to the front page.
+
+# On the left icon bar, click on "Browse"
+# If the check box next to "Starred" is selected, click on it to de-select it
+# You should see a folder with "Arvados cluster overview", "Node exporter" and "Postgres exporter"
+# You can visit each dashboard and click on the star next to the title to "Mark as favorite"
+# They should now be linked on the front page.
 
 h2(#post_install). After the installation
 

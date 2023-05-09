@@ -183,12 +183,12 @@ class Arvados::V1::CollectionsController < ApplicationController
           end
         end
 
-        Container.readable_by(*@read_users).where(output: loc.to_s).each do |c|
-          search_edges(visited, c.uuid, :search_up)
+        Container.readable_by(*@read_users).where(output: loc.to_s).pluck(:uuid).each do |c_uuid|
+          search_edges(visited, c_uuid, :search_up)
         end
 
-        Container.readable_by(*@read_users).where(log: loc.to_s).each do |c|
-          search_edges(visited, c.uuid, :search_up)
+        Container.readable_by(*@read_users).where(log: loc.to_s).pluck(:uuid).each do |c_uuid|
+          search_edges(visited, c_uuid, :search_up)
         end
       elsif direction == :search_down
         if loc.to_s == "d41d8cd98f00b204e9800998ecf8427e+0"
@@ -207,7 +207,7 @@ class Arvados::V1::CollectionsController < ApplicationController
           end
         end
 
-        Container.readable_by(*@read_users).where([Container.full_text_trgm + " like ?", "%#{loc.to_s}%"]).each do |c|
+        Container.readable_by(*@read_users).where([Container.full_text_trgm + " like ?", "%#{loc.to_s}%"]).select("output, log, uuid").each do |c|
           if c.output != loc.to_s && c.log != loc.to_s
             search_edges(visited, c.uuid, :search_down)
           end
@@ -276,12 +276,12 @@ class Arvados::V1::CollectionsController < ApplicationController
               end
             end
 
-            ContainerRequest.readable_by(*@read_users).where(output_uuid: uuid).each do |cr|
-              search_edges(visited, cr.uuid, :search_up)
+            ContainerRequest.readable_by(*@read_users).where(output_uuid: uuid).pluck(:uuid).each do |cr_uuid|
+              search_edges(visited, cr_uuid, :search_up)
             end
 
-            ContainerRequest.readable_by(*@read_users).where(log_uuid: uuid).each do |cr|
-              search_edges(visited, cr.uuid, :search_up)
+            ContainerRequest.readable_by(*@read_users).where(log_uuid: uuid).pluck(:uuid).each do |cr_uuid|
+              search_edges(visited, cr_uuid, :search_up)
             end
           elsif direction == :search_down
             search_edges(visited, c.portable_data_hash, :search_down)

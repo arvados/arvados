@@ -53,7 +53,6 @@ gem 'themes_for_rails', git: 'https://github.com/arvados/themes_for_rails'
 gem 'arvados', '~> 2.1.5'
 gem 'httpclient'
 
-gem 'sshkey'
 gem 'safe_yaml'
 gem 'lograge'
 gem 'logstash-event'
@@ -62,6 +61,8 @@ gem 'rails-observers'
 
 gem 'rails-perftest'
 gem 'rails-controller-testing'
+
+gem 'mini_portile2', '~> 2.8', '>= 2.8.1'
 
 # arvados-google-api-client and googleauth depend on signet, but
 # signet 0.12 is incompatible with ruby 2.3.

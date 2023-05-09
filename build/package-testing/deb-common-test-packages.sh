@@ -50,7 +50,7 @@ if [[ "$DEBUG" != "0" ]]; then
   while read so && [ -n "$so" ]; do
       echo
       echo "== Packages dependencies for $so =="
-      ldd "$so" | awk '($3 ~ /^\//){print $3}' | sort -u | xargs dpkg -S | cut -d: -f1 | sort -u
+      ldd "$so" | awk '($3 ~ /^\//){print $3}' | sort -u | xargs -r dpkg -S | cut -d: -f1 | sort -u
   done <<EOF
 $(find -name '*.so')
 EOF

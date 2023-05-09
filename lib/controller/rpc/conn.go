@@ -16,6 +16,7 @@ import (
 	"io/ioutil"
 	"net"
 	"net/http"
+	"net/http/httputil"
 	"net/url"
 	"strconv"
 	"strings"
@@ -88,6 +89,8 @@ func (conn *Conn) requestAndDecode(ctx context.Context, dst interface{}, ep arva
 		Scheme:     conn.baseURL.Scheme,
 		APIHost:    conn.baseURL.Host,
 		SendHeader: conn.SendHeader,
+		// Disable auto-retry
+		Timeout: 0,
 	}
 	tokens, err := conn.tokenProvider(ctx)
 	if err != nil {
@@ -217,6 +220,41 @@ func (conn *Conn) relativeToBaseURL(location string) string {
 	return location
 }
 
+func (conn *Conn) AuthorizedKeyCreate(ctx context.Context, options arvados.CreateOptions) (arvados.AuthorizedKey, error) {
+	ep := arvados.EndpointAuthorizedKeyCreate
+	var resp arvados.AuthorizedKey
+	err := conn.requestAndDecode(ctx, &resp, ep, nil, options)
+	return resp, err
+}
+
+func (conn *Conn) AuthorizedKeyUpdate(ctx context.Context, options arvados.UpdateOptions) (arvados.AuthorizedKey, error) {
+	ep := arvados.EndpointAuthorizedKeyUpdate
+	var resp arvados.AuthorizedKey
+	err := conn.requestAndDecode(ctx, &resp, ep, nil, options)
+	return resp, err
+}
+
+func (conn *Conn) AuthorizedKeyGet(ctx context.Context, options arvados.GetOptions) (arvados.AuthorizedKey, error) {
+	ep := arvados.EndpointAuthorizedKeyGet
+	var resp arvados.AuthorizedKey
+	err := conn.requestAndDecode(ctx, &resp, ep, nil, options)
+	return resp, err
+}
+
+func (conn *Conn) AuthorizedKeyList(ctx context.Context, options arvados.ListOptions) (arvados.AuthorizedKeyList, error) {
+	ep := arvados.EndpointAuthorizedKeyList
+	var resp arvados.AuthorizedKeyList
+	err := conn.requestAndDecode(ctx, &resp, ep, nil, options)
+	return resp, err
+}
+
+func (conn *Conn) AuthorizedKeyDelete(ctx context.Context, options arvados.DeleteOptions) (arvados.AuthorizedKey, error) {
+	ep := arvados.EndpointAuthorizedKeyDelete
+	var resp arvados.AuthorizedKey
+	err := conn.requestAndDecode(ctx, &resp, ep, nil, options)
+	return resp, err
+}
+
 func (conn *Conn) CollectionCreate(ctx context.Context, options arvados.CreateOptions) (arvados.Collection, error) {
 	ep := arvados.EndpointCollectionCreate
 	var resp arvados.Collection
@@ -340,7 +378,7 @@ func (conn *Conn) ContainerUnlock(ctx context.Context, options arvados.GetOption
 // a running container. If the returned error is nil, the caller is
 // responsible for closing sshconn.Conn.
 func (conn *Conn) ContainerSSH(ctx context.Context, options arvados.ContainerSSHOptions) (sshconn arvados.ConnectionResponse, err error) {
-	u, err := conn.baseURL.Parse("/" + strings.Replace(arvados.EndpointContainerSSH.Path, "{uuid}", options.UUID, -1))
+	u, err := conn.baseURL.Parse("/" + strings.Replace(arvados.EndpointContainerSSHCompat.Path, "{uuid}", options.UUID, -1))
 	if err != nil {
 		err = fmt.Errorf("url.Parse: %w", err)
 		return
@@ -356,7 +394,7 @@ func (conn *Conn) ContainerSSH(ctx context.Context, options arvados.ContainerSSH
 // the controller. The caller should connect the returned resp.Conn to
 // a client-side yamux session.
 func (conn *Conn) ContainerGatewayTunnel(ctx context.Context, options arvados.ContainerGatewayTunnelOptions) (tunnelconn arvados.ConnectionResponse, err error) {
-	u, err := conn.baseURL.Parse("/" + strings.Replace(arvados.EndpointContainerGatewayTunnel.Path, "{uuid}", options.UUID, -1))
+	u, err := conn.baseURL.Parse("/" + strings.Replace(arvados.EndpointContainerGatewayTunnelCompat.Path, "{uuid}", options.UUID, -1))
 	if err != nil {
 		err = fmt.Errorf("url.Parse: %w", err)
 		return
@@ -466,6 +504,19 @@ func (conn *Conn) ContainerRequestDelete(ctx context.Context, options arvados.De
 	var resp arvados.ContainerRequest
 	err := conn.requestAndDecode(ctx, &resp, ep, nil, options)
 	return resp, err
+}
+
+func (conn *Conn) ContainerRequestLog(ctx context.Context, options arvados.ContainerLogOptions) (resp http.Handler, err error) {
+	proxy := &httputil.ReverseProxy{
+		Transport: conn.httpClient.Transport,
+		Director: func(r *http.Request) {
+			u := conn.baseURL
+			u.Path = r.URL.Path
+			u.RawQuery = fmt.Sprintf("no_forward=%v", options.NoForward)
+			r.URL = &u
+		},
+	}
+	return proxy, nil
 }
 
 func (conn *Conn) GroupCreate(ctx context.Context, options arvados.CreateOptions) (arvados.Group, error) {

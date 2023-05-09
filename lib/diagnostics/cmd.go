@@ -131,6 +131,8 @@ func (diag *diagnoser) dotest(id int, title string, fn func() error) {
 
 func (diag *diagnoser) runtests() {
 	client := arvados.NewClientFromEnv()
+	// Disable auto-retry, use context instead
+	client.Timeout = 0
 
 	if client.APIHost == "" || client.AuthToken == "" {
 		diag.errorf("ARVADOS_API_HOST and ARVADOS_API_TOKEN environment variables are not set -- aborting without running any tests")

@@ -17,6 +17,47 @@ import (
 // -- this file is auto-generated -- do not edit -- edit list.go and run "go generate" instead --
 //
 
+func (conn *Conn) generated_AuthorizedKeyList(ctx context.Context, options arvados.ListOptions) (arvados.AuthorizedKeyList, error) {
+	var mtx sync.Mutex
+	var merged arvados.AuthorizedKeyList
+	var needSort atomic.Value
+	needSort.Store(false)
+	err := conn.splitListRequest(ctx, options, func(ctx context.Context, _ string, backend arvados.API, options arvados.ListOptions) ([]string, error) {
+		options.ForwardedFor = conn.cluster.ClusterID + "-" + options.ForwardedFor
+		cl, err := backend.AuthorizedKeyList(ctx, options)
+		if err != nil {
+			return nil, err
+		}
+		mtx.Lock()
+		defer mtx.Unlock()
+		if len(merged.Items) == 0 {
+			merged = cl
+		} else if len(cl.Items) > 0 {
+			merged.Items = append(merged.Items, cl.Items...)
+			needSort.Store(true)
+		}
+		uuids := make([]string, 0, len(cl.Items))
+		for _, item := range cl.Items {
+			uuids = append(uuids, item.UUID)
+		}
+		return uuids, nil
+	})
+	if needSort.Load().(bool) {
+		// Apply the default/implied order, "modified_at desc"
+		sort.Slice(merged.Items, func(i, j int) bool {
+			mi, mj := merged.Items[i].ModifiedAt, merged.Items[j].ModifiedAt
+			return mj.Before(mi)
+		})
+	}
+	if merged.Items == nil {
+		// Return empty results as [], not null
+		// (https://github.com/golang/go/issues/27589 might be
+		// a better solution in the future)
+		merged.Items = []arvados.AuthorizedKey{}
+	}
+	return merged, err
+}
+
 func (conn *Conn) generated_ContainerList(ctx context.Context, options arvados.ListOptions) (arvados.ContainerList, error) {
 	var mtx sync.Mutex
 	var merged arvados.ContainerList

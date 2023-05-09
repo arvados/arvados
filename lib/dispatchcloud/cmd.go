@@ -21,6 +21,10 @@ func newHandler(ctx context.Context, cluster *arvados.Cluster, token string, reg
 	if err != nil {
 		return service.ErrorHandler(ctx, cluster, fmt.Errorf("error initializing client from cluster config: %s", err))
 	}
+	// Disable auto-retry.  We have transient failure recovery at
+	// the application level, so we would rather receive/report
+	// upstream errors right away.
+	ac.Timeout = 0
 	d := &dispatcher{
 		Cluster:   cluster,
 		Context:   ctx,

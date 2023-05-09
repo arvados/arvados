@@ -201,9 +201,9 @@ func (sub *v0subscribe) sendOldEvents(sess *v0session) {
 		return
 	}
 
-	var ids []uint64
+	var ids []int64
 	for rows.Next() {
-		var id uint64
+		var id int64
 		err := rows.Scan(&id)
 		if err != nil {
 			sess.log.WithError(err).Error("sendOldEvents row Scan failed")

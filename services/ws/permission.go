@@ -75,7 +75,9 @@ func (pc *cachingPermChecker) Check(ctx context.Context, uuid string) (bool, err
 	}
 
 	pc.nMisses++
-	err = pc.RequestAndDecode(&buf, "GET", path, nil, url.Values{
+	ctx, cancel := context.WithDeadline(context.Background(), time.Now().Add(time.Minute))
+	defer cancel()
+	err = pc.RequestAndDecodeContext(ctx, &buf, "GET", path, nil, url.Values{
 		"include_trash": {"true"},
 		"select":        {`["uuid"]`},
 	})

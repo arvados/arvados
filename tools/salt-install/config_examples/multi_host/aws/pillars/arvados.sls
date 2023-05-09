@@ -107,6 +107,12 @@ arvados:
             Email: __INITIAL_USER_EMAIL__
             Password: __INITIAL_USER_PASSWORD__
 
+    ### API
+    {%- if "__CONTROLLER_MAX_CONCURRENT_REQUESTS__" != "" %}
+    API:
+      MaxConcurrentRequests: __CONTROLLER_MAX_CONCURRENT_REQUESTS__
+    {%- endif %}
+
     ### CONTAINERS
     Containers:
       MaxRetryAttempts: 10
@@ -140,7 +146,6 @@ arvados:
         Replication: 2
         Driver: S3
         DriverParameters:
-          UseAWSS3v2Driver: true
           Bucket: __CLUSTER__-nyw5e-000000000000000-volume
           IAMRole: __CLUSTER__-keepstore-00-iam-role
           Region: FIXME
@@ -161,7 +166,7 @@ arvados:
           'http://__CONTROLLER_INT_IP__:9006': {}
       Keepbalance:
         InternalURLs:
-          'http://localhost:9005': {}
+          'http://__CONTROLLER_INT_IP__:9005': {}
       Keepproxy:
         ExternalURL: 'https://keep.__CLUSTER__.__DOMAIN__:__KEEP_EXT_SSL_PORT__'
         InternalURLs:
@@ -169,14 +174,13 @@ arvados:
       Keepstore:
         InternalURLs:
           'http://__KEEPSTORE0_INT_IP__:25107': {}
-          'http://__KEEPSTORE1_INT_IP__:25107': {}
       RailsAPI:
         InternalURLs:
           'http://localhost:8004': {}
       WebDAV:
         ExternalURL: 'https://*.collections.__CLUSTER__.__DOMAIN__:__KEEPWEB_EXT_SSL_PORT__/'
         InternalURLs:
-          'http://localhost:9002': {}
+          'http://__KEEPWEB_INT_IP__:9002': {}
       WebDAVDownload:
         ExternalURL: 'https://download.__CLUSTER__.__DOMAIN__:__KEEPWEB_EXT_SSL_PORT__'
       WebShell:

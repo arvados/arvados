@@ -41,6 +41,7 @@ from .runner import (upload_dependencies, packed_workflow, upload_workflow_colle
 from .pathmapper import ArvPathMapper, trim_listing
 from .arvtool import ArvadosCommandTool, set_cluster_target
 from ._version import __version__
+from .util import common_prefix
 
 from .perf import Perf
 
@@ -235,6 +236,7 @@ def fix_schemadef(req, baseuri, urlexpander, merged_map, jobmapper, pdh):
             merged_map[mm].resolved[r] = rename
     return req
 
+
 def drop_ids(d):
     if isinstance(d, MutableSequence):
         for i, s in enumerate(d):
@@ -280,22 +282,7 @@ def upload_workflow(arvRunner, tool, job_order, project_uuid,
     # Find the longest common prefix among all the file names.  We'll
     # use this to recreate the directory structure in a keep
     # collection with correct relative references.
-    n = 7
-    allmatch = True
-    if firstfile:
-        while allmatch:
-            n += 1
-            for f in all_files:
-                if len(f)-1 < n:
-                    n -= 1
-                    allmatch = False
-                    break
-                if f[n] != firstfile[n]:
-                    allmatch = False
-                    break
-
-        while firstfile[n] != "/":
-            n -= 1
+    prefix = common_prefix(firstfile, all_files)
 
     col = arvados.collection.Collection(api_client=arvRunner.api)
 
@@ -332,22 +319,22 @@ def upload_workflow(arvRunner, tool, job_order, project_uuid,
         update_refs(result, w, tool.doc_loader.expand_url, merged_map, jobmapper, runtimeContext, "", "")
 
         # Write the updated file to the collection.
-        with col.open(w[n+1:], "wt") as f:
+        with col.open(w[len(prefix):], "wt") as f:
             if export_as_json:
                 json.dump(result, f, indent=4, separators=(',',': '))
             else:
                 yamlloader.dump(result, stream=f)
 
         # Also store a verbatim copy of the original files
-        with col.open(os.path.join("original", w[n+1:]), "wt") as f:
+        with col.open(os.path.join("original", w[len(prefix):]), "wt") as f:
             f.write(text)
 
 
     # Upload files referenced by $include directives, these are used
     # unchanged and don't need to be updated.
     for w in include_files:
-        with col.open(w[n+1:], "wb") as f1:
-            with col.open(os.path.join("original", w[n+1:]), "wb") as f3:
+        with col.open(w[len(prefix):], "wb") as f1:
+            with col.open(os.path.join("original", w[len(prefix):]), "wb") as f3:
                 with open(uri_file_path(w), "rb") as f2:
                     dat = f2.read(65536)
                     while dat:
@@ -361,7 +348,7 @@ def upload_workflow(arvRunner, tool, job_order, project_uuid,
     if git_info and git_info.get("http://arvados.org/cwl#gitDescribe"):
         toolname = "%s (%s)" % (toolname, git_info.get("http://arvados.org/cwl#gitDescribe"))
 
-    toolfile = tool.tool["id"][n+1:]
+    toolfile = tool.tool["id"][len(prefix):]
 
     properties = {
         "type": "workflow",

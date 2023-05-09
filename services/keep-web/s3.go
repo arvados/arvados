@@ -28,7 +28,6 @@ import (
 
 	"git.arvados.org/arvados.git/sdk/go/arvados"
 	"git.arvados.org/arvados.git/sdk/go/ctxlog"
-	"github.com/AdRoll/goamz/s3"
 )
 
 const (
@@ -42,11 +41,17 @@ type commonPrefix struct {
 }
 
 type listV1Resp struct {
-	XMLName string `xml:"http://s3.amazonaws.com/doc/2006-03-01/ ListBucketResult"`
-	s3.ListResp
-	// s3.ListResp marshals an empty tag when
-	// CommonPrefixes is nil, which confuses some clients.
-	// Fix by using this nested struct instead.
+	XMLName     string `xml:"http://s3.amazonaws.com/doc/2006-03-01/ ListBucketResult"`
+	Name        string
+	Prefix      string
+	Delimiter   string
+	Marker      string
+	MaxKeys     int
+	IsTruncated bool
+	Contents    []s3Key
+	// If we use a []string here, xml marshals an empty tag when
+	// CommonPrefixes is nil, which confuses some clients.  Fix by
+	// using this nested struct instead.
 	CommonPrefixes []commonPrefix
 	// Similarly, we need omitempty here, because an empty
 	// tag confuses some clients (e.g.,
@@ -60,7 +65,7 @@ type listV1Resp struct {
 type listV2Resp struct {
 	XMLName               string `xml:"http://s3.amazonaws.com/doc/2006-03-01/ ListBucketResult"`
 	IsTruncated           bool
-	Contents              []s3.Key
+	Contents              []s3Key
 	Name                  string
 	Prefix                string
 	Delimiter             string
@@ -71,6 +76,21 @@ type listV2Resp struct {
 	ContinuationToken     string `xml:",omitempty"`
 	NextContinuationToken string `xml:",omitempty"`
 	StartAfter            string `xml:",omitempty"`
+}
+
+type s3Key struct {
+	Key          string
+	LastModified string
+	Size         int64
+	// The following fields are not populated, but are here in
+	// case clients rely on the keys being present in xml
+	// responses.
+	ETag         string
+	StorageClass string
+	Owner        struct {
+		ID          string
+		DisplayName string
+	}
 }
 
 func hmacstring(msg string, key []byte) []byte {
@@ -859,7 +879,7 @@ func (h *handler) s3list(bucket string, w http.ResponseWriter, r *http.Request, 
 				return filepath.SkipDir
 			}
 		}
-		resp.Contents = append(resp.Contents, s3.Key{
+		resp.Contents = append(resp.Contents, s3Key{
 			Key:          path,
 			LastModified: fi.ModTime().UTC().Format("2006-01-02T15:04:05.999") + "Z",
 			Size:         filesize,
@@ -923,15 +943,13 @@ func (h *handler) s3list(bucket string, w http.ResponseWriter, r *http.Request, 
 			CommonPrefixes: resp.CommonPrefixes,
 			NextMarker:     nextMarker,
 			KeyCount:       resp.KeyCount,
-			ListResp: s3.ListResp{
-				IsTruncated: resp.IsTruncated,
-				Name:        bucket,
-				Prefix:      params.prefix,
-				Delimiter:   params.delimiter,
-				Marker:      params.marker,
-				MaxKeys:     params.maxKeys,
-				Contents:    resp.Contents,
-			},
+			IsTruncated:    resp.IsTruncated,
+			Name:           bucket,
+			Prefix:         params.prefix,
+			Delimiter:      params.delimiter,
+			Marker:         params.marker,
+			MaxKeys:        params.maxKeys,
+			Contents:       resp.Contents,
 		}
 	}
 

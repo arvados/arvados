@@ -26,6 +26,10 @@ type Proxy struct {
 
 	// A dump of each request that has been proxied.
 	RequestDumps [][]byte
+
+	// If non-nil, func will be called on each incoming request
+	// before proxying it.
+	Director func(*http.Request)
 }
 
 // NewProxy returns a new Proxy that saves a dump of each reqeust
@@ -63,6 +67,9 @@ func NewProxy(c *check.C, svc arvados.Service) *Proxy {
 		URL:    u,
 	}
 	rp.Director = func(r *http.Request) {
+		if proxy.Director != nil {
+			proxy.Director(r)
+		}
 		dump, _ := httputil.DumpRequest(r, true)
 		proxy.RequestDumps = append(proxy.RequestDumps, dump)
 		r.URL.Scheme = target.Scheme

@@ -541,9 +541,11 @@ func (err rateLimitError) EarliestRetry() time.Time {
 }
 
 var isCodeCapacity = map[string]bool{
-	"InsufficientInstanceCapacity": true,
-	"VcpuLimitExceeded":            true,
-	"MaxSpotInstanceCountExceeded": true,
+	"InsufficientFreeAddressesInSubnet": true,
+	"InsufficientInstanceCapacity":      true,
+	"InsufficientVolumeCapacity":        true,
+	"MaxSpotInstanceCountExceeded":      true,
+	"VcpuLimitExceeded":                 true,
 }
 
 // isErrorCapacity returns whether the error is to be throttled based on its code.

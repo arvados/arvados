@@ -266,7 +266,7 @@ The 'jobs' API is no longer supported.
         activity statuses, for example in the RuntimeStatusLoggingHandler.
         """
 
-        if kind not in ('error', 'warning'):
+        if kind not in ('error', 'warning', 'activity'):
             # Ignore any other status kind
             return
 
@@ -281,7 +281,7 @@ The 'jobs' API is no longer supported.
             runtime_status = current.get('runtime_status', {})
 
             original_updatemessage = updatemessage = runtime_status.get(kind, "")
-            if not updatemessage:
+            if kind == "activity" or not updatemessage:
                 updatemessage = message
 
             # Subsequent messages tacked on in detail
@@ -370,7 +370,7 @@ The 'jobs' API is no longer supported.
                     try:
                         proc_states = table.list(filters=[["uuid", "in", page]]).execute(num_retries=self.num_retries)
                     except Exception as e:
-                        logger.exception("Error checking states on API server: %s", e)
+                        logger.warning("Temporary error checking states on API server: %s", e)
                         remain_wait = self.poll_interval
                         continue
 
@@ -593,6 +593,8 @@ The 'jobs' API is no longer supported.
     def arv_executor(self, updated_tool, job_order, runtimeContext, logger=None):
         self.debug = runtimeContext.debug
 
+        self.runtime_status_update("activity", "initialization")
+
         git_info = self.get_git_info(updated_tool) if self.git_info else {}
         if git_info:
             logger.info("Git provenance")
@@ -654,6 +656,8 @@ The 'jobs' API is no longer supported.
             runtimeContext.project_uuid = existing_wf["owner_uuid"]
 
         self.project_uuid = runtimeContext.project_uuid
+
+        self.runtime_status_update("activity", "data transfer")
 
         # Upload local file references in the job order.
         with Perf(metrics, "upload_job_order"):
@@ -822,6 +826,8 @@ The 'jobs' API is no longer supported.
 
         # We either running the workflow directly, or submitting it
         # and will wait for a final result.
+
+        self.runtime_status_update("activity", "workflow execution")
 
         current_container = arvados_cwl.util.get_current_container(self.api, self.num_retries, logger)
         if current_container:

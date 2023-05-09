@@ -1521,7 +1521,13 @@ func (runner *ContainerRunner) saveLogCollection(final bool) (response arvados.C
 	if final {
 		updates["is_trashed"] = true
 	} else {
-		exp := time.Now().Add(crunchLogUpdatePeriod * 24)
+		// We set trash_at so this collection gets
+		// automatically cleaned up eventually.  It used to be
+		// 12 hours but we had a situation where the API
+		// server was down over a weekend but the containers
+		// kept running such that the log collection got
+		// trashed, so now we make it 2 weeks.  refs #20378
+		exp := time.Now().Add(time.Duration(24*14) * time.Hour)
 		updates["trash_at"] = exp
 		updates["delete_at"] = exp
 	}
@@ -1643,11 +1649,7 @@ func (runner *ContainerRunner) Run() (err error) {
 	signal.Notify(sigusr2, syscall.SIGUSR2)
 	defer signal.Stop(sigusr2)
 	runner.loadPrices()
-	go func() {
-		for range sigusr2 {
-			runner.loadPrices()
-		}
-	}()
+	go runner.handleSIGUSR2(sigusr2)
 
 	runner.finalState = "Queued"
 
@@ -2081,6 +2083,7 @@ func (command) RunCommand(prog string, args []string, stdin io.Reader, stdout, s
 			ContainerUUID: containerUUID,
 			Target:        cr.executor,
 			Log:           cr.CrunchLog,
+			LogCollection: cr.LogCollection,
 		}
 		if gwListen == "" {
 			// Direct connection won't work, so we use the
@@ -2452,4 +2455,16 @@ func (cr *ContainerRunner) calculateCost(now time.Time) float64 {
 	}
 
 	return cost
+}
+
+func (runner *ContainerRunner) handleSIGUSR2(sigchan chan os.Signal) {
+	for range sigchan {
+		runner.loadPrices()
+		update := arvadosclient.Dict{
+			"container": arvadosclient.Dict{
+				"cost": runner.calculateCost(time.Now()),
+			},
+		}
+		runner.DispatcherArvClient.Update("containers", runner.Container.UUID, update, nil)
+	}
 }

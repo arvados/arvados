@@ -197,6 +197,8 @@ type Pool struct {
 	mTimeFromShutdownToGone   prometheus.Summary
 	mTimeFromQueueToCrunchRun prometheus.Summary
 	mRunProbeDuration         *prometheus.SummaryVec
+	mProbeAgeMax              prometheus.Gauge
+	mProbeAgeMedian           prometheus.Gauge
 }
 
 type createCall struct {
@@ -626,6 +628,20 @@ func (wp *Pool) registerMetrics(reg *prometheus.Registry) {
 		Help:      "Number of containers reported running by cloud VMs.",
 	})
 	reg.MustRegister(wp.mContainersRunning)
+	wp.mProbeAgeMax = prometheus.NewGauge(prometheus.GaugeOpts{
+		Namespace: "arvados",
+		Subsystem: "dispatchcloud",
+		Name:      "probe_age_seconds_max",
+		Help:      "Maximum number of seconds since an instance's most recent successful probe.",
+	})
+	reg.MustRegister(wp.mProbeAgeMax)
+	wp.mProbeAgeMedian = prometheus.NewGauge(prometheus.GaugeOpts{
+		Namespace: "arvados",
+		Subsystem: "dispatchcloud",
+		Name:      "probe_age_seconds_median",
+		Help:      "Median number of seconds since an instance's most recent successful probe.",
+	})
+	reg.MustRegister(wp.mProbeAgeMedian)
 	wp.mInstances = prometheus.NewGaugeVec(prometheus.GaugeOpts{
 		Namespace: "arvados",
 		Subsystem: "dispatchcloud",
@@ -738,6 +754,8 @@ func (wp *Pool) updateMetrics() {
 	cpu := map[string]int64{}
 	mem := map[string]int64{}
 	var running int64
+	now := time.Now()
+	var probed []time.Time
 	for _, wkr := range wp.workers {
 		var cat string
 		switch {
@@ -757,6 +775,7 @@ func (wp *Pool) updateMetrics() {
 		cpu[cat] += int64(wkr.instType.VCPUs)
 		mem[cat] += int64(wkr.instType.RAM)
 		running += int64(len(wkr.running) + len(wkr.starting))
+		probed = append(probed, wkr.probed)
 	}
 	for _, cat := range []string{"inuse", "hold", "booting", "unknown", "idle"} {
 		wp.mInstancesPrice.WithLabelValues(cat).Set(price[cat])
@@ -773,6 +792,15 @@ func (wp *Pool) updateMetrics() {
 		wp.mInstances.WithLabelValues(k.cat, k.instType).Set(float64(v))
 	}
 	wp.mContainersRunning.Set(float64(running))
+
+	if len(probed) == 0 {
+		wp.mProbeAgeMax.Set(0)
+		wp.mProbeAgeMedian.Set(0)
+	} else {
+		sort.Slice(probed, func(i, j int) bool { return probed[i].Before(probed[j]) })
+		wp.mProbeAgeMax.Set(now.Sub(probed[0]).Seconds())
+		wp.mProbeAgeMedian.Set(now.Sub(probed[len(probed)/2]).Seconds())
+	}
 }
 
 func (wp *Pool) runProbes() {

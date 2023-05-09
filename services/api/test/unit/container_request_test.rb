@@ -394,14 +394,15 @@ class ContainerRequestTest < ActiveSupport::TestCase
     ]
     parents = toplevel_crs.map(&findctr)
 
-    children = parents.map do |parent|
+    children_crs = parents.map do |parent|
       lock_and_run(parent)
       with_container_auth(parent) do
         create_minimal_req!(state: "Committed",
                             priority: 1,
                             environment: {"child" => parent.environment["workflow"]})
       end
-    end.map(&findctr)
+    end
+    children = children_crs.map(&findctr)
 
     grandchildren = children.reverse.map do |child|
       lock_and_run(child)
@@ -466,6 +467,36 @@ class ContainerRequestTest < ActiveSupport::TestCase
     assert_operator shared_grandchild.priority, :<=, grandchildren[2].priority
     assert_operator shared_grandchild.priority, :<=, children[2].priority
     assert_operator shared_grandchild.priority, :<=, parents[2].priority
+
+    # cancelling the most recent toplevel container should
+    # reprioritize all of its descendants (except the shared
+    # grandchild) to zero
+    toplevel_crs[2].update_attributes!(priority: 0)
+    (parents + children + grandchildren + [shared_grandchild]).map(&:reload)
+    assert_operator 0, :==, parents[2].priority
+    assert_operator 0, :==, children[2].priority
+    assert_operator 0, :==, grandchildren[2].priority
+    assert_operator shared_grandchild.priority, :==, grandchildren[0].priority
+
+    # cancel a child request, the parent should be > 0 but
+    # the child and grandchild go to 0.
+    children_crs[1].update_attributes!(priority: 0)
+    (parents + children + grandchildren + [shared_grandchild]).map(&:reload)
+    assert_operator 0, :<, parents[1].priority
+    assert_operator parents[0].priority, :>, parents[1].priority
+    assert_operator 0, :==, children[1].priority
+    assert_operator 0, :==, grandchildren[1].priority
+    assert_operator shared_grandchild.priority, :==, grandchildren[0].priority
+
+    # update the parent, it should get a higher priority but the children and
+    # grandchildren should remain at 0
+    toplevel_crs[1].update_attributes!(priority: 6)
+    (parents + children + grandchildren + [shared_grandchild]).map(&:reload)
+    assert_operator 0, :<, parents[1].priority
+    assert_operator parents[0].priority, :<, parents[1].priority
+    assert_operator 0, :==, children[1].priority
+    assert_operator 0, :==, grandchildren[1].priority
+    assert_operator shared_grandchild.priority, :==, grandchildren[0].priority
   end
 
   [

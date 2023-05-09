@@ -69,9 +69,3 @@ extra_extra_hosts_entries_etc_hosts_keep0_host_present:
     - ip: __KEEPSTORE0_INT_IP__
     - names:
       - keep0.{{ arvados.cluster.name }}.{{ arvados.cluster.domain }}
-
-extra_extra_hosts_entries_etc_hosts_keep1_host_present:
-  host.present:
-    - ip: __KEEPSTORE1_INT_IP__
-    - names:
-      - keep1.{{ arvados.cluster.name }}.{{ arvados.cluster.domain }}

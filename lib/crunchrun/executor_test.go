@@ -6,6 +6,7 @@ package crunchrun
 
 import (
 	"bytes"
+	"context"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -18,7 +19,6 @@ import (
 	"git.arvados.org/arvados.git/lib/diagnostics"
 	"git.arvados.org/arvados.git/sdk/go/arvados"
 	"git.arvados.org/arvados.git/sdk/go/arvadostest"
-	"golang.org/x/net/context"
 	. "gopkg.in/check.v1"
 )
 

@@ -2,6 +2,8 @@
 #
 # SPDX-License-Identifier: AGPL-3.0
 
+require 'update_priorities'
+
 class Arvados::V1::ContainerRequestsController < ApplicationController
   accept_attribute_as_json :environment, Hash
   accept_attribute_as_json :mounts, Hash
@@ -27,5 +29,21 @@ class Arvados::V1::ContainerRequestsController < ApplicationController
           type: 'boolean', required: false, default: false, description: "Show container request even if its owner project is trashed.",
         },
       })
+  end
+
+  def update
+    if (resource_attrs.keys - [:owner_uuid, :name, :description, :properties]).empty? or @object.container_uuid.nil?
+      # If no attributes are being updated besides these, there are no
+      # cascading changes to other rows/tables, the only lock will be
+      # the single row lock on SQL UPDATE.
+      super
+    else
+      # Get locks ahead of time to avoid deadlock in cascading priority
+      # update
+      Container.transaction do
+        row_lock_for_priority_update @object.container_uuid
+        super
+      end
+    end
   end
 end

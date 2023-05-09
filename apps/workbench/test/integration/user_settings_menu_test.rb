@@ -46,7 +46,7 @@ class UserSettingsMenuTest < ActionDispatch::IntegrationTest
 
         page.find_field('public_key').set 'first test with an incorrect ssh key value'
         click_button 'Submit'
-        assert_text 'Public key does not appear to be a valid ssh-rsa or dsa public key'
+        assert_text 'Public key does not appear to be valid'
 
         public_key_str = api_fixture('authorized_keys')['active']['public_key']
         page.find_field('public_key').set public_key_str

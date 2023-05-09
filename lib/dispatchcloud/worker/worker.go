@@ -253,19 +253,30 @@ func (wkr *worker) probeAndUpdate() {
 
 	if !booted {
 		booted, stderr = wkr.probeBooted()
+		shouldCopy := booted || initialState == StateUnknown
 		if !booted {
 			// Pretend this probe succeeded if another
 			// concurrent attempt succeeded.
 			wkr.mtx.Lock()
-			booted = wkr.state == StateRunning || wkr.state == StateIdle
+			if wkr.state == StateRunning || wkr.state == StateIdle {
+				booted = true
+				shouldCopy = false
+			}
 			wkr.mtx.Unlock()
+		}
+		if shouldCopy {
+			_, stderrCopy, err := wkr.copyRunnerData()
+			if err != nil {
+				booted = false
+				wkr.logger.WithError(err).WithField("stderr", string(stderrCopy)).Warn("error copying runner binary")
+			}
 		}
 		if booted {
 			logger.Info("instance booted; will try probeRunning")
 		}
 	}
 	reportedBroken := false
-	if booted || wkr.state == StateUnknown {
+	if booted || initialState == StateUnknown {
 		ctrUUIDs, reportedBroken, ok = wkr.probeRunning()
 	}
 	wkr.mtx.Lock()
@@ -467,21 +478,18 @@ func (wkr *worker) probeBooted() (ok bool, stderr []byte) {
 		return false, stderr
 	}
 	logger.Info("boot probe succeeded")
-	if err = wkr.wp.loadRunnerData(); err != nil {
-		wkr.logger.WithError(err).Warn("cannot boot worker: error loading runner binary")
-		return false, stderr
-	} else if len(wkr.wp.runnerData) == 0 {
-		// Assume crunch-run is already installed
-	} else if _, stderr2, err := wkr.copyRunnerData(); err != nil {
-		wkr.logger.WithError(err).WithField("stderr", string(stderr2)).Warn("error copying runner binary")
-		return false, stderr2
-	} else {
-		stderr = append(stderr, stderr2...)
-	}
 	return true, stderr
 }
 
 func (wkr *worker) copyRunnerData() (stdout, stderr []byte, err error) {
+	if err = wkr.wp.loadRunnerData(); err != nil {
+		wkr.logger.WithError(err).Warn("cannot boot worker: error loading runner binary")
+		return
+	} else if len(wkr.wp.runnerData) == 0 {
+		// Assume crunch-run is already installed
+		return
+	}
+
 	hash := fmt.Sprintf("%x", wkr.wp.runnerMD5)
 	dstdir, _ := filepath.Split(wkr.wp.runnerCmd)
 	logger := wkr.logger.WithFields(logrus.Fields{

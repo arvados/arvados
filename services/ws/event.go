@@ -26,7 +26,7 @@ type eventSource interface {
 }
 
 type event struct {
-	LogID    uint64
+	LogID    int64
 	Received time.Time
 	Ready    time.Time
 	Serial   uint64

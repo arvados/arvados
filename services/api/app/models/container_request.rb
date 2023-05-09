@@ -300,6 +300,10 @@ class ContainerRequest < ArvadosModel
     super - ["mounts", "secret_mounts", "secret_mounts_md5", "runtime_token", "output_storage_classes"]
   end
 
+  def set_priority_zero
+    self.update_attributes!(priority: 0) if self.priority > 0 && self.state != Final
+  end
+
   protected
 
   def fill_field_defaults
@@ -348,10 +352,11 @@ class ContainerRequest < ArvadosModel
       self.container_count += 1
       return if self.container_uuid_was.nil?
 
-      old_container = Container.find_by_uuid(self.container_uuid_was)
-      return if old_container.nil?
+      old_container_uuid = self.container_uuid_was
+      old_container_log = Container.where(uuid: old_container_uuid).pluck(:log).first
+      return if old_container_log.nil?
 
-      old_logs = Collection.where(portable_data_hash: old_container.log).first
+      old_logs = Collection.where(portable_data_hash: old_container_log).first
       return if old_logs.nil?
 
       log_coll = self.log_uuid.nil? ? nil : Collection.where(uuid: self.log_uuid).first
@@ -366,7 +371,7 @@ class ContainerRequest < ArvadosModel
       # copy logs from old container into CR's log collection
       src = Arv::Collection.new(old_logs.manifest_text)
       dst = Arv::Collection.new(log_coll.manifest_text)
-      dst.cp_r("./", "log for container #{old_container.uuid}", src)
+      dst.cp_r("./", "log for container #{old_container_uuid}", src)
       manifest = dst.manifest_text
 
       log_coll.assign_attributes(
@@ -557,15 +562,8 @@ class ContainerRequest < ArvadosModel
 
   def update_priority
     return unless saved_change_to_state? || saved_change_to_priority? || saved_change_to_container_uuid?
-    act_as_system_user do
-      Container.
-        where('uuid in (?)', [container_uuid_before_last_save, self.container_uuid].compact).
-        map(&:update_priority!)
-    end
-  end
-
-  def set_priority_zero
-    self.update_attributes!(priority: 0) if self.state != Final
+    update_priorities container_uuid_before_last_save if !container_uuid_before_last_save.nil? and container_uuid_before_last_save != self.container_uuid
+    update_priorities self.container_uuid if self.container_uuid
   end
 
   def set_requesting_container_uuid

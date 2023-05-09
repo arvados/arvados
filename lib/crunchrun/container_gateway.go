@@ -5,6 +5,7 @@
 package crunchrun
 
 import (
+	"context"
 	"crypto/hmac"
 	"crypto/rand"
 	"crypto/rsa"
@@ -17,12 +18,14 @@ import (
 	"net/url"
 	"os"
 	"os/exec"
+	"strings"
 	"sync"
 	"syscall"
 	"time"
 
 	"git.arvados.org/arvados.git/lib/controller/rpc"
 	"git.arvados.org/arvados.git/lib/selfsigned"
+	"git.arvados.org/arvados.git/lib/webdavfs"
 	"git.arvados.org/arvados.git/sdk/go/arvados"
 	"git.arvados.org/arvados.git/sdk/go/auth"
 	"git.arvados.org/arvados.git/sdk/go/ctxlog"
@@ -31,7 +34,7 @@ import (
 	"github.com/google/shlex"
 	"github.com/hashicorp/yamux"
 	"golang.org/x/crypto/ssh"
-	"golang.org/x/net/context"
+	"golang.org/x/net/webdav"
 )
 
 type GatewayTarget interface {
@@ -77,6 +80,10 @@ type Gateway struct {
 	// not nil) will be called with the InternalURL of the
 	// controller process at the other end of the tunnel.
 	UpdateTunnelURL func(url string)
+
+	// Source for serving WebDAV requests with
+	// X-Webdav-Source: /log
+	LogCollection arvados.CollectionFileSystem
 
 	sshConfig   ssh.ServerConfig
 	requestAuth string
@@ -157,7 +164,7 @@ func (gw *Gateway) Start() error {
 
 	srv := &httpserver.Server{
 		Server: http.Server{
-			Handler: http.HandlerFunc(gw.handleSSH),
+			Handler: gw,
 			TLSConfig: &tls.Config{
 				Certificates: []tls.Certificate{cert},
 			},
@@ -260,6 +267,75 @@ func (gw *Gateway) runTunnel(addr string) error {
 	}
 }
 
+var webdavMethod = map[string]bool{
+	"GET":      true,
+	"OPTIONS":  true,
+	"PROPFIND": true,
+}
+
+func (gw *Gateway) ServeHTTP(w http.ResponseWriter, req *http.Request) {
+	w.Header().Set("Vary", "X-Arvados-Authorization, X-Arvados-Container-Gateway-Uuid, X-Webdav-Prefix, X-Webdav-Source")
+	reqUUID := req.Header.Get("X-Arvados-Container-Gateway-Uuid")
+	if reqUUID == "" {
+		// older controller versions only send UUID as query param
+		req.ParseForm()
+		reqUUID = req.Form.Get("uuid")
+	}
+	if reqUUID != gw.ContainerUUID {
+		http.Error(w, fmt.Sprintf("misdirected request: meant for %q but received by crunch-run %q", reqUUID, gw.ContainerUUID), http.StatusBadGateway)
+		return
+	}
+	if req.Header.Get("X-Arvados-Authorization") != gw.requestAuth {
+		http.Error(w, "bad X-Arvados-Authorization header", http.StatusUnauthorized)
+		return
+	}
+	w.Header().Set("X-Arvados-Authorization-Response", gw.respondAuth)
+	switch {
+	case req.Method == "POST" && req.Header.Get("Upgrade") == "ssh":
+		gw.handleSSH(w, req)
+	case req.Header.Get("X-Webdav-Source") == "/log":
+		if !webdavMethod[req.Method] {
+			http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+			return
+		}
+		gw.handleLogsWebDAV(w, req)
+	default:
+		http.Error(w, "path not found", http.StatusNotFound)
+	}
+}
+
+func (gw *Gateway) handleLogsWebDAV(w http.ResponseWriter, r *http.Request) {
+	prefix := r.Header.Get("X-Webdav-Prefix")
+	if !strings.HasPrefix(r.URL.Path, prefix) {
+		http.Error(w, "X-Webdav-Prefix header is not a prefix of the requested path", http.StatusBadRequest)
+		return
+	}
+	if gw.LogCollection == nil {
+		http.Error(w, "Not found", http.StatusNotFound)
+		return
+	}
+	wh := webdav.Handler{
+		Prefix: prefix,
+		FileSystem: &webdavfs.FS{
+			FileSystem:    gw.LogCollection,
+			Prefix:        "",
+			Writing:       false,
+			AlwaysReadEOF: r.Method == "PROPFIND",
+		},
+		LockSystem: webdavfs.NoLockSystem,
+		Logger:     gw.webdavLogger,
+	}
+	wh.ServeHTTP(w, r)
+}
+
+func (gw *Gateway) webdavLogger(r *http.Request, err error) {
+	if err != nil && !os.IsNotExist(err) {
+		ctxlog.FromContext(r.Context()).WithError(err).Info("error reported by webdav handler")
+	} else {
+		ctxlog.FromContext(r.Context()).WithError(err).Debug("webdav request log")
+	}
+}
+
 // handleSSH connects to an SSH server that allows the caller to run
 // interactive commands as root (or any other desired user) inside the
 // container. The tunnel itself can only be created by an
@@ -282,22 +358,7 @@ func (gw *Gateway) runTunnel(addr string) error {
 // X-Arvados-Login-Username: argument to "docker exec --user": account
 // used to run command(s) inside the container.
 func (gw *Gateway) handleSSH(w http.ResponseWriter, req *http.Request) {
-	// In future we'll handle browser traffic too, but for now the
-	// only traffic we expect is an SSH tunnel from
-	// (*lib/controller/localdb.Conn)ContainerSSH()
-	if req.Method != "POST" || req.Header.Get("Upgrade") != "ssh" {
-		http.Error(w, "path not found", http.StatusNotFound)
-		return
-	}
 	req.ParseForm()
-	if want := req.Form.Get("uuid"); want != gw.ContainerUUID {
-		http.Error(w, fmt.Sprintf("misdirected request: meant for %q but received by crunch-run %q", want, gw.ContainerUUID), http.StatusBadGateway)
-		return
-	}
-	if req.Header.Get("X-Arvados-Authorization") != gw.requestAuth {
-		http.Error(w, "bad X-Arvados-Authorization header", http.StatusUnauthorized)
-		return
-	}
 	detachKeys := req.Form.Get("detach_keys")
 	username := req.Form.Get("login_username")
 	if username == "" {
@@ -316,7 +377,6 @@ func (gw *Gateway) handleSSH(w http.ResponseWriter, req *http.Request) {
 	defer netconn.Close()
 	w.Header().Set("Connection", "upgrade")
 	w.Header().Set("Upgrade", "ssh")
-	w.Header().Set("X-Arvados-Authorization-Response", gw.respondAuth)
 	netconn.Write([]byte("HTTP/1.1 101 Switching Protocols\r\n"))
 	w.Header().Write(netconn)
 	netconn.Write([]byte("\r\n"))

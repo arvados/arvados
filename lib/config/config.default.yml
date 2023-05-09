@@ -442,6 +442,15 @@ Clusters:
       # params_truncated.
       MaxRequestLogParamsSize: 2000
 
+      # In all services except RailsAPI, periodically check whether
+      # the incoming HTTP request queue is nearly full (see
+      # MaxConcurrentRequests) and, if so, write a snapshot of the
+      # request queue to {service}-requests.json in the specified
+      # directory.
+      #
+      # Leave blank to disable.
+      RequestQueueDumpDirectory: ""
+
     Collections:
 
       # Enable access controls for data stored in Keep. This should
@@ -534,7 +543,7 @@ Clusters:
       #
       # If SIGUSR1 is received during an idle period between operations,
       # the next operation will start immediately.
-      BalancePeriod: 10m
+      BalancePeriod: 6h
 
       # Limits the number of collections retrieved by keep-balance per
       # API transaction. If this is zero, page size is
@@ -543,11 +552,12 @@ Clusters:
       BalanceCollectionBatch: 0
 
       # The size of keep-balance's internal queue of
-      # collections. Higher values use more memory and improve throughput
-      # by allowing keep-balance to fetch the next page of collections
-      # while the current page is still being processed. If this is zero
-      # or omitted, pages are processed serially.
-      BalanceCollectionBuffers: 1000
+      # collections. Higher values may improve throughput by allowing
+      # keep-balance to fetch collections from the database while the
+      # current collection are still being processed, at the expense of
+      # using more memory.  If this is zero or omitted, pages are
+      # processed serially.
+      BalanceCollectionBuffers: 4
 
       # Maximum time for a rebalancing run. This ensures keep-balance
       # eventually gives up and retries if, for example, a network
@@ -908,6 +918,9 @@ Clusters:
       # need to be listed here.  If this is a LoginCluster, you
       # probably want to include the other Workbench instances in the
       # federation in this list.
+      #
+      # A wildcard like "https://*.example" will match client URLs
+      # like "https://a.example" and "https://a.b.c.example".
       #
       # Example:
       #
@@ -1584,8 +1597,6 @@ Clusters:
           ReadTimeout: 10m
           RaceWindow: 24h
           PrefixLength: 0
-          # Use aws-s3-go (v2) instead of goamz
-          UseAWSS3v2Driver: true
 
           # For S3 driver, potentially unsafe tuning parameter,
           # intentionally excluded from main documentation.

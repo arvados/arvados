@@ -5,6 +5,7 @@
 require 'log_reuse_info'
 require 'whitelist_update'
 require 'safe_json'
+require 'update_priorities'
 
 class Container < ArvadosModel
   include ArvadosModelUpdates
@@ -49,7 +50,6 @@ class Container < ArvadosModel
   before_save :clear_runtime_status_when_queued
   after_save :update_cr_logs
   after_save :handle_completed
-  after_save :propagate_priority
 
   has_many :container_requests, :foreign_key => :container_uuid, :class_name => 'ContainerRequest', :primary_key => :uuid
   belongs_to :auth, :class_name => 'ApiClientAuthorization', :foreign_key => :auth_uuid, :primary_key => :uuid
@@ -129,35 +129,8 @@ class Container < ArvadosModel
   # priority of a user-submitted request is a function of
   # user-assigned priority and request creation time.
   def update_priority!
-    return if ![Queued, Locked, Running].include?(state)
-    p = ContainerRequest.
-        where('container_uuid=? and priority>0', uuid).
-        includes(:requesting_container).
-        lock(true).
-        map do |cr|
-      if cr.requesting_container
-        cr.requesting_container.priority
-      else
-        (cr.priority << 50) - (cr.created_at.to_time.to_f * 1000).to_i
-      end
-    end.max || 0
-    update_attributes!(priority: p)
-  end
-
-  def propagate_priority
-    return true unless saved_change_to_priority?
-    act_as_system_user do
-      # Update the priority of child container requests to match new
-      # priority of the parent container (ignoring requests with no
-      # container assigned, because their priority doesn't matter).
-      ContainerRequest.
-        where(requesting_container_uuid: self.uuid,
-              state: ContainerRequest::Committed).
-        where('container_uuid is not null').
-        includes(:container).
-        map(&:container).
-        map(&:update_priority!)
-    end
+    update_priorities uuid
+    reload
   end
 
   # Create a new container (or find an existing one) to satisfy the
@@ -646,7 +619,7 @@ class Container < ArvadosModel
     # each requesting CR.
     return if self.final? || !saved_change_to_log?
     leave_modified_by_user_alone do
-      ContainerRequest.where(container_uuid: self.uuid).each do |cr|
+      ContainerRequest.where(container_uuid: self.uuid, state: ContainerRequest::Committed).each do |cr|
         cr.update_collections(container: self, collections: ['log'])
         cr.save!
       end
@@ -830,13 +803,13 @@ class Container < ArvadosModel
 
           # Cancel outstanding container requests made by this container.
           ContainerRequest.
-            includes(:container).
             where(requesting_container_uuid: uuid,
-                  state: ContainerRequest::Committed).each do |cr|
+                  state: ContainerRequest::Committed).
+            in_batches(of: 15).each_record do |cr|
             leave_modified_by_user_alone do
-              cr.update_attributes!(priority: 0)
-              cr.container.reload
-              if cr.container.state == Container::Queued || cr.container.state == Container::Locked
+              cr.set_priority_zero
+              container_state = Container.where(uuid: cr.container_uuid).pluck(:state).first
+              if container_state == Container::Queued || container_state == Container::Locked
                 # If the child container hasn't started yet, finalize the
                 # child CR now instead of leaving it "on hold", i.e.,
                 # Queued with priority 0.  (OTOH, if the child is already

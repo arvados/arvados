@@ -76,7 +76,8 @@ func (sch *Scheduler) runQueue() {
 	}).Debug("runQueue")
 
 	dontstart := map[arvados.InstanceType]bool{}
-	var overquota []container.QueueEnt // entries that are unmappable because of worker pool quota
+	var overquota []container.QueueEnt    // entries that are unmappable because of worker pool quota
+	var overmaxsuper []container.QueueEnt // unmappable because max supervisors (these are not included in overquota)
 	var containerAllocatedWorkerBootingCount int
 
 	// trying is #containers running + #containers we're trying to
@@ -87,8 +88,8 @@ func (sch *Scheduler) runQueue() {
 	supervisors := 0
 
 tryrun:
-	for i, ctr := range sorted {
-		ctr, it := ctr.Container, ctr.InstanceType
+	for i, ent := range sorted {
+		ctr, it := ent.Container, ent.InstanceType
 		logger := sch.logger.WithFields(logrus.Fields{
 			"ContainerUUID": ctr.UUID,
 			"InstanceType":  it.Name,
@@ -96,6 +97,7 @@ tryrun:
 		if ctr.SchedulingParameters.Supervisor {
 			supervisors += 1
 			if sch.maxSupervisors > 0 && supervisors > sch.maxSupervisors {
+				overmaxsuper = append(overmaxsuper, sorted[i])
 				continue
 			}
 		}
@@ -173,19 +175,19 @@ tryrun:
 	}
 
 	sch.mContainersAllocatedNotStarted.Set(float64(containerAllocatedWorkerBootingCount))
-	sch.mContainersNotAllocatedOverQuota.Set(float64(len(overquota)))
+	sch.mContainersNotAllocatedOverQuota.Set(float64(len(overquota) + len(overmaxsuper)))
 
-	if len(overquota) > 0 {
+	if len(overquota)+len(overmaxsuper) > 0 {
 		// Unlock any containers that are unmappable while
 		// we're at quota (but if they have already been
 		// scheduled and they're loading docker images etc.,
 		// let them run).
-		for _, ctr := range overquota {
+		for _, ctr := range append(overmaxsuper, overquota...) {
 			ctr := ctr.Container
 			_, toolate := running[ctr.UUID]
 			if ctr.State == arvados.ContainerStateLocked && !toolate {
 				logger := sch.logger.WithField("ContainerUUID", ctr.UUID)
-				logger.Debug("unlock because pool capacity is used by higher priority containers")
+				logger.Info("unlock because pool capacity is used by higher priority containers")
 				err := sch.queue.Unlock(ctr.UUID)
 				if err != nil {
 					logger.WithError(err).Warn("error unlocking")

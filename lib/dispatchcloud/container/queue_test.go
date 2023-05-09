@@ -41,6 +41,7 @@ func (suite *IntegrationSuite) TearDownTest(c *check.C) {
 
 func (suite *IntegrationSuite) TestGetLockUnlockCancel(c *check.C) {
 	typeChooser := func(ctr *arvados.Container) (arvados.InstanceType, error) {
+		c.Check(ctr.Mounts["/tmp"].Capacity, check.Equals, int64(24000000000))
 		return arvados.InstanceType{Name: "testType"}, nil
 	}
 
@@ -64,6 +65,8 @@ func (suite *IntegrationSuite) TestGetLockUnlockCancel(c *check.C) {
 		c.Check(ent.InstanceType.Name, check.Equals, "testType")
 		c.Check(ent.Container.State, check.Equals, arvados.ContainerStateQueued)
 		c.Check(ent.Container.Priority > 0, check.Equals, true)
+		// Mounts should be deleted to avoid wasting memory
+		c.Check(ent.Container.Mounts, check.IsNil)
 
 		ctr, ok := cq.Get(uuid)
 		c.Check(ok, check.Equals, true)

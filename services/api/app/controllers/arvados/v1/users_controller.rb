@@ -274,7 +274,7 @@ class Arvados::V1::UsersController < ApplicationController
     return super if @read_users.any?(&:is_admin)
     if params[:uuid] != current_user.andand.uuid
       # Non-admin index/show returns very basic information about readable users.
-      safe_attrs = ["uuid", "is_active", "email", "first_name", "last_name", "username", "can_write", "can_manage"]
+      safe_attrs = ["uuid", "is_active", "email", "first_name", "last_name", "username", "can_write", "can_manage", "kind"]
       if @select
         @select = @select & safe_attrs
       else
@@ -282,6 +282,13 @@ class Arvados::V1::UsersController < ApplicationController
       end
       @filters += [['is_active', '=', true]]
     end
+    # This gets called from within find_object_by_uuid.
+    # find_object_by_uuid stores the original value of @select in
+    # @preserve_select, edits the value of @select, calls
+    # find_objects_for_index, then restores @select from the value
+    # of @preserve_select.  So if we want our updated value of
+    # @select here to stick, we have to set @preserve_select.
+    @preserve_select = @select
     super
   end
 
