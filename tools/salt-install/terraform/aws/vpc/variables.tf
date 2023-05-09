@@ -38,3 +38,27 @@ variable "internal_service_hosts" {
   type = list(string)
   default = [ "keep0", "shell" ]
 }
+
+variable "vpc_id" {
+  description = "Use existing VPC instead of creating one for the cluster"
+  type = string
+  default = ""
+}
+
+variable "sg_id" {
+  description = "Use existing security group instead of creating one for the cluster"
+  type = string
+  default = ""
+}
+
+variable "private_subnet_id" {
+  description = "Use existing private subnet instead of creating one for the cluster"
+  type = string
+  default = ""
+}
+
+variable "public_subnet_id" {
+  description = "Use existing public subnet instead of creating one for the cluster"
+  type = string
+  default = ""
+}

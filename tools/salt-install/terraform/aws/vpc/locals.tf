@@ -12,6 +12,15 @@ locals {
   route53_public_zone = one(aws_route53_zone.public_zone[*])
   iam_user_letsencrypt = one(aws_iam_user.letsencrypt[*])
   iam_access_key_letsencrypt = one(aws_iam_access_key.letsencrypt[*])
+
+  arvados_vpc_id = one(aws_vpc.arvados_vpc[*]) != null ? one(aws_vpc.arvados_vpc[*]).id : var.vpc_id
+  arvados_vpc_cidr_block = one(aws_vpc.arvados_vpc[*])
+
+  arvados_sg_id = one(aws_security_group.arvados_sg[*]) != null ? one(aws_security_group.arvados_sg[*]).id : var.sg_id
+
+  private_subnet_id = one(aws_subnet.private_subnet[*]) != null ? one(aws_subnet.private_subnet[*]).id : var.private_subnet_id
+  public_subnet_id = one(aws_subnet.public_subnet[*]) != null ? one(aws_subnet.public_subnet[*]).id : var.public_subnet_id
+
   public_hosts = var.private_only ? [] : var.user_facing_hosts
   private_hosts = concat(
     var.internal_service_hosts,

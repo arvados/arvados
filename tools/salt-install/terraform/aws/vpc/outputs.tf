@@ -3,22 +3,22 @@
 # SPDX-License-Identifier: CC-BY-SA-3.0
 
 output "arvados_vpc_id" {
-  value = aws_vpc.arvados_vpc.id
+  value = local.arvados_vpc_id
 }
 output "arvados_vpc_cidr" {
-  value = aws_vpc.arvados_vpc.cidr_block
+  value = try(local.arvados_vpc_cidr_block, "")
 }
 
 output "public_subnet_id" {
-  value = aws_subnet.public_subnet.id
+  value = local.public_subnet_id
 }
 
 output "private_subnet_id" {
-  value = aws_subnet.private_subnet.id
+  value = local.private_subnet_id
 }
 
 output "arvados_sg_id" {
-  value = aws_security_group.arvados_sg.id
+  value = local.arvados_sg_id
 }
 
 output "eip_id" {

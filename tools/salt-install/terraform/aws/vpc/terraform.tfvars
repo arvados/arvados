@@ -8,3 +8,11 @@ region_name = "us-east-1"
 
 # Uncomment this to create an non-publicly accessible Arvados cluster
 # private_only = true
+
+# Optional networking options. Set existing resources to be used instead of
+# creating new ones.
+# NOTE: We only support fully managed or fully custom networking, not a mix of both.
+# vpc_id = "vpc-"
+# sg_id = "sg-"
+# public_subnet_id = "subnet-"
+# private_subnet_id = "subnet-"
