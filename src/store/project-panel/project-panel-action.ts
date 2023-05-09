@@ -16,7 +16,7 @@ export const projectPanelActions = bindDataExplorerActions(PROJECT_PANEL_ID);
 
 export const openProjectPanel = (projectUuid: string) =>
     async (dispatch: Dispatch) => {
-        await loadProject(projectUuid);
+        await dispatch<any>(loadProject(projectUuid));
         dispatch(propertiesActions.SET_PROPERTY({ key: PROJECT_PANEL_CURRENT_UUID, value: projectUuid }));
         dispatch(projectPanelActions.RESET_EXPLORER_SEARCH_VALUE());
         dispatch(projectPanelActions.REQUEST_ITEMS());

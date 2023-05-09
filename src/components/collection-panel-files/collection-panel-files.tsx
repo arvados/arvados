@@ -39,7 +39,7 @@ import { setCollectionFiles } from 'store/collection-panel/collection-panel-file
 import { sortBy } from 'lodash';
 import { formatFileSize } from 'common/formatters';
 import { getInlineFileUrl, sanitizeToken } from 'views-components/context-menu/actions/helpers';
-import { extractUuidObjectType, ResourceObjectType } from 'models/resource';
+import { extractUuidKind, ResourceKind } from 'models/resource';
 
 export interface CollectionPanelFilesProps {
     isWritable: boolean;
@@ -261,7 +261,7 @@ export const CollectionPanelFiles = withStyles(styles)(connect((state: RootState
     const rightData = pathData[rightKey];
 
     React.useEffect(() => {
-        if (props.currentItemUuid && extractUuidObjectType(props.currentItemUuid) == ResourceObjectType.COLLECTION) {
+        if (props.currentItemUuid && extractUuidKind(props.currentItemUuid) == ResourceKind.COLLECTION) {
             setPathData({});
             setPath([props.currentItemUuid]);
         }
