@@ -39,6 +39,7 @@ import { setCollectionFiles } from 'store/collection-panel/collection-panel-file
 import { sortBy } from 'lodash';
 import { formatFileSize } from 'common/formatters';
 import { getInlineFileUrl, sanitizeToken } from 'views-components/context-menu/actions/helpers';
+import { extractUuidObjectType, ResourceObjectType } from 'models/resource';
 
 export interface CollectionPanelFilesProps {
     isWritable: boolean;
@@ -260,7 +261,7 @@ export const CollectionPanelFiles = withStyles(styles)(connect((state: RootState
     const rightData = pathData[rightKey];
 
     React.useEffect(() => {
-        if (props.currentItemUuid) {
+        if (props.currentItemUuid && extractUuidObjectType(props.currentItemUuid) == ResourceObjectType.COLLECTION) {
             setPathData({});
             setPath([props.currentItemUuid]);
         }
@@ -288,33 +289,33 @@ export const CollectionPanelFiles = withStyles(styles)(connect((state: RootState
             })
             .filter((promise) => !!promise)
         )
-        .then((requests) => {
-            const newState = requests.map((request, index) => {
-                if (request && request.responseXML != null) {
-                    const key = keyArray[index];
-                    const result: any = extractFilesData(request.responseXML);
-                    const sortedResult = sortBy(result, (n) => n.name).sort((n1, n2) => {
-                        if (n1.type === 'directory' && n2.type !== 'directory') {
-                            return -1;
-                        }
-                        if (n1.type !== 'directory' && n2.type === 'directory') {
-                            return 1;
-                        }
-                        return 0;
-                    });
+            .then((requests) => {
+                const newState = requests.map((request, index) => {
+                    if (request && request.responseXML != null) {
+                        const key = keyArray[index];
+                        const result: any = extractFilesData(request.responseXML);
+                        const sortedResult = sortBy(result, (n) => n.name).sort((n1, n2) => {
+                            if (n1.type === 'directory' && n2.type !== 'directory') {
+                                return -1;
+                            }
+                            if (n1.type !== 'directory' && n2.type === 'directory') {
+                                return 1;
+                            }
+                            return 0;
+                        });
 
-                    return { [key]: sortedResult };
-                }
-                return {};
-            }).reduce((prev, next) => {
-                return { ...next, ...prev };
-            }, {});
-            setPathData((state) => ({ ...state, ...newState }));
-        })
-        .finally(() => {
-            setIsLoading(false);
-            keyArray.forEach(key => delete pathPromise[key]);
-        });
+                        return { [key]: sortedResult };
+                    }
+                    return {};
+                }).reduce((prev, next) => {
+                    return { ...next, ...prev };
+                }, {});
+                setPathData((state) => ({ ...state, ...newState }));
+            })
+            .finally(() => {
+                setIsLoading(false);
+                keyArray.forEach(key => delete pathPromise[key]);
+            });
     };
 
     React.useEffect(() => {
@@ -323,7 +324,7 @@ export const CollectionPanelFiles = withStyles(styles)(connect((state: RootState
             setLeftSearch('');
             setRightSearch('');
         }
-    }, [rightKey]); // eslint-disable-line react-hooks/exhaustive-deps
+    }, [rightKey, rightData]); // eslint-disable-line react-hooks/exhaustive-deps
 
     const currentPDH = (collectionPanel.item || {}).portableDataHash;
     React.useEffect(() => {
@@ -420,7 +421,7 @@ export const CollectionPanelFiles = withStyles(styles)(connect((state: RootState
                 }
 
                 if (elem.dataset.id && type === 'file') {
-                    const item = rightData.find(({id}) => id === elem.dataset.id) || leftData.find(({ id }) => id === elem.dataset.id);
+                    const item = rightData.find(({ id }) => id === elem.dataset.id) || leftData.find(({ id }) => id === elem.dataset.id);
                     const enhancedItem = servicesProvider.getServices().collectionService.extendFileURL(item);
                     const fileUrl = sanitizeToken(getInlineFileUrl(enhancedItem.url, config.keepWebServiceUrl, config.keepWebInlineServiceUrl), true);
                     window.open(fileUrl, '_blank');
@@ -483,12 +484,12 @@ export const CollectionPanelFiles = withStyles(styles)(connect((state: RootState
     return <div data-cy="collection-files-panel" onClick={handleClick} ref={parentRef}>
         <div className={classes.pathPanel}>
             <div className={classes.pathPanelPathWrapper}>
-            { path.map( (p: string, index: number) =>
-                <span key={`${index}-${p}`} data-item="true"
-                className={classes.pathPanelItem} data-breadcrumb-path={p}>
-                    <span className={classes.rowActive}>{index === 0 ? 'Home' : p}</span> <b>/</b>&nbsp;
-                </span>)
-            }
+                {path.map((p: string, index: number) =>
+                    <span key={`${index}-${p}`} data-item="true"
+                        className={classes.pathPanelItem} data-breadcrumb-path={p}>
+                        <span className={classes.rowActive}>{index === 0 ? 'Home' : p}</span> <b>/</b>&nbsp;
+                    </span>)
+                }
             </div>
             <Tooltip className={classes.pathPanelMenu} title="More options" disableFocusListener>
                 <IconButton data-cy='collection-files-panel-options-btn'
@@ -502,94 +503,96 @@ export const CollectionPanelFiles = withStyles(styles)(connect((state: RootState
         <div className={classes.wrapper}>
             <div className={classNames(classes.leftPanel, path.length > 1 ? classes.leftPanelVisible : classes.leftPanelHidden)} data-cy="collection-files-left-panel">
                 <Tooltip title="Go back" className={path.length > 1 ? classes.backButton : classes.backButtonHidden}>
-                    <IconButton onClick={() => setPath((state) => ([...state.slice(0, state.length -1)]))}>
+                    <IconButton onClick={() => setPath((state) => ([...state.slice(0, state.length - 1)]))}>
                         <BackIcon />
                     </IconButton>
                 </Tooltip>
                 <div className={path.length > 1 ? classes.searchWrapper : classes.searchWrapperHidden}>
                     <SearchInput selfClearProp={leftKey} label="Search" value={leftSearch} onSearch={setLeftSearch} />
                 </div>
-                <div className={classes.dataWrapper}>{ leftData
-                ? <AutoSizer defaultWidth={0}>{({ height, width }) => {
-                    const filtered = leftData.filter(({ name }) => name.indexOf(leftSearch) > -1);
-                    return !!filtered.length
-                    ? <FixedSizeList height={height} itemCount={filtered.length}
-                        itemSize={35} width={width}>{ ({ index, style }) => {
-                        const { id, type, name } = filtered[index];
-                        return <div data-id={id} style={style} data-item="true"
-                            data-type={type} data-parent-path={name}
-                            className={classNames(classes.row, getActiveClass(name))}
-                            key={id}>
-                                { getItemIcon(type, getActiveClass(name)) }
-                                <div className={classes.rowName}>
-                                    {name}
-                                </div>
-                                { getActiveClass(name)
-                                ? <SidePanelRightArrowIcon
-                                    style={{ display: 'inline', marginTop: '5px', marginLeft: '5px' }} />
-                                : null
-                                }
-                        </div>;
-                    }}</FixedSizeList>
-                    : <div className={classes.rowEmpty}>No directories available</div>
+                <div className={classes.dataWrapper}>{leftData
+                    ? <AutoSizer defaultWidth={0}>{({ height, width }) => {
+                        const filtered = leftData.filter(({ name }) => name.indexOf(leftSearch) > -1);
+                        return !!filtered.length
+                            ? <FixedSizeList height={height} itemCount={filtered.length}
+                                itemSize={35} width={width}>{({ index, style }) => {
+                                    const { id, type, name } = filtered[index];
+                                    return <div data-id={id} style={style} data-item="true"
+                                        data-type={type} data-parent-path={name}
+                                        className={classNames(classes.row, getActiveClass(name))}
+                                        key={id}>
+                                        {getItemIcon(type, getActiveClass(name))}
+                                        <div className={classes.rowName}>
+                                            {name}
+                                        </div>
+                                        {getActiveClass(name)
+                                            ? <SidePanelRightArrowIcon
+                                                style={{ display: 'inline', marginTop: '5px', marginLeft: '5px' }} />
+                                            : null
+                                        }
+                                    </div>;
+                                }}</FixedSizeList>
+                            : <div className={classes.rowEmpty}>No directories available</div>
                     }}
-                </AutoSizer>
-                : <div data-cy="collection-loader" className={classes.row}><CircularProgress className={classes.loader} size={30} /></div> }
+                    </AutoSizer>
+                    : <div data-cy="collection-loader" className={classes.row}><CircularProgress className={classes.loader} size={30} /></div>}
                 </div>
             </div>
             <div className={classes.rightPanel} data-cy="collection-files-right-panel">
                 <div className={classes.searchWrapper}>
                     <SearchInput selfClearProp={rightKey} label="Search" value={rightSearch} onSearch={setRightSearch} />
                 </div>
-                { isWritable &&
-                <Button className={classes.uploadButton} data-cy='upload-button'
-                    onClick={() => {
-                        onUploadDataClick(rightKey === leftKey ? undefined : rightKey);
-                    }}
-                    variant='contained' color='primary' size='small'>
-                    <DownloadIcon className={classes.uploadIcon} />
-                    Upload data
-                </Button> }
-                <div className={classes.dataWrapper}>{ rightData && !isLoading
+                {isWritable &&
+                    <Button className={classes.uploadButton} data-cy='upload-button'
+                        onClick={() => {
+                            onUploadDataClick(rightKey === leftKey ? undefined : rightKey);
+                        }}
+                        variant='contained' color='primary' size='small'>
+                        <DownloadIcon className={classes.uploadIcon} />
+                        Upload data
+                    </Button>}
+                <div className={classes.dataWrapper}>{rightData && !isLoading
                     ? <AutoSizer defaultHeight={500}>{({ height, width }) => {
                         const filtered = rightData.filter(({ name }) => name.indexOf(rightSearch) > -1);
                         return !!filtered.length
-                        ? <FixedSizeList height={height} itemCount={filtered.length}
-                            itemSize={35} width={width}>{ ({ index, style }) => {
-                                const { id, type, name, size } = filtered[index];
+                            ? <FixedSizeList height={height} itemCount={filtered.length}
+                                itemSize={35} width={width}>{({ index, style }) => {
+                                    const { id, type, name, size } = filtered[index];
 
-                                return <div style={style} data-id={id} data-item="true"
-                                    data-type={type} data-subfolder-path={name}
-                                    className={classes.row} key={id}>
-                                    <Checkbox color="primary"
-                                        className={classes.rowSelection}
-                                        checked={collectionPanelFiles[id] ? collectionPanelFiles[id].value.selected : false}
-                                    />&nbsp;
-                                    {getItemIcon(type, null)}
-                                    <div className={classes.rowName}>
-                                        {name}
+                                    return <div style={style} data-id={id} data-item="true"
+                                        data-type={type} data-subfolder-path={name}
+                                        className={classes.row} key={id}>
+                                        <Checkbox color="primary"
+                                            className={classes.rowSelection}
+                                            checked={collectionPanelFiles[id] ? collectionPanelFiles[id].value.selected : false}
+                                        />&nbsp;
+                                        {getItemIcon(type, null)}
+                                        <div className={classes.rowName}>
+                                            {name}
+                                        </div>
+                                        <span className={classes.rowName} style={{
+                                            marginLeft: 'auto', marginRight: '1rem'
+                                        }}>
+                                            {formatFileSize(size)}
+                                        </span>
+                                        <Tooltip title="More options" disableFocusListener>
+                                            <IconButton data-id='moreOptions'
+                                                data-cy='file-item-options-btn'
+                                                className={classes.moreOptionsButton}>
+                                                <MoreOptionsIcon
+                                                    data-id='moreOptions'
+                                                    className={classes.moreOptions} />
+                                            </IconButton>
+                                        </Tooltip>
                                     </div>
-                                    <span className={classes.rowName} style={{
-                                        marginLeft: 'auto', marginRight: '1rem' }}>
-                                        { formatFileSize(size) }
-                                    </span>
-                                    <Tooltip title="More options" disableFocusListener>
-                                        <IconButton data-id='moreOptions'
-                                            data-cy='file-item-options-btn'
-                                            className={classes.moreOptionsButton}>
-                                            <MoreOptionsIcon
-                                                data-id='moreOptions'
-                                                className={classes.moreOptions} />
-                                        </IconButton>
-                                    </Tooltip>
-                                </div>
-                            } }</FixedSizeList>
-                        : <div className={classes.rowEmpty}>This collection is empty</div>
+                                }}</FixedSizeList>
+                            : <div className={classes.rowEmpty}>This collection is empty</div>
                     }}</AutoSizer>
                     : <div className={classes.row}>
                         <CircularProgress className={classes.loader} size={30} />
-                    </div> }
+                    </div>}
                 </div>
             </div>
         </div>
-    </div>}));
+    </div>
+}));
