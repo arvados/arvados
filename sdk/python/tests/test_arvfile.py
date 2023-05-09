@@ -414,7 +414,7 @@ class ArvadosFileWriterTestCase(unittest.TestCase):
         keep = ArvadosFileWriterTestCase.MockKeep({})
         api = ArvadosFileWriterTestCase.MockApi({}, {})
         for r in [[0, 1, 2, 3, 4], [4, 3, 2, 1, 0], [3, 2, 0, 4, 1]]:
-            with Collection() as c:
+            with Collection(api_client=api, keep_client=keep) as c:
                 writer = c.open("count.txt", "rb+")
                 self.assertEqual(writer.size(), 0)
 
@@ -429,7 +429,7 @@ class ArvadosFileWriterTestCase(unittest.TestCase):
         keep = ArvadosFileWriterTestCase.MockKeep({})
         api = ArvadosFileWriterTestCase.MockApi({}, {})
         for r in [[0, 1, 2, 4], [4, 2, 1, 0], [2, 0, 4, 1]]:
-            with Collection() as c:
+            with Collection(api_client=api, keep_client=keep) as c:
                 writer = c.open("count.txt", "rb+")
                 self.assertEqual(writer.size(), 0)
 
