@@ -147,9 +147,11 @@ export const DataTable = withStyles(styles)(
             const { checkedList } = this.state;
             if (!arraysAreCongruent(prevProps.items, items)) {
                 this.state.isSelected = false;
+                toggleMSToolbar(false);
                 this.initializeCheckedList(items);
             }
             if (prevState.checkedList !== checkedList) {
+                console.log(this.isAnySelected());
                 toggleMSToolbar(this.isAnySelected() ? true : false);
                 window.localStorage.setItem('selectedRows', JSON.stringify(checkedList));
             }
@@ -179,6 +181,7 @@ export const DataTable = withStyles(styles)(
         ];
 
         initializeCheckedList = (uuids: any[]): void => {
+            console.log('INIT LIIST');
             const { checkedList } = this.state;
             uuids.forEach((uuid) => {
                 if (!checkedList.hasOwnProperty(uuid)) {
@@ -202,6 +205,7 @@ export const DataTable = withStyles(styles)(
 
         isAnySelected = (): boolean => {
             const { checkedList } = this.state;
+            if (!Object.keys(checkedList).length) return false;
             for (const key in checkedList) {
                 if (checkedList[key] === true) return true;
             }
@@ -222,11 +226,13 @@ export const DataTable = withStyles(styles)(
 
         handleSelectAll = (): void => {
             const { checkedList } = this.state;
-            const newCheckedList = { ...checkedList };
-            for (const key in newCheckedList) {
-                newCheckedList[key] = true;
+            if (Object.keys(checkedList).length) {
+                const newCheckedList = { ...checkedList };
+                for (const key in newCheckedList) {
+                    newCheckedList[key] = true;
+                }
+                this.setState({ isSelected: true, checkedList: newCheckedList });
             }
-            this.setState({ isSelected: true, checkedList: newCheckedList });
         };
 
         handleSelectNone = (): void => {
@@ -240,11 +246,13 @@ export const DataTable = withStyles(styles)(
 
         handleInvertSelect = (): void => {
             const { checkedList } = this.state;
-            const newCheckedList = { ...checkedList };
-            for (const key in newCheckedList) {
-                newCheckedList[key] = !checkedList[key];
+            if (Object.keys(checkedList).length) {
+                const newCheckedList = { ...checkedList };
+                for (const key in newCheckedList) {
+                    newCheckedList[key] = !checkedList[key];
+                }
+                this.setState({ checkedList: newCheckedList, isSelected: this.isAllSelected(newCheckedList) });
             }
-            this.setState({ checkedList: newCheckedList, isSelected: this.isAllSelected(newCheckedList) });
         };
 
         render() {
