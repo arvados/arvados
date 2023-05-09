@@ -2,16 +2,17 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import { connect } from "react-redux";
-import { RootState } from "store/store";
-import { DataExplorer as DataExplorerComponent } from "components/data-explorer/data-explorer";
-import { getDataExplorer } from "store/data-explorer/data-explorer-reducer";
-import { Dispatch } from "redux";
-import { dataExplorerActions } from "store/data-explorer/data-explorer-action";
-import { DataColumn } from "components/data-table/data-column";
-import { DataColumns } from "components/data-table/data-table";
+import { connect } from 'react-redux';
+import { RootState } from 'store/store';
+import { DataExplorer as DataExplorerComponent } from 'components/data-explorer/data-explorer';
+import { getDataExplorer } from 'store/data-explorer/data-explorer-reducer';
+import { Dispatch } from 'redux';
+import { dataExplorerActions } from 'store/data-explorer/data-explorer-action';
+import { DataColumn } from 'components/data-table/data-column';
+import { DataColumns } from 'components/data-table/data-table';
 import { DataTableFilters } from 'components/data-table-filters/data-table-filters-tree';
-import { LAST_REFRESH_TIMESTAMP } from "components/refresh-button/refresh-button";
+import { LAST_REFRESH_TIMESTAMP } from 'components/refresh-button/refresh-button';
+import { toggleMSToolbar } from 'store/multiselect/multiselect-actions';
 
 interface Props {
     id: string;
@@ -22,11 +23,12 @@ interface Props {
 }
 
 const mapStateToProps = (state: RootState, { id }: Props) => {
-    const progress = state.progressIndicator.find(p => p.id === id);
+    const progress = state.progressIndicator.find((p) => p.id === id);
     const dataExplorerState = getDataExplorer(state.dataExplorer, id);
     const currentRoute = state.router.location ? state.router.location.pathname : '';
     const currentRefresh = localStorage.getItem(LAST_REFRESH_TIMESTAMP) || '';
     const currentItemUuid = currentRoute === '/workflows' ? state.properties.workflowPanelDetailsUuid : state.detailsPanel.resourceUuid;
+    const isMSToolbarVisible = state.multiselect.isVisible;
     return {
         ...dataExplorerState,
         working: !!progress?.working,
@@ -34,10 +36,11 @@ const mapStateToProps = (state: RootState, { id }: Props) => {
         currentRoute: currentRoute,
         paperKey: currentRoute,
         currentItemUuid,
+        isMSToolbarVisible,
     };
 };
 
-const mapDispatchToProps = () => {
+const mapDispatchToProps = (dispatchFn) => {
     return (dispatch: Dispatch, { id, onRowClick, onRowDoubleClick, onContextMenu }: Props) => ({
         onSetColumns: (columns: DataColumns<any, any>) => {
             dispatch(dataExplorerActions.SET_COLUMNS({ id, columns }));
@@ -69,6 +72,10 @@ const mapDispatchToProps = () => {
 
         onLoadMore: (page: number) => {
             dispatch(dataExplorerActions.SET_PAGE({ id, page }));
+        },
+
+        toggleMSToolbar: (isVisible: boolean) => {
+            dispatchFn(toggleMSToolbar(isVisible));
         },
 
         onRowClick,

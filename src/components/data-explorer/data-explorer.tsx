@@ -52,6 +52,7 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
         width: '100%',
         float: 'right',
         display: 'flex',
+        flexDirection: 'row-reverse',
         justifyContent: 'space-between',
     },
 });
@@ -80,6 +81,7 @@ interface DataExplorerDataProps<T> {
     paperKey?: string;
     currentItemUuid: string;
     elementPath?: string;
+    isMSToolbarVisible: boolean;
 }
 
 interface DataExplorerActionProps<T> {
@@ -95,6 +97,7 @@ interface DataExplorerActionProps<T> {
     onChangeRowsPerPage: (rowsPerPage: number) => void;
     onLoadMore: (page: number) => void;
     extractKey?: (item: T) => React.Key;
+    toggleMSToolbar: (isVisible: boolean) => void;
 }
 
 type DataExplorerProps<T> = DataExplorerDataProps<T> & DataExplorerActionProps<T> & WithStyles<CssRules> & MPVPanelProps;
@@ -181,6 +184,8 @@ export const DataExplorer = withStyles(styles)(
                 panelName,
                 panelMaximized,
                 elementPath,
+                isMSToolbarVisible,
+                toggleMSToolbar,
             } = this.props;
             return (
                 <Paper className={classes.root} {...paperProps} key={paperKey} data-cy={this.props['data-cy']}>
@@ -193,7 +198,6 @@ export const DataExplorer = withStyles(styles)(
                             )}
                             {(!hideColumnSelector || !hideSearchInput || !!actions) && (
                                 <Grid className={classes.headerMenu} item xs>
-                                    <MultiselectToolbar />
                                     <Toolbar className={classes.toolbar}>
                                         {!hideSearchInput && (
                                             <div className={classes.searchBox}>
@@ -224,6 +228,7 @@ export const DataExplorer = withStyles(styles)(
                                             </Tooltip>
                                         )}
                                     </Toolbar>
+                                    {isMSToolbarVisible && <MultiselectToolbar />}
                                 </Grid>
                             )}
                         </div>
@@ -242,6 +247,7 @@ export const DataExplorer = withStyles(styles)(
                                 defaultViewMessages={defaultViewMessages}
                                 currentItemUuid={currentItemUuid}
                                 currentRoute={paperKey}
+                                toggleMSToolbar={toggleMSToolbar}
                             />
                         </Grid>
                         <Grid item xs>

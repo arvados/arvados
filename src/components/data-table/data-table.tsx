@@ -52,6 +52,7 @@ export interface DataTableDataProps<I> {
     defaultViewMessages?: string[];
     currentItemUuid?: string;
     currentRoute?: string;
+    toggleMSToolbar: (isVisible: boolean) => void;
 }
 
 type CssRules =
@@ -142,13 +143,14 @@ export const DataTable = withStyles(styles)(
         }
 
         componentDidUpdate(prevProps: Readonly<DataTableProps<T>>, prevState: DataTableState) {
-            const { items } = this.props;
+            const { items, toggleMSToolbar } = this.props;
             const { checkedList } = this.state;
             if (!arraysAreCongruent(prevProps.items, items)) {
                 this.state.isSelected = false;
                 this.initializeCheckedList(items);
             }
             if (prevState.checkedList !== checkedList) {
+                toggleMSToolbar(this.isAnySelected() ? true : false);
                 window.localStorage.setItem('selectedRows', JSON.stringify(checkedList));
             }
         }
@@ -196,6 +198,14 @@ export const DataTable = withStyles(styles)(
                 if (list[key] === false) return false;
             }
             return true;
+        };
+
+        isAnySelected = (): boolean => {
+            const { checkedList } = this.state;
+            for (const key in checkedList) {
+                if (checkedList[key] === true) return true;
+            }
+            return false;
         };
 
         handleCheck = (uuid: string): void => {

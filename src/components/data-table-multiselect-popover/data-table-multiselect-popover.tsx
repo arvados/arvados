@@ -3,21 +3,7 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import React, { useEffect } from 'react';
-import {
-    WithStyles,
-    withStyles,
-    ButtonBase,
-    StyleRulesCallback,
-    Theme,
-    Popover,
-    Button,
-    Card,
-    CardActions,
-    Typography,
-    CardContent,
-    Tooltip,
-    IconButton,
-} from '@material-ui/core';
+import { WithStyles, withStyles, ButtonBase, StyleRulesCallback, Theme, Popover, Button, Card, CardActions, Tooltip, IconButton } from '@material-ui/core';
 import classnames from 'classnames';
 import { DefaultTransformOrigin } from 'components/popover/helpers';
 import debounce from 'lodash/debounce';
@@ -89,7 +75,7 @@ export const DataTableMultiselectPopover = withStyles(styles)(
         icon = React.createRef<HTMLElement>();
 
         render() {
-            const { name, classes, children, options, checkedList } = this.props;
+            const { classes, children, options, checkedList } = this.props;
             return (
                 <>
                     <Tooltip disableFocusListener title='Select Options'>
