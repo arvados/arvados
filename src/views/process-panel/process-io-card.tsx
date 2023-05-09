@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import React, { ReactElement, useState } from 'react';
+import React, { ReactElement, memo, useState } from 'react';
 import { Dispatch } from 'redux';
 import {
     StyleRulesCallback,
@@ -384,7 +384,7 @@ interface ProcessIOPreviewDataProps {
 
 type ProcessIOPreviewProps = ProcessIOPreviewDataProps & WithStyles<CssRules>;
 
-const ProcessIOPreview = withStyles(styles)(
+const ProcessIOPreview = memo(withStyles(styles)(
     ({ classes, data, showImagePreview, valueLabel }: ProcessIOPreviewProps) => {
         const showLabel = data.some((param: ProcessIOParameter) => param.label);
         return <Table className={classes.tableRoot} aria-label="Process IO Preview">
@@ -441,7 +441,7 @@ const ProcessIOPreview = withStyles(styles)(
                 })}
             </TableBody>
         </Table >;
-    });
+    }));
 
 interface ProcessValuePreviewProps {
     value: ProcessIOValue;
