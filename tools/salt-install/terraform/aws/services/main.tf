@@ -82,7 +82,6 @@ resource "aws_iam_policy" "cloud_dispatcher_ec2_access" {
     Statement: [{
       Effect: "Allow",
       Action: [
-        "iam:PassRole",
         "ec2:DescribeKeyPairs",
         "ec2:ImportKeyPair",
         "ec2:RunInstances",
@@ -91,6 +90,13 @@ resource "aws_iam_policy" "cloud_dispatcher_ec2_access" {
         "ec2:TerminateInstances"
       ],
       Resource: "*"
+    },
+    {
+      Effect: "Allow",
+      Action: [
+        "iam:PassRole",
+      ],
+      Resource: "arn:aws:iam::*:role/${aws_iam_instance_profile.keepstore_instance_profile.name}"
     }]
   })
 }
