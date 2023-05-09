@@ -588,16 +588,16 @@ export const getIOParamDisplayValue = (auth: AuthState, input: CommandInputParam
             const fileArrayMainFiles = ((input as FileArrayCommandInputParameter).value || []);
             const firstMainFilePdh = (fileArrayMainFiles.length > 0 && fileArrayMainFiles[0]) ? getResourcePdhUrl(fileArrayMainFiles[0], pdh) : "";
 
-            // Convert each main file into separate arrays of ProcessIOValue to preserve secondaryFile grouping
-            const fileArrayValues = fileArrayMainFiles.map((mainFile: File, i): ProcessIOValue[] => {
-                const secondaryFiles = ((mainFile as unknown) as FileWithSecondaryFiles)?.secondaryFiles || [];
-                return [
+            // Convert each main and secondaryFiles into array of ProcessIOValue preserving ordering
+            let fileArrayValues: ProcessIOValue[] = [];
+            for(let i = 0; i < fileArrayMainFiles.length; i++) {
+                const secondaryFiles = ((fileArrayMainFiles[i] as unknown) as FileWithSecondaryFiles)?.secondaryFiles || [];
+                fileArrayValues.push(
                     // Pass firstMainFilePdh to secondary files and every main file besides the first to hide pdh if equal
-                    ...(mainFile ? [fileToProcessIOValue(mainFile, false, auth, pdh, i > 0 ? firstMainFilePdh : "")] : []),
+                    ...(fileArrayMainFiles[i] ? [fileToProcessIOValue(fileArrayMainFiles[i], false, auth, pdh, i > 0 ? firstMainFilePdh : "")] : []),
                     ...(secondaryFiles.map(file => fileToProcessIOValue(file, true, auth, pdh, firstMainFilePdh)))
-                ];
-                // Reduce each mainFile/secondaryFile group into single array preserving ordering
-            }).reduce((acc: ProcessIOValue[], mainFile: ProcessIOValue[]) => (acc.concat(mainFile)), []);
+                );
+            }
 
             return fileArrayValues.length ?
                 fileArrayValues :
