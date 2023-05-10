@@ -128,7 +128,7 @@ resource "aws_iam_policy" "cloud_dispatcher_ec2_access" {
       Action: [
         "iam:PassRole",
       ],
-      Resource: "arn:aws:iam::*:role/${aws_iam_instance_profile.keepstore_instance_profile.name}"
+      Resource: "arn:aws:iam::*:role/${aws_iam_instance_profile.compute_node_instance_profile.name}"
     }]
   })
 }
