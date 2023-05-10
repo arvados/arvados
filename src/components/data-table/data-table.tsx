@@ -124,9 +124,11 @@ const styles: StyleRulesCallback<CssRules> = (theme: Theme) => ({
     },
 });
 
+export type TCheckedList = Record<string, boolean>;
+
 type DataTableState = {
     isSelected: boolean;
-    checkedList: Record<string, boolean>;
+    checkedList: TCheckedList;
 };
 
 type DataTableProps<T> = DataTableDataProps<T> & WithStyles<CssRules>;
@@ -144,14 +146,13 @@ export const DataTable = withStyles(styles)(
 
         componentDidUpdate(prevProps: Readonly<DataTableProps<T>>, prevState: DataTableState) {
             const { items, toggleMSToolbar } = this.props;
-            const { checkedList } = this.state;
+            const { isSelected, checkedList } = this.state;
             if (!arraysAreCongruent(prevProps.items, items)) {
-                this.state.isSelected = false;
+                if (isSelected === true) this.setState({ isSelected: false });
+                if (items.length) this.initializeCheckedList(items);
                 toggleMSToolbar(false);
-                this.initializeCheckedList(items);
             }
             if (prevState.checkedList !== checkedList) {
-                console.log(this.isAnySelected());
                 toggleMSToolbar(this.isAnySelected() ? true : false);
                 window.localStorage.setItem('selectedRows', JSON.stringify(checkedList));
             }
@@ -175,28 +176,29 @@ export const DataTable = withStyles(styles)(
         };
 
         multiselectOptions: DataTableMultiselectOption[] = [
-            { name: 'All', fn: () => this.handleSelectAll() },
-            { name: 'None', fn: () => this.handleSelectNone() },
-            { name: 'Invert', fn: () => this.handleInvertSelect() },
+            { name: 'All', fn: (list) => this.handleSelectAll(list) },
+            { name: 'None', fn: (list) => this.handleSelectNone(list) },
+            { name: 'Invert', fn: (list) => this.handleInvertSelect(list) },
         ];
 
         initializeCheckedList = (uuids: any[]): void => {
-            console.log('INIT LIIST');
-            const { checkedList } = this.state;
+            const newCheckedList = { ...this.state.checkedList };
+
             uuids.forEach((uuid) => {
-                if (!checkedList.hasOwnProperty(uuid)) {
-                    checkedList[uuid] = false;
+                if (!newCheckedList.hasOwnProperty(uuid)) {
+                    newCheckedList[uuid] = false;
                 }
             });
-            for (const key in checkedList) {
+            for (const key in newCheckedList) {
                 if (!uuids.includes(key)) {
-                    delete checkedList[key];
+                    delete newCheckedList[key];
                 }
             }
-            window.localStorage.setItem('selectedRows', JSON.stringify(checkedList));
+            this.setState({ checkedList: newCheckedList });
+            window.localStorage.setItem('selectedRows', JSON.stringify(newCheckedList));
         };
 
-        isAllSelected = (list: Record<string, boolean>): boolean => {
+        isAllSelected = (list: TCheckedList): boolean => {
             for (const key in list) {
                 if (list[key] === false) return false;
             }
@@ -220,14 +222,14 @@ export const DataTable = withStyles(styles)(
         };
 
         handleSelectorSelect = (): void => {
+            const { checkedList } = this.state;
             const { isSelected } = this.state;
-            isSelected ? this.handleSelectNone() : this.handleSelectAll();
+            isSelected ? this.handleSelectNone(checkedList) : this.handleSelectAll(checkedList);
         };
 
-        handleSelectAll = (): void => {
-            const { checkedList } = this.state;
-            if (Object.keys(checkedList).length) {
-                const newCheckedList = { ...checkedList };
+        handleSelectAll = (list: TCheckedList): void => {
+            if (Object.keys(list).length) {
+                const newCheckedList = { ...list };
                 for (const key in newCheckedList) {
                     newCheckedList[key] = true;
                 }
@@ -235,21 +237,19 @@ export const DataTable = withStyles(styles)(
             }
         };
 
-        handleSelectNone = (): void => {
-            const { checkedList } = this.state;
-            const newCheckedList = { ...checkedList };
+        handleSelectNone = (list: TCheckedList): void => {
+            const newCheckedList = { ...list };
             for (const key in newCheckedList) {
                 newCheckedList[key] = false;
             }
             this.setState({ isSelected: false, checkedList: newCheckedList });
         };
 
-        handleInvertSelect = (): void => {
-            const { checkedList } = this.state;
-            if (Object.keys(checkedList).length) {
-                const newCheckedList = { ...checkedList };
+        handleInvertSelect = (list: TCheckedList): void => {
+            if (Object.keys(list).length) {
+                const newCheckedList = { ...list };
                 for (const key in newCheckedList) {
-                    newCheckedList[key] = !checkedList[key];
+                    newCheckedList[key] = !list[key];
                 }
                 this.setState({ checkedList: newCheckedList, isSelected: this.isAllSelected(newCheckedList) });
             }
