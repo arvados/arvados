@@ -150,7 +150,6 @@ export const DataTable = withStyles(styles)(
             if (!arraysAreCongruent(prevProps.items, items)) {
                 if (isSelected === true) this.setState({ isSelected: false });
                 if (items.length) this.initializeCheckedList(items);
-                toggleMSToolbar(false);
             }
             if (prevState.checkedList !== checkedList) {
                 toggleMSToolbar(this.isAnySelected() ? true : false);
