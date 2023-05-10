@@ -4,7 +4,7 @@
 
 import React from 'react';
 import { connect } from 'react-redux';
-import { StyleRulesCallback, withStyles, WithStyles, Toolbar } from '@material-ui/core';
+import { StyleRulesCallback, withStyles, WithStyles, Toolbar, Button } from '@material-ui/core';
 import { ArvadosTheme } from 'common/custom-theme';
 import { RootState } from 'store/store';
 
@@ -26,19 +26,29 @@ type MultiselectToolbarAction = {
     fn: () => void;
 };
 
-export type MultiselectToolbarActions = MultiselectToolbarAction[];
+export type MultiselectToolbarActions = {
+    actions: Array<MultiselectToolbarAction>;
+};
 
-// type MultiselectToolbarProps = MultiselectToolbarActions & WithStyles<CssRules>;
-type MultiselectToolbarProps = WithStyles<CssRules>;
+export const defaultActions: Array<MultiselectToolbarAction> = [
+    {
+        name: 'foo',
+        fn: () => console.log('yo'),
+    },
+];
 
-export default connect(mapStateToProps)(
+type MultiselectToolbarProps = MultiselectToolbarActions & WithStyles<CssRules>;
+
+export const MultiselectToolbar = connect(mapStateToProps)(
     withStyles(styles)((props: MultiselectToolbarProps) => {
-        const { classes } = props;
+        const { classes, actions } = props;
         return (
             <Toolbar className={classes.root}>
-                <div className={classes.item}>test1</div>
-                <div className={classes.item}>test2</div>
-                <div className={classes.item}>test3</div>
+                {actions.map((action, i) => (
+                    <Button key={i} onClick={action.fn}>
+                        {action.name}
+                    </Button>
+                ))}
             </Toolbar>
         );
     })

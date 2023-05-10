@@ -14,7 +14,7 @@ import { DataTableFilters } from 'components/data-table-filters/data-table-filte
 import { CloseIcon, IconType, MaximizeIcon, UnMaximizeIcon, MoreOptionsIcon } from 'components/icon/icon';
 import { PaperProps } from '@material-ui/core/Paper';
 import { MPVPanelProps } from 'components/multi-panel-view/multi-panel-view';
-import MultiselectToolbar from 'components/multiselectToolbar/MultiselectToolbar';
+import { MultiselectToolbar, defaultActions } from 'components/multiselectToolbar/MultiselectToolbar';
 
 type CssRules = 'searchBox' | 'headerMenu' | 'toolbar' | 'footer' | 'root' | 'moreOptionsButton' | 'title' | 'dataTable' | 'container';
 
@@ -228,7 +228,7 @@ export const DataExplorer = withStyles(styles)(
                                             </Tooltip>
                                         )}
                                     </Toolbar>
-                                    {isMSToolbarVisible && <MultiselectToolbar />}
+                                    {isMSToolbarVisible && <MultiselectToolbar actions={defaultActions} />}
                                 </Grid>
                             )}
                         </div>
