@@ -59,6 +59,7 @@ output "route53_dns_ns" {
 
 output "letsencrypt_iam_access_key_id" {
   value = try(local.iam_access_key_letsencrypt.id, "")
+  sensitive = true
 }
 
 output "letsencrypt_iam_secret_access_key" {
