@@ -154,7 +154,6 @@ export const DataTable = withStyles(styles)(
             }
             if (prevState.checkedList !== checkedList) {
                 toggleMSToolbar(this.isAnySelected() ? true : false);
-                window.localStorage.setItem('selectedRows', JSON.stringify(checkedList));
             }
         }
 
@@ -195,7 +194,6 @@ export const DataTable = withStyles(styles)(
                 }
             }
             this.setState({ checkedList: newCheckedList });
-            window.localStorage.setItem('selectedRows', JSON.stringify(newCheckedList));
         };
 
         isAllSelected = (list: TCheckedList): boolean => {

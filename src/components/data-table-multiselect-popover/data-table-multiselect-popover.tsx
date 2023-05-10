@@ -37,7 +37,7 @@ const styles: StyleRulesCallback<CssRules> = (theme: Theme) => ({
         paddingBottom: 5,
     },
     optionsContainer: {
-        paddingTop: '1rem',
+        padding: '1rem 0',
         flex: 1,
     },
     option: {
@@ -109,11 +109,11 @@ export const DataTableMultiselectPopover = withStyles(styles)(
                                         </div>
                                     ))}
                             </div>
-                            <CardActions>
+                            {/* <CardActions>
                                 <Button color='primary' variant='outlined' size='small' onClick={this.close}>
                                     Close
                                 </Button>
-                            </CardActions>
+                            </CardActions> */}
                         </Card>
                     </Popover>
                     <this.MountHandler />
