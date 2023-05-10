@@ -25,6 +25,11 @@ resource "aws_iam_instance_profile" "keepstore_instance_profile" {
   role = data.terraform_remote_state.data-storage.outputs.keepstore_iam_role_name
 }
 
+resource "aws_iam_instance_profile" "compute_node_instance_profile" {
+  name = "${local.cluster_name}-compute-node-00-iam-role"
+  role = local.compute_node_iam_role_name
+}
+
 resource "aws_iam_instance_profile" "dispatcher_instance_profile" {
   name = "${local.cluster_name}_dispatcher_instance_profile"
   role = aws_iam_role.cloud_dispatcher_iam_role.name
@@ -70,6 +75,35 @@ resource "aws_instance" "arvados_service" {
       ami,
     ]
   }
+}
+
+resource "aws_iam_policy" "compute_node_ebs_autoscaler" {
+  name = "${local.cluster_name}_compute_node_ebs_autoscaler"
+  policy = jsonencode({
+    Version: "2012-10-17",
+    Id: "compute-node EBS Autoscaler policy",
+    Statement: [{
+      Effect: "Allow",
+      Action: [
+          "ec2:AttachVolume",
+          "ec2:DescribeVolumeStatus",
+          "ec2:DescribeVolumes",
+          "ec2:DescribeTags",
+          "ec2:ModifyInstanceAttribute",
+          "ec2:DescribeVolumeAttribute",
+          "ec2:CreateVolume",
+          "ec2:DeleteVolume",
+          "ec2:CreateTags"
+      ],
+      Resource: "*"
+    }]
+  })
+}
+
+resource "aws_iam_policy_attachment" "compute_node_ebs_autoscaler_attachment" {
+  name = "${local.cluster_name}_compute_node_ebs_autoscaler_attachment"
+  roles = [ local.compute_node_iam_role_name ]
+  policy_arn = aws_iam_policy.compute_node_ebs_autoscaler.arn
 }
 
 resource "aws_iam_policy" "cloud_dispatcher_ec2_access" {

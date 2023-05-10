@@ -30,6 +30,11 @@ resource "aws_iam_role" "keepstore_iam_role" {
   assume_role_policy = "${file("../assumerolepolicy.json")}"
 }
 
+resource "aws_iam_role" "compute_node_iam_role" {
+  name = "${local.cluster_name}-compute-node-00-iam-role"
+  assume_role_policy = "${file("../assumerolepolicy.json")}"
+}
+
 resource "aws_iam_policy" "s3_full_access" {
   name = "${local.cluster_name}_s3_full_access"
   policy = jsonencode({
@@ -50,7 +55,10 @@ resource "aws_iam_policy" "s3_full_access" {
 
 resource "aws_iam_policy_attachment" "s3_full_access_policy_attachment" {
   name = "${local.cluster_name}_s3_full_access_attachment"
-  roles = [ aws_iam_role.keepstore_iam_role.name ]
+  roles = [
+    aws_iam_role.keepstore_iam_role.name,
+    aws_iam_role.compute_node_iam_role.name,
+  ]
   policy_arn = aws_iam_policy.s3_full_access.arn
 }
 

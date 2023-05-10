@@ -6,6 +6,10 @@ output "keepstore_iam_role_name" {
   value = aws_iam_role.keepstore_iam_role.name
 }
 
+output "compute_node_iam_role_name" {
+  value = aws_iam_role.compute_node_iam_role.name
+}
+
 output "use_external_db" {
   value = var.use_external_db
 }

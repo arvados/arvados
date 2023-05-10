@@ -17,4 +17,5 @@ locals {
   ssl_password_secret_name = "${local.cluster_name}-${var.ssl_password_secret_name_suffix}"
   instance_ami_id = var.instance_ami != "" ? var.instance_ami : data.aws_ami.debian-11.image_id
   custom_tags = data.terraform_remote_state.vpc.outputs.custom_tags
+  compute_node_iam_role_name = data.terraform_remote_state.data-storage.outputs.compute_node_iam_role_name
 }
