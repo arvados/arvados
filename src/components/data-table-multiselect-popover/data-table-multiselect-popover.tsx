@@ -8,6 +8,7 @@ import classnames from 'classnames';
 import { DefaultTransformOrigin } from 'components/popover/helpers';
 import debounce from 'lodash/debounce';
 import { grey } from '@material-ui/core/colors';
+import { TCheckedList } from 'components/data-table/data-table';
 
 export type CssRules = 'root' | 'icon' | 'iconButton' | 'optionsContainer' | 'option';
 
@@ -60,7 +61,7 @@ export type DataTableMultiselectOption = {
 export interface DataTableMultiselectProps {
     name: string;
     options: DataTableMultiselectOption[];
-    checkedList: Record<string, boolean>;
+    checkedList: TCheckedList;
 }
 
 interface DataTableFMultiselectPopState {
@@ -109,11 +110,6 @@ export const DataTableMultiselectPopover = withStyles(styles)(
                                         </div>
                                     ))}
                             </div>
-                            {/* <CardActions>
-                                <Button color='primary' variant='outlined' size='small' onClick={this.close}>
-                                    Close
-                                </Button>
-                            </CardActions> */}
                         </Card>
                     </Popover>
                     <this.MountHandler />
