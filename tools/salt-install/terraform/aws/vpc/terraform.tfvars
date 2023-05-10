@@ -2,7 +2,8 @@
 #
 # SPDX-License-Identifier: CC-BY-SA-3.0
 
-region_name = "us-east-1"
+# Main cluster configurations. No sensible defaults provided for these:
+# region_name = "us-east-1"
 # cluster_name = "xarv1"
 # domain_name = "xarv1.example.com"
 
@@ -12,10 +13,10 @@ region_name = "us-east-1"
 # Optional networking options. Set existing resources to be used instead of
 # creating new ones.
 # NOTE: We only support fully managed or fully custom networking, not a mix of both.
-# vpc_id = "vpc-"
-# sg_id = "sg-"
-# public_subnet_id = "subnet-"
-# private_subnet_id = "subnet-"
+# vpc_id = "vpc-aaaa"
+# sg_id = "sg-bbbb"
+# public_subnet_id = "subnet-cccc"
+# private_subnet_id = "subnet-dddd"
 
 # Optional custom tags to add to every resource. Default: {}
 # custom_tags = {
@@ -27,8 +28,17 @@ region_name = "us-east-1"
 # Optional cluster service nodes configuration:
 #
 # List of node names which either will be hosting user-facing or internal services
-# user_facing_hosts = [...]
-# internal_service_hosts = [...]
+# user_facing_hosts = ["node1", "node2", ...]
+# internal_service_hosts = ["node3", ...]
 #
 # Map assigning each node name an internal IP address
-# private_ip = {...}
+# private_ip = {
+#   node1 = "1.2.3.4",
+#   ...
+# }
+#
+# Map assigning DNS aliases for service node names
+# dns_aliases {
+#   node1 = ["alias1", "alias2", ...],
+#   ...
+# }

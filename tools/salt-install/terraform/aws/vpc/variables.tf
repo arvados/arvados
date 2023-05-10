@@ -50,6 +50,23 @@ variable "private_ip" {
   }
 }
 
+variable "dns_aliases" {
+  description = "Sets DNS name aliases for every service node"
+  type = map(list(string))
+  default = {
+    controller: ["ws"]
+    workbench: [
+      "workbench2",
+      "webshell",
+      "keep",
+      "download",
+      "prometheus",
+      "grafana",
+      "*.collections"
+    ]
+  }
+}
+
 variable "vpc_id" {
   description = "Use existing VPC instead of creating one for the cluster"
   type = string

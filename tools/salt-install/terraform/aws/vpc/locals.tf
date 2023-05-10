@@ -30,12 +30,8 @@ locals {
     for k, v in aws_eip.arvados_eip: k => v.public_ip
   }
   private_ip = var.private_ip
-  aliases = {
-    controller: ["ws"]
-    workbench: ["workbench2", "webshell", "keep", "download", "prometheus", "grafana", "*.collections"]
-  }
   cname_by_host = flatten([
-    for host, aliases in local.aliases : [
+    for host, aliases in var.dns_aliases : [
       for alias in aliases : {
         record = alias
         cname = host
