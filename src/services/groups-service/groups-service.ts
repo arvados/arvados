@@ -56,7 +56,7 @@ export class GroupsService<
             select: select
                 ? JSON.stringify(select.map(sel => {
                     const sp = sel.split(".");
-                    return sp.length == 2 ? (sp[0] + "." + snakeCase(sp[1])) : snakeCase(sel);
+                    return sp.length === 2 ? (sp[0] + "." + snakeCase(sp[1])) : snakeCase(sel);
                 }))
                 : undefined
         };

@@ -261,7 +261,7 @@ export const CollectionPanelFiles = withStyles(styles)(connect((state: RootState
     const rightData = pathData[rightKey];
 
     React.useEffect(() => {
-        if (props.currentItemUuid && extractUuidKind(props.currentItemUuid) == ResourceKind.COLLECTION) {
+        if (props.currentItemUuid && extractUuidKind(props.currentItemUuid) === ResourceKind.COLLECTION) {
             setPathData({});
             setPath([props.currentItemUuid]);
         }
