@@ -48,7 +48,7 @@ output "domain_name" {
 
 # Debian AMI's default user
 output "deploy_user" {
-  value = "admin"
+  value = var.deploy_user
 }
 
 output "region_name" {

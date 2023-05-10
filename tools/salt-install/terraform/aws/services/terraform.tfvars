@@ -11,3 +11,7 @@
 # AWS secret's name which holds the SSL certificate private key's password.
 # Default: "arvados-ssl-privkey-password"
 # ssl_password_secret_name_suffix = "some-name-suffix"
+
+# User for software deployment. Depends on the AMI's distro.
+# Default: 'admin'
+# deploy_user = ubuntu

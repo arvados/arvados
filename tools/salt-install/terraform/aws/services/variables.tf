@@ -14,6 +14,12 @@ variable "pubkey_path" {
   default = "~/.ssh/id_rsa.pub"
 }
 
+variable "deploy_user" {
+  description = "User for deploying the software"
+  type = string
+  default = "admin"
+}
+
 variable "ssl_password_secret_name_suffix" {
   description = "Name suffix for the SSL certificate's private key password AWS secret."
   type = string

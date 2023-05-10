@@ -19,11 +19,6 @@ provider "aws" {
   }
 }
 
-resource "aws_key_pair" "deployer" {
-  key_name = local.pubkey_name
-  public_key = file(local.pubkey_path)
-}
-
 resource "aws_iam_instance_profile" "keepstore_instance_profile" {
   name = "${local.cluster_name}-keepstore-00-iam-role"
   role = data.terraform_remote_state.data-storage.outputs.keepstore_iam_role_name
@@ -48,9 +43,10 @@ resource "aws_instance" "arvados_service" {
   for_each = toset(concat(local.public_hosts, local.private_hosts))
   ami = data.aws_ami.debian-11.image_id
   instance_type = var.default_instance_type
-  key_name = local.pubkey_name
   user_data = templatefile("user_data.sh", {
-    "hostname": each.value
+    "hostname": each.value,
+    "deploy_user": var.deploy_user,
+    "ssh_pubkey": file(local.pubkey_path)
   })
   private_ip = local.private_ip[each.value]
   subnet_id = contains(local.user_facing_hosts, each.value) ? data.terraform_remote_state.vpc.outputs.public_subnet_id : data.terraform_remote_state.vpc.outputs.private_subnet_id

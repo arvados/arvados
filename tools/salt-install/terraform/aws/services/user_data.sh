@@ -17,3 +17,13 @@ while true; do
 done
 
 apt-get -o Acquire::ForceIPv4=true install -y git curl
+
+SSH_DIR="/home/${deploy_user}/.ssh"
+if [ ! -d "$${SSH_DIR}" ]; then
+  mkdir $${SSH_DIR}
+  chown ${deploy_user}.${deploy_user} $${SSH_DIR}
+  chmod 700 $${SSH_DIR}
+fi
+
+echo "${ssh_pubkey}" > $${SSH_DIR}/authorized_keys
+chmod 600 $${SSH_DIR}/authorized_keys
