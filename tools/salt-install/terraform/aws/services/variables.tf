@@ -25,3 +25,9 @@ variable "ssl_password_secret_name_suffix" {
   type = string
   default = "arvados-ssl-privkey-password"
 }
+
+variable "instance_ami" {
+  description = "The EC2 instance AMI to use on the nodes"
+  type = string
+  default = ""
+}

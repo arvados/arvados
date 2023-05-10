@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: CC-BY-SA-3.0
 
 # Set to a specific SSH public key path. Default: ~/.ssh/id_rsa.pub
-# pubkey_path = /path/to/pub.key
+# pubkey_path = "/path/to/pub.key"
 
 # Set the instance type for your hosts. Default: m5a.large
 # default_instance_type = "t2.micro"
@@ -14,4 +14,7 @@
 
 # User for software deployment. Depends on the AMI's distro.
 # Default: 'admin'
-# deploy_user = ubuntu
+# deploy_user = "ubuntu"
+
+# Instance AMI to use for service nodes. Default: latest from Debian 11
+# instance_ami = "ami-0481e8ba7f486bd99"
