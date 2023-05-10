@@ -16,3 +16,10 @@ region_name = "us-east-1"
 # sg_id = "sg-"
 # public_subnet_id = "subnet-"
 # private_subnet_id = "subnet-"
+
+# Optional custom tags to add to every resource. Default: {}
+# custom_tags = {
+#   environment = "production"
+#   project = "Phoenix"
+#   owner = "jdoe"
+# }

@@ -16,4 +16,5 @@ locals {
   internal_service_hosts = data.terraform_remote_state.vpc.outputs.internal_service_hosts
   ssl_password_secret_name = "${local.cluster_name}-${var.ssl_password_secret_name_suffix}"
   instance_ami_id = var.instance_ami != "" ? var.instance_ami : data.aws_ami.debian-11.image_id
+  custom_tags = data.terraform_remote_state.vpc.outputs.custom_tags
 }

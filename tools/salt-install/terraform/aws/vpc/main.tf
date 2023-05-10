@@ -13,9 +13,10 @@ terraform {
 provider "aws" {
   region = var.region_name
   default_tags {
-    tags = {
+    tags = merge(var.custom_tags, {
       Arvados = var.cluster_name
-    }
+      Terraform = true
+    })
   }
 }
 

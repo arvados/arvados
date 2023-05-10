@@ -77,3 +77,7 @@ output "cluster_name" {
 output "domain_name" {
   value = var.domain_name
 }
+
+output "custom_tags" {
+  value = var.custom_tags
+}

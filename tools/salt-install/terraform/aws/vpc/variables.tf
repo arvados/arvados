@@ -62,3 +62,9 @@ variable "public_subnet_id" {
   type = string
   default = ""
 }
+
+variable "custom_tags" {
+  description = "Apply customized tags to every resource on the cluster"
+  type = map(string)
+  default = {}
+}
