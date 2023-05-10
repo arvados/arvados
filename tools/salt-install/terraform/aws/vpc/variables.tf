@@ -39,6 +39,17 @@ variable "internal_service_hosts" {
   default = [ "keep0", "shell" ]
 }
 
+variable "private_ip" {
+  description = "Map with every node's private IP address"
+  type = map(string)
+  default = {
+    controller: "10.1.1.11",
+    workbench: "10.1.1.15",
+    shell: "10.1.2.17",
+    keep0: "10.1.2.13",
+  }
+}
+
 variable "vpc_id" {
   description = "Use existing VPC instead of creating one for the cluster"
   type = string

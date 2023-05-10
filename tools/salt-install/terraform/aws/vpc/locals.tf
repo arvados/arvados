@@ -29,12 +29,7 @@ locals {
   public_ip = {
     for k, v in aws_eip.arvados_eip: k => v.public_ip
   }
-  private_ip = {
-    "controller": "10.1.1.11",
-    "workbench": "10.1.1.15",
-    "shell": "10.1.2.17",
-    "keep0": "10.1.2.13",
-  }
+  private_ip = var.private_ip
   aliases = {
     controller: ["ws"]
     workbench: ["workbench2", "webshell", "keep", "download", "prometheus", "grafana", "*.collections"]

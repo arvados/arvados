@@ -23,3 +23,12 @@ region_name = "us-east-1"
 #   project = "Phoenix"
 #   owner = "jdoe"
 # }
+
+# Optional cluster service nodes configuration:
+#
+# List of node names which either will be hosting user-facing or internal services
+# user_facing_hosts = [...]
+# internal_service_hosts = [...]
+#
+# Map assigning each node name an internal IP address
+# private_ip = {...}
