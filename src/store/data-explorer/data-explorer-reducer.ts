@@ -70,14 +70,23 @@ export const dataExplorerReducer = (
         SET_FILTERS: ({ id, columnName, filters }) =>
             update(state, id, mapColumns(setFilters(columnName, filters))),
 
-        SET_ITEMS: ({ id, items, itemsAvailable, page, rowsPerPage }) =>
-            update(state, id, (explorer) => ({
-                ...explorer,
-                items,
-                itemsAvailable,
-                page: page || 0,
-                rowsPerPage,
-            })),
+        SET_ITEMS: ({ id, items, itemsAvailable, page, rowsPerPage }) => (
+            update(state, id, (explorer) => {
+                // Reject updates to pages other than current,
+                //  DataExplorer middleware should retry
+                if (explorer.page === page) {
+                    return {
+                        ...explorer,
+                        items,
+                        itemsAvailable,
+                        page: page || 0,
+                        rowsPerPage,
+                    }
+                } else {
+                    return explorer;
+                }
+            })
+        ),
 
         APPEND_ITEMS: ({ id, items, itemsAvailable, page, rowsPerPage }) =>
             update(state, id, (explorer) => ({
