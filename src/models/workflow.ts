@@ -185,10 +185,13 @@ export const isPrimitiveOfType = (input: GenericCommandInputParameter<any, any>,
         : input.type === type;
 
 export const isArrayOfType = (input: GenericCommandInputParameter<any, any>, type: CWLType) =>
-    typeof input.type === 'object' &&
-        input.type.type === 'array'
-        ? input.type.items === type
-        : false;
+    input.type instanceof Array
+        ? (input.type.filter(t => typeof t === 'object' &&
+            t.type === 'array' &&
+            t.items === type).length > 0)
+        : (typeof input.type === 'object' &&
+            input.type.type === 'array' &&
+            input.type.items === type);
 
 export const stringifyInputType = ({ type }: CommandInputParameter) => {
     if (typeof type === 'string') {
