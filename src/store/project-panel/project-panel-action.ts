@@ -7,6 +7,7 @@ import { bindDataExplorerActions } from "store/data-explorer/data-explorer-actio
 import { propertiesActions } from "store/properties/properties-actions";
 import { RootState } from 'store/store';
 import { getProperty } from "store/properties/properties";
+import { loadProject } from "store/workbench/workbench-actions";
 
 export const PROJECT_PANEL_ID = "projectPanel";
 export const PROJECT_PANEL_CURRENT_UUID = "projectPanelCurrentUuid";
@@ -14,7 +15,8 @@ export const IS_PROJECT_PANEL_TRASHED = 'isProjectPanelTrashed';
 export const projectPanelActions = bindDataExplorerActions(PROJECT_PANEL_ID);
 
 export const openProjectPanel = (projectUuid: string) =>
-    (dispatch: Dispatch) => {
+    async (dispatch: Dispatch) => {
+        await dispatch<any>(loadProject(projectUuid));
         dispatch(propertiesActions.SET_PROPERTY({ key: PROJECT_PANEL_CURRENT_UUID, value: projectUuid }));
         dispatch(projectPanelActions.RESET_EXPLORER_SEARCH_VALUE());
         dispatch(projectPanelActions.REQUEST_ITEMS());

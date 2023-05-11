@@ -77,17 +77,7 @@ import { MiddlewareListReducer } from 'common/plugintypes';
 import { tooltipsMiddleware } from './tooltips/tooltips-middleware';
 import { sidePanelReducer } from './side-panel/side-panel-reducer'
 import { bannerReducer } from './banner/banner-reducer';
-
-declare global {
-    interface Window {
-        __REDUX_DEVTOOLS_EXTENSION_COMPOSE__?: typeof compose;
-    }
-}
-
-const composeEnhancers =
-    (process.env.NODE_ENV === 'development' &&
-        window && window.__REDUX_DEVTOOLS_EXTENSION_COMPOSE__) ||
-    compose;
+import { composeWithDevTools } from 'redux-devtools-extension';
 
 export type RootState = ReturnType<ReturnType<typeof createRootReducer>>;
 
@@ -187,7 +177,7 @@ export function configureStore(history: History, services: ServiceRepository, co
 
     middlewares = pluginConfig.middlewares.reduce(reduceMiddlewaresFn, middlewares);
 
-    const enhancer = composeEnhancers(applyMiddleware(redirectToMiddleware, ...middlewares));
+    const enhancer = composeWithDevTools({/* options */ })(applyMiddleware(redirectToMiddleware, ...middlewares));
     return createStore(rootReducer, enhancer);
 }
 

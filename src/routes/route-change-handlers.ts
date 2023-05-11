@@ -11,6 +11,7 @@ import { dialogActions } from 'store/dialog/dialog-actions';
 import { contextMenuActions } from 'store/context-menu/context-menu-actions';
 import { searchBarActions } from 'store/search-bar/search-bar-actions';
 import { pluginConfig } from 'plugins';
+import { openProjectPanel } from 'store/project-panel/project-panel-action';
 
 export const addRouteChangeHandlers = (history: History, store: RootStore) => {
     const handler = handleLocationChange(store);
@@ -60,7 +61,7 @@ const handleLocationChange = (store: RootStore) => ({ pathname }: Location) => {
     }
 
     if (projectMatch) {
-        store.dispatch(WorkbenchActions.loadProject(projectMatch.params.id));
+        store.dispatch(openProjectPanel(projectMatch.params.id));
     } else if (collectionMatch) {
         store.dispatch(WorkbenchActions.loadCollection(collectionMatch.params.id));
     } else if (favoriteMatch) {

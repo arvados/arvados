@@ -3811,6 +3811,7 @@ __metadata:
     react-window: 1.8.5
     redux: 4.0.3
     redux-devtools: 3.4.1
+    redux-devtools-extension: ^2.13.9
     redux-form: 7.4.2
     redux-mock-store: 1.5.4
     redux-thunk: 2.3.0
@@ -15445,6 +15446,15 @@ __metadata:
     indent-string: ^2.1.0
     strip-indent: ^1.0.1
   checksum: 2bb8f76fda9c9f44e26620047b0ba9dd1834b0a80309d0badcc23fdcf7bb27a7ca74e66b683baa0d4b8cb5db787f11be086504036d63447976f409dd3e73fd7d
+  languageName: node
+  linkType: hard
+
+"redux-devtools-extension@npm:^2.13.9":
+  version: 2.13.9
+  resolution: "redux-devtools-extension@npm:2.13.9"
+  peerDependencies:
+    redux: ^3.1.0 || ^4.0.0
+  checksum: 603d48fd6acf3922ef373b251ab3fdbb990035e90284191047b29d25b06ea18122bc4ef01e0704ccae495acb27ab5e47b560937e98213605dd88299470025db9
   languageName: node
   linkType: hard
 
