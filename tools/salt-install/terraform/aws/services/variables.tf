@@ -10,6 +10,15 @@ variable "instance_type" {
   }
 }
 
+variable "instance_volume_size" {
+  description = "EC2 volume size in GiB per service node"
+  type = map(number)
+  default = {
+    default = 20
+    controller = 100
+  }
+}
+
 variable "pubkey_path" {
   description = "Path to the file containing the public SSH key"
   type = string
