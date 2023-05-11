@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import React from 'react';
-import { Grid, StyleRulesCallback, Divider, Typography } from '@material-ui/core';
+import { Grid, StyleRulesCallback, Typography } from '@material-ui/core';
 import { Field, WrappedFieldProps } from 'redux-form';
 import { WithStyles } from '@material-ui/core/styles';
 import withStyles from '@material-ui/core/styles/withStyles';

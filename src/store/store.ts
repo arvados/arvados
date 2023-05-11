@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import { createStore, applyMiddleware, compose, Middleware, combineReducers, Store, Action, Dispatch } from 'redux';
+import { createStore, applyMiddleware, Middleware, combineReducers, Store, Action, Dispatch } from 'redux';
 import { routerMiddleware, routerReducer } from "react-router-redux";
 import thunkMiddleware from 'redux-thunk';
 import { History } from "history";
