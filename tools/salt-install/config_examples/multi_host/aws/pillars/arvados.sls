@@ -129,7 +129,7 @@ arvados:
           ### This SG should allow SSH from the dispatcher to the compute nodes
           SecurityGroupIDs: ['sg-FIXMEFIXMEFIXMEFI']
           SubnetID: subnet-FIXMEFIXMEFIXMEFI
-          IAMInstanceProfile: __CLUSTER__-keepstore-00-iam-role
+          IAMInstanceProfile: __CLUSTER__-compute-node-00-iam-role
       DispatchPrivateKey: |
         -----BEGIN OPENSSH PRIVATE KEY-----
         Read https://doc.arvados.org/install/crunch2-cloud/install-compute-node.html#sshkeypair

@@ -28,7 +28,12 @@ TODO: extract this information based on git commit messages and generate changel
 <div class="releasenotes">
 </notextile>
 
-h2(#main). development main (as of 2023-04-18)
+h2(#main). development main (as of 2023-05-11)
+
+h3. Multi-node installer's domain_name configuration change
+
+The @domain_name@ variable at @terraform/vpc/terraform.tfvars@ changed its meaning. In previous versions it was used in combination with @cluster_name@ to build the cluster's domain name (e.g.: @cluster_name@.@domain_name@). To allow the use of any arbitrary cluster domain, now we don't enforce using the @cluster_name@ as part of the domain, so @domain_name@ needs to hold the entire domain for the given cluster.
+For example, if @cluster_name@ is set to @"xarv1"@ and @domain_name@ was previously set to @"example.com"@, it should now be set to @"xarv1.example.com"@ to keep using the same cluster domain.
 
 "previous: Upgrading to 2.6.1":#v2_6_1
 
