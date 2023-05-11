@@ -74,12 +74,13 @@ export const dataExplorerReducer = (
             update(state, id, (explorer) => {
                 // Reject updates to pages other than current,
                 //  DataExplorer middleware should retry
-                if (explorer.page === page) {
+                const updatedPage = page || 0;
+                if (explorer.page === updatedPage) {
                     return {
                         ...explorer,
                         items,
                         itemsAvailable,
-                        page: page || 0,
+                        page: updatedPage,
                         rowsPerPage,
                     }
                 } else {
