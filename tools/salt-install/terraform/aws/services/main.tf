@@ -58,9 +58,10 @@ resource "aws_instance" "arvados_service" {
   subnet_id = contains(local.user_facing_hosts, each.value) ? data.terraform_remote_state.vpc.outputs.public_subnet_id : data.terraform_remote_state.vpc.outputs.private_subnet_id
   vpc_security_group_ids = [ data.terraform_remote_state.vpc.outputs.arvados_sg_id ]
   # This should be done in a more readable way
-  iam_instance_profile = each.value == "controller" ? aws_iam_instance_profile.dispatcher_instance_profile.name : length(regexall("^keep[0-9]+", each.value)) > 0 ? aws_iam_instance_profile.keepstore_instance_profile.name : aws_iam_instance_profile.default_instance_profile.name
+  # iam_instance_profile = each.value == "controller" ? aws_iam_instance_profile.dispatcher_instance_profile.name : length(regexall("^keep[0-9]+", each.value)) > 0 ? aws_iam_instance_profile.keepstore_instance_profile.name : aws_iam_instance_profile.default_instance_profile.name
+  iam_instance_profile = try(local.instance_profile[each.value], local.instance_profile.default).name
   tags = {
-    Name = "arvados_service_${each.value}"
+    Name = "${local.cluster_name}_arvados_service_${each.value}"
   }
   root_block_device {
     volume_type = "gp3"
