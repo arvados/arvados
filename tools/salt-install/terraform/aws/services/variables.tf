@@ -2,10 +2,12 @@
 #
 # SPDX-License-Identifier: CC-BY-SA-3.0
 
-variable "default_instance_type" {
-  description = "The default EC2 instance type to use on the nodes"
-  type = string
-  default = "m5a.large"
+variable "instance_type" {
+  description = "The EC2 instance types to use per service node"
+  type = map(string)
+  default = {
+    default = "m5a.large"
+  }
 }
 
 variable "pubkey_path" {

@@ -48,7 +48,7 @@ resource "aws_iam_instance_profile" "default_instance_profile" {
 resource "aws_instance" "arvados_service" {
   for_each = toset(concat(local.public_hosts, local.private_hosts))
   ami = local.instance_ami_id
-  instance_type = var.default_instance_type
+  instance_type = try(var.instance_type[each.value], var.instance_type.default)
   user_data = templatefile("user_data.sh", {
     "hostname": each.value,
     "deploy_user": var.deploy_user,

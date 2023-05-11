@@ -5,8 +5,11 @@
 # Set to a specific SSH public key path. Default: ~/.ssh/id_rsa.pub
 # pubkey_path = "/path/to/pub.key"
 
-# Set the instance type for your hosts. Default: m5a.large
-# default_instance_type = "t2.micro"
+# Set the instance type for your nodes. Default: m5a.large
+# instance_type = {
+#   default = "m5a.xlarge"
+#   controller = "c5a.4xlarge"
+# }
 
 # AWS secret's name which holds the SSL certificate private key's password.
 # Default: "arvados-ssl-privkey-password"
