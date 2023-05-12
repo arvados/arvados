@@ -23,24 +23,22 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
 });
 
 type MultiselectToolbarAction = {
-    name: string;
-    fn: () => ReactElement;
+    fn: (classes, i) => ReactElement;
 };
 
 export type MultiselectToolbarActions = {
-    actions: Array<MultiselectToolbarAction>;
+    buttons: Array<MultiselectToolbarAction>;
 };
 
 export const defaultActions: Array<MultiselectToolbarAction> = [
     {
-        name: 'foo',
-        fn: () => MSToolbarCopyButton({ button: { border: '1px solid blue' } }),
+        fn: (classes, i) => MSToolbarCopyButton(classes, i),
     },
 ];
 
-const MSToolbarCopyButton = (classes) => {
+const MSToolbarCopyButton = (classes, i) => {
     return (
-        <Button className={classes.button}>
+        <Button key={i} className={classes.button}>
             <CopyToClipboardSnackbar value='foo' children={<div>Copy</div>} />
         </Button>
     );
@@ -50,18 +48,8 @@ type MultiselectToolbarProps = MultiselectToolbarActions & WithStyles<CssRules>;
 
 export const MultiselectToolbar = connect(mapStateToProps)(
     withStyles(styles)((props: MultiselectToolbarProps) => {
-        const { classes, actions } = props;
-        return (
-            <Toolbar className={classes.root}>
-                {actions.map((action, i) => (
-                    <Button key={i} className={classes.button} onClick={action.fn}>
-                        {action.name}
-                    </Button>
-                ))}
-                <MSToolbarCopyButton />
-                {/* <CopyToClipboardSnackbar value='foo' children={<div>test</div>} /> */}
-            </Toolbar>
-        );
+        const { classes, buttons } = props;
+        return <Toolbar className={classes.root}>{buttons.map((btn, i) => btn.fn(classes, i))}</Toolbar>;
     })
 );
 

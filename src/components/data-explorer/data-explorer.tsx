@@ -228,7 +228,7 @@ export const DataExplorer = withStyles(styles)(
                                             </Tooltip>
                                         )}
                                     </Toolbar>
-                                    {isMSToolbarVisible && <MultiselectToolbar actions={defaultActions} />}
+                                    {isMSToolbarVisible && <MultiselectToolbar buttons={defaultActions} />}
                                 </Grid>
                             )}
                         </div>
