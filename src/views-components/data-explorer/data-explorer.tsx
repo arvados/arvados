@@ -9,10 +9,10 @@ import { getDataExplorer } from 'store/data-explorer/data-explorer-reducer';
 import { Dispatch } from 'redux';
 import { dataExplorerActions } from 'store/data-explorer/data-explorer-action';
 import { DataColumn } from 'components/data-table/data-column';
-import { DataColumns } from 'components/data-table/data-table';
+import { DataColumns, TCheckedList } from 'components/data-table/data-table';
 import { DataTableFilters } from 'components/data-table-filters/data-table-filters-tree';
 import { LAST_REFRESH_TIMESTAMP } from 'components/refresh-button/refresh-button';
-import { toggleMSToolbar } from 'store/multiselect/multiselect-actions';
+import { toggleMSToolbar, setCheckedListOnStore } from 'store/multiselect/multiselect-actions';
 
 interface Props {
     id: string;
@@ -76,6 +76,10 @@ const mapDispatchToProps = (dispatchFn) => {
 
         toggleMSToolbar: (isVisible: boolean) => {
             dispatchFn(toggleMSToolbar(isVisible));
+        },
+
+        setCheckedListOnStore: (checkedList: TCheckedList) => {
+            dispatchFn(setCheckedListOnStore(checkedList));
         },
 
         onRowClick,

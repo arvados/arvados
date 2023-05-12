@@ -15,6 +15,7 @@ import { CloseIcon, IconType, MaximizeIcon, UnMaximizeIcon, MoreOptionsIcon } fr
 import { PaperProps } from '@material-ui/core/Paper';
 import { MPVPanelProps } from 'components/multi-panel-view/multi-panel-view';
 import { MultiselectToolbar, defaultActions } from 'components/multiselectToolbar/MultiselectToolbar';
+import { TCheckedList } from 'components/data-table/data-table';
 
 type CssRules = 'searchBox' | 'headerMenu' | 'toolbar' | 'footer' | 'root' | 'moreOptionsButton' | 'title' | 'dataTable' | 'container';
 
@@ -98,6 +99,7 @@ interface DataExplorerActionProps<T> {
     onLoadMore: (page: number) => void;
     extractKey?: (item: T) => React.Key;
     toggleMSToolbar: (isVisible: boolean) => void;
+    setCheckedListOnStore: (checkedList: TCheckedList) => void;
 }
 
 type DataExplorerProps<T> = DataExplorerDataProps<T> & DataExplorerActionProps<T> & WithStyles<CssRules> & MPVPanelProps;
@@ -186,6 +188,7 @@ export const DataExplorer = withStyles(styles)(
                 elementPath,
                 isMSToolbarVisible,
                 toggleMSToolbar,
+                setCheckedListOnStore,
             } = this.props;
             return (
                 <Paper className={classes.root} {...paperProps} key={paperKey} data-cy={this.props['data-cy']}>
@@ -248,6 +251,7 @@ export const DataExplorer = withStyles(styles)(
                                 currentItemUuid={currentItemUuid}
                                 currentRoute={paperKey}
                                 toggleMSToolbar={toggleMSToolbar}
+                                setCheckedListOnStore={setCheckedListOnStore}
                             />
                         </Grid>
                         <Grid item xs>

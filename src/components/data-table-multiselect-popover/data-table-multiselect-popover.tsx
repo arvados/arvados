@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import React, { useEffect } from 'react';
-import { WithStyles, withStyles, ButtonBase, StyleRulesCallback, Theme, Popover, Button, Card, CardActions, Tooltip, IconButton } from '@material-ui/core';
+import { WithStyles, withStyles, ButtonBase, StyleRulesCallback, Theme, Popover, Card, Tooltip, IconButton } from '@material-ui/core';
 import classnames from 'classnames';
 import { DefaultTransformOrigin } from 'components/popover/helpers';
 import debounce from 'lodash/debounce';

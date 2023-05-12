@@ -53,6 +53,7 @@ export interface DataTableDataProps<I> {
     currentItemUuid?: string;
     currentRoute?: string;
     toggleMSToolbar: (isVisible: boolean) => void;
+    setCheckedListOnStore: (checkedList: TCheckedList) => void;
 }
 
 type CssRules =
@@ -145,7 +146,7 @@ export const DataTable = withStyles(styles)(
         }
 
         componentDidUpdate(prevProps: Readonly<DataTableProps<T>>, prevState: DataTableState) {
-            const { items, toggleMSToolbar } = this.props;
+            const { items, toggleMSToolbar, setCheckedListOnStore } = this.props;
             const { isSelected, checkedList } = this.state;
             if (!arraysAreCongruent(prevProps.items, items)) {
                 if (isSelected === true) this.setState({ isSelected: false });
@@ -153,6 +154,7 @@ export const DataTable = withStyles(styles)(
             }
             if (prevState.checkedList !== checkedList) {
                 toggleMSToolbar(this.isAnySelected() ? true : false);
+                setCheckedListOnStore(checkedList);
             }
         }
 

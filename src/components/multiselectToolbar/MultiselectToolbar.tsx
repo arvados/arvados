@@ -36,13 +36,11 @@ export const defaultActions: Array<MultiselectToolbarAction> = [
     },
 ];
 
-const MSToolbarCopyButton = (classes, i) => {
-    return (
-        <Button key={i} className={classes.button}>
-            <CopyToClipboardSnackbar value='foo' children={<div>Copy</div>} />
-        </Button>
-    );
-};
+const MSToolbarCopyButton = (classes, i) => (
+    <Button key={i} className={classes.button}>
+        <CopyToClipboardSnackbar value='foo' children={<div>Copy</div>} />
+    </Button>
+);
 
 type MultiselectToolbarProps = MultiselectToolbarActions & WithStyles<CssRules>;
 
@@ -54,6 +52,7 @@ export const MultiselectToolbar = connect(mapStateToProps)(
 );
 
 function mapStateToProps(state: RootState) {
+    // console.log(state);
     return {
         // state: state,
     };
