@@ -8,6 +8,7 @@ import { StyleRulesCallback, withStyles, WithStyles, Toolbar, Button } from '@ma
 import { ArvadosTheme } from 'common/custom-theme';
 import { RootState } from 'store/store';
 import { CopyToClipboardSnackbar } from 'components/copy-to-clipboard-snackbar/copy-to-clipboard-snackbar';
+import { TCheckedList } from 'components/data-table/data-table';
 
 type CssRules = 'root' | 'button';
 
@@ -23,37 +24,47 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
 });
 
 type MultiselectToolbarAction = {
-    fn: (classes, i) => ReactElement;
+    fn: (checkedList) => ReactElement;
 };
 
-export type MultiselectToolbarActions = {
+export type MultiselectToolbarProps = {
     buttons: Array<MultiselectToolbarAction>;
+    checkedList: TCheckedList;
 };
 
 export const defaultActions: Array<MultiselectToolbarAction> = [
     {
-        fn: (classes, i) => MSToolbarCopyButton(classes, i),
+        fn: (checkedList) => MSToolbarCopyButton(checkedList),
     },
 ];
 
-const MSToolbarCopyButton = (classes, i) => (
-    <Button key={i} className={classes.button}>
-        <CopyToClipboardSnackbar value='foo' children={<div>Copy</div>} />
-    </Button>
-);
-
-type MultiselectToolbarProps = MultiselectToolbarActions & WithStyles<CssRules>;
+const MSToolbarCopyButton = (checkedList) => {
+    let stringifiedSelectedList: string = '';
+    for (const [key, value] of Object.entries(checkedList)) {
+        if (value === true) {
+            stringifiedSelectedList += key + '\n';
+        }
+    }
+    return <CopyToClipboardSnackbar value={stringifiedSelectedList} children={<div>Copy</div>} />;
+};
 
 export const MultiselectToolbar = connect(mapStateToProps)(
-    withStyles(styles)((props: MultiselectToolbarProps) => {
-        const { classes, buttons } = props;
-        return <Toolbar className={classes.root}>{buttons.map((btn, i) => btn.fn(classes, i))}</Toolbar>;
+    withStyles(styles)((props: MultiselectToolbarProps & WithStyles<CssRules>) => {
+        const { classes, buttons, checkedList } = props;
+        return (
+            <Toolbar className={classes.root}>
+                {buttons.map((btn, i) => (
+                    <Button key={i} className={classes.button}>
+                        {btn.fn(checkedList)}
+                    </Button>
+                ))}
+            </Toolbar>
+        );
     })
 );
 
 function mapStateToProps(state: RootState) {
-    // console.log(state);
     return {
-        // state: state,
+        checkedList: state.multiselect.checkedList,
     };
 }
