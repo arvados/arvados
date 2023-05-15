@@ -264,7 +264,7 @@ case "$subcmd" in
 	    exit 1
 	fi
 
-	BRANCH=$(git branch --show-current)
+	BRANCH=$(git rev-parse --abbrev-ref HEAD)
 
 	set -x
 
