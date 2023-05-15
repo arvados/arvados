@@ -43,10 +43,10 @@ variable "private_ip" {
   description = "Map with every node's private IP address"
   type = map(string)
   default = {
-    controller: "10.1.1.11",
-    workbench: "10.1.1.15",
-    shell: "10.1.2.17",
-    keep0: "10.1.2.13",
+    controller = "10.1.1.11"
+    workbench = "10.1.1.15"
+    shell = "10.1.2.17"
+    keep0 = "10.1.2.13"
   }
 }
 
@@ -54,8 +54,8 @@ variable "dns_aliases" {
   description = "Sets DNS name aliases for every service node"
   type = map(list(string))
   default = {
-    controller: ["ws"]
-    workbench: [
+    controller = ["ws"]
+    workbench = [
       "workbench2",
       "webshell",
       "keep",
