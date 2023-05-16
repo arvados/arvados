@@ -113,6 +113,7 @@ export function configureStore(history: History, services: ServiceRepository, co
     const publicFavoritesMiddleware = dataExplorerMiddleware(new PublicFavoritesMiddlewareService(services, PUBLIC_FAVORITE_PANEL_ID));
     const collectionsContentAddress = dataExplorerMiddleware(new CollectionsWithSameContentAddressMiddlewareService(services, COLLECTIONS_CONTENT_ADDRESS_PANEL_ID));
     const subprocessMiddleware = dataExplorerMiddleware(new SubprocessMiddlewareService(services, SUBPROCESS_PANEL_ID));
+
     const redirectToMiddleware = (store: any) => (next: any) => (action: any) => {
         const state = store.getState();
 
