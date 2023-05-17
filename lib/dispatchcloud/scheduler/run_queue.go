@@ -22,7 +22,19 @@ func (sch *Scheduler) runQueue() {
 		sorted = append(sorted, ent)
 	}
 	sort.Slice(sorted, func(i, j int) bool {
-		if pi, pj := sorted[i].Container.Priority, sorted[j].Container.Priority; pi != pj {
+		ilocked := sorted[i].Container.State == arvados.ContainerStateLocked
+		jlocked := sorted[j].Container.State == arvados.ContainerStateLocked
+		if ilocked != jlocked {
+			// Give precedence to containers that we have
+			// already locked, even if higher-priority
+			// containers have since arrived in the
+			// queue. This avoids undesirable queue churn
+			// effects including extra lock/unlock cycles
+			// and bringing up new instances and quickly
+			// shutting them down to make room for
+			// different instance sizes.
+			return ilocked
+		} else if pi, pj := sorted[i].Container.Priority, sorted[j].Container.Priority; pi != pj {
 			return pi > pj
 		} else {
 			// When containers have identical priority,
