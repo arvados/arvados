@@ -33,12 +33,12 @@
 #
 # Map assigning each node name an internal IP address
 # private_ip = {
-#   node1 = "1.2.3.4",
+#   node1 = "1.2.3.4"
 #   ...
 # }
 #
 # Map assigning DNS aliases for service node names
-# dns_aliases {
-#   node1 = ["alias1", "alias2", ...],
+# dns_aliases = {
+#   node1 = ["alias1", "alias2", ...]
 #   ...
 # }

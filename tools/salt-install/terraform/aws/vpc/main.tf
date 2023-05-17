@@ -66,12 +66,13 @@ resource "aws_subnet" "private_subnet" {
 # VPC S3 access
 #
 resource "aws_vpc_endpoint" "s3" {
+  count = var.vpc_id == "" ? 1 : 0
   vpc_id = local.arvados_vpc_id
   service_name = "com.amazonaws.${var.region_name}.s3"
 }
 resource "aws_vpc_endpoint_route_table_association" "compute_s3_route" {
   count = var.private_subnet_id == "" ? 1 : 0
-  vpc_endpoint_id = aws_vpc_endpoint.s3.id
+  vpc_endpoint_id = aws_vpc_endpoint.s3[0].id
   route_table_id = aws_route_table.private_subnet_rt[0].id
 }
 
