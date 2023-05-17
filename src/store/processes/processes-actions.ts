@@ -299,7 +299,7 @@ export const openRemoveProcessDialog = (uuid: string) => (dispatch: Dispatch, ge
 export const openRemoveManyProcessesDialog = (list: Array<string>) => (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
     dispatch(
         dialogActions.OPEN_DIALOG({
-            id: REMOVE_PROCESS_DIALOG,
+            id: REMOVE_MANY_PROCESSES_DIALOG,
             data: {
                 title: 'Remove processes permanently',
                 text: `Are you sure you want to remove all ${list.length} processes?`,
@@ -311,6 +311,7 @@ export const openRemoveManyProcessesDialog = (list: Array<string>) => (dispatch:
 };
 
 export const REMOVE_PROCESS_DIALOG = 'removeProcessDialog';
+export const REMOVE_MANY_PROCESSES_DIALOG = 'removeManyProcessesDialog';
 
 export const removeProcessPermanently = (uuid: string) => async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
     dispatch(snackbarActions.OPEN_SNACKBAR({ message: 'Removing ...', kind: SnackbarKind.INFO }));

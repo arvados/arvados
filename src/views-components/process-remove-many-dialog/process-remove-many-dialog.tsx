@@ -6,13 +6,14 @@ import { Dispatch, compose } from 'redux';
 import { connect } from 'react-redux';
 import { ConfirmationDialog } from 'components/confirmation-dialog/confirmation-dialog';
 import { withDialog, WithDialogProps } from 'store/dialog/with-dialog';
-import { removeProcessPermanently, REMOVE_PROCESS_DIALOG } from 'store/processes/processes-actions';
+import { removeProcessPermanently, REMOVE_MANY_PROCESSES_DIALOG } from 'store/processes/processes-actions';
 
 const mapDispatchToProps = (dispatch: Dispatch, props: WithDialogProps<any>) => ({
     onConfirm: () => {
+        console.log(props.data.list);
         props.closeDialog();
-        dispatch<any>(removeProcessPermanently(props.data.uuid));
+        props.data.list.forEach((uuid: string) => dispatch<any>(removeProcessPermanently(uuid)));
     },
 });
 
-export const RemoveManyProcessesDialog = compose(withDialog(REMOVE_PROCESS_DIALOG), connect(null, mapDispatchToProps))(ConfirmationDialog);
+export const RemoveManyProcessesDialog = compose(withDialog(REMOVE_MANY_PROCESSES_DIALOG), connect(null, mapDispatchToProps))(ConfirmationDialog);
