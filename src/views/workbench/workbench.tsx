@@ -4,12 +4,12 @@
 
 import React from 'react';
 import { StyleRulesCallback, WithStyles, withStyles } from '@material-ui/core/styles';
-import { Route, Switch } from "react-router";
-import { ProjectPanel } from "views/project-panel/project-panel";
+import { Route, Switch } from 'react-router';
+import { ProjectPanel } from 'views/project-panel/project-panel';
 import { DetailsPanel } from 'views-components/details-panel/details-panel';
 import { ArvadosTheme } from 'common/custom-theme';
-import { ContextMenu } from "views-components/context-menu/context-menu";
-import { FavoritePanel } from "../favorite-panel/favorite-panel";
+import { ContextMenu } from 'views-components/context-menu/context-menu';
+import { FavoritePanel } from '../favorite-panel/favorite-panel';
 import { TokenDialog } from 'views-components/token-dialog/token-dialog';
 import { RichTextEditorDialog } from 'views-components/rich-text-editor-dialog/rich-text-editor-dialog';
 import { Snackbar } from 'views-components/snackbar/snackbar';
@@ -34,9 +34,10 @@ import { MoveCollectionDialog } from 'views-components/dialog-forms/move-collect
 import { FilesUploadCollectionDialog } from 'views-components/dialog-forms/files-upload-collection-dialog';
 import { PartialCopyCollectionDialog } from 'views-components/dialog-forms/partial-copy-collection-dialog';
 import { RemoveProcessDialog } from 'views-components/process-remove-dialog/process-remove-dialog';
+import { RemoveManyProcessesDialog } from 'views-components/process-remove-many-dialog/process-remove-many-dialog';
 import { MainContentBar } from 'views-components/main-content-bar/main-content-bar';
 import { Grid } from '@material-ui/core';
-import { TrashPanel } from "views/trash-panel/trash-panel";
+import { TrashPanel } from 'views/trash-panel/trash-panel';
 import { SharedWithMePanel } from 'views/shared-with-me-panel/shared-with-me-panel';
 import { RunProcessPanel } from 'views/run-process-panel/run-process-panel';
 import SplitterLayout from 'react-splitter-layout';
@@ -45,7 +46,7 @@ import { RegisteredWorkflowPanel } from 'views/workflow-panel/registered-workflo
 import { SearchResultsPanel } from 'views/search-results-panel/search-results-panel';
 import { SshKeyPanel } from 'views/ssh-key-panel/ssh-key-panel';
 import { SshKeyAdminPanel } from 'views/ssh-key-panel/ssh-key-admin-panel';
-import { SiteManagerPanel } from "views/site-manager-panel/site-manager-panel";
+import { SiteManagerPanel } from 'views/site-manager-panel/site-manager-panel';
 import { UserProfilePanel } from 'views/user-profile-panel/user-profile-panel';
 import { SharingDialog } from 'views-components/sharing-dialog/sharing-dialog';
 import { NotFoundDialog } from 'views-components/not-found-dialog/not-found-dialog';
@@ -100,7 +101,7 @@ import { RestoreCollectionVersionDialog } from 'views-components/collections-dia
 import { WebDavS3InfoDialog } from 'views-components/webdav-s3-dialog/webdav-s3-dialog';
 import { pluginConfig } from 'plugins';
 import { ElementListReducer } from 'common/plugintypes';
-import { COLLAPSE_ICON_SIZE } from 'views-components/side-panel-toggle/side-panel-toggle'
+import { COLLAPSE_ICON_SIZE } from 'views-components/side-panel-toggle/side-panel-toggle';
 import { Banner } from 'views-components/baner/banner';
 
 type CssRules = 'root' | 'container' | 'splitter' | 'asidePanel' | 'contentWrapper' | 'content';
@@ -108,10 +109,10 @@ type CssRules = 'root' | 'container' | 'splitter' | 'asidePanel' | 'contentWrapp
 const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     root: {
         paddingTop: theme.spacing.unit * 7,
-        background: theme.palette.background.default
+        background: theme.palette.background.default,
     },
     container: {
-        position: 'relative'
+        position: 'relative',
     },
     splitter: {
         '& > .layout-splitter': {
@@ -119,16 +120,16 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
         },
         '& > .layout-splitter-disabled': {
             pointerEvents: 'none',
-            cursor: 'pointer'
-        }
+            cursor: 'pointer',
+        },
     },
     asidePanel: {
         paddingTop: theme.spacing.unit,
-        height: '100%'
+        height: '100%',
     },
     contentWrapper: {
         paddingTop: theme.spacing.unit,
-        minWidth: 0
+        minWidth: 0,
     },
     content: {
         minWidth: 0,
@@ -137,7 +138,7 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
         // Reserve vertical space for app bar + MainContentBar
         minHeight: `calc(100vh - ${theme.spacing.unit * 16}px)`,
         display: 'flex',
-    }
+    },
 });
 
 interface WorkbenchDataProps {
@@ -158,72 +159,78 @@ const getSplitterInitialSize = () => {
 
 const saveSplitterSize = (size: number) => localStorage.setItem('splitterSize', size.toString());
 
-let routes = <>
-    <Route path={Routes.PROJECTS} component={ProjectPanel} />
-    <Route path={Routes.COLLECTIONS} component={CollectionPanel} />
-    <Route path={Routes.FAVORITES} component={FavoritePanel} />
-    <Route path={Routes.ALL_PROCESSES} component={AllProcessesPanel} />
-    <Route path={Routes.PROCESSES} component={ProcessPanel} />
-    <Route path={Routes.TRASH} component={TrashPanel} />
-    <Route path={Routes.SHARED_WITH_ME} component={SharedWithMePanel} />
-    <Route path={Routes.RUN_PROCESS} component={RunProcessPanel} />
-    <Route path={Routes.REGISTEREDWORKFLOW} component={RegisteredWorkflowPanel} />
-    <Route path={Routes.WORKFLOWS} component={WorkflowPanel} />
-    <Route path={Routes.SEARCH_RESULTS} component={SearchResultsPanel} />
-    <Route path={Routes.VIRTUAL_MACHINES_USER} component={VirtualMachineUserPanel} />
-    <Route path={Routes.VIRTUAL_MACHINES_ADMIN} component={VirtualMachineAdminPanel} />
-    <Route path={Routes.REPOSITORIES} component={RepositoriesPanel} />
-    <Route path={Routes.SSH_KEYS_USER} component={SshKeyPanel} />
-    <Route path={Routes.SSH_KEYS_ADMIN} component={SshKeyAdminPanel} />
-    <Route path={Routes.SITE_MANAGER} component={SiteManagerPanel} />
-    <Route path={Routes.KEEP_SERVICES} component={KeepServicePanel} />
-    <Route path={Routes.USERS} component={UserPanel} />
-    <Route path={Routes.API_CLIENT_AUTHORIZATIONS} component={ApiClientAuthorizationPanel} />
-    <Route path={Routes.MY_ACCOUNT} component={UserProfilePanel} />
-    <Route path={Routes.USER_PROFILE} component={UserProfilePanel} />
-    <Route path={Routes.GROUPS} component={GroupsPanel} />
-    <Route path={Routes.GROUP_DETAILS} component={GroupDetailsPanel} />
-    <Route path={Routes.LINKS} component={LinkPanel} />
-    <Route path={Routes.PUBLIC_FAVORITES} component={PublicFavoritePanel} />
-    <Route path={Routes.LINK_ACCOUNT} component={LinkAccountPanel} />
-    <Route path={Routes.COLLECTIONS_CONTENT_ADDRESS} component={CollectionsContentAddressPanel} />
-</>;
+let routes = (
+    <>
+        <Route path={Routes.PROJECTS} component={ProjectPanel} />
+        <Route path={Routes.COLLECTIONS} component={CollectionPanel} />
+        <Route path={Routes.FAVORITES} component={FavoritePanel} />
+        <Route path={Routes.ALL_PROCESSES} component={AllProcessesPanel} />
+        <Route path={Routes.PROCESSES} component={ProcessPanel} />
+        <Route path={Routes.TRASH} component={TrashPanel} />
+        <Route path={Routes.SHARED_WITH_ME} component={SharedWithMePanel} />
+        <Route path={Routes.RUN_PROCESS} component={RunProcessPanel} />
+        <Route path={Routes.REGISTEREDWORKFLOW} component={RegisteredWorkflowPanel} />
+        <Route path={Routes.WORKFLOWS} component={WorkflowPanel} />
+        <Route path={Routes.SEARCH_RESULTS} component={SearchResultsPanel} />
+        <Route path={Routes.VIRTUAL_MACHINES_USER} component={VirtualMachineUserPanel} />
+        <Route path={Routes.VIRTUAL_MACHINES_ADMIN} component={VirtualMachineAdminPanel} />
+        <Route path={Routes.REPOSITORIES} component={RepositoriesPanel} />
+        <Route path={Routes.SSH_KEYS_USER} component={SshKeyPanel} />
+        <Route path={Routes.SSH_KEYS_ADMIN} component={SshKeyAdminPanel} />
+        <Route path={Routes.SITE_MANAGER} component={SiteManagerPanel} />
+        <Route path={Routes.KEEP_SERVICES} component={KeepServicePanel} />
+        <Route path={Routes.USERS} component={UserPanel} />
+        <Route path={Routes.API_CLIENT_AUTHORIZATIONS} component={ApiClientAuthorizationPanel} />
+        <Route path={Routes.MY_ACCOUNT} component={UserProfilePanel} />
+        <Route path={Routes.USER_PROFILE} component={UserProfilePanel} />
+        <Route path={Routes.GROUPS} component={GroupsPanel} />
+        <Route path={Routes.GROUP_DETAILS} component={GroupDetailsPanel} />
+        <Route path={Routes.LINKS} component={LinkPanel} />
+        <Route path={Routes.PUBLIC_FAVORITES} component={PublicFavoritePanel} />
+        <Route path={Routes.LINK_ACCOUNT} component={LinkAccountPanel} />
+        <Route path={Routes.COLLECTIONS_CONTENT_ADDRESS} component={CollectionsContentAddressPanel} />
+    </>
+);
 
-const reduceRoutesFn: (a: React.ReactElement[],
-    b: ElementListReducer) => React.ReactElement[] = (a, b) => b(a);
+const reduceRoutesFn: (a: React.ReactElement[], b: ElementListReducer) => React.ReactElement[] = (a, b) => b(a);
 
 routes = React.createElement(React.Fragment, null, pluginConfig.centerPanelList.reduce(reduceRoutesFn, React.Children.toArray(routes.props.children)));
 
 const applyCollapsedState = (isCollapsed) => {
-    const rightPanel: Element = document.getElementsByClassName('layout-pane')[1]
-    const totalWidth: number = document.getElementsByClassName('splitter-layout')[0]?.clientWidth
-    const rightPanelExpandedWidth = ((totalWidth - COLLAPSE_ICON_SIZE)) / (totalWidth / 100)
+    const rightPanel: Element = document.getElementsByClassName('layout-pane')[1];
+    const totalWidth: number = document.getElementsByClassName('splitter-layout')[0]?.clientWidth;
+    const rightPanelExpandedWidth = (totalWidth - COLLAPSE_ICON_SIZE) / (totalWidth / 100);
     if (rightPanel) {
-        rightPanel.setAttribute('style', `width: ${isCollapsed ? rightPanelExpandedWidth : getSplitterInitialSize()}%`)
+        rightPanel.setAttribute('style', `width: ${isCollapsed ? rightPanelExpandedWidth : getSplitterInitialSize()}%`);
     }
-    const splitter = document.getElementsByClassName('layout-splitter')[0]
-    isCollapsed ? splitter?.classList.add('layout-splitter-disabled') : splitter?.classList.remove('layout-splitter-disabled')
+    const splitter = document.getElementsByClassName('layout-splitter')[0];
+    isCollapsed ? splitter?.classList.add('layout-splitter-disabled') : splitter?.classList.remove('layout-splitter-disabled');
+};
 
-}
+export const WorkbenchPanel = withStyles(styles)((props: WorkbenchPanelProps) => {
+    //panel size will not scale automatically on window resize, so we do it manually
+    window.addEventListener('resize', () => applyCollapsedState(props.sidePanelIsCollapsed));
+    applyCollapsedState(props.sidePanelIsCollapsed);
 
-export const WorkbenchPanel =
-    withStyles(styles)((props: WorkbenchPanelProps) => {
-
-        //panel size will not scale automatically on window resize, so we do it manually
-        window.addEventListener('resize', () => applyCollapsedState(props.sidePanelIsCollapsed))
-        applyCollapsedState(props.sidePanelIsCollapsed)
-
-        return <Grid container item xs className={props.classes.root}>
+    return (
+        <Grid container item xs className={props.classes.root}>
             {props.sessionIdleTimeout > 0 && <AutoLogout />}
             <Grid container item xs className={props.classes.container}>
-                <SplitterLayout customClassName={props.classes.splitter} percentage={true}
-                    primaryIndex={0} primaryMinSize={10}
-                    secondaryInitialSize={getSplitterInitialSize()} secondaryMinSize={40}
-                    onSecondaryPaneSizeChange={saveSplitterSize}>
-                    {props.isUserActive && props.isNotLinking && <Grid container item xs component='aside' direction='column' className={props.classes.asidePanel}>
-                        <SidePanel />
-                    </Grid>}
-                    <Grid container item xs component="main" direction="column" className={props.classes.contentWrapper}>
+                <SplitterLayout
+                    customClassName={props.classes.splitter}
+                    percentage={true}
+                    primaryIndex={0}
+                    primaryMinSize={10}
+                    secondaryInitialSize={getSplitterInitialSize()}
+                    secondaryMinSize={40}
+                    onSecondaryPaneSizeChange={saveSplitterSize}
+                >
+                    {props.isUserActive && props.isNotLinking && (
+                        <Grid container item xs component='aside' direction='column' className={props.classes.asidePanel}>
+                            <SidePanel />
+                        </Grid>
+                    )}
+                    <Grid container item xs component='main' direction='column' className={props.classes.contentWrapper}>
                         <Grid item xs>
                             {props.isNotLinking && <MainContentBar />}
                         </Grid>
@@ -274,6 +281,7 @@ export const WorkbenchPanel =
             <RemoveKeepServiceDialog />
             <RemoveLinkDialog />
             <RemoveProcessDialog />
+            <RemoveManyProcessesDialog />
             <RemoveRepositoryDialog />
             <RemoveSshKeyDialog />
             <RemoveVirtualMachineDialog />
@@ -299,5 +307,5 @@ export const WorkbenchPanel =
             <Banner />
             {React.createElement(React.Fragment, null, pluginConfig.dialogs)}
         </Grid>
-    }
     );
+});

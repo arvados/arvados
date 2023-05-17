@@ -10,44 +10,67 @@ import { RootState } from 'store/store';
 import { Dispatch } from 'redux';
 import { CopyToClipboardSnackbar } from 'components/copy-to-clipboard-snackbar/copy-to-clipboard-snackbar';
 import { TCheckedList } from 'components/data-table/data-table';
-import { openRemoveProcessDialog } from 'store/processes/processes-actions';
+import { openRemoveProcessDialog, openRemoveManyProcessesDialog } from 'store/processes/processes-actions';
 import { processResourceActionSet } from '../../views-components/context-menu/action-sets/process-resource-action-set';
 import { ContextMenuResource } from 'store/context-menu/context-menu-actions';
 import { toggleTrashed } from 'store/trash/trash-actions';
 
-type CssRules = 'root' | 'button';
+type CssRules = 'root' | 'expanded' | 'button';
 
 const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     root: {
         display: 'flex',
         flexDirection: 'row',
+        justifyContent: 'start',
+        width: '0px',
+        padding: 0,
+        marginTop: '0.5rem',
+        marginLeft: '0.5rem',
+        overflow: 'hidden',
+        transition: 'width 150ms',
+        transitionTimingFunction: 'ease',
+    },
+    expanded: {
+        transition: 'width 150ms',
+        transitionTimingFunction: 'ease-in',
+        width: '40%',
     },
     button: {
-        color: theme.palette.text.primary,
-        // margin: '0.5rem',
+        backgroundColor: '#017ead',
+        color: 'white',
+        fontSize: '0.75rem',
+        width: 'fit-content',
+        margin: '2px',
+        padding: '1px',
     },
 });
 
 type MultiselectToolbarAction = {
     name: string;
-    fn: string;
+    action: string;
 };
 
 export const defaultActions: Array<MultiselectToolbarAction> = [
-    // {
-    //     name: 'copy',
-    //     fn: (name, checkedList) => MSToolbarCopyButton(name, checkedList),
-    // },
+    {
+        name: 'copy',
+        action: 'copySelected',
+    },
+    {
+        name: 'move',
+        action: 'moveSelected',
+    },
     {
         name: 'remove',
-        fn: 'REMOVE',
+        action: 'removeSelected',
     },
 ];
 
 export type MultiselectToolbarProps = {
     buttons: Array<MultiselectToolbarAction>;
+    isVisible: boolean;
     checkedList: TCheckedList;
     copySelected: () => void;
+    moveSelected: () => void;
     removeSelected: (selectedList: TCheckedList) => void;
 };
 
@@ -56,17 +79,12 @@ export const MultiselectToolbar = connect(
     mapDispatchToProps
 )(
     withStyles(styles)((props: MultiselectToolbarProps & WithStyles<CssRules>) => {
-        console.log(props);
-        const actions = {
-            COPY: props.copySelected,
-            REMOVE: props.removeSelected,
-        };
-
-        const { classes, buttons, checkedList } = props;
+        // console.log(props);
+        const { classes, buttons, isVisible, checkedList } = props;
         return (
-            <Toolbar className={classes.root}>
+            <Toolbar className={isVisible ? `${classes.root} ${classes.expanded}` : classes.root}>
                 {buttons.map((btn) => (
-                    <Button key={btn.name} className={classes.button} onClick={() => actions[btn.fn](checkedList)}>
+                    <Button key={btn.name} className={`${classes.button} ${classes.expanded}`} onClick={() => props[btn.action](checkedList)}>
                         {btn.name}
                     </Button>
                 ))}
@@ -86,7 +104,7 @@ function selectedToString(checkedList: TCheckedList) {
 }
 
 function selectedToArray<T>(checkedList: TCheckedList): Array<T | string> {
-    const arrayifiedSelectedList: Array<string> = [];
+    const arrayifiedSelectedList: Array<T | string> = [];
     for (const [key, value] of Object.entries(checkedList)) {
         if (value === true) {
             arrayifiedSelectedList.push(key);
@@ -97,8 +115,10 @@ function selectedToArray<T>(checkedList: TCheckedList): Array<T | string> {
 
 function mapStateToProps(state: RootState) {
     // console.log(state.resources, state.multiselect.checkedList);
+    const { isVisible, checkedList } = state.multiselect;
     return {
-        checkedList: state.multiselect.checkedList as TCheckedList,
+        isVisible: isVisible,
+        checkedList: checkedList as TCheckedList,
         // selectedList: state.multiselect.checkedList.forEach(processUUID=>containerRequestUUID)
     };
 }
@@ -106,10 +126,11 @@ function mapStateToProps(state: RootState) {
 function mapDispatchToProps(dispatch: Dispatch) {
     return {
         copySelected: () => {},
-        removeSelected: (selectedList) => removeMany(dispatch, selectedList),
+        moveSelected: () => {},
+        removeSelected: (checkedList: TCheckedList) => removeMany(dispatch, checkedList),
     };
 }
 
 function removeMany(dispatch: Dispatch, checkedList: TCheckedList): void {
-    selectedToArray(checkedList).forEach((uuid: string) => dispatch<any>(openRemoveProcessDialog(uuid)));
+    dispatch<any>(openRemoveManyProcessesDialog(selectedToArray(checkedList)));
 }

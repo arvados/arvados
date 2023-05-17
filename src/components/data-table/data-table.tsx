@@ -286,17 +286,14 @@ export const DataTable = withStyles(styles)(
         renderHeadCell = (column: DataColumn<T, any>, index: number) => {
             const { name, key, renderHeader, filters, sort } = column;
             const { onSortToggle, onFiltersChange, classes } = this.props;
+            const { isSelected, checkedList } = this.state;
             return column.name === 'checkBoxColumn' ? (
                 <TableCell key={key || index} className={classes.checkBoxCell}>
                     <div className={classes.checkBoxHead}>
                         <Tooltip title={this.state.isSelected ? 'Deselect All' : 'Select All'}>
-                            <input type='checkbox' className={classes.checkBox} checked={this.state.isSelected} onChange={this.handleSelectorSelect}></input>
+                            <input type='checkbox' className={classes.checkBox} checked={isSelected} onChange={this.handleSelectorSelect}></input>
                         </Tooltip>
-                        <DataTableMultiselectPopover
-                            name={`Options`}
-                            options={this.multiselectOptions}
-                            checkedList={this.state.checkedList}
-                        ></DataTableMultiselectPopover>
+                        <DataTableMultiselectPopover name={`Options`} options={this.multiselectOptions} checkedList={checkedList}></DataTableMultiselectPopover>
                     </div>
                 </TableCell>
             ) : (
