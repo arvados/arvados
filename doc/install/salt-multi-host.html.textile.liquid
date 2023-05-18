@@ -44,7 +44,7 @@ Choose a 5-character cluster identifier that will represent the cluster.  Here a
 
 Determine the base domain for the cluster.  This will be referred to as @${DOMAIN}@.
 
-For example, if CLUSTER is @xarv1@ and DOMAIN is @example.com@, then @controller.${CLUSTER}.${DOMAIN}@ means @controller.xarv1.example.com@.
+For example, if DOMAIN is @xarv1.example.com@, then @controller.${DOMAIN}@ means @controller.xarv1.example.com@.
 
 h3(#DNS). DNS hostnames for each service
 
@@ -52,19 +52,19 @@ You will need a DNS entry for each service.  When using the "Terraform script":#
 
 In the default configuration these are:
 
-# @controller.${CLUSTER}.${DOMAIN}@
-# @ws.${CLUSTER}.${DOMAIN}@
-# @keep0.${CLUSTER}.${DOMAIN}@
-# @keep1.${CLUSTER}.${DOMAIN}@
-# @keep.${CLUSTER}.${DOMAIN}@
-# @download.${CLUSTER}.${DOMAIN}@
-# @*.collections.${CLUSTER}.${DOMAIN}@  -- important note, this must be a wildcard DNS, resolving to the @keepweb@ service
-# @workbench.${CLUSTER}.${DOMAIN}@
-# @workbench2.${CLUSTER}.${DOMAIN}@
-# @webshell.${CLUSTER}.${DOMAIN}@
-# @shell.${CLUSTER}.${DOMAIN}@
-# @prometheus.${CLUSTER}.${DOMAIN}@
-# @grafana.${CLUSTER}.${DOMAIN}@
+# @controller.${DOMAIN}@
+# @ws.${DOMAIN}@
+# @keep0.${DOMAIN}@
+# @keep1.${DOMAIN}@
+# @keep.${DOMAIN}@
+# @download.${DOMAIN}@
+# @*.collections.${DOMAIN}@  -- important note, this must be a wildcard DNS, resolving to the @keepweb@ service
+# @workbench.${DOMAIN}@
+# @workbench2.${DOMAIN}@
+# @webshell.${DOMAIN}@
+# @shell.${DOMAIN}@
+# @prometheus.${DOMAIN}@
+# @grafana.${DOMAIN}@
 
 For more information, see "DNS entries and TLS certificates":install-manual-prerequisites.html#dnstls.
 
@@ -98,27 +98,24 @@ The Terraform state files (that keep crucial infrastructure information from the
 
 h4. Terraform code configuration
 
-Each section described above contain a @terraform.tfvars@ file with some configuration values that you should set before applying each configuration. You should set the cluster prefix and domain name in @terraform/vpc/terraform.tfvars@:
+Each section described above contain a @terraform.tfvars@ file with some configuration values that you should set before applying each configuration. You should at least set the AWS region, cluster prefix and domain name in @terraform/vpc/terraform.tfvars@:
 
-<pre><code>region_name = "us-east-1"
-# cluster_name = "xarv1"
-# domain_name = "xarv1.example.com"
+<pre><code>{% include 'terraform_vpc_tfvars' %}</code></pre>
 
-# Uncomment this to create an non-publicly accessible Arvados cluster
-# private_only = true</code></pre>
+If you don't set the main configuration variables at @vpc/terraform.tfvars@ file, you will be asked to re-enter these parameters every time you run Terraform.
 
-If you don't set the variables @vpc/terraform.tfvars@ file, you will be asked to re-enter these parameters every time you run Terraform.
+The @data-storage/terraform.tfvars@ and @services/terraform.tfvars@ let you configure additional details, including the SSH public key for deployment, instance & volume sizes, etc. All these configurations are provided with sensible defaults:
 
-The @data-storage/terraform.tfvars@ and @services/terraform.tfvars@ let you configure the location of your ssh public key (default @~/.ssh/id_rsa.pub@) and the instance type to use (default @m5a.large@).
+<pre><code>{% include 'terraform_datastorage_tfvars' %}</code></pre>
+
+<pre><code>{% include 'terraform_services_tfvars' %}</code></pre>
 
 h4. Set credentials
 
 You will need an AWS access key and secret key to create the infrastructure.
 
-<pre><code>
-$ export AWS_ACCESS_KEY_ID="anaccesskey"
-$ export AWS_SECRET_ACCESS_KEY="asecretkey"
-</code></pre>
+<pre><code>$ export AWS_ACCESS_KEY_ID="anaccesskey"
+$ export AWS_SECRET_ACCESS_KEY="asecretkey"</code></pre>
 
 h4. Create the infrastructure
 
@@ -132,10 +129,11 @@ Outputs:
 
 arvados_sg_id = "sg-02f999a99973999d7"
 arvados_subnet_id = "subnet-01234567abc"
+cluster_int_cidr = "10.1.0.0/16"
 cluster_name = "xarv1"
 compute_subnet_id = "subnet-abcdef12345"
 deploy_user = "admin"
-domain_name = "example.com"
+domain_name = "xarv1.example.com"
 letsencrypt_iam_access_key_id = "AKAA43MAAAWAKAADAASD"
 private_ip = {
   "controller" = "10.1.1.1"
@@ -160,7 +158,7 @@ route53_dns_ns = tolist([
   "ns-437.awsdns-54.com",
   "ns-809.awsdns-37.net",
 ])
-vpc_cidr = "10.1.0.0/16"
+ssl_password_secret_name = "xarv1-arvados-ssl-privkey-password"
 vpc_id = "vpc-0999994998399923a"
 letsencrypt_iam_secret_access_key = "XXXXXSECRETACCESSKEYXXXX"
 </code></pre>
@@ -172,7 +170,7 @@ Once Terraform has completed, the infrastructure for your Arvados cluster is up 
 
 The domain names for your cluster (e.g.: controller.xarv1.example.com) are managed via "Route 53":https://aws.amazon.com/route53/ and the TLS certificates will be issued using "Let's Encrypt":https://letsencrypt.org/ .
 
-You need to configure the parent domain to delegate to the newly created zone.  In other words, you need to configure @${DOMAIN}@ (e.g. "example.com") to delegate the subdomain @${CLUSTER}.${DOMAIN}@ (e.g. "xarv1.example.com") to the nameservers for the Arvados hostname records created by Terraform.  You do this by creating a @NS@ record on the parent domain that refers to the name servers listed in the Terraform output parameter @route53_dns_ns@.
+You need to configure the parent domain to delegate to the newly created zone.  For example, you need to configure "example.com" to delegate the subdomain "xarv1.example.com" to the nameservers for the Arvados hostname records created by Terraform.  You do this by creating a @NS@ record on the parent domain that refers to the name servers listed in the Terraform output parameter @route53_dns_ns@.
 
 If your parent domain is also controlled by Route 53, the process will be like this:
 
@@ -190,7 +188,7 @@ h4. Other important output parameters
 
 The certificates will be requested from Let's Encrypt when you run the installer.
 
-* @vpc_cidr@ will be used to set @CLUSTER_INT_CIDR@
+* @cluster_int_cidr@ will be used to set @CLUSTER_INT_CIDR@
 
 * You'll also need @compute_subnet_id@ and @arvados_sg_id@ to set @DriverParameters.SubnetID@ and @DriverParameters.SecurityGroupIDs@ in @local_config_dir/pillars/arvados.sls@ and when you "create a compute image":#create_a_compute_image.
 
@@ -229,21 +227,21 @@ The installer will set up the Arvados services on your machines.  Here is the de
 # API node
 ## postgresql server
 ## arvados api server
-## arvados controller  (recommendend hostname @controller.${CLUSTER}.${DOMAIN}@)
-## arvados websocket   (recommendend hostname @ws.${CLUSTER}.${DOMAIN}@)
+## arvados controller  (recommendend hostname @controller.${DOMAIN}@)
+## arvados websocket   (recommendend hostname @ws.${DOMAIN}@)
 ## arvados cloud dispatcher
 ## arvados keepbalance
-# KEEPSTORE nodes (at least 2)
-## arvados keepstore   (recommendend hostnames @keep0.${CLUSTER}.${DOMAIN}@ and @keep1.${CLUSTER}.${DOMAIN}@)
+# KEEPSTORE nodes (at least 1 if using S3 as a Keep backend, else 2)
+## arvados keepstore   (recommendend hostnames @keep0.${DOMAIN}@ and @keep1.${DOMAIN}@)
 # KEEPPROXY node
-## arvados keepproxy   (recommendend hostname @keep.${CLUSTER}.${DOMAIN}@)
-## arvados keepweb     (recommendend hostname @download.${CLUSTER}.${DOMAIN}@ and @*.collections.${CLUSTER}.${DOMAIN}@)
+## arvados keepproxy   (recommendend hostname @keep.${DOMAIN}@)
+## arvados keepweb     (recommendend hostname @download.${DOMAIN}@ and @*.collections.${DOMAIN}@)
 # WORKBENCH node
-## arvados workbench   (recommendend hostname @workbench.${CLUSTER}.${DOMAIN}@)
-## arvados workbench2  (recommendend hostname @workbench2.${CLUSTER}.${DOMAIN}@)
-## arvados webshell    (recommendend hostname @webshell.${CLUSTER}.${DOMAIN}@)
+## arvados workbench   (recommendend hostname @workbench.${DOMAIN}@)
+## arvados workbench2  (recommendend hostname @workbench2.${DOMAIN}@)
+## arvados webshell    (recommendend hostname @webshell.${DOMAIN}@)
 # SHELL node  (optional)
-## arvados shell       (recommended hostname @shell.${CLUSTER}.${DOMAIN}@)
+## arvados shell       (recommended hostname @shell.${DOMAIN}@)
 
 When using the database installed by Arvados (and not an "external database":#ext-database), the database is stored under @/var/lib/postgresql@.  Arvados logs are also kept in @/var/log@ and @/var/www/arvados-api/shared/log@.  Accordingly, you should ensure that the disk partition containing @/var@ has adequate storage for your planned usage.  We suggest starting with 50GiB of free space on the database host.
 
@@ -266,9 +264,9 @@ h2(#localparams). Edit @local.params@
 This can be found wherever you choose to initialize the install files (@~/setup-arvados-xarv1@ in these examples).
 
 # Set @CLUSTER@ to the 5-character cluster identifier (e.g "xarv1")
-# Set @DOMAIN@ to the base DNS domain of the environment, e.g. "example.com"
+# Set @DOMAIN@ to the base DNS domain of the environment, e.g. "xarv1.example.com"
 # Set the @*_INT_IP@ variables with the internal (private) IP addresses of each host. Since services share hosts, some hosts are the same.  See "note about /etc/hosts":#etchosts
-# Edit @CLUSTER_INT_CIDR@, this should be the CIDR of the private network that Arvados is running on, e.g. the VPC.  If you used terraform, this is emitted as @vpc_cidr@.
+# Edit @CLUSTER_INT_CIDR@, this should be the CIDR of the private network that Arvados is running on, e.g. the VPC.  If you used terraform, this is emitted as @cluster_int_cidr@.
 _CIDR stands for "Classless Inter-Domain Routing" and describes which portion of the IP address that refers to the network.  For example 192.168.3.0/24 means that the first 24 bits are the network (192.168.3) and the last 8 bits are a specific host on that network._
 _AWS Specific: Go to the AWS console and into the VPC service, there is a column in this table view of the VPCs that gives the CIDR for the VPC (IPv4 CIDR)._
 # Set @INITIAL_USER_EMAIL@ to your email address, as you will be the first admin user of the system.
