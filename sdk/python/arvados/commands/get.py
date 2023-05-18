@@ -155,7 +155,7 @@ def main(arguments=None, stdout=sys.stdout, stderr=sys.stderr):
     request_id = arvados.util.new_request_id()
     logger.info('X-Request-Id: '+request_id)
 
-    api_client = arvados.api('v1', request_id=request_id)
+    api_client = arvados.api('v1', request_id=request_id, num_retries=args.retries)
 
     r = re.search(r'^(.*?)(/.*)?$', args.locator)
     col_loc = r.group(1)

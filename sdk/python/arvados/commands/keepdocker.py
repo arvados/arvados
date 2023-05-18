@@ -359,7 +359,7 @@ def _uuid2pdh(api, uuid):
 def main(arguments=None, stdout=sys.stdout, install_sig_handlers=True, api=None):
     args = arg_parser.parse_args(arguments)
     if api is None:
-        api = arvados.api('v1')
+        api = arvados.api('v1', num_retries=args.retries)
 
     if args.image is None or args.image == 'images':
         fmt = "{:30}  {:10}  {:12}  {:29}  {:20}\n"

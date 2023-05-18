@@ -37,6 +37,17 @@ For example, if @cluster_name@ is set to @"xarv1"@ and @domain_name@ was previou
 
 "previous: Upgrading to 2.6.1":#v2_6_1
 
+h3. Python SDK automatically retries failed requests much more
+
+The Python SDK has always provided functionality to retry API requests that fail due to temporary problems like network failures, by passing @num_retries=N@ to a request's @execute()@ method. In this release, API client constructor functions like @arvados.api@ also accept a @num_retries@ argument. This value is stored on the client object and used as a floor for all API requests made with this client. This allows developers to set their preferred retry strategy once, without having to pass it to each @execute()@ call.
+
+The default value for @num_retries@ in API constructor functions is 10. This means that an API request that repeatedly encounters temporary problems may spend up to about 35 minutes retrying in the worst case. We believe this is an appropriate default for most users, where eventual success is a much greater concern than responsiveness. If you have client applications where this is undesirable, update them to pass a lower @num_retries@ value to the constructor function. You can even pass @num_retries=0@ to have the API client act as it did before, like this:
+
+{% codeblock as python %}
+import arvados
+arv_client = arvados.api('v1', num_retries=0, ...)
+{% endcodeblock %}
+
 h3. UseAWSS3v2Driver option removed
 
 The old "v1" S3 driver for keepstore has been removed. The new "v2" implementation, which has been the default since Arvados 2.5.0, is always used. The @Volumes.*.DriverParameters.UseAWSS3v2Driver@ configuration key is no longer recognized. If your config file uses it, remove it to avoid warning messages at startup.

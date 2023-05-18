@@ -835,7 +835,7 @@ class KeepClient(object):
     def __init__(self, api_client=None, proxy=None,
                  timeout=DEFAULT_TIMEOUT, proxy_timeout=DEFAULT_PROXY_TIMEOUT,
                  api_token=None, local_store=None, block_cache=None,
-                 num_retries=0, session=None):
+                 num_retries=10, session=None):
         """Initialize a new KeepClient.
 
         Arguments:
@@ -888,7 +888,7 @@ class KeepClient(object):
         :num_retries:
           The default number of times to retry failed requests.
           This will be used as the default num_retries value when get() and
-          put() are called.  Default 0.
+          put() are called.  Default 10.
         """
         self.lock = threading.Lock()
         if proxy is None:

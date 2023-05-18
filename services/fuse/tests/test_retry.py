@@ -38,8 +38,8 @@ class KeepClientRetry(unittest.TestCase):
             pass
         self.assertEqual(num_retries, kc.call_args[1].get('num_retries'))
 
-    def test_default_retry_3(self):
-        self._test_retry(3, [])
+    def test_default_retry_10(self):
+        self._test_retry(10, [])
 
     def test_retry_2(self):
         self._test_retry(2, ['--retries=2'])

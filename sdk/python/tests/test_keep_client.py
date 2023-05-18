@@ -276,7 +276,7 @@ class KeepClientServiceTestCase(unittest.TestCase, tutil.ApiClientMock, DiskCach
         try:
             # this will fail, but it ensures we get the service
             # discovery response
-            keep_client.put('baz2')
+            keep_client.put('baz2', num_retries=0)
         except:
             pass
         self.assertTrue(keep_client.using_proxy)
@@ -338,7 +338,11 @@ class KeepClientServiceTestCase(unittest.TestCase, tutil.ApiClientMock, DiskCach
         api_client = self.mock_keep_services(count=1)
         force_timeout = socket.timeout("timed out")
         with tutil.mock_keep_responses(force_timeout, 0) as mock:
-            keep_client = arvados.KeepClient(api_client=api_client, block_cache=self.make_block_cache(self.disk_cache))
+            keep_client = arvados.KeepClient(
+                api_client=api_client,
+                block_cache=self.make_block_cache(self.disk_cache),
+                num_retries=0,
+            )
             with self.assertRaises(arvados.errors.KeepReadError):
                 keep_client.get('ffffffffffffffffffffffffffffffff')
             self.assertEqual(
@@ -355,7 +359,11 @@ class KeepClientServiceTestCase(unittest.TestCase, tutil.ApiClientMock, DiskCach
         api_client = self.mock_keep_services(count=1)
         force_timeout = socket.timeout("timed out")
         with tutil.mock_keep_responses(force_timeout, 0) as mock:
-            keep_client = arvados.KeepClient(api_client=api_client, block_cache=self.make_block_cache(self.disk_cache))
+            keep_client = arvados.KeepClient(
+                api_client=api_client,
+                block_cache=self.make_block_cache(self.disk_cache),
+                num_retries=0,
+            )
             with self.assertRaises(arvados.errors.KeepWriteError):
                 keep_client.put(b'foo')
             self.assertEqual(
@@ -372,7 +380,11 @@ class KeepClientServiceTestCase(unittest.TestCase, tutil.ApiClientMock, DiskCach
         api_client = self.mock_keep_services(count=1)
         force_timeout = socket.timeout("timed out")
         with tutil.mock_keep_responses(force_timeout, 0) as mock:
-            keep_client = arvados.KeepClient(api_client=api_client, block_cache=self.make_block_cache(self.disk_cache))
+            keep_client = arvados.KeepClient(
+                api_client=api_client,
+                block_cache=self.make_block_cache(self.disk_cache),
+                num_retries=0,
+            )
             with self.assertRaises(arvados.errors.KeepReadError):
                 keep_client.head('ffffffffffffffffffffffffffffffff')
             self.assertEqual(
@@ -389,7 +401,11 @@ class KeepClientServiceTestCase(unittest.TestCase, tutil.ApiClientMock, DiskCach
         api_client = self.mock_keep_services(service_type='proxy', count=1)
         force_timeout = socket.timeout("timed out")
         with tutil.mock_keep_responses(force_timeout, 0) as mock:
-            keep_client = arvados.KeepClient(api_client=api_client, block_cache=self.make_block_cache(self.disk_cache))
+            keep_client = arvados.KeepClient(
+                api_client=api_client,
+                block_cache=self.make_block_cache(self.disk_cache),
+                num_retries=0,
+            )
             with self.assertRaises(arvados.errors.KeepReadError):
                 keep_client.get('ffffffffffffffffffffffffffffffff')
             self.assertEqual(
@@ -406,7 +422,11 @@ class KeepClientServiceTestCase(unittest.TestCase, tutil.ApiClientMock, DiskCach
         api_client = self.mock_keep_services(service_type='proxy', count=1)
         force_timeout = socket.timeout("timed out")
         with tutil.mock_keep_responses(force_timeout, 0) as mock:
-            keep_client = arvados.KeepClient(api_client=api_client, block_cache=self.make_block_cache(self.disk_cache))
+            keep_client = arvados.KeepClient(
+                api_client=api_client,
+                block_cache=self.make_block_cache(self.disk_cache),
+                num_retries=0,
+            )
             with self.assertRaises(arvados.errors.KeepReadError):
                 keep_client.head('ffffffffffffffffffffffffffffffff')
             self.assertEqual(
@@ -424,7 +444,10 @@ class KeepClientServiceTestCase(unittest.TestCase, tutil.ApiClientMock, DiskCach
         api_client = self.mock_keep_services(service_type='proxy', count=1)
         force_timeout = socket.timeout("timed out")
         with tutil.mock_keep_responses(force_timeout, 0) as mock:
-            keep_client = arvados.KeepClient(api_client=api_client)
+            keep_client = arvados.KeepClient(
+                api_client=api_client,
+                num_retries=0,
+            )
             with self.assertRaises(arvados.errors.KeepWriteError):
                 keep_client.put('foo')
             self.assertEqual(
@@ -441,7 +464,11 @@ class KeepClientServiceTestCase(unittest.TestCase, tutil.ApiClientMock, DiskCach
         api_client = mock.MagicMock(name='api_client')
         api_client.keep_services().accessible().execute.side_effect = (
             arvados.errors.ApiError)
-        keep_client = arvados.KeepClient(api_client=api_client, block_cache=self.make_block_cache(self.disk_cache))
+        keep_client = arvados.KeepClient(
+            api_client=api_client,
+            block_cache=self.make_block_cache(self.disk_cache),
+            num_retries=0,
+        )
         with self.assertRaises(exc_class) as err_check:
             getattr(keep_client, verb)('d41d8cd98f00b204e9800998ecf8427e+0')
         self.assertEqual(0, len(err_check.exception.request_errors()))
@@ -461,7 +488,11 @@ class KeepClientServiceTestCase(unittest.TestCase, tutil.ApiClientMock, DiskCach
             "retry error reporting test", 500, 500, 500, 500, 500, 500, 502, 502)
         with req_mock, tutil.skip_sleep, \
                 self.assertRaises(exc_class) as err_check:
-            keep_client = arvados.KeepClient(api_client=api_client, block_cache=self.make_block_cache(self.disk_cache))
+            keep_client = arvados.KeepClient(
+                api_client=api_client,
+                block_cache=self.make_block_cache(self.disk_cache),
+                num_retries=0,
+            )
             getattr(keep_client, verb)('d41d8cd98f00b204e9800998ecf8427e+0',
                                        num_retries=3)
         self.assertEqual([502, 502], [
@@ -484,7 +515,11 @@ class KeepClientServiceTestCase(unittest.TestCase, tutil.ApiClientMock, DiskCach
         api_client = self.mock_keep_services(count=3)
         with tutil.mock_keep_responses(data_loc, 200, 500, 500) as req_mock, \
                 self.assertRaises(arvados.errors.KeepWriteError) as exc_check:
-            keep_client = arvados.KeepClient(api_client=api_client, block_cache=self.make_block_cache(self.disk_cache))
+            keep_client = arvados.KeepClient(
+                api_client=api_client,
+                block_cache=self.make_block_cache(self.disk_cache),
+                num_retries=0,
+            )
             keep_client.put(data)
         self.assertEqual(2, len(exc_check.exception.request_errors()))
 
@@ -494,8 +529,12 @@ class KeepClientServiceTestCase(unittest.TestCase, tutil.ApiClientMock, DiskCach
         api_client = self.mock_keep_services(service_type='proxy', read_only=True, count=1)
         with tutil.mock_keep_responses(data_loc, 200, 500, 500) as req_mock, \
                 self.assertRaises(arvados.errors.KeepWriteError) as exc_check:
-          keep_client = arvados.KeepClient(api_client=api_client, block_cache=self.make_block_cache(self.disk_cache))
-          keep_client.put(data)
+            keep_client = arvados.KeepClient(
+                api_client=api_client,
+                block_cache=self.make_block_cache(self.disk_cache),
+                num_retries=0,
+            )
+            keep_client.put(data)
         self.assertEqual(True, ("no Keep services available" in str(exc_check.exception)))
         self.assertEqual(0, len(exc_check.exception.request_errors()))
 
@@ -503,7 +542,11 @@ class KeepClientServiceTestCase(unittest.TestCase, tutil.ApiClientMock, DiskCach
         body = b'oddball service get'
         api_client = self.mock_keep_services(service_type='fancynewblobstore')
         with tutil.mock_keep_responses(body, 200):
-            keep_client = arvados.KeepClient(api_client=api_client, block_cache=self.make_block_cache(self.disk_cache))
+            keep_client = arvados.KeepClient(
+                api_client=api_client,
+                block_cache=self.make_block_cache(self.disk_cache),
+                num_retries=0,
+            )
             actual = keep_client.get(tutil.str_keep_locator(body))
         self.assertEqual(body, actual)
 
@@ -512,7 +555,11 @@ class KeepClientServiceTestCase(unittest.TestCase, tutil.ApiClientMock, DiskCach
         pdh = tutil.str_keep_locator(body)
         api_client = self.mock_keep_services(service_type='fancynewblobstore')
         with tutil.mock_keep_responses(pdh, 200):
-            keep_client = arvados.KeepClient(api_client=api_client, block_cache=self.make_block_cache(self.disk_cache))
+            keep_client = arvados.KeepClient(
+                api_client=api_client,
+                block_cache=self.make_block_cache(self.disk_cache),
+                num_retries=0,
+            )
             actual = keep_client.put(body, copies=1)
         self.assertEqual(pdh, actual)
 
@@ -524,7 +571,11 @@ class KeepClientServiceTestCase(unittest.TestCase, tutil.ApiClientMock, DiskCach
         headers = {'x-keep-replicas-stored': 3}
         with tutil.mock_keep_responses(pdh, 200, 418, 418, 418,
                                        **headers) as req_mock:
-            keep_client = arvados.KeepClient(api_client=api_client, block_cache=self.make_block_cache(self.disk_cache))
+            keep_client = arvados.KeepClient(
+                api_client=api_client,
+                block_cache=self.make_block_cache(self.disk_cache),
+                num_retries=0,
+            )
             actual = keep_client.put(body, copies=2)
         self.assertEqual(pdh, actual)
         self.assertEqual(1, req_mock.call_count)
@@ -638,7 +689,7 @@ class KeepStorageClassesTestCase(unittest.TestCase, tutil.ApiClientMock, DiskCac
             'x-keep-storage-classes-confirmed': 'foo=1'}
         with tutil.mock_keep_responses(self.locator, 200, 503, **headers) as mock:
             with self.assertRaises(arvados.errors.KeepWriteError):
-                self.keep_client.put(self.data, copies=1, classes=['foo', 'bar'])
+                self.keep_client.put(self.data, copies=1, classes=['foo', 'bar'], num_retries=0)
             # 1st request, both classes pending
             req1_headers = mock.responses[0].getopt(pycurl.HTTPHEADER)
             self.assertIn('X-Keep-Storage-Classes: bar, foo', req1_headers)
@@ -689,7 +740,7 @@ class KeepStorageClassesTestCase(unittest.TestCase, tutil.ApiClientMock, DiskCac
             with tutil.mock_keep_responses(self.locator, return_code, return_code, **headers):
                 case_desc = 'wanted_copies={}, wanted_classes="{}", confirmed_copies={}, confirmed_classes="{}"'.format(w_copies, ', '.join(w_classes), c_copies, c_classes)
                 with self.assertRaises(arvados.errors.KeepWriteError, msg=case_desc):
-                    self.keep_client.put(self.data, copies=w_copies, classes=w_classes)
+                    self.keep_client.put(self.data, copies=w_copies, classes=w_classes, num_retries=0)
 
 @tutil.skip_sleep
 @parameterized.parameterized_class([{"disk_cache": True}, {"disk_cache": False}])
@@ -1250,10 +1301,6 @@ class KeepClientRetryTestMixin(object):
         with self.TEST_PATCHER(self.DEFAULT_EXPECT, Exception('mock err'), 200):
             self.check_success(num_retries=3)
 
-    def test_no_default_retry(self):
-        with self.TEST_PATCHER(self.DEFAULT_EXPECT, 500, 200):
-            self.check_exception()
-
     def test_no_retry_after_permanent_error(self):
         with self.TEST_PATCHER(self.DEFAULT_EXPECT, 403, 200):
             self.check_exception(num_retries=3)
@@ -1293,7 +1340,7 @@ class KeepClientRetryGetTestCase(KeepClientRetryTestMixin, unittest.TestCase, Di
         # and a high threshold of servers report that it's not found.
         # This test rigs up 50/50 disagreement between two servers, and
         # checks that it does not become a NotFoundError.
-        client = self.new_client()
+        client = self.new_client(num_retries=0)
         with tutil.mock_keep_responses(self.DEFAULT_EXPECT, 404, 500):
             with self.assertRaises(arvados.errors.KeepReadError) as exc_check:
                 client.get(self.HINTED_LOCATOR)
@@ -1341,7 +1388,7 @@ class KeepClientRetryHeadTestCase(KeepClientRetryTestMixin, unittest.TestCase, D
         # and a high threshold of servers report that it's not found.
         # This test rigs up 50/50 disagreement between two servers, and
         # checks that it does not become a NotFoundError.
-        client = self.new_client()
+        client = self.new_client(num_retries=0)
         with tutil.mock_keep_responses(self.DEFAULT_EXPECT, 404, 500):
             with self.assertRaises(arvados.errors.KeepReadError) as exc_check:
                 client.head(self.HINTED_LOCATOR)
