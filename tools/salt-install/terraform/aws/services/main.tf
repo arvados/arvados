@@ -57,8 +57,8 @@ resource "aws_instance" "arvados_service" {
     "ssh_pubkey": file(local.pubkey_path)
   })
   private_ip = local.private_ip[each.value]
-  subnet_id = contains(local.user_facing_hosts, each.value) ? data.terraform_remote_state.vpc.outputs.public_subnet_id : data.terraform_remote_state.vpc.outputs.private_subnet_id
-  vpc_security_group_ids = [ data.terraform_remote_state.vpc.outputs.arvados_sg_id ]
+  subnet_id = contains(local.user_facing_hosts, each.value) ? local.public_subnet_id : local.private_subnet_id
+  vpc_security_group_ids = [ local.arvados_sg_id ]
   iam_instance_profile = try(local.instance_profile[each.value], local.instance_profile.default).name
   tags = {
     Name = "${local.cluster_name}_arvados_service_${each.value}"
@@ -148,7 +148,7 @@ resource "aws_iam_policy_attachment" "cloud_dispatcher_ec2_access_attachment" {
 resource "aws_eip_association" "eip_assoc" {
   for_each = local.private_only ? [] : toset(local.public_hosts)
   instance_id = aws_instance.arvados_service[each.value].id
-  allocation_id = data.terraform_remote_state.vpc.outputs.eip_id[each.value]
+  allocation_id = local.eip_id[each.value]
 }
 
 resource "aws_iam_role" "default_iam_role" {
@@ -175,7 +175,7 @@ resource "aws_iam_policy_attachment" "ssl_privkey_password_access_attachment" {
   roles = [
     aws_iam_role.cloud_dispatcher_iam_role.name,
     aws_iam_role.default_iam_role.name,
-    data.terraform_remote_state.data-storage.outputs.keepstore_iam_role_name,
+    local.keepstore_iam_role_name,
   ]
   policy_arn = aws_iam_policy.ssl_privkey_password_access.arn
 }

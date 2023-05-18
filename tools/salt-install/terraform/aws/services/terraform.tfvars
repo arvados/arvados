@@ -2,7 +2,8 @@
 #
 # SPDX-License-Identifier: CC-BY-SA-3.0
 
-# Set to a specific SSH public key path. Default: ~/.ssh/id_rsa.pub
+# SSH public key path to use by the installer script. It will be installed in
+# the home directory of the 'deploy_user'. Default: ~/.ssh/id_rsa.pub
 # pubkey_path = "/path/to/pub.key"
 
 # Set the instance type for your nodes. Default: m5a.large
