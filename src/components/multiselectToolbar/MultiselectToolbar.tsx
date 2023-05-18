@@ -24,8 +24,7 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
         justifyContent: 'start',
         width: '0px',
         padding: 0,
-        marginTop: '0.5rem',
-        marginLeft: '0.5rem',
+        margin: '1rem auto auto 0.5rem',
         overflow: 'hidden',
         transition: 'width 150ms',
         transitionTimingFunction: 'ease',
@@ -127,10 +126,11 @@ function mapDispatchToProps(dispatch: Dispatch) {
     return {
         copySelected: () => {},
         moveSelected: () => {},
-        removeSelected: (checkedList: TCheckedList) => removeMany(dispatch, checkedList),
+        removeSelected: (checkedList: TCheckedList) => removeMulti(dispatch, checkedList),
     };
 }
 
-function removeMany(dispatch: Dispatch, checkedList: TCheckedList): void {
-    dispatch<any>(openRemoveManyProcessesDialog(selectedToArray(checkedList)));
+function removeMulti(dispatch: Dispatch, checkedList: TCheckedList): void {
+    const list: Array<string> = selectedToArray(checkedList);
+    dispatch<any>(list.length === 1 ? openRemoveProcessDialog(list[0]) : openRemoveManyProcessesDialog(list));
 }
