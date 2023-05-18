@@ -6,5 +6,5 @@
 ### LETSENCRYPT
 letsencrypt:
   domainsets:
-    webshell.__CLUSTER__.__DOMAIN__:
-      - webshell.__CLUSTER__.__DOMAIN__
+    webshell.__DOMAIN__:
+      - webshell.__DOMAIN__

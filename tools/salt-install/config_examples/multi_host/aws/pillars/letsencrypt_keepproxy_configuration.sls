@@ -6,5 +6,5 @@
 ### LETSENCRYPT
 letsencrypt:
   domainsets:
-    keepproxy.__CLUSTER__.__DOMAIN__:
-      - keep.__CLUSTER__.__DOMAIN__
+    keepproxy.__DOMAIN__:
+      - keep.__DOMAIN__

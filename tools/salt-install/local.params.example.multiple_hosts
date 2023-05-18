@@ -8,8 +8,8 @@
 # The Arvados cluster ID, needs to be 5 lowercase alphanumeric characters.
 CLUSTER="cluster_fixme_or_this_wont_work"
 
-# The domain name you want to give to your cluster's hosts
-# the end result hostnames will be $SERVICE.$CLUSTER.$DOMAIN
+# The domain name you want to give to your cluster's hosts;
+# the end result hostnames will be $SERVICE.$DOMAIN
 DOMAIN="domain_fixme_or_this_wont_work"
 
 # For multi-node installs, the ssh log in for each node
@@ -19,7 +19,7 @@ DEPLOY_USER=admin
 INITIAL_USER=admin
 
 # If not specified, the initial user email will be composed as
-# INITIAL_USER@CLUSTER.DOMAIN
+# INITIAL_USER@DOMAIN
 INITIAL_USER_EMAIL="admin@cluster_fixme_or_this_wont_work.domain_fixme_or_this_wont_work"
 INITIAL_USER_PASSWORD="fixmepassword"
 
@@ -27,7 +27,7 @@ INITIAL_USER_PASSWORD="fixmepassword"
 # installer from the outside of the cluster's local network and still reach
 # the internal servers for configuration deployment.
 # Comment out to disable.
-USE_SSH_JUMPHOST="controller.${CLUSTER}.${DOMAIN}"
+USE_SSH_JUMPHOST="controller.${DOMAIN}"
 
 # YOU SHOULD CHANGE THESE TO SOME RANDOM STRINGS
 BLOB_SIGNING_KEY=fixmeblobsigningkeymushaveatleast32characters
@@ -96,10 +96,10 @@ MONITORING_EMAIL=${INITIAL_USER_EMAIL}
 # installer.sh will log in to each of these nodes and then provision
 # it for the specified roles.
 NODES=(
-  [controller.${CLUSTER}.${DOMAIN}]=database,api,controller,websocket,dispatcher,keepbalance
-  [workbench.${CLUSTER}.${DOMAIN}]=monitoring,workbench,workbench2,webshell,keepproxy,keepweb
-  [keep0.${CLUSTER}.${DOMAIN}]=keepstore
-  [shell.${CLUSTER}.${DOMAIN}]=shell
+  [controller.${DOMAIN}]=database,api,controller,websocket,dispatcher,keepbalance
+  [workbench.${DOMAIN}]=monitoring,workbench,workbench2,webshell,keepproxy,keepweb
+  [keep0.${DOMAIN}]=keepstore
+  [shell.${DOMAIN}]=shell
 )
 
 # Host SSL port where you want to point your browser to access Arvados

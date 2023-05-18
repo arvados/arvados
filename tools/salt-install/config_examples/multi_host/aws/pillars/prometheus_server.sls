@@ -36,7 +36,7 @@ prometheus:
               bearer_token: __MANAGEMENT_TOKEN__
               scheme: https
               static_configs:
-                - targets: ['ws.__CLUSTER__.__DOMAIN__:443']
+                - targets: ['ws.__DOMAIN__:443']
                   labels:
                     instance: ws.__CLUSTER__
                     cluster: __CLUSTER__
@@ -44,7 +44,7 @@ prometheus:
               bearer_token: __MANAGEMENT_TOKEN__
               scheme: https
               static_configs:
-                - targets: ['__CLUSTER__.__DOMAIN__:443']
+                - targets: ['__DOMAIN__:443']
                   labels:
                     instance: controller.__CLUSTER__
                     cluster: __CLUSTER__
@@ -52,7 +52,7 @@ prometheus:
               bearer_token: __MANAGEMENT_TOKEN__
               scheme: https
               static_configs:
-                - targets: ['keep.__CLUSTER__.__DOMAIN__:443']
+                - targets: ['keep.__DOMAIN__:443']
                   labels:
                     instance: keep-web.__CLUSTER__
                     cluster: __CLUSTER__
@@ -98,7 +98,7 @@ prometheus:
                   'workbench',
                   'shell',
                 ] %}
-                - targets: [ "{{ node }}.__CLUSTER__.__DOMAIN__:9100" ]
+                - targets: [ "{{ node }}.__DOMAIN__:9100" ]
                   labels:
                     instance: "{{ node }}.__CLUSTER__"
                     cluster: __CLUSTER__

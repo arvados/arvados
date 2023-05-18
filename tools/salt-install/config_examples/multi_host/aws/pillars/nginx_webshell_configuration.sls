@@ -14,7 +14,7 @@ nginx:
       ### STREAMS
       http:
         upstream webshell_upstream:
-          - server: 'shell.__CLUSTER__.__DOMAIN__:4200 fail_timeout=10s'
+          - server: 'shell.__DOMAIN__:4200 fail_timeout=10s'
 
   ### SITES
   servers:
@@ -24,7 +24,7 @@ nginx:
         overwrite: true
         config:
           - server:
-            - server_name: webshell.__CLUSTER__.__DOMAIN__
+            - server_name: webshell.__DOMAIN__
             - listen:
               - 80
             - location /:
@@ -37,11 +37,11 @@ nginx:
           __CERT_REQUIRES__
         config:
           - server:
-            - server_name: webshell.__CLUSTER__.__DOMAIN__
+            - server_name: webshell.__DOMAIN__
             - listen:
               - __WEBSHELL_EXT_SSL_PORT__ http2 ssl
             - index: index.html index.htm
-            - location /shell.__CLUSTER__.__DOMAIN__:
+            - location /shell.__DOMAIN__:
               - proxy_pass: 'http://webshell_upstream'
               - proxy_read_timeout: 90
               - proxy_connect_timeout: 90
@@ -76,6 +76,6 @@ nginx:
             {%- if ssl_key_encrypted_pillar.ssl_key_encrypted.enabled %}
             - ssl_password_file: {{ '/run/arvados/' | path_join(ssl_key_encrypted_pillar.ssl_key_encrypted.privkey_password_filename) }}
             {%- endif %}
-            - access_log: /var/log/nginx/webshell.__CLUSTER__.__DOMAIN__.access.log combined
-            - error_log: /var/log/nginx/webshell.__CLUSTER__.__DOMAIN__.error.log
+            - access_log: /var/log/nginx/webshell.__DOMAIN__.access.log combined
+            - error_log: /var/log/nginx/webshell.__DOMAIN__.error.log
 

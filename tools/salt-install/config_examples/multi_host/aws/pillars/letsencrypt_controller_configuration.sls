@@ -6,5 +6,5 @@
 ### LETSENCRYPT
 letsencrypt:
   domainsets:
-    controller.__CLUSTER__.__DOMAIN__:
-      - __CLUSTER__.__DOMAIN__
+    controller.__DOMAIN__:
+      - __DOMAIN__

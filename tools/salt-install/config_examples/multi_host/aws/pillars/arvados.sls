@@ -84,7 +84,7 @@ arvados:
     resources:
       virtual_machines:
         shell:
-          name: shell.__CLUSTER__.__DOMAIN__
+          name: shell.__DOMAIN__
           backend: __SHELL_INT_IP__
           port: 4200
 
@@ -158,7 +158,7 @@ arvados:
 
     Services:
       Controller:
-        ExternalURL: 'https://__CLUSTER__.__DOMAIN__:__CONTROLLER_EXT_SSL_PORT__'
+        ExternalURL: 'https://__DOMAIN__:__CONTROLLER_EXT_SSL_PORT__'
         InternalURLs:
           'http://localhost:8003': {}
       DispatchCloud:
@@ -168,7 +168,7 @@ arvados:
         InternalURLs:
           'http://__CONTROLLER_INT_IP__:9005': {}
       Keepproxy:
-        ExternalURL: 'https://keep.__CLUSTER__.__DOMAIN__:__KEEP_EXT_SSL_PORT__'
+        ExternalURL: 'https://keep.__DOMAIN__:__KEEP_EXT_SSL_PORT__'
         InternalURLs:
           'http://localhost:25107': {}
       Keepstore:
@@ -178,21 +178,21 @@ arvados:
         InternalURLs:
           'http://localhost:8004': {}
       WebDAV:
-        ExternalURL: 'https://*.collections.__CLUSTER__.__DOMAIN__:__KEEPWEB_EXT_SSL_PORT__/'
+        ExternalURL: 'https://*.collections.__DOMAIN__:__KEEPWEB_EXT_SSL_PORT__/'
         InternalURLs:
           'http://__KEEPWEB_INT_IP__:9002': {}
       WebDAVDownload:
-        ExternalURL: 'https://download.__CLUSTER__.__DOMAIN__:__KEEPWEB_EXT_SSL_PORT__'
+        ExternalURL: 'https://download.__DOMAIN__:__KEEPWEB_EXT_SSL_PORT__'
       WebShell:
-        ExternalURL: 'https://webshell.__CLUSTER__.__DOMAIN__:__KEEPWEB_EXT_SSL_PORT__'
+        ExternalURL: 'https://webshell.__DOMAIN__:__KEEPWEB_EXT_SSL_PORT__'
       Websocket:
-        ExternalURL: 'wss://ws.__CLUSTER__.__DOMAIN__/websocket'
+        ExternalURL: 'wss://ws.__DOMAIN__/websocket'
         InternalURLs:
           'http://localhost:8005': {}
       Workbench1:
-        ExternalURL: 'https://workbench.__CLUSTER__.__DOMAIN__:__WORKBENCH1_EXT_SSL_PORT__'
+        ExternalURL: 'https://workbench.__DOMAIN__:__WORKBENCH1_EXT_SSL_PORT__'
       Workbench2:
-        ExternalURL: 'https://workbench2.__CLUSTER__.__DOMAIN__:__WORKBENCH2_EXT_SSL_PORT__'
+        ExternalURL: 'https://workbench2.__DOMAIN__:__WORKBENCH2_EXT_SSL_PORT__'
 
     InstanceTypes:
       t3small:
