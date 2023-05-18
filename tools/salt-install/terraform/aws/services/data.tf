@@ -29,3 +29,7 @@ data "aws_ami" "debian-11" {
     values = ["hvm"]
   }
 }
+
+data "aws_vpc" "arvados_vpc" {
+  id = data.terraform_remote_state.vpc.outputs.arvados_vpc_id
+}
