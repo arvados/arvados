@@ -17,9 +17,9 @@ def _pos_int(s):
     return num
 
 retry_opt = argparse.ArgumentParser(add_help=False)
-retry_opt.add_argument('--retries', type=_pos_int, default=3, help="""
+retry_opt.add_argument('--retries', type=_pos_int, default=10, help="""
 Maximum number of times to retry server requests that encounter temporary
-failures (e.g., server down).  Default 3.""")
+failures (e.g., server down).  Default 10.""")
 
 def _ignore_error(error):
     return None

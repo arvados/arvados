@@ -129,8 +129,8 @@ def main():
         args.source_arvados = args.object_uuid[:5]
 
     # Create API clients for the source and destination instances
-    src_arv = api_for_instance(args.source_arvados)
-    dst_arv = api_for_instance(args.destination_arvados)
+    src_arv = api_for_instance(args.source_arvados, args.retries)
+    dst_arv = api_for_instance(args.destination_arvados, args.retries)
 
     if not args.project_uuid:
         args.project_uuid = dst_arv.users().current().execute(num_retries=args.retries)["uuid"]
@@ -187,7 +187,7 @@ def set_src_owner_uuid(resource, uuid, args):
 #     Otherwise, it is presumed to be the name of a file in
 #     $HOME/.config/arvados/instance_name.conf
 #
-def api_for_instance(instance_name):
+def api_for_instance(instance_name, num_retries):
     if not instance_name:
         # Use environment
         return arvados.api('v1', model=OrderedJsonModel())
@@ -214,7 +214,9 @@ def api_for_instance(instance_name):
                              host=cfg['ARVADOS_API_HOST'],
                              token=cfg['ARVADOS_API_TOKEN'],
                              insecure=api_is_insecure,
-                             model=OrderedJsonModel())
+                             model=OrderedJsonModel(),
+                             num_retries=num_retries,
+                             )
     else:
         abort('need ARVADOS_API_HOST and ARVADOS_API_TOKEN for {}'.format(instance_name))
     return client

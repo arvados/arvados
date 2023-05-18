@@ -68,7 +68,10 @@ def versionstring():
 
 
 def arg_parser():  # type: () -> argparse.ArgumentParser
-    parser = argparse.ArgumentParser(description='Arvados executor for Common Workflow Language')
+    parser = argparse.ArgumentParser(
+        description='Arvados executor for Common Workflow Language',
+        parents=[arv_cmd.retry_opt],
+    )
 
     parser.add_argument("--basedir",
                         help="Base directory used to resolve relative references in the input, default to directory of input object file or current directory (if inputs piped/provided on command line).")
@@ -333,8 +336,14 @@ def main(args=sys.argv[1:],
     try:
         if api_client is None:
             api_client = arvados.safeapi.ThreadSafeApiCache(
-                api_params={"model": OrderedJsonModel(), "timeout": arvargs.http_timeout},
-                keep_params={"num_retries": 4},
+                api_params={
+                    'model': OrderedJsonModel(),
+                    'num_retries': arvargs.retries,
+                    'timeout': arvargs.http_timeout,
+                },
+                keep_params={
+                    'num_retries': arvargs.retries,
+                },
                 version='v1',
             )
             keep_client = api_client.keep
@@ -342,8 +351,18 @@ def main(args=sys.argv[1:],
             api_client.users().current().execute()
         if keep_client is None:
             block_cache = arvados.keep.KeepBlockCache(disk_cache=True)
-            keep_client = arvados.keep.KeepClient(api_client=api_client, num_retries=4, block_cache=block_cache)
-        executor = ArvCwlExecutor(api_client, arvargs, keep_client=keep_client, num_retries=4, stdout=stdout)
+            keep_client = arvados.keep.KeepClient(
+                api_client=api_client,
+                block_cache=block_cache,
+                num_retries=arvargs.retries,
+            )
+        executor = ArvCwlExecutor(
+            api_client,
+            arvargs,
+            keep_client=keep_client,
+            num_retries=arvargs.retries,
+            stdout=stdout,
+        )
     except WorkflowException as e:
         logger.error(e, exc_info=(sys.exc_info()[1] if arvargs.debug else False))
         return 1

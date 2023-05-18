@@ -10,12 +10,13 @@ import arvados
 import json
 from arvados.events import subscribe
 from arvados._version import __version__
+from . import _util as arv_cmd
 import signal
 
 def main(arguments=None):
     logger = logging.getLogger('arvados.arv-ws')
 
-    parser = argparse.ArgumentParser()
+    parser = argparse.ArgumentParser(parents=[arv_cmd.retry_opt])
     parser.add_argument('--version', action='version',
                         version="%s %s" % (sys.argv[0], __version__),
                         help='Print version and exit.')
@@ -56,7 +57,7 @@ def main(arguments=None):
             filters = new_filters
             known_component_jobs = pipeline_jobs
 
-    api = arvados.api('v1')
+    api = arvados.api('v1', num_retries=args.retries)
 
     if args.uuid:
         filters += [ ['object_uuid', '=', args.uuid] ]

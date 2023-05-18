@@ -1136,7 +1136,7 @@ def main(arguments=None, stdout=sys.stdout, stderr=sys.stderr,
     logging.getLogger('arvados').handlers[0].setFormatter(formatter)
 
     if api_client is None:
-        api_client = arvados.api('v1', request_id=request_id)
+        api_client = arvados.api('v1', request_id=request_id, num_retries=args.retries)
 
     if install_sig_handlers:
         arv_cmd.install_signal_handlers()

@@ -224,13 +224,6 @@ class StreamRetryTestMixin(object):
             self.assertEqual(b'bar', self.read_for_test(reader, 3))
 
     @tutil.skip_sleep
-    def test_read_no_default_retry(self):
-        with tutil.mock_keep_responses('', 500):
-            reader = self.reader_for('user_agreement')
-            with self.assertRaises(arvados.errors.KeepReadError):
-                self.read_for_test(reader, 10)
-
-    @tutil.skip_sleep
     def test_read_with_instance_retries(self):
         with tutil.mock_keep_responses('foo', 500, 200):
             reader = self.reader_for('foo_file', num_retries=3)

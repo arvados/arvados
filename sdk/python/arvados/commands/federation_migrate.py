@@ -24,6 +24,7 @@ import os
 import hashlib
 import re
 from arvados._version import __version__
+from . import _util as arv_cmd
 
 EMAIL=0
 USERNAME=1
@@ -43,10 +44,10 @@ def connect_clusters(args):
                 host = r[0]
                 token = r[1]
                 print("Contacting %s" % (host))
-                arv = arvados.api(host=host, token=token, cache=False)
+                arv = arvados.api(host=host, token=token, cache=False, num_retries=args.retries)
                 clusters[arv._rootDesc["uuidPrefix"]] = arv
     else:
-        arv = arvados.api(cache=False)
+        arv = arvados.api(cache=False, num_retries=args.retries)
         rh = arv._rootDesc["remoteHosts"]
         tok = arv.api_client_authorizations().current().execute()
         token = "v2/%s/%s" % (tok["uuid"], tok["api_token"])
@@ -326,7 +327,10 @@ def migrate_user(args, migratearv, email, new_user_uuid, old_user_uuid):
 
 
 def main():
-    parser = argparse.ArgumentParser(description='Migrate users to federated identity, see https://doc.arvados.org/admin/merge-remote-account.html')
+    parser = argparse.ArgumentParser(
+        description='Migrate users to federated identity, see https://doc.arvados.org/admin/merge-remote-account.html',
+        parents=[arv_cmd.retry_opt],
+    )
     parser.add_argument(
         '--version', action='version', version="%s %s" % (sys.argv[0], __version__),
         help='Print version and exit.')
