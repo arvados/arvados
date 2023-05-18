@@ -168,7 +168,10 @@ class ArvadosApiTest(run_test_server.TestCaseWithServers):
 
     def test_4xx_not_retried(self):
         client = arvados.api('v1', num_retries=3)
-        for code in [400, 401, 404, 422]:
+        # Note that googleapiclient does retry 403 *if* the response JSON
+        # includes flags that say the request was denied by rate limiting.
+        # An empty JSON response like we use here should not be retried.
+        for code in [400, 401, 403, 404, 422]:
             with self.subTest(f'error {code}'), mock.patch('time.sleep'):
                 with mock_api_responses(
                         client,
