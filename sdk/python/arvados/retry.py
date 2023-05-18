@@ -27,7 +27,7 @@ from collections import deque
 import arvados.errors
 
 _HTTP_SUCCESSES = set(range(200, 300))
-_HTTP_CAN_RETRY = set([408, 409, 422, 423, 500, 502, 503, 504])
+_HTTP_CAN_RETRY = set([408, 409, 423, 500, 502, 503, 504])
 
 class RetryLoop(object):
     """Coordinate limited retries of code.
@@ -200,10 +200,6 @@ def check_http_response_success(status_code):
     * Any 2xx result returns `True`.
 
     * A select few status codes, or any malformed responses, return `None`.
-      422 Unprocessable Entity is in this category.  This may not meet the
-      letter of the HTTP specification, but the Arvados API server will
-      use it for various server-side problems like database connection
-      errors.
 
     * Everything else returns `False`.  Note that this includes 1xx and
       3xx status codes.  They don't indicate success, and you can't

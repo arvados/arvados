@@ -38,7 +38,7 @@ if not mimetypes.inited:
 class ArvadosApiTest(run_test_server.TestCaseWithServers):
     MAIN_SERVER = {}
     ERROR_HEADERS = {'Content-Type': mimetypes.types_map['.json']}
-    RETRIED_4XX = frozenset([408, 409, 422, 423])
+    RETRIED_4XX = frozenset([408, 409, 423])
 
     def api_error_response(self, code, *errors):
         return (fake_httplib2_response(code, **self.ERROR_HEADERS),
@@ -168,7 +168,7 @@ class ArvadosApiTest(run_test_server.TestCaseWithServers):
 
     def test_4xx_not_retried(self):
         client = arvados.api('v1', num_retries=3)
-        for code in [400, 401, 404]:
+        for code in [400, 401, 404, 422]:
             with self.subTest(f'error {code}'), mock.patch('time.sleep'):
                 with mock_api_responses(
                         client,

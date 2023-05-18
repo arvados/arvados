@@ -174,14 +174,14 @@ class CheckHTTPResponseSuccessTestCase(unittest.TestCase):
         self.check_is(True, *list(range(200, 207)))
 
     def test_obvious_stops(self):
-        self.check_is(False, 424, 426, 428, 431,
+        self.check_is(False, 422, 424, 426, 428, 431,
                       *list(range(400, 408)) + list(range(410, 420)))
 
     def test_obvious_retries(self):
         self.check_is(None, 500, 502, 503, 504)
 
     def test_4xx_retries(self):
-        self.check_is(None, 408, 409, 422, 423)
+        self.check_is(None, 408, 409, 423)
 
     def test_5xx_failures(self):
         self.check_is(False, 501, *list(range(505, 512)))
