@@ -77,6 +77,29 @@ func (e *dockerExecutor) Runtime() string {
 	return "docker " + info
 }
 
+func (e *dockerExecutor) PullImage(ctx context.Context, repotag string) (imageData io.ReadCloser, imageID string, err error) {
+	out, err := e.dockerclient.ImagePull(ctx, repotag, dockertypes.ImagePullOptions{})
+	if err != nil {
+		return nil, "", fmt.Errorf("ImagePull: %w", err)
+	}
+	defer out.Close()
+	buf, err := ioutil.ReadAll(out)
+	if err != nil {
+		return nil, "", fmt.Errorf("reading response: %w", err)
+	}
+	e.logf("%s", buf)
+
+	inspect, _, err := e.dockerclient.ImageInspectWithRaw(context.TODO(), repotag)
+	if err != nil {
+		return nil, "", err
+	}
+	imagedata, err := e.dockerclient.ImageSave(ctx, []string{inspect.ID})
+	if err != nil {
+		return nil, "", err
+	}
+	return imagedata, inspect.ID, nil
+}
+
 func (e *dockerExecutor) LoadImage(imageID string, imageTarballPath string, container arvados.Container, arvMountPoint string,
 	containerClient *arvados.Client) error {
 	_, _, err := e.dockerclient.ImageInspectWithRaw(context.TODO(), imageID)

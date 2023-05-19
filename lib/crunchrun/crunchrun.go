@@ -1721,6 +1721,24 @@ func (runner *ContainerRunner) Run() (err error) {
 		runner.hoststatReporter.ReportPID("keepstore", runner.keepstore.Process.Pid)
 	}
 
+	err = runner.LogHostInfo()
+	if err != nil {
+		return
+	}
+	err = runner.LogNodeRecord()
+	if err != nil {
+		return
+	}
+	err = runner.LogContainerRecord()
+	if err != nil {
+		return
+	}
+
+	if runner.Container.ContainerImage == "arvados/builtin" {
+		err = runner.runBuiltinCommand()
+		return
+	}
+
 	// set up FUSE mount and binds
 	bindmounts, err = runner.SetupMounts()
 	if err != nil {
@@ -1742,18 +1760,6 @@ func (runner *ContainerRunner) Run() (err error) {
 	}
 
 	err = runner.CreateContainer(imageID, bindmounts)
-	if err != nil {
-		return
-	}
-	err = runner.LogHostInfo()
-	if err != nil {
-		return
-	}
-	err = runner.LogNodeRecord()
-	if err != nil {
-		return
-	}
-	err = runner.LogContainerRecord()
 	if err != nil {
 		return
 	}

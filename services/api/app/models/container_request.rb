@@ -39,6 +39,7 @@ class ContainerRequest < ArvadosModel
   validates :command, :container_image, :output_path, :cwd, :presence => true
   validates :output_ttl, numericality: { only_integer: true, greater_than_or_equal_to: 0 }
   validates :priority, numericality: { only_integer: true, greater_than_or_equal_to: 0, less_than_or_equal_to: 1000 }
+  validate :validate_builtin_command
   validate :validate_datatypes
   validate :validate_runtime_constraints
   validate :validate_scheduling_parameters
@@ -293,6 +294,22 @@ class ContainerRequest < ArvadosModel
         properties: merged_properties)
       coll.save_with_unique_name!
       self.send(out_type + '_uuid=', coll.uuid)
+
+      if out_type == 'output' &&
+         container_image == 'arvados/builtin' &&
+         command[0..1] == ['docker', 'pull'] &&
+         container.exit_code == 0
+        Link.create!(
+	  head_uuid:  coll.uuid,
+          link_class: 'docker_image_repo+tag',
+          name: container.output_properties['docker-image-repo-tag'],
+        )
+        Link.create!(
+	  head_uuid:  coll.uuid,
+          link_class: 'docker_image_hash',
+          name: container.output_properties['docker-image-hash'],
+        )
+      end
     end
   end
 
@@ -389,6 +406,23 @@ class ContainerRequest < ArvadosModel
        get_requesting_container_uuid() &&
        self.class.any_preemptible_instances?
       self.scheduling_parameters['preemptible'] = true
+    end
+  end
+
+  def validate_builtin_command
+    return if container_image != "arvados/builtin"
+    if command.length == 3 && command[0..1] == ["docker", "pull"]
+      if !mounts.empty?
+        errors.add(:mounts, "must be empty for builtin docker pull command")
+      end
+      if !runtime_constraints['API']
+        errors.add(:runtime_constraints, "API flag must be set for builtin docker pull command")
+      end
+      if output_path != "/"
+        errors.add(:output_path, "must be '/' for builtin docker pull command")
+      end
+    else
+      errors.add(:command, "is not a valid builtin command")
     end
   end
 

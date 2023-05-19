@@ -9,6 +9,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"net"
 	"os"
@@ -139,7 +140,11 @@ func (e *singularityExecutor) checkImageCache(dockerImageID string, container ar
 	return &imageCollection, nil
 }
 
-// LoadImage will satisfy ContainerExecuter interface transforming
+func (e *singularityExecutor) PullImage(context.Context, string) (io.ReadCloser, string, error) {
+	return nil, "", errors.New("image pull is not supported by the singularity executor")
+}
+
+// LoadImage will satisfy ContainerExecutor interface transforming
 // containerImage into a sif file for later use.
 func (e *singularityExecutor) LoadImage(dockerImageID string, imageTarballPath string, container arvados.Container, arvMountPoint string,
 	containerClient *arvados.Client) error {

@@ -233,8 +233,11 @@ class Container < ArvadosModel
     return c_mounts
   end
 
-  # Return a container_image PDH suitable for a Container.
+  # Resolve an image specification found in a container request (UUID,
+  # PDH, repo:tag, or "arvados/builtin") to an image specification
+  # suitable for a Container (PDH or "arvados/builtin").
   def self.resolve_container_image(container_image)
+    return "arvados/builtin" if container_image == "arvados/builtin"
     coll = Collection.for_latest_docker_image(container_image)
     if !coll
       raise ArvadosModel::UnresolvableContainerError.new "docker image #{container_image.inspect} not found"

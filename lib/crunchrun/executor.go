@@ -35,6 +35,11 @@ type containerSpec struct {
 // containerExecutor is an interface to a container runtime
 // (docker/singularity).
 type containerExecutor interface {
+	// Pull the specified image (repo:tag) from docker hub. Return
+	// a reader that reads the image tarball, and the expected
+	// image hash.
+	PullImage(context.Context, string) (io.ReadCloser, string, error)
+
 	// ImageLoad loads the image from the given tarball such that
 	// it can be used to create/start a container.
 	LoadImage(imageID string, imageTarballPath string, container arvados.Container, keepMount string,

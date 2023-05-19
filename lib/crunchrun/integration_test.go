@@ -351,3 +351,105 @@ func (s *integrationSuite) testRunTrivialContainer(c *C) {
 	}
 	s.outputCollection = output
 }
+
+func (s *integrationSuite) TestBuiltinPullImage(c *C) {
+	s.engine = "docker"
+	if err := exec.Command("which", s.engine).Run(); err != nil {
+		c.Skip(fmt.Sprintf("%s: %s", s.engine, err))
+	}
+	s.cr.Command = []string{"docker", "pull", "alpine:latest"}
+	s.cr.Mounts = nil
+	s.cr.ContainerImage = "arvados/builtin"
+	s.cr.OutputPath = "/"
+	s.setup(c)
+	args := []string{
+		"-runtime-engine=" + s.engine,
+		"-enable-memory-limit=false",
+		s.cr.ContainerUUID,
+	}
+	code := command{}.RunCommand("crunch-run", args, &s.stdin, io.MultiWriter(&s.stdout, os.Stderr), io.MultiWriter(&s.stderr, os.Stderr))
+	c.Logf("\n===== stdout =====\n%s", s.stdout.String())
+	c.Logf("\n===== stderr =====\n%s", s.stderr.String())
+	c.Check(code, Equals, 0)
+	err := s.client.RequestAndDecode(&s.cr, "GET", "arvados/v1/container_requests/"+s.cr.UUID, nil, nil)
+	c.Assert(err, IsNil)
+	c.Check(s.cr.State, Equals, arvados.ContainerRequestStateFinal)
+	var ctr arvados.Container
+	err = s.client.RequestAndDecode(&ctr, "GET", "arvados/v1/containers/"+s.cr.ContainerUUID, nil, nil)
+	c.Assert(err, IsNil)
+	c.Check(ctr.State, Equals, arvados.ContainerStateComplete)
+	c.Check(ctr.ExitCode, Equals, 0)
+	var outcoll arvados.Collection
+	err = s.client.RequestAndDecode(&outcoll, "GET", "arvados/v1/collections/"+s.cr.OutputUUID, nil, nil)
+	c.Assert(err, IsNil)
+	c.Check(outcoll.Properties["docker-image-repo-tag"], Equals, "alpine:latest")
+	c.Check(outcoll.Properties["docker-image-hash"], Matches, `sha256:[a-f0-9]{64}`)
+	c.Check(outcoll.IsTrashed, Equals, false)
+	c.Check(outcoll.TrashAt, IsNil)
+
+	var links arvados.LinkList
+	err = s.client.RequestAndDecode(&links, "GET", "arvados/v1/links", nil, map[string]interface{}{
+		"filters": []arvados.Filter{{"head_uuid", "=", outcoll.UUID}},
+		"order":   "link_class",
+	})
+	c.Assert(err, IsNil)
+	c.Assert(links.Items, HasLen, 2)
+	c.Check(links.Items[0].LinkClass, Equals, "docker_image_hash")
+	c.Check(links.Items[0].HeadUUID, Equals, outcoll.UUID)
+	c.Check(links.Items[0].Name, Matches, `sha256:[a-f0-9]{64}`)
+	c.Check(links.Items[1].LinkClass, Equals, "docker_image_repo+tag")
+	c.Check(links.Items[1].HeadUUID, Equals, outcoll.UUID)
+	c.Check(links.Items[1].Name, Equals, "alpine:latest")
+
+	c.Logf("Pull succeeded, docker image hash is %s", links.Items[0].Properties["docker_image_hash"])
+
+	// Use the output to run a container. We can reference it by
+	// either PDH (output of the pull CR) or repo:tag (tag links
+	// added by railsapi).
+
+	for _, image := range []string{
+		outcoll.PortableDataHash,
+		"alpine:latest",
+	} {
+		c.Logf("===== running container, specifying pulled image as %q =====", image)
+		s.cr = arvados.ContainerRequest{
+			Priority:       1,
+			State:          "Committed",
+			OutputPath:     "/mnt/out",
+			ContainerImage: image,
+			Command:        []string{"sh", "-c", "echo ok >/mnt/out/ok"},
+			Mounts: map[string]arvados.Mount{
+				"/mnt/out": {
+					Kind:     "tmp",
+					Capacity: 1000,
+				},
+			},
+			RuntimeConstraints: arvados.RuntimeConstraints{
+				RAM:   128000000,
+				VCPUs: 1,
+				API:   true,
+			},
+		}
+		s.setup(c)
+		args := []string{
+			"-runtime-engine=" + s.engine,
+			"-enable-memory-limit=false",
+			s.cr.ContainerUUID,
+		}
+		code := command{}.RunCommand("crunch-run", args, &s.stdin, io.MultiWriter(&s.stdout, os.Stderr), io.MultiWriter(&s.stderr, os.Stderr))
+		c.Logf("\n===== stdout =====\n%s", s.stdout.String())
+		c.Logf("\n===== stderr =====\n%s", s.stderr.String())
+		c.Check(code, Equals, 0)
+		err := s.client.RequestAndDecode(&s.cr, "GET", "arvados/v1/container_requests/"+s.cr.UUID, nil, nil)
+		c.Assert(err, IsNil)
+		c.Check(s.cr.State, Equals, arvados.ContainerRequestStateFinal)
+		var ctr2 arvados.Container
+		err = s.client.RequestAndDecode(&ctr2, "GET", "arvados/v1/containers/"+s.cr.ContainerUUID, nil, nil)
+		c.Assert(err, IsNil)
+		c.Check(ctr2.State, Equals, arvados.ContainerStateComplete)
+		c.Check(ctr2.ExitCode, Equals, 0)
+		var outcoll2 arvados.Collection
+		err = s.client.RequestAndDecode(&outcoll2, "GET", "arvados/v1/collections/"+s.cr.OutputUUID, nil, nil)
+		c.Check(err, IsNil)
+	}
+}

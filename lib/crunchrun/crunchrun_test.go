@@ -118,6 +118,7 @@ type KeepTestClient struct {
 
 type stubExecutor struct {
 	imageLoaded bool
+	pullErr     error
 	loaded      string
 	loadErr     error
 	exitCode    int
@@ -156,6 +157,9 @@ func (e *stubExecutor) InjectCommand(ctx context.Context, _, _ string, _ bool, _
 	return nil, errors.New("unimplemented")
 }
 func (e *stubExecutor) IPAddress() (string, error) { return "", errors.New("unimplemented") }
+func (e *stubExecutor) PullImage(context.Context, string) (io.ReadCloser, string, error) {
+	return nil, "", e.pullErr
+}
 
 const fakeInputCollectionPDH = "ffffffffaaaaaaaa88888888eeeeeeee+1234"
 
