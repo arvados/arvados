@@ -29,7 +29,6 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     },
     expanded: {
         transition: 'width 150ms',
-        transitionTimingFunction: 'ease-in',
     },
     button: {
         backgroundColor: '#017ead',
@@ -61,7 +60,12 @@ export const defaultActions: Array<MultiselectToolbarAction> = [
     {
         name: 'remove',
         action: 'removeSelected',
-        relevantKinds: [ResourceKind.COLLECTION],
+        relevantKinds: [ResourceKind.COLLECTION, ResourceKind.PROCESS, ResourceKind.PROJECT],
+    },
+    {
+        name: 'foo',
+        action: 'barSelected',
+        relevantKinds: [ResourceKind.COLLECTION, ResourceKind.PROJECT],
     },
 ];
 
@@ -71,6 +75,7 @@ export type MultiselectToolbarProps = {
     checkedList: TCheckedList;
     copySelected: () => void;
     moveSelected: () => void;
+    barSelected: () => void;
     removeSelected: (selectedList: TCheckedList) => void;
 };
 
@@ -82,21 +87,14 @@ export const MultiselectToolbar = connect(
         // console.log(props);
         const { classes, actions, isVisible, checkedList } = props;
 
-        //include any action that can be applied to all selected elements
+        const currentResourceKinds = selectedToArray(checkedList).map((element) => extractUuidKind(element));
 
-        const currentResourceKinds = new Set(selectedToArray(checkedList).map((element) => extractUuidKind(element) as string));
-        console.log('CURRENT_KINDS', currentResourceKinds);
-        const buttons = actions.filter((action) => {
-            // console.log('ACTION.KINDS', action.relevantKinds);
-            return action.relevantKinds.every((kind) => {
-                // console.log('KIND', kind);
-                // console.log('setHasKind', currentResourceKinds.has(kind));
-                return currentResourceKinds.has(kind);
-            });
-        });
-        // console.log('BUTTONS', buttons);
+        const buttons = actions.filter(
+            (action) => currentResourceKinds.length && currentResourceKinds.every((kind) => action.relevantKinds.includes(kind as ResourceKind))
+        );
+
         return (
-            <Toolbar className={isVisible && buttons.length ? `${classes.root} ${classes.expanded}` : classes.root} style={{ width: `${buttons.length * 5.8}rem` }}>
+            <Toolbar className={isVisible && buttons.length ? `${classes.root} ${classes.expanded}` : classes.root} style={{ width: `${buttons.length * 5.5}rem` }}>
                 {buttons.length ? (
                     buttons.map((btn) => (
                         <Button key={btn.name} className={`${classes.button} ${classes.expanded}`} onClick={() => props[btn.action](checkedList)}>
@@ -132,12 +130,10 @@ function selectedToArray<T>(checkedList: TCheckedList): Array<string> {
 }
 
 function mapStateToProps(state: RootState) {
-    // console.log(state.resources, state.multiselect.checkedList);
     const { isVisible, checkedList } = state.multiselect;
     return {
         isVisible: isVisible,
         checkedList: checkedList as TCheckedList,
-        // selectedList: state.multiselect.checkedList.forEach(processUUID=>containerRequestUUID)
     };
 }
 
@@ -145,6 +141,7 @@ function mapDispatchToProps(dispatch: Dispatch) {
     return {
         copySelected: () => {},
         moveSelected: () => {},
+        barSelected: () => {},
         removeSelected: (checkedList: TCheckedList) => removeMulti(dispatch, checkedList),
     };
 }
