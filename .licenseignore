@@ -14,6 +14,7 @@ build/package-test-dockerfiles/ubuntu1604/etc-apt-preferences.d-arvados
 *COPYING
 doc/fonts/*
 doc/_includes/_config_default_yml.liquid
+doc/_includes/_terraform_*_tfvars.liquid
 doc/user/cwl/federated/*
 doc/_includes/_federated_cwl.liquid
 */docker_image
