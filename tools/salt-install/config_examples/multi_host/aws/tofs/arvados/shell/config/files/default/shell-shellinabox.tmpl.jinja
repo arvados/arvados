@@ -1,0 +1,16 @@
+{#
+##########################################################
+# Copyright (C) The Arvados Authors. All rights reserved.
+#
+# SPDX-License-Identifier: CC-BY-SA-3.0
+#}
+########################################################################
+# File managed by Salt at <{{ source }}>.
+# Your changes will be overwritten.
+########################################################################
+# Should shellinaboxd start automatically
+SHELLINABOX_DAEMON_START=1
+# TCP port that shellinboxd's webserver listens on
+SHELLINABOX_PORT={{ arvados.shell.shellinabox.service.port }}
+# SSL is disabled because it is terminated in Nginx. Adjust as needed.
+SHELLINABOX_ARGS="--disable-ssl --no-beep --service=/shell.{{ arvados.cluster.domain }}:AUTH:HOME:SHELL"

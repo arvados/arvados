@@ -396,10 +396,12 @@ fi
 if [ "x${VAGRANT}" = "xyes" ]; then
   EXTRA_STATES_DIR="/home/vagrant/${CONFIG_DIR}/states"
   SOURCE_PILLARS_DIR="/home/vagrant/${CONFIG_DIR}/pillars"
+  SOURCE_TOFS_DIR="/home/vagrant/${CONFIG_DIR}/tofs"
   SOURCE_TESTS_DIR="/home/vagrant/${TESTS_DIR}"
 else
   EXTRA_STATES_DIR="${SCRIPT_DIR}/${CONFIG_DIR}/states"
   SOURCE_PILLARS_DIR="${SCRIPT_DIR}/${CONFIG_DIR}/pillars"
+  SOURCE_TOFS_DIR="${SCRIPT_DIR}/${CONFIG_DIR}/tofs"
   SOURCE_TESTS_DIR="${SCRIPT_DIR}/${TESTS_DIR}"
 fi
 
@@ -544,6 +546,12 @@ fi
 # Now, we build the SALT states/pillars trees
 # As we need to separate both states and pillars in case we want specific
 # roles, we iterate on both at the same time
+
+# Formula template overrides (TOFS)
+# See: https://template-formula.readthedocs.io/en/latest/TOFS_pattern.html#template-override
+if [ -d ${SOURCE_TOFS_DIR} ]; then
+  find ${SOURCE_TOFS_DIR} -mindepth 1 -maxdepth 1 -type d -exec cp -r "{}" ${S_DIR} \;
+fi
 
 # States
 cat > ${S_DIR}/top.sls << EOFTSLS
