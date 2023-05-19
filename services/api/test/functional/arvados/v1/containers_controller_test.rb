@@ -168,4 +168,25 @@ class Arvados::V1::ContainersControllerTest < ActionController::TestCase
     assert_response :success
     assert_not_equal 0, Container.find_by_uuid(containers(:running).uuid).priority
   end
+
+  test 'update runtime_status, runtime_status is toplevel key' do
+    authorize_with :dispatch1
+    c = containers(:running)
+    patch :update, params: {id: containers(:running).uuid, runtime_status: {activity: "foo", activityDetail: "bar"}}
+    assert_response :success
+  end
+
+  test 'update runtime_status, container is toplevel key' do
+    authorize_with :dispatch1
+    c = containers(:running)
+    patch :update, params: {id: containers(:running).uuid, container: {runtime_status: {activity: "foo", activityDetail: "bar"}}}
+    assert_response :success
+  end
+
+  test 'update state, state is toplevel key' do
+    authorize_with :dispatch1
+    c = containers(:running)
+    patch :update, params: {id: containers(:running).uuid, state: "Complete", runtime_status: {activity: "finishing"}}
+    assert_response :success
+  end
 end
