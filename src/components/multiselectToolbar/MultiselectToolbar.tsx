@@ -43,29 +43,29 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
 type MultiselectToolbarAction = {
     name: string;
     action: string;
-    relevantKinds: Array<ResourceKind>;
+    relevantKinds: Set<ResourceKind>;
 };
 
 export const defaultActions: Array<MultiselectToolbarAction> = [
     {
         name: 'copy',
         action: 'copySelected',
-        relevantKinds: [ResourceKind.COLLECTION],
+        relevantKinds: new Set([ResourceKind.COLLECTION]),
     },
     {
         name: 'move',
         action: 'moveSelected',
-        relevantKinds: [ResourceKind.COLLECTION, ResourceKind.PROCESS],
+        relevantKinds: new Set([ResourceKind.COLLECTION, ResourceKind.PROCESS]),
     },
     {
         name: 'remove',
         action: 'removeSelected',
-        relevantKinds: [ResourceKind.COLLECTION, ResourceKind.PROCESS, ResourceKind.PROJECT],
+        relevantKinds: new Set([ResourceKind.COLLECTION, ResourceKind.PROCESS, ResourceKind.PROJECT]),
     },
     {
         name: 'foo',
         action: 'barSelected',
-        relevantKinds: [ResourceKind.COLLECTION, ResourceKind.PROJECT],
+        relevantKinds: new Set([ResourceKind.COLLECTION, ResourceKind.PROJECT]),
     },
 ];
 
@@ -86,12 +86,8 @@ export const MultiselectToolbar = connect(
     withStyles(styles)((props: MultiselectToolbarProps & WithStyles<CssRules>) => {
         // console.log(props);
         const { classes, actions, isVisible, checkedList } = props;
-
-        const currentResourceKinds = selectedToArray(checkedList).map((element) => extractUuidKind(element));
-
-        const buttons = actions.filter(
-            (action) => currentResourceKinds.length && currentResourceKinds.every((kind) => action.relevantKinds.includes(kind as ResourceKind))
-        );
+        const currentResourceKinds = Array.from(new Set(selectedToArray(checkedList).map((element) => extractUuidKind(element))));
+        const buttons = actions.filter((action) => currentResourceKinds.length && currentResourceKinds.every((kind) => action.relevantKinds.has(kind as ResourceKind)));
 
         return (
             <Toolbar className={isVisible && buttons.length ? `${classes.root} ${classes.expanded}` : classes.root} style={{ width: `${buttons.length * 5.5}rem` }}>
@@ -108,16 +104,6 @@ export const MultiselectToolbar = connect(
         );
     })
 );
-
-function selectedToString(checkedList: TCheckedList) {
-    let stringifiedSelectedList: string = '';
-    for (const [key, value] of Object.entries(checkedList)) {
-        if (value === true) {
-            stringifiedSelectedList += key + ',';
-        }
-    }
-    return stringifiedSelectedList.slice(0, -1);
-}
 
 function selectedToArray<T>(checkedList: TCheckedList): Array<string> {
     const arrayifiedSelectedList: Array<string> = [];
