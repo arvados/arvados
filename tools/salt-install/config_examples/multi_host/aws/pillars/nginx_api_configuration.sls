@@ -22,7 +22,7 @@ nginx:
             - server_name: api
             - root: /var/www/arvados-api/current/public
             - index:  index.html index.htm
-            - access_log: /var/log/nginx/api.__CLUSTER__.__DOMAIN__-upstream.access.log combined
-            - error_log: /var/log/nginx/api.__CLUSTER__.__DOMAIN__-upstream.error.log
+            - access_log: /var/log/nginx/api.__DOMAIN__-upstream.access.log combined
+            - error_log: /var/log/nginx/api.__DOMAIN__-upstream.error.log
             - passenger_enabled: 'on'
             - client_max_body_size: 128m

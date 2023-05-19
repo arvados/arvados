@@ -5,14 +5,18 @@ Add the certificates for your hosts in this directory.
 
 The nodes requiring certificates are:
 
-* CLUSTER.DOMAIN
-* collections.CLUSTER.DOMAIN
-* \*.collections.CLUSTER.DOMAIN
-* download.CLUSTER.DOMAIN
-* keep.CLUSTER.DOMAIN
-* workbench.CLUSTER.DOMAIN
-* workbench2.CLUSTER.DOMAIN
-* ws.CLUSTER.DOMAIN
+* DOMAIN
+* collections.DOMAIN
+* controller.DOMAIN
+* \*.collections.DOMAIN
+* grafana.DOMAIN
+* download.DOMAIN
+* keep.DOMAIN
+* prometheus.DOMAIN
+* shell.DOMAIN
+* workbench.DOMAIN
+* workbench2.DOMAIN
+* ws.DOMAIN
 
 They can be individual certificates or a wildcard certificate for all of them.
 

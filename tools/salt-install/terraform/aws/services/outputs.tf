@@ -5,7 +5,9 @@
 output "vpc_id" {
   value = data.terraform_remote_state.vpc.outputs.arvados_vpc_id
 }
-
+output "cluster_int_cidr" {
+  value = data.aws_vpc.arvados_vpc.cidr_block
+}
 output "arvados_subnet_id" {
   value = data.terraform_remote_state.vpc.outputs.public_subnet_id
 }

@@ -24,4 +24,9 @@ locals {
     keep0 = aws_iam_instance_profile.keepstore_instance_profile
     keep1 = aws_iam_instance_profile.keepstore_instance_profile
   }
+  private_subnet_id = data.terraform_remote_state.vpc.outputs.private_subnet_id
+  public_subnet_id = data.terraform_remote_state.vpc.outputs.public_subnet_id
+  arvados_sg_id = data.terraform_remote_state.vpc.outputs.arvados_sg_id
+  eip_id = data.terraform_remote_state.vpc.outputs.eip_id
+  keepstore_iam_role_name = data.terraform_remote_state.data-storage.outputs.keepstore_iam_role_name
 }

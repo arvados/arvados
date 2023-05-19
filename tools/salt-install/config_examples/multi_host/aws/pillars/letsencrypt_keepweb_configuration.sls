@@ -6,8 +6,8 @@
 ### LETSENCRYPT
 letsencrypt:
   domainsets:
-    download.__CLUSTER__.__DOMAIN__:
-      - download.__CLUSTER__.__DOMAIN__
-    collections.__CLUSTER__.__DOMAIN__:
-      - collections.__CLUSTER__.__DOMAIN__
-      - '*.collections.__CLUSTER__.__DOMAIN__'
+    download.__DOMAIN__:
+      - download.__DOMAIN__
+    collections.__DOMAIN__:
+      - collections.__DOMAIN__
+      - '*.collections.__DOMAIN__'

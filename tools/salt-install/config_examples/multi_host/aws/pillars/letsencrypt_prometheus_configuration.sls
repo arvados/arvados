@@ -6,5 +6,5 @@
 ### LETSENCRYPT
 letsencrypt:
   domainsets:
-    prometheus.__CLUSTER__.__DOMAIN__:
-      - prometheus.__CLUSTER__.__DOMAIN__
+    prometheus.__DOMAIN__:
+      - prometheus.__DOMAIN__

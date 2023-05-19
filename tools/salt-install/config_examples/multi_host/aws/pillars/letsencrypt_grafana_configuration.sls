@@ -6,5 +6,5 @@
 ### LETSENCRYPT
 letsencrypt:
   domainsets:
-    grafana.__CLUSTER__.__DOMAIN__:
-      - grafana.__CLUSTER__.__DOMAIN__
+    grafana.__DOMAIN__:
+      - grafana.__DOMAIN__
