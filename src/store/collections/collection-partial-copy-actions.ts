@@ -197,6 +197,7 @@ export const copyCollectionPartialToSeparateCollections = ({ name, projectUuid }
                     )
                 ));
                 dispatch(updateResources(collections));
+                dispatch<any>(navigateTo(projectUuid));
 
                 dispatch(dialogActions.CLOSE_DIALOG({ id: COLLECTION_PARTIAL_COPY_TO_SEPARATE_COLLECTIONS }));
                 dispatch(snackbarActions.OPEN_SNACKBAR({

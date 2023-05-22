@@ -194,6 +194,7 @@ export const moveCollectionPartialToSeparateCollections = ({ name, projectUuid }
                     )
                 ));
                 dispatch(updateResources(collections));
+                dispatch<any>(navigateTo(projectUuid));
 
                 dispatch(dialogActions.CLOSE_DIALOG({ id: COLLECTION_PARTIAL_MOVE_TO_SEPARATE_COLLECTIONS }));
                 dispatch(snackbarActions.OPEN_SNACKBAR({
