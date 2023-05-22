@@ -36,7 +36,7 @@ export const mergeCollectionPanelFilesStates = (oldState: CollectionPanelFilesSt
     })(newState);
 };
 
-export const filterCollectionFilesBySelection = (tree: CollectionPanelFilesState, selected: boolean) => {
+export const filterCollectionFilesBySelection = (tree: CollectionPanelFilesState, selected: boolean): (CollectionPanelFile | CollectionPanelDirectory)[] => {
     const allFiles = getNodeDescendants('')(tree).map(node => node.value);
     const selectedDirectories = allFiles.filter(file => file.selected === selected && file.type === CollectionFileType.DIRECTORY);
     const selectedFiles = allFiles.filter(file => file.selected === selected && !selectedDirectories.some(dir => dir.id === file.path));
