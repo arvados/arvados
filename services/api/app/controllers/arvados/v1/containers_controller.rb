@@ -31,7 +31,7 @@ class Arvados::V1::ContainersController < ApplicationController
   end
 
   def update
-    if (resource_attrs.keys - [:cost, :gateway_address, :output_properties, :progress, :runtime_status]).empty?
+    if (resource_attrs.keys.map(&:to_sym) - [:cost, :gateway_address, :output_properties, :progress, :runtime_status]).empty?
       # If no attributes are being updated besides these, there are no
       # cascading changes to other rows/tables, the only lock will the
       # single row lock on SQL UPDATE.
