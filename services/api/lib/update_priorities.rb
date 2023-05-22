@@ -3,8 +3,20 @@
 # SPDX-License-Identifier: AGPL-3.0
 
 def row_lock_for_priority_update container_uuid
+  # Locks all the containers under this container, and also any
+  # immediate parent containers.  This ensures we have locked
+  # everything that gets touched by either a priority update or state
+  # update.
   ActiveRecord::Base.connection.exec_query %{
-        select 1 from containers where containers.uuid in (select pri_container_uuid from container_tree($1)) order by containers.uuid for update
+        select 1 from containers where containers.uuid in (
+  select pri_container_uuid from container_tree($1)
+UNION
+  select container_requests.requesting_container_uuid from container_requests
+    where container_requests.container_uuid = $1
+          and container_requests.state = 'Committed'
+          and container_requests.requesting_container_uuid is not NULL
+)
+        order by containers.uuid for update
   }, 'select_for_update_priorities', [[nil, container_uuid]]
 end
 
