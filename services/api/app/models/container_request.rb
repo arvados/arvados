@@ -412,6 +412,16 @@ class ContainerRequest < ArvadosModel
   def validate_builtin_command
     return if container_image != "arvados/builtin"
     if command.length == 3 && command[0..1] == ["docker", "pull"]
+      if new_record? && Rails.configuration.Containers.RuntimeEngine != "docker"
+        # Note this is only checked when creating a new CR --
+        # otherwise a config change could cause unrelated updates to
+        # existing CRs (including cancelling) to start failing.
+        # Although this means a client can bypass the config check by
+        # creating a CR and then changing the container_image in a
+        # separate call, it doesn't much matter: the resulting
+        # container will just fail later, in crunch-run.
+        errors.add(:command, "not available due to cluster configuration: RuntimeEngine is not docker")
+      end
       if !mounts.empty?
         errors.add(:mounts, "must be empty for builtin docker pull command")
       end
