@@ -44,7 +44,7 @@ table(table table-bordered table-condensed).
 |scheduling_parameters|hash|Parameters to be passed to the container scheduler when running this container.|e.g.,<pre><code>{
 "partitions":["fastcpu","vfastcpu"]
 }</code></pre>See "Scheduling parameters":#scheduling_parameters for more details.|
-|container_image|string|Portable data hash of a collection containing the docker image to run the container.|Required.|
+|container_image|string|Name (@repo@ or @repo:tag@) or portable data hash of a collection containing the docker image to run the container. If the image is specified by name, the image must have been stored in Arvados using @arv keep docker@ or an "image pull request":#pull_image.|Required. e.g., @arvados/jobs@, @alpine:latest@|
 |environment|hash|Environment variables and values that should be set in the container environment (@docker run --env@). This augments and (when conflicts exist) overrides environment variables given in the image's Dockerfile.||
 |cwd|string|Initial working directory, given as an absolute path (in the container) or a path relative to the WORKDIR given in the image's Dockerfile.|Required.|
 |command|array of strings|Command to execute in the container.|Required. e.g., @["echo","hello"]@|
@@ -158,6 +158,33 @@ h2(#cancel_container). Canceling a container request
 A container request may be canceled by setting its priority to 0, using an update call.
 
 When a container request is canceled, it will still reflect the state of the Container it is associated with via the container_uuid attribute. If that Container is being reused by any other container_requests that are still active, i.e., not yet canceled, that Container may continue to run or be scheduled to run by the system in future. However, if no other container_requests are using that Container, then the Container will get canceled as well.
+
+h2(#pull_image). Pulling a docker image
+
+To download an existing Docker image from Docker Hub to Arvados, submit a container request with a @docker pull@ command, using the special container image name @arvados/builtin@:
+
+<pre>
+{
+  "container_image": "arvados/builtin",
+  "command": ["docker", "pull", "alpine:latest"],
+  "mounts": {},
+  "output_path": "/",
+  "runtime_constraints": {
+    "API": true
+  },
+  ...
+}
+</pre>
+
+The downloaded image can then be used as a container_image in subsequent container requests.
+
+<pre>
+{
+  "container_image": "alpine:latest",
+  "command": ["echo", "ok"],
+  ...
+}
+</pre>
 
 h2. Methods
 
