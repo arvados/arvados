@@ -22,9 +22,10 @@ nginx:
   passenger:
     passenger_ruby: {{ passenger_ruby }}
     passenger_max_pool_size: {{ "__CONTROLLER_NGINX_WORKERS__" or grains['num_cpus'] }}
-    {%- if "__CONTROLLER_MAX_CONCURRENT_REQUESTS__" != "" %}
+    {%- set max_reqs = "__CONTROLLER_MAX_CONCURRENT_REQUESTS__" %}
+    {%- if max_reqs != "" and max_reqs is number %}
     # Default is 100
-    passenger_max_request_queue_size: __CONTROLLER_MAX_CONCURRENT_REQUESTS__
+    passenger_max_request_queue_size: {{ max_reqs + 5 }}
     {%- endif %}
 
   ### SERVER

@@ -108,9 +108,10 @@ arvados:
             Password: __INITIAL_USER_PASSWORD__
 
     ### API
-    {%- if "__CONTROLLER_MAX_CONCURRENT_REQUESTS__" != "" %}
+    {%- set max_reqs = "__CONTROLLER_MAX_CONCURRENT_REQUESTS__" %}
+    {%- if max_reqs != "" and max_reqs is number %}
     API:
-      MaxConcurrentRequests: __CONTROLLER_MAX_CONCURRENT_REQUESTS__
+      MaxConcurrentRequests: max_reqs
     {%- endif %}
 
     ### CONTAINERS
