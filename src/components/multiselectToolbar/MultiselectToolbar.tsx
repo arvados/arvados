@@ -86,7 +86,8 @@ export const MultiselectToolbar = connect(
     withStyles(styles)((props: MultiselectToolbarProps & WithStyles<CssRules>) => {
         // console.log(props);
         const { classes, actions, isVisible, checkedList } = props;
-        const currentResourceKinds = Array.from(new Set(selectedToArray(checkedList).map((element) => extractUuidKind(element))));
+
+        const currentResourceKinds = Array.from(selectedToKindSet(checkedList));
         const buttons = actions.filter((action) => currentResourceKinds.length && currentResourceKinds.every((kind) => action.relevantKinds.has(kind as ResourceKind)));
 
         return (
@@ -105,7 +106,7 @@ export const MultiselectToolbar = connect(
     })
 );
 
-function selectedToArray<T>(checkedList: TCheckedList): Array<string> {
+function selectedToArray(checkedList: TCheckedList): Array<string> {
     const arrayifiedSelectedList: Array<string> = [];
     for (const [key, value] of Object.entries(checkedList)) {
         if (value === true) {
@@ -113,6 +114,16 @@ function selectedToArray<T>(checkedList: TCheckedList): Array<string> {
         }
     }
     return arrayifiedSelectedList;
+}
+
+function selectedToKindSet(checkedList: TCheckedList): Set<string> {
+    const setifiedList = new Set<string>();
+    for (const [key, value] of Object.entries(checkedList)) {
+        if (value === true) {
+            setifiedList.add(extractUuidKind(key) as string);
+        }
+    }
+    return setifiedList;
 }
 
 function mapStateToProps(state: RootState) {
@@ -133,6 +144,6 @@ function mapDispatchToProps(dispatch: Dispatch) {
 }
 
 function removeMulti(dispatch: Dispatch, checkedList: TCheckedList): void {
-    const list: Array<string> = selectedToArray(checkedList);
-    dispatch<any>(list.length === 1 ? openRemoveProcessDialog(list[0]) : openRemoveManyProcessesDialog(list));
+    const selectedList: Array<string> = selectedToArray(checkedList);
+    dispatch<any>(selectedList.length === 1 ? openRemoveProcessDialog(selectedList[0]) : openRemoveManyProcessesDialog(selectedList));
 }

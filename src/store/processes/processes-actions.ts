@@ -302,7 +302,7 @@ export const openRemoveManyProcessesDialog = (list: Array<string>) => (dispatch:
             id: REMOVE_MANY_PROCESSES_DIALOG,
             data: {
                 title: 'Remove processes permanently',
-                text: `Are you sure you want to remove all ${list.length} processes?`,
+                text: `Are you sure you want to remove these ${list.length} processes?`,
                 confirmButtonLabel: 'Remove',
                 list,
             },
