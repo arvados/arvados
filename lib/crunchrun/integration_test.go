@@ -107,8 +107,6 @@ func (s *integrationSuite) SetUpTest(c *C) {
 	s.engine = "docker"
 	s.args = nil
 	s.stdin = bytes.Buffer{}
-	s.stdout = bytes.Buffer{}
-	s.stderr = bytes.Buffer{}
 	s.logCollection = arvados.Collection{}
 	s.outputCollection = arvados.Collection{}
 	s.logFiles = map[string]string{}
@@ -144,6 +142,8 @@ func (s *integrationSuite) SetUpTest(c *C) {
 }
 
 func (s *integrationSuite) setup(c *C) {
+	s.stdout = bytes.Buffer{}
+	s.stderr = bytes.Buffer{}
 	err := s.client.RequestAndDecode(&s.cr, "POST", "arvados/v1/container_requests", nil, map[string]interface{}{"container_request": map[string]interface{}{
 		"priority":            s.cr.Priority,
 		"state":               s.cr.State,
