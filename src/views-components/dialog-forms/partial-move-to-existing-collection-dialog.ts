@@ -13,8 +13,8 @@ export const PartialMoveToExistingCollectionDialog = compose(
     withDialog(COLLECTION_PARTIAL_MOVE_TO_SELECTED_COLLECTION),
     reduxForm<CollectionPartialMoveToExistingCollectionFormData>({
         form: COLLECTION_PARTIAL_MOVE_TO_SELECTED_COLLECTION,
-        onSubmit: (data, dispatch) => {
-            dispatch(moveCollectionPartialToExistingCollection(data));
+        onSubmit: (data, dispatch, dialog) => {
+            dispatch(moveCollectionPartialToExistingCollection(dialog.data, data));
         }
     }),
     pickerId(COLLECTION_PARTIAL_MOVE_TO_SELECTED_COLLECTION),

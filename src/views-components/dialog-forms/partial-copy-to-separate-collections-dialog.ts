@@ -13,8 +13,8 @@ export const PartialCopyToSeparateCollectionsDialog = compose(
     withDialog(COLLECTION_PARTIAL_COPY_TO_SEPARATE_COLLECTIONS),
     reduxForm<CollectionPartialCopyToSeparateCollectionsFormData>({
         form: COLLECTION_PARTIAL_COPY_TO_SEPARATE_COLLECTIONS,
-        onSubmit: (data, dispatch) => {
-            dispatch(copyCollectionPartialToSeparateCollections(data));
+        onSubmit: (data, dispatch, dialog) => {
+            dispatch(copyCollectionPartialToSeparateCollections(dialog.data, data));
         }
     }),
     pickerId(COLLECTION_PARTIAL_COPY_TO_SEPARATE_COLLECTIONS),

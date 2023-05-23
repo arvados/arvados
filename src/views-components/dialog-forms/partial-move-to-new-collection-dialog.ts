@@ -13,8 +13,8 @@ export const PartialMoveToNewCollectionDialog = compose(
     withDialog(COLLECTION_PARTIAL_MOVE_TO_NEW_COLLECTION),
     reduxForm<CollectionPartialMoveToNewCollectionFormData>({
         form: COLLECTION_PARTIAL_MOVE_TO_NEW_COLLECTION,
-        onSubmit: (data, dispatch) => {
-            dispatch(moveCollectionPartialToNewCollection(data));
+        onSubmit: (data, dispatch, dialog) => {
+            dispatch(moveCollectionPartialToNewCollection(dialog.data, data));
         }
     }),
     pickerId(COLLECTION_PARTIAL_MOVE_TO_NEW_COLLECTION),

@@ -6,7 +6,8 @@ import { Dispatch } from "redux";
 import { initialize, startSubmit } from "redux-form";
 import { CommonResourceServiceError, getCommonResourceServiceError } from "services/common-service/common-resource-service";
 import { ServiceRepository } from "services/services";
-import { filterCollectionFilesBySelection } from "store/collection-panel/collection-panel-files/collection-panel-files-state";
+import { CollectionFileSelection, CollectionPanelDirectory, CollectionPanelFile, filterCollectionFilesBySelection, getCollectionSelection } from "store/collection-panel/collection-panel-files/collection-panel-files-state";
+import { ContextMenuResource } from "store/context-menu/context-menu-actions";
 import { dialogActions } from "store/dialog/dialog-actions";
 import { navigateTo } from "store/navigation/navigation-action";
 import { progressIndicatorActions } from "store/progress-indicator/progress-indicator-actions";
@@ -15,6 +16,7 @@ import { updateResources } from "store/resources/resources-actions";
 import { SnackbarKind, snackbarActions } from "store/snackbar/snackbar-actions";
 import { RootState } from "store/store";
 import { FileOperationLocation } from "store/tree-picker/tree-picker-actions";
+import { CollectionResource } from "models/collection";
 
 export const COLLECTION_PARTIAL_MOVE_TO_NEW_COLLECTION = 'COLLECTION_PARTIAL_MOVE_TO_NEW_DIALOG';
 export const COLLECTION_PARTIAL_MOVE_TO_SELECTED_COLLECTION = 'COLLECTION_PARTIAL_MOVE_TO_SELECTED_DIALOG';
@@ -35,45 +37,55 @@ export interface CollectionPartialMoveToSeparateCollectionsFormData {
     projectUuid: string;
 }
 
-export const openCollectionPartialMoveToNewCollectionDialog = () =>
+export const openCollectionPartialMoveToNewCollectionDialog = (resource: ContextMenuResource) =>
     (dispatch: Dispatch, getState: () => RootState) => {
-        const currentCollection = getState().collectionPanel.item;
-        if (currentCollection) {
-            const initialData = {
-                name: `Files moved from: ${currentCollection.name}`,
-                description: currentCollection.description,
-                projectUuid: undefined
-            };
-            dispatch(initialize(COLLECTION_PARTIAL_MOVE_TO_NEW_COLLECTION, initialData));
-            dispatch<any>(resetPickerProjectTree());
-            dispatch(dialogActions.OPEN_DIALOG({ id: COLLECTION_PARTIAL_MOVE_TO_NEW_COLLECTION, data: {} }));
+        const sourceCollection = getState().collectionPanel.item;
+
+        if (sourceCollection) {
+            openMoveToNewDialog(dispatch, sourceCollection, [resource]);
         }
     };
 
-export const moveCollectionPartialToNewCollection = ({ name, description, projectUuid }: CollectionPartialMoveToNewCollectionFormData) =>
-    async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
-        const state = getState();
-        // Get current collection
-        const sourceCollection = state.collectionPanel.item;
+export const openCollectionPartialMoveMultipleToNewCollectionDialog = () =>
+    (dispatch: Dispatch, getState: () => RootState) => {
+        const sourceCollection = getState().collectionPanel.item;
+        const selectedItems = filterCollectionFilesBySelection(getState().collectionPanelFiles, true);
 
-        if (sourceCollection) {
+        if (sourceCollection && selectedItems.length) {
+            openMoveToNewDialog(dispatch, sourceCollection, selectedItems);
+        }
+    };
+
+const openMoveToNewDialog = (dispatch: Dispatch, sourceCollection: CollectionResource, selectedItems: (CollectionPanelDirectory | CollectionPanelFile | ContextMenuResource)[]) => {
+    // Get selected files
+    const collectionFileSelection = getCollectionSelection(sourceCollection, selectedItems);
+    // Populate form initial state
+    const initialFormData = {
+        name: `Files moved from: ${sourceCollection.name}`,
+        description: sourceCollection.description,
+        projectUuid: undefined
+    };
+    dispatch(initialize(COLLECTION_PARTIAL_MOVE_TO_NEW_COLLECTION, initialFormData));
+    dispatch<any>(resetPickerProjectTree());
+    dispatch(dialogActions.OPEN_DIALOG({ id: COLLECTION_PARTIAL_MOVE_TO_NEW_COLLECTION, data: collectionFileSelection }));
+}
+
+export const moveCollectionPartialToNewCollection = (fileSelection: CollectionFileSelection, formData: CollectionPartialMoveToNewCollectionFormData) =>
+    async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
+        if (fileSelection.collection) {
             try {
                 dispatch(startSubmit(COLLECTION_PARTIAL_MOVE_TO_NEW_COLLECTION));
                 dispatch(progressIndicatorActions.START_WORKING(COLLECTION_PARTIAL_MOVE_TO_NEW_COLLECTION));
 
-                // Get selected files
-                const paths = filterCollectionFilesBySelection(state.collectionPanelFiles, true)
-                    .map(file => file.id.replace(new RegExp(`(^${sourceCollection.uuid})`), ''));
-
                 // Move files
                 const updatedCollection = await services.collectionService.moveFiles(
-                    sourceCollection.uuid,
-                    sourceCollection.portableDataHash,
-                    paths,
+                    fileSelection.collection.uuid,
+                    fileSelection.collection.portableDataHash,
+                    fileSelection.selectedPaths,
                     {
-                        name,
-                        description,
-                        ownerUuid: projectUuid,
+                        name: formData.name,
+                        description: formData.description,
+                        ownerUuid: formData.projectUuid,
                         uuid: undefined,
                     },
                     '/',
@@ -100,35 +112,52 @@ export const moveCollectionPartialToNewCollection = ({ name, description, projec
         }
     };
 
-export const openCollectionPartialMoveToExistingCollectionDialog = () =>
+export const openCollectionPartialMoveToExistingCollectionDialog = (resource: ContextMenuResource) =>
     (dispatch: Dispatch, getState: () => RootState) => {
-        const currentCollection = getState().collectionPanel.item;
-        if (currentCollection) {
-            const initialData = {
-                destination: {uuid: currentCollection.uuid, path: ''}
-            };
-            dispatch(initialize(COLLECTION_PARTIAL_MOVE_TO_SELECTED_COLLECTION, initialData));
-            dispatch<any>(resetPickerProjectTree());
-            dispatch(dialogActions.OPEN_DIALOG({ id: COLLECTION_PARTIAL_MOVE_TO_SELECTED_COLLECTION, data: {} }));
+        const sourceCollection = getState().collectionPanel.item;
+
+        if (sourceCollection) {
+            openMoveToExistingDialog(dispatch, sourceCollection, [resource]);
         }
     };
 
-export const moveCollectionPartialToExistingCollection = ({ destination }: CollectionPartialMoveToExistingCollectionFormData) =>
-    async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
-        const state = getState();
-        // Get current collection
-        const sourceCollection = state.collectionPanel.item;
+export const openCollectionPartialMoveMultipleToExistingCollectionDialog = () =>
+    (dispatch: Dispatch, getState: () => RootState) => {
+        const sourceCollection = getState().collectionPanel.item;
+        const selectedItems = filterCollectionFilesBySelection(getState().collectionPanelFiles, true);
 
-        if (sourceCollection && destination && destination.uuid) {
+        if (sourceCollection && selectedItems.length) {
+            openMoveToExistingDialog(dispatch, sourceCollection, selectedItems);
+        }
+    };
+
+const openMoveToExistingDialog = (dispatch: Dispatch, sourceCollection: CollectionResource, selectedItems: (CollectionPanelDirectory | CollectionPanelFile | ContextMenuResource)[]) => {
+    // Get selected files
+    const collectionFileSelection = getCollectionSelection(sourceCollection, selectedItems);
+    // Populate form initial state
+    const initialFormData = {
+        destination: {uuid: sourceCollection.uuid, path: ''}
+    };
+    dispatch(initialize(COLLECTION_PARTIAL_MOVE_TO_SELECTED_COLLECTION, initialFormData));
+    dispatch<any>(resetPickerProjectTree());
+    dispatch(dialogActions.OPEN_DIALOG({ id: COLLECTION_PARTIAL_MOVE_TO_SELECTED_COLLECTION, data: collectionFileSelection }));
+}
+
+export const moveCollectionPartialToExistingCollection = (fileSelection: CollectionFileSelection, formData: CollectionPartialMoveToExistingCollectionFormData) =>
+    async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
+        if (fileSelection.collection && formData.destination && formData.destination.uuid) {
             try {
                 dispatch(startSubmit(COLLECTION_PARTIAL_MOVE_TO_SELECTED_COLLECTION));
                 dispatch(progressIndicatorActions.START_WORKING(COLLECTION_PARTIAL_MOVE_TO_SELECTED_COLLECTION));
-                // Get selected files
-                const paths = filterCollectionFilesBySelection(state.collectionPanelFiles, true)
-                    .map(file => file.id.replace(new RegExp(`(^${sourceCollection.uuid})`), ''));
 
                 // Move files
-                const updatedCollection = await services.collectionService.moveFiles(sourceCollection.uuid, sourceCollection.portableDataHash, paths, {uuid: destination.uuid}, destination.path || '/', false);
+                const updatedCollection = await services.collectionService.moveFiles(
+                    fileSelection.collection.uuid,
+                    fileSelection.collection.portableDataHash,
+                    fileSelection.selectedPaths,
+                    {uuid: formData.destination.uuid},
+                    formData.destination.path || '/', false
+                );
                 dispatch(updateResources([updatedCollection]));
 
                 dispatch(dialogActions.CLOSE_DIALOG({ id: COLLECTION_PARTIAL_MOVE_TO_SELECTED_COLLECTION }));
@@ -151,42 +180,39 @@ export const moveCollectionPartialToExistingCollection = ({ destination }: Colle
 
 export const openCollectionPartialMoveToSeparateCollectionsDialog = () =>
     (dispatch: Dispatch, getState: () => RootState) => {
-        const currentCollection = getState().collectionPanel.item;
-        if (currentCollection) {
+        const sourceCollection = getState().collectionPanel.item;
+        const selectedItems = filterCollectionFilesBySelection(getState().collectionPanelFiles, true);
+
+        if (sourceCollection && selectedItems.length) {
+            // Get selected files
+            const collectionFileSelection = getCollectionSelection(sourceCollection, selectedItems);
+            // Populate form initial state
             const initialData = {
-                name: currentCollection.name,
+                name: sourceCollection.name,
                 projectUuid: undefined
             };
             dispatch(initialize(COLLECTION_PARTIAL_MOVE_TO_SEPARATE_COLLECTIONS, initialData));
             dispatch<any>(resetPickerProjectTree());
-            dispatch(dialogActions.OPEN_DIALOG({ id: COLLECTION_PARTIAL_MOVE_TO_SEPARATE_COLLECTIONS, data: {} }));
+            dispatch(dialogActions.OPEN_DIALOG({ id: COLLECTION_PARTIAL_MOVE_TO_SEPARATE_COLLECTIONS, data: collectionFileSelection }));
         }
     };
 
-export const moveCollectionPartialToSeparateCollections = ({ name, projectUuid }: CollectionPartialMoveToSeparateCollectionsFormData) =>
+export const moveCollectionPartialToSeparateCollections = (fileSelection: CollectionFileSelection, formData: CollectionPartialMoveToSeparateCollectionsFormData) =>
     async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
-        const state = getState();
-        // Get current collection
-        const sourceCollection = state.collectionPanel.item;
-
-        if (sourceCollection) {
+        if (fileSelection.collection) {
             try {
                 dispatch(startSubmit(COLLECTION_PARTIAL_MOVE_TO_SEPARATE_COLLECTIONS));
                 dispatch(progressIndicatorActions.START_WORKING(COLLECTION_PARTIAL_MOVE_TO_SEPARATE_COLLECTIONS));
 
-                // Get selected files
-                const paths = filterCollectionFilesBySelection(state.collectionPanelFiles, true)
-                    .map(file => file.id.replace(new RegExp(`(^${sourceCollection.uuid})`), ''));
-
                 // Move files
-                const collections = await Promise.all(paths.map((path) =>
+                const collections = await Promise.all(fileSelection.selectedPaths.map((path) =>
                     services.collectionService.moveFiles(
-                        sourceCollection.uuid,
-                        sourceCollection.portableDataHash,
+                        fileSelection.collection.uuid,
+                        fileSelection.collection.portableDataHash,
                         [path],
                         {
-                            name: `File moved from collection ${name}${path}`,
-                            ownerUuid: projectUuid,
+                            name: `File moved from collection ${formData.name}${path}`,
+                            ownerUuid: formData.projectUuid,
                             uuid: undefined,
                         },
                         '/',
@@ -194,7 +220,7 @@ export const moveCollectionPartialToSeparateCollections = ({ name, projectUuid }
                     )
                 ));
                 dispatch(updateResources(collections));
-                dispatch<any>(navigateTo(projectUuid));
+                dispatch<any>(navigateTo(formData.projectUuid));
 
                 dispatch(dialogActions.CLOSE_DIALOG({ id: COLLECTION_PARTIAL_MOVE_TO_SEPARATE_COLLECTIONS }));
                 dispatch(snackbarActions.OPEN_SNACKBAR({

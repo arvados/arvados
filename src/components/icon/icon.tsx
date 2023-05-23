@@ -18,6 +18,7 @@ import ImportContacts from '@material-ui/icons/ImportContacts';
 import ChevronRight from '@material-ui/icons/ChevronRight';
 import Close from '@material-ui/icons/Close';
 import ContentCopy from '@material-ui/icons/FileCopyOutlined';
+import FileCopy from '@material-ui/icons/FileCopy';
 import CreateNewFolder from '@material-ui/icons/CreateNewFolder';
 import Delete from '@material-ui/icons/Delete';
 import DeviceHub from '@material-ui/icons/DeviceHub';
@@ -135,8 +136,15 @@ export const OutputIcon: IconType = (props: any) =>
         <path d="M14,14H10V11H8L12,7L16,11H14V14M16,11M5,15V5H19V15H15A3,3 0 0,1 12,18A3,3 0 0,1 9,15H5M19,3H5C3.89,3 3,3.9 3,5V19A2,2 0 0,0 5,21H19A2,2 0 0,0 21,19V5A2,2 0 0,0 19,3" />
     </SvgIcon>;
 
+// https://pictogrammers.com/library/mdi/icon/file-move/
+export const FileMoveIcon: IconType = (props: any) =>
+    <SvgIcon {...props}>
+        <path d="M14,17H18V14L23,18.5L18,23V20H14V17M13,9H18.5L13,3.5V9M6,2H14L20,8V12.34C19.37,12.12 18.7,12 18,12A6,6 0 0,0 12,18C12,19.54 12.58,20.94 13.53,22H6C4.89,22 4,21.1 4,20V4A2,2 0 0,1 6,2Z" />
+    </SvgIcon>;
+
 export type IconType = React.SFC<{ className?: string, style?: object }>;
 
+// https://v4.mui.com/components/material-icons/
 export const AddIcon: IconType = (props) => <Add {...props} />;
 export const AddFavoriteIcon: IconType = (props) => <StarBorder {...props} />;
 export const AdminMenuIcon: IconType = (props) => <Build {...props} />;
@@ -146,6 +154,7 @@ export const BackIcon: IconType = (props) => <ArrowBack {...props} />;
 export const CustomizeTableIcon: IconType = (props) => <Menu {...props} />;
 export const CommandIcon: IconType = (props) => <LastPage {...props} />;
 export const CopyIcon: IconType = (props) => <ContentCopy {...props} />;
+export const FileCopyIcon: IconType = (props) => <FileCopy {...props} />;
 export const CollectionIcon: IconType = (props) => <LibraryBooks {...props} />;
 export const CloseIcon: IconType = (props) => <Close {...props} />;
 export const CloudUploadIcon: IconType = (props) => <CloudUpload {...props} />;

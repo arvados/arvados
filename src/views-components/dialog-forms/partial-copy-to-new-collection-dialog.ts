@@ -13,8 +13,9 @@ export const PartialCopyToNewCollectionDialog = compose(
     withDialog(COLLECTION_PARTIAL_COPY_FORM_NAME),
     reduxForm<CollectionPartialCopyToNewCollectionFormData>({
         form: COLLECTION_PARTIAL_COPY_FORM_NAME,
-        onSubmit: (data, dispatch) => {
-            dispatch(copyCollectionPartialToNewCollection(data));
+        onSubmit: (data, dispatch, dialog) => {
+            console.log(dialog.data);
+            dispatch(copyCollectionPartialToNewCollection(dialog.data, data));
         }
     }),
     pickerId(COLLECTION_PARTIAL_COPY_FORM_NAME),

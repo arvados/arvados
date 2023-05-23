@@ -4,6 +4,8 @@
 
 import { Tree, TreeNode, mapTreeValues, getNodeValue, getNodeDescendants } from 'models/tree';
 import { CollectionFile, CollectionDirectory, CollectionFileType } from 'models/collection-file';
+import { ContextMenuResource } from 'store/context-menu/context-menu-actions';
+import { CollectionResource } from 'models/collection';
 
 export type CollectionPanelFilesState = Tree<CollectionPanelDirectory | CollectionPanelFile>;
 
@@ -14,6 +16,11 @@ export interface CollectionPanelDirectory extends CollectionDirectory {
 
 export interface CollectionPanelFile extends CollectionFile {
     selected: boolean;
+}
+
+export interface CollectionFileSelection {
+    collection: CollectionResource;
+    selectedPaths: string[];
 }
 
 export const mapCollectionFileToCollectionPanelFile = (node: TreeNode<CollectionDirectory | CollectionFile>): TreeNode<CollectionPanelDirectory | CollectionPanelFile> => {
@@ -45,3 +52,12 @@ export const filterCollectionFilesBySelection = (tree: CollectionPanelFilesState
             array.indexOf(value) === index
         ));
 };
+
+export const getCollectionSelection = (sourceCollection: CollectionResource, selectedItems: (CollectionPanelDirectory | CollectionPanelFile | ContextMenuResource)[]) => ({
+    collection: sourceCollection,
+    selectedPaths: selectedItems.map(itemsToPaths).map(trimPathUuids(sourceCollection.uuid)),
+})
+
+const itemsToPaths = (item: (CollectionPanelDirectory | CollectionPanelFile | ContextMenuResource)): string => ('uuid' in item) ? item.uuid : item.id;
+
+const trimPathUuids = (parentCollectionUuid: string) => (path: string) => path.replace(new RegExp(`(^${parentCollectionUuid})`), '');

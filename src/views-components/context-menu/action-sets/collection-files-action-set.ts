@@ -5,23 +5,23 @@
 import { ContextMenuAction, ContextMenuActionSet } from "views-components/context-menu/context-menu-action-set";
 import { collectionPanelFilesAction, openMultipleFilesRemoveDialog } from "store/collection-panel/collection-panel-files/collection-panel-files-actions";
 import {
-    openCollectionPartialCopyToNewCollectionDialog,
-    openCollectionPartialCopyToExistingCollectionDialog,
+    openCollectionPartialCopyMultipleToNewCollectionDialog,
+    openCollectionPartialCopyMultipleToExistingCollectionDialog,
     openCollectionPartialCopyToSeparateCollectionsDialog
 } from 'store/collections/collection-partial-copy-actions';
-import { openCollectionPartialMoveToExistingCollectionDialog, openCollectionPartialMoveToNewCollectionDialog, openCollectionPartialMoveToSeparateCollectionsDialog } from "store/collections/collection-partial-move-actions";
+import { openCollectionPartialMoveMultipleToExistingCollectionDialog, openCollectionPartialMoveMultipleToNewCollectionDialog, openCollectionPartialMoveToSeparateCollectionsDialog } from "store/collections/collection-partial-move-actions";
 
 const copyActions: ContextMenuAction[] = [
     {
         name: "Copy selected into new collection",
         execute: dispatch => {
-            dispatch<any>(openCollectionPartialCopyToNewCollectionDialog());
+            dispatch<any>(openCollectionPartialCopyMultipleToNewCollectionDialog());
         }
     },
     {
         name: "Copy selected into existing collection",
         execute: dispatch => {
-            dispatch<any>(openCollectionPartialCopyToExistingCollectionDialog());
+            dispatch<any>(openCollectionPartialCopyMultipleToExistingCollectionDialog());
         }
     },
 ];
@@ -40,13 +40,13 @@ const moveActions: ContextMenuAction[] = [
     {
         name: "Move selected into new collection",
         execute: dispatch => {
-            dispatch<any>(openCollectionPartialMoveToNewCollectionDialog());
+            dispatch<any>(openCollectionPartialMoveMultipleToNewCollectionDialog());
         }
     },
     {
         name: "Move selected into existing collection",
         execute: dispatch => {
-            dispatch<any>(openCollectionPartialMoveToExistingCollectionDialog());
+            dispatch<any>(openCollectionPartialMoveMultipleToExistingCollectionDialog());
         }
     },
 ];

@@ -13,8 +13,8 @@ export const PartialMoveToSeparateCollectionsDialog = compose(
     withDialog(COLLECTION_PARTIAL_MOVE_TO_SEPARATE_COLLECTIONS),
     reduxForm<CollectionPartialMoveToSeparateCollectionsFormData>({
         form: COLLECTION_PARTIAL_MOVE_TO_SEPARATE_COLLECTIONS,
-        onSubmit: (data, dispatch) => {
-            dispatch(moveCollectionPartialToSeparateCollections(data));
+        onSubmit: (data, dispatch, dialog) => {
+            dispatch(moveCollectionPartialToSeparateCollections(dialog.data, data));
         }
     }),
     pickerId(COLLECTION_PARTIAL_MOVE_TO_SEPARATE_COLLECTIONS),
