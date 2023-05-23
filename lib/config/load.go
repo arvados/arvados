@@ -26,6 +26,7 @@ import (
 	"github.com/imdario/mergo"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/sirupsen/logrus"
+	"golang.org/x/crypto/ssh"
 	"golang.org/x/sys/unix"
 )
 
@@ -689,4 +690,18 @@ func (ldr *Loader) RegisterMetrics(reg *prometheus.Registry) {
 	}, []string{"sha256"})
 	vec.WithLabelValues(hash).Set(float64(ldr.loadTimestamp.UnixNano()) / 1e9)
 	reg.MustRegister(vec)
+}
+
+// Load an SSH private key from the given confvalue, which is either
+// the literal key or an absolute path to a file containing the key.
+func LoadSSHKey(confvalue string) (ssh.Signer, error) {
+	if fnm := strings.TrimPrefix(confvalue, "file://"); fnm != confvalue && strings.HasPrefix(fnm, "/") {
+		keydata, err := os.ReadFile(fnm)
+		if err != nil {
+			return nil, err
+		}
+		return ssh.ParsePrivateKey(keydata)
+	} else {
+		return ssh.ParsePrivateKey([]byte(confvalue))
+	}
 }
