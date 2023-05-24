@@ -103,7 +103,7 @@ export const copyCollectionPartialToNewCollection = (fileSelection: CollectionFi
             } catch (e) {
                 const error = getCommonResourceServiceError(e);
                 if (error === CommonResourceServiceError.UNIQUE_NAME_VIOLATION) {
-                    dispatch(stopSubmit(COLLECTION_PARTIAL_COPY_FORM_NAME, { name: 'Collection with this name already exists.' } as FormErrors));
+                    dispatch(snackbarActions.OPEN_SNACKBAR({ message: 'Collection with this name already exists', hideDuration: 2000, kind: SnackbarKind.ERROR }));
                 } else if (error === CommonResourceServiceError.UNKNOWN) {
                     dispatch(dialogActions.CLOSE_DIALOG({ id: COLLECTION_PARTIAL_COPY_FORM_NAME }));
                     dispatch(snackbarActions.OPEN_SNACKBAR({ message: 'Could not create a copy of collection', hideDuration: 2000, kind: SnackbarKind.ERROR }));
@@ -111,6 +111,7 @@ export const copyCollectionPartialToNewCollection = (fileSelection: CollectionFi
                     dispatch(dialogActions.CLOSE_DIALOG({ id: COLLECTION_PARTIAL_COPY_FORM_NAME }));
                     dispatch(snackbarActions.OPEN_SNACKBAR({ message: 'Collection has been copied but may contain incorrect files.', hideDuration: 2000, kind: SnackbarKind.ERROR }));
                 }
+                dispatch(stopSubmit(COLLECTION_PARTIAL_COPY_FORM_NAME));
                 dispatch(progressIndicatorActions.STOP_WORKING(COLLECTION_PARTIAL_COPY_FORM_NAME));
             }
         }
@@ -171,6 +172,7 @@ export const copyCollectionPartialToExistingCollection = (fileSelection: Collect
                     dispatch(dialogActions.CLOSE_DIALOG({ id: COLLECTION_PARTIAL_COPY_TO_SELECTED_COLLECTION }));
                     dispatch(snackbarActions.OPEN_SNACKBAR({ message: 'Could not copy this files to selected collection', hideDuration: 2000, kind: SnackbarKind.ERROR }));
                 }
+                dispatch(stopSubmit(COLLECTION_PARTIAL_COPY_TO_SELECTED_COLLECTION));
                 dispatch(progressIndicatorActions.STOP_WORKING(COLLECTION_PARTIAL_COPY_TO_SELECTED_COLLECTION));
             }
         }
@@ -238,6 +240,7 @@ export const copyCollectionPartialToSeparateCollections = (fileSelection: Collec
                     dispatch(dialogActions.CLOSE_DIALOG({ id: COLLECTION_PARTIAL_COPY_TO_SEPARATE_COLLECTIONS }));
                     dispatch(snackbarActions.OPEN_SNACKBAR({ message: 'Collection has been copied but may contain incorrect files.', hideDuration: 2000, kind: SnackbarKind.ERROR }));
                 }
+                dispatch(stopSubmit(COLLECTION_PARTIAL_COPY_TO_SEPARATE_COLLECTIONS));
                 dispatch(progressIndicatorActions.STOP_WORKING(COLLECTION_PARTIAL_COPY_TO_SEPARATE_COLLECTIONS));
             }
         }

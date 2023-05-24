@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import { Dispatch } from "redux";
-import { initialize, startSubmit } from "redux-form";
+import { initialize, startSubmit, stopSubmit } from "redux-form";
 import { CommonResourceServiceError, getCommonResourceServiceError } from "services/common-service/common-resource-service";
 import { ServiceRepository } from "services/services";
 import { CollectionFileSelection, CollectionPanelDirectory, CollectionPanelFile, filterCollectionFilesBySelection, getCollectionSelection } from "store/collection-panel/collection-panel-files/collection-panel-files-state";
@@ -107,6 +107,7 @@ export const moveCollectionPartialToNewCollection = (fileSelection: CollectionFi
                     dispatch(dialogActions.CLOSE_DIALOG({ id: COLLECTION_PARTIAL_MOVE_TO_NEW_COLLECTION }));
                     dispatch(snackbarActions.OPEN_SNACKBAR({ message: 'Could not move files to selected collection', hideDuration: 2000, kind: SnackbarKind.ERROR }));
                 }
+                dispatch(stopSubmit(COLLECTION_PARTIAL_MOVE_TO_NEW_COLLECTION));
                 dispatch(progressIndicatorActions.STOP_WORKING(COLLECTION_PARTIAL_MOVE_TO_NEW_COLLECTION));
             }
         }
@@ -173,6 +174,7 @@ export const moveCollectionPartialToExistingCollection = (fileSelection: Collect
                     dispatch(dialogActions.CLOSE_DIALOG({ id: COLLECTION_PARTIAL_MOVE_TO_SELECTED_COLLECTION }));
                     dispatch(snackbarActions.OPEN_SNACKBAR({ message: 'Could not copy this files to selected collection', hideDuration: 2000, kind: SnackbarKind.ERROR }));
                 }
+                dispatch(stopSubmit(COLLECTION_PARTIAL_MOVE_TO_SELECTED_COLLECTION));
                 dispatch(progressIndicatorActions.STOP_WORKING(COLLECTION_PARTIAL_MOVE_TO_SELECTED_COLLECTION));
             }
         }
@@ -240,6 +242,7 @@ export const moveCollectionPartialToSeparateCollections = (fileSelection: Collec
                     dispatch(dialogActions.CLOSE_DIALOG({ id: COLLECTION_PARTIAL_MOVE_TO_SEPARATE_COLLECTIONS }));
                     dispatch(snackbarActions.OPEN_SNACKBAR({ message: 'Collection has been copied but may contain incorrect files.', hideDuration: 2000, kind: SnackbarKind.ERROR }));
                 }
+                dispatch(stopSubmit(COLLECTION_PARTIAL_MOVE_TO_SEPARATE_COLLECTIONS));
                 dispatch(progressIndicatorActions.STOP_WORKING(COLLECTION_PARTIAL_MOVE_TO_SEPARATE_COLLECTIONS));
             }
         }
