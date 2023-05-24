@@ -186,7 +186,6 @@ export const DataExplorer = withStyles(styles)(
                 panelName,
                 panelMaximized,
                 elementPath,
-                isMSToolbarVisible,
                 toggleMSToolbar,
                 setCheckedListOnStore,
             } = this.props;
@@ -231,7 +230,6 @@ export const DataExplorer = withStyles(styles)(
                                             </Tooltip>
                                         )}
                                     </Toolbar>
-                                    {/* {isMSToolbarVisible && <MultiselectToolbar buttons={defaultActions} />} */}
                                     <MultiselectToolbar actions={defaultActions} />
                                 </Grid>
                             )}
