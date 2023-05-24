@@ -311,7 +311,6 @@ export const loadInitialValue = (initialValue: string, pickerId: string) =>
                     pickerId: pickerTreeId,
                     subtree: tree
                 }));
-            dispatch(treePickerActions.EXPAND_TREE_PICKER_NODES({ ids: [pickerTreeRootUuid], pickerId: pickerTreeId }));
             dispatch(treePickerActions.ACTIVATE_TREE_PICKER_NODE({ id: initialValue, pickerId: pickerTreeId }));
             dispatch(treePickerSearchActions.REFRESH_TREE_PICKER({ pickerId: pickerTreeId }));
         }
@@ -561,7 +560,7 @@ export const createInitialLocationTree = (data: Array<GroupResource | Collection
             value: item,
             active: false,
             selected: false,
-            expanded: item.uuid !== tailUuid,
+            expanded: false,
             status: item.uuid !== tailUuid ? TreeNodeStatus.LOADED : TreeNodeStatus.INITIAL,
         })(tree), createTree<GroupResource | CollectionResource>());
 };

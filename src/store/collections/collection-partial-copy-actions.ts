@@ -4,7 +4,7 @@
 
 import { Dispatch } from 'redux';
 import { RootState } from 'store/store';
-import { FormErrors, initialize, startSubmit, stopSubmit } from 'redux-form';
+import { initialize, startSubmit, stopSubmit } from 'redux-form';
 import { resetPickerProjectTree } from 'store/project-tree-picker/project-tree-picker-actions';
 import { dialogActions } from 'store/dialog/dialog-actions';
 import { ServiceRepository } from 'services/services';
