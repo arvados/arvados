@@ -990,7 +990,7 @@ describe('Collection panel tests', function () {
                 cy.goToPath(`/collections/${sourceCollection.uuid}`);
 
                 cy.get('[data-cy=collection-files-panel]').within(() => {
-                    cy.get('input[type=checkbox]').first().click();
+                    cy.get('input[type=checkbox]').click({multiple: true});
                 });
 
                 cy.get('[data-cy=collection-files-panel-options-btn]').click();
@@ -1094,7 +1094,7 @@ describe('Collection panel tests', function () {
                 cy.goToPath(`/collections/${sourceCollection.uuid}`);
 
                 cy.get('[data-cy=collection-files-panel]').within(() => {
-                    cy.get('input[type=checkbox]').first().click();
+                    cy.get('input[type=checkbox]').click({multiple: true});
                 });
 
                 cy.get('[data-cy=collection-files-panel-options-btn]').click();
