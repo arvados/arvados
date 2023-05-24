@@ -1123,7 +1123,7 @@ describe('Collection panel tests', function () {
                 cy.get('[data-cy=collection-files-panel]')
                         .and('contain', 'foo');
                 cy.get('.layout-pane-primary').contains('Projects').click();
-                cy.get('main').contains(`File copied from collection ${sourceCollection.name}/bar`).click();
+                cy.get('main').contains(`File moved from collection ${sourceCollection.name}/bar`).click();
                 cy.get('[data-cy=collection-files-panel]')
                         .and('contain', 'bar');
             });
