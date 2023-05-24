@@ -13,12 +13,14 @@ import { ApiActions } from "services/api/api-actions";
 import { Session } from "models/session";
 import { CommonService } from "services/common-service/common-service";
 import { snakeCase } from "lodash";
+import { CommonResourceServiceError } from "services/common-service/common-resource-service";
 
 export type UploadProgress = (fileId: number, loaded: number, total: number, currentTime: number) => void;
 type CollectionPartialUpdateOrCreate =  Partial<CollectionResource> & Pick<CollectionResource, "uuid"> |
                                         Partial<CollectionResource> & Pick<CollectionResource, "ownerUuid">;
 
 export const emptyCollectionPdh = 'd41d8cd98f00b204e9800998ecf8427e+0';
+export const SOURCE_DESTINATION_EQUAL_ERROR_MESSAGE = 'Source and destination cannot be the same';
 
 export class CollectionService extends TrashableResourceService<CollectionResource> {
     constructor(serverApi: AxiosInstance, private webdavClient: WebDAV, private authService: AuthService, actions: ApiActions) {
@@ -172,10 +174,10 @@ export class CollectionService extends TrashableResourceService<CollectionResour
 
     copyFiles(sourcePdh: string, files: string[], destinationCollection: CollectionPartialUpdateOrCreate, destinationPath: string, showErrors?: boolean) {
         const fileMap = files.reduce((obj, sourceFile) => {
-            const sourceFileName = sourceFile.split('/').filter(Boolean).slice(-1).join("");
+            const fileBasename = sourceFile.split('/').filter(Boolean).slice(-1).join("");
             return {
                 ...obj,
-                [this.combineFilePath([destinationPath, sourceFileName])]: `${sourcePdh}${this.combineFilePath([sourceFile])}`
+                [this.combineFilePath([destinationPath, fileBasename])]: `${sourcePdh}${this.combineFilePath([sourceFile])}`
             };
         }, {});
 
@@ -184,16 +186,31 @@ export class CollectionService extends TrashableResourceService<CollectionResour
 
     moveFiles(sourceUuid: string, sourcePdh: string, files: string[], destinationCollection: CollectionPartialUpdateOrCreate, destinationPath: string, showErrors?: boolean) {
         if (sourceUuid === destinationCollection.uuid) {
+            let errors: CommonResourceServiceError[] = [];
             const fileMap = files.reduce((obj, sourceFile) => {
-                const sourceFileName = sourceFile.split('/').filter(Boolean).slice(-1).join("");
-                return {
-                    ...obj,
-                    [this.combineFilePath([destinationPath, sourceFileName])]: `${sourcePdh}${this.combineFilePath([sourceFile])}`,
-                    [this.combineFilePath([sourceFile])]: '',
-                };
+                const fileBasename = sourceFile.split('/').filter(Boolean).slice(-1).join("");
+                const fileDestinationPath = this.combineFilePath([destinationPath, fileBasename]);
+                const fileSourcePath = this.combineFilePath([sourceFile]);
+                const fileSourceUri = `${sourcePdh}${fileSourcePath}`;
+
+
+                if (fileDestinationPath !== fileSourcePath) {
+                    return {
+                        ...obj,
+                        [fileDestinationPath]: fileSourceUri,
+                        [fileSourcePath]: '',
+                    };
+                } else {
+                    errors.push(CommonResourceServiceError.SOURCE_DESTINATION_CANNOT_BE_SAME);
+                    return obj;
+                }
             }, {});
 
-            return this.replaceFiles({uuid: sourceUuid}, fileMap, showErrors)
+            if (errors.length === 0) {
+                return this.replaceFiles({uuid: sourceUuid}, fileMap, showErrors)
+            } else {
+                return Promise.reject({errors});
+            }
         } else {
             return this.copyFiles(sourcePdh, files, destinationCollection, destinationPath, showErrors)
                 .then(() => {

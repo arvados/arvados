@@ -17,6 +17,7 @@ import { SnackbarKind, snackbarActions } from "store/snackbar/snackbar-actions";
 import { RootState } from "store/store";
 import { FileOperationLocation } from "store/tree-picker/tree-picker-actions";
 import { CollectionResource } from "models/collection";
+import { SOURCE_DESTINATION_EQUAL_ERROR_MESSAGE } from "services/collection-service/collection-service";
 
 export const COLLECTION_PARTIAL_MOVE_TO_NEW_COLLECTION = 'COLLECTION_PARTIAL_MOVE_TO_NEW_DIALOG';
 export const COLLECTION_PARTIAL_MOVE_TO_SELECTED_COLLECTION = 'COLLECTION_PARTIAL_MOVE_TO_SELECTED_DIALOG';
@@ -170,7 +171,9 @@ export const moveCollectionPartialToExistingCollection = (fileSelection: Collect
                 dispatch(progressIndicatorActions.STOP_WORKING(COLLECTION_PARTIAL_MOVE_TO_SELECTED_COLLECTION));
             } catch (e) {
                 const error = getCommonResourceServiceError(e);
-                if (error === CommonResourceServiceError.UNKNOWN) {
+                if (error === CommonResourceServiceError.SOURCE_DESTINATION_CANNOT_BE_SAME) {
+                    dispatch(snackbarActions.OPEN_SNACKBAR({ message: SOURCE_DESTINATION_EQUAL_ERROR_MESSAGE, hideDuration: 2000, kind: SnackbarKind.ERROR }));
+                } else if (error === CommonResourceServiceError.UNKNOWN) {
                     dispatch(dialogActions.CLOSE_DIALOG({ id: COLLECTION_PARTIAL_MOVE_TO_SELECTED_COLLECTION }));
                     dispatch(snackbarActions.OPEN_SNACKBAR({ message: 'Could not copy this files to selected collection', hideDuration: 2000, kind: SnackbarKind.ERROR }));
                 }
