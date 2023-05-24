@@ -389,6 +389,7 @@ describe('Collection panel tests', function () {
                     'table%&?*2',
                     'bar' // make sure we can go back to the original name as a last step
                 ];
+                cy.intercept({method: 'PUT', url: '**/arvados/v1/collections/*'}).as('renameRequest');
                 eachPair(names, (from, to) => {
                     cy.waitForDom().get('[data-cy=collection-files-panel]')
                         .contains(`${from}`).rightclick();
@@ -403,6 +404,7 @@ describe('Collection panel tests', function () {
                                 .type(to, { parseSpecialCharSequences: false });
                         });
                     cy.get('[data-cy=form-submit-btn]').click();
+                    cy.wait('@renameRequest');
                     cy.get('[data-cy=collection-files-panel]')
                         .should('not.contain', `${from}`)
                         .and('contain', `${to}`);
