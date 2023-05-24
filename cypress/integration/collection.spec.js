@@ -990,7 +990,7 @@ describe('Collection panel tests', function () {
                 cy.goToPath(`/collections/${sourceCollection.uuid}`);
 
                 // Select both files
-                cy.get('[data-cy=collection-files-panel]').within(() => {
+                cy.waitForDom().get('[data-cy=collection-files-panel]').within(() => {
                     cy.get('input[type=checkbox]').first().click();
                     cy.get('input[type=checkbox]').last().click();
                 });
