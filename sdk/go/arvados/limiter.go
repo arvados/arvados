@@ -13,7 +13,10 @@ import (
 	"time"
 )
 
-var requestLimiterQuietPeriod = time.Second
+var (
+	requestLimiterQuietPeriod        = time.Second
+	requestLimiterInitialLimit int64 = 8
+)
 
 type requestLimiter struct {
 	current    int64
@@ -33,6 +36,7 @@ func (rl *requestLimiter) Acquire(ctx context.Context) {
 	if rl.cond == nil {
 		// First use of requestLimiter. Initialize.
 		rl.cond = sync.NewCond(&rl.lock)
+		rl.limit = requestLimiterInitialLimit
 	}
 	// Wait out the quiet period(s) immediately following a 503.
 	for ctx.Err() == nil {

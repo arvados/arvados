@@ -18,23 +18,23 @@ var _ = Suite(&limiterSuite{})
 
 type limiterSuite struct{}
 
-func (*limiterSuite) TestUnlimitedBeforeFirstReport(c *C) {
+func (*limiterSuite) TestInitialLimit(c *C) {
 	ctx, cancel := context.WithDeadline(context.Background(), time.Now().Add(time.Minute))
 	defer cancel()
 	rl := requestLimiter{}
 
 	var wg sync.WaitGroup
-	wg.Add(1000)
-	for i := 0; i < 1000; i++ {
+	wg.Add(int(requestLimiterInitialLimit))
+	for i := int64(0); i < requestLimiterInitialLimit; i++ {
 		go func() {
 			rl.Acquire(ctx)
 			wg.Done()
 		}()
 	}
 	wg.Wait()
-	c.Check(rl.current, Equals, int64(1000))
-	wg.Add(1000)
-	for i := 0; i < 1000; i++ {
+	c.Check(rl.current, Equals, requestLimiterInitialLimit)
+	wg.Add(int(requestLimiterInitialLimit))
+	for i := int64(0); i < requestLimiterInitialLimit; i++ {
 		go func() {
 			rl.Release()
 			wg.Done()
@@ -49,8 +49,8 @@ func (*limiterSuite) TestCancelWhileWaitingForAcquire(c *C) {
 	defer cancel()
 	rl := requestLimiter{}
 
-	rl.limit = 1
 	rl.Acquire(ctx)
+	rl.limit = 1
 	ctxShort, cancel := context.WithDeadline(ctx, time.Now().Add(time.Millisecond))
 	defer cancel()
 	rl.Acquire(ctxShort)
@@ -74,7 +74,7 @@ func (*limiterSuite) TestReducedLimitAndQuietPeriod(c *C) {
 		rl.Acquire(ctx)
 	}
 	rl.Report(&http.Response{StatusCode: http.StatusServiceUnavailable}, nil)
-	c.Check(rl.limit, Equals, int64(3))
+	c.Check(rl.limit, Equals, requestLimiterInitialLimit/2)
 	for i := 0; i < 5; i++ {
 		rl.Release()
 	}
