@@ -17,7 +17,7 @@ import { connect, DispatchProp } from "react-redux";
 import { RouteComponentProps } from 'react-router';
 import { ArvadosTheme } from 'common/custom-theme';
 import { RootState } from 'store/store';
-import { MoreOptionsIcon, CollectionIcon, ReadOnlyIcon, CollectionOldVersionIcon } from 'components/icon/icon';
+import { MoreVerticalIcon, CollectionIcon, ReadOnlyIcon, CollectionOldVersionIcon } from 'components/icon/icon';
 import { DetailsAttribute } from 'components/details-attribute/details-attribute';
 import { CollectionResource, getCollectionUrl } from 'models/collection';
 import { CollectionPanelFiles } from 'views-components/collection-panel-files/collection-panel-files';
@@ -200,7 +200,7 @@ export const CollectionPanel = withStyles(styles)(connect(
                                                 data-cy='collection-panel-options-btn'
                                                 aria-label="Actions"
                                                 onClick={this.handleContextMenu}>
-                                                <MoreOptionsIcon />
+                                                <MoreVerticalIcon />
                                             </IconButton>
                                         </Tooltip>
                                     }

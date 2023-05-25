@@ -8,7 +8,7 @@ import { connect } from 'react-redux';
 import { FixedSizeList } from "react-window";
 import AutoSizer from "react-virtualized-auto-sizer";
 import servicesProvider from 'common/service-provider';
-import { CustomizeTableIcon, DownloadIcon, MoreOptionsIcon } from 'components/icon/icon';
+import { DownloadIcon, MoreHorizontalIcon, MoreVerticalIcon } from 'components/icon/icon';
 import { SearchInput } from 'components/search-input/search-input';
 import {
     ListItemIcon,
@@ -495,7 +495,7 @@ export const CollectionPanelFiles = withStyles(styles)(connect((state: RootState
                     onClick={(ev) => {
                         onOptionsMenuOpen(ev, isWritable);
                     }}>
-                    <CustomizeTableIcon />
+                    <MoreVerticalIcon />
                 </IconButton>
             </Tooltip>
         </div>
@@ -577,7 +577,7 @@ export const CollectionPanelFiles = withStyles(styles)(connect((state: RootState
                                         <IconButton data-id='moreOptions'
                                             data-cy='file-item-options-btn'
                                             className={classes.moreOptionsButton}>
-                                            <MoreOptionsIcon
+                                            <MoreHorizontalIcon
                                                 data-id='moreOptions'
                                                 className={classes.moreOptions} />
                                         </IconButton>

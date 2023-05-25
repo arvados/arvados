@@ -6,7 +6,7 @@ import React from 'react';
 import { StyleRulesCallback, WithStyles, withStyles, Card, CardContent, Button, Typography, Grid, Table, TableHead, TableRow, TableCell, TableBody, Tooltip, IconButton } from '@material-ui/core';
 import { ArvadosTheme } from 'common/custom-theme';
 import { SshKeyResource } from 'models/ssh-key';
-import { AddIcon, MoreOptionsIcon, KeyIcon } from 'components/icon/icon';
+import { AddIcon, MoreVerticalIcon, KeyIcon } from 'components/icon/icon';
 
 type CssRules = 'root' | 'link' | 'buttonContainer' | 'table' | 'tableRow' | 'keyIcon';
 
@@ -103,7 +103,7 @@ export const SshKeyPanelRoot = withStyles(styles)(
                                     <TableCell>
                                         <Tooltip title="More options" disableFocusListener>
                                             <IconButton onClick={event => openRowOptions(event, sshKey)}>
-                                                <MoreOptionsIcon />
+                                                <MoreVerticalIcon />
                                             </IconButton>
                                         </Tooltip>
                                     </TableCell>

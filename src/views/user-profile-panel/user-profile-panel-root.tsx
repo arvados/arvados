@@ -27,7 +27,7 @@ import { ArvadosTheme } from 'common/custom-theme';
 import { PROFILE_EMAIL_VALIDATION, PROFILE_URL_VALIDATION } from "validators/validators";
 import { USER_PROFILE_PANEL_ID } from 'store/user-profile/user-profile-actions';
 import { noop } from 'lodash';
-import { DetailsIcon, GroupsIcon, MoreOptionsIcon } from 'components/icon/icon';
+import { DetailsIcon, GroupsIcon, MoreVerticalIcon } from 'components/icon/icon';
 import { DataColumns } from 'components/data-table/data-table';
 import { ResourceLinkHeadUuid, ResourceLinkHeadPermissionLevel, ResourceLinkHead, ResourceLinkDelete, ResourceLinkTailIsVisible, UserResourceAccountStatus } from 'views-components/data-explorer/renderers';
 import { createTree } from 'models/tree';
@@ -220,7 +220,7 @@ export const UserProfilePanelRoot = withStyles(styles)(
                                                     data-cy='user-profile-panel-options-btn'
                                                     aria-label="Actions"
                                                     onClick={(event) => this.handleContextMenu(event, this.props.userUuid)}>
-                                                    <MoreOptionsIcon />
+                                                    <MoreVerticalIcon />
                                                 </IconButton>
                                             </Tooltip>
                                         </Grid>
