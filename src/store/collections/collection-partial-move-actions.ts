@@ -101,13 +101,13 @@ export const moveCollectionPartialToNewCollection = (fileSelection: CollectionFi
                     hideDuration: 2000,
                     kind: SnackbarKind.SUCCESS
                 }));
-                dispatch(progressIndicatorActions.STOP_WORKING(COLLECTION_PARTIAL_MOVE_TO_NEW_COLLECTION));
             } catch (e) {
                 const error = getCommonResourceServiceError(e);
                 if (error === CommonResourceServiceError.UNKNOWN) {
                     dispatch(dialogActions.CLOSE_DIALOG({ id: COLLECTION_PARTIAL_MOVE_TO_NEW_COLLECTION }));
                     dispatch(snackbarActions.OPEN_SNACKBAR({ message: 'Could not move files to selected collection', hideDuration: 2000, kind: SnackbarKind.ERROR }));
                 }
+            } finally {
                 dispatch(stopSubmit(COLLECTION_PARTIAL_MOVE_TO_NEW_COLLECTION));
                 dispatch(progressIndicatorActions.STOP_WORKING(COLLECTION_PARTIAL_MOVE_TO_NEW_COLLECTION));
             }
@@ -168,7 +168,6 @@ export const moveCollectionPartialToExistingCollection = (fileSelection: Collect
                     hideDuration: 2000,
                     kind: SnackbarKind.SUCCESS
                 }));
-                dispatch(progressIndicatorActions.STOP_WORKING(COLLECTION_PARTIAL_MOVE_TO_SELECTED_COLLECTION));
             } catch (e) {
                 const error = getCommonResourceServiceError(e);
                 if (error === CommonResourceServiceError.SOURCE_DESTINATION_CANNOT_BE_SAME) {
@@ -177,6 +176,7 @@ export const moveCollectionPartialToExistingCollection = (fileSelection: Collect
                     dispatch(dialogActions.CLOSE_DIALOG({ id: COLLECTION_PARTIAL_MOVE_TO_SELECTED_COLLECTION }));
                     dispatch(snackbarActions.OPEN_SNACKBAR({ message: 'Could not copy this files to selected collection', hideDuration: 2000, kind: SnackbarKind.ERROR }));
                 }
+            } finally {
                 dispatch(stopSubmit(COLLECTION_PARTIAL_MOVE_TO_SELECTED_COLLECTION));
                 dispatch(progressIndicatorActions.STOP_WORKING(COLLECTION_PARTIAL_MOVE_TO_SELECTED_COLLECTION));
             }
@@ -233,7 +233,6 @@ export const moveCollectionPartialToSeparateCollections = (fileSelection: Collec
                     hideDuration: 2000,
                     kind: SnackbarKind.SUCCESS
                 }));
-                dispatch(progressIndicatorActions.STOP_WORKING(COLLECTION_PARTIAL_MOVE_TO_SEPARATE_COLLECTIONS));
             } catch (e) {
                 const error = getCommonResourceServiceError(e);
                 if (error === CommonResourceServiceError.UNIQUE_NAME_VIOLATION) {
@@ -245,6 +244,7 @@ export const moveCollectionPartialToSeparateCollections = (fileSelection: Collec
                     dispatch(dialogActions.CLOSE_DIALOG({ id: COLLECTION_PARTIAL_MOVE_TO_SEPARATE_COLLECTIONS }));
                     dispatch(snackbarActions.OPEN_SNACKBAR({ message: 'Collection has been copied but may contain incorrect files.', hideDuration: 2000, kind: SnackbarKind.ERROR }));
                 }
+            } finally {
                 dispatch(stopSubmit(COLLECTION_PARTIAL_MOVE_TO_SEPARATE_COLLECTIONS));
                 dispatch(progressIndicatorActions.STOP_WORKING(COLLECTION_PARTIAL_MOVE_TO_SEPARATE_COLLECTIONS));
             }
