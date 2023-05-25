@@ -109,7 +109,7 @@ func (cp *copier) Copy() (string, error) {
 }
 
 func (cp *copier) copyFile(fs arvados.CollectionFileSystem, f filetodo) (int64, error) {
-	cp.logger.Printf("copying %q (%d bytes)", f.dst, f.size)
+	cp.logger.Printf("copying %q (%d bytes)", strings.TrimLeft(f.dst, "/"), f.size)
 	dst, err := fs.OpenFile(f.dst, os.O_CREATE|os.O_WRONLY, 0666)
 	if err != nil {
 		return 0, err
@@ -161,6 +161,7 @@ func (cp *copier) walkMount(dest, src string, maxSymlinks int, walkMountsBelow b
 	// srcRelPath is the path to the file/dir we are trying to
 	// copy, relative to its mount point -- ".", "./foo.txt", ...
 	srcRelPath := filepath.Join(".", srcMount.Path, src[len(srcRoot):])
+	outputRelPath := src[len(cp.ctrOutputDir):]
 
 	switch {
 	case srcMount.ExcludeFromOutput:
@@ -170,12 +171,14 @@ func (cp *copier) walkMount(dest, src string, maxSymlinks int, walkMountsBelow b
 	case srcMount.Kind != "collection":
 		return fmt.Errorf("%q: unsupported mount %q in output (kind is %q)", src, srcRoot, srcMount.Kind)
 	case !srcMount.Writable:
+		cp.logger.Printf("copying %q from %v/%v", outputRelPath, srcMount.PortableDataHash, strings.TrimPrefix(srcRelPath, "./"))
 		mft, err := cp.getManifest(srcMount.PortableDataHash)
 		if err != nil {
 			return err
 		}
 		cp.manifest += mft.Extract(srcRelPath, dest).Text
 	default:
+		cp.logger.Printf("copying %q", outputRelPath)
 		hostRoot, err := cp.hostRoot(srcRoot)
 		if err != nil {
 			return err
