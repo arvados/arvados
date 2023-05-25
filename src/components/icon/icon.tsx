@@ -142,6 +142,18 @@ export const FileMoveIcon: IconType = (props: any) =>
         <path d="M14,17H18V14L23,18.5L18,23V20H14V17M13,9H18.5L13,3.5V9M6,2H14L20,8V12.34C19.37,12.12 18.7,12 18,12A6,6 0 0,0 12,18C12,19.54 12.58,20.94 13.53,22H6C4.89,22 4,21.1 4,20V4A2,2 0 0,1 6,2Z" />
     </SvgIcon>;
 
+// https://pictogrammers.com/library/mdi/icon/checkbox-multiple-outline/
+export const CheckboxMultipleOutline: IconType = (props: any) =>
+    <SvgIcon {...props}>
+        <path d="M20,2H8A2,2 0 0,0 6,4V16A2,2 0 0,0 8,18H20A2,2 0 0,0 22,16V4A2,2 0 0,0 20,2M20,16H8V4H20V16M16,20V22H4A2,2 0 0,1 2,20V7H4V20H16M18.53,8.06L17.47,7L12.59,11.88L10.47,9.76L9.41,10.82L12.59,14L18.53,8.06Z" />
+    </SvgIcon>;
+
+// https://pictogrammers.com/library/mdi/icon/checkbox-multiple-blank-outline/
+export const CheckboxMultipleBlankOutline: IconType = (props: any) =>
+    <SvgIcon {...props}>
+        <path d="M20,16V4H8V16H20M22,16A2,2 0 0,1 20,18H8C6.89,18 6,17.1 6,16V4C6,2.89 6.89,2 8,2H20A2,2 0 0,1 22,4V16M16,20V22H4A2,2 0 0,1 2,20V7H4V20H16Z" />
+    </SvgIcon>;
+
 export type IconType = React.SFC<{ className?: string, style?: object }>;
 
 // https://v4.mui.com/components/material-icons/
@@ -226,3 +238,5 @@ export const InactiveIcon: IconType = (props) => <NotInterested {...props} />;
 export const ImageIcon: IconType = (props) => <Image {...props} />;
 export const StartIcon: IconType = (props) => <PlayArrow {...props} />;
 export const StopIcon: IconType = (props) => <Stop {...props} />;
+export const SelectAllIcon: IconType = (props) => <CheckboxMultipleOutline {...props} />;
+export const SelectNoneIcon: IconType = (props) => <CheckboxMultipleBlankOutline {...props} />;
