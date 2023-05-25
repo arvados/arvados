@@ -278,6 +278,102 @@ func (*SchedulerSuite) TestShutdownAtQuota(c *check.C) {
 	}
 }
 
+// Don't unlock containers or shutdown unalloc (booting/idle) nodes
+// just because some 503 errors caused us to reduce maxConcurrency
+// below the current load level.
+//
+// We expect to raise maxConcurrency soon when we stop seeing 503s. If
+// that doesn't happen soon, the idle timeout will take care of the
+// excess nodes.
+func (*SchedulerSuite) TestIdleIn503QuietPeriod(c *check.C) {
+	ctx := ctxlog.Context(context.Background(), ctxlog.TestLogger(c))
+	queue := test.Queue{
+		ChooseType: chooseType,
+		Containers: []arvados.Container{
+			// scheduled on an instance (but not Running yet)
+			{
+				UUID:     test.ContainerUUID(1),
+				Priority: 1000,
+				State:    arvados.ContainerStateLocked,
+				RuntimeConstraints: arvados.RuntimeConstraints{
+					VCPUs: 2,
+					RAM:   2 << 30,
+				},
+			},
+			// not yet scheduled
+			{
+				UUID:     test.ContainerUUID(2),
+				Priority: 1000,
+				State:    arvados.ContainerStateLocked,
+				RuntimeConstraints: arvados.RuntimeConstraints{
+					VCPUs: 2,
+					RAM:   2 << 30,
+				},
+			},
+			// scheduled on an instance (but not Running yet)
+			{
+				UUID:     test.ContainerUUID(3),
+				Priority: 1000,
+				State:    arvados.ContainerStateLocked,
+				RuntimeConstraints: arvados.RuntimeConstraints{
+					VCPUs: 3,
+					RAM:   3 << 30,
+				},
+			},
+			// not yet scheduled
+			{
+				UUID:     test.ContainerUUID(4),
+				Priority: 1000,
+				State:    arvados.ContainerStateLocked,
+				RuntimeConstraints: arvados.RuntimeConstraints{
+					VCPUs: 3,
+					RAM:   3 << 30,
+				},
+			},
+			// not yet locked
+			{
+				UUID:     test.ContainerUUID(5),
+				Priority: 1000,
+				State:    arvados.ContainerStateQueued,
+				RuntimeConstraints: arvados.RuntimeConstraints{
+					VCPUs: 3,
+					RAM:   3 << 30,
+				},
+			},
+		},
+	}
+	queue.Update()
+	pool := stubPool{
+		quota: 16,
+		unalloc: map[arvados.InstanceType]int{
+			test.InstanceType(2): 2,
+			test.InstanceType(3): 2,
+		},
+		idle: map[arvados.InstanceType]int{
+			test.InstanceType(2): 1,
+			test.InstanceType(3): 1,
+		},
+		running: map[string]time.Time{
+			test.ContainerUUID(1): {},
+			test.ContainerUUID(3): {},
+		},
+		creates:   []arvados.InstanceType{},
+		starts:    []string{},
+		canCreate: 0,
+	}
+	sch := New(ctx, arvados.NewClientFromEnv(), &queue, &pool, nil, time.Millisecond, time.Millisecond, 0)
+	sch.last503time = time.Now()
+	sch.maxConcurrency = 3
+	sch.sync()
+	sch.runQueue()
+	sch.sync()
+
+	c.Check(pool.starts, check.DeepEquals, []string{test.ContainerUUID(2)})
+	c.Check(pool.shutdowns, check.Equals, 0)
+	c.Check(pool.creates, check.HasLen, 0)
+	c.Check(queue.StateChanges(), check.HasLen, 0)
+}
+
 // Don't flap lock/unlock when equal-priority containers compete for
 // limited workers.
 //

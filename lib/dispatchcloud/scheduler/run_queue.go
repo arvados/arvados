@@ -120,8 +120,7 @@ tryrun:
 		case arvados.ContainerStateQueued:
 			if sch.maxConcurrency > 0 && trying >= sch.maxConcurrency {
 				logger.Tracef("not locking: already at maxConcurrency %d", sch.maxConcurrency)
-				overquota = sorted[i:]
-				break tryrun
+				continue
 			}
 			trying++
 			if unalloc[it] < 1 && sch.pool.AtQuota() {
@@ -137,9 +136,8 @@ tryrun:
 			unalloc[it]--
 		case arvados.ContainerStateLocked:
 			if sch.maxConcurrency > 0 && trying >= sch.maxConcurrency {
-				logger.Debugf("not starting: already at maxConcurrency %d", sch.maxConcurrency)
-				overquota = sorted[i:]
-				break tryrun
+				logger.Tracef("not starting: already at maxConcurrency %d", sch.maxConcurrency)
+				continue
 			}
 			trying++
 			if unalloc[it] > 0 {
