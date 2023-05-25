@@ -141,7 +141,7 @@ func (rl *requestLimiter) Report(resp *http.Response, err error) bool {
 			increase = 1
 		}
 		rl.limit += increase
-		if max := rl.current * 2; max > rl.limit {
+		if max := rl.current * 2; max < rl.limit {
 			rl.limit = max
 		}
 		rl.cond.Broadcast()
