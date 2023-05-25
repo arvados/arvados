@@ -16,12 +16,25 @@ import (
 var quietAfter503 = time.Minute
 
 func (sch *Scheduler) runQueue() {
+	running := sch.pool.Running()
+	unalloc := sch.pool.Unallocated()
+
 	unsorted, _ := sch.queue.Entries()
 	sorted := make([]container.QueueEnt, 0, len(unsorted))
 	for _, ent := range unsorted {
 		sorted = append(sorted, ent)
 	}
 	sort.Slice(sorted, func(i, j int) bool {
+		_, irunning := running[sorted[i].Container.UUID]
+		_, jrunning := running[sorted[j].Container.UUID]
+		if irunning != jrunning {
+			// Ensure the "tryrun" loop (see below) sees
+			// already-scheduled containers first, to
+			// ensure existing supervisor containers are
+			// properly counted before we decide whether
+			// we have room for new ones.
+			return irunning
+		}
 		ilocked := sorted[i].Container.State == arvados.ContainerStateLocked
 		jlocked := sorted[j].Container.State == arvados.ContainerStateLocked
 		if ilocked != jlocked {
@@ -45,9 +58,6 @@ func (sch *Scheduler) runQueue() {
 			return sorted[i].FirstSeenAt.Before(sorted[j].FirstSeenAt)
 		}
 	})
-
-	running := sch.pool.Running()
-	unalloc := sch.pool.Unallocated()
 
 	if t := sch.client.Last503(); t.After(sch.last503time) {
 		// API has sent an HTTP 503 response since last time

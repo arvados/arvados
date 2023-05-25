@@ -430,6 +430,62 @@ func (*SchedulerSuite) TestUnlockExcessSupervisors(c *check.C) {
 	})
 }
 
+// Assuming we're not at quota, don't try to shutdown idle nodes
+// merely because we have more queued/locked supervisor containers
+// than MaxSupervisors -- it won't help.
+func (*SchedulerSuite) TestExcessSupervisors(c *check.C) {
+	ctx := ctxlog.Context(context.Background(), ctxlog.TestLogger(c))
+	queue := test.Queue{
+		ChooseType: chooseType,
+	}
+	for i := 1; i <= 8; i++ {
+		queue.Containers = append(queue.Containers, arvados.Container{
+			UUID:     test.ContainerUUID(i),
+			Priority: int64(1000 + i),
+			State:    arvados.ContainerStateQueued,
+			RuntimeConstraints: arvados.RuntimeConstraints{
+				VCPUs: 2,
+				RAM:   2 << 30,
+			},
+			SchedulingParameters: arvados.SchedulingParameters{
+				Supervisor: true,
+			},
+		})
+	}
+	for i := 2; i < 4; i++ {
+		queue.Containers[i].State = arvados.ContainerStateLocked
+	}
+	for i := 4; i < 6; i++ {
+		queue.Containers[i].State = arvados.ContainerStateRunning
+	}
+	queue.Update()
+	pool := stubPool{
+		quota: 16,
+		unalloc: map[arvados.InstanceType]int{
+			test.InstanceType(2): 2,
+		},
+		idle: map[arvados.InstanceType]int{
+			test.InstanceType(2): 1,
+		},
+		running: map[string]time.Time{
+			test.ContainerUUID(5): {},
+			test.ContainerUUID(6): {},
+		},
+		creates:   []arvados.InstanceType{},
+		starts:    []string{},
+		canCreate: 0,
+	}
+	sch := New(ctx, arvados.NewClientFromEnv(), &queue, &pool, nil, time.Millisecond, time.Millisecond, 4)
+	sch.sync()
+	sch.runQueue()
+	sch.sync()
+
+	c.Check(pool.starts, check.HasLen, 2)
+	c.Check(pool.shutdowns, check.Equals, 0)
+	c.Check(pool.creates, check.HasLen, 0)
+	c.Check(queue.StateChanges(), check.HasLen, 0)
+}
+
 // Don't flap lock/unlock when equal-priority containers compete for
 // limited workers.
 //
