@@ -98,4 +98,4 @@ def logtail(logcollection, logfunc, header, maxlen=25, include_crunchrun=True):
     loglines = loglines[-maxlen:]
 
     logtxt = "\n  ".join(l.strip() for l in loglines)
-    logfunc("%s\n\n  %s", header, logtxt)
+    logfunc("%s\n\n  %s\n", header, logtxt)
