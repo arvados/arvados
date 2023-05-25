@@ -24,7 +24,7 @@ import { ChangeWorkflowDialog } from 'views-components/run-process-dialog/change
 import { CreateProjectDialog } from 'views-components/dialog-forms/create-project-dialog';
 import { CreateCollectionDialog } from 'views-components/dialog-forms/create-collection-dialog';
 import { CopyCollectionDialog } from 'views-components/dialog-forms/copy-collection-dialog';
-import { CopyProcessDialog } from 'views-components/dialog-forms/copy-process-dialog';
+import { CopyProcessDialog, CopyManyProcessesDialog } from 'views-components/dialog-forms/copy-process-dialog';
 import { UpdateCollectionDialog } from 'views-components/dialog-forms/update-collection-dialog';
 import { UpdateProcessDialog } from 'views-components/dialog-forms/update-process-dialog';
 import { UpdateProjectDialog } from 'views-components/dialog-forms/update-project-dialog';
@@ -255,6 +255,7 @@ export const WorkbenchPanel = withStyles(styles)((props: WorkbenchPanelProps) =>
             <ContextMenu />
             <CopyCollectionDialog />
             <CopyProcessDialog />
+            <CopyManyProcessesDialog />
             <CreateCollectionDialog />
             <CreateProjectDialog />
             <CreateRepositoryDialog />

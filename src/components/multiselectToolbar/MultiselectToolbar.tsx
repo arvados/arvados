@@ -15,13 +15,14 @@ import { processResourceActionSet } from '../../views-components/context-menu/ac
 import { ContextMenuResource } from 'store/context-menu/context-menu-actions';
 import { ResourceKind, extractUuidKind } from 'models/resource';
 import { openMoveProcessDialog } from 'store/processes/process-move-actions';
-import { openCopyProcessDialog } from 'store/processes/process-copy-actions';
+import { openCopyProcessDialog, openCopyManyProcessesDialog } from 'store/processes/process-copy-actions';
 import { getResource } from 'store/resources/resources';
 import { ResourceName } from 'views-components/data-explorer/renderers';
 import { ProcessResource } from 'models/process';
 import { ResourcesState } from 'store/resources/resources';
 import { Resource } from 'models/resource';
 import { getProcess } from 'store/processes/process';
+import { CopyProcessDialog, CopyManyProcessesDialog } from 'views-components/dialog-forms/copy-process-dialog';
 
 type CssRules = 'root' | 'button';
 
@@ -101,7 +102,8 @@ export const MultiselectToolbar = connect(
             <Toolbar className={classes.root} style={{ width: `${buttons.length * 5.5}rem` }}>
                 {buttons.length ? (
                     buttons.map((btn) => (
-                        <Button key={btn.name} className={classes.button} onClick={() => props[btn.funcName](checkedList, resources)}>
+                        <Button key={btn.name} className={classes.button} onClick={() => props[btn.funcName](checkedList)}>
+                            {/* {<CopyProcessDialog>{btn.name}</CopyProcessDialog>} */}
                             {btn.name}
                         </Button>
                     ))
@@ -134,8 +136,6 @@ function selectedToKindSet(checkedList: TCheckedList): Set<string> {
 }
 
 function mapStateToProps(state: RootState) {
-    // console.log(state);
-    // console.log(getResource<ProcessResource>('tordo-dz642-0p7xefqdr4nw4pw')(state.resources));
     const { isVisible, checkedList } = state.multiselect;
     return {
         isVisible: isVisible,
@@ -146,20 +146,18 @@ function mapStateToProps(state: RootState) {
 
 function mapDispatchToProps(dispatch: Dispatch) {
     return {
-        copySelected: (checkedList: TCheckedList, resources: ResourcesState) => copyMoveMulti(dispatch, checkedList, resources),
+        copySelected: (checkedList: TCheckedList, resources: ResourcesState) => copyMoveMany(dispatch, checkedList),
         moveSelected: (checkedList: TCheckedList) => {},
         barSelected: () => {},
         removeSelected: (checkedList: TCheckedList) => removeMultiProcesses(dispatch, checkedList),
     };
 }
 
-function copyMoveMulti(dispatch: Dispatch, checkedList: TCheckedList, resources: ResourcesState) {
+function copyMoveMany(dispatch: Dispatch, checkedList: TCheckedList) {
     const selectedList: Array<string> = selectedToArray(checkedList);
-    const single = getProcess(selectedList[0])(resources)?.containerRequest;
-    console.log(single);
-    const { name, uuid } = single as any;
-    console.log(name, uuid);
-    dispatch<any>(openCopyProcessDialog({ name, uuid }));
+    const uuid = selectedList[0];
+    // dispatch<any>(openCopyManyProcessesDialog(uuid));
+    dispatch<any>(openCopyManyProcessesDialog(selectedList));
 }
 
 function moveMultiProcesses(dispatch: Dispatch, checkedList: TCheckedList): void {
