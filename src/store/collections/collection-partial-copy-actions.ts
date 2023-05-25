@@ -230,7 +230,6 @@ export const copyCollectionPartialToSeparateCollections = (fileSelection: Collec
                 dispatch(progressIndicatorActions.STOP_WORKING(COLLECTION_PARTIAL_COPY_TO_SEPARATE_COLLECTIONS));
             } catch (e) {
                 const error = getCommonResourceServiceError(e);
-                console.log(e, error);
                 if (error === CommonResourceServiceError.UNIQUE_NAME_VIOLATION) {
                     dispatch(snackbarActions.OPEN_SNACKBAR({ message: 'Collection from one or more files already exists', hideDuration: 2000, kind: SnackbarKind.ERROR }));
                 } else if (error === CommonResourceServiceError.UNKNOWN) {
