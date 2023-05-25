@@ -21,6 +21,7 @@ var (
 type requestLimiter struct {
 	current    int64
 	limit      int64
+	maxlimit   int64
 	lock       sync.Mutex
 	cond       *sync.Cond
 	quietUntil time.Time
@@ -143,6 +144,9 @@ func (rl *requestLimiter) Report(resp *http.Response, err error) bool {
 		rl.limit += increase
 		if max := rl.current * 2; max < rl.limit {
 			rl.limit = max
+		}
+		if rl.maxlimit > 0 && rl.maxlimit < rl.limit {
+			rl.limit = rl.maxlimit
 		}
 		rl.cond.Broadcast()
 	}
