@@ -57,43 +57,45 @@ def done_outputs(self, record, tmpdir, outdir, keepdir):
 crunchstat_re = re.compile(r"^\d{4}-\d\d-\d\d_\d\d:\d\d:\d\d [a-z0-9]{5}-8i9sb-[a-z0-9]{15} \d+ \d+ stderr crunchstat:")
 timestamp_re = re.compile(r"^(\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d\.\d+Z) (.*)")
 
-def logtail(logcollection, logfunc, header, maxlen=25):
+def logtail(logcollection, logfunc, header, maxlen=25, include_crunchrun=True):
     if len(logcollection) == 0:
         logfunc("%s\n%s", header, "  ** log is empty **")
         return
 
-    containersapi = ("crunch-run.txt" in logcollection)
     mergelogs = {}
+    logfiles = ["stdout.txt", "stderr.txt"]
 
-    for log in list(logcollection):
-        if not containersapi or log in ("crunch-run.txt", "stdout.txt", "stderr.txt"):
-            logname = log[:-4]
-            logt = deque([], maxlen)
-            mergelogs[logname] = logt
-            with logcollection.open(log, encoding="utf-8") as f:
-                for l in f:
-                    if containersapi:
-                        g = timestamp_re.match(l)
-                        logt.append((g.group(1), g.group(2)))
-                    elif not crunchstat_re.match(l):
-                        logt.append(l)
+    if include_crunchrun:
+        logfiles.append("crunch-run.txt")
 
-    if containersapi:
-        keys = list(mergelogs)
-        loglines = []
-        while True:
-            earliest = None
-            for k in keys:
-                if mergelogs[k]:
-                    if earliest is None or mergelogs[k][0][0] < mergelogs[earliest][0][0]:
-                        earliest = k
-            if earliest is None:
-                break
-            ts, msg = mergelogs[earliest].popleft()
-            loglines.append("%s %s %s" % (ts, earliest, msg))
-        loglines = loglines[-maxlen:]
-    else:
-        loglines = mergelogs[list(mergelogs)[0]]
+    for log in logfiles:
+        if log not in logcollection:
+            continue
+        logname = log[:-4]  # trim off the .txt
+        logt = deque([], maxlen)
+        mergelogs[logname] = logt
+        with logcollection.open(log, encoding="utf-8") as f:
+            for l in f:
+                g = timestamp_re.match(l)
+                logt.append((g.group(1), g.group(2)))
+
+    keys = list(mergelogs)
+    loglines = []
+
+    # we assume the log lines are all in order so this this is a
+    # straight linear merge where we look at the next timestamp of
+    # each log and take whichever one is earliest.
+    while True:
+        earliest = None
+        for k in keys:
+            if mergelogs[k]:
+                if earliest is None or mergelogs[k][0][0] < mergelogs[earliest][0][0]:
+                    earliest = k
+        if earliest is None:
+            break
+        ts, msg = mergelogs[earliest].popleft()
+        loglines.append("%s %s %s" % (ts, earliest, msg))
+    loglines = loglines[-maxlen:]
 
     logtxt = "\n  ".join(l.strip() for l in loglines)
     logfunc("%s\n\n  %s", header, logtxt)
