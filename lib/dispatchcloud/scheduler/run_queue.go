@@ -204,6 +204,8 @@ tryrun:
 				}
 			}
 		}
+	}
+	if len(overquota) > 0 {
 		// Shut down idle workers that didn't get any
 		// containers mapped onto them before we hit quota.
 		for it, n := range unalloc {
