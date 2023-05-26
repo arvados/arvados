@@ -142,11 +142,12 @@ func NewClientFromConfig(cluster *Cluster) (*Client, error) {
 		}
 	}
 	return &Client{
-		Client:   hc,
-		Scheme:   ctrlURL.Scheme,
-		APIHost:  ctrlURL.Host,
-		Insecure: cluster.TLS.Insecure,
-		Timeout:  5 * time.Minute,
+		Client:         hc,
+		Scheme:         ctrlURL.Scheme,
+		APIHost:        ctrlURL.Host,
+		Insecure:       cluster.TLS.Insecure,
+		Timeout:        5 * time.Minute,
+		requestLimiter: requestLimiter{maxlimit: int64(cluster.API.MaxConcurrentRequests / 4)},
 	}, nil
 }
 

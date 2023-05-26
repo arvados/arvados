@@ -501,6 +501,7 @@ func (s *IntegrationSuite) TestCreateContainerRequestWithFedToken(c *check.C) {
 	req.Header.Set("Authorization", "OAuth2 "+ac2.AuthToken)
 	resp, err = arvados.InsecureHTTPClient.Do(req)
 	c.Assert(err, check.IsNil)
+	defer resp.Body.Close()
 	err = json.NewDecoder(resp.Body).Decode(&cr)
 	c.Check(err, check.IsNil)
 	c.Check(cr.UUID, check.Matches, "z2222-.*")
@@ -538,8 +539,10 @@ func (s *IntegrationSuite) TestCreateContainerRequestWithBadToken(c *check.C) {
 		c.Assert(err, check.IsNil)
 		req.Header.Set("Content-Type", "application/json")
 		resp, err := ac1.Do(req)
-		c.Assert(err, check.IsNil)
-		c.Assert(resp.StatusCode, check.Equals, tt.expectedCode)
+		if c.Check(err, check.IsNil) {
+			c.Assert(resp.StatusCode, check.Equals, tt.expectedCode)
+			resp.Body.Close()
+		}
 	}
 }
 
@@ -607,9 +610,11 @@ func (s *IntegrationSuite) TestRequestIDHeader(c *check.C) {
 			var jresp httpserver.ErrorResponse
 			err := json.NewDecoder(resp.Body).Decode(&jresp)
 			c.Check(err, check.IsNil)
-			c.Assert(jresp.Errors, check.HasLen, 1)
-			c.Check(jresp.Errors[0], check.Matches, `.*\(`+respHdr+`\).*`)
+			if c.Check(jresp.Errors, check.HasLen, 1) {
+				c.Check(jresp.Errors[0], check.Matches, `.*\(`+respHdr+`\).*`)
+			}
 		}
+		resp.Body.Close()
 	}
 }
 
