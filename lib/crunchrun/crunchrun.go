@@ -638,7 +638,7 @@ func (runner *ContainerRunner) SetupMounts() (map[string]bindmount, error) {
 			if err != nil {
 				return nil, fmt.Errorf("creating temp dir: %v", err)
 			}
-			err = gitMount(mnt).extractTree(runner.ContainerArvClient, tmpdir, token)
+			err = gitMount(mnt).extractTree(runner.containerClient, tmpdir, token)
 			if err != nil {
 				return nil, err
 			}
@@ -1345,7 +1345,6 @@ func (runner *ContainerRunner) CaptureOutput(bindmounts map[string]bindmount) er
 
 	txt, err := (&copier{
 		client:        runner.containerClient,
-		arvClient:     runner.ContainerArvClient,
 		keepClient:    runner.ContainerKeepClient,
 		hostOutputDir: runner.HostOutputDir,
 		ctrOutputDir:  runner.Container.OutputPath,

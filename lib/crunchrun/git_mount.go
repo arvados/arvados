@@ -48,25 +48,22 @@ func (gm gitMount) validate() error {
 
 // ExtractTree extracts the specified tree into dir, which is an
 // existing empty local directory.
-func (gm gitMount) extractTree(ac IArvadosClient, dir string, token string) error {
+func (gm gitMount) extractTree(ac *arvados.Client, dir string, token string) error {
 	err := gm.validate()
 	if err != nil {
 		return err
 	}
-	baseURL, err := ac.Discovery("gitUrl")
+	dd, err := ac.DiscoveryDocument()
 	if err != nil {
-		return fmt.Errorf("discover gitUrl from API: %s", err)
-	} else if _, ok := baseURL.(string); !ok {
-		return fmt.Errorf("discover gitUrl from API: expected string, found %T", baseURL)
+		return fmt.Errorf("error getting discovery document: %w", err)
 	}
-
-	u, err := url.Parse(baseURL.(string))
+	u, err := url.Parse(dd.GitURL)
 	if err != nil {
-		return fmt.Errorf("parse gitUrl %q: %s", baseURL, err)
+		return fmt.Errorf("parse gitUrl %q: %s", dd.GitURL, err)
 	}
 	u, err = u.Parse("/" + gm.UUID + ".git")
 	if err != nil {
-		return fmt.Errorf("build git url from %q, %q: %s", baseURL, gm.UUID, err)
+		return fmt.Errorf("build git url from %q, %q: %s", dd.GitURL, gm.UUID, err)
 	}
 	store := memory.NewStorage()
 	repo, err := git.Init(store, osfs.New(dir))
