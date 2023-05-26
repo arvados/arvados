@@ -558,6 +558,7 @@ type CloudVMsConfig struct {
 	Enable bool
 
 	BootProbeCommand               string
+	InstanceInitCommand            string
 	DeployRunnerBinary             string
 	ImageID                        string
 	MaxCloudOpsPerSecond           int
