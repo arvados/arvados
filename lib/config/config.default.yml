@@ -1397,6 +1397,12 @@ Clusters:
         # https://xxxxx.blob.core.windows.net/system/Microsoft.Compute/Images/images/xxxxx.vhd
         ImageID: ""
 
+        # Shell script to run on new instances using the cloud
+        # provider's UserData (EC2) or CustomData (Azure) feature.
+        #
+        # It is not necessary to include a #!/bin/sh line.
+        InstanceInitCommand: ""
+
         # An executable file (located on the dispatcher host) to be
         # copied to cloud instances at runtime and used as the
         # container runner/supervisor. The default value is the

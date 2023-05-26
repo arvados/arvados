@@ -195,7 +195,7 @@ The @VPC@ and @Subnet@ should be configured for where you want the compute image
 
 h3(#aws-ebs-autoscaler). Autoscaling compute node scratch space
 
-Arvados supports "AWS EBS autoscaler":https://github.com/awslabs/amazon-ebs-autoscale .  This feature automatically expands the scratch space on the compute node on demand by 200 GB at a time, up to 5 TB.
+Arvados supports "AWS EBS autoscaler":https://github.com/awslabs/amazon-ebs-autoscale.  This feature automatically expands the scratch space on the compute node on demand by 200 GB at a time, up to 5 TB.
 
 If you want to add the daemon in your images, add the @--aws-ebs-autoscale@ flag to the "the build script":#building.
 
@@ -228,7 +228,7 @@ The AWS EBS autoscaler daemon will be installed with this configuration:
 
 Changing the ebs-autoscale configuration is left as an exercise for the reader.
 
-This feature also requires a few Arvados configuration changes, described in "EBS-Autoscale configuration"#aws-ebs-autoscaler .
+This feature also requires a few Arvados configuration changes, described in "EBS Autoscale configuration":install-dispatch-cloud.html#aws-ebs-autoscaler.
 
 h2(#azure). Build an Azure image
 

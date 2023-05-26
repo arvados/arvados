@@ -108,7 +108,7 @@ type StubInstanceSet struct {
 	lastInstanceID     int
 }
 
-func (sis *StubInstanceSet) Create(it arvados.InstanceType, image cloud.ImageID, tags cloud.InstanceTags, cmd cloud.InitCommand, authKey ssh.PublicKey) (cloud.Instance, error) {
+func (sis *StubInstanceSet) Create(it arvados.InstanceType, image cloud.ImageID, tags cloud.InstanceTags, initCommand cloud.InitCommand, authKey ssh.PublicKey) (cloud.Instance, error) {
 	if sis.driver.HoldCloudOps {
 		sis.driver.holdCloudOps <- true
 	}
@@ -127,11 +127,11 @@ func (sis *StubInstanceSet) Create(it arvados.InstanceType, image cloud.ImageID,
 	}
 	sis.lastInstanceID++
 	svm := &StubVM{
+		InitCommand:  initCommand,
 		sis:          sis,
 		id:           cloud.InstanceID(fmt.Sprintf("inst%d,%s", sis.lastInstanceID, it.ProviderType)),
 		tags:         copyTags(tags),
 		providerType: it.ProviderType,
-		initCommand:  cmd,
 		running:      map[string]stubProcess{},
 		killing:      map[string]bool{},
 	}
@@ -171,6 +171,15 @@ func (sis *StubInstanceSet) Stop() {
 	sis.stopped = true
 }
 
+func (sis *StubInstanceSet) StubVMs() (svms []*StubVM) {
+	sis.mtx.Lock()
+	defer sis.mtx.Unlock()
+	for _, vm := range sis.servers {
+		svms = append(svms, vm)
+	}
+	return
+}
+
 type RateLimitError struct{ Retry time.Time }
 
 func (e RateLimitError) Error() string            { return fmt.Sprintf("rate limited until %s", e.Retry) }
@@ -196,10 +205,12 @@ type StubVM struct {
 	CrashRunningContainer func(arvados.Container)
 	ExtraCrunchRunArgs    string // extra args expected after "crunch-run --detach --stdin-config "
 
+	// Populated by (*StubInstanceSet)Create()
+	InitCommand cloud.InitCommand
+
 	sis          *StubInstanceSet
 	id           cloud.InstanceID
 	tags         cloud.InstanceTags
-	initCommand  cloud.InitCommand
 	providerType string
 	SSHService   SSHService
 	running      map[string]stubProcess
