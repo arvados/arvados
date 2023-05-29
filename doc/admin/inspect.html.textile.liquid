@@ -16,11 +16,11 @@ To access snapshots, services must be configured with a "management token":manag
 
 In an interactive setting, use the @jq@ tool to format the JSON response.
 
-<pre>curl -sfH "Authorization: Bearer your_management_token_goes_here" "https://0.0.0.0:25107/_inspect/requests" | jq .
-</pre>
+<notextile><pre><code>curl -sfH "Authorization: Bearer <span class="userinput">your_management_token_goes_here</span>" "https://<span class="userinput">0.0.0.0:25107</span>/_inspect/requests" | jq .
+</code></pre></notextile>
 
-table(table table-bordered table-condensed table-hover).
-|_. Component|_. @/_inspect/requests@ endpoint|
+table(table table-bordered table-condensed table-hover){width:40em}.
+|_. Component|_. Provides @/_inspect/requests@ endpoint|
 |arvados-api-server||
 |arvados-controller|✓|
 |arvados-dispatch-cloud|✓|
@@ -45,7 +45,7 @@ The @RemoteAddr@ field reports the source of the incoming TCP connection, which 
 
 The @Elapsed@ field reports the number of seconds since the incoming HTTP request headers were received.
 
-h2. Example
+h2. Example response
 
 <pre>
 [
