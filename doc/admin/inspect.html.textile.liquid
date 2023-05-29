@@ -1,0 +1,69 @@
+---
+layout: default
+navsection: admin
+title: Inspecting active requests
+...
+
+{% comment %}
+Copyright (C) The Arvados Authors. All rights reserved.
+
+SPDX-License-Identifier: CC-BY-SA-3.0
+{% endcomment %}
+
+Most Arvados services publish a snapshot of HTTP requests currently being serviced at @/_inspect/requests@. This can be useful for troubleshooting slow requests and understanding high server load conditions.
+
+To access snapshots, services must be configured with a "management token":management-token.html. When accessing this endpoint, prefix the management token with @"Bearer "@ and supply it in the @Authorization@ request header.
+
+In an interactive setting, use the @jq@ tool to format the JSON response.
+
+<notextile><pre><code>curl -sfH "Authorization: Bearer <span class="userinput">your_management_token_goes_here</span>" "https://<span class="userinput">0.0.0.0:25107</span>/_inspect/requests" | jq .
+</code></pre></notextile>
+
+table(table table-bordered table-condensed table-hover){width:40em}.
+|_. Component|_. Provides @/_inspect/requests@ endpoint|
+|arvados-api-server||
+|arvados-controller|✓|
+|arvados-dispatch-cloud|✓|
+|arvados-dispatch-lsf|✓|
+|arvados-git-httpd||
+|arvados-ws|✓|
+|composer||
+|keepproxy|✓|
+|keepstore|✓|
+|keep-balance|✓|
+|keep-web|✓|
+|workbench1||
+|workbench2||
+
+h2. Report fields
+
+Most fields are self explanatory.
+
+The @Host@ field reports the virtual host specified in the incoming HTTP request.
+
+The @RemoteAddr@ field reports the source of the incoming TCP connection, which is typically a local address associated with the Nginx proxy service.
+
+The @Elapsed@ field reports the number of seconds since the incoming HTTP request headers were received.
+
+h2. Example response
+
+<pre>
+[
+  {
+    "RequestID": "req-1vzzj6nwrki0rd2hj08a",
+    "Method": "GET",
+    "Host": "tordo.arvadosapi.com",
+    "URL": "/arvados/v1/groups?order=name+asc&filters=[[%22owner_uuid%22,%22%3D%22,%22zzzzz-tpzed-aaaaaaaaaaaaaaa%22],[%22group_class%22,%22in%22,[%22project%22,%22filter%22]]]",
+    "RemoteAddr": "127.0.0.1:55822",
+    "Elapsed": 0.006363228
+  },
+  {
+    "RequestID": "req-1wrof2b2wlj5s1rao4u3",
+    "Method": "GET",
+    "Host": "tordo.arvadosapi.com",
+    "URL": "/arvados/v1/users/current",
+    "RemoteAddr": "127.0.0.1:55814",
+    "Elapsed": 0.04796585
+  }
+]
+</pre>
