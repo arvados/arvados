@@ -26,8 +26,8 @@ export const ConfirmationDialog = (props: ConfirmationDialogProps & WithDialogPr
             <DialogContent style={{ display: 'flex', alignItems: 'center' }}>
                 <WarningIcon />
                 <DialogContentText style={{ paddingLeft: '8px' }}>
-                    <div>{props.data.text}</div>
-                    <div>{props.data.info}</div>
+                    <span style={{display: 'block'}}>{props.data.text}</span>
+                    <span style={{display: 'block'}}>{props.data.info}</span>
                 </DialogContentText>
             </DialogContent>
             <DialogActions style={{ margin: '0px 24px 24px' }}>

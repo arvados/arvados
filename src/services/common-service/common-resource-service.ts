@@ -13,6 +13,7 @@ export enum CommonResourceServiceError {
     OWNERSHIP_CYCLE = 'OwnershipCycle',
     MODIFYING_CONTAINER_REQUEST_FINAL_STATE = 'ModifyingContainerRequestFinalState',
     NAME_HAS_ALREADY_BEEN_TAKEN = 'NameHasAlreadyBeenTaken',
+    PERMISSION_ERROR_FORBIDDEN = 'PermissionErrorForbidden',
     UNKNOWN = 'Unknown',
     NONE = 'None'
 }
@@ -64,11 +65,11 @@ export const getCommonResourceServiceError = (errorResponse: any) => {
                 return CommonResourceServiceError.MODIFYING_CONTAINER_REQUEST_FINAL_STATE;
             case /Name has already been taken/.test(error):
                 return CommonResourceServiceError.NAME_HAS_ALREADY_BEEN_TAKEN;
+            case /403 Forbidden/.test(error):
+                return CommonResourceServiceError.PERMISSION_ERROR_FORBIDDEN;
             default:
                 return CommonResourceServiceError.UNKNOWN;
         }
     }
     return CommonResourceServiceError.NONE;
 };
-
-
