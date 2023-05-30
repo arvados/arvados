@@ -161,7 +161,20 @@ func (cp *copier) walkMount(dest, src string, maxSymlinks int, walkMountsBelow b
 	// srcRelPath is the path to the file/dir we are trying to
 	// copy, relative to its mount point -- ".", "./foo.txt", ...
 	srcRelPath := filepath.Join(".", srcMount.Path, src[len(srcRoot):])
-	outputRelPath := src[len(cp.ctrOutputDir):]
+
+	// outputRelPath is the path relative in the output directory
+	// that corresponds to the path in the output collection where
+	// the file will go, for logging
+	var outputRelPath = ""
+	if strings.HasPrefix(src, cp.ctrOutputDir) {
+		outputRelPath = strings.TrimPrefix(src[len(cp.ctrOutputDir):], "/")
+	}
+	if outputRelPath == "" {
+		// blank means copy a whole directory, so replace it
+		// with a wildcard to make it a little clearer what's
+		// going on since outputRelPath is only used for logging
+		outputRelPath = "*"
+	}
 
 	switch {
 	case srcMount.ExcludeFromOutput:
