@@ -397,4 +397,9 @@ func (s *clientRetrySuite) TestExponentialBackoff(c *check.C) {
 		StatusCode: http.StatusTooManyRequests,
 	})
 	c.Check(t, check.Equals, time.Second*4)
+
+	t = exponentialBackoff(0, max, 0, nil)
+	c.Check(t, check.Equals, time.Duration(0))
+	t = exponentialBackoff(0, max, 1, nil)
+	c.Check(t, check.Not(check.Equals), time.Duration(0))
 }

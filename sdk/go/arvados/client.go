@@ -374,12 +374,17 @@ func isRedirectStatus(code int) bool {
 	}
 }
 
+const minExponentialBackoffBase = time.Second
+
 // Implements retryablehttp.Backoff using the server-provided
 // Retry-After header if available, otherwise nearly-full jitter
 // exponential backoff (similar to
 // https://aws.amazon.com/blogs/architecture/exponential-backoff-and-jitter/),
 // in all cases respecting the provided min and max.
 func exponentialBackoff(min, max time.Duration, attemptNum int, resp *http.Response) time.Duration {
+	if attemptNum > 0 && min < minExponentialBackoffBase {
+		min = minExponentialBackoffBase
+	}
 	var t time.Duration
 	if resp != nil && (resp.StatusCode == http.StatusTooManyRequests || resp.StatusCode == http.StatusServiceUnavailable) {
 		if s := resp.Header.Get("Retry-After"); s != "" {
