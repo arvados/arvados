@@ -1014,7 +1014,8 @@ describe('Collection panel tests', function () {
                         .and('contain', 'bar');
 
                 // Verify separate collection menu items not present when single file selected
-                cy.get('[data-cy=collection-files-panel]').within(() => {
+                // Wait for dom for collection to re-render
+                cy.waitForDom().get('[data-cy=collection-files-panel]').within(() => {
                     cy.get('input[type=checkbox]').first().click();
                 });
                 cy.get('[data-cy=collection-files-panel-options-btn]').click();
