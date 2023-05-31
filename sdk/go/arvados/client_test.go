@@ -169,6 +169,44 @@ func (*clientSuite) TestAnythingToValues(c *check.C) {
 	}
 }
 
+// select=["uuid"] is added automatically when RequestAndDecode's
+// destination argument is nil.
+func (*clientSuite) TestAutoSelectUUID(c *check.C) {
+	var req *http.Request
+	var err error
+	server := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		c.Check(r.ParseForm(), check.IsNil)
+		req = r
+		w.Write([]byte("{}"))
+	}))
+	client := Client{
+		APIHost:   strings.TrimPrefix(server.URL, "https://"),
+		AuthToken: "zzz",
+		Insecure:  true,
+		Timeout:   2 * time.Second,
+	}
+
+	req = nil
+	err = client.RequestAndDecode(nil, http.MethodPost, "test", nil, nil)
+	c.Check(err, check.IsNil)
+	c.Check(req.FormValue("select"), check.Equals, `["uuid"]`)
+
+	req = nil
+	err = client.RequestAndDecode(nil, http.MethodGet, "test", nil, nil)
+	c.Check(err, check.IsNil)
+	c.Check(req.FormValue("select"), check.Equals, `["uuid"]`)
+
+	req = nil
+	err = client.RequestAndDecode(nil, http.MethodGet, "test", nil, map[string]interface{}{"select": []string{"blergh"}})
+	c.Check(err, check.IsNil)
+	c.Check(req.FormValue("select"), check.Equals, `["uuid"]`)
+
+	req = nil
+	err = client.RequestAndDecode(&struct{}{}, http.MethodGet, "test", nil, map[string]interface{}{"select": []string{"blergh"}})
+	c.Check(err, check.IsNil)
+	c.Check(req.FormValue("select"), check.Equals, `["blergh"]`)
+}
+
 func (*clientSuite) TestLoadConfig(c *check.C) {
 	oldenv := os.Environ()
 	defer func() {

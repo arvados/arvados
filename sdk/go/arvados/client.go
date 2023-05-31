@@ -502,6 +502,12 @@ func (c *Client) RequestAndDecodeContext(ctx context.Context, dst interface{}, m
 	if err != nil {
 		return err
 	}
+	if dst == nil {
+		if urlValues == nil {
+			urlValues = url.Values{}
+		}
+		urlValues["select"] = []string{`["uuid"]`}
+	}
 	if urlValues == nil {
 		// Nothing to send
 	} else if body != nil || ((method == "GET" || method == "HEAD") && len(urlValues.Encode()) < 1000) {
