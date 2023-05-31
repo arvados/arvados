@@ -317,7 +317,7 @@ export const Tree = withStyles(styles)(
         // Scroll to selected item whenever it changes, accepts selectedRef from props for recursive trees
         const [cachedSelectedRef, setCachedRef] = useState<HTMLDivElement | null>(null)
         const selectedRef = props.selectedRef || useCallback((node: HTMLDivElement | null) => {
-            if (node && node !== cachedSelectedRef) {
+            if (node && node.scrollIntoView && node !== cachedSelectedRef) {
                 node.scrollIntoView({ behavior: "smooth", block: "center" });
             }
             setCachedRef(node);
