@@ -142,6 +142,10 @@ func (disp *dispatcher) initialize() {
 	} else {
 		disp.sshKey = key
 	}
+	installPublicKey := disp.sshKey.PublicKey()
+	if !disp.Cluster.Containers.CloudVMs.DeployPublicKey {
+		installPublicKey = nil
+	}
 
 	instanceSet, err := newInstanceSet(disp.Cluster, disp.InstanceSetID, disp.logger, disp.Registry)
 	if err != nil {
@@ -149,7 +153,7 @@ func (disp *dispatcher) initialize() {
 	}
 	dblock.Dispatch.Lock(disp.Context, disp.dbConnector.GetDB)
 	disp.instanceSet = instanceSet
-	disp.pool = worker.NewPool(disp.logger, disp.ArvClient, disp.Registry, disp.InstanceSetID, disp.instanceSet, disp.newExecutor, disp.sshKey.PublicKey(), disp.Cluster)
+	disp.pool = worker.NewPool(disp.logger, disp.ArvClient, disp.Registry, disp.InstanceSetID, disp.instanceSet, disp.newExecutor, installPublicKey, disp.Cluster)
 	disp.queue = container.NewQueue(disp.logger, disp.Registry, disp.typeChooser, disp.ArvClient)
 
 	if disp.Cluster.ManagementToken == "" {

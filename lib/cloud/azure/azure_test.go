@@ -69,14 +69,17 @@ var _ = check.Suite(&AzureInstanceSetSuite{})
 
 const testNamePrefix = "compute-test123-"
 
-type VirtualMachinesClientStub struct{}
+type VirtualMachinesClientStub struct {
+	vmParameters compute.VirtualMachine
+}
 
-func (*VirtualMachinesClientStub) createOrUpdate(ctx context.Context,
+func (stub *VirtualMachinesClientStub) createOrUpdate(ctx context.Context,
 	resourceGroupName string,
 	VMName string,
 	parameters compute.VirtualMachine) (result compute.VirtualMachine, err error) {
 	parameters.ID = &VMName
 	parameters.Name = &VMName
+	stub.vmParameters = parameters
 	return parameters, nil
 }
 
@@ -124,7 +127,7 @@ type testConfig struct {
 
 var live = flag.String("live-azure-cfg", "", "Test with real azure API, provide config file")
 
-func GetInstanceSet() (cloud.InstanceSet, cloud.ImageID, arvados.Cluster, error) {
+func GetInstanceSet() (*azureInstanceSet, cloud.ImageID, arvados.Cluster, error) {
 	cluster := arvados.Cluster{
 		InstanceTypes: arvados.InstanceTypeMap(map[string]arvados.InstanceType{
 			"tiny": {
@@ -154,7 +157,7 @@ func GetInstanceSet() (cloud.InstanceSet, cloud.ImageID, arvados.Cluster, error)
 		}
 
 		ap, err := newAzureInstanceSet(exampleCfg.DriverParameters, "test123", nil, logrus.StandardLogger())
-		return ap, cloud.ImageID(exampleCfg.ImageIDForTestSuite), cluster, err
+		return ap.(*azureInstanceSet), cloud.ImageID(exampleCfg.ImageIDForTestSuite), cluster, err
 	}
 	ap := azureInstanceSet{
 		azconfig: azureInstanceSetConfig{
@@ -193,18 +196,25 @@ func (*AzureInstanceSetSuite) TestCreate(c *check.C) {
 	tags := inst.Tags()
 	c.Check(tags["TestTagName"], check.Equals, "test tag value")
 	c.Logf("inst.String()=%v Address()=%v Tags()=%v", inst.String(), inst.Address(), tags)
+	if *live == "" {
+		c.Check(ap.vmClient.(*VirtualMachinesClientStub).vmParameters.VirtualMachineProperties.OsProfile.LinuxConfiguration.SSH, check.NotNil)
+	}
 
 	instPreemptable, err := ap.Create(cluster.InstanceTypes["tinyp"],
 		img, map[string]string{
 			"TestTagName": "test tag value",
-		}, "umask 0600; echo -n test-file-data >/var/run/test-file", pk)
+		}, "umask 0600; echo -n test-file-data >/var/run/test-file", nil)
 
 	c.Assert(err, check.IsNil)
 
 	tags = instPreemptable.Tags()
 	c.Check(tags["TestTagName"], check.Equals, "test tag value")
 	c.Logf("instPreemptable.String()=%v Address()=%v Tags()=%v", instPreemptable.String(), instPreemptable.Address(), tags)
-
+	if *live == "" {
+		// Should not have set SSH option, because publickey
+		// arg was nil
+		c.Check(ap.vmClient.(*VirtualMachinesClientStub).vmParameters.VirtualMachineProperties.OsProfile.LinuxConfiguration.SSH, check.IsNil)
+	}
 }
 
 func (*AzureInstanceSetSuite) TestListInstances(c *check.C) {
@@ -229,7 +239,7 @@ func (*AzureInstanceSetSuite) TestManageNics(c *check.C) {
 		c.Fatal("Error making provider", err)
 	}
 
-	ap.(*azureInstanceSet).manageNics()
+	ap.manageNics()
 	ap.Stop()
 }
 
@@ -239,7 +249,7 @@ func (*AzureInstanceSetSuite) TestManageBlobs(c *check.C) {
 		c.Fatal("Error making provider", err)
 	}
 
-	ap.(*azureInstanceSet).manageBlobs()
+	ap.manageBlobs()
 	ap.Stop()
 }
 
@@ -263,7 +273,7 @@ func (*AzureInstanceSetSuite) TestDeleteFake(c *check.C) {
 		c.Fatal("Error making provider", err)
 	}
 
-	_, err = ap.(*azureInstanceSet).netClient.delete(context.Background(), "fakefakefake", "fakefakefake")
+	_, err = ap.netClient.delete(context.Background(), "fakefakefake", "fakefakefake")
 
 	de, ok := err.(autorest.DetailedError)
 	if ok {
