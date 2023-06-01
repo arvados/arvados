@@ -57,15 +57,19 @@ type testConfig struct {
 }
 
 type ec2stub struct {
-	c       *check.C
-	reftime time.Time
+	c                     *check.C
+	reftime               time.Time
+	importKeyPairCalls    []*ec2.ImportKeyPairInput
+	describeKeyPairsCalls []*ec2.DescribeKeyPairsInput
 }
 
 func (e *ec2stub) ImportKeyPair(input *ec2.ImportKeyPairInput) (*ec2.ImportKeyPairOutput, error) {
+	e.importKeyPairCalls = append(e.importKeyPairCalls, input)
 	return nil, nil
 }
 
 func (e *ec2stub) DescribeKeyPairs(input *ec2.DescribeKeyPairsInput) (*ec2.DescribeKeyPairsOutput, error) {
+	e.describeKeyPairsCalls = append(e.describeKeyPairsCalls, input)
 	return &ec2.DescribeKeyPairsOutput{}, nil
 }
 
@@ -213,16 +217,18 @@ func (*EC2InstanceSetSuite) TestCreate(c *check.C) {
 	c.Check(tags["TestTagName"], check.Equals, "test tag value")
 	c.Logf("inst.String()=%v Address()=%v Tags()=%v", inst.String(), inst.Address(), tags)
 
+	if *live == "" {
+		c.Check(ap.client.(*ec2stub).describeKeyPairsCalls, check.HasLen, 1)
+		c.Check(ap.client.(*ec2stub).importKeyPairCalls, check.HasLen, 1)
+	}
 }
 
 func (*EC2InstanceSetSuite) TestCreateWithExtraScratch(c *check.C) {
 	ap, img, cluster := GetInstanceSet(c)
-	pk, _ := test.LoadTestKey(c, "../../dispatchcloud/test/sshkey_dispatch")
-
 	inst, err := ap.Create(cluster.InstanceTypes["tiny-with-extra-scratch"],
 		img, map[string]string{
 			"TestTagName": "test tag value",
-		}, "umask 0600; echo -n test-file-data >/var/run/test-file", pk)
+		}, "umask 0600; echo -n test-file-data >/var/run/test-file", nil)
 
 	c.Assert(err, check.IsNil)
 
@@ -230,6 +236,12 @@ func (*EC2InstanceSetSuite) TestCreateWithExtraScratch(c *check.C) {
 	c.Check(tags["TestTagName"], check.Equals, "test tag value")
 	c.Logf("inst.String()=%v Address()=%v Tags()=%v", inst.String(), inst.Address(), tags)
 
+	if *live == "" {
+		// Should not have called key pair APIs, because
+		// publickey arg was nil
+		c.Check(ap.client.(*ec2stub).describeKeyPairsCalls, check.HasLen, 0)
+		c.Check(ap.client.(*ec2stub).importKeyPairCalls, check.HasLen, 0)
+	}
 }
 
 func (*EC2InstanceSetSuite) TestCreatePreemptible(c *check.C) {

@@ -149,11 +149,6 @@ func (instanceSet *ec2InstanceSet) Create(
 	initCommand cloud.InitCommand,
 	publicKey ssh.PublicKey) (cloud.Instance, error) {
 
-	keyname, err := instanceSet.getKeyName(publicKey)
-	if err != nil {
-		return nil, err
-	}
-
 	ec2tags := []*ec2.Tag{}
 	for k, v := range newTags {
 		ec2tags = append(ec2tags, &ec2.Tag{
@@ -172,7 +167,6 @@ func (instanceSet *ec2InstanceSet) Create(
 		InstanceType: &instanceType.ProviderType,
 		MaxCount:     aws.Int64(1),
 		MinCount:     aws.Int64(1),
-		KeyName:      &keyname,
 
 		NetworkInterfaces: []*ec2.InstanceNetworkInterfaceSpecification{
 			{
@@ -190,6 +184,14 @@ func (instanceSet *ec2InstanceSet) Create(
 				Tags:         ec2tags,
 			}},
 		UserData: aws.String(base64.StdEncoding.EncodeToString([]byte("#!/bin/sh\n" + initCommand + "\n"))),
+	}
+
+	if publicKey != nil {
+		keyname, err := instanceSet.getKeyName(publicKey)
+		if err != nil {
+			return nil, err
+		}
+		rii.KeyName = &keyname
 	}
 
 	if instanceType.AddedScratch > 0 {

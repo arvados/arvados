@@ -1412,6 +1412,12 @@ Clusters:
         # version of crunch-run installed; see CrunchRunCommand above.
         DeployRunnerBinary: "/proc/self/exe"
 
+        # Install the Dispatcher's SSH public key (derived from
+        # DispatchPrivateKey) when creating new cloud
+        # instances. Change this to false if you are using a different
+        # mechanism to pre-install the public key on new instances.
+        DeployPublicKey: true
+
         # Tags to add on all resources (VMs, NICs, disks) created by
         # the container dispatcher. (Arvados's own tags --
         # InstanceType, IdleBehavior, and InstanceSecret -- will also

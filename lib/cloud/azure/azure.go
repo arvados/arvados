@@ -514,18 +514,21 @@ func (az *azureInstanceSet) Create(
 				AdminUsername: to.StringPtr(az.azconfig.AdminUsername),
 				LinuxConfiguration: &compute.LinuxConfiguration{
 					DisablePasswordAuthentication: to.BoolPtr(true),
-					SSH: &compute.SSHConfiguration{
-						PublicKeys: &[]compute.SSHPublicKey{
-							{
-								Path:    to.StringPtr("/home/" + az.azconfig.AdminUsername + "/.ssh/authorized_keys"),
-								KeyData: to.StringPtr(string(ssh.MarshalAuthorizedKey(publicKey))),
-							},
-						},
-					},
 				},
 				CustomData: &customData,
 			},
 		},
+	}
+
+	if publicKey != nil {
+		vmParameters.VirtualMachineProperties.OsProfile.LinuxConfiguration.SSH = &compute.SSHConfiguration{
+			PublicKeys: &[]compute.SSHPublicKey{
+				{
+					Path:    to.StringPtr("/home/" + az.azconfig.AdminUsername + "/.ssh/authorized_keys"),
+					KeyData: to.StringPtr(string(ssh.MarshalAuthorizedKey(publicKey))),
+				},
+			},
+		}
 	}
 
 	if instanceType.Preemptible {
