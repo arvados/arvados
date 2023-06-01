@@ -16,12 +16,15 @@ import (
 	"io/fs"
 	"io/ioutil"
 	"log"
+	"math"
 	"math/big"
+	mathrand "math/rand"
 	"net"
 	"net/http"
 	"net/url"
 	"os"
 	"regexp"
+	"strconv"
 	"strings"
 	"sync/atomic"
 	"time"
@@ -274,6 +277,7 @@ func (c *Client) Do(req *http.Request) (*http.Response, error) {
 
 	rclient := retryablehttp.NewClient()
 	rclient.HTTPClient = c.httpClient()
+	rclient.Backoff = exponentialBackoff
 	if c.Timeout > 0 {
 		rclient.RetryWaitMax = c.Timeout / 10
 		rclient.RetryMax = 32
@@ -367,6 +371,40 @@ func isRedirectStatus(code int) bool {
 		return true
 	default:
 		return false
+	}
+}
+
+const minExponentialBackoffBase = time.Second
+
+// Implements retryablehttp.Backoff using the server-provided
+// Retry-After header if available, otherwise nearly-full jitter
+// exponential backoff (similar to
+// https://aws.amazon.com/blogs/architecture/exponential-backoff-and-jitter/),
+// in all cases respecting the provided min and max.
+func exponentialBackoff(min, max time.Duration, attemptNum int, resp *http.Response) time.Duration {
+	if attemptNum > 0 && min < minExponentialBackoffBase {
+		min = minExponentialBackoffBase
+	}
+	var t time.Duration
+	if resp != nil && (resp.StatusCode == http.StatusTooManyRequests || resp.StatusCode == http.StatusServiceUnavailable) {
+		if s := resp.Header.Get("Retry-After"); s != "" {
+			if sleep, err := strconv.ParseInt(s, 10, 64); err == nil {
+				t = time.Second * time.Duration(sleep)
+			} else if stamp, err := time.Parse(time.RFC1123, s); err == nil {
+				t = stamp.Sub(time.Now())
+			}
+		}
+	}
+	if t == 0 {
+		jitter := mathrand.New(mathrand.NewSource(int64(time.Now().Nanosecond()))).Float64()
+		t = min + time.Duration((math.Pow(2, float64(attemptNum))*float64(min)-float64(min))*jitter)
+	}
+	if t < min {
+		return min
+	} else if t > max {
+		return max
+	} else {
+		return t
 	}
 }
 

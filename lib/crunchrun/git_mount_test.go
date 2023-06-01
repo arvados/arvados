@@ -6,14 +6,11 @@ package crunchrun
 
 import (
 	"io/ioutil"
-	"net/url"
 	"os"
 	"path/filepath"
 
-	"git.arvados.org/arvados.git/lib/config"
 	"git.arvados.org/arvados.git/sdk/go/arvados"
 	"git.arvados.org/arvados.git/sdk/go/arvadostest"
-	"git.arvados.org/arvados.git/sdk/go/ctxlog"
 	check "gopkg.in/check.v1"
 	git_client "gopkg.in/src-d/go-git.v4/plumbing/transport/client"
 	git_http "gopkg.in/src-d/go-git.v4/plumbing/transport/http"
@@ -26,11 +23,10 @@ type GitMountSuite struct {
 var _ = check.Suite(&GitMountSuite{})
 
 func (s *GitMountSuite) SetUpTest(c *check.C) {
-	s.useTestGitServer(c)
-
 	var err error
 	s.tmpdir, err = ioutil.TempDir("", "")
 	c.Assert(err, check.IsNil)
+	git_client.InstallProtocol("https", git_http.NewClient(arvados.InsecureHTTPClient))
 }
 
 func (s *GitMountSuite) TearDownTest(c *check.C) {
@@ -39,13 +35,14 @@ func (s *GitMountSuite) TearDownTest(c *check.C) {
 }
 
 // Commit fd3531f is crunch-run-tree-test
-func (s *GitMountSuite) TestextractTree(c *check.C) {
+func (s *GitMountSuite) TestExtractTree(c *check.C) {
 	gm := gitMount{
 		Path:   "/",
 		UUID:   arvadostest.Repository2UUID,
 		Commit: "fd3531f42995344f36c30b79f55f27b502f3d344",
 	}
-	err := gm.extractTree(&ArvTestClient{}, s.tmpdir, arvadostest.ActiveToken)
+	ac := arvados.NewClientFromEnv()
+	err := gm.extractTree(ac, s.tmpdir, arvadostest.ActiveToken)
 	c.Check(err, check.IsNil)
 
 	fnm := filepath.Join(s.tmpdir, "dir1/dir2/file with mode 0644")
@@ -85,7 +82,7 @@ func (s *GitMountSuite) TestExtractNonTipCommit(c *check.C) {
 		UUID:   arvadostest.Repository2UUID,
 		Commit: "5ebfab0522851df01fec11ec55a6d0f4877b542e",
 	}
-	err := gm.extractTree(&ArvTestClient{}, s.tmpdir, arvadostest.ActiveToken)
+	err := gm.extractTree(arvados.NewClientFromEnv(), s.tmpdir, arvadostest.ActiveToken)
 	c.Check(err, check.IsNil)
 
 	fnm := filepath.Join(s.tmpdir, "file only on testbranch")
@@ -100,7 +97,7 @@ func (s *GitMountSuite) TestNonexistentRepository(c *check.C) {
 		UUID:   "zzzzz-s0uqq-nonexistentrepo",
 		Commit: "5ebfab0522851df01fec11ec55a6d0f4877b542e",
 	}
-	err := gm.extractTree(&ArvTestClient{}, s.tmpdir, arvadostest.ActiveToken)
+	err := gm.extractTree(arvados.NewClientFromEnv(), s.tmpdir, arvadostest.ActiveToken)
 	c.Check(err, check.NotNil)
 	c.Check(err, check.ErrorMatches, ".*repository not found.*")
 
@@ -113,7 +110,7 @@ func (s *GitMountSuite) TestNonexistentCommit(c *check.C) {
 		UUID:   arvadostest.Repository2UUID,
 		Commit: "bb66b6bb6b6bbb6b6b6b66b6b6b6b6b6b6b6b66b",
 	}
-	err := gm.extractTree(&ArvTestClient{}, s.tmpdir, arvadostest.ActiveToken)
+	err := gm.extractTree(arvados.NewClientFromEnv(), s.tmpdir, arvadostest.ActiveToken)
 	c.Check(err, check.NotNil)
 	c.Check(err, check.ErrorMatches, ".*object not found.*")
 
@@ -127,8 +124,8 @@ func (s *GitMountSuite) TestGitUrlDiscoveryFails(c *check.C) {
 		UUID:   arvadostest.Repository2UUID,
 		Commit: "5ebfab0522851df01fec11ec55a6d0f4877b542e",
 	}
-	err := gm.extractTree(&ArvTestClient{}, s.tmpdir, arvadostest.ActiveToken)
-	c.Check(err, check.ErrorMatches, ".*gitUrl.*")
+	err := gm.extractTree(&arvados.Client{}, s.tmpdir, arvadostest.ActiveToken)
+	c.Check(err, check.ErrorMatches, ".*error getting discovery doc.*")
 }
 
 func (s *GitMountSuite) TestInvalid(c *check.C) {
@@ -186,7 +183,7 @@ func (s *GitMountSuite) TestInvalid(c *check.C) {
 			matcher: ".*writable.*",
 		},
 	} {
-		err := trial.gm.extractTree(&ArvTestClient{}, s.tmpdir, arvadostest.ActiveToken)
+		err := trial.gm.extractTree(arvados.NewClientFromEnv(), s.tmpdir, arvadostest.ActiveToken)
 		c.Check(err, check.NotNil)
 		s.checkTmpdirContents(c, []string{})
 
@@ -201,16 +198,4 @@ func (s *GitMountSuite) checkTmpdirContents(c *check.C, expect []string) {
 	names, err := f.Readdirnames(-1)
 	c.Check(err, check.IsNil)
 	c.Check(names, check.DeepEquals, expect)
-}
-
-func (*GitMountSuite) useTestGitServer(c *check.C) {
-	git_client.InstallProtocol("https", git_http.NewClient(arvados.InsecureHTTPClient))
-
-	loader := config.NewLoader(nil, ctxlog.TestLogger(c))
-	cfg, err := loader.Load()
-	c.Assert(err, check.IsNil)
-	cluster, err := cfg.GetCluster("")
-	c.Assert(err, check.IsNil)
-
-	discoveryMap["gitUrl"] = (*url.URL)(&cluster.Services.GitHTTP.ExternalURL).String()
 }

@@ -638,7 +638,7 @@ func (runner *ContainerRunner) SetupMounts() (map[string]bindmount, error) {
 			if err != nil {
 				return nil, fmt.Errorf("creating temp dir: %v", err)
 			}
-			err = gitMount(mnt).extractTree(runner.ContainerArvClient, tmpdir, token)
+			err = gitMount(mnt).extractTree(runner.containerClient, tmpdir, token)
 			if err != nil {
 				return nil, err
 			}
@@ -1345,7 +1345,6 @@ func (runner *ContainerRunner) CaptureOutput(bindmounts map[string]bindmount) er
 
 	txt, err := (&copier{
 		client:        runner.containerClient,
-		arvClient:     runner.ContainerArvClient,
 		keepClient:    runner.ContainerKeepClient,
 		hostOutputDir: runner.HostOutputDir,
 		ctrOutputDir:  runner.Container.OutputPath,
@@ -1989,7 +1988,9 @@ func (command) RunCommand(prog string, args []string, stdin io.Reader, stdout, s
 		log.Printf("%s: %v", containerUUID, err)
 		return 1
 	}
-	api.Retries = 8
+	// arvadosclient now interprets Retries=10 to mean
+	// Timeout=10m, retrying with exponential backoff + jitter.
+	api.Retries = 10
 
 	kc, err := keepclient.MakeKeepClient(api)
 	if err != nil {
@@ -2166,7 +2167,9 @@ func hpcConfData(uuid string, configFile string, stderr io.Writer) ConfigData {
 		fmt.Fprintf(stderr, "error setting up arvadosclient: %s\n", err)
 		return conf
 	}
-	arv.Retries = 8
+	// arvadosclient now interprets Retries=10 to mean
+	// Timeout=10m, retrying with exponential backoff + jitter.
+	arv.Retries = 10
 	var ctr arvados.Container
 	err = arv.Call("GET", "containers", uuid, "", arvadosclient.Dict{"select": []string{"runtime_constraints"}}, &ctr)
 	if err != nil {
