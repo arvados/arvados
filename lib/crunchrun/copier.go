@@ -51,7 +51,6 @@ type filetodo struct {
 //	manifest, err := (&copier{...}).Copy()
 type copier struct {
 	client        *arvados.Client
-	arvClient     IArvadosClient
 	keepClient    IKeepClient
 	hostOutputDir string
 	ctrOutputDir  string
@@ -372,7 +371,7 @@ func (cp *copier) getManifest(pdh string) (*manifest.Manifest, error) {
 		return mft, nil
 	}
 	var coll arvados.Collection
-	err := cp.arvClient.Get("collections", pdh, nil, &coll)
+	err := cp.client.RequestAndDecode(&coll, "GET", "arvados/v1/collections/"+pdh, nil, nil)
 	if err != nil {
 		return nil, fmt.Errorf("error retrieving collection record for %q: %s", pdh, err)
 	}

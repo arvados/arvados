@@ -12,7 +12,6 @@ import (
 	"syscall"
 
 	"git.arvados.org/arvados.git/sdk/go/arvados"
-	"git.arvados.org/arvados.git/sdk/go/arvadosclient"
 	"git.arvados.org/arvados.git/sdk/go/arvadostest"
 	"github.com/sirupsen/logrus"
 	check "gopkg.in/check.v1"
@@ -27,12 +26,9 @@ type copierSuite struct {
 
 func (s *copierSuite) SetUpTest(c *check.C) {
 	tmpdir := c.MkDir()
-	api, err := arvadosclient.MakeArvadosClient()
-	c.Assert(err, check.IsNil)
 	s.log = bytes.Buffer{}
 	s.cp = copier{
 		client:        arvados.NewClientFromEnv(),
-		arvClient:     api,
 		hostOutputDir: tmpdir,
 		ctrOutputDir:  "/ctr/outdir",
 		mounts: map[string]arvados.Mount{

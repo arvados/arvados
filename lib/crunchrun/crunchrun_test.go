@@ -17,6 +17,8 @@ import (
 	"math/rand"
 	"net/http"
 	"net/http/httptest"
+	"net/http/httputil"
+	"net/url"
 	"os"
 	"os/exec"
 	"path"
@@ -38,6 +40,8 @@ import (
 	"git.arvados.org/arvados.git/sdk/go/manifest"
 
 	. "gopkg.in/check.v1"
+	git_client "gopkg.in/src-d/go-git.v4/plumbing/transport/client"
+	git_http "gopkg.in/src-d/go-git.v4/plumbing/transport/http"
 )
 
 // Gocheck boilerplate
@@ -416,6 +420,67 @@ func (client *KeepTestClient) ManifestFileReader(m manifest.Manifest, filename s
 	return nil, nil
 }
 
+type apiStubServer struct {
+	server    *httptest.Server
+	proxy     *httputil.ReverseProxy
+	intercept func(http.ResponseWriter, *http.Request) bool
+
+	container arvados.Container
+	logs      map[string]string
+}
+
+func apiStub() (*arvados.Client, *apiStubServer) {
+	client := arvados.NewClientFromEnv()
+	apistub := &apiStubServer{}
+	apistub.server = httptest.NewTLSServer(apistub)
+	apistub.proxy = httputil.NewSingleHostReverseProxy(&url.URL{Scheme: "https", Host: client.APIHost})
+	if client.Insecure {
+		apistub.proxy.Transport = arvados.InsecureHTTPClient.Transport
+	}
+	client.APIHost = apistub.server.Listener.Addr().String()
+	return client, apistub
+}
+
+func (apistub *apiStubServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	if apistub.intercept != nil && apistub.intercept(w, r) {
+		return
+	}
+	if r.Method == "POST" && r.URL.Path == "/arvados/v1/logs" {
+		var body struct {
+			Log struct {
+				EventType  string `json:"event_type"`
+				Properties struct {
+					Text string
+				}
+			}
+		}
+		json.NewDecoder(r.Body).Decode(&body)
+		apistub.logs[body.Log.EventType] += body.Log.Properties.Text
+		return
+	}
+	if r.Method == "GET" && r.URL.Path == "/arvados/v1/collections/"+hwPDH {
+		json.NewEncoder(w).Encode(arvados.Collection{ManifestText: hwManifest})
+		return
+	}
+	if r.Method == "GET" && r.URL.Path == "/arvados/v1/collections/"+otherPDH {
+		json.NewEncoder(w).Encode(arvados.Collection{ManifestText: otherManifest})
+		return
+	}
+	if r.Method == "GET" && r.URL.Path == "/arvados/v1/collections/"+normalizedWithSubdirsPDH {
+		json.NewEncoder(w).Encode(arvados.Collection{ManifestText: normalizedManifestWithSubdirs})
+		return
+	}
+	if r.Method == "GET" && r.URL.Path == "/arvados/v1/collections/"+denormalizedWithSubdirsPDH {
+		json.NewEncoder(w).Encode(arvados.Collection{ManifestText: denormalizedManifestWithSubdirs})
+		return
+	}
+	if r.Method == "GET" && r.URL.Path == "/arvados/v1/containers/"+apistub.container.UUID {
+		json.NewEncoder(w).Encode(apistub.container)
+		return
+	}
+	apistub.proxy.ServeHTTP(w, r)
+}
+
 func (s *TestSuite) TestLoadImage(c *C) {
 	s.runner.Container.ContainerImage = arvadostest.DockerImage112PDH
 	s.runner.Container.Mounts = map[string]arvados.Mount{
@@ -687,8 +752,9 @@ func (s *TestSuite) fullRunHelper(c *C, record string, extraMounts []string, fn 
 		}
 		return d, err
 	}
+	client, _ := apiStub()
 	s.runner.MkArvClient = func(token string) (IArvadosClient, IKeepClient, *arvados.Client, error) {
-		return &ArvTestClient{secretMounts: secretMounts}, &s.testContainerKeepClient, nil, nil
+		return &ArvTestClient{secretMounts: secretMounts}, &s.testContainerKeepClient, client, nil
 	}
 
 	if extraMounts != nil && len(extraMounts) > 0 {
@@ -1352,6 +1418,7 @@ func (s *TestSuite) TestSetupMounts(c *C) {
 	cr := s.runner
 	am := &ArvMountCmdLine{}
 	cr.RunArvMount = am.ArvMountTest
+	cr.containerClient, _ = apiStub()
 	cr.ContainerArvClient = &ArvTestClient{}
 	cr.ContainerKeepClient = &KeepTestClient{}
 	cr.Container.OutputStorageClasses = []string{"default"}
@@ -1674,7 +1741,7 @@ func (s *TestSuite) TestSetupMounts(c *C) {
 	{
 		i = 0
 		cr.ArvMountPoint = ""
-		(*GitMountSuite)(nil).useTestGitServer(c)
+		git_client.InstallProtocol("https", git_http.NewClient(arvados.InsecureHTTPClient))
 		cr.token = arvadostest.ActiveToken
 		cr.Container.Mounts = make(map[string]arvados.Mount)
 		cr.Container.Mounts = map[string]arvados.Mount{

@@ -231,74 +231,37 @@ func (c *ArvadosClient) CallRaw(method string, resourceType string, uuid string,
 			vals.Set(k, string(m))
 		}
 	}
-
-	retryable := false
-	switch method {
-	case "GET", "HEAD", "PUT", "OPTIONS", "DELETE":
-		retryable = true
-	}
-
-	// Non-retryable methods such as POST are not safe to retry automatically,
-	// so we minimize such failures by always using a new or recently active socket
-	if !retryable {
-		if time.Since(c.lastClosedIdlesAt) > MaxIdleConnectionDuration {
-			c.lastClosedIdlesAt = time.Now()
-			c.Client.Transport.(*http.Transport).CloseIdleConnections()
-		}
-	}
-
-	// Make the request
 	var req *http.Request
-	var resp *http.Response
-
-	for attempt := 0; attempt <= c.Retries; attempt++ {
-		if method == "GET" || method == "HEAD" {
-			u.RawQuery = vals.Encode()
-			if req, err = http.NewRequest(method, u.String(), nil); err != nil {
-				return nil, err
-			}
-		} else {
-			if req, err = http.NewRequest(method, u.String(), bytes.NewBufferString(vals.Encode())); err != nil {
-				return nil, err
-			}
-			req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
+	if method == "GET" || method == "HEAD" {
+		u.RawQuery = vals.Encode()
+		if req, err = http.NewRequest(method, u.String(), nil); err != nil {
+			return nil, err
 		}
-
-		// Add api token header
-		req.Header.Add("Authorization", fmt.Sprintf("OAuth2 %s", c.ApiToken))
-		if c.RequestID != "" {
-			req.Header.Add("X-Request-Id", c.RequestID)
+	} else {
+		if req, err = http.NewRequest(method, u.String(), bytes.NewBufferString(vals.Encode())); err != nil {
+			return nil, err
 		}
-
-		resp, err = c.Client.Do(req)
-		if err != nil {
-			if retryable {
-				time.Sleep(RetryDelay)
-				continue
-			} else {
-				return nil, err
-			}
-		}
-
-		if resp.StatusCode == http.StatusOK {
-			return resp.Body, nil
-		}
-
-		defer resp.Body.Close()
-
-		switch resp.StatusCode {
-		case 408, 409, 422, 423, 500, 502, 503, 504:
-			time.Sleep(RetryDelay)
-			continue
-		default:
-			return nil, newAPIServerError(c.ApiServer, resp)
-		}
+		req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
 	}
-
-	if resp != nil {
+	if c.RequestID != "" {
+		req.Header.Add("X-Request-Id", c.RequestID)
+	}
+	client := arvados.Client{
+		Client:    c.Client,
+		APIHost:   c.ApiServer,
+		AuthToken: c.ApiToken,
+		Insecure:  c.ApiInsecure,
+		Timeout:   30 * RetryDelay * time.Duration(c.Retries),
+	}
+	resp, err := client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusNoContent {
+		defer resp.Body.Close()
 		return nil, newAPIServerError(c.ApiServer, resp)
 	}
-	return nil, err
+	return resp.Body, nil
 }
 
 func newAPIServerError(ServerAddress string, resp *http.Response) APIServerError {
@@ -332,12 +295,12 @@ func newAPIServerError(ServerAddress string, resp *http.Response) APIServerError
 
 // Call an API endpoint and parse the JSON response into an object.
 //
-//   method - HTTP method: GET, HEAD, PUT, POST, PATCH or DELETE.
-//   resourceType - the type of arvados resource to act on (e.g., "collections", "pipeline_instances").
-//   uuid - the uuid of the specific item to access. May be empty.
-//   action - API method name (e.g., "lock"). This is often empty if implied by method and uuid.
-//   parameters - method parameters.
-//   output - a map or annotated struct which is a legal target for encoding/json/Decoder.
+//	method - HTTP method: GET, HEAD, PUT, POST, PATCH or DELETE.
+//	resourceType - the type of arvados resource to act on (e.g., "collections", "pipeline_instances").
+//	uuid - the uuid of the specific item to access. May be empty.
+//	action - API method name (e.g., "lock"). This is often empty if implied by method and uuid.
+//	parameters - method parameters.
+//	output - a map or annotated struct which is a legal target for encoding/json/Decoder.
 //
 // Returns a non-nil error if an error occurs making the API call, the
 // API responds with a non-successful HTTP status, or an error occurs
