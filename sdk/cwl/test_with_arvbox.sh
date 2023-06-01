@@ -104,10 +104,14 @@ fi
 
 set -x
 
+# 2.3.20230527113600 release of cwltest confirms that files exist on disk, since
+# our files are in Keep, all the tests fail.
+# We should add [optional] Arvados support to cwltest so it can access
+# Keep but for the time being just install the last working version.
 if [ "\$PYCMD" = "python3" ]; then
-    pip3 install cwltest
+    pip3 install 'cwltest<2.3.20230527113600'
 else
-    pip install cwltest
+    pip install 'cwltest<2.3.20230527113600'
 fi
 
 mkdir -p /tmp/cwltest
