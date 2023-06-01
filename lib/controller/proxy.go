@@ -45,6 +45,11 @@ var dropHeaders = map[string]bool{
 
 	// Content-Length depends on encoding.
 	"Content-Length": true,
+
+	// Defend against Rails vulnerability CVE-2023-22795 -
+	// we don't use this functionality anyway, so it costs us nothing.
+	// <https://discuss.rubyonrails.org/t/cve-2023-22795-possible-redos-based-dos-vulnerability-in-action-dispatch/82118>
+	"If-None-Match": true,
 }
 
 type ResponseFilter func(*http.Response, error) (*http.Response, error)
