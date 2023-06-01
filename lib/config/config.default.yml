@@ -1155,6 +1155,8 @@ Clusters:
 
         # Maximum bytes that may be logged by a single job.  Log bytes that are
         # silenced by throttling are not counted against this total.
+        # If you set this to zero, each container will only create a single
+        # log on the API server, noting for users that logging is throttled.
         LimitLogBytesPerJob: 67108864
 
         LogPartialLineThrottlePeriod: 5s
