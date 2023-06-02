@@ -377,10 +377,17 @@ def main(args=sys.argv[1:],
     logger.setLevel(logging.INFO)
     logging.getLogger('arvados').setLevel(logging.INFO)
     logging.getLogger('arvados.keep').setLevel(logging.WARNING)
+    # API retries are at WARNING level and can be noisy, but as long as
+    # they succeed we don't need to see warnings about it.
+    logging.getLogger('googleapiclient').setLevel(logging.ERROR)
 
     if arvargs.debug:
         logger.setLevel(logging.DEBUG)
         logging.getLogger('arvados').setLevel(logging.DEBUG)
+        # In debug mode show logs about retries, but we arn't
+        # debugging the google client so we don't need to see
+        # everything.
+        logging.getLogger('googleapiclient').setLevel(logging.WARNING)
 
     if arvargs.quiet:
         logger.setLevel(logging.WARN)
