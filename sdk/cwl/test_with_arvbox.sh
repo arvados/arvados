@@ -17,6 +17,7 @@ tag="latest"
 pythoncmd=python3
 suite=conformance
 runapi=containers
+reinstall=0
 
 while test -n "$1" ; do
     arg="$1"
@@ -43,6 +44,10 @@ while test -n "$1" ; do
             ;;
         --devcwl)
             devcwl=1
+            shift
+            ;;
+        --reinstall)
+            reinstall=1
             shift
             ;;
         --pythoncmd)
@@ -96,7 +101,11 @@ set -eu -o pipefail
 
 export PYCMD=$pythoncmd
 
-if test $config = dev ; then
+if test $config = dev -o $reinstall = 1; then
+  cd /usr/src/arvados/sdk/python
+  \$PYCMD setup.py sdist
+  pip_install \$(ls -r dist/arvados-python-client-*.tar.gz | head -n1)
+
   cd /usr/src/arvados/sdk/cwl
   \$PYCMD setup.py sdist
   pip_install \$(ls -r dist/arvados-cwl-runner-*.tar.gz | head -n1)
