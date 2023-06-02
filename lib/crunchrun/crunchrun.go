@@ -1124,6 +1124,7 @@ func (runner *ContainerRunner) WaitFinish() error {
 	}
 	runner.CrunchLog.Printf("Container exited with status code %d%s", exitcode, extra)
 	err = runner.DispatcherArvClient.Update("containers", runner.Container.UUID, arvadosclient.Dict{
+		"select":    []string{"uuid"},
 		"container": arvadosclient.Dict{"exit_code": exitcode},
 	}, nil)
 	if err != nil {
@@ -1200,7 +1201,10 @@ func (runner *ContainerRunner) updateLogs() {
 		}
 
 		err = runner.DispatcherArvClient.Update("containers", runner.Container.UUID, arvadosclient.Dict{
-			"container": arvadosclient.Dict{"log": saved.PortableDataHash},
+			"select": []string{"uuid"},
+			"container": arvadosclient.Dict{
+				"log": saved.PortableDataHash,
+			},
 		}, nil)
 		if err != nil {
 			runner.CrunchLog.Printf("error updating container log to %s: %s", saved.PortableDataHash, err)
@@ -1316,6 +1320,7 @@ func (runner *ContainerRunner) checkSpotInterruptionNotices() {
 
 func (runner *ContainerRunner) updateRuntimeStatus(status arvadosclient.Dict) {
 	err := runner.DispatcherArvClient.Update("containers", runner.Container.UUID, arvadosclient.Dict{
+		"select": []string{"uuid"},
 		"container": arvadosclient.Dict{
 			"runtime_status": status,
 		},
@@ -1332,7 +1337,9 @@ func (runner *ContainerRunner) CaptureOutput(bindmounts map[string]bindmount) er
 		// Output may have been set directly by the container, so
 		// refresh the container record to check.
 		err := runner.DispatcherArvClient.Get("containers", runner.Container.UUID,
-			nil, &runner.Container)
+			arvadosclient.Dict{
+				"select": []string{"output"},
+			}, &runner.Container)
 		if err != nil {
 			return err
 		}
@@ -1370,6 +1377,7 @@ func (runner *ContainerRunner) CaptureOutput(bindmounts map[string]bindmount) er
 	var resp arvados.Collection
 	err = runner.ContainerArvClient.Create("collections", arvadosclient.Dict{
 		"ensure_unique_name": true,
+		"select":             []string{"portable_data_hash"},
 		"collection": arvadosclient.Dict{
 			"is_trashed":    true,
 			"name":          "output for " + runner.Container.UUID,
@@ -1496,6 +1504,8 @@ func (runner *ContainerRunner) CommitLogs() error {
 	return nil
 }
 
+// Create/update the log collection. Return value has UUID and
+// PortableDataHash fields populated, but others may be blank.
 func (runner *ContainerRunner) saveLogCollection(final bool) (response arvados.Collection, err error) {
 	runner.logMtx.Lock()
 	defer runner.logMtx.Unlock()
@@ -1524,7 +1534,10 @@ func (runner *ContainerRunner) saveLogCollection(final bool) (response arvados.C
 		updates["trash_at"] = exp
 		updates["delete_at"] = exp
 	}
-	reqBody := arvadosclient.Dict{"collection": updates}
+	reqBody := arvadosclient.Dict{
+		"select":     []string{"uuid", "portable_data_hash"},
+		"collection": updates,
+	}
 	var err2 error
 	if runner.logUUID == "" {
 		reqBody["ensure_unique_name"] = true
@@ -1559,7 +1572,10 @@ func (runner *ContainerRunner) UpdateContainerRunning(logId string) error {
 	return runner.DispatcherArvClient.Update(
 		"containers",
 		runner.Container.UUID,
-		arvadosclient.Dict{"container": updates},
+		arvadosclient.Dict{
+			"select":    []string{"uuid"},
+			"container": updates,
+		},
 		nil,
 	)
 }
@@ -1597,7 +1613,10 @@ func (runner *ContainerRunner) UpdateContainerFinal() error {
 		update["output"] = *runner.OutputPDH
 	}
 	update["cost"] = runner.calculateCost(time.Now())
-	return runner.DispatcherArvClient.Update("containers", runner.Container.UUID, arvadosclient.Dict{"container": update}, nil)
+	return runner.DispatcherArvClient.Update("containers", runner.Container.UUID, arvadosclient.Dict{
+		"select":    []string{"uuid"},
+		"container": update,
+	}, nil)
 }
 
 // IsCancelled returns the value of Cancelled, with goroutine safety.
@@ -2089,7 +2108,10 @@ func (command) RunCommand(prog string, args []string, stdin io.Reader, stdout, s
 			cr.gateway.UpdateTunnelURL = func(url string) {
 				cr.gateway.Address = "tunnel " + url
 				cr.DispatcherArvClient.Update("containers", containerUUID,
-					arvadosclient.Dict{"container": arvadosclient.Dict{"gateway_address": cr.gateway.Address}}, nil)
+					arvadosclient.Dict{
+						"select":    []string{"uuid"},
+						"container": arvadosclient.Dict{"gateway_address": cr.gateway.Address},
+					}, nil)
 			}
 		}
 		err = cr.gateway.Start()
@@ -2458,6 +2480,7 @@ func (runner *ContainerRunner) handleSIGUSR2(sigchan chan os.Signal) {
 	for range sigchan {
 		runner.loadPrices()
 		update := arvadosclient.Dict{
+			"select": []string{"uuid"},
 			"container": arvadosclient.Dict{
 				"cost": runner.calculateCost(time.Now()),
 			},
