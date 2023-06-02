@@ -120,8 +120,8 @@ deploynode() {
 			SUDO=sudo
 		fi
 		$SUDO ./provision.sh --config ${CONFIG_FILE} ${ROLES} 2>&1 | tee $logfile
-	else
-	    $SSH $DEPLOY_USER@$NODE "cd ${GITTARGET} && sudo ./provision.sh --config ${CONFIG_FILE} ${ROLES}" 2>&1 | tee $logfile
+    else
+	    $SSH $DEPLOY_USER@$NODE "cd ${GITTARGET} && git log -n1 HEAD && sudo ./provision.sh --config ${CONFIG_FILE} ${ROLES}" 2>&1 | tee $logfile
 	    cleanup $NODE
     fi
 }
