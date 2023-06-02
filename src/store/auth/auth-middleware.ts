@@ -56,7 +56,7 @@ export const authMiddleware = (services: ServiceRepository): Middleware => store
             }
         },
         SET_CONFIG: ({ config }) => {
-            document.title = `Arvados Workbench (${config.uuidPrefix})`;
+            document.title = `Arvados (${config.uuidPrefix})`;
             next(action);
         },
         LOGOUT: ({ deleteLinkData, preservePath }) => {

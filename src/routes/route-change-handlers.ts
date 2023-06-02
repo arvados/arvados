@@ -60,6 +60,8 @@ const handleLocationChange = (store: RootStore) => ({ pathname }: Location) => {
         }
     }
 
+    document.title = `Arvados (${store.getState().auth.config.uuidPrefix}) - ${pathname.slice(1)}`;
+
     if (projectMatch) {
         store.dispatch(openProjectPanel(projectMatch.params.id));
     } else if (collectionMatch) {
