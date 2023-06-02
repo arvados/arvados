@@ -499,7 +499,7 @@ class ArvadosContainer(JobBase):
                 label = self.arvrunner.label(self)
                 done.logtail(
                     logc, logger.error,
-                    "%s (%s) error log:" % (label, record["uuid"]), maxlen=40)
+                    "%s (%s) error log:" % (label, record["uuid"]), maxlen=40, include_crunchrun=(rcode is None or rcode > 127))
 
             if record["output_uuid"]:
                 if self.arvrunner.trash_intermediate or self.arvrunner.intermediate_output_ttl:
