@@ -12,6 +12,7 @@
 {%- set passenger_ruby = '/usr/local/rvm/wrappers/default/ruby'
                            if grains.osfinger in ('CentOS Linux-7', 'Ubuntu-18.04', 'Debian-10') else
                          '/usr/bin/ruby' %}
+{%- set max_reqs = "__CONTROLLER_MAX_CONCURRENT_REQUESTS__" %}
 
 ### NGINX
 nginx:
@@ -22,11 +23,10 @@ nginx:
   passenger:
     passenger_ruby: {{ passenger_ruby }}
     passenger_max_pool_size: {{ "__CONTROLLER_NGINX_WORKERS__" or grains['num_cpus'] }}
-    {%- set max_reqs = "__CONTROLLER_MAX_CONCURRENT_REQUESTS__" %}
-    {%- if max_reqs != "" and max_reqs is number %}
+    {%- if max_reqs != "" %}
     # Default is 100 -- Configuring this a bit higher than API.MaxConcurrentRequests
     # to be able to handle /metrics requests even on heavy load situations.
-    passenger_max_request_queue_size: {{ (max_reqs * 1.1)|round|int }}
+    passenger_max_request_queue_size: {{ (max_reqs|int * 1.1)|round|int }}
     {%- endif %}
 
   ### SERVER
@@ -44,9 +44,15 @@ nginx:
       load_module: {{ passenger_mod }}
       {% endif %}
       worker_processes: {{ "__CONTROLLER_NGINX_WORKERS__" or grains['num_cpus'] }}
+      {%- if max_reqs != "" %}
+      worker_rlimit_nofile: {{ (max_reqs|int * 3)|round|int }}
+      events:
+        worker_connections: {{ (max_reqs|int * 3)|round|int }}
+      {%- else %}
       worker_rlimit_nofile: 4096
       events:
         worker_connections: 1024
+      {%- endif %}
 
   ### SNIPPETS
   snippets:
