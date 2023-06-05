@@ -459,6 +459,7 @@ class ArvadosContainer(JobBase):
     def done(self, record):
         outputs = {}
         retried = False
+        rcode = None
         try:
             container = self.arvrunner.api.containers().get(
                 uuid=record["container_uuid"]
