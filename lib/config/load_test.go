@@ -912,3 +912,10 @@ func (s *LoadSuite) TestGetFilesystemSize(c *check.C) {
 	c.Check(err, check.IsNil)
 	c.Logf("getFilesystemSize(%q) == %v", path, size)
 }
+
+func (s *LoadSuite) TestLoadSSHKey(c *check.C) {
+	cwd, err := os.Getwd()
+	c.Assert(err, check.IsNil)
+	_, err = LoadSSHKey("file://" + cwd + "/../dispatchcloud/test/sshkey_dispatch")
+	c.Check(err, check.IsNil)
+}
