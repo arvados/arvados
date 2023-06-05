@@ -15,6 +15,7 @@ import (
 	"time"
 
 	"git.arvados.org/arvados.git/lib/cloud"
+	"git.arvados.org/arvados.git/lib/config"
 	"git.arvados.org/arvados.git/lib/controller/dblock"
 	"git.arvados.org/arvados.git/lib/ctrlctx"
 	"git.arvados.org/arvados.git/lib/dispatchcloud/container"
@@ -137,7 +138,7 @@ func (disp *dispatcher) initialize() {
 	disp.stop = make(chan struct{}, 1)
 	disp.stopped = make(chan struct{})
 
-	if key, err := ssh.ParsePrivateKey([]byte(disp.Cluster.Containers.DispatchPrivateKey)); err != nil {
+	if key, err := config.LoadSSHKey(disp.Cluster.Containers.DispatchPrivateKey); err != nil {
 		disp.logger.Fatalf("error parsing configured Containers.DispatchPrivateKey: %s", err)
 	} else {
 		disp.sshKey = key

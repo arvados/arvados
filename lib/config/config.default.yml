@@ -1050,6 +1050,10 @@ Clusters:
       # cloud dispatcher for executing containers on worker VMs.
       # Begins with "-----BEGIN RSA PRIVATE KEY-----\n"
       # and ends with "\n-----END RSA PRIVATE KEY-----\n".
+      #
+      # Use "file:///absolute/path/to/key" to load the key from a
+      # separate file instead of embedding it in the configuration
+      # file.
       DispatchPrivateKey: ""
 
       # Maximum time to wait for workers to come up before abandoning

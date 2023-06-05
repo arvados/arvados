@@ -18,7 +18,6 @@ import (
 	"git.arvados.org/arvados.git/lib/dispatchcloud"
 	"git.arvados.org/arvados.git/sdk/go/arvados"
 	"git.arvados.org/arvados.git/sdk/go/ctxlog"
-	"golang.org/x/crypto/ssh"
 )
 
 var Command command
@@ -65,9 +64,9 @@ func (command) RunCommand(prog string, args []string, stdin io.Reader, stdout, s
 	if err != nil {
 		return 1
 	}
-	key, err := ssh.ParsePrivateKey([]byte(cluster.Containers.DispatchPrivateKey))
+	key, err := config.LoadSSHKey(cluster.Containers.DispatchPrivateKey)
 	if err != nil {
-		err = fmt.Errorf("error parsing configured Containers.DispatchPrivateKey: %s", err)
+		err = fmt.Errorf("error loading Containers.DispatchPrivateKey: %s", err)
 		return 1
 	}
 	driver, ok := dispatchcloud.Drivers[cluster.Containers.CloudVMs.Driver]
