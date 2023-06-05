@@ -25,7 +25,7 @@ import { rootProjectActionSet } from "views-components/context-menu/action-sets/
 import { filterGroupActionSet, frozenActionSet, projectActionSet, readOnlyProjectActionSet } from "views-components/context-menu/action-sets/project-action-set";
 import { resourceActionSet } from 'views-components/context-menu/action-sets/resource-action-set';
 import { favoriteActionSet } from "views-components/context-menu/action-sets/favorite-action-set";
-import { collectionFilesActionSet, readOnlyCollectionFilesActionSet } from 'views-components/context-menu/action-sets/collection-files-action-set';
+import { collectionFilesActionSet, collectionFilesMultipleActionSet, readOnlyCollectionFilesActionSet, readOnlyCollectionFilesMultipleActionSet } from 'views-components/context-menu/action-sets/collection-files-action-set';
 import { collectionDirectoryItemActionSet, collectionFileItemActionSet, readOnlyCollectionDirectoryItemActionSet, readOnlyCollectionFileItemActionSet } from 'views-components/context-menu/action-sets/collection-files-item-action-set';
 import { collectionFilesNotSelectedActionSet } from 'views-components/context-menu/action-sets/collection-files-not-selected-action-set';
 import { collectionActionSet, collectionAdminActionSet, oldCollectionVersionActionSet, readOnlyCollectionActionSet } from 'views-components/context-menu/action-sets/collection-action-set';
@@ -77,7 +77,9 @@ addMenuActionSet(ContextMenuKind.FILTER_GROUP, filterGroupActionSet);
 addMenuActionSet(ContextMenuKind.RESOURCE, resourceActionSet);
 addMenuActionSet(ContextMenuKind.FAVORITE, favoriteActionSet);
 addMenuActionSet(ContextMenuKind.COLLECTION_FILES, collectionFilesActionSet);
+addMenuActionSet(ContextMenuKind.COLLECTION_FILES_MULTIPLE, collectionFilesMultipleActionSet);
 addMenuActionSet(ContextMenuKind.READONLY_COLLECTION_FILES, readOnlyCollectionFilesActionSet);
+addMenuActionSet(ContextMenuKind.READONLY_COLLECTION_FILES_MULTIPLE, readOnlyCollectionFilesMultipleActionSet);
 addMenuActionSet(ContextMenuKind.COLLECTION_FILES_NOT_SELECTED, collectionFilesNotSelectedActionSet);
 addMenuActionSet(ContextMenuKind.COLLECTION_DIRECTORY_ITEM, collectionDirectoryItemActionSet);
 addMenuActionSet(ContextMenuKind.READONLY_COLLECTION_DIRECTORY_ITEM, readOnlyCollectionDirectoryItemActionSet);

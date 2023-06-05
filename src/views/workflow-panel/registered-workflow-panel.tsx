@@ -18,7 +18,7 @@ import { connect, DispatchProp } from "react-redux";
 import { RouteComponentProps } from 'react-router';
 import { ArvadosTheme } from 'common/custom-theme';
 import { RootState } from 'store/store';
-import { WorkflowIcon, MoreOptionsIcon } from 'components/icon/icon';
+import { WorkflowIcon, MoreVerticalIcon } from 'components/icon/icon';
 import { WorkflowResource } from 'models/workflow';
 import { ProcessOutputCollectionFiles } from 'views/process-panel/process-output-collection-files';
 import { WorkflowDetailsAttributes, RegisteredWorkflowPanelDataProps, getRegisteredWorkflowPanelData } from 'views-components/details-panel/workflow-details';
@@ -167,7 +167,7 @@ export const RegisteredWorkflowPanel = withStyles(styles)(connect(
                                             <IconButton
                                                 aria-label="More options"
                                                 onClick={event => this.handleContextMenu(event)}>
-                                                <MoreOptionsIcon />
+                                                <MoreVerticalIcon />
                                             </IconButton>
                                         </Tooltip>}
 

@@ -5,7 +5,7 @@
 import React from 'react';
 import { StyleRulesCallback, WithStyles, withStyles, Card, CardContent, Grid, Table, TableHead, TableRow, TableCell, TableBody, Tooltip, IconButton, Checkbox } from '@material-ui/core';
 import { ArvadosTheme } from 'common/custom-theme';
-import { MoreOptionsIcon } from 'components/icon/icon';
+import { MoreVerticalIcon } from 'components/icon/icon';
 import { KeepServiceResource } from 'models/keep-services';
 
 type CssRules = 'root' | 'tableRow';
@@ -34,7 +34,7 @@ export interface KeepServicePanelRootDataProps {
 type KeepServicePanelRootProps = KeepServicePanelRootActionProps & KeepServicePanelRootDataProps & WithStyles<CssRules>;
 
 export const KeepServicePanelRoot = withStyles(styles)(
-    ({ classes, hasKeepSerices, keepServices, openRowOptions }: KeepServicePanelRootProps) => 
+    ({ classes, hasKeepSerices, keepServices, openRowOptions }: KeepServicePanelRootProps) =>
         <Card className={classes.root}>
             <CardContent>
                 {hasKeepSerices && <Grid container direction="row">
@@ -73,7 +73,7 @@ export const KeepServicePanelRoot = withStyles(styles)(
                                         <TableCell>
                                             <Tooltip title="More options" disableFocusListener>
                                                 <IconButton onClick={event => openRowOptions(event, keepService)}>
-                                                    <MoreOptionsIcon />
+                                                    <MoreVerticalIcon />
                                                 </IconButton>
                                             </Tooltip>
                                         </TableCell>

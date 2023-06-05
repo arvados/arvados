@@ -14,6 +14,7 @@ export enum CommonResourceServiceError {
     MODIFYING_CONTAINER_REQUEST_FINAL_STATE = 'ModifyingContainerRequestFinalState',
     NAME_HAS_ALREADY_BEEN_TAKEN = 'NameHasAlreadyBeenTaken',
     PERMISSION_ERROR_FORBIDDEN = 'PermissionErrorForbidden',
+    SOURCE_DESTINATION_CANNOT_BE_SAME = 'SourceDestinationCannotBeSame',
     UNKNOWN = 'Unknown',
     NONE = 'None'
 }
@@ -54,7 +55,7 @@ export class CommonResourceService<T extends Resource> extends CommonService<T> 
 }
 
 export const getCommonResourceServiceError = (errorResponse: any) => {
-    if ('errors' in errorResponse) {
+    if (errorResponse && 'errors' in errorResponse) {
         const error = errorResponse.errors.join('');
         switch (true) {
             case /UniqueViolation/.test(error):
@@ -67,6 +68,8 @@ export const getCommonResourceServiceError = (errorResponse: any) => {
                 return CommonResourceServiceError.NAME_HAS_ALREADY_BEEN_TAKEN;
             case /403 Forbidden/.test(error):
                 return CommonResourceServiceError.PERMISSION_ERROR_FORBIDDEN;
+            case new RegExp(CommonResourceServiceError.SOURCE_DESTINATION_CANNOT_BE_SAME).test(error):
+                return CommonResourceServiceError.SOURCE_DESTINATION_CANNOT_BE_SAME;
             default:
                 return CommonResourceServiceError.UNKNOWN;
         }

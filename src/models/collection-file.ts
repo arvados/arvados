@@ -71,10 +71,10 @@ export const createCollectionFilesTree = (data: Array<CollectionDirectory | Coll
 
 const getParentId = (item: CollectionDirectory | CollectionFile) =>
     item.path
-        ? join('', [getCollectionId(item.id), item.path])
+        ? join('', [getCollectionResourceCollectionUuid(item.id), item.path])
         : item.path;
 
-const getCollectionId = pipe(
+export const getCollectionResourceCollectionUuid = pipe(
     split('/'),
     head,
 );

@@ -389,6 +389,7 @@ describe('Collection panel tests', function () {
                     'table%&?*2',
                     'bar' // make sure we can go back to the original name as a last step
                 ];
+                cy.intercept({method: 'PUT', url: '**/arvados/v1/collections/*'}).as('renameRequest');
                 eachPair(names, (from, to) => {
                     cy.waitForDom().get('[data-cy=collection-files-panel]')
                         .contains(`${from}`).rightclick();
@@ -403,6 +404,7 @@ describe('Collection panel tests', function () {
                                 .type(to, { parseSpecialCharSequences: false });
                         });
                     cy.get('[data-cy=form-submit-btn]').click();
+                    cy.wait('@renameRequest');
                     cy.get('[data-cy=collection-files-panel]')
                         .should('not.contain', `${from}`)
                         .and('contain', `${to}`);
@@ -905,7 +907,7 @@ describe('Collection panel tests', function () {
             });
     });
 
-    it('creates collection from selected files of another collection', () => {
+    it('copies selected files into new collection', () => {
         cy.createCollection(adminUser.token, {
             name: `Test Collection ${Math.floor(Math.random() * 999999)}`,
             owner_uuid: activeUser.user.uuid,
@@ -922,7 +924,7 @@ describe('Collection panel tests', function () {
                 });
 
                 cy.get('[data-cy=collection-files-panel-options-btn]').click();
-                cy.get('[data-cy=context-menu]').contains('Create a new collection with selected').click();
+                cy.get('[data-cy=context-menu]').contains('Copy selected into new collection').click();
 
                 cy.get('[data-cy=form-dialog]').contains('Projects').click();
 
@@ -930,7 +932,203 @@ describe('Collection panel tests', function () {
 
                 cy.waitForDom().get('.layout-pane-primary', { timeout: 12000 }).contains('Projects').click();
 
-                cy.get('main').contains(`Files extracted from: ${this.collection.name}`).should('exist');
+                cy.get('main').contains(`Files extracted from: ${this.collection.name}`).click();
+                cy.get('[data-cy=collection-files-panel]')
+                        .and('contain', 'bar');
+            });
+    });
+
+    it('copies selected files into existing collection', () => {
+        cy.createCollection(adminUser.token, {
+            name: `Test Collection ${Math.floor(Math.random() * 999999)}`,
+            owner_uuid: activeUser.user.uuid,
+            preserve_version: true,
+            manifest_text: ". 37b51d194a7513e45b56f6524f2d51f2+3 0:3:foo 0:3:bar\n"
+        }).as('sourceCollection')
+
+        cy.createCollection(adminUser.token, {
+            name: `Destination Collection ${Math.floor(Math.random() * 999999)}`,
+            owner_uuid: activeUser.user.uuid,
+            preserve_version: true,
+            manifest_text: ""
+        }).as('destinationCollection');
+
+        cy.getAll('@sourceCollection', '@destinationCollection').then(function ([sourceCollection, destinationCollection]) {
+                // Visit collection, check basic information
+                cy.loginAs(activeUser)
+                cy.goToPath(`/collections/${sourceCollection.uuid}`);
+
+                cy.get('[data-cy=collection-files-panel]').within(() => {
+                    cy.get('input[type=checkbox]').first().click();
+                });
+
+                cy.get('[data-cy=collection-files-panel-options-btn]').click();
+                cy.get('[data-cy=context-menu]').contains('Copy selected into existing collection').click();
+
+                cy.get('[data-cy=form-dialog]').contains(destinationCollection.name).click();
+
+                cy.get('[data-cy=form-submit-btn]').click();
+                cy.wait(2000);
+
+                cy.goToPath(`/collections/${destinationCollection.uuid}`);
+
+                cy.get('main').contains(destinationCollection.name).should('exist');
+                cy.get('[data-cy=collection-files-panel]')
+                        .and('contain', 'bar');
+            });
+    });
+
+    it('copies selected files into separate collections', () => {
+        cy.createCollection(adminUser.token, {
+            name: `Test Collection ${Math.floor(Math.random() * 999999)}`,
+            owner_uuid: activeUser.user.uuid,
+            preserve_version: true,
+            manifest_text: ". 37b51d194a7513e45b56f6524f2d51f2+3 0:3:foo 0:3:bar\n"
+        }).as('sourceCollection')
+
+        cy.getAll('@sourceCollection').then(function ([sourceCollection]) {
+                // Visit collection, check basic information
+                cy.loginAs(activeUser)
+                cy.goToPath(`/collections/${sourceCollection.uuid}`);
+
+                // Select both files
+                cy.waitForDom().get('[data-cy=collection-files-panel]').within(() => {
+                    cy.get('input[type=checkbox]').first().click();
+                    cy.get('input[type=checkbox]').last().click();
+                });
+
+                // Copy to separate collections
+                cy.get('[data-cy=collection-files-panel-options-btn]').click();
+                cy.get('[data-cy=context-menu]').contains('Copy selected into separate collections').click();
+                cy.get('[data-cy=form-dialog]').contains('Projects').click();
+                cy.get('[data-cy=form-submit-btn]').click();
+
+                // Verify created collections
+                cy.waitForDom().get('.layout-pane-primary', { timeout: 12000 }).contains('Projects').click();
+                cy.get('main').contains(`File copied from collection ${sourceCollection.name}/foo`).click();
+                cy.get('[data-cy=collection-files-panel]')
+                        .and('contain', 'foo');
+                cy.get('.layout-pane-primary').contains('Projects').click();
+                cy.get('main').contains(`File copied from collection ${sourceCollection.name}/bar`).click();
+                cy.get('[data-cy=collection-files-panel]')
+                        .and('contain', 'bar');
+
+                // Verify separate collection menu items not present when single file selected
+                // Wait for dom for collection to re-render
+                cy.waitForDom().get('[data-cy=collection-files-panel]').within(() => {
+                    cy.get('input[type=checkbox]').first().click();
+                });
+                cy.get('[data-cy=collection-files-panel-options-btn]').click();
+                cy.get('[data-cy=context-menu]').should('not.contain', 'Copy selected into separate collections');
+                cy.get('[data-cy=context-menu]').should('not.contain', 'Move selected into separate collections');
+            });
+    });
+
+    it('moves selected files into new collection', () => {
+        cy.createCollection(adminUser.token, {
+            name: `Test Collection ${Math.floor(Math.random() * 999999)}`,
+            owner_uuid: activeUser.user.uuid,
+            preserve_version: true,
+            manifest_text: ". 37b51d194a7513e45b56f6524f2d51f2+3 0:3:foo 0:3:bar\n"
+        })
+            .as('collection').then(function () {
+                // Visit collection, check basic information
+                cy.loginAs(activeUser)
+                cy.goToPath(`/collections/${this.collection.uuid}`);
+
+                cy.get('[data-cy=collection-files-panel]').within(() => {
+                    cy.get('input[type=checkbox]').first().click();
+                });
+
+                cy.get('[data-cy=collection-files-panel-options-btn]').click();
+                cy.get('[data-cy=context-menu]').contains('Move selected into new collection').click();
+
+                cy.get('[data-cy=form-dialog]').contains('Projects').click();
+
+                cy.get('[data-cy=form-submit-btn]').click();
+
+                cy.waitForDom().get('.layout-pane-primary', { timeout: 12000 }).contains('Projects').click();
+
+                cy.get('main').contains(`Files moved from: ${this.collection.name}`).click();
+                cy.get('[data-cy=collection-files-panel]')
+                        .and('contain', 'bar');
+            });
+    });
+
+    it('moves selected files into existing collection', () => {
+        cy.createCollection(adminUser.token, {
+            name: `Test Collection ${Math.floor(Math.random() * 999999)}`,
+            owner_uuid: activeUser.user.uuid,
+            preserve_version: true,
+            manifest_text: ". 37b51d194a7513e45b56f6524f2d51f2+3 0:3:foo 0:3:bar\n"
+        }).as('sourceCollection')
+
+        cy.createCollection(adminUser.token, {
+            name: `Destination Collection ${Math.floor(Math.random() * 999999)}`,
+            owner_uuid: activeUser.user.uuid,
+            preserve_version: true,
+            manifest_text: ""
+        }).as('destinationCollection');
+
+        cy.getAll('@sourceCollection', '@destinationCollection').then(function ([sourceCollection, destinationCollection]) {
+                // Visit collection, check basic information
+                cy.loginAs(activeUser)
+                cy.goToPath(`/collections/${sourceCollection.uuid}`);
+
+                cy.get('[data-cy=collection-files-panel]').within(() => {
+                    cy.get('input[type=checkbox]').first().click();
+                });
+
+                cy.get('[data-cy=collection-files-panel-options-btn]').click();
+                cy.get('[data-cy=context-menu]').contains('Move selected into existing collection').click();
+
+                cy.get('[data-cy=form-dialog]').contains(destinationCollection.name).click();
+
+                cy.get('[data-cy=form-submit-btn]').click();
+                cy.wait(2000);
+
+                cy.goToPath(`/collections/${destinationCollection.uuid}`);
+
+                cy.get('main').contains(destinationCollection.name).should('exist');
+                cy.get('[data-cy=collection-files-panel]')
+                        .and('contain', 'bar');
+            });
+    });
+
+    it('moves selected files into separate collections', () => {
+        cy.createCollection(adminUser.token, {
+            name: `Test Collection ${Math.floor(Math.random() * 999999)}`,
+            owner_uuid: activeUser.user.uuid,
+            preserve_version: true,
+            manifest_text: ". 37b51d194a7513e45b56f6524f2d51f2+3 0:3:foo 0:3:bar\n"
+        }).as('sourceCollection')
+
+        cy.getAll('@sourceCollection').then(function ([sourceCollection]) {
+                // Visit collection, check basic information
+                cy.loginAs(activeUser)
+                cy.goToPath(`/collections/${sourceCollection.uuid}`);
+
+                // Select both files
+                cy.get('[data-cy=collection-files-panel]').within(() => {
+                    cy.get('input[type=checkbox]').first().click();
+                    cy.get('input[type=checkbox]').last().click();
+                });
+
+                // Copy to separate collections
+                cy.get('[data-cy=collection-files-panel-options-btn]').click();
+                cy.get('[data-cy=context-menu]').contains('Move selected into separate collections').click();
+                cy.get('[data-cy=form-dialog]').contains('Projects').click();
+                cy.get('[data-cy=form-submit-btn]').click();
+
+                // Verify created collections
+                cy.waitForDom().get('.layout-pane-primary', { timeout: 12000 }).contains('Projects').click();
+                cy.get('main').contains(`File moved from collection ${sourceCollection.name}/foo`).click();
+                cy.get('[data-cy=collection-files-panel]')
+                        .and('contain', 'foo');
+                cy.get('.layout-pane-primary').contains('Projects').click();
+                cy.get('main').contains(`File moved from collection ${sourceCollection.name}/bar`).click();
+                cy.get('[data-cy=collection-files-panel]')
+                        .and('contain', 'bar');
             });
     });
 

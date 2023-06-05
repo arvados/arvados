@@ -16,7 +16,7 @@ import {
     IconType,
     MaximizeIcon,
     UnMaximizeIcon,
-    MoreOptionsIcon
+    MoreVerticalIcon
 } from 'components/icon/icon';
 import { PaperProps } from '@material-ui/core/Paper';
 import { MPVPanelProps } from 'components/multi-panel-view/multi-panel-view';
@@ -255,7 +255,7 @@ export const DataExplorer = withStyles(styles)(
             <Grid container justify="center">
                 <Tooltip title="More options" disableFocusListener>
                     <IconButton className={this.props.classes.moreOptionsButton} onClick={event => this.props.onContextMenu(event, item)}>
-                        <MoreOptionsIcon />
+                        <MoreVerticalIcon />
                     </IconButton>
                 </Tooltip>
             </Grid>

@@ -75,13 +75,12 @@ export const createServices = (config: Config, actions: ApiActions, useApiClient
     const workflowService = new WorkflowService(apiClient, actions);
     const linkAccountService = new LinkAccountService(apiClient, actions);
 
-    const ancestorsService = new AncestorService(groupsService, userService);
-
     const idleTimeout = (config && config.clusterConfig && config.clusterConfig.Workbench.IdleTimeout) || '0s';
     const authService = new AuthService(apiClient, config.rootUrl, actions,
         (parse(idleTimeout, 's') || 0) > 0);
 
     const collectionService = new CollectionService(apiClient, webdavClient, authService, actions);
+    const ancestorsService = new AncestorService(groupsService, userService, collectionService);
     const favoriteService = new FavoriteService(linkService, groupsService);
     const tagService = new TagService(linkService);
     const searchService = new SearchService();

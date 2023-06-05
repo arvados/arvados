@@ -23,6 +23,7 @@ import { GroupContentsResource } from 'services/groups-service/groups-service';
 import { LinkResource } from 'models/link';
 import { resourceIsFrozen } from 'common/frozen-resources';
 import { ProjectResource } from 'models/project';
+import { filterCollectionFilesBySelection } from 'store/collection-panel/collection-panel-files/collection-panel-files-state';
 
 export const contextMenuActions = unionize({
     OPEN_CONTEXT_MENU: ofType<{ position: ContextMenuPosition, resource: ContextMenuResource }>(),
@@ -67,17 +68,18 @@ export const openContextMenu = (event: React.MouseEvent<HTMLElement>, resource: 
 
 export const openCollectionFilesContextMenu = (event: React.MouseEvent<HTMLElement>, isWritable: boolean) =>
     (dispatch: Dispatch, getState: () => RootState) => {
-        const isCollectionFileSelected = JSON.stringify(getState().collectionPanelFiles).includes('"selected":true');
+        const selectedCount = filterCollectionFilesBySelection(getState().collectionPanelFiles, true).length;
+        const multiple = selectedCount > 1;
         dispatch<any>(openContextMenu(event, {
             name: '',
             uuid: '',
             ownerUuid: '',
             description: '',
             kind: ResourceKind.COLLECTION,
-            menuKind: isCollectionFileSelected
+            menuKind: selectedCount > 0
                 ? isWritable
-                    ? ContextMenuKind.COLLECTION_FILES
-                    : ContextMenuKind.READONLY_COLLECTION_FILES
+                    ? multiple ? ContextMenuKind.COLLECTION_FILES_MULTIPLE : ContextMenuKind.COLLECTION_FILES
+                    : multiple ? ContextMenuKind.READONLY_COLLECTION_FILES_MULTIPLE : ContextMenuKind.READONLY_COLLECTION_FILES
                 : ContextMenuKind.COLLECTION_FILES_NOT_SELECTED
         }));
     };
