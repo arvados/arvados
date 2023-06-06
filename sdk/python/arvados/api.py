@@ -23,6 +23,7 @@ import re
 import socket
 import ssl
 import sys
+import threading
 import time
 import types
 
@@ -35,8 +36,10 @@ from . import errors
 from . import retry
 from . import util
 from . import cache
+from .logging import GoogleHTTPClientFilter, log_handler
 
 _logger = logging.getLogger('arvados.api')
+_googleapiclient_log_lock = threading.Lock()
 
 MAX_IDLE_CONNECTION_DURATION = 30
 
@@ -252,6 +255,27 @@ def api_client(
         http.timeout = timeout
     http = _patch_http_request(http, token, num_retries)
 
+    # The first time a client is instantiated, temporarily route
+    # googleapiclient.http retry logs if they're not already. These are
+    # important because temporary problems fetching the discovery document
+    # can cause clients to appear to hang early. This can be removed after
+    # we have a more general story for handling googleapiclient logs (#20521).
+    client_logger = logging.getLogger('googleapiclient.http')
+    client_logger_preconfigured = (
+        # "first time a client is instantiated" = thread that acquires this lock
+        # It is never released.
+        _googleapiclient_log_lock.acquire(blocking=False)
+        and not client_logger.hasHandlers()
+    )
+    if not client_logger_preconfigured:
+        client_level = client_logger.level
+        client_filter = GoogleHTTPClientFilter()
+        client_logger.addFilter(client_filter)
+        client_logger.addHandler(log_handler)
+        if logging.NOTSET < client_level < client_filter.retry_levelno:
+            client_logger.setLevel(client_level)
+        else:
+            client_logger.setLevel(client_filter.retry_levelno)
     svc = apiclient_discovery.build(
         'arvados', version,
         cache_discovery=False,
@@ -260,6 +284,10 @@ def api_client(
         num_retries=num_retries,
         **kwargs,
     )
+    if not client_logger_preconfigured:
+        client_logger.removeHandler(log_handler)
+        client_logger.removeFilter(client_filter)
+        client_logger.setLevel(client_level)
     svc.api_token = token
     svc.insecure = insecure
     svc.request_id = request_id
