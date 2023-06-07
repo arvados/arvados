@@ -223,8 +223,8 @@ Clusters:
       # parameter higher than this value, this value is used instead.
       MaxItemsPerResponse: 1000
 
-      # Maximum number of concurrent requests to accept in a single
-      # service process, or 0 for no limit.
+      # Maximum number of concurrent requests to process concurrently
+      # in a single service process, or 0 for no limit.
       MaxConcurrentRequests: 64
 
       # Fraction of MaxConcurrentRequests that can be "log create"

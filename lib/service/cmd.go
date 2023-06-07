@@ -154,7 +154,10 @@ func (c *command) RunCommand(prog string, args []string, stdin io.Reader, stdout
 				httpserver.Inspect(reg, cluster.ManagementToken,
 					httpserver.LogRequests(
 						interceptHealthReqs(cluster.ManagementToken, handler.CheckHealth,
-							httpserver.NewRequestLimiter(cluster.API.MaxConcurrentRequests, handler, reg)))))))
+							&httpserver.RequestLimiter{
+								Handler:       handler,
+								MaxConcurrent: cluster.API.MaxConcurrentRequests,
+								Registry:      reg}))))))
 	srv := &httpserver.Server{
 		Server: http.Server{
 			Handler:     ifCollectionInHost(instrumented, instrumented.ServeAPI(cluster.ManagementToken, instrumented)),
