@@ -49,6 +49,8 @@ import arvados
 arv_client = arvados.api('v1', num_retries=0, ...)
 {% endcodeblock %}
 
+The first time the Python SDK fetches an Arvados API discovery document, it will ensure that @googleapiclient.http@ logs are handled so you have a way to know about early problems that are being retried. If you prefer to handle these logs your own way, just ensure that the @googleapiclient.http@ logger (or a parent logger) has a handler installed before you call any Arvados API client constructor.
+
 h3. UseAWSS3v2Driver option removed
 
 The old "v1" S3 driver for keepstore has been removed. The new "v2" implementation, which has been the default since Arvados 2.5.0, is always used. The @Volumes.*.DriverParameters.UseAWSS3v2Driver@ configuration key is no longer recognized. If your config file uses it, remove it to avoid warning messages at startup.
