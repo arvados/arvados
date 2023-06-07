@@ -276,18 +276,20 @@ def api_client(
             client_logger.setLevel(client_level)
         else:
             client_logger.setLevel(client_filter.retry_levelno)
-    svc = apiclient_discovery.build(
-        'arvados', version,
-        cache_discovery=False,
-        discoveryServiceUrl=discoveryServiceUrl,
-        http=http,
-        num_retries=num_retries,
-        **kwargs,
-    )
-    if client_logger_unconfigured:
-        client_logger.removeHandler(log_handler)
-        client_logger.removeFilter(client_filter)
-        client_logger.setLevel(client_level)
+    try:
+        svc = apiclient_discovery.build(
+            'arvados', version,
+            cache_discovery=False,
+            discoveryServiceUrl=discoveryServiceUrl,
+            http=http,
+            num_retries=num_retries,
+            **kwargs,
+        )
+    finally:
+        if client_logger_unconfigured:
+            client_logger.removeHandler(log_handler)
+            client_logger.removeFilter(client_filter)
+            client_logger.setLevel(client_level)
     svc.api_token = token
     svc.insecure = insecure
     svc.request_id = request_id

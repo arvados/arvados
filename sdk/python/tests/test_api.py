@@ -11,6 +11,7 @@ import contextlib
 import httplib2
 import itertools
 import json
+import logging
 import mimetypes
 import os
 import socket
@@ -29,8 +30,10 @@ from arvados.api import (
     normalize_api_kwargs,
     api_kwargs_from_config,
     OrderedJsonModel,
+    _googleapiclient_log_lock,
 )
 from .arvados_testutil import fake_httplib2_response, mock_api_responses, queue_with
+import httplib2.error
 
 if not mimetypes.inited:
     mimetypes.init()
@@ -390,6 +393,50 @@ class ArvadosApiTest(run_test_server.TestCaseWithServers):
                 args = list(all_args)
                 args[arg_index] = arg_value
                 api_client(*args, insecure=True)
+
+    def test_initial_retry_logs(self):
+        try:
+            _googleapiclient_log_lock.release()
+        except RuntimeError:
+            # Lock was never acquired - that's the state we want anyway
+            pass
+        real_logger = logging.getLogger('googleapiclient.http')
+        mock_logger = mock.Mock(wraps=real_logger)
+        mock_logger.hasHandlers.return_value = False
+        mock_logger.level = logging.NOTSET
+        with (
+                mock.patch('logging.getLogger', return_value=mock_logger),
+                mock.patch('time.sleep'),
+                self.assertLogs(real_logger, 'INFO') as actual_logs,
+        ):
+            try:
+                api_client('v1', 'https://test.invalid/', 'NoToken', num_retries=1)
+            except httplib2.error.ServerNotFoundError:
+                pass
+        mock_logger.addFilter.assert_called()
+        mock_logger.addHandler.assert_called()
+        mock_logger.setLevel.assert_called()
+        mock_logger.removeHandler.assert_called()
+        mock_logger.removeFilter.assert_called()
+        self.assertRegex(actual_logs.output[0], r'^INFO:googleapiclient\.http:Sleeping \d')
+
+    def test_configured_logger_untouched(self):
+        real_logger = logging.getLogger('googleapiclient.http')
+        mock_logger = mock.Mock(wraps=real_logger)
+        mock_logger.hasHandlers.return_value = True
+        with (
+                mock.patch('logging.getLogger', return_value=mock_logger),
+                mock.patch('time.sleep'),
+        ):
+            try:
+                api_client('v1', 'https://test.invalid/', 'NoToken', num_retries=1)
+            except httplib2.error.ServerNotFoundError:
+                pass
+        mock_logger.addFilter.assert_not_called()
+        mock_logger.addHandler.assert_not_called()
+        mock_logger.setLevel.assert_not_called()
+        mock_logger.removeHandler.assert_not_called()
+        mock_logger.removeFilter.assert_not_called()
 
 
 class ConstructNumRetriesTestCase(unittest.TestCase):
