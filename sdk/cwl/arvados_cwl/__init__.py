@@ -28,6 +28,7 @@ from cwltool.utils import adjustFileObjs, adjustDirObjs, get_listing
 
 import arvados
 import arvados.config
+import arvados.logging
 from arvados.keep import KeepClient
 from arvados.errors import ApiError
 import arvados.commands._util as arv_cmd
@@ -377,9 +378,11 @@ def main(args=sys.argv[1:],
     logger.setLevel(logging.INFO)
     logging.getLogger('arvados').setLevel(logging.INFO)
     logging.getLogger('arvados.keep').setLevel(logging.WARNING)
-    # API retries are at WARNING level and can be noisy, but as long as
+    # API retries are filtered to the INFO level and can be noisy, but as long as
     # they succeed we don't need to see warnings about it.
-    logging.getLogger('googleapiclient').setLevel(logging.ERROR)
+    googleapiclient_http_logger = logging.getLogger('googleapiclient.http')
+    googleapiclient_http_logger.addFilter(arvados.logging.GoogleHTTPClientFilter())
+    googleapiclient_http_logger.setLevel(logging.WARNING)
 
     if arvargs.debug:
         logger.setLevel(logging.DEBUG)
@@ -387,7 +390,8 @@ def main(args=sys.argv[1:],
         # In debug mode show logs about retries, but we arn't
         # debugging the google client so we don't need to see
         # everything.
-        logging.getLogger('googleapiclient').setLevel(logging.WARNING)
+        googleapiclient_http_logger.setLevel(logging.NOTSET)
+        logging.getLogger('googleapiclient').setLevel(logging.INFO)
 
     if arvargs.quiet:
         logger.setLevel(logging.WARN)

@@ -28,7 +28,7 @@ TODO: extract this information based on git commit messages and generate changel
 <div class="releasenotes">
 </notextile>
 
-h2(#v2_6_3). v2.6.3 (2023-06-06)
+h2(#v2_6_3). v2.6.3 (2023-06-08)
 
 "previous: Upgrading to 2.6.2":#v2_6_2
 
@@ -42,6 +42,8 @@ The default value for @num_retries@ in API constructor functions is 10. This mea
 import arvados
 arv_client = arvados.api('v1', num_retries=0, ...)
 {% endcodeblock %}
+
+The first time the Python SDK fetches an Arvados API discovery document, it will ensure that @googleapiclient.http@ logs are handled so you have a way to know about early problems that are being retried. If you prefer to handle these logs your own way, just ensure that the @googleapiclient.http@ logger (or a parent logger) has a handler installed before you call any Arvados API client constructor.
 
 h2(#v2_6_2). v2.6.2 (2023-05-22)
 

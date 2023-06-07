@@ -23,6 +23,7 @@ import re
 import socket
 import ssl
 import sys
+import threading
 import time
 import types
 
@@ -35,8 +36,10 @@ from . import errors
 from . import retry
 from . import util
 from . import cache
+from .logging import GoogleHTTPClientFilter, log_handler
 
 _logger = logging.getLogger('arvados.api')
+_googleapiclient_log_lock = threading.Lock()
 
 MAX_IDLE_CONNECTION_DURATION = 30
 
@@ -252,14 +255,44 @@ def api_client(
         http.timeout = timeout
     http = _patch_http_request(http, token, num_retries)
 
-    svc = apiclient_discovery.build(
-        'arvados', version,
-        cache_discovery=False,
-        discoveryServiceUrl=discoveryServiceUrl,
-        http=http,
-        num_retries=num_retries,
-        **kwargs,
+    # The first time a client is instantiated, temporarily route
+    # googleapiclient.http retry logs if they're not already. These are
+    # important because temporary problems fetching the discovery document
+    # can cause clients to appear to hang early. This can be removed after
+    # we have a more general story for handling googleapiclient logs (#20521).
+    client_logger = logging.getLogger('googleapiclient.http')
+    # "first time a client is instantiated" = thread that acquires this lock
+    # It is never released.
+    # googleapiclient sets up its own NullHandler so we detect if logging is
+    # configured by looking for a real handler anywhere in the hierarchy.
+    client_logger_unconfigured = _googleapiclient_log_lock.acquire(blocking=False) and all(
+        isinstance(handler, logging.NullHandler)
+        for logger_name in ['', 'googleapiclient', 'googleapiclient.http']
+        for handler in logging.getLogger(logger_name).handlers
     )
+    if client_logger_unconfigured:
+        client_level = client_logger.level
+        client_filter = GoogleHTTPClientFilter()
+        client_logger.addFilter(client_filter)
+        client_logger.addHandler(log_handler)
+        if logging.NOTSET < client_level < client_filter.retry_levelno:
+            client_logger.setLevel(client_level)
+        else:
+            client_logger.setLevel(client_filter.retry_levelno)
+    try:
+        svc = apiclient_discovery.build(
+            'arvados', version,
+            cache_discovery=False,
+            discoveryServiceUrl=discoveryServiceUrl,
+            http=http,
+            num_retries=num_retries,
+            **kwargs,
+        )
+    finally:
+        if client_logger_unconfigured:
+            client_logger.removeHandler(log_handler)
+            client_logger.removeFilter(client_filter)
+            client_logger.setLevel(client_level)
     svc.api_token = token
     svc.insecure = insecure
     svc.request_id = request_id

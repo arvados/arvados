@@ -13,7 +13,7 @@ import hashlib
 import http.client
 import httplib2
 import json
-import logging
+import logging as stdliblog
 import os
 import pprint
 import re
@@ -33,20 +33,21 @@ from .collection import CollectionReader, CollectionWriter, ResumableCollectionW
 from arvados.keep import *
 from arvados.stream import *
 from .arvfile import StreamFileReader
+from .logging import log_format, log_date_format, log_handler
 from .retry import RetryLoop
 import arvados.errors as errors
 import arvados.util as util
 
+# Override logging module pulled in via `from ... import *`
+# so users can `import arvados.logging`.
+logging = sys.modules['arvados.logging']
+
 # Set up Arvados logging based on the user's configuration.
 # All Arvados code should log under the arvados hierarchy.
-log_format = '%(asctime)s %(name)s[%(process)d] %(levelname)s: %(message)s'
-log_date_format = '%Y-%m-%d %H:%M:%S'
-log_handler = logging.StreamHandler()
-log_handler.setFormatter(logging.Formatter(log_format, log_date_format))
-logger = logging.getLogger('arvados')
+logger = stdliblog.getLogger('arvados')
 logger.addHandler(log_handler)
-logger.setLevel(logging.DEBUG if config.get('ARVADOS_DEBUG')
-                else logging.WARNING)
+logger.setLevel(stdliblog.DEBUG if config.get('ARVADOS_DEBUG')
+                else stdliblog.WARNING)
 
 def task_set_output(self, s, num_retries=5):
     for tries_left in RetryLoop(num_retries=num_retries, backoff_start=0):
