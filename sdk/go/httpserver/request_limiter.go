@@ -5,6 +5,7 @@
 package httpserver
 
 import (
+	"math"
 	"net/http"
 	"sync"
 	"time"
@@ -229,6 +230,14 @@ func (rl *RequestLimiter) enqueue(req *http.Request) *qent {
 		// fast path, skip the queue
 		rl.handling++
 		ent.ready <- true
+		return ent
+	}
+	if priority == math.MinInt64 {
+		// Priority func is telling us to return 503
+		// immediately instead of queueing, regardless of
+		// queue size, if we can't handle the request
+		// immediately.
+		ent.ready <- false
 		return ent
 	}
 	rl.queue.add(ent)

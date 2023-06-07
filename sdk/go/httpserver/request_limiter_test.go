@@ -6,6 +6,7 @@ package httpserver
 
 import (
 	"fmt"
+	"math"
 	"net/http"
 	"net/http/httptest"
 	"strconv"
@@ -133,6 +134,19 @@ func (*Suite) TestRequestLimiterQueuePriority(c *check.C) {
 	for i := 0; i < rl.MaxConcurrent; i++ {
 		<-h.inHandler
 	}
+
+	c.Logf("starting %d priority=MinInt64 requests (should respond 503 immediately)", rl.MaxQueue)
+	var wgX sync.WaitGroup
+	for i := 0; i < rl.MaxQueue; i++ {
+		wgX.Add(1)
+		go func() {
+			defer wgX.Done()
+			resp := httptest.NewRecorder()
+			rl.ServeHTTP(resp, &http.Request{Header: http.Header{"Priority": {fmt.Sprintf("%d", math.MinInt64)}}})
+			c.Check(resp.Code, check.Equals, http.StatusServiceUnavailable)
+		}()
+	}
+	wgX.Wait()
 
 	c.Logf("starting %d priority=1 and %d priority=1 requests", rl.MaxQueue, rl.MaxQueue)
 	var wg1, wg2 sync.WaitGroup
