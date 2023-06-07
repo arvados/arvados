@@ -404,11 +404,9 @@ class ArvadosApiTest(run_test_server.TestCaseWithServers):
         mock_logger = mock.Mock(wraps=real_logger)
         mock_logger.hasHandlers.return_value = False
         mock_logger.level = logging.NOTSET
-        with (
-                mock.patch('logging.getLogger', return_value=mock_logger),
-                mock.patch('time.sleep'),
-                self.assertLogs(real_logger, 'INFO') as actual_logs,
-        ):
+        with mock.patch('logging.getLogger', return_value=mock_logger), \
+             mock.patch('time.sleep'), \
+             self.assertLogs(real_logger, 'INFO') as actual_logs:
             try:
                 api_client('v1', 'https://test.invalid/', 'NoToken', num_retries=1)
             except httplib2.error.ServerNotFoundError:
@@ -424,10 +422,8 @@ class ArvadosApiTest(run_test_server.TestCaseWithServers):
         real_logger = logging.getLogger('googleapiclient.http')
         mock_logger = mock.Mock(wraps=real_logger)
         mock_logger.hasHandlers.return_value = True
-        with (
-                mock.patch('logging.getLogger', return_value=mock_logger),
-                mock.patch('time.sleep'),
-        ):
+        with mock.patch('logging.getLogger', return_value=mock_logger), \
+             mock.patch('time.sleep'):
             try:
                 api_client('v1', 'https://test.invalid/', 'NoToken', num_retries=1)
             except httplib2.error.ServerNotFoundError:
