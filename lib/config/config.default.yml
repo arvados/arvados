@@ -227,6 +227,15 @@ Clusters:
       # in a single service process, or 0 for no limit.
       MaxConcurrentRequests: 64
 
+      # Maximum number of incoming requests to hold in a priority
+      # queue waiting for one of the MaxConcurrentRequests slots to be
+      # free. When the queue is longer than this, respond 503 to the
+      # lowest priority request.
+      #
+      # If MaxQueuedRequests is 0, respond 503 immediately to
+      # additional requests while at the MaxConcurrentRequests limit.
+      MaxQueuedRequests: 64
+
       # Fraction of MaxConcurrentRequests that can be "log create"
       # messages at any given time.  This is to prevent logging
       # updates from crowding out more important requests.

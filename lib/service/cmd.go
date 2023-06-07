@@ -157,6 +157,7 @@ func (c *command) RunCommand(prog string, args []string, stdin io.Reader, stdout
 							&httpserver.RequestLimiter{
 								Handler:       handler,
 								MaxConcurrent: cluster.API.MaxConcurrentRequests,
+								MaxQueue:      cluster.API.MaxQueuedRequests,
 								Registry:      reg}))))))
 	srv := &httpserver.Server{
 		Server: http.Server{

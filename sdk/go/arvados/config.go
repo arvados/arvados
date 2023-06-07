@@ -100,6 +100,7 @@ type Cluster struct {
 		MaxIndexDatabaseRead             int
 		MaxItemsPerResponse              int
 		MaxConcurrentRequests            int
+		MaxQueuedRequests                int
 		LogCreateRequestFraction         float64
 		MaxKeepBlobBuffers               int
 		MaxRequestAmplification          int
