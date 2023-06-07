@@ -402,7 +402,7 @@ class ArvadosApiTest(run_test_server.TestCaseWithServers):
             pass
         real_logger = logging.getLogger('googleapiclient.http')
         mock_logger = mock.Mock(wraps=real_logger)
-        mock_logger.hasHandlers.return_value = False
+        mock_logger.handlers = logging.getLogger('googleapiclient').handlers
         mock_logger.level = logging.NOTSET
         with mock.patch('logging.getLogger', return_value=mock_logger), \
              mock.patch('time.sleep'), \
@@ -421,7 +421,7 @@ class ArvadosApiTest(run_test_server.TestCaseWithServers):
     def test_configured_logger_untouched(self):
         real_logger = logging.getLogger('googleapiclient.http')
         mock_logger = mock.Mock(wraps=real_logger)
-        mock_logger.hasHandlers.return_value = True
+        mock_logger.handlers = logging.getLogger().handlers
         with mock.patch('logging.getLogger', return_value=mock_logger), \
              mock.patch('time.sleep'):
             try:

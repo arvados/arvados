@@ -261,11 +261,14 @@ def api_client(
     # can cause clients to appear to hang early. This can be removed after
     # we have a more general story for handling googleapiclient logs (#20521).
     client_logger = logging.getLogger('googleapiclient.http')
-    client_logger_unconfigured = (
-        # "first time a client is instantiated" = thread that acquires this lock
-        # It is never released.
-        _googleapiclient_log_lock.acquire(blocking=False)
-        and not client_logger.hasHandlers()
+    # "first time a client is instantiated" = thread that acquires this lock
+    # It is never released.
+    # googleapiclient sets up its own NullHandler so we detect if logging is
+    # configured by looking for a real handler anywhere in the hierarchy.
+    client_logger_unconfigured = _googleapiclient_log_lock.acquire(blocking=False) and all(
+        isinstance(handler, logging.NullHandler)
+        for logger_name in ['', 'googleapiclient', 'googleapiclient.http']
+        for handler in logging.getLogger(logger_name).handlers
     )
     if client_logger_unconfigured:
         client_level = client_logger.level
