@@ -10,6 +10,7 @@ import (
 	"flag"
 	"fmt"
 	"io"
+	"math"
 	"net"
 	"net/http"
 	"net/http/httptest"
@@ -158,6 +159,7 @@ func (c *command) RunCommand(prog string, args []string, stdin io.Reader, stdout
 								Handler:       handler,
 								MaxConcurrent: cluster.API.MaxConcurrentRequests,
 								MaxQueue:      cluster.API.MaxQueuedRequests,
+								Priority:      c.requestPriority,
 								Registry:      reg}))))))
 	srv := &httpserver.Server{
 		Server: http.Server{
@@ -251,6 +253,25 @@ func (c *command) requestQueueDumpCheck(cluster *arvados.Cluster, prog string, r
 				continue
 			}
 		}
+	}
+}
+
+func (c *command) requestPriority(req *http.Request, queued time.Time) int64 {
+	switch {
+	case req.Method == http.MethodPost && strings.HasPrefix(req.URL.Path, "/arvados/v1/containers/") && strings.HasSuffix(req.URL.Path, "/lock"):
+		// Return 503 immediately instead of queueing. We want
+		// to send feedback to dispatchcloud ASAP to stop
+		// bringing up new containers.
+		return math.MinInt64
+	case req.Method == http.MethodPost && strings.HasPrefix(req.URL.Path, "/arvados/v1/logs"):
+		// "Create log entry" is the most harmless kind of
+		// request to drop.
+		return 0
+	case req.Header.Get("Origin") != "":
+		// Handle interactive requests first.
+		return 2
+	default:
+		return 1
 	}
 }
 
