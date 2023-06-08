@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/prometheus/client_golang/prometheus"
+	"github.com/sirupsen/logrus"
 )
 
 // RequestLimiter wraps http.Handler, limiting the number of
@@ -258,6 +259,7 @@ func (rl *RequestLimiter) remove(ent *qent) {
 func (rl *RequestLimiter) ServeHTTP(resp http.ResponseWriter, req *http.Request) {
 	rl.setupOnce.Do(rl.setup)
 	ent := rl.enqueue(req)
+	SetResponseLogFields(req.Context(), logrus.Fields{"priority": ent.priority})
 	var ok bool
 	select {
 	case <-req.Context().Done():
