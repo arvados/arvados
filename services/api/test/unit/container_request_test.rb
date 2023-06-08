@@ -950,6 +950,174 @@ class ContainerRequestTest < ActiveSupport::TestCase
 
   end
 
+  test "Retry sub-request on error" do
+    set_user_from_auth :active
+    cr1 = create_minimal_req!(priority: 1, state: "Committed", container_count_max: 2, command: ["echo", "foo1"])
+    c1 = Container.find_by_uuid(cr1.container_uuid)
+    act_as_system_user do
+      c1.update_attributes!(state: Container::Locked)
+      c1.update_attributes!(state: Container::Running)
+    end
+
+    cr2 = with_container_auth(c1) do
+      create_minimal_req!(priority: 10, state: "Committed", container_count_max: 2, command: ["echo", "foo2"])
+    end
+    c2 = Container.find_by_uuid(cr2.container_uuid)
+    act_as_system_user do
+      c2.update_attributes!(state: Container::Locked)
+      c2.update_attributes!(state: Container::Running)
+    end
+
+    cr3 = with_container_auth(c2) do
+      create_minimal_req!(priority: 10, state: "Committed", container_count_max: 2, command: ["echo", "foo3"])
+    end
+    c3 = Container.find_by_uuid(cr3.container_uuid)
+
+    act_as_system_user do
+      c3.update_attributes!(state: Container::Locked)
+      c3.update_attributes!(state: Container::Running)
+    end
+
+    # All the containers are in running state
+
+    c3.reload
+    cr3.reload
+
+    # c3 still running
+    assert_equal 'Running', c3.state
+    assert_equal 1, cr3.container_count
+    assert_equal 'Committed', cr3.state
+
+    # c3 goes to cancelled state
+    act_as_system_user do
+      c3.state = "Cancelled"
+      c3.save!
+    end
+
+    cr3.reload
+
+    # Because the parent request is still live, it should
+    # be retried.
+    assert_equal 2, cr3.container_count
+    assert_equal 'Committed', cr3.state
+  end
+
+  test "Do not retry sub-request when process tree is cancelled" do
+    set_user_from_auth :active
+    cr1 = create_minimal_req!(priority: 1, state: "Committed", container_count_max: 2, command: ["echo", "foo1"])
+    c1 = Container.find_by_uuid(cr1.container_uuid)
+    act_as_system_user do
+      c1.update_attributes!(state: Container::Locked)
+      c1.update_attributes!(state: Container::Running)
+    end
+
+    cr2 = with_container_auth(c1) do
+      create_minimal_req!(priority: 10, state: "Committed", container_count_max: 2, command: ["echo", "foo2"])
+    end
+    c2 = Container.find_by_uuid(cr2.container_uuid)
+    act_as_system_user do
+      c2.update_attributes!(state: Container::Locked)
+      c2.update_attributes!(state: Container::Running)
+    end
+
+    cr3 = with_container_auth(c2) do
+      create_minimal_req!(priority: 10, state: "Committed", container_count_max: 2, command: ["echo", "foo3"])
+    end
+    c3 = Container.find_by_uuid(cr3.container_uuid)
+
+    act_as_system_user do
+      c3.update_attributes!(state: Container::Locked)
+      c3.update_attributes!(state: Container::Running)
+    end
+
+    # All the containers are in running state
+
+    # Now cancel the toplevel container request
+    act_as_system_user do
+      cr1.priority = 0
+      cr1.save!
+    end
+
+    c3.reload
+    cr3.reload
+
+    # c3 still running
+    assert_equal 'Running', c3.state
+    assert_equal 1, cr3.container_count
+    assert_equal 'Committed', cr3.state
+
+    # c3 goes to cancelled state
+    act_as_system_user do
+      assert_equal 0, c3.priority
+      c3.state = "Cancelled"
+      c3.save!
+    end
+
+    cr3.reload
+
+    # Because the parent process was cancelled, it _should not_ be
+    # retried.
+    assert_equal 1, cr3.container_count
+    assert_equal 'Final', cr3.state
+  end
+
+  test "Retry process tree on error" do
+    set_user_from_auth :active
+    cr1 = create_minimal_req!(priority: 1, state: "Committed", container_count_max: 2, command: ["echo", "foo1"])
+    c1 = Container.find_by_uuid(cr1.container_uuid)
+    act_as_system_user do
+      c1.update_attributes!(state: Container::Locked)
+      c1.update_attributes!(state: Container::Running)
+    end
+
+    cr2 = with_container_auth(c1) do
+      create_minimal_req!(priority: 10, state: "Committed", container_count_max: 2, command: ["echo", "foo2"])
+    end
+    c2 = Container.find_by_uuid(cr2.container_uuid)
+    act_as_system_user do
+      c2.update_attributes!(state: Container::Locked)
+      c2.update_attributes!(state: Container::Running)
+    end
+
+    cr3 = with_container_auth(c2) do
+      create_minimal_req!(priority: 10, state: "Committed", container_count_max: 2, command: ["echo", "foo3"])
+    end
+    c3 = Container.find_by_uuid(cr3.container_uuid)
+
+    act_as_system_user do
+      c3.update_attributes!(state: Container::Locked)
+      c3.update_attributes!(state: Container::Running)
+    end
+
+    # All the containers are in running state
+
+    c1.reload
+
+    # c1 goes to cancelled state
+    act_as_system_user do
+      c1.state = "Cancelled"
+      c1.save!
+    end
+
+    cr1.reload
+    cr2.reload
+    cr3.reload
+
+    # Because the root request is still live, it should be retried.
+    # Assumes the root is something like arvados-cwl-runner where
+    # container reuse enables it to more or less pick up where it left
+    # off.
+    assert_equal 2, cr1.container_count
+    assert_equal 'Committed', cr1.state
+
+    # These keep running.
+    assert_equal 1, cr2.container_count
+    assert_equal 'Committed', cr2.state
+
+    assert_equal 1, cr3.container_count
+    assert_equal 'Committed', cr3.state
+  end
+
   test "Output collection name setting using output_name with name collision resolution" do
     set_user_from_auth :active
     output_name = 'unimaginative name'
