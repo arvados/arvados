@@ -19,7 +19,9 @@ ArvadosFile <- R6::R6Class(
         #' @param name Name of the new enviroment.
         #' @return A new `ArvadosFile` object.
         #' @examples
+        #' \dontrun{
         #' myFile   <- ArvadosFile$new("myFile")
+        #' }
         initialize = function(name)
         {
             if(name == "")
@@ -31,14 +33,18 @@ ArvadosFile <- R6::R6Class(
         #' @description
         #' Returns name of the file.
         #' @examples
+        #' \dontrun{
         #' arvadosFile$getName()
+        #' }
         getName = function() private$name,
 
         #' @description
         #' Returns collections file content as character vector.
         #' @param fullPath Checking if TRUE.
         #' @examples
+        #' \dontrun{
         #' arvadosFile$getFileListing()
+        #' }
         getFileListing = function(fullpath = TRUE)
         {
             self$getName()
@@ -47,7 +53,9 @@ ArvadosFile <- R6::R6Class(
         #' @description
         #' Returns collections content size in bytes.
         #' @examples
+        #' \dontrun{
         #' arvadosFile$getSizeInBytes()
+        #' }
         getSizeInBytes = function()
         {
             if(is.null(private$collection))
@@ -112,9 +120,11 @@ ArvadosFile <- R6::R6Class(
         #' @param offset Describes the location of a piece of data compared to another location
         #' @param length Length of content
         #' @examples
+        #' \dontrun{
         #' collection <- Collection$new(arv, collectionUUID)
         #' arvadosFile <- collection$get(fileName)
         #' fileContent <- arvadosFile$read("text")
+        #' }
         read = function(contentType = "raw", offset = 0, length = 0)
         {
             if(is.null(private$collection))
@@ -135,9 +145,11 @@ ArvadosFile <- R6::R6Class(
         #' Get connection opened in "read" or "write" mode.
         #' @param rw Type of connection.
         #' @examples
+        #' \dontrun{
         #' collection <- Collection$new(arv, collectionUUID)
         #' arvadosFile <- collection$get(fileName)
         #' arvConnection <- arvadosFile$connection("w")
+        #' }
         connection = function(rw)
         {
             if (rw == "r" || rw == "rb")
@@ -158,10 +170,12 @@ ArvadosFile <- R6::R6Class(
         #' @description
         #' Write connections content to a file or override current content of the file.
         #' @examples
+        #' \dontrun{
         #' collection <- Collection$new(arv, collectionUUID)
         #' arvadosFile <- collection$get(fileName)
         #' myFile$write("This is new file content")
         #' arvadosFile$flush()
+        #' }
         flush = function()
         {
             v <- textConnectionValue(private$buffer)
@@ -174,9 +188,11 @@ ArvadosFile <- R6::R6Class(
         #' @param content File to write.
         #' @param contentType Type of content. Possible is "text", "raw".
         #' @examples
+        #' \dontrun{
         #' collection <- Collection$new(arv, collectionUUID)
         #' arvadosFile <- collection$get(fileName)
         #' myFile$write("This is new file content")
+        #' }
         write = function(content, contentType = "text/html")
         {
             if(is.null(private$collection))
@@ -194,7 +210,9 @@ ArvadosFile <- R6::R6Class(
         #' Moves file to a new location inside collection.
         #' @param destination Path to new folder.
         #' @examples
+        #' \dontrun{
         #' arvadosFile$move(newPath)
+        #' }
         move = function(destination)
         {
             if(is.null(private$collection))
@@ -231,7 +249,9 @@ ArvadosFile <- R6::R6Class(
         #' Copies file to a new location inside collection.
         #' @param destination Path to new folder.
         #' @examples
+        #' \dontrun{
         #' arvadosFile$copy("NewName.format")
+        #' }
         copy = function(destination)
         {
             if(is.null(private$collection))
