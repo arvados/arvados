@@ -213,7 +213,7 @@ func (c *command) RunCommand(prog string, args []string, stdin io.Reader, stdout
 // JSON file in the specified directory.
 func (c *command) requestQueueDumpCheck(cluster *arvados.Cluster, prog string, reg *prometheus.Registry, srv *http.Server, logger logrus.FieldLogger) {
 	outdir := cluster.SystemLogs.RequestQueueDumpDirectory
-	if outdir == "" || cluster.ManagementToken == "" {
+	if outdir == "" || cluster.ManagementToken == "" || cluster.API.MaxConcurrentRequests < 1 {
 		return
 	}
 	logger = logger.WithField("worker", "RequestQueueDump")
