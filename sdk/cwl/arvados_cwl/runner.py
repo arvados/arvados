@@ -923,7 +923,8 @@ class Runner(Process):
                                                            api_client=self.arvrunner.api,
                                                            keep_client=self.arvrunner.keep_client,
                                                            num_retries=self.arvrunner.num_retries)
-                done.logtail(logc, logger.error, "%s (%s) error log:" % (self.arvrunner.label(self), record["uuid"]), maxlen=40)
+                done.logtail(logc, logger.error, "%s (%s) error log:" % (self.arvrunner.label(self), record["uuid"]), maxlen=40,
+                             include_crunchrun=(record.get("exit_code") is None or record.get("exit_code") > 127))
 
             self.final_output = record["output"]
             outc = arvados.collection.CollectionReader(self.final_output,

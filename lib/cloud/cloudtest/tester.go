@@ -27,23 +27,24 @@ var (
 // configuration. Run() should be called only once, after assigning
 // suitable values to public fields.
 type tester struct {
-	Logger             logrus.FieldLogger
-	Tags               cloud.SharedResourceTags
-	TagKeyPrefix       string
-	SetID              cloud.InstanceSetID
-	DestroyExisting    bool
-	ProbeInterval      time.Duration
-	SyncInterval       time.Duration
-	TimeoutBooting     time.Duration
-	Driver             cloud.Driver
-	DriverParameters   json.RawMessage
-	InstanceType       arvados.InstanceType
-	ImageID            cloud.ImageID
-	SSHKey             ssh.Signer
-	SSHPort            string
-	BootProbeCommand   string
-	ShellCommand       string
-	PauseBeforeDestroy func()
+	Logger              logrus.FieldLogger
+	Tags                cloud.SharedResourceTags
+	TagKeyPrefix        string
+	SetID               cloud.InstanceSetID
+	DestroyExisting     bool
+	ProbeInterval       time.Duration
+	SyncInterval        time.Duration
+	TimeoutBooting      time.Duration
+	Driver              cloud.Driver
+	DriverParameters    json.RawMessage
+	InstanceType        arvados.InstanceType
+	ImageID             cloud.ImageID
+	SSHKey              ssh.Signer
+	SSHPort             string
+	BootProbeCommand    string
+	InstanceInitCommand cloud.InitCommand
+	ShellCommand        string
+	PauseBeforeDestroy  func()
 
 	is              cloud.InstanceSet
 	testInstance    *worker.TagVerifier
@@ -127,7 +128,7 @@ func (t *tester) Run() bool {
 	defer t.destroyTestInstance()
 
 	bootDeadline := time.Now().Add(t.TimeoutBooting)
-	initCommand := worker.TagVerifier{Instance: nil, Secret: t.secret, ReportVerified: nil}.InitCommand()
+	initCommand := worker.TagVerifier{Instance: nil, Secret: t.secret, ReportVerified: nil}.InitCommand() + "\n" + t.InstanceInitCommand
 
 	t.Logger.WithFields(logrus.Fields{
 		"InstanceType":         t.InstanceType.Name,

@@ -6,5 +6,5 @@
 ### LETSENCRYPT
 letsencrypt:
   domainsets:
-    websocket.__CLUSTER__.__DOMAIN__:
-      - ws.__CLUSTER__.__DOMAIN__
+    websocket.__DOMAIN__:
+      - ws.__DOMAIN__

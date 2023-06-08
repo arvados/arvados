@@ -266,6 +266,7 @@ func (suite *PoolSuite) TestCreateUnallocShutdown(c *check.C) {
 			type2.Name: type2,
 			type3.Name: type3,
 		},
+		instanceInitCommand: "echo 'instance init command goes here'",
 	}
 	notify := pool.Subscribe()
 	defer pool.Unsubscribe(notify)
@@ -293,6 +294,9 @@ func (suite *PoolSuite) TestCreateUnallocShutdown(c *check.C) {
 		defer pool.mtx.RUnlock()
 		return len(pool.workers) == 4
 	})
+
+	vms := instanceSet.(*test.StubInstanceSet).StubVMs()
+	c.Check(string(vms[0].InitCommand), check.Matches, `umask 0177 && echo -n "[0-9a-f]+" >/var/run/arvados-instance-secret\necho 'instance init command goes here'`)
 
 	// Place type3 node on admin-hold
 	ivs := suite.instancesByType(pool, type3)

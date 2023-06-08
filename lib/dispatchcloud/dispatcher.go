@@ -15,6 +15,7 @@ import (
 	"time"
 
 	"git.arvados.org/arvados.git/lib/cloud"
+	"git.arvados.org/arvados.git/lib/config"
 	"git.arvados.org/arvados.git/lib/controller/dblock"
 	"git.arvados.org/arvados.git/lib/ctrlctx"
 	"git.arvados.org/arvados.git/lib/dispatchcloud/container"
@@ -137,10 +138,14 @@ func (disp *dispatcher) initialize() {
 	disp.stop = make(chan struct{}, 1)
 	disp.stopped = make(chan struct{})
 
-	if key, err := ssh.ParsePrivateKey([]byte(disp.Cluster.Containers.DispatchPrivateKey)); err != nil {
+	if key, err := config.LoadSSHKey(disp.Cluster.Containers.DispatchPrivateKey); err != nil {
 		disp.logger.Fatalf("error parsing configured Containers.DispatchPrivateKey: %s", err)
 	} else {
 		disp.sshKey = key
+	}
+	installPublicKey := disp.sshKey.PublicKey()
+	if !disp.Cluster.Containers.CloudVMs.DeployPublicKey {
+		installPublicKey = nil
 	}
 
 	instanceSet, err := newInstanceSet(disp.Cluster, disp.InstanceSetID, disp.logger, disp.Registry)
@@ -149,7 +154,7 @@ func (disp *dispatcher) initialize() {
 	}
 	dblock.Dispatch.Lock(disp.Context, disp.dbConnector.GetDB)
 	disp.instanceSet = instanceSet
-	disp.pool = worker.NewPool(disp.logger, disp.ArvClient, disp.Registry, disp.InstanceSetID, disp.instanceSet, disp.newExecutor, disp.sshKey.PublicKey(), disp.Cluster)
+	disp.pool = worker.NewPool(disp.logger, disp.ArvClient, disp.Registry, disp.InstanceSetID, disp.instanceSet, disp.newExecutor, installPublicKey, disp.Cluster)
 	disp.queue = container.NewQueue(disp.logger, disp.Registry, disp.typeChooser, disp.ArvClient)
 
 	if disp.Cluster.ManagementToken == "" {

@@ -106,6 +106,7 @@ func NewPool(logger logrus.FieldLogger, arvClient *arvados.Client, reg *promethe
 		newExecutor:                    newExecutor,
 		cluster:                        cluster,
 		bootProbeCommand:               cluster.Containers.CloudVMs.BootProbeCommand,
+		instanceInitCommand:            cloud.InitCommand(cluster.Containers.CloudVMs.InstanceInitCommand),
 		runnerSource:                   cluster.Containers.CloudVMs.DeployRunnerBinary,
 		imageID:                        cloud.ImageID(cluster.Containers.CloudVMs.ImageID),
 		instanceTypes:                  cluster.InstanceTypes,
@@ -149,6 +150,7 @@ type Pool struct {
 	newExecutor                    func(cloud.Instance) Executor
 	cluster                        *arvados.Cluster
 	bootProbeCommand               string
+	instanceInitCommand            cloud.InitCommand
 	runnerSource                   string
 	imageID                        cloud.ImageID
 	instanceTypes                  map[string]arvados.InstanceType
@@ -347,7 +349,7 @@ func (wp *Pool) Create(it arvados.InstanceType) bool {
 			wp.tagKeyPrefix + tagKeyIdleBehavior:   string(IdleBehaviorRun),
 			wp.tagKeyPrefix + tagKeyInstanceSecret: secret,
 		}
-		initCmd := TagVerifier{nil, secret, nil}.InitCommand()
+		initCmd := TagVerifier{nil, secret, nil}.InitCommand() + "\n" + wp.instanceInitCommand
 		inst, err := wp.instanceSet.Create(it, wp.imageID, tags, initCmd, wp.installPublicKey)
 		wp.mtx.Lock()
 		defer wp.mtx.Unlock()
@@ -906,6 +908,9 @@ func (wp *Pool) Instances() []InstanceView {
 // KillInstance destroys a cloud VM instance. It returns an error if
 // the given instance does not exist.
 func (wp *Pool) KillInstance(id cloud.InstanceID, reason string) error {
+	wp.setupOnce.Do(wp.setup)
+	wp.mtx.Lock()
+	defer wp.mtx.Unlock()
 	wkr, ok := wp.workers[id]
 	if !ok {
 		return errors.New("instance not found")

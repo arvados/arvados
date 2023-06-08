@@ -287,7 +287,7 @@ else
   USE_SINGLE_HOSTNAME="no"
   # We set this variable, anyway, so sed lines do not fail and we don't need to add more
   # conditionals
-  HOSTNAME_EXT="${CLUSTER}.${DOMAIN}"
+  HOSTNAME_EXT="${DOMAIN}"
 fi
 
 if [ "${DUMP_CONFIG}" = "yes" ]; then
@@ -396,10 +396,12 @@ fi
 if [ "x${VAGRANT}" = "xyes" ]; then
   EXTRA_STATES_DIR="/home/vagrant/${CONFIG_DIR}/states"
   SOURCE_PILLARS_DIR="/home/vagrant/${CONFIG_DIR}/pillars"
+  SOURCE_TOFS_DIR="/home/vagrant/${CONFIG_DIR}/tofs"
   SOURCE_TESTS_DIR="/home/vagrant/${TESTS_DIR}"
 else
   EXTRA_STATES_DIR="${SCRIPT_DIR}/${CONFIG_DIR}/states"
   SOURCE_PILLARS_DIR="${SCRIPT_DIR}/${CONFIG_DIR}/pillars"
+  SOURCE_TOFS_DIR="${SCRIPT_DIR}/${CONFIG_DIR}/tofs"
   SOURCE_TESTS_DIR="${SCRIPT_DIR}/${TESTS_DIR}"
 fi
 
@@ -545,6 +547,12 @@ fi
 # As we need to separate both states and pillars in case we want specific
 # roles, we iterate on both at the same time
 
+# Formula template overrides (TOFS)
+# See: https://template-formula.readthedocs.io/en/latest/TOFS_pattern.html#template-override
+if [ -d ${SOURCE_TOFS_DIR} ]; then
+  find ${SOURCE_TOFS_DIR} -mindepth 1 -maxdepth 1 -type d -exec cp -r "{}" ${S_DIR} \;
+fi
+
 # States
 cat > ${S_DIR}/top.sls << EOFTSLS
 base:
@@ -651,7 +659,7 @@ if [ -z "${ROLES}" ]; then
         CERT_NAME=${HOSTNAME_EXT}
       else
         # We are in a multiple-hostnames env
-        CERT_NAME=${c}.${CLUSTER}.${DOMAIN}
+        CERT_NAME=${c}.${DOMAIN}
       fi
 
       # As the pillar differs whether we use LE or custom certs, we need to do a final edition on them
@@ -763,9 +771,9 @@ else
           grep -q "letsencrypt"     ${P_DIR}/top.sls || echo "    - letsencrypt" >> ${P_DIR}/top.sls
           for SVC in grafana prometheus; do
             grep -q "letsencrypt_${SVC}_configuration" ${P_DIR}/top.sls || echo "    - letsencrypt_${SVC}_configuration" >> ${P_DIR}/top.sls
-            sed -i "s/__CERT_REQUIRES__/cmd: create-initial-cert-${SVC}.${CLUSTER}.${DOMAIN}*/g;
-                    s#__CERT_PEM__#/etc/letsencrypt/live/${SVC}.${CLUSTER}.${DOMAIN}/fullchain.pem#g;
-                    s#__CERT_KEY__#/etc/letsencrypt/live/${SVC}.${CLUSTER}.${DOMAIN}/privkey.pem#g" \
+            sed -i "s/__CERT_REQUIRES__/cmd: create-initial-cert-${SVC}.${DOMAIN}*/g;
+                    s#__CERT_PEM__#/etc/letsencrypt/live/${SVC}.${DOMAIN}/fullchain.pem#g;
+                    s#__CERT_KEY__#/etc/letsencrypt/live/${SVC}.${DOMAIN}/privkey.pem#g" \
             ${P_DIR}/nginx_${SVC}_configuration.sls
           done
           if [ "${USE_LETSENCRYPT_ROUTE53}" = "yes" ]; then
@@ -875,15 +883,15 @@ else
           # Special case for keepweb
           if [ ${R} = "keepweb" ]; then
             for kwsub in download collections; do
-              sed -i "s/__CERT_REQUIRES__/cmd: create-initial-cert-${kwsub}.${CLUSTER}.${DOMAIN}*/g;
-                      s#__CERT_PEM__#/etc/letsencrypt/live/${kwsub}.${CLUSTER}.${DOMAIN}/fullchain.pem#g;
-                      s#__CERT_KEY__#/etc/letsencrypt/live/${kwsub}.${CLUSTER}.${DOMAIN}/privkey.pem#g" \
+              sed -i "s/__CERT_REQUIRES__/cmd: create-initial-cert-${kwsub}.${DOMAIN}*/g;
+                      s#__CERT_PEM__#/etc/letsencrypt/live/${kwsub}.${DOMAIN}/fullchain.pem#g;
+                      s#__CERT_KEY__#/etc/letsencrypt/live/${kwsub}.${DOMAIN}/privkey.pem#g" \
               ${P_DIR}/nginx_${kwsub}_configuration.sls
             done
           else
-            sed -i "s/__CERT_REQUIRES__/cmd: create-initial-cert-${R}.${CLUSTER}.${DOMAIN}*/g;
-                    s#__CERT_PEM__#/etc/letsencrypt/live/${R}.${CLUSTER}.${DOMAIN}/fullchain.pem#g;
-                    s#__CERT_KEY__#/etc/letsencrypt/live/${R}.${CLUSTER}.${DOMAIN}/privkey.pem#g" \
+            sed -i "s/__CERT_REQUIRES__/cmd: create-initial-cert-${R}.${DOMAIN}*/g;
+                    s#__CERT_PEM__#/etc/letsencrypt/live/${R}.${DOMAIN}/fullchain.pem#g;
+                    s#__CERT_KEY__#/etc/letsencrypt/live/${R}.${DOMAIN}/privkey.pem#g" \
             ${P_DIR}/nginx_${R}_configuration.sls
           fi
         else
@@ -948,11 +956,11 @@ fi
 
 # Leave a copy of the Arvados CA so the user can copy it where it's required
 if [ "${SSL_MODE}" = "self-signed" ]; then
-  echo "Copying the Arvados CA certificate '${CLUSTER}.${DOMAIN}-arvados-snakeoil-ca.crt' to the installer dir, so you can import it"
+  echo "Copying the Arvados CA certificate '${DOMAIN}-arvados-snakeoil-ca.crt' to the installer dir, so you can import it"
   if [ "x${VAGRANT}" = "xyes" ]; then
-    cp /etc/ssl/certs/arvados-snakeoil-ca.pem /vagrant/${CLUSTER}.${DOMAIN}-arvados-snakeoil-ca.pem
+    cp /etc/ssl/certs/arvados-snakeoil-ca.pem /vagrant/${DOMAIN}-arvados-snakeoil-ca.pem
   else
-    cp /etc/ssl/certs/arvados-snakeoil-ca.pem ${SCRIPT_DIR}/${CLUSTER}.${DOMAIN}-arvados-snakeoil-ca.crt
+    cp /etc/ssl/certs/arvados-snakeoil-ca.pem ${SCRIPT_DIR}/${DOMAIN}-arvados-snakeoil-ca.crt
   fi
 fi
 

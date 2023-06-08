@@ -28,7 +28,7 @@ class ApiClientRetryTestMixin(object):
     def setUp(self):
         # Patch arvados.api() to return our mock API, so we can mock
         # its http requests.
-        self.api_client = arvados.api('v1', cache=False)
+        self.api_client = arvados.api('v1', cache=False, num_retries=0)
         self.api_patch = mock.patch('arvados.api', return_value=self.api_client)
         self.api_patch.start()
 

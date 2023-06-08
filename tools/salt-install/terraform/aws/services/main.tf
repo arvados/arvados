@@ -3,9 +3,11 @@
 # SPDX-License-Identifier: CC-BY-SA-3.0
 
 terraform {
+  required_version = "~> 1.3.0"
   required_providers {
     aws = {
       source = "hashicorp/aws"
+      version = "~> 4.38.0"
     }
   }
 }
@@ -13,20 +15,21 @@ terraform {
 provider "aws" {
   region = local.region_name
   default_tags {
-    tags = {
+    tags = merge(local.custom_tags, {
       Arvados = local.cluster_name
-    }
+      Terraform = true
+    })
   }
-}
-
-resource "aws_key_pair" "deployer" {
-  key_name = local.pubkey_name
-  public_key = file(local.pubkey_path)
 }
 
 resource "aws_iam_instance_profile" "keepstore_instance_profile" {
   name = "${local.cluster_name}-keepstore-00-iam-role"
   role = data.terraform_remote_state.data-storage.outputs.keepstore_iam_role_name
+}
+
+resource "aws_iam_instance_profile" "compute_node_instance_profile" {
+  name = "${local.cluster_name}-compute-node-00-iam-role"
+  role = local.compute_node_iam_role_name
 }
 
 resource "aws_iam_instance_profile" "dispatcher_instance_profile" {
@@ -36,6 +39,7 @@ resource "aws_iam_instance_profile" "dispatcher_instance_profile" {
 
 resource "aws_secretsmanager_secret" "ssl_password_secret" {
   name = local.ssl_password_secret_name
+  recovery_window_in_days = 0
 }
 
 resource "aws_iam_instance_profile" "default_instance_profile" {
@@ -45,23 +49,23 @@ resource "aws_iam_instance_profile" "default_instance_profile" {
 
 resource "aws_instance" "arvados_service" {
   for_each = toset(concat(local.public_hosts, local.private_hosts))
-  ami = data.aws_ami.debian-11.image_id
-  instance_type = var.default_instance_type
-  key_name = local.pubkey_name
+  ami = local.instance_ami_id
+  instance_type = try(var.instance_type[each.value], var.instance_type.default)
   user_data = templatefile("user_data.sh", {
-    "hostname": each.value
+    "hostname": each.value,
+    "deploy_user": var.deploy_user,
+    "ssh_pubkey": file(local.pubkey_path)
   })
   private_ip = local.private_ip[each.value]
-  subnet_id = contains(local.public_hosts, each.value) ? data.terraform_remote_state.vpc.outputs.public_subnet_id : data.terraform_remote_state.vpc.outputs.private_subnet_id
-  vpc_security_group_ids = [ data.terraform_remote_state.vpc.outputs.arvados_sg_id ]
-  # This should be done in a more readable way
-  iam_instance_profile = each.value == "controller" ? aws_iam_instance_profile.dispatcher_instance_profile.name : length(regexall("^keep[0-9]+", each.value)) > 0 ? aws_iam_instance_profile.keepstore_instance_profile.name : aws_iam_instance_profile.default_instance_profile.name
+  subnet_id = contains(local.user_facing_hosts, each.value) ? local.public_subnet_id : local.private_subnet_id
+  vpc_security_group_ids = [ local.arvados_sg_id ]
+  iam_instance_profile = try(local.instance_profile[each.value], local.instance_profile.default).name
   tags = {
-    Name = "arvados_service_${each.value}"
+    Name = "${local.cluster_name}_arvados_service_${each.value}"
   }
   root_block_device {
     volume_type = "gp3"
-    volume_size = (each.value == "controller" && !local.use_external_db) ? 70 : 20
+    volume_size = try(var.instance_volume_size[each.value], var.instance_volume_size.default)
   }
 
   lifecycle {
@@ -74,6 +78,35 @@ resource "aws_instance" "arvados_service" {
   }
 }
 
+resource "aws_iam_policy" "compute_node_ebs_autoscaler" {
+  name = "${local.cluster_name}_compute_node_ebs_autoscaler"
+  policy = jsonencode({
+    Version: "2012-10-17",
+    Id: "compute-node EBS Autoscaler policy",
+    Statement: [{
+      Effect: "Allow",
+      Action: [
+          "ec2:AttachVolume",
+          "ec2:DescribeVolumeStatus",
+          "ec2:DescribeVolumes",
+          "ec2:DescribeTags",
+          "ec2:ModifyInstanceAttribute",
+          "ec2:DescribeVolumeAttribute",
+          "ec2:CreateVolume",
+          "ec2:DeleteVolume",
+          "ec2:CreateTags"
+      ],
+      Resource: "*"
+    }]
+  })
+}
+
+resource "aws_iam_policy_attachment" "compute_node_ebs_autoscaler_attachment" {
+  name = "${local.cluster_name}_compute_node_ebs_autoscaler_attachment"
+  roles = [ local.compute_node_iam_role_name ]
+  policy_arn = aws_iam_policy.compute_node_ebs_autoscaler.arn
+}
+
 resource "aws_iam_policy" "cloud_dispatcher_ec2_access" {
   name = "${local.cluster_name}_cloud_dispatcher_ec2_access"
   policy = jsonencode({
@@ -82,7 +115,6 @@ resource "aws_iam_policy" "cloud_dispatcher_ec2_access" {
     Statement: [{
       Effect: "Allow",
       Action: [
-        "iam:PassRole",
         "ec2:DescribeKeyPairs",
         "ec2:ImportKeyPair",
         "ec2:RunInstances",
@@ -91,6 +123,13 @@ resource "aws_iam_policy" "cloud_dispatcher_ec2_access" {
         "ec2:TerminateInstances"
       ],
       Resource: "*"
+    },
+    {
+      Effect: "Allow",
+      Action: [
+        "iam:PassRole",
+      ],
+      Resource: "arn:aws:iam::*:role/${aws_iam_instance_profile.compute_node_instance_profile.name}"
     }]
   })
 }
@@ -107,9 +146,9 @@ resource "aws_iam_policy_attachment" "cloud_dispatcher_ec2_access_attachment" {
 }
 
 resource "aws_eip_association" "eip_assoc" {
-  for_each = toset(local.public_hosts)
+  for_each = local.private_only ? [] : toset(local.public_hosts)
   instance_id = aws_instance.arvados_service[each.value].id
-  allocation_id = data.terraform_remote_state.vpc.outputs.eip_id[each.value]
+  allocation_id = local.eip_id[each.value]
 }
 
 resource "aws_iam_role" "default_iam_role" {
@@ -136,7 +175,7 @@ resource "aws_iam_policy_attachment" "ssl_privkey_password_access_attachment" {
   roles = [
     aws_iam_role.cloud_dispatcher_iam_role.name,
     aws_iam_role.default_iam_role.name,
-    data.terraform_remote_state.data-storage.outputs.keepstore_iam_role_name,
+    local.keepstore_iam_role_name,
   ]
   policy_arn = aws_iam_policy.ssl_privkey_password_access.arn
 }

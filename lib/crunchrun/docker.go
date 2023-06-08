@@ -34,7 +34,7 @@ const DockerAPIVersion = "1.35"
 // Number of consecutive "inspect container" failures before
 // concluding Docker is unresponsive, giving up, and cancelling the
 // container.
-const dockerWatchdogThreshold = 3
+const dockerWatchdogThreshold = 5
 
 type dockerExecutor struct {
 	containerUUID    string
@@ -52,7 +52,7 @@ func newDockerExecutor(containerUUID string, logf func(string, ...interface{}), 
 	// currently the minimum version we want to support.
 	client, err := dockerclient.NewClient(dockerclient.DefaultDockerHost, DockerAPIVersion, nil, nil)
 	if watchdogInterval < 1 {
-		watchdogInterval = time.Minute
+		watchdogInterval = time.Minute * 2
 	}
 	return &dockerExecutor{
 		containerUUID:    containerUUID,

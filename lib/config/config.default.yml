@@ -1051,6 +1051,10 @@ Clusters:
       # cloud dispatcher for executing containers on worker VMs.
       # Begins with "-----BEGIN RSA PRIVATE KEY-----\n"
       # and ends with "\n-----END RSA PRIVATE KEY-----\n".
+      #
+      # Use "file:///absolute/path/to/key" to load the key from a
+      # separate file instead of embedding it in the configuration
+      # file.
       DispatchPrivateKey: ""
 
       # Maximum time to wait for workers to come up before abandoning
@@ -1155,6 +1159,8 @@ Clusters:
 
         # Maximum bytes that may be logged by a single job.  Log bytes that are
         # silenced by throttling are not counted against this total.
+        # If you set this to zero, each container will only create a single
+        # log on the API server, noting for users that logging is throttled.
         LimitLogBytesPerJob: 67108864
 
         LogPartialLineThrottlePeriod: 5s
@@ -1397,6 +1403,12 @@ Clusters:
         # https://xxxxx.blob.core.windows.net/system/Microsoft.Compute/Images/images/xxxxx.vhd
         ImageID: ""
 
+        # Shell script to run on new instances using the cloud
+        # provider's UserData (EC2) or CustomData (Azure) feature.
+        #
+        # It is not necessary to include a #!/bin/sh line.
+        InstanceInitCommand: ""
+
         # An executable file (located on the dispatcher host) to be
         # copied to cloud instances at runtime and used as the
         # container runner/supervisor. The default value is the
@@ -1406,6 +1418,12 @@ Clusters:
         # copied, and cloud instances are assumed to have a suitable
         # version of crunch-run installed; see CrunchRunCommand above.
         DeployRunnerBinary: "/proc/self/exe"
+
+        # Install the Dispatcher's SSH public key (derived from
+        # DispatchPrivateKey) when creating new cloud
+        # instances. Change this to false if you are using a different
+        # mechanism to pre-install the public key on new instances.
+        DeployPublicKey: true
 
         # Tags to add on all resources (VMs, NICs, disks) created by
         # the container dispatcher. (Arvados's own tags --

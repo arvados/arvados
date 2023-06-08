@@ -501,6 +501,7 @@ func (s *IntegrationSuite) TestCreateContainerRequestWithFedToken(c *check.C) {
 	req.Header.Set("Authorization", "OAuth2 "+ac2.AuthToken)
 	resp, err = arvados.InsecureHTTPClient.Do(req)
 	c.Assert(err, check.IsNil)
+	defer resp.Body.Close()
 	err = json.NewDecoder(resp.Body).Decode(&cr)
 	c.Check(err, check.IsNil)
 	c.Check(cr.UUID, check.Matches, "z2222-.*")
@@ -538,8 +539,10 @@ func (s *IntegrationSuite) TestCreateContainerRequestWithBadToken(c *check.C) {
 		c.Assert(err, check.IsNil)
 		req.Header.Set("Content-Type", "application/json")
 		resp, err := ac1.Do(req)
-		c.Assert(err, check.IsNil)
-		c.Assert(resp.StatusCode, check.Equals, tt.expectedCode)
+		if c.Check(err, check.IsNil) {
+			c.Assert(resp.StatusCode, check.Equals, tt.expectedCode)
+			resp.Body.Close()
+		}
 	}
 }
 
@@ -607,9 +610,11 @@ func (s *IntegrationSuite) TestRequestIDHeader(c *check.C) {
 			var jresp httpserver.ErrorResponse
 			err := json.NewDecoder(resp.Body).Decode(&jresp)
 			c.Check(err, check.IsNil)
-			c.Assert(jresp.Errors, check.HasLen, 1)
-			c.Check(jresp.Errors[0], check.Matches, `.*\(`+respHdr+`\).*`)
+			if c.Check(jresp.Errors, check.HasLen, 1) {
+				c.Check(jresp.Errors[0], check.Matches, `.*\(`+respHdr+`\).*`)
+			}
 		}
+		resp.Body.Close()
 	}
 }
 
@@ -1144,6 +1149,15 @@ func (s *IntegrationSuite) TestRunTrivialContainer(c *check.C) {
 }
 
 func (s *IntegrationSuite) TestContainerInputOnDifferentCluster(c *check.C) {
+	// As of Arvados 2.6.2 (April 2023), this test was going down the
+	// `if outcoll.UUID == ""` branch, checking that FUSE reports a specific
+	// error.
+	// With increased PySDK/FUSE retries from #12684, this test now trips up
+	// on #20425. The test times out as FUSE spends a long time retrying a
+	// request that will never succeed.
+	// This early skip can be removed after #20425 is fixed.
+	c.Skip("blocked by <https://dev.arvados.org/issues/20425>")
+	return
 	conn := s.super.Conn("z1111")
 	rootctx, _, _ := s.super.RootClients("z1111")
 	userctx, ac, _, _ := s.super.UserClients("z1111", rootctx, c, conn, s.oidcprovider.AuthEmail, true)
@@ -1241,7 +1255,11 @@ func (s *IntegrationSuite) runContainer(c *check.C, clusterID string, token stri
 		} else {
 			if time.Now().After(deadline) {
 				c.Errorf("timed out, container state is %q", cr.State)
-				showlogs(ctr.Log)
+				if ctr.Log == "" {
+					c.Logf("=== NO LOG COLLECTION saved for container")
+				} else {
+					showlogs(ctr.Log)
+				}
 				c.FailNow()
 			}
 			time.Sleep(time.Second / 2)

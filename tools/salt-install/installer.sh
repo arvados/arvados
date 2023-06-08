@@ -60,6 +60,13 @@ checktools() {
     fi
 }
 
+cleanup() {
+    local NODE=$1
+    local SSH=`ssh_cmd "$NODE"`
+    # Delete the old repository
+    $SSH $DEPLOY_USER@$NODE rm -rf ${GITTARGET}.git ${GITTARGET}
+}
+
 sync() {
     local NODE=$1
     local BRANCH=$2
@@ -68,33 +75,26 @@ sync() {
     # each node, pushing our branch, and updating the checkout.
 
     if [[ "$NODE" != localhost ]] ; then
-		SSH=`ssh_cmd "$NODE"`
-		GIT="eval `git_cmd $NODE`"
-		if ! $SSH $DEPLOY_USER@$NODE test -d ${GITTARGET}.git ; then
+	SSH=`ssh_cmd "$NODE"`
+	GIT="eval `git_cmd $NODE`"
 
-			# Initialize the git repository (1st time case).  We're
-			# actually going to make two repositories here because git
-			# will complain if you try to push to a repository with a
-			# checkout. So we're going to create a "bare" repository
-			# and then clone a regular repository (with a checkout)
-			# from that.
+	cleanup $NODE
 
-			$SSH $DEPLOY_USER@$NODE git init --bare --shared=0600 ${GITTARGET}.git
-			if ! $GIT remote add $NODE $DEPLOY_USER@$NODE:${GITTARGET}.git ; then
-				$GIT remote set-url $NODE $DEPLOY_USER@$NODE:${GITTARGET}.git
-			fi
-			$GIT push $NODE $BRANCH
-			$SSH $DEPLOY_USER@$NODE "umask 0077 && git clone ${GITTARGET}.git ${GITTARGET}"
-		fi
+	# Update the git remote for the remote repository.
+	if ! $GIT remote add $NODE $DEPLOY_USER@$NODE:${GITTARGET}.git ; then
+	    $GIT remote set-url $NODE $DEPLOY_USER@$NODE:${GITTARGET}.git
+	fi
 
-		# The update case.
-		#
-		# Push to the bare repository on the remote node, then in the
-		# remote node repository with the checkout, pull the branch
-		# from the bare repository.
+	# Initialize the git repository.  We're
+	# actually going to make two repositories here because git
+	# will complain if you try to push to a repository with a
+	# checkout. So we're going to create a "bare" repository
+	# and then clone a regular repository (with a checkout)
+	# from that.
 
-		$GIT push $NODE $BRANCH
-		$SSH $DEPLOY_USER@$NODE "git -C ${GITTARGET} checkout ${BRANCH} && git -C ${GITTARGET} pull"
+	$SSH $DEPLOY_USER@$NODE git init --bare --shared=0600 ${GITTARGET}.git
+	$GIT push $NODE $BRANCH
+	$SSH $DEPLOY_USER@$NODE "umask 0077 && git clone -s ${GITTARGET}.git ${GITTARGET} && git -C ${GITTARGET} checkout ${BRANCH}"
     fi
 }
 
@@ -112,7 +112,7 @@ deploynode() {
     fi
 
     logfile=deploy-${NODE}-$(date -Iseconds).log
-	SSH=`ssh_cmd "$NODE"`
+    SSH=`ssh_cmd "$NODE"`
 
     if [[ "$NODE" = localhost ]] ; then
 	    SUDO=''
@@ -120,8 +120,9 @@ deploynode() {
 			SUDO=sudo
 		fi
 		$SUDO ./provision.sh --config ${CONFIG_FILE} ${ROLES} 2>&1 | tee $logfile
-	else
-		$SSH $DEPLOY_USER@$NODE "cd ${GITTARGET} && sudo ./provision.sh --config ${CONFIG_FILE} ${ROLES}" 2>&1 | tee $logfile
+    else
+	    $SSH $DEPLOY_USER@$NODE "cd ${GITTARGET} && git log -n1 HEAD && sudo ./provision.sh --config ${CONFIG_FILE} ${ROLES}" 2>&1 | tee $logfile
+	    cleanup $NODE
     fi
 }
 
@@ -264,7 +265,7 @@ case "$subcmd" in
 	    exit 1
 	fi
 
-	BRANCH=$(git branch --show-current)
+	BRANCH=$(git rev-parse --abbrev-ref HEAD)
 
 	set -x
 
@@ -338,7 +339,7 @@ case "$subcmd" in
 	    exit 1
 	fi
 
-	export ARVADOS_API_HOST="${CLUSTER}.${DOMAIN}:${CONTROLLER_EXT_SSL_PORT}"
+	export ARVADOS_API_HOST="${DOMAIN}:${CONTROLLER_EXT_SSL_PORT}"
 	export ARVADOS_API_TOKEN="$SYSTEM_ROOT_TOKEN"
 
 	arvados-client diagnostics $LOCATION

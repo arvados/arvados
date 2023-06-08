@@ -51,7 +51,6 @@ type filetodo struct {
 //	manifest, err := (&copier{...}).Copy()
 type copier struct {
 	client        *arvados.Client
-	arvClient     IArvadosClient
 	keepClient    IKeepClient
 	hostOutputDir string
 	ctrOutputDir  string
@@ -109,7 +108,7 @@ func (cp *copier) Copy() (string, error) {
 }
 
 func (cp *copier) copyFile(fs arvados.CollectionFileSystem, f filetodo) (int64, error) {
-	cp.logger.Printf("copying %q (%d bytes)", f.dst, f.size)
+	cp.logger.Printf("copying %q (%d bytes)", strings.TrimLeft(f.dst, "/"), f.size)
 	dst, err := fs.OpenFile(f.dst, os.O_CREATE|os.O_WRONLY, 0666)
 	if err != nil {
 		return 0, err
@@ -162,6 +161,20 @@ func (cp *copier) walkMount(dest, src string, maxSymlinks int, walkMountsBelow b
 	// copy, relative to its mount point -- ".", "./foo.txt", ...
 	srcRelPath := filepath.Join(".", srcMount.Path, src[len(srcRoot):])
 
+	// outputRelPath is the path relative in the output directory
+	// that corresponds to the path in the output collection where
+	// the file will go, for logging
+	var outputRelPath = ""
+	if strings.HasPrefix(src, cp.ctrOutputDir) {
+		outputRelPath = strings.TrimPrefix(src[len(cp.ctrOutputDir):], "/")
+	}
+	if outputRelPath == "" {
+		// blank means copy a whole directory, so replace it
+		// with a wildcard to make it a little clearer what's
+		// going on since outputRelPath is only used for logging
+		outputRelPath = "*"
+	}
+
 	switch {
 	case srcMount.ExcludeFromOutput:
 	case srcMount.Kind == "tmp":
@@ -170,12 +183,14 @@ func (cp *copier) walkMount(dest, src string, maxSymlinks int, walkMountsBelow b
 	case srcMount.Kind != "collection":
 		return fmt.Errorf("%q: unsupported mount %q in output (kind is %q)", src, srcRoot, srcMount.Kind)
 	case !srcMount.Writable:
+		cp.logger.Printf("copying %q from %v/%v", outputRelPath, srcMount.PortableDataHash, strings.TrimPrefix(srcRelPath, "./"))
 		mft, err := cp.getManifest(srcMount.PortableDataHash)
 		if err != nil {
 			return err
 		}
 		cp.manifest += mft.Extract(srcRelPath, dest).Text
 	default:
+		cp.logger.Printf("copying %q", outputRelPath)
 		hostRoot, err := cp.hostRoot(srcRoot)
 		if err != nil {
 			return err
@@ -356,7 +371,7 @@ func (cp *copier) getManifest(pdh string) (*manifest.Manifest, error) {
 		return mft, nil
 	}
 	var coll arvados.Collection
-	err := cp.arvClient.Get("collections", pdh, nil, &coll)
+	err := cp.client.RequestAndDecode(&coll, "GET", "arvados/v1/collections/"+pdh, nil, nil)
 	if err != nil {
 		return nil, fmt.Errorf("error retrieving collection record for %q: %s", pdh, err)
 	}

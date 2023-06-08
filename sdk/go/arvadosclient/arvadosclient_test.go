@@ -31,7 +31,7 @@ type ServerRequiredSuite struct{}
 
 func (s *ServerRequiredSuite) SetUpSuite(c *C) {
 	arvadostest.StartKeep(2, false)
-	RetryDelay = 0
+	RetryDelay = 2 * time.Second
 }
 
 func (s *ServerRequiredSuite) TearDownSuite(c *C) {
@@ -248,7 +248,7 @@ func (s *UnitSuite) TestPDHMatch(c *C) {
 type MockArvadosServerSuite struct{}
 
 func (s *MockArvadosServerSuite) SetUpSuite(c *C) {
-	RetryDelay = 0
+	RetryDelay = 100 * time.Millisecond
 }
 
 func (s *MockArvadosServerSuite) SetUpTest(c *C) {
@@ -279,15 +279,17 @@ type APIStub struct {
 }
 
 func (h *APIStub) ServeHTTP(resp http.ResponseWriter, req *http.Request) {
-	if req.URL.Path == "/redirect-loop" {
-		http.Redirect(resp, req, "/redirect-loop", http.StatusFound)
-		return
-	}
-	if h.respStatus[h.retryAttempts] < 0 {
-		// Fail the client's Do() by starting a redirect loop
-		http.Redirect(resp, req, "/redirect-loop", http.StatusFound)
+	if status := h.respStatus[h.retryAttempts]; status < 0 {
+		// Fail the client's Do() by hanging up without
+		// sending an HTTP response header.
+		conn, _, err := resp.(http.Hijacker).Hijack()
+		if err != nil {
+			panic(err)
+		}
+		conn.Write([]byte("zzzzzzzzzz"))
+		conn.Close()
 	} else {
-		resp.WriteHeader(h.respStatus[h.retryAttempts])
+		resp.WriteHeader(status)
 		resp.Write([]byte(h.responseBody[h.retryAttempts]))
 	}
 	h.retryAttempts++
@@ -302,22 +304,22 @@ func (s *MockArvadosServerSuite) TestWithRetries(c *C) {
 			"create", 0, 200, []int{200, 500}, []string{`{"ok":"ok"}`, ``},
 		},
 		{
-			"get", 0, 500, []int{500, 500, 500, 200}, []string{``, ``, ``, `{"ok":"ok"}`},
+			"get", 0, 423, []int{500, 500, 423, 200}, []string{``, ``, ``, `{"ok":"ok"}`},
 		},
 		{
-			"create", 0, 500, []int{500, 500, 500, 200}, []string{``, ``, ``, `{"ok":"ok"}`},
+			"create", 0, 423, []int{500, 500, 423, 200}, []string{``, ``, ``, `{"ok":"ok"}`},
 		},
 		{
-			"update", 0, 500, []int{500, 500, 500, 200}, []string{``, ``, ``, `{"ok":"ok"}`},
+			"update", 0, 422, []int{500, 500, 422, 200}, []string{``, ``, ``, `{"ok":"ok"}`},
 		},
 		{
-			"delete", 0, 500, []int{500, 500, 500, 200}, []string{``, ``, ``, `{"ok":"ok"}`},
+			"delete", 0, 422, []int{500, 500, 422, 200}, []string{``, ``, ``, `{"ok":"ok"}`},
 		},
 		{
-			"get", 0, 502, []int{500, 500, 502, 200}, []string{``, ``, ``, `{"ok":"ok"}`},
+			"get", 0, 401, []int{500, 502, 401, 200}, []string{``, ``, ``, `{"ok":"ok"}`},
 		},
 		{
-			"create", 0, 502, []int{500, 500, 502, 200}, []string{``, ``, ``, `{"ok":"ok"}`},
+			"create", 0, 422, []int{500, 502, 422, 200}, []string{``, ``, ``, `{"ok":"ok"}`},
 		},
 		{
 			"get", 0, 200, []int{500, 500, 200}, []string{``, ``, `{"ok":"ok"}`},
@@ -338,6 +340,12 @@ func (s *MockArvadosServerSuite) TestWithRetries(c *C) {
 			"create", 0, 401, []int{401, 200}, []string{``, `{"ok":"ok"}`},
 		},
 		{
+			"create", 0, 403, []int{403, 200}, []string{``, `{"ok":"ok"}`},
+		},
+		{
+			"create", 0, 422, []int{422, 200}, []string{``, `{"ok":"ok"}`},
+		},
+		{
 			"get", 0, 404, []int{404, 200}, []string{``, `{"ok":"ok"}`},
 		},
 		{
@@ -352,11 +360,13 @@ func (s *MockArvadosServerSuite) TestWithRetries(c *C) {
 		{
 			"get", 0, 200, []int{-1, -1, 200}, []string{``, ``, `{"ok":"ok"}`},
 		},
-		// "POST" is not safe to retry: fail after one error
+		// "POST" protocol error is safe to retry
 		{
-			"create", 0, -1, []int{-1, 200}, []string{``, `{"ok":"ok"}`},
+			"create", 0, 200, []int{-1, 200}, []string{``, `{"ok":"ok"}`},
 		},
 	} {
+		c.Logf("stub: %#v", stub)
+
 		api, err := RunFakeArvadosServer(&stub)
 		c.Check(err, IsNil)
 
@@ -396,7 +406,9 @@ func (s *MockArvadosServerSuite) TestWithRetries(c *C) {
 		default:
 			c.Check(err, NotNil)
 			c.Check(err, ErrorMatches, fmt.Sprintf("arvados API server error: %d.*", stub.expected))
-			c.Check(err.(APIServerError).HttpStatusCode, Equals, stub.expected)
+			if c.Check(err, FitsTypeOf, APIServerError{}) {
+				c.Check(err.(APIServerError).HttpStatusCode, Equals, stub.expected)
+			}
 		}
 	}
 }

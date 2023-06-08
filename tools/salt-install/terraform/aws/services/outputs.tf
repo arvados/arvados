@@ -5,11 +5,9 @@
 output "vpc_id" {
   value = data.terraform_remote_state.vpc.outputs.arvados_vpc_id
 }
-
-output "vpc_cidr" {
-  value = data.terraform_remote_state.vpc.outputs.arvados_vpc_cidr
+output "cluster_int_cidr" {
+  value = data.aws_vpc.arvados_vpc.cidr_block
 }
-
 output "arvados_subnet_id" {
   value = data.terraform_remote_state.vpc.outputs.public_subnet_id
 }
@@ -52,7 +50,7 @@ output "domain_name" {
 
 # Debian AMI's default user
 output "deploy_user" {
-  value = "admin"
+  value = var.deploy_user
 }
 
 output "region_name" {

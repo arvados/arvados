@@ -9,6 +9,7 @@ import (
 	"context"
 	"fmt"
 	"io/ioutil"
+	"math"
 	"math/rand"
 	"net/http"
 	"net/http/httptest"
@@ -167,6 +168,44 @@ func (*clientSuite) TestAnythingToValues(c *check.C) {
 		c.Check(err, check.IsNil)
 		c.Check(tc.ok(out), check.Equals, true)
 	}
+}
+
+// select=["uuid"] is added automatically when RequestAndDecode's
+// destination argument is nil.
+func (*clientSuite) TestAutoSelectUUID(c *check.C) {
+	var req *http.Request
+	var err error
+	server := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		c.Check(r.ParseForm(), check.IsNil)
+		req = r
+		w.Write([]byte("{}"))
+	}))
+	client := Client{
+		APIHost:   strings.TrimPrefix(server.URL, "https://"),
+		AuthToken: "zzz",
+		Insecure:  true,
+		Timeout:   2 * time.Second,
+	}
+
+	req = nil
+	err = client.RequestAndDecode(nil, http.MethodPost, "test", nil, nil)
+	c.Check(err, check.IsNil)
+	c.Check(req.FormValue("select"), check.Equals, `["uuid"]`)
+
+	req = nil
+	err = client.RequestAndDecode(nil, http.MethodGet, "test", nil, nil)
+	c.Check(err, check.IsNil)
+	c.Check(req.FormValue("select"), check.Equals, `["uuid"]`)
+
+	req = nil
+	err = client.RequestAndDecode(nil, http.MethodGet, "test", nil, map[string]interface{}{"select": []string{"blergh"}})
+	c.Check(err, check.IsNil)
+	c.Check(req.FormValue("select"), check.Equals, `["uuid"]`)
+
+	req = nil
+	err = client.RequestAndDecode(&struct{}{}, http.MethodGet, "test", nil, map[string]interface{}{"select": []string{"blergh"}})
+	c.Check(err, check.IsNil)
+	c.Check(req.FormValue("select"), check.Equals, `["blergh"]`)
 }
 
 func (*clientSuite) TestLoadConfig(c *check.C) {
@@ -338,4 +377,67 @@ func (s *clientRetrySuite) TestContextAlreadyCanceled(c *check.C) {
 	cancel()
 	err := s.client.RequestAndDecodeContext(ctx, &struct{}{}, http.MethodGet, "test", nil, nil)
 	c.Check(err, check.Equals, context.Canceled)
+}
+
+func (s *clientRetrySuite) TestExponentialBackoff(c *check.C) {
+	var min, max time.Duration
+	min, max = time.Second, 64*time.Second
+
+	t := exponentialBackoff(min, max, 0, nil)
+	c.Check(t, check.Equals, min)
+
+	for e := float64(1); e < 5; e += 1 {
+		ok := false
+		for i := 0; i < 20; i++ {
+			t = exponentialBackoff(min, max, int(e), nil)
+			// Every returned value must be between min and min(2^e, max)
+			c.Check(t >= min, check.Equals, true)
+			c.Check(t <= min*time.Duration(math.Pow(2, e)), check.Equals, true)
+			c.Check(t <= max, check.Equals, true)
+			// Check that jitter is actually happening by
+			// checking that at least one in 20 trials is
+			// between min*2^(e-.75) and min*2^(e-.25)
+			jittermin := time.Duration(float64(min) * math.Pow(2, e-0.75))
+			jittermax := time.Duration(float64(min) * math.Pow(2, e-0.25))
+			c.Logf("min %v max %v e %v jittermin %v jittermax %v t %v", min, max, e, jittermin, jittermax, t)
+			if t > jittermin && t < jittermax {
+				ok = true
+				break
+			}
+		}
+		c.Check(ok, check.Equals, true)
+	}
+
+	for i := 0; i < 20; i++ {
+		t := exponentialBackoff(min, max, 100, nil)
+		c.Check(t < max, check.Equals, true)
+	}
+
+	for _, trial := range []struct {
+		retryAfter string
+		expect     time.Duration
+	}{
+		{"1", time.Second * 4},             // minimum enforced
+		{"5", time.Second * 5},             // header used
+		{"55", time.Second * 10},           // maximum enforced
+		{"eleventy-nine", time.Second * 4}, // invalid header, exponential backoff used
+		{time.Now().UTC().Add(time.Second).Format(time.RFC1123), time.Second * 4},  // minimum enforced
+		{time.Now().UTC().Add(time.Minute).Format(time.RFC1123), time.Second * 10}, // maximum enforced
+		{time.Now().UTC().Add(-time.Minute).Format(time.RFC1123), time.Second * 4}, // minimum enforced
+	} {
+		c.Logf("trial %+v", trial)
+		t := exponentialBackoff(time.Second*4, time.Second*10, 0, &http.Response{
+			StatusCode: http.StatusTooManyRequests,
+			Header:     http.Header{"Retry-After": {trial.retryAfter}}})
+		c.Check(t, check.Equals, trial.expect)
+	}
+	t = exponentialBackoff(time.Second*4, time.Second*10, 0, &http.Response{
+		StatusCode: http.StatusTooManyRequests,
+	})
+	c.Check(t, check.Equals, time.Second*4)
+
+	t = exponentialBackoff(0, max, 0, nil)
+	c.Check(t, check.Equals, time.Duration(0))
+	t = exponentialBackoff(0, max, 1, nil)
+	c.Check(t, check.Not(check.Equals), time.Duration(0))
 }

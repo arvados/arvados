@@ -24,7 +24,7 @@ nginx:
         overwrite: true
         config:
           - server:
-            - server_name: prometheus.__CLUSTER__.__DOMAIN__
+            - server_name: prometheus.__DOMAIN__
             - listen:
               - 80
             - location /.well-known:
@@ -39,7 +39,7 @@ nginx:
           __CERT_REQUIRES__
         config:
           - server:
-            - server_name: prometheus.__CLUSTER__.__DOMAIN__
+            - server_name: prometheus.__DOMAIN__
             - listen:
               - 443 http2 ssl
             - index: index.html index.htm
@@ -60,5 +60,5 @@ nginx:
             {%- endif %}
             - auth_basic: '"Restricted Area"'
             - auth_basic_user_file: htpasswd
-            - access_log: /var/log/nginx/prometheus.__CLUSTER__.__DOMAIN__.access.log combined
-            - error_log: /var/log/nginx/prometheus.__CLUSTER__.__DOMAIN__.error.log
+            - access_log: /var/log/nginx/prometheus.__DOMAIN__.access.log combined
+            - error_log: /var/log/nginx/prometheus.__DOMAIN__.error.log

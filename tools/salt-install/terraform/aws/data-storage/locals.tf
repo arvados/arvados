@@ -5,4 +5,5 @@
 locals {
   region_name = data.terraform_remote_state.vpc.outputs.region_name
   cluster_name = data.terraform_remote_state.vpc.outputs.cluster_name
+  custom_tags = data.terraform_remote_state.vpc.outputs.custom_tags
 }

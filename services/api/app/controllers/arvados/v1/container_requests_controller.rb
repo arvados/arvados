@@ -32,7 +32,7 @@ class Arvados::V1::ContainerRequestsController < ApplicationController
   end
 
   def update
-    if (resource_attrs.keys - [:owner_uuid, :name, :description, :properties]).empty? or @object.container_uuid.nil?
+    if (resource_attrs.keys.map(&:to_sym) - [:owner_uuid, :name, :description, :properties]).empty? or @object.container_uuid.nil?
       # If no attributes are being updated besides these, there are no
       # cascading changes to other rows/tables, the only lock will be
       # the single row lock on SQL UPDATE.

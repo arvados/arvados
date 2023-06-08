@@ -16,13 +16,38 @@ import (
 var quietAfter503 = time.Minute
 
 func (sch *Scheduler) runQueue() {
+	running := sch.pool.Running()
+	unalloc := sch.pool.Unallocated()
+
 	unsorted, _ := sch.queue.Entries()
 	sorted := make([]container.QueueEnt, 0, len(unsorted))
 	for _, ent := range unsorted {
 		sorted = append(sorted, ent)
 	}
 	sort.Slice(sorted, func(i, j int) bool {
-		if pi, pj := sorted[i].Container.Priority, sorted[j].Container.Priority; pi != pj {
+		_, irunning := running[sorted[i].Container.UUID]
+		_, jrunning := running[sorted[j].Container.UUID]
+		if irunning != jrunning {
+			// Ensure the "tryrun" loop (see below) sees
+			// already-scheduled containers first, to
+			// ensure existing supervisor containers are
+			// properly counted before we decide whether
+			// we have room for new ones.
+			return irunning
+		}
+		ilocked := sorted[i].Container.State == arvados.ContainerStateLocked
+		jlocked := sorted[j].Container.State == arvados.ContainerStateLocked
+		if ilocked != jlocked {
+			// Give precedence to containers that we have
+			// already locked, even if higher-priority
+			// containers have since arrived in the
+			// queue. This avoids undesirable queue churn
+			// effects including extra lock/unlock cycles
+			// and bringing up new instances and quickly
+			// shutting them down to make room for
+			// different instance sizes.
+			return ilocked
+		} else if pi, pj := sorted[i].Container.Priority, sorted[j].Container.Priority; pi != pj {
 			return pi > pj
 		} else {
 			// When containers have identical priority,
@@ -33,9 +58,6 @@ func (sch *Scheduler) runQueue() {
 			return sorted[i].FirstSeenAt.Before(sorted[j].FirstSeenAt)
 		}
 	})
-
-	running := sch.pool.Running()
-	unalloc := sch.pool.Unallocated()
 
 	if t := sch.client.Last503(); t.After(sch.last503time) {
 		// API has sent an HTTP 503 response since last time
@@ -108,8 +130,7 @@ tryrun:
 		case arvados.ContainerStateQueued:
 			if sch.maxConcurrency > 0 && trying >= sch.maxConcurrency {
 				logger.Tracef("not locking: already at maxConcurrency %d", sch.maxConcurrency)
-				overquota = sorted[i:]
-				break tryrun
+				continue
 			}
 			trying++
 			if unalloc[it] < 1 && sch.pool.AtQuota() {
@@ -125,9 +146,8 @@ tryrun:
 			unalloc[it]--
 		case arvados.ContainerStateLocked:
 			if sch.maxConcurrency > 0 && trying >= sch.maxConcurrency {
-				logger.Debugf("not starting: already at maxConcurrency %d", sch.maxConcurrency)
-				overquota = sorted[i:]
-				break tryrun
+				logger.Tracef("not starting: already at maxConcurrency %d", sch.maxConcurrency)
+				continue
 			}
 			trying++
 			if unalloc[it] > 0 {
@@ -194,6 +214,8 @@ tryrun:
 				}
 			}
 		}
+	}
+	if len(overquota) > 0 {
 		// Shut down idle workers that didn't get any
 		// containers mapped onto them before we hit quota.
 		for it, n := range unalloc {

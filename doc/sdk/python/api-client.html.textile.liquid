@@ -46,7 +46,7 @@ The API client has a method that corresponds to each "type of resource supported
 
 Each resource object has a method that corresponds to each API method supported by that resource type. You call these methods with the keyword arguments and values documented in the API reference. They return an API request object.
 
-Each API request object has an @execute()@ method. You may pass a @num_retries@ integer argument to retry the operation that many times, with exponential back-off, in case of temporary errors like network problems. If it ultimately succeeds, it returns the kind of object documented in the API reference for that method. Usually that's a dictionary with details about the object you requested. If there's a problem, it raises an exception.
+Each API request object has an @execute()@ method. If it succeeds, it returns the kind of object documented in the API reference for that method. Usually that's a dictionary with details about the object you requested. If there's a problem, it raises an exception.
 
 Putting it all together, basic API requests usually look like:
 
@@ -54,10 +54,19 @@ Putting it all together, basic API requests usually look like:
 arv_object = arv_client.resource_type().api_method(
     argument=...,
     other_argument=...,
-).execute(num_retries=3)
+).execute()
 {% endcodeblock %}
 
-The following sections detail how to call "common resource methods in the API":{{site.baseurl}}/api/methods.html with more concrete examples. Additional methods may be available on specific resource types.
+Later sections detail how to call "common resource methods in the API":{{site.baseurl}}/api/methods.html with more concrete examples. Additional methods may be available on specific resource types.
+
+h3. Retrying failed requests
+
+If you execute an API request and it fails because of a temporary error like a network problem, the SDK waits with randomized exponential back-off, then retries the request. You can specify the maximum number of retries by passing a @num_retries@ integer to either @arvados.api@ or the @execute()@ method; the SDK will use whichever number is greater. The default number of retries is 10, which means that an API request could take up to about 35 minutes if the temporary problem persists that long. To disable automatic retries, just pass @num_retries=0@ to @arvados.api@:
+
+{% codeblock as python %}
+import arvados
+arv_client = arvados.api('v1', num_retries=0, ...)
+{% endcodeblock %}
 
 h2. get method
 

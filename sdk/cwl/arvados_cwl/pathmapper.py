@@ -115,7 +115,7 @@ class ArvPathMapper(PathMapper):
                         logger.info("%s is %s", src, keepref)
                         self._pathmap[src] = MapperEnt(keepref, keepref, srcobj["class"], True)
                 except Exception as e:
-                    logger.warning(str(e))
+                    logger.warning("Download error: %s", e)
             else:
                 self._pathmap[src] = MapperEnt(src, src, srcobj["class"], True)
 
@@ -147,7 +147,7 @@ class ArvPathMapper(PathMapper):
             for opt in self.optional_deps:
                 if obj["location"] == opt["location"]:
                     return
-            raise SourceLine(obj, "location", WorkflowException).makeError("Don't know what to do with '%s'" % obj["location"])
+            raise SourceLine(obj, "location", WorkflowException).makeError("Can't handle '%s'" % obj["location"])
 
     def needs_new_collection(self, srcobj, prefix=""):
         """Check if files need to be staged into a new collection.

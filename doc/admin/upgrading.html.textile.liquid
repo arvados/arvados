@@ -28,13 +28,38 @@ TODO: extract this information based on git commit messages and generate changel
 <div class="releasenotes">
 </notextile>
 
-h2(#main). development main (as of 2023-04-18)
 
-"previous: Upgrading to 2.6.1":#v2_6_1
+h2(#main). development main (as of 2023-05-11)
+
+"previous: Upgrading to 2.6.2":#v2_6_2
+
+h3. Multi-node installer's domain name configuration changes
+
+The @domain_name@ variable at @terraform/vpc/terraform.tfvars@ and @DOMAIN@ variable at @local.params@ changed their meaning. In previous versions they were used in combination with @cluster_name@ and @CLUSTER@ to build the cluster's domain name (e.g.: @cluster_name@.@domain_name@). To allow the use of any arbitrary cluster domain, now we don't enforce using the cluster prefix as part of the domain, so @domain_name@ and @DOMAIN@ need to hold the entire domain for the given cluster.
+For example, if @cluster_name@ is set to @"xarv1"@ and @domain_name@ was previously set to @"example.com"@, it should now be set to @"xarv1.example.com"@ to keep using the same cluster domain.
+
+h3. Python SDK automatically retries failed requests much more
+
+The Python SDK has always provided functionality to retry API requests that fail due to temporary problems like network failures, by passing @num_retries=N@ to a request's @execute()@ method. In this release, API client constructor functions like @arvados.api@ also accept a @num_retries@ argument. This value is stored on the client object and used as a floor for all API requests made with this client. This allows developers to set their preferred retry strategy once, without having to pass it to each @execute()@ call.
+
+The default value for @num_retries@ in API constructor functions is 10. This means that an API request that repeatedly encounters temporary problems may spend up to about 35 minutes retrying in the worst case. We believe this is an appropriate default for most users, where eventual success is a much greater concern than responsiveness. If you have client applications where this is undesirable, update them to pass a lower @num_retries@ value to the constructor function. You can even pass @num_retries=0@ to have the API client act as it did before, like this:
+
+{% codeblock as python %}
+import arvados
+arv_client = arvados.api('v1', num_retries=0, ...)
+{% endcodeblock %}
+
+The first time the Python SDK fetches an Arvados API discovery document, it will ensure that @googleapiclient.http@ logs are handled so you have a way to know about early problems that are being retried. If you prefer to handle these logs your own way, just ensure that the @googleapiclient.http@ logger (or a parent logger) has a handler installed before you call any Arvados API client constructor.
 
 h3. UseAWSS3v2Driver option removed
 
 The old "v1" S3 driver for keepstore has been removed. The new "v2" implementation, which has been the default since Arvados 2.5.0, is always used. The @Volumes.*.DriverParameters.UseAWSS3v2Driver@ configuration key is no longer recognized. If your config file uses it, remove it to avoid warning messages at startup.
+
+h2(#v2_6_2). v2.6.2 (2023-05-22)
+
+"previous: Upgrading to 2.6.1":#v2_6_1
+
+This version introduces a new API feature which is used by Workbench 2 to improve page loading performance.  To avoid any errors using the new Workbench with an old API server, be sure to upgrade the API server before upgrading Workbench 2.
 
 h2(#v2_6_1). v2.6.1 (2023-04-17)
 

@@ -3,22 +3,22 @@
 # SPDX-License-Identifier: CC-BY-SA-3.0
 
 output "arvados_vpc_id" {
-  value = aws_vpc.arvados_vpc.id
+  value = local.arvados_vpc_id
 }
 output "arvados_vpc_cidr" {
-  value = aws_vpc.arvados_vpc.cidr_block
+  value = try(local.arvados_vpc_cidr_block, "")
 }
 
 output "public_subnet_id" {
-  value = aws_subnet.public_subnet.id
+  value = local.public_subnet_id
 }
 
 output "private_subnet_id" {
-  value = aws_subnet.private_subnet.id
+  value = local.private_subnet_id
 }
 
 output "arvados_sg_id" {
-  value = aws_security_group.arvados_sg.id
+  value = local.arvados_sg_id
 }
 
 output "eip_id" {
@@ -41,16 +41,29 @@ output "private_hosts" {
   value = local.private_hosts
 }
 
+output "user_facing_hosts" {
+  value = var.user_facing_hosts
+}
+
+output "internal_service_hosts" {
+  value = var.internal_service_hosts
+}
+
+output "private_only" {
+  value = var.private_only
+}
+
 output "route53_dns_ns" {
-  value = aws_route53_zone.public_zone.name_servers
+  value = try(local.route53_public_zone.name_servers, [])
 }
 
 output "letsencrypt_iam_access_key_id" {
-  value = aws_iam_access_key.letsencrypt.id
+  value = try(local.iam_access_key_letsencrypt.id, "")
+  sensitive = true
 }
 
 output "letsencrypt_iam_secret_access_key" {
-  value = aws_iam_access_key.letsencrypt.secret
+  value = try(local.iam_access_key_letsencrypt.secret, "")
   sensitive = true
 }
 
@@ -64,4 +77,8 @@ output "cluster_name" {
 
 output "domain_name" {
   value = var.domain_name
+}
+
+output "custom_tags" {
+  value = var.custom_tags
 }

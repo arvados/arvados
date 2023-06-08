@@ -116,6 +116,7 @@ table(table table-bordered table-condensed).
 |include|string|If provided with the value "owner_uuid", this will return owner objects in the "included" field of the response.|query||
 |include_trash|boolean (default false)|Include trashed objects.|query|@true@|
 |include_old_versions|boolean (default false)|Include past versions of the collections being listed.|query|@true@|
+|select|array|Attributes of each object to return in the response. Specify an unqualified name like @uuid@ to select that attribute on all object types, or a qualified name like @collections.name@ to select that attribute on objects of the specified type. By default, all available attributes are returned, except on collections, where @manifest_text@ is not returned and cannot be selected due to an implementation limitation. This limitation may be removed in the future.|query|@["uuid", "collections.name"]@|
 
 Notes:
 

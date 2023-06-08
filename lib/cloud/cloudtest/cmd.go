@@ -18,7 +18,6 @@ import (
 	"git.arvados.org/arvados.git/lib/dispatchcloud"
 	"git.arvados.org/arvados.git/sdk/go/arvados"
 	"git.arvados.org/arvados.git/sdk/go/ctxlog"
-	"golang.org/x/crypto/ssh"
 )
 
 var Command command
@@ -65,9 +64,9 @@ func (command) RunCommand(prog string, args []string, stdin io.Reader, stdout, s
 	if err != nil {
 		return 1
 	}
-	key, err := ssh.ParsePrivateKey([]byte(cluster.Containers.DispatchPrivateKey))
+	key, err := config.LoadSSHKey(cluster.Containers.DispatchPrivateKey)
 	if err != nil {
-		err = fmt.Errorf("error parsing configured Containers.DispatchPrivateKey: %s", err)
+		err = fmt.Errorf("error loading Containers.DispatchPrivateKey: %s", err)
 		return 1
 	}
 	driver, ok := dispatchcloud.Drivers[cluster.Containers.CloudVMs.Driver]
@@ -86,22 +85,23 @@ func (command) RunCommand(prog string, args []string, stdin io.Reader, stdout, s
 	tagKeyPrefix := cluster.Containers.CloudVMs.TagKeyPrefix
 	tags[tagKeyPrefix+"CloudTestPID"] = fmt.Sprintf("%d", os.Getpid())
 	if !(&tester{
-		Logger:           logger,
-		Tags:             tags,
-		TagKeyPrefix:     tagKeyPrefix,
-		SetID:            cloud.InstanceSetID(*instanceSetID),
-		DestroyExisting:  *destroyExisting,
-		ProbeInterval:    cluster.Containers.CloudVMs.ProbeInterval.Duration(),
-		SyncInterval:     cluster.Containers.CloudVMs.SyncInterval.Duration(),
-		TimeoutBooting:   cluster.Containers.CloudVMs.TimeoutBooting.Duration(),
-		Driver:           driver,
-		DriverParameters: cluster.Containers.CloudVMs.DriverParameters,
-		ImageID:          cloud.ImageID(*imageID),
-		InstanceType:     it,
-		SSHKey:           key,
-		SSHPort:          cluster.Containers.CloudVMs.SSHPort,
-		BootProbeCommand: cluster.Containers.CloudVMs.BootProbeCommand,
-		ShellCommand:     *shellCommand,
+		Logger:              logger,
+		Tags:                tags,
+		TagKeyPrefix:        tagKeyPrefix,
+		SetID:               cloud.InstanceSetID(*instanceSetID),
+		DestroyExisting:     *destroyExisting,
+		ProbeInterval:       cluster.Containers.CloudVMs.ProbeInterval.Duration(),
+		SyncInterval:        cluster.Containers.CloudVMs.SyncInterval.Duration(),
+		TimeoutBooting:      cluster.Containers.CloudVMs.TimeoutBooting.Duration(),
+		Driver:              driver,
+		DriverParameters:    cluster.Containers.CloudVMs.DriverParameters,
+		ImageID:             cloud.ImageID(*imageID),
+		InstanceType:        it,
+		SSHKey:              key,
+		SSHPort:             cluster.Containers.CloudVMs.SSHPort,
+		BootProbeCommand:    cluster.Containers.CloudVMs.BootProbeCommand,
+		InstanceInitCommand: cloud.InitCommand(cluster.Containers.CloudVMs.InstanceInitCommand),
+		ShellCommand:        *shellCommand,
 		PauseBeforeDestroy: func() {
 			if *pauseBeforeDestroy {
 				logger.Info("waiting for operator to press Enter")

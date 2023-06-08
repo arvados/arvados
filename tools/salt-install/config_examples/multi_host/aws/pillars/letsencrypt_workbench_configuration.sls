@@ -6,5 +6,5 @@
 ### LETSENCRYPT
 letsencrypt:
   domainsets:
-    workbench.__CLUSTER__.__DOMAIN__:
-      - workbench.__CLUSTER__.__DOMAIN__
+    workbench.__DOMAIN__:
+      - workbench.__DOMAIN__
