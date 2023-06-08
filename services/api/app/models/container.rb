@@ -730,7 +730,21 @@ class Container < ArvadosModel
       self.with_lock do
         act_as_system_user do
           if self.state == Cancelled
-            retryable_requests = ContainerRequest.where("container_uuid = ? and priority > 0 and state = 'Committed' and container_count < container_count_max", uuid)
+            # Cancelled means the container didn't run to completion.
+            # This happens either because it was cancelled by the user
+            # or because there was an infrastructure failure.  We want
+            # to retry infrastructure failures automatically.
+            #
+            # Seach for live container requests to determine if we
+            # should retry the container.
+            retryable_requests = ContainerRequest.
+                                   joins('left outer join containers as requesting_container on container_requests.requesting_container_uuid = requesting_container.uuid').
+                                   where("container_requests.container_uuid = ? and "+
+                                         "container_requests.priority > 0 and "+
+                                         "(requesting_container.priority is null or (requesting_container.state = 'Running' and requesting_container.priority > 0)) and "+
+                                         "container_requests.state = 'Committed' and "+
+                                         "container_requests.container_count < container_requests.container_count_max", uuid).
+                                   order('container_requests.uuid asc')
           else
             retryable_requests = []
           end
