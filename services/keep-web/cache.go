@@ -141,6 +141,7 @@ func (c *cache) GetSession(token string) (arvados.CustomFileSystem, *cachedSessi
 			return nil, nil, nil, err
 		}
 		sess.client.AuthToken = token
+		sess.client.Timeout = time.Minute
 		sess.arvadosclient, err = arvadosclient.New(sess.client)
 		if err != nil {
 			return nil, nil, nil, err
