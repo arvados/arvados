@@ -34,8 +34,8 @@ type APIClient interface {
 // record and the instance type that should be used to run it.
 type QueueEnt struct {
 	// The container to run. Only the UUID, State, Priority,
-	// RuntimeConstraints, Mounts, and ContainerImage fields are
-	// populated.
+	// RuntimeConstraints, ContainerImage, SchedulingParameters,
+	// and CreatedAt fields are populated.
 	Container    arvados.Container    `json:"container"`
 	InstanceType arvados.InstanceType `json:"instance_type"`
 	FirstSeenAt  time.Time            `json:"first_seen_at"`
@@ -239,6 +239,19 @@ func (cq *Queue) delEnt(uuid string, state arvados.ContainerState) {
 
 // Caller must have lock.
 func (cq *Queue) addEnt(uuid string, ctr arvados.Container) {
+	logger := cq.logger.WithField("ContainerUUID", ctr.UUID)
+	// We didn't ask for the Mounts field when polling
+	// controller/RailsAPI, because it can be expensive on the
+	// Rails side, and most of the time we already have it.  But
+	// this is the first time we're seeing this container, so we
+	// need to fetch mounts in order to choose an instance type.
+	err := cq.client.RequestAndDecode(&ctr, "GET", "arvados/v1/containers/"+ctr.UUID, nil, arvados.GetOptions{
+		Select: []string{"mounts"},
+	})
+	if err != nil {
+		logger.WithError(err).Warn("error getting mounts")
+		return
+	}
 	it, err := cq.chooseType(&ctr)
 
 	// Avoid wasting memory on a large Mounts attr (we don't need
@@ -250,7 +263,6 @@ func (cq *Queue) addEnt(uuid string, ctr arvados.Container) {
 		// error: it wouldn't help to try again, or to leave
 		// it for a different dispatcher process to attempt.
 		errorString := err.Error()
-		logger := cq.logger.WithField("ContainerUUID", ctr.UUID)
 		logger.WithError(err).Warn("cancel container with no suitable instance type")
 		go func() {
 			if ctr.State == arvados.ContainerStateQueued {
@@ -396,7 +408,7 @@ func (cq *Queue) poll() (map[string]*arvados.Container, error) {
 			*next[upd.UUID] = upd
 		}
 	}
-	selectParam := []string{"uuid", "state", "priority", "runtime_constraints", "container_image", "mounts", "scheduling_parameters", "created_at"}
+	selectParam := []string{"uuid", "state", "priority", "runtime_constraints", "container_image", "scheduling_parameters", "created_at"}
 	limitParam := 1000
 
 	mine, err := cq.fetchAll(arvados.ResourceListParams{
