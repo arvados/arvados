@@ -5,6 +5,7 @@
 package httpserver
 
 import (
+	"container/heap"
 	"math"
 	"net/http"
 	"sync"
@@ -47,7 +48,7 @@ type RequestLimiter struct {
 	setupOnce sync.Once
 	mtx       sync.Mutex
 	handling  int
-	queue     heap
+	queue     queue
 }
 
 type qent struct {
@@ -57,87 +58,49 @@ type qent struct {
 	ready    chan bool // true = handle now; false = return 503 now
 }
 
-type heap []*qent
+type queue []*qent
 
-func (h heap) Swap(i, j int) {
+func (h queue) Swap(i, j int) {
 	h[i], h[j] = h[j], h[i]
 	h[i].heappos, h[j].heappos = i, j
 }
 
-func (h heap) Less(i, j int) bool {
+func (h queue) Less(i, j int) bool {
 	pi, pj := h[i].priority, h[j].priority
 	return pi > pj || (pi == pj && h[i].queued.Before(h[j].queued))
 }
 
-func (h heap) Len() int {
+func (h queue) Len() int {
 	return len(h)
 }
 
-// Move element i to a correct position in the heap. When the heap is
-// empty, fix(0) is a no-op (does not crash).
-func (h heap) fix(i int) {
-	// If the initial position is a leaf (i.e., index is greater
-	// than the last node's parent index), we only need to move it
-	// up, not down.
-	uponly := i > (len(h)-2)/2
-	// Move the new entry toward the root until reaching a
-	// position where the parent already has higher priority.
-	for i > 0 {
-		parent := (i - 1) / 2
-		if h.Less(i, parent) {
-			h.Swap(i, parent)
-			i = parent
-		} else {
-			break
-		}
-	}
-	// Move i away from the root until reaching a position where
-	// both children already have lower priority.
-	for !uponly {
-		child := i*2 + 1
-		if child+1 < len(h) && h.Less(child+1, child) {
-			// Right child has higher priority than left
-			// child. Choose right child.
-			child = child + 1
-		}
-		if child < len(h) && h.Less(child, i) {
-			// Chosen child has higher priority than i.
-			// Swap and continue down.
-			h.Swap(i, child)
-			i = child
-		} else {
-			break
-		}
-	}
-}
-
-func (h *heap) add(ent *qent) {
-	ent.heappos = len(*h)
+func (h *queue) Push(x interface{}) {
+	n := len(*h)
+	ent := x.(*qent)
+	ent.heappos = n
 	*h = append(*h, ent)
-	h.fix(ent.heappos)
 }
 
-func (h *heap) removeMax() *qent {
-	ent := (*h)[0]
-	if len(*h) == 1 {
-		*h = (*h)[:0]
-	} else {
-		h.Swap(0, len(*h)-1)
-		*h = (*h)[:len(*h)-1]
-		h.fix(0)
-	}
+func (h *queue) Pop() interface{} {
+	n := len(*h)
+	ent := (*h)[n-1]
 	ent.heappos = -1
+	(*h)[n-1] = nil
+	*h = (*h)[0 : n-1]
 	return ent
 }
 
-func (h *heap) remove(i int) {
-	// Move the last leaf into i's place, then move it to a
-	// correct position.
-	h.Swap(i, len(*h)-1)
-	*h = (*h)[:len(*h)-1]
-	if i < len(*h) {
-		h.fix(i)
-	}
+func (h *queue) add(ent *qent) {
+	ent.heappos = h.Len()
+	h.Push(ent)
+}
+
+func (h *queue) removeMax() *qent {
+	return heap.Pop(h).(*qent)
+}
+
+func (h *queue) remove(i int) {
+	heap.Remove(h, i)
 }
 
 func (rl *RequestLimiter) setup() {
@@ -191,7 +154,6 @@ func (rl *RequestLimiter) runqueue() {
 	for len(rl.queue) > 0 && (rl.MaxConcurrent == 0 || rl.handling < rl.MaxConcurrent) {
 		rl.handling++
 		ent := rl.queue.removeMax()
-		ent.heappos = -1
 		ent.ready <- true
 	}
 }
@@ -208,7 +170,6 @@ func (rl *RequestLimiter) trimqueue() {
 			min = i
 		}
 	}
-	rl.queue[min].heappos = -1
 	rl.queue[min].ready <- false
 	rl.queue.remove(min)
 }
@@ -251,7 +212,6 @@ func (rl *RequestLimiter) remove(ent *qent) {
 	defer rl.mtx.Unlock()
 	if ent.heappos >= 0 {
 		rl.queue.remove(ent.heappos)
-		ent.heappos = -1
 		ent.ready <- false
 	}
 }

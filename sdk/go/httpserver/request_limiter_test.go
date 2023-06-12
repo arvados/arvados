@@ -116,8 +116,8 @@ func (*Suite) TestRequestLimiter10(c *check.C) {
 func (*Suite) TestRequestLimiterQueuePriority(c *check.C) {
 	h := newTestHandler()
 	rl := RequestLimiter{
-		MaxConcurrent: 100,
-		MaxQueue:      20,
+		MaxConcurrent: 1000,
+		MaxQueue:      200,
 		Handler:       h,
 		Priority: func(r *http.Request, _ time.Time) int64 {
 			p, _ := strconv.ParseInt(r.Header.Get("Priority"), 10, 64)
