@@ -15,6 +15,13 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+// Stop fetching queued containers after this many of the highest
+// priority non-supervisor containers. Reduces API load when queue is
+// long. This also limits how quickly a large batch of queued
+// containers can be started, which improves reliability under high
+// load at the cost of increased under light load.
+const queuedContainersTarget = 100
+
 type typeChooser func(*arvados.Container) (arvados.InstanceType, error)
 
 // An APIClient performs Arvados API requests. It is typically an
@@ -398,7 +405,7 @@ func (cq *Queue) poll() (map[string]*arvados.Container, error) {
 		Limit:   &limitParam,
 		Count:   "none",
 		Filters: []arvados.Filter{{"locked_by_uuid", "=", auth.UUID}},
-	})
+	}, 0)
 	if err != nil {
 		return nil, err
 	}
@@ -406,11 +413,11 @@ func (cq *Queue) poll() (map[string]*arvados.Container, error) {
 
 	avail, err := cq.fetchAll(arvados.ResourceListParams{
 		Select:  selectParam,
-		Order:   "uuid",
+		Order:   "priority desc",
 		Limit:   &limitParam,
 		Count:   "none",
 		Filters: []arvados.Filter{{"state", "=", arvados.ContainerStateQueued}, {"priority", ">", "0"}},
-	})
+	}, queuedContainersTarget)
 	if err != nil {
 		return nil, err
 	}
@@ -441,7 +448,7 @@ func (cq *Queue) poll() (map[string]*arvados.Container, error) {
 			Order:   "uuid",
 			Count:   "none",
 			Filters: filters,
-		})
+		}, 0)
 		if err != nil {
 			return nil, err
 		}
@@ -476,10 +483,18 @@ func (cq *Queue) poll() (map[string]*arvados.Container, error) {
 	return next, nil
 }
 
-func (cq *Queue) fetchAll(initialParams arvados.ResourceListParams) ([]arvados.Container, error) {
+// Fetch all pages of containers.
+//
+// Except: if maxNonSuper>0, stop fetching more pages after receving
+// that many non-supervisor containers. Along with {Order: "priority
+// desc"}, this enables fetching enough high priority scheduling-ready
+// containers to make progress, without necessarily fetching the
+// entire queue.
+func (cq *Queue) fetchAll(initialParams arvados.ResourceListParams, maxNonSuper int) ([]arvados.Container, error) {
 	var results []arvados.Container
 	params := initialParams
 	params.Offset = 0
+	nonSuper := 0
 	for {
 		// This list variable must be a new one declared
 		// inside the loop: otherwise, items in the API
@@ -503,10 +518,15 @@ func (cq *Queue) fetchAll(initialParams arvados.ResourceListParams) ([]arvados.C
 					delete(c.Mounts, path)
 				}
 			}
+			if !c.SchedulingParameters.Supervisor {
+				nonSuper++
+			}
 		}
 
 		results = append(results, list.Items...)
-		if len(params.Order) == 1 && params.Order == "uuid" {
+		if maxNonSuper > 0 && nonSuper >= maxNonSuper {
+			break
+		} else if params.Order == "uuid" {
 			params.Filters = append(initialParams.Filters, arvados.Filter{"uuid", ">", list.Items[len(list.Items)-1].UUID})
 		} else {
 			params.Offset += len(list.Items)
