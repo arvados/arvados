@@ -10,7 +10,6 @@ import (
 	"flag"
 	"fmt"
 	"io"
-	"math"
 	"net"
 	"net/http"
 	"net/http/httptest"
@@ -262,7 +261,7 @@ func (c *command) requestPriority(req *http.Request, queued time.Time) int64 {
 		// Return 503 immediately instead of queueing. We want
 		// to send feedback to dispatchcloud ASAP to stop
 		// bringing up new containers.
-		return math.MinInt64
+		return httpserver.IneligibleForQueuePriority
 	case req.Method == http.MethodPost && strings.HasPrefix(req.URL.Path, "/arvados/v1/logs"):
 		// "Create log entry" is the most harmless kind of
 		// request to drop.

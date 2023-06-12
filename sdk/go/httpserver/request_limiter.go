@@ -15,6 +15,8 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+const IneligibleForQueuePriority = math.MinInt64
+
 // RequestLimiter wraps http.Handler, limiting the number of
 // concurrent requests being handled by the wrapped Handler. Requests
 // that arrive when the handler is already at the specified
@@ -194,7 +196,7 @@ func (rl *RequestLimiter) enqueue(req *http.Request) *qent {
 		ent.ready <- true
 		return ent
 	}
-	if priority == math.MinInt64 {
+	if priority == IneligibleForQueuePriority {
 		// Priority func is telling us to return 503
 		// immediately instead of queueing, regardless of
 		// queue size, if we can't handle the request
