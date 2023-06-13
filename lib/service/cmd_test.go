@@ -210,7 +210,9 @@ Clusters:
  zzzzz:
   SystemRootToken: aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
   ManagementToken: bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb
-  API: {MaxConcurrentRequests: %d}
+  API:
+   MaxConcurrentRequests: %d
+   MaxQueuedRequests: 0
   SystemLogs: {RequestQueueDumpDirectory: %q}
   Services:
    Controller:
@@ -268,15 +270,15 @@ Clusters:
 			panic("timed out")
 		}
 	}
-	for {
-		time.Sleep(time.Second / 100)
+	for delay := time.Second / 100; ; delay = delay * 2 {
+		time.Sleep(delay)
 		j, err := os.ReadFile(tmpdir + "/arvados-controller-requests.json")
 		if os.IsNotExist(err) && deadline.After(time.Now()) {
 			continue
 		}
-		c.Check(err, check.IsNil)
-		c.Logf("%s", stderr.String())
-		c.Logf("%s", string(j))
+		c.Assert(err, check.IsNil)
+		c.Logf("stderr:\n%s", stderr.String())
+		c.Logf("json:\n%s", string(j))
 
 		var loaded []struct{ URL string }
 		err = json.Unmarshal(j, &loaded)
