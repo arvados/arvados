@@ -435,6 +435,13 @@ func (cq *Queue) poll() (map[string]*arvados.Container, error) {
 	}
 	apply(avail)
 
+	// Check for containers that we already know about but weren't
+	// returned by any of the above queries, and fetch them
+	// explicitly by UUID. If they're in a final state we can drop
+	// them, but otherwise we need to apply updates, e.g.,
+	//
+	// - Queued container priority has been reduced
+	// - Locked container has been requeued with lower priority
 	missing := map[string]bool{}
 	cq.mtx.Lock()
 	for uuid, ent := range cq.current {
