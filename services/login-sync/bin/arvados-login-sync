@@ -176,6 +176,10 @@ begin
     end
 
     homedir = pwnam[l[:username]].dir
+    if !File.exist?(homedir)
+      STDERR.puts "Home directory #{homedir} from user #{username} doesn't exist. Skipping."
+      next
+    end
     userdotssh = File.join(homedir, ".ssh")
     Dir.mkdir(userdotssh) if !File.exist?(userdotssh)
 
