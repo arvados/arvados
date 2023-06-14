@@ -1627,6 +1627,7 @@ func (s *IntegrationSuite) TestUploadLoggingPermission(c *check.C) {
 }
 
 func (s *IntegrationSuite) TestConcurrentWrites(c *check.C) {
+	lockTidyInterval = time.Second
 	client := arvados.NewClientFromEnv()
 	client.AuthToken = arvadostest.ActiveTokenV2
 	// Start small, and increase concurrency (2^2, 4^2, ...)

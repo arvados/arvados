@@ -37,8 +37,9 @@ type handler struct {
 	Cluster   *arvados.Cluster
 	setupOnce sync.Once
 
-	lockMtx sync.Mutex
-	lock    map[string]*sync.RWMutex
+	lockMtx    sync.Mutex
+	lock       map[string]*sync.RWMutex
+	lockTidied time.Time
 }
 
 var urlPDHDecoder = strings.NewReplacer(" ", "+", "-", "+")
@@ -958,6 +959,16 @@ var lockTidyInterval = time.Minute * 10
 func (h *handler) collectionLock(collectionID string, writing bool) sync.Locker {
 	h.lockMtx.Lock()
 	defer h.lockMtx.Unlock()
+	if time.Since(h.lockTidied) > lockTidyInterval {
+		// Periodically delete all locks that aren't in use.
+		h.lockTidied = time.Now()
+		for id, locker := range h.lock {
+			if locker.TryLock() {
+				locker.Unlock()
+				delete(h.lock, id)
+			}
+		}
+	}
 	locker := h.lock[collectionID]
 	if locker == nil {
 		locker = new(sync.RWMutex)
