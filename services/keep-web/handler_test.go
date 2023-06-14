@@ -1629,10 +1629,12 @@ func (s *IntegrationSuite) TestUploadLoggingPermission(c *check.C) {
 func (s *IntegrationSuite) TestConcurrentWrites(c *check.C) {
 	client := arvados.NewClientFromEnv()
 	client.AuthToken = arvadostest.ActiveTokenV2
-	// Start small, and increase concurrency (2^2, 4^2, 8^2, 16^2)
+	// Start small, and increase concurrency (2^2, 4^2, ...)
 	// only until hitting failure. Avoids unnecessarily long
 	// failure reports.
-	for n := 2; n < 32 && !c.Failed(); n++ {
+	for n := 2; n < 16 && !c.Failed(); n = n * 2 {
+		c.Logf("%s: n=%d", c.TestName(), n)
+
 		var coll arvados.Collection
 		err := client.RequestAndDecode(&coll, "POST", "arvados/v1/collections", nil, nil)
 		c.Assert(err, check.IsNil)
@@ -1679,5 +1681,14 @@ func (s *IntegrationSuite) TestConcurrentWrites(c *check.C) {
 			}()
 		}
 		wg.Wait()
+		for i := 0; i < n; i++ {
+			u := mustParseURL(fmt.Sprintf("http://%s.collections.example.com/i=%d", coll.UUID, i))
+			resp := httptest.NewRecorder()
+			req, err := http.NewRequest("PROPFIND", u.String(), &bytes.Buffer{})
+			c.Assert(err, check.IsNil)
+			req.Header.Set("Authorization", "Bearer "+client.AuthToken)
+			s.handler.ServeHTTP(resp, req)
+			c.Assert(resp.Code, check.Equals, http.StatusMultiStatus)
+		}
 	}
 }
