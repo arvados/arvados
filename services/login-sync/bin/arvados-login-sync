@@ -177,7 +177,7 @@ begin
 
     homedir = pwnam[l[:username]].dir
     if !File.exist?(homedir)
-      STDERR.puts "Home directory #{homedir} from user #{username} doesn't exist. Skipping."
+      STDERR.puts "Cannot set up user #{username} because their home directory #{homedir} does not exist. Skipping."
       next
     end
     userdotssh = File.join(homedir, ".ssh")
