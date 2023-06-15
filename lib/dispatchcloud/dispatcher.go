@@ -198,11 +198,7 @@ func (disp *dispatcher) run() {
 	if pollInterval <= 0 {
 		pollInterval = defaultPollInterval
 	}
-	maxSupervisors := int(float64(disp.Cluster.Containers.CloudVMs.MaxInstances) * disp.Cluster.Containers.CloudVMs.SupervisorFraction)
-	if maxSupervisors == 0 && disp.Cluster.Containers.CloudVMs.SupervisorFraction > 0 {
-		maxSupervisors = 1
-	}
-	sched := scheduler.New(disp.Context, disp.ArvClient, disp.queue, disp.pool, disp.Registry, staleLockTimeout, pollInterval, maxSupervisors)
+	sched := scheduler.New(disp.Context, disp.ArvClient, disp.queue, disp.pool, disp.Registry, staleLockTimeout, pollInterval, disp.Cluster.Containers.CloudVMs.MaxInstances, disp.Cluster.Containers.CloudVMs.SupervisorFraction)
 	sched.Start()
 	defer sched.Stop()
 
