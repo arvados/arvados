@@ -172,14 +172,23 @@ func (sch *Scheduler) run() {
 	}
 
 	// Keep the queue up to date.
-	poll := time.NewTicker(sch.queueUpdateInterval)
-	defer poll.Stop()
 	go func() {
-		for range poll.C {
+		for {
+			starttime := time.Now()
 			err := sch.queue.Update()
 			if err != nil {
 				sch.logger.Errorf("error updating queue: %s", err)
 			}
+			// If the previous update took a long time,
+			// that probably means the server is
+			// overloaded, so wait that long before doing
+			// another. Otherwise, wait for the configured
+			// poll interval.
+			delay := time.Since(starttime)
+			if delay < sch.queueUpdateInterval {
+				delay = sch.queueUpdateInterval
+			}
+			time.Sleep(delay)
 		}
 	}()
 
