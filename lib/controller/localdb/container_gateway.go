@@ -31,6 +31,7 @@ import (
 	"git.arvados.org/arvados.git/sdk/go/auth"
 	"git.arvados.org/arvados.git/sdk/go/ctxlog"
 	"git.arvados.org/arvados.git/sdk/go/httpserver"
+	keepweb "git.arvados.org/arvados.git/services/keep-web"
 	"github.com/hashicorp/yamux"
 	"golang.org/x/net/webdav"
 )
@@ -78,6 +79,16 @@ var (
 // ...or the request may be handled locally using an empty-collection
 // stub.
 func (conn *Conn) ContainerRequestLog(ctx context.Context, opts arvados.ContainerLogOptions) (http.Handler, error) {
+	if opts.Method == "OPTIONS" && opts.Header.Get("Access-Control-Request-Method") != "" {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			if !keepweb.ServeCORSPreflight(w, opts.Header) {
+				// Inconceivable.  We already checked
+				// for the only condition where
+				// ServeCORSPreflight returns false.
+				httpserver.Error(w, "unhandled CORS preflight request", http.StatusInternalServerError)
+			}
+		}), nil
+	}
 	cr, err := conn.railsProxy.ContainerRequestGet(ctx, arvados.GetOptions{UUID: opts.UUID, Select: []string{"uuid", "container_uuid", "log_uuid"}})
 	if err != nil {
 		if se := httpserver.HTTPStatusError(nil); errors.As(err, &se) && se.HTTPStatus() == http.StatusUnauthorized {
