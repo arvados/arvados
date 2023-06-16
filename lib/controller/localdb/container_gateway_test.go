@@ -6,6 +6,7 @@ package localdb
 
 import (
 	"bytes"
+	"context"
 	"crypto/hmac"
 	"crypto/sha256"
 	"fmt"
@@ -28,6 +29,7 @@ import (
 	"git.arvados.org/arvados.git/sdk/go/arvados"
 	"git.arvados.org/arvados.git/sdk/go/arvadosclient"
 	"git.arvados.org/arvados.git/sdk/go/arvadostest"
+	"git.arvados.org/arvados.git/sdk/go/auth"
 	"git.arvados.org/arvados.git/sdk/go/ctxlog"
 	"git.arvados.org/arvados.git/sdk/go/httpserver"
 	"git.arvados.org/arvados.git/sdk/go/keepclient"
@@ -298,9 +300,16 @@ func (s *ContainerGatewaySuite) TestContainerRequestLogViaTunnel(c *check.C) {
 			defer delete(s.cluster.Services.Controller.InternalURLs, *forceInternalURLForTest)
 		}
 
+		r, err := http.NewRequestWithContext(s.userctx, "GET", "https://controller.example/arvados/v1/container_requests/"+s.reqUUID+"/log/"+s.ctrUUID+"/stderr.txt", nil)
+		c.Assert(err, check.IsNil)
+		r.Header.Set("Authorization", "Bearer "+arvadostest.ActiveTokenV2)
 		handler, err := s.localdb.ContainerRequestLog(s.userctx, arvados.ContainerLogOptions{
-			UUID:          s.reqUUID,
-			WebDAVOptions: arvados.WebDAVOptions{Path: "/" + s.ctrUUID + "/stderr.txt"},
+			UUID: s.reqUUID,
+			WebDAVOptions: arvados.WebDAVOptions{
+				Method: "GET",
+				Header: r.Header,
+				Path:   "/" + s.ctrUUID + "/stderr.txt",
+			},
 		})
 		if broken {
 			c.Check(err, check.ErrorMatches, `.*tunnel endpoint is invalid.*`)
@@ -308,9 +317,6 @@ func (s *ContainerGatewaySuite) TestContainerRequestLogViaTunnel(c *check.C) {
 		}
 		c.Check(err, check.IsNil)
 		c.Assert(handler, check.NotNil)
-		r, err := http.NewRequestWithContext(s.userctx, "GET", "https://controller.example/arvados/v1/container_requests/"+s.reqUUID+"/log/"+s.ctrUUID+"/stderr.txt", nil)
-		c.Assert(err, check.IsNil)
-		r.Header.Set("Authorization", "Bearer "+arvadostest.ActiveTokenV2)
 		rec := httptest.NewRecorder()
 		handler.ServeHTTP(rec, r)
 		resp := rec.Result()
@@ -334,12 +340,13 @@ func (s *ContainerGatewaySuite) TestContainerRequestLogViaKeepWeb(c *check.C) {
 
 func (s *ContainerGatewaySuite) testContainerRequestLog(c *check.C) {
 	for _, trial := range []struct {
-		method       string
-		path         string
-		header       http.Header
-		expectStatus int
-		expectBodyRe string
-		expectHeader http.Header
+		method          string
+		path            string
+		header          http.Header
+		unauthenticated bool
+		expectStatus    int
+		expectBodyRe    string
+		expectHeader    http.Header
 	}{
 		{
 			method:       "GET",
@@ -371,6 +378,22 @@ func (s *ContainerGatewaySuite) testContainerRequestLog(c *check.C) {
 			expectHeader: http.Header{
 				"Dav":   {"1, 2"},
 				"Allow": {"OPTIONS, LOCK, GET, HEAD, POST, DELETE, PROPPATCH, COPY, MOVE, UNLOCK, PROPFIND, PUT"},
+			},
+		},
+		{
+			method:          "OPTIONS",
+			path:            s.ctrUUID + "/stderr.txt",
+			unauthenticated: true,
+			header: http.Header{
+				"Access-Control-Request-Method": {"POST"},
+			},
+			expectStatus: http.StatusOK,
+			expectBodyRe: "",
+			expectHeader: http.Header{
+				"Access-Control-Allow-Headers": {"Authorization, Content-Type, Range, Depth, Destination, If, Lock-Token, Overwrite, Timeout, Cache-Control"},
+				"Access-Control-Allow-Methods": {"COPY, DELETE, GET, LOCK, MKCOL, MOVE, OPTIONS, POST, PROPFIND, PROPPATCH, PUT, RMCOL, UNLOCK"},
+				"Access-Control-Allow-Origin":  {"*"},
+				"Access-Control-Max-Age":       {"86400"},
 			},
 		},
 		{
@@ -411,17 +434,25 @@ func (s *ContainerGatewaySuite) testContainerRequestLog(c *check.C) {
 		},
 	} {
 		c.Logf("trial %#v", trial)
-		handler, err := s.localdb.ContainerRequestLog(s.userctx, arvados.ContainerLogOptions{
-			UUID:          s.reqUUID,
-			WebDAVOptions: arvados.WebDAVOptions{Path: "/" + trial.path},
-		})
-		c.Assert(err, check.IsNil)
-		c.Assert(handler, check.NotNil)
-		r, err := http.NewRequestWithContext(s.userctx, trial.method, "https://controller.example/arvados/v1/container_requests/"+s.reqUUID+"/log/"+trial.path, nil)
+		ctx := s.userctx
+		if trial.unauthenticated {
+			ctx = auth.NewContext(context.Background(), auth.CredentialsFromRequest(&http.Request{URL: &url.URL{}, Header: http.Header{}}))
+		}
+		r, err := http.NewRequestWithContext(ctx, trial.method, "https://controller.example/arvados/v1/container_requests/"+s.reqUUID+"/log/"+trial.path, nil)
 		c.Assert(err, check.IsNil)
 		for k := range trial.header {
 			r.Header.Set(k, trial.header.Get(k))
 		}
+		handler, err := s.localdb.ContainerRequestLog(ctx, arvados.ContainerLogOptions{
+			UUID: s.reqUUID,
+			WebDAVOptions: arvados.WebDAVOptions{
+				Method: trial.method,
+				Header: r.Header,
+				Path:   "/" + trial.path,
+			},
+		})
+		c.Assert(err, check.IsNil)
+		c.Assert(handler, check.NotNil)
 		rec := httptest.NewRecorder()
 		handler.ServeHTTP(rec, r)
 		resp := rec.Result()

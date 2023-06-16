@@ -182,15 +182,7 @@ func (h *handler) ServeHTTP(wOrig http.ResponseWriter, r *http.Request) {
 
 	w := httpserver.WrapResponseWriter(wOrig)
 
-	if method := r.Header.Get("Access-Control-Request-Method"); method != "" && r.Method == "OPTIONS" {
-		if !browserMethod[method] && !webdavMethod[method] {
-			w.WriteHeader(http.StatusMethodNotAllowed)
-			return
-		}
-		w.Header().Set("Access-Control-Allow-Headers", corsAllowHeadersHeader)
-		w.Header().Set("Access-Control-Allow-Methods", "COPY, DELETE, GET, LOCK, MKCOL, MOVE, OPTIONS, POST, PROPFIND, PROPPATCH, PUT, RMCOL, UNLOCK")
-		w.Header().Set("Access-Control-Allow-Origin", "*")
-		w.Header().Set("Access-Control-Max-Age", "86400")
+	if r.Method == "OPTIONS" && ServeCORSPreflight(w, r.Header) {
 		return
 	}
 
@@ -948,4 +940,20 @@ func (h *handler) determineCollection(fs arvados.CustomFileSystem, path string) 
 		}
 	}
 	return nil, ""
+}
+
+func ServeCORSPreflight(w http.ResponseWriter, header http.Header) bool {
+	method := header.Get("Access-Control-Request-Method")
+	if method == "" {
+		return false
+	}
+	if !browserMethod[method] && !webdavMethod[method] {
+		w.WriteHeader(http.StatusMethodNotAllowed)
+		return true
+	}
+	w.Header().Set("Access-Control-Allow-Headers", corsAllowHeadersHeader)
+	w.Header().Set("Access-Control-Allow-Methods", "COPY, DELETE, GET, LOCK, MKCOL, MOVE, OPTIONS, POST, PROPFIND, PROPPATCH, PUT, RMCOL, UNLOCK")
+	w.Header().Set("Access-Control-Allow-Origin", "*")
+	w.Header().Set("Access-Control-Max-Age", "86400")
+	return true
 }
