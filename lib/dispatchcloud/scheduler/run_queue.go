@@ -94,8 +94,8 @@ func (sch *Scheduler) runQueue() {
 	}
 	sch.mMaxContainerConcurrency.Set(float64(sch.maxConcurrency))
 
-	maxSupervisors := int(float64(sch.maxConcurrency) * sch.maxSupervisors)
-	if maxSupervisors < 1 && sch.maxSupervisors > 0 && sch.maxConcurrency > 0 {
+	maxSupervisors := int(float64(sch.maxConcurrency) * sch.supervisorFraction)
+	if maxSupervisors < 1 && sch.supervisorFraction > 0 && sch.maxConcurrency > 0 {
 		maxSupervisors = 1
 	}
 
