@@ -27,6 +27,7 @@ class ArvadosFileWriterTestCase(unittest.TestCase):
         def __init__(self, blocks):
             self.blocks = blocks
             self.requests = []
+            self.num_prefetch_threads = 1
         def get(self, locator, num_retries=0, prefetch=False):
             self.requests.append(locator)
             return self.blocks.get(locator)
@@ -37,6 +38,8 @@ class ArvadosFileWriterTestCase(unittest.TestCase):
             pdh = tutil.str_keep_locator(data)
             self.blocks[pdh] = bytes(data)
             return pdh
+        def block_prefetch(self, loc):
+            self.requests.append(loc)
 
     class MockApi(object):
         def __init__(self, b, r):
@@ -627,7 +630,7 @@ class ArvadosFileReaderTestCase(StreamFileReaderTestCase):
             def __init__(self, blocks, nocache):
                 self.blocks = blocks
                 self.nocache = nocache
-                self.num_get_threads = 1
+                self._keep = ArvadosFileWriterTestCase.MockKeep({})
 
             def block_prefetch(self, loc):
                 pass

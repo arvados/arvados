@@ -323,6 +323,7 @@ class ArvadosCollectionsTest(run_test_server.TestCaseWithServers,
     class MockKeep(object):
         def __init__(self, content, num_retries=0):
             self.content = content
+            self.num_prefetch_threads = 1
 
         def get(self, locator, num_retries=0, prefetch=False):
             return self.content[locator]
