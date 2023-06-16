@@ -147,6 +147,13 @@ func (rl *RequestLimiter) setup() {
 			},
 			func() float64 { return float64(rl.MaxQueue) },
 		))
+		rl.mQueueDelay = prometheus.NewSummary(prometheus.SummaryOpts{
+			Namespace:  "arvados",
+			Name:       "queue_delay_seconds",
+			Help:       "Number of seconds spent in the incoming request queue",
+			Objectives: map[float64]float64{0.5: 0.05, 0.9: 0.01, 0.95: 0.005, 0.99: 0.001},
+		})
+		reg.MustRegister(rl.mQueueDelay)
 	}
 }
 
