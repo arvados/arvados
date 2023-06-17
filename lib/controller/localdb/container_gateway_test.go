@@ -458,7 +458,7 @@ func (s *ContainerGatewaySuite) testContainerRequestLog(c *check.C) {
 		resp := rec.Result()
 		c.Check(resp.StatusCode, check.Equals, trial.expectStatus)
 		for k := range trial.expectHeader {
-			c.Check(resp.Header.Get(k), check.Equals, trial.expectHeader.Get(k))
+			c.Check(resp.Header[k], check.DeepEquals, trial.expectHeader[k])
 		}
 		buf, err := ioutil.ReadAll(resp.Body)
 		c.Check(err, check.IsNil)

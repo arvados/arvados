@@ -183,6 +183,15 @@ func (conn *Conn) ContainerRequestLog(ctx context.Context, opts arvados.Containe
 					// an attacker-in-the-middle.
 					return httpserver.ErrorWithStatus(errors.New("bad X-Arvados-Authorization-Response header"), http.StatusBadGateway)
 				}
+				resp.Header.Del("X-Arvados-Authorization-Response")
+				for hdr := range resp.Header {
+					// proxy.ServeHTTP adds each
+					// resp.Header to w.Header,
+					// which causes duplicate CORS
+					// and request-id headers,
+					// unless we do this.
+					w.Header().Del(hdr)
+				}
 				return nil
 			},
 			ErrorHandler: func(w http.ResponseWriter, r *http.Request, err error) {
@@ -272,6 +281,17 @@ func (conn *Conn) serveContainerRequestLogViaKeepWeb(opts arvados.ContainerLogOp
 				r.Header.Set("X-Webdav-Prefix", "/arvados/v1/container_requests/"+cr.UUID+"/log/"+opts.Path[1:28])
 				r.Header.Set("X-Webdav-Source", "/log for container "+opts.Path[1:28]+"/")
 			}
+		},
+		ModifyResponse: func(resp *http.Response) error {
+			for hdr := range resp.Header {
+				// proxy.ServeHTTP adds each
+				// resp.Header to w.Header, which
+				// causes duplicate CORS and
+				// request-id headers, unless we do
+				// this.
+				w.Header().Del(hdr)
+			}
+			return nil
 		},
 	}
 	if conn.cluster.TLS.Insecure {

@@ -1240,6 +1240,17 @@ func (s *IntegrationSuite) runContainer(c *check.C, clusterID string, token stri
 		return cfs
 	}
 
+	checkwebdavlogs := func(cr arvados.ContainerRequest) {
+		req, err := http.NewRequest("OPTIONS", "https://"+ac.APIHost+"/arvados/v1/container_requests/"+cr.UUID+"/log/"+cr.ContainerUUID+"/", nil)
+		c.Assert(err, check.IsNil)
+		req.Header.Set("Origin", "http://example.example")
+		resp, err := ac.Do(req)
+		c.Assert(err, check.IsNil)
+		c.Check(resp.StatusCode, check.Equals, http.StatusOK)
+		// Check for duplicate headers -- must use Header[], not Header.Get()
+		c.Check(resp.Header["Access-Control-Allow-Origin"], check.DeepEquals, []string{"*"})
+	}
+
 	var ctr arvados.Container
 	var lastState arvados.ContainerState
 	deadline := time.Now().Add(time.Minute)
@@ -1274,5 +1285,6 @@ func (s *IntegrationSuite) runContainer(c *check.C, clusterID string, token stri
 		c.Assert(err, check.IsNil)
 	}
 	logcfs = showlogs(cr.LogUUID)
+	checkwebdavlogs(cr)
 	return outcoll, logcfs
 }
