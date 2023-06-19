@@ -47,10 +47,11 @@ type RequestLimiter struct {
 	// registered with Registry, if it is not nil.
 	Registry *prometheus.Registry
 
-	setupOnce sync.Once
-	mtx       sync.Mutex
-	handling  int
-	queue     queue
+	setupOnce   sync.Once
+	mQueueDelay *prometheus.SummaryVec
+	mtx         sync.Mutex
+	handling    int
+	queue       queue
 }
 
 type qent struct {
@@ -147,13 +148,13 @@ func (rl *RequestLimiter) setup() {
 			},
 			func() float64 { return float64(rl.MaxQueue) },
 		))
-		rl.mQueueDelay = prometheus.NewSummary(prometheus.SummaryOpts{
+		rl.mQueueDelay = prometheus.NewSummaryVec(prometheus.SummaryOpts{
 			Namespace:  "arvados",
 			Name:       "queue_delay_seconds",
-			Help:       "Number of seconds spent in the incoming request queue",
+			Help:       "Time spent in the incoming request queue",
 			Objectives: map[float64]float64{0.5: 0.05, 0.9: 0.01, 0.95: 0.005, 0.99: 0.001},
-		})
-		reg.MustRegister(rl.mQueueDelay)
+		}, []string{"priority"})
+		rl.Registry.MustRegister(rl.mQueueDelay)
 	}
 }
 
@@ -230,8 +231,10 @@ func (rl *RequestLimiter) ServeHTTP(resp http.ResponseWriter, req *http.Request)
 	ent := rl.enqueue(req)
 	SetResponseLogFields(req.Context(), logrus.Fields{"priority": ent.priority})
 	var ok bool
+	var abandoned bool
 	select {
 	case <-req.Context().Done():
+		abandoned = true
 		rl.remove(ent)
 		// we still need to wait for ent.ready, because
 		// sometimes runqueue() will have already decided to
@@ -240,6 +243,24 @@ func (rl *RequestLimiter) ServeHTTP(resp http.ResponseWriter, req *http.Request)
 		ok = <-ent.ready
 	case ok = <-ent.ready:
 	}
+
+	// report time spent in queue
+	var qlabel string
+	switch {
+	case abandoned:
+	case !ok && ent.priority == IneligibleForQueuePriority:
+		// don't pollute stats
+	case ent.priority < 0:
+		qlabel = "low"
+	case ent.priority > 0:
+		qlabel = "high"
+	default:
+		qlabel = "normal"
+	}
+	if qlabel != "" && rl.mQueueDelay != nil {
+		rl.mQueueDelay.WithLabelValues(qlabel).Observe(time.Now().Sub(ent.queued).Seconds())
+	}
+
 	if !ok {
 		resp.WriteHeader(http.StatusServiceUnavailable)
 		return

@@ -264,13 +264,17 @@ func (c *command) requestPriority(req *http.Request, queued time.Time) int64 {
 		return httpserver.IneligibleForQueuePriority
 	case req.Method == http.MethodPost && strings.HasPrefix(req.URL.Path, "/arvados/v1/logs"):
 		// "Create log entry" is the most harmless kind of
-		// request to drop.
-		return 0
+		// request to drop. Negative priority is called "low"
+		// in aggregate metrics.
+		return -1
 	case req.Header.Get("Origin") != "":
-		// Handle interactive requests first.
-		return 2
-	default:
+		// Handle interactive requests first. Positive
+		// priority is called "high" in aggregate metrics.
 		return 1
+	default:
+		// Zero priority is called "normal" in aggregate
+		// metrics.
+		return 0
 	}
 }
 
