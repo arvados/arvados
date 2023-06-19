@@ -228,17 +228,28 @@ class Mount(object):
 
     def _setup_api(self):
         try:
+            # default value of file_cache is 0, this tells KeepBlockCache to
+            # choose a default based on whether disk_cache is enabled or not.
+
+            block_cache = arvados.keep.KeepBlockCache(cache_max=self.args.file_cache,
+                                                      disk_cache=self.args.disk_cache,
+                                                      disk_cache_dir=self.args.disk_cache_dir)
+
+            # If there's too many prefetch threads and you
+            # max out the CPU, delivering data to the FUSE
+            # layer actually ends up being slower.
+            # Experimentally, capping 7 threads seems to
+            # be a sweet spot.
+            prefetch_threads = min(max((block_cache.cache_max // (64 * 1024 * 1024)) - 1, 1), 7)
+
             self.api = arvados.safeapi.ThreadSafeApiCache(
                 apiconfig=arvados.config.settings(),
                 api_params={
                     'num_retries': self.args.retries,
                 },
-                # default value of file_cache is 0, this tells KeepBlockCache to
-                # choose a default based on whether disk_cache is enabled or not.
                 keep_params={
-                    'block_cache': arvados.keep.KeepBlockCache(cache_max=self.args.file_cache,
-                                                               disk_cache=self.args.disk_cache,
-                                                               disk_cache_dir=self.args.disk_cache_dir),
+                    'block_cache': block_cache,
+                    'num_prefetch_threads': prefetch_threads,
                     'num_retries': self.args.retries,
                 },
                 version='v1',
