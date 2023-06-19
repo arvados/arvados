@@ -73,6 +73,7 @@ var whitelist = map[string]bool{
 	"API.MaxItemsPerResponse":                  true,
 	"API.MaxKeepBlobBuffers":                   false,
 	"API.MaxQueuedRequests":                    false,
+	"API.MaxQueueTimeForLockRequests":          false,
 	"API.MaxRequestAmplification":              false,
 	"API.MaxRequestSize":                       true,
 	"API.MaxTokenLifetime":                     false,

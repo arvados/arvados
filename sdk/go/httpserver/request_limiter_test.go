@@ -134,15 +134,36 @@ func (*Suite) TestRequestLimiterQueuePriority(c *check.C) {
 		<-h.inHandler
 	}
 
-	c.Logf("starting %d priority=IneligibleForQueuePriority requests (should respond 503 immediately)", rl.MaxQueue)
+	c.Logf("starting %d priority=MinPriority requests (should respond 503 immediately)", rl.MaxQueue)
 	var wgX sync.WaitGroup
 	for i := 0; i < rl.MaxQueue; i++ {
 		wgX.Add(1)
 		go func() {
 			defer wgX.Done()
 			resp := httptest.NewRecorder()
-			rl.ServeHTTP(resp, &http.Request{Header: http.Header{"Priority": {fmt.Sprintf("%d", IneligibleForQueuePriority)}}})
+			rl.ServeHTTP(resp, &http.Request{Header: http.Header{"Priority": {fmt.Sprintf("%d", MinPriority)}}})
 			c.Check(resp.Code, check.Equals, http.StatusServiceUnavailable)
+		}()
+	}
+	wgX.Wait()
+
+	c.Logf("starting %d priority=MinPriority requests (should respond 503 after 100 ms)", rl.MaxQueue)
+	// Usage docs say the caller isn't allowed to change fields
+	// after first use, but we secretly know it's OK to change
+	// this field on the fly as long as no requests are arriving
+	// concurrently.
+	rl.MaxQueueTimeForMinPriority = time.Millisecond * 100
+	for i := 0; i < rl.MaxQueue; i++ {
+		wgX.Add(1)
+		go func() {
+			defer wgX.Done()
+			resp := httptest.NewRecorder()
+			t0 := time.Now()
+			rl.ServeHTTP(resp, &http.Request{Header: http.Header{"Priority": {fmt.Sprintf("%d", MinPriority)}}})
+			c.Check(resp.Code, check.Equals, http.StatusServiceUnavailable)
+			elapsed := time.Since(t0)
+			c.Check(elapsed > rl.MaxQueueTimeForMinPriority, check.Equals, true)
+			c.Check(elapsed < rl.MaxQueueTimeForMinPriority*10, check.Equals, true)
 		}()
 	}
 	wgX.Wait()
