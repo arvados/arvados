@@ -236,6 +236,10 @@ Clusters:
       # additional requests while at the MaxConcurrentRequests limit.
       MaxQueuedRequests: 64
 
+      # Maximum time a "lock container" request is allowed to wait in
+      # the incoming request queue before returning 503.
+      MaxQueueTimeForLockRequests: 2s
+
       # Fraction of MaxConcurrentRequests that can be "log create"
       # messages at any given time.  This is to prevent logging
       # updates from crowding out more important requests.

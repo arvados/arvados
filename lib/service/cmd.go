@@ -155,11 +155,12 @@ func (c *command) RunCommand(prog string, args []string, stdin io.Reader, stdout
 					httpserver.LogRequests(
 						interceptHealthReqs(cluster.ManagementToken, handler.CheckHealth,
 							&httpserver.RequestLimiter{
-								Handler:       handler,
-								MaxConcurrent: cluster.API.MaxConcurrentRequests,
-								MaxQueue:      cluster.API.MaxQueuedRequests,
-								Priority:      c.requestPriority,
-								Registry:      reg}))))))
+								Handler:                    handler,
+								MaxConcurrent:              cluster.API.MaxConcurrentRequests,
+								MaxQueue:                   cluster.API.MaxQueuedRequests,
+								MaxQueueTimeForMinPriority: cluster.API.MaxQueueTimeForLockRequests.Duration(),
+								Priority:                   c.requestPriority,
+								Registry:                   reg}))))))
 	srv := &httpserver.Server{
 		Server: http.Server{
 			Handler:     ifCollectionInHost(instrumented, instrumented.ServeAPI(cluster.ManagementToken, instrumented)),
@@ -261,16 +262,20 @@ func (c *command) requestPriority(req *http.Request, queued time.Time) int64 {
 		// Return 503 immediately instead of queueing. We want
 		// to send feedback to dispatchcloud ASAP to stop
 		// bringing up new containers.
-		return httpserver.IneligibleForQueuePriority
+		return httpserver.MinPriority
 	case req.Method == http.MethodPost && strings.HasPrefix(req.URL.Path, "/arvados/v1/logs"):
 		// "Create log entry" is the most harmless kind of
-		// request to drop.
-		return 0
+		// request to drop. Negative priority is called "low"
+		// in aggregate metrics.
+		return -1
 	case req.Header.Get("Origin") != "":
-		// Handle interactive requests first.
-		return 2
-	default:
+		// Handle interactive requests first. Positive
+		// priority is called "high" in aggregate metrics.
 		return 1
+	default:
+		// Zero priority is called "normal" in aggregate
+		// metrics.
+		return 0
 	}
 }
 

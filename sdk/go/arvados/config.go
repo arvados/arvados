@@ -101,6 +101,7 @@ type Cluster struct {
 		MaxItemsPerResponse              int
 		MaxConcurrentRequests            int
 		MaxQueuedRequests                int
+		MaxQueueTimeForLockRequests      Duration
 		LogCreateRequestFraction         float64
 		MaxKeepBlobBuffers               int
 		MaxRequestAmplification          int
