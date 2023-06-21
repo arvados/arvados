@@ -14,7 +14,7 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import java.util.List;
 
 @JsonInclude(JsonInclude.Include.NON_NULL)
-@JsonPropertyOrder({ "limit", "offset", "filters", "order", "select", "distinct", "count", "exclude_home_project" })
+@JsonPropertyOrder({ "limit", "offset", "filters", "order", "select", "distinct", "count", "exclude_home_project", "include_old_versions", "include_trash" })
 public class ListArgument extends Argument {
 
     @JsonProperty("limit")
@@ -41,7 +41,17 @@ public class ListArgument extends Argument {
     @JsonProperty("exclude_home_project")
     private Boolean excludeHomeProject;
 
-    ListArgument(Integer limit, Integer offset, List<Filter> filters, List<String> order, List<String> select, Boolean distinct, Count count, Boolean excludeHomeProject) {
+    @JsonProperty("include_old_versions")
+    private Boolean includeOldVersions;
+
+    @JsonProperty("include_trash")
+    private Boolean includeTrash;
+
+    ListArgument(
+            Integer limit, Integer offset, List<Filter> filters, List<String> order, List<String> select,
+            Boolean distinct, Count count, Boolean excludeHomeProject, Boolean includeOldVersions,
+            Boolean includeTrash
+    ) {
         this.limit = limit;
         this.offset = offset;
         this.filters = filters;
@@ -50,6 +60,8 @@ public class ListArgument extends Argument {
         this.distinct = distinct;
         this.count = count;
         this.excludeHomeProject = excludeHomeProject;
+        this.includeOldVersions = includeOldVersions;
+        this.includeTrash = includeTrash;
     }
 
     public static ListArgumentBuilder builder() {
@@ -74,6 +86,8 @@ public class ListArgument extends Argument {
         private Boolean distinct;
         private Count count;
         private Boolean excludeHomeProject;
+        private Boolean includeOldVersions;
+        private Boolean includeTrash;
 
         ListArgumentBuilder() {
         }
@@ -118,8 +132,18 @@ public class ListArgument extends Argument {
             return this;
         }
 
+        public ListArgument.ListArgumentBuilder includeOldVersions(Boolean includeOldVersions) {
+            this.includeOldVersions = includeOldVersions;
+            return this;
+        }
+
+        public ListArgument.ListArgumentBuilder includeTrash(Boolean includeTrash) {
+            this.includeTrash = includeTrash;
+            return this;
+        }
+
         public ListArgument build() {
-            return new ListArgument(limit, offset, filters, order, select, distinct, count, excludeHomeProject);
+            return new ListArgument(limit, offset, filters, order, select, distinct, count, excludeHomeProject, includeOldVersions, includeTrash);
         }
 
         public String toString() {
@@ -127,7 +151,10 @@ public class ListArgument extends Argument {
                     ", offset=" + this.offset + ", filters=" + this.filters +
                     ", order=" + this.order + ", select=" + this.select +
                     ", distinct=" + this.distinct + ", count=" + this.count +
-                    ", excludeHomeProject=" + this.excludeHomeProject + ")";
+                    ", excludeHomeProject=" + this.excludeHomeProject +
+                    ", includeOldVersions=" + this.includeOldVersions +
+                    ", includeTrash=" + this.includeTrash +
+                    ")";
         }
     }
 }
