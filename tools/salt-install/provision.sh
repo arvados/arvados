@@ -241,11 +241,12 @@ arguments ${@}
 
 declare -A NODES
 
-if [ -s ${CONFIG_FILE} ]; then
+if [ -s ${CONFIG_FILE} -a -s ${CONFIG_FILE}.secrets ]; then
+  source ${CONFIG_FILE}.secrets
   source ${CONFIG_FILE}
 else
   echo >&2 "You don't seem to have a config file with initial values."
-  echo >&2 "Please create a '${CONFIG_FILE}' file as described in"
+  echo >&2 "Please create a '${CONFIG_FILE}' & '${CONFIG_FILE}.secrets' files as described in"
   echo >&2 "  * https://doc.arvados.org/install/salt-single-host.html#single_host, or"
   echo >&2 "  * https://doc.arvados.org/install/salt-multi-host.html#multi_host_multi_hostnames"
   exit 1
@@ -259,8 +260,8 @@ if [ ! -d ${CONFIG_DIR} ]; then
   exit 1
 fi
 
-if grep -rni 'fixme' ${CONFIG_FILE} ${CONFIG_DIR} ; then
-  echo >&2 "The config file ${CONFIG_FILE} has some parameters that need to be modified."
+if grep -rni 'fixme' ${CONFIG_FILE}.secrets ${CONFIG_FILE} ${CONFIG_DIR} ; then
+  echo >&2 "The config files has some parameters that need to be modified."
   echo >&2 "Please, fix them and re-run the provision script."
   exit 1
 fi
@@ -459,7 +460,8 @@ for f in $(ls "${SOURCE_PILLARS_DIR}"/*); do
        s#__CONTROLLER_MAX_CONCURRENT_REQUESTS__#${CONTROLLER_MAX_CONCURRENT_REQUESTS}#g;
        s#__MONITORING_USERNAME__#${MONITORING_USERNAME}#g;
        s#__MONITORING_EMAIL__#${MONITORING_EMAIL}#g;
-       s#__MONITORING_PASSWORD__#${MONITORING_PASSWORD}#g" \
+       s#__MONITORING_PASSWORD__#${MONITORING_PASSWORD}#g;
+       s#__DISPATCHER_SSH_PRIVKEY__#${DISPATCHER_SSH_PRIVKEY//$'\n'/\\n}#g" \
   "${f}" > "${P_DIR}"/$(basename "${f}")
 done
 
@@ -538,7 +540,8 @@ if [ -d "${SOURCE_STATES_DIR}" ]; then
          s#__CONTROLLER_MAX_CONCURRENT_REQUESTS__#${CONTROLLER_MAX_CONCURRENT_REQUESTS}#g;
          s#__MONITORING_USERNAME__#${MONITORING_USERNAME}#g;
          s#__MONITORING_EMAIL__#${MONITORING_EMAIL}#g;
-         s#__MONITORING_PASSWORD__#${MONITORING_PASSWORD}#g" \
+         s#__MONITORING_PASSWORD__#${MONITORING_PASSWORD}#g;
+         s#__DISPATCHER_SSH_PRIVKEY__#${DISPATCHER_SSH_PRIVKEY//$'\n'/\\n}#g" \
     "${f}" > "${F_DIR}/extra/extra"/$(basename "${f}")
   done
 fi

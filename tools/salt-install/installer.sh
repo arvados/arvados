@@ -127,9 +127,10 @@ deploynode() {
 }
 
 loadconfig() {
-    if [[ ! -s $CONFIG_FILE ]] ; then
+    if [ ! -s ${CONFIG_FILE} -o ! -s ${CONFIG_FILE}.secrets ]; then
 		echo "Must be run from initialized setup dir, maybe you need to 'initialize' first?"
     fi
+    source ${CONFIG_FILE}.secrets
     source ${CONFIG_FILE}
     GITTARGET=arvados-deploy-config-${CLUSTER}
 }
@@ -198,6 +199,7 @@ case "$subcmd" in
 	cp -r *.sh tests $SETUPDIR
 
 	cp local.params.example.$PARAMS $SETUPDIR/${CONFIG_FILE}
+	cp local.params.secrets.example $SETUPDIR/${CONFIG_FILE}.secrets
 	cp -r config_examples/$SLS $SETUPDIR/${CONFIG_DIR}
 
 	if [[ -n "$TERRAFORM" ]] ; then
@@ -214,7 +216,7 @@ case "$subcmd" in
 		git add terraform
 	fi
 
-	git add *.sh ${CONFIG_FILE} ${CONFIG_DIR} tests .gitignore
+	git add *.sh ${CONFIG_FILE} ${CONFIG_FILE}.secrets ${CONFIG_DIR} tests .gitignore
 	git commit -m"initial commit"
 
 	echo
@@ -225,7 +227,7 @@ case "$subcmd" in
 	    (cd $SETUPDIR/terraform/services && terraform init)
 	    echo "Now go to $SETUPDIR, customize 'terraform/vpc/terraform.tfvars' as needed, then run 'installer.sh terraform'"
 	else
-	    echo "Now go to $SETUPDIR, customize '${CONFIG_FILE}' and '${CONFIG_DIR}' as needed, then run 'installer.sh deploy'"
+		echo "Now go to $SETUPDIR, customize '${CONFIG_FILE}', '${CONFIG_FILE}.secrets' and '${CONFIG_DIR}' as needed, then run 'installer.sh deploy'"
 	fi
 	;;
 
@@ -259,7 +261,7 @@ case "$subcmd" in
 
 	loadconfig
 
-	if grep -rni 'fixme' ${CONFIG_FILE} ${CONFIG_DIR} ; then
+	if grep -rni 'fixme' ${CONFIG_FILE} ${CONFIG_FILE}.secrets ${CONFIG_DIR} ; then
 	    echo
 	    echo "Some parameters still need to be updated.  Please fix them and then re-run deploy."
 	    exit 1
@@ -270,7 +272,7 @@ case "$subcmd" in
 	set -x
 
 	git add -A
-	if ! git diff --cached --exit-code ; then
+	if ! git diff --cached --exit-code --quiet ; then
 	    git commit -m"prepare for deploy"
 	fi
 

@@ -20,15 +20,6 @@ INITIAL_USER=admin
 # If not specified, the initial user email will be composed as
 # INITIAL_USER@CLUSTER.DOMAIN
 INITIAL_USER_EMAIL="admin@cluster_fixme_or_this_wont_work.domain_fixme_or_this_wont_work"
-INITIAL_USER_PASSWORD="fixmepassword"
-
-# Populate these values with random strings
-BLOB_SIGNING_KEY=fixmeblobsigningkeymushaveatleast32characters
-MANAGEMENT_TOKEN=fixmemanagementtokenmushaveatleast32characters
-SYSTEM_ROOT_TOKEN=fixmesystemroottokenmushaveatleast32characters
-ANONYMOUS_USER_TOKEN=fixmeanonymoususertokenmushaveatleast32characters
-WORKBENCH_SECRET_KEY=fixmeworkbenchsecretkeymushaveatleast32characters
-DATABASE_PASSWORD=fixmeplease_set_this_to_some_secure_value
 
 # SSL CERTIFICATES
 # Arvados requires SSL certificates to work correctly. This installer supports these options:
