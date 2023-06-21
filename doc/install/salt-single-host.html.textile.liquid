@@ -12,7 +12,7 @@ SPDX-License-Identifier: CC-BY-SA-3.0
 # "Limitations of the single host install":#limitations
 # "Prerequisites and planning":#prerequisites
 # "Download the installer":#download
-# "Edit local.params":#localparams
+# "Edit local.params* files":#localparams
 # "Choose the SSL configuration":#certificates
 ## "Using a self-signed certificate":#self-signed
 ## "Using a Let's Encrypt certificate":#lets-encrypt
@@ -104,15 +104,22 @@ h2(#download). Download the installer
 
 If you are using multiple hostname configuration, substitute 'multiple_hostnames' where it says 'single_hostname' in the command above.
 
-h2(#localparams). Edit @local.params@
+h2(#localparams). Edit @local.params*@ files
 
-This can be found wherever you choose to initialize the install files (@~/setup-arvados-xarv1@ in these examples).
+The cluster configuration parameters are included in two files: @local.params@ and @local.params.secrets@. These files can be found wherever you choose to initialize the installation files (e.g., @~/setup-arvados-xarv1@ in these examples).
+
+The @local.params.secrets@ file is intended to store security-sensitive data such as passwords, private keys, tokens, etc. Depending on the security requirements of the cluster deployment, this file may need to be handled differently from the others.
+
+h3. Parameters from @local.params@:
 
 # Set @CLUSTER@ to the 5-character cluster identifier (e.g "xarv1")
 # Set @DOMAIN@ to the base DNS domain of the environment, e.g. "example.com"
 # Single hostname only: set @IP_INT@ to the host's IP address.
 # Single hostname only: set @HOSTNAME_EXT@ to the hostname that users will use to connect.
 # Set @INITIAL_USER_EMAIL@ to your email address, as you will be the first admin user of the system.
+
+h3. Parameters from @local.params.secrets@:
+
 # Set each @KEY@ / @TOKEN@ to a random string
 	Here's an easy way to create five random tokens:
 <pre><code>for i in 1 2 3 4 5; do
@@ -124,7 +131,7 @@ done
    For example, if the password is @Lq&MZ<V']d?j@
    With backslash quoting the special characters it should appear like this in local.params:
 <pre><code>DATABASE_PASSWORD="Lq\&MZ\<V\'\]d\?j"</code></pre>
-
+# Set @DISPATCHER_SSH_PRIVKEY@ to @"no"@, as it isn't needed.
 {% include 'ssl_config_single' %}
 
 h2(#authentication). Configure your authentication provider (optional, recommended)
