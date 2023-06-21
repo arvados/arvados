@@ -14,17 +14,17 @@ xarv1.example.com
 *.collections.xarv1.example.com
 </pre>
 
-(Replacing xarv1 with your own ${CLUSTER}.${DOMAIN})
+(Replacing @xarv1.example.com@ with your own @${DOMAIN}@)
 
 Copy your certificates to the directory specified with the variable @CUSTOM_CERTS_DIR@ in the remote directory where you copied the @provision.sh@ script. The provision script will find the certificates there.
 
 The script expects cert/key files with these basenames (matching the role except for <i>keepweb</i>, which is split in both <i>download / collections</i>):
 
 # @controller@
-# @websocket@        -- note: corresponds to default domain @ws.${CLUSTER}.${DOMAIN}@
-# @keepproxy@        -- note: corresponds to default domain @keep.${CLUSTER}.${DOMAIN}@
+# @websocket@        -- note: corresponds to default domain @ws.${DOMAIN}@
+# @keepproxy@        -- note: corresponds to default domain @keep.${DOMAIN}@
 # @download@         -- Part of keepweb
-# @collections@      -- Part of keepweb, must be a wildcard for @*.collections.${CLUSTER}.${DOMAIN}@
+# @collections@      -- Part of keepweb, must be a wildcard for @*.collections.${DOMAIN}@
 # @workbench@
 # @workbench2@
 # @webshell@
