@@ -412,6 +412,27 @@ Clusters:
       # Use 0 to disable activity logging.
       ActivityLoggingPeriod: 24h
 
+      # The SyncUser* options control what system resources are managed by
+      # arvados-login-sync on shell nodes. They correspond to:
+      # * SyncUserAccounts: The user's Unix account on the shell node
+      # * SyncUserGroups: The group memberships of that account
+      # * SyncUserSSHKeys: Whether to authorize the user's Arvados SSH keys
+      # * SyncUserAPITokens: Whether to set up the user's Arvados API token
+      # All default to true.
+      SyncUserAccounts: true
+      SyncUserGroups: true
+      SyncUserSSHKeys: true
+      SyncUserAPITokens: true
+
+      # If SyncUserGroups=true, then arvados-login-sync will ensure that all
+      # managed accounts are members of the Unix groups listed in
+      # SyncRequiredGroups, in addition to any groups listed in their Arvados
+      # login permission. The default list includes the "fuse" group so
+      # users can use arv-mount. You can require no groups by specifying an
+      # empty list (i.e., `SyncRequiredGroups: []`).
+      SyncRequiredGroups:
+        - fuse
+
     AuditLogs:
       # Time to keep audit logs, in seconds. (An audit log is a row added
       # to the "logs" table in the PostgreSQL database each time an

@@ -258,6 +258,11 @@ type Cluster struct {
 		RoleGroupsVisibleToAll                bool
 		CanCreateRoleGroups                   bool
 		ActivityLoggingPeriod                 Duration
+		SyncRequiredGroups                    []string
+		SyncUserAccounts                      bool
+		SyncUserAPITokens                     bool
+		SyncUserGroups                        bool
+		SyncUserSSHKeys                       bool
 	}
 	StorageClasses map[string]StorageClassConfig
 	Volumes        map[string]Volume
