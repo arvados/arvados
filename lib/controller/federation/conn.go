@@ -178,20 +178,29 @@ func (conn *Conn) tryLocalThenRemotes(ctx context.Context, forwardedFor string, 
 			errchan <- fn(ctx, remoteID, be)
 		}()
 	}
-	all404 := true
+	returncode := http.StatusNotFound
 	var errs []error
 	for i := 0; i < cap(errchan); i++ {
 		err := <-errchan
 		if err == nil {
 			return nil
 		}
-		all404 = all404 && errStatus(err) == http.StatusNotFound
 		errs = append(errs, err)
+		if code := errStatus(err); code >= 500 || code == http.StatusTooManyRequests {
+			// If any of the remotes have a retryable
+			// error (and none succeed) we'll return 502.
+			returncode = http.StatusBadGateway
+		} else if code != http.StatusNotFound && returncode != http.StatusBadGateway {
+			// If some of the remotes have non-retryable
+			// non-404 errors (and none succeed or have
+			// retryable errors) we'll return 422.
+			returncode = http.StatusUnprocessableEntity
+		}
 	}
-	if all404 {
+	if returncode == http.StatusNotFound {
 		return notFoundError{}
 	}
-	return httpErrorf(http.StatusBadGateway, "errors: %v", errs)
+	return httpErrorf(returncode, "errors: %v", errs)
 }
 
 func (conn *Conn) CollectionCreate(ctx context.Context, options arvados.CreateOptions) (arvados.Collection, error) {

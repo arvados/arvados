@@ -141,6 +141,7 @@ func (c *cache) GetSession(token string) (arvados.CustomFileSystem, *cachedSessi
 			return nil, nil, nil, err
 		}
 		sess.client.AuthToken = token
+		sess.client.Timeout = time.Minute
 		// A non-empty origin header tells controller to
 		// prioritize our traffic as interactive, which is
 		// true most of the time.
