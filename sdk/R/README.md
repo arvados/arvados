@@ -63,7 +63,71 @@ This parameter can be set at any time using `setNumRetries`
 arv$setNumRetries(5)
 ```
 
+### Working with Aravdos projects
+
+##### Create project:
+
+```r
+newProject <- arv$project_create(name = "project name", description = "project description", owner_uuid = "project UUID", properties = NULL, ensureUniqueName = "false")
+```
+
+##### Update project:
+
+```r
+updatedProject <- arv$project_update(name = "new project name", properties = newProperties, uuid = "projectUUID")
+```
+
+##### Delete a project:
+
+```r
+deletedProject <- arv$project_delete("uuid")
+```
+
+#### Find a project:
+
+##### Get a project:
+
+```r
+project <- arv$project_get("uuid")
+```
+
+##### List projects:
+
+```r
+list subprojects of a project
+projects <- arv$project_list(list(list("owner_uuid", "=", "aaaaa-j7d0g-ccccccccccccccc")))
+
+list projects which have names beginning with Example
+examples <- arv$project_list(list(list("name","like","Example%")))
+```
+
+##### List all projects even if the number of items is greater than maximum API limit:
+
+```r
+projects <- listAll(arv$project_list, list(list("name","like","Example%")))
+```
+
 ### Working with collections
+
+#### Create a new collection:
+
+```r
+newCollection <- arv$collections_create(name = "collectionTitle", description = "collectionDescription", ownerUUID = "collectionOwner", properties = Properties)
+```
+
+#### Update a collection’s metadata:
+
+```r
+collection <- arv$collections_update(name = "newCollectionTitle", description = "newCollectionDescription", ownerUUID = "collectionOwner", properties = NULL, uuid =  "collectionUUID")
+```
+
+#### Delete a collection:
+
+```r
+deletedCollection <- arv$collections_delete("uuid")
+```
+
+#### Find a collection:
 
 #### Get a collection:
 
@@ -92,24 +156,6 @@ collectionList$items
 
 ```r
 collectionList <- listAll(arv$collections_list, list(list("name", "like", "Test%")))
-```
-
-#### Delete a collection:
-
-```r
-deletedCollection <- arv$collections_delete("uuid")
-```
-
-#### Update a collection’s metadata:
-
-```r
-collection <- arv$collections_update(name = "newCollectionTitle", description = "newCollectionDescription", ownerUUID = "collectionOwner", properties = NULL, uuid =  "collectionUUID")
-```
-
-#### Create a new collection:
-
-```r
-newCollection <- arv$collections_create(name = "collectionTitle", description = "collectionDescription", ownerUUID = "collectionOwner", properties = Properties)
 ```
 
 ### Manipulating collection content
@@ -284,47 +330,6 @@ subcollection <- collection$get("location/to/folder")
 subcollection$copy("destination/folder")
 ```
 
-### Working with Aravdos projects
-
-#### Get a project:
-
-```r
-project <- arv$project_get("uuid")
-```
-
-#### List projects:
-
-```r
-list subprojects of a project
-projects <- arv$project_list(list(list("owner_uuid", "=", "aaaaa-j7d0g-ccccccccccccccc")))
-
-list projects which have names beginning with Example
-examples <- arv$project_list(list(list("name","like","Example%")))
-```
-
-#### List all projects even if the number of items is greater than maximum API limit:
-
-```r
-projects <- listAll(arv$project_list, list(list("name","like","Example%")))
-```
-
-##### Delete a project:
-
-```r
-deletedProject <- arv$project_delete("uuid")
-```
-
-##### Update project:
-
-```r
-updatedProject <- arv$project_update(name = "new project name", properties = newProperties, uuid = "projectUUID")
-```
-
-##### Create project:
-
-```r
-newProject <- arv$project_create(name = "project name", description = "project description", owner_uuid = "project UUID", properties = NULL, ensureUniqueName = "false")
-```
 
 ### Help
 

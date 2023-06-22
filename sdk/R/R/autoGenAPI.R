@@ -9,6 +9,10 @@ getAPIDocument <- function(){
     httr::content(serverResponse, as = "parsed", type = "application/json")
 }
 
+#' generateAPI
+#'
+#' Autogenerate classes to interact with Arvados from the Arvados discovery document.
+#'
 #' @export
 generateAPI <- function()
 {

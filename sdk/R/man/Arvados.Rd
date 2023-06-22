@@ -18,260 +18,316 @@ arv <- Arvados$new(authToken = "ARVADOS_API_TOKEN", hostName = "ARVADOS_API_HOST
 ## Method `Arvados$project_exist`
 ## ------------------------------------------------
 
-arv$project_exist(uuid = projectUUID)
+\dontrun{
+arv$project_exist(uuid = "projectUUID")
+}
 
 ## ------------------------------------------------
 ## Method `Arvados$project_get`
 ## ------------------------------------------------
 
-project <- arv$project_get(uuid = projectUUID)
+\dontrun{
+project <- arv$project_get(uuid = 'projectUUID')
+}
 
 ## ------------------------------------------------
 ## Method `Arvados$project_create`
 ## ------------------------------------------------
 
+\dontrun{
 Properties <- list() # should contain a list of new properties to be added
 new_project <- arv$project_create(name = "project name", description = "project description", owner_uuid = "project UUID", properties = NULL, ensureUniqueName = "false")
+}
 
 ## ------------------------------------------------
 ## Method `Arvados$project_properties_set`
 ## ------------------------------------------------
 
+\dontrun{
 Properties <- list() # should contain a list of new properties to be added
 arv$project_properties_set(Properties, uuid)
+}
 
 ## ------------------------------------------------
 ## Method `Arvados$project_properties_append`
 ## ------------------------------------------------
 
+\dontrun{
 newProperties <- list() # should contain a list of new properties to be added
 arv$project_properties_append(properties = newProperties, uuid)
+}
 
 ## ------------------------------------------------
 ## Method `Arvados$project_properties_get`
 ## ------------------------------------------------
 
+\dontrun{
 arv$project_properties_get(projectUUID)
+}
 
 ## ------------------------------------------------
 ## Method `Arvados$project_properties_delete`
 ## ------------------------------------------------
 
+\dontrun{
 Properties <- list() # should contain a list of new properties to be added
 arv$project_properties_delete(Properties,  projectUUID)
+}
 
 ## ------------------------------------------------
 ## Method `Arvados$project_update`
 ## ------------------------------------------------
 
+\dontrun{
 newProperties <- list() # should contain a list of new properties to be added
 arv$project_update(name = "new project name", properties = newProperties, uuid = projectUUID)
+}
 
 ## ------------------------------------------------
 ## Method `Arvados$project_list`
 ## ------------------------------------------------
 
+\dontrun{
 listOfprojects <- arv$project_list(list(list("owner_uuid", "=", projectUUID))) # Sample query which show projects within the project of a given UUID
+}
+
+## ------------------------------------------------
+## Method `Arvados$project_delete`
+## ------------------------------------------------
+
+\dontrun{
+arv$project_delete(uuid = 'projectUUID')
+}
+
+## ------------------------------------------------
+## Method `Arvados$collections_get`
+## ------------------------------------------------
+
+\dontrun{
+collection <- arv$collections_get(uuid = collectionUUID)
+}
 
 ## ------------------------------------------------
 ## Method `Arvados$collections_create`
 ## ------------------------------------------------
 
+\dontrun{
 Properties <- list() # should contain a list of new properties to be added
 arv$collections_create(name = "collectionTitle", description = "collectionDescription", ownerUUID = "collectionOwner", properties = Properties)
+}
 
 ## ------------------------------------------------
 ## Method `Arvados$collections_update`
 ## ------------------------------------------------
 
-collection <- arv$collections_create(name = "newCollectionTitle", description = "newCollectionDescription", ownerUUID = "collectionOwner", properties = NULL)
+\dontrun{
+collection <- arv$collections_update(name = "newCollectionTitle", description = "newCollectionDescription", ownerUUID = "collectionOwner", properties = NULL, uuid = "collectionUUID")
+}
 
 ## ------------------------------------------------
 ## Method `Arvados$collections_delete`
 ## ------------------------------------------------
 
+\dontrun{
 arv$collection_delete(collectionUUID)
+}
 
 ## ------------------------------------------------
 ## Method `Arvados$collections_provenance`
 ## ------------------------------------------------
 
+\dontrun{
 collection <- arv$collections_provenance(collectionUUID)
+}
 
 ## ------------------------------------------------
 ## Method `Arvados$collections_trash`
 ## ------------------------------------------------
 
+\dontrun{
 arv$collections_trash(collectionUUID)
+}
 
 ## ------------------------------------------------
 ## Method `Arvados$collections_untrash`
 ## ------------------------------------------------
 
+\dontrun{
 arv$collections_untrash(collectionUUID)
+}
 
 ## ------------------------------------------------
 ## Method `Arvados$collections_list`
 ## ------------------------------------------------
 
-collectionList <- arv$collections.list(list(list("name", "=", "Example")))
+\dontrun{
+collectionList <- arv$collections_list(list(list("name", "=", "Example")))
+}
 
 ## ------------------------------------------------
 ## Method `Arvados$project_permission_give`
 ## ------------------------------------------------
 
+\dontrun{
 arv$project_permission_give(type = "can_read", uuid = objectUUID, user = userUUID)
+}
 
 ## ------------------------------------------------
 ## Method `Arvados$project_permission_refuse`
 ## ------------------------------------------------
 
+\dontrun{
 arv$project_permission_refuse(type = "can_read", uuid = objectUUID, user = userUUID)
+}
 
 ## ------------------------------------------------
 ## Method `Arvados$project_permission_update`
 ## ------------------------------------------------
 
+\dontrun{
 arv$project_permission_update(typeOld = "can_read", typeNew = "can_write", uuid = objectUUID, user = userUUID)
+}
 
 ## ------------------------------------------------
 ## Method `Arvados$project_permission_check`
 ## ------------------------------------------------
 
+\dontrun{
 arv$project_permission_check(type = "can_read", uuid = objectUUID, user = userUUID)
+}
 }
 \section{Methods}{
 \subsection{Public methods}{
 \itemize{
-\item \href{#method-new}{\code{Arvados$new()}}
-\item \href{#method-project_exist}{\code{Arvados$project_exist()}}
-\item \href{#method-project_get}{\code{Arvados$project_get()}}
-\item \href{#method-project_create}{\code{Arvados$project_create()}}
-\item \href{#method-project_properties_set}{\code{Arvados$project_properties_set()}}
-\item \href{#method-project_properties_append}{\code{Arvados$project_properties_append()}}
-\item \href{#method-project_properties_get}{\code{Arvados$project_properties_get()}}
-\item \href{#method-project_properties_delete}{\code{Arvados$project_properties_delete()}}
-\item \href{#method-project_update}{\code{Arvados$project_update()}}
-\item \href{#method-project_list}{\code{Arvados$project_list()}}
-\item \href{#method-project_delete}{\code{Arvados$project_delete()}}
-\item \href{#method-api_clients_get}{\code{Arvados$api_clients_get()}}
-\item \href{#method-api_clients_create}{\code{Arvados$api_clients_create()}}
-\item \href{#method-api_clients_update}{\code{Arvados$api_clients_update()}}
-\item \href{#method-api_clients_delete}{\code{Arvados$api_clients_delete()}}
-\item \href{#method-api_clients_list}{\code{Arvados$api_clients_list()}}
-\item \href{#method-api_client_authorizations_get}{\code{Arvados$api_client_authorizations_get()}}
-\item \href{#method-api_client_authorizations_create}{\code{Arvados$api_client_authorizations_create()}}
-\item \href{#method-api_client_authorizations_update}{\code{Arvados$api_client_authorizations_update()}}
-\item \href{#method-api_client_authorizations_delete}{\code{Arvados$api_client_authorizations_delete()}}
-\item \href{#method-api_client_authorizations_create_system_auth}{\code{Arvados$api_client_authorizations_create_system_auth()}}
-\item \href{#method-api_client_authorizations_current}{\code{Arvados$api_client_authorizations_current()}}
-\item \href{#method-api_client_authorizations_list}{\code{Arvados$api_client_authorizations_list()}}
-\item \href{#method-authorized_keys_get}{\code{Arvados$authorized_keys_get()}}
-\item \href{#method-authorized_keys_create}{\code{Arvados$authorized_keys_create()}}
-\item \href{#method-authorized_keys_update}{\code{Arvados$authorized_keys_update()}}
-\item \href{#method-authorized_keys_delete}{\code{Arvados$authorized_keys_delete()}}
-\item \href{#method-authorized_keys_list}{\code{Arvados$authorized_keys_list()}}
-\item \href{#method-collections_get}{\code{Arvados$collections_get()}}
-\item \href{#method-collections_create}{\code{Arvados$collections_create()}}
-\item \href{#method-collections_update}{\code{Arvados$collections_update()}}
-\item \href{#method-collections_delete}{\code{Arvados$collections_delete()}}
-\item \href{#method-collections_provenance}{\code{Arvados$collections_provenance()}}
-\item \href{#method-collections_used_by}{\code{Arvados$collections_used_by()}}
-\item \href{#method-collections_trash}{\code{Arvados$collections_trash()}}
-\item \href{#method-collections_untrash}{\code{Arvados$collections_untrash()}}
-\item \href{#method-collections_list}{\code{Arvados$collections_list()}}
-\item \href{#method-containers_get}{\code{Arvados$containers_get()}}
-\item \href{#method-containers_create}{\code{Arvados$containers_create()}}
-\item \href{#method-containers_update}{\code{Arvados$containers_update()}}
-\item \href{#method-containers_delete}{\code{Arvados$containers_delete()}}
-\item \href{#method-containers_auth}{\code{Arvados$containers_auth()}}
-\item \href{#method-containers_lock}{\code{Arvados$containers_lock()}}
-\item \href{#method-containers_unlock}{\code{Arvados$containers_unlock()}}
-\item \href{#method-containers_secret_mounts}{\code{Arvados$containers_secret_mounts()}}
-\item \href{#method-containers_current}{\code{Arvados$containers_current()}}
-\item \href{#method-containers_list}{\code{Arvados$containers_list()}}
-\item \href{#method-container_requests_get}{\code{Arvados$container_requests_get()}}
-\item \href{#method-container_requests_create}{\code{Arvados$container_requests_create()}}
-\item \href{#method-container_requests_update}{\code{Arvados$container_requests_update()}}
-\item \href{#method-container_requests_delete}{\code{Arvados$container_requests_delete()}}
-\item \href{#method-container_requests_list}{\code{Arvados$container_requests_list()}}
-\item \href{#method-groups_get}{\code{Arvados$groups_get()}}
-\item \href{#method-groups_create}{\code{Arvados$groups_create()}}
-\item \href{#method-groups_update}{\code{Arvados$groups_update()}}
-\item \href{#method-groups_delete}{\code{Arvados$groups_delete()}}
-\item \href{#method-groups_contents}{\code{Arvados$groups_contents()}}
-\item \href{#method-groups_shared}{\code{Arvados$groups_shared()}}
-\item \href{#method-groups_trash}{\code{Arvados$groups_trash()}}
-\item \href{#method-groups_untrash}{\code{Arvados$groups_untrash()}}
-\item \href{#method-groups_list}{\code{Arvados$groups_list()}}
-\item \href{#method-keep_services_get}{\code{Arvados$keep_services_get()}}
-\item \href{#method-keep_services_create}{\code{Arvados$keep_services_create()}}
-\item \href{#method-keep_services_update}{\code{Arvados$keep_services_update()}}
-\item \href{#method-keep_services_delete}{\code{Arvados$keep_services_delete()}}
-\item \href{#method-keep_services_accessible}{\code{Arvados$keep_services_accessible()}}
-\item \href{#method-keep_services_list}{\code{Arvados$keep_services_list()}}
-\item \href{#method-project_permission_give}{\code{Arvados$project_permission_give()}}
-\item \href{#method-project_permission_refuse}{\code{Arvados$project_permission_refuse()}}
-\item \href{#method-project_permission_update}{\code{Arvados$project_permission_update()}}
-\item \href{#method-project_permission_check}{\code{Arvados$project_permission_check()}}
-\item \href{#method-links_get}{\code{Arvados$links_get()}}
-\item \href{#method-links_create}{\code{Arvados$links_create()}}
-\item \href{#method-links_update}{\code{Arvados$links_update()}}
-\item \href{#method-links_delete}{\code{Arvados$links_delete()}}
-\item \href{#method-links_list}{\code{Arvados$links_list()}}
-\item \href{#method-links_get_permissions}{\code{Arvados$links_get_permissions()}}
-\item \href{#method-logs_get}{\code{Arvados$logs_get()}}
-\item \href{#method-logs_create}{\code{Arvados$logs_create()}}
-\item \href{#method-logs_update}{\code{Arvados$logs_update()}}
-\item \href{#method-logs_delete}{\code{Arvados$logs_delete()}}
-\item \href{#method-logs_list}{\code{Arvados$logs_list()}}
-\item \href{#method-users_get}{\code{Arvados$users_get()}}
-\item \href{#method-users_create}{\code{Arvados$users_create()}}
-\item \href{#method-users_update}{\code{Arvados$users_update()}}
-\item \href{#method-users_delete}{\code{Arvados$users_delete()}}
-\item \href{#method-users_current}{\code{Arvados$users_current()}}
-\item \href{#method-users_system}{\code{Arvados$users_system()}}
-\item \href{#method-users_activate}{\code{Arvados$users_activate()}}
-\item \href{#method-users_setup}{\code{Arvados$users_setup()}}
-\item \href{#method-users_unsetup}{\code{Arvados$users_unsetup()}}
-\item \href{#method-users_merge}{\code{Arvados$users_merge()}}
-\item \href{#method-users_list}{\code{Arvados$users_list()}}
-\item \href{#method-repositories_get}{\code{Arvados$repositories_get()}}
-\item \href{#method-repositories_create}{\code{Arvados$repositories_create()}}
-\item \href{#method-repositories_update}{\code{Arvados$repositories_update()}}
-\item \href{#method-repositories_delete}{\code{Arvados$repositories_delete()}}
-\item \href{#method-repositories_get_all_permissions}{\code{Arvados$repositories_get_all_permissions()}}
-\item \href{#method-repositories_list}{\code{Arvados$repositories_list()}}
-\item \href{#method-virtual_machines_get}{\code{Arvados$virtual_machines_get()}}
-\item \href{#method-virtual_machines_create}{\code{Arvados$virtual_machines_create()}}
-\item \href{#method-virtual_machines_update}{\code{Arvados$virtual_machines_update()}}
-\item \href{#method-virtual_machines_delete}{\code{Arvados$virtual_machines_delete()}}
-\item \href{#method-virtual_machines_logins}{\code{Arvados$virtual_machines_logins()}}
-\item \href{#method-virtual_machines_get_all_logins}{\code{Arvados$virtual_machines_get_all_logins()}}
-\item \href{#method-virtual_machines_list}{\code{Arvados$virtual_machines_list()}}
-\item \href{#method-workflows_get}{\code{Arvados$workflows_get()}}
-\item \href{#method-workflows_create}{\code{Arvados$workflows_create()}}
-\item \href{#method-workflows_update}{\code{Arvados$workflows_update()}}
-\item \href{#method-workflows_delete}{\code{Arvados$workflows_delete()}}
-\item \href{#method-workflows_list}{\code{Arvados$workflows_list()}}
-\item \href{#method-user_agreements_get}{\code{Arvados$user_agreements_get()}}
-\item \href{#method-user_agreements_create}{\code{Arvados$user_agreements_create()}}
-\item \href{#method-user_agreements_update}{\code{Arvados$user_agreements_update()}}
-\item \href{#method-user_agreements_delete}{\code{Arvados$user_agreements_delete()}}
-\item \href{#method-user_agreements_signatures}{\code{Arvados$user_agreements_signatures()}}
-\item \href{#method-user_agreements_sign}{\code{Arvados$user_agreements_sign()}}
-\item \href{#method-user_agreements_list}{\code{Arvados$user_agreements_list()}}
-\item \href{#method-user_agreements_new}{\code{Arvados$user_agreements_new()}}
-\item \href{#method-configs_get}{\code{Arvados$configs_get()}}
-\item \href{#method-getHostName}{\code{Arvados$getHostName()}}
-\item \href{#method-getToken}{\code{Arvados$getToken()}}
-\item \href{#method-setRESTService}{\code{Arvados$setRESTService()}}
-\item \href{#method-getRESTService}{\code{Arvados$getRESTService()}}
+\item \href{#method-Arvados-new}{\code{Arvados$new()}}
+\item \href{#method-Arvados-project_exist}{\code{Arvados$project_exist()}}
+\item \href{#method-Arvados-project_get}{\code{Arvados$project_get()}}
+\item \href{#method-Arvados-project_create}{\code{Arvados$project_create()}}
+\item \href{#method-Arvados-project_properties_set}{\code{Arvados$project_properties_set()}}
+\item \href{#method-Arvados-project_properties_append}{\code{Arvados$project_properties_append()}}
+\item \href{#method-Arvados-project_properties_get}{\code{Arvados$project_properties_get()}}
+\item \href{#method-Arvados-project_properties_delete}{\code{Arvados$project_properties_delete()}}
+\item \href{#method-Arvados-project_update}{\code{Arvados$project_update()}}
+\item \href{#method-Arvados-project_list}{\code{Arvados$project_list()}}
+\item \href{#method-Arvados-project_delete}{\code{Arvados$project_delete()}}
+\item \href{#method-Arvados-api_clients_get}{\code{Arvados$api_clients_get()}}
+\item \href{#method-Arvados-api_clients_create}{\code{Arvados$api_clients_create()}}
+\item \href{#method-Arvados-api_clients_update}{\code{Arvados$api_clients_update()}}
+\item \href{#method-Arvados-api_clients_delete}{\code{Arvados$api_clients_delete()}}
+\item \href{#method-Arvados-api_clients_list}{\code{Arvados$api_clients_list()}}
+\item \href{#method-Arvados-api_client_authorizations_get}{\code{Arvados$api_client_authorizations_get()}}
+\item \href{#method-Arvados-api_client_authorizations_create}{\code{Arvados$api_client_authorizations_create()}}
+\item \href{#method-Arvados-api_client_authorizations_update}{\code{Arvados$api_client_authorizations_update()}}
+\item \href{#method-Arvados-api_client_authorizations_delete}{\code{Arvados$api_client_authorizations_delete()}}
+\item \href{#method-Arvados-api_client_authorizations_create_system_auth}{\code{Arvados$api_client_authorizations_create_system_auth()}}
+\item \href{#method-Arvados-api_client_authorizations_current}{\code{Arvados$api_client_authorizations_current()}}
+\item \href{#method-Arvados-api_client_authorizations_list}{\code{Arvados$api_client_authorizations_list()}}
+\item \href{#method-Arvados-authorized_keys_get}{\code{Arvados$authorized_keys_get()}}
+\item \href{#method-Arvados-authorized_keys_create}{\code{Arvados$authorized_keys_create()}}
+\item \href{#method-Arvados-authorized_keys_update}{\code{Arvados$authorized_keys_update()}}
+\item \href{#method-Arvados-authorized_keys_delete}{\code{Arvados$authorized_keys_delete()}}
+\item \href{#method-Arvados-authorized_keys_list}{\code{Arvados$authorized_keys_list()}}
+\item \href{#method-Arvados-collections_get}{\code{Arvados$collections_get()}}
+\item \href{#method-Arvados-collections_create}{\code{Arvados$collections_create()}}
+\item \href{#method-Arvados-collections_update}{\code{Arvados$collections_update()}}
+\item \href{#method-Arvados-collections_delete}{\code{Arvados$collections_delete()}}
+\item \href{#method-Arvados-collections_provenance}{\code{Arvados$collections_provenance()}}
+\item \href{#method-Arvados-collections_used_by}{\code{Arvados$collections_used_by()}}
+\item \href{#method-Arvados-collections_trash}{\code{Arvados$collections_trash()}}
+\item \href{#method-Arvados-collections_untrash}{\code{Arvados$collections_untrash()}}
+\item \href{#method-Arvados-collections_list}{\code{Arvados$collections_list()}}
+\item \href{#method-Arvados-containers_get}{\code{Arvados$containers_get()}}
+\item \href{#method-Arvados-containers_create}{\code{Arvados$containers_create()}}
+\item \href{#method-Arvados-containers_update}{\code{Arvados$containers_update()}}
+\item \href{#method-Arvados-containers_delete}{\code{Arvados$containers_delete()}}
+\item \href{#method-Arvados-containers_auth}{\code{Arvados$containers_auth()}}
+\item \href{#method-Arvados-containers_lock}{\code{Arvados$containers_lock()}}
+\item \href{#method-Arvados-containers_unlock}{\code{Arvados$containers_unlock()}}
+\item \href{#method-Arvados-containers_secret_mounts}{\code{Arvados$containers_secret_mounts()}}
+\item \href{#method-Arvados-containers_current}{\code{Arvados$containers_current()}}
+\item \href{#method-Arvados-containers_list}{\code{Arvados$containers_list()}}
+\item \href{#method-Arvados-container_requests_get}{\code{Arvados$container_requests_get()}}
+\item \href{#method-Arvados-container_requests_create}{\code{Arvados$container_requests_create()}}
+\item \href{#method-Arvados-container_requests_update}{\code{Arvados$container_requests_update()}}
+\item \href{#method-Arvados-container_requests_delete}{\code{Arvados$container_requests_delete()}}
+\item \href{#method-Arvados-container_requests_list}{\code{Arvados$container_requests_list()}}
+\item \href{#method-Arvados-groups_get}{\code{Arvados$groups_get()}}
+\item \href{#method-Arvados-groups_create}{\code{Arvados$groups_create()}}
+\item \href{#method-Arvados-groups_update}{\code{Arvados$groups_update()}}
+\item \href{#method-Arvados-groups_delete}{\code{Arvados$groups_delete()}}
+\item \href{#method-Arvados-groups_contents}{\code{Arvados$groups_contents()}}
+\item \href{#method-Arvados-groups_shared}{\code{Arvados$groups_shared()}}
+\item \href{#method-Arvados-groups_trash}{\code{Arvados$groups_trash()}}
+\item \href{#method-Arvados-groups_untrash}{\code{Arvados$groups_untrash()}}
+\item \href{#method-Arvados-groups_list}{\code{Arvados$groups_list()}}
+\item \href{#method-Arvados-keep_services_get}{\code{Arvados$keep_services_get()}}
+\item \href{#method-Arvados-keep_services_create}{\code{Arvados$keep_services_create()}}
+\item \href{#method-Arvados-keep_services_update}{\code{Arvados$keep_services_update()}}
+\item \href{#method-Arvados-keep_services_delete}{\code{Arvados$keep_services_delete()}}
+\item \href{#method-Arvados-keep_services_accessible}{\code{Arvados$keep_services_accessible()}}
+\item \href{#method-Arvados-keep_services_list}{\code{Arvados$keep_services_list()}}
+\item \href{#method-Arvados-project_permission_give}{\code{Arvados$project_permission_give()}}
+\item \href{#method-Arvados-project_permission_refuse}{\code{Arvados$project_permission_refuse()}}
+\item \href{#method-Arvados-project_permission_update}{\code{Arvados$project_permission_update()}}
+\item \href{#method-Arvados-project_permission_check}{\code{Arvados$project_permission_check()}}
+\item \href{#method-Arvados-links_get}{\code{Arvados$links_get()}}
+\item \href{#method-Arvados-links_create}{\code{Arvados$links_create()}}
+\item \href{#method-Arvados-links_update}{\code{Arvados$links_update()}}
+\item \href{#method-Arvados-links_delete}{\code{Arvados$links_delete()}}
+\item \href{#method-Arvados-links_list}{\code{Arvados$links_list()}}
+\item \href{#method-Arvados-links_get_permissions}{\code{Arvados$links_get_permissions()}}
+\item \href{#method-Arvados-logs_get}{\code{Arvados$logs_get()}}
+\item \href{#method-Arvados-logs_create}{\code{Arvados$logs_create()}}
+\item \href{#method-Arvados-logs_update}{\code{Arvados$logs_update()}}
+\item \href{#method-Arvados-logs_delete}{\code{Arvados$logs_delete()}}
+\item \href{#method-Arvados-logs_list}{\code{Arvados$logs_list()}}
+\item \href{#method-Arvados-users_get}{\code{Arvados$users_get()}}
+\item \href{#method-Arvados-users_create}{\code{Arvados$users_create()}}
+\item \href{#method-Arvados-users_update}{\code{Arvados$users_update()}}
+\item \href{#method-Arvados-users_delete}{\code{Arvados$users_delete()}}
+\item \href{#method-Arvados-users_current}{\code{Arvados$users_current()}}
+\item \href{#method-Arvados-users_system}{\code{Arvados$users_system()}}
+\item \href{#method-Arvados-users_activate}{\code{Arvados$users_activate()}}
+\item \href{#method-Arvados-users_setup}{\code{Arvados$users_setup()}}
+\item \href{#method-Arvados-users_unsetup}{\code{Arvados$users_unsetup()}}
+\item \href{#method-Arvados-users_merge}{\code{Arvados$users_merge()}}
+\item \href{#method-Arvados-users_list}{\code{Arvados$users_list()}}
+\item \href{#method-Arvados-repositories_get}{\code{Arvados$repositories_get()}}
+\item \href{#method-Arvados-repositories_create}{\code{Arvados$repositories_create()}}
+\item \href{#method-Arvados-repositories_update}{\code{Arvados$repositories_update()}}
+\item \href{#method-Arvados-repositories_delete}{\code{Arvados$repositories_delete()}}
+\item \href{#method-Arvados-repositories_get_all_permissions}{\code{Arvados$repositories_get_all_permissions()}}
+\item \href{#method-Arvados-repositories_list}{\code{Arvados$repositories_list()}}
+\item \href{#method-Arvados-virtual_machines_get}{\code{Arvados$virtual_machines_get()}}
+\item \href{#method-Arvados-virtual_machines_create}{\code{Arvados$virtual_machines_create()}}
+\item \href{#method-Arvados-virtual_machines_update}{\code{Arvados$virtual_machines_update()}}
+\item \href{#method-Arvados-virtual_machines_delete}{\code{Arvados$virtual_machines_delete()}}
+\item \href{#method-Arvados-virtual_machines_logins}{\code{Arvados$virtual_machines_logins()}}
+\item \href{#method-Arvados-virtual_machines_get_all_logins}{\code{Arvados$virtual_machines_get_all_logins()}}
+\item \href{#method-Arvados-virtual_machines_list}{\code{Arvados$virtual_machines_list()}}
+\item \href{#method-Arvados-workflows_get}{\code{Arvados$workflows_get()}}
+\item \href{#method-Arvados-workflows_create}{\code{Arvados$workflows_create()}}
+\item \href{#method-Arvados-workflows_update}{\code{Arvados$workflows_update()}}
+\item \href{#method-Arvados-workflows_delete}{\code{Arvados$workflows_delete()}}
+\item \href{#method-Arvados-workflows_list}{\code{Arvados$workflows_list()}}
+\item \href{#method-Arvados-user_agreements_get}{\code{Arvados$user_agreements_get()}}
+\item \href{#method-Arvados-user_agreements_create}{\code{Arvados$user_agreements_create()}}
+\item \href{#method-Arvados-user_agreements_update}{\code{Arvados$user_agreements_update()}}
+\item \href{#method-Arvados-user_agreements_delete}{\code{Arvados$user_agreements_delete()}}
+\item \href{#method-Arvados-user_agreements_signatures}{\code{Arvados$user_agreements_signatures()}}
+\item \href{#method-Arvados-user_agreements_sign}{\code{Arvados$user_agreements_sign()}}
+\item \href{#method-Arvados-user_agreements_list}{\code{Arvados$user_agreements_list()}}
+\item \href{#method-Arvados-user_agreements_new}{\code{Arvados$user_agreements_new()}}
+\item \href{#method-Arvados-configs_get}{\code{Arvados$configs_get()}}
+\item \href{#method-Arvados-getHostName}{\code{Arvados$getHostName()}}
+\item \href{#method-Arvados-getToken}{\code{Arvados$getToken()}}
+\item \href{#method-Arvados-setRESTService}{\code{Arvados$setRESTService()}}
+\item \href{#method-Arvados-getRESTService}{\code{Arvados$getRESTService()}}
 }
 }
 \if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-new"></a>}}
-\if{latex}{\out{\hypertarget{method-new}{}}}
+\if{html}{\out{<a id="method-Arvados-new"></a>}}
+\if{latex}{\out{\hypertarget{method-Arvados-new}{}}}
 \subsection{Method \code{new()}}{
 Initialize new enviroment.
 \subsection{Usage}{
@@ -302,8 +358,8 @@ A new `Arvados` object.
 
 }
 \if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-project_exist"></a>}}
-\if{latex}{\out{\hypertarget{method-project_exist}{}}}
+\if{html}{\out{<a id="method-Arvados-project_exist"></a>}}
+\if{latex}{\out{\hypertarget{method-Arvados-project_exist}{}}}
 \subsection{Method \code{project_exist()}}{
 project_exist enables checking if the project with such a UUID exist.
 \subsection{Usage}{
@@ -319,7 +375,9 @@ project_exist enables checking if the project with such a UUID exist.
 }
 \subsection{Examples}{
 \if{html}{\out{<div class="r example copy">}}
-\preformatted{arv$project_exist(uuid = projectUUID)
+\preformatted{\dontrun{
+arv$project_exist(uuid = "projectUUID")
+}
 }
 \if{html}{\out{</div>}}
 
@@ -327,8 +385,8 @@ project_exist enables checking if the project with such a UUID exist.
 
 }
 \if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-project_get"></a>}}
-\if{latex}{\out{\hypertarget{method-project_get}{}}}
+\if{html}{\out{<a id="method-Arvados-project_get"></a>}}
+\if{latex}{\out{\hypertarget{method-Arvados-project_get}{}}}
 \subsection{Method \code{project_get()}}{
 project_get returns the demanded project.
 \subsection{Usage}{
@@ -344,7 +402,9 @@ project_get returns the demanded project.
 }
 \subsection{Examples}{
 \if{html}{\out{<div class="r example copy">}}
-\preformatted{project <- arv$project_get(uuid = projectUUID)
+\preformatted{\dontrun{
+project <- arv$project_get(uuid = 'projectUUID')
+}
 }
 \if{html}{\out{</div>}}
 
@@ -352,8 +412,8 @@ project_get returns the demanded project.
 
 }
 \if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-project_create"></a>}}
-\if{latex}{\out{\hypertarget{method-project_create}{}}}
+\if{html}{\out{<a id="method-Arvados-project_create"></a>}}
+\if{latex}{\out{\hypertarget{method-Arvados-project_create}{}}}
 \subsection{Method \code{project_create()}}{
 project_create creates a new project of a given name and description.
 \subsection{Usage}{
@@ -383,8 +443,10 @@ project_create creates a new project of a given name and description.
 }
 \subsection{Examples}{
 \if{html}{\out{<div class="r example copy">}}
-\preformatted{Properties <- list() # should contain a list of new properties to be added
+\preformatted{\dontrun{
+Properties <- list() # should contain a list of new properties to be added
 new_project <- arv$project_create(name = "project name", description = "project description", owner_uuid = "project UUID", properties = NULL, ensureUniqueName = "false")
+}
 }
 \if{html}{\out{</div>}}
 
@@ -392,8 +454,8 @@ new_project <- arv$project_create(name = "project name", description = "project 
 
 }
 \if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-project_properties_set"></a>}}
-\if{latex}{\out{\hypertarget{method-project_properties_set}{}}}
+\if{html}{\out{<a id="method-Arvados-project_properties_set"></a>}}
+\if{latex}{\out{\hypertarget{method-Arvados-project_properties_set}{}}}
 \subsection{Method \code{project_properties_set()}}{
 project_properties_set is a method defined in Arvados class that enables setting properties. Allows to set or overwrite the properties. In case there are set already it overwrites them.
 \subsection{Usage}{
@@ -411,8 +473,10 @@ project_properties_set is a method defined in Arvados class that enables setting
 }
 \subsection{Examples}{
 \if{html}{\out{<div class="r example copy">}}
-\preformatted{Properties <- list() # should contain a list of new properties to be added
+\preformatted{\dontrun{
+Properties <- list() # should contain a list of new properties to be added
 arv$project_properties_set(Properties, uuid)
+}
 }
 \if{html}{\out{</div>}}
 
@@ -420,8 +484,8 @@ arv$project_properties_set(Properties, uuid)
 
 }
 \if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-project_properties_append"></a>}}
-\if{latex}{\out{\hypertarget{method-project_properties_append}{}}}
+\if{html}{\out{<a id="method-Arvados-project_properties_append"></a>}}
+\if{latex}{\out{\hypertarget{method-Arvados-project_properties_append}{}}}
 \subsection{Method \code{project_properties_append()}}{
 project_properties_append is a method defined in Arvados class that enables appending properties. Allows to add new properties.
 \subsection{Usage}{
@@ -431,16 +495,18 @@ project_properties_append is a method defined in Arvados class that enables appe
 \subsection{Arguments}{
 \if{html}{\out{<div class="arguments">}}
 \describe{
-\item{\code{uuid}}{The UUID of a project or a file.}
+\item{\code{properties}}{List of new properties.}
 
-\item{\code{listOfNewProperties}}{List of new properties.}
+\item{\code{uuid}}{The UUID of a project or a file.}
 }
 \if{html}{\out{</div>}}
 }
 \subsection{Examples}{
 \if{html}{\out{<div class="r example copy">}}
-\preformatted{newProperties <- list() # should contain a list of new properties to be added
+\preformatted{\dontrun{
+newProperties <- list() # should contain a list of new properties to be added
 arv$project_properties_append(properties = newProperties, uuid)
+}
 }
 \if{html}{\out{</div>}}
 
@@ -448,8 +514,8 @@ arv$project_properties_append(properties = newProperties, uuid)
 
 }
 \if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-project_properties_get"></a>}}
-\if{latex}{\out{\hypertarget{method-project_properties_get}{}}}
+\if{html}{\out{<a id="method-Arvados-project_properties_get"></a>}}
+\if{latex}{\out{\hypertarget{method-Arvados-project_properties_get}{}}}
 \subsection{Method \code{project_properties_get()}}{
 project_properties_get is a method defined in Arvados class that returns properties.
 \subsection{Usage}{
@@ -465,7 +531,9 @@ project_properties_get is a method defined in Arvados class that returns propert
 }
 \subsection{Examples}{
 \if{html}{\out{<div class="r example copy">}}
-\preformatted{arv$project_properties_get(projectUUID)
+\preformatted{\dontrun{
+arv$project_properties_get(projectUUID)
+}
 }
 \if{html}{\out{</div>}}
 
@@ -473,8 +541,8 @@ project_properties_get is a method defined in Arvados class that returns propert
 
 }
 \if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-project_properties_delete"></a>}}
-\if{latex}{\out{\hypertarget{method-project_properties_delete}{}}}
+\if{html}{\out{<a id="method-Arvados-project_properties_delete"></a>}}
+\if{latex}{\out{\hypertarget{method-Arvados-project_properties_delete}{}}}
 \subsection{Method \code{project_properties_delete()}}{
 project_properties_delete is a method defined in Arvados class that deletes list of properties.
 \subsection{Usage}{
@@ -492,8 +560,10 @@ project_properties_delete is a method defined in Arvados class that deletes list
 }
 \subsection{Examples}{
 \if{html}{\out{<div class="r example copy">}}
-\preformatted{Properties <- list() # should contain a list of new properties to be added
+\preformatted{\dontrun{
+Properties <- list() # should contain a list of new properties to be added
 arv$project_properties_delete(Properties,  projectUUID)
+}
 }
 \if{html}{\out{</div>}}
 
@@ -501,8 +571,8 @@ arv$project_properties_delete(Properties,  projectUUID)
 
 }
 \if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-project_update"></a>}}
-\if{latex}{\out{\hypertarget{method-project_update}{}}}
+\if{html}{\out{<a id="method-Arvados-project_update"></a>}}
+\if{latex}{\out{\hypertarget{method-Arvados-project_update}{}}}
 \subsection{Method \code{project_update()}}{
 project_update enables updating project. New name, description and properties may be given.
 \subsection{Usage}{
@@ -520,8 +590,10 @@ project_update enables updating project. New name, description and properties ma
 }
 \subsection{Examples}{
 \if{html}{\out{<div class="r example copy">}}
-\preformatted{newProperties <- list() # should contain a list of new properties to be added
+\preformatted{\dontrun{
+newProperties <- list() # should contain a list of new properties to be added
 arv$project_update(name = "new project name", properties = newProperties, uuid = projectUUID)
+}
 }
 \if{html}{\out{</div>}}
 
@@ -529,8 +601,8 @@ arv$project_update(name = "new project name", properties = newProperties, uuid =
 
 }
 \if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-project_list"></a>}}
-\if{latex}{\out{\hypertarget{method-project_list}{}}}
+\if{html}{\out{<a id="method-Arvados-project_list"></a>}}
+\if{latex}{\out{\hypertarget{method-Arvados-project_list}{}}}
 \subsection{Method \code{project_list()}}{
 project_list enables listing project by its name, uuid, properties, permissions.
 \subsection{Usage}{
@@ -560,7 +632,9 @@ project_list enables listing project by its name, uuid, properties, permissions.
 }
 \subsection{Examples}{
 \if{html}{\out{<div class="r example copy">}}
-\preformatted{listOfprojects <- arv$project_list(list(list("owner_uuid", "=", projectUUID))) # Sample query which show projects within the project of a given UUID
+\preformatted{\dontrun{
+listOfprojects <- arv$project_list(list(list("owner_uuid", "=", projectUUID))) # Sample query which show projects within the project of a given UUID
+}
 }
 \if{html}{\out{</div>}}
 
@@ -568,8 +642,8 @@ project_list enables listing project by its name, uuid, properties, permissions.
 
 }
 \if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-project_delete"></a>}}
-\if{latex}{\out{\hypertarget{method-project_delete}{}}}
+\if{html}{\out{<a id="method-Arvados-project_delete"></a>}}
+\if{latex}{\out{\hypertarget{method-Arvados-project_delete}{}}}
 \subsection{Method \code{project_delete()}}{
 project_delete trashes project of a given uuid. It can be restored from trash or deleted permanently.
 \subsection{Usage}{
@@ -583,10 +657,20 @@ project_delete trashes project of a given uuid. It can be restored from trash or
 }
 \if{html}{\out{</div>}}
 }
+\subsection{Examples}{
+\if{html}{\out{<div class="r example copy">}}
+\preformatted{\dontrun{
+arv$project_delete(uuid = 'projectUUID')
+}
+}
+\if{html}{\out{</div>}}
+
+}
+
 }
 \if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-api_clients_get"></a>}}
-\if{latex}{\out{\hypertarget{method-api_clients_get}{}}}
+\if{html}{\out{<a id="method-Arvados-api_clients_get"></a>}}
+\if{latex}{\out{\hypertarget{method-Arvados-api_clients_get}{}}}
 \subsection{Method \code{api_clients_get()}}{
 api_clients_get is a method defined in Arvados class.
 \subsection{Usage}{
@@ -602,8 +686,8 @@ api_clients_get is a method defined in Arvados class.
 }
 }
 \if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-api_clients_create"></a>}}
-\if{latex}{\out{\hypertarget{method-api_clients_create}{}}}
+\if{html}{\out{<a id="method-Arvados-api_clients_create"></a>}}
+\if{latex}{\out{\hypertarget{method-Arvados-api_clients_create}{}}}
 \subsection{Method \code{api_clients_create()}}{
 api_clients_create is a method defined in Arvados class.
 \subsection{Usage}{
@@ -627,8 +711,8 @@ api_clients_create is a method defined in Arvados class.
 }
 }
 \if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-api_clients_update"></a>}}
-\if{latex}{\out{\hypertarget{method-api_clients_update}{}}}
+\if{html}{\out{<a id="method-Arvados-api_clients_update"></a>}}
+\if{latex}{\out{\hypertarget{method-Arvados-api_clients_update}{}}}
 \subsection{Method \code{api_clients_update()}}{
 api_clients_update is a method defined in Arvados class.
 \subsection{Usage}{
@@ -646,8 +730,8 @@ api_clients_update is a method defined in Arvados class.
 }
 }
 \if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-api_clients_delete"></a>}}
-\if{latex}{\out{\hypertarget{method-api_clients_delete}{}}}
+\if{html}{\out{<a id="method-Arvados-api_clients_delete"></a>}}
+\if{latex}{\out{\hypertarget{method-Arvados-api_clients_delete}{}}}
 \subsection{Method \code{api_clients_delete()}}{
 api_clients_delete is a method defined in Arvados class.
 \subsection{Usage}{
@@ -663,8 +747,8 @@ api_clients_delete is a method defined in Arvados class.
 }
 }
 \if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-api_clients_list"></a>}}
-\if{latex}{\out{\hypertarget{method-api_clients_list}{}}}
+\if{html}{\out{<a id="method-Arvados-api_clients_list"></a>}}
+\if{latex}{\out{\hypertarget{method-Arvados-api_clients_list}{}}}
 \subsection{Method \code{api_clients_list()}}{
 api_clients_list is a method defined in Arvados class.
 \subsection{Usage}{
@@ -693,8 +777,8 @@ api_clients_list is a method defined in Arvados class.
 }
 }
 \if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-api_client_authorizations_get"></a>}}
-\if{latex}{\out{\hypertarget{method-api_client_authorizations_get}{}}}
+\if{html}{\out{<a id="method-Arvados-api_client_authorizations_get"></a>}}
+\if{latex}{\out{\hypertarget{method-Arvados-api_client_authorizations_get}{}}}
 \subsection{Method \code{api_client_authorizations_get()}}{
 api_client_authorizations_get is a method defined in Arvados class.
 \subsection{Usage}{
@@ -710,8 +794,8 @@ api_client_authorizations_get is a method defined in Arvados class.
 }
 }
 \if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-api_client_authorizations_create"></a>}}
-\if{latex}{\out{\hypertarget{method-api_client_authorizations_create}{}}}
+\if{html}{\out{<a id="method-Arvados-api_client_authorizations_create"></a>}}
+\if{latex}{\out{\hypertarget{method-Arvados-api_client_authorizations_create}{}}}
 \subsection{Method \code{api_client_authorizations_create()}}{
 api_client_authorizations_create is a method defined in Arvados class.
 \subsection{Usage}{
@@ -735,8 +819,8 @@ api_client_authorizations_create is a method defined in Arvados class.
 }
 }
 \if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-api_client_authorizations_update"></a>}}
-\if{latex}{\out{\hypertarget{method-api_client_authorizations_update}{}}}
+\if{html}{\out{<a id="method-Arvados-api_client_authorizations_update"></a>}}
+\if{latex}{\out{\hypertarget{method-Arvados-api_client_authorizations_update}{}}}
 \subsection{Method \code{api_client_authorizations_update()}}{
 api_client_authorizations_update is a method defined in Arvados class.
 \subsection{Usage}{
@@ -754,8 +838,8 @@ api_client_authorizations_update is a method defined in Arvados class.
 }
 }
 \if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-api_client_authorizations_delete"></a>}}
-\if{latex}{\out{\hypertarget{method-api_client_authorizations_delete}{}}}
+\if{html}{\out{<a id="method-Arvados-api_client_authorizations_delete"></a>}}
+\if{latex}{\out{\hypertarget{method-Arvados-api_client_authorizations_delete}{}}}
 \subsection{Method \code{api_client_authorizations_delete()}}{
 api_client_authorizations_delete is a method defined in Arvados class.
 \subsection{Usage}{
@@ -771,8 +855,8 @@ api_client_authorizations_delete is a method defined in Arvados class.
 }
 }
 \if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-api_client_authorizations_create_system_auth"></a>}}
-\if{latex}{\out{\hypertarget{method-api_client_authorizations_create_system_auth}{}}}
+\if{html}{\out{<a id="method-Arvados-api_client_authorizations_create_system_auth"></a>}}
+\if{latex}{\out{\hypertarget{method-Arvados-api_client_authorizations_create_system_auth}{}}}
 \subsection{Method \code{api_client_authorizations_create_system_auth()}}{
 api_client_authorizations_create_system_auth is a method defined in Arvados class.
 \subsection{Usage}{
@@ -784,8 +868,8 @@ api_client_authorizations_create_system_auth is a method defined in Arvados clas
 
 }
 \if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-api_client_authorizations_current"></a>}}
-\if{latex}{\out{\hypertarget{method-api_client_authorizations_current}{}}}
+\if{html}{\out{<a id="method-Arvados-api_client_authorizations_current"></a>}}
+\if{latex}{\out{\hypertarget{method-Arvados-api_client_authorizations_current}{}}}
 \subsection{Method \code{api_client_authorizations_current()}}{
 api_client_authorizations_current is a method defined in Arvados class.
 \subsection{Usage}{
@@ -794,8 +878,8 @@ api_client_authorizations_current is a method defined in Arvados class.
 
 }
 \if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-api_client_authorizations_list"></a>}}
-\if{latex}{\out{\hypertarget{method-api_client_authorizations_list}{}}}
+\if{html}{\out{<a id="method-Arvados-api_client_authorizations_list"></a>}}
+\if{latex}{\out{\hypertarget{method-Arvados-api_client_authorizations_list}{}}}
 \subsection{Method \code{api_client_authorizations_list()}}{
 api_client_authorizations_list is a method defined in Arvados class.
 \subsection{Usage}{
@@ -824,8 +908,8 @@ api_client_authorizations_list is a method defined in Arvados class.
 }
 }
 \if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-authorized_keys_get"></a>}}
-\if{latex}{\out{\hypertarget{method-authorized_keys_get}{}}}
+\if{html}{\out{<a id="method-Arvados-authorized_keys_get"></a>}}
+\if{latex}{\out{\hypertarget{method-Arvados-authorized_keys_get}{}}}
 \subsection{Method \code{authorized_keys_get()}}{
 authorized_keys_get is a method defined in Arvados class.
 \subsection{Usage}{
@@ -841,8 +925,8 @@ authorized_keys_get is a method defined in Arvados class.
 }
 }
 \if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-authorized_keys_create"></a>}}
-\if{latex}{\out{\hypertarget{method-authorized_keys_create}{}}}
+\if{html}{\out{<a id="method-Arvados-authorized_keys_create"></a>}}
+\if{latex}{\out{\hypertarget{method-Arvados-authorized_keys_create}{}}}
 \subsection{Method \code{authorized_keys_create()}}{
 authorized_keys_create is a method defined in Arvados class.
 \subsection{Usage}{
@@ -866,8 +950,8 @@ authorized_keys_create is a method defined in Arvados class.
 }
 }
 \if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-authorized_keys_update"></a>}}
-\if{latex}{\out{\hypertarget{method-authorized_keys_update}{}}}
+\if{html}{\out{<a id="method-Arvados-authorized_keys_update"></a>}}
+\if{latex}{\out{\hypertarget{method-Arvados-authorized_keys_update}{}}}
 \subsection{Method \code{authorized_keys_update()}}{
 authorized_keys_update is a method defined in Arvados class.
 \subsection{Usage}{
@@ -885,8 +969,8 @@ authorized_keys_update is a method defined in Arvados class.
 }
 }
 \if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-authorized_keys_delete"></a>}}
-\if{latex}{\out{\hypertarget{method-authorized_keys_delete}{}}}
+\if{html}{\out{<a id="method-Arvados-authorized_keys_delete"></a>}}
+\if{latex}{\out{\hypertarget{method-Arvados-authorized_keys_delete}{}}}
 \subsection{Method \code{authorized_keys_delete()}}{
 authorized_keys_delete is a method defined in Arvados class.
 \subsection{Usage}{
@@ -902,8 +986,8 @@ authorized_keys_delete is a method defined in Arvados class.
 }
 }
 \if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-authorized_keys_list"></a>}}
-\if{latex}{\out{\hypertarget{method-authorized_keys_list}{}}}
+\if{html}{\out{<a id="method-Arvados-authorized_keys_list"></a>}}
+\if{latex}{\out{\hypertarget{method-Arvados-authorized_keys_list}{}}}
 \subsection{Method \code{authorized_keys_list()}}{
 authorized_keys_list is a method defined in Arvados class.
 \subsection{Usage}{
@@ -932,8 +1016,8 @@ authorized_keys_list is a method defined in Arvados class.
 }
 }
 \if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-collections_get"></a>}}
-\if{latex}{\out{\hypertarget{method-collections_get}{}}}
+\if{html}{\out{<a id="method-Arvados-collections_get"></a>}}
+\if{latex}{\out{\hypertarget{method-Arvados-collections_get}{}}}
 \subsection{Method \code{collections_get()}}{
 collections_get is a method defined in Arvados class.
 \subsection{Usage}{
@@ -943,15 +1027,24 @@ collections_get is a method defined in Arvados class.
 \subsection{Arguments}{
 \if{html}{\out{<div class="arguments">}}
 \describe{
-\item{\code{uuid}}{The UUID of the Collection in question.
-collection <- arv$collections_get(uuid = collectionUUID)}
+\item{\code{uuid}}{The UUID of the Collection in question.}
 }
 \if{html}{\out{</div>}}
 }
+\subsection{Examples}{
+\if{html}{\out{<div class="r example copy">}}
+\preformatted{\dontrun{
+collection <- arv$collections_get(uuid = collectionUUID)
+}
+}
+\if{html}{\out{</div>}}
+
+}
+
 }
 \if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-collections_create"></a>}}
-\if{latex}{\out{\hypertarget{method-collections_create}{}}}
+\if{html}{\out{<a id="method-Arvados-collections_create"></a>}}
+\if{latex}{\out{\hypertarget{method-Arvados-collections_create}{}}}
 \subsection{Method \code{collections_create()}}{
 collections_create is a method defined in Arvados class that enables collections creation.
 \subsection{Usage}{
@@ -984,8 +1077,10 @@ collections_create is a method defined in Arvados class that enables collections
 }
 \subsection{Examples}{
 \if{html}{\out{<div class="r example copy">}}
-\preformatted{Properties <- list() # should contain a list of new properties to be added
+\preformatted{\dontrun{
+Properties <- list() # should contain a list of new properties to be added
 arv$collections_create(name = "collectionTitle", description = "collectionDescription", ownerUUID = "collectionOwner", properties = Properties)
+}
 }
 \if{html}{\out{</div>}}
 
@@ -993,8 +1088,8 @@ arv$collections_create(name = "collectionTitle", description = "collectionDescri
 
 }
 \if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-collections_update"></a>}}
-\if{latex}{\out{\hypertarget{method-collections_update}{}}}
+\if{html}{\out{<a id="method-Arvados-collections_update"></a>}}
+\if{latex}{\out{\hypertarget{method-Arvados-collections_update}{}}}
 \subsection{Method \code{collections_update()}}{
 collections_update is a method defined in Arvados class.
 \subsection{Usage}{
@@ -1024,7 +1119,9 @@ collections_update is a method defined in Arvados class.
 }
 \subsection{Examples}{
 \if{html}{\out{<div class="r example copy">}}
-\preformatted{collection <- arv$collections_create(name = "newCollectionTitle", description = "newCollectionDescription", ownerUUID = "collectionOwner", properties = NULL)
+\preformatted{\dontrun{
+collection <- arv$collections_update(name = "newCollectionTitle", description = "newCollectionDescription", ownerUUID = "collectionOwner", properties = NULL, uuid = "collectionUUID")
+}
 }
 \if{html}{\out{</div>}}
 
@@ -1032,8 +1129,8 @@ collections_update is a method defined in Arvados class.
 
 }
 \if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-collections_delete"></a>}}
-\if{latex}{\out{\hypertarget{method-collections_delete}{}}}
+\if{html}{\out{<a id="method-Arvados-collections_delete"></a>}}
+\if{latex}{\out{\hypertarget{method-Arvados-collections_delete}{}}}
 \subsection{Method \code{collections_delete()}}{
 collections_delete is a method defined in Arvados class.
 \subsection{Usage}{
@@ -1049,7 +1146,9 @@ collections_delete is a method defined in Arvados class.
 }
 \subsection{Examples}{
 \if{html}{\out{<div class="r example copy">}}
-\preformatted{arv$collection_delete(collectionUUID)
+\preformatted{\dontrun{
+arv$collection_delete(collectionUUID)
+}
 }
 \if{html}{\out{</div>}}
 
@@ -1057,8 +1156,8 @@ collections_delete is a method defined in Arvados class.
 
 }
 \if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-collections_provenance"></a>}}
-\if{latex}{\out{\hypertarget{method-collections_provenance}{}}}
+\if{html}{\out{<a id="method-Arvados-collections_provenance"></a>}}
+\if{latex}{\out{\hypertarget{method-Arvados-collections_provenance}{}}}
 \subsection{Method \code{collections_provenance()}}{
 collections_provenance is a method defined in Arvados class, it returns the collection by uuid.
 \subsection{Usage}{
@@ -1074,7 +1173,9 @@ collections_provenance is a method defined in Arvados class, it returns the coll
 }
 \subsection{Examples}{
 \if{html}{\out{<div class="r example copy">}}
-\preformatted{collection <- arv$collections_provenance(collectionUUID)
+\preformatted{\dontrun{
+collection <- arv$collections_provenance(collectionUUID)
+}
 }
 \if{html}{\out{</div>}}
 
@@ -1082,8 +1183,8 @@ collections_provenance is a method defined in Arvados class, it returns the coll
 
 }
 \if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-collections_used_by"></a>}}
-\if{latex}{\out{\hypertarget{method-collections_used_by}{}}}
+\if{html}{\out{<a id="method-Arvados-collections_used_by"></a>}}
+\if{latex}{\out{\hypertarget{method-Arvados-collections_used_by}{}}}
 \subsection{Method \code{collections_used_by()}}{
 collections_used_by is a method defined in Arvados class, it returns collection by portable_data_hash.
 \subsection{Usage}{
@@ -1099,8 +1200,8 @@ collections_used_by is a method defined in Arvados class, it returns collection 
 }
 }
 \if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-collections_trash"></a>}}
-\if{latex}{\out{\hypertarget{method-collections_trash}{}}}
+\if{html}{\out{<a id="method-Arvados-collections_trash"></a>}}
+\if{latex}{\out{\hypertarget{method-Arvados-collections_trash}{}}}
 \subsection{Method \code{collections_trash()}}{
 collections_trash is a method defined in Arvados class, it moves collection to trash.
 \subsection{Usage}{
@@ -1116,7 +1217,9 @@ collections_trash is a method defined in Arvados class, it moves collection to t
 }
 \subsection{Examples}{
 \if{html}{\out{<div class="r example copy">}}
-\preformatted{arv$collections_trash(collectionUUID)
+\preformatted{\dontrun{
+arv$collections_trash(collectionUUID)
+}
 }
 \if{html}{\out{</div>}}
 
@@ -1124,8 +1227,8 @@ collections_trash is a method defined in Arvados class, it moves collection to t
 
 }
 \if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-collections_untrash"></a>}}
-\if{latex}{\out{\hypertarget{method-collections_untrash}{}}}
+\if{html}{\out{<a id="method-Arvados-collections_untrash"></a>}}
+\if{latex}{\out{\hypertarget{method-Arvados-collections_untrash}{}}}
 \subsection{Method \code{collections_untrash()}}{
 collections_untrash is a method defined in Arvados class, it moves collection from trash to project.
 \subsection{Usage}{
@@ -1141,7 +1244,9 @@ collections_untrash is a method defined in Arvados class, it moves collection fr
 }
 \subsection{Examples}{
 \if{html}{\out{<div class="r example copy">}}
-\preformatted{arv$collections_untrash(collectionUUID)
+\preformatted{\dontrun{
+arv$collections_untrash(collectionUUID)
+}
 }
 \if{html}{\out{</div>}}
 
@@ -1149,8 +1254,8 @@ collections_untrash is a method defined in Arvados class, it moves collection fr
 
 }
 \if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-collections_list"></a>}}
-\if{latex}{\out{\hypertarget{method-collections_list}{}}}
+\if{html}{\out{<a id="method-Arvados-collections_list"></a>}}
+\if{latex}{\out{\hypertarget{method-Arvados-collections_list}{}}}
 \subsection{Method \code{collections_list()}}{
 collections_list is a method defined in Arvados class.
 \subsection{Usage}{
@@ -1185,7 +1290,9 @@ collections_list is a method defined in Arvados class.
 }
 \subsection{Examples}{
 \if{html}{\out{<div class="r example copy">}}
-\preformatted{collectionList <- arv$collections.list(list(list("name", "=", "Example")))
+\preformatted{\dontrun{
+collectionList <- arv$collections_list(list(list("name", "=", "Example")))
+}
 }
 \if{html}{\out{</div>}}
 
@@ -1193,8 +1300,8 @@ collections_list is a method defined in Arvados class.
 
 }
 \if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-containers_get"></a>}}
-\if{latex}{\out{\hypertarget{method-containers_get}{}}}
+\if{html}{\out{<a id="method-Arvados-containers_get"></a>}}
+\if{latex}{\out{\hypertarget{method-Arvados-containers_get}{}}}
 \subsection{Method \code{containers_get()}}{
 containers_get is a method defined in Arvados class.
 \subsection{Usage}{
@@ -1210,8 +1317,8 @@ containers_get is a method defined in Arvados class.
 }
 }
 \if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-containers_create"></a>}}
-\if{latex}{\out{\hypertarget{method-containers_create}{}}}
+\if{html}{\out{<a id="method-Arvados-containers_create"></a>}}
+\if{latex}{\out{\hypertarget{method-Arvados-containers_create}{}}}
 \subsection{Method \code{containers_create()}}{
 containers_create is a method defined in Arvados class.
 \subsection{Usage}{
@@ -1235,8 +1342,8 @@ containers_create is a method defined in Arvados class.
 }
 }
 \if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-containers_update"></a>}}
-\if{latex}{\out{\hypertarget{method-containers_update}{}}}
+\if{html}{\out{<a id="method-Arvados-containers_update"></a>}}
+\if{latex}{\out{\hypertarget{method-Arvados-containers_update}{}}}
 \subsection{Method \code{containers_update()}}{
 containers_update is a method defined in Arvados class.
 \subsection{Usage}{
@@ -1254,8 +1361,8 @@ containers_update is a method defined in Arvados class.
 }
 }
 \if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-containers_delete"></a>}}
-\if{latex}{\out{\hypertarget{method-containers_delete}{}}}
+\if{html}{\out{<a id="method-Arvados-containers_delete"></a>}}
+\if{latex}{\out{\hypertarget{method-Arvados-containers_delete}{}}}
 \subsection{Method \code{containers_delete()}}{
 containers_delete is a method defined in Arvados class.
 \subsection{Usage}{
@@ -1271,8 +1378,8 @@ containers_delete is a method defined in Arvados class.
 }
 }
 \if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-containers_auth"></a>}}
-\if{latex}{\out{\hypertarget{method-containers_auth}{}}}
+\if{html}{\out{<a id="method-Arvados-containers_auth"></a>}}
+\if{latex}{\out{\hypertarget{method-Arvados-containers_auth}{}}}
 \subsection{Method \code{containers_auth()}}{
 containers_auth is a method defined in Arvados class.
 \subsection{Usage}{
@@ -1288,8 +1395,8 @@ containers_auth is a method defined in Arvados class.
 }
 }
 \if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-containers_lock"></a>}}
-\if{latex}{\out{\hypertarget{method-containers_lock}{}}}
+\if{html}{\out{<a id="method-Arvados-containers_lock"></a>}}
+\if{latex}{\out{\hypertarget{method-Arvados-containers_lock}{}}}
 \subsection{Method \code{containers_lock()}}{
 containers_lock is a method defined in Arvados class.
 \subsection{Usage}{
@@ -1305,8 +1412,8 @@ containers_lock is a method defined in Arvados class.
 }
 }
 \if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-containers_unlock"></a>}}
-\if{latex}{\out{\hypertarget{method-containers_unlock}{}}}
+\if{html}{\out{<a id="method-Arvados-containers_unlock"></a>}}
+\if{latex}{\out{\hypertarget{method-Arvados-containers_unlock}{}}}
 \subsection{Method \code{containers_unlock()}}{
 containers_unlock is a method defined in Arvados class.
 \subsection{Usage}{
@@ -1322,8 +1429,8 @@ containers_unlock is a method defined in Arvados class.
 }
 }
 \if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-containers_secret_mounts"></a>}}
-\if{latex}{\out{\hypertarget{method-containers_secret_mounts}{}}}
+\if{html}{\out{<a id="method-Arvados-containers_secret_mounts"></a>}}
+\if{latex}{\out{\hypertarget{method-Arvados-containers_secret_mounts}{}}}
 \subsection{Method \code{containers_secret_mounts()}}{
 containers_secret_mounts is a method defined in Arvados class.
 \subsection{Usage}{
@@ -1339,8 +1446,8 @@ containers_secret_mounts is a method defined in Arvados class.
 }
 }
 \if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-containers_current"></a>}}
-\if{latex}{\out{\hypertarget{method-containers_current}{}}}
+\if{html}{\out{<a id="method-Arvados-containers_current"></a>}}
+\if{latex}{\out{\hypertarget{method-Arvados-containers_current}{}}}
 \subsection{Method \code{containers_current()}}{
 containers_current is a method defined in Arvados class.
 \subsection{Usage}{
@@ -1349,8 +1456,8 @@ containers_current is a method defined in Arvados class.
 
 }
 \if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-containers_list"></a>}}
-\if{latex}{\out{\hypertarget{method-containers_list}{}}}
+\if{html}{\out{<a id="method-Arvados-containers_list"></a>}}
+\if{latex}{\out{\hypertarget{method-Arvados-containers_list}{}}}
 \subsection{Method \code{containers_list()}}{
 containers_list is a method defined in Arvados class.
 \subsection{Usage}{
@@ -1379,8 +1486,8 @@ containers_list is a method defined in Arvados class.
 }
 }
 \if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-container_requests_get"></a>}}
-\if{latex}{\out{\hypertarget{method-container_requests_get}{}}}
+\if{html}{\out{<a id="method-Arvados-container_requests_get"></a>}}
+\if{latex}{\out{\hypertarget{method-Arvados-container_requests_get}{}}}
 \subsection{Method \code{container_requests_get()}}{
 container_requests_get is a method defined in Arvados class.
 \subsection{Usage}{
@@ -1396,8 +1503,8 @@ container_requests_get is a method defined in Arvados class.
 }
 }
 \if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-container_requests_create"></a>}}
-\if{latex}{\out{\hypertarget{method-container_requests_create}{}}}
+\if{html}{\out{<a id="method-Arvados-container_requests_create"></a>}}
+\if{latex}{\out{\hypertarget{method-Arvados-container_requests_create}{}}}
 \subsection{Method \code{container_requests_create()}}{
 container_requests_create is a method defined in Arvados class.
 \subsection{Usage}{
@@ -1421,8 +1528,8 @@ container_requests_create is a method defined in Arvados class.
 }
 }
 \if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-container_requests_update"></a>}}
-\if{latex}{\out{\hypertarget{method-container_requests_update}{}}}
+\if{html}{\out{<a id="method-Arvados-container_requests_update"></a>}}
+\if{latex}{\out{\hypertarget{method-Arvados-container_requests_update}{}}}
 \subsection{Method \code{container_requests_update()}}{
 container_requests_update is a method defined in Arvados class.
 \subsection{Usage}{
@@ -1440,8 +1547,8 @@ container_requests_update is a method defined in Arvados class.
 }
 }
 \if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-container_requests_delete"></a>}}
-\if{latex}{\out{\hypertarget{method-container_requests_delete}{}}}
+\if{html}{\out{<a id="method-Arvados-container_requests_delete"></a>}}
+\if{latex}{\out{\hypertarget{method-Arvados-container_requests_delete}{}}}
 \subsection{Method \code{container_requests_delete()}}{
 container_requests_delete is a method defined in Arvados class.
 \subsection{Usage}{
@@ -1457,8 +1564,8 @@ container_requests_delete is a method defined in Arvados class.
 }
 }
 \if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-container_requests_list"></a>}}
-\if{latex}{\out{\hypertarget{method-container_requests_list}{}}}
+\if{html}{\out{<a id="method-Arvados-container_requests_list"></a>}}
+\if{latex}{\out{\hypertarget{method-Arvados-container_requests_list}{}}}
 \subsection{Method \code{container_requests_list()}}{
 container_requests_list is a method defined in Arvados class.
 \subsection{Usage}{
@@ -1490,8 +1597,8 @@ container_requests_list is a method defined in Arvados class.
 }
 }
 \if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-groups_get"></a>}}
-\if{latex}{\out{\hypertarget{method-groups_get}{}}}
+\if{html}{\out{<a id="method-Arvados-groups_get"></a>}}
+\if{latex}{\out{\hypertarget{method-Arvados-groups_get}{}}}
 \subsection{Method \code{groups_get()}}{
 groups_get is a method defined in Arvados class.
 \subsection{Usage}{
@@ -1507,8 +1614,8 @@ groups_get is a method defined in Arvados class.
 }
 }
 \if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-groups_create"></a>}}
-\if{latex}{\out{\hypertarget{method-groups_create}{}}}
+\if{html}{\out{<a id="method-Arvados-groups_create"></a>}}
+\if{latex}{\out{\hypertarget{method-Arvados-groups_create}{}}}
 \subsection{Method \code{groups_create()}}{
 groups_create is a method defined in Arvados class that supports project creation.
 \subsection{Usage}{
@@ -1535,8 +1642,8 @@ groups_create is a method defined in Arvados class that supports project creatio
 }
 }
 \if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-groups_update"></a>}}
-\if{latex}{\out{\hypertarget{method-groups_update}{}}}
+\if{html}{\out{<a id="method-Arvados-groups_update"></a>}}
+\if{latex}{\out{\hypertarget{method-Arvados-groups_update}{}}}
 \subsection{Method \code{groups_update()}}{
 groups_update is a method defined in Arvados class.
 \subsection{Usage}{
@@ -1556,8 +1663,8 @@ groups_update is a method defined in Arvados class.
 }
 }
 \if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-groups_delete"></a>}}
-\if{latex}{\out{\hypertarget{method-groups_delete}{}}}
+\if{html}{\out{<a id="method-Arvados-groups_delete"></a>}}
+\if{latex}{\out{\hypertarget{method-Arvados-groups_delete}{}}}
 \subsection{Method \code{groups_delete()}}{
 groups_delete is a method defined in Arvados class.
 \subsection{Usage}{
@@ -1573,8 +1680,8 @@ groups_delete is a method defined in Arvados class.
 }
 }
 \if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-groups_contents"></a>}}
-\if{latex}{\out{\hypertarget{method-groups_contents}{}}}
+\if{html}{\out{<a id="method-Arvados-groups_contents"></a>}}
+\if{latex}{\out{\hypertarget{method-Arvados-groups_contents}{}}}
 \subsection{Method \code{groups_contents()}}{
 groups_contents is a method defined in Arvados class.
 \subsection{Usage}{
@@ -1612,8 +1719,8 @@ groups_contents is a method defined in Arvados class.
 }
 }
 \if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-groups_shared"></a>}}
-\if{latex}{\out{\hypertarget{method-groups_shared}{}}}
+\if{html}{\out{<a id="method-Arvados-groups_shared"></a>}}
+\if{latex}{\out{\hypertarget{method-Arvados-groups_shared}{}}}
 \subsection{Method \code{groups_shared()}}{
 groups_shared is a method defined in Arvados class.
 \subsection{Usage}{
@@ -1646,8 +1753,8 @@ groups_shared is a method defined in Arvados class.
 }
 }
 \if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-groups_trash"></a>}}
-\if{latex}{\out{\hypertarget{method-groups_trash}{}}}
+\if{html}{\out{<a id="method-Arvados-groups_trash"></a>}}
+\if{latex}{\out{\hypertarget{method-Arvados-groups_trash}{}}}
 \subsection{Method \code{groups_trash()}}{
 groups_trash is a method defined in Arvados class.
 \subsection{Usage}{
@@ -1663,8 +1770,8 @@ groups_trash is a method defined in Arvados class.
 }
 }
 \if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-groups_untrash"></a>}}
-\if{latex}{\out{\hypertarget{method-groups_untrash}{}}}
+\if{html}{\out{<a id="method-Arvados-groups_untrash"></a>}}
+\if{latex}{\out{\hypertarget{method-Arvados-groups_untrash}{}}}
 \subsection{Method \code{groups_untrash()}}{
 groups_untrash is a method defined in Arvados class.
 \subsection{Usage}{
@@ -1680,8 +1787,8 @@ groups_untrash is a method defined in Arvados class.
 }
 }
 \if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-groups_list"></a>}}
-\if{latex}{\out{\hypertarget{method-groups_list}{}}}
+\if{html}{\out{<a id="method-Arvados-groups_list"></a>}}
+\if{latex}{\out{\hypertarget{method-Arvados-groups_list}{}}}
 \subsection{Method \code{groups_list()}}{
 groups_list is a method defined in Arvados class.
 \subsection{Usage}{
@@ -1713,8 +1820,8 @@ groups_list is a method defined in Arvados class.
 }
 }
 \if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-keep_services_get"></a>}}
-\if{latex}{\out{\hypertarget{method-keep_services_get}{}}}
+\if{html}{\out{<a id="method-Arvados-keep_services_get"></a>}}
+\if{latex}{\out{\hypertarget{method-Arvados-keep_services_get}{}}}
 \subsection{Method \code{keep_services_get()}}{
 keep_services_get is a method defined in Arvados class.
 \subsection{Usage}{
@@ -1730,8 +1837,8 @@ keep_services_get is a method defined in Arvados class.
 }
 }
 \if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-keep_services_create"></a>}}
-\if{latex}{\out{\hypertarget{method-keep_services_create}{}}}
+\if{html}{\out{<a id="method-Arvados-keep_services_create"></a>}}
+\if{latex}{\out{\hypertarget{method-Arvados-keep_services_create}{}}}
 \subsection{Method \code{keep_services_create()}}{
 keep_services_create is a method defined in Arvados class.
 \subsection{Usage}{
@@ -1755,8 +1862,8 @@ keep_services_create is a method defined in Arvados class.
 }
 }
 \if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-keep_services_update"></a>}}
-\if{latex}{\out{\hypertarget{method-keep_services_update}{}}}
+\if{html}{\out{<a id="method-Arvados-keep_services_update"></a>}}
+\if{latex}{\out{\hypertarget{method-Arvados-keep_services_update}{}}}
 \subsection{Method \code{keep_services_update()}}{
 keep_services_update is a method defined in Arvados class.
 \subsection{Usage}{
@@ -1774,8 +1881,8 @@ keep_services_update is a method defined in Arvados class.
 }
 }
 \if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-keep_services_delete"></a>}}
-\if{latex}{\out{\hypertarget{method-keep_services_delete}{}}}
+\if{html}{\out{<a id="method-Arvados-keep_services_delete"></a>}}
+\if{latex}{\out{\hypertarget{method-Arvados-keep_services_delete}{}}}
 \subsection{Method \code{keep_services_delete()}}{
 keep_services_delete is a method defined in Arvados class.
 \subsection{Usage}{
@@ -1791,8 +1898,8 @@ keep_services_delete is a method defined in Arvados class.
 }
 }
 \if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-keep_services_accessible"></a>}}
-\if{latex}{\out{\hypertarget{method-keep_services_accessible}{}}}
+\if{html}{\out{<a id="method-Arvados-keep_services_accessible"></a>}}
+\if{latex}{\out{\hypertarget{method-Arvados-keep_services_accessible}{}}}
 \subsection{Method \code{keep_services_accessible()}}{
 keep_services_accessible is a method defined in Arvados class.
 \subsection{Usage}{
@@ -1801,8 +1908,8 @@ keep_services_accessible is a method defined in Arvados class.
 
 }
 \if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-keep_services_list"></a>}}
-\if{latex}{\out{\hypertarget{method-keep_services_list}{}}}
+\if{html}{\out{<a id="method-Arvados-keep_services_list"></a>}}
+\if{latex}{\out{\hypertarget{method-Arvados-keep_services_list}{}}}
 \subsection{Method \code{keep_services_list()}}{
 keep_services_list is a method defined in Arvados class.
 \subsection{Usage}{
@@ -1831,8 +1938,8 @@ keep_services_list is a method defined in Arvados class.
 }
 }
 \if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-project_permission_give"></a>}}
-\if{latex}{\out{\hypertarget{method-project_permission_give}{}}}
+\if{html}{\out{<a id="method-Arvados-project_permission_give"></a>}}
+\if{latex}{\out{\hypertarget{method-Arvados-project_permission_give}{}}}
 \subsection{Method \code{project_permission_give()}}{
 project_permission_give is a method defined in Arvados class that enables sharing files with another users.
 \subsection{Usage}{
@@ -1852,7 +1959,9 @@ project_permission_give is a method defined in Arvados class that enables sharin
 }
 \subsection{Examples}{
 \if{html}{\out{<div class="r example copy">}}
-\preformatted{arv$project_permission_give(type = "can_read", uuid = objectUUID, user = userUUID)
+\preformatted{\dontrun{
+arv$project_permission_give(type = "can_read", uuid = objectUUID, user = userUUID)
+}
 }
 \if{html}{\out{</div>}}
 
@@ -1860,8 +1969,8 @@ project_permission_give is a method defined in Arvados class that enables sharin
 
 }
 \if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-project_permission_refuse"></a>}}
-\if{latex}{\out{\hypertarget{method-project_permission_refuse}{}}}
+\if{html}{\out{<a id="method-Arvados-project_permission_refuse"></a>}}
+\if{latex}{\out{\hypertarget{method-Arvados-project_permission_refuse}{}}}
 \subsection{Method \code{project_permission_refuse()}}{
 project_permission_refuse is a method defined in Arvados class that unables sharing files with another users.
 \subsection{Usage}{
@@ -1881,7 +1990,9 @@ project_permission_refuse is a method defined in Arvados class that unables shar
 }
 \subsection{Examples}{
 \if{html}{\out{<div class="r example copy">}}
-\preformatted{arv$project_permission_refuse(type = "can_read", uuid = objectUUID, user = userUUID)
+\preformatted{\dontrun{
+arv$project_permission_refuse(type = "can_read", uuid = objectUUID, user = userUUID)
+}
 }
 \if{html}{\out{</div>}}
 
@@ -1889,8 +2000,8 @@ project_permission_refuse is a method defined in Arvados class that unables shar
 
 }
 \if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-project_permission_update"></a>}}
-\if{latex}{\out{\hypertarget{method-project_permission_update}{}}}
+\if{html}{\out{<a id="method-Arvados-project_permission_update"></a>}}
+\if{latex}{\out{\hypertarget{method-Arvados-project_permission_update}{}}}
 \subsection{Method \code{project_permission_update()}}{
 project_permission_update is a method defined in Arvados class that enables updating permissions.
 \subsection{Usage}{
@@ -1912,7 +2023,9 @@ project_permission_update is a method defined in Arvados class that enables upda
 }
 \subsection{Examples}{
 \if{html}{\out{<div class="r example copy">}}
-\preformatted{arv$project_permission_update(typeOld = "can_read", typeNew = "can_write", uuid = objectUUID, user = userUUID)
+\preformatted{\dontrun{
+arv$project_permission_update(typeOld = "can_read", typeNew = "can_write", uuid = objectUUID, user = userUUID)
+}
 }
 \if{html}{\out{</div>}}
 
@@ -1920,8 +2033,8 @@ project_permission_update is a method defined in Arvados class that enables upda
 
 }
 \if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-project_permission_check"></a>}}
-\if{latex}{\out{\hypertarget{method-project_permission_check}{}}}
+\if{html}{\out{<a id="method-Arvados-project_permission_check"></a>}}
+\if{latex}{\out{\hypertarget{method-Arvados-project_permission_check}{}}}
 \subsection{Method \code{project_permission_check()}}{
 project_permission_check is a method defined in Arvados class that enables checking file permissions.
 \subsection{Usage}{
@@ -1941,7 +2054,9 @@ project_permission_check is a method defined in Arvados class that enables check
 }
 \subsection{Examples}{
 \if{html}{\out{<div class="r example copy">}}
-\preformatted{arv$project_permission_check(type = "can_read", uuid = objectUUID, user = userUUID)
+\preformatted{\dontrun{
+arv$project_permission_check(type = "can_read", uuid = objectUUID, user = userUUID)
+}
 }
 \if{html}{\out{</div>}}
 
@@ -1949,8 +2064,8 @@ project_permission_check is a method defined in Arvados class that enables check
 
 }
 \if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-links_get"></a>}}
-\if{latex}{\out{\hypertarget{method-links_get}{}}}
+\if{html}{\out{<a id="method-Arvados-links_get"></a>}}
+\if{latex}{\out{\hypertarget{method-Arvados-links_get}{}}}
 \subsection{Method \code{links_get()}}{
 links_get is a method defined in Arvados class.
 \subsection{Usage}{
@@ -1966,8 +2081,8 @@ links_get is a method defined in Arvados class.
 }
 }
 \if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-links_create"></a>}}
-\if{latex}{\out{\hypertarget{method-links_create}{}}}
+\if{html}{\out{<a id="method-Arvados-links_create"></a>}}
+\if{latex}{\out{\hypertarget{method-Arvados-links_create}{}}}
 \subsection{Method \code{links_create()}}{
 links_create is a method defined in Arvados class.
 \subsection{Usage}{
@@ -1987,8 +2102,8 @@ links_create is a method defined in Arvados class.
 }
 }
 \if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-links_update"></a>}}
-\if{latex}{\out{\hypertarget{method-links_update}{}}}
+\if{html}{\out{<a id="method-Arvados-links_update"></a>}}
+\if{latex}{\out{\hypertarget{method-Arvados-links_update}{}}}
 \subsection{Method \code{links_update()}}{
 links_update is a method defined in Arvados class.
 \subsection{Usage}{
@@ -2006,8 +2121,8 @@ links_update is a method defined in Arvados class.
 }
 }
 \if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-links_delete"></a>}}
-\if{latex}{\out{\hypertarget{method-links_delete}{}}}
+\if{html}{\out{<a id="method-Arvados-links_delete"></a>}}
+\if{latex}{\out{\hypertarget{method-Arvados-links_delete}{}}}
 \subsection{Method \code{links_delete()}}{
 links_delete is a method defined in Arvados class.
 \subsection{Usage}{
@@ -2023,8 +2138,8 @@ links_delete is a method defined in Arvados class.
 }
 }
 \if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-links_list"></a>}}
-\if{latex}{\out{\hypertarget{method-links_list}{}}}
+\if{html}{\out{<a id="method-Arvados-links_list"></a>}}
+\if{latex}{\out{\hypertarget{method-Arvados-links_list}{}}}
 \subsection{Method \code{links_list()}}{
 links_list is a method defined in Arvados class.
 \subsection{Usage}{
@@ -2053,8 +2168,8 @@ links_list is a method defined in Arvados class.
 }
 }
 \if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-links_get_permissions"></a>}}
-\if{latex}{\out{\hypertarget{method-links_get_permissions}{}}}
+\if{html}{\out{<a id="method-Arvados-links_get_permissions"></a>}}
+\if{latex}{\out{\hypertarget{method-Arvados-links_get_permissions}{}}}
 \subsection{Method \code{links_get_permissions()}}{
 links_get_permissions is a method defined in Arvados class.
 \subsection{Usage}{
@@ -2070,8 +2185,8 @@ links_get_permissions is a method defined in Arvados class.
 }
 }
 \if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-logs_get"></a>}}
-\if{latex}{\out{\hypertarget{method-logs_get}{}}}
+\if{html}{\out{<a id="method-Arvados-logs_get"></a>}}
+\if{latex}{\out{\hypertarget{method-Arvados-logs_get}{}}}
 \subsection{Method \code{logs_get()}}{
 logs_get is a method defined in Arvados class.
 \subsection{Usage}{
@@ -2087,8 +2202,8 @@ logs_get is a method defined in Arvados class.
 }
 }
 \if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-logs_create"></a>}}
-\if{latex}{\out{\hypertarget{method-logs_create}{}}}
+\if{html}{\out{<a id="method-Arvados-logs_create"></a>}}
+\if{latex}{\out{\hypertarget{method-Arvados-logs_create}{}}}
 \subsection{Method \code{logs_create()}}{
 logs_create is a method defined in Arvados class.
 \subsection{Usage}{
@@ -2108,8 +2223,8 @@ logs_create is a method defined in Arvados class.
 }
 }
 \if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-logs_update"></a>}}
-\if{latex}{\out{\hypertarget{method-logs_update}{}}}
+\if{html}{\out{<a id="method-Arvados-logs_update"></a>}}
+\if{latex}{\out{\hypertarget{method-Arvados-logs_update}{}}}
 \subsection{Method \code{logs_update()}}{
 logs_update is a method defined in Arvados class.
 \subsection{Usage}{
@@ -2127,8 +2242,8 @@ logs_update is a method defined in Arvados class.
 }
 }
 \if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-logs_delete"></a>}}
-\if{latex}{\out{\hypertarget{method-logs_delete}{}}}
+\if{html}{\out{<a id="method-Arvados-logs_delete"></a>}}
+\if{latex}{\out{\hypertarget{method-Arvados-logs_delete}{}}}
 \subsection{Method \code{logs_delete()}}{
 logs_delete is a method defined in Arvados class.
 \subsection{Usage}{
@@ -2144,8 +2259,8 @@ logs_delete is a method defined in Arvados class.
 }
 }
 \if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-logs_list"></a>}}
-\if{latex}{\out{\hypertarget{method-logs_list}{}}}
+\if{html}{\out{<a id="method-Arvados-logs_list"></a>}}
+\if{latex}{\out{\hypertarget{method-Arvados-logs_list}{}}}
 \subsection{Method \code{logs_list()}}{
 logs_list is a method defined in Arvados class.
 \subsection{Usage}{
@@ -2174,8 +2289,8 @@ logs_list is a method defined in Arvados class.
 }
 }
 \if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-users_get"></a>}}
-\if{latex}{\out{\hypertarget{method-users_get}{}}}
+\if{html}{\out{<a id="method-Arvados-users_get"></a>}}
+\if{latex}{\out{\hypertarget{method-Arvados-users_get}{}}}
 \subsection{Method \code{users_get()}}{
 users_get is a method defined in Arvados class.
 \subsection{Usage}{
@@ -2191,8 +2306,8 @@ users_get is a method defined in Arvados class.
 }
 }
 \if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-users_create"></a>}}
-\if{latex}{\out{\hypertarget{method-users_create}{}}}
+\if{html}{\out{<a id="method-Arvados-users_create"></a>}}
+\if{latex}{\out{\hypertarget{method-Arvados-users_create}{}}}
 \subsection{Method \code{users_create()}}{
 users_create is a method defined in Arvados class.
 \subsection{Usage}{
@@ -2212,8 +2327,8 @@ users_create is a method defined in Arvados class.
 }
 }
 \if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-users_update"></a>}}
-\if{latex}{\out{\hypertarget{method-users_update}{}}}
+\if{html}{\out{<a id="method-Arvados-users_update"></a>}}
+\if{latex}{\out{\hypertarget{method-Arvados-users_update}{}}}
 \subsection{Method \code{users_update()}}{
 users_update is a method defined in Arvados class.
 \subsection{Usage}{
@@ -2231,8 +2346,8 @@ users_update is a method defined in Arvados class.
 }
 }
 \if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-users_delete"></a>}}
-\if{latex}{\out{\hypertarget{method-users_delete}{}}}
+\if{html}{\out{<a id="method-Arvados-users_delete"></a>}}
+\if{latex}{\out{\hypertarget{method-Arvados-users_delete}{}}}
 \subsection{Method \code{users_delete()}}{
 users_delete is a method defined in Arvados class.
 \subsection{Usage}{
@@ -2248,8 +2363,8 @@ users_delete is a method defined in Arvados class.
 }
 }
 \if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-users_current"></a>}}
-\if{latex}{\out{\hypertarget{method-users_current}{}}}
+\if{html}{\out{<a id="method-Arvados-users_current"></a>}}
+\if{latex}{\out{\hypertarget{method-Arvados-users_current}{}}}
 \subsection{Method \code{users_current()}}{
 users_current is a method defined in Arvados class.
 \subsection{Usage}{
@@ -2258,8 +2373,8 @@ users_current is a method defined in Arvados class.
 
 }
 \if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-users_system"></a>}}
-\if{latex}{\out{\hypertarget{method-users_system}{}}}
+\if{html}{\out{<a id="method-Arvados-users_system"></a>}}
+\if{latex}{\out{\hypertarget{method-Arvados-users_system}{}}}
 \subsection{Method \code{users_system()}}{
 users_system is a method defined in Arvados class.
 \subsection{Usage}{
@@ -2268,8 +2383,8 @@ users_system is a method defined in Arvados class.
 
 }
 \if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-users_activate"></a>}}
-\if{latex}{\out{\hypertarget{method-users_activate}{}}}
+\if{html}{\out{<a id="method-Arvados-users_activate"></a>}}
+\if{latex}{\out{\hypertarget{method-Arvados-users_activate}{}}}
 \subsection{Method \code{users_activate()}}{
 users_activate is a method defined in Arvados class.
 \subsection{Usage}{
@@ -2285,8 +2400,8 @@ users_activate is a method defined in Arvados class.
 }
 }
 \if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-users_setup"></a>}}
-\if{latex}{\out{\hypertarget{method-users_setup}{}}}
+\if{html}{\out{<a id="method-Arvados-users_setup"></a>}}
+\if{latex}{\out{\hypertarget{method-Arvados-users_setup}{}}}
 \subsection{Method \code{users_setup()}}{
 users_setup is a method defined in Arvados class.
 \subsection{Usage}{
@@ -2301,8 +2416,8 @@ users_setup is a method defined in Arvados class.
 
 }
 \if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-users_unsetup"></a>}}
-\if{latex}{\out{\hypertarget{method-users_unsetup}{}}}
+\if{html}{\out{<a id="method-Arvados-users_unsetup"></a>}}
+\if{latex}{\out{\hypertarget{method-Arvados-users_unsetup}{}}}
 \subsection{Method \code{users_unsetup()}}{
 users_unsetup is a method defined in Arvados class.
 \subsection{Usage}{
@@ -2318,8 +2433,8 @@ users_unsetup is a method defined in Arvados class.
 }
 }
 \if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-users_merge"></a>}}
-\if{latex}{\out{\hypertarget{method-users_merge}{}}}
+\if{html}{\out{<a id="method-Arvados-users_merge"></a>}}
+\if{latex}{\out{\hypertarget{method-Arvados-users_merge}{}}}
 \subsection{Method \code{users_merge()}}{
 users_merge is a method defined in Arvados class.
 \subsection{Usage}{
@@ -2334,8 +2449,8 @@ users_merge is a method defined in Arvados class.
 
 }
 \if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-users_list"></a>}}
-\if{latex}{\out{\hypertarget{method-users_list}{}}}
+\if{html}{\out{<a id="method-Arvados-users_list"></a>}}
+\if{latex}{\out{\hypertarget{method-Arvados-users_list}{}}}
 \subsection{Method \code{users_list()}}{
 users_list is a method defined in Arvados class.
 \subsection{Usage}{
@@ -2364,8 +2479,8 @@ users_list is a method defined in Arvados class.
 }
 }
 \if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-repositories_get"></a>}}
-\if{latex}{\out{\hypertarget{method-repositories_get}{}}}
+\if{html}{\out{<a id="method-Arvados-repositories_get"></a>}}
+\if{latex}{\out{\hypertarget{method-Arvados-repositories_get}{}}}
 \subsection{Method \code{repositories_get()}}{
 repositories_get is a method defined in Arvados class.
 \subsection{Usage}{
@@ -2381,8 +2496,8 @@ repositories_get is a method defined in Arvados class.
 }
 }
 \if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-repositories_create"></a>}}
-\if{latex}{\out{\hypertarget{method-repositories_create}{}}}
+\if{html}{\out{<a id="method-Arvados-repositories_create"></a>}}
+\if{latex}{\out{\hypertarget{method-Arvados-repositories_create}{}}}
 \subsection{Method \code{repositories_create()}}{
 repositories_create is a method defined in Arvados class.
 \subsection{Usage}{
@@ -2406,8 +2521,8 @@ repositories_create is a method defined in Arvados class.
 }
 }
 \if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-repositories_update"></a>}}
-\if{latex}{\out{\hypertarget{method-repositories_update}{}}}
+\if{html}{\out{<a id="method-Arvados-repositories_update"></a>}}
+\if{latex}{\out{\hypertarget{method-Arvados-repositories_update}{}}}
 \subsection{Method \code{repositories_update()}}{
 repositories_update is a method defined in Arvados class.
 \subsection{Usage}{
@@ -2425,8 +2540,8 @@ repositories_update is a method defined in Arvados class.
 }
 }
 \if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-repositories_delete"></a>}}
-\if{latex}{\out{\hypertarget{method-repositories_delete}{}}}
+\if{html}{\out{<a id="method-Arvados-repositories_delete"></a>}}
+\if{latex}{\out{\hypertarget{method-Arvados-repositories_delete}{}}}
 \subsection{Method \code{repositories_delete()}}{
 repositories_delete is a method defined in Arvados class.
 \subsection{Usage}{
@@ -2442,8 +2557,8 @@ repositories_delete is a method defined in Arvados class.
 }
 }
 \if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-repositories_get_all_permissions"></a>}}
-\if{latex}{\out{\hypertarget{method-repositories_get_all_permissions}{}}}
+\if{html}{\out{<a id="method-Arvados-repositories_get_all_permissions"></a>}}
+\if{latex}{\out{\hypertarget{method-Arvados-repositories_get_all_permissions}{}}}
 \subsection{Method \code{repositories_get_all_permissions()}}{
 repositories_get_all_permissions is a method defined in Arvados class.
 \subsection{Usage}{
@@ -2452,8 +2567,8 @@ repositories_get_all_permissions is a method defined in Arvados class.
 
 }
 \if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-repositories_list"></a>}}
-\if{latex}{\out{\hypertarget{method-repositories_list}{}}}
+\if{html}{\out{<a id="method-Arvados-repositories_list"></a>}}
+\if{latex}{\out{\hypertarget{method-Arvados-repositories_list}{}}}
 \subsection{Method \code{repositories_list()}}{
 repositories_list is a method defined in Arvados class.
 \subsection{Usage}{
@@ -2482,8 +2597,8 @@ repositories_list is a method defined in Arvados class.
 }
 }
 \if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-virtual_machines_get"></a>}}
-\if{latex}{\out{\hypertarget{method-virtual_machines_get}{}}}
+\if{html}{\out{<a id="method-Arvados-virtual_machines_get"></a>}}
+\if{latex}{\out{\hypertarget{method-Arvados-virtual_machines_get}{}}}
 \subsection{Method \code{virtual_machines_get()}}{
 virtual_machines_get is a method defined in Arvados class.
 \subsection{Usage}{
@@ -2499,8 +2614,8 @@ virtual_machines_get is a method defined in Arvados class.
 }
 }
 \if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-virtual_machines_create"></a>}}
-\if{latex}{\out{\hypertarget{method-virtual_machines_create}{}}}
+\if{html}{\out{<a id="method-Arvados-virtual_machines_create"></a>}}
+\if{latex}{\out{\hypertarget{method-Arvados-virtual_machines_create}{}}}
 \subsection{Method \code{virtual_machines_create()}}{
 virtual_machines_create is a method defined in Arvados class.
 \subsection{Usage}{
@@ -2524,8 +2639,8 @@ virtual_machines_create is a method defined in Arvados class.
 }
 }
 \if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-virtual_machines_update"></a>}}
-\if{latex}{\out{\hypertarget{method-virtual_machines_update}{}}}
+\if{html}{\out{<a id="method-Arvados-virtual_machines_update"></a>}}
+\if{latex}{\out{\hypertarget{method-Arvados-virtual_machines_update}{}}}
 \subsection{Method \code{virtual_machines_update()}}{
 virtual_machines_update is a method defined in Arvados class.
 \subsection{Usage}{
@@ -2543,8 +2658,8 @@ virtual_machines_update is a method defined in Arvados class.
 }
 }
 \if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-virtual_machines_delete"></a>}}
-\if{latex}{\out{\hypertarget{method-virtual_machines_delete}{}}}
+\if{html}{\out{<a id="method-Arvados-virtual_machines_delete"></a>}}
+\if{latex}{\out{\hypertarget{method-Arvados-virtual_machines_delete}{}}}
 \subsection{Method \code{virtual_machines_delete()}}{
 virtual_machines_delete is a method defined in Arvados class.
 \subsection{Usage}{
@@ -2560,8 +2675,8 @@ virtual_machines_delete is a method defined in Arvados class.
 }
 }
 \if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-virtual_machines_logins"></a>}}
-\if{latex}{\out{\hypertarget{method-virtual_machines_logins}{}}}
+\if{html}{\out{<a id="method-Arvados-virtual_machines_logins"></a>}}
+\if{latex}{\out{\hypertarget{method-Arvados-virtual_machines_logins}{}}}
 \subsection{Method \code{virtual_machines_logins()}}{
 virtual_machines_logins is a method defined in Arvados class.
 \subsection{Usage}{
@@ -2577,8 +2692,8 @@ virtual_machines_logins is a method defined in Arvados class.
 }
 }
 \if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-virtual_machines_get_all_logins"></a>}}
-\if{latex}{\out{\hypertarget{method-virtual_machines_get_all_logins}{}}}
+\if{html}{\out{<a id="method-Arvados-virtual_machines_get_all_logins"></a>}}
+\if{latex}{\out{\hypertarget{method-Arvados-virtual_machines_get_all_logins}{}}}
 \subsection{Method \code{virtual_machines_get_all_logins()}}{
 virtual_machines_get_all_logins is a method defined in Arvados class.
 \subsection{Usage}{
@@ -2587,8 +2702,8 @@ virtual_machines_get_all_logins is a method defined in Arvados class.
 
 }
 \if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-virtual_machines_list"></a>}}
-\if{latex}{\out{\hypertarget{method-virtual_machines_list}{}}}
+\if{html}{\out{<a id="method-Arvados-virtual_machines_list"></a>}}
+\if{latex}{\out{\hypertarget{method-Arvados-virtual_machines_list}{}}}
 \subsection{Method \code{virtual_machines_list()}}{
 virtual_machines_list is a method defined in Arvados class.
 \subsection{Usage}{
@@ -2617,8 +2732,8 @@ virtual_machines_list is a method defined in Arvados class.
 }
 }
 \if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-workflows_get"></a>}}
-\if{latex}{\out{\hypertarget{method-workflows_get}{}}}
+\if{html}{\out{<a id="method-Arvados-workflows_get"></a>}}
+\if{latex}{\out{\hypertarget{method-Arvados-workflows_get}{}}}
 \subsection{Method \code{workflows_get()}}{
 workflows_get is a method defined in Arvados class.
 \subsection{Usage}{
@@ -2634,8 +2749,8 @@ workflows_get is a method defined in Arvados class.
 }
 }
 \if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-workflows_create"></a>}}
-\if{latex}{\out{\hypertarget{method-workflows_create}{}}}
+\if{html}{\out{<a id="method-Arvados-workflows_create"></a>}}
+\if{latex}{\out{\hypertarget{method-Arvados-workflows_create}{}}}
 \subsection{Method \code{workflows_create()}}{
 workflows_create is a method defined in Arvados class.
 \subsection{Usage}{
@@ -2659,8 +2774,8 @@ workflows_create is a method defined in Arvados class.
 }
 }
 \if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-workflows_update"></a>}}
-\if{latex}{\out{\hypertarget{method-workflows_update}{}}}
+\if{html}{\out{<a id="method-Arvados-workflows_update"></a>}}
+\if{latex}{\out{\hypertarget{method-Arvados-workflows_update}{}}}
 \subsection{Method \code{workflows_update()}}{
 workflows_update is a method defined in Arvados class.
 \subsection{Usage}{
@@ -2678,8 +2793,8 @@ workflows_update is a method defined in Arvados class.
 }
 }
 \if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-workflows_delete"></a>}}
-\if{latex}{\out{\hypertarget{method-workflows_delete}{}}}
+\if{html}{\out{<a id="method-Arvados-workflows_delete"></a>}}
+\if{latex}{\out{\hypertarget{method-Arvados-workflows_delete}{}}}
 \subsection{Method \code{workflows_delete()}}{
 workflows_delete is a method defined in Arvados class.
 \subsection{Usage}{
@@ -2695,8 +2810,8 @@ workflows_delete is a method defined in Arvados class.
 }
 }
 \if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-workflows_list"></a>}}
-\if{latex}{\out{\hypertarget{method-workflows_list}{}}}
+\if{html}{\out{<a id="method-Arvados-workflows_list"></a>}}
+\if{latex}{\out{\hypertarget{method-Arvados-workflows_list}{}}}
 \subsection{Method \code{workflows_list()}}{
 workflows_list is a method defined in Arvados class.
 \subsection{Usage}{
@@ -2725,8 +2840,8 @@ workflows_list is a method defined in Arvados class.
 }
 }
 \if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-user_agreements_get"></a>}}
-\if{latex}{\out{\hypertarget{method-user_agreements_get}{}}}
+\if{html}{\out{<a id="method-Arvados-user_agreements_get"></a>}}
+\if{latex}{\out{\hypertarget{method-Arvados-user_agreements_get}{}}}
 \subsection{Method \code{user_agreements_get()}}{
 user_agreements_get is a method defined in Arvados class.
 \subsection{Usage}{
@@ -2742,8 +2857,8 @@ user_agreements_get is a method defined in Arvados class.
 }
 }
 \if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-user_agreements_create"></a>}}
-\if{latex}{\out{\hypertarget{method-user_agreements_create}{}}}
+\if{html}{\out{<a id="method-Arvados-user_agreements_create"></a>}}
+\if{latex}{\out{\hypertarget{method-Arvados-user_agreements_create}{}}}
 \subsection{Method \code{user_agreements_create()}}{
 user_agreements_create is a method defined in Arvados class.
 \subsection{Usage}{
@@ -2767,8 +2882,8 @@ user_agreements_create is a method defined in Arvados class.
 }
 }
 \if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-user_agreements_update"></a>}}
-\if{latex}{\out{\hypertarget{method-user_agreements_update}{}}}
+\if{html}{\out{<a id="method-Arvados-user_agreements_update"></a>}}
+\if{latex}{\out{\hypertarget{method-Arvados-user_agreements_update}{}}}
 \subsection{Method \code{user_agreements_update()}}{
 user_agreements_update is a method defined in Arvados class.
 \subsection{Usage}{
@@ -2786,8 +2901,8 @@ user_agreements_update is a method defined in Arvados class.
 }
 }
 \if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-user_agreements_delete"></a>}}
-\if{latex}{\out{\hypertarget{method-user_agreements_delete}{}}}
+\if{html}{\out{<a id="method-Arvados-user_agreements_delete"></a>}}
+\if{latex}{\out{\hypertarget{method-Arvados-user_agreements_delete}{}}}
 \subsection{Method \code{user_agreements_delete()}}{
 user_agreements_delete is a method defined in Arvados class.
 \subsection{Usage}{
@@ -2803,8 +2918,8 @@ user_agreements_delete is a method defined in Arvados class.
 }
 }
 \if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-user_agreements_signatures"></a>}}
-\if{latex}{\out{\hypertarget{method-user_agreements_signatures}{}}}
+\if{html}{\out{<a id="method-Arvados-user_agreements_signatures"></a>}}
+\if{latex}{\out{\hypertarget{method-Arvados-user_agreements_signatures}{}}}
 \subsection{Method \code{user_agreements_signatures()}}{
 user_agreements_signatures is a method defined in Arvados class.
 \subsection{Usage}{
@@ -2813,8 +2928,8 @@ user_agreements_signatures is a method defined in Arvados class.
 
 }
 \if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-user_agreements_sign"></a>}}
-\if{latex}{\out{\hypertarget{method-user_agreements_sign}{}}}
+\if{html}{\out{<a id="method-Arvados-user_agreements_sign"></a>}}
+\if{latex}{\out{\hypertarget{method-Arvados-user_agreements_sign}{}}}
 \subsection{Method \code{user_agreements_sign()}}{
 user_agreements_sign is a method defined in Arvados class.
 \subsection{Usage}{
@@ -2823,8 +2938,8 @@ user_agreements_sign is a method defined in Arvados class.
 
 }
 \if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-user_agreements_list"></a>}}
-\if{latex}{\out{\hypertarget{method-user_agreements_list}{}}}
+\if{html}{\out{<a id="method-Arvados-user_agreements_list"></a>}}
+\if{latex}{\out{\hypertarget{method-Arvados-user_agreements_list}{}}}
 \subsection{Method \code{user_agreements_list()}}{
 user_agreements_list is a method defined in Arvados class.
 \subsection{Usage}{
@@ -2853,8 +2968,8 @@ user_agreements_list is a method defined in Arvados class.
 }
 }
 \if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-user_agreements_new"></a>}}
-\if{latex}{\out{\hypertarget{method-user_agreements_new}{}}}
+\if{html}{\out{<a id="method-Arvados-user_agreements_new"></a>}}
+\if{latex}{\out{\hypertarget{method-Arvados-user_agreements_new}{}}}
 \subsection{Method \code{user_agreements_new()}}{
 user_agreements_new is a method defined in Arvados class.
 \subsection{Usage}{
@@ -2863,8 +2978,8 @@ user_agreements_new is a method defined in Arvados class.
 
 }
 \if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-configs_get"></a>}}
-\if{latex}{\out{\hypertarget{method-configs_get}{}}}
+\if{html}{\out{<a id="method-Arvados-configs_get"></a>}}
+\if{latex}{\out{\hypertarget{method-Arvados-configs_get}{}}}
 \subsection{Method \code{configs_get()}}{
 configs_get is a method defined in Arvados class.
 \subsection{Usage}{
@@ -2873,8 +2988,8 @@ configs_get is a method defined in Arvados class.
 
 }
 \if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-getHostName"></a>}}
-\if{latex}{\out{\hypertarget{method-getHostName}{}}}
+\if{html}{\out{<a id="method-Arvados-getHostName"></a>}}
+\if{latex}{\out{\hypertarget{method-Arvados-getHostName}{}}}
 \subsection{Method \code{getHostName()}}{
 \subsection{Usage}{
 \if{html}{\out{<div class="r">}}\preformatted{Arvados$getHostName()}\if{html}{\out{</div>}}
@@ -2882,8 +2997,8 @@ configs_get is a method defined in Arvados class.
 
 }
 \if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-getToken"></a>}}
-\if{latex}{\out{\hypertarget{method-getToken}{}}}
+\if{html}{\out{<a id="method-Arvados-getToken"></a>}}
+\if{latex}{\out{\hypertarget{method-Arvados-getToken}{}}}
 \subsection{Method \code{getToken()}}{
 \subsection{Usage}{
 \if{html}{\out{<div class="r">}}\preformatted{Arvados$getToken()}\if{html}{\out{</div>}}
@@ -2891,8 +3006,8 @@ configs_get is a method defined in Arvados class.
 
 }
 \if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-setRESTService"></a>}}
-\if{latex}{\out{\hypertarget{method-setRESTService}{}}}
+\if{html}{\out{<a id="method-Arvados-setRESTService"></a>}}
+\if{latex}{\out{\hypertarget{method-Arvados-setRESTService}{}}}
 \subsection{Method \code{setRESTService()}}{
 \subsection{Usage}{
 \if{html}{\out{<div class="r">}}\preformatted{Arvados$setRESTService(newREST)}\if{html}{\out{</div>}}
@@ -2900,8 +3015,8 @@ configs_get is a method defined in Arvados class.
 
 }
 \if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-getRESTService"></a>}}
-\if{latex}{\out{\hypertarget{method-getRESTService}{}}}
+\if{html}{\out{<a id="method-Arvados-getRESTService"></a>}}
+\if{latex}{\out{\hypertarget{method-Arvados-getRESTService}{}}}
 \subsection{Method \code{getRESTService()}}{
 \subsection{Usage}{
 \if{html}{\out{<div class="r">}}\preformatted{Arvados$getRESTService()}\if{html}{\out{</div>}}
