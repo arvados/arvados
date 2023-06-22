@@ -197,8 +197,7 @@ def main(arguments=None, stdout=sys.stdout, stderr=sys.stderr):
     try:
         reader = arvados.CollectionReader(
             col_loc, api_client=api_client, num_retries=args.retries,
-            keep_client=arvados.keep.KeepClient(block_cache=arvados.keep.KeepBlockCache((args.threads+1)*64 * 1024 * 1024)),
-            get_threads=args.threads)
+            keep_client=arvados.keep.KeepClient(block_cache=arvados.keep.KeepBlockCache((args.threads+1)*64 * 1024 * 1024), num_prefetch_threads=args.threads))
     except Exception as error:
         logger.error("failed to read collection: {}".format(error))
         return 1

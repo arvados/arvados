@@ -31,6 +31,7 @@ import (
 	"git.arvados.org/arvados.git/sdk/go/auth"
 	"git.arvados.org/arvados.git/sdk/go/ctxlog"
 	"git.arvados.org/arvados.git/sdk/go/httpserver"
+	keepweb "git.arvados.org/arvados.git/services/keep-web"
 	"github.com/hashicorp/yamux"
 	"golang.org/x/net/webdav"
 )
@@ -78,6 +79,16 @@ var (
 // ...or the request may be handled locally using an empty-collection
 // stub.
 func (conn *Conn) ContainerRequestLog(ctx context.Context, opts arvados.ContainerLogOptions) (http.Handler, error) {
+	if opts.Method == "OPTIONS" && opts.Header.Get("Access-Control-Request-Method") != "" {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			if !keepweb.ServeCORSPreflight(w, opts.Header) {
+				// Inconceivable.  We already checked
+				// for the only condition where
+				// ServeCORSPreflight returns false.
+				httpserver.Error(w, "unhandled CORS preflight request", http.StatusInternalServerError)
+			}
+		}), nil
+	}
 	cr, err := conn.railsProxy.ContainerRequestGet(ctx, arvados.GetOptions{UUID: opts.UUID, Select: []string{"uuid", "container_uuid", "log_uuid"}})
 	if err != nil {
 		if se := httpserver.HTTPStatusError(nil); errors.As(err, &se) && se.HTTPStatus() == http.StatusUnauthorized {
@@ -172,6 +183,8 @@ func (conn *Conn) ContainerRequestLog(ctx context.Context, opts arvados.Containe
 					// an attacker-in-the-middle.
 					return httpserver.ErrorWithStatus(errors.New("bad X-Arvados-Authorization-Response header"), http.StatusBadGateway)
 				}
+				resp.Header.Del("X-Arvados-Authorization-Response")
+				preemptivelyDeduplicateHeaders(w.Header(), resp.Header)
 				return nil
 			},
 			ErrorHandler: func(w http.ResponseWriter, r *http.Request, err error) {
@@ -262,6 +275,10 @@ func (conn *Conn) serveContainerRequestLogViaKeepWeb(opts arvados.ContainerLogOp
 				r.Header.Set("X-Webdav-Source", "/log for container "+opts.Path[1:28]+"/")
 			}
 		},
+		ModifyResponse: func(resp *http.Response) error {
+			preemptivelyDeduplicateHeaders(w.Header(), resp.Header)
+			return nil
+		},
 	}
 	if conn.cluster.TLS.Insecure {
 		proxy.Transport = &http.Transport{
@@ -271,6 +288,31 @@ func (conn *Conn) serveContainerRequestLogViaKeepWeb(opts arvados.ContainerLogOp
 		}
 	}
 	proxy.ServeHTTP(w, r)
+}
+
+// httputil.ReverseProxy uses (http.Header)Add() to copy headers from
+// the upstream Response to the downstream ResponseWriter. If headers
+// have already been set on the downstream ResponseWriter, Add() will
+// result in duplicate headers. For example, if we set CORS headers
+// and then use ReverseProxy with an upstream that also sets CORS
+// headers, our client will receive
+//
+//	Access-Control-Allow-Origin: *
+//	Access-Control-Allow-Origin: *
+//
+// ...which is incorrect.
+//
+// preemptivelyDeduplicateHeaders, when called from a ModifyResponse
+// hook, solves this by removing any conflicting headers from
+// ResponseWriter. This way, when ReverseProxy calls Add(), it will
+// assign the new values without causing duplicates.
+//
+// dst is the downstream ResponseWriter's Header(). src is the
+// upstream resp.Header.
+func preemptivelyDeduplicateHeaders(dst, src http.Header) {
+	for hdr := range src {
+		dst.Del(hdr)
+	}
 }
 
 // serveEmptyDir handles read-only webdav requests as if there was an

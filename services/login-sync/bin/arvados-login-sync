@@ -146,6 +146,12 @@ begin
       end
     end
 
+    homedir = pwnam[l[:username]].dir
+    if !File.exist?(homedir)
+      STDERR.puts "Cannot set up user #{username} because their home directory #{homedir} does not exist. Skipping."
+      next
+    end
+
     existing_groups = current_user_groups[username] || []
     groups = l[:groups] || []
     # Adding users to the FUSE group has long been hardcoded behavior.
@@ -175,7 +181,6 @@ begin
       end
     end
 
-    homedir = pwnam[l[:username]].dir
     userdotssh = File.join(homedir, ".ssh")
     Dir.mkdir(userdotssh) if !File.exist?(userdotssh)
 

@@ -142,6 +142,11 @@ func (c *cache) GetSession(token string) (arvados.CustomFileSystem, *cachedSessi
 		}
 		sess.client.AuthToken = token
 		sess.client.Timeout = time.Minute
+		// A non-empty origin header tells controller to
+		// prioritize our traffic as interactive, which is
+		// true most of the time.
+		origin := c.cluster.Services.WebDAVDownload.ExternalURL
+		sess.client.SendHeader = http.Header{"Origin": {origin.Scheme + "://" + origin.Host}}
 		sess.arvadosclient, err = arvadosclient.New(sess.client)
 		if err != nil {
 			return nil, nil, nil, err

@@ -4,18 +4,20 @@
 \alias{ArvadosR}
 \title{ArvadosR}
 \description{
-
 Arvados is an open source platform for managing, processing, and sharing genomic and other large scientific and biomedical data. With Arvados, bioinformaticians run and scale compute-intensive workflows, developers create biomedical applications, and IT administrators manage large compute and storage resources.
 }
 \seealso{
 \itemize{
-\item \code{\link{https://github.com/arvados/arvados/blob/main/README.md}}
-\item \code{\link{https://github.com/arvados/arvados/tree/main/sdk/R}}}
+\item https://arvados.org
+\item https://doc.arvados.org/sdk/R/index.html
+\item https://git.arvados.org/arvados.git/tree/HEAD:/sdk/R}
 }
 \author{
 \itemize{
 \item Lucas Di Pentima
 \item Ward Vandewege
+\item Fuad Muhic
 \item Peter Amstutz
-\item Fuad Muhic}
+\item Aneta Stanczyk
+\item Piotr Nowosielski}
 }

@@ -51,7 +51,9 @@ Arvados <- R6::R6Class(
         #' project_exist enables checking if the project with such a UUID exist.
         #' @param uuid The UUID of a project or a file.
         #' @examples
-        #' arv$project_exist(uuid = projectUUID)
+        #' \dontrun{
+        #' arv$project_exist(uuid = "projectUUID")
+        #' }
         project_exist = function(uuid)
         {
             proj <- self$project_list(list(list("uuid", '=', uuid)))
@@ -68,7 +70,9 @@ Arvados <- R6::R6Class(
         #' project_get returns the demanded project.
         #' @param uuid The UUID of the Group in question.
         #' @examples
-        #' project <- arv$project_get(uuid = projectUUID)
+        #' \dontrun{
+        #' project <- arv$project_get(uuid = 'projectUUID')
+        #' }
         project_get = function(uuid)
         {
             self$groups_get(uuid)
@@ -82,8 +86,10 @@ Arvados <- R6::R6Class(
         #' @param properties List of the properties of the project.
         #' @param ensureUniqueName Adjust name to ensure uniqueness instead of returning an error.
         #' @examples
+        #' \dontrun{
         #' Properties <- list() # should contain a list of new properties to be added
         #' new_project <- arv$project_create(name = "project name", description = "project description", owner_uuid = "project UUID", properties = NULL, ensureUniqueName = "false")
+        #' }
         project_create = function(name, description, ownerUUID, properties = NULL, ensureUniqueName = "false")
         {
             group <- list(name = name, description = description, owner_uuid = ownerUUID, properties = properties)
@@ -96,8 +102,10 @@ Arvados <- R6::R6Class(
         #' @param listProperties List of new properties.
         #' @param uuid The UUID of a project or a file.
         #' @examples
+        #' \dontrun{
         #' Properties <- list() # should contain a list of new properties to be added
         #' arv$project_properties_set(Properties, uuid)
+        #' }
         project_properties_set = function(listProperties, uuid)
         {
             group <- c("group_class" = "project", list("properties" = listProperties))
@@ -107,11 +115,13 @@ Arvados <- R6::R6Class(
 
         #' @description
         #' project_properties_append is a method defined in Arvados class that enables appending properties. Allows to add new properties.
-        #' @param listOfNewProperties List of new properties.
+        #' @param properties List of new properties.
         #' @param uuid The UUID of a project or a file.
         #' @examples
+        #' \dontrun{
         #' newProperties <- list() # should contain a list of new properties to be added
         #' arv$project_properties_append(properties = newProperties, uuid)
+        #' }
         project_properties_append = function(properties, uuid)
         {
             proj <- self$project_list(list(list('uuid', '=', uuid)))
@@ -130,7 +140,9 @@ Arvados <- R6::R6Class(
         #' project_properties_get is a method defined in Arvados class that returns properties.
         #' @param uuid The UUID of a project or a file.
         #' @examples
+        #' \dontrun{
         #' arv$project_properties_get(projectUUID)
+        #' }
         project_properties_get = function(uuid)
         {
             proj <- self$project_list(list(list('uuid', '=', uuid)))
@@ -142,8 +154,10 @@ Arvados <- R6::R6Class(
         #' @param oneProp Property to be deleted.
         #' @param uuid The UUID of a project or a file.
         #' @examples
+        #' \dontrun{
         #' Properties <- list() # should contain a list of new properties to be added
         #' arv$project_properties_delete(Properties,  projectUUID)
+        #' }
         project_properties_delete = function(oneProp, uuid)
         {
             proj <- self$project_list(list(list('uuid', '=', uuid))) # find project
@@ -162,8 +176,10 @@ Arvados <- R6::R6Class(
         #' @param ... Feature to be updated (name, description, properties).
         #' @param uuid The UUID of a project in question.
         #' @examples
+        #' \dontrun{
         #' newProperties <- list() # should contain a list of new properties to be added
         #' arv$project_update(name = "new project name", properties = newProperties, uuid = projectUUID)
+        #' }
         project_update = function(..., uuid) {
             vec <- list(...)
             for (i in 1:length(vec))
@@ -190,7 +206,9 @@ Arvados <- R6::R6Class(
         #' @param uuid The UUID of a project in question.
         #' @param recursive Include contents from child groups recursively.
         #' @examples
+        #' \dontrun{
         #' listOfprojects <- arv$project_list(list(list("owner_uuid", "=", projectUUID))) # Sample query which show projects within the project of a given UUID
+        #' }
         project_list = function(filters = NULL, where = NULL,
                                 order = NULL, select = NULL, distinct = NULL,
                                 limit = "100", offset = "0", count = "exact",
@@ -204,6 +222,10 @@ Arvados <- R6::R6Class(
         #' @description
         #' project_delete trashes project of a given uuid. It can be restored from trash or deleted permanently.
         #' @param uuid The UUID of the Group in question.
+        #' @examples
+        #' \dontrun{
+        #' arv$project_delete(uuid = 'projectUUID')
+        #' }
         project_delete = function(uuid)
         {
             self$groups_delete(uuid)
@@ -688,7 +710,10 @@ Arvados <- R6::R6Class(
         #' @description
         #' collections_get is a method defined in Arvados class.
         #' @param uuid The UUID of the Collection in question.
+        #' @examples
+        #' \dontrun{
         #' collection <- arv$collections_get(uuid = collectionUUID)
+        #' }
         collections_get = function(uuid)
         {
             endPoint <- stringr::str_interp("collections/${uuid}")
@@ -718,8 +743,10 @@ Arvados <- R6::R6Class(
         #' @param ensureUniqueName Adjust name to ensure uniqueness instead of returning an error.
         #' @param clusterID Create object on a remote federated cluster instead of the current one.
         #' @examples
+        #' \dontrun{
         #' Properties <- list() # should contain a list of new properties to be added
         #' arv$collections_create(name = "collectionTitle", description = "collectionDescription", ownerUUID = "collectionOwner", properties = Properties)
+        #' }
         collections_create = function(name, description, ownerUUID = NULL, properties = NULL, # name and description are obligatory
                                       ensureUniqueName = "false", clusterID = NULL)
         {
@@ -760,7 +787,9 @@ Arvados <- R6::R6Class(
         #' @param properties New list of properties of the collection.
         #' @param uuid The UUID of the Collection in question.
         #' @examples
+        #' \dontrun{
         #' collection <- arv$collections_update(name = "newCollectionTitle", description = "newCollectionDescription", ownerUUID = "collectionOwner", properties = NULL, uuid = "collectionUUID")
+        #' }
         collections_update = function(name, description, ownerUUID = NULL, properties = NULL, uuid)
         {
             endPoint <- stringr::str_interp("collections/${uuid}")
@@ -790,7 +819,9 @@ Arvados <- R6::R6Class(
         #' collections_delete is a method defined in Arvados class.
         #' @param uuid The UUID of the Collection in question.
         #' @examples
+        #' \dontrun{
         #' arv$collection_delete(collectionUUID)
+        #' }
         collections_delete = function(uuid)
         {
             endPoint <- stringr::str_interp("collections/${uuid}")
@@ -815,7 +846,9 @@ Arvados <- R6::R6Class(
         #' collections_provenance is a method defined in Arvados class, it returns the collection by uuid.
         #' @param uuid The UUID of the Collection in question.
         #' @examples
+        #' \dontrun{
         #' collection <- arv$collections_provenance(collectionUUID)
+        #' }
         collections_provenance = function(uuid)
         {
             endPoint <- stringr::str_interp("collections/${uuid}/provenance")
@@ -863,7 +896,9 @@ Arvados <- R6::R6Class(
         #' collections_trash is a method defined in Arvados class, it moves collection to trash.
         #' @param uuid The UUID of the Collection in question.
         #' @examples
+        #' \dontrun{
         #' arv$collections_trash(collectionUUID)
+        #' }
         collections_trash = function(uuid)
         {
             endPoint <- stringr::str_interp("collections/${uuid}/trash")
@@ -888,7 +923,9 @@ Arvados <- R6::R6Class(
         #' collections_untrash is a method defined in Arvados class, it moves collection from trash to project.
         #' @param uuid The UUID of the Collection in question.
         #' @examples
+        #' \dontrun{
         #' arv$collections_untrash(collectionUUID)
+        #' }
         collections_untrash = function(uuid)
         {
             endPoint <- stringr::str_interp("collections/${uuid}/untrash")
@@ -924,7 +961,9 @@ Arvados <- R6::R6Class(
         #' @param includeTrash Include collections whose is_trashed attribute is true.
         #' @param includeOldVersions Include past collection versions.
         #' @examples
+        #' \dontrun{
         #' collectionList <- arv$collections_list(list(list("name", "=", "Example")))
+        #' }
         collections_list = function(filters = NULL,
                                     where = NULL, order = NULL, select = NULL,
                                     distinct = NULL, limit = "100", offset = "0",
@@ -1826,7 +1865,9 @@ Arvados <- R6::R6Class(
         #' @param uuid The UUID of a project or a file.
         #' @param user The UUID of the person that gets the permission.
         #' @examples
+        #' \dontrun{
         #' arv$project_permission_give(type = "can_read", uuid = objectUUID, user = userUUID)
+        #' }
         project_permission_give = function(type, uuid, user)
         {
             endPoint <- stringr::str_interp("links")
@@ -1860,7 +1901,9 @@ Arvados <- R6::R6Class(
         #' @param uuid The UUID of a project or a file.
         #' @param user The UUID of a person that permissions are taken from.
         #' @examples
+        #' \dontrun{
         #' arv$project_permission_refuse(type = "can_read", uuid = objectUUID, user = userUUID)
+        #' }
         project_permission_refuse = function(type, uuid, user)
         {
             examples <- self$links_list(list(list("head_uuid","=", uuid)))
@@ -1884,7 +1927,9 @@ Arvados <- R6::R6Class(
         #' @param uuid The UUID of a project or a file.
         #' @param user The UUID of the person that the permission is being updated.
         #' @examples
+        #' \dontrun{
         #' arv$project_permission_update(typeOld = "can_read", typeNew = "can_write", uuid = objectUUID, user = userUUID)
+        #' }
         project_permission_update = function(typeOld, typeNew, uuid, user)
         {
             link <- list("name" = typeNew)
@@ -1908,7 +1953,9 @@ Arvados <- R6::R6Class(
         #' @param user The UUID of the person that the permission is being updated.
         #' @param type Possible options are can_read or can_write or can_manage.
         #' @examples
+        #' \dontrun{
         #' arv$project_permission_check(type = "can_read", uuid = objectUUID, user = userUUID)
+        #' }
         project_permission_check = function(uuid, user, type = NULL)
         {
             examples <- self$links_list(list(list("head_uuid","=", uuid)))

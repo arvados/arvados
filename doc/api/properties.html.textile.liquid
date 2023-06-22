@@ -22,14 +22,15 @@ table(table table-bordered table-condensed).
 {% comment %}
 The arv:git* container properties, and the associated Git commands, primarily come from arvados_cwl.executor.ArvCwlExecutor.get_git_info.
 {% endcomment -%}
-|arv:gitBranch|container|string|When @arvados-cwl-runner@ is run from a Git checkout, this property is set with the name of the branch checked out (the output of @git rev-parse --abbrev-ref HEAD@)|
-|arv:gitCommitter|container|string|When @arvados-cwl-runner@ is run from a Git checkout, this property is set with the name and email address of the committer of the most recent commit (the output of @git log --format='%cn <%ce>' -n1 HEAD@)|
-|arv:gitCommit|container|string|When @arvados-cwl-runner@ is run from a Git checkout, this property is set with the full checksum of the most recent commit (the output of @git log --format='%H' -n1 HEAD@)|
-|arv:gitDate|container|string|When @arvados-cwl-runner@ is run from a Git checkout, this property is set with the commit date of the most recent commit in RFC 2822 format (the output of @git log --format='%cD' -n1 HEAD@)|
-|arv:gitDescribe|container|string|When @arvados-cwl-runner@ is run from a Git checkout, this property is set with the name of the most recent tag that is reachable from the most recent commit (the output of @git describe --always --tags@)|
-|arv:gitOrigin|container|string|When @arvados-cwl-runner@ is run from a Git checkout, this property is set with the URL of the remote named @origin@, if set (the output of @git remote get-url origin@)|
-|arv:gitPath|container|string|When @arvados-cwl-runner@ is run from a Git checkout, this property is set with the absolute path of the checkout on the filesystem|
-|arv:gitStatus|container|string|When @arvados-cwl-runner@ is run from a Git checkout, this property is set with a machine-readable summary of files modified in the checkout since the most recent commit (the output of @git status --untracked-files=no --porcelain@)|
+|arv:gitBranch|container request, collection of type=workflow|string|When @arvados-cwl-runner@ is run from a Git checkout, this property is set with the name of the branch checked out (the output of @git rev-parse --abbrev-ref HEAD@)|
+|arv:gitCommitter|container request, collection of type=workflow|string|When @arvados-cwl-runner@ is run from a Git checkout, this property is set with the name and email address of the committer of the most recent commit (the output of @git log --format='%cn <%ce>' -n1 HEAD@)|
+|arv:gitCommit|container request, collection of type=workflow|string|When @arvados-cwl-runner@ is run from a Git checkout, this property is set with the full checksum of the most recent commit (the output of @git log --format='%H' -n1 HEAD@)|
+|arv:gitDate|container request, collection of type=workflow|string|When @arvados-cwl-runner@ is run from a Git checkout, this property is set with the commit date of the most recent commit in RFC 2822 format (the output of @git log --format='%cD' -n1 HEAD@)|
+|arv:gitDescribe|container request, collection of type=workflow|string|When @arvados-cwl-runner@ is run from a Git checkout, this property is set with the name of the most recent tag that is reachable from the most recent commit (the output of @git describe --always --tags@)|
+|arv:gitOrigin|container request, collection of type=workflow|string|When @arvados-cwl-runner@ is run from a Git checkout, this property is set with the URL of the remote named @origin@, if set (the output of @git remote get-url origin@)|
+|arv:gitPath|container request, collection of type=workflow|string|When @arvados-cwl-runner@ is run from a Git checkout, this property is set with the absolute path of the checkout on the filesystem|
+|arv:gitStatus|container request, collection of type=workflow|string|When @arvados-cwl-runner@ is run from a Git checkout, this property is set with a machine-readable summary of files modified in the checkout since the most recent commit (the output of @git status --untracked-files=no --porcelain@)|
+|arv:workflowMain|collection of type=workflow|string|Set on a collection containing a workflow created by @arvados-cwl-runner --create-workflow@, this is a relative reference inside the collection to the entry point of the workflow.|
 
 The following system properties predate the @arv:@ key prefix, but are still reserved and can always be set.
 
@@ -56,6 +57,7 @@ table(table table-bordered table-condensed).
 |log|The collection contains log files from a container run.|
 |output|The collection contains the output of a top-level container run (this is a container request where @requesting_container_uuid@  is null).|
 |intermediate|The collection contains the output of a child container run (this is a container request where @requesting_container_uuid@ is non-empty).|
+|workflow|A collection created by @arvados-cwl-runner --create-workflow@ containing a workflow definition.|
 
 h2. Controlling user-supplied properties
 

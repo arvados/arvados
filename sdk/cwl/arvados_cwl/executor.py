@@ -368,7 +368,8 @@ The 'jobs' API is no longer supported.
                 while keys:
                     page = keys[:pageSize]
                     try:
-                        proc_states = table.list(filters=[["uuid", "in", page]]).execute(num_retries=self.num_retries)
+                        proc_states = table.list(filters=[["uuid", "in", page]], select=["uuid", "container_uuid", "state", "log_uuid",
+                                                                                         "output_uuid", "modified_at", "properties"]).execute(num_retries=self.num_retries)
                     except Exception as e:
                         logger.warning("Temporary error checking states on API server: %s", e)
                         remain_wait = self.poll_interval
