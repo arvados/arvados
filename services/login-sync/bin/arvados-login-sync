@@ -12,6 +12,18 @@ require 'yaml'
 require 'optparse'
 require 'open3'
 
+def ensure_dir(path, mode, owner, group)
+  begin
+    Dir.mkdir(path, mode)
+  rescue Errno::EEXIST
+    # No change needed
+    false
+  else
+    FileUtils.chown(owner, group, path)
+    true
+  end
+end
+
 req_envs = %w(ARVADOS_API_HOST ARVADOS_API_TOKEN ARVADOS_VIRTUAL_MACHINE_UUID)
 req_envs.each do |k|
   unless ENV[k]
@@ -146,6 +158,7 @@ begin
       end
     end
 
+    user_gid = pwnam[username].gid
     homedir = pwnam[l[:username]].dir
     if !File.exist?(homedir)
       STDERR.puts "Cannot set up user #{username} because their home directory #{homedir} does not exist. Skipping."
@@ -182,15 +195,14 @@ begin
     end
 
     userdotssh = File.join(homedir, ".ssh")
-    Dir.mkdir(userdotssh) if !File.exist?(userdotssh)
+    ensure_dir(userdotssh, 0700, username, user_gid)
 
     newkeys = "###\n###\n" + keys[l[:username]].join("\n") + "\n###\n###\n"
 
     keysfile = File.join(userdotssh, "authorized_keys")
-
-    if File.exist?(keysfile)
-      oldkeys = IO::read(keysfile)
-    else
+    begin
+      oldkeys = File.read(keysfile)
+    rescue Errno::ENOENT
       oldkeys = ""
     end
 
@@ -205,18 +217,16 @@ begin
     end
 
     if oldkeys != newkeys then
-      f = File.new(keysfile, 'w')
-      f.write(newkeys)
-      f.close()
+      File.open(keysfile, 'w', 0600) do |f|
+        f.write(newkeys)
+      end
+      FileUtils.chown(username, user_gid, keysfile)
     end
 
     userdotconfig = File.join(homedir, ".config")
-    if !File.exist?(userdotconfig)
-      Dir.mkdir(userdotconfig)
-    end
-
+    ensure_dir(userdotconfig, 0755, username, user_gid)
     configarvados = File.join(userdotconfig, "arvados")
-    Dir.mkdir(configarvados) if !File.exist?(configarvados)
+    ensure_dir(configarvados, 0700, username, user_gid)
 
     tokenfile = File.join(configarvados, "settings.conf")
 
@@ -226,7 +236,7 @@ begin
       if File.exist?(tokenfile)
         # check if the token is still valid
         myToken = ENV["ARVADOS_API_TOKEN"]
-        userEnv = IO::read(tokenfile)
+        userEnv = File.read(tokenfile)
         if (m = /^ARVADOS_API_TOKEN=(.*?\n)/m.match(userEnv))
           begin
             tmp_arv = Arvados.new({ :api_host => logincluster_host,
@@ -252,24 +262,14 @@ begin
           aca_params.merge!(expires_at: (Time.now + options[:"token-lifetime"]))
         end
         user_token = logincluster_arv.api_client_authorization.create(api_client_authorization: aca_params)
-        f = File.new(tokenfile, 'w')
-        f.write("ARVADOS_API_HOST=#{ENV['ARVADOS_API_HOST']}\n")
-        f.write("ARVADOS_API_TOKEN=v2/#{user_token[:uuid]}/#{user_token[:api_token]}\n")
-        f.close()
+        File.open(tokenfile, 'w', 0600) do |f|
+          f.write("ARVADOS_API_HOST=#{ENV['ARVADOS_API_HOST']}\n")
+          f.write("ARVADOS_API_TOKEN=v2/#{user_token[:uuid]}/#{user_token[:api_token]}\n")
+        end
+        FileUtils.chown(username, user_gid, tokenfile)
       end
     rescue => e
       STDERR.puts "Error setting token for #{l[:username]}: #{e}"
-    end
-
-    FileUtils.chown_R(l[:username], nil, userdotssh)
-    FileUtils.chown_R(l[:username], nil, userdotconfig)
-    File.chmod(0700, userdotssh)
-    File.chmod(0700, userdotconfig)
-    File.chmod(0700, configarvados)
-    File.chmod(0750, homedir)
-    File.chmod(0600, keysfile)
-    if File.exist?(tokenfile)
-      File.chmod(0600, tokenfile)
     end
   end
 
