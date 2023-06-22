@@ -9,7 +9,7 @@
 #' for exaplme actions like creating, updating, moving or removing are possible.
 #'
 #' @seealso
-#' \code{\link{https://github.com/arvados/arvados/tree/main/sdk/R}}
+#' https://git.arvados.org/arvados.git/tree/HEAD:/sdk/R
 #'
 #' @export
 
@@ -454,10 +454,3 @@ print.Collection = function(x, ...)
     cat(paste0("Type: ", "\"", "Arvados Collection", "\""), sep = "\n")
     cat(paste0("uuid: ", "\"", x$uuid,               "\""), sep = "\n")
 }
-
-
-
-
-
-
-

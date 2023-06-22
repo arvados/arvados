@@ -103,7 +103,7 @@ arvadosFile <- collection$get(fileName)
 }
 }
 \seealso{
-\code{\link{https://github.com/arvados/arvados/tree/main/sdk/R}}
+https://git.arvados.org/arvados.git/tree/HEAD:/sdk/R
 }
 \section{Public fields}{
 \if{html}{\out{<div class="r6-fields">}}

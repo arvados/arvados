@@ -8,8 +8,9 @@ Arvados is an open source platform for managing, processing, and sharing genomic
 }
 \seealso{
 \itemize{
-\item \code{\link{https://github.com/arvados/arvados/blob/main/README.md}}
-\item \code{\link{https://github.com/arvados/arvados/tree/main/sdk/R}}}
+\item https://arvados.org
+\item https://doc.arvados.org/sdk/R/index.html
+\item https://git.arvados.org/arvados.git/tree/HEAD:/sdk/R}
 }
 \author{
 \itemize{
