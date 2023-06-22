@@ -126,11 +126,12 @@ begin
 
   seen = Hash.new()
 
-  current_user_groups = Hash.new
+  all_groups = []
+  current_user_groups = Hash.new { |hash, key| hash[key] = [] }
   while (ent = Etc.getgrent()) do
+    all_groups << ent.name
     ent.mem.each do |member|
-      current_user_groups[member] ||= Array.new
-      current_user_groups[member].push ent.name
+      current_user_groups[member] << ent.name
     end
   end
   Etc.endgrent()
@@ -167,30 +168,26 @@ begin
       next
     end
 
-    existing_groups = current_user_groups[username] || []
-    groups = l[:groups] || []
-    groups |= minimum_groups
-    groups.select! { |g| Etc.getgrnam(g) rescue false }
+    have_groups = current_user_groups[username]
+    want_groups = l[:groups] || []
+    want_groups |= minimum_groups
+    want_groups &= all_groups
 
-    groups.each do |addgroup|
-      if existing_groups.index(addgroup).nil?
-        # User should be in group, but isn't, so add them.
-        STDERR.puts "Add user #{username} to #{addgroup} group"
-        out, st = Open3.capture2e("usermod", "-aG", addgroup, username)
-        if st.exitstatus != 0
-          STDERR.puts "Failed to add #{username} to #{addgroup} group:\n#{out}"
-        end
+    (want_groups - have_groups).each do |addgroup|
+      # User should be in group, but isn't, so add them.
+      STDERR.puts "Add user #{username} to #{addgroup} group"
+      out, st = Open3.capture2e("usermod", "-aG", addgroup, username)
+      if st.exitstatus != 0
+        STDERR.puts "Failed to add #{username} to #{addgroup} group:\n#{out}"
       end
     end
 
-    existing_groups.each do |removegroup|
-      if groups.index(removegroup).nil?
-        # User is in a group, but shouldn't be, so remove them.
-        STDERR.puts "Remove user #{username} from #{removegroup} group"
-        out, st = Open3.capture2e("gpasswd", "-d", username, removegroup)
-        if st.exitstatus != 0
-          STDERR.puts "Failed to remove user #{username} from #{removegroup} group:\n#{out}"
-        end
+    (have_groups - want_groups).each do |removegroup|
+      # User is in a group, but shouldn't be, so remove them.
+      STDERR.puts "Remove user #{username} from #{removegroup} group"
+      out, st = Open3.capture2e("gpasswd", "-d", username, removegroup)
+      if st.exitstatus != 0
+        STDERR.puts "Failed to remove user #{username} from #{removegroup} group:\n#{out}"
       end
     end
 
