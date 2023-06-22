@@ -56,6 +56,8 @@ begin
   arv = Arvados.new({ :suppress_ssl_warnings => false })
   logincluster_host = ENV['ARVADOS_API_HOST']
   logincluster_name = arv.cluster_config['Login']['LoginCluster'] or ''
+  # Requiring the fuse group was previous hardcoded behavior
+  minimum_groups = arv.cluster_config['Login']['SyncRequiredGroups'] || ['fuse']
 
   if logincluster_name != '' and logincluster_name != arv.cluster_config['ClusterID']
     logincluster_host = arv.cluster_config['RemoteClusters'][logincluster_name]['Host']
@@ -167,9 +169,7 @@ begin
 
     existing_groups = current_user_groups[username] || []
     groups = l[:groups] || []
-    # Adding users to the FUSE group has long been hardcoded behavior.
-    groups << "fuse"
-    groups << username
+    groups |= minimum_groups
     groups.select! { |g| Etc.getgrnam(g) rescue false }
 
     groups.each do |addgroup|
