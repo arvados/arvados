@@ -65,8 +65,14 @@ begin
   arv = Arvados.new({ :suppress_ssl_warnings => false })
   logincluster_host = ENV['ARVADOS_API_HOST']
   logincluster_name = arv.cluster_config['Login']['LoginCluster'] or ''
+
   # Requiring the fuse group was previous hardcoded behavior
   minimum_groups = arv.cluster_config['Users']['SyncRequiredGroups'] || ['fuse']
+  ignored_groups = arv.cluster_config['Users']['SyncIgnoredGroups'] || []
+  (minimum_groups & ignored_groups).each do |group_name|
+    STDERR.puts "WARNING: #{group_name} is listed in both SyncRequiredGroups and SyncIgnoredGroups. It will be ignored."
+  end
+
   actions.each_pair do |key, default|
     actions[key] = arv.cluster_config['Users'].fetch(key.to_s, default)
   end
@@ -185,9 +191,10 @@ begin
     end
 
     if actions[:SyncUserGroups]
-      have_groups = current_user_groups[username]
+      have_groups = current_user_groups[username] - ignored_groups
       want_groups = l[:groups] || []
       want_groups |= minimum_groups
+      want_groups -= ignored_groups
       want_groups &= all_groups
 
       (want_groups - have_groups).each do |addgroup|

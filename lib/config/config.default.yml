@@ -433,6 +433,13 @@ Clusters:
       SyncRequiredGroups:
         - fuse
 
+      # SyncIgnoredGroups is a list of group names. arvados-login-sync will
+      # never modify these groups. If user login permissions list any groups
+      # in SyncIgnoredGroups, they will be ignored. If a user's Unix account
+      # belongs to any of these groups, arvados-login-sync will not remove
+      # the account from that group.
+      SyncIgnoredGroups: []
+
     AuditLogs:
       # Time to keep audit logs, in seconds. (An audit log is a row added
       # to the "logs" table in the PostgreSQL database each time an

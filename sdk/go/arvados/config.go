@@ -258,6 +258,7 @@ type Cluster struct {
 		RoleGroupsVisibleToAll                bool
 		CanCreateRoleGroups                   bool
 		ActivityLoggingPeriod                 Duration
+		SyncIgnoredGroups                     []string
 		SyncRequiredGroups                    []string
 		SyncUserAccounts                      bool
 		SyncUserAPITokens                     bool

@@ -247,6 +247,7 @@ var whitelist = map[string]bool{
 	"Users.NewUsersAreActive":                             false,
 	"Users.PreferDomainForUsername":                       false,
 	"Users.RoleGroupsVisibleToAll":                        false,
+	"Users.SyncIgnoredGroups":                             true,
 	"Users.SyncRequiredGroups":                            true,
 	"Users.SyncUserAccounts":                              true,
 	"Users.SyncUserAPITokens":                             true,
