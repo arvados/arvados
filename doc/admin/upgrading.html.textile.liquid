@@ -29,14 +29,26 @@ TODO: extract this information based on git commit messages and generate changel
 </notextile>
 
 
-h2(#main). development main (as of 2023-05-11)
+h2(#main). development main (as of 2023-06-23)
 
-"previous: Upgrading to 2.6.2":#v2_6_2
+"previous: Upgrading to 2.6.3":#v2_6_3
 
 h3. Multi-node installer's domain name configuration changes
 
 The @domain_name@ variable at @terraform/vpc/terraform.tfvars@ and @DOMAIN@ variable at @local.params@ changed their meaning. In previous versions they were used in combination with @cluster_name@ and @CLUSTER@ to build the cluster's domain name (e.g.: @cluster_name@.@domain_name@). To allow the use of any arbitrary cluster domain, now we don't enforce using the cluster prefix as part of the domain, so @domain_name@ and @DOMAIN@ need to hold the entire domain for the given cluster.
 For example, if @cluster_name@ is set to @"xarv1"@ and @domain_name@ was previously set to @"example.com"@, it should now be set to @"xarv1.example.com"@ to keep using the same cluster domain.
+
+h3. arvados-login-sync configuration changes, including ignored groups
+
+In the @Users@ section of your cluster configuration, there are now several options to control what system resources are or are not managed by @arvados-login-sync@. These options all have names that begin with @Sync@.
+
+The defaults for all of these options match the previous behavior of @arvados-login-sync@ _except_ for @SyncIgnoredGroups@. This list names groups that @arvados-login-sync@ will never modify by adding or removing members. As a security precaution, the default list names security-sensitive system groups on Debian- and Red Hat-based distributions. If you are using Arvados to manage system group membership on shell nodes, especially @sudo@ or @wheel@, you may want to provide your own list. Set @SyncIgnoredGroups: []@ to restore the original behavior of ignoring no groups.
+
+h3. UseAWSS3v2Driver option removed
+
+The old "v1" S3 driver for keepstore has been removed. The new "v2" implementation, which has been the default since Arvados 2.5.0, is always used. The @Volumes.*.DriverParameters.UseAWSS3v2Driver@ configuration key is no longer recognized. If your config file uses it, remove it to avoid warning messages at startup.
+
+h2(#v2_6_3). v2.6.3 (2023-06-06)
 
 h3. Python SDK automatically retries failed requests much more
 
@@ -50,10 +62,6 @@ arv_client = arvados.api('v1', num_retries=0, ...)
 {% endcodeblock %}
 
 The first time the Python SDK fetches an Arvados API discovery document, it will ensure that @googleapiclient.http@ logs are handled so you have a way to know about early problems that are being retried. If you prefer to handle these logs your own way, just ensure that the @googleapiclient.http@ logger (or a parent logger) has a handler installed before you call any Arvados API client constructor.
-
-h3. UseAWSS3v2Driver option removed
-
-The old "v1" S3 driver for keepstore has been removed. The new "v2" implementation, which has been the default since Arvados 2.5.0, is always used. The @Volumes.*.DriverParameters.UseAWSS3v2Driver@ configuration key is no longer recognized. If your config file uses it, remove it to avoid warning messages at startup.
 
 h2(#v2_6_2). v2.6.2 (2023-05-22)
 

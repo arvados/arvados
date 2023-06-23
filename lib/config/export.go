@@ -37,8 +37,8 @@ func ExportJSON(w io.Writer, cluster *arvados.Cluster) error {
 	return json.NewEncoder(w).Encode(m)
 }
 
-// whitelist classifies configs as safe/unsafe to reveal to
-// unauthenticated clients.
+// whitelist classifies configs as safe/unsafe to reveal through the API
+// endpoint. Note that endpoint does not require authentication.
 //
 // Every config entry must either be listed explicitly here along with
 // all of its parent keys (e.g., "API" + "API.RequestTimeout"), or
@@ -247,6 +247,12 @@ var whitelist = map[string]bool{
 	"Users.NewUsersAreActive":                             false,
 	"Users.PreferDomainForUsername":                       false,
 	"Users.RoleGroupsVisibleToAll":                        false,
+	"Users.SyncIgnoredGroups":                             true,
+	"Users.SyncRequiredGroups":                            true,
+	"Users.SyncUserAccounts":                              true,
+	"Users.SyncUserAPITokens":                             true,
+	"Users.SyncUserGroups":                                true,
+	"Users.SyncUserSSHKeys":                               true,
 	"Users.UserNotifierEmailBcc":                          false,
 	"Users.UserNotifierEmailFrom":                         false,
 	"Users.UserProfileNotificationAddress":                false,
