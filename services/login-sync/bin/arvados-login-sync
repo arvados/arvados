@@ -66,9 +66,9 @@ begin
   logincluster_host = ENV['ARVADOS_API_HOST']
   logincluster_name = arv.cluster_config['Login']['LoginCluster'] or ''
   # Requiring the fuse group was previous hardcoded behavior
-  minimum_groups = arv.cluster_config['Login']['SyncRequiredGroups'] || ['fuse']
+  minimum_groups = arv.cluster_config['Users']['SyncRequiredGroups'] || ['fuse']
   actions.each_pair do |key, default|
-    actions[key] = arv.cluster_config['Login'].fetch(key.to_s, default)
+    actions[key] = arv.cluster_config['Users'].fetch(key.to_s, default)
   end
 
   if logincluster_name != '' and logincluster_name != arv.cluster_config['ClusterID']
