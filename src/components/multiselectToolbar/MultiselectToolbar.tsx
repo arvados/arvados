@@ -4,7 +4,7 @@
 
 import React, { ReactElement } from 'react';
 import { connect } from 'react-redux';
-import { StyleRulesCallback, withStyles, WithStyles, Toolbar, Button } from '@material-ui/core';
+import { StyleRulesCallback, withStyles, WithStyles, Toolbar, Button, Tooltip, IconButton } from '@material-ui/core';
 import { ArvadosTheme } from 'common/custom-theme';
 import { RootState } from 'store/store';
 import { Dispatch } from 'redux';
@@ -23,6 +23,9 @@ import { ResourcesState } from 'store/resources/resources';
 import { Resource } from 'models/resource';
 import { getProcess } from 'store/processes/process';
 import { CopyProcessDialog, CopyManyProcessesDialog } from 'views-components/dialog-forms/copy-process-dialog';
+import { collectionActionSet } from 'views-components/context-menu/action-sets/collection-action-set';
+import { ContextMenuAction, ContextMenuActionSet } from 'views-components/context-menu/context-menu-action-set';
+import { TrashIcon } from 'components/icon/icon';
 
 type CssRules = 'root' | 'button';
 
@@ -46,45 +49,57 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     },
 });
 
-type MultiselectToolbarAction = {
-    name: string;
-    funcName: string;
-    relevantKinds: Set<ResourceKind>;
-};
+// type MultiselectToolbarAction = {
+//     name: string;
+//     funcName: string;
+//     relevantKinds: Set<ResourceKind>;
+// };
 
 //gleaned from src/views-components/context-menu/action-sets
-export const defaultActions: Array<MultiselectToolbarAction> = [
-    {
-        name: 'copy and re-run',
-        funcName: 'copySelected',
-        relevantKinds: new Set([ResourceKind.PROCESS]),
-    },
-    {
-        name: 'move',
-        funcName: 'moveSelected',
-        relevantKinds: new Set([ResourceKind.PROCESS, ResourceKind.PROJECT]),
-    },
-    {
-        name: 'remove',
-        funcName: 'removeSelected',
-        relevantKinds: new Set([ResourceKind.PROCESS, ResourceKind.COLLECTION]),
-    },
-    {
-        name: 'favorite',
-        funcName: 'favoriteSelected',
-        relevantKinds: new Set([ResourceKind.PROCESS, ResourceKind.PROJECT, ResourceKind.COLLECTION]),
-    },
-];
+// export const defaultActions: Array<MultiselectToolbarAction> = [
+//     // {
+//     //     name: 'copy and re-run',
+//     //     funcName: 'copySelected',
+//     //     relevantKinds: new Set([ResourceKind.PROCESS]),
+//     // },
+//     {
+//         name: 'copy',
+//         funcName: 'copyCollections',
+//         relevantKinds: new Set([ResourceKind.COLLECTION]),
+//     },
+//     {
+//         name: 'move',
+//         funcName: 'moveSelected',
+//         relevantKinds: new Set([ResourceKind.PROCESS, ResourceKind.PROJECT]),
+//     },
+//     {
+//         name: 'remove',
+//         funcName: 'removeSelected',
+//         relevantKinds: new Set([ResourceKind.PROCESS, ResourceKind.COLLECTION]),
+//     },
+//     {
+//         name: 'favorite',
+//         funcName: 'favoriteSelected',
+//         relevantKinds: new Set([ResourceKind.PROCESS, ResourceKind.PROJECT, ResourceKind.COLLECTION]),
+//     },
+// ];
 
 export type MultiselectToolbarProps = {
-    actions: Array<MultiselectToolbarAction>;
+    // actions: Array<MultiselectToolbarAction>;
     isVisible: boolean;
     checkedList: TCheckedList;
     resources: ResourcesState;
-    copySelected: (checkedList: TCheckedList, resources: ResourcesState) => void;
-    moveSelected: (resource) => void;
-    barSelected: () => void;
-    removeSelected: (checkedList: TCheckedList) => void;
+    // copySelected: (checkedList: TCheckedList, resources: ResourcesState) => void;
+    // copyCollections: (fn, resource: Resource) => void;
+    // moveSelected: (resource) => void;
+    // removeSelected: (checkedList: TCheckedList) => void;
+    executeMulti: (fn, checkedList: TCheckedList, resources: ResourcesState) => void;
+};
+
+const CollectionMSActionsFilter = {
+    MAKE_A_COPY: 'Make a copy',
+    MOVE_TO: 'Move to',
+    TOGGLE_TRASH_ACTION: 'ToggleTrashAction',
 };
 
 export const MultiselectToolbar = connect(
@@ -92,20 +107,37 @@ export const MultiselectToolbar = connect(
     mapDispatchToProps
 )(
     withStyles(styles)((props: MultiselectToolbarProps & WithStyles<CssRules>) => {
-        // console.log(props);
-        const { classes, actions, isVisible, checkedList, resources } = props;
-
+        const { classes, isVisible, checkedList, resources } = props;
         const currentResourceKinds = Array.from(selectedToKindSet(checkedList));
-        const buttons = actions.filter((action) => currentResourceKinds.length && currentResourceKinds.every((kind) => action.relevantKinds.has(kind as ResourceKind)));
+
+        const buttons = filterActions(collectionActionSet, CollectionMSActionsFilter);
+        console.log(selectedToArray(props.checkedList));
 
         return (
             <Toolbar className={classes.root} style={{ width: `${buttons.length * 5.5}rem` }}>
                 {buttons.length ? (
                     buttons.map((btn) => (
-                        <Button key={btn.name} className={classes.button} onClick={() => props[btn.funcName](checkedList)}>
-                            {/* {<CopyProcessDialog>{btn.name}</CopyProcessDialog>} */}
-                            {btn.name}
-                        </Button>
+                        <Tooltip title={btn.name} disableFocusListener>
+                            <IconButton
+                                onClick={() =>
+                                    props.executeMulti(
+                                        btn.execute,
+                                        checkedList,
+                                        props.resources
+                                        // getResource('tordo-4zz18-2dkyrfnrsjdda5v')(props.resources) as Resource
+                                    )
+                                }
+                            >
+                                {/* {console.log(btn.component && btn.component)} */}
+                                {btn.icon ? (
+                                    btn.icon({ className: 'foo' })
+                                ) : btn.name === 'ToggleTrashAction' ? (
+                                    <TrashIcon />
+                                ) : (
+                                    <>error</>
+                                )}
+                            </IconButton>
+                        </Tooltip>
                     ))
                 ) : (
                     <></>
@@ -115,6 +147,7 @@ export const MultiselectToolbar = connect(
     })
 );
 
+//todo: put these all in a /utils
 function selectedToArray(checkedList: TCheckedList): Array<string> {
     const arrayifiedSelectedList: Array<string> = [];
     for (const [key, value] of Object.entries(checkedList)) {
@@ -135,6 +168,12 @@ function selectedToKindSet(checkedList: TCheckedList): Set<string> {
     return setifiedList;
 }
 
+function filterActions(actionArray: ContextMenuActionSet, filters: Record<string, string>): Array<ContextMenuAction> {
+    return actionArray[0].filter((action) => Object.values(filters).includes(action.name as string));
+}
+
+//--------------------------------------------------//
+
 function mapStateToProps(state: RootState) {
     const { isVisible, checkedList } = state.multiselect;
     return {
@@ -146,35 +185,34 @@ function mapStateToProps(state: RootState) {
 
 function mapDispatchToProps(dispatch: Dispatch) {
     return {
-        copySelected: (checkedList: TCheckedList, resources: ResourcesState) => copyMoveMany(dispatch, checkedList),
-        moveSelected: (checkedList: TCheckedList) => {},
-        barSelected: () => {},
-        removeSelected: (checkedList: TCheckedList) => removeMultiProcesses(dispatch, checkedList),
+        // copySelected: (checkedList: TCheckedList, resources: ResourcesState) => copyMoveMany(dispatch, checkedList),
+        // copyCollections: (fn, resource) => fn(dispatch, resource),
+        // moveSelected: (checkedList: TCheckedList) => {},
+        // removeSelected: (checkedList: TCheckedList) => removeMultiProcesses(dispatch, checkedList),
+        executeMulti: (fn, checkedList: TCheckedList, resources: ResourcesState) =>
+            selectedToArray(checkedList).forEach((uuid) => {
+                console.log(uuid);
+                fn(dispatch, getResource(uuid)(resources));
+            }),
     };
 }
 
-function copyMoveMany(dispatch: Dispatch, checkedList: TCheckedList) {
-    const selectedList: Array<string> = selectedToArray(checkedList);
-    const uuid = selectedList[0];
-    // dispatch<any>(openCopyManyProcessesDialog(uuid));
-    dispatch<any>(openCopyManyProcessesDialog(selectedList));
-}
+// function copyMoveMany(dispatch: Dispatch, checkedList: TCheckedList) {
+//     const selectedList: Array<string> = selectedToArray(checkedList);
+//     const uuid = selectedList[0];
+//     dispatch<any>(openCopyManyProcessesDialog(selectedList));
+// }
 
-function moveMultiProcesses(dispatch: Dispatch, checkedList: TCheckedList): void {
-    const selectedList: Array<string> = selectedToArray(checkedList);
-    // if (selectedList.length === 1) dispatch<any>(openMoveProcessDialog(selectedList[0]));
-}
+// const RemoveFunctions = {
+//     ONE_PROCESS: (uuid: string) => openRemoveProcessDialog(uuid),
+//     MANY_PROCESSES: (list: Array<string>) => openRemoveManyProcessesDialog(list),
+// };
 
-const RemoveFunctions = {
-    ONE_PROCESS: (uuid: string) => openRemoveProcessDialog(uuid),
-    MANY_PROCESSES: (list: Array<string>) => openRemoveManyProcessesDialog(list),
-};
-
-function removeMultiProcesses(dispatch: Dispatch, checkedList: TCheckedList): void {
-    const selectedList: Array<string> = selectedToArray(checkedList);
-    dispatch<any>(selectedList.length === 1 ? RemoveFunctions.ONE_PROCESS(selectedList[0]) : RemoveFunctions.MANY_PROCESSES(selectedList));
-}
-
-//onRemove
-//go through the array of selected and choose the appropriate removal function
-//have a constant with [ResourceKind]: different removal methods
+// function removeMultiProcesses(dispatch: Dispatch, checkedList: TCheckedList): void {
+//     const selectedList: Array<string> = selectedToArray(checkedList);
+//     dispatch<any>(
+//         selectedList.length === 1
+//             ? RemoveFunctions.ONE_PROCESS(selectedList[0])
+//             : RemoveFunctions.MANY_PROCESSES(selectedList)
+//     );
+// }

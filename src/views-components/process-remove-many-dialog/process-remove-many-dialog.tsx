@@ -10,7 +10,6 @@ import { removeProcessPermanently, REMOVE_MANY_PROCESSES_DIALOG } from 'store/pr
 
 const mapDispatchToProps = (dispatch: Dispatch, props: WithDialogProps<any>) => ({
     onConfirm: () => {
-        console.log(props.data.list);
         props.closeDialog();
         props.data.list.forEach((uuid: string) => dispatch<any>(removeProcessPermanently(uuid)));
     },

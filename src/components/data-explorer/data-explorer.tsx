@@ -3,7 +3,18 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import React from 'react';
-import { Grid, Paper, Toolbar, StyleRulesCallback, withStyles, WithStyles, TablePagination, IconButton, Tooltip, Button } from '@material-ui/core';
+import {
+    Grid,
+    Paper,
+    Toolbar,
+    StyleRulesCallback,
+    withStyles,
+    WithStyles,
+    TablePagination,
+    IconButton,
+    Tooltip,
+    Button,
+} from '@material-ui/core';
 import { ColumnSelector } from 'components/column-selector/column-selector';
 import { DataTable, DataColumns, DataTableFetchMode } from 'components/data-table/data-table';
 import { DataColumn } from 'components/data-table/data-column';
@@ -14,10 +25,19 @@ import { DataTableFilters } from 'components/data-table-filters/data-table-filte
 import { CloseIcon, IconType, MaximizeIcon, UnMaximizeIcon, MoreOptionsIcon } from 'components/icon/icon';
 import { PaperProps } from '@material-ui/core/Paper';
 import { MPVPanelProps } from 'components/multi-panel-view/multi-panel-view';
-import { MultiselectToolbar, defaultActions } from 'components/multiselectToolbar/MultiselectToolbar';
+import { MultiselectToolbar } from 'components/multiselectToolbar/MultiselectToolbar';
 import { TCheckedList } from 'components/data-table/data-table';
 
-type CssRules = 'searchBox' | 'headerMenu' | 'toolbar' | 'footer' | 'root' | 'moreOptionsButton' | 'title' | 'dataTable' | 'container';
+type CssRules =
+    | 'searchBox'
+    | 'headerMenu'
+    | 'toolbar'
+    | 'footer'
+    | 'root'
+    | 'moreOptionsButton'
+    | 'title'
+    | 'dataTable'
+    | 'container';
 
 const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     searchBox: {
@@ -102,7 +122,10 @@ interface DataExplorerActionProps<T> {
     setCheckedListOnStore: (checkedList: TCheckedList) => void;
 }
 
-type DataExplorerProps<T> = DataExplorerDataProps<T> & DataExplorerActionProps<T> & WithStyles<CssRules> & MPVPanelProps;
+type DataExplorerProps<T> = DataExplorerDataProps<T> &
+    DataExplorerActionProps<T> &
+    WithStyles<CssRules> &
+    MPVPanelProps;
 
 export const DataExplorer = withStyles(styles)(
     class DataExplorerGeneric<T> extends React.Component<DataExplorerProps<T>> {
@@ -203,11 +226,20 @@ export const DataExplorer = withStyles(styles)(
                                     <Toolbar className={classes.toolbar}>
                                         {!hideSearchInput && (
                                             <div className={classes.searchBox}>
-                                                {!hideSearchInput && <SearchInput label={searchLabel} value={searchValue} selfClearProp={''} onSearch={onSearch} />}
+                                                {!hideSearchInput && (
+                                                    <SearchInput
+                                                        label={searchLabel}
+                                                        value={searchValue}
+                                                        selfClearProp={''}
+                                                        onSearch={onSearch}
+                                                    />
+                                                )}
                                             </div>
                                         )}
                                         {actions}
-                                        {!hideColumnSelector && <ColumnSelector columns={columns} onColumnToggle={onColumnToggle} />}
+                                        {!hideColumnSelector && (
+                                            <ColumnSelector columns={columns} onColumnToggle={onColumnToggle} />
+                                        )}
                                         {doUnMaximizePanel && panelMaximized && (
                                             <Tooltip title={`Unmaximize ${panelName || 'panel'}`} disableFocusListener>
                                                 <IconButton onClick={doUnMaximizePanel}>
@@ -230,7 +262,7 @@ export const DataExplorer = withStyles(styles)(
                                             </Tooltip>
                                         )}
                                     </Toolbar>
-                                    <MultiselectToolbar actions={defaultActions} />
+                                    <MultiselectToolbar />
                                 </Grid>
                             )}
                         </div>
@@ -301,7 +333,10 @@ export const DataExplorer = withStyles(styles)(
         renderContextMenuTrigger = (item: T) => (
             <Grid container justify='center'>
                 <Tooltip title='More options' disableFocusListener>
-                    <IconButton className={this.props.classes.moreOptionsButton} onClick={(event) => this.props.onContextMenu(event, item)}>
+                    <IconButton
+                        className={this.props.classes.moreOptionsButton}
+                        onClick={(event) => this.props.onContextMenu(event, item)}
+                    >
                         <MoreOptionsIcon />
                     </IconButton>
                 </Tooltip>
