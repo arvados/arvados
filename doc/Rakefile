@@ -51,7 +51,7 @@ file ["install/new_cluster_checklist_Azure.xlsx", "install/new_cluster_checklist
 end
 
 file "sdk/python/arvados/index.html" do |t|
-  if ENV['NO_SDK'] || File.exists?("no-sdk")
+  if ENV['NO_SDK'] || File.exist?("no-sdk")
     next
   end
   `which pdoc`
@@ -66,7 +66,7 @@ file "sdk/python/arvados/index.html" do |t|
 end
 
 file "sdk/R/arvados/index.html" do |t|
-  if ENV['NO_SDK'] || File.exists?("no-sdk")
+  if ENV['NO_SDK'] || File.exist?("no-sdk")
     next
   end
   `which R`
@@ -132,7 +132,7 @@ EOF
 end
 
 file "sdk/java-v2/javadoc/index.html" do |t|
-  if ENV['NO_SDK'] || File.exists?("no-sdk")
+  if ENV['NO_SDK'] || File.exist?("no-sdk")
     next
   end
   `which java`
