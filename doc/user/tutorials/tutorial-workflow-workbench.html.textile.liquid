@@ -21,18 +21,19 @@ h3. Steps
 
 notextile. <div class="spaced-out">
 
-# Start from the *Workbench Dashboard*.  You can access the Dashboard by clicking on *<i class="fa fa-lg fa-fw fa-dashboard"></i> Dashboard* in the upper left corner of any Workbench page.
-# Click on the <span class="btn btn-sm btn-primary"><i class="fa fa-fw fa-gear"></i> Run a process...</span> button.  This will open a dialog box titled *Choose a pipeline or workflow to run*.
-# In the search box, type in *bwa-mem.cwl*.
-# Select *<i class="fa fa-fw fa-gear"></i> bwa-mem.cwl* and click the <span class="btn btn-sm btn-primary" >Next: choose inputs <i class="fa fa-fw fa-arrow-circle-right"></i></span> button.  This will create a new process in your *Home* project and will open it. You can now supply the inputs for the process. Please note that all required inputs are populated with default values and you can change them if you prefer.
-# For example, let's see how to set read pair *read_p1* and *read_p2* for this workflow. Click the <span class="btn btn-sm btn-primary">Choose</span> button beneath the *read_p1* header.  This will open a dialog box titled *Choose a file*.
-# In the file dialog, click on *Home <span class="caret"></span>* menu and then select *All Projects*.
-# Enter *HWI-ST1027* into the search box.  You will see one or more collections. Click on *<i class="fa fa-fw fa-archive"></i>  HWI-ST1027_129_D0THKACXX for CWL tutorial*
-# The right hand panel will list two files.  Click on the first one ending in "_1" and click the <span class="btn btn-sm btn-primary" >OK</span> button.
-# Repeat the steps 5-8 to set the *read_p2* except selecting the second file ending in "_2"
-# Scroll to the bottom of the "Inputs" panel and click on the <span class="btn btn-sm btn-primary" >Run <i class="fa fa-fw fa-play"></i></span> button.  The page updates to show you that the process has been submitted to run on the Arvados cluster.
-# Once the process starts running, you can track the progress by watching log messages from the component(s).  This page refreshes automatically.  You will see a <span class="label label-success">complete</span> label when the process completes successfully.
-# Click on the *Output* link to see the results of the process.  This will load a new page listing the output files from this process.  You'll see the output SAM file from the alignment tool under the *Files* tab.
-# Click on the <span class="btn btn-sm btn-info"><i class="fa fa-download"></i></span> download button to the right of the SAM file to download your results.
+# Click on the <span class="btn btn-sm btn-primary">+ NEW</span> button in the top-left.
+# In the pop-up menu, select *<i class="fa fa-fw fa-gear"></i> Run a workflow*.  This will open the _Run Process_ panel in the Workbench.
+# In the search field under *Choose a workflow*, type in _bwa-mem.cwl_.
+# Select *bwa-mem.cwl* in the search results, and click the <span class="btn btn-sm btn-primary" >NEXT</span> button.  This will create a new process in one of your Home Projects and will open it. To specify the project for the workflow run, click on the input line below "*Project where the workflow will run*", and in the pop-up dialog box, choose a project under your Home Projects.
+# You can now supply the inputs for the process. Please note that all required inputs are populated with default values and you can change them if you prefer.
+# For example, let's see how to set read pair *read_p1* and *read_p2* for this workflow. Click on the input line under the *read_p1* header.  This will open a dialog box titled *Choose a file*.
+# Enter the search terms _user guide resources_ into the *Search for a Project* field on the left.  You will see one or more collections in the search results appearing below and, among them, the one with the exact title *<i class="fa fa-fw fa-folder"></i> User guide resources*. Your goal is to locate the file _HWI-ST1027_129_D0THKACXX.1_1.fastq_.
+# You may either locate the file manually, by clicking on the triangles ▶ to the left of each item to expand them (projects and the collections under it) until you find the file, or by filtering the search results using the *Filter Collections list in Projects* field, for example, with a term like "_HWI-ST1027_".
+# Either way, you will find the file <i class="fa fa-fw fa-file"></i> *HWI-ST1027_129_D0THKACXX.1_1.fastq* in the search results. Click on it, and then the <span class="btn btn-sm btn-primary">OK</span> button in the bottom-right.
+# Repeat the steps 7--9 to set the value for *read_p2*, except selecting the file ending in "_2"
+# Scroll to the bottom of the "Inputs" panel and click on the <span class="btn btn-sm btn-primary" >RUN WORKFLOW</span> button.  The page updates to show you that the process has been queued to run on the Arvados cluster.
+# Once the process starts running, you can track the progress by watching the log messages from the component(s) (scroll down to the *Logs* panel).  This page refreshes automatically, and you can also click on the <span class="btn btn-sm btn-primary">REFRESH</span> button on the top of the page. You will see a <span class="label label-success">Completed</span> label when the process completes successfully.
+# The output of the workflow can be found by following the link "Output from bwa-mem.cwl" under the heading *Output collection* in the main or <span class="btn btn-sm btn-primary">DETAILS</span> panel, or in the <span class="btn btn-sm btn-primary">OUTPUTS</span> panel further down. Click on the *Output from bwa-mem.cwl* link to see the detailed results from the workflow run.  This will lead you to a page that lists the metadata of the outputs, and you'll see the output SAM file there, in the <span class="btn btn-sm btn-primary">FILES</span> panel.
+# To download your results, simply click on the SAM file name.
 
 notextile. </div>
