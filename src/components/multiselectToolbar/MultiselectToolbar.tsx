@@ -22,6 +22,7 @@ import { CopyProcessDialog, CopyManyProcessesDialog } from 'views-components/dia
 import { collectionActionSet } from 'views-components/context-menu/action-sets/collection-action-set';
 import { ContextMenuAction, ContextMenuActionSet } from 'views-components/context-menu/context-menu-action-set';
 import { TrashIcon } from 'components/icon/icon';
+import { multiselectActionsFilters, TMultiselectActionsFilters } from './ms-toolbar-action-filters';
 
 type CssRules = 'root' | 'button';
 
@@ -52,22 +53,12 @@ export type MultiselectToolbarProps = {
     executeMulti: (fn, checkedList: TCheckedList, resources: ResourcesState) => void;
 };
 
-const collectionMSActionsFilter = {
-    MAKE_A_COPY: 'Make a copy',
-    MOVE_TO: 'Move to',
-    TOGGLE_TRASH_ACTION: 'ToggleTrashAction',
-};
-
-const multiselectActionsFilters = {
-    'arvados#collection': [collectionActionSet, collectionMSActionsFilter],
-};
-
 export const MultiselectToolbar = connect(
     mapStateToProps,
     mapDispatchToProps
 )(
     withStyles(styles)((props: MultiselectToolbarProps & WithStyles<CssRules>) => {
-        const { classes, isVisible, checkedList, resources } = props;
+        const { classes, checkedList } = props;
         const currentResourceKinds = Array.from(selectedToKindSet(checkedList));
 
         const buttons = selectActionsByKind(currentResourceKinds, multiselectActionsFilters);
@@ -117,13 +108,15 @@ function selectedToKindSet(checkedList: TCheckedList): Set<string> {
     return setifiedList;
 }
 
-function filterActions(actionArray: ContextMenuActionSet, filters: Record<string, string>): Array<ContextMenuAction> {
-    return actionArray[0].filter((action) => Object.values(filters).includes(action.name as string));
+function filterActions(actionArray: ContextMenuActionSet, filters: Array<string>): Array<ContextMenuAction> {
+    return actionArray[0].filter((action) => filters.includes(action.name as string));
 }
 
-function selectActionsByKind(resourceKinds: Array<string>, filterSet: any) {
+function selectActionsByKind(resourceKinds: Array<string>, filterSet: TMultiselectActionsFilters) {
     const result: Array<ContextMenuAction> = [];
-    resourceKinds.forEach((kind) => result.push(...filterActions(filterSet[kind][0], filterSet[kind][1])));
+    resourceKinds.forEach((kind) => {
+        if (filterSet[kind]) result.push(...filterActions(...filterSet[kind]));
+    });
     return result;
 }
 
@@ -142,7 +135,6 @@ function mapDispatchToProps(dispatch: Dispatch) {
     return {
         executeMulti: (fn, checkedList: TCheckedList, resources: ResourcesState) =>
             selectedToArray(checkedList).forEach((uuid) => {
-                console.log(uuid);
                 fn(dispatch, getResource(uuid)(resources));
             }),
     };
