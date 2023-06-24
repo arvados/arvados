@@ -17,23 +17,33 @@ Arvados Data collections can be uploaded using either Workbench or the @arv-put@
 
 h2(#upload-using-workbench). Upload using Workbench
 
-To upload using Workbench, visit the Workbench *Dashboard*. Click on *Projects*<span class="caret"></span> dropdown menu in the top navigation menu and select your *Home* project or any other project of your choosing.  You will see the *Data collections* tab for this project, which lists the collections in this project.
+To upload using Workbench, first identify the project to upload the files into. This is done by browsing your projects in the navigation menu on the left, or to search for the project using the search field on the top.
 
-To upload files into a new collection, click on *Add data*<span class="caret"></span> dropdown menu and select *Upload files from my computer*.
+Having navigated to the project, click on the <span class="btn btn-sm btn-primary">+ NEW</span> button in the top-left corner. In the pop-up menu, select the item *New collection*.
 
-!{display: block;margin-left: 25px;margin-right: auto;border:1px solid lightgray;}{{ site.baseurl }}/images/upload-using-workbench.png!
+<figure> !{width: 80%;}{{ site.baseurl }}/images/add-new-collection-wb2.png! <figcaption> _Creating a new collection in the project "WGS Processing Tutorial"_ </figcaption></figure>
 
-<br/>This will create a new empty collection in your chosen project and will take you to the *Upload* tab for that collection.
+In the dialog box that follows, you will be prompted to create a new collection in your chosen project. Here, the *Collection Name* field is required. After entering the name for this new collection (and optionally other fields), you have the choice to create it with new file updates -- by drag-and-drop into the *Files* area or with the traditional file-upload dialog opened by your browser.
 
-!{display: block;margin-left: 25px;margin-right: auto;border:1px solid lightgray;}{{ site.baseurl }}/images/upload-tab-in-new-collection.png!
+<figure>!{width: 100%;}{{ site.baseurl }}/images/new-collection-modal-wb2.png!<figcaption>_Providing the new collection with a name (required). Optionally, you can upload files in this step._</figcaption></figure>
 
-Click on the *Browse...* button and select the files you would like to upload. Selected files will be added to a list of files to be uploaded. After you are done selecting files to upload, click on the *<i class="fa fa-fw fa-play"></i> Start* button to start upload. This will start uploading files to Arvados and Workbench will show you the progress bar. When upload is completed, you will see an indication to that effect.
+You can then click on the <span class="btn btn-sm btn-primary">CREATE A COLLECTION</span> button and proceed to the newly-created collection's page. If you don't upload any data when creating the collection, the new collection will be empty, and you can upload files into it later.
 
-!{display: block;margin-left: 25px;margin-right: auto;border:1px solid lightgray;}{{ site.baseurl }}/images/files-uploaded.png!
+<figure>!{width: 100%;}{{ site.baseurl }}/images/newly-created-collection-empty-wb2.png!<figcaption>_The newly-created collection without any files yet._</figcaption></figure>
+
+In the <span class="btn btn-sm btn-primary">FILES</span> panel, there is a button labeled <span class="btn btn-sm btn-primary">UPLOAD DATA</span>. Click on it, and you will be prompted to upload files by drag-and-drop or the file-selection dialog opened by your browser.
+
+The files you choose to upload will then be displayed, and you can review them before clicking on the <span class="btn btn-sm btn-primary">UPLOAD DATA</span> button to initiate the actual file transfer.
+
+<figure>!{width: 100%;}{{ site.baseurl }}/images/upload-data-prompt-with-files-wb2.png!<figcaption>_Selecting the files to upload_</figcaption></figure>
+
+Once the file upload completes, you will be notified by a message, and the files will appear under the <span class="btn btn-sm btn-primary">FILES</span> panel shortly.
+
+<figure>!{width: 100%;}{{ site.baseurl }}/images/upload-data-progress-wb2.png!<figcaption>_Upload status being displayed, with the files to appear shortly_</figcaption></figure>
 
 *Note:* If you leave the collection page during the upload, the upload process will be aborted and you will need to upload the files again.
 
-*Note:* You can also use the Upload tab to add additional files to an existing collection.
+*Note:* You can also use the <span class="btn btn-sm btn-primary">UPLOAD DATA</span> button to add additional files to an existing collection.
 
 notextile. <div class="spaced-out">
 
@@ -41,9 +51,11 @@ h2(#creating-projects). Creating projects
 
 Files are organized into Collections, and Collections are organized by Projects.
 
-Click on *Projects*<span class="caret"></span> <span class="rarr">&rarr;</span> <i class="fa fa-fw fa-plus"></i>*Add a new project* to add a top level project.
+When you have navigated to any existing project, clicking on <span class="btn btn-sm btn-primary">+ NEW</span> <span class="rarr">&rarr;</span> <i class="fa fa-fw fa-folder"></i> *New project* will prompt you to create a new subproject under the current project.
 
-To create a subproject, navigate to the parent project, and click on <i class="fa fa-fw fa-plus"></i>*Add a subproject*.
+If you're at the top-level <i class="fa fa-fw fa-folder"></i> *Home Projects*, a new top-level project will be created.
+
+Alternatively, you can right-click on the link to an existing project to bring up a context menu, and select *New project*.
 
 See "Sharing collections":tutorial-keep-get.html#download-shared-collection for information about sharing projects and collections with other users.
 
@@ -85,12 +97,12 @@ In both examples, the @arv-put@ command created a collection. The first collecti
 
 h3. Locate your collection in Workbench
 
-Visit the Workbench *Dashboard*.  Click on *Projects*<span class="caret"></span> dropdown menu in the top navigation menu, select your *Home* project.  Your newly uploaded collection should appear near the top of the *Data collections* tab.  The collection name printed by @arv-put@ will appear under the *name* column.
+Visit the Workbench and go to your <i class="fa fa-fw fa-folder"></i> *Home Projects*.  Your newly uploaded collection should appear in the main panel.  The collection name printed by @arv-put@ will appear under the *Name* column, and its *Type* will be "_Data collection_".
 
-To move the collection to a different project, check the box at the left of the collection row.  Pull down the *Selection...*<span class="caret"></span> menu near the top of the page tab, and select *Move selected...* button. This will open a dialog box where you can select a destination project for the collection.  Click a project, then finally the <span class="btn btn-sm btn-primary">Move</span> button.
+Click on the collection's name will lead you to its Workbench page, where you can see the collection's contents and download individual files.
 
-!{display: block;margin-left: 25px;margin-right: auto;}{{ site.baseurl }}/images/workbench-move-selected.png!
+To move the collection to a different project, locate the collection and right-click on it. This will bring up a context menu with *Move to*. Click on this item, and you will see a dialog box where you can select the target project to move this collection to, by search or navigation. This context menu is also available from the triple-dot button in the project/collection listing or the collection details page.
 
-Click on the *<i class="fa fa-fw fa-archive"></i> Show* button next to the collection's listing on a project page to go to the Workbench page for your collection.  On this page, you can see the collection's contents, download individual files, and set sharing options.
+<figure>!{width: 80%;}{{ site.baseurl }}/images/workbench-move-wb2.png!<figcaption> _Context menu with the_ *Move to* _item_ </figcaption></figure>
 
 notextile. </div>
