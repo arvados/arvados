@@ -19,29 +19,42 @@ h2(#download-using-workbench). Download using Workbench
 
 You can also download Arvados data collections using the Workbench.
 
-Visit the Workbench *Dashboard*. Click on *Projects*<span class="caret"></span> dropdown menu in the top navigation menu, select your *Home* project. You will see the *Data collections* tab, which lists the collections in this project.
+When you visit a project in Workbench (for instance, the <i class="fa fa-fw fa-folder"></i> *Home Projects* or any projects under it), the collections will show up on the project details page, with "_Data collection_" in the *Type* column.
 
-You can access the contents of a collection by clicking on the *<i class="fa fa-fw fa-archive"></i> Show* button next to the collection. This will take you to the collection's page. Using this page you can see the collection's contents, and download individual files.
+Clicking on a collection will bring you to its details page. There, the <span class="btn btn-sw btn-primary">FILES</span> panel acts like a file manager where you can navigate to or search for files, select them for actions, and download them.
 
-You can now download the collection files by clicking on the <span class="btn btn-sm btn-info"><i class="fa fa-download"></i></span> button(s).
+To download a file, simply click on the file, or bring up the context menu using right-click or the triple-dot button on its row, and then select the menu item *Download*.
 
 h2(#download-shared-collection). Sharing collections
 
+Collections or their parent projects can be shared with other users on the Arvados cluster.  First, locate the collection or project using any available means (for instance, by manually navigating in the Workbench, or using the Search bar). Then right-click on its link in a listing, or click on the triple-dot button in the details page. You will find the menu item *Share*, which opens the dialog box *Sharing settings*.
+
 h3. Sharing with other Arvados users
 
-Collections can be shared with other users on the Arvados cluster by sharing the parent project.  Navigate to the parent project using the "breadcrumbs" bar, then click on the *Sharing* tab.  From the sharing tab, you can choose which users or groups to share with, and their level of access.
+To share with other Arvados users, select the *WITH USERS/GROUPS* tab in the *Sharing settings* dialog box. Under *Add people and groups*, in the input field you can search for the user or group names. Select one you will be sharing with, choose the *Authorization* level (Read/Write/Manage) in the drop-down menu, and click on the plus sign (+) on the right. This can be repeated for other users or groups, each with their own *Authorization* level. The selected ones will appear under *People with access*. You can revisit the *Sharing settings* dialog box to modify the users or their access levels at a later time.
 
-h3. Creating a special download URL
+The *General access* drop-down menu controls the default sharing setting, with the following choices:
 
-To share a collection with users that do not have an account on your Arvados cluster, visit the collection page using Workbench as described in the above section. Once on this page, click on the <span class="btn btn-sm btn-primary" >Create sharing link</span> button.
+* *Private*: This is the initial state when no users or groups have been selected for sharing. At any time, by setting *General access* to private, the current sharing setting will be cleared, and any users or groups formerly with access will lose that access.
+* *Public*: This means the list of *People with access* will include _Anonymous users_, even if they are not users of the current cluster. You can further set their access level in the *Authorization* level.
+* *All users*: This means sharing with other users who are logged in on the current cluster.
+* *Shared*: When you choose to share with specific people or groups, *General access* will be set to *Shared*. From this state, you can further specify the default sharing settings for *Public* and *All users*.
 
-This will create a sharing link for the collection as shown below. You can copy the sharing link in this page and share it with other users.
+h3. Creating a special download URL for a collection
 
-!{display: block;margin-left: 25px;margin-right: auto;border:1px solid lightgray;}{{ site.baseurl }}/images/shared-collection.png!
+To share a collection with users that do not have an account on your Arvados cluster, locate the collection and then go to the *Sharing settings* dialog box as described above. There, select the *SHARING URLS* tab.
 
-A user with this url can download this collection by simply accessing this url using browser. It will present a downloadable version of the collection as shown below.
+You can then generate a new sharing URL using the <span class="btn btn-sm btn-primary">CREATE SHARING URL</span> button, with the option to set an expiration time for the URL. You can then copy the URL to the clipboard for sharing with others. To revoke (that is, delete) a sharing URL, click on the cross icon beside it.
+
+!{width: 80%}{{ site.baseurl }}/images/sharing-collection-url.png!
+
+Any user with the sharing URL can download this collection by simply accessing this URL using browser. It will present a downloadable version of the collection as shown below.
 
 !{display: block;margin-left: 25px;margin-right: auto;border:1px solid lightgray;}{{ site.baseurl }}/images/download-shared-collection.png!
+
+When a collection is being shared by URL, in the *WITH USERS/GROUS* tab of *Sharing settings*, the following message will appear if *General access* is Private: _Although there aren't specific permissions set, this is publicly accessible via Sharing URL(s)._
+
+* *Note:* Sharing by URL is specific to collections. Projects or individual files cannot be shared in this way.
 
 h2(#download-using-arv). Download using command line tools
 
