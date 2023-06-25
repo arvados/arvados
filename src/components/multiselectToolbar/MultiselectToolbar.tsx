@@ -35,14 +35,11 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
         margin: '1rem auto auto 0.5rem',
         overflow: 'hidden',
         transition: 'width 150ms',
+        borderBottom: '1px solid gray',
     },
     button: {
-        backgroundColor: '#017ead',
-        color: 'white',
-        fontSize: '0.75rem',
-        width: 'auto',
-        margin: 'auto',
-        padding: '1px',
+        width: '1rem',
+        margin: 'auto 5px',
     },
 });
 
@@ -64,21 +61,27 @@ export const MultiselectToolbar = connect(
         const buttons = selectActionsByKind(currentResourceKinds, multiselectActionsFilters);
 
         return (
-            <Toolbar className={classes.root} style={{ width: `${buttons.length * 3.5}rem` }}>
+            <Toolbar className={classes.root} style={{ width: `${buttons.length * 2.12}rem` }}>
                 {buttons.length ? (
-                    buttons.map((btn, i) => (
-                        <Tooltip title={btn.name} key={i} disableFocusListener>
-                            <IconButton onClick={() => props.executeMulti(btn.execute, checkedList, props.resources)}>
-                                {btn.icon ? (
-                                    btn.icon({ className: 'foo' })
-                                ) : btn.name === 'ToggleTrashAction' ? (
+                    buttons.map((btn, i) =>
+                        btn.name === 'ToggleTrashAction' ? (
+                            <Tooltip className={classes.button} title={'Move to trash'} key={i} disableFocusListener>
+                                <IconButton
+                                    onClick={() => props.executeMulti(btn.execute, checkedList, props.resources)}
+                                >
                                     <TrashIcon />
-                                ) : (
-                                    <>error</>
-                                )}
-                            </IconButton>
-                        </Tooltip>
-                    ))
+                                </IconButton>
+                            </Tooltip>
+                        ) : (
+                            <Tooltip className={classes.button} title={btn.name} key={i} disableFocusListener>
+                                <IconButton
+                                    onClick={() => props.executeMulti(btn.execute, checkedList, props.resources)}
+                                >
+                                    {btn.icon ? btn.icon({}) : <>error</>}
+                                </IconButton>
+                            </Tooltip>
+                        )
+                    )
                 ) : (
                     <></>
                 )}
@@ -108,13 +111,15 @@ function selectedToKindSet(checkedList: TCheckedList): Set<string> {
     return setifiedList;
 }
 
+//num of currentResourceKinds * num of actions (in ContextMenuActionSet) * num of filters
+//worst case: 14 * x * x -oof
 function filterActions(actionArray: ContextMenuActionSet, filters: Array<string>): Array<ContextMenuAction> {
     return actionArray[0].filter((action) => filters.includes(action.name as string));
 }
 
-function selectActionsByKind(resourceKinds: Array<string>, filterSet: TMultiselectActionsFilters) {
+function selectActionsByKind(currentResourceKinds: Array<string>, filterSet: TMultiselectActionsFilters) {
     const result: Array<ContextMenuAction> = [];
-    resourceKinds.forEach((kind) => {
+    currentResourceKinds.forEach((kind) => {
         if (filterSet[kind]) result.push(...filterActions(...filterSet[kind]));
     });
     return result;
