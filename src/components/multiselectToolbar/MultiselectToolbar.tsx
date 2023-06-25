@@ -12,7 +12,7 @@ import { TCheckedList } from 'components/data-table/data-table';
 import { openRemoveProcessDialog, openRemoveManyProcessesDialog } from 'store/processes/processes-actions';
 import { processResourceActionSet } from '../../views-components/context-menu/action-sets/process-resource-action-set';
 import { ContextMenuResource } from 'store/context-menu/context-menu-actions';
-import { extractUuidKind } from 'models/resource';
+import { Resource, extractUuidKind } from 'models/resource';
 import { openMoveProcessDialog } from 'store/processes/process-move-actions';
 import { openCopyProcessDialog, openCopyManyProcessesDialog } from 'store/processes/process-copy-actions';
 import { getResource } from 'store/resources/resources';
@@ -22,7 +22,12 @@ import { CopyProcessDialog, CopyManyProcessesDialog } from 'views-components/dia
 import { collectionActionSet } from 'views-components/context-menu/action-sets/collection-action-set';
 import { ContextMenuAction, ContextMenuActionSet } from 'views-components/context-menu/context-menu-action-set';
 import { TrashIcon } from 'components/icon/icon';
-import { multiselectActionsFilters, TMultiselectActionsFilters } from './ms-toolbar-action-filters';
+import {
+    multiselectActionsFilters,
+    TMultiselectActionsFilters,
+    contextMenuActionConsts,
+} from './ms-toolbar-action-filters';
+import { kindToActionSet, findActionByName } from './ms-kind-action-differentiator';
 
 type CssRules = 'root' | 'button';
 
@@ -47,7 +52,7 @@ export type MultiselectToolbarProps = {
     isVisible: boolean;
     checkedList: TCheckedList;
     resources: ResourcesState;
-    executeMulti: (fn, checkedList: TCheckedList, resources: ResourcesState) => void;
+    executeMulti: (fn, actionName: string, checkedList: TCheckedList, resources: ResourcesState) => void;
 };
 
 export const MultiselectToolbar = connect(
@@ -67,7 +72,14 @@ export const MultiselectToolbar = connect(
                         btn.name === 'ToggleTrashAction' ? (
                             <Tooltip className={classes.button} title={'Move to trash'} key={i} disableFocusListener>
                                 <IconButton
-                                    onClick={() => props.executeMulti(btn.execute, checkedList, props.resources)}
+                                    onClick={() =>
+                                        props.executeMulti(
+                                            btn.execute,
+                                            btn.name as string,
+                                            checkedList,
+                                            props.resources
+                                        )
+                                    }
                                 >
                                     <TrashIcon />
                                 </IconButton>
@@ -75,9 +87,16 @@ export const MultiselectToolbar = connect(
                         ) : (
                             <Tooltip className={classes.button} title={btn.name} key={i} disableFocusListener>
                                 <IconButton
-                                    onClick={() => props.executeMulti(btn.execute, checkedList, props.resources)}
+                                    onClick={() =>
+                                        props.executeMulti(
+                                            btn.execute,
+                                            btn.name as string,
+                                            checkedList,
+                                            props.resources
+                                        )
+                                    }
                                 >
-                                    {btn.icon ? btn.icon({}) : <>error</>}
+                                    {btn.icon ? btn.icon({}) : <></>}
                                 </IconButton>
                             </Tooltip>
                         )
@@ -138,9 +157,17 @@ function mapStateToProps(state: RootState) {
 
 function mapDispatchToProps(dispatch: Dispatch) {
     return {
-        executeMulti: (fn, checkedList: TCheckedList, resources: ResourcesState) =>
+        executeMulti: (fn, actionName: string, checkedList: TCheckedList, resources: ResourcesState) => {
             selectedToArray(checkedList).forEach((uuid) => {
-                fn(dispatch, getResource(uuid)(resources));
-            }),
+                const resource = getResource(uuid)(resources);
+                resource ? executeSpecific(dispatch, actionName, resource) : fn(dispatch, resource);
+            });
+        },
     };
+}
+
+function executeSpecific(dispatch: Dispatch, actionName: string, resource) {
+    const actionSet = kindToActionSet[resource.kind];
+    const action = findActionByName(actionName, actionSet);
+    if (action) action.execute(dispatch, resource);
 }
