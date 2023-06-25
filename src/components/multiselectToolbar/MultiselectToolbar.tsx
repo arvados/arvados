@@ -52,7 +52,7 @@ export type MultiselectToolbarProps = {
     isVisible: boolean;
     checkedList: TCheckedList;
     resources: ResourcesState;
-    executeMulti: (fn, actionName: string, checkedList: TCheckedList, resources: ResourcesState) => void;
+    executeMulti: (action: ContextMenuAction, checkedList: TCheckedList, resources: ResourcesState) => void;
 };
 
 export const MultiselectToolbar = connect(
@@ -71,31 +71,13 @@ export const MultiselectToolbar = connect(
                     buttons.map((btn, i) =>
                         btn.name === 'ToggleTrashAction' ? (
                             <Tooltip className={classes.button} title={'Move to trash'} key={i} disableFocusListener>
-                                <IconButton
-                                    onClick={() =>
-                                        props.executeMulti(
-                                            btn.execute,
-                                            btn.name as string,
-                                            checkedList,
-                                            props.resources
-                                        )
-                                    }
-                                >
+                                <IconButton onClick={() => props.executeMulti(btn, checkedList, props.resources)}>
                                     <TrashIcon />
                                 </IconButton>
                             </Tooltip>
                         ) : (
                             <Tooltip className={classes.button} title={btn.name} key={i} disableFocusListener>
-                                <IconButton
-                                    onClick={() =>
-                                        props.executeMulti(
-                                            btn.execute,
-                                            btn.name as string,
-                                            checkedList,
-                                            props.resources
-                                        )
-                                    }
-                                >
+                                <IconButton onClick={() => props.executeMulti(btn, checkedList, props.resources)}>
                                     {btn.icon ? btn.icon({}) : <></>}
                                 </IconButton>
                             </Tooltip>
@@ -131,17 +113,35 @@ function selectedToKindSet(checkedList: TCheckedList): Set<string> {
 }
 
 //num of currentResourceKinds * num of actions (in ContextMenuActionSet) * num of filters
-//worst case: 14 * x * x -oof
+//worst case: 14 * n * n -oof
 function filterActions(actionArray: ContextMenuActionSet, filters: Array<string>): Array<ContextMenuAction> {
     return actionArray[0].filter((action) => filters.includes(action.name as string));
 }
 
+//this might be the least efficient algorithm I've ever written
 function selectActionsByKind(currentResourceKinds: Array<string>, filterSet: TMultiselectActionsFilters) {
     const result: Array<ContextMenuAction> = [];
     currentResourceKinds.forEach((kind) => {
-        if (filterSet[kind]) result.push(...filterActions(...filterSet[kind]));
+        if (filterSet[kind]) {
+            const actions = filterActions(...filterSet[kind]);
+            actions.forEach((action) => {
+                if (!result.some((item) => item.name === action.name)) {
+                    result.push(action);
+                }
+            });
+        }
     });
-    return result;
+    return result.sort((a, b) => {
+        a.name = a.name || '';
+        b.name = b.name || '';
+        if (a.name < b.name) {
+            return -1;
+        }
+        if (a.name > b.name) {
+            return 1;
+        }
+        return 0;
+    });
 }
 
 //--------------------------------------------------//
@@ -157,16 +157,16 @@ function mapStateToProps(state: RootState) {
 
 function mapDispatchToProps(dispatch: Dispatch) {
     return {
-        executeMulti: (fn, actionName: string, checkedList: TCheckedList, resources: ResourcesState) => {
+        executeMulti: (action: ContextMenuAction, checkedList: TCheckedList, resources: ResourcesState) => {
             selectedToArray(checkedList).forEach((uuid) => {
                 const resource = getResource(uuid)(resources);
-                resource ? executeSpecific(dispatch, actionName, resource) : fn(dispatch, resource);
+                executeSpecific(dispatch, action.name, resource);
             });
         },
     };
 }
 
-function executeSpecific(dispatch: Dispatch, actionName: string, resource) {
+function executeSpecific(dispatch: Dispatch, actionName, resource) {
     const actionSet = kindToActionSet[resource.kind];
     const action = findActionByName(actionName, actionSet);
     if (action) action.execute(dispatch, resource);
