@@ -573,6 +573,7 @@ type CloudVMsConfig struct {
 	MaxProbesPerSecond             int
 	MaxConcurrentInstanceCreateOps int
 	MaxInstances                   int
+	InitialQuotaEstimate           int
 	SupervisorFraction             float64
 	PollInterval                   Duration
 	ProbeInterval                  Duration

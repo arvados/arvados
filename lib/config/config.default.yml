@@ -1413,10 +1413,30 @@ Clusters:
         # down.
         MaxInstances: 64
 
-        # Maximum fraction of CloudVMs.MaxInstances allowed to run
-        # "supervisor" containers at any given time. A supervisor is a
-        # container whose purpose is mainly to submit and manage other
-        # containers, such as arvados-cwl-runner workflow runner.
+        # The minimum number of instances expected to be runnable
+        # without reaching a provider-imposed quota.
+        #
+        # This is used as the initial value for the dispatcher's
+        # dynamic instance limit, which increases (up to MaxInstances)
+        # as containers start up successfully and decreases in
+        # response to high API load and cloud quota errors.
+        #
+        # Setting this too high creates a risk that the dispatcher
+        # will cause deadlock by starting so many supervisor
+        # containers (based on SupervisorFraction and MaxInstances)
+        # that the cloud quota prevents them from running any child
+        # containers.
+        #
+        # Setting this too low causes the dispatcher to be
+        # unnecessarily slow to start up new instances after a
+        # restart.
+        InitialQuotaEstimate: 16
+
+        # Maximum fraction of available instance capacity allowed to
+        # run "supervisor" containers at any given time. A supervisor
+        # is a container whose purpose is mainly to submit and manage
+        # other containers, such as arvados-cwl-runner workflow
+        # runner.
         #
         # If there is a hard limit on the amount of concurrent
         # containers that the cluster can run, it is important to

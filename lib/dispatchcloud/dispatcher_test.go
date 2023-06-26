@@ -78,6 +78,7 @@ func (s *DispatcherSuite) SetUpTest(c *check.C) {
 				TimeoutProbe:         arvados.Duration(15 * time.Millisecond),
 				TimeoutShutdown:      arvados.Duration(5 * time.Millisecond),
 				MaxCloudOpsPerSecond: 500,
+				InitialQuotaEstimate: 8,
 				PollInterval:         arvados.Duration(5 * time.Millisecond),
 				ProbeInterval:        arvados.Duration(5 * time.Millisecond),
 				MaxProbesPerSecond:   1000,
