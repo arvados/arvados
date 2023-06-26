@@ -121,9 +121,13 @@ function filterActions(actionArray: ContextMenuActionSet, filters: Array<string>
 //this might be the least efficient algorithm I've ever written
 function selectActionsByKind(currentResourceKinds: Array<string>, filterSet: TMultiselectActionsFilters) {
     const result: Array<ContextMenuAction> = [];
+    //start at currentResourceKinds
     currentResourceKinds.forEach((kind) => {
+        //if there is a matching filter set
         if (filterSet[kind]) {
+            //filter actions that apply to current kind
             const actions = filterActions(...filterSet[kind]);
+            //if action name isn't in result, push name
             actions.forEach((action) => {
                 if (!result.some((item) => item.name === action.name)) {
                     result.push(action);
@@ -131,6 +135,7 @@ function selectActionsByKind(currentResourceKinds: Array<string>, filterSet: TMu
             });
         }
     });
+    //return sorted array of actions
     return result.sort((a, b) => {
         a.name = a.name || '';
         b.name = b.name || '';
