@@ -92,6 +92,19 @@ func (sch *Scheduler) runQueue() {
 	if sch.maxInstances > 0 && sch.maxConcurrency > sch.maxInstances {
 		sch.maxConcurrency = sch.maxInstances
 	}
+	if sch.pool.AtQuota() && len(running) > 0 && (sch.maxConcurrency == 0 || sch.maxConcurrency > len(running)) {
+		// Consider current workload to be the maximum
+		// allowed, for the sake of reporting metrics and
+		// calculating max supervisors.
+		//
+		// Now that sch.maxConcurrency is set, we will only
+		// raise it past len(running) by 10%.  This helps
+		// avoid running an inappropriate number of
+		// supervisors when we reach the cloud-imposed quota
+		// (which may be based on # CPUs etc) long before the
+		// configured MaxInstances.
+		sch.maxConcurrency = len(running)
+	}
 	sch.mMaxContainerConcurrency.Set(float64(sch.maxConcurrency))
 
 	maxSupervisors := int(float64(sch.maxConcurrency) * sch.supervisorFraction)
