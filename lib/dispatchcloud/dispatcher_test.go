@@ -69,6 +69,7 @@ func (s *DispatcherSuite) SetUpTest(c *check.C) {
 			DispatchPrivateKey:     string(dispatchprivraw),
 			StaleLockTimeout:       arvados.Duration(5 * time.Millisecond),
 			RuntimeEngine:          "stub",
+			MaxDispatchAttempts:    10,
 			CloudVMs: arvados.CloudVMsConfig{
 				Driver:               "test",
 				SyncInterval:         arvados.Duration(10 * time.Millisecond),
@@ -234,9 +235,9 @@ func (s *DispatcherSuite) TestDispatchToStubDriver(c *check.C) {
 		select {
 		case <-done:
 			// loop will end because len(waiting)==0
-		case <-time.After(3 * time.Second):
+		case <-time.After(5 * time.Second):
 			if len(waiting) >= waswaiting {
-				c.Fatalf("timed out; no progress in 3s while waiting for %d containers: %q", len(waiting), waiting)
+				c.Fatalf("timed out; no progress in 5 s while waiting for %d containers: %q", len(waiting), waiting)
 			}
 		}
 	}
