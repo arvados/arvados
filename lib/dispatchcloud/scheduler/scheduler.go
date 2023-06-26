@@ -122,6 +122,18 @@ func (sch *Scheduler) registerMetrics(reg *prometheus.Registry) {
 		Help:      "Dynamically assigned limit on number of containers scheduled concurrency, set after receiving 503 errors from API.",
 	})
 	reg.MustRegister(sch.mMaxContainerConcurrency)
+	reg.MustRegister(prometheus.NewGaugeFunc(prometheus.GaugeOpts{
+		Namespace: "arvados",
+		Subsystem: "dispatchcloud",
+		Name:      "at_quota",
+		Help:      "Flag indicating the cloud driver is reporting an at-quota condition.",
+	}, func() float64 {
+		if sch.pool.AtQuota() {
+			return 1
+		} else {
+			return 0
+		}
+	}))
 }
 
 func (sch *Scheduler) updateMetrics() {
