@@ -127,7 +127,7 @@ deploynode() {
 }
 
 loadconfig() {
-    if [ ! -s ${CONFIG_FILE} -o ! -s ${CONFIG_FILE}.secrets ]; then
+    if [[ -s ${CONFIG_FILE} && -s ${CONFIG_FILE}.secrets ]]; then
 		echo "Must be run from initialized setup dir, maybe you need to 'initialize' first?"
     fi
     source ${CONFIG_FILE}.secrets

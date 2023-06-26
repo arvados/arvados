@@ -241,7 +241,7 @@ arguments ${@}
 
 declare -A NODES
 
-if [ -s ${CONFIG_FILE} -a -s ${CONFIG_FILE}.secrets ]; then
+if [[ -s ${CONFIG_FILE} && -s ${CONFIG_FILE}.secrets ]]; then
   source ${CONFIG_FILE}.secrets
   source ${CONFIG_FILE}
 else
