@@ -1169,6 +1169,12 @@ class ContainerTest < ActiveSupport::TestCase
     preemptible_values.product(preemptible_values),
     preemptible_values.product(preemptible_values, preemptible_values),
   ).each do |preemptible_a|
+    # If the first req has preemptible=true but a subsequent req
+    # doesn't, we want to avoid reusing the first container, so this
+    # test isn't appropriate.
+    next if preemptible_a[0] &&
+            ((preemptible_a.length > 1 && !preemptible_a[1]) ||
+             (preemptible_a.length > 2 && !preemptible_a[2]))
     test "retry requests scheduled with preemptible=#{preemptible_a}" do
       configure_preemptible_instance_type
       param_hashes = vary_parameters(preemptible: preemptible_a)
@@ -1217,14 +1223,14 @@ class ContainerTest < ActiveSupport::TestCase
     configure_preemptible_instance_type
     param_hashes = [{
                      "partitions": ["alpha", "bravo"],
-                     "preemptible": true,
+                     "preemptible": false,
                      "max_run_time": 10,
                     }, {
                      "partitions": ["alpha", "charlie"],
                      "max_run_time": 20,
                     }, {
                      "partitions": ["bravo", "charlie"],
-                     "preemptible": false,
+                     "preemptible": true,
                      "max_run_time": 30,
                     }]
     container = retry_with_scheduling_parameters(param_hashes)
