@@ -21,21 +21,12 @@ INITIAL_USER=admin
 # If not specified, the initial user email will be composed as
 # INITIAL_USER@DOMAIN
 INITIAL_USER_EMAIL="admin@cluster_fixme_or_this_wont_work.domain_fixme_or_this_wont_work"
-INITIAL_USER_PASSWORD="fixmepassword"
 
 # Use a public node as a jump host for SSH sessions. This allows running the
 # installer from the outside of the cluster's local network and still reach
 # the internal servers for configuration deployment.
 # Comment out to disable.
 USE_SSH_JUMPHOST="controller.${DOMAIN}"
-
-# YOU SHOULD CHANGE THESE TO SOME RANDOM STRINGS
-BLOB_SIGNING_KEY=fixmeblobsigningkeymushaveatleast32characters
-MANAGEMENT_TOKEN=fixmemanagementtokenmushaveatleast32characters
-SYSTEM_ROOT_TOKEN=fixmesystemroottokenmushaveatleast32characters
-ANONYMOUS_USER_TOKEN=fixmeanonymoususertokenmushaveatleast32characters
-WORKBENCH_SECRET_KEY=fixmeworkbenchsecretkeymushaveatleast32characters
-DATABASE_PASSWORD=fixmeplease_set_this_to_some_secure_value
 
 # SSL CERTIFICATES
 # Arvados requires SSL certificates to work correctly. This installer supports these options:
@@ -52,8 +43,6 @@ USE_LETSENCRYPT_ROUTE53="yes"
 # RRs in the route53 zone for the cluster.
 # WARNING!: If AWS credentials files already exist in the hosts, they won't be replaced.
 LE_AWS_REGION="us-east-1"
-LE_AWS_ACCESS_KEY_ID="AKIABCDEFGHIJKLMNOPQ"
-LE_AWS_SECRET_ACCESS_KEY="thisistherandomstringthatisyoursecretkey"
 
 # If you going to provide your own certificates for Arvados, the provision script can
 # help you deploy them. In order to do that, you need to set `SSL_MODE=bring-your-own` above,

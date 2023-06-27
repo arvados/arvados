@@ -16,7 +16,7 @@ SPDX-License-Identifier: CC-BY-SA-3.0
 # "Set up your infrastructure":#setup-infra
 ## "Create AWS infrastructure with Terraform":#terraform
 ## "Create required infrastructure manually":#inframanual
-# "Edit local.params":#localparams
+# "Edit local.params* files":#localparams
 # "Configure Keep storage":#keep
 # "Choose the SSL configuration":#certificates
 ## "Using a Let's Encrypt certificates":#lets-encrypt
@@ -192,7 +192,7 @@ The certificates will be requested from Let's Encrypt when you run the installer
 
 * You'll also need @compute_subnet_id@ and @arvados_sg_id@ to set @DriverParameters.SubnetID@ and @DriverParameters.SecurityGroupIDs@ in @local_config_dir/pillars/arvados.sls@ and when you "create a compute image":#create_a_compute_image.
 
-You can now proceed to "edit local.params":#localparams.
+You can now proceed to "edit local.params* files":#localparams.
 
 h3(#inframanual). Create required infrastructure manually
 
@@ -259,9 +259,13 @@ This usually means adding the account to the @sudo@ group and having a rule like
 
 If your infrastructure differs from the setup proposed above (ie, different hostnames), you can still use the installer, but "additional customization may be necessary":#further_customization .
 
-h2(#localparams). Edit @local.params@
+h2(#localparams). Edit @local.params*@ files
 
-This can be found wherever you choose to initialize the install files (@~/setup-arvados-xarv1@ in these examples).
+The cluster configuration parameters are included in two files: @local.params@ and @local.params.secrets@. These files can be found wherever you choose to initialize the installation files (e.g., @~/setup-arvados-xarv1@ in these examples).
+
+The @local.params.secrets@ file is intended to store security-sensitive data such as passwords, private keys, tokens, etc. Depending on the security requirements of the cluster deployment, you may wish to store this file in a secrets store like AWS Secrets Manager or Jenkins credentials.
+
+h3. Parameters from @local.params@:
 
 # Set @CLUSTER@ to the 5-character cluster identifier (e.g "xarv1")
 # Set @DOMAIN@ to the base DNS domain of the environment, e.g. "xarv1.example.com"
@@ -270,6 +274,9 @@ This can be found wherever you choose to initialize the install files (@~/setup-
 _CIDR stands for "Classless Inter-Domain Routing" and describes which portion of the IP address that refers to the network.  For example 192.168.3.0/24 means that the first 24 bits are the network (192.168.3) and the last 8 bits are a specific host on that network._
 _AWS Specific: Go to the AWS console and into the VPC service, there is a column in this table view of the VPCs that gives the CIDR for the VPC (IPv4 CIDR)._
 # Set @INITIAL_USER_EMAIL@ to your email address, as you will be the first admin user of the system.
+
+h3. Parameters from @local.params.secrets@:
+
 # Set each @KEY@ / @TOKEN@ / @PASSWORD@ to a random string.  You can use @installer.sh generate-tokens@
 <pre><code>$ ./installer.sh generate-tokens
 BLOB_SIGNING_KEY=XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
@@ -284,6 +291,13 @@ DATABASE_PASSWORD=XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
    For example, if the password is @Lq&MZ<V']d?j@
    With backslash quoting the special characters it should appear like this in local.params:
 <pre><code>DATABASE_PASSWORD="Lq\&MZ\<V\'\]d\?j"</code></pre>
+# Set @DISPATCHER_SSH_PRIVKEY@ to a SSH private key that @arvados-dispatch-cloud@ will use to connect to the compute nodes:
+<pre><code>DISPATCHER_SSH_PRIVKEY="-----BEGIN OPENSSH PRIVATE KEY-----
+b3BlbnNzaC1rZXktdjEAAAAABG5vbmUAAAAEbm9uZQAAAAAAAAABAAABlwAAAAdzc2gtcn
+...
+s4VY40kNxs6MsAAAAPbHVjYXNAaW5zdGFsbGVyAQIDBA==
+-----END OPENSSH PRIVATE KEY-----"
+</code></pre>You can create one by following the steps described on the "building a compute node documentation":{{site.baseurl}}/install/crunch2-cloud/install-compute-node.html#sshkeypair page.
 
 h3(#etchosts). Note on @/etc/hosts@
 
@@ -324,7 +338,7 @@ Arvados requires a database that is compatible with PostgreSQL 9.5 or later.  Fo
 
 # In @local.params@, remove 'database' from the list of roles assigned to the controller node:
 <pre><code>NODES=(
-  [controller.${CLUSTER}.${DOMAIN}]=api,controller,websocket,dispatcher,keepbalance
+  [controller.${DOMAIN}]=api,controller,websocket,dispatcher,keepbalance
   ...
 )
 </code></pre>
@@ -364,7 +378,6 @@ Once the image has been created, open @local_config_dir/pillars/arvados.sls@ and
 ## Set @DriverParameters.AdminUsername@ to the admin user account on the image
 ## Set the @DriverParameters.SecurityGroupIDs@ list to the VPC security group which you set up to allow SSH connections to these nodes
 ## Set @DriverParameters.SubnetID@ to the value of SubnetId of your VPC
-# Update @arvados.cluster.Containers.DispatchPrivateKey@ and paste the contents of the @~/.ssh/id_dispatcher@ file you generated in an earlier step.
 # Update @arvados.cluster.InstanceTypes@ as necessary.  The example instance types are for AWS, other cloud providers will of course have different instance types with different names and specifications.
 (AWS specific) If m5/c5 node types are not available, replace them with m4/c4. You'll need to double check the values for Price and IncludedScratch/AddedScratch for each type that is changed.
 
@@ -450,7 +463,7 @@ h2(#initial_user). Initial user and login
 
 At this point you should be able to log into the Arvados cluster. The initial URL will be
 
-https://workbench.@${CLUSTER}.${DOMAIN}@
+https://workbench.${DOMAIN}@
 
 If you did *not* "configure a different authentication provider":#authentication you will be using the "Test" provider, and the provision script creates an initial user for testing purposes. This user is configured as administrator of the newly created cluster.  It uses the values of @INITIAL_USER@ and @INITIAL_USER_PASSWORD@ the @local.params@ file.
 
@@ -460,7 +473,7 @@ h2(#monitoring). Monitoring and Metrics
 
 You can monitor the health and performance of the system using the admin dashboard:
 
-https://grafana.@${CLUSTER}.${DOMAIN}@
+https://grafana.${DOMAIN}@
 
 To log in, use username "admin" and @${INITIAL_USER_PASSWORD}@ from @local.conf@.
 

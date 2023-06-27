@@ -115,6 +115,7 @@ arvados:
     {%- endif %}
 
     ### CONTAINERS
+    {%- set dispatcher_ssh_privkey = "__DISPATCHER_SSH_PRIVKEY__" %}
     Containers:
       MaxRetryAttempts: 10
       CloudVMs:
@@ -131,12 +132,7 @@ arvados:
           SecurityGroupIDs: ['sg-FIXMEFIXMEFIXMEFI']
           SubnetID: subnet-FIXMEFIXMEFIXMEFI
           IAMInstanceProfile: __CLUSTER__-compute-node-00-iam-role
-      DispatchPrivateKey: |
-        -----BEGIN OPENSSH PRIVATE KEY-----
-        Read https://doc.arvados.org/install/crunch2-cloud/install-compute-node.html#sshkeypair
-        for details on how to create this key.
-        FIXMEFIXMEFIXME replace this with your dispatcher ssh private key
-        -----END OPENSSH PRIVATE KEY-----
+      DispatchPrivateKey: {{ dispatcher_ssh_privkey|yaml_dquote }}
 
     ### VOLUMES
     ## This should usually match all your `keepstore` instances
