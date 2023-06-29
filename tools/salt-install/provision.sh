@@ -26,6 +26,7 @@ usage() {
   echo >&2 "  -r, --roles                                 List of Arvados roles to apply to the host, comma separated"
   echo >&2 "                                              Possible values are:"
   echo >&2 "                                                api"
+  echo >&2 "                                                balancer"
   echo >&2 "                                                controller"
   echo >&2 "                                                dispatcher"
   echo >&2 "                                                keepproxy"
@@ -109,7 +110,7 @@ arguments() {
         for i in ${2//,/ }
           do
             # Verify the role exists
-            if [[ ! "database,api,controller,keepstore,websocket,keepweb,workbench2,webshell,keepbalance,keepproxy,shell,workbench,dispatcher,monitoring" == *"$i"* ]]; then
+            if [[ ! "database,api,balancer,controller,keepstore,websocket,keepweb,workbench2,webshell,keepbalance,keepproxy,shell,workbench,dispatcher,monitoring" == *"$i"* ]]; then
               echo "The role '${i}' is not a valid role"
               usage
               exit 1
@@ -319,7 +320,7 @@ else
     echo "Salt already installed"
   else
     curl -L https://bootstrap.saltstack.com -o /tmp/bootstrap_salt.sh
-    sh /tmp/bootstrap_salt.sh -XdfP -x python3 stable ${SALT_VERSION}
+    sh /tmp/bootstrap_salt.sh -XdfP -x python3 old-stable ${SALT_VERSION}
     /bin/systemctl stop salt-minion.service
     /bin/systemctl disable salt-minion.service
   fi
@@ -461,7 +462,11 @@ for f in $(ls "${SOURCE_PILLARS_DIR}"/*); do
        s#__MONITORING_USERNAME__#${MONITORING_USERNAME}#g;
        s#__MONITORING_EMAIL__#${MONITORING_EMAIL}#g;
        s#__MONITORING_PASSWORD__#${MONITORING_PASSWORD}#g;
-       s#__DISPATCHER_SSH_PRIVKEY__#${DISPATCHER_SSH_PRIVKEY//$'\n'/\\n}#g" \
+       s#__DISPATCHER_SSH_PRIVKEY__#${DISPATCHER_SSH_PRIVKEY//$'\n'/\\n}#g;
+       s#__ENABLE_BALANCER__#${ENABLE_BALANCER}#g;
+       s#__BALANCER_NODENAME__#${BALANCER_NODENAME}#g;
+       s#__BALANCER_BACKENDS__#${BALANCER_BACKENDS}#g;
+       s#__DISPATCHER_INT_IP__#${DISPATCHER_INT_IP}#g" \
   "${f}" > "${P_DIR}"/$(basename "${f}")
 done
 
@@ -541,7 +546,11 @@ if [ -d "${SOURCE_STATES_DIR}" ]; then
          s#__MONITORING_USERNAME__#${MONITORING_USERNAME}#g;
          s#__MONITORING_EMAIL__#${MONITORING_EMAIL}#g;
          s#__MONITORING_PASSWORD__#${MONITORING_PASSWORD}#g;
-         s#__DISPATCHER_SSH_PRIVKEY__#${DISPATCHER_SSH_PRIVKEY//$'\n'/\\n}#g" \
+         s#__DISPATCHER_SSH_PRIVKEY__#${DISPATCHER_SSH_PRIVKEY//$'\n'/\\n}#g;
+         s#__ENABLE_BALANCER__#${ENABLE_BALANCER}#g;
+         s#__BALANCER_NODENAME__#${BALANCER_NODENAME}#g;
+         s#__BALANCER_BACKENDS__#${BALANCER_BACKENDS}#g;
+         s#__DISPATCHER_INT_IP__#${DISPATCHER_INT_IP}#g" \
     "${f}" > "${F_DIR}/extra/extra"/$(basename "${f}")
   done
 fi
@@ -804,17 +813,19 @@ else
         echo "    - extra.passenger_rvm" >> ${S_DIR}/top.sls
         ### If we don't install and run LE before arvados-api-server, it fails and breaks everything
         ### after it. So we add this here as we are, after all, sharing the host for api and controller
-        if [ "${SSL_MODE}" = "lets-encrypt" ]; then
-          if [ "${USE_LETSENCRYPT_ROUTE53}" = "yes" ]; then
-            grep -q "aws_credentials" ${S_DIR}/top.sls || echo "    - aws_credentials" >> ${S_DIR}/top.sls
+        if [ "${ENABLE_BALANCER}" == "no" ]; then
+          if [ "${SSL_MODE}" = "lets-encrypt" ]; then
+            if [ "${USE_LETSENCRYPT_ROUTE53}" = "yes" ]; then
+              grep -q "aws_credentials" ${S_DIR}/top.sls || echo "    - aws_credentials" >> ${S_DIR}/top.sls
+            fi
+            grep -q "letsencrypt" ${S_DIR}/top.sls || echo "    - letsencrypt" >> ${S_DIR}/top.sls
+          else
+            # Use custom certs
+            if [ "${SSL_MODE}" = "bring-your-own" ]; then
+              copy_custom_cert ${CUSTOM_CERTS_DIR} controller
+            fi
+            grep -q controller ${P_DIR}/extra_custom_certs.sls || echo "  - controller" >> ${P_DIR}/extra_custom_certs.sls
           fi
-          grep -q "letsencrypt" ${S_DIR}/top.sls || echo "    - letsencrypt" >> ${S_DIR}/top.sls
-        else
-          # Use custom certs
-          if [ "${SSL_MODE}" = "bring-your-own" ]; then
-            copy_custom_cert ${CUSTOM_CERTS_DIR} controller
-          fi
-          grep -q controller ${P_DIR}/extra_custom_certs.sls || echo "  - controller" >> ${P_DIR}/extra_custom_certs.sls
         fi
         grep -q "arvados.${R}" ${S_DIR}/top.sls    || echo "    - arvados.${R}" >> ${S_DIR}/top.sls
         # Pillars
@@ -828,8 +839,89 @@ else
         NGINX_INSTALL_SOURCE="install_from_phusionpassenger"
         sed -i "s/__NGINX_INSTALL_SOURCE__/${NGINX_INSTALL_SOURCE}/g" ${P_DIR}/nginx_passenger.sls
       ;;
-      "controller" | "websocket" | "workbench" | "workbench2" | "webshell" | "keepweb" | "keepproxy")
-        # States
+      "balancer")
+        ### States ###
+        grep -q "\- nginx$" ${S_DIR}/top.sls || echo "    - nginx" >> ${S_DIR}/top.sls
+
+        if [ "${SSL_MODE}" = "lets-encrypt" ]; then
+          grep -q "letsencrypt"     ${S_DIR}/top.sls || echo "    - letsencrypt" >> ${S_DIR}/top.sls
+          if [ "x${USE_LETSENCRYPT_ROUTE53}" = "xyes" ]; then
+            grep -q "aws_credentials" ${S_DIR}/top.sls || echo "    - aws_credentials" >> ${S_DIR}/top.sls
+          fi
+        elif [ "${SSL_MODE}" = "bring-your-own" ]; then
+          copy_custom_cert ${CUSTOM_CERTS_DIR} ${R}
+        fi
+
+        ### Pillars ###
+        grep -q "nginx_${R}_configuration" ${P_DIR}/top.sls || echo "    - nginx_${R}_configuration" >> ${P_DIR}/top.sls
+
+        if [ "${SSL_MODE}" = "lets-encrypt" ]; then
+          grep -q "letsencrypt"     ${P_DIR}/top.sls || echo "    - letsencrypt" >> ${P_DIR}/top.sls
+
+          grep -q "letsencrypt_${R}_configuration" ${P_DIR}/top.sls || echo "    - letsencrypt_${R}_configuration" >> ${P_DIR}/top.sls
+          sed -i "s/__CERT_REQUIRES__/cmd: create-initial-cert-${BALANCER_NODENAME}.${DOMAIN}*/g;
+                  s#__CERT_PEM__#/etc/letsencrypt/live/${BALANCER_NODENAME}.${DOMAIN}/fullchain.pem#g;
+                  s#__CERT_KEY__#/etc/letsencrypt/live/${BALANCER_NODENAME}.${DOMAIN}/privkey.pem#g" \
+          ${P_DIR}/nginx_${R}_configuration.sls
+
+          if [ "${USE_LETSENCRYPT_ROUTE53}" = "yes" ]; then
+            grep -q "aws_credentials" ${P_DIR}/top.sls || echo "    - aws_credentials" >> ${P_DIR}/top.sls
+          fi
+        elif [ "${SSL_MODE}" = "bring-your-own" ]; then
+          grep -q "ssl_key_encrypted" ${P_DIR}/top.sls || echo "    - ssl_key_encrypted" >> ${P_DIR}/top.sls
+          sed -i "s/__CERT_REQUIRES__/file: extra_custom_certs_file_copy_arvados-${R}.pem/g;
+                  s#__CERT_PEM__#/etc/nginx/ssl/arvados-${R}.pem#g;
+                  s#__CERT_KEY__#/etc/nginx/ssl/arvados-${R}.key#g" \
+            ${P_DIR}/nginx_${R}_configuration.sls
+          grep -q "${R}" ${P_DIR}/extra_custom_certs.sls || echo "  - ${R}" >> ${P_DIR}/extra_custom_certs.sls
+        fi
+      ;;
+      "controller")
+        ### States ###
+        grep -q "\- nginx$" ${S_DIR}/top.sls || echo "    - nginx" >> ${S_DIR}/top.sls
+        grep -q "arvados.${R}" ${S_DIR}/top.sls || echo "    - arvados.${R}" >> ${S_DIR}/top.sls
+
+        if [ "${ENABLE_BALANCER}" == "no" ]; then
+          if [ "${SSL_MODE}" = "lets-encrypt" ]; then
+            if [ "x${USE_LETSENCRYPT_ROUTE53}" = "xyes" ]; then
+              grep -q "aws_credentials" ${S_DIR}/top.sls || echo "    - aws_credentials" >> ${S_DIR}/top.sls
+            fi
+            grep -q "letsencrypt"     ${S_DIR}/top.sls || echo "    - letsencrypt" >> ${S_DIR}/top.sls
+          elif [ "${SSL_MODE}" = "bring-your-own" ]; then
+            copy_custom_cert ${CUSTOM_CERTS_DIR} ${R}
+          fi
+        fi
+
+        ### Pillars ###
+        grep -q "nginx_passenger" ${P_DIR}/top.sls          || echo "    - nginx_passenger" >> ${P_DIR}/top.sls
+        grep -q "nginx_${R}_configuration" ${P_DIR}/top.sls || echo "    - nginx_${R}_configuration" >> ${P_DIR}/top.sls
+
+        if [ "${ENABLE_BALANCER}" == "no" ]; then
+          if [ "${SSL_MODE}" = "lets-encrypt" ]; then
+            if [ "${USE_LETSENCRYPT_ROUTE53}" = "yes" ]; then
+              grep -q "aws_credentials" ${P_DIR}/top.sls || echo "    - aws_credentials" >> ${P_DIR}/top.sls
+            fi
+
+            grep -q "letsencrypt"     ${P_DIR}/top.sls || echo "    - letsencrypt" >> ${P_DIR}/top.sls
+            grep -q "letsencrypt_${R}_configuration" ${P_DIR}/top.sls || echo "    - letsencrypt_${R}_configuration" >> ${P_DIR}/top.sls
+            sed -i "s/__CERT_REQUIRES__/cmd: create-initial-cert-${R}.${DOMAIN}*/g;
+                    s#__CERT_PEM__#/etc/letsencrypt/live/${R}.${DOMAIN}/fullchain.pem#g;
+                    s#__CERT_KEY__#/etc/letsencrypt/live/${R}.${DOMAIN}/privkey.pem#g" \
+            ${P_DIR}/nginx_${R}_configuration.sls
+          else
+            grep -q "ssl_key_encrypted" ${P_DIR}/top.sls || echo "    - ssl_key_encrypted" >> ${P_DIR}/top.sls
+            sed -i "s/__CERT_REQUIRES__/file: extra_custom_certs_file_copy_arvados-${R}.pem/g;
+                    s#__CERT_PEM__#/etc/nginx/ssl/arvados-${R}.pem#g;
+                    s#__CERT_KEY__#/etc/nginx/ssl/arvados-${R}.key#g" \
+            ${P_DIR}/nginx_${R}_configuration.sls
+            grep -q ${R} ${P_DIR}/extra_custom_certs.sls || echo "  - ${R}" >> ${P_DIR}/extra_custom_certs.sls
+          fi
+        fi
+        # We need to tweak the Nginx's pillar depending whether we want plain nginx or nginx+passenger
+        sed -i "s/__NGINX_INSTALL_SOURCE__/${NGINX_INSTALL_SOURCE}/g" ${P_DIR}/nginx_passenger.sls
+      ;;
+      "websocket" | "workbench" | "workbench2" | "webshell" | "keepweb" | "keepproxy")
+        ### States ###
         if [ "${R}" = "workbench" ]; then
           grep -q "    - logrotate" ${S_DIR}/top.sls || echo "    - logrotate" >> ${S_DIR}/top.sls
           NGINX_INSTALL_SOURCE="install_from_phusionpassenger"
@@ -841,6 +933,7 @@ else
         else
           grep -q "\- nginx$" ${S_DIR}/top.sls || echo "    - nginx" >> ${S_DIR}/top.sls
         fi
+
         if [ "${SSL_MODE}" = "lets-encrypt" ]; then
           if [ "x${USE_LETSENCRYPT_ROUTE53}" = "xyes" ]; then
             grep -q "aws_credentials" ${S_DIR}/top.sls || echo "    - aws_credentials" >> ${S_DIR}/top.sls
@@ -859,11 +952,13 @@ else
             fi
           fi
         fi
+
         # webshell role is just a nginx vhost, so it has no state
         if [ "${R}" != "webshell" ]; then
           grep -q "arvados.${R}" ${S_DIR}/top.sls || echo "    - arvados.${R}" >> ${S_DIR}/top.sls
         fi
-        # Pillars
+
+        ### Pillars ###
         if [ "${R}" = "workbench" ]; then
           grep -q "logrotate_wb1" ${P_DIR}/top.sls || echo "    - logrotate_wb1" >> ${P_DIR}/top.sls
         fi
