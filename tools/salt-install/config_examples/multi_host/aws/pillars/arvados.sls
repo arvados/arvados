@@ -160,7 +160,7 @@ arvados:
           'http://localhost:8003': {}
       DispatchCloud:
         InternalURLs:
-          'http://__CONTROLLER_INT_IP__:9006': {}
+          'http://__DISPATCHER_INT_IP__:9006': {}
       Keepbalance:
         InternalURLs:
           'http://__CONTROLLER_INT_IP__:9005': {}
