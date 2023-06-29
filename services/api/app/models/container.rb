@@ -343,7 +343,7 @@ class Container < ArvadosModel
     # Check for non-failing Running candidates and return the most likely to finish sooner.
     log_reuse_info { "checking for state=Running..." }
     running = candidates.where(state: Running).
-              where("(runtime_status->'error') is null").
+              where("(runtime_status->'error') is null and priority > 0").
               order('progress desc, started_at asc').
               limit(1).first
     if running
@@ -357,10 +357,15 @@ class Container < ArvadosModel
     locked_or_queued = candidates.
                        where("state IN (?)", [Locked, Queued]).
                        order('state asc, priority desc, created_at asc').
-                       limit(1).first
-    if locked_or_queued
-      log_reuse_info { "done, reusing container #{locked_or_queued.uuid} with state=#{locked_or_queued.state}" }
-      return locked_or_queued
+                       limit(1)
+    if !attrs[:scheduling_parameters]['preemptible']
+      locked_or_queued = locked_or_queued.
+                           where("not ((scheduling_parameters::jsonb)->>'preemptible')::boolean")
+    end
+    chosen = locked_or_queued.first
+    if chosen
+      log_reuse_info { "done, reusing container #{chosen.uuid} with state=#{chosen.state}" }
+      return chosen
     else
       log_reuse_info { "have no containers in Locked or Queued state" }
     end

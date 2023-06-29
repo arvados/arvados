@@ -37,7 +37,8 @@ class ContainerTest < ActiveSupport::TestCase
     },
     secret_mounts: {},
     runtime_user_uuid: "zzzzz-tpzed-xurymjxw79nv3jz",
-    runtime_auth_scopes: ["all"]
+    runtime_auth_scopes: ["all"],
+    scheduling_parameters: {},
   }
 
   REUSABLE_ATTRS_SLIM = {
@@ -57,6 +58,7 @@ class ContainerTest < ActiveSupport::TestCase
     },
     runtime_user_uuid: "zzzzz-tpzed-xurymjxw79nv3jz",
     secret_mounts: {},
+    scheduling_parameters: {},
   }
 
   def request_only attrs
@@ -524,6 +526,34 @@ class ContainerTest < ActiveSupport::TestCase
                           exit_code: 33})
     reused = Container.find_reusable(attrs)
     assert_nil reused
+  end
+
+  [[false, false, true],
+   [false, true, true],
+   [true, false, false],
+   [true, true, true]
+  ].each do |c1_preemptible, c2_preemptible, should_reuse|
+    [[Container::Queued, 1],
+     [Container::Locked, 1],
+     [Container::Running, 0],   # not cancelled yet, but obviously will be soon
+    ].each do |c1_state, c1_priority|
+      test "find_reusable for #{c2_preemptible ? '' : 'non-'}preemptible req should #{should_reuse ? '' : 'not'} reuse a #{c1_state} #{c1_preemptible ? '' : 'non-'}preemptible container with priority #{c1_priority}" do
+        configure_preemptible_instance_type
+        set_user_from_auth :active
+        c1_attrs = REUSABLE_COMMON_ATTRS.merge({environment: {"test" => name, "state" => c1_state}, scheduling_parameters: {"preemptible" => c1_preemptible}})
+        c1, _ = minimal_new(c1_attrs)
+        set_user_from_auth :dispatch1
+        c1.update_attributes!({state: Container::Locked}) if c1_state != Container::Queued
+        c1.update_attributes!({state: Container::Running, priority: c1_priority}) if c1_state == Container::Running
+        c2_attrs = c1_attrs.merge({scheduling_parameters: {"preemptible" => c2_preemptible}})
+        reused = Container.find_reusable(c2_attrs)
+        if should_reuse && c1_priority > 0
+          assert_not_nil reused
+        else
+          assert_nil reused
+        end
+      end
+    end
   end
 
   test "find_reusable with logging disabled" do
@@ -1139,6 +1169,12 @@ class ContainerTest < ActiveSupport::TestCase
     preemptible_values.product(preemptible_values),
     preemptible_values.product(preemptible_values, preemptible_values),
   ).each do |preemptible_a|
+    # If the first req has preemptible=true but a subsequent req
+    # doesn't, we want to avoid reusing the first container, so this
+    # test isn't appropriate.
+    next if preemptible_a[0] &&
+            ((preemptible_a.length > 1 && !preemptible_a[1]) ||
+             (preemptible_a.length > 2 && !preemptible_a[2]))
     test "retry requests scheduled with preemptible=#{preemptible_a}" do
       configure_preemptible_instance_type
       param_hashes = vary_parameters(preemptible: preemptible_a)
@@ -1187,14 +1223,14 @@ class ContainerTest < ActiveSupport::TestCase
     configure_preemptible_instance_type
     param_hashes = [{
                      "partitions": ["alpha", "bravo"],
-                     "preemptible": true,
+                     "preemptible": false,
                      "max_run_time": 10,
                     }, {
                      "partitions": ["alpha", "charlie"],
                      "max_run_time": 20,
                     }, {
                      "partitions": ["bravo", "charlie"],
-                     "preemptible": false,
+                     "preemptible": true,
                      "max_run_time": 30,
                     }]
     container = retry_with_scheduling_parameters(param_hashes)
