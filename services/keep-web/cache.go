@@ -78,15 +78,48 @@ type cachedSession struct {
 	arvadosclient *arvadosclient.ArvadosClient
 	keepclient    *keepclient.KeepClient
 
-	// mtx is RLocked while session is not safe to evict from cache
+	// Each session uses a system of three mutexes (plus the
+	// cache-wide mutex) to enable the following semantics:
+	//
+	// - There are never multiple sessions in use for a given
+	// token.
+	//
+	// - If the cached in-memory filesystems/user records are
+	// older than the configured cache TTL when a request starts,
+	// the request will use new ones.
+	//
+	// - Unused sessions are garbage-collected.
+	//
+	// In particular, when it is necessary to reset a session's
+	// filesystem/user record (to save memory or respect the
+	// configured cache TTL), any operations that are already
+	// using the existing filesystem/user record are allowed to
+	// finish before the new filesystem is constructed.
+	//
+	// The locks must be acquired in the following order:
+	// cache.mtx, session.mtx, session.refresh, session.inuse.
+
+	// mtx is RLocked while session is not safe to evict from
+	// cache -- i.e., a checkout() has decided to use it, and its
+	// caller is not finished with it. When locking or rlocking
+	// this mtx, the cache mtx MUST already be held.
+	//
+	// This mutex enables pruneSessions to detect when it is safe
+	// to completely remove the session entry from the cache.
 	mtx sync.RWMutex
-	// refresh is locked while reading or writing the following fields
-	refresh    sync.Mutex
+	// refresh must be locked in order to read or write the
+	// fs/user/userLoaded fields. This mutex enables GetSession
+	// and pruneSessions to remove/replace fs and user values
+	// safely.
+	refresh sync.Mutex
+	// inuse must be RLocked while the session is in use by a
+	// caller. This mutex enables pruneSessions() to wait for all
+	// existing usage to finish by calling inuse.Lock().
+	inuse sync.RWMutex
+
 	fs         arvados.CustomFileSystem
 	user       arvados.User
 	userLoaded bool
-	// inuse is RLocked while session is in use by a caller
-	inuse sync.RWMutex
 }
 
 func (sess *cachedSession) Release() {
@@ -271,18 +304,23 @@ func (c *cache) pruneSessions() {
 		// next GetSession will reload fs/user, or a
 		// subsequent pruneSessions will remove the session.
 		go func() {
-			// Ensure nobody is in GetSession
+			// Ensure nobody is mid-GetSession() (note we
+			// already know nobody is mid-checkout()
+			// because we have c.mtx locked)
 			sess.refresh.Lock()
-			// Wait for current usage to finish
+			defer sess.refresh.Unlock()
+			// Wait for current usage to finish (i.e.,
+			// anyone who has decided to use the current
+			// values of sess.fs and sess.user, and hasn't
+			// called Release() yet)
 			sess.inuse.Lock()
+			defer sess.inuse.Unlock()
 			// Release memory
 			sess.fs = nil
 			if sess.expire.Before(now) {
 				// Mark user data as stale
 				sess.userLoaded = false
 			}
-			sess.inuse.Unlock()
-			sess.refresh.Unlock()
 			// Next GetSession will make a new fs
 		}()
 	}
