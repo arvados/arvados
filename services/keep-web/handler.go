@@ -411,16 +411,20 @@ func (h *handler) ServeHTTP(wOrig http.ResponseWriter, r *http.Request) {
 			// collection id is outside scope of supplied
 			// token
 			tokenScopeProblem = true
+			sess.Release()
 			continue
 		} else if os.IsNotExist(err) {
 			// collection does not exist or is not
 			// readable using this token
+			sess.Release()
 			continue
 		} else if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
+			sess.Release()
 			return
 		}
 		defer f.Close()
+		defer sess.Release()
 
 		collectionDir, sessionFS, session, tokenUser = f, fs, sess, user
 		break

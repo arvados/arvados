@@ -1627,6 +1627,7 @@ func (s *IntegrationSuite) TestUploadLoggingPermission(c *check.C) {
 }
 
 func (s *IntegrationSuite) TestConcurrentWrites(c *check.C) {
+	s.handler.Cluster.Collections.WebDAVCache.TTL = arvados.Duration(time.Second * 2)
 	lockTidyInterval = time.Second
 	client := arvados.NewClientFromEnv()
 	client.AuthToken = arvadostest.ActiveTokenV2

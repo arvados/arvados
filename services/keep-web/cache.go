@@ -8,7 +8,6 @@ import (
 	"errors"
 	"net/http"
 	"sync"
-	"sync/atomic"
 	"time"
 
 	"git.arvados.org/arvados.git/sdk/go/arvados"
@@ -28,6 +27,7 @@ type cache struct {
 	metrics   cacheMetrics
 	sessions  *lru.TwoQueueCache
 	setupOnce sync.Once
+	mtx       sync.Mutex
 
 	chPruneSessions chan struct{}
 }
@@ -72,12 +72,30 @@ func (m *cacheMetrics) setup(reg *prometheus.Registry) {
 }
 
 type cachedSession struct {
+	cache         *cache
 	expire        time.Time
-	fs            atomic.Value
 	client        *arvados.Client
 	arvadosclient *arvadosclient.ArvadosClient
 	keepclient    *keepclient.KeepClient
-	user          atomic.Value
+
+	// mtx is RLocked while session is not safe to evict from cache
+	mtx sync.RWMutex
+	// refresh is locked while reading or writing the following fields
+	refresh    sync.Mutex
+	fs         arvados.CustomFileSystem
+	user       arvados.User
+	userLoaded bool
+	// inuse is RLocked while session is in use by a caller
+	inuse sync.RWMutex
+}
+
+func (sess *cachedSession) Release() {
+	sess.inuse.RUnlock()
+	sess.mtx.RUnlock()
+	select {
+	case sess.cache.chPruneSessions <- struct{}{}:
+	default:
+	}
 }
 
 func (c *cache) setup() {
@@ -114,98 +132,112 @@ var selectPDH = map[string]interface{}{
 	"select": []string{"portable_data_hash"},
 }
 
-// ResetSession unloads any potentially stale state. Should be called
-// after write operations, so subsequent reads don't return stale
-// data.
-func (c *cache) ResetSession(token string) {
+func (c *cache) checkout(token string) (*cachedSession, error) {
 	c.setupOnce.Do(c.setup)
-	c.sessions.Remove(token)
-}
-
-// Get a long-lived CustomFileSystem suitable for doing a read operation
-// with the given token.
-func (c *cache) GetSession(token string) (arvados.CustomFileSystem, *cachedSession, *arvados.User, error) {
-	c.setupOnce.Do(c.setup)
-	now := time.Now()
+	c.mtx.Lock()
+	defer c.mtx.Unlock()
 	ent, _ := c.sessions.Get(token)
 	sess, _ := ent.(*cachedSession)
-	expired := false
 	if sess == nil {
-		c.metrics.sessionMisses.Inc()
-		sess = &cachedSession{
-			expire: now.Add(c.cluster.Collections.WebDAVCache.TTL.Duration()),
-		}
-		var err error
-		sess.client, err = arvados.NewClientFromConfig(c.cluster)
+		client, err := arvados.NewClientFromConfig(c.cluster)
 		if err != nil {
-			return nil, nil, nil, err
+			return nil, err
 		}
-		sess.client.AuthToken = token
-		sess.client.Timeout = time.Minute
+		client.AuthToken = token
+		client.Timeout = time.Minute
 		// A non-empty origin header tells controller to
 		// prioritize our traffic as interactive, which is
 		// true most of the time.
 		origin := c.cluster.Services.WebDAVDownload.ExternalURL
-		sess.client.SendHeader = http.Header{"Origin": {origin.Scheme + "://" + origin.Host}}
-		sess.arvadosclient, err = arvadosclient.New(sess.client)
+		client.SendHeader = http.Header{"Origin": {origin.Scheme + "://" + origin.Host}}
+		arvadosclient, err := arvadosclient.New(client)
 		if err != nil {
-			return nil, nil, nil, err
+			return nil, err
 		}
-		sess.keepclient = keepclient.New(sess.arvadosclient)
+		sess = &cachedSession{
+			cache:         c,
+			client:        client,
+			arvadosclient: arvadosclient,
+			keepclient:    keepclient.New(arvadosclient),
+		}
 		c.sessions.Add(token, sess)
-	} else if sess.expire.Before(now) {
-		c.metrics.sessionMisses.Inc()
-		expired = true
+	}
+	sess.mtx.RLock()
+	return sess, nil
+}
+
+// Get a long-lived CustomFileSystem suitable for doing a read or
+// write operation with the given token.
+//
+// If the returned error is nil, the caller must call Release() on the
+// returned session when finished using it.
+func (c *cache) GetSession(token string) (arvados.CustomFileSystem, *cachedSession, *arvados.User, error) {
+	sess, err := c.checkout(token)
+	if err != nil {
+		return nil, nil, nil, err
+	}
+	sess.refresh.Lock()
+	defer sess.refresh.Unlock()
+	now := time.Now()
+	refresh := sess.expire.Before(now)
+	if sess.fs == nil || !sess.userLoaded || refresh {
+		// Wait for all active users to finish (otherwise they
+		// might make changes to an old fs after we start
+		// using the new fs).
+		sess.inuse.Lock()
+		if !sess.userLoaded || refresh {
+			err := sess.client.RequestAndDecode(&sess.user, "GET", "/arvados/v1/users/current", nil, nil)
+			if he := errorWithHTTPStatus(nil); errors.As(err, &he) && he.HTTPStatus() == http.StatusForbidden {
+				// token is OK, but "get user id" api is out
+				// of scope -- use existing/expired info if
+				// any, or leave empty for unknown user
+			} else if err != nil {
+				sess.inuse.Unlock()
+				sess.mtx.RUnlock()
+				return nil, nil, nil, err
+			}
+			sess.userLoaded = true
+		}
+
+		if sess.fs == nil || refresh {
+			sess.fs = sess.client.SiteFileSystem(sess.keepclient)
+			sess.fs.ForwardSlashNameSubstitution(c.cluster.Collections.ForwardSlashNameSubstitution)
+			sess.expire = now.Add(c.cluster.Collections.WebDAVCache.TTL.Duration())
+			c.metrics.sessionMisses.Inc()
+		} else {
+			c.metrics.sessionHits.Inc()
+		}
+		sess.inuse.Unlock()
 	} else {
 		c.metrics.sessionHits.Inc()
 	}
-	select {
-	case c.chPruneSessions <- struct{}{}:
-	default:
-	}
-
-	fs, _ := sess.fs.Load().(arvados.CustomFileSystem)
-	if fs == nil || expired {
-		fs = sess.client.SiteFileSystem(sess.keepclient)
-		fs.ForwardSlashNameSubstitution(c.cluster.Collections.ForwardSlashNameSubstitution)
-		sess.fs.Store(fs)
-	}
-
-	user, _ := sess.user.Load().(*arvados.User)
-	if user == nil || expired {
-		user = new(arvados.User)
-		err := sess.client.RequestAndDecode(user, "GET", "/arvados/v1/users/current", nil, nil)
-		if he := errorWithHTTPStatus(nil); errors.As(err, &he) && he.HTTPStatus() == http.StatusForbidden {
-			// token is OK, but "get user id" api is out
-			// of scope -- return nil, signifying unknown
-			// user
-		} else if err != nil {
-			return nil, nil, nil, err
-		}
-		sess.user.Store(user)
-	}
-
-	return fs, sess, user, nil
+	sess.inuse.RLock()
+	return sess.fs, sess, &sess.user, nil
 }
 
-// Remove all expired session cache entries, then remove more entries
-// until approximate remaining size <= maxsize/2
+// Remove all expired idle session cache entries, and remove in-memory
+// filesystems until approximate remaining size <= maxsize/2
 func (c *cache) pruneSessions() {
 	now := time.Now()
 	keys := c.sessions.Keys()
 	sizes := make([]int64, len(keys))
+	prune := []string(nil)
 	var size int64
 	for i, token := range keys {
+		token := token.(string)
 		ent, ok := c.sessions.Peek(token)
 		if !ok {
 			continue
 		}
-		s := ent.(*cachedSession)
-		if s.expire.Before(now) {
-			c.sessions.Remove(token)
-			continue
+		sess := ent.(*cachedSession)
+		sess.refresh.Lock()
+		expired := sess.expire.Before(now)
+		fs := sess.fs
+		sess.refresh.Unlock()
+		if expired {
+			prune = append(prune, token)
 		}
-		if fs, ok := s.fs.Load().(arvados.CustomFileSystem); ok {
+		if fs != nil {
 			sizes[i] = fs.MemorySize()
 			size += sizes[i]
 		}
@@ -214,9 +246,45 @@ func (c *cache) pruneSessions() {
 	// least frequently used entries (which Keys() returns last).
 	for i := len(keys) - 1; i >= 0 && size > c.cluster.Collections.WebDAVCache.MaxCollectionBytes; i-- {
 		if sizes[i] > 0 {
-			c.sessions.Remove(keys[i])
+			prune = append(prune, keys[i].(string))
 			size -= sizes[i]
 		}
+	}
+
+	c.mtx.Lock()
+	defer c.mtx.Unlock()
+	for _, token := range prune {
+		ent, ok := c.sessions.Peek(token)
+		if !ok {
+			continue
+		}
+		sess := ent.(*cachedSession)
+		if sess.mtx.TryLock() {
+			c.sessions.Remove(token)
+			continue
+		}
+		// We can't remove a session that's been checked out
+		// -- that would allow another session to be created
+		// for the same token using a different in-memory
+		// filesystem. Instead, we wait for active requests to
+		// finish and then "unload" it. After this, either the
+		// next GetSession will reload fs/user, or a
+		// subsequent pruneSessions will remove the session.
+		go func() {
+			// Ensure nobody is in GetSession
+			sess.refresh.Lock()
+			// Wait for current usage to finish
+			sess.inuse.Lock()
+			// Release memory
+			sess.fs = nil
+			if sess.expire.Before(now) {
+				// Mark user data as stale
+				sess.userLoaded = false
+			}
+			sess.inuse.Unlock()
+			sess.refresh.Unlock()
+			// Next GetSession will make a new fs
+		}()
 	}
 }
 
@@ -229,7 +297,11 @@ func (c *cache) collectionBytes() uint64 {
 		if !ok {
 			continue
 		}
-		if fs, ok := ent.(*cachedSession).fs.Load().(arvados.CustomFileSystem); ok {
+		sess := ent.(*cachedSession)
+		sess.refresh.Lock()
+		fs := sess.fs
+		sess.refresh.Unlock()
+		if fs != nil {
 			size += uint64(fs.MemorySize())
 		}
 	}
