@@ -22,7 +22,6 @@ locals {
     default = aws_iam_instance_profile.default_instance_profile
     controller = aws_iam_instance_profile.dispatcher_instance_profile
     keep0 = aws_iam_instance_profile.keepstore_instance_profile
-    keep1 = aws_iam_instance_profile.keepstore_instance_profile
   }
   private_subnet_id = data.terraform_remote_state.vpc.outputs.private_subnet_id
   public_subnet_id = data.terraform_remote_state.vpc.outputs.public_subnet_id
