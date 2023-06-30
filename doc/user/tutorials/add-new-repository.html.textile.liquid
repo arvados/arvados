@@ -24,19 +24,19 @@ Before you start using Git and arvados repositories, you should do some basic co
 
 h2. Add "tutorial" repository
 
-On the Arvados Workbench, click on the dropdown menu icon <span class="fa fa-lg fa-user"></span> <span class="caret"></span> in the upper right corner of the top navigation menu to access the user settings menu, and click on the menu item *Repositories*.
+On the Arvados Workbench, click on the dropdown menu icon <i class="fa fa-lg fa-user"></i> (Account Management) in the upper right corner of the top navigation menu to access the user settings menu, and click on the menu item *Repositories*.
 
-In the *Repositories* page, you will see the *Add new repository* button.
+In the *Repositories* page, you will see the <span class="btn btn-sm btn-primary">+ NEW REPOSITORY</span> button.
 
-!{display: block;margin-left: 25px;margin-right: auto;}{{ site.baseurl }}/images/repositories-panel.png!
+!{width: 100%;}{{ site.baseurl }}/images/repositories-panel.png!
 
-Click the *Add new Repository* button to open the popup to add a new arvados repository. You will see a text box where you can enter the name of the repository. Enter *tutorial* in this text box and click on *Create*.
+Click the <span class="btn btn-sm btn-primary">+ NEW REPOSITORY</span> button to open the popup to add a new Arvados repository. You will see a text box where you can enter the name of the repository. Enter *tutorial* in this text box and click on *Create*.
 
 {% include 'notebox_begin' %}
 The name you enter here must begin with a letter and can only contain alphanumeric characters.
 {% include 'notebox_end' %}
 
-!{display: block;margin-left: 25px;margin-right: auto;border:1px solid lightgray;}{{ site.baseurl }}/images/add-new-repository.png!
+!{width: 100%;}{{ site.baseurl }}/images/add-new-repository.png!
 
 This will create a new repository with the name @$USER/tutorial@. It can be accessed using the URL <notextile><code>https://git.{{ site.arvados_api_host }}/$USER/tutorial.git</code></notextile> or <notextile><code>git@git.{{ site.arvados_api_host }}:$USER/tutorial.git</code></notextile>
 
