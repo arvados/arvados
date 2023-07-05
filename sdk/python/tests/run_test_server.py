@@ -12,9 +12,9 @@ import errno
 import glob
 import httplib2
 import os
-import pipes
 import random
 import re
+import shlex
 import shutil
 import signal
 import socket
@@ -989,8 +989,8 @@ if __name__ == "__main__":
         host = os.environ['ARVADOS_API_HOST']
         if args.auth is not None:
             token = auth_token(args.auth)
-            print("export ARVADOS_API_TOKEN={}".format(pipes.quote(token)))
-            print("export ARVADOS_API_HOST={}".format(pipes.quote(host)))
+            print("export ARVADOS_API_TOKEN={}".format(shlex.quote(token)))
+            print("export ARVADOS_API_HOST={}".format(shlex.quote(host)))
             print("export ARVADOS_API_HOST_INSECURE=true")
         else:
             print(host)
