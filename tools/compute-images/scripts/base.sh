@@ -150,7 +150,7 @@ $SUDO mkdir -p /etc/arvados/docker-cleaner
 $SUDO echo -e "{\n  \"Quota\": \"10G\",\n  \"RemoveStoppedContainers\": \"always\"\n}" > /etc/arvados/docker-cleaner/docker-cleaner.json
 
 # Enable cgroup accounting (forcing cgroups v1)
-$SUDO sed -i 's/GRUB_CMDLINE_LINUX=""/GRUB_CMDLINE_LINUX="cgroup_enable=memory swapaccount=1 systemd.unified_cgroup_hierarchy=0"/g' /etc/default/grub
+$SUDO echo 'GRUB_CMDLINE_LINUX="$GRUB_CMDLINE_LINUX cgroup_enable=memory swapaccount=1 systemd.unified_cgroup_hierarchy=0"' >> /etc/default/grub
 $SUDO update-grub
 
 # Make sure user_allow_other is set in fuse.conf
