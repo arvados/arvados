@@ -9,15 +9,11 @@ import json
 import multiprocessing
 import os
 from . import run_test_server
+import shlex
 import tempfile
 import unittest
 
 from .integration_test import workerPool
-
-try:
-    from shlex import quote
-except:
-    from pipes import quote
 
 def try_exec(mnt, cmd):
     try:
@@ -56,11 +52,11 @@ class ExecMode(unittest.TestCase):
 
     def test_exec(self):
         workerPool().apply(try_exec, (self.mnt, [
-            'sh', '-c',
-            'echo -n foo >{}; cp {} {}'.format(
-                quote(os.path.join(self.mnt, 'zzz', 'foo.txt')),
-                quote(os.path.join(self.mnt, 'zzz', '.arvados#collection')),
-                quote(os.path.join(self.okfile)))]))
+            'sh', '-c', 'echo -n foo >{}; cp {} {}'.format(
+                shlex.quote(os.path.join(self.mnt, 'zzz', 'foo.txt')),
+                shlex.quote(os.path.join(self.mnt, 'zzz', '.arvados#collection')),
+                shlex.quote(os.path.join(self.okfile)),
+            )]))
         with open(self.okfile) as f:
             assertRegex(
                 self,
