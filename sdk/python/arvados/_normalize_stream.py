@@ -8,9 +8,7 @@ from . import config
 import re
 
 def escape(path):
-    path = re.sub('\\\\', lambda m: '\\134', path)
-    path = re.sub('[:\000-\040]', lambda m: "\\%03o" % ord(m.group(0)), path)
-    return path
+    return re.sub(r'[\\:\000-\040]', lambda m: "\\%03o" % ord(m.group(0)), path)
 
 def normalize_stream(stream_name, stream):
     """Take manifest stream and return a list of tokens in normalized format.

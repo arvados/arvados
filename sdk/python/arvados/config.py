@@ -38,9 +38,7 @@ def load(config_file):
     cfg = {}
     with open(config_file, "r") as f:
         for config_line in f:
-            if re.match('^\s*$', config_line):
-                continue
-            if re.match('^\s*#', config_line):
+            if re.match(r'^\s*(?:#|$)', config_line):
                 continue
             var, val = config_line.rstrip().split('=', 2)
             cfg[var] = val

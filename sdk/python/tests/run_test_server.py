@@ -338,7 +338,7 @@ def run(leave_running_atexit=False):
     resdir = subprocess.check_output(['bundle', 'exec', 'passenger-config', 'about', 'resourcesdir']).decode().rstrip()
     with open(resdir + '/templates/standalone/config.erb') as f:
         template = f.read()
-    newtemplate = re.sub('http {', 'http {\n        passenger_stat_throttle_rate 0;', template)
+    newtemplate = re.sub(r'http \{', 'http {\n        passenger_stat_throttle_rate 0;', template)
     if newtemplate == template:
         raise "template edit failed"
     with open('tmp/passenger-nginx.conf.erb', 'w') as f:

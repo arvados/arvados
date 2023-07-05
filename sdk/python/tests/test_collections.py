@@ -593,7 +593,7 @@ class CollectionReaderTestCase(unittest.TestCase, CollectionTestMixin):
         # Ensure stripped_manifest() doesn't mangle our manifest in
         # any way other than stripping hints.
         self.assertEqual(
-            re.sub('\+[^\d\s\+]+', '', nonnormal),
+            re.sub(r'\+[^\d\s\+]+', '', nonnormal),
             reader.stripped_manifest())
         # Ensure stripped_manifest() didn't mutate our reader.
         self.assertEqual(nonnormal, reader.manifest_text())

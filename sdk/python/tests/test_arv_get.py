@@ -88,7 +88,7 @@ class ArvadosGetTestCase(run_test_server.TestCaseWithServers,
 
     def test_get_block(self):
         # Get raw data using a block locator
-        blk = re.search(' (acbd18\S+\+A\S+) ', self.col_manifest).group(1)
+        blk = re.search(r' (acbd18\S+\+A\S+) ', self.col_manifest).group(1)
         r = self.run_get([blk, '-'])
         self.assertEqual(0, r)
         self.assertEqual(b'foo', self.stdout.getvalue())

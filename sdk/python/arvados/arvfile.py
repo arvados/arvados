@@ -100,7 +100,7 @@ class ArvadosFileReaderBase(_FileLikeObjectBase):
             yield data
 
     def decompressed_name(self):
-        return re.sub('\.(bz2|gz)$', '', self.name)
+        return re.sub(r'\.(bz2|gz)$', '', self.name)
 
     @_FileLikeObjectBase._before_close
     def seek(self, pos, whence=os.SEEK_SET):
