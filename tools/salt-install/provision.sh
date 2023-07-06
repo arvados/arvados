@@ -319,7 +319,7 @@ else
     echo "Salt already installed"
   else
     curl -L https://bootstrap.saltstack.com -o /tmp/bootstrap_salt.sh
-    sh /tmp/bootstrap_salt.sh -XdfP -x python3 stable ${SALT_VERSION}
+    sh /tmp/bootstrap_salt.sh -XdfP -x python3 old-stable ${SALT_VERSION}
     /bin/systemctl stop salt-minion.service
     /bin/systemctl disable salt-minion.service
   fi
