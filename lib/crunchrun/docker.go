@@ -187,7 +187,7 @@ func (e *dockerExecutor) config(spec containerSpec) (dockercontainer.Config, doc
 
 func (e *dockerExecutor) Create(spec containerSpec) error {
 	cfg, hostCfg := e.config(spec)
-	created, err := e.dockerclient.ContainerCreate(context.TODO(), &cfg, &hostCfg, nil, e.containerUUID)
+	created, err := e.dockerclient.ContainerCreate(context.TODO(), &cfg, &hostCfg, nil, nil, e.containerUUID)
 	if err != nil {
 		return fmt.Errorf("While creating container: %v", err)
 	}
