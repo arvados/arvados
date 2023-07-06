@@ -149,8 +149,8 @@ wait_for_apt_locks && $SUDO DEBIAN_FRONTEND=noninteractive apt-get -qq --yes rem
 $SUDO mkdir -p /etc/arvados/docker-cleaner
 $SUDO echo -e "{\n  \"Quota\": \"10G\",\n  \"RemoveStoppedContainers\": \"always\"\n}" > /etc/arvados/docker-cleaner/docker-cleaner.json
 
-# Enable cgroup accounting
-$SUDO sed -i 's/GRUB_CMDLINE_LINUX=""/GRUB_CMDLINE_LINUX="cgroup_enable=memory swapaccount=1"/g' /etc/default/grub
+# Enable cgroup accounting (forcing cgroups v1)
+$SUDO echo 'GRUB_CMDLINE_LINUX="$GRUB_CMDLINE_LINUX cgroup_enable=memory swapaccount=1 systemd.unified_cgroup_hierarchy=0"' >> /etc/default/grub
 $SUDO update-grub
 
 # Make sure user_allow_other is set in fuse.conf
