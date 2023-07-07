@@ -18,6 +18,7 @@ import (
 	"path/filepath"
 	"regexp"
 	"strings"
+	"sync"
 	"time"
 
 	"git.arvados.org/arvados.git/lib/config"
@@ -1621,6 +1622,75 @@ func (s *IntegrationSuite) TestUploadLoggingPermission(c *check.C) {
 			}
 			s.checkUploadDownloadRequest(c, req, http.StatusCreated, "upload", userperm,
 				arvadostest.ActiveUserUUID, coll.UUID, "", "bar")
+		}
+	}
+}
+
+func (s *IntegrationSuite) TestConcurrentWrites(c *check.C) {
+	s.handler.Cluster.Collections.WebDAVCache.TTL = arvados.Duration(time.Second * 2)
+	lockTidyInterval = time.Second
+	client := arvados.NewClientFromEnv()
+	client.AuthToken = arvadostest.ActiveTokenV2
+	// Start small, and increase concurrency (2^2, 4^2, ...)
+	// only until hitting failure. Avoids unnecessarily long
+	// failure reports.
+	for n := 2; n < 16 && !c.Failed(); n = n * 2 {
+		c.Logf("%s: n=%d", c.TestName(), n)
+
+		var coll arvados.Collection
+		err := client.RequestAndDecode(&coll, "POST", "arvados/v1/collections", nil, nil)
+		c.Assert(err, check.IsNil)
+		defer client.RequestAndDecode(&coll, "DELETE", "arvados/v1/collections/"+coll.UUID, nil, nil)
+
+		var wg sync.WaitGroup
+		for i := 0; i < n && !c.Failed(); i++ {
+			i := i
+			wg.Add(1)
+			go func() {
+				defer wg.Done()
+				u := mustParseURL(fmt.Sprintf("http://%s.collections.example.com/i=%d", coll.UUID, i))
+				resp := httptest.NewRecorder()
+				req, err := http.NewRequest("MKCOL", u.String(), nil)
+				c.Assert(err, check.IsNil)
+				req.Header.Set("Authorization", "Bearer "+client.AuthToken)
+				s.handler.ServeHTTP(resp, req)
+				c.Assert(resp.Code, check.Equals, http.StatusCreated)
+				for j := 0; j < n && !c.Failed(); j++ {
+					j := j
+					wg.Add(1)
+					go func() {
+						defer wg.Done()
+						content := fmt.Sprintf("i=%d/j=%d", i, j)
+						u := mustParseURL("http://" + coll.UUID + ".collections.example.com/" + content)
+
+						resp := httptest.NewRecorder()
+						req, err := http.NewRequest("PUT", u.String(), strings.NewReader(content))
+						c.Assert(err, check.IsNil)
+						req.Header.Set("Authorization", "Bearer "+client.AuthToken)
+						s.handler.ServeHTTP(resp, req)
+						c.Check(resp.Code, check.Equals, http.StatusCreated)
+
+						time.Sleep(time.Second)
+						resp = httptest.NewRecorder()
+						req, err = http.NewRequest("GET", u.String(), nil)
+						c.Assert(err, check.IsNil)
+						req.Header.Set("Authorization", "Bearer "+client.AuthToken)
+						s.handler.ServeHTTP(resp, req)
+						c.Check(resp.Code, check.Equals, http.StatusOK)
+						c.Check(resp.Body.String(), check.Equals, content)
+					}()
+				}
+			}()
+		}
+		wg.Wait()
+		for i := 0; i < n; i++ {
+			u := mustParseURL(fmt.Sprintf("http://%s.collections.example.com/i=%d", coll.UUID, i))
+			resp := httptest.NewRecorder()
+			req, err := http.NewRequest("PROPFIND", u.String(), &bytes.Buffer{})
+			c.Assert(err, check.IsNil)
+			req.Header.Set("Authorization", "Bearer "+client.AuthToken)
+			s.handler.ServeHTTP(resp, req)
+			c.Assert(resp.Code, check.Equals, http.StatusMultiStatus)
 		}
 	}
 }
