@@ -120,13 +120,15 @@ function filterActions(actionArray: ContextMenuActionSet, filters: Array<string>
 
 //this might be the least efficient algorithm I've ever written
 function selectActionsByKind(currentResourceKinds: Array<string>, filterSet: TMultiselectActionsFilters) {
-    const result: Array<ContextMenuAction> = [];
+    let result: Array<ContextMenuAction> = [];
+    const fullFilterArray: ContextMenuAction[][] = [];
     //start at currentResourceKinds
     currentResourceKinds.forEach((kind) => {
         //if there is a matching filter set
         if (filterSet[kind]) {
             //filter actions that apply to current kind
             const actions = filterActions(...filterSet[kind]);
+            fullFilterArray.push(actions);
             //if action name isn't in result, push name
             actions.forEach((action) => {
                 if (!result.some((item) => item.name === action.name)) {
@@ -135,8 +137,26 @@ function selectActionsByKind(currentResourceKinds: Array<string>, filterSet: TMu
             });
         }
     });
+    // console.log(result, fullFilterArray);
+    ///take fullFilterSet, make it into an array of string sets
+    const filteredNameSet = fullFilterArray.map((filterArray) => {
+        const resultSet = new Set();
+        filterArray.forEach((action) => resultSet.add(action.name || ''));
+        return resultSet;
+    });
+    console.log('filteredNameSet', filteredNameSet);
+    //filter results so that the name of each action is present in all of this string arrays
+    const filteredResult = result.filter((action) => {
+        for (let i = 0; i < filteredNameSet.length; i++) {
+            if (!filteredNameSet[i].has(action.name)) return false;
+        }
+        return true;
+    });
+
+    console.log('filteredResult', filteredResult);
+
     //return sorted array of actions
-    return result.sort((a, b) => {
+    return filteredResult.sort((a, b) => {
         a.name = a.name || '';
         b.name = b.name || '';
         if (a.name < b.name) {
