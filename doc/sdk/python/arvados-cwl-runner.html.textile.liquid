@@ -10,17 +10,17 @@ Copyright (C) The Arvados Authors. All rights reserved.
 SPDX-License-Identifier: CC-BY-SA-3.0
 {% endcomment %}
 
-The Arvados FUSE driver is a Python utility that allows you to see the Keep service as a normal filesystem, so that data can be accessed using standard tools. This driver requires the Python SDK installed in order to access Arvados services.
+The Arvados CWL Runner is a Python tool that allows you to register and submit workflows to Arvados. You can oversee a running workflow on your local system, or let that run inside an Arvados container. This tool requires the Python SDK installed in order to access Arvados services.
 
 h2. Installation
 
-If you are logged in to a managed Arvados VM, the @arv-mount@ utility should already be installed.
+If you are logged in to a managed Arvados VM, the @arvados-cwl-runner@ utility should already be installed.
 
-To use the FUSE driver elsewhere, you can install from a distribution package, or PyPI.
+To use the CWL Runner elsewhere, you can install it from a distribution package or PyPI.
 
 h2. Option 1: Install from distribution packages
 
-First, "add the appropriate package repository for your distribution":{{ site.baseurl }}/install/packages.html
+First, "add the appropriate package repository for your distribution":{{ site.baseurl }}/install/packages.html.
 
 {% assign arvados_component = 'python3-arvados-cwl-runner' %}
 
@@ -32,13 +32,14 @@ Run @pip install arvados-cwl-runner@ in an appropriate installation environment,
 
 Note:
 
-The SDK uses @pycurl@ which depends on the @libcurl@ C library.  To build the module you may have to first install additional packages.  On Debian 10 this is:
+The CWL Runner uses @pycurl@ which depends on the @libcurl@ C library.  To build the module you may have to first install additional packages.  On Debian-based distributions you can install them by running:
 
-<pre>
-$ apt-get install git build-essential python3-dev libcurl4-openssl-dev libssl1.0-dev python3-llfuse
-</pre>
+<notextile>
+<pre><code># <span class="userinput">apt install git build-essential python3-dev libcurl4-openssl-dev libssl-dev</span>
+</code></pre>
+</notextile>
 
-h3. Check Docker access
+h2. Check Docker access
 
 In order to pull and upload Docker images, @arvados-cwl-runner@ requires access to Docker.  You do not need Docker if the Docker images you intend to use are already available in Arvados.
 
@@ -66,6 +67,6 @@ Server:
 
 If this returns an error, contact the sysadmin of your cluster for assistance.
 
-h3. Usage
+h2. Usage
 
-Please refer to the "Accessing Keep from GNU/Linux":{{site.baseurl}}/user/tutorials/tutorial-keep-mount-gnu-linux.html tutorial for more information.
+Please refer to the "Starting a Workflow at the Command Line":{{site.baseurl}}/user/cwl/cwl-runner.html tutorial for more information.

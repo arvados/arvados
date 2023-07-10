@@ -69,11 +69,12 @@ h2(#pip-install). Install from PyPI with pip
 
 This installation method is recommended to use the SDK in your own Python programs. If installed into a @virtualenv@, it can coexist with the system-wide installation method from a distribution package.
 
-The SDK uses @pycurl@ which depends on the @libcurl@ C library.  To build the module you may have to first install additional packages.  On Debian 10 you can do this by running:
+Note the Python SDK uses @pycurl@ which depends on the @libcurl@ C library.  To build the module you may have to first install additional packages.  On Debian-based distributions you can install them by running:
 
-<pre>
-$ apt-get install git build-essential python3-dev libcurl4-openssl-dev libssl-dev
-</pre>
+<notextile>
+<pre><code># <span class="userinput">apt install git build-essential python3-dev libcurl4-openssl-dev libssl-dev</span>
+</code></pre>
+</notextile>
 
 Run @python3 -m pip install arvados-python-client@ in an appropriate installation environment, such as a @virtualenv@.
 

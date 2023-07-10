@@ -32,7 +32,12 @@ Run @pip install arvados_fuse@ in an appropriate installation environment, such 
 
 Note:
 
-The SDK uses @pycurl@ which depends on the @libcurl@ C library.  To build the module you may have to first install additional packages.  On Debian 10 this is:
+The FUSE driver uses @pycurl@ which depends on the @libcurl@ C library.  To build the module you may have to first install additional packages.  On Debian-based distributions you can install them by running:
+
+<notextile>
+<pre><code># <span class="userinput">apt install git build-essential python3-dev libcurl4-openssl-dev libssl-dev</span>
+</code></pre>
+</notextile>
 
 <pre>
 $ apt-get install git build-essential python3-dev libcurl4-openssl-dev libssl-dev python3-llfuse
