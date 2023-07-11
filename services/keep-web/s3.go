@@ -772,6 +772,9 @@ func (h *handler) s3list(bucket string, w http.ResponseWriter, r *http.Request, 
 			http.Error(w, "invalid continuation token", http.StatusBadRequest)
 			return
 		}
+		// marker and start-after perform the same function,
+		// but we keep them separate so we can repeat them
+		// back to the client in the response.
 		params.marker = string(marker)
 		params.startAfter = r.FormValue("start-after")
 		switch r.FormValue("encoding-type") {
@@ -783,6 +786,7 @@ func (h *handler) s3list(bucket string, w http.ResponseWriter, r *http.Request, 
 			return
 		}
 	} else {
+		// marker is functionally equivalent to start-after.
 		params.marker = r.FormValue("marker")
 	}
 
@@ -809,6 +813,11 @@ func (h *handler) s3list(bucket string, w http.ResponseWriter, r *http.Request, 
 		ContinuationToken: r.FormValue("continuation-token"),
 		StartAfter:        params.startAfter,
 	}
+
+	// nextMarker will be the last path we add to either
+	// resp.Contents or commonPrefixes.  It will be included in
+	// the response as NextMarker or NextContinuationToken if
+	// needed.
 	nextMarker := ""
 
 	commonPrefixes := map[string]bool{}
@@ -850,7 +859,7 @@ func (h *handler) s3list(bucket string, w http.ResponseWriter, r *http.Request, 
 				return errDone
 			}
 		}
-		if path < params.marker || path < params.prefix || path <= params.startAfter {
+		if path <= params.marker || path < params.prefix || path <= params.startAfter {
 			return nil
 		}
 		if fi.IsDir() && !h.Cluster.Collections.S3FolderObjects {
@@ -863,9 +872,6 @@ func (h *handler) s3list(bucket string, w http.ResponseWriter, r *http.Request, 
 		}
 		if len(resp.Contents)+len(commonPrefixes) >= params.maxKeys {
 			resp.IsTruncated = true
-			if params.delimiter != "" || params.v2 {
-				nextMarker = path
-			}
 			return errDone
 		}
 		if params.delimiter != "" {
@@ -875,7 +881,11 @@ func (h *handler) s3list(bucket string, w http.ResponseWriter, r *http.Request, 
 				// "z", when we hit "foobar/baz", we
 				// add "/baz" to commonPrefixes and
 				// stop descending.
-				commonPrefixes[path[:len(params.prefix)+idx+1]] = true
+				prefix := path[:len(params.prefix)+idx+1]
+				if prefix != params.marker {
+					commonPrefixes[prefix] = true
+					nextMarker = prefix
+				}
 				return filepath.SkipDir
 			}
 		}
@@ -884,11 +894,15 @@ func (h *handler) s3list(bucket string, w http.ResponseWriter, r *http.Request, 
 			LastModified: fi.ModTime().UTC().Format("2006-01-02T15:04:05.999") + "Z",
 			Size:         filesize,
 		})
+		nextMarker = path
 		return nil
 	})
 	if err != nil && err != errDone {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
+	}
+	if params.delimiter == "" && !params.v2 || !resp.IsTruncated {
+		nextMarker = ""
 	}
 	if params.delimiter != "" {
 		resp.CommonPrefixes = make([]commonPrefix, 0, len(commonPrefixes))

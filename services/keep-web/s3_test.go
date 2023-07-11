@@ -851,6 +851,9 @@ func (s *IntegrationSuite) testS3List(c *check.C, bucket *s3.Bucket, prefix stri
 			break
 		}
 		for _, key := range resp.Contents {
+			if _, dup := gotKeys[key.Key]; dup {
+				c.Errorf("got duplicate key %q on page %d", key.Key, pages)
+			}
 			gotKeys[key.Key] = key
 			if strings.Contains(key.Key, "sailboat.txt") {
 				c.Check(key.Size, check.Equals, int64(4))
@@ -971,27 +974,30 @@ func (s *IntegrationSuite) testS3CollectionListRollup(c *check.C) {
 		var expectTruncated bool
 		for _, key := range allfiles {
 			full := len(expectKeys)+len(expectPrefixes) >= maxKeys
-			if !strings.HasPrefix(key, trial.prefix) || key < trial.marker {
+			if !strings.HasPrefix(key, trial.prefix) || key <= trial.marker {
 				continue
 			} else if idx := strings.Index(key[len(trial.prefix):], trial.delimiter); trial.delimiter != "" && idx >= 0 {
 				prefix := key[:len(trial.prefix)+idx+1]
 				if len(expectPrefixes) > 0 && expectPrefixes[len(expectPrefixes)-1] == prefix {
 					// same prefix as previous key
 				} else if full {
-					expectNextMarker = key
 					expectTruncated = true
 				} else {
 					expectPrefixes = append(expectPrefixes, prefix)
+					expectNextMarker = prefix
 				}
 			} else if full {
-				if trial.delimiter != "" {
-					expectNextMarker = key
-				}
 				expectTruncated = true
 				break
 			} else {
 				expectKeys = append(expectKeys, key)
+				if trial.delimiter != "" {
+					expectNextMarker = key
+				}
 			}
+		}
+		if !expectTruncated {
+			expectNextMarker = ""
 		}
 
 		var gotKeys []string
