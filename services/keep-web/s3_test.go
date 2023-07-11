@@ -17,6 +17,7 @@ import (
 	"net/url"
 	"os"
 	"os/exec"
+	"sort"
 	"strings"
 	"sync"
 	"time"
@@ -817,8 +818,8 @@ func (s *IntegrationSuite) TestS3CollectionList(c *check.C) {
 
 	var markers int
 	for markers, s.handler.Cluster.Collections.S3FolderObjects = range []bool{false, true} {
-		dirs := 2
-		filesPerDir := 1001
+		dirs := 2000
+		filesPerDir := 2
 		stage.writeBigDirs(c, dirs, filesPerDir)
 		// Total # objects is:
 		//                 2 file entries from s3setup (emptyfile and sailboat.txt)
@@ -827,6 +828,7 @@ func (s *IntegrationSuite) TestS3CollectionList(c *check.C) {
 		// +filesPerDir*dirs file entries from writeBigDirs (dir0/file0.txt, etc.)
 		s.testS3List(c, stage.collbucket, "", 4000, markers+2+(filesPerDir+markers)*dirs)
 		s.testS3List(c, stage.collbucket, "", 131, markers+2+(filesPerDir+markers)*dirs)
+		s.testS3List(c, stage.collbucket, "", 51, markers+2+(filesPerDir+markers)*dirs)
 		s.testS3List(c, stage.collbucket, "dir0/", 71, filesPerDir+markers)
 	}
 }
@@ -863,7 +865,16 @@ func (s *IntegrationSuite) testS3List(c *check.C, bucket *s3.Bucket, prefix stri
 		}
 		nextMarker = resp.NextMarker
 	}
-	c.Check(len(gotKeys), check.Equals, expectFiles)
+	if !c.Check(len(gotKeys), check.Equals, expectFiles) {
+		var sorted []string
+		for k := range gotKeys {
+			sorted = append(sorted, k)
+		}
+		sort.Strings(sorted)
+		for _, k := range sorted {
+			c.Logf("got %s", k)
+		}
+	}
 }
 
 func (s *IntegrationSuite) TestS3CollectionListRollup(c *check.C) {
