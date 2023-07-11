@@ -114,8 +114,8 @@ function selectedToKindSet(checkedList: TCheckedList): Set<string> {
 
 //num of currentResourceKinds * num of actions (in ContextMenuActionSet) * num of filters
 //worst case: 14 * n * n -oof
-function filterActions(actionArray: ContextMenuActionSet, filters: Array<string>): Array<ContextMenuAction> {
-    return actionArray[0].filter((action) => filters.includes(action.name as string));
+function filterActions(actionArray: ContextMenuActionSet, filters: Set<string>): Array<ContextMenuAction> {
+    return actionArray[0].filter((action) => filters.has(action.name as string));
 }
 
 //this might be the least efficient algorithm I've ever written
@@ -137,14 +137,12 @@ function selectActionsByKind(currentResourceKinds: Array<string>, filterSet: TMu
             });
         }
     });
-    // console.log(result, fullFilterArray);
     ///take fullFilterSet, make it into an array of string sets
     const filteredNameSet = fullFilterArray.map((filterArray) => {
         const resultSet = new Set();
         filterArray.forEach((action) => resultSet.add(action.name || ''));
         return resultSet;
     });
-    console.log('filteredNameSet', filteredNameSet);
     //filter results so that the name of each action is present in all of this string arrays
     const filteredResult = result.filter((action) => {
         for (let i = 0; i < filteredNameSet.length; i++) {
@@ -152,8 +150,6 @@ function selectActionsByKind(currentResourceKinds: Array<string>, filterSet: TMu
         }
         return true;
     });
-
-    console.log('filteredResult', filteredResult);
 
     //return sorted array of actions
     return filteredResult.sort((a, b) => {

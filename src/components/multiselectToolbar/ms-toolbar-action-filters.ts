@@ -8,7 +8,7 @@ import { collectionActionSet } from 'views-components/context-menu/action-sets/c
 import { projectActionSet } from 'views-components/context-menu/action-sets/project-action-set';
 import { processResourceActionSet } from 'views-components/context-menu/action-sets/process-resource-action-set';
 
-export type TMultiselectActionsFilters = Record<string, [ContextMenuActionSet, Array<string>]>;
+export type TMultiselectActionsFilters = Record<string, [ContextMenuActionSet, Set<string>]>;
 
 export const contextMenuActionConsts = {
     MAKE_A_COPY: 'Make a copy',
@@ -22,9 +22,9 @@ export const contextMenuActionConsts = {
 const { MAKE_A_COPY, MOVE_TO, TOGGLE_TRASH_ACTION, COPY_TO_CLIPBOARD, COPY_AND_RERUN_PROCESS, REMOVE } =
     contextMenuActionConsts;
 
-const collectionMSActionsFilter = [MAKE_A_COPY, MOVE_TO, TOGGLE_TRASH_ACTION];
-const projectMSActionsFilter = [COPY_TO_CLIPBOARD, MOVE_TO, TOGGLE_TRASH_ACTION];
-const processResourceMSActionsFilter = [COPY_AND_RERUN_PROCESS, MOVE_TO, REMOVE];
+const collectionMSActionsFilter = new Set([MAKE_A_COPY, MOVE_TO, TOGGLE_TRASH_ACTION]);
+const projectMSActionsFilter = new Set([COPY_TO_CLIPBOARD, MOVE_TO, TOGGLE_TRASH_ACTION]);
+const processResourceMSActionsFilter = new Set([COPY_AND_RERUN_PROCESS, MOVE_TO, REMOVE]);
 
 const { COLLECTION, PROJECT, PROCESS } = ResourceKind;
 
