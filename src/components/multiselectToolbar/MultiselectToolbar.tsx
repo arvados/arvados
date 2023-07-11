@@ -112,53 +112,47 @@ function selectedToKindSet(checkedList: TCheckedList): Set<string> {
     return setifiedList;
 }
 
-//num of currentResourceKinds * num of actions (in ContextMenuActionSet) * num of filters
-//worst case: 14 * n * n -oof
 function filterActions(actionArray: ContextMenuActionSet, filters: Set<string>): Array<ContextMenuAction> {
     return actionArray[0].filter((action) => filters.has(action.name as string));
 }
 
-//this might be the least efficient algorithm I've ever written
 function selectActionsByKind(currentResourceKinds: Array<string>, filterSet: TMultiselectActionsFilters) {
-    let result: Array<ContextMenuAction> = [];
-    const fullFilterArray: ContextMenuAction[][] = [];
-    //start at currentResourceKinds
+    const rawResult: Set<ContextMenuAction> = new Set();
+    const resultNames = new Set();
+    const allFiltersArray: ContextMenuAction[][] = [];
     currentResourceKinds.forEach((kind) => {
-        //if there is a matching filter set
         if (filterSet[kind]) {
-            //filter actions that apply to current kind
             const actions = filterActions(...filterSet[kind]);
-            fullFilterArray.push(actions);
-            //if action name isn't in result, push name
+            allFiltersArray.push(actions);
             actions.forEach((action) => {
-                if (!result.some((item) => item.name === action.name)) {
-                    result.push(action);
+                if (!resultNames.has(action.name)) {
+                    rawResult.add(action);
+                    resultNames.add(action.name);
                 }
             });
         }
     });
-    ///take fullFilterSet, make it into an array of string sets
-    const filteredNameSet = fullFilterArray.map((filterArray) => {
+
+    const filteredNameSet = allFiltersArray.map((filterArray) => {
         const resultSet = new Set();
         filterArray.forEach((action) => resultSet.add(action.name || ''));
         return resultSet;
     });
-    //filter results so that the name of each action is present in all of this string arrays
-    const filteredResult = result.filter((action) => {
+
+    const filteredResult = Array.from(rawResult).filter((action) => {
         for (let i = 0; i < filteredNameSet.length; i++) {
             if (!filteredNameSet[i].has(action.name)) return false;
         }
         return true;
     });
 
-    //return sorted array of actions
     return filteredResult.sort((a, b) => {
-        a.name = a.name || '';
-        b.name = b.name || '';
-        if (a.name < b.name) {
+        const nameA = a.name || '';
+        const nameB = b.name || '';
+        if (nameA < nameB) {
             return -1;
         }
-        if (a.name > b.name) {
+        if (nameA > nameB) {
             return 1;
         }
         return 0;
