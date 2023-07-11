@@ -12,6 +12,7 @@ import (
 	"flag"
 	"fmt"
 	"io"
+	"io/fs"
 	"io/ioutil"
 	"log"
 	"net"
@@ -152,20 +153,12 @@ type ContainerRunner struct {
 	hoststatLogger   io.WriteCloser
 	hoststatReporter *crunchstat.Reporter
 	statInterval     time.Duration
-	cgroupRoot       string
-	// What we expect the container's cgroup parent to be.
-	expectCgroupParent string
 	// What we tell docker to use as the container's cgroup
-	// parent. Note: Ideally we would use the same field for both
-	// expectCgroupParent and setCgroupParent, and just make it
-	// default to "docker". However, when using docker < 1.10 with
-	// systemd, specifying a non-empty cgroup parent (even the
-	// default value "docker") hits a docker bug
-	// (https://github.com/docker/docker/issues/17126). Using two
-	// separate fields makes it possible to use the "expect cgroup
-	// parent to be X" feature even on sites where the "specify
-	// cgroup parent" feature breaks.
+	// parent.
 	setCgroupParent string
+	// Fake root dir where crunchstat.Reporter should read OS
+	// files, for testing.
+	crunchstatFakeFS fs.FS
 
 	cStateLock sync.Mutex
 	cCancelled bool // StopContainer() invoked
@@ -750,7 +743,7 @@ func (runner *ContainerRunner) startHoststat() error {
 	runner.hoststatLogger = NewThrottledLogger(w)
 	runner.hoststatReporter = &crunchstat.Reporter{
 		Logger:     log.New(runner.hoststatLogger, "", 0),
-		CgroupRoot: runner.cgroupRoot,
+		Pid:        func() int { return 1 },
 		PollPeriod: runner.statInterval,
 	}
 	runner.hoststatReporter.Start()
@@ -765,10 +758,9 @@ func (runner *ContainerRunner) startCrunchstat() error {
 	}
 	runner.statLogger = NewThrottledLogger(w)
 	runner.statReporter = &crunchstat.Reporter{
-		CgroupParent: runner.expectCgroupParent,
-		CgroupRoot:   runner.cgroupRoot,
-		CID:          runner.executor.CgroupID(),
-		Logger:       log.New(runner.statLogger, "", 0),
+		Pid:    runner.executor.Pid,
+		FS:     runner.crunchstatFakeFS,
+		Logger: log.New(runner.statLogger, "", 0),
 		MemThresholds: map[string][]crunchstat.Threshold{
 			"rss": crunchstat.NewThresholdsFromPercentages(runner.Container.RuntimeConstraints.RAM, []int64{90, 95, 99}),
 		},
@@ -1909,9 +1901,9 @@ func (command) RunCommand(prog string, args []string, stdin io.Reader, stdout, s
 	log := log.New(stderr, "", 0)
 	flags := flag.NewFlagSet(prog, flag.ContinueOnError)
 	statInterval := flags.Duration("crunchstat-interval", 10*time.Second, "sampling period for periodic resource usage reporting")
-	cgroupRoot := flags.String("cgroup-root", "/sys/fs/cgroup", "path to sysfs cgroup tree")
-	cgroupParent := flags.String("cgroup-parent", "docker", "name of container's parent cgroup (ignored if -cgroup-parent-subsystem is used)")
-	cgroupParentSubsystem := flags.String("cgroup-parent-subsystem", "", "use current cgroup for given subsystem as parent cgroup for container")
+	flags.String("cgroup-root", "/sys/fs/cgroup", "path to sysfs cgroup tree (obsolete, ignored)")
+	flags.String("cgroup-parent", "docker", "name of container's parent cgroup (obsolete, ignored)")
+	cgroupParentSubsystem := flags.String("cgroup-parent-subsystem", "", "use current cgroup for given subsystem as parent cgroup for container (cgroups v1 only)")
 	caCertsPath := flags.String("ca-certs", "", "Path to TLS root certificates")
 	detach := flags.Bool("detach", false, "Detach from parent process and run in the background")
 	stdinConfig := flags.Bool("stdin-config", false, "Load config and environment variables from JSON message on stdin")
@@ -2135,8 +2127,6 @@ func (command) RunCommand(prog string, args []string, stdin io.Reader, stdout, s
 
 	cr.parentTemp = parentTemp
 	cr.statInterval = *statInterval
-	cr.cgroupRoot = *cgroupRoot
-	cr.expectCgroupParent = *cgroupParent
 	cr.enableMemoryLimit = *enableMemoryLimit
 	cr.enableNetwork = *enableNetwork
 	cr.networkMode = *networkMode
@@ -2147,7 +2137,6 @@ func (command) RunCommand(prog string, args []string, stdin io.Reader, stdout, s
 			return 1
 		}
 		cr.setCgroupParent = p
-		cr.expectCgroupParent = p
 	}
 
 	if conf.EC2SpotCheck {

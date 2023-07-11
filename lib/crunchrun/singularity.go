@@ -353,8 +353,12 @@ func (e *singularityExecutor) Start() error {
 	return nil
 }
 
-func (e *singularityExecutor) CgroupID() string {
-	return ""
+func (e *singularityExecutor) Pid() int {
+	pid, err := e.containedProcess()
+	if err != nil {
+		return -1
+	}
+	return pid
 }
 
 func (e *singularityExecutor) Stop() error {
