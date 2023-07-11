@@ -62,7 +62,7 @@ type Scheduler struct {
 //
 // Any given queue and pool should not be used by more than one
 // scheduler at a time.
-func New(ctx context.Context, client *arvados.Client, queue ContainerQueue, pool WorkerPool, reg *prometheus.Registry, staleLockTimeout, queueUpdateInterval time.Duration, maxInstances int, supervisorFraction float64) *Scheduler {
+func New(ctx context.Context, client *arvados.Client, queue ContainerQueue, pool WorkerPool, reg *prometheus.Registry, staleLockTimeout, queueUpdateInterval time.Duration, minQuota, maxInstances int, supervisorFraction float64) *Scheduler {
 	sch := &Scheduler{
 		logger:              ctxlog.FromContext(ctx),
 		client:              client,
@@ -75,9 +75,13 @@ func New(ctx context.Context, client *arvados.Client, queue ContainerQueue, pool
 		stop:                make(chan struct{}),
 		stopped:             make(chan struct{}),
 		uuidOp:              map[string]string{},
-		maxConcurrency:      maxInstances, // initial value -- will be dynamically adjusted
 		supervisorFraction:  supervisorFraction,
 		maxInstances:        maxInstances,
+	}
+	if minQuota > 0 {
+		sch.maxConcurrency = minQuota
+	} else {
+		sch.maxConcurrency = maxInstances
 	}
 	sch.registerMetrics(reg)
 	return sch
@@ -122,6 +126,18 @@ func (sch *Scheduler) registerMetrics(reg *prometheus.Registry) {
 		Help:      "Dynamically assigned limit on number of containers scheduled concurrency, set after receiving 503 errors from API.",
 	})
 	reg.MustRegister(sch.mMaxContainerConcurrency)
+	reg.MustRegister(prometheus.NewGaugeFunc(prometheus.GaugeOpts{
+		Namespace: "arvados",
+		Subsystem: "dispatchcloud",
+		Name:      "at_quota",
+		Help:      "Flag indicating the cloud driver is reporting an at-quota condition.",
+	}, func() float64 {
+		if sch.pool.AtQuota() {
+			return 1
+		} else {
+			return 0
+		}
+	}))
 }
 
 func (sch *Scheduler) updateMetrics() {
