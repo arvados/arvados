@@ -91,7 +91,6 @@ export const MultiselectToolbar = connect(
     })
 );
 
-//todo: put these all in a /utils
 function selectedToArray(checkedList: TCheckedList): Array<string> {
     const arrayifiedSelectedList: Array<string> = [];
     for (const [key, value] of Object.entries(checkedList)) {

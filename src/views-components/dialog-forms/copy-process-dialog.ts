@@ -16,6 +16,7 @@ export const CopyProcessDialog = compose(
     reduxForm<CopyFormDialogData>({
         form: PROCESS_COPY_FORM_NAME,
         onSubmit: (data, dispatch) => {
+            console.log('In CopyProcessDialog');
             dispatch(copyProcess(data));
         },
     }),
