@@ -943,7 +943,8 @@ func (s *IntegrationSuite) testS3CollectionListRollup(c *check.C) {
 		{"dir0", "", ""},
 		{"dir0/", "", ""},
 		{"dir0/f", "", ""},
-		{"dir0", "/", "dir0/file14.txt"},       // no commonprefixes
+		{"dir0", "/", "dir0/file14.txt"},       // one commonprefix, "dir0/"
+		{"dir0", "/", "dir0/zzzzfile.txt"},     // no commonprefixes
 		{"", "", "dir0/file14.txt"},            // middle page, skip walking dir1
 		{"", "", "dir1/file14.txt"},            // middle page, skip walking dir0
 		{"", "", "dir1/file498.txt"},           // last page of results
@@ -1014,6 +1015,61 @@ func (s *IntegrationSuite) testS3CollectionListRollup(c *check.C) {
 		c.Check(resp.NextMarker, check.Equals, expectNextMarker, commentf)
 		c.Check(resp.IsTruncated, check.Equals, expectTruncated, commentf)
 		c.Logf("=== trial %+v keys %q prefixes %q nextMarker %q", trial, gotKeys, gotPrefixes, resp.NextMarker)
+	}
+}
+
+func (s *IntegrationSuite) TestS3ListObjectsV2ManySubprojects(c *check.C) {
+	stage := s.s3setup(c)
+	defer stage.teardown(c)
+	projects := 50
+	collectionsPerProject := 2
+	for i := 0; i < projects; i++ {
+		var subproj arvados.Group
+		err := stage.arv.RequestAndDecode(&subproj, "POST", "arvados/v1/groups", nil, map[string]interface{}{
+			"group": map[string]interface{}{
+				"owner_uuid":  stage.subproj.UUID,
+				"group_class": "project",
+				"name":        fmt.Sprintf("keep-web s3 test subproject %d", i),
+			},
+		})
+		c.Assert(err, check.IsNil)
+		for j := 0; j < collectionsPerProject; j++ {
+			err = stage.arv.RequestAndDecode(nil, "POST", "arvados/v1/collections", nil, map[string]interface{}{"collection": map[string]interface{}{
+				"owner_uuid":    subproj.UUID,
+				"name":          fmt.Sprintf("keep-web s3 test collection %d", j),
+				"manifest_text": ". d41d8cd98f00b204e9800998ecf8427e+0 0:0:emptyfile\n./emptydir d41d8cd98f00b204e9800998ecf8427e+0 0:0:.\n",
+			}})
+			c.Assert(err, check.IsNil)
+		}
+	}
+	c.Logf("setup complete")
+
+	sess := aws_session.Must(aws_session.NewSession(&aws_aws.Config{
+		Region:           aws_aws.String("auto"),
+		Endpoint:         aws_aws.String(s.testServer.URL),
+		Credentials:      aws_credentials.NewStaticCredentials(url.QueryEscape(arvadostest.ActiveTokenV2), url.QueryEscape(arvadostest.ActiveTokenV2), ""),
+		S3ForcePathStyle: aws_aws.Bool(true),
+	}))
+	client := aws_s3.New(sess)
+	ctx := context.Background()
+	params := aws_s3.ListObjectsV2Input{
+		Bucket:    aws_aws.String(stage.proj.UUID),
+		Delimiter: aws_aws.String("/"),
+		Prefix:    aws_aws.String("keep-web s3 test subproject/"),
+		MaxKeys:   aws_aws.Int64(int64(projects / 2)),
+	}
+	for page := 1; ; page++ {
+		t0 := time.Now()
+		result, err := client.ListObjectsV2WithContext(ctx, &params)
+		if !c.Check(err, check.IsNil) {
+			break
+		}
+		c.Logf("got page %d in %v with len(Contents) == %d, len(CommonPrefixes) == %d", page, time.Since(t0), len(result.Contents), len(result.CommonPrefixes))
+		if !*result.IsTruncated {
+			break
+		}
+		params.ContinuationToken = result.NextContinuationToken
+		*params.MaxKeys = *params.MaxKeys/2 + 1
 	}
 }
 
