@@ -175,9 +175,9 @@ func ReadWriteLines(in io.Reader, writer io.Writer, done chan<- bool) {
 }
 
 // NewThrottledLogger creates a new thottled logger that
-// (a) prepends timestamps to each line
-// (b) batches log messages and only calls the underlying Writer
-//  at most once per "crunchLogSecondsBetweenEvents" seconds.
+//   - prepends timestamps to each line, and
+//   - batches log messages and only calls the underlying Writer
+//     at most once per "crunchLogSecondsBetweenEvents" seconds.
 func NewThrottledLogger(writer io.WriteCloser) *ThrottledLogger {
 	tl := &ThrottledLogger{}
 	tl.flush = make(chan struct{}, 1)

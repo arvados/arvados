@@ -607,22 +607,22 @@ func (s *ServerRequiredSuite) TestStripHint(c *C) {
 }
 
 // Test GetIndex
-//   Put one block, with 2 replicas
-//   With no prefix (expect the block locator, twice)
-//   With an existing prefix (expect the block locator, twice)
-//   With a valid but non-existing prefix (expect "\n")
-//   With an invalid prefix (expect error)
+// - Put one block, with 2 replicas
+// - With no prefix (expect the block locator, twice)
+// - With an existing prefix (expect the block locator, twice)
+// - With a valid but non-existing prefix (expect "\n")
+// - With an invalid prefix (expect error)
 func (s *ServerRequiredSuite) TestGetIndex(c *C) {
 	getIndexWorker(c, false)
 }
 
 // Test GetIndex
-//   Uses config.yml
-//   Put one block, with 2 replicas
-//   With no prefix (expect the block locator, twice)
-//   With an existing prefix (expect the block locator, twice)
-//   With a valid but non-existing prefix (expect "\n")
-//   With an invalid prefix (expect error)
+// - Uses config.yml
+// - Put one block, with 2 replicas
+// - With no prefix (expect the block locator, twice)
+// - With an existing prefix (expect the block locator, twice)
+// - With a valid but non-existing prefix (expect "\n")
+// - With an invalid prefix (expect error)
 func (s *ServerRequiredConfigYmlSuite) TestGetIndex(c *C) {
 	getIndexWorker(c, true)
 }

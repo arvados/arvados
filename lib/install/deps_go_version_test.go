@@ -20,13 +20,11 @@ var _ = check.Suite(&Suite{})
 
 type Suite struct{}
 
-/*
-	TestExtractGoVersion tests the grep/awk command used in
-	tools/arvbox/bin/arvbox to extract the version of Go to install for
-	bootstrapping `arvados-server`.
-
-	If this test is changed, the arvbox code will also need to be updated.
-*/
+// TestExtractGoVersion tests the grep/awk command used in
+// tools/arvbox/bin/arvbox to extract the version of Go to install for
+// bootstrapping `arvados-server`.
+//
+// If this test is changed, the arvbox code will also need to be updated.
 func (*Suite) TestExtractGoVersion(c *check.C) {
 	script := `
   sourcepath="$(realpath ../..)"

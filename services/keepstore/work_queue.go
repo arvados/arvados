@@ -108,7 +108,6 @@ type WorkQueueStatus struct {
 }
 
 // NewWorkQueue returns a new empty WorkQueue.
-//
 func NewWorkQueue() *WorkQueue {
 	nextItem := make(chan interface{})
 	reportDone := make(chan struct{})
@@ -185,7 +184,6 @@ func NewWorkQueue() *WorkQueue {
 // and starts giving workers items from the given list. After giving
 // it to ReplaceQueue, the caller must not read or write the given
 // list.
-//
 func (b *WorkQueue) ReplaceQueue(list *list.List) {
 	b.newlist <- list
 }
@@ -196,14 +194,12 @@ func (b *WorkQueue) ReplaceQueue(list *list.List) {
 //
 // After Close, Status will return correct values, NextItem will be
 // closed, and ReplaceQueue will panic.
-//
 func (b *WorkQueue) Close() {
 	close(b.newlist)
 }
 
 // Status returns an up-to-date WorkQueueStatus reflecting the current
 // queue status.
-//
 func (b *WorkQueue) Status() WorkQueueStatus {
 	// If the channel is closed, we get the nil value of
 	// WorkQueueStatus, which is an accurate description of a

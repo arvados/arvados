@@ -15,7 +15,6 @@
 // fill your storage volumes with random data if you leave it running,
 // which can cost you money or leave you with too little room for
 // useful data.
-//
 package main
 
 import (
