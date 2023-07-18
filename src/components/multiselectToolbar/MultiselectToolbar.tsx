@@ -22,11 +22,7 @@ import { CopyProcessDialog, CopyManyProcessesDialog } from 'views-components/dia
 import { collectionActionSet } from 'views-components/context-menu/action-sets/collection-action-set';
 import { ContextMenuAction, ContextMenuActionSet } from 'views-components/context-menu/context-menu-action-set';
 import { TrashIcon } from 'components/icon/icon';
-import {
-    multiselectActionsFilters,
-    TMultiselectActionsFilters,
-    contextMenuActionConsts,
-} from './ms-toolbar-action-filters';
+import { multiselectActionsFilters, TMultiselectActionsFilters, contextMenuActionConsts } from './ms-toolbar-action-filters';
 import { kindToActionSet, findActionByName } from './ms-kind-action-differentiator';
 
 type CssRules = 'root' | 'button';
@@ -171,17 +167,47 @@ function mapStateToProps(state: RootState) {
 
 function mapDispatchToProps(dispatch: Dispatch) {
     return {
-        executeMulti: (action: ContextMenuAction, checkedList: TCheckedList, resources: ResourcesState) => {
-            selectedToArray(checkedList).forEach((uuid) => {
-                const resource = getResource(uuid)(resources);
-                executeSpecific(dispatch, action.name, resource);
-            });
+        // executeMulti: (action: ContextMenuAction, checkedList: TCheckedList, resources: ResourcesState) => {
+        //     selectedToArray(checkedList).forEach((uuid) => {
+        //         const resource = getResource(uuid)(resources);
+        //         executeSpecific(dispatch, action.name, resource);
+        //     });
+        // },
+        executeMulti: (selectedAction: ContextMenuAction, checkedList: TCheckedList, resources: ResourcesState) => {
+            console.log(groupByKind(checkedList, resources));
+            // selectedToArray(checkedList).forEach((uuid) => {
+            //     const resource = getResource(uuid)(resources);
+            //     executeSpecific(dispatch, action.name, resource);
+            // });
+            const kindGroups = groupByKind(checkedList, resources);
+            for (const kind in kindGroups) {
+                const actionSet = kindToActionSet[kind];
+                const action = findActionByName(selectedAction.name as string, actionSet);
+                // if (action) action.execute(dispatch, kindGroups[kind]);
+                // if (action && action.name === 'ToggleTrashAction') action.execute(dispatch, kindGroups[kind]);
+            }
         },
     };
 }
+
+// function executeSpecific(dispatch: Dispatch, actionName, resource) {
+//     const actionSet = kindToActionSet[resource.kind];
+//     const action = findActionByName(actionName, actionSet);
+//     if (action) action.execute(dispatch, resource);
+// }
 
 function executeSpecific(dispatch: Dispatch, actionName, resource) {
     const actionSet = kindToActionSet[resource.kind];
     const action = findActionByName(actionName, actionSet);
     if (action) action.execute(dispatch, resource);
+}
+
+function groupByKind(checkedList: TCheckedList, resources: ResourcesState): Record<string, Array<Resource | undefined>> {
+    const result = {};
+    selectedToArray(checkedList).forEach((uuid) => {
+        const resource = getResource(uuid)(resources) as Resource;
+        if (!result[resource.kind]) result[resource.kind] = [];
+        result[resource.kind].push(resource);
+    });
+    return result;
 }

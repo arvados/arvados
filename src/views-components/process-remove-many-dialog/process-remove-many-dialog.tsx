@@ -2,6 +2,8 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
+//this file can probably be removed - lk
+
 import { Dispatch, compose } from 'redux';
 import { connect } from 'react-redux';
 import { ConfirmationDialog } from 'components/confirmation-dialog/confirmation-dialog';
