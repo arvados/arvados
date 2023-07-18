@@ -39,7 +39,7 @@ export const storeRedirects = () => {
     const redirectStoreKey = redirectKey === REDIRECT_TO_KEY ? REDIRECT_TO_PREVIEW_KEY : redirectKey;
 
     if (localStorage && redirectKey && redirectStoreKey) {
-        localStorage.setItem(redirectStoreKey, href.split(`${redirectKey}=`)[1]);
+        localStorage.setItem(redirectStoreKey, decodeURIComponent(href.split(`${redirectKey}=`)[1]));
     }
 };
 
