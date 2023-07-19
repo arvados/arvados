@@ -24,18 +24,20 @@ import { freezeProject, unfreezeProject } from 'store/projects/project-lock-acti
 export const toggleFavoriteAction = {
     component: ToggleFavoriteAction,
     name: 'ToggleFavoriteAction',
-    execute: (dispatch, resource) => {
-        dispatch(toggleFavorite(resource)).then(() => {
-            dispatch(favoritePanelActions.REQUEST_ITEMS());
-        });
+    execute: (dispatch, resources) => {
+        resources.forEach((resource) =>
+            dispatch(toggleFavorite(resource)).then(() => {
+                dispatch(favoritePanelActions.REQUEST_ITEMS());
+            })
+        );
     },
 };
 
 export const openInNewTabMenuAction = {
     icon: OpenIcon,
     name: 'Open in new tab',
-    execute: (dispatch, resource) => {
-        dispatch(openInNewTabAction(resource));
+    execute: (dispatch, resources) => {
+        resources.forEach((resource) => dispatch(openInNewTabAction(resource)));
     },
 };
 
@@ -58,60 +60,64 @@ export const viewDetailsAction = {
 export const advancedAction = {
     icon: AdvancedIcon,
     name: 'API Details',
-    execute: (dispatch, resource) => {
-        dispatch(openAdvancedTabDialog(resource.uuid));
+    execute: (dispatch, resources) => {
+        resources.forEach((resource) => dispatch(openAdvancedTabDialog(resource.uuid)));
     },
 };
 
 export const openWith3rdPartyClientAction = {
     icon: FolderSharedIcon,
     name: 'Open with 3rd party client',
-    execute: (dispatch, resource) => {
-        dispatch(openWebDavS3InfoDialog(resource.uuid));
+    execute: (dispatch, resources) => {
+        resources.forEach((resource) => dispatch(openWebDavS3InfoDialog(resource.uuid)));
     },
 };
 
 export const editProjectAction = {
     icon: RenameIcon,
     name: 'Edit project',
-    execute: (dispatch, resource) => {
-        dispatch(openProjectUpdateDialog(resource));
+    execute: (dispatch, resources) => {
+        resources.forEach((resource) => dispatch(openProjectUpdateDialog(resource)));
     },
 };
 
 export const shareAction = {
     icon: ShareIcon,
     name: 'Share',
-    execute: (dispatch, { uuid }) => {
-        dispatch(openSharingDialog(uuid));
+    execute: (dispatch, processes) => {
+        processes.forEach((process) => dispatch(openSharingDialog(process.uuid)));
     },
 };
 
 export const moveToAction = {
     icon: MoveToIcon,
     name: 'Move to',
-    execute: (dispatch, resource) => {
-        dispatch(openMoveProjectDialog(resource));
+    execute: (dispatch, resources) => {
+        resources.forEach((resource) => {
+            dispatch(openMoveProjectDialog(resource));
+        });
     },
 };
 
 export const toggleTrashAction = {
     component: ToggleTrashAction,
     name: 'ToggleTrashAction',
-    execute: (dispatch, resource) => {
-        dispatch(toggleProjectTrashed(resource.uuid, resource.ownerUuid, resource.isTrashed!!));
+    execute: (dispatch, resources) => {
+        resources.forEach((resource) => dispatch(toggleProjectTrashed(resource.uuid, resource.ownerUuid, resource.isTrashed!!)));
     },
 };
 
 export const freezeProjectAction = {
     component: ToggleLockAction,
     name: 'ToggleLockAction',
-    execute: (dispatch, resource) => {
-        if (resource.isFrozen) {
-            dispatch(unfreezeProject(resource.uuid));
-        } else {
-            dispatch(freezeProject(resource.uuid));
-        }
+    execute: (dispatch, resources) => {
+        resources.forEach((resource) => {
+            if (resource.isFrozen) {
+                dispatch(unfreezeProject(resource.uuid));
+            } else {
+                dispatch(freezeProject(resource.uuid));
+            }
+        });
     },
 };
 
