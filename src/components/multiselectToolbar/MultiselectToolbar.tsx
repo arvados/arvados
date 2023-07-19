@@ -167,24 +167,11 @@ function mapStateToProps(state: RootState) {
 
 function mapDispatchToProps(dispatch: Dispatch) {
     return {
-        // executeMulti: (action: ContextMenuAction, checkedList: TCheckedList, resources: ResourcesState) => {
-        //     selectedToArray(checkedList).forEach((uuid) => {
-        //         const resource = getResource(uuid)(resources);
-        //         executeSpecific(dispatch, action.name, resource);
-        //     });
-        // },
         executeMulti: (selectedAction: ContextMenuAction, checkedList: TCheckedList, resources: ResourcesState) => {
-            // selectedToArray(checkedList).forEach((uuid) => {
-            //     const resource = getResource(uuid)(resources);
-            //     executeSpecific(dispatch, action.name, resource);
-            // });
             const kindGroups = groupByKind(checkedList, resources);
-            // console.log(kindGroups);
             for (const kind in kindGroups) {
                 const actionSet = kindToActionSet[kind];
                 const action = findActionByName(selectedAction.name as string, actionSet);
-                console.log(action?.execute);
-                console.log(kindGroups[kind]);
 
                 if (action) action.execute(dispatch, kindGroups[kind]);
                 // if (action && action.name === 'ToggleTrashAction') action.execute(dispatch, kindGroups[kind]);
@@ -193,20 +180,7 @@ function mapDispatchToProps(dispatch: Dispatch) {
     };
 }
 
-// function executeSpecific(dispatch: Dispatch, actionName, resource) {
-//     const actionSet = kindToActionSet[resource.kind];
-//     const action = findActionByName(actionName, actionSet);
-//     if (action) action.execute(dispatch, resource);
-// }
-
-function executeSpecific(dispatch: Dispatch, actionName, resource) {
-    const actionSet = kindToActionSet[resource.kind];
-    const action = findActionByName(actionName, actionSet);
-    if (action) action.execute(dispatch, resource);
-}
-
 function groupByKind(checkedList: TCheckedList, resources: ResourcesState): Record<string, ContextMenuResource[]> {
-    // function groupByKind(checkedList: TCheckedList, resources: ResourcesState): Record<string, Array<Resource | undefined>> {
     const result = {};
     selectedToArray(checkedList).forEach((uuid) => {
         const resource = getResource(uuid)(resources) as Resource;

@@ -17,13 +17,18 @@ export const openInNewTabAction = (resource: any) => (dispatch: Dispatch, getSta
     }
 };
 
-export const copyToClipboardAction = (resource: any) => (dispatch: Dispatch, getState: () => RootState) => {
+export const copyToClipboardAction = (resources: Array<any>) => (dispatch: Dispatch, getState: () => RootState) => {
     // Copy to clipboard omits token to avoid accidental sharing
-    const url = getNavUrl(resource.uuid, getState().auth, false);
 
-    if (url[0] === '/') {
-        copy(`${window.location.origin}${url}`);
-    } else if (url.length) {
-        copy(url);
+    let output = '';
+
+    resources.forEach((resource) => {
+        let url = getNavUrl(resource.uuid, getState().auth, false);
+        if (url[0] === '/') url = `${window.location.origin}${url}`;
+        output += output.length ? `, ${url}` : url;
+    });
+
+    if (output.length) {
+        copy(output);
     }
 };

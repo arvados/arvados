@@ -21,7 +21,7 @@ export const searchResultsActionSet: ContextMenuActionSet = [
             icon: Link,
             name: 'Copy to clipboard',
             execute: (dispatch, resources) => {
-                resources.forEach((resource) => dispatch<any>(copyToClipboardAction(resource)));
+                dispatch<any>(copyToClipboardAction(resources));
             },
         },
         {
