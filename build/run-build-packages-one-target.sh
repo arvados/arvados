@@ -222,7 +222,6 @@ if test -z "$packages" ; then
         crunch-dispatch-local
         crunch-dispatch-slurm
         crunch-run
-        crunchstat
         keepproxy
         keepstore
         keep-balance
