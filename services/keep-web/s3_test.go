@@ -325,6 +325,11 @@ func (s *IntegrationSuite) TestS3ProjectPutObjectSuccess(c *check.C) {
 	s.testS3PutObjectSuccess(c, stage.projbucket, stage.coll.Name+"/", stage.coll.UUID)
 }
 func (s *IntegrationSuite) testS3PutObjectSuccess(c *check.C, bucket *s3.Bucket, prefix string, collUUID string) {
+	// We insert a delay between test cases to ensure we exercise
+	// rollover of expired sessions.
+	sleep := time.Second / 100
+	s.handler.Cluster.Collections.WebDAVCache.TTL = arvados.Duration(sleep * 3)
+
 	for _, trial := range []struct {
 		path        string
 		size        int
@@ -360,6 +365,7 @@ func (s *IntegrationSuite) testS3PutObjectSuccess(c *check.C, bucket *s3.Bucket,
 			contentType: "application/x-directory",
 		},
 	} {
+		time.Sleep(sleep)
 		c.Logf("=== %v", trial)
 
 		objname := prefix + trial.path
