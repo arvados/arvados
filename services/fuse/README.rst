@@ -41,6 +41,9 @@ add the directory to your shell's search path by running::
 
 You can make this search path change permanent by adding this command to
 your shell's configuration, for example ``~/.bashrc`` if you're using bash.
+You can test the change by running::
+
+  arv-mount --version
 
 Assuming they have permission to read inside your home directory, other
 users on the same system can use this installation by making a similar
