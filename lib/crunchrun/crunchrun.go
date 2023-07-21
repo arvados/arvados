@@ -2131,7 +2131,7 @@ func (command) RunCommand(prog string, args []string, stdin io.Reader, stdout, s
 	cr.enableNetwork = *enableNetwork
 	cr.networkMode = *networkMode
 	if *cgroupParentSubsystem != "" {
-		p, err := findCgroup(*cgroupParentSubsystem)
+		p, err := findCgroup(os.DirFS("/"), *cgroupParentSubsystem)
 		if err != nil {
 			log.Printf("fatal: cgroup parent subsystem: %s", err)
 			return 1
