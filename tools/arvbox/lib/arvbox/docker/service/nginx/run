@@ -161,10 +161,10 @@ http {
     rewrite ^/groups/(.*) /group/$1 redirect;
 
     # Special file download redirects
-    if ($arg_disposition = attachment) {
+    if (\$arg_disposition = attachment) {
       rewrite ^/collections/([^/]*)/(.*) /?redirectToDownload=/c=$1/$2? redirect;
     }
-    if ($arg_disposition = inline) {
+    if (\$arg_disposition = inline) {
       rewrite ^/collections/([^/]*)/(.*) /?redirectToPreview=/c=$1/$2? redirect;
     }
 
