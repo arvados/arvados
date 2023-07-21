@@ -335,6 +335,7 @@ func (h *handler) serveS3(w http.ResponseWriter, r *http.Request) bool {
 		s3ErrorResponse(w, InternalError, err.Error(), r.URL.Path, http.StatusInternalServerError)
 		return true
 	}
+	defer sess.Release()
 	readfs := fs
 	if writeMethod[r.Method] {
 		// Create a FileSystem for this request, to avoid
