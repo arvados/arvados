@@ -202,7 +202,7 @@ func (e *dockerExecutor) Pid() int {
 	if err != nil && ctr.State != nil {
 		return ctr.State.Pid
 	} else {
-		return -1
+		return 0
 	}
 }
 

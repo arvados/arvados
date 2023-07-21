@@ -742,8 +742,16 @@ func (runner *ContainerRunner) startHoststat() error {
 	}
 	runner.hoststatLogger = NewThrottledLogger(w)
 	runner.hoststatReporter = &crunchstat.Reporter{
-		Logger:     log.New(runner.hoststatLogger, "", 0),
-		Pid:        func() int { return 1 },
+		Logger: log.New(runner.hoststatLogger, "", 0),
+		// Our own cgroup is the "host" cgroup, in the sense
+		// that it accounts for resource usage outside the
+		// container. It doesn't count _all_ resource usage on
+		// the system.
+		//
+		// TODO?: Use the furthest ancestor of our own cgroup
+		// that has stats available. (Currently crunchstat
+		// does not have that capability.)
+		Pid:        os.Getpid,
 		PollPeriod: runner.statInterval,
 	}
 	runner.hoststatReporter.Start()

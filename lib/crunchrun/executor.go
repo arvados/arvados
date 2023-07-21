@@ -51,9 +51,8 @@ type containerExecutor interface {
 	// Start the container
 	Start() error
 
-	// Process ID of a process in the container (return 0 or
-	// negative if container is finished or no process has started
-	// yet)
+	// Process ID of a process in the container.  Return 0 if
+	// container is finished or no process has started yet.
 	Pid() int
 
 	// Stop the container immediately
