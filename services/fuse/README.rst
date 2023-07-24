@@ -45,11 +45,6 @@ You can test the change by running::
 
   arv-mount --version
 
-Assuming they have permission to read inside your home directory, other
-users on the same system can use this installation by making a similar
-change to their shell's ``$PATH``. When they do, they will need to replace
-``$HOME`` with the static path to your own home directory.
-
 Installing on Debian systems
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
