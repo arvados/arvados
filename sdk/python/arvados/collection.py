@@ -1770,7 +1770,7 @@ class Collection(RichCollectionBase):
     _segment_re = re.compile(r'(\d+):(\d+):(\S+)')
 
     def _unescape_manifest_path(self, path):
-        return re.sub('\\\\([0-3][0-7][0-7])', lambda m: chr(int(m.group(1), 8)), path)
+        return re.sub(r'\\([0-3][0-7][0-7])', lambda m: chr(int(m.group(1), 8)), path)
 
     @synchronized
     def _import_manifest(self, manifest_text):

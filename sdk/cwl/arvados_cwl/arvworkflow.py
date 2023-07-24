@@ -51,6 +51,21 @@ metrics = logging.getLogger('arvados.cwl-runner.metrics')
 max_res_pars = ("coresMin", "coresMax", "ramMin", "ramMax", "tmpdirMin", "tmpdirMax")
 sum_res_pars = ("outdirMin", "outdirMax")
 
+_basetype_re = re.compile(r'''(?:
+Directory
+|File
+|array
+|boolean
+|double
+|enum
+|float
+|int
+|long
+|null
+|record
+|string
+)(?:\[\])?\??''', re.VERBOSE)
+
 def make_wrapper_workflow(arvRunner, main, packed, project_uuid, name, git_info, tool):
     col = arvados.collection.Collection(api_client=arvRunner.api,
                                         keep_client=arvRunner.keep_client)
@@ -161,12 +176,7 @@ def rel_ref(s, baseuri, urlexpander, merged_map, jobmapper):
     return os.path.join(r, p3)
 
 def is_basetype(tp):
-    basetypes = ("null", "boolean", "int", "long", "float", "double", "string", "File", "Directory", "record", "array", "enum")
-    for b in basetypes:
-        if re.match(b+"(\[\])?\??", tp):
-            return True
-    return False
-
+    return _basetype_re.match(tp) is not None
 
 def update_refs(d, baseuri, urlexpander, merged_map, jobmapper, runtimeContext, prefix, replacePrefix):
     if isinstance(d, MutableSequence):

@@ -116,11 +116,12 @@ def tarball_extract(tarball, path):
                 os.unlink(os.path.join(path, '.locator'))
 
         for f in CollectionReader(tarball).all_files():
-            if re.search('\.(tbz|tar.bz2)$', f.name()):
+            f_name = f.name()
+            if f_name.endswith(('.tbz', '.tar.bz2')):
                 p = tar_extractor(path, 'j')
-            elif re.search('\.(tgz|tar.gz)$', f.name()):
+            elif f_name.endswith(('.tgz', '.tar.gz')):
                 p = tar_extractor(path, 'z')
-            elif re.search('\.tar$', f.name()):
+            elif f_name.endswith('.tar'):
                 p = tar_extractor(path, '')
             else:
                 raise arvados.errors.AssertionError(
@@ -177,7 +178,7 @@ def zipball_extract(zipball, path):
                 os.unlink(os.path.join(path, '.locator'))
 
         for f in CollectionReader(zipball).all_files():
-            if not re.search('\.zip$', f.name()):
+            if not f.name().endswith('.zip'):
                 raise arvados.errors.NotImplementedError(
                     "zipball_extract cannot handle filename %s" % f.name())
             zip_filename = os.path.join(path, os.path.basename(f.name()))
