@@ -21,17 +21,29 @@ Installation
 Installing under your user account
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-This method lets you install the package without root access.
-However, other users on the same system won't be able to use it.
+This method lets you install the package without root access.  However,
+other users on the same system will need to reconfigure their shell in order
+to be able to use it. Run the following to install the package in an
+environment at ``~/arvclients``::
 
-1. Run ``pip install --user arvados_fuse``.
+  python3 -m venv ~/arvclients
+  ~/arvclients/bin/pip install arvados_fuse
 
-2. In your shell configuration, make sure you add ``$HOME/.local/bin``
-   to your PATH environment variable.  For example, you could add the
-   command ``PATH=$PATH:$HOME/.local/bin`` to your ``.bashrc`` file.
+Command line tools will be installed under ``~/arvclients/bin``. You can
+test one by running::
 
-3. Reload your shell configuration.  For example, bash users could run
-   ``source ~/.bashrc``.
+  ~/arvclients/bin/arv-mount --version
+
+You can run these tools by specifying the full path every time, or you can
+add the directory to your shell's search path by running::
+
+  export PATH="$PATH:$HOME/arvclients/bin"
+
+You can make this search path change permanent by adding this command to
+your shell's configuration, for example ``~/.bashrc`` if you're using bash.
+You can test the change by running::
+
+  arv-mount --version
 
 Installing on Debian systems
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
