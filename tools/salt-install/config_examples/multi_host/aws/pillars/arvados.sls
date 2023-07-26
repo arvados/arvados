@@ -111,7 +111,7 @@ arvados:
     {%- set max_reqs = "__CONTROLLER_MAX_CONCURRENT_REQUESTS__" %}
     {%- if max_reqs != "" and max_reqs is number %}
     API:
-      MaxConcurrentRequests: max_reqs
+      MaxConcurrentRequests: {{ max_reqs }}
     {%- endif %}
 
     ### CONTAINERS
