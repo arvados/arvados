@@ -241,6 +241,8 @@ T_DIR="/tmp/cluster_tests"
 arguments ${@}
 
 declare -A NODES
+declare -A ROLES
+declare NODELIST
 
 if [[ -s ${CONFIG_FILE} && -s ${CONFIG_FILE}.secrets ]]; then
   source ${CONFIG_FILE}.secrets
@@ -466,6 +468,7 @@ for f in $(ls "${SOURCE_PILLARS_DIR}"/*); do
        s#__ENABLE_BALANCER__#${ENABLE_BALANCER}#g;
        s#__BALANCER_NODENAME__#${BALANCER_NODENAME}#g;
        s#__BALANCER_BACKENDS__#${BALANCER_BACKENDS}#g;
+       s#__NODELIST__#${NODELIST}#g;
        s#__DISPATCHER_INT_IP__#${DISPATCHER_INT_IP}#g;
        s#__KEEPBALANCE_INT_IP__#${KEEPBALANCE_INT_IP}#g;
        s#__COMPUTE_AMI__#${COMPUTE_AMI}#g;
@@ -557,6 +560,7 @@ if [ -d "${SOURCE_STATES_DIR}" ]; then
          s#__ENABLE_BALANCER__#${ENABLE_BALANCER}#g;
          s#__BALANCER_NODENAME__#${BALANCER_NODENAME}#g;
          s#__BALANCER_BACKENDS__#${BALANCER_BACKENDS}#g;
+         s#__NODELIST__#${NODELIST}#g;
          s#__DISPATCHER_INT_IP__#${DISPATCHER_INT_IP}#g;
          s#__KEEPBALANCE_INT_IP__#${KEEPBALANCE_INT_IP}#g;
          s#__COMPUTE_AMI__#${COMPUTE_AMI}#g;

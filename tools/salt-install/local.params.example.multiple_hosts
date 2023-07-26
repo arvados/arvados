@@ -102,6 +102,35 @@ NODES=(
   [shell.${DOMAIN}]=shell
 )
 
+# Comma-separated list of nodes. This is used to dynamically adjust
+# salt pillars.
+NODELIST=""
+for node in "${!NODES[@]}"; do
+  if [ -z "$NODELIST" ]; then
+    NODELIST="$node"
+  else
+    NODELIST="$NODELIST,$node"
+  fi
+done
+
+# The mapping of roles to nodes. This is used to dinamically adjust
+# salt pillars.
+declare -A ROLES
+for node in "${!NODES[@]}"; do
+  roles="${NODES[$node]}"
+
+  # Split the comma-separated roles into an array
+  IFS=',' read -ra roles_array <<< "$roles"
+
+  for role in "${roles_array[@]}"; do
+    if [ -n "${ROLES[$role]:-}" ]; then
+      ROLES["$role"]="${ROLES[$role]},$node"
+    else
+      ROLES["$role"]=$node
+    fi
+  done
+done
+
 # Host SSL port where you want to point your browser to access Arvados
 # Defaults to 443 for regular runs, and to 8443 when called in Vagrant.
 # You can point it to another port if desired

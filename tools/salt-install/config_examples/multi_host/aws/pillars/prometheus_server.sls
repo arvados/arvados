@@ -59,7 +59,7 @@ prometheus:
             - job_name: keep_balance
               bearer_token: __MANAGEMENT_TOKEN__
               static_configs:
-                - targets: ['__CONTROLLER_INT_IP__:9005']
+                - targets: ['__KEEPBALANCE_INT_IP__:9005']
                   labels:
                     instance: keep-balance.__CLUSTER__
                     cluster: __CLUSTER__
@@ -90,14 +90,14 @@ prometheus:
                     cluster: __CLUSTER__
 
             # Nodes
+            {%- set node_list = "__NODELIST__".split(',') %}
+            {%- set nodes = [] %}
+            {%- for node in node_list %}
+              {%- set _ = nodes.append(node.split('.')[0]) %}
+            {%- endfor %}
             - job_name: node
               static_configs:
-                {% for node in [
-                  'controller',
-                  'keep0',
-                  'workbench',
-                  'shell',
-                ] %}
+                {% for node in nodes %}
                 - targets: [ "{{ node }}.__DOMAIN__:9100" ]
                   labels:
                     instance: "{{ node }}.__CLUSTER__"
