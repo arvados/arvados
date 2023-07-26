@@ -466,8 +466,8 @@ for f in $(ls "${SOURCE_PILLARS_DIR}"/*); do
        s#__MONITORING_PASSWORD__#${MONITORING_PASSWORD}#g;
        s#__DISPATCHER_SSH_PRIVKEY__#${DISPATCHER_SSH_PRIVKEY//$'\n'/\\n}#g;
        s#__ENABLE_BALANCER__#${ENABLE_BALANCER}#g;
-       s#__BALANCER_NODENAME__#${BALANCER_NODENAME}#g;
-       s#__BALANCER_BACKENDS__#${BALANCER_BACKENDS}#g;
+       s#__BALANCER_NODENAME__#${ROLES['balancer']}#g;
+       s#__CONTROLLER_NODES__#${ROLES['controller']}#g;
        s#__NODELIST__#${NODELIST}#g;
        s#__DISPATCHER_INT_IP__#${DISPATCHER_INT_IP}#g;
        s#__KEEPBALANCE_INT_IP__#${KEEPBALANCE_INT_IP}#g;
@@ -558,8 +558,8 @@ if [ -d "${SOURCE_STATES_DIR}" ]; then
          s#__MONITORING_PASSWORD__#${MONITORING_PASSWORD}#g;
          s#__DISPATCHER_SSH_PRIVKEY__#${DISPATCHER_SSH_PRIVKEY//$'\n'/\\n}#g;
          s#__ENABLE_BALANCER__#${ENABLE_BALANCER}#g;
-         s#__BALANCER_NODENAME__#${BALANCER_NODENAME}#g;
-         s#__BALANCER_BACKENDS__#${BALANCER_BACKENDS}#g;
+         s#__BALANCER_NODENAME__#${ROLES['balancer']}#g;
+         s#__CONTROLLER_NODES__#${ROLES['controller']}#g;
          s#__NODELIST__#${NODELIST}#g;
          s#__DISPATCHER_INT_IP__#${DISPATCHER_INT_IP}#g;
          s#__KEEPBALANCE_INT_IP__#${KEEPBALANCE_INT_IP}#g;
@@ -877,9 +877,9 @@ else
           grep -q "letsencrypt"     ${P_DIR}/top.sls || echo "    - letsencrypt" >> ${P_DIR}/top.sls
 
           grep -q "letsencrypt_${R}_configuration" ${P_DIR}/top.sls || echo "    - letsencrypt_${R}_configuration" >> ${P_DIR}/top.sls
-          sed -i "s/__CERT_REQUIRES__/cmd: create-initial-cert-${BALANCER_NODENAME}.${DOMAIN}*/g;
-                  s#__CERT_PEM__#/etc/letsencrypt/live/${BALANCER_NODENAME}.${DOMAIN}/fullchain.pem#g;
-                  s#__CERT_KEY__#/etc/letsencrypt/live/${BALANCER_NODENAME}.${DOMAIN}/privkey.pem#g" \
+          sed -i "s/__CERT_REQUIRES__/cmd: create-initial-cert-${ROLES["balancer"]}*/g;
+                  s#__CERT_PEM__#/etc/letsencrypt/live/${ROLES["balancer"]}/fullchain.pem#g;
+                  s#__CERT_KEY__#/etc/letsencrypt/live/${ROLES["balancer"]}/privkey.pem#g" \
           ${P_DIR}/nginx_${R}_configuration.sls
 
           if [ "${USE_LETSENCRYPT_ROUTE53}" = "yes" ]; then

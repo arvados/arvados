@@ -5,8 +5,7 @@
 
 {%- import_yaml "ssl_key_encrypted.sls" as ssl_key_encrypted_pillar %}
 {%- set domain = "__DOMAIN__" %}
-{%- set enable_balancer = ("__ENABLE_BALANCER__"|to_bool) %}
-{%- set balancer_backends = "__BALANCER_BACKENDS__".split(",") if enable_balancer else [] %}
+{%- set balancer_backends = "__CONTROLLER_NODES__".split(",") %}
 
 ### NGINX
 nginx:
@@ -21,7 +20,7 @@ nginx:
           '__CLUSTER_INT_CIDR__': 0
         upstream controller_upstream:
         {%- for backend in balancer_backends %}
-          'server {{ backend }}.{{ domain }}:80': ''
+          'server {{ backend }}:80': ''
         {%- endfor %}
 
   ### SNIPPETS

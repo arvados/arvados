@@ -6,5 +6,5 @@
 ### LETSENCRYPT
 letsencrypt:
   domainsets:
-    __BALANCER_NODENAME__.__DOMAIN__:
+    __BALANCER_NODENAME__:
       - __DOMAIN__

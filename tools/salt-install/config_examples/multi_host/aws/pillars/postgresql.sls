@@ -4,9 +4,9 @@
 # SPDX-License-Identifier: AGPL-3.0
 
 {%- set domain = "__DOMAIN__" %}
-{%- set enable_balancer = ("__ENABLE_BALANCER__"|to_bool) %}
-{%- set balancer_backends = "__BALANCER_BACKENDS__".split(",") if enable_balancer else [] %}
+{%- set controller_nodes = "__CONTROLLER_NODES__".split(",") %}
 {%- set dispatcher_ip = "__DISPATCHER_INT_IP__" %}
+{%- set keepbalance_ip = "__KEEPBALANCE_INT_IP__" %}
 
 ### POSTGRESQL
 postgres:
@@ -23,14 +23,11 @@ postgres:
     - ['host', 'all', 'all', '::1/128', 'md5']
     - ['host', '__CLUSTER___arvados', '__CLUSTER___arvados', '127.0.0.1/32']
     - ['host', '__CLUSTER___arvados', '__CLUSTER___arvados', '{{ dispatcher_ip }}/32']
-    {%- if enable_balancer %}
-    {%- for backend in balancer_backends %}
-    {%- set controller_ip = salt['cmd.run']("getent hosts "+backend+"."+domain+" | awk '{print $1 ; exit}'", python_shell=True) %}
+    - ['host', '__CLUSTER___arvados', '__CLUSTER___arvados', '{{ keepbalance_ip }}/32']
+    {%- for controller_hostname in controller_nodes %}
+    {%- set controller_ip = salt['cmd.run']("getent hosts "+controller_hostname+" | awk '{print $1 ; exit}'", python_shell=True) %}
     - ['host', '__CLUSTER___arvados', '__CLUSTER___arvados', '{{ controller_ip }}/32']
     {%- endfor %}
-    {%- else %}
-    - ['host', '__CLUSTER___arvados', '__CLUSTER___arvados', '__CONTROLLER_INT_IP__/32']
-    {%- endif %}
   users:
     __CLUSTER___arvados:
       ensure: present

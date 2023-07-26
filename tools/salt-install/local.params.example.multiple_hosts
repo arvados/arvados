@@ -165,8 +165,6 @@ SHELL_INT_IP=10.1.2.17
 
 # Load balancing settings
 ENABLE_BALANCER="no"
-BALANCER_BACKENDS="controller1,controller2"
-BALANCER_NODENAME="controller"
 
 # Performance tuning parameters
 #CONTROLLER_NGINX_WORKERS=
