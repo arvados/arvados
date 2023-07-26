@@ -466,7 +466,14 @@ for f in $(ls "${SOURCE_PILLARS_DIR}"/*); do
        s#__ENABLE_BALANCER__#${ENABLE_BALANCER}#g;
        s#__BALANCER_NODENAME__#${BALANCER_NODENAME}#g;
        s#__BALANCER_BACKENDS__#${BALANCER_BACKENDS}#g;
-       s#__DISPATCHER_INT_IP__#${DISPATCHER_INT_IP}#g" \
+       s#__DISPATCHER_INT_IP__#${DISPATCHER_INT_IP}#g;
+       s#__KEEPBALANCE_INT_IP__#${KEEPBALANCE_INT_IP}#g;
+       s#__COMPUTE_AMI__#${COMPUTE_AMI}#g;
+       s#__COMPUTE_SG__#${COMPUTE_SG}#g;
+       s#__COMPUTE_SUBNET__#${COMPUTE_SUBNET}#g;
+       s#__COMPUTE_AWS_REGION__#${COMPUTE_AWS_REGION}#g;
+       s#__COMPUTE_USER__#${COMPUTE_USER}#g;
+       s#__KEEP_AWS_REGION__#${KEEP_AWS_REGION}#g" \
   "${f}" > "${P_DIR}"/$(basename "${f}")
 done
 
@@ -550,7 +557,14 @@ if [ -d "${SOURCE_STATES_DIR}" ]; then
          s#__ENABLE_BALANCER__#${ENABLE_BALANCER}#g;
          s#__BALANCER_NODENAME__#${BALANCER_NODENAME}#g;
          s#__BALANCER_BACKENDS__#${BALANCER_BACKENDS}#g;
-         s#__DISPATCHER_INT_IP__#${DISPATCHER_INT_IP}#g" \
+         s#__DISPATCHER_INT_IP__#${DISPATCHER_INT_IP}#g;
+         s#__KEEPBALANCE_INT_IP__#${KEEPBALANCE_INT_IP}#g;
+         s#__COMPUTE_AMI__#${COMPUTE_AMI}#g;
+         s#__COMPUTE_SG__#${COMPUTE_SG}#g;
+         s#__COMPUTE_SUBNET__#${COMPUTE_SUBNET}#g;
+         s#__COMPUTE_AWS_REGION__#${COMPUTE_AWS_REGION}#g;
+         s#__COMPUTE_USER__#${COMPUTE_USER}#g;
+         s#__KEEP_AWS_REGION__#${KEEP_AWS_REGION}#g" \
     "${f}" > "${F_DIR}/extra/extra"/$(basename "${f}")
   done
 fi

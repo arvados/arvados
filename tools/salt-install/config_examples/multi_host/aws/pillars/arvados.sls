@@ -122,15 +122,15 @@ arvados:
         ResourceTags:
           Name: __CLUSTER__-compute-node
         BootProbeCommand: 'systemctl is-system-running'
-        ImageID: ami-FIXMEFIXMEFIXMEFI
+        ImageID: __COMPUTE_AMI__
         Driver: ec2
         DriverParameters:
-          Region: FIXME
+          Region: __COMPUTE_AWS_REGION__
           EBSVolumeType: gp3
-          AdminUsername: FIXME
+          AdminUsername: __COMPUTE_USER__
           ### This SG should allow SSH from the dispatcher to the compute nodes
-          SecurityGroupIDs: ['sg-FIXMEFIXMEFIXMEFI']
-          SubnetID: subnet-FIXMEFIXMEFIXMEFI
+          SecurityGroupIDs: ['__COMPUTE_SG__']
+          SubnetID: __COMPUTE_SUBNET__
           IAMInstanceProfile: __CLUSTER__-compute-node-00-iam-role
       DispatchPrivateKey: {{ dispatcher_ssh_privkey|yaml_dquote }}
 
@@ -145,7 +145,7 @@ arvados:
         DriverParameters:
           Bucket: __CLUSTER__-nyw5e-000000000000000-volume
           IAMRole: __CLUSTER__-keepstore-00-iam-role
-          Region: FIXME
+          Region: __KEEP_AWS_REGION__
 
     Users:
       NewUsersAreActive: true
@@ -163,7 +163,7 @@ arvados:
           'http://__DISPATCHER_INT_IP__:9006': {}
       Keepbalance:
         InternalURLs:
-          'http://__CONTROLLER_INT_IP__:9005': {}
+          'http://__KEEPBALANCE_INT_IP__:9005': {}
       Keepproxy:
         ExternalURL: 'https://keep.__DOMAIN__:__KEEP_EXT_SSL_PORT__'
         InternalURLs:
