@@ -24,7 +24,7 @@ import { ChangeWorkflowDialog } from 'views-components/run-process-dialog/change
 import { CreateProjectDialog } from 'views-components/dialog-forms/create-project-dialog';
 import { CreateCollectionDialog } from 'views-components/dialog-forms/create-collection-dialog';
 import { CopyCollectionDialog } from 'views-components/dialog-forms/copy-collection-dialog';
-import { CopyProcessDialog, CopyManyProcessesDialog } from 'views-components/dialog-forms/copy-process-dialog';
+import { CopyProcessDialog } from 'views-components/dialog-forms/copy-process-dialog';
 import { UpdateCollectionDialog } from 'views-components/dialog-forms/update-collection-dialog';
 import { UpdateProcessDialog } from 'views-components/dialog-forms/update-process-dialog';
 import { UpdateProjectDialog } from 'views-components/dialog-forms/update-project-dialog';
@@ -34,7 +34,6 @@ import { MoveCollectionDialog } from 'views-components/dialog-forms/move-collect
 import { FilesUploadCollectionDialog } from 'views-components/dialog-forms/files-upload-collection-dialog';
 import { PartialCopyCollectionDialog } from 'views-components/dialog-forms/partial-copy-collection-dialog';
 import { RemoveProcessDialog } from 'views-components/process-remove-dialog/process-remove-dialog';
-import { RemoveManyProcessesDialog } from 'views-components/process-remove-many-dialog/process-remove-many-dialog';
 import { MainContentBar } from 'views-components/main-content-bar/main-content-bar';
 import { Grid } from '@material-ui/core';
 import { TrashPanel } from 'views/trash-panel/trash-panel';
@@ -194,7 +193,11 @@ let routes = (
 
 const reduceRoutesFn: (a: React.ReactElement[], b: ElementListReducer) => React.ReactElement[] = (a, b) => b(a);
 
-routes = React.createElement(React.Fragment, null, pluginConfig.centerPanelList.reduce(reduceRoutesFn, React.Children.toArray(routes.props.children)));
+routes = React.createElement(
+    React.Fragment,
+    null,
+    pluginConfig.centerPanelList.reduce(reduceRoutesFn, React.Children.toArray(routes.props.children))
+);
 
 const applyCollapsedState = (isCollapsed) => {
     const rightPanel: Element = document.getElementsByClassName('layout-pane')[1];
@@ -255,7 +258,6 @@ export const WorkbenchPanel = withStyles(styles)((props: WorkbenchPanelProps) =>
             <ContextMenu />
             <CopyCollectionDialog />
             <CopyProcessDialog />
-            <CopyManyProcessesDialog />
             <CreateCollectionDialog />
             <CreateProjectDialog />
             <CreateRepositoryDialog />
@@ -282,7 +284,6 @@ export const WorkbenchPanel = withStyles(styles)((props: WorkbenchPanelProps) =>
             <RemoveKeepServiceDialog />
             <RemoveLinkDialog />
             <RemoveProcessDialog />
-            <RemoveManyProcessesDialog />
             <RemoveRepositoryDialog />
             <RemoveSshKeyDialog />
             <RemoveVirtualMachineDialog />

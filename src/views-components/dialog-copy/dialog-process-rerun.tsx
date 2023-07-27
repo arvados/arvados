@@ -25,14 +25,3 @@ const CopyDialogFields = memoize((pickerId: string) => () => (
         <Field name='ownerUuid' component={ProjectTreePickerField} validate={COPY_FILE_VALIDATION} pickerId={pickerId} />
     </>
 ));
-
-export const DialogManyProcessesRerun = (props: ProcessRerunFormDialogProps & PickerIdProp) => (
-    <FormDialog dialogTitle='Choose location for re-runs' formFields={CopyManyDialogFields(props.pickerId)} submitLabel='Copy' {...props} />
-);
-
-const CopyManyDialogFields = memoize((pickerId: string) => () => (
-    <>
-        {/* <Field name='name' component={TextField as any} validate={COPY_NAME_VALIDATION} label='Enter a new name for the copy' /> */}
-        <Field name='ownerUuid' component={ProjectTreePickerField} validate={COPY_FILE_VALIDATION} pickerId={pickerId} />
-    </>
-));
