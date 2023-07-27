@@ -36,8 +36,13 @@ nginx:
             - location /.well-known:
               - root: /var/www
             {%- if balanced_controller %}
+            {%- set balancer_ip = salt['cmd.run']("getent hosts __BALANCER_NODENAME__ | awk '{print $1 ; exit}'", python_shell=True) %}
+            {%- set prometheus_ip = salt['cmd.run']("getent hosts __PROMETHEUS_NODENAME__ | awk '{print $1 ; exit}'", python_shell=True) %}
             - index: index.html index.htm
             - location /:
+              - allow: {{ balancer_ip }}
+              - allow: {{ prometheus_ip }}
+              - deny: all
               - proxy_pass: 'http://controller_upstream'
               - proxy_read_timeout: 300
               - proxy_connect_timeout: 90
