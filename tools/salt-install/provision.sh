@@ -466,6 +466,7 @@ for f in $(ls "${SOURCE_PILLARS_DIR}"/*); do
        s#__MONITORING_PASSWORD__#${MONITORING_PASSWORD}#g;
        s#__DISPATCHER_SSH_PRIVKEY__#${DISPATCHER_SSH_PRIVKEY//$'\n'/\\n}#g;
        s#__ENABLE_BALANCER__#${ENABLE_BALANCER}#g;
+       s#__DISABLED_CONTROLLER__#${DISABLED_CONTROLLER}#g;
        s#__BALANCER_NODENAME__#${ROLES['balancer']}#g;
        s#__PROMETHEUS_NODENAME__#${ROLES['monitoring']}#g;
        s#__CONTROLLER_NODES__#${ROLES['controller']}#g;
@@ -559,6 +560,7 @@ if [ -d "${SOURCE_STATES_DIR}" ]; then
          s#__MONITORING_PASSWORD__#${MONITORING_PASSWORD}#g;
          s#__DISPATCHER_SSH_PRIVKEY__#${DISPATCHER_SSH_PRIVKEY//$'\n'/\\n}#g;
          s#__ENABLE_BALANCER__#${ENABLE_BALANCER}#g;
+         s#__DISABLED_CONTROLLER__#${DISABLED_CONTROLLER}#g;
          s#__BALANCER_NODENAME__#${ROLES['balancer']}#g;
          s#__PROMETHEUS_NODENAME__#${ROLES['monitoring']}#g;
          s#__CONTROLLER_NODES__#${ROLES['controller']}#g;

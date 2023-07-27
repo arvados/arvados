@@ -6,6 +6,7 @@
 {%- import_yaml "ssl_key_encrypted.sls" as ssl_key_encrypted_pillar %}
 {%- set domain = "__DOMAIN__" %}
 {%- set balancer_backends = "__CONTROLLER_NODES__".split(",") %}
+{%- set disabled_controller = "__DISABLED_CONTROLLER__" %}
 
 ### NGINX
 nginx:
@@ -20,7 +21,11 @@ nginx:
           '__CLUSTER_INT_CIDR__': 0
         upstream controller_upstream:
         {%- for backend in balancer_backends %}
+          {%- if disabled_controller == "" or not backend.startswith(disabled_controller) %}
           'server {{ backend }}:80': ''
+          {%- else %}
+          'server {{ backend }}:80 down': ''
+          {% endif %}
         {%- endfor %}
 
   ### SNIPPETS
