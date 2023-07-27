@@ -64,15 +64,18 @@ h3. 3a. Setting up a New Project
 
 Projects in Arvados help you organize and track your work - and can contain data, workflow code, details about workflow runs, and results.  Let’s begin by setting up a new project for the work you will be doing in this walkthrough.
 
-To create a new project, go to the Projects dropdown menu and select “Add a New Project”.
+To create a new project, go to the Projects dropdown menu and select “New Project”.
 
 <figure> !{width: 100%}{{ site.baseurl }}/images/wgs-tutorial/image4.png!
 <figcaption> _*Figure 3*:  Adding a new project using Arvados Workbench._ </figcaption> </figure>
 
-Let’s name your project “WGS Processing Tutorial”. You can also add a description of your project using the  *Edit* button. The universally unique identifier (UUID) of the project can be found in the URL.
+Let’s name your project “WGS Processing Tutorial”. You can also add a description of your project by typing in the **Description - optional** field. The universally unique identifier (UUID) of the project can be found in the URL.
 
 <figure> !{width: 100%}{{ site.baseurl }}/images/wgs-tutorial/image6.png!
-<figcaption> _*Figure 4*:  Renaming new project using Arvados Workbench.   The UUID of the project can be found in the URL and is highlighted in yellow in this image for emphasis._ </figcaption> </figure>
+<figcaption> _*Figure 4*:  Renaming new project using Arvados Workbench._ </figcaption> </figure>
+
+<figure> !{width: 100%}{{ site.baseurl }}/images/wgs-tutorial/image7.png!
+<figcaption> _*Figure 5*: The UUID of the project can be found in the URL and is highlighted in yellow in this image for emphasis._ </figcaption> </figure>
 
 If you choose to use another name for your project, just keep in mind when the project name is referenced in the walkthrough later on.
 
@@ -83,15 +86,15 @@ Collections in Arvados help organize and manage your data. You can upload your e
 Arvados uses a content-addressable filesystem (i.e. Keep) where the addresses of files are derived from their contents.  A major benefit of this is that Arvados can then verify that when a dataset is retrieved it is the dataset you requested  and can track the exact datasets that were used for each of our previous calculations.  This is what allows you to be certain that we are always working with the data that you think you are using.  You use the content address of a collection when you want to guarantee that you use the same version as input to your workflow.
 
 <figure> !{width: 100%}{{ site.baseurl }}/images/wgs-tutorial/image1.png!
-<figcaption> _*Figure 5*:  A collection in Arvados as viewed via the Arvados Workbench. On the upper left you will find a panel that contains: the name of the collection (editable), a description of the collection (editable),  the collection UUID and the content address and content size._ </figcaption> </figure>
+<figcaption> _*Figure 6*:  A collection in Arvados as viewed via the Arvados Workbench. You will find a panel that contains: the name of the collection (editable), a description of the collection,  the collection UUID, the content address, content size, and some other information like version number._ </figcaption> </figure>
 
 Let’s start working with collections by copying the existing collection that stores the FASTQ data being processed into our new “WGS Processing Tutorial” project.
 
 First, you must find the collection you are interested in copying over to your project.  There are several ways to search for a collection: by collection name, by UUID or by content address.  In this case, let’s search for our collection by name.
 
-In this case it is called “PGP UK FASTQs” and by searching for it in the “search this site” box.  It will come up and you can navigate to it.  You would do similarly if you would want to search by UUID or content address.
+In this case it is called “PGP UK FASTQs (ten genomes)” and by searching for it in the “Search” box.  It will come up and you can navigate to it.  You would do similarly if you would want to search by UUID or content address.
 
-Now that you have found the collection of FASTQs you want to copy to your project, you can simply use the <span class="btn btn-sm btn-primary" >Copy to project...</span> button and select your new project to copy the collection there.  You can rename your collection whatever you wish, or use the default name on copy and add whatever description you would like.
+Now that you have found the collection of FASTQs you want to copy to your project, you can simply click the three dots in the right corner and click "Make a copy" and select your new project to copy the collection there.  You can rename your collection whatever you wish, or use the default name on copy and add whatever description you would like.
 
 
 
@@ -105,16 +108,16 @@ In this section, we will be discussing three ways to run the tutorial workflow u
 
 h3. 4a. Interactively Running a Workflow Using Workbench
 
-Workflows can be registered in Arvados. Registration allows you to share a workflow with other Arvados users, and let’s them run the workflow by clicking the  <span class="btn btn-sm btn-primary" >Run a process…</span> button on the Workbench Dashboard and on the command line by specifying the workflow UUID.  Default values can be specified for workflow inputs.
+Workflows can be registered in Arvados. Registration allows you to share a workflow with other Arvados users, and let’s them run the workflow by clicking the  <span class="btn btn-sm btn-primary" >+ New</span> button and selecting "Run a Workflow" on the Workbench Dashboard or on the command line by specifying the workflow UUID.  Default values can be specified for workflow inputs.
 
 We have already previously registered the WGS workflow and set default input values for this set of the walkthrough.
 
 Let’s find the registered WGS Processing Workflow and run it interactively in our newly created project.
 
 # To find the registered workflow, you can search for it in the search box located in the top right corner of the Arvados Workbench by looking for the name  “WGS Processing Workflow”.
-# Once you have found the registered workflow, you can run it your project by using the  <span class="btn btn-sm btn-primary" >Run this workflow..</span> button and selecting your project ("WGS Processing Tutorial") that you set up in Section 3a.
+# Once you have found the registered workflow, you can run it your project by using the  <span class="btn btn-sm btn-primary" >Run Workflow</span> button and selecting your project ("WGS Processing Tutorial") that you set up in Section 3a, under *Project where the workflow will be done*.
 # Default inputs to the registered workflow will be automatically filled in.  These inputs will still work.  You can verify this by checking the addresses of the collections you copied over to your New Project.
-# The input *Directory of paired FASTQ files* will need to be set.  Click on <span class="btn btn-sm btn-primary" >Choose</span> button, select "PGP UK FASTQs" in the *Choose a dataset* dialog and then click <span class="btn btn-sm btn-primary" >OK</span>.
+# The input *Directory of paired FASTQ files* will need to be set.  Click the box, select "PGP UK FASTQs" under the *Choose a directory* dialog, then click <span class="btn btn-sm btn-primary" >OK</span>.
 # Now, you can submit your workflow by scrolling to the bottom of the page and hitting the <span class="btn btn-sm btn-primary" >Run</span> button.
 
 Congratulations! You have now submitted your workflow to run. You can move to Section 5 to learn how to check the state of your submitted workflow and Section 6 to learn how to examine the results of and logs from your workflow.
@@ -226,7 +229,6 @@ Contained in this collection, is the GVCF, tabix index file, and html ClinVar re
 Logs for the main process can be found in the Log tab.  There several logs available, so here is a basic summary of what some of the more commonly used logs contain.  Let's first define a few terms that will help us understand what the logs are tracking.
 
 As you may recall, Arvados Crunch manages the running of workflows. A _container request_ is an order sent to Arvados Crunch to perform some computational work. Crunch fulfils a request by either choosing a worker node to execute a container, or finding an identical/equivalent container that has already run. You can use _container request_ or _container_ to distinguish between a work order that is submitted to be run and a work order that is actually running or has been run. So our container request in this case is just the submitted workflow we sent to the Arvados cluster.
-
 A _node_ is a compute resource where Arvardos can schedule work.  In our case since the Arvados Playground is running on a cloud, our nodes are virtual machines.  @arvados-cwl-runner@ (acr) executes CWL workflows by submitting the individual parts to Arvados as containers and crunch-run is an internal component that runs on nodes and executes containers.
 
 * @stderr.txt@
