@@ -64,6 +64,7 @@ type CssRules =
     | 'checkBoxHead'
     | 'checkBoxCell'
     | 'checkBox'
+    | 'firstTableCell'
     | 'tableCell'
     | 'arrow'
     | 'arrowButton'
@@ -105,6 +106,9 @@ const styles: StyleRulesCallback<CssRules> = (theme: Theme) => ({
         wordWrap: 'break-word',
         paddingRight: '24px',
         color: '#737373',
+    },
+    firstTableCell: {
+        paddingLeft: '5px',
     },
     tableCellWorkflows: {
         '&:nth-last-child(2)': {
@@ -293,11 +297,15 @@ export const DataTable = withStyles(styles)(
                         <Tooltip title={this.state.isSelected ? 'Deselect All' : 'Select All'}>
                             <input type='checkbox' className={classes.checkBox} checked={isSelected} onChange={this.handleSelectorSelect}></input>
                         </Tooltip>
-                        <DataTableMultiselectPopover name={`Options`} options={this.multiselectOptions} checkedList={checkedList}></DataTableMultiselectPopover>
+                        <DataTableMultiselectPopover
+                            name={`Options`}
+                            options={this.multiselectOptions}
+                            checkedList={checkedList}
+                        ></DataTableMultiselectPopover>
                     </div>
                 </TableCell>
             ) : (
-                <TableCell className={classes.tableCell} key={key || index}>
+                <TableCell className={index == 1 ? classes.firstTableCell : classes.tableCell} key={key || index}>
                     {renderHeader ? (
                         renderHeader()
                     ) : countNodes(filters) > 0 ? (
@@ -346,7 +354,13 @@ export const DataTable = withStyles(styles)(
                     {this.mapVisibleColumns((column, index) => (
                         <TableCell
                             key={column.key || index}
-                            className={currentRoute === '/workflows' ? classes.tableCellWorkflows : index === 0 ? classes.checkBoxCell : classes.tableCell}
+                            className={
+                                currentRoute === '/workflows'
+                                    ? classes.tableCellWorkflows
+                                    : index === 0
+                                    ? classes.checkBoxCell
+                                    : `${classes.tableCell} ${index === 1 ? classes.firstTableCell : ''}`
+                            }
                         >
                             {column.render(item)}
                         </TableCell>
