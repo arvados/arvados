@@ -1,0 +1,1 @@
+rpm-common-test-packages.sh

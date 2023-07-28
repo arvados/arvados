@@ -919,11 +919,6 @@ fpm_build_virtualenv_worker () {
   LICENSE_STRING=`grep license $WORKSPACE/$PKG_DIR/setup.py|cut -f2 -d=|sed -e "s/[',\\"]//g"`
   COMMAND_ARR+=('--license' "$LICENSE_STRING")
 
-  if [[ "$package_format" == "rpm" ]]; then
-    # Make sure to conflict with the old rh-python36 packages we used to publish
-    COMMAND_ARR+=('--conflicts' "rh-python36-python-$PKG")
-  fi
-
   if [[ "$DEBUG" != "0" ]]; then
     COMMAND_ARR+=('--verbose' '--log' 'info')
   fi
@@ -940,9 +935,21 @@ fpm_build_virtualenv_worker () {
   fi
 
   COMMAND_ARR+=('--depends' "$PYTHON3_PACKAGE")
-
-  # avoid warning
-  COMMAND_ARR+=('--deb-no-default-config-files')
+  case "$package_format" in
+      deb)
+          COMMAND_ARR+=(
+              # Avoid warning
+              --deb-no-default-config-files
+          ) ;;
+      rpm)
+          COMMAND_ARR+=(
+              # Conflict with older packages we used to publish
+              --conflicts "rh-python36-python-$PKG"
+              # Do not generate /usr/lib/.build-id links on RH8+
+              # (otherwise our packages conflict with platform-python)
+              --rpm-rpmbuild-define "_build_id_links none"
+          ) ;;
+  esac
 
   # Append --depends X and other arguments specified by fpm-info.sh in
   # the package source dir. These are added last so they can override

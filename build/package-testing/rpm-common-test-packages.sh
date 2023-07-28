@@ -14,16 +14,23 @@ if [[ "$DEBUG" != "0" ]]; then
   STDERR_IF_DEBUG=/dev/stderr
 fi
 
-target=$(basename "$0" | grep -Eo '\bcentos[[:digit:]]+\b')
+target="$(basename "$0" .sh)"
+target="${target##*-}"
 
-yum -q clean all
+case "$target" in
+    centos*) yum -q clean all ;;
+    rocky*) microdnf clean all ;;
+esac
 touch /var/lib/rpm/*
 
 export ARV_PACKAGES_DIR="/arvados/packages/$target"
 
 rpm -qa | sort > "$ARV_PACKAGES_DIR/$1.before"
 
-yum install --assumeyes -e 0 $1
+case "$target" in
+    centos*) yum install --assumeyes -e 0 $1 ;;
+    rocky*) microdnf install $1 ;;
+esac
 
 rpm -qa | sort > "$ARV_PACKAGES_DIR/$1.after"
 

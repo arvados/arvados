@@ -141,6 +141,13 @@ case "$TARGET" in
         PYTHON3_INSTALL_LIB=lib/python$PYTHON3_VERSION/site-packages
         export PYCURL_SSL_LIBRARY=nss
         ;;
+    rocky*)
+        FORMAT=rpm
+        PYTHON3_PACKAGE=$(rpm -qf "$(which python"$PYTHON3_VERSION")" --queryformat '%{NAME}\n')
+        PYTHON3_PKG_PREFIX=python3
+        PYTHON3_PREFIX=/usr
+        PYTHON3_INSTALL_LIB=lib/python$PYTHON3_VERSION/site-packages
+        ;;
     *)
         echo -e "$0: Unknown target '$TARGET'.\n" >&2
         exit 1

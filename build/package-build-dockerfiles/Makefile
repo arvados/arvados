@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: AGPL-3.0
 
 SHELL := '/bin/bash'
-all: centos7/generated debian10/generated debian11/generated ubuntu1804/generated ubuntu2004/generated
+all: centos7/generated debian10/generated debian11/generated rocky8/generated ubuntu1804/generated ubuntu2004/generated
 
 centos7/generated: common-generated-all
 	test -d centos7/generated || mkdir centos7/generated
@@ -16,6 +16,10 @@ debian10/generated: common-generated-all
 debian11/generated: common-generated-all
 	test -d debian11/generated || mkdir debian11/generated
 	cp -f -rlt debian11/generated common-generated/*
+
+rocky8/generated: common-generated-all
+	test -d rocky8/generated || mkdir rocky8/generated
+	cp -f -rlt rocky8/generated common-generated/*
 
 ubuntu1804/generated: common-generated-all
 	test -d ubuntu1804/generated || mkdir ubuntu1804/generated
