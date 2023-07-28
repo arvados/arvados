@@ -10,7 +10,7 @@ import debounce from 'lodash/debounce';
 import { grey } from '@material-ui/core/colors';
 import { TCheckedList } from 'components/data-table/data-table';
 
-export type CssRules = 'root' | 'icon' | 'iconButton' | 'optionsContainer' | 'option';
+export type CssRules = 'root' | 'icon' | 'iconButton' | 'disabled' | 'optionsContainer' | 'option';
 
 const styles: StyleRulesCallback<CssRules> = (theme: Theme) => ({
     root: {
@@ -37,6 +37,9 @@ const styles: StyleRulesCallback<CssRules> = (theme: Theme) => ({
         padding: 1,
         paddingBottom: 5,
     },
+    disabled: {
+        color: grey[500],
+    },
     optionsContainer: {
         padding: '1rem 0',
         flex: 1,
@@ -60,6 +63,7 @@ export type DataTableMultiselectOption = {
 
 export interface DataTableMultiselectProps {
     name: string;
+    disabled: boolean;
     options: DataTableMultiselectOption[];
     checkedList: TCheckedList;
 }
@@ -76,14 +80,18 @@ export const DataTableMultiselectPopover = withStyles(styles)(
         icon = React.createRef<HTMLElement>();
 
         render() {
-            const { classes, children, options, checkedList } = this.props;
+            const { classes, children, options, checkedList, disabled } = this.props;
             return (
                 <>
                     <Tooltip disableFocusListener title='Select Options'>
-                        <ButtonBase className={classnames(classes.root)} component='span' onClick={this.open} disableRipple>
+                        <ButtonBase className={classnames(classes.root)} component='span' onClick={disabled ? () => {} : this.open} disableRipple>
                             {children}
                             <IconButton component='span' classes={{ root: classes.iconButton }} tabIndex={-1}>
-                                <i className={classnames(['fas fa-sort-down', classes.icon])} data-fa-transform='shrink-3' ref={this.icon} />
+                                <i
+                                    className={`${classnames(['fas fa-sort-down', classes.icon])}${disabled ? ` ${classes.disabled}` : ''}`}
+                                    data-fa-transform='shrink-3'
+                                    ref={this.icon}
+                                />
                             </IconButton>
                         </ButtonBase>
                     </Tooltip>

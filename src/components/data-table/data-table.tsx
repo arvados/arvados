@@ -28,7 +28,6 @@ import { IconType, PendingIcon } from 'components/icon/icon';
 import { SvgIconProps } from '@material-ui/core/SvgIcon';
 import ArrowDownwardIcon from '@material-ui/icons/ArrowDownward';
 import { createTree } from 'models/tree';
-import arraysAreCongruent from 'validators/arrays-are-congruent';
 import { DataTableMultiselectOption } from '../data-table-multiselect-popover/data-table-multiselect-popover';
 
 export type DataColumns<I, R> = Array<DataColumn<I, R>>;
@@ -152,9 +151,10 @@ export const DataTable = withStyles(styles)(
         componentDidUpdate(prevProps: Readonly<DataTableProps<T>>, prevState: DataTableState) {
             const { items, toggleMSToolbar, setCheckedListOnStore } = this.props;
             const { isSelected, checkedList } = this.state;
-            if (!arraysAreCongruent(prevProps.items, items)) {
+            if (prevProps.items !== items) {
                 if (isSelected === true) this.setState({ isSelected: false });
                 if (items.length) this.initializeCheckedList(items);
+                else this.setState({ checkedList: {} });
             }
             if (prevState.checkedList !== checkedList) {
                 toggleMSToolbar(this.isAnySelected() ? true : false);
@@ -295,10 +295,17 @@ export const DataTable = withStyles(styles)(
                 <TableCell key={key || index} className={classes.checkBoxCell}>
                     <div className={classes.checkBoxHead}>
                         <Tooltip title={this.state.isSelected ? 'Deselect All' : 'Select All'}>
-                            <input type='checkbox' className={classes.checkBox} checked={isSelected} onChange={this.handleSelectorSelect}></input>
+                            <input
+                                type='checkbox'
+                                className={classes.checkBox}
+                                checked={isSelected}
+                                disabled={!this.props.items.length}
+                                onChange={this.handleSelectorSelect}
+                            ></input>
                         </Tooltip>
                         <DataTableMultiselectPopover
                             name={`Options`}
+                            disabled={!this.props.items.length}
                             options={this.multiselectOptions}
                             checkedList={checkedList}
                         ></DataTableMultiselectPopover>
