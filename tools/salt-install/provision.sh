@@ -881,9 +881,9 @@ else
           grep -q "letsencrypt"     ${P_DIR}/top.sls || echo "    - letsencrypt" >> ${P_DIR}/top.sls
 
           grep -q "letsencrypt_${R}_configuration" ${P_DIR}/top.sls || echo "    - letsencrypt_${R}_configuration" >> ${P_DIR}/top.sls
-          sed -i "s/__CERT_REQUIRES__/cmd: create-initial-cert-${ROLES["balancer"]}*/g;
-                  s#__CERT_PEM__#/etc/letsencrypt/live/${ROLES["balancer"]}/fullchain.pem#g;
-                  s#__CERT_KEY__#/etc/letsencrypt/live/${ROLES["balancer"]}/privkey.pem#g" \
+          sed -i "s/__CERT_REQUIRES__/cmd: create-initial-cert-${ROLES['balancer']}*/g;
+                  s#__CERT_PEM__#/etc/letsencrypt/live/${ROLES['balancer']}/fullchain.pem#g;
+                  s#__CERT_KEY__#/etc/letsencrypt/live/${ROLES['balancer']}/privkey.pem#g" \
           ${P_DIR}/nginx_${R}_configuration.sls
 
           if [ "${USE_LETSENCRYPT_ROUTE53}" = "yes" ]; then

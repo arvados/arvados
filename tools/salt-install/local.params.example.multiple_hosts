@@ -131,6 +131,13 @@ for node in "${!NODES[@]}"; do
   done
 done
 
+# Auto-detects load-balancing mode
+if [ -z "${ROLES['balancer']:-}" ]; then
+  ENABLE_BALANCER="no"
+else
+  ENABLE_BALANCER="yes"
+fi
+
 # Host SSL port where you want to point your browser to access Arvados
 # Defaults to 443 for regular runs, and to 8443 when called in Vagrant.
 # You can point it to another port if desired
@@ -164,7 +171,6 @@ KEEPSTORE0_INT_IP=10.1.2.13
 SHELL_INT_IP=10.1.2.17
 
 # Load balancing settings
-ENABLE_BALANCER="no"
 DISABLED_CONTROLLER=""
 
 # Performance tuning parameters
