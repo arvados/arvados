@@ -30,6 +30,8 @@ SPDX-License-Identifier: CC-BY-SA-3.0
 ## "Common problems and solutions":#common-problems
 # "Initial user and login":#initial_user
 # "Monitoring and Metrics":#monitoring
+# "Load balancing controllers":#load_balancing
+## "Rolling upgrades procedure":#rolling-upgrades
 # "After the installation":#post_install
 
 h2(#introduction). Introduction
@@ -114,14 +116,14 @@ h4. Set credentials
 
 You will need an AWS access key and secret key to create the infrastructure.
 
-<pre><code>$ export AWS_ACCESS_KEY_ID="anaccesskey"
-$ export AWS_SECRET_ACCESS_KEY="asecretkey"</code></pre>
+<pre><code class="userinput">export AWS_ACCESS_KEY_ID="anaccesskey"
+export AWS_SECRET_ACCESS_KEY="asecretkey"</code></pre>
 
 h4. Create the infrastructure
 
 Build the infrastructure by running @./installer.sh terraform@.  The last stage will output the information needed to set up the cluster's domain and continue with the installer. for example:
 
-<pre><code>$ ./installer.sh terraform
+<pre><code class="userinput">./installer.sh terraform
 ...
 Apply complete! Resources: 16 added, 0 changed, 0 destroyed.
 
@@ -278,7 +280,7 @@ _AWS Specific: Go to the AWS console and into the VPC service, there is a column
 h3. Parameters from @local.params.secrets@:
 
 # Set each @KEY@ / @TOKEN@ / @PASSWORD@ to a random string.  You can use @installer.sh generate-tokens@
-<pre><code>$ ./installer.sh generate-tokens
+<pre><code class="userinput">./installer.sh generate-tokens
 BLOB_SIGNING_KEY=XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 MANAGEMENT_TOKEN=XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 SYSTEM_ROOT_TOKEN=XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
@@ -387,9 +389,7 @@ At this point, you are ready to run the installer script in deploy mode that wil
 
 Run this in the @~/arvados-setup-xarv1@ directory:
 
-<pre>
-./installer.sh deploy
-</pre>
+<pre><code class="userinput">./installer.sh deploy</code></pre>
 
 This will install and configure Arvados on all the nodes.  It will take a while and produce a lot of logging.  If it runs into an error, it will stop.
 
@@ -403,9 +403,7 @@ If you are running the diagnostics from one of the Arvados machines inside the p
 
 You are an "external client" if you running the diagnostics from your workstation outside of the private network.
 
-<pre>
-./installer.sh diagnostics (-internal-client|-external-client)
-</pre>
+<pre><code class="userinput">./installer.sh diagnostics (-internal-client|-external-client)</code></pre>
 
 h3(#debugging). Debugging issues
 
@@ -429,9 +427,7 @@ You can iterate on the config and maintain the cluster by making changes to @loc
 
 If you are debugging a configuration issue on a specific node, you can speed up the cycle a bit by deploying just one node:
 
-<pre>
-./installer.sh deploy keep0.xarv1.example.com
-</pre>
+<pre><code class="userinput">./installer.sh deploy keep0.xarv1.example.com</code></pre>
 
 However, once you have a final configuration, you should run a full deploy to ensure that the configuration has been synchronized on all the nodes.
 
@@ -452,7 +448,7 @@ If this happens, you need to
 1. correct the database information
 2. run @./installer.sh deploy xarv1.example.com@ to update the configuration on the API/controller node
 3. Log in to the API/controller server node, then run this command to re-run the post-install script, which will set up the database:
-<pre>dpkg-reconfigure arvados-api-server</pre>
+<pre><code class="userinput">dpkg-reconfigure arvados-api-server</code></pre>
 4. Re-run @./installer.sh deploy@ again to synchronize everything, and so that the install steps that need to contact the API server are run successfully.
 
 h4. Missing ENA support (AWS Specific)
@@ -463,9 +459,9 @@ h2(#initial_user). Initial user and login
 
 At this point you should be able to log into the Arvados cluster. The initial URL will be
 
-https://workbench.${DOMAIN}@
+@https://workbench.${DOMAIN}@
 
-If you did *not* "configure a different authentication provider":#authentication you will be using the "Test" provider, and the provision script creates an initial user for testing purposes. This user is configured as administrator of the newly created cluster.  It uses the values of @INITIAL_USER@ and @INITIAL_USER_PASSWORD@ the @local.params@ file.
+If you did *not* "configure a different authentication provider":#authentication you will be using the "Test" provider, and the provision script creates an initial user for testing purposes. This user is configured as administrator of the newly created cluster.  It uses the values of @INITIAL_USER@ and @INITIAL_USER_PASSWORD@ from the @local.params*@ file.
 
 If you *did* configure a different authentication provider, the first user to log in will automatically be given Arvados admin privileges.
 
@@ -473,9 +469,9 @@ h2(#monitoring). Monitoring and Metrics
 
 You can monitor the health and performance of the system using the admin dashboard:
 
-https://grafana.${DOMAIN}@
+@https://grafana.${DOMAIN}@
 
-To log in, use username "admin" and @${INITIAL_USER_PASSWORD}@ from @local.conf@.
+To log in, use username "admin" and @${INITIAL_USER_PASSWORD}@ from @local.params.secrets@.
 
 Once logged in, you will want to add the dashboards to the front page.
 
@@ -485,6 +481,69 @@ Once logged in, you will want to add the dashboards to the front page.
 # You should see three dashboards "Arvados cluster overview", "Node exporter" and "Postgres exporter"
 # Visit each dashboard, at the top of the page click on the star next to the title to "Mark as favorite"
 # They should now be linked on the front page.
+
+h2(#load_balancing). Load balancing controllers (optional)
+
+In order to handle high loads and perform rolling upgrades, the controller & api services can be scaled to a number of hosts and the installer make this implementation a fairly simple task.
+
+First, you should take care of the infrastructure deployment: if you use our Terraform code, you will need to set up the @terraform.tfvars@ in @terraform/vpc/@ so that in addition to the node named @controller@ (the load-balancer), a number of @controllerN@ nodes (backends) are defined as needed, and added to the @internal_service_hosts@ list.
+
+We suggest that the backend nodes just hold the controller & api services and nothing else, so they can be easily created or destroyed as needed without other service disruption. Because of this, you will need to set up a custom @dns_aliases@ variable map.
+
+The following is an example @terraform/vpc/terraform.tfvars@ file that describes a cluster with a load-balancer, 2 backend nodes, a separate database node, a keepstore node and a workbench node that will also hold other miscelaneous services:
+
+<pre><code>region_name = "us-east-1"
+cluster_name = "xarv1"
+domain_name = "xarv1.example.com"
+internal_service_hosts = [ "keep0", "database", "controller1", "controller2" ]
+private_ip = {
+  controller = "10.1.1.11"
+  workbench = "10.1.1.15"
+  database = "10.1.2.12"
+  controller1 = "10.1.2.21"
+  controller2 = "10.1.2.22"
+  keep0 = "10.1.2.13"
+}
+dns_aliases = {
+  workbench = [
+    "ws",
+    "workbench2",
+    "keep",
+    "download",
+    "prometheus",
+    "grafana",
+    "*.collections"
+  ]
+}</code></pre>
+
+Once the infrastructure is deployed, you'll then need to define which node will be using the @balancer@ role in @local.params@, as it's being shown in this partial example:
+
+<pre><code>...
+NODES=(
+  [controller.${DOMAIN}]=balancer
+  [controller1.${DOMAIN}]=api,controller
+  [controller2.${DOMAIN}]=api,controller
+  [database.${DOMAIN}]=database
+  [workbench.${DOMAIN}]=monitoring,workbench,workbench2,keepproxy,keepweb,websocket,keepbalance,dispatcher
+  [keep0.${DOMAIN}]=keepstore
+)
+...</code></pre>
+
+h3(#rolling-upgrades). Rolling upgrades procedure
+
+Once you have more than one controller backend node, it's easy to take one of those from the backend pool to upgrade it to a newer version of Arvados (that might involve applying database migrations) by adding its name to the @DISABLED_CONTROLLER@ variable in @local.params@. For example:
+
+<pre><code>...
+DISABLED_CONTROLLER="controller1"
+...</code></pre>
+
+Then, apply the configuration change to just the load-balancer:
+
+<pre><code class="userinput">./installer.sh deploy controller.xarv1.example.com</code></pre>
+
+This will allow you to do the necessary changes to the @controller1@ node without service disruption, as it will not be receiving any traffic until you remove it from the @DISABLED_CONTROLLER@ variable.
+
+You can do the same for the rest of the backend controllers one at a time to complete the upgrade.
 
 h2(#post_install). After the installation
 
