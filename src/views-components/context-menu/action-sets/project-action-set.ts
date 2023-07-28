@@ -103,7 +103,9 @@ export const toggleTrashAction = {
     component: ToggleTrashAction,
     name: 'ToggleTrashAction',
     execute: (dispatch, resources) => {
-        resources.forEach((resource) => dispatch(toggleProjectTrashed(resource.uuid, resource.ownerUuid, resource.isTrashed!!)));
+        resources.forEach((resource) =>
+            dispatch(toggleProjectTrashed(resource.uuid, resource.ownerUuid, resource.isTrashed!!, resources.length > 1))
+        );
     },
 };
 
