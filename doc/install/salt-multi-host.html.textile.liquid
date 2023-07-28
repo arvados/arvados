@@ -192,7 +192,7 @@ The certificates will be requested from Let's Encrypt when you run the installer
 
 * @cluster_int_cidr@ will be used to set @CLUSTER_INT_CIDR@
 
-* You'll also need @compute_subnet_id@ and @arvados_sg_id@ to set @DriverParameters.SubnetID@ and @DriverParameters.SecurityGroupIDs@ in @local_config_dir/pillars/arvados.sls@ and when you "create a compute image":#create_a_compute_image.
+* You'll also need @compute_subnet_id@ and @arvados_sg_id@ to set @COMPUTE_SUBNET@ and @COMPUTE_SG@ in @local.params@ and when you "create a compute image":#create_a_compute_image.
 
 You can now proceed to "edit local.params* files":#localparams.
 
@@ -372,15 +372,14 @@ Follow "the instructions to build a cloud compute node image":{{site.baseurl}}/i
 
 h3. Configure the compute image
 
-Once the image has been created, open @local_config_dir/pillars/arvados.sls@ and edit as follows (AWS specific settings described here, other cloud providers will have similar settings in their respective configuration section):
+Once the image has been created, open @local.params@ and edit as follows (AWS specific settings described here, you will need to make custom changes for other cloud providers):
 
-# In the @arvados.cluster.Containers.CloudVMs@ section:
-## Set @ImageID@ to the AMI produced by Packer
-## Set @DriverParameters.Region@ to the appropriate AWS region
-## Set @DriverParameters.AdminUsername@ to the admin user account on the image
-## Set the @DriverParameters.SecurityGroupIDs@ list to the VPC security group which you set up to allow SSH connections to these nodes
-## Set @DriverParameters.SubnetID@ to the value of SubnetId of your VPC
-# Update @arvados.cluster.InstanceTypes@ as necessary.  The example instance types are for AWS, other cloud providers will of course have different instance types with different names and specifications.
+# Set @COMPUTE_AMI@ to the AMI produced by Packer
+# Set @COMPUTE_AWS_REGION@ to the appropriate AWS region
+# Set @COMPUTE_USER@ to the admin user account on the image
+# Set the @COMPUTE_SG@ list to the VPC security group which you set up to allow SSH connections to these nodes
+# Set @COMPUTE_SUBNET@ to the value of SubnetId of your VPC
+# Update @arvados.cluster.InstanceTypes@ in @local_config_dir/pillars/arvados.sls@ as necessary.  The example instance types are for AWS, other cloud providers will of course have different instance types with different names and specifications.
 (AWS specific) If m5/c5 node types are not available, replace them with m4/c4. You'll need to double check the values for Price and IncludedScratch/AddedScratch for each type that is changed.
 
 h2(#installation). Begin installation
