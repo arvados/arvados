@@ -11,7 +11,6 @@ import { ResourceKind } from 'models/resource';
 import { loadProcess } from 'store/processes/processes-actions';
 import { getProcess, getSubprocesses } from 'store/processes/process';
 import { LogEventType } from 'models/log';
-import { addProcessLogsPanelItem } from 'store/process-logs-panel/process-logs-panel-actions';
 import { subprocessPanelActions } from "store/subprocess-panel/subprocess-panel-actions";
 import { projectPanelActions } from "store/project-panel/project-panel-action";
 import { getProjectPanelCurrentUuid } from 'store/project-panel/project-panel-action';
@@ -73,7 +72,5 @@ const messageListener = (store: RootStore) => (message: ResourceEventMessage) =>
             default:
                 return;
         }
-    } else {
-        return store.dispatch(addProcessLogsPanelItem(message as ResourceEventMessage<{ text: string }>));
     }
 };

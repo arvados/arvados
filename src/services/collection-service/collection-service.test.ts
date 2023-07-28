@@ -13,14 +13,14 @@ describe('collection-service', () => {
     let collectionService: CollectionService;
     let serverApi: AxiosInstance;
     let axiosMock: MockAdapter;
-    let webdavClient: any;
+    let keepWebdavClient: any;
     let authService;
     let actions;
 
     beforeEach(() => {
         serverApi = axios.create();
         axiosMock = new MockAdapter(serverApi);
-        webdavClient = {
+        keepWebdavClient = {
             delete: jest.fn(),
             upload: jest.fn(),
             mkdir: jest.fn(),
@@ -30,7 +30,7 @@ describe('collection-service', () => {
             progressFn: jest.fn(),
             errorFn: jest.fn(),
         } as any;
-        collectionService = new CollectionService(serverApi, webdavClient, authService, actions);
+        collectionService = new CollectionService(serverApi, keepWebdavClient, authService, actions);
         collectionService.update = jest.fn();
     });
 
@@ -79,7 +79,7 @@ describe('collection-service', () => {
                 },
                 select: ['uuid', 'name', 'version', 'modified_at'],
             }
-            collectionService = new CollectionService(serverApi, webdavClient, authService, actions);
+            collectionService = new CollectionService(serverApi, keepWebdavClient, authService, actions);
             await collectionService.update('uuid', data);
             expect(serverApi.put).toHaveBeenCalledWith('/collections/uuid', expected);
         });
@@ -95,7 +95,7 @@ describe('collection-service', () => {
             await collectionService.uploadFiles(collectionUUID, files);
 
             // then
-            expect(webdavClient.upload).not.toHaveBeenCalled();
+            expect(keepWebdavClient.upload).not.toHaveBeenCalled();
         });
 
         it('should upload files', async () => {
@@ -107,8 +107,8 @@ describe('collection-service', () => {
             await collectionService.uploadFiles(collectionUUID, files);
 
             // then
-            expect(webdavClient.upload).toHaveBeenCalledTimes(1);
-            expect(webdavClient.upload.mock.calls[0][0]).toEqual("c=zzzzz-4zz18-0123456789abcde/test-file1");
+            expect(keepWebdavClient.upload).toHaveBeenCalledTimes(1);
+            expect(keepWebdavClient.upload.mock.calls[0][0]).toEqual("c=zzzzz-4zz18-0123456789abcde/test-file1");
         });
 
         it('should upload files with custom uplaod target', async () => {
@@ -121,8 +121,8 @@ describe('collection-service', () => {
             await collectionService.uploadFiles(collectionUUID, files, undefined, customTarget);
 
             // then
-            expect(webdavClient.upload).toHaveBeenCalledTimes(1);
-            expect(webdavClient.upload.mock.calls[0][0]).toEqual("c=zzzzz-4zz18-0123456789adddd/test-path/test-file1");
+            expect(keepWebdavClient.upload).toHaveBeenCalledTimes(1);
+            expect(keepWebdavClient.upload.mock.calls[0][0]).toEqual("c=zzzzz-4zz18-0123456789adddd/test-path/test-file1");
         });
     });
 

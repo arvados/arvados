@@ -39,12 +39,14 @@ export function setAuthorizationHeader(services: ServiceRepository, token: strin
     services.apiClient.defaults.headers.common = {
         Authorization: `Bearer ${token}`
     };
-    services.webdavClient.setAuthorization(`Bearer ${token}`);
+    services.keepWebdavClient.setAuthorization(`Bearer ${token}`);
+    services.apiWebdavClient.setAuthorization(`Bearer ${token}`);
 }
 
 export function removeAuthorizationHeader(services: ServiceRepository) {
     delete services.apiClient.defaults.headers.common;
-    services.webdavClient.setAuthorization(undefined);
+    services.keepWebdavClient.setAuthorization(undefined);
+    services.apiWebdavClient.setAuthorization(undefined);
 }
 
 export const createServices = (config: Config, actions: ApiActions, useApiClient?: AxiosInstance) => {
@@ -55,8 +57,12 @@ export const createServices = (config: Config, actions: ApiActions, useApiClient
     const apiClient = useApiClient || Axios.create({ headers: {} });
     apiClient.defaults.baseURL = config.baseUrl;
 
-    const webdavClient = new WebDAV({
+    const keepWebdavClient = new WebDAV({
         baseURL: config.keepWebServiceUrl
+    });
+
+    const apiWebdavClient = new WebDAV({
+        baseURL: config.baseUrl
     });
 
     const apiClientAuthorizationService = new ApiClientAuthorizationService(apiClient, actions);
@@ -66,7 +72,7 @@ export const createServices = (config: Config, actions: ApiActions, useApiClient
     const groupsService = new GroupsService(apiClient, actions);
     const keepService = new KeepService(apiClient, actions);
     const linkService = new LinkService(apiClient, actions);
-    const logService = new LogService(apiClient, actions);
+    const logService = new LogService(apiClient, apiWebdavClient, actions);
     const permissionService = new PermissionService(apiClient, actions);
     const projectService = new ProjectService(apiClient, actions);
     const repositoriesService = new RepositoriesService(apiClient, actions);
@@ -79,7 +85,7 @@ export const createServices = (config: Config, actions: ApiActions, useApiClient
     const authService = new AuthService(apiClient, config.rootUrl, actions,
         (parse(idleTimeout, 's') || 0) > 0);
 
-    const collectionService = new CollectionService(apiClient, webdavClient, authService, actions);
+    const collectionService = new CollectionService(apiClient, keepWebdavClient, authService, actions);
     const ancestorsService = new AncestorService(groupsService, userService, collectionService);
     const favoriteService = new FavoriteService(linkService, groupsService);
     const tagService = new TagService(linkService);
@@ -109,7 +115,8 @@ export const createServices = (config: Config, actions: ApiActions, useApiClient
         tagService,
         userService,
         virtualMachineService,
-        webdavClient,
+        keepWebdavClient,
+        apiWebdavClient,
         workflowService,
         vocabularyService,
         linkAccountService
