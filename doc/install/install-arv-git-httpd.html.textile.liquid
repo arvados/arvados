@@ -34,10 +34,10 @@ Git services must be installed on the same host as the Arvados Rails API server.
 
 h2(#dependencies). Install dependencies
 
-h3. CentOS 7
+h3. Alma/CentOS/Red Hat/Rocky
 
 <notextile>
-<pre><code># <span class="userinput">yum install git perl-Data-Dumper openssh-server</span>
+<pre><code># <span class="userinput">dnf install git perl-Data-Dumper openssh-server</span>
 </code></pre>
 </notextile>
 
@@ -246,10 +246,10 @@ h2(#install-packages). Install the arvados-git-httpd package
 
 The arvados-git-httpd package provides HTTP access, using Arvados authentication tokens instead of passwords. It must be installed on the system where your git repositories are stored.
 
-h3. CentOS 7
+h3. Alma/CentOS/Red Hat/Rocky
 
 <notextile>
-<pre><code># <span class="userinput">yum install arvados-git-httpd</span>
+<pre><code># <span class="userinput">dnf install arvados-git-httpd</span>
 </code></pre>
 </notextile>
 

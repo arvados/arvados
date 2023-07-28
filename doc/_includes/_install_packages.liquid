@@ -13,10 +13,10 @@ fallback on arvados_component if not defined
 
 h2(#install-packages). Install {{packages_to_install | join: " and " }}
 
-h3. Red Hat and CentOS
+h3. Alma/CentOS/Red Hat/Rocky
 
 <notextile>
-<pre><code># <span class="userinput">yum install {{packages_to_install | join: " "}}</span>
+<pre><code># <span class="userinput">dnf install {{packages_to_install | join: " "}}</span>
 </code></pre>
 </notextile>
 

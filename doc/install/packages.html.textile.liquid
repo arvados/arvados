@@ -12,11 +12,27 @@ SPDX-License-Identifier: CC-BY-SA-3.0
 On any host where you install Arvados software, you'll need to add the Arvados package repository.  They're available for several popular distributions.
 
 * "CentOS 7":#centos7
+* "Alma/CentOS/Red Hat/Rocky 8":#rh8
 * "Debian and Ubuntu":#debian
 
 h3(#centos7). CentOS 7
 
 Packages are available for CentOS 7. To install them with yum, save this configuration block in @/etc/yum.repos.d/arvados.repo@:
+
+<notextile>
+<pre><code>[arvados]
+name=Arvados
+baseurl=http://rpm.arvados.org/CentOS/$releasever/os/$basearch/
+gpgcheck=1
+gpgkey=http://rpm.arvados.org/CentOS/RPM-GPG-KEY-arvados
+</code></pre>
+</notextile>
+
+{% include 'gpg_key_fingerprint' %}
+
+h3(#rh8). Alma/CentOS/Red Hat/Rocky 8
+
+Packages are available for all distributions based on RHEL 8, including AlmaLinux and Rocky Linux. To install them with dnf, save this configuration block in @/etc/yum.repos.d/arvados.repo@:
 
 <notextile>
 <pre><code>[arvados]

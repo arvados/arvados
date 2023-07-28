@@ -16,9 +16,16 @@ h2(#packages). Option 1: Install from packages
 Future versions of Arvados may require a newer version of Ruby than is packaged with your OS.  Using OS packages simplifies initial install, but may complicate upgrades that rely on a newer Ruby.  If this is a concern, we recommend using "RVM":#rvm.
 {% include 'notebox_end' %}
 
-h3. CentOS 7
+h3. Alma/CentOS/Red Hat/Rocky
 
-The Ruby version shipped with CentOS 7 is too old.  Use "RVM":#rvm to install a newer version of Ruby (we recommend installing version 2.7 or newer).
+The Ruby version shipped with version 7 of these distributions is too old.  Use "RVM":#rvm to install a newer version of Ruby (we recommend installing version 2.7 or newer).
+
+Ruby 2.7 is available in a module with version 8 of these distributions. You can install it by running:
+
+<notextile>
+<pre><code># <span class="userinput">dnf module enable ruby:2.7</span>
+# <span class="userinput">dnf install --enablerepo=devel ruby ruby-devel</span></code></pre>
+</notextile>
 
 h3. Debian and Ubuntu
 
@@ -34,10 +41,10 @@ h2(#rvm). Option 2: Install with RVM
 
 h3. Install gpg and curl
 
-h4. CentOS 7
+h4. Alma/CentOS/Red Hat/Rocky
 
 <pre>
-yum install gpg curl which
+dnf install gpg curl which
 </pre>
 
 h4. Debian and Ubuntu
@@ -78,10 +85,10 @@ Install prerequisites for Debian 10, Ubuntu 18.04 and Ubuntu 20.04:
     libssl-dev libxslt1.1 zlib1g-dev
 </span></code></pre></notextile>
 
-Install prerequisites for CentOS 7:
+Install prerequisites for Alma/CentOS/Red Hat/Rocky:
 
 <notextile>
-<pre><code><span class="userinput">sudo yum install \
+<pre><code><span class="userinput">sudo dnf install \
     libyaml-devel glibc-headers autoconf gcc-c++ glibc-devel \
     patch readline-devel zlib-devel libffi-devel openssl-devel \
     make automake libtool bison sqlite-devel tar
