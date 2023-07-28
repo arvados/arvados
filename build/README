@@ -1,4 +1,41 @@
-Scripts in this directory:
+Prerequisites
+=============
+
+In order to build packages, you will need:
+
+* Docker installed
+* permission to run Docker commands
+* the `WORKSPACE` environment variable set to the absolute path of an
+  Arvados Git work tree
+
+Quickstart
+==========
+
+Build and test all the packages for debian10 on your architecture by
+running:
+
+    ./run-build-test-packages-one-target.sh --arch "$(arch)"
+
+This will build package build and test Docker images for debian10, build all
+packages in a build container, then test all packages in a test container.
+
+Use a different distro by adding the `--target TARGET` option.
+
+Limit the build to a single package by adding the `--only-build
+PACKAGE_NAME` option. This is helpful when a build is mostly in good shape
+and you're tracking down last bugs in one or two packages.
+
+Get more verbose output by adding the `--debug` option.
+
+By default the script avoids rebuilding or retesting packages that it
+detects have already been done in past runs. You can force the script to
+rebuild or retest package(s) with the `--force-build` and `--force-test`
+options, respectively.
+
+Run the script with `--help` for more information about other options.
+
+Scripts in this directory
+=========================
 
 run-tests.sh                             Run unit and integration test suite.
 
