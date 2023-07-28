@@ -1,4 +1,8 @@
 {% comment %}
+Copyright (C) The Arvados Authors. All rights reserved.
+
+SPDX-License-Identifier: CC-BY-SA-3.0
+
 packages_to_install should be a list
 fallback on arvados_component if not defined
 {% endcomment %}
@@ -9,7 +13,7 @@ fallback on arvados_component if not defined
 
 h2(#install-packages). Install {{packages_to_install | join: " and " }}
 
-h3. Red Hat and Centos
+h3. Red Hat and CentOS
 
 <notextile>
 <pre><code># <span class="userinput">yum install {{packages_to_install | join: " "}}</span>
