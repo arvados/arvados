@@ -67,3 +67,27 @@ build-dev-docker-jobs-image.sh           Build developer arvados/jobs Docker ima
 run-library.sh                           A library of functions shared by the
                                          various scripts in this
                                          directory.
+
+Adding a new target
+===================
+
+In order to build packages on a new distribution, you MUST:
+
+* Add a rule for `TARGET/generated` to `package-build-dockerfiles/Makefile`.
+* Add the new `TARGET/generated` rule to the `all` target in
+  `package-build-dockerfiles/Makefile`.
+* Write `package-build-dockerfiles/TARGET/Dockerfile`.
+* Add a rule for `TARGET/generated` to `package-test-dockerfiles/Makefile`.
+* Add the new `TARGET/generated` rule to the `all` target in
+  `package-test-dockerfiles/Makefile`.
+* Write `package-test-dockerfiles/TARGET/Dockerfile`.
+* Create `package-testing/test-packages-TARGET.sh`, ideally by making it a
+  symlink to `FORMAT-common-test-packages.sh`.
+
+Of course, any part of our package build or test infrastructure may need to
+be updated to accommodate the process for new distributions. If you're
+having trouble building lots of packages, consider grepping these build
+scripts for the identifier of the closest working target, and see if you may
+need to add branches or similar hooks for your target. If you're having
+trouble building specific packages, consider doing the same for those
+packages' `fpm-info.sh` files.
