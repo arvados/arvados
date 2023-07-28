@@ -139,16 +139,14 @@ fi
 
 if [[ -n "$test_packages" ]]; then
   if [[ -n "$(find $WORKSPACE/packages/$TARGET -name '*.rpm')" ]] ; then
-    set +e
-    /usr/bin/which createrepo >/dev/null
-    if [[ "$?" != "0" ]]; then
+    CREATEREPO="$(command -v createrepo createrepo_c | tail -n1)"
+    if [[ -z "$CREATEREPO" ]]; then
       echo >&2
-      echo >&2 "Error: please install createrepo. E.g. sudo apt-get install createrepo"
+      echo >&2 "Error: please install createrepo. E.g. sudo apt install createrepo-c"
       echo >&2
       exit 1
     fi
-    set -e
-    createrepo $WORKSPACE/packages/$TARGET
+    "$CREATEREPO" $WORKSPACE/packages/$TARGET
   fi
 
   if [[ -n "$(find $WORKSPACE/packages/$TARGET -name '*.deb')" ]] ; then
