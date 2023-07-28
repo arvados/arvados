@@ -73,7 +73,7 @@ RUN gpg --import --no-tty /tmp/mpapis.asc && \
     /usr/local/rvm/bin/rvm install 2.7 -j $(grep -c processor /proc/cpuinfo) && \
     /usr/local/rvm/bin/rvm alias create default ruby-2.7 && \
     echo "gem: --no-document" >> ~/.gemrc && \
-    /usr/local/rvm/bin/rvm-exec default gem install bundler --version 2.2.19 && \
+    /usr/local/rvm/bin/rvm-exec default gem install bundler --version 2.3.26 && \
     /usr/local/rvm/bin/rvm-exec default gem install fpm --version 1.10.2
 
 RUN /usr/local/rvm/bin/rvm-exec default bundle config --global jobs $(let a=$(grep -c processor /proc/cpuinfo )-1; echo $a)

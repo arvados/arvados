@@ -43,6 +43,6 @@ RUN touch /var/lib/rpm/* && \
     curl -L https://get.rvm.io | bash -s stable && \
     /usr/local/rvm/bin/rvm install 2.7 -j $(grep -c processor /proc/cpuinfo) && \
     /usr/local/rvm/bin/rvm alias create default ruby-2.7 && \
-    /usr/local/rvm/bin/rvm-exec default gem install bundler --version 2.2.9
+    /usr/local/rvm/bin/rvm-exec default gem install bundler --version 2.3.26
 
 COPY localrepo.repo /etc/yum.repos.d/localrepo.repo
