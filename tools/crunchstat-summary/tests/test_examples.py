@@ -8,21 +8,32 @@ import crunchstat_summary.command
 import difflib
 import glob
 import gzip
-from io import open
+import io
+import logging
 import mock
 import os
 import sys
 import unittest
 
 from crunchstat_summary.command import UTF8Decode
+from crunchstat_summary import logger
 
 TESTS_DIR = os.path.dirname(os.path.abspath(__file__))
 
 
-class ReportDiff(unittest.TestCase):
+class TestCase(unittest.TestCase):
+    def setUp(self):
+        self.logbuf = io.StringIO()
+        self.loghandler = logging.StreamHandler(stream=self.logbuf)
+        logger.addHandler(self.loghandler)
+        logger.setLevel(logging.WARNING)
+
+    def tearDown(self):
+        logger.removeHandler(self.loghandler)
+
     def diff_known_report(self, logfile, cmd):
         expectfile = logfile+'.report'
-        with open(expectfile, encoding='utf-8') as f:
+        with io.open(expectfile, encoding='utf-8') as f:
             expect = f.readlines()
         self.diff_report(cmd, expect, expectfile=expectfile)
 
@@ -32,7 +43,7 @@ class ReportDiff(unittest.TestCase):
             expect, got, fromfile=expectfile, tofile="(generated)")))
 
 
-class SummarizeFile(ReportDiff):
+class SummarizeFile(TestCase):
     def test_example_files(self):
         for fnm in glob.glob(os.path.join(TESTS_DIR, '*.txt.gz')):
             logfile = os.path.join(TESTS_DIR, fnm)
@@ -43,7 +54,7 @@ class SummarizeFile(ReportDiff):
             self.diff_known_report(logfile, cmd)
 
 
-class HTMLFromFile(ReportDiff):
+class HTMLFromFile(TestCase):
     def test_example_files(self):
         # Note we don't test the output content at all yet; we're
         # mainly just verifying the --format=html option isn't ignored
@@ -54,20 +65,21 @@ class HTMLFromFile(ReportDiff):
                 ['--format=html', '--log-file', logfile])
             cmd = crunchstat_summary.command.Command(args)
             cmd.run()
-            if sys.version_info >= (3,2):
-                self.assertRegex(cmd.report(), r'(?is)<html>.*</html>\s*$')
-            else:
-                self.assertRegexpMatches(cmd.report(), r'(?is)<html>.*</html>\s*$')
+            self.assertRegex(cmd.report(), r'(?is)<html>.*</html>\s*$')
 
 
-class SummarizeEdgeCases(unittest.TestCase):
+class SummarizeEdgeCases(TestCase):
     def test_error_messages(self):
-        logfile = open(os.path.join(TESTS_DIR, 'crunchstat_error_messages.txt'), encoding='utf-8')
+        logfile = io.open(os.path.join(TESTS_DIR, 'crunchstat_error_messages.txt'), encoding='utf-8')
         s = crunchstat_summary.summarizer.Summarizer(logfile)
         s.run()
+        self.assertRegex(self.logbuf.getvalue(), r'CPU stats are missing -- possible cluster configuration issue')
+        self.assertRegex(self.logbuf.getvalue(), r'memory stats are missing -- possible cluster configuration issue')
+        self.assertRegex(self.logbuf.getvalue(), r'network I/O stats are missing -- possible cluster configuration issue')
+        self.assertRegex(self.logbuf.getvalue(), r'storage space stats are missing -- possible cluster configuration issue')
 
 
-class SummarizeContainerCommon(ReportDiff):
+class SummarizeContainerCommon(TestCase):
     fake_container = {
         'uuid': '9tee4-dz642-lymtndkpy39eibk',
         'created_at': '2017-08-18T14:27:25.371388141',
@@ -133,9 +145,11 @@ class SummarizeContainerRequest(SummarizeContainerCommon):
 
     def test_container_request(self):
         self.check_common()
+        self.assertNotRegex(self.logbuf.getvalue(), r'stats are missing')
+        self.assertNotRegex(self.logbuf.getvalue(), r'possible cluster configuration issue')
 
 
-class SummarizeJob(ReportDiff):
+class SummarizeJob(TestCase):
     fake_job_uuid = '4xphq-8i9sb-jq0ekny1xou3zoh'
     fake_log_id = 'fake-log-collection-id'
     fake_job = {
@@ -160,7 +174,7 @@ class SummarizeJob(ReportDiff):
         mock_cr().open.assert_called_with('fake-logfile.txt')
 
 
-class SummarizePipeline(ReportDiff):
+class SummarizePipeline(TestCase):
     fake_instance = {
         'uuid': 'zzzzz-d1hrv-i3e77t9z5y8j9cc',
         'owner_uuid': 'zzzzz-tpzed-xurymjxw79nv3jz',
@@ -216,7 +230,7 @@ class SummarizePipeline(ReportDiff):
         cmd = crunchstat_summary.command.Command(args)
         cmd.run()
 
-        with open(logfile+'.report', encoding='utf-8') as f:
+        with io.open(logfile+'.report', encoding='utf-8') as f:
             job_report = [line for line in f if not line.startswith('#!! ')]
         expect = (
             ['### Summary for foo (zzzzz-8i9sb-000000000000000)\n'] +
@@ -238,7 +252,7 @@ class SummarizePipeline(ReportDiff):
         mock_cr().open.assert_called_with('fake-logfile.txt')
 
 
-class SummarizeACRJob(ReportDiff):
+class SummarizeACRJob(TestCase):
     fake_job = {
         'uuid': 'zzzzz-8i9sb-i3e77t9z5y8j9cc',
         'owner_uuid': 'zzzzz-tpzed-xurymjxw79nv3jz',
@@ -291,7 +305,7 @@ class SummarizeACRJob(ReportDiff):
         cmd = crunchstat_summary.command.Command(args)
         cmd.run()
 
-        with open(logfile+'.report', encoding='utf-8') as f:
+        with io.open(logfile+'.report', encoding='utf-8') as f:
             job_report = [line for line in f if not line.startswith('#!! ')]
         expect = (
             ['### Summary for zzzzz-8i9sb-i3e77t9z5y8j9cc (partial) (zzzzz-8i9sb-i3e77t9z5y8j9cc)\n',
