@@ -10,7 +10,7 @@ describe('redirect-to', () => {
         keepWebServiceUrl: 'http://localhost',
         keepWebServiceInlineUrl: 'http://localhost-inline'
     };
-    const redirectTo = '/test123';
+    const redirectTo = 'c=acbd18db4cc2f85cedef654fccc4a4d8%2B3/foo';
     const locationTemplate = {
         hash: '',
         hostname: '',
@@ -51,7 +51,7 @@ describe('redirect-to', () => {
             storeRedirects();
 
             // then
-            expect(window.localStorage.setItem).toHaveBeenCalledWith('redirectToDownload', redirectTo);
+            expect(window.localStorage.setItem).toHaveBeenCalledWith('redirectToDownload', decodeURIComponent(redirectTo));
         });
     });
 
