@@ -174,25 +174,23 @@ package_go_binary() {
     return 1
   fi
 
-  cross_compilation=1
-  if [[ "$TARGET" == "centos7" ]]; then
-    if [[ "$native_arch" == "amd64" ]] && [[ -n "$target_arch" ]] && [[ "$native_arch" != "$target_arch" ]]; then
-      echo "Error: no cross compilation support for Go on $native_arch for $TARGET, can not build $prog for $target_arch"
-      return 1
-    fi
-    cross_compilation=0
-  fi
-
-  if [[ "$package_format" == "deb" ]] &&
-     [[ "$TARGET" == "debian10" ]] || [[ "$TARGET" == "ubuntu1804" ]] || [[ "$TARGET" == "ubuntu2004" ]]; then
-    # Due to bug https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=983477 the libfuse-dev package for arm64 does
-    # not install properly side by side with the amd64 version before Debian 11.
-    if [[ "$native_arch" == "amd64" ]] && [[ -n "$target_arch" ]] && [[ "$native_arch" != "$target_arch" ]]; then
-      echo "Error: no cross compilation support for Go on $native_arch for $TARGET, can not build $prog for $target_arch"
-      return 1
-    fi
-    cross_compilation=0
-  fi
+  case "$package_format-$TARGET" in
+    # Older Debian/Ubuntu do not support cross compilation because the
+    # libfuse package does not support multiarch. See
+    # <https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=983477>.
+    # Red Hat-based distributions do not support native cross compilation at
+    # all (they use a qemu-based solution we haven't implemented yet).
+    deb-debian10|deb-ubuntu1804|deb-ubuntu2004|rpm-*)
+      cross_compilation=0
+      if [[ "$native_arch" == "amd64" ]] && [[ -n "$target_arch" ]] && [[ "$native_arch" != "$target_arch" ]]; then
+        echo "Error: no cross compilation support for Go on $native_arch for $TARGET, can not build $prog for $target_arch"
+        return 1
+      fi
+      ;;
+    *)
+      cross_compilation=1
+      ;;
+  esac
 
   if [[ -n "$target_arch" ]]; then
     archs=($target_arch)
