@@ -320,7 +320,7 @@ func (r *Reporter) findStatFiles() {
 			}
 			*try.statFile = target
 			done[try.statFile] = true
-			r.Logger.Printf("using /%s", target)
+			r.Logger.Printf("notice: reading stats from /%s", target)
 			break
 		}
 	}
