@@ -6,7 +6,7 @@ FROM rockylinux:8.6-minimal
 MAINTAINER Arvados Package Maintainers <packaging@arvados.org>
 
 # Install dependencies.
-RUN microdnf --enablerepo=devel install \
+RUN microdnf --assumeyes --enablerepo=devel install \
     autoconf \
     automake \
     bison \

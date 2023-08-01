@@ -19,7 +19,7 @@ target="${target##*-}"
 
 case "$target" in
     centos*) yum -q clean all ;;
-    rocky*) microdnf clean all ;;
+    rocky*) microdnf --assumeyes clean all ;;
 esac
 touch /var/lib/rpm/*
 
@@ -29,7 +29,7 @@ rpm -qa | sort > "$ARV_PACKAGES_DIR/$1.before"
 
 case "$target" in
     centos*) yum install --assumeyes -e 0 $1 ;;
-    rocky*) microdnf install $1 ;;
+    rocky*) microdnf --assumeyes install $1 ;;
 esac
 
 rpm -qa | sort > "$ARV_PACKAGES_DIR/$1.after"

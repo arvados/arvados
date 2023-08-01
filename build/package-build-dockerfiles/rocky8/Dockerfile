@@ -29,7 +29,7 @@ FROM build_${HOSTTYPE}
 MAINTAINER Arvados Package Maintainers <packaging@arvados.org>
 
 # Install dependencies.
-RUN microdnf --enablerepo=devel install \
+RUN microdnf --assumeyes --enablerepo=devel install \
     automake \
     bison \
     bzip2 \
