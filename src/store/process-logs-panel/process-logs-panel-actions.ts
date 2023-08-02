@@ -92,8 +92,9 @@ export const pollProcessLogs = (processUuid: string) =>
                     await dispatch(processLogsPanelActions.ADD_PROCESS_LOGS_PANEL_ITEM(groupedLogs));
                 }
             }
+            return Promise.resolve();
         } catch (e) {
-            // Failed to poll, ignore error
+            return Promise.reject();
         }
     };
 
