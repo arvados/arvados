@@ -29,7 +29,7 @@ import {
     WordWrapOffIcon,
     WordWrapOnIcon,
 } from 'components/icon/icon';
-import { Process } from 'store/processes/process';
+import { Process, isProcessRunning } from 'store/processes/process';
 import { MPVPanelProps } from 'components/multi-panel-view/multi-panel-view';
 import {
     FilterOption,
@@ -105,7 +105,7 @@ export const ProcessLogsCard = withStyles(styles)(
 
         useAsyncInterval(() => (
             pollProcessLogs(process.containerRequest.uuid)
-        ), 2000);
+        ), isProcessRunning(process) ? 2000 : null);
 
         return <Grid item className={classes.root} xs={12}>
             <Card className={classes.card}>

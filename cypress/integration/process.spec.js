@@ -2,6 +2,8 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
+import { ContainerState } from 'models/container';
+
 describe('Process tests', function() {
     let activeUser;
     let adminUser;
@@ -415,6 +417,12 @@ describe('Process tests', function() {
 
     describe('Logs panel', function() {
         it('shows live process logs', function() {
+            cy.intercept({method: 'GET', url: '**/arvados/v1/containers/*'}, (req) => {
+                req.reply((res) => {
+                    res.body.state = ContainerState.RUNNING;
+                });
+            });
+
             const crName = 'test_container_request';
             createContainerRequest(
                 activeUser,
