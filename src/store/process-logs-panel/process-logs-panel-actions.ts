@@ -104,7 +104,6 @@ const loadContainerLogFileList = async (containerUuid: string, logService: LogSe
     // Filter only root directory files matching log event types which have bytes
     return logCollectionContents.filter((file): file is CollectionFile => (
         file.type === CollectionFileType.FILE &&
-        file.path === `/arvados/v1/container_requests/${containerUuid}/log` &&
         PROCESS_PANEL_LOG_EVENT_TYPES.indexOf(logFileToLogType(file)) > -1 &&
         file.size > 0
     ));

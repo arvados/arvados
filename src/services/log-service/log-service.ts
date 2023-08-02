@@ -23,7 +23,10 @@ export class LogService extends CommonResourceService<LogResource> {
     async listLogFiles(containerRequestUuid: string) {
         const request = await this.apiWebdavClient.propfind(`container_requests/${containerRequestUuid}/log`);
         if (request.responseXML != null) {
-            return extractFilesData(request.responseXML);
+            return extractFilesData(request.responseXML)
+                .filter((file) => (
+                    file.path === `/arvados/v1/container_requests/${containerRequestUuid}/log`
+                ));
         }
         return Promise.reject();
     }
