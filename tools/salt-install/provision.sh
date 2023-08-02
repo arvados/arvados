@@ -244,16 +244,7 @@ declare -A NODES
 declare -A ROLES
 declare NODELIST
 
-if [[ -s ${CONFIG_FILE} && -s ${CONFIG_FILE}.secrets ]]; then
-  source ${CONFIG_FILE}.secrets
-  source ${CONFIG_FILE}
-else
-  echo >&2 "You don't seem to have a config file with initial values."
-  echo >&2 "Please create a '${CONFIG_FILE}' & '${CONFIG_FILE}.secrets' files as described in"
-  echo >&2 "  * https://doc.arvados.org/install/salt-single-host.html#single_host, or"
-  echo >&2 "  * https://doc.arvados.org/install/salt-multi-host.html#multi_host_multi_hostnames"
-  exit 1
-fi
+source common.sh
 
 if [ ! -d ${CONFIG_DIR} ]; then
   echo >&2 "You don't seem to have a config directory with pillars and states."
