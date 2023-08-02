@@ -109,44 +109,44 @@ fi
 declare -a PYTHON3_BACKPORTS
 
 PYTHON3_EXECUTABLE=python3
-PYTHON3_VERSION=$($PYTHON3_EXECUTABLE -c 'import sys; print("{v.major}.{v.minor}".format(v=sys.version_info))')
-
-## These defaults are suitable for any Debian-based distribution.
-# You can customize them as needed in distro sections below.
-PYTHON3_PACKAGE=python$PYTHON3_VERSION
 PYTHON3_PKG_PREFIX=python3
 PYTHON3_PREFIX=/usr
-PYTHON3_INSTALL_LIB=lib/python$PYTHON3_VERSION/dist-packages
-## End Debian Python defaults.
-
 case "$TARGET" in
-    debian*)
-        FORMAT=deb
+    centos7)
+        FORMAT=rpm
+        # In CentOS 7, libcurl is linked against libnss. pycurl needs to know
+        # that in order to link to it correctly. This environment variable tells
+        # it that.
+        # libcurl is linked against openssl in RH8+ so this should not be
+        # necessary in later versions.
+        export PYCURL_SSL_LIBRARY=nss
         ;;
     ubuntu1804)
         FORMAT=deb
         PYTHON3_EXECUTABLE=python3.8
-        PYTHON3_VERSION=$($PYTHON3_EXECUTABLE -c 'import sys; print("{v.major}.{v.minor}".format(v=sys.version_info))')
-        PYTHON3_PACKAGE=python$PYTHON3_VERSION
-        PYTHON3_INSTALL_LIB=lib/python$PYTHON3_VERSION/dist-packages
         ;;
-    ubuntu*)
-        FORMAT=deb
-        ;;
-    centos*)
+    centos*|rocky*)
         FORMAT=rpm
-        PYTHON3_PACKAGE=$(rpm -qf "$(which python"$PYTHON3_VERSION")" --queryformat '%{NAME}\n')
-        PYTHON3_PKG_PREFIX=$PYTHON3_PACKAGE
-        PYTHON3_PREFIX=/usr
-        PYTHON3_INSTALL_LIB=lib/python$PYTHON3_VERSION/site-packages
-        export PYCURL_SSL_LIBRARY=nss
+        ;;
+    debian*|ubuntu*)
+        FORMAT=deb
         ;;
     *)
         echo -e "$0: Unknown target '$TARGET'.\n" >&2
         exit 1
         ;;
 esac
-
+: "${PYTHON3_VERSION:=$("$PYTHON3_EXECUTABLE" -c 'import sys; print("{v.major}.{v.minor}".format(v=sys.version_info))')}"
+case "$FORMAT" in
+    deb)
+        : "${PYTHON3_INSTALL_LIB:=lib/python$PYTHON3_VERSION/dist-packages}"
+        : "${PYTHON3_PACKAGE:=python$PYTHON3_VERSION}"
+        ;;
+    rpm)
+        : "${PYTHON3_INSTALL_LIB:=lib/python$PYTHON3_VERSION/site-packages}"
+        : "${PYTHON3_PACKAGE:=$(rpm -qf "$(command -v "python$PYTHON3_VERSION")" --queryformat '%{NAME}\n')}"
+        ;;
+esac
 
 if [[ -z "$WORKSPACE" ]]; then
   echo >&2 "$helpmessage"

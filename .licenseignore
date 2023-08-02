@@ -8,6 +8,7 @@ AUTHORS
 */bootstrap.js
 *bootstrap-theme.css
 build/package-test-dockerfiles/centos7/localrepo.repo
+build/package-test-dockerfiles/rocky8/localrepo.repo
 build/package-test-dockerfiles/ubuntu1604/etc-apt-preferences.d-arvados
 *by-sa-3.0.html
 *by-sa-3.0.txt

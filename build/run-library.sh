@@ -174,25 +174,23 @@ package_go_binary() {
     return 1
   fi
 
-  cross_compilation=1
-  if [[ "$TARGET" == "centos7" ]]; then
-    if [[ "$native_arch" == "amd64" ]] && [[ -n "$target_arch" ]] && [[ "$native_arch" != "$target_arch" ]]; then
-      echo "Error: no cross compilation support for Go on $native_arch for $TARGET, can not build $prog for $target_arch"
-      return 1
-    fi
-    cross_compilation=0
-  fi
-
-  if [[ "$package_format" == "deb" ]] &&
-     [[ "$TARGET" == "debian10" ]] || [[ "$TARGET" == "ubuntu1804" ]] || [[ "$TARGET" == "ubuntu2004" ]]; then
-    # Due to bug https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=983477 the libfuse-dev package for arm64 does
-    # not install properly side by side with the amd64 version before Debian 11.
-    if [[ "$native_arch" == "amd64" ]] && [[ -n "$target_arch" ]] && [[ "$native_arch" != "$target_arch" ]]; then
-      echo "Error: no cross compilation support for Go on $native_arch for $TARGET, can not build $prog for $target_arch"
-      return 1
-    fi
-    cross_compilation=0
-  fi
+  case "$package_format-$TARGET" in
+    # Older Debian/Ubuntu do not support cross compilation because the
+    # libfuse package does not support multiarch. See
+    # <https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=983477>.
+    # Red Hat-based distributions do not support native cross compilation at
+    # all (they use a qemu-based solution we haven't implemented yet).
+    deb-debian10|deb-ubuntu1804|deb-ubuntu2004|rpm-*)
+      cross_compilation=0
+      if [[ "$native_arch" == "amd64" ]] && [[ -n "$target_arch" ]] && [[ "$native_arch" != "$target_arch" ]]; then
+        echo "Error: no cross compilation support for Go on $native_arch for $TARGET, can not build $prog for $target_arch"
+        return 1
+      fi
+      ;;
+    *)
+      cross_compilation=1
+      ;;
+  esac
 
   if [[ -n "$target_arch" ]]; then
     archs=($target_arch)
@@ -919,11 +917,6 @@ fpm_build_virtualenv_worker () {
   LICENSE_STRING=`grep license $WORKSPACE/$PKG_DIR/setup.py|cut -f2 -d=|sed -e "s/[',\\"]//g"`
   COMMAND_ARR+=('--license' "$LICENSE_STRING")
 
-  if [[ "$package_format" == "rpm" ]]; then
-    # Make sure to conflict with the old rh-python36 packages we used to publish
-    COMMAND_ARR+=('--conflicts' "rh-python36-python-$PKG")
-  fi
-
   if [[ "$DEBUG" != "0" ]]; then
     COMMAND_ARR+=('--verbose' '--log' 'info')
   fi
@@ -940,9 +933,21 @@ fpm_build_virtualenv_worker () {
   fi
 
   COMMAND_ARR+=('--depends' "$PYTHON3_PACKAGE")
-
-  # avoid warning
-  COMMAND_ARR+=('--deb-no-default-config-files')
+  case "$package_format" in
+      deb)
+          COMMAND_ARR+=(
+              # Avoid warning
+              --deb-no-default-config-files
+          ) ;;
+      rpm)
+          COMMAND_ARR+=(
+              # Conflict with older packages we used to publish
+              --conflicts "rh-python36-python-$PKG"
+              # Do not generate /usr/lib/.build-id links on RH8+
+              # (otherwise our packages conflict with platform-python)
+              --rpm-rpmbuild-define "_build_id_links none"
+          ) ;;
+  esac
 
   # Append --depends X and other arguments specified by fpm-info.sh in
   # the package source dir. These are added last so they can override

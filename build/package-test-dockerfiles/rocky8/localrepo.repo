@@ -1,0 +1,5 @@
+[localrepo]
+name=Arvados Test
+baseurl=file:///arvados/packages/rocky8
+gpgcheck=0
+enabled=1

@@ -5,7 +5,7 @@
 fpm_depends+=(fuse)
 
 case "$TARGET" in
-    centos*)
+    centos*|rocky*)
         fpm_depends+=(fuse-libs)
         ;;
 esac
