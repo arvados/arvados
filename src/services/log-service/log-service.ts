@@ -8,7 +8,7 @@ import { CommonResourceService } from "services/common-service/common-resource-s
 import { ApiActions } from "services/api/api-actions";
 import { WebDAV } from "common/webdav";
 import { extractFilesData } from "services/collection-service/collection-service-files-response";
-import { CollectionDirectory, CollectionFile } from "models/collection-file";
+import { CollectionFile } from "models/collection-file";
 
 export type LogFragment = {
     logType: LogEventType;
@@ -50,4 +50,4 @@ export class LogService extends CommonResourceService<LogResource> {
     }
 }
 
-export const logFileToLogType = (file: CollectionFile | CollectionDirectory) => (file.name.replace(/\.(txt|json)$/, '') as LogEventType);
+export const logFileToLogType = (file: CollectionFile) => (file.name.replace(/\.(txt|json)$/, '') as LogEventType);
