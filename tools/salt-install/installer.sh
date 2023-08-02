@@ -106,9 +106,12 @@ sync() {
 deploynode() {
     local NODE=$1
     local ROLES=$2
+    local BRANCH=$3
 
     # Deploy a node.  This runs the provision script on the node, with
     # the appropriate roles.
+
+    sync $NODE $BRANCH
 
     if [[ -z "$ROLES" ]] ; then
 		echo "No roles specified for $NODE, will deploy all roles"
@@ -289,17 +292,15 @@ case "$subcmd" in
 	if [[ -z "$NODE" ]]; then
 	    for NODE in "${!NODES[@]}"
 	    do
-		# First, push the git repo to each node.  This also
-		# confirms that we have git and can log into each
-		# node.
-		sync $NODE $BRANCH
+		# First, just confirm we can ssh to each node.
+		`ssh_cmd "$NODE"` $DEPLOY_USER@$NODE true
 	    done
 
 	    for NODE in "${!NODES[@]}"
 	    do
 		# Do 'database' role first,
 		if [[ "${NODES[$NODE]}" =~ database ]] ; then
-		    deploynode $NODE "${NODES[$NODE]}"
+		    deploynode $NODE "${NODES[$NODE]}" $BRANCH
 		    unset NODES[$NODE]
 		fi
 	    done
@@ -326,12 +327,11 @@ case "$subcmd" in
 	    do
 		# Everything else (we removed the nodes that we
 		# already deployed from the list)
-		deploynode $NODE "${NODES[$NODE]}"
+		deploynode $NODE "${NODES[$NODE]}" $BRANCH
 	    done
 	else
 	    # Just deploy the node that was supplied on the command line.
-	    sync $NODE $BRANCH
-	    deploynode $NODE "${NODES[$NODE]}"
+	    deploynode $NODE "${NODES[$NODE]}" $BRANCH
 	fi
 
 	set +x
