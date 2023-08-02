@@ -62,7 +62,7 @@ clean-node-modules:
 
 clean: clean-rpm clean-deb clean-node-modules
 
-arvados-server-install:
+arvados-server-install: check-arvados-directory
 	cd $(ARVADOS_DIRECTORY)
 	go mod download
 	cd cmd/arvados-server
@@ -77,12 +77,15 @@ yarn-install: arvados-server-install
 unit-tests: yarn-install
 	yarn test --no-watchAll --bail --ci
 
-integration-tests: yarn-install
+integration-tests: yarn-install check-arvados-directory
 	yarn run cypress install
 	$(WORKSPACE)/tools/run-integration-tests.sh -a $(ARVADOS_DIRECTORY)
 
-integration-tests-in-docker: workbench2-build-image
+integration-tests-in-docker: workbench2-build-image check-arvados-directory
 	docker run -ti -v$(PWD):/usr/src/workbench2 -v$(ARVADOS_DIRECTORY):/usr/src/arvados -w /usr/src/workbench2 -e ARVADOS_DIRECTORY=/usr/src/arvados workbench2-build make integration-tests
+
+unit-tests-in-docker: workbench2-build-image check-arvados-directory
+	docker run -ti -v$(PWD):/usr/src/workbench2 -v$(ARVADOS_DIRECTORY):/usr/src/arvados -w /usr/src/workbench2 -e ARVADOS_DIRECTORY=/usr/src/arvados workbench2-build make unit-tests
 
 test: unit-tests integration-tests
 
