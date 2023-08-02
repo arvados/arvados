@@ -141,18 +141,18 @@ const loadContainerLogFileContents = async (logFilesWithProgress: FileWithProgre
             return Promise.all([logService.getLogFileContents(process.containerRequest.uuid, file, lastByte, file.size-1)]);
         }
     })).then((res) => {
-        if (res.length && res.every(promise => (promise.status === 'rejected'))) {
+        if (res.length && res.every(promiseResult => (promiseResult.status === 'rejected'))) {
             // Since allSettled does not pass promise rejection we throw an
             //   error if every request failed
             return Promise.reject("Failed to load logs");
         }
-        return res.filter((one): one is PromiseFulfilledResult<LogFragment[]> => (
+        return res.filter((promiseResult): promiseResult is PromiseFulfilledResult<LogFragment[]> => (
             // Filter out log files with rejected promises
             //   (Promise.all rejects on any failure)
-            one.status === 'fulfilled' &&
+            promiseResult.status === 'fulfilled' &&
             // Filter out files where any fragment is empty
             //   (prevent incorrect snipline generation or an un-resumable situation)
-            !!one.value.every(logFragment => logFragment.contents.length)
+            !!promiseResult.value.every(logFragment => logFragment.contents.length)
         )).map(one => one.value)
     })).map((logResponseSet)=> {
         // For any multi fragment response set, modify the last line of non-final chunks to include a line break and snip line
