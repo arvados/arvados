@@ -31,24 +31,20 @@ export class LogService extends CommonResourceService<LogResource> {
         return Promise.reject();
     }
 
-    async getLogFileContents(containerRequestUuid: string, fileRecord: CollectionFile, startByte: number, endByte: number): Promise<LogFragment | undefined> {
-        try {
-            const request = await this.apiWebdavClient.get(
-                `container_requests/${containerRequestUuid}/log/${fileRecord.name}`,
-                {headers: {Range: `bytes=${startByte}-${endByte}`}}
-            );
-            const logFileType = logFileToLogType(fileRecord);
+    async getLogFileContents(containerRequestUuid: string, fileRecord: CollectionFile, startByte: number, endByte: number): Promise<LogFragment> {
+        const request = await this.apiWebdavClient.get(
+            `container_requests/${containerRequestUuid}/log/${fileRecord.name}`,
+            {headers: {Range: `bytes=${startByte}-${endByte}`}}
+        );
+        const logFileType = logFileToLogType(fileRecord);
 
-            if (request.responseText && logFileType) {
-                return {
-                    logType: logFileType,
-                    contents: request.responseText.split(/\r?\n/),
-                };
-            } else {
-                return undefined;
-            }
-        } catch(e) {
-            return undefined;
+        if (request.responseText && logFileType) {
+            return {
+                logType: logFileType,
+                contents: request.responseText.split(/\r?\n/),
+            };
+        } else {
+            return Promise.reject();
         }
     }
 }

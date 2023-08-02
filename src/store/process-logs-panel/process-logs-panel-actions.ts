@@ -39,21 +39,28 @@ export const setProcessLogsPanelFilter = (filter: string) =>
 
 export const initProcessLogsPanel = (processUuid: string) =>
     async (dispatch: Dispatch, getState: () => RootState, { logService }: ServiceRepository) => {
-        dispatch(processLogsPanelActions.RESET_PROCESS_LOGS_PANEL());
-        const process = getProcess(processUuid)(getState().resources);
-        if (process?.containerRequest?.uuid) {
-            // Get log file size info
-            const logFiles = await loadContainerLogFileList(process.containerRequest.uuid, logService);
+        try {
+            dispatch(processLogsPanelActions.RESET_PROCESS_LOGS_PANEL());
+            const process = getProcess(processUuid)(getState().resources);
+            if (process?.containerRequest?.uuid) {
+                // Get log file size info
+                const logFiles = await loadContainerLogFileList(process.containerRequest.uuid, logService);
 
-            // Populate lastbyte 0 for each file
-            const filesWithProgress = logFiles.map((file) => ({file, lastByte: 0}));
+                // Populate lastbyte 0 for each file
+                const filesWithProgress = logFiles.map((file) => ({file, lastByte: 0}));
 
-            // Fetch array of LogFragments
-            const logLines = await loadContainerLogFileContents(filesWithProgress, logService, process);
+                // Fetch array of LogFragments
+                const logLines = await loadContainerLogFileContents(filesWithProgress, logService, process);
 
-            // Populate initial state with filters
-            const initialState = createInitialLogPanelState(logFiles, logLines);
+                // Populate initial state with filters
+                const initialState = createInitialLogPanelState(logFiles, logLines);
+                dispatch(processLogsPanelActions.INIT_PROCESS_LOGS_PANEL(initialState));
+            }
+        } catch(e) {
+            // On error, populate empty state to allow polling to start
+            const initialState = createInitialLogPanelState([], []);
             dispatch(processLogsPanelActions.INIT_PROCESS_LOGS_PANEL(initialState));
+            dispatch(snackbarActions.OPEN_SNACKBAR({ message: 'Could not load process logs', hideDuration: 2000, kind: SnackbarKind.ERROR }));
         }
     };
 
@@ -94,6 +101,7 @@ export const pollProcessLogs = (processUuid: string) =>
             }
             return Promise.resolve();
         } catch (e) {
+            // Remove log when polling error is handled in some way instead of being ignored
             console.log("Polling process logs failed");
             return Promise.reject();
         }
@@ -120,7 +128,7 @@ const loadContainerLogFileList = async (containerUuid: string, logService: LogSe
  * @returns LogFragment[] containing a single LogFragment corresponding to each input file
  */
 const loadContainerLogFileContents = async (logFilesWithProgress: FileWithProgress[], logService: LogService, process: Process) => (
-    (await Promise.all(logFilesWithProgress.filter(({file}) => file.size > 0).map(({file, lastByte}) => {
+    (await Promise.allSettled(logFilesWithProgress.filter(({file}) => file.size > 0).map(({file, lastByte}) => {
         const requestSize = file.size - lastByte;
         if (requestSize > maxLogFetchSize) {
             const chunkSize = Math.floor(maxLogFetchSize / 2);
@@ -128,31 +136,38 @@ const loadContainerLogFileContents = async (logFilesWithProgress: FileWithProgre
             return Promise.all([
                 logService.getLogFileContents(process.containerRequest.uuid, file, lastByte, firstChunkEnd),
                 logService.getLogFileContents(process.containerRequest.uuid, file, file.size-chunkSize, file.size-1)
-            ] as Promise<(LogFragment | undefined)>[]);
+            ] as Promise<(LogFragment)>[]);
         } else {
             return Promise.all([logService.getLogFileContents(process.containerRequest.uuid, file, lastByte, file.size-1)]);
         }
-    }))).filter((logResponseSet) => ( // Top level filter ensures array of LogFragments is not empty and contains 1 or more fragments containing log lines
-        logResponseSet.length && logResponseSet.some(logFragment => logFragment && logFragment.contents.length)
-    )).map((logResponseSet)=> {
-        // Remove fragments from subarrays that are undefined or have no lines
-        const responseSet = logResponseSet.filter((logFragment): logFragment is LogFragment => (
-            !!logFragment && logFragment.contents.length > 0
-        ));
-
+    })).then((res) => {
+        if (res.length && res.every(promise => (promise.status === 'rejected'))) {
+            // Since allSettled does not pass promise rejection we throw an
+            //   error if every request failed
+            return Promise.reject("Failed to load logs");
+        }
+        return res.filter((one): one is PromiseFulfilledResult<LogFragment[]> => (
+            // Filter out log files with rejected promises
+            //   (Promise.all rejects on any failure)
+            one.status === 'fulfilled' &&
+            // Filter out files where any fragment is empty
+            //   (prevent incorrect snipline generation or an un-resumable situation)
+            !!one.value.every(logFragment => logFragment.contents.length)
+        )).map(one => one.value)
+    })).map((logResponseSet)=> {
         // For any multi fragment response set, modify the last line of non-final chunks to include a line break and snip line
         //   Don't add snip line as a separate line so that sorting won't reorder it
-        for (let i = 1; i < responseSet.length; i++) {
-            const fragment = responseSet[i-1];
+        for (let i = 1; i < logResponseSet.length; i++) {
+            const fragment = logResponseSet[i-1];
             const lastLineIndex = fragment.contents.length-1;
             const lastLineContents = fragment.contents[lastLineIndex];
             const newLastLine = `${lastLineContents}\n${SNIPLINE}`;
 
-            responseSet[i-1].contents[lastLineIndex] = newLastLine;
+            logResponseSet[i-1].contents[lastLineIndex] = newLastLine;
         }
 
         // Merge LogFragment Array (representing multiple log line arrays) into single LogLine[] / LogFragment
-        return responseSet.reduce((acc, curr: LogFragment) => ({
+        return logResponseSet.reduce((acc, curr: LogFragment) => ({
             logType: curr.logType,
             contents: [...(acc.contents || []), ...curr.contents]
         }), {} as LogFragment);
