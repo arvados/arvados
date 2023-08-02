@@ -1911,7 +1911,7 @@ func (command) RunCommand(prog string, args []string, stdin io.Reader, stdout, s
 	statInterval := flags.Duration("crunchstat-interval", 10*time.Second, "sampling period for periodic resource usage reporting")
 	flags.String("cgroup-root", "/sys/fs/cgroup", "path to sysfs cgroup tree (obsolete, ignored)")
 	flags.String("cgroup-parent", "docker", "name of container's parent cgroup (obsolete, ignored)")
-	cgroupParentSubsystem := flags.String("cgroup-parent-subsystem", "", "use current cgroup for given `subsystem` as parent cgroup for container (subsystem argument is only relevant for cgroups v1; in cgroups v2 / unified mode, any non-empty value means use current cgroup); if empty, use the docker daemon's default cgroup parent. See https://doc.arvados.org/main/install/crunch2-slurm/install-dispatch.html#CrunchRunCommand-cgroups")
+	cgroupParentSubsystem := flags.String("cgroup-parent-subsystem", "", "use current cgroup for given `subsystem` as parent cgroup for container (subsystem argument is only relevant for cgroups v1; in cgroups v2 / unified mode, any non-empty value means use current cgroup); if empty, use the docker daemon's default cgroup parent. See https://doc.arvados.org/install/crunch2-slurm/install-dispatch.html#CrunchRunCommand-cgroups")
 	caCertsPath := flags.String("ca-certs", "", "Path to TLS root certificates")
 	detach := flags.Bool("detach", false, "Detach from parent process and run in the background")
 	stdinConfig := flags.Bool("stdin-config", false, "Load config and environment variables from JSON message on stdin")
