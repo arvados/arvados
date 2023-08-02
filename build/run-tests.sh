@@ -94,7 +94,6 @@ lib/pam
 lib/service
 services/api
 services/githttpd
-services/crunchstat
 services/dockercleaner
 services/fuse
 services/fuse:py3

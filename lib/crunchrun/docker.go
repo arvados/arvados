@@ -195,8 +195,15 @@ func (e *dockerExecutor) Create(spec containerSpec) error {
 	return e.startIO(spec.Stdin, spec.Stdout, spec.Stderr)
 }
 
-func (e *dockerExecutor) CgroupID() string {
-	return e.containerID
+func (e *dockerExecutor) Pid() int {
+	ctx, cancel := context.WithDeadline(context.Background(), time.Now().Add(10*time.Second))
+	defer cancel()
+	ctr, err := e.dockerclient.ContainerInspect(ctx, e.containerID)
+	if err != nil && ctr.State != nil {
+		return ctr.State.Pid
+	} else {
+		return 0
+	}
 }
 
 func (e *dockerExecutor) Start() error {

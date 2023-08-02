@@ -353,8 +353,9 @@ func (e *singularityExecutor) Start() error {
 	return nil
 }
 
-func (e *singularityExecutor) CgroupID() string {
-	return ""
+func (e *singularityExecutor) Pid() int {
+	// see https://dev.arvados.org/issues/17244#note-21
+	return 0
 }
 
 func (e *singularityExecutor) Stop() error {

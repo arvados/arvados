@@ -6,11 +6,11 @@ package crunchstat
 
 import (
 	"bytes"
-	"errors"
 	"fmt"
+	"io/fs"
 	"os"
-	"path"
 	"regexp"
+	"runtime"
 	"strconv"
 	"testing"
 	"time"
@@ -20,118 +20,99 @@ import (
 )
 
 const logMsgPrefix = `(?m)(.*\n)*.* msg="`
-const GiB = int64(1024 * 1024 * 1024)
-
-type fakeStat struct {
-	cgroupRoot string
-	statName   string
-	unit       string
-	value      int64
-}
-
-var fakeRSS = fakeStat{
-	cgroupRoot: "testdata/fakestat",
-	statName:   "mem rss",
-	unit:       "bytes",
-	// Note this is the value of total_rss, not rss, because that's what should
-	// always be reported for thresholds and maxima.
-	value: 750 * 1024 * 1024,
-}
 
 func Test(t *testing.T) {
 	TestingT(t)
 }
 
-var _ = Suite(&suite{
-	logger: logrus.New(),
-})
+var _ = Suite(&suite{})
+
+type testdatasource struct {
+	fspath string
+	pid    int
+}
+
+func (s testdatasource) Pid() int {
+	return s.pid
+}
+func (s testdatasource) FS() fs.FS {
+	return os.DirFS(s.fspath)
+}
+
+// To generate a test case for a new OS target, build
+// cmd/arvados-server and run
+//
+//	arvados-server crunchstat -dump ./testdata/example1234 sleep 2
+var testdata = map[string]testdatasource{
+	"debian11":   {fspath: "testdata/debian11", pid: 4153022},
+	"debian12":   {fspath: "testdata/debian12", pid: 1115883},
+	"ubuntu1804": {fspath: "testdata/ubuntu1804", pid: 2523},
+	"ubuntu2004": {fspath: "testdata/ubuntu2004", pid: 1360},
+	"ubuntu2204": {fspath: "testdata/ubuntu2204", pid: 1967},
+}
 
 type suite struct {
-	cgroupRoot string
-	logbuf     bytes.Buffer
-	logger     *logrus.Logger
+	logbuf                bytes.Buffer
+	logger                *logrus.Logger
+	debian12MemoryCurrent int64
 }
 
 func (s *suite) SetUpSuite(c *C) {
+	s.logger = logrus.New()
 	s.logger.Out = &s.logbuf
+
+	buf, err := os.ReadFile("testdata/debian12/sys/fs/cgroup/user.slice/user-1000.slice/session-4.scope/memory.current")
+	c.Assert(err, IsNil)
+	_, err = fmt.Sscanf(string(buf), "%d", &s.debian12MemoryCurrent)
+	c.Assert(err, IsNil)
 }
 
 func (s *suite) SetUpTest(c *C) {
-	s.cgroupRoot = ""
 	s.logbuf.Reset()
 }
 
-func (s *suite) tempCgroup(c *C, sourceDir string) error {
-	tempDir := c.MkDir()
-	dirents, err := os.ReadDir(sourceDir)
-	if err != nil {
-		return err
-	}
-	for _, dirent := range dirents {
-		srcData, err := os.ReadFile(path.Join(sourceDir, dirent.Name()))
-		if err != nil {
-			return err
-		}
-		destPath := path.Join(tempDir, dirent.Name())
-		err = os.WriteFile(destPath, srcData, 0o600)
-		if err != nil {
-			return err
-		}
-	}
-	s.cgroupRoot = tempDir
-	return nil
-}
-
-func (s *suite) addPidToCgroup(pid int) error {
-	if s.cgroupRoot == "" {
-		return errors.New("cgroup has not been set up for this test")
-	}
-	procsPath := path.Join(s.cgroupRoot, "cgroup.procs")
-	procsFile, err := os.OpenFile(procsPath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0o600)
-	if err != nil {
-		return err
-	}
-	pidLine := strconv.Itoa(pid) + "\n"
-	_, err = procsFile.Write([]byte(pidLine))
-	if err != nil {
-		procsFile.Close()
-		return err
-	}
-	return procsFile.Close()
-}
-
-func (s *suite) TestReadAllOrWarnFail(c *C) {
-	rep := Reporter{Logger: s.logger}
-
-	// The special file /proc/self/mem can be opened for
-	// reading, but reading from byte 0 returns an error.
-	f, err := os.Open("/proc/self/mem")
-	c.Assert(err, IsNil)
-	defer f.Close()
-	_, err = rep.readAllOrWarn(f)
-	c.Check(err, NotNil)
-	c.Check(s.logbuf.String(), Matches, ".* msg=\"warning: read /proc/self/mem: .*\n")
-}
-
-func (s *suite) TestReadAllOrWarnSuccess(c *C) {
-	rep := Reporter{Logger: s.logger}
-
-	f, err := os.Open("./crunchstat_test.go")
-	c.Assert(err, IsNil)
-	defer f.Close()
-	data, err := rep.readAllOrWarn(f)
-	c.Check(err, IsNil)
-	c.Check(string(data), Matches, "(?ms).*\npackage crunchstat\n.*")
-	c.Check(s.logbuf.String(), Equals, "")
-}
-
-func (s *suite) TestReportPIDs(c *C) {
+// Report stats for the current (go test) process's cgroup, using the
+// test host's real procfs/sysfs.
+func (s *suite) TestReportCurrent(c *C) {
 	r := Reporter{
+		Pid:        os.Getpid,
 		Logger:     s.logger,
-		CgroupRoot: "/sys/fs/cgroup",
 		PollPeriod: time.Second,
 	}
 	r.Start()
+	defer r.Stop()
+	checkPatterns := []string{
+		`(?ms).*rss.*`,
+		`(?ms).*net:.*`,
+		`(?ms).*blkio:.*`,
+		`(?ms).* [\d.]+ user [\d.]+ sys ` + fmt.Sprintf("%d", runtime.NumCPU()) + ` cpus -- .*`,
+	}
+	for deadline := time.Now().Add(4 * time.Second); !c.Failed(); time.Sleep(time.Millisecond) {
+		done := true
+		for _, pattern := range checkPatterns {
+			if m := regexp.MustCompile(pattern).FindSubmatch(s.logbuf.Bytes()); len(m) == 0 {
+				done = false
+				if time.Now().After(deadline) {
+					c.Errorf("timed out waiting for %s", pattern)
+				}
+			}
+		}
+		if done {
+			break
+		}
+	}
+	c.Logf("%s", s.logbuf.String())
+}
+
+// Report stats for a the current (go test) process.
+func (s *suite) TestReportPIDs(c *C) {
+	r := Reporter{
+		Pid:        func() int { return 1 },
+		Logger:     s.logger,
+		PollPeriod: time.Second,
+	}
+	r.Start()
+	defer r.Stop()
 	r.ReportPID("init", 1)
 	r.ReportPID("test_process", os.Getpid())
 	r.ReportPID("nonexistent", 12345) // should be silently ignored/omitted
@@ -154,13 +135,37 @@ func (s *suite) TestReportPIDs(c *C) {
 	c.Logf("%s", s.logbuf.String())
 }
 
+func (s *suite) TestAllTestdata(c *C) {
+	for platform, datasource := range testdata {
+		s.logbuf.Reset()
+		c.Logf("=== %s", platform)
+		rep := Reporter{
+			Pid:             datasource.Pid,
+			FS:              datasource.FS(),
+			Logger:          s.logger,
+			PollPeriod:      time.Second,
+			ThresholdLogger: s.logger,
+			Debug:           true,
+		}
+		rep.Start()
+		rep.Stop()
+		logs := s.logbuf.String()
+		c.Logf("%s", logs)
+		c.Check(logs, Matches, `(?ms).* \d\d+ rss\\n.*`)
+		c.Check(logs, Matches, `(?ms).*blkio:\d+:\d+ \d+ write \d+ read\\n.*`)
+		c.Check(logs, Matches, `(?ms).*net:\S+ \d+ tx \d+ rx\\n.*`)
+		c.Check(logs, Matches, `(?ms).* [\d.]+ user [\d.]+ sys [2-9]\d* cpus.*`)
+	}
+}
+
 func (s *suite) testRSSThresholds(c *C, rssPercentages []int64, alertCount int) {
 	c.Assert(alertCount <= len(rssPercentages), Equals, true)
 	rep := Reporter{
-		CgroupRoot: fakeRSS.cgroupRoot,
-		Logger:     s.logger,
+		Pid:    testdata["debian12"].Pid,
+		FS:     testdata["debian12"].FS(),
+		Logger: s.logger,
 		MemThresholds: map[string][]Threshold{
-			"rss": NewThresholdsFromPercentages(GiB, rssPercentages),
+			"rss": NewThresholdsFromPercentages(s.debian12MemoryCurrent*3/2, rssPercentages),
 		},
 		PollPeriod:      time.Second * 10,
 		ThresholdLogger: s.logger,
@@ -178,7 +183,7 @@ func (s *suite) testRSSThresholds(c *C, rssPercentages []int64, alertCount int) 
 			logCheck = Not(Matches)
 		}
 		pattern := fmt.Sprintf(`%sContainer using over %d%% of memory \(rss %d/%d bytes\)"`,
-			logMsgPrefix, expectPercentage, fakeRSS.value, GiB)
+			logMsgPrefix, expectPercentage, s.debian12MemoryCurrent, s.debian12MemoryCurrent*3/2)
 		c.Check(logs, logCheck, pattern)
 	}
 }
@@ -200,7 +205,7 @@ func (s *suite) TestMultipleRSSThresholdsNonePassed(c *C) {
 }
 
 func (s *suite) TestMultipleRSSThresholdsSomePassed(c *C) {
-	s.testRSSThresholds(c, []int64{60, 70, 80, 90}, 2)
+	s.testRSSThresholds(c, []int64{45, 60, 75, 90}, 2)
 }
 
 func (s *suite) TestMultipleRSSThresholdsAllPassed(c *C) {
@@ -208,27 +213,25 @@ func (s *suite) TestMultipleRSSThresholdsAllPassed(c *C) {
 }
 
 func (s *suite) TestLogMaxima(c *C) {
-	err := s.tempCgroup(c, fakeRSS.cgroupRoot)
-	c.Assert(err, IsNil)
 	rep := Reporter{
-		CgroupRoot: s.cgroupRoot,
+		Pid:        testdata["debian12"].Pid,
+		FS:         testdata["debian12"].FS(),
 		Logger:     s.logger,
 		PollPeriod: time.Second * 10,
-		TempDir:    s.cgroupRoot,
+		TempDir:    "/",
 	}
 	rep.Start()
 	rep.Stop()
-	rep.LogMaxima(s.logger, map[string]int64{"rss": GiB})
+	rep.LogMaxima(s.logger, map[string]int64{"rss": s.debian12MemoryCurrent * 3 / 2})
 	logs := s.logbuf.String()
 	c.Logf("%s", logs)
 
 	expectRSS := fmt.Sprintf(`Maximum container memory rss usage was %d%%, %d/%d bytes`,
-		100*fakeRSS.value/GiB, fakeRSS.value, GiB)
+		66, s.debian12MemoryCurrent, s.debian12MemoryCurrent*3/2)
 	for _, expected := range []string{
 		`Maximum disk usage was \d+%, \d+/\d+ bytes`,
-		`Maximum container memory cache usage was 73400320 bytes`,
-		`Maximum container memory swap usage was 320 bytes`,
-		`Maximum container memory pgmajfault usage was 20 faults`,
+		`Maximum container memory swap usage was \d\d+ bytes`,
+		`Maximum container memory pgmajfault usage was \d\d+ faults`,
 		expectRSS,
 	} {
 		pattern := logMsgPrefix + expected + `"`
@@ -237,19 +240,12 @@ func (s *suite) TestLogMaxima(c *C) {
 }
 
 func (s *suite) TestLogProcessMemMax(c *C) {
-	err := s.tempCgroup(c, fakeRSS.cgroupRoot)
-	c.Assert(err, IsNil)
-	pid := os.Getpid()
-	err = s.addPidToCgroup(pid)
-	c.Assert(err, IsNil)
-
 	rep := Reporter{
-		CgroupRoot: s.cgroupRoot,
+		Pid:        os.Getpid,
 		Logger:     s.logger,
 		PollPeriod: time.Second * 10,
-		TempDir:    s.cgroupRoot,
 	}
-	rep.ReportPID("test-run", pid)
+	rep.ReportPID("test-run", os.Getpid())
 	rep.Start()
 	rep.Stop()
 	rep.LogProcessMemMax(s.logger)
