@@ -94,6 +94,7 @@ export const pollProcessLogs = (processUuid: string) =>
             }
             return Promise.resolve();
         } catch (e) {
+            console.log("Polling process logs failed");
             return Promise.reject();
         }
     };
