@@ -29,7 +29,7 @@ done
 
 # The mapping of roles to nodes. This is used to dinamically adjust
 # salt pillars.
-declare -A ROLES
+declare -A ROLE2NODES
 for node in "${!NODES[@]}"; do
   roles="${NODES[$node]}"
 
@@ -37,16 +37,16 @@ for node in "${!NODES[@]}"; do
   IFS=',' read -ra roles_array <<< "$roles"
 
   for role in "${roles_array[@]}"; do
-    if [ -n "${ROLES[$role]:-}" ]; then
-      ROLES["$role"]="${ROLES[$role]},$node"
+    if [ -n "${ROLE2NODES[$role]:-}" ]; then
+      ROLE2NODES["$role"]="${ROLE2NODES[$role]},$node"
     else
-      ROLES["$role"]=$node
+      ROLE2NODES["$role"]=$node
     fi
   done
 done
 
 # Auto-detects load-balancing mode
-if [ -z "${ROLES['balancer']:-}" ]; then
+if [ -z "${ROLE2NODES['balancer']:-}" ]; then
   ENABLE_BALANCER="no"
 else
   ENABLE_BALANCER="yes"

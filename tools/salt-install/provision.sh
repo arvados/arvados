@@ -10,6 +10,7 @@
 #
 # vagrant up
 
+set -eu
 set -o pipefail
 
 # capture the directory that the script is running from
@@ -115,7 +116,7 @@ arguments() {
               usage
               exit 1
             fi
-            ROLES="${ROLES} ${i}"
+            ROLES="${ROLES:-} ${i}"
           done
           shift 2
         ;;
@@ -267,7 +268,7 @@ if ! grep -qE '^[[:alnum:]]{5}$' <<<${CLUSTER} ; then
 fi
 
 # Only used in single_host/single_name deploys
-if [ ! -z "${HOSTNAME_EXT}" ] ; then
+if [ ! -z "${HOSTNAME_EXT:-}" ] ; then
   # We need to add some extra control vars to manage a single certificate vs. multiple
   USE_SINGLE_HOSTNAME="yes"
   # Make sure that the value configured as IP_INT is a real IP on the system.
@@ -382,13 +383,13 @@ echo "...arvados"
 test -d arvados || git clone --quiet https://git.arvados.org/arvados-formula.git ${F_DIR}/arvados
 
 # If we want to try a specific branch of the formula
-if [ "x${BRANCH}" != "x" ]; then
+if [ "x${BRANCH:-}" != "x" ]; then
   ( cd ${F_DIR}/arvados && git checkout --quiet -t origin/"${BRANCH}" -b "${BRANCH}" )
-elif [ "x${ARVADOS_TAG}" != "x" ]; then
+elif [ "x${ARVADOS_TAG:-}" != "x" ]; then
   ( cd ${F_DIR}/arvados && git checkout --quiet tags/"${ARVADOS_TAG}" -b "${ARVADOS_TAG}" )
 fi
 
-if [ "x${VAGRANT}" = "xyes" ]; then
+if [ "x${VAGRANT:-}" = "xyes" ]; then
   EXTRA_STATES_DIR="/home/vagrant/${CONFIG_DIR}/states"
   SOURCE_PILLARS_DIR="/home/vagrant/${CONFIG_DIR}/pillars"
   SOURCE_TOFS_DIR="/home/vagrant/${CONFIG_DIR}/tofs"
@@ -450,17 +451,17 @@ for f in $(ls "${SOURCE_PILLARS_DIR}"/*); do
        s#__SSL_KEY_ENCRYPTED__#${SSL_KEY_ENCRYPTED}#g;
        s#__SSL_KEY_AWS_REGION__#${SSL_KEY_AWS_REGION}#g;
        s#__SSL_KEY_AWS_SECRET_NAME__#${SSL_KEY_AWS_SECRET_NAME}#g;
-       s#__CONTROLLER_NGINX_WORKERS__#${CONTROLLER_NGINX_WORKERS}#g;
-       s#__CONTROLLER_MAX_CONCURRENT_REQUESTS__#${CONTROLLER_MAX_CONCURRENT_REQUESTS}#g;
+       s#__CONTROLLER_NGINX_WORKERS__#${CONTROLLER_NGINX_WORKERS:-}#g;
+       s#__CONTROLLER_MAX_CONCURRENT_REQUESTS__#${CONTROLLER_MAX_CONCURRENT_REQUESTS:-}#g;
        s#__MONITORING_USERNAME__#${MONITORING_USERNAME}#g;
        s#__MONITORING_EMAIL__#${MONITORING_EMAIL}#g;
        s#__MONITORING_PASSWORD__#${MONITORING_PASSWORD}#g;
        s#__DISPATCHER_SSH_PRIVKEY__#${DISPATCHER_SSH_PRIVKEY//$'\n'/\\n}#g;
        s#__ENABLE_BALANCER__#${ENABLE_BALANCER}#g;
        s#__DISABLED_CONTROLLER__#${DISABLED_CONTROLLER}#g;
-       s#__BALANCER_NODENAME__#${ROLES['balancer']}#g;
-       s#__PROMETHEUS_NODENAME__#${ROLES['monitoring']}#g;
-       s#__CONTROLLER_NODES__#${ROLES['controller']}#g;
+       s#__BALANCER_NODENAME__#${ROLE2NODES['balancer']}#g;
+       s#__PROMETHEUS_NODENAME__#${ROLE2NODES['monitoring']}#g;
+       s#__CONTROLLER_NODES__#${ROLE2NODES['controller']}#g;
        s#__NODELIST__#${NODELIST}#g;
        s#__DISPATCHER_INT_IP__#${DISPATCHER_INT_IP}#g;
        s#__KEEPBALANCE_INT_IP__#${KEEPBALANCE_INT_IP}#g;
@@ -475,7 +476,7 @@ done
 
 if [ ! -d "${SOURCE_TESTS_DIR}" ]; then
   echo "WARNING: The tests directory was not copied to \"${SOURCE_TESTS_DIR}\"."
-  if [ "x${TEST}" = "xyes" ]; then
+  if [ "x${TEST:-}" = "xyes" ]; then
     echo "WARNING: Disabling tests for this installation."
   fi
   TEST="no"
@@ -544,17 +545,17 @@ if [ -d "${SOURCE_STATES_DIR}" ]; then
          s#__SSL_KEY_ENCRYPTED__#${SSL_KEY_ENCRYPTED}#g;
          s#__SSL_KEY_AWS_REGION__#${SSL_KEY_AWS_REGION}#g;
          s#__SSL_KEY_AWS_SECRET_NAME__#${SSL_KEY_AWS_SECRET_NAME}#g;
-         s#__CONTROLLER_NGINX_WORKERS__#${CONTROLLER_NGINX_WORKERS}#g;
-         s#__CONTROLLER_MAX_CONCURRENT_REQUESTS__#${CONTROLLER_MAX_CONCURRENT_REQUESTS}#g;
+         s#__CONTROLLER_NGINX_WORKERS__#${CONTROLLER_NGINX_WORKERS:-}#g;
+         s#__CONTROLLER_MAX_CONCURRENT_REQUESTS__#${CONTROLLER_MAX_CONCURRENT_REQUESTS:-}#g;
          s#__MONITORING_USERNAME__#${MONITORING_USERNAME}#g;
          s#__MONITORING_EMAIL__#${MONITORING_EMAIL}#g;
          s#__MONITORING_PASSWORD__#${MONITORING_PASSWORD}#g;
          s#__DISPATCHER_SSH_PRIVKEY__#${DISPATCHER_SSH_PRIVKEY//$'\n'/\\n}#g;
          s#__ENABLE_BALANCER__#${ENABLE_BALANCER}#g;
          s#__DISABLED_CONTROLLER__#${DISABLED_CONTROLLER}#g;
-         s#__BALANCER_NODENAME__#${ROLES['balancer']}#g;
-         s#__PROMETHEUS_NODENAME__#${ROLES['monitoring']}#g;
-         s#__CONTROLLER_NODES__#${ROLES['controller']}#g;
+         s#__BALANCER_NODENAME__#${ROLE2NODES['balancer']}#g;
+         s#__PROMETHEUS_NODENAME__#${ROLE2NODES['monitoring']}#g;
+         s#__CONTROLLER_NODES__#${ROLE2NODES['controller']}#g;
          s#__NODELIST__#${NODELIST}#g;
          s#__DISPATCHER_INT_IP__#${DISPATCHER_INT_IP}#g;
          s#__KEEPBALANCE_INT_IP__#${KEEPBALANCE_INT_IP}#g;
@@ -778,7 +779,7 @@ else
 
         if [ "${SSL_MODE}" = "lets-encrypt" ]; then
           grep -q "letsencrypt"     ${S_DIR}/top.sls || echo "    - letsencrypt" >> ${S_DIR}/top.sls
-          if [ "x${USE_LETSENCRYPT_ROUTE53}" = "xyes" ]; then
+          if [ "x${USE_LETSENCRYPT_ROUTE53:-}" = "xyes" ]; then
             grep -q "aws_credentials" ${S_DIR}/top.sls || echo "    - aws_credentials" >> ${S_DIR}/top.sls
           fi
         elif [ "${SSL_MODE}" = "bring-your-own" ]; then
@@ -858,7 +859,7 @@ else
 
         if [ "${SSL_MODE}" = "lets-encrypt" ]; then
           grep -q "letsencrypt"     ${S_DIR}/top.sls || echo "    - letsencrypt" >> ${S_DIR}/top.sls
-          if [ "x${USE_LETSENCRYPT_ROUTE53}" = "xyes" ]; then
+          if [ "x${USE_LETSENCRYPT_ROUTE53:-}" = "xyes" ]; then
             grep -q "aws_credentials" ${S_DIR}/top.sls || echo "    - aws_credentials" >> ${S_DIR}/top.sls
           fi
         elif [ "${SSL_MODE}" = "bring-your-own" ]; then
@@ -872,9 +873,9 @@ else
           grep -q "letsencrypt"     ${P_DIR}/top.sls || echo "    - letsencrypt" >> ${P_DIR}/top.sls
 
           grep -q "letsencrypt_${R}_configuration" ${P_DIR}/top.sls || echo "    - letsencrypt_${R}_configuration" >> ${P_DIR}/top.sls
-          sed -i "s/__CERT_REQUIRES__/cmd: create-initial-cert-${ROLES['balancer']}*/g;
-                  s#__CERT_PEM__#/etc/letsencrypt/live/${ROLES['balancer']}/fullchain.pem#g;
-                  s#__CERT_KEY__#/etc/letsencrypt/live/${ROLES['balancer']}/privkey.pem#g" \
+          sed -i "s/__CERT_REQUIRES__/cmd: create-initial-cert-${ROLE2NODES['balancer']}*/g;
+                  s#__CERT_PEM__#/etc/letsencrypt/live/${ROLE2NODES['balancer']}/fullchain.pem#g;
+                  s#__CERT_KEY__#/etc/letsencrypt/live/${ROLE2NODES['balancer']}/privkey.pem#g" \
           ${P_DIR}/nginx_${R}_configuration.sls
 
           if [ "${USE_LETSENCRYPT_ROUTE53}" = "yes" ]; then
@@ -896,7 +897,7 @@ else
 
         if [ "${ENABLE_BALANCER}" == "no" ]; then
           if [ "${SSL_MODE}" = "lets-encrypt" ]; then
-            if [ "x${USE_LETSENCRYPT_ROUTE53}" = "xyes" ]; then
+            if [ "x${USE_LETSENCRYPT_ROUTE53:-}" = "xyes" ]; then
               grep -q "aws_credentials" ${S_DIR}/top.sls || echo "    - aws_credentials" >> ${S_DIR}/top.sls
             fi
             grep -q "letsencrypt"     ${S_DIR}/top.sls || echo "    - letsencrypt" >> ${S_DIR}/top.sls
@@ -948,7 +949,7 @@ else
         fi
 
         if [ "${SSL_MODE}" = "lets-encrypt" ]; then
-          if [ "x${USE_LETSENCRYPT_ROUTE53}" = "xyes" ]; then
+          if [ "x${USE_LETSENCRYPT_ROUTE53:-}" = "xyes" ]; then
             grep -q "aws_credentials" ${S_DIR}/top.sls || echo "    - aws_credentials" >> ${S_DIR}/top.sls
           fi
           grep -q "letsencrypt"     ${S_DIR}/top.sls || echo "    - letsencrypt" >> ${S_DIR}/top.sls
@@ -1068,21 +1069,21 @@ fi
 # Leave a copy of the Arvados CA so the user can copy it where it's required
 if [ "${SSL_MODE}" = "self-signed" ]; then
   echo "Copying the Arvados CA certificate '${DOMAIN}-arvados-snakeoil-ca.crt' to the installer dir, so you can import it"
-  if [ "x${VAGRANT}" = "xyes" ]; then
+  if [ "x${VAGRANT:-}" = "xyes" ]; then
     cp /etc/ssl/certs/arvados-snakeoil-ca.pem /vagrant/${DOMAIN}-arvados-snakeoil-ca.pem
   else
     cp /etc/ssl/certs/arvados-snakeoil-ca.pem ${SCRIPT_DIR}/${DOMAIN}-arvados-snakeoil-ca.crt
   fi
 fi
 
-if [ "x${VAGRANT}" = "xyes" ]; then
+if [ "x${VAGRANT:-}" = "xyes" ]; then
     # If running in a vagrant VM, also add default user to docker group
     echo "Adding the vagrant user to the docker group"
     usermod -a -G docker vagrant
 fi
 
 # Test that the installation finished correctly
-if [ "x${TEST}" = "xyes" ]; then
+if [ "x${TEST:-}" = "xyes" ]; then
   cd ${T_DIR}
   # If we use RVM, we need to run this with it, or most ruby commands will fail
   RVM_EXEC=""
