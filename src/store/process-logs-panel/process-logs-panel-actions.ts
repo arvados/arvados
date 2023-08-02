@@ -237,7 +237,7 @@ const mergeSortLogFragments = (logFragments: LogFragment[]): string[] => {
         .filter((fragment) => (NON_SORTED_LOG_TYPES.includes(fragment.logType)))
         .sort((a, b) => (a.logType.localeCompare(b.logType))));
 
-    return [...sortableLines.sort(sortLogLines), ...nonSortableLines]
+    return [...nonSortableLines, ...sortableLines.sort(sortLogLines)]
 };
 
 const sortLogLines = (a: string, b: string) => {

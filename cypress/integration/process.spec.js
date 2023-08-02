@@ -576,24 +576,24 @@ describe('Process tests', function() {
                     // Switch to All logs
                     cy.get('[data-cy=process-logs-filter]').click();
                     cy.get('body').contains('li', 'All logs').click();
-                    // Verify sorted logs
-                    cy.get('[data-cy=process-logs] pre')
-                        .eq(0).should('contain', '2023-07-18T20:14:48.128642814Z first');
-                    cy.get('[data-cy=process-logs] pre')
-                        .eq(1).should('contain', '2023-07-18T20:14:48.528642814Z second');
-                    cy.get('[data-cy=process-logs] pre')
-                        .eq(2).should('contain', '2023-07-18T20:14:49.128642814Z third');
                     // Verify non-sorted lines were preserved
                     cy.get('[data-cy=process-logs] pre')
-                        .eq(3).should('contain', '3: nodeinfo 1');
+                        .eq(0).should('contain', '3: nodeinfo 1');
                     cy.get('[data-cy=process-logs] pre')
-                        .eq(4).should('contain', '2: nodeinfo 2');
+                        .eq(1).should('contain', '2: nodeinfo 2');
                     cy.get('[data-cy=process-logs] pre')
-                        .eq(5).should('contain', '1: nodeinfo 3');
+                        .eq(2).should('contain', '1: nodeinfo 3');
                     cy.get('[data-cy=process-logs] pre')
-                        .eq(6).should('contain', '2: nodeinfo 4');
+                        .eq(3).should('contain', '2: nodeinfo 4');
                     cy.get('[data-cy=process-logs] pre')
-                        .eq(7).should('contain', '3: nodeinfo 5');
+                        .eq(4).should('contain', '3: nodeinfo 5');
+                    // Verify sorted logs
+                    cy.get('[data-cy=process-logs] pre')
+                        .eq(5).should('contain', '2023-07-18T20:14:48.128642814Z first');
+                    cy.get('[data-cy=process-logs] pre')
+                        .eq(6).should('contain', '2023-07-18T20:14:48.528642814Z second');
+                    cy.get('[data-cy=process-logs] pre')
+                        .eq(7).should('contain', '2023-07-18T20:14:49.128642814Z third');
                 });
             });
         });
