@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"git.arvados.org/arvados.git/sdk/go/arvados"
+	"github.com/prometheus/client_golang/prometheus"
 	"github.com/sirupsen/logrus"
 	"golang.org/x/crypto/ssh"
 )
@@ -191,7 +192,7 @@ type InitCommand string
 //
 //	type exampleDriver struct {}
 //
-//	func (*exampleDriver) InstanceSet(config json.RawMessage, id cloud.InstanceSetID, tags cloud.SharedResourceTags, logger logrus.FieldLogger) (cloud.InstanceSet, error) {
+//	func (*exampleDriver) InstanceSet(config json.RawMessage, id cloud.InstanceSetID, tags cloud.SharedResourceTags, logger logrus.FieldLogger, reg *prometheus.Registry) (cloud.InstanceSet, error) {
 //		var is exampleInstanceSet
 //		if err := json.Unmarshal(config, &is); err != nil {
 //			return nil, err
@@ -199,20 +200,18 @@ type InitCommand string
 //		is.ownID = id
 //		return &is, nil
 //	}
-//
-//	var _ = registerCloudDriver("example", &exampleDriver{})
 type Driver interface {
-	InstanceSet(config json.RawMessage, id InstanceSetID, tags SharedResourceTags, logger logrus.FieldLogger) (InstanceSet, error)
+	InstanceSet(config json.RawMessage, id InstanceSetID, tags SharedResourceTags, logger logrus.FieldLogger, reg *prometheus.Registry) (InstanceSet, error)
 }
 
 // DriverFunc makes a Driver using the provided function as its
 // InstanceSet method. This is similar to http.HandlerFunc.
-func DriverFunc(fn func(config json.RawMessage, id InstanceSetID, tags SharedResourceTags, logger logrus.FieldLogger) (InstanceSet, error)) Driver {
+func DriverFunc(fn func(config json.RawMessage, id InstanceSetID, tags SharedResourceTags, logger logrus.FieldLogger, reg *prometheus.Registry) (InstanceSet, error)) Driver {
 	return driverFunc(fn)
 }
 
-type driverFunc func(config json.RawMessage, id InstanceSetID, tags SharedResourceTags, logger logrus.FieldLogger) (InstanceSet, error)
+type driverFunc func(config json.RawMessage, id InstanceSetID, tags SharedResourceTags, logger logrus.FieldLogger, reg *prometheus.Registry) (InstanceSet, error)
 
-func (df driverFunc) InstanceSet(config json.RawMessage, id InstanceSetID, tags SharedResourceTags, logger logrus.FieldLogger) (InstanceSet, error) {
-	return df(config, id, tags, logger)
+func (df driverFunc) InstanceSet(config json.RawMessage, id InstanceSetID, tags SharedResourceTags, logger logrus.FieldLogger, reg *prometheus.Registry) (InstanceSet, error) {
+	return df(config, id, tags, logger, reg)
 }

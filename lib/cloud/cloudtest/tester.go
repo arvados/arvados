@@ -64,7 +64,7 @@ func (t *tester) Run() bool {
 	deferredError := false
 
 	var err error
-	t.is, err = t.Driver.InstanceSet(t.DriverParameters, t.SetID, t.Tags, t.Logger)
+	t.is, err = t.Driver.InstanceSet(t.DriverParameters, t.SetID, t.Tags, t.Logger, nil)
 	if err != nil {
 		t.Logger.WithError(err).Info("error initializing driver")
 		return false

@@ -246,7 +246,7 @@ func GetInstanceSet(c *check.C) (*ec2InstanceSet, cloud.ImageID, arvados.Cluster
 		err := config.LoadFile(&exampleCfg, *live)
 		c.Assert(err, check.IsNil)
 
-		ap, err := newEC2InstanceSet(exampleCfg.DriverParameters, "test123", nil, logrus.StandardLogger())
+		ap, err := newEC2InstanceSet(exampleCfg.DriverParameters, "test123", nil, logrus.StandardLogger(), nil)
 		c.Assert(err, check.IsNil)
 		return ap.(*ec2InstanceSet), cloud.ImageID(exampleCfg.ImageIDForTestSuite), cluster
 	}
