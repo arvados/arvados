@@ -26,7 +26,6 @@ usage() {
   echo >&2 "  -t, --test                                  Test installation running a CWL workflow"
   echo >&2 "  -r, --roles                                 List of Arvados roles to apply to the host, comma separated"
   echo >&2 "                                              Possible values are:"
-  echo >&2 "                                                api"
   echo >&2 "                                                balancer"
   echo >&2 "                                                controller"
   echo >&2 "                                                dispatcher"
@@ -111,7 +110,7 @@ arguments() {
         for i in ${2//,/ }
           do
             # Verify the role exists
-            if [[ ! "database,api,balancer,controller,keepstore,websocket,keepweb,workbench2,webshell,keepbalance,keepproxy,shell,workbench,dispatcher,monitoring" == *"$i"* ]]; then
+            if [[ ! "database,balancer,controller,keepstore,websocket,keepweb,workbench2,webshell,keepbalance,keepproxy,shell,workbench,dispatcher,monitoring" == *"$i"* ]]; then
               echo "The role '${i}' is not a valid role"
               usage
               exit 1
@@ -768,43 +767,6 @@ else
           done
         fi
       ;;
-      "api")
-        # States
-        grep -q "    - logrotate" ${STATES_TOP} || echo "    - logrotate" >> ${STATES_TOP}
-        if grep -q "    - nginx.*$" ${STATES_TOP}; then
-          sed -i s/"^    - nginx.*$"/"    - nginx.passenger"/g ${STATES_TOP}
-        else
-          echo "    - nginx.passenger" >> ${STATES_TOP}
-        fi
-        echo "    - extra.passenger_rvm" >> ${STATES_TOP}
-        ### If we don't install and run LE before arvados-api-server, it fails and breaks everything
-        ### after it. So we add this here as we are, after all, sharing the host for api and controller
-        if [ "${ENABLE_BALANCER}" == "no" ]; then
-          if [ "${SSL_MODE}" = "lets-encrypt" ]; then
-            if [ "${USE_LETSENCRYPT_ROUTE53}" = "yes" ]; then
-              grep -q "aws_credentials" ${STATES_TOP} || echo "    - aws_credentials" >> ${STATES_TOP}
-            fi
-            grep -q "letsencrypt" ${STATES_TOP} || echo "    - letsencrypt" >> ${STATES_TOP}
-          else
-            # Use custom certs
-            if [ "${SSL_MODE}" = "bring-your-own" ]; then
-              copy_custom_cert ${CUSTOM_CERTS_DIR} controller
-            fi
-            grep -q controller ${P_DIR}/extra_custom_certs.sls || echo "  - controller" >> ${P_DIR}/extra_custom_certs.sls
-          fi
-        fi
-        grep -q "arvados.${R}" ${STATES_TOP}    || echo "    - arvados.${R}" >> ${STATES_TOP}
-        # Pillars
-        grep -q "logrotate_api" ${PILLARS_TOP}            || echo "    - logrotate_api" >> ${PILLARS_TOP}
-        grep -q "aws_credentials" ${PILLARS_TOP}          || echo "    - aws_credentials" >> ${PILLARS_TOP}
-        grep -q "postgresql" ${PILLARS_TOP}               || echo "    - postgresql" >> ${PILLARS_TOP}
-        grep -q "nginx_passenger" ${PILLARS_TOP}          || echo "    - nginx_passenger" >> ${PILLARS_TOP}
-        grep -q "nginx_${R}_configuration" ${PILLARS_TOP} || echo "    - nginx_${R}_configuration" >> ${PILLARS_TOP}
-
-        # We need to tweak the Nginx's pillar depending whether we want plain nginx or nginx+passenger
-        NGINX_INSTALL_SOURCE="install_from_phusionpassenger"
-        sed -i "s/__NGINX_INSTALL_SOURCE__/${NGINX_INSTALL_SOURCE}/g" ${P_DIR}/nginx_passenger.sls
-      ;;
       "balancer")
         ### States ###
         grep -q "\- nginx$" ${STATES_TOP} || echo "    - nginx" >> ${STATES_TOP}
@@ -844,9 +806,16 @@ else
       ;;
       "controller")
         ### States ###
-        grep -q "\- nginx$" ${STATES_TOP} || echo "    - nginx" >> ${STATES_TOP}
-        grep -q "arvados.${R}" ${STATES_TOP} || echo "    - arvados.${R}" >> ${STATES_TOP}
+        grep -q "    - logrotate" ${STATES_TOP} || echo "    - logrotate" >> ${STATES_TOP}
+        if grep -q "    - nginx.*$" ${STATES_TOP}; then
+          sed -i s/"^    - nginx.*$"/"    - nginx.passenger"/g ${STATES_TOP}
+        else
+          echo "    - nginx.passenger" >> ${STATES_TOP}
+        fi
+        echo "    - extra.passenger_rvm" >> ${STATES_TOP}
 
+        ### If we don't install and run LE before arvados-api-server, it fails and breaks everything
+        ### after it. So we add this here as we are, after all, sharing the host for api and controller
         if [ "${ENABLE_BALANCER}" == "no" ]; then
           if [ "${SSL_MODE}" = "lets-encrypt" ]; then
             if [ "x${USE_LETSENCRYPT_ROUTE53:-}" = "xyes" ]; then
@@ -855,12 +824,19 @@ else
             grep -q "letsencrypt"     ${STATES_TOP} || echo "    - letsencrypt" >> ${STATES_TOP}
           elif [ "${SSL_MODE}" = "bring-your-own" ]; then
             copy_custom_cert ${CUSTOM_CERTS_DIR} ${R}
+            grep -q controller ${P_DIR}/extra_custom_certs.sls || echo "  - controller" >> ${P_DIR}/extra_custom_certs.sls
           fi
         fi
+        grep -q "arvados.api" ${STATES_TOP} || echo "    - arvados.api" >> ${STATES_TOP}
+        grep -q "arvados.controller" ${STATES_TOP} || echo "    - arvados.controller" >> ${STATES_TOP}
 
         ### Pillars ###
+        grep -q "logrotate_api" ${PILLARS_TOP}            || echo "    - logrotate_api" >> ${PILLARS_TOP}
+        grep -q "aws_credentials" ${PILLARS_TOP}          || echo "    - aws_credentials" >> ${PILLARS_TOP}
+        grep -q "postgresql" ${PILLARS_TOP}               || echo "    - postgresql" >> ${PILLARS_TOP}
         grep -q "nginx_passenger" ${PILLARS_TOP}          || echo "    - nginx_passenger" >> ${PILLARS_TOP}
-        grep -q "nginx_${R}_configuration" ${PILLARS_TOP} || echo "    - nginx_${R}_configuration" >> ${PILLARS_TOP}
+        grep -q "nginx_api_configuration" ${PILLARS_TOP} || echo "    - nginx_api_configuration" >> ${PILLARS_TOP}
+        grep -q "nginx_controller_configuration" ${PILLARS_TOP} || echo "    - nginx_controller_configuration" >> ${PILLARS_TOP}
 
         if [ "${ENABLE_BALANCER}" == "no" ]; then
           if [ "${SSL_MODE}" = "lets-encrypt" ]; then
@@ -884,6 +860,7 @@ else
           fi
         fi
         # We need to tweak the Nginx's pillar depending whether we want plain nginx or nginx+passenger
+        NGINX_INSTALL_SOURCE="install_from_phusionpassenger"
         sed -i "s/__NGINX_INSTALL_SOURCE__/${NGINX_INSTALL_SOURCE}/g" ${P_DIR}/nginx_passenger.sls
       ;;
       "websocket" | "workbench" | "workbench2" | "webshell" | "keepweb" | "keepproxy")

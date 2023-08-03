@@ -307,7 +307,7 @@ case "$subcmd" in
 	    for NODE in "${!NODES[@]}"
 	    do
 		# then 'balancer' role
-		if [[ "${NODES[$NODE]}" =~ (balancer) ]] ; then
+		if [[ "${NODES[$NODE]}" =~ balancer ]] ; then
 		    deploynode $NODE "${NODES[$NODE]}"
 		    unset NODES[$NODE]
 		fi
@@ -315,8 +315,8 @@ case "$subcmd" in
 
 	    for NODE in "${!NODES[@]}"
 	    do
-		# then 'api' or 'controller' roles
-		if [[ "${NODES[$NODE]}" =~ (api|controller) ]] ; then
+		# then 'controller' role
+		if [[ "${NODES[$NODE]}" =~ controller ]] ; then
 		    deploynode $NODE "${NODES[$NODE]}"
 		    unset NODES[$NODE]
 		fi
