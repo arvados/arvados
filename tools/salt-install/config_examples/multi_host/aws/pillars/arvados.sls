@@ -3,7 +3,8 @@
 #
 # SPDX-License-Identifier: AGPL-3.0
 
-{%- set max_reqs = "__CONTROLLER_MAX_CONCURRENT_REQUESTS__" %}
+{%- set max_workers = ("__CONTROLLER_MAX_WORKERS__" or grains['num_cpus'])|int %}
+{%- set max_reqs = ("__CONTROLLER_MAX_QUEUED_REQUESTS__" or 128)|int %}
 
 # The variables commented out are the default values that the formula uses.
 # The uncommented values are REQUIRED values. If you don't set them, running
@@ -110,10 +111,9 @@ arvados:
             Password: __INITIAL_USER_PASSWORD__
 
     ### API
-    {%- if max_reqs != "" %}
     API:
-      MaxConcurrentRequests: {{ max_reqs|int }}
-    {%- endif %}
+      MaxConcurrentRequests: {{ max_workers * 2 }}
+      MaxQueuedRequests: {{ max_reqs }}
 
     ### CONTAINERS
     {%- set dispatcher_ssh_privkey = "__DISPATCHER_SSH_PRIVKEY__" %}
