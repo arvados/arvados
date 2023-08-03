@@ -160,6 +160,71 @@ copy_custom_cert() {
   fi
 }
 
+apply_var_substitutions() {
+  local SRCFILE=$1
+  local DSTFILE=$2
+  sed "s#__ANONYMOUS_USER_TOKEN__#${ANONYMOUS_USER_TOKEN}#g;
+       s#__BLOB_SIGNING_KEY__#${BLOB_SIGNING_KEY}#g;
+       s#__CONTROLLER_EXT_SSL_PORT__#${CONTROLLER_EXT_SSL_PORT}#g;
+       s#__CLUSTER__#${CLUSTER}#g;
+       s#__DOMAIN__#${DOMAIN}#g;
+       s#__HOSTNAME_EXT__#${HOSTNAME_EXT}#g;
+       s#__IP_INT__#${IP_INT}#g;
+       s#__INITIAL_USER_EMAIL__#${INITIAL_USER_EMAIL}#g;
+       s#__INITIAL_USER_PASSWORD__#${INITIAL_USER_PASSWORD}#g;
+       s#__INITIAL_USER__#${INITIAL_USER}#g;
+       s#__LE_AWS_REGION__#${LE_AWS_REGION}#g;
+       s#__LE_AWS_SECRET_ACCESS_KEY__#${LE_AWS_SECRET_ACCESS_KEY}#g;
+       s#__LE_AWS_ACCESS_KEY_ID__#${LE_AWS_ACCESS_KEY_ID}#g;
+       s#__DATABASE_PASSWORD__#${DATABASE_PASSWORD}#g;
+       s#__KEEPWEB_EXT_SSL_PORT__#${KEEPWEB_EXT_SSL_PORT}#g;
+       s#__KEEP_EXT_SSL_PORT__#${KEEP_EXT_SSL_PORT}#g;
+       s#__MANAGEMENT_TOKEN__#${MANAGEMENT_TOKEN}#g;
+       s#__RELEASE__#${RELEASE}#g;
+       s#__SYSTEM_ROOT_TOKEN__#${SYSTEM_ROOT_TOKEN}#g;
+       s#__VERSION__#${VERSION}#g;
+       s#__WEBSHELL_EXT_SSL_PORT__#${WEBSHELL_EXT_SSL_PORT}#g;
+       s#__WEBSOCKET_EXT_SSL_PORT__#${WEBSOCKET_EXT_SSL_PORT}#g;
+       s#__WORKBENCH1_EXT_SSL_PORT__#${WORKBENCH1_EXT_SSL_PORT}#g;
+       s#__WORKBENCH2_EXT_SSL_PORT__#${WORKBENCH2_EXT_SSL_PORT}#g;
+       s#__CLUSTER_INT_CIDR__#${CLUSTER_INT_CIDR}#g;
+       s#__CONTROLLER_INT_IP__#${CONTROLLER_INT_IP}#g;
+       s#__WEBSOCKET_INT_IP__#${WEBSOCKET_INT_IP}#g;
+       s#__KEEP_INT_IP__#${KEEP_INT_IP}#g;
+       s#__KEEPSTORE0_INT_IP__#${KEEPSTORE0_INT_IP}#g;
+       s#__KEEPWEB_INT_IP__#${KEEPWEB_INT_IP}#g;
+       s#__WEBSHELL_INT_IP__#${WEBSHELL_INT_IP}#g;
+       s#__SHELL_INT_IP__#${SHELL_INT_IP}#g;
+       s#__WORKBENCH1_INT_IP__#${WORKBENCH1_INT_IP}#g;
+       s#__WORKBENCH2_INT_IP__#${WORKBENCH2_INT_IP}#g;
+       s#__DATABASE_INT_IP__#${DATABASE_INT_IP}#g;
+       s#__WORKBENCH_SECRET_KEY__#${WORKBENCH_SECRET_KEY}#g;
+       s#__SSL_KEY_ENCRYPTED__#${SSL_KEY_ENCRYPTED}#g;
+       s#__SSL_KEY_AWS_REGION__#${SSL_KEY_AWS_REGION}#g;
+       s#__SSL_KEY_AWS_SECRET_NAME__#${SSL_KEY_AWS_SECRET_NAME}#g;
+       s#__CONTROLLER_NGINX_WORKERS__#${CONTROLLER_NGINX_WORKERS:-}#g;
+       s#__CONTROLLER_MAX_CONCURRENT_REQUESTS__#${CONTROLLER_MAX_CONCURRENT_REQUESTS:-}#g;
+       s#__MONITORING_USERNAME__#${MONITORING_USERNAME}#g;
+       s#__MONITORING_EMAIL__#${MONITORING_EMAIL}#g;
+       s#__MONITORING_PASSWORD__#${MONITORING_PASSWORD}#g;
+       s#__DISPATCHER_SSH_PRIVKEY__#${DISPATCHER_SSH_PRIVKEY//$'\n'/\\n}#g;
+       s#__ENABLE_BALANCER__#${ENABLE_BALANCER}#g;
+       s#__DISABLED_CONTROLLER__#${DISABLED_CONTROLLER}#g;
+       s#__BALANCER_NODENAME__#${ROLE2NODES['balancer']}#g;
+       s#__PROMETHEUS_NODENAME__#${ROLE2NODES['monitoring']}#g;
+       s#__CONTROLLER_NODES__#${ROLE2NODES['controller']}#g;
+       s#__NODELIST__#${NODELIST}#g;
+       s#__DISPATCHER_INT_IP__#${DISPATCHER_INT_IP}#g;
+       s#__KEEPBALANCE_INT_IP__#${KEEPBALANCE_INT_IP}#g;
+       s#__COMPUTE_AMI__#${COMPUTE_AMI}#g;
+       s#__COMPUTE_SG__#${COMPUTE_SG}#g;
+       s#__COMPUTE_SUBNET__#${COMPUTE_SUBNET}#g;
+       s#__COMPUTE_AWS_REGION__#${COMPUTE_AWS_REGION}#g;
+       s#__COMPUTE_USER__#${COMPUTE_USER}#g;
+       s#__KEEP_AWS_REGION__#${KEEP_AWS_REGION}#g" \
+  "${SRCFILE}" > "${DSTFILE}"
+}
+
 DEV_MODE="no"
 CONFIG_FILE="${SCRIPT_DIR}/local.params"
 CONFIG_DIR="local_config_dir"
@@ -412,66 +477,7 @@ if [ ! -d "${SOURCE_PILLARS_DIR}" ]; then
   exit 1
 fi
 for f in $(ls "${SOURCE_PILLARS_DIR}"/*); do
-  sed "s#__ANONYMOUS_USER_TOKEN__#${ANONYMOUS_USER_TOKEN}#g;
-       s#__BLOB_SIGNING_KEY__#${BLOB_SIGNING_KEY}#g;
-       s#__CONTROLLER_EXT_SSL_PORT__#${CONTROLLER_EXT_SSL_PORT}#g;
-       s#__CLUSTER__#${CLUSTER}#g;
-       s#__DOMAIN__#${DOMAIN}#g;
-       s#__HOSTNAME_EXT__#${HOSTNAME_EXT}#g;
-       s#__IP_INT__#${IP_INT}#g;
-       s#__INITIAL_USER_EMAIL__#${INITIAL_USER_EMAIL}#g;
-       s#__INITIAL_USER_PASSWORD__#${INITIAL_USER_PASSWORD}#g;
-       s#__INITIAL_USER__#${INITIAL_USER}#g;
-       s#__LE_AWS_REGION__#${LE_AWS_REGION}#g;
-       s#__LE_AWS_SECRET_ACCESS_KEY__#${LE_AWS_SECRET_ACCESS_KEY}#g;
-       s#__LE_AWS_ACCESS_KEY_ID__#${LE_AWS_ACCESS_KEY_ID}#g;
-       s#__DATABASE_PASSWORD__#${DATABASE_PASSWORD}#g;
-       s#__KEEPWEB_EXT_SSL_PORT__#${KEEPWEB_EXT_SSL_PORT}#g;
-       s#__KEEP_EXT_SSL_PORT__#${KEEP_EXT_SSL_PORT}#g;
-       s#__MANAGEMENT_TOKEN__#${MANAGEMENT_TOKEN}#g;
-       s#__RELEASE__#${RELEASE}#g;
-       s#__SYSTEM_ROOT_TOKEN__#${SYSTEM_ROOT_TOKEN}#g;
-       s#__VERSION__#${VERSION}#g;
-       s#__WEBSHELL_EXT_SSL_PORT__#${WEBSHELL_EXT_SSL_PORT}#g;
-       s#__WEBSOCKET_EXT_SSL_PORT__#${WEBSOCKET_EXT_SSL_PORT}#g;
-       s#__WORKBENCH1_EXT_SSL_PORT__#${WORKBENCH1_EXT_SSL_PORT}#g;
-       s#__WORKBENCH2_EXT_SSL_PORT__#${WORKBENCH2_EXT_SSL_PORT}#g;
-       s#__CLUSTER_INT_CIDR__#${CLUSTER_INT_CIDR}#g;
-       s#__CONTROLLER_INT_IP__#${CONTROLLER_INT_IP}#g;
-       s#__WEBSOCKET_INT_IP__#${WEBSOCKET_INT_IP}#g;
-       s#__KEEP_INT_IP__#${KEEP_INT_IP}#g;
-       s#__KEEPSTORE0_INT_IP__#${KEEPSTORE0_INT_IP}#g;
-       s#__KEEPWEB_INT_IP__#${KEEPWEB_INT_IP}#g;
-       s#__WEBSHELL_INT_IP__#${WEBSHELL_INT_IP}#g;
-       s#__SHELL_INT_IP__#${SHELL_INT_IP}#g;
-       s#__WORKBENCH1_INT_IP__#${WORKBENCH1_INT_IP}#g;
-       s#__WORKBENCH2_INT_IP__#${WORKBENCH2_INT_IP}#g;
-       s#__DATABASE_INT_IP__#${DATABASE_INT_IP}#g;
-       s#__WORKBENCH_SECRET_KEY__#${WORKBENCH_SECRET_KEY}#g;
-       s#__SSL_KEY_ENCRYPTED__#${SSL_KEY_ENCRYPTED}#g;
-       s#__SSL_KEY_AWS_REGION__#${SSL_KEY_AWS_REGION}#g;
-       s#__SSL_KEY_AWS_SECRET_NAME__#${SSL_KEY_AWS_SECRET_NAME}#g;
-       s#__CONTROLLER_NGINX_WORKERS__#${CONTROLLER_NGINX_WORKERS:-}#g;
-       s#__CONTROLLER_MAX_CONCURRENT_REQUESTS__#${CONTROLLER_MAX_CONCURRENT_REQUESTS:-}#g;
-       s#__MONITORING_USERNAME__#${MONITORING_USERNAME}#g;
-       s#__MONITORING_EMAIL__#${MONITORING_EMAIL}#g;
-       s#__MONITORING_PASSWORD__#${MONITORING_PASSWORD}#g;
-       s#__DISPATCHER_SSH_PRIVKEY__#${DISPATCHER_SSH_PRIVKEY//$'\n'/\\n}#g;
-       s#__ENABLE_BALANCER__#${ENABLE_BALANCER}#g;
-       s#__DISABLED_CONTROLLER__#${DISABLED_CONTROLLER}#g;
-       s#__BALANCER_NODENAME__#${ROLE2NODES['balancer']}#g;
-       s#__PROMETHEUS_NODENAME__#${ROLE2NODES['monitoring']}#g;
-       s#__CONTROLLER_NODES__#${ROLE2NODES['controller']}#g;
-       s#__NODELIST__#${NODELIST}#g;
-       s#__DISPATCHER_INT_IP__#${DISPATCHER_INT_IP}#g;
-       s#__KEEPBALANCE_INT_IP__#${KEEPBALANCE_INT_IP}#g;
-       s#__COMPUTE_AMI__#${COMPUTE_AMI}#g;
-       s#__COMPUTE_SG__#${COMPUTE_SG}#g;
-       s#__COMPUTE_SUBNET__#${COMPUTE_SUBNET}#g;
-       s#__COMPUTE_AWS_REGION__#${COMPUTE_AWS_REGION}#g;
-       s#__COMPUTE_USER__#${COMPUTE_USER}#g;
-       s#__KEEP_AWS_REGION__#${KEEP_AWS_REGION}#g" \
-  "${f}" > "${P_DIR}"/$(basename "${f}")
+  apply_var_substitutions "${f}" "${P_DIR}"/$(basename "${f}")
 done
 
 if [ ! -d "${SOURCE_TESTS_DIR}" ]; then
@@ -509,63 +515,7 @@ if [ -d "${SOURCE_STATES_DIR}" ]; then
   rm -f "${F_DIR}"/extra/extra/*
 
   for f in $(ls "${SOURCE_STATES_DIR}"/*); do
-    sed "s#__ANONYMOUS_USER_TOKEN__#${ANONYMOUS_USER_TOKEN}#g;
-         s#__CLUSTER__#${CLUSTER}#g;
-         s#__BLOB_SIGNING_KEY__#${BLOB_SIGNING_KEY}#g;
-         s#__CONTROLLER_EXT_SSL_PORT__#${CONTROLLER_EXT_SSL_PORT}#g;
-         s#__DOMAIN__#${DOMAIN}#g;
-         s#__HOSTNAME_EXT__#${HOSTNAME_EXT}#g;
-         s#__IP_INT__#${IP_INT}#g;
-         s#__INITIAL_USER_EMAIL__#${INITIAL_USER_EMAIL}#g;
-         s#__INITIAL_USER_PASSWORD__#${INITIAL_USER_PASSWORD}#g;
-         s#__INITIAL_USER__#${INITIAL_USER}#g;
-         s#__DATABASE_PASSWORD__#${DATABASE_PASSWORD}#g;
-         s#__KEEPWEB_EXT_SSL_PORT__#${KEEPWEB_EXT_SSL_PORT}#g;
-         s#__KEEP_EXT_SSL_PORT__#${KEEP_EXT_SSL_PORT}#g;
-         s#__MANAGEMENT_TOKEN__#${MANAGEMENT_TOKEN}#g;
-         s#__RELEASE__#${RELEASE}#g;
-         s#__SYSTEM_ROOT_TOKEN__#${SYSTEM_ROOT_TOKEN}#g;
-         s#__VERSION__#${VERSION}#g;
-         s#__CLUSTER_INT_CIDR__#${CLUSTER_INT_CIDR}#g;
-         s#__CONTROLLER_INT_IP__#${CONTROLLER_INT_IP}#g;
-         s#__WEBSOCKET_INT_IP__#${WEBSOCKET_INT_IP}#g;
-         s#__KEEP_INT_IP__#${KEEP_INT_IP}#g;
-         s#__KEEPSTORE0_INT_IP__#${KEEPSTORE0_INT_IP}#g;
-         s#__KEEPWEB_INT_IP__#${KEEPWEB_INT_IP}#g;
-         s#__WEBSHELL_INT_IP__#${WEBSHELL_INT_IP}#g;
-         s#__WORKBENCH1_INT_IP__#${WORKBENCH1_INT_IP}#g;
-         s#__WORKBENCH2_INT_IP__#${WORKBENCH2_INT_IP}#g;
-         s#__DATABASE_INT_IP__#${DATABASE_INT_IP}#g;
-         s#__WEBSHELL_EXT_SSL_PORT__#${WEBSHELL_EXT_SSL_PORT}#g;
-         s#__SHELL_INT_IP__#${SHELL_INT_IP}#g;
-         s#__WEBSOCKET_EXT_SSL_PORT__#${WEBSOCKET_EXT_SSL_PORT}#g;
-         s#__WORKBENCH1_EXT_SSL_PORT__#${WORKBENCH1_EXT_SSL_PORT}#g;
-         s#__WORKBENCH2_EXT_SSL_PORT__#${WORKBENCH2_EXT_SSL_PORT}#g;
-         s#__WORKBENCH_SECRET_KEY__#${WORKBENCH_SECRET_KEY}#g;
-         s#__SSL_KEY_ENCRYPTED__#${SSL_KEY_ENCRYPTED}#g;
-         s#__SSL_KEY_AWS_REGION__#${SSL_KEY_AWS_REGION}#g;
-         s#__SSL_KEY_AWS_SECRET_NAME__#${SSL_KEY_AWS_SECRET_NAME}#g;
-         s#__CONTROLLER_NGINX_WORKERS__#${CONTROLLER_NGINX_WORKERS:-}#g;
-         s#__CONTROLLER_MAX_CONCURRENT_REQUESTS__#${CONTROLLER_MAX_CONCURRENT_REQUESTS:-}#g;
-         s#__MONITORING_USERNAME__#${MONITORING_USERNAME}#g;
-         s#__MONITORING_EMAIL__#${MONITORING_EMAIL}#g;
-         s#__MONITORING_PASSWORD__#${MONITORING_PASSWORD}#g;
-         s#__DISPATCHER_SSH_PRIVKEY__#${DISPATCHER_SSH_PRIVKEY//$'\n'/\\n}#g;
-         s#__ENABLE_BALANCER__#${ENABLE_BALANCER}#g;
-         s#__DISABLED_CONTROLLER__#${DISABLED_CONTROLLER}#g;
-         s#__BALANCER_NODENAME__#${ROLE2NODES['balancer']}#g;
-         s#__PROMETHEUS_NODENAME__#${ROLE2NODES['monitoring']}#g;
-         s#__CONTROLLER_NODES__#${ROLE2NODES['controller']}#g;
-         s#__NODELIST__#${NODELIST}#g;
-         s#__DISPATCHER_INT_IP__#${DISPATCHER_INT_IP}#g;
-         s#__KEEPBALANCE_INT_IP__#${KEEPBALANCE_INT_IP}#g;
-         s#__COMPUTE_AMI__#${COMPUTE_AMI}#g;
-         s#__COMPUTE_SG__#${COMPUTE_SG}#g;
-         s#__COMPUTE_SUBNET__#${COMPUTE_SUBNET}#g;
-         s#__COMPUTE_AWS_REGION__#${COMPUTE_AWS_REGION}#g;
-         s#__COMPUTE_USER__#${COMPUTE_USER}#g;
-         s#__KEEP_AWS_REGION__#${KEEP_AWS_REGION}#g" \
-    "${f}" > "${F_DIR}/extra/extra"/$(basename "${f}")
+    apply_var_substitutions "${f}" "${F_DIR}/extra/extra"/$(basename "${f}")
   done
 fi
 
