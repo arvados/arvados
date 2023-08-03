@@ -102,7 +102,7 @@ export const pollProcessLogs = (processUuid: string) =>
             return Promise.resolve();
         } catch (e) {
             // Remove log when polling error is handled in some way instead of being ignored
-            console.log("Polling process logs failed");
+            console.error("Error occurred in pollProcessLogs:", e);
             return Promise.reject();
         }
     };
@@ -144,7 +144,10 @@ const loadContainerLogFileContents = async (logFilesWithProgress: FileWithProgre
         if (res.length && res.every(promiseResult => (promiseResult.status === 'rejected'))) {
             // Since allSettled does not pass promise rejection we throw an
             //   error if every request failed
-            return Promise.reject("Failed to load logs");
+            const error = res.find(
+                (promiseResult): promiseResult is PromiseRejectedResult => promiseResult.status === 'rejected'
+              )?.reason;
+            return Promise.reject(error);
         }
         return res.filter((promiseResult): promiseResult is PromiseFulfilledResult<LogFragment[]> => (
             // Filter out log files with rejected promises
