@@ -12,15 +12,6 @@ arvados:
 
 ### NGINX
 nginx:
-  ### SERVER
-  server:
-    config:
-
-      ### STREAMS
-      http:
-        upstream workbench_upstream:
-          - server: 'localhost:9000 fail_timeout=10s'
-
   ### SITES
   servers:
     managed:
@@ -47,34 +38,74 @@ nginx:
             - listen:
               - __CONTROLLER_EXT_SSL_PORT__ http2 ssl
             - index: index.html index.htm
+
+    # REDIRECTS FROM WORKBENCH 1 TO WORKBENCH 2
+
+    # Paths that are not redirected because wb1 and wb2 have similar enough paths
+    # that a redirect is pointless and would create a redirect loop.
+    # rewrite ^/api_client_authorizations.* /api_client_authorizations redirect;
+    # rewrite ^/repositories.* /repositories redirect;
+    # rewrite ^/links.* /links redirect;
+    # rewrite ^/projects.* /projects redirect;
+    # rewrite ^/trash /trash redirect;
+
+    # Redirects that include a uuid
+            - rewrite: '^/work_units/(.*) /processes/$1 redirect'
+            - rewrite: '^/container_requests/(.*) /processes/$1 redirect'
+            - rewrite: '^/users/(.*) /user/$1 redirect'
+            - rewrite: '^/groups/(.*) /group/$1 redirect'
+
+    # Special file download redirects
+            - 'if ($arg_disposition = attachment)':
+              - rewrite: '^/collections/([^/]*)/(.*) /?redirectToDownload=/c=$1/$2? redirect'
+
+            - 'if ($arg_disposition = inline)':
+              - rewrite: '^/collections/([^/]*)/(.*) /?redirectToPreview=/c=$1/$2? redirect'
+
+    # Redirects that go to a roughly equivalent page
+            - rewrite: '^/virtual_machines.* /virtual-machines-admin redirect'
+            - rewrite: '^/users/.*/virtual_machines /virtual-machines-user redirect'
+            - rewrite: '^/authorized_keys.* /ssh-keys-admin redirect'
+            - rewrite: '^/users/.*/ssh_keys /ssh-keys-user redirect'
+            - rewrite: '^/containers.* /all_processes redirect'
+            - rewrite: '^/container_requests /all_processes redirect'
+            - rewrite: '^/job.* /all_processes redirect'
+            - rewrite: '^/users/link_account /link_account redirect'
+            - rewrite: '^/search.* /search-results redirect'
+            - rewrite: '^/keep_services.* /keep-services redirect'
+            - rewrite: '^/trash_items.* /trash redirect'
+
+    # Redirects that don't have a good mapping and
+    # just go to root.
+            - rewrite: '^/themes.* / redirect'
+            - rewrite: '^/keep_disks.* / redirect'
+            - rewrite: '^/user_agreements.* / redirect'
+            - rewrite: '^/nodes.* / redirect'
+            - rewrite: '^/humans.* / redirect'
+            - rewrite: '^/traits.* / redirect'
+            - rewrite: '^/sessions.* / redirect'
+            - rewrite: '^/logout.* / redirect'
+            - rewrite: '^/logged_out.* / redirect'
+            - rewrite: '^/current_token / redirect'
+            - rewrite: '^/logs.* / redirect'
+            - rewrite: '^/factory_jobs.* / redirect'
+            - rewrite: '^/uploaded_datasets.* / redirect'
+            - rewrite: '^/specimens.* / redirect'
+            - rewrite: '^/pipeline_templates.* / redirect'
+            - rewrite: '^/pipeline_instances.* / redirect'
+
             - location /:
-              - proxy_pass: 'http://workbench_upstream'
-              - proxy_read_timeout: 300
-              - proxy_connect_timeout: 90
-              - proxy_redirect: 'off'
-              - proxy_set_header: X-Forwarded-Proto https
-              - proxy_set_header: 'Host $http_host'
-              - proxy_set_header: 'X-Real-IP $remote_addr'
-              - proxy_set_header: 'X-Forwarded-For $proxy_add_x_forwarded_for'
+              - root: /var/www/arvados-workbench2/workbench2
+              - try_files: '$uri $uri/ /index.html'
+              - 'if (-f $document_root/maintenance.html)':
+                - return: 503
+            - location /config.json:
+              - return: {{ "200 '" ~ '{"API_HOST":"__DOMAIN__:__CONTROLLER_EXT_SSL_PORT__"}' ~ "'" }}
             - include: snippets/ssl_hardening_default.conf
             - ssl_certificate: __CERT_PEM__
             - ssl_certificate_key: __CERT_KEY__
             {%- if ssl_key_encrypted_pillar.ssl_key_encrypted.enabled %}
             - ssl_password_file: {{ '/run/arvados/' | path_join(ssl_key_encrypted_pillar.ssl_key_encrypted.privkey_password_filename) }}
             {%- endif %}
-            - access_log: /var/log/nginx/workbench.__DOMAIN__.access.log combined
-            - error_log: /var/log/nginx/workbench.__DOMAIN__.error.log
-
-      arvados_workbench_upstream:
-        enabled: true
-        overwrite: true
-        config:
-          - server:
-            - listen: 'localhost:9000'
-            - server_name: workbench
-            - root: /var/www/arvados-workbench/current/public
-            - index:  index.html index.htm
-            - passenger_enabled: 'on'
-            # yamllint disable-line rule:line-length
-            - access_log: /var/log/nginx/workbench.__DOMAIN__-upstream.access.log combined
-            - error_log: /var/log/nginx/workbench.__DOMAIN__-upstream.error.log
+            - access_log: /var/log/nginx/workbench2.__DOMAIN__.access.log combined
+            - error_log: /var/log/nginx/workbench2.__DOMAIN__.error.log
