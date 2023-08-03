@@ -27,7 +27,7 @@ for node in "${!NODES[@]}"; do
   fi
 done
 
-# The mapping of roles to nodes. This is used to dinamically adjust
+# The mapping of roles to nodes. This is used to dynamically adjust
 # salt pillars.
 declare -A ROLE2NODES
 for node in "${!NODES[@]}"; do

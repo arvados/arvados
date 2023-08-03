@@ -96,7 +96,7 @@ MONITORING_EMAIL=${INITIAL_USER_EMAIL}
 # installer.sh will log in to each of these nodes and then provision
 # it for the specified roles.
 NODES=(
-  [controller.${DOMAIN}]=database,api,controller,websocket,dispatcher,keepbalance
+  [controller.${DOMAIN}]=database,controller,websocket,dispatcher,keepbalance
   [workbench.${DOMAIN}]=monitoring,workbench,workbench2,webshell,keepproxy,keepweb
   [keep0.${DOMAIN}]=keepstore
   [shell.${DOMAIN}]=shell

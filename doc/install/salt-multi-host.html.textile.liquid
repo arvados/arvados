@@ -340,7 +340,7 @@ Arvados requires a database that is compatible with PostgreSQL 9.5 or later.  Fo
 
 # In @local.params@, remove 'database' from the list of roles assigned to the controller node:
 <pre><code>NODES=(
-  [controller.${DOMAIN}]=api,controller,websocket,dispatcher,keepbalance
+  [controller.${DOMAIN}]=controller,websocket,dispatcher,keepbalance
   ...
 )
 </code></pre>
@@ -494,7 +494,12 @@ The following is an example @terraform/vpc/terraform.tfvars@ file that describes
 <pre><code>region_name = "us-east-1"
 cluster_name = "xarv1"
 domain_name = "xarv1.example.com"
+# Include controller nodes in this list so instances are assigned to the
+# private subnet. Only the balancer node should be connecting to them.
 internal_service_hosts = [ "keep0", "database", "controller1", "controller2" ]
+
+# Assign private IPs for the controller nodes. These will be used to create
+# internal DNS resolutions that will get used by the balancer and database nodes.
 private_ip = {
   controller = "10.1.1.11"
   workbench = "10.1.1.15"
@@ -503,6 +508,10 @@ private_ip = {
   controller2 = "10.1.2.22"
   keep0 = "10.1.2.13"
 }
+
+# Some services that used to run on the non-balanced controller node need to be
+# moved to another. Here we assign DNS aliases because they will run on the
+# workbench node.
 dns_aliases = {
   workbench = [
     "ws",
@@ -515,13 +524,13 @@ dns_aliases = {
   ]
 }</code></pre>
 
-Once the infrastructure is deployed, you'll then need to define which node will be using the @balancer@ role in @local.params@, as it's being shown in this partial example:
+Once the infrastructure is deployed, you'll then need to define which node will be using the @balancer@ role and which will be the @controller@ nodes in @local.params@, as it's being shown in this partial example. Note how the workbench node got the majority of the other roles, reflecting the above terraform configuration example:
 
 <pre><code>...
 NODES=(
   [controller.${DOMAIN}]=balancer
-  [controller1.${DOMAIN}]=api,controller
-  [controller2.${DOMAIN}]=api,controller
+  [controller1.${DOMAIN}]=controller
+  [controller2.${DOMAIN}]=controller
   [database.${DOMAIN}]=database
   [workbench.${DOMAIN}]=monitoring,workbench,workbench2,keepproxy,keepweb,websocket,keepbalance,dispatcher
   [keep0.${DOMAIN}]=keepstore
@@ -530,7 +539,7 @@ NODES=(
 
 h3(#rolling-upgrades). Rolling upgrades procedure
 
-Once you have more than one controller backend node, it's easy to take one of those from the backend pool to upgrade it to a newer version of Arvados (that might involve applying database migrations) by adding its name to the @DISABLED_CONTROLLER@ variable in @local.params@. For example:
+Once you have more than one controller backend node, it's easy to take one at a time from the backend pool to upgrade it to a newer version of Arvados (which might involve applying database migrations) by adding its name to the @DISABLED_CONTROLLER@ variable in @local.params@. For example:
 
 <pre><code>...
 DISABLED_CONTROLLER="controller1"
@@ -542,7 +551,41 @@ Then, apply the configuration change to just the load-balancer:
 
 This will allow you to do the necessary changes to the @controller1@ node without service disruption, as it will not be receiving any traffic until you remove it from the @DISABLED_CONTROLLER@ variable.
 
-You can do the same for the rest of the backend controllers one at a time to complete the upgrade.
+Next step is applying the @deploy@ command to @controller1@:
+
+<pre><code class="userinput">./installer.sh deploy controller1.xarv1.example.com</code></pre>
+
+After that, disable the other controller node by editing @local.params@:
+
+<pre><code>...
+DISABLED_CONTROLLER="controller2"
+...</code></pre>
+
+...applying the changes on the balancer node:
+
+<pre><code class="userinput">./installer.sh deploy controller.xarv1.example.com</code></pre>
+
+Then, deploy the changes to the recently disabled @controller2@ node:
+
+<pre><code class="userinput">./installer.sh deploy controller2.xarv1.example.com</code></pre>
+
+This won't cause a service interruption because the load balancer is already routing all traffic to the othe @controller1@ node.
+
+And the last step is enabling both controller nodes by making the following change to @local.params@:
+
+<pre><code>...
+DISABLED_CONTROLLER=""
+...</code></pre>
+
+...and running:
+
+<pre><code class="userinput">./installer.sh deploy controller.xarv1.example.com</code></pre>
+
+This should get all your @controller@ nodes correctly upgraded, and you can continue executing the @deploy@ command with the rest of the nodes individually, or just run:
+
+<pre><code class="userinput">./installer.sh deploy</code></pre>
+
+Only the nodes with pending changes might require certain services to be restarted. In this example, the @workbench@ node will have the remaining Arvados services upgraded and restarted. However, these services are not as critical as the ones on the @controller@ nodes.
 
 h2(#post_install). After the installation
 
