@@ -28,6 +28,8 @@
 // -- This will overwrite an existing command --
 // Cypress.Commands.overwrite("visit", (originalFn, url, options) => { ... })
 
+import { extractFilesData } from "services/collection-service/collection-service-files-response";
+
 const controllerURL = Cypress.env('controller_url');
 const systemToken = Cypress.env('system_token');
 let createdResources = [];
@@ -57,6 +59,22 @@ Cypress.Commands.add(
         auth: auth ? { bearer: `${token}` } : undefined,
         followRedirect: followRedirect,
         failOnStatusCode: failOnStatusCode
+    });
+});
+
+Cypress.Commands.add(
+    "doKeepRequest", (method = 'GET', path = '', data = null, qs = null,
+        token = systemToken, auth = false, followRedirect = true, failOnStatusCode = true) => {
+    return cy.doRequest('GET', '/arvados/v1/config', null, null).then(({body: config}) => {
+        return cy.request({
+            method: method,
+            url: `${config.Services.WebDAVDownload.ExternalURL.replace(/\/+$/, '')}/${path.replace(/^\/+/, '')}`,
+            body: data,
+            qs: auth ? qs : Object.assign({ api_token: token }, qs),
+            auth: auth ? { bearer: `${token}` } : undefined,
+            followRedirect: followRedirect,
+            failOnStatusCode: failOnStatusCode
+        });
     });
 });
 
@@ -152,17 +170,17 @@ Cypress.Commands.add(
 )
 
 Cypress.Commands.add(
-    "getCollection", (token, uuid) => {
-        return cy.getResource(token, 'collections', uuid)
-    }
-)
-
-Cypress.Commands.add(
     "createCollection", (token, data) => {
         return cy.createResource(token, 'collections', {
             collection: JSON.stringify(data),
             ensure_unique_name: true
         })
+    }
+)
+
+Cypress.Commands.add(
+    "getCollection", (token, uuid) => {
+        return cy.getResource(token, 'collections', uuid)
     }
 )
 
@@ -189,6 +207,12 @@ Cypress.Commands.add(
 )
 
 Cypress.Commands.add(
+    "getContainerRequest", (token, uuid) => {
+        return cy.getResource(token, 'container_requests', uuid)
+    }
+)
+
+Cypress.Commands.add(
     'createContainerRequest', (token, data) => {
         return cy.createResource(token, 'container_requests', {
             container_request: JSON.stringify(data),
@@ -205,31 +229,80 @@ Cypress.Commands.add(
     }
 )
 
+/**
+ * Requires an admin token for log_uuid modification to succeed
+ */
 Cypress.Commands.add(
-    "createLog", (token, data) => {
-        return cy.createResource(token, 'logs', {
-            log: JSON.stringify(data)
+    "appendLog", (token, crUuid, fileName, lines = []) => (
+        cy.getContainerRequest(token, crUuid).then((containerRequest) => {
+            if (containerRequest.log_uuid) {
+                cy.listContainerRequestLogs(token, crUuid).then((logFiles) => {
+                    if (logFiles.find((file) => (file.name === fileName))) {
+                        // File exists, fetch and append
+                        return cy.doKeepRequest(
+                                "GET",
+                                `c=${containerRequest.log_uuid}/${fileName}`,
+                                null,
+                                null,
+                                token
+                            )
+                            .then(({ body: contents }) => cy.doKeepRequest(
+                                "PUT",
+                                `c=${containerRequest.log_uuid}/${fileName}`,
+                                contents.split("\n").concat(lines).join("\n"),
+                                null,
+                                token
+                            ));
+                    } else {
+                        // File not exists, put new file
+                        cy.doKeepRequest(
+                            "PUT",
+                            `c=${containerRequest.log_uuid}/${fileName}`,
+                            lines.join("\n"),
+                            null,
+                            token
+                        )
+                    }
+                });
+                // Fetch current log contents and append new line
+                // let newLines = [...lines];
+                // return cy.doKeepRequest('GET', `c=${containerRequest.log_uuid}/${fileName}`, null, null, token)
+                //     .then(({body: contents}) => {
+                //         newLines = [contents.split('\n'), ...newLines];
+                //     })
+                //     .then(() => (
+                //         cy.doKeepRequest('PUT', `c=${containerRequest.log_uuid}/${fileName}`, newLines.join('\n'), null, token)
+                //     ));
+            } else {
+                // Create log collection
+                return cy.createCollection(token, {
+                    name: `Test log collection ${Math.floor(Math.random() * 999999)}`,
+                    owner_uuid: containerRequest.owner_uuid,
+                    manifest_text: ""
+                }).then((collection) => (
+                    // Update CR log_uuid to fake log collection
+                    cy.updateContainerRequest(token, containerRequest.uuid, {
+                        log_uuid: collection.uuid,
+                    }).then(() => (
+                        // Put new log file with contents into fake log collection
+                        cy.doKeepRequest('PUT', `c=${collection.uuid}/${fileName}`, lines.join('\n'), null, token)
+                    ))
+                ));
+            }
         })
-    }
+    )
 )
 
 Cypress.Commands.add(
-    "logsForContainer", (token, uuid, logType, logTextArray = []) => {
-        let logs = [];
-        for (const logText of logTextArray) {
-            logs.push(cy.createLog(token, {
-                object_uuid: uuid,
-                event_type: logType,
-                properties: {
-                    text: logText
-                }
-            }).as('lastLogRecord'))
-        }
-        cy.getAll('@lastLogRecord').then(function () {
-            return logs;
-        })
-    }
-)
+    "listContainerRequestLogs", (token, crUuid) => (
+        cy.getContainerRequest(token, crUuid).then((containerRequest) => (
+            cy.doKeepRequest('PROPFIND', `c=${containerRequest.log_uuid}`, null, null, token)
+                .then(({body: data}) => {
+                    return extractFilesData(new DOMParser().parseFromString(data, "text/xml"));
+                })
+        ))
+    )
+);
 
 Cypress.Commands.add(
     "createVirtualMachine", (token, data) => {

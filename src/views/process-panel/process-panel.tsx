@@ -26,7 +26,7 @@ import {
     loadNodeJson
 } from 'store/process-panel/process-panel-actions';
 import { cancelRunningWorkflow, resumeOnHoldWorkflow, startWorkflow } from 'store/processes/processes-actions';
-import { navigateToLogCollection, setProcessLogsPanelFilter } from 'store/process-logs-panel/process-logs-panel-actions';
+import { navigateToLogCollection, pollProcessLogs, setProcessLogsPanelFilter } from 'store/process-logs-panel/process-logs-panel-actions';
 import { snackbarActions, SnackbarKind } from 'store/snackbar/snackbar-actions';
 
 const mapStateToProps = ({ router, auth, resources, processPanel, processLogsPanel }: RootState): ProcessPanelRootDataProps => {
@@ -71,6 +71,7 @@ const mapDispatchToProps = (dispatch: Dispatch): ProcessPanelRootActionProps => 
     loadOutputDefinitions: (containerRequest) => dispatch<any>(loadOutputDefinitions(containerRequest)),
     updateOutputParams: () => dispatch<any>(updateOutputParams()),
     loadNodeJson: (containerRequest) => dispatch<any>(loadNodeJson(containerRequest)),
+    pollProcessLogs: (processUuid) => dispatch<any>(pollProcessLogs(processUuid)),
 });
 
 const getFilters = (processPanel: ProcessPanelState, processes: Process[]) => {

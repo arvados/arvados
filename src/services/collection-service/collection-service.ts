@@ -23,7 +23,7 @@ export const emptyCollectionPdh = 'd41d8cd98f00b204e9800998ecf8427e+0';
 export const SOURCE_DESTINATION_EQUAL_ERROR_MESSAGE = 'Source and destination cannot be the same';
 
 export class CollectionService extends TrashableResourceService<CollectionResource> {
-    constructor(serverApi: AxiosInstance, private webdavClient: WebDAV, private authService: AuthService, actions: ApiActions) {
+    constructor(serverApi: AxiosInstance, private keepWebdavClient: WebDAV, private authService: AuthService, actions: ApiActions) {
         super(serverApi, "collections", actions, [
             'fileCount',
             'fileSizeTotal',
@@ -52,7 +52,7 @@ export class CollectionService extends TrashableResourceService<CollectionResour
     }
 
     async files(uuid: string) {
-        const request = await this.webdavClient.propfind(`c=${uuid}`);
+        const request = await this.keepWebdavClient.propfind(`c=${uuid}`);
         if (request.responseXML != null) {
             return extractFilesData(request.responseXML);
         }
@@ -118,9 +118,9 @@ export class CollectionService extends TrashableResourceService<CollectionResour
     }
 
     extendFileURL = (file: CollectionDirectory | CollectionFile) => {
-        const baseUrl = this.webdavClient.getBaseUrl().endsWith('/')
-            ? this.webdavClient.getBaseUrl().slice(0, -1)
-            : this.webdavClient.getBaseUrl();
+        const baseUrl = this.keepWebdavClient.getBaseUrl().endsWith('/')
+            ? this.keepWebdavClient.getBaseUrl().slice(0, -1)
+            : this.keepWebdavClient.getBaseUrl();
         const apiToken = this.authService.getApiToken();
         const encodedApiToken = apiToken ? encodeURI(apiToken) : '';
         const userApiToken = `/t=${encodedApiToken}/`;
@@ -133,7 +133,7 @@ export class CollectionService extends TrashableResourceService<CollectionResour
     }
 
     async getFileContents(file: CollectionFile) {
-        return (await this.webdavClient.get(`c=${file.id}`)).response;
+        return (await this.keepWebdavClient.get(`c=${file.id}`)).response;
     }
 
     private async uploadFile(collectionUuid: string, file: File, fileId: number, onProgress: UploadProgress = () => { return; }, targetLocation: string = '') {
@@ -146,7 +146,7 @@ export class CollectionService extends TrashableResourceService<CollectionResour
                 onProgress(fileId, e.loaded, e.total, Date.now());
             },
         };
-        return this.webdavClient.upload(fileURL, [file], requestConfig);
+        return this.keepWebdavClient.upload(fileURL, [file], requestConfig);
     }
 
     deleteFiles(collectionUuid: string, files: string[], showErrors?: boolean) {

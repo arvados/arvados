@@ -185,6 +185,10 @@ export const getProcessStatus = ({ containerRequest, container }: Process): Proc
     }
 };
 
+export const isProcessRunning = ({ container }: Process): boolean => (
+    container?.state === ContainerState.RUNNING
+);
+
 export const isProcessRunnable = ({ containerRequest }: Process): boolean => (
     containerRequest.state === ContainerRequestState.UNCOMMITTED
 );

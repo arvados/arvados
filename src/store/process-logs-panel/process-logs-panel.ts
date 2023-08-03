@@ -12,11 +12,11 @@ export interface ProcessLogsPanel {
 }
 
 export interface ProcessLogs {
-    [logType: string]: string[];
+    [logType: string]: {lastByte: number | undefined, contents: string[]};
 }
 
-export const getProcessPanelLogs = ({ selectedFilter, logs }: ProcessLogsPanel) => {
-    return logs[selectedFilter];
+export const getProcessPanelLogs = ({ selectedFilter, logs }: ProcessLogsPanel): string[] => {
+    return logs[selectedFilter]?.contents || [];
 };
 
 export const getProcessLogsPanelCurrentUuid = (router: RouterState) => {

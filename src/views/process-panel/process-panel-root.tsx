@@ -61,6 +61,7 @@ export interface ProcessPanelRootActionProps {
     loadNodeJson: (containerRequest: ContainerRequestResource) => void;
     loadOutputDefinitions: (containerRequest: ContainerRequestResource) => void;
     updateOutputParams: () => void;
+    pollProcessLogs: (processUuid: string) => Promise<void>;
 }
 
 export type ProcessPanelRootProps = ProcessPanelRootDataProps & ProcessPanelRootActionProps & WithStyles<CssRules>;
@@ -147,6 +148,7 @@ export const ProcessPanelRoot = withStyles(styles)(
                         )}
                         onLogFilterChange={props.onLogFilterChange}
                         navigateToLog={props.navigateToLog}
+                        pollProcessLogs={props.pollProcessLogs}
                     />
                 </MPVPanelContent>
                 <MPVPanelContent forwardProps xs maxHeight='50%' data-cy="process-inputs">
