@@ -3,6 +3,8 @@
 #
 # SPDX-License-Identifier: AGPL-3.0
 
+{%- set max_reqs = "__CONTROLLER_MAX_CONCURRENT_REQUESTS__" %}
+
 # The variables commented out are the default values that the formula uses.
 # The uncommented values are REQUIRED values. If you don't set them, running
 # this formula will fail.
@@ -108,10 +110,9 @@ arvados:
             Password: __INITIAL_USER_PASSWORD__
 
     ### API
-    {%- set max_reqs = "__CONTROLLER_MAX_CONCURRENT_REQUESTS__" %}
-    {%- if max_reqs != "" and max_reqs is number %}
+    {%- if max_reqs != "" %}
     API:
-      MaxConcurrentRequests: {{ max_reqs }}
+      MaxConcurrentRequests: {{ max_reqs|int }}
     {%- endif %}
 
     ### CONTAINERS

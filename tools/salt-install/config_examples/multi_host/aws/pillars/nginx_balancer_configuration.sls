@@ -6,13 +6,27 @@
 {%- import_yaml "ssl_key_encrypted.sls" as ssl_key_encrypted_pillar %}
 {%- set domain = "__DOMAIN__" %}
 {%- set balancer_backends = "__CONTROLLER_NODES__".split(",") %}
+{%- set controller_nr = balancer_backends|length %}
 {%- set disabled_controller = "__DISABLED_CONTROLLER__" %}
+{%- if disabled_controller != "" %}
+  {%- set controller_nr = controller_nr - 1 %}
+{%- endif %}
+{%- set max_reqs = "__CONTROLLER_MAX_CONCURRENT_REQUESTS__" %}
 
 ### NGINX
 nginx:
   ### SERVER
   server:
     config:
+      {%- if max_reqs != "" %}
+      worker_rlimit_nofile: {{ (max_reqs|int * 3 * controller_nr)|round|int }}
+      events:
+        worker_connections: {{ (max_reqs|int * 3 * controller_nr)|round|int }}
+      {%- else %}
+      worker_rlimit_nofile: 4096
+      events:
+        worker_connections: 1024
+      {%- endif %}
       ### STREAMS
       http:
         'geo $external_client':
