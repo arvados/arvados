@@ -14,6 +14,7 @@ import (
 	"fmt"
 	"math/big"
 	"strconv"
+	"strings"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -45,12 +46,45 @@ type ec2InstanceSetConfig struct {
 	SecretAccessKey         string
 	Region                  string
 	SecurityGroupIDs        arvados.StringSet
-	SubnetID                string
+	SubnetID                sliceOrSingleString
 	AdminUsername           string
 	EBSVolumeType           string
 	EBSPrice                float64
 	IAMInstanceProfile      string
 	SpotPriceUpdateInterval arvados.Duration
+}
+
+type sliceOrSingleString []string
+
+// UnmarshalJSON unmarshals an array of strings, and also accepts ""
+// as [], and "foo" as ["foo"].
+func (ss *sliceOrSingleString) UnmarshalJSON(data []byte) error {
+	if len(data) == 0 {
+		*ss = nil
+	} else if data[0] == '[' {
+		var slice []string
+		err := json.Unmarshal(data, &slice)
+		if err != nil {
+			return err
+		}
+		if len(slice) == 0 {
+			*ss = nil
+		} else {
+			*ss = slice
+		}
+	} else {
+		var str string
+		err := json.Unmarshal(data, &str)
+		if err != nil {
+			return err
+		}
+		if str == "" {
+			*ss = nil
+		} else {
+			*ss = []string{str}
+		}
+	}
+	return nil
 }
 
 type ec2Interface interface {
@@ -66,6 +100,7 @@ type ec2Interface interface {
 
 type ec2InstanceSet struct {
 	ec2config              ec2InstanceSetConfig
+	currentSubnetIDIndex   int32
 	instanceSetID          cloud.InstanceSetID
 	logger                 logrus.FieldLogger
 	client                 ec2Interface
@@ -174,7 +209,6 @@ func (instanceSet *ec2InstanceSet) Create(
 				DeleteOnTermination:      aws.Bool(true),
 				DeviceIndex:              aws.Int64(0),
 				Groups:                   aws.StringSlice(groups),
-				SubnetId:                 &instanceSet.ec2config.SubnetID,
 			}},
 		DisableApiTermination:             aws.Bool(false),
 		InstanceInitiatedShutdownBehavior: aws.String("terminate"),
@@ -219,7 +253,36 @@ func (instanceSet *ec2InstanceSet) Create(
 		}
 	}
 
-	rsv, err := instanceSet.client.RunInstances(&rii)
+	var rsv *ec2.Reservation
+	var err error
+	subnets := instanceSet.ec2config.SubnetID
+	currentSubnetIDIndex := int(atomic.LoadInt32(&instanceSet.currentSubnetIDIndex))
+	for tryOffset := 0; ; tryOffset++ {
+		tryIndex := 0
+		if len(subnets) > 0 {
+			tryIndex = (currentSubnetIDIndex + tryOffset) % len(subnets)
+			rii.NetworkInterfaces[0].SubnetId = aws.String(subnets[tryIndex])
+		}
+		rsv, err = instanceSet.client.RunInstances(&rii)
+		if isErrorSubnetSpecific(err) &&
+			tryOffset < len(subnets)-1 {
+			instanceSet.logger.WithError(err).WithField("SubnetID", subnets[tryIndex]).
+				Warn("RunInstances failed, trying next subnet")
+			continue
+		}
+		// Succeeded, or exhausted all subnets, or got a
+		// non-subnet-related error.
+		//
+		// We intentionally update currentSubnetIDIndex even
+		// in the non-retryable-failure case here to avoid a
+		// situation where successive calls to Create() keep
+		// returning errors for the same subnet (perhaps
+		// "subnet full") and never reveal the errors for the
+		// other configured subnets (perhaps "subnet ID
+		// invalid").
+		atomic.StoreInt32(&instanceSet.currentSubnetIDIndex, int32(tryIndex))
+		break
+	}
 	err = wrapError(err, &instanceSet.throttleDelayCreate)
 	if err != nil {
 		return nil, err
@@ -548,6 +611,8 @@ func (err rateLimitError) EarliestRetry() time.Time {
 }
 
 var isCodeCapacity = map[string]bool{
+	"InstanceLimitExceeded":             true,
+	"InsufficientAddressCapacity":       true,
 	"InsufficientFreeAddressesInSubnet": true,
 	"InsufficientInstanceCapacity":      true,
 	"InsufficientVolumeCapacity":        true,
@@ -564,6 +629,19 @@ func isErrorCapacity(err error) bool {
 		}
 	}
 	return false
+}
+
+// isErrorSubnetSpecific returns true if the problem encountered by
+// RunInstances might be avoided by trying a different subnet.
+func isErrorSubnetSpecific(err error) bool {
+	aerr, ok := err.(awserr.Error)
+	if !ok {
+		return false
+	}
+	code := aerr.Code()
+	return strings.Contains(code, "Subnet") ||
+		code == "InsufficientInstanceCapacity" ||
+		code == "InsufficientVolumeCapacity"
 }
 
 type ec2QuotaError struct {

@@ -1531,10 +1531,23 @@ Clusters:
           SecretAccessKey: ""
 
           # (ec2) Instance configuration.
+
+          # (ec2) Region, like "us-east-1".
+          Region: ""
+
+          # (ec2) Security group IDs. Omit or use {} to use the
+          # default security group.
           SecurityGroupIDs:
             "SAMPLE": {}
+
+          # (ec2) One or more subnet IDs. Omit or leave empty to let
+          # AWS choose a default subnet from your default VPC. If
+          # multiple subnets are configured here (enclosed in brackets
+          # like [subnet-abc123, subnet-def456]) the cloud dispatcher
+          # will detect subnet-related errors and retry using a
+          # different subnet. Most sites specify one subnet.
           SubnetID: ""
-          Region: ""
+
           EBSVolumeType: gp2
           AdminUsername: debian
           # (ec2) name of the IAMInstanceProfile for instances started by

@@ -24,7 +24,9 @@ package ec2
 
 import (
 	"encoding/json"
+	"errors"
 	"flag"
+	"fmt"
 	"sync/atomic"
 	"testing"
 	"time"
@@ -33,9 +35,11 @@ import (
 	"git.arvados.org/arvados.git/lib/dispatchcloud/test"
 	"git.arvados.org/arvados.git/sdk/go/arvados"
 	"git.arvados.org/arvados.git/sdk/go/config"
+	"git.arvados.org/arvados.git/sdk/go/ctxlog"
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/aws/aws-sdk-go/service/ec2"
+	"github.com/ghodss/yaml"
 	"github.com/sirupsen/logrus"
 	check "gopkg.in/check.v1"
 )
@@ -45,6 +49,34 @@ var live = flag.String("live-ec2-cfg", "", "Test with real EC2 API, provide conf
 // Gocheck boilerplate
 func Test(t *testing.T) {
 	check.TestingT(t)
+}
+
+type sliceOrStringSuite struct{}
+
+var _ = check.Suite(&sliceOrStringSuite{})
+
+func (s *sliceOrStringSuite) TestUnmarshal(c *check.C) {
+	var conf ec2InstanceSetConfig
+	for _, trial := range []struct {
+		input  string
+		output sliceOrSingleString
+	}{
+		{``, nil},
+		{`""`, nil},
+		{`[]`, nil},
+		{`"foo"`, sliceOrSingleString{"foo"}},
+		{`["foo"]`, sliceOrSingleString{"foo"}},
+		{`[foo]`, sliceOrSingleString{"foo"}},
+		{`["foo", "bar"]`, sliceOrSingleString{"foo", "bar"}},
+		{`[foo-bar, baz]`, sliceOrSingleString{"foo-bar", "baz"}},
+	} {
+		c.Logf("trial: %+v", trial)
+		err := yaml.Unmarshal([]byte("SubnetID: "+trial.input+"\n"), &conf)
+		if !c.Check(err, check.IsNil) {
+			continue
+		}
+		c.Check(conf.SubnetID, check.DeepEquals, trial.output)
+	}
 }
 
 type EC2InstanceSetSuite struct{}
@@ -61,6 +93,10 @@ type ec2stub struct {
 	reftime               time.Time
 	importKeyPairCalls    []*ec2.ImportKeyPairInput
 	describeKeyPairsCalls []*ec2.DescribeKeyPairsInput
+	runInstancesCalls     []*ec2.RunInstancesInput
+	// {subnetID => error}: RunInstances returns error if subnetID
+	// matches.
+	subnetErrorOnRunInstances map[string]error
 }
 
 func (e *ec2stub) ImportKeyPair(input *ec2.ImportKeyPairInput) (*ec2.ImportKeyPairOutput, error) {
@@ -74,6 +110,13 @@ func (e *ec2stub) DescribeKeyPairs(input *ec2.DescribeKeyPairsInput) (*ec2.Descr
 }
 
 func (e *ec2stub) RunInstances(input *ec2.RunInstancesInput) (*ec2.Reservation, error) {
+	e.runInstancesCalls = append(e.runInstancesCalls, input)
+	if len(input.NetworkInterfaces) > 0 && input.NetworkInterfaces[0].SubnetId != nil {
+		err := e.subnetErrorOnRunInstances[*input.NetworkInterfaces[0].SubnetId]
+		if err != nil {
+			return nil, err
+		}
+	}
 	return &ec2.Reservation{Instances: []*ec2.Instance{{
 		InstanceId:   aws.String("i-123"),
 		InstanceType: aws.String("t2.micro"),
@@ -154,6 +197,19 @@ func (e *ec2stub) TerminateInstances(input *ec2.TerminateInstancesInput) (*ec2.T
 	return nil, nil
 }
 
+type ec2stubError struct {
+	code    string
+	message string
+}
+
+func (err *ec2stubError) Code() string    { return err.code }
+func (err *ec2stubError) Message() string { return err.message }
+func (err *ec2stubError) Error() string   { return fmt.Sprintf("%s: %s", err.code, err.message) }
+func (err *ec2stubError) OrigErr() error  { return errors.New("stub OrigErr") }
+
+// Ensure ec2stubError satisfies the aws.Error interface
+var _ = awserr.Error(&ec2stubError{})
+
 func GetInstanceSet(c *check.C) (*ec2InstanceSet, cloud.ImageID, arvados.Cluster) {
 	cluster := arvados.Cluster{
 		InstanceTypes: arvados.InstanceTypeMap(map[string]arvados.InstanceType{
@@ -196,7 +252,7 @@ func GetInstanceSet(c *check.C) (*ec2InstanceSet, cloud.ImageID, arvados.Cluster
 	}
 	ap := ec2InstanceSet{
 		instanceSetID: "test123",
-		logger:        logrus.StandardLogger(),
+		logger:        ctxlog.TestLogger(c),
 		client:        &ec2stub{c: c, reftime: time.Now().UTC()},
 		keys:          make(map[string]string),
 	}
@@ -259,6 +315,61 @@ func (*EC2InstanceSetSuite) TestCreatePreemptible(c *check.C) {
 	c.Check(tags["TestTagName"], check.Equals, "test tag value")
 	c.Logf("inst.String()=%v Address()=%v Tags()=%v", inst.String(), inst.Address(), tags)
 
+}
+
+func (*EC2InstanceSetSuite) TestCreateFailoverSecondSubnet(c *check.C) {
+	if *live != "" {
+		c.Skip("not applicable in live mode")
+		return
+	}
+
+	ap, img, cluster := GetInstanceSet(c)
+	ap.ec2config.SubnetID = sliceOrSingleString{"subnet-full", "subnet-good"}
+	ap.client.(*ec2stub).subnetErrorOnRunInstances = map[string]error{
+		"subnet-full": &ec2stubError{
+			code:    "InsufficientFreeAddressesInSubnet",
+			message: "subnet is full",
+		},
+	}
+	inst, err := ap.Create(cluster.InstanceTypes["tiny"], img, nil, "", nil)
+	c.Check(err, check.IsNil)
+	c.Check(inst, check.NotNil)
+	c.Check(ap.client.(*ec2stub).runInstancesCalls, check.HasLen, 2)
+
+	// Next RunInstances call should try the working subnet first
+	inst, err = ap.Create(cluster.InstanceTypes["tiny"], img, nil, "", nil)
+	c.Check(err, check.IsNil)
+	c.Check(inst, check.NotNil)
+	c.Check(ap.client.(*ec2stub).runInstancesCalls, check.HasLen, 3)
+}
+
+func (*EC2InstanceSetSuite) TestCreateAllSubnetsFailing(c *check.C) {
+	if *live != "" {
+		c.Skip("not applicable in live mode")
+		return
+	}
+
+	ap, img, cluster := GetInstanceSet(c)
+	ap.ec2config.SubnetID = sliceOrSingleString{"subnet-full", "subnet-broken"}
+	ap.client.(*ec2stub).subnetErrorOnRunInstances = map[string]error{
+		"subnet-full": &ec2stubError{
+			code:    "InsufficientFreeAddressesInSubnet",
+			message: "subnet is full",
+		},
+		"subnet-broken": &ec2stubError{
+			code:    "InvalidSubnetId.NotFound",
+			message: "bogus subnet id",
+		},
+	}
+	_, err := ap.Create(cluster.InstanceTypes["tiny"], img, nil, "", nil)
+	c.Check(err, check.NotNil)
+	c.Check(err, check.ErrorMatches, `.*InvalidSubnetId\.NotFound.*`)
+	c.Check(ap.client.(*ec2stub).runInstancesCalls, check.HasLen, 2)
+
+	_, err = ap.Create(cluster.InstanceTypes["tiny"], img, nil, "", nil)
+	c.Check(err, check.NotNil)
+	c.Check(err, check.ErrorMatches, `.*InsufficientFreeAddressesInSubnet.*`)
+	c.Check(ap.client.(*ec2stub).runInstancesCalls, check.HasLen, 4)
 }
 
 func (*EC2InstanceSetSuite) TestTagInstances(c *check.C) {
