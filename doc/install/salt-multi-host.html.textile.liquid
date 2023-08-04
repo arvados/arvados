@@ -230,18 +230,17 @@ The installer will set up the Arvados services on your machines.  Here is the de
 ## postgresql server
 ## arvados api server
 ## arvados controller  (recommendend hostname @controller.${DOMAIN}@)
-## arvados websocket   (recommendend hostname @ws.${DOMAIN}@)
-## arvados cloud dispatcher
-## arvados keepbalance
 # KEEPSTORE nodes (at least 1 if using S3 as a Keep backend, else 2)
 ## arvados keepstore   (recommendend hostnames @keep0.${DOMAIN}@ and @keep1.${DOMAIN}@)
-# KEEPPROXY node
-## arvados keepproxy   (recommendend hostname @keep.${DOMAIN}@)
-## arvados keepweb     (recommendend hostname @download.${DOMAIN}@ and @*.collections.${DOMAIN}@)
 # WORKBENCH node
 ## arvados workbench   (recommendend hostname @workbench.${DOMAIN}@)
 ## arvados workbench2  (recommendend hostname @workbench2.${DOMAIN}@)
 ## arvados webshell    (recommendend hostname @webshell.${DOMAIN}@)
+## arvados websocket   (recommendend hostname @ws.${DOMAIN}@)
+## arvados cloud dispatcher
+## arvados keepbalance
+## arvados keepproxy   (recommendend hostname @keep.${DOMAIN}@)
+## arvados keepweb     (recommendend hostname @download.${DOMAIN}@ and @*.collections.${DOMAIN}@)
 # SHELL node  (optional)
 ## arvados shell       (recommended hostname @shell.${DOMAIN}@)
 
@@ -483,20 +482,20 @@ Once logged in, you will want to add the dashboards to the front page.
 
 h2(#load_balancing). Load balancing controllers (optional)
 
-In order to handle high loads and perform rolling upgrades, the controller & api services can be scaled to a number of hosts and the installer make this implementation a fairly simple task.
+In order to handle high loads and perform rolling upgrades, the controller service can be scaled to a number of hosts and the installer make this implementation a fairly simple task.
 
 First, you should take care of the infrastructure deployment: if you use our Terraform code, you will need to set up the @terraform.tfvars@ in @terraform/vpc/@ so that in addition to the node named @controller@ (the load-balancer), a number of @controllerN@ nodes (backends) are defined as needed, and added to the @internal_service_hosts@ list.
 
-We suggest that the backend nodes just hold the controller & api services and nothing else, so they can be easily created or destroyed as needed without other service disruption. Because of this, you will need to set up a custom @dns_aliases@ variable map.
+We suggest that the backend nodes just hold the controller service and nothing else, so they can be easily created or destroyed as needed without other service disruption.
 
-The following is an example @terraform/vpc/terraform.tfvars@ file that describes a cluster with a load-balancer, 2 backend nodes, a separate database node, a keepstore node and a workbench node that will also hold other miscelaneous services:
+The following is an example @terraform/vpc/terraform.tfvars@ file that describes a cluster with a load-balancer, 2 backend nodes, a separate database node, a shell node, a keepstore node and a workbench node that will also hold other miscelaneous services:
 
 <pre><code>region_name = "us-east-1"
 cluster_name = "xarv1"
 domain_name = "xarv1.example.com"
 # Include controller nodes in this list so instances are assigned to the
 # private subnet. Only the balancer node should be connecting to them.
-internal_service_hosts = [ "keep0", "database", "controller1", "controller2" ]
+internal_service_hosts = [ "keep0", "shell", "database", "controller1", "controller2" ]
 
 # Assign private IPs for the controller nodes. These will be used to create
 # internal DNS resolutions that will get used by the balancer and database nodes.
@@ -506,36 +505,22 @@ private_ip = {
   database = "10.1.2.12"
   controller1 = "10.1.2.21"
   controller2 = "10.1.2.22"
+  shell = "10.1.2.17"
   keep0 = "10.1.2.13"
-}
-
-# Some services that used to run on the non-balanced controller node need to be
-# moved to another. Here we assign DNS aliases because they will run on the
-# workbench node.
-dns_aliases = {
-  workbench = [
-    "ws",
-    "workbench2",
-    "keep",
-    "download",
-    "prometheus",
-    "grafana",
-    "*.collections"
-  ]
 }</code></pre>
 
-Once the infrastructure is deployed, you'll then need to define which node will be using the @balancer@ role and which will be the @controller@ nodes in @local.params@, as it's being shown in this partial example. Note how the workbench node got the majority of the other roles, reflecting the above terraform configuration example:
+Once the infrastructure is deployed, you'll then need to define which node will be using the @balancer@ role and which will be the @controller@ nodes in @local.params@, as it's being shown in this partial example:
 
-<pre><code>...
-NODES=(
+<pre><code>NODES=(
   [controller.${DOMAIN}]=balancer
   [controller1.${DOMAIN}]=controller
   [controller2.${DOMAIN}]=controller
   [database.${DOMAIN}]=database
-  [workbench.${DOMAIN}]=monitoring,workbench,workbench2,keepproxy,keepweb,websocket,keepbalance,dispatcher
-  [keep0.${DOMAIN}]=keepstore
+  ...
 )
-...</code></pre>
+</code></pre>
+
+Note that we also set the @database@ role to its own node.
 
 h3(#rolling-upgrades). Rolling upgrades procedure
 
