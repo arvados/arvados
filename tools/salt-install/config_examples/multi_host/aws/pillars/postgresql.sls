@@ -5,7 +5,7 @@
 
 {%- set domain = "__DOMAIN__" %}
 {%- set controller_nodes = "__CONTROLLER_NODES__".split(",") %}
-{%- set dispatcher_ip = "__DISPATCHER_INT_IP__" %}
+{%- set websocket_ip = "__WEBSOCKET_INT_IP__" %}
 {%- set keepbalance_ip = "__KEEPBALANCE_INT_IP__" %}
 
 ### POSTGRESQL
@@ -22,7 +22,7 @@ postgres:
     - ['host', 'all', 'all', '127.0.0.1/32', 'md5']
     - ['host', 'all', 'all', '::1/128', 'md5']
     - ['host', '__CLUSTER___arvados', '__CLUSTER___arvados', '127.0.0.1/32']
-    - ['host', '__CLUSTER___arvados', '__CLUSTER___arvados', '{{ dispatcher_ip }}/32']
+    - ['host', '__CLUSTER___arvados', '__CLUSTER___arvados', '{{ websocket_ip }}/32']
     - ['host', '__CLUSTER___arvados', '__CLUSTER___arvados', '{{ keepbalance_ip }}/32']
     {%- for controller_hostname in controller_nodes %}
     {%- set controller_ip = salt['cmd.run']("getent hosts "+controller_hostname+" | awk '{print $1 ; exit}'", python_shell=True) %}

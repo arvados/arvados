@@ -96,8 +96,8 @@ MONITORING_EMAIL=${INITIAL_USER_EMAIL}
 # installer.sh will log in to each of these nodes and then provision
 # it for the specified roles.
 NODES=(
-  [controller.${DOMAIN}]=database,controller,websocket,dispatcher,keepbalance
-  [workbench.${DOMAIN}]=monitoring,workbench,workbench2,webshell,keepproxy,keepweb
+  [controller.${DOMAIN}]=database,controller
+  [workbench.${DOMAIN}]=monitoring,workbench,workbench2,webshell,keepproxy,keepweb,websocket,dispatcher,keepbalance
   [keep0.${DOMAIN}]=keepstore
   [shell.${DOMAIN}]=shell
 )
@@ -121,11 +121,11 @@ CLUSTER_INT_CIDR=10.1.0.0/16
 # Note the IPs in this example are shared between roles, as suggested in
 # https://doc.arvados.org/main/install/salt-multi-host.html
 CONTROLLER_INT_IP=10.1.1.11
-DISPATCHER_INT_IP=${CONTROLLER_INT_IP}
-KEEPBALANCE_INT_IP=${CONTROLLER_INT_IP}
-WEBSOCKET_INT_IP=${CONTROLLER_INT_IP}
 DATABASE_INT_IP=${CONTROLLER_INT_IP}
 WORKBENCH1_INT_IP=10.1.1.15
+DISPATCHER_INT_IP=${WORKBENCH1_INT_IP}
+KEEPBALANCE_INT_IP=${WORKBENCH1_INT_IP}
+WEBSOCKET_INT_IP=${WORKBENCH1_INT_IP}
 # Both for collections and downloads
 KEEPWEB_INT_IP=${WORKBENCH1_INT_IP}
 WORKBENCH2_INT_IP=${WORKBENCH1_INT_IP}

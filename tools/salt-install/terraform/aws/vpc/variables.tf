@@ -54,8 +54,8 @@ variable "dns_aliases" {
   description = "Sets DNS name aliases for every service node"
   type = map(list(string))
   default = {
-    controller = ["ws"]
     workbench = [
+      "ws",
       "workbench2",
       "webshell",
       "keep",
