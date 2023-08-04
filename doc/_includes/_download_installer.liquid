@@ -9,7 +9,7 @@ SPDX-License-Identifier: CC-BY-SA-3.0
 This is a package-based installation method, however the installation script is currently distributed in source form via @git@. We recommend checking out the git tree on your local workstation, not directly on the target(s) where you want to install and run Arvados.
 
 <notextile>
-<pre><code>git clone https://github.com/arvados/arvados.git
+<pre><code class="userinput">git clone https://github.com/arvados/arvados.git
 cd arvados
 git checkout {{ branchname }}
 cd tools/salt-install
@@ -31,7 +31,7 @@ h3. Using Terraform (AWS specific)
 If you are going to use Terraform to set up the infrastructure on AWS, you first need to install the "Terraform CLI":https://developer.hashicorp.com/terraform/tutorials/aws-get-started/install-cli and the "AWS CLI":https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html tool.  Then you can initialize the installer.
 
 <notextile>
-<pre><code>CLUSTER=xarv1
+<pre><code class="userinput">CLUSTER=xarv1
 ./installer.sh initialize ~/setup-arvados-${CLUSTER} {{local_params_src}} {{config_examples_src}} {{terraform_src}}
 cd ~/setup-arvados-${CLUSTER}
 </code></pre>
@@ -40,7 +40,7 @@ cd ~/setup-arvados-${CLUSTER}
 h3. Without Terraform
 
 <notextile>
-<pre><code>CLUSTER=xarv1
+<pre><code class="userinput">CLUSTER=xarv1
 ./installer.sh initialize ~/setup-arvados-${CLUSTER} {{local_params_src}} {{config_examples_src}}
 cd ~/setup-arvados-${CLUSTER}
 </code></pre>

@@ -28,6 +28,8 @@ INITIAL_USER_EMAIL="admin@cluster_fixme_or_this_wont_work.domain_fixme_or_this_w
 # Comment out to disable.
 USE_SSH_JUMPHOST="controller.${DOMAIN}"
 
+AWS_REGION="fixme_or_this_wont_work"
+
 # SSL CERTIFICATES
 # Arvados requires SSL certificates to work correctly. This installer supports these options:
 # * self-signed: let the installer create self-signed certificate(s)
@@ -42,7 +44,17 @@ USE_LETSENCRYPT_ROUTE53="yes"
 # For that reason, you'll need to provide AWS credentials with permissions to manage
 # RRs in the route53 zone for the cluster.
 # WARNING!: If AWS credentials files already exist in the hosts, they won't be replaced.
-LE_AWS_REGION="us-east-1"
+LE_AWS_REGION="${AWS_REGION}"
+
+# Compute node configurations
+COMPUTE_AMI="ami_id_fixme_or_this_wont_work"
+COMPUTE_SG="security_group_fixme_or_this_wont_work"
+COMPUTE_SUBNET="subnet_fixme_or_this_wont_work"
+COMPUTE_AWS_REGION="${AWS_REGION}"
+COMPUTE_USER="${DEPLOY_USER}"
+
+# Keep S3 backend region
+KEEP_AWS_REGION="${AWS_REGION}"
 
 # If you going to provide your own certificates for Arvados, the provision script can
 # help you deploy them. In order to do that, you need to set `SSL_MODE=bring-your-own` above,
@@ -72,11 +84,10 @@ LE_AWS_REGION="us-east-1"
 # a custom AWS secret name for each node to retrieve the password.
 SSL_KEY_ENCRYPTED="no"
 SSL_KEY_AWS_SECRET_NAME="${CLUSTER}-arvados-ssl-privkey-password"
-SSL_KEY_AWS_REGION="us-east-1"
+SSL_KEY_AWS_REGION="${AWS_REGION}"
 
 # Customize Prometheus & Grafana web UI access credentials
 MONITORING_USERNAME=${INITIAL_USER}
-MONITORING_PASSWORD=${INITIAL_USER_PASSWORD}
 MONITORING_EMAIL=${INITIAL_USER_EMAIL}
 # Sets the directory for Grafana dashboards
 # GRAFANA_DASHBOARDS_DIR="${SCRIPT_DIR}/local_config_dir/dashboards"
@@ -85,8 +96,8 @@ MONITORING_EMAIL=${INITIAL_USER_EMAIL}
 # installer.sh will log in to each of these nodes and then provision
 # it for the specified roles.
 NODES=(
-  [controller.${DOMAIN}]=database,api,controller,websocket,dispatcher,keepbalance
-  [workbench.${DOMAIN}]=monitoring,workbench,workbench2,webshell,keepproxy,keepweb
+  [controller.${DOMAIN}]=database,controller
+  [workbench.${DOMAIN}]=monitoring,workbench,workbench2,webshell,keepproxy,keepweb,websocket,dispatcher,keepbalance
   [keep0.${DOMAIN}]=keepstore
   [shell.${DOMAIN}]=shell
 )
@@ -110,20 +121,27 @@ CLUSTER_INT_CIDR=10.1.0.0/16
 # Note the IPs in this example are shared between roles, as suggested in
 # https://doc.arvados.org/main/install/salt-multi-host.html
 CONTROLLER_INT_IP=10.1.1.11
-WEBSOCKET_INT_IP=10.1.1.11
-KEEP_INT_IP=10.1.1.15
-# Both for collections and downloads
-KEEPWEB_INT_IP=10.1.1.15
-KEEPSTORE0_INT_IP=10.1.2.13
+DATABASE_INT_IP=${CONTROLLER_INT_IP}
 WORKBENCH1_INT_IP=10.1.1.15
-WORKBENCH2_INT_IP=10.1.1.15
-WEBSHELL_INT_IP=10.1.1.15
-DATABASE_INT_IP=10.1.1.11
+DISPATCHER_INT_IP=${WORKBENCH1_INT_IP}
+KEEPBALANCE_INT_IP=${WORKBENCH1_INT_IP}
+WEBSOCKET_INT_IP=${WORKBENCH1_INT_IP}
+# Both for collections and downloads
+KEEPWEB_INT_IP=${WORKBENCH1_INT_IP}
+WORKBENCH2_INT_IP=${WORKBENCH1_INT_IP}
+WEBSHELL_INT_IP=${WORKBENCH1_INT_IP}
+KEEP_INT_IP=${WORKBENCH1_INT_IP}
+KEEPSTORE0_INT_IP=10.1.2.13
 SHELL_INT_IP=10.1.2.17
+
+# In a load balanced deployment, you can do rolling upgrades by specifying one
+# controller node name at a time, so that it gets removed from the pool and can
+# be upgraded.
+DISABLED_CONTROLLER=""
 
 # Performance tuning parameters
 #CONTROLLER_NGINX_WORKERS=
-#CONTROLLER_MAX_CONCURRENT_REQUESTS=
+CONTROLLER_MAX_CONCURRENT_REQUESTS=64
 
 # The directory to check for the config files (pillars, states) you want to use.
 # There are a few examples under 'config_examples'.

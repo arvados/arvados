@@ -10,6 +10,7 @@
 #
 # vagrant up
 
+set -eu
 set -o pipefail
 
 # capture the directory that the script is running from
@@ -25,7 +26,7 @@ usage() {
   echo >&2 "  -t, --test                                  Test installation running a CWL workflow"
   echo >&2 "  -r, --roles                                 List of Arvados roles to apply to the host, comma separated"
   echo >&2 "                                              Possible values are:"
-  echo >&2 "                                                api"
+  echo >&2 "                                                balancer"
   echo >&2 "                                                controller"
   echo >&2 "                                                dispatcher"
   echo >&2 "                                                keepproxy"
@@ -109,12 +110,12 @@ arguments() {
         for i in ${2//,/ }
           do
             # Verify the role exists
-            if [[ ! "database,api,controller,keepstore,websocket,keepweb,workbench2,webshell,keepbalance,keepproxy,shell,workbench,dispatcher,monitoring" == *"$i"* ]]; then
+            if [[ ! "database,balancer,controller,keepstore,websocket,keepweb,workbench2,webshell,keepbalance,keepproxy,shell,workbench,dispatcher,monitoring" == *"$i"* ]]; then
               echo "The role '${i}' is not a valid role"
               usage
               exit 1
             fi
-            ROLES="${ROLES} ${i}"
+            ROLES="${ROLES:-} ${i}"
           done
           shift 2
         ;;
@@ -156,6 +157,71 @@ copy_custom_cert() {
     echo "${cert_dir}/${cert_name}.key does not exist. Exiting"
     exit 1
   fi
+}
+
+apply_var_substitutions() {
+  local SRCFILE=$1
+  local DSTFILE=$2
+  sed "s#__ANONYMOUS_USER_TOKEN__#${ANONYMOUS_USER_TOKEN}#g;
+       s#__BLOB_SIGNING_KEY__#${BLOB_SIGNING_KEY}#g;
+       s#__CONTROLLER_EXT_SSL_PORT__#${CONTROLLER_EXT_SSL_PORT}#g;
+       s#__CLUSTER__#${CLUSTER}#g;
+       s#__DOMAIN__#${DOMAIN}#g;
+       s#__HOSTNAME_EXT__#${HOSTNAME_EXT}#g;
+       s#__IP_INT__#${IP_INT}#g;
+       s#__INITIAL_USER_EMAIL__#${INITIAL_USER_EMAIL}#g;
+       s#__INITIAL_USER_PASSWORD__#${INITIAL_USER_PASSWORD}#g;
+       s#__INITIAL_USER__#${INITIAL_USER}#g;
+       s#__LE_AWS_REGION__#${LE_AWS_REGION}#g;
+       s#__LE_AWS_SECRET_ACCESS_KEY__#${LE_AWS_SECRET_ACCESS_KEY}#g;
+       s#__LE_AWS_ACCESS_KEY_ID__#${LE_AWS_ACCESS_KEY_ID}#g;
+       s#__DATABASE_PASSWORD__#${DATABASE_PASSWORD}#g;
+       s#__KEEPWEB_EXT_SSL_PORT__#${KEEPWEB_EXT_SSL_PORT}#g;
+       s#__KEEP_EXT_SSL_PORT__#${KEEP_EXT_SSL_PORT}#g;
+       s#__MANAGEMENT_TOKEN__#${MANAGEMENT_TOKEN}#g;
+       s#__RELEASE__#${RELEASE}#g;
+       s#__SYSTEM_ROOT_TOKEN__#${SYSTEM_ROOT_TOKEN}#g;
+       s#__VERSION__#${VERSION}#g;
+       s#__WEBSHELL_EXT_SSL_PORT__#${WEBSHELL_EXT_SSL_PORT}#g;
+       s#__WEBSOCKET_EXT_SSL_PORT__#${WEBSOCKET_EXT_SSL_PORT}#g;
+       s#__WORKBENCH1_EXT_SSL_PORT__#${WORKBENCH1_EXT_SSL_PORT}#g;
+       s#__WORKBENCH2_EXT_SSL_PORT__#${WORKBENCH2_EXT_SSL_PORT}#g;
+       s#__CLUSTER_INT_CIDR__#${CLUSTER_INT_CIDR}#g;
+       s#__CONTROLLER_INT_IP__#${CONTROLLER_INT_IP}#g;
+       s#__WEBSOCKET_INT_IP__#${WEBSOCKET_INT_IP}#g;
+       s#__KEEP_INT_IP__#${KEEP_INT_IP}#g;
+       s#__KEEPSTORE0_INT_IP__#${KEEPSTORE0_INT_IP}#g;
+       s#__KEEPWEB_INT_IP__#${KEEPWEB_INT_IP}#g;
+       s#__WEBSHELL_INT_IP__#${WEBSHELL_INT_IP}#g;
+       s#__SHELL_INT_IP__#${SHELL_INT_IP}#g;
+       s#__WORKBENCH1_INT_IP__#${WORKBENCH1_INT_IP}#g;
+       s#__WORKBENCH2_INT_IP__#${WORKBENCH2_INT_IP}#g;
+       s#__DATABASE_INT_IP__#${DATABASE_INT_IP}#g;
+       s#__WORKBENCH_SECRET_KEY__#${WORKBENCH_SECRET_KEY}#g;
+       s#__SSL_KEY_ENCRYPTED__#${SSL_KEY_ENCRYPTED}#g;
+       s#__SSL_KEY_AWS_REGION__#${SSL_KEY_AWS_REGION}#g;
+       s#__SSL_KEY_AWS_SECRET_NAME__#${SSL_KEY_AWS_SECRET_NAME}#g;
+       s#__CONTROLLER_NGINX_WORKERS__#${CONTROLLER_NGINX_WORKERS:-}#g;
+       s#__CONTROLLER_MAX_CONCURRENT_REQUESTS__#${CONTROLLER_MAX_CONCURRENT_REQUESTS:-64}#g;
+       s#__MONITORING_USERNAME__#${MONITORING_USERNAME}#g;
+       s#__MONITORING_EMAIL__#${MONITORING_EMAIL}#g;
+       s#__MONITORING_PASSWORD__#${MONITORING_PASSWORD}#g;
+       s#__DISPATCHER_SSH_PRIVKEY__#${DISPATCHER_SSH_PRIVKEY//$'\n'/\\n}#g;
+       s#__ENABLE_BALANCER__#${ENABLE_BALANCER}#g;
+       s#__DISABLED_CONTROLLER__#${DISABLED_CONTROLLER}#g;
+       s#__BALANCER_NODENAME__#${ROLE2NODES['balancer']:-}#g;
+       s#__PROMETHEUS_NODENAME__#${ROLE2NODES['monitoring']:-}#g;
+       s#__CONTROLLER_NODES__#${ROLE2NODES['controller']}#g;
+       s#__NODELIST__#${NODELIST}#g;
+       s#__DISPATCHER_INT_IP__#${DISPATCHER_INT_IP}#g;
+       s#__KEEPBALANCE_INT_IP__#${KEEPBALANCE_INT_IP}#g;
+       s#__COMPUTE_AMI__#${COMPUTE_AMI}#g;
+       s#__COMPUTE_SG__#${COMPUTE_SG}#g;
+       s#__COMPUTE_SUBNET__#${COMPUTE_SUBNET}#g;
+       s#__COMPUTE_AWS_REGION__#${COMPUTE_AWS_REGION}#g;
+       s#__COMPUTE_USER__#${COMPUTE_USER}#g;
+       s#__KEEP_AWS_REGION__#${KEEP_AWS_REGION}#g" \
+  "${SRCFILE}" > "${DSTFILE}"
 }
 
 DEV_MODE="no"
@@ -230,27 +296,22 @@ GRAFANA_TAG="v3.1.3"
 DUMP_SALT_CONFIG_DIR=""
 ## states
 S_DIR="/srv/salt"
+STATES_TOP=${S_DIR}/top.sls
 ## formulas
 F_DIR="/srv/formulas"
 ## pillars
 P_DIR="/srv/pillars"
+PILLARS_TOP=${P_DIR}/top.sls
 ## tests
 T_DIR="/tmp/cluster_tests"
 
 arguments ${@}
 
 declare -A NODES
+declare -A ROLES
+declare NODELIST
 
-if [[ -s ${CONFIG_FILE} && -s ${CONFIG_FILE}.secrets ]]; then
-  source ${CONFIG_FILE}.secrets
-  source ${CONFIG_FILE}
-else
-  echo >&2 "You don't seem to have a config file with initial values."
-  echo >&2 "Please create a '${CONFIG_FILE}' & '${CONFIG_FILE}.secrets' files as described in"
-  echo >&2 "  * https://doc.arvados.org/install/salt-single-host.html#single_host, or"
-  echo >&2 "  * https://doc.arvados.org/install/salt-multi-host.html#multi_host_multi_hostnames"
-  exit 1
-fi
+source common.sh
 
 if [ ! -d ${CONFIG_DIR} ]; then
   echo >&2 "You don't seem to have a config directory with pillars and states."
@@ -273,7 +334,7 @@ if ! grep -qE '^[[:alnum:]]{5}$' <<<${CLUSTER} ; then
 fi
 
 # Only used in single_host/single_name deploys
-if [ ! -z "${HOSTNAME_EXT}" ] ; then
+if [ ! -z "${HOSTNAME_EXT:-}" ] ; then
   # We need to add some extra control vars to manage a single certificate vs. multiple
   USE_SINGLE_HOSTNAME="yes"
   # Make sure that the value configured as IP_INT is a real IP on the system.
@@ -388,13 +449,13 @@ echo "...arvados"
 test -d arvados || git clone --quiet https://git.arvados.org/arvados-formula.git ${F_DIR}/arvados
 
 # If we want to try a specific branch of the formula
-if [ "x${BRANCH}" != "x" ]; then
+if [ "x${BRANCH:-}" != "x" ]; then
   ( cd ${F_DIR}/arvados && git checkout --quiet -t origin/"${BRANCH}" -b "${BRANCH}" )
-elif [ "x${ARVADOS_TAG}" != "x" ]; then
+elif [ "x${ARVADOS_TAG:-}" != "x" ]; then
   ( cd ${F_DIR}/arvados && git checkout --quiet tags/"${ARVADOS_TAG}" -b "${ARVADOS_TAG}" )
 fi
 
-if [ "x${VAGRANT}" = "xyes" ]; then
+if [ "x${VAGRANT:-}" = "xyes" ]; then
   EXTRA_STATES_DIR="/home/vagrant/${CONFIG_DIR}/states"
   SOURCE_PILLARS_DIR="/home/vagrant/${CONFIG_DIR}/pillars"
   SOURCE_TOFS_DIR="/home/vagrant/${CONFIG_DIR}/tofs"
@@ -417,57 +478,12 @@ if [ ! -d "${SOURCE_PILLARS_DIR}" ]; then
   exit 1
 fi
 for f in $(ls "${SOURCE_PILLARS_DIR}"/*); do
-  sed "s#__ANONYMOUS_USER_TOKEN__#${ANONYMOUS_USER_TOKEN}#g;
-       s#__BLOB_SIGNING_KEY__#${BLOB_SIGNING_KEY}#g;
-       s#__CONTROLLER_EXT_SSL_PORT__#${CONTROLLER_EXT_SSL_PORT}#g;
-       s#__CLUSTER__#${CLUSTER}#g;
-       s#__DOMAIN__#${DOMAIN}#g;
-       s#__HOSTNAME_EXT__#${HOSTNAME_EXT}#g;
-       s#__IP_INT__#${IP_INT}#g;
-       s#__INITIAL_USER_EMAIL__#${INITIAL_USER_EMAIL}#g;
-       s#__INITIAL_USER_PASSWORD__#${INITIAL_USER_PASSWORD}#g;
-       s#__INITIAL_USER__#${INITIAL_USER}#g;
-       s#__LE_AWS_REGION__#${LE_AWS_REGION}#g;
-       s#__LE_AWS_SECRET_ACCESS_KEY__#${LE_AWS_SECRET_ACCESS_KEY}#g;
-       s#__LE_AWS_ACCESS_KEY_ID__#${LE_AWS_ACCESS_KEY_ID}#g;
-       s#__DATABASE_PASSWORD__#${DATABASE_PASSWORD}#g;
-       s#__KEEPWEB_EXT_SSL_PORT__#${KEEPWEB_EXT_SSL_PORT}#g;
-       s#__KEEP_EXT_SSL_PORT__#${KEEP_EXT_SSL_PORT}#g;
-       s#__MANAGEMENT_TOKEN__#${MANAGEMENT_TOKEN}#g;
-       s#__RELEASE__#${RELEASE}#g;
-       s#__SYSTEM_ROOT_TOKEN__#${SYSTEM_ROOT_TOKEN}#g;
-       s#__VERSION__#${VERSION}#g;
-       s#__WEBSHELL_EXT_SSL_PORT__#${WEBSHELL_EXT_SSL_PORT}#g;
-       s#__WEBSOCKET_EXT_SSL_PORT__#${WEBSOCKET_EXT_SSL_PORT}#g;
-       s#__WORKBENCH1_EXT_SSL_PORT__#${WORKBENCH1_EXT_SSL_PORT}#g;
-       s#__WORKBENCH2_EXT_SSL_PORT__#${WORKBENCH2_EXT_SSL_PORT}#g;
-       s#__CLUSTER_INT_CIDR__#${CLUSTER_INT_CIDR}#g;
-       s#__CONTROLLER_INT_IP__#${CONTROLLER_INT_IP}#g;
-       s#__WEBSOCKET_INT_IP__#${WEBSOCKET_INT_IP}#g;
-       s#__KEEP_INT_IP__#${KEEP_INT_IP}#g;
-       s#__KEEPSTORE0_INT_IP__#${KEEPSTORE0_INT_IP}#g;
-       s#__KEEPWEB_INT_IP__#${KEEPWEB_INT_IP}#g;
-       s#__WEBSHELL_INT_IP__#${WEBSHELL_INT_IP}#g;
-       s#__SHELL_INT_IP__#${SHELL_INT_IP}#g;
-       s#__WORKBENCH1_INT_IP__#${WORKBENCH1_INT_IP}#g;
-       s#__WORKBENCH2_INT_IP__#${WORKBENCH2_INT_IP}#g;
-       s#__DATABASE_INT_IP__#${DATABASE_INT_IP}#g;
-       s#__WORKBENCH_SECRET_KEY__#${WORKBENCH_SECRET_KEY}#g;
-       s#__SSL_KEY_ENCRYPTED__#${SSL_KEY_ENCRYPTED}#g;
-       s#__SSL_KEY_AWS_REGION__#${SSL_KEY_AWS_REGION}#g;
-       s#__SSL_KEY_AWS_SECRET_NAME__#${SSL_KEY_AWS_SECRET_NAME}#g;
-       s#__CONTROLLER_NGINX_WORKERS__#${CONTROLLER_NGINX_WORKERS}#g;
-       s#__CONTROLLER_MAX_CONCURRENT_REQUESTS__#${CONTROLLER_MAX_CONCURRENT_REQUESTS}#g;
-       s#__MONITORING_USERNAME__#${MONITORING_USERNAME}#g;
-       s#__MONITORING_EMAIL__#${MONITORING_EMAIL}#g;
-       s#__MONITORING_PASSWORD__#${MONITORING_PASSWORD}#g;
-       s#__DISPATCHER_SSH_PRIVKEY__#${DISPATCHER_SSH_PRIVKEY//$'\n'/\\n}#g" \
-  "${f}" > "${P_DIR}"/$(basename "${f}")
+  apply_var_substitutions "${f}" "${P_DIR}"/$(basename "${f}")
 done
 
 if [ ! -d "${SOURCE_TESTS_DIR}" ]; then
   echo "WARNING: The tests directory was not copied to \"${SOURCE_TESTS_DIR}\"."
-  if [ "x${TEST}" = "xyes" ]; then
+  if [ "x${TEST:-}" = "xyes" ]; then
     echo "WARNING: Disabling tests for this installation."
   fi
   TEST="no"
@@ -500,49 +516,7 @@ if [ -d "${SOURCE_STATES_DIR}" ]; then
   rm -f "${F_DIR}"/extra/extra/*
 
   for f in $(ls "${SOURCE_STATES_DIR}"/*); do
-    sed "s#__ANONYMOUS_USER_TOKEN__#${ANONYMOUS_USER_TOKEN}#g;
-         s#__CLUSTER__#${CLUSTER}#g;
-         s#__BLOB_SIGNING_KEY__#${BLOB_SIGNING_KEY}#g;
-         s#__CONTROLLER_EXT_SSL_PORT__#${CONTROLLER_EXT_SSL_PORT}#g;
-         s#__DOMAIN__#${DOMAIN}#g;
-         s#__HOSTNAME_EXT__#${HOSTNAME_EXT}#g;
-         s#__IP_INT__#${IP_INT}#g;
-         s#__INITIAL_USER_EMAIL__#${INITIAL_USER_EMAIL}#g;
-         s#__INITIAL_USER_PASSWORD__#${INITIAL_USER_PASSWORD}#g;
-         s#__INITIAL_USER__#${INITIAL_USER}#g;
-         s#__DATABASE_PASSWORD__#${DATABASE_PASSWORD}#g;
-         s#__KEEPWEB_EXT_SSL_PORT__#${KEEPWEB_EXT_SSL_PORT}#g;
-         s#__KEEP_EXT_SSL_PORT__#${KEEP_EXT_SSL_PORT}#g;
-         s#__MANAGEMENT_TOKEN__#${MANAGEMENT_TOKEN}#g;
-         s#__RELEASE__#${RELEASE}#g;
-         s#__SYSTEM_ROOT_TOKEN__#${SYSTEM_ROOT_TOKEN}#g;
-         s#__VERSION__#${VERSION}#g;
-         s#__CLUSTER_INT_CIDR__#${CLUSTER_INT_CIDR}#g;
-         s#__CONTROLLER_INT_IP__#${CONTROLLER_INT_IP}#g;
-         s#__WEBSOCKET_INT_IP__#${WEBSOCKET_INT_IP}#g;
-         s#__KEEP_INT_IP__#${KEEP_INT_IP}#g;
-         s#__KEEPSTORE0_INT_IP__#${KEEPSTORE0_INT_IP}#g;
-         s#__KEEPWEB_INT_IP__#${KEEPWEB_INT_IP}#g;
-         s#__WEBSHELL_INT_IP__#${WEBSHELL_INT_IP}#g;
-         s#__WORKBENCH1_INT_IP__#${WORKBENCH1_INT_IP}#g;
-         s#__WORKBENCH2_INT_IP__#${WORKBENCH2_INT_IP}#g;
-         s#__DATABASE_INT_IP__#${DATABASE_INT_IP}#g;
-         s#__WEBSHELL_EXT_SSL_PORT__#${WEBSHELL_EXT_SSL_PORT}#g;
-         s#__SHELL_INT_IP__#${SHELL_INT_IP}#g;
-         s#__WEBSOCKET_EXT_SSL_PORT__#${WEBSOCKET_EXT_SSL_PORT}#g;
-         s#__WORKBENCH1_EXT_SSL_PORT__#${WORKBENCH1_EXT_SSL_PORT}#g;
-         s#__WORKBENCH2_EXT_SSL_PORT__#${WORKBENCH2_EXT_SSL_PORT}#g;
-         s#__WORKBENCH_SECRET_KEY__#${WORKBENCH_SECRET_KEY}#g;
-         s#__SSL_KEY_ENCRYPTED__#${SSL_KEY_ENCRYPTED}#g;
-         s#__SSL_KEY_AWS_REGION__#${SSL_KEY_AWS_REGION}#g;
-         s#__SSL_KEY_AWS_SECRET_NAME__#${SSL_KEY_AWS_SECRET_NAME}#g;
-         s#__CONTROLLER_NGINX_WORKERS__#${CONTROLLER_NGINX_WORKERS}#g;
-         s#__CONTROLLER_MAX_CONCURRENT_REQUESTS__#${CONTROLLER_MAX_CONCURRENT_REQUESTS}#g;
-         s#__MONITORING_USERNAME__#${MONITORING_USERNAME}#g;
-         s#__MONITORING_EMAIL__#${MONITORING_EMAIL}#g;
-         s#__MONITORING_PASSWORD__#${MONITORING_PASSWORD}#g;
-         s#__DISPATCHER_SSH_PRIVKEY__#${DISPATCHER_SSH_PRIVKEY//$'\n'/\\n}#g" \
-    "${f}" > "${F_DIR}/extra/extra"/$(basename "${f}")
+    apply_var_substitutions "${f}" "${F_DIR}/extra/extra"/$(basename "${f}")
   done
 fi
 
@@ -557,14 +531,14 @@ if [ -d ${SOURCE_TOFS_DIR} ]; then
 fi
 
 # States
-cat > ${S_DIR}/top.sls << EOFTSLS
+cat > ${STATES_TOP} << EOFTSLS
 base:
   '*':
     - locale
 EOFTSLS
 
 # Pillars
-cat > ${P_DIR}/top.sls << EOFPSLS
+cat > ${PILLARS_TOP} << EOFPSLS
 base:
   '*':
     - locale
@@ -582,7 +556,7 @@ if [ -d "${F_DIR}"/extra/extra ]; then
     SKIP_SNAKE_OIL="dont_add_snakeoil_certs"
   fi
   for f in $(ls "${F_DIR}"/extra/extra/*.sls | egrep -v "${SKIP_SNAKE_OIL}|shell_"); do
-  echo "    - extra.$(basename ${f} | sed 's/.sls$//g')" >> ${S_DIR}/top.sls
+  echo "    - extra.$(basename ${f} | sed 's/.sls$//g')" >> ${STATES_TOP}
   done
   # Use byo or self-signed certificates
   if [ "${SSL_MODE}" != "lets-encrypt" ]; then
@@ -594,49 +568,49 @@ fi
 # and its dependencies
 if [ -z "${ROLES}" ]; then
   # States
-  echo "    - nginx.passenger" >> ${S_DIR}/top.sls
+  echo "    - nginx.passenger" >> ${STATES_TOP}
   if [ "${SSL_MODE}" = "lets-encrypt" ]; then
     if [ "${USE_LETSENCRYPT_ROUTE53}" = "yes" ]; then
-      grep -q "aws_credentials" ${S_DIR}/top.sls || echo "    - extra.aws_credentials" >> ${S_DIR}/top.sls
+      grep -q "aws_credentials" ${STATES_TOP} || echo "    - extra.aws_credentials" >> ${STATES_TOP}
     fi
-    grep -q "letsencrypt" ${S_DIR}/top.sls || echo "    - letsencrypt" >> ${S_DIR}/top.sls
+    grep -q "letsencrypt" ${STATES_TOP} || echo "    - letsencrypt" >> ${STATES_TOP}
   else
     mkdir -p --mode=0700 /srv/salt/certs
     if [ "${SSL_MODE}" = "bring-your-own" ]; then
       # Copy certs to formula extra/files
       install --mode=0600 ${CUSTOM_CERTS_DIR}/* /srv/salt/certs/
       # We add the custom_certs state
-      grep -q "custom_certs" ${S_DIR}/top.sls || echo "    - extra.custom_certs" >> ${S_DIR}/top.sls
+      grep -q "custom_certs" ${STATES_TOP} || echo "    - extra.custom_certs" >> ${STATES_TOP}
       if [ "${SSL_KEY_ENCRYPTED}" = "yes" ]; then
-        grep -q "ssl_key_encrypted" ${S_DIR}/top.sls || echo "    - extra.ssl_key_encrypted" >> ${S_DIR}/top.sls
+        grep -q "ssl_key_encrypted" ${STATES_TOP} || echo "    - extra.ssl_key_encrypted" >> ${STATES_TOP}
       fi
     fi
     # In self-signed mode, the certificate files will be created and put in the
     # destination directory by the snakeoil_certs.sls state file
   fi
 
-  echo "    - postgres" >> ${S_DIR}/top.sls
-  echo "    - logrotate" >> ${S_DIR}/top.sls
-  echo "    - docker.software" >> ${S_DIR}/top.sls
-  echo "    - arvados" >> ${S_DIR}/top.sls
-  echo "    - extra.shell_sudo_passwordless" >> ${S_DIR}/top.sls
-  echo "    - extra.shell_cron_add_login_sync" >> ${S_DIR}/top.sls
-  echo "    - extra.passenger_rvm" >> ${S_DIR}/top.sls
+  echo "    - postgres" >> ${STATES_TOP}
+  echo "    - logrotate" >> ${STATES_TOP}
+  echo "    - docker.software" >> ${STATES_TOP}
+  echo "    - arvados" >> ${STATES_TOP}
+  echo "    - extra.shell_sudo_passwordless" >> ${STATES_TOP}
+  echo "    - extra.shell_cron_add_login_sync" >> ${STATES_TOP}
+  echo "    - extra.passenger_rvm" >> ${STATES_TOP}
 
   # Pillars
-  echo "    - docker" >> ${P_DIR}/top.sls
-  echo "    - nginx_api_configuration" >> ${P_DIR}/top.sls
-  echo "    - logrotate_api" >> ${P_DIR}/top.sls
-  echo "    - nginx_controller_configuration" >> ${P_DIR}/top.sls
-  echo "    - nginx_keepproxy_configuration" >> ${P_DIR}/top.sls
-  echo "    - nginx_keepweb_configuration" >> ${P_DIR}/top.sls
-  echo "    - nginx_passenger" >> ${P_DIR}/top.sls
-  echo "    - nginx_websocket_configuration" >> ${P_DIR}/top.sls
-  echo "    - nginx_webshell_configuration" >> ${P_DIR}/top.sls
-  echo "    - nginx_workbench2_configuration" >> ${P_DIR}/top.sls
-  echo "    - nginx_workbench_configuration" >> ${P_DIR}/top.sls
-  echo "    - logrotate_wb1" >> ${P_DIR}/top.sls
-  echo "    - postgresql" >> ${P_DIR}/top.sls
+  echo "    - docker" >> ${PILLARS_TOP}
+  echo "    - nginx_api_configuration" >> ${PILLARS_TOP}
+  echo "    - logrotate_api" >> ${PILLARS_TOP}
+  echo "    - nginx_controller_configuration" >> ${PILLARS_TOP}
+  echo "    - nginx_keepproxy_configuration" >> ${PILLARS_TOP}
+  echo "    - nginx_keepweb_configuration" >> ${PILLARS_TOP}
+  echo "    - nginx_passenger" >> ${PILLARS_TOP}
+  echo "    - nginx_websocket_configuration" >> ${PILLARS_TOP}
+  echo "    - nginx_webshell_configuration" >> ${PILLARS_TOP}
+  echo "    - nginx_workbench2_configuration" >> ${PILLARS_TOP}
+  echo "    - nginx_workbench_configuration" >> ${PILLARS_TOP}
+  echo "    - logrotate_wb1" >> ${PILLARS_TOP}
+  echo "    - postgresql" >> ${PILLARS_TOP}
 
   # We need to tweak the Nginx's pillar depending whether we want plan nginx or nginx+passenger
   NGINX_INSTALL_SOURCE="install_from_phusionpassenger"
@@ -644,9 +618,9 @@ if [ -z "${ROLES}" ]; then
 
   if [ "${SSL_MODE}" = "lets-encrypt" ]; then
     if [ "${USE_LETSENCRYPT_ROUTE53}" = "yes" ]; then
-      grep -q "aws_credentials" ${P_DIR}/top.sls || echo "    - aws_credentials" >> ${P_DIR}/top.sls
+      grep -q "aws_credentials" ${PILLARS_TOP} || echo "    - aws_credentials" >> ${PILLARS_TOP}
     fi
-    grep -q "letsencrypt" ${P_DIR}/top.sls || echo "    - letsencrypt" >> ${P_DIR}/top.sls
+    grep -q "letsencrypt" ${PILLARS_TOP} || echo "    - letsencrypt" >> ${PILLARS_TOP}
 
     hosts=("controller" "websocket" "workbench" "workbench2" "webshell" "keepproxy")
     if [ ${USE_SINGLE_HOSTNAME} = "no" ]; then
@@ -673,7 +647,7 @@ if [ -z "${ROLES}" ]; then
     done
   else
     # Use custom certs (either dev mode or prod)
-    grep -q "extra_custom_certs" ${P_DIR}/top.sls || echo "    - extra_custom_certs" >> ${P_DIR}/top.sls
+    grep -q "extra_custom_certs" ${PILLARS_TOP} || echo "    - extra_custom_certs" >> ${PILLARS_TOP}
     # And add the certs in the custom_certs pillar
     echo "extra_custom_certs_dir: /srv/salt/certs" > ${P_DIR}/extra_custom_certs.sls
     echo "extra_custom_certs:" >> ${P_DIR}/extra_custom_certs.sls
@@ -703,11 +677,11 @@ if [ -z "${ROLES}" ]; then
   fi
 else
   # If we add individual roles, make sure we add the repo first
-  echo "    - arvados.repo" >> ${S_DIR}/top.sls
+  echo "    - arvados.repo" >> ${STATES_TOP}
   # We add the extra_custom_certs state
-  grep -q "extra.custom_certs"    ${S_DIR}/top.sls || echo "    - extra.custom_certs" >> ${S_DIR}/top.sls
+  grep -q "extra.custom_certs"    ${STATES_TOP} || echo "    - extra.custom_certs" >> ${STATES_TOP}
   if [ "${SSL_KEY_ENCRYPTED}" = "yes" ]; then
-    grep -q "ssl_key_encrypted" ${S_DIR}/top.sls || echo "    - extra.ssl_key_encrypted" >> ${S_DIR}/top.sls
+    grep -q "ssl_key_encrypted" ${STATES_TOP} || echo "    - extra.ssl_key_encrypted" >> ${STATES_TOP}
   fi
 
   # And we add the basic part for the certs pillar
@@ -715,23 +689,23 @@ else
     # And add the certs in the custom_certs pillar
     echo "extra_custom_certs_dir: /srv/salt/certs" > ${P_DIR}/extra_custom_certs.sls
     echo "extra_custom_certs:" >> ${P_DIR}/extra_custom_certs.sls
-    grep -q "extra_custom_certs" ${P_DIR}/top.sls || echo "    - extra_custom_certs" >> ${P_DIR}/top.sls
+    grep -q "extra_custom_certs" ${PILLARS_TOP} || echo "    - extra_custom_certs" >> ${PILLARS_TOP}
   fi
 
   # Prometheus state on all nodes due to the node exporter below
-  grep -q "\- prometheus$" ${S_DIR}/top.sls || echo "    - prometheus" >> ${S_DIR}/top.sls
+  grep -q "\- prometheus$" ${STATES_TOP} || echo "    - prometheus" >> ${STATES_TOP}
   # Prometheus node exporter pillar
-  grep -q "prometheus_node_exporter" ${P_DIR}/top.sls || echo "    - prometheus_node_exporter" >> ${P_DIR}/top.sls
+  grep -q "prometheus_node_exporter" ${PILLARS_TOP} || echo "    - prometheus_node_exporter" >> ${PILLARS_TOP}
 
   for R in ${ROLES}; do
     case "${R}" in
       "database")
         # States
-        grep -q "\- postgres$" ${S_DIR}/top.sls || echo "    - postgres" >> ${S_DIR}/top.sls
-        grep -q "extra.prometheus_pg_exporter" ${S_DIR}/top.sls || echo "    - extra.prometheus_pg_exporter" >> ${S_DIR}/top.sls
+        grep -q "\- postgres$" ${STATES_TOP} || echo "    - postgres" >> ${STATES_TOP}
+        grep -q "extra.prometheus_pg_exporter" ${STATES_TOP} || echo "    - extra.prometheus_pg_exporter" >> ${STATES_TOP}
         # Pillars
-        grep -q "postgresql" ${P_DIR}/top.sls || echo "    - postgresql" >> ${P_DIR}/top.sls
-        grep -q "prometheus_pg_exporter" ${P_DIR}/top.sls || echo "    - prometheus_pg_exporter" >> ${P_DIR}/top.sls
+        grep -q "postgresql" ${PILLARS_TOP} || echo "    - postgresql" >> ${PILLARS_TOP}
+        grep -q "prometheus_pg_exporter" ${PILLARS_TOP} || echo "    - prometheus_pg_exporter" >> ${PILLARS_TOP}
       ;;
       "monitoring")
         ### Support files ###
@@ -746,18 +720,18 @@ else
         done
 
         ### States ###
-        grep -q "\- nginx$" ${S_DIR}/top.sls || echo "    - nginx" >> ${S_DIR}/top.sls
-        grep -q "extra.nginx_prometheus_configuration" ${S_DIR}/top.sls || echo "    - extra.nginx_prometheus_configuration" >> ${S_DIR}/top.sls
+        grep -q "\- nginx$" ${STATES_TOP} || echo "    - nginx" >> ${STATES_TOP}
+        grep -q "extra.nginx_prometheus_configuration" ${STATES_TOP} || echo "    - extra.nginx_prometheus_configuration" >> ${STATES_TOP}
 
-        grep -q "\- grafana$" ${S_DIR}/top.sls || echo "    - grafana" >> ${S_DIR}/top.sls
-        grep -q "extra.grafana_datasource" ${S_DIR}/top.sls || echo "    - extra.grafana_datasource" >> ${S_DIR}/top.sls
-        grep -q "extra.grafana_dashboards" ${S_DIR}/top.sls || echo "    - extra.grafana_dashboards" >> ${S_DIR}/top.sls
-        grep -q "extra.grafana_admin_user" ${S_DIR}/top.sls || echo "    - extra.grafana_admin_user" >> ${S_DIR}/top.sls
+        grep -q "\- grafana$" ${STATES_TOP} || echo "    - grafana" >> ${STATES_TOP}
+        grep -q "extra.grafana_datasource" ${STATES_TOP} || echo "    - extra.grafana_datasource" >> ${STATES_TOP}
+        grep -q "extra.grafana_dashboards" ${STATES_TOP} || echo "    - extra.grafana_dashboards" >> ${STATES_TOP}
+        grep -q "extra.grafana_admin_user" ${STATES_TOP} || echo "    - extra.grafana_admin_user" >> ${STATES_TOP}
 
         if [ "${SSL_MODE}" = "lets-encrypt" ]; then
-          grep -q "letsencrypt"     ${S_DIR}/top.sls || echo "    - letsencrypt" >> ${S_DIR}/top.sls
-          if [ "x${USE_LETSENCRYPT_ROUTE53}" = "xyes" ]; then
-            grep -q "aws_credentials" ${S_DIR}/top.sls || echo "    - aws_credentials" >> ${S_DIR}/top.sls
+          grep -q "letsencrypt"     ${STATES_TOP} || echo "    - letsencrypt" >> ${STATES_TOP}
+          if [ "x${USE_LETSENCRYPT_ROUTE53:-}" = "xyes" ]; then
+            grep -q "aws_credentials" ${STATES_TOP} || echo "    - aws_credentials" >> ${STATES_TOP}
           fi
         elif [ "${SSL_MODE}" = "bring-your-own" ]; then
           for SVC in grafana prometheus; do
@@ -765,25 +739,25 @@ else
           done
         fi
         ### Pillars ###
-        grep -q "prometheus_server" ${P_DIR}/top.sls || echo "    - prometheus_server" >> ${P_DIR}/top.sls
-        grep -q "grafana" ${P_DIR}/top.sls || echo "    - grafana" >> ${P_DIR}/top.sls
+        grep -q "prometheus_server" ${PILLARS_TOP} || echo "    - prometheus_server" >> ${PILLARS_TOP}
+        grep -q "grafana" ${PILLARS_TOP} || echo "    - grafana" >> ${PILLARS_TOP}
         for SVC in grafana prometheus; do
-          grep -q "nginx_${SVC}_configuration" ${P_DIR}/top.sls || echo "    - nginx_${SVC}_configuration" >> ${P_DIR}/top.sls
+          grep -q "nginx_${SVC}_configuration" ${PILLARS_TOP} || echo "    - nginx_${SVC}_configuration" >> ${PILLARS_TOP}
         done
         if [ "${SSL_MODE}" = "lets-encrypt" ]; then
-          grep -q "letsencrypt"     ${P_DIR}/top.sls || echo "    - letsencrypt" >> ${P_DIR}/top.sls
+          grep -q "letsencrypt"     ${PILLARS_TOP} || echo "    - letsencrypt" >> ${PILLARS_TOP}
           for SVC in grafana prometheus; do
-            grep -q "letsencrypt_${SVC}_configuration" ${P_DIR}/top.sls || echo "    - letsencrypt_${SVC}_configuration" >> ${P_DIR}/top.sls
+            grep -q "letsencrypt_${SVC}_configuration" ${PILLARS_TOP} || echo "    - letsencrypt_${SVC}_configuration" >> ${PILLARS_TOP}
             sed -i "s/__CERT_REQUIRES__/cmd: create-initial-cert-${SVC}.${DOMAIN}*/g;
                     s#__CERT_PEM__#/etc/letsencrypt/live/${SVC}.${DOMAIN}/fullchain.pem#g;
                     s#__CERT_KEY__#/etc/letsencrypt/live/${SVC}.${DOMAIN}/privkey.pem#g" \
             ${P_DIR}/nginx_${SVC}_configuration.sls
           done
           if [ "${USE_LETSENCRYPT_ROUTE53}" = "yes" ]; then
-            grep -q "aws_credentials" ${P_DIR}/top.sls || echo "    - aws_credentials" >> ${P_DIR}/top.sls
+            grep -q "aws_credentials" ${PILLARS_TOP} || echo "    - aws_credentials" >> ${PILLARS_TOP}
           fi
         elif [ "${SSL_MODE}" = "bring-your-own" ]; then
-          grep -q "ssl_key_encrypted" ${P_DIR}/top.sls || echo "    - ssl_key_encrypted" >> ${P_DIR}/top.sls
+          grep -q "ssl_key_encrypted" ${PILLARS_TOP} || echo "    - ssl_key_encrypted" >> ${PILLARS_TOP}
           for SVC in grafana prometheus; do
             sed -i "s/__CERT_REQUIRES__/file: extra_custom_certs_file_copy_arvados-${SVC}.pem/g;
                     s#__CERT_PEM__#/etc/nginx/ssl/arvados-${SVC}.pem#g;
@@ -793,59 +767,121 @@ else
           done
         fi
       ;;
-      "api")
-        # States
-        grep -q "    - logrotate" ${S_DIR}/top.sls || echo "    - logrotate" >> ${S_DIR}/top.sls
-        if grep -q "    - nginx.*$" ${S_DIR}/top.sls; then
-          sed -i s/"^    - nginx.*$"/"    - nginx.passenger"/g ${S_DIR}/top.sls
-        else
-          echo "    - nginx.passenger" >> ${S_DIR}/top.sls
+      "balancer")
+        ### States ###
+        grep -q "\- nginx$" ${STATES_TOP} || echo "    - nginx" >> ${STATES_TOP}
+
+        if [ "${SSL_MODE}" = "lets-encrypt" ]; then
+          grep -q "letsencrypt"     ${STATES_TOP} || echo "    - letsencrypt" >> ${STATES_TOP}
+          if [ "x${USE_LETSENCRYPT_ROUTE53:-}" = "xyes" ]; then
+            grep -q "aws_credentials" ${STATES_TOP} || echo "    - aws_credentials" >> ${STATES_TOP}
+          fi
+        elif [ "${SSL_MODE}" = "bring-your-own" ]; then
+          copy_custom_cert ${CUSTOM_CERTS_DIR} ${R}
         fi
-        echo "    - extra.passenger_rvm" >> ${S_DIR}/top.sls
+
+        ### Pillars ###
+        grep -q "nginx_${R}_configuration" ${PILLARS_TOP} || echo "    - nginx_${R}_configuration" >> ${PILLARS_TOP}
+
+        if [ "${SSL_MODE}" = "lets-encrypt" ]; then
+          grep -q "letsencrypt"     ${PILLARS_TOP} || echo "    - letsencrypt" >> ${PILLARS_TOP}
+
+          grep -q "letsencrypt_${R}_configuration" ${PILLARS_TOP} || echo "    - letsencrypt_${R}_configuration" >> ${PILLARS_TOP}
+          sed -i "s/__CERT_REQUIRES__/cmd: create-initial-cert-${ROLE2NODES['balancer']}*/g;
+                  s#__CERT_PEM__#/etc/letsencrypt/live/${ROLE2NODES['balancer']}/fullchain.pem#g;
+                  s#__CERT_KEY__#/etc/letsencrypt/live/${ROLE2NODES['balancer']}/privkey.pem#g" \
+          ${P_DIR}/nginx_${R}_configuration.sls
+
+          if [ "${USE_LETSENCRYPT_ROUTE53}" = "yes" ]; then
+            grep -q "aws_credentials" ${PILLARS_TOP} || echo "    - aws_credentials" >> ${PILLARS_TOP}
+          fi
+        elif [ "${SSL_MODE}" = "bring-your-own" ]; then
+          grep -q "ssl_key_encrypted" ${PILLARS_TOP} || echo "    - ssl_key_encrypted" >> ${PILLARS_TOP}
+          sed -i "s/__CERT_REQUIRES__/file: extra_custom_certs_file_copy_arvados-${R}.pem/g;
+                  s#__CERT_PEM__#/etc/nginx/ssl/arvados-${R}.pem#g;
+                  s#__CERT_KEY__#/etc/nginx/ssl/arvados-${R}.key#g" \
+            ${P_DIR}/nginx_${R}_configuration.sls
+          grep -q "${R}" ${P_DIR}/extra_custom_certs.sls || echo "  - ${R}" >> ${P_DIR}/extra_custom_certs.sls
+        fi
+      ;;
+      "controller")
+        ### States ###
+        grep -q "    - logrotate" ${STATES_TOP} || echo "    - logrotate" >> ${STATES_TOP}
+        if grep -q "    - nginx.*$" ${STATES_TOP}; then
+          sed -i s/"^    - nginx.*$"/"    - nginx.passenger"/g ${STATES_TOP}
+        else
+          echo "    - nginx.passenger" >> ${STATES_TOP}
+        fi
+        echo "    - extra.passenger_rvm" >> ${STATES_TOP}
+
         ### If we don't install and run LE before arvados-api-server, it fails and breaks everything
         ### after it. So we add this here as we are, after all, sharing the host for api and controller
-        if [ "${SSL_MODE}" = "lets-encrypt" ]; then
-          if [ "${USE_LETSENCRYPT_ROUTE53}" = "yes" ]; then
-            grep -q "aws_credentials" ${S_DIR}/top.sls || echo "    - aws_credentials" >> ${S_DIR}/top.sls
+        if [ "${ENABLE_BALANCER}" == "no" ]; then
+          if [ "${SSL_MODE}" = "lets-encrypt" ]; then
+            if [ "x${USE_LETSENCRYPT_ROUTE53:-}" = "xyes" ]; then
+              grep -q "aws_credentials" ${STATES_TOP} || echo "    - aws_credentials" >> ${STATES_TOP}
+            fi
+            grep -q "letsencrypt"     ${STATES_TOP} || echo "    - letsencrypt" >> ${STATES_TOP}
+          elif [ "${SSL_MODE}" = "bring-your-own" ]; then
+            copy_custom_cert ${CUSTOM_CERTS_DIR} ${R}
+            grep -q controller ${P_DIR}/extra_custom_certs.sls || echo "  - controller" >> ${P_DIR}/extra_custom_certs.sls
           fi
-          grep -q "letsencrypt" ${S_DIR}/top.sls || echo "    - letsencrypt" >> ${S_DIR}/top.sls
-        else
-          # Use custom certs
-          if [ "${SSL_MODE}" = "bring-your-own" ]; then
-            copy_custom_cert ${CUSTOM_CERTS_DIR} controller
-          fi
-          grep -q controller ${P_DIR}/extra_custom_certs.sls || echo "  - controller" >> ${P_DIR}/extra_custom_certs.sls
         fi
-        grep -q "arvados.${R}" ${S_DIR}/top.sls    || echo "    - arvados.${R}" >> ${S_DIR}/top.sls
-        # Pillars
-        grep -q "logrotate_api" ${P_DIR}/top.sls            || echo "    - logrotate_api" >> ${P_DIR}/top.sls
-        grep -q "aws_credentials" ${P_DIR}/top.sls          || echo "    - aws_credentials" >> ${P_DIR}/top.sls
-        grep -q "postgresql" ${P_DIR}/top.sls               || echo "    - postgresql" >> ${P_DIR}/top.sls
-        grep -q "nginx_passenger" ${P_DIR}/top.sls          || echo "    - nginx_passenger" >> ${P_DIR}/top.sls
-        grep -q "nginx_${R}_configuration" ${P_DIR}/top.sls || echo "    - nginx_${R}_configuration" >> ${P_DIR}/top.sls
+        grep -q "arvados.api" ${STATES_TOP} || echo "    - arvados.api" >> ${STATES_TOP}
+        grep -q "arvados.controller" ${STATES_TOP} || echo "    - arvados.controller" >> ${STATES_TOP}
 
+        ### Pillars ###
+        grep -q "logrotate_api" ${PILLARS_TOP}            || echo "    - logrotate_api" >> ${PILLARS_TOP}
+        grep -q "aws_credentials" ${PILLARS_TOP}          || echo "    - aws_credentials" >> ${PILLARS_TOP}
+        grep -q "postgresql" ${PILLARS_TOP}               || echo "    - postgresql" >> ${PILLARS_TOP}
+        grep -q "nginx_passenger" ${PILLARS_TOP}          || echo "    - nginx_passenger" >> ${PILLARS_TOP}
+        grep -q "nginx_api_configuration" ${PILLARS_TOP} || echo "    - nginx_api_configuration" >> ${PILLARS_TOP}
+        grep -q "nginx_controller_configuration" ${PILLARS_TOP} || echo "    - nginx_controller_configuration" >> ${PILLARS_TOP}
+
+        if [ "${ENABLE_BALANCER}" == "no" ]; then
+          if [ "${SSL_MODE}" = "lets-encrypt" ]; then
+            if [ "${USE_LETSENCRYPT_ROUTE53}" = "yes" ]; then
+              grep -q "aws_credentials" ${PILLARS_TOP} || echo "    - aws_credentials" >> ${PILLARS_TOP}
+            fi
+
+            grep -q "letsencrypt"     ${PILLARS_TOP} || echo "    - letsencrypt" >> ${PILLARS_TOP}
+            grep -q "letsencrypt_${R}_configuration" ${PILLARS_TOP} || echo "    - letsencrypt_${R}_configuration" >> ${PILLARS_TOP}
+            sed -i "s/__CERT_REQUIRES__/cmd: create-initial-cert-${R}.${DOMAIN}*/g;
+                    s#__CERT_PEM__#/etc/letsencrypt/live/${R}.${DOMAIN}/fullchain.pem#g;
+                    s#__CERT_KEY__#/etc/letsencrypt/live/${R}.${DOMAIN}/privkey.pem#g" \
+            ${P_DIR}/nginx_${R}_configuration.sls
+          else
+            grep -q "ssl_key_encrypted" ${PILLARS_TOP} || echo "    - ssl_key_encrypted" >> ${PILLARS_TOP}
+            sed -i "s/__CERT_REQUIRES__/file: extra_custom_certs_file_copy_arvados-${R}.pem/g;
+                    s#__CERT_PEM__#/etc/nginx/ssl/arvados-${R}.pem#g;
+                    s#__CERT_KEY__#/etc/nginx/ssl/arvados-${R}.key#g" \
+            ${P_DIR}/nginx_${R}_configuration.sls
+            grep -q ${R} ${P_DIR}/extra_custom_certs.sls || echo "  - ${R}" >> ${P_DIR}/extra_custom_certs.sls
+          fi
+        fi
         # We need to tweak the Nginx's pillar depending whether we want plain nginx or nginx+passenger
         NGINX_INSTALL_SOURCE="install_from_phusionpassenger"
         sed -i "s/__NGINX_INSTALL_SOURCE__/${NGINX_INSTALL_SOURCE}/g" ${P_DIR}/nginx_passenger.sls
       ;;
-      "controller" | "websocket" | "workbench" | "workbench2" | "webshell" | "keepweb" | "keepproxy")
-        # States
+      "websocket" | "workbench" | "workbench2" | "webshell" | "keepweb" | "keepproxy")
+        ### States ###
         if [ "${R}" = "workbench" ]; then
-          grep -q "    - logrotate" ${S_DIR}/top.sls || echo "    - logrotate" >> ${S_DIR}/top.sls
+          grep -q "    - logrotate" ${STATES_TOP} || echo "    - logrotate" >> ${STATES_TOP}
           NGINX_INSTALL_SOURCE="install_from_phusionpassenger"
-          if grep -q "    - nginx$" ${S_DIR}/top.sls; then
-            sed -i s/"^    - nginx.*$"/"    - nginx.passenger"/g ${S_DIR}/top.sls
+          if grep -q "    - nginx$" ${STATES_TOP}; then
+            sed -i s/"^    - nginx.*$"/"    - nginx.passenger"/g ${STATES_TOP}
           else
-            echo "    - nginx.passenger" >> ${S_DIR}/top.sls
+            echo "    - nginx.passenger" >> ${STATES_TOP}
           fi
         else
-          grep -q "\- nginx$" ${S_DIR}/top.sls || echo "    - nginx" >> ${S_DIR}/top.sls
+          grep -q "\- nginx$" ${STATES_TOP} || echo "    - nginx" >> ${STATES_TOP}
         fi
+
         if [ "${SSL_MODE}" = "lets-encrypt" ]; then
-          if [ "x${USE_LETSENCRYPT_ROUTE53}" = "xyes" ]; then
-            grep -q "aws_credentials" ${S_DIR}/top.sls || echo "    - aws_credentials" >> ${S_DIR}/top.sls
+          if [ "x${USE_LETSENCRYPT_ROUTE53:-}" = "xyes" ]; then
+            grep -q "aws_credentials" ${STATES_TOP} || echo "    - aws_credentials" >> ${STATES_TOP}
           fi
-          grep -q "letsencrypt"     ${S_DIR}/top.sls || echo "    - letsencrypt" >> ${S_DIR}/top.sls
+          grep -q "letsencrypt"     ${STATES_TOP} || echo "    - letsencrypt" >> ${STATES_TOP}
         else
           # Use custom certs, special case for keepweb
           if [ ${R} = "keepweb" ]; then
@@ -859,28 +895,30 @@ else
             fi
           fi
         fi
+
         # webshell role is just a nginx vhost, so it has no state
         if [ "${R}" != "webshell" ]; then
-          grep -q "arvados.${R}" ${S_DIR}/top.sls || echo "    - arvados.${R}" >> ${S_DIR}/top.sls
+          grep -q "arvados.${R}" ${STATES_TOP} || echo "    - arvados.${R}" >> ${STATES_TOP}
         fi
-        # Pillars
+
+        ### Pillars ###
         if [ "${R}" = "workbench" ]; then
-          grep -q "logrotate_wb1" ${P_DIR}/top.sls || echo "    - logrotate_wb1" >> ${P_DIR}/top.sls
+          grep -q "logrotate_wb1" ${PILLARS_TOP} || echo "    - logrotate_wb1" >> ${PILLARS_TOP}
         fi
-        grep -q "nginx_passenger" ${P_DIR}/top.sls          || echo "    - nginx_passenger" >> ${P_DIR}/top.sls
-        grep -q "nginx_${R}_configuration" ${P_DIR}/top.sls || echo "    - nginx_${R}_configuration" >> ${P_DIR}/top.sls
+        grep -q "nginx_passenger" ${PILLARS_TOP}          || echo "    - nginx_passenger" >> ${PILLARS_TOP}
+        grep -q "nginx_${R}_configuration" ${PILLARS_TOP} || echo "    - nginx_${R}_configuration" >> ${PILLARS_TOP}
         # Special case for keepweb
         if [ ${R} = "keepweb" ]; then
-          grep -q "nginx_download_configuration" ${P_DIR}/top.sls || echo "    - nginx_download_configuration" >> ${P_DIR}/top.sls
-          grep -q "nginx_collections_configuration" ${P_DIR}/top.sls || echo "    - nginx_collections_configuration" >> ${P_DIR}/top.sls
+          grep -q "nginx_download_configuration" ${PILLARS_TOP} || echo "    - nginx_download_configuration" >> ${PILLARS_TOP}
+          grep -q "nginx_collections_configuration" ${PILLARS_TOP} || echo "    - nginx_collections_configuration" >> ${PILLARS_TOP}
         fi
 
         if [ "${SSL_MODE}" = "lets-encrypt" ]; then
           if [ "${USE_LETSENCRYPT_ROUTE53}" = "yes" ]; then
-            grep -q "aws_credentials" ${P_DIR}/top.sls || echo "    - aws_credentials" >> ${P_DIR}/top.sls
+            grep -q "aws_credentials" ${PILLARS_TOP} || echo "    - aws_credentials" >> ${PILLARS_TOP}
           fi
-          grep -q "letsencrypt"     ${P_DIR}/top.sls || echo "    - letsencrypt" >> ${P_DIR}/top.sls
-          grep -q "letsencrypt_${R}_configuration" ${P_DIR}/top.sls || echo "    - letsencrypt_${R}_configuration" >> ${P_DIR}/top.sls
+          grep -q "letsencrypt"     ${PILLARS_TOP} || echo "    - letsencrypt" >> ${PILLARS_TOP}
+          grep -q "letsencrypt_${R}_configuration" ${PILLARS_TOP} || echo "    - letsencrypt_${R}_configuration" >> ${PILLARS_TOP}
 
           # As the pillar differ whether we use LE or custom certs, we need to do a final edition on them
           # Special case for keepweb
@@ -898,7 +936,7 @@ else
             ${P_DIR}/nginx_${R}_configuration.sls
           fi
         else
-          grep -q "ssl_key_encrypted" ${P_DIR}/top.sls || echo "    - ssl_key_encrypted" >> ${P_DIR}/top.sls
+          grep -q "ssl_key_encrypted" ${PILLARS_TOP} || echo "    - ssl_key_encrypted" >> ${PILLARS_TOP}
           # As the pillar differ whether we use LE or custom certs, we need to do a final edition on them
           # Special case for keepweb
           if [ ${R} = "keepweb" ]; then
@@ -922,16 +960,16 @@ else
       ;;
       "shell")
         # States
-        echo "    - extra.shell_sudo_passwordless" >> ${S_DIR}/top.sls
-        echo "    - extra.shell_cron_add_login_sync" >> ${S_DIR}/top.sls
-        grep -q "docker" ${S_DIR}/top.sls       || echo "    - docker.software" >> ${S_DIR}/top.sls
-        grep -q "arvados.${R}" ${S_DIR}/top.sls || echo "    - arvados.${R}" >> ${S_DIR}/top.sls
+        echo "    - extra.shell_sudo_passwordless" >> ${STATES_TOP}
+        echo "    - extra.shell_cron_add_login_sync" >> ${STATES_TOP}
+        grep -q "docker" ${STATES_TOP}       || echo "    - docker.software" >> ${STATES_TOP}
+        grep -q "arvados.${R}" ${STATES_TOP} || echo "    - arvados.${R}" >> ${STATES_TOP}
         # Pillars
-        grep -q "docker" ${P_DIR}/top.sls       || echo "    - docker" >> ${P_DIR}/top.sls
+        grep -q "docker" ${PILLARS_TOP}       || echo "    - docker" >> ${PILLARS_TOP}
       ;;
       "dispatcher" | "keepbalance" | "keepstore")
         # States
-        grep -q "arvados.${R}" ${S_DIR}/top.sls || echo "    - arvados.${R}" >> ${S_DIR}/top.sls
+        grep -q "arvados.${R}" ${STATES_TOP} || echo "    - arvados.${R}" >> ${STATES_TOP}
         # Pillars
         # ATM, no specific pillar needed
       ;;
@@ -960,21 +998,21 @@ fi
 # Leave a copy of the Arvados CA so the user can copy it where it's required
 if [ "${SSL_MODE}" = "self-signed" ]; then
   echo "Copying the Arvados CA certificate '${DOMAIN}-arvados-snakeoil-ca.crt' to the installer dir, so you can import it"
-  if [ "x${VAGRANT}" = "xyes" ]; then
+  if [ "x${VAGRANT:-}" = "xyes" ]; then
     cp /etc/ssl/certs/arvados-snakeoil-ca.pem /vagrant/${DOMAIN}-arvados-snakeoil-ca.pem
   else
     cp /etc/ssl/certs/arvados-snakeoil-ca.pem ${SCRIPT_DIR}/${DOMAIN}-arvados-snakeoil-ca.crt
   fi
 fi
 
-if [ "x${VAGRANT}" = "xyes" ]; then
+if [ "x${VAGRANT:-}" = "xyes" ]; then
     # If running in a vagrant VM, also add default user to docker group
     echo "Adding the vagrant user to the docker group"
     usermod -a -G docker vagrant
 fi
 
 # Test that the installation finished correctly
-if [ "x${TEST}" = "xyes" ]; then
+if [ "x${TEST:-}" = "xyes" ]; then
   cd ${T_DIR}
   # If we use RVM, we need to run this with it, or most ruby commands will fail
   RVM_EXEC=""
