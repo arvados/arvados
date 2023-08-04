@@ -20,7 +20,7 @@ locals {
   compute_node_iam_role_name = data.terraform_remote_state.data-storage.outputs.compute_node_iam_role_name
   instance_profile = {
     default = aws_iam_instance_profile.default_instance_profile
-    controller = aws_iam_instance_profile.dispatcher_instance_profile
+    workbench = aws_iam_instance_profile.dispatcher_instance_profile
     keep0 = aws_iam_instance_profile.keepstore_instance_profile
   }
   private_subnet_id = data.terraform_remote_state.vpc.outputs.private_subnet_id
