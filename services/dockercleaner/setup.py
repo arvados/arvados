@@ -37,7 +37,16 @@ setup(name="arvados-docker-cleaner",
           ('share/doc/arvados-docker-cleaner', ['agpl-3.0.txt', 'arvados-docker-cleaner.service']),
       ],
       install_requires=[
-          'docker-py==1.7.2',
+          # The requirements for the docker library broke when requests started
+          # supporting urllib3 2.0.
+          # See <https://github.com/docker/docker-py/issues/3113>.
+          # Make sure we get a version with the bugfix, assuming Python is
+          # recent enough.
+          'docker>=6.1.0; python_version>"3.6"',
+          # If Python is too old, install the latest version we can and pin
+          # urllib3 ourselves.
+          'docker~=5.0; python_version<"3.7"',
+          'urllib3~=1.26; python_version<"3.7"',
           'setuptools',
       ],
       test_suite='tests',
