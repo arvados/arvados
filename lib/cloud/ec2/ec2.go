@@ -113,6 +113,9 @@ type ec2InstanceSet struct {
 	prices        map[priceKey][]cloud.InstancePrice
 	pricesLock    sync.Mutex
 	pricesUpdated map[priceKey]time.Time
+
+	mInstances      *prometheus.GaugeVec
+	mInstanceStarts *prometheus.CounterVec
 }
 
 func newEC2InstanceSet(config json.RawMessage, instanceSetID cloud.InstanceSetID, _ cloud.SharedResourceTags, logger logrus.FieldLogger, reg *prometheus.Registry) (prv cloud.InstanceSet, err error) {
@@ -142,6 +145,36 @@ func newEC2InstanceSet(config json.RawMessage, instanceSetID cloud.InstanceSetID
 	if instanceSet.ec2config.EBSVolumeType == "" {
 		instanceSet.ec2config.EBSVolumeType = "gp2"
 	}
+
+	// Set up metrics
+	instanceSet.mInstances = prometheus.NewGaugeVec(prometheus.GaugeOpts{
+		Namespace: "arvados",
+		Subsystem: "dispatchcloud",
+		Name:      "ec2_instances",
+		Help:      "Number of instances running",
+	}, []string{"subnet_id"})
+	instanceSet.mInstanceStarts = prometheus.NewCounterVec(prometheus.CounterOpts{
+		Namespace: "arvados",
+		Subsystem: "dispatchcloud",
+		Name:      "ec2_instance_starts_total",
+		Help:      "Number of attempts to start a new instance",
+	}, []string{"subnet_id", "success"})
+	// Initialize all of the series we'll be reporting.  Otherwise
+	// the {subnet=A, success=0} series doesn't appear in metrics
+	// at all until there's a failure in subnet A.
+	for _, subnet := range instanceSet.ec2config.SubnetID {
+		instanceSet.mInstanceStarts.WithLabelValues(subnet, "0").Add(0)
+		instanceSet.mInstanceStarts.WithLabelValues(subnet, "1").Add(0)
+	}
+	if len(instanceSet.ec2config.SubnetID) == 0 {
+		instanceSet.mInstanceStarts.WithLabelValues("", "0").Add(0)
+		instanceSet.mInstanceStarts.WithLabelValues("", "1").Add(0)
+	}
+	if reg != nil {
+		reg.MustRegister(instanceSet.mInstances)
+		reg.MustRegister(instanceSet.mInstanceStarts)
+	}
+
 	return instanceSet, nil
 }
 
@@ -260,11 +293,14 @@ func (instanceSet *ec2InstanceSet) Create(
 	currentSubnetIDIndex := int(atomic.LoadInt32(&instanceSet.currentSubnetIDIndex))
 	for tryOffset := 0; ; tryOffset++ {
 		tryIndex := 0
+		trySubnet := ""
 		if len(subnets) > 0 {
 			tryIndex = (currentSubnetIDIndex + tryOffset) % len(subnets)
-			rii.NetworkInterfaces[0].SubnetId = aws.String(subnets[tryIndex])
+			trySubnet = subnets[tryIndex]
+			rii.NetworkInterfaces[0].SubnetId = aws.String(trySubnet)
 		}
 		rsv, err = instanceSet.client.RunInstances(&rii)
+		instanceSet.mInstanceStarts.WithLabelValues(trySubnet, boolLabelValue[err == nil]).Add(1)
 		if isErrorSubnetSpecific(err) &&
 			tryOffset < len(subnets)-1 {
 			instanceSet.logger.WithError(err).WithField("SubnetID", subnets[tryIndex]).
@@ -382,6 +418,24 @@ func (instanceSet *ec2InstanceSet) Instances(tags cloud.InstanceTags) (instances
 		}
 		instanceSet.updateSpotPrices(instances)
 	}
+
+	// Count instances in each subnet, and report in metrics.
+	subnetInstances := map[string]int{"": 0}
+	for _, subnet := range instanceSet.ec2config.SubnetID {
+		subnetInstances[subnet] = 0
+	}
+	for _, inst := range instances {
+		subnet := inst.(*ec2Instance).instance.SubnetId
+		if subnet != nil {
+			subnetInstances[*subnet]++
+		} else {
+			subnetInstances[""]++
+		}
+	}
+	for subnet, count := range subnetInstances {
+		instanceSet.mInstances.WithLabelValues(subnet).Set(float64(count))
+	}
+
 	return instances, err
 }
 
@@ -675,3 +729,5 @@ func wrapError(err error, throttleValue *atomic.Value) error {
 	throttleValue.Store(time.Duration(0))
 	return nil
 }
+
+var boolLabelValue = map[bool]string{false: "0", true: "1"}
