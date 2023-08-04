@@ -13,7 +13,7 @@ import time
 import unittest
 
 import docker
-import mock
+from unittest import mock
 
 from arvados_docker import cleaner
 
