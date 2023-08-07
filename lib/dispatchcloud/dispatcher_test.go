@@ -49,6 +49,7 @@ func (s *DispatcherSuite) SetUpTest(c *check.C) {
 	s.stubDriver = &test.StubDriver{
 		HostKey:                   hostpriv,
 		AuthorizedKeys:            []ssh.PublicKey{dispatchpub},
+		ErrorRateCreate:           0.1,
 		ErrorRateDestroy:          0.1,
 		MinTimeBetweenCreateCalls: time.Millisecond,
 	}
