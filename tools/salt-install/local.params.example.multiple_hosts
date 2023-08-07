@@ -139,9 +139,10 @@ SHELL_INT_IP=10.1.2.17
 # be upgraded.
 DISABLED_CONTROLLER=""
 
-# Performance tuning parameters
-#CONTROLLER_NGINX_WORKERS=
-CONTROLLER_MAX_CONCURRENT_REQUESTS=64
+# Performance tuning parameters.  If these are not set, workers
+# defaults on the number of cpus and queued requests defaults to 128.
+#CONTROLLER_MAX_WORKERS=
+#CONTROLLER_MAX_QUEUED_REQUESTS=
 
 # The directory to check for the config files (pillars, states) you want to use.
 # There are a few examples under 'config_examples'.

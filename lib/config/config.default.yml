@@ -225,7 +225,7 @@ Clusters:
 
       # Maximum number of concurrent requests to process concurrently
       # in a single service process, or 0 for no limit.
-      MaxConcurrentRequests: 64
+      MaxConcurrentRequests: 4
 
       # Maximum number of incoming requests to hold in a priority
       # queue waiting for one of the MaxConcurrentRequests slots to be
@@ -234,7 +234,7 @@ Clusters:
       #
       # If MaxQueuedRequests is 0, respond 503 immediately to
       # additional requests while at the MaxConcurrentRequests limit.
-      MaxQueuedRequests: 64
+      MaxQueuedRequests: 128
 
       # Maximum time a "lock container" request is allowed to wait in
       # the incoming request queue before returning 503.
@@ -1074,7 +1074,7 @@ Clusters:
 
       # Number of times a container can be unlocked before being
       # automatically cancelled.
-      MaxDispatchAttempts: 5
+      MaxDispatchAttempts: 10
 
       # Default value for container_count_max for container requests.  This is the
       # number of times Arvados will create a new container to satisfy a container
