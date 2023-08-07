@@ -173,19 +173,20 @@ type Pool struct {
 	runnerArgs                     []string // extra args passed to crunch-run
 
 	// private state
-	subscribers  map[<-chan struct{}]chan<- struct{}
-	creating     map[string]createCall // unfinished (cloud.InstanceSet)Create calls (key is instance secret)
-	workers      map[cloud.InstanceID]*worker
-	loaded       bool                 // loaded list of instances from InstanceSet at least once
-	exited       map[string]time.Time // containers whose crunch-run proc has exited, but ForgetContainer has not been called
-	atQuotaUntil time.Time
-	atQuotaErr   cloud.QuotaError
-	stop         chan bool
-	mtx          sync.RWMutex
-	setupOnce    sync.Once
-	runnerData   []byte
-	runnerMD5    [md5.Size]byte
-	runnerCmd    string
+	subscribers                map[<-chan struct{}]chan<- struct{}
+	creating                   map[string]createCall // unfinished (cloud.InstanceSet)Create calls (key is instance secret)
+	workers                    map[cloud.InstanceID]*worker
+	loaded                     bool                 // loaded list of instances from InstanceSet at least once
+	exited                     map[string]time.Time // containers whose crunch-run proc has exited, but ForgetContainer has not been called
+	atQuotaUntilFewerInstances int
+	atQuotaUntil               time.Time
+	atQuotaErr                 cloud.QuotaError
+	stop                       chan bool
+	mtx                        sync.RWMutex
+	setupOnce                  sync.Once
+	runnerData                 []byte
+	runnerMD5                  [md5.Size]byte
+	runnerCmd                  string
 
 	mContainersRunning        prometheus.Gauge
 	mInstances                *prometheus.GaugeVec
@@ -322,6 +323,7 @@ func (wp *Pool) Create(it arvados.InstanceType) bool {
 	wp.mtx.Lock()
 	defer wp.mtx.Unlock()
 	if time.Now().Before(wp.atQuotaUntil) ||
+		wp.atQuotaUntilFewerInstances > 0 ||
 		wp.instanceSet.throttleCreate.Error() != nil ||
 		(wp.maxInstances > 0 && wp.maxInstances <= len(wp.workers)+len(wp.creating)) {
 		return false
@@ -360,8 +362,24 @@ func (wp *Pool) Create(it arvados.InstanceType) bool {
 		if err != nil {
 			if err, ok := err.(cloud.QuotaError); ok && err.IsQuotaError() {
 				wp.atQuotaErr = err
-				wp.atQuotaUntil = time.Now().Add(quotaErrorTTL)
-				time.AfterFunc(quotaErrorTTL, wp.notify)
+				n := len(wp.workers) + len(wp.creating) - 1
+				if n < 1 {
+					// Quota error with no
+					// instances running --
+					// nothing to do but wait
+					wp.atQuotaUntilFewerInstances = 0
+					wp.atQuotaUntil = time.Now().Add(quotaErrorTTL)
+					time.AfterFunc(quotaErrorTTL, wp.notify)
+					logger.WithField("atQuotaUntil", wp.atQuotaUntil).Info("quota error with 0 running -- waiting for quotaErrorTTL")
+				} else if n < wp.atQuotaUntilFewerInstances || wp.atQuotaUntilFewerInstances == 0 {
+					// Quota error with N
+					// instances running -- report
+					// AtQuota until some
+					// instances shut down
+					wp.atQuotaUntilFewerInstances = n
+					wp.atQuotaUntil = time.Time{}
+					logger.WithField("atQuotaUntilFewerInstances", n).Info("quota error -- waiting for next instance shutdown")
+				}
 			}
 			logger.WithError(err).Error("create failed")
 			wp.instanceSet.throttleCreate.CheckRateLimitError(err, wp.logger, "create instance", wp.notify)
@@ -381,7 +399,9 @@ func (wp *Pool) Create(it arvados.InstanceType) bool {
 func (wp *Pool) AtQuota() bool {
 	wp.mtx.Lock()
 	defer wp.mtx.Unlock()
-	return time.Now().Before(wp.atQuotaUntil) || (wp.maxInstances > 0 && wp.maxInstances <= len(wp.workers)+len(wp.creating))
+	return wp.atQuotaUntilFewerInstances > 0 ||
+		time.Now().Before(wp.atQuotaUntil) ||
+		(wp.maxInstances > 0 && wp.maxInstances <= len(wp.workers)+len(wp.creating))
 }
 
 // SetIdleBehavior determines how the indicated instance will behave
@@ -1030,6 +1050,10 @@ func (wp *Pool) sync(threshold time.Time, instances []cloud.Instance) {
 		delete(wp.workers, id)
 		go wkr.Close()
 		notify = true
+	}
+
+	if wp.atQuotaUntilFewerInstances > len(wp.workers)+len(wp.creating) {
+		wp.atQuotaUntilFewerInstances = 0
 	}
 
 	if !wp.loaded {

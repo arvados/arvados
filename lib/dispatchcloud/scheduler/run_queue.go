@@ -92,7 +92,13 @@ func (sch *Scheduler) runQueue() {
 	if sch.maxInstances > 0 && sch.maxConcurrency > sch.maxInstances {
 		sch.maxConcurrency = sch.maxInstances
 	}
-	if sch.pool.AtQuota() && len(running) > 0 && (sch.maxConcurrency == 0 || sch.maxConcurrency > len(running)) {
+	instances := len(running) + len(unalloc)
+	if sch.instancesWithinQuota > 0 && sch.instancesWithinQuota < instances {
+		// Evidently it is possible to run this many
+		// instances, so raise our estimate.
+		sch.instancesWithinQuota = instances
+	}
+	if sch.pool.AtQuota() {
 		// Consider current workload to be the maximum
 		// allowed, for the sake of reporting metrics and
 		// calculating max supervisors.
@@ -103,7 +109,27 @@ func (sch *Scheduler) runQueue() {
 		// supervisors when we reach the cloud-imposed quota
 		// (which may be based on # CPUs etc) long before the
 		// configured MaxInstances.
-		sch.maxConcurrency = len(running)
+		if sch.maxConcurrency == 0 || sch.maxConcurrency > instances {
+			if instances == 0 {
+				sch.maxConcurrency = 1
+			} else {
+				sch.maxConcurrency = instances
+			}
+		}
+		sch.instancesWithinQuota = instances
+	} else if sch.instancesWithinQuota > 0 && sch.maxConcurrency > sch.instancesWithinQuota+1 {
+		// Once we've hit a quota error and started tracking
+		// instancesWithinQuota (i.e., it's not zero), we
+		// avoid exceeding that known-working level by more
+		// than 1.
+		//
+		// If we don't do this, we risk entering a pattern of
+		// repeatedly locking several containers, hitting
+		// quota again, and unlocking them again each time the
+		// driver stops reporting AtQuota, which tends to use
+		// up the max lock/unlock cycles on the next few
+		// containers in the queue, and cause them to fail.
+		sch.maxConcurrency = sch.instancesWithinQuota + 1
 	}
 	sch.mMaxContainerConcurrency.Set(float64(sch.maxConcurrency))
 
