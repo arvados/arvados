@@ -3,6 +3,9 @@
 #
 # SPDX-License-Identifier: AGPL-3.0
 
+{%- set controller_nodes = "__CONTROLLER_NODES__".split(',') %}
+{%- set enable_balancer = ("__ENABLE_BALANCER__"|to_bool) %}
+
 ### PROMETHEUS
 prometheus:
   wanted:
@@ -42,12 +45,25 @@ prometheus:
                     cluster: __CLUSTER__
             - job_name: arvados_controller
               bearer_token: __MANAGEMENT_TOKEN__
+              {%- if enable_balancer %}
+              scheme: http
+              {%- else %}
               scheme: https
+              {%- endif %}
               static_configs:
+                {%- if enable_balancer %}
+                  {%- for controller in controller_nodes %}
+                - targets: ['{{ controller }}']
+                  labels:
+                    instance: {{ controller.split('.')[0] }}.__CLUSTER__
+                    cluster: __CLUSTER__
+                  {%- endfor %}
+                {%- else %}
                 - targets: ['__DOMAIN__:443']
                   labels:
                     instance: controller.__CLUSTER__
                     cluster: __CLUSTER__
+                {%- endif %}
             - job_name: keep_web
               bearer_token: __MANAGEMENT_TOKEN__
               scheme: https
@@ -59,7 +75,7 @@ prometheus:
             - job_name: keep_balance
               bearer_token: __MANAGEMENT_TOKEN__
               static_configs:
-                - targets: ['__CONTROLLER_INT_IP__:9005']
+                - targets: ['__KEEPBALANCE_INT_IP__:9005']
                   labels:
                     instance: keep-balance.__CLUSTER__
                     cluster: __CLUSTER__
@@ -73,7 +89,7 @@ prometheus:
             - job_name: arvados_dispatch_cloud
               bearer_token: __MANAGEMENT_TOKEN__
               static_configs:
-                - targets: ['__CONTROLLER_INT_IP__:9006']
+                - targets: ['__DISPATCHER_INT_IP__:9006']
                   labels:
                     instance: arvados-dispatch-cloud.__CLUSTER__
                     cluster: __CLUSTER__
@@ -90,14 +106,14 @@ prometheus:
                     cluster: __CLUSTER__
 
             # Nodes
+            {%- set node_list = "__NODELIST__".split(',') %}
+            {%- set nodes = [] %}
+            {%- for node in node_list %}
+              {%- set _ = nodes.append(node.split('.')[0]) %}
+            {%- endfor %}
             - job_name: node
               static_configs:
-                {% for node in [
-                  'controller',
-                  'keep0',
-                  'workbench',
-                  'shell',
-                ] %}
+                {% for node in nodes %}
                 - targets: [ "{{ node }}.__DOMAIN__:9100" ]
                   labels:
                     instance: "{{ node }}.__CLUSTER__"

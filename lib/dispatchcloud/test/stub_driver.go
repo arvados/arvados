@@ -45,7 +45,8 @@ type StubDriver struct {
 	Queue *Queue
 
 	// Frequency of artificially introduced errors on calls to
-	// Destroy. 0=always succeed, 1=always fail.
+	// Create and Destroy. 0=always succeed, 1=always fail.
+	ErrorRateCreate  float64
 	ErrorRateDestroy float64
 
 	// If Create() or Instances() is called too frequently, return
@@ -119,6 +120,9 @@ func (sis *StubInstanceSet) Create(it arvados.InstanceType, image cloud.ImageID,
 	}
 	if sis.allowCreateCall.After(time.Now()) {
 		return nil, RateLimitError{sis.allowCreateCall}
+	}
+	if math_rand.Float64() < sis.driver.ErrorRateCreate {
+		return nil, fmt.Errorf("StubInstanceSet: rand < ErrorRateCreate %f", sis.driver.ErrorRateCreate)
 	}
 	sis.allowCreateCall = time.Now().Add(sis.driver.MinTimeBetweenCreateCalls)
 	ak := sis.driver.AuthorizedKeys
