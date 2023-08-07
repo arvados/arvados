@@ -139,7 +139,8 @@ SHELL_INT_IP=10.1.2.17
 # be upgraded.
 DISABLED_CONTROLLER=""
 
-# Performance tuning parameters
+# Performance tuning parameters.  If these are not set, workers
+# defaults on the number of cpus and queued requests defaults to 128.
 #CONTROLLER_MAX_WORKERS=
 #CONTROLLER_MAX_QUEUED_REQUESTS=
 

@@ -13,7 +13,7 @@
                            if grains.osfinger in ('CentOS Linux-7', 'Ubuntu-18.04', 'Debian-10') else
                          '/usr/bin/ruby' %}
 {%- set max_workers = ("__CONTROLLER_MAX_WORKERS__" or grains['num_cpus'])|int %}
-{%- set max_reqs = ("__CONTROLLER_MAX_QUEUED_REQUESTS__" or 1024)|int %}
+{%- set max_reqs = ("__CONTROLLER_MAX_QUEUED_REQUESTS__" or 128)|int %}
 
 ### NGINX
 nginx:

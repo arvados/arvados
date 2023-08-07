@@ -11,7 +11,7 @@
 {%- if disabled_controller != "" %}
   {%- set controller_nr = controller_nr - 1 %}
 {%- endif %}
-{%- set max_reqs = "__CONTROLLER_MAX_CONCURRENT_REQUESTS__" %}
+{%- set max_reqs = ("__CONTROLLER_MAX_QUEUED_REQUESTS__" or 128)|int %}
 
 ### NGINX
 nginx:
