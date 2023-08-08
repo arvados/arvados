@@ -8,9 +8,6 @@
 {%- set balancer_backends = "__CONTROLLER_NODES__".split(",") %}
 {%- set controller_nr = balancer_backends|length %}
 {%- set disabled_controller = "__DISABLED_CONTROLLER__" %}
-{%- if disabled_controller != "" %}
-  {%- set controller_nr = controller_nr - 1 %}
-{%- endif %}
 {%- set max_reqs = ("__CONTROLLER_MAX_QUEUED_REQUESTS__" or 128)|int %}
 
 ### NGINX

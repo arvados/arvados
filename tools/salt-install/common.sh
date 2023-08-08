@@ -29,7 +29,6 @@ done
 
 # The mapping of roles to nodes. This is used to dynamically adjust
 # salt pillars.
-declare -A ROLE2NODES
 for node in "${!NODES[@]}"; do
   roles="${NODES[$node]}"
 

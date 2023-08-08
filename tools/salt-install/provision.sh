@@ -309,6 +309,7 @@ arguments ${@}
 
 declare -A NODES
 declare -A ROLES
+declare -A ROLE2NODES
 declare NODELIST
 
 source common.sh

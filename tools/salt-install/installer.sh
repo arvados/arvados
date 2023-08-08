@@ -35,6 +35,11 @@ declare DOMAIN
 # This will be populated by loadconfig()
 declare -A NODES
 
+# A bash associative array listing each role and mapping to the nodes
+# that should be provisioned with this role.
+# This will be populated by loadconfig()
+declare -A ROLE2NODES
+
 # The ssh user we'll use
 # This will be populated by loadconfig()
 declare DEPLOY_USER
@@ -106,9 +111,12 @@ sync() {
 deploynode() {
     local NODE=$1
     local ROLES=$2
+    local BRANCH=$3
 
     # Deploy a node.  This runs the provision script on the node, with
     # the appropriate roles.
+
+    sync $NODE $BRANCH
 
     if [[ -z "$ROLES" ]] ; then
 		echo "No roles specified for $NODE, will deploy all roles"
@@ -126,7 +134,7 @@ deploynode() {
 		fi
 		$SUDO ./provision.sh --config ${CONFIG_FILE} ${ROLES} 2>&1 | tee $logfile
     else
-	    $SSH $DEPLOY_USER@$NODE "cd ${GITTARGET} && git log -n1 HEAD && sudo ./provision.sh --config ${CONFIG_FILE} ${ROLES}" 2>&1 | tee $logfile
+	    $SSH $DEPLOY_USER@$NODE "cd ${GITTARGET} && git log -n1 HEAD && DISABLED_CONTROLLER=\"$DISABLED_CONTROLLER\" sudo --preserve-env=DISABLED_CONTROLLER ./provision.sh --config ${CONFIG_FILE} ${ROLES}" 2>&1 | tee $logfile
 	    cleanup $NODE
     fi
 }
@@ -286,52 +294,66 @@ case "$subcmd" in
 	    git commit -m"prepare for deploy"
 	fi
 
+	# Used for rolling updates to disable individual nodes at the
+	# load balancer.
+	export DISABLED_CONTROLLER=""
 	if [[ -z "$NODE" ]]; then
 	    for NODE in "${!NODES[@]}"
 	    do
-		# First, push the git repo to each node.  This also
-		# confirms that we have git and can log into each
-		# node.
-		sync $NODE $BRANCH
+		# First, just confirm we can ssh to each node.
+		`ssh_cmd "$NODE"` $DEPLOY_USER@$NODE true
 	    done
 
 	    for NODE in "${!NODES[@]}"
 	    do
 		# Do 'database' role first,
 		if [[ "${NODES[$NODE]}" =~ database ]] ; then
-		    deploynode $NODE "${NODES[$NODE]}"
+		    deploynode $NODE "${NODES[$NODE]}" $BRANCH
 		    unset NODES[$NODE]
 		fi
 	    done
 
-	    for NODE in "${!NODES[@]}"
-	    do
-		# then 'balancer' role
-		if [[ "${NODES[$NODE]}" =~ balancer ]] ; then
-		    deploynode $NODE "${NODES[$NODE]}"
-		    unset NODES[$NODE]
-		fi
-	    done
+	    if [[ ${ENABLE_BALANCER} == yes ]] ;
+	    then
+		# We have a load balancer, so do a rolling update,
+		# take down each node at the load balancer before
+		# updating it.
+		BALANCER=${ROLE2NODES['balancer']}
 
-	    for NODE in "${!NODES[@]}"
-	    do
-		# then 'controller' role
-		if [[ "${NODES[$NODE]}" =~ controller ]] ; then
-		    deploynode $NODE "${NODES[$NODE]}"
-		    unset NODES[$NODE]
-		fi
-	    done
+		for NODE in "${!NODES[@]}"
+		do
+		    if [[ "${NODES[$NODE]}" =~ controller ]] ; then
+			export DISABLED_CONTROLLER=$NODE
+
+			# Update balancer that the node is disabled
+			deploynode $BALANCER "${NODES[$BALANCER]}" $BRANCH
+
+			# Now update the node itself
+			deploynode $NODE "${NODES[$NODE]}" $BRANCH
+			unset NODES[$NODE]
+		    fi
+		done
+
+		# Now make sure all nodes are enabled.
+		export DISABLED_CONTROLLER=""
+		deploynode $BALANCER "${NODES[$BALANCER]}" $BRANCH
+		unset NODES[$BALANCER]
+	    else
+		# No balancer, should only be one controller
+		NODE=${ROLE2NODES['controller']}
+		deploynode $NODE "${NODES[$NODE]}" $BRANCH
+		unset NODES[$NODE]
+	    fi
 
 	    for NODE in "${!NODES[@]}"
 	    do
 		# Everything else (we removed the nodes that we
 		# already deployed from the list)
-		deploynode $NODE "${NODES[$NODE]}"
+		deploynode $NODE "${NODES[$NODE]}" $BRANCH
 	    done
 	else
 	    # Just deploy the node that was supplied on the command line.
-	    sync $NODE $BRANCH
-	    deploynode $NODE "${NODES[$NODE]}"
+	    deploynode $NODE "${NODES[$NODE]}" $BRANCH
 	fi
 
 	set +x
