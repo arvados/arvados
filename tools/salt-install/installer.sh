@@ -313,12 +313,16 @@ case "$subcmd" in
 		fi
 	    done
 
-	    if [[ ${ENABLE_BALANCER} == yes ]] ;
+	    BALANCER=${ROLE2NODES['balancer']:-}
+
+	    # Check if there are multiple controllers, they'll be comma-separated
+	    # in ROLE2NODES
+	    if [[ ${ROLE2NODES['controller']} =~ , ]] ;
 	    then
-		# We have a load balancer, so do a rolling update,
-		# take down each node at the load balancer before
-		# updating it.
-		BALANCER=${ROLE2NODES['balancer']}
+		# If we have multiple controllers then there must be
+		# load balancer. We want to do a rolling update, take
+		# down each node at the load balancer before updating
+		# it.
 
 		for NODE in "${!NODES[@]}"
 		do
@@ -333,16 +337,19 @@ case "$subcmd" in
 			unset NODES[$NODE]
 		    fi
 		done
-
-		# Now make sure all nodes are enabled.
-		export DISABLED_CONTROLLER=""
-		deploynode $BALANCER "${NODES[$BALANCER]}" $BRANCH
-		unset NODES[$BALANCER]
 	    else
-		# No balancer, should only be one controller
+		# Only one controller
 		NODE=${ROLE2NODES['controller']}
 		deploynode $NODE "${NODES[$NODE]}" $BRANCH
 		unset NODES[$NODE]
+	    fi
+
+	    if [[ -n "$BALANCER" ]] ; then
+		# Deploy balancer. In the rolling update case, this
+		# will re-enable all the controllers at the balancer.
+		export DISABLED_CONTROLLER=""
+		deploynode $BALANCER "${NODES[$BALANCER]}" $BRANCH
+		unset NODES[$BALANCER]
 	    fi
 
 	    for NODE in "${!NODES[@]}"
