@@ -199,7 +199,7 @@ func (e *dockerExecutor) Pid() int {
 	ctx, cancel := context.WithDeadline(context.Background(), time.Now().Add(10*time.Second))
 	defer cancel()
 	ctr, err := e.dockerclient.ContainerInspect(ctx, e.containerID)
-	if err != nil && ctr.State != nil {
+	if err == nil && ctr.State != nil {
 		return ctr.State.Pid
 	} else {
 		return 0
