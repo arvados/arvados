@@ -320,10 +320,9 @@ func (s *genericVolumeSuite) testPutMultipleBlocks(t TB, factory TestableVolumeF
 	}
 }
 
-// testPutAndTouch
-//   Test that when applying PUT to a block that already exists,
-//   the block's modification time is updated.
-// Test is intended for only writable volumes
+// testPutAndTouch checks that when applying PUT to a block that
+// already exists, the block's modification time is updated.  Intended
+// for only writable volumes.
 func (s *genericVolumeSuite) testPutAndTouch(t TB, factory TestableVolumeFactory) {
 	s.setup(t)
 	v := s.newVolume(t, factory)

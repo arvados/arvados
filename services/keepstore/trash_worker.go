@@ -12,12 +12,7 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-// RunTrashWorker is used by Keepstore to initiate trash worker channel goroutine.
-//	The channel will process trash list.
-//		For each (next) trash request:
-//      Delete the block indicated by the trash request Locator
-//		Repeat
-//
+// RunTrashWorker processes the trash request queue.
 func RunTrashWorker(volmgr *RRVolumeManager, logger logrus.FieldLogger, cluster *arvados.Cluster, trashq *WorkQueue) {
 	for item := range trashq.NextItem {
 		trashRequest := item.(TrashRequest)

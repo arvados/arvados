@@ -36,9 +36,8 @@ type TrashWorkerTestData struct {
 	ExpectLocator2 bool
 }
 
-/* Delete block that does not exist in any of the keep volumes.
-   Expect no errors.
-*/
+// Delete block that does not exist in any of the keep volumes.
+// Expect no errors.
 func (s *HandlerSuite) TestTrashWorkerIntegration_GetNonExistingLocator(c *check.C) {
 	s.cluster.Collections.BlobTrash = true
 	testData := TrashWorkerTestData{
@@ -58,9 +57,8 @@ func (s *HandlerSuite) TestTrashWorkerIntegration_GetNonExistingLocator(c *check
 	s.performTrashWorkerTest(c, testData)
 }
 
-/* Delete a block that exists on volume 1 of the keep servers.
-   Expect the second locator in volume 2 to be unaffected.
-*/
+// Delete a block that exists on volume 1 of the keep servers. Expect
+// the second locator in volume 2 to be unaffected.
 func (s *HandlerSuite) TestTrashWorkerIntegration_LocatorInVolume1(c *check.C) {
 	s.cluster.Collections.BlobTrash = true
 	testData := TrashWorkerTestData{
@@ -80,9 +78,8 @@ func (s *HandlerSuite) TestTrashWorkerIntegration_LocatorInVolume1(c *check.C) {
 	s.performTrashWorkerTest(c, testData)
 }
 
-/* Delete a block that exists on volume 2 of the keep servers.
-   Expect the first locator in volume 1 to be unaffected.
-*/
+// Delete a block that exists on volume 2 of the keep servers. Expect
+// the first locator in volume 1 to be unaffected.
 func (s *HandlerSuite) TestTrashWorkerIntegration_LocatorInVolume2(c *check.C) {
 	s.cluster.Collections.BlobTrash = true
 	testData := TrashWorkerTestData{
@@ -102,9 +99,8 @@ func (s *HandlerSuite) TestTrashWorkerIntegration_LocatorInVolume2(c *check.C) {
 	s.performTrashWorkerTest(c, testData)
 }
 
-/* Delete a block with matching mtime for locator in both volumes.
-   Expect locator to be deleted from both volumes.
-*/
+// Delete a block with matching mtime for locator in both
+// volumes. Expect locator to be deleted from both volumes.
 func (s *HandlerSuite) TestTrashWorkerIntegration_LocatorInBothVolumes(c *check.C) {
 	s.cluster.Collections.BlobTrash = true
 	testData := TrashWorkerTestData{
@@ -124,9 +120,8 @@ func (s *HandlerSuite) TestTrashWorkerIntegration_LocatorInBothVolumes(c *check.
 	s.performTrashWorkerTest(c, testData)
 }
 
-/* Same locator with different Mtimes exists in both volumes.
-   Delete the second and expect the first to be still around.
-*/
+// Same locator with different Mtimes exists in both volumes. Delete
+// the second and expect the first to be still around.
 func (s *HandlerSuite) TestTrashWorkerIntegration_MtimeMatchesForLocator1ButNotForLocator2(c *check.C) {
 	s.cluster.Collections.BlobTrash = true
 	testData := TrashWorkerTestData{
@@ -170,10 +165,8 @@ func (s *HandlerSuite) TestTrashWorkerIntegration_SpecifyMountUUID(c *check.C) {
 	s.performTrashWorkerTest(c, testData)
 }
 
-/* Two different locators in volume 1.
-   Delete one of them.
-   Expect the other unaffected.
-*/
+// Two different locators in volume 1. Delete one of them. Expect the
+// other unaffected.
 func (s *HandlerSuite) TestTrashWorkerIntegration_TwoDifferentLocatorsInVolume1(c *check.C) {
 	s.cluster.Collections.BlobTrash = true
 	testData := TrashWorkerTestData{
@@ -194,9 +187,9 @@ func (s *HandlerSuite) TestTrashWorkerIntegration_TwoDifferentLocatorsInVolume1(
 	s.performTrashWorkerTest(c, testData)
 }
 
-/* Allow default Trash Life time to be used. Thus, the newly created block
-   will not be deleted because its Mtime is within the trash life time.
-*/
+// Allow default Trash Life time to be used. Thus, the newly created
+// block will not be deleted because its Mtime is within the trash
+// life time.
 func (s *HandlerSuite) TestTrashWorkerIntegration_SameLocatorInTwoVolumesWithDefaultTrashLifeTime(c *check.C) {
 	s.cluster.Collections.BlobTrash = true
 	testData := TrashWorkerTestData{
@@ -220,9 +213,8 @@ func (s *HandlerSuite) TestTrashWorkerIntegration_SameLocatorInTwoVolumesWithDef
 	s.performTrashWorkerTest(c, testData)
 }
 
-/* Delete a block with matching mtime for locator in both volumes, but EnableDelete is false,
-   so block won't be deleted.
-*/
+// Delete a block with matching mtime for locator in both volumes, but
+// EnableDelete is false, so block won't be deleted.
 func (s *HandlerSuite) TestTrashWorkerIntegration_DisabledDelete(c *check.C) {
 	s.cluster.Collections.BlobTrash = false
 	testData := TrashWorkerTestData{
@@ -242,7 +234,6 @@ func (s *HandlerSuite) TestTrashWorkerIntegration_DisabledDelete(c *check.C) {
 	s.performTrashWorkerTest(c, testData)
 }
 
-/* Perform the test */
 func (s *HandlerSuite) performTrashWorkerTest(c *check.C, testData TrashWorkerTestData) {
 	c.Assert(s.handler.setup(context.Background(), s.cluster, "", prometheus.NewRegistry(), testServiceURL), check.IsNil)
 	// Replace the router's trashq -- which the worker goroutines

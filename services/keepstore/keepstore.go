@@ -17,8 +17,6 @@ const MinFreeKilobytes = BlockSize / 1024
 
 var bufs *bufferPool
 
-// KeepError types.
-//
 type KeepError struct {
 	HTTPCode int
 	ErrMsg   string

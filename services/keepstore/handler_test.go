@@ -4,9 +4,9 @@
 
 // Tests for Keep HTTP handlers:
 //
-//     GetBlockHandler
-//     PutBlockHandler
-//     IndexHandler
+// - GetBlockHandler
+// - PutBlockHandler
+// - IndexHandler
 //
 // The HTTP handlers are responsible for enforcing permission policy,
 // so these tests must exercise all possible permission permutations.
@@ -86,7 +86,6 @@ type RequestTester struct {
 //   - permissions on, unauthenticated request, signed locator
 //   - permissions on, authenticated request, expired locator
 //   - permissions on, authenticated request, signed locator, transient error from backend
-//
 func (s *HandlerSuite) TestGetHandler(c *check.C) {
 	c.Assert(s.handler.setup(context.Background(), s.cluster, "", prometheus.NewRegistry(), testServiceURL), check.IsNil)
 
@@ -206,7 +205,6 @@ func (s *HandlerSuite) TestGetHandler(c *check.C) {
 //   - no server key
 //   - with server key, authenticated request, unsigned locator
 //   - with server key, unauthenticated request, unsigned locator
-//
 func (s *HandlerSuite) TestPutHandler(c *check.C) {
 	c.Assert(s.handler.setup(context.Background(), s.cluster, "", prometheus.NewRegistry(), testServiceURL), check.IsNil)
 
@@ -517,7 +515,6 @@ func (s *HandlerSuite) TestTouchHandler(c *check.C) {
 //
 // The only /index requests that should succeed are those issued by the
 // superuser. They should pass regardless of the value of BlobSigning.
-//
 func (s *HandlerSuite) TestIndexHandler(c *check.C) {
 	c.Assert(s.handler.setup(context.Background(), s.cluster, "", prometheus.NewRegistry(), testServiceURL), check.IsNil)
 
@@ -673,28 +670,27 @@ func (s *HandlerSuite) TestIndexHandler(c *check.C) {
 //
 // Cases tested:
 //
-//   With no token and with a non-data-manager token:
-//   * Delete existing block
-//     (test for 403 Forbidden, confirm block not deleted)
+//	With no token and with a non-data-manager token:
+//	* Delete existing block
+//	  (test for 403 Forbidden, confirm block not deleted)
 //
-//   With data manager token:
+//	With data manager token:
 //
-//   * Delete existing block
-//     (test for 200 OK, response counts, confirm block deleted)
+//	* Delete existing block
+//	  (test for 200 OK, response counts, confirm block deleted)
 //
-//   * Delete nonexistent block
-//     (test for 200 OK, response counts)
+//	* Delete nonexistent block
+//	  (test for 200 OK, response counts)
 //
-//   TODO(twp):
+//	TODO(twp):
 //
-//   * Delete block on read-only and read-write volume
-//     (test for 200 OK, response with copies_deleted=1,
-//     copies_failed=1, confirm block deleted only on r/w volume)
+//	* Delete block on read-only and read-write volume
+//	  (test for 200 OK, response with copies_deleted=1,
+//	  copies_failed=1, confirm block deleted only on r/w volume)
 //
-//   * Delete block on read-only volume only
-//     (test for 200 OK, response with copies_deleted=0, copies_failed=1,
-//     confirm block not deleted)
-//
+//	* Delete block on read-only volume only
+//	  (test for 200 OK, response with copies_deleted=0, copies_failed=1,
+//	  confirm block not deleted)
 func (s *HandlerSuite) TestDeleteHandler(c *check.C) {
 	c.Assert(s.handler.setup(context.Background(), s.cluster, "", prometheus.NewRegistry(), testServiceURL), check.IsNil)
 
@@ -823,18 +819,18 @@ func (s *HandlerSuite) TestDeleteHandler(c *check.C) {
 // Cases tested: syntactically valid and invalid pull lists, from the
 // data manager and from unprivileged users:
 //
-//   1. Valid pull list from an ordinary user
-//      (expected result: 401 Unauthorized)
+//  1. Valid pull list from an ordinary user
+//     (expected result: 401 Unauthorized)
 //
-//   2. Invalid pull request from an ordinary user
-//      (expected result: 401 Unauthorized)
+//  2. Invalid pull request from an ordinary user
+//     (expected result: 401 Unauthorized)
 //
-//   3. Valid pull request from the data manager
-//      (expected result: 200 OK with request body "Received 3 pull
-//      requests"
+//  3. Valid pull request from the data manager
+//     (expected result: 200 OK with request body "Received 3 pull
+//     requests"
 //
-//   4. Invalid pull request from the data manager
-//      (expected result: 400 Bad Request)
+//  4. Invalid pull request from the data manager
+//     (expected result: 400 Bad Request)
 //
 // Test that in the end, the pull manager received a good pull list with
 // the expected number of requests.
@@ -842,7 +838,6 @@ func (s *HandlerSuite) TestDeleteHandler(c *check.C) {
 // TODO(twp): test concurrency: launch 100 goroutines to update the
 // pull list simultaneously.  Make sure that none of them return 400
 // Bad Request and that pullq.GetList() returns a valid list.
-//
 func (s *HandlerSuite) TestPullHandler(c *check.C) {
 	c.Assert(s.handler.setup(context.Background(), s.cluster, "", prometheus.NewRegistry(), testServiceURL), check.IsNil)
 
@@ -938,18 +933,18 @@ func (s *HandlerSuite) TestPullHandler(c *check.C) {
 // Cases tested: syntactically valid and invalid trash lists, from the
 // data manager and from unprivileged users:
 //
-//   1. Valid trash list from an ordinary user
-//      (expected result: 401 Unauthorized)
+//  1. Valid trash list from an ordinary user
+//     (expected result: 401 Unauthorized)
 //
-//   2. Invalid trash list from an ordinary user
-//      (expected result: 401 Unauthorized)
+//  2. Invalid trash list from an ordinary user
+//     (expected result: 401 Unauthorized)
 //
-//   3. Valid trash list from the data manager
-//      (expected result: 200 OK with request body "Received 3 trash
-//      requests"
+//  3. Valid trash list from the data manager
+//     (expected result: 200 OK with request body "Received 3 trash
+//     requests"
 //
-//   4. Invalid trash list from the data manager
-//      (expected result: 400 Bad Request)
+//  4. Invalid trash list from the data manager
+//     (expected result: 400 Bad Request)
 //
 // Test that in the end, the trash collector received a good list
 // trash list with the expected number of requests.
@@ -957,7 +952,6 @@ func (s *HandlerSuite) TestPullHandler(c *check.C) {
 // TODO(twp): test concurrency: launch 100 goroutines to update the
 // pull list simultaneously.  Make sure that none of them return 400
 // Bad Request and that replica.Dump() returns a valid list.
-//
 func (s *HandlerSuite) TestTrashHandler(c *check.C) {
 	c.Assert(s.handler.setup(context.Background(), s.cluster, "", prometheus.NewRegistry(), testServiceURL), check.IsNil)
 	// Replace the router's trashq -- which the worker goroutines
