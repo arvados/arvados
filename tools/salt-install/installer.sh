@@ -47,6 +47,11 @@ declare GITTARGET
 # This will be populated by loadconfig()
 declare USE_SSH_JUMPHOST
 
+# The temp file that will get used to disable envvar forwarding to avoid locale
+# issues in Debian distros.
+# This will be populated by loadconfig()
+declare SSH_CONFFILE
+
 checktools() {
     local MISSING=''
     for a in git ip ; do
@@ -130,17 +135,22 @@ loadconfig() {
     if ! [[ -s ${CONFIG_FILE} && -s ${CONFIG_FILE}.secrets ]]; then
 		echo "Must be run from initialized setup dir, maybe you need to 'initialize' first?"
     fi
-    source ${CONFIG_FILE}.secrets
-    source ${CONFIG_FILE}
+    source common.sh
     GITTARGET=arvados-deploy-config-${CLUSTER}
+
+	# Set up SSH so that it doesn't forward any environment variable. This is to avoid
+	# getting "setlocale" errors on the first run, depending on the distro being used
+	# to run the installer (like Debian).
+	SSH_CONFFILE=$(mktemp)
+	echo "Include config SendEnv -*" > ${SSH_CONFFILE}
 }
 
 ssh_cmd() {
 	local NODE=$1
 	if [ -z "${USE_SSH_JUMPHOST}" -o "${NODE}" == "${USE_SSH_JUMPHOST}" -o "${NODE}" == "localhost" ]; then
-		echo "ssh"
+		echo "ssh -F ${SSH_CONFFILE}"
 	else
-		echo "ssh -J ${DEPLOY_USER}@${USE_SSH_JUMPHOST}"
+		echo "ssh -F ${SSH_CONFFILE} -J ${DEPLOY_USER}@${USE_SSH_JUMPHOST}"
 	fi
 }
 
@@ -296,8 +306,17 @@ case "$subcmd" in
 
 	    for NODE in "${!NODES[@]}"
 	    do
-		# then  'api' or 'controller' roles
-		if [[ "${NODES[$NODE]}" =~ (api|controller) ]] ; then
+		# then 'balancer' role
+		if [[ "${NODES[$NODE]}" =~ balancer ]] ; then
+		    deploynode $NODE "${NODES[$NODE]}"
+		    unset NODES[$NODE]
+		fi
+	    done
+
+	    for NODE in "${!NODES[@]}"
+	    do
+		# then 'controller' role
+		if [[ "${NODES[$NODE]}" =~ controller ]] ; then
 		    deploynode $NODE "${NODES[$NODE]}"
 		    unset NODES[$NODE]
 		fi

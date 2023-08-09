@@ -30,18 +30,18 @@ import (
 
 var Command cmd.Handler = &installCommand{}
 
-const goversion = "1.18.8"
+const goversion = "1.20.6"
 
 const (
-	rubyversion             = "2.7.6"
+	rubyversion             = "2.7.7"
 	bundlerversion          = "2.2.19"
-	singularityversion      = "3.9.9"
+	singularityversion      = "3.10.4"
 	pjsversion              = "1.9.8"
 	geckoversion            = "0.24.0"
 	gradleversion           = "5.3.1"
 	nodejsversion           = "v12.22.12"
 	devtestDatabasePassword = "insecure_arvados_test"
-	workbench2version       = "e30e54d674c95ee15e296c71e471c1555bdc5a38" // 2.4.3
+	workbench2version       = "9a62117dbe56bdfa42489415eb6696638c2bb336" // 2.6.3
 )
 
 //go:embed arvados.service
@@ -360,7 +360,7 @@ S=`+singularityversion+`
 tmp=/var/lib/arvados/tmp/singularity
 trap "rm -r ${tmp}" ERR EXIT
 cd /var/lib/arvados/tmp
-git clone https://github.com/sylabs/singularity
+git clone --recurse-submodules https://github.com/sylabs/singularity
 cd singularity
 git checkout v${S}
 ./mconfig --prefix=/var/lib/arvados

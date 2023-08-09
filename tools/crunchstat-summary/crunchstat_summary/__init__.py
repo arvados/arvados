@@ -3,6 +3,9 @@
 # SPDX-License-Identifier: AGPL-3.0
 
 import logging
+import sys
+
 
 logger = logging.getLogger(__name__)
-logger.addHandler(logging.NullHandler())
+logger.addHandler(logging.StreamHandler(stream=sys.stderr))
+logger.setLevel(logging.WARNING)

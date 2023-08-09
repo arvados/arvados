@@ -6,11 +6,11 @@
 // cache-invalidation event feed at "ws://.../websocket") to
 // websocket clients.
 //
-// Installation and configuration
+// # Installation and configuration
 //
 // See https://doc.arvados.org/install/install-ws.html.
 //
-// Developer info
+// # Developer info
 //
 // See https://dev.arvados.org/projects/arvados/wiki/Hacking_websocket_server.
 package ws

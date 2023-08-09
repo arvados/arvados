@@ -10,44 +10,44 @@
 //
 // See http://doc.arvados.org/install/install-keep-web.html.
 //
-// Configuration
+// # Configuration
 //
 // The default cluster configuration file location is
 // /etc/arvados/config.yml.
 //
 // Example configuration file
 //
-//   Clusters:
-//     zzzzz:
-//       SystemRootToken: ""
-//       Services:
-//         Controller:
-//           ExternalURL: "https://example.com"
-//           Insecure: false
-//         WebDAV:
-//           InternalURLs:
-//             "http://:1234/": {}
-//         WebDAVDownload:
-//           InternalURLs:
-//             "http://:1234/": {}
-//           ExternalURL: "https://download.example.com/"
-//       Users:
-//         AnonymousUserToken: "xxxxxxxxxxxxxxxxxxxx"
-//       Collections:
-//         TrustAllContent: false
+//	Clusters:
+//	  zzzzz:
+//	    SystemRootToken: ""
+//	    Services:
+//	      Controller:
+//	        ExternalURL: "https://example.com"
+//	        Insecure: false
+//	      WebDAV:
+//	        InternalURLs:
+//	          "http://:1234/": {}
+//	      WebDAVDownload:
+//	        InternalURLs:
+//	          "http://:1234/": {}
+//	        ExternalURL: "https://download.example.com/"
+//	    Users:
+//	      AnonymousUserToken: "xxxxxxxxxxxxxxxxxxxx"
+//	    Collections:
+//	      TrustAllContent: false
 //
-// Starting the server
+// # Starting the server
 //
 // Start a server using the default config file
 // /etc/arvados/config.yml:
 //
-//   keep-web
+//	keep-web
 //
 // Start a server using the config file /path/to/config.yml:
 //
-//   keep-web -config /path/to/config.yml
+//	keep-web -config /path/to/config.yml
 //
-// Proxy configuration
+// # Proxy configuration
 //
 // Typically, keep-web is installed behind a proxy like nginx.
 //
@@ -74,25 +74,25 @@
 // proxy. However, if TLS is not used between nginx and keep-web, the
 // intervening networks must be secured by other means.
 //
-// Anonymous downloads
+// # Anonymous downloads
 //
 // The "Users.AnonymousUserToken" configuration entry used when
 // when processing anonymous requests, i.e., whenever a web client
 // does not supply its own Arvados API token via path, query string,
 // cookie, or request header.
 //
-//   Clusters:
-//     zzzzz:
-//       Users:
-//         AnonymousUserToken: "xxxxxxxxxxxxxxxxxxxxxxx"
+//	Clusters:
+//	  zzzzz:
+//	    Users:
+//	      AnonymousUserToken: "xxxxxxxxxxxxxxxxxxxxxxx"
 //
 // See http://doc.arvados.org/install/install-keep-web.html for examples.
 //
-// Download URLs
+// # Download URLs
 //
 // See http://doc.arvados.org/api/keep-web-urls.html
 //
-// Attachment-Only host
+// # Attachment-Only host
 //
 // It is possible to serve untrusted content and accept user
 // credentials at the same origin as long as the content is only
@@ -103,13 +103,13 @@
 // only when the designated origin matches exactly the Host header
 // provided by the client or downstream proxy.
 //
-//   Clusters:
-//     zzzzz:
-//       Services:
-//         WebDAVDownload:
-//           ExternalURL: "https://domain.example:9999"
+//	Clusters:
+//	  zzzzz:
+//	    Services:
+//	      WebDAVDownload:
+//	        ExternalURL: "https://domain.example:9999"
 //
-// Trust All Content mode
+// # Trust All Content mode
 //
 // In TrustAllContent mode, Keep-web will accept credentials (API
 // tokens) and serve any collection X at
@@ -120,32 +120,31 @@
 //
 // In such cases you can enable trust-all-content mode.
 //
-//   Clusters:
-//     zzzzz:
-//       Collections:
-//         TrustAllContent: true
+//	Clusters:
+//	  zzzzz:
+//	    Collections:
+//	      TrustAllContent: true
 //
 // When TrustAllContent is enabled, the only effect of the
 // Attachment-Only host setting is to add a "Content-Disposition:
 // attachment" header.
 //
-//   Clusters:
-//     zzzzz:
-//       Services:
-//         WebDAVDownload:
-//           ExternalURL: "https://domain.example:9999"
-//       Collections:
-//         TrustAllContent: true
+//	Clusters:
+//	  zzzzz:
+//	    Services:
+//	      WebDAVDownload:
+//	        ExternalURL: "https://domain.example:9999"
+//	    Collections:
+//	      TrustAllContent: true
 //
 // Depending on your site configuration, you might also want to enable
 // the "trust all content" setting in Workbench. Normally, Workbench
 // avoids redirecting requests to keep-web if they depend on
 // TrustAllContent being enabled.
 //
-// Metrics
+// # Metrics
 //
 // Keep-web exposes request metrics in Prometheus text-based format at
 // /metrics. The same information is also available as JSON at
 // /metrics.json.
-//
 package keepweb

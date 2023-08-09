@@ -27,18 +27,29 @@
 
 # Optional cluster service nodes configuration:
 #
-# List of node names which either will be hosting user-facing or internal services
-# user_facing_hosts = ["node1", "node2", ...]
-# internal_service_hosts = ["node3", ...]
+# List of node names which either will be hosting user-facing or internal
+# services. Defaults:
+# user_facing_hosts = [ "controller", "workbench" ]
+# internal_service_hosts = [ "keep0", "shell" ]
 #
-# Map assigning each node name an internal IP address
+# Map assigning each node name an internal IP address. Defaults:
 # private_ip = {
-#   node1 = "1.2.3.4"
-#   ...
+#   controller = "10.1.1.11"
+#   workbench = "10.1.1.15"
+#   shell = "10.1.2.17"
+#   keep0 = "10.1.2.13"
 # }
 #
-# Map assigning DNS aliases for service node names
+# Map assigning DNS aliases for service node names. Defaults:
 # dns_aliases = {
-#   node1 = ["alias1", "alias2", ...]
-#   ...
+#   workbench = [
+#     "ws",
+#     "workbench2",
+#     "webshell",
+#     "keep",
+#     "download",
+#     "prometheus",
+#     "grafana",
+#     "*.collections"
+#   ]
 # }

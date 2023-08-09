@@ -55,12 +55,12 @@ func (versionCommand) RunCommand(prog string, args []string, stdin io.Reader, st
 //
 // Example:
 //
-//     os.Exit(Multi(map[string]Handler{
-//             "foobar": HandlerFunc(func(prog string, args []string) int {
-//                     fmt.Println(args[0])
-//                     return 2
-//             }),
-//     })("/usr/bin/multi", []string{"foobar", "baz"}, os.Stdin, os.Stdout, os.Stderr))
+//	os.Exit(Multi(map[string]Handler{
+//	        "foobar": HandlerFunc(func(prog string, args []string) int {
+//	                fmt.Println(args[0])
+//	                return 2
+//	        }),
+//	})("/usr/bin/multi", []string{"foobar", "baz"}, os.Stdin, os.Stdout, os.Stderr))
 //
 // ...prints "baz" and exits 2.
 type Multi map[string]Handler
