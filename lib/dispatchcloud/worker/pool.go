@@ -1053,6 +1053,10 @@ func (wp *Pool) sync(threshold time.Time, instances []cloud.Instance) {
 	}
 
 	if wp.atQuotaUntilFewerInstances > len(wp.workers)+len(wp.creating) {
+		// After syncing, there are fewer instances (including
+		// pending creates) than there were last time we saw a
+		// quota error.  This might mean it's now possible to
+		// create new instances.  Reset our "at quota" state.
 		wp.atQuotaUntilFewerInstances = 0
 	}
 

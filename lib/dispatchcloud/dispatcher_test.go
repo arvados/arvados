@@ -52,6 +52,7 @@ func (s *DispatcherSuite) SetUpTest(c *check.C) {
 		ErrorRateCreate:           0.1,
 		ErrorRateDestroy:          0.1,
 		MinTimeBetweenCreateCalls: time.Millisecond,
+		QuotaMaxInstances:         10,
 	}
 
 	// We need the postgresql connection info from the integration

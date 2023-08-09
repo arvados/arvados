@@ -54,6 +54,8 @@ type StubDriver struct {
 	MinTimeBetweenCreateCalls    time.Duration
 	MinTimeBetweenInstancesCalls time.Duration
 
+	QuotaMaxInstances int
+
 	// If true, Create and Destroy calls block until Release() is
 	// called.
 	HoldCloudOps bool
@@ -123,6 +125,9 @@ func (sis *StubInstanceSet) Create(it arvados.InstanceType, image cloud.ImageID,
 	}
 	if math_rand.Float64() < sis.driver.ErrorRateCreate {
 		return nil, fmt.Errorf("StubInstanceSet: rand < ErrorRateCreate %f", sis.driver.ErrorRateCreate)
+	}
+	if max := sis.driver.QuotaMaxInstances; max > 0 && len(sis.servers) >= max {
+		return nil, QuotaError{fmt.Errorf("StubInstanceSet: reached QuotaMaxInstances %d", max)}
 	}
 	sis.allowCreateCall = time.Now().Add(sis.driver.MinTimeBetweenCreateCalls)
 	ak := sis.driver.AuthorizedKeys
@@ -489,3 +494,9 @@ func copyTags(src cloud.InstanceTags) cloud.InstanceTags {
 func (si stubInstance) PriceHistory(arvados.InstanceType) []cloud.InstancePrice {
 	return nil
 }
+
+type QuotaError struct {
+	error
+}
+
+func (QuotaError) IsQuotaError() bool { return true }

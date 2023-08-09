@@ -29,12 +29,6 @@ var (
 	}()
 )
 
-type stubQuotaError struct {
-	error
-}
-
-func (stubQuotaError) IsQuotaError() bool { return true }
-
 type stubPool struct {
 	notify    <-chan struct{}
 	unalloc   map[arvados.InstanceType]int // idle+booting+unknown
