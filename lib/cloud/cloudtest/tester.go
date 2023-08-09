@@ -61,10 +61,12 @@ type tester struct {
 // Currently this means run once for each configured SubnetID.
 func (t *tester) Run() bool {
 	var dp map[string]interface{}
-	err := json.Unmarshal(t.DriverParameters, &dp)
-	if err != nil {
-		t.Logger.WithError(err).Error("error decoding configured CloudVMs.DriverParameters")
-		return false
+	if len(t.DriverParameters) > 0 {
+		err := json.Unmarshal(t.DriverParameters, &dp)
+		if err != nil {
+			t.Logger.WithError(err).Error("error decoding configured CloudVMs.DriverParameters")
+			return false
+		}
 	}
 	subnets, ok := dp["SubnetID"].([]interface{})
 	if !ok || len(subnets) <= 1 {
