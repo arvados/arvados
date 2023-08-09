@@ -367,6 +367,7 @@ func (s *DispatcherSuite) TestInstancesAPI(c *check.C) {
 	sr := getInstances()
 	c.Check(len(sr.Items), check.Equals, 0)
 
+	s.stubDriver.ErrorRateCreate = 0
 	ch := s.disp.pool.Subscribe()
 	defer s.disp.pool.Unsubscribe(ch)
 	ok := s.disp.pool.Create(test.InstanceType(1))
