@@ -68,7 +68,9 @@ export const ProcessDetailsAttributes = withStyles(styles, { withTheme: true })(
             const classes = props.classes;
             const mdSize = props.twoCol ? 6 : 12;
             const filteredPropertyKeys = Object.keys(containerRequest.properties)
-                                            .filter(k => (typeof containerRequest.properties[k] !== 'object'));
+                .filter(k => (typeof containerRequest.properties[k] !== 'object'));
+            const hasTotalCost = containerRequest && containerRequest.cumulativeCost > 0;
+            const totalCostNotReady = container && container.cost > 0 && container.state === "Running" && containerRequest && containerRequest.cumulativeCost === 0 && subprocesses.length > 0;
             return <Grid container>
                 <Grid item xs={12}>
                     <ProcessRuntimeStatus runtimeStatus={container?.runtimeStatus} containerCount={containerRequest.containerCount} />
@@ -127,11 +129,10 @@ export const ProcessDetailsAttributes = withStyles(styles, { withTheme: true })(
                         <CollectionName className={classes.link} uuid={containerRequest.outputUuid} />
                     </span>}
                 </Grid>
-                {container && container.cost > 0 && <Grid item xs={12} md={mdSize}>
-                        <DetailsAttribute label='Cost ' value={formatContainerCost(container.cost)} />
-                </Grid>}
-                {containerRequest && containerRequest.cumulativeCost > 0 && subprocesses.length > 0 && <Grid item xs={12} md={mdSize}>
-                    <DetailsAttribute label='Container &amp; subprocess cost' value={formatContainerCost(containerRequest.cumulativeCost)} />
+                {container && <Grid item xs={12} md={mdSize}>
+                    <DetailsAttribute label='Cost' value={
+                        `${hasTotalCost ? formatContainerCost(containerRequest.cumulativeCost) + ' total, ' : (totalCostNotReady ? 'total pending completion, ' : '')}${container.cost > 0 ? formatContainerCost(container.cost) : 'not available'} for this container`
+                    } />
                 </Grid>}
                 {containerRequest.properties.template_uuid &&
                     <Grid item xs={12} md={mdSize}>
@@ -144,9 +145,9 @@ export const ProcessDetailsAttributes = withStyles(styles, { withTheme: true })(
                     <DetailsAttribute label='Priority' value={containerRequest.priority} />
                 </Grid>
                 {/*
-                    NOTE: The property list should be kept at the bottom, because it spans
-                    the entire available width, without regards of the twoCol prop.
-                */}
+			NOTE: The property list should be kept at the bottom, because it spans
+			the entire available width, without regards of the twoCol prop.
+			*/}
                 <Grid item xs={12} md={12}>
                     <DetailsAttribute label='Properties' />
                     {filteredPropertyKeys.length > 0
