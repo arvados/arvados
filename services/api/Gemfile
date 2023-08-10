@@ -48,7 +48,7 @@ gem 'optimist'
 
 gem 'themes_for_rails', git: 'https://github.com/arvados/themes_for_rails'
 
-gem 'arvados', '>= 2.7.0.dev20230810141507'
+gem 'arvados', '>= 2.7.0.dev20230810143224'
 gem 'httpclient'
 
 gem 'safe_yaml'
