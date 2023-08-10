@@ -99,6 +99,7 @@ func (command) RunCommand(prog string, args []string, stdin io.Reader, stdout, s
 		InstanceType:        it,
 		SSHKey:              key,
 		SSHPort:             cluster.Containers.CloudVMs.SSHPort,
+		DeployPublicKey:     cluster.Containers.CloudVMs.DeployPublicKey,
 		BootProbeCommand:    cluster.Containers.CloudVMs.BootProbeCommand,
 		InstanceInitCommand: cloud.InitCommand(cluster.Containers.CloudVMs.InstanceInitCommand),
 		ShellCommand:        *shellCommand,
