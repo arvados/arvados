@@ -13,18 +13,9 @@ package install
 
 import (
 	"os"
-	"testing"
 
 	"gopkg.in/check.v1"
 )
-
-func Test(t *testing.T) {
-	check.TestingT(t)
-}
-
-var _ = check.Suite(&Suite{})
-
-type Suite struct{}
 
 func (*Suite) TestInstallDeps(c *check.C) {
 	tmp := c.MkDir()
@@ -41,8 +32,8 @@ docker run -i --rm --workdir /arvados \
        -v /arvados/services/api/tmp \
        --env http_proxy \
        --env https_proxy \
-       debian:10 \
+       debian:11 \
        bash -c "/arvados-server install -type test && /arvados-server boot -type test -config doc/examples/config/zzzzz.yml -own-temporary-database -shutdown -timeout 9m"
 `
-	c.Check(runBash(script, os.Stdout, os.Stderr), check.IsNil)
+	c.Check((&installCommand{}).runBash(script, os.Stdout, os.Stderr), check.IsNil)
 }
