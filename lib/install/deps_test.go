@@ -33,7 +33,9 @@ docker run -i --rm --workdir /arvados \
        --env http_proxy \
        --env https_proxy \
        debian:11 \
-       bash -c "/arvados-server install -type test && /arvados-server boot -type test -config doc/examples/config/zzzzz.yml -own-temporary-database -shutdown -timeout 9m"
+       bash -c "/arvados-server install -type test &&
+           git config --global --add safe.directory /arvados &&
+           /arvados-server boot -type test -config doc/examples/config/zzzzz.yml -own-temporary-database -shutdown -timeout 9m"
 `
 	c.Check((&installCommand{}).runBash(script, os.Stdout, os.Stderr), check.IsNil)
 }
