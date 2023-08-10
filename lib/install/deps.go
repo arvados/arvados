@@ -156,14 +156,12 @@ func (inst *installCommand) RunCommand(prog string, args []string, stdin io.Read
 			"gettext",
 			"libattr1-dev",
 			"libfuse-dev",
-			"libgbm1",        // cypress / workbench2 tests
-			"libglib2.0-dev", // common, used by singularity
+			"libgbm1", // cypress / workbench2 tests
 			"libgnutls28-dev",
 			"libpam-dev",
 			"libpcre3-dev",
 			"libpq-dev",
 			"libreadline-dev",
-			"libseccomp-dev", // singularity
 			"libssl-dev",
 			"libxml2-dev",
 			"libxslt1-dev",
@@ -200,8 +198,11 @@ func (inst *installCommand) RunCommand(prog string, args []string, stdin io.Read
 			}
 		}
 		if dev || test {
-			pkgs = append(pkgs, "squashfs-tools") // for singularity
-			pkgs = append(pkgs, "gnupg")          // for docker install recipe
+			pkgs = append(pkgs,
+				"libglib2.0-dev", // singularity (conmon)
+				"libseccomp-dev", // singularity (seccomp)
+				"squashfs-tools", // singularity
+				"gnupg")          // docker install recipe
 		}
 		switch {
 		case osv.Debian && osv.Major >= 11:
