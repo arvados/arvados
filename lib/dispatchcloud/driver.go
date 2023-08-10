@@ -33,7 +33,7 @@ func newInstanceSet(cluster *arvados.Cluster, setID cloud.InstanceSetID, logger 
 		return nil, fmt.Errorf("unsupported cloud driver %q", cluster.Containers.CloudVMs.Driver)
 	}
 	sharedResourceTags := cloud.SharedResourceTags(cluster.Containers.CloudVMs.ResourceTags)
-	is, err := driver.InstanceSet(cluster.Containers.CloudVMs.DriverParameters, setID, sharedResourceTags, logger)
+	is, err := driver.InstanceSet(cluster.Containers.CloudVMs.DriverParameters, setID, sharedResourceTags, logger, reg)
 	is = newInstrumentedInstanceSet(is, reg)
 	if maxops := cluster.Containers.CloudVMs.MaxCloudOpsPerSecond; maxops > 0 {
 		is = rateLimitedInstanceSet{

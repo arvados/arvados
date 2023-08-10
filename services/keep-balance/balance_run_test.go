@@ -5,7 +5,6 @@
 package keepbalance
 
 import (
-	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -24,7 +23,6 @@ import (
 	"git.arvados.org/arvados.git/sdk/go/ctxlog"
 	"github.com/jmoiron/sqlx"
 	"github.com/prometheus/client_golang/prometheus"
-	"github.com/prometheus/common/expfmt"
 	check "gopkg.in/check.v1"
 )
 
@@ -591,14 +589,12 @@ func (s *runSuite) TestCommit(c *check.C) {
 	c.Assert(err, check.IsNil)
 	c.Check(string(lost), check.Not(check.Matches), `(?ms).*acbd18db4cc2f85cedef654fccc4a4d8.*`)
 
-	buf, err := s.getMetrics(c, srv)
-	c.Check(err, check.IsNil)
-	bufstr := buf.String()
-	c.Check(bufstr, check.Matches, `(?ms).*\narvados_keep_total_bytes 15\n.*`)
-	c.Check(bufstr, check.Matches, `(?ms).*\narvados_keepbalance_changeset_compute_seconds_sum [0-9\.]+\n.*`)
-	c.Check(bufstr, check.Matches, `(?ms).*\narvados_keepbalance_changeset_compute_seconds_count 1\n.*`)
-	c.Check(bufstr, check.Matches, `(?ms).*\narvados_keep_dedup_byte_ratio [1-9].*`)
-	c.Check(bufstr, check.Matches, `(?ms).*\narvados_keep_dedup_block_ratio [1-9].*`)
+	metrics := arvadostest.GatherMetricsAsString(srv.Metrics.reg)
+	c.Check(metrics, check.Matches, `(?ms).*\narvados_keep_total_bytes 15\n.*`)
+	c.Check(metrics, check.Matches, `(?ms).*\narvados_keepbalance_changeset_compute_seconds_sum [0-9\.]+\n.*`)
+	c.Check(metrics, check.Matches, `(?ms).*\narvados_keepbalance_changeset_compute_seconds_count 1\n.*`)
+	c.Check(metrics, check.Matches, `(?ms).*\narvados_keep_dedup_byte_ratio [1-9].*`)
+	c.Check(metrics, check.Matches, `(?ms).*\narvados_keep_dedup_block_ratio [1-9].*`)
 }
 
 func (s *runSuite) TestChunkPrefix(c *check.C) {
@@ -674,23 +670,6 @@ func (s *runSuite) TestRunForever(c *check.C) {
 	c.Check(pullReqs.Count() >= 16, check.Equals, true)
 	c.Check(trashReqs.Count(), check.Equals, pullReqs.Count()+4)
 
-	buf, err := s.getMetrics(c, srv)
-	c.Check(err, check.IsNil)
-	c.Check(buf, check.Matches, `(?ms).*\narvados_keepbalance_changeset_compute_seconds_count `+fmt.Sprintf("%d", pullReqs.Count()/4)+`\n.*`)
-}
-
-func (s *runSuite) getMetrics(c *check.C, srv *Server) (*bytes.Buffer, error) {
-	mfs, err := srv.Metrics.reg.Gather()
-	if err != nil {
-		return nil, err
-	}
-
-	var buf bytes.Buffer
-	for _, mf := range mfs {
-		if _, err := expfmt.MetricFamilyToText(&buf, mf); err != nil {
-			return nil, err
-		}
-	}
-
-	return &buf, nil
+	metrics := arvadostest.GatherMetricsAsString(srv.Metrics.reg)
+	c.Check(metrics, check.Matches, `(?ms).*\narvados_keepbalance_changeset_compute_seconds_count `+fmt.Sprintf("%d", pullReqs.Count()/4)+`\n.*`)
 }

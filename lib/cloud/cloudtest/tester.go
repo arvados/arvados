@@ -55,16 +55,60 @@ type tester struct {
 	failed bool
 }
 
+// Run the test suite once for each applicable permutation of
+// DriverParameters.  Return true if everything worked.
+//
+// Currently this means run once for each configured SubnetID.
+func (t *tester) Run() bool {
+	var dp map[string]interface{}
+	if len(t.DriverParameters) > 0 {
+		err := json.Unmarshal(t.DriverParameters, &dp)
+		if err != nil {
+			t.Logger.WithError(err).Error("error decoding configured CloudVMs.DriverParameters")
+			return false
+		}
+	}
+	subnets, ok := dp["SubnetID"].([]interface{})
+	if !ok || len(subnets) <= 1 {
+		// Easy, only one SubnetID to test.
+		return t.runWithDriverParameters(t.DriverParameters)
+	}
+
+	deferredError := false
+	for i, subnet := range subnets {
+		subnet, ok := subnet.(string)
+		if !ok {
+			t.Logger.Errorf("CloudVMs.DriverParameters.SubnetID[%d] is invalid -- must be a string", i)
+			deferredError = true
+			continue
+		}
+		dp["SubnetID"] = subnet
+		t.Logger.Infof("running tests using SubnetID[%d] %q", i, subnet)
+		dpjson, err := json.Marshal(dp)
+		if err != nil {
+			t.Logger.WithError(err).Error("error encoding driver parameters")
+			deferredError = true
+			continue
+		}
+		ok = t.runWithDriverParameters(dpjson)
+		if !ok {
+			t.Logger.Infof("failed tests using SubnetID[%d] %q", i, subnet)
+			deferredError = true
+		}
+	}
+	return !deferredError
+}
+
 // Run the test suite as specified, clean up as needed, and return
 // true (everything is OK) or false (something went wrong).
-func (t *tester) Run() bool {
+func (t *tester) runWithDriverParameters(driverParameters json.RawMessage) bool {
 	// This flag gets set when we encounter a non-fatal error, so
 	// we can continue doing more tests but remember to return
 	// false (failure) at the end.
 	deferredError := false
 
 	var err error
-	t.is, err = t.Driver.InstanceSet(t.DriverParameters, t.SetID, t.Tags, t.Logger)
+	t.is, err = t.Driver.InstanceSet(driverParameters, t.SetID, t.Tags, t.Logger, nil)
 	if err != nil {
 		t.Logger.WithError(err).Info("error initializing driver")
 		return false
