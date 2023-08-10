@@ -157,11 +157,13 @@ func (inst *installCommand) RunCommand(prog string, args []string, stdin io.Read
 			"libattr1-dev",
 			"libfuse-dev",
 			"libgbm1", // cypress / workbench2 tests
+			"libglib2.0-dev", // conmon, used by singularity
 			"libgnutls28-dev",
 			"libpam-dev",
 			"libpcre3-dev",
 			"libpq-dev",
 			"libreadline-dev",
+			"libseccomp-dev", // singularity
 			"libssl-dev",
 			"libxml2-dev",
 			"libxslt1-dev",
