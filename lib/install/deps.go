@@ -193,6 +193,8 @@ func (inst *installCommand) RunCommand(prog string, args []string, stdin io.Read
 		if test {
 			if osv.Debian && osv.Major <= 10 {
 				pkgs = append(pkgs, "iceweasel")
+			} else if osv.Debian && osv.Major >= 11 {
+				pkgs = append(pkgs, "firefox-esr")
 			} else {
 				pkgs = append(pkgs, "firefox")
 			}
