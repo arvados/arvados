@@ -19,6 +19,11 @@ func (sch *Scheduler) runQueue() {
 	running := sch.pool.Running()
 	unalloc := sch.pool.Unallocated()
 
+	totalInstances := 0
+	for _, n := range sch.pool.CountWorkers() {
+		totalInstances += n
+	}
+
 	unsorted, _ := sch.queue.Entries()
 	sorted := make([]container.QueueEnt, 0, len(unsorted))
 	for _, ent := range unsorted {
@@ -92,11 +97,10 @@ func (sch *Scheduler) runQueue() {
 	if sch.maxInstances > 0 && sch.maxConcurrency > sch.maxInstances {
 		sch.maxConcurrency = sch.maxInstances
 	}
-	instances := len(running) + len(unalloc)
-	if sch.instancesWithinQuota > 0 && sch.instancesWithinQuota < instances {
+	if sch.instancesWithinQuota > 0 && sch.instancesWithinQuota < totalInstances {
 		// Evidently it is possible to run this many
 		// instances, so raise our estimate.
-		sch.instancesWithinQuota = instances
+		sch.instancesWithinQuota = totalInstances
 	}
 	if sch.pool.AtQuota() {
 		// Consider current workload to be the maximum
@@ -109,14 +113,14 @@ func (sch *Scheduler) runQueue() {
 		// supervisors when we reach the cloud-imposed quota
 		// (which may be based on # CPUs etc) long before the
 		// configured MaxInstances.
-		if sch.maxConcurrency == 0 || sch.maxConcurrency > instances {
-			if instances == 0 {
+		if sch.maxConcurrency == 0 || sch.maxConcurrency > totalInstances {
+			if totalInstances == 0 {
 				sch.maxConcurrency = 1
 			} else {
-				sch.maxConcurrency = instances
+				sch.maxConcurrency = totalInstances
 			}
 		}
-		sch.instancesWithinQuota = instances
+		sch.instancesWithinQuota = totalInstances
 	} else if sch.instancesWithinQuota > 0 && sch.maxConcurrency > sch.instancesWithinQuota+1 {
 		// Once we've hit a quota error and started tracking
 		// instancesWithinQuota (i.e., it's not zero), we
