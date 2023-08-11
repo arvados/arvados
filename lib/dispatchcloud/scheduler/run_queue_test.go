@@ -249,12 +249,12 @@ func (*SchedulerSuite) TestShutdownAtQuota(c *check.C) {
 		case 1, 2:
 			// Can't create a type3 node for ctr3, so we
 			// shutdown an unallocated node (type2), and
-			// unlock both containers.
+			// unlock the 2nd-in-line container, but not
+			// the 1st-in-line container.
 			c.Check(pool.starts, check.HasLen, 0)
 			c.Check(pool.shutdowns, check.Equals, 1)
 			c.Check(pool.creates, check.HasLen, 0)
 			c.Check(queue.StateChanges(), check.DeepEquals, []test.QueueStateChange{
-				{UUID: test.ContainerUUID(3), From: "Locked", To: "Queued"},
 				{UUID: test.ContainerUUID(2), From: "Locked", To: "Queued"},
 			})
 		case 3:
