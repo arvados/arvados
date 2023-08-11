@@ -77,6 +77,7 @@ export interface ClusterConfigJSON {
         IdleTimeout: string;
         BannerUUID: string;
         UserProfileFormFields: {};
+        UserProfileFormMessage: string;
     };
     Login: {
         LoginCluster: string;
@@ -307,7 +308,8 @@ export const mockClusterConfigJSON = (
         SiteName: '',
         IdleTimeout: '0s',
         BannerUUID: "",
-        UserProfileFormFields: {}
+        UserProfileFormFields: {},
+        UserProfileFormMessage: '',
     },
     Login: {
         LoginCluster: '',
