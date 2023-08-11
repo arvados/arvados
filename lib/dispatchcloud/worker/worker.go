@@ -7,17 +7,21 @@ package worker
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
+	"net"
 	"path/filepath"
 	"strings"
 	"sync"
 	"time"
 
 	"git.arvados.org/arvados.git/lib/cloud"
+	"git.arvados.org/arvados.git/lib/dispatchcloud/sshexecutor"
 	"git.arvados.org/arvados.git/sdk/go/arvados"
 	"git.arvados.org/arvados.git/sdk/go/stats"
 	"github.com/sirupsen/logrus"
+	"golang.org/x/crypto/ssh"
 )
 
 const (
@@ -301,10 +305,10 @@ func (wkr *worker) probeAndUpdate() {
 		dur := probeStart.Sub(wkr.probed)
 		if wkr.shutdownIfBroken(dur) {
 			// stderr from failed run-probes will have
-			// been logged already, but boot-probe
+			// been logged already, but some boot-probe
 			// failures are normal so they are logged only
-			// at Debug level. This is our chance to log
-			// some evidence about why the node never
+			// at Debug level. This may be our chance to
+			// log some evidence about why the node never
 			// booted, even in non-debug mode.
 			if !booted {
 				wkr.reportBootOutcome(BootOutcomeFailed)
@@ -474,7 +478,26 @@ func (wkr *worker) probeBooted() (ok bool, stderr []byte) {
 		"stderr":  string(stderr),
 	})
 	if err != nil {
-		logger.WithError(err).Debug("boot probe failed")
+		if errors.Is(err, sshexecutor.ErrNoAddress) ||
+			errors.As(err, new(*net.OpError)) ||
+			errors.As(err, new(*ssh.ExitError)) {
+			// These errors are expected while the
+			// instance is booting, so we only log them at
+			// debug level.
+			logger.WithError(err).Debug("boot probe failed")
+		} else {
+			// Other errors are more likely to indicate a
+			// configuration problem, and it's more
+			// sysadmin-friendly to show them right away
+			// instead of waiting until boot timeout and
+			// only showing the last error.
+			//
+			// Example: "ssh: handshake failed: ssh:
+			// unable to authenticate, attempted methods
+			// [none publickey], no supported methods
+			// remain"
+			logger.WithError(err).Warn("boot probe failed")
+		}
 		return false, stderr
 	}
 	logger.Info("boot probe succeeded")

@@ -18,6 +18,8 @@ import (
 	"golang.org/x/crypto/ssh"
 )
 
+var ErrNoAddress = errors.New("instance has no address")
+
 // New returns a new Executor, using the given target.
 func New(t cloud.ExecutorTarget) *Executor {
 	return &Executor{target: t}
@@ -196,7 +198,7 @@ func (exr *Executor) TargetHostPort() (string, string) {
 func (exr *Executor) setupSSHClient() (*ssh.Client, error) {
 	addr := net.JoinHostPort(exr.TargetHostPort())
 	if addr == ":" {
-		return nil, errors.New("instance has no address")
+		return nil, ErrNoAddress
 	}
 	var receivedKey ssh.PublicKey
 	client, err := ssh.Dial("tcp", addr, &ssh.ClientConfig{
