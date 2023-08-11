@@ -6,6 +6,7 @@ class ApiClientAuthorization < ArvadosModel
   include HasUuid
   include KindAndEtag
   include CommonApiTemplate
+  include Rails.application.routes.url_helpers
   extend CurrentApiClient
   extend DbCurrentTime
 
@@ -78,7 +79,9 @@ class ApiClientAuthorization < ArvadosModel
 
   def scopes_allow_request?(request)
     method = request.request_method
-    if method == 'HEAD'
+    if method == 'GET' and request.path == url_for(controller: 'arvados/v1/api_client_authorizations', action: 'current', only_path: true)
+      true
+    elsif method == 'HEAD'
       (scopes_allow?(['HEAD', request.path].join(' ')) ||
        scopes_allow?(['GET', request.path].join(' ')))
     else
