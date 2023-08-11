@@ -253,7 +253,28 @@ tryrun:
 		// we're at quota (but if they have already been
 		// scheduled and they're loading docker images etc.,
 		// let them run).
-		for _, ctr := range append(overmaxsuper, overquota...) {
+		var unlock []container.QueueEnt
+		unlock = append(unlock, overmaxsuper...)
+		if totalInstances > 0 && len(overquota) > 1 {
+			// We don't unlock the next-in-line container
+			// when at quota.  This avoids a situation
+			// where our "at quota" state expires, we lock
+			// the next container and try to create an
+			// instance, the cloud provider still returns
+			// a quota error, we unlock the container, and
+			// we repeat this until the container reaches
+			// its limit of lock/unlock cycles.
+			unlock = append(unlock, overquota[1:]...)
+		} else {
+			// However, if totalInstances is 0 and we're
+			// still getting quota errors, then the
+			// next-in-line container is evidently not
+			// possible to run, so we should let it
+			// exhaust its lock/unlock cycles and
+			// eventually cancel, to avoid starvation.
+			unlock = append(unlock, overquota...)
+		}
+		for _, ctr := range unlock {
 			ctr := ctr.Container
 			_, toolate := running[ctr.UUID]
 			if ctr.State == arvados.ContainerStateLocked && !toolate {
