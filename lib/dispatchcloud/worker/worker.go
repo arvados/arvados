@@ -240,6 +240,7 @@ func (wkr *worker) probeAndUpdate() {
 		ctrUUIDs []string
 		ok       bool
 		stderr   []byte // from probeBooted
+		errLast  error  // from probeBooted or copyRunnerData
 	)
 
 	switch initialState {
@@ -256,7 +257,8 @@ func (wkr *worker) probeAndUpdate() {
 	logger := wkr.logger.WithField("ProbeStart", probeStart)
 
 	if !booted {
-		booted, stderr = wkr.probeBooted()
+		stderr, errLast = wkr.probeBooted()
+		booted = errLast == nil
 		shouldCopy := booted || initialState == StateUnknown
 		if !booted {
 			// Pretend this probe succeeded if another
@@ -273,6 +275,7 @@ func (wkr *worker) probeAndUpdate() {
 			if err != nil {
 				booted = false
 				wkr.logger.WithError(err).WithField("stderr", string(stderrCopy)).Warn("error copying runner binary")
+				errLast = err
 			}
 		}
 		if booted {
@@ -315,7 +318,7 @@ func (wkr *worker) probeAndUpdate() {
 				logger.WithFields(logrus.Fields{
 					"Duration": dur,
 					"stderr":   string(stderr),
-				}).Info("boot failed")
+				}).WithError(errLast).Info("boot failed")
 			}
 		}
 		return
@@ -466,7 +469,7 @@ func (wkr *worker) probeRunning() (running []string, reportsBroken, ok bool) {
 	return
 }
 
-func (wkr *worker) probeBooted() (ok bool, stderr []byte) {
+func (wkr *worker) probeBooted() (stderr []byte, err error) {
 	cmd := wkr.wp.bootProbeCommand
 	if cmd == "" {
 		cmd = "true"
@@ -498,10 +501,10 @@ func (wkr *worker) probeBooted() (ok bool, stderr []byte) {
 			// remain"
 			logger.WithError(err).Warn("boot probe failed")
 		}
-		return false, stderr
+		return stderr, err
 	}
 	logger.Info("boot probe succeeded")
-	return true, stderr
+	return stderr, nil
 }
 
 func (wkr *worker) copyRunnerData() (stdout, stderr []byte, err error) {
