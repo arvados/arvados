@@ -22,7 +22,7 @@ To generate the Python SDK documentation, these additional dependencies are need
 <pre>
 arvados/doc$ sudo apt-get install python3-pip
 arvados/doc$ pip3 install arvados-python-client
-arvados/doc$ pip3 install pdoc3
+arvados/doc$ pip3 install pdoc
 </pre>
 
 h2. Generate HTML pages
