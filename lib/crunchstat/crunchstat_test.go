@@ -85,7 +85,7 @@ func (s *suite) TestReportCurrent(c *C) {
 		`(?ms).*rss.*`,
 		`(?ms).*net:.*`,
 		`(?ms).*blkio:.*`,
-		`(?ms).* [\d.]+ user [\d.]+ sys ` + fmt.Sprintf("%d", runtime.NumCPU()) + ` cpus -- .*`,
+		`(?ms).* [\d.]+ user [\d.]+ sys ` + fmt.Sprintf("%.2f", float64(runtime.NumCPU())) + ` cpus -- .*`,
 	}
 	for deadline := time.Now().Add(4 * time.Second); !c.Failed(); time.Sleep(time.Millisecond) {
 		done := true
@@ -154,7 +154,7 @@ func (s *suite) TestAllTestdata(c *C) {
 		c.Check(logs, Matches, `(?ms).* \d\d+ rss\\n.*`)
 		c.Check(logs, Matches, `(?ms).*blkio:\d+:\d+ \d+ write \d+ read\\n.*`)
 		c.Check(logs, Matches, `(?ms).*net:\S+ \d+ tx \d+ rx\\n.*`)
-		c.Check(logs, Matches, `(?ms).* [\d.]+ user [\d.]+ sys [2-9]\d* cpus.*`)
+		c.Check(logs, Matches, `(?ms).* [\d.]+ user [\d.]+ sys [2-9]\d*\.\d\d cpus.*`)
 	}
 }
 

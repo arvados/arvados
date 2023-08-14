@@ -71,6 +71,7 @@ type Reporter struct {
 
 	// available cgroup hierarchies
 	statFiles struct {
+		cpuMax            string // v2
 		cpusetCpus        string // v1,v2 (via /proc/$PID/cpuset)
 		cpuacctStat       string // v1 (via /proc/$PID/cgroup => cpuacct)
 		cpuStat           string // v2
@@ -275,6 +276,7 @@ func (r *Reporter) findStatFiles() {
 		pathkey  string
 		file     string
 	}{
+		{&r.statFiles.cpuMax, "unified", "cpu.max"},
 		{&r.statFiles.cpusetCpus, "cpuset", "cpuset.cpus.effective"},
 		{&r.statFiles.cpusetCpus, "cpuset", "cpuset.cpus"},
 		{&r.statFiles.cpuacctStat, "cpuacct", "cpuacct.stat"},
@@ -352,7 +354,7 @@ func (r *Reporter) reportMemoryMax(logger logPrinter, source, statName string, v
 
 func (r *Reporter) LogMaxima(logger logPrinter, memLimits map[string]int64) {
 	if r.lastCPUSample.hasData {
-		logger.Printf("Total CPU usage was %f user and %f sys on %d CPUs",
+		logger.Printf("Total CPU usage was %f user and %f sys on %.2f CPUs",
 			r.lastCPUSample.user, r.lastCPUSample.sys, r.lastCPUSample.cpus)
 	}
 	for disk, sample := range r.lastDiskIOSample {
@@ -733,27 +735,54 @@ type cpuSample struct {
 	sampleTime time.Time
 	user       float64
 	sys        float64
-	cpus       int64
+	cpus       float64
 }
 
-// Return the number of CPUs available in the container. Return 0 if
-// we can't figure out the real number of CPUs.
-func (r *Reporter) getCPUCount() int64 {
-	buf, err := fs.ReadFile(r.FS, r.statFiles.cpusetCpus)
-	if err != nil {
-		return 0
-	}
-	cpus := int64(0)
-	for _, v := range bytes.Split(buf, []byte{','}) {
-		var min, max int64
-		n, _ := fmt.Sscanf(string(v), "%d-%d", &min, &max)
-		if n == 2 {
-			cpus += (max - min) + 1
-		} else {
-			cpus++
+// Return the number of virtual CPUs available in the container. This
+// can be based on a scheduling ratio (which is not necessarily a
+// whole number) or a restricted set of accessible CPUs.
+//
+// Return the number of host processors based on /proc/cpuinfo if
+// cgroupfs doesn't reveal anything.
+//
+// Return 0 if even that doesn't work.
+func (r *Reporter) getCPUCount() float64 {
+	if buf, err := fs.ReadFile(r.FS, r.statFiles.cpuMax); err == nil {
+		// cpu.max looks like "150000 100000" if CPU usage is
+		// restricted to 150% (docker run --cpus=1.5), or "max
+		// 100000\n" if not.
+		var max, period int64
+		if _, err := fmt.Sscanf(string(buf), "%d %d", &max, &period); err == nil {
+			return float64(max) / float64(period)
 		}
 	}
-	return cpus
+	if buf, err := fs.ReadFile(r.FS, r.statFiles.cpusetCpus); err == nil {
+		// cpuset.cpus looks like "0,4-7\n" if only CPUs
+		// 0,4,5,6,7 are available.
+		cpus := 0
+		for _, v := range bytes.Split(buf, []byte{','}) {
+			var min, max int
+			n, _ := fmt.Sscanf(string(v), "%d-%d", &min, &max)
+			if n == 2 {
+				cpus += (max - min) + 1
+			} else {
+				cpus++
+			}
+		}
+		return float64(cpus)
+	}
+	if buf, err := fs.ReadFile(r.FS, "proc/cpuinfo"); err == nil {
+		// cpuinfo has a line like "processor\t: 0\n" for each
+		// CPU.
+		cpus := 0
+		for _, line := range bytes.Split(buf, []byte{'\n'}) {
+			if bytes.HasPrefix(line, []byte("processor\t:")) {
+				cpus++
+			}
+		}
+		return float64(cpus)
+	}
+	return 0
 }
 
 func (r *Reporter) doCPUStats() {
@@ -809,7 +838,7 @@ func (r *Reporter) doCPUStats() {
 			nextSample.user-r.lastCPUSample.user,
 			nextSample.sys-r.lastCPUSample.sys)
 	}
-	r.Logger.Printf("cpu %.4f user %.4f sys %d cpus%s\n",
+	r.Logger.Printf("cpu %.4f user %.4f sys %.2f cpus%s\n",
 		nextSample.user, nextSample.sys, nextSample.cpus, delta)
 	r.lastCPUSample = nextSample
 }
@@ -900,8 +929,10 @@ func (r *Reporter) dumpSourceFiles(destdir string) error {
 	todo := []string{
 		fmt.Sprintf("proc/%d/cgroup", r.pid),
 		fmt.Sprintf("proc/%d/cpuset", r.pid),
+		"proc/cpuinfo",
 		"proc/mounts",
 		"proc/self/smaps",
+		r.statFiles.cpuMax,
 		r.statFiles.cpusetCpus,
 		r.statFiles.cpuacctStat,
 		r.statFiles.cpuStat,

@@ -1,7 +1,7 @@
 category	metric	task_max	task_max_rate	job_total
 blkio:0:0	read	0	0	0
 blkio:0:0	write	0	0	0
-cpu	cpus	8	-	-
+cpu	cpus	8.00	-	-
 cpu	sys	1.92	0.04	1.92
 cpu	user	3.83	0.09	3.83
 cpu	user+sys	5.75	0.13	5.75
