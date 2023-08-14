@@ -44,6 +44,7 @@ func (s testdatasource) FS() fs.FS {
 //
 //	arvados-server crunchstat -dump ./testdata/example1234 sleep 2
 var testdata = map[string]testdatasource{
+	"debian10":   {fspath: "testdata/debian10", pid: 3288},
 	"debian11":   {fspath: "testdata/debian11", pid: 4153022},
 	"debian12":   {fspath: "testdata/debian12", pid: 1115883},
 	"ubuntu1804": {fspath: "testdata/ubuntu1804", pid: 2523},
