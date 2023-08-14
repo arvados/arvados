@@ -555,9 +555,11 @@ func (wkr *worker) shutdownIfBroken(dur time.Duration) bool {
 		// Never shut down.
 		return false
 	}
-	label, threshold := "", wkr.wp.timeoutProbe
+	prologue, epilogue, threshold := "", "", wkr.wp.timeoutProbe
 	if wkr.state == StateUnknown || wkr.state == StateBooting {
-		label, threshold = "new ", wkr.wp.timeoutBooting
+		prologue = "new "
+		epilogue = " -- `arvados-server cloudtest` might help troubleshoot, see https://doc.arvados.org/main/admin/cloudtest.html"
+		threshold = wkr.wp.timeoutBooting
 	}
 	if dur < threshold {
 		return false
@@ -566,7 +568,7 @@ func (wkr *worker) shutdownIfBroken(dur time.Duration) bool {
 		"Duration": dur,
 		"Since":    wkr.probed,
 		"State":    wkr.state,
-	}).Warnf("%sinstance unresponsive, shutting down", label)
+	}).Warnf("%sinstance unresponsive, shutting down%s", prologue, epilogue)
 	wkr.shutdown()
 	return true
 }
