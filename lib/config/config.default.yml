@@ -1848,7 +1848,8 @@ Clusters:
 
       # Use "UserProfileFormMessage to configure the message you want
       # to display on the profile page.
-      UserProfileFormMessage: 'Welcome to Arvados. All <span style="color:red">required fields</span> must be completed before you can proceed.'
+      # SAMPLE: 'Welcome to Arvados.  Please tell us a little bit about yourself.'
+      UserProfileFormMessage: ''
 
       # Mimetypes of applications for which the view icon
       # would be enabled in a collection's show page.
