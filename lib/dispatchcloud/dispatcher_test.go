@@ -52,6 +52,7 @@ func (s *DispatcherSuite) SetUpTest(c *check.C) {
 		ErrorRateCreate:           0.1,
 		ErrorRateDestroy:          0.1,
 		MinTimeBetweenCreateCalls: time.Millisecond,
+		QuotaMaxInstances:         10,
 	}
 
 	// We need the postgresql connection info from the integration
@@ -367,6 +368,7 @@ func (s *DispatcherSuite) TestInstancesAPI(c *check.C) {
 	sr := getInstances()
 	c.Check(len(sr.Items), check.Equals, 0)
 
+	s.stubDriver.ErrorRateCreate = 0
 	ch := s.disp.pool.Subscribe()
 	defer s.disp.pool.Unsubscribe(ch)
 	ok := s.disp.pool.Create(test.InstanceType(1))

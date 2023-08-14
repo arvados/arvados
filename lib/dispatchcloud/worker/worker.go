@@ -639,10 +639,12 @@ func (wkr *worker) Close() {
 	for uuid, rr := range wkr.running {
 		wkr.logger.WithField("ContainerUUID", uuid).Info("crunch-run process abandoned")
 		rr.Close()
+		delete(wkr.running, uuid)
 	}
 	for uuid, rr := range wkr.starting {
 		wkr.logger.WithField("ContainerUUID", uuid).Info("crunch-run process abandoned")
 		rr.Close()
+		delete(wkr.starting, uuid)
 	}
 }
 
