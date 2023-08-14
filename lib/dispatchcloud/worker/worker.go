@@ -188,6 +188,14 @@ func (wkr *worker) startContainer(ctr arvados.Container) {
 		}
 		wkr.mtx.Lock()
 		defer wkr.mtx.Unlock()
+		if wkr.starting[ctr.UUID] != rr {
+			// Someone else (e.g., wkr.probeAndUpdate() ->
+			// wkr.updateRunning() or wkr.Close()) already
+			// moved our runner from wkr.starting to
+			// wkr.running or deleted it while we were in
+			// rr.Start().
+			return
+		}
 		now := time.Now()
 		wkr.updated = now
 		wkr.busy = now
@@ -665,10 +673,12 @@ func (wkr *worker) Close() {
 	for uuid, rr := range wkr.running {
 		wkr.logger.WithField("ContainerUUID", uuid).Info("crunch-run process abandoned")
 		rr.Close()
+		delete(wkr.running, uuid)
 	}
 	for uuid, rr := range wkr.starting {
 		wkr.logger.WithField("ContainerUUID", uuid).Info("crunch-run process abandoned")
 		rr.Close()
+		delete(wkr.starting, uuid)
 	}
 }
 
