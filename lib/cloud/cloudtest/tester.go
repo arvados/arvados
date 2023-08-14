@@ -41,6 +41,7 @@ type tester struct {
 	ImageID             cloud.ImageID
 	SSHKey              ssh.Signer
 	SSHPort             string
+	DeployPublicKey     bool
 	BootProbeCommand    string
 	InstanceInitCommand cloud.InitCommand
 	ShellCommand        string
@@ -174,15 +175,21 @@ func (t *tester) runWithDriverParameters(driverParameters json.RawMessage) bool 
 	bootDeadline := time.Now().Add(t.TimeoutBooting)
 	initCommand := worker.TagVerifier{Instance: nil, Secret: t.secret, ReportVerified: nil}.InitCommand() + "\n" + t.InstanceInitCommand
 
+	installPublicKey := t.SSHKey.PublicKey()
+	if !t.DeployPublicKey {
+		installPublicKey = nil
+	}
+
 	t.Logger.WithFields(logrus.Fields{
 		"InstanceType":         t.InstanceType.Name,
 		"ProviderInstanceType": t.InstanceType.ProviderType,
 		"ImageID":              t.ImageID,
 		"Tags":                 tags,
 		"InitCommand":          initCommand,
+		"DeployPublicKey":      installPublicKey != nil,
 	}).Info("creating instance")
 	t0 := time.Now()
-	inst, err := t.is.Create(t.InstanceType, t.ImageID, tags, initCommand, t.SSHKey.PublicKey())
+	inst, err := t.is.Create(t.InstanceType, t.ImageID, tags, initCommand, installPublicKey)
 	lgrC := t.Logger.WithField("Duration", time.Since(t0))
 	if err != nil {
 		// Create() might have failed due to a bug or network

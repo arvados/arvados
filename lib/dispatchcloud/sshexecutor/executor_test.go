@@ -6,6 +6,7 @@ package sshexecutor
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -146,6 +147,7 @@ func (s *ExecutorSuite) TestExecute(c *check.C) {
 		exr.SetTargetPort("0")
 		_, _, err = exr.Execute(nil, command, nil)
 		c.Check(err, check.ErrorMatches, `.*connection refused.*`)
+		c.Check(errors.As(err, new(*net.OpError)), check.Equals, true)
 
 		// Use the test server's listening port.
 		exr.SetTargetPort(target.Port())
