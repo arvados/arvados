@@ -12,7 +12,8 @@
 {%- set passenger_ruby = '/usr/local/rvm/wrappers/default/ruby'
                            if grains.osfinger in ('CentOS Linux-7', 'Ubuntu-18.04', 'Debian-10') else
                          '/usr/bin/ruby' %}
-{%- set max_workers = ("__CONTROLLER_MAX_WORKERS__" or grains['num_cpus'])|int %}
+{%- set _workers = ("__CONTROLLER_MAX_WORKERS__" or grains['num_cpus']*2)|int %}
+{%- set max_workers = [_workers, 8]|max %}
 {%- set max_reqs = ("__CONTROLLER_MAX_QUEUED_REQUESTS__" or 128)|int %}
 
 ### NGINX

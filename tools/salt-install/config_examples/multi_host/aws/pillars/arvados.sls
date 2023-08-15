@@ -3,7 +3,8 @@
 #
 # SPDX-License-Identifier: AGPL-3.0
 
-{%- set max_workers = ("__CONTROLLER_MAX_WORKERS__" or grains['num_cpus'])|int %}
+{%- set _workers = ("__CONTROLLER_MAX_WORKERS__" or grains['num_cpus']*2)|int %}
+{%- set max_workers = [_workers, 8]|max %}
 {%- set max_reqs = ("__CONTROLLER_MAX_QUEUED_REQUESTS__" or 128)|int %}
 
 # The variables commented out are the default values that the formula uses.
