@@ -1,5 +1,5 @@
 category	metric	task_max	task_max_rate	job_total
-cpu	cpus	8	-	-
+cpu	cpus	8.00	-	-
 cpu	sys	0	-	0.00
 cpu	user	0	-	0.00
 cpu	user+sys	0	-	0.00
