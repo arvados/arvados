@@ -438,6 +438,7 @@ describe('Process tests', function() {
                     .should('contain', 'No logs yet')
                     .and('not.contain', 'hello world');
 
+                // Append a log line
                 cy.appendLog(adminUser.token, containerRequest.uuid, "stdout.txt", [
                     "2023-07-18T20:14:48.128642814Z hello world"
                 ]).then(() => {
@@ -446,6 +447,7 @@ describe('Process tests', function() {
                         .and('contain', 'hello world');
                 });
 
+                // Append new log line to different file
                 cy.appendLog(adminUser.token, containerRequest.uuid, "stderr.txt", [
                     "2023-07-18T20:14:49.128642814Z hello new line"
                 ]).then(() => {

@@ -9,6 +9,7 @@ import { ApiActions } from "services/api/api-actions";
 import { WebDAV } from "common/webdav";
 import { extractFilesData } from "services/collection-service/collection-service-files-response";
 import { CollectionFile } from "models/collection-file";
+import { ContainerRequestResource } from "models/container-request";
 
 export type LogFragment = {
     logType: LogEventType;
@@ -20,20 +21,20 @@ export class LogService extends CommonResourceService<LogResource> {
         super(serverApi, "logs", actions);
     }
 
-    async listLogFiles(containerRequestUuid: string) {
-        const request = await this.apiWebdavClient.propfind(`container_requests/${containerRequestUuid}/log`);
+    async listLogFiles(containerRequest: ContainerRequestResource) {
+        const request = await this.apiWebdavClient.propfind(`container_requests/${containerRequest.uuid}/log/${containerRequest.containerUuid}`);
         if (request.responseXML != null) {
             return extractFilesData(request.responseXML)
                 .filter((file) => (
-                    file.path === `/arvados/v1/container_requests/${containerRequestUuid}/log`
+                    file.path === `/arvados/v1/container_requests/${containerRequest.uuid}/log/${containerRequest.containerUuid}`
                 ));
         }
         return Promise.reject();
     }
 
-    async getLogFileContents(containerRequestUuid: string, fileRecord: CollectionFile, startByte: number, endByte: number): Promise<LogFragment> {
+    async getLogFileContents(containerRequest: ContainerRequestResource, fileRecord: CollectionFile, startByte: number, endByte: number): Promise<LogFragment> {
         const request = await this.apiWebdavClient.get(
-            `container_requests/${containerRequestUuid}/log/${fileRecord.name}`,
+            `container_requests/${containerRequest.uuid}/log/${containerRequest.containerUuid}/${fileRecord.name}`,
             {headers: {Range: `bytes=${startByte}-${endByte}`}}
         );
         const logFileType = logFileToLogType(fileRecord);

@@ -13,6 +13,7 @@ import { Process, getProcess } from 'store/processes/process';
 import { navigateTo } from 'store/navigation/navigation-action';
 import { snackbarActions, SnackbarKind } from 'store/snackbar/snackbar-actions';
 import { CollectionFile, CollectionFileType } from "models/collection-file";
+import { ContainerRequestResource } from "models/container-request";
 
 const SNIPLINE = `================ ✀ ================ ✀ ========= Some log(s) were skipped ========= ✀ ================ ✀ ================`;
 const LOG_TIMESTAMP_PATTERN = /^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}\.[0-9]{9}Z/;
@@ -44,7 +45,7 @@ export const initProcessLogsPanel = (processUuid: string) =>
             const process = getProcess(processUuid)(getState().resources);
             if (process?.containerRequest?.uuid) {
                 // Get log file size info
-                const logFiles = await loadContainerLogFileList(process.containerRequest.uuid, logService);
+                const logFiles = await loadContainerLogFileList(process.containerRequest, logService);
 
                 // Populate lastbyte 0 for each file
                 const filesWithProgress = logFiles.map((file) => ({file, lastByte: 0}));
@@ -73,7 +74,7 @@ export const pollProcessLogs = (processUuid: string) =>
 
             // Check if container request is present and initial logs state loaded
             if (process?.containerRequest?.uuid && Object.keys(currentState.logs).length > 0) {
-                const logFiles = await loadContainerLogFileList(process.containerRequest.uuid, logService);
+                const logFiles = await loadContainerLogFileList(process.containerRequest, logService);
 
                 // Determine byte to fetch from while filtering unchanged files
                 const filesToUpdateWithProgress = logFiles.reduce((acc, updatedFile) => {
@@ -107,8 +108,8 @@ export const pollProcessLogs = (processUuid: string) =>
         }
     };
 
-const loadContainerLogFileList = async (containerUuid: string, logService: LogService) => {
-    const logCollectionContents = await logService.listLogFiles(containerUuid);
+const loadContainerLogFileList = async (containerRequest: ContainerRequestResource, logService: LogService) => {
+    const logCollectionContents = await logService.listLogFiles(containerRequest);
 
     // Filter only root directory files matching log event types which have bytes
     return logCollectionContents.filter((file): file is CollectionFile => (
@@ -134,11 +135,11 @@ const loadContainerLogFileContents = async (logFilesWithProgress: FileWithProgre
             const chunkSize = Math.floor(maxLogFetchSize / 2);
             const firstChunkEnd = lastByte+chunkSize-1;
             return Promise.all([
-                logService.getLogFileContents(process.containerRequest.uuid, file, lastByte, firstChunkEnd),
-                logService.getLogFileContents(process.containerRequest.uuid, file, file.size-chunkSize, file.size-1)
+                logService.getLogFileContents(process.containerRequest, file, lastByte, firstChunkEnd),
+                logService.getLogFileContents(process.containerRequest, file, file.size-chunkSize, file.size-1)
             ] as Promise<(LogFragment)>[]);
         } else {
-            return Promise.all([logService.getLogFileContents(process.containerRequest.uuid, file, lastByte, file.size-1)]);
+            return Promise.all([logService.getLogFileContents(process.containerRequest, file, lastByte, file.size-1)]);
         }
     })).then((res) => {
         if (res.length && res.every(promiseResult => (promiseResult.status === 'rejected'))) {
