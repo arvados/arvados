@@ -29,9 +29,13 @@ TODO: extract this information based on git commit messages and generate changel
 </notextile>
 
 
-h2(#main). development main (as of 2023-06-23)
+h2(#main). development main (as of 2023-08-15)
 
 "previous: Upgrading to 2.6.3":#v2_6_3
+
+h3. Crunchstat log format change
+
+The reported number of CPUs available in a container is now formatted in @crunchstat.txt@ log files and @crunchstat-summary@ text reports as a floating-point number rather than an integer (@2.00 cpus@ rather than @2 cpus@). Programs that parse these files may need to be updated accordingly.
 
 h3. Multi-node installer's domain name configuration changes
 
