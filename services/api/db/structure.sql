@@ -256,6 +256,24 @@ $$;
 
 
 --
+-- Name: jsonb_exists_all_inline_op(jsonb, text[]); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.jsonb_exists_all_inline_op(jsonb, text[]) RETURNS boolean
+    LANGUAGE sql IMMUTABLE
+    AS $_$SELECT $1 ?& $2$_$;
+
+
+--
+-- Name: jsonb_exists_inline_op(jsonb, text); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.jsonb_exists_inline_op(jsonb, text) RETURNS boolean
+    LANGUAGE sql IMMUTABLE
+    AS $_$SELECT $1 ? $2$_$;
+
+
+--
 -- Name: project_subtree_with_is_frozen(character varying, boolean); Type: FUNCTION; Schema: public; Owner: -
 --
 
@@ -3270,6 +3288,7 @@ INSERT INTO "schema_migrations" (version) VALUES
 ('20221219165512'),
 ('20221230155924'),
 ('20230421142716'),
-('20230503224107');
+('20230503224107'),
+('20230815160000');
 
 
