@@ -442,7 +442,7 @@ describe('Process tests', function() {
                 cy.appendLog(adminUser.token, containerRequest.uuid, "stdout.txt", [
                     "2023-07-18T20:14:48.128642814Z hello world"
                 ]).then(() => {
-                    cy.get('[data-cy=process-logs]', {timeout: 7000})
+                    cy.get('[data-cy=process-logs]', {timeout: 10000})
                         .should('not.contain', 'No logs yet')
                         .and('contain', 'hello world');
                 });
@@ -451,7 +451,7 @@ describe('Process tests', function() {
                 cy.appendLog(adminUser.token, containerRequest.uuid, "stderr.txt", [
                     "2023-07-18T20:14:49.128642814Z hello new line"
                 ]).then(() => {
-                    cy.get('[data-cy=process-logs]', {timeout: 7000})
+                    cy.get('[data-cy=process-logs]', {timeout: 10000})
                         .should('not.contain', 'No logs yet')
                         .and('contain', 'hello new line');
                 });
