@@ -172,7 +172,7 @@ apply_var_substitutions() {
        s#__INITIAL_USER_EMAIL__#${INITIAL_USER_EMAIL}#g;
        s#__INITIAL_USER_PASSWORD__#${INITIAL_USER_PASSWORD}#g;
        s#__INITIAL_USER__#${INITIAL_USER}#g;
-       s#__LE_AWS_REGION__#${LE_AWS_REGION}#g;
+       s#__LE_AWS_REGION__#${LE_AWS_REGION:-}#g;
        s#__LE_AWS_SECRET_ACCESS_KEY__#${LE_AWS_SECRET_ACCESS_KEY}#g;
        s#__LE_AWS_ACCESS_KEY_ID__#${LE_AWS_ACCESS_KEY_ID}#g;
        s#__DATABASE_PASSWORD__#${DATABASE_PASSWORD}#g;
@@ -199,7 +199,7 @@ apply_var_substitutions() {
        s#__DATABASE_INT_IP__#${DATABASE_INT_IP}#g;
        s#__WORKBENCH_SECRET_KEY__#${WORKBENCH_SECRET_KEY}#g;
        s#__SSL_KEY_ENCRYPTED__#${SSL_KEY_ENCRYPTED}#g;
-       s#__SSL_KEY_AWS_REGION__#${SSL_KEY_AWS_REGION}#g;
+       s#__SSL_KEY_AWS_REGION__#${SSL_KEY_AWS_REGION:-}#g;
        s#__SSL_KEY_AWS_SECRET_NAME__#${SSL_KEY_AWS_SECRET_NAME}#g;
        s#__CONTROLLER_MAX_WORKERS__#${CONTROLLER_MAX_WORKERS:-}#g;
        s#__CONTROLLER_MAX_QUEUED_REQUESTS__#${CONTROLLER_MAX_QUEUED_REQUESTS:-128}#g;
@@ -211,16 +211,16 @@ apply_var_substitutions() {
        s#__DISABLED_CONTROLLER__#${DISABLED_CONTROLLER}#g;
        s#__BALANCER_NODENAME__#${ROLE2NODES['balancer']:-}#g;
        s#__PROMETHEUS_NODENAME__#${ROLE2NODES['monitoring']:-}#g;
-       s#__CONTROLLER_NODES__#${ROLE2NODES['controller']}#g;
+       s#__CONTROLLER_NODES__#${ROLE2NODES['controller']:-}#g;
        s#__NODELIST__#${NODELIST}#g;
        s#__DISPATCHER_INT_IP__#${DISPATCHER_INT_IP}#g;
        s#__KEEPBALANCE_INT_IP__#${KEEPBALANCE_INT_IP}#g;
-       s#__COMPUTE_AMI__#${COMPUTE_AMI}#g;
-       s#__COMPUTE_SG__#${COMPUTE_SG}#g;
-       s#__COMPUTE_SUBNET__#${COMPUTE_SUBNET}#g;
-       s#__COMPUTE_AWS_REGION__#${COMPUTE_AWS_REGION}#g;
-       s#__COMPUTE_USER__#${COMPUTE_USER}#g;
-       s#__KEEP_AWS_REGION__#${KEEP_AWS_REGION}#g" \
+       s#__COMPUTE_AMI__#${COMPUTE_AMI:-}#g;
+       s#__COMPUTE_SG__#${COMPUTE_SG:-}#g;
+       s#__COMPUTE_SUBNET__#${COMPUTE_SUBNET:-}#g;
+       s#__COMPUTE_AWS_REGION__#${COMPUTE_AWS_REGION:-}#g;
+       s#__COMPUTE_USER__#${COMPUTE_USER:-}#g;
+       s#__KEEP_AWS_REGION__#${KEEP_AWS_REGION:-}#g" \
   "${SRCFILE}" > "${DSTFILE}"
 }
 
@@ -308,7 +308,6 @@ T_DIR="/tmp/cluster_tests"
 arguments ${@}
 
 declare -A NODES
-declare -A ROLES
 declare -A ROLE2NODES
 declare NODELIST
 
@@ -514,7 +513,7 @@ fi
 # Replace helper state files that differ from the formula's examples
 if [ -d "${SOURCE_STATES_DIR}" ]; then
   mkdir -p "${F_DIR}"/extra/extra
-  rm -f "${F_DIR}"/extra/extra/*
+  rm -rf "${F_DIR}"/extra/extra/*
 
   for f in $(ls "${SOURCE_STATES_DIR}"/*); do
     apply_var_substitutions "${f}" "${F_DIR}/extra/extra"/$(basename "${f}")
@@ -567,7 +566,7 @@ fi
 
 # If we want specific roles for a node, just add the desired states
 # and its dependencies
-if [ -z "${ROLES}" ]; then
+if [ -z "${ROLES:-}" ]; then
   # States
   echo "    - nginx.passenger" >> ${STATES_TOP}
   if [ "${SSL_MODE}" = "lets-encrypt" ]; then
@@ -698,7 +697,7 @@ else
   # Prometheus node exporter pillar
   grep -q "prometheus_node_exporter" ${PILLARS_TOP} || echo "    - prometheus_node_exporter" >> ${PILLARS_TOP}
 
-  for R in ${ROLES}; do
+  for R in ${ROLES:-}; do
     case "${R}" in
       "database")
         # States
