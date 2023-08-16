@@ -67,7 +67,7 @@ func (bcmd bootCommand) run(ctx context.Context, prog string, args []string, std
 	flags.StringVar(&super.ConfigPath, "config", "/etc/arvados/config.yml", "arvados config file `path`")
 	flags.StringVar(&super.SourcePath, "source", ".", "arvados source tree `directory`")
 	flags.StringVar(&super.ClusterType, "type", "production", "cluster `type`: development, test, or production")
-	flags.StringVar(&super.ListenHost, "listen-host", "localhost", "host name or interface address for internal services whose InternalURLs are not configured")
+	flags.StringVar(&super.ListenHost, "listen-host", "127.0.0.1", "host name or interface address for internal services whose InternalURLs are not configured")
 	flags.StringVar(&super.ControllerAddr, "controller-address", ":0", "desired controller address, `host:port` or `:port`")
 	// Default for -workbench2-source is where `arvados-server
 	// install` puts its checkout.
