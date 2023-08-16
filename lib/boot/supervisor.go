@@ -325,13 +325,13 @@ func (super *Supervisor) runCluster() error {
 	} else if super.SourceVersion == "" {
 		// Find current source tree version.
 		var buf bytes.Buffer
-		err = super.RunProgram(super.ctx, ".", runOptions{output: &buf}, "git", "diff", "--shortstat")
+		err = super.RunProgram(super.ctx, super.SourcePath, runOptions{output: &buf}, "git", "diff", "--shortstat")
 		if err != nil {
 			return err
 		}
 		dirty := buf.Len() > 0
 		buf.Reset()
-		err = super.RunProgram(super.ctx, ".", runOptions{output: &buf}, "git", "log", "-n1", "--format=%H")
+		err = super.RunProgram(super.ctx, super.SourcePath, runOptions{output: &buf}, "git", "log", "-n1", "--format=%H")
 		if err != nil {
 			return err
 		}
