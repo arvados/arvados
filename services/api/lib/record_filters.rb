@@ -121,9 +121,9 @@ module RecordFilters
             end
           when 'exists'
             if operand == true
-              cond_out << "jsonb_exists(#{attr_table_name}.#{attr}, ?)"
+              cond_out << "jsonb_exists_inline_op(#{attr_table_name}.#{attr}, ?)"
             elsif operand == false
-              cond_out << "(NOT jsonb_exists(#{attr_table_name}.#{attr}, ?)) OR #{attr_table_name}.#{attr} is NULL"
+              cond_out << "(NOT jsonb_exists_inline_op(#{attr_table_name}.#{attr}, ?)) OR #{attr_table_name}.#{attr} is NULL"
             else
               raise ArgumentError.new("Invalid operand '#{operand}' for '#{operator}' must be true or false")
             end
@@ -140,7 +140,7 @@ module RecordFilters
             raise ArgumentError.new("Invalid attribute '#{attr}' for operator '#{operator}' in filter")
           end
 
-          cond_out << "jsonb_exists(#{attr_table_name}.#{attr}, ?)"
+          cond_out << "jsonb_exists_inline_op(#{attr_table_name}.#{attr}, ?)"
           param_out << operand
         elsif expr = /^ *\( *(\w+) *(<=?|>=?|=) *(\w+) *\) *$/.match(attr)
           if operator != '=' || ![true,"true"].index(operand)
@@ -270,13 +270,18 @@ module RecordFilters
                 raise ArgumentError.new("Invalid element #{operand.inspect} in operand for #{operator.inspect} operator (operand must be a string or array of strings)")
               end
             end
-            # We use jsonb_exists_all(a,b) instead of "a ?& b" because
-            # the pg gem thinks "?" is a bind var. And we use string
-            # interpolation instead of param_out because the pg gem
-            # flattens param_out / doesn't support passing arrays as
-            # bind vars.
+            # We use jsonb_exists_all_inline_op(a,b) instead of "a ?&
+            # b" because the pg gem thinks "?" is a bind var.
+            #
+            # See note in migration
+            # 20230815160000_jsonb_exists_functions about _inline_op
+            # functions.
+            #
+            # We use string interpolation instead of param_out
+            # because the pg gem flattens param_out / doesn't support
+            # passing arrays as bind vars.
             q = operand.map { |s| ActiveRecord::Base.connection.quote(s) }.join(',')
-            cond_out << "jsonb_exists_all(#{attr_table_name}.#{attr}, array[#{q}])"
+            cond_out << "jsonb_exists_all_inline_op(#{attr_table_name}.#{attr}, array[#{q}])"
           else
             raise ArgumentError.new("Invalid operator '#{operator}'")
           end
