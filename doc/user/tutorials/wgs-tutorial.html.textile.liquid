@@ -86,7 +86,7 @@ Collections in Arvados help organize and manage your data. You can upload your e
 Arvados uses a content-addressable filesystem (i.e. Keep) where the addresses of files are derived from their contents.  A major benefit of this is that Arvados can then verify that when a dataset is retrieved it is the dataset you requested  and can track the exact datasets that were used for each of our previous calculations.  This is what allows you to be certain that we are always working with the data that you think you are using.  You use the content address of a collection when you want to guarantee that you use the same version as input to your workflow.
 
 <figure> !{width: 100%}{{ site.baseurl }}/images/wgs-tutorial/image1.png!
-<figcaption> _*Figure 6*:  A collection in Arvados as viewed via the Arvados Workbench. You will find a panel that contains: the name of the collection (editable), a description of the collection,  the collection UUID, the content address, content size, and some other information like version number._ </figcaption> </figure>
+<figcaption> _*Figure 6*:  A collection in Arvados as viewed via the Arvados Workbench. You will find a panel that contains: the name of the collection (editable), a description of the collection (editable), the collection UUID, the content address, content size, and some other information like version number._ </figcaption> </figure>
 
 Let’s start working with collections by copying the existing collection that stores the FASTQ data being processed into our new “WGS Processing Tutorial” project.
 
