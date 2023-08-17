@@ -468,7 +468,7 @@ test_package_presence() {
       if curl -fs -o "$WORKSPACE/packages/$TARGET/$full_pkgname" "$rpm_url"; then
         echo "Package $full_pkgname exists upstream, not rebuilding, downloading instead!"
         return 1
-      elif test -f "$WORKSPACE/packages/$TARGET/processed/${full_pkgname}" ; then
+      elif [[ -f "$WORKSPACE/packages/$TARGET/processed/$full_pkgname" ]]; then
         echo "Package $full_pkgname exists, not rebuilding!"
         return 1
       else
