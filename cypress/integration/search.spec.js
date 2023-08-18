@@ -161,12 +161,12 @@ describe('Search tests', function() {
     });
 
     it('shows search context menu', function() {
-        const colName = `Collection ${Math.floor(Math.random() * Math.floor(999999))}`;
-        const federatedColName = `Collection ${Math.floor(Math.random() * Math.floor(999999))}`;
+        const colName = `Home Collection ${Math.floor(Math.random() * Math.floor(999999))}`;
+        const federatedColName = `Federated Collection ${Math.floor(Math.random() * Math.floor(999999))}`;
         const federatedColUuid = "xxxxx-4zz18-000000000000000";
 
         // Intercept config to insert remote cluster
-        cy.intercept({method: 'GET', hostname: 'localhost', url: '**/arvados/v1/config?nocache=*'}, (req) => {
+        cy.intercept({method: 'GET', hostname: '127.0.0.1', url: '**/arvados/v1/config?nocache=*'}, (req) => {
             req.reply((res) => {
                 res.body.RemoteClusters = {
                     "*": res.body.RemoteClusters["*"],
