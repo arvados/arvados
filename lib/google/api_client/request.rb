@@ -13,7 +13,6 @@
 # limitations under the License.
 
 require 'faraday'
-require 'faraday/request/multipart'
 require 'compat/multi_json'
 require 'addressable/uri'
 require 'stringio'
@@ -279,32 +278,7 @@ module Google
       # @option options [#read, #to_str] :body
       #   Raw body to send in POST/PUT requests
       def initialize_media_upload(options)
-        self.media = options[:media]
-        case self.upload_type
-        when "media"
-          if options[:body] || options[:body_object]
-            raise ArgumentError, "Can not specify body & body object for simple uploads"
-          end
-          self.headers['Content-Type'] ||= self.media.content_type
-          self.headers['Content-Length'] ||= self.media.length.to_s
-          self.body = self.media
-        when "multipart"
-          unless options[:body_object]
-            raise ArgumentError, "Multipart requested but no body object"
-          end
-          metadata = StringIO.new(serialize_body(options[:body_object]))
-          build_multipart([Faraday::UploadIO.new(metadata, 'application/json', 'file.json'), self.media])
-        when "resumable"
-          file_length = self.media.length
-          self.headers['X-Upload-Content-Type'] = self.media.content_type
-          self.headers['X-Upload-Content-Length'] = file_length.to_s
-          if options[:body_object]
-            self.headers['Content-Type'] ||= 'application/json'
-            self.body = serialize_body(options[:body_object])
-          else
-            self.body = ''
-          end
-        end
+        raise "not supported"
       end
 
       ##
@@ -319,13 +293,7 @@ module Google
       # @param [String] boundary
       #   Boundary for separating each part of the message
       def build_multipart(parts, mime_type = 'multipart/related', boundary = MULTIPART_BOUNDARY)
-        env = Faraday::Env.new
-        env.request = Faraday::RequestOptions.new
-        env.request.boundary = boundary
-        env.request_headers = {'Content-Type' => "#{mime_type};boundary=#{boundary}"}
-        multipart = Faraday::Request::Multipart.new
-        self.body = multipart.create_multipart(env, parts.map {|part| [nil, part]})
-        self.headers.update(env[:request_headers])
+        raise "not supported"
       end
 
       ##

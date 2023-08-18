@@ -24,15 +24,16 @@ Gem::Specification.new do |s|
   s.summary = "Fork of google-api-client used by Ruby-based Arvados components."
 
   s.add_runtime_dependency 'addressable', '~> 2.3'
-  s.add_runtime_dependency 'signet', '~> 0.6'
-  s.add_runtime_dependency 'faraday', '~> 0.9'
-  s.add_runtime_dependency 'googleauth', '~> 0.3'
+  s.add_runtime_dependency 'signet', '~> 1.0'
+  s.add_runtime_dependency 'faraday', '~> 2.0'
+  s.add_runtime_dependency 'faraday-multipart', '~> 1.0'
+  s.add_runtime_dependency 'googleauth', '~> 1.0'
   s.add_runtime_dependency 'multi_json', '~> 1.10'
   s.add_runtime_dependency 'autoparse', '~> 0.3'
   s.add_runtime_dependency 'extlib', '~> 0.9'
   s.add_runtime_dependency 'launchy', '~> 2.4'
   s.add_runtime_dependency 'retriable', '~> 1.4'
-  s.add_runtime_dependency 'activesupport', '>= 3.2', '< 5.3'
+  s.add_runtime_dependency 'activesupport', '>= 3.2', '< 8.0'
 
   s.add_development_dependency 'rake', '~> 10.0'
   s.add_development_dependency 'yard', '~> 0.8'

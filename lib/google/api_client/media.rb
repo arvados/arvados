@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 require 'google/api_client/reference'
+require 'faraday/multipart'
 
 module Google
   class APIClient
@@ -21,7 +22,7 @@ module Google
     # @see Faraday::UploadIO
     # @example
     #   media = Google::APIClient::UploadIO.new('mymovie.m4v', 'video/mp4')
-    class UploadIO < Faraday::UploadIO
+    class UploadIO < Faraday::Multipart::FilePart
       
       # @return [Fixnum] Size of chunks to upload. Default is nil, meaning upload the entire file in a single request
       attr_accessor :chunk_size
