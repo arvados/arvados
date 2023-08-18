@@ -50,7 +50,7 @@ describe('Virtual machine login manage tests', function() {
                     cy.get('input').type('VMAdmin');
                   })
             });
-        cy.get('[role=tooltip]').click();
+        cy.waitForDom().get('[role=tooltip]').click();
         cy.get('[data-cy=form-dialog]').as('add-login-dialog')
             .should('contain', 'Add login permission')
             .within(() => {
@@ -269,11 +269,11 @@ describe('Virtual machine login manage tests', function() {
         cy.get('@removeButton').click();
         cy.get('[data-cy=confirmation-dialog-ok-btn]').click();
 
-        cy.get('[data-cy=vm-admin-table]')
+        cy.waitForDom().get('[data-cy=vm-admin-table]')
             .contains(vmHost)
             .parents('tr')
             .within(() => {
-                cy.get('div[role=button]').should('not.contain', 'admin');
+                cy.get('div[role=button]').should('not.exist');
             });
 
         // Check admin's vm page for login
