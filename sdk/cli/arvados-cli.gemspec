@@ -38,8 +38,8 @@ Gem::Specification.new do |s|
   s.files       = ["bin/arv", "bin/arv-tag", "LICENSE-2.0.txt"]
   s.executables << "arv"
   s.executables << "arv-tag"
-  s.required_ruby_version = '>= 2.1.0'
-  s.add_runtime_dependency 'arvados', '>= 1.4.1.20190320201707'
+  s.required_ruby_version = '>= 2.5.0'
+  s.add_runtime_dependency 'arvados', '>= 2.7.0.dev20230818173219'
   # Our google-api-client dependency used to be < 0.9, but that could be
   # satisfied by the buggy 0.9.pre*, cf. https://dev.arvados.org/issues/9213
   # We need at least version 0.8.7.5 for compatibility with faraday >= 1.0.
