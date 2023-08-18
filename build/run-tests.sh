@@ -109,6 +109,7 @@ services/ws
 sdk/cli
 sdk/python
 sdk/python:py3
+sdk/ruby-google-api-client
 sdk/ruby
 sdk/go/arvados
 sdk/go/arvadosclient
@@ -908,6 +909,10 @@ install_sdk/ruby() {
     install_gem arvados sdk/ruby
 }
 
+install_sdk/ruby-google-api-client() {
+    install_gem arvados-google-api-client sdk/ruby-google-api-client
+}
+
 install_sdk/R() {
   if [[ "$NEED_SDK_R" = true ]]; then
     cd "$WORKSPACE/sdk/R" \
@@ -920,6 +925,7 @@ install_sdk/cli() {
 }
 
 install_services/login-sync() {
+    install_gem arvados-google-api-client sdk/ruby-google-api-client
     install_gem arvados sdk/ruby
     install_gem arvados-login-sync services/login-sync
 }
@@ -1079,6 +1085,7 @@ install_deps() {
     do_install cmd/arvados-server go
     do_install sdk/cli
     do_install sdk/python pip "${VENV3DIR}/bin/"
+    do_install sdk/ruby-google-api-client
     do_install sdk/ruby
     do_install services/api
     do_install services/keepproxy go
@@ -1088,6 +1095,7 @@ install_deps() {
 install_all() {
     do_install env
     do_install doc
+    do_install sdk/ruby-google-api-client
     do_install sdk/ruby
     do_install sdk/R
     do_install sdk/cli
@@ -1120,6 +1128,7 @@ test_all() {
 
     do_test gofmt
     do_test doc
+    do_test sdk/ruby-google-api-client
     do_test sdk/ruby
     do_test sdk/R
     do_test sdk/cli
