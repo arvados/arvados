@@ -42,13 +42,13 @@ Gem::Specification.new do |s|
   s.add_dependency('andand', '~> 1.3', '>= 1.3.3')
   # Our google-api-client dependency used to be < 0.9, but that could be
   # satisfied by the buggy 0.9.pre*, cf. https://dev.arvados.org/issues/9213
-  # We need at least version 0.8.7.3, cf. https://dev.arvados.org/issues/15673
-  s.add_dependency('arvados-google-api-client', '>= 0.8.7.3', '< 0.8.9')
+  # We need at least version 0.8.7.5 for compatibility with faraday >= 1.0.
+  s.add_dependency('arvados-google-api-client', '>= 0.8.7.5', '< 0.8.8')
   # work around undeclared dependency on i18n in some activesupport 3.x.x:
   s.add_dependency('i18n', '~> 0')
   s.add_dependency('json', '>= 1.7.7', '<3')
-  # Avoid warning on Ruby 2.7, cf. https://dev.arvados.org/issues/18247
-  s.add_dependency('faraday', '>= 0.17.4')
+  s.add_dependency('faraday', '~> 1.0')
+  s.add_dependency('faraday-multipart', '~> 1.0')
   s.add_runtime_dependency('jwt', '<2', '>= 0.1.5')
   s.homepage    =
     'https://arvados.org'

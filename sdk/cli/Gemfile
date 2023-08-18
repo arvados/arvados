@@ -6,4 +6,3 @@ source 'https://rubygems.org'
 gemspec
 gem 'minitest', '>= 5.0.0'
 gem 'rake'
-gem 'signet', '<= 0.11'
