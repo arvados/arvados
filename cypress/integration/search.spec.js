@@ -280,6 +280,7 @@ describe('Search tests', function() {
                 cy.contains('View details');
 
                 cy.contains('Copy to clipboard').click();
+                cy.waitForDom();
                 cy.window().then((win) => (
                     win.navigator.clipboard.readText().then((text) => {
                         expect(text).to.match(new RegExp(`/collections/${testCollection.uuid}$`));
