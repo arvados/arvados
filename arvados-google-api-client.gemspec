@@ -9,10 +9,10 @@ Gem::Specification.new do |s|
   s.require_paths = ["lib"]
   s.authors = ["Bob Aman", "Steven Bazyl"]
   s.license = "Apache-2.0"
-  s.description = "The Google API Ruby Client makes it trivial to discover and access supported APIs."
-  s.email = "sbazyl@google.com"
+  s.description = "Fork of google-api-client used by Ruby-based Arvados components."
+  s.email = "dev@arvados.org"
   s.extra_rdoc_files = ["README.md"]
-  s.files = %w(google-api-client.gemspec Rakefile LICENSE CHANGELOG.md README.md Gemfile)
+  s.files = %w(arvados-google-api-client.gemspec Rakefile LICENSE CHANGELOG.md README.md Gemfile)
   s.files += Dir.glob("lib/**/*.rb")
   s.files += Dir.glob("lib/cacerts.pem")
   s.files += Dir.glob("spec/**/*.{rb,opts}")
@@ -21,7 +21,7 @@ Gem::Specification.new do |s|
   s.files += Dir.glob("website/**/*")
   s.homepage = "https://github.com/arvados/google-api-ruby-client/"
   s.rdoc_options = ["--main", "README.md"]
-  s.summary = "The Google API Ruby Client makes it trivial to discover and access Google's REST APIs."
+  s.summary = "Fork of google-api-client used by Ruby-based Arvados components."
 
   s.add_runtime_dependency 'addressable', '~> 2.3'
   s.add_runtime_dependency 'signet', '~> 0.6'
