@@ -84,27 +84,31 @@ export const LoginForm = withStyles(styles)(
             setHelperText('');
             setSubmitting(true);
             handleSubmit(username, password)
-            .then((response) => {
-                setSubmitting(false);
-                if (response.data.uuid && response.data.api_token) {
-                    const apiToken = `v2/${response.data.uuid}/${response.data.api_token}`;
-                    const rd = new URL(window.location.href);
-                    const rdUrl = rd.pathname + rd.search;
-                    dispatch<any>(saveApiToken(apiToken)).finally(
-                        () => rdUrl === '/' ? dispatch(navigateToRootProject) : dispatch(replace(rdUrl))
-                    );
-                } else {
+                .then((response) => {
+                    setSubmitting(false);
+                    if (response.data.uuid && response.data.api_token) {
+                        const apiToken = `v2/${response.data.uuid}/${response.data.api_token}`;
+                        const rd = new URL(window.location.href);
+                        const rdUrl = rd.pathname + rd.search;
+                        dispatch<any>(saveApiToken(apiToken)).finally(
+                            () => {
+                                if ((new URL(window.location.href).pathname) !== '/my-account') {
+                                    rdUrl === '/' ? dispatch(navigateToRootProject) : dispatch(replace(rdUrl))
+                                }
+                            }
+                        );
+                    } else {
+                        setError(true);
+                        setHelperText(response.data.message || 'Please try again');
+                        setFocus();
+                    }
+                })
+                .catch((err) => {
                     setError(true);
-                    setHelperText(response.data.message || 'Please try again');
+                    setSubmitting(false);
+                    setHelperText(`${(err.response && err.response.data && err.response.data.errors[0]) || 'Error logging in: ' + err}`);
                     setFocus();
-                }
-            })
-            .catch((err) => {
-                setError(true);
-                setSubmitting(false);
-                setHelperText(`${(err.response && err.response.data && err.response.data.errors[0]) || 'Error logging in: '+err}`);
-                setFocus();
-            });
+                });
         };
 
         const handleKeyPress = (e: any) => {
@@ -117,38 +121,38 @@ export const LoginForm = withStyles(styles)(
 
         return (
             <React.Fragment>
-            <form className={classes.root} noValidate autoComplete="off">
-                <Card className={classes.card}>
-                    <div className={classes.wrapper}>
-                    <CardContent>
-                        <TextField
-                            inputRef={userInput}
-                            disabled={isSubmitting}
-                            error={error} fullWidth id="username" type="email"
-                            label="Username" margin="normal"
-                            onChange={(e) => setUsername(e.target.value)}
-                            onKeyPress={(e) => handleKeyPress(e)}
-                        />
-                        <TextField
-                            disabled={isSubmitting}
-                            error={error} fullWidth id="password" type="password"
-                            label="Password" margin="normal"
-                            helperText={helperText}
-                            onChange={(e) => setPassword(e.target.value)}
-                            onKeyPress={(e) => handleKeyPress(e)}
-                        />
-                    </CardContent>
-                    <CardActions>
-                        <Button variant="contained" size="large" color="primary"
-                            className={classes.loginBtn} onClick={() => handleLogin()}
-                            disabled={isSubmitting || isButtonDisabled}>
-                            {loginLabel || 'Log in'}
-                        </Button>
-                    </CardActions>
-                    { isSubmitting && <CircularProgress color='secondary' className={classes.progress} />}
-                    </div>
-                </Card>
-            </form>
+                <form className={classes.root} noValidate autoComplete="off">
+                    <Card className={classes.card}>
+                        <div className={classes.wrapper}>
+                            <CardContent>
+                                <TextField
+                                    inputRef={userInput}
+                                    disabled={isSubmitting}
+                                    error={error} fullWidth id="username" type="email"
+                                    label="Username" margin="normal"
+                                    onChange={(e) => setUsername(e.target.value)}
+                                    onKeyPress={(e) => handleKeyPress(e)}
+                                />
+                                <TextField
+                                    disabled={isSubmitting}
+                                    error={error} fullWidth id="password" type="password"
+                                    label="Password" margin="normal"
+                                    helperText={helperText}
+                                    onChange={(e) => setPassword(e.target.value)}
+                                    onKeyPress={(e) => handleKeyPress(e)}
+                                />
+                            </CardContent>
+                            <CardActions>
+                                <Button variant="contained" size="large" color="primary"
+                                    className={classes.loginBtn} onClick={() => handleLogin()}
+                                    disabled={isSubmitting || isButtonDisabled}>
+                                    {loginLabel || 'Log in'}
+                                </Button>
+                            </CardActions>
+                            {isSubmitting && <CircularProgress color='secondary' className={classes.progress} />}
+                        </div>
+                    </Card>
+                </form>
             </React.Fragment>
         );
     });
