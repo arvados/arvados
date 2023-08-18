@@ -292,6 +292,7 @@ describe('Search tests', function() {
             cy.get('[data-cy=search-results]').contains(colName).rightclick();
             cy.get('[data-cy=context-menu]').within(() => {
                 cy.contains('Open in new tab').click();
+                cy.waitForDom();
                 cy.get('@Open').should('have.been.calledOnceWith', `${window.location.origin}/collections/${testCollection.uuid}`)
             });
 
@@ -299,6 +300,7 @@ describe('Search tests', function() {
             cy.get('[data-cy=search-results]').contains(federatedColName).rightclick();
             cy.get('[data-cy=context-menu]').within(() => {
                 cy.contains('Copy to clipboard').click();
+                cy.waitForDom();
                 cy.window().then((win) => (
                     win.navigator.clipboard.readText().then((text) => {
                         expect(text).to.equal(`https://wb2.xxxxx.fakecluster.tld/collections/${federatedColUuid}`);
@@ -309,6 +311,7 @@ describe('Search tests', function() {
             cy.get('[data-cy=search-results]').contains(federatedColName).rightclick();
             cy.get('[data-cy=context-menu]').within(() => {
                 cy.contains('Open in new tab').click();
+                cy.waitForDom();
                 cy.get('@Open').should('have.been.calledWith', `https://wb2.xxxxx.fakecluster.tld/collections/${federatedColUuid}`)
             });
 
