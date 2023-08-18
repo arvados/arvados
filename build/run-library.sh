@@ -454,15 +454,21 @@ test_package_presence() {
         return 0
       fi
     else
-      centos_repo="http://rpm.arvados.org/CentOS/7/dev/x86_64/"
+      local rpm_root
+      case "TARGET" in
+        centos7) rpm_root="CentOS/7/dev" ;;
+        rocky8) rpm_root="CentOS/8/dev" ;;
+        *)
+          echo "FIXME: Don't know RPM URL path for $TARGET, building"
+          return 0
+          ;;
+      esac
+      local rpm_url="http://rpm.arvados.org/$rpm_root/$arch/$full_pkgname"
 
-      repo_pkg_list=$(curl -s -o - ${centos_repo})
-      echo ${repo_pkg_list} |grep -q ${full_pkgname}
-      if [ $? -eq 0 ]; then
+      if curl -fs -o "$WORKSPACE/packages/$TARGET/$full_pkgname" "$rpm_url"; then
         echo "Package $full_pkgname exists upstream, not rebuilding, downloading instead!"
-        curl -s -o "$WORKSPACE/packages/$TARGET/${full_pkgname}" ${centos_repo}${full_pkgname}
         return 1
-      elif test -f "$WORKSPACE/packages/$TARGET/processed/${full_pkgname}" ; then
+      elif [[ -f "$WORKSPACE/packages/$TARGET/processed/$full_pkgname" ]]; then
         echo "Package $full_pkgname exists, not rebuilding!"
         return 1
       else
