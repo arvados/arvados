@@ -13,7 +13,7 @@ import { CollectionName, ContainerRunTime, ResourceWithName } from "views-compon
 import { getProcess, getProcessStatus } from "store/processes/process";
 import { RootState } from "store/store";
 import { connect } from "react-redux";
-import { ProcessResource } from "models/process";
+import { ProcessResource, MOUNT_PATH_CWL_WORKFLOW } from "models/process";
 import { ContainerResource } from "models/container";
 import { navigateToOutput, openWorkflow } from "store/process-panel/process-panel-actions";
 import { ArvadosTheme } from "common/custom-theme";
@@ -21,6 +21,8 @@ import { ProcessRuntimeStatus } from "views-components/process-runtime-status/pr
 import { getPropertyChip } from "views-components/resource-properties-form/property-chip";
 import { ContainerRequestResource } from "models/container-request";
 import { filterResources } from "store/resources/resources";
+import { JSONMount } from 'models/mount-types';
+import { getCollectionUrl } from 'models/collection';
 
 type CssRules = 'link' | 'propertyTag';
 
@@ -40,8 +42,31 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
 
 const mapStateToProps = (state: RootState, props: { request: ProcessResource }) => {
     const process = getProcess(props.request.uuid)(state.resources);
+
+    let workflowCollection = "";
+    let workflowPath = "";
+    if (process?.containerRequest?.mounts && process.containerRequest.mounts[MOUNT_PATH_CWL_WORKFLOW]) {
+        const wf = process.containerRequest.mounts[MOUNT_PATH_CWL_WORKFLOW] as JSONMount;
+
+        if (wf.content["$graph"] &&
+            wf.content["$graph"].length > 0 &&
+            wf.content["$graph"][0] &&
+            wf.content["$graph"][0]["steps"] &&
+            wf.content["$graph"][0]["steps"][0]) {
+
+            const REGEX = /keep:([0-9a-f]{32}\+\d+)\/(.*)/;
+            const pdh = wf.content["$graph"][0]["steps"][0].run.match(REGEX);
+            if (pdh) {
+                workflowCollection = pdh[1];
+                workflowPath = pdh[2];
+            }
+        }
+    }
+
     return {
         container: process?.container,
+        workflowCollection,
+        workflowPath,
         subprocesses: filterResources((resource: ContainerRequestResource) =>
             resource.kind === ResourceKind.CONTAINER_REQUEST &&
             resource.requestingContainerUuid === process?.containerRequest.containerUuid
@@ -61,12 +86,18 @@ const mapDispatchToProps = (dispatch: Dispatch): ProcessDetailsAttributesActionP
 
 export const ProcessDetailsAttributes = withStyles(styles, { withTheme: true })(
     connect(mapStateToProps, mapDispatchToProps)(
-        (props: { request: ProcessResource, container?: ContainerResource, subprocesses: ContainerRequestResource[], twoCol?: boolean, hideProcessPanelRedundantFields?: boolean, classes: Record<CssRules, string> } & ProcessDetailsAttributesActionProps) => {
+        (props: {
+            request: ProcessResource, container?: ContainerResource, subprocesses: ContainerRequestResource[],
+            workflowCollection, workflowPath,
+            twoCol?: boolean, hideProcessPanelRedundantFields?: boolean, classes: Record<CssRules, string>
+        } & ProcessDetailsAttributesActionProps) => {
             const containerRequest = props.request;
             const container = props.container;
             const subprocesses = props.subprocesses;
             const classes = props.classes;
             const mdSize = props.twoCol ? 6 : 12;
+            const workflowCollection = props.workflowCollection;
+            const workflowPath = props.workflowPath;
             const filteredPropertyKeys = Object.keys(containerRequest.properties)
                 .filter(k => (typeof containerRequest.properties[k] !== 'object'));
             const hasTotalCost = containerRequest && containerRequest.cumulativeCost > 0;
@@ -133,6 +164,10 @@ export const ProcessDetailsAttributes = withStyles(styles, { withTheme: true })(
                     <DetailsAttribute label='Cost' value={
                         `${hasTotalCost ? formatContainerCost(containerRequest.cumulativeCost) + ' total, ' : (totalCostNotReady ? 'total pending completion, ' : '')}${container.cost > 0 ? formatContainerCost(container.cost) : 'not available'} for this container`
                     } />
+
+                    {container && workflowCollection && <Grid item xs={12} md={mdSize}>
+                        <DetailsAttribute label='Workflow code' link={getCollectionUrl(workflowCollection)} value={workflowPath} />
+                    </Grid>}
                 </Grid>}
                 {containerRequest.properties.template_uuid &&
                     <Grid item xs={12} md={mdSize}>
