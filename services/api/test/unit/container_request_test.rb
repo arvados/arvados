@@ -1479,7 +1479,24 @@ class ContainerRequestTest < ActiveSupport::TestCase
       cr.destroy
 
       # the cr's container now has priority of 0
+      c.reload
+      assert_equal 0, c.priority
+    end
+  end
+
+  test "trash the project containing a container_request and check its container's priority" do
+    act_as_user users(:active) do
+      cr = ContainerRequest.find_by_uuid container_requests(:running_to_be_deleted).uuid
+
+      # initially the cr's container has priority > 0
       c = Container.find_by_uuid(cr.container_uuid)
+      assert_equal 1, c.priority
+
+      prj = Group.find_by_uuid cr.owner_uuid
+      prj.update_attributes!(trash_at: db_current_time)
+
+      # the cr's container now has priority of 0
+      c.reload
       assert_equal 0, c.priority
     end
   end
