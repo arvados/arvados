@@ -183,7 +183,7 @@ export const runProcess = async (dispatch: Dispatch<any>, getState: () => RootSt
                 '/var/lib/cwl/cwl.input.json'
             ],
             outputPath: '/var/spool/cwl',
-            priority: 1,
+            priority: 500,
             outputName: advancedForm[OUTPUT_FIELD] ? advancedForm[OUTPUT_FIELD] : `Output from ${basicForm.name}`,
             properties: {
                 template_uuid: selectedWorkflow.uuid,
