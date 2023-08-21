@@ -65,7 +65,7 @@ Cypress.Commands.add(
 });
 
 Cypress.Commands.add(
-    "doKeepRequest", (method = 'GET', path = '', data = null, qs = null,
+    "doWebDAVRequest", (method = 'GET', path = '', data = null, qs = null,
         token = systemToken, auth = false, followRedirect = true, failOnStatusCode = true) => {
     return cy.doRequest('GET', '/arvados/v1/config', null, null).then(({body: config}) => {
         return cy.request({
@@ -248,14 +248,14 @@ Cypress.Commands.add(
                     const filePath = `${containerRequest.log_uuid}/${containerLogFolderPrefix}${containerRequest.container_uuid}/${fileName}`;
                     if (logFiles.find((file) => (file.name === fileName))) {
                         // File exists, fetch and append
-                        return cy.doKeepRequest(
+                        return cy.doWebDAVRequest(
                                 "GET",
                                 `c=${filePath}`,
                                 null,
                                 null,
                                 token
                             )
-                            .then(({ body: contents }) => cy.doKeepRequest(
+                            .then(({ body: contents }) => cy.doWebDAVRequest(
                                 "PUT",
                                 `c=${filePath}`,
                                 contents.split("\n").concat(lines).join("\n"),
@@ -264,7 +264,7 @@ Cypress.Commands.add(
                             ));
                     } else {
                         // File not exists, put new file
-                        cy.doKeepRequest(
+                        cy.doWebDAVRequest(
                             "PUT",
                             `c=${filePath}`,
                             lines.join("\n"),
@@ -294,7 +294,7 @@ Cypress.Commands.add(
                             }
                         }).then(() => (
                             // Put new log file with contents into fake log collection
-                            cy.doKeepRequest(
+                            cy.doWebDAVRequest(
                                 'PUT',
                                 `c=${collection.uuid}/${containerLogFolderPrefix}${containerRequest.container_uuid}/${fileName}`,
                                 lines.join('\n'),
@@ -312,7 +312,7 @@ Cypress.Commands.add(
 Cypress.Commands.add(
     "listContainerRequestLogs", (token, crUuid) => (
         cy.getContainerRequest(token, crUuid).then((containerRequest) => (
-            cy.doKeepRequest('PROPFIND', `c=${containerRequest.log_uuid}/${containerLogFolderPrefix}${containerRequest.container_uuid}`, null, null, token)
+            cy.doWebDAVRequest('PROPFIND', `c=${containerRequest.log_uuid}/${containerLogFolderPrefix}${containerRequest.container_uuid}`, null, null, token)
                 .then(({body: data}) => {
                     return extractFilesData(new DOMParser().parseFromString(data, "text/xml"));
                 })
