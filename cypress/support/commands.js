@@ -196,7 +196,12 @@ Cypress.Commands.add(
 
 Cypress.Commands.add(
     "collectionReplaceFiles", (token, uuid, data) => {
-        return cy.updateResource(token, 'collections', uuid, JSON.stringify(data))
+        return cy.updateResource(token, 'collections', uuid, {
+            collection: {
+                preserve_version: true,
+            },
+            replace_files: JSON.stringify(data)
+        })
     }
 )
 
@@ -286,12 +291,7 @@ Cypress.Commands.add(
                     }).then(() => (
                         // Create empty directory for container uuid
                         cy.collectionReplaceFiles(token, collection.uuid, {
-                            collection: {
-                                preserve_version: true,
-                            },
-                            replace_files: {
-                                [`/${containerLogFolderPrefix}${containerRequest.container_uuid}`]: "d41d8cd98f00b204e9800998ecf8427e+0"
-                            }
+                            [`/${containerLogFolderPrefix}${containerRequest.container_uuid}`]: "d41d8cd98f00b204e9800998ecf8427e+0"
                         }).then(() => (
                             // Put new log file with contents into fake log collection
                             cy.doWebDAVRequest(
