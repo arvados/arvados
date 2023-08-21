@@ -139,10 +139,10 @@ exec 8<&"${wb2[0]}"; coproc consume_wb2_stdout (cat <&8 >&2)
 
 # Wait for workbench2 to be up.
 # Using https-get to avoid false positive 'ready' detection.
-yarn run wait-on --timeout 300000 https-get://localhost:${WB2_PORT} || exit 1
+yarn run wait-on --timeout 300000 https-get://127.0.0.1:${WB2_PORT} || exit 1
 
 echo "Running tests..."
 CYPRESS_system_token=systemusertesttoken1234567890aoeuidhtnsqjkxbmwvzpy \
     CYPRESS_controller_url=${controllerURL} \
-    CYPRESS_BASE_URL=https://localhost:${WB2_PORT} \
+    CYPRESS_BASE_URL=https://127.0.0.1:${WB2_PORT} \
     yarn run cypress ${CYPRESS_MODE}
