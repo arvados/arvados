@@ -21,9 +21,9 @@ export class LogService extends CommonResourceService<LogResource> {
         super(serverApi, "logs", actions);
     }
 
-    async listLogFiles(containerRequest: ContainerRequestResource) {
+    async listLogFiles(containerRequest: Pick<ContainerRequestResource, 'uuid' | 'containerUuid'>) {
         const request = await this.apiWebdavClient.propfind(`container_requests/${containerRequest.uuid}/log/${containerRequest.containerUuid}`);
-        if (request.responseXML != null) {
+        if (request?.responseXML != null) {
             return extractFilesData(request.responseXML)
                 .filter((file) => (
                     file.path === `/arvados/v1/container_requests/${containerRequest.uuid}/log/${containerRequest.containerUuid}`
@@ -32,14 +32,22 @@ export class LogService extends CommonResourceService<LogResource> {
         return Promise.reject();
     }
 
-    async getLogFileContents(containerRequest: ContainerRequestResource, fileRecord: CollectionFile, startByte: number, endByte: number): Promise<LogFragment> {
+    /**
+     * Fetches the specified log file contents from the given container request's container live logs endpoint
+     * @param containerRequest Container request to fetch logs for
+     * @param fileRecord Log file to fetch
+     * @param startByte First byte index of the log file to fetch
+     * @param endByte Last byte index to include in the response
+     * @returns A promise that resolves to the LogEventType and a string array of the log file contents
+     */
+    async getLogFileContents(containerRequest: Pick<ContainerRequestResource, 'uuid' | 'containerUuid'>, fileRecord: Pick<CollectionFile, 'name'>, startByte: number, endByte: number): Promise<LogFragment> {
         const request = await this.apiWebdavClient.get(
             `container_requests/${containerRequest.uuid}/log/${containerRequest.containerUuid}/${fileRecord.name}`,
             {headers: {Range: `bytes=${startByte}-${endByte}`}}
         );
         const logFileType = logFileToLogType(fileRecord);
 
-        if (request.responseText && logFileType) {
+        if (request?.responseText && logFileType) {
             return {
                 logType: logFileType,
                 contents: request.responseText.split(/\r?\n/),
@@ -50,4 +58,4 @@ export class LogService extends CommonResourceService<LogResource> {
     }
 }
 
-export const logFileToLogType = (file: CollectionFile) => (file.name.replace(/\.(txt|json)$/, '') as LogEventType);
+export const logFileToLogType = (file: Pick<CollectionFile, 'name'>) => (file.name.replace(/\.(txt|json)$/, '') as LogEventType);
