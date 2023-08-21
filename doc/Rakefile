@@ -28,7 +28,7 @@ module Zenweb
   end
 end
 
-task :generate => [ :realclean, 'sdk/python/arvados/index.html', 'sdk/R/arvados/index.html', 'sdk/java-v2/javadoc/index.html' ] do
+task :generate => [ :realclean, 'sdk/python/arvados.html', 'sdk/R/arvados/index.html', 'sdk/java-v2/javadoc/index.html' ] do
   vars = ['baseurl', 'arvados_cluster_uuid', 'arvados_api_host', 'arvados_workbench_host']
   if ! ENV.key?('baseurl') || ENV['baseurl'] == ""
     if !ENV.key?('WORKSPACE') || ENV['WORKSPACE'] == ""
@@ -50,7 +50,7 @@ file ["install/new_cluster_checklist_Azure.xlsx", "install/new_cluster_checklist
   cp(t, t)
 end
 
-file "sdk/python/arvados/index.html" do |t|
+file "sdk/python/arvados.html" do |t|
   if ENV['NO_SDK'] || File.exist?("no-sdk")
     next
   end
@@ -58,10 +58,10 @@ file "sdk/python/arvados/index.html" do |t|
   if $? == 0
     raise unless system("python3", "setup.py", "build",
                         chdir: "../sdk/python", out: :err)
-    raise unless system("pdoc", "--html", "-o", "sdk/python", "../sdk/python/build/lib/arvados/",
+    raise unless system("pdoc", "-o", "sdk/python", "../sdk/python/build/lib/arvados/",
                         out: :err)
   else
-    puts "Warning: pdoc3 not found, Python documentation will not be generated".colorize(:light_red)
+    puts "Warning: pdoc not found, Python documentation will not be generated".colorize(:light_red)
   end
 end
 
@@ -202,6 +202,8 @@ end
 
 task :clean do
   rm_rf "sdk/python/arvados"
+  rm_f "sdk/python/arvados.html"
+  rm_f "sdk/python/index.html"
   rm_rf "sdk/R"
   rm_rf "sdk/java-v2/javadoc"
 end
@@ -212,5 +214,5 @@ load "zenweb-liquid.rb"
 load "zenweb-fix-body.rb"
 
 task :extra_wirings do
-  $website.pages["sdk/python/python.html.textile.liquid"].depends_on("sdk/python/arvados/index.html")
+  $website.pages["sdk/python/python.html.textile.liquid"].depends_on("sdk/python/arvados.html")
 end
