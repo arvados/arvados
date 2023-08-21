@@ -14,20 +14,22 @@ import { matchUserProfileRoute } from 'routes/routes';
 import { openUserContextMenu } from 'store/context-menu/context-menu-actions';
 
 const mapStateToProps = (state: RootState): UserProfilePanelRootDataProps => {
-  const pathname = state.router.location ? state.router.location.pathname : '';
-  const match = matchUserProfileRoute(pathname);
-  const uuid = match ? match.params.id : state.auth.user?.uuid || '';
+    const pathname = state.router.location ? state.router.location.pathname : '';
+    const match = matchUserProfileRoute(pathname);
+    const uuid = match ? match.params.id : state.auth.user?.uuid || '';
 
-  return {
-    isAdmin: state.auth.user!.isAdmin,
-    isSelf: state.auth.user!.uuid === uuid,
-    isPristine: isPristine(USER_PROFILE_FORM)(state),
-    isValid: isValid(USER_PROFILE_FORM)(state),
-    isInaccessible: getUserProfileIsInaccessible(state.properties) || false,
-    localCluster: state.auth.localCluster,
-    userUuid: uuid,
-    resources: state.resources,
-}};
+    return {
+        isAdmin: state.auth.user!.isAdmin,
+        isSelf: state.auth.user!.uuid === uuid,
+        isPristine: isPristine(USER_PROFILE_FORM)(state),
+        isValid: isValid(USER_PROFILE_FORM)(state),
+        isInaccessible: getUserProfileIsInaccessible(state.properties) || false,
+        localCluster: state.auth.localCluster,
+        userUuid: uuid,
+        resources: state.resources,
+        userProfileFormMessage: state.auth.config.clusterConfig.Workbench.UserProfileFormMessage,
+    }
+};
 
 const mapDispatchToProps = (dispatch: Dispatch) => ({
     handleContextMenu: (event, resource: UserResource) => dispatch<any>(openUserContextMenu(event, resource)),

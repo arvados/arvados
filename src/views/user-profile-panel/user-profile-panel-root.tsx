@@ -36,7 +36,7 @@ import { DefaultView } from 'components/default-view/default-view';
 import { CopyToClipboardSnackbar } from 'components/copy-to-clipboard-snackbar/copy-to-clipboard-snackbar';
 import { PermissionResource } from 'models/permission';
 
-type CssRules = 'root' | 'emptyRoot' | 'gridItem' | 'label' | 'readOnlyValue' | 'title' | 'description' | 'actions' | 'content' | 'copyIcon';
+type CssRules = 'root' | 'emptyRoot' | 'gridItem' | 'label' | 'readOnlyValue' | 'title' | 'description' | 'actions' | 'content' | 'copyIcon' | 'userProfileFormMessage';
 
 const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     root: {
@@ -81,6 +81,9 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
         '& svg': {
             fontSize: '1rem'
         }
+    },
+    userProfileFormMessage: {
+        fontSize: '1.1rem',
     }
 });
 
@@ -97,6 +100,7 @@ export interface UserProfilePanelRootDataProps {
     userUuid: string;
     resources: ResourcesState;
     localCluster: string;
+    userProfileFormMessage: string;
 }
 
 const RoleTypes = [
@@ -165,7 +169,7 @@ export const userProfileGroupsColumns: DataColumns<string, PermissionResource> =
 ];
 
 const ReadOnlyField = withStyles(styles)(
-    (props: ({ label: string, input: {value: string} }) & WithStyles<CssRules> ) => (
+    (props: ({ label: string, input: { value: string } }) & WithStyles<CssRules>) => (
         <Grid item xs={12} data-cy="field">
             <Typography className={props.classes.label}>
                 {props.label}
@@ -184,7 +188,7 @@ export const UserProfilePanelRoot = withStyles(styles)(
         };
 
         componentDidMount() {
-            this.setState({ value: TABS.PROFILE});
+            this.setState({ value: TABS.PROFILE });
         }
 
         render() {
@@ -213,7 +217,7 @@ export const UserProfilePanelRoot = withStyles(styles)(
                                 </Grid>
                                 <Grid item>
                                     <Grid container alignItems="center">
-                                        <Grid item style={{marginRight: '10px'}}><UserResourceAccountStatus uuid={this.props.userUuid} /></Grid>
+                                        <Grid item style={{ marginRight: '10px' }}><UserResourceAccountStatus uuid={this.props.userUuid} /></Grid>
                                         <Grid item>
                                             <Tooltip title="Actions" disableFocusListener>
                                                 <IconButton
@@ -260,6 +264,9 @@ export const UserProfilePanelRoot = withStyles(styles)(
                                             component={ReadOnlyField as any}
                                             disabled
                                         />
+                                    </Grid>
+                                    <Grid item className={this.props.classes.gridItem} xs={12}>
+                                        <span className={this.props.classes.userProfileFormMessage}>{this.props.userProfileFormMessage}</span>
                                     </Grid>
                                     <Grid item className={this.props.classes.gridItem} sm={6} xs={12}>
                                         <Field
@@ -316,19 +323,19 @@ export const UserProfilePanelRoot = withStyles(styles)(
                     {this.state.value === TABS.GROUPS &&
                         <div className={this.props.classes.content}>
                             <DataExplorer
-                                    id={USER_PROFILE_PANEL_ID}
-                                    data-cy="user-profile-groups-data-explorer"
-                                    onRowClick={noop}
-                                    onRowDoubleClick={noop}
-                                    onContextMenu={noop}
-                                    contextMenuColumn={false}
-                                    hideColumnSelector
-                                    hideSearchInput
-                                    paperProps={{
-                                        elevation: 0,
-                                    }}
-                                    defaultViewIcon={GroupsIcon}
-                                    defaultViewMessages={['Group list is empty.']} />
+                                id={USER_PROFILE_PANEL_ID}
+                                data-cy="user-profile-groups-data-explorer"
+                                onRowClick={noop}
+                                onRowDoubleClick={noop}
+                                onContextMenu={noop}
+                                contextMenuColumn={false}
+                                hideColumnSelector
+                                hideSearchInput
+                                paperProps={{
+                                    elevation: 0,
+                                }}
+                                defaultViewIcon={GroupsIcon}
+                                defaultViewMessages={['Group list is empty.']} />
                         </div>}
                 </Paper >;
             }

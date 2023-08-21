@@ -815,7 +815,7 @@ describe('Collection panel tests', function () {
                         cy.get('[data-cy=collection-version-browser-select-1]')
                             .should('contain', '1')
                             .and('contain', '6 B')
-                            .and('contain', adminUser.user.uuid);
+                            .and('contain', adminUser.user.full_name);
                         // Version 2: 3 bytes in size (one file removed)
                         cy.get('[data-cy=collection-version-browser-select-2]')
                             .should('contain', '2')
