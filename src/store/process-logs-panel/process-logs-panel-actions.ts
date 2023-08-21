@@ -61,7 +61,10 @@ export const initProcessLogsPanel = (processUuid: string) =>
             // On error, populate empty state to allow polling to start
             const initialState = createInitialLogPanelState([], []);
             dispatch(processLogsPanelActions.INIT_PROCESS_LOGS_PANEL(initialState));
-            dispatch(snackbarActions.OPEN_SNACKBAR({ message: 'Could not load process logs', hideDuration: 2000, kind: SnackbarKind.ERROR }));
+            // Only show toast on errors other than 404 since 404 is expected when logs do not exist yet
+            if (e.status !== 404) {
+                dispatch(snackbarActions.OPEN_SNACKBAR({ message: 'Could not load process logs', hideDuration: 2000, kind: SnackbarKind.ERROR }));
+            }
         }
     };
 
