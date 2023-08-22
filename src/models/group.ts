@@ -15,7 +15,6 @@ export interface GroupResource extends TrashableResource, ResourceWithProperties
     name: string;
     groupClass: GroupClass | null;
     description: string;
-    writableBy: string[];
     ensure_unique_name: boolean;
     canWrite: boolean;
     canManage: boolean;
@@ -49,7 +48,6 @@ export const selectedFieldsOfGroup = [
     "group_class",
     "description",
     "properties",
-    "writable_by",
     "can_write",
     "can_manage",
     "trash_at",

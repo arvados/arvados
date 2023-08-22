@@ -468,7 +468,7 @@ const collectionApiResponse = (apiResponse: CollectionResource): JSX.Element => 
 
 const groupRequestApiResponse = (apiResponse: ProjectResource): JSX.Element => {
     const { uuid, ownerUuid, createdAt, modifiedAt, modifiedByClientUuid, modifiedByUserUuid, name,
-        description, groupClass, trashAt, isTrashed, deleteAt, properties, writableBy,
+        description, groupClass, trashAt, isTrashed, deleteAt, properties,
         canWrite, canManage } = apiResponse;
     const response = `
 "uuid": "${uuid}",
@@ -485,8 +485,7 @@ const groupRequestApiResponse = (apiResponse: ProjectResource): JSX.Element => {
 "delete_at": ${stringify(deleteAt)},
 "properties": ${stringifyObject(properties)},
 "can_write": ${stringify(canWrite)},
-"can_manage": ${stringify(canManage)},
-"writable_by": ${stringifyObject(writableBy)}`;
+"can_manage": ${stringify(canManage)}`;
 
     return <span style={{ marginLeft: '-15px' }}>{'{'} {response} {'\n'} <span style={{ marginLeft: '-15px' }}>{'}'}</span></span>;
 };

@@ -27,7 +27,7 @@ describe('resources', () => {
                 modifiedAt: 'string',
                 href: 'string',
                 kind: ResourceKind.PROJECT,
-                writableBy: [groupFixtures.user_uuid],
+                canWrite: true,
                 etag: 'string',
             },
             [groupFixtures.editable_collection_resource_uuid]: {
@@ -50,7 +50,7 @@ describe('resources', () => {
                 modifiedAt: 'string',
                 href: 'string',
                 kind: ResourceKind.PROJECT,
-                writableBy: [groupFixtures.unknown_user_resource_uuid],
+                canWrite: false,
                 etag: 'string',
             },
             [groupFixtures.not_editable_collection_resource_uuid]: {

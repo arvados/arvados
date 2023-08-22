@@ -65,7 +65,7 @@ export const openRunProcess = (workflowUuid: string, ownerUuid?: string, name?: 
                 // Must be writable.
                 const userUuid = getUserUuid(getState());
                 owner = getResource<ProjectResource | UserResource>(ownerUuid)(getState().resources);
-                if (!owner || !userUuid || owner.writableBy.indexOf(userUuid) === -1) {
+                if (!owner || !owner.canWrite) {
                     owner = undefined;
                 }
             }

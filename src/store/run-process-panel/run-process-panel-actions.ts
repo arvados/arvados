@@ -104,7 +104,7 @@ export const setWorkflow = (workflow: WorkflowResource, isWorkflowChanged = true
 
         let owner = getResource<ProjectResource | UserResource>(getState().runProcessPanel.processOwnerUuid)(getState().resources);
         const userUuid = getUserUuid(getState());
-        if (!owner || !userUuid || owner.writableBy.indexOf(userUuid) === -1) {
+        if (!owner || !owner.canWrite) {
             owner = undefined;
         }
 

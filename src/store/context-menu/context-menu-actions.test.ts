@@ -107,13 +107,13 @@ describe('context-menu-actions', () => {
                         [projectUuid]: {
                             uuid: projectUuid,
                             ownerUuid: isEditable ? userUuid : otherUserUuid,
-                            writableBy: isEditable ? [userUuid] : [otherUserUuid],
+                            canWrite: isEditable,
                             groupClass: GroupClass.PROJECT,
                         },
                         [filterGroupUuid]: {
                             uuid: filterGroupUuid,
                             ownerUuid: isEditable ? userUuid : otherUserUuid,
-                            writableBy: isEditable ? [userUuid] : [otherUserUuid],
+                            canWrite: isEditable,
                             groupClass: GroupClass.FILTER,
                         },
                         [linkUuid]: {

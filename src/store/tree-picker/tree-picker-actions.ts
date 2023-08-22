@@ -390,7 +390,7 @@ export const loadFavoritesProject = (params: LoadFavoritesProjectParams,
                 id: 'Favorites',
                 pickerId,
                 data: items.filter((item) => {
-                    if (options.showOnlyWritable && (item as GroupResource).writableBy && (item as GroupResource).writableBy.indexOf(uuid) === -1) {
+                    if (options.showOnlyWritable && !(item as GroupResource).canWrite) {
                         return false;
                     }
 
