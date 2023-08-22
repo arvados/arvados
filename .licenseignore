@@ -97,3 +97,4 @@ CITATION.cff
 SECURITY.md
 lib/crunchstat/testdata/*
 lib/controller/localdb/testdata/*.pub
+sdk/ruby-google-api-client/*
