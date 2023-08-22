@@ -3,7 +3,7 @@ require 'zlib'
  
 module Google
   class APIClient
-    class Charset < Faraday::Response::Middleware
+    class Charset < Faraday::Middleware
       include Google::APIClient::Logging
 
       def charset_for_content_type(type)
