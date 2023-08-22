@@ -20,7 +20,7 @@ describe('resources', () => {
         const resourcesState = {
             [groupFixtures.editable_project_resource_uuid]: {
                 uuid: groupFixtures.editable_project_resource_uuid,
-                ownerUuid: groupFixtures.user_uuid,
+                ownerUuid: groupFixtures.user_resource_uuid,
                 createdAt: 'string',
                 modifiedByClientUuid: 'string',
                 modifiedByUserUuid: 'string',
@@ -74,6 +74,7 @@ describe('resources', () => {
                 href: 'string',
                 kind: ResourceKind.USER,
                 etag: 'string',
+                canWrite: true
             }
         };
 

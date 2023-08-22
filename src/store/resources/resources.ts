@@ -17,6 +17,11 @@ export const getResourceWithEditableStatus = <T extends EditableResource & Group
 
         if (resource) {
             resource.isEditable = resource.canWrite;
+
+            if (!resource.isEditable && state[resource.ownerUuid]) {
+                const resourceOwner = JSON.parse(JSON.stringify(state[resource.ownerUuid] as T));
+                resource.isEditable = resourceOwner.canWrite;
+            }
         }
 
         return resource;
