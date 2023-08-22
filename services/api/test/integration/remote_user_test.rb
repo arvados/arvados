@@ -109,6 +109,15 @@ class RemoteUsersTest < ActionDispatch::IntegrationTest
     end
   end
 
+  def uncache_token(src)
+    if match = src.match(/\b(?:[a-z0-9]{5}-){2}[a-z0-9]{15}\b/)
+      tokens = ApiClientAuthorization.where(uuid: match[0])
+    else
+      tokens = ApiClientAuthorization.where("uuid like ?", "#{src}-%")
+    end
+    tokens.update_all(expires_at: "1995-05-15T01:02:03Z")
+  end
+
   test 'authenticate with remote token that has limited scope' do
     get '/arvados/v1/collections',
         params: {format: 'json'},
@@ -123,10 +132,7 @@ class RemoteUsersTest < ActionDispatch::IntegrationTest
         headers: auth(remote: 'zbbbb')
     assert_response :success
 
-    # simulate cache expiry
-    ApiClientAuthorization.where('uuid like ?', 'zbbbb-%').
-      update_all(expires_at: db_current_time - 1.minute)
-
+    uncache_token('zbbbb')
     # re-authorize after cache expires
     get '/arvados/v1/collections',
         params: {format: 'json'},
@@ -154,10 +160,7 @@ class RemoteUsersTest < ActionDispatch::IntegrationTest
       headers: auth(remote: 'zbbbb')
     assert_response :success
 
-    # simulate cache expiry
-    ApiClientAuthorization.where('uuid like ?', 'zbbbb-%').
-      update_all(expires_at: db_current_time - 1.minute)
-
+    uncache_token('zbbbb')
     # re-authorize after cache expires
     get '/arvados/v1/users/current',
       params: {format: 'json'},
@@ -195,11 +198,7 @@ class RemoteUsersTest < ActionDispatch::IntegrationTest
     @stub_content[:is_active] = false
     @stub_content[:is_invited] = false
 
-    # simulate cache expiry
-    ApiClientAuthorization.where(
-      uuid: salted_active_token(remote: 'zbbbb').split('/')[1]).
-      update_all(expires_at: db_current_time - 1.minute)
-
+    uncache_token('zbbbb')
     # re-authorize after cache expires
     get '/arvados/v1/users/current',
       params: {format: 'json'},
@@ -445,11 +444,8 @@ class RemoteUsersTest < ActionDispatch::IntegrationTest
     assert_equal 'foo@example.com', json_response['email']
     assert_equal 'barney', json_response['username']
 
-    # Delete cached value.  User should be inactive now.
-    act_as_system_user do
-      ApiClientAuthorization.delete_all
-    end
-
+    uncache_token('zbbbb')
+    # User should be inactive now.
     get '/arvados/v1/users/current',
       params: {format: 'json'},
       headers: auth(remote: 'zbbbb')
