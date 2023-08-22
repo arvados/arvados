@@ -28,6 +28,7 @@ Gem::Specification.new do |s|
   s.add_runtime_dependency 'signet', '~> 0.16.0'
   s.add_runtime_dependency 'faraday', '~> 2.0'
   s.add_runtime_dependency 'faraday-multipart', '~> 1.0'
+  s.add_runtime_dependency 'faraday-gzip', '~> 2.0'
   s.add_runtime_dependency 'googleauth', '~> 1.0'
   s.add_runtime_dependency 'multi_json', '~> 1.10'
   s.add_runtime_dependency 'autoparse', '~> 0.3'

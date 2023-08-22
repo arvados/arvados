@@ -14,6 +14,7 @@
 
 
 require 'faraday'
+require 'faraday/gzip'
 require 'multi_json'
 require 'compat/multi_json'
 require 'stringio'
@@ -30,7 +31,6 @@ require 'google/api_client/result'
 require 'google/api_client/media'
 require 'google/api_client/service_account'
 require 'google/api_client/batch'
-require 'google/api_client/gzip'
 require 'google/api_client/charset'
 require 'google/api_client/client_secrets'
 require 'google/api_client/railtie' if defined?(Rails)
@@ -130,8 +130,8 @@ module Google
       @discovered_apis = {}
       ca_file = options[:ca_file] || File.expand_path('../../cacerts.pem', __FILE__)
       self.connection = Faraday.new do |faraday|
+        faraday.request :gzip
         faraday.response :charset if options[:force_encoding]
-        faraday.response :gzip
         faraday.options.params_encoder = Faraday::FlatParamsEncoder
         faraday.ssl.ca_file = ca_file
         faraday.ssl.verify = true
