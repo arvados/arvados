@@ -47,10 +47,6 @@ Gem::Specification.new do |s|
   # work around undeclared dependency on i18n in some activesupport 3.x.x:
   s.add_dependency('i18n', '~> 0')
   s.add_dependency('json', '>= 1.7.7', '<3')
-  # our faraday and faraday-multipart version requirements have to be
-  # compatible with ruby-google-api-client's requirements
-  s.add_dependency('faraday', '>= 1.0')
-  s.add_dependency('faraday-multipart', '>= 1.0')
   s.add_runtime_dependency('jwt', '<2', '>= 0.1.5')
   s.homepage    =
     'https://arvados.org'
