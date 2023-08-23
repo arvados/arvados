@@ -274,75 +274,96 @@ class ApiClientAuthorization < ArvadosModel
       Rails.logger.warn "remote authentication rejected: no host for #{upstream_cluster_id.inspect}"
       return nil
     end
+    remote_url = URI::parse("https://#{host}/")
+    remote_query = {"remote" => Rails.configuration.ClusterID}
+    remote_headers = {"Authorization" => "Bearer #{token}"}
 
-    begin
-      remote_user = SafeJSON.load(
-        clnt.get_content('https://' + host + '/arvados/v1/users/current',
-                         {'remote' => Rails.configuration.ClusterID},
-                         {'Authorization' => 'Bearer ' + token}))
-    rescue => e
-      Rails.logger.warn "remote authentication with token #{token.inspect} failed: #{e}"
-      return nil
-    end
-
-    # Check the response is well formed.
-    if !remote_user.is_a?(Hash) || !remote_user['uuid'].is_a?(String)
-      Rails.logger.warn "remote authentication rejected: remote_user=#{remote_user.inspect}"
-      return nil
-    end
-
-    remote_user_prefix = remote_user['uuid'][0..4]
-
-    # Get token scope, and make sure we use the same UUID as the
-    # remote when caching the token.
+    # First get the current token. This query is not limited by token scopes,
+    # and tells us the user's UUID via owner_uuid, so this gives us enough
+    # information to load a local user record from the database if one exists.
     remote_token = nil
     begin
       remote_token = SafeJSON.load(
-        clnt.get_content('https://' + host + '/arvados/v1/api_client_authorizations/current',
-                         {'remote' => Rails.configuration.ClusterID},
-                         {'Authorization' => 'Bearer ' + token}))
+        clnt.get_content(
+          remote_url.merge("arvados/v1/api_client_authorizations/current"),
+          remote_query, remote_headers,
+        ))
       Rails.logger.debug "retrieved remote token #{remote_token.inspect}"
       token_uuid = remote_token['uuid']
       if !token_uuid.match(HasUuid::UUID_REGEX) || token_uuid[0..4] != upstream_cluster_id
         raise "remote cluster #{upstream_cluster_id} returned invalid token uuid #{token_uuid.inspect}"
       end
     rescue HTTPClient::BadResponseError => e
-      if e.res.status != 401
-        raise
+      # CurrentApiToken#call and ApplicationController#render_error will
+      # propagate the status code from the #http_status method, so define
+      # that here.
+      def e.http_status
+        self.res.status_code
       end
-      rev = SafeJSON.load(clnt.get_content('https://' + host + '/discovery/v1/apis/arvados/v1/rest'))['revision']
-      if rev >= '20010101' && rev < '20210503'
-        Rails.logger.warn "remote cluster #{upstream_cluster_id} at #{host} with api rev #{rev} does not provide token expiry and scopes; using scopes=['all']"
-      else
-        # remote server is new enough that it should have accepted
-        # this request if the token was valid
-        raise
-      end
+      raise
     rescue => e
       Rails.logger.warn "error getting remote token details for #{token.inspect}: #{e}"
       return nil
     end
 
-    # Clusters can only authenticate for their own users.
-    if remote_user_prefix != upstream_cluster_id
-      Rails.logger.warn "remote authentication rejected: claimed remote user #{remote_user_prefix} but token was issued by #{upstream_cluster_id}"
-      return nil
+    # Next, load the token's user record from the database (might be nil).
+    remote_user_prefix, remote_user_suffix = remote_token['owner_uuid'].split('-', 2)
+    if anonymous_user_uuid.end_with?(remote_user_suffix)
+      # Special case: map the remote anonymous user to local anonymous user
+      remote_user_uuid = anonymous_user_uuid
+    else
+      remote_user_uuid = remote_token['owner_uuid']
+    end
+    user = User.find_by_uuid(remote_user_uuid)
+
+    # Next, try to load the remote user. If this succeeds, we'll use this
+    # information to update/create the local database record as necessary.
+    # If this fails for any reason, but we successfully loaded a user record
+    # from the database, we'll just rely on that information.
+    remote_user = nil
+    begin
+      remote_user = SafeJSON.load(
+        clnt.get_content(
+          remote_url.merge("arvados/v1/users/current"),
+          remote_query, remote_headers,
+        ))
+    rescue HTTPClient::BadResponseError => e
+      # If user is defined, we will use that alone for auth, see below.
+      if user.nil?
+        # See rationale in the previous BadResponseError rescue.
+        def e.http_status
+          self.res.status_code
+        end
+        raise
+      end
+    rescue => e
+      Rails.logger.warn "getting remote user with token #{token.inspect} failed: #{e}"
+    else
+      # Check the response is well formed.
+      if !remote_user.is_a?(Hash) || !remote_user['uuid'].is_a?(String)
+        Rails.logger.warn "malformed remote user=#{remote_user.inspect}"
+        remote_user = nil
+      # Clusters can only authenticate for their own users.
+      elsif remote_user_prefix != upstream_cluster_id
+        Rails.logger.warn "remote user rejected: claimed remote user #{remote_user_prefix} but token was issued by #{upstream_cluster_id}"
+        remote_user = nil
+      # Force our local copy of a remote root to have a static name
+      elsif system_user_uuid.end_with?(remote_user_suffix)
+        remote_user.update(
+          "first_name" => "root",
+          "last_name" => "from cluster #{remote_user_prefix}",
+        )
+      end
     end
 
+    if user.nil? and remote_user.nil?
+      Rails.logger.warn "remote token #{token.inspect} rejected: cannot get owner #{remote_user_uuid} from database or remote cluster"
+      return nil
     # Invariant:    remote_user_prefix == upstream_cluster_id
     # therefore:    remote_user_prefix != Rails.configuration.ClusterID
-
     # Add or update user and token in local database so we can
     # validate subsequent requests faster.
-
-    if remote_user['uuid'][-22..-1] == '-tpzed-anonymouspublic'
-      # Special case: map the remote anonymous user to local anonymous user
-      remote_user['uuid'] = anonymous_user_uuid
-    end
-
-    user = User.find_by_uuid(remote_user['uuid'])
-
-    if !user
+    elsif user.nil?
       # Create a new record for this user.
       user = User.new(uuid: remote_user['uuid'],
                       is_active: false,
@@ -352,57 +373,54 @@ class ApiClientAuthorization < ArvadosModel
       user.set_initial_username(requested: remote_user['username'])
     end
 
-    # Sync user record.
+    # Sync user record if we loaded a remote user.
     act_as_system_user do
-      %w[first_name last_name email prefs].each do |attr|
-        user.send(attr+'=', remote_user[attr])
-      end
-
-      if remote_user['uuid'][-22..-1] == '-tpzed-000000000000000'
-        user.first_name = "root"
-        user.last_name = "from cluster #{remote_user_prefix}"
-      end
-
-      begin
-        user.save!
-      rescue ActiveRecord::RecordInvalid, ActiveRecord::RecordNotUnique
-        Rails.logger.debug("remote user #{remote_user['uuid']} already exists, retrying...")
-        # Some other request won the race: retry fetching the user record.
-        user = User.find_by_uuid(remote_user['uuid'])
-        if !user
-          Rails.logger.warn("cannot find or create remote user #{remote_user['uuid']}")
-          return nil
-        end
-      end
-
-      if user.is_invited && !remote_user['is_invited']
-        # Remote user is not "invited" state, they should be unsetup, which
-        # also makes them inactive.
-        user.unsetup
-      else
-        if !user.is_invited && remote_user['is_invited'] and
-          (remote_user_prefix == Rails.configuration.Login.LoginCluster or
-           Rails.configuration.Users.AutoSetupNewUsers or
-           Rails.configuration.Users.NewUsersAreActive or
-           Rails.configuration.RemoteClusters[remote_user_prefix].andand["ActivateUsers"])
-          user.setup
+      if remote_user
+        %w[first_name last_name email prefs].each do |attr|
+          user.send(attr+'=', remote_user[attr])
         end
 
-        if !user.is_active && remote_user['is_active'] && user.is_invited and
-          (remote_user_prefix == Rails.configuration.Login.LoginCluster or
-           Rails.configuration.Users.NewUsersAreActive or
-           Rails.configuration.RemoteClusters[remote_user_prefix].andand["ActivateUsers"])
-          user.update_attributes!(is_active: true)
-        elsif user.is_active && !remote_user['is_active']
-          user.update_attributes!(is_active: false)
+        begin
+          user.save!
+        rescue ActiveRecord::RecordInvalid, ActiveRecord::RecordNotUnique
+          Rails.logger.debug("remote user #{remote_user['uuid']} already exists, retrying...")
+          # Some other request won the race: retry fetching the user record.
+          user = User.find_by_uuid(remote_user['uuid'])
+          if !user
+            Rails.logger.warn("cannot find or create remote user #{remote_user['uuid']}")
+            return nil
+          end
         end
 
-        if remote_user_prefix == Rails.configuration.Login.LoginCluster and
-          user.is_active and
-          user.is_admin != remote_user['is_admin']
-          # Remote cluster controls our user database, including the
-          # admin flag.
-          user.update_attributes!(is_admin: remote_user['is_admin'])
+        if user.is_invited && !remote_user['is_invited']
+          # Remote user is not "invited" state, they should be unsetup, which
+          # also makes them inactive.
+          user.unsetup
+        else
+          if !user.is_invited && remote_user['is_invited'] and
+            (remote_user_prefix == Rails.configuration.Login.LoginCluster or
+             Rails.configuration.Users.AutoSetupNewUsers or
+             Rails.configuration.Users.NewUsersAreActive or
+             Rails.configuration.RemoteClusters[remote_user_prefix].andand["ActivateUsers"])
+            user.setup
+          end
+
+          if !user.is_active && remote_user['is_active'] && user.is_invited and
+            (remote_user_prefix == Rails.configuration.Login.LoginCluster or
+             Rails.configuration.Users.NewUsersAreActive or
+             Rails.configuration.RemoteClusters[remote_user_prefix].andand["ActivateUsers"])
+            user.update_attributes!(is_active: true)
+          elsif user.is_active && !remote_user['is_active']
+            user.update_attributes!(is_active: false)
+          end
+
+          if remote_user_prefix == Rails.configuration.Login.LoginCluster and
+            user.is_active and
+            user.is_admin != remote_user['is_admin']
+            # Remote cluster controls our user database, including the
+            # admin flag.
+            user.update_attributes!(is_admin: remote_user['is_admin'])
+          end
         end
       end
 

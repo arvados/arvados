@@ -42,18 +42,35 @@ class ArvadosApiToken
     # reader_tokens.
     accepted = false
     auth = nil
+    remote_errcodes = []
+    remote_errmsgs = []
     [params["api_token"],
      params["oauth_token"],
      env["HTTP_AUTHORIZATION"].andand.match(/(OAuth2|Bearer) ([!-~]+)/).andand[2],
      *reader_tokens,
     ].each do |supplied|
       next if !supplied
-      try_auth = ApiClientAuthorization.
-                 validate(token: supplied, remote: remote)
-      if try_auth.andand.user
-        auth = try_auth
-        accepted = supplied
-        break
+      begin
+        try_auth = ApiClientAuthorization.validate(token: supplied, remote: remote)
+      rescue => e
+        begin
+          remote_errcodes.append(e.http_status)
+        rescue NoMethodError
+          # The exception is an internal validation problem, not a remote error.
+          next
+        end
+        begin
+          errors = SafeJSON.load(e.res.content)["errors"]
+        rescue
+          errors = nil
+        end
+        remote_errmsgs += errors if errors.is_a?(Array)
+      else
+        if try_auth.andand.user
+          auth = try_auth
+          accepted = supplied
+          break
+        end
       end
     end
 
@@ -64,6 +81,24 @@ class ArvadosApiToken
     Thread.current[:token] = accepted
     Thread.current[:user] = auth.andand.user
 
-    @app.call env if @app
+    if auth.nil? and not remote_errcodes.empty?
+      # If we failed to the validate any tokens because of remote validation
+      # errors, pass those on to the client. This code is functionally very
+      # similar to ApplicationController#render_error, but the implementation
+      # is very different because we're a Rack middleware, not in
+      # ActionDispatch land yet.
+      remote_errmsgs.prepend("failed to validate remote token")
+      error_content = {
+        error_token: "%d+%08x" % [Time.now.utc.to_i, rand(16 ** 8)],
+        errors: remote_errmsgs,
+      }
+      [
+        remote_errcodes.max,
+        {"Content-Type": "application/json"},
+        SafeJSON.dump(error_content).html_safe,
+      ]
+    else
+      @app.call env if @app
+    end
   end
 end
