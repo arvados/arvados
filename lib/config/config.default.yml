@@ -1421,16 +1421,15 @@ Clusters:
         # as containers start up successfully and decreases in
         # response to high API load and cloud quota errors.
         #
-        # Setting this too high creates a risk that the dispatcher
-        # will cause deadlock by starting so many supervisor
-        # containers (based on SupervisorFraction and MaxInstances)
-        # that the cloud quota prevents them from running any child
-        # containers.
+        # Setting this to 0 means the dynamic instance limit will
+        # start at MaxInstances.
         #
-        # Setting this too low causes the dispatcher to be
-        # unnecessarily slow to start up new instances after a
-        # restart.
-        InitialQuotaEstimate: 16
+        # Situations where you may want to set this (to a value lower
+        # than MaxInstances) would be when there is significant
+        # variability in the actual cloud resources available and you
+        # to be conservative in how many parallel supervisors
+        # (workflows) it launches.
+        InitialQuotaEstimate: 0
 
         # Maximum fraction of available instance capacity allowed to
         # run "supervisor" containers at any given time. A supervisor
@@ -1444,9 +1443,9 @@ Clusters:
         # containers who just create more work.
         #
         # For example, with the default MaxInstances of 64, it will
-        # schedule at most floor(64*0.30) = 19 concurrent workflows,
-        # ensuring 45 slots are available for work.
-        SupervisorFraction: 0.30
+        # schedule at most floor(64*0.50) = 32 concurrent workflow
+        # runners, ensuring 32 slots are available for work.
+        SupervisorFraction: 0.50
 
         # Interval between cloud provider syncs/updates ("list all
         # instances").
