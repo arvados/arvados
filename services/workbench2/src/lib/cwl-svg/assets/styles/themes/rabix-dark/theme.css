@@ -1,0 +1,80 @@
+svg.cwl-workflow {
+  background: #303030;
+  color: white;
+  font-family: sans-serif;
+  padding: 0;
+  width: 100%;
+  display: block;
+  transform: translateZ(0); }
+  svg.cwl-workflow [tabindex]:active, svg.cwl-workflow [tabindex]:focus {
+    outline: none; }
+  svg.cwl-workflow .hidden {
+    display: none; }
+  svg.cwl-workflow .workflow {
+    user-select: none; }
+  svg.cwl-workflow .pan-handle {
+    fill: transparent; }
+  svg.cwl-workflow .label {
+    fill: white;
+    stroke: #303030;
+    stroke-width: 4px;
+    text-anchor: middle;
+    paint-order: stroke;
+    stroke-linecap: butt;
+    stroke-linejoin: miter; }
+  svg.cwl-workflow .node-icon {
+    fill: #303030;
+    stroke: #303030;
+    stroke-width: 3px;
+    stroke-linecap: round; }
+  svg.cwl-workflow .node .outer {
+    fill: #303030;
+    stroke: #9a9a9a;
+    stroke-width: 2px; }
+  svg.cwl-workflow .node .inner {
+    stroke: 0; }
+  svg.cwl-workflow .node.input .inner {
+    fill: #c3c3c3; }
+  svg.cwl-workflow .node.output .inner {
+    fill: #c3c3c3; }
+  svg.cwl-workflow .node.step .inner {
+    fill: #11a7a7; }
+  svg.cwl-workflow .node .core .inner,
+  svg.cwl-workflow .node .core .node-icon {
+    pointer-events: none; }
+  svg.cwl-workflow .node:hover .port .label {
+    transition: all 0.1s;
+    opacity: 1; }
+  svg.cwl-workflow .node .port {
+    fill: #c3c3c3; }
+    svg.cwl-workflow .node .port:hover {
+      stroke: white;
+      stroke-width: 2px; }
+    svg.cwl-workflow .node .port.output-port .label {
+      text-anchor: start;
+      transform: translate(10px, 0); }
+    svg.cwl-workflow .node .port.input-port .label {
+      text-anchor: end;
+      transform: translate(-10px, 0); }
+    svg.cwl-workflow .node .port .label {
+      fill: white;
+      opacity: 0;
+      font-size: .9em;
+      user-select: none;
+      transition: all .1s;
+      pointer-events: none;
+      alignment-baseline: middle; }
+  svg.cwl-workflow .edge:hover .inner {
+    stroke: #11a7a7; }
+  svg.cwl-workflow .edge .inner, svg.cwl-workflow .edge .outer {
+    fill: none;
+    stroke-linecap: round; }
+  svg.cwl-workflow .edge .inner {
+    stroke-width: 2px;
+    stroke: #9a9a9a; }
+  svg.cwl-workflow .edge .outer {
+    stroke-width: 7px;
+    stroke: #303030; }
+  svg.cwl-workflow .unselectable {
+    user-select: none;
+    cursor: pointer; }

@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<D:multistatus xmlns:D="DAV:">
+  <D:response>
+    <D:href>/c=zzzzz-4zz18-zzzzzzzzzzzzzzz/</D:href>
+    <D:propstat>
+      <D:prop>
+        <D:resourcetype>
+          <D:collection xmlns:D="DAV:" />
+        </D:resourcetype>
+        <D:getlastmodified>Mon, 11 Jul 2022 21:54:20 GMT</D:getlastmodified>
+        <D:supportedlock>
+          <D:lockentry xmlns:D="DAV:">
+            <D:lockscope>
+              <D:exclusive />
+            </D:lockscope>
+            <D:locktype>
+              <D:write />
+            </D:locktype>
+          </D:lockentry>
+        </D:supportedlock>
+        <D:displayname></D:displayname>
+      </D:prop>
+      <D:status>HTTP/1.1 200 OK</D:status>
+    </D:propstat>
+  </D:response>
+  <D:response>
+    <D:href>/c=zzzzz-4zz18-zzzzzzzzzzzzzzz/cwl.output.json</D:href>
+    <D:propstat>
+      <D:prop>
+        <D:displayname>cwl.output.json</D:displayname>
+        <D:getcontentlength>141</D:getcontentlength>
+        <D:getlastmodified>Mon, 11 Jul 2022 21:54:20 GMT</D:getlastmodified>
+        <D:supportedlock>
+          <D:lockentry xmlns:D="DAV:">
+            <D:lockscope>
+              <D:exclusive />
+            </D:lockscope>
+            <D:locktype>
+              <D:write />
+            </D:locktype>
+          </D:lockentry>
+        </D:supportedlock>
+        <D:resourcetype></D:resourcetype>
+        <D:getcontenttype>application/json</D:getcontenttype>
+        <D:getetag>"000000000000000000"</D:getetag>
+      </D:prop>
+      <D:status>HTTP/1.1 200 OK</D:status>
+    </D:propstat>
+  </D:response>
+</D:multistatus>
