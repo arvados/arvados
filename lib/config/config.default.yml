@@ -1212,11 +1212,14 @@ Clusters:
         # before being silenced until the end of the period.
         LogThrottleLines: 1024
 
-        # Maximum bytes that may be logged by a single job.  Log bytes that are
-        # silenced by throttling are not counted against this total.
-        # If you set this to zero, each container will only create a single
-        # log on the API server, noting for users that logging is throttled.
-        LimitLogBytesPerJob: 67108864
+        # Maximum bytes that may be logged as legacy log events
+        # (records posted to the "logs" table). Starting with Arvados
+        # 2.7, container live logging has migrated to a new system
+        # (polling the container request live log endpoint) and this
+        # value should be 0.  As of this writing, the container will
+        # still create a single log on the API server, noting for that
+        # log events are throttled.
+        LimitLogBytesPerJob: 0
 
         LogPartialLineThrottlePeriod: 5s
 
