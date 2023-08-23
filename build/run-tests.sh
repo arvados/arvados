@@ -1027,6 +1027,10 @@ test_sdk/ruby() {
         && "$bundle" exec rake test TESTOPTS=-v ${testargs[sdk/ruby]}
 }
 
+test_sdk/ruby-google-api-client() {
+    true
+}
+
 test_sdk/R() {
   if [[ "$NEED_SDK_R" = true ]]; then
     cd "$WORKSPACE/sdk/R" \
