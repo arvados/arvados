@@ -6,6 +6,7 @@
 SHELL := /bin/bash
 .ONESHELL:
 
+GOPATH?=~/go
 APP_NAME?=arvados-workbench2
 
 # VERSION uses all the above to produce X.Y.Z.timestamp
@@ -68,8 +69,8 @@ arvados-server-install: check-arvados-directory
 	cd cmd/arvados-server
 	go install
 	cd -
-	ls -l ~/go/bin/arvados-server
-	~/go/bin/arvados-server install -type test
+	ls -l $(GOPATH)/bin/arvados-server
+	$(GOPATH)/bin/arvados-server install -type test
 
 yarn-install: arvados-server-install
 	yarn install
