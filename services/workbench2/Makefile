@@ -72,7 +72,7 @@ arvados-server-install: check-arvados-directory
 	ls -l $(GOPATH)/bin/arvados-server
 	$(GOPATH)/bin/arvados-server install -type test
 
-yarn-install: arvados-server-install
+yarn-install:
 	yarn install
 
 unit-tests: yarn-install
@@ -83,10 +83,10 @@ integration-tests: yarn-install check-arvados-directory
 	$(WORKSPACE)/tools/run-integration-tests.sh -a $(ARVADOS_DIRECTORY)
 
 integration-tests-in-docker: workbench2-build-image check-arvados-directory
-	docker run -ti -v$(PWD):/usr/src/workbench2 -v$(ARVADOS_DIRECTORY):/usr/src/arvados -w /usr/src/workbench2 -e ARVADOS_DIRECTORY=/usr/src/arvados workbench2-build make integration-tests
+	docker run -ti -v$(PWD):/usr/src/workbench2 -v$(ARVADOS_DIRECTORY):/usr/src/arvados -w /usr/src/workbench2 -e ARVADOS_DIRECTORY=/usr/src/arvados workbench2-build make arvados-server-install integration-tests
 
 unit-tests-in-docker: workbench2-build-image check-arvados-directory
-	docker run -ti -v$(PWD):/usr/src/workbench2 -v$(ARVADOS_DIRECTORY):/usr/src/arvados -w /usr/src/workbench2 -e ARVADOS_DIRECTORY=/usr/src/arvados workbench2-build make unit-tests
+	docker run -ti -v$(PWD):/usr/src/workbench2 -v$(ARVADOS_DIRECTORY):/usr/src/arvados -w /usr/src/workbench2 -e ARVADOS_DIRECTORY=/usr/src/arvados workbench2-build make arvados-server-install unit-tests
 
 test: unit-tests integration-tests
 
