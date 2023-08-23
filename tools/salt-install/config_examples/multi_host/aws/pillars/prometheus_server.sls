@@ -14,7 +14,8 @@ prometheus:
       - alertmanager
       - node_exporter
   pkg:
-    use_upstream_repo: true
+    use_upstream_repo: false
+    use_upstream_archive: true
     component:
       prometheus:
         config:
