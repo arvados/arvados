@@ -13,7 +13,6 @@ import { resourcesActions } from 'store/resources/resources-actions';
 import { FilterBuilder } from 'services/api/filter-builder';
 import { progressIndicatorActions } from 'store/progress-indicator/progress-indicator-actions';
 import { collectionsContentAddressActions } from './collections-content-address-panel-actions';
-import { navigateTo } from 'store/navigation/navigation-action';
 import { updateFavorites } from 'store/favorites/favorites-actions';
 import { updatePublicFavorites } from 'store/public-favorites/public-favorites-actions';
 import { setBreadcrumbs } from '../breadcrumbs/breadcrumbs-actions';
