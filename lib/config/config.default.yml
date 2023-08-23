@@ -1424,11 +1424,13 @@ Clusters:
         # Setting this to 0 means the dynamic instance limit will
         # start at MaxInstances.
         #
-        # Situations where you may want to set this (to a value lower
+        # Situations where you may want to set this (to a value less
         # than MaxInstances) would be when there is significant
-        # variability in the actual cloud resources available and you
-        # to be conservative in how many parallel supervisors
-        # (workflows) it launches.
+        # variability or uncertainty in the actual cloud resources
+        # available.  Upon reaching InitialQuotaEstimate the
+        # dispatcher will switch to a more conservative behavior with
+        # slower instance start to avoid over-shooting cloud resource
+        # limits.
         InitialQuotaEstimate: 0
 
         # Maximum fraction of available instance capacity allowed to
