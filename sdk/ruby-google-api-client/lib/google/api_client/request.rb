@@ -278,7 +278,7 @@ module Google
       # @option options [#read, #to_str] :body
       #   Raw body to send in POST/PUT requests
       def initialize_media_upload(options)
-        raise "not supported"
+        raise "media upload not supported by arvados-google-api-client"
       end
 
       ##
@@ -293,7 +293,7 @@ module Google
       # @param [String] boundary
       #   Boundary for separating each part of the message
       def build_multipart(parts, mime_type = 'multipart/related', boundary = MULTIPART_BOUNDARY)
-        raise "not supported"
+        raise "multipart upload not supported by arvados-google-api-client"
       end
 
       ##
