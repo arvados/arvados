@@ -93,10 +93,17 @@ export const moveToAction = {
     icon: MoveToIcon,
     name: 'Move to',
     execute: (dispatch, resources) => {
-        resources.forEach((resource) => {
-            dispatch(openMoveProjectDialog(resource));
-        });
+        // resources.length === 1
+        //     ? dispatch(openMoveProjectDialog(resources[0]))
+        // : resources.forEach((resource) => {
+        dispatch(openMoveProjectDialog(resources));
+        //   })
     },
+    // execute: (dispatch, resources) => {
+    //     resources.forEach((resource) => {
+    //         dispatch(openMoveProjectDialog(resource));
+    //     });
+    // },
 };
 
 export const toggleTrashAction = {
