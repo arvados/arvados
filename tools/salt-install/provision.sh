@@ -173,8 +173,8 @@ apply_var_substitutions() {
        s#__INITIAL_USER_PASSWORD__#${INITIAL_USER_PASSWORD}#g;
        s#__INITIAL_USER__#${INITIAL_USER}#g;
        s#__LE_AWS_REGION__#${LE_AWS_REGION:-}#g;
-       s#__LE_AWS_SECRET_ACCESS_KEY__#${LE_AWS_SECRET_ACCESS_KEY}#g;
-       s#__LE_AWS_ACCESS_KEY_ID__#${LE_AWS_ACCESS_KEY_ID}#g;
+       s#__LE_AWS_SECRET_ACCESS_KEY__#${LE_AWS_SECRET_ACCESS_KEY:-}#g;
+       s#__LE_AWS_ACCESS_KEY_ID__#${LE_AWS_ACCESS_KEY_ID:-}#g;
        s#__DATABASE_PASSWORD__#${DATABASE_PASSWORD}#g;
        s#__KEEPWEB_EXT_SSL_PORT__#${KEEPWEB_EXT_SSL_PORT}#g;
        s#__KEEP_EXT_SSL_PORT__#${KEEP_EXT_SSL_PORT}#g;
@@ -450,7 +450,7 @@ echo "...arvados"
 test -d arvados || git clone --quiet https://git.arvados.org/arvados-formula.git ${F_DIR}/arvados
 
 # If we want to try a specific branch of the formula
-if [ "x${BRANCH:-}" != "xmain" ]; then
+if [[ ! -z "${BRANCH:-}" && "x${BRANCH}" != "xmain" ]]; then
   ( cd ${F_DIR}/arvados && git checkout --quiet -t origin/"${BRANCH}" -b "${BRANCH}" )
 elif [ "x${ARVADOS_TAG:-}" != "x" ]; then
   ( cd ${F_DIR}/arvados && git checkout --quiet tags/"${ARVADOS_TAG}" -b "${ARVADOS_TAG}" )
