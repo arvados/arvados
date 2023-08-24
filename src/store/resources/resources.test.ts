@@ -20,14 +20,14 @@ describe('resources', () => {
         const resourcesState = {
             [groupFixtures.editable_project_resource_uuid]: {
                 uuid: groupFixtures.editable_project_resource_uuid,
-                ownerUuid: groupFixtures.user_uuid,
+                ownerUuid: groupFixtures.user_resource_uuid,
                 createdAt: 'string',
                 modifiedByClientUuid: 'string',
                 modifiedByUserUuid: 'string',
                 modifiedAt: 'string',
                 href: 'string',
                 kind: ResourceKind.PROJECT,
-                writableBy: [groupFixtures.user_uuid],
+                canWrite: true,
                 etag: 'string',
             },
             [groupFixtures.editable_collection_resource_uuid]: {
@@ -50,7 +50,7 @@ describe('resources', () => {
                 modifiedAt: 'string',
                 href: 'string',
                 kind: ResourceKind.PROJECT,
-                writableBy: [groupFixtures.unknown_user_resource_uuid],
+                canWrite: false,
                 etag: 'string',
             },
             [groupFixtures.not_editable_collection_resource_uuid]: {
@@ -74,6 +74,7 @@ describe('resources', () => {
                 href: 'string',
                 kind: ResourceKind.USER,
                 etag: 'string',
+                canWrite: true
             }
         };
 

@@ -150,8 +150,8 @@ export const CollectionPanel = withStyles(styles)(connect(
                 isWritable = true;
             } else {
                 const itemOwner = getResource<GroupResource | UserResource>(item.ownerUuid)(state.resources);
-                if (itemOwner && itemOwner.writableBy) {
-                    isWritable = itemOwner.writableBy.indexOf(currentUserUUID || '') >= 0;
+                if (itemOwner) {
+                    isWritable = itemOwner.canWrite;
                 }
             }
         }
@@ -351,7 +351,7 @@ export const CollectionDetailsAttributes = (props: CollectionDetailsProps) => {
         {/*
             NOTE: The property list should be kept at the bottom, because it spans
             the entire available width, without regards of the twoCol prop.
-        */}
+          */}
         <Grid item xs={12} md={12}>
             <DetailsAttribute classLabel={classes.label} classValue={classes.value}
                 label='Properties' />
