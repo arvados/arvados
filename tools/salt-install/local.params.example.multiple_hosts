@@ -139,6 +139,9 @@ KEEP_INT_IP=${WORKBENCH1_INT_IP}
 KEEPSTORE0_INT_IP=10.1.2.13
 SHELL_INT_IP=10.1.2.17
 
+# Set this if using an external PostgreSQL service.
+#DATABASE_EXTERNAL_SERVICE_HOST_OR_IP=
+
 # Performance tuning parameters.  If these are not set, workers
 # defaults on the number of cpus and queued requests defaults to 128.
 #CONTROLLER_MAX_WORKERS=

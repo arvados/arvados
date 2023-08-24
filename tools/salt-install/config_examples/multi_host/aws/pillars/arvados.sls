@@ -6,6 +6,7 @@
 {%- set _workers = ("__CONTROLLER_MAX_WORKERS__" or grains['num_cpus']*2)|int %}
 {%- set max_workers = [_workers, 8]|max %}
 {%- set max_reqs = ("__CONTROLLER_MAX_QUEUED_REQUESTS__" or 128)|int %}
+{%- set database_host = ("__DATABASE_EXTERNAL_SERVICE_HOST_OR_IP__" or "__DATABASE_INT_IP__") %}
 
 # The variables commented out are the default values that the formula uses.
 # The uncommented values are REQUIRED values. If you don't set them, running
@@ -73,7 +74,7 @@ arvados:
       # max concurrent connections per arvados server daemon
       # connection_pool_max: 32
       name: __CLUSTER___arvados
-      host: __DATABASE_INT_IP__
+      host: {{ database_host }}
       password: "__DATABASE_PASSWORD__"
       user: __CLUSTER___arvados
       encoding: en_US.utf8

@@ -99,6 +99,7 @@ prometheus:
                     instance: arvados-dispatch-cloud.__CLUSTER__
                     cluster: __CLUSTER__
 
+            {%- if "__DATABASE_INT_IP__" != "" %}
             # Database
             - job_name: postgresql
               static_configs:
@@ -109,6 +110,7 @@ prometheus:
                   labels:
                     instance: database.__CLUSTER__
                     cluster: __CLUSTER__
+            {%- endif %}
 
             # Nodes
             {%- set node_list = "__NODELIST__".split(',') %}
