@@ -31,7 +31,6 @@ SPDX-License-Identifier: CC-BY-SA-3.0
 # "Initial user and login":#initial_user
 # "Monitoring and Metrics":#monitoring
 # "Load balancing controllers":#load_balancing
-## "Rolling upgrades procedure":#rolling-upgrades
 # "After the installation":#post_install
 
 h2(#introduction). Introduction
@@ -520,57 +519,9 @@ Once the infrastructure is deployed, you'll then need to define which node will 
 )
 </code></pre>
 
-Note that we also set the @database@ role to its own node.
+Note that we also set the @database@ role to its own node instead of just leaving it in a shared controller node.
 
-h3(#rolling-upgrades). Rolling upgrades procedure
-
-Once you have more than one controller backend node, it's easy to take one at a time from the backend pool to upgrade it to a newer version of Arvados (which might involve applying database migrations) by adding its name to the @DISABLED_CONTROLLER@ variable in @local.params@. For example:
-
-<pre><code>...
-DISABLED_CONTROLLER="controller1"
-...</code></pre>
-
-Then, apply the configuration change to just the load-balancer:
-
-<pre><code class="userinput">./installer.sh deploy controller.xarv1.example.com</code></pre>
-
-This will allow you to do the necessary changes to the @controller1@ node without service disruption, as it will not be receiving any traffic until you remove it from the @DISABLED_CONTROLLER@ variable.
-
-Next step is applying the @deploy@ command to @controller1@:
-
-<pre><code class="userinput">./installer.sh deploy controller1.xarv1.example.com</code></pre>
-
-After that, disable the other controller node by editing @local.params@:
-
-<pre><code>...
-DISABLED_CONTROLLER="controller2"
-...</code></pre>
-
-...applying the changes on the balancer node:
-
-<pre><code class="userinput">./installer.sh deploy controller.xarv1.example.com</code></pre>
-
-Then, deploy the changes to the recently disabled @controller2@ node:
-
-<pre><code class="userinput">./installer.sh deploy controller2.xarv1.example.com</code></pre>
-
-This won't cause a service interruption because the load balancer is already routing all traffic to the othe @controller1@ node.
-
-And the last step is enabling both controller nodes by making the following change to @local.params@:
-
-<pre><code>...
-DISABLED_CONTROLLER=""
-...</code></pre>
-
-...and running:
-
-<pre><code class="userinput">./installer.sh deploy controller.xarv1.example.com</code></pre>
-
-This should get all your @controller@ nodes correctly upgraded, and you can continue executing the @deploy@ command with the rest of the nodes individually, or just run:
-
-<pre><code class="userinput">./installer.sh deploy</code></pre>
-
-Only the nodes with pending changes might require certain services to be restarted. In this example, the @workbench@ node will have the remaining Arvados services upgraded and restarted. However, these services are not as critical as the ones on the @controller@ nodes.
+Each time you run @installer.sh deploy@, the system will automatically do rolling upgrades. This means it will make changes to one controller node at a time, after removing it from the balancer so that there's no downtime.
 
 h2(#post_install). After the installation
 
