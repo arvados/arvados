@@ -125,16 +125,15 @@ $(RPM_FILE): build
 	etc/arvados/workbench2/workbench2.example.json=/etc/arvados/$(APP_NAME)/workbench2.example.json
 
 copy: $(DEB_FILE) $(RPM_FILE)
-	for target in $(TARGETS) ; do \
-	        mkdir -p packages/$$target
-		if [[ $$target =~ ^centos ]]; then
-			cp -p $(RPM_FILE) packages/$$target ; \
-		else
-			cp -p $(DEB_FILE) packages/$$target ; \
-		fi
-	done
-	rm -f $(RPM_FILE)
-	rm -f $(DEB_FILE)
+	for target in $(TARGETS); do \
+		mkdir -p "packages/$$target" && \
+		case "$$target" in \
+			centos*|rocky*) cp -p "$(RPM_FILE)" "packages/$$target" ;; \
+			debian*|ubuntu*) cp -p "$(DEB_FILE)" "packages/$$target" ;; \
+			*) echo "Unknown copy target $$target"; exit 1 ;; \
+		esac ; \
+	done ; \
+	rm -f "$(DEB_FILE)" "$(RPM_FILE)"
 
 # use FPM to create DEB and RPM
 packages: copy
