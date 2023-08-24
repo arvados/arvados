@@ -102,7 +102,7 @@ go install
 cd -
 
 echo "Installing dev dependencies..."
-~/go/bin/arvados-server install -type test || exit 1
+${GOPATH:-${HOME}/go}/bin/arvados-server install -type test || exit 1
 
 echo "Launching arvados in test mode..."
 TMPSUBDIR=$(mktemp -d -p /tmp | cut -d \/ -f3) # Removes the /tmp/ part for the regex below
@@ -110,7 +110,7 @@ TMPDIR=/tmp/${TMPSUBDIR}
 cp ${VOCABULARY_CONF} ${TMPDIR}/voc.json
 cp ${ARVADOS_CONF} ${TMPDIR}/arvados.yml
 sed -i "s/VocabularyPath: \".*\"/VocabularyPath: \"\/tmp\/${TMPSUBDIR}\/voc.json\"/" ${TMPDIR}/arvados.yml
-coproc arvboot (~/go/bin/arvados-server boot \
+coproc arvboot (${GOPATH:-${HOME}/go}/bin/arvados-server boot \
     -type test \
     -config ${TMPDIR}/arvados.yml \
     -no-workbench1 \
