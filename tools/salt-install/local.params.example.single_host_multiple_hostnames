@@ -76,8 +76,6 @@ KEEP_INT_IP=""
 KEEPSTORE0_INT_IP=""
 SHELL_INT_IP=""
 
-DISABLED_CONTROLLER=""
-
 # The directory to check for the config files (pillars, states) you want to use.
 # There are a few examples under 'config_examples'.
 # CONFIG_DIR="local_config_dir"
