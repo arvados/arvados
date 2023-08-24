@@ -107,6 +107,7 @@ services/crunch-dispatch-local
 services/crunch-dispatch-slurm
 services/workbench2
 services/workbench2_units
+services/workbench2_integration
 services/ws
 sdk/cli
 sdk/python
@@ -1166,6 +1167,7 @@ test_all() {
     do_test apps/workbench_integration
     do_test apps/workbench_benchmark
     do_test apps/workbench_profile
+    do_test services/workbench2
 }
 
 test_go() {
