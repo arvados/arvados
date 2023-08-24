@@ -41,7 +41,6 @@ const (
 	gradleversion           = "5.3.1"
 	nodejsversion           = "v12.22.12"
 	devtestDatabasePassword = "insecure_arvados_test"
-	workbench2version       = "9a62117dbe56bdfa42489415eb6696638c2bb336" // 2.6.3
 )
 
 //go:embed arvados.service
@@ -258,6 +257,17 @@ DEBIAN_FRONTEND=noninteractive apt-get --yes --no-install-recommends install doc
 			}
 		} else {
 			err = fmt.Errorf("don't know how to install docker for osversion %v", osv)
+			return 1
+		}
+
+		err = inst.runBash(`
+add="fs.inotify.max_user_watches=524288"
+if ! grep -F -- "$add" /etc/sysctl.conf; then
+    echo "$add" | tee -a /etc/sysctl.conf
+    sysctl -p
+fi
+`, stdout, stderr)
+		if err != nil {
 			return 1
 		}
 	}
@@ -532,38 +542,6 @@ ln -sfv /var/lib/arvados/node-`+nodejsversion+`-linux-x64/bin/{yarn,yarnpkg} /us
 				return 1
 			}
 		}
-
-		if havewb2version, err := exec.Command("git", "--git-dir=/var/lib/arvados/arvados-workbench2/.git", "log", "-n1", "--format=%H").CombinedOutput(); err == nil && string(havewb2version) == workbench2version+"\n" {
-			logger.Print("workbench2 repo is already at " + workbench2version)
-		} else {
-			err = inst.runBash(`
-V=`+workbench2version+`
-cd /var/lib/arvados
-if [[ ! -e arvados-workbench2 ]]; then
-  git clone https://git.arvados.org/arvados-workbench2.git
-  cd arvados-workbench2
-  git checkout $V
-else
-  cd arvados-workbench2
-  if ! git checkout $V; then
-    git fetch
-    git checkout yarn.lock
-    git checkout $V
-  fi
-fi
-rm -rf build
-`, stdout, stderr)
-			if err != nil {
-				return 1
-			}
-		}
-
-		if err = inst.runBash(`
-cd /var/lib/arvados/arvados-workbench2
-yarn install
-`, stdout, stderr); err != nil {
-			return 1
-		}
 	}
 
 	if prod || pkg {
@@ -693,8 +671,8 @@ done
 
 		// Install workbench2 app to /var/lib/arvados/workbench2/
 		if err = inst.runBash(`
-cd /var/lib/arvados/arvados-workbench2
-VERSION="`+inst.PackageVersion+`" BUILD_NUMBER=1 GIT_COMMIT="`+workbench2version[:9]+`" yarn build
+cd `+inst.SourcePath+`/services/workbench2
+VERSION="`+inst.PackageVersion+`" BUILD_NUMBER=1 GIT_COMMIT=000000000 yarn build
 rsync -a --delete-after build/ /var/lib/arvados/workbench2/
 `, stdout, stderr); err != nil {
 			return 1
