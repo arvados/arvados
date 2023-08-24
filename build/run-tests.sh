@@ -1059,7 +1059,7 @@ test_services/workbench2_units() {
 }
 
 test_services/workbench2_integration() {
-    cd "$WORKSPACE/services/workbench2" && make integration-tests-in-docker ARVADOS_DIRECTORY="${WORKSPACE}" WORKSPACE="$(pwd)" ${testargs[services/workbench2]}
+    cd "$WORKSPACE/services/workbench2" && make integration-tests ARVADOS_DIRECTORY="${WORKSPACE}" WORKSPACE="$(pwd)" ${testargs[services/workbench2]}
 }
 
 test_services/workbench2() {
