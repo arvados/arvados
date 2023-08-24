@@ -94,15 +94,17 @@ if [ ! -d "${ARVADOS_DIR}/.git" ]; then
     git clone https://git.arvados.org/arvados.git ${ARVADOS_DIR} || exit 1
 fi
 
-echo "Building & installing arvados-server..."
-cd ${ARVADOS_DIR}
-go mod download || exit 1
-cd cmd/arvados-server
-go install
-cd -
+if [ ! -x ${GOPATH:-${HOME}/go}/bin/arvados-server ]; then
+    echo "Building & installing arvados-server..."
+    cd ${ARVADOS_DIR}
+    go mod download || exit 1
+    cd cmd/arvados-server
+    go install
+    cd -
 
-echo "Installing dev dependencies..."
-${GOPATH:-${HOME}/go}/bin/arvados-server install -type test || exit 1
+    echo "Installing dev dependencies..."
+    ${GOPATH:-${HOME}/go}/bin/arvados-server install -type test || exit 1
+fi
 
 echo "Launching arvados in test mode..."
 TMPSUBDIR=$(mktemp -d -p /tmp | cut -d \/ -f3) # Removes the /tmp/ part for the regex below
