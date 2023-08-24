@@ -114,6 +114,7 @@ cp ${ARVADOS_CONF} ${TMPDIR}/arvados.yml
 sed -i "s/VocabularyPath: \".*\"/VocabularyPath: \"\/tmp\/${TMPSUBDIR}\/voc.json\"/" ${TMPDIR}/arvados.yml
 coproc arvboot (${GOPATH:-${HOME}/go}/bin/arvados-server boot \
     -type test \
+    -source "${ARVADOS_DIR}" \
     -config ${TMPDIR}/arvados.yml \
     -no-workbench1 \
     -no-workbench2 \
