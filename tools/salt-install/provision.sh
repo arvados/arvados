@@ -222,6 +222,8 @@ apply_var_substitutions() {
        s#__COMPUTE_SUBNET__#${COMPUTE_SUBNET:-}#g;
        s#__COMPUTE_AWS_REGION__#${COMPUTE_AWS_REGION:-}#g;
        s#__COMPUTE_USER__#${COMPUTE_USER:-}#g;
+       s#__KEEP_AWS_S3_BUCKET__#${KEEP_AWS_S3_BUCKET:-}#g;
+       s#__KEEP_AWS_IAM_ROLE__#${KEEP_AWS_IAM_ROLE:-}#g;
        s#__KEEP_AWS_REGION__#${KEEP_AWS_REGION:-}#g" \
   "${SRCFILE}" > "${DSTFILE}"
 }

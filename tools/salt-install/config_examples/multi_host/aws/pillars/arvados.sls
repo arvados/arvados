@@ -146,8 +146,8 @@ arvados:
         Replication: 2
         Driver: S3
         DriverParameters:
-          Bucket: __CLUSTER__-nyw5e-000000000000000-volume
-          IAMRole: __CLUSTER__-keepstore-00-iam-role
+          Bucket: __KEEP_AWS_S3_BUCKET__
+          IAMRole: __KEEP_AWS_IAM_ROLE__
           Region: __KEEP_AWS_REGION__
 
     Users:
