@@ -21,10 +21,6 @@ prometheus:
           global:
             scrape_interval: 15s
             evaluation_interval: 15s
-	  storage:
-	    tsdb:
-	      retention:
-	        time: 90d
           rule_files:
             - rules.yml
 
