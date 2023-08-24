@@ -71,10 +71,6 @@ export const AccountMenuComponent =
             <MenuItem onClick={() => dispatch(navigateToSiteManager)}>Site Manager</MenuItem>
             <MenuItem onClick={() => dispatch(navigateToMyAccount)}>My account</MenuItem>
             <MenuItem onClick={() => dispatch(navigateToLinkAccount)}>Link account</MenuItem>
-            <MenuItem>
-                <a href={`${workbenchURL.replace(/\/$/, "")}/${wb1URL(currentRoute)}?api_token=${apiToken}`}
-                    className={classes.link}>
-                    Switch to Workbench v1</a></MenuItem>
         </>;
 
         const reduceItemsFn: (a: React.ReactElement[],
@@ -97,7 +93,7 @@ export const AccountMenuComponent =
                 <MenuItem data-cy="logout-menuitem"
                     onClick={() => dispatch(authActions.LOGOUT({ deleteLinkData: true, preservePath: false }))}>
                     Logout
-		 </MenuItem>
+                </MenuItem>
             </DropdownMenu>
             : null;
     };
