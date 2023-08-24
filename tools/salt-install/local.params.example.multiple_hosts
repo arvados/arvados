@@ -89,8 +89,13 @@ SSL_KEY_AWS_REGION="${AWS_REGION}"
 # Customize Prometheus & Grafana web UI access credentials
 MONITORING_USERNAME=${INITIAL_USER}
 MONITORING_EMAIL=${INITIAL_USER_EMAIL}
+
 # Sets the directory for Grafana dashboards
 # GRAFANA_DASHBOARDS_DIR="${SCRIPT_DIR}/local_config_dir/dashboards"
+
+# Sets the amount of data (expressed in time) Prometheus keeps on its
+# time-series database. Default is 15 days.
+# PROMETHEUS_DATA_RETENTION_TIME="180d"
 
 # The mapping of nodes to roles
 # installer.sh will log in to each of these nodes and then provision

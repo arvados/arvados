@@ -211,6 +211,7 @@ apply_var_substitutions() {
        s#__DISABLED_CONTROLLER__#${DISABLED_CONTROLLER}#g;
        s#__BALANCER_NODENAME__#${ROLE2NODES['balancer']:-}#g;
        s#__PROMETHEUS_NODENAME__#${ROLE2NODES['monitoring']:-}#g;
+       s#__PROMETHEUS_DATA_RETENTION_TIME__#${PROMETHEUS_DATA_RETENTION_TIME:-15d}#g;
        s#__CONTROLLER_NODES__#${ROLE2NODES['controller']:-}#g;
        s#__NODELIST__#${NODELIST}#g;
        s#__DISPATCHER_INT_IP__#${DISPATCHER_INT_IP}#g;
