@@ -50,7 +50,7 @@ The defaults for all of these options match the previous behavior of @arvados-lo
 
 h3. API clients can always retrieve their current token, regardless of scopes
 
-We have introduced a small exception to the previous behavior of "Arvados API token scopes":{{ site.baseurl }}:/admin/scoped-tokens.html in this release. A valid token is now always allowed to issue a request to "@GET /arvados/v1/api_client_authorizations/current@":{{ site.baseurl }}/api/methods/api_client_authorizations.html#current regardless of its scopes. This allows clients to reliably determine whether a request failed because a token is invalid, or because the token is not permitted to perform a particular request. The API server itself needs to be able to do this to validate tokens issued by other clusters in a federation.
+We have introduced a small exception to the previous behavior of "Arvados API token scopes":{{ site.baseurl }}/admin/scoped-tokens.html in this release. A valid token is now always allowed to issue a request to "@GET /arvados/v1/api_client_authorizations/current@":{{ site.baseurl }}/api/methods/api_client_authorizations.html#current regardless of its scopes. This allows clients to reliably determine whether a request failed because a token is invalid, or because the token is not permitted to perform a particular request. The API server itself needs to be able to do this to validate tokens issued by other clusters in a federation.
 
 h3. UseAWSS3v2Driver option removed
 
