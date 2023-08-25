@@ -49,6 +49,20 @@ func (s *ClientSuite) TestShellGateway(c *check.C) {
 	defer func() {
 		c.Check(arvados.NewClientFromEnv().RequestAndDecode(nil, "POST", "database/reset", nil, nil), check.IsNil)
 	}()
+	homedir := c.MkDir()
+	settings := "ARVADOS_API_HOST=" + os.Getenv("ARVADOS_API_HOST") + "\nARVADOS_API_TOKEN=" + arvadostest.ActiveTokenV2 + "\nARVADOS_API_HOST_INSECURE=true\n"
+	err := os.MkdirAll(homedir+"/.config/arvados", 0777)
+	c.Assert(err, check.IsNil)
+	err = os.WriteFile(homedir+"/.config/arvados/settings.conf", []byte(settings), 0777)
+	c.Assert(err, check.IsNil)
+
+	c.Logf("building arvados-client binary in %s", homedir)
+	cmd := exec.Command("go", "install", ".")
+	cmd.Env = append(os.Environ(), "GOBIN="+homedir)
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	c.Assert(cmd.Run(), check.IsNil)
+
 	uuid := arvadostest.QueuedContainerUUID
 	h := hmac.New(sha256.New, []byte(arvadostest.SystemRootToken))
 	fmt.Fprint(h, uuid)
@@ -63,7 +77,7 @@ func (s *ClientSuite) TestShellGateway(c *check.C) {
 		// container.
 		Target: crunchrun.GatewayTargetStub{},
 	}
-	err := gw.Start()
+	err = gw.Start()
 	c.Assert(err, check.IsNil)
 
 	rpcconn := rpc.NewConn("",
@@ -85,8 +99,13 @@ func (s *ClientSuite) TestShellGateway(c *check.C) {
 	}})
 	c.Assert(err, check.IsNil)
 
+	c.Log("connecting using ARVADOS_* env vars")
 	var stdout, stderr bytes.Buffer
-	cmd := exec.Command("go", "run", ".", "shell", uuid, "-o", "controlpath=none", "-o", "userknownhostsfile="+c.MkDir()+"/known_hosts", "echo", "ok")
+	cmd = exec.Command(
+		homedir+"/arvados-client", "shell", uuid,
+		"-o", "controlpath=none",
+		"-o", "userknownhostsfile="+homedir+"/known_hosts",
+		"echo", "ok")
 	cmd.Env = append(cmd.Env, os.Environ()...)
 	cmd.Env = append(cmd.Env, "ARVADOS_API_TOKEN="+arvadostest.ActiveTokenV2)
 	cmd.Stdout = &stdout
@@ -94,13 +113,16 @@ func (s *ClientSuite) TestShellGateway(c *check.C) {
 	stdin, err := cmd.StdinPipe()
 	c.Assert(err, check.IsNil)
 	go fmt.Fprintln(stdin, "data appears on stdin, but stdin does not close; cmd should exit anyway, not hang")
-	time.AfterFunc(5*time.Second, func() {
+	timeout := time.AfterFunc(5*time.Second, func() {
 		c.Errorf("timed out -- remote end is probably hung waiting for us to close stdin")
 		stdin.Close()
 	})
+	c.Logf("cmd.Args: %s", cmd.Args)
 	c.Check(cmd.Run(), check.IsNil)
+	timeout.Stop()
 	c.Check(stdout.String(), check.Equals, "ok\n")
 
+	c.Logf("setting up an http server")
 	// Set up an http server, and try using "arvados-client shell"
 	// to forward traffic to it.
 	httpTarget := &httpserver.Server{}
@@ -120,22 +142,27 @@ func (s *ClientSuite) TestShellGateway(c *check.C) {
 	_, forwardedPort, _ := net.SplitHostPort(ln.Addr().String())
 	ln.Close()
 
+	c.Log("connecting using settings.conf file")
 	stdout.Reset()
 	stderr.Reset()
 	ctx, cancel := context.WithDeadline(context.Background(), time.Now().Add(10*time.Second))
 	defer cancel()
 	cmd = exec.CommandContext(ctx,
-		"go", "run", ".", "shell", uuid,
+		homedir+"/arvados-client", "shell", uuid,
 		"-L", forwardedPort+":"+httpTarget.Addr,
 		"-o", "controlpath=none",
-		"-o", "userknownhostsfile="+c.MkDir()+"/known_hosts",
+		"-o", "userknownhostsfile="+homedir+"/known_hosts",
 		"-N",
 	)
-	c.Logf("cmd.Args: %s", cmd.Args)
-	cmd.Env = append(cmd.Env, os.Environ()...)
-	cmd.Env = append(cmd.Env, "ARVADOS_API_TOKEN="+arvadostest.ActiveTokenV2)
+	for _, kv := range os.Environ() {
+		if !strings.HasPrefix(kv, "ARVADOS_") && !strings.HasPrefix(kv, "HOME=") {
+			cmd.Env = append(cmd.Env, kv)
+		}
+	}
+	cmd.Env = append(cmd.Env, "HOME="+homedir)
 	cmd.Stdout = &stdout
 	cmd.Stderr = &stderr
+	c.Logf("cmd.Args: %s", cmd.Args)
 	cmd.Start()
 
 	forwardedURL := fmt.Sprintf("http://localhost:%s/foo", forwardedPort)

@@ -66,8 +66,11 @@ func (lc *logsCommand) tail(crUUID string, stdout, stderr io.Writer, follow bool
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	rpcconn := rpcFromEnv()
-	err := lc.checkAPISupport(ctx, crUUID)
+	rpcconn, err := rpcFromEnv()
+	if err != nil {
+		return err
+	}
+	err = lc.checkAPISupport(ctx, crUUID)
 	if err != nil {
 		return err
 	}
@@ -401,12 +404,12 @@ Options:
 		loginUsername = targetUUID[:i]
 		targetUUID = targetUUID[i+1:]
 	}
-	if os.Getenv("ARVADOS_API_HOST") == "" || os.Getenv("ARVADOS_API_TOKEN") == "" {
-		fmt.Fprintln(stderr, "fatal: ARVADOS_API_HOST and ARVADOS_API_TOKEN environment variables are not set")
+	rpcconn, err := rpcFromEnv()
+	if err != nil {
+		fmt.Fprintln(stderr, err)
 		return 1
 	}
-	rpcconn := rpcFromEnv()
-	targetUUID, err := resolveToContainerUUID(rpcconn, targetUUID)
+	targetUUID, err = resolveToContainerUUID(rpcconn, targetUUID)
 	if err != nil {
 		fmt.Fprintln(stderr, err)
 		return 1
@@ -453,17 +456,20 @@ func shellescape(s string) string {
 	return "'" + strings.Replace(s, "'", "'\\''", -1) + "'"
 }
 
-func rpcFromEnv() *rpc.Conn {
-	insecure := os.Getenv("ARVADOS_API_HOST_INSECURE")
+func rpcFromEnv() (*rpc.Conn, error) {
+	ac := arvados.NewClientFromEnv()
+	if ac.APIHost == "" || ac.AuthToken == "" {
+		return nil, fmt.Errorf("fatal: ARVADOS_API_HOST and ARVADOS_API_TOKEN environment variables are not set, and ~/.config/arvados/settings.conf is not readable")
+	}
 	return rpc.NewConn("",
 		&url.URL{
 			Scheme: "https",
-			Host:   os.Getenv("ARVADOS_API_HOST"),
+			Host:   ac.APIHost,
 		},
-		insecure == "1" || insecure == "yes" || insecure == "true",
+		ac.Insecure,
 		func(context.Context) ([]string, error) {
-			return []string{os.Getenv("ARVADOS_API_TOKEN")}, nil
-		})
+			return []string{ac.AuthToken}, nil
+		}), nil
 }
 
 func resolveToContainerUUID(rpcconn *rpc.Conn, targetUUID string) (string, error) {
