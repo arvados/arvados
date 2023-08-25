@@ -338,10 +338,12 @@ case "$subcmd" in
 		    fi
 		done
 	    else
-		# Only one controller
+		# Only one controller, check if it wasn't already taken care of.
 		NODE=${ROLE2NODES['controller']}
-		deploynode $NODE "${NODES[$NODE]}" $BRANCH
-		unset NODES[$NODE]
+		if [[ ! -z "${NODES[$NODE]:-}" ]]; then
+			deploynode $NODE "${NODES[$NODE]}" $BRANCH
+			unset NODES[$NODE]
+		fi
 	    fi
 
 	    if [[ -n "$BALANCER" ]] ; then
