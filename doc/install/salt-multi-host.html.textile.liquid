@@ -267,8 +267,8 @@ The @local.params.secrets@ file is intended to store security-sensitive data suc
 
 h3. Parameters from @local.params@:
 
-# Set @CLUSTER@ to the 5-character cluster identifier (e.g "xarv1")
-# Set @DOMAIN@ to the base DNS domain of the environment, e.g. "xarv1.example.com"
+# Set @CLUSTER@ to the 5-character cluster identifier. (e.g. "xarv1")
+# Set @DOMAIN@ to the base DNS domain of the environment. (e.g. "xarv1.example.com")
 # Set the @*_INT_IP@ variables with the internal (private) IP addresses of each host. Since services share hosts, some hosts are the same.  See "note about /etc/hosts":#etchosts
 # Edit @CLUSTER_INT_CIDR@, this should be the CIDR of the private network that Arvados is running on, e.g. the VPC.  If you used terraform, this is emitted as @cluster_int_cidr@.
 _CIDR stands for "Classless Inter-Domain Routing" and describes which portion of the IP address that refers to the network.  For example 192.168.3.0/24 means that the first 24 bits are the network (192.168.3) and the last 8 bits are a specific host on that network._
@@ -342,11 +342,13 @@ Arvados requires a database that is compatible with PostgreSQL 9.5 or later.  Fo
   ...
 )
 </code></pre>
-# In @local.params@, set @DATABASE_INT_IP@ to the database endpoint (can be a hostname, does not have to be an IP address).
-<pre><code>DATABASE_INT_IP=...
+# In @local.params@, set @DATABASE_INT_IP@ to empty string and @DATABASE_EXTERNAL_SERVICE_HOST_OR_IP@ to the database endpoint (can be a hostname, does not have to be an IP address).
+<pre><code>DATABASE_INT_IP=""
+...
+DATABASE_EXTERNAL_SERVICE_HOST_OR_IP="arvados.xxxxxxx.eu-east-1.rds.amazonaws.com"
 </code></pre>
-# In @local.params@, set @DATABASE_PASSWORD@ to the correct value.  "See the previous section describing correct quoting":#localparams
-# In @local_config_dir/pillars/arvados.sls@ you may need to adjust the database name and user.  This can be found in the section @arvados.cluster.database@.
+# In @local.params.secrets@, set @DATABASE_PASSWORD@ to the correct value.  "See the previous section describing correct quoting":#localparams
+# In @local.params@ you may need to adjust the database name and user.
 
 h2(#further_customization). Further customization of the installation (optional)
 

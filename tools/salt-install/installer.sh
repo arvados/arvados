@@ -139,6 +139,15 @@ deploynode() {
     fi
 }
 
+checkcert() {
+	local CERTNAME=$1
+	local CERTPATH="${CONFIG_DIR}/certs/${CERTNAME}"
+	if [[ ! -f "${CERTPATH}.crt" || ! -e "${CERTPATH}.key" ]]; then
+		echo "Missing ${CERTPATH}.crt or ${CERTPATH}.key files"
+		exit 1
+	fi
+}
+
 loadconfig() {
     if ! [[ -s ${CONFIG_FILE} && -s ${CONFIG_FILE}.secrets ]]; then
 		echo "Must be run from initialized setup dir, maybe you need to 'initialize' first?"
@@ -283,6 +292,38 @@ case "$subcmd" in
 	    echo
 	    echo "Some parameters still need to be updated.  Please fix them and then re-run deploy."
 	    exit 1
+	fi
+
+	if [[ ${SSL_MODE} == "bring-your-own" ]]; then
+		if [[ ! -z "${ROLE2NODES['balancer']:-}" ]]; then
+			checkcert balancer
+		fi
+		if [[ ! -z "${ROLE2NODES['controller']:-}" ]]; then
+			checkcert controller
+		fi
+		if [[ ! -z "${ROLE2NODES['keepproxy']:-}" ]]; then
+			checkcert keepproxy
+		fi
+		if [[ ! -z "${ROLE2NODES['keepweb']:-}" ]]; then
+			checkcert collections
+			checkcert download
+		fi
+		if [[ ! -z "${ROLE2NODES['monitoring']:-}" ]]; then
+			checkcert grafana
+			checkcert prometheus
+		fi
+		if [[ ! -z "${ROLE2NODES['webshell']:-}" ]]; then
+			checkcert webshell
+		fi
+		if [[ ! -z "${ROLE2NODES['websocket']:-}" ]]; then
+			checkcert websocket
+		fi
+		if [[ ! -z "${ROLE2NODES['workbench']:-}" ]]; then
+			checkcert workbench
+		fi
+		if [[ ! -z "${ROLE2NODES['workbench2']:-}" ]]; then
+			checkcert workbench2
+		fi
 	fi
 
 	BRANCH=$(git rev-parse --abbrev-ref HEAD)
