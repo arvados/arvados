@@ -314,16 +314,14 @@ The @multi_host/aws@ template uses S3 for storage.  Arvados also supports "files
 
 h3. Object storage in S3 (AWS Specific)
 
-Open @local_config_dir/pillars/arvados.sls@ and edit as follows:
+If you "followed the recommendend naming scheme":#keep-bucket for both the bucket and role (or used the provided Terraform script), you're done.
 
-# In the @arvados.cluster.Volumes.DriverParameters@ section, set @Region@ to the appropriate AWS region (e.g. 'us-east-1')
+If you did not follow the recommendend naming scheme for either the bucket or role, you'll need to update these parameters in @local.params@:
 
-If "followed the recommendend naming scheme":#keep-bucket for both the bucket and role (or used the provided Terraform script), you're done.
+# Set @KEEP_AWS_S3_BUCKET@ to the value of "keepstore bucket you created earlier":#keep-bucket
+# Set @KEEP_AWS_IAM_ROLE@ to "keepstore role you created earlier":#keep-bucket
 
-If you did not follow the recommendend naming scheme for either the bucket or role, you'll need to update these parameters as well:
-
-# Set @Bucket@ to the value of "keepstore bucket you created earlier":#keep-bucket
-# Set @IAMRole@ to "keepstore role you created earlier":#keep-bucket
+You can also configure a specific AWS Region for the S3 bucket by setting @KEEP_AWS_REGION@.
 
 {% include 'ssl_config_multi' %}
 
