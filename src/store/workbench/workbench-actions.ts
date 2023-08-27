@@ -2,28 +2,28 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import { Dispatch } from 'redux';
-import { RootState } from 'store/store';
-import { getUserUuid } from 'common/getuser';
-import { loadDetailsPanel } from 'store/details-panel/details-panel-action';
-import { snackbarActions, SnackbarKind } from 'store/snackbar/snackbar-actions';
-import { favoritePanelActions, loadFavoritePanel } from 'store/favorite-panel/favorite-panel-action';
+import { Dispatch } from "redux";
+import { RootState } from "store/store";
+import { getUserUuid } from "common/getuser";
+import { loadDetailsPanel } from "store/details-panel/details-panel-action";
+import { snackbarActions, SnackbarKind } from "store/snackbar/snackbar-actions";
+import { favoritePanelActions, loadFavoritePanel } from "store/favorite-panel/favorite-panel-action";
 import {
     getProjectPanelCurrentUuid,
     openProjectPanel,
     projectPanelActions,
     setIsProjectPanelTrashed,
-} from 'store/project-panel/project-panel-action';
+} from "store/project-panel/project-panel-action";
 import {
     activateSidePanelTreeItem,
     initSidePanelTree,
     loadSidePanelTreeProjects,
     SidePanelTreeCategory,
-} from 'store/side-panel-tree/side-panel-tree-actions';
-import { updateResources } from 'store/resources/resources-actions';
-import { projectPanelColumns } from 'views/project-panel/project-panel';
-import { favoritePanelColumns } from 'views/favorite-panel/favorite-panel';
-import { matchRootRoute } from 'routes/routes';
+} from "store/side-panel-tree/side-panel-tree-actions";
+import { updateResources } from "store/resources/resources-actions";
+import { projectPanelColumns } from "views/project-panel/project-panel";
+import { favoritePanelColumns } from "views/favorite-panel/favorite-panel";
+import { matchRootRoute } from "routes/routes";
 import {
     setBreadcrumbs,
     setGroupDetailsBreadcrumbs,
@@ -35,73 +35,74 @@ import {
     setUsersBreadcrumbs,
     setMyAccountBreadcrumbs,
     setUserProfileBreadcrumbs,
-} from 'store/breadcrumbs/breadcrumbs-actions';
-import { navigateTo, navigateToRootProject } from 'store/navigation/navigation-action';
-import { MoveToFormDialogData } from 'store/move-to-dialog/move-to-dialog';
-import { ServiceRepository } from 'services/services';
-import { getResource } from 'store/resources/resources';
-import * as projectCreateActions from 'store/projects/project-create-actions';
-import * as projectMoveActions from 'store/projects/project-move-actions';
-import * as projectUpdateActions from 'store/projects/project-update-actions';
-import * as collectionCreateActions from 'store/collections/collection-create-actions';
-import * as collectionCopyActions from 'store/collections/collection-copy-actions';
-import * as collectionMoveActions from 'store/collections/collection-move-actions';
-import * as processesActions from 'store/processes/processes-actions';
-import * as processMoveActions from 'store/processes/process-move-actions';
-import * as processUpdateActions from 'store/processes/process-update-actions';
-import * as processCopyActions from 'store/processes/process-copy-actions';
-import { trashPanelColumns } from 'views/trash-panel/trash-panel';
-import { loadTrashPanel, trashPanelActions } from 'store/trash-panel/trash-panel-action';
-import { loadProcessPanel } from 'store/process-panel/process-panel-actions';
-import { loadSharedWithMePanel, sharedWithMePanelActions } from 'store/shared-with-me-panel/shared-with-me-panel-actions';
-import { CopyFormDialogData } from 'store/copy-dialog/copy-dialog';
-import { workflowPanelActions } from 'store/workflow-panel/workflow-panel-actions';
-import { loadSshKeysPanel } from 'store/auth/auth-action-ssh';
-import { loadLinkAccountPanel, linkAccountPanelActions } from 'store/link-account-panel/link-account-panel-actions';
-import { loadSiteManagerPanel } from 'store/auth/auth-action-session';
-import { workflowPanelColumns } from 'views/workflow-panel/workflow-panel-view';
-import { progressIndicatorActions } from 'store/progress-indicator/progress-indicator-actions';
-import { getProgressIndicator } from 'store/progress-indicator/progress-indicator-reducer';
-import { extractUuidKind, ResourceKind } from 'models/resource';
-import { FilterBuilder } from 'services/api/filter-builder';
-import { GroupContentsResource } from 'services/groups-service/groups-service';
-import { MatchCases, ofType, unionize, UnionOf } from 'common/unionize';
-import { loadRunProcessPanel } from 'store/run-process-panel/run-process-panel-actions';
-import { collectionPanelActions, loadCollectionPanel } from 'store/collection-panel/collection-panel-action';
-import { CollectionResource } from 'models/collection';
-import { WorkflowResource } from 'models/workflow';
-import { loadSearchResultsPanel, searchResultsPanelActions } from 'store/search-results-panel/search-results-panel-actions';
-import { searchResultsPanelColumns } from 'views/search-results-panel/search-results-panel-view';
-import { loadVirtualMachinesPanel } from 'store/virtual-machines/virtual-machines-actions';
-import { loadRepositoriesPanel } from 'store/repositories/repositories-actions';
-import { loadKeepServicesPanel } from 'store/keep-services/keep-services-actions';
-import { loadUsersPanel, userBindedActions } from 'store/users/users-actions';
-import * as userProfilePanelActions from 'store/user-profile/user-profile-actions';
-import { linkPanelActions, loadLinkPanel } from 'store/link-panel/link-panel-actions';
-import { linkPanelColumns } from 'views/link-panel/link-panel-root';
-import { userPanelColumns } from 'views/user-panel/user-panel';
-import { loadApiClientAuthorizationsPanel, apiClientAuthorizationsActions } from 'store/api-client-authorizations/api-client-authorizations-actions';
-import { apiClientAuthorizationPanelColumns } from 'views/api-client-authorization-panel/api-client-authorization-panel-root';
-import * as groupPanelActions from 'store/groups-panel/groups-panel-actions';
-import { groupsPanelColumns } from 'views/groups-panel/groups-panel';
-import * as groupDetailsPanelActions from 'store/group-details-panel/group-details-panel-actions';
-import { groupDetailsMembersPanelColumns, groupDetailsPermissionsPanelColumns } from 'views/group-details-panel/group-details-panel';
-import { DataTableFetchMode } from 'components/data-table/data-table';
-import { loadPublicFavoritePanel, publicFavoritePanelActions } from 'store/public-favorites-panel/public-favorites-action';
-import { publicFavoritePanelColumns } from 'views/public-favorites-panel/public-favorites-panel';
+} from "store/breadcrumbs/breadcrumbs-actions";
+import { navigateTo, navigateToRootProject } from "store/navigation/navigation-action";
+import { MoveToFormDialogData } from "store/move-to-dialog/move-to-dialog";
+import { ServiceRepository } from "services/services";
+import { getResource } from "store/resources/resources";
+import * as projectCreateActions from "store/projects/project-create-actions";
+import * as projectMoveActions from "store/projects/project-move-actions";
+import * as projectUpdateActions from "store/projects/project-update-actions";
+import * as collectionCreateActions from "store/collections/collection-create-actions";
+import * as collectionCopyActions from "store/collections/collection-copy-actions";
+import * as collectionMoveActions from "store/collections/collection-move-actions";
+import * as processesActions from "store/processes/processes-actions";
+import * as processMoveActions from "store/processes/process-move-actions";
+import * as processUpdateActions from "store/processes/process-update-actions";
+import * as processCopyActions from "store/processes/process-copy-actions";
+import { trashPanelColumns } from "views/trash-panel/trash-panel";
+import { loadTrashPanel, trashPanelActions } from "store/trash-panel/trash-panel-action";
+import { loadProcessPanel } from "store/process-panel/process-panel-actions";
+import { loadSharedWithMePanel, sharedWithMePanelActions } from "store/shared-with-me-panel/shared-with-me-panel-actions";
+import { CopyFormDialogData } from "store/copy-dialog/copy-dialog";
+import { workflowPanelActions } from "store/workflow-panel/workflow-panel-actions";
+import { loadSshKeysPanel } from "store/auth/auth-action-ssh";
+import { loadLinkAccountPanel, linkAccountPanelActions } from "store/link-account-panel/link-account-panel-actions";
+import { loadSiteManagerPanel } from "store/auth/auth-action-session";
+import { workflowPanelColumns } from "views/workflow-panel/workflow-panel-view";
+import { progressIndicatorActions } from "store/progress-indicator/progress-indicator-actions";
+import { getProgressIndicator } from "store/progress-indicator/progress-indicator-reducer";
+import { extractUuidKind, ResourceKind } from "models/resource";
+import { FilterBuilder } from "services/api/filter-builder";
+import { GroupContentsResource } from "services/groups-service/groups-service";
+import { MatchCases, ofType, unionize, UnionOf } from "common/unionize";
+import { loadRunProcessPanel } from "store/run-process-panel/run-process-panel-actions";
+import { collectionPanelActions, loadCollectionPanel } from "store/collection-panel/collection-panel-action";
+import { CollectionResource } from "models/collection";
+import { WorkflowResource } from "models/workflow";
+import { loadSearchResultsPanel, searchResultsPanelActions } from "store/search-results-panel/search-results-panel-actions";
+import { searchResultsPanelColumns } from "views/search-results-panel/search-results-panel-view";
+import { loadVirtualMachinesPanel } from "store/virtual-machines/virtual-machines-actions";
+import { loadRepositoriesPanel } from "store/repositories/repositories-actions";
+import { loadKeepServicesPanel } from "store/keep-services/keep-services-actions";
+import { loadUsersPanel, userBindedActions } from "store/users/users-actions";
+import * as userProfilePanelActions from "store/user-profile/user-profile-actions";
+import { linkPanelActions, loadLinkPanel } from "store/link-panel/link-panel-actions";
+import { linkPanelColumns } from "views/link-panel/link-panel-root";
+import { userPanelColumns } from "views/user-panel/user-panel";
+import { loadApiClientAuthorizationsPanel, apiClientAuthorizationsActions } from "store/api-client-authorizations/api-client-authorizations-actions";
+import { apiClientAuthorizationPanelColumns } from "views/api-client-authorization-panel/api-client-authorization-panel-root";
+import * as groupPanelActions from "store/groups-panel/groups-panel-actions";
+import { groupsPanelColumns } from "views/groups-panel/groups-panel";
+import * as groupDetailsPanelActions from "store/group-details-panel/group-details-panel-actions";
+import { groupDetailsMembersPanelColumns, groupDetailsPermissionsPanelColumns } from "views/group-details-panel/group-details-panel";
+import { DataTableFetchMode } from "components/data-table/data-table";
+import { loadPublicFavoritePanel, publicFavoritePanelActions } from "store/public-favorites-panel/public-favorites-action";
+import { publicFavoritePanelColumns } from "views/public-favorites-panel/public-favorites-panel";
 import {
     loadCollectionsContentAddressPanel,
     collectionsContentAddressActions,
-} from 'store/collections-content-address-panel/collections-content-address-panel-actions';
-import { collectionContentAddressPanelColumns } from 'views/collection-content-address-panel/collection-content-address-panel';
-import { subprocessPanelActions } from 'store/subprocess-panel/subprocess-panel-actions';
-import { subprocessPanelColumns } from 'views/subprocess-panel/subprocess-panel-root';
-import { loadAllProcessesPanel, allProcessesPanelActions } from '../all-processes-panel/all-processes-panel-action';
-import { allProcessesPanelColumns } from 'views/all-processes-panel/all-processes-panel';
-import { AdminMenuIcon } from 'components/icon/icon';
-import { userProfileGroupsColumns } from 'views/user-profile-panel/user-profile-panel-root';
+} from "store/collections-content-address-panel/collections-content-address-panel-actions";
+import { collectionContentAddressPanelColumns } from "views/collection-content-address-panel/collection-content-address-panel";
+import { subprocessPanelActions } from "store/subprocess-panel/subprocess-panel-actions";
+import { subprocessPanelColumns } from "views/subprocess-panel/subprocess-panel-root";
+import { loadAllProcessesPanel, allProcessesPanelActions } from "../all-processes-panel/all-processes-panel-action";
+import { allProcessesPanelColumns } from "views/all-processes-panel/all-processes-panel";
+import { AdminMenuIcon } from "components/icon/icon";
+import { userProfileGroupsColumns } from "views/user-profile-panel/user-profile-panel-root";
+import { selectedToArray } from "components/multiselectToolbar/MultiselectToolbar";
 
-export const WORKBENCH_LOADING_SCREEN = 'workbenchLoadingScreen';
+export const WORKBENCH_LOADING_SCREEN = "workbenchLoadingScreen";
 
 export const isWorkbenchLoading = (state: RootState) => {
     const progress = getProgressIndicator(WORKBENCH_LOADING_SCREEN)(state.progressIndicator);
@@ -267,7 +268,7 @@ export const createProject = (data: projectCreateActions.ProjectCreateFormDialog
     if (newProject) {
         dispatch(
             snackbarActions.OPEN_SNACKBAR({
-                message: 'Project has been successfully created.',
+                message: "Project has been successfully created.",
                 hideDuration: 2000,
                 kind: SnackbarKind.SUCCESS,
             })
@@ -278,32 +279,83 @@ export const createProject = (data: projectCreateActions.ProjectCreateFormDialog
 };
 
 export const moveProject = (data: MoveToFormDialogData) => async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
-    try {
-        const oldProject = getResource(data.uuid)(getState().resources);
-        const oldOwnerUuid = oldProject ? oldProject.ownerUuid : '';
-        const movedProject = await dispatch<any>(projectMoveActions.moveProject(data));
-        if (movedProject) {
+    console.log("moveProject---");
+    console.log("moveProject:", data);
+    // const currentState = getState();
+    // console.log('current', currentState.multiselect.checkedList);
+    const projectsToMove = selectedToArray(getState().multiselect.checkedList);
+    // console.log("resource?", getResource(projectsToMove[0])(getState().resources));
+    const sourceUuid = getResource(projectsToMove[0])(getState().resources)?.ownerUuid;
+    const destinationUuid = data.ownerUuid;
+
+    for (const project of projectsToMove) {
+        await moveSingleProject(project);
+    }
+
+    async function moveSingleProject(projectUuid) {
+        try {
+            // const oldProject = getResource(projectUuid)(getState().resources);
+            const originalProject = getResource(projectUuid)(getState().resources) as any;
+            const oldProject = { ...originalProject, ownerUuid: data.ownerUuid } as any;
+            // const { name, uuid, ownerUuid } = getResource(projectUuid)(getState().resources) as any;
+            // const oldProject: MoveToFormDialogData = { name, uuid, ownerUuid };
+            console.log("oldProject", oldProject, data);
+            const oldOwnerUuid = oldProject ? oldProject.ownerUuid : "";
+            const movedProject = await dispatch<any>(projectMoveActions.moveProject(oldProject));
+            if (movedProject) {
+                console.log("movedProject", movedProject);
+                dispatch(
+                    snackbarActions.OPEN_SNACKBAR({
+                        message: "Project has been moved",
+                        hideDuration: 2000,
+                        kind: SnackbarKind.SUCCESS,
+                    })
+                );
+                // if (oldProject) {
+                // await dispatch<any>(loadSidePanelTreeProjects(oldProject.ownerUuid));
+                // await dispatch<any>(loadSidePanelTreeProjects(originalProject.ownerUuid));
+                // }
+                await dispatch<any>(reloadProjectMatchingUuid([oldOwnerUuid, movedProject.ownerUuid, movedProject.uuid]));
+            }
+        } catch (e) {
             dispatch(
                 snackbarActions.OPEN_SNACKBAR({
-                    message: 'Project has been moved',
+                    message: e.message,
                     hideDuration: 2000,
-                    kind: SnackbarKind.SUCCESS,
+                    kind: SnackbarKind.ERROR,
                 })
             );
-            if (oldProject) {
-                await dispatch<any>(loadSidePanelTreeProjects(oldProject.ownerUuid));
-            }
-            dispatch<any>(reloadProjectMatchingUuid([oldOwnerUuid, movedProject.ownerUuid, movedProject.uuid]));
         }
-    } catch (e) {
-        dispatch(
-            snackbarActions.OPEN_SNACKBAR({
-                message: e.message,
-                hideDuration: 2000,
-                kind: SnackbarKind.ERROR,
-            })
-        );
     }
+    if (sourceUuid) await dispatch<any>(loadSidePanelTreeProjects(sourceUuid));
+    await dispatch<any>(loadSidePanelTreeProjects(destinationUuid));
+
+    // try {
+    //     const oldProject = getResource(data.uuid)(getState().resources);
+    //     const oldOwnerUuid = oldProject ? oldProject.ownerUuid : '';
+    //     const movedProject = await dispatch<any>(projectMoveActions.moveProject(data));
+    //     if (movedProject) {
+    //         dispatch(
+    //             snackbarActions.OPEN_SNACKBAR({
+    //                 message: 'Project has been moved',
+    //                 hideDuration: 2000,
+    //                 kind: SnackbarKind.SUCCESS,
+    //             })
+    //         );
+    //         if (oldProject) {
+    //             await dispatch<any>(loadSidePanelTreeProjects(oldProject.ownerUuid));
+    //         }
+    //         dispatch<any>(reloadProjectMatchingUuid([oldOwnerUuid, movedProject.ownerUuid, movedProject.uuid]));
+    //     }
+    // } catch (e) {
+    //     dispatch(
+    //         snackbarActions.OPEN_SNACKBAR({
+    //             message: e.message,
+    //             hideDuration: 2000,
+    //             kind: SnackbarKind.ERROR,
+    //         })
+    //     );
+    // }
 };
 
 export const updateProject = (data: projectUpdateActions.ProjectUpdateFormDialogData) => async (dispatch: Dispatch) => {
@@ -311,7 +363,7 @@ export const updateProject = (data: projectUpdateActions.ProjectUpdateFormDialog
     if (updatedProject) {
         dispatch(
             snackbarActions.OPEN_SNACKBAR({
-                message: 'Project has been successfully updated.',
+                message: "Project has been successfully updated.",
                 hideDuration: 2000,
                 kind: SnackbarKind.SUCCESS,
             })
@@ -326,7 +378,7 @@ export const updateGroup = (data: projectUpdateActions.ProjectUpdateFormDialogDa
     if (updatedGroup) {
         dispatch(
             snackbarActions.OPEN_SNACKBAR({
-                message: 'Group has been successfully updated.',
+                message: "Group has been successfully updated.",
                 hideDuration: 2000,
                 kind: SnackbarKind.SUCCESS,
             })
@@ -351,20 +403,20 @@ export const loadCollection = (uuid: string) =>
                 | undefined;
             let sidepanel: string | undefined;
             match({
-                OWNED: (thecollection) => {
+                OWNED: thecollection => {
                     collection = thecollection as CollectionResource;
                     sidepanel = collection.ownerUuid;
                     breadcrumbfunc = setSidePanelBreadcrumbs;
                 },
-                SHARED: (thecollection) => {
+                SHARED: thecollection => {
                     collection = thecollection as CollectionResource;
                     sidepanel = collection.ownerUuid;
                     breadcrumbfunc = setSharedWithMeBreadcrumbs;
                 },
-                TRASHED: (thecollection) => {
+                TRASHED: thecollection => {
                     collection = thecollection as CollectionResource;
                     sidepanel = SidePanelTreeCategory.TRASH;
-                    breadcrumbfunc = () => setTrashBreadcrumbs('');
+                    breadcrumbfunc = () => setTrashBreadcrumbs("");
                 },
             });
             if (collection && breadcrumbfunc && sidepanel) {
@@ -383,7 +435,7 @@ export const createCollection = (data: collectionCreateActions.CollectionCreateF
     if (collection) {
         dispatch(
             snackbarActions.OPEN_SNACKBAR({
-                message: 'Collection has been successfully created.',
+                message: "Collection has been successfully created.",
                 hideDuration: 2000,
                 kind: SnackbarKind.SUCCESS,
             })
@@ -401,7 +453,7 @@ export const copyCollection = (data: CopyFormDialogData) => async (dispatch: Dis
             dispatch<any>(reloadProjectMatchingUuid([copyToProject.uuid]));
             dispatch(
                 snackbarActions.OPEN_SNACKBAR({
-                    message: 'Collection has been copied.',
+                    message: "Collection has been copied.",
                     hideDuration: 3000,
                     kind: SnackbarKind.SUCCESS,
                     link: collection.ownerUuid,
@@ -426,7 +478,7 @@ export const moveCollection = (data: MoveToFormDialogData) => async (dispatch: D
         dispatch<any>(reloadProjectMatchingUuid([collection.ownerUuid]));
         dispatch(
             snackbarActions.OPEN_SNACKBAR({
-                message: 'Collection has been moved.',
+                message: "Collection has been moved.",
                 hideDuration: 2000,
                 kind: SnackbarKind.SUCCESS,
             })
@@ -468,11 +520,11 @@ export const loadRegisteredWorkflow = (uuid: string) =>
                 | ((uuid: string) => (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => Promise<void>)
                 | undefined;
             match({
-                OWNED: async (theworkflow) => {
+                OWNED: async theworkflow => {
                     workflow = theworkflow as WorkflowResource;
                     breadcrumbfunc = setSidePanelBreadcrumbs;
                 },
-                SHARED: async (theworkflow) => {
+                SHARED: async theworkflow => {
                     workflow = theworkflow as WorkflowResource;
                     breadcrumbfunc = setSharedWithMeBreadcrumbs;
                 },
@@ -493,7 +545,7 @@ export const updateProcess = (data: processUpdateActions.ProcessUpdateFormDialog
         if (process) {
             dispatch(
                 snackbarActions.OPEN_SNACKBAR({
-                    message: 'Process has been successfully updated.',
+                    message: "Process has been successfully updated.",
                     hideDuration: 2000,
                     kind: SnackbarKind.SUCCESS,
                 })
@@ -519,7 +571,7 @@ export const moveProcess = (data: MoveToFormDialogData) => async (dispatch: Disp
         dispatch<any>(reloadProjectMatchingUuid([process.ownerUuid]));
         dispatch(
             snackbarActions.OPEN_SNACKBAR({
-                message: 'Process has been moved.',
+                message: "Process has been moved.",
                 hideDuration: 2000,
                 kind: SnackbarKind.SUCCESS,
             })
@@ -542,7 +594,7 @@ export const copyProcess = (data: CopyFormDialogData) => async (dispatch: Dispat
         dispatch<any>(reloadProjectMatchingUuid([process.ownerUuid]));
         dispatch(
             snackbarActions.OPEN_SNACKBAR({
-                message: 'Process has been copied.',
+                message: "Process has been copied.",
                 hideDuration: 2000,
                 kind: SnackbarKind.SUCCESS,
             })
@@ -566,19 +618,19 @@ export const resourceIsNotLoaded = (uuid: string) =>
     });
 
 export const userIsNotAuthenticated = snackbarActions.OPEN_SNACKBAR({
-    message: 'User is not authenticated',
+    message: "User is not authenticated",
     kind: SnackbarKind.ERROR,
 });
 
 export const couldNotLoadUser = snackbarActions.OPEN_SNACKBAR({
-    message: 'Could not load user',
+    message: "Could not load user",
     kind: SnackbarKind.ERROR,
 });
 
 export const reloadProjectMatchingUuid =
     (matchingUuids: string[]) => async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
         const currentProjectPanelUuid = getProjectPanelCurrentUuid(getState());
-        if (currentProjectPanelUuid && matchingUuids.some((uuid) => uuid === currentProjectPanelUuid)) {
+        if (currentProjectPanelUuid && matchingUuids.some(uuid => uuid === currentProjectPanelUuid)) {
             dispatch<any>(loadProject(currentProjectPanelUuid));
         }
     };
@@ -610,17 +662,17 @@ export const loadLinks = handleFirstTimeLoad(async (dispatch: Dispatch<any>) => 
 
 export const loadVirtualMachines = handleFirstTimeLoad(async (dispatch: Dispatch<any>) => {
     await dispatch(loadVirtualMachinesPanel());
-    dispatch(setBreadcrumbs([{ label: 'Virtual Machines' }]));
+    dispatch(setBreadcrumbs([{ label: "Virtual Machines" }]));
 });
 
 export const loadVirtualMachinesAdmin = handleFirstTimeLoad(async (dispatch: Dispatch<any>) => {
     await dispatch(loadVirtualMachinesPanel());
-    dispatch(setBreadcrumbs([{ label: 'Virtual Machines Admin', icon: AdminMenuIcon }]));
+    dispatch(setBreadcrumbs([{ label: "Virtual Machines Admin", icon: AdminMenuIcon }]));
 });
 
 export const loadRepositories = handleFirstTimeLoad(async (dispatch: Dispatch<any>) => {
     await dispatch(loadRepositoriesPanel());
-    dispatch(setBreadcrumbs([{ label: 'Repositories' }]));
+    dispatch(setBreadcrumbs([{ label: "Repositories" }]));
 });
 
 export const loadSshKeys = handleFirstTimeLoad(async (dispatch: Dispatch<any>) => {
@@ -671,16 +723,16 @@ export const loadGroupDetailsPanel = (groupUuid: string) =>
     });
 
 const finishLoadingProject = (project: GroupContentsResource | string) => async (dispatch: Dispatch<any>) => {
-    const uuid = typeof project === 'string' ? project : project.uuid;
+    const uuid = typeof project === "string" ? project : project.uuid;
     dispatch(openProjectPanel(uuid));
     dispatch(loadDetailsPanel(uuid));
-    if (typeof project !== 'string') {
+    if (typeof project !== "string") {
         dispatch(updateResources([project]));
     }
 };
 
 const loadGroupContentsResource = async (params: { uuid: string; userUuid: string; services: ServiceRepository }) => {
-    const filters = new FilterBuilder().addEqual('uuid', params.uuid).getFilters();
+    const filters = new FilterBuilder().addEqual("uuid", params.uuid).getFilters();
     const { items } = await params.services.groupsService.contents(params.userUuid, {
         filters,
         recursive: true,
@@ -705,7 +757,7 @@ const loadGroupContentsResource = async (params: { uuid: string; userUuid: strin
         } else if (kind === ResourceKind.CONTAINER_REQUEST) {
             resource = await params.services.containerRequestService.get(params.uuid);
         } else {
-            throw new Error('loadGroupContentsResource unsupported kind ' + kind);
+            throw new Error("loadGroupContentsResource unsupported kind " + kind);
         }
         handler = groupContentsHandlers.SHARED(resource);
     }

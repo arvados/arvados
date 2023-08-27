@@ -23,13 +23,13 @@ export const openMoveProjectDialog = (resources: Array<any>) => {
     return (dispatch: Dispatch) => {
         dispatch<any>(resetPickerProjectTree());
         dispatch<any>(initProjectsTreePicker(PROJECT_MOVE_FORM_NAME));
-        dispatch(initialize(PROJECT_MOVE_FORM_NAME, resources));
+        dispatch(initialize(PROJECT_MOVE_FORM_NAME, resources[0], undefined, resources)); //here
         dispatch(dialogActions.OPEN_DIALOG({ id: PROJECT_MOVE_FORM_NAME, data: {} }));
     };
 };
 
 export const moveProject = (resource: MoveToFormDialogData) => async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
-    console.log(resource);
+    console.log('SUCCESS?', resource);
     const userUuid = getUserUuid(getState());
     if (!userUuid) {
         return;

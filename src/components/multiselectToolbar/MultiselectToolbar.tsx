@@ -60,17 +60,27 @@ export const MultiselectToolbar = connect(
                 : selectActionsByKind(currentResourceKinds, multiselectActionsFilters);
 
         return (
-            <Toolbar className={classes.root} style={{ width: `${buttons.length * 2.12}rem` }}>
+            <Toolbar
+                className={classes.root}
+                style={{ width: `${buttons.length * 2.12}rem` }}>
                 {buttons.length ? (
                     buttons.map((btn, i) =>
                         btn.name === 'ToggleTrashAction' ? (
-                            <Tooltip className={classes.button} title={currentPathIsTrash ? 'Restore' : 'Move to trash'} key={i} disableFocusListener>
+                            <Tooltip
+                                className={classes.button}
+                                title={currentPathIsTrash ? 'Restore' : 'Move to trash'}
+                                key={i}
+                                disableFocusListener>
                                 <IconButton onClick={() => props.executeMulti(btn, checkedList, props.resources)}>
                                     {currentPathIsTrash ? <RestoreFromTrashIcon /> : <TrashIcon />}
                                 </IconButton>
                             </Tooltip>
                         ) : (
-                            <Tooltip className={classes.button} title={btn.name} key={i} disableFocusListener>
+                            <Tooltip
+                                className={classes.button}
+                                title={btn.name}
+                                key={i}
+                                disableFocusListener>
                                 <IconButton onClick={() => props.executeMulti(btn, checkedList, props.resources)}>
                                     {btn.icon ? btn.icon({}) : <></>}
                                 </IconButton>
@@ -85,7 +95,7 @@ export const MultiselectToolbar = connect(
     })
 );
 
-function selectedToArray(checkedList: TCheckedList): Array<string> {
+export function selectedToArray(checkedList: TCheckedList): Array<string> {
     const arrayifiedSelectedList: Array<string> = [];
     for (const [key, value] of Object.entries(checkedList)) {
         if (value === true) {
@@ -106,18 +116,18 @@ function selectedToKindSet(checkedList: TCheckedList): Set<string> {
 }
 
 function filterActions(actionArray: ContextMenuActionSet, filters: Set<string>): Array<ContextMenuAction> {
-    return actionArray[0].filter((action) => filters.has(action.name as string));
+    return actionArray[0].filter(action => filters.has(action.name as string));
 }
 
 function selectActionsByKind(currentResourceKinds: Array<string>, filterSet: TMultiselectActionsFilters) {
     const rawResult: Set<ContextMenuAction> = new Set();
     const resultNames = new Set();
     const allFiltersArray: ContextMenuAction[][] = [];
-    currentResourceKinds.forEach((kind) => {
+    currentResourceKinds.forEach(kind => {
         if (filterSet[kind]) {
             const actions = filterActions(...filterSet[kind]);
             allFiltersArray.push(actions);
-            actions.forEach((action) => {
+            actions.forEach(action => {
                 if (!resultNames.has(action.name)) {
                     rawResult.add(action);
                     resultNames.add(action.name);
@@ -126,13 +136,13 @@ function selectActionsByKind(currentResourceKinds: Array<string>, filterSet: TMu
         }
     });
 
-    const filteredNameSet = allFiltersArray.map((filterArray) => {
+    const filteredNameSet = allFiltersArray.map(filterArray => {
         const resultSet = new Set();
-        filterArray.forEach((action) => resultSet.add(action.name || ''));
+        filterArray.forEach(action => resultSet.add(action.name || ''));
         return resultSet;
     });
 
-    const filteredResult = Array.from(rawResult).filter((action) => {
+    const filteredResult = Array.from(rawResult).filter(action => {
         for (let i = 0; i < filteredNameSet.length; i++) {
             if (!filteredNameSet[i].has(action.name)) return false;
         }
@@ -180,7 +190,7 @@ function mapDispatchToProps(dispatch: Dispatch) {
 
 function groupByKind(checkedList: TCheckedList, resources: ResourcesState): Record<string, ContextMenuResource[]> {
     const result = {};
-    selectedToArray(checkedList).forEach((uuid) => {
+    selectedToArray(checkedList).forEach(uuid => {
         const resource = getResource(uuid)(resources) as Resource;
         if (!result[resource.kind]) result[resource.kind] = [];
         result[resource.kind].push(resource);
