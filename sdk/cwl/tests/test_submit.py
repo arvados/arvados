@@ -10,6 +10,7 @@ from future.utils import viewvalues
 
 import copy
 import io
+import itertools
 import functools
 import hashlib
 import json
@@ -1047,43 +1048,37 @@ class TestSubmit(unittest.TestCase):
         api.return_value = mock.MagicMock()
         arvrunner.api = api.return_value
         arvrunner.runtimeContext.match_local_docker = False
-        arvrunner.api.links().list().execute.side_effect = ({"items": [{"created_at": "",
-                                                                        "head_uuid": "zzzzz-4zz18-zzzzzzzzzzzzzzb",
-                                                                        "link_class": "docker_image_repo+tag",
-                                                                        "name": "arvados/jobs:"+arvados_cwl.__version__,
-                                                                        "owner_uuid": "",
-                                                                        "properties": {"image_timestamp": ""}}], "items_available": 1, "offset": 0},
-                                                            {"items": [{"created_at": "",
-                                                                        "head_uuid": "",
-                                                                        "link_class": "docker_image_hash",
-                                                                        "name": "123456",
-                                                                        "owner_uuid": "",
-                                                                        "properties": {"image_timestamp": ""}}], "items_available": 1, "offset": 0},
-                                                            {"items": [{"created_at": "",
-                                                                        "head_uuid": "zzzzz-4zz18-zzzzzzzzzzzzzzb",
-                                                                        "link_class": "docker_image_repo+tag",
-                                                                        "name": "arvados/jobs:"+arvados_cwl.__version__,
-                                                                        "owner_uuid": "",
-                                                                        "properties": {"image_timestamp": ""}}], "items_available": 1, "offset": 0},
-                                                            {"items": [{"created_at": "",
-                                                                        "head_uuid": "",
-                                                                        "link_class": "docker_image_hash",
-                                                                        "name": "123456",
-                                                                        "owner_uuid": "",
-                                                                        "properties": {"image_timestamp": ""}}], "items_available": 1, "offset": 0}
-        )
+        arvrunner.api.links().list().execute.side_effect = itertools.cycle([
+            {"items": [{"created_at": "2023-08-25T12:34:56.123456Z",
+                        "head_uuid": "zzzzz-4zz18-zzzzzzzzzzzzzzb",
+                        "link_class": "docker_image_repo+tag",
+                        "name": "arvados/jobs:"+arvados_cwl.__version__,
+                        "owner_uuid": "",
+                        "uuid": "zzzzz-o0j2j-arvadosjobsrepo",
+                        "properties": {"image_timestamp": ""}}]},
+            {"items": []},
+            {"items": []},
+            {"items": [{"created_at": "2023-08-25T12:34:57.234567Z",
+                        "head_uuid": "",
+                        "link_class": "docker_image_hash",
+                        "name": "123456",
+                        "owner_uuid": "",
+                        "uuid": "zzzzz-o0j2j-arvadosjobshash",
+                        "properties": {"image_timestamp": ""}}]},
+            {"items": []},
+            {"items": []},
+        ])
         find_one_image_hash.return_value = "123456"
 
-        arvrunner.api.collections().list().execute.side_effect = ({"items": [{"uuid": "zzzzz-4zz18-zzzzzzzzzzzzzzb",
-                                                                              "owner_uuid": "",
-                                                                              "manifest_text": "",
-                                                                              "properties": ""
-                                                                              }], "items_available": 1, "offset": 0},
-                                                                  {"items": [{"uuid": "zzzzz-4zz18-zzzzzzzzzzzzzzb",
-                                                                              "owner_uuid": "",
-                                                                              "manifest_text": "",
-                                                                              "properties": ""
-                                                                          }], "items_available": 1, "offset": 0})
+        arvrunner.api.collections().list().execute.side_effect = itertools.cycle([
+            {"items": [{"uuid": "zzzzz-4zz18-zzzzzzzzzzzzzzb",
+                        "owner_uuid": "",
+                        "manifest_text": "",
+                        "created_at": "2023-08-25T12:34:55.012345Z",
+                        "properties": {}}]},
+            {"items": []},
+            {"items": []},
+        ])
         arvrunner.api.collections().create().execute.return_value = {"uuid": ""}
         arvrunner.api.collections().get().execute.return_value = {"uuid": "zzzzz-4zz18-zzzzzzzzzzzzzzb",
                                                                   "portable_data_hash": "9999999999999999999999999999999b+99"}

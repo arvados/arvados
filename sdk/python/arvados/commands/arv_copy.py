@@ -706,20 +706,20 @@ def copy_project(obj_uuid, src, dst, owner_uuid, args):
 
     # Copy collections
     try:
-        copy_collections([col["uuid"] for col in arvados.util.list_all(src.collections().list, filters=[["owner_uuid", "=", obj_uuid]])],
+        copy_collections([col["uuid"] for col in arvados.util.keyset_list_all(src.collections().list, filters=[["owner_uuid", "=", obj_uuid]])],
                          src, dst, args)
     except Exception as e:
         partial_error += "\n" + str(e)
 
     # Copy workflows
-    for w in arvados.util.list_all(src.workflows().list, filters=[["owner_uuid", "=", obj_uuid]]):
+    for w in arvados.util.keyset_list_all(src.workflows().list, filters=[["owner_uuid", "=", obj_uuid]]):
         try:
             copy_workflow(w["uuid"], src, dst, args)
         except Exception as e:
             partial_error += "\n" + "Error while copying %s: %s" % (w["uuid"], e)
 
     if args.recursive:
-        for g in arvados.util.list_all(src.groups().list, filters=[["owner_uuid", "=", obj_uuid]]):
+        for g in arvados.util.keyset_list_all(src.groups().list, filters=[["owner_uuid", "=", obj_uuid]]):
             try:
                 copy_project(g["uuid"], src, dst, project_record["uuid"], args)
             except Exception as e:

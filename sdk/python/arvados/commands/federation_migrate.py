@@ -97,13 +97,12 @@ def fetch_users(clusters, loginCluster):
     by_email = {}
     by_username = {}
 
-    users = []
-    for c, arv in clusters.items():
-        print("Getting user list from %s" % c)
-        ul = arvados.util.list_all(arv.users().list, bypass_federation=True)
-        for l in ul:
-            if l["uuid"].startswith(c):
-                users.append(l)
+    users = [
+        user
+        for prefix, arv in clusters.items()
+        for user in arvados.util.keyset_list_all(arv.users().list, bypass_federation=True)
+        if user['uuid'].startswith(prefix)
+    ]
 
     # Users list is sorted by email
     # Go through users and collect users with same email

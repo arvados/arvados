@@ -240,8 +240,9 @@ def docker_link_sort_key(link):
     return (image_timestamp, created_timestamp)
 
 def _get_docker_links(api_client, num_retries, **kwargs):
-    links = arvados.util.list_all(api_client.links().list,
-                                  num_retries, **kwargs)
+    links = list(arvados.util.keyset_list_all(
+        api_client.links().list, num_retries=num_retries, **kwargs,
+    ))
     for link in links:
         link['_sort_key'] = docker_link_sort_key(link)
     links.sort(key=itemgetter('_sort_key'), reverse=True)
@@ -340,10 +341,12 @@ def list_images_in_arv(api_client, num_retries, image_name=None, image_tag=None,
         images.sort(key=itemgetter('_sort_key'), reverse=True)
 
     # Remove any image listings that refer to unknown collections.
-    existing_coll_uuids = {coll['uuid'] for coll in arvados.util.list_all(
-            api_client.collections().list, num_retries,
-            filters=[['uuid', 'in', [im['collection'] for im in images]]]+project_filter,
-            select=['uuid'])}
+    existing_coll_uuids = {coll['uuid'] for coll in arvados.util.keyset_list_all(
+        api_client.collections().list,
+        num_retries=num_retries,
+        filters=[['uuid', 'in', [im['collection'] for im in images]]]+project_filter,
+        select=['uuid'],
+    )}
     return [(image['collection'], image) for image in images
             if image['collection'] in existing_coll_uuids]
 
