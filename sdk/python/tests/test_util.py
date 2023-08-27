@@ -2,9 +2,13 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
+import itertools
 import os
+import parameterized
 import subprocess
 import unittest
+
+from unittest import mock
 
 import arvados
 import arvados.util
@@ -53,6 +57,12 @@ class KeysetTestHelper:
     def execute(self, num_retries):
         self.n += 1
         return self.expect[self.n-1][1]
+
+_SELECT_FAKE_ITEM = {
+    'uuid': 'zzzzz-zyyyz-zzzzzyyyyywwwww',
+    'name': 'KeysetListAllTestCase.test_select mock',
+    'created_at': '2023-08-28T12:34:56.123456Z',
+}
 
 class KeysetListAllTestCase(unittest.TestCase):
     def test_empty(self):
@@ -163,7 +173,6 @@ class KeysetListAllTestCase(unittest.TestCase):
         ls = list(arvados.util.keyset_list_all(ks.fn, filters=[["foo", ">", "bar"]]))
         self.assertEqual(ls, [{"created_at": "1", "uuid": "1"}, {"created_at": "2", "uuid": "2"}])
 
-
     def test_onepage_desc(self):
         ks = KeysetTestHelper([[
             {"limit": 1000, "count": "none", "order": ["created_at desc", "uuid desc"], "filters": []},
@@ -175,3 +184,35 @@ class KeysetListAllTestCase(unittest.TestCase):
 
         ls = list(arvados.util.keyset_list_all(ks.fn, ascending=False))
         self.assertEqual(ls, [{"created_at": "2", "uuid": "2"}, {"created_at": "1", "uuid": "1"}])
+
+    @parameterized.parameterized.expand(zip(
+        itertools.cycle(_SELECT_FAKE_ITEM),
+        itertools.chain.from_iterable(
+            itertools.combinations(_SELECT_FAKE_ITEM, count)
+            for count in range(len(_SELECT_FAKE_ITEM) + 1)
+        ),
+    ))
+    def test_select(self, order_key, select):
+        # keyset_list_all must have both uuid and order_key to function.
+        # Test that it selects those fields along with user-specified ones.
+        expect_select = {'uuid', order_key, *select}
+        item = {
+            key: value
+            for key, value in _SELECT_FAKE_ITEM.items()
+            if key in expect_select
+        }
+        list_func = mock.Mock()
+        list_func().execute = mock.Mock(
+            side_effect=[
+                {'items': [item]},
+                {'items': []},
+                {'items': []},
+            ],
+        )
+        list_func.reset_mock()
+        actual = list(arvados.util.keyset_list_all(list_func, order_key, select=list(select)))
+        self.assertEqual(actual, [item])
+        calls = list_func.call_args_list
+        self.assertTrue(len(calls) >= 2, "list_func() not called enough to exhaust items")
+        for call in calls:
+            self.assertEqual(set(call.kwargs.get('select', ())), expect_select)

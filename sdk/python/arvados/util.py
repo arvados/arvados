@@ -397,8 +397,14 @@ def keyset_list_all(fn, order_key="created_at", num_retries=0, ascending=True, *
     kwargs["order"] = ["%s %s" % (order_key, asc), "uuid %s" % asc]
     other_filters = kwargs.get("filters", [])
 
-    if "select" in kwargs and "uuid" not in kwargs["select"]:
-        kwargs["select"].append("uuid")
+    try:
+        select = set(kwargs['select'])
+    except KeyError:
+        pass
+    else:
+        select.add(order_key)
+        select.add('uuid')
+        kwargs['select'] = list(select)
 
     nextpage = []
     tot = 0
