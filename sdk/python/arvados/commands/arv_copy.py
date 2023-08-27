@@ -30,6 +30,7 @@ import getpass
 import os
 import re
 import shutil
+import subprocess
 import sys
 import logging
 import tempfile
@@ -224,8 +225,12 @@ def api_for_instance(instance_name, num_retries):
 # Check if git is available
 def check_git_availability():
     try:
-        arvados.util.run_command(['git', '--help'])
-    except Exception:
+        subprocess.run(
+            ['git', '--version'],
+            check=True,
+            stdout=subprocess.DEVNULL,
+        )
+    except FileNotFoundError:
         abort('git command is not available. Please ensure git is installed.')
 
 
@@ -612,8 +617,6 @@ def select_git_url(api, repo_name, retries, allow_insecure_http, allow_insecure_
 
     priority = https_url + other_url + http_url
 
-    git_config = []
-    git_url = None
     for url in priority:
         if url.startswith("http"):
             u = urllib.parse.urlsplit(url)
@@ -625,17 +628,22 @@ def select_git_url(api, repo_name, retries, allow_insecure_http, allow_insecure_
 
         try:
             logger.debug("trying %s", url)
-            arvados.util.run_command(["git"] + git_config + ["ls-remote", url],
-                                      env={"HOME": os.environ["HOME"],
-                                           "ARVADOS_API_TOKEN": api.api_token,
-                                           "GIT_ASKPASS": "/bin/false"})
-        except arvados.errors.CommandFailedError:
+            subprocess.run(
+                ['git', *git_config, 'ls-remote', url],
+                check=True,
+                env={
+                    'ARVADOS_API_TOKEN': api.api_token,
+                    'GIT_ASKPASS': '/bin/false',
+                    'HOME': os.environ['HOME'],
+                },
+                stdout=subprocess.DEVNULL,
+            )
+        except subprocess.CalledProcessError:
             pass
         else:
             git_url = url
             break
-
-    if not git_url:
+    else:
         raise Exception('Cannot access git repository, tried {}'
                         .format(priority))
 
@@ -728,9 +736,14 @@ def copy_project(obj_uuid, src, dst, owner_uuid, args):
 #    repository)
 #
 def git_rev_parse(rev, repo):
-    gitout, giterr = arvados.util.run_command(
-        ['git', 'rev-parse', rev], cwd=repo)
-    return gitout.strip()
+    proc = subprocess.run(
+        ['git', 'rev-parse', rev],
+        check=True,
+        cwd=repo,
+        stdout=subprocess.PIPE,
+        text=True,
+    )
+    return proc.stdout.read().strip()
 
 # uuid_type(api, object_uuid)
 #
