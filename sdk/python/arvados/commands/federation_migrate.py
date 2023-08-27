@@ -111,7 +111,7 @@ def fetch_users(clusters, loginCluster):
     # call add_accum_rows() to generate the report rows with
     # the "home cluster" set, and also fill in the by_email table.
 
-    users = sorted(users, key=lambda u: u["email"]+"::"+(u["username"] or "")+"::"+u["uuid"])
+    users.sort(key=lambda u: (u["email"], u["username"] or "", u["uuid"]))
 
     accum = []
     lastemail = None
