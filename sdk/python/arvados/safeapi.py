@@ -10,12 +10,14 @@ Arvados API client.
 from __future__ import absolute_import
 
 from builtins import object
+import sys
 import threading
 
-from . import api
 from . import config
 from . import keep
 from . import util
+
+api = sys.modules['arvados.api']
 
 class ThreadSafeApiCache(object):
     """Thread-safe wrapper for an Arvados API client

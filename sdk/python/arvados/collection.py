@@ -99,6 +99,7 @@ class _WriterFile(_FileLikeObjectBase):
 class CollectionWriter(CollectionBase):
     """Deprecated, use Collection instead."""
 
+    @arvados.util._deprecated('3.0', 'arvados.collection.Collection')
     def __init__(self, api_client=None, num_retries=0, replication=None):
         """Instantiate a CollectionWriter.
 
@@ -412,6 +413,7 @@ class ResumableCollectionWriter(CollectionWriter):
                    '_data_buffer', '_dependencies', '_finished_streams',
                    '_queued_dirents', '_queued_trees']
 
+    @arvados.util._deprecated('3.0', 'arvados.collection.Collection')
     def __init__(self, api_client=None, **kwargs):
         self._dependencies = {}
         super(ResumableCollectionWriter, self).__init__(api_client, **kwargs)
@@ -1956,11 +1958,14 @@ class CollectionReader(Collection):
 
         self._streams = [normalize_stream(s, streams[s])
                          for s in sorted(streams)]
+
+    @arvados.util._deprecated('3.0', 'Collection iteration')
     @_populate_streams
     def all_streams(self):
         return [StreamReader(s, self._my_keep(), num_retries=self.num_retries)
                 for s in self._streams]
 
+    @arvados.util._deprecated('3.0', 'Collection iteration')
     @_populate_streams
     def all_files(self):
         for s in self.all_streams():

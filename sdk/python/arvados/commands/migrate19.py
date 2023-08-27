@@ -18,6 +18,7 @@ import arvados
 import arvados.commands.keepdocker
 from arvados._version import __version__
 from arvados.collection import CollectionReader
+from .. import util
 
 logger = logging.getLogger('arvados.migrate-docker19')
 logger.setLevel(logging.DEBUG if arvados.config.get('ARVADOS_DEBUG')
@@ -29,6 +30,7 @@ _migration_link_name = 'migrate_1.9_1.10'
 class MigrationFailed(Exception):
     pass
 
+@util._deprecated('3.0')
 def main(arguments=None):
     """Docker image format migration tool for Arvados.
 
