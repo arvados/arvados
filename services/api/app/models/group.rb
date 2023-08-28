@@ -4,6 +4,7 @@
 
 require 'can_be_an_owner'
 require 'trashable'
+require 'update_priorities'
 
 class Group < ArvadosModel
   include HasUuid
@@ -178,6 +179,13 @@ class Group < ArvadosModel
       "select target_uuid as group_uuid, trash_at from #{temptable} where trash_at is not NULL " +
       "on conflict (group_uuid) do update set trash_at=EXCLUDED.trash_at",
       "Group.update_trash.insert")
+    ActiveRecord::Base.connection.exec_query(
+      "select container_uuid from container_requests where " +
+      "owner_uuid in (select target_uuid from #{temptable}) and " +
+      "requesting_container_uuid is NULL and state = 'Committed' and container_uuid is not NULL",
+      "Group.update_trash.update_priorities").each do |container_uuid|
+      update_priorities container_uuid["container_uuid"]
+    end
   end
 
   def update_frozen

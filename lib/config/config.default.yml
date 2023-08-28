@@ -1212,11 +1212,14 @@ Clusters:
         # before being silenced until the end of the period.
         LogThrottleLines: 1024
 
-        # Maximum bytes that may be logged by a single job.  Log bytes that are
-        # silenced by throttling are not counted against this total.
-        # If you set this to zero, each container will only create a single
-        # log on the API server, noting for users that logging is throttled.
-        LimitLogBytesPerJob: 67108864
+        # Maximum bytes that may be logged as legacy log events
+        # (records posted to the "logs" table). Starting with Arvados
+        # 2.7, container live logging has migrated to a new system
+        # (polling the container request live log endpoint) and this
+        # value should be 0.  As of this writing, the container will
+        # still create a single log on the API server, noting for that
+        # log events are throttled.
+        LimitLogBytesPerJob: 0
 
         LogPartialLineThrottlePeriod: 5s
 
@@ -1421,16 +1424,17 @@ Clusters:
         # as containers start up successfully and decreases in
         # response to high API load and cloud quota errors.
         #
-        # Setting this too high creates a risk that the dispatcher
-        # will cause deadlock by starting so many supervisor
-        # containers (based on SupervisorFraction and MaxInstances)
-        # that the cloud quota prevents them from running any child
-        # containers.
+        # Setting this to 0 means the dynamic instance limit will
+        # start at MaxInstances.
         #
-        # Setting this too low causes the dispatcher to be
-        # unnecessarily slow to start up new instances after a
-        # restart.
-        InitialQuotaEstimate: 16
+        # Situations where you may want to set this (to a value less
+        # than MaxInstances) would be when there is significant
+        # variability or uncertainty in the actual cloud resources
+        # available.  Upon reaching InitialQuotaEstimate the
+        # dispatcher will switch to a more conservative behavior with
+        # slower instance start to avoid over-shooting cloud resource
+        # limits.
+        InitialQuotaEstimate: 0
 
         # Maximum fraction of available instance capacity allowed to
         # run "supervisor" containers at any given time. A supervisor
@@ -1444,9 +1448,9 @@ Clusters:
         # containers who just create more work.
         #
         # For example, with the default MaxInstances of 64, it will
-        # schedule at most floor(64*0.30) = 19 concurrent workflows,
-        # ensuring 45 slots are available for work.
-        SupervisorFraction: 0.30
+        # schedule at most floor(64*0.50) = 32 concurrent workflow
+        # runners, ensuring 32 slots are available for work.
+        SupervisorFraction: 0.50
 
         # Interval between cloud provider syncs/updates ("list all
         # instances").
