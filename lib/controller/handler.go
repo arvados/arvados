@@ -282,7 +282,7 @@ func (ent *cacheEnt) refresh(path string, do func(*http.Request) (*http.Response
 	// 0.0.0.0:0 is just a placeholder here -- do(), which is
 	// localClusterRequest(), will replace the scheme and host
 	// parts with the real proxy destination.
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, "http://0.0.0.0:0/"+path, nil)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, "http://localhost" + path, nil)
 	if err != nil {
 		return nil, nil, err
 	}
