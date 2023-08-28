@@ -8,6 +8,7 @@ import (
 	"archive/tar"
 	"bytes"
 	"context"
+	"crypto/sha256"
 	_ "embed"
 	"flag"
 	"fmt"
@@ -17,6 +18,7 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"os/exec"
 	"strings"
 	"time"
 
@@ -33,9 +35,10 @@ type Command struct{}
 func (Command) RunCommand(prog string, args []string, stdin io.Reader, stdout, stderr io.Writer) int {
 	var diag diagnoser
 	f := flag.NewFlagSet(prog, flag.ContinueOnError)
-	f.StringVar(&diag.projectName, "project-name", "scratch area for diagnostics", "name of project to find/create in home project and use for temporary/test objects")
-	f.StringVar(&diag.logLevel, "log-level", "info", "logging level (debug, info, warning, error)")
-	f.StringVar(&diag.dockerImage, "docker-image", "", "image to use when running a test container (default: use embedded hello-world image)")
+	f.StringVar(&diag.projectName, "project-name", "scratch area for diagnostics", "`name` of project to find/create in home project and use for temporary/test objects")
+	f.StringVar(&diag.logLevel, "log-level", "info", "logging `level` (debug, info, warning, error)")
+	f.StringVar(&diag.dockerImage, "docker-image", "", "`image` (tag or portable data hash) to use when running a test container, or \"hello-world\" to use embedded hello-world image (default: build a custom image containing this executable, and run diagnostics inside the container too)")
+	f.StringVar(&diag.dockerImageFrom, "docker-image-from", "debian:stable-slim", "`base` image to use when building a custom image (use a debian-based image similar this host's OS for best results)")
 	f.BoolVar(&diag.checkInternal, "internal-client", false, "check that this host is considered an \"internal\" client")
 	f.BoolVar(&diag.checkExternal, "external-client", false, "check that this host is considered an \"external\" client")
 	f.BoolVar(&diag.verbose, "v", false, "verbose: include more information in report")
@@ -44,6 +47,8 @@ func (Command) RunCommand(prog string, args []string, stdin io.Reader, stdout, s
 	if ok, code := cmd.ParseFlags(f, prog, args, "", stderr); !ok {
 		return code
 	}
+	diag.stdout = stdout
+	diag.stderr = stderr
 	diag.logger = ctxlog.New(stdout, "text", diag.logLevel)
 	diag.logger.SetFormatter(&logrus.TextFormatter{DisableTimestamp: true, DisableLevelTruncation: true, PadLevelText: true})
 	diag.runtests()
@@ -67,19 +72,20 @@ func (Command) RunCommand(prog string, args []string, stdin io.Reader, stdout, s
 var HelloWorldDockerImage []byte
 
 type diagnoser struct {
-	stdout        io.Writer
-	stderr        io.Writer
-	logLevel      string
-	priority      int
-	projectName   string
-	dockerImage   string
-	checkInternal bool
-	checkExternal bool
-	verbose       bool
-	timeout       time.Duration
-	logger        *logrus.Logger
-	errors        []string
-	done          map[int]bool
+	stdout          io.Writer
+	stderr          io.Writer
+	logLevel        string
+	priority        int
+	projectName     string
+	dockerImage     string
+	dockerImageFrom string
+	checkInternal   bool
+	checkExternal   bool
+	verbose         bool
+	timeout         time.Duration
+	logger          *logrus.Logger
+	errors          []string
+	done            map[int]bool
 }
 
 func (diag *diagnoser) debugf(f string, args ...interface{}) {
@@ -444,18 +450,76 @@ func (diag *diagnoser) runtests() {
 		}()
 	}
 
-	// Read hello-world.tar to find image ID, so we can upload it
-	// as "sha256:{...}.tar"
+	tempdir, err := ioutil.TempDir("", "arvados-diagnostics")
+	if err != nil {
+		diag.errorf("error creating temp dir: %s", err)
+		return
+	}
+	defer os.RemoveAll(tempdir)
+
+	var dockerImageData []byte
+	if diag.dockerImage != "" || diag.priority < 1 {
+		// We won't be using the self-built docker image, so
+		// don't build it.  But we will write the embedded
+		// "hello-world" image to our test collection to test
+		// upload/download, whether or not we're using it as a
+		// docker image.
+		dockerImageData = HelloWorldDockerImage
+	} else if selfbin, err := os.Readlink("/proc/self/exe"); err != nil {
+		diag.errorf("readlink /proc/self/exe: %s", err)
+		return
+	} else if selfbindata, err := os.ReadFile(selfbin); err != nil {
+		diag.errorf("error reading %s: %s", selfbin, err)
+		return
+	} else {
+		selfbinSha := fmt.Sprintf("%x", sha256.Sum256(selfbindata))
+		tag := "arvados-client-diagnostics:" + selfbinSha[:9]
+		err := os.WriteFile(tempdir+"/arvados-client", selfbindata, 0777)
+		if err != nil {
+			diag.errorf("error writing %s: %s", tempdir+"/arvados-client", err)
+			return
+		}
+
+		dockerfile := "FROM " + diag.dockerImageFrom + "\n"
+		dockerfile += "RUN apt-get update && apt-get install --yes --no-install-recommends libfuse2 ca-certificates && apt-get clean\n"
+		dockerfile += "COPY /arvados-client /arvados-client\n"
+		cmd := exec.Command("docker", "build", "--tag", tag, "-f", "-", tempdir)
+		cmd.Stdin = strings.NewReader(dockerfile)
+		cmd.Stdout = diag.stderr
+		cmd.Stderr = diag.stderr
+		err = cmd.Run()
+		if err != nil {
+			diag.errorf("error building docker image: %s", err)
+			return
+		}
+		checkversion, err := exec.Command("docker", "run", tag, "/arvados-client", "version").CombinedOutput()
+		if err != nil {
+			diag.errorf("docker image does not seem to work: %s", err)
+			return
+		}
+		diag.infof("arvados-client version: %s", checkversion)
+
+		buf, err := exec.Command("docker", "save", tag).Output()
+		if err != nil {
+			diag.errorf("docker save %s: %s", tag, err)
+			return
+		}
+		diag.infof("docker image size is %d", len(buf))
+		dockerImageData = buf
+	}
+
+	// Read image tarball to find image ID, so we can upload it as
+	// "sha256:{...}.tar"
 	var imageSHA2 string
 	{
-		tr := tar.NewReader(bytes.NewReader(HelloWorldDockerImage))
+		tr := tar.NewReader(bytes.NewReader(dockerImageData))
 		for {
 			hdr, err := tr.Next()
 			if err == io.EOF {
 				break
 			}
 			if err != nil {
-				diag.errorf("internal error/bug: cannot read embedded docker image tar file: %s", err)
+				diag.errorf("internal error/bug: cannot read docker image tar file: %s", err)
 				return
 			}
 			if s := strings.TrimSuffix(hdr.Name, ".json"); len(s) == 64 && s != hdr.Name {
@@ -463,19 +527,26 @@ func (diag *diagnoser) runtests() {
 			}
 		}
 		if imageSHA2 == "" {
-			diag.errorf("internal error/bug: cannot find {sha256}.json file in embedded docker image tar file")
+			diag.errorf("internal error/bug: cannot find {sha256}.json file in docker image tar file")
 			return
 		}
 	}
 	tarfilename := "sha256:" + imageSHA2 + ".tar"
 
 	diag.dotest(100, "uploading file via webdav", func() error {
-		ctx, cancel := context.WithDeadline(context.Background(), time.Now().Add(diag.timeout))
+		timeout := diag.timeout
+		if len(dockerImageData) > 10<<20 && timeout < time.Minute {
+			// Extend the normal http timeout if we're
+			// uploading a substantial docker image.
+			timeout = time.Minute
+		}
+		ctx, cancel := context.WithDeadline(context.Background(), time.Now().Add(timeout))
 		defer cancel()
 		if collection.UUID == "" {
 			return fmt.Errorf("skipping, no test collection")
 		}
-		req, err := http.NewRequestWithContext(ctx, "PUT", cluster.Services.WebDAVDownload.ExternalURL.String()+"c="+collection.UUID+"/"+tarfilename, bytes.NewReader(HelloWorldDockerImage))
+		t0 := time.Now()
+		req, err := http.NewRequestWithContext(ctx, "PUT", cluster.Services.WebDAVDownload.ExternalURL.String()+"c="+collection.UUID+"/"+tarfilename, bytes.NewReader(dockerImageData))
 		if err != nil {
 			return fmt.Errorf("BUG? http.NewRequest: %s", err)
 		}
@@ -488,12 +559,12 @@ func (diag *diagnoser) runtests() {
 		if resp.StatusCode != http.StatusCreated {
 			return fmt.Errorf("status %s", resp.Status)
 		}
-		diag.debugf("ok, status %s", resp.Status)
+		diag.verbosef("upload ok, status %s, %f MB/s", resp.Status, float64(len(dockerImageData))/time.Since(t0).Seconds()/1000000)
 		err = client.RequestAndDecodeContext(ctx, &collection, "GET", "arvados/v1/collections/"+collection.UUID, nil, nil)
 		if err != nil {
 			return fmt.Errorf("get updated collection: %s", err)
 		}
-		diag.debugf("ok, pdh %s", collection.PortableDataHash)
+		diag.verbosef("upload pdh %s", collection.PortableDataHash)
 		return nil
 	})
 
@@ -549,7 +620,7 @@ func (diag *diagnoser) runtests() {
 			if resp.StatusCode != trial.status {
 				return fmt.Errorf("unexpected response status: %s", resp.Status)
 			}
-			if trial.status == http.StatusOK && !bytes.Equal(body, HelloWorldDockerImage) {
+			if trial.status == http.StatusOK && !bytes.Equal(body, dockerImageData) {
 				excerpt := body
 				if len(excerpt) > 128 {
 					excerpt = append([]byte(nil), body[:128]...)
@@ -662,13 +733,26 @@ func (diag *diagnoser) runtests() {
 		}
 
 		timestamp := time.Now().Format(time.RFC3339)
-		ctrCommand := []string{"echo", timestamp}
-		if diag.dockerImage == "" {
+
+		var ctrCommand []string
+		switch diag.dockerImage {
+		case "":
+			if collection.UUID == "" {
+				return fmt.Errorf("skipping, no test collection to use as docker image")
+			}
+			diag.dockerImage = collection.PortableDataHash
+			ctrCommand = []string{"/arvados-client", "diagnostics",
+				"-priority=0", // don't run a container
+				"-log-level=" + diag.logLevel,
+				"-internal-client=true"}
+		case "hello-world":
 			if collection.UUID == "" {
 				return fmt.Errorf("skipping, no test collection to use as docker image")
 			}
 			diag.dockerImage = collection.PortableDataHash
 			ctrCommand = []string{"/hello"}
+		default:
+			ctrCommand = []string{"echo", timestamp}
 		}
 
 		var cr arvados.ContainerRequest
@@ -692,15 +776,16 @@ func (diag *diagnoser) runtests() {
 				},
 			},
 			"runtime_constraints": arvados.RuntimeConstraints{
+				API:          true,
 				VCPUs:        1,
-				RAM:          1 << 26,
-				KeepCacheRAM: 1 << 26,
+				RAM:          128 << 20,
+				KeepCacheRAM: 64 << 20,
 			},
 		}})
 		if err != nil {
 			return err
 		}
-		diag.verbosef("container request uuid = %s", cr.UUID)
+		diag.infof("container request uuid = %s", cr.UUID)
 		diag.verbosef("container uuid = %s", cr.ContainerUUID)
 
 		timeout := 10 * time.Minute
