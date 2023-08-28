@@ -181,7 +181,6 @@ function mapDispatchToProps(dispatch: Dispatch) {
                 const action = findActionByName(selectedAction.name as string, actionSet);
 
                 if (action) action.execute(dispatch, kindGroups[kind]);
-                // if (action && action.name === 'ToggleTrashAction') action.execute(dispatch, kindGroups[kind]);
             }
         },
     };

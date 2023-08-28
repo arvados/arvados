@@ -62,7 +62,7 @@ import { loadSiteManagerPanel } from "store/auth/auth-action-session";
 import { workflowPanelColumns } from "views/workflow-panel/workflow-panel-view";
 import { progressIndicatorActions } from "store/progress-indicator/progress-indicator-actions";
 import { getProgressIndicator } from "store/progress-indicator/progress-indicator-reducer";
-import { extractUuidKind, ResourceKind } from "models/resource";
+import { extractUuidKind, Resource, ResourceKind } from "models/resource";
 import { FilterBuilder } from "services/api/filter-builder";
 import { GroupContentsResource } from "services/groups-service/groups-service";
 import { MatchCases, ofType, unionize, UnionOf } from "common/unionize";
@@ -290,29 +290,31 @@ export const moveProject = (data: MoveToFormDialogData) => async (dispatch: Disp
     }
 
     async function moveSingleProject(projectUuid) {
-        try {
-            const originalProject = getResource(projectUuid)(getState().resources);
-            const oldProject = { ...originalProject, ownerUuid: data.ownerUuid } as any;
-            const oldOwnerUuid = oldProject ? oldProject.ownerUuid : "";
-            const movedProject = await dispatch<any>(projectMoveActions.moveProject(oldProject));
-            if (movedProject) {
+        const originalProject = getResource(projectUuid)(getState().resources) as Resource & { name: string };
+        if (originalProject.kind === ResourceKind.PROJECT) {
+            try {
+                const oldProject: MoveToFormDialogData = { name: originalProject.name, uuid: originalProject.uuid, ownerUuid: data.ownerUuid };
+                const oldOwnerUuid = oldProject ? oldProject.ownerUuid : "";
+                const movedProject = await dispatch<any>(projectMoveActions.moveProject(oldProject));
+                if (movedProject) {
+                    dispatch(
+                        snackbarActions.OPEN_SNACKBAR({
+                            message: "Project has been moved",
+                            hideDuration: 2000,
+                            kind: SnackbarKind.SUCCESS,
+                        })
+                    );
+                    await dispatch<any>(reloadProjectMatchingUuid([oldOwnerUuid, movedProject.ownerUuid, movedProject.uuid]));
+                }
+            } catch (e) {
                 dispatch(
                     snackbarActions.OPEN_SNACKBAR({
-                        message: "Project has been moved",
+                        message: e.message,
                         hideDuration: 2000,
-                        kind: SnackbarKind.SUCCESS,
+                        kind: SnackbarKind.ERROR,
                     })
                 );
-                await dispatch<any>(reloadProjectMatchingUuid([oldOwnerUuid, movedProject.ownerUuid, movedProject.uuid]));
             }
-        } catch (e) {
-            dispatch(
-                snackbarActions.OPEN_SNACKBAR({
-                    message: e.message,
-                    hideDuration: 2000,
-                    kind: SnackbarKind.ERROR,
-                })
-            );
         }
     }
     if (sourceUuid) await dispatch<any>(loadSidePanelTreeProjects(sourceUuid));
@@ -526,6 +528,7 @@ export const updateProcess = (data: processUpdateActions.ProcessUpdateFormDialog
 };
 
 export const moveProcess = (data: MoveToFormDialogData) => async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
+    console.log("PROCESSS_DATA: ", data);
     try {
         const process = await dispatch<any>(processMoveActions.moveProcess(data));
         dispatch<any>(updateResources([process]));
