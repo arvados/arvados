@@ -33,42 +33,40 @@ import (
 	check "gopkg.in/check.v1"
 )
 
-func (s *ClientSuite) TestShellGatewayNotAvailable(c *check.C) {
-	var stdout, stderr bytes.Buffer
-	cmd := exec.Command("go", "run", ".", "shell", arvadostest.QueuedContainerUUID, "-o", "controlpath=none", "echo", "ok")
-	cmd.Env = append(cmd.Env, os.Environ()...)
-	cmd.Env = append(cmd.Env, "ARVADOS_API_TOKEN="+arvadostest.ActiveTokenV2)
-	cmd.Stdout = &stdout
-	cmd.Stderr = &stderr
-	c.Check(cmd.Run(), check.NotNil)
-	c.Log(stderr.String())
-	c.Check(stderr.String(), check.Matches, `(?ms).*container is not running yet \(state is "Queued"\).*`)
+var _ = check.Suite(&shellSuite{})
+
+type shellSuite struct {
+	gobindir    string
+	homedir     string
+	runningUUID string
 }
 
-func (s *ClientSuite) TestShellGateway(c *check.C) {
-	defer func() {
-		c.Check(arvados.NewClientFromEnv().RequestAndDecode(nil, "POST", "database/reset", nil, nil), check.IsNil)
-	}()
-	homedir := c.MkDir()
-	settings := "ARVADOS_API_HOST=" + os.Getenv("ARVADOS_API_HOST") + "\nARVADOS_API_TOKEN=" + arvadostest.ActiveTokenV2 + "\nARVADOS_API_HOST_INSECURE=true\n"
-	err := os.MkdirAll(homedir+"/.config/arvados", 0777)
-	c.Assert(err, check.IsNil)
-	err = os.WriteFile(homedir+"/.config/arvados/settings.conf", []byte(settings), 0777)
-	c.Assert(err, check.IsNil)
+func (s *shellSuite) SetUpSuite(c *check.C) {
+	tmpdir := c.MkDir()
+	s.gobindir = tmpdir + "/bin"
+	c.Check(os.Mkdir(s.gobindir, 0777), check.IsNil)
+	s.homedir = tmpdir + "/home"
+	c.Check(os.Mkdir(s.homedir, 0777), check.IsNil)
 
-	c.Logf("building arvados-client binary in %s", homedir)
+	// We explicitly build a client binary in our tempdir here,
+	// instead of using "go run .", because (a) we're going to
+	// invoke the same binary several times, and (b) we're going
+	// to change $HOME to a temp dir in some of the tests, which
+	// would force "go run ." to recompile the world instead of
+	// using the cached object files in the real $HOME.
+	c.Logf("building arvados-client binary in %s", s.gobindir)
 	cmd := exec.Command("go", "install", ".")
-	cmd.Env = append(os.Environ(), "GOBIN="+homedir)
+	cmd.Env = append(os.Environ(), "GOBIN="+s.gobindir)
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 	c.Assert(cmd.Run(), check.IsNil)
 
-	uuid := arvadostest.QueuedContainerUUID
+	s.runningUUID = arvadostest.RunningContainerUUID
 	h := hmac.New(sha256.New, []byte(arvadostest.SystemRootToken))
-	fmt.Fprint(h, uuid)
+	fmt.Fprint(h, s.runningUUID)
 	authSecret := fmt.Sprintf("%x", h.Sum(nil))
 	gw := crunchrun.Gateway{
-		ContainerUUID: uuid,
+		ContainerUUID: s.runningUUID,
 		Address:       "0.0.0.0:0",
 		AuthSecret:    authSecret,
 		Log:           ctxlog.TestLogger(c),
@@ -77,7 +75,7 @@ func (s *ClientSuite) TestShellGateway(c *check.C) {
 		// container.
 		Target: crunchrun.GatewayTargetStub{},
 	}
-	err = gw.Start()
+	err := gw.Start()
 	c.Assert(err, check.IsNil)
 
 	rpcconn := rpc.NewConn("",
@@ -89,25 +87,61 @@ func (s *ClientSuite) TestShellGateway(c *check.C) {
 		func(context.Context) ([]string, error) {
 			return []string{arvadostest.SystemRootToken}, nil
 		})
-	_, err = rpcconn.ContainerUpdate(context.TODO(), arvados.UpdateOptions{UUID: uuid, Attrs: map[string]interface{}{
-		"state": arvados.ContainerStateLocked,
-	}})
-	c.Assert(err, check.IsNil)
-	_, err = rpcconn.ContainerUpdate(context.TODO(), arvados.UpdateOptions{UUID: uuid, Attrs: map[string]interface{}{
-		"state":           arvados.ContainerStateRunning,
+	_, err = rpcconn.ContainerUpdate(context.TODO(), arvados.UpdateOptions{UUID: s.runningUUID, Attrs: map[string]interface{}{
 		"gateway_address": gw.Address,
 	}})
 	c.Assert(err, check.IsNil)
+}
 
-	c.Log("connecting using ARVADOS_* env vars")
+func (s *shellSuite) TearDownSuite(c *check.C) {
+	c.Check(arvados.NewClientFromEnv().RequestAndDecode(nil, "POST", "database/reset", nil, nil), check.IsNil)
+}
+
+func (s *shellSuite) TestShellGatewayNotAvailable(c *check.C) {
 	var stdout, stderr bytes.Buffer
-	cmd = exec.Command(
-		homedir+"/arvados-client", "shell", uuid,
-		"-o", "controlpath=none",
-		"-o", "userknownhostsfile="+homedir+"/known_hosts",
-		"echo", "ok")
+	cmd := exec.Command(s.gobindir+"/arvados-client", "shell", arvadostest.QueuedContainerUUID, "-o", "controlpath=none", "echo", "ok")
 	cmd.Env = append(cmd.Env, os.Environ()...)
 	cmd.Env = append(cmd.Env, "ARVADOS_API_TOKEN="+arvadostest.ActiveTokenV2)
+	cmd.Stdout = &stdout
+	cmd.Stderr = &stderr
+	c.Check(cmd.Run(), check.NotNil)
+	c.Log(stderr.String())
+	c.Check(stderr.String(), check.Matches, `(?ms).*container is not running yet \(state is "Queued"\).*`)
+}
+
+func (s *shellSuite) TestShellGatewayUsingEnvVars(c *check.C) {
+	s.testShellGateway(c, false)
+}
+func (s *shellSuite) TestShellGatewayUsingSettingsConf(c *check.C) {
+	s.testShellGateway(c, true)
+}
+func (s *shellSuite) testShellGateway(c *check.C, useSettingsConf bool) {
+	var stdout, stderr bytes.Buffer
+	cmd := exec.Command(
+		s.gobindir+"/arvados-client", "shell", s.runningUUID,
+		"-o", "controlpath=none",
+		"-o", "userknownhostsfile="+s.homedir+"/known_hosts",
+		"echo", "ok")
+	if useSettingsConf {
+		settings := "ARVADOS_API_HOST=" + os.Getenv("ARVADOS_API_HOST") + "\nARVADOS_API_TOKEN=" + arvadostest.ActiveTokenV2 + "\nARVADOS_API_HOST_INSECURE=true\n"
+		err := os.MkdirAll(s.homedir+"/.config/arvados", 0777)
+		c.Assert(err, check.IsNil)
+		err = os.WriteFile(s.homedir+"/.config/arvados/settings.conf", []byte(settings), 0777)
+		c.Assert(err, check.IsNil)
+		for _, kv := range os.Environ() {
+			if !strings.HasPrefix(kv, "ARVADOS_") && !strings.HasPrefix(kv, "HOME=") {
+				cmd.Env = append(cmd.Env, kv)
+			}
+		}
+		cmd.Env = append(cmd.Env, "HOME="+s.homedir)
+	} else {
+		err := os.Remove(s.homedir + "/.config/arvados/settings.conf")
+		if !os.IsNotExist(err) {
+			c.Assert(err, check.IsNil)
+		}
+		cmd.Env = append(cmd.Env, os.Environ()...)
+		cmd.Env = append(cmd.Env, "ARVADOS_API_TOKEN="+arvadostest.ActiveTokenV2)
+	}
 	cmd.Stdout = &stdout
 	cmd.Stderr = &stderr
 	stdin, err := cmd.StdinPipe()
@@ -121,8 +155,10 @@ func (s *ClientSuite) TestShellGateway(c *check.C) {
 	c.Check(cmd.Run(), check.IsNil)
 	timeout.Stop()
 	c.Check(stdout.String(), check.Equals, "ok\n")
+}
 
-	c.Logf("setting up an http server")
+func (s *shellSuite) TestShellGatewayPortForwarding(c *check.C) {
+	c.Log("setting up an http server")
 	// Set up an http server, and try using "arvados-client shell"
 	// to forward traffic to it.
 	httpTarget := &httpserver.Server{}
@@ -134,7 +170,7 @@ func (s *ClientSuite) TestShellGateway(c *check.C) {
 			w.WriteHeader(http.StatusNotFound)
 		}
 	})
-	err = httpTarget.Start()
+	err := httpTarget.Start()
 	c.Assert(err, check.IsNil)
 
 	ln, err := net.Listen("tcp", ":0")
@@ -142,24 +178,19 @@ func (s *ClientSuite) TestShellGateway(c *check.C) {
 	_, forwardedPort, _ := net.SplitHostPort(ln.Addr().String())
 	ln.Close()
 
-	c.Log("connecting using settings.conf file")
-	stdout.Reset()
-	stderr.Reset()
+	c.Log("connecting")
+	var stdout, stderr bytes.Buffer
 	ctx, cancel := context.WithDeadline(context.Background(), time.Now().Add(10*time.Second))
 	defer cancel()
-	cmd = exec.CommandContext(ctx,
-		homedir+"/arvados-client", "shell", uuid,
+	cmd := exec.CommandContext(ctx,
+		s.gobindir+"/arvados-client", "shell", s.runningUUID,
 		"-L", forwardedPort+":"+httpTarget.Addr,
 		"-o", "controlpath=none",
-		"-o", "userknownhostsfile="+homedir+"/known_hosts",
+		"-o", "userknownhostsfile="+s.homedir+"/known_hosts",
 		"-N",
 	)
-	for _, kv := range os.Environ() {
-		if !strings.HasPrefix(kv, "ARVADOS_") && !strings.HasPrefix(kv, "HOME=") {
-			cmd.Env = append(cmd.Env, kv)
-		}
-	}
-	cmd.Env = append(cmd.Env, "HOME="+homedir)
+	cmd.Env = append(cmd.Env, os.Environ()...)
+	cmd.Env = append(cmd.Env, "ARVADOS_API_TOKEN="+arvadostest.ActiveTokenV2)
 	cmd.Stdout = &stdout
 	cmd.Stderr = &stderr
 	c.Logf("cmd.Args: %s", cmd.Args)
@@ -209,7 +240,11 @@ func (s *ClientSuite) TestShellGateway(c *check.C) {
 	wg.Wait()
 }
 
-func (s *ClientSuite) TestContainerRequestLog(c *check.C) {
+var _ = check.Suite(&logsSuite{})
+
+type logsSuite struct{}
+
+func (s *logsSuite) TestContainerRequestLog(c *check.C) {
 	arvadostest.StartKeep(2, true)
 	ctx, cancel := context.WithDeadline(context.Background(), time.Now().Add(30*time.Second))
 	defer cancel()
