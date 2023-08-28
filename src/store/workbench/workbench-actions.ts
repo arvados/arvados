@@ -279,21 +279,21 @@ export const createProject = (data: projectCreateActions.ProjectCreateFormDialog
 };
 
 export const moveProject = (data: MoveToFormDialogData) => async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
-    const projectsToMove: string[] = selectedToArray(getState().multiselect.checkedList);
+    const itemsToMove: string[] = selectedToArray(getState().multiselect.checkedList);
     //if no items in checkedlist, default to normal context menu behavior
-    if (!projectsToMove.length) projectsToMove.push(data.uuid);
+    if (!itemsToMove.length) itemsToMove.push(data.uuid);
     const sourceUuid = getResource(data.uuid)(getState().resources)?.ownerUuid;
     const destinationUuid = data.ownerUuid;
 
-    for (const projectUuid of projectsToMove) {
-        await moveSingleProject(projectUuid);
+    for (const uuid of itemsToMove) {
+        await moveSingleProject(uuid);
     }
 
-    async function moveSingleProject(projectUuid) {
-        const originalProject = getResource(projectUuid)(getState().resources) as Resource & { name: string };
-        if (originalProject.kind === ResourceKind.PROJECT) {
+    async function moveSingleProject(uuid) {
+        const originalItem = getResource(uuid)(getState().resources) as Resource & { name: string };
+        if (originalItem.kind === ResourceKind.PROJECT) {
             try {
-                const oldProject: MoveToFormDialogData = { name: originalProject.name, uuid: originalProject.uuid, ownerUuid: data.ownerUuid };
+                const oldProject: MoveToFormDialogData = { name: originalItem.name, uuid: originalItem.uuid, ownerUuid: data.ownerUuid };
                 const oldOwnerUuid = oldProject ? oldProject.ownerUuid : "";
                 const movedProject = await dispatch<any>(projectMoveActions.moveProject(oldProject));
                 if (movedProject) {
