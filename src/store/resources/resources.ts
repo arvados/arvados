@@ -9,18 +9,17 @@ import { GroupResource } from "models/group";
 
 export type ResourcesState = { [key: string]: Resource };
 
-export const getResourceWithEditableStatus = <T extends EditableResource & GroupResource>(id: string, userUuid?: string) =>
+export const getResourceWithEditableStatus = <T extends GroupResource & EditableResource>(id: string, userUuid?: string) =>
     (state: ResourcesState): T | undefined => {
         if (state[id] === undefined) { return; }
 
-        const resource = JSON.parse(JSON.stringify(state[id] as T));
+        const resource = JSON.parse(JSON.stringify(state[id])) as T;
 
         if (resource) {
-            resource.isEditable = resource.canWrite;
-
-            if (!resource.isEditable && state[resource.ownerUuid]) {
-                const resourceOwner = JSON.parse(JSON.stringify(state[resource.ownerUuid] as T));
-                resource.isEditable = resourceOwner.canWrite;
+            if (resource.canWrite === undefined) {
+                resource.isEditable = (state[resource.ownerUuid] as GroupResource)?.canWrite;
+            } else {
+                resource.isEditable = resource.canWrite;
             }
         }
 

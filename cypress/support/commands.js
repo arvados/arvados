@@ -36,12 +36,14 @@ let createdResources = [];
 
 const containerLogFolderPrefix = 'log for container ';
 
-// Clean up on a 'before' hook to allow post-mortem analysis on individual tests.
-beforeEach(function () {
+// Clean up anything that was created.  You can temporarily add
+// 'return' to the top if you need the resources to hang around to
+// debug a specific test.
+afterEach(function () {
     if (createdResources.length === 0) {
         return;
     }
-    cy.log(`Cleaning ${createdResources.length} previously created resource(s)`);
+    cy.log(`Cleaning ${createdResources.length} previously created resource(s).`);
     createdResources.forEach(function({suffix, uuid}) {
         // Don't fail when a resource isn't already there, some objects may have
         // been removed, directly or indirectly, from the test that created them.
