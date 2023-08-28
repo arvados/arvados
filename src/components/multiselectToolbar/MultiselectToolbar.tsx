@@ -2,39 +2,38 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import React from 'react';
-import { connect } from 'react-redux';
-import { StyleRulesCallback, withStyles, WithStyles, Toolbar, Tooltip, IconButton } from '@material-ui/core';
-import { ArvadosTheme } from 'common/custom-theme';
-import { RootState } from 'store/store';
-import { Dispatch } from 'redux';
-import { TCheckedList } from 'components/data-table/data-table';
-import { ContextMenuResource } from 'store/context-menu/context-menu-actions';
-import { Resource, extractUuidKind } from 'models/resource';
-import { getResource } from 'store/resources/resources';
-import { ResourcesState } from 'store/resources/resources';
-import { ContextMenuAction, ContextMenuActionSet } from 'views-components/context-menu/context-menu-action-set';
-import { RestoreFromTrashIcon, TrashIcon } from 'components/icon/icon';
-import { multiselectActionsFilters, TMultiselectActionsFilters } from './ms-toolbar-action-filters';
-import { kindToActionSet, findActionByName } from './ms-kind-action-differentiator';
-import { toggleTrashAction } from 'views-components/context-menu/action-sets/project-action-set';
+import React from "react";
+import { connect } from "react-redux";
+import { StyleRulesCallback, withStyles, WithStyles, Toolbar, Tooltip, IconButton } from "@material-ui/core";
+import { ArvadosTheme } from "common/custom-theme";
+import { RootState } from "store/store";
+import { Dispatch } from "redux";
+import { TCheckedList } from "components/data-table/data-table";
+import { ContextMenuResource } from "store/context-menu/context-menu-actions";
+import { Resource, extractUuidKind } from "models/resource";
+import { getResource } from "store/resources/resources";
+import { ResourcesState } from "store/resources/resources";
+import { ContextMenuAction, ContextMenuActionSet } from "views-components/context-menu/context-menu-action-set";
+import { RestoreFromTrashIcon, TrashIcon } from "components/icon/icon";
+import { multiselectActionsFilters, TMultiselectActionsFilters } from "./ms-toolbar-action-filters";
+import { kindToActionSet, findActionByName } from "./ms-kind-action-differentiator";
+import { toggleTrashAction } from "views-components/context-menu/action-sets/project-action-set";
 
-type CssRules = 'root' | 'button';
+type CssRules = "root" | "button";
 
 const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
     root: {
-        display: 'flex',
-        flexDirection: 'row',
+        display: "flex",
+        flexDirection: "row",
         width: 0,
         padding: 0,
-        margin: '1rem auto auto 0.5rem',
-        overflow: 'hidden',
-        transition: 'width 150ms',
-        // borderBottom: '1px solid gray',
+        margin: "1rem auto auto 0.5rem",
+        overflow: "hidden",
+        transition: "width 150ms",
     },
     button: {
-        width: '1rem',
-        margin: 'auto 5px',
+        width: "1rem",
+        margin: "auto 5px",
     },
 });
 
@@ -53,7 +52,7 @@ export const MultiselectToolbar = connect(
         const { classes, checkedList } = props;
         const currentResourceKinds = Array.from(selectedToKindSet(checkedList));
 
-        const currentPathIsTrash = window.location.pathname === '/trash';
+        const currentPathIsTrash = window.location.pathname === "/trash";
         const buttons =
             currentPathIsTrash && selectedToKindSet(checkedList).size
                 ? [toggleTrashAction]
@@ -65,10 +64,10 @@ export const MultiselectToolbar = connect(
                 style={{ width: `${buttons.length * 2.12}rem` }}>
                 {buttons.length ? (
                     buttons.map((btn, i) =>
-                        btn.name === 'ToggleTrashAction' ? (
+                        btn.name === "ToggleTrashAction" ? (
                             <Tooltip
                                 className={classes.button}
-                                title={currentPathIsTrash ? 'Restore' : 'Move to trash'}
+                                title={currentPathIsTrash ? "Restore" : "Move to trash"}
                                 key={i}
                                 disableFocusListener>
                                 <IconButton onClick={() => props.executeMulti(btn, checkedList, props.resources)}>
@@ -138,7 +137,7 @@ function selectActionsByKind(currentResourceKinds: Array<string>, filterSet: TMu
 
     const filteredNameSet = allFiltersArray.map(filterArray => {
         const resultSet = new Set();
-        filterArray.forEach(action => resultSet.add(action.name || ''));
+        filterArray.forEach(action => resultSet.add(action.name || ""));
         return resultSet;
     });
 
@@ -150,8 +149,8 @@ function selectActionsByKind(currentResourceKinds: Array<string>, filterSet: TMu
     });
 
     return filteredResult.sort((a, b) => {
-        const nameA = a.name || '';
-        const nameB = b.name || '';
+        const nameA = a.name || "";
+        const nameB = b.name || "";
         if (nameA < nameB) {
             return -1;
         }

@@ -2,34 +2,31 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import { Dispatch } from 'redux';
-import { dialogActions } from 'store/dialog/dialog-actions';
-import { startSubmit, stopSubmit, initialize, FormErrors } from 'redux-form';
-import { ServiceRepository } from 'services/services';
-import { RootState } from 'store/store';
-import { getUserUuid } from 'common/getuser';
-import { getCommonResourceServiceError, CommonResourceServiceError } from 'services/common-service/common-resource-service';
-import { MoveToFormDialogData } from 'store/move-to-dialog/move-to-dialog';
-import { resetPickerProjectTree } from 'store/project-tree-picker/project-tree-picker-actions';
-import { initProjectsTreePicker } from 'store/tree-picker/tree-picker-actions';
-import { projectPanelActions } from 'store/project-panel/project-panel-action';
-import { loadSidePanelTreeProjects } from '../side-panel-tree/side-panel-tree-actions';
+import { Dispatch } from "redux";
+import { dialogActions } from "store/dialog/dialog-actions";
+import { startSubmit, stopSubmit, initialize, FormErrors } from "redux-form";
+import { ServiceRepository } from "services/services";
+import { RootState } from "store/store";
+import { getUserUuid } from "common/getuser";
+import { getCommonResourceServiceError, CommonResourceServiceError } from "services/common-service/common-resource-service";
+import { MoveToFormDialogData } from "store/move-to-dialog/move-to-dialog";
+import { resetPickerProjectTree } from "store/project-tree-picker/project-tree-picker-actions";
+import { initProjectsTreePicker } from "store/tree-picker/tree-picker-actions";
+import { projectPanelActions } from "store/project-panel/project-panel-action";
+import { loadSidePanelTreeProjects } from "../side-panel-tree/side-panel-tree-actions";
 
-export const PROJECT_MOVE_FORM_NAME = 'projectMoveFormName';
+export const PROJECT_MOVE_FORM_NAME = "projectMoveFormName";
 
-// export const openMoveProjectDialog = (resource: { name: string; uuid: string }) => {
-// console.log(resource);
 export const openMoveProjectDialog = (resources: Array<any>) => {
     return (dispatch: Dispatch) => {
         dispatch<any>(resetPickerProjectTree());
         dispatch<any>(initProjectsTreePicker(PROJECT_MOVE_FORM_NAME));
-        dispatch(initialize(PROJECT_MOVE_FORM_NAME, resources[0], undefined, resources)); //here
+        dispatch(initialize(PROJECT_MOVE_FORM_NAME, resources[0]));
         dispatch(dialogActions.OPEN_DIALOG({ id: PROJECT_MOVE_FORM_NAME, data: {} }));
     };
 };
 
 export const moveProject = (resource: MoveToFormDialogData) => async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
-    console.log('SUCCESS?', resource);
     const userUuid = getUserUuid(getState());
     if (!userUuid) {
         return;
@@ -45,13 +42,13 @@ export const moveProject = (resource: MoveToFormDialogData) => async (dispatch: 
         const error = getCommonResourceServiceError(e);
         if (error === CommonResourceServiceError.UNIQUE_NAME_VIOLATION) {
             dispatch(
-                stopSubmit(PROJECT_MOVE_FORM_NAME, { ownerUuid: 'A project with the same name already exists in the target project.' } as FormErrors)
+                stopSubmit(PROJECT_MOVE_FORM_NAME, { ownerUuid: "A project with the same name already exists in the target project." } as FormErrors)
             );
         } else if (error === CommonResourceServiceError.OWNERSHIP_CYCLE) {
-            dispatch(stopSubmit(PROJECT_MOVE_FORM_NAME, { ownerUuid: 'Cannot move a project into itself.' } as FormErrors));
+            dispatch(stopSubmit(PROJECT_MOVE_FORM_NAME, { ownerUuid: "Cannot move a project into itself." } as FormErrors));
         } else {
             dispatch(dialogActions.CLOSE_DIALOG({ id: PROJECT_MOVE_FORM_NAME }));
-            throw new Error('Could not move the project.');
+            throw new Error("Could not move the project.");
         }
         return;
     }

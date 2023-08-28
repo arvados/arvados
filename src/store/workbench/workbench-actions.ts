@@ -279,31 +279,23 @@ export const createProject = (data: projectCreateActions.ProjectCreateFormDialog
 };
 
 export const moveProject = (data: MoveToFormDialogData) => async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
-    console.log("moveProject---");
-    console.log("moveProject:", data);
-    // const currentState = getState();
-    // console.log('current', currentState.multiselect.checkedList);
-    const projectsToMove = selectedToArray(getState().multiselect.checkedList);
-    // console.log("resource?", getResource(projectsToMove[0])(getState().resources));
-    const sourceUuid = getResource(projectsToMove[0])(getState().resources)?.ownerUuid;
+    const projectsToMove: string[] = selectedToArray(getState().multiselect.checkedList);
+    //if no items in checkedlist, default to normal context menu behavior
+    if (!projectsToMove.length) projectsToMove.push(data.uuid);
+    const sourceUuid = getResource(data.uuid)(getState().resources)?.ownerUuid;
     const destinationUuid = data.ownerUuid;
 
-    for (const project of projectsToMove) {
-        await moveSingleProject(project);
+    for (const projectUuid of projectsToMove) {
+        await moveSingleProject(projectUuid);
     }
 
     async function moveSingleProject(projectUuid) {
         try {
-            // const oldProject = getResource(projectUuid)(getState().resources);
-            const originalProject = getResource(projectUuid)(getState().resources) as any;
+            const originalProject = getResource(projectUuid)(getState().resources);
             const oldProject = { ...originalProject, ownerUuid: data.ownerUuid } as any;
-            // const { name, uuid, ownerUuid } = getResource(projectUuid)(getState().resources) as any;
-            // const oldProject: MoveToFormDialogData = { name, uuid, ownerUuid };
-            console.log("oldProject", oldProject, data);
             const oldOwnerUuid = oldProject ? oldProject.ownerUuid : "";
             const movedProject = await dispatch<any>(projectMoveActions.moveProject(oldProject));
             if (movedProject) {
-                console.log("movedProject", movedProject);
                 dispatch(
                     snackbarActions.OPEN_SNACKBAR({
                         message: "Project has been moved",
@@ -311,10 +303,6 @@ export const moveProject = (data: MoveToFormDialogData) => async (dispatch: Disp
                         kind: SnackbarKind.SUCCESS,
                     })
                 );
-                // if (oldProject) {
-                // await dispatch<any>(loadSidePanelTreeProjects(oldProject.ownerUuid));
-                // await dispatch<any>(loadSidePanelTreeProjects(originalProject.ownerUuid));
-                // }
                 await dispatch<any>(reloadProjectMatchingUuid([oldOwnerUuid, movedProject.ownerUuid, movedProject.uuid]));
             }
         } catch (e) {
@@ -329,33 +317,6 @@ export const moveProject = (data: MoveToFormDialogData) => async (dispatch: Disp
     }
     if (sourceUuid) await dispatch<any>(loadSidePanelTreeProjects(sourceUuid));
     await dispatch<any>(loadSidePanelTreeProjects(destinationUuid));
-
-    // try {
-    //     const oldProject = getResource(data.uuid)(getState().resources);
-    //     const oldOwnerUuid = oldProject ? oldProject.ownerUuid : '';
-    //     const movedProject = await dispatch<any>(projectMoveActions.moveProject(data));
-    //     if (movedProject) {
-    //         dispatch(
-    //             snackbarActions.OPEN_SNACKBAR({
-    //                 message: 'Project has been moved',
-    //                 hideDuration: 2000,
-    //                 kind: SnackbarKind.SUCCESS,
-    //             })
-    //         );
-    //         if (oldProject) {
-    //             await dispatch<any>(loadSidePanelTreeProjects(oldProject.ownerUuid));
-    //         }
-    //         dispatch<any>(reloadProjectMatchingUuid([oldOwnerUuid, movedProject.ownerUuid, movedProject.uuid]));
-    //     }
-    // } catch (e) {
-    //     dispatch(
-    //         snackbarActions.OPEN_SNACKBAR({
-    //             message: e.message,
-    //             hideDuration: 2000,
-    //             kind: SnackbarKind.ERROR,
-    //         })
-    //     );
-    // }
 };
 
 export const updateProject = (data: projectUpdateActions.ProjectUpdateFormDialogData) => async (dispatch: Dispatch) => {

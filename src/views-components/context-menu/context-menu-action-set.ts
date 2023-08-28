@@ -2,10 +2,9 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import { Dispatch } from 'redux';
-import { ContextMenuItem } from 'components/context-menu/context-menu';
-import { ContextMenuResource } from 'store/context-menu/context-menu-actions';
-import { RootState } from 'store/store';
+import { Dispatch } from "redux";
+import { ContextMenuItem } from "components/context-menu/context-menu";
+import { ContextMenuResource } from "store/context-menu/context-menu-actions";
 
 export interface ContextMenuAction extends ContextMenuItem {
     execute(dispatch: Dispatch, resources: ContextMenuResource[], state?: any): void;
