@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import React from 'react';
+import React from "react";
 import {
     Table,
     TableBody,
@@ -16,19 +16,19 @@ import {
     withStyles,
     IconButton,
     Tooltip,
-} from '@material-ui/core';
-import classnames from 'classnames';
-import { DataColumn, SortDirection } from './data-column';
-import { DataTableDefaultView } from '../data-table-default-view/data-table-default-view';
-import { DataTableFilters } from '../data-table-filters/data-table-filters-tree';
-import { DataTableMultiselectPopover } from '../data-table-multiselect-popover/data-table-multiselect-popover';
-import { DataTableFiltersPopover } from '../data-table-filters/data-table-filters-popover';
-import { countNodes, getTreeDirty } from 'models/tree';
-import { IconType, PendingIcon } from 'components/icon/icon';
-import { SvgIconProps } from '@material-ui/core/SvgIcon';
-import ArrowDownwardIcon from '@material-ui/icons/ArrowDownward';
-import { createTree } from 'models/tree';
-import { DataTableMultiselectOption } from '../data-table-multiselect-popover/data-table-multiselect-popover';
+} from "@material-ui/core";
+import classnames from "classnames";
+import { DataColumn, SortDirection } from "./data-column";
+import { DataTableDefaultView } from "../data-table-default-view/data-table-default-view";
+import { DataTableFilters } from "../data-table-filters/data-table-filters-tree";
+import { DataTableMultiselectPopover } from "../data-table-multiselect-popover/data-table-multiselect-popover";
+import { DataTableFiltersPopover } from "../data-table-filters/data-table-filters-popover";
+import { countNodes, getTreeDirty } from "models/tree";
+import { IconType, PendingIcon } from "components/icon/icon";
+import { SvgIconProps } from "@material-ui/core/SvgIcon";
+import ArrowDownwardIcon from "@material-ui/icons/ArrowDownward";
+import { createTree } from "models/tree";
+import { DataTableMultiselectOption } from "../data-table-multiselect-popover/data-table-multiselect-popover";
 
 export type DataColumns<I, R> = Array<DataColumn<I, R>>;
 
@@ -56,68 +56,68 @@ export interface DataTableDataProps<I> {
 }
 
 type CssRules =
-    | 'tableBody'
-    | 'root'
-    | 'content'
-    | 'noItemsInfo'
-    | 'checkBoxHead'
-    | 'checkBoxCell'
-    | 'checkBox'
-    | 'firstTableCell'
-    | 'tableCell'
-    | 'arrow'
-    | 'arrowButton'
-    | 'tableCellWorkflows'
-    | 'loader';
+    | "tableBody"
+    | "root"
+    | "content"
+    | "noItemsInfo"
+    | "checkBoxHead"
+    | "checkBoxCell"
+    | "checkBox"
+    | "firstTableCell"
+    | "tableCell"
+    | "arrow"
+    | "arrowButton"
+    | "tableCellWorkflows"
+    | "loader";
 
 const styles: StyleRulesCallback<CssRules> = (theme: Theme) => ({
     root: {
-        width: '100%',
+        width: "100%",
     },
     content: {
-        display: 'inline-block',
-        width: '100%',
+        display: "inline-block",
+        width: "100%",
     },
     tableBody: {
         background: theme.palette.background.paper,
     },
     loader: {
-        left: '50%',
-        marginLeft: '-84px',
-        position: 'absolute',
+        left: "50%",
+        marginLeft: "-84px",
+        position: "absolute",
     },
     noItemsInfo: {
-        textAlign: 'center',
+        textAlign: "center",
         padding: theme.spacing.unit,
     },
     checkBoxHead: {
-        padding: '0',
-        display: 'flex',
+        padding: "0",
+        display: "flex",
     },
     checkBoxCell: {
-        padding: '0',
-        paddingLeft: '10px',
+        padding: "0",
+        paddingLeft: "10px",
     },
     checkBox: {
-        cursor: 'pointer',
+        cursor: "pointer",
     },
     tableCell: {
-        wordWrap: 'break-word',
-        paddingRight: '24px',
-        color: '#737373',
+        wordWrap: "break-word",
+        paddingRight: "24px",
+        color: "#737373",
     },
     firstTableCell: {
-        paddingLeft: '5px',
+        paddingLeft: "5px",
     },
     tableCellWorkflows: {
-        '&:nth-last-child(2)': {
-            padding: '0px',
-            maxWidth: '48px',
+        "&:nth-last-child(2)": {
+            padding: "0px",
+            maxWidth: "48px",
         },
-        '&:last-child': {
-            padding: '0px',
-            paddingRight: '24px',
-            width: '48px',
+        "&:last-child": {
+            padding: "0px",
+            paddingRight: "24px",
+            width: "48px",
         },
     },
     arrow: {
@@ -152,43 +152,43 @@ export const DataTable = withStyles(styles)(
             const { items, toggleMSToolbar, setCheckedListOnStore } = this.props;
             const { isSelected, checkedList } = this.state;
             if (prevProps.items !== items) {
-                if (isSelected === true) this.setState({ isSelected: false });
+                if (isSelected === true) this.setState({ isSelected: this.isAnySelected(checkedList) });
+
                 if (items.length) this.initializeCheckedList(items);
                 else this.setState({ checkedList: {} });
             }
             if (prevState.checkedList !== checkedList) {
-                toggleMSToolbar(this.isAnySelected() ? true : false);
+                toggleMSToolbar(this.isAnySelected(checkedList) ? true : false);
                 setCheckedListOnStore(checkedList);
             }
         }
 
         checkBoxColumn: DataColumn<any, any> = {
-            name: 'checkBoxColumn',
+            name: "checkBoxColumn",
             selected: true,
             configurable: false,
             filters: createTree(),
-            render: (uuid) => (
+            render: uuid => (
                 <input
-                    type='checkbox'
+                    type="checkbox"
                     name={uuid}
                     className={this.props.classes.checkBox}
                     checked={this.state.checkedList[uuid] ?? false}
                     onChange={() => this.handleCheck(uuid)}
-                    onDoubleClick={(ev) => ev.stopPropagation()}
-                ></input>
+                    onDoubleClick={ev => ev.stopPropagation()}></input>
             ),
         };
 
         multiselectOptions: DataTableMultiselectOption[] = [
-            { name: 'All', fn: (list) => this.handleSelectAll(list) },
-            { name: 'None', fn: (list) => this.handleSelectNone(list) },
-            { name: 'Invert', fn: (list) => this.handleInvertSelect(list) },
+            { name: "All", fn: list => this.handleSelectAll(list) },
+            { name: "None", fn: list => this.handleSelectNone(list) },
+            { name: "Invert", fn: list => this.handleInvertSelect(list) },
         ];
 
         initializeCheckedList = (uuids: any[]): void => {
             const newCheckedList = { ...this.state.checkedList };
 
-            uuids.forEach((uuid) => {
+            uuids.forEach(uuid => {
                 if (!newCheckedList.hasOwnProperty(uuid)) {
                     newCheckedList[uuid] = false;
                 }
@@ -208,8 +208,8 @@ export const DataTable = withStyles(styles)(
             return true;
         };
 
-        isAnySelected = (): boolean => {
-            const { checkedList } = this.state;
+        isAnySelected = (checkedList): boolean => {
+            // const { checkedList } = this.state;
             if (!Object.keys(checkedList).length) return false;
             for (const key in checkedList) {
                 if (checkedList[key] === true) return true;
@@ -221,7 +221,7 @@ export const DataTable = withStyles(styles)(
             const { checkedList } = this.state;
             const newCheckedList = { ...checkedList };
             newCheckedList[uuid] = !checkedList[uuid];
-            this.setState({ checkedList: newCheckedList, isSelected: this.isAllSelected(newCheckedList) });
+            this.setState({ checkedList: newCheckedList, isSelected: this.isAnySelected(newCheckedList) });
         };
 
         handleSelectorSelect = (): void => {
@@ -273,7 +273,10 @@ export const DataTable = withStyles(styles)(
                         </Table>
                         {!!working && (
                             <div className={classes.loader}>
-                                <DataTableDefaultView icon={PendingIcon} messages={['Loading data, please wait.']} />
+                                <DataTableDefaultView
+                                    icon={PendingIcon}
+                                    messages={["Loading data, please wait."]}
+                                />
                             </div>
                         )}
                         {items.length === 0 && !working && this.renderNoItemsPlaceholder(this.props.columns)}
@@ -283,45 +286,52 @@ export const DataTable = withStyles(styles)(
         }
 
         renderNoItemsPlaceholder = (columns: DataColumns<T, any>) => {
-            const dirty = columns.some((column) => getTreeDirty('')(column.filters));
-            return <DataTableDefaultView icon={this.props.defaultViewIcon} messages={this.props.defaultViewMessages} filtersApplied={dirty} />;
+            const dirty = columns.some(column => getTreeDirty("")(column.filters));
+            return (
+                <DataTableDefaultView
+                    icon={this.props.defaultViewIcon}
+                    messages={this.props.defaultViewMessages}
+                    filtersApplied={dirty}
+                />
+            );
         };
 
         renderHeadCell = (column: DataColumn<T, any>, index: number) => {
             const { name, key, renderHeader, filters, sort } = column;
             const { onSortToggle, onFiltersChange, classes } = this.props;
             const { isSelected, checkedList } = this.state;
-            return column.name === 'checkBoxColumn' ? (
-                <TableCell key={key || index} className={classes.checkBoxCell}>
+            return column.name === "checkBoxColumn" ? (
+                <TableCell
+                    key={key || index}
+                    className={classes.checkBoxCell}>
                     <div className={classes.checkBoxHead}>
-                        <Tooltip title={this.state.isSelected ? 'Deselect All' : 'Select All'}>
+                        <Tooltip title={this.state.isSelected ? "Deselect All" : "Select All"}>
                             <input
-                                type='checkbox'
+                                type="checkbox"
                                 className={classes.checkBox}
                                 checked={isSelected}
                                 disabled={!this.props.items.length}
-                                onChange={this.handleSelectorSelect}
-                            ></input>
+                                onChange={this.handleSelectorSelect}></input>
                         </Tooltip>
                         <DataTableMultiselectPopover
                             name={`Options`}
                             disabled={!this.props.items.length}
                             options={this.multiselectOptions}
-                            checkedList={checkedList}
-                        ></DataTableMultiselectPopover>
+                            checkedList={checkedList}></DataTableMultiselectPopover>
                     </div>
                 </TableCell>
             ) : (
-                <TableCell className={index == 1 ? classes.firstTableCell : classes.tableCell} key={key || index}>
+                <TableCell
+                    className={index == 1 ? classes.firstTableCell : classes.tableCell}
+                    key={key || index}>
                     {renderHeader ? (
                         renderHeader()
                     ) : countNodes(filters) > 0 ? (
                         <DataTableFiltersPopover
                             name={`${name} filters`}
                             mutuallyExclusive={column.mutuallyExclusiveFilters}
-                            onChange={(filters) => onFiltersChange && onFiltersChange(filters, column)}
-                            filters={filters}
-                        >
+                            onChange={filters => onFiltersChange && onFiltersChange(filters, column)}
+                            filters={filters}>
                             {name}
                         </DataTableFiltersPopover>
                     ) : sort ? (
@@ -330,8 +340,7 @@ export const DataTable = withStyles(styles)(
                             direction={sort.direction !== SortDirection.NONE ? sort.direction : undefined}
                             IconComponent={this.ArrowIcon}
                             hideSortIcon
-                            onClick={() => onSortToggle && onSortToggle(column)}
-                        >
+                            onClick={() => onSortToggle && onSortToggle(column)}>
                             {name}
                         </TableSortLabel>
                     ) : (
@@ -342,8 +351,14 @@ export const DataTable = withStyles(styles)(
         };
 
         ArrowIcon = ({ className, ...props }: SvgIconProps) => (
-            <IconButton component='span' className={this.props.classes.arrowButton} tabIndex={-1}>
-                <ArrowDownwardIcon {...props} className={classnames(className, this.props.classes.arrow)} />
+            <IconButton
+                component="span"
+                className={this.props.classes.arrowButton}
+                tabIndex={-1}>
+                <ArrowDownwardIcon
+                    {...props}
+                    className={classnames(className, this.props.classes.arrow)}
+                />
             </IconButton>
         );
 
@@ -353,22 +368,20 @@ export const DataTable = withStyles(styles)(
                 <TableRow
                     hover
                     key={extractKey ? extractKey(item) : index}
-                    onClick={(event) => onRowClick && onRowClick(event, item)}
+                    onClick={event => onRowClick && onRowClick(event, item)}
                     onContextMenu={this.handleRowContextMenu(item)}
-                    onDoubleClick={(event) => onRowDoubleClick && onRowDoubleClick(event, item)}
-                    selected={item === currentItemUuid}
-                >
+                    onDoubleClick={event => onRowDoubleClick && onRowDoubleClick(event, item)}
+                    selected={item === currentItemUuid}>
                     {this.mapVisibleColumns((column, index) => (
                         <TableCell
                             key={column.key || index}
                             className={
-                                currentRoute === '/workflows'
+                                currentRoute === "/workflows"
                                     ? classes.tableCellWorkflows
                                     : index === 0
                                     ? classes.checkBoxCell
-                                    : `${classes.tableCell} ${index === 1 ? classes.firstTableCell : ''}`
-                            }
-                        >
+                                    : `${classes.tableCell} ${index === 1 ? classes.firstTableCell : ""}`
+                            }>
                             {column.render(item)}
                         </TableCell>
                     ))}
@@ -377,7 +390,7 @@ export const DataTable = withStyles(styles)(
         };
 
         mapVisibleColumns = (fn: (column: DataColumn<T, any>, index: number) => React.ReactElement<any>) => {
-            return this.props.columns.filter((column) => column.selected).map(fn);
+            return this.props.columns.filter(column => column.selected).map(fn);
         };
 
         handleRowContextMenu = (item: T) => (event: React.MouseEvent<HTMLElement>) => this.props.onContextMenu(event, item);
