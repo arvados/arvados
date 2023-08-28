@@ -528,26 +528,39 @@ export const updateProcess = (data: processUpdateActions.ProcessUpdateFormDialog
 };
 
 export const moveProcess = (data: MoveToFormDialogData) => async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
-    console.log("PROCESSS_DATA: ", data);
-    try {
-        const process = await dispatch<any>(processMoveActions.moveProcess(data));
-        dispatch<any>(updateResources([process]));
-        dispatch<any>(reloadProjectMatchingUuid([process.ownerUuid]));
-        dispatch(
-            snackbarActions.OPEN_SNACKBAR({
-                message: "Process has been moved.",
-                hideDuration: 2000,
-                kind: SnackbarKind.SUCCESS,
-            })
-        );
-    } catch (e) {
-        dispatch(
-            snackbarActions.OPEN_SNACKBAR({
-                message: e.message,
-                hideDuration: 2000,
-                kind: SnackbarKind.ERROR,
-            })
-        );
+    const itemsToMove: string[] = selectedToArray(getState().multiselect.checkedList);
+    //if no items in checkedlist, default to normal context menu behavior
+    if (!itemsToMove.length) itemsToMove.push(data.uuid);
+
+    for (const uuid of itemsToMove) {
+        await moveSingleProcess(uuid);
+    }
+
+    async function moveSingleProcess(uuid) {
+        const originalItem = getResource(uuid)(getState().resources) as Resource & { name: string };
+        if (originalItem.kind === ResourceKind.PROCESS) {
+            try {
+                const oldProcess: MoveToFormDialogData = { name: originalItem.name, uuid: originalItem.uuid, ownerUuid: data.ownerUuid };
+                const process = await dispatch<any>(processMoveActions.moveProcess(oldProcess));
+                dispatch<any>(updateResources([process]));
+                dispatch<any>(reloadProjectMatchingUuid([process.ownerUuid]));
+                dispatch(
+                    snackbarActions.OPEN_SNACKBAR({
+                        message: "Process has been moved.",
+                        hideDuration: 2000,
+                        kind: SnackbarKind.SUCCESS,
+                    })
+                );
+            } catch (e) {
+                dispatch(
+                    snackbarActions.OPEN_SNACKBAR({
+                        message: e.message,
+                        hideDuration: 2000,
+                        kind: SnackbarKind.ERROR,
+                    })
+                );
+            }
+        }
     }
 };
 
