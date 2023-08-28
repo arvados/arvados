@@ -105,7 +105,6 @@ services/keep-balance
 services/login-sync
 services/crunch-dispatch-local
 services/crunch-dispatch-slurm
-services/workbench2
 services/workbench2_units
 services/workbench2_integration
 services/ws
@@ -718,7 +717,7 @@ do_test() {
             stop_services
             check_arvados_config "$1"
             ;;
-        gofmt | doc | lib/cli | lib/cloud/azure | lib/cloud/ec2 | lib/cloud/cloudtest | lib/cmd | lib/dispatchcloud/sshexecutor | lib/dispatchcloud/worker | services/workbench2_units | services/workbench2_integration | services/workbench2)
+        gofmt | doc | lib/cli | lib/cloud/azure | lib/cloud/ec2 | lib/cloud/cloudtest | lib/cmd | lib/dispatchcloud/sshexecutor | lib/dispatchcloud/worker | services/workbench2_units | services/workbench2_integration)
             check_arvados_config "$1"
             # don't care whether services are running
             ;;
@@ -1062,11 +1061,6 @@ test_services/workbench2_integration() {
     cd "$WORKSPACE/services/workbench2" && make integration-tests ARVADOS_DIRECTORY="${WORKSPACE}" WORKSPACE="$(pwd)" ${testargs[services/workbench2]}
 }
 
-test_services/workbench2() {
-    test_services/workbench2_units
-    test_services/workbench2_integration
-}
-
 test_apps/workbench_units() {
     local TASK="test:units"
     cd "$WORKSPACE/apps/workbench" \
@@ -1167,7 +1161,8 @@ test_all() {
     do_test apps/workbench_integration
     do_test apps/workbench_benchmark
     do_test apps/workbench_profile
-    do_test services/workbench2
+    do_test services/workbench2_units
+    do_test services/workbench2_integration
 }
 
 test_go() {
