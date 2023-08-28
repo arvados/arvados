@@ -214,5 +214,5 @@ class KeysetListAllTestCase(unittest.TestCase):
         self.assertEqual(actual, [item])
         calls = list_func.call_args_list
         self.assertTrue(len(calls) >= 2, "list_func() not called enough to exhaust items")
-        for call in calls:
-            self.assertEqual(set(call.kwargs.get('select', ())), expect_select)
+        for args, kwargs in calls:
+            self.assertEqual(set(kwargs.get('select', ())), expect_select)
