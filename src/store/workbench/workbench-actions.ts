@@ -289,7 +289,7 @@ export const moveProject = (data: MoveToFormDialogData) => async (dispatch: Disp
         await moveSingleProject(uuid);
     }
 
-    async function moveSingleProject(uuid) {
+    async function moveSingleProject(uuid: string) {
         const originalItem = getResource(uuid)(getState().resources) as Resource & { name: string };
         if (originalItem.kind === ResourceKind.PROJECT) {
             try {
@@ -435,25 +435,39 @@ export const copyCollection = (data: CopyFormDialogData) => async (dispatch: Dis
 };
 
 export const moveCollection = (data: MoveToFormDialogData) => async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
-    try {
-        const collection = await dispatch<any>(collectionMoveActions.moveCollection(data));
-        dispatch<any>(updateResources([collection]));
-        dispatch<any>(reloadProjectMatchingUuid([collection.ownerUuid]));
-        dispatch(
-            snackbarActions.OPEN_SNACKBAR({
-                message: "Collection has been moved.",
-                hideDuration: 2000,
-                kind: SnackbarKind.SUCCESS,
-            })
-        );
-    } catch (e) {
-        dispatch(
-            snackbarActions.OPEN_SNACKBAR({
-                message: e.message,
-                hideDuration: 2000,
-                kind: SnackbarKind.ERROR,
-            })
-        );
+    const itemsToMove: string[] = selectedToArray(getState().multiselect.checkedList);
+    //if no items in checkedlist, default to normal context menu behavior
+    if (!itemsToMove.length) itemsToMove.push(data.uuid);
+
+    for (const uuid of itemsToMove) {
+        await moveSingleCollection(uuid);
+    }
+
+    async function moveSingleCollection(uuid: string) {
+        const originalItem = getResource(uuid)(getState().resources) as Resource & { name: string };
+        if (originalItem.kind === ResourceKind.COLLECTION) {
+            try {
+                const oldCollection: MoveToFormDialogData = { name: originalItem.name, uuid: originalItem.uuid, ownerUuid: data.ownerUuid };
+                const collection = await dispatch<any>(collectionMoveActions.moveCollection(oldCollection));
+                dispatch<any>(updateResources([collection]));
+                dispatch<any>(reloadProjectMatchingUuid([collection.ownerUuid]));
+                dispatch(
+                    snackbarActions.OPEN_SNACKBAR({
+                        message: "Collection has been moved.",
+                        hideDuration: 2000,
+                        kind: SnackbarKind.SUCCESS,
+                    })
+                );
+            } catch (e) {
+                dispatch(
+                    snackbarActions.OPEN_SNACKBAR({
+                        message: e.message,
+                        hideDuration: 2000,
+                        kind: SnackbarKind.ERROR,
+                    })
+                );
+            }
+        }
     }
 };
 
@@ -536,7 +550,7 @@ export const moveProcess = (data: MoveToFormDialogData) => async (dispatch: Disp
         await moveSingleProcess(uuid);
     }
 
-    async function moveSingleProcess(uuid) {
+    async function moveSingleProcess(uuid: string) {
         const originalItem = getResource(uuid)(getState().resources) as Resource & { name: string };
         if (originalItem.kind === ResourceKind.PROCESS) {
             try {
