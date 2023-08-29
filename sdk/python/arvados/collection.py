@@ -37,21 +37,6 @@ from arvados.retry import retry_method
 
 _logger = logging.getLogger('arvados.collection')
 
-
-if sys.version_info >= (3, 0):
-    TextIOWrapper = io.TextIOWrapper
-else:
-    class TextIOWrapper(io.TextIOWrapper):
-        """To maintain backward compatibility, cast str to unicode in
-        write('foo').
-
-        """
-        def write(self, data):
-            if isinstance(data, basestring):
-                data = unicode(data)
-            return super(TextIOWrapper, self).write(data)
-
-
 class CollectionBase(object):
     """Abstract base class for Collection classes."""
 
@@ -114,6 +99,7 @@ class _WriterFile(_FileLikeObjectBase):
 class CollectionWriter(CollectionBase):
     """Deprecated, use Collection instead."""
 
+    @arvados.util._deprecated('3.0', 'arvados.collection.Collection')
     def __init__(self, api_client=None, num_retries=0, replication=None):
         """Instantiate a CollectionWriter.
 
@@ -427,6 +413,7 @@ class ResumableCollectionWriter(CollectionWriter):
                    '_data_buffer', '_dependencies', '_finished_streams',
                    '_queued_dirents', '_queued_trees']
 
+    @arvados.util._deprecated('3.0', 'arvados.collection.Collection')
     def __init__(self, api_client=None, **kwargs):
         self._dependencies = {}
         super(ResumableCollectionWriter, self).__init__(api_client, **kwargs)
@@ -721,7 +708,7 @@ class RichCollectionBase(CollectionBase):
         f = fclass(arvfile, mode=binmode, num_retries=self.num_retries)
         if 'b' not in mode:
             bufferclass = io.BufferedRandom if f.writable() else io.BufferedReader
-            f = TextIOWrapper(bufferclass(WrappableFile(f)), encoding=encoding)
+            f = io.TextIOWrapper(bufferclass(WrappableFile(f)), encoding=encoding)
         return f
 
     def modified(self):
@@ -1971,11 +1958,14 @@ class CollectionReader(Collection):
 
         self._streams = [normalize_stream(s, streams[s])
                          for s in sorted(streams)]
+
+    @arvados.util._deprecated('3.0', 'Collection iteration')
     @_populate_streams
     def all_streams(self):
         return [StreamReader(s, self._my_keep(), num_retries=self.num_retries)
                 for s in self._streams]
 
+    @arvados.util._deprecated('3.0', 'Collection iteration')
     @_populate_streams
     def all_files(self):
         for s in self.all_streams():
