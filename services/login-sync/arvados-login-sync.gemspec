@@ -41,7 +41,7 @@ Gem::Specification.new do |s|
   # bundler's dependency resolver to include 'pre-release' versions, like the
   # ones we build (but not publish) on every test pipeline job.
   # See: https://github.com/rubygems/bundler/issues/4340
-  s.add_runtime_dependency 'arvados', '~> 2.7.0.dev20230824142549'
+  s.add_runtime_dependency 'arvados', '~> 2.7.0.rc1'
   s.add_runtime_dependency 'launchy', '< 2.5'
   # We need at least version 0.8.7.3, cf. https://dev.arvados.org/issues/15673
   s.add_dependency('arvados-google-api-client', '>= 0.8.7.3', '< 0.8.9')
