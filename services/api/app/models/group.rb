@@ -49,6 +49,12 @@ class Group < ArvadosModel
     t.add :can_manage
   end
 
+  # check if admins are allowed to make changes to the project, e.g. it
+  # isn't trashed or frozen.
+  def admin_change_permitted
+    !(FrozenGroup.where(uuid: self.uuid).any? || TrashedGroup.where(group_uuid: self.uuid).any?)
+  end
+
   protected
 
   def self.attributes_required_columns
