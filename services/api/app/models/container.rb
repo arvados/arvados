@@ -746,6 +746,7 @@ class Container < ArvadosModel
                                    joins('left outer join containers as requesting_container on container_requests.requesting_container_uuid = requesting_container.uuid').
                                    where("container_requests.container_uuid = ? and "+
                                          "container_requests.priority > 0 and "+
+                                         "container_requests.owner_uuid not in (select group_uuid from trashed_groups) and "+
                                          "(requesting_container.priority is null or (requesting_container.state = 'Running' and requesting_container.priority > 0)) and "+
                                          "container_requests.state = 'Committed' and "+
                                          "container_requests.container_count < container_requests.container_count_max", uuid).

@@ -6,6 +6,7 @@
 import argparse
 import hashlib
 import os
+import pathlib
 import re
 import string
 import sys
@@ -261,7 +262,7 @@ def main(arguments=None, stdout=sys.stdout, stderr=sys.stderr):
                     logger.error('Local file %s already exists.' % (outfilename,))
                     return 1
                 if args.r:
-                    arvados.util.mkdir_dash_p(os.path.dirname(outfilename))
+                    pathlib.Path(outfilename).parent.mkdir(parents=True, exist_ok=True)
                 try:
                     outfile = open(outfilename, 'wb')
                 except Exception as error:

@@ -19,6 +19,7 @@ import httplib2
 import json
 import logging
 import os
+import pathlib
 import re
 import socket
 import ssl
@@ -173,15 +174,16 @@ def _new_http_error(cls, *args, **kwargs):
 apiclient_errors.HttpError.__new__ = staticmethod(_new_http_error)
 
 def http_cache(data_type):
-    homedir = os.environ.get('HOME')
-    if not homedir or len(homedir) == 0:
-        return None
-    path = homedir + '/.cache/arvados/' + data_type
     try:
-        util.mkdir_dash_p(path)
+        homedir = pathlib.Path.home()
+    except RuntimeError:
+        return None
+    path = pathlib.Path(homedir, '.cache', 'arvados', data_type)
+    try:
+        path.mkdir(parents=True, exist_ok=True)
     except OSError:
         return None
-    return cache.SafeHTTPCache(path, max_age=60*60*24*2)
+    return cache.SafeHTTPCache(str(path), max_age=60*60*24*2)
 
 def api_client(
         version,

@@ -5,6 +5,7 @@
 from builtins import object
 import json
 import os
+from . import util
 
 class TaskOutputDir(object):
     """Keep-backed directory for staging outputs of Crunch tasks.
@@ -21,6 +22,7 @@ class TaskOutputDir(object):
             f.write('42')
         arvados.current_task().set_output(out.manifest_text())
     """
+    @util._deprecated('3.0', 'arvados-cwl-runner or the containers API')
     def __init__(self):
         self.path = os.environ['TASK_KEEPMOUNT_TMP']
 

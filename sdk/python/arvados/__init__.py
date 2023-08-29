@@ -49,6 +49,7 @@ logger.addHandler(log_handler)
 logger.setLevel(stdliblog.DEBUG if config.get('ARVADOS_DEBUG')
                 else stdliblog.WARNING)
 
+@util._deprecated('3.0', 'arvados-cwl-runner or the containers API')
 def task_set_output(self, s, num_retries=5):
     for tries_left in RetryLoop(num_retries=num_retries, backoff_start=0):
         try:
@@ -66,6 +67,7 @@ def task_set_output(self, s, num_retries=5):
                 raise
 
 _current_task = None
+@util._deprecated('3.0', 'arvados-cwl-runner or the containers API')
 def current_task(num_retries=5):
     global _current_task
     if _current_task:
@@ -86,6 +88,7 @@ def current_task(num_retries=5):
                 raise
 
 _current_job = None
+@util._deprecated('3.0', 'arvados-cwl-runner or the containers API')
 def current_job(num_retries=5):
     global _current_job
     if _current_job:
@@ -104,21 +107,26 @@ def current_job(num_retries=5):
             else:
                 raise
 
+@util._deprecated('3.0', 'arvados-cwl-runner or the containers API')
 def getjobparam(*args):
     return current_job()['script_parameters'].get(*args)
 
+@util._deprecated('3.0', 'arvados-cwl-runner or the containers API')
 def get_job_param_mount(*args):
     return os.path.join(os.environ['TASK_KEEPMOUNT'], current_job()['script_parameters'].get(*args))
 
+@util._deprecated('3.0', 'arvados-cwl-runner or the containers API')
 def get_task_param_mount(*args):
     return os.path.join(os.environ['TASK_KEEPMOUNT'], current_task()['parameters'].get(*args))
 
 class JobTask(object):
+    @util._deprecated('3.0', 'arvados-cwl-runner or the containers API')
     def __init__(self, parameters=dict(), runtime_constraints=dict()):
         print("init jobtask %s %s" % (parameters, runtime_constraints))
 
 class job_setup(object):
     @staticmethod
+    @util._deprecated('3.0', 'arvados-cwl-runner or the containers API')
     def one_task_per_input_file(if_sequence=0, and_end_task=True, input_as_path=False, api_client=None):
         if if_sequence != current_task()['sequence']:
             return
@@ -151,6 +159,7 @@ class job_setup(object):
             exit(0)
 
     @staticmethod
+    @util._deprecated('3.0', 'arvados-cwl-runner or the containers API')
     def one_task_per_input_stream(if_sequence=0, and_end_task=True):
         if if_sequence != current_task()['sequence']:
             return

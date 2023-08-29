@@ -87,6 +87,8 @@ In order to build packages on a new distribution, you MUST:
 * Write `package-test-dockerfiles/TARGET/Dockerfile`.
 * Create `package-testing/test-packages-TARGET.sh`, ideally by making it a
   symlink to `FORMAT-common-test-packages.sh`.
+* Update the package download code near the bottom of `test_package_presence`
+  in `run-library.sh` so it can download packages for the new distribution.
 
 Of course, any part of our package build or test infrastructure may need to
 be updated to accommodate the process for new distributions. If you're

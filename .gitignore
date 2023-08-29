@@ -12,6 +12,9 @@ docker/*/generated
 docker/config.yml
 doc/.site
 doc/sdk/python/arvados
+doc/sdk/python/arvados.html
+doc/sdk/python/index.html
+doc/sdk/python/search.js
 doc/sdk/R/arvados
 doc/sdk/java-v2/javadoc
 */vendor

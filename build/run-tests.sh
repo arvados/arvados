@@ -654,7 +654,7 @@ install_env() {
     . "$VENV3DIR/bin/activate"
 
     # Needed for run_test_server.py which is used by certain (non-Python) tests.
-    # pdoc3 needed to generate the Python SDK documentation.
+    # pdoc needed to generate the Python SDK documentation.
     (
         set -e
         "${VENV3DIR}/bin/pip3" install wheel
@@ -665,7 +665,7 @@ install_env() {
         "${VENV3DIR}/bin/pip3" install ciso8601
         "${VENV3DIR}/bin/pip3" install pycurl
         "${VENV3DIR}/bin/pip3" install ws4py
-        "${VENV3DIR}/bin/pip3" install pdoc3
+        "${VENV3DIR}/bin/pip3" install pdoc
         cd "$WORKSPACE/sdk/python"
         python3 setup.py install
     ) || fatal "installing PyYAML and sdk/python failed"

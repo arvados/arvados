@@ -20,9 +20,11 @@ from arvados.retry import retry_method
 from arvados.keep import *
 from . import config
 from . import errors
+from . import util
 from ._normalize_stream import normalize_stream
 
 class StreamReader(object):
+    @util._deprecated('3.0', 'arvados.collection.Collecttion')
     def __init__(self, tokens, keep=None, debug=False, _empty=False,
                  num_retries=10):
         self._stream_name = None
