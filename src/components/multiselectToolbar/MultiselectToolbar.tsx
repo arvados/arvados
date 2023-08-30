@@ -176,11 +176,20 @@ function mapDispatchToProps(dispatch: Dispatch) {
     return {
         executeMulti: (selectedAction: ContextMenuAction, checkedList: TCheckedList, resources: ResourcesState): void => {
             const kindGroups = groupByKind(checkedList, resources);
-            for (const kind in kindGroups) {
-                const actionSet = kindToActionSet[kind];
+            if (selectedAction.name === "Move to") {
+                const firstResource = getResource(selectedToArray(checkedList)[0])(resources) as Resource;
+
+                const actionSet = kindToActionSet[firstResource.kind];
                 const action = findActionByName(selectedAction.name as string, actionSet);
 
-                if (action) action.execute(dispatch, kindGroups[kind]);
+                if (action) action.execute(dispatch, kindGroups[firstResource.kind]);
+            } else {
+                for (const kind in kindGroups) {
+                    const actionSet = kindToActionSet[kind];
+                    const action = findActionByName(selectedAction.name as string, actionSet);
+
+                    if (action) action.execute(dispatch, kindGroups[kind]);
+                }
             }
         },
     };

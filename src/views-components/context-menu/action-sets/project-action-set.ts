@@ -92,8 +92,8 @@ export const shareAction = {
 export const moveToAction = {
     icon: MoveToIcon,
     name: "Move to",
-    execute: (dispatch, resources) => {
-        dispatch(openMoveProjectDialog(resources));
+    execute: (dispatch, resource) => {
+        dispatch(openMoveProjectDialog(resource[0]));
     },
 };
 

@@ -2,9 +2,9 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import { ContextMenuActionSet } from '../context-menu-action-set';
-import { ToggleFavoriteAction } from '../actions/favorite-action';
-import { toggleFavorite } from 'store/favorites/favorites-actions';
+import { ContextMenuActionSet } from "../context-menu-action-set";
+import { ToggleFavoriteAction } from "../actions/favorite-action";
+import { toggleFavorite } from "store/favorites/favorites-actions";
 import {
     RenameIcon,
     ShareIcon,
@@ -15,27 +15,27 @@ import {
     OutputIcon,
     AdvancedIcon,
     OpenIcon,
-} from 'components/icon/icon';
-import { favoritePanelActions } from 'store/favorite-panel/favorite-panel-action';
-import { openMoveProcessDialog } from 'store/processes/process-move-actions';
-import { openProcessUpdateDialog } from 'store/processes/process-update-actions';
-import { openCopyProcessDialog } from 'store/processes/process-copy-actions';
-import { openSharingDialog } from 'store/sharing-dialog/sharing-dialog-actions';
-import { openRemoveProcessDialog } from 'store/processes/processes-actions';
-import { toggleDetailsPanel } from 'store/details-panel/details-panel-action';
-import { navigateToOutput } from 'store/process-panel/process-panel-actions';
-import { openAdvancedTabDialog } from 'store/advanced-tab/advanced-tab';
-import { TogglePublicFavoriteAction } from '../actions/public-favorite-action';
-import { togglePublicFavorite } from 'store/public-favorites/public-favorites-actions';
-import { publicFavoritePanelActions } from 'store/public-favorites-panel/public-favorites-action';
-import { openInNewTabAction } from 'store/open-in-new-tab/open-in-new-tab.actions';
+} from "components/icon/icon";
+import { favoritePanelActions } from "store/favorite-panel/favorite-panel-action";
+import { openMoveProcessDialog } from "store/processes/process-move-actions";
+import { openProcessUpdateDialog } from "store/processes/process-update-actions";
+import { openCopyProcessDialog } from "store/processes/process-copy-actions";
+import { openSharingDialog } from "store/sharing-dialog/sharing-dialog-actions";
+import { openRemoveProcessDialog } from "store/processes/processes-actions";
+import { toggleDetailsPanel } from "store/details-panel/details-panel-action";
+import { navigateToOutput } from "store/process-panel/process-panel-actions";
+import { openAdvancedTabDialog } from "store/advanced-tab/advanced-tab";
+import { TogglePublicFavoriteAction } from "../actions/public-favorite-action";
+import { togglePublicFavorite } from "store/public-favorites/public-favorites-actions";
+import { publicFavoritePanelActions } from "store/public-favorites-panel/public-favorites-action";
+import { openInNewTabAction } from "store/open-in-new-tab/open-in-new-tab.actions";
 
 export const readOnlyProcessResourceActionSet: ContextMenuActionSet = [
     [
         {
             component: ToggleFavoriteAction,
             execute: (dispatch, resources) => {
-                resources.forEach((resource) =>
+                resources.forEach(resource =>
                     dispatch<any>(toggleFavorite(resource)).then(() => {
                         dispatch<any>(favoritePanelActions.REQUEST_ITEMS());
                     })
@@ -44,23 +44,23 @@ export const readOnlyProcessResourceActionSet: ContextMenuActionSet = [
         },
         {
             icon: OpenIcon,
-            name: 'Open in new tab',
+            name: "Open in new tab",
             execute: (dispatch, resources) => {
-                resources.forEach((resource) => dispatch<any>(openInNewTabAction(resource)));
+                resources.forEach(resource => dispatch<any>(openInNewTabAction(resource)));
             },
         },
         {
             icon: ReRunProcessIcon,
-            name: 'Copy and re-run process',
+            name: "Copy and re-run process",
             execute: (dispatch, resources) => {
-                resources.forEach((resource) => dispatch<any>(openCopyProcessDialog(resource)));
+                resources.forEach(resource => dispatch<any>(openCopyProcessDialog(resource)));
             },
         },
         {
             icon: OutputIcon,
-            name: 'Outputs',
+            name: "Outputs",
             execute: (dispatch, resources) => {
-                resources.forEach((resource) => {
+                resources.forEach(resource => {
                     if (resource.outputUuid) {
                         dispatch<any>(navigateToOutput(resource.outputUuid));
                     }
@@ -69,16 +69,16 @@ export const readOnlyProcessResourceActionSet: ContextMenuActionSet = [
         },
         {
             icon: DetailsIcon,
-            name: 'View details',
-            execute: (dispatch) => {
+            name: "View details",
+            execute: dispatch => {
                 dispatch<any>(toggleDetailsPanel());
             },
         },
         {
             icon: AdvancedIcon,
-            name: 'API Details',
+            name: "API Details",
             execute: (dispatch, resources) => {
-                resources.forEach((resource) => dispatch<any>(openAdvancedTabDialog(resource.uuid)));
+                resources.forEach(resource => dispatch<any>(openAdvancedTabDialog(resource.uuid)));
             },
         },
     ],
@@ -89,30 +89,30 @@ export const processResourceActionSet: ContextMenuActionSet = [
         ...readOnlyProcessResourceActionSet.reduce((prev, next) => prev.concat(next), []),
         {
             icon: RenameIcon,
-            name: 'Edit process',
+            name: "Edit process",
             execute: (dispatch, resources) => {
-                resources.forEach((resource) => dispatch<any>(openProcessUpdateDialog(resource)));
+                resources.forEach(resource => dispatch<any>(openProcessUpdateDialog(resource)));
             },
         },
         {
             icon: ShareIcon,
-            name: 'Share',
+            name: "Share",
             execute: (dispatch, resources) => {
                 resources.forEach(({ uuid }) => dispatch<any>(openSharingDialog(uuid)));
             },
         },
         {
             icon: MoveToIcon,
-            name: 'Move to',
+            name: "Move to",
             execute: (dispatch, resources) => {
-                resources.forEach((resource) => dispatch<any>(openMoveProcessDialog(resource)));
+                dispatch<any>(openMoveProcessDialog(resources[0]));
             },
         },
         {
-            name: 'Remove',
+            name: "Remove",
             icon: RemoveIcon,
             execute: (dispatch, resources) => {
-                resources.forEach((resource) => dispatch<any>(openRemoveProcessDialog(resource.uuid)));
+                resources.forEach(resource => dispatch<any>(openRemoveProcessDialog(resource.uuid)));
             },
         },
     ],
@@ -123,9 +123,9 @@ export const processResourceAdminActionSet: ContextMenuActionSet = [
         ...processResourceActionSet.reduce((prev, next) => prev.concat(next), []),
         {
             component: TogglePublicFavoriteAction,
-            name: 'Add to public favorites',
+            name: "Add to public favorites",
             execute: (dispatch, resources) => {
-                resources.forEach((resource) =>
+                resources.forEach(resource =>
                     dispatch<any>(togglePublicFavorite(resource)).then(() => {
                         dispatch<any>(publicFavoritePanelActions.REQUEST_ITEMS());
                     })
