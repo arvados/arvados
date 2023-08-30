@@ -205,6 +205,11 @@ func (h *Handler) localClusterRequest(req *http.Request) (*http.Response, error)
 	if insecure {
 		client = h.insecureClient
 	}
+	// Clearing the Host field here causes the Go http client to
+	// use the host part of urlOut as the Host header in the
+	// outgoing request, instead of the Host value from the
+	// original request we received.
+	req.Host = ""
 	return h.proxy.Do(req, urlOut, client)
 }
 
@@ -279,13 +284,15 @@ func (ent *cacheEnt) refresh(path string, do func(*http.Request) (*http.Response
 
 	ctx, cancel := context.WithDeadline(context.Background(), time.Now().Add(time.Minute))
 	defer cancel()
-	// 0.0.0.0:0 is just a placeholder here -- do(), which is
+	// "http://localhost" is just a placeholder here -- we'll fill
+	// in req.URL.Path below, and then do(), which is
 	// localClusterRequest(), will replace the scheme and host
 	// parts with the real proxy destination.
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, "http://localhost" + path, nil)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, "http://localhost", nil)
 	if err != nil {
 		return nil, nil, err
 	}
+	req.URL.Path = path
 	resp, err := do(req)
 	if err != nil {
 		return nil, nil, err
