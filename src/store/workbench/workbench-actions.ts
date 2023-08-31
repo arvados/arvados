@@ -279,13 +279,13 @@ export const createProject = (data: projectCreateActions.ProjectCreateFormDialog
 };
 
 export const moveProject =
-    (data: MoveToFormDialogData, secondaryMoveKind: string = "") =>
+    (data: MoveToFormDialogData, isSecondaryMove = false) =>
     async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
         const checkedList = getState().multiselect.checkedList;
         const uuidsToMove: string[] = selectedToArray(checkedList);
 
         //if no items in checkedlist && no items passed in, default to normal context menu behavior
-        if (!secondaryMoveKind.length && !uuidsToMove.length) uuidsToMove.push(data.uuid);
+        if (!isSecondaryMove && !uuidsToMove.length) uuidsToMove.push(data.uuid);
 
         const sourceUuid = getResource(data.uuid)(getState().resources)?.ownerUuid;
         const destinationUuid = data.ownerUuid;
@@ -298,13 +298,13 @@ export const moveProject =
             await moveSingleProject(project);
         }
 
-        if (!secondaryMoveKind.length) {
+        //omly propagate if this call is the original
+        if (!isSecondaryMove) {
             const kindsToMove: Set<string> = selectedToKindSet(checkedList);
             kindsToMove.delete(ResourceKind.PROJECT);
 
             kindsToMove.forEach(kind => {
-                secondaryMove[kind](data, kind)(dispatch, getState, services);
-                console.log(secondaryMove[kind]);
+                secondaryMove[kind](data, true)(dispatch, getState, services);
             });
         }
 
@@ -452,41 +452,53 @@ export const copyCollection = (data: CopyFormDialogData) => async (dispatch: Dis
 };
 
 export const moveCollection =
-    (data: MoveToFormDialogData, secondaryMoveKind: string = "") =>
+    (data: MoveToFormDialogData, isSecondaryMove = false) =>
     async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
-        console.log("MoveCollection?", data, secondaryMoveKind);
-        const itemsToMove: string[] = selectedToArray(getState().multiselect.checkedList);
-        //if no items in checkedlist, default to normal context menu behavior
-        if (!itemsToMove.length) itemsToMove.push(data.uuid);
+        const checkedList = getState().multiselect.checkedList;
+        const uuidsToMove: string[] = selectedToArray(checkedList);
 
-        for (const uuid of itemsToMove) {
-            await moveSingleCollection(uuid);
+        //if no items in checkedlist && no items passed in, default to normal context menu behavior
+        if (!isSecondaryMove && !uuidsToMove.length) uuidsToMove.push(data.uuid);
+
+        const collectionsToMove: MoveableResource[] = uuidsToMove
+            .map(uuid => getResource(uuid)(getState().resources) as MoveableResource)
+            .filter(resource => resource.kind === ResourceKind.COLLECTION);
+
+        for (const collection of collectionsToMove) {
+            await moveSingleCollection(collection);
         }
 
-        async function moveSingleCollection(uuid: string) {
-            const originalItem = getResource(uuid)(getState().resources) as Resource & { name: string };
-            if (originalItem.kind === ResourceKind.COLLECTION) {
-                try {
-                    const oldCollection: MoveToFormDialogData = { name: originalItem.name, uuid: originalItem.uuid, ownerUuid: data.ownerUuid };
-                    const collection = await dispatch<any>(collectionMoveActions.moveCollection(oldCollection));
-                    dispatch<any>(updateResources([collection]));
-                    dispatch<any>(reloadProjectMatchingUuid([collection.ownerUuid]));
-                    dispatch(
-                        snackbarActions.OPEN_SNACKBAR({
-                            message: "Collection has been moved.",
-                            hideDuration: 2000,
-                            kind: SnackbarKind.SUCCESS,
-                        })
-                    );
-                } catch (e) {
-                    dispatch(
-                        snackbarActions.OPEN_SNACKBAR({
-                            message: e.message,
-                            hideDuration: 2000,
-                            kind: SnackbarKind.ERROR,
-                        })
-                    );
-                }
+        //omly propagate if this call is the original
+        if (!isSecondaryMove) {
+            const kindsToMove: Set<string> = selectedToKindSet(checkedList);
+            kindsToMove.delete(ResourceKind.COLLECTION);
+
+            kindsToMove.forEach(kind => {
+                secondaryMove[kind](data, true)(dispatch, getState, services);
+            });
+        }
+
+        async function moveSingleCollection(collection: MoveableResource) {
+            try {
+                const oldCollection: MoveToFormDialogData = { name: collection.name, uuid: collection.uuid, ownerUuid: data.ownerUuid };
+                const movedCollection = await dispatch<any>(collectionMoveActions.moveCollection(oldCollection));
+                dispatch<any>(updateResources([movedCollection]));
+                dispatch<any>(reloadProjectMatchingUuid([movedCollection.ownerUuid]));
+                dispatch(
+                    snackbarActions.OPEN_SNACKBAR({
+                        message: "Collection has been moved.",
+                        hideDuration: 2000,
+                        kind: SnackbarKind.SUCCESS,
+                    })
+                );
+            } catch (e) {
+                dispatch(
+                    snackbarActions.OPEN_SNACKBAR({
+                        message: e.message,
+                        hideDuration: 2000,
+                        kind: SnackbarKind.ERROR,
+                    })
+                );
             }
         }
     };
@@ -561,23 +573,39 @@ export const updateProcess = (data: processUpdateActions.ProcessUpdateFormDialog
     }
 };
 
-export const moveProcess = (data: MoveToFormDialogData) => async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
-    const itemsToMove: string[] = selectedToArray(getState().multiselect.checkedList);
-    //if no items in checkedlist, default to normal context menu behavior
-    if (!itemsToMove.length) itemsToMove.push(data.uuid);
+export const moveProcess =
+    (data: MoveToFormDialogData, isSecondaryMove = false) =>
+    async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
+        const checkedList = getState().multiselect.checkedList;
+        const uuidsToMove: string[] = selectedToArray(checkedList);
 
-    for (const uuid of itemsToMove) {
-        await moveSingleProcess(uuid);
-    }
+        //if no items in checkedlist && no items passed in, default to normal context menu behavior
+        if (!isSecondaryMove && !uuidsToMove.length) uuidsToMove.push(data.uuid);
 
-    async function moveSingleProcess(uuid: string) {
-        const originalItem = getResource(uuid)(getState().resources) as Resource & { name: string };
-        if (originalItem.kind === ResourceKind.PROCESS) {
+        const processesToMove: MoveableResource[] = uuidsToMove
+            .map(uuid => getResource(uuid)(getState().resources) as MoveableResource)
+            .filter(resource => resource.kind === ResourceKind.PROCESS);
+
+        for (const process of processesToMove) {
+            await moveSingleProcess(process);
+        }
+
+        //omly propagate if this call is the original
+        if (!isSecondaryMove) {
+            const kindsToMove: Set<string> = selectedToKindSet(checkedList);
+            kindsToMove.delete(ResourceKind.PROCESS);
+
+            kindsToMove.forEach(kind => {
+                secondaryMove[kind](data, true)(dispatch, getState, services);
+            });
+        }
+
+        async function moveSingleProcess(process: MoveableResource) {
             try {
-                const oldProcess: MoveToFormDialogData = { name: originalItem.name, uuid: originalItem.uuid, ownerUuid: data.ownerUuid };
-                const process = await dispatch<any>(processMoveActions.moveProcess(oldProcess));
-                dispatch<any>(updateResources([process]));
-                dispatch<any>(reloadProjectMatchingUuid([process.ownerUuid]));
+                const oldProcess: MoveToFormDialogData = { name: process.name, uuid: process.uuid, ownerUuid: data.ownerUuid };
+                const movedProcess = await dispatch<any>(processMoveActions.moveProcess(oldProcess));
+                dispatch<any>(updateResources([movedProcess]));
+                dispatch<any>(reloadProjectMatchingUuid([movedProcess.ownerUuid]));
                 dispatch(
                     snackbarActions.OPEN_SNACKBAR({
                         message: "Process has been moved.",
@@ -595,8 +623,7 @@ export const moveProcess = (data: MoveToFormDialogData) => async (dispatch: Disp
                 );
             }
         }
-    }
-};
+    };
 
 export const copyProcess = (data: CopyFormDialogData) => async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
     try {
@@ -789,7 +816,7 @@ type MoveableResource = Resource & { name: string };
 
 type MoveFunc = (
     data: MoveToFormDialogData,
-    secondaryMoveKind?: string
+    isSecondaryMove?: boolean
 ) => (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => Promise<void>;
 
 const secondaryMove: Record<string, MoveFunc> = {
