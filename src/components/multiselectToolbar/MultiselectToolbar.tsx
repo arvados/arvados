@@ -104,7 +104,7 @@ export function selectedToArray(checkedList: TCheckedList): Array<string> {
     return arrayifiedSelectedList;
 }
 
-function selectedToKindSet(checkedList: TCheckedList): Set<string> {
+export function selectedToKindSet(checkedList: TCheckedList): Set<string> {
     const setifiedList = new Set<string>();
     for (const [key, value] of Object.entries(checkedList)) {
         if (value === true) {

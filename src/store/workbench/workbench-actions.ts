@@ -100,7 +100,7 @@ import { loadAllProcessesPanel, allProcessesPanelActions } from "../all-processe
 import { allProcessesPanelColumns } from "views/all-processes-panel/all-processes-panel";
 import { AdminMenuIcon } from "components/icon/icon";
 import { userProfileGroupsColumns } from "views/user-profile-panel/user-profile-panel-root";
-import { selectedToArray } from "components/multiselectToolbar/MultiselectToolbar";
+import { selectedToArray, selectedToKindSet } from "components/multiselectToolbar/MultiselectToolbar";
 
 export const WORKBENCH_LOADING_SCREEN = "workbenchLoadingScreen";
 
@@ -278,22 +278,39 @@ export const createProject = (data: projectCreateActions.ProjectCreateFormDialog
     }
 };
 
-export const moveProject = (data: MoveToFormDialogData) => async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
-    const itemsToMove: string[] = selectedToArray(getState().multiselect.checkedList);
-    //if no items in checkedlist, default to normal context menu behavior
-    if (!itemsToMove.length) itemsToMove.push(data.uuid);
-    const sourceUuid = getResource(data.uuid)(getState().resources)?.ownerUuid;
-    const destinationUuid = data.ownerUuid;
+export const moveProject =
+    (data: MoveToFormDialogData, secondaryMoveKind: string = "") =>
+    async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
+        const checkedList = getState().multiselect.checkedList;
+        const uuidsToMove: string[] = selectedToArray(checkedList);
 
-    for (const uuid of itemsToMove) {
-        await moveSingleProject(uuid);
-    }
+        //if no items in checkedlist && no items passed in, default to normal context menu behavior
+        if (!secondaryMoveKind.length && !uuidsToMove.length) uuidsToMove.push(data.uuid);
 
-    async function moveSingleProject(uuid: string) {
-        const originalItem = getResource(uuid)(getState().resources) as Resource & { name: string };
-        if (originalItem.kind === ResourceKind.PROJECT) {
+        const sourceUuid = getResource(data.uuid)(getState().resources)?.ownerUuid;
+        const destinationUuid = data.ownerUuid;
+
+        const projectsToMove: MoveableResource[] = uuidsToMove
+            .map(uuid => getResource(uuid)(getState().resources) as MoveableResource)
+            .filter(resource => resource.kind === ResourceKind.PROJECT);
+
+        for (const project of projectsToMove) {
+            await moveSingleProject(project);
+        }
+
+        if (!secondaryMoveKind.length) {
+            const kindsToMove: Set<string> = selectedToKindSet(checkedList);
+            kindsToMove.delete(ResourceKind.PROJECT);
+
+            kindsToMove.forEach(kind => {
+                secondaryMove[kind](data, kind)(dispatch, getState, services);
+                console.log(secondaryMove[kind]);
+            });
+        }
+
+        async function moveSingleProject(project: MoveableResource) {
             try {
-                const oldProject: MoveToFormDialogData = { name: originalItem.name, uuid: originalItem.uuid, ownerUuid: data.ownerUuid };
+                const oldProject: MoveToFormDialogData = { name: project.name, uuid: project.uuid, ownerUuid: data.ownerUuid };
                 const oldOwnerUuid = oldProject ? oldProject.ownerUuid : "";
                 const movedProject = await dispatch<any>(projectMoveActions.moveProject(oldProject));
                 if (movedProject) {
@@ -314,12 +331,12 @@ export const moveProject = (data: MoveToFormDialogData) => async (dispatch: Disp
                         kind: SnackbarKind.ERROR,
                     })
                 );
+                // }
             }
         }
-    }
-    if (sourceUuid) await dispatch<any>(loadSidePanelTreeProjects(sourceUuid));
-    await dispatch<any>(loadSidePanelTreeProjects(destinationUuid));
-};
+        if (sourceUuid) await dispatch<any>(loadSidePanelTreeProjects(sourceUuid));
+        await dispatch<any>(loadSidePanelTreeProjects(destinationUuid));
+    };
 
 export const updateProject = (data: projectUpdateActions.ProjectUpdateFormDialogData) => async (dispatch: Dispatch) => {
     const updatedProject = await dispatch<any>(projectUpdateActions.updateProject(data));
@@ -434,42 +451,45 @@ export const copyCollection = (data: CopyFormDialogData) => async (dispatch: Dis
     }
 };
 
-export const moveCollection = (data: MoveToFormDialogData) => async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
-    const itemsToMove: string[] = selectedToArray(getState().multiselect.checkedList);
-    //if no items in checkedlist, default to normal context menu behavior
-    if (!itemsToMove.length) itemsToMove.push(data.uuid);
+export const moveCollection =
+    (data: MoveToFormDialogData, secondaryMoveKind: string = "") =>
+    async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
+        console.log("MoveCollection?", data, secondaryMoveKind);
+        const itemsToMove: string[] = selectedToArray(getState().multiselect.checkedList);
+        //if no items in checkedlist, default to normal context menu behavior
+        if (!itemsToMove.length) itemsToMove.push(data.uuid);
 
-    for (const uuid of itemsToMove) {
-        await moveSingleCollection(uuid);
-    }
+        for (const uuid of itemsToMove) {
+            await moveSingleCollection(uuid);
+        }
 
-    async function moveSingleCollection(uuid: string) {
-        const originalItem = getResource(uuid)(getState().resources) as Resource & { name: string };
-        if (originalItem.kind === ResourceKind.COLLECTION) {
-            try {
-                const oldCollection: MoveToFormDialogData = { name: originalItem.name, uuid: originalItem.uuid, ownerUuid: data.ownerUuid };
-                const collection = await dispatch<any>(collectionMoveActions.moveCollection(oldCollection));
-                dispatch<any>(updateResources([collection]));
-                dispatch<any>(reloadProjectMatchingUuid([collection.ownerUuid]));
-                dispatch(
-                    snackbarActions.OPEN_SNACKBAR({
-                        message: "Collection has been moved.",
-                        hideDuration: 2000,
-                        kind: SnackbarKind.SUCCESS,
-                    })
-                );
-            } catch (e) {
-                dispatch(
-                    snackbarActions.OPEN_SNACKBAR({
-                        message: e.message,
-                        hideDuration: 2000,
-                        kind: SnackbarKind.ERROR,
-                    })
-                );
+        async function moveSingleCollection(uuid: string) {
+            const originalItem = getResource(uuid)(getState().resources) as Resource & { name: string };
+            if (originalItem.kind === ResourceKind.COLLECTION) {
+                try {
+                    const oldCollection: MoveToFormDialogData = { name: originalItem.name, uuid: originalItem.uuid, ownerUuid: data.ownerUuid };
+                    const collection = await dispatch<any>(collectionMoveActions.moveCollection(oldCollection));
+                    dispatch<any>(updateResources([collection]));
+                    dispatch<any>(reloadProjectMatchingUuid([collection.ownerUuid]));
+                    dispatch(
+                        snackbarActions.OPEN_SNACKBAR({
+                            message: "Collection has been moved.",
+                            hideDuration: 2000,
+                            kind: SnackbarKind.SUCCESS,
+                        })
+                    );
+                } catch (e) {
+                    dispatch(
+                        snackbarActions.OPEN_SNACKBAR({
+                            message: e.message,
+                            hideDuration: 2000,
+                            kind: SnackbarKind.ERROR,
+                        })
+                    );
+                }
             }
         }
-    }
-};
+    };
 
 export const loadProcess = (uuid: string) =>
     handleFirstTimeLoad(async (dispatch: Dispatch, getState: () => RootState) => {
@@ -764,3 +784,16 @@ const groupContentsHandlersRecord = {
 const groupContentsHandlers = unionize(groupContentsHandlersRecord);
 
 type GroupContentsHandler = UnionOf<typeof groupContentsHandlers>;
+
+type MoveableResource = Resource & { name: string };
+
+type MoveFunc = (
+    data: MoveToFormDialogData,
+    secondaryMoveKind?: string
+) => (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => Promise<void>;
+
+const secondaryMove: Record<string, MoveFunc> = {
+    [ResourceKind.PROJECT]: moveProject,
+    [ResourceKind.PROCESS]: moveProcess,
+    [ResourceKind.COLLECTION]: moveCollection,
+};
