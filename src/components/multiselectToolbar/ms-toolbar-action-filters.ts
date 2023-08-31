@@ -19,11 +19,12 @@ export const contextMenuActionConsts = {
     REMOVE: "Remove",
 } as const;
 
-const { MOVE_TO, TOGGLE_TRASH_ACTION, COPY_TO_CLIPBOARD, COPY_AND_RERUN_PROCESS, REMOVE } = contextMenuActionConsts;
+const { MOVE_TO, TOGGLE_TRASH_ACTION, COPY_TO_CLIPBOARD, REMOVE } = contextMenuActionConsts;
 
+//these sets govern what actions are on the ms toolbar for each resource kind
 const collectionMSActionsFilter = new Set([COPY_TO_CLIPBOARD, MOVE_TO, TOGGLE_TRASH_ACTION]);
 const projectMSActionsFilter = new Set([COPY_TO_CLIPBOARD, MOVE_TO, TOGGLE_TRASH_ACTION]);
-const processResourceMSActionsFilter = new Set([COPY_AND_RERUN_PROCESS, MOVE_TO, REMOVE]);
+const processResourceMSActionsFilter = new Set([MOVE_TO, REMOVE]);
 
 const { COLLECTION, PROJECT, PROCESS } = ResourceKind;
 

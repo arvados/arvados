@@ -68,7 +68,7 @@ export const MultiselectToolbar = connect(
                         btn.name === "ToggleTrashAction" ? (
                             <Tooltip
                                 className={classes.button}
-                                title={currentPathIsTrash ? "Restore" : "Move to trash"}
+                                title={currentPathIsTrash ? "Restore All" : "Move to trash"}
                                 key={i}
                                 disableFocusListener>
                                 <IconButton onClick={() => props.executeMulti(btn, checkedList, props.resources)}>
