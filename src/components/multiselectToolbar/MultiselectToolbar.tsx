@@ -18,6 +18,7 @@ import { RestoreFromTrashIcon, TrashIcon } from "components/icon/icon";
 import { multiselectActionsFilters, TMultiselectActionsFilters, contextMenuActionConsts } from "./ms-toolbar-action-filters";
 import { kindToActionSet, findActionByName } from "./ms-kind-action-differentiator";
 import { toggleTrashAction } from "views-components/context-menu/action-sets/project-action-set";
+import { copyToClipboardAction } from "store/open-in-new-tab/open-in-new-tab.actions";
 
 type CssRules = "root" | "button";
 
@@ -114,6 +115,16 @@ export function selectedToKindSet(checkedList: TCheckedList): Set<string> {
     return setifiedList;
 }
 
+function groupByKind(checkedList: TCheckedList, resources: ResourcesState): Record<string, ContextMenuResource[]> {
+    const result = {};
+    selectedToArray(checkedList).forEach(uuid => {
+        const resource = getResource(uuid)(resources) as Resource;
+        if (!result[resource.kind]) result[resource.kind] = [];
+        result[resource.kind].push(resource);
+    });
+    return result;
+}
+
 function filterActions(actionArray: ContextMenuActionSet, filters: Set<string>): Array<ContextMenuAction> {
     return actionArray[0].filter(action => filters.has(action.name as string));
 }
@@ -176,31 +187,28 @@ function mapDispatchToProps(dispatch: Dispatch) {
     return {
         executeMulti: (selectedAction: ContextMenuAction, checkedList: TCheckedList, resources: ResourcesState): void => {
             const kindGroups = groupByKind(checkedList, resources);
-            if (selectedAction.name === contextMenuActionConsts.MOVE_TO) {
-                const firstResource = getResource(selectedToArray(checkedList)[0])(resources) as Resource;
+            switch (selectedAction.name) {
+                case contextMenuActionConsts.MOVE_TO:
+                    const firstResource = getResource(selectedToArray(checkedList)[0])(resources) as Resource;
 
-                const actionSet = kindToActionSet[firstResource.kind];
-                const action = findActionByName(selectedAction.name as string, actionSet);
-
-                if (action) action.execute(dispatch, kindGroups[firstResource.kind]);
-            } else {
-                for (const kind in kindGroups) {
-                    const actionSet = kindToActionSet[kind];
+                    const actionSet = kindToActionSet[firstResource.kind];
                     const action = findActionByName(selectedAction.name as string, actionSet);
 
-                    if (action) action.execute(dispatch, kindGroups[kind]);
-                }
+                    if (action) action.execute(dispatch, kindGroups[firstResource.kind]);
+                    break;
+                case contextMenuActionConsts.COPY_TO_CLIPBOARD:
+                    const selectedResources = selectedToArray(checkedList).map(uuid => getResource(uuid)(resources));
+                    dispatch<any>(copyToClipboardAction(selectedResources));
+                    break;
+                default:
+                    for (const kind in kindGroups) {
+                        const actionSet = kindToActionSet[kind];
+                        const action = findActionByName(selectedAction.name as string, actionSet);
+
+                        if (action) action.execute(dispatch, kindGroups[kind]);
+                    }
+                    break;
             }
         },
     };
-}
-
-function groupByKind(checkedList: TCheckedList, resources: ResourcesState): Record<string, ContextMenuResource[]> {
-    const result = {};
-    selectedToArray(checkedList).forEach(uuid => {
-        const resource = getResource(uuid)(resources) as Resource;
-        if (!result[resource.kind]) result[resource.kind] = [];
-        result[resource.kind].push(resource);
-    });
-    return result;
 }

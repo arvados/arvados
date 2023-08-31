@@ -58,8 +58,8 @@ const commonActionSet: ContextMenuActionSet = [
         {
             icon: Link,
             name: "Copy to clipboard",
-            execute: (dispatch, resource) => {
-                dispatch<any>(copyToClipboardAction(resource));
+            execute: (dispatch, resources) => {
+                dispatch<any>(copyToClipboardAction(resources));
             },
         },
         {
