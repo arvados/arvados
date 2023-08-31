@@ -15,7 +15,7 @@ import { getResource } from "store/resources/resources";
 import { ResourcesState } from "store/resources/resources";
 import { ContextMenuAction, ContextMenuActionSet } from "views-components/context-menu/context-menu-action-set";
 import { RestoreFromTrashIcon, TrashIcon } from "components/icon/icon";
-import { multiselectActionsFilters, TMultiselectActionsFilters } from "./ms-toolbar-action-filters";
+import { multiselectActionsFilters, TMultiselectActionsFilters, contextMenuActionConsts } from "./ms-toolbar-action-filters";
 import { kindToActionSet, findActionByName } from "./ms-kind-action-differentiator";
 import { toggleTrashAction } from "views-components/context-menu/action-sets/project-action-set";
 
@@ -176,7 +176,7 @@ function mapDispatchToProps(dispatch: Dispatch) {
     return {
         executeMulti: (selectedAction: ContextMenuAction, checkedList: TCheckedList, resources: ResourcesState): void => {
             const kindGroups = groupByKind(checkedList, resources);
-            if (selectedAction.name === "Move to") {
+            if (selectedAction.name === contextMenuActionConsts.MOVE_TO) {
                 const firstResource = getResource(selectedToArray(checkedList)[0])(resources) as Resource;
 
                 const actionSet = kindToActionSet[firstResource.kind];
