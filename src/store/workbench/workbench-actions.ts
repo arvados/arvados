@@ -100,7 +100,7 @@ import { loadAllProcessesPanel, allProcessesPanelActions } from "../all-processe
 import { allProcessesPanelColumns } from "views/all-processes-panel/all-processes-panel";
 import { AdminMenuIcon } from "components/icon/icon";
 import { userProfileGroupsColumns } from "views/user-profile-panel/user-profile-panel-root";
-import { selectedToArray, selectedToKindSet } from "components/multiselectToolbar/MultiselectToolbar";
+import { selectedToArray, selectedToKindSet } from "components/multiselect-toolbar/MultiselectToolbar";
 
 export const WORKBENCH_LOADING_SCREEN = "workbenchLoadingScreen";
 
