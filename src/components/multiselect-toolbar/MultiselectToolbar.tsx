@@ -189,6 +189,7 @@ function mapDispatchToProps(dispatch: Dispatch) {
             const kindGroups = groupByKind(checkedList, resources);
             switch (selectedAction.name) {
                 case contextMenuActionConsts.MOVE_TO:
+                case contextMenuActionConsts.REMOVE:
                     const firstResource = getResource(selectedToArray(checkedList)[0])(resources) as Resource;
                     const action = findActionByName(selectedAction.name as string, kindToActionSet[firstResource.kind]);
                     if (action) action.execute(dispatch, kindGroups[firstResource.kind]);
@@ -200,6 +201,7 @@ function mapDispatchToProps(dispatch: Dispatch) {
                 default:
                     for (const kind in kindGroups) {
                         const action = findActionByName(selectedAction.name as string, kindToActionSet[kind]);
+                        console.log(action, kindGroups[kind]);
                         if (action) action.execute(dispatch, kindGroups[kind]);
                     }
                     break;

@@ -281,10 +281,11 @@ export const createProject = (data: projectCreateActions.ProjectCreateFormDialog
 export const moveProject =
     (data: MoveToFormDialogData, isSecondaryMove = false) =>
     async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
+        const selectedUuid = getState().detailsPanel.resourceUuid;
         const checkedList = getState().multiselect.checkedList;
         const uuidsToMove: string[] = selectedToArray(checkedList);
 
-        //if no items in checkedlist && no items passed in, default to normal context menu behavior
+        //if no items in checkedlist default to normal context menu behavior
         if (!isSecondaryMove && !uuidsToMove.length) uuidsToMove.push(data.uuid);
 
         const sourceUuid = getResource(data.uuid)(getState().resources)?.ownerUuid;

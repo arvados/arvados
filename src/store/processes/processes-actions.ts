@@ -2,28 +2,30 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import { Dispatch } from 'redux';
-import { RootState } from 'store/store';
-import { ServiceRepository } from 'services/services';
-import { updateResources } from 'store/resources/resources-actions';
-import { Process } from './process';
-import { dialogActions } from 'store/dialog/dialog-actions';
-import { snackbarActions, SnackbarKind } from 'store/snackbar/snackbar-actions';
-import { projectPanelActions } from 'store/project-panel/project-panel-action';
-import { navigateToRunProcess } from 'store/navigation/navigation-action';
-import { goToStep, runProcessPanelActions } from 'store/run-process-panel/run-process-panel-actions';
-import { getResource } from 'store/resources/resources';
-import { initialize } from 'redux-form';
-import { RUN_PROCESS_BASIC_FORM, RunProcessBasicFormData } from 'views/run-process-panel/run-process-basic-form';
-import { RunProcessAdvancedFormData, RUN_PROCESS_ADVANCED_FORM } from 'views/run-process-panel/run-process-advanced-form';
-import { MOUNT_PATH_CWL_WORKFLOW, MOUNT_PATH_CWL_INPUT } from 'models/process';
-import { CommandInputParameter, getWorkflow, getWorkflowInputs, getWorkflowOutputs, WorkflowInputsData } from 'models/workflow';
-import { ProjectResource } from 'models/project';
-import { UserResource } from 'models/user';
-import { CommandOutputParameter } from 'cwlts/mappings/v1.0/CommandOutputParameter';
-import { ContainerResource } from 'models/container';
-import { ContainerRequestResource, ContainerRequestState } from 'models/container-request';
-import { FilterBuilder } from 'services/api/filter-builder';
+import { Dispatch } from "redux";
+import { RootState } from "store/store";
+import { ServiceRepository } from "services/services";
+import { updateResources } from "store/resources/resources-actions";
+import { Process } from "./process";
+import { dialogActions } from "store/dialog/dialog-actions";
+import { snackbarActions, SnackbarKind } from "store/snackbar/snackbar-actions";
+import { projectPanelActions } from "store/project-panel/project-panel-action";
+import { navigateToRunProcess } from "store/navigation/navigation-action";
+import { goToStep, runProcessPanelActions } from "store/run-process-panel/run-process-panel-actions";
+import { getResource } from "store/resources/resources";
+import { initialize } from "redux-form";
+import { RUN_PROCESS_BASIC_FORM, RunProcessBasicFormData } from "views/run-process-panel/run-process-basic-form";
+import { RunProcessAdvancedFormData, RUN_PROCESS_ADVANCED_FORM } from "views/run-process-panel/run-process-advanced-form";
+import { MOUNT_PATH_CWL_WORKFLOW, MOUNT_PATH_CWL_INPUT } from "models/process";
+import { CommandInputParameter, getWorkflow, getWorkflowInputs, getWorkflowOutputs, WorkflowInputsData } from "models/workflow";
+import { ProjectResource } from "models/project";
+import { UserResource } from "models/user";
+import { CommandOutputParameter } from "cwlts/mappings/v1.0/CommandOutputParameter";
+import { ContainerResource } from "models/container";
+import { ContainerRequestResource, ContainerRequestState } from "models/container-request";
+import { FilterBuilder } from "services/api/filter-builder";
+import { selectedToArray } from "components/multiselect-toolbar/MultiselectToolbar";
+import { Resource, ResourceKind } from "models/resource";
 
 export const loadProcess =
     (containerRequestUuid: string) =>
@@ -66,7 +68,7 @@ export const loadContainers =
     (containerUuids: string[], loadMounts: boolean = true) =>
     async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
         let args: any = {
-            filters: new FilterBuilder().addIn('uuid', containerUuids).getFilters(),
+            filters: new FilterBuilder().addIn("uuid", containerUuids).getFilters(),
             limit: containerUuids.length,
         };
         if (!loadMounts) {
@@ -79,41 +81,41 @@ export const loadContainers =
 
 // Until the api supports unselecting fields, we need a list of all other fields to omit mounts
 const containerFieldsNoMounts = [
-    'auth_uuid',
-    'command',
-    'container_image',
-    'cost',
-    'created_at',
-    'cwd',
-    'environment',
-    'etag',
-    'exit_code',
-    'finished_at',
-    'gateway_address',
-    'href',
-    'interactive_session_started',
-    'kind',
-    'lock_count',
-    'locked_by_uuid',
-    'log',
-    'modified_at',
-    'modified_by_client_uuid',
-    'modified_by_user_uuid',
-    'output_path',
-    'output_properties',
-    'output_storage_classes',
-    'output',
-    'owner_uuid',
-    'priority',
-    'progress',
-    'runtime_auth_scopes',
-    'runtime_constraints',
-    'runtime_status',
-    'runtime_user_uuid',
-    'scheduling_parameters',
-    'started_at',
-    'state',
-    'uuid',
+    "auth_uuid",
+    "command",
+    "container_image",
+    "cost",
+    "created_at",
+    "cwd",
+    "environment",
+    "etag",
+    "exit_code",
+    "finished_at",
+    "gateway_address",
+    "href",
+    "interactive_session_started",
+    "kind",
+    "lock_count",
+    "locked_by_uuid",
+    "log",
+    "modified_at",
+    "modified_by_client_uuid",
+    "modified_by_user_uuid",
+    "output_path",
+    "output_properties",
+    "output_storage_classes",
+    "output",
+    "owner_uuid",
+    "priority",
+    "progress",
+    "runtime_auth_scopes",
+    "runtime_constraints",
+    "runtime_status",
+    "runtime_user_uuid",
+    "scheduling_parameters",
+    "started_at",
+    "state",
+    "uuid",
 ];
 
 export const cancelRunningWorkflow = (uuid: string) => async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
@@ -126,7 +128,7 @@ export const cancelRunningWorkflow = (uuid: string) => async (dispatch: Dispatch
         }
         return process;
     } catch (e) {
-        throw new Error('Could not cancel the process.');
+        throw new Error("Could not cancel the process.");
     }
 };
 
@@ -140,7 +142,7 @@ export const resumeOnHoldWorkflow = (uuid: string) => async (dispatch: Dispatch,
         }
         return process;
     } catch (e) {
-        throw new Error('Could not resume the process.');
+        throw new Error("Could not resume the process.");
     }
 };
 
@@ -149,7 +151,7 @@ export const startWorkflow = (uuid: string) => async (dispatch: Dispatch, getSta
         const process = await services.containerRequestService.update(uuid, { state: ContainerRequestState.COMMITTED });
         if (process) {
             dispatch<any>(updateResources([process]));
-            dispatch(snackbarActions.OPEN_SNACKBAR({ message: 'Process started', hideDuration: 2000, kind: SnackbarKind.SUCCESS }));
+            dispatch(snackbarActions.OPEN_SNACKBAR({ message: "Process started", hideDuration: 2000, kind: SnackbarKind.SUCCESS }));
         } else {
             dispatch<any>(snackbarActions.OPEN_SNACKBAR({ message: `Failed to start process`, kind: SnackbarKind.ERROR }));
         }
@@ -162,7 +164,7 @@ export const reRunProcess =
     (processUuid: string, workflowUuid: string) => (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
         const process = getResource<any>(processUuid)(getState().resources);
         const workflows = getState().runProcessPanel.searchWorkflows;
-        const workflow = workflows.find((workflow) => workflow.uuid === workflowUuid);
+        const workflow = workflows.find(workflow => workflow.uuid === workflowUuid);
         if (workflow && process) {
             const mainWf = getWorkflow(process.mounts[MOUNT_PATH_CWL_WORKFLOW]);
             if (mainWf) {
@@ -230,7 +232,7 @@ export const getInputs = (data: any): CommandInputParameter[] => {
               id: it.id,
               label: it.label,
               default: content[it.id],
-              value: content[it.id.split('/').pop()] || [],
+              value: content[it.id.split("/").pop()] || [],
               doc: it.doc,
           }))
         : [];
@@ -257,12 +259,12 @@ export const getInputCollectionMounts = (data: any): InputCollectionMount[] => {
         return [];
     }
     return Object.keys(data.mounts)
-        .map((key) => ({
+        .map(key => ({
             ...data.mounts[key],
             path: key,
         }))
-        .filter((mount) => mount.kind === 'collection' && mount.portable_data_hash && mount.path)
-        .map((mount) => ({
+        .filter(mount => mount.kind === "collection" && mount.portable_data_hash && mount.path)
+        .map(mount => ({
             path: mount.path,
             pdh: mount.portable_data_hash,
         }));
@@ -283,25 +285,41 @@ export const getOutputParameters = (data: any): CommandOutputParameter[] => {
         : [];
 };
 
-export const openRemoveProcessDialog = (uuid: string) => (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
-    dispatch(
-        dialogActions.OPEN_DIALOG({
-            id: REMOVE_PROCESS_DIALOG,
-            data: {
-                title: 'Remove process permanently',
-                text: 'Are you sure you want to remove this process?',
-                confirmButtonLabel: 'Remove',
-                uuid,
-            },
-        })
-    );
-};
+export const openRemoveProcessDialog =
+    (uuid: string, numOfProcesses: Number) => (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
+        const confirmationText =
+            numOfProcesses === 1
+                ? "Are you sure you want to remove this process?"
+                : `Are you sure you want to remove these ${numOfProcesses} processes?`;
+        const titleText = numOfProcesses === 1 ? "Remove process permanently" : "Remove processes permanently";
 
-export const REMOVE_PROCESS_DIALOG = 'removeProcessDialog';
+        dispatch(
+            dialogActions.OPEN_DIALOG({
+                id: REMOVE_PROCESS_DIALOG,
+                data: {
+                    title: titleText,
+                    text: confirmationText,
+                    confirmButtonLabel: "Remove",
+                    uuid,
+                },
+            })
+        );
+    };
+
+export const REMOVE_PROCESS_DIALOG = "removeProcessDialog";
 
 export const removeProcessPermanently = (uuid: string) => async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
-    dispatch(snackbarActions.OPEN_SNACKBAR({ message: 'Removing ...', kind: SnackbarKind.INFO }));
-    await services.containerRequestService.delete(uuid);
-    dispatch(projectPanelActions.REQUEST_ITEMS());
-    dispatch(snackbarActions.OPEN_SNACKBAR({ message: 'Removed.', hideDuration: 2000, kind: SnackbarKind.SUCCESS }));
+    const checkedList = getState().multiselect.checkedList;
+    const uuidsToRemove: string[] = selectedToArray(checkedList);
+
+    const processesToRemove = uuidsToRemove
+        .map(uuid => getResource(uuid)(getState().resources) as Resource)
+        .filter(resource => resource.kind === ResourceKind.PROCESS);
+
+    for (const process of processesToRemove) {
+        dispatch(snackbarActions.OPEN_SNACKBAR({ message: "Removing ...", kind: SnackbarKind.INFO }));
+        await services.containerRequestService.delete(process.uuid);
+        dispatch(projectPanelActions.REQUEST_ITEMS());
+        dispatch(snackbarActions.OPEN_SNACKBAR({ message: "Removed.", hideDuration: 2000, kind: SnackbarKind.SUCCESS }));
+    }
 };
