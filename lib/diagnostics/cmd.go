@@ -481,7 +481,7 @@ func (diag *diagnoser) runtests() {
 		}
 
 		dockerfile := "FROM " + diag.dockerImageFrom + "\n"
-		dockerfile += "RUN apt-get update && apt-get install --yes --no-install-recommends libfuse2 ca-certificates && apt-get clean\n"
+		dockerfile += "RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install --yes --no-install-recommends libfuse2 ca-certificates && apt-get clean\n"
 		dockerfile += "COPY /arvados-client /arvados-client\n"
 		cmd := exec.Command("docker", "build", "--tag", tag, "-f", "-", tempdir)
 		cmd.Stdin = strings.NewReader(dockerfile)
