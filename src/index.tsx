@@ -62,7 +62,7 @@ import { linkActionSet } from 'views-components/context-menu/action-sets/link-ac
 import { loadFileViewersConfig } from 'store/file-viewers/file-viewers-actions';
 import { filterGroupAdminActionSet, frozenAdminActionSet, projectAdminActionSet } from 'views-components/context-menu/action-sets/project-admin-action-set';
 import { permissionEditActionSet } from 'views-components/context-menu/action-sets/permission-edit-action-set';
-import { workflowActionSet } from 'views-components/context-menu/action-sets/workflow-action-set';
+import { workflowActionSet, readOnlyWorkflowActionSet } from 'views-components/context-menu/action-sets/workflow-action-set';
 import { snackbarActions, SnackbarKind } from "store/snackbar/snackbar-actions";
 import { openNotFoundDialog } from './store/not-found-panel/not-found-panel-action';
 import { storeRedirects } from './common/redirect-to';
@@ -108,6 +108,7 @@ addMenuActionSet(ContextMenuKind.FROZEN_PROJECT, frozenActionSet);
 addMenuActionSet(ContextMenuKind.FROZEN_PROJECT_ADMIN, frozenAdminActionSet);
 addMenuActionSet(ContextMenuKind.FILTER_GROUP_ADMIN, filterGroupAdminActionSet);
 addMenuActionSet(ContextMenuKind.PERMISSION_EDIT, permissionEditActionSet);
+addMenuActionSet(ContextMenuKind.READONLY_WORKFLOW, readOnlyWorkflowActionSet);
 addMenuActionSet(ContextMenuKind.WORKFLOW, workflowActionSet);
 addMenuActionSet(ContextMenuKind.SEARCH_RESULTS, searchResultsActionSet);
 

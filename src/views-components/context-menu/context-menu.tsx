@@ -115,5 +115,6 @@ export enum ContextMenuKind {
     PERMISSION_EDIT = "PermissionEdit",
     LINK = "Link",
     WORKFLOW = "Workflow",
+    READONLY_WORKFLOW = "ReadOnlyWorkflow",
     SEARCH_RESULTS = "SearchResults"
 }
