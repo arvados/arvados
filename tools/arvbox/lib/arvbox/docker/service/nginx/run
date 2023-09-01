@@ -123,17 +123,17 @@ http {
     # rewrite ^/trash /trash redirect;
 
     # Redirects that include a uuid
-    rewrite ^/work_units/(.*) /processes/$1 redirect;
-    rewrite ^/container_requests/(.*) /processes/$1 redirect;
-    rewrite ^/users/(.*) /user/$1 redirect;
-    rewrite ^/groups/(.*) /group/$1 redirect;
+    rewrite ^/work_units/(.*) /processes/\$1 redirect;
+    rewrite ^/container_requests/(.*) /processes/\$1 redirect;
+    rewrite ^/users/(.*) /user/\$1 redirect;
+    rewrite ^/groups/(.*) /group/\$1 redirect;
 
     # Special file download redirects
     if (\$arg_disposition = attachment) {
-      rewrite ^/collections/([^/]*)/(.*) /?redirectToDownload=/c=$1/$2? redirect;
+      rewrite ^/collections/([^/]*)/(.*) /?redirectToDownload=/c=\$1/\$2? redirect;
     }
     if (\$arg_disposition = inline) {
-      rewrite ^/collections/([^/]*)/(.*) /?redirectToPreview=/c=$1/$2? redirect;
+      rewrite ^/collections/([^/]*)/(.*) /?redirectToPreview=/c=\$1/\$2? redirect;
     }
 
     # Redirects that go to a roughly equivalent page
