@@ -68,7 +68,7 @@ export const MultiselectToolbar = connect(
                         btn.name === "ToggleTrashAction" ? (
                             <Tooltip
                                 className={classes.button}
-                                title={currentPathIsTrash ? "Restore All" : "Move to trash"}
+                                title={currentPathIsTrash ? "Restore selected" : "Move to trash"}
                                 key={i}
                                 disableFocusListener>
                                 <IconButton onClick={() => props.executeMulti(btn, checkedList, props.resources)}>
@@ -190,10 +190,7 @@ function mapDispatchToProps(dispatch: Dispatch) {
             switch (selectedAction.name) {
                 case contextMenuActionConsts.MOVE_TO:
                     const firstResource = getResource(selectedToArray(checkedList)[0])(resources) as Resource;
-
-                    const actionSet = kindToActionSet[firstResource.kind];
-                    const action = findActionByName(selectedAction.name as string, actionSet);
-
+                    const action = findActionByName(selectedAction.name as string, kindToActionSet[firstResource.kind]);
                     if (action) action.execute(dispatch, kindGroups[firstResource.kind]);
                     break;
                 case contextMenuActionConsts.COPY_TO_CLIPBOARD:
@@ -202,9 +199,7 @@ function mapDispatchToProps(dispatch: Dispatch) {
                     break;
                 default:
                     for (const kind in kindGroups) {
-                        const actionSet = kindToActionSet[kind];
-                        const action = findActionByName(selectedAction.name as string, actionSet);
-
+                        const action = findActionByName(selectedAction.name as string, kindToActionSet[kind]);
                         if (action) action.execute(dispatch, kindGroups[kind]);
                     }
                     break;
