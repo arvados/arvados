@@ -85,12 +85,13 @@ SPDX-License-Identifier: AGPL-3.0 %>
                 <% if Rails.configuration.Services.Workbench2.ExternalURL != URI("") %>
                 <li role="menuitem">
                   <%
-                    wb2_url = Rails.configuration.Services.Workbench2.ExternalURL.to_s
-                    wb2_url += '/' if wb2_url[-1] != '/'
-                    wb2_url += 'token'
+                  wb2_url = Rails.configuration.Services.Workbench2.ExternalURL.to_s
+                    if wb2_url[-1] == '/'
+                  wb2_url  = wb2_url.chop
+                  end
+                  wb2_url += request.fullpath
                   %>
                   <form action="<%= wb2_url %>" method="GET">
-                    <input type="hidden" name="api_token" value="<%= Thread.current[:arvados_api_token] %>">
                     <button role="menuitem" type="submit">
                       <i class="fa fa-lg fa-share-square fa-fw"></i> Go to Workbench 2
                     </button>
@@ -243,6 +244,22 @@ SPDX-License-Identifier: AGPL-3.0 %>
         </nav>
       <% end %>
     <% end %>
+
+    <div id="deprecation-notice" class="row">
+      <div class="col-md-12">
+	<div class="alert alert-block alert-warning">
+	    <button type="button" class="close" data-dismiss="alert">&times;</button>
+	  <span>You are using the <a href="https://doc.arvados.org/user/topics/workbench-migration.html">deprecated workbench application</a>
+	    to access Arvados. A newer workbench application is available.
+          <form action="<%= wb2_url %>" method="GET">
+                    <button type="submit">
+                      <i class="fa fa-lg fa-share-square fa-fw"></i> Go to Workbench 2
+                    </button>
+          </form>
+	  </span>
+    </div>
+  </div>
+    </div>
 
     <%= render partial: 'browser_unsupported' %><%# requires JS support below %>
     <%= render partial: 'getting_started/getting_started_popup' %>
