@@ -38,7 +38,7 @@ func (Command) RunCommand(prog string, args []string, stdin io.Reader, stdout, s
 	f.StringVar(&diag.projectName, "project-name", "scratch area for diagnostics", "`name` of project to find/create in home project and use for temporary/test objects")
 	f.StringVar(&diag.logLevel, "log-level", "info", "logging `level` (debug, info, warning, error)")
 	f.StringVar(&diag.dockerImage, "docker-image", "", "`image` (tag or portable data hash) to use when running a test container, or \"hello-world\" to use embedded hello-world image (default: build a custom image containing this executable, and run diagnostics inside the container too)")
-	f.StringVar(&diag.dockerImageFrom, "docker-image-from", "debian:stable-slim", "`base` image to use when building a custom image (use a debian-based image similar this host's OS for best results)")
+	f.StringVar(&diag.dockerImageFrom, "docker-image-from", "debian:stable-slim", "`base` image to use when building a custom image (see https://doc.arvados.org/main/admin/diagnostics.html#container-options)")
 	f.BoolVar(&diag.checkInternal, "internal-client", false, "check that this host is considered an \"internal\" client")
 	f.BoolVar(&diag.checkExternal, "external-client", false, "check that this host is considered an \"external\" client")
 	f.BoolVar(&diag.verbose, "v", false, "verbose: include more information in report")
