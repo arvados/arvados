@@ -245,10 +245,10 @@ SPDX-License-Identifier: AGPL-3.0 %>
       <% end %>
     <% end %>
 
+    <% if current_user.andand.is_active %>
     <div id="deprecation-notice" class="row">
       <div class="col-md-12">
 	<div class="alert alert-block alert-warning">
-	    <button type="button" class="close" data-dismiss="alert">&times;</button>
 	  <span>You are using the <a href="https://doc.arvados.org/user/topics/workbench-migration.html">deprecated workbench application</a>
 	    to access Arvados. A newer workbench application is available.
           <form action="<%= wb2_url %>" method="GET">
@@ -260,6 +260,7 @@ SPDX-License-Identifier: AGPL-3.0 %>
     </div>
   </div>
     </div>
+    <% end %>
 
     <%= render partial: 'browser_unsupported' %><%# requires JS support below %>
     <%= render partial: 'getting_started/getting_started_popup' %>
