@@ -74,7 +74,7 @@ class SearchBoxTest < ActionDispatch::IntegrationTest
         assert page.has_text?('Search'), 'No text - Search'
         assert page.has_text?('Cancel'), 'No text - Cancel'
         assert_selector('div', text: publicly_accessible_project['name'])
-        find(:xpath, '//div[./span[contains(.,publicly_accessible_project["uuid"])]]').click
+        find("div[data-object-uuid=#{publicly_accessible_project["uuid"]}]").click
 
         click_button 'Show'
       end
