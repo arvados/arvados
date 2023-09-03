@@ -109,19 +109,14 @@ navbar:
       - api/methods.html.textile.liquid
       - api/resources.html.textile.liquid
     - Permission and authentication:
-      - api/methods/api_client_authorizations.html.textile.liquid
-      - api/methods/api_clients.html.textile.liquid
-      - api/methods/authorized_keys.html.textile.liquid
-      - api/methods/groups.html.textile.liquid
       - api/methods/users.html.textile.liquid
-      - api/methods/user_agreements.html.textile.liquid
-    - System resources:
-      - api/methods/keep_services.html.textile.liquid
+      - api/methods/groups.html.textile.liquid
+      - api/methods/api_client_authorizations.html.textile.liquid
       - api/methods/links.html.textile.liquid
-      - api/methods/logs.html.textile.liquid
-      - api/methods/nodes.html.textile.liquid
+      - api/methods/authorized_keys.html.textile.liquid
+      - api/methods/api_clients.html.textile.liquid
+      - api/methods/user_agreements.html.textile.liquid
       - api/methods/virtual_machines.html.textile.liquid
-      - api/methods/keep_disks.html.textile.liquid
     - Data management:
       - api/keep-webdav.html.textile.liquid
       - api/keep-s3.html.textile.liquid
@@ -129,12 +124,12 @@ navbar:
       - api/projects.html.textile.liquid
       - api/properties.html.textile.liquid
       - api/methods/collections.html.textile.liquid
-      - api/methods/repositories.html.textile.liquid
+      - api/methods/logs.html.textile.liquid
+      - api/methods/keep_services.html.textile.liquid
     - Container engine:
       - api/methods/container_requests.html.textile.liquid
       - api/methods/containers.html.textile.liquid
       - api/methods/workflows.html.textile.liquid
-    - Management (admin/system):
       - api/dispatch.html.textile.liquid
     - Jobs engine (legacy):
       - api/crunch-scripts.html.textile.liquid
@@ -142,7 +137,10 @@ navbar:
       - api/methods/job_tasks.html.textile.liquid
       - api/methods/pipeline_instances.html.textile.liquid
       - api/methods/pipeline_templates.html.textile.liquid
-    - Metadata for bioinformatics (deprecated):
+      - api/methods/nodes.html.textile.liquid
+      - api/methods/repositories.html.textile.liquid
+      - api/methods/keep_disks.html.textile.liquid
+    - Metadata for bioinformatics (legacy):
       - api/methods/humans.html.textile.liquid
       - api/methods/specimens.html.textile.liquid
       - api/methods/traits.html.textile.liquid
