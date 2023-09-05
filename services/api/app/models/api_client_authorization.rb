@@ -301,6 +301,8 @@ class ApiClientAuthorization < ArvadosModel
         self.res.status_code
       end
       raise
+    # TODO #20927: Catch network exceptions and assign a 5xx status to them so
+    # the client knows they're a temporary problem.
     rescue => e
       Rails.logger.warn "error getting remote token details for #{token.inspect}: #{e}"
       return nil
@@ -336,6 +338,8 @@ class ApiClientAuthorization < ArvadosModel
         end
         raise
       end
+    # TODO #20927: Catch network exceptions and assign a 5xx status to them so
+    # the client knows they're a temporary problem.
     rescue => e
       Rails.logger.warn "getting remote user with token #{token.inspect} failed: #{e}"
     else
