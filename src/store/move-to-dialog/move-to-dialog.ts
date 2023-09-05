@@ -6,4 +6,5 @@ export interface MoveToFormDialogData {
     name: string;
     uuid: string;
     ownerUuid: string;
+    isSingle?: boolean;
 }

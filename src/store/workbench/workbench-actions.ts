@@ -281,9 +281,9 @@ export const createProject = (data: projectCreateActions.ProjectCreateFormDialog
 export const moveProject =
     (data: MoveToFormDialogData, isSecondaryMove = false) =>
     async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
-        const selectedUuid = getState().detailsPanel.resourceUuid;
+        console.log(data);
         const checkedList = getState().multiselect.checkedList;
-        const uuidsToMove: string[] = selectedToArray(checkedList);
+        const uuidsToMove: string[] = data.isSingle ? [data.uuid] : selectedToArray(checkedList);
 
         //if no items in checkedlist default to normal context menu behavior
         if (!isSecondaryMove && !uuidsToMove.length) uuidsToMove.push(data.uuid);
@@ -456,7 +456,7 @@ export const moveCollection =
     (data: MoveToFormDialogData, isSecondaryMove = false) =>
     async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
         const checkedList = getState().multiselect.checkedList;
-        const uuidsToMove: string[] = selectedToArray(checkedList);
+        const uuidsToMove: string[] = data.isSingle ? [data.uuid] : selectedToArray(checkedList);
 
         //if no items in checkedlist && no items passed in, default to normal context menu behavior
         if (!isSecondaryMove && !uuidsToMove.length) uuidsToMove.push(data.uuid);
@@ -578,7 +578,7 @@ export const moveProcess =
     (data: MoveToFormDialogData, isSecondaryMove = false) =>
     async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
         const checkedList = getState().multiselect.checkedList;
-        const uuidsToMove: string[] = selectedToArray(checkedList);
+        const uuidsToMove: string[] = data.isSingle ? [data.uuid] : selectedToArray(checkedList);
 
         //if no items in checkedlist && no items passed in, default to normal context menu behavior
         if (!isSecondaryMove && !uuidsToMove.length) uuidsToMove.push(data.uuid);
