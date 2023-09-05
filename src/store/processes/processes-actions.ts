@@ -26,6 +26,7 @@ import { ContainerRequestResource, ContainerRequestState } from "models/containe
 import { FilterBuilder } from "services/api/filter-builder";
 import { selectedToArray } from "components/multiselect-toolbar/MultiselectToolbar";
 import { Resource, ResourceKind } from "models/resource";
+import { ContextMenuResource } from "store/context-menu/context-menu-actions";
 
 export const loadProcess =
     (containerRequestUuid: string) =>
@@ -286,7 +287,7 @@ export const getOutputParameters = (data: any): CommandOutputParameter[] => {
 };
 
 export const openRemoveProcessDialog =
-    (uuid: string, numOfProcesses: Number) => (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
+    (resource: ContextMenuResource, numOfProcesses: Number) => (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
         const confirmationText =
             numOfProcesses === 1
                 ? "Are you sure you want to remove this process?"
@@ -300,7 +301,8 @@ export const openRemoveProcessDialog =
                     title: titleText,
                     text: confirmationText,
                     confirmButtonLabel: "Remove",
-                    uuid,
+                    uuid: resource.uuid,
+                    resource,
                 },
             })
         );
@@ -309,8 +311,13 @@ export const openRemoveProcessDialog =
 export const REMOVE_PROCESS_DIALOG = "removeProcessDialog";
 
 export const removeProcessPermanently = (uuid: string) => async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
+    const resource = getState().dialog.removeProcessDialog.data.resource;
     const checkedList = getState().multiselect.checkedList;
-    const uuidsToRemove: string[] = selectedToArray(checkedList);
+
+    const uuidsToRemove: string[] = resource.isSingle ? [resource.uuid] : selectedToArray(checkedList);
+
+    //if no items in checkedlist && no items passed in, default to normal context menu behavior
+    if (!uuidsToRemove.length) uuidsToRemove.push(uuid);
 
     const processesToRemove = uuidsToRemove
         .map(uuid => getResource(uuid)(getState().resources) as Resource)

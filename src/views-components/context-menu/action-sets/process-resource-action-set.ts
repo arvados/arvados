@@ -112,7 +112,7 @@ export const processResourceActionSet: ContextMenuActionSet = [
             name: "Remove",
             icon: RemoveIcon,
             execute: (dispatch, resources) => {
-                dispatch<any>(openRemoveProcessDialog(resources[0].uuid, resources.length));
+                dispatch<any>(openRemoveProcessDialog(resources[0], resources.length));
             },
         },
     ],

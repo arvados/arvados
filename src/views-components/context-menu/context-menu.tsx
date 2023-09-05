@@ -52,7 +52,6 @@ const mapDispatchToProps = (dispatch: Dispatch): ActionProps => ({
 const handleItemClick = memoize(
     (resource: DataProps["resource"], onItemClick: ActionProps["onItemClick"]): ContextMenuProps["onItemClick"] =>
         item => {
-            console.log("clisky");
             onItemClick(item, { ...resource, isSingle: true } as ContextMenuResource);
         }
 );
