@@ -50,16 +50,16 @@ h2(#container-options). Container-running options
 By default, the @diagnostics@ command builds a custom Docker image containing a copy of its own binary, and uses that image to run diagnostic checks from inside an Arvados container. This can help detect problems like lack of network connectivity between containers and Arvados cluster services.
 
 The default approach works well if the client host (i.e., the host where you invoke @arvados-client diagnostics@) meets certain conditions:
-* Docker is installed and working, so the diagnostics command can run @docker build@ and @docker save@.
-* Its hardware and kernel are similar to the cluster's compute instances (so the @arvados-client@ binary and the custom-built docker image are compatible with the compute instances).
-* Network bandwidth supports uploading the docker image (about 100 megabytes) in less than a minute.
+* Docker is installed and working (so the diagnostics command can run @docker build@ and @docker save@).
+* Its hardware and kernel are similar to the cluster's compute instances (so the @arvados-client@ binary and the custom-built Docker image are compatible with the compute instances).
+* Network bandwidth supports uploading the Docker image (about 100 megabytes) in less than a minute.
 
 The following options provide flexibility in case the default approach is not suitable.
 * @-priority=0@ skips the container-running part of the diagnostics suite.
-* @-docker-image="hello-world"@ uses a tiny "hello world" image that is already embedded in the @arvados-client@ binary. This works even if the client host does not have any Docker tools installed, and it minimizes the data transferred during the diagnostics suite. It provides less test coverage than the default option, but it will at least check that it is possible to run a container on the cluster.
-* @-docker-image=X@ (where @X@ is a docker image name or a portable data hash) uses a Docker image that has already been uploaded to your Arvados cluster using @arv keep docker@. In this case the diagnostics tool will run a container with the command @echo {timestamp}@.
-* @-docker-image-from=NAME@ builds a custom docker image on the fly as described above, but using the specified image as a base instead of the default @debian:slim-stable@ image. Note that the build recipe runs commands like @apt-get install [...] libfuse2 ca-certificates@ so only Debian-based base images are supported. For more flexibility, use one of the above @-docker-image=...@ options.
-* @-timeout=2m@ extends the time limit for each HTTP request made by the diagnostics suite, including the process of uploading a custom-built docker image, to 2 minutes (the default HTTP request timeout is 10 seconds, and the default upload time limit is either the HTTP timeout or 1 minute, whichever is longer).
+* @-docker-image="hello-world"@ uses a tiny "hello world" image that is already embedded in the @arvados-client@ binary. This works even if the client host does not have any docker tools installed, and it minimizes the data transferred during the diagnostics suite. It provides less test coverage than the default option, but it will at least check that it is possible to run a container on the cluster.
+* @-docker-image=X@ (where @X@ is a Docker image name or a portable data hash) uses a Docker image that has already been uploaded to your Arvados cluster using @arv keep docker@. In this case the diagnostics tool will run a container with the command @echo {timestamp}@.
+* @-docker-image-from=NAME@ builds a custom Docker image on the fly as described above, but using the specified image as a base instead of the default @debian:slim-stable@ image. Note that the build recipe runs commands like @apt-get install [...] libfuse2 ca-certificates@ so only Debian-based base images are supported. For more flexibility, use one of the above @-docker-image=...@ options.
+* @-timeout=2m@ extends the time limit for each HTTP request made by the diagnostics suite, including the process of uploading a custom-built Docker image, to 2 minutes (the default HTTP request timeout is 10 seconds, and the default upload time limit is either the HTTP timeout or 1 minute, whichever is longer).
 
 h2. Example output
 
