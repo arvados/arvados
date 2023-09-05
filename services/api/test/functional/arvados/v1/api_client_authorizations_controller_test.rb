@@ -199,6 +199,19 @@ class Arvados::V1::ApiClientAuthorizationsControllerTest < ActionController::Tes
     assert_not_empty(json_response['uuid'])
   end
 
+  [
+    :active_noscope,
+    :active_all_collections,
+    :active_userlist,
+    :foo_collection_sharing_token,
+  ].each do |auth|
+    test "#{auth} can get current token without the appropriate scope" do
+      authorize_with auth
+      get :current
+      assert_response :success
+    end
+  end
+
   test "get current token, no auth" do
     get :current
     assert_response 401

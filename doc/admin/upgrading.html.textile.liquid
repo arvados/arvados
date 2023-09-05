@@ -48,6 +48,10 @@ In the @Users@ section of your cluster configuration, there are now several opti
 
 The defaults for all of these options match the previous behavior of @arvados-login-sync@ _except_ for @SyncIgnoredGroups@. This list names groups that @arvados-login-sync@ will never modify by adding or removing members. As a security precaution, the default list names security-sensitive system groups on Debian- and Red Hat-based distributions. If you are using Arvados to manage system group membership on shell nodes, especially @sudo@ or @wheel@, you may want to provide your own list. Set @SyncIgnoredGroups: []@ to restore the original behavior of ignoring no groups.
 
+h3. API clients can always retrieve their current token, regardless of scopes
+
+We have introduced a small exception to the previous behavior of "Arvados API token scopes":{{ site.baseurl }}/admin/scoped-tokens.html in this release. A valid token is now always allowed to issue a request to "@GET /arvados/v1/api_client_authorizations/current@":{{ site.baseurl }}/api/methods/api_client_authorizations.html#current regardless of its scopes. This allows clients to reliably determine whether a request failed because a token is invalid, or because the token is not permitted to perform a particular request. The API server itself needs to be able to do this to validate tokens issued by other clusters in a federation.
+
 h3. UseAWSS3v2Driver option removed
 
 The old "v1" S3 driver for keepstore has been removed. The new "v2" implementation, which has been the default since Arvados 2.5.0, is always used. The @Volumes.*.DriverParameters.UseAWSS3v2Driver@ configuration key is no longer recognized. If your config file uses it, remove it to avoid warning messages at startup.
