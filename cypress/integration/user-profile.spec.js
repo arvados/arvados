@@ -145,6 +145,8 @@ describe('User profile tests', function() {
             website: 'example.com',
         });
 
+        cy.get('[data-cy=profile-form] button[type="submit"]').should('not.be.disabled');
+
         // Submit
         cy.get('[data-cy=profile-form] button[type="submit"]').click();
 
@@ -159,6 +161,9 @@ describe('User profile tests', function() {
             role: 'Data Scientist',
             website: 'example.com',
         });
+
+        // if it worked, the save button should be disabled.
+        cy.get('[data-cy=profile-form] button[type="submit"]').should('be.disabled');
     });
 
     it('non-admin cannot edit other profile', function() {
