@@ -82,7 +82,7 @@ class ArvadosApiToken
     Thread.current[:user] = auth.andand.user
 
     if auth.nil? and not remote_errcodes.empty?
-      # If we failed to the validate any tokens because of remote validation
+      # If we failed to validate any tokens because of remote validation
       # errors, pass those on to the client. This code is functionally very
       # similar to ApplicationController#render_error, but the implementation
       # is very different because we're a Rack middleware, not in
