@@ -34,8 +34,8 @@ class ContainerRequestTest < ActiveSupport::TestCase
 
   def lock_and_run(ctr)
       act_as_system_user do
-        ctr.update_attributes!(state: Container::Locked)
-        ctr.update_attributes!(state: Container::Running)
+        ctr.update!(state: Container::Locked)
+        ctr.update!(state: Container::Running)
       end
   end
 
@@ -129,7 +129,7 @@ class ContainerRequestTest < ActiveSupport::TestCase
       cr.save!
       assert_raises(ActiveRecord::RecordInvalid) do
         cr = ContainerRequest.find_by_uuid cr.uuid
-        cr.update_attributes!({state: "Committed",
+        cr.update!({state: "Committed",
                                priority: 1}.merge(value))
       end
     end
@@ -138,7 +138,7 @@ class ContainerRequestTest < ActiveSupport::TestCase
   test "Update from fixture" do
     set_user_from_auth :active
     cr = ContainerRequest.find_by_uuid(container_requests(:running).uuid)
-    cr.update_attributes!(description: "New description")
+    cr.update!(description: "New description")
     assert_equal "New description", cr.description
   end
 
@@ -147,7 +147,7 @@ class ContainerRequestTest < ActiveSupport::TestCase
       cr = create_minimal_req!(state: "Uncommitted", priority: 1)
       cr.save!
       cr = ContainerRequest.find_by_uuid cr.uuid
-      cr.update_attributes!(state: "Committed",
+      cr.update!(state: "Committed",
                             runtime_constraints: {"vcpus" => 1, "ram" => 23})
       assert_not_nil cr.container_uuid
   end
@@ -217,7 +217,7 @@ class ContainerRequestTest < ActiveSupport::TestCase
     assert_operator c1.priority, :<, c2.priority
     c2priority_was = c2.priority
 
-    cr1.update_attributes!(priority: 0)
+    cr1.update!(priority: 0)
 
     c1.reload
     assert_equal 0, c1.priority
@@ -233,7 +233,7 @@ class ContainerRequestTest < ActiveSupport::TestCase
 
     act_as_system_user do
       Container.find_by_uuid(cr.container_uuid).
-        update_attributes!(state: Container::Cancelled, cost: 1.25)
+        update!(state: Container::Cancelled, cost: 1.25)
     end
 
     cr.reload
@@ -252,8 +252,8 @@ class ContainerRequestTest < ActiveSupport::TestCase
 
     c = act_as_system_user do
       c = Container.find_by_uuid(cr.container_uuid)
-      c.update_attributes!(state: Container::Locked)
-      c.update_attributes!(state: Container::Running)
+      c.update!(state: Container::Locked)
+      c.update!(state: Container::Running)
       c
     end
 
@@ -263,7 +263,7 @@ class ContainerRequestTest < ActiveSupport::TestCase
     output_pdh = '1f4b0bc7583c2a7f9102c395f4ffc5e3+45'
     log_pdh = 'fa7aeb5140e2848d39b416daeef4ffc5+45'
     act_as_system_user do
-      c.update_attributes!(state: Container::Complete,
+      c.update!(state: Container::Complete,
                            cost: 1.25,
                            output: output_pdh,
                            log: log_pdh)
@@ -302,8 +302,8 @@ class ContainerRequestTest < ActiveSupport::TestCase
 
     c = act_as_system_user do
       c = Container.find_by_uuid(cr.container_uuid)
-      c.update_attributes!(state: Container::Locked)
-      c.update_attributes!(state: Container::Running,
+      c.update!(state: Container::Locked)
+      c.update!(state: Container::Running,
                            output: output_pdh,
                            log: log_pdh)
       c
@@ -315,7 +315,7 @@ class ContainerRequestTest < ActiveSupport::TestCase
     act_as_system_user do
       Collection.where(portable_data_hash: output_pdh).delete_all
       Collection.where(portable_data_hash: log_pdh).delete_all
-      c.update_attributes!(state: Container::Complete)
+      c.update!(state: Container::Complete)
     end
 
     cr.reload
@@ -333,8 +333,8 @@ class ContainerRequestTest < ActiveSupport::TestCase
 
     c = act_as_system_user do
       c = Container.find_by_uuid(cr.container_uuid)
-      c.update_attributes!(state: Container::Locked)
-      c.update_attributes!(state: Container::Running)
+      c.update!(state: Container::Locked)
+      c.update!(state: Container::Running)
       c
     end
 
@@ -454,7 +454,7 @@ class ContainerRequestTest < ActiveSupport::TestCase
     # increasing priority of the most recent toplevel container should
     # reprioritize all of its descendants (including the shared
     # grandchild) above everything else.
-    toplevel_crs[2].update_attributes!(priority: 72)
+    toplevel_crs[2].update!(priority: 72)
     (parents + children + grandchildren + [shared_grandchild]).map(&:reload)
     assert_operator shared_grandchild.priority, :>, grandchildren[0].priority
     assert_operator shared_grandchild.priority, :>, children[0].priority
@@ -471,7 +471,7 @@ class ContainerRequestTest < ActiveSupport::TestCase
     # cancelling the most recent toplevel container should
     # reprioritize all of its descendants (except the shared
     # grandchild) to zero
-    toplevel_crs[2].update_attributes!(priority: 0)
+    toplevel_crs[2].update!(priority: 0)
     (parents + children + grandchildren + [shared_grandchild]).map(&:reload)
     assert_operator 0, :==, parents[2].priority
     assert_operator 0, :==, children[2].priority
@@ -480,7 +480,7 @@ class ContainerRequestTest < ActiveSupport::TestCase
 
     # cancel a child request, the parent should be > 0 but
     # the child and grandchild go to 0.
-    children_crs[1].update_attributes!(priority: 0)
+    children_crs[1].update!(priority: 0)
     (parents + children + grandchildren + [shared_grandchild]).map(&:reload)
     assert_operator 0, :<, parents[1].priority
     assert_operator parents[0].priority, :>, parents[1].priority
@@ -490,7 +490,7 @@ class ContainerRequestTest < ActiveSupport::TestCase
 
     # update the parent, it should get a higher priority but the children and
     # grandchildren should remain at 0
-    toplevel_crs[1].update_attributes!(priority: 6)
+    toplevel_crs[1].update!(priority: 6)
     (parents + children + grandchildren + [shared_grandchild]).map(&:reload)
     assert_operator 0, :<, parents[1].priority
     assert_operator parents[0].priority, :<, parents[1].priority
@@ -805,7 +805,7 @@ class ContainerRequestTest < ActiveSupport::TestCase
       #   should be assigned.
       # * When use_existing is false, a different container should be assigned.
       # * When env1 and env2 are different, a different container should be assigned.
-      cr2.update_attributes!({state: ContainerRequest::Committed})
+      cr2.update!({state: ContainerRequest::Committed})
       assert_equal (cr2.use_existing == true and (env1 == env2)),
                    (cr1.container_uuid == cr2.container_uuid)
     end
@@ -826,8 +826,8 @@ class ContainerRequestTest < ActiveSupport::TestCase
 
     c = act_as_system_user do
       c = Container.find_by_uuid(cr.container_uuid)
-      c.update_attributes!(state: Container::Locked)
-      c.update_attributes!(state: Container::Running)
+      c.update!(state: Container::Locked)
+      c.update!(state: Container::Running)
       c
     end
 
@@ -839,8 +839,8 @@ class ContainerRequestTest < ActiveSupport::TestCase
     prev_container_uuid = cr.container_uuid
 
     act_as_system_user do
-      c.update_attributes!(cost: 0.5, subrequests_cost: 1.25)
-      c.update_attributes!(state: Container::Cancelled)
+      c.update!(cost: 0.5, subrequests_cost: 1.25)
+      c.update!(state: Container::Cancelled)
     end
 
     cr.reload
@@ -852,10 +852,10 @@ class ContainerRequestTest < ActiveSupport::TestCase
 
     c = act_as_system_user do
       c = Container.find_by_uuid(cr.container_uuid)
-      c.update_attributes!(state: Container::Locked)
-      c.update_attributes!(state: Container::Running)
-      c.update_attributes!(cost: 0.125)
-      c.update_attributes!(state: Container::Cancelled)
+      c.update!(state: Container::Locked)
+      c.update!(state: Container::Running)
+      c.update!(cost: 0.125)
+      c.update!(state: Container::Cancelled)
       c
     end
 
@@ -878,8 +878,8 @@ class ContainerRequestTest < ActiveSupport::TestCase
     c = act_as_system_user do
       c = Container.find_by_uuid(cr.container_uuid)
       assert_equal spec.token, c.runtime_token
-      c.update_attributes!(state: Container::Locked)
-      c.update_attributes!(state: Container::Running)
+      c.update!(state: Container::Locked)
+      c.update!(state: Container::Running)
       c
     end
 
@@ -889,7 +889,7 @@ class ContainerRequestTest < ActiveSupport::TestCase
     prev_container_uuid = cr.container_uuid
 
     act_as_system_user do
-      c.update_attributes!(state: Container::Cancelled)
+      c.update!(state: Container::Cancelled)
     end
 
     cr.reload
@@ -900,7 +900,7 @@ class ContainerRequestTest < ActiveSupport::TestCase
     c = act_as_system_user do
       c = Container.find_by_uuid(cr.container_uuid)
       assert_equal spec.token, c.runtime_token
-      c.update_attributes!(state: Container::Cancelled)
+      c.update!(state: Container::Cancelled)
       c
     end
 
@@ -916,8 +916,8 @@ class ContainerRequestTest < ActiveSupport::TestCase
 
     c = act_as_system_user do
       c = Container.find_by_uuid(cr.container_uuid)
-      c.update_attributes!(state: Container::Locked)
-      c.update_attributes!(state: Container::Running)
+      c.update!(state: Container::Locked)
+      c.update!(state: Container::Running)
       c
     end
 
@@ -932,7 +932,7 @@ class ContainerRequestTest < ActiveSupport::TestCase
         logc = Collection.new(manifest_text: ". 37b51d194a7513e45b56f6524f2d51f2+3 0:3:bar\n")
         logc.save!
         c = Container.find_by_uuid(cr.container_uuid)
-        c.update_attributes!(state: Container::Cancelled, log: logc.portable_data_hash)
+        c.update!(state: Container::Cancelled, log: logc.portable_data_hash)
         c
       end
     end
@@ -955,8 +955,8 @@ class ContainerRequestTest < ActiveSupport::TestCase
     cr1 = create_minimal_req!(priority: 1, state: "Committed", container_count_max: 2, command: ["echo", "foo1"])
     c1 = Container.find_by_uuid(cr1.container_uuid)
     act_as_system_user do
-      c1.update_attributes!(state: Container::Locked)
-      c1.update_attributes!(state: Container::Running)
+      c1.update!(state: Container::Locked)
+      c1.update!(state: Container::Running)
     end
 
     cr2 = with_container_auth(c1) do
@@ -964,8 +964,8 @@ class ContainerRequestTest < ActiveSupport::TestCase
     end
     c2 = Container.find_by_uuid(cr2.container_uuid)
     act_as_system_user do
-      c2.update_attributes!(state: Container::Locked)
-      c2.update_attributes!(state: Container::Running)
+      c2.update!(state: Container::Locked)
+      c2.update!(state: Container::Running)
     end
 
     cr3 = with_container_auth(c2) do
@@ -974,8 +974,8 @@ class ContainerRequestTest < ActiveSupport::TestCase
     c3 = Container.find_by_uuid(cr3.container_uuid)
 
     act_as_system_user do
-      c3.update_attributes!(state: Container::Locked)
-      c3.update_attributes!(state: Container::Running)
+      c3.update!(state: Container::Locked)
+      c3.update!(state: Container::Running)
     end
 
     # All the containers are in running state
@@ -1007,8 +1007,8 @@ class ContainerRequestTest < ActiveSupport::TestCase
     cr1 = create_minimal_req!(priority: 1, state: "Committed", container_count_max: 2, command: ["echo", "foo1"])
     c1 = Container.find_by_uuid(cr1.container_uuid)
     act_as_system_user do
-      c1.update_attributes!(state: Container::Locked)
-      c1.update_attributes!(state: Container::Running)
+      c1.update!(state: Container::Locked)
+      c1.update!(state: Container::Running)
     end
 
     cr2 = with_container_auth(c1) do
@@ -1016,8 +1016,8 @@ class ContainerRequestTest < ActiveSupport::TestCase
     end
     c2 = Container.find_by_uuid(cr2.container_uuid)
     act_as_system_user do
-      c2.update_attributes!(state: Container::Locked)
-      c2.update_attributes!(state: Container::Running)
+      c2.update!(state: Container::Locked)
+      c2.update!(state: Container::Running)
     end
 
     cr3 = with_container_auth(c2) do
@@ -1026,8 +1026,8 @@ class ContainerRequestTest < ActiveSupport::TestCase
     c3 = Container.find_by_uuid(cr3.container_uuid)
 
     act_as_system_user do
-      c3.update_attributes!(state: Container::Locked)
-      c3.update_attributes!(state: Container::Running)
+      c3.update!(state: Container::Locked)
+      c3.update!(state: Container::Running)
     end
 
     # All the containers are in running state
@@ -1066,8 +1066,8 @@ class ContainerRequestTest < ActiveSupport::TestCase
     cr1 = create_minimal_req!(priority: 1, state: "Committed", container_count_max: 2, command: ["echo", "foo1"])
     c1 = Container.find_by_uuid(cr1.container_uuid)
     act_as_system_user do
-      c1.update_attributes!(state: Container::Locked)
-      c1.update_attributes!(state: Container::Running)
+      c1.update!(state: Container::Locked)
+      c1.update!(state: Container::Running)
     end
 
     cr2 = with_container_auth(c1) do
@@ -1075,8 +1075,8 @@ class ContainerRequestTest < ActiveSupport::TestCase
     end
     c2 = Container.find_by_uuid(cr2.container_uuid)
     act_as_system_user do
-      c2.update_attributes!(state: Container::Locked)
-      c2.update_attributes!(state: Container::Running)
+      c2.update!(state: Container::Locked)
+      c2.update!(state: Container::Running)
     end
 
     cr3 = with_container_auth(c2) do
@@ -1085,8 +1085,8 @@ class ContainerRequestTest < ActiveSupport::TestCase
     c3 = Container.find_by_uuid(cr3.container_uuid)
 
     act_as_system_user do
-      c3.update_attributes!(state: Container::Locked)
-      c3.update_attributes!(state: Container::Running)
+      c3.update!(state: Container::Locked)
+      c3.update!(state: Container::Running)
     end
 
     # All the containers are in running state
@@ -1185,9 +1185,9 @@ class ContainerRequestTest < ActiveSupport::TestCase
       logc.save!
 
       c = Container.find_by_uuid(cr.container_uuid)
-      c.update_attributes!(state: Container::Locked)
-      c.update_attributes!(state: Container::Running)
-      c.update_attributes!(state: final_state,
+      c.update!(state: Container::Locked)
+      c.update!(state: Container::Running)
+      c.update!(state: final_state,
                            exit_code: exit_code,
                            output: '1f4b0bc7583c2a7f9102c395f4ffc5e3+45',
                            log: logc.portable_data_hash)
@@ -1211,7 +1211,7 @@ class ContainerRequestTest < ActiveSupport::TestCase
 
     cr3 = create_minimal_req!(priority: 1, state: ContainerRequest::Uncommitted)
     assert_equal ContainerRequest::Uncommitted, cr3.state
-    cr3.update_attributes!(state: ContainerRequest::Committed)
+    cr3.update!(state: ContainerRequest::Committed)
     assert_equal cr.container_uuid, cr3.container_uuid
     assert_equal ContainerRequest::Final, cr3.state
   end
@@ -1307,7 +1307,7 @@ class ContainerRequestTest < ActiveSupport::TestCase
       # Even though preemptible is not allowed, we should be able to
       # commit a CR that was created earlier when preemptible was the
       # default.
-      commit_later.update_attributes!(priority: 1, state: "Committed")
+      commit_later.update!(priority: 1, state: "Committed")
       expect[false].push commit_later
     end
 
@@ -1323,7 +1323,7 @@ class ContainerRequestTest < ActiveSupport::TestCase
       # Cancelling the parent used to fail while updating the child
       # containers' priority, because the child containers' unchanged
       # preemptible fields caused validation to fail.
-      parent.update_attributes!(state: 'Cancelled')
+      parent.update!(state: 'Cancelled')
 
       [false, true].each do |pflag|
         expect[pflag].each do |cr|
@@ -1450,7 +1450,7 @@ class ContainerRequestTest < ActiveSupport::TestCase
         when 'Final'
           act_as_system_user do
             Container.find_by_uuid(cr.container_uuid).
-              update_attributes!(state: Container::Cancelled)
+              update!(state: Container::Cancelled)
           end
           cr.reload
         else
@@ -1458,10 +1458,10 @@ class ContainerRequestTest < ActiveSupport::TestCase
         end
         assert_equal state, cr.state
         if permitted
-          assert cr.update_attributes!(updates)
+          assert cr.update!(updates)
         else
           assert_raises(ActiveRecord::RecordInvalid) do
-            cr.update_attributes!(updates)
+            cr.update!(updates)
           end
         end
       end
@@ -1493,7 +1493,7 @@ class ContainerRequestTest < ActiveSupport::TestCase
       assert_equal 1, c.priority
 
       prj = Group.find_by_uuid cr.owner_uuid
-      prj.update_attributes!(trash_at: db_current_time)
+      prj.update!(trash_at: db_current_time)
 
       # the cr's container now has priority of 0
       c.reload
@@ -1506,7 +1506,7 @@ class ContainerRequestTest < ActiveSupport::TestCase
       # container request to go to final state and run the finalize
       # function
       act_as_system_user do
-        c.update_attributes!(state: 'Cancelled', log: 'fa7aeb5140e2848d39b416daeef4ffc5+45')
+        c.update!(state: 'Cancelled', log: 'fa7aeb5140e2848d39b416daeef4ffc5+45')
       end
       c.reload
       cr.reload
@@ -1615,7 +1615,7 @@ class ContainerRequestTest < ActiveSupport::TestCase
     sm = {'/secret/foo' => {'kind' => 'text', 'content' => secret_string}}
     set_user_from_auth :active
     cr = create_minimal_req!
-    assert_equal false, cr.update_attributes(state: "Committed",
+    assert_equal false, cr.update(state: "Committed",
                                              priority: 1,
                                              mounts: cr.mounts.merge(sm),
                                              secret_mounts: sm)
@@ -1635,7 +1635,7 @@ class ContainerRequestTest < ActiveSupport::TestCase
     assert_not_nil ApiClientAuthorization.find_by_uuid(spec.uuid)
 
     act_as_system_user do
-      c.update_attributes!(state: Container::Complete,
+      c.update!(state: Container::Complete,
                            exit_code: 0,
                            output: '1f4b0bc7583c2a7f9102c395f4ffc5e3+45',
                            log: 'fa7aeb5140e2848d39b416daeef4ffc5+45')
@@ -1714,7 +1714,7 @@ class ContainerRequestTest < ActiveSupport::TestCase
     assert_nil cr2.container_uuid
 
     # Update cr2 to commited state, check for reuse, then run it
-    cr2.update_attributes!({state: ContainerRequest::Committed})
+    cr2.update!({state: ContainerRequest::Committed})
     assert_equal cr1.container_uuid, cr2.container_uuid
 
     cr2.reload
@@ -1748,12 +1748,12 @@ class ContainerRequestTest < ActiveSupport::TestCase
           logc.save!
 
           c = Container.find_by_uuid(cr.container_uuid)
-          c.update_attributes!(state: Container::Locked)
-          c.update_attributes!(state: Container::Running)
+          c.update!(state: Container::Locked)
+          c.update!(state: Container::Running)
 
-          c.update_attributes!(output_properties: container_prop)
+          c.update!(output_properties: container_prop)
 
-          c.update_attributes!(state: Container::Complete,
+          c.update!(state: Container::Complete,
                                exit_code: 0,
                                output: '1f4b0bc7583c2a7f9102c395f4ffc5e3+45',
                                log: logc.portable_data_hash)
@@ -1773,9 +1773,9 @@ class ContainerRequestTest < ActiveSupport::TestCase
     cr = create_minimal_req!(priority: 5, state: "Committed", container_count_max: 3)
     c = Container.find_by_uuid cr.container_uuid
     act_as_system_user do
-      c.update_attributes!(state: Container::Locked)
-      c.update_attributes!(state: Container::Running)
-      c.update_attributes!(state: Container::Cancelled, cost: 3)
+      c.update!(state: Container::Locked)
+      c.update!(state: Container::Running)
+      c.update!(state: Container::Cancelled, cost: 3)
     end
     cr.reload
     assert_equal 3, cr.cumulative_cost
@@ -1792,12 +1792,12 @@ class ContainerRequestTest < ActiveSupport::TestCase
     assert_equal c.uuid, cr2.requesting_container_uuid
     c2 = Container.find_by_uuid cr2.container_uuid
     act_as_system_user do
-      c2.update_attributes!(state: Container::Locked)
-      c2.update_attributes!(state: Container::Running)
+      c2.update!(state: Container::Locked)
+      c2.update!(state: Container::Running)
       logc = Collection.new(owner_uuid: system_user_uuid,
                             manifest_text: ". ef772b2f28e2c8ca84de45466ed19ee9+7815 0:0:arv-mount.txt\n")
       logc.save!
-      c2.update_attributes!(state: Container::Complete,
+      c2.update!(state: Container::Complete,
                             exit_code: 0,
                             output: '1f4b0bc7583c2a7f9102c395f4ffc5e3+45',
                             log: logc.portable_data_hash,
@@ -1818,7 +1818,7 @@ class ContainerRequestTest < ActiveSupport::TestCase
     assert_equal 7, c.subrequests_cost
 
     act_as_system_user do
-      c.update_attributes!(state: Container::Complete, exit_code: 0, cost: 9)
+      c.update!(state: Container::Complete, exit_code: 0, cost: 9)
     end
 
     c.reload

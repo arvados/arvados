@@ -103,7 +103,7 @@ class Arvados::V1::ContainerRequestsControllerTest < ActionController::TestCase
   test "update without deleting secret_mounts" do
     authorize_with :active
     req = container_requests(:uncommitted)
-    req.update_attributes!(secret_mounts: {'/foo' => {'kind' => 'json', 'content' => 'bar'}})
+    req.update!(secret_mounts: {'/foo' => {'kind' => 'json', 'content' => 'bar'}})
 
     patch :update, params: {
             id: req.uuid,
@@ -169,7 +169,7 @@ class Arvados::V1::ContainerRequestsControllerTest < ActionController::TestCase
   test "filter on container subproperty runtime_status[foo] = bar" do
     ctr = containers(:running)
     act_as_system_user do
-      ctr.update_attributes!(runtime_status: {foo: 'bar'})
+      ctr.update!(runtime_status: {foo: 'bar'})
     end
     authorize_with :active
     get :index, params: {

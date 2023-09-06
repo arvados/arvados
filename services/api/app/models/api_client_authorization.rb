@@ -413,9 +413,9 @@ class ApiClientAuthorization < ArvadosModel
             (remote_user_prefix == Rails.configuration.Login.LoginCluster or
              Rails.configuration.Users.NewUsersAreActive or
              Rails.configuration.RemoteClusters[remote_user_prefix].andand["ActivateUsers"])
-            user.update_attributes!(is_active: true)
+            user.update!(is_active: true)
           elsif user.is_active && !remote_user['is_active']
-            user.update_attributes!(is_active: false)
+            user.update!(is_active: false)
           end
 
           if remote_user_prefix == Rails.configuration.Login.LoginCluster and
@@ -423,7 +423,7 @@ class ApiClientAuthorization < ArvadosModel
             user.is_admin != remote_user['is_admin']
             # Remote cluster controls our user database, including the
             # admin flag.
-            user.update_attributes!(is_admin: remote_user['is_admin'])
+            user.update!(is_admin: remote_user['is_admin'])
           end
         end
       end
@@ -459,7 +459,7 @@ class ApiClientAuthorization < ArvadosModel
           return nil
         end
       end
-      auth.update_attributes!(user: user,
+      auth.update!(user: user,
                               api_token: stored_secret,
                               api_client_id: 0,
                               scopes: scopes,

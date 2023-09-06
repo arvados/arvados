@@ -889,7 +889,7 @@ The Arvados team.
    ['dst', :project_viewer_trustedclient]].each do |which_scoped, auth|
     test "refuse to merge with scoped #{which_scoped} token" do
       act_as_system_user do
-        api_client_authorizations(auth).update_attributes(scopes: ["GET /", "POST /", "PUT /"])
+        api_client_authorizations(auth).update(scopes: ["GET /", "POST /", "PUT /"])
       end
       authorize_with(:active_trustedclient)
       post(:merge, params: {

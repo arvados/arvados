@@ -379,7 +379,7 @@ class Container < ArvadosModel
       if self.state != Queued
         raise LockFailedError.new("cannot lock when #{self.state}")
       end
-      self.update_attributes!(state: Locked)
+      self.update!(state: Locked)
     end
   end
 
@@ -397,7 +397,7 @@ class Container < ArvadosModel
       if self.state != Locked
         raise InvalidStateTransitionError.new("cannot unlock when #{self.state}")
       end
-      self.update_attributes!(state: Queued)
+      self.update!(state: Queued)
     end
   end
 
@@ -642,7 +642,7 @@ class Container < ArvadosModel
       # ensure the token doesn't validate later in the same
       # transaction (e.g., in a test case) by satisfying expires_at >
       # transaction timestamp.
-      self.auth.andand.update_attributes(expires_at: db_transaction_time)
+      self.auth.andand.update(expires_at: db_transaction_time)
       self.auth = nil
       return
     elsif self.auth
@@ -835,7 +835,7 @@ class Container < ArvadosModel
                 # Queued with priority 0.  (OTOH, if the child is already
                 # running, leave it alone so it can get cancelled the
                 # usual way, get a copy of the log collection, etc.)
-                cr.update_attributes!(state: ContainerRequest::Final)
+                cr.update!(state: ContainerRequest::Final)
               end
             end
           end

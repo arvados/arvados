@@ -17,7 +17,7 @@ class RenameMetadataAttributes < ActiveRecord::Migration[4.2]
       Metadatum.where('head like ?', 'orvos#%').each do |m|
         kind_uuid = m.head.match /^(orvos\#.*)\#([-0-9a-z]+)$/
         if kind_uuid
-          m.update_attributes(head_kind: kind_uuid[1],
+          m.update(head_kind: kind_uuid[1],
                               head: kind_uuid[2])
         end
       end
@@ -28,7 +28,7 @@ class RenameMetadataAttributes < ActiveRecord::Migration[4.2]
   def down
     begin
       Metadatum.where('head_kind is not null and head_kind <> ? and head is not null', '').each do |m|
-        m.update_attributes(head: m.head_kind + '#' + m.head)
+        m.update(head: m.head_kind + '#' + m.head)
       end
     rescue
     end

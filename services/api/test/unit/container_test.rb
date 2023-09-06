@@ -76,7 +76,7 @@ class ContainerTest < ActiveSupport::TestCase
 
   def check_illegal_updates c, bad_updates
     bad_updates.each do |u|
-      refute c.update_attributes(u), u.inspect
+      refute c.update(u), u.inspect
       refute c.valid?, u.inspect
       c.reload
     end
@@ -173,15 +173,15 @@ class ContainerTest < ActiveSupport::TestCase
     assert_equal Container::Queued, c.state
 
     set_user_from_auth :dispatch1
-    c.update_attributes! state: Container::Locked
-    c.update_attributes! state: Container::Running
+    c.update! state: Container::Locked
+    c.update! state: Container::Running
 
     [
       'error', 'errorDetail', 'warning', 'warningDetail', 'activity'
     ].each do |k|
       # String type is allowed
       string_val = 'A string is accepted'
-      c.update_attributes! runtime_status: {k => string_val}
+      c.update! runtime_status: {k => string_val}
       assert_equal string_val, c.runtime_status[k]
 
       # Other types aren't allowed
@@ -189,7 +189,7 @@ class ContainerTest < ActiveSupport::TestCase
         42, false, [], {}, nil
       ].each do |unallowed_val|
         assert_raises ActiveRecord::RecordInvalid do
-          c.update_attributes! runtime_status: {k => unallowed_val}
+          c.update! runtime_status: {k => unallowed_val}
         end
       end
     end
@@ -209,41 +209,41 @@ class ContainerTest < ActiveSupport::TestCase
 
     assert_equal Container::Queued, c1.state
     assert_raises ArvadosModel::PermissionDeniedError do
-      c1.update_attributes! runtime_status: {'error' => 'Oops!'}
+      c1.update! runtime_status: {'error' => 'Oops!'}
     end
 
     set_user_from_auth :dispatch1
 
     # Allow updates when state = Locked
-    c1.update_attributes! state: Container::Locked
-    c1.update_attributes! runtime_status: {'error' => 'Oops!'}
+    c1.update! state: Container::Locked
+    c1.update! runtime_status: {'error' => 'Oops!'}
     assert c1.runtime_status.key? 'error'
 
     # Reset when transitioning from Locked to Queued
-    c1.update_attributes! state: Container::Queued
+    c1.update! state: Container::Queued
     assert_equal c1.runtime_status, {}
 
     # Allow updates when state = Running
-    c1.update_attributes! state: Container::Locked
-    c1.update_attributes! state: Container::Running
-    c1.update_attributes! runtime_status: {'error' => 'Oops!'}
+    c1.update! state: Container::Locked
+    c1.update! state: Container::Running
+    c1.update! runtime_status: {'error' => 'Oops!'}
     assert c1.runtime_status.key? 'error'
 
     # Don't allow updates on other states
-    c1.update_attributes! state: Container::Complete
+    c1.update! state: Container::Complete
     assert_raises ActiveRecord::RecordInvalid do
-      c1.update_attributes! runtime_status: {'error' => 'Some other error'}
+      c1.update! runtime_status: {'error' => 'Some other error'}
     end
 
     set_user_from_auth :active
     c2, _ = minimal_new(attrs)
     assert_equal c2.runtime_status, {}
     set_user_from_auth :dispatch1
-    c2.update_attributes! state: Container::Locked
-    c2.update_attributes! state: Container::Running
-    c2.update_attributes! state: Container::Cancelled
+    c2.update! state: Container::Locked
+    c2.update! state: Container::Running
+    c2.update! state: Container::Cancelled
     assert_raises ActiveRecord::RecordInvalid do
-      c2.update_attributes! runtime_status: {'error' => 'Oops!'}
+      c2.update! runtime_status: {'error' => 'Oops!'}
     end
   end
 
@@ -294,13 +294,13 @@ class ContainerTest < ActiveSupport::TestCase
     assert_not_equal c_older.uuid, c_recent.uuid
 
     set_user_from_auth :dispatch1
-    c_older.update_attributes!({state: Container::Locked})
-    c_older.update_attributes!({state: Container::Running})
-    c_older.update_attributes!(completed_attrs)
+    c_older.update!({state: Container::Locked})
+    c_older.update!({state: Container::Running})
+    c_older.update!(completed_attrs)
 
-    c_recent.update_attributes!({state: Container::Locked})
-    c_recent.update_attributes!({state: Container::Running})
-    c_recent.update_attributes!(completed_attrs)
+    c_recent.update!({state: Container::Locked})
+    c_recent.update!({state: Container::Running})
+    c_recent.update!(completed_attrs)
 
     reused = Container.find_reusable(common_attrs)
     assert_not_nil reused
@@ -334,14 +334,14 @@ class ContainerTest < ActiveSupport::TestCase
 
     out1 = '1f4b0bc7583c2a7f9102c395f4ffc5e3+45'
     log1 = collections(:real_log_collection).portable_data_hash
-    c_output1.update_attributes!({state: Container::Locked})
-    c_output1.update_attributes!({state: Container::Running})
-    c_output1.update_attributes!(completed_attrs.merge({log: log1, output: out1}))
+    c_output1.update!({state: Container::Locked})
+    c_output1.update!({state: Container::Running})
+    c_output1.update!(completed_attrs.merge({log: log1, output: out1}))
 
     out2 = 'fa7aeb5140e2848d39b416daeef4ffc5+45'
-    c_output2.update_attributes!({state: Container::Locked})
-    c_output2.update_attributes!({state: Container::Running})
-    c_output2.update_attributes!(completed_attrs.merge({log: log1, output: out2}))
+    c_output2.update!({state: Container::Locked})
+    c_output2.update!({state: Container::Running})
+    c_output2.update!(completed_attrs.merge({log: log1, output: out2}))
 
     set_user_from_auth :active
     reused = Container.resolve(ContainerRequest.new(request_only(common_attrs)))
@@ -357,14 +357,14 @@ class ContainerTest < ActiveSupport::TestCase
     # Confirm the 3 container UUIDs are different.
     assert_equal 3, [c_slower.uuid, c_faster_started_first.uuid, c_faster_started_second.uuid].uniq.length
     set_user_from_auth :dispatch1
-    c_slower.update_attributes!({state: Container::Locked})
-    c_slower.update_attributes!({state: Container::Running,
+    c_slower.update!({state: Container::Locked})
+    c_slower.update!({state: Container::Running,
                                  progress: 0.1})
-    c_faster_started_first.update_attributes!({state: Container::Locked})
-    c_faster_started_first.update_attributes!({state: Container::Running,
+    c_faster_started_first.update!({state: Container::Locked})
+    c_faster_started_first.update!({state: Container::Running,
                                                progress: 0.15})
-    c_faster_started_second.update_attributes!({state: Container::Locked})
-    c_faster_started_second.update_attributes!({state: Container::Running,
+    c_faster_started_second.update!({state: Container::Locked})
+    c_faster_started_second.update!({state: Container::Running,
                                                 progress: 0.15})
     reused = Container.find_reusable(common_attrs)
     assert_not_nil reused
@@ -381,14 +381,14 @@ class ContainerTest < ActiveSupport::TestCase
     # Confirm the 3 container UUIDs are different.
     assert_equal 3, [c_slower.uuid, c_faster_started_first.uuid, c_faster_started_second.uuid].uniq.length
     set_user_from_auth :dispatch1
-    c_slower.update_attributes!({state: Container::Locked})
-    c_slower.update_attributes!({state: Container::Running,
+    c_slower.update!({state: Container::Locked})
+    c_slower.update!({state: Container::Running,
                                  progress: 0.1})
-    c_faster_started_first.update_attributes!({state: Container::Locked})
-    c_faster_started_first.update_attributes!({state: Container::Running,
+    c_faster_started_first.update!({state: Container::Locked})
+    c_faster_started_first.update!({state: Container::Running,
                                                progress: 0.15})
-    c_faster_started_second.update_attributes!({state: Container::Locked})
-    c_faster_started_second.update_attributes!({state: Container::Running,
+    c_faster_started_second.update!({state: Container::Locked})
+    c_faster_started_second.update!({state: Container::Running,
                                                 progress: 0.2})
     reused = Container.find_reusable(common_attrs)
     assert_not_nil reused
@@ -405,16 +405,16 @@ class ContainerTest < ActiveSupport::TestCase
     # Confirm the 3 container UUIDs are different.
     assert_equal 3, [c_slower.uuid, c_faster_started_first.uuid, c_faster_started_second.uuid].uniq.length
     set_user_from_auth :dispatch1
-    c_slower.update_attributes!({state: Container::Locked})
-    c_slower.update_attributes!({state: Container::Running,
+    c_slower.update!({state: Container::Locked})
+    c_slower.update!({state: Container::Running,
                                  progress: 0.1})
-    c_faster_started_first.update_attributes!({state: Container::Locked})
-    c_faster_started_first.update_attributes!({state: Container::Running,
+    c_faster_started_first.update!({state: Container::Locked})
+    c_faster_started_first.update!({state: Container::Running,
                                                runtime_status: {'warning' => 'This is not an error'},
                                                progress: 0.15})
-    c_faster_started_second.update_attributes!({state: Container::Locked})
+    c_faster_started_second.update!({state: Container::Locked})
     assert_equal 0, Container.where("runtime_status->'error' is not null").count
-    c_faster_started_second.update_attributes!({state: Container::Running,
+    c_faster_started_second.update!({state: Container::Running,
                                                 runtime_status: {'error' => 'Something bad happened'},
                                                 progress: 0.2})
     assert_equal 1, Container.where("runtime_status->'error' is not null").count
@@ -433,11 +433,11 @@ class ContainerTest < ActiveSupport::TestCase
     # Confirm the 3 container UUIDs are different.
     assert_equal 3, [c_low_priority.uuid, c_high_priority_older.uuid, c_high_priority_newer.uuid].uniq.length
     set_user_from_auth :dispatch1
-    c_low_priority.update_attributes!({state: Container::Locked,
+    c_low_priority.update!({state: Container::Locked,
                                        priority: 1})
-    c_high_priority_older.update_attributes!({state: Container::Locked,
+    c_high_priority_older.update!({state: Container::Locked,
                                               priority: 2})
-    c_high_priority_newer.update_attributes!({state: Container::Locked,
+    c_high_priority_newer.update!({state: Container::Locked,
                                               priority: 2})
     reused = Container.find_reusable(common_attrs)
     assert_not_nil reused
@@ -451,14 +451,14 @@ class ContainerTest < ActiveSupport::TestCase
     c_running, _ = minimal_new(common_attrs.merge({use_existing: false}))
     assert_not_equal c_failed.uuid, c_running.uuid
     set_user_from_auth :dispatch1
-    c_failed.update_attributes!({state: Container::Locked})
-    c_failed.update_attributes!({state: Container::Running})
-    c_failed.update_attributes!({state: Container::Complete,
+    c_failed.update!({state: Container::Locked})
+    c_failed.update!({state: Container::Running})
+    c_failed.update!({state: Container::Complete,
                                  exit_code: 42,
                                  log: 'ea10d51bcf88862dbcc36eb292017dfd+45',
                                  output: 'ea10d51bcf88862dbcc36eb292017dfd+45'})
-    c_running.update_attributes!({state: Container::Locked})
-    c_running.update_attributes!({state: Container::Running,
+    c_running.update!({state: Container::Locked})
+    c_running.update!({state: Container::Running,
                                   progress: 0.15})
     reused = Container.find_reusable(common_attrs)
     assert_not_nil reused
@@ -472,14 +472,14 @@ class ContainerTest < ActiveSupport::TestCase
     c_running, _ = minimal_new(common_attrs.merge({use_existing: false}))
     assert_not_equal c_completed.uuid, c_running.uuid
     set_user_from_auth :dispatch1
-    c_completed.update_attributes!({state: Container::Locked})
-    c_completed.update_attributes!({state: Container::Running})
-    c_completed.update_attributes!({state: Container::Complete,
+    c_completed.update!({state: Container::Locked})
+    c_completed.update!({state: Container::Running})
+    c_completed.update!({state: Container::Complete,
                                     exit_code: 0,
                                     log: 'ea10d51bcf88862dbcc36eb292017dfd+45',
                                     output: '1f4b0bc7583c2a7f9102c395f4ffc5e3+45'})
-    c_running.update_attributes!({state: Container::Locked})
-    c_running.update_attributes!({state: Container::Running,
+    c_running.update!({state: Container::Locked})
+    c_running.update!({state: Container::Running,
                                   progress: 0.15})
     reused = Container.find_reusable(common_attrs)
     assert_not_nil reused
@@ -493,9 +493,9 @@ class ContainerTest < ActiveSupport::TestCase
     c_running, _ = minimal_new(common_attrs.merge({use_existing: false}))
     assert_not_equal c_running.uuid, c_locked.uuid
     set_user_from_auth :dispatch1
-    c_locked.update_attributes!({state: Container::Locked})
-    c_running.update_attributes!({state: Container::Locked})
-    c_running.update_attributes!({state: Container::Running,
+    c_locked.update!({state: Container::Locked})
+    c_running.update!({state: Container::Locked})
+    c_running.update!({state: Container::Running,
                                   progress: 0.15})
     reused = Container.find_reusable(common_attrs)
     assert_not_nil reused
@@ -509,7 +509,7 @@ class ContainerTest < ActiveSupport::TestCase
     c_queued, _ = minimal_new(common_attrs.merge({use_existing: false}))
     assert_not_equal c_queued.uuid, c_locked.uuid
     set_user_from_auth :dispatch1
-    c_locked.update_attributes!({state: Container::Locked})
+    c_locked.update!({state: Container::Locked})
     reused = Container.find_reusable(common_attrs)
     assert_not_nil reused
     assert_equal reused.uuid, c_locked.uuid
@@ -520,9 +520,9 @@ class ContainerTest < ActiveSupport::TestCase
     attrs = REUSABLE_COMMON_ATTRS.merge({environment: {"var" => "failed"}})
     c, _ = minimal_new(attrs)
     set_user_from_auth :dispatch1
-    c.update_attributes!({state: Container::Locked})
-    c.update_attributes!({state: Container::Running})
-    c.update_attributes!({state: Container::Complete,
+    c.update!({state: Container::Locked})
+    c.update!({state: Container::Running})
+    c.update!({state: Container::Complete,
                           exit_code: 33})
     reused = Container.find_reusable(attrs)
     assert_nil reused
@@ -543,8 +543,8 @@ class ContainerTest < ActiveSupport::TestCase
         c1_attrs = REUSABLE_COMMON_ATTRS.merge({environment: {"test" => name, "state" => c1_state}, scheduling_parameters: {"preemptible" => c1_preemptible}})
         c1, _ = minimal_new(c1_attrs)
         set_user_from_auth :dispatch1
-        c1.update_attributes!({state: Container::Locked}) if c1_state != Container::Queued
-        c1.update_attributes!({state: Container::Running, priority: c1_priority}) if c1_state == Container::Running
+        c1.update!({state: Container::Locked}) if c1_state != Container::Queued
+        c1.update!({state: Container::Running, priority: c1_priority}) if c1_state == Container::Running
         c2_attrs = c1_attrs.merge({scheduling_parameters: {"preemptible" => c2_preemptible}})
         reused = Container.find_reusable(c2_attrs)
         if should_reuse && c1_priority > 0
@@ -676,7 +676,7 @@ class ContainerTest < ActiveSupport::TestCase
                               {state: Container::Complete}]
 
     c.lock
-    c.update_attributes! state: Container::Running
+    c.update! state: Container::Running
 
     check_illegal_modify c
     check_bogus_states c
@@ -684,7 +684,7 @@ class ContainerTest < ActiveSupport::TestCase
     check_illegal_updates c, [{state: Container::Queued}]
     c.reload
 
-    c.update_attributes! priority: 3
+    c.update! priority: 3
   end
 
   test "Lock and unlock" do
@@ -699,11 +699,11 @@ class ContainerTest < ActiveSupport::TestCase
       c.lock
     end
     c.reload
-    assert cr.update_attributes priority: 1
+    assert cr.update priority: 1
 
-    refute c.update_attributes(state: Container::Running), "not locked"
+    refute c.update(state: Container::Running), "not locked"
     c.reload
-    refute c.update_attributes(state: Container::Complete), "not locked"
+    refute c.update(state: Container::Complete), "not locked"
     c.reload
 
     assert c.lock, show_errors(c)
@@ -717,13 +717,13 @@ class ContainerTest < ActiveSupport::TestCase
     refute c.locked_by_uuid
     refute c.auth_uuid
 
-    refute c.update_attributes(state: Container::Running), "not locked"
+    refute c.update(state: Container::Running), "not locked"
     c.reload
     refute c.locked_by_uuid
     refute c.auth_uuid
 
     assert c.lock, show_errors(c)
-    assert c.update_attributes(state: Container::Running), show_errors(c)
+    assert c.update(state: Container::Running), show_errors(c)
     assert c.locked_by_uuid
     assert c.auth_uuid
 
@@ -740,7 +740,7 @@ class ContainerTest < ActiveSupport::TestCase
     end
     c.reload
 
-    assert c.update_attributes(state: Container::Complete), show_errors(c)
+    assert c.update(state: Container::Complete), show_errors(c)
     refute c.locked_by_uuid
     refute c.auth_uuid
 
@@ -800,7 +800,7 @@ class ContainerTest < ActiveSupport::TestCase
     set_user_from_auth :active
     c, cr = minimal_new({container_count_max: 1})
     set_user_from_auth :dispatch1
-    assert c.update_attributes(state: Container::Cancelled), show_errors(c)
+    assert c.update(state: Container::Cancelled), show_errors(c)
     check_no_change_from_cancelled c
     cr.reload
     assert_equal ContainerRequest::Final, cr.state
@@ -823,7 +823,7 @@ class ContainerTest < ActiveSupport::TestCase
     c, _ = minimal_new
     set_user_from_auth :dispatch1
     assert c.lock, show_errors(c)
-    assert c.update_attributes(state: Container::Cancelled), show_errors(c)
+    assert c.update(state: Container::Cancelled), show_errors(c)
     check_no_change_from_cancelled c
   end
 
@@ -843,7 +843,7 @@ class ContainerTest < ActiveSupport::TestCase
     c, _ = minimal_new
     set_user_from_auth :dispatch1
     assert c.lock, show_errors(c)
-    assert c.update_attributes(
+    assert c.update(
              state: Container::Cancelled,
              log: collections(:real_log_collection).portable_data_hash,
            ), show_errors(c)
@@ -855,8 +855,8 @@ class ContainerTest < ActiveSupport::TestCase
     c, _ = minimal_new
     set_user_from_auth :dispatch1
     c.lock
-    c.update_attributes! state: Container::Running
-    c.update_attributes! state: Container::Cancelled
+    c.update! state: Container::Running
+    c.update! state: Container::Cancelled
     check_no_change_from_cancelled c
   end
 
@@ -906,16 +906,16 @@ class ContainerTest < ActiveSupport::TestCase
         set_user_from_auth :dispatch1
         c.lock
         if start_state != Container::Locked
-          c.update_attributes! state: Container::Running
+          c.update! state: Container::Running
           if start_state != Container::Running
-            c.update_attributes! state: start_state
+            c.update! state: start_state
           end
         end
       end
       assert_equal c.state, start_state
       set_user_from_auth :active
       assert_raises(ArvadosModel::PermissionDeniedError) do
-        c.update_attributes! updates
+        c.update! updates
       end
     end
   end
@@ -926,9 +926,9 @@ class ContainerTest < ActiveSupport::TestCase
     set_user_from_auth :dispatch1
     c.lock
     check_illegal_updates c, [{exit_code: 1}]
-    c.update_attributes! state: Container::Running
-    assert c.update_attributes(exit_code: 1)
-    assert c.update_attributes(exit_code: 1, state: Container::Complete)
+    c.update! state: Container::Running
+    assert c.update(exit_code: 1)
+    assert c.update(exit_code: 1, state: Container::Complete)
   end
 
   test "locked_by_uuid can update log when locked/running, and output when running" do
@@ -947,8 +947,8 @@ class ContainerTest < ActiveSupport::TestCase
     set_user_from_auth :dispatch1
     c.lock
     assert_equal c.locked_by_uuid, Thread.current[:api_client_authorization].uuid
-    c.update_attributes!(log: logpdh_time1)
-    c.update_attributes!(state: Container::Running)
+    c.update!(log: logpdh_time1)
+    c.update!(state: Container::Running)
     cr1.reload
     cr2.reload
     cr1log_uuid = cr1.log_uuid
@@ -959,17 +959,17 @@ class ContainerTest < ActiveSupport::TestCase
     assert_not_equal logcoll.uuid, cr2log_uuid
     assert_not_equal cr1log_uuid, cr2log_uuid
 
-    logcoll.update_attributes!(manifest_text: logcoll.manifest_text + ". acbd18db4cc2f85cedef654fccc4a4d8+3 0:3:foo.txt\n")
+    logcoll.update!(manifest_text: logcoll.manifest_text + ". acbd18db4cc2f85cedef654fccc4a4d8+3 0:3:foo.txt\n")
     logpdh_time2 = logcoll.portable_data_hash
 
-    assert c.update_attributes(output: collections(:collection_owned_by_active).portable_data_hash)
-    assert c.update_attributes(log: logpdh_time2)
-    assert c.update_attributes(state: Container::Complete, log: logcoll.portable_data_hash)
+    assert c.update(output: collections(:collection_owned_by_active).portable_data_hash)
+    assert c.update(log: logpdh_time2)
+    assert c.update(state: Container::Complete, log: logcoll.portable_data_hash)
     c.reload
     assert_equal collections(:collection_owned_by_active).portable_data_hash, c.output
     assert_equal logpdh_time2, c.log
-    refute c.update_attributes(output: nil)
-    refute c.update_attributes(log: nil)
+    refute c.update(output: nil)
+    refute c.update(log: nil)
     cr1.reload
     cr2.reload
     assert_equal cr1log_uuid, cr1.log_uuid
@@ -992,7 +992,7 @@ class ContainerTest < ActiveSupport::TestCase
       end
       set_user_from_auth :dispatch1
       c.lock
-      c.update_attributes! state: Container::Running
+      c.update! state: Container::Running
 
       if tok == "runtime_token"
         auth = ApiClientAuthorization.validate(token: c.runtime_token)
@@ -1008,14 +1008,14 @@ class ContainerTest < ActiveSupport::TestCase
         Thread.current[:user] = auth.user
       end
 
-      assert c.update_attributes(gateway_address: "127.0.0.1:9")
-      assert c.update_attributes(output: collections(:collection_owned_by_active).portable_data_hash)
-      assert c.update_attributes(runtime_status: {'warning' => 'something happened'})
-      assert c.update_attributes(progress: 0.5)
-      assert c.update_attributes(exit_code: 0)
-      refute c.update_attributes(log: collections(:real_log_collection).portable_data_hash)
+      assert c.update(gateway_address: "127.0.0.1:9")
+      assert c.update(output: collections(:collection_owned_by_active).portable_data_hash)
+      assert c.update(runtime_status: {'warning' => 'something happened'})
+      assert c.update(progress: 0.5)
+      assert c.update(exit_code: 0)
+      refute c.update(log: collections(:real_log_collection).portable_data_hash)
       c.reload
-      assert c.update_attributes(state: Container::Complete, exit_code: 0)
+      assert c.update(state: Container::Complete, exit_code: 0)
     end
   end
 
@@ -1024,13 +1024,13 @@ class ContainerTest < ActiveSupport::TestCase
     c, _ = minimal_new
     set_user_from_auth :dispatch1
     c.lock
-    c.update_attributes! state: Container::Running
+    c.update! state: Container::Running
 
     Thread.current[:api_client_authorization] = ApiClientAuthorization.find_by_uuid(c.auth_uuid)
     Thread.current[:user] = User.find_by_id(Thread.current[:api_client_authorization].user_id)
 
     assert_raises ActiveRecord::RecordInvalid do
-      c.update_attributes! output: collections(:collection_not_readable_by_active).portable_data_hash
+      c.update! output: collections(:collection_not_readable_by_active).portable_data_hash
     end
   end
 
@@ -1039,11 +1039,11 @@ class ContainerTest < ActiveSupport::TestCase
     c, _ = minimal_new
     set_user_from_auth :dispatch1
     c.lock
-    c.update_attributes! state: Container::Running
+    c.update! state: Container::Running
 
     set_user_from_auth :running_to_be_deleted_container_auth
     assert_raises(ArvadosModel::PermissionDeniedError) do
-      c.update_attributes(output: collections(:foo_file).portable_data_hash)
+      c.update(output: collections(:foo_file).portable_data_hash)
     end
   end
 
@@ -1052,13 +1052,13 @@ class ContainerTest < ActiveSupport::TestCase
     c, _ = minimal_new
     set_user_from_auth :dispatch1
     c.lock
-    c.update_attributes! state: Container::Running
+    c.update! state: Container::Running
 
     output = Collection.find_by_uuid('zzzzz-4zz18-mto52zx1s7sn3jk')
 
     assert output.is_trashed
-    assert c.update_attributes output: output.portable_data_hash
-    assert c.update_attributes! state: Container::Complete
+    assert c.update output: output.portable_data_hash
+    assert c.update! state: Container::Complete
   end
 
   test "not allowed to set trashed output that is not readable by current user" do
@@ -1066,7 +1066,7 @@ class ContainerTest < ActiveSupport::TestCase
     c, _ = minimal_new
     set_user_from_auth :dispatch1
     c.lock
-    c.update_attributes! state: Container::Running
+    c.update! state: Container::Running
 
     output = Collection.find_by_uuid('zzzzz-4zz18-mto52zx1s7sn3jr')
 
@@ -1074,7 +1074,7 @@ class ContainerTest < ActiveSupport::TestCase
     Thread.current[:user] = User.find_by_id(Thread.current[:api_client_authorization].user_id)
 
     assert_raises ActiveRecord::RecordInvalid do
-      c.update_attributes! output: output.portable_data_hash
+      c.update! output: output.portable_data_hash
     end
   end
 
@@ -1097,12 +1097,12 @@ class ContainerTest < ActiveSupport::TestCase
                           container_count_max: 1, runtime_token: api_client_authorizations(:active).token)
       set_user_from_auth :dispatch1
       c.lock
-      c.update_attributes!(state: Container::Running)
+      c.update!(state: Container::Running)
       c.reload
       assert c.secret_mounts.has_key?('/secret')
       assert_equal api_client_authorizations(:active).token, c.runtime_token
 
-      c.update_attributes!(final_attrs)
+      c.update!(final_attrs)
       c.reload
       assert_equal({}, c.secret_mounts)
       assert_nil c.runtime_token
@@ -1150,7 +1150,7 @@ class ContainerTest < ActiveSupport::TestCase
     assert_equal(1, containers.length)
     _, container1 = containers.shift
     container1.lock
-    container1.update_attributes!(state: Container::Cancelled)
+    container1.update!(state: Container::Cancelled)
     container1.reload
     request1 = requests.shift
     request1.reload
@@ -1277,8 +1277,8 @@ class ContainerTest < ActiveSupport::TestCase
     end
     container, request = minimal_new(request_params)
     container.lock
-    container.update_attributes!(state: Container::Running)
-    container.update_attributes!(final_attrs)
+    container.update!(state: Container::Running)
+    container.update!(final_attrs)
     return container, request
   end
 

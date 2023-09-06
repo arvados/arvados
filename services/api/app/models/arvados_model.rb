@@ -145,7 +145,7 @@ class ArvadosModel < ApplicationRecord
     super(permit_attribute_params(raw_params), *args)
   end
 
-  def update_attributes raw_params={}, *args
+  def update raw_params={}, *args
     super(self.class.permit_attribute_params(raw_params), *args)
   end
 

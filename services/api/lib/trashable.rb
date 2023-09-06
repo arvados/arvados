@@ -93,19 +93,19 @@ end
 module TrashableController
   def destroy
     if !@object.is_trashed
-      @object.update_attributes!(trash_at: db_current_time)
+      @object.update!(trash_at: db_current_time)
     end
     earliest_delete = (@object.trash_at +
                        Rails.configuration.Collections.BlobSigningTTL)
     if @object.delete_at > earliest_delete
-      @object.update_attributes!(delete_at: earliest_delete)
+      @object.update!(delete_at: earliest_delete)
     end
     show
   end
 
   def trash
     if !@object.is_trashed
-      @object.update_attributes!(trash_at: db_current_time)
+      @object.update!(trash_at: db_current_time)
     end
     show
   end

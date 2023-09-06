@@ -164,7 +164,7 @@ class ContainerRequest < ArvadosModel
         end
       elsif state == Committed
         # Behave as if the container is cancelled
-        update_attributes!(state: Final)
+        update!(state: Final)
       end
       return true
     end
@@ -228,7 +228,7 @@ class ContainerRequest < ArvadosModel
         end
       end
     end
-    update_attributes!(state: Final)
+    update!(state: Final)
   end
 
   def update_collections(container:, collections: ['log', 'output'])
@@ -308,7 +308,7 @@ class ContainerRequest < ArvadosModel
   end
 
   def set_priority_zero
-    self.update_attributes!(priority: 0) if self.priority > 0 && self.state != Final
+    self.update!(priority: 0) if self.priority > 0 && self.state != Final
   end
 
   protected

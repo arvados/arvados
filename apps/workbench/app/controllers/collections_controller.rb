@@ -258,7 +258,7 @@ class CollectionsController < ApplicationController
       arv_coll.rm "."+p
     end
 
-    if @object.update_attributes manifest_text: arv_coll.manifest_text
+    if @object.update manifest_text: arv_coll.manifest_text
       show
     else
       self.render_error status: 422
@@ -289,7 +289,7 @@ class CollectionsController < ApplicationController
       else
         arv_coll.rename "./"+file_path, new_file_path
 
-        if @object.update_attributes manifest_text: arv_coll.manifest_text
+        if @object.update manifest_text: arv_coll.manifest_text
           show
         else
           self.render_error status: 422

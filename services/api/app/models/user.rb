@@ -497,7 +497,7 @@ SELECT target_uuid, perm_level
       end
 
       if redirect_to_new_user
-        update_attributes!(redirect_to_user_uuid: new_user.uuid, username: nil)
+        update!(redirect_to_user_uuid: new_user.uuid, username: nil)
       end
       skip_check_permissions_against_full_refresh do
         update_permissions self.uuid, self.uuid, CAN_MANAGE_PERM

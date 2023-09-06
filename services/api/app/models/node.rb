@@ -176,7 +176,7 @@ class Node < ArvadosModel
         # as the new node. Clear the ip_address field on the stale
         # nodes. Otherwise, we (via SLURM) might inadvertently connect
         # to the new node using the old node's hostname.
-        stale_node.update_attributes!(ip_address: nil)
+        stale_node.update!(ip_address: nil)
       end
     end
     if hostname_before_last_save && saved_change_to_hostname?

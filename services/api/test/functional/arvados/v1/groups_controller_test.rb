@@ -984,7 +984,7 @@ class Arvados::V1::GroupsControllerTest < ActionController::TestCase
     innertrash = Collection.create!(name: 'inner-trashed', owner_uuid: innerproj.uuid, trash_at: trashtime)
     innertrashproj = Group.create!(group_class: 'project', name: 'inner-trashed-proj', owner_uuid: innerproj.uuid, trash_at: trashtime)
     outertrash = Collection.create!(name: 'outer-trashed', owner_uuid: outerproj.uuid, trash_at: trashtime)
-    innerproj.update_attributes!(frozen_by_uuid: users(:active).uuid)
+    innerproj.update!(frozen_by_uuid: users(:active).uuid)
     get :contents, params: {id: outerproj.uuid, include_trash: true, recursive: true}
     assert_response :success
     uuids = json_response['items'].collect { |item| item['uuid'] }
