@@ -53,6 +53,7 @@ export interface DataTableDataProps<I> {
     currentRoute?: string;
     toggleMSToolbar: (isVisible: boolean) => void;
     setCheckedListOnStore: (checkedList: TCheckedList) => void;
+    checkedList: TCheckedList;
 }
 
 type CssRules =
@@ -141,7 +142,7 @@ export const DataTable = withStyles(styles)(
     class Component<T> extends React.Component<DataTableProps<T>> {
         state: DataTableState = {
             isSelected: false,
-            checkedList: {},
+            checkedList: this.props.checkedList,
         };
 
         componentDidMount(): void {

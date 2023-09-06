@@ -281,7 +281,6 @@ export const createProject = (data: projectCreateActions.ProjectCreateFormDialog
 export const moveProject =
     (data: MoveToFormDialogData, isSecondaryMove = false) =>
     async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
-        console.log(data);
         const checkedList = getState().multiselect.checkedList;
         const uuidsToMove: string[] = data.isSingle ? [data.uuid] : selectedToArray(checkedList);
 
@@ -427,28 +426,44 @@ export const createCollection = (data: collectionCreateActions.CollectionCreateF
 };
 
 export const copyCollection = (data: CopyFormDialogData) => async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
-    try {
-        const copyToProject = getResource(data.ownerUuid)(getState().resources);
-        const collection = await dispatch<any>(collectionCopyActions.copyCollection(data));
-        if (copyToProject && collection) {
-            dispatch<any>(reloadProjectMatchingUuid([copyToProject.uuid]));
+    const checkedList = getState().multiselect.checkedList;
+    const uuidsToCopy: string[] = data.isSingle ? [data.uuid] : selectedToArray(checkedList);
+
+    //if no items in checkedlist && no items passed in, default to normal context menu behavior
+    if (!uuidsToCopy.length) uuidsToCopy.push(data.uuid);
+
+    const collectionsToCopy: Resource[] = uuidsToCopy
+        .map(uuid => getResource(uuid)(getState().resources) as any)
+        .filter(resource => resource.kind === ResourceKind.COLLECTION);
+
+    for (const collection of collectionsToCopy) {
+        await copySingleCollection(collection as Resource & { name: string });
+    }
+
+    async function copySingleCollection(copyToProject: Resource & { name: string }) {
+        const newName = data.isSingle ? data.name : `Copy of: ${copyToProject.name}`;
+        try {
+            const collection = await dispatch<any>(collectionCopyActions.copyCollection({ ...copyToProject, name: newName }));
+            if (copyToProject && collection) {
+                await dispatch<any>(reloadProjectMatchingUuid([copyToProject.uuid]));
+                dispatch(
+                    snackbarActions.OPEN_SNACKBAR({
+                        message: "Collection has been copied.",
+                        hideDuration: 3000,
+                        kind: SnackbarKind.SUCCESS,
+                        link: collection.ownerUuid,
+                    })
+                );
+            }
+        } catch (e) {
             dispatch(
                 snackbarActions.OPEN_SNACKBAR({
-                    message: "Collection has been copied.",
-                    hideDuration: 3000,
-                    kind: SnackbarKind.SUCCESS,
-                    link: collection.ownerUuid,
+                    message: e.message,
+                    hideDuration: 2000,
+                    kind: SnackbarKind.ERROR,
                 })
             );
         }
-    } catch (e) {
-        dispatch(
-            snackbarActions.OPEN_SNACKBAR({
-                message: e.message,
-                hideDuration: 2000,
-                kind: SnackbarKind.ERROR,
-            })
-        );
     }
 };
 

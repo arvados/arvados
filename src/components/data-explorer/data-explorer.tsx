@@ -83,6 +83,7 @@ interface DataExplorerDataProps<T> {
     currentItemUuid: string;
     elementPath?: string;
     isMSToolbarVisible: boolean;
+    checkedList: TCheckedList;
 }
 
 interface DataExplorerActionProps<T> {
@@ -188,6 +189,7 @@ export const DataExplorer = withStyles(styles)(
                 elementPath,
                 toggleMSToolbar,
                 setCheckedListOnStore,
+                checkedList,
             } = this.props;
             return (
                 <Paper
@@ -288,6 +290,7 @@ export const DataExplorer = withStyles(styles)(
                                 currentRoute={paperKey}
                                 toggleMSToolbar={toggleMSToolbar}
                                 setCheckedListOnStore={setCheckedListOnStore}
+                                checkedList={checkedList}
                             />
                         </Grid>
                         <Grid

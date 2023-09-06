@@ -176,6 +176,7 @@ function selectActionsByKind(currentResourceKinds: Array<string>, filterSet: TMu
 
 function mapStateToProps(state: RootState) {
     const { isVisible, checkedList } = state.multiselect;
+    // console.log("checkedList", checkedList); //here
     return {
         isVisible: isVisible,
         checkedList: checkedList as TCheckedList,
@@ -201,7 +202,6 @@ function mapDispatchToProps(dispatch: Dispatch) {
                 default:
                     for (const kind in kindGroups) {
                         const action = findActionByName(selectedAction.name as string, kindToActionSet[kind]);
-                        console.log(action, kindGroups[kind]);
                         if (action) action.execute(dispatch, kindGroups[kind]);
                     }
                     break;

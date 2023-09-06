@@ -66,7 +66,7 @@ const commonActionSet: ContextMenuActionSet = [
             icon: CopyIcon,
             name: "Make a copy",
             execute: (dispatch, resources) => {
-                resources.forEach(resource => dispatch<any>(openCollectionCopyDialog(resource))); //here
+                dispatch<any>(openCollectionCopyDialog(resources[0]));
             },
         },
         {

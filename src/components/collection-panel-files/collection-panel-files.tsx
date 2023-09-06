@@ -278,7 +278,6 @@ export const CollectionPanelFiles = withStyles(styles)(
                             }
 
                             pathPromise[key] = true;
-                            console.log(key);
 
                             return webdavClient.propfind(`c=${key}`, webDAVRequestConfig);
                         }
