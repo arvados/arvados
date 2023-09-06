@@ -36,7 +36,7 @@ if !status.success?
   puts stderr
   raise "error loading config: #{status}"
 end
-confs = YAML.load(defaultYAML, deserialize_symbols: false)
+confs = YAML.safe_load(defaultYAML)
 clusterID, clusterConfig = confs["Clusters"].first
 $arvados_config_defaults = clusterConfig
 $arvados_config_defaults["ClusterID"] = clusterID
@@ -50,7 +50,7 @@ if ENV["ARVADOS_CONFIG"] == "none"
 else
   # Load the global config file
   Open3.popen2("arvados-server", "config-dump", "-skip-legacy") do |stdin, stdout, status_thread|
-    confs = YAML.load(stdout, deserialize_symbols: false)
+    confs = YAML.safe_load(stdout)
     if confs && !confs.empty?
       # config-dump merges defaults with user configuration, so every
       # key should be set.
@@ -198,7 +198,7 @@ application_config = {}
   path = "#{::Rails.root.to_s}/config/#{cfgfile}.yml"
   confs = ConfigLoader.load(path, erb: true)
   # Ignore empty YAML file:
-  next if confs == false
+  next if confs == nil
   application_config.deep_merge!(confs['common'] || {})
   application_config.deep_merge!(confs[::Rails.env.to_s] || {})
 end

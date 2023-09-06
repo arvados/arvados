@@ -19,8 +19,8 @@ class DatabaseController < ApplicationController
       where('email is null or (email not like ? and email not like ?)', '%@example.com', '%.example.com').
       collect(&:uuid)
     fixture_uuids =
-      YAML::load_file(File.expand_path('../../../test/fixtures/users.yml',
-                                       __FILE__)).
+      YAML::safe_load_file(File.expand_path('../../../test/fixtures/users.yml',
+                                            __FILE__)).
       values.collect { |u| u['uuid'] }
     unexpected_uuids = user_uuids - fixture_uuids
     if unexpected_uuids.any?

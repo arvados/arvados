@@ -176,13 +176,13 @@ GEM
     nokogiri (1.15.4)
       mini_portile2 (~> 2.8.2)
       racc (~> 1.4)
-    oj (3.16.0)
+    oj (3.16.1)
     optimist (3.1.0)
     os (1.1.4)
     passenger (6.0.18)
       rack
       rake (>= 0.8.1)
-    pg (1.5.3)
+    pg (1.5.4)
     power_assert (2.0.3)
     public_suffix (5.0.3)
     racc (1.7.1)
@@ -236,7 +236,6 @@ GEM
     retriable (1.4.1)
     ruby-prof (0.15.9)
     ruby2_keywords (0.0.5)
-    safe_yaml (1.0.5)
     signet (0.16.1)
       addressable (~> 2.8)
       faraday (>= 0.17.5, < 3.0)
@@ -297,7 +296,6 @@ DEPENDENCIES
   rails-perftest
   responders
   ruby-prof (~> 0.15.0)
-  safe_yaml
   simplecov (~> 0.7.1)
   simplecov-rcov
   sprockets (~> 3.0)

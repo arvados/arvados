@@ -47,8 +47,6 @@ end
 
 module Server
   class Application < Rails::Application
-    # The following is to avoid SafeYAML's warning message
-    SafeYAML::OPTIONS[:default_mode] = :safe
 
     require_relative "arvados_config.rb"
 

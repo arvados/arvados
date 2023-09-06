@@ -19,7 +19,7 @@ module MigrateYAMLToJSON
         [[nil, '---%']],
       ).rows.map do |id, yaml|
         n += 1
-        json = SafeJSON.dump(YAML.load(yaml))
+        json = SafeJSON.dump(YAML.safe_load(yaml))
         conn.exec_query(
           "UPDATE #{table} SET #{column}=$1 WHERE id=$2 AND #{column}=$3",
           "#{table}.#{column} convert YAML to JSON",
