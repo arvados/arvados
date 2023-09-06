@@ -51,8 +51,8 @@ const commonActionSet: ContextMenuActionSet = [
         {
             icon: OpenIcon,
             name: "Open in new tab",
-            execute: (dispatch, resource) => {
-                dispatch<any>(openInNewTabAction(resource));
+            execute: (dispatch, resources) => {
+                dispatch<any>(openInNewTabAction(resources[0]));
             },
         },
         {
@@ -66,7 +66,7 @@ const commonActionSet: ContextMenuActionSet = [
             icon: CopyIcon,
             name: "Make a copy",
             execute: (dispatch, resources) => {
-                resources.forEach(resource => dispatch<any>(openCollectionCopyDialog(resource)));
+                resources.forEach(resource => dispatch<any>(openCollectionCopyDialog(resource))); //here
             },
         },
         {
