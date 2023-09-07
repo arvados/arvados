@@ -38,6 +38,13 @@ for node in "${!NODES[@]}"; do
   # Split the comma-separated roles into an array
   IFS=',' read -ra roles_array <<< "$roles"
 
+  # Workaround for old bash in CentOS 7: if there's nothing in the array,
+  # trying to iterate it trips up `set -u` and raises an unbound variable
+  # error. Short circuit to prevent that.
+  if [[ "${#roles_array[@]}" -eq 0 ]]; then
+    continue
+  fi
+
   for role in "${roles_array[@]}"; do
     if [ -n "${ROLE2NODES[$role]:-}" ]; then
       ROLE2NODES["$role"]="${ROLE2NODES[$role]},$node"
