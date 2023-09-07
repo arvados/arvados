@@ -39,7 +39,7 @@ class Arvados::V1::ManagementControllerTest < ActionController::TestCase
     @request.headers['Authorization'] = "Bearer configuredmanagementtoken"
     get :metrics
     assert_response :success
-    assert_equal 'text/plain', @response.content_type
+    assert_equal 'text/plain; charset=utf-8', @response.content_type
 
     assert_match /\narvados_config_source_timestamp_seconds{sha256="#{hash}"} #{Regexp.escape mtime.utc.to_f.to_s}\n/, @response.body
 
