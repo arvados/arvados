@@ -32,7 +32,11 @@ class DiscoveryDocumentTest < ActionDispatch::IntegrationTest
     missing = canonical.select { |key| canonical[key].nil? }
     assert(missing.empty?, "discovery document missing required fields")
 
-    expected = JSON.pretty_generate(canonical)
+    # (Temporary) sort the hash keys so we can diff JSON below.
+    canonical["resources"] = Hash[canonical["resources"].to_a.sort]
+    canonical["schemas"] = Hash[canonical["schemas"].to_a.sort]
+    actual_json = JSON.pretty_generate(canonical)
+
     # Currently the Python SDK is the only component using this copy of the
     # discovery document, and storing it with the source simplifies the build
     # process, so it lives there. If another component wants to use it later,
@@ -40,16 +44,21 @@ class DiscoveryDocumentTest < ActionDispatch::IntegrationTest
     # Python build process will need to be extended to accommodate that.
     src_path = Rails.root.join("../../sdk/python/arvados-v1-discovery.json")
     begin
-      actual = File.open(src_path) { |f| f.read }
+      expected_json = File.open(src_path) { |f| f.read }
+      # (Temporary) sort the hash keys so we can diff JSON below.
+      j = JSON.parse(expected_json)
+      j["resources"] = Hash[j["resources"].to_a.sort]
+      j["schemas"] = Hash[j["schemas"].to_a.sort]
+      expected_json = JSON.pretty_generate(j)
     rescue Errno::ENOENT
-      actual = "(#{src_path} not found)"
+      expected_json = "(#{src_path} not found)"
     end
 
     out_path = Rails.root.join("tmp", "test-arvados-v1-discovery.json")
-    if expected != actual
-      File.open(out_path, "w") { |f| f.write(expected) }
+    if expected_json != actual_json
+      File.open(out_path, "w") { |f| f.write(actual_json) }
     end
-    assert_equal(expected, actual, [
+    assert_equal(expected_json, actual_json, [
                    "#{src_path} did not match the live discovery document",
                    "Current live version saved to #{out_path}",
                    "Commit that to #{src_path} to regenerate documentation",
