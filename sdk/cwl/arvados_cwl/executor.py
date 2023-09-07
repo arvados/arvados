@@ -34,7 +34,7 @@ from arvados.errors import ApiError
 
 import arvados_cwl.util
 from .arvcontainer import RunnerContainer, cleanup_name_for_collection
-from .runner import Runner, upload_docker, upload_job_order, upload_workflow_deps, make_builder, update_from_merged_map
+from .runner import Runner, upload_docker, upload_job_order, upload_workflow_deps, make_builder, update_from_merged_map, print_keep_deps
 from .arvtool import ArvadosCommandTool, validate_cluster_target, ArvadosExpressionTool
 from .arvworkflow import ArvadosWorkflow, upload_workflow, make_workflow_record
 from .fsaccess import CollectionFsAccess, CollectionFetcher, collectionResolver, CollectionCache, pdh_size
@@ -671,12 +671,10 @@ The 'jobs' API is no longer supported.
         # are going to wait for the result, and always_submit_runner
         # is false, then we don't submit a runner process.
 
-        submitting = (runtimeContext.update_workflow or
-                      runtimeContext.create_workflow or
-                      (runtimeContext.submit and not
+        submitting = (runtimeContext.submit and not
                        (updated_tool.tool["class"] == "CommandLineTool" and
                         runtimeContext.wait and
-                        not runtimeContext.always_submit_runner)))
+                        not runtimeContext.always_submit_runner))
 
         loadingContext = self.loadingContext.copy()
         loadingContext.do_validate = False
@@ -702,7 +700,7 @@ The 'jobs' API is no longer supported.
         loadingContext.skip_resolve_all = True
 
         workflow_wrapper = None
-        if submitting and not self.fast_submit:
+        if (submitting and not self.fast_submit) or runtimeContext.update_workflow or runtimeContext.create_workflow or runtimeContext.print_keep_deps:
             # upload workflow and get back the workflow wrapper
 
             workflow_wrapper = upload_workflow(self, tool, job_order,
@@ -723,6 +721,11 @@ The 'jobs' API is no longer supported.
                 uuid = make_workflow_record(self, workflow_wrapper, runtimeContext.name, tool,
                                             runtimeContext.project_uuid, runtimeContext.update_workflow)
                 self.stdout.write(uuid + "\n")
+                return (None, "success")
+
+            if runtimeContext.print_keep_deps:
+                # Just find and print out all the collection dependencies and exit
+                print_keep_deps(tool)
                 return (None, "success")
 
             # Did not register a workflow, we're going to submit

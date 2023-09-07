@@ -35,6 +35,8 @@ link_uuid_pattern = re.compile(r'[a-z0-9]{5}-o0j2j-[a-z0-9]{15}')
 job_uuid_pattern = re.compile(r'[a-z0-9]{5}-8i9sb-[a-z0-9]{15}')
 container_uuid_pattern = re.compile(r'[a-z0-9]{5}-dz642-[a-z0-9]{15}')
 manifest_pattern = re.compile(r'((\S+)( +[a-f0-9]{32}(\+\d+)(\+\S+)*)+( +\d+:\d+:\S+)+$)+', flags=re.MULTILINE)
+keep_file_locator_pattern = re.compile(r'([0-9a-f]{32}\+\d+)/(.*)')
+keepuri_pattern = re.compile(r'keep:([0-9a-f]{32}\+\d+)/(.*)')
 
 def _deprecated(version=None, preferred=None):
     """Mark a callable as deprecated in the SDK

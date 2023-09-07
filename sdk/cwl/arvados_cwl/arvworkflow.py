@@ -292,7 +292,8 @@ def upload_workflow(arvRunner, tool, job_order, project_uuid,
     # Find the longest common prefix among all the file names.  We'll
     # use this to recreate the directory structure in a keep
     # collection with correct relative references.
-    prefix = common_prefix(firstfile, all_files)
+    prefix = common_prefix(firstfile, all_files) if firstfile else ""
+
 
     col = arvados.collection.Collection(api_client=arvRunner.api)
 

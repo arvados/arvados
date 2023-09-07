@@ -123,6 +123,8 @@ def arg_parser():  # type: () -> argparse.ArgumentParser
     exgroup.add_argument("--create-workflow", action="store_true", help="Register an Arvados workflow that can be run from Workbench")
     exgroup.add_argument("--update-workflow", metavar="UUID", help="Update an existing Arvados workflow with the given UUID.")
 
+    exgroup.add_argument("--print-keep-deps", action="store_true", help="To assist copying, print a list of Keep collections that this workflow depends on.")
+
     exgroup = parser.add_mutually_exclusive_group()
     exgroup.add_argument("--wait", action="store_true", help="After submitting workflow runner, wait for completion.",
                         default=True, dest="wait")
@@ -324,7 +326,9 @@ def main(args=sys.argv[1:],
             return 1
         arvargs.work_api = want_api
 
-    if (arvargs.create_workflow or arvargs.update_workflow) and not arvargs.job_order:
+    workflow_op = arvargs.create_workflow or arvargs.update_workflow or arvargs.print_keep_deps
+
+    if workflow_op and not arvargs.job_order:
         job_order_object = ({}, "")
 
     add_arv_hints()
@@ -418,7 +422,7 @@ def main(args=sys.argv[1:],
 
     if arvargs.workflow.startswith("arvwf:") or workflow_uuid_pattern.match(arvargs.workflow) or arvargs.workflow.startswith("keep:"):
         executor.loadingContext.do_validate = False
-        if arvargs.submit:
+        if arvargs.submit and not workflow_op:
             executor.fast_submit = True
 
     return cwltool.main.main(args=arvargs,
@@ -431,4 +435,4 @@ def main(args=sys.argv[1:],
                              custom_schema_callback=add_arv_hints,
                              loadingContext=executor.loadingContext,
                              runtimeContext=executor.toplevel_runtimeContext,
-                             input_required=not (arvargs.create_workflow or arvargs.update_workflow))
+                             input_required=not workflow_op)
