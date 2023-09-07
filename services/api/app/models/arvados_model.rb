@@ -464,6 +464,7 @@ class ArvadosModel < ApplicationRecord
       end
     end
 
+    return self if sql_conds == nil
     self.where(sql_conds,
                user_uuids: all_user_uuids.collect{|c| c["target_uuid"]},
                permission_link_classes: ['permission'])
