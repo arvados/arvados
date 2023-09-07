@@ -938,8 +938,6 @@ class ArvadosModel < ApplicationRecord
   # hook.
   def fill_container_defaults_after_find
     fill_container_defaults
-    set_attribute_was('runtime_constraints', runtime_constraints)
-    set_attribute_was('scheduling_parameters', scheduling_parameters)
     clear_changes_information
   end
 
