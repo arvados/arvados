@@ -16,6 +16,9 @@ else
   exit 1
 fi
 
+USE_SSH_JUMPHOST=${USE_SSH_JUMPHOST:-}
+DISABLED_CONTROLLER=""
+
 # Comma-separated list of nodes. This is used to dynamically adjust
 # salt pillars.
 NODELIST=""

@@ -173,9 +173,13 @@ apply_var_substitutions() {
        s#__INITIAL_USER_PASSWORD__#${INITIAL_USER_PASSWORD}#g;
        s#__INITIAL_USER__#${INITIAL_USER}#g;
        s#__LE_AWS_REGION__#${LE_AWS_REGION:-}#g;
-       s#__LE_AWS_SECRET_ACCESS_KEY__#${LE_AWS_SECRET_ACCESS_KEY}#g;
-       s#__LE_AWS_ACCESS_KEY_ID__#${LE_AWS_ACCESS_KEY_ID}#g;
+       s#__LE_AWS_SECRET_ACCESS_KEY__#${LE_AWS_SECRET_ACCESS_KEY:-}#g;
+       s#__LE_AWS_ACCESS_KEY_ID__#${LE_AWS_ACCESS_KEY_ID:-}#g;
+       s#__DATABASE_NAME__#${DATABASE_NAME}#g;
+       s#__DATABASE_USER__#${DATABASE_USER}#g;
        s#__DATABASE_PASSWORD__#${DATABASE_PASSWORD}#g;
+       s#__DATABASE_INT_IP__#${DATABASE_INT_IP:-}#g;
+       s#__DATABASE_EXTERNAL_SERVICE_HOST_OR_IP__#${DATABASE_EXTERNAL_SERVICE_HOST_OR_IP:-}#g;
        s#__KEEPWEB_EXT_SSL_PORT__#${KEEPWEB_EXT_SSL_PORT}#g;
        s#__KEEP_EXT_SSL_PORT__#${KEEP_EXT_SSL_PORT}#g;
        s#__MANAGEMENT_TOKEN__#${MANAGEMENT_TOKEN}#g;
@@ -196,7 +200,6 @@ apply_var_substitutions() {
        s#__SHELL_INT_IP__#${SHELL_INT_IP}#g;
        s#__WORKBENCH1_INT_IP__#${WORKBENCH1_INT_IP}#g;
        s#__WORKBENCH2_INT_IP__#${WORKBENCH2_INT_IP}#g;
-       s#__DATABASE_INT_IP__#${DATABASE_INT_IP}#g;
        s#__WORKBENCH_SECRET_KEY__#${WORKBENCH_SECRET_KEY}#g;
        s#__SSL_KEY_ENCRYPTED__#${SSL_KEY_ENCRYPTED}#g;
        s#__SSL_KEY_AWS_REGION__#${SSL_KEY_AWS_REGION:-}#g;
@@ -211,6 +214,7 @@ apply_var_substitutions() {
        s#__DISABLED_CONTROLLER__#${DISABLED_CONTROLLER}#g;
        s#__BALANCER_NODENAME__#${ROLE2NODES['balancer']:-}#g;
        s#__PROMETHEUS_NODENAME__#${ROLE2NODES['monitoring']:-}#g;
+       s#__PROMETHEUS_DATA_RETENTION_TIME__#${PROMETHEUS_DATA_RETENTION_TIME:-15d}#g;
        s#__CONTROLLER_NODES__#${ROLE2NODES['controller']:-}#g;
        s#__NODELIST__#${NODELIST}#g;
        s#__DISPATCHER_INT_IP__#${DISPATCHER_INT_IP}#g;
@@ -220,6 +224,8 @@ apply_var_substitutions() {
        s#__COMPUTE_SUBNET__#${COMPUTE_SUBNET:-}#g;
        s#__COMPUTE_AWS_REGION__#${COMPUTE_AWS_REGION:-}#g;
        s#__COMPUTE_USER__#${COMPUTE_USER:-}#g;
+       s#__KEEP_AWS_S3_BUCKET__#${KEEP_AWS_S3_BUCKET:-}#g;
+       s#__KEEP_AWS_IAM_ROLE__#${KEEP_AWS_IAM_ROLE:-}#g;
        s#__KEEP_AWS_REGION__#${KEEP_AWS_REGION:-}#g" \
   "${SRCFILE}" > "${DSTFILE}"
 }
@@ -449,7 +455,7 @@ echo "...arvados"
 test -d arvados || git clone --quiet https://git.arvados.org/arvados-formula.git ${F_DIR}/arvados
 
 # If we want to try a specific branch of the formula
-if [ "x${BRANCH:-}" != "xmain" ]; then
+if [[ ! -z "${BRANCH:-}" && "x${BRANCH}" != "xmain" ]]; then
   ( cd ${F_DIR}/arvados && git checkout --quiet -t origin/"${BRANCH}" -b "${BRANCH}" )
 elif [ "x${ARVADOS_TAG:-}" != "x" ]; then
   ( cd ${F_DIR}/arvados && git checkout --quiet tags/"${ARVADOS_TAG}" -b "${ARVADOS_TAG}" )

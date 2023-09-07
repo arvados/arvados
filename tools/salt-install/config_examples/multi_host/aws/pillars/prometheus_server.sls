@@ -5,6 +5,7 @@
 
 {%- set controller_nodes = "__CONTROLLER_NODES__".split(',') %}
 {%- set enable_balancer = ("__ENABLE_BALANCER__"|to_bool) %}
+{%- set data_retention_time = "__PROMETHEUS_DATA_RETENTION_TIME__" %}
 
 ### PROMETHEUS
 prometheus:
@@ -14,9 +15,13 @@ prometheus:
       - alertmanager
       - node_exporter
   pkg:
-    use_upstream_repo: true
+    use_upstream_repo: false
+    use_upstream_archive: true
     component:
       prometheus:
+        service:
+           args:
+             storage.tsdb.retention.time: {{ data_retention_time }}
         config:
           global:
             scrape_interval: 15s
@@ -94,6 +99,7 @@ prometheus:
                     instance: arvados-dispatch-cloud.__CLUSTER__
                     cluster: __CLUSTER__
 
+            {%- if "__DATABASE_INT_IP__" != "" %}
             # Database
             - job_name: postgresql
               static_configs:
@@ -104,6 +110,7 @@ prometheus:
                   labels:
                     instance: database.__CLUSTER__
                     cluster: __CLUSTER__
+            {%- endif %}
 
             # Nodes
             {%- set node_list = "__NODELIST__".split(',') %}

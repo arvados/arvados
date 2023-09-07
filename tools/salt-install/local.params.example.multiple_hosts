@@ -53,8 +53,10 @@ COMPUTE_SUBNET="subnet_fixme_or_this_wont_work"
 COMPUTE_AWS_REGION="${AWS_REGION}"
 COMPUTE_USER="${DEPLOY_USER}"
 
-# Keep S3 backend region
+# Keep S3 backend settings
 KEEP_AWS_REGION="${AWS_REGION}"
+KEEP_AWS_S3_BUCKET="${CLUSTER}-nyw5e-000000000000000-volume"
+KEEP_AWS_IAM_ROLE="${CLUSTER}-keepstore-00-iam-role"
 
 # If you going to provide your own certificates for Arvados, the provision script can
 # help you deploy them. In order to do that, you need to set `SSL_MODE=bring-your-own` above,
@@ -89,8 +91,13 @@ SSL_KEY_AWS_REGION="${AWS_REGION}"
 # Customize Prometheus & Grafana web UI access credentials
 MONITORING_USERNAME=${INITIAL_USER}
 MONITORING_EMAIL=${INITIAL_USER_EMAIL}
+
 # Sets the directory for Grafana dashboards
 # GRAFANA_DASHBOARDS_DIR="${SCRIPT_DIR}/local_config_dir/dashboards"
+
+# Sets the amount of data (expressed in time) Prometheus keeps on its
+# time-series database. Default is 15 days.
+# PROMETHEUS_DATA_RETENTION_TIME="180d"
 
 # The mapping of nodes to roles
 # installer.sh will log in to each of these nodes and then provision
@@ -134,10 +141,10 @@ KEEP_INT_IP=${WORKBENCH1_INT_IP}
 KEEPSTORE0_INT_IP=10.1.2.13
 SHELL_INT_IP=10.1.2.17
 
-# In a load balanced deployment, you can do rolling upgrades by specifying one
-# controller node name at a time, so that it gets removed from the pool and can
-# be upgraded.
-DISABLED_CONTROLLER=""
+DATABASE_NAME="${CLUSTER}_arvados"
+DATABASE_USER="${CLUSTER}_arvados"
+# Set this if using an external PostgreSQL service.
+#DATABASE_EXTERNAL_SERVICE_HOST_OR_IP=
 
 # Performance tuning parameters.  If these are not set, workers
 # defaults on the number of cpus and queued requests defaults to 128.

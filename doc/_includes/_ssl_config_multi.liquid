@@ -38,3 +38,13 @@ To supply your own certificates, change the configuration like this:
 {% include 'multi_host_install_custom_certificates' %}
 
 All certificate files will be used by nginx. You may need to include intermediate certificates in your certificate files. See "the nginx documentation":http://nginx.org/en/docs/http/configuring_https_servers.html#chains for more details.
+
+h4(#secure-tls-keys). Securing your TLS certificate keys (optional)
+
+When using @SSL_MODE=bring-your-own@, if you need to keep your TLS certificate keys encrypted on the server nodes, you can do it when deploying in AWS by using the "Secrets Manager":https://aws.amazon.com/es/secrets-manager/ service.
+
+When using Terraform, the secret and related permission cloud resources are created automatically, and you can customize the secret's name by editing @terraform/services/terraform.tfvars@ and setting its suffix in @ssl_password_secret_name_suffix@.
+
+In @local.params@ you need to set @SSL_KEY_ENCRYPTED@ to @yes@ and change the default values for @SSL_KEY_AWS_SECRET_NAME@ and @SSL_KEY_AWS_REGION@ if necessary.
+
+Then, you should set the appropriate password as a plain-text value on AWS's web console, so that it can be used by the necessary nodes. This should be done before running @installer.sh deploy@ to avoid any failures when trying to start the @nginx@ servers.
