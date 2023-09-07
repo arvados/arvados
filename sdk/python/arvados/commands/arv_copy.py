@@ -328,12 +328,11 @@ def copy_workflow(wf_uuid, src, dst, args):
                "ARVADOS_API_TOKEN": src.api_token,
                "PATH": os.environ["PATH"]}
         result = subprocess.run(["arvados-cwl-runner", "--quiet", "--print-keep-deps", "arvwf:"+wf_uuid],
-                                env=env)
-        print(result)
-        exit()
+                                capture_output=True, env=env)
+        locations = json.loads(result.stdout)
 
-        #if locations:
-        #        copy_collections(locations, src, dst, args)
+        if locations:
+            copy_collections(locations, src, dst, args)
 
     # copy the workflow itself
     del wf['uuid']

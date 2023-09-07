@@ -950,11 +950,16 @@ class Runner(Process):
 
 def print_keep_deps_visitor(references, doc_loader, tool):
     def collect_locators(obj):
-        loc = obj.get("location", "") or obj.get("http://arvados.org/cwl#dockerCollectionPDH", "")
+        loc = obj.get("location", "")
 
         g = arvados.util.keepuri_pattern.match(loc)
         if g and g[1] not in references:
             references.append(g[1])
+            return
+
+        loc = obj.get("http://arvados.org/cwl#dockerCollectionPDH", "") or obj.get("acrContainerImage")
+        if loc:
+            references.append(loc)
 
     sc_result = scandeps(tool["id"], tool,
                          set(),
@@ -963,6 +968,7 @@ def print_keep_deps_visitor(references, doc_loader, tool):
                          nestdirs=False)
 
     visit_class(sc_result, ("File", "Directory"), collect_locators)
+    visit_class(tool, ("DockerRequirement", "http://arvados.org/cwl#WorkflowRunnerResources"), collect_locators)
 
 
 def print_keep_deps(tool):
