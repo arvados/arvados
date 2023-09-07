@@ -324,21 +324,16 @@ def copy_workflow(wf_uuid, src, dst, args):
 
     # copy collections and docker images
     if args.recursive and wf["definition"]:
-        wf_def = yaml.safe_load(wf["definition"])
-        if wf_def is not None:
-            locations = []
-            docker_images = {}
-            graph = wf_def.get('$graph', None)
-            if graph is not None:
-                workflow_collections(graph, locations, docker_images)
-            else:
-                workflow_collections(wf_def, locations, docker_images)
+        env = {"ARVADOS_API_HOST": urllib.parse.urlparse(src._rootDesc["rootUrl"]).netloc,
+               "ARVADOS_API_TOKEN": src.api_token,
+               "PATH": os.environ["PATH"]}
+        result = subprocess.run(["arvados-cwl-runner", "--quiet", "--print-keep-deps", "arvwf:"+wf_uuid],
+                                env=env)
+        print(result)
+        exit()
 
-            if locations:
-                copy_collections(locations, src, dst, args)
-
-            for image in docker_images:
-                copy_docker_image(image, docker_images[image], src, dst, args)
+        #if locations:
+        #        copy_collections(locations, src, dst, args)
 
     # copy the workflow itself
     del wf['uuid']

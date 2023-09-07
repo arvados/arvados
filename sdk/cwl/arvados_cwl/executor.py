@@ -649,6 +649,10 @@ The 'jobs' API is no longer supported.
             runtimeContext.copy_deps = True
             runtimeContext.match_local_docker = True
 
+        if runtimeContext.print_keep_deps:
+            runtimeContext.copy_deps = False
+            runtimeContext.match_local_docker = False
+
         if runtimeContext.update_workflow and self.project_uuid is None:
             # If we are updating a workflow, make sure anything that
             # gets uploaded goes into the same parent project, unless

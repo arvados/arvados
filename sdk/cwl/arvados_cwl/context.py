@@ -7,6 +7,7 @@ from collections import namedtuple
 
 class ArvLoadingContext(LoadingContext):
     def __init__(self, kwargs=None):
+        self.default_docker_image = None
         super(ArvLoadingContext, self).__init__(kwargs)
 
 class ArvRuntimeContext(RuntimeContext):

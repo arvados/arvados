@@ -29,7 +29,7 @@ from cwltool.load_tool import fetch_document, resolve_and_validate_document
 from cwltool.process import shortname, uniquename
 from cwltool.workflow import Workflow, WorkflowException, WorkflowStep
 from cwltool.utils import adjustFileObjs, adjustDirObjs, visit_class, normalizeFilesDirs
-from cwltool.context import LoadingContext
+from cwltool.context import LoadingContext, getdefault
 
 from schema_salad.ref_resolver import file_uri, uri_file_path
 
@@ -412,9 +412,10 @@ def upload_workflow(arvRunner, tool, job_order, project_uuid,
         wf_runner_resources = {"class": "http://arvados.org/cwl#WorkflowRunnerResources"}
         hints.append(wf_runner_resources)
 
-    wf_runner_resources["acrContainerImage"] = arvados_jobs_image(arvRunner,
-                                                                  submit_runner_image or "arvados/jobs:"+__version__,
-                                                                  runtimeContext)
+    if "acrContainerImage" not in wf_runner_resources:
+        wf_runner_resources["acrContainerImage"] = arvados_jobs_image(arvRunner,
+                                                                      submit_runner_image or "arvados/jobs:"+__version__,
+                                                                      runtimeContext)
 
     if submit_runner_ram:
         wf_runner_resources["ramMin"] = submit_runner_ram
@@ -594,8 +595,18 @@ class ArvadosWorkflow(Workflow):
         self.dynamic_resource_req = []
         self.static_resource_req = []
         self.wf_reffiles = []
-        self.loadingContext = loadingContext
-        super(ArvadosWorkflow, self).__init__(toolpath_object, loadingContext)
+        self.loadingContext = loadingContext.copy()
+
+        self.requirements = copy.deepcopy(getdefault(loadingContext.requirements, []))
+        tool_requirements = toolpath_object.get("requirements", [])
+        self.hints = copy.deepcopy(getdefault(loadingContext.hints, []))
+        tool_hints = toolpath_object.get("hints", [])
+
+        workflow_runner_req, _ = self.get_requirement("http://arvados.org/cwl#WorkflowRunnerResources")
+        if workflow_runner_req and workflow_runner_req.get("acrContainerImage"):
+            self.loadingContext.default_docker_image = workflow_runner_req.get("acrContainerImage")
+
+        super(ArvadosWorkflow, self).__init__(toolpath_object, self.loadingContext)
         self.cluster_target_req, _ = self.get_requirement("http://arvados.org/cwl#ClusterTarget")
 
     def job(self, joborder, output_callback, runtimeContext):

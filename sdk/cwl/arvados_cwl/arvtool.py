@@ -10,6 +10,7 @@ from ._version import __version__
 from functools import partial
 from schema_salad.sourceline import SourceLine
 from cwltool.errors import WorkflowException
+from arvados.util import portable_data_hash_pattern
 
 def validate_cluster_target(arvrunner, runtimeContext):
     if (runtimeContext.submit_runner_cluster and
@@ -61,8 +62,12 @@ class ArvadosCommandTool(CommandLineTool):
 
         (docker_req, docker_is_req) = self.get_requirement("DockerRequirement")
         if not docker_req:
-            self.hints.append({"class": "DockerRequirement",
-                               "dockerPull": "arvados/jobs:"+__version__})
+            if portable_data_hash_pattern.match(loadingContext.default_docker_image):
+                self.hints.append({"class": "DockerRequirement",
+                                   "http://arvados.org/cwl#dockerCollectionPDH": loadingContext.default_docker_image})
+            else:
+                self.hints.append({"class": "DockerRequirement",
+                                   "dockerPull": loadingContext.default_docker_image})
 
         self.arvrunner = arvrunner
 

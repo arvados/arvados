@@ -420,6 +420,8 @@ def main(args=sys.argv[1:],
         # unit tests.
         stdout = None
 
+    executor.loadingContext.default_docker_image = arvargs.submit_runner_image or "arvados/jobs:"+__version__
+
     if arvargs.workflow.startswith("arvwf:") or workflow_uuid_pattern.match(arvargs.workflow) or arvargs.workflow.startswith("keep:"):
         executor.loadingContext.do_validate = False
         if arvargs.submit and not workflow_op:
