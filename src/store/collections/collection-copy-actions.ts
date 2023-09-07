@@ -16,8 +16,10 @@ import { getResource } from "store/resources/resources";
 import { CollectionResource } from "models/collection";
 
 export const COLLECTION_COPY_FORM_NAME = "collectionCopyFormName";
+export const COLLECTION_MULTI_COPY_FORM_NAME = "collectionMultiCopyFormName";
 
 export const openCollectionCopyDialog = (resource: { name: string; uuid: string; isSingle?: boolean }) => (dispatch: Dispatch) => {
+    //here
     dispatch<any>(resetPickerProjectTree());
     dispatch<any>(initProjectsTreePicker(COLLECTION_COPY_FORM_NAME));
     const initialData: CopyFormDialogData = { name: `Copy of: ${resource.name}`, ownerUuid: "", uuid: resource.uuid, isSingle: resource.isSingle };
@@ -25,8 +27,19 @@ export const openCollectionCopyDialog = (resource: { name: string; uuid: string;
     dispatch(dialogActions.OPEN_DIALOG({ id: COLLECTION_COPY_FORM_NAME, data: {} }));
 };
 
+export const openMultiCollectionCopyDialog = (resource: { name: string; uuid: string; isSingle?: boolean }) => (dispatch: Dispatch) => {
+    //here
+    dispatch<any>(resetPickerProjectTree());
+    dispatch<any>(initProjectsTreePicker(COLLECTION_MULTI_COPY_FORM_NAME));
+    const initialData: CopyFormDialogData = { name: `Copy of: ${resource.name}`, ownerUuid: "", uuid: resource.uuid, isSingle: resource.isSingle };
+    dispatch<any>(initialize(COLLECTION_MULTI_COPY_FORM_NAME, initialData));
+    dispatch(dialogActions.OPEN_DIALOG({ id: COLLECTION_MULTI_COPY_FORM_NAME, data: {} }));
+};
+
 export const copyCollection =
     (resource: CopyFormDialogData) => async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
+        console.log("IN COPY COLLECTION", resource);
+        const formName = resource.isSingle ? COLLECTION_COPY_FORM_NAME : COLLECTION_MULTI_COPY_FORM_NAME;
         dispatch(startSubmit(COLLECTION_COPY_FORM_NAME));
         let collection = getResource<CollectionResource>(resource.uuid)(getState().resources);
         try {
@@ -41,22 +54,22 @@ export const copyCollection =
                 ownerUuid: resource.ownerUuid,
                 name: resource.name,
             });
-            dispatch(dialogActions.CLOSE_DIALOG({ id: COLLECTION_COPY_FORM_NAME }));
+            dispatch(dialogActions.CLOSE_DIALOG({ id: formName }));
             return newCollection;
         } catch (e) {
             const error = getCommonResourceServiceError(e);
             if (error === CommonResourceServiceError.UNIQUE_NAME_VIOLATION) {
                 dispatch(
-                    stopSubmit(COLLECTION_COPY_FORM_NAME, {
+                    stopSubmit(formName, {
                         ownerUuid: "A collection with the same name already exists in the target project.",
                     } as FormErrors)
                 );
             } else {
-                dispatch(dialogActions.CLOSE_DIALOG({ id: COLLECTION_COPY_FORM_NAME }));
+                dispatch(dialogActions.CLOSE_DIALOG({ id: formName }));
                 throw new Error("Could not copy the collection.");
             }
             return;
         } finally {
-            dispatch(progressIndicatorActions.STOP_WORKING(COLLECTION_COPY_FORM_NAME));
+            dispatch(progressIndicatorActions.STOP_WORKING(formName));
         }
     };

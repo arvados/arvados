@@ -15,14 +15,18 @@ import { PickerIdProp } from "store/tree-picker/picker-id";
 
 type CopyFormDialogProps = WithDialogProps<string> & InjectedFormProps<CopyFormDialogData>;
 
-export const DialogCopy = (props: CopyFormDialogProps & PickerIdProp) => (
-    <FormDialog
-        dialogTitle="Make a copy"
-        formFields={CopyDialogFields(props.pickerId)}
-        submitLabel="Copy"
-        {...props}
-    />
-);
+export const DialogCopy = (props: CopyFormDialogProps & PickerIdProp) => {
+    console.log("single dialog copy", props);
+
+    return (
+        <FormDialog
+            dialogTitle="Make a copy"
+            formFields={CopyDialogFields(props.pickerId)}
+            submitLabel="Copy"
+            {...props}
+        />
+    );
+};
 
 const CopyDialogFields = memoize((pickerId: string) => () => (
     <>
@@ -39,4 +43,26 @@ const CopyDialogFields = memoize((pickerId: string) => () => (
             pickerId={pickerId}
         />
     </>
+));
+
+export const DialogMultiCopy = (props: CopyFormDialogProps & PickerIdProp) => {
+    console.log("multi dialog copy", props);
+
+    return (
+        <FormDialog
+            dialogTitle="Make a copy"
+            formFields={CopyMultiDialogFields(props.pickerId)}
+            submitLabel="Copy"
+            {...props}
+        />
+    );
+};
+
+const CopyMultiDialogFields = memoize((pickerId: string) => () => (
+    <Field
+        name="ownerUuid"
+        component={ProjectTreePickerField}
+        validate={COPY_FILE_VALIDATION}
+        pickerId={pickerId}
+    />
 ));

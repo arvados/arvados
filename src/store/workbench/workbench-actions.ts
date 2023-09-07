@@ -432,18 +432,20 @@ export const copyCollection = (data: CopyFormDialogData) => async (dispatch: Dis
     //if no items in checkedlist && no items passed in, default to normal context menu behavior
     if (!uuidsToCopy.length) uuidsToCopy.push(data.uuid);
 
-    const collectionsToCopy: Resource[] = uuidsToCopy
-        .map(uuid => getResource(uuid)(getState().resources) as any)
+    const collectionsToCopy: CollectionCopyResource[] = uuidsToCopy
+        .map(uuid => getResource(uuid)(getState().resources) as CollectionCopyResource)
         .filter(resource => resource.kind === ResourceKind.COLLECTION);
 
     for (const collection of collectionsToCopy) {
-        await copySingleCollection(collection as Resource & { name: string });
+        await copySingleCollection(collection as CollectionCopyResource);
     }
 
-    async function copySingleCollection(copyToProject: Resource & { name: string }) {
+    async function copySingleCollection(copyToProject: CollectionCopyResource) {
         const newName = data.isSingle ? data.name : `Copy of: ${copyToProject.name}`;
         try {
-            const collection = await dispatch<any>(collectionCopyActions.copyCollection({ ...copyToProject, name: newName }));
+            const collection = await dispatch<any>(
+                collectionCopyActions.copyCollection({ ...copyToProject, name: newName, isSingle: data.isSingle })
+            );
             if (copyToProject && collection) {
                 await dispatch<any>(reloadProjectMatchingUuid([copyToProject.uuid]));
                 dispatch(
@@ -827,6 +829,8 @@ const groupContentsHandlersRecord = {
 const groupContentsHandlers = unionize(groupContentsHandlersRecord);
 
 type GroupContentsHandler = UnionOf<typeof groupContentsHandlers>;
+
+type CollectionCopyResource = Resource & { name: string; isSingle: boolean };
 
 type MoveableResource = Resource & { name: string };
 

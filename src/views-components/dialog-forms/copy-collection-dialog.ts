@@ -5,8 +5,8 @@
 import { compose } from "redux";
 import { withDialog } from "store/dialog/with-dialog";
 import { reduxForm } from "redux-form";
-import { COLLECTION_COPY_FORM_NAME } from "store/collections/collection-copy-actions";
-import { DialogCopy } from "views-components/dialog-copy/dialog-copy";
+import { COLLECTION_COPY_FORM_NAME, COLLECTION_MULTI_COPY_FORM_NAME } from "store/collections/collection-copy-actions";
+import { DialogCopy, DialogMultiCopy } from "views-components/dialog-copy/dialog-copy";
 import { copyCollection } from "store/workbench/workbench-actions";
 import { CopyFormDialogData } from "store/copy-dialog/copy-dialog";
 import { pickerId } from "store/tree-picker/picker-id";
@@ -17,8 +17,22 @@ export const CopyCollectionDialog = compose(
         form: COLLECTION_COPY_FORM_NAME,
         touchOnChange: true,
         onSubmit: (data, dispatch) => {
+            console.log("DATA main", data);
             dispatch(copyCollection(data));
         },
     }),
     pickerId(COLLECTION_COPY_FORM_NAME)
 )(DialogCopy);
+
+export const CopyMultiCollectionDialog = compose(
+    withDialog(COLLECTION_MULTI_COPY_FORM_NAME),
+    reduxForm<CopyFormDialogData>({
+        form: COLLECTION_MULTI_COPY_FORM_NAME,
+        touchOnChange: true,
+        onSubmit: (data, dispatch) => {
+            console.log("DATA main", data);
+            dispatch(copyCollection(data));
+        },
+    }),
+    pickerId(COLLECTION_MULTI_COPY_FORM_NAME)
+)(DialogMultiCopy);

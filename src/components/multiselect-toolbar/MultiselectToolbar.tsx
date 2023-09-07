@@ -176,7 +176,7 @@ function selectActionsByKind(currentResourceKinds: Array<string>, filterSet: TMu
 
 function mapStateToProps(state: RootState) {
     const { isVisible, checkedList } = state.multiselect;
-    // console.log("checkedList", checkedList); //here
+    // if (Object.keys(state.dialog).length) console.log("latest dialog", state.dialog); //here
     return {
         isVisible: isVisible,
         checkedList: checkedList as TCheckedList,
