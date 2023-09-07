@@ -31,10 +31,6 @@ class DiscoveryDocumentTest < ActionDispatch::IntegrationTest
     canonical = Hash[CANONICAL_FIELDS.map { |key| [key, json_response[key]] }]
     missing = canonical.select { |key| canonical[key].nil? }
     assert(missing.empty?, "discovery document missing required fields")
-
-    # (Temporary) sort the hash keys so we can diff JSON below.
-    canonical["resources"] = Hash[canonical["resources"].to_a.sort]
-    canonical["schemas"] = Hash[canonical["schemas"].to_a.sort]
     actual_json = JSON.pretty_generate(canonical)
 
     # Currently the Python SDK is the only component using this copy of the
@@ -45,11 +41,6 @@ class DiscoveryDocumentTest < ActionDispatch::IntegrationTest
     src_path = Rails.root.join("../../sdk/python/arvados-v1-discovery.json")
     begin
       expected_json = File.open(src_path) { |f| f.read }
-      # (Temporary) sort the hash keys so we can diff JSON below.
-      j = JSON.parse(expected_json)
-      j["resources"] = Hash[j["resources"].to_a.sort]
-      j["schemas"] = Hash[j["schemas"].to_a.sort]
-      expected_json = JSON.pretty_generate(j)
     rescue Errno::ENOENT
       expected_json = "(#{src_path} not found)"
     end

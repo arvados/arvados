@@ -118,7 +118,7 @@ class Arvados::V1::SchemaController < ApplicationController
       resources: {}
     }
 
-    ActiveRecord::Base.descendants.reject(&:abstract_class?).each do |k|
+    ActiveRecord::Base.descendants.reject(&:abstract_class?).sort_by(&:to_s).each do |k|
       begin
         ctl_class = "Arvados::V1::#{k.to_s.pluralize}Controller".constantize
       rescue
