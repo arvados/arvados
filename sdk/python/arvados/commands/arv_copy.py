@@ -593,6 +593,12 @@ def copy_collection(obj_uuid, src, dst, args):
             word = get_queue.get()
             if word is None:
                 return
+
+            blockhash = arvados.KeepLocator(word).md5sum
+            with lock:
+                if blockhash in dst_locators:
+                    continue
+
             logger.debug("Getting block %s", word)
             data = src_keep.get(word)
             put_queue.put((word, data))
@@ -603,9 +609,14 @@ def copy_collection(obj_uuid, src, dst, args):
             item = put_queue.get()
             if item is None:
                 return
+
             word, data = item
             loc = arvados.KeepLocator(word)
             blockhash = loc.md5sum
+            with lock:
+                if blockhash in dst_locators:
+                    continue
+
             logger.debug("Putting block %s (%s bytes)", blockhash, loc.size)
             dst_locator = dst_keep.put(data, classes=(args.storage_classes or []))
             with lock:
@@ -625,14 +636,7 @@ def copy_collection(obj_uuid, src, dst, args):
                 # If 'word' can't be parsed as a locator,
                 # presume it's a filename.
                 continue
-            blockhash = loc.md5sum
-            # copy this block if we haven't seen it before
-            # (otherwise, just reuse the existing dst_locator)
-            with lock:
-                if blockhash in dst_locators:
-                    continue
 
-            # queue it up.
             get_queue.put(word)
 
     threading.Thread(target=get_thread, daemon=True).start()
