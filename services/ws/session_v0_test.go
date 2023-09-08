@@ -339,14 +339,16 @@ func (s *v0Suite) expectLog(c *check.C, r *json.Decoder) *arvados.Log {
 	lg := &arvados.Log{}
 	ok := make(chan struct{})
 	go func() {
+		defer close(ok)
 		for lg.ID <= s.ignoreLogID {
-			c.Check(r.Decode(lg), check.IsNil)
+			c.Assert(r.Decode(lg), check.IsNil)
 		}
-		close(ok)
 	}()
 	select {
 	case <-time.After(10 * time.Second):
-		panic("timed out")
+		c.Error("timed out")
+		c.FailNow()
+		return lg
 	case <-ok:
 		return lg
 	}
