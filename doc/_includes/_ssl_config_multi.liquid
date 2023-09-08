@@ -39,13 +39,13 @@ To supply your own certificates, change the configuration like this:
 
 All certificate files will be used by nginx. You may need to include intermediate certificates in your certificate files. See "the nginx documentation":http://nginx.org/en/docs/http/configuring_https_servers.html#chains for more details.
 
-h4(#secure-tls-keys). Securing your TLS certificate keys (optional)
+h4(#secure-tls-keys). Securing your TLS certificate keys (AWS specific) (optional)
 
-When using @SSL_MODE=bring-your-own@, you can keep your TLS certificate keys encrypted on the server nodes, and this might even be required depending on your organization's security best practices.
+When using @SSL_MODE=bring-your-own@, you can keep your TLS certificate keys encrypted on the server nodes. This reduces the risk of certificate leaks from node disk volumes snapshots or backups.
 
-This feature is currently implemented in AWS by providing the certificate keys' password via Amazon's "Secrets Manager":https://aws.amazon.com/es/secrets-manager/ service, and installing appropriate services on the nodes that provide this password to @nginx@ via a file that only lives in system's RAM disk. This avoids potential password leaks to node disk volumes snapshots or backups.
+This feature is currently implemented in AWS by providing the certificate keys’ password via Amazon’s "Secrets Manager":https://aws.amazon.com/es/secrets-manager/ service, and installing appropriate services on the nodes that provide this password to nginx via a file that only lives in system RAM.
 
-If your use the installer's Terraform code, the secret and related permission cloud resources are created automatically, and you can customize the secret's name by editing @terraform/services/terraform.tfvars@ and setting its suffix in @ssl_password_secret_name_suffix@.
+If you use the installer's Terraform code, the secret and related permission cloud resources are created automatically, and you can customize the secret's name by editing @terraform/services/terraform.tfvars@ and setting its suffix in @ssl_password_secret_name_suffix@.
 
 In @local.params@ you need to set @SSL_KEY_ENCRYPTED@ to @yes@ and change the default values for @SSL_KEY_AWS_SECRET_NAME@ and @SSL_KEY_AWS_REGION@ if necessary.
 
