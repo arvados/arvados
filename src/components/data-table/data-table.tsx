@@ -133,7 +133,6 @@ export type TCheckedList = Record<string, boolean>;
 
 type DataTableState = {
     isSelected: boolean;
-    checkedList: TCheckedList;
 };
 
 type DataTableProps<T> = DataTableDataProps<T> & WithStyles<CssRules>;
@@ -142,7 +141,6 @@ export const DataTable = withStyles(styles)(
     class Component<T> extends React.Component<DataTableProps<T>> {
         state: DataTableState = {
             isSelected: false,
-            checkedList: this.props.checkedList,
         };
 
         componentDidMount(): void {
@@ -150,16 +148,12 @@ export const DataTable = withStyles(styles)(
         }
 
         componentDidUpdate(prevProps: Readonly<DataTableProps<T>>, prevState: DataTableState) {
-            const { items, toggleMSToolbar, setCheckedListOnStore } = this.props;
-            const { isSelected, checkedList } = this.state;
+            const { items, setCheckedListOnStore } = this.props;
+            const { isSelected } = this.state;
             if (prevProps.items !== items) {
                 if (isSelected === true) this.setState({ isSelected: false });
                 if (items.length) this.initializeCheckedList(items);
-                else this.setState({ checkedList: {} });
-            }
-            if (prevState.checkedList !== checkedList) {
-                toggleMSToolbar(this.isAnySelected() ? true : false);
-                setCheckedListOnStore(checkedList);
+                else setCheckedListOnStore({});
             }
         }
 
@@ -173,7 +167,7 @@ export const DataTable = withStyles(styles)(
                     type="checkbox"
                     name={uuid}
                     className={this.props.classes.checkBox}
-                    checked={this.state.checkedList[uuid] ?? false}
+                    checked={this.props.checkedList[uuid] ?? false}
                     onChange={() => this.handleSelectOne(uuid)}
                     onDoubleClick={ev => ev.stopPropagation()}></input>
             ),
@@ -186,7 +180,7 @@ export const DataTable = withStyles(styles)(
         ];
 
         initializeCheckedList = (uuids: any[]): void => {
-            const newCheckedList = { ...this.state.checkedList };
+            const newCheckedList = { ...this.props.checkedList };
 
             uuids.forEach(uuid => {
                 if (!newCheckedList.hasOwnProperty(uuid)) {
@@ -198,11 +192,7 @@ export const DataTable = withStyles(styles)(
                     delete newCheckedList[key];
                 }
             }
-            this.setState({ checkedList: newCheckedList });
-        };
-
-        updateCheckedList = (newList: TCheckedList): void => {
-            this.setState({ checkedList: newList });
+            this.props.setCheckedListOnStore(newCheckedList);
         };
 
         isAllSelected = (list: TCheckedList): boolean => {
@@ -213,7 +203,7 @@ export const DataTable = withStyles(styles)(
         };
 
         isAnySelected = (): boolean => {
-            const { checkedList } = this.state;
+            const { checkedList } = this.props;
             if (!Object.keys(checkedList).length) return false;
             for (const key in checkedList) {
                 if (checkedList[key] === true) return true;
@@ -222,14 +212,15 @@ export const DataTable = withStyles(styles)(
         };
 
         handleSelectOne = (uuid: string): void => {
-            const { checkedList } = this.state;
+            const { checkedList } = this.props;
             const newCheckedList = { ...checkedList };
             newCheckedList[uuid] = !checkedList[uuid];
-            this.setState({ checkedList: newCheckedList, isSelected: this.isAllSelected(newCheckedList) });
+            this.setState({ isSelected: this.isAllSelected(newCheckedList) });
+            this.props.setCheckedListOnStore(newCheckedList);
         };
 
         handleSelectorSelect = (): void => {
-            const { checkedList } = this.state;
+            const { checkedList } = this.props;
             const { isSelected } = this.state;
             isSelected ? this.handleSelectNone(checkedList) : this.handleSelectAll(checkedList);
         };
@@ -240,7 +231,8 @@ export const DataTable = withStyles(styles)(
                 for (const key in newCheckedList) {
                     newCheckedList[key] = true;
                 }
-                this.setState({ isSelected: true, checkedList: newCheckedList });
+                this.setState({ isSelected: true });
+                this.props.setCheckedListOnStore(newCheckedList);
             }
         };
 
@@ -249,7 +241,8 @@ export const DataTable = withStyles(styles)(
             for (const key in newCheckedList) {
                 newCheckedList[key] = false;
             }
-            this.setState({ isSelected: false, checkedList: newCheckedList });
+            this.setState({ isSelected: false });
+            this.props.setCheckedListOnStore(newCheckedList);
         };
 
         handleInvertSelect = (list: TCheckedList): void => {
@@ -258,7 +251,8 @@ export const DataTable = withStyles(styles)(
                 for (const key in newCheckedList) {
                     newCheckedList[key] = !list[key];
                 }
-                this.setState({ checkedList: newCheckedList, isSelected: this.isAllSelected(newCheckedList) });
+                this.setState({ isSelected: this.isAllSelected(newCheckedList) });
+                this.props.setCheckedListOnStore(newCheckedList);
             }
         };
 
@@ -302,8 +296,9 @@ export const DataTable = withStyles(styles)(
 
         renderHeadCell = (column: DataColumn<T, any>, index: number) => {
             const { name, key, renderHeader, filters, sort } = column;
-            const { onSortToggle, onFiltersChange, classes } = this.props;
-            const { isSelected, checkedList } = this.state;
+            const { onSortToggle, onFiltersChange, classes, checkedList } = this.props;
+            const { isSelected } = this.state;
+            // const { isSelected, checkedList } = this.state;
             return column.name === "checkBoxColumn" ? (
                 <TableCell
                     key={key || index}

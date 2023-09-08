@@ -15,18 +15,17 @@ const multiselectToolbarInitialState = {
     checkedList: {},
 };
 
-export const multiselectReducer = (state: MultiselectToolbarState = multiselectToolbarInitialState, action) => {
-    if (action.type === multiselectActions.TOGGLE_VISIBLITY) return { ...state, isVisible: action.payload };
-    if (action.type === multiselectActions.SET_CHECKEDLIST) return { ...state, checkedList: action.payload };
-    if (action.type === multiselectActions.DESELECT_ONE) {
-        return { ...state, checkedList: { ...state.checkedList, [action.payload]: false } };
-    }
-    return state;
-};
+const { TOGGLE_VISIBLITY, SET_CHECKEDLIST, DESELECT_ONE } = multiselectActions;
 
-const updateCheckedList = (uuid: string, newValue: boolean, checkedList: TCheckedList) => {
-    return;
-    // const newList = { ...checkedList };
-    // newList[uuid] = newValue;
-    // return newList;
+export const multiselectReducer = (state: MultiselectToolbarState = multiselectToolbarInitialState, action) => {
+    switch (action.type) {
+        case TOGGLE_VISIBLITY:
+            return { ...state, isVisible: action.payload };
+        case SET_CHECKEDLIST:
+            return { ...state, checkedList: action.payload };
+        case DESELECT_ONE:
+            return { ...state, checkedList: { ...state.checkedList, [action.payload]: false } };
+        default:
+            return state;
+    }
 };

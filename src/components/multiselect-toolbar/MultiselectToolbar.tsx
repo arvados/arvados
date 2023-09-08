@@ -174,10 +174,8 @@ function selectActionsByKind(currentResourceKinds: Array<string>, filterSet: TMu
 //--------------------------------------------------//
 
 function mapStateToProps(state: RootState) {
-    const { isVisible, checkedList } = state.multiselect;
-    // console.log(state.multiselect.checkedList); //here
     return {
-        checkedList: checkedList as TCheckedList,
+        checkedList: state.multiselect.checkedList as TCheckedList,
         resources: state.resources,
     };
 }
