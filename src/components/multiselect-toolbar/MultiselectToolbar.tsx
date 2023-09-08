@@ -39,7 +39,6 @@ const styles: StyleRulesCallback<CssRules> = (theme: ArvadosTheme) => ({
 });
 
 export type MultiselectToolbarProps = {
-    isVisible: boolean;
     checkedList: TCheckedList;
     resources: ResourcesState;
     executeMulti: (action: ContextMenuAction, checkedList: TCheckedList, resources: ResourcesState) => void;
@@ -176,9 +175,8 @@ function selectActionsByKind(currentResourceKinds: Array<string>, filterSet: TMu
 
 function mapStateToProps(state: RootState) {
     const { isVisible, checkedList } = state.multiselect;
-    // if (Object.keys(state.dialog).length) console.log("latest dialog", state.dialog); //here
+    // console.log(state.multiselect.checkedList); //here
     return {
-        isVisible: isVisible,
         checkedList: checkedList as TCheckedList,
         resources: state.resources,
     };

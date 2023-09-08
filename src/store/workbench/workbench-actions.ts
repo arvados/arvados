@@ -101,6 +101,7 @@ import { allProcessesPanelColumns } from "views/all-processes-panel/all-processe
 import { AdminMenuIcon } from "components/icon/icon";
 import { userProfileGroupsColumns } from "views/user-profile-panel/user-profile-panel-root";
 import { selectedToArray, selectedToKindSet } from "components/multiselect-toolbar/MultiselectToolbar";
+import { deselectOne } from "store/multiselect/multiselect-actions";
 
 export const WORKBENCH_LOADING_SCREEN = "workbenchLoadingScreen";
 
@@ -456,6 +457,7 @@ export const copyCollection = (data: CopyFormDialogData) => async (dispatch: Dis
                         link: collection.ownerUuid,
                     })
                 );
+                dispatch<any>(deselectOne(copyToProject.uuid));
             }
         } catch (e) {
             dispatch(

@@ -174,7 +174,7 @@ export const DataTable = withStyles(styles)(
                     name={uuid}
                     className={this.props.classes.checkBox}
                     checked={this.state.checkedList[uuid] ?? false}
-                    onChange={() => this.handleCheck(uuid)}
+                    onChange={() => this.handleSelectOne(uuid)}
                     onDoubleClick={ev => ev.stopPropagation()}></input>
             ),
         };
@@ -201,6 +201,10 @@ export const DataTable = withStyles(styles)(
             this.setState({ checkedList: newCheckedList });
         };
 
+        updateCheckedList = (newList: TCheckedList): void => {
+            this.setState({ checkedList: newList });
+        };
+
         isAllSelected = (list: TCheckedList): boolean => {
             for (const key in list) {
                 if (list[key] === false) return false;
@@ -217,7 +221,7 @@ export const DataTable = withStyles(styles)(
             return false;
         };
 
-        handleCheck = (uuid: string): void => {
+        handleSelectOne = (uuid: string): void => {
             const { checkedList } = this.state;
             const newCheckedList = { ...checkedList };
             newCheckedList[uuid] = !checkedList[uuid];
