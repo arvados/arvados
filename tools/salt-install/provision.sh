@@ -1002,7 +1002,7 @@ if [ -d /etc/cloud/cloud.cfg.d ]; then
 fi
 
 # Leave a copy of the Arvados CA so the user can copy it where it's required
-if [ "${SSL_MODE}" = "self-signed" ]; then
+if [[ "${SSL_MODE}" = "self-signed" && -f /etc/ssl/certs/arvados-snakeoil-ca.pem ]]; then
   echo "Copying the Arvados CA certificate '${DOMAIN}-arvados-snakeoil-ca.crt' to the installer dir, so you can import it"
   if [ "x${VAGRANT:-}" = "xyes" ]; then
     cp /etc/ssl/certs/arvados-snakeoil-ca.pem /vagrant/${DOMAIN}-arvados-snakeoil-ca.pem
