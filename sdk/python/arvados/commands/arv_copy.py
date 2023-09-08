@@ -593,6 +593,7 @@ def copy_collection(obj_uuid, src, dst, args):
             word = get_queue.get()
             if word is None:
                 return
+            logger.debug("Getting block %s", word)
             data = src_keep.get(word)
             put_queue.put((word, data))
             get_queue.task_done()
@@ -605,10 +606,14 @@ def copy_collection(obj_uuid, src, dst, args):
             word, data = item
             loc = arvados.KeepLocator(word)
             blockhash = loc.md5sum
+            logger.debug("Putting block %s (%s bytes)", blockhash, loc.size)
             dst_locator = dst_keep.put(data, classes=(args.storage_classes or []))
             with lock:
                 dst_locators[blockhash] = dst_locator
                 bytes_written[0] += loc.size
+                if progress_writer:
+                    progress_writer.report(obj_uuid, bytes_written[0], bytes_expected)
+
             put_queue.task_done()
 
     for line in manifest.splitlines():
@@ -626,9 +631,6 @@ def copy_collection(obj_uuid, src, dst, args):
             with lock:
                 if blockhash in dst_locators:
                     continue
-                logger.debug("Copying block %s (%s bytes)", blockhash, loc.size)
-                if progress_writer:
-                    progress_writer.report(obj_uuid, bytes_written[0], bytes_expected)
 
             # queue it up.
             get_queue.put(word)
