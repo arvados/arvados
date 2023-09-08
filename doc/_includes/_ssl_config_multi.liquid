@@ -41,10 +41,33 @@ All certificate files will be used by nginx. You may need to include intermediat
 
 h4(#secure-tls-keys). Securing your TLS certificate keys (optional)
 
-When using @SSL_MODE=bring-your-own@, if you need to keep your TLS certificate keys encrypted on the server nodes, you can do it when deploying in AWS by using the "Secrets Manager":https://aws.amazon.com/es/secrets-manager/ service.
+When using @SSL_MODE=bring-your-own@, you can keep your TLS certificate keys encrypted on the server nodes, and this might even be required depending on your organization's security best practices.
 
-When using Terraform, the secret and related permission cloud resources are created automatically, and you can customize the secret's name by editing @terraform/services/terraform.tfvars@ and setting its suffix in @ssl_password_secret_name_suffix@.
+This feature is currently implemented in AWS by providing the certificate keys' password via Amazon's "Secrets Manager":https://aws.amazon.com/es/secrets-manager/ service, and installing appropriate services on the nodes that provide this password to @nginx@ via a file that only lives in system's RAM disk. This avoids potential password leaks to node disk volumes snapshots or backups.
+
+If your use the installer's Terraform code, the secret and related permission cloud resources are created automatically, and you can customize the secret's name by editing @terraform/services/terraform.tfvars@ and setting its suffix in @ssl_password_secret_name_suffix@.
 
 In @local.params@ you need to set @SSL_KEY_ENCRYPTED@ to @yes@ and change the default values for @SSL_KEY_AWS_SECRET_NAME@ and @SSL_KEY_AWS_REGION@ if necessary.
 
-Then, you should set the appropriate password as a plain-text value on AWS's web console, so that it can be used by the necessary nodes. This should be done before running @installer.sh deploy@ to avoid any failures when trying to start the @nginx@ servers.
+Then, if your certificate key file is not yet encrypted, you can generated an encrypted version of it by running the @openssl@ command as follows:
+
+<notextile>
+<pre><code>openssl rsa -aes256 -in your.key -out your.encrypted.key
+</code></pre>
+</notextile>
+(this will ask you to type the encryption password)
+
+This encrypted key file will be the one needed to be copied to the @${CUSTOM_CERTS_DIR}@ directory, instead of the plain key file.
+
+In order to allow the appropriate nodes decrypt the key file, you should set the password on Amazon Secrets Manager. There're a couple way this can be done:
+
+# Through AWS web interface may be the easiest, just make sure to set it as "plain text" instead of JSON.
+# By using the AWS CLI tools, for example:
+<notextile>
+<pre><code>aws secretsmanager put-secret-value --secret-id pkey-pwd --secret-string "p455w0rd" --region us-east-1
+</code></pre>
+</notextile>Where @pkey-pwd@ should match with what's set in @SSL_KEY_AWS_SECRET_NAME@ and @us-east-1@ with what's set in @SSL_KEY_AWS_REGION@.
+
+Take into account that the AWS secret should be set before running @installer.sh deploy@ to avoid any failures when trying to start the @nginx@ servers.
+
+If you ever need to change the encryption password on a running cluster, you should first change the secret's value on AWS, and only then copy the newly encrypted key file to @${CUSTOM_CERTS_DIR}@ and re-run the deploy command.
