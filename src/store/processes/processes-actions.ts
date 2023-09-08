@@ -316,7 +316,7 @@ export const removeProcessPermanently = (uuid: string) => async (dispatch: Dispa
 
     const uuidsToRemove: string[] = resource.isSingle ? [resource.uuid] : selectedToArray(checkedList);
 
-    //if no items in checkedlist && no items passed in, default to normal context menu behavior
+    //if no items in checkedlist, default to normal context menu behavior
     if (!uuidsToRemove.length) uuidsToRemove.push(uuid);
 
     const processesToRemove = uuidsToRemove

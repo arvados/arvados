@@ -332,7 +332,6 @@ export const moveProject =
                         kind: SnackbarKind.ERROR,
                     })
                 );
-                // }
             }
         }
         if (sourceUuid) await dispatch<any>(loadSidePanelTreeProjects(sourceUuid));

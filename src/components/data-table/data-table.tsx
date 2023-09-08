@@ -298,7 +298,6 @@ export const DataTable = withStyles(styles)(
             const { name, key, renderHeader, filters, sort } = column;
             const { onSortToggle, onFiltersChange, classes, checkedList } = this.props;
             const { isSelected } = this.state;
-            // const { isSelected, checkedList } = this.state;
             return column.name === "checkBoxColumn" ? (
                 <TableCell
                     key={key || index}
