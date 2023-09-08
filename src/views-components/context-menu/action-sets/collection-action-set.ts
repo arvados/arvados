@@ -66,8 +66,6 @@ const commonActionSet: ContextMenuActionSet = [
             icon: CopyIcon,
             name: "Make a copy",
             execute: (dispatch, resources) => {
-                console.log(resources[0]);
-                //here fix single vs one
                 if (resources[0].isSingle) dispatch<any>(openCollectionCopyDialog(resources[0]));
                 else dispatch<any>(openMultiCollectionCopyDialog(resources[0]));
             },
@@ -129,7 +127,6 @@ export const collectionActionSet: ContextMenuActionSet = [
             component: ToggleTrashAction,
             name: "ToggleTrashAction",
             execute: (dispatch, resources: ContextMenuResource[]) => {
-                //here fix  multi?
                 resources.forEach(resource => dispatch<any>(toggleCollectionTrashed(resource.uuid, resource.isTrashed!!)));
             },
         },

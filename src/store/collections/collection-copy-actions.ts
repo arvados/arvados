@@ -19,7 +19,6 @@ export const COLLECTION_COPY_FORM_NAME = "collectionCopyFormName";
 export const COLLECTION_MULTI_COPY_FORM_NAME = "collectionMultiCopyFormName";
 
 export const openCollectionCopyDialog = (resource: { name: string; uuid: string; isSingle?: boolean }) => (dispatch: Dispatch) => {
-    //here
     dispatch<any>(resetPickerProjectTree());
     dispatch<any>(initProjectsTreePicker(COLLECTION_COPY_FORM_NAME));
     const initialData: CopyFormDialogData = { name: `Copy of: ${resource.name}`, ownerUuid: "", uuid: resource.uuid, isSingle: resource.isSingle };
@@ -28,7 +27,6 @@ export const openCollectionCopyDialog = (resource: { name: string; uuid: string;
 };
 
 export const openMultiCollectionCopyDialog = (resource: { name: string; uuid: string; isSingle?: boolean }) => (dispatch: Dispatch) => {
-    //here
     dispatch<any>(resetPickerProjectTree());
     dispatch<any>(initProjectsTreePicker(COLLECTION_MULTI_COPY_FORM_NAME));
     const initialData: CopyFormDialogData = { name: `Copy of: ${resource.name}`, ownerUuid: "", uuid: resource.uuid, isSingle: resource.isSingle };
@@ -38,9 +36,8 @@ export const openMultiCollectionCopyDialog = (resource: { name: string; uuid: st
 
 export const copyCollection =
     (resource: CopyFormDialogData) => async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
-        console.log("IN COPY COLLECTION", resource);
         const formName = resource.isSingle ? COLLECTION_COPY_FORM_NAME : COLLECTION_MULTI_COPY_FORM_NAME;
-        dispatch(startSubmit(COLLECTION_COPY_FORM_NAME));
+        dispatch(startSubmit(formName));
         let collection = getResource<CollectionResource>(resource.uuid)(getState().resources);
         try {
             if (!collection) {

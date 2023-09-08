@@ -437,7 +437,7 @@ export const copyCollection = (data: CopyFormDialogData) => async (dispatch: Dis
         .filter(resource => resource.kind === ResourceKind.COLLECTION);
 
     for (const collection of collectionsToCopy) {
-        await copySingleCollection(collection as CollectionCopyResource);
+        await copySingleCollection({ ...collection, ownerUuid: data.ownerUuid } as CollectionCopyResource);
     }
 
     async function copySingleCollection(copyToProject: CollectionCopyResource) {

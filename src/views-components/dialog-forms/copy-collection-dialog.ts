@@ -17,7 +17,6 @@ export const CopyCollectionDialog = compose(
         form: COLLECTION_COPY_FORM_NAME,
         touchOnChange: true,
         onSubmit: (data, dispatch) => {
-            console.log("DATA main", data);
             dispatch(copyCollection(data));
         },
     }),
@@ -30,7 +29,6 @@ export const CopyMultiCollectionDialog = compose(
         form: COLLECTION_MULTI_COPY_FORM_NAME,
         touchOnChange: true,
         onSubmit: (data, dispatch) => {
-            console.log("DATA main", data);
             dispatch(copyCollection(data));
         },
     }),
