@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import { multiselectActions } from "./multiselect-actions";
+import { multiselectActionContants } from "./multiselect-actions";
 import { TCheckedList } from "components/data-table/data-table";
 
 type MultiselectToolbarState = {
@@ -15,7 +15,7 @@ const multiselectToolbarInitialState = {
     checkedList: {},
 };
 
-const { TOGGLE_VISIBLITY, SET_CHECKEDLIST, DESELECT_ONE } = multiselectActions;
+const { TOGGLE_VISIBLITY, SET_CHECKEDLIST, DESELECT_ONE } = multiselectActionContants;
 
 export const multiselectReducer = (state: MultiselectToolbarState = multiselectToolbarInitialState, action) => {
     switch (action.type) {
