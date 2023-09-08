@@ -46,7 +46,7 @@ const CopyDialogFields = memoize((pickerId: string) => () => (
 export const DialogMultiCopy = (props: CopyFormDialogProps & PickerIdProp) => {
     return (
         <FormDialog
-            dialogTitle="Make a copy"
+            dialogTitle="Make Copies"
             formFields={CopyMultiDialogFields(props.pickerId)}
             submitLabel="Copy"
             {...props}
