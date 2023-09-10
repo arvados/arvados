@@ -19,6 +19,11 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+var (
+	listenerPingInterval = time.Minute
+	testSlowPing         = false
+)
+
 type pgEventSource struct {
 	DataSource   string
 	MaxOpenConns int
@@ -248,7 +253,7 @@ func (ps *pgEventSource) Run() {
 	}()
 
 	var serial uint64
-	ticker := time.NewTicker(time.Minute)
+	ticker := time.NewTicker(listenerPingInterval)
 	defer ticker.Stop()
 	for {
 		select {
@@ -258,6 +263,9 @@ func (ps *pgEventSource) Run() {
 
 		case <-ticker.C:
 			ps.Logger.Debug("listener ping")
+			if testSlowPing {
+				time.Sleep(time.Second / 2)
+			}
 			err := ps.pqListener.Ping()
 			if err != nil {
 				ps.listenerProblem(-1, fmt.Errorf("pqListener ping failed: %s", err))
