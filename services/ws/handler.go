@@ -38,9 +38,6 @@ func (h *handler) Handle(ws wsConn, logger logrus.FieldLogger, eventSource event
 	ctx, cancel := context.WithCancel(ws.Request().Context())
 	defer cancel()
 
-	incoming := eventSource.NewSink()
-	defer incoming.Stop()
-
 	queue := make(chan interface{}, h.QueueSize)
 	h.mtx.Lock()
 	h.lastDelay[queue] = 0
@@ -162,6 +159,9 @@ func (h *handler) Handle(ws wsConn, logger logrus.FieldLogger, eventSource event
 		defer cancel()
 		ticker := time.NewTicker(h.PingTimeout)
 		defer ticker.Stop()
+
+		incoming := eventSource.NewSink()
+		defer incoming.Stop()
 
 		for {
 			select {
