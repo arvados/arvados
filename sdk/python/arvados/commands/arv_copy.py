@@ -587,11 +587,14 @@ def copy_collection(obj_uuid, src, dst, args):
     lock = threading.Lock()
     get_queue = queue.Queue()
     put_queue = queue.Queue()
+    transfer_error = []
 
     def get_thread():
         while True:
             word = get_queue.get()
             if word is None:
+                put_queue.put(None)
+                get_queue.task_done()
                 return
 
             blockhash = arvados.KeepLocator(word).md5sum
@@ -599,15 +602,27 @@ def copy_collection(obj_uuid, src, dst, args):
                 if blockhash in dst_locators:
                     continue
 
-            logger.debug("Getting block %s", word)
-            data = src_keep.get(word)
-            put_queue.put((word, data))
-            get_queue.task_done()
+            try:
+                logger.debug("Getting block %s", word)
+                data = src_keep.get(word)
+                put_queue.put((word, data))
+            except e:
+                logger.error("Error getting block %s: %s", word, e)
+                transfer_error.append(e)
+                try:
+                    # Drain the 'get' queue so we end early
+                    while True:
+                        get_queue.get(False)
+                except queue.Empty:
+                    pass
+            finally:
+                get_queue.task_done()
 
     def put_thread():
         while True:
             item = put_queue.get()
             if item is None:
+                put_queue.task_done()
                 return
 
             word, data = item
@@ -617,15 +632,25 @@ def copy_collection(obj_uuid, src, dst, args):
                 if blockhash in dst_locators:
                     continue
 
-            logger.debug("Putting block %s (%s bytes)", blockhash, loc.size)
-            dst_locator = dst_keep.put(data, classes=(args.storage_classes or []))
-            with lock:
-                dst_locators[blockhash] = dst_locator
-                bytes_written[0] += loc.size
-                if progress_writer:
-                    progress_writer.report(obj_uuid, bytes_written[0], bytes_expected)
-
-            put_queue.task_done()
+            try:
+                logger.debug("Putting block %s (%s bytes)", blockhash, loc.size)
+                dst_locator = dst_keep.put(data, classes=(args.storage_classes or []))
+                with lock:
+                    dst_locators[blockhash] = dst_locator
+                    bytes_written[0] += loc.size
+                    if progress_writer:
+                        progress_writer.report(obj_uuid, bytes_written[0], bytes_expected)
+            except e:
+                logger.error("Error putting block %s (%s bytes): %s", blockhash, loc.size, e)
+                try:
+                    # Drain the 'get' queue so we end early
+                    while True:
+                        get_queue.get(False)
+                except queue.Empty:
+                    pass
+                transfer_error.append(e)
+            finally:
+                put_queue.task_done()
 
     for line in manifest.splitlines():
         words = line.split()
@@ -639,6 +664,11 @@ def copy_collection(obj_uuid, src, dst, args):
 
             get_queue.put(word)
 
+    get_queue.put(None)
+    get_queue.put(None)
+    get_queue.put(None)
+    get_queue.put(None)
+
     threading.Thread(target=get_thread, daemon=True).start()
     threading.Thread(target=get_thread, daemon=True).start()
     threading.Thread(target=get_thread, daemon=True).start()
@@ -651,6 +681,9 @@ def copy_collection(obj_uuid, src, dst, args):
 
     get_queue.join()
     put_queue.join()
+
+    if len(transfer_error) > 0:
+        return {"error_token": "Failed to transfer blocks"}
 
     for line in manifest.splitlines():
         words = line.split()
