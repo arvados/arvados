@@ -586,8 +586,15 @@ def copy_collection(obj_uuid, src, dst, args):
     # again and build dst_manifest
 
     lock = threading.Lock()
+
+    # the get queue should be unbounded because we'll add all the
+    # block hashes we want to get, but these are small
     get_queue = queue.Queue()
-    put_queue = queue.Queue()
+
+    # the put queue contains full data blocks
+    # and if 'get' is faster than 'put' we could end up consuming
+    # a great deal of RAM if it isn't bounded.
+    put_queue = queue.Queue(4)
     transfer_error = []
 
     def get_thread():
