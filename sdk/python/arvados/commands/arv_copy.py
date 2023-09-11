@@ -168,7 +168,7 @@ def main():
 
     # If no exception was thrown and the response does not have an
     # error_token field, presume success
-    if result in None or 'error_token' in result or 'uuid' not in result:
+    if result is None or 'error_token' in result or 'uuid' not in result:
         if result:
             logger.error("API server returned an error result: {}".format(result))
         exit(1)
