@@ -591,10 +591,12 @@ def copy_collection(obj_uuid, src, dst, args):
     # block hashes we want to get, but these are small
     get_queue = queue.Queue()
 
+    threadcount = 4
+
     # the put queue contains full data blocks
     # and if 'get' is faster than 'put' we could end up consuming
     # a great deal of RAM if it isn't bounded.
-    put_queue = queue.Queue(4)
+    put_queue = queue.Queue(threadcount)
     transfer_error = []
 
     def get_thread():
@@ -608,6 +610,8 @@ def copy_collection(obj_uuid, src, dst, args):
             blockhash = arvados.KeepLocator(word).md5sum
             with lock:
                 if blockhash in dst_locators:
+                    # Already uploaded
+                    get_queue.task_done()
                     continue
 
             try:
@@ -638,6 +642,8 @@ def copy_collection(obj_uuid, src, dst, args):
             blockhash = loc.md5sum
             with lock:
                 if blockhash in dst_locators:
+                    # Already uploaded
+                    put_queue.task_done()
                     continue
 
             try:
@@ -672,20 +678,14 @@ def copy_collection(obj_uuid, src, dst, args):
 
             get_queue.put(word)
 
-    get_queue.put(None)
-    get_queue.put(None)
-    get_queue.put(None)
-    get_queue.put(None)
+    for i in range(0, threadcount):
+        get_queue.put(None)
 
-    threading.Thread(target=get_thread, daemon=True).start()
-    threading.Thread(target=get_thread, daemon=True).start()
-    threading.Thread(target=get_thread, daemon=True).start()
-    threading.Thread(target=get_thread, daemon=True).start()
+    for i in range(0, threadcount):
+        threading.Thread(target=get_thread, daemon=True).start()
 
-    threading.Thread(target=put_thread, daemon=True).start()
-    threading.Thread(target=put_thread, daemon=True).start()
-    threading.Thread(target=put_thread, daemon=True).start()
-    threading.Thread(target=put_thread, daemon=True).start()
+    for i in range(0, threadcount):
+        threading.Thread(target=put_thread, daemon=True).start()
 
     get_queue.join()
     put_queue.join()
