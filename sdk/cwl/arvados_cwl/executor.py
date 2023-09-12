@@ -869,7 +869,8 @@ The 'jobs' API is no longer supported.
                     if (self.task_queue.in_flight + len(self.processes)) > 0:
                         self.workflow_eval_lock.wait(3)
                     else:
-                        logger.error("Workflow is deadlocked, no runnable processes and not waiting on any pending processes.")
+                        if self.final_status is None:
+                            logger.error("Workflow is deadlocked, no runnable processes and not waiting on any pending processes.")
                         break
 
                 if self.stop_polling.is_set():
