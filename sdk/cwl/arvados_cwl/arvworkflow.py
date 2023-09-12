@@ -38,6 +38,7 @@ import ruamel.yaml as yaml
 from .runner import (upload_dependencies, packed_workflow, upload_workflow_collection,
                      trim_anonymous_location, remove_redundant_fields, discover_secondary_files,
                      make_builder, arvados_jobs_image, FileUpdates)
+from .arvcontainer import RunnerContainer
 from .pathmapper import ArvPathMapper, trim_listing
 from .arvtool import ArvadosCommandTool, set_cluster_target
 from ._version import __version__
@@ -762,11 +763,13 @@ class ArvadosWorkflow(Workflow):
         return ArvadosCommandTool(self.arvrunner, wf_runner, self.loadingContext).job(joborder_resolved, output_callback, runtimeContext)
 
 
-    def separateRunner(joborder, output_callback, runtimeContext, builder):
-        return RunnerContainer(self, self.tool, self.loadingContext,
+    def separateRunner(self, joborder, output_callback, runtimeContext):
+        return RunnerContainer(self.arvrunner,
+                               self,
+                               self.loadingContext,
                                runtimeContext.enable_reuse,
-                               self.output_name,
-                               self.output_tags,
+                               None,
+                               None,
                                submit_runner_ram=runtimeContext.submit_runner_ram,
                                name=runtimeContext.name,
                                on_error=runtimeContext.on_error,
@@ -776,8 +779,8 @@ class ArvadosWorkflow(Workflow):
                                priority=runtimeContext.priority,
                                secret_store=self.arvrunner.secret_store,
                                collection_cache_size=runtimeContext.collection_cache_size,
-                               collection_cache_is_default=self.should_estimate_cache_size,
-                               git_info=self.arvrunner.git_info)
+                               collection_cache_is_default=self.arvrunner.should_estimate_cache_size,
+                               git_info=self.arvrunner.git_info).job(joborder, output_callback, runtimeContext)
 
 
     def job(self, joborder, output_callback, runtimeContext):
@@ -791,7 +794,7 @@ class ArvadosWorkflow(Workflow):
 
         req, _ = self.get_requirement("http://arvados.org/cwl#SeparateRunner")
         if req:
-            return self.separateRunner(joborder, output_callback, runtimeContext, builder)
+            return self.separateRunner(joborder, output_callback, runtimeContext)
 
         return super(ArvadosWorkflow, self).job(joborder, output_callback, runtimeContext)
 
