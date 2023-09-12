@@ -771,8 +771,6 @@ class ArvadosWorkflow(Workflow):
         if rpn:
             name = builder.do_eval(rpn)
 
-        print("BBB name", name)
-
         return RunnerContainer(self.arvrunner,
                                self,
                                self.loadingContext,
