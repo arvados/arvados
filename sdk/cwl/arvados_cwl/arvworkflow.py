@@ -147,7 +147,7 @@ def make_wrapper_workflow(arvRunner, main, packed, project_uuid, name, git_info,
 
 
 def rel_ref(s, baseuri, urlexpander, merged_map, jobmapper):
-    if s.startswith("keep:"):
+    if s.startswith("keep:") or s.startswith("arvwf:"):
         return s
 
     uri = urlexpander(s, baseuri)
