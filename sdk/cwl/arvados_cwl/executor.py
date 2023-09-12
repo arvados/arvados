@@ -603,6 +603,8 @@ The 'jobs' API is no longer supported.
                 if git_info[g]:
                     logger.info("  %s: %s", g.split("#", 1)[1], git_info[g])
 
+        runtimeContext.git_info = git_info
+
         workbench1 = self.api.config()["Services"]["Workbench1"]["ExternalURL"]
         workbench2 = self.api.config()["Services"]["Workbench2"]["ExternalURL"]
         controller = self.api.config()["Services"]["Controller"]["ExternalURL"]

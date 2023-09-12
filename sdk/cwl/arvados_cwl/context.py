@@ -43,6 +43,7 @@ class ArvRuntimeContext(RuntimeContext):
         self.varying_url_params = ""
         self.prefer_cached_downloads = False
         self.cached_docker_lookups = {}
+        self.git_info = {}
 
         super(ArvRuntimeContext, self).__init__(kwargs)
 
