@@ -763,7 +763,16 @@ class ArvadosWorkflow(Workflow):
         return ArvadosCommandTool(self.arvrunner, wf_runner, self.loadingContext).job(joborder_resolved, output_callback, runtimeContext)
 
 
-    def separateRunner(self, joborder, output_callback, runtimeContext):
+    def separateRunner(self, joborder, output_callback, runtimeContext, req, builder):
+
+        name = runtimeContext.name
+
+        rpn = req.get("runnerProcessName")
+        if rpn:
+            name = builder.do_eval(rpn)
+
+        print("BBB name", name)
+
         return RunnerContainer(self.arvrunner,
                                self,
                                self.loadingContext,
@@ -771,7 +780,7 @@ class ArvadosWorkflow(Workflow):
                                None,
                                None,
                                submit_runner_ram=runtimeContext.submit_runner_ram,
-                               name=runtimeContext.name,
+                               name=name,
                                on_error=runtimeContext.on_error,
                                submit_runner_image=runtimeContext.submit_runner_image,
                                intermediate_output_ttl=runtimeContext.intermediate_output_ttl,
@@ -794,7 +803,7 @@ class ArvadosWorkflow(Workflow):
 
         req, _ = self.get_requirement("http://arvados.org/cwl#SeparateRunner")
         if req:
-            return self.separateRunner(joborder, output_callback, runtimeContext)
+            return self.separateRunner(joborder, output_callback, runtimeContext, req, builder)
 
         return super(ArvadosWorkflow, self).job(joborder, output_callback, runtimeContext)
 

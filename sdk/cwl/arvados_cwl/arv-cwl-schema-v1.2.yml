@@ -444,3 +444,7 @@ $graph:
       jsonldPredicate:
         _id: "@type"
         _type: "@vocab"
+    - name: runnerProcessName
+      type: ['null', string, cwl:Expression]
+      doc: |
+        Custom name to use for the runner process
