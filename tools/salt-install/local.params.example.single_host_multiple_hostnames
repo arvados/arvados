@@ -78,6 +78,7 @@ SHELL_INT_IP=""
 
 DATABASE_NAME="${CLUSTER}_arvados"
 DATABASE_USER="${CLUSTER}_arvados"
+DATABASE_POSTGRESQL_VERSION=12
 # Set this if using an external PostgreSQL service.
 #DATABASE_EXTERNAL_SERVICE_HOST_OR_IP=
 

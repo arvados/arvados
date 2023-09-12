@@ -7,13 +7,14 @@
 {%- set controller_nodes = "__CONTROLLER_NODES__".split(",") %}
 {%- set websocket_ip = "__WEBSOCKET_INT_IP__" %}
 {%- set keepbalance_ip = "__KEEPBALANCE_INT_IP__" %}
+{%- set pg_version = "__DATABASE_POSTGRESQL_VERSION__" %}
 
 ### POSTGRESQL
 postgres:
   pkgs_extra:
     - postgresql-contrib
   use_upstream_repo: true
-  version: '12'
+  version: {{ pg_version }}
   postgresconf: |-
     listen_addresses = '*'  # listen on all interfaces
   acls:
