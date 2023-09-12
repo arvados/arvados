@@ -429,3 +429,18 @@ $graph:
       doc: |
         If the container failed on its first run, re-submit the
         container with the RAM request multiplied by this factor.
+
+- name: SeparateRunner
+  type: record
+  extends: cwl:ProcessRequirement
+  inVocab: false
+  doc: |
+    Indicates that a subworkflow should run in a separate
+    arvados-cwl-runner process.
+  fields:
+    - name: class
+      type: string
+      doc: "Always 'arv:SeparateRunner'"
+      jsonldPredicate:
+        _id: "@type"
+        _type: "@vocab"
