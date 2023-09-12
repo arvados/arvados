@@ -828,7 +828,8 @@ class Runner(Process):
                  priority=None, secret_store=None,
                  collection_cache_size=256,
                  collection_cache_is_default=True,
-                 git_info=None):
+                 git_info=None,
+                 reuse_runner=False):
 
         self.loadingContext = loadingContext.copy()
 
@@ -861,6 +862,7 @@ class Runner(Process):
         self.enable_dev = self.loadingContext.enable_dev
         self.git_info = git_info
         self.fast_parser = self.loadingContext.fast_parser
+        self.reuse_runner = reuse_runner
 
         self.submit_runner_cores = 1
         self.submit_runner_ram = 1024  # defaut 1 GiB

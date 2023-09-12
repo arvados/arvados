@@ -787,7 +787,8 @@ class ArvadosWorkflow(Workflow):
                                secret_store=self.arvrunner.secret_store,
                                collection_cache_size=runtimeContext.collection_cache_size,
                                collection_cache_is_default=self.arvrunner.should_estimate_cache_size,
-                               git_info=runtimeContext.git_info).job(joborder, output_callback, runtimeContext)
+                               git_info=runtimeContext.git_info,
+                               reuse_runner=True).job(joborder, output_callback, runtimeContext)
 
 
     def job(self, joborder, output_callback, runtimeContext):
