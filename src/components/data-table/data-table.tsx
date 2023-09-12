@@ -162,15 +162,18 @@ export const DataTable = withStyles(styles)(
             selected: true,
             configurable: false,
             filters: createTree(),
-            render: uuid => (
-                <input
-                    type="checkbox"
-                    name={uuid}
-                    className={this.props.classes.checkBox}
-                    checked={this.props.checkedList[uuid] ?? false}
-                    onChange={() => this.handleSelectOne(uuid)}
-                    onDoubleClick={ev => ev.stopPropagation()}></input>
-            ),
+            render: uuid => {
+                const { classes, checkedList } = this.props;
+                return (
+                    <input
+                        type="checkbox"
+                        name={uuid}
+                        className={classes.checkBox}
+                        checked={checkedList ? checkedList[uuid] : false}
+                        onChange={() => this.handleSelectOne(uuid)}
+                        onDoubleClick={ev => ev.stopPropagation()}></input>
+                );
+            },
         };
 
         multiselectOptions: DataTableMultiselectOption[] = [
