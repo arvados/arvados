@@ -143,9 +143,9 @@ SHELL_INT_IP=10.1.2.17
 
 DATABASE_NAME="${CLUSTER}_arvados"
 DATABASE_USER="${CLUSTER}_arvados"
-DATABASE_POSTGRESQL_VERSION=12
-# Set this if using an external PostgreSQL service.
+# Set these if using an external PostgreSQL service.
 #DATABASE_EXTERNAL_SERVICE_HOST_OR_IP=
+#DATABASE_POSTGRESQL_VERSION=
 
 # Performance tuning parameters.  If these are not set, workers
 # defaults on the number of cpus and queued requests defaults to 128.

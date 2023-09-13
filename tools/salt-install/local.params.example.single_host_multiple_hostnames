@@ -78,9 +78,9 @@ SHELL_INT_IP=""
 
 DATABASE_NAME="${CLUSTER}_arvados"
 DATABASE_USER="${CLUSTER}_arvados"
-DATABASE_POSTGRESQL_VERSION=12
-# Set this if using an external PostgreSQL service.
+# Set these if using an external PostgreSQL service.
 #DATABASE_EXTERNAL_SERVICE_HOST_OR_IP=
+#DATABASE_POSTGRESQL_VERSION=
 
 # The directory to check for the config files (pillars, states) you want to use.
 # There are a few examples under 'config_examples'.

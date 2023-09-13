@@ -297,6 +297,12 @@ deploy)
     exit 1
   fi
 
+  if [[ -z "${DATABASE_POSTGRESQL_VERSION:-}" ]]; then
+    echo
+    echo "Please configure DATABASE_POSTGRESQL_VERSION in local.params: It should match the version of the PostgreSQL service you're going to use."
+    exit 1
+  fi
+
   if [[ ${SSL_MODE} == "bring-your-own" ]]; then
     if [[ ! -z "${ROLE2NODES['balancer']:-}" ]]; then
       checkcert balancer
