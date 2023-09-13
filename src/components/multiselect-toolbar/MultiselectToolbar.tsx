@@ -17,7 +17,7 @@ import { ContextMenuAction, ContextMenuActionSet } from "views-components/contex
 import { RestoreFromTrashIcon, TrashIcon } from "components/icon/icon";
 import { multiselectActionsFilters, TMultiselectActionsFilters, contextMenuActionConsts } from "./ms-toolbar-action-filters";
 import { kindToActionSet, findActionByName } from "./ms-kind-action-differentiator";
-import { toggleTrashAction } from "views-components/context-menu/action-sets/project-action-set";
+import { msToggleTrashAction } from "views-components/multiselect-toolbar/ms-project-action-set";
 import { copyToClipboardAction } from "store/open-in-new-tab/open-in-new-tab.actions";
 
 type CssRules = "root" | "button";
@@ -55,41 +55,43 @@ export const MultiselectToolbar = connect(
         const currentPathIsTrash = window.location.pathname === "/trash";
         const buttons =
             currentPathIsTrash && selectedToKindSet(checkedList).size
-                ? [toggleTrashAction]
+                ? [msToggleTrashAction]
                 : selectActionsByKind(currentResourceKinds, multiselectActionsFilters);
 
         return (
-            <Toolbar
-                className={classes.root}
-                style={{ width: `${buttons.length * 2.12}rem` }}>
-                {buttons.length ? (
-                    buttons.map((btn, i) =>
-                        btn.name === "ToggleTrashAction" ? (
-                            <Tooltip
-                                className={classes.button}
-                                title={currentPathIsTrash ? "Restore selected" : "Move to trash"}
-                                key={i}
-                                disableFocusListener>
-                                <IconButton onClick={() => props.executeMulti(btn, checkedList, props.resources)}>
-                                    {currentPathIsTrash ? <RestoreFromTrashIcon /> : <TrashIcon />}
-                                </IconButton>
-                            </Tooltip>
-                        ) : (
-                            <Tooltip
-                                className={classes.button}
-                                title={btn.name}
-                                key={i}
-                                disableFocusListener>
-                                <IconButton onClick={() => props.executeMulti(btn, checkedList, props.resources)}>
-                                    {btn.icon ? btn.icon({}) : <></>}
-                                </IconButton>
-                            </Tooltip>
+            <React.Fragment>
+                <Toolbar
+                    className={classes.root}
+                    style={{ width: `${buttons.length * 2.12}rem` }}>
+                    {buttons.length ? (
+                        buttons.map((btn, i) =>
+                            btn.name === "ToggleTrashAction" ? (
+                                <Tooltip
+                                    className={classes.button}
+                                    title={currentPathIsTrash ? "Restore selected" : "Move to trash"}
+                                    key={i}
+                                    disableFocusListener>
+                                    <IconButton onClick={() => props.executeMulti(btn, checkedList, props.resources)}>
+                                        {currentPathIsTrash ? <RestoreFromTrashIcon /> : <TrashIcon />}
+                                    </IconButton>
+                                </Tooltip>
+                            ) : (
+                                <Tooltip
+                                    className={classes.button}
+                                    title={btn.name}
+                                    key={i}
+                                    disableFocusListener>
+                                    <IconButton onClick={() => props.executeMulti(btn, checkedList, props.resources)}>
+                                        {btn.icon ? btn.icon({}) : <></>}
+                                    </IconButton>
+                                </Tooltip>
+                            )
                         )
-                    )
-                ) : (
-                    <></>
-                )}
-            </Toolbar>
+                    ) : (
+                        <></>
+                    )}
+                </Toolbar>
+            </React.Fragment>
         );
     })
 );

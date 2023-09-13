@@ -76,11 +76,11 @@ const mapDispatchToProps = dispatchFn => {
         },
 
         toggleMSToolbar: (isVisible: boolean) => {
-            dispatchFn(toggleMSToolbar(isVisible));
+            dispatch<any>(toggleMSToolbar(isVisible));
         },
 
         setCheckedListOnStore: (checkedList: TCheckedList) => {
-            dispatchFn(setCheckedListOnStore(checkedList));
+            dispatch<any>(setCheckedListOnStore(checkedList));
         },
 
         onRowClick,

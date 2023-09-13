@@ -4,9 +4,9 @@
 
 import { ResourceKind } from "models/resource";
 import { ContextMenuActionSet } from "views-components/context-menu/context-menu-action-set";
-import { collectionActionSet } from "views-components/context-menu/action-sets/collection-action-set";
-import { projectActionSet } from "views-components/context-menu/action-sets/project-action-set";
-import { processResourceActionSet } from "views-components/context-menu/action-sets/process-resource-action-set";
+import { msCollectionActionSet } from "views-components/multiselect-toolbar/ms-collection-action-set";
+import { msProjectActionSet } from "views-components/multiselect-toolbar/ms-project-action-set";
+import { msProcessActionSet } from "views-components/multiselect-toolbar/ms-process-action-set";
 
 export type TMultiselectActionsFilters = Record<string, [ContextMenuActionSet, Set<string>]>;
 
@@ -17,7 +17,7 @@ export const contextMenuActionConsts = {
     COPY_TO_CLIPBOARD: "Copy to clipboard",
     COPY_AND_RERUN_PROCESS: "Copy and re-run process",
     REMOVE: "Remove",
-} as const;
+};
 
 const { MOVE_TO, TOGGLE_TRASH_ACTION, COPY_TO_CLIPBOARD, REMOVE, MAKE_A_COPY } = contextMenuActionConsts;
 
@@ -29,7 +29,7 @@ const collectionMSActionsFilter = new Set([MAKE_A_COPY, MOVE_TO, TOGGLE_TRASH_AC
 const { COLLECTION, PROJECT, PROCESS } = ResourceKind;
 
 export const multiselectActionsFilters: TMultiselectActionsFilters = {
-    [PROJECT]: [projectActionSet, projectMSActionsFilter],
-    [PROCESS]: [processResourceActionSet, processResourceMSActionsFilter],
-    [COLLECTION]: [collectionActionSet, collectionMSActionsFilter],
+    [PROJECT]: [msProjectActionSet, projectMSActionsFilter],
+    [PROCESS]: [msProcessActionSet, processResourceMSActionsFilter],
+    [COLLECTION]: [msCollectionActionSet, collectionMSActionsFilter],
 };
