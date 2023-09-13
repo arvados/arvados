@@ -169,7 +169,7 @@ export const DataTable = withStyles(styles)(
                         type="checkbox"
                         name={uuid}
                         className={classes.checkBox}
-                        checked={checkedList ? checkedList[uuid] : false}
+                        checked={checkedList[uuid] ? checkedList[uuid] : false}
                         onChange={() => this.handleSelectOne(uuid)}
                         onDoubleClick={ev => ev.stopPropagation()}></input>
                 );
