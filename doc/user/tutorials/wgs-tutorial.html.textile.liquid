@@ -58,24 +58,24 @@ _Ways to Learn More About CWL_
 
 h2. 3. Setting Up to Run the WGS Processing Workflow
 
-Let’s get a little familiar with the Arvados Workbench while also setting up to run the WGS processing tutorial workflow.  Logging into the workbench will present you with the Dashboard. This gives a summary of your projects and recent activity in your Arvados instance, i.e. the Arvados Playground.  The Dashboard will only give you information about projects and activities that you have permissions to view and/or access.  Other users' private or restricted projects and activities will not be visible by design.
+Let’s get a little familiar with the Arvados Workbench while also setting up to run the WGS processing tutorial workflow.  Logging into the workbench will present you with the front page. This gives a summary of your projects in your Arvados instance (i.e. the Arvados Playground) as well as a left hand side navigation bar, top search bar, and help, profile settings, and notifications on the top right.  The front page will only give you information about projects and activities that you have permissions to view and/or access.  Other users' private or restricted projects and activities will not be visible by design.
 
 h3. 3a. Setting up a New Project
 
 Projects in Arvados help you organize and track your work - and can contain data, workflow code, details about workflow runs, and results.  Let’s begin by setting up a new project for the work you will be doing in this walkthrough.
 
-To create a new project, go to the Projects dropdown menu and select “New Project”.
+To create a new project, go to the Projects dropdown menu and select the "+NEW" button, then select “New project”.
 
 <figure> !{width: 100%}{{ site.baseurl }}/images/wgs-tutorial/image4.png!
-<figcaption> _*Figure 3*:  Adding a new project using Arvados Workbench._ </figcaption> </figure>
+<figcaption> _*Figure 3*:  Adding a new project using Arvados Workbench, select the "+NEW" button in the upper left-hand corner and click "New Project"._ </figcaption> </figure>
 
-Let’s name your project “WGS Processing Tutorial”. You can also add a description of your project by typing in the **Description - optional** field. The universally unique identifier (UUID) of the project can be found in the URL.
+Let’s name your project “WGS Processing Tutorial”. You can also add a description of your project by typing in the **Description - optional** field. The universally unique identifier (UUID) of the project can be found in the URL, or by clicking the info button on the upper right-hand corner.
 
 <figure> !{width: 100%}{{ site.baseurl }}/images/wgs-tutorial/image6.png!
-<figcaption> _*Figure 4*:  Renaming new project using Arvados Workbench._ </figcaption> </figure>
+<figcaption> _*Figure 4*:  Renaming new project using Arvados Workbench, enter the name in the "Project Name" box._ </figcaption> </figure>
 
 <figure> !{width: 100%}{{ site.baseurl }}/images/wgs-tutorial/image7.png!
-<figcaption> _*Figure 5*: The UUID of the project can be found in the URL and is highlighted in yellow in this image for emphasis._ </figcaption> </figure>
+<figcaption> _*Figure 5*: The UUID of the project can be found by selecting the "i" in the upper right-hand corner, under "UUID" and copied using the copy to clipboard option, highlighted in yellow in this image for emphasis._ </figcaption> </figure>
 
 If you choose to use another name for your project, just keep in mind when the project name is referenced in the walkthrough later on.
 
@@ -83,16 +83,16 @@ h3. 3b. Working with Collections
 
 Collections in Arvados help organize and manage your data. You can upload your existing data into a collection or reuse data from one or more existing collections. Collections allow us to reorganize our files without duplicating or physically moving the data, making them very efficient to use even when working with terabytes of data.   Each collection has a universally unique identifier (collection UUID).  This is a constant for this collection, even if we add or remove files -- or rename the collection.  You use this if we want to to identify the most recent version of our collection to use in our workflows.
 
-Arvados uses a content-addressable filesystem (i.e. Keep) where the addresses of files are derived from their contents.  A major benefit of this is that Arvados can then verify that when a dataset is retrieved it is the dataset you requested  and can track the exact datasets that were used for each of our previous calculations.  This is what allows you to be certain that we are always working with the data that you think you are using.  You use the content address of a collection when you want to guarantee that you use the same version as input to your workflow.
+Arvados uses a content-addressable filesystem (i.e. Keep) where the addresses of files are derived from their contents.  A major benefit of this is that Arvados can then verify that when a dataset is retrieved it is the dataset you requested  and can track the exact datasets that were used for each of our previous calculations.  This is what allows you to be certain that we are always working with the data that you think you are using.  You use the portable data hash of a collection when you want to guarantee that you use the same version as input to your workflow.
 
 <figure> !{width: 100%}{{ site.baseurl }}/images/wgs-tutorial/image1.png!
-<figcaption> _*Figure 6*:  A collection in Arvados as viewed via the Arvados Workbench. You will find a panel that contains: the name of the collection (editable), a description of the collection (editable), the collection UUID, the content address, content size, and some other information like version number._ </figcaption> </figure>
+<figcaption> _*Figure 6*:  A collection in Arvados as viewed via the Arvados Workbench. You will find a panel that contains: the name of the collection (this is editable, if you hit the three dots in the upper right-hand corner and click "Edit collection"), a description of the collection (also editable through the same way), the collection UUID, the portable data hash, content size, and some other information like version number._ </figcaption> </figure>
 
 Let’s start working with collections by copying the existing collection that stores the FASTQ data being processed into our new “WGS Processing Tutorial” project.
 
-First, you must find the collection you are interested in copying over to your project.  There are several ways to search for a collection: by collection name, by UUID or by content address.  In this case, let’s search for our collection by name.
+First, you must find the collection you are interested in copying over to your project.  There are several ways to search for a collection: by collection name, by UUID or by portable data hash.  In this case, let’s search for our collection by name.
 
-In this case it is called “PGP UK FASTQs (ten genomes)” and by searching for it in the “Search” box.  It will come up and you can navigate to it.  You would do similarly if you would want to search by UUID or content address.
+In this case it is called “PGP UK FASTQs (ten genomes)” and by searching for it in the “Search” box.  It will come up and you can navigate to it.  You would do similarly if you would want to search by UUID or portable data hash.
 
 Now that you have found the collection of FASTQs you want to copy to your project, you can simply click the three dots in the right corner and click "Make a copy" and select your new project to copy the collection there.  You can rename your collection whatever you wish, or use the default name on copy and add whatever description you would like.
 
@@ -108,16 +108,18 @@ In this section, we will be discussing three ways to run the tutorial workflow u
 
 h3. 4a. Interactively Running a Workflow Using Workbench
 
-Workflows can be registered in Arvados. Registration allows you to share a workflow with other Arvados users, and let’s them run the workflow by clicking the  <span class="btn btn-sm btn-primary" >+ New</span> button and selecting "Run a Workflow" on the Workbench Dashboard or on the command line by specifying the workflow UUID.  Default values can be specified for workflow inputs.
+Workflows can be registered in Arvados. Registration allows you to share a workflow with other Arvados users, and let’s them run the workflow by clicking the  "+ New" button and selecting "Run a workflow" on the Workbench Dashboard or on the command line by specifying the workflow UUID.  Default values can be specified for workflow inputs.
 
 We have already previously registered the WGS workflow and set default input values for this set of the walkthrough.
 
 Let’s find the registered WGS Processing Workflow and run it interactively in our newly created project.
 
-# To find the registered workflow, you can search for it in the search box located in the top right corner of the Arvados Workbench by looking for the name "WGS processing workflow scattered over samples".
-# Once you have found the registered workflow, you can run it your project by using the  <span class="btn btn-sm btn-primary" >Run Workflow</span> button and selecting your project ("WGS Processing Tutorial") that you set up in Section 3a, under *Project where the workflow will be done*.
-# Default inputs to the registered workflow will be automatically filled in.  These inputs will still work.  You can verify this by checking the addresses of the collections you copied over to your New Project.
-# Now, you can submit your workflow by scrolling to the bottom of the page and hitting the <span class="btn btn-sm btn-primary" >Run</span> button.
+# To find the registered workflow, you can search for by searching for the project "WGS Processing Tutorial", owned by "Tutorial projects", in the search box located at the top of the page. From there, select the workflow "WGS processing workflow scattered over samples".
+# Once you have found the registered workflow, you can run it your project by using the "Run Workflow" button and selecting your project ("WGS Processing Tutorial") that you set up in Section 3a, under *Project where the workflow will run*.
+<figure> !{width: 100%}{{ site.baseurl }}/images/wgs-tutorial/image8.png!
+<figcaption> _*Figure 7*: This is the page that pops up when you hit "Run Workflow", the input that needs selected is highlighted in yellow._ </figcaption> </figure>
+# Default inputs to the registered workflow will be automatically filled in.  These inputs will still work.  You can verify this by checking the addresses of the collections you copied over to your new project.
+# Now, you can submit your workflow by selecting the "Run Workflow" button.
 
 Congratulations! You have now submitted your workflow to run. You can move to Section 5 to learn how to check the state of your submitted workflow and Section 6 to learn how to examine the results of and logs from your workflow.
 
@@ -173,7 +175,7 @@ The tutorial directories are as follows:
 
 Before we run the WGS processing workflow, we want to adjust the inputs to match those in your new project.  The workflow that we want to submit is described by the file @/cwl/@ and the inputs are given by the file @/yml/@.  Note: while all the cwl files are needed to describe the full workflow only the single yml with the workflow inputs is needed to run the workflow. The additional yml files (in the helper folder) are provided for testing purposes or if one might want to test or run an underlying subworkflow or cwl for a command line tool by itself.
 
-Several of the inputs in the yml file point to original content addresses of collections that you make copies of in our New Project.  These still work because even though we made copies of the collections into our new project we haven’t changed the underlying contents. However, by changing this file is in general how you would alter the inputs in the accompanying yml file for a given workflow.
+Several of the inputs in the yml file point to original portable data hashes of collections that you make copies of in our New Project.  These still work because even though we made copies of the collections into our new project we haven’t changed the underlying contents. However, by changing this file is in general how you would alter the inputs in the accompanying yml file for a given workflow.
 
 The command to submit to the Arvados Playground Cluster is @arvados-cwl-runner@.
 To submit the WGS processing workflow , you need to run the following command replacing YOUR_PROJECT_UUID with the UUID of the new project you created for this tutorial.
@@ -194,23 +196,22 @@ Now, you are ready to check the state of your submitted workflow.
 
 h2. 5.  Checking the State Of a Submitted Workflow
 
-Once you have submitted your workflow, you can examine its state interactively using the Arvados Workbench.  If you aren’t already viewing your workflow process on the workbench, there several ways to get to your submitted workflow.  Here are two of the simplest ways:
+Once you have submitted your workflow, you can examine its state interactively using the Arvados Workbench.  If you aren’t already viewing your workflow process on the workbench, there are several ways to get to your submitted workflow.  Here is the simplest way:
 
-* Via the Dashboard: It should be listed at the top of the list of “Recent Processes”. Just click on the name of your submitted workflow and it will take you to the submitted workflow information.
-* Via Your Project:  You will want to go back to your new project, using the Projects pulldown menu or searching for the project name.  Note: You can mark a Project as a favorite (if/when you have multiple Projects) to make it easier to find on the pulldown menu using the star next to the project name on the project page.
+* Via Your Project:  You will want to go back to your new project, using the projects pulldown menu (the list of projects on the left) or searching for the project name.  Note: You can mark a project as a favorite (if/when you have multiple projects) to make it easier to find on the pulldown menu by right-clicking on the project name on the project pulldown menu and selecting "Add to favorites".
 
-The process you will be looking for will be titled “WGS processing workflow scattered over samples”(if you submitted via the command line) or NAME OF REGISTERED WORKFLOW container (if you submitted via the Registered Workflow).
+The process you will be looking for will be titled “WGS processing workflow scattered over samples” (if you submitted via the command line/Workbench).
 
 Once you have found your workflow, you can clearly see the state of the overall workflow and underlying steps below by their label.
 
 Common states you will see are as follows:
 
-* <span class="label label-default">Queued</span>  -  Workflow or step is waiting to run
-* <span class="label label-info">Running</span> or <span class="label label-info">Active</span> - Workflow is currently running
-* <span class="label label-success">Complete</span> - Workflow or step has successfully completed
-* <span class="label label-warning">Failing</span> - Workflow is running but has steps that have failed
-* <span class="label label-danger">Failed</span> - Workflow or step did not complete successfully
-* <span class="label label-danger">Cancelled</span>  - Workflow or step was either manually cancelled or was canceled by Arvados due to a system error
+* "Queued"  -  Workflow or step is waiting to run
+* "Running" or "Active"- Workflow is currently running
+* "Complete" - Workflow or step has successfully completed
+* "Failing"- Workflow is running but has steps that have failed
+* "Failed"- Workflow or step did not complete successfully
+* "Cancelled"  - Workflow or step was either manually cancelled or was canceled by Arvados due to a system error
 
 Since Arvados Crunch reuses steps and workflows if possible, this workflow should run relatively quickly since this workflow has been run before and you have access to those previously run steps.  You may notice an initial period where the top level job shows the option of canceling while the other steps are filled in with already finished steps.
 
@@ -219,13 +220,14 @@ h2. 6.  Examining a Finished Workflow
 Once your workflow has finished, you can see how long it took the workflow to run, see scaling information, and examine the logs and outputs.  Outputs will be only available for steps that have been successfully completed.   Outputs will be saved for every step in the workflow and be saved for the workflow itself.  Outputs are saved in collections.  You can access each collection by clicking on the link corresponding to the output.
 
 <figure> !{width: 100%}{{ site.baseurl }}/images/wgs-tutorial/image5.png!
-<figcaption> _*Figure 6*:  A completed workflow process in Arvados as viewed via the Arvados Workbench. You can click on the outputs link (highlighted in yellow) to view the outputs. Outputs of a workflow are stored in a collection._ </figcaption> </figure>
+<figcaption> _*Figure 8*:  A completed workflow process in Arvados as viewed via the Arvados Workbench. You can click on the outputs link (highlighted in yellow) to view the outputs. Outputs of a workflow are stored in a collection._ </figcaption> </figure>
 
 If we click on the outputs of the workflow, we will see the output collection.
 
-Contained in this collection, is the GVCF, tabix index file, and html ClinVar report for each analyzed sample (e.g. set of FASTQs).   By clicking on the download button to the right of the file, you can download it to your local machine.  You can also use the command line to download single files or whole collections to your machine. You can examine the outputs of a step similarly by using the arrow to expand the panel to see more details.
+Contained in this collection, is the GVCF, tabix index file, and html ClinVar report for each analyzed sample (e.g. set of FASTQs).  You can directly open it in the browser by selecting the file listing. Additionally, by clicking on the download button to the right of the file, you can download it to your local machine.  You can also use the command line to download single files or whole collections to your machine. You can examine the outputs of a step similarly by using the arrow to expand the panel to see more details.
 
-Logs for the main process can be found in the Log tab.  There several logs available, so here is a basic summary of what some of the more commonly used logs contain.  Let's first define a few terms that will help us understand what the logs are tracking.
+Logs for the main process can be found back on the workflow process page. Selecting the "LOGS" button at the top navigates down to the logs. You can view the logs directly through that panel, or in the upper right-hand corner select the button with hover-over text "Go to Log collection". 
+There several logs available, so here is a basic summary of what some of the more commonly used logs contain.  Let's first define a few terms that will help us understand what the logs are tracking.
 
 As you may recall, Arvados Crunch manages the running of workflows. A _container request_ is an order sent to Arvados Crunch to perform some computational work. Crunch fulfils a request by either choosing a worker node to execute a container, or finding an identical/equivalent container that has already run. You can use _container request_ or _container_ to distinguish between a work order that is submitted to be run and a work order that is actually running or has been run. So our container request in this case is just the submitted workflow we sent to the Arvados cluster.
 A _node_ is a compute resource where Arvardos can schedule work.  In our case since the Arvados Playground is running on a cloud, our nodes are virtual machines.  @arvados-cwl-runner@ (acr) executes CWL workflows by submitting the individual parts to Arvados as containers and crunch-run is an internal component that runs on nodes and executes containers.
@@ -269,9 +271,9 @@ Let’s take a peek at a few of these logs to get you more familiar with them.  
 
 You can see the output of all the work that arvados-cwl-runner does by managing the execution of the CWL workflow and all the underlying steps and subworkflows.
 
-Now, let’s explore the logs for a step in the workflow.   Remember that those logs can be found by expanding the steps and clicking on the link to the log collection.   Let’s look at the log for the step that does the alignment.  That step is named bwamem-samtools-view.  We can see there are 10 of them because we are aligning 10 genomes.  Let’s look at *bwamem-samtools-view2.*
+Now, let’s explore the logs for a subprocess in the workflow. Start by navigating back to the workflow process page. The logs can be found by selecting the appropriate subprocess under the "Subprocesses" tab, and getting the logs in the way as mentioned above.  Let’s look at the log for the subprocess that does the alignment.  That subprocess is named bwamem-samtools-view.  We can see there are 10 of them because we are aligning 10 genomes.  Let’s look at *bwamem-samtools-view_2.*
 
-We click the arrow to open up the step, and then can click on the log collection to access the logs.  You may notice there are two sets of seemingly identical logs.  One listed under a directory named for a container and one up in the main directory.  This is done in case your step had to be automatically re-run due to any issues and gives the logs of each re-run. The logs in the main directory are the logs for the successful run. In most cases this does not happen, you will just see one directory and one those logs will match the logs in the main directory.  Let’s open the logs labeled node-info.txt and stderr.txt.
+We click on the subprocess to open it and then can go down to the "Logs" section to access the logs.  You may notice there are two sets of seemingly identical logs.  One listed under a directory named for a container and one up in the main directory.  This is done in case your subprocess had to be automatically re-run due to any issues and gives the logs of each re-run. The logs in the main directory are the logs for the successful run. In most cases this does not happen, you will just see one directory and one those logs will match the logs in the main directory.  Let’s open the logs labeled node-info.txt and stderr.txt.
 
 @node-info.txt@ gives us information about detailed information about the virtual machine this step was run on.  The tail end of the log should look like the following:
 
