@@ -27,11 +27,18 @@ export const toggleProjectTrashed =
                 dispatch<any>(activateSidePanelTreeItem(uuid));
             } else {
                 errorMessage = "Could not move project to trash";
-                successMessage = "Added to trash";
+                successMessage = "Added project to trash";
                 await services.groupsService.trash(uuid);
                 dispatch<any>(loadSidePanelTreeProjects(ownerUuid));
                 dispatch<any>(navigateTo(ownerUuid));
             }
+            dispatch(
+                snackbarActions.OPEN_SNACKBAR({
+                    message: successMessage,
+                    hideDuration: 2000,
+                    kind: SnackbarKind.SUCCESS,
+                })
+            );
         } catch (e) {
             dispatch(
                 snackbarActions.OPEN_SNACKBAR({
@@ -40,13 +47,6 @@ export const toggleProjectTrashed =
                 })
             );
         }
-        dispatch(
-            snackbarActions.OPEN_SNACKBAR({
-                message: successMessage,
-                hideDuration: 2000,
-                kind: SnackbarKind.SUCCESS,
-            })
-        );
     };
 
 export const toggleCollectionTrashed =

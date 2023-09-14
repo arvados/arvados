@@ -127,7 +127,9 @@ export const collectionActionSet: ContextMenuActionSet = [
             component: ToggleTrashAction,
             name: "ToggleTrashAction",
             execute: (dispatch, resources: ContextMenuResource[]) => {
-                resources.forEach(resource => dispatch<any>(toggleCollectionTrashed(resource.uuid, resource.isTrashed!!)));
+                for (const resource of resources) {
+                    dispatch<any>(toggleCollectionTrashed(resource.uuid, resource.isTrashed!!));
+                }
             },
         },
     ],
@@ -157,7 +159,9 @@ export const oldCollectionVersionActionSet: ContextMenuActionSet = [
             icon: RestoreVersionIcon,
             name: "Restore version",
             execute: (dispatch, resources) => {
-                resources.forEach(({ uuid }) => dispatch<any>(openRestoreCollectionVersionDialog(uuid)));
+                for (const resource of resources) {
+                    dispatch<any>(openRestoreCollectionVersionDialog(resource.uuid));
+                }
             },
         },
     ],
