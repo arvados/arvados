@@ -56,6 +56,6 @@ else
 fi
 
 # Auto-sets PG version if needed
-if [ -n "${ROLE2NODES['database']:-}" ]; then
+if [[ -n "${ROLE2NODES['database']:-}" || "${NODELIST}" == "localhost" ]]; then
   DATABASE_POSTGRESQL_VERSION="${DATABASE_POSTGRESQL_VERSION:-${DATABASE_POSTGRESQL_DEFAULT_VERSION}}"
 fi
