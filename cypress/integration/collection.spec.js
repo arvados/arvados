@@ -753,12 +753,12 @@ describe("Collection panel tests", function () {
                 cy.get("[data-cy=collection-files-panel]").should("contain", "foo").and("contain", "bar");
 
                 // Modify collection, expect version number change
-                // cy.get('[data-cy=collection-files-panel]').contains('foo').rightclick();
-                // cy.get('[data-cy=context-menu]').contains('Remove').click();
-                // cy.get('[data-cy=confirmation-dialog]').should('contain', 'Removing file');
-                // cy.get('[data-cy=confirmation-dialog-ok-btn]').click();
-                // cy.get('[data-cy=collection-version-number]').should('contain', '2');
-                // cy.get('[data-cy=collection-files-panel]').should('not.contain', 'foo').and('contain', 'bar');
+                cy.get("[data-cy=collection-files-panel]").contains("foo").rightclick();
+                cy.get("[data-cy=context-menu]").contains("Remove").click();
+                cy.get("[data-cy=confirmation-dialog]").should("contain", "Removing file");
+                cy.get("[data-cy=confirmation-dialog-ok-btn]").click();
+                cy.get("[data-cy=collection-version-number]").should("contain", "2");
+                cy.get("[data-cy=collection-files-panel]").should("not.contain", "foo").and("contain", "bar");
 
                 // Click on version number, check version browser. Click on past version.
                 cy.get("[data-cy=collection-version-browser]").should("not.exist");
