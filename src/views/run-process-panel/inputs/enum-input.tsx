@@ -21,12 +21,21 @@ const getValidation = memoize(
             : () => undefined,
     ]));
 
+const emptyToNull = value => {
+    if (value === '') {
+        return null;
+    } else {
+        return value;
+    }
+};
+
 export const EnumInput = ({ input }: EnumInputProps) =>
     <Field
         name={input.id}
         commandInput={input}
         component={EnumInputComponent}
         validate={getValidation(input)}
+        normalize={emptyToNull}
     />;
 
 const EnumInputComponent = (props: GenericInputProps) =>
@@ -40,10 +49,10 @@ const Input = (props: GenericInputProps) => {
         value={props.input.value}
         onChange={props.input.onChange}
         disabled={props.commandInput.disabled} >
-        {type.symbols.map(symbol =>
+        {(isRequiredInput(props.commandInput) ? [] : [<MenuItem key={'_empty'} value={''} />]).concat(type.symbols.map(symbol =>
             <MenuItem key={symbol} value={extractValue(symbol)}>
                 {extractValue(symbol)}
-            </MenuItem>)}
+            </MenuItem>))}
     </Select>;
 };
 
