@@ -18,7 +18,7 @@ fi
 
 USE_SSH_JUMPHOST=${USE_SSH_JUMPHOST:-}
 DISABLED_CONTROLLER=""
-DATABASE_POSTGRESQL_DEFAULT_VERSION=12
+DATABASE_POSTGRESQL_DEFAULT_VERSION=15
 
 # Comma-separated list of nodes. This is used to dynamically adjust
 # salt pillars.
