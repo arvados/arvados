@@ -180,6 +180,7 @@ apply_var_substitutions() {
        s#__DATABASE_PASSWORD__#${DATABASE_PASSWORD}#g;
        s#__DATABASE_INT_IP__#${DATABASE_INT_IP:-}#g;
        s#__DATABASE_EXTERNAL_SERVICE_HOST_OR_IP__#${DATABASE_EXTERNAL_SERVICE_HOST_OR_IP:-}#g;
+       s#__DATABASE_POSTGRESQL_VERSION__#${DATABASE_POSTGRESQL_VERSION}#g;
        s#__KEEPWEB_EXT_SSL_PORT__#${KEEPWEB_EXT_SSL_PORT}#g;
        s#__KEEP_EXT_SSL_PORT__#${KEEP_EXT_SSL_PORT}#g;
        s#__MANAGEMENT_TOKEN__#${MANAGEMENT_TOKEN}#g;
@@ -819,6 +820,7 @@ else
           echo "    - nginx.passenger" >> ${STATES_TOP}
         fi
         echo "    - extra.passenger_rvm" >> ${STATES_TOP}
+        grep -q "^    - postgres\\.client$" ${STATES_TOP} || echo "    - postgres.client" >> ${STATES_TOP}
 
         ### If we don't install and run LE before arvados-api-server, it fails and breaks everything
         ### after it. So we add this here as we are, after all, sharing the host for api and controller
