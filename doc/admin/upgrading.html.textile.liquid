@@ -36,9 +36,19 @@ h2(#v2_7_0). v2.7.0 (2023-09-??)
 
 "previous: Upgrading to 2.6.3":#v2_6_3
 
+h3. New system for live container logs
+
+Starting with Arvados 2.7, a new system for fetching live container logs is in place.  This system features significantly reduced database load compared to previous releases.  When Workbench or another application need to access the logs of a process (running or completed), they should use the "log endpoint of container_requests.":https://doc.arvados.org/main/api/methods/container_requests.html which forwards requests to the running container.  This supercedes the previous system where compute processes would send all of their logs to the database, which produced significant database load.
+
+The legacy logging system is now disabled by default for all installations with the setting @Containers.Logging.LimitLogBytesForJob: 0@.  If you have an existing Arvados installation where you have customized this value and do not need the legacy container logging system, we recommend removing @LimitLogBytesForJob@ from your configuration.
+
+If you need to re-enable the legacy logging system, set @Containers.Logging.LimitLogBytesForJob@ to a positive value (the previous default was @Containers.Logging.LimitLogBytesForJob: 67108864@).
+
 h3. Workbench 1 deprecated
 
 The original Arvados Workbench application (referred to as "Workbench 1") is deprecated and will be removed in a future major version of Arvados.  Users are advised to migrate to "Workbench 2".  Starting with this release, new installations of Arvados will only set up Workbench 2 and no longer include Workbench 1 by default.
+
+It is also important to note that Workbench 1 only supports the legacy logging system, which is now disabled by default.  If you need to re-enable the legacy logging system, see above.
 
 h3. Multi-node installer's domain name configuration changes
 
