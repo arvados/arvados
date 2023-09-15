@@ -60,6 +60,8 @@ h3. Deprecated/legacy APIs slated for removal
 
 The legacy APIs "humans":../api/methods/humans.html, "specimens":../api/methods/specimens.html, "traits":../api/methods/traits.html, "jobs":../api/methods/jobs.html, "job_tasks":../api/methods/job_tasks.html, "pipeline_instances":../api/methods/pipeline_instances.html, "pipeline_templates":../api/methods/pipeline_templates.html, "nodes":../api/methods/nodes.html, "repositories":../api/methods/repositories.html, and "keep_disks":../api/methods/keep_disks.html are deprecated and will be removed in a future major version of Arvados.
 
+In addition, the @default_owner_uuid@, @api_client_id@, and @user_id@ fields of "api_client_authorizations":../api/methods/api_client_authorizations.html are deprecated and will be removed from @api_client_authorization@ responses in a future major version of Arvados.  This should not affect clients as  @default_owner_uuid@ was never implemented, and @api_client_id@ and @user_id@ returned internal ids that were not meaningful or usable with any other API call.
+
 h3. Workbench 1 deprecated
 
 The original Arvados Workbench application (referred to as "Workbench 1") is deprecated and will be removed in a future major version of Arvados.  Users are advised to migrate to "Workbench 2".  Starting with this release, new installations of Arvados will only set up Workbench 2 and no longer include Workbench 1 by default.
