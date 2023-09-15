@@ -193,6 +193,24 @@ export const isArrayOfType = (input: GenericCommandInputParameter<any, any>, typ
             input.type.type === 'array' &&
             input.type.items === type);
 
+export const getEnumType = (input: GenericCommandInputParameter<any, any>) => {
+    if (input.type instanceof Array) {
+        const f = input.type.filter(t => typeof t === 'object' &&
+            !(t instanceof Array) &&
+            t.type === 'enum');
+        if (f.length > 0) {
+            return f[0];
+        }
+    } else {
+        if ((typeof input.type === 'object' &&
+            !(input.type instanceof Array) &&
+            input.type.type === 'enum')) {
+            return input.type;
+        }
+    }
+    return null;
+};
+
 export const stringifyInputType = ({ type }: CommandInputParameter) => {
     if (typeof type === 'string') {
         return type;
