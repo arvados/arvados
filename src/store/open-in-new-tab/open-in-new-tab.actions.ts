@@ -23,11 +23,11 @@ export const copyToClipboardAction = (resources: Array<any>) => (dispatch: Dispa
 
     let output = "";
 
-    resources.forEach(resource => {
+    for (const resource of [...resources]) {
         let url = getNavUrl(resource.uuid, getState().auth, false);
         if (url[0] === "/") url = `${window.location.origin}${url}`;
-        output += output.length ? `, ${url}` : url;
-    });
+        output += output.length ? `,${url}` : url;
+    }
 
     if (output.length) {
         const wasCopied = copy(output);

@@ -38,14 +38,13 @@ const toggleFavoriteAction: ContextMenuAction = {
     component: ToggleFavoriteAction,
     name: "ToggleFavoriteAction",
     execute: (dispatch, resources) => {
-        resources.forEach(resource =>
+        for (const resource of [...resources]) {
             dispatch<any>(toggleFavorite(resource)).then(() => {
                 dispatch<any>(favoritePanelActions.REQUEST_ITEMS());
-            })
-        );
+            });
+        }
     },
 };
-
 const commonActionSet: ContextMenuActionSet = [
     [
         {
@@ -81,7 +80,7 @@ const commonActionSet: ContextMenuActionSet = [
             icon: AdvancedIcon,
             name: "API Details",
             execute: (dispatch, resources) => {
-                resources.forEach(resource => dispatch<any>(openAdvancedTabDialog(resource.uuid)));
+                dispatch<any>(openAdvancedTabDialog(resources[0].uuid));
             },
         },
     ],
@@ -95,7 +94,7 @@ export const readOnlyCollectionActionSet: ContextMenuActionSet = [
             icon: FolderSharedIcon,
             name: "Open with 3rd party client",
             execute: (dispatch, resources) => {
-                resources.forEach(resource => dispatch<any>(openWebDavS3InfoDialog(resource.uuid)));
+                dispatch<any>(openWebDavS3InfoDialog(resources[0].uuid));
             },
         },
     ],
@@ -108,14 +107,14 @@ export const collectionActionSet: ContextMenuActionSet = [
             icon: RenameIcon,
             name: "Edit collection",
             execute: (dispatch, resources) => {
-                resources.forEach(resource => dispatch<any>(openCollectionUpdateDialog(resource)));
+                dispatch<any>(openCollectionUpdateDialog(resources[0]));
             },
         },
         {
             icon: ShareIcon,
             name: "Share",
             execute: (dispatch, resources) => {
-                resources.forEach(({ uuid }) => dispatch<any>(openSharingDialog(uuid)));
+                dispatch<any>(openSharingDialog(resources[0].uuid));
             },
         },
         {
@@ -142,11 +141,11 @@ export const collectionAdminActionSet: ContextMenuActionSet = [
             component: TogglePublicFavoriteAction,
             name: "TogglePublicFavoriteAction",
             execute: (dispatch, resources) => {
-                resources.forEach(resource =>
+                for (const resource of resources) {
                     dispatch<any>(togglePublicFavorite(resource)).then(() => {
                         dispatch<any>(publicFavoritePanelActions.REQUEST_ITEMS());
-                    })
-                );
+                    });
+                }
             },
         },
     ],

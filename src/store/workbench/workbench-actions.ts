@@ -444,7 +444,11 @@ export const copyCollection = (data: CopyFormDialogData) => async (dispatch: Dis
         const newName = data.isSingle ? data.name : `Copy of: ${copyToProject.name}`;
         try {
             const collection = await dispatch<any>(
-                collectionCopyActions.copyCollection({ ...copyToProject, name: newName, isSingle: data.isSingle })
+                collectionCopyActions.copyCollection({
+                    ...copyToProject,
+                    name: newName,
+                    isSingle: collectionsToCopy.length === 1 ? true : data.isSingle,
+                })
             );
             if (copyToProject && collection) {
                 await dispatch<any>(reloadProjectMatchingUuid([copyToProject.uuid]));
