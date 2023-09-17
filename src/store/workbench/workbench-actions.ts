@@ -472,6 +472,7 @@ export const copyCollection = (data: CopyFormDialogData) => async (dispatch: Dis
             );
         }
     }
+    dispatch(projectPanelActions.REQUEST_ITEMS());
 };
 
 export const moveCollection =
