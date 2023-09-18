@@ -14,14 +14,14 @@ This page aims to provide insight about managing the ever growing API Server's l
 
 h3. Logs table purpose & behavior
 
-This database table is accessed viad the via "the @logs@ endpoint.":../api/methods/logs.html
+This database table is accessed via "the @logs@ endpoint.":../api/methods/logs.html
 
 This table currently serves several purposes:
 
 * Audit logging, permitting admins and users to look up the time and details of past changes to Arvados objects.
 * Logging other system events, specifically "file uploads and downloads from keep-web.":restricting-upload-download.html#audit_logs
 * The source for cache-invalidation events, published through websockets to Workbench to refresh the view.  It can also be monitored by the Python SDK "events module.":../sdk/python/events.html
-* Prior to Arvados 2.7, it was used a staging area for stdout/stderr text coming from users' containers, permitting users to see what their containers are doing while they are still running (i.e., before those text files are written to Keep).  Starting with Arvados 2.7, this is superceded by a more efficient mechanism and so these logs are disabled by default.  See "2.7.0 upgrade notes":upgrading.html#v2_7_0 for details.
+* Prior to Arvados 2.7, it was used a staging area for stdout/stderr text coming from users' containers, permitting users to see what their containers are doing while they are still running (i.e., before those text files are written to Keep).  Starting with Arvados 2.7, this is superseded by a more efficient mechanism, so these logs are disabled by default.  See "2.7.0 upgrade notes":upgrading.html#v2_7_0 for details.
 
 As a result, this table grows indefinitely, even on sites where policy does not require an audit log; making backups, migrations, and upgrades unnecessarily slow and painful.
 

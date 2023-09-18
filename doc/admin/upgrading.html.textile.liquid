@@ -38,7 +38,7 @@ h2(#v2_7_0). v2.7.0 (2023-09-??)
 
 h3. New system for live container logs
 
-Starting with Arvados 2.7, a new system for fetching live container logs is in place.  This system features significantly reduced database load compared to previous releases.  When Workbench or another application need to access the logs of a process (running or completed), they should use the "log endpoint of container_requests.":https://doc.arvados.org/main/api/methods/container_requests.html which forwards requests to the running container.  This supercedes the previous system where compute processes would send all of their logs to the database, which produced significant database load.
+Starting with Arvados 2.7, a new system for fetching live container logs is in place.  This system features significantly reduced database load compared to previous releases.  When Workbench or another application needs to access the logs of a process (running or completed), they should use the "log endpoint of container_requests":{{ site.baseurl }}/api/methods/container_requests.html which forwards requests to the running container.  This supersedes the previous system where compute processes would send all of their logs to the database, which produced significant load.
 
 The legacy logging system is now disabled by default for all installations with the setting @Containers.Logging.LimitLogBytesForJob: 0@.  If you have an existing Arvados installation where you have customized this value and do not need the legacy container logging system, we recommend removing @LimitLogBytesForJob@ from your configuration.
 
