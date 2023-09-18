@@ -230,6 +230,7 @@ Logs for the main process can be found back on the workflow process page. Select
 There several logs available, so here is a basic summary of what some of the more commonly used logs contain.  Let's first define a few terms that will help us understand what the logs are tracking.
 
 As you may recall, Arvados Crunch manages the running of workflows. A _container request_ is an order sent to Arvados Crunch to perform some computational work. Crunch fulfils a request by either choosing a worker node to execute a container, or finding an identical/equivalent container that has already run. You can use _container request_ or _container_ to distinguish between a work order that is submitted to be run and a work order that is actually running or has been run. So our container request in this case is just the submitted workflow we sent to the Arvados cluster.
+
 A _node_ is a compute resource where Arvardos can schedule work.  In our case since the Arvados Playground is running on a cloud, our nodes are virtual machines.  @arvados-cwl-runner@ (acr) executes CWL workflows by submitting the individual parts to Arvados as containers and crunch-run is an internal component that runs on nodes and executes containers.
 
 * @stderr.txt@
