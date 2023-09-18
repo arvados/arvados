@@ -220,9 +220,7 @@ Once your workflow has finished, you can see how long it took the workflow to ru
 <figure> !{width: 100%}{{ site.baseurl }}/images/wgs-tutorial/image5.png!
 <figcaption> _*Figure 8*:  A completed workflow process in Arvados as viewed via the Arvados Workbench. You can click on the outputs link (highlighted in yellow) to view the outputs. Outputs of a workflow are stored in a collection._ </figcaption> </figure>
 
-If we click on the outputs of the workflow, we will see the output collection.
-
-Contained in this collection, is the GVCF, tabix index file, and html ClinVar report for each analyzed sample (e.g. set of FASTQs).  You can directly open it in the browser by selecting the file listing. Additionally, by clicking on the download button to the right of the file, you can download it to your local machine.  You can also use the command line to download single files or whole collections to your machine. You can examine the outputs of a step similarly by using the arrow to expand the panel to see more details.
+If we click on the outputs of the workflow, we will see the output collection. It contains the GVCF, tabix index file, and HTML ClinVar report for each analyzed sample (e.g. set of FASTQs). You can open a report in the browser by selecting it from the listing. You can also download a file to your local machine by right-clicking a file and selecting "Download" from the context menu, or from the action menu available from the far right of each listing.
 
 Logs for the main process can be found back on the workflow process page. Selecting the "LOGS" button at the top navigates down to the logs. You can view the logs directly through that panel, or in the upper right-hand corner select the button with hover-over text "Go to Log collection". 
 There several logs available, so here is a basic summary of what some of the more commonly used logs contain.  Let's first define a few terms that will help us understand what the logs are tracking.
