@@ -729,7 +729,7 @@ describe("Collection panel tests", function () {
             });
     });
 
-    it.only("uses the collection version browser to view a previous version", function () {
+    it("uses the collection version browser to view a previous version", function () {
         const colName = `Test Collection ${Math.floor(Math.random() * 999999)}`;
 
         // Creates the collection using the admin token so we can set up
