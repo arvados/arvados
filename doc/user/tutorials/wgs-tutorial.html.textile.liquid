@@ -220,10 +220,11 @@ Once your workflow has finished, you can see how long it took the workflow to ru
 <figure> !{width: 100%}{{ site.baseurl }}/images/wgs-tutorial/image5.png!
 <figcaption> _*Figure 8*:  A completed workflow process in Arvados as viewed via the Arvados Workbench. You can click on the outputs link (highlighted in yellow) to view the outputs. Outputs of a workflow are stored in a collection._ </figcaption> </figure>
 
-If we click on the outputs of the workflow, we will see the output collection. It contains the GVCF, tabix index file, and HTML ClinVar report for each analyzed sample (e.g. set of FASTQs). You can open a report in the browser by selecting it from the listing. You can also download a file to your local machine by right-clicking a file and selecting "Download" from the context menu, or from the action menu available from the far right of each listing.
+If we click on the outputs of the workflow, we will see the output collection. It contains the GVCF, tabix index file, and HTML ClinVar report for each analyzed sample (e.g., set of FASTQs). You can open a report in the browser by selecting it from the listing. You can also download a file to your local machine by right-clicking a file and selecting "Download" from the context menu, or from the action menu available from the far right of each listing.
 
 Logs for the main process can be found back on the workflow process page. Selecting the "LOGS" button at the top navigates down to the logs. You can view the logs directly through that panel, or in the upper right-hand corner select the button with hover-over text "Go to Log collection". 
-There several logs available, so here is a basic summary of what some of the more commonly used logs contain.  Let's first define a few terms that will help us understand what the logs are tracking.
+
+There are several logs available, so here is a basic summary of what some of the more commonly used logs contain.  Let's first define a few terms that will help us understand what the logs are tracking.
 
 As you may recall, Arvados Crunch manages the running of workflows. A _container request_ is an order sent to Arvados Crunch to perform some computational work. Crunch fulfils a request by either choosing a worker node to execute a container, or finding an identical/equivalent container that has already run. You can use _container request_ or _container_ to distinguish between a work order that is submitted to be run and a work order that is actually running or has been run. So our container request in this case is just the submitted workflow we sent to the Arvados cluster.
 
@@ -233,7 +234,7 @@ A _node_ is a compute resource where Arvardos can schedule work.  In our case si
 ** Captures everything written to standard error by the programs run by the executing container
 * @node-info.txt@ and @node.json@
 ** Contains information about the nodes that executed this container. For the Arvados Playground, this gives information about the virtual machine instance that ran the container.
-node.json gives a high level overview about the instance such as name, price, and RAM while node-info.txt gives more detailed information about the virtual machine (e.g. cpu of each processor)
+node.json gives a high level overview about the instance such as name, price, and RAM while node-info.txt gives more detailed information about the virtual machine (e.g., CPU of each processor)
 * @crunch-run.txt@ and @crunchstat.txt@
 ** @crunch-run.txt@ has info about how the container's execution environment was set up (e.g., time spent loading the docker image) and timing/results of copying output data to Keep (if applicable)
 ** @crunchstat.txt@ has info about resource consumption (RAM, cpu, disk, network) by the container while it was running.
