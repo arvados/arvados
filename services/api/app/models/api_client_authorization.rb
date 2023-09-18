@@ -10,8 +10,8 @@ class ApiClientAuthorization < ArvadosModel
   extend CurrentApiClient
   extend DbCurrentTime
 
-  belongs_to :api_client
-  belongs_to :user
+  belongs_to :api_client, optional: true
+  belongs_to :user, optional: true
   after_initialize :assign_random_api_token
   serialize :scopes, Array
 

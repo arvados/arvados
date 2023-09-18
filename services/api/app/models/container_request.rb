@@ -12,11 +12,16 @@ class ContainerRequest < ArvadosModel
   include CommonApiTemplate
   include WhitelistUpdate
 
-  belongs_to :container, foreign_key: :container_uuid, primary_key: :uuid
+  belongs_to :container, {
+               foreign_key: :container_uuid,
+               primary_key: :uuid,
+               optional: true,
+             }
   belongs_to :requesting_container, {
                class_name: 'Container',
                foreign_key: :requesting_container_uuid,
                primary_key: :uuid,
+               optional: true,
              }
 
   # Posgresql JSONB columns should NOT be declared as serialized, Rails 5
