@@ -346,6 +346,8 @@ The tail end of our log should be similar to the following:
 
 This is the command we ran to invoke bwa-mem, and the scaling information for running bwa-mem multi-threaded across 16 cores (15.4x).
 
+You can also view outputs for the subprocess just like you do for the main workflow process. Back on the subprocess page for *bwamem-samtools-view_2*, the Outputs pane shows the output files of this specific subprocess. In this case, it is a single BAM file. This way, if your workflow succeeds but produces a surprising result, you can download and review the intermediate outputs to investigate further.
+
 We hope that now that you have a bit more familiarity with the logs you can continue to use them to debug and optimize your own workflows as you move forward with using Arvados if your own work in the future.
 
 h2. 7.  Conclusion
