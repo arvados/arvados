@@ -656,6 +656,13 @@ handle_cwltest () {
     rm -rf "$WORKSPACE/cwltest"
   fi
   git clone https://github.com/common-workflow-language/cwltest.git
+
+  # The subsequent release of cwltest confirms that files exist on disk, since
+  # our files are in Keep, all the tests fail.
+  # We should add [optional] Arvados support to cwltest so it can access
+  # Keep but for the time being just package the last working version.
+  git --git-dir=cwltest checkout 2.3.20230108193615
+
   # signal to our build script that we want a cwltest executable installed in /usr/bin/
   mkdir cwltest/bin && touch cwltest/bin/cwltest
   fpm_build_virtualenv "cwltest" "cwltest" "$package_format" "$target_arch"
