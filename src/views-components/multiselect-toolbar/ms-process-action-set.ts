@@ -14,7 +14,9 @@ export const msProcessActionSet: ContextMenuActionSet = [
             icon: ReRunProcessIcon,
             name: "Copy and re-run process",
             execute: (dispatch, resources) => {
-                resources.forEach(resource => dispatch<any>(openCopyProcessDialog(resource)));
+                for (const resource of [...resources]) {
+                    dispatch<any>(openCopyProcessDialog(resource));
+                }
             },
         },
         {

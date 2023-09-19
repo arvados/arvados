@@ -15,19 +15,19 @@ import { CommonService } from "services/common-service/common-service";
 
 export type UploadProgress = (fileId: number, loaded: number, total: number, currentTime: number) => void;
 
-export const emptyCollectionPdh = 'd41d8cd98f00b204e9800998ecf8427e+0';
+export const emptyCollectionPdh = "d41d8cd98f00b204e9800998ecf8427e+0";
 
 export class CollectionService extends TrashableResourceService<CollectionResource> {
     constructor(serverApi: AxiosInstance, private webdavClient: WebDAV, private authService: AuthService, actions: ApiActions) {
         super(serverApi, "collections", actions, [
-            'fileCount',
-            'fileSizeTotal',
-            'replicationConfirmed',
-            'replicationConfirmedAt',
-            'storageClassesConfirmed',
-            'storageClassesConfirmedAt',
-            'unsignedManifestText',
-            'version',
+            "fileCount",
+            "fileSizeTotal",
+            "replicationConfirmed",
+            "replicationConfirmedAt",
+            "storageClassesConfirmed",
+            "storageClassesConfirmedAt",
+            "unsignedManifestText",
+            "version",
         ]);
     }
 
@@ -42,7 +42,7 @@ export class CollectionService extends TrashableResourceService<CollectionResour
     }
 
     update(uuid: string, data: Partial<CollectionResource>, showErrors?: boolean) {
-        const select = [...Object.keys(data), 'version', 'modifiedAt'];
+        const select = [...Object.keys(data), "version", "modifiedAt"];
         return super.update(uuid, { ...data, preserveVersion: true }, showErrors, select);
     }
 
@@ -51,15 +51,16 @@ export class CollectionService extends TrashableResourceService<CollectionResour
         if (request.responseXML != null) {
             return extractFilesData(request.responseXML);
         }
+
         return Promise.reject();
     }
 
     private combineFilePath(parts: string[]) {
         return parts.reduce((path, part) => {
             // Trim leading and trailing slashes
-            const trimmedPart = part.split('/').filter(Boolean).join('/');
+            const trimmedPart = part.split("/").filter(Boolean).join("/");
             if (trimmedPart.length) {
-                const separator = path.endsWith('/') ? '' : '/';
+                const separator = path.endsWith("/") ? "" : "/";
                 return `${path}${separator}${trimmedPart}`;
             } else {
                 return path;
@@ -70,22 +71,23 @@ export class CollectionService extends TrashableResourceService<CollectionResour
     private replaceFiles(collectionUuid: string, fileMap: {}, showErrors?: boolean) {
         const payload = {
             collection: {
-                preserve_version: true
+                preserve_version: true,
             },
-            replace_files: fileMap
+            replace_files: fileMap,
         };
 
         return CommonService.defaultResponse(
-            this.serverApi
-                .put<CollectionResource>(`/${this.resourceType}/${collectionUuid}`, payload),
+            this.serverApi.put<CollectionResource>(`/${this.resourceType}/${collectionUuid}`, payload),
             this.actions,
             true, // mapKeys
             showErrors
         );
     }
 
-    async uploadFiles(collectionUuid: string, files: File[], onProgress?: UploadProgress, targetLocation: string = '') {
-        if (collectionUuid === "" || files.length === 0) { return; }
+    async uploadFiles(collectionUuid: string, files: File[], onProgress?: UploadProgress, targetLocation: string = "") {
+        if (collectionUuid === "" || files.length === 0) {
+            return;
+        }
         // files have to be uploaded sequentially
         for (let idx = 0; idx < files.length; idx++) {
             await this.uploadFile(collectionUuid, files[idx], idx, onProgress, targetLocation);
@@ -96,34 +98,40 @@ export class CollectionService extends TrashableResourceService<CollectionResour
     async renameFile(collectionUuid: string, collectionPdh: string, oldPath: string, newPath: string) {
         return this.replaceFiles(collectionUuid, {
             [this.combineFilePath([newPath])]: `${collectionPdh}${this.combineFilePath([oldPath])}`,
-            [this.combineFilePath([oldPath])]: '',
+            [this.combineFilePath([oldPath])]: "",
         });
     }
 
     extendFileURL = (file: CollectionDirectory | CollectionFile) => {
-        const baseUrl = this.webdavClient.getBaseUrl().endsWith('/')
-            ? this.webdavClient.getBaseUrl().slice(0, -1)
-            : this.webdavClient.getBaseUrl();
+        const baseUrl = this.webdavClient.getBaseUrl().endsWith("/") ? this.webdavClient.getBaseUrl().slice(0, -1) : this.webdavClient.getBaseUrl();
         const apiToken = this.authService.getApiToken();
-        const encodedApiToken = apiToken ? encodeURI(apiToken) : '';
+        const encodedApiToken = apiToken ? encodeURI(apiToken) : "";
         const userApiToken = `/t=${encodedApiToken}/`;
-        const splittedPrevFileUrl = file.url.split('/');
-        const url = `${baseUrl}/${splittedPrevFileUrl[1]}${userApiToken}${splittedPrevFileUrl.slice(2).join('/')}`;
+        const splittedPrevFileUrl = file.url.split("/");
+        const url = `${baseUrl}/${splittedPrevFileUrl[1]}${userApiToken}${splittedPrevFileUrl.slice(2).join("/")}`;
         return {
             ...file,
-            url
+            url,
         };
-    }
+    };
 
     async getFileContents(file: CollectionFile) {
         return (await this.webdavClient.get(`c=${file.id}`)).response;
     }
 
-    private async uploadFile(collectionUuid: string, file: File, fileId: number, onProgress: UploadProgress = () => { return; }, targetLocation: string = '') {
-        const fileURL = `c=${targetLocation !== '' ? targetLocation : collectionUuid}/${file.name}`.replace('//', '/');
+    private async uploadFile(
+        collectionUuid: string,
+        file: File,
+        fileId: number,
+        onProgress: UploadProgress = () => {
+            return;
+        },
+        targetLocation: string = ""
+    ) {
+        const fileURL = `c=${targetLocation !== "" ? targetLocation : collectionUuid}/${file.name}`.replace("//", "/");
         const requestConfig = {
             headers: {
-                'Content-Type': 'text/octet-stream'
+                "Content-Type": "text/octet-stream",
             },
             onUploadProgress: (e: ProgressEvent) => {
                 onProgress(fileId, e.loaded, e.total, Date.now());
@@ -136,7 +144,7 @@ export class CollectionService extends TrashableResourceService<CollectionResour
         const optimizedFiles = files
             .sort((a, b) => a.length - b.length)
             .reduce((acc, currentPath) => {
-                const parentPathFound = acc.find((parentPath) => currentPath.indexOf(`${parentPath}/`) > -1);
+                const parentPathFound = acc.find(parentPath => currentPath.indexOf(`${parentPath}/`) > -1);
 
                 if (!parentPathFound) {
                     return [...acc, currentPath];
@@ -148,49 +156,54 @@ export class CollectionService extends TrashableResourceService<CollectionResour
         const fileMap = optimizedFiles.reduce((obj, filePath) => {
             return {
                 ...obj,
-                [this.combineFilePath([filePath])]: ''
-            }
-        }, {})
+                [this.combineFilePath([filePath])]: "",
+            };
+        }, {});
 
         return this.replaceFiles(collectionUuid, fileMap, showErrors);
     }
 
     copyFiles(sourcePdh: string, files: string[], destinationCollectionUuid: string, destinationPath: string, showErrors?: boolean) {
         const fileMap = files.reduce((obj, sourceFile) => {
-            const sourceFileName = sourceFile.split('/').filter(Boolean).slice(-1).join("");
+            const sourceFileName = sourceFile.split("/").filter(Boolean).slice(-1).join("");
             return {
                 ...obj,
-                [this.combineFilePath([destinationPath, sourceFileName])]: `${sourcePdh}${this.combineFilePath([sourceFile])}`
+                [this.combineFilePath([destinationPath, sourceFileName])]: `${sourcePdh}${this.combineFilePath([sourceFile])}`,
             };
         }, {});
 
         return this.replaceFiles(destinationCollectionUuid, fileMap, showErrors);
     }
 
-    moveFiles(sourceUuid: string, sourcePdh: string, files: string[], destinationCollectionUuid: string, destinationPath: string, showErrors?: boolean) {
+    moveFiles(
+        sourceUuid: string,
+        sourcePdh: string,
+        files: string[],
+        destinationCollectionUuid: string,
+        destinationPath: string,
+        showErrors?: boolean
+    ) {
         if (sourceUuid === destinationCollectionUuid) {
             const fileMap = files.reduce((obj, sourceFile) => {
-                const sourceFileName = sourceFile.split('/').filter(Boolean).slice(-1).join("");
+                const sourceFileName = sourceFile.split("/").filter(Boolean).slice(-1).join("");
                 return {
                     ...obj,
                     [this.combineFilePath([destinationPath, sourceFileName])]: `${sourcePdh}${this.combineFilePath([sourceFile])}`,
-                    [this.combineFilePath([sourceFile])]: '',
+                    [this.combineFilePath([sourceFile])]: "",
                 };
             }, {});
 
-            return this.replaceFiles(sourceUuid, fileMap, showErrors)
+            return this.replaceFiles(sourceUuid, fileMap, showErrors);
         } else {
-            return this.copyFiles(sourcePdh, files, destinationCollectionUuid, destinationPath, showErrors)
-                .then(() => {
-                    return this.deleteFiles(sourceUuid, files, showErrors);
-                });
+            return this.copyFiles(sourcePdh, files, destinationCollectionUuid, destinationPath, showErrors).then(() => {
+                return this.deleteFiles(sourceUuid, files, showErrors);
+            });
         }
     }
 
     createDirectory(collectionUuid: string, path: string, showErrors?: boolean) {
-        const fileMap = {[this.combineFilePath([path])]: emptyCollectionPdh};
+        const fileMap = { [this.combineFilePath([path])]: emptyCollectionPdh };
 
         return this.replaceFiles(collectionUuid, fileMap, showErrors);
     }
-
 }

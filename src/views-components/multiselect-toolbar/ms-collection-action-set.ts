@@ -16,7 +16,6 @@ export const msCollectionActionSet: ContextMenuActionSet = [
             icon: CopyIcon,
             name: "Make a copy",
             execute: (dispatch, [...resources]) => {
-                console.log(resources);
                 if (resources[0].isSingle || resources.length === 1) dispatch<any>(openCollectionCopyDialog(resources[0]));
                 else dispatch<any>(openMultiCollectionCopyDialog(resources[0]));
             },
