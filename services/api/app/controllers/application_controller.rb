@@ -29,6 +29,9 @@ class ApplicationController < ActionController::Base
   include DbCurrentTime
 
   respond_to :json
+
+  # Although CSRF protection is already enabled by default, this is
+  # still needed to reposition CSRF checks later in callback order.
   protect_from_forgery
 
   ERROR_ACTIONS = [:render_error, :render_not_found]
