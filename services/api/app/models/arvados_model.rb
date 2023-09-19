@@ -37,9 +37,9 @@ class ArvadosModel < ApplicationRecord
   # user.uuid==object.owner_uuid.
   has_many(:permissions,
            ->{where(link_class: 'permission')},
-           foreign_key: :head_uuid,
+           foreign_key: 'head_uuid',
            class_name: 'Link',
-           primary_key: :uuid)
+           primary_key: 'uuid')
 
   # If async is true at create or update, permission graph
   # update is deferred allowing making multiple calls without the performance

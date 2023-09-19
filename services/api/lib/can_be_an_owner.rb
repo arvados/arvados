@@ -22,8 +22,8 @@ module CanBeAnOwner
       klass = t.classify.constantize
       next unless klass and 'owner_uuid'.in?(klass.columns.collect(&:name))
       base.has_many(t.to_sym,
-                    foreign_key: :owner_uuid,
-                    primary_key: :uuid,
+                    foreign_key: 'owner_uuid',
+                    primary_key: 'uuid',
                     dependent: :restrict_with_exception)
     end
     # We need custom protection for changing an owner's primary
@@ -75,7 +75,7 @@ module CanBeAnOwner
 
     # Check for objects that have my old uuid listed as their owner.
     self.class.reflect_on_all_associations(:has_many).each do |assoc|
-      next unless assoc.foreign_key == :owner_uuid
+      next unless assoc.foreign_key == 'owner_uuid'
       if assoc.klass.where(owner_uuid: uuid_was).any?
         errors.add(:uuid,
                    "cannot be changed on a #{self.class} that owns objects")

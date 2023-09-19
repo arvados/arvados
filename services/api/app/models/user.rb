@@ -56,8 +56,8 @@ class User < ArvadosModel
   before_destroy :clear_permissions
   after_destroy :remove_self_from_permissions
 
-  has_many :authorized_keys, :foreign_key => :authorized_user_uuid, :primary_key => :uuid
-  has_many :repositories, foreign_key: :owner_uuid, primary_key: :uuid
+  has_many :authorized_keys, foreign_key: 'authorized_user_uuid', primary_key: 'uuid'
+  has_many :repositories, foreign_key: 'owner_uuid', primary_key: 'uuid'
 
   default_scope { where('redirect_to_user_uuid is null') }
 

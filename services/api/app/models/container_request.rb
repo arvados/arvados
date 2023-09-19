@@ -13,14 +13,14 @@ class ContainerRequest < ArvadosModel
   include WhitelistUpdate
 
   belongs_to :container, {
-               foreign_key: :container_uuid,
-               primary_key: :uuid,
+               foreign_key: 'container_uuid',
+               primary_key: 'uuid',
                optional: true,
              }
   belongs_to :requesting_container, {
                class_name: 'Container',
-               foreign_key: :requesting_container_uuid,
-               primary_key: :uuid,
+               foreign_key: 'requesting_container_uuid',
+               primary_key: 'uuid',
                optional: true,
              }
 

@@ -21,8 +21,8 @@ class Node < ArvadosModel
   # have access to the associated Job.  They're expected to set
   # job_readable=true if the Job UUID can be included in the API response.
   belongs_to :job, {
-               foreign_key: :job_uuid,
-               primary_key: :uuid,
+               foreign_key: 'job_uuid',
+               primary_key: 'uuid',
                optional: true,
              }
   attr_accessor :job_readable
