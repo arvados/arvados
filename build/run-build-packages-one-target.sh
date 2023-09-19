@@ -32,6 +32,8 @@ Syntax:
     Version to build (default:
     \$ARVADOS_BUILDING_VERSION-\$ARVADOS_BUILDING_ITERATION or
     0.1.timestamp.commithash)
+--skip-docker-build
+    Don't try to build Docker images
 
 WORKSPACE=path         Path to the Arvados source tree to build packages from
 
@@ -56,7 +58,7 @@ if ! [[ -d "$WORKSPACE" ]]; then
 fi
 
 PARSEDOPTS=$(getopt --name "$0" --longoptions \
-    help,debug,test-packages,target:,command:,only-test:,force-test,only-build:,force-build,arch:,build-version: \
+    help,debug,test-packages,target:,command:,only-test:,force-test,only-build:,force-build,arch:,build-version:,skip-docker-build \
     -- "" "$@")
 if [ $? -ne 0 ]; then
     exit 1
@@ -121,6 +123,9 @@ while [ $# -gt 0 ]; do
             fi
             shift
             ;;
+        --skip-docker-build)
+            SKIP_DOCKER_BUILD=1
+	    ;;
         --)
             if [ $# -gt 1 ]; then
                 echo >&2 "$0: unrecognized argument '$2'. Try: $0 --help"
@@ -183,23 +188,25 @@ fi
 
 JENKINS_DIR=$(dirname "$(readlink -e "$0")")
 
-if [[ -n "$test_packages" ]]; then
-    pushd "$JENKINS_DIR/package-test-dockerfiles"
-    make "$TARGET/generated"
-else
-    pushd "$JENKINS_DIR/package-build-dockerfiles"
-    make "$TARGET/generated"
+if [[ "$SKIP_DOCKER_BUILD" != 1 ]] ; then
+    if [[ -n "$test_packages" ]]; then
+	pushd "$JENKINS_DIR/package-test-dockerfiles"
+	make "$TARGET/generated"
+    else
+	pushd "$JENKINS_DIR/package-build-dockerfiles"
+	make "$TARGET/generated"
+    fi
+
+    GOVERSION=$(grep 'const goversion =' $WORKSPACE/lib/install/deps.go |awk -F'"' '{print $2}')
+
+    echo $TARGET
+    cd $TARGET
+    time docker build --tag "$IMAGE" \
+	 --build-arg HOSTTYPE=$HOSTTYPE \
+	 --build-arg BRANCH=$(git rev-parse --abbrev-ref HEAD) \
+	 --build-arg GOVERSION=$GOVERSION --no-cache .
+    popd
 fi
-
-GOVERSION=$(grep 'const goversion =' $WORKSPACE/lib/install/deps.go |awk -F'"' '{print $2}')
-
-echo $TARGET
-cd $TARGET
-time docker build --tag "$IMAGE" \
-  --build-arg HOSTTYPE=$HOSTTYPE \
-  --build-arg BRANCH=$(git rev-parse --abbrev-ref HEAD) \
-  --build-arg GOVERSION=$GOVERSION --no-cache .
-popd
 
 if test -z "$packages" ; then
     packages="arvados-api-server
