@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: AGPL-3.0
 
-require_relative 'boot'
+require_relative "boot"
 
 require "rails"
 # Pick the frameworks you want:
@@ -35,10 +35,13 @@ module Server
     # Initialize configuration defaults for originally generated Rails version.
     config.load_defaults 5.0
 
-    # Settings in config/environments/* take precedence over those specified here.
-    # Application configuration can go into files in config/initializers
-    # -- all .rb files in that directory are automatically loaded after loading
-    # the framework and any gems in your application.
+    # Configuration for the application, engines, and railties goes here.
+    #
+    # These settings can be overridden in specific environments using the files
+    # in config/environments, which are processed later.
+    #
+    # config.time_zone = "Central Time (US & Canada)"
+    # config.eager_load_paths << Rails.root.join("extras")
 
     # We use db/structure.sql instead of db/schema.rb.
     config.active_record.schema_format = :sql
@@ -50,7 +53,7 @@ module Server
     # container_request records can contain arbitrary data structures
     # in mounts.*.content, so rails must not munge them.
     config.action_dispatch.perform_deep_munge = false
-    
+
     # force_ssl's redirect-to-https feature doesn't work when the
     # client supplies a port number, and prevents arvados-controller
     # from connecting to Rails internally via plain http.
