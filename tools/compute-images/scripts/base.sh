@@ -68,10 +68,7 @@ wait_for_apt_locks && $SUDO DEBIAN_FRONTEND=noninteractive apt-get -qq --yes ins
   libcurl4-openssl-dev \
   lvm2 \
   cryptsetup \
-  xfsprogs \
-  squashfs-tools \
-  libglib2.0-dev \
-  libseccomp-dev
+  xfsprogs
 
 # Install the Arvados packages we need
 wait_for_apt_locks && $SUDO DEBIAN_FRONTEND=noninteractive apt-get -qq --yes install \
@@ -123,12 +120,16 @@ curl -s https://storage.googleapis.com/golang/go${GOVERSION}.linux-amd64.tar.gz 
 ln -sf /var/lib/arvados/go/bin/* /usr/local/bin/
 
 singularityversion=3.10.4
-curl -Ls https://github.com/sylabs/singularity/archive/refs/tags/v${singularityversion}.tar.gz | tar -C /var/lib/arvados -xzf -
-cd /var/lib/arvados/singularity-${singularityversion}
+cd /var/lib/arvados
+git clone --recurse-submodules https://github.com/sylabs/singularity
+cd singularity
+git checkout v${singularityversion}
 
 # build dependencies for singularity
 wait_for_apt_locks && $SUDO DEBIAN_FRONTEND=noninteractive apt-get -qq --yes install \
-  make build-essential libssl-dev uuid-dev cryptsetup
+			    make build-essential libssl-dev uuid-dev cryptsetup \
+			    squashfs-tools libglib2.0-dev libseccomp-dev
+
 
 echo $singularityversion > VERSION
 ./mconfig --prefix=/var/lib/arvados
