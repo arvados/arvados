@@ -21,23 +21,20 @@ export const openInNewTabAction = (resource: any) => (dispatch: Dispatch, getSta
 export const copyToClipboardAction = (resources: Array<any>) => (dispatch: Dispatch, getState: () => RootState) => {
     // Copy to clipboard omits token to avoid accidental sharing
 
-    let output = "";
+    let url = getNavUrl(resources[0].uuid, getState().auth, false);
+    let wasCopied;
 
-    for (const resource of [...resources]) {
-        let url = getNavUrl(resource.uuid, getState().auth, false);
-        if (url[0] === "/") url = `${window.location.origin}${url}`;
-        output += output.length ? `,${url}` : url;
+    if (url[0] === "/") wasCopied = copy(`${window.location.origin}${url}`);
+    else if (url.length) {
+        wasCopied = copy(url);
     }
 
-    if (output.length) {
-        const wasCopied = copy(output);
-        if (wasCopied)
-            dispatch(
-                snackbarActions.OPEN_SNACKBAR({
-                    message: "Copied",
-                    hideDuration: 2000,
-                    kind: SnackbarKind.SUCCESS,
-                })
-            );
-    }
+    if (wasCopied)
+        dispatch(
+            snackbarActions.OPEN_SNACKBAR({
+                message: "Copied",
+                hideDuration: 2000,
+                kind: SnackbarKind.SUCCESS,
+            })
+        );
 };
