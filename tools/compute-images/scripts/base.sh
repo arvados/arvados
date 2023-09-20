@@ -113,38 +113,6 @@ $SUDO systemctl daemon-reload
 # and the BootProbeCommand might be "docker ps -q"
 $SUDO systemctl disable docker
 
-# Get Go and build singularity
-mkdir -p /var/lib/arvados
-rm -rf /var/lib/arvados/go/
-curl -s https://storage.googleapis.com/golang/go${GOVERSION}.linux-amd64.tar.gz | tar -C /var/lib/arvados -xzf -
-ln -sf /var/lib/arvados/go/bin/* /usr/local/bin/
-
-singularityversion=3.10.4
-cd /var/lib/arvados
-git clone --recurse-submodules https://github.com/sylabs/singularity
-cd singularity
-git checkout v${singularityversion}
-
-# build dependencies for singularity
-wait_for_apt_locks && $SUDO DEBIAN_FRONTEND=noninteractive apt-get -qq --yes install \
-			    make build-essential libssl-dev uuid-dev cryptsetup \
-			    squashfs-tools libglib2.0-dev libseccomp-dev
-
-
-echo $singularityversion > VERSION
-./mconfig --prefix=/var/lib/arvados
-make -C ./builddir
-make -C ./builddir install
-ln -sf /var/lib/arvados/bin/* /usr/local/bin/
-
-# set `mksquashfs mem` in the singularity config file if it is configured
-if [ "$MKSQUASHFS_MEM" != "" ]; then
-  echo "mksquashfs mem = ${MKSQUASHFS_MEM}" >> /var/lib/arvados/etc/singularity/singularity.conf
-fi
-
-# Print singularity version installed
-singularity --version
-
 # Remove unattended-upgrades if it is installed
 wait_for_apt_locks && $SUDO DEBIAN_FRONTEND=noninteractive apt-get -qq --yes remove unattended-upgrades --purge
 
@@ -250,5 +218,37 @@ if [ "$NVIDIA_GPU_SUPPORT" == "1" ]; then
   # CUDA initialization.
   $SUDO systemctl disable nvidia-persistenced.service
 fi
+
+# Get Go and build singularity
+mkdir -p /var/lib/arvados
+rm -rf /var/lib/arvados/go/
+curl -s https://storage.googleapis.com/golang/go${GOVERSION}.linux-amd64.tar.gz | tar -C /var/lib/arvados -xzf -
+ln -sf /var/lib/arvados/go/bin/* /usr/local/bin/
+
+singularityversion=3.10.4
+cd /var/lib/arvados
+git clone --recurse-submodules https://github.com/sylabs/singularity
+cd singularity
+git checkout v${singularityversion}
+
+# build dependencies for singularity
+wait_for_apt_locks && $SUDO DEBIAN_FRONTEND=noninteractive apt-get -qq --yes install \
+			    make build-essential libssl-dev uuid-dev cryptsetup \
+			    squashfs-tools libglib2.0-dev libseccomp-dev
+
+
+echo $singularityversion > VERSION
+./mconfig --prefix=/var/lib/arvados
+make -C ./builddir
+make -C ./builddir install
+ln -sf /var/lib/arvados/bin/* /usr/local/bin/
+
+# set `mksquashfs mem` in the singularity config file if it is configured
+if [ "$MKSQUASHFS_MEM" != "" ]; then
+  echo "mksquashfs mem = ${MKSQUASHFS_MEM}" >> /var/lib/arvados/etc/singularity/singularity.conf
+fi
+
+# Print singularity version installed
+singularity --version
 
 $SUDO apt-get clean
