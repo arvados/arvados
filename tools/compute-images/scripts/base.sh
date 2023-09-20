@@ -69,7 +69,9 @@ wait_for_apt_locks && $SUDO DEBIAN_FRONTEND=noninteractive apt-get -qq --yes ins
   lvm2 \
   cryptsetup \
   xfsprogs \
-  squashfs-tools
+  squashfs-tools \
+  libglib2.0-dev \
+  libseccomp-dev
 
 # Install the Arvados packages we need
 wait_for_apt_locks && $SUDO DEBIAN_FRONTEND=noninteractive apt-get -qq --yes install \
