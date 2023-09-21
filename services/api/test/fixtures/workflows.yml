@@ -28,7 +28,7 @@ workflow_with_input_specifications:
   owner_uuid: zzzzz-j7d0g-zhxawtyetzwc5f0
   name: Workflow with input specifications
   description: this workflow has inputs specified
-  created_at: <%= 1.minute.ago.to_s(:db) %>
+  created_at: <%= 1.minute.ago.to_fs(:db) %>
   definition: |
     cwlVersion: v1.0
     class: CommandLineTool
@@ -54,7 +54,7 @@ workflow_with_input_defaults:
   owner_uuid: zzzzz-j7d0g-zhxawtyetzwc5f0
   name: Workflow with default input specifications
   description: this workflow has inputs specified
-  created_at: <%= 1.minute.ago.to_s(:db) %>
+  created_at: <%= 1.minute.ago.to_fs(:db) %>
   definition: |
     cwlVersion: v1.0
     class: CommandLineTool
@@ -73,7 +73,7 @@ workflow_with_wrr:
   owner_uuid: zzzzz-j7d0g-zhxawtyetzwc5f0
   name: Workflow with WorkflowRunnerResources
   description: this workflow has WorkflowRunnerResources
-  created_at: <%= 1.minute.ago.to_s(:db) %>
+  created_at: <%= 1.minute.ago.to_fs(:db) %>
   definition: |
     cwlVersion: v1.0
     class: CommandLineTool

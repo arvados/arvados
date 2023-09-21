@@ -8,8 +8,8 @@ noop: # nothing happened ...to the 'spectator' user
   owner_uuid: zzzzz-tpzed-000000000000000
   object_uuid: zzzzz-tpzed-l1s2piq4t4mps8r
   object_owner_uuid: zzzzz-tpzed-000000000000000
-  event_at: <%= 1.minute.ago.to_s(:db) %>
-  created_at: <%= 1.minute.ago.to_s(:db) %>
+  event_at: <%= 1.minute.ago.to_fs(:db) %>
+  created_at: <%= 1.minute.ago.to_fs(:db) %>
 
 admin_changes_repository2: # admin changes repository2, which is owned by active user
   id: 2
@@ -17,8 +17,8 @@ admin_changes_repository2: # admin changes repository2, which is owned by active
   owner_uuid: zzzzz-tpzed-d9tiejq69daie8f # admin user
   object_uuid: zzzzz-2x53u-382brsig8rp3667 # repository foo
   object_owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz # active user
-  created_at: <%= 2.minute.ago.to_s(:db) %>
-  event_at: <%= 2.minute.ago.to_s(:db) %>
+  created_at: <%= 2.minute.ago.to_fs(:db) %>
+  event_at: <%= 2.minute.ago.to_fs(:db) %>
   event_type: update
 
 admin_changes_specimen: # admin changes specimen owned_by_spectator
@@ -27,8 +27,8 @@ admin_changes_specimen: # admin changes specimen owned_by_spectator
   owner_uuid: zzzzz-tpzed-d9tiejq69daie8f # admin user
   object_uuid: zzzzz-2x53u-3b0xxwzlbzxq5yr # specimen owned_by_spectator
   object_owner_uuid: zzzzz-tpzed-l1s2piq4t4mps8r # spectator user
-  created_at: <%= 3.minute.ago.to_s(:db) %>
-  event_at: <%= 3.minute.ago.to_s(:db) %>
+  created_at: <%= 3.minute.ago.to_fs(:db) %>
+  event_at: <%= 3.minute.ago.to_fs(:db) %>
   event_type: update
 
 system_adds_foo_file: # foo collection added, readable by active through link
@@ -37,8 +37,8 @@ system_adds_foo_file: # foo collection added, readable by active through link
   owner_uuid: zzzzz-tpzed-000000000000000 # system user
   object_uuid: zzzzz-4zz18-znfnqtbbv4spc3w # foo file
   object_owner_uuid: zzzzz-tpzed-000000000000000 # system user
-  created_at: <%= 4.minute.ago.to_s(:db) %>
-  event_at: <%= 4.minute.ago.to_s(:db) %>
+  created_at: <%= 4.minute.ago.to_fs(:db) %>
+  event_at: <%= 4.minute.ago.to_fs(:db) %>
   event_type: create
 
 system_adds_baz: # baz collection added, readable by active and spectator through group 'all users' group membership
@@ -47,8 +47,8 @@ system_adds_baz: # baz collection added, readable by active and spectator throug
   owner_uuid: zzzzz-tpzed-000000000000000 # system user
   object_uuid: zzzzz-4zz18-y9vne9npefyxh8g # baz file
   object_owner_uuid: zzzzz-tpzed-000000000000000 # system user
-  created_at: <%= 5.minute.ago.to_s(:db) %>
-  event_at: <%= 5.minute.ago.to_s(:db) %>
+  created_at: <%= 5.minute.ago.to_fs(:db) %>
+  event_at: <%= 5.minute.ago.to_fs(:db) %>
   event_type: create
 
 log_owned_by_active:
@@ -57,7 +57,7 @@ log_owned_by_active:
   owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz # active user
   object_uuid: zzzzz-2x53u-382brsig8rp3667 # repository foo
   object_owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz # active user
-  event_at: <%= 2.minute.ago.to_s(:db) %>
+  event_at: <%= 2.minute.ago.to_fs(:db) %>
   summary: non-admin use can read own logs
 
 crunchstat_for_running_job:
@@ -162,16 +162,16 @@ stderr_for_ancient_container:
   modified_by_client_uuid: zzzzz-ozdt8-obw7foaks3qjyej
   modified_by_user_uuid: zzzzz-tpzed-xurymjxw79nv3jz
   object_uuid: zzzzz-dz642-logscontainer01
-  event_at: <%= 2.year.ago.to_s(:db) %>
+  event_at: <%= 2.year.ago.to_fs(:db) %>
   event_type: stderr
   summary: ~
   properties:
     text: '2013-11-07_23:33:41 zzzzz-8i9sb-ahd7cie8jah9qui 29610 1 stderr crunchstat:
       cpu 1935.4300 user 59.4100 sys 8 cpus -- interval 10.0002 seconds 12.9900 user
       0.9900 sys'
-  created_at: <%= 2.year.ago.to_s(:db) %>
-  updated_at: <%= 2.year.ago.to_s(:db) %>
-  modified_at: <%= 2.year.ago.to_s(:db) %>
+  created_at: <%= 2.year.ago.to_fs(:db) %>
+  updated_at: <%= 2.year.ago.to_fs(:db) %>
+  modified_at: <%= 2.year.ago.to_fs(:db) %>
   object_owner_uuid: zzzzz-j7d0g-xurymjxw79nv3jz
 
 crunchstat_for_ancient_container:
@@ -181,16 +181,16 @@ crunchstat_for_ancient_container:
   modified_by_client_uuid: zzzzz-ozdt8-obw7foaks3qjyej
   modified_by_user_uuid: zzzzz-tpzed-xurymjxw79nv3jz
   object_uuid: zzzzz-dz642-logscontainer01
-  event_at: <%= 2.year.ago.to_s(:db) %>
+  event_at: <%= 2.year.ago.to_fs(:db) %>
   event_type: crunchstat
   summary: ~
   properties:
     text: '2013-11-07_23:33:41 zzzzz-8i9sb-ahd7cie8jah9qui 29610 1 stderr crunchstat:
       cpu 1935.4300 user 59.4100 sys 8 cpus -- interval 10.0002 seconds 12.9900 user
       0.9900 sys'
-  created_at: <%= 2.year.ago.to_s(:db) %>
-  updated_at: <%= 2.year.ago.to_s(:db) %>
-  modified_at: <%= 2.year.ago.to_s(:db) %>
+  created_at: <%= 2.year.ago.to_fs(:db) %>
+  updated_at: <%= 2.year.ago.to_fs(:db) %>
+  modified_at: <%= 2.year.ago.to_fs(:db) %>
   object_owner_uuid: zzzzz-j7d0g-xurymjxw79nv3jz
 
 stderr_for_previous_container:
@@ -200,16 +200,16 @@ stderr_for_previous_container:
   modified_by_client_uuid: zzzzz-ozdt8-obw7foaks3qjyej
   modified_by_user_uuid: zzzzz-tpzed-xurymjxw79nv3jz
   object_uuid: zzzzz-dz642-logscontainer02
-  event_at: <%= 1.month.ago.to_s(:db) %>
+  event_at: <%= 1.month.ago.to_fs(:db) %>
   event_type: stderr
   summary: ~
   properties:
     text: '2013-11-07_23:33:41 zzzzz-8i9sb-ahd7cie8jah9qui 29610 1 stderr crunchstat:
       cpu 1935.4300 user 59.4100 sys 8 cpus -- interval 10.0002 seconds 12.9900 user
       0.9900 sys'
-  created_at: <%= 1.month.ago.to_s(:db) %>
-  updated_at: <%= 1.month.ago.to_s(:db) %>
-  modified_at: <%= 1.month.ago.to_s(:db) %>
+  created_at: <%= 1.month.ago.to_fs(:db) %>
+  updated_at: <%= 1.month.ago.to_fs(:db) %>
+  modified_at: <%= 1.month.ago.to_fs(:db) %>
   object_owner_uuid: zzzzz-j7d0g-xurymjxw79nv3jz
 
 crunchstat_for_previous_container:
@@ -219,16 +219,16 @@ crunchstat_for_previous_container:
   modified_by_client_uuid: zzzzz-ozdt8-obw7foaks3qjyej
   modified_by_user_uuid: zzzzz-tpzed-xurymjxw79nv3jz
   object_uuid: zzzzz-dz642-logscontainer02
-  event_at: <%= 1.month.ago.to_s(:db) %>
+  event_at: <%= 1.month.ago.to_fs(:db) %>
   event_type: crunchstat
   summary: ~
   properties:
     text: '2013-11-07_23:33:41 zzzzz-8i9sb-ahd7cie8jah9qui 29610 1 stderr crunchstat:
       cpu 1935.4300 user 59.4100 sys 8 cpus -- interval 10.0002 seconds 12.9900 user
       0.9900 sys'
-  created_at: <%= 1.month.ago.to_s(:db) %>
-  updated_at: <%= 1.month.ago.to_s(:db) %>
-  modified_at: <%= 1.month.ago.to_s(:db) %>
+  created_at: <%= 1.month.ago.to_fs(:db) %>
+  updated_at: <%= 1.month.ago.to_fs(:db) %>
+  modified_at: <%= 1.month.ago.to_fs(:db) %>
   object_owner_uuid: zzzzz-j7d0g-xurymjxw79nv3jz
 
 stderr_for_running_container:
@@ -238,16 +238,16 @@ stderr_for_running_container:
   modified_by_client_uuid: zzzzz-ozdt8-obw7foaks3qjyej
   modified_by_user_uuid: zzzzz-tpzed-xurymjxw79nv3jz
   object_uuid: zzzzz-dz642-logscontainer03
-  event_at: <%= 1.hour.ago.to_s(:db) %>
+  event_at: <%= 1.hour.ago.to_fs(:db) %>
   event_type: crunchstat
   summary: ~
   properties:
     text: '2013-11-07_23:33:41 zzzzz-8i9sb-ahd7cie8jah9qui 29610 1 stderr crunchstat:
       cpu 1935.4300 user 59.4100 sys 8 cpus -- interval 10.0002 seconds 12.9900 user
       0.9900 sys'
-  created_at: <%= 1.hour.ago.to_s(:db) %>
-  updated_at: <%= 1.hour.ago.to_s(:db) %>
-  modified_at: <%= 1.hour.ago.to_s(:db) %>
+  created_at: <%= 1.hour.ago.to_fs(:db) %>
+  updated_at: <%= 1.hour.ago.to_fs(:db) %>
+  modified_at: <%= 1.hour.ago.to_fs(:db) %>
   object_owner_uuid: zzzzz-j7d0g-xurymjxw79nv3jz
 
 crunchstat_for_running_container:
@@ -257,14 +257,14 @@ crunchstat_for_running_container:
   modified_by_client_uuid: zzzzz-ozdt8-obw7foaks3qjyej
   modified_by_user_uuid: zzzzz-tpzed-xurymjxw79nv3jz
   object_uuid: zzzzz-dz642-logscontainer03
-  event_at: <%= 1.hour.ago.to_s(:db) %>
+  event_at: <%= 1.hour.ago.to_fs(:db) %>
   event_type: crunchstat
   summary: ~
   properties:
     text: '2013-11-07_23:33:41 zzzzz-8i9sb-ahd7cie8jah9qui 29610 1 stderr crunchstat:
       cpu 1935.4300 user 59.4100 sys 8 cpus -- interval 10.0002 seconds 12.9900 user
       0.9900 sys'
-  created_at: <%= 1.hour.ago.to_s(:db) %>
-  updated_at: <%= 1.hour.ago.to_s(:db) %>
-  modified_at: <%= 1.hour.ago.to_s(:db) %>
+  created_at: <%= 1.hour.ago.to_fs(:db) %>
+  updated_at: <%= 1.hour.ago.to_fs(:db) %>
+  modified_at: <%= 1.hour.ago.to_fs(:db) %>
   object_owner_uuid: zzzzz-j7d0g-xurymjxw79nv3jz
