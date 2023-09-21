@@ -158,7 +158,7 @@ export const moveCollectionPartialToExistingCollection = (fileSelection: Collect
                     fileSelection.collection.portableDataHash,
                     fileSelection.selectedPaths,
                     {uuid: formData.destination.uuid},
-                    formData.destination.path || '/', false
+                    formData.destination.subpath || '/', false
                 );
                 dispatch(updateResources([updatedCollection]));
 

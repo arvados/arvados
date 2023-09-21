@@ -9,7 +9,9 @@ import { WrappedFieldProps } from 'redux-form';
 import { ProjectsTreePicker } from 'views-components/projects-tree-picker/projects-tree-picker';
 import { ProjectsTreePickerItem } from 'store/tree-picker/tree-picker-middleware';
 import { PickerIdProp } from 'store/tree-picker/picker-id';
-import { getFileOperationLocation } from "store/tree-picker/tree-picker-actions";
+import { FileOperationLocation, getFileOperationLocation } from "store/tree-picker/tree-picker-actions";
+import { connect } from "react-redux";
+import { Dispatch } from "redux";
 
 export const ProjectTreePickerField = (props: WrappedFieldProps & PickerIdProp) =>
     <div style={{ display: 'flex', minHeight: 0, flexDirection: 'column' }}>
@@ -44,24 +46,40 @@ export const CollectionTreePickerField = (props: WrappedFieldProps & PickerIdPro
         </div>
     </div>;
 
-const handleDirectoryChange = (props: WrappedFieldProps) =>
-    (_: any, { data }: TreeItem<ProjectsTreePickerItem>) => {
-        props.input.onChange(getFileOperationLocation(data) || '');
-    }
+type ProjectsTreePickerActionProps = {
+    getFileOperationLocation: (item: ProjectsTreePickerItem) => Promise<FileOperationLocation | undefined>;
+}
 
-export const DirectoryTreePickerField = (props: WrappedFieldProps & PickerIdProp) =>
-    <div style={{ display: 'flex', minHeight: 0, flexDirection: 'column' }}>
-        <div style={{ flexBasis: '275px', flexShrink: 1, minHeight: 0, display: 'flex', flexDirection: 'column' }}>
-            <ProjectsTreePicker
-                currentUuid={props.input.value.uuid}
-                pickerId={props.pickerId}
-                toggleItemActive={handleDirectoryChange(props)}
-                options={{ showOnlyOwned: false, showOnlyWritable: true }}
-                includeCollections
-                includeDirectories />
-            {props.meta.dirty && props.meta.error &&
-                <Typography variant='caption' color='error'>
-                    {props.meta.error}
-                </Typography>}
-        </div>
-    </div>;
+const projectsTreePickerMapDispatchToProps = (dispatch: Dispatch): ProjectsTreePickerActionProps => ({
+    getFileOperationLocation: (item: ProjectsTreePickerItem) => dispatch<any>(getFileOperationLocation(item)),
+});
+
+type ProjectsTreePickerCombinedProps = ProjectsTreePickerActionProps & WrappedFieldProps & PickerIdProp;
+
+export const DirectoryTreePickerField = connect(null, projectsTreePickerMapDispatchToProps)(
+    class DirectoryTreePickerFieldComponent extends React.Component<ProjectsTreePickerCombinedProps> {
+
+        handleDirectoryChange = (props: WrappedFieldProps) =>
+            async (_: any, { data }: TreeItem<ProjectsTreePickerItem>) => {
+                const location = await this.props.getFileOperationLocation(data);
+                props.input.onChange(location || '');
+            }
+
+        render() {
+            return <div style={{ display: 'flex', minHeight: 0, flexDirection: 'column' }}>
+                <div style={{ flexBasis: '275px', flexShrink: 1, minHeight: 0, display: 'flex', flexDirection: 'column' }}>
+                    <ProjectsTreePicker
+                        currentUuid={this.props.input.value.uuid}
+                        pickerId={this.props.pickerId}
+                        toggleItemActive={this.handleDirectoryChange(this.props)}
+                        options={{ showOnlyOwned: false, showOnlyWritable: true }}
+                        includeCollections
+                        includeDirectories />
+                    {this.props.meta.dirty && this.props.meta.error &&
+                        <Typography variant='caption' color='error'>
+                            {this.props.meta.error}
+                        </Typography>}
+                </div>
+            </div>;
+        }
+    });

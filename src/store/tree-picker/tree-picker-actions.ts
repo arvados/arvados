@@ -23,6 +23,8 @@ import { mapTreeValues } from "models/tree";
 import { sortFilesTree } from "services/collection-service/collection-service-files-response";
 import { GroupClass, GroupResource } from "models/group";
 import { CollectionResource } from "models/collection";
+import { getResource } from "store/resources/resources";
+import { updateResources } from "store/resources/resources-actions";
 
 export const treePickerActions = unionize({
     LOAD_TREE_PICKER_NODE: ofType<{ id: string, pickerId: string }>(),
@@ -167,6 +169,7 @@ export const loadProject = (params: LoadProjectParamsWithId) =>
         const itemLimit = 200;
 
         const { items, itemsAvailable } = await services.groupsService.contents((loadShared || searchProjects) ? '' : id, { filters, excludeHomeProject: loadShared || undefined, limit: itemLimit });
+        dispatch<any>(updateResources(items));
 
         if (itemsAvailable > itemLimit) {
             items.push({
@@ -523,29 +526,38 @@ const buildParams = (ownerUuid: string) => {
  *   if the item represents a valid target/destination location
  */
 export type FileOperationLocation = {
+    name: string;
     uuid: string;
-    path: string;
+    pdh?: string;
+    subpath: string;
 }
-export const getFileOperationLocation = (item: ProjectsTreePickerItem): FileOperationLocation | undefined => {
-    if ('kind' in item && item.kind === ResourceKind.COLLECTION) {
-        return {
-            uuid: item.uuid,
-            path: '/'
-        };
-    } else if ('type' in item && item.type === CollectionFileType.DIRECTORY) {
-        const uuid = getCollectionResourceCollectionUuid(item.id);
-        if (uuid) {
+export const getFileOperationLocation = (item: ProjectsTreePickerItem) =>
+    async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository): Promise<FileOperationLocation | undefined> => {
+        if ('kind' in item && item.kind === ResourceKind.COLLECTION) {
             return {
-                uuid,
-                path: [item.path, item.name].join('/')
+                name: item.name,
+                uuid: item.uuid,
+                pdh: item.portableDataHash,
+                subpath: '/',
             };
-        } else {
-            return undefined;
+        } else if ('type' in item && item.type === CollectionFileType.DIRECTORY) {
+            const uuid = getCollectionResourceCollectionUuid(item.id);
+            if (uuid) {
+                const collection = getResource<CollectionResource>(uuid)(getState().resources);
+                if (collection) {
+                    const itemPath = [item.path, item.name].join('/');
+
+                    return {
+                        name: item.name,
+                        uuid,
+                        pdh: collection.portableDataHash,
+                        subpath: itemPath,
+                    };
+                }
+            }
         }
-    } else {
         return undefined;
-    }
-};
+    };
 
 /**
  * Create an expanded tree picker subtree from array of nested projects/collection
