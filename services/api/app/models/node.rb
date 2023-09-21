@@ -163,8 +163,8 @@ class Node < ArvadosModel
                           LIMIT 1',
                           # query label:
                           'Node.available_slot_number',
-                          # [col_id, val] for $1 vars:
-                          [[nil, MAX_VMS]],
+                          # bind vars:
+                          [MAX_VMS],
                          ).rows.first.andand.first
   end
 

@@ -111,10 +111,10 @@ create temporary table #{temptable_perms} on commit drop
 as select * from compute_permission_subgraph($1, $2, $3, $4)
 },
                                              'update_permissions.select',
-                                             [[nil, perm_origin_uuid],
-                                              [nil, starting_uuid],
-                                              [nil, perm_level],
-                                              [nil, edge_id]]
+                                             [perm_origin_uuid,
+                                              starting_uuid,
+                                              perm_level,
+                                              edge_id]
 
     ActiveRecord::Base.connection.exec_query "SET LOCAL enable_mergejoin to true;"
 

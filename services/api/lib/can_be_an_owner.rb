@@ -62,7 +62,7 @@ module CanBeAnOwner
                   # "name" arg is a query label that appears in logs:
                   "descendant_project_uuids for #{self.uuid}",
                   # "binds" arg is an array of [col_id, value] for '$1' vars:
-                  [[nil, self.uuid], [nil, 'project']],
+                  [self.uuid, 'project'],
                   ).rows.map do |project_uuid,|
       project_uuid
     end

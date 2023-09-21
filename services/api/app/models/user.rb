@@ -145,10 +145,10 @@ SELECT 1 FROM #{PERMISSION_VIEW}
 },
                   # "name" arg is a query label that appears in logs:
                    "user_can_query",
-                   [[nil, self.uuid],
-                    [nil, target_uuid],
-                    [nil, VAL_FOR_PERM[action]],
-                    [nil, target_owner_uuid]]
+                   [self.uuid,
+                    target_uuid,
+                    VAL_FOR_PERM[action],
+                    target_owner_uuid]
                   ).any?
         return false
       end
@@ -237,7 +237,7 @@ SELECT target_uuid, perm_level
                    # "name" arg is a query label that appears in logs:
                    "User.group_permissions",
                    # "binds" arg is an array of [col_id, value] for '$1' vars:
-                   [[nil, uuid]]).
+                   [uuid]).
         rows.each do |group_uuid, max_p_val|
         @group_perms[group_uuid] = PERMS_FOR_VAL[max_p_val.to_i]
       end

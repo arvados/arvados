@@ -168,9 +168,9 @@ class Group < ArvadosModel
       "create temporary table #{temptable} on commit drop " +
       "as select * from project_subtree_with_trash_at($1, LEAST($2, $3)::timestamp)",
       "Group.update_trash.select",
-      [[nil, self.uuid],
-       [nil, TrashedGroup.find_by_group_uuid(self.owner_uuid).andand.trash_at],
-       [nil, self.trash_at]])
+      [self.uuid,
+       TrashedGroup.find_by_group_uuid(self.owner_uuid).andand.trash_at,
+       self.trash_at])
     frozen_descendants = ActiveRecord::Base.connection.exec_query(
       "select uuid from frozen_groups, #{temptable} where uuid = target_uuid",
       "Group.update_trash.check_frozen")
@@ -200,16 +200,16 @@ class Group < ArvadosModel
     ActiveRecord::Base.connection.exec_query(
       "create temporary table #{temptable} on commit drop as select * from project_subtree_with_is_frozen($1,$2)",
       "Group.update_frozen.select",
-      [[nil, self.uuid],
-       [nil, !self.frozen_by_uuid.nil?]])
+      [self.uuid,
+       !self.frozen_by_uuid.nil?])
     if frozen_by_uuid
       rows = ActiveRecord::Base.connection.exec_query(
         "select cr.uuid, cr.state from container_requests cr, #{temptable} frozen " +
         "where cr.owner_uuid = frozen.uuid and frozen.is_frozen " +
         "and cr.state not in ($1, $2) limit 1",
         "Group.update_frozen.check_container_requests",
-        [[nil, ContainerRequest::Uncommitted],
-         [nil, ContainerRequest::Final]])
+        [ContainerRequest::Uncommitted,
+         ContainerRequest::Final])
       if rows.any?
         raise ArgumentError.new("cannot freeze project containing container request #{rows.first['uuid']} with state = #{rows.first['state']}")
       end
@@ -240,11 +240,11 @@ class Group < ArvadosModel
     ActiveRecord::Base.connection.exec_delete(
       "delete from trashed_groups where group_uuid=$1",
       "Group.clear_permissions_trash_frozen",
-      [[nil, self.uuid]])
+      [self.uuid])
     ActiveRecord::Base.connection.exec_delete(
       "delete from frozen_groups where uuid=$1",
       "Group.clear_permissions_trash_frozen",
-      [[nil, self.uuid]])
+      [self.uuid])
   end
 
   def assign_name
