@@ -306,7 +306,7 @@ describe("Search tests", function () {
                 cy.window().then(win =>
                     win.navigator.clipboard.readText().then(text => {
                         // expect(text).to.equal(`https://wb2.xxxxx.fakecluster.tld/collections/${federatedColUuid}`);
-                        expect(text).to.equal(`${window.location.origin}/collections/${federatedColUuid}`);
+                        expect(text).to.equal(`${window.location.origin}/collections/${testCollection.uuid}`);
                     })
                 );
             });
