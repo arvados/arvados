@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: AGPL-3.0
 
-require 'update_permissions'
+require_relative '../lib/update_permissions'
 
 ENV["RAILS_ENV"] = "test"
 unless ENV["NO_COVERAGE_TEST"]

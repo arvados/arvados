@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: AGPL-3.0
 
-require '20200501150153_permission_table_constants'
+require_relative '20200501150153_permission_table_constants'
 
 REVOKE_PERM = 0
 CAN_MANAGE_PERM = 3
