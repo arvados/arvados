@@ -7,6 +7,7 @@ source 'https://rubygems.org'
 gem 'rails', '~> 7.0.0'
 gem 'responders'
 gem 'i18n'
+gem 'sprockets-rails'
 
 group :test, :development do
   gem 'factory_bot_rails'
