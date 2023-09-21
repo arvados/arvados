@@ -59,6 +59,14 @@ module Server
     # from connecting to Rails internally via plain http.
     config.ssl_options = {redirect: false}
 
+    # This will change to 7.0 in a future release when there is no
+    # longer a possibility of rolling back to Arvados 2.7 (Rails 5.2)
+    # which cannot read 7.0-format cache files.
+    config.active_support.cache_format_version = 6.1
+
+    # Delete when switching to 7.0 framework defaults.
+    config.active_support.disable_to_s_conversion = true
+
     # Before using the filesystem backend for Rails.cache, check
     # whether we own the relevant directory. If we don't, using it is
     # likely to either fail or (if we're root) pollute it and cause
