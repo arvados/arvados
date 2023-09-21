@@ -33,7 +33,7 @@ module Server
     require_relative "arvados_config.rb"
 
     # Initialize configuration defaults for specified Rails version.
-    config.load_defaults 6.0
+    config.load_defaults 6.1
 
     # Configuration for the application, engines, and railties goes here.
     #
