@@ -19,6 +19,7 @@ export const ProjectTreePickerField = (props: WrappedFieldProps & PickerIdProp) 
             <ProjectsTreePicker
                 pickerId={props.pickerId}
                 toggleItemActive={handleChange(props)}
+                cascadeSelection={false}
                 options={{ showOnlyOwned: false, showOnlyWritable: true }} />
             {props.meta.dirty && props.meta.error &&
                 <Typography variant='caption' color='error'>
@@ -37,6 +38,7 @@ export const CollectionTreePickerField = (props: WrappedFieldProps & PickerIdPro
             <ProjectsTreePicker
                 pickerId={props.pickerId}
                 toggleItemActive={handleChange(props)}
+                cascadeSelection={false}
                 options={{ showOnlyOwned: false, showOnlyWritable: true }}
                 includeCollections />
             {props.meta.dirty && props.meta.error &&
@@ -69,9 +71,10 @@ export const DirectoryTreePickerField = connect(null, projectsTreePickerMapDispa
             return <div style={{ display: 'flex', minHeight: 0, flexDirection: 'column' }}>
                 <div style={{ flexBasis: '275px', flexShrink: 1, minHeight: 0, display: 'flex', flexDirection: 'column' }}>
                     <ProjectsTreePicker
-                        currentUuid={this.props.input.value.uuid}
+                        currentUuids={[this.props.input.value.uuid]}
                         pickerId={this.props.pickerId}
                         toggleItemActive={this.handleDirectoryChange(this.props)}
+                        cascadeSelection={false}
                         options={{ showOnlyOwned: false, showOnlyWritable: true }}
                         includeCollections
                         includeDirectories />

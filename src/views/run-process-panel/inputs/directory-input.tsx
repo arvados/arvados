@@ -149,6 +149,7 @@ const DirectoryInputComponent = connect(null, mapDispatchToProps)(
                                 pickerId={this.props.commandInput.id}
                                 includeCollections
                                 includeDirectories
+                                cascadeSelection={false}
                                 options={this.props.options}
                                 toggleItemActive={this.setDirectory} />
                         </div>

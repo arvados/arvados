@@ -25,6 +25,7 @@ import { GroupClass, GroupResource } from "models/group";
 import { CollectionResource } from "models/collection";
 import { getResource } from "store/resources/resources";
 import { updateResources } from "store/resources/resources-actions";
+import { SnackbarKind, snackbarActions } from "store/snackbar/snackbar-actions";
 
 export const treePickerActions = unionize({
     LOAD_TREE_PICKER_NODE: ofType<{ id: string, pickerId: string }>(),
@@ -32,11 +33,12 @@ export const treePickerActions = unionize({
     APPEND_TREE_PICKER_NODE_SUBTREE: ofType<{ id: string, subtree: Tree<any>, pickerId: string }>(),
     TOGGLE_TREE_PICKER_NODE_COLLAPSE: ofType<{ id: string, pickerId: string }>(),
     EXPAND_TREE_PICKER_NODE: ofType<{ id: string, pickerId: string }>(),
+    EXPAND_TREE_PICKER_NODE_ANCESTORS: ofType<{ id: string, pickerId: string }>(),
     ACTIVATE_TREE_PICKER_NODE: ofType<{ id: string, pickerId: string, relatedTreePickers?: string[] }>(),
     DEACTIVATE_TREE_PICKER_NODE: ofType<{ pickerId: string }>(),
-    TOGGLE_TREE_PICKER_NODE_SELECTION: ofType<{ id: string, pickerId: string }>(),
-    SELECT_TREE_PICKER_NODE: ofType<{ id: string | string[], pickerId: string }>(),
-    DESELECT_TREE_PICKER_NODE: ofType<{ id: string | string[], pickerId: string }>(),
+    TOGGLE_TREE_PICKER_NODE_SELECTION: ofType<{ id: string, pickerId: string, cascade: boolean }>(),
+    SELECT_TREE_PICKER_NODE: ofType<{ id: string | string[], pickerId: string, cascade: boolean }>(),
+    DESELECT_TREE_PICKER_NODE: ofType<{ id: string | string[], pickerId: string, cascade: boolean }>(),
     EXPAND_TREE_PICKER_NODES: ofType<{ ids: string[], pickerId: string }>(),
     RESET_TREE_PICKER: ofType<{ pickerId: string }>()
 });
@@ -91,7 +93,14 @@ export const getAllNodes = <Value>(pickerId: string, filter = (node: TreeNode<Va
 export const getSelectedNodes = <Value>(pickerId: string) => (state: TreePicker) =>
     getAllNodes<Value>(pickerId, node => node.selected)(state);
 
-export const initProjectsTreePicker = (pickerId: string, selectedItemUuid?: string) =>
+interface TreePickerPreloadParams {
+    selectedItemUuids: string[];
+    includeDirectories: boolean;
+    includeFiles: boolean;
+    multi: boolean;
+}
+
+export const initProjectsTreePicker = (pickerId: string, preloadParams?: TreePickerPreloadParams) =>
     async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
         const { home, shared, favorites, publicFavorites, search } = getProjectsTreePickerIds(pickerId);
         dispatch<any>(initUserProject(home));
@@ -100,8 +109,14 @@ export const initProjectsTreePicker = (pickerId: string, selectedItemUuid?: stri
         dispatch<any>(initPublicFavoritesProject(publicFavorites));
         dispatch<any>(initSearchProject(search));
 
-        if (selectedItemUuid) {
-            dispatch<any>(loadInitialValue(selectedItemUuid, pickerId));
+        if (preloadParams && preloadParams.selectedItemUuids.length) {
+            dispatch<any>(loadInitialValue(
+                preloadParams.selectedItemUuids,
+                pickerId,
+                preloadParams.includeDirectories,
+                preloadParams.includeFiles,
+                preloadParams.multi
+            ));
         }
     };
 
@@ -239,13 +254,15 @@ export const loadCollection = (id: string, pickerId: string, includeDirectories?
                 const sorted = sortFilesTree(tree);
                 const filesTree = mapTreeValues(services.collectionService.extendFileURL)(sorted);
 
-                dispatch(
+                // await tree modifications so that consumers can guarantee node presence
+                await dispatch(
                     treePickerActions.APPEND_TREE_PICKER_NODE_SUBTREE({
                         id,
                         pickerId,
                         subtree: mapTree(node => ({ ...node, status: TreeNodeStatus.LOADED }))(filesTree)
                     }));
 
+                // Expand collection root node
                 dispatch(treePickerActions.TOGGLE_TREE_PICKER_NODE_COLLAPSE({ id, pickerId }));
             }
         }
@@ -291,34 +308,124 @@ export const initSharedProject = (pickerId: string) =>
         }));
     };
 
-export const loadInitialValue = (initialValue: string, pickerId: string) =>
+type PickerItemPreloadData = {
+    itemId: string;
+    mainItemUuid: string;
+    ancestors: (GroupResource | CollectionResource)[];
+    isHomeProjectItem: boolean;
+}
+
+type PickerTreePreloadData = {
+    tree: Tree<GroupResource | CollectionResource>;
+    pickerTreeId: string;
+    pickerTreeRootUuid: string;
+};
+
+export const loadInitialValue = (pickerItemIds: string[], pickerId: string, includeDirectories: boolean, includeFiles: boolean, multi: boolean,) =>
     async (dispatch: Dispatch<any>, getState: () => RootState, services: ServiceRepository) => {
-        const { home, shared } = getProjectsTreePickerIds(pickerId);
         const homeUuid = getUserUuid(getState());
-        const ancestors = (await services.ancestorsService.ancestors(initialValue, ''))
+
+        // Request ancestor trees in paralell and save home project status
+        const pickerItemsData: PickerItemPreloadData[] = await Promise.allSettled(pickerItemIds.map(async itemId => {
+            const mainItemUuid = itemId.includes('/') ? itemId.split('/')[0] : itemId;
+            const ancestors = (await services.ancestorsService.ancestors(mainItemUuid, ''))
             .filter(item =>
                 item.kind === ResourceKind.GROUP ||
                 item.kind === ResourceKind.COLLECTION
             ) as (GroupResource | CollectionResource)[];
 
-        if (ancestors.length) {
-            const isUserHomeProject = !!(homeUuid && ancestors.some(item => item.ownerUuid === homeUuid));
-            const pickerTreeId = isUserHomeProject ? home : shared;
-            const pickerTreeRootUuid: string = (homeUuid && isUserHomeProject) ? homeUuid : SHARED_PROJECT_ID;
+            const isHomeProjectItem = !!(homeUuid && ancestors.some(item => item.ownerUuid === homeUuid));
 
-            ancestors[0].ownerUuid = '';
-            const tree = createInitialLocationTree(ancestors, initialValue);
+            return {
+                itemId,
+                mainItemUuid,
+                ancestors,
+                isHomeProjectItem,
+            };
+        })).then((res) => {
+            // Show toast if any selections failed to restore
+            if (res.find((promiseResult): promiseResult is PromiseRejectedResult => (promiseResult.status === 'rejected'))) {
+                dispatch<any>(snackbarActions.OPEN_SNACKBAR({ message: `Some selections failed to load and were removed`, kind: SnackbarKind.ERROR }));
+            }
+            // Filter out any failed promises and map to resulting preload data with ancestors
+            return res.filter((promiseResult): promiseResult is PromiseFulfilledResult<PickerItemPreloadData> => (
+                promiseResult.status === 'fulfilled'
+            )).map(res => res.value)
+        });
+
+        // Group items to preload / ancestor data by home/shared picker and create initial Trees to preload
+        const initialTreePreloadData: PickerTreePreloadData[] = [
+            pickerItemsData.filter((item) => item.isHomeProjectItem),
+            pickerItemsData.filter((item) => !item.isHomeProjectItem),
+        ]
+            .filter((items) => items.length > 0)
+            .map((itemGroup) =>
+                itemGroup.reduce(
+                    (preloadTree, itemData) => ({
+                        tree: createInitialPickerTree(
+                            itemData.ancestors,
+                            itemData.mainItemUuid,
+                            preloadTree.tree
+                        ),
+                        pickerTreeId: getPickerItemTreeId(itemData, homeUuid, pickerId),
+                        pickerTreeRootUuid: getPickerItemRootUuid(itemData, homeUuid),
+                    }),
+                    {
+                        tree: createTree<GroupResource | CollectionResource>(),
+                        pickerTreeId: '',
+                        pickerTreeRootUuid: '',
+                    } as PickerTreePreloadData
+                )
+            );
+
+        // Load initial trees into corresponding picker store
+        await Promise.all(initialTreePreloadData.map(preloadTree => (
             dispatch(
                 treePickerActions.APPEND_TREE_PICKER_NODE_SUBTREE({
-                    id: pickerTreeRootUuid,
-                    pickerId: pickerTreeId,
-                    subtree: tree
-                }));
-            dispatch(treePickerActions.ACTIVATE_TREE_PICKER_NODE({ id: initialValue, pickerId: pickerTreeId }));
-            dispatch(treePickerSearchActions.REFRESH_TREE_PICKER({ pickerId: pickerTreeId }));
-        }
+                    id: preloadTree.pickerTreeRootUuid,
+                    pickerId: preloadTree.pickerTreeId,
+                    subtree: preloadTree.tree,
+                })
+            )
+        )));
 
+        // Await loading collection before attempting to select items
+        await Promise.all(pickerItemsData.map(async itemData => {
+            const pickerTreeId = getPickerItemTreeId(itemData, homeUuid, pickerId);
+
+            // Selected item resides in collection subpath
+            if (itemData.itemId.includes('/')) {
+                // Load collection into tree
+                // loadCollection includes more than dispatched actions and must be awaited
+                await dispatch(loadCollection(itemData.mainItemUuid, pickerTreeId, includeDirectories, includeFiles));
+            }
+            // Expand nodes down to destination
+            dispatch(treePickerActions.EXPAND_TREE_PICKER_NODE_ANCESTORS({ id: itemData.itemId, pickerId: pickerTreeId }));
+        }));
+
+        // Select or activate nodes
+        pickerItemsData.forEach(itemData => {
+            const pickerTreeId = getPickerItemTreeId(itemData, homeUuid, pickerId);
+
+            if (multi) {
+                dispatch(treePickerActions.SELECT_TREE_PICKER_NODE({ id: itemData.itemId, pickerId: pickerTreeId, cascade: false}));
+            } else {
+                dispatch(treePickerActions.ACTIVATE_TREE_PICKER_NODE({ id: itemData.itemId, pickerId: pickerTreeId }));
+            }
+        });
+
+        // Refresh triggers loading in all adjacent items that were not included in the ancestor tree
+        await initialTreePreloadData.map(preloadTree => dispatch(treePickerSearchActions.REFRESH_TREE_PICKER({ pickerId: preloadTree.pickerTreeId })));
     }
+
+const getPickerItemTreeId = (itemData: PickerItemPreloadData, homeUuid: string | undefined, pickerId: string) => {
+    const { home, shared } = getProjectsTreePickerIds(pickerId);
+    return ((itemData.isHomeProjectItem && homeUuid) ? home : shared);
+};
+
+const getPickerItemRootUuid = (itemData: PickerItemPreloadData, homeUuid: string | undefined) => {
+    return (itemData.isHomeProjectItem && homeUuid) ? homeUuid : SHARED_PROJECT_ID;
+};
 
 export const FAVORITES_PROJECT_ID = 'Favorites';
 export const initFavoritesProject = (pickerId: string) =>
@@ -561,18 +668,33 @@ export const getFileOperationLocation = (item: ProjectsTreePickerItem) =>
 
 /**
  * Create an expanded tree picker subtree from array of nested projects/collection
- *   Assumes the root item of the subtree already has an empty string ownerUuid
+ *   First item is assumed to be root and gets empty parent id
+ *   Nodes must be sorted from top down to prevent orphaned nodes
  */
-export const createInitialLocationTree = (data: Array<GroupResource | CollectionResource>, tailUuid: string) => {
-    return data
-        .reduce((tree, item) => setNode({
-            children: [],
-            id: item.uuid,
-            parent: item.ownerUuid,
-            value: item,
-            active: false,
-            selected: false,
-            expanded: false,
-            status: item.uuid !== tailUuid ? TreeNodeStatus.LOADED : TreeNodeStatus.INITIAL,
-        })(tree), createTree<GroupResource | CollectionResource>());
+export const createInitialPickerTree = (sortedAncestors: Array<GroupResource | CollectionResource>, tailUuid: string, initialTree: Tree<GroupResource | CollectionResource>) => {
+    return sortedAncestors
+        .reduce((tree, item, index) => {
+            if (getNode(item.uuid)(tree)) {
+                return tree;
+            } else {
+                return setNode({
+                    children: [],
+                    id: item.uuid,
+                    parent: index === 0 ? '' : item.ownerUuid,
+                    value: item,
+                    active: false,
+                    selected: false,
+                    expanded: false,
+                    status: item.uuid !== tailUuid ? TreeNodeStatus.LOADED : TreeNodeStatus.INITIAL,
+                })(tree);
+            }
+        }, initialTree);
 };
+
+export const fileOperationLocationToPickerId = (location: FileOperationLocation): string => {
+    let id = location.uuid;
+    if (location.subpath.length && location.subpath !== '/') {
+        id = id + location.subpath;
+    }
+    return id;
+}

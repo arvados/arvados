@@ -140,6 +140,7 @@ export const ProjectInputComponent = connect(mapStateToProps)(
                         <div className={classes.pickerWrapper}>
                             <ProjectsTreePicker
                                 pickerId={this.props.commandInput.id}
+                                cascadeSelection={false}
                                 options={this.props.options}
                                 toggleItemActive={this.setProject} />
                         </div>
