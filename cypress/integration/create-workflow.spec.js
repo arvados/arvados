@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-describe('Multi-file deletion tests', function () {
+describe('Create workflow tests', function () {
     let activeUser;
     let adminUser;
 

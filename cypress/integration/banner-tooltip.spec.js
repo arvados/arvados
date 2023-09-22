@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-describe('Collection panel tests', function () {
+describe('Banner / tooltip tests', function () {
     let activeUser;
     let adminUser;
     let collectionUUID;
