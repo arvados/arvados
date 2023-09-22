@@ -23,7 +23,6 @@ import { RUN_PROCESS_ADVANCED_FORM } from 'views/run-process-panel/run-process-a
 import { getResource } from 'store/resources/resources';
 import { ProjectResource } from 'models/project';
 import { UserResource } from 'models/user';
-import { getUserUuid } from "common/getuser";
 import { getWorkflowInputs, parseWorkflowDefinition } from 'models/workflow';
 
 export const WORKFLOW_PANEL_ID = "workflowPanel";
@@ -63,7 +62,6 @@ export const openRunProcess = (workflowUuid: string, ownerUuid?: string, name?: 
             let owner;
             if (ownerUuid) {
                 // Must be writable.
-                const userUuid = getUserUuid(getState());
                 owner = getResource<ProjectResource | UserResource>(ownerUuid)(getState().resources);
                 if (!owner || !owner.canWrite) {
                     owner = undefined;

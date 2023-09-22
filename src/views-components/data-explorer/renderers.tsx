@@ -57,7 +57,6 @@ import { setMemberIsHidden } from 'store/group-details-panel/group-details-panel
 import { formatPermissionLevel } from 'views-components/sharing-dialog/permission-select';
 import { PermissionLevel } from 'models/permission';
 import { openPermissionEditContextMenu } from 'store/context-menu/context-menu-actions';
-import { getUserUuid } from 'common/getuser';
 import { VirtualMachinesResource } from 'models/virtual-machines';
 import { CopyToClipboardSnackbar } from 'components/copy-to-clipboard-snackbar/copy-to-clipboard-snackbar';
 import { ProjectResource } from 'models/project';
