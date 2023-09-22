@@ -28,7 +28,7 @@ describe("Project tests", function () {
         cy.clearLocalStorage();
     });
 
-    it.only("creates a new project with multiple properties", function () {
+    it("creates a new project with multiple properties", function () {
         const projName = `Test project (${Math.floor(999999 * Math.random())})`;
         cy.loginAs(activeUser);
         cy.get("[data-cy=side-panel-button]").click();
