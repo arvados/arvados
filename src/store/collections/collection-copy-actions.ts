@@ -37,7 +37,6 @@ export const openMultiCollectionCopyDialog = (resource: { name: string; uuid: st
 
 export const copyCollection =
     (resource: CopyFormDialogData) => async (dispatch: Dispatch, getState: () => RootState, services: ServiceRepository) => {
-        console.log("COPYCOLL", resource);
         const formName = resource.isSingle ? COLLECTION_COPY_FORM_NAME : COLLECTION_MULTI_COPY_FORM_NAME;
         dispatch(startSubmit(formName));
         let collection = getResource<CollectionResource>(resource.uuid)(getState().resources);

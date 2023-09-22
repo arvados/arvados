@@ -126,7 +126,7 @@ export const collectionActionSet: ContextMenuActionSet = [
             component: ToggleTrashAction,
             name: "ToggleTrashAction",
             execute: (dispatch, resources: ContextMenuResource[]) => {
-                for (const resource of resources) {
+                for (const resource of [...resources]) {
                     dispatch<any>(toggleCollectionTrashed(resource.uuid, resource.isTrashed!!));
                 }
             },
@@ -141,7 +141,7 @@ export const collectionAdminActionSet: ContextMenuActionSet = [
             component: TogglePublicFavoriteAction,
             name: "TogglePublicFavoriteAction",
             execute: (dispatch, resources) => {
-                for (const resource of resources) {
+                for (const resource of [...resources]) {
                     dispatch<any>(togglePublicFavorite(resource)).then(() => {
                         dispatch<any>(publicFavoritePanelActions.REQUEST_ITEMS());
                     });
@@ -158,7 +158,7 @@ export const oldCollectionVersionActionSet: ContextMenuActionSet = [
             icon: RestoreVersionIcon,
             name: "Restore version",
             execute: (dispatch, resources) => {
-                for (const resource of resources) {
+                for (const resource of [...resources]) {
                     dispatch<any>(openRestoreCollectionVersionDialog(resource.uuid));
                 }
             },

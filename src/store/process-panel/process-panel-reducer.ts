@@ -2,8 +2,8 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-import { ProcessPanel } from 'store/process-panel/process-panel';
-import { ProcessPanelAction, processPanelActions } from 'store/process-panel/process-panel-actions';
+import { OutputDetails, ProcessPanel } from "store/process-panel/process-panel";
+import { ProcessPanelAction, processPanelActions } from "store/process-panel/process-panel-actions";
 
 const initialState: ProcessPanel = {
     containerRequestUuid: "",
@@ -20,7 +20,8 @@ export const processPanelReducer = (state = initialState, action: ProcessPanelAc
     processPanelActions.match(action, {
         RESET_PROCESS_PANEL: () => initialState,
         SET_PROCESS_PANEL_CONTAINER_REQUEST_UUID: containerRequestUuid => ({
-            ...state, containerRequestUuid
+            ...state,
+            containerRequestUuid,
         }),
         SET_PROCESS_PANEL_FILTERS: statuses => {
             const filters = statuses.reduce((filters, status) => ({ ...filters, [status]: true }), {});
@@ -48,8 +49,12 @@ export const processPanelReducer = (state = initialState, action: ProcessPanelAc
                 return state;
             }
         },
-        SET_OUTPUT_RAW: outputRaw => {
-            return { ...state, outputRaw };
+        SET_OUTPUT_RAW: (data: any) => {
+            //never set output to {} unless initializing
+            if (state.outputRaw?.rawOutputs && Object.keys(state.outputRaw?.rawOutputs).length && state.containerRequestUuid === data.uuid) {
+                return state;
+            }
+            return { ...state, outputRaw: data.outputRaw };
         },
         SET_NODE_INFO: ({ nodeInfo }) => {
             return { ...state, nodeInfo };
@@ -57,7 +62,7 @@ export const processPanelReducer = (state = initialState, action: ProcessPanelAc
         SET_OUTPUT_DEFINITIONS: outputDefinitions => {
             // Set output definitions is only additive to avoid clearing when mounts go temporarily missing
             if (outputDefinitions.length) {
-                return { ...state, outputDefinitions }
+                return { ...state, outputDefinitions };
             } else {
                 return state;
             }

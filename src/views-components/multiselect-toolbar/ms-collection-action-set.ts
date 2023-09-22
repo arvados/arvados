@@ -29,7 +29,7 @@ export const msCollectionActionSet: ContextMenuActionSet = [
             component: ToggleTrashAction,
             name: "ToggleTrashAction",
             execute: (dispatch, resources: ContextMenuResource[]) => {
-                for (const resource of resources) {
+                for (const resource of [...resources]) {
                     dispatch<any>(toggleCollectionTrashed(resource.uuid, resource.isTrashed!!));
                 }
             },

@@ -19,6 +19,7 @@ import { multiselectActionsFilters, TMultiselectActionsFilters, contextMenuActio
 import { kindToActionSet, findActionByName } from "./ms-kind-action-differentiator";
 import { msToggleTrashAction } from "views-components/multiselect-toolbar/ms-project-action-set";
 import { copyToClipboardAction } from "store/open-in-new-tab/open-in-new-tab.actions";
+import { ContainerRequestResource } from "models/container-request";
 
 type CssRules = "root" | "button";
 
@@ -119,7 +120,7 @@ export function selectedToKindSet(checkedList: TCheckedList): Set<string> {
 function groupByKind(checkedList: TCheckedList, resources: ResourcesState): Record<string, ContextMenuResource[]> {
     const result = {};
     selectedToArray(checkedList).forEach(uuid => {
-        const resource = getResource(uuid)(resources) as Resource;
+        const resource = getResource(uuid)(resources) as ContainerRequestResource | Resource;
         if (!result[resource.kind]) result[resource.kind] = [];
         result[resource.kind].push(resource);
     });
@@ -189,7 +190,7 @@ function mapDispatchToProps(dispatch: Dispatch) {
             switch (selectedAction.name) {
                 case contextMenuActionConsts.MOVE_TO:
                 case contextMenuActionConsts.REMOVE:
-                    const firstResource = getResource(selectedToArray(checkedList)[0])(resources) as Resource;
+                    const firstResource = getResource(selectedToArray(checkedList)[0])(resources) as ContainerRequestResource | Resource;
                     const action = findActionByName(selectedAction.name as string, kindToActionSet[firstResource.kind]);
                     if (action) action.execute(dispatch, kindGroups[firstResource.kind]);
                     break;

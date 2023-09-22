@@ -29,7 +29,7 @@ export const msToggleTrashAction = {
     component: ToggleTrashAction,
     name: "ToggleTrashAction",
     execute: (dispatch, resources) => {
-        for (const resource of resources) {
+        for (const resource of [...resources]) {
             dispatch(toggleProjectTrashed(resource.uuid, resource.ownerUuid, resource.isTrashed!!, resources.length > 1));
         }
     },
