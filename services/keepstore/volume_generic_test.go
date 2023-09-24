@@ -546,6 +546,9 @@ func (s *genericVolumeSuite) testStatus(t TB, factory TestableVolumeFactory) {
 	v := s.newVolume(t, factory)
 	defer v.Teardown()
 
+	// If the volume has no data, it may have no BytesUsed
+	v.PutRaw(TestHash, TestBlock)
+
 	// Get node status and make a basic sanity check.
 	status := v.Status()
 	if status.DeviceNum == 0 {
